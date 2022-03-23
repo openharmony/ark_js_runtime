@@ -17,21 +17,101 @@
 #define ECMASCRIPT_ASM_DEFINES_H
 
 #ifdef PANDA_TARGET_64
-#define ASM_GLUE_CURRENT_FRAME_OFFSET     (16)
-#define ASM_GLUE_LEAVE_FRAME_OFFSET       (24)
-#define ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET (2088)
+#define ASM_GLUE_CURRENT_FRAME_OFFSET            (16)
+#define ASM_GLUE_LEAVE_FRAME_OFFSET              (24)
+#define ASM_GLUE_BC_HANDLERS_OFFSET              (32)
+#define ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET        (2080)
+#define ASM_BASE_FUNCTION_METHOD_OFFSET          (32)
+#define ASM_JS_METHOD_CALLFIELD_OFFSET           (72)
+#define ASM_JS_METHOD_BYTECODEARRAY_OFFSET       (88)
+#define ASM_JS_FUNCTION_LEXICAL_ENV_OFFSET       (48)
+#define ASM_JS_FUNCTION_CONSTANT_POOL_OFFSET     (72)
+#define ASM_JF_FUNCTION_PROFILE_TYPE_INFO_OFFSET (80)
+#define ASM_JS_METHOD_HOTNESS_COUNTER_OFFSET     (12)
+#define ASM_JS_METHOD_NATIVE_POINTER_OFFSET      (32)
+#define ASM_GLUE_TO_THREAD_OFFSET                (6616)
+// ecma_runtime_callinfo struct
+// ------------------------
+// | size_t       size_   |
+// | JSTaggedType *data_  |
+// ------------------------  stackArgs_
+// | size_t       size_   |
+// | JSTaggedType *data_  |
+// ------------------------  gprArgs_
+// | uint32_t   padding   |
+// | uint32_t   numArgs   |
+// | JSThread*  thread    |
+// ------------------------
+#define ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE         (48)
+#define ECMA_RUNTIME_CALLINFO_NUMARGS_OFFSET        (8)
+#define ECMA_RUNTIME_CALLINFO_GPRARGS_OFFSET        (16)
+#define ECMA_RUNTIME_CALLINFO_GPRARGS_SIZE_OFFSET   (24)
+#define ECMA_RUNTIME_CALLINFO_STACKARGS_OFFSET      (32)
+#define ECMA_RUNTIME_CALLINFO_STACKARGS_SIZE_OFFSET (40)
 #endif
 
 #ifdef PANDA_TARGET_32
-#define ASM_GLUE_CURRENT_FRAME_OFFSET     (16)
-#define ASM_GLUE_LEAVE_FRAME_OFFSET       (24)
-#define ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET (1064)
+#define ASM_GLUE_CURRENT_FRAME_OFFSET            (16)
+#define ASM_GLUE_LEAVE_FRAME_OFFSET              (24)
+#define ASM_GLUE_BC_HANDLERS_OFFSET              (32)
+#define ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET        (1056)
+#define ASM_BASE_FUNCTION_METHOD_OFFSET          (32)
+#define ASM_JS_METHOD_CALLFIELD_OFFSET           (48)
+#define ASM_JS_METHOD_BYTECODEARRAY_OFFSET       (60)
+#define ASM_JS_FUNCTION_LEXICAL_ENV_OFFSET       (48)
+#define ASM_JS_FUNCTION_CONSTANT_POOL_OFFSET     (72)
+#define ASM_JF_FUNCTION_PROFILE_TYPE_INFO_OFFSET (80)
+#define ASM_JS_METHOD_HOTNESS_COUNTER_OFFSET     (12)
+#define ASM_JS_METHOD_NATIVE_POINTER_OFFSET      (24)
+#define ASM_GLUE_TO_THREAD_OFFSET                (0)
+// ecma_runtime_callinfo struct
+// ------------------------
+// | size_t       size_   |
+// | JSTaggedType *data_  |
+// ------------------------  stackArgs_
+// | size_t       size_   |
+// | JSTaggedType *data_  |
+// ------------------------  gprArgs_
+// | uint32_t   numArgs   |
+// | JSThread*  thread    |
+// ------------------------
+#define ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE         (24)
+#define ECMA_RUNTIME_CALLINFO_NUMARGS_OFFSET        (4)
+#define ECMA_RUNTIME_CALLINFO_GPRARGS_OFFSET        (8)
+#define ECMA_RUNTIME_CALLINFO_GPRARGS_SIZE_OFFSET   (12)
+#define ECMA_RUNTIME_CALLINFO_STACKARGS_OFFSET      (16)
+#define ECMA_RUNTIME_CALLINFO_STACKARGS_SIZE_OFFSET (20)
 #endif
 
-#define OPTIMIZE_FRAME_TYPE              (0)
-#define JS_ENTRY_FRAME_TYPE              (1)
-#define LEAVE_FRAME_TYPE                 (3)
-#define ASM_LEAVE_FRAME_TYPE             (5)
-#define JSUNDEFINED                     (0xa)
+#define OPTIMIZE_FRAME_TYPE                (0)
+#define JS_ENTRY_FRAME_TYPE                (1)
+#define LEAVE_FRAME_TYPE                   (3)
+#define ASM_LEAVE_FRAME_TYPE               (5)
+#define ASM_INTERPRETER_FRAME              (3)
+#define JSUNDEFINED                        (0xa)
+#define JSHOLE                             (0x0)
+#define ASM_JS_METHOD_NUM_VREGS_START_BIT  (4)
+#define ASM_JS_METHOD_NUM_VREGS_BIT_SIZE   (28)
+#define ASM_JS_METHOD_NUM_VREGS_MASK       (0xfffffff)  // ((0x1ULL << ASM_JS_METHOD_NUM_VREGS_BIT_SIZE) - 1)
+#define ASM_JS_METHOD_NUM_ARGS_START_BIT   (32)
+#define ASM_JS_METHOD_NUM_ARGS_BIT_SIZE    (28)
+#define ASM_JS_METHOD_NUM_ARGS_MASK        (0xfffffff)  // ((0x1ULL << ASM_JS_METHOD_NUM_ARGS_BIT_SIZE) - 1)
+#define ASM_JS_METHOD_HAVE_THIS_MASK       (0x1)
+#define ASM_JS_METHOD_HAVE_NEW_TARGET_MASK (0x2)
+#define ASM_JS_METHOD_HAVE_EXTRA_MASK      (0x4)
+#define ASM_JS_METHOD_HAVE_FUNC_MASK       (0x8)
+#define ASM_JS_METHOD_IS_NATIVE_MASK       (0x1000000000000000)
+#define ASM_JS_METHOD_CALL_TYPE_MASK       (0xf)
 
+#define ASM_INTERPRETED_FRAME_STATE_SIZE (56)
+#define ASM_INTERPRETED_FRAME_CALL_SIZE_OFFSET (8)
+#define ASM_INTERPRETED_FRAME_FUNCTION_OFFSET  (16)
+#define ASM_INTERPRETED_FRAME_ACC_OFFSET       (24)
+#define ASM_INTERPRETED_FRAME_ENV_OFFSET       (32)
+
+#define JUMP_SIZE_PREF_V8                      (3)
+#define JUMP_SIZE_PREF_V8_V8                   (4)
+#define JUMP_SIZE_PREF_V8_V8_V8                (5)
+#define JUMP_SIZE_PREF_V8_V8_V8_V8             (6)
+#define JUMP_SIZE_PREF_IMM16_V8                (5)
 #endif  // ECMASCRIPT_ASM_DEFINES_H

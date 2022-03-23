@@ -27,8 +27,65 @@
  .global OptimizedCallOptimized
 .type OptimizedCallOptimized, %function
 
-.global HandleCommonCall
-.type HandleCommonCall, %function
+.global PushCallIThisRangeAndDispatch
+.type PushCallIThisRangeAndDispatch, %function
+
+.global PushCallIRangeAndDispatch
+.type PushCallIRangeAndDispatch, %function
+
+.global PushCallArgs3AndDispatch
+.type PushCallArgs3AndDispatch, %function
+
+.global PushCallArgs2AndDispatch
+.type PushCallArgs2AndDispatch, %function
+
+.global PushCallArgs1AndDispatch
+.type PushCallArgs1AndDispatch, %function
+
+.global PushCallArgs0AndDispatch
+.type PushCallArgs0AndDispatch, %function
+
+.global PushCallIThisRangeAndDispatchSlowPath
+.type PushCallIThisRangeAndDispatchSlowPath, %function
+
+.global PushCallIRangeAndDispatchSlowPath
+.type PushCallIRangeAndDispatchSlowPath, %function
+
+.global PushCallArgs3AndDispatchSlowPath
+.type PushCallArgs3AndDispatchSlowPath, %function
+
+.global PushCallArgs2AndDispatchSlowPath
+.type PushCallArgs2AndDispatchSlowPath, %function
+
+.global PushCallArgs1AndDispatchSlowPath
+.type PushCallArgs1AndDispatchSlowPath, %function
+
+.global PushCallArgs0AndDispatchSlowPath
+.type PushCallArgs0AndDispatchSlowPath, %function
+
+.global PushCallIThisRangeAndDispatchNative
+.type PushCallIThisRangeAndDispatchNative, %function
+
+.global PushCallIRangeAndDispatchNative
+.type PushCallIRangeAndDispatchNative, %function
+
+.global PushCallArgs3AndDispatchNative
+.type PushCallArgs3AndDispatchNative, %function
+
+.global PushCallArgs2AndDispatchNative
+.type PushCallArgs2AndDispatchNative, %function
+
+.global PushCallArgs1AndDispatchNative
+.type PushCallArgs1AndDispatchNative, %function
+
+.global PushCallArgs0AndDispatchNative
+.type PushCallArgs0AndDispatchNative, %function
+
+.global ResumeRspAndDispatch
+.type ResumeRspAndDispatch, %function
+
+.global ResumeRspAndReturn
+.type ResumeRspAndReturn, %function
 
 #define CALLEESAVE_REGS_SIZE   (32)
 #define SLOT_SIZE              (4)
@@ -250,6 +307,62 @@ OptimizedCallOptimized:
     pop     {r4, r5, r6, r7, r8, r9, r10, lr}
     bx      lr
 
-// void HandleCommonCall(uintptr_t glue, uint64_t callType, uintptr_t sp, uint64_t funcReg, uint64_t actualArgc, ...);
-HandleCommonCall:
-    bx      lr
+PushCallIThisRangeAndDispatch:
+    bx  lr
+
+PushCallIRangeAndDispatch:
+    bx  lr
+
+PushCallArgs3AndDispatch:
+    bx  lr
+
+PushCallArgs2AndDispatch:
+    bx  lr
+
+PushCallArgs1AndDispatch:
+    bx  lr
+
+PushCallArgs0AndDispatch:
+    bx  lr
+
+PushCallIThisRangeAndDispatchSlowPath:
+    bx  lr
+
+PushCallIRangeAndDispatchSlowPath:
+    bx  lr
+
+PushCallArgs3AndDispatchSlowPath:
+    bx  lr
+
+PushCallArgs2AndDispatchSlowPath:
+    bx  lr
+
+PushCallArgs1AndDispatchSlowPath:
+    bx  lr
+
+PushCallArgs0AndDispatchSlowPath:
+    bx  lr
+
+PushCallIThisRangeAndDispatchNative:
+    bx  lr
+
+PushCallIRangeAndDispatchNative:
+    bx  lr
+
+PushCallArgs3AndDispatchNative:
+    bx  lr
+
+PushCallArgs2AndDispatchNative:
+    bx  lr
+
+PushCallArgs1AndDispatchNative:
+    bx  lr
+
+PushCallArgs0AndDispatchNative:
+    bx  lr
+
+ResumeRspAndDispatch:
+    bx  lr
+
+ResumeRspAndReturn:
+    bx  lr

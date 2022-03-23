@@ -44,18 +44,15 @@ struct BCStubEntries {
     static constexpr size_t EXISTING_BC_HANDLER_STUB_ENTRIES_COUNT = kungfu::BytecodeStubCSigns::NUM_OF_ALL_STUBS;
     // The number of bytecodes.
     static constexpr size_t BC_HANDLER_STUB_ENTRIES_COUNT = 0x100;
-    // Add bytecode helper handlers at the end of bytecode handlers.
-    static constexpr size_t BC_HELPER_STUB_ENTRIES_COUNT = kungfu::BytecodeHelperId::NUM_OF_BYTECODE_HELPERS;
-    static constexpr size_t ALL_BC_STUB_ENTRIES_COUNT = BC_HANDLER_STUB_ENTRIES_COUNT + BC_HELPER_STUB_ENTRIES_COUNT;
     static_assert(EXISTING_BC_HANDLER_STUB_ENTRIES_COUNT <= BC_HANDLER_STUB_ENTRIES_COUNT);
-    Address stubEntries_[ALL_BC_STUB_ENTRIES_COUNT] = {0};
+    Address stubEntries_[BC_HANDLER_STUB_ENTRIES_COUNT] = {0};
 
-    static constexpr size_t SizeArch32 = sizeof(uint32_t) * ALL_BC_STUB_ENTRIES_COUNT;
-    static constexpr size_t SizeArch64 = sizeof(uint64_t) * ALL_BC_STUB_ENTRIES_COUNT;
+    static constexpr size_t SizeArch32 = sizeof(uint32_t) * BC_HANDLER_STUB_ENTRIES_COUNT;
+    static constexpr size_t SizeArch64 = sizeof(uint64_t) * BC_HANDLER_STUB_ENTRIES_COUNT;
 
     void Set(size_t index, Address addr)
     {
-        assert(index < ALL_BC_STUB_ENTRIES_COUNT);
+        assert(index < BC_HANDLER_STUB_ENTRIES_COUNT);
         stubEntries_[index] = addr;
     }
 

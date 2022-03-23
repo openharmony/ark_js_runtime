@@ -682,9 +682,17 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList, 
     if (compCfg_->Is32Bit() || compCfg_->Is64Bit()) {
         SaveCurrentSP();
     }
-
-    gateToLLVMMaps_[gate] = LLVMBuildCall(builder_, callee, params,
-        inList.size() - paraStartIndex + extraParameterCnt, "");
+    LLVMValueRef call = LLVMBuildCall(builder_, callee, params, inList.size() - paraStartIndex + extraParameterCnt, "");
+    if (calleeDescriptor->GetCallConv() == CallSignature::CallConv::GHCCallConv) {
+        LLVMSetTailCall(call, true);
+        const char *attrName = "gc-leaf-function";
+        const char *attrValue = "true";
+        LLVMAttributeRef llvmAttr = LLVMCreateStringAttribute(context_, attrName, strlen(attrName), attrValue,
+                                                              strlen(attrValue));
+        LLVMAddCallSiteAttribute(call, LLVMAttributeFunctionIndex, llvmAttr);
+        LLVMSetInstructionCallConv(call, LLVMGHCCallConv);
+    }
+    gateToLLVMMaps_[gate] = call;
     return;
 }
 
@@ -694,16 +702,9 @@ void LLVMIRBuilder::VisitBytecodeCall(GateRef gate, const std::vector<GateRef> &
     LLVMValueRef opcodeOffset = gateToLLVMMaps_[inList[1]];
     ASSERT(llvmModule_ != nullptr);
     LLVMValueRef callee;
-    LLVMTypeRef rtfuncType;
-    if (BCStubEntries::GetStubEntryOffset(
-        BCStubEntries::BC_HANDLER_STUB_ENTRIES_COUNT + BytecodeHelperId::HandleCommonCallId) == inList[1]) {
-        const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(HandleCommonCall));
-        rtfuncType = llvmModule_->GetFuncType(signature);
-    } else {
-        // start index of bytecode handler csign in llvmModule
-        const CallSignature *signature = BytecodeStubCSigns::Get(BYTECODE_STUB_BEGIN_ID);
-        rtfuncType = llvmModule_->GetFuncType(signature);
-    }
+    // start index of bytecode handler csign in llvmModule
+    const CallSignature *signature = BytecodeStubCSigns::Get(BYTECODE_STUB_BEGIN_ID);
+    LLVMTypeRef rtfuncType = llvmModule_->GetFuncType(signature);
     LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
     LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
     LLVMTypeRef glueType = LLVMTypeOf(glue);
