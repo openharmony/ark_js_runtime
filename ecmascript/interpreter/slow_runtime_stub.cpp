@@ -734,16 +734,30 @@ JSTaggedValue SlowRuntimeStub::ExpDyn(JSThread *thread, JSTaggedValue base, JSTa
     INTERPRETER_TRACE(thread, ExpDyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSTaggedNumber baseNumber = JSTaggedValue::ToNumber(thread, JSHandle<JSTaggedValue>(thread, base));
+    JSHandle<JSTaggedValue> baseHandle(thread, base);
+    JSHandle<JSTaggedValue> exponentHandle(thread, exponent);
+
+    JSTaggedValue val1 = JSTaggedValue::ToNumeric(thread, baseHandle);
+    JSHandle<JSTaggedValue> valBase(thread, val1);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    double doubleBase = baseNumber.GetNumber();
-    JSTaggedNumber exponentNumber = JSTaggedValue::ToNumber(thread, JSHandle<JSTaggedValue>(thread, exponent));
+    JSTaggedValue val2 = JSTaggedValue::ToNumeric(thread, exponentHandle);
+    JSHandle<JSTaggedValue> valExponent(thread, val2);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    double doubleExponent = exponentNumber.GetNumber();
+
+    if (valBase->IsBigInt() || valExponent->IsBigInt()) {
+        if (valBase->IsBigInt() && valExponent->IsBigInt()) {
+            JSHandle<BigInt> bigBaseVale(valBase);
+            JSHandle<BigInt> bigExponentValue(valExponent);
+            return  BigInt::Exponentiate(thread, bigBaseVale, bigExponentValue).GetTaggedValue();
+        }
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot mix BigInt and other types, use explicit conversions",
+                                    JSTaggedValue::Exception());
+    }
+    double doubleBase = valBase->GetNumber();
+    double doubleExponent = valExponent->GetNumber();
     if (std::abs(doubleBase) == 1 && std::isinf(doubleExponent)) {
         return JSTaggedValue(base::NAN_VALUE);
     }
-
     if (((doubleBase == 0) && ((bit_cast<uint64_t>(doubleBase)) & base::DOUBLE_SIGN_MASK) == base::DOUBLE_SIGN_MASK) &&
         std::isfinite(doubleExponent) && base::NumberHelper::TruncateDouble(doubleExponent) == doubleExponent &&
         base::NumberHelper::TruncateDouble(doubleExponent / 2) + base::HALF == (doubleExponent / 2)) {  // 2: half
