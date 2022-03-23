@@ -18,14 +18,14 @@
  .global JSFunctionEntry
 .type JSFunctionEntry, %function
 
-.global RuntimeCallTrampolineAot
-.type RuntimeCallTrampolineAot, %function
+.global OptimizedCallRuntime
+.type OptimizedCallRuntime, %function
 
-.global RuntimeCallTrampolineInterpreterAsm
-.type RuntimeCallTrampolineInterpreterAsm, %function
+.global AsmIntCallRuntime
+.type AsmIntCallRuntime, %function
 
- .global AotCallAotTrampoline
-.type AotCallAotTrampoline, %function
+ .global OptimizedCallOptimized
+.type OptimizedCallOptimized, %function
 
 .global HandleCommonCall
 .type HandleCommonCall, %function
@@ -59,29 +59,14 @@
 #define ARGS_STACK_TOP_TO_FP_OFFSET (CALLEESAVE_REGS_SIZE + CALLER_SAVE_LR_SIZE)
 
 // uint64_t JSFunctionEntry(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
-//                                uint32_t actualNumArgs, uintptr_t codeAddr, ...);
+//                                uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr);
 // Input:
 // %rdi - glue
 // %rsi - prevFp
 // %rdx - expectedNumArgs
 // %ecx - actualNumArgs
-// %r8  - codeAddr
-// %r9  - argv[0]
-// sp[0 * 8]  -  argv[1]
-// sp[1 * 8]  -  argv[2]
-// sp[2 * 8]  -  argv[3]
-// .....
-// sp[(N -1) * 8] - argv[N - 1]
-// Output:
-// stack as followsn from high address to lowAdress
-//  sp       -      argv[N - 1]
-// sp[-8]    -      argv[N -2]
-// ...........................
-// sp[- 8(N - 1)] - arg[0]
-// sp[-8(N)]   -    this
-// sp[-8(N+1)] -    newTarget
-// sp[-8(N + 2)] -  callTarget
-
+// %r8  - argV
+// %r9  - codeAddr
 JSFunctionEntry:
     PUSH_GENERAL_REGS
     // construct the frame
@@ -116,29 +101,16 @@ JSFunctionEntry:
     cmovbe  %ebx, %ecx
     movl    %ecx, %eax
 
-    // argV[0] - r9
-    addq $-1, %rax
-    cmpq  $0, %rax
-    jbe  .LCopyLoopEnd
-
-    // PUSH_GENERAL_REGS and return address alignment
-    movq %rbp, %r15
-    addq $FP_SIZE, %r15
-    addq $ARGS_STACK_TOP_TO_FP_OFFSET, %r15
-
 .LCopyLoop:
-    movq    -8(%r15, %rax, 8), %rcx
+    movq    -8(%r8, %rax, 8), %rcx
     pushq   %rcx
 
     addq    $-1, %rax
     jne     .LCopyLoop
 
-.LCopyLoopEnd:
-    // argV[0]
-    pushq   %r9
     movq    %rdi, %rax          // move glue to rax
-    call    *%r8                // then call jsFunction
-    leaq    (,%r14,8), %rcx
+    call    *%r9                // then call jsFunction
+    leaq    (,%r14,8), %rcx     // todo:: fixed for 3 extra arguments
     addq    %rcx, %rsp
 
     testb   $1, %r14b           // stack 16bytes align check
@@ -155,7 +127,7 @@ JSFunctionEntry:
     ret
 
 
-// uint64_t AotCallAotTrampoline(uintptr_t glue, uint32_t expectedNumArgs,
+// uint64_t OptimizedCallOptimized(uintptr_t glue, uint32_t expectedNumArgs,
 //                                uint32_t actualNumArgs, uintptr_t codeAddr, ...);
 // Input:
 // %rdi - glue
@@ -176,7 +148,7 @@ JSFunctionEntry:
 // ...........................
 // sp[- 8(N - 1)] - arg[0]
 
-AotCallAotTrampoline:
+OptimizedCallOptimized:
     PUSH_GENERAL_REGS
 
     // 16 bytes align check
@@ -286,7 +258,7 @@ AotCallAotTrampoline:
 //  sp - 16: rbp <---------current rbp & current sp
 //  current sp - 8:  type
 
-RuntimeCallTrampolineAot:
+OptimizedCallRuntime:
     pushq   %rbp
     movq    %rsp, %rbp     // set frame pointer
     movq    %rbp, ASM_GLUE_CURRENT_FRAME_OFFSET(%rax)   // save to thread->currentFrame_
@@ -317,7 +289,7 @@ RuntimeCallTrampolineAot:
     popq    %rbp
     ret
 
-RuntimeCallTrampolineInterpreterAsm:
+AsmIntCallRuntime:
     pushq   $0
     movq    %rsp, ASM_GLUE_LEAVE_FRAME_OFFSET(%rax)   // save to thread->leaveFrame_
     pushq   $ASM_LEAVE_FRAME_TYPE

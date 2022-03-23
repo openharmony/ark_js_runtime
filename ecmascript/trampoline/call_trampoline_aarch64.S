@@ -17,14 +17,14 @@
  .global JSFunctionEntry
 .type JSFunctionEntry, %function
 
-.global RuntimeCallTrampolineAot
-.type RuntimeCallTrampolineAot, %function
+.global OptimizedCallRuntime
+.type OptimizedCallRuntime, %function
 
-.global RuntimeCallTrampolineInterpreterAsm
-.type RuntimeCallTrampolineInterpreterAsm, %function
+.global AsmIntCallRuntime
+.type AsmIntCallRuntime, %function
 
- .global AotCallAotTrampoline
-.type AotCallAotTrampoline, %function
+ .global OptimizedCallOptimized
+.type OptimizedCallOptimized, %function
 
 .global HandleCommonCall
 .type HandleCommonCall, %function
@@ -62,16 +62,14 @@
 #define ARGS_STACK_TOP_TO_FP_OFFSET  (CALLEESAVE_REGS_SIZE + 2 * SLOT_SIZE)
 
 // uint64_t JSFunctionEntry(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
-//                                uint32_t actualNumArgs, uintptr_t codeAddr, ...);
+//                                uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr);
 // Input:
 // %x0 - glue
 // %x1 - prevFp
 // %x2 - expectedNumArgs
 // %x3 - actualNumArgs
-// %x4 - codeAddr
-// %x5 - argv[0]
-// %x6 - argv[1]
-// %x7 - argv[2]
+// %x4 - argV
+// %x5 - codeAddr
 // construct Entry Frame
 //   +--------------------------+
 //   |   returnaddress      |   ^
@@ -112,47 +110,20 @@ JSFunctionEntry:
     cmp     w19, w3
     csel    w8, w19, w3, lo
     cbz     w8, .InvokeCompiledJSFunction
-    cmp    w8, #1
-    b.ne   .MoreThanOneArgv
-    str     x5, [sp, #-8]!
-    b .CopyArgvEnd
-
-.MoreThanOneArgv:
-    cmp    w8, #2
-    b.ne   .MoreThanTwoArgv
-    str     x6, [sp, #-8]!
-    str     x5, [sp, #-8]!
-    b .CopyArgvEnd
-
-.MoreThanTwoArgv:
-    cmp    w8, #3
-    b.ne   .MoreThanThreeArgv
-    str     x7, [sp, #-8]!
-    str     x6, [sp, #-8]!
-    str     x5, [sp, #-8]!
-    b .CopyArgvEnd
-
-.MoreThanThreeArgv:
-    subs    w8, w8, #3
-    add     x9, x29, #ARGS_STACK_TOP_TO_FP_OFFSET
+    sub     w9, w8, #1              // =1
+    add     x9, x4, w9, uxtw #3
 .LCopyArgLoop:
     ldr     x10, [x9], #-8
     subs    w8, w8, #1              // =1
     str     x10, [sp, #-8]!
 
     b.ne    .LCopyArgLoop
-    str     x7, [sp, #-8]!
-    str     x6, [sp, #-8]!
-    str     x5, [sp, #-8]!
-
-.CopyArgvEnd:
-    b .InvokeCompiledJSFunction
 
 // Input:
 // %x0 - glue
 // argv push stack
 .InvokeCompiledJSFunction:
-    mov     x2, x4
+    mov     x2, x5
     blr     x2
 
     // pop argv
@@ -207,7 +178,7 @@ JSFunctionEntry:
 //  current sp - 8:  type
 //  current sp - 16: callee save x19
 
-RuntimeCallTrampolineAot:
+OptimizedCallRuntime:
     stp     x29, x30, [sp, #-16]!  // save register for fp, rip
     mov     x29, sp                // set frame pointer = callsiteFp
     str     x29, [x0, #ASM_GLUE_CURRENT_FRAME_OFFSET]       // save to thread->currentFrame_
@@ -233,7 +204,7 @@ RuntimeCallTrampolineAot:
     ldp     x29, x30, [sp], #16
     ret
 
-RuntimeCallTrampolineInterpreterAsm:
+AsmIntCallRuntime:
     str     x30, [sp, #-8]             // save register rip
     add     sp, sp, #-16
     str     x19, [sp, #-16]        // callee save register
@@ -261,7 +232,7 @@ RuntimeCallTrampolineInterpreterAsm:
     ret
 
 
-// extern "C" JSTaggedType AotCallAotTrampoline(uintptr_t glue, uint32_t expectedNumArgs,
+// extern "C" JSTaggedType OptimizedCallOptimized(uintptr_t glue, uint32_t expectedNumArgs,
 //                                  uint32_t actualNumArgs, uintptr_t codeAddr, ...)
 // Input:
 // %x0 - glue
@@ -282,7 +253,7 @@ RuntimeCallTrampolineInterpreterAsm:
 // ...........................
 // sp[- 8(N - 1)] - arg[0]
 
-AotCallAotTrampoline:
+OptimizedCallOptimized:
     PUSH_CALLEE_SAVED_REGS
 
     mov     x20, x0
