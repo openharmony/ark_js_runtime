@@ -17,8 +17,8 @@
 #define ECMASCRIPT_COMPILER_INTERPRETER_STUB_H
 
 #include "ecmascript/base/config.h"
-#include "ecmascript/compiler/common_stubs.h"
-#include "ecmascript/stubs/runtime_stubs.h"
+#include "ecmascript/compiler/rt_call_signature.h"
+#include "ecmascript/compiler/stub.h"
 
 namespace panda::ecmascript::kungfu {
 #define IGNORE_BC_STUB(...)
@@ -186,17 +186,6 @@ namespace panda::ecmascript::kungfu {
 #define ASM_INTERPRETER_BC_STUB_ID_LIST(V) \
     ASM_INTERPRETER_BC_STUB_LIST(V, V, V)
 
-#define EXPORTED_TO_BC_STUB_LIST(V)    \
-    COMMON_EXPROTED_TO_BC_STUB_LIST(V) \
-    RUNTIME_EXPROTED_TO_BC_STUB_LIST(V)
-
-enum BytecodeHelperId {
-#define DEF_BC_HELPER_ID(name) name##Id,
-    EXPORTED_TO_BC_STUB_LIST(DEF_BC_HELPER_ID)
-#undef DEF_BC_HELPER_ID
-    NUM_OF_BYTECODE_HELPERS
-};
-
 class InterpreterStub : public Stub {
 public:
     InterpreterStub(const char* name, int argCount, Circuit *circuit)
@@ -262,9 +251,10 @@ public:
                          GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter, GateRef format);
     inline void DispatchLast(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
                              GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter);
-    template<typename... Args>
-    inline void DispatchCommonCall(GateRef glue, GateRef callType, GateRef sp, GateRef funcReg, GateRef actualArgc,
-                                   Args... args);
+    template<RuntimeStubCSigns::ID id, typename... Args>
+    void DispatchCommonCall(GateRef glue, GateRef function, Args... args);
+    template<RuntimeStubCSigns::ID id, typename... Args>
+    GateRef CommonCallNative(GateRef glue, GateRef function, Args... args);
     inline GateRef FunctionIsResolved(GateRef object);
     inline GateRef GetObjectFromConstPool(GateRef constpool, GateRef index);
 
