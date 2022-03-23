@@ -3507,6 +3507,15 @@ void InterpreterAssembly::HandleLdFunctionPref(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {
+    LOG_INST() << "intrinsic::ldfunction";
+    SET_ACC(GetThisFunction(sp));
+    DISPATCH(BytecodeInstruction::Format::PREF_NONE);
+}
+
+void InterpreterAssembly::HandleNewLexEnvWithNameDynPrefImm16Imm16(
+    JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
+    JSTaggedValue acc, int32_t hotnessCounter)
+{
     uint16_t numVars = READ_INST_16_1();
     uint16_t scopeId = READ_INST_16_3();
     LOG_INST() << "intrinsics::newlexenvwithnamedyn"
@@ -3521,15 +3530,6 @@ void InterpreterAssembly::HandleLdFunctionPref(
     DISPATCH(BytecodeInstruction::Format::PREF_IMM16_IMM16);
 }
 
-void InterpreterAssembly::HandleNewLexEnvWithNameDynPrefImm16Imm16(
-    JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
-    JSTaggedValue acc, int32_t hotnessCounter)
-{
-    LOG_INST() << "intrinsic::ldfunction";
-    SET_ACC(GetThisFunction(sp));
-    DISPATCH(BytecodeInstruction::Format::PREF_NONE);
-}
-
 void InterpreterAssembly::HandleLdBigIntPrefId32(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
@@ -3537,6 +3537,7 @@ void InterpreterAssembly::HandleLdBigIntPrefId32(
     uint32_t stringId = READ_INST_32_1();
     LOG_INST() << "intrinsic::ldbigint";
     JSTaggedValue numberBigInt = ConstantPool::Cast(constpool.GetTaggedObject())->GetObjectFromCache(stringId);
+    SAVE_PC();
     JSTaggedValue res = SlowRuntimeStub::LdBigInt(thread, numberBigInt);
     INTERPRETER_RETURN_IF_ABRUPT(res);
     SET_ACC(res);
