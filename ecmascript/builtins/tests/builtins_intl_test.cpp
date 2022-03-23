@@ -60,7 +60,7 @@ HWTEST_F_L0(BuiltinsIntlTest, GetCanonicalLocales_001)
     JSTaggedValue resultObj = BuiltinsIntl::GetCanonicalLocales(ecmaRuntimeCallInfo.get());
     EXPECT_TRUE(resultObj.IsJSArray());
     JSHandle<JSArray> resultHandle(thread, resultObj);
-    EXPECT_EQ(resultHandle->GetArrayLength(), 0);
+    EXPECT_EQ(resultHandle->GetArrayLength(), 0U);
 }
 
 HWTEST_F_L0(BuiltinsIntlTest, GetCanonicalLocales_002)
@@ -79,7 +79,7 @@ HWTEST_F_L0(BuiltinsIntlTest, GetCanonicalLocales_002)
     JSHandle<JSArray> resultHandle(thread, resultObj);
 
     JSHandle<TaggedArray> elements(thread, resultHandle->GetElements());
-    EXPECT_EQ(elements->GetLength(), 1);
+    EXPECT_EQ(elements->GetLength(), 1U);
     JSHandle<EcmaString> handleEcmaStr(thread, elements->Get(0));
     EXPECT_STREQ("ko-Kore-KR", CString(handleEcmaStr->GetCString().get()).c_str());
 }
@@ -107,7 +107,7 @@ HWTEST_F_L0(BuiltinsIntlTest, GetCanonicalLocales_003)
     JSHandle<JSArray> resultHandle(thread, resultObj);
 
     JSHandle<TaggedArray> elements(thread, resultHandle->GetElements());
-    EXPECT_EQ(elements->GetLength(), 1);
+    EXPECT_EQ(elements->GetLength(), 1U);
     JSHandle<EcmaString> handleEcmaStr(thread, elements->Get(0));
     EXPECT_STREQ("zh-Hans-CN", CString(handleEcmaStr->GetCString().get()).c_str());
 }

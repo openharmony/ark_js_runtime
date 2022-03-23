@@ -227,7 +227,7 @@ HWTEST_F_L0(BuiltinsSetTest, ForEach)
     JSTaggedValue result2 = BuiltinsSet::ForEach(ecmaRuntimeCallInfo1.get());
 
     EXPECT_EQ(result2.GetRawData(), JSTaggedValue::VALUE_UNDEFINED);
-    EXPECT_EQ(jsArray->GetArrayLength(), 5);
+    EXPECT_EQ(jsArray->GetArrayLength(), 5U);
 }
 
 HWTEST_F_L0(BuiltinsSetTest, DeleteAndRemove)

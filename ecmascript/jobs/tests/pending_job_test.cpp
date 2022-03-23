@@ -100,7 +100,7 @@ HWTEST_F_L0(PendingJobTest, GetArguments)
     handlePendingJob->SetArguments(thread, handleArgv2.GetTaggedValue());
 
     JSHandle<TaggedArray> resultArray(thread, handlePendingJob->GetArguments());
-    EXPECT_EQ(resultArray->GetLength(), 1);
+    EXPECT_EQ(resultArray->GetLength(), 1U);
     EXPECT_EQ(resultArray->Get(0).GetInt(), 1);
 }
 

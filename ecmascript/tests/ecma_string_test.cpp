@@ -97,13 +97,13 @@ HWTEST_F_L0(EcmaStringTest, CreateEmptyString)
     EcmaVM *ecmaVMPtr = EcmaVM::Cast(instance);
 
     JSHandle<EcmaString> handleEcmaStrEmpty(thread, EcmaString::CreateEmptyString(ecmaVMPtr));
-    EXPECT_EQ(handleEcmaStrEmpty->GetLength(), 0);
+    EXPECT_EQ(handleEcmaStrEmpty->GetLength(), 0U);
     EXPECT_TRUE(handleEcmaStrEmpty->IsUtf8());
     EXPECT_FALSE(handleEcmaStrEmpty->IsUtf16());
 
 
     EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
-    EXPECT_EQ(handleEcmaStrEmpty->GetLength(), 0);
+    EXPECT_EQ(handleEcmaStrEmpty->GetLength(), 0U);
     EXPECT_TRUE(handleEcmaStrEmpty->IsUtf16());
     EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
@@ -125,7 +125,7 @@ HWTEST_F_L0(EcmaStringTest, AllocStringObject)
     for (int i = 0; i < sizeAllocComp; i++) {
         EXPECT_EQ(handleEcmaStrAllocComp->At(i), 0);
     }
-    EXPECT_EQ(handleEcmaStrAllocComp->GetLength(), sizeAllocComp);
+    EXPECT_EQ(handleEcmaStrAllocComp->GetLength(), static_cast<uint32_t>(sizeAllocComp));
     EXPECT_TRUE(handleEcmaStrAllocComp->IsUtf8());
     EXPECT_FALSE(handleEcmaStrAllocComp->IsUtf16());
 
@@ -136,7 +136,7 @@ HWTEST_F_L0(EcmaStringTest, AllocStringObject)
     for (int i = 0; i < sizeAllocNotComp; i++) {
         EXPECT_EQ(handleEcmaStrAllocNotComp->At(i), 0);
     }
-    EXPECT_EQ(handleEcmaStrAllocNotComp->GetLength(), sizeAllocNotComp);
+    EXPECT_EQ(handleEcmaStrAllocNotComp->GetLength(), static_cast<uint32_t>(sizeAllocNotComp));
     EXPECT_FALSE(handleEcmaStrAllocNotComp->IsUtf8());
     EXPECT_TRUE(handleEcmaStrAllocNotComp->IsUtf16());
     EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
@@ -160,7 +160,7 @@ HWTEST_F_L0(EcmaStringTest, CreateFromUtf8)
     for (int i = 0; i < lengthEcmaStrU8; i++) {
         EXPECT_EQ(arrayU8[i], handleEcmaStrU8->At(i));
     }
-    EXPECT_EQ(handleEcmaStrU8->GetLength(), lengthEcmaStrU8);
+    EXPECT_EQ(handleEcmaStrU8->GetLength(), static_cast<uint32_t>(lengthEcmaStrU8));
     EXPECT_TRUE(handleEcmaStrU8->IsUtf8());
     EXPECT_FALSE(handleEcmaStrU8->IsUtf16());
 }
@@ -181,7 +181,7 @@ HWTEST_F_L0(EcmaStringTest, CreateFromUtf16)
     size_t lengthEcmaStrU16Comp = sizeof(arrayU16Comp) / sizeof(arrayU16Comp[0]);
     JSHandle<EcmaString> handleEcmaStrU16Comp(thread,
         EcmaString::CreateFromUtf16(&arrayU16Comp[0], lengthEcmaStrU16Comp, ecmaVMPtr, true));
-    EXPECT_EQ(handleEcmaStrU16Comp->GetLength(), lengthEcmaStrU16Comp);
+    EXPECT_EQ(handleEcmaStrU16Comp->GetLength(), static_cast<uint32_t>(lengthEcmaStrU16Comp));
     EXPECT_TRUE(handleEcmaStrU16Comp->IsUtf8());
     EXPECT_FALSE(handleEcmaStrU16Comp->IsUtf16());
 
@@ -190,7 +190,7 @@ HWTEST_F_L0(EcmaStringTest, CreateFromUtf16)
     size_t lengthEcmaStrU16NotComp = sizeof(arrayU16NotComp) / sizeof(arrayU16NotComp[0]);
     JSHandle<EcmaString> handleEcmaStrU16NotComp(thread,
         EcmaString::CreateFromUtf16(&arrayU16NotComp[0], lengthEcmaStrU16NotComp, ecmaVMPtr, false));
-    EXPECT_EQ(handleEcmaStrU16NotComp->GetLength(), lengthEcmaStrU16NotComp);
+    EXPECT_EQ(handleEcmaStrU16NotComp->GetLength(), static_cast<uint32_t>(lengthEcmaStrU16NotComp));
     EXPECT_FALSE(handleEcmaStrU16NotComp->IsUtf8());
     EXPECT_TRUE(handleEcmaStrU16NotComp->IsUtf16());
     EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.

@@ -155,7 +155,7 @@ HWTEST_F_L0(JsonParserTest, Parser_004)
     JSHandle<JSTaggedValue> lenResult =
         JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(valueHandle), lengthKeyHandle).GetValue();
     uint32_t length = JSTaggedValue::ToLength(thread, lenResult).ToUint32();
-    EXPECT_EQ(length, 3);
+    EXPECT_EQ(length, 3U);
 }
 
 /**
@@ -185,6 +185,6 @@ HWTEST_F_L0(JsonParserTest, Parser_005)
     JSHandle<JSTaggedValue> lengthKey(factory->NewFromCanBeCompressString("length"));
     JSHandle<JSTaggedValue> lenResult = JSObject::GetProperty(thread, handleKey, lengthKey).GetValue();
     uint32_t length = JSTaggedValue::ToLength(thread, lenResult).ToUint32();
-    EXPECT_EQ(length, 2);
+    EXPECT_EQ(length, 2U);
 }
 } // namespace panda::test
