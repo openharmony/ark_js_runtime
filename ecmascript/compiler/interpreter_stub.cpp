@@ -5443,6 +5443,50 @@ DECLARE_ASM_HANDLER(HandleCallIThisRangeDynPrefImm16V8)
     GateRef callThis = TrueConstant();
     CALL_PUSH_ARGS(PREF_IMM16_V8);
 }
+
+DECLARE_ASM_HANDLER(HandleLdBigIntPrefId32)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    GateRef stringId = ReadInst32_1(pc);
+    GateRef numberBigInt = GetObjectFromConstPool(constpool, stringId);
+    SetPcToFrame(glue, GetFrame(sp), pc);
+    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(LdBigInt)),
+        { numberBigInt });
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    varAcc = res;
+    DISPATCH_WITH_ACC(PREF_ID32);
+}
+
+DECLARE_ASM_HANDLER(HandleNewLexEnvWithNameDynPrefImm16Imm16)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    GateRef numVars = ReadInst16_1(pc);
+    GateRef scopeId = ReadInst16_3(pc);
+    SetPcToFrame(glue, GetFrame(sp), pc);
+    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(NewLexicalEnvWithNameDyn)),
+        { Int16BuildTaggedTypeWithNoGC(numVars), Int16BuildTaggedTypeWithNoGC(scopeId) });
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    varAcc = res;
+    GateRef state = GetFrame(sp);
+    SetEnvToFrame(glue, state, res);
+    DISPATCH_WITH_ACC(PREF_IMM16_IMM16);
+}
 #undef DECLARE_ASM_HANDLER
 #undef DISPATCH
 #undef DISPATCH_WITH_ACC
