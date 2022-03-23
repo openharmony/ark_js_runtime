@@ -157,7 +157,7 @@ JSTaggedValue LoadICRuntime::LoadMiss(JSHandle<JSTaggedValue> receiver, JSHandle
     }
     TraceIC(receiver, key);
     // do not cache element
-    if (!op.IsFastMode() && op.IsFound()) {
+    if (!op.IsFastMode()) {
         icAccessor_.SetAsMega();
         return result.GetTaggedValue();
     }
