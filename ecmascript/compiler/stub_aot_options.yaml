@@ -35,6 +35,6 @@ options:
   default: All
   description: generated assembly for stubs in the list
   # e.g:
-  # using default value: xxx/ark_stub_opt ..
-  # specify single stub: xxx/ark_stub_opt --compiled-stubs=FastAdd
-  # specify multiple stubs: xxx/ark_stub_opt --compiled-stubs=FastAddFastSubFastMulFastDiv
+  # using default value: xxx/ark_stub_compiler ..
+  # specify single stub: xxx/ark_stub_compiler --compiled-stubs=FastAdd
+  # specify multiple stubs: xxx/ark_stub_compiler --compiled-stubs=FastAddFastSubFastMulFastDiv
