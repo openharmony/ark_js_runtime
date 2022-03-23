@@ -621,7 +621,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec1)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("ab");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -643,7 +643,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec2)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 10);
+    ASSERT_EQ(result.captures_.size(), 10U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("ab");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
     ASSERT_TRUE(result.captures_[1].second->Compare(*str) == 0);
@@ -674,7 +674,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec3)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 2);
+    ASSERT_EQ(result.captures_.size(), 2U);
     JSHandle<EcmaString> str1 = factory->NewFromCanBeCompressString("aaba");
     JSHandle<EcmaString> str2 = factory->NewFromCanBeCompressString("ba");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str1) == 0);
@@ -698,7 +698,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec4)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("aa");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -720,7 +720,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec5)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -742,7 +742,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec6)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 6);
+    ASSERT_EQ(result.captures_.size(), 6U);
     JSHandle<EcmaString> str1 = factory->NewFromCanBeCompressString("zaacbbbcac");
     JSHandle<EcmaString> str2 = factory->NewFromCanBeCompressString("z");
     JSHandle<EcmaString> str3 = factory->NewFromCanBeCompressString("ac");
@@ -773,7 +773,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec7)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("abc");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -795,7 +795,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec8)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("abc");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -817,7 +817,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec9)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("er");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -839,7 +839,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec10)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("d");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -861,7 +861,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec11)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("a");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -883,7 +883,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec12)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("\n");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -905,7 +905,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec13)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("abc");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -927,7 +927,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec14)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("abc");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -949,7 +949,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec15)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("a");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -971,7 +971,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec16)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("ABC");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -993,7 +993,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec17)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("a\n");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1031,7 +1031,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec19)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("a");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1053,7 +1053,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec20)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 2);
+    ASSERT_EQ(result.captures_.size(), 2U);
     JSHandle<EcmaString> str1 = factory->NewFromCanBeCompressString("");
     JSHandle<EcmaString> str2 = factory->NewFromCanBeCompressString("aaa");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str1) == 0);
@@ -1077,7 +1077,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec21)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("a");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1099,7 +1099,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec22)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("aaaa:");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1121,7 +1121,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec23)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("a");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1159,7 +1159,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec25)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 2);
+    ASSERT_EQ(result.captures_.size(), 2U);
     JSHandle<EcmaString> str1 = factory->NewFromCanBeCompressString("");
     JSHandle<EcmaString> str2 = factory->NewFromCanBeCompressString("ab");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str1) == 0);
@@ -1183,7 +1183,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec26)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("A");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1205,7 +1205,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec27)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("Z");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1227,7 +1227,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec28)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("\n");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1249,7 +1249,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec29)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 2);
+    ASSERT_EQ(result.captures_.size(), 2U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
     ASSERT_TRUE(result.captures_[1].second->Compare(*str) == 0);
@@ -1272,7 +1272,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec30)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 2);
+    ASSERT_EQ(result.captures_.size(), 2U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
     ASSERT_TRUE(result.captures_[1].first);
@@ -1293,7 +1293,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec31)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 2);
+    ASSERT_EQ(result.captures_.size(), 2U);
     JSHandle<EcmaString> str1 = factory->NewFromCanBeCompressString("abb");
     JSHandle<EcmaString> str2 = factory->NewFromCanBeCompressString("b");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str1) == 0);
@@ -1315,7 +1315,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec32)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 3);
+    ASSERT_EQ(result.captures_.size(), 3U);
     JSHandle<EcmaString> str1 = factory->NewFromCanBeCompressString("abb");
     JSHandle<EcmaString> str2 = factory->NewFromCanBeCompressString("ab");
     JSHandle<EcmaString> str3 = factory->NewFromCanBeCompressString("b");
@@ -1339,7 +1339,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec33)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("qya");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1359,7 +1359,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec34)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("qy");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1379,7 +1379,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec35)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 4);
+    ASSERT_EQ(result.captures_.size(), 4U);
     JSHandle<EcmaString> str1 = factory->NewFromCanBeCompressString("2021-01-09");
     JSHandle<EcmaString> str2 = factory->NewFromCanBeCompressString("2021");
     JSHandle<EcmaString> str3 = factory->NewFromCanBeCompressString("01");
@@ -1405,7 +1405,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec36)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 3);
+    ASSERT_EQ(result.captures_.size(), 3U);
     JSHandle<EcmaString> str1 = factory->NewFromCanBeCompressString("Quick Brown Fox Jumps");
     JSHandle<EcmaString> str2 = factory->NewFromCanBeCompressString("Brown");
     JSHandle<EcmaString> str3 = factory->NewFromCanBeCompressString("Jumps");
@@ -1429,7 +1429,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec37)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 2);
+    ASSERT_EQ(result.captures_.size(), 2U);
     JSHandle<EcmaString> str1 = factory->NewFromCanBeCompressString("abABc");
     JSHandle<EcmaString> str2 = factory->NewFromCanBeCompressString("AB");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str1) == 0);
@@ -1451,7 +1451,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec38)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 3);
+    ASSERT_EQ(result.captures_.size(), 3U);
     JSHandle<EcmaString> str1 = factory->NewFromCanBeCompressString("www.netscape.com");
     JSHandle<EcmaString> str2 = factory->NewFromCanBeCompressString("netscape.");
     JSHandle<EcmaString> str3 = factory->NewFromCanBeCompressString("netscap");
@@ -1475,7 +1475,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec39)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 2);
+    ASSERT_EQ(result.captures_.size(), 2U);
     JSHandle<EcmaString> str1 = factory->NewFromCanBeCompressString("b");
     JSHandle<EcmaString> str2 = factory->NewFromCanBeCompressString("");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str1) == 0);
@@ -1497,7 +1497,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec40)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1517,7 +1517,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec41)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 4);
+    ASSERT_EQ(result.captures_.size(), 4U);
     JSHandle<EcmaString> str1 = factory->NewFromCanBeCompressString("baaabaac");
     JSHandle<EcmaString> str2 = factory->NewFromCanBeCompressString("ba");
     JSHandle<EcmaString> str3 = factory->NewFromCanBeCompressString("abaac");
@@ -1542,7 +1542,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec42)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("abc324234");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1562,7 +1562,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec43)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("1\nl");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1582,7 +1582,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec44)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("c\bd");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1602,7 +1602,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec45)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("easy");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1622,7 +1622,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec46)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 3);
+    ASSERT_EQ(result.captures_.size(), 3U);
     JSHandle<EcmaString> str1 = factory->NewFromCanBeCompressString("Course_Creator = Test");
     JSHandle<EcmaString> str2 = factory->NewFromCanBeCompressString("Course_Creator");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str1) == 0);
@@ -1646,7 +1646,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec47)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("et");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1666,7 +1666,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec49)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 5);
+    ASSERT_EQ(result.captures_.size(), 5U);
     JSHandle<EcmaString> str1 = factory->NewFromCanBeCompressString("ab55");
     JSHandle<EcmaString> str2 = factory->NewFromCanBeCompressString("ab55");
     JSHandle<EcmaString> str3 = factory->NewFromCanBeCompressString("b");
@@ -1694,7 +1694,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec50)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 4);
+    ASSERT_EQ(result.captures_.size(), 4U);
     JSHandle<EcmaString> str1 = factory->NewFromCanBeCompressString("2020-12-31");
     JSHandle<EcmaString> str2 = factory->NewFromCanBeCompressString("2020");
     JSHandle<EcmaString> str3 = factory->NewFromCanBeCompressString("12-31");
@@ -1719,7 +1719,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec51)
                                 parser.GetOriginBuffer(), true);
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
 }
 
 HWTEST_F_L0(RegExpTest, ParseAndExec52)
@@ -1737,7 +1737,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec52)
         executor.Execute(reinterpret_cast<const uint8_t *>(input.c_str()), 0, input.length(), parser.GetOriginBuffer());
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 2);
+    ASSERT_EQ(result.captures_.size(), 2U);
     JSHandle<EcmaString> str1 = factory->NewFromCanBeCompressString("aabcdaa");
     JSHandle<EcmaString> str2 = factory->NewFromCanBeCompressString("aa");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str1) == 0);
@@ -1759,7 +1759,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec53)
                                 parser.GetOriginBuffer(), true);
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("\u0001");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1794,7 +1794,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec55)
                                 parser.GetOriginBuffer(), false);
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("e");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1814,7 +1814,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec56)
                                 parser.GetOriginBuffer(), true);
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromString("a啊");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
@@ -1847,7 +1847,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec58)
     bool ret = executor.Execute(reinterpret_cast<const uint8_t *>(data), 0, 2, parser.GetOriginBuffer(), true);
     ASSERT_TRUE(ret);
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     char16_t data1[] = {0xdf06};
     JSHandle<EcmaString> str = factory->NewFromUtf16UnCheck(reinterpret_cast<const uint16_t *>(data1), 1, true);
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
@@ -1870,7 +1870,7 @@ HWTEST_F_L0(RegExpTest, ParseAndExec59)
     ASSERT_TRUE(ret);
 
     MatchResult result = executor.GetResult(thread, ret);
-    ASSERT_EQ(result.captures_.size(), 1);
+    ASSERT_EQ(result.captures_.size(), 1U);
     JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("\u000B");
     ASSERT_TRUE(result.captures_[0].second->Compare(*str) == 0);
 }
