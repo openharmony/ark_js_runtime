@@ -123,18 +123,18 @@ HWTEST_F_L0(ArrayHelperTest, GetLength)
 
     JSArray *handleArr = JSArray::ArrayCreate(thread, JSTaggedNumber(10)).GetObject<JSArray>();
     JSHandle<JSTaggedValue> arrayHandle(thread, handleArr);
-    EXPECT_EQ(ArrayHelper::GetLength(thread, arrayHandle), 10);
+    EXPECT_EQ(ArrayHelper::GetLength(thread, arrayHandle), 10U);
 
     JSHandle<JSTaggedValue> HandleInt8ArrayFunc(globalEnv->GetInt8ArrayFunction());
     JSHandle<JSTypedArray> handleTypeArray = JSHandle<JSTypedArray>::Cast(
         factory->NewJSObjectByConstructor(JSHandle<JSFunction>(HandleInt8ArrayFunc), HandleInt8ArrayFunc));
     handleTypeArray->SetArrayLength(thread, JSTaggedValue(11));
     JSHandle<JSTaggedValue> typeArrayHandle(handleTypeArray);
-    EXPECT_EQ(ArrayHelper::GetLength(thread, typeArrayHandle), 11);
+    EXPECT_EQ(ArrayHelper::GetLength(thread, typeArrayHandle), 11U);
 
     JSHandle<JSTaggedValue> objFunc(globalEnv->GetArrayFunction());
     JSHandle<JSObject> objectHandle = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFunc), objFunc);
-    EXPECT_EQ(ArrayHelper::GetLength(thread, JSHandle<JSTaggedValue>(objectHandle)), 0);
+    EXPECT_EQ(ArrayHelper::GetLength(thread, JSHandle<JSTaggedValue>(objectHandle)), 0U);
 
     JSObject::SetProperty(thread, objectHandle, lengthKey, lengthValue);
     EXPECT_EQ(ArrayHelper::GetLength(thread, JSHandle<JSTaggedValue>(objectHandle)),
@@ -157,11 +157,11 @@ HWTEST_F_L0(ArrayHelperTest, GetArrayLength)
 
     JSArray *handleArr = JSArray::ArrayCreate(thread, JSTaggedNumber(0)).GetObject<JSArray>();
     JSHandle<JSTaggedValue> arrayHandle(thread, handleArr);
-    EXPECT_EQ(ArrayHelper::GetLength(thread, arrayHandle), 0);
+    EXPECT_EQ(ArrayHelper::GetLength(thread, arrayHandle), 0U);
 
     JSHandle<JSTaggedValue> objFunc(globalEnv->GetArrayFunction());
     JSHandle<JSObject> objectHandle = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFunc), objFunc);
-    EXPECT_EQ(ArrayHelper::GetArrayLength(thread, JSHandle<JSTaggedValue>(objectHandle)), 0);
+    EXPECT_EQ(ArrayHelper::GetArrayLength(thread, JSHandle<JSTaggedValue>(objectHandle)), 0U);
 
     JSObject::SetProperty(thread, objectHandle, lengthKey, lengthValue);
     EXPECT_EQ(ArrayHelper::GetArrayLength(thread, JSHandle<JSTaggedValue>(objectHandle)),

@@ -491,7 +491,7 @@ HWTEST_F_L0(JSObjectTest, EnumerableOwnNames)
     EXPECT_EQ(JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(obj), key).GetValue()->GetInt(), 1);
 
     JSHandle<TaggedArray> namesNoEnum = JSObject::EnumerableOwnNames(thread, obj);
-    EXPECT_TRUE(namesNoEnum->GetLength() == 0);
+    EXPECT_TRUE(namesNoEnum->GetLength() == 0U);
 
     PropertyDescriptor descEnum(thread);
     descEnum.SetConfigurable(false);

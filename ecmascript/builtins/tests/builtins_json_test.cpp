@@ -245,7 +245,7 @@ HWTEST_F_L0(BuiltinsJsonTest, Parse3)
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
     JSTaggedValue result = BuiltinsJson::Parse(ecmaRuntimeCallInfo.get());
     uint32_t length = EcmaString::Cast(result.GetTaggedObject())->GetLength();
-    ASSERT_EQ(length, 1);
+    ASSERT_EQ(length, 1U);
 }
 
 HWTEST_F_L0(BuiltinsJsonTest, Parse4)

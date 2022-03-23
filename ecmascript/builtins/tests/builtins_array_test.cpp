@@ -810,7 +810,7 @@ HWTEST_F_L0(BuiltinsArrayTest, ForEach)
     JSTaggedValue result2 = Array::ForEach(ecmaRuntimeCallInfo1.get());
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_EQ(result2.GetRawData(), JSTaggedValue::VALUE_UNDEFINED);
-    EXPECT_EQ(jsArray->GetArrayLength(), 3);
+    EXPECT_EQ(jsArray->GetArrayLength(), 3U);
 }
 
 // 22.1.3.11 new Array(1,2,3,4,3).IndexOf(searchElement [ , fromIndex ])
