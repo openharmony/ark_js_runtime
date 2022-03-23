@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_PLATFORM_TASK_QUEUE_H
-#define ECMASCRIPT_PLATFORM_TASK_QUEUE_H
+#ifndef ECMASCRIPT_TASKPOOL_TASK_QUEUE_H
+#define ECMASCRIPT_TASKPOOL_TASK_QUEUE_H
 
 #include <algorithm>
 #include <atomic>
 #include <memory>
 #include <queue>
 
-#include "ecmascript/platform/task.h"
+#include "ecmascript/taskpool/task.h"
 #include "os/mutex.h"
 
 namespace panda::ecmascript {
@@ -46,4 +46,4 @@ private:
     os::memory::ConditionVariable cv_;
 };
 }  // namespace panda::ecmascript
-#endif  // ECMASCRIPT_PLATFORM_TASK_QUEUE_H
+#endif  // ECMASCRIPT_TASKPOOL_TASK_QUEUE_H

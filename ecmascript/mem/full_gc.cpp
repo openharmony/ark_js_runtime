@@ -84,7 +84,7 @@ void FullGC::SweepPhases()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::SweepPhases");
     // process weak reference
-    auto totalThreadCount = Platform::GetCurrentPlatform()->GetTotalThreadNum() + 1; // gc thread and main thread
+    auto totalThreadCount = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1; // gc thread and main thread
     for (uint32_t i = 0; i < totalThreadCount; i++) {
         ProcessQueue *queue = workList_->GetWeakReferenceQueue(i);
 

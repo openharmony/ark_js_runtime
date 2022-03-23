@@ -22,7 +22,7 @@
 #include "ecmascript/mem/mark_word.h"
 #include "ecmascript/mem/region-inl.h"
 #include "ecmascript/mem/remembered_set.h"
-#include "ecmascript/platform/platform.h"
+#include "ecmascript/taskpool/taskpool.h"
 
 namespace panda::ecmascript {
 // Move regions with a survival rate of more than 75% to new space
@@ -121,7 +121,7 @@ int ParallelEvacuation::CalculateEvacuationThreadNum()
 {
     int length = fragments_.size();
     int regionPerThread = 8;
-    int maxThreadNum = Platform::GetCurrentPlatform()->GetTotalThreadNum();
+    int maxThreadNum = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum();
     return std::min(std::max(1, length / regionPerThread), maxThreadNum);
 }
 
@@ -130,7 +130,7 @@ int ParallelEvacuation::CalculateUpdateThreadNum()
     int length = fragments_.size();
     double regionPerThread = 1.0 / 4;
     length = static_cast<int>(std::pow(length, regionPerThread));
-    int maxThreadNum = Platform::GetCurrentPlatform()->GetTotalThreadNum();
+    int maxThreadNum = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum();
     return std::min(std::max(1, length), maxThreadNum);
 }
 }  // namespace panda::ecmascript

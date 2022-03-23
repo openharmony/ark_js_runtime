@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_PLATFORM_TASK_H
-#define ECMASCRIPT_PLATFORM_TASK_H
+#ifndef ECMASCRIPT_TASKPOOL_TASK_H
+#define ECMASCRIPT_TASKPOOL_TASK_H
 
 #include "macros.h"
 
@@ -42,4 +42,4 @@ private:
     volatile bool terminate_ {false};
 };
 }  // namespace panda::ecmascript
-#endif  // ECMASCRIPT_PLATFORM_TASK_H
+#endif  // ECMASCRIPT_TASKPOOL_TASK_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_PLATFORM_RUNNER_H
-#define ECMASCRIPT_PLATFORM_RUNNER_H
+#ifndef ECMASCRIPT_TASKPOOL_RUNNER_H
+#define ECMASCRIPT_TASKPOOL_RUNNER_H
 
 #include <array>
 #include <memory>
@@ -22,11 +22,11 @@
 #include <vector>
 
 #include "ecmascript/common.h"
-#include "ecmascript/platform/task_queue.h"
+#include "ecmascript/taskpool/task_queue.h"
 
 namespace panda::ecmascript {
-static constexpr uint32_t MAX_PLATFORM_THREAD_NUM = 7;
-static constexpr uint32_t DEFAULT_PLATFORM_THREAD_NUM = 0;
+static constexpr uint32_t MAX_TASKPOOL_THREAD_NUM = 7;
+static constexpr uint32_t DEFAULT_TASKPOOL_THREAD_NUM = 0;
 
 class Runner {
 public:
@@ -64,8 +64,8 @@ private:
 
     std::vector<std::unique_ptr<std::thread>> threadPool_ {};
     TaskQueue taskQueue_ {};
-    std::array<Task*, MAX_PLATFORM_THREAD_NUM + 1> runningTask_;
+    std::array<Task*, MAX_TASKPOOL_THREAD_NUM + 1> runningTask_;
     uint32_t totalThreadNum_ {0};
 };
 }  // namespace panda::ecmascript
-#endif  // ECMASCRIPT_PLATFORM_RUNNER_H
+#endif  // ECMASCRIPT_TASKPOOL_RUNNER_H

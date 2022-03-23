@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/platform/task_queue.h"
+#include "ecmascript/taskpool/task_queue.h"
 
 namespace panda::ecmascript {
 void TaskQueue::PostTask(std::unique_ptr<Task> task)

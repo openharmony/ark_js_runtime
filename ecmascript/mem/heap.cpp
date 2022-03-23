@@ -78,7 +78,7 @@ void Heap::Initialize()
 #if defined(IS_STANDARD_SYSTEM)
     concurrentMarkingEnabled_ = false;
 #endif
-    workList_ = new WorkerHelper(this, Platform::GetCurrentPlatform()->GetTotalThreadNum() + 1);
+    workList_ = new WorkerHelper(this, Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1);
     stwYoungGC_ = new STWYoungGC(this, paralledGc_);
     fullGC_ = new FullGC(this);
 
@@ -208,7 +208,7 @@ void Heap::Resume(TriggerGCType gcType)
     toSpace_->SetWaterLine();
     if (paralledGc_) {
         isClearTaskFinished_ = false;
-        Platform::GetCurrentPlatform()->PostTask(std::make_unique<AsyncClearTask>(this, gcType));
+        Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<AsyncClearTask>(this, gcType));
     } else {
         ReclaimRegions(gcType);
     }
@@ -546,7 +546,7 @@ void Heap::WaitConcurrentMarkingFinished()
 void Heap::PostParallelGCTask(ParallelGCTaskPhase gcTask)
 {
     IncreaseTaskCount();
-    Platform::GetCurrentPlatform()->PostTask(std::make_unique<ParallelGCTask>(this, gcTask));
+    Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<ParallelGCTask>(this, gcTask));
 }
 
 void Heap::IncreaseTaskCount()
@@ -558,7 +558,7 @@ void Heap::IncreaseTaskCount()
 bool Heap::CheckCanDistributeTask()
 {
     os::memory::LockHolder holder(waitTaskFinishedMutex_);
-    return (runningTastCount_ < Platform::GetCurrentPlatform()->GetTotalThreadNum() - 1);
+    return (runningTastCount_ < Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() - 1);
 }
 
 void Heap::ReduceTaskCount()

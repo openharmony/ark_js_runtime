@@ -25,7 +25,7 @@
 #include "ecmascript/mem/remembered_set.h"
 #include "ecmascript/mem/space.h"
 #include "ecmascript/mem/tagged_object.h"
-#include "ecmascript/platform/task.h"
+#include "ecmascript/taskpool/task.h"
 #include "os/mutex.h"
 
 namespace panda::ecmascript {
