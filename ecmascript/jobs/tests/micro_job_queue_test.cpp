@@ -78,8 +78,8 @@ HWTEST_F_L0(MicroJobQueueTest, GetJobQueue)
     JSHandle<TaggedQueue> promiseQueue(thread, handleMicroJobQueue->GetPromiseJobQueue());
     JSHandle<TaggedQueue> scriptQueue(thread, handleMicroJobQueue->GetScriptJobQueue());
 
-    EXPECT_EQ(promiseQueue->Size(), 1);
-    EXPECT_EQ(scriptQueue->Size(), 0);
+    EXPECT_EQ(promiseQueue->Size(), 1U);
+    EXPECT_EQ(scriptQueue->Size(), 0U);
 
     EXPECT_EQ(promiseQueue->Back().GetInt(), 123);
     EXPECT_TRUE(scriptQueue->Back().IsHole());

@@ -233,7 +233,7 @@ HWTEST_F_L0(JSAPITreeSetTest, JSAPITreeSetIterator)
     JSHandle<JSAPITreeSet> tset(thread, CreateTreeSet());
 
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
-    for (int i = 0; i < NODE_NUMBERS; i++) {
+    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         JSAPITreeSet::Add(thread, tset, key);
     }
@@ -243,7 +243,7 @@ HWTEST_F_L0(JSAPITreeSetTest, JSAPITreeSetIterator)
     JSHandle<JSTaggedValue> valueIter(factory->NewJSAPITreeSetIterator(tset, IterationKind::VALUE));
     JSMutableHandle<JSTaggedValue> keyIterResult(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> valueIterResult(thread, JSTaggedValue::Undefined());
-    for (int i = 0; i < NODE_NUMBERS / 2; i++) {
+    for (uint32_t i = 0; i < NODE_NUMBERS / 2; i++) {
         keyIterResult.Update(JSIterator::IteratorStep(thread, keyIter).GetTaggedValue());
         valueIterResult.Update(JSIterator::IteratorStep(thread, valueIter).GetTaggedValue());
         EXPECT_EQ(i, JSIterator::IteratorValue(thread, keyIterResult)->GetInt());
@@ -256,7 +256,7 @@ HWTEST_F_L0(JSAPITreeSetTest, JSAPITreeSetIterator)
     JSHandle<JSTaggedValue> iter(factory->NewJSAPITreeSetIterator(tset, IterationKind::KEY_AND_VALUE));
     JSMutableHandle<JSTaggedValue> iterResult(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> result(thread, JSTaggedValue::Undefined());
-    for (int i = 0; i < NODE_NUMBERS; i++) {
+    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
         iterResult.Update(JSIterator::IteratorStep(thread, iter).GetTaggedValue());
         result.Update(JSIterator::IteratorValue(thread, iterResult).GetTaggedValue());
         EXPECT_EQ(i, JSObject::GetProperty(thread, result, indexKey).GetValue()->GetInt());
@@ -267,7 +267,7 @@ HWTEST_F_L0(JSAPITreeSetTest, JSAPITreeSetIterator)
     key.Update(JSTaggedValue(NODE_NUMBERS / 2));
     bool success = JSAPITreeSet::Delete(thread, tset, key);
     EXPECT_EQ(success, true);
-    for (int i = NODE_NUMBERS / 2 + 1; i < NODE_NUMBERS; i++) {
+    for (uint32_t i = NODE_NUMBERS / 2 + 1; i < NODE_NUMBERS; i++) {
         keyIterResult.Update(JSIterator::IteratorStep(thread, keyIter).GetTaggedValue());
         valueIterResult.Update(JSIterator::IteratorStep(thread, valueIter).GetTaggedValue());
         EXPECT_EQ(i, JSIterator::IteratorValue(thread, keyIterResult)->GetInt());
