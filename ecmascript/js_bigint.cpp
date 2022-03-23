@@ -1290,7 +1290,7 @@ JSTaggedNumber BigInt::BigIntToNumber(JSHandle<BigInt> bigint)
         return CalculateNumber(sign, mantissa, exponent);
     }
     // pad unset mantissa
-    if (remainMantissaBits >= BigInt::DATEBITS) {
+    if (static_cast<uint32_t>(remainMantissaBits) >= BigInt::DATEBITS) {
         mantissa |= (static_cast<uint64_t>(digit) << (remainMantissaBits - BigInt::DATEBITS));
         remainMantissaBits -= BigInt::DATEBITS;
         index--;
