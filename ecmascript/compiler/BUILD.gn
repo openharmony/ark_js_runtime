@@ -185,7 +185,7 @@ ark_gen_file("stub_aot_options_gen_h") {
   output_file = "$target_gen_dir/generated/stub_aot_options_gen.h"
 }
 
-ohos_executable("ark_stub_opt") {
+ohos_executable("ark_stub_compiler") {
   sources = [ "stub_compiler.cpp" ]
   include_dirs = [ "$target_gen_dir" ]
 
@@ -210,11 +210,11 @@ ohos_executable("ark_stub_opt") {
   part_name = "ark_js_runtime"
   install_enable = false
 
-  output_name = "ark_stub_opt"
+  output_name = "ark_stub_compiler"
   subsystem_name = "ark"
 }
 
-ohos_executable("ark_ts_aot") {
+ohos_executable("ark_aot_compiler") {
   sources = [
     "aot_compiler.cpp",
     "pass_manager.cpp",
@@ -241,6 +241,6 @@ ohos_executable("ark_ts_aot") {
   part_name = "ark_js_runtime"
   install_enable = false
 
-  output_name = "ark_ts_aot"
+  output_name = "ark_aot_compiler"
   subsystem_name = "ark"
 }

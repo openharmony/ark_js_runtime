@@ -146,7 +146,7 @@ int main(const int argc, const char **argv)
 
     if (!paParser.Parse(argc, argv) || help.GetValue()) {
         std::cerr << paParser.GetErrorString() << std::endl;
-        std::cerr << "Usage: " << "ark_stub_opt" << " [OPTIONS]" << std::endl;
+        std::cerr << "Usage: " << "ark_stub_compiler" << " [OPTIONS]" << std::endl;
         std::cerr << std::endl;
         std::cerr << "optional arguments:" << std::endl;
 
