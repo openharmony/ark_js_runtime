@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/platform/runner.h"
+#include "ecmascript/taskpool/runner.h"
 
 #include "os/thread.h"
 

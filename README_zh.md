@@ -37,7 +37,7 @@
 │   ├─ mem                # 内存管理模块
 │   ├─ module             # ECMAScript module模块
 │   ├─ napi               # C++接口模块
-│   ├─ platform           # 任务池
+│   ├─ taskpool           # 任务池
 │   ├─ regexp             # 正则引擎模块
 │   ├─ snapshot           # 快照模块
 │   ├─ stubs              # runtime桩函数

@@ -13,36 +13,36 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_PALTFORM_PLATFORM_H
-#define ECMASCRIPT_PALTFORM_PLATFORM_H
+#ifndef ECMASCRIPT_TASKPOOL_TASKPOOL_H
+#define ECMASCRIPT_TASKPOOL_TASKPOOL_H
 
 #include <memory>
 
 #include "ecmascript/common.h"
-#include "ecmascript/platform/runner.h"
+#include "ecmascript/taskpool/runner.h"
 #include "os/mutex.h"
 
 namespace panda::ecmascript {
-class Platform {
+class Taskpool {
 public:
-    static Platform *GetCurrentPlatform()
+    static Taskpool *GetCurrentTaskpool()
     {
-        static Platform platform;
-        return &platform;
+        static Taskpool taskpool;
+        return &taskpool;
     }
 
-    Platform() = default;
-    PUBLIC_API ~Platform()
+    Taskpool() = default;
+    PUBLIC_API ~Taskpool()
     {
         os::memory::LockHolder lock(mutex_);
         runner_->TerminateThread();
         isInitialized_ = 0;
     }
 
-    NO_COPY_SEMANTIC(Platform);
-    NO_MOVE_SEMANTIC(Platform);
+    NO_COPY_SEMANTIC(Taskpool);
+    NO_MOVE_SEMANTIC(Taskpool);
 
-    void Initialize(int threadNum = DEFAULT_PLATFORM_THREAD_NUM);
+    void Initialize(int threadNum = DEFAULT_TASKPOOL_THREAD_NUM);
     void Destroy();
 
     void PostTask(std::unique_ptr<Task> task) const

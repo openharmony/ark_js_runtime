@@ -18,7 +18,7 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/space-inl.h"
-#include "ecmascript/platform/platform.h"
+#include "ecmascript/taskpool/taskpool.h"
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
@@ -31,10 +31,10 @@ void ConcurrentSweeper::PostConcurrentSweepTasks(bool fullGC)
 {
     if (concurrentSweep_) {
         if (!fullGC) {
-            Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, OLD_SPACE));
+            Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<SweeperTask>(this, OLD_SPACE));
         }
-        Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, NON_MOVABLE));
-        Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, MACHINE_CODE_SPACE));
+        Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<SweeperTask>(this, NON_MOVABLE));
+        Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<SweeperTask>(this, MACHINE_CODE_SPACE));
     }
 }
 

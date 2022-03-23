@@ -20,7 +20,7 @@
 #include "ecmascript/dfx/cpu_profiler/profile_generator.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/interpreter/frame_handler.h"
-#include "ecmascript/platform/task.h"
+#include "ecmascript/taskpool/task.h"
 
 namespace panda::ecmascript {
 class ProfileProcessor : public Task {
