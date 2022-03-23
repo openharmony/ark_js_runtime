@@ -361,7 +361,7 @@ HWTEST_F_L0(BuiltinsCollatorTest, SupportedLocalesOf)
 
     JSHandle<JSArray> resultHandle(thread, resultArr);
     JSHandle<TaggedArray> elements(thread, resultHandle->GetElements());
-    EXPECT_EQ(elements->GetLength(), 1);
+    EXPECT_EQ(elements->GetLength(), 1U);
     JSHandle<EcmaString> handleEcmaStr(thread, elements->Get(0));
     EXPECT_STREQ("id-u-co-pinyin-de-id", CString(handleEcmaStr->GetCString().get()).c_str());
 }

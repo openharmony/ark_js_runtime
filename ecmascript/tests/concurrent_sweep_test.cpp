@@ -58,7 +58,7 @@ TEST_F(ConcurrentSweepTest, ConcurrentSweep)
         vm->CollectGarbage(ecmascript::TriggerGCType::OLD_GC);
     }
     JSHandle<EcmaString> test2(thread, EcmaString::CreateFromUtf8(utf8, 4, vm, false));
-    ASSERT_EQ(test1->GetLength(), 4);
+    ASSERT_EQ(test1->GetLength(), 4U);
     ASSERT_NE(test1.GetTaggedValue().GetHeapObject(), test2.GetTaggedValue().GetHeapObject());
 }
 }  // namespace panda::test

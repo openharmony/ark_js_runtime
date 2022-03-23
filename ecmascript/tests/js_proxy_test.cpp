@@ -531,7 +531,7 @@ HWTEST_F_L0(JSProxyTest, OwnPropertyKeys)
     JSHandle<JSProxy> proxyHandle2 = JSProxy::ProxyCreate(thread, targetHandle, handlerHandle);
     EXPECT_TRUE(*proxyHandle2 != nullptr);
     JSHandle<TaggedArray> res2 = JSProxy::OwnPropertyKeys(thread, proxyHandle2);
-    EXPECT_TRUE(res2->GetLength() == 0 || !JSTaggedValue::SameValue(res2->Get(0), key.GetTaggedValue()));
+    EXPECT_TRUE(res2->GetLength() == 0U || !JSTaggedValue::SameValue(res2->Get(0), key.GetTaggedValue()));
 }
 
 JSTaggedValue HandlerCall([[maybe_unused]] EcmaRuntimeCallInfo *argv)
