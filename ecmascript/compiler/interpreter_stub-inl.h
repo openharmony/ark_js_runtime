@@ -100,14 +100,14 @@ GateRef InterpreterStub::ReadInst4_3(GateRef pc)
 GateRef InterpreterStub::ReadInstSigned8_0(GateRef pc)
 {
     GateRef x = Load(VariableType::INT8(), pc, GetIntPtrConstant(1));
-    return GetEnvironment()->GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SEXT_TO_INT32), x);
+    return GetEnvironment()->GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT32), x);
 }
 
 GateRef InterpreterStub::ReadInstSigned16_0(GateRef pc)
 {
     /* 2 : skip 8 bits of opcode and 8 bits of low bits */
     GateRef currentInst = Load(VariableType::INT8(), pc, GetIntPtrConstant(2));
-    GateRef currentInst1 = GetEnvironment()->GetCircuitBuilder().NewArithmeticGate(
+    GateRef currentInst1 = GetEnvironment()->GetCircuitBuilder().UnaryArithmetic(
         OpCode(OpCode::SEXT_TO_INT32), currentInst);
     GateRef currentInst2 = Int32LSL(currentInst1, GetInt32Constant(8));  // 8 : set as high 8 bits
     return Int32Add(currentInst2, ZExtInt8ToInt32(ReadInst8_0(pc)));
@@ -117,7 +117,7 @@ GateRef InterpreterStub::ReadInstSigned32_0(GateRef pc)
 {
     /* 4 : skip 8 bits of opcode and 24 bits of low bits */
     GateRef x = Load(VariableType::INT8(), pc, GetIntPtrConstant(4));
-    GateRef currentInst = GetEnvironment()->GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SEXT_TO_INT32), x);
+    GateRef currentInst = GetEnvironment()->GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT32), x);
     GateRef currentInst1 = Int32LSL(currentInst, GetInt32Constant(8));
     GateRef currentInst2 = Int32Add(currentInst1, ZExtInt8ToInt32(ReadInst8_2(pc)));
     GateRef currentInst3 = Int32LSL(currentInst2, GetInt32Constant(8));
@@ -340,7 +340,7 @@ void InterpreterStub::DispatchBase(GateRef bcOffset, const CallSignature *signat
 {
     auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
     GateRef result =
-        GetEnvironment()->GetCircuitBuilder().NewBytecodeCallGate(signature, glue, bcOffset, depend, {glue, args...});
+        GetEnvironment()->GetCircuitBuilder().BytecodeCall(signature, glue, bcOffset, depend, {glue, args...});
     GetEnvironment()->GetCurrentLabel()->SetDepend(result);
 }
 
