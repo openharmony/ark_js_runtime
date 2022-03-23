@@ -64,7 +64,7 @@ HWTEST_F_L0(EcmaModuleTest, AddImportEntry)
     JSHandle<ImportEntry> importEntry2 = objectFactory->NewImportEntry();
     SourceTextModule::AddImportEntry(thread, module, importEntry2);
     JSHandle<TaggedArray> importEntries(thread, module->GetImportEntries());
-    EXPECT_TRUE(importEntries->GetLength() == 2);
+    EXPECT_TRUE(importEntries->GetLength() == 2U);
 }
 
 /*
@@ -83,7 +83,7 @@ HWTEST_F_L0(EcmaModuleTest, AddLocalExportEntry)
     JSHandle<ExportEntry> exportEntry2 = objectFactory->NewExportEntry();
     SourceTextModule::AddLocalExportEntry(thread, module, exportEntry2);
     JSHandle<TaggedArray> localExportEntries(thread, module->GetLocalExportEntries());
-    EXPECT_TRUE(localExportEntries->GetLength() == 2);
+    EXPECT_TRUE(localExportEntries->GetLength() == 2U);
 }
 
 /*
@@ -102,7 +102,7 @@ HWTEST_F_L0(EcmaModuleTest, AddIndirectExportEntry)
     JSHandle<ExportEntry> exportEntry2 = objectFactory->NewExportEntry();
     SourceTextModule::AddIndirectExportEntry(thread, module, exportEntry2);
     JSHandle<TaggedArray> indirectExportEntries(thread, module->GetIndirectExportEntries());
-    EXPECT_TRUE(indirectExportEntries->GetLength() == 2);
+    EXPECT_TRUE(indirectExportEntries->GetLength() == 2U);
 }
 
 /*
@@ -121,7 +121,7 @@ HWTEST_F_L0(EcmaModuleTest, AddStarExportEntry)
     JSHandle<ExportEntry> exportEntry2 = objectFactory->NewExportEntry();
     SourceTextModule::AddStarExportEntry(thread, module, exportEntry2);
     JSHandle<TaggedArray> startExportEntries(thread, module->GetStarExportEntries());
-    EXPECT_TRUE(startExportEntries->GetLength() == 2);
+    EXPECT_TRUE(startExportEntries->GetLength() == 2U);
 }
 
 /*

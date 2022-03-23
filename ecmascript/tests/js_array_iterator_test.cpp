@@ -81,7 +81,7 @@ HWTEST_F_L0(JSArrayIteratorTest, SetIteratedArray)
         IterationKind::KEY);
 
     JSHandle<JSArray> handleJSArrayTo1(thread, JSArray::Cast(handleJSArrayIter->GetIteratedArray().GetTaggedObject()));
-    EXPECT_EQ(handleJSArrayTo1->GetArrayLength(), numArrayFrom1);
+    EXPECT_EQ(handleJSArrayTo1->GetArrayLength(), static_cast<uint32_t>(numArrayFrom1));
     for (int i = 0; i < numArrayFrom1; i++) {
         EXPECT_EQ(JSArray::FastGetPropertyByValue(thread, JSHandle<JSTaggedValue>(handleJSArrayTo1), i)->GetNumber(),
             arrayFrom1[i]);
@@ -91,7 +91,7 @@ HWTEST_F_L0(JSArrayIteratorTest, SetIteratedArray)
     handleJSArrayIter->SetIteratedArray(thread, handleJSObjectTaggedArrayFrom2);
 
     JSHandle<JSArray> handleJSArrayTo2(thread, JSArray::Cast(handleJSArrayIter->GetIteratedArray().GetTaggedObject()));
-    EXPECT_EQ(handleJSArrayTo2->GetArrayLength(), numArrayFrom2);
+    EXPECT_EQ(handleJSArrayTo2->GetArrayLength(), static_cast<uint32_t>(numArrayFrom2));
     for (int i = 0; i < numArrayFrom2; i++) {
         EXPECT_EQ(JSArray::FastGetPropertyByValue(thread, JSHandle<JSTaggedValue>(handleJSArrayTo2), i)->GetNumber(),
             arrayFrom2[i]);

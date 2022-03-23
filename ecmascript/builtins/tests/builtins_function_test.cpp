@@ -198,7 +198,7 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeBind)
     ASSERT_EQ(resultFunc->GetBoundThis(), thisArg.GetTaggedValue());
     // test BoundArguments
     JSHandle<TaggedArray> array(thread, resultFunc->GetBoundArguments());
-    ASSERT_EQ(array->GetLength(), 0);
+    ASSERT_EQ(array->GetLength(), 0U);
     // test name property
     auto globalConst = thread->GlobalConstants();
     JSHandle<JSTaggedValue> nameKey = globalConst->GetHandledNameString();
@@ -247,7 +247,7 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeBind1)
     ASSERT_EQ(resultFunc->GetBoundThis(), thisArg.GetTaggedValue());
     // test BoundArguments
     JSHandle<TaggedArray> array(thread, resultFunc->GetBoundArguments());
-    ASSERT_EQ(array->GetLength(), 2);
+    ASSERT_EQ(array->GetLength(), 2U);
     JSTaggedValue elem = array->Get(0);
     JSTaggedValue elem1 = array->Get(1);
     ASSERT_EQ(elem.GetRawData(), JSTaggedValue(123).GetRawData());
@@ -303,7 +303,7 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeBind2)
     ASSERT_EQ(resultFunc->GetBoundThis(), thisArg.GetTaggedValue());
     // test BoundArguments
     JSHandle<TaggedArray> array(thread, resultFunc->GetBoundArguments());
-    ASSERT_EQ(array->GetLength(), 2);
+    ASSERT_EQ(array->GetLength(), 2U);
     JSTaggedValue elem = array->Get(0);
     JSTaggedValue elem1 = array->Get(1);
     ASSERT_EQ(elem.GetRawData(), JSTaggedValue(123).GetRawData());

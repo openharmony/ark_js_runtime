@@ -69,7 +69,7 @@ HWTEST_F_L0(BuiltinsBaseTest, GetArgsArray)
     JSHandle<TaggedArray> resultArray = BuiltinsBase::GetArgsArray(ecmaRuntimeCallInfo.get());
     TestHelper::TearDownFrame(thread, prev);
 
-    EXPECT_EQ(resultArray->GetLength(), 3);
+    EXPECT_EQ(resultArray->GetLength(), 3U);
     EXPECT_EQ(resultArray->Get(0).GetInt(), 1);
     EXPECT_EQ(resultArray->Get(1).GetInt(), 2);
     EXPECT_EQ(resultArray->Get(2).GetInt(), 3);
@@ -99,9 +99,9 @@ HWTEST_F_L0(BuiltinsBaseTest, BuiltinsBase_info_Get)
 
     EXPECT_TRUE(BuiltinsBase::GetConstructor(ecmaRuntimeCallInfo1.get())->IsUndefined());
     EXPECT_TRUE(BuiltinsBase::GetNewTarget(ecmaRuntimeCallInfo1.get())->IsUndefined());
-    EXPECT_EQ(BuiltinsBase::GetCallArg(ecmaRuntimeCallInfo1.get(), 0)->GetInt(), ArgsPosition::FIRST);
-    EXPECT_EQ(BuiltinsBase::GetCallArg(ecmaRuntimeCallInfo1.get(), 1)->GetInt(), ArgsPosition::SECOND);
-    EXPECT_EQ(BuiltinsBase::GetCallArg(ecmaRuntimeCallInfo1.get(), 2)->GetInt(), ArgsPosition::FOURTH);
+    EXPECT_EQ(BuiltinsBase::GetCallArg(ecmaRuntimeCallInfo1.get(), 0)->GetInt(), 0);
+    EXPECT_EQ(BuiltinsBase::GetCallArg(ecmaRuntimeCallInfo1.get(), 1)->GetInt(), 1);
+    EXPECT_EQ(BuiltinsBase::GetCallArg(ecmaRuntimeCallInfo1.get(), 2)->GetInt(), 3);
     TestHelper::TearDownFrame(thread, prev1);
 
     auto ecmaRuntimeCallInfo2 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue(*handleNewTarget), 6);

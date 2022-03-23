@@ -179,7 +179,7 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolWithParameterFor)
     JSHandle<SymbolTable> tableHandle(env->GetRegisterSymbols());
 
     JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromCanBeCompressString("ccc");
-    ASSERT_EQ(string->GetLength(), 3);
+    ASSERT_EQ(string->GetLength(), 3U);
     JSHandle<JSTaggedValue> string_handle(string);
     ASSERT_EQ(tableHandle->ContainsKey(thread, string_handle.GetTaggedValue()), false);
 
@@ -218,7 +218,7 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolKeyFor)
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::VALUE_UNDEFINED);
 
     JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromCanBeCompressString("ccc");
-    ASSERT_EQ(string->GetLength(), 3);
+    ASSERT_EQ(string->GetLength(), 3U);
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
@@ -325,7 +325,7 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolGetter)
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_TRUE(result.IsString());
     EcmaString *resString = reinterpret_cast<EcmaString *>(result.GetRawData());
-    ASSERT_EQ(resString->GetLength(), 0);
+    ASSERT_EQ(resString->GetLength(), 0U);
     ASSERT_EQ(EcmaString::StringsAreEqual(resString, *string), true);
 }
 }  // namespace panda::test

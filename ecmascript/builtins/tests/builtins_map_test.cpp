@@ -213,7 +213,7 @@ HWTEST_F_L0(BuiltinsMapTest, ForEach)
     JSTaggedValue result2 = BuiltinsMap::ForEach(ecmaRuntimeCallInfo1.get());
 
     EXPECT_EQ(result2.GetRawData(), JSTaggedValue::VALUE_UNDEFINED);
-    EXPECT_EQ(jsArray->GetArrayLength(), 10);
+    EXPECT_EQ(jsArray->GetArrayLength(), 10U);
 }
 
 HWTEST_F_L0(BuiltinsMapTest, DeleteAndRemove)
