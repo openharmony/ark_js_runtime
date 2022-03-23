@@ -118,10 +118,14 @@ Properties OpCode::GetProperties() const
             return {I32, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case ZEXT_TO_INT16:
             return {I16, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
+        case ZEXT_TO_ARCH:
+            return {ARCH, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case SEXT_TO_INT64:
             return {I64, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case SEXT_TO_INT32:
             return {I32, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
+        case SEXT_TO_ARCH:
+            return {ARCH, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case TRUNC_TO_INT32:
             return {I32, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case TRUNC_TO_INT1:
@@ -236,8 +240,10 @@ std::string OpCode::Str() const
         {ZEXT_TO_INT64, "ZEXT_TO_INT64"},
         {ZEXT_TO_INT32, "ZEXT_TO_INT32"},
         {ZEXT_TO_INT16, "ZEXT_TO_INT16"},
+        {ZEXT_TO_ARCH, "ZEXT_TO_ARCH"},
         {SEXT_TO_INT64, "SEXT_TO_INT64"},
         {SEXT_TO_INT32, "SEXT_TO_INT32"},
+        {SEXT_TO_ARCH, "SEXT_TO_ARCH"},
         {TRUNC_TO_INT32, "TRUNC_TO_INT32"},
         {TRUNC_TO_INT1, "TRUNC_TO_INT1"},
         {REV, "REV"},

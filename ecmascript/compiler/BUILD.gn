@@ -50,6 +50,7 @@ source_set("libark_jsoptimizer_static") {
     "interpreter_stub.cpp",
     "llvm_codegen.cpp",
     "llvm_ir_builder.cpp",
+    "low_level_circuit_builder.cpp",
     "rt_call_signature.cpp",
     "scheduler.cpp",
     "stub.cpp",
