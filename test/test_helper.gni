@@ -149,3 +149,85 @@ template("host_moduletest_action") {
     outputs = [ "$target_out_dir/${_target_name_}/" ]
   }
 }
+
+template("host_aottest_action") {
+  _target_name_ = "${target_name}"
+  _deps_ = invoker.deps
+  _is_aot_ = false
+  if (defined(invoker.is_aot) && invoker.is_aot) {
+    _is_aot_ = true
+  }
+
+  _test_js_path_ = "./${_target_name_}.ts"
+  _test_abc_path_ = "$target_out_dir/${_target_name_}.abc"
+  _test_expect_path_ = "./expect_output.txt"
+
+  ts2abc_gen_abc("gen_${_target_name_}_abc") {
+    extra_visibility = [ ":*" ]  # Only targets in this file can depend on this.
+    extra_dependencies = _deps_
+    src_js = rebase_path(_test_js_path_)
+    dst_file = rebase_path(_test_abc_path_)
+    extra_args = [ "--debug" ]
+    if (_is_aot_) {
+      extra_args += [ "--aot" ]
+    }
+
+    in_puts = [
+      _test_js_path_,
+      _test_expect_path_,
+    ]
+    out_puts = [ _test_abc_path_ ]
+  }
+
+  _extra_aots_ = []
+  if (defined(invoker._extra_aots_)) {
+    foreach(aot, invoker.extra_aots) {
+      _extra_aots_ += [ "$target_out_dir/${aot}.abc" ]
+    }
+  }
+  _test_abc_paths_ = rebase_path(_test_abc_path_)
+  foreach(extra_aot, _extra_aots_) {
+    _test_abc_paths_ += ":" + rebase_path(extra_aot)
+  }
+
+  action("${_target_name_}Action") {
+    testonly = true
+
+    _host_aot_target_ = "//ark/js_runtime/ecmascript/compiler:ark_aot_compiler(${host_toolchain})"
+    _root_out_dir_ = get_label_info(_host_aot_target_, "root_out_dir")
+    deps = [
+      ":gen_${_target_name_}_abc",
+      _host_aot_target_,
+    ]
+    deps += _deps_
+
+    script = "//ark/js_runtime/test/run_ark_executable.py"
+
+    aot_options = " "
+    if (defined(invoker.is_set_maxNonmovableSpaceCapacity) &&
+        invoker.is_set_maxNonmovableSpaceCapacity) {
+      aot_options += "--maxNonmovableSpaceCapacity=524288"  # 0.5M
+    }
+
+    args = [
+      "--script-file",
+      rebase_path(_root_out_dir_) + "/ark/ark_js_runtime/ark_aot_compiler",
+      "--script-options",
+      aot_options,
+      "--script-args",
+      _test_abc_paths_,
+      "--expect-file",
+      rebase_path(_test_expect_path_),
+      "--env-path",
+      rebase_path(_root_out_dir_) + "/ark/ark:" + rebase_path(_root_out_dir_) +
+          "/ark/ark_js_runtime:" + rebase_path(_root_out_dir_) +
+          "/common/${icu_path}:" +
+          rebase_path("//prebuilts/clang/ohos/linux-x86_64/llvm/lib/"),
+    ]
+
+    inputs = [ _test_abc_path_ ]
+    inputs += _extra_aots_
+
+    outputs = [ "$target_out_dir/${_target_name_}/" ]
+  }
+}

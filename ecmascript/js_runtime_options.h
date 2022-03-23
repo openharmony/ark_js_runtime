@@ -340,7 +340,7 @@ private:
         true,
         R"(if true trigger full gc, else trigger semi and old gc)"};
     PandArg<int> arkProperties_ {"ark-properties", GetDefaultProperties(), R"(set ark properties)"};
-    PandArg<int> enableTsAot_ {"enable-ts-aot", false, R"(enable aot of fast stub. Default: false)"};
+    PandArg<int> enableTsAot_ {"enable-ts-aot", true, R"(enable aot of fast stub. Default: false)"};
     PandArg<std::string> aotOutputFile_ {"aot-output-file",
         R"(aot_output_file.m)",
         R"(Path to AOT output file. Default: "aot_output_file.m")"};
