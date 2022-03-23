@@ -1286,6 +1286,20 @@ void LLVMIRBuilder::HandleAdd(GateRef gate)
     VisitAdd(gate, g0, g1);
 }
 
+bool IsAddIntergerType(MachineType machineType)
+{
+    switch (machineType) {
+        case MachineType::I8:
+        case MachineType::I16:
+        case MachineType::I32:
+        case MachineType::I64:
+        case MachineType::ARCH:
+            return true;
+        default:
+            return false;
+    }
+}
+
 void LLVMIRBuilder::VisitAdd(GateRef gate, GateRef e1, GateRef e2)
 {
     COMPILER_LOG(DEBUG) << "add gate:" << gate;
@@ -1300,8 +1314,7 @@ void LLVMIRBuilder::VisitAdd(GateRef gate, GateRef e1, GateRef e2)
     LLVMTypeRef returnType = ConvertLLVMTypeFromGate(gate);
 
     auto machineType = circuit_->LoadGatePtrConst(gate)->GetMachineType();
-    if (machineType == MachineType::I32 || machineType == MachineType::I64 ||
-        machineType == MachineType::I8 || machineType == MachineType::I16) {
+    if (IsAddIntergerType(machineType)) {
         auto e1Type = LLVMGetTypeKind(ConvertLLVMTypeFromGate(e1));
         if (e1Type == LLVMVectorTypeKind) {
             result = VectorAdd(e1Value, e2Value, returnType);
@@ -1359,6 +1372,18 @@ void LLVMIRBuilder::HandleMul(GateRef gate)
     VisitMul(gate, g0, g1);
 }
 
+bool IsMulIntergerType(MachineType machineType)
+{
+    switch (machineType) {
+        case MachineType::I32:
+        case MachineType::I64:
+        case MachineType::ARCH:
+            return true;
+        default:
+            return false;
+    }
+}
+
 void LLVMIRBuilder::VisitMul(GateRef gate, GateRef e1, GateRef e2)
 {
     COMPILER_LOG(DEBUG) << "mul gate:" << gate;
@@ -1368,7 +1393,7 @@ void LLVMIRBuilder::VisitMul(GateRef gate, GateRef e1, GateRef e2)
     COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = nullptr;
     auto machineType = circuit_->LoadGatePtrConst(gate)->GetMachineType();
-    if (machineType == MachineType::I32 || machineType == MachineType::I64) {
+    if (IsMulIntergerType(machineType)) {
         result = LLVMBuildMul(builder_, e1Value, e2Value, "");
     } else if (machineType == MachineType::F64) {
         result = LLVMBuildFMul(builder_, e1Value, e2Value, "");

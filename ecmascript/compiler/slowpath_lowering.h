@@ -225,6 +225,17 @@ private:
     void LowerStSuperByValue(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerTryStGlobalByName(GateRef gate, GateRef glue);
     void LowerStConstToGlobalRecord(GateRef gate, GateRef glue);
+    void LowerStLetToGlobalRecord(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerStClassToGlobalRecord(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerStOwnByValueWithNameSet(GateRef gate, GateRef glue);
+    void LowerStOwnByNameWithNameSet(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerLdGlobalVar(GateRef gate, GateRef glue);
+    void LowerLdObjByName(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerStObjByName(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerLdSuperByName(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerStSuperByName(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerCreateGeneratorObj(GateRef gate, GateRef glue);
+    void LowerStArraySpread(GateRef gate, GateRef glue);
 
     BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;
