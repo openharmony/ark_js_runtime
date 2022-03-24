@@ -61,9 +61,8 @@ public:
         return static_cast<JSMethod *>(method);
     }
 
-    JSMethod(Class *klass, const JSPandaFile *jsPandaFile, panda_file::File::EntityId fileId,
-                      panda_file::File::EntityId codeId, uint32_t accessFlags,
-                      uint32_t numArgs, const uint16_t *shorty);
+    JSMethod(const JSPandaFile *jsPandaFile, panda_file::File::EntityId fileId,
+             panda_file::File::EntityId codeId, uint32_t accessFlags, uint32_t numArgs);
     JSMethod() = delete;
     ~JSMethod() = default;
     JSMethod(const JSMethod &) = delete;

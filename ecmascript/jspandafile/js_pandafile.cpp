@@ -37,15 +37,6 @@ JSPandaFile::~JSPandaFile()
     }
 }
 
-tooling::ecmascript::PtJSExtractor *JSPandaFile::GetOrCreatePtJSExtractor()
-{
-    if (ptJSExtractor_) {
-        return ptJSExtractor_.get();
-    }
-    ptJSExtractor_ = std::make_unique<tooling::ecmascript::PtJSExtractor>(pf_);
-    return ptJSExtractor_.get();
-}
-
 uint32_t JSPandaFile::GetOrInsertConstantPool(ConstPoolType type, uint32_t offset)
 {
     auto it = constpoolMap_.find(offset);

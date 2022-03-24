@@ -43,6 +43,7 @@ void ProtocolHandler::RunIfWaitingForDebugger()
 void ProtocolHandler::ProcessCommand(const CString &msg)
 {
     LOG(DEBUG, DEBUGGER) << "ProtocolHandler::ProcessCommand: " << msg;
+    [[maybe_unused]] LocalScope scope(vm_);
     Local<JSValueRef> exception = DebuggerApi::GetException(vm_);
     if (!exception->IsHole()) {
         DebuggerApi::ClearException(vm_);

@@ -17,7 +17,7 @@
 #define ECMASCRIPT_TOOLING_AGENT_JS_PT_HOOKS_H
 
 #include "libpandabase/macros.h"
-#include "ecmascript/tooling/pt_js_extractor.h"
+#include "ecmascript/tooling/js_pt_extractor.h"
 #include "ecmascript/tooling/base/pt_events.h"
 #include "ecmascript/tooling/base/pt_script.h"
 #include "include/tooling/debug_interface.h"

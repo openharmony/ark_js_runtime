@@ -374,6 +374,7 @@ ecma_source = [
   "ecmascript/js_api_stack.cpp",
   "ecmascript/js_api_stack_iterator.cpp",
   "ecmascript/jspandafile/class_info_extractor.cpp",
+  "ecmascript/jspandafile/debug_info_extractor.cpp",
   "ecmascript/jspandafile/ecma_class_linker_extension.cpp",
   "ecmascript/jspandafile/literal_data_extractor.cpp",
   "ecmascript/jspandafile/module_data_extractor.cpp",
