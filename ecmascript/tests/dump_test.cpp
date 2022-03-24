@@ -218,14 +218,14 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
 
 #define DUMP_FOR_HANDLE(dumpHandle)                                        \
     dumpHandle.GetTaggedValue().D();                                       \
-    dumpHandle.GetTaggedValue().DumpForSnapshot(thread, snapshotVector);
+    dumpHandle.GetTaggedValue().DumpForSnapshot(snapshotVector);
 
 #define NEW_OBJECT_AND_DUMP(ClassName, TypeName)                                       \
     JSHandle<JSHClass> class##ClassName =                                              \
         factory->NewEcmaDynClass(ClassName::SIZE, JSType::TypeName, proto);            \
         JSHandle<JSObject> object##ClassName = factory->NewJSObject(class##ClassName); \
         object##ClassName.GetTaggedValue().D();                                        \
-        object##ClassName.GetTaggedValue().DumpForSnapshot(thread, snapshotVector);
+        object##ClassName.GetTaggedValue().DumpForSnapshot(snapshotVector);
 
     for (JSType type = JSType::JS_OBJECT; type <= JSType::TYPE_LAST; type = JSType(static_cast<int>(type) + 1)) {
         switch (type) {

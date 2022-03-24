@@ -22,7 +22,7 @@
 namespace panda::ecmascript {
 using SourceLang = panda_file::SourceLang;
 
-bool EcmaClassLinkerExtension::InitializeImpl(bool cmpStrEnabled)
+bool EcmaClassLinkerExtension::InitializeImpl([[maybe_unused]] bool cmpStrEnabled)
 {
     return true;
 }

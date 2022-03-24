@@ -23,7 +23,6 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/slow_runtime_helper.h"
-#include "ecmascript/js_invoker.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/tagged_array-inl.h"
 

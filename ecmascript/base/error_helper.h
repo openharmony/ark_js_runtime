@@ -16,11 +16,6 @@
 #ifndef ECMASCRIPT_BASE_ERROR_HELPER_H
 #define ECMASCRIPT_BASE_ERROR_HELPER_H
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wextern-c-compat"
-#endif
-
 #include "ecmascript/base/error_type.h"
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/js_handle.h"

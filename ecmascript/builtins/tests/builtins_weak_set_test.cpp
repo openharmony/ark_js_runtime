@@ -177,7 +177,7 @@ HWTEST_F_L0(BuiltinsWeakSetTest, DeleteAndRemove)
 
         EXPECT_TRUE(result1.IsECMAObject());
         JSWeakSet *jsWeakSet = JSWeakSet::Cast(reinterpret_cast<TaggedObject *>(result1.GetRawData()));
-        EXPECT_EQ(jsWeakSet->GetSize(), i + 1);
+        EXPECT_EQ(jsWeakSet->GetSize(), static_cast<int>(i) + 1);
         lastKey = key.GetTaggedValue();
     }
     // whether jsWeakSet has delete lastKey

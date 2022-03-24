@@ -421,6 +421,21 @@ JSTaggedType* EcmaInterpreter::GetCurrentFrameState(JSTaggedType *sp)
     return sp - FRAME_STATE_SIZE;
 }
 
+JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const JSHandle<JSFunction> &func,
+                                       const JSHandle<JSTaggedValue> &obj,
+                                       const JSHandle<JSTaggedValue> &newTgt, InternalCallParams *arguments)
+{
+    ASSERT(func->GetCallTarget() != nullptr);
+
+    CallParams params;
+    params.callTarget = ECMAObject::Cast(*func);
+    params.newTarget = newTgt.GetTaggedType();
+    params.thisArg = obj.GetTaggedType();
+    params.argc = arguments->GetLength();
+    params.argv = arguments->GetArgv();
+    return Execute(thread, params);
+}
+
 JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& params)
 {
     INTERPRETER_TRACE(thread, Execute);
@@ -1440,7 +1455,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         } else {
             // one or both are not number, slow path
             SAVE_PC();
-            JSTaggedValue res = SlowRuntimeStub::Add2Dyn(thread, ecmaVm, left, right);
+            JSTaggedValue res = SlowRuntimeStub::Add2Dyn(thread, left, right);
             INTERPRETER_RETURN_IF_ABRUPT(res);
             SET_ACC(res);
         }

@@ -42,18 +42,20 @@ public:
     void ProcessOldToNew(uint32_t threadId, Region *region);  // for SemiGC
     void ProcessSnapshotRSet(uint32_t threadId);              // for SemiGC
 
-    virtual void ProcessMarkStack(uint32_t threadId)
+    virtual void ProcessMarkStack([[maybe_unused]] uint32_t threadId)
     {
         LOG(FATAL, ECMASCRIPT) << "can not call this method";
     }
 
 protected:
-    virtual inline void MarkObject(uint32_t threadId, TaggedObject *object)  // non move
+    // non move
+    virtual inline void MarkObject([[maybe_unused]] uint32_t threadId, [[maybe_unused]] TaggedObject *object)
     {
         LOG(FATAL, ECMASCRIPT) << "can not call this method";
     }
 
-    virtual inline SlotStatus MarkObject(uint32_t threadId, TaggedObject *object, ObjectSlot slot)  // move
+    virtual inline SlotStatus MarkObject([[maybe_unused]] uint32_t threadId, [[maybe_unused]] TaggedObject *object,
+                                         [[maybe_unused]] ObjectSlot slot)  // move
     {
         LOG(FATAL, ECMASCRIPT) << "can not call this method";
         return SlotStatus::KEEP_SLOT;
@@ -63,7 +65,7 @@ protected:
     virtual inline void HandleRoots(uint32_t threadId, [[maybe_unused]] Root type, ObjectSlot slot) = 0;
     virtual inline void HandleRangeRoots(uint32_t threadId, [[maybe_unused]] Root type, ObjectSlot start,
                                          ObjectSlot end) = 0;
-    virtual inline void RecordWeakReference(uint32_t threadId, JSTaggedType *ref)
+    virtual inline void RecordWeakReference([[maybe_unused]] uint32_t threadId, [[maybe_unused]] JSTaggedType *ref)
     {
         LOG(FATAL, ECMASCRIPT) << "can not call this method";
     }

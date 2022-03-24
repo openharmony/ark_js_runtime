@@ -57,8 +57,8 @@ HWTEST_F_L0(TSTypeTest, UnionType)
     auto factory = ecmaVm->GetFactory();
     JSHandle<TSTypeTable> table = factory->NewTSTypeTable(2);
 
-    const int literalLength = 4;
-    const int unionLength = 2;
+    const uint32_t literalLength = 4;
+    const uint32_t unionLength = 2;
     JSHandle<TaggedArray> literal = factory->NewTaggedArray(literalLength);
     literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeTable::TypeLiteralFlag::UNION)));
     literal->Set(thread, 1, JSTaggedValue(unionLength));
@@ -118,7 +118,7 @@ HWTEST_F_L0(TSTypeTest, ImportType)
     importTable->Set(thread, 1, JSHandle<JSTaggedValue>(importType));
 
     GlobalTSTypeRef importGT = importType->GetGTRef();
-    ASSERT_EQ(importType->GetTargetRefGT().GetGlobalTSTypeRef(), 0);
+    ASSERT_EQ(importType->GetTargetRefGT().GetGlobalTSTypeRef(), 0ULL);
 
     tsLoader->AddTypeTable(JSHandle<JSTaggedValue>(importTable), importFileHandle);
 
@@ -158,7 +158,7 @@ HWTEST_F_L0(TSTypeTest, ImportType)
     redirectImportTable->Set(thread, redirectImportTable->GetLength() - 1, redirectExportTableHandle);
 
     GlobalTSTypeRef redirectImportGT = redirectImportType->GetGTRef();
-    ASSERT_EQ(redirectImportType->GetTargetRefGT().GetGlobalTSTypeRef(), 0);
+    ASSERT_EQ(redirectImportType->GetTargetRefGT().GetGlobalTSTypeRef(), 0ULL);
 
     tsLoader->AddTypeTable(JSHandle<JSTaggedValue>(redirectImportTable), redirectImportFileHandle);
 
@@ -307,7 +307,7 @@ HWTEST_F_L0(TSTypeTest, ClassInstanceType)
     ASSERT_TRUE(type->IsTSClassInstanceType());
     JSHandle<TSClassInstanceType> classInstanceType = JSHandle<TSClassInstanceType>(type);
 
-    ASSERT_EQ(classInstanceType->GetClassRefGT().GetGlobalTSTypeRef(), 50);
+    ASSERT_EQ(classInstanceType->GetClassRefGT().GetGlobalTSTypeRef(), 50ULL);
 }
 
 HWTEST_F_L0(TSTypeTest, FuntionType)
@@ -340,9 +340,9 @@ HWTEST_F_L0(TSTypeTest, FuntionType)
     JSHandle<TaggedArray> parameterTypes(thread, functionType->GetParameterTypes());
     ASSERT_EQ(parameterTypes->GetLength(), parameterLength + TSFunctionType::DEFAULT_LENGTH);
     ASSERT_EQ(functionType->GetParametersNum(), parameterLength);
-    ASSERT_EQ(functionType->GetParameterTypeGT(table, 0).GetGlobalTSTypeRef(), 1);
-    ASSERT_EQ(functionType->GetParameterTypeGT(table, 1).GetGlobalTSTypeRef(), 2);
-    ASSERT_EQ(functionType->GetReturnValueTypeGT(table).GetGlobalTSTypeRef(), 6);
+    ASSERT_EQ(functionType->GetParameterTypeGT(table, 0).GetGlobalTSTypeRef(), 1ULL);
+    ASSERT_EQ(functionType->GetParameterTypeGT(table, 1).GetGlobalTSTypeRef(), 2ULL);
+    ASSERT_EQ(functionType->GetReturnValueTypeGT(table).GetGlobalTSTypeRef(), 6ULL);
 }
 
 HWTEST_F_L0(TSTypeTest, ObjectType)
@@ -394,6 +394,6 @@ HWTEST_F_L0(TSTypeTest, ArrayType)
     ASSERT_TRUE(type->IsTSArrayType());
     JSHandle<TSArrayType> arrayType = JSHandle<TSArrayType>(type);
 
-    ASSERT_EQ(arrayType->GetElementTypeRef(), 2);
+    ASSERT_EQ(arrayType->GetElementTypeRef(), 2ULL);
 }
 } // namespace panda::test

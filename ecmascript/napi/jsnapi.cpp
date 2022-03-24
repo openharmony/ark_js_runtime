@@ -1261,7 +1261,7 @@ Local<ArrayBufferRef> ArrayBufferRef::New(
     return JSNApiHelper::ToLocal<ArrayBufferRef>(JSHandle<JSTaggedValue>(arrayBuffer));
 }
 
-int32_t ArrayBufferRef::ByteLength(const EcmaVM *vm)
+int32_t ArrayBufferRef::ByteLength([[maybe_unused]] const EcmaVM *vm)
 {
     JSHandle<JSArrayBuffer> arrayBuffer(JSNApiHelper::ToJSHandle(this));
     return arrayBuffer->GetArrayBufferByteLength();
@@ -1313,7 +1313,7 @@ Local<ArrayBufferRef> DataViewRef::GetArrayBuffer(const EcmaVM *vm)
 // ---------------------------------- DataView -----------------------------------
 
 // ---------------------------------- TypedArray -----------------------------------
-int32_t TypedArrayRef::ByteLength(const EcmaVM *vm)
+int32_t TypedArrayRef::ByteLength([[maybe_unused]] const EcmaVM *vm)
 {
     JSHandle<JSTypedArray> typedArray(JSNApiHelper::ToJSHandle(this));
     JSTaggedValue length = typedArray->GetByteLength();
@@ -1323,7 +1323,7 @@ int32_t TypedArrayRef::ByteLength(const EcmaVM *vm)
     return length.GetNumber();
 }
 
-int32_t TypedArrayRef::ByteOffset(const EcmaVM *vm)
+int32_t TypedArrayRef::ByteOffset([[maybe_unused]] const EcmaVM *vm)
 {
     JSHandle<JSTypedArray> typedArray(JSNApiHelper::ToJSHandle(this));
     JSTaggedValue length = typedArray->GetByteOffset();
@@ -1333,7 +1333,7 @@ int32_t TypedArrayRef::ByteOffset(const EcmaVM *vm)
     return length.GetNumber();
 }
 
-int32_t TypedArrayRef::ArrayLength(const EcmaVM *vm)
+int32_t TypedArrayRef::ArrayLength([[maybe_unused]] const EcmaVM *vm)
 {
     JSHandle<JSTypedArray> typedArray(JSNApiHelper::ToJSHandle(this));
     JSTaggedValue length = typedArray->GetArrayLength();

@@ -42,7 +42,7 @@ public:
 
     DECL_DUMP()
 
-    uintptr_t GetDataOffsetAddress(void)
+    uintptr_t GetDataOffsetAddress()
     {
         return reinterpret_cast<uintptr_t>(this) + DATA_OFFSET;
     }
@@ -60,7 +60,7 @@ public:
         }
     }
 
-    void VisitRangeSlot(const EcmaObjectRangeVisitor &v)
+    void VisitRangeSlot([[maybe_unused]] const EcmaObjectRangeVisitor &v)
     {
         // left blank deliberately,only need to visit TaggedObject type object.
     }
@@ -70,7 +70,7 @@ public:
         // left blank deliberately,only need to visit TaggedObject type object.
     }
 
-    size_t GetMachineCodeObjectSize(void)
+    size_t GetMachineCodeObjectSize()
     {
         return SIZE + this->GetInstructionSizeInBytes();
     }

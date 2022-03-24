@@ -69,7 +69,7 @@ void LayoutInfo::GetAllKeys(const JSThread *thread, int end, int offset, TaggedA
     }
 }
 
-void LayoutInfo::GetAllKeys(const JSThread *thread, int end, std::vector<JSTaggedValue> &keyVector)
+void LayoutInfo::GetAllKeys([[maybe_unused]] const JSThread *thread, int end, std::vector<JSTaggedValue> &keyVector)
 {
     ASSERT(end <= NumberOfElements());
     int enumKeys = 0;

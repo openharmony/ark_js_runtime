@@ -234,7 +234,7 @@ void TSLoader::Dump()
     JSHandle<TSModuleTable> table = GetTSModuleTable();
     int GTLength = table->GetLength();
     for (int i = 0; i < GTLength; i++) {
-        JSHandle<JSTaggedValue>(thread, table->Get(i))->Dump(thread, std::cout);
+        JSHandle<JSTaggedValue>(thread, table->Get(i))->Dump(std::cout);
     }
 }
 
@@ -335,7 +335,7 @@ GlobalTSTypeRef TSLoader::FindInGlobalUTable(JSHandle<TSUnionType> unionType) co
     for (uint32_t unionIndex = 0; unionIndex < tableLength; unionIndex++) {
         JSHandle<TSUnionType> unionTemp(thread, unionTypeTable->Get(unionIndex));
         ASSERT(unionTemp.GetTaggedValue().IsTSUnionType() && unionType.GetTaggedValue().IsTSUnionType());
-        bool foundTag = unionTemp->IsEqual(thread, unionType);
+        bool foundTag = unionTemp->IsEqual(unionType);
         if (foundTag) {
             foundUnionRef = CreateGT(unionTableId, unionIndex,
                                      static_cast<int>(TSTypeKind::TS_UNION));

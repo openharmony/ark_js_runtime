@@ -28,7 +28,7 @@ public:
     static JSHandle<ModuleNamespace> ModuleNamespaceCreate(JSThread *thread, const JSHandle<JSTaggedValue> &module,
                                                            const JSHandle<TaggedArray> &exports);
     // 9.4.6.1[[SetPrototypeOf]]
-    static bool SetPrototype(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
+    static bool SetPrototype(const JSHandle<JSTaggedValue> &obj,
                              const JSHandle<JSTaggedValue> &proto);
     // 9.4.6.2[[IsExtensible]]
     static bool IsExtensible();

@@ -37,7 +37,7 @@ public:
     ~EnableParams() override = default;
 
     static std::unique_ptr<EnableParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
     {
         return Local<ObjectRef>();
     }
@@ -65,7 +65,7 @@ public:
     ~EvaluateOnCallFrameParams() override = default;
 
     static std::unique_ptr<EvaluateOnCallFrameParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
     {
         return Local<ObjectRef>();
     }
@@ -100,7 +100,7 @@ public:
     ~GetPossibleBreakpointsParams() override = default;
 
     static std::unique_ptr<GetPossibleBreakpointsParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
     {
         return Local<ObjectRef>();
     }
@@ -148,7 +148,7 @@ public:
     ~GetScriptSourceParams() override = default;
 
     static std::unique_ptr<GetScriptSourceParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
     {
         return Local<ObjectRef>();
     }
@@ -171,7 +171,7 @@ public:
     ~RemoveBreakpointParams() override = default;
 
     static std::unique_ptr<RemoveBreakpointParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
     {
         return Local<ObjectRef>();
     }
@@ -194,7 +194,7 @@ public:
     ~ResumeParams() override = default;
 
     static std::unique_ptr<ResumeParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
     {
         return Local<ObjectRef>();
     }
@@ -222,7 +222,7 @@ public:
     ~SetAsyncCallStackDepthParams() override = default;
 
     static std::unique_ptr<SetAsyncCallStackDepthParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
     {
         return Local<ObjectRef>();
     }
@@ -244,7 +244,7 @@ public:
     SetBlackboxPatternsParams() = default;
     ~SetBlackboxPatternsParams() override = default;
     static std::unique_ptr<SetBlackboxPatternsParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
     {
         return Local<ObjectRef>();
     }
@@ -267,7 +267,7 @@ public:
     ~SetBreakpointByUrlParams() override = default;
 
     static std::unique_ptr<SetBreakpointByUrlParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
     {
         return Local<ObjectRef>();
     }
@@ -346,7 +346,7 @@ public:
     SetPauseOnExceptionsParams() = default;
     ~SetPauseOnExceptionsParams() override = default;
     static std::unique_ptr<SetPauseOnExceptionsParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
     {
         return Local<ObjectRef>();
     }
@@ -386,7 +386,7 @@ public:
     ~StepIntoParams() override = default;
 
     static std::unique_ptr<StepIntoParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
     {
         return Local<ObjectRef>();
     }
@@ -428,7 +428,7 @@ public:
     ~StepOverParams() override = default;
 
     static std::unique_ptr<StepOverParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
     {
         return Local<ObjectRef>();
     }
@@ -459,7 +459,7 @@ public:
     ~GetPropertiesParams() override = default;
 
     static std::unique_ptr<GetPropertiesParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
     {
         return Local<ObjectRef>();
     }

@@ -399,7 +399,7 @@ JSHandle<Derived> OrderTaggedHashTable<Derived>::Put(const JSThread *thread, con
 }
 
 template<typename Derived>
-void TaggedHashTable<Derived>::GetAllKeysIntoVector(const JSThread *thread, std::vector<JSTaggedValue> &vector) const
+void TaggedHashTable<Derived>::GetAllKeysIntoVector(std::vector<JSTaggedValue> &vector) const
 {
     int capacity = Size();
     for (int hashIndex = 0; hashIndex < capacity; hashIndex++) {

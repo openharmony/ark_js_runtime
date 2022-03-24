@@ -47,14 +47,9 @@ JSBackend::~JSBackend()
     DebuggerApi::DestroyJSDebugger(debugger_);
 }
 
-void JSBackend::ProcessCommand()
-{
-    frontend_->ProcessCommand(ecmaVm_);
-}
-
 void JSBackend::WaitForDebugger()
 {
-    frontend_->WaitForDebugger(ecmaVm_);
+    frontend_->WaitForDebugger();
 }
 
 void JSBackend::NotifyPaused(std::optional<PtLocation> location, PauseReason reason)
@@ -95,7 +90,7 @@ void JSBackend::NotifyPaused(std::optional<PtLocation> location, PauseReason rea
     frontend_->SendNotification(ecmaVm_, std::move(paused));
 
     // Waiting for Debugger
-    frontend_->WaitForDebugger(ecmaVm_);
+    frontend_->WaitForDebugger();
 }
 
 void JSBackend::NotifyResume()
@@ -123,7 +118,7 @@ bool JSBackend::NotifyScriptParsed(int32_t scriptId, const CString &fileName)
         LOG(WARNING, DEBUGGER) << "NotifyScriptParsed: already loaded: " << fileName;
         return false;
     }
-    const panda_file::File *pfs = DebuggerApi::FindPandaFile(ecmaVm_, fileName);
+    const panda_file::File *pfs = DebuggerApi::FindPandaFile(fileName);
     if (pfs == nullptr) {
         LOG(WARNING, DEBUGGER) << "NotifyScriptParsed: unknown file: " << fileName;
         return false;

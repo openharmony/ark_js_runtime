@@ -53,11 +53,11 @@ public:
         return HashTable::Create(thread, numberOfElements);
     }
 
-    inline bool ContainsKey(JSThread *thread, const JSTaggedValue &key);
+    inline bool ContainsKey(const JSTaggedValue &key);
 
     inline JSTaggedValue GetSymbol(const JSTaggedValue &key);
 
-    inline JSTaggedValue FindSymbol(JSThread *thread, const JSTaggedValue &value);
+    inline JSTaggedValue FindSymbol(const JSTaggedValue &value);
     static constexpr int ENTRY_KEY_INDEX = 0;
     static constexpr int ENTRY_VALUE_INDEX = 1;
     static constexpr int ENTRY_SIZE = 2;

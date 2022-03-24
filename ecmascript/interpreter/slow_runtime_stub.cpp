@@ -22,6 +22,7 @@
 #include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/interpreter/frame_handler.h"
+#include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/interpreter/slow_runtime_helper.h"
 #include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/jspandafile/scope_info_extractor.h"
@@ -33,7 +34,6 @@
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_hclass-inl.h"
-#include "ecmascript/js_invoker.h"
 #include "ecmascript/js_iterator.h"
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_proxy.h"
@@ -62,7 +62,7 @@ JSTaggedValue SlowRuntimeStub::CallSpreadDyn(JSThread *thread, JSTaggedValue fun
     InternalCallParams *params = thread->GetInternalCallParams();
     params->MakeArgList(*coretypesArray);
     JSHandle<JSTaggedValue> newTarget(thread, JSTaggedValue::Undefined());
-    JSTaggedValue res = InvokeJsFunction(thread, jsFunc, taggedObj, newTarget, params);
+    JSTaggedValue res = EcmaInterpreter::Execute(thread, jsFunc, taggedObj, newTarget, params);
 
     return res;
 }
@@ -209,7 +209,7 @@ void SlowRuntimeStub::ThrowConstAssignment(JSThread *thread, JSTaggedValue value
     THROW_NEW_ERROR_AND_RETURN(thread, factory->NewJSError(base::ErrorType::TYPE_ERROR, msg).GetTaggedValue());
 }
 
-JSTaggedValue SlowRuntimeStub::Add2Dyn(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left, JSTaggedValue right)
+JSTaggedValue SlowRuntimeStub::Add2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right)
 {
     INTERPRETER_TRACE(thread, Add2Dyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
@@ -1429,7 +1429,8 @@ JSTaggedValue SlowRuntimeStub::GetIterator(JSThread *thread, JSTaggedValue obj)
     JSHandle<JSTaggedValue> newTarget(thread, JSTaggedValue::Undefined());
     InternalCallParams *params = thread->GetInternalCallParams();
     params->MakeEmptyArgv();
-    JSTaggedValue res = InvokeJsFunction(thread, JSHandle<JSFunction>(valuesFunc), objHandle, newTarget, params);
+    JSTaggedValue res = EcmaInterpreter::Execute(
+        thread, JSHandle<JSFunction>(valuesFunc), objHandle, newTarget, params);
 
     return res;
 }

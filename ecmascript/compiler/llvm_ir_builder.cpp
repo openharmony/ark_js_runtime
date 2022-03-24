@@ -826,7 +826,7 @@ void LLVMIRBuilder::HandleGoto(GateRef gate)
     switch (circuit_->GetOpCode(gate)) {
         case OpCode::MERGE:
         case OpCode::LOOP_BEGIN: {
-            for (int i = 0; i < static_cast<int>(outs.size()); i++) {
+            for (size_t i = 0; i < outs.size(); i++) {
                 bbOut = instIdMapBbId_[circuit_->GetId(outs[i])];
                 VisitGoto(block, bbOut);
             }

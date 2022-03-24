@@ -77,8 +77,8 @@ HeapSnapShot::~HeapSnapShot()
 
 bool HeapSnapShot::BuildUp(JSThread *thread)
 {
-    FillNodes(thread);
-    FillEdges(thread);
+    FillNodes();
+    FillEdges();
     AddSyntheticRoot(thread);
     return Verify();
 }
@@ -91,7 +91,7 @@ bool HeapSnapShot::Verify()
 
 void HeapSnapShot::PrepareSnapShot()
 {
-    FillNodes(thread_);
+    FillNodes();
 }
 
 void HeapSnapShot::UpdateNode()
@@ -99,7 +99,7 @@ void HeapSnapShot::UpdateNode()
     for (Node *node : nodes_) {
         node->SetLive(false);
     }
-    FillNodes(thread_);
+    FillNodes();
 
     for (auto iter = nodes_.begin(); iter != nodes_.end();) {
         if (!(*iter)->IsLive()) {
@@ -113,7 +113,7 @@ void HeapSnapShot::UpdateNode()
 bool HeapSnapShot::FinishSnapShot()
 {
     UpdateNode();
-    FillEdges(thread_);
+    FillEdges();
     AddSyntheticRoot(thread_);
     return Verify();
 }
@@ -125,7 +125,7 @@ void HeapSnapShot::RecordSampleTime()
 
 void HeapSnapShot::AddNode(uintptr_t address)
 {
-    GenerateNode(thread_, JSTaggedValue(address));
+    GenerateNode(JSTaggedValue(address));
 }
 
 void HeapSnapShot::MoveNode(uintptr_t address, uintptr_t forward_address)
@@ -136,11 +136,11 @@ void HeapSnapShot::MoveNode(uintptr_t address, uintptr_t forward_address)
         sequenceId = node->GetId();
         EraseNodeUnique(node);
     }
-    GenerateNode(thread_, JSTaggedValue(forward_address), sequenceId);
+    GenerateNode(JSTaggedValue(forward_address), sequenceId);
 }
 
 // NOLINTNEXTLINE(readability-function-size)
-CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
+CString *HeapSnapShot::GenerateNodeName(TaggedObject *entry)
 {
     auto *hCls = entry->GetClass();
     JSType type = hCls->GetObjectType();
@@ -416,17 +416,18 @@ NodeType HeapSnapShot::GenerateNodeType(TaggedObject *entry)
     return nodeType;
 }
 
-void HeapSnapShot::FillNodes(JSThread *thread)
+void HeapSnapShot::FillNodes()
 {
     // Iterate Heap Object
     auto heap = thread_->GetEcmaVM()->GetHeap();
     if (heap != nullptr) {
-        heap->IteratorOverObjects(
-            [this, &thread](TaggedObject *obj) { this->GenerateNode(thread, JSTaggedValue(obj)); });
+        heap->IteratorOverObjects([this](TaggedObject *obj) {
+            GenerateNode(JSTaggedValue(obj));
+        });
     }
 }
 
-Node *HeapSnapShot::GenerateNode(JSThread *thread, JSTaggedValue entry, int sequenceId)
+Node *HeapSnapShot::GenerateNode(JSTaggedValue entry, int sequenceId)
 {
     Node *node = nullptr;
     if (sequenceId == -1) {
@@ -445,7 +446,7 @@ Node *HeapSnapShot::GenerateNode(JSThread *thread, JSTaggedValue entry, int sequ
         TaggedObject *obj = entry.GetTaggedObject();
         auto *baseClass = obj->GetClass();
         if (baseClass != nullptr) {
-            node = Node::NewNode(heap_, sequenceId, nodeCount_, GenerateNodeName(thread, obj), GenerateNodeType(obj),
+            node = Node::NewNode(heap_, sequenceId, nodeCount_, GenerateNodeName(obj), GenerateNodeType(obj),
                                  obj->GetClass()->SizeFromJSHClass(obj), obj);
             Node *existNode = entryMap_.FindOrInsertNode(node);  // Fast Index
             if (existNode == node) {
@@ -522,7 +523,7 @@ Node *HeapSnapShot::GenerateStringNode(JSTaggedValue entry, int sequenceId)
     return node;
 }
 
-void HeapSnapShot::FillEdges(JSThread *thread)
+void HeapSnapShot::FillEdges()
 {
     size_t length = nodes_.size();
     auto iter = nodes_.begin();
@@ -531,7 +532,7 @@ void HeapSnapShot::FillEdges(JSThread *thread)
         ASSERT(*iter != nullptr);
         auto *objFrom = reinterpret_cast<TaggedObject *>((*iter)->GetAddress());
         std::vector<std::pair<CString, JSTaggedValue>> nameResources;
-        JSTaggedValue(objFrom).DumpForSnapshot(thread, nameResources, isVmMode_);
+        JSTaggedValue(objFrom).DumpForSnapshot(nameResources, isVmMode_);
         JSTaggedValue objValue(objFrom);
         for (auto const &it : nameResources) {
             JSTaggedValue toValue = it.second;
@@ -544,7 +545,7 @@ void HeapSnapShot::FillEdges(JSThread *thread)
                 entryTo = entryMap_.FindEntry(Node::NewAddress(to));
             }
             if (entryTo == nullptr) {
-                entryTo = GenerateNode(thread, toValue);
+                entryTo = GenerateNode(toValue);
             }
             if (entryTo != nullptr) {
                 Edge *edge = Edge::NewEdge(heap_, edgeCount_, EdgeType::DEFAULT, *iter, entryTo, GetString(it.first));

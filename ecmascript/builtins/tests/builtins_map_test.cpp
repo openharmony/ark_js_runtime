@@ -197,7 +197,7 @@ HWTEST_F_L0(BuiltinsMapTest, ForEach)
         JSTaggedValue result1 = BuiltinsMap::Set(ecmaRuntimeCallInfo.get());
         EXPECT_TRUE(result1.IsECMAObject());
         JSMap *jsMap = JSMap::Cast(reinterpret_cast<TaggedObject *>(result1.GetRawData()));
-        EXPECT_EQ(jsMap->GetSize(), i + 1);
+        EXPECT_EQ(jsMap->GetSize(), static_cast<int>(i) + 1);
     }
     // test foreach;
     JSHandle<JSArray> jsArray(JSArray::ArrayCreate(thread, JSTaggedNumber(0)));
@@ -238,7 +238,7 @@ HWTEST_F_L0(BuiltinsMapTest, DeleteAndRemove)
 
         EXPECT_TRUE(result1.IsECMAObject());
         JSMap *jsMap = JSMap::Cast(reinterpret_cast<TaggedObject *>(result1.GetRawData()));
-        EXPECT_EQ(jsMap->GetSize(), i + 1);
+        EXPECT_EQ(jsMap->GetSize(), static_cast<int>(i) + 1);
     }
     // whether jsMap has delete key
     keyArray[3] = '1' + 8;

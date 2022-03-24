@@ -210,7 +210,7 @@ HWTEST_F_L0(BuiltinsSetTest, ForEach)
 
         EXPECT_TRUE(result1.IsECMAObject());
         JSSet *jsSet = JSSet::Cast(reinterpret_cast<TaggedObject *>(result1.GetRawData()));
-        EXPECT_EQ(jsSet->GetSize(), i + 1);
+        EXPECT_EQ(jsSet->GetSize(), static_cast<int>(i) + 1);
     }
     // test foreach;
     JSHandle<JSArray> jsArray(JSArray::ArrayCreate(thread, JSTaggedNumber(0)));
@@ -252,7 +252,7 @@ HWTEST_F_L0(BuiltinsSetTest, DeleteAndRemove)
 
         EXPECT_TRUE(result1.IsECMAObject());
         JSSet *jsSet = JSSet::Cast(reinterpret_cast<TaggedObject *>(result1.GetRawData()));
-        EXPECT_EQ(jsSet->GetSize(), i + 1);
+        EXPECT_EQ(jsSet->GetSize(), static_cast<int>(i) + 1);
     }
     // whether jsSet has delete key
     keyArray[3] = '1' + 8;

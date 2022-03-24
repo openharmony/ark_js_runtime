@@ -32,29 +32,29 @@ enum class BinaryType : uint8_t {
 
 class ICBinaryOP {
 public:
-    static inline JSTaggedValue AddWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+    static inline JSTaggedValue AddWithTSType(JSThread *thread, JSTaggedValue left,
                                              JSTaggedValue right, JSTaggedValue argType);
-    static inline JSTaggedValue SubWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+    static inline JSTaggedValue SubWithTSType(JSThread *thread, JSTaggedValue left,
                                              JSTaggedValue right, JSTaggedValue argType);
-    static inline JSTaggedValue MulWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+    static inline JSTaggedValue MulWithTSType(JSThread *thread, JSTaggedValue left,
                                              JSTaggedValue right, JSTaggedValue argType);
-    static inline JSTaggedValue DivWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+    static inline JSTaggedValue DivWithTSType(JSThread *thread, JSTaggedValue left,
                                              JSTaggedValue right, JSTaggedValue argType);
-    static inline JSTaggedValue ModWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+    static inline JSTaggedValue ModWithTSType(JSThread *thread, JSTaggedValue left,
                                               JSTaggedValue right, JSTaggedValue argType);
     static inline void GetBitOPDate(JSThread *thread, JSTaggedValue left, JSTaggedValue right,
                                     int32_t &opNumber0, int32_t &opNumber1, BinaryType opType);
-    static inline JSTaggedValue ShlWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+    static inline JSTaggedValue ShlWithTSType(JSThread *thread, JSTaggedValue left,
                                               JSTaggedValue right, JSTaggedValue argType);
-    static inline JSTaggedValue ShrWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+    static inline JSTaggedValue ShrWithTSType(JSThread *thread, JSTaggedValue left,
                                               JSTaggedValue right, JSTaggedValue argType);
-    static inline JSTaggedValue AshrWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+    static inline JSTaggedValue AshrWithTSType(JSThread *thread, JSTaggedValue left,
                                                JSTaggedValue right, JSTaggedValue argType);
-    static inline JSTaggedValue AndWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+    static inline JSTaggedValue AndWithTSType(JSThread *thread, JSTaggedValue left,
                                               JSTaggedValue right, JSTaggedValue argType);
-    static inline JSTaggedValue OrWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+    static inline JSTaggedValue OrWithTSType(JSThread *thread, JSTaggedValue left,
                                              JSTaggedValue right, JSTaggedValue argType);
-    static inline JSTaggedValue XorWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+    static inline JSTaggedValue XorWithTSType(JSThread *thread, JSTaggedValue left,
                                               JSTaggedValue right, JSTaggedValue argType);
 };
 }  // namespace panda::ecmascript

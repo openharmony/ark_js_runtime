@@ -73,7 +73,7 @@ private:
     static RegExpExecutor::MatchResult Matcher(JSThread *thread, const JSHandle<JSTaggedValue> &regexp,
                                                const uint8_t *buffer, size_t length, int32_t lastindex, bool isUtf16);
     // 21.2.5.2.3 AdvanceStringIndex ( S, index, unicode )
-    static uint32_t AdvanceStringIndex(JSThread *thread, const JSHandle<JSTaggedValue> &inputStr, uint32_t index,
+    static uint32_t AdvanceStringIndex(const JSHandle<JSTaggedValue> &inputStr, uint32_t index,
                                        bool unicode);
 
     static bool GetFlagsInternal(JSThread *thread, const JSHandle<JSTaggedValue> &obj,

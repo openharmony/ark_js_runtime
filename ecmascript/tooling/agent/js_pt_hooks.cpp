@@ -65,8 +65,6 @@ void JSPtHooks::SingleStep([[maybe_unused]] PtThread thread, const PtLocation &l
     // pause or step complete
     if (backend_->StepComplete(location)) {
         backend_->NotifyPaused({}, OTHER);
-    } else {
-        backend_->ProcessCommand();
     }
 }
 

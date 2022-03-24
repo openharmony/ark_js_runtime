@@ -183,14 +183,14 @@ void CpuProfiler::GetFrameStack(JSThread *thread)
             }
             auto *method = frameHandler.GetMethod();
             if (method != nullptr && staticStackInfo_.count(method) == 0) {
-                ParseMethodInfo(method, thread, frameHandler);
+                ParseMethodInfo(method, frameHandler);
             }
             staticFrameStack_.push_back(method);
         }
     }
 }
 
-void CpuProfiler::ParseMethodInfo(JSMethod *method, JSThread *thread, InterpretedFrameHandler frameHandler)
+void CpuProfiler::ParseMethodInfo(JSMethod *method, InterpretedFrameHandler frameHandler)
 {
     struct StackInfo codeEntry;
     if (method != nullptr && method->IsNative()) {
@@ -223,14 +223,18 @@ void CpuProfiler::ParseMethodInfo(JSMethod *method, JSThread *thread, Interprete
         }
         // line number
         int lineNumber = 0;
-        auto callbackFunc = [&](size_t line, [[maybe_unused]] size_t column) -> bool {
-            lineNumber = line + 1;
+        int columnNumber = 0;
+        auto callbackFunc = [&](size_t line, size_t column) -> bool {
+            lineNumber = static_cast<int>(line) + 1;
+            columnNumber = static_cast<int>(column) + 1;
             return true;
         };
         if (!debugExtractor->MatchWithOffset(callbackFunc, method->GetFileId(), frameHandler.GetBytecodeOffset())) {
             codeEntry.lineNumber = 0;
+            codeEntry.columnNumber = 0;
         } else {
             codeEntry.lineNumber = lineNumber;
+            codeEntry.columnNumber = columnNumber;
         }
         staticStackInfo_.insert(std::make_pair(method, codeEntry));
     }
@@ -248,7 +252,7 @@ void CpuProfiler::IsNeedAndGetStack(JSThread *thread)
     }
 }
 
-void CpuProfiler::GetStackSignalHandler(int signal)
+void CpuProfiler::GetStackSignalHandler([[maybe_unused]] int signal)
 {
     JSThread *thread = ProfileProcessor::GetJSThread();
     GetFrameStack(thread);

@@ -28,10 +28,9 @@ public:
     explicit ProtocolHandler(std::function<void(std::string)> callback, const EcmaVM *vm);
     ~ProtocolHandler() override = default;
 
-    void WaitForDebugger(const EcmaVM *ecmaVm) override;
+    void WaitForDebugger() override;
     void RunIfWaitingForDebugger() override;
-    void ProcessCommand(const EcmaVM *ecmaVm) override;
-    void SendCommand(const CString &msg);
+    void ProcessCommand(const CString &msg);
     void SendResponse(const DispatchRequest &request, const DispatchResponse &response,
                       std::unique_ptr<PtBaseReturns> result) override;
     void SendNotification(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events) override;

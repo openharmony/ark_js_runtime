@@ -535,7 +535,7 @@ JSHandle<JSHClass> JSFunction::GetInstanceJSHClass(JSThread *thread, JSHandle<JS
         if (newTargetFunc->IsDerivedConstructor()) {
             JSTaggedValue newTargetProto = JSHandle<JSObject>::Cast(newTarget)->GetPrototype(thread);
             if (newTargetProto == constructor.GetTaggedValue()) {
-                return GetOrCreateDerivedJSHClass(thread, newTargetFunc, constructor, ctorInitialJSHClass);
+                return GetOrCreateDerivedJSHClass(thread, newTargetFunc, ctorInitialJSHClass);
             }
         }
     }
@@ -570,7 +570,6 @@ JSHandle<JSHClass> JSFunction::GetInstanceJSHClass(JSThread *thread, JSHandle<JS
 }
 
 JSHandle<JSHClass> JSFunction::GetOrCreateDerivedJSHClass(JSThread *thread, JSHandle<JSFunction> derived,
-                                                          JSHandle<JSFunction> constructor,
                                                           JSHandle<JSHClass> ctorInitialJSHClass)
 {
     JSTaggedValue protoOrDyn(derived->GetProtoOrDynClass());
