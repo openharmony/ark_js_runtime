@@ -291,9 +291,7 @@ public:
         return glueData_.bcHandlers_.GetAddr();
     }
 
-    void InitializeFastRuntimeStubs();
-
-    void LoadStubModule(const char *moduleFile);
+    void LoadStubsFromFile(std::string &fileName);
 
     InternalCallParams *GetInternalCallParams() const
     {

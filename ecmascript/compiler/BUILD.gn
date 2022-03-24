@@ -40,6 +40,7 @@ config("ark_jsruntime_compiler_config") {
 
 source_set("libark_jsoptimizer_static") {
   sources = [
+    "aot_file_manager.cpp",
     "bytecode_circuit_builder.cpp",
     "call_signature.cpp",
     "circuit.cpp",

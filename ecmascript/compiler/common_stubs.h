@@ -53,7 +53,7 @@ namespace panda::ecmascript::kungfu {
 class MulGCTestStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit MulGCTestStub(Circuit *circuit) : Stub("FastMulGCTest", 3, circuit) {}
+    explicit MulGCTestStub(Circuit *circuit) : Stub("MulGCTest", 3, circuit) {}
     ~MulGCTestStub() = default;
     NO_MOVE_SEMANTIC(MulGCTestStub);
     NO_COPY_SEMANTIC(MulGCTestStub);
@@ -63,7 +63,7 @@ public:
 class AddStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit AddStub(Circuit *circuit) : Stub("FastAdd", 3, circuit)
+    explicit AddStub(Circuit *circuit) : Stub("Add", 3, circuit)
     {
         circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_FRAME);
     }
@@ -76,7 +76,7 @@ public:
 class SubStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit SubStub(Circuit *circuit) : Stub("FastSub", 3, circuit) {}
+    explicit SubStub(Circuit *circuit) : Stub("Sub", 3, circuit) {}
     ~SubStub() = default;
     NO_MOVE_SEMANTIC(SubStub);
     NO_COPY_SEMANTIC(SubStub);
@@ -86,7 +86,7 @@ public:
 class MulStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit MulStub(Circuit *circuit) : Stub("FastMul", 3, circuit) {}
+    explicit MulStub(Circuit *circuit) : Stub("Mul", 3, circuit) {}
     ~MulStub() = default;
     NO_MOVE_SEMANTIC(MulStub);
     NO_COPY_SEMANTIC(MulStub);
@@ -96,7 +96,7 @@ public:
 class DivStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit DivStub(Circuit *circuit) : Stub("FastDiv", 3, circuit) {}
+    explicit DivStub(Circuit *circuit) : Stub("Div", 3, circuit) {}
     ~DivStub() = default;
     NO_MOVE_SEMANTIC(DivStub);
     NO_COPY_SEMANTIC(DivStub);
@@ -171,7 +171,7 @@ public:
 class ModStub : public Stub {
 public:
     // 3 means argument counts
-    explicit ModStub(Circuit *circuit) : Stub("FastMod", 3, circuit)
+    explicit ModStub(Circuit *circuit) : Stub("Mod", 3, circuit)
     {
         circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
     }
@@ -184,7 +184,7 @@ public:
 class TypeOfStub : public Stub {
 public:
     // 2 means argument counts
-    explicit TypeOfStub(Circuit *circuit) : Stub("FastTypeOf", 2, circuit) {}
+    explicit TypeOfStub(Circuit *circuit) : Stub("TypeOf", 2, circuit) {}
     ~TypeOfStub() = default;
     NO_MOVE_SEMANTIC(TypeOfStub);
     NO_COPY_SEMANTIC(TypeOfStub);
@@ -204,7 +204,7 @@ public:
 class GetPropertyByValueStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit GetPropertyByValueStub(Circuit *circuit) : Stub("FastGetPropertyByValue", 3, circuit)
+    explicit GetPropertyByValueStub(Circuit *circuit) : Stub("GetPropertyByValue", 3, circuit)
     {
         circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
     }
@@ -217,7 +217,7 @@ public:
 class SetPropertyByValueStub : public Stub {
 public:
     // 4 : 4 means argument counts
-    explicit SetPropertyByValueStub(Circuit *circuit) : Stub("FastSetPropertyByValue", 4, circuit)
+    explicit SetPropertyByValueStub(Circuit *circuit) : Stub("SetPropertyByValue", 4, circuit)
     {
         circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
     }

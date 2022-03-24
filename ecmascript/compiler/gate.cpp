@@ -98,6 +98,7 @@ Properties OpCode::GetProperties() const
             return {I64, NO_STATE, ONE_DEPEND, NO_VALUE, NO_ROOT};
         // Middle Level IR
         case RUNTIME_CALL:
+        case NOGC_RUNTIME_CALL:
         case BYTECODE_CALL:
         case CALL:
             return {FLEX, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
@@ -229,6 +230,7 @@ std::string OpCode::Str() const
         {IF_EXCEPTION, "IF_EXCEPTION"},
         {GET_EXCEPTION, "GET_EXCEPTION"},
         {RUNTIME_CALL, "RUNTIME_CALL"},
+        {NOGC_RUNTIME_CALL, "NOGC_RUNTIME_CALL"},
         {CALL, "CALL"},
         {BYTECODE_CALL, "BYTECODE_CALL"},
         {ALLOCA, "ALLOCA"},

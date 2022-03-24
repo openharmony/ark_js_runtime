@@ -20,22 +20,24 @@
 #include <iostream>
 #include <unistd.h>
 
+#include "ecmascript/js_thread.h"
 #include "ecmascript/base/config.h"
 #include "common_stubs.h"
+#include "ecmascript/compiler/aot_file_manager.h"
 #include "interpreter_stub-inl.h"
 #include "generated/stub_aot_options_gen.h"
 #include "libpandabase/utils/pandargs.h"
 #include "libpandabase/utils/span.h"
 #include "llvm_codegen.h"
+#include "pass.h"
 #include "scheduler.h"
 #include "stub-inl.h"
 #include "verifier.h"
-#include "pass.h"
 
 namespace panda::ecmascript::kungfu {
 class StubPassData : public PassData {
 public:
-    explicit StubPassData(Stub *stub, LLVMStubModule *module) : PassData(nullptr), module_(module), stub_(stub) {}
+    explicit StubPassData(Stub *stub, LLVMModule *module) : PassData(nullptr), module_(module), stub_(stub) {}
     ~StubPassData() = default;
 
     const CompilationConfig *GetCompilationConfig() const
@@ -48,7 +50,7 @@ public:
         return stub_->GetEnvironment()->GetCircuit();
     }
 
-    LLVMStubModule *GetStubModule() const
+    LLVMModule *GetStubModule() const
     {
         return module_;
     }
@@ -59,7 +61,7 @@ public:
     }
 
 private:
-    LLVMStubModule *module_;
+    LLVMModule *module_;
     Stub *stub_;
 };
 
@@ -68,7 +70,7 @@ public:
     bool Run(StubPassData *data)
     {
         auto stub = data->GetStub();
-        std::cout << "Stub Name: " << stub->GetMethodName() << std::endl;
+        std::cerr << "Stub Name: " << stub->GetMethodName() << std::endl;
         stub->GenerateCircuit(data->GetCompilationConfig());
         return true;
     }
@@ -76,7 +78,7 @@ public:
 
 class StubLLVMIRGenPass {
 public:
-    void CreateCodeGen(LLVMStubModule *module)
+    void CreateCodeGen(LLVMModule *module)
     {
         llvmImpl_ = std::make_unique<LLVMIRGeneratorImpl>(module);
     }
@@ -85,25 +87,23 @@ public:
         auto stubModule = data->GetStubModule();
         CreateCodeGen(stubModule);
         CodeGenerator codegen(llvmImpl_);
-        codegen.Run(data->GetCircuit(), data->GetScheduleResult(), index, data->GetCompilationConfig());
+        codegen.RunForStub(data->GetCircuit(), data->GetScheduleResult(), index, data->GetCompilationConfig());
         return true;
     }
 private:
     std::unique_ptr<CodeGeneratorImpl> llvmImpl_ {nullptr};
 };
 
-void StubCompiler::BuildStubModuleAndSave(const std::string &triple, const std::string &filename)
+void StubCompiler::RunPipeline(LLVMModule &module)
 {
-    LLVMStubModule stubModule("stubs", triple);
-    stubModule.Initialize();
-    auto callSigns = stubModule.GetCSigns();
+    auto callSigns = module.GetCSigns();
     for (size_t i = 0; i < callSigns.size(); i++) {
         Circuit circuit;
         if (!callSigns[i]->HasConstructor()) {
             continue;
         }
         Stub* stub = static_cast<Stub*>(callSigns[i]->GetConstructor()(reinterpret_cast<void*>(&circuit)));
-        StubPassData data(stub, &stubModule);
+        StubPassData data(stub, &module);
         PassRunner<StubPassData> pipeline(&data);
         pipeline.RunPass<StubBuildCircuitPass>();
         pipeline.RunPass<VerifierPass>();
@@ -111,23 +111,34 @@ void StubCompiler::BuildStubModuleAndSave(const std::string &triple, const std::
         pipeline.RunPass<StubLLVMIRGenPass>(i);
         delete stub;
     }
+}
 
-    LLVMModuleAssembler assembler(&stubModule);
-    assembler.AssembleModule();
-    panda::ecmascript::StubModule module;
-    assembler.AssembleStubModule(&module);
+bool StubCompiler::BuildStubModuleAndSave(const std::string &triple, const std::string &commonStubFile,
+    const std::string &bcHandlerStubFile)
+{
+    size_t res = 0;
+    if (!commonStubFile.empty()) {
+        std::cerr << "compiling common stubs" << std::endl;
+        LLVMModule commonStubModule("com_stub", triple);
+        commonStubModule.SetUpForCommonStubs();
+        RunPipeline(commonStubModule);
+        AotFileManager manager(&commonStubModule);
+        manager.SaveStubFile(commonStubFile);
+        std::cerr << "finish" << std::endl;
+        res++;
+    }
 
-    auto codeSize = assembler.GetCodeSize();
-    panda::ecmascript::MachineCode *code = reinterpret_cast<panda::ecmascript::MachineCode *>(
-        new uint64_t[(panda::ecmascript::MachineCode::SIZE + codeSize) / sizeof(uint64_t) + 1]);
-    code->SetInstructionSizeInBytes(codeSize);
-
-    assembler.CopyAssemblerToCode(code);
-
-    module.SetCode(code);
-    module.Save(filename);
-
-    delete[] code;
+    if (!bcHandlerStubFile.empty()) {
+        std::cerr << "compiling bytecode handler stubs" << std::endl;
+        LLVMModule bcHandlerStubModule("bc_stub", triple);
+        bcHandlerStubModule.SetUpForBytecodeHandlerStubs();
+        RunPipeline(bcHandlerStubModule);
+        AotFileManager manager(&bcHandlerStubModule, true);
+        manager.SaveStubFile(bcHandlerStubFile);
+        std::cerr << "finish" << std::endl;
+        res++;
+    }
+    return (res > 0);
 }
 }  // namespace panda::ecmascript::kungfu
 
@@ -155,13 +166,14 @@ int main(const int argc, const char **argv)
     }
 
     std::string tripleString = stubOptions.GetTargetTriple();
-    std::string moduleFilename = stubOptions.GetStubOutputFile();
+    std::string commonStubFile = stubOptions.WasSetComStubOut() ? stubOptions.GetComStubOut() : "";
+    std::string bcHandlerFile = stubOptions.WasSetBcStubOut() ? stubOptions.GetBcStubOut() : "";
     std::string compiledStubList = stubOptions.GetCompiledStubs();
     panda::ecmascript::kungfu::BytecodeStubCSigns::Initialize();
     panda::ecmascript::kungfu::CommonStubCSigns::Initialize();
     panda::ecmascript::kungfu::RuntimeStubCSigns::Initialize();
     panda::ecmascript::kungfu::StubCompiler compiler;
-    compiler.BuildStubModuleAndSave(tripleString, moduleFilename);
-    std::cout << "BuildStubModuleAndSave success" << std::endl;
+    bool res = compiler.BuildStubModuleAndSave(tripleString, commonStubFile, bcHandlerFile);
+    std::cerr << "stub compiler run finish, result condition(T/F):" << std::boolalpha << res << std::endl;
     return 0;
 }

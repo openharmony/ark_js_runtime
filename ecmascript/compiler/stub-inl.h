@@ -381,18 +381,25 @@ inline GateRef Stub::CallRuntime(const CallSignature *descriptor, GateRef glue, 
     return result;
 }
 
+inline GateRef Stub::CallNoGCRuntime(const CallSignature *descriptor, GateRef glue, GateRef target,
+    std::initializer_list<GateRef> args)
+{
+    auto depend = env_.GetCurrentLabel()->GetDepend();
+    GateRef result = env_.GetCircuitBuilder().NoGcRuntimeCall(descriptor, glue, target, depend, args);
+    env_.GetCurrentLabel()->SetDepend(result);
+    return result;
+}
+
 inline void Stub::DebugPrint(GateRef glue, std::initializer_list<GateRef> args)
 {
     const CallSignature *debugPrint = RuntimeStubCSigns::Get(RTSTUB_ID(DebugPrint));
-    CallRuntime(debugPrint, glue, GetInt64Constant(
-        RTSTUB_ID(DebugPrint) + NOGC_RTSTUB_CSIGNS_BEGIN), args);
+    CallNoGCRuntime(debugPrint, glue, GetInt64Constant(RTSTUB_ID(DebugPrint)), args);
 }
 
 inline void Stub::FatalPrint(GateRef glue, std::initializer_list<GateRef> args)
 {
     const CallSignature *fatalPrint = RuntimeStubCSigns::Get(RTSTUB_ID(FatalPrint));
-    CallRuntime(fatalPrint, glue, GetInt64Constant(
-        RTSTUB_ID(FatalPrint) + NOGC_RTSTUB_CSIGNS_BEGIN), args);
+    CallNoGCRuntime(fatalPrint, glue, GetInt64Constant(RTSTUB_ID(FatalPrint)), args);
 }
 
 inline GateRef Stub::CallRuntimeTrampoline(GateRef glue, GateRef target, std::initializer_list<GateRef> args)

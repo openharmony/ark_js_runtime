@@ -12,17 +12,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_MACHINE_CODE_H
 #define PANDA_RUNTIME_ECMASCRIPT_MEM_MACHINE_CODE_H
 
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_tagged_value.h"
+#include "ecmascript/js_thread.h"
 #include "ecmascript/mem/tagged_object.h"
 #include "ecmascript/mem/barriers.h"
+#include "ecmascript/compiler/call_signature.h"
+#include "libpandabase/macros.h"
 
-namespace panda {
-namespace ecmascript {
+
+namespace panda::ecmascript {
 class MachineCode : public TaggedObject {
 public:
     NO_COPY_SEMANTIC(MachineCode);
@@ -73,7 +75,162 @@ public:
         return SIZE + this->GetInstructionSizeInBytes();
     }
 };
-}  // namespace ecmascript
-}  // namespace panda
 
+class PUBLIC_API AotCodeInfo {
+public:
+    AotCodeInfo() {};
+    ~AotCodeInfo() = default;
+
+    void SerializeForStub(const std::string &filename);
+    void Serialize(const std::string &filename);
+    bool DeserializeForStub(JSThread *thread, const std::string &filename);
+    bool Deserialize(EcmaVM *vm, const std::string &filename);
+
+    struct StubDes {
+        uint64_t codeAddr_;
+        CallSignature::TargetKind kind_;
+        uint32_t indexInKind_;
+        bool IsStub() const
+        {
+            return kungfu::CallSignature::TargetKind::STUB_BEGIN <= kind_ &&
+                kind_ < kungfu::CallSignature::TargetKind::STUB_END;
+        }
+
+        bool IsBCHandler() const
+        {
+            return kungfu::CallSignature::TargetKind::BCHANDLER_BEGIN <= kind_ &&
+                kind_ < kungfu::CallSignature::TargetKind::BCHANDLER_END;
+        }
+
+        bool IsCommonStub() const
+        {
+            return (kind_ == kungfu::CallSignature::TargetKind::COMMON_STUB);
+        }
+    };
+
+    const StubDes& GetStubDes(int index) const
+    {
+        return stubEntries_[index];
+    }
+
+    const std::vector<StubDes>& GetStubs() const
+    {
+        return stubEntries_;
+    }
+
+    void SetCode(MachineCode *code)
+    {
+        code_ = code;
+    }
+
+    void SetCodePtr(uintptr_t codePtr)
+    {
+        codePtr_ = codePtr;
+    }
+
+    uintptr_t GetCodePtr()
+    {
+        return codePtr_;
+    }
+
+    void SetAOTFuncOffset(std::string str, uint64_t offset)
+    {
+        aotFuncEntryOffsets_[str] = offset;
+    }
+
+    void SetHostCodeSectionAddr(uint64_t addr)
+    {
+        hostCodeSectionAddr_ = addr;
+    }
+
+    uint64_t GetHostCodeSectionAddr() const
+    {
+        return hostCodeSectionAddr_;
+    }
+
+    void SetDeviceCodeSectionAddr(uintptr_t addr)
+    {
+        devicesCodeSectionAddr_ = addr;
+    }
+
+    uintptr_t GetDeviceCodeSectionAddr() const
+    {
+        return devicesCodeSectionAddr_;
+    }
+
+    JSTaggedValue GetCode()
+    {
+        return JSTaggedValue(code_);
+    }
+
+    void SetStackMapAddr(uint64_t addr)
+    {
+        stackMapAddr_ = addr;
+    }
+
+    uint64_t GetStackMapAddr() const
+    {
+        return stackMapAddr_;
+    }
+
+    void SetStackMapSize(uint32_t len)
+    {
+        stackMapSize_ = len;
+    }
+
+    uint32_t GetStackMapSize() const
+    {
+        return stackMapSize_;
+    }
+
+    void SetCodeSize(uint32_t len)
+    {
+        codeSize_ = len;
+    }
+
+    uint32_t GetCodeSize() const
+    {
+        return codeSize_;
+    }
+
+    uint64_t GetAOTFuncEntry(std::string &name)
+    {
+        ASSERT(code_ != nullptr);
+        return aotFuncEntryOffsets_[name];
+    }
+
+    uint64_t GetStubNum() const
+    {
+        return stubNum_;
+    }
+
+    void SetStubNum(uint64_t n)
+    {
+        stubNum_ = n;
+    }
+
+    void AddStubEntry(CallSignature::TargetKind kind, int indexInKind, uint64_t offset)
+    {
+        StubDes des;
+        des.kind_ = kind;
+        des.indexInKind_ = indexInKind;
+        des.codeAddr_ = offset;
+        stubEntries_.emplace_back(des);
+    }
+private:
+    uint64_t stubNum_ {0};
+    std::vector<StubDes> stubEntries_ {};
+    std::map<std::string, uint64_t> aotFuncEntryOffsets_ {};
+    uint64_t hostCodeSectionAddr_  {0};
+    uintptr_t devicesCodeSectionAddr_ {0};
+    // NOTE: code object is non movable(code space) currently.
+    // The thought use of code->GetDataOffsetAddress() as data base rely on this premise.
+    // A stable technique or mechanism for code object against other GC situation is future work.
+    MachineCode *code_ {nullptr};
+    uintptr_t stackMapAddr_ {0};
+    uintptr_t codePtr_ {0};
+    uint32_t codeSize_ {0};
+    uint32_t stackMapSize_ {0};
+};
+}  // namespace panda::ecmascript
 #endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_MACHINE_CODE_H
