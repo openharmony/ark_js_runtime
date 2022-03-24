@@ -40,6 +40,10 @@ public:
         while (next != nullptr) {
             current = next;
             next = current->GetNext();
+            current->IterateUsageGlobal([] (Node *node) {
+                node->SetFree(true);
+                node->SetObject(JSTaggedValue::Undefined().GetRawData());
+            });
             chunk_->Delete(current);
         }
 
@@ -47,6 +51,10 @@ public:
         while (next != nullptr) {
             current = next;
             next = current->GetNext();
+            current->IterateUsageGlobal([] (Node *node) {
+                node->SetFree(true);
+                node->SetObject(JSTaggedValue::Undefined().GetRawData());
+            });
             chunk_->Delete(current);
         }
     }
