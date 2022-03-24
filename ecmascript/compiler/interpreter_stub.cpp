@@ -419,6 +419,8 @@ DECLARE_ASM_HANDLER(HandleDefineFuncDynPrefId16Imm16V8)
             GetInt32Constant(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
         GateRef envHandle = GetVregValue(sp, ZExtInt8ToPtr(v0));
         SetLexicalEnvToFunction(glue, *result, envHandle);
+        GateRef currentFunc = GetFunctionFromFrame(GetFrame(sp));
+        SetModuleToFunction(glue, *result, GetModuleFromFunction(currentFunc));
         varAcc = *result;
         DISPATCH_WITH_ACC(PREF_ID16_IMM16_V8);
     }
@@ -468,6 +470,8 @@ DECLARE_ASM_HANDLER(HandleDefineNCFuncDynPrefId16Imm16V8)
         GateRef env = GetVregValue(sp, ZExtInt8ToPtr(v0));
         SetLexicalEnvToFunction(glue, *result, env);
         SetHomeObjectToFunction(glue, *result, acc);
+        GateRef currentFunc = GetFunctionFromFrame(GetFrame(sp));
+        SetModuleToFunction(glue, *result, GetModuleFromFunction(currentFunc));
         varAcc = *result;
         DISPATCH_WITH_ACC(PREF_ID16_IMM16_V8);
     }
@@ -516,6 +520,8 @@ DECLARE_ASM_HANDLER(HandleDefineGeneratorFuncPrefId16Imm16V8)
             GetInt32Constant(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
         GateRef env = GetVregValue(sp, ZExtInt8ToPtr(v0));
         SetLexicalEnvToFunction(glue, *result, env);
+        GateRef currentFunc = GetFunctionFromFrame(GetFrame(sp));
+        SetModuleToFunction(glue, *result, GetModuleFromFunction(currentFunc));
         varAcc = *result;
         DISPATCH_WITH_ACC(PREF_ID16_IMM16_V8);
     }
@@ -564,6 +570,8 @@ DECLARE_ASM_HANDLER(HandleDefineAsyncFuncPrefId16Imm16V8)
             GetInt32Constant(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
         GateRef env = GetVregValue(sp, ZExtInt8ToPtr(v0));
         SetLexicalEnvToFunction(glue, *result, env);
+        GateRef currentFunc = GetFunctionFromFrame(GetFrame(sp));
+        SetModuleToFunction(glue, *result, GetModuleFromFunction(currentFunc));
         varAcc = *result;
         DISPATCH_WITH_ACC(PREF_ID16_IMM16_V8);
     }
@@ -613,6 +621,8 @@ DECLARE_ASM_HANDLER(HandleDefineMethodPrefId16Imm16V8)
             GetInt32Constant(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
         GateRef env = GetVregValue(sp, ZExtInt8ToPtr(v0));
         SetLexicalEnvToFunction(glue, *result, env);
+        GateRef currentFunc = GetFunctionFromFrame(GetFrame(sp));
+        SetModuleToFunction(glue, *result, GetModuleFromFunction(currentFunc));
         varAcc = *result;
         DISPATCH_WITH_ACC(PREF_ID16_IMM16_V8);
     }
