@@ -27,6 +27,7 @@ group("ark_js_moduletest") {
     "getunmappedargs:getunmappedargsAction",
     "globalaccessor:globalaccessorAction",
     "globalrecord:globalrecordAction",
+    "globalthis:globalthisAction",
     "helloworld:helloworldAction",
     "lexicalenv:lexicalenvAction",
     "module:moduleAction",
