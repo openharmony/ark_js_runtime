@@ -1216,7 +1216,7 @@ JSHandle<LexicalEnv> ObjectFactory::NewLexicalEnv(int numSlots)
     auto header = heap_->AllocateYoungOrHugeObject(
         JSHClass::Cast(thread_->GlobalConstants()->GetEnvClass().GetTaggedObject()), size);
     JSHandle<LexicalEnv> array(thread_, header);
-    array->InitializeWithSpecialValue(JSTaggedValue::Undefined(), numSlots + LexicalEnv::RESERVED_ENV_LENGTH);
+    array->InitializeWithSpecialValue(JSTaggedValue::Hole(), numSlots + LexicalEnv::RESERVED_ENV_LENGTH);
     return array;
 }
 
