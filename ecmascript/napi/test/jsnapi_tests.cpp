@@ -242,7 +242,7 @@ HWTEST_F_L0(JSNApiTests, TypeValue)
 
     ASSERT_EQ(toString->Int32Value(vm_), -123);        // -123 : test case of input
     ASSERT_EQ(toString->BooleaValue(), true);
-    ASSERT_EQ(toString->Uint32Value(vm_), 4294967173); // 4294967173 : test case of input
+    ASSERT_EQ(toString->Uint32Value(vm_), 4294967173U); // 4294967173 : test case of input
     ASSERT_EQ(toString->IntegerValue(vm_), -123);      // -123 : test case of input
 }
 
