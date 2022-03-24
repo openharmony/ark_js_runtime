@@ -84,7 +84,7 @@ HWTEST_F_L0(JSArrayIteratorTest, SetIteratedArray)
     EXPECT_EQ(handleJSArrayTo1->GetArrayLength(), static_cast<uint32_t>(numArrayFrom1));
     for (int i = 0; i < numArrayFrom1; i++) {
         EXPECT_EQ(JSArray::FastGetPropertyByValue(thread, JSHandle<JSTaggedValue>(handleJSArrayTo1), i)->GetNumber(),
-            arrayFrom1[i]);
+                  static_cast<int32_t>(arrayFrom1[i]));
     }
 
     // Call "SetIteratedArray" function in this HWTEST_F_L0.
@@ -94,7 +94,7 @@ HWTEST_F_L0(JSArrayIteratorTest, SetIteratedArray)
     EXPECT_EQ(handleJSArrayTo2->GetArrayLength(), static_cast<uint32_t>(numArrayFrom2));
     for (int i = 0; i < numArrayFrom2; i++) {
         EXPECT_EQ(JSArray::FastGetPropertyByValue(thread, JSHandle<JSTaggedValue>(handleJSArrayTo2), i)->GetNumber(),
-            arrayFrom2[i]);
+                  static_cast<int32_t>(arrayFrom2[i]));
     }
 }
 
@@ -122,10 +122,10 @@ HWTEST_F_L0(JSArrayIteratorTest, SetNextIndex)
     // Call "SetNextIndex" function through "NewJSArrayIterator" function of "object_factory.cpp".
     JSHandle<JSArrayIterator> handleJSArrayIter = factory->NewJSArrayIterator(handleJSObjectTaggedArray,
         IterationKind::KEY);
-    EXPECT_EQ(handleJSArrayIter->GetNextIndex(), 0);
+    EXPECT_EQ(handleJSArrayIter->GetNextIndex(), 0U);
 
-    int testQuantity = 100;
-    for (int i = 1; i <= testQuantity; i++) {
+    uint32_t testQuantity = 100;
+    for (uint32_t i = 1; i <= testQuantity; i++) {
         // Call "SetNextIndex" function in this HWTEST_F_L0.
         handleJSArrayIter->SetNextIndex(i);
         EXPECT_EQ(handleJSArrayIter->GetNextIndex(), i);

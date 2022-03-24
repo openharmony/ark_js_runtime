@@ -880,8 +880,9 @@ HWTEST_F_L0(JSObjectTest, FastToSlow)
 
     EXPECT_TRUE(TaggedArray::Cast(obj1->GetProperties().GetTaggedObject())->IsDictionaryMode());
     NameDictionary *dict = NameDictionary::Cast(obj1->GetProperties().GetTaggedObject());
-    EXPECT_EQ(dict->EntriesCount(), PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES + 1);
-    EXPECT_EQ(dict->NextEnumerationIndex(thread), PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES + 1);
+    EXPECT_EQ(dict->EntriesCount(), static_cast<int>(PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES + 1));
+    EXPECT_EQ(dict->NextEnumerationIndex(thread),
+              static_cast<int>(PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES + 1));
 }
 
 HWTEST_F_L0(JSObjectTest, DeleteMiddle)
@@ -1109,8 +1110,8 @@ HWTEST_F_L0(JSObjectTest, BuildRegisterTree)
     uint32_t index6 = ProtoChangeDetails::Cast(protoDetails6.GetTaggedObject())->GetRegisterIndex();
     EXPECT_TRUE(listeners2->Get(index6) == obj6Dynclass.GetTaggedValue());
 
-    EXPECT_TRUE(listeners1->GetEnd() == 1);
-    EXPECT_TRUE(listeners2->GetEnd() == 2);
+    EXPECT_TRUE(listeners1->GetEnd() == 1U);
+    EXPECT_TRUE(listeners2->GetEnd() == 2U);
 }
 
 HWTEST_F_L0(JSObjectTest, NoticeThroughChain)
@@ -1168,7 +1169,7 @@ HWTEST_F_L0(JSObjectTest, NoticeThroughChain)
     EXPECT_TRUE(listeners1Value != JSTaggedValue(0));
     JSHandle<ChangeListener> listeners1(thread, listeners1Value.GetTaggedObject());
     uint32_t holeIndex = ChangeListener::CheckHole(listeners1);
-    EXPECT_TRUE(holeIndex == 0);
+    EXPECT_TRUE(holeIndex == 0U);
 
     JSTaggedValue protoDetails2 = obj2Dynclass->GetProtoChangeDetails();
     EXPECT_TRUE(protoDetails2.IsProtoChangeDetails());

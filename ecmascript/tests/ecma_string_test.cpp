@@ -123,7 +123,7 @@ HWTEST_F_L0(EcmaStringTest, AllocStringObject)
     size_t sizeAllocComp = 5;
     JSHandle<EcmaString> handleEcmaStrAllocComp(thread, EcmaString::AllocStringObject(sizeAllocComp, true, ecmaVMPtr));
     for (uint32_t i = 0; i < sizeAllocComp; i++) {
-        EXPECT_EQ(handleEcmaStrAllocComp->At(i), 0);
+        EXPECT_EQ(handleEcmaStrAllocComp->At(i), 0U);
     }
     EXPECT_EQ(handleEcmaStrAllocComp->GetLength(), sizeAllocComp);
     EXPECT_TRUE(handleEcmaStrAllocComp->IsUtf8());
@@ -134,7 +134,7 @@ HWTEST_F_L0(EcmaStringTest, AllocStringObject)
     JSHandle<EcmaString> handleEcmaStrAllocNotComp(thread,
         EcmaString::AllocStringObject(sizeAllocNotComp, false, ecmaVMPtr));
     for (uint32_t i = 0; i < sizeAllocNotComp; i++) {
-        EXPECT_EQ(handleEcmaStrAllocNotComp->At(i), 0);
+        EXPECT_EQ(handleEcmaStrAllocNotComp->At(i), 0U);
     }
     EXPECT_EQ(handleEcmaStrAllocNotComp->GetLength(), sizeAllocNotComp);
     EXPECT_FALSE(handleEcmaStrAllocNotComp->IsUtf8());
@@ -1044,7 +1044,7 @@ HWTEST_F_L0(EcmaStringTest, CopyDataUtf8)
     for (uint32_t i = 0; i < lengthReturnU16Comp - 1; i++) {
         EXPECT_EQ(arrayU8CompCopyTo[i], arrayU16CompCopyFrom[i]);
     }
-    EXPECT_EQ(arrayU8CompCopyTo[lengthReturnU16Comp - 1], 0);
+    EXPECT_EQ(arrayU8CompCopyTo[lengthReturnU16Comp - 1], 0U);
 }
 
 /*
@@ -1647,7 +1647,7 @@ HWTEST_F_L0(EcmaStringTest, ComputeHashcodeUtf8)
     for (uint32_t i = 0; i < lengthEcmaStrU8; i++) {
         hashExpect = hashExpect * 31 + arrayU8[i];
     }
-    EXPECT_EQ(EcmaString::ComputeHashcodeUtf8(&arrayU8[0], lengthEcmaStrU8, true), static_cast<int32_t>(hashExpect));
+    EXPECT_EQ(EcmaString::ComputeHashcodeUtf8(&arrayU8[0], lengthEcmaStrU8, true), hashExpect);
 }
 
 /*
@@ -1665,7 +1665,7 @@ HWTEST_F_L0(EcmaStringTest, ComputeHashcodeUtf16)
     for (uint32_t i = 0; i < lengthEcmaStrU16; i++) {
         hashExpect = hashExpect * 31 + arrayU16[i];
     }
-    EXPECT_EQ(EcmaString::ComputeHashcodeUtf16(&arrayU16[0], lengthEcmaStrU16), static_cast<int32_t>(hashExpect));
+    EXPECT_EQ(EcmaString::ComputeHashcodeUtf16(&arrayU16[0], lengthEcmaStrU16), hashExpect);
 }
 
 /*
@@ -1688,7 +1688,7 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_001)
     for (uint32_t i = 0; i < lengthEcmaStrU8; i++) {
         hashExpect = hashExpect * 31 + arrayU8[i];
     }
-    EXPECT_EQ(handleEcmaStrU8->GetHashcode(), static_cast<int32_t>(hashExpect));
+    EXPECT_EQ(handleEcmaStrU8->GetHashcode(), hashExpect);
 }
 
 /*
@@ -1711,7 +1711,7 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_002)
     for (uint32_t i = 0; i < lengthEcmaStrU16Comp; i++) {
         hashExpect = hashExpect * 31 + arrayU16Comp[i];
     }
-    EXPECT_EQ(handleEcmaStrU16Comp->GetHashcode(), static_cast<int32_t>(hashExpect));
+    EXPECT_EQ(handleEcmaStrU16Comp->GetHashcode(), hashExpect);
 }
 
 /*
@@ -1735,9 +1735,9 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_003)
     for (uint32_t i = 0; i < lengthEcmaStrU16NotComp; i++) {
         hashExpect = hashExpect * 31 + arrayU16NotComp[i];
     }
-    EXPECT_EQ(handleEcmaStrU16NotComp->GetHashcode(), static_cast<int32_t>(hashExpect));
+    EXPECT_EQ(handleEcmaStrU16NotComp->GetHashcode(), hashExpect);
     EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
-    EXPECT_EQ(handleEcmaStrU16NotComp->GetHashcode(), static_cast<int32_t>(hashExpect));
+    EXPECT_EQ(handleEcmaStrU16NotComp->GetHashcode(), hashExpect);
     EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 
@@ -1754,10 +1754,10 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_004)
 
     // GetHashcode(). EcmaString made by CreateEmptyString().
     JSHandle<EcmaString> handleEcmaStrEmpty(thread, EcmaString::CreateEmptyString(ecmaVMPtr));
-    EXPECT_EQ(handleEcmaStrEmpty->GetHashcode(), 0);
+    EXPECT_EQ(handleEcmaStrEmpty->GetHashcode(), 0U);
 
     EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
-    EXPECT_EQ(handleEcmaStrEmpty->GetHashcode(), 0);
+    EXPECT_EQ(handleEcmaStrEmpty->GetHashcode(), 0U);
     EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 
@@ -1777,11 +1777,11 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_005)
     size_t sizeAlloc = 5;
     JSHandle<EcmaString> handleEcmaStrAllocComp(thread, EcmaString::AllocStringObject(sizeAlloc, true, ecmaVMPtr));
     JSHandle<EcmaString> handleEcmaStrAllocNotComp(thread, EcmaString::AllocStringObject(sizeAlloc, false, ecmaVMPtr));
-    EXPECT_EQ(handleEcmaStrAllocComp->GetHashcode(), 0);
-    EXPECT_EQ(handleEcmaStrAllocNotComp->GetHashcode(), 0);
+    EXPECT_EQ(handleEcmaStrAllocComp->GetHashcode(), 0U);
+    EXPECT_EQ(handleEcmaStrAllocNotComp->GetHashcode(), 0U);
 
     EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
-    EXPECT_EQ(handleEcmaStrAllocNotComp->GetHashcode(), 0);
+    EXPECT_EQ(handleEcmaStrAllocNotComp->GetHashcode(), 0U);
     EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 

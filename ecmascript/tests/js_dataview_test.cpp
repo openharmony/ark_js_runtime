@@ -57,15 +57,15 @@ public:
  */
 HWTEST_F_L0(JSDataViewTest, GetElementSize)
 {
-    EXPECT_EQ(JSDataView::GetElementSize(DataViewType::INT8), 1);
-    EXPECT_EQ(JSDataView::GetElementSize(DataViewType::UINT8), 1);
-    EXPECT_EQ(JSDataView::GetElementSize(DataViewType::UINT8_CLAMPED), 1);
-    EXPECT_EQ(JSDataView::GetElementSize(DataViewType::INT16), 2);
-    EXPECT_EQ(JSDataView::GetElementSize(DataViewType::UINT16), 2);
-    EXPECT_EQ(JSDataView::GetElementSize(DataViewType::INT32), 4);
-    EXPECT_EQ(JSDataView::GetElementSize(DataViewType::UINT32), 4);
-    EXPECT_EQ(JSDataView::GetElementSize(DataViewType::FLOAT32), 4);
-    EXPECT_EQ(JSDataView::GetElementSize(DataViewType::FLOAT64), 8);
+    EXPECT_EQ(JSDataView::GetElementSize(DataViewType::INT8), 1U);
+    EXPECT_EQ(JSDataView::GetElementSize(DataViewType::UINT8), 1U);
+    EXPECT_EQ(JSDataView::GetElementSize(DataViewType::UINT8_CLAMPED), 1U);
+    EXPECT_EQ(JSDataView::GetElementSize(DataViewType::INT16), 2U);
+    EXPECT_EQ(JSDataView::GetElementSize(DataViewType::UINT16), 2U);
+    EXPECT_EQ(JSDataView::GetElementSize(DataViewType::INT32), 4U);
+    EXPECT_EQ(JSDataView::GetElementSize(DataViewType::UINT32), 4U);
+    EXPECT_EQ(JSDataView::GetElementSize(DataViewType::FLOAT32), 4U);
+    EXPECT_EQ(JSDataView::GetElementSize(DataViewType::FLOAT64), 8U);
 }
 
 /*
@@ -82,9 +82,9 @@ HWTEST_F_L0(JSDataViewTest, SetDataView)
     ObjectFactory *factory = ecmaVMPtr->GetFactory();
     JSHandle<GlobalEnv> handleGlobalEnv = ecmaVMPtr->GetGlobalEnv();
 
-    int32_t lengthDataArrayBuf = 8;
-    int32_t offsetDataView = 4;
-    int32_t lengthDataView = 4;
+    uint32_t lengthDataArrayBuf = 8;
+    uint32_t offsetDataView = 4;
+    uint32_t lengthDataView = 4;
     JSHandle<JSFunction> handleFuncArrayBuf(handleGlobalEnv->GetArrayBufferFunction());
     JSHandle<JSTaggedValue> handleTagValFuncArrayBuf(handleFuncArrayBuf);
     JSHandle<JSArrayBuffer> handleArrayBuf(
@@ -118,10 +118,10 @@ HWTEST_F_L0(JSDataViewTest, SetViewedArrayBuffer)
     JSHandle<JSFunction> handleFuncArrayBuf(ecmaVMPtr->GetGlobalEnv()->GetArrayBufferFunction());
     JSHandle<JSTaggedValue> handleTagValFuncArrayBuf(handleFuncArrayBuf);
 
-    int32_t lengthDataArrayBuf1 = 8;
-    int32_t lengthDataArrayBuf2 = 16;
-    int32_t offsetDataView = 4;
-    int32_t lengthDataView = 4;
+    uint32_t lengthDataArrayBuf1 = 8;
+    uint32_t lengthDataArrayBuf2 = 16;
+    uint32_t offsetDataView = 4;
+    uint32_t lengthDataView = 4;
     JSHandle<JSArrayBuffer> handleArrayBuf1(
         factory->NewJSObjectByConstructor(handleFuncArrayBuf, handleTagValFuncArrayBuf));
     JSHandle<JSArrayBuffer> handleArrayBuf2(
@@ -159,10 +159,10 @@ HWTEST_F_L0(JSDataViewTest, SetByteLength)
     JSHandle<JSFunction> handleFuncArrayBuf(ecmaVMPtr->GetGlobalEnv()->GetArrayBufferFunction());
     JSHandle<JSTaggedValue> handleTagValFuncArrayBuf(handleFuncArrayBuf);
 
-    int32_t lengthDataArrayBuf = 8;
-    int32_t offsetDataView = 4;
-    int32_t lengthDataView1 = 4;
-    int32_t lengthDataView2 = 2;
+    uint32_t lengthDataArrayBuf = 8;
+    uint32_t offsetDataView = 4;
+    uint32_t lengthDataView1 = 4;
+    uint32_t lengthDataView2 = 2;
     JSHandle<JSArrayBuffer> handleArrayBuf(
         factory->NewJSObjectByConstructor(handleFuncArrayBuf, handleTagValFuncArrayBuf));
     handleArrayBuf->SetArrayBufferByteLength(lengthDataArrayBuf);
@@ -192,10 +192,10 @@ HWTEST_F_L0(JSDataViewTest, SetByteOffset)
     JSHandle<JSFunction> handleFuncArrayBuf1(ecmaVMPtr->GetGlobalEnv()->GetArrayBufferFunction());
     JSHandle<JSTaggedValue> handleTagValFuncArrayBuf1(handleFuncArrayBuf1);
 
-    int32_t lengthDataArrayBuf = 8;
-    int32_t offsetDataView1 = 4;
-    int32_t offsetDataView2 = 6;
-    int32_t lengthDataView = 2;
+    uint32_t lengthDataArrayBuf = 8;
+    uint32_t offsetDataView1 = 4;
+    uint32_t offsetDataView2 = 6;
+    uint32_t lengthDataView = 2;
     JSHandle<JSArrayBuffer> handleArrayBuf(
         factory->NewJSObjectByConstructor(handleFuncArrayBuf1, handleTagValFuncArrayBuf1));
     handleArrayBuf->SetArrayBufferByteLength(lengthDataArrayBuf);
