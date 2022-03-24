@@ -95,7 +95,7 @@ HWTEST_F_L0(JSAPITreeMapTest, TreeMapCreate)
 
 HWTEST_F_L0(JSAPITreeMapTest, TreeMapSetAndGet)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
@@ -104,7 +104,7 @@ HWTEST_F_L0(JSAPITreeMapTest, TreeMapSetAndGet)
     JSHandle<JSAPITreeMap> tmap(thread, CreateTreeMap());
     std::string myKey("mykey");
     std::string myValue("myvalue");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -113,7 +113,7 @@ HWTEST_F_L0(JSAPITreeMapTest, TreeMapSetAndGet)
     }
     EXPECT_EQ(tmap->GetSize(), NODE_NUMBERS);
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -127,8 +127,8 @@ HWTEST_F_L0(JSAPITreeMapTest, TreeMapSetAndGet)
 
 HWTEST_F_L0(JSAPITreeMapTest, TreeMapDeleteAndHas)
 {
-    constexpr uint32_t NODE_NUMBERS = 64;
-    constexpr uint32_t REMOVE_SIZE = 48;
+    constexpr int NODE_NUMBERS = 64;
+    constexpr int REMOVE_SIZE = 48;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
@@ -137,7 +137,7 @@ HWTEST_F_L0(JSAPITreeMapTest, TreeMapDeleteAndHas)
     JSHandle<JSAPITreeMap> tmap(thread, CreateTreeMap());
     std::string myKey("mykey");
     std::string myValue("myvalue");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -146,14 +146,14 @@ HWTEST_F_L0(JSAPITreeMapTest, TreeMapDeleteAndHas)
     }
     EXPECT_EQ(tmap->GetSize(), NODE_NUMBERS);
 
-    for (uint32_t i = 0; i < REMOVE_SIZE; i++) {
+    for (int i = 0; i < REMOVE_SIZE; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         [[maybe_unused]] JSTaggedValue dvalue = JSAPITreeMap::Delete(thread, tmap, key);
     }
     EXPECT_EQ(tmap->GetSize(), NODE_NUMBERS - REMOVE_SIZE);
 
-    for (uint32_t i = 0; i < REMOVE_SIZE; i++) {
+    for (int i = 0; i < REMOVE_SIZE; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -166,7 +166,7 @@ HWTEST_F_L0(JSAPITreeMapTest, TreeMapDeleteAndHas)
         EXPECT_EQ(hasValue, false);
     }
 
-    for (uint32_t i = REMOVE_SIZE; i < NODE_NUMBERS; i++) {
+    for (int i = REMOVE_SIZE; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -182,7 +182,7 @@ HWTEST_F_L0(JSAPITreeMapTest, TreeMapDeleteAndHas)
 
 HWTEST_F_L0(JSAPITreeMapTest, TreeMapReplaceAndClear)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
@@ -191,7 +191,7 @@ HWTEST_F_L0(JSAPITreeMapTest, TreeMapReplaceAndClear)
     JSHandle<JSAPITreeMap> tmap(thread, CreateTreeMap());
     std::string myKey("mykey");
     std::string myValue("myvalue");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -200,7 +200,7 @@ HWTEST_F_L0(JSAPITreeMapTest, TreeMapReplaceAndClear)
     }
     EXPECT_EQ(tmap->GetSize(), NODE_NUMBERS);
 
-    for (uint32_t i = 0; i < NODE_NUMBERS / 2; i++) {
+    for (int i = 0; i < NODE_NUMBERS / 2; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i + 1);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -211,7 +211,7 @@ HWTEST_F_L0(JSAPITreeMapTest, TreeMapReplaceAndClear)
         EXPECT_EQ(success, true);
     }
 
-    for (uint32_t i = 0; i < NODE_NUMBERS / 2; i++) {
+    for (int i = 0; i < NODE_NUMBERS / 2; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i + 1);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -222,7 +222,7 @@ HWTEST_F_L0(JSAPITreeMapTest, TreeMapReplaceAndClear)
         EXPECT_EQ(gvalue, value.GetTaggedValue());
     }
 
-    for (uint32_t i = NODE_NUMBERS / 2; i < NODE_NUMBERS; i++) {
+    for (int i = NODE_NUMBERS / 2; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -233,7 +233,7 @@ HWTEST_F_L0(JSAPITreeMapTest, TreeMapReplaceAndClear)
         EXPECT_EQ(gvalue, value.GetTaggedValue());
     }
 
-    for (uint32_t i = 0; i < NODE_NUMBERS / 2; i++) {
+    for (int i = 0; i < NODE_NUMBERS / 2; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         [[maybe_unused]] JSTaggedValue dvalue = JSAPITreeMap::Delete(thread, tmap, key);
@@ -241,7 +241,7 @@ HWTEST_F_L0(JSAPITreeMapTest, TreeMapReplaceAndClear)
 
     JSAPITreeMap::Clear(thread, tmap);
     EXPECT_EQ(tmap->GetSize(), 0);
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -261,7 +261,7 @@ HWTEST_F_L0(JSAPITreeMapTest, TreeMapReplaceAndClear)
 
 HWTEST_F_L0(JSAPITreeMapTest, JSAPITreeMapIterator)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSAPITreeMap> tmap(thread, CreateTreeMap());
 

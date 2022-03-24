@@ -185,7 +185,7 @@ bool IsVaildRBTree(JSThread *thread, JSHandle<T> &tree, int nodeIndex)
 
 HWTEST_F_L0(TaggedTreeTest, TreeMapCreate)
 {
-    constexpr uint32_t NODE_NUMBERS = 64;
+    constexpr int NODE_NUMBERS = 64;
     JSHandle<TaggedTreeMap> tmap(thread, TaggedTreeMap::Create(thread, NODE_NUMBERS));
     EXPECT_EQ(tmap->Capacity(), NODE_NUMBERS);
     EXPECT_EQ(tmap->GetRootEntries(), -1);
@@ -195,7 +195,7 @@ HWTEST_F_L0(TaggedTreeTest, TreeMapCreate)
 
 HWTEST_F_L0(TaggedTreeTest, TreeSetCreate)
 {
-    constexpr uint32_t NODE_NUMBERS = 64;
+    constexpr int NODE_NUMBERS = 64;
     JSHandle<TaggedTreeSet> tset(thread, TaggedTreeSet::Create(thread, NODE_NUMBERS));
     EXPECT_EQ(tset->Capacity(), NODE_NUMBERS);
     EXPECT_EQ(tset->GetRootEntries(), -1);
@@ -206,7 +206,7 @@ HWTEST_F_L0(TaggedTreeTest, TreeSetCreate)
 HWTEST_F_L0(TaggedTreeTest, TestTreeMapAddKeyAndValue)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    constexpr uint32_t NODE_NUMBERS = 64;
+    constexpr int NODE_NUMBERS = 64;
     JSMutableHandle<TaggedTreeMap> tmap(thread, TaggedTreeMap::Create(thread, NODE_NUMBERS));
     JSHandle<JSTaggedValue> objFun = GetGlobalEnv()->GetObjectFunction();
 
@@ -242,7 +242,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapAddKeyAndValue)
 HWTEST_F_L0(TaggedTreeTest, TestTreeSetAddValue)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    constexpr uint32_t NODE_NUMBERS = 64;
+    constexpr int NODE_NUMBERS = 64;
     JSMutableHandle<TaggedTreeSet> tset(thread, TaggedTreeSet::Create(thread, NODE_NUMBERS));
 
     char keyArray[] = "mykey1";
@@ -271,7 +271,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeSetAddValue)
 
 HWTEST_F_L0(TaggedTreeTest, TestTreeMapGrowCapacity)
 {
-    constexpr uint32_t NODE_NUMBERS = 32;
+    constexpr int NODE_NUMBERS = 32;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<TaggedTreeMap> tmap(thread, TaggedTreeMap::Create(thread));
     JSHandle<JSFunction> objFun(GetGlobalEnv()->GetObjectFunction());
@@ -300,7 +300,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapGrowCapacity)
 
 HWTEST_F_L0(TaggedTreeTest, TestTreeSetGrowCapacity)
 {
-    constexpr uint32_t NODE_NUMBERS = 32;
+    constexpr int NODE_NUMBERS = 32;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<TaggedTreeSet> tset(thread, TaggedTreeSet::Create(thread));
     // create key
@@ -329,7 +329,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeSetGrowCapacity)
 
 HWTEST_F_L0(TaggedTreeTest, TestTreeMapHasValue)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
@@ -338,7 +338,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapHasValue)
 
     // test TaggedTreeMap HasValue
     JSMutableHandle<TaggedTreeMap> tmap(thread, TaggedTreeMap::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -348,7 +348,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapHasValue)
     EXPECT_EQ(tmap->NumberOfElements(), NODE_NUMBERS);
     EXPECT_EQ(tmap->Capacity(), 15); // 15 means capacity after Grow
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ivalue = myValue + std::to_string(i);
         value.Update(factory->NewFromStdString(ivalue).GetTaggedValue());
         bool success = tmap->HasValue(thread, value.GetTaggedValue());
@@ -358,7 +358,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapHasValue)
 
 HWTEST_F_L0(TaggedTreeTest, TestTreeMapGetLowerKey)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
@@ -367,7 +367,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapGetLowerKey)
 
     // test TaggedTreeMap
     JSMutableHandle<TaggedTreeMap> tmap(thread, TaggedTreeMap::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -391,7 +391,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapGetLowerKey)
 
     // check mykey1 ...mykeyn
     JSMutableHandle<JSTaggedValue> keyToCompare(thread, JSTaggedValue::Undefined());
-    for (uint32_t i = 1; i < NODE_NUMBERS; i++) {
+    for (int i = 1; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         std::string tmp = myKey + std::to_string(i - 1);
@@ -403,14 +403,14 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapGetLowerKey)
 
 HWTEST_F_L0(TaggedTreeTest, TestTreeMapGetHigherKey)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
 
     // test TaggedTreeMap
     JSMutableHandle<TaggedTreeMap> tmap(thread, TaggedTreeMap::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         value.Update(JSTaggedValue(i));
         tmap.Update(TaggedTreeMap::Set(thread, tmap, key, value));
@@ -430,7 +430,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapGetHigherKey)
 
     // check 1 ...n
     JSMutableHandle<JSTaggedValue> keyToCompare(thread, JSTaggedValue::Undefined());
-    for (uint32_t i = 0; i < NODE_NUMBERS - 1; i++) {
+    for (int i = 0; i < NODE_NUMBERS - 1; i++) {
         key.Update(JSTaggedValue(i));
         keyToCompare.Update(JSTaggedValue(i + 1));
         higherKey = TaggedTreeMap::GetHigherKey(thread, tmap, key);
@@ -440,7 +440,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapGetHigherKey)
 
 HWTEST_F_L0(TaggedTreeTest, TestTreeMapGetFirsKey)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
@@ -449,7 +449,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapGetFirsKey)
 
     // test TaggedTreeMap
     JSMutableHandle<TaggedTreeMap> tmap(thread, TaggedTreeMap::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -461,7 +461,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapGetFirsKey)
     JSTaggedValue firstKey = tmap->GetFirstKey();
     EXPECT_EQ(firstKey, key.GetTaggedValue());
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         value.Update(JSTaggedValue(i));
         tmap.Update(TaggedTreeMap::Set(thread, tmap, key, value));
@@ -472,14 +472,14 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapGetFirsKey)
 
 HWTEST_F_L0(TaggedTreeTest, TestTreeMapGetLastKey)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
 
     // test TaggedTreeMap
     JSMutableHandle<TaggedTreeMap> tmap(thread, TaggedTreeMap::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         value.Update(JSTaggedValue(i));
         tmap.Update(TaggedTreeMap::Set(thread, tmap, key, value));
@@ -489,7 +489,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapGetLastKey)
 
     std::string myKey("mykey");
     std::string myValue("myvalue");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -504,14 +504,14 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapGetLastKey)
 
 HWTEST_F_L0(TaggedTreeTest, TestTreeMapSetAll)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
 
     // test TaggedTreeMap
     JSMutableHandle<TaggedTreeMap> smap(thread, TaggedTreeMap::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         value.Update(JSTaggedValue(i));
         smap.Update(TaggedTreeMap::Set(thread, smap, key, value));
@@ -520,7 +520,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapSetAll)
     JSMutableHandle<TaggedTreeMap> dmap(thread, TaggedTreeMap::Create(thread));
     std::string myKey("mykey");
     std::string myValue("myvalue");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -529,7 +529,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapSetAll)
     }
     dmap.Update(TaggedTreeMap::SetAll(thread, dmap, smap));
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         value.Update(JSTaggedValue(i));
         JSTaggedValue res = TaggedTreeMap::Get(thread, dmap, key);
@@ -546,14 +546,14 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapSetAll)
 
 HWTEST_F_L0(TaggedTreeTest, TestTreeMapGetArrayFromMap)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
 
     // test TaggedTreeMap
     JSMutableHandle<TaggedTreeMap> tmap(thread, TaggedTreeMap::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         value.Update(JSTaggedValue(i));
         tmap.Update(TaggedTreeMap::Set(thread, tmap, key, value));
@@ -561,7 +561,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapGetArrayFromMap)
 
     std::string myKey("mykey");
     std::string myValue("myvalue");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -569,12 +569,12 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapGetArrayFromMap)
         tmap.Update(TaggedTreeMap::Set(thread, tmap, key, value));
     }
     JSHandle<TaggedArray> arr = TaggedTreeMap::GetArrayFromMap(thread, tmap);
-    EXPECT_EQ(arr->GetLength(), static_cast<uint32_t>(NODE_NUMBERS * 2));
+    EXPECT_EQ(arr->GetLength(), NODE_NUMBERS * 2);
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         EXPECT_EQ(tmap->GetKey(arr->Get(i).GetInt()), JSTaggedValue(i));
     }
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         EXPECT_EQ(tmap->GetKey(arr->Get(NODE_NUMBERS + i).GetInt()), key.GetTaggedValue());
@@ -584,14 +584,14 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapGetArrayFromMap)
 // TaggedTreeSet
 HWTEST_F_L0(TaggedTreeTest, TestTreeSetGetLowerKey)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     std::string myKey("mykey");
 
     // test TaggedTreeSet
     JSMutableHandle<TaggedTreeSet> tset(thread, TaggedTreeSet::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         tset.Update(TaggedTreeSet::Add(thread, tset, key));
@@ -612,7 +612,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeSetGetLowerKey)
 
     // check mykey1 ...mykeyn
     JSMutableHandle<JSTaggedValue> keyToCompare(thread, JSTaggedValue::Undefined());
-    for (uint32_t i = 1; i < NODE_NUMBERS; i++) {
+    for (int i = 1; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         std::string tmp = myKey + std::to_string(i - 1);
@@ -624,13 +624,13 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeSetGetLowerKey)
 
 HWTEST_F_L0(TaggedTreeTest, TestTreeSetGetHigherKey)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
 
     // test TaggedTreeSet
     JSMutableHandle<TaggedTreeSet> tset(thread, TaggedTreeSet::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         tset.Update(TaggedTreeSet::Add(thread, tset, key));
     }
@@ -649,7 +649,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeSetGetHigherKey)
 
     // check 1 ...n
     JSMutableHandle<JSTaggedValue> keyToCompare(thread, JSTaggedValue::Undefined());
-    for (uint32_t i = 0; i < NODE_NUMBERS - 1; i++) {
+    for (int i = 0; i < NODE_NUMBERS - 1; i++) {
         key.Update(JSTaggedValue(i));
         keyToCompare.Update(JSTaggedValue(i + 1));
         higherKey = TaggedTreeSet::GetHigherKey(thread, tset, key);
@@ -659,14 +659,14 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeSetGetHigherKey)
 
 HWTEST_F_L0(TaggedTreeTest, TestTreeSetGetFirsKey)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     std::string myKey("mykey");
 
     // test TaggedTreeSet
     JSMutableHandle<TaggedTreeSet> tset(thread, TaggedTreeSet::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         tset.Update(TaggedTreeSet::Add(thread, tset, key));
@@ -676,7 +676,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeSetGetFirsKey)
     JSTaggedValue firstKey = tset->GetFirstKey();
     EXPECT_EQ(firstKey, key.GetTaggedValue());
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         tset.Update(TaggedTreeSet::Add(thread, tset, key));
     }
@@ -686,13 +686,13 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeSetGetFirsKey)
 
 HWTEST_F_L0(TaggedTreeTest, TestTreeSetGetLastKey)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
 
     // test TaggedTreeSet
     JSMutableHandle<TaggedTreeSet> tset(thread, TaggedTreeSet::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         tset.Update(TaggedTreeSet::Add(thread, tset, key));
     }
@@ -700,7 +700,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeSetGetLastKey)
     EXPECT_EQ(lastKey, JSTaggedValue(NODE_NUMBERS - 1));
 
     std::string myKey("mykey");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         tset.Update(TaggedTreeSet::Add(thread, tset, key));
@@ -713,30 +713,30 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeSetGetLastKey)
 
 HWTEST_F_L0(TaggedTreeTest, TestTreeSetGetArrayFromSet)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
 
     // test TaggedTreeSet
     JSMutableHandle<TaggedTreeSet> tset(thread, TaggedTreeSet::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         tset.Update(TaggedTreeSet::Add(thread, tset, key));
     }
 
     std::string myKey("mykey");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         tset.Update(TaggedTreeSet::Add(thread, tset, key));
     }
     JSHandle<TaggedArray> arr = TaggedTreeSet::GetArrayFromSet(thread, tset);
-    EXPECT_EQ(arr->GetLength(), static_cast<uint32_t>(NODE_NUMBERS * 2));
+    EXPECT_EQ(arr->GetLength(), NODE_NUMBERS * 2);
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         EXPECT_EQ(tset->GetKey(arr->Get(i).GetInt()), JSTaggedValue(i));
     }
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         EXPECT_EQ(tset->GetKey(arr->Get(NODE_NUMBERS + i).GetInt()), key.GetTaggedValue());
@@ -745,14 +745,14 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeSetGetArrayFromSet)
 
 HWTEST_F_L0(TaggedTreeTest, TestSetAfterDelete)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
 
     // test TaggedTreeMap
     JSMutableHandle<TaggedTreeMap> tmap(thread, TaggedTreeMap::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         value.Update(JSTaggedValue(i));
         tmap.Update(TaggedTreeMap::Set(thread, tmap, key, value));
@@ -760,7 +760,7 @@ HWTEST_F_L0(TaggedTreeTest, TestSetAfterDelete)
     EXPECT_EQ(tmap->NumberOfElements(), NODE_NUMBERS);
     EXPECT_EQ(tmap->NumberOfDeletedElements(), 0);
 
-    for (uint32_t i = 0; i < NODE_NUMBERS / 2; i++) {
+    for (int i = 0; i < NODE_NUMBERS / 2; i++) {
         key.Update(JSTaggedValue(i));
         value.Update(JSTaggedValue(i));
         JSTaggedValue dvalue = TaggedTreeMap::Delete(thread, tmap, TaggedTreeMap::FindEntry(thread, tmap, key));
@@ -771,7 +771,7 @@ HWTEST_F_L0(TaggedTreeTest, TestSetAfterDelete)
 
     std::string myKey("mykey");
     std::string myValue("myvalue");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -781,14 +781,14 @@ HWTEST_F_L0(TaggedTreeTest, TestSetAfterDelete)
     EXPECT_EQ(tmap->NumberOfElements(), NODE_NUMBERS + NODE_NUMBERS / 2);
     EXPECT_EQ(tmap->NumberOfDeletedElements(), 0);
 
-    for (uint32_t i = NODE_NUMBERS / 2; i < NODE_NUMBERS; i++) {
+    for (int i = NODE_NUMBERS / 2; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         value.Update(JSTaggedValue(i));
         JSTaggedValue gvalue = TaggedTreeMap::Get(thread, tmap, key);
         EXPECT_EQ(gvalue, value.GetTaggedValue());
     }
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -801,14 +801,14 @@ HWTEST_F_L0(TaggedTreeTest, TestSetAfterDelete)
 
     // TaggedTreeSet
     JSMutableHandle<TaggedTreeSet> tset(thread, TaggedTreeSet::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         tset.Update(TaggedTreeSet::Add(thread, tset, key));
     }
     EXPECT_EQ(tset->NumberOfElements(), NODE_NUMBERS);
     EXPECT_EQ(tset->NumberOfDeletedElements(), 0);
 
-    for (uint32_t i = 0; i < NODE_NUMBERS / 2; i++) {
+    for (int i = 0; i < NODE_NUMBERS / 2; i++) {
         key.Update(JSTaggedValue(i));
         JSTaggedValue dvalue = TaggedTreeSet::Delete(thread, tset, TaggedTreeSet::FindEntry(thread, tset, key));
         EXPECT_EQ(dvalue, tset.GetTaggedValue());
@@ -816,7 +816,7 @@ HWTEST_F_L0(TaggedTreeTest, TestSetAfterDelete)
     EXPECT_EQ(tset->NumberOfElements(), NODE_NUMBERS / 2);
     EXPECT_EQ(tset->NumberOfDeletedElements(), NODE_NUMBERS / 2);
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         tset.Update(TaggedTreeSet::Add(thread, tset, key));
@@ -824,13 +824,13 @@ HWTEST_F_L0(TaggedTreeTest, TestSetAfterDelete)
     EXPECT_EQ(tset->NumberOfElements(), NODE_NUMBERS + NODE_NUMBERS / 2);
     EXPECT_EQ(tset->NumberOfDeletedElements(), 0);
 
-    for (uint32_t i = NODE_NUMBERS / 2; i < NODE_NUMBERS; i++) {
+    for (int i = NODE_NUMBERS / 2; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         int entry = TaggedTreeSet::FindEntry(thread, tset, key);
         EXPECT_TRUE(entry >= 0);
     }
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         int entry = TaggedTreeSet::FindEntry(thread, tset, key);
@@ -843,7 +843,7 @@ HWTEST_F_L0(TaggedTreeTest, TestSetAfterDelete)
 HWTEST_F_L0(TaggedTreeTest, RBTreeAddCheck)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    constexpr uint32_t NODE_NUMBERS = 16;
+    constexpr int NODE_NUMBERS = 16;
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     std::string myKey("mykey");
@@ -851,14 +851,14 @@ HWTEST_F_L0(TaggedTreeTest, RBTreeAddCheck)
 
     // test TaggedTreeMap
     JSMutableHandle<TaggedTreeMap> tmap(thread, TaggedTreeMap::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         value.Update(JSTaggedValue(i));
         tmap.Update(TaggedTreeMap::Set(thread, tmap, key, value));
         bool success = IsVaildRBTree<TaggedTreeMap>(thread, tmap, tmap->GetRootEntries());
         EXPECT_TRUE(success);
     }
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -871,13 +871,13 @@ HWTEST_F_L0(TaggedTreeTest, RBTreeAddCheck)
 
     // test TaggedTreeSet
     JSMutableHandle<TaggedTreeSet> tset(thread, TaggedTreeSet::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         tset.Update(TaggedTreeSet::Add(thread, tset, key));
         bool success = IsVaildRBTree<TaggedTreeSet>(thread, tset, tset->GetRootEntries());
         EXPECT_TRUE(success);
     }
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         tset.Update(TaggedTreeSet::Add(thread, tset, key));
@@ -890,7 +890,7 @@ HWTEST_F_L0(TaggedTreeTest, RBTreeAddCheck)
 HWTEST_F_L0(TaggedTreeTest, RBTreeDeleteCheck)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    constexpr uint32_t NODE_NUMBERS = 16;
+    constexpr int NODE_NUMBERS = 16;
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     std::string myKey("mykey");
@@ -898,14 +898,14 @@ HWTEST_F_L0(TaggedTreeTest, RBTreeDeleteCheck)
 
     // test TaggedTreeMap
     JSMutableHandle<TaggedTreeMap> tmap(thread, TaggedTreeMap::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         value.Update(JSTaggedValue(i));
         tmap.Update(TaggedTreeMap::Set(thread, tmap, key, value));
         bool success = IsVaildRBTree<TaggedTreeMap>(thread, tmap, tmap->GetRootEntries());
         EXPECT_TRUE(success);
     }
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -916,7 +916,7 @@ HWTEST_F_L0(TaggedTreeTest, RBTreeDeleteCheck)
     }
 
     JSMutableHandle<JSTaggedValue> resOfDelete(thread, JSTaggedValue::Undefined());
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         resOfDelete.Update(TaggedTreeMap::Delete(thread, tmap, TaggedTreeMap::FindEntry(thread, tmap, key)));
         bool success = IsVaildRBTree<TaggedTreeMap>(thread, tmap, tmap->GetRootEntries());
@@ -927,13 +927,13 @@ HWTEST_F_L0(TaggedTreeTest, RBTreeDeleteCheck)
 
     // test TaggedTreeSet
     JSMutableHandle<TaggedTreeSet> tset(thread, TaggedTreeSet::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         tset.Update(TaggedTreeSet::Add(thread, tset, key));
         bool success = IsVaildRBTree<TaggedTreeSet>(thread, tset, tset->GetRootEntries());
         EXPECT_TRUE(success);
     }
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         tset.Update(TaggedTreeSet::Add(thread, tset, key));
@@ -941,7 +941,7 @@ HWTEST_F_L0(TaggedTreeTest, RBTreeDeleteCheck)
         EXPECT_TRUE(success);
     }
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         resOfDelete.Update(TaggedTreeSet::Delete(thread, tset, TaggedTreeSet::FindEntry(thread, tset, key)));
         bool success = IsVaildRBTree<TaggedTreeSet>(thread, tset, tset->GetRootEntries());
@@ -954,7 +954,7 @@ HWTEST_F_L0(TaggedTreeTest, RBTreeDeleteCheck)
 HWTEST_F_L0(TaggedTreeTest, CustomCompareFunctionTest)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    constexpr uint32_t NODE_NUMBERS = 9;
+    constexpr int NODE_NUMBERS = 9;
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     std::string myKey("mykey");
@@ -965,14 +965,14 @@ HWTEST_F_L0(TaggedTreeTest, CustomCompareFunctionTest)
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSFunction> func = factory->NewJSFunction(env, reinterpret_cast<void *>(TestClass::TestCompareFunction));
     tmap->SetCompare(thread, func.GetTaggedValue());
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         value.Update(JSTaggedValue(i));
         tmap.Update(TaggedTreeMap::Set(thread, tmap, key, value));
         bool success = IsVaildRBTree<TaggedTreeMap>(thread, tmap, tmap->GetRootEntries());
         EXPECT_TRUE(success);
     }
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -984,11 +984,11 @@ HWTEST_F_L0(TaggedTreeTest, CustomCompareFunctionTest)
     EXPECT_TRUE(tmap->NumberOfElements() == NODE_NUMBERS * 2);
 
     JSHandle<TaggedArray> arr = TaggedTreeMap::GetArrayFromMap(thread, tmap);
-    EXPECT_EQ(arr->GetLength(), static_cast<uint32_t>(NODE_NUMBERS * 2));
-    for (uint32_t i = NODE_NUMBERS; i < NODE_NUMBERS * 2; i++) {
+    EXPECT_EQ(arr->GetLength(), NODE_NUMBERS * 2);
+    for (int i = NODE_NUMBERS; i < NODE_NUMBERS * 2; i++) {
         EXPECT_EQ(tmap->GetKey(arr->Get(i).GetInt()).GetInt(), (NODE_NUMBERS * 2  - 1 - i));
     }
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(NODE_NUMBERS - 1 - i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         EXPECT_EQ(tmap->GetKey(arr->Get(i).GetInt()), key.GetTaggedValue());
@@ -997,13 +997,13 @@ HWTEST_F_L0(TaggedTreeTest, CustomCompareFunctionTest)
     // test TaggedTreeSet
     JSMutableHandle<TaggedTreeSet> tset(thread, TaggedTreeSet::Create(thread));
     tset->SetCompare(thread, func.GetTaggedValue());
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         tset.Update(TaggedTreeSet::Add(thread, tset, key));
         bool success = IsVaildRBTree<TaggedTreeSet>(thread, tset, tset->GetRootEntries());
         EXPECT_TRUE(success);
     }
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         tset.Update(TaggedTreeSet::Add(thread, tset, key));
@@ -1013,11 +1013,11 @@ HWTEST_F_L0(TaggedTreeTest, CustomCompareFunctionTest)
     EXPECT_TRUE(tset->NumberOfElements() == NODE_NUMBERS * 2);
 
     JSHandle<TaggedArray> sarr = TaggedTreeSet::GetArrayFromSet(thread, tset);
-    EXPECT_EQ(arr->GetLength(), static_cast<uint32_t>(NODE_NUMBERS * 2));
-    for (uint32_t i = NODE_NUMBERS; i < NODE_NUMBERS * 2; i++) {
+    EXPECT_EQ(arr->GetLength(), NODE_NUMBERS * 2);
+    for (int i = NODE_NUMBERS; i < NODE_NUMBERS * 2; i++) {
         EXPECT_EQ(tset->GetKey(sarr->Get(i).GetInt()), JSTaggedValue(NODE_NUMBERS * 2  - 1 - i));
     }
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(NODE_NUMBERS - 1 - i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         EXPECT_EQ(tset->GetKey(sarr->Get(i).GetInt()), key.GetTaggedValue());
@@ -1027,7 +1027,7 @@ HWTEST_F_L0(TaggedTreeTest, CustomCompareFunctionTest)
 HWTEST_F_L0(TaggedTreeTest, RBTreeDeleteShrink)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    constexpr uint32_t NODE_NUMBERS = 32;
+    constexpr int NODE_NUMBERS = 32;
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     std::string myKey("mykey");
@@ -1035,7 +1035,7 @@ HWTEST_F_L0(TaggedTreeTest, RBTreeDeleteShrink)
 
     // test TaggedTreeMap
     JSMutableHandle<TaggedTreeMap> tmap(thread, TaggedTreeMap::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         value.Update(JSTaggedValue(i));
         tmap.Update(TaggedTreeMap::Set(thread, tmap, key, value));
@@ -1044,7 +1044,7 @@ HWTEST_F_L0(TaggedTreeTest, RBTreeDeleteShrink)
     }
 
     JSMutableHandle<JSTaggedValue> resOfDelete(thread, JSTaggedValue::Undefined());
-    for (uint32_t i = 0; i < NODE_NUMBERS / 2; i++) {
+    for (int i = 0; i < NODE_NUMBERS / 2; i++) {
         key.Update(JSTaggedValue(i));
         resOfDelete.Update(TaggedTreeMap::Delete(thread, tmap, TaggedTreeMap::FindEntry(thread, tmap, key)));
         bool success = IsVaildRBTree<TaggedTreeMap>(thread, tmap, tmap->GetRootEntries());
@@ -1070,7 +1070,7 @@ HWTEST_F_L0(TaggedTreeTest, RBTreeDeleteShrink)
 
     // test TaggedTreeSet
     JSMutableHandle<TaggedTreeSet> tset(thread, TaggedTreeSet::Create(thread));
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         tset.Update(TaggedTreeSet::Add(thread, tset, key));
@@ -1078,7 +1078,7 @@ HWTEST_F_L0(TaggedTreeTest, RBTreeDeleteShrink)
         EXPECT_TRUE(success);
     }
 
-    for (uint32_t i = 0; i < NODE_NUMBERS / 2; i++) {
+    for (int i = 0; i < NODE_NUMBERS / 2; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         resOfDelete.Update(TaggedTreeSet::Delete(thread, tset, TaggedTreeSet::FindEntry(thread, tset, key)));
