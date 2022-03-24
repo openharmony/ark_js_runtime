@@ -22,7 +22,7 @@
 #include <fstream>
 
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
-#include "ecmascript/platform/platform.h"
+#include "ecmascript/taskpool/taskpool.h"
 
 namespace panda::ecmascript {
 CMap<JSMethod *, struct StackInfo> CpuProfiler::staticStackInfo_ = CMap<JSMethod *, struct StackInfo>();
@@ -96,7 +96,7 @@ void CpuProfiler::StartCpuProfiler(const EcmaVM *vm, const std::string &fileName
     uint64_t ts = ProfileProcessor::GetMicrosecondsTimeStamp();
     ts = ts % TIME_CHANGE;
     SetProfileStart(ts);
-    Platform::GetCurrentPlatform()->PostTask(std::make_unique<ProfileProcessor>(generator_, vm, interval_));
+    Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<ProfileProcessor>(generator_, vm, interval_));
 }
 
 void CpuProfiler::StopCpuProfiler()

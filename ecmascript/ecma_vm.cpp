@@ -47,7 +47,7 @@
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/module/js_module_manager.h"
 #include "ecmascript/object_factory.h"
-#include "ecmascript/platform/platform.h"
+#include "ecmascript/taskpool/taskpool.h"
 #include "ecmascript/regexp/regexp_parser_cache.h"
 #include "ecmascript/runtime_call_id.h"
 #ifndef PANDA_TARGET_WINDOWS
@@ -146,7 +146,7 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
 bool EcmaVM::Initialize()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "EcmaVM::Initialize");
-    Platform::GetCurrentPlatform()->Initialize();
+    Taskpool::GetCurrentTaskpool()->Initialize();
 #ifndef PANDA_TARGET_WINDOWS
     RuntimeStubs::Initialize(thread_);
 #endif
@@ -272,7 +272,7 @@ bool EcmaVM::InitializeFinish()
 EcmaVM::~EcmaVM()
 {
     vmInitialized_ = false;
-    Platform::GetCurrentPlatform()->Destroy();
+    Taskpool::GetCurrentTaskpool()->Destroy();
     ClearNativeMethodsData();
 
     if (runtimeStat_ != nullptr && runtimeStatEnabled_) {

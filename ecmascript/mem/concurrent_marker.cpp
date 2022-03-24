@@ -24,7 +24,7 @@
 #include "ecmascript/mem/parallel_marker-inl.h"
 #include "ecmascript/mem/space-inl.h"
 #include "ecmascript/mem/verification.h"
-#include "ecmascript/platform/platform.h"
+#include "ecmascript/taskpool/taskpool.h"
 #include "ecmascript/runtime_call_id.h"
 #include "os/mutex.h"
 
@@ -45,7 +45,7 @@ void ConcurrentMarker::ConcurrentMarking()
     MEM_ALLOCATE_AND_GC_TRACE(vm_, ConcurrentMarking);
     ClockScope scope;
     InitializeMarking();
-    Platform::GetCurrentPlatform()->PostTask(std::make_unique<MarkerTask>(heap_));
+    Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<MarkerTask>(heap_));
     if (!heap_->IsFullMark() && heap_->IsParallelGCEnabled()) {
         heap_->PostParallelGCTask(ParallelGCTaskPhase::CONCURRENT_HANDLE_OLD_TO_NEW_TASK);
     }

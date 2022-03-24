@@ -22,7 +22,7 @@
 #include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/space.h"
-#include "ecmascript/platform/task.h"
+#include "ecmascript/taskpool/task.h"
 #include "os/mutex.h"
 
 namespace panda::ecmascript {

@@ -18,7 +18,7 @@
 
 #include "ecmascript/mem/mark_stack-inl.h"
 #include "ecmascript/mem/slots.h"
-#include "ecmascript/platform/platform.h"
+#include "ecmascript/taskpool/taskpool.h"
 
 namespace panda::ecmascript {
 using SlotNeedUpdate = std::pair<TaggedObject *, ObjectSlot>;
@@ -204,8 +204,8 @@ private:
 
     Heap *heap_;
     uint32_t threadNum_;
-    WorkNodeHolder workList_[MAX_PLATFORM_THREAD_NUM + 1];
-    ContinuousStack<JSTaggedType> *continuousQueue_[MAX_PLATFORM_THREAD_NUM + 1];
+    WorkNodeHolder workList_[MAX_TASKPOOL_THREAD_NUM + 1];
+    ContinuousStack<JSTaggedType> *continuousQueue_[MAX_TASKPOOL_THREAD_NUM + 1];
     GlobalWorkList globalWork_;
     uintptr_t markSpace_;
     uintptr_t spaceTop_;

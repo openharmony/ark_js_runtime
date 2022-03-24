@@ -23,7 +23,7 @@
 #include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/linear_space.h"
 #include "ecmascript/mem/sparse_space.h"
-#include "ecmascript/platform/platform.h"
+#include "ecmascript/taskpool/taskpool.h"
 
 namespace panda::ecmascript {
 class EcmaVM;
