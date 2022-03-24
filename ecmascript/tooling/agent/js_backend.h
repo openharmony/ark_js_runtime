@@ -32,7 +32,6 @@ public:
     ~JSBackend();
 
     // add for hooks
-    void ProcessCommand();
     void WaitForDebugger();
     void NotifyPaused(std::optional<PtLocation> location, PauseReason reason);
     void NotifyResume();

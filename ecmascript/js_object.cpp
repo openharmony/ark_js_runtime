@@ -25,7 +25,6 @@
 #include "js_array.h"
 #include "js_for_in_iterator.h"
 #include "js_hclass.h"
-#include "js_invoker.h"
 #include "js_iterator.h"
 #include "object_factory.h"
 #include "property_attributes.h"
@@ -289,7 +288,7 @@ void JSObject::GetAllKeys(const JSThread *thread, const JSHandle<JSObject> &obj,
         }
     } else {
         NameDictionary *dict = NameDictionary::Cast(obj->GetProperties().GetTaggedObject());
-        dict->GetAllKeysIntoVector(thread, keyVector);
+        dict->GetAllKeysIntoVector(keyVector);
     }
 }
 
@@ -371,7 +370,7 @@ void JSObject::GetALLElementKeysIntoVector(const JSThread *thread, const JSHandl
         }
     } else {
         JSHandle<NumberDictionary> dict = JSHandle<NumberDictionary>::Cast(elements);
-        dict->GetAllKeysIntoVector(thread, keyVector);
+        dict->GetAllKeysIntoVector(keyVector);
     }
 }
 

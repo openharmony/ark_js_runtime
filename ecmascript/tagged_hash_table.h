@@ -60,7 +60,7 @@ public:
 
     inline void GetAllKeys(const JSThread *thread, int offset, TaggedArray *keyArray) const;
 
-    inline void GetAllKeysIntoVector(const JSThread *thread, std::vector<JSTaggedValue> &vector) const;
+    inline void GetAllKeysIntoVector(std::vector<JSTaggedValue> &vector) const;
 
     inline void Swap(const JSThread *thread, int src, int dst);
 

@@ -77,7 +77,7 @@ public:
 
     inline void InitializeWithSpecialValue(JSTaggedValue initValue, uint32_t length);
 
-    static inline bool ShouldTrim(JSThread *thread, uint32_t oldLength, uint32_t newLength)
+    static inline bool ShouldTrim(uint32_t oldLength, uint32_t newLength)
     {
         return (oldLength - newLength > MAX_END_UNUSED);
     }

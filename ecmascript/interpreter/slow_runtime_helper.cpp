@@ -19,7 +19,6 @@
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/js_generator_object.h"
-#include "ecmascript/js_invoker.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/tagged_array-inl.h"
@@ -37,7 +36,7 @@ JSTaggedValue SlowRuntimeHelper::CallBoundFunction(JSThread *thread,
     InternalCallParams *arguments = thread->GetInternalCallParams();
     arguments->MakeBoundArgv(thread, boundFunc);
     JSHandle<JSTaggedValue> newTarget(thread, JSTaggedValue::Undefined());
-    return InvokeJsFunction(thread, targetFunc, obj, newTarget, arguments);
+    return EcmaInterpreter::Execute(thread, targetFunc, obj, newTarget, arguments);
 }
 
 JSTaggedValue SlowRuntimeHelper::NewObject(JSThread *thread, JSHandle<JSTaggedValue> func,
@@ -69,7 +68,7 @@ JSTaggedValue SlowRuntimeHelper::NewObject(JSThread *thread, JSHandle<JSTaggedVa
 
     if (jsFunc->GetCallTarget()->IsNative()) {
         if (jsFunc->IsBuiltinsConstructor()) {
-            return InvokeJsFunction(thread, jsFunc, JSHandle<JSTaggedValue>(thread, JSTaggedValue::Undefined()),
+            return EcmaInterpreter::Execute(thread, jsFunc, JSHandle<JSTaggedValue>(thread, JSTaggedValue::Undefined()),
                                     newTarget, thread->GetInternalCallParams());
         }
         THROW_TYPE_ERROR_AND_RETURN(thread, "Constructed NonConstructable", JSTaggedValue::Exception());

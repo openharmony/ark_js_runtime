@@ -345,7 +345,7 @@ public:
 
 class StringRemoteObject final : public RemoteObject {
 public:
-    explicit StringRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
+    explicit StringRemoteObject([[maybe_unused]] const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
     {
         SetType(RemoteObject::TypeName::String).SetValue(tagged);
     }

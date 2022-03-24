@@ -278,7 +278,7 @@ public:
     {
         totalNodesSize_ -= size;
     }
-    CString *GenerateNodeName(JSThread *thread, TaggedObject *entry);
+    CString *GenerateNodeName(TaggedObject *entry);
     NodeType GenerateNodeType(TaggedObject *entry);
     const CList<Node *> *GetNodes() const
     {
@@ -301,10 +301,10 @@ public:
     }
 
 private:
-    void FillNodes(JSThread *thread);
-    Node *GenerateNode(JSThread *thread, JSTaggedValue entry, int sequenceId = -1);
+    void FillNodes();
+    Node *GenerateNode(JSTaggedValue entry, int sequenceId = -1);
     Node *GenerateStringNode(JSTaggedValue entry, int sequenceId);
-    void FillEdges(JSThread *thread);
+    void FillEdges();
     void BridgeAllReferences();
     CString *GenerateEdgeName(TaggedObject *from, TaggedObject *to);
 

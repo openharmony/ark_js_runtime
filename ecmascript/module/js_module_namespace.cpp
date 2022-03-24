@@ -126,8 +126,10 @@ bool ModuleNamespace::PreventExtensions()
     return true;
 }
 
-bool ModuleNamespace::DefineOwnProperty(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
-                                        const JSHandle<JSTaggedValue> &key, PropertyDescriptor desc)
+bool ModuleNamespace::DefineOwnProperty([[maybe_unused]] JSThread *thread,
+                                        [[maybe_unused]] const JSHandle<JSTaggedValue> &obj,
+                                        [[maybe_unused]] const JSHandle<JSTaggedValue> &key,
+                                        [[maybe_unused]] PropertyDescriptor desc)
 {
     return false;
 }
@@ -154,7 +156,7 @@ bool ModuleNamespace::HasProperty(JSThread *thread, const JSHandle<JSTaggedValue
     return false;
 }
 
-bool ModuleNamespace::SetPrototype(JSThread *thread, [[maybe_unused]]const JSHandle<JSTaggedValue> &obj,
+bool ModuleNamespace::SetPrototype([[maybe_unused]]const JSHandle<JSTaggedValue> &obj,
                                    const JSHandle<JSTaggedValue> &proto)
 {
     ASSERT(obj->IsModuleNamespace());

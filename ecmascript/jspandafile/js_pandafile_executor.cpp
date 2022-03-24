@@ -16,7 +16,6 @@
 #include "ecmascript/jspandafile/js_pandafile_executor.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/internal_call_params.h"
-#include "ecmascript/js_invoker.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/module/js_module_manager.h"

@@ -45,7 +45,7 @@ bool SymbolTable::IsMatch(const JSTaggedValue &name, const JSTaggedValue &other)
     return EcmaString::StringsAreEqual(nameString, otherString);
 }
 
-bool SymbolTable::ContainsKey(JSThread *thread, const JSTaggedValue &key)
+bool SymbolTable::ContainsKey(const JSTaggedValue &key)
 {
     int entry = FindEntry(key);
     return entry != -1;
@@ -58,12 +58,12 @@ JSTaggedValue SymbolTable::GetSymbol(const JSTaggedValue &key)
     return GetValue(entry);
 }
 
-JSTaggedValue SymbolTable::FindSymbol(JSThread *thread, const JSTaggedValue &value)
+JSTaggedValue SymbolTable::FindSymbol(const JSTaggedValue &value)
 {
     JSSymbol *symbol = JSSymbol::Cast(value.GetTaggedObject());
     JSTaggedValue des = symbol->GetDescription();
     if (!des.IsUndefined()) {
-        if (ContainsKey(thread, des)) {
+        if (ContainsKey(des)) {
             return des;
         }
     }

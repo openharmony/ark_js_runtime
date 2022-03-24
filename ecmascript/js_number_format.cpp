@@ -189,8 +189,8 @@ icu::MeasureUnit ToMeasureUnit(const std::string &sanctionedUnit)
 bool IsSanctionedSimpleUnitIdentifier(const std::string &unit)
 {
     // 1. If unitIdentifier is listed in sanctioned unit set, return true.
-    auto it = sanctionedUnit.find(unit);
-    if (it != sanctionedUnit.end()) {
+    auto it = SANCTIONED_UNIT.find(unit);
+    if (it != SANCTIONED_UNIT.end()) {
         return true;
     }
 

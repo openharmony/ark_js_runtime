@@ -245,7 +245,6 @@ public:
 
 private:
     static JSHandle<JSHClass> GetOrCreateDerivedJSHClass(JSThread *thread, JSHandle<JSFunction> derived,
-                                                         JSHandle<JSFunction> constructor,
                                                          JSHandle<JSHClass> ctorInitialDynClass);
 };
 

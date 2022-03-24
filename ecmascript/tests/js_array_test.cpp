@@ -174,17 +174,17 @@ HWTEST_F_L0(JSArrayTest, Iterator)
         JSHandle<JSTaggedValue> index_key(thread, JSTaggedValue(0));
         JSHandle<JSTaggedValue> element_key(thread, JSTaggedValue(1));
         if (i == 2) {
-            EXPECT_EQ(i, JSIterator::IteratorValue(thread, key_result)->GetInt());
+            EXPECT_EQ(static_cast<int>(i), JSIterator::IteratorValue(thread, key_result)->GetInt());
             EXPECT_EQ(JSTaggedValue::Undefined(), JSIterator::IteratorValue(thread, value_result).GetTaggedValue());
-            EXPECT_EQ(i, JSObject::GetProperty(thread, iter_value, index_key).GetValue()->GetInt());
+            EXPECT_EQ(static_cast<int>(i), JSObject::GetProperty(thread, iter_value, index_key).GetValue()->GetInt());
             EXPECT_EQ(JSTaggedValue::Undefined(),
                       JSObject::GetProperty(thread, iter_value, element_key).GetValue().GetTaggedValue());
             continue;
         }
-        EXPECT_EQ(i, JSIterator::IteratorValue(thread, key_result)->GetInt());
-        EXPECT_EQ(i, JSIterator::IteratorValue(thread, value_result)->GetInt());
-        EXPECT_EQ(i, JSObject::GetProperty(thread, iter_value, index_key).GetValue()->GetInt());
-        EXPECT_EQ(i, JSObject::GetProperty(thread, iter_value, element_key).GetValue()->GetInt());
+        EXPECT_EQ(static_cast<int>(i), JSIterator::IteratorValue(thread, key_result)->GetInt());
+        EXPECT_EQ(static_cast<int>(i), JSIterator::IteratorValue(thread, value_result)->GetInt());
+        EXPECT_EQ(static_cast<int>(i), JSObject::GetProperty(thread, iter_value, index_key).GetValue()->GetInt());
+        EXPECT_EQ(static_cast<int>(i), JSObject::GetProperty(thread, iter_value, element_key).GetValue()->GetInt());
     }
 }
 }  // namespace panda::test

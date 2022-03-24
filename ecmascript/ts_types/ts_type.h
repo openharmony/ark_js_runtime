@@ -143,7 +143,7 @@ class TSUnionType : public TSType {
 public:
     CAST_CHECK(TSUnionType, IsTSUnionType);
 
-    bool IsEqual(JSThread *thread, JSHandle<TSUnionType> unionB);
+    bool IsEqual(JSHandle<TSUnionType> unionB);
 
     static constexpr size_t COMPONENT_OFFSET = TSType::SIZE;
     ACCESSORS(ComponentTypes, COMPONENT_OFFSET, SIZE);

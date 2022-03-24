@@ -181,7 +181,7 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolWithParameterFor)
     JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromCanBeCompressString("ccc");
     ASSERT_EQ(string->GetLength(), 3U);
     JSHandle<JSTaggedValue> string_handle(string);
-    ASSERT_EQ(tableHandle->ContainsKey(thread, string_handle.GetTaggedValue()), false);
+    ASSERT_EQ(tableHandle->ContainsKey(string_handle.GetTaggedValue()), false);
 
     JSHandle<JSSymbol> symbol = ecmaVM->GetFactory()->NewSymbolWithTableWithChar("ccc");
 
@@ -193,7 +193,7 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolWithParameterFor)
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
     JSTaggedValue result = BuiltinsSymbol::For(ecmaRuntimeCallInfo.get());
     TestHelper::TearDownFrame(thread, prev);
-    ASSERT_EQ(tableHandle->ContainsKey(thread, string_handle.GetTaggedValue()), true);
+    ASSERT_EQ(tableHandle->ContainsKey(string_handle.GetTaggedValue()), true);
 
     JSTaggedValue target(*symbol);
     ASSERT_EQ(result.GetRawData() == target.GetRawData(), true);
@@ -241,7 +241,7 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolKeyFor)
     ASSERT_TRUE(otherResult.IsString());
     JSHandle<SymbolTable> tableHandle(env->GetRegisterSymbols());
     JSTaggedValue stringValue(*string);
-    ASSERT_EQ(tableHandle->ContainsKey(thread, stringValue), true);
+    ASSERT_EQ(tableHandle->ContainsKey(stringValue), true);
 }
 
 // Symbol.ToPrimitive()

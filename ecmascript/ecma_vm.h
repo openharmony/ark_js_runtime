@@ -387,11 +387,12 @@ public:
 protected:
     bool CheckEntrypointSignature([[maybe_unused]] Method *entrypoint) override
     {
-        return true;
+        // unused interface
+        UNREACHABLE();
     }
 
-    Expected<int, Runtime::Error> InvokeEntrypointImpl(Method *entrypoint,
-                                                       const std::vector<std::string> &args) override
+    Expected<int, Runtime::Error> InvokeEntrypointImpl([[maybe_unused]] Method *entrypoint,
+                                                       [[maybe_unused]] const std::vector<std::string> &args) override
     {
         // unused interface
         UNREACHABLE();

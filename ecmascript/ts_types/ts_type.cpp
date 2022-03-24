@@ -66,7 +66,7 @@ JSHClass *TSObjectType::CreateHClassByProps(JSThread *thread, JSHandle<TSObjLayo
     return *hclass;
 }
 
-bool TSUnionType::IsEqual(JSThread *thread, JSHandle<TSUnionType> unionB)
+bool TSUnionType::IsEqual(JSHandle<TSUnionType> unionB)
 {
     DISALLOW_GARBAGE_COLLECTION;
     ASSERT(unionB->GetComponentTypes().IsTaggedArray());

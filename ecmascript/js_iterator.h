@@ -28,8 +28,7 @@ enum class IterationKind : uint8_t {
 
 class JSIterator final {
 public:
-    static JSTaggedValue IteratorCloseAndReturn(JSThread *thread, const JSHandle<JSTaggedValue> &iter,
-                                                const JSHandle<JSTaggedValue> &status);
+    static JSTaggedValue IteratorCloseAndReturn(JSThread *thread, const JSHandle<JSTaggedValue> &iter);
     // 7.4.1
     static JSHandle<JSTaggedValue> GetIterator(JSThread *thread, const JSHandle<JSTaggedValue> &obj);
 

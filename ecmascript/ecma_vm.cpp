@@ -32,6 +32,7 @@
 #include "ecmascript/global_env_constants-inl.h"
 #include "ecmascript/global_env_constants.h"
 #include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jspandafile/js_pandafile.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
@@ -40,7 +41,6 @@
 #include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_for_in_iterator.h"
-#include "ecmascript/js_invoker.h"
 #include "ecmascript/js_native_pointer.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/concurrent_marker.h"
@@ -428,11 +428,11 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
         CpuProfiler *profiler = CpuProfiler::GetInstance();
         profiler->CpuProfiler::StartCpuProfiler(this, "");
-        panda::ecmascript::InvokeJsFunction(thread_, func, global, newTarget, params);
+        EcmaInterpreter::Execute(thread_, func, global, newTarget, params);
         profiler->CpuProfiler::StopCpuProfiler();
 #endif
     } else {
-        panda::ecmascript::InvokeJsFunction(thread_, func, global, newTarget, params);
+        EcmaInterpreter::Execute(thread_, func, global, newTarget, params);
     }
     if (!thread_->HasPendingException()) {
         job::MicroJobQueue::ExecutePendingJob(thread_, GetMicroJobQueue());

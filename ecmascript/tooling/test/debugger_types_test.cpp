@@ -1644,7 +1644,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
     EXPECT_EQ(location->GetLine(), 19);
     EXPECT_EQ("url7", callFrame->GetUrl());
     const CVector<std::unique_ptr<Scope>> *scopeChain = callFrame->GetScopeChain();
-    EXPECT_EQ(scopeChain->size(), 2);
+    EXPECT_EQ(scopeChain->size(), 2U);
     RemoteObject *thisObj = callFrame->GetThis();
     ASSERT_NE(thisObj, nullptr);
     EXPECT_EQ(thisObj->GetType(), ObjectType::Object);
@@ -1671,7 +1671,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
     EXPECT_EQ(location->GetLine(), 19);
     EXPECT_EQ("url7", callFrame->GetUrl());
     scopeChain = callFrame->GetScopeChain();
-    EXPECT_EQ(scopeChain->size(), 2);
+    EXPECT_EQ(scopeChain->size(), 2U);
     thisObj = callFrame->GetThis();
     ASSERT_NE(thisObj, nullptr);
     EXPECT_EQ(thisObj->GetType(), ObjectType::Object);

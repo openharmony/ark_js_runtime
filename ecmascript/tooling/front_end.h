@@ -27,9 +27,8 @@ public:
     FrontEnd() = default;
     virtual ~FrontEnd() = default;
 
-    virtual void WaitForDebugger(const EcmaVM *ecmaVm) = 0;
+    virtual void WaitForDebugger() = 0;
     virtual void RunIfWaitingForDebugger() = 0;
-    virtual void ProcessCommand(const EcmaVM *ecmaVm) = 0;
     virtual void SendResponse(const DispatchRequest &request, const DispatchResponse &response,
                               std::unique_ptr<PtBaseReturns> result) = 0;
     virtual void SendNotification(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events) = 0;

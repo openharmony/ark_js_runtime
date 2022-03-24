@@ -19,13 +19,11 @@
 #include "ecmascript/accessor_data.h"
 #include "ecmascript/internal_call_params.h"
 #include "global_env.h"
-#include "js_invoker.h"
 #include "js_symbol.h"
 #include "object_factory.h"
 
 namespace panda::ecmascript {
-JSTaggedValue JSIterator::IteratorCloseAndReturn(JSThread *thread, const JSHandle<JSTaggedValue> &iter,
-                                                 const JSHandle<JSTaggedValue> &status)
+JSTaggedValue JSIterator::IteratorCloseAndReturn(JSThread *thread, const JSHandle<JSTaggedValue> &iter)
 {
     ASSERT(thread->HasPendingException());
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();

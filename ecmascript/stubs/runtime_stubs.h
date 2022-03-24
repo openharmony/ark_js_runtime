@@ -343,7 +343,7 @@ private:
                                                   const JSHandle<JSTaggedValue> &right);
     static inline JSTaggedValue RuntimeGreaterEqDyn(JSThread *thread, const JSHandle<JSTaggedValue> &left,
                                                     const JSHandle<JSTaggedValue> &right);
-    static inline JSTaggedValue RuntimeAdd2Dyn(JSThread *thread, EcmaVM *ecma_vm, const JSHandle<JSTaggedValue> &left,
+    static inline JSTaggedValue RuntimeAdd2Dyn(JSThread *thread, const JSHandle<JSTaggedValue> &left,
                                                const JSHandle<JSTaggedValue> &right);
     static inline JSTaggedValue RuntimeSub2Dyn(JSThread *thread, const JSHandle<JSTaggedValue> &left,
                                                const JSHandle<JSTaggedValue> &right);

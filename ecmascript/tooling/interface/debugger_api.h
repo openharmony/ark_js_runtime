@@ -79,7 +79,7 @@ public:
     static void ClearException(const EcmaVM *ecmaVm);
 
     // EcmaVM
-    static const panda_file::File *FindPandaFile(const EcmaVM *ecmaVm, const CString &fileName);
+    static const panda_file::File *FindPandaFile(const CString &fileName);
 
     // NumberHelper
     static double StringToDouble(const uint8_t *start, const uint8_t *end, uint8_t radix);

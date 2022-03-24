@@ -50,7 +50,7 @@ public:
     void AddSnapShot(HeapSnapShot *snapshot);
 
     bool StartHeapTracking(JSThread *thread, double timeInterval, bool isVmMode = true) override;
-    bool StopHeapTracking(JSThread *thread, DumpFormat dumpFormat, const std::string &filePath) override;
+    bool StopHeapTracking(JSThread *thread, const std::string &filePath) override;
 
 private:
     /**

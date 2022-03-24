@@ -28,7 +28,6 @@
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_handle.h"
-#include "ecmascript/js_invoker.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_tagged_value-inl.h"

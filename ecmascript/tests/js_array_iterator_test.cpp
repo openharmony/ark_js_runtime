@@ -84,7 +84,7 @@ HWTEST_F_L0(JSArrayIteratorTest, SetIteratedArray)
     EXPECT_EQ(handleJSArrayTo1->GetArrayLength(), static_cast<uint32_t>(numArrayFrom1));
     for (int i = 0; i < numArrayFrom1; i++) {
         EXPECT_EQ(JSArray::FastGetPropertyByValue(thread, JSHandle<JSTaggedValue>(handleJSArrayTo1), i)->GetNumber(),
-                  static_cast<int32_t>(arrayFrom1[i]));
+                  static_cast<double>(arrayFrom1[i]));
     }
 
     // Call "SetIteratedArray" function in this HWTEST_F_L0.
