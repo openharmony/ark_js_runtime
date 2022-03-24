@@ -12,9 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "pass_manager.h"
 
+#include "aot_file_manager.h"
 #include "ecmascript/ecma_handle_scope.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
@@ -23,15 +23,17 @@
 #include "pass.h"
 
 namespace panda::ecmascript::kungfu {
-bool PassManager::Compile(const std::string &fileName)
+bool PassManager::Compile(const std::string &fileName, const std::string &triple,
+    const std::string &outputFileName)
 {
     BytecodeTranslationInfo translationInfo;
     [[maybe_unused]] EcmaHandleScope handleScope(vm_->GetJSThread());
     bool res = CollectInfoOfPandaFile(fileName, &translationInfo);
     if (!res) {
-        std::cerr << "Cannot execute panda file '" << fileName << "' with entry '" << entry_ << "'" << std::endl;
+        std::cerr << "Cannot execute panda file '" << fileName << "'" << std::endl;
         return false;
     }
+    LLVMModule aotModule("aot_file", triple);
 
     for (size_t i = 0; i < translationInfo.methodPcInfos.size(); i++) {
         BytecodeCircuitBuilder builder(vm_, translationInfo, i);
@@ -41,8 +43,11 @@ bool PassManager::Compile(const std::string &fileName)
         pipeline.RunPass<SlowPathLoweringPass>(&builder);
         pipeline.RunPass<VerifierPass>();
         pipeline.RunPass<SchedulingPass>();
-        pipeline.RunPass<LLVMIRGenPass>();
+        pipeline.RunPass<LLVMIRGenPass>(&aotModule, translationInfo.methodPcInfos[i].method);
     }
+
+    AotFileManager manager(&aotModule);
+    manager.SaveAOTFile(outputFileName);
     return true;
 }
 

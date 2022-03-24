@@ -56,11 +56,12 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMInTwoWays)
     JSRuntimeOptions options2;
     options2.SetEnableArkTools(true);
     options2.SetEnableStubAot(true);
-    options2.SetStubModuleFile("file2");
+    options2.SetComStubFile("file1");
+    options2.SetBcStubFile("file2");
     options2.SetEnableForceGC(false);
     options2.SetForceFullGC(false);
     options2.SetEnableCpuprofiler(true);
-    options2.SetEnableTsAot(false);
+    options2.SetEnableTsAot(true);
     options2.SetArkProperties(ArkProperties::GC_STATS_PRINT);
 
     // // GC
@@ -76,7 +77,8 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMInTwoWays)
 
     EXPECT_TRUE(options1Out.IsEnableArkTools() != options2Out.IsEnableArkTools());
     EXPECT_TRUE(options1Out.IsEnableStubAot() != options2Out.IsEnableStubAot());
-    EXPECT_TRUE(options1Out.GetStubModuleFile() != options2Out.GetStubModuleFile());
+    EXPECT_TRUE(options1Out.GetComStubFile() != options2Out.GetComStubFile());
+    EXPECT_TRUE(options1Out.GetBcStubFile() != options2Out.GetBcStubFile());
     EXPECT_TRUE(options1Out.IsEnableForceGC() != options2Out.IsEnableForceGC());
     EXPECT_TRUE(options1Out.IsForceFullGC() != options2Out.IsForceFullGC());
     EXPECT_TRUE(options1Out.IsEnableCpuProfiler() != options2Out.IsEnableCpuProfiler());

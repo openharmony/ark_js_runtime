@@ -229,6 +229,12 @@ GateRef CircuitBuilder::RuntimeCall(GateRef glue, GateRef target,
     DEF_CALL_GATE(OpCode::RUNTIME_CALL, signature);
 }
 
+GateRef CircuitBuilder::NoGcRuntimeCall(const CallSignature *signature, GateRef glue, GateRef target,
+                                        GateRef depend, std::initializer_list<GateRef> args)
+{
+    DEF_CALL_GATE(OpCode::NOGC_RUNTIME_CALL, signature);
+}
+
 GateRef CircuitBuilder::BytecodeCall(const CallSignature *signature, GateRef glue, GateRef target,
                                      GateRef depend, const std::vector<GateRef> &args)
 {

@@ -426,6 +426,8 @@ public:
         std::initializer_list<GateRef> args);
     GateRef CallRuntimeTrampoline(GateRef glue, GateRef target, std::initializer_list<GateRef> args);
     GateRef CallRuntimeTrampoline(GateRef glue, GateRef target, GateRef depend, std::initializer_list<GateRef> args);
+    GateRef CallNoGCRuntime(const CallSignature *descriptor, GateRef glue, GateRef target,
+        std::initializer_list<GateRef> args);
     void DebugPrint(GateRef thread, std::initializer_list<GateRef> args);
     void FatalPrint(GateRef thread, std::initializer_list<GateRef> args);
     // memory

@@ -62,34 +62,12 @@ void LLVMIRGeneratorImpl::GenerateCodeForStub(Circuit *circuit, const ControlFlo
     builder.Build();
 }
 
-void LLVMModuleAssembler::AssembleModule()
+void LLVMIRGeneratorImpl::GenerateCode(Circuit *circuit, const ControlFlowGraph &graph, const CompilationConfig *cfg,
+    const panda::ecmascript::JSMethod *method)
 {
-    assembler_.Run();
-}
-
-void LLVMModuleAssembler::AssembleStubModule(StubModule *module)
-{
-    auto codeBuff = reinterpret_cast<uintptr_t>(assembler_.GetCodeBuffer());
-    auto engine = assembler_.GetEngine();
-    std::map<uintptr_t, std::string> addr2name;
-
-    auto callSigns = stubmodule_->GetCSigns();
-    for (size_t i = 0; i < stubmodule_->GetFuncsSize(); i++) {
-        auto cs = callSigns[i];
-        LLVMValueRef func = stubmodule_->GetFunction(i);
-        ASSERT(func != nullptr);
-        uintptr_t entry = reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, func));
-        module->AddStubEntry(cs->GetTargetKind(), cs->GetID(), entry - codeBuff);
-        ASSERT(!cs->GetName().empty());
-        addr2name[entry] = cs->GetName();
-    }
-    module->SetHostCodeSectionAddr(codeBuff);
-    // stackmaps ptr and size
-    module->SetStackMapAddr(reinterpret_cast<uintptr_t>(assembler_.GetStackMapsSection()));
-    module->SetStackMapSize(assembler_.GetStackMapsSize());
-#ifndef NDEBUG
-    assembler_.Disassemble(addr2name);
-#endif
+    auto function = module_->AddFunc(method);
+    LLVMIRBuilder builder(&graph, circuit, module_, function, cfg);
+    builder.Build();
 }
 
 static uint8_t *RoundTripAllocateCodeSection(void *object, uintptr_t size, [[maybe_unused]] unsigned alignment,
@@ -174,10 +152,9 @@ void LLVMAssembler::BuildAndRunPasses()
     COMPILER_LOG(DEBUG) << "BuildAndRunPasses  + ";
 }
 
-LLVMAssembler::LLVMAssembler(LLVMModuleRef module)
-    : module_(module)
+LLVMAssembler::LLVMAssembler(LLVMModuleRef module, bool isFpElim) : module_(module)
 {
-    Initialize();
+    Initialize(isFpElim);
 }
 
 LLVMAssembler::~LLVMAssembler()
@@ -205,7 +182,9 @@ void LLVMAssembler::Run()
     COMPILER_LOG(INFO) << "Current Module: " << info;
     LLVMDisposeMessage(info);
 #endif
-    LLVMPrintModuleToFile(module_, "stub.ll", &error);
+    std::string originName = llvm::unwrap(module_)->getModuleIdentifier() + ".ll";
+    std::string optName = llvm::unwrap(module_)->getModuleIdentifier() + "_opt" + ".ll";
+    LLVMPrintModuleToFile(module_, originName.c_str(), &error);
     LLVMVerifyModule(module_, LLVMAbortProcessAction, &error);
     LLVMDisposeMessage(error);
     UseRoundTripSectionMemoryManager();
@@ -213,10 +192,10 @@ void LLVMAssembler::Run()
         return;
     }
     BuildAndRunPasses();
-    LLVMPrintModuleToFile(module_, "opt_stub.ll", &error);
+    LLVMPrintModuleToFile(module_, optName.c_str(), &error);
 }
 
-void LLVMAssembler::Initialize()
+void LLVMAssembler::Initialize(bool isFpElim)
 {
     std::string triple(LLVMGetTarget(module_));
     if (triple.compare("x86_64-unknown-linux-gnu") == 0) {
@@ -246,14 +225,9 @@ void LLVMAssembler::Initialize()
     }
     llvm::linkAllBuiltinGCs();
     LLVMInitializeMCJITCompilerOptions(&options_, sizeof(options_));
-    options_.OptLevel = 3; // opt level 2
-    // Just ensure that this field still exists.
-#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
-    // tmp for interpreter stub
-    options_.NoFramePointerElim = false;
-#else
-    options_.NoFramePointerElim = true;
-#endif
+    options_.OptLevel = 3; // opt level 3
+    // NOTE: Just ensure that this field still exists for PIC option
+    options_.NoFramePointerElim = isFpElim ? false : true;
     options_.CodeModel = LLVMCodeModelSmall;
 }
 

@@ -140,7 +140,7 @@ public:
         callField_ = IsNativeBit::Update(callField_, isNative);
     }
 
-    CString ParseFunctionName() const;
+    CString PUBLIC_API ParseFunctionName() const;
     void InitializeCallField();
 
     bool HaveThisWithCallField() const

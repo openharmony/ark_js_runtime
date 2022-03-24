@@ -129,11 +129,13 @@ int Main(const int argc, const char **argv)
     }
     std::string entry = entrypoint.GetValue();
 
-    arg_list_t fileNames = files.GetValue();
+    arg_list_t pandaFileNames = files.GetValue();
     PassManager passManager(vm, entry);
-    for (const auto &fileName : fileNames) {
+    std::string triple = runtimeOptions.GetAotTargetTriple();
+    std::string outputFileName = runtimeOptions.GetAOTOutputFile();
+    for (const auto &fileName : pandaFileNames) {
         LOG_ECMA(DEBUG) << "start to execute ark file: " << fileName;
-        if (passManager.Compile(fileName) == false) {
+        if (passManager.Compile(fileName, triple, outputFileName) == false) {
             ret = false;
             break;
         }

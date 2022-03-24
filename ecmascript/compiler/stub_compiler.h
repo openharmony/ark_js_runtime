@@ -16,7 +16,9 @@
 #ifndef ECMASCRIPT_COMPILER_STUB_COMPILER_H
 #define ECMASCRIPT_COMPILER_STUB_COMPILER_H
 
-#include "ecmascript/stub_module.h"
+#include <string>
+
+#include "llvm_ir_builder.h"
 
 namespace panda::ecmascript::kungfu {
 class Stub;
@@ -26,7 +28,10 @@ public:
 
     ~StubCompiler() = default;
 
-    void BuildStubModuleAndSave(const std::string &triple, const std::string &filename);
+    bool BuildStubModuleAndSave(const std::string &triple, const std::string &commonStubFile,
+        const std::string &bcHandlerStubFile);
+private:
+    void RunPipeline(LLVMModule &module);
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_STUB_COMPILER_H

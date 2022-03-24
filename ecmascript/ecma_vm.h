@@ -69,6 +69,8 @@ class JSFunction;
 class Program;
 class TSLoader;
 class ModuleManager;
+class AotCodeInfo;
+
 using HostPromiseRejectionTracker = void (*)(const EcmaVM* vm,
                                              const JSHandle<JSPromise> promise,
                                              const JSHandle<JSTaggedValue> reason,
@@ -327,6 +329,7 @@ public:
     {
         return tsLoader_;
     }
+
     void SetupRegExpResultCache();
 
     JSHandle<JSTaggedValue> GetRegExpCache() const
@@ -414,6 +417,8 @@ private:
 
     void ClearNativeMethodsData();
 
+    void LoadAOTFile(std::string fileName);
+
     NO_MOVE_SEMANTIC(EcmaVM);
     NO_COPY_SEMANTIC(EcmaVM);
 
@@ -459,6 +464,7 @@ private:
     ModuleManager *moduleManager_ {nullptr};
     TSLoader *tsLoader_ {nullptr};
     bool optionalLogEnabled_ {false};
+    AotCodeInfo *aotInfo_ {nullptr};
 
     // Debugger
     RuntimeNotificationManager *notificationManager_ {nullptr};
