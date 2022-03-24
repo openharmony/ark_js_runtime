@@ -353,7 +353,7 @@ JSTaggedValue SlowRuntimeStub::Mod2Dyn(JSThread *thread, JSTaggedValue left, JST
             JSHandle<BigInt> leftBigint(valLeft);
             JSHandle<BigInt> rightBigint(valRight);
             return BigInt::Remainder(thread, leftBigint, rightBigint).GetTaggedValue();
-        }    
+        }
         return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
     double dLeft = valLeft->GetNumber();
