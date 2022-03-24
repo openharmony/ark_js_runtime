@@ -55,6 +55,7 @@ template("host_unittest_action") {
       rebase_path(_root_out_dir_) + "/ark/ark:" + rebase_path(_root_out_dir_) +
           "/ark/ark_js_runtime:" + rebase_path(_root_out_dir_) + "/test/test:" +
           rebase_path(_root_out_dir_) + "/common/${icu_path}:" +
+          rebase_path(_root_out_dir_) + "/global/${icu_path}:" +
           rebase_path("//prebuilts/clang/ohos/linux-x86_64/llvm/lib/"),
     ]
 
@@ -137,7 +138,8 @@ template("host_moduletest_action") {
       "--env-path",
       rebase_path(_root_out_dir_) + "/ark/ark:" + rebase_path(_root_out_dir_) +
           "/ark/ark_js_runtime:" + rebase_path(_root_out_dir_) +
-          "/common/${icu_path}:" +
+          "/common/${icu_path}:" + rebase_path(_root_out_dir_) +
+          "/global/${icu_path}:" +
           rebase_path("//prebuilts/clang/ohos/linux-x86_64/llvm/lib/"),
     ]
 
