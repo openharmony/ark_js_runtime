@@ -214,6 +214,11 @@ GateRef InterpreterStub::GetProfileTypeInfoFromFunction(GateRef function)
     return Load(VariableType::JS_POINTER(), function, GetIntPtrConstant(JSFunction::PROFILE_TYPE_INFO_OFFSET));
 }
 
+GateRef InterpreterStub::GetModuleFromFunction(GateRef function)
+{
+    return Load(VariableType::JS_POINTER(), function, GetIntPtrConstant(JSFunction::ECMA_MODULE_OFFSET));
+}
+
 GateRef InterpreterStub::GetConstpoolFromFunction(GateRef function)
 {
     return Load(VariableType::JS_POINTER(), function, GetIntPtrConstant(JSFunction::CONSTANT_POOL_OFFSET));
@@ -268,6 +273,12 @@ void InterpreterStub::SetHomeObjectToFunction(GateRef glue, GateRef function, Ga
 {
     GateRef offset = GetIntPtrConstant(JSFunction::HOME_OBJECT_OFFSET);
     Store(VariableType::INT64(), glue, function, offset, value);
+}
+
+void InterpreterStub::SetModuleToFunction(GateRef glue, GateRef function, GateRef value)
+{
+    GateRef offset = GetIntPtrConstant(JSFunction::ECMA_MODULE_OFFSET);
+    Store(VariableType::JS_POINTER(), glue, function, offset, value);
 }
 
 GateRef InterpreterStub::GetCurrentSpFrame(GateRef glue)
