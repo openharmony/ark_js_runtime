@@ -202,7 +202,7 @@ HWTEST_F_L0(BuiltinsJsonTest, Parse)
     JSHandle<JSTaggedValue> lenResult =
         JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(valueHandle), lengthKeyHandle).GetValue();
     uint32_t length = JSTaggedValue::ToLength(thread, lenResult).ToUint32();
-    EXPECT_EQ(length, 3);
+    EXPECT_EQ(length, 3U);
 }
 
 HWTEST_F_L0(BuiltinsJsonTest, Parse2)
@@ -229,7 +229,7 @@ HWTEST_F_L0(BuiltinsJsonTest, Parse2)
     JSHandle<JSTaggedValue> lengthKey(factory->NewFromCanBeCompressString("length"));
     JSHandle<JSTaggedValue> lenResult = JSObject::GetProperty(thread, handleKey, lengthKey).GetValue();
     uint32_t length = JSTaggedValue::ToLength(thread, lenResult).ToUint32();
-    ASSERT_EQ(length, 2);
+    ASSERT_EQ(length, 2U);
 }
 
 HWTEST_F_L0(BuiltinsJsonTest, Parse3)

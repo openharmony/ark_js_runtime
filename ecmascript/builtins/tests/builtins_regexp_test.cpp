@@ -303,7 +303,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, Exec1)
     JSHandle<JSTaggedValue> index(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("index"));
     JSHandle<JSTaggedValue> indexHandle(JSObject::GetProperty(thread, execResult, index).GetValue());
     uint32_t resultIndex = JSTaggedValue::ToUint32(thread, indexHandle);
-    ASSERT_TRUE(resultIndex == 4);
+    ASSERT_TRUE(resultIndex == 4U);
 
     JSHandle<JSTaggedValue> input(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("input"));
 
@@ -362,7 +362,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, Exec2)
     JSHandle<JSTaggedValue> index(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("index"));
     JSHandle<JSTaggedValue> indexHandle(JSObject::GetProperty(thread, execResult, index).GetValue());
     uint32_t resultIndex = JSTaggedValue::ToUint32(thread, indexHandle);
-    ASSERT_TRUE(resultIndex == 0);
+    ASSERT_TRUE(resultIndex == 0U);
 
     JSHandle<JSTaggedValue> input(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("input"));
     JSHandle<JSTaggedValue> inputHandle(JSObject::GetProperty(thread, execResult, input).GetValue());
@@ -650,7 +650,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, RegExpParseCache)
     JSHandle<EcmaString> string2 = factory->NewFromCanBeCompressString("abcd");
     regExpParserCache->SetCache(*string1, 0, JSTaggedValue::True(), 2);
     ASSERT_TRUE(regExpParserCache->GetCache(*string1, 0).first == JSTaggedValue::True());
-    ASSERT_TRUE(regExpParserCache->GetCache(*string1, 0).second == 2);
+    ASSERT_TRUE(regExpParserCache->GetCache(*string1, 0).second == 2U);
     ASSERT_TRUE(regExpParserCache->GetCache(*string1, RegExpParserCache::CACHE_SIZE).first == JSTaggedValue::Hole());
     ASSERT_TRUE(regExpParserCache->GetCache(*string2, 0).first == JSTaggedValue::Hole());
 }
