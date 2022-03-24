@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/platform/platform.h"
+#include "ecmascript/taskpool/taskpool.h"
 
 #ifndef PANDA_TARGET_WINDOWS
 #include "sys/sysinfo.h"
@@ -22,7 +22,7 @@
 #endif
 
 namespace panda::ecmascript {
-void Platform::Initialize(int threadNum)
+void Taskpool::Initialize(int threadNum)
 {
     os::memory::LockHolder lock(mutex_);
     if (isInitialized_++ <= 0) {
@@ -30,7 +30,7 @@ void Platform::Initialize(int threadNum)
     }
 }
 
-void Platform::Destroy()
+void Taskpool::Destroy()
 {
     os::memory::LockHolder lock(mutex_);
     if (isInitialized_ <= 0) {
@@ -44,10 +44,10 @@ void Platform::Destroy()
     }
 }
 
-uint32_t Platform::TheMostSuitableThreadNum(uint32_t threadNum) const
+uint32_t Taskpool::TheMostSuitableThreadNum(uint32_t threadNum) const
 {
     if (threadNum > 0) {
-        return std::min<uint32_t>(threadNum, MAX_PLATFORM_THREAD_NUM);
+        return std::min<uint32_t>(threadNum, MAX_TASKPOOL_THREAD_NUM);
     }
 #ifndef PANDA_TARGET_WINDOWS
     uint32_t numOfCpuCore = get_nprocs() - 1;
@@ -56,6 +56,6 @@ uint32_t Platform::TheMostSuitableThreadNum(uint32_t threadNum) const
     GetSystemInfo(&info);
     uint32_t numOfCpuCore = info.dwNumberOfProcessors;
 #endif
-    return std::min<uint32_t>(numOfCpuCore, MAX_PLATFORM_THREAD_NUM);
+    return std::min<uint32_t>(numOfCpuCore, MAX_TASKPOOL_THREAD_NUM);
 }
 }  // namespace panda::ecmascript

@@ -67,7 +67,7 @@ void ParallelEvacuation::EvacuateSpace()
         os::memory::LockHolder holder(mutex_);
         parallel_ = CalculateEvacuationThreadNum();
         for (int i = 0; i < parallel_; i++) {
-            Platform::GetCurrentPlatform()->PostTask(std::make_unique<EvacuationTask>(this));
+            Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<EvacuationTask>(this));
         }
     }
 
@@ -202,7 +202,7 @@ void ParallelEvacuation::UpdateReference()
         os::memory::LockHolder holder(mutex_);
         parallel_ = CalculateUpdateThreadNum();
         for (int i = 0; i < parallel_; i++) {
-            Platform::GetCurrentPlatform()->PostTask(std::make_unique<UpdateReferenceTask>(this));
+            Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<UpdateReferenceTask>(this));
         }
     }
 
@@ -229,7 +229,7 @@ void ParallelEvacuation::UpdateRoot()
 
 void ParallelEvacuation::UpdateRecordWeakReference()
 {
-    auto totalThreadCount = Platform::GetCurrentPlatform()->GetTotalThreadNum() + 1;
+    auto totalThreadCount = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1;
     for (uint32_t i = 0; i < totalThreadCount; i++) {
         ProcessQueue *queue = heap_->GetWorkList()->GetWeakReferenceQueue(i);
 
