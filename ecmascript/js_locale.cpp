@@ -20,7 +20,20 @@
 #include "js_locale.h"
 #include "object_factory.h"
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wshadow"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#endif
 #include "unicode/localebuilder.h"
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+
 #include "unicode/localematcher.h"
 
 namespace panda::ecmascript {
@@ -197,7 +210,7 @@ JSHandle<TaggedArray> JSLocale::CanonicalizeLocaleList(JSThread *thread, const J
         JSHandle<TaggedArray> temp = factory->NewTaggedArray(1);
         temp->Set(thread, 0, tag.GetTaggedValue());
         JSHandle<JSArray> obj = JSArray::CreateArrayFromList(thread, temp);
-        JSHandle<TaggedArray> finalSeen = CanonicalizeHelper<JSArray>(thread, locales, obj, localeSeen);
+        JSHandle<TaggedArray> finalSeen = CanonicalizeHelper<JSArray>(thread, obj, localeSeen);
         return finalSeen;
     } else if (locales->IsJSLocale()) {
         JSHandle<EcmaString> tag = JSLocale::ToString(thread, JSHandle<JSLocale>::Cast(locales));
@@ -205,20 +218,19 @@ JSHandle<TaggedArray> JSLocale::CanonicalizeLocaleList(JSThread *thread, const J
         RETURN_HANDLE_IF_ABRUPT_COMPLETION(TaggedArray, thread);
         temp->Set(thread, 0, tag.GetTaggedValue());
         JSHandle<JSArray> obj = JSArray::CreateArrayFromList(thread, temp);
-        JSHandle<TaggedArray> finalSeen = CanonicalizeHelper<JSArray>(thread, locales, obj, localeSeen);
+        JSHandle<TaggedArray> finalSeen = CanonicalizeHelper<JSArray>(thread, obj, localeSeen);
         return finalSeen;
     } else {
         JSHandle<JSObject> obj = JSTaggedValue::ToObject(thread, locales);
         RETURN_HANDLE_IF_ABRUPT_COMPLETION(TaggedArray, thread);
-        JSHandle<TaggedArray> finalSeen = CanonicalizeHelper<JSObject>(thread, locales, obj, localeSeen);
+        JSHandle<TaggedArray> finalSeen = CanonicalizeHelper<JSObject>(thread, obj, localeSeen);
         return finalSeen;
     }
     return localeSeen;
 }
 
 template<typename T>
-JSHandle<TaggedArray> JSLocale::CanonicalizeHelper(JSThread *thread, const JSHandle<JSTaggedValue> &locales,
-                                                   JSHandle<T> &obj, JSHandle<TaggedArray> &seen)
+JSHandle<TaggedArray> JSLocale::CanonicalizeHelper(JSThread *thread, JSHandle<T> &obj, JSHandle<TaggedArray> &seen)
 {
     OperationResult operationResult = JSTaggedValue::GetProperty(thread, JSHandle<JSTaggedValue>::Cast(obj),
                                                                  thread->GlobalConstants()->GetHandledLengthString());
@@ -266,14 +278,14 @@ JSHandle<TaggedArray> JSLocale::CanonicalizeHelper(JSThread *thread, const JSHan
             } else {
                 JSHandle<EcmaString> kValueString = JSTaggedValue::ToString(thread, kValue);
                 RETURN_HANDLE_IF_ABRUPT_COMPLETION(TaggedArray, thread);
-                JSHandle<EcmaString> str = CanonicalizeUnicodeLocaleId(thread, kValueString);
+                JSHandle<EcmaString> canonicalStr = CanonicalizeUnicodeLocaleId(thread, kValueString);
                 RETURN_HANDLE_IF_ABRUPT_COMPLETION(TaggedArray, thread);
-                tag.Update(str.GetTaggedValue());
+                tag.Update(canonicalStr.GetTaggedValue());
             }
             // vii. If canonicalizedTag is not an element of seen, append canonicalizedTag as the last element of seen.
             bool isExist = false;
-            uint32_t len = seen->GetLength();
-            for (uint32_t i = 0; i < len; i++) {
+            uint32_t seenLen = seen->GetLength();
+            for (uint32_t i = 0; i < seenLen; i++) {
                 if (JSTaggedValue::SameValue(seen->Get(thread, i), tag.GetTaggedValue())) {
                     isExist = true;
                 }
@@ -1367,9 +1379,9 @@ JSHandle<TaggedArray> JSLocale::GetAvailableLocales(JSThread *thread, const char
         }
 
         if (localePath != nullptr || localeKey != nullptr) {
-            icu::Locale loc(locStr.c_str());
+            icu::Locale locale(locStr.c_str());
             bool res = false;
-            if (!CheckLocales(loc, localeKey, localePath, res)) {
+            if (!CheckLocales(locale, localeKey, localePath, res)) {
                 continue;
             }
         }

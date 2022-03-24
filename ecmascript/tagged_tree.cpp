@@ -499,7 +499,7 @@ JSTaggedValue TaggedTreeMap::Delete(JSThread *thread, const JSHandle<TaggedTreeM
     return RBTree::Shrink(thread, map).GetTaggedValue();
 }
 
-bool TaggedTreeMap::HasValue(const JSThread *thread, JSTaggedValue value) const
+bool TaggedTreeMap::HasValue([[maybe_unused]] const JSThread *thread, JSTaggedValue value) const
 {
     int root = GetRootEntries();
     if (root < 0) {

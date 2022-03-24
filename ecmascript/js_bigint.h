@@ -68,7 +68,7 @@ public:
     static JSHandle<BigInt> Add(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y);
     static JSHandle<BigInt> Subtract(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y);
     static bool LessThan(const JSTaggedValue &x, const JSTaggedValue &y);
-    static ComparisonResult Compare(JSThread *thread, const JSTaggedValue &x, const JSTaggedValue &y);
+    static ComparisonResult Compare(const JSTaggedValue &x, const JSTaggedValue &y);
     static JSHandle<BigInt> SignedRightShift(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y);
     static JSHandle<BigInt> RightShiftHelper(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y);
     static JSTaggedValue UnsignedRightShift(JSThread *thread);
@@ -88,8 +88,7 @@ public:
     static JSTaggedValue AsUintN(JSThread *thread, JSTaggedNumber &bits, JSHandle<BigInt> bigint);
     static JSTaggedValue AsintN(JSThread *thread, JSTaggedNumber &bits, JSHandle<BigInt> bigint);
     static JSTaggedNumber BigIntToNumber(JSHandle<BigInt> bigint);
-    static ComparisonResult CompareWithNumber(JSThread *thread, JSHandle<BigInt> bigint,
-                                              JSHandle<JSTaggedValue> number);
+    static ComparisonResult CompareWithNumber(JSHandle<BigInt> bigint, JSHandle<JSTaggedValue> number);
     inline bool IsZero()
     {
         return GetLength() == 1 && !GetDigit(0);

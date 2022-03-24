@@ -37,7 +37,7 @@ public:
     static void ThrowDyn(JSThread *thread, JSTaggedValue value);
     static JSTaggedValue GetPropIterator(JSThread *thread, JSTaggedValue value);
     static void ThrowConstAssignment(JSThread *thread, JSTaggedValue value);
-    static JSTaggedValue Add2Dyn(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left, JSTaggedValue right);
+    static JSTaggedValue Add2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right);
     static JSTaggedValue Sub2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right);
     static JSTaggedValue Mul2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right);
     static JSTaggedValue Div2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right);

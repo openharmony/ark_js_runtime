@@ -127,7 +127,7 @@ void SemiGcMarker::ProcessMarkStack(uint32_t threadId)
 
 void CompressGcMarker::ProcessMarkStack(uint32_t threadId)
 {
-    auto visitor = [this, threadId](TaggedObject *root, ObjectSlot start, ObjectSlot end) {
+    auto visitor = [this, threadId]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end) {
         for (ObjectSlot slot = start; slot < end; slot++) {
             JSTaggedValue value(slot.GetTaggedType());
             if (value.IsHeapObject()) {

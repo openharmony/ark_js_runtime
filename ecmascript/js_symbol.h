@@ -53,7 +53,7 @@ public:
         return (GetFlags() & IS_PRIVATE) != 0U;
     }
 
-    void SetPrivate(const JSThread *thread)
+    void SetPrivate()
     {
         SetFlags(GetFlags() | IS_PRIVATE);
     }
@@ -63,7 +63,7 @@ public:
         return (GetFlags() & IS_WELL_KNOWN_SYMBOL) != 0U;
     }
 
-    void SetWellKnownSymbol(const JSThread *thread)
+    void SetWellKnownSymbol()
     {
         SetFlags(GetFlags() | IS_WELL_KNOWN_SYMBOL);
     }
@@ -73,7 +73,7 @@ public:
         return (GetFlags() & IS_IN_PUBLIC_SYMBOL_TABLE) != 0U;
     }
 
-    void SetInPublicSymbolTable(const JSThread *thread)
+    void SetInPublicSymbolTable()
     {
         SetFlags(GetFlags() | IS_IN_PUBLIC_SYMBOL_TABLE);
     }
@@ -83,7 +83,7 @@ public:
         return (GetFlags() & IS_INTERESTING_SYMBOL) != 0U;
     }
 
-    void SetInterestingSymbol(const JSThread *thread)
+    void SetInterestingSymbol()
     {
         SetFlags(GetFlags() | IS_INTERESTING_SYMBOL);
     }
@@ -93,7 +93,7 @@ public:
         return (GetFlags() & IS_PRIVATE_NAME) != 0U;
     }
 
-    void SetPrivateNameSymbol(const JSThread *thread)
+    void SetPrivateNameSymbol()
     {
         SetFlags(GetFlags() | IS_PRIVATE_NAME);
     }

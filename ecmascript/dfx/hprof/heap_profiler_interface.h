@@ -35,7 +35,7 @@ public:
     virtual ~HeapProfilerInterface() = default;
 
     virtual bool StartHeapTracking(JSThread *thread, double timeInterval, bool isVmMode = true) = 0;
-    virtual bool StopHeapTracking(JSThread *thread, DumpFormat dumpFormat, const std::string &filePath) = 0;
+    virtual bool StopHeapTracking(JSThread *thread, const std::string &filePath) = 0;
 
     NO_MOVE_SEMANTIC(HeapProfilerInterface);
     NO_COPY_SEMANTIC(HeapProfilerInterface);

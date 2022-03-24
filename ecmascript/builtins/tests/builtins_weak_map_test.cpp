@@ -182,7 +182,7 @@ HWTEST_F_L0(BuiltinsWeakMapTest, DeleteAndRemove)
 
         EXPECT_TRUE(result1.IsECMAObject());
         JSWeakMap *jsWeakMap = JSWeakMap::Cast(reinterpret_cast<TaggedObject *>(result1.GetRawData()));
-        EXPECT_EQ(jsWeakMap->GetSize(), i + 1);
+        EXPECT_EQ(jsWeakMap->GetSize(), static_cast<int>(i) + 1);
         lastKey = key.GetTaggedValue();
     }
 

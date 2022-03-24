@@ -229,7 +229,7 @@ void OptimizedFrameHandler::PrevFrame()
     sp_ = reinterpret_cast<JSTaggedType *>(frame->base.prevFp);
 }
 
-void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
+void OptimizedFrameHandler::Iterate(const RootVisitor &v0, [[maybe_unused]] const RootRangeVisitor &v1,
                                     ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const
 {
     if (sp_ != nullptr) {
@@ -244,13 +244,13 @@ void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisito
 #endif
             return;
         }
-        for (auto slot : slotAddrs) {
+        for (const auto &slot : slotAddrs) {
             v0(Root::ROOT_FRAME, ObjectSlot(slot));
         }
     }
 }
 
-void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
+void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, [[maybe_unused]] const RootRangeVisitor &v1,
     ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const
 {
     if (sp_ != nullptr) {
@@ -265,7 +265,7 @@ void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, const RootRangeV
 #endif
             return;
         }
-        for (auto slot : slotAddrs) {
+        for (const auto &slot : slotAddrs) {
             v0(Root::ROOT_FRAME, ObjectSlot(slot));
         }
     }

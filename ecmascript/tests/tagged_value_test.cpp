@@ -476,7 +476,7 @@ HWTEST_F_L0(JSTaggedValueTest, ToUint32)
     double input3 = 100 * (static_cast<uint64_t>(UINT32_MAX) + 1) + INT32_MAX + 1 + 23456;
     JSTaggedValue doubleV5(input3);
     result = JSTaggedValue::ToUint32(thread, JSHandle<JSTaggedValue>(thread, doubleV5));
-    EXPECT_EQ(result, static_cast<uint64_t>(INT32_MAX + 1 + 23456));
+    EXPECT_EQ(result, static_cast<uint32_t>(static_cast<uint64_t>(INT32_MAX) + 1 + 23456));
 
     JSTaggedValue undefinedV = JSTaggedValue::Undefined();
     result = JSTaggedValue::ToUint32(thread, JSHandle<JSTaggedValue>(thread, undefinedV));

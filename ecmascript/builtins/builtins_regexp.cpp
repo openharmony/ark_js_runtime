@@ -23,7 +23,6 @@
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_hclass.h"
-#include "ecmascript/js_invoker.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_regexp.h"
 #include "ecmascript/js_tagged_value-inl.h"
@@ -472,7 +471,7 @@ JSTaggedValue BuiltinsRegExp::Match(EcmaRuntimeCallInfo *argv)
             // c. Let nextIndex be AdvanceStringIndex(S, thisIndex, fullUnicode).
             // d. Let setStatus be Set(rx, "lastIndex", nextIndex, true).
             JSTaggedValue nextIndex =
-                JSTaggedValue(AdvanceStringIndex(thread, string, thisIndex.GetNumber(), fullUnicode));
+                JSTaggedValue(AdvanceStringIndex(string, thisIndex.GetNumber(), fullUnicode));
             FastRuntimeStub::FastSetProperty(thread, thisObj.GetTaggedValue(), lastIndexString.GetTaggedValue(),
                                              nextIndex, true);
             // e. ReturnIfAbrupt(setStatus).
@@ -591,7 +590,7 @@ JSTaggedValue BuiltinsRegExp::RegExpReplaceFast(JSThread *thread, JSHandle<JSTag
         }
         if (endIndex == startIndex) {
             bool unicode = inputString->IsUtf16() && (flags & RegExpParser::FLAG_UTF16);
-            endIndex = AdvanceStringIndex(thread, tagInputString, endIndex, unicode);
+            endIndex = AdvanceStringIndex(tagInputString, endIndex, unicode);
         }
         lastIndex = endIndex;
     }
@@ -716,7 +715,7 @@ JSTaggedValue BuiltinsRegExp::Replace(EcmaRuntimeCallInfo *argv)
                 RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
             }
             // c. Let nextIndex be AdvanceStringIndex(S, thisIndex, fullUnicode).
-            uint32_t nextIndex = AdvanceStringIndex(thread, inputStr, thisIndex, fullUnicode);
+            uint32_t nextIndex = AdvanceStringIndex(inputStr, thisIndex, fullUnicode);
             nextIndexHandle.Update(JSTaggedValue(nextIndex));
             // d. Let setStatus be Set(rx, "lastIndex", nextIndex, true).
             FastRuntimeStub::FastSetProperty(thread, thisObj.GetTaggedValue(), lastIndex.GetTaggedValue(),
@@ -1045,7 +1044,7 @@ JSTaggedValue BuiltinsRegExp::Split(EcmaRuntimeCallInfo *argv)
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         // e. If z is null, let q be AdvanceStringIndex(S, q, unicodeMatching).
         if (execResult->IsNull()) {
-            endIndex = AdvanceStringIndex(thread, jsString, endIndex, unicodeMatching);
+            endIndex = AdvanceStringIndex(jsString, endIndex, unicodeMatching);
         } else {
             // f. Else z is not null,
             // i. Let e be ToLength(Get(splitter, "lastIndex")).
@@ -1057,7 +1056,7 @@ JSTaggedValue BuiltinsRegExp::Split(EcmaRuntimeCallInfo *argv)
             uint32_t lastIndex = lastIndexNumber.GetNumber();
             // iii. If e = p, let q be AdvanceStringIndex(S, q, unicodeMatching).
             if (lastIndex == startIndex) {
-                endIndex = AdvanceStringIndex(thread, jsString, endIndex, unicodeMatching);
+                endIndex = AdvanceStringIndex(jsString, endIndex, unicodeMatching);
             } else {
                 // iv. Else e != p,
                 // 1. Let T be a String value equal to the substring of S consisting of the elements at indices p
@@ -1157,7 +1156,7 @@ RegExpExecutor::MatchResult BuiltinsRegExp::Matcher(JSThread *thread, const JSHa
     return result;
 }
 
-uint32_t BuiltinsRegExp::AdvanceStringIndex(JSThread *thread, const JSHandle<JSTaggedValue> &inputStr, uint32_t index,
+uint32_t BuiltinsRegExp::AdvanceStringIndex(const JSHandle<JSTaggedValue> &inputStr, uint32_t index,
                                             bool unicode)
 {
     // 1. Assert: Type(S) is String.

@@ -84,7 +84,7 @@ HWTEST_F_L0(HeapTrackerTest, HeapTracker)
     outputString.close();
     outputString.clear();
 
-    heapProfile->StopHeapTracking(thread, DumpFormat::JSON, fileName.c_str());
+    heapProfile->StopHeapTracking(thread, fileName.c_str());
     HeapProfilerInterface::Destroy(thread, heapProfile);
 
     // Check

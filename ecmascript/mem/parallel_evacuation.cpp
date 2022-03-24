@@ -148,7 +148,7 @@ void ParallelEvacuation::VerifyHeapObject(TaggedObject *object)
 {
     auto klass = object->GetClass();
     objXRay_.VisitObjectBody<GCType::OLD_GC>(object, klass,
-        [&](TaggedObject *root, ObjectSlot start, ObjectSlot end) {
+        [&]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end) {
             for (ObjectSlot slot = start; slot < end; slot++) {
                 JSTaggedValue value(slot.GetTaggedType());
                 if (value.IsHeapObject()) {
@@ -373,7 +373,7 @@ void ParallelEvacuation::UpdateAndSweepNewRegionReference(Region *region)
 void ParallelEvacuation::UpdateNewObjectField(TaggedObject *object, JSHClass *cls)
 {
     objXRay_.VisitObjectBody<GCType::OLD_GC>(object, cls,
-        [this](TaggedObject *root, ObjectSlot start, ObjectSlot end) {
+        [this]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end) {
             for (ObjectSlot slot = start; slot < end; slot++) {
                 UpdateObjectSlot(slot);
             }
@@ -418,35 +418,35 @@ ParallelEvacuation::EvacuationTask::~EvacuationTask()
     delete allocator_;
 }
 
-bool ParallelEvacuation::EvacuationTask::Run(uint32_t threadIndex)
+bool ParallelEvacuation::EvacuationTask::Run([[maybe_unused]] uint32_t threadIndex)
 {
     return evacuation_->EvacuateSpace(allocator_);
 }
 
-bool ParallelEvacuation::UpdateReferenceTask::Run(uint32_t threadIndex)
+bool ParallelEvacuation::UpdateReferenceTask::Run([[maybe_unused]] uint32_t threadIndex)
 {
     evacuation_->ProcessFragments(false);
     return true;
 }
 
-bool ParallelEvacuation::EvacuationFragment::Process(bool isMain)
+bool ParallelEvacuation::EvacuationFragment::Process([[maybe_unused]] bool isMain)
 {
     return true;
 }
 
-bool ParallelEvacuation::UpdateRSetFragment::Process(bool isMain)
+bool ParallelEvacuation::UpdateRSetFragment::Process([[maybe_unused]] bool isMain)
 {
     GetEvacuation()->UpdateRSet(GetRegion());
     return true;
 }
 
-bool ParallelEvacuation::UpdateNewRegionFragment::Process(bool isMain)
+bool ParallelEvacuation::UpdateNewRegionFragment::Process([[maybe_unused]] bool isMain)
 {
     GetEvacuation()->UpdateNewRegionReference(GetRegion());
     return true;
 }
 
-bool ParallelEvacuation::UpdateAndSweepNewRegionFragment::Process(bool isMain)
+bool ParallelEvacuation::UpdateAndSweepNewRegionFragment::Process([[maybe_unused]] bool isMain)
 {
     GetEvacuation()->UpdateAndSweepNewRegionReference(GetRegion());
     return true;

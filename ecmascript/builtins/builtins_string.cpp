@@ -30,7 +30,6 @@
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_hclass.h"
-#include "ecmascript/js_invoker.h"
 #include "ecmascript/js_locale.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_primitive_ref.h"

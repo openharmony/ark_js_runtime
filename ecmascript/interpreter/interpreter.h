@@ -48,6 +48,9 @@ public:
     static const uint32_t METHOD_HOTNESS_THRESHOLD = 512;
     enum ActualNumArgsOfCall : uint8_t { CALLARG0 = 0, CALLARG1, CALLARGS2, CALLARGS3 };
 
+    static inline JSTaggedValue Execute(JSThread *thread, const JSHandle<JSFunction> &func,
+                                        const JSHandle<JSTaggedValue> &obj,
+                                        const JSHandle<JSTaggedValue> &newTgt, InternalCallParams *arguments);
     static inline JSTaggedValue Execute(JSThread *thread, const CallParams& params);
     static inline JSTaggedValue ExecuteNative(JSThread *thread, const CallParams& params);
     static inline JSTaggedValue GeneratorReEnterInterpreter(JSThread *thread, JSHandle<GeneratorContext> context);

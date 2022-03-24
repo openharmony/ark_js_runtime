@@ -410,12 +410,7 @@ template<class T>
 static int32_t ComputeHashForData(const T *data, size_t size, uint32_t hashSeed)
 {
     uint32_t hash = hashSeed;
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wignored-attributes"
     Span<const T> sp(data, size);
-#pragma GCC diagnostic pop
-#endif
     for (auto c : sp) {
         constexpr size_t SHIFT = 5;
         hash = (hash << SHIFT) - hash + c;

@@ -32,7 +32,7 @@ using ecmascript::GCStats;
 template<typename T>
 using JSHandle = ecmascript::JSHandle<T>;
 
-void DFXJSNApi::DumpHeapSnapShot(EcmaVM *vm,  int dumpFormat, const std::string &path, bool isVmMode)
+void DFXJSNApi::DumpHeapSnapShot(EcmaVM *vm, int dumpFormat, const std::string &path, bool isVmMode)
 {
     if (dumpFormat == 0) {
         ecmascript::HeapProfilerInterface::DumpHeapSnapShot(vm->GetJSThread(), ecmascript::DumpFormat::JSON,
@@ -62,19 +62,11 @@ bool DFXJSNApi::StartHeapTracking(EcmaVM *vm, double timeInterval, bool isVmMode
     return heapProfile->StartHeapTracking(vm->GetJSThread(), timeInterval, isVmMode);
 }
 
-bool DFXJSNApi::StopHeapTracking(EcmaVM *vm,  int dumpFormat, const std::string &filePath)
+bool DFXJSNApi::StopHeapTracking(EcmaVM *vm, const std::string &filePath)
 {
     bool result = false;
     ecmascript::HeapProfilerInterface *heapProfile = ecmascript::HeapProfilerInterface::GetInstance(vm->GetJSThread());
-    if (dumpFormat == 0) {
-        result = heapProfile->StopHeapTracking(vm->GetJSThread(), ecmascript::DumpFormat::JSON, filePath);
-    }
-    if (dumpFormat == 1) {
-        result = heapProfile->StopHeapTracking(vm->GetJSThread(), ecmascript::DumpFormat::BINARY, filePath);
-    }
-    if (dumpFormat == 2) { // 2: enum is 2
-        result = heapProfile->StopHeapTracking(vm->GetJSThread(), ecmascript::DumpFormat::OTHER, filePath);
-    }
+    result = heapProfile->StopHeapTracking(vm->GetJSThread(), filePath);
     const ecmascript::Heap *heap = vm->GetJSThread()->GetEcmaVM()->GetHeap();
     const_cast<ecmascript::NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->Delete(heapProfile);
     return result;
