@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +20,7 @@
 #include "js_object.h"
 
 namespace panda::ecmascript {
+enum class ContentType : uint8_t { None = 1, Number, BigInt };
 class JSTypedArray : public JSObject {
 public:
     static JSTypedArray *Cast(ObjectHeader *object)
@@ -69,6 +70,9 @@ public:
     static bool SetProperty(JSThread *thread, const JSHandle<JSTaggedValue> &typedarray,
                             const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value,
                             const JSHandle<JSTaggedValue> &receiver, bool mayThrow = false);
+    // s12 10.4.5.6 [[Delete]] ( P )
+    static bool DeleteProperty(JSThread *thread, const JSHandle<JSTaggedValue> &typedarray,
+                               const JSHandle<JSTaggedValue> &key);
     // 9.4.5.6 [[OwnPropertyKeys]] ( )
     static JSHandle<TaggedArray> OwnPropertyKeys(JSThread *thread, const JSHandle<JSTaggedValue> &typedarray);
     // 9.4.5.7 IntegerIndexedObjectCreate (prototype, internalSlotsList)
@@ -81,18 +85,20 @@ public:
     // 9.4.5.9 IntegerIndexedElementSet ( O, index, value )
     static bool IntegerIndexedElementSet(JSThread *thread, const JSHandle<JSTaggedValue> &typedarray,
                                          JSTaggedValue index, const JSHandle<JSTaggedValue> &value);
-
+    // s12 10.4.5.9 IsValidIntegerIndex ( O, index )
+    static bool IsValidIntegerIndex(JSThread *thread, const JSHandle<JSTaggedValue> &typedArray,
+                                    JSTaggedValue &index);
     static constexpr size_t VIEWED_ARRAY_BUFFER_OFFSET = JSObject::SIZE;
     ACCESSORS(ViewedArrayBuffer, VIEWED_ARRAY_BUFFER_OFFSET, TYPED_ARRAY_NAME_OFFSET)
     ACCESSORS(TypedArrayName, TYPED_ARRAY_NAME_OFFSET, BYTE_LENGTH_OFFSET)
     ACCESSORS(ByteLength, BYTE_LENGTH_OFFSET, BYTE_OFFSET_OFFSET)
     ACCESSORS(ByteOffset, BYTE_OFFSET_OFFSET, ARRAY_LENGTH_OFFSET)
-    ACCESSORS(ArrayLength, ARRAY_LENGTH_OFFSET, SIZE)
-
+    ACCESSORS(ArrayLength, ARRAY_LENGTH_OFFSET, CONTENT_TYPE_OFFSET)
+    ACCESSORS_PRIMITIVE_FIELD(ContentType, ContentType, CONTENT_TYPE_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
     static const uint32_t MAX_TYPED_ARRAY_INDEX = MAX_ELEMENT_INDEX;
     DECL_DUMP()
-
-    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, VIEWED_ARRAY_BUFFER_OFFSET, SIZE)
+    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, VIEWED_ARRAY_BUFFER_OFFSET, CONTENT_TYPE_OFFSET)
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_JS_TYPED_ARRAY_H

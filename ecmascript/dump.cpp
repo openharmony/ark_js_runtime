@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -166,6 +166,10 @@ CString JSHClass::DumpJSType(JSType type)
             return "Float32 Array";
         case JSType::JS_FLOAT64_ARRAY:
             return "Float64 Array";
+        case JSType::JS_BIGINT64_ARRAY:
+            return "BigInt64 Array";
+        case JSType::JS_BIGUINT64_ARRAY:
+            return "BigUint64 Array";
         case JSType::JS_ARGUMENTS:
             return "Arguments";
         case JSType::JS_PROXY:
@@ -483,6 +487,8 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::ostream &os)
         case JSType::JS_UINT32_ARRAY:
         case JSType::JS_FLOAT32_ARRAY:
         case JSType::JS_FLOAT64_ARRAY:
+        case JSType::JS_BIGINT64_ARRAY:
+        case JSType::JS_BIGUINT64_ARRAY:
             JSTypedArray::Cast(obj)->Dump(thread, os);
             break;
         case JSType::BIGINT:
@@ -2655,6 +2661,8 @@ static void DumpObject(JSThread *thread, TaggedObject *obj,
         case JSType::JS_UINT32_ARRAY:
         case JSType::JS_FLOAT32_ARRAY:
         case JSType::JS_FLOAT64_ARRAY:
+        case JSType::JS_BIGINT64_ARRAY:
+        case JSType::JS_BIGUINT64_ARRAY:
             JSTypedArray::Cast(obj)->DumpForSnapshot(thread, vec);
             return;
         case JSType::BIGINT:
