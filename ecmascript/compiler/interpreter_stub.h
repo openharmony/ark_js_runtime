@@ -244,6 +244,7 @@ public:
     inline GateRef GetEnvFromFunction(GateRef frame);
     inline GateRef GetConstpoolFromFunction(GateRef function);
     inline GateRef GetProfileTypeInfoFromFunction(GateRef function);
+    inline GateRef GetModuleFromFunction(GateRef function);
 
     inline void SetCurrentSpFrame(GateRef glue, GateRef sp);
     inline void SetPcToFrame(GateRef glue, GateRef frame, GateRef value);
@@ -254,6 +255,7 @@ public:
     inline void SetConstantPoolToFunction(GateRef glue, GateRef function, GateRef value);
     inline void SetResolvedToFunction(GateRef glue, GateRef function, GateRef value);
     inline void SetHomeObjectToFunction(GateRef glue, GateRef function, GateRef value);
+    inline void SetModuleToFunction(GateRef glue, GateRef function, GateRef value);
 
     inline void Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
                          GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter, GateRef format);
