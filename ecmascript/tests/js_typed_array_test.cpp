@@ -119,8 +119,8 @@ HWTEST_F_L0(JSTypedArrayTest, ToPropKey_001)
     JSHandle<JSTaggedValue> hnadleTagValEcmaStrPropKeyTo2 = JSTypedArray::ToPropKey(thread, handleHole);
     JSHandle<EcmaString> handleEcmaStrPropKeyTo1 = JSHandle<EcmaString>::Cast(hnadleTagValEcmaStrPropKeyTo1);
     JSHandle<EcmaString> handleEcmaStrPropKeyTo2 = JSHandle<EcmaString>::Cast(hnadleTagValEcmaStrPropKeyTo2);
-    EXPECT_NE(0, sizeof(handleUndefined));
-    EXPECT_NE(0, sizeof(handleHole));
+    EXPECT_NE(0U, sizeof(handleUndefined));
+    EXPECT_NE(0U, sizeof(handleHole));
     std::unique_ptr<char[]> uniCharArrTo1(handleEcmaStrPropKeyTo1->GetCString());
     std::unique_ptr<char[]> uniCharArrTo2(handleEcmaStrPropKeyTo2->GetCString());
     EXPECT_EQ(uniCharArrTo1[0], 'u');
@@ -244,7 +244,7 @@ HWTEST_F_L0(JSTypedArrayTest, SetViewedArrayBuffer)
     JSHandle<JSArrayBuffer> handleArrayBufferFrom = factory->NewJSArrayBuffer(10);
     JSHandle<JSTaggedValue> handleTagValArrayBufferFrom = JSHandle<JSTaggedValue>::Cast(handleArrayBufferFrom);
 
-    for (int i = 0; i < cVecJSType.size(); i++) {
+    for (size_t i = 0; i < cVecJSType.size(); i++) {
         JSHandle<JSTypedArray> handleTypedArray = CreateNumberTypedArray(thread, cVecJSType.at(i));
 
         EXPECT_EQ(handleTypedArray->GetViewedArrayBuffer(), JSTaggedValue::Undefined());
@@ -268,7 +268,7 @@ HWTEST_F_L0(JSTypedArrayTest, SetTypedArrayName)
     JSHandle<EcmaString> handleEcmaStrNameFrom = factory->NewFromString(cStrName);
     JSHandle<JSTaggedValue> handleTagValEcmaStrNameFrom = JSHandle<JSTaggedValue>::Cast(handleEcmaStrNameFrom);
 
-    for (int i = 0; i < cVecJSType.size(); i++) {
+    for (size_t i = 0; i < cVecJSType.size(); i++) {
         JSHandle<JSTypedArray> handleTypedArray = CreateNumberTypedArray(thread, cVecJSType.at(i));
 
         EXPECT_EQ(handleTypedArray->GetTypedArrayName(), JSTaggedValue::Undefined());
@@ -290,7 +290,7 @@ HWTEST_F_L0(JSTypedArrayTest, SetByteLength)
     uint32_t u32ByteLength = 2;
     JSHandle<JSTaggedValue> handleTagValByteLengthFrom(thread, JSTaggedValue(u32ByteLength));
 
-    for (int i = 0; i < cVecJSType.size(); i++) {
+    for (size_t i = 0; i < cVecJSType.size(); i++) {
         JSHandle<JSTypedArray> handleTypedArray = CreateNumberTypedArray(thread, cVecJSType.at(i));
 
         EXPECT_EQ(handleTypedArray->GetByteLength(), JSTaggedValue(0));
@@ -312,7 +312,7 @@ HWTEST_F_L0(JSTypedArrayTest, SetByteOffset)
     uint32_t u32ByteOffset = 2;
     JSHandle<JSTaggedValue> handleTagValByteOffsetFrom(thread, JSTaggedValue(u32ByteOffset));
 
-    for (int i = 0; i < cVecJSType.size(); i++) {
+    for (size_t i = 0; i < cVecJSType.size(); i++) {
         JSHandle<JSTypedArray> handleTypedArray = CreateNumberTypedArray(thread, cVecJSType.at(i));
 
         EXPECT_EQ(handleTypedArray->GetByteOffset(), JSTaggedValue(0));
@@ -334,7 +334,7 @@ HWTEST_F_L0(JSTypedArrayTest, SetArrayLength)
     uint32_t u32ArrayLength = 2;
     JSHandle<JSTaggedValue> handleTagValArrayLengthFrom(thread, JSTaggedValue(u32ArrayLength));
 
-    for (int i = 0; i < cVecJSType.size(); i++) {
+    for (size_t i = 0; i < cVecJSType.size(); i++) {
         JSHandle<JSTypedArray> handleTypedArray = CreateNumberTypedArray(thread, cVecJSType.at(i));
 
         EXPECT_EQ(handleTypedArray->GetArrayLength(), JSTaggedValue(0));
@@ -353,7 +353,7 @@ HWTEST_F_L0(JSTypedArrayTest, SetArrayLength)
  */
 HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int8Array_001)
 {
-    uint32_t numElementsInt8Array = 256;
+    int numElementsInt8Array = 256;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTypedArray> handleInt8Array = CreateNumberTypedArray(thread, JSType::JS_INT8_ARRAY);
     JSHandle<JSTaggedValue> handleTagValInt8Array = JSHandle<JSTaggedValue>::Cast(handleInt8Array);
@@ -367,14 +367,14 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int8Array_001)
     handleInt8Array->SetArrayLength(thread, JSTaggedValue(numElementsInt8Array));
 
     CVector<OperationResult> cVecOpResult = {};
-    for (int32_t i = 0; i < numElementsInt8Array; i++) {
+    for (int i = 0; i < numElementsInt8Array; i++) {
         EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValInt8Array, JSTaggedValue(i),
             JSHandle<JSTaggedValue>(thread, JSTaggedValue(std::numeric_limits<int8_t>::min() + i))));
         OperationResult opResult = JSTypedArray::IntegerIndexedElementGet(thread, handleTagValInt8Array,
             JSTaggedValue(i));
         cVecOpResult.push_back(opResult);
     }
-    for (int32_t i = 0; i < numElementsInt8Array; i++) {
+    for (int i = 0; i < numElementsInt8Array; i++) {
         EXPECT_EQ(cVecOpResult.at(i).GetValue().GetTaggedValue().GetNumber(), std::numeric_limits<int8_t>::min() + i);
     }
     cVecOpResult.clear();
@@ -401,7 +401,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int8Array_001)
 // Nonstandard input value for Int8Array
 HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int8Array_002)
 {
-    uint32_t numElementsInt8Array = 16;
+    int numElementsInt8Array = 16;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTypedArray> handleInt8Array = CreateNumberTypedArray(thread, JSType::JS_INT8_ARRAY);
     JSHandle<JSTaggedValue> handleTagValInt8Array = JSHandle<JSTaggedValue>::Cast(handleInt8Array);
@@ -452,7 +452,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int8Array_002)
 
 HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint8Array_001)
 {
-    uint32_t numElementsUint8Array = 256;
+    int numElementsUint8Array = 256;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTypedArray> handleUint8Array = CreateNumberTypedArray(thread, JSType::JS_UINT8_ARRAY);
     JSHandle<JSTaggedValue> handleTagValUint8Array = JSHandle<JSTaggedValue>::Cast(handleUint8Array);
@@ -466,14 +466,14 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint8Array_001)
     handleUint8Array->SetArrayLength(thread, JSTaggedValue(numElementsUint8Array));
 
     CVector<OperationResult> cVecOpResult = {};
-    for (uint32_t i = 0; i < numElementsUint8Array; i++) {
+    for (int i = 0; i < numElementsUint8Array; i++) {
         EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint8Array, JSTaggedValue(i),
             JSHandle<JSTaggedValue>(thread, JSTaggedValue(std::numeric_limits<uint8_t>::min() + i))));
         OperationResult opResult = JSTypedArray::IntegerIndexedElementGet(thread, handleTagValUint8Array,
             JSTaggedValue(i));
         cVecOpResult.push_back(opResult);
     }
-    for (uint32_t i = 0; i < numElementsUint8Array; i++) {
+    for (int i = 0; i < numElementsUint8Array; i++) {
         EXPECT_EQ(cVecOpResult.at(i).GetValue().GetTaggedValue().GetNumber(), std::numeric_limits<uint8_t>::min() + i);
     }
     cVecOpResult.clear();
@@ -500,7 +500,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint8Array_001)
 // Nonstandard input value for Uint8Array
 HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint8Array_002)
 {
-    uint32_t numElementsUint8Array = 16;
+    int numElementsUint8Array = 16;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTypedArray> handleUint8Array = CreateNumberTypedArray(thread, JSType::JS_UINT8_ARRAY);
     JSHandle<JSTaggedValue> handleTagValUint8Array = JSHandle<JSTaggedValue>::Cast(handleUint8Array);
@@ -551,7 +551,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint8Array_002)
 
 HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint8ClampedArray_001)
 {
-    uint32_t numElementsUint8ClampedArray = 256;
+    int numElementsUint8ClampedArray = 256;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTypedArray> handleUint8ClampedArray = CreateNumberTypedArray(thread, JSType::JS_UINT8_CLAMPED_ARRAY);
     JSHandle<JSTaggedValue> handleTagValUint8ClampedArray = JSHandle<JSTaggedValue>::Cast(handleUint8ClampedArray);
@@ -565,14 +565,14 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint8ClampedArray_001)
     handleUint8ClampedArray->SetArrayLength(thread, JSTaggedValue(numElementsUint8ClampedArray));
 
     CVector<OperationResult> cVecOpResult = {};
-    for (uint32_t i = 0; i < numElementsUint8ClampedArray; i++) {
+    for (int i = 0; i < numElementsUint8ClampedArray; i++) {
         EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint8ClampedArray, JSTaggedValue(i),
             JSHandle<JSTaggedValue>(thread, JSTaggedValue(std::numeric_limits<uint8_t>::min() + i))));
         OperationResult opResult = JSTypedArray::IntegerIndexedElementGet(thread, handleTagValUint8ClampedArray,
             JSTaggedValue(i));
         cVecOpResult.push_back(opResult);
     }
-    for (uint32_t i = 0; i < numElementsUint8ClampedArray; i++) {
+    for (int i = 0; i < numElementsUint8ClampedArray; i++) {
         EXPECT_EQ(cVecOpResult.at(i).GetValue().GetTaggedValue().GetNumber(), std::numeric_limits<uint8_t>::min() + i);
     }
     cVecOpResult.clear();
@@ -599,7 +599,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint8ClampedArray_001)
 // Nonstandard input value for Uint8ClampedArray
 HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint8ClampedArray_002)
 {
-    uint32_t numElementsUint8ClampedArray = 16;
+    int numElementsUint8ClampedArray = 16;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTypedArray> handleUint8ClampedArray = CreateNumberTypedArray(thread, JSType::JS_UINT8_CLAMPED_ARRAY);
     JSHandle<JSTaggedValue> handleTagValUint8ClampedArray = JSHandle<JSTaggedValue>::Cast(handleUint8ClampedArray);
@@ -650,7 +650,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint8ClampedArray_002)
 
 HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int16Array_001)
 {
-    uint32_t numElementsInt16Array = 100;
+    int numElementsInt16Array = 100;
     int16_t scaleForInt16ValueSet = 100;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTypedArray> handleInt16Array = CreateNumberTypedArray(thread, JSType::JS_INT16_ARRAY);
@@ -665,7 +665,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int16Array_001)
     handleInt16Array->SetArrayLength(thread, JSTaggedValue(numElementsInt16Array));
 
     CVector<OperationResult> cVecOpResult = {};
-    for (int32_t i = 0; i < numElementsInt16Array; i++) {
+    for (int i = 0; i < numElementsInt16Array; i++) {
         EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValInt16Array, JSTaggedValue(i),
             JSHandle<JSTaggedValue>(thread,
                 JSTaggedValue(std::numeric_limits<int16_t>::min() + i * scaleForInt16ValueSet))));
@@ -673,7 +673,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int16Array_001)
             JSTaggedValue(i));
         cVecOpResult.push_back(opResult);
     }
-    for (int32_t i = 0; i < numElementsInt16Array; i++) {
+    for (int i = 0; i < numElementsInt16Array; i++) {
         EXPECT_EQ(cVecOpResult.at(i).GetValue().GetTaggedValue().GetNumber(),
             std::numeric_limits<int16_t>::min() + i * scaleForInt16ValueSet);
     }
@@ -701,7 +701,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int16Array_001)
 // Nonstandard input value for Int16Array
 HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int16Array_002)
 {
-    uint32_t numElementsInt16Array = 16;
+    int numElementsInt16Array = 16;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTypedArray> handleInt16Array = CreateNumberTypedArray(thread, JSType::JS_INT16_ARRAY);
     JSHandle<JSTaggedValue> handleTagValInt16Array = JSHandle<JSTaggedValue>::Cast(handleInt16Array);
@@ -752,7 +752,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int16Array_002)
 
 HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint16Array_001)
 {
-    uint32_t numElementsUint16Array = 100;
+    int numElementsUint16Array = 100;
     uint32_t scaleForUint16ValueSet = 100;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTypedArray> handleUint16Array = CreateNumberTypedArray(thread, JSType::JS_UINT16_ARRAY);
@@ -767,7 +767,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint16Array_001)
     handleUint16Array->SetArrayLength(thread, JSTaggedValue(numElementsUint16Array));
 
     CVector<OperationResult> cVecOpResult = {};
-    for (uint32_t i = 0; i < numElementsUint16Array; i++) {
+    for (int i = 0; i < numElementsUint16Array; i++) {
         EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint16Array, JSTaggedValue(i),
             JSHandle<JSTaggedValue>(thread,
                 JSTaggedValue(std::numeric_limits<uint16_t>::min() + i * scaleForUint16ValueSet))));
@@ -775,7 +775,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint16Array_001)
             JSTaggedValue(i));
         cVecOpResult.push_back(opResult);
     }
-    for (uint32_t i = 0; i < numElementsUint16Array; i++) {
+    for (int i = 0; i < numElementsUint16Array; i++) {
         EXPECT_EQ(cVecOpResult.at(i).GetValue().GetTaggedValue().GetNumber(),
             std::numeric_limits<uint16_t>::min() + i * scaleForUint16ValueSet);
     }
@@ -803,7 +803,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint16Array_001)
 // Nonstandard input value for Uint16Array
 HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint16Array_002)
 {
-    uint32_t numElementsUint16Array = 16;
+    int numElementsUint16Array = 16;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTypedArray> handleUint16Array = CreateNumberTypedArray(thread, JSType::JS_UINT16_ARRAY);
     JSHandle<JSTaggedValue> handleTagValUint16Array = JSHandle<JSTaggedValue>::Cast(handleUint16Array);
@@ -854,7 +854,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint16Array_002)
 
 HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int32Array_001)
 {
-    uint32_t numElementsInt32Array = 100;
+    int numElementsInt32Array = 100;
     int32_t scaleForInt32ValueSet = 100000;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTypedArray> handleInt32Array = CreateNumberTypedArray(thread, JSType::JS_INT32_ARRAY);
@@ -869,7 +869,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int32Array_001)
     handleInt32Array->SetArrayLength(thread, JSTaggedValue(numElementsInt32Array));
 
     CVector<OperationResult> cVecOpResult = {};
-    for (int32_t i = 0; i < numElementsInt32Array; i++) {
+    for (int i = 0; i < numElementsInt32Array; i++) {
         EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValInt32Array, JSTaggedValue(i),
             JSHandle<JSTaggedValue>(thread,
                 JSTaggedValue(std::numeric_limits<int32_t>::min() + i * scaleForInt32ValueSet))));
@@ -877,7 +877,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int32Array_001)
             JSTaggedValue(i));
         cVecOpResult.push_back(opResult);
     }
-    for (int32_t i = 0; i < numElementsInt32Array; i++) {
+    for (int i = 0; i < numElementsInt32Array; i++) {
         EXPECT_EQ(cVecOpResult.at(i).GetValue().GetTaggedValue().GetNumber(),
             std::numeric_limits<int32_t>::min() + i * scaleForInt32ValueSet);
     }
@@ -905,7 +905,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int32Array_001)
 // Nonstandard input value for Int32Array
 HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int32Array_002)
 {
-    uint32_t numElementsInt32Array = 16;
+    int numElementsInt32Array = 16;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTypedArray> handleInt32Array = CreateNumberTypedArray(thread, JSType::JS_INT32_ARRAY);
     JSHandle<JSTaggedValue> handleTagValInt32Array = JSHandle<JSTaggedValue>::Cast(handleInt32Array);
@@ -956,7 +956,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int32Array_002)
 
 HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint32Array_001)
 {
-    uint32_t numElementsUint32Array = 100;
+    int numElementsUint32Array = 100;
     uint32_t scaleForUint32ValueSet = 100000;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTypedArray> handleUint32Array = CreateNumberTypedArray(thread, JSType::JS_UINT32_ARRAY);
@@ -971,7 +971,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint32Array_001)
     handleUint32Array->SetArrayLength(thread, JSTaggedValue(numElementsUint32Array));
 
     CVector<OperationResult> cVecOpResult = {};
-    for (uint32_t i = 0; i < numElementsUint32Array; i++) {
+    for (int i = 0; i < numElementsUint32Array; i++) {
         EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint32Array, JSTaggedValue(i),
             JSHandle<JSTaggedValue>(thread,
                 JSTaggedValue(std::numeric_limits<uint32_t>::min() + i * scaleForUint32ValueSet))));
@@ -979,7 +979,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint32Array_001)
             JSTaggedValue(i));
         cVecOpResult.push_back(opResult);
     }
-    for (uint32_t i = 0; i < numElementsUint32Array; i++) {
+    for (int i = 0; i < numElementsUint32Array; i++) {
         EXPECT_EQ(cVecOpResult.at(i).GetValue().GetTaggedValue().GetNumber(),
             std::numeric_limits<uint32_t>::min() + i * scaleForUint32ValueSet);
     }
@@ -1058,7 +1058,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint32Array_002)
 
 HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Float32Array)
 {
-    uint32_t numElementsFloat32Array = 100;
+    int numElementsFloat32Array = 100;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTypedArray> handleFloat32Array = CreateNumberTypedArray(thread, JSType::JS_FLOAT32_ARRAY);
     JSHandle<JSTaggedValue> handleTagValFloat32Array = JSHandle<JSTaggedValue>::Cast(handleFloat32Array);
@@ -1073,7 +1073,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Float32Array)
 
     CVector<OperationResult> cVecOpResult = {};
     float floatMaxValue = std::numeric_limits<float>::max();
-    for (uint32_t i = 0; i < numElementsFloat32Array; i++) {
+    for (int i = 0; i < numElementsFloat32Array; i++) {
         EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValFloat32Array, JSTaggedValue(i),
             JSHandle<JSTaggedValue>(thread,
                 JSTaggedValue(floatMaxValue - (i * (floatMaxValue / numElementsFloat32Array))))));
@@ -1081,7 +1081,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Float32Array)
             JSTaggedValue(i));
         cVecOpResult.push_back(opResult);
     }
-    for (uint32_t i = 0; i < numElementsFloat32Array; i++) {
+    for (int i = 0; i < numElementsFloat32Array; i++) {
         EXPECT_EQ(cVecOpResult.at(i).GetValue().GetTaggedValue().GetNumber(),
             floatMaxValue - (i * (floatMaxValue / numElementsFloat32Array)));
     }
@@ -1108,7 +1108,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Float32Array)
 
 HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Float64Array)
 {
-    uint32_t numElementsFloat64Array = 100;
+    int numElementsFloat64Array = 100;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTypedArray> handleFloat64Array = CreateNumberTypedArray(thread, JSType::JS_FLOAT64_ARRAY);
     JSHandle<JSTaggedValue> handleTagValFloat64Array = JSHandle<JSTaggedValue>::Cast(handleFloat64Array);
@@ -1123,7 +1123,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Float64Array)
 
     CVector<OperationResult> cVecOpResult = {};
     double doubleMaxValue = std::numeric_limits<double>::max();
-    for (uint32_t i = 0; i < numElementsFloat64Array; i++) {
+    for (int i = 0; i < numElementsFloat64Array; i++) {
         EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValFloat64Array, JSTaggedValue(i),
             JSHandle<JSTaggedValue>(thread, JSTaggedValue(
                 doubleMaxValue - (i * (doubleMaxValue / numElementsFloat64Array))))));
@@ -1131,7 +1131,7 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Float64Array)
             JSTaggedValue(i));
         cVecOpResult.push_back(opResult);
     }
-    for (uint32_t i = 0; i < numElementsFloat64Array; i++) {
+    for (int i = 0; i < numElementsFloat64Array; i++) {
         EXPECT_EQ(cVecOpResult.at(i).GetValue().GetTaggedValue().GetNumber(),
             doubleMaxValue - (i * (doubleMaxValue / numElementsFloat64Array)));
     }
@@ -1169,7 +1169,7 @@ HWTEST_F_L0(JSTypedArrayTest, FastElementGet_TypedArray)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     for (uint32_t j = 0; j < cVecJSType.size(); j++) {
-        uint32_t numElementsTypedArray = 10;
+        int numElementsTypedArray = 10;
         JSHandle<JSTypedArray> handleTypedArray = CreateNumberTypedArray(thread, cVecJSType.at(j));
         JSHandle<JSTaggedValue> handleTagValTypedArray = JSHandle<JSTaggedValue>::Cast(handleTypedArray);
 
@@ -1182,11 +1182,11 @@ HWTEST_F_L0(JSTypedArrayTest, FastElementGet_TypedArray)
         handleTypedArray->SetArrayLength(thread, JSTaggedValue(numElementsTypedArray));
 
         JSHandle<JSTaggedValue> handleTagValValueSet(thread, JSTaggedValue(cVecHandleTagValValueForTypedArray.at(j)));
-        for (uint32_t i = 0; i < numElementsTypedArray; i++) {
+        for (int i = 0; i < numElementsTypedArray; i++) {
             EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValTypedArray, JSTaggedValue(i),
                 handleTagValValueSet));
         }
-        for (uint32_t i = 0; i < numElementsTypedArray; i++) {
+        for (int i = 0; i < numElementsTypedArray; i++) {
             OperationResult opResult = JSTypedArray::FastElementGet(thread, handleTagValTypedArray, i);
             EXPECT_EQ(opResult.GetValue().GetTaggedValue().GetNumber(),
                       handleTagValValueSet.GetTaggedValue().GetNumber());
@@ -1215,8 +1215,8 @@ HWTEST_F_L0(JSTypedArrayTest, DefineOwnProperty_TypedArray)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
-    for (int j = 0; j < cVecJSType.size(); j++) {
-        int32_t numElementsTypedArray = 10;
+    for (size_t j = 0; j < cVecJSType.size(); j++) {
+        int numElementsTypedArray = 10;
         JSHandle<JSTaggedValue> handleTagValValueDef(thread, cVecHandleTagValValueForTypedArray.at(j));
         PropertyDescriptor descFrom1(thread, handleTagValValueDef, true, true, true);
         JSHandle<JSTypedArray> handleTypedArray = CreateNumberTypedArray(thread, cVecJSType.at(j));
@@ -1230,7 +1230,7 @@ HWTEST_F_L0(JSTypedArrayTest, DefineOwnProperty_TypedArray)
         handleTypedArray->SetViewedArrayBuffer(thread, handleTagValArrayBufferFrom);
         handleTypedArray->SetArrayLength(thread, JSTaggedValue(numElementsTypedArray));
 
-        for (uint32_t i = 0; i < numElementsTypedArray; i++) {
+        for (int i = 0; i < numElementsTypedArray; i++) {
             JSHandle<JSTaggedValue> handleTagValKey(thread, JSTaggedValue(i));
             EXPECT_FALSE(JSTypedArray::HasProperty(thread, handleTagValTypedArray, handleTagValKey));
             EXPECT_TRUE(JSTypedArray::DefineOwnProperty(thread, handleTagValTypedArray, handleTagValKey, descFrom1));
@@ -1263,8 +1263,8 @@ HWTEST_F_L0(JSTypedArrayTest, SetProperty_TypedArray)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
-    for (int j = 0; j < cVecJSType.size(); j++) {
-        int32_t numElementsTypedArray = 10;
+    for (size_t j = 0; j < cVecJSType.size(); j++) {
+        int numElementsTypedArray = 10;
         JSHandle<JSTaggedValue> handleTagValValueSet(thread, cVecHandleTagValValueForTypedArray.at(j));
         JSHandle<JSTypedArray> handleTypedArray = CreateNumberTypedArray(thread, cVecJSType.at(j));
         JSHandle<JSTaggedValue> handleTagValTypedArray = JSHandle<JSTaggedValue>::Cast(handleTypedArray);
@@ -1277,7 +1277,7 @@ HWTEST_F_L0(JSTypedArrayTest, SetProperty_TypedArray)
         handleTypedArray->SetViewedArrayBuffer(thread, handleTagValArrayBufferFrom);
         handleTypedArray->SetArrayLength(thread, JSTaggedValue(numElementsTypedArray));
 
-        for (uint32_t i = 0; i < numElementsTypedArray; i++) {
+        for (int i = 0; i < numElementsTypedArray; i++) {
             JSHandle<JSTaggedValue> handleTagValKey(thread, JSTaggedValue(i));
             EXPECT_FALSE(JSTypedArray::HasProperty(thread, handleTagValTypedArray, handleTagValKey));
             EXPECT_TRUE(JSTypedArray::SetProperty(thread, handleTagValTypedArray, handleTagValKey,
@@ -1304,8 +1304,8 @@ HWTEST_F_L0(JSTypedArrayTest, FastCopyElementToArray_TypedArray)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
-    for (int j = 0; j < cVecJSType.size(); j++) {
-        int32_t numElementsTypedArray = 10;
+    for (size_t j = 0; j < cVecJSType.size(); j++) {
+        int numElementsTypedArray = 10;
         JSHandle<JSTaggedValue> handleTagValValueSet(thread, cVecHandleTagValValueForTypedArray.at(j));
         JSHandle<JSTypedArray> handleTypedArrayFrom =
             CreateNumberTypedArray(thread, cVecJSType.at(j));
@@ -1320,12 +1320,12 @@ HWTEST_F_L0(JSTypedArrayTest, FastCopyElementToArray_TypedArray)
         handleTypedArrayFrom->SetViewedArrayBuffer(thread, handleTagValArrayBuffer);
         handleTypedArrayFrom->SetArrayLength(thread, JSTaggedValue(numElementsTypedArray));
 
-        for (uint32_t i = 0; i < numElementsTypedArray; i++) {
+        for (int i = 0; i < numElementsTypedArray; i++) {
             EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValTypedArrayFrom, JSTaggedValue(i),
                 handleTagValValueSet));
         }
         EXPECT_TRUE(JSTypedArray::FastCopyElementToArray(thread, handleTagValTypedArrayFrom, handleTagArrTo));
-        for (uint32_t i = 0; i < numElementsTypedArray; i++) {
+        for (int i = 0; i < numElementsTypedArray; i++) {
             EXPECT_EQ(handleTagArrTo->Get(i), handleTagValValueSet.GetTaggedValue());
         }
     }

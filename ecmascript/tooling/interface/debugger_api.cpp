@@ -145,7 +145,7 @@ void DebuggerApi::ClearException(const EcmaVM *ecmaVm)
 }
 
 // EcmaVM
-const panda_file::File *DebuggerApi::FindPandaFile(const EcmaVM *ecmaVm, const CString &fileName)
+const panda_file::File *DebuggerApi::FindPandaFile(const CString &fileName)
 {
     const panda_file::File *pfs = nullptr;
     ::panda::ecmascript::JSPandaFileManager::GetInstance()->EnumerateJSPandaFiles([&pfs, fileName](

@@ -18,7 +18,6 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_array.h"
-#include "ecmascript/js_invoker.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
@@ -59,7 +58,7 @@ JSTaggedValue JSStableArray::Pop(JSHandle<JSArray> receiver, EcmaRuntimeCallInfo
     uint32_t capacity = elements->GetLength();
     uint32_t index = length - 1;
     auto result = elements->Get(index);
-    if (TaggedArray::ShouldTrim(thread, capacity, index)) {
+    if (TaggedArray::ShouldTrim(capacity, index)) {
         elements->Trim(thread, index);
     } else {
         elements->Set(thread, index, JSTaggedValue::Hole());
@@ -131,7 +130,7 @@ JSTaggedValue JSStableArray::Splice(JSHandle<JSArray> receiver, EcmaRuntimeCallI
             srcElementsHandle->Set(thread, idx + insertCount, element);
         }
 
-        if (TaggedArray::ShouldTrim(thread, oldCapacity, newCapacity)) {
+        if (TaggedArray::ShouldTrim(oldCapacity, newCapacity)) {
             srcElementsHandle->Trim(thread, newCapacity);
         } else {
             for (uint32_t idx = newCapacity; idx < len; idx++) {
@@ -180,7 +179,7 @@ JSTaggedValue JSStableArray::Shift(JSHandle<JSArray> receiver, EcmaRuntimeCallIn
     }
     uint32_t capacity = elements->GetLength();
     uint32_t index = length - 1;
-    if (TaggedArray::ShouldTrim(thread, capacity, index)) {
+    if (TaggedArray::ShouldTrim(capacity, index)) {
         elements->Trim(thread, index);
     } else {
         elements->Set(thread, index, JSTaggedValue::Hole());

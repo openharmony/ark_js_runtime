@@ -193,7 +193,8 @@ Local<ObjectRef> Paused::ToObject(const EcmaVM *ecmaVm)
     return object;
 }
 
-std::unique_ptr<Resumed> Resumed::Create(const EcmaVM *ecmaVm, [[maybe_unused]] const Local<JSValueRef> &params)
+std::unique_ptr<Resumed> Resumed::Create([[maybe_unused]] const EcmaVM *ecmaVm,
+                                         [[maybe_unused]] const Local<JSValueRef> &params)
 {
     return std::make_unique<Resumed>();
 }

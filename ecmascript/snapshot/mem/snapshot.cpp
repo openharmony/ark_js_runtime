@@ -59,11 +59,11 @@ void SnapShot::MakeSnapShotProgramObject(Program *program, const panda_file::Fil
 
     // handle GlobalEnvConstants
     auto constant = const_cast<GlobalEnvConstants *>(vm_->GetJSThread()->GlobalConstants());
-    constant->VisitRangeSlot([&objectQueue, &data](Root type, ObjectSlot start, ObjectSlot end) {
+    constant->VisitRangeSlot([&objectQueue, &data]([[maybe_unused]] Root type, ObjectSlot start, ObjectSlot end) {
         SerializeHelper::AddTaggedObjectRangeToData(start, end, &objectQueue, &data);
     });
 
-    vm_->Iterate([&objectQueue, &data](Root type, ObjectSlot object) {
+    vm_->Iterate([&objectQueue, &data]([[maybe_unused]] Root type, ObjectSlot object) {
         SerializeHelper::AddObjectHeaderToData(object.GetTaggedObjectHeader(), &objectQueue, &data);
     });
 

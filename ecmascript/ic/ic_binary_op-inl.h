@@ -26,7 +26,7 @@
 #include "ecmascript/napi/include/jsnapi.h"
 
 namespace panda::ecmascript {
-JSTaggedValue ICBinaryOP::AddWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+JSTaggedValue ICBinaryOP::AddWithTSType(JSThread *thread, JSTaggedValue left,
                                         JSTaggedValue right, JSTaggedValue argType)
 {
     INTERPRETER_TRACE(thread, AddWithTSType);
@@ -60,7 +60,7 @@ JSTaggedValue ICBinaryOP::AddWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTag
         case BinaryType::STRING: {
             JSHandle<EcmaString> stringA0 = JSHandle<EcmaString>(JSHandle<JSTaggedValue>(thread, left));
             JSHandle<EcmaString> stringA1 = JSHandle<EcmaString>(JSHandle<JSTaggedValue>(thread, right));
-            EcmaString *ret = EcmaString::Concat(stringA0, stringA1, ecma_vm);
+            EcmaString *ret = EcmaString::Concat(stringA0, stringA1, thread->GetEcmaVM());
             return JSTaggedValue(ret);
         }
         // Support cases, such as: string + null, string + object, string + boolean, string + number, etc.
@@ -70,18 +70,18 @@ JSTaggedValue ICBinaryOP::AddWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTag
             if (left.IsString()) {
                 JSHandle<EcmaString> stringA0 = JSHandle<EcmaString>(leftValue);
                 JSHandle<EcmaString> stringA1 = JSTaggedValue::ToString(thread, rightValue);
-                EcmaString *ret = EcmaString::Concat(stringA0, stringA1, ecma_vm);
+                EcmaString *ret = EcmaString::Concat(stringA0, stringA1, thread->GetEcmaVM());
                 return JSTaggedValue(ret);
             } else {
                 JSHandle<EcmaString> stringA0 = JSTaggedValue::ToString(thread, leftValue);
                 JSHandle<EcmaString> stringA1 = JSHandle<EcmaString>(rightValue);
-                EcmaString *ret = EcmaString::Concat(stringA0, stringA1, ecma_vm);
+                EcmaString *ret = EcmaString::Concat(stringA0, stringA1, thread->GetEcmaVM());
                 return JSTaggedValue(ret);
             }
         }
         // Some special cases, such as: object + undefined, object + boolean, etc.
         case BinaryType::GENERIC: {
-            JSTaggedValue res = SlowRuntimeStub::Add2Dyn(thread, ecma_vm, left, right);
+            JSTaggedValue res = SlowRuntimeStub::Add2Dyn(thread, left, right);
             return res;
         }
         default: {
@@ -90,7 +90,7 @@ JSTaggedValue ICBinaryOP::AddWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTag
     }
 }
 
-JSTaggedValue ICBinaryOP::SubWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+JSTaggedValue ICBinaryOP::SubWithTSType(JSThread *thread, JSTaggedValue left,
                                         JSTaggedValue right, JSTaggedValue argType)
 {
     INTERPRETER_TRACE(thread, SubWithTSType);
@@ -123,7 +123,7 @@ JSTaggedValue ICBinaryOP::SubWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTag
     }
 }
 
-JSTaggedValue ICBinaryOP::MulWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+JSTaggedValue ICBinaryOP::MulWithTSType(JSThread *thread, JSTaggedValue left,
                                         JSTaggedValue right, JSTaggedValue argType)
 {
     INTERPRETER_TRACE(thread, MulWithTSType);
@@ -157,7 +157,7 @@ JSTaggedValue ICBinaryOP::MulWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTag
     }
 }
 
-JSTaggedValue ICBinaryOP::DivWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+JSTaggedValue ICBinaryOP::DivWithTSType(JSThread *thread, JSTaggedValue left,
                                         JSTaggedValue right, JSTaggedValue argType)
 {
     INTERPRETER_TRACE(thread, DivWithTSType);
@@ -191,7 +191,7 @@ JSTaggedValue ICBinaryOP::DivWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTag
     }
 }
 
-JSTaggedValue ICBinaryOP::ModWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+JSTaggedValue ICBinaryOP::ModWithTSType(JSThread *thread, JSTaggedValue left,
                                         JSTaggedValue right, JSTaggedValue argType)
 {
     INTERPRETER_TRACE(thread, ModWithTSType);
@@ -271,7 +271,7 @@ void ICBinaryOP::GetBitOPDate(JSThread *thread, JSTaggedValue left, JSTaggedValu
     return;
 }
 
-JSTaggedValue ICBinaryOP::ShlWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+JSTaggedValue ICBinaryOP::ShlWithTSType(JSThread *thread, JSTaggedValue left,
                                         JSTaggedValue right, JSTaggedValue argType)
 {
     INTERPRETER_TRACE(thread, ShlWithTSType);
@@ -287,7 +287,7 @@ JSTaggedValue ICBinaryOP::ShlWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTag
     return JSTaggedValue(ret);
 }
 
-JSTaggedValue ICBinaryOP::ShrWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+JSTaggedValue ICBinaryOP::ShrWithTSType(JSThread *thread, JSTaggedValue left,
                                         JSTaggedValue right, JSTaggedValue argType)
 {
     INTERPRETER_TRACE(thread, ShrWithTSType);
@@ -301,7 +301,7 @@ JSTaggedValue ICBinaryOP::ShrWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTag
     return JSTaggedValue(ret);
 }
 
-JSTaggedValue ICBinaryOP::AshrWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+JSTaggedValue ICBinaryOP::AshrWithTSType(JSThread *thread, JSTaggedValue left,
                                          JSTaggedValue right, JSTaggedValue argType)
 {
     INTERPRETER_TRACE(thread, AshrWithTSType);
@@ -317,7 +317,7 @@ JSTaggedValue ICBinaryOP::AshrWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTa
     return JSTaggedValue(ret);
 }
 
-JSTaggedValue ICBinaryOP::AndWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+JSTaggedValue ICBinaryOP::AndWithTSType(JSThread *thread, JSTaggedValue left,
                                         JSTaggedValue right, JSTaggedValue argType)
 {
     INTERPRETER_TRACE(thread, AndWithTSType);
@@ -330,7 +330,7 @@ JSTaggedValue ICBinaryOP::AndWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTag
     return JSTaggedValue(ret);
 }
 
-JSTaggedValue ICBinaryOP::OrWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+JSTaggedValue ICBinaryOP::OrWithTSType(JSThread *thread, JSTaggedValue left,
                                        JSTaggedValue right, JSTaggedValue argType)
 {
     INTERPRETER_TRACE(thread, OrWithTSType);
@@ -343,7 +343,7 @@ JSTaggedValue ICBinaryOP::OrWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTagg
     return JSTaggedValue(ret);
 }
 
-JSTaggedValue ICBinaryOP::XorWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
+JSTaggedValue ICBinaryOP::XorWithTSType(JSThread *thread, JSTaggedValue left,
                                         JSTaggedValue right, JSTaggedValue argType)
 {
     INTERPRETER_TRACE(thread, XorWithTSType);

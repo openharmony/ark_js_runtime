@@ -1242,7 +1242,7 @@ JSHandle<JSSymbol> ObjectFactory::NewJSSymbol()
 JSHandle<JSSymbol> ObjectFactory::NewPrivateSymbol()
 {
     JSHandle<JSSymbol> obj = NewJSSymbol();
-    obj->SetPrivate(thread_);
+    obj->SetPrivate();
     return obj;
 }
 
@@ -1253,7 +1253,7 @@ JSHandle<JSSymbol> ObjectFactory::NewPrivateNameSymbol(const JSHandle<JSTaggedVa
         JSHClass::Cast(thread_->GlobalConstants()->GetSymbolClass().GetTaggedObject()));
     JSHandle<JSSymbol> obj(thread_, JSSymbol::Cast(header));
     obj->SetFlags(0);
-    obj->SetPrivateNameSymbol(thread_);
+    obj->SetPrivateNameSymbol();
     obj->SetDescription(thread_, name);
     obj->SetHashField(SymbolTable::Hash(name.GetTaggedValue()));
     return obj;
@@ -1266,7 +1266,7 @@ JSHandle<JSSymbol> ObjectFactory::NewWellKnownSymbol(const JSHandle<JSTaggedValu
         JSHClass::Cast(thread_->GlobalConstants()->GetSymbolClass().GetTaggedObject()));
     JSHandle<JSSymbol> obj(thread_, JSSymbol::Cast(header));
     obj->SetFlags(0);
-    obj->SetWellKnownSymbol(thread_);
+    obj->SetWellKnownSymbol();
     obj->SetDescription(thread_, name);
     obj->SetHashField(SymbolTable::Hash(name.GetTaggedValue()));
     return obj;
@@ -1288,7 +1288,7 @@ JSHandle<JSSymbol> ObjectFactory::NewSymbolWithTable(const JSHandle<JSTaggedValu
 {
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<SymbolTable> tableHandle(env->GetRegisterSymbols());
-    if (tableHandle->ContainsKey(thread_, name.GetTaggedValue())) {
+    if (tableHandle->ContainsKey(name.GetTaggedValue())) {
         JSTaggedValue objValue = tableHandle->GetSymbol(name.GetTaggedValue());
         return JSHandle<JSSymbol>(thread_, objValue);
     }
@@ -2388,8 +2388,9 @@ JSHandle<JSAPIArrayListIterator> ObjectFactory::NewJSAPIArrayListIterator(const 
     return iter;
 }
 
-JSHandle<TaggedArray> ObjectFactory::CopyQueue(const JSHandle<TaggedArray> &old, [[maybe_unused]] uint32_t oldLength,
-                                               uint32_t newLength, uint32_t front, uint32_t tail)
+JSHandle<TaggedArray> ObjectFactory::CopyQueue(const JSHandle<TaggedArray> &old, uint32_t oldLength,
+                                               uint32_t newLength, [[maybe_unused]] uint32_t front,
+                                               [[maybe_unused]] uint32_t tail)
 {
     NewObjectHook();
     size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), newLength);

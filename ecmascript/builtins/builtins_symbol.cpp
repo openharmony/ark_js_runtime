@@ -189,7 +189,7 @@ JSTaggedValue BuiltinsSymbol::KeyFor(EcmaRuntimeCallInfo *argv)
     // 4.Return undefined.
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     auto *table = env->GetRegisterSymbols().GetObject<SymbolTable>();
-    JSTaggedValue key = table->FindSymbol(thread, sym.GetTaggedValue());
+    JSTaggedValue key = table->FindSymbol(sym.GetTaggedValue());
     if (key.IsUndefined()) {
         return JSTaggedValue::Undefined();
     }

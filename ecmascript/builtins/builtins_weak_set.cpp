@@ -17,7 +17,6 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/internal_call_params.h"
-#include "ecmascript/js_invoker.h"
 #include "ecmascript/js_set_iterator.h"
 #include "ecmascript/js_weak_container.h"
 #include "ecmascript/linked_hash_table-inl.h"
@@ -89,13 +88,11 @@ JSTaggedValue BuiltinsWeakSet::WeakSetConstructor(EcmaRuntimeCallInfo *argv)
             auto prop = JSObject::GetProperty(thread, nextValue, valueIndex).GetValue();
             arguments->MakeArgv(prop);
         }
-        JSTaggedValue ret = JSFunction::Call(thread, adder, JSHandle<JSTaggedValue>(weakSet), 1, arguments->GetArgv());
-
         // Let status be Call(adder, weakset, «nextValue.[[value]]»).
-        status.Update(ret);
+        JSFunction::Call(thread, adder, JSHandle<JSTaggedValue>(weakSet), 1, arguments->GetArgv());
         // If status is an abrupt completion, return IteratorClose(iter, status).
         if (thread->HasPendingException()) {
-            return JSIterator::IteratorCloseAndReturn(thread, iter, status);
+            return JSIterator::IteratorCloseAndReturn(thread, iter);
         }
         // Let next be IteratorStep(iter).
         next = JSIterator::IteratorStep(thread, iter);

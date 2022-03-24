@@ -794,12 +794,12 @@ HWTEST_F_L0(ContainersTreeSetTest, KeysAndValuesAndEntries)
     }
 
     // test values
-    auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
-    callInfo->SetFunction(JSTaggedValue::Undefined());
-    callInfo->SetThis(tset.GetTaggedValue());
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-    JSHandle<JSTaggedValue> iterValues(thread, ContainersTreeSet::Values(callInfo.get()));
-    TestHelper::TearDownFrame(thread, prev);
+    auto callInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
+    callInfo1->SetFunction(JSTaggedValue::Undefined());
+    callInfo1->SetThis(tset.GetTaggedValue());
+    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, callInfo1.get());
+    JSHandle<JSTaggedValue> iterValues(thread, ContainersTreeSet::Values(callInfo1.get()));
+    TestHelper::TearDownFrame(thread, prev1);
     EXPECT_TRUE(iterValues->IsJSAPITreeSetIterator());
     {
         JSMutableHandle<JSTaggedValue> result(thread, JSTaggedValue::Undefined());
@@ -853,12 +853,12 @@ HWTEST_F_L0(ContainersTreeSetTest, KeysAndValuesAndEntries)
     }
     // test entries
     {
-        auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
-        callInfo->SetFunction(JSTaggedValue::Undefined());
-        callInfo->SetThis(tset.GetTaggedValue());
-        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-        JSHandle<JSTaggedValue> iter(thread, ContainersTreeSet::Entries(callInfo.get()));
-        TestHelper::TearDownFrame(thread, prev);
+        auto callInfo2 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
+        callInfo2->SetFunction(JSTaggedValue::Undefined());
+        callInfo2->SetThis(tset.GetTaggedValue());
+        [[maybe_unused]] auto prev2 = TestHelper::SetupFrame(thread, callInfo2.get());
+        JSHandle<JSTaggedValue> iter(thread, ContainersTreeSet::Entries(callInfo2.get()));
+        TestHelper::TearDownFrame(thread, prev2);
         EXPECT_TRUE(iter->IsJSAPITreeSetIterator());
 
         JSHandle<JSTaggedValue> first(thread, JSTaggedValue(0));
@@ -1036,12 +1036,12 @@ HWTEST_F_L0(ContainersTreeSetTest, CustomCompareFunctionTest)
     EXPECT_EQ(tset->GetSize(), NODE_NUMBERS * 2);
 
     // test sort
-    auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
-    callInfo->SetFunction(JSTaggedValue::Undefined());
-    callInfo->SetThis(tset.GetTaggedValue());
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
-    JSHandle<JSTaggedValue> iterValues(thread, ContainersTreeSet::Values(callInfo.get()));
-    TestHelper::TearDownFrame(thread, prev);
+    auto callInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
+    callInfo1->SetFunction(JSTaggedValue::Undefined());
+    callInfo1->SetThis(tset.GetTaggedValue());
+    [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, callInfo1.get());
+    JSHandle<JSTaggedValue> iterValues(thread, ContainersTreeSet::Values(callInfo1.get()));
+    TestHelper::TearDownFrame(thread, prev1);
     EXPECT_TRUE(iterValues->IsJSAPITreeSetIterator());
     JSMutableHandle<JSTaggedValue> result(thread, JSTaggedValue::Undefined());
     for (int i = 0; i < NODE_NUMBERS; i++) {

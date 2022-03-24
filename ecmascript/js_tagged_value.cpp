@@ -205,7 +205,7 @@ bool JSTaggedValue::Equal(JSThread *thread, const JSHandle<JSTaggedValue> &x, co
         }
         if (y->IsNumber()) {
             JSHandle<BigInt> bigint = JSHandle<BigInt>::Cast(x);
-            return BigInt::CompareWithNumber(thread, bigint, y) == ComparisonResult::EQUAL;
+            return BigInt::CompareWithNumber(bigint, y) == ComparisonResult::EQUAL;
         }
         if (y->IsHeapObject() && !y->IsSymbol()) {
             JSHandle<JSTaggedValue> yPrimitive(thread, ToPrimitive(thread, y));
@@ -273,17 +273,17 @@ ComparisonResult JSTaggedValue::Compare(JSThread *thread, const JSHandle<JSTagge
     if (primX->IsBigInt()) {
         if (primY->IsNumber()) {
             JSHandle<BigInt> bigint = JSHandle<BigInt>::Cast(primX);
-            return BigInt::CompareWithNumber(thread, bigint, primY);
+            return BigInt::CompareWithNumber(bigint, primY);
         } else if (primY->IsString()) {
             JSHandle<JSTaggedValue> bigY(thread, base::NumberHelper::StringToBigInt(thread, primY));
             if (!bigY->IsBigInt()) {
                 return ComparisonResult::UNDEFINED;
             }
-            return BigInt::Compare(thread, primX.GetTaggedValue(), bigY.GetTaggedValue());
+            return BigInt::Compare(primX.GetTaggedValue(), bigY.GetTaggedValue());
         } else {
             JSHandle<JSTaggedValue> bigY(thread, ToBigInt(thread, primY));
             RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ComparisonResult::UNDEFINED);
-            return BigInt::Compare(thread, primX.GetTaggedValue(), bigY.GetTaggedValue());
+            return BigInt::Compare(primX.GetTaggedValue(), bigY.GetTaggedValue());
         }
     }
     if (primY->IsBigInt()) {
@@ -738,7 +738,7 @@ bool JSTaggedValue::SetPrototype(JSThread *thread, const JSHandle<JSTaggedValue>
         return JSProxy::SetPrototype(thread, JSHandle<JSProxy>(obj), proto);
     }
     if (obj->IsModuleNamespace()) {
-        return ModuleNamespace::SetPrototype(thread, obj, proto);
+        return ModuleNamespace::SetPrototype(obj, proto);
     }
     if (obj->IsSpecialContainer()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Can not set Prototype on Container Object", false);

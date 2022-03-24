@@ -43,6 +43,14 @@
 #include "ecmascript/ts_types/ts_loader.h"
 
 namespace panda::ecmascript {
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 #define DEF_RUNTIME_STUBS(name) \
 JSTaggedType RuntimeStubs::name(uintptr_t argGlue, uint32_t argc, uintptr_t argv) \
 
@@ -1204,8 +1212,7 @@ DEF_RUNTIME_STUBS(Add2Dyn)
     RUNTIME_STUBS_HEADER(Add2Dyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, left, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, right, 1);
-    EcmaVM *ecmaVm = thread->GetEcmaVM();
-    return RuntimeAdd2Dyn(thread, ecmaVm, left, right).GetRawData();
+    return RuntimeAdd2Dyn(thread, left, right).GetRawData();
 }
 
 DEF_RUNTIME_STUBS(Sub2Dyn)
@@ -1633,4 +1640,10 @@ void RuntimeStubs::Initialize(JSThread *thread)
 #undef INITIAL_RUNTIME_FUNCTIONS
 #undef DEF_RUNTIME_STUB
 }
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 }  // namespace panda::ecmascript

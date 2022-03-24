@@ -368,18 +368,18 @@ public:
     inline uint32_t GetKeyHashCode() const;
     static JSTaggedValue GetSuperBase(JSThread *thread, const JSHandle<JSTaggedValue> &obj);
 
-    void DumpTaggedValue(JSThread *thread, std::ostream &os) const DUMP_API_ATTR;
-    void Dump(JSThread *thread, std::ostream &os) const DUMP_API_ATTR;
+    void DumpTaggedValue(std::ostream &os) const DUMP_API_ATTR;
+    void Dump(std::ostream &os) const DUMP_API_ATTR;
     void D() const DUMP_API_ATTR;
-    void DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec,
+    void DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec,
                          bool isVmMode = true) const;
     static void DV(JSTaggedType val) DUMP_API_ATTR;
 
 private:
     inline double ExtractNumber() const;
 
-    void DumpSpecialValue([[maybe_unused]] JSThread *thread, std::ostream &os) const;
-    void DumpHeapObjectType([[maybe_unused]] JSThread *thread, std::ostream &os) const;
+    void DumpSpecialValue(std::ostream &os) const;
+    void DumpHeapObjectType(std::ostream &os) const;
 
     // non ECMA standard jsapis
     static bool HasContainerProperty(JSThread *thread, const JSHandle<JSTaggedValue> &obj,

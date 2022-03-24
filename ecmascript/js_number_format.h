@@ -41,7 +41,7 @@ struct FractionDigitsOption {
     int32_t mxfdDefault = 0;
 };
 
-static const std::set<std::string> sanctionedUnit({ "acre", "bit", "byte", "celsius", "centimeter", "day", "degree",
+static const std::set<std::string> SANCTIONED_UNIT({ "acre", "bit", "byte", "celsius", "centimeter", "day", "degree",
                                                   "fahrenheit", "fluid-ounce", "foot", "gallon", "gigabit", "gigabyte",
                                                   "gram", "hectare", "hour", "inch", "kilobit", "kilobyte", "kilogram",
                                                   "kilometer", "liter", "megabit", "megabyte", "meter", "mile",

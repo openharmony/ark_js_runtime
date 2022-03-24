@@ -31,7 +31,7 @@ ProfileProcessor::ProfileProcessor(ProfileGenerator *generator, const EcmaVM *vm
 }
 ProfileProcessor::~ProfileProcessor() {}
 
-bool ProfileProcessor::Run(uint32_t threadIndex)
+bool ProfileProcessor::Run([[maybe_unused]] uint32_t threadIndex)
 {
     uint64_t startTime = 0;
     uint64_t endTime = 0;

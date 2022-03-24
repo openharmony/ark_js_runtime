@@ -202,8 +202,7 @@ public:
     static JSHandle<TaggedArray> CanonicalizeLocaleList(JSThread *thread, const JSHandle<JSTaggedValue> &locales);
 
     template<typename T>
-    static JSHandle<TaggedArray> CanonicalizeHelper(JSThread *thread, const JSHandle<JSTaggedValue> &locales,
-                                                       JSHandle<T> &obj, JSHandle<TaggedArray> &seen);
+    static JSHandle<TaggedArray> CanonicalizeHelper(JSThread *thread, JSHandle<T> &obj, JSHandle<TaggedArray> &seen);
 
     // 9.2.2 BestAvailableLocale ( availableLocales, locale )
     static std::string BestAvailableLocale(JSThread *thread, const JSHandle<TaggedArray> &availableLocales,

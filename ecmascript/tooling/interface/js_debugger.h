@@ -87,7 +87,7 @@ public:
     {
         return nullptr;
     }
-    Expected<PtMethod, Error> GetPtMethod(const PtLocation &location) const override
+    Expected<PtMethod, Error> GetPtMethod([[maybe_unused]] const PtLocation &location) const override
     {
         return Unexpected(Error(Error::Type::INVALID_VALUE, "Unsupported GetPtMethod"));
     }
@@ -99,88 +99,97 @@ public:
     {
         return {};
     }
-    std::optional<Error> SetNotification(PtThread thread, bool enable, PtHookType hookType) override
+    std::optional<Error> SetNotification([[maybe_unused]] PtThread thread, [[maybe_unused]] bool enable,
+                                         [[maybe_unused]] PtHookType hookType) override
     {
         return {};
     }
-    Expected<std::unique_ptr<PtFrame>, Error> GetCurrentFrame(PtThread thread) const override
+    Expected<std::unique_ptr<PtFrame>, Error> GetCurrentFrame([[maybe_unused]] PtThread thread) const override
     {
         return Unexpected(Error(Error::Type::INVALID_VALUE, "Unsupported GetCurrentFrame"));
     }
-    std::optional<Error> EnumerateFrames(PtThread thread, std::function<bool(const PtFrame &)> callback) const override
+    std::optional<Error> EnumerateFrames([[maybe_unused]] PtThread thread,
+                                         [[maybe_unused]] std::function<bool(const PtFrame &)> callback) const override
     {
         return {};
     }
-    std::optional<Error> GetThisVariableByFrame(PtThread thread, uint32_t frameDepth, PtValue *value) override
+    std::optional<Error> GetThisVariableByFrame([[maybe_unused]] PtThread thread, [[maybe_unused]] uint32_t frameDepth,
+                                                [[maybe_unused]] PtValue *value) override
     {
         return {};
     }
-    void ThreadStart(ManagedThread::ThreadId threadId) override {}
-    void ThreadEnd(ManagedThread::ThreadId threadId) override {}
+    void ThreadStart([[maybe_unused]] ManagedThread::ThreadId threadId) override {}
+    void ThreadEnd([[maybe_unused]] ManagedThread::ThreadId threadId) override {}
     void GarbageCollectorStart() override {}
     void GarbageCollectorFinish() override {}
-    void ObjectAlloc(BaseClass *klass, ObjectHeader *object, ManagedThread *thread, size_t size) override {}
-    void ExceptionCatch(const ManagedThread *thread, const Method *method, uint32_t bcOffset) override {}
-    void ClassLoad(Class *klass) override {}
-    void ClassPrepare(Class *klass) override {}
-    void MonitorWait(ObjectHeader *object, int64_t timeout) override {}
-    void MonitorWaited(ObjectHeader *object, bool timedOut) override {}
-    void MonitorContendedEnter(ObjectHeader *object) override {}
-    void MonitorContendedEntered(ObjectHeader *object) override {}
+    void ObjectAlloc([[maybe_unused]] BaseClass *klass, [[maybe_unused]] ObjectHeader *object,
+                     [[maybe_unused]] ManagedThread *thread, [[maybe_unused]] size_t size) override {}
+    void ExceptionCatch([[maybe_unused]] const ManagedThread *thread, [[maybe_unused]] const Method *method,
+                        [[maybe_unused]] uint32_t bcOffset) override {}
+    void ClassLoad([[maybe_unused]] Class *klass) override {}
+    void ClassPrepare([[maybe_unused]] Class *klass) override {}
+    void MonitorWait([[maybe_unused]] ObjectHeader *object, [[maybe_unused]] int64_t timeout) override {}
+    void MonitorWaited([[maybe_unused]] ObjectHeader *object, [[maybe_unused]] bool timedOut) override {}
+    void MonitorContendedEnter([[maybe_unused]] ObjectHeader *object) override {}
+    void MonitorContendedEntered([[maybe_unused]] ObjectHeader *object) override {}
 
-    std::optional<Error> GetThreadList(PandaVector<PtThread> *threadList) const override
+    std::optional<Error> GetThreadList([[maybe_unused]] PandaVector<PtThread> *threadList) const override
     {
         return {};
     }
-    std::optional<Error> GetThreadInfo(PtThread thread, ThreadInfo *infoPtr) const override
+    std::optional<Error> GetThreadInfo([[maybe_unused]] PtThread thread,
+                                       [[maybe_unused]] ThreadInfo *infoPtr) const override
     {
         return {};
     }
-    std::optional<Error> SuspendThread(PtThread thread) const override
+    std::optional<Error> SuspendThread([[maybe_unused]] PtThread thread) const override
     {
         return {};
     }
-    std::optional<Error> ResumeThread(PtThread thread) const override
+    std::optional<Error> ResumeThread([[maybe_unused]] PtThread thread) const override
     {
         return {};
     }
-    std::optional<Error> SetVariable(PtThread thread, uint32_t frameDepth, int32_t regNumber,
-        const PtValue &value) const override
+    std::optional<Error> SetVariable([[maybe_unused]] PtThread thread, [[maybe_unused]] uint32_t frameDepth,
+                                     [[maybe_unused]] int32_t regNumber,
+                                     [[maybe_unused]] const PtValue &value) const override
     {
         return {};
     }
-    std::optional<Error> GetVariable(PtThread thread, uint32_t frameDepth, int32_t regNumber,
-        PtValue *result) const override
+    std::optional<Error> GetVariable([[maybe_unused]] PtThread thread, [[maybe_unused]] uint32_t frameDepth,
+                                     [[maybe_unused]] int32_t regNumber,
+                                     [[maybe_unused]] PtValue *result) const override
     {
         return {};
     }
     std::optional<Error> GetProperty([[maybe_unused]] PtObject object, [[maybe_unused]] PtProperty property,
-        PtValue *value) const override
+                                     [[maybe_unused]] PtValue *value) const override
     {
         return {};
     }
     std::optional<Error> SetProperty([[maybe_unused]] PtObject object, [[maybe_unused]] PtProperty property,
-        [[maybe_unused]] const PtValue &value) const override
+                                     [[maybe_unused]] const PtValue &value) const override
     {
         return {};
     }
     std::optional<Error> EvaluateExpression([[maybe_unused]] PtThread thread, [[maybe_unused]] uint32_t frameNumber,
-        ExpressionWrapper expr, PtValue *result) const override
+                                            [[maybe_unused]] ExpressionWrapper expr,
+                                            [[maybe_unused]] PtValue *result) const override
     {
         return {};
     }
     std::optional<Error> RetransformClasses([[maybe_unused]] int32_t classCount,
-        [[maybe_unused]] const PtClass *classes) const override
+                                            [[maybe_unused]] const PtClass *classes) const override
     {
         return {};
     }
     std::optional<Error> RedefineClasses([[maybe_unused]] int32_t classCount,
-        [[maybe_unused]] const PandaClassDefinition *classes) const override
+                                         [[maybe_unused]] const PandaClassDefinition *classes) const override
     {
         return {};
     }
     std::optional<Error> RestartFrame([[maybe_unused]] PtThread thread,
-        [[maybe_unused]] uint32_t frameNumber) const override
+                                      [[maybe_unused]] uint32_t frameNumber) const override
     {
         return {};
     }
@@ -188,36 +197,44 @@ public:
     {
         return {};
     }
-    std::optional<Error> AwaitPromise([[maybe_unused]] PtObject promiseObject, PtValue *result) const override
+    std::optional<Error> AwaitPromise([[maybe_unused]] PtObject promiseObject,
+                                      [[maybe_unused]] PtValue *result) const override
     {
         return {};
     }
     std::optional<Error> CallFunctionOn([[maybe_unused]] PtObject object, [[maybe_unused]] PtMethod method,
-        [[maybe_unused]] const PandaVector<PtValue> &arguments, PtValue *returnValue) const override
+                                        [[maybe_unused]] const PandaVector<PtValue> &arguments,
+                                        [[maybe_unused]] PtValue *returnValue) const override
     {
         return {};
     }
-    std::optional<Error> GetProperties(uint32_t *countPtr, [[maybe_unused]] char ***propertyPtr) const override
+    std::optional<Error> GetProperties([[maybe_unused]] uint32_t *countPtr,
+                                       [[maybe_unused]] char ***propertyPtr) const override
     {
         return {};
     }
-    std::optional<Error> NotifyFramePop(PtThread thread, uint32_t depth) const override
+    std::optional<Error> NotifyFramePop([[maybe_unused]] PtThread thread,
+                                        [[maybe_unused]] uint32_t depth) const override
     {
         return {};
     }
-    std::optional<Error> SetPropertyAccessWatch(PtClass klass, PtProperty property) override
+    std::optional<Error> SetPropertyAccessWatch([[maybe_unused]] PtClass klass,
+                                                [[maybe_unused]] PtProperty property) override
     {
         return {};
     }
-    std::optional<Error> ClearPropertyAccessWatch(PtClass klass, PtProperty property) override
+    std::optional<Error> ClearPropertyAccessWatch([[maybe_unused]] PtClass klass,
+                                                  [[maybe_unused]] PtProperty property) override
     {
         return {};
     }
-    std::optional<Error> SetPropertyModificationWatch(PtClass klass, PtProperty property) override
+    std::optional<Error> SetPropertyModificationWatch([[maybe_unused]] PtClass klass,
+                                                      [[maybe_unused]] PtProperty property) override
     {
         return {};
     }
-    std::optional<Error> ClearPropertyModificationWatch(PtClass klass, PtProperty property) override
+    std::optional<Error> ClearPropertyModificationWatch([[maybe_unused]] PtClass klass,
+                                                        [[maybe_unused]] PtProperty property) override
     {
         return {};
     }

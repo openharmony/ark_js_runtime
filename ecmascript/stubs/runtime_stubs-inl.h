@@ -27,7 +27,6 @@
 #include "ecmascript/js_async_function.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_generator_object.h"
-#include "ecmascript/js_invoker.h"
 #include "ecmascript/js_iterator.h"
 #include "ecmascript/js_promise.h"
 #include "ecmascript/module/js_module_manager.h"
@@ -844,7 +843,7 @@ JSTaggedValue RuntimeStubs::RuntimeGetIterator(JSThread *thread, const JSHandle<
     JSHandle<JSTaggedValue> newTarget(thread, JSTaggedValue::Undefined());
     InternalCallParams *params = thread->GetInternalCallParams();
     params->MakeEmptyArgv();
-    JSTaggedValue res = InvokeJsFunction(thread, JSHandle<JSFunction>(valuesFunc), obj, newTarget, params);
+    JSTaggedValue res = EcmaInterpreter::Execute(thread, JSHandle<JSFunction>(valuesFunc), obj, newTarget, params);
 
     return res;
 }
@@ -1026,7 +1025,7 @@ JSTaggedValue RuntimeStubs::RuntimeGreaterEqDyn(JSThread *thread, const JSHandle
     return (ret ? JSTaggedValue::True() : JSTaggedValue::False());
 }
 
-JSTaggedValue RuntimeStubs::RuntimeAdd2Dyn(JSThread *thread, EcmaVM *ecma_vm, const JSHandle<JSTaggedValue> &left,
+JSTaggedValue RuntimeStubs::RuntimeAdd2Dyn(JSThread *thread, const JSHandle<JSTaggedValue> &left,
                                            const JSHandle<JSTaggedValue> &right)
 {
     if (left->IsString() && right->IsString()) {
@@ -1165,7 +1164,7 @@ JSTaggedValue RuntimeStubs::RuntimeMod2Dyn(JSThread *thread, const JSHandle<JSTa
     return JSTaggedValue(std::fmod(dLeft, dRight));
 }
 
-JSTaggedValue RuntimeStubs::RuntimeCreateEmptyObject(JSThread *thread, ObjectFactory *factory,
+JSTaggedValue RuntimeStubs::RuntimeCreateEmptyObject([[maybe_unused]] JSThread *thread, ObjectFactory *factory,
                                                      JSHandle<GlobalEnv> globalEnv)
 {
     JSHandle<JSFunction> builtinObj(globalEnv->GetObjectFunction());
@@ -1173,7 +1172,7 @@ JSTaggedValue RuntimeStubs::RuntimeCreateEmptyObject(JSThread *thread, ObjectFac
     return obj.GetTaggedValue();
 }
 
-JSTaggedValue RuntimeStubs::RuntimeCreateEmptyArray(JSThread *thread, ObjectFactory *factory,
+JSTaggedValue RuntimeStubs::RuntimeCreateEmptyArray([[maybe_unused]] JSThread *thread, ObjectFactory *factory,
                                                     JSHandle<GlobalEnv> globalEnv)
 {
     JSHandle<JSFunction> builtinObj(globalEnv->GetArrayFunction());
@@ -1452,7 +1451,7 @@ JSTaggedValue RuntimeStubs::RuntimeCallSpreadDyn(JSThread *thread, const JSHandl
     InternalCallParams *params = thread->GetInternalCallParams();
     params->MakeArgList(*coretypesArray);
     JSHandle<JSTaggedValue> newTarget(thread, JSTaggedValue::Undefined());
-    JSTaggedValue res = InvokeJsFunction(thread, jsFunc, obj, newTarget, params);
+    JSTaggedValue res = EcmaInterpreter::Execute(thread, jsFunc, obj, newTarget, params);
 
     return res;
 }

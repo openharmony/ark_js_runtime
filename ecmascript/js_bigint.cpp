@@ -770,7 +770,7 @@ inline uint32_t BigIntHelper::SubHelper(uint32_t x, uint32_t y, uint32_t &bigint
     return minuSub;
 }
 
-ComparisonResult BigInt::Compare(JSThread *thread, const JSTaggedValue &x, const JSTaggedValue &y)
+ComparisonResult BigInt::Compare(const JSTaggedValue &x, const JSTaggedValue &y)
 {
     if (!LessThan(x, y)) {
         if (!LessThan(y, x)) {
@@ -1353,7 +1353,7 @@ static int CompareToBitsLen(JSHandle<BigInt> bigint, int numBitLen, int &preZero
     return -1;
 }
 
-ComparisonResult BigInt::CompareWithNumber(JSThread *thread, JSHandle<BigInt> bigint, JSHandle<JSTaggedValue> number)
+ComparisonResult BigInt::CompareWithNumber(JSHandle<BigInt> bigint, JSHandle<JSTaggedValue> number)
 {
     double num = number->GetNumber();
     bool numberSign = num < 0;

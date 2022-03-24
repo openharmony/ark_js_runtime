@@ -66,7 +66,7 @@ bool HeapProfiler::StartHeapTracking(JSThread *thread, double timeInterval, bool
     return true;
 }
 
-bool HeapProfiler::StopHeapTracking(JSThread *thread, DumpFormat dumpFormat, const std::string &path)
+bool HeapProfiler::StopHeapTracking(JSThread *thread, const std::string &path)
 {
     if (heapTracker_ == nullptr) {
         return false;

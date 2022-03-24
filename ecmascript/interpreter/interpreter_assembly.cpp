@@ -41,9 +41,11 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wvoid-ptr-dereference"
 #pragma clang diagnostic ignored "-Wgnu-label-as-value"
+#pragma clang diagnostic ignored "-Wunused-parameter"
 #elif defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -1239,8 +1241,7 @@ void InterpreterAssembly::HandleAdd2DynPrefV8(
         SET_ACC(JSTaggedValue(ret))
     } else {
         // one or both are not number, slow path
-        EcmaVM *ecmaVm = thread->GetEcmaVM();
-        JSTaggedValue res = SlowRuntimeStub::Add2Dyn(thread, ecmaVm, left, right);
+        JSTaggedValue res = SlowRuntimeStub::Add2Dyn(thread, left, right);
         INTERPRETER_RETURN_IF_ABRUPT(res);
         SET_ACC(res);
     }
@@ -3779,7 +3780,7 @@ inline uint32_t InterpreterAssembly::GetNumArgs(JSTaggedType *sp, uint32_t restI
     uint32_t numArgs = JSMethod::NumArgsBits::Decode(callField);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     JSTaggedType *lastFrame = state->base.prev - FRAME_STATE_SIZE;
-    if (lastFrame - sp > numVregs + copyArgs + numArgs) {
+    if (static_cast<uint32_t>(lastFrame - sp) > numVregs + copyArgs + numArgs) {
         // In this case, actualNumArgs is in the end
         // If not, then actualNumArgs == declaredNumArgs, therefore do nothing
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)

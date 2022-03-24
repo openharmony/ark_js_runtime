@@ -134,7 +134,7 @@ void ConcurrentSweeper::FinishSweeping(MemSpaceType type)
     space->FillSweptRegion();
 }
 
-bool ConcurrentSweeper::SweeperTask::Run(uint32_t threadIndex)
+bool ConcurrentSweeper::SweeperTask::Run([[maybe_unused]] uint32_t threadIndex)
 {
     int sweepTypeNum = FREE_LIST_NUM - sweeper_->startSpaceType_;
     for (size_t i = sweeper_->startSpaceType_; i < FREE_LIST_NUM; i++) {

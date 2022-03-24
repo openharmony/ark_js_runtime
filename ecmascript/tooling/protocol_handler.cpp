@@ -26,10 +26,13 @@ ProtocolHandler::ProtocolHandler(std::function<void(std::string)> callback, cons
     dispatcher_ = std::make_unique<Dispatcher>(this);
 }
 
-void ProtocolHandler::WaitForDebugger(const EcmaVM *ecmaVm)
+void ProtocolHandler::WaitForDebugger()
 {
     waitingForDebugger_ = true;
-    ProcessCommand(ecmaVm);
+    static constexpr int DEBUGGER_WAIT_SLEEP_TIME = 100;
+    while (waitingForDebugger_) {
+        usleep(DEBUGGER_WAIT_SLEEP_TIME);
+    }
 }
 
 void ProtocolHandler::RunIfWaitingForDebugger()
@@ -37,17 +40,9 @@ void ProtocolHandler::RunIfWaitingForDebugger()
     waitingForDebugger_ = false;
 }
 
-void ProtocolHandler::ProcessCommand(const EcmaVM *ecmaVm)
+void ProtocolHandler::ProcessCommand(const CString &msg)
 {
-    static constexpr int DEBUGGER_WAIT_SLEEP_TIME = 100;
-    while (waitingForDebugger_) {
-        usleep(DEBUGGER_WAIT_SLEEP_TIME);
-    }
-}
-
-void ProtocolHandler::SendCommand(const CString &msg)
-{
-    LOG(DEBUG, DEBUGGER) << "ProtocolHandler::SendCommand: " << msg;
+    LOG(DEBUG, DEBUGGER) << "ProtocolHandler::ProcessCommand: " << msg;
     Local<JSValueRef> exception = DebuggerApi::GetException(vm_);
     if (!exception->IsHole()) {
         DebuggerApi::ClearException(vm_);

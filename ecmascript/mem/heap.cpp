@@ -602,7 +602,7 @@ bool Heap::ParallelGCTask::Run(uint32_t threadIndex)
     return true;
 }
 
-bool Heap::AsyncClearTask::Run(uint32_t threadIndex)
+bool Heap::AsyncClearTask::Run([[maybe_unused]] uint32_t threadIndex)
 {
     heap_->ReclaimRegions(gcType_);
     return true;

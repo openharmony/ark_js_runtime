@@ -23,55 +23,56 @@ public:
     ~JSPtLangExt() override = default;
 
     // PtValue API
-    PtObject ValueToObject(PtValue value) const override
+    PtObject ValueToObject([[maybe_unused]] PtValue value) const override
     {
         return PtObject();
     }
 
     // PtClass API
-    PtClass GetClass(PtObject object) const override
+    PtClass GetClass([[maybe_unused]] PtObject object) const override
     {
         return PtClass();
     }
-    PtClass GetClass(PtProperty property) const override
+    PtClass GetClass([[maybe_unused]] PtProperty property) const override
     {
         return PtClass();
     }
-    void ReleaseClass(PtClass klass) const override {}
-    const char *GetClassDescriptor(PtClass klass) const override
+    void ReleaseClass([[maybe_unused]] PtClass klass) const override {}
+    const char *GetClassDescriptor([[maybe_unused]] PtClass klass) const override
     {
         return nullptr;
     }
 
     // PtObject API
-    PandaList<PtProperty> GetProperties(PtObject object) const override
+    PandaList<PtProperty> GetProperties([[maybe_unused]] PtObject object) const override
     {
         return {};
     }
-    PtProperty GetProperty(PtObject object, const char *propertyName) const override
+    PtProperty GetProperty([[maybe_unused]] PtObject object, [[maybe_unused]] const char *propertyName) const override
     {
         return PtProperty();
     }
-    bool AddProperty(PtObject object, const char *propertyName, PtValue value) const override
+    bool AddProperty([[maybe_unused]] PtObject object, [[maybe_unused]] const char *propertyName,
+                     [[maybe_unused]] PtValue value) const override
     {
         return false;
     }
-    bool RemoveProperty(PtObject object, const char *propertyName) const override
+    bool RemoveProperty([[maybe_unused]] PtObject object, [[maybe_unused]] const char *propertyName) const override
     {
         return false;
     }
 
     // PtProperty API
-    const char *GetPropertyName(PtProperty property) const override
+    const char *GetPropertyName([[maybe_unused]] PtProperty property) const override
     {
         return nullptr;
     }
-    PtValue GetPropertyValue(PtProperty property) const override
+    PtValue GetPropertyValue([[maybe_unused]] PtProperty property) const override
     {
         return PtValue();
     }
-    void SetPropertyPtValue(PtProperty property, PtValue value) const override {}
-    void ReleasePtValue(const PtValue *value) const override {}
+    void SetPropertyPtValue([[maybe_unused]] PtProperty property, [[maybe_unused]] PtValue value) const override {}
+    void ReleasePtValue([[maybe_unused]] const PtValue *value) const override {}
 
     NO_COPY_SEMANTIC(JSPtLangExt);
     NO_MOVE_SEMANTIC(JSPtLangExt);

@@ -33,7 +33,7 @@ JSTaggedValue BuiltinsArkTools::ObjectDump(EcmaRuntimeCallInfo *msg)
     for (uint32_t i = 1; i < numArgs; i++) {
         JSHandle<JSTaggedValue> obj = GetCallArg(msg, i);
         std::ostringstream oss;
-        obj->Dump(thread, oss);
+        obj->Dump(oss);
 
         // The default log level of ace_engine and js_runtime is error
         LOG(ERROR, RUNTIME) << ": " << oss.str();

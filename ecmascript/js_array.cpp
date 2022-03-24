@@ -19,7 +19,6 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/internal_call_params.h"
-#include "ecmascript/js_invoker.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/object_factory.h"
 #include "interpreter/fast_runtime_stub-inl.h"
