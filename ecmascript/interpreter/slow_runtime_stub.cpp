@@ -240,12 +240,12 @@ JSTaggedValue SlowRuntimeStub::Add2Dyn(JSThread *thread, EcmaVM *ecma_vm, JSTagg
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, primitiveA1));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
-        JSHandle<BigInt> bigLeft(valLeft);
-        JSHandle<BigInt> bigRight(valRight);
-        return BigInt::Add(thread, bigLeft, bigRight).GetTaggedValue();
-    }
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+            JSHandle<BigInt> bigLeft(valLeft);
+            JSHandle<BigInt> bigRight(valRight);
+            return BigInt::Add(thread, bigLeft, bigRight).GetTaggedValue();
+        }
         return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
     double a0Double = valLeft->GetNumber();
@@ -264,12 +264,12 @@ JSTaggedValue SlowRuntimeStub::Sub2Dyn(JSThread *thread, JSTaggedValue left, JST
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
-        JSHandle<BigInt> bigLeft(valLeft);
-        JSHandle<BigInt> bigRight(valRight);
-        return BigInt::Subtract(thread, bigLeft, bigRight).GetTaggedValue();
-    }
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+            JSHandle<BigInt> bigLeft(valLeft);
+            JSHandle<BigInt> bigRight(valRight);
+            return BigInt::Subtract(thread, bigLeft, bigRight).GetTaggedValue();
+        }
         return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
     JSTaggedNumber number0(valLeft.GetTaggedValue());
@@ -289,12 +289,12 @@ JSTaggedValue SlowRuntimeStub::Mul2Dyn(JSThread *thread, JSTaggedValue left, JST
     JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 9. ReturnIfAbrupt(rnum).
-    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
-        JSHandle<BigInt> bigLeft(valLeft);
-        JSHandle<BigInt> bigRight(valRight);
-        return BigInt::Multiply(thread, bigLeft, bigRight).GetTaggedValue();
-    }
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+            JSHandle<BigInt> bigLeft(valLeft);
+            JSHandle<BigInt> bigRight(valRight);
+            return BigInt::Multiply(thread, bigLeft, bigRight).GetTaggedValue();
+        }
         return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
     // 12.6.3.1 Applying the * Operator
@@ -314,12 +314,12 @@ JSTaggedValue SlowRuntimeStub::Div2Dyn(JSThread *thread, JSTaggedValue left, JST
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
-        JSHandle<BigInt> bigLeft(valLeft);
-        JSHandle<BigInt> bigRight(valRight);
-        return BigInt::Divide(thread, bigLeft, bigRight).GetTaggedValue();
-    }
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+            JSHandle<BigInt> bigLeft(valLeft);
+            JSHandle<BigInt> bigRight(valRight);
+            return BigInt::Divide(thread, bigLeft, bigRight).GetTaggedValue();
+        }
         return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
     double dLeft = valLeft->GetNumber();
@@ -348,12 +348,12 @@ JSTaggedValue SlowRuntimeStub::Mod2Dyn(JSThread *thread, JSTaggedValue left, JST
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     // 12.6.3.3 Applying the % Operator
-    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
-        JSHandle<BigInt> leftBigint(valLeft);
-        JSHandle<BigInt> rightBigint(valRight);
-        return BigInt::Remainder(thread, leftBigint, rightBigint).GetTaggedValue();
-    }
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+            JSHandle<BigInt> leftBigint(valLeft);
+            JSHandle<BigInt> rightBigint(valRight);
+            return BigInt::Remainder(thread, leftBigint, rightBigint).GetTaggedValue();
+        }
         return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
     double dLeft = valLeft->GetNumber();
@@ -451,12 +451,12 @@ JSTaggedValue SlowRuntimeStub::Shl2Dyn(JSThread *thread, JSTaggedValue left, JST
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     JSHandle<JSTaggedValue> rightValue(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    if (leftValue->IsBigInt() && rightValue->IsBigInt()) {
-        JSHandle<BigInt> leftBigint(leftValue);
-        JSHandle<BigInt> rightBigint(rightValue);
-        return BigInt::LeftShift(thread, leftBigint, rightBigint).GetTaggedValue();
-    }
     if (leftValue->IsBigInt() || rightValue->IsBigInt()) {
+        if (leftValue->IsBigInt() && rightValue->IsBigInt()) {
+            JSHandle<BigInt> leftBigint(leftValue);
+            JSHandle<BigInt> rightBigint(rightValue);
+            return BigInt::LeftShift(thread, leftBigint, rightBigint).GetTaggedValue();
+        }
         return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
     JSTaggedValue taggedNumber0 = SlowRuntimeStub::ToJSTaggedValueWithInt32(thread, leftValue.GetTaggedValue());
@@ -484,12 +484,12 @@ JSTaggedValue SlowRuntimeStub::Shr2Dyn(JSThread *thread, JSTaggedValue left, JST
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
-        JSHandle<BigInt> bigLeft(valLeft);
-        JSHandle<BigInt> bigRight(valRight);
-        return BigInt::SignedRightShift(thread, bigLeft, bigRight).GetTaggedValue();
-    }
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+            JSHandle<BigInt> bigLeft(valLeft);
+            JSHandle<BigInt> bigRight(valRight);
+            return BigInt::SignedRightShift(thread, bigLeft, bigRight).GetTaggedValue();
+        }
         return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
     JSTaggedValue taggedNumber0 = SlowRuntimeStub::ToJSTaggedValueWithInt32(thread, valLeft.GetTaggedValue());
@@ -515,10 +515,10 @@ JSTaggedValue SlowRuntimeStub::Ashr2Dyn(JSThread *thread, JSTaggedValue left, JS
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
-        return BigInt::UnsignedRightShift(thread);
-    }
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+            return BigInt::UnsignedRightShift(thread);
+        }
         return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
     JSTaggedValue taggedNumber0 = SlowRuntimeStub::ToJSTaggedValueWithUint32(thread, valLeft.GetTaggedValue());
@@ -546,12 +546,12 @@ JSTaggedValue SlowRuntimeStub::And2Dyn(JSThread *thread, JSTaggedValue left, JST
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
-        JSHandle<BigInt> leftBigint(valLeft);
-        JSHandle<BigInt> rightBigint(valRight);
-        return BigInt::BitwiseAND(thread, leftBigint, rightBigint).GetTaggedValue();
-    }
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+            JSHandle<BigInt> leftBigint(valLeft);
+            JSHandle<BigInt> rightBigint(valRight);
+            return BigInt::BitwiseAND(thread, leftBigint, rightBigint).GetTaggedValue();
+        }
         return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
     JSTaggedValue taggedNumber0 = SlowRuntimeStub::ToJSTaggedValueWithInt32(thread, valLeft.GetTaggedValue());
@@ -576,12 +576,12 @@ JSTaggedValue SlowRuntimeStub::Or2Dyn(JSThread *thread, JSTaggedValue left, JSTa
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
-        JSHandle<BigInt> leftBigint(valLeft);
-        JSHandle<BigInt> rightBigint(valRight);
-        return BigInt::BitwiseOR(thread, leftBigint, rightBigint).GetTaggedValue();
-    }
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+            JSHandle<BigInt> leftBigint(valLeft);
+            JSHandle<BigInt> rightBigint(valRight);
+            return BigInt::BitwiseOR(thread, leftBigint, rightBigint).GetTaggedValue();
+        }
         return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
     JSTaggedValue taggedNumber0 = SlowRuntimeStub::ToJSTaggedValueWithInt32(thread, valLeft.GetTaggedValue());
@@ -606,12 +606,12 @@ JSTaggedValue SlowRuntimeStub::Xor2Dyn(JSThread *thread, JSTaggedValue left, JST
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
-        JSHandle<BigInt> leftBigint(valLeft);
-        JSHandle<BigInt> rightBigint(valRight);
-        return BigInt::BitwiseXOR(thread, leftBigint, rightBigint).GetTaggedValue();
-    }
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+            JSHandle<BigInt> leftBigint(valLeft);
+            JSHandle<BigInt> rightBigint(valRight);
+            return BigInt::BitwiseXOR(thread, leftBigint, rightBigint).GetTaggedValue();
+        }
         return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
     JSTaggedValue taggedNumber0 = SlowRuntimeStub::ToJSTaggedValueWithInt32(thread, valLeft.GetTaggedValue());
