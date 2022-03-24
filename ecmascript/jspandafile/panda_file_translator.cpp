@@ -72,8 +72,8 @@ void PandaFileTranslator::TranslateClasses(JSPandaFile *jsPandaFile, const CStri
                 jsPandaFile->UpdateMainMethodIndex(mda.GetMethodId().GetOffset());
             }
 
-            InitializeMemory(method, nullptr, jsPandaFile, mda.GetMethodId(), codeDataAccessor.GetCodeId(),
-                             mda.GetAccessFlags(), codeDataAccessor.GetNumArgs(), nullptr);
+            InitializeMemory(method, jsPandaFile, mda.GetMethodId(), codeDataAccessor.GetCodeId(),
+                             mda.GetAccessFlags(), codeDataAccessor.GetNumArgs());
             method->SetHotnessCounter(EcmaInterpreter::METHOD_HOTNESS_THRESHOLD);
             method->InitializeCallField();
             const uint8_t *insns = codeDataAccessor.GetInstructions();
@@ -88,29 +88,32 @@ void PandaFileTranslator::TranslateClasses(JSPandaFile *jsPandaFile, const CStri
 
 JSHandle<Program> PandaFileTranslator::GenerateProgram(EcmaVM *vm, const JSPandaFile *jsPandaFile)
 {
-    JSThread *thread = vm->GetJSThread();
-    EcmaHandleScope handleScope(thread);
-
-    JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
     ObjectFactory *factory = vm->GetFactory();
     JSHandle<Program> program = factory->NewProgram();
 
-    uint32_t mainMethodIndex = jsPandaFile->GetMainMethodIndex();
-    auto method = jsPandaFile->FindMethods(mainMethodIndex);
-    ASSERT(method != nullptr);
-    JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithProto());
-    JSHandle<JSFunction> mainFunc =
-        factory->NewJSFunctionByDynClass(method, dynclass, FunctionKind::BASE_CONSTRUCTOR);
+    {
+        JSThread *thread = vm->GetJSThread();
+        EcmaHandleScope handleScope(thread);
 
-    program->SetMainFunction(thread, mainFunc.GetTaggedValue());
+        JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
 
-    JSTaggedValue constpool = vm->FindConstpool(jsPandaFile);
-    if (constpool.IsHole()) {
-        constpool = ParseConstPool(vm, jsPandaFile);
-        vm->SetConstpool(jsPandaFile, constpool);
+        uint32_t mainMethodIndex = jsPandaFile->GetMainMethodIndex();
+        auto method = jsPandaFile->FindMethods(mainMethodIndex);
+        ASSERT(method != nullptr);
+        JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithProto());
+        JSHandle<JSFunction> mainFunc =
+            factory->NewJSFunctionByDynClass(method, dynclass, FunctionKind::BASE_CONSTRUCTOR);
+
+        program->SetMainFunction(thread, mainFunc.GetTaggedValue());
+
+        JSTaggedValue constpool = vm->FindConstpool(jsPandaFile);
+        if (constpool.IsHole()) {
+            constpool = ParseConstPool(vm, jsPandaFile);
+            vm->SetConstpool(jsPandaFile, constpool);
+        }
+
+        mainFunc->SetConstantPool(thread, constpool);
     }
-
-    mainFunc->SetConstantPool(thread, constpool);
 
     return program;
 }

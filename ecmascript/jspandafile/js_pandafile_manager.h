@@ -19,7 +19,7 @@
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/jspandafile/js_pandafile.h"
 #include "ecmascript/jspandafile/panda_file_translator.h"
-#include "ecmascript/tooling/pt_js_extractor.h"
+#include "ecmascript/tooling/js_pt_extractor.h"
 #include "libpandafile/file.h"
 #include "libpandabase/utils/logger.h"
 
@@ -55,7 +55,7 @@ public:
 
     JSPandaFile *NewJSPandaFile(const panda_file::File *pf, const std::string &desc);
 
-    tooling::ecmascript::PtJSExtractor *GetPtJSExtractor(const JSPandaFile *jsPandaFile);
+    tooling::ecmascript::JSPtExtractor *GetJSPtExtractor(const JSPandaFile *jsPandaFile);
 
     static void RemoveJSPandaFile(void *pointer, void *data);
 
@@ -94,6 +94,7 @@ private:
 
     os::memory::RecursiveMutex jsPandaFileLock_;
     std::unordered_map<const JSPandaFile *, uint32_t> loadedJSPandaFiles_;
+    std::unordered_map<const JSPandaFile *, std::unique_ptr<tooling::ecmascript::JSPtExtractor>> extractors_;
 
     friend class JSPandaFile;
 };

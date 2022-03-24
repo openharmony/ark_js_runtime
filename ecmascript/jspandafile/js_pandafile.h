@@ -16,10 +16,10 @@
 #ifndef ECMASCRIPT_JSPANDAFILE_JS_PANDAFILE_H
 #define ECMASCRIPT_JSPANDAFILE_JS_PANDAFILE_H
 
+#include "ecmascript/js_method.h"
 #include "ecmascript/jspandafile/constpool_value.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/mem/c_containers.h"
-#include "ecmascript/tooling/pt_js_extractor.h"
 #include "libpandafile/file.h"
 #include "libpandabase/utils/logger.h"
 
@@ -37,8 +37,6 @@ class JSPandaFile {
 public:
     JSPandaFile(const panda_file::File *pf, const std::string &descriptor);
     ~JSPandaFile();
-
-    tooling::ecmascript::PtJSExtractor *GetOrCreatePtJSExtractor();
 
     const std::string &GetJSPandaFileDesc() const
     {
@@ -108,7 +106,6 @@ private:
     JSMethod *methods_ {nullptr};
     std::unordered_map<uint32_t, JSMethod *> methodMap_;
     const panda_file::File *pf_ {nullptr};
-    std::unique_ptr<tooling::ecmascript::PtJSExtractor> ptJSExtractor_;
     std::string desc_;
     bool isModule_ {false};
 };
