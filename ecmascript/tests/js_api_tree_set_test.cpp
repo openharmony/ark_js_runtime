@@ -95,21 +95,21 @@ HWTEST_F_L0(JSAPITreeSetTest, TreeSetCreate)
 
 HWTEST_F_L0(JSAPITreeSetTest, TreeSetAddAndHas)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
 
     // test JSAPITreeSet
     JSHandle<JSAPITreeSet> tset(thread, CreateTreeSet());
     std::string myKey("mykey");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         JSAPITreeSet::Add(thread, tset, key);
     }
     EXPECT_EQ(tset->GetSize(), NODE_NUMBERS);
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
 
@@ -121,22 +121,22 @@ HWTEST_F_L0(JSAPITreeSetTest, TreeSetAddAndHas)
 
 HWTEST_F_L0(JSAPITreeSetTest, TreeSetDeleteAndHas)
 {
-    constexpr uint32_t NODE_NUMBERS = 64;
-    constexpr uint32_t REMOVE_SIZE = 48;
+    constexpr int NODE_NUMBERS = 64;
+    constexpr int REMOVE_SIZE = 48;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
 
     // test JSAPITreeSet
     JSHandle<JSAPITreeSet> tset(thread, CreateTreeSet());
     std::string myKey("mykey");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         JSAPITreeSet::Add(thread, tset, key);
     }
     EXPECT_EQ(tset->GetSize(), NODE_NUMBERS);
 
-    for (uint32_t i = 0; i < REMOVE_SIZE; i++) {
+    for (int i = 0; i < REMOVE_SIZE; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         bool success = JSAPITreeSet::Delete(thread, tset, key);
@@ -144,7 +144,7 @@ HWTEST_F_L0(JSAPITreeSetTest, TreeSetDeleteAndHas)
     }
     EXPECT_EQ(tset->GetSize(), NODE_NUMBERS - REMOVE_SIZE);
 
-    for (uint32_t i = 0; i < REMOVE_SIZE; i++) {
+    for (int i = 0; i < REMOVE_SIZE; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
 
@@ -153,7 +153,7 @@ HWTEST_F_L0(JSAPITreeSetTest, TreeSetDeleteAndHas)
         EXPECT_EQ(has, false);
     }
 
-    for (uint32_t i = REMOVE_SIZE; i < NODE_NUMBERS; i++) {
+    for (int i = REMOVE_SIZE; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
 
@@ -165,14 +165,14 @@ HWTEST_F_L0(JSAPITreeSetTest, TreeSetDeleteAndHas)
 
 HWTEST_F_L0(JSAPITreeSetTest, TreeSetClear)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
 
     // test TaggedTreeSet
     JSHandle<JSAPITreeSet> tset(thread, CreateTreeSet());
     std::string myKey("mykey");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         JSAPITreeSet::Add(thread, tset, key);
@@ -181,7 +181,7 @@ HWTEST_F_L0(JSAPITreeSetTest, TreeSetClear)
 
     JSAPITreeSet::Clear(thread, tset);
     EXPECT_EQ(tset->GetSize(), 0);
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
 
@@ -193,14 +193,14 @@ HWTEST_F_L0(JSAPITreeSetTest, TreeSetClear)
 
 HWTEST_F_L0(JSAPITreeSetTest, TreeSetPop)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
 
     // test TaggedTreeSet
     JSHandle<JSAPITreeSet> tset(thread, CreateTreeSet());
     std::string myKey("mykey");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         JSAPITreeSet::Add(thread, tset, key);
@@ -228,12 +228,12 @@ HWTEST_F_L0(JSAPITreeSetTest, TreeSetPop)
 
 HWTEST_F_L0(JSAPITreeSetTest, JSAPITreeSetIterator)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSAPITreeSet> tset(thread, CreateTreeSet());
 
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         key.Update(JSTaggedValue(i));
         JSAPITreeSet::Add(thread, tset, key);
     }
@@ -243,7 +243,7 @@ HWTEST_F_L0(JSAPITreeSetTest, JSAPITreeSetIterator)
     JSHandle<JSTaggedValue> valueIter(factory->NewJSAPITreeSetIterator(tset, IterationKind::VALUE));
     JSMutableHandle<JSTaggedValue> keyIterResult(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> valueIterResult(thread, JSTaggedValue::Undefined());
-    for (uint32_t i = 0; i < NODE_NUMBERS / 2; i++) {
+    for (int i = 0; i < NODE_NUMBERS / 2; i++) {
         keyIterResult.Update(JSIterator::IteratorStep(thread, keyIter).GetTaggedValue());
         valueIterResult.Update(JSIterator::IteratorStep(thread, valueIter).GetTaggedValue());
         EXPECT_EQ(i, JSIterator::IteratorValue(thread, keyIterResult)->GetInt());
@@ -256,7 +256,7 @@ HWTEST_F_L0(JSAPITreeSetTest, JSAPITreeSetIterator)
     JSHandle<JSTaggedValue> iter(factory->NewJSAPITreeSetIterator(tset, IterationKind::KEY_AND_VALUE));
     JSMutableHandle<JSTaggedValue> iterResult(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> result(thread, JSTaggedValue::Undefined());
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         iterResult.Update(JSIterator::IteratorStep(thread, iter).GetTaggedValue());
         result.Update(JSIterator::IteratorValue(thread, iterResult).GetTaggedValue());
         EXPECT_EQ(i, JSObject::GetProperty(thread, result, indexKey).GetValue()->GetInt());
@@ -267,7 +267,7 @@ HWTEST_F_L0(JSAPITreeSetTest, JSAPITreeSetIterator)
     key.Update(JSTaggedValue(NODE_NUMBERS / 2));
     bool success = JSAPITreeSet::Delete(thread, tset, key);
     EXPECT_EQ(success, true);
-    for (uint32_t i = NODE_NUMBERS / 2 + 1; i < NODE_NUMBERS; i++) {
+    for (int i = NODE_NUMBERS / 2 + 1; i < NODE_NUMBERS; i++) {
         keyIterResult.Update(JSIterator::IteratorStep(thread, keyIter).GetTaggedValue());
         valueIterResult.Update(JSIterator::IteratorStep(thread, valueIter).GetTaggedValue());
         EXPECT_EQ(i, JSIterator::IteratorValue(thread, keyIterResult)->GetInt());
