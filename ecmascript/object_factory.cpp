@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -341,7 +341,11 @@ JSHandle<TaggedArray> ObjectFactory::CloneProperties(const JSHandle<TaggedArray>
         return EmptyArray();
     }
     NewObjectHook();
-    JSHandle<TaggedArray> newArray = NewTaggedArray(newLength);
+    auto klass = old->GetClass();
+    size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), newLength);
+    auto header = heap_->AllocateYoungOrHugeObject(klass, size);
+    JSHandle<TaggedArray> newArray(thread_, header);
+    newArray->SetLength(newLength);
 
     for (uint32_t i = 0; i < newLength; i++) {
         JSTaggedValue value = old->Get(i);
@@ -719,11 +723,14 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
             case JSType::JS_UINT32_ARRAY:
             case JSType::JS_FLOAT32_ARRAY:
             case JSType::JS_FLOAT64_ARRAY:
+            case JSType::JS_BIGINT64_ARRAY:
+            case JSType::JS_BIGUINT64_ARRAY:
                 JSTypedArray::Cast(*obj)->SetViewedArrayBuffer(thread_, JSTaggedValue::Undefined());
                 JSTypedArray::Cast(*obj)->SetTypedArrayName(thread_, JSTaggedValue::Undefined());
                 JSTypedArray::Cast(*obj)->SetByteLength(thread_, JSTaggedValue(0));
                 JSTypedArray::Cast(*obj)->SetByteOffset(thread_, JSTaggedValue(0));
                 JSTypedArray::Cast(*obj)->SetArrayLength(thread_, JSTaggedValue(0));
+                JSTypedArray::Cast(*obj)->SetContentType(ContentType::None);
                 break;
             case JSType::JS_REG_EXP:
                 JSRegExp::Cast(*obj)->SetByteCodeBuffer(thread_, JSTaggedValue::Undefined());

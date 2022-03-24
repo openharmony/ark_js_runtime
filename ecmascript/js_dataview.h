@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,7 +19,9 @@
 #include "ecmascript/js_object.h"
 
 namespace panda::ecmascript {
-enum class DataViewType : uint8_t { FLOAT32 = 0, FLOAT64, INT8, INT16, INT32, UINT8, UINT16, UINT32, UINT8_CLAMPED };
+enum class DataViewType : uint8_t {
+    BIGINT64 = 0, BIGUINT64, FLOAT32, FLOAT64, INT8, INT16, INT32, UINT8, UINT16, UINT32, UINT8_CLAMPED
+};
 class JSDataView : public JSObject {
 public:
     CAST_CHECK(JSDataView, IsDataView);

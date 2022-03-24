@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -133,7 +133,9 @@ class ProtoChangeDetails;
         JS_INT32_ARRAY,         /* ////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_UINT32_ARRAY,        /* ////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_FLOAT32_ARRAY,       /* ////////////////////////////////////////////////////////////////////////-PADDING */ \
-        JS_FLOAT64_ARRAY,       /* JS_TYPED_ARRAY_END ///////////////////////////////////////////////////////////// */ \
+        JS_FLOAT64_ARRAY,       /* ////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_BIGINT64_ARRAY,      /* ////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_BIGUINT64_ARRAY,     /* JS_TYPED_ARRAY_END ///////////////////////////////////////////////////////////// */ \
         JS_PRIMITIVE_REF, /* number\boolean\string. SPECIAL indexed objects end, DON'T CHANGE HERE ////////-PADDING */ \
         JS_MODULE_NAMESPACE, /* ///////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_GLOBAL_OBJECT, /* JS_OBJECT_END/////////////////////////////////////////////////////////////////-PADDING */ \
@@ -205,7 +207,7 @@ class ProtoChangeDetails;
         JS_RECORD_END = COMPLETION_RECORD,    /* ///////////////////////////////////////////////////////-PADDING */    \
                                                                                                                        \
         JS_TYPED_ARRAY_BEGIN = JS_TYPED_ARRAY, /* /////////////////////////////////////////////////////////-PADDING */ \
-        JS_TYPED_ARRAY_END = JS_FLOAT64_ARRAY, /* /////////////////////////////////////////////////////////-PADDING */ \
+        JS_TYPED_ARRAY_END = JS_BIGUINT64_ARRAY, /* ///////////////////////////////////////////////////////-PADDING */ \
                                                                                                                        \
         MODULE_RECORD_BEGIN = MODULE_RECORD, /* ///////////////////////////////////////////////////////////-PADDING */ \
         MODULE_RECORD_END = SOURCE_TEXT_MODULE_RECORD /* //////////////////////////////////////////////////-PADDING */

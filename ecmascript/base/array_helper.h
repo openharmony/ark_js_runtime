@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,6 +22,11 @@
 #include "ecmascript/base/builtins_base.h"
 
 namespace panda::ecmascript::base {
+struct FlattenArgs {
+    double sourceLen = 0;
+    double start = 0;
+    double depth = 0;
+};
 class ArrayHelper {
 public:
     static bool IsConcatSpreadable(JSThread *thread, const JSHandle<JSTaggedValue> &obj);
@@ -29,6 +34,10 @@ public:
                                const JSHandle<JSTaggedValue> &valueX, const JSHandle<JSTaggedValue> &valueY);
     static double GetLength(JSThread *thread, const JSHandle<JSTaggedValue> &thisHandle);
     static double GetArrayLength(JSThread *thread, const JSHandle<JSTaggedValue> &thisHandle);
+    static JSTaggedValue FlattenIntoArray(JSThread *thread, const JSHandle<JSObject> &newArrayHandle,
+                                          const JSHandle<JSTaggedValue> &thisObjVal, const FlattenArgs &args,
+                                          const JSHandle<JSTaggedValue> &mapperFunctionHandle,
+                                          const JSHandle<JSTaggedValue> &thisArg);
 };
 }  // namespace panda::ecmascript::base
 

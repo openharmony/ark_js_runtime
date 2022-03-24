@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -287,6 +287,10 @@ bool JSSerializer::WriteTaggedObject(const JSHandle<JSTaggedValue> &value)
             return WriteJSTypedArray(value, SerializationUID::JS_FLOAT32_ARRAY);
         case JSType::JS_FLOAT64_ARRAY:
             return WriteJSTypedArray(value, SerializationUID::JS_FLOAT64_ARRAY);
+        case JSType::JS_BIGINT64_ARRAY:
+            return WriteJSTypedArray(value, SerializationUID::JS_BIGINT64_ARRAY);
+        case JSType::JS_BIGUINT64_ARRAY:
+            return WriteJSTypedArray(value, SerializationUID::JS_BIGUINT64_ARRAY);
         case JSType::JS_ARRAY_BUFFER:
             return WriteJSArrayBuffer(value);
         case JSType::STRING:
@@ -563,6 +567,12 @@ bool JSSerializer::WriteJSTypedArray(const JSHandle<JSTaggedValue> &value, Seria
     // Write ACCESSORS(ArrayLength)
     JSTaggedValue arrayLength = typedArray->GetArrayLength();
     if (!WriteRawData(&arrayLength, sizeof(JSTaggedValue))) {
+        bufferSize_ = oldSize;
+        return false;
+    }
+    // Write ACCESSORS(ContentType)
+    ContentType contentType = typedArray->GetContentType();
+    if (!WriteRawData(&contentType, sizeof(ContentType))) {
         bufferSize_ = oldSize;
         return false;
     }
@@ -879,6 +889,10 @@ JSHandle<JSTaggedValue> JSDeserializer::DeserializeJSTaggedValue()
             return ReadJSTypedArray(SerializationUID::JS_FLOAT32_ARRAY);
         case SerializationUID::JS_FLOAT64_ARRAY:
             return ReadJSTypedArray(SerializationUID::JS_FLOAT64_ARRAY);
+        case SerializationUID::JS_BIGINT64_ARRAY:
+            return ReadJSTypedArray(SerializationUID::JS_BIGINT64_ARRAY);
+        case SerializationUID::JS_BIGUINT64_ARRAY:
+            return ReadJSTypedArray(SerializationUID::JS_BIGUINT64_ARRAY);
         case SerializationUID::NATIVE_FUNCTION_POINTER:
             return ReadNativeFunctionPointer();
         case SerializationUID::JS_ARRAY_BUFFER:
@@ -1145,6 +1159,14 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSTypedArray(SerializationUID uid)
             target = env->GetFloat64ArrayFunction();
             break;
         }
+        case SerializationUID::JS_BIGINT64_ARRAY: {
+            target = env->GetBigInt64ArrayFunction();
+            break;
+        }
+        case SerializationUID::JS_BIGUINT64_ARRAY: {
+            target = env->GetBigUint64ArrayFunction();
+            break;
+        }
         default:
             UNREACHABLE();
     }
@@ -1186,6 +1208,12 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSTypedArray(SerializationUID uid)
         return JSHandle<JSTaggedValue>();
     }
     typedArray->SetArrayLength(thread_, arrayLength);
+
+    ContentType *contentType = reinterpret_cast<ContentType*>(GetBuffer(sizeof(ContentType)));
+    if (contentType == nullptr) {
+        return JSHandle<JSTaggedValue>();
+    }
+    typedArray->SetContentType(*contentType);
     return objTag;
 }
 

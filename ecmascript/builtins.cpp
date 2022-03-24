@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1711,6 +1711,9 @@ void Builtins::InitializeArray(const JSHandle<GlobalEnv> &env, const JSHandle<JS
                 FunctionLength::ZERO);
     SetFunction(env, arrFuncPrototype, "unshift", BuiltinsArray::Unshift, FunctionLength::ONE);
     SetFunction(env, arrFuncPrototype, "values", BuiltinsArray::Values, FunctionLength::ZERO);
+    SetFunction(env, arrFuncPrototype, "includes", BuiltinsArray::Includes, FunctionLength::ONE);
+    SetFunction(env, arrFuncPrototype, "flat", BuiltinsArray::Flat, FunctionLength::ZERO);
+    SetFunction(env, arrFuncPrototype, "flatMap", BuiltinsArray::FlatMap, FunctionLength::ONE);
 
     // %ArrayPrototype% [ @@iterator ]
     JSHandle<JSTaggedValue> values(factory_->NewFromCanBeCompressString("values"));
@@ -1795,6 +1798,7 @@ void Builtins::InitializeTypedArray(const JSHandle<GlobalEnv> &env, const JSHand
     SetFunction(env, typedArrFuncPrototype, thread_->GlobalConstants()->GetHandledToLocaleStringString(),
                 BuiltinsTypedArray::ToLocaleString, FunctionLength::ZERO);
     SetFunction(env, typedArrFuncPrototype, "values", BuiltinsTypedArray::Values, FunctionLength::ZERO);
+    SetFunction(env, typedArrFuncPrototype, "includes", BuiltinsTypedArray::Includes, FunctionLength::ONE);
 
     JSHandle<JSTaggedValue> bufferGetter =
         CreateGetter(env, BuiltinsTypedArray::GetBuffer, "buffer", FunctionLength::ZERO);
@@ -1867,6 +1871,8 @@ void Builtins::InitializeTypedArray(const JSHandle<GlobalEnv> &env, const JSHand
     InitializeUint32Array(env, typedArrFuncInstanceDynclass);
     InitializeFloat32Array(env, typedArrFuncInstanceDynclass);
     InitializeFloat64Array(env, typedArrFuncInstanceDynclass);
+    InitializeBigInt64Array(env, typedArrFuncInstanceDynclass);
+    InitializeBigUint64Array(env, typedArrFuncInstanceDynclass);
 }
 
 void Builtins::InitializeInt8Array(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &objFuncDynclass) const
@@ -2086,6 +2092,54 @@ void Builtins::InitializeFloat64Array(const JSHandle<GlobalEnv> &env, const JSHa
     SetConstant(float64ArrFuncPrototype, "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     SetConstant(JSHandle<JSObject>(float64ArrayFunction), "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
     env->SetFloat64ArrayFunction(thread_, float64ArrayFunction);
+}
+
+void Builtins::InitializeBigInt64Array(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &objFuncDynclass) const
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    // BigInt64Array.prototype
+    JSHandle<JSObject> bigInt64ArrFuncPrototype = factory_->NewJSObject(objFuncDynclass);
+    JSHandle<JSTaggedValue> bigInt64ArrFuncPrototypeValue(bigInt64ArrFuncPrototype);
+
+    // BigInt64Array.prototype_or_dynclass
+    JSHandle<JSHClass> bigInt64ArrFuncInstanceDynclass = factory_->NewEcmaDynClass(
+        panda::ecmascript::JSTypedArray::SIZE, JSType::JS_BIGINT64_ARRAY, bigInt64ArrFuncPrototypeValue);
+
+    // BigInt64Array = new Function()
+    JSHandle<JSFunction> bigInt64ArrayFunction = factory_->NewSpecificTypedArrayFunction(
+        env, reinterpret_cast<void *>(BuiltinsTypedArray::BigInt64ArrayConstructor));
+    InitializeCtor(env, bigInt64ArrFuncPrototype, bigInt64ArrayFunction, "BigInt64Array", FunctionLength::THREE);
+
+    bigInt64ArrayFunction->SetProtoOrDynClass(thread_, bigInt64ArrFuncInstanceDynclass.GetTaggedValue());
+
+    const int bytesPerElement = 8;
+    SetConstant(bigInt64ArrFuncPrototype, "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
+    SetConstant(JSHandle<JSObject>(bigInt64ArrayFunction), "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
+    env->SetBigInt64ArrayFunction(thread_, bigInt64ArrayFunction);
+}
+
+void Builtins::InitializeBigUint64Array(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &objFuncDynclass) const
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    // BigUint64Array.prototype
+    JSHandle<JSObject> bigUint64ArrFuncPrototype = factory_->NewJSObject(objFuncDynclass);
+    JSHandle<JSTaggedValue> bigUint64ArrFuncPrototypeValue(bigUint64ArrFuncPrototype);
+
+    // BigUint64Array.prototype_or_dynclass
+    JSHandle<JSHClass> bigUint64ArrFuncInstanceDynclass = factory_->NewEcmaDynClass(
+        panda::ecmascript::JSTypedArray::SIZE, JSType::JS_BIGUINT64_ARRAY, bigUint64ArrFuncPrototypeValue);
+
+    // BigUint64Array = new Function()
+    JSHandle<JSFunction> bigUint64ArrayFunction = factory_->NewSpecificTypedArrayFunction(
+        env, reinterpret_cast<void *>(BuiltinsTypedArray::BigUint64ArrayConstructor));
+    InitializeCtor(env, bigUint64ArrFuncPrototype, bigUint64ArrayFunction, "BigUint64Array", FunctionLength::THREE);
+
+    bigUint64ArrayFunction->SetProtoOrDynClass(thread_, bigUint64ArrFuncInstanceDynclass.GetTaggedValue());
+
+    const int bytesPerElement = 8;
+    SetConstant(bigUint64ArrFuncPrototype, "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
+    SetConstant(JSHandle<JSObject>(bigUint64ArrayFunction), "BYTES_PER_ELEMENT", JSTaggedValue(bytesPerElement));
+    env->SetBigUint64ArrayFunction(thread_, bigUint64ArrayFunction);
 }
 
 void Builtins::InitializeArrayBuffer(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &objFuncDynclass) const
