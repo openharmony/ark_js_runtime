@@ -179,9 +179,9 @@ HWTEST_F_L0(ContainersTreeMapTest, TreeMapConstructor)
 // treemap.set(key, value), treemap.get(key)
 HWTEST_F_L0(ContainersTreeMapTest, SetAndGet)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     JSHandle<JSAPITreeMap> tmap = CreateJSAPITreeMap();
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -201,7 +201,7 @@ HWTEST_F_L0(ContainersTreeMapTest, SetAndGet)
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     std::string myKey("mykey");
     std::string myValue("myvalue");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -219,7 +219,7 @@ HWTEST_F_L0(ContainersTreeMapTest, SetAndGet)
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), NODE_NUMBERS + i + 1);
     }
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -231,7 +231,7 @@ HWTEST_F_L0(ContainersTreeMapTest, SetAndGet)
         EXPECT_EQ(result, JSTaggedValue(i));
     }
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -251,10 +251,10 @@ HWTEST_F_L0(ContainersTreeMapTest, SetAndGet)
 // treemap.remove(key)
 HWTEST_F_L0(ContainersTreeMapTest, Remove)
 {
-    constexpr uint32_t NODE_NUMBERS = 64;
-    constexpr uint32_t REMOVE_SIZE = 48;
+    constexpr int NODE_NUMBERS = 64;
+    constexpr int REMOVE_SIZE = 48;
     JSHandle<JSAPITreeMap> tmap = CreateJSAPITreeMap();
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -268,7 +268,7 @@ HWTEST_F_L0(ContainersTreeMapTest, Remove)
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), i + 1);
     }
 
-    for (uint32_t i = 0; i < REMOVE_SIZE; i++) {
+    for (int i = 0; i < REMOVE_SIZE; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -281,7 +281,7 @@ HWTEST_F_L0(ContainersTreeMapTest, Remove)
     }
     EXPECT_EQ(tmap->GetSize(), NODE_NUMBERS - REMOVE_SIZE);
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -303,7 +303,7 @@ HWTEST_F_L0(ContainersTreeMapTest, Remove)
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     std::string myKey("mykey");
     std::string myValue("myvalue");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -321,7 +321,7 @@ HWTEST_F_L0(ContainersTreeMapTest, Remove)
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), NODE_NUMBERS - REMOVE_SIZE + i + 1);
     }
 
-    for (uint32_t i = 0; i < REMOVE_SIZE; i++) {
+    for (int i = 0; i < REMOVE_SIZE; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         std::string ivalue = myValue + std::to_string(i);
@@ -342,9 +342,9 @@ HWTEST_F_L0(ContainersTreeMapTest, Remove)
 // treemap.hasKey(key), treemap.hasValue(value)
 HWTEST_F_L0(ContainersTreeMapTest, HasKeyAndHasValue)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     JSHandle<JSAPITreeMap> tmap = CreateJSAPITreeMap();
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -358,7 +358,7 @@ HWTEST_F_L0(ContainersTreeMapTest, HasKeyAndHasValue)
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), i + 1);
     }
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         // test hasKey
         {
             auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
@@ -391,7 +391,7 @@ HWTEST_F_L0(ContainersTreeMapTest, HasKeyAndHasValue)
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     std::string myKey("mykey");
     std::string myValue("myvalue");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -409,7 +409,7 @@ HWTEST_F_L0(ContainersTreeMapTest, HasKeyAndHasValue)
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), NODE_NUMBERS + i + 1);
     }
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         // test hasKey
         {
             std::string ikey = myKey + std::to_string(i);
@@ -444,9 +444,9 @@ HWTEST_F_L0(ContainersTreeMapTest, HasKeyAndHasValue)
 // treemap.getFirstKey(), treemap.getLastKey()
 HWTEST_F_L0(ContainersTreeMapTest, GetFirstKeyAndGetLastKey)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     JSHandle<JSAPITreeMap> tmap = CreateJSAPITreeMap();
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -488,7 +488,7 @@ HWTEST_F_L0(ContainersTreeMapTest, GetFirstKeyAndGetLastKey)
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     std::string myKey("mykey");
     std::string myValue("myvalue");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -535,9 +535,9 @@ HWTEST_F_L0(ContainersTreeMapTest, GetFirstKeyAndGetLastKey)
 // treemap.clear()
 HWTEST_F_L0(ContainersTreeMapTest, Clear)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     JSHandle<JSAPITreeMap> tmap = CreateJSAPITreeMap();
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -562,7 +562,7 @@ HWTEST_F_L0(ContainersTreeMapTest, Clear)
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(tmap->GetSize(), 0);
     }
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -580,7 +580,7 @@ HWTEST_F_L0(ContainersTreeMapTest, Clear)
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     std::string myKey("mykey");
     std::string myValue("myvalue");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -609,7 +609,7 @@ HWTEST_F_L0(ContainersTreeMapTest, Clear)
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(tmap->GetSize(), 0);
     }
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
@@ -627,9 +627,9 @@ HWTEST_F_L0(ContainersTreeMapTest, Clear)
 // treemap.setAll(map)
 HWTEST_F_L0(ContainersTreeMapTest, SetAll)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     JSHandle<JSAPITreeMap> smap = CreateJSAPITreeMap();
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(smap.GetTaggedValue());
@@ -655,7 +655,7 @@ HWTEST_F_L0(ContainersTreeMapTest, SetAll)
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(dmap->GetSize(), NODE_NUMBERS);
     }
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(dmap.GetTaggedValue());
@@ -673,7 +673,7 @@ HWTEST_F_L0(ContainersTreeMapTest, SetAll)
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     std::string myKey("mykey");
     std::string myValue("myvalue");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -701,7 +701,7 @@ HWTEST_F_L0(ContainersTreeMapTest, SetAll)
         TestHelper::TearDownFrame(thread, prev);
         EXPECT_EQ(dmap->GetSize(), NODE_NUMBERS * 2);
     }
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         std::string ivalue = myValue + std::to_string(i);
@@ -722,9 +722,9 @@ HWTEST_F_L0(ContainersTreeMapTest, SetAll)
 // treemap.getLowerKey(key), treemap.getHigherKey(key)
 HWTEST_F_L0(ContainersTreeMapTest, GetLowerKeyAndGetHigherKey)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     JSHandle<JSAPITreeMap> tmap = CreateJSAPITreeMap();
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -739,7 +739,7 @@ HWTEST_F_L0(ContainersTreeMapTest, GetLowerKeyAndGetHigherKey)
     }
 
     // test getLowerKey
-    for (uint32_t i = 0; i <= NODE_NUMBERS; i++) {
+    for (int i = 0; i <= NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -755,7 +755,7 @@ HWTEST_F_L0(ContainersTreeMapTest, GetLowerKeyAndGetHigherKey)
         }
     }
     // test getHigherKey
-    for (uint32_t i = 0; i <= NODE_NUMBERS; i++) {
+    for (int i = 0; i <= NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -777,7 +777,7 @@ HWTEST_F_L0(ContainersTreeMapTest, GetLowerKeyAndGetHigherKey)
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     std::string myKey("mykey");
     std::string myValue("myvalue");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -796,7 +796,7 @@ HWTEST_F_L0(ContainersTreeMapTest, GetLowerKeyAndGetHigherKey)
     }
 
     // test getLowerKey
-    for (uint32_t i = 0; i <= NODE_NUMBERS; i++) {
+    for (int i = 0; i <= NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         std::string ivalue = myKey+ std::to_string(i - 1);
@@ -817,7 +817,7 @@ HWTEST_F_L0(ContainersTreeMapTest, GetLowerKeyAndGetHigherKey)
         }
     }
     // test getHigherKey
-    for (uint32_t i = 0; i <= NODE_NUMBERS; i++) {
+    for (int i = 0; i <= NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         std::string ivalue = myKey+ std::to_string(i + 1);
@@ -842,9 +842,9 @@ HWTEST_F_L0(ContainersTreeMapTest, GetLowerKeyAndGetHigherKey)
 // treemap.keys(), treemap.values(), treemap.entries()
 HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     JSHandle<JSAPITreeMap> tmap = CreateJSAPITreeMap();
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -868,7 +868,7 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
     EXPECT_TRUE(iterKeys->IsJSAPITreeMapIterator());
 
     JSMutableHandle<JSTaggedValue> result(thread, JSTaggedValue::Undefined());
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(iterKeys.GetTaggedValue());
@@ -888,7 +888,7 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
     TestHelper::TearDownFrame(thread, prev);
     EXPECT_TRUE(iterValues->IsJSAPITreeMapIterator());
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(iterValues.GetTaggedValue());
@@ -905,7 +905,7 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     std::string myKey("mykey");
     std::string myValue("myvalue");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -923,7 +923,7 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
         EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), NODE_NUMBERS + i + 1);
     }
     // test keys after add
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
 
@@ -938,7 +938,7 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
         EXPECT_TRUE(JSTaggedValue::SameValue(key, itRes));
     }
     // test values after add
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ivalue = myValue + std::to_string(i);
         value.Update(factory->NewFromStdString(ivalue).GetTaggedValue());
 
@@ -966,7 +966,7 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
         JSHandle<JSTaggedValue> second(thread, JSTaggedValue(1));
         JSMutableHandle<JSTaggedValue> result(thread, JSTaggedValue::Undefined());
         JSMutableHandle<JSTaggedValue> entries(thread, JSTaggedValue::Undefined());
-        for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+        for (int i = 0; i < NODE_NUMBERS; i++) {
             auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
             callInfo->SetFunction(JSTaggedValue::Undefined());
             callInfo->SetThis(iter.GetTaggedValue());
@@ -979,7 +979,7 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
             EXPECT_EQ(i, JSObject::GetProperty(thread, entries, second).GetValue()->GetInt());
         }
 
-        for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+        for (int i = 0; i < NODE_NUMBERS; i++) {
             std::string ikey = myKey + std::to_string(i);
             std::string ivalue = myValue + std::to_string(i);
             key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -1002,9 +1002,9 @@ HWTEST_F_L0(ContainersTreeMapTest, KeysAndValuesAndEntries)
 // treemap.replace(key, value)
 HWTEST_F_L0(ContainersTreeMapTest, Replace)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     JSHandle<JSAPITreeMap> tmap = CreateJSAPITreeMap();
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -1031,7 +1031,7 @@ HWTEST_F_L0(ContainersTreeMapTest, Replace)
         EXPECT_EQ(result, JSTaggedValue::True());
         EXPECT_EQ(tmap->GetSize(), NODE_NUMBERS);
     }
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -1053,7 +1053,7 @@ HWTEST_F_L0(ContainersTreeMapTest, Replace)
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     std::string myKey("mykey");
     std::string myValue("myvalue");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -1088,7 +1088,7 @@ HWTEST_F_L0(ContainersTreeMapTest, Replace)
         EXPECT_EQ(result, JSTaggedValue::True());
         EXPECT_EQ(tmap->GetSize(), NODE_NUMBERS * 2);
     }
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         std::string ivalue;
@@ -1113,9 +1113,9 @@ HWTEST_F_L0(ContainersTreeMapTest, Replace)
 // treemap.ForEach(callbackfn, this)
 HWTEST_F_L0(ContainersTreeMapTest, ForEach)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     JSHandle<JSAPITreeMap> tmap = CreateJSAPITreeMap();
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -1146,7 +1146,7 @@ HWTEST_F_L0(ContainersTreeMapTest, ForEach)
     }
 
     EXPECT_EQ(dmap->GetSize(), NODE_NUMBERS);
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -1158,7 +1158,7 @@ HWTEST_F_L0(ContainersTreeMapTest, ForEach)
         EXPECT_EQ(result, JSTaggedValue(i * 2));
     }
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(dmap.GetTaggedValue());
@@ -1175,7 +1175,7 @@ HWTEST_F_L0(ContainersTreeMapTest, ForEach)
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     std::string myKey("mykey");
     std::string myValue("myvalue");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -1209,7 +1209,7 @@ HWTEST_F_L0(ContainersTreeMapTest, ForEach)
     }
 
     EXPECT_EQ(dmap->GetSize(), NODE_NUMBERS * 2);
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -1221,7 +1221,7 @@ HWTEST_F_L0(ContainersTreeMapTest, ForEach)
         EXPECT_EQ(result, JSTaggedValue(i * 4)); // 4 means 4 times
     }
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(dmap.GetTaggedValue());
@@ -1233,7 +1233,7 @@ HWTEST_F_L0(ContainersTreeMapTest, ForEach)
         EXPECT_EQ(result, JSTaggedValue(i * 2));
     }
 
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -1253,12 +1253,12 @@ HWTEST_F_L0(ContainersTreeMapTest, ForEach)
 
 HWTEST_F_L0(ContainersTreeMapTest, CustomCompareFunctionTest)
 {
-    constexpr uint32_t NODE_NUMBERS = 8;
+    constexpr int NODE_NUMBERS = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSFunction> func = factory->NewJSFunction(env, reinterpret_cast<void *>(TestClass::TestCompareFunction));
     JSHandle<JSAPITreeMap> tmap = CreateJSAPITreeMap(func.GetTaggedValue());
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(tmap.GetTaggedValue());
@@ -1276,7 +1276,7 @@ HWTEST_F_L0(ContainersTreeMapTest, CustomCompareFunctionTest)
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     std::string myKey("mykey");
     std::string myValue("myvalue");
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(i);
         std::string ivalue = myValue + std::to_string(i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
@@ -1303,7 +1303,7 @@ HWTEST_F_L0(ContainersTreeMapTest, CustomCompareFunctionTest)
     EXPECT_TRUE(iterKeys->IsJSAPITreeMapIterator());
 
     JSMutableHandle<JSTaggedValue> result(thread, JSTaggedValue::Undefined());
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         std::string ikey = myKey + std::to_string(NODE_NUMBERS - 1 - i);
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
@@ -1316,7 +1316,7 @@ HWTEST_F_L0(ContainersTreeMapTest, CustomCompareFunctionTest)
         JSHandle<JSTaggedValue> itRes = JSIterator::IteratorValue(thread, result);
         EXPECT_TRUE(JSTaggedValue::SameValue(key, itRes));
     }
-    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+    for (int i = 0; i < NODE_NUMBERS; i++) {
         auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
         callInfo->SetFunction(JSTaggedValue::Undefined());
         callInfo->SetThis(iterKeys.GetTaggedValue());
