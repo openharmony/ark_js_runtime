@@ -87,7 +87,7 @@ HWTEST_F_L0(JSVerificationTest, VerifyHeapObjects)
     auto ecmaVm = thread->GetEcmaVM();
     auto heap = const_cast<Heap *>(ecmaVm->GetHeap());
     auto objectFactory = ecmaVm->GetFactory();
-    EXPECT_EQ(heap->VerifyHeapObjects(), 0);  // failcount is 0
+    EXPECT_EQ(heap->VerifyHeapObjects(), 0U);  // failcount is 0
 
     JSTaggedValue oldArray;
     auto verifier = Verification(heap);
@@ -100,7 +100,7 @@ HWTEST_F_L0(JSVerificationTest, VerifyHeapObjects)
         newArray->Set(thread, 0, oldArray);
     }
     heap->CollectGarbage(panda::ecmascript::TriggerGCType::OLD_GC);
-    EXPECT_EQ(verifier.VerifyRoot(), 0);
+    EXPECT_EQ(verifier.VerifyRoot(), 0U);
     size_t failCount = 0;
     VerifyObjectVisitor objVerifier(heap, &failCount);
     const_cast<SemiSpace *>(heap->GetNewSpace())->IterateOverObjects(objVerifier);  // newspace reference the old space

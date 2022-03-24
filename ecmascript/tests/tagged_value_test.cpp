@@ -453,50 +453,50 @@ HWTEST_F_L0(JSTaggedValueTest, ToUint32)
 
     JSTaggedValue intV(100);
     result = JSTaggedValue::ToUint32(thread, JSHandle<JSTaggedValue>(thread, intV));
-    EXPECT_EQ(result, 100);
+    EXPECT_EQ(result, 100U);
 
     JSTaggedValue doubleV1((double)100.0);
     result = JSTaggedValue::ToUint32(thread, JSHandle<JSTaggedValue>(thread, doubleV1));
-    EXPECT_EQ(result, 100);
+    EXPECT_EQ(result, 100U);
 
     JSTaggedValue doubleV2((double)100.123);
     result = JSTaggedValue::ToUint32(thread, JSHandle<JSTaggedValue>(thread, doubleV2));
-    EXPECT_EQ(result, 100);
+    EXPECT_EQ(result, 100U);
 
     double input1 = (static_cast<uint64_t>(UINT32_MAX) + 1) + 12345;
     JSTaggedValue doubleV3(input1);
     result = JSTaggedValue::ToUint32(thread, JSHandle<JSTaggedValue>(thread, doubleV3));
-    EXPECT_EQ(result, 12345);
+    EXPECT_EQ(result, 12345U);
 
     double input2 = 100 * (static_cast<uint64_t>(UINT32_MAX) + 1) + 23456;
     JSTaggedValue doubleV4(input2);
     result = JSTaggedValue::ToUint32(thread, JSHandle<JSTaggedValue>(thread, doubleV4));
-    EXPECT_EQ(result, 23456);
+    EXPECT_EQ(result, 23456U);
 
     double input3 = 100 * (static_cast<uint64_t>(UINT32_MAX) + 1) + INT32_MAX + 1 + 23456;
     JSTaggedValue doubleV5(input3);
     result = JSTaggedValue::ToUint32(thread, JSHandle<JSTaggedValue>(thread, doubleV5));
-    EXPECT_EQ(result, static_cast<uint64_t>(INT32_MAX) + 1 + 23456);
+    EXPECT_EQ(result, static_cast<uint64_t>(INT32_MAX + 1 + 23456));
 
     JSTaggedValue undefinedV = JSTaggedValue::Undefined();
     result = JSTaggedValue::ToUint32(thread, JSHandle<JSTaggedValue>(thread, undefinedV));
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, 0U);
 
     JSTaggedValue holeV = JSTaggedValue::Hole();
     result = JSTaggedValue::ToUint32(thread, JSHandle<JSTaggedValue>(thread, holeV));
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, 0U);
 
     JSTaggedValue nullV = JSTaggedValue::Null();
     result = JSTaggedValue::ToUint32(thread, JSHandle<JSTaggedValue>(thread, nullV));
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, 0U);
 
     JSTaggedValue falseV = JSTaggedValue::False();
     result = JSTaggedValue::ToUint32(thread, JSHandle<JSTaggedValue>(thread, falseV));
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, 0U);
 
     JSTaggedValue trueV = JSTaggedValue::True();
     result = JSTaggedValue::ToUint32(thread, JSHandle<JSTaggedValue>(thread, trueV));
-    EXPECT_EQ(result, 1);
+    EXPECT_EQ(result, 1U);
 }
 
 HWTEST_F_L0(JSTaggedValueTest, ToInt16)
@@ -557,50 +557,50 @@ HWTEST_F_L0(JSTaggedValueTest, ToUint16)
 
     JSTaggedValue intV(100);
     result = JSTaggedValue::ToUint16(thread, JSHandle<JSTaggedValue>(thread, intV));
-    EXPECT_EQ(result, 100);
+    EXPECT_EQ(result, 100U);
 
     JSTaggedValue doubleV1((double)100.0);
     result = JSTaggedValue::ToUint16(thread, JSHandle<JSTaggedValue>(thread, doubleV1));
-    EXPECT_EQ(result, 100);
+    EXPECT_EQ(result, 100U);
 
     JSTaggedValue doubleV2((double)100.123);
     result = JSTaggedValue::ToUint16(thread, JSHandle<JSTaggedValue>(thread, doubleV2));
-    EXPECT_EQ(result, 100);
+    EXPECT_EQ(result, 100U);
 
     double input1 = (static_cast<uint64_t>(UINT16_MAX) + 1) + 12345;
     JSTaggedValue doubleV3(input1);
     result = JSTaggedValue::ToUint16(thread, JSHandle<JSTaggedValue>(thread, doubleV3));
-    EXPECT_EQ(result, 12345);
+    EXPECT_EQ(result, 12345U);
 
     double input2 = 100 * (static_cast<uint64_t>(UINT16_MAX) + 1) + 23456;
     JSTaggedValue doubleV4(input2);
     result = JSTaggedValue::ToUint16(thread, JSHandle<JSTaggedValue>(thread, doubleV4));
-    EXPECT_EQ(result, 23456);
+    EXPECT_EQ(result, 23456U);
 
     double input3 = 100 * (static_cast<uint64_t>(UINT16_MAX) + 1) + INT16_MAX + 1 + 23456;
     JSTaggedValue doubleV5(input3);
     result = JSTaggedValue::ToUint16(thread, JSHandle<JSTaggedValue>(thread, doubleV5));
-    EXPECT_EQ(result, static_cast<uint64_t>(INT16_MAX) + 1 + 23456);
+    EXPECT_EQ(result, static_cast<uint64_t>(INT16_MAX + 1 + 23456));
 
     JSTaggedValue undefinedV = JSTaggedValue::Undefined();
     result = JSTaggedValue::ToUint16(thread, JSHandle<JSTaggedValue>(thread, undefinedV));
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, 0U);
 
     JSTaggedValue holeV = JSTaggedValue::Hole();
     result = JSTaggedValue::ToUint16(thread, JSHandle<JSTaggedValue>(thread, holeV));
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, 0U);
 
     JSTaggedValue nullV = JSTaggedValue::Null();
     result = JSTaggedValue::ToUint16(thread, JSHandle<JSTaggedValue>(thread, nullV));
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, 0U);
 
     JSTaggedValue falseV = JSTaggedValue::False();
     result = JSTaggedValue::ToUint16(thread, JSHandle<JSTaggedValue>(thread, falseV));
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, 0U);
 
     JSTaggedValue trueV = JSTaggedValue::True();
     result = JSTaggedValue::ToUint16(thread, JSHandle<JSTaggedValue>(thread, trueV));
-    EXPECT_EQ(result, 1);
+    EXPECT_EQ(result, 1U);
 }
 
 HWTEST_F_L0(JSTaggedValueTest, ToInt8)
@@ -661,50 +661,50 @@ HWTEST_F_L0(JSTaggedValueTest, ToUint8)
 
     JSTaggedValue intV(100);
     result = JSTaggedValue::ToUint8(thread, JSHandle<JSTaggedValue>(thread, intV));
-    EXPECT_EQ(result, 100);
+    EXPECT_EQ(result, 100U);
 
     JSTaggedValue doubleV1((double)100.0);
     result = JSTaggedValue::ToUint8(thread, JSHandle<JSTaggedValue>(thread, doubleV1));
-    EXPECT_EQ(result, 100);
+    EXPECT_EQ(result, 100U);
 
     JSTaggedValue doubleV2((double)100.123);
     result = JSTaggedValue::ToUint8(thread, JSHandle<JSTaggedValue>(thread, doubleV2));
-    EXPECT_EQ(result, 100);
+    EXPECT_EQ(result, 100U);
 
     double input1 = (static_cast<uint64_t>(UINT8_MAX) + 1) + 34;
     JSTaggedValue doubleV3(input1);
     result = JSTaggedValue::ToUint8(thread, JSHandle<JSTaggedValue>(thread, doubleV3));
-    EXPECT_EQ(result, 34);
+    EXPECT_EQ(result, 34U);
 
     double input2 = 100 * (static_cast<uint64_t>(UINT8_MAX) + 1) + 45;
     JSTaggedValue doubleV4(input2);
     result = JSTaggedValue::ToUint8(thread, JSHandle<JSTaggedValue>(thread, doubleV4));
-    EXPECT_EQ(result, 45);
+    EXPECT_EQ(result, 45U);
 
     double input3 = 100 * (static_cast<uint64_t>(UINT8_MAX) + 1) + INT8_MAX + 1 + 56;
     JSTaggedValue doubleV5(input3);
     result = JSTaggedValue::ToUint8(thread, JSHandle<JSTaggedValue>(thread, doubleV5));
-    EXPECT_EQ(result, static_cast<uint64_t>(INT8_MAX) + 1 + 56);
+    EXPECT_EQ(result, static_cast<uint64_t>(INT8_MAX + 1 + 56));
 
     JSTaggedValue undefinedV = JSTaggedValue::Undefined();
     result = JSTaggedValue::ToUint8(thread, JSHandle<JSTaggedValue>(thread, undefinedV));
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, 0U);
 
     JSTaggedValue holeV = JSTaggedValue::Hole();
     result = JSTaggedValue::ToUint8(thread, JSHandle<JSTaggedValue>(thread, holeV));
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, 0U);
 
     JSTaggedValue nullV = JSTaggedValue::Null();
     result = JSTaggedValue::ToUint8(thread, JSHandle<JSTaggedValue>(thread, nullV));
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, 0U);
 
     JSTaggedValue falseV = JSTaggedValue::False();
     result = JSTaggedValue::ToUint8(thread, JSHandle<JSTaggedValue>(thread, falseV));
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, 0U);
 
     JSTaggedValue trueV = JSTaggedValue::True();
     result = JSTaggedValue::ToUint8(thread, JSHandle<JSTaggedValue>(thread, trueV));
-    EXPECT_EQ(result, 1);
+    EXPECT_EQ(result, 1U);
 }
 
 HWTEST_F_L0(JSTaggedValueTest, ToUint8Clamp)
@@ -713,55 +713,55 @@ HWTEST_F_L0(JSTaggedValueTest, ToUint8Clamp)
 
     JSTaggedValue intV1(-100);
     result = JSTaggedValue::ToUint8Clamp(thread, JSHandle<JSTaggedValue>(thread, intV1));
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, 0U);
 
     JSTaggedValue intV2(100);
     result = JSTaggedValue::ToUint8Clamp(thread, JSHandle<JSTaggedValue>(thread, intV2));
-    EXPECT_EQ(result, 100);
+    EXPECT_EQ(result, 100U);
 
     JSTaggedValue intV3(300);
     result = JSTaggedValue::ToUint8Clamp(thread, JSHandle<JSTaggedValue>(thread, intV3));
-    EXPECT_EQ(result, 255);
+    EXPECT_EQ(result, 255U);
 
     JSTaggedValue doubleV1((double)-100.123);
     result = JSTaggedValue::ToUint8Clamp(thread, JSHandle<JSTaggedValue>(thread, doubleV1));
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, 0U);
 
     JSTaggedValue doubleV2((double)100.123);
     result = JSTaggedValue::ToUint8Clamp(thread, JSHandle<JSTaggedValue>(thread, doubleV2));
-    EXPECT_EQ(result, 100);
+    EXPECT_EQ(result, 100U);
 
     JSTaggedValue doubleV3((double)100.55);
     result = JSTaggedValue::ToUint8Clamp(thread, JSHandle<JSTaggedValue>(thread, doubleV3));
-    EXPECT_EQ(result, 101);
+    EXPECT_EQ(result, 101U);
 
     JSTaggedValue doubleV4((double)99.9);
     result = JSTaggedValue::ToUint8Clamp(thread, JSHandle<JSTaggedValue>(thread, doubleV4));
-    EXPECT_EQ(result, 100);
+    EXPECT_EQ(result, 100U);
 
     JSTaggedValue doubleV5((double)300.5);
     result = JSTaggedValue::ToUint8Clamp(thread, JSHandle<JSTaggedValue>(thread, doubleV5));
-    EXPECT_EQ(result, 255);
+    EXPECT_EQ(result, 255U);
 
     JSTaggedValue undefinedV = JSTaggedValue::Undefined();
     result = JSTaggedValue::ToUint8Clamp(thread, JSHandle<JSTaggedValue>(thread, undefinedV));
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, 0U);
 
     JSTaggedValue holeV = JSTaggedValue::Hole();
     result = JSTaggedValue::ToUint8Clamp(thread, JSHandle<JSTaggedValue>(thread, holeV));
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, 0U);
 
     JSTaggedValue nullV = JSTaggedValue::Null();
     result = JSTaggedValue::ToUint8Clamp(thread, JSHandle<JSTaggedValue>(thread, nullV));
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, 0U);
 
     JSTaggedValue falseV = JSTaggedValue::False();
     result = JSTaggedValue::ToUint8Clamp(thread, JSHandle<JSTaggedValue>(thread, falseV));
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, 0U);
 
     JSTaggedValue trueV = JSTaggedValue::True();
     result = JSTaggedValue::ToUint8Clamp(thread, JSHandle<JSTaggedValue>(thread, trueV));
-    EXPECT_EQ(result, 1);
+    EXPECT_EQ(result, 1U);
 }
 
 HWTEST_F_L0(JSTaggedValueTest, ToPropertyKey)
