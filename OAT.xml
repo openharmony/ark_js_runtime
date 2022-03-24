@@ -64,6 +64,7 @@ Note:If the text contains special characters, please escape them according to th
                 <filteritem type="filepath" name="docs/figures/zh-cn_image_0000001196712959.png" desc="自造的二进制图片"/>
                 <filteritem type="filepath" name="docs/figures/zh-cn_image_0000001196789343.png" desc="自造的二进制图片"/>
                 <filteritem type="filepath" name="docs/figures/zh-cn_image_0000001197967897.png" desc="自造的二进制图片"/>
+                <filteritem type="filepath" name="docs/figures/zh-cn_image_ark-js-arch.png" desc="自造的二进制图片"/>
             </filefilter>
             <filefilter name="copyrightPolicyFilter" desc="copyright文件头校验策略的过滤条件" >
             </filefilter>
