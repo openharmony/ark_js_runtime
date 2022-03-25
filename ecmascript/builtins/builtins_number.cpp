@@ -44,16 +44,15 @@ JSTaggedValue BuiltinsNumber::NumberConstructor(EcmaRuntimeCallInfo *argv)
     if (argv->GetArgsNumber() > 0) {
         JSHandle<JSTaggedValue> value = GetCallArg(argv, 0);
         // a. Let prim be ? ToNumeric(value).
-        JSTaggedValue numeric = JSTaggedValue::ToNumeric(thread, value);
+        JSHandle<JSTaggedValue> numericVal = JSTaggedValue::ToNumeric(thread, value.GetTaggedValue());
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-        JSHandle<JSTaggedValue> numericVal(thread, numeric);
         // b. If Type(prim) is BigInt, let n be 𝔽(ℝ(prim)).
         if (numericVal->IsBigInt()) {
             JSHandle<BigInt> bigNumericVal(numericVal);
             numberValue = BigInt::BigIntToNumber(bigNumericVal);
         } else {
             // c. Otherwise, let n be prim.
-            numberValue = JSTaggedNumber(numeric);
+            numberValue = JSTaggedNumber(numericVal.GetTaggedValue());
         }
     }
     // 3. If NewTarget is undefined, return n.
