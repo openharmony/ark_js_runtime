@@ -14,12 +14,26 @@
  */
 
 #include "llvm_codegen.h"
+
 #include <string>
 #include <vector>
+
+#include "ecmascript/compiler/call_signature.h"
 #include "ecmascript/compiler/compiler_macros.h"
 #include "ecmascript/compiler/stub-inl.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/object_factory.h"
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wshadow"
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 #include "llvm-c/Analysis.h"
 #include "llvm-c/Core.h"
 #include "llvm-c/Disassembler.h"
@@ -50,7 +64,12 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/llvm_stackmap_parser.h"
-#include "call_signature.h"
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
 using namespace panda::ecmascript;
 namespace panda::ecmascript::kungfu {
@@ -241,7 +260,7 @@ static const char *SymbolLookupCallback([[maybe_unused]] void *disInfo, [[maybe_
 }
 #endif
 
-void LLVMAssembler::Disassemble(const std::map<uint64_t, std::string> &addr2name) const
+void LLVMAssembler::Disassemble([[maybe_unused]] const std::map<uint64_t, std::string> &addr2name) const
 {
 #if ECMASCRIPT_ENABLE_COMPILER_LOG
     LLVMDisasmContextRef dcr = LLVMCreateDisasm(LLVMGetTarget(module_), nullptr, 0, nullptr, SymbolLookupCallback);

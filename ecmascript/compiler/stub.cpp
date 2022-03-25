@@ -1138,7 +1138,6 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
     Label isHeapObject(env);
     Label isVailedIndex(env);
     Label notValidIndex(env);
-    Label marking(env);
 
     Branch(TaggedIsHeapObject(value), &isHeapObject, &exit);
     Bind(&isHeapObject);
@@ -1146,8 +1145,8 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
         GateRef objectRegion = ObjectAddressToRange(obj);
         GateRef valueRegion = ObjectAddressToRange(value);
         GateRef slotAddr = IntPtrAdd(TaggedCastToIntPtr(obj), offset);
-        GateRef objectNotInYoung = BoolNot(InYoungGeneration(glue, objectRegion));
-        GateRef valueRegionInYoung = InYoungGeneration(glue, valueRegion);
+        GateRef objectNotInYoung = BoolNot(InYoungGeneration(objectRegion));
+        GateRef valueRegionInYoung = InYoungGeneration(valueRegion);
         Branch(BoolAnd(objectNotInYoung, valueRegionInYoung), &isVailedIndex, &notValidIndex);
         Bind(&isVailedIndex);
         {
@@ -3431,8 +3430,6 @@ GateRef Stub::FastBinaryOp(GateRef left, GateRef right,
     Label doIntOp(env);
     Label leftIsNumber(env);
     Label rightIsNumber(env);
-    Label leftIsInt(env);
-    Label leftIsDouble(env);
     Label leftIsIntRightIsDouble(env);
     Label rightIsInt(env);
     Label rightIsDouble(env);
@@ -3508,8 +3505,8 @@ GateRef Stub::FastAddSubAndMul(GateRef left, GateRef right)
         {
             auto doubleLeft = ChangeInt32ToFloat64(TaggedCastToInt32(left));
             auto doubleRight = ChangeInt32ToFloat64(TaggedCastToInt32(right));
-            auto res = BinaryOp<Op, MachineType::F64>(doubleLeft, doubleRight);
-            result = DoubleBuildTaggedWithNoGC(res);
+            auto ret = BinaryOp<Op, MachineType::F64>(doubleLeft, doubleRight);
+            result = DoubleBuildTaggedWithNoGC(ret);
             Jump(&exit);
         }
         Bind(&notOverflow);

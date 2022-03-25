@@ -392,9 +392,9 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int8Array_001)
     EXPECT_EQ(opResult3.GetValue().GetTaggedValue(), JSTaggedValue::Undefined());
     EXPECT_EQ(opResult4.GetValue().GetTaggedValue(), JSTaggedValue::Undefined());
 
-    EXPECT_FALSE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValInt8Array, JSTaggedValue(-1),
+    EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValInt8Array, JSTaggedValue(-1),
         JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))));
-    EXPECT_FALSE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValInt8Array,
+    EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValInt8Array,
         JSTaggedValue(numElementsInt8Array), JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))));
 }
 
@@ -491,9 +491,9 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint8Array_001)
     EXPECT_EQ(opResult3.GetValue().GetTaggedValue(), JSTaggedValue::Undefined());
     EXPECT_EQ(opResult4.GetValue().GetTaggedValue(), JSTaggedValue::Undefined());
 
-    EXPECT_FALSE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint8Array, JSTaggedValue(-1),
+    EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint8Array, JSTaggedValue(-1),
         JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))));
-    EXPECT_FALSE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint8Array,
+    EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint8Array,
         JSTaggedValue(numElementsUint8Array), JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))));
 }
 
@@ -590,9 +590,9 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint8ClampedArray_001)
     EXPECT_EQ(opResult3.GetValue().GetTaggedValue(), JSTaggedValue::Undefined());
     EXPECT_EQ(opResult4.GetValue().GetTaggedValue(), JSTaggedValue::Undefined());
 
-    EXPECT_FALSE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint8ClampedArray, JSTaggedValue(-1),
+    EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint8ClampedArray, JSTaggedValue(-1),
         JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))));
-    EXPECT_FALSE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint8ClampedArray,
+    EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint8ClampedArray,
         JSTaggedValue(numElementsUint8ClampedArray), JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))));
 }
 
@@ -692,9 +692,9 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int16Array_001)
     EXPECT_EQ(opResult3.GetValue().GetTaggedValue(), JSTaggedValue::Undefined());
     EXPECT_EQ(opResult4.GetValue().GetTaggedValue(), JSTaggedValue::Undefined());
 
-    EXPECT_FALSE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValInt16Array, JSTaggedValue(-1),
+    EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValInt16Array, JSTaggedValue(-1),
         JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))));
-    EXPECT_FALSE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValInt16Array,
+    EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValInt16Array,
         JSTaggedValue(numElementsInt16Array), JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))));
 }
 
@@ -794,9 +794,9 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint16Array_001)
     EXPECT_EQ(opResult3.GetValue().GetTaggedValue(), JSTaggedValue::Undefined());
     EXPECT_EQ(opResult4.GetValue().GetTaggedValue(), JSTaggedValue::Undefined());
 
-    EXPECT_FALSE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint16Array, JSTaggedValue(-1),
+    EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint16Array, JSTaggedValue(-1),
         JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))));
-    EXPECT_FALSE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint16Array,
+    EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint16Array,
         JSTaggedValue(numElementsUint16Array), JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))));
 }
 
@@ -896,9 +896,9 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Int32Array_001)
     EXPECT_EQ(opResult3.GetValue().GetTaggedValue(), JSTaggedValue::Undefined());
     EXPECT_EQ(opResult4.GetValue().GetTaggedValue(), JSTaggedValue::Undefined());
 
-    EXPECT_FALSE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValInt32Array, JSTaggedValue(-1),
+    EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValInt32Array, JSTaggedValue(-1),
         JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))));
-    EXPECT_FALSE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValInt32Array,
+    EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValInt32Array,
         JSTaggedValue(numElementsInt32Array), JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))));
 }
 
@@ -998,9 +998,9 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Uint32Array_001)
     EXPECT_EQ(opResult3.GetValue().GetTaggedValue(), JSTaggedValue::Undefined());
     EXPECT_EQ(opResult4.GetValue().GetTaggedValue(), JSTaggedValue::Undefined());
 
-    EXPECT_FALSE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint32Array, JSTaggedValue(-1),
+    EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint32Array, JSTaggedValue(-1),
         JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))));
-    EXPECT_FALSE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint32Array,
+    EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValUint32Array,
         JSTaggedValue(numElementsUint32Array), JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))));
 }
 
@@ -1100,9 +1100,9 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Float32Array)
     EXPECT_EQ(opResult3.GetValue().GetTaggedValue(), JSTaggedValue::Undefined());
     EXPECT_EQ(opResult4.GetValue().GetTaggedValue(), JSTaggedValue::Undefined());
 
-    EXPECT_FALSE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValFloat32Array, JSTaggedValue(-1),
+    EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValFloat32Array, JSTaggedValue(-1),
         JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))));
-    EXPECT_FALSE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValFloat32Array,
+    EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValFloat32Array,
         JSTaggedValue(numElementsFloat32Array), JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))));
 }
 
@@ -1150,9 +1150,9 @@ HWTEST_F_L0(JSTypedArrayTest, IntegerIndexedElementSet_Float64Array)
     EXPECT_EQ(opResult3.GetValue().GetTaggedValue(), JSTaggedValue::Undefined());
     EXPECT_EQ(opResult4.GetValue().GetTaggedValue(), JSTaggedValue::Undefined());
 
-    EXPECT_FALSE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValFloat64Array, JSTaggedValue(-1),
+    EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValFloat64Array, JSTaggedValue(-1),
         JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))));
-    EXPECT_FALSE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValFloat64Array,
+    EXPECT_TRUE(JSTypedArray::IntegerIndexedElementSet(thread, handleTagValFloat64Array,
         JSTaggedValue(numElementsFloat64Array), JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))));
 }
 

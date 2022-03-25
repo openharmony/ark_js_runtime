@@ -29,7 +29,25 @@
 #include "ecmascript/frames.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/js_method.h"
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wshadow"
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 #include "llvm/IR/Instructions.h"
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+
 #include "llvm/Support/Host.h"
 #include "securec.h"
 #include "utils/logger.h"
@@ -287,7 +305,7 @@ LLVMTFBuilderBasicBlockImpl *LLVMIRBuilder::EnsureBasicBlockImpl(BasicBlock *bb)
     return bb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
 }
 
-void LLVMIRBuilder::GenPrologue(LLVMModuleRef &module, LLVMBuilderRef &builder)
+void LLVMIRBuilder::GenPrologue([[maybe_unused]] LLVMModuleRef &module, LLVMBuilderRef &builder)
 {
     /* current frame for x86_64 system:
     for optimized entry frame
@@ -377,7 +395,7 @@ LLVMValueRef LLVMIRBuilder::CallingFp(LLVMModuleRef &module, LLVMBuilderRef &bui
     return fAddrRet;
 }
 
-LLVMValueRef LLVMIRBuilder::ReadRegister(LLVMModuleRef &module, LLVMBuilderRef &builder,
+LLVMValueRef LLVMIRBuilder::ReadRegister(LLVMModuleRef &module, [[maybe_unused]] LLVMBuilderRef &builder,
     LLVMMetadataRef meta)
 {
     std::vector<LLVMValueRef> args = {LLVMMetadataAsValue(context_, meta)};
@@ -1154,7 +1172,7 @@ LLVMValueRef LLVMIRBuilder::PointerAdd(LLVMValueRef baseAddr, LLVMValueRef offse
     return result;
 }
 
-LLVMValueRef LLVMIRBuilder::VectorAdd(LLVMValueRef baseAddr, LLVMValueRef offset, LLVMTypeRef rep)
+LLVMValueRef LLVMIRBuilder::VectorAdd(LLVMValueRef baseAddr, LLVMValueRef offset, [[maybe_unused]] LLVMTypeRef rep)
 {
     LLVMValueRef ptr = CanonicalizeToPtr(baseAddr);
     LLVMValueRef dstRef8 = LLVMBuildGEP(builder_, ptr, &offset, 1, "");
@@ -1844,7 +1862,6 @@ LLVMTypeRef LLVMModule::GetFuncType(const CallSignature *stubDescriptor)
     }
 
     for (int i = 1; i < paramCount; i++) {
-        auto paramsType = stubDescriptor->GetParametersType();
         paramTys.push_back(ConvertLLVMTypeFromVariableType(paramsType[i]));
     }
     auto functype = LLVMFunctionType(returnType, paramTys.data(), paramCount + extraParameterCnt,

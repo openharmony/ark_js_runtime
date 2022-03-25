@@ -61,8 +61,8 @@ HWTEST_F_L0(JSArrayIteratorTest, SetIteratedArray)
     EcmaVM *ecmaVMPtr = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVMPtr->GetFactory();
 
-    uint32_t arrayFrom1[10] = {0, 6, 8, 99, 200, 1, -1, -199, 33, 100};
-    uint32_t arrayFrom2[10] = {1111, 3211, 737, 0, 1267, 174, 2763, 832, 11, 93};
+    int32_t arrayFrom1[10] = {0, 6, 8, 99, 200, 1, -1, -199, 33, 100};
+    int32_t arrayFrom2[10] = {1111, 3211, 737, 0, 1267, 174, 2763, 832, 11, 93};
     int numArrayFrom1 = sizeof(arrayFrom1)/sizeof(arrayFrom1[0]);
     int numArrayFrom2 = sizeof(arrayFrom2)/sizeof(arrayFrom2[0]);
     JSHandle<TaggedArray> handleTaggedArrayFrom1(factory->NewTaggedArray(numArrayFrom1));
@@ -84,7 +84,7 @@ HWTEST_F_L0(JSArrayIteratorTest, SetIteratedArray)
     EXPECT_EQ(handleJSArrayTo1->GetArrayLength(), static_cast<uint32_t>(numArrayFrom1));
     for (int i = 0; i < numArrayFrom1; i++) {
         EXPECT_EQ(JSArray::FastGetPropertyByValue(thread, JSHandle<JSTaggedValue>(handleJSArrayTo1), i)->GetNumber(),
-                  static_cast<double>(arrayFrom1[i]));
+                  arrayFrom1[i]);
     }
 
     // Call "SetIteratedArray" function in this HWTEST_F_L0.
@@ -94,7 +94,7 @@ HWTEST_F_L0(JSArrayIteratorTest, SetIteratedArray)
     EXPECT_EQ(handleJSArrayTo2->GetArrayLength(), static_cast<uint32_t>(numArrayFrom2));
     for (int i = 0; i < numArrayFrom2; i++) {
         EXPECT_EQ(JSArray::FastGetPropertyByValue(thread, JSHandle<JSTaggedValue>(handleJSArrayTo2), i)->GetNumber(),
-                  static_cast<int32_t>(arrayFrom2[i]));
+                  arrayFrom2[i]);
     }
 }
 
@@ -111,7 +111,7 @@ HWTEST_F_L0(JSArrayIteratorTest, SetNextIndex)
     EcmaVM *ecmaVMPtr = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVMPtr->GetFactory();
 
-    uint32_t array[10] = {0, 6, 8, 99, 200, 1, -1, -199, 33, 100};
+    int32_t array[10] = {0, 6, 8, 99, 200, 1, -1, -199, 33, 100};
     int numArray = sizeof(array)/sizeof(array[0]);
     JSHandle<TaggedArray> handleTaggedArray(factory->NewTaggedArray(numArray));
     for (int i = 0; i < numArray; i++) {
@@ -145,7 +145,7 @@ HWTEST_F_L0(JSArrayIteratorTest, SetIterationKind)
     EcmaVM *ecmaVMPtr = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVMPtr->GetFactory();
 
-    uint32_t array[10] = {0, 6, 8, 99, 200, 1, -1, -199, 33, 100};
+    int32_t array[10] = {0, 6, 8, 99, 200, 1, -1, -199, 33, 100};
     int numArray = sizeof(array)/sizeof(array[0]);
     JSHandle<TaggedArray> handleTaggedArray(factory->NewTaggedArray(numArray));
     for (int i = 0; i < numArray; i++) {

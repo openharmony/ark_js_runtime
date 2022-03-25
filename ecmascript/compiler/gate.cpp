@@ -317,7 +317,7 @@ size_t OpCode::GetInValueCount(BitField bitfield) const
     return valueProp.has_value() ? (valueProp->second ? bitfield : valueProp->first.size()) : 0;
 }
 
-size_t OpCode::GetRootCount(BitField bitfield) const
+size_t OpCode::GetRootCount([[maybe_unused]] BitField bitfield) const
 {
     auto properties = GetProperties();
     auto rootProp = properties.root;
