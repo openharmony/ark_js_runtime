@@ -15,13 +15,29 @@
 
 #include "ecmascript/compiler/call_signature.h"
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wshadow"
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 #include "llvm-c/Core.h"
 #include "llvm/Support/Host.h"
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
 namespace panda::ecmascript::kungfu {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DEF_CALL_SIGNATURE(name)                                  \
-    void name##CallSignature::Initialize(CallSignature *callSign)
+    void name##CallSignature::Initialize([[maybe_unused]] CallSignature *callSign)
 
 DEF_CALL_SIGNATURE(Add)
 {

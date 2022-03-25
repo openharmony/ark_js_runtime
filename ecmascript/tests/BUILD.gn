@@ -25,13 +25,7 @@ host_unittest_action("AssertScopeTest") {
     "assert_scope_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -52,13 +46,7 @@ host_unittest_action("BuiltinsTest") {
     "builtins_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -79,13 +67,7 @@ host_unittest_action("DumpTest") {
     "dump_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -106,13 +88,7 @@ host_unittest_action("EcmaModuleTest") {
     "ecma_module_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -133,13 +109,7 @@ host_unittest_action("EcmaStringTest") {
     "ecma_string_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -160,13 +130,7 @@ host_unittest_action("EcmaVMTest") {
     "ecma_vm_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -187,13 +151,7 @@ host_unittest_action("GlueRegsTest") {
     "glue_regs_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -214,13 +172,7 @@ host_unittest_action("JsArrayIteratorTest") {
     "js_array_iterator_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -241,13 +193,7 @@ host_unittest_action("JsArrayTest") {
     "js_array_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -268,13 +214,7 @@ host_unittest_action("JsDataViewTest") {
     "js_dataview_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -295,13 +235,7 @@ host_unittest_action("JsDateTest") {
     "js_date_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -322,13 +256,7 @@ host_unittest_action("JsForinIteratorTest") {
     "js_forin_iterator_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -349,13 +277,7 @@ host_unittest_action("JsFunctionTest") {
     "js_function_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -376,13 +298,7 @@ host_unittest_action("JsHandleTest") {
     "js_handle_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -403,13 +319,7 @@ host_unittest_action("JsIteratorTest") {
     "js_iterator_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "//ark/js_runtime:libark_jsruntime_test",
@@ -429,13 +339,7 @@ host_unittest_action("JsMapTest") {
     "js_map_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -456,13 +360,7 @@ host_unittest_action("JSAPITreeMapTest") {
     "js_api_tree_map_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -483,13 +381,7 @@ host_unittest_action("JSAPITreeSetTest") {
     "js_api_tree_set_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -510,13 +402,7 @@ host_unittest_action("JsObjectTest") {
     "js_object_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -537,13 +423,7 @@ host_unittest_action("JsPrimitiveRefTest") {
     "js_primitive_ref_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -564,13 +444,7 @@ host_unittest_action("JsPromiseTest") {
     "js_promise_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -591,13 +465,7 @@ host_unittest_action("JsProxyTest") {
     "js_proxy_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -618,13 +486,7 @@ host_unittest_action("JsSetTest") {
     "js_set_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -645,13 +507,7 @@ host_unittest_action("JsSymbolTest") {
     "js_symbol_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -672,13 +528,7 @@ host_unittest_action("JsTaggedQueueTest") {
     "js_tagged_queue_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -699,13 +549,7 @@ host_unittest_action("JsTypedArrayTest") {
     "js_typed_array_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -726,13 +570,7 @@ host_unittest_action("JsVerificationTest") {
     "js_verification_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -753,13 +591,7 @@ host_unittest_action("TaggedTreeTest") {
     "tagged_tree_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -780,13 +612,7 @@ host_unittest_action("HugeObjectTest") {
     "huge_object_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -807,13 +633,7 @@ host_unittest_action("JsArgumentsTest") {
     "js_arguments_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -834,13 +654,7 @@ host_unittest_action("LexicalEnvTest") {
     "lexical_env_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -861,13 +675,7 @@ host_unittest_action("LinkedHashTableTest") {
     "linked_hash_table_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -888,13 +696,7 @@ host_unittest_action("NameDictionaryTest") {
     "name_dictionary_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -915,13 +717,7 @@ host_unittest_action("NativePointerTest") {
     "native_pointer_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -942,13 +738,7 @@ host_unittest_action("ObjectFactoryTest") {
     "object_factory_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -969,13 +759,7 @@ host_unittest_action("SymbolTableTest") {
     "symbol_table_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -996,13 +780,7 @@ host_unittest_action("TaggedValueTest") {
     "tagged_value_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -1023,13 +801,7 @@ host_unittest_action("MemControllerTest") {
     "mem_controller_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -1050,13 +822,7 @@ host_unittest_action("WeakRefOldGcTest") {
     "weak_ref_old_gc_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -1077,13 +843,7 @@ host_unittest_action("WeakRefSemiGcTest") {
     "weak_ref_semi_gc_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -1104,13 +864,7 @@ host_unittest_action("JsSerializerTest") {
     "js_serializer_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -1132,13 +886,7 @@ host_unittest_action("GcTest") {
     "gc_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -1159,13 +907,7 @@ host_unittest_action("ConcurrentMarkingTest") {
     "concurrent_marking_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",

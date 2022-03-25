@@ -25,13 +25,7 @@ host_unittest_action("DynChunkTest") {
     "dyn_chunk_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -52,13 +46,7 @@ host_unittest_action("RegexpTest") {
     "regexp_test.cpp",
   ]
 
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",

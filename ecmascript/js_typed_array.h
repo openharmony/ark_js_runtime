@@ -87,7 +87,7 @@ public:
                                          JSTaggedValue index, const JSHandle<JSTaggedValue> &value);
     // s12 10.4.5.9 IsValidIntegerIndex ( O, index )
     static bool IsValidIntegerIndex(JSThread *thread, const JSHandle<JSTaggedValue> &typedArray,
-                                    JSTaggedValue &index);
+                                    JSTaggedValue index);
     static constexpr size_t VIEWED_ARRAY_BUFFER_OFFSET = JSObject::SIZE;
     ACCESSORS(ViewedArrayBuffer, VIEWED_ARRAY_BUFFER_OFFSET, TYPED_ARRAY_NAME_OFFSET)
     ACCESSORS(TypedArrayName, TYPED_ARRAY_NAME_OFFSET, BYTE_LENGTH_OFFSET)
