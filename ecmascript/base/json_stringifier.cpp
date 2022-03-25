@@ -374,7 +374,9 @@ JSTaggedValue JsonStringifier::SerializeJSONProperty(const JSHandle<JSTaggedValu
                 return JSTaggedValue::Undefined();
             default: {
                 if (!tagValue.IsCallable()) {
-                    if (UNLIKELY(tagValue.IsJSProxy())) {
+                    JSHClass *jsHclass = tagValue.GetTaggedObject()->GetClass();
+                    if (UNLIKELY(jsHclass->IsJSProxy() &&
+                        JSProxy::Cast(tagValue.GetTaggedObject())->IsArray(thread_))) {
                         SerializeJSProxy(valHandle, replacer);
                         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread_);
                     } else {
@@ -451,15 +453,38 @@ bool JsonStringifier::SerializeJSONObject(const JSHandle<JSTaggedValue> &value, 
 
     JSHandle<JSObject> obj(value);
     if (!replacer->IsArray(thread_)) {
-        uint32_t numOfKeys = obj->GetNumberOfKeys();
-        uint32_t numOfElements = obj->GetNumberOfElements();
-        if (numOfElements > 0) {
-            hasContent = JsonStringifier::SerializeElements(obj, replacer, hasContent);
-            RETURN_VALUE_IF_ABRUPT_COMPLETION(thread_, false);
-        }
-        if (numOfKeys > 0) {
-            hasContent = JsonStringifier::SerializeKeys(obj, replacer, hasContent);
-            RETURN_VALUE_IF_ABRUPT_COMPLETION(thread_, false);
+        if (UNLIKELY(value->IsJSProxy())) {  // serialize proxy object
+            JSHandle<JSProxy> proxy(value);
+            JSHandle<TaggedArray> propertyArray = JSObject::EnumerableOwnNames(thread_, obj);
+            uint32_t arrLength = propertyArray->GetLength();
+            for (uint32_t i = 0; i < arrLength; i++) {
+                handleKey_.Update(propertyArray->Get(i));
+                JSHandle<JSTaggedValue> proxyValue = JSProxy::GetProperty(thread_, proxy, handleKey_).GetValue();
+                JSTaggedValue serializeValue = GetSerializeValue(value, handleKey_, proxyValue, replacer);
+                RETURN_VALUE_IF_ABRUPT_COMPLETION(thread_, false);
+                if (UNLIKELY(serializeValue.IsUndefined() || serializeValue.IsSymbol() ||
+                    (serializeValue.IsECMAObject() && serializeValue.IsCallable()))) {
+                    continue;
+                }
+                handleValue_.Update(serializeValue);
+                SerializeObjectKey(handleKey_, hasContent);
+                JSTaggedValue res = SerializeJSONProperty(handleValue_, replacer);
+                RETURN_VALUE_IF_ABRUPT_COMPLETION(thread_, false);
+                if (!res.IsUndefined()) {
+                    hasContent = true;
+                }
+            }
+        } else {
+            uint32_t numOfKeys = obj->GetNumberOfKeys();
+            uint32_t numOfElements = obj->GetNumberOfElements();
+            if (numOfElements > 0) {
+                hasContent = JsonStringifier::SerializeElements(obj, replacer, hasContent);
+                RETURN_VALUE_IF_ABRUPT_COMPLETION(thread_, false);
+            }
+            if (numOfKeys > 0) {
+                hasContent = JsonStringifier::SerializeKeys(obj, replacer, hasContent);
+                RETURN_VALUE_IF_ABRUPT_COMPLETION(thread_, false);
+            }
         }
     } else {
         uint32_t propLen = propList_.size();
