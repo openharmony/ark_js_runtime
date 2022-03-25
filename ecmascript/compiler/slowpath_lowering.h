@@ -120,6 +120,8 @@ private:
     void LowerHirToConditionCall(CircuitBuilder &cirBuilder, GateRef hirGate, GateRef condGate, GateRef callGate);
     void LowerHirToThrowCall(CircuitBuilder &cirBuilder, GateRef hirGate, GateRef condGate, GateRef callGate);
     void LowerExceptionHandler(GateRef hirGate);
+    // labelmanager must be initialized
+    GateRef GetObjectFromConstPool(CircuitBuilder &cirBuilder, GateRef index);
     void Lower(GateRef gate, EcmaOpcode op);
     void LowerAdd2Dyn(GateRef gate, GateRef glue);
     void LowerCreateIterResultObj(GateRef gate, GateRef glue);
@@ -181,6 +183,13 @@ private:
     void LowerInstanceofDyn(GateRef gate, GateRef glue);
     void LowerFastStrictNotEqual(GateRef gate, GateRef glue);
     void LowerFastStrictEqual(GateRef gate, GateRef glue);
+    void LowerCreateEmptyArray(GateRef gate, GateRef glue);
+    void LowerCreateEmptyObject(GateRef gate, GateRef glue);
+    void LowerCreateArrayWithBuffer(GateRef gate, GateRef glue);
+    void LowerCreateObjectWithBuffer(GateRef gate, GateRef glue);
+    void LowerStModuleVar(GateRef gate, GateRef glue);
+    void LowerGetTemplateObject(GateRef gate, GateRef glue);
+    void LowerSetObjectWithProto(GateRef gate, GateRef glue);
 
     BytecodeCircuitBuilder *builder_;
     Circuit *circuit_;
