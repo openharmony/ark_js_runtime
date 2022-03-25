@@ -723,11 +723,11 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     ObjectFactory *factory = ecmaVm->GetFactory();
 
     constexpr size_t numOps = 0x100;
-    static std::array<const void *, numOps> instDispatchTable{
+    static std::array<const void *, numOps> instDispatchTable {
 #include "templates/instruction_dispatch.inl"
     };
 
-    static std::array<const void *, numOps> debugDispatchTable{
+    static std::array<const void *, numOps> debugDispatchTable {
 #include "templates/debugger_instruction_dispatch.inl"
     };
 
@@ -1065,7 +1065,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 {
                     [[maybe_unused]] EcmaHandleScope handleScope(thread);
                     JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR,
-                                                   "Derived constructor must return object or undefined");
+                        "Derived constructor must return object or undefined");
                     thread->SetException(error.GetTaggedValue());
                 }
                 INTERPRETER_GOTO_EXCEPTION_HANDLER();
@@ -1113,7 +1113,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 {
                     [[maybe_unused]] EcmaHandleScope handleScope(thread);
                     JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR,
-                                                   "Derived constructor must return object or undefined");
+                        "Derived constructor must return object or undefined");
                     thread->SetException(error.GetTaggedValue());
                 }
                 INTERPRETER_GOTO_EXCEPTION_HANDLER();
