@@ -313,6 +313,8 @@ public:
     void Switch(GateRef index, Label *defaultLabel, int64_t *keysValue, Label *keysLabel, int numberOfKeys);
     void LoopBegin(Label *loopHead);
     void LoopEnd(Label *loopHead);
+    inline GateRef GetState() const;
+    inline GateRef GetDepend() const;
 private:
     LabelManager *lm_ {nullptr};
     LCircuitBuilder lowBuilder_;
@@ -462,10 +464,6 @@ public:
     void Jump(Label *label);
     void Branch(GateRef condition, Label *trueLabel, Label *falseLabel);
     void Switch(GateRef index, Label *defaultLabel, int64_t *keysValue, Label *keysLabel, int numberOfKeys);
-    void Seal(Label *label)
-    {
-        label->Seal();
-    }
     void LoopBegin(Label *loopHead);
     void LoopEnd(Label *loopHead);
 private:
