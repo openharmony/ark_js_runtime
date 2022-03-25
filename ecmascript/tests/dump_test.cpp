@@ -570,7 +570,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
             }
             case JSType::PROPERTY_BOX: {
                 CHECK_DUMP_FIELDS(TaggedObject::TaggedObjectSize(), PropertyBox::SIZE, 1)
-                JSHandle<PropertyBox> PropertyBox = factory->NewPropertyBox(globalEnv->GetEmptyArray());
+                JSHandle<PropertyBox> PropertyBox = factory->NewPropertyBox(globalConst->GetHandledEmptyArray());
                 DUMP_FOR_HANDLE(PropertyBox)
                 break;
             }
@@ -645,7 +645,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
             case JSType::COMPLETION_RECORD: {
                 CHECK_DUMP_FIELDS(Record::SIZE, CompletionRecord::SIZE, 2)
                 JSHandle<CompletionRecord> comRecord =
-                    factory->NewCompletionRecord(CompletionRecordType::NORMAL, globalEnv->GetEmptyArray());
+                    factory->NewCompletionRecord(CompletionRecordType::NORMAL, globalConst->GetHandledEmptyArray());
                 DUMP_FOR_HANDLE(comRecord)
                 break;
             }

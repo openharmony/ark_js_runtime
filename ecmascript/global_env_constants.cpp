@@ -72,6 +72,7 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
                 factory->NewEcmaDynClass(dynClassClass, FreeObject::SIZE, JSType::FREE_OBJECT_WITH_TWO_FIELD));
     SetConstant(ConstantIndex::STRING_CLASS_INDEX, factory->NewEcmaDynClass(dynClassClass, 0, JSType::STRING));
     SetConstant(ConstantIndex::ARRAY_CLASS_INDEX, factory->NewEcmaDynClass(dynClassClass, 0, JSType::TAGGED_ARRAY));
+    InitGlobalConstantSpecial(thread);
     SetConstant(ConstantIndex::DICTIONARY_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, 0, JSType::TAGGED_DICTIONARY));
     SetConstant(ConstantIndex::BIGINT_CLASS_INDEX,
@@ -181,8 +182,7 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
                 factory->NewEcmaDynClass(dynClassClass, JSAPITreeSetIterator::SIZE, JSType::JS_API_TREESET_ITERATOR));
 }
 
-// NOLINTNEXTLINE(readability-function-size)
-void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
+void GlobalEnvConstants::InitGlobalConstantSpecial(JSThread *thread)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     // SPECIAL INIT
@@ -190,6 +190,15 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::NULL_INDEX, JSTaggedValue::Null());
     auto vm = thread->GetEcmaVM();
     SetConstant(ConstantIndex::EMPTY_STRING_OBJECT_INDEX, JSTaggedValue(EcmaString::CreateEmptyString(vm)));
+    SetConstant(ConstantIndex::EMPTY_ARRAY_OBJECT_INDEX, factory->NewEmptyArray());
+    SetConstant(ConstantIndex::EMPTY_LAYOUT_INFO_OBJECT_INDEX, factory->CreateLayoutInfo(0));
+    SetConstant(ConstantIndex::EMPTY_TAGGED_QUEUE_OBJECT_INDEX, factory->NewTaggedQueue(0));
+}
+
+// NOLINTNEXTLINE(readability-function-size)
+void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     [[maybe_unused]] auto test = EcmaString::Cast(GetHandledEmptyString().GetObject<EcmaString>());
     SetConstant(ConstantIndex::CONSTRUCTOR_STRING_INDEX, factory->NewFromCanBeCompressString("constructor"));
     SetConstant(ConstantIndex::PROTOTYPE_STRING_INDEX, factory->NewFromCanBeCompressString("prototype"));
