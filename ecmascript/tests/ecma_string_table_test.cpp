@@ -16,21 +16,6 @@
 #include "ecmascript/ecma_string_table.h"
 #include "ecmascript/tests/test_helper.h"
 
-#include "ecmascript/mem/semi_space_collector-inl.h"
-
-#include "ecmascript/ecma_vm.h"
-#include "ecmascript/mem/clock_scope.h"
-#include "ecmascript/mem/concurrent_marker.h"
-#include "ecmascript/mem/mem_manager.h"
-#include "ecmascript/mem/heap-inl.h"
-#include "ecmascript/mem/object_xray-inl.h"
-#include "ecmascript/mem/mark_stack.h"
-#include "ecmascript/mem/mem.h"
-#include "ecmascript/mem/parallel_marker-inl.h"
-#include "ecmascript/mem/space-inl.h"
-#include "ecmascript/mem/tlab_allocator-inl.h"
-#include "ecmascript/runtime_call_id.h"
-#include "ecmascript/vmstat/runtime_stat.h"
 using namespace panda::ecmascript;
 
 namespace panda::test {

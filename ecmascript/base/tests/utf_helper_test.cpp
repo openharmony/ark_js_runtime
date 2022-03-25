@@ -104,7 +104,7 @@ HWTEST_F_L0(UtfHelperTest, UTF16Decode)
     EXPECT_TRUE(lead >= DECODE_LEAD_LOW && lead <= DECODE_LEAD_HIGH);
     EXPECT_TRUE(trail >= DECODE_TRAIL_LOW && trail <= DECODE_TRAIL_HIGH);
     codePoint = utf_helper::UTF16Decode(lead, trail);
-    EXPECT_EQ(codePoint, 0x277CC);
+    EXPECT_EQ(codePoint, 0x277CCU);
 }
 
 /*
@@ -317,9 +317,9 @@ HWTEST_F_L0(UtfHelperTest, Utf16ToUtf8Size_001)
     uint16_t utf16Value3[1] = {0x00};
     const uint16_t *utf16ValuePtr3 = utf16Value3;
     length = Utf16ToUtf8Size(utf16ValuePtr3, 1, false);
-    EXPECT_EQ(length - 1, 0);
+    EXPECT_EQ(length - 1, 0U);
     length = Utf16ToUtf8Size(utf16ValuePtr3, 1, true);
-    EXPECT_EQ(length - 1, 2);
+    EXPECT_EQ(length - 1, 2U);
 
     // code point lie in [0x00, 0x7F], it needs to be represented by one UTF8 code.
     uint16_t utf16Value4[1] = {0x00};
@@ -327,9 +327,9 @@ HWTEST_F_L0(UtfHelperTest, Utf16ToUtf8Size_001)
     const uint16_t *utf16ValuePtr4 = utf16Value4;
     const uint16_t *utf16ValuePtr5 = utf16Value5;
     length = Utf16ToUtf8Size(utf16ValuePtr4, 1, false);
-    EXPECT_EQ(length - 1, 0);
+    EXPECT_EQ(length - 1, 0U);
     length = Utf16ToUtf8Size(utf16ValuePtr5, 1, false);
-    EXPECT_EQ(length - 1, 1);
+    EXPECT_EQ(length - 1, 1U);
 
     // code point lie in [0x80, 0x7FF], it needs to be represented by two UTF8 code,
     uint16_t utf16Value6[1] = {0x80};
@@ -337,9 +337,9 @@ HWTEST_F_L0(UtfHelperTest, Utf16ToUtf8Size_001)
     const uint16_t *utf16ValuePtr6 = utf16Value6;
     const uint16_t *utf16ValuePtr7 = utf16Value7;
     length = Utf16ToUtf8Size(utf16ValuePtr6, 1, false);
-    EXPECT_EQ(length - 1, 2);
+    EXPECT_EQ(length - 1, 2U);
     length = Utf16ToUtf8Size(utf16ValuePtr7, 1, false);
-    EXPECT_EQ(length - 1, 2);
+    EXPECT_EQ(length - 1, 2U);
     // code point lie in [0x800, 0xD7FF] or [0xDCoo, 0xFFFF], it needs to be represented by three UTF8 code.
     uint16_t utf16Value8[1] = {0x800};
     uint16_t utf16Value9[1] = {0xD7FF};
@@ -350,13 +350,13 @@ HWTEST_F_L0(UtfHelperTest, Utf16ToUtf8Size_001)
     const uint16_t *utf16ValuePtr10 = utf16Value10;
     const uint16_t *utf16ValuePtr11 = utf16Value11;
     length = Utf16ToUtf8Size(utf16ValuePtr8, 1, false);
-    EXPECT_EQ(length - 1, 3);
+    EXPECT_EQ(length - 1, 3U);
     length = Utf16ToUtf8Size(utf16ValuePtr9, 1, false);
-    EXPECT_EQ(length - 1, 3);
+    EXPECT_EQ(length - 1, 3U);
     length = Utf16ToUtf8Size(utf16ValuePtr10, 1, false);
-    EXPECT_EQ(length-1, 3);
+    EXPECT_EQ(length-1, 3U);
     length = Utf16ToUtf8Size(utf16ValuePtr11, 1, false);
-    EXPECT_EQ(length - 1, 3);
+    EXPECT_EQ(length - 1, 3U);
 }
 
 HWTEST_F_L0(UtfHelperTest, Utf16ToUtf8Size_002)
@@ -371,13 +371,13 @@ HWTEST_F_L0(UtfHelperTest, Utf16ToUtf8Size_002)
     const uint16_t *utf16ValuePtr14 = utf16Value14;
     const uint16_t *utf16ValuePtr15 = utf16Value15;
     uint32_t length = Utf16ToUtf8Size(utf16ValuePtr12, 2, false);
-    EXPECT_EQ(length - 1, 4);
+    EXPECT_EQ(length - 1, 4U);
     length = Utf16ToUtf8Size(utf16ValuePtr13, 2, false);
-    EXPECT_EQ(length- 1, 4);
+    EXPECT_EQ(length- 1, 4U);
     length = Utf16ToUtf8Size(utf16ValuePtr14, 2, false);
-    EXPECT_EQ(length - 1, 4);
+    EXPECT_EQ(length - 1, 4U);
     length = Utf16ToUtf8Size(utf16ValuePtr15, 2, false);
-    EXPECT_EQ(length - 1, 4);
+    EXPECT_EQ(length - 1, 4U);
 
     // The trail value of Bad sequence is invalid, not located in [0xDC00, 0xDFFF].
     // Need to return 6 bytes length
@@ -386,17 +386,17 @@ HWTEST_F_L0(UtfHelperTest, Utf16ToUtf8Size_002)
     const uint16_t *utf16ValuePtr16 = utf16Value16;
     const uint16_t *utf16ValuePtr17 = utf16Value17;
     length = Utf16ToUtf8Size(utf16ValuePtr16, 2, false);
-    EXPECT_EQ(length- 1, 6);
+    EXPECT_EQ(length- 1, 6U);
     length = Utf16ToUtf8Size(utf16ValuePtr17, 2, false);
-    EXPECT_EQ(length-1, 6);
+    EXPECT_EQ(length-1, 6U);
 
     // 0(or 2)+ 1+ 2 + 3 + 4 = 10(or 12)
     uint16_t utf16Value18[6] = {0x00, 0x7F, 0x80, 0x800, 0xD800, 0xDC00};
     const uint16_t *utf16ValuePtr18 = utf16Value18;
     length = Utf16ToUtf8Size(utf16ValuePtr18, 6, false);
-    EXPECT_EQ(length - 1, 10);
+    EXPECT_EQ(length - 1, 10U);
     length = Utf16ToUtf8Size(utf16ValuePtr18, 6, true);
-    EXPECT_EQ(length - 1, 12);
+    EXPECT_EQ(length - 1, 12U);
 }
 
 /*
@@ -476,25 +476,25 @@ HWTEST_F_L0(UtfHelperTest, Utf8ToUtf16Size)
     const uint8_t *utf8ValueOneByteMinPtr = utf8ValueOneByteMin;
     const uint8_t *utf8ValueOneByteMaxPtr = utf8ValueOneByteMax;
     size_t length = Utf8ToUtf16Size(utf8ValueOneByteMinPtr, sizeof(utf8ValueOneByteMin));
-    EXPECT_EQ(length, 1);
+    EXPECT_EQ(length, 1U);
     length = Utf8ToUtf16Size(utf8ValueOneByteMaxPtr, sizeof(utf8ValueOneByteMax));
-    EXPECT_EQ(length, 2);
+    EXPECT_EQ(length, 2U);
     // when code point lie in [0x10000, 0x10FFFF], the required utf16 code element length is 2.
     const uint8_t utf8ValueTwoBytesMin[5] = {0xF0, 0x90, 0x80, 0x80, 0x00}; // 0x10000
     const uint8_t utf8ValueTwoBytesMax[5] = {0xF4, 0x8F, 0xBF, 0xBF, 0x00}; // 0x10FFFF
     const uint8_t *utf8ValueTwoBytesMinPtr = utf8ValueTwoBytesMin;
     const uint8_t *utf8ValueTwoBytesMaxPtr = utf8ValueTwoBytesMax;
     length = Utf8ToUtf16Size(utf8ValueTwoBytesMinPtr, sizeof(utf8ValueTwoBytesMin));
-    EXPECT_EQ(length, 3);
+    EXPECT_EQ(length, 3U);
     length = Utf8ToUtf16Size(utf8ValueTwoBytesMaxPtr, sizeof(utf8ValueTwoBytesMax));
-    EXPECT_EQ(length, 3);
+    EXPECT_EQ(length, 3U);
     uint8_t utf8Value[12] = {
         0xEF, 0xBF, 0xBF, 0xF0,
         0x90, 0x80, 0x80, 0xF4,
         0x8F, 0xBF, 0xBF, 0x00};
     const uint8_t *utf8ValuePtr = utf8Value;
     length = Utf8ToUtf16Size(utf8ValuePtr, sizeof(utf8Value));
-    EXPECT_EQ(length, 6);
+    EXPECT_EQ(length, 6U);
 }
 
 /*
@@ -522,11 +522,11 @@ HWTEST_F_L0(UtfHelperTest, ConvertRegionUtf16ToUtf8)
     uint8_t *utf8Out = (uint8_t*)malloc(utf8Len);
     size_t utf8Pos = ConvertRegionUtf16ToUtf8(utf16ValuePtr, utf8Out, utf16Len, utf8Len, start, modify);
     // 0 + 1 + 2 +(3 *3)+ 4= 16
-    EXPECT_EQ(utf8Pos, 16);
+    EXPECT_EQ(utf8Pos, 16U);
     // 2 + 1 + 2 +(3 * 3)+ 4 = 18
     modify = true;
     utf8Pos = ConvertRegionUtf16ToUtf8(utf16ValuePtr, utf8Out, utf16Len, utf8Len, start, modify);
-    EXPECT_EQ(utf8Pos, 18);
+    EXPECT_EQ(utf8Pos, 18U);
 }
 
 /*
@@ -549,21 +549,21 @@ HWTEST_F_L0(UtfHelperTest, ConvertRegionUtf8ToUtf16)
     uint16_t *utf16Out = (uint16_t*)malloc(utf16Len);
     size_t outPos = ConvertRegionUtf8ToUtf16(utf8ValuePtr, utf16Out, sizeof(utf8ValuePtr), utf16Len, start);
     // 1 + 1 + 1 + 2 = 5s
-    EXPECT_EQ(outPos, 5);
+    EXPECT_EQ(outPos, 5U);
     // 1 + 2 = 3
     start = 3;
     outPos = ConvertRegionUtf8ToUtf16(utf8ValuePtr, utf16Out, sizeof(utf8ValuePtr), utf16Len, start);
-    EXPECT_EQ(outPos, 3);
+    EXPECT_EQ(outPos, 3U);
 
     // When "start" is in the middle of a symbol sequence
     start = 2;
     outPos = ConvertRegionUtf8ToUtf16(utf8ValuePtr, utf16Out, sizeof(utf8ValuePtr), utf16Len, start);
-    EXPECT_EQ(outPos, 0);
+    EXPECT_EQ(outPos, 0U);
     start = 4;
     outPos = ConvertRegionUtf8ToUtf16(utf8ValuePtr, utf16Out, sizeof(utf8ValuePtr), utf16Len, start);
-    EXPECT_EQ(outPos, 0);
+    EXPECT_EQ(outPos, 0U);
     start = 7;
     outPos = ConvertRegionUtf8ToUtf16(utf8ValuePtr, utf16Out, sizeof(utf8ValuePtr), utf16Len, start);
-    EXPECT_EQ(outPos, 1);
+    EXPECT_EQ(outPos, 1U);
 }
 } // namespace panda:test
