@@ -124,16 +124,11 @@ HWTEST_F_L0(UtfHelperTest, IsValidUTF8)
     const std::vector<uint8_t> utfDataTwoBitVaild2 = {BIT_MASK_3 - 0x01, BIT_MASK_2 - 0x01};
     const std::vector<uint8_t> utfDataTwoBitUnvaild1 = {BIT_MASK_2, BIT_MASK_2};
     const std::vector<uint8_t> utfDataTwoBitUnvaild2 = {BIT_MASK_3, BIT_MASK_1};
-    // const std::vector<uint8_t> utfDataTwoBitUnvaild3 ={BIT_MASK_3, BIT_MASK_2};
     EXPECT_TRUE(utf_helper::IsValidUTF8(utfDataTwoBitVaild1));
     EXPECT_TRUE(utf_helper::IsValidUTF8(utfDataTwoBitVaild2));
     EXPECT_FALSE(utf_helper::IsValidUTF8(utfDataTwoBitUnvaild1));
     EXPECT_FALSE(utf_helper::IsValidUTF8(utfDataTwoBitUnvaild2));
-    const std::vector<uint8_t> utfDataThreeBitVaild1 = {
-        BIT_MASK_3,
-        BIT_MASK_1,
-        BIT_MASK_1
-    }; // 1110xxxx 10xxxxxx10xxxxxx
+    const std::vector<uint8_t> utfDataThreeBitVaild1 = {BIT_MASK_3, BIT_MASK_1, BIT_MASK_1};
     const std::vector<uint8_t>utfDataThreeBitVaild2 = {BIT_MASK_4 - 0x01, BIT_MASK_2 - 0x01, BIT_MASK_2 - 0x01};
     const std::vector<uint8_t>utfDataThreeBitUnvaild1 = {BIT_MASK_3, BIT_MASK_1, BIT_MASK_2};
     const std::vector<uint8_t>utfDataThreeBitUnvaild2 = {BIT_MASK_3, BIT_MASK_2, BIT_MASK_1};
@@ -145,16 +140,9 @@ HWTEST_F_L0(UtfHelperTest, IsValidUTF8)
     EXPECT_FALSE(utf_helper::IsValidUTF8(utfDataThreeBitUnvaild2));
     EXPECT_FALSE(utf_helper::IsValidUTF8(utfDataThreeBitUnvaild3));
     EXPECT_FALSE(utf_helper::IsValidUTF8(utfDataThreeBitUnvaild4));
-    const std::vector<uint8_t>utfDataFourBitVaild1 = {
-        BIT_MASK_4,
-        BIT_MASK_1,
-        BIT_MASK_1,
-        BIT_MASK_1}; // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-    const std::vector<uint8_t> utfDataFourBitVaild2 = {
-        BIT_MASK_5 - 0x01,
-        BIT_MASK_2 - 0x01,
-        BIT_MASK_2 - 0x01,
-        BIT_MASK_2 - 0x01};
+    const std::vector<uint8_t>utfDataFourBitVaild1 = {BIT_MASK_4, BIT_MASK_1, BIT_MASK_1, BIT_MASK_1};
+    const std::vector<uint8_t> utfDataFourBitVaild2 =
+        {BIT_MASK_5 - 0x01, BIT_MASK_2 - 0x01, BIT_MASK_2 - 0x01, BIT_MASK_2 - 0x01};
     const std::vector<uint8_t>utfDataFourBitUnvaild1 = {BIT_MASK_4, BIT_MASK_1, BIT_MASK_1, BIT_MASK_2};
     const std::vector<uint8_t>utfDataFourBitUnvaild2 = {BIT_MASK_4, BIT_MASK_1, BIT_MASK_2, BIT_MASK_1};
     const std::vector<uint8_t>utfDataFourBitUnvaild3 = {BIT_MASK_4, BIT_MASK_2, BIT_MASK_1, BIT_MASK_1};
