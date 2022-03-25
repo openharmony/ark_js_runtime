@@ -100,6 +100,10 @@ public:
     void SetPauseOnException(bool flag);
     void GetProperties(uint32_t objectId, bool isOwn, bool isAccessorOnly,
                        CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
+    void CallFunctionOn(const CString &functionDeclaration, uint32_t objectId,
+        const CVector<std::unique_ptr<CallArgument>> *arguments, bool isSilent, bool returnByValue,
+        bool generatePreview, bool userGesture, bool awaitPromise, ExecutionContextId executionContextId,
+        const CString &objectGroup, bool throwOnSideEffect, std::unique_ptr<RemoteObject> *outRemoteObject);
     // public for testcases
     bool GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames);
     const EcmaVM *GetEcmaVm() const

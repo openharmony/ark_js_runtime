@@ -25,6 +25,7 @@ RuntimeImpl::DispatcherImpl::DispatcherImpl(FrontEnd *frontend, std::unique_ptr<
     dispatcherTable_["enable"] = &RuntimeImpl::DispatcherImpl::Enable;
     dispatcherTable_["getProperties"] = &RuntimeImpl::DispatcherImpl::GetProperties;
     dispatcherTable_["runIfWaitingForDebugger"] = &RuntimeImpl::DispatcherImpl::RunIfWaitingForDebugger;
+    dispatcherTable_["callFunctionOn"] = &RuntimeImpl::DispatcherImpl::CallFunctionOn;
 }
 
 void RuntimeImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
@@ -77,6 +78,26 @@ void RuntimeImpl::DispatcherImpl::GetProperties(const DispatchRequest &request)
     SendResponse(request, response, std::move(result));
 }
 
+void RuntimeImpl::DispatcherImpl::CallFunctionOn(const DispatchRequest &request)
+{
+    std::unique_ptr<CallFunctionOnParams> params =
+        CallFunctionOnParams::Create(request.GetEcmaVM(), request.GetParams());
+    if (params == nullptr) {
+        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        return;
+    }
+
+    std::unique_ptr<RemoteObject> outRemoteObject;
+    std::optional<std::unique_ptr<ExceptionDetails>> outExceptionDetails;
+    DispatchResponse response = runtime_->CallFunctionOn(std::move(params), &outRemoteObject, &outExceptionDetails);
+    if (outExceptionDetails) {
+        LOG(WARNING, DEBUGGER) << "CallFunctionOn thrown an exception";
+    }
+    std::unique_ptr<CallFunctionOnReturns> result = std::make_unique<CallFunctionOnReturns>(std::move(outRemoteObject),
+        std::move(outExceptionDetails));
+    SendResponse(request, response, std::move(result));
+}
+
 DispatchResponse RuntimeImpl::Enable()
 {
     Runtime::GetCurrent()->SetDebugMode(true);
@@ -99,6 +120,25 @@ DispatchResponse RuntimeImpl::GetProperties(std::unique_ptr<GetPropertiesParams>
         params->GetOwnProperties(),
         params->GetAccessPropertiesOnly(),
         outPropertyDesc);
+    return DispatchResponse::Ok();
+}
+
+DispatchResponse RuntimeImpl::CallFunctionOn(std::unique_ptr<CallFunctionOnParams> params,
+    std::unique_ptr<RemoteObject> *outRemoteObject,
+    [[maybe_unused]] std::optional<std::unique_ptr<ExceptionDetails>> *outExceptionDetails)
+{
+    backend_->CallFunctionOn(params->GetFunctionDeclaration(),
+        DebuggerApi::CStringToULL(params->GetObjectId()),
+        params->GetArguments(),
+        params->GetSilent(),
+        params->GetReturnByValue(),
+        params->GetGeneratePreview(),
+        params->GetUserGesture(),
+        params->GetAwaitPromise(),
+        params->GetExecutionContextId(),
+        params->GetObjectGroup(),
+        params->GetThrowOnSideEffect(),
+        outRemoteObject);
     return DispatchResponse::Ok();
 }
 }  // namespace panda::tooling::ecmascript
