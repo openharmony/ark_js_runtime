@@ -114,6 +114,7 @@ bool AotCodeInfo::Deserialize(EcmaVM *vm, const std::string &filename)
     uint64_t curFuncOffset = 0;
     for (uint32_t i = 0; i < funcNum; i++) {
         moduleFile.read(reinterpret_cast<char *>(&curfuncNameSize), sizeof(uint32_t));
+        curFuncName.resize(curfuncNameSize);
         moduleFile.read(reinterpret_cast<char *>(curFuncName.data()), curfuncNameSize);
         moduleFile.read(reinterpret_cast<char *>(&curFuncOffset), sizeof(uint64_t));
         aotFuncEntryOffsets_.insert(make_pair(curFuncName, curFuncOffset));

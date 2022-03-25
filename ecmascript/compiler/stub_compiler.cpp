@@ -136,7 +136,7 @@ bool StubCompiler::BuildStubModuleAndSave(const std::string &triple, const std::
         LLVMModule bcHandlerStubModule("bc_stub", triple);
         bcHandlerStubModule.SetUpForBytecodeHandlerStubs();
         RunPipeline(bcHandlerStubModule);
-        AotFileManager manager(&bcHandlerStubModule, true);
+        AotFileManager manager(&bcHandlerStubModule, false);
         manager.SaveStubFile(bcHandlerStubFile);
         std::cerr << "finish" << std::endl;
         res++;

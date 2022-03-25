@@ -1923,21 +1923,24 @@ LLVMTypeRef LLVMModule::ConvertLLVMTypeFromVariableType(VariableType type)
 
 LLVMValueRef LLVMModule::AddFunc(const panda::ecmascript::JSMethod *method)
 {
-    VariableType retType(MachineType::I64, GateType::C_VALUE); // possibly get it for circuit
+    VariableType retType(MachineType::I64, GateType::TAGGED_VALUE); // possibly get it for circuit
     LLVMTypeRef returnType = ConvertLLVMTypeFromVariableType(retType);
     std::vector<LLVMTypeRef> paramTys;
     auto paramCount = method->GetNumArgs() + CommonArgIdx::NUM_OF_ARGS;
-    for (uint32_t i = 0; i < CommonArgIdx::NUM_OF_ARGS; i++) {
-        VariableType paramsType(MachineType::I64, GateType::TAGGED_POINTER);
+    VariableType glueParamType(MachineType::I64, GateType::C_VALUE);
+    paramTys.push_back(ConvertLLVMTypeFromVariableType(glueParamType));
+    for (uint32_t i = 1; i < CommonArgIdx::NUM_OF_ARGS; i++) {
+        VariableType paramsType(MachineType::I64, GateType::TAGGED_VALUE);
         paramTys.push_back(ConvertLLVMTypeFromVariableType(paramsType));
     }
     for (uint32_t j = CommonArgIdx::NUM_OF_ARGS; j < paramCount; j++) {
-        VariableType paramsType(MachineType::I64, GateType::C_VALUE);
+        VariableType paramsType(MachineType::I64, GateType::TAGGED_VALUE);
         paramTys.push_back(ConvertLLVMTypeFromVariableType(paramsType));
     }
     auto funcType = LLVMFunctionType(returnType, paramTys.data(), paramCount, false); // not variable args
     CString name = method->ParseFunctionName();
     auto function = LLVMAddFunction(module_, name.c_str(), funcType);
+    functions_.emplace_back(function);
     return function;
 }
 }  // namespace panda::ecmascript::kungfu
