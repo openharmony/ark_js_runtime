@@ -178,8 +178,10 @@ HWTEST_F_L0(UtfHelperTest, ConvertUtf16ToUtf8_001)
 
     // special case for \u0000 ==> Co80- 1100'0000 1000'0000
     {
-        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, true);
-        utf8CharTemp = {2, {UTF8_2B_FIRST, UTF8_2B_SECOND}};
+        uint16_t utf16Data0 = 0x00;
+        uint16_t utf16Data1= 0x00;
+        Utf8Char utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, true);
+        Utf8Char utf8CharTemp = {2, {UTF8_2B_FIRST, UTF8_2B_SECOND}};
         EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
         EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
         utf16Data0 = 0x7F;
@@ -203,9 +205,10 @@ HWTEST_F_L0(UtfHelperTest, ConvertUtf16ToUtf8_001)
 
     // codePoint lie in [0xD800,0xDFFF]--> UTF-8(length:3)
     {
-        utf16Data0 = 0xD800;
-        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-        utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0xD800 >> 12),
+        uint16_t utf16Data0 = 0xD800;
+        uint16_t utf16Data1= 0x00;
+        Utf8Char utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+        Utf8Char utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0xD800 >> 12),
                             UTF8_3B_SECOND | (static_cast<uint8_t>(0xD800 >> 6) & utf::MASK_6BIT),
                             UTF8_3B_THIRD | (static_cast<uint8_t>(0xD800) & utf::MASK_6BIT)}};
         EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
@@ -272,11 +275,11 @@ HWTEST_F_L0(UtfHelperTest, ConvertUtf16ToUtf8_003)
 
     // 0xD950 0xDF21 --> 0x64321 --> 0xf1 0xa4 0x8c 0xa1
     {
-        utf16Data0 = 0xD950;
-        utf16Data1 = 0xDF21;
-        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-        codePoint = CombineTwoU16(utf16Data0, utf16Data1);
-        utf8CharTemp = {4, {static_cast<uint8_t>((codePoint >> 18) | UTF8_4B_FIRST),
+        uint16_t utf16Data0 = 0xD950;
+        uint16_t utf16Data1 = 0xDF21;
+        Utf8Char utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+        uint32_t codePoint = CombineTwoU16(utf16Data0, utf16Data1);
+        Utf8Char utf8CharTemp = {4, {static_cast<uint8_t>((codePoint >> 18) | UTF8_4B_FIRST),
                             static_cast<uint8_t>(((codePoint >> 12)& utf::MASK_6BIT)| utf::MASK1),
                             static_cast<uint8_t>(((codePoint >> 6)& utf::MASK_6BIT) | utf::MASK1),
         static_cast<uint8_t>((codePoint & utf::MASK_6BIT) | utf::MASK1)}};

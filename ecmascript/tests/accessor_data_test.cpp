@@ -297,11 +297,11 @@ HWTEST_F_L0(AccessorDataTest, IsThrow)
     JSHandle<JSTaggedValue> exceptionHandle(thread, thread->GetException());
 
     JSHandle<CompletionRecord> normalComRecHandle =
-        factory->NewCompletionRecord(CompletionRecord::NORMAL, exceptionHandle);
+        factory->NewCompletionRecord(CompletionRecordType::NORMAL, exceptionHandle);
     EXPECT_TRUE(!normalComRecHandle->IsThrow());
 
     JSHandle<CompletionRecord> throwComRecHandle =
-        factory->NewCompletionRecord(CompletionRecord::THROW, exceptionHandle);
+        factory->NewCompletionRecord(CompletionRecordType::THROW, exceptionHandle);
     EXPECT_TRUE(throwComRecHandle->IsThrow());
 }
 }  // namespace panda::test
