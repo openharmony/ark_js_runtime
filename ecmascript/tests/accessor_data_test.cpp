@@ -160,7 +160,7 @@ HWTEST_F_L0(AccessorDataTest, HasSetter)
 
 /**
  * @tc.name: CallInternalGet
- * @tc.desc: Call internal get function to get object prototype. 
+ * @tc.desc: Call internal get function to get object prototype.
  * @tc.type: FUNC
  * @tc.require:
  */
@@ -217,7 +217,7 @@ HWTEST_F_L0(AccessorDataTest, CallInternalGet)
 
 /**
  * @tc.name: CallInternalSet
- * @tc.desc: Call internal set function to set object prototype. 
+ * @tc.desc: Call internal set function to set object prototype.
  * @tc.type: FUNC
  * @tc.require:
  */

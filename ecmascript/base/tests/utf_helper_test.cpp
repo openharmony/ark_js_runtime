@@ -164,7 +164,7 @@ HWTEST_F_L0(UtfHelperTest, IsValidUTF8)
 *           indicates whether to perform special conversion for 0.
 * @tc.type: FUNC
 */
-HWTEST_F_L0(UtfHelperTest, ConvertUtf16ToUtf8)
+HWTEST_F_L0(UtfHelperTest, ConvertUtf16ToUtf8_001)
 {
     // codePoint lie in [0,0x7F]--->UTF-8(length:1)
     {
@@ -218,14 +218,18 @@ HWTEST_F_L0(UtfHelperTest, ConvertUtf16ToUtf8)
         EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
         EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
     }
+}
 
+HWTEST_F_L0(UtfHelperTest, ConvertUtf16ToUtf8_002)
+{
     // codePoint lie in [0x800,0xD7FF]&&[0xE000,0xFFFF]-->UTF-8(length:3)
     {
-        utf16Data0 = 0x800;
-        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-        utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0x800 >> 12),
-                            UTF8_3B_SECOND | (static_cast<uint8_t>(0x800 >> 6) & utf::MASK_6BIT),
-                            UTF8_3B_THIRD | (static_cast<uint8_t>(0x800) & utf::MASK_6BIT)}};
+        uint16_t utf16Data0 = 0x800;
+        uint16_t utf16Data1= 0x00;
+        Utf8Char utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+        Utf8Char utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0x800 >> 12),
+                                     UTF8_3B_SECOND | (static_cast<uint8_t>(0x800 >> 6) & utf::MASK_6BIT),
+                                     UTF8_3B_THIRD | (static_cast<uint8_t>(0x800) & utf::MASK_6BIT)}};
         EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
         EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
         utf16Data0 = 0xD7FF;
