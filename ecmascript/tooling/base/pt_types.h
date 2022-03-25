@@ -858,6 +858,72 @@ private:
     std::optional<std::unique_ptr<RemoteObject>> symbol_ {};
 };
 
+// Runtime.CallArgument
+class CallArgument final : public PtBaseTypes {
+public:
+    CallArgument() = default;
+    ~CallArgument() override = default;
+
+    static std::unique_ptr<CallArgument> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    Local<JSValueRef> GetValue() const
+    {
+        return value_.value_or(Local<JSValueRef>());
+    }
+
+    CallArgument &SetValue(const Local<JSValueRef> &value)
+    {
+        value_ = value;
+        return *this;
+    }
+
+    bool HasValue() const
+    {
+        return value_.has_value();
+    }
+
+    UnserializableValue GetUnserializableValue() const
+    {
+        return unserializableValue_.value_or("");
+    }
+
+    CallArgument &SetUnserializableValue(const UnserializableValue &unserializableValue)
+    {
+        unserializableValue_ = unserializableValue;
+        return *this;
+    }
+
+    bool HasUnserializableValue() const
+    {
+        return unserializableValue_.has_value();
+    }
+
+    RemoteObjectId GetObjectId() const
+    {
+        return objectId_.value_or("");
+    }
+
+    CallArgument &SetObjectId(const RemoteObjectId &objectId)
+    {
+        objectId_ = objectId;
+        return *this;
+    }
+
+    bool HasObjectId() const
+    {
+        return objectId_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(CallArgument);
+    NO_MOVE_SEMANTIC(CallArgument);
+
+    std::optional<Local<JSValueRef>> value_ {};
+    std::optional<UnserializableValue> unserializableValue_ {};
+    std::optional<RemoteObjectId> objectId_ {};
+};
+
 // ========== Debugger types begin
 // Debugger.ScriptLanguage
 struct ScriptLanguage {

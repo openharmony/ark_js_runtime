@@ -789,4 +789,17 @@ void JSBackend::GetProperties(uint32_t objectId, bool isOwn, bool isAccessorOnly
     }
     GetProtoOrProtoType(value, isOwn, isAccessorOnly, outPropertyDesc);
 }
+
+void JSBackend::CallFunctionOn([[maybe_unused]] const CString &functionDeclaration, [[maybe_unused]] uint32_t objectId,
+    [[maybe_unused]] const CVector<std::unique_ptr<CallArgument>> *arguments, [[maybe_unused]] bool isSilent,
+    [[maybe_unused]] bool returnByValue, [[maybe_unused]] bool generatePreview, [[maybe_unused]] bool userGesture,
+    [[maybe_unused]] bool awaitPromise, [[maybe_unused]] ExecutionContextId executionContextId,
+    [[maybe_unused]] const CString &objectGroup, [[maybe_unused]] bool throwOnSideEffect,
+    std::unique_ptr<RemoteObject> *outRemoteObject)
+{
+    // Return undefined value temporarily.
+    std::unique_ptr<RemoteObject> remoteObjUndefVal =
+        std::make_unique<PrimitiveRemoteObject>(ecmaVm_, JSValueRef::Undefined(ecmaVm_));
+    (*outRemoteObject) = std::move(remoteObjUndefVal);
+}
 }  // namespace panda::tooling::ecmascript

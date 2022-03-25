@@ -37,6 +37,10 @@ public:
         std::optional<CVector<std::unique_ptr<InternalPropertyDescriptor>>> *outInternalDescs,
         std::optional<CVector<std::unique_ptr<PrivatePropertyDescriptor>>> *outPrivateProps,
         std::optional<std::unique_ptr<ExceptionDetails>> *outExceptionDetails);
+    DispatchResponse CallFunctionOn(
+        std::unique_ptr<CallFunctionOnParams> params,
+        std::unique_ptr<RemoteObject> *outRemoteObject,
+        std::optional<std::unique_ptr<ExceptionDetails>> *outExceptionDetails);
 
     class DispatcherImpl final : public DispatcherBase {
     public:
@@ -47,6 +51,7 @@ public:
         void Enable(const DispatchRequest &request);
         void RunIfWaitingForDebugger(const DispatchRequest &request);
         void GetProperties(const DispatchRequest &request);
+        void CallFunctionOn(const DispatchRequest &request);
 
     private:
         using AgentHandler = void (RuntimeImpl::DispatcherImpl::*)(const DispatchRequest &request);
