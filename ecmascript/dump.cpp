@@ -1561,11 +1561,11 @@ void GlobalEnv::Dump(std::ostream &os) const
     os << " - JSGlobalObject: ";
     GetJSGlobalObject().GetTaggedValue().Dump(os);
     os << " - EmptyArray: ";
-    GetEmptyArray().GetTaggedValue().Dump(os);
+    globalConst->GetEmptyArray().Dump(os);
     os << " - EmptyString ";
     globalConst->GetEmptyString().Dump(os);
     os << " - EmptyTaggedQueue: ";
-    GetEmptyTaggedQueue().GetTaggedValue().Dump(os);
+    globalConst->GetEmptyTaggedQueue().Dump(os);
     os << " - PrototypeString: ";
     globalConst->GetPrototypeString().Dump(os);
     os << " - HasInstanceSymbol: ";
@@ -3311,9 +3311,9 @@ void GlobalEnv::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &
     vec.push_back(std::make_pair(CString("AsyncFunction"), GetAsyncFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("AsyncFunctionPrototype"), GetAsyncFunctionPrototype().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("JSGlobalObject"), GetJSGlobalObject().GetTaggedValue()));
-    vec.push_back(std::make_pair(CString("EmptyArray"), GetEmptyArray().GetTaggedValue()));
+    vec.push_back(std::make_pair(CString("EmptyArray"), globalConst->GetEmptyArray()));
     vec.push_back(std::make_pair(CString("EmptyString"), globalConst->GetEmptyString()));
-    vec.push_back(std::make_pair(CString("EmptyTaggedQueue"), GetEmptyTaggedQueue().GetTaggedValue()));
+    vec.push_back(std::make_pair(CString("EmptyTaggedQueue"), globalConst->GetEmptyTaggedQueue()));
     vec.push_back(std::make_pair(CString("PrototypeString"), globalConst->GetPrototypeString()));
     vec.push_back(std::make_pair(CString("HasInstanceSymbol"), GetHasInstanceSymbol().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("IsConcatSpreadableSymbol"), GetIsConcatSpreadableSymbol().GetTaggedValue()));
