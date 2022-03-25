@@ -33,6 +33,7 @@ group("ark_js_moduletest") {
     "module:moduleAction",
     "multiargs:multiargsAction",
     "newobjdynrange:newobjdynrangeAction",
+    "objectcloneproperties:objectclonepropertiesAction",
     "promise:promiseAction",
     "spreadoperator:spreadoperatorAction",
     "throwdyn:throwdynAction",
