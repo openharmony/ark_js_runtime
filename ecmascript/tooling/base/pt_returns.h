@@ -229,5 +229,24 @@ private:
     std::optional<CVector<std::unique_ptr<PrivatePropertyDescriptor>>> privateProperties_ {};
     std::optional<std::unique_ptr<ExceptionDetails>> exceptionDetails_ {};
 };
+
+class CallFunctionOnReturns : public PtBaseReturns {
+public:
+    explicit CallFunctionOnReturns(std::unique_ptr<RemoteObject> result,
+        std::optional<std::unique_ptr<ExceptionDetails>> exceptionDetails = std::nullopt)
+        : result_(std::move(result)),
+          exceptionDetails_(std::move(exceptionDetails))
+    {}
+    ~CallFunctionOnReturns() override = default;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+private:
+    CallFunctionOnReturns() = default;
+    NO_COPY_SEMANTIC(CallFunctionOnReturns);
+    NO_MOVE_SEMANTIC(CallFunctionOnReturns);
+
+    std::unique_ptr<RemoteObject> result_ {};
+    std::optional<std::unique_ptr<ExceptionDetails>> exceptionDetails_ {};
+};
 }  // namespace panda::ecmascript::tooling
 #endif

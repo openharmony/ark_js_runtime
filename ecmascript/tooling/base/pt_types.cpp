@@ -934,6 +934,66 @@ Local<ObjectRef> PropertyDescriptor::ToObject(const EcmaVM *ecmaVm)
     return params;
 }
 
+std::unique_ptr<CallArgument> CallArgument::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+{
+    if (params.IsEmpty() || !params->IsObject()) {
+        LOG(ERROR, DEBUGGER) << "CallArgument::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto callArgument = std::make_unique<CallArgument>();
+
+    Local<JSValueRef> result =
+        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "value")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        callArgument->value_ = result;
+    }
+    result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "unserializableValue")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            callArgument->unserializableValue_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+        } else {
+            error += "'unserializableValue' should be a String;";
+        }
+    }
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            callArgument->objectId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+        } else {
+            error += "'objectId' should be a String;";
+        }
+    }
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "CallArgument::Create " << error;
+        return nullptr;
+    }
+
+    return callArgument;
+}
+
+Local<ObjectRef> CallArgument::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+
+    if (value_) {
+        params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "value")), value_.value());
+    }
+    if (unserializableValue_) {
+        params->Set(ecmaVm,
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "unserializableValue")),
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, unserializableValue_->c_str())));
+    }
+    if (objectId_) {
+        params->Set(ecmaVm,
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")),
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, objectId_->c_str())));
+    }
+
+    return params;
+}
+
 std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
 {
     if (params.IsEmpty() || !params->IsObject()) {

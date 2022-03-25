@@ -508,5 +508,153 @@ private:
     std::optional<bool> accessorPropertiesOnly_ {};
     std::optional<bool> generatePreview_ {};
 };
+
+class CallFunctionOnParams : public PtBaseParams {
+public:
+    CallFunctionOnParams() = default;
+    ~CallFunctionOnParams() override = default;
+
+    static std::unique_ptr<CallFunctionOnParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
+    {
+        return Local<ObjectRef>();
+    }
+
+    CString GetFunctionDeclaration()
+    {
+        return functionDeclaration_;
+    }
+
+    RemoteObjectId GetObjectId() const
+    {
+        return objectId_.value();
+    }
+
+    CallFunctionOnParams &SetObjectId(RemoteObjectId objectId)
+    {
+        objectId_ = objectId;
+        return *this;
+    }
+
+    bool HasObjectId() const
+    {
+        return objectId_.has_value();
+    }
+
+    const CVector<std::unique_ptr<CallArgument>> *GetArguments() const
+    {
+        if (!arguments_) {
+            return nullptr;
+        }
+        return &(arguments_.value());
+    }
+
+    bool HasArguments() const
+    {
+        return arguments_.has_value();
+    }
+
+    bool GetSilent() const
+    {
+        return silent_.value_or(false);
+    }
+
+    bool HasSilent() const
+    {
+        return silent_.has_value();
+    }
+
+    bool GetReturnByValue() const
+    {
+        return returnByValue_.value_or(false);
+    }
+
+    bool HasReturnByValue() const
+    {
+        return returnByValue_.has_value();
+    }
+
+    bool GetGeneratePreview() const
+    {
+        return generatePreview_.value_or(false);
+    }
+
+    bool HasGeneratePreview() const
+    {
+        return generatePreview_.has_value();
+    }
+
+    bool GetUserGesture() const
+    {
+        return userGesture_.value_or(false);
+    }
+
+    bool HasUserGesture() const
+    {
+        return userGesture_.has_value();
+    }
+
+    bool GetAwaitPromise() const
+    {
+        return awaitPromise_.value_or(false);
+    }
+
+    bool HasAwaitPromise() const
+    {
+        return awaitPromise_.has_value();
+    }
+
+    ExecutionContextId GetExecutionContextId() const
+    {
+        return executionContextId_.value_or(-1);
+    }
+
+    CallFunctionOnParams &SetExecutionContextId(ExecutionContextId executionContextId)
+    {
+        executionContextId_ = executionContextId;
+        return *this;
+    }
+
+    bool HasExecutionContextId() const
+    {
+        return executionContextId_.has_value();
+    }
+
+    CString GetObjectGroup() const
+    {
+        return objectGroup_.value_or("");
+    }
+
+    bool HasObjectGroup() const
+    {
+        return objectGroup_.has_value();
+    }
+
+    bool GetThrowOnSideEffect() const
+    {
+        return throwOnSideEffect_.value_or(false);
+    }
+
+    bool HasThrowOnSideEffect() const
+    {
+        return throwOnSideEffect_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(CallFunctionOnParams);
+    NO_MOVE_SEMANTIC(CallFunctionOnParams);
+
+    CString functionDeclaration_ {};
+    std::optional<RemoteObjectId> objectId_ {};
+    std::optional<CVector<std::unique_ptr<CallArgument>>> arguments_ {};
+    std::optional<bool> silent_ {};
+    std::optional<bool> returnByValue_ {};
+    std::optional<bool> generatePreview_ {};
+    std::optional<bool> userGesture_ {};
+    std::optional<bool> awaitPromise_ {};
+    std::optional<ExecutionContextId> executionContextId_ {};
+    std::optional<CString> objectGroup_ {};
+    std::optional<bool> throwOnSideEffect_ {};
+};
 }  // namespace panda::ecmascript::tooling
 #endif
