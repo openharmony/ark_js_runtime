@@ -60,6 +60,12 @@ public:
     // return the year, update days.
     static int64_t GetYearFromDays(int64_t *days);
     static int64_t FloorDiv(int64_t a, int64_t b);
+
+private:
+    static bool isCached_;
+    static int preSumDays_;
+    static int preDays_;
+    static int preYear_;
 };
 class JSDate : public JSObject {
 public:

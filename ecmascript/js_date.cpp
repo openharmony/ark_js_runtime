@@ -24,6 +24,10 @@
 
 namespace panda::ecmascript {
 using NumberHelper = base::NumberHelper;
+bool DateUtils::isCached_ = false;
+int DateUtils::preSumDays_ = 0;
+int DateUtils::preDays_ = 0;
+int DateUtils::preYear_ = 0;
 void DateUtils::TransferTimeToDate(int64_t timeMs, std::array<int64_t, DATE_LENGTH> *date)
 {
     (*date)[HOUR] = Mod(timeMs, MS_PER_DAY);                                 // ms from hour, minutes, second, ms
@@ -71,9 +75,14 @@ int64_t DateUtils::FloorDiv(int64_t a, int64_t b)
 // static
 int64_t DateUtils::GetYearFromDays(int64_t *days)
 {
+    if (isCached_ && preSumDays_ == *days) {
+        *days = preDays_;
+        return preYear_;
+    }
     int64_t realDay;
     int64_t dayTemp = 0;
     int64_t d = *days;
+    preSumDays_ = d;
     int64_t year = FloorDiv(d * APPROXIMATION_NUMBER[0], APPROXIMATION_NUMBER[1]) + YEAR_NUMBER[0];
     realDay = d - GetDaysFromYear(year);
     while (realDay != 0) {
@@ -89,6 +98,9 @@ int64_t DateUtils::GetYearFromDays(int64_t *days)
         realDay = d - GetDaysFromYear(year);
     }
     *days = realDay;
+    preDays_ = realDay;
+    preYear_ = year;
+    isCached_ = true;
     return year;
 }
 
