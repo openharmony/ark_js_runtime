@@ -112,7 +112,8 @@ HWTEST_F_L0(EcmaStringTableTest, GetOrInternString_utf16Data)
     EcmaStringTable *table = vm->GetEcmaStringTable();
 
     uint16_t utf16Data[] = {0x7F16, 0x7801, 0x89E3, 0x7801}; // “ 编码解码 ”
-    EcmaString *ecmaStrCreatePtr = EcmaString::CreateFromUtf16(utf16Data, sizeof(utf16Data) / sizeof(uint16_t), vm, false);
+    EcmaString *ecmaStrCreatePtr =
+        EcmaString::CreateFromUtf16(utf16Data, sizeof(utf16Data) / sizeof(uint16_t), vm, false);
     EXPECT_TRUE(!ecmaStrCreatePtr->IsInternString());
 
     EcmaString *ecmaStrGetPtr = table->GetOrInternString(utf16Data, sizeof(utf16Data) / sizeof(uint16_t), false);
@@ -148,7 +149,7 @@ HWTEST_F_L0(EcmaStringTableTest, GetOrInternString_EcmaString)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F_L0(EcmaStringTableTest, SweepWeakReference) // using WeakRootVisitor = std::function<TaggedObject *(TaggedObject *p)>;
+HWTEST_F_L0(EcmaStringTableTest, SweepWeakReference)
 {
     EcmaVM *vm = thread->GetEcmaVM();
     EcmaStringTable *table = vm->GetEcmaStringTable();

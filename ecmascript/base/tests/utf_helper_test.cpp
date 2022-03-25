@@ -21,7 +21,7 @@ using namespace panda::ecmascript::base;
 using namespace panda::ecmascript::base::utf_helper;
 
 namespace panda::test {
-class UtfHelperTest: public testing::Test {
+class UtfHelperTest : public testing::Test {
 public:
     static void SetUpTestCase()
     {
@@ -84,6 +84,7 @@ HWTEST_F_L0(UtfHelperTest, CombineTwoU16)
     EXPECT_EQ(codePoint, utfHelperCodePoint);
     EXPECT_EQ(codePoint, static_cast<uint32_t>(0x64321));
 }
+
 /*
 * @tc.name: UTF16Decode
 * @tc.desc: Enter a pair of UTF16-encoded surrogate pair corresponding to the lead surrogates and trail surrogates,
@@ -97,7 +98,7 @@ HWTEST_F_L0(UtfHelperTest, UTF16Decode)
     EXPECT_TRUE(lead >= DECODE_LEAD_LOW && lead <= DECODE_LEAD_HIGH);
     EXPECT_TRUE(trail >= DECODE_TRAIL_LOW && trail <= DECODE_TRAIL_HIGH);
     uint32_t codePoint = utf_helper::UTF16Decode(lead, trail);
-    EXPECT_EQ(codePoint, 0x64321);
+    EXPECT_EQ(codePoint, 0x64321U);
     lead = 0xD85D;
     trail = 0xDFCC;
     EXPECT_TRUE(lead >= DECODE_LEAD_LOW && lead <= DECODE_LEAD_HIGH);
@@ -107,10 +108,10 @@ HWTEST_F_L0(UtfHelperTest, UTF16Decode)
 }
 
 /*
-* @tc.name: IsValidUTF8
-* @tc.desc: Judge whether an input group of symbols is a valid UTF8 coding sequence.
-* @tc.type: FUNC
-*/
+ * @tc.name: IsValidUTF8
+ * @tc.desc: Judge whether an input group of symbols is a valid UTF8 coding sequence.
+ * @tc.type: FUNC
+ */
 HWTEST_F_L0(UtfHelperTest, IsValidUTF8)
 {
     const std::vector<uint8_t> utfDataOneBitVaild1 = {0x00}; // //0xxxxxxx
@@ -154,11 +155,11 @@ HWTEST_F_L0(UtfHelperTest, IsValidUTF8)
         BIT_MASK_2 - 0x01,
         BIT_MASK_2 - 0x01,
         BIT_MASK_2 - 0x01};
-    const std::vector<uint8_t>utfDataFourBitUnvaild1 = {BIT_MASK_4, BIT_MASK_1,BIT_MASK_1, BIT_MASK_2};
-    const std::vector<uint8_t>utfDataFourBitUnvaild2 = {BIT_MASK_4, BIT_MASK_1,BIT_MASK_2, BIT_MASK_1};
-    const std::vector<uint8_t>utfDataFourBitUnvaild3 = {BIT_MASK_4, BIT_MASK_2,BIT_MASK_1, BIT_MASK_1};
-    const std::vector<uint8_t>utfDataFourBitUnvaild4 = {BIT_MASK_5, BIT_MASK_1,BIT_MASK_1, BIT_MASK_1};
-    const std::vector<uint8_t>utfDataFourBitUnvaild5 = {BIT_MASK_5, BIT_MASK_2,BIT_MASK_2, BIT_MASK_2};
+    const std::vector<uint8_t>utfDataFourBitUnvaild1 = {BIT_MASK_4, BIT_MASK_1, BIT_MASK_1, BIT_MASK_2};
+    const std::vector<uint8_t>utfDataFourBitUnvaild2 = {BIT_MASK_4, BIT_MASK_1, BIT_MASK_2, BIT_MASK_1};
+    const std::vector<uint8_t>utfDataFourBitUnvaild3 = {BIT_MASK_4, BIT_MASK_2, BIT_MASK_1, BIT_MASK_1};
+    const std::vector<uint8_t>utfDataFourBitUnvaild4 = {BIT_MASK_5, BIT_MASK_1, BIT_MASK_1, BIT_MASK_1};
+    const std::vector<uint8_t>utfDataFourBitUnvaild5 = {BIT_MASK_5, BIT_MASK_2, BIT_MASK_2, BIT_MASK_2};
     EXPECT_TRUE(utf_helper::IsValidUTF8(utfDataFourBitVaild1));
     EXPECT_TRUE(utf_helper::IsValidUTF8(utfDataFourBitVaild2));
     EXPECT_FALSE(utf_helper::IsValidUTF8(utfDataFourBitUnvaild1));
@@ -167,6 +168,7 @@ HWTEST_F_L0(UtfHelperTest, IsValidUTF8)
     EXPECT_FALSE(utf_helper::IsValidUTF8(utfDataFourBitUnvaild4));
     EXPECT_FALSE(utf_helper::IsValidUTF8(utfDataFourBitUnvaild5));
 }
+
 /*
 * @tc.name: ConvertUtf16ToUtf8
 * @tc.desc: Converts a UTF16 encoding sequence encoding a character into a UTF8 encoding sequence,
@@ -176,117 +178,134 @@ HWTEST_F_L0(UtfHelperTest, IsValidUTF8)
 */
 HWTEST_F_L0(UtfHelperTest, ConvertUtf16ToUtf8)
 {
-    uint16_t utf16Data0 = 0x00;
-    uint16_t utf16Data1= 0x00;
-
     // codePoint lie in [0,0x7F]--->UTF-8(length:1)
-    Utf8Char utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-    Utf8Char utf8CharTemp = {0, {0x00U}};
-    EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
-    EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
-    // special case for \u0000 ==> Co80- 1100'0000 1000'0000
-    utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, true);
-    utf8CharTemp = {2,{UTF8_2B_FIRST, UTF8_2B_SECOND}};
-    EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
-    EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
-    utf16Data0 = 0x7F;
-    utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-    utf8CharTemp = {1, {0x7F}};
-    EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
-    EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+    {
+        uint16_t utf16Data0 = 0x00;
+        uint16_t utf16Data1= 0x00;
+        Utf8Char utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+        Utf8Char utf8CharTemp = {0, {0x00U}};
+        EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
+        EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+    }
 
-    // codePoint lie in [0x80,0x7FF]--> UTF-8(length:2)
-    utf16Data0 = 0x80;
-    utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-    utf8CharTemp = {2, {UTF8_2B_FIRST + 0x02U, UTF8_2B_SECOND}};
-    EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
-    EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
-    utf16Data0 = 0x7FF;
-    utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-    utf8CharTemp ={2, {BIT_MASK_3 - 0x01, BIT_MASK_2 - 0x01}};
-    EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
-    EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+    // special case for \u0000 ==> Co80- 1100'0000 1000'0000
+    {
+        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, true);
+        utf8CharTemp = {2, {UTF8_2B_FIRST, UTF8_2B_SECOND}};
+        EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
+        EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+        utf16Data0 = 0x7F;
+        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+        utf8CharTemp = {1, {0x7F}};
+        EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
+        EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+
+        // codePoint lie in [0x80,0x7FF]--> UTF-8(length:2)
+        utf16Data0 = 0x80;
+        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+        utf8CharTemp = {2, {UTF8_2B_FIRST + 0x02U, UTF8_2B_SECOND}};
+        EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
+        EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+        utf16Data0 = 0x7FF;
+        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+        utf8CharTemp = {2, {BIT_MASK_3 - 0x01, BIT_MASK_2 - 0x01}};
+        EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
+        EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+    }
 
     // codePoint lie in [0xD800,0xDFFF]--> UTF-8(length:3)
-    utf16Data0 = 0xD800;
-    utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-    utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0xD800 >> 12),
-                        UTF8_3B_SECOND | (static_cast<uint8_t>(0xD800 >> 6) & utf::MASK_6BIT),
-                        UTF8_3B_THIRD | (static_cast<uint8_t>(0xD800) & utf::MASK_6BIT)}};
-    EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
-    EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
-    utf16Data0 = 0xDFFF;
-    utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-    utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0xDFFF >> 12), 
-                        UTF8_3B_SECOND | (static_cast<uint8_t>(0xDFFF >> 6) & utf::MASK_6BIT),
-                        UTF8_3B_THIRD | (static_cast<uint8_t>(0xDFFF) & utf::MASK_6BIT)}};
-    EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
-    EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+    {
+        utf16Data0 = 0xD800;
+        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+        utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0xD800 >> 12),
+                            UTF8_3B_SECOND | (static_cast<uint8_t>(0xD800 >> 6) & utf::MASK_6BIT),
+                            UTF8_3B_THIRD | (static_cast<uint8_t>(0xD800) & utf::MASK_6BIT)}};
+        EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
+        EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+        utf16Data0 = 0xDFFF;
+        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+        utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0xDFFF >> 12),
+                            UTF8_3B_SECOND | (static_cast<uint8_t>(0xDFFF >> 6) & utf::MASK_6BIT),
+                            UTF8_3B_THIRD | (static_cast<uint8_t>(0xDFFF) & utf::MASK_6BIT)}};
+        EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
+        EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+    }
 
     // codePoint lie in [0x800,0xD7FF]&&[0xE000,0xFFFF]-->UTF-8(length:3)
-    utf16Data0 = 0x800;
-    utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-    utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0x800 >> 12),
-                        UTF8_3B_SECOND | (static_cast<uint8_t>(0x800 >> 6) & utf::MASK_6BIT),
-                        UTF8_3B_THIRD | (static_cast<uint8_t>(0x800) & utf::MASK_6BIT)}};
-    EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
-    EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
-    utf16Data0 = 0xD7FF;
-    utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-    utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0xD7FF>>12),
-                        UTF8_3B_SECOND | (static_cast<uint8_t>(0xD7FF >> 6) & utf::MASK_6BIT),
-                        UTF8_3B_THIRD | (static_cast<uint8_t>(0xD7FF) & utf::MASK_6BIT)}};
-    EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
-    EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
-    utf16Data0= 0xE000;
-    utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-    utf8CharTemp = {3,{UTF8_3B_FIRST | static_cast<uint8_t>(0xE000 >> 12),
-                       UTF8_3B_SECOND | (static_cast<uint8_t>(0xE000 >> 6)& utf::MASK_6BIT),
-                       UTF8_3B_THIRD | (static_cast<uint8_t>(0xE000) & utf::MASK_6BIT)}};
-    EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
-    EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
-    utf16Data0 = 0xFFFF;
-    utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-    utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0xFFFF >> 12),
-                        UTF8_3B_SECOND | (static_cast<uint8_t>(0xFFFF >> 6)& utf::MASK_6BIT),
-                        UTF8_3B_THIRD | (static_cast<uint8_t>(0xFFFF) & utf::MASK_6BIT)}};
-    EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
-    EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+    {
+        utf16Data0 = 0x800;
+        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+        utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0x800 >> 12),
+                            UTF8_3B_SECOND | (static_cast<uint8_t>(0x800 >> 6) & utf::MASK_6BIT),
+                            UTF8_3B_THIRD | (static_cast<uint8_t>(0x800) & utf::MASK_6BIT)}};
+        EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
+        EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+        utf16Data0 = 0xD7FF;
+        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+        utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0xD7FF>>12),
+                            UTF8_3B_SECOND | (static_cast<uint8_t>(0xD7FF >> 6) & utf::MASK_6BIT),
+                            UTF8_3B_THIRD | (static_cast<uint8_t>(0xD7FF) & utf::MASK_6BIT)}};
+        EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
+        EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+        utf16Data0= 0xE000;
+        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+        utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0xE000 >> 12),
+                            UTF8_3B_SECOND | (static_cast<uint8_t>(0xE000 >> 6)& utf::MASK_6BIT),
+                            UTF8_3B_THIRD | (static_cast<uint8_t>(0xE000) & utf::MASK_6BIT)}};
+        EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
+        EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+        utf16Data0 = 0xFFFF;
+        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+        utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0xFFFF >> 12),
+                            UTF8_3B_SECOND | (static_cast<uint8_t>(0xFFFF >> 6)& utf::MASK_6BIT),
+                            UTF8_3B_THIRD | (static_cast<uint8_t>(0xFFFF) & utf::MASK_6BIT)}};
+        EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
+        EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+    }
+
     // codePoint lie in [0x10000,0x10FFFF] --> UTF-8(length:4)
-    utf16Data0 = 0xD800;
-    utf16Data1= 0xDC00;
-    utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-    uint32_t codePoint = CombineTwoU16(utf16Data0, utf16Data1);
-    utf8CharTemp = {4, {static_cast<uint8_t>((codePoint >> 18) | UTF8_4B_FIRST),
-                        static_cast<uint8_t>(((codePoint >> 12) & utf::MASK_6BIT) | utf::MASK1),
-                        static_cast<uint8_t>(((codePoint >> 6) & utf::MASK_6BIT) | utf::MASK1),
-                        static_cast<uint8_t>((codePoint & utf::MASK_6BIT) | utf::MASK1)}};
-    EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
-    EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+    {
+        utf16Data0 = 0xD800;
+        utf16Data1= 0xDC00;
+        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+        uint32_t codePoint = CombineTwoU16(utf16Data0, utf16Data1);
+        utf8CharTemp = {4, {static_cast<uint8_t>((codePoint >> 18) | UTF8_4B_FIRST),
+                            static_cast<uint8_t>(((codePoint >> 12) & utf::MASK_6BIT) | utf::MASK1),
+                            static_cast<uint8_t>(((codePoint >> 6) & utf::MASK_6BIT) | utf::MASK1),
+                            static_cast<uint8_t>((codePoint & utf::MASK_6BIT) | utf::MASK1)}};
+        EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
+        EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+    }
+
     // 0xD950 0xDF21 --> 0x64321 --> 0xf1 0xa4 0x8c 0xa1
-    utf16Data0 = 0xD950;
-    utf16Data1 = 0xDF21;
-    utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-    codePoint = CombineTwoU16(utf16Data0, utf16Data1);
-    utf8CharTemp = {4, {static_cast<uint8_t>((codePoint >> 18) | UTF8_4B_FIRST),
-                        static_cast<uint8_t>(((codePoint >> 12)& utf::MASK_6BIT)| utf::MASK1),
-                        static_cast<uint8_t>(((codePoint >> 6)& utf::MASK_6BIT) | utf::MASK1),
-    static_cast<uint8_t>((codePoint & utf::MASK_6BIT) | utf::MASK1)}};
-    EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
-    EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
-    utf8CharTemp ={4,{0xf1, 0xa4, 0x8c, 0xa1}};
-    EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
-    EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+    {
+        utf16Data0 = 0xD950;
+        utf16Data1 = 0xDF21;
+        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+        codePoint = CombineTwoU16(utf16Data0, utf16Data1);
+        utf8CharTemp = {4, {static_cast<uint8_t>((codePoint >> 18) | UTF8_4B_FIRST),
+                            static_cast<uint8_t>(((codePoint >> 12)& utf::MASK_6BIT)| utf::MASK1),
+                            static_cast<uint8_t>(((codePoint >> 6)& utf::MASK_6BIT) | utf::MASK1),
+        static_cast<uint8_t>((codePoint & utf::MASK_6BIT) | utf::MASK1)}};
+        EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
+        EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+        utf8CharTemp = {4, {0xf1, 0xa4, 0x8c, 0xa1}};
+        EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
+        EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+    }
 }
+
 /*
-*@tc.name: Utf16ToUtf8Size
-*@tc.desc: Enter a string of UTF16 coded sequences and return the length of the sequence converted into UTF8 coded  sequences.
-*"length" indicates the length of the input UTF16 sequence, " and "modify" indicates whether to perform special conversion for
-*@tc.type: FUNC
+* @tc.name: Utf16ToUtf8Size
+* @tc.desc: Enter a string of UTF16 coded sequences and return the length of the sequence converted into UTF8 coded
+*           sequences. "length" indicates the length of the input UTF16 sequence, and "modify" indicates whether
+*           to perform special conversion for.
+* @tc.type: FUNC
 */
 HWTEST_F_L0(UtfHelperTest, Utf16ToUtf8Size)
 {
-    // when utf16 data length is only 1 and code in 0xd800-0xdfff, l/ means that is a single code point, it needs to be represented by three UTF8 code.
+    // when utf16 data length is only 1 and code in 0xd800-0xdfff, means that is a single code point, it needs to be
+    // represented by three UTF8 code.
     uint32_t length = 0;
     uint16_t utf16Value1[1] = {0xD800};
     const uint16_t *utf16ValuePtr1 = utf16Value1;
@@ -312,7 +331,7 @@ HWTEST_F_L0(UtfHelperTest, Utf16ToUtf8Size)
     const uint16_t *utf16ValuePtr4 = utf16Value4;
     const uint16_t *utf16ValuePtr5 = utf16Value5;
     length = Utf16ToUtf8Size(utf16ValuePtr4, 1, false);
-    EXPECT_EQ(length - 1,0);
+    EXPECT_EQ(length - 1, 0);
     length = Utf16ToUtf8Size(utf16ValuePtr5, 1, false);
     EXPECT_EQ(length - 1, 1);
 
@@ -373,13 +392,14 @@ HWTEST_F_L0(UtfHelperTest, Utf16ToUtf8Size)
     EXPECT_EQ(length-1, 6);
 
     // 0(or 2)+ 1+ 2 + 3 + 4 = 10(or 12)
-    uint16_t utf16Value18[6] ={0x00, 0x7F, 0x80, 0x800, 0xD800, 0xDC00};
+    uint16_t utf16Value18[6] = {0x00, 0x7F, 0x80, 0x800, 0xD800, 0xDC00};
     const uint16_t *utf16ValuePtr18 = utf16Value18;
     length = Utf16ToUtf8Size(utf16ValuePtr18, 6, false);
     EXPECT_EQ(length - 1, 10);
     length = Utf16ToUtf8Size(utf16ValuePtr18, 6, true);
     EXPECT_EQ(length - 1, 12);
 }
+
 /*
 * @tc.name: ConvertUtf8ToUtf16Pair
 * @tc.desc: Converts a UTF8 encoding sequence encoding a character into a UTF16 encoding sequence, and returns the
@@ -395,27 +415,27 @@ HWTEST_F_L0(UtfHelperTest, ConvertUtf8ToUtf16Pair)
     const uint8_t *utf8ValuePtr1 = utf8Value1;
     const uint8_t *utf8ValuePtr2 = utf8Value2;
     std::pair<uint32_t, size_t> utf16Res = ConvertUtf8ToUtf16Pair(utf8ValuePtr1);
-    std::pair<uint32_t, size_t> utf16Value ={utf8Value1[0], 1};
+    std::pair<uint32_t, size_t> utf16Value = {utf8Value1[0], 1};
     EXPECT_EQ(utf16Res, utf16Value);
     utf16Res = ConvertUtf8ToUtf16Pair(utf8ValuePtr2);
     utf16Value = {utf8Value2[0], 1};
     EXPECT_EQ(utf16Res, utf16Value);
     // code point lie in [0x80, 0x7FF], the length of utf8 code element byte is 2
-    uint8_t utf8Value3[2]={0xc2, 0x80}; // 0x80
-    uint8_t utf8Value4[2]={0xDF, 0x7F}; // 0x7FF
+    uint8_t utf8Value3[2] = {0xc2, 0x80}; // 0x80
+    uint8_t utf8Value4[2] = {0xDF, 0x7F}; // 0x7FF
     const uint8_t *utf8ValuePtr3 = utf8Value3;
     const uint8_t *utf8ValuePtr4 = utf8Value4;
     utf16Res = ConvertUtf8ToUtf16Pair(utf8ValuePtr3);
-    utf16Value ={0x80, 2};
+    utf16Value = {0x80, 2};
     EXPECT_EQ(utf16Res, utf16Value);
     utf16Res = ConvertUtf8ToUtf16Pair(utf8ValuePtr4);
-    utf16Value = {0x7FF,2};
+    utf16Value = {0x7FF, 2};
     EXPECT_EQ(utf16Res, utf16Value);
 
     // code point lie in [0x800, 0xD7FF] or [0xDC00,0xFFFF], the length of utf8 code element byte is 3.
     // when code point lie in [0xD800, 0xDBFF], due to the use of UCS-2, it corresponds to 3 utf8 symbols.
-    uint8_t utf8Value5[3]={0xE0, 0xA0, 0x80}; // 0x800
-    uint8_t utf8Value6[3]={0xEF, 0xBF, 0xBF}; // 0xD7FF
+    uint8_t utf8Value5[3] = {0xE0, 0xA0, 0x80}; // 0x800
+    uint8_t utf8Value6[3] = {0xEF, 0xBF, 0xBF}; // 0xD7FF
     const uint8_t *utf8ValuePtr5 = utf8Value5;
     const uint8_t *utf8ValuePtr6 = utf8Value6;
     utf16Res = ConvertUtf8ToUtf16Pair(utf8ValuePtr5);
@@ -425,8 +445,8 @@ HWTEST_F_L0(UtfHelperTest, ConvertUtf8ToUtf16Pair)
     utf16Value = {0xFFFF, 3};
     EXPECT_EQ(utf16Res, utf16Value);
     // code point lie in [0x10000, 0x10FFFF], the length of utf8 code element byte is 4.
-    uint8_t utf8Value9[4]={0xF0, 0x90, 0x80, 0x80}; // 0x10000
-    uint8_t utf8Value10[4]= {0xF4, 0x8F, 0xBF, 0xBF}; // 0x10FFFF
+    uint8_t utf8Value9[4] = {0xF0, 0x90, 0x80, 0x80}; // 0x10000
+    uint8_t utf8Value10[4] = {0xF4, 0x8F, 0xBF, 0xBF}; // 0x10FFFF
     const uint8_t *utf8ValuePtr9 = utf8Value9;
     const uint8_t *utf8ValuePtr10 = utf8Value10;
     utf16Res = ConvertUtf8ToUtf16Pair(utf8ValuePtr9);
@@ -442,10 +462,12 @@ HWTEST_F_L0(UtfHelperTest, ConvertUtf8ToUtf16Pair)
     utf16Value = {0x10FFFF, 4};
     EXPECT_EQ(utf16Res, utf16Value);
 }
+
 /*
-*@tc.name: Utf8ToUtf16Size
-*@tc.desc: Enter a string of UTF8 coded sequences and return the length of the sequence converted into UTF16 coded sequences.
-*@tc.type: FUNC
+* @tc.name: Utf8ToUtf16Size
+* @tc.desc: Enter a string of UTF8 coded sequences and return the length of the sequence converted into UTF16 coded
+*           sequences.
+* @tc.type: FUNC
 */
 HWTEST_F_L0(UtfHelperTest, Utf8ToUtf16Size)
 {
@@ -459,7 +481,7 @@ HWTEST_F_L0(UtfHelperTest, Utf8ToUtf16Size)
     length = Utf8ToUtf16Size(utf8ValueOneByteMaxPtr, sizeof(utf8ValueOneByteMax));
     EXPECT_EQ(length, 2);
     // when code point lie in [0x10000, 0x10FFFF], the required utf16 code element length is 2.
-    const uint8_t utf8ValueTwoBytesMin[5] = {0xF0, 0x90, 0x80, 0x80, 0x00};// 0x10000
+    const uint8_t utf8ValueTwoBytesMin[5] = {0xF0, 0x90, 0x80, 0x80, 0x00}; // 0x10000
     const uint8_t utf8ValueTwoBytesMax[5] = {0xF4, 0x8F, 0xBF, 0xBF, 0x00}; // 0x10FFFF
     const uint8_t *utf8ValueTwoBytesMinPtr = utf8ValueTwoBytesMin;
     const uint8_t *utf8ValueTwoBytesMaxPtr = utf8ValueTwoBytesMax;
@@ -475,14 +497,13 @@ HWTEST_F_L0(UtfHelperTest, Utf8ToUtf16Size)
     length = Utf8ToUtf16Size(utf8ValuePtr, sizeof(utf8Value));
     EXPECT_EQ(length, 6);
 }
+
 /*
-*@tc.name:ConvertRegionUtf16ToUtf8
-*@tc.desc: Input aUTF16-encoded sequence (thelength is "utf16Len"),
-* convert part of the sequence into a UTF8-encoded sequence,
-* and save it to "utf8Out"(the maximum length is "utf8Len").
-* The start parameter indicates the start position of the conversion.
-* Whether to perform special processing for O in the "modify" parameter.
-*@tc.type: FUNC
+* @tc.name: ConvertRegionUtf16ToUtf8
+* @tc.desc: Input aUTF16-encoded sequence (thelength is "utf16Len"), convert part of the sequence into a UTF8-encoded
+*           sequence, and save it to "utf8Out"(the maximum length is "utf8Len"). The start parameter indicates the
+*           start position of the conversion. Whether to perform special processing for O in the "modify" parameter.
+* @tc.type: FUNC
 */
 HWTEST_F_L0(UtfHelperTest, ConvertRegionUtf16ToUtf8)
 {
@@ -490,12 +511,12 @@ HWTEST_F_L0(UtfHelperTest, ConvertRegionUtf16ToUtf8)
     size_t utf8Len = 100;
     size_t start = 0;
     bool modify = false;
-    uint16_t utf16Value[8]={
+    uint16_t utf16Value[8] = {
         0x00, // 0 or 2 (special case for \u0000 ==> C080 - 1100'0000 1000'0000）
         0x7F, // 1(0x00, 0x7F]
         0x7FF, // 2 [0x80, 0x7FF]
         0x800, // 3 [0x800, 0xD7FF]
-        0xD800, // 3 [0xD800, 0xDFFF] In the era of UCS-2, the values in U+D800...U+DFFF are occupied
+        0xD800, // 3 [0xD800, 0xDFFF]
         0xFFFF, // 3 [0xE000, 0xFFFF]
         0xD800, 0xDFFF}; // 4 [0x10000, 0x10FFFF]
     const uint16_t *utf16ValuePtr = utf16Value;
@@ -510,7 +531,7 @@ HWTEST_F_L0(UtfHelperTest, ConvertRegionUtf16ToUtf8)
 }
 
 /*
-* @tc.name:ConvertRegionUtf8ToUtf16
+* @tc.name: ConvertRegionUtf8ToUtf16
 * @tc.desc: Input a UTF8-encoded sequence, convert part of the sequence into a UTF8-encoded sequence, and save it to
 *           "utf16Out"(the maximum length is "utf16Len"), The start parameter indicates the start position of the
 *           conversion.
