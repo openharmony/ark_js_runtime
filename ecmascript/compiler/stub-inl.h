@@ -1965,7 +1965,7 @@ inline GateRef Stub::ObjectAddressToRange(GateRef x)
     return IntPtrAnd(TaggedCastToIntPtr(x), GetIntPtrConstant(~panda::ecmascript::DEFAULT_REGION_MASK));
 }
 
-inline GateRef Stub::InYoungGeneration(GateRef glue, GateRef region)
+inline GateRef Stub::InYoungGeneration(GateRef region)
 {
     auto offset = env_.Is32Bit() ? Region::REGION_FLAG_OFFSET_32 : Region::REGION_FLAG_OFFSET_64;
     GateRef x = Load(VariableType::POINTER(), IntPtrAdd(GetIntPtrConstant(offset), region),

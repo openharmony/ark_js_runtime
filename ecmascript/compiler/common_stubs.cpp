@@ -252,10 +252,10 @@ void GetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
         }
         Bind(&notValidIndex);
         {
-            Label notNumber(env);
+            Label notNumber1(env);
             Label getByName(env);
-            Branch(TaggedIsNumber(*key), &exit, &notNumber);
-            Bind(&notNumber);
+            Branch(TaggedIsNumber(*key), &exit, &notNumber1);
+            Bind(&notNumber1);
             {
                 Label isString(env);
                 Label notString(env);
@@ -325,10 +325,10 @@ void SetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
         }
         Bind(&notValidIndex);
         {
-            Label notNumber(env);
+            Label notNumber1(env);
             Label getByName(env);
-            Branch(TaggedIsNumber(*key), &exit, &notNumber);
-            Bind(&notNumber);
+            Branch(TaggedIsNumber(*key), &exit, &notNumber1);
+            Bind(&notNumber1);
             {
                 Label isString(env);
                 Label notString(env);

@@ -136,8 +136,8 @@ source_set("libark_js_intl_static") {
   sources = intl_sources
 
   public_configs = [
-    ":ark_jsruntime_public_config",
-    ":ark_jsruntime_common_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
@@ -152,23 +152,16 @@ source_set("libark_js_intl_static") {
 }
 
 config("ark_jsruntime_compiler_config") {
-  configs = [ "//ark/js_runtime:ark_jsruntime_base_config" ]
+  configs = [ "//ark/js_runtime:ark_jsruntime_common_config" ]
 }
 
 config("ark_jsruntime_common_config") {
-  configs = [ "//ark/js_runtime:ark_jsruntime_base_config" ]
-
-  cflags_cc = [
-    "-Wshadow",
-    "-Werror",
-    "-Wextra",
-  ]
-}
-
-config("ark_jsruntime_base_config") {
   defines = [ "PANDA_ENABLE_LTO" ]
   cflags_cc = [
     "-Wall",
+    "-Wshadow",
+    "-Werror",
+    "-Wextra",
     "-pedantic",
     "-Wno-invalid-offsetof",
     "-Wno-gnu-statement-expression",
@@ -282,6 +275,13 @@ config("ark_jsruntime_base_config") {
 # ecmascript unit testcase config
 config("ecma_test_config") {
   visibility = [ ":*" ]
+
+  configs = [
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_common_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
 
   ldflags = [ "-Wl,-rpath=\$ORIGIN/" ]
 }
@@ -506,9 +506,8 @@ source_set("libark_jsruntime_static") {
   sources += ecma_debugger_source
 
   public_configs = [
-    ":ark_jsruntime_public_config",  # should add before
-                                     # arkruntime_public_config
-    ":ark_jsruntime_common_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
@@ -548,8 +547,6 @@ ohos_shared_library("libark_jsruntime") {
     }
   }
 
-  configs = [ ":ark_jsruntime_common_config" ]
-
   install_enable = true
   part_name = "ark_js_runtime"
 
@@ -583,18 +580,16 @@ source_set("libark_jsruntime_test_static") {
   }
 
   public_configs = [
-    ":ark_jsruntime_public_config",  # should add before
-                                     # arkruntime_public_config
-    ":ark_jsruntime_common_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 }
 
 ohos_shared_library("libark_jsruntime_test") {
   configs = [
-    ":ark_jsruntime_public_config",  # should add before
-                                     # arkruntime_public_config
-    ":ark_jsruntime_common_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 

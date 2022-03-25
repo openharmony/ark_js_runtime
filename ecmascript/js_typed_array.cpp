@@ -379,7 +379,7 @@ OperationResult JSTypedArray::IntegerIndexedElementGet(JSThread *thread, const J
 
 // s12 10.4.5.9 IsValidIntegerIndex ( O, index )
 bool JSTypedArray::IsValidIntegerIndex(JSThread *thread, const JSHandle<JSTaggedValue> &typedArray,
-                                       JSTaggedValue &index)
+                                       JSTaggedValue index)
 {
     // 1. Assert: O is an Integer-Indexed exotic object.
     // 2. If IsDetachedBuffer(O.[[ViewedArrayBuffer]]) is true, return false.
