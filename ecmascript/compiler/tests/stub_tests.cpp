@@ -59,7 +59,8 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
-    void PrintCircuitByBasicBlock(const std::vector<std::vector<GateRef>> &cfg, const Circuit &netOfGates) const
+    void PrintCircuitByBasicBlock([[maybe_unused]] const std::vector<std::vector<GateRef>> &cfg,
+                                  [[maybe_unused]] const Circuit &netOfGates) const
     {
 #if ECMASCRIPT_ENABLE_COMPILER_LOG
         for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
@@ -1100,7 +1101,7 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
     double key = 4.29497e+09;
     resVal = getPropertyByValuePtr(thread->GetGlueAddr(), strHello.GetTaggedValue().GetRawData(),
                                    JSTaggedValue(key).GetRawData());
-    EXPECT_EQ(resVal.GetRawData(), 0);
+    EXPECT_EQ(resVal.GetRawData(), 0ULL);
 }
 
 HWTEST_F_L0(StubTest, FastTypeOfTest)

@@ -496,7 +496,7 @@ public:
     GateRef TaggedIsSpecial(GateRef x);
     GateRef TaggedIsHeapObject(GateRef x);
     GateRef ObjectAddressToRange(GateRef x);
-    GateRef InYoungGeneration(GateRef glue, GateRef x);
+    GateRef InYoungGeneration(GateRef x);
     GateRef TaggedIsGeneratorObject(GateRef x);
     GateRef TaggedIsPropertyBox(GateRef x);
     GateRef TaggedIsWeak(GateRef x);

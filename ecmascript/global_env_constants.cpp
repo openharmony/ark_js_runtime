@@ -209,6 +209,12 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::WRITABLE_STRING_INDEX, factory->NewFromCanBeCompressString("writable"));
     SetConstant(ConstantIndex::ENUMERABLE_STRING_INDEX, factory->NewFromCanBeCompressString("enumerable"));
     SetConstant(ConstantIndex::CONFIGURABLE_STRING_INDEX, factory->NewFromCanBeCompressString("configurable"));
+    /* non ECMA standard jsapi containers iterators, init to Undefined first */
+    SetConstant(ConstantIndex::ARRAYLIST_FUNCTION_INDEX, JSTaggedValue::Undefined());
+    SetConstant(ConstantIndex::ARRAYLIST_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
+    SetConstant(ConstantIndex::TREEMAP_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
+    SetConstant(ConstantIndex::TREESET_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
+    SetConstant(ConstantIndex::QUEUE_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
     /* SymbolTable *RegisterSymbols */
     SetConstant(ConstantIndex::NAME_STRING_INDEX, factory->NewFromCanBeCompressString("name"));
     SetConstant(ConstantIndex::GETPROTOTYPEOF_STRING_INDEX, factory->NewFromCanBeCompressString("getPrototypeOf"));
