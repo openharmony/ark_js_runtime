@@ -1298,4 +1298,70 @@ HWTEST_F_L0(JSObjectTest, NativePointerField)
     void *pointer = obj->GetNativePointerField(0);
     EXPECT_TRUE(pointer == array);
 }
+
+static JSHandle<JSHClass> CreateTestHClass(JSThread *thread)
+{
+    JSHandle<GlobalEnv> globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSTaggedValue> objectFuncPrototype = globalEnv->GetObjectFunctionPrototype();
+    JSHandle<JSHClass> hclass = factory->NewEcmaDynClass(JSObject::SIZE, JSType::JS_OBJECT, objectFuncPrototype);
+    return hclass;
+}
+
+HWTEST_F_L0(JSObjectTest, UpdateWeakTransitions)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    EcmaVM *vm = thread->GetEcmaVM();
+    PropertyAttributes attr = PropertyAttributes::Default();
+
+    // Initialize three objects by hc0
+    JSHandle<JSHClass> hc0 = CreateTestHClass(thread);
+    [[maybe_unused]] JSHandle<JSObject> obj0 = factory->NewJSObject(hc0);  // need it to ensure hc0 not be collected
+    JSHandle<JSObject> obj1 = factory->NewJSObject(hc0);
+    JSHandle<JSObject> obj2 = factory->NewJSObject(hc0);
+
+    JSHandle<JSTaggedValue> keyA(factory->NewFromCanBeCompressString("a"));
+    JSHandle<JSTaggedValue> keyB(factory->NewFromCanBeCompressString("b"));
+
+    {
+        // need a new handle scope to ensure no scope refers hc1, hc2.
+        [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+        //                               / hc1 (obj1)
+        // occur transition,  hc0 (obj0)
+        //                               \ hc2 (obj2)
+        JSObject::SetProperty(thread, obj1, keyA, JSHandle<JSTaggedValue>(thread, JSTaggedValue(1)));
+        JSObject::SetProperty(thread, obj2, keyB, JSHandle<JSTaggedValue>(thread, JSTaggedValue(2)));
+
+        EXPECT_TRUE(hc0->GetTransitions().IsTaggedArray());
+        EXPECT_EQ(hc0->FindTransitions(keyA.GetTaggedValue(), attr.GetTaggedValue()), obj1->GetClass());
+        EXPECT_EQ(hc0->FindTransitions(keyB.GetTaggedValue(), attr.GetTaggedValue()), obj2->GetClass());
+
+        //            / hc1 --> hc3 (obj1)
+        // hc0 (obj0)
+        //            \ hc2 --> hc4 (obj2)
+        JSObject::SetProperty(thread, obj1, keyB, JSHandle<JSTaggedValue>(thread, JSTaggedValue(3)));
+        JSObject::SetProperty(thread, obj2, keyA, JSHandle<JSTaggedValue>(thread, JSTaggedValue(4)));
+    }
+
+    // collect hc1, hc2
+    vm->CollectGarbage(TriggerGCType::FULL_GC);
+
+
+    EXPECT_EQ(hc0->FindTransitions(keyA.GetTaggedValue(), attr.GetTaggedValue()), nullptr);
+    EXPECT_EQ(hc0->FindTransitions(keyB.GetTaggedValue(), attr.GetTaggedValue()), nullptr);
+
+    JSHandle<JSObject> obj3 = factory->NewJSObject(hc0);
+    JSHandle<JSObject> obj4 = factory->NewJSObject(hc0);
+
+    //                                  / hc5 (obj3)
+    // re-occur transition,  hc0 (obj0)
+    //                                  \ hc6 (obj4)
+    JSObject::SetProperty(thread, obj3, keyA, JSHandle<JSTaggedValue>(thread, JSTaggedValue(5)));
+    JSObject::SetProperty(thread, obj4, keyB, JSHandle<JSTaggedValue>(thread, JSTaggedValue(6)));
+
+    EXPECT_TRUE(hc0->GetTransitions().IsTaggedArray());
+    EXPECT_EQ(hc0->FindTransitions(keyA.GetTaggedValue(), attr.GetTaggedValue()), obj3->GetClass());
+    EXPECT_EQ(hc0->FindTransitions(keyB.GetTaggedValue(), attr.GetTaggedValue()), obj4->GetClass());
+}
 }  // namespace panda::test
