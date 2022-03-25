@@ -155,7 +155,7 @@ HWTEST_F_L0(EcmaStringTableTest, SweepWeakReference)
     oldSizeBefore = heap->GetOldSpace()->GetHeapObjectSize();
     EXPECT_EQ(oldSizeBefore, oldSizebase);
 
-    WeakRootVisitor visitor = [&](TaggedObject *header) {
+    WeakRootVisitor visitor = []() {
         return reinterpret_cast<TaggedObject *>(ToUintPtr(nullptr));
     };
     ecmaStrHandle2 = nullptr;
