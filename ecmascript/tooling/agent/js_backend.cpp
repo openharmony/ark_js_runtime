@@ -858,6 +858,15 @@ void JSBackend::GetProperties(uint32_t objectId, bool isOwn, bool isAccessorOnly
     GetProtoOrProtoType(value, isOwn, isAccessorOnly, outPropertyDesc);
 }
 
+void JSBackend::CallFunctionOn([[maybe_unused]] const CString &functionDeclaration,
+                               std::unique_ptr<RemoteObject> *outRemoteObject)
+{
+    // Return EvalError temporarily.
+    auto error = Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unsupport eval now"));
+
+    *outRemoteObject = RemoteObject::FromTagged(ecmaVm_, error);
+}
+
 void JSBackend::CacheObjectIfNeeded(const Local<JSValueRef> &valRef, std::unique_ptr<RemoteObject> *remoteObj)
 {
     *remoteObj = RemoteObject::FromTagged(ecmaVm_, valRef);

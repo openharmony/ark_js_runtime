@@ -104,6 +104,7 @@ public:
     void SetPauseOnException(bool flag);
     void GetProperties(uint32_t objectId, bool isOwn, bool isAccessorOnly,
                        CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
+    void CallFunctionOn(const CString &functionDeclaration, std::unique_ptr<RemoteObject> *outRemoteObject);
     // public for testcases
     bool GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames);
     const EcmaVM *GetEcmaVm() const
