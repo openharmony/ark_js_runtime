@@ -180,13 +180,10 @@ bool EcmaVM::Initialize()
         // init global env
         globalConst->InitRootsClass(thread_, *dynClassClassHandle);
         globalConst->InitGlobalConstant(thread_);
-        globalEnv->SetEmptyArray(thread_, factory_->NewEmptyArray());
-        globalEnv->SetEmptyLayoutInfo(thread_, factory_->CreateLayoutInfo(0));
         globalEnv->SetRegisterSymbols(thread_, SymbolTable::Create(thread_));
         globalEnv->SetGlobalRecord(thread_, GlobalDictionary::Create(thread_));
         JSTaggedValue emptyStr = thread_->GlobalConstants()->GetEmptyString();
         stringTable_->InternEmptyString(EcmaString::Cast(emptyStr.GetTaggedObject()));
-        globalEnv->SetEmptyTaggedQueue(thread_, factory_->NewTaggedQueue(0));
         globalEnv->SetTemplateMap(thread_, TemplateMap::Create(thread_));
         globalEnv->SetRegisterSymbols(GetJSThread(), SymbolTable::Create(GetJSThread()));
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT

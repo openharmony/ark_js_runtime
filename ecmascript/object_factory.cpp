@@ -492,8 +492,8 @@ JSHandle<JSForInIterator> ObjectFactory::NewJSForinIterator(const JSHandle<JSTag
 
     JSHandle<JSForInIterator> it = JSHandle<JSForInIterator>::Cast(NewJSObject(dynclass));
     it->SetObject(thread_, obj);
-    it->SetVisitedKeys(thread_, env->GetEmptyTaggedQueue());
-    it->SetRemainingKeys(thread_, env->GetEmptyTaggedQueue());
+    it->SetVisitedKeys(thread_->GlobalConstants()->GetEmptyTaggedQueue());
+    it->SetRemainingKeys(thread_->GlobalConstants()->GetEmptyTaggedQueue());
     it->ClearBitField();
     return it;
 }
@@ -1452,8 +1452,6 @@ JSHandle<JSRealm> ObjectFactory::NewJSRealm()
     JSHandle<JSHClass> realmEnvClass = NewEcmaDynClass(*dynClassClassHandle, GlobalEnv::SIZE, JSType::GLOBAL_ENV);
     JSHandle<GlobalEnv> realmEnvHandle = NewGlobalEnv(*realmEnvClass);
 
-    realmEnvHandle->SetEmptyArray(thread_, NewEmptyArray());
-    realmEnvHandle->SetEmptyTaggedQueue(thread_, NewTaggedQueue(0));
     auto result = TemplateMap::Create(thread_);
     realmEnvHandle->SetTemplateMap(thread_, result);
 
@@ -1707,8 +1705,7 @@ JSHandle<EcmaString> ObjectFactory::GetEmptyString() const
 
 JSHandle<TaggedArray> ObjectFactory::EmptyArray() const
 {
-    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
-    return JSHandle<TaggedArray>(env->GetEmptyArray());
+    return JSHandle<TaggedArray>(thread_->GlobalConstants()->GetHandledEmptyArray());
 }
 
 JSHandle<EcmaString> ObjectFactory::GetStringFromStringTable(const uint8_t *utf8Data, uint32_t utf8Len,
@@ -1847,8 +1844,7 @@ JSHandle<TaggedQueue> ObjectFactory::NewTaggedQueue(uint32_t length)
 
 JSHandle<TaggedQueue> ObjectFactory::GetEmptyTaggedQueue() const
 {
-    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
-    return JSHandle<TaggedQueue>(env->GetEmptyTaggedQueue());
+    return JSHandle<TaggedQueue>(thread_->GlobalConstants()->GetHandledEmptyTaggedQueue());
 }
 
 JSHandle<JSSetIterator> ObjectFactory::NewJSSetIterator(const JSHandle<JSSet> &set, IterationKind kind)

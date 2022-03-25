@@ -77,8 +77,8 @@ HWTEST_F_L0(ObjectFactoryTest, NewJSObjectByConstructor)
     EXPECT_TRUE(*newObjCls != nullptr);
 
     // check feild
-    EXPECT_EQ(newObj->GetProperties(), GetGlobal(thread)->GetEmptyArray().GetTaggedValue());
-    EXPECT_EQ(newObj->GetElements(), GetGlobal(thread)->GetEmptyArray().GetTaggedValue());
+    EXPECT_EQ(newObj->GetProperties(), thread->GlobalConstants()->GetEmptyArray());
+    EXPECT_EQ(newObj->GetElements(), thread->GlobalConstants()->GetEmptyArray());
     EXPECT_TRUE(JSTaggedValue(*newObj).IsECMAObject());
 
     // check jshclass
@@ -108,8 +108,8 @@ HWTEST_F_L0(ObjectFactoryTest, NewJSFunction)
     EXPECT_TRUE(*newFunCls != nullptr);
 
     // check feild
-    EXPECT_EQ(newFun->GetProperties(), GetGlobal(thread)->GetEmptyArray().GetTaggedValue());
-    EXPECT_EQ(newFun->GetElements(), GetGlobal(thread)->GetEmptyArray().GetTaggedValue());
+    EXPECT_EQ(newFun->GetProperties(), thread->GlobalConstants()->GetEmptyArray());
+    EXPECT_EQ(newFun->GetElements(), thread->GlobalConstants()->GetEmptyArray());
     EXPECT_EQ(newFun->GetProtoOrDynClass(), JSTaggedValue::Hole());
     EXPECT_EQ(newFun->GetHomeObject(), JSTaggedValue::Undefined());
     EXPECT_TRUE(JSTaggedValue(*newFun).IsJSFunction());
@@ -132,7 +132,7 @@ HWTEST_F_L0(ObjectFactoryTest, NewJSBoundFunction)
     // test prepare
     JSHandle<JSFunction> funFun(GetGlobal(thread)->GetObjectFunction());
     JSHandle<JSTaggedValue> bound(thread, GetGlobal(thread)->GetObjectFunctionPrototype().GetTaggedValue());
-    const JSHandle<TaggedArray> array(GetGlobal(thread)->GetEmptyArray());
+    const JSHandle<TaggedArray> array(thread->GlobalConstants()->GetHandledEmptyArray());
 
     // check mem alloc
     JSHandle<JSFunctionBase> targetFunc(funFun);
