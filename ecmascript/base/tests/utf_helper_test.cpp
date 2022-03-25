@@ -223,45 +223,46 @@ HWTEST_F_L0(UtfHelperTest, ConvertUtf16ToUtf8_001)
 HWTEST_F_L0(UtfHelperTest, ConvertUtf16ToUtf8_002)
 {
     // codePoint lie in [0x800,0xD7FF]&&[0xE000,0xFFFF]-->UTF-8(length:3)
-    {
-        uint16_t utf16Data0 = 0x800;
-        uint16_t utf16Data1= 0x00;
-        Utf8Char utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-        Utf8Char utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0x800 >> 12),
-                                     UTF8_3B_SECOND | (static_cast<uint8_t>(0x800 >> 6) & utf::MASK_6BIT),
-                                     UTF8_3B_THIRD | (static_cast<uint8_t>(0x800) & utf::MASK_6BIT)}};
-        EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
-        EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
-        utf16Data0 = 0xD7FF;
-        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-        utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0xD7FF>>12),
-                            UTF8_3B_SECOND | (static_cast<uint8_t>(0xD7FF >> 6) & utf::MASK_6BIT),
-                            UTF8_3B_THIRD | (static_cast<uint8_t>(0xD7FF) & utf::MASK_6BIT)}};
-        EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
-        EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
-        utf16Data0= 0xE000;
-        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-        utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0xE000 >> 12),
-                            UTF8_3B_SECOND | (static_cast<uint8_t>(0xE000 >> 6)& utf::MASK_6BIT),
-                            UTF8_3B_THIRD | (static_cast<uint8_t>(0xE000) & utf::MASK_6BIT)}};
-        EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
-        EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
-        utf16Data0 = 0xFFFF;
-        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
-        utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0xFFFF >> 12),
-                            UTF8_3B_SECOND | (static_cast<uint8_t>(0xFFFF >> 6)& utf::MASK_6BIT),
-                            UTF8_3B_THIRD | (static_cast<uint8_t>(0xFFFF) & utf::MASK_6BIT)}};
-        EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
-        EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
-    }
+    uint16_t utf16Data0 = 0x800;
+    uint16_t utf16Data1= 0x00;
+    Utf8Char utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+    Utf8Char utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0x800 >> 12),
+                                 UTF8_3B_SECOND | (static_cast<uint8_t>(0x800 >> 6) & utf::MASK_6BIT),
+                                 UTF8_3B_THIRD | (static_cast<uint8_t>(0x800) & utf::MASK_6BIT)}};
+    EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
+    EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+    utf16Data0 = 0xD7FF;
+    utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+    utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0xD7FF>>12),
+                        UTF8_3B_SECOND | (static_cast<uint8_t>(0xD7FF >> 6) & utf::MASK_6BIT),
+                        UTF8_3B_THIRD | (static_cast<uint8_t>(0xD7FF) & utf::MASK_6BIT)}};
+    EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
+    EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+    utf16Data0= 0xE000;
+    utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+    utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0xE000 >> 12),
+                        UTF8_3B_SECOND | (static_cast<uint8_t>(0xE000 >> 6)& utf::MASK_6BIT),
+                        UTF8_3B_THIRD | (static_cast<uint8_t>(0xE000) & utf::MASK_6BIT)}};
+    EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
+    EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+    utf16Data0 = 0xFFFF;
+    utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+    utf8CharTemp = {3, {UTF8_3B_FIRST | static_cast<uint8_t>(0xFFFF >> 12),
+                        UTF8_3B_SECOND | (static_cast<uint8_t>(0xFFFF >> 6)& utf::MASK_6BIT),
+                        UTF8_3B_THIRD | (static_cast<uint8_t>(0xFFFF) & utf::MASK_6BIT)}};
+    EXPECT_EQ(utf8Char.n, utf8CharTemp.n);
+    EXPECT_EQ(utf8Char.ch, utf8CharTemp.ch);
+}
 
+HWTEST_F_L0(UtfHelperTest, ConvertUtf16ToUtf8_003)
+{
     // codePoint lie in [0x10000,0x10FFFF] --> UTF-8(length:4)
     {
-        utf16Data0 = 0xD800;
-        utf16Data1= 0xDC00;
-        utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
+        uint16_t utf16Data0 = 0xD800;
+        uint16_t utf16Data1= 0xDC00;
+        Utf8Char utf8Char = ConvertUtf16ToUtf8(utf16Data0, utf16Data1, false);
         uint32_t codePoint = CombineTwoU16(utf16Data0, utf16Data1);
-        utf8CharTemp = {4, {static_cast<uint8_t>((codePoint >> 18) | UTF8_4B_FIRST),
+        Utf8Char utf8CharTemp = {4, {static_cast<uint8_t>((codePoint >> 18) | UTF8_4B_FIRST),
                             static_cast<uint8_t>(((codePoint >> 12) & utf::MASK_6BIT) | utf::MASK1),
                             static_cast<uint8_t>(((codePoint >> 6) & utf::MASK_6BIT) | utf::MASK1),
                             static_cast<uint8_t>((codePoint & utf::MASK_6BIT) | utf::MASK1)}};
@@ -294,7 +295,7 @@ HWTEST_F_L0(UtfHelperTest, ConvertUtf16ToUtf8_002)
 *           to perform special conversion for.
 * @tc.type: FUNC
 */
-HWTEST_F_L0(UtfHelperTest, Utf16ToUtf8Size)
+HWTEST_F_L0(UtfHelperTest, Utf16ToUtf8Size_001)
 {
     // when utf16 data length is only 1 and code in 0xd800-0xdfff, means that is a single code point, it needs to be
     // represented by three UTF8 code.
@@ -353,7 +354,10 @@ HWTEST_F_L0(UtfHelperTest, Utf16ToUtf8Size)
     EXPECT_EQ(length-1, 3);
     length = Utf16ToUtf8Size(utf16ValuePtr11, 1, false);
     EXPECT_EQ(length - 1, 3);
+}
 
+HWTEST_F_L0(UtfHelperTest, Utf16ToUtf8Size_002)
+{
     // The trail value is valid, located in [0xDc00, 0xDFFF].It needs to be represented by four UTF8 code.
     uint16_t utf16Value12[2] = {0xD800, 0xDc00};
     uint16_t utf16Value13[2] = {0xD800, 0xDFFF};
@@ -363,7 +367,7 @@ HWTEST_F_L0(UtfHelperTest, Utf16ToUtf8Size)
     const uint16_t *utf16ValuePtr13 = utf16Value13;
     const uint16_t *utf16ValuePtr14 = utf16Value14;
     const uint16_t *utf16ValuePtr15 = utf16Value15;
-    length = Utf16ToUtf8Size(utf16ValuePtr12, 2, false);
+    uint32_t length = Utf16ToUtf8Size(utf16ValuePtr12, 2, false);
     EXPECT_EQ(length - 1, 4);
     length = Utf16ToUtf8Size(utf16ValuePtr13, 2, false);
     EXPECT_EQ(length- 1, 4);
