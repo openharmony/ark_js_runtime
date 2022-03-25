@@ -73,7 +73,6 @@ void MixGC::InitializePhase()
 void MixGC::FinishPhase()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixGC::FinishPhase");
-    heap_->GetSweeper()->PostConcurrentSweepTasks();
     if (concurrentMark_) {
         auto marker = heap_->GetConcurrentMarker();
         marker->Reset(false);
