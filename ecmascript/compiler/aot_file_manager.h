@@ -22,8 +22,8 @@
 namespace panda::ecmascript::kungfu {
 class AotFileManager {
 public:
-    AotFileManager(LLVMModule *llvmModule, bool isFpElim = false) : llvmModule_(llvmModule),
-        assembler_(llvmModule->GetModule(), isFpElim) {};
+    AotFileManager(LLVMModule *llvmModule, bool genFp = true) : llvmModule_(llvmModule),
+        assembler_(llvmModule->GetModule(), genFp) {};
     ~AotFileManager() = default;
     // save function funcs for aot files containing stubs
     void SaveStubFile(const std::string &filename);

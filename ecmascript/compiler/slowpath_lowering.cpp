@@ -232,7 +232,8 @@ GateRef SlowPathLowering::GetValueFromConstStringTable(GateRef glue, GateRef gat
 {
     GateRef id = builder_.Int64(RTSTUB_ID(LoadValueFromConstantStringTable));
     auto idGate = acc_.GetValueIn(gate, inIndex);
-    return builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {idGate});
+    GateRef dependGate = acc_.GetDep(gate);
+    return builder_.RuntimeCall(glue, id, dependGate, {idGate});
 }
 
 void SlowPathLowering::Lower(GateRef gate, EcmaOpcode op)
@@ -553,6 +554,7 @@ void SlowPathLowering::LowerTryLdGlobalByName(GateRef gate, GateRef glue)
 {
     GateRef prop = GetValueFromConstStringTable(glue, gate, 0);
     GateRef id = builder_.Int64(RTSTUB_ID(TryLdGlobalByName));
+    acc_.SetDep(gate, prop);
     ASSERT(acc_.GetNumValueIn(gate) == 1);
     GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {prop});
     LowerHirToCall(gate, newGate);
@@ -562,6 +564,7 @@ void SlowPathLowering::LowerStGlobalVar(GateRef gate, GateRef glue)
 {
     GateRef prop = GetValueFromConstStringTable(glue, gate, 0);
     GateRef id = builder_.Int64(RTSTUB_ID(StGlobalVar));
+    acc_.SetDep(gate, prop);
     ASSERT(acc_.GetNumValueIn(gate) == 2); // 2: number of value inputs
     GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
         {prop, acc_.GetValueIn(gate, 0)});

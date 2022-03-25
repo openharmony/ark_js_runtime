@@ -110,7 +110,7 @@ JSFunctionEntry:
 
     movq    %rdi, %rax          // move glue to rax
     call    *%r9                // then call jsFunction
-    leaq    (,%r14,8), %rcx     // todo:: fixed for 3 extra arguments
+    leaq    (,%r14,8), %rcx   // NOTE: fixed for 3 extra arguments
     addq    %rcx, %rsp
 
     testb   $1, %r14b           // stack 16bytes align check
@@ -263,7 +263,7 @@ OptimizedCallRuntime:
     movq    %rsp, %rbp     // set frame pointer
     movq    %rbp, ASM_GLUE_CURRENT_FRAME_OFFSET(%rax)   // save to thread->currentFrame_
     pushq   $LEAVE_FRAME_TYPE
-    
+
     // callee save
     pushq    %r10
     pushq    %rdx
@@ -293,7 +293,7 @@ AsmIntCallRuntime:
     pushq   $0
     movq    %rsp, ASM_GLUE_LEAVE_FRAME_OFFSET(%rax)   // save to thread->leaveFrame_
     pushq   $ASM_LEAVE_FRAME_TYPE
-    
+
     // callee save
     pushq    %r10
     pushq    %rdx
