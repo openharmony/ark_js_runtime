@@ -1165,6 +1165,9 @@ public:
     {
         return GetProto();
     }
+
+    inline JSHClass *FindTransitions(const JSTaggedValue &key, const JSTaggedValue &attributes);
+
     DECL_DUMP()
 
     static CString DumpJSType(JSType type);
@@ -1180,7 +1183,6 @@ private:
     static inline void AddProtoTransitions(const JSThread *thread, const JSHandle<JSHClass> &parent,
                                            const JSHandle<JSHClass> &child, const JSHandle<JSTaggedValue> &key,
                                            const JSHandle<JSTaggedValue> &proto);
-    inline JSHClass *FindTransitions(const JSTaggedValue &key, const JSTaggedValue &attributes);
     inline JSHClass *FindProtoTransitions(const JSTaggedValue &key, const JSTaggedValue &proto);
 
     inline void Copy(const JSThread *thread, const JSHClass *jshclass);
