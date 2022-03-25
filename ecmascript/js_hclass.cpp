@@ -127,8 +127,7 @@ void JSHClass::Initialize(const JSThread *thread, uint32_t size, JSType type, ui
     if (JSType::JS_OBJECT_BEGIN <= type && type <= JSType::JS_OBJECT_END) {
         SetObjectSize(size + inlinedProps * JSTaggedValue::TaggedTypeSize());
         SetInlinedPropsStart(size);
-        auto env = thread->GetEcmaVM()->GetGlobalEnv();
-        SetLayout(thread, env->GetEmptyLayoutInfo());
+        SetLayout(thread, thread->GlobalConstants()->GetEmptyLayoutInfo());
     } else {
         SetObjectSize(size);
         SetLayout(thread, JSTaggedValue::Null());

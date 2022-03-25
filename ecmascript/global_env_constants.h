@@ -88,10 +88,13 @@ class JSThread;
     V(JSTaggedValue, JSAPITreeSetIteratorClass, JS_API_TREE_SET_ITERATOR_CLASS_INDEX, ecma_roots_class)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define GLOBAL_ENV_CONSTANT_SPECIAL(V)                               \
-    V(JSTaggedValue, Undefined, UNDEFINED_INDEX, ecma_roots_special) \
-    V(JSTaggedValue, Null, NULL_INDEX, ecma_roots_special)           \
-    V(JSTaggedValue, EmptyString, EMPTY_STRING_OBJECT_INDEX, ecma_roots_special)
+#define GLOBAL_ENV_CONSTANT_SPECIAL(V)                                                      \
+    V(JSTaggedValue, Undefined, UNDEFINED_INDEX, ecma_roots_special)                        \
+    V(JSTaggedValue, Null, NULL_INDEX, ecma_roots_special)                                  \
+    V(JSTaggedValue, EmptyString, EMPTY_STRING_OBJECT_INDEX, ecma_roots_special)            \
+    V(JSTaggedValue, EmptyLayoutInfo, EMPTY_LAYOUT_INFO_OBJECT_INDEX, ecma_roots_special)   \
+    V(JSTaggedValue, EmptyArray, EMPTY_ARRAY_OBJECT_INDEX, ecma_roots_special)              \
+    V(JSTaggedValue, EmptyTaggedQueue, EMPTY_TAGGED_QUEUE_OBJECT_INDEX, ecma_roots_special) \
 /* GlobalConstant */
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GLOBAL_ENV_CONSTANT_CONSTANT(V)                                                                               \
@@ -363,6 +366,8 @@ public:
     const JSTaggedValue *EndSlot() const;
 
     void InitRootsClass(JSThread *thread, JSHClass *dynClassClass);
+
+    void InitGlobalConstantSpecial(JSThread *thread);
 
     void InitGlobalConstant(JSThread *thread);
 
