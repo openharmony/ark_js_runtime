@@ -1789,6 +1789,7 @@ DECLARE_ASM_HANDLER(HandleIncDynPrefV8)
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
     Label valueIsInt(env);
     Label valueNotInt(env);
+    Label slowPath(env);
     Label accDispatch(env);
     Branch(TaggedIsInt(value), &valueIsInt, &valueNotInt);
     Bind(&valueIsInt);
@@ -1814,7 +1815,11 @@ DECLARE_ASM_HANDLER(HandleIncDynPrefV8)
             Jump(&accDispatch);
         }
         Bind(&valueNotDouble);
+        Jump(&slowPath);
+    } else {
+        Jump(&slowPath);
     }
+    Bind(&slowPath);
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
@@ -1830,7 +1835,6 @@ DECLARE_ASM_HANDLER(HandleIncDynPrefV8)
         varAcc = result;
         Jump(&accDispatch);
     }
-
     Bind(&accDispatch);
     DISPATCH_WITH_ACC(PREF_V8);
 }
@@ -1844,6 +1848,7 @@ DECLARE_ASM_HANDLER(HandleDecDynPrefV8)
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
     Label valueIsInt(env);
     Label valueNotInt(env);
+    Label slowPath(env);
     Label accDispatch(env);
     Branch(TaggedIsInt(value), &valueIsInt, &valueNotInt);
     Bind(&valueIsInt);
@@ -1869,7 +1874,11 @@ DECLARE_ASM_HANDLER(HandleDecDynPrefV8)
             Jump(&accDispatch);
         }
         Bind(&valueNotDouble);
+        Jump(&slowPath);
+    } else {
+        Jump(&slowPath);
     }
+    Bind(&slowPath);
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
