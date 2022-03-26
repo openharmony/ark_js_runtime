@@ -39,6 +39,7 @@ void ParallelEvacuation::Finalize()
 {
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelEvacuationFinalize);
     delete allocator_;
+    heap_->GetSweeper()->PostConcurrentSweepTasks();
     heap_->Resume(OLD_GC);
 }
 
@@ -299,16 +300,14 @@ void ParallelEvacuation::UpdateRSet(Region *region)
             return true;
         });
     }
-    if (!heap_->GetOldSpace()->IsCSetEmpty()) {
-        rememberedSet = region->GetCrossRegionRememberedSet();
-        if (LIKELY(rememberedSet != nullptr)) {
-            rememberedSet->IterateOverMarkedChunks([this](void *mem) -> bool {
-                ObjectSlot slot(ToUintPtr(mem));
-                UpdateObjectSlot(slot);
-                return true;
-            });
-            rememberedSet->ClearAllBits();
-        }
+    rememberedSet = region->GetCrossRegionRememberedSet();
+    if (LIKELY(rememberedSet != nullptr)) {
+        rememberedSet->IterateOverMarkedChunks([this](void *mem) -> bool {
+            ObjectSlot slot(ToUintPtr(mem));
+            UpdateObjectSlot(slot);
+            return true;
+        });
+        rememberedSet->ClearAllBits();
     }
 }
 
