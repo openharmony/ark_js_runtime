@@ -1128,16 +1128,9 @@ inline void Stub::StoreHClass(GateRef glue, GateRef object, GateRef hclass)
 
 inline GateRef Stub::GetObjectType(GateRef hClass)
 {
-    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
     return Int32And(bitfield, GetInt32Constant((1LU << JSHClass::ObjectTypeBits::SIZE) - 1));
-}
-
-inline GateRef Stub::GetGeneratorObjectResumeMode(GateRef obj)
-{
-    GateRef bitfieldOffset = GetInt32Constant(JSGeneratorObject::BIT_FIELD_OFFSET);
-    GateRef bitfield = Load(VariableType::INT32(), obj, bitfieldOffset);
-    return Int32And(bitfield, GetInt32Constant((1LU << JSGeneratorObject::ResumeModeBits::SIZE) - 1));
 }
 
 inline GateRef Stub::IsDictionaryMode(GateRef object)
@@ -1149,7 +1142,7 @@ inline GateRef Stub::IsDictionaryMode(GateRef object)
 
 inline GateRef Stub::IsDictionaryModeByHClass(GateRef hClass)
 {
-    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
     return Int32NotEqual(
         Int32And(
@@ -1160,7 +1153,7 @@ inline GateRef Stub::IsDictionaryModeByHClass(GateRef hClass)
 
 inline GateRef Stub::IsDictionaryElement(GateRef hClass)
 {
-    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
     // decode
     return Int32NotEqual(
@@ -1173,7 +1166,7 @@ inline GateRef Stub::IsDictionaryElement(GateRef hClass)
 inline GateRef Stub::NotBuiltinsConstructor(GateRef object)
 {
     GateRef hclass = LoadHClass(object);
-    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
 
     GateRef bitfield = Load(VariableType::INT32(), hclass, bitfieldOffset);
     // decode
@@ -1187,7 +1180,7 @@ inline GateRef Stub::NotBuiltinsConstructor(GateRef object)
 inline GateRef Stub::IsClassConstructor(GateRef object)
 {
     GateRef hClass = LoadHClass(object);
-    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
 
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
     // decode
@@ -1200,7 +1193,7 @@ inline GateRef Stub::IsClassConstructor(GateRef object)
 inline GateRef Stub::IsClassPrototype(GateRef object)
 {
     GateRef hClass = LoadHClass(object);
-    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
 
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
     // decode
@@ -1213,7 +1206,7 @@ inline GateRef Stub::IsClassPrototype(GateRef object)
 inline GateRef Stub::IsExtensible(GateRef object)
 {
     GateRef hClass = LoadHClass(object);
-    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
 
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
     // decode
@@ -1375,7 +1368,7 @@ inline GateRef Stub::GetPrototypeHandlerHandlerInfo(GateRef object)
 
 inline GateRef Stub::GetHasChanged(GateRef object)
 {
-    GateRef bitfieldOffset = GetInt32Constant(ProtoChangeMarker::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetIntPtrConstant(ProtoChangeMarker::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), object, bitfieldOffset);
     GateRef mask = GetInt32Constant(1LLU << (ProtoChangeMarker::HAS_CHANGED_BITS - 1));
     return Int32NotEqual(Int32And(bitfield, mask), GetInt32Constant(0));
@@ -1523,7 +1516,7 @@ inline GateRef Stub::GetLayoutFromHClass(GateRef hClass)
 
 inline GateRef Stub::GetBitFieldFromHClass(GateRef hClass)
 {
-    GateRef offset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef offset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
     return Load(VariableType::INT32(), hClass, offset);
 }
 
@@ -1895,7 +1888,7 @@ inline GateRef Stub::GetGlobalConstantString(ConstantIndex index)
 inline GateRef Stub::IsCallable(GateRef obj)
 {
     GateRef hclass = LoadHClass(obj);
-    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hclass, bitfieldOffset);
     return Int32NotEqual(
         Int32And(UInt32LSR(bitfield, GetInt32Constant(JSHClass::CallableBit::START_BIT)),
@@ -2029,9 +2022,10 @@ inline GateRef Stub::GetEntryIndexOfGlobalDictionary(GateRef entry)
 
 inline GateRef Stub::GetBoxFromGlobalDictionary(GateRef object, GateRef entry)
 {
-    GateRef index =
-        Int32Add(GetEntryIndexOfGlobalDictionary(entry), GetInt32Constant(GlobalDictionary::ENTRY_VALUE_INDEX));
-    return Load(VariableType::JS_POINTER(), object, index);
+    GateRef index = GetEntryIndexOfGlobalDictionary(entry);
+    GateRef offset = IntPtrAdd(ChangeInt32ToIntPtr(index),
+        GetIntPtrConstant(GlobalDictionary::ENTRY_VALUE_INDEX));
+    return Load(VariableType::JS_POINTER(), object, offset);
 }
 
 inline GateRef Stub::GetValueFromGlobalDictionary(GateRef object, GateRef entry)
