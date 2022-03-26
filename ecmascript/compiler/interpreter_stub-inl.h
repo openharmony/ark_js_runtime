@@ -18,6 +18,7 @@
 
 #include "ecmascript/compiler/interpreter_stub.h"
 #include "ecmascript/js_function.h"
+#include "ecmascript/js_generator_object.h"
 
 namespace panda::ecmascript::kungfu {
 void InterpreterStub::SetVregValue(GateRef glue, GateRef sp, GateRef idx, GateRef val)
@@ -222,6 +223,15 @@ GateRef InterpreterStub::GetModuleFromFunction(GateRef function)
 GateRef InterpreterStub::GetConstpoolFromFunction(GateRef function)
 {
     return Load(VariableType::JS_POINTER(), function, GetIntPtrConstant(JSFunction::CONSTANT_POOL_OFFSET));
+}
+
+GateRef InterpreterStub::GetResumeModeFromGeneratorObject(GateRef obj)
+{
+    GateRef bitfieldOffset = GetIntPtrConstant(JSGeneratorObject::BIT_FIELD_OFFSET);
+    GateRef bitfield = Load(VariableType::INT32(), obj, bitfieldOffset);
+    return Int32And(
+        UInt32LSR(bitfield, GetInt32Constant(JSGeneratorObject::ResumeModeBits::START_BIT)),
+        GetInt32Constant((1LU << JSGeneratorObject::ResumeModeBits::SIZE) - 1));
 }
 
 void InterpreterStub::SetEnvToFrame(GateRef glue, GateRef frame, GateRef value)
