@@ -54,8 +54,9 @@ namespace panda::ecmascript {
 #define DEF_RUNTIME_STUBS(name) \
 JSTaggedType RuntimeStubs::name(uintptr_t argGlue, uint32_t argc, uintptr_t argv) \
 
-#define RUNTIME_STUBS_HEADER(name)                  \
+#define RUNTIME_STUBS_HEADER(name)                        \
     auto thread = JSThread::GlueToJSThread(argGlue);      \
+    RUNTIME_TRACE(thread, name);                          \
     [[maybe_unused]] EcmaHandleScope handleScope(thread)  \
 
 #define CONVERT_ARG_TAGGED_TYPE_CHECKED(name, index) \
@@ -68,7 +69,7 @@ JSTaggedType RuntimeStubs::name(uintptr_t argGlue, uint32_t argc, uintptr_t argv
 
 #define CONVERT_ARG_HANDLE_CHECKED(type, name, index) \
     ASSERT((index) < argc);                           \
-    JSHandle<type> name(thread, JSTaggedValue(*(reinterpret_cast<JSTaggedType *>(argv) + (index))))
+    JSHandle<type> name(&(reinterpret_cast<JSTaggedType *>(argv)[index]))
 
 #define CONVERT_ARG_PTR_CHECKED(type, name, index) \
     ASSERT((index) < argc);                        \

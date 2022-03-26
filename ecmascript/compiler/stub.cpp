@@ -1692,7 +1692,7 @@ GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRe
         Branch(TaggedIsInt(*varHandler), &handlerIsInt, &handlerNotInt);
         Bind(&handlerIsInt);
         {
-            GateRef handlerInfo = TaggedCastToInt32(handler);
+            GateRef handlerInfo = TaggedCastToInt32(*varHandler);
             Branch(HandlerBaseIsJSArray(handlerInfo), &handerInfoIsJSArray, &handerInfoNotJSArray);
             Bind(&handerInfoIsJSArray);
             {
