@@ -1997,7 +1997,7 @@ DECLARE_ASM_HANDLER(HandleGetResumeModePrefV8)
 
     GateRef vs = ReadInst8_1(pc);
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(vs));
-    varAcc = ChangeInt64ToTagged(ZExtInt32ToInt64(GetGeneratorObjectResumeMode(obj)));
+    varAcc = IntBuildTaggedWithNoGC(GetResumeModeFromGeneratorObject(obj));
     DISPATCH_WITH_ACC(PREF_V8);
 }
 

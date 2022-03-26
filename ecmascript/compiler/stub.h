@@ -569,7 +569,6 @@ public:
     void StoreHClass(GateRef glue, GateRef object, GateRef hclass);
     void CopyAllHClass(GateRef glue, GateRef dstHClass, GateRef scrHClass);
     GateRef GetObjectType(GateRef hClass);
-    GateRef GetGeneratorObjectResumeMode(GateRef obj);
     GateRef IsDictionaryMode(GateRef object);
     GateRef IsDictionaryModeByHClass(GateRef hClass);
     GateRef IsDictionaryElement(GateRef hClass);
