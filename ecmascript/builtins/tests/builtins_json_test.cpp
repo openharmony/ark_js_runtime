@@ -20,6 +20,7 @@
 #include "ecmascript/base/builtins_base.h"
 #include "ecmascript/builtins/builtins_errors.h"
 #include "ecmascript/builtins/builtins_json.h"
+#include "ecmascript/builtins/builtins_proxy.h"
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/ecma_string-inl.h"
 #include "ecmascript/ecma_vm.h"
@@ -456,6 +457,54 @@ HWTEST_F_L0(BuiltinsJsonTest, Stringify3)
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetCallArg(0, str.GetTaggedValue());
+
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    JSTaggedValue result = BuiltinsJson::Stringify(ecmaRuntimeCallInfo.get());
+    ASSERT_TRUE(EcmaString::StringsAreEqual(*test, EcmaString::Cast(result.GetTaggedObject())));
+}
+
+JSHandle<JSTaggedValue> CreateJSObject(JSThread *thread)
+{
+    EcmaVM *ecmaVM = thread->GetEcmaVM();
+    JSHandle<GlobalEnv> globalEnv = ecmaVM->GetGlobalEnv();
+    JSHandle<JSTaggedValue> objFun = globalEnv->GetObjectFunction();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+
+    JSHandle<JSTaggedValue> obj(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun));
+    JSHandle<JSTaggedValue> key(factory->NewFromStdString("x"));
+    JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
+    JSObject::SetProperty(thread, obj, key, value);
+    return obj;
+}
+
+JSHandle<JSTaggedValue> CreateProxy(JSThread *thread)
+{
+    JSHandle<JSTaggedValue> target = CreateJSObject(thread);
+    JSHandle<JSTaggedValue> handler = CreateJSObject(thread);
+
+    auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Null(), 8);
+    ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo->SetCallArg(0, target.GetTaggedValue());
+    ecmaRuntimeCallInfo->SetCallArg(1, handler.GetTaggedValue());
+
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    JSTaggedValue result = BuiltinsProxy::ProxyConstructor(ecmaRuntimeCallInfo.get());
+    return JSHandle<JSTaggedValue>(thread, result);
+}
+
+HWTEST_F_L0(BuiltinsJsonTest, Stringify4)  // Test for proxy object
+{
+    auto ecmaVM = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVM->GetFactory();
+
+    JSHandle<JSTaggedValue> proxy = CreateProxy(thread);
+    JSHandle<EcmaString> test = factory->NewFromStdString("{\"x\":1}");
+
+    auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
+    ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo->SetCallArg(0, proxy.GetTaggedValue());
 
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
     JSTaggedValue result = BuiltinsJson::Stringify(ecmaRuntimeCallInfo.get());
