@@ -27,7 +27,6 @@
 #endif
 #include "ecmascript/dfx/vmstat/runtime_stat.h"
 #include "ecmascript/ecma_string_table.h"
-#include "ecmascript/global_dictionary.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/global_env_constants-inl.h"
 #include "ecmascript/global_env_constants.h"
@@ -53,15 +52,13 @@
 #ifndef PANDA_TARGET_WINDOWS
 #include "ecmascript/stubs/runtime_stubs.h"
 #endif
-#include "ecmascript/snapshot/mem/slot_bit.h"
+#include "ecmascript/snapshot/mem/encode_bit.h"
 #include "ecmascript/snapshot/mem/snapshot.h"
 #include "ecmascript/snapshot/mem/snapshot_serialize.h"
-#include "ecmascript/symbol_table.h"
 #include "ecmascript/tagged_array-inl.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/tagged_queue.h"
 #include "ecmascript/tagged_queue.h"
-#include "ecmascript/template_map.h"
 #include "ecmascript/ts_types/ts_loader.h"
 #include "include/runtime_notification.h"
 #include "libpandafile/file.h"
@@ -162,51 +159,22 @@ bool EcmaVM::Initialize()
         UNREACHABLE();
     }
     [[maybe_unused]] EcmaHandleScope scope(thread_);
-    if (!snapshotDeserializeEnable_ || !VerifyFilePath(snapshotFileName_)) {
-        LOG_ECMA(DEBUG) << "EcmaVM::Initialize run builtins";
 
-        JSHandle<JSHClass> dynClassClassHandle =
-            factory_->NewEcmaDynClassClass(nullptr, JSHClass::SIZE, JSType::HCLASS);
-        JSHClass *dynclass = reinterpret_cast<JSHClass *>(dynClassClassHandle.GetTaggedValue().GetTaggedObject());
-        dynclass->SetClass(dynclass);
-        JSHandle<JSHClass> globalEnvClass =
-            factory_->NewEcmaDynClass(*dynClassClassHandle, GlobalEnv::SIZE, JSType::GLOBAL_ENV);
-
-        JSHandle<GlobalEnv> globalEnvHandle = factory_->NewGlobalEnv(*globalEnvClass);
-        globalEnv_ = globalEnvHandle.GetTaggedValue();
-        auto globalEnv = GlobalEnv::Cast(globalEnv_.GetTaggedObject());
-
-        // init global env
-        globalConst->InitRootsClass(thread_, *dynClassClassHandle);
-        globalConst->InitGlobalConstant(thread_);
-        globalEnv->SetRegisterSymbols(thread_, SymbolTable::Create(thread_));
-        globalEnv->SetGlobalRecord(thread_, GlobalDictionary::Create(thread_));
-        JSTaggedValue emptyStr = thread_->GlobalConstants()->GetEmptyString();
-        stringTable_->InternEmptyString(EcmaString::Cast(emptyStr.GetTaggedObject()));
-        globalEnv->SetTemplateMap(thread_, TemplateMap::Create(thread_));
-        globalEnv->SetRegisterSymbols(GetJSThread(), SymbolTable::Create(GetJSThread()));
+    LOG_ECMA(DEBUG) << "EcmaVM::Initialize run builtins";
+    JSHandle<JSHClass> dynClassClassHandle = factory_->InitClassClass();
+    JSHandle<JSHClass> globalEnvClass =
+        factory_->NewEcmaDynClass(*dynClassClassHandle, GlobalEnv::SIZE, JSType::GLOBAL_ENV);
+    globalConst->Init(thread_, *dynClassClassHandle);
+    JSHandle<GlobalEnv> globalEnv = factory_->NewGlobalEnv(*globalEnvClass);
+    globalEnv->Init(thread_);
+    globalEnv_ = globalEnv.GetTaggedValue();
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-        std::string comStubFile = options_.GetComStubFile();
-        thread_->LoadStubsFromFile(comStubFile);
-        std::string bcStubFile = options_.GetBcStubFile();
-        thread_->LoadStubsFromFile(bcStubFile);
+    LoadStubs();
 #endif
-        SetupRegExpResultCache();
-        microJobQueue_ = factory_->NewMicroJobQueue().GetTaggedValue();
-        {
-            Builtins builtins;
-            builtins.Initialize(globalEnvHandle, thread_);
-        }
-    } else {
-#if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
-        LOG_ECMA(DEBUG) << "EcmaVM::Initialize run snapshot";
-        SnapShot snapShot(this);
-        frameworkPandaFile_ = snapShot.DeserializeGlobalEnvAndProgram(snapshotFileName_, frameworkAbcFileName_);
-        globalConst->InitGlobalUndefined();
-#else
-        LOG_ECMA(FATAL) << "Don't support snapshot now.";
-#endif
-    }
+    SetupRegExpResultCache();
+    microJobQueue_ = factory_->NewMicroJobQueue().GetTaggedValue();
+    Builtins builtins;
+    builtins.Initialize(globalEnv, thread_);
     thread_->SetGlobalObject(GetGlobalEnv()->GetGlobalObject());
     moduleManager_ = new ModuleManager(this);
     tsLoader_ = new TSLoader(this);
@@ -372,26 +340,11 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
     JSTaggedValue result;
     [[maybe_unused]] EcmaHandleScope scope(thread_);
     JSHandle<Program> program;
-    if (snapshotSerializeEnable_) {
-#if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
+    if (jsPandaFile != frameworkPandaFile_) {
         program = JSPandaFileManager::GetInstance()->GenerateProgram(this, jsPandaFile);
-
-        auto index = jsPandaFile->GetJSPandaFileDesc().find(frameworkAbcFileName_);
-        if (index != CString::npos) {
-            LOG_ECMA(DEBUG) << "snapShot MakeSnapShotProgramObject abc " << jsPandaFile->GetJSPandaFileDesc();
-            SnapShot snapShot(this);
-            snapShot.MakeSnapShotProgramObject(*program, jsPandaFile->GetPandaFile(), snapshotFileName_);
-#else
-        LOG_ECMA(FATAL) << "Don't support snapshot now.";
-#endif
-        }
     } else {
-        if (jsPandaFile != frameworkPandaFile_) {
-            program = JSPandaFileManager::GetInstance()->GenerateProgram(this, jsPandaFile);
-        } else {
-            program = JSHandle<Program>(thread_, frameworkProgram_);
-            frameworkProgram_ = JSTaggedValue::Hole();
-        }
+        program = JSHandle<Program>(thread_, frameworkProgram_);
+        frameworkProgram_ = JSTaggedValue::Hole();
     }
     if (program.IsEmpty()) {
         LOG_ECMA(ERROR) << "program is empty, invoke entrypoint failed";
@@ -660,6 +613,14 @@ void EcmaVM::ClearNativeMethodsData()
         chunk_.Delete(iter);
     }
     nativeMethods_.clear();
+}
+
+void EcmaVM::LoadStubs()
+{
+    std::string comStubFile = options_.GetComStubFile();
+    thread_->LoadStubsFromFile(comStubFile);
+    std::string bcStubFile = options_.GetBcStubFile();
+    thread_->LoadStubsFromFile(bcStubFile);
 }
 
 void EcmaVM::SetupRegExpResultCache()

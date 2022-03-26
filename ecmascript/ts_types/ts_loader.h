@@ -174,6 +174,11 @@ public:
         return JSHandle<TSModuleTable>(reinterpret_cast<uintptr_t>(&globalModuleTable_));
     }
 
+    CVector<JSTaggedType> GetConstStringTable() const
+    {
+        return constantStringTable_;
+    }
+
     void SetTSModuleTable(JSHandle<TSModuleTable> table)
     {
         globalModuleTable_ = table.GetTaggedValue();

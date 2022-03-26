@@ -100,6 +100,7 @@ public:
     DECL_DUMP()
 
     DECL_VISIT_OBJECT(TARGET_OFFSET, METHOD_OFFSET)
+    DECL_VISIT_NATIVE_FIELD(METHOD_OFFSET, SIZE);
 };
 }  // namespace panda::ecmascript
 

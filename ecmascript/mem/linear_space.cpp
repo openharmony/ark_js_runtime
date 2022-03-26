@@ -23,7 +23,7 @@
 
 namespace panda::ecmascript {
 LinearSpace::LinearSpace(Heap *heap, MemSpaceType type, size_t initialCapacity, size_t maximumCapacity)
-    : Space(heap, type, initialCapacity, maximumCapacity), waterLine_(0)
+    : Space(heap, type, initialCapacity, maximumCapacity), allocator_(new BumpPointerAllocator()), waterLine_(0)
 {
 }
 
@@ -86,10 +86,7 @@ void LinearSpace::Stop()
 }
 
 SemiSpace::SemiSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
-    : LinearSpace(heap, MemSpaceType::SEMI_SPACE, initialCapacity, maximumCapacity)
-{
-    allocator_ = new BumpPointerAllocator();
-}
+    : LinearSpace(heap, MemSpaceType::SEMI_SPACE, initialCapacity, maximumCapacity) {}
 
 void SemiSpace::Initialize()
 {
@@ -235,7 +232,5 @@ size_t SemiSpace::GetAllocatedSizeSinceGC() const
 }
 
 SnapShotSpace::SnapShotSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
-    : LinearSpace(heap, MemSpaceType::SNAPSHOT_SPACE, initialCapacity, maximumCapacity)
-{
-}
+    : LinearSpace(heap, MemSpaceType::SNAPSHOT_SPACE, initialCapacity, maximumCapacity) {}
 }  // namespace panda::ecmascript

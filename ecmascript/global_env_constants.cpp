@@ -60,6 +60,12 @@
 #include "ecmascript/ts_types/ts_type.h"
 
 namespace panda::ecmascript {
+void GlobalEnvConstants::Init(JSThread *thread, JSHClass *dynClassClass)
+{
+    InitRootsClass(thread, dynClassClass);
+    InitGlobalConstant(thread);
+}
+
 void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHClass *dynClassClass)
 {
     // Global constants are readonly.

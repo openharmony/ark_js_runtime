@@ -75,8 +75,8 @@ void FullGC::InitializePhase()
 void FullGC::MarkingPhase()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::MarkingPhase");
-    heap_->GetCompressGcMarker()->MarkRoots(0);
-    heap_->GetCompressGcMarker()->ProcessMarkStack(0);
+    heap_->GetCompressGcMarker()->MarkRoots(MAIN_THREAD_INDEX);
+    heap_->GetCompressGcMarker()->ProcessMarkStack(MAIN_THREAD_INDEX);
     heap_->WaitRunningTaskFinished();
 }
 
