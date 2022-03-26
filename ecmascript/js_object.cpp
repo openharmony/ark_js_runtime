@@ -1312,7 +1312,8 @@ JSHandle<TaggedArray> JSObject::EnumerableOwnNames(JSThread *thread, const JSHan
         JSTaggedValue key(keys->Get(i));
         if (key.IsString()) {
             PropertyDescriptor desc(thread);
-            bool status = GetOwnProperty(thread, obj, JSHandle<JSTaggedValue>(thread, key), desc);
+            bool status = JSTaggedValue::GetOwnProperty(thread, JSHandle<JSTaggedValue>(obj),
+                                                        JSHandle<JSTaggedValue>(thread, key), desc);
             RETURN_HANDLE_IF_ABRUPT_COMPLETION(TaggedArray, thread);
 
             if (status && desc.IsEnumerable()) {
