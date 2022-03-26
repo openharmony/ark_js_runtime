@@ -151,6 +151,11 @@ public:
         return regionList_.GetLast();
     }
 
+    Region *GetFirstRegion() const
+    {
+        return regionList_.GetFirst();
+    }
+
     uint32_t GetRegionCount()
     {
         return regionList_.GetLength();

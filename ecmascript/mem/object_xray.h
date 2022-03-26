@@ -33,12 +33,13 @@ enum class Root {
     ROOT_INTERNAL_CALL_PARAMS,
 };
 
-enum class GCType : size_t { SEMI_GC, OLD_GC };
+enum class VisitType : size_t { SEMI_GC_VISIT, OLD_GC_VISIT, SNAPSHOT_VISIT };
 
 using RootVisitor = std::function<void(Root type, ObjectSlot p)>;
 using RootRangeVisitor = std::function<void(Root type, ObjectSlot start, ObjectSlot end)>;
 using EcmaObjectVisitor = std::function<void(TaggedObject *root, ObjectSlot p)>;
-using EcmaObjectRangeVisitor = std::function<void(TaggedObject *root, ObjectSlot start, ObjectSlot end)>;
+using EcmaObjectRangeVisitor = std::function<void(TaggedObject *root, ObjectSlot start, ObjectSlot end,
+                                                  bool isNative)>;
 
 using WeakRootVisitor = std::function<TaggedObject *(TaggedObject *p)>;
 
@@ -48,7 +49,7 @@ public:
     ~ObjectXRay() = default;
 
     inline void VisitVMRoots(const RootVisitor &visitor, const RootRangeVisitor &range_visitor) const;
-    template<GCType gc_type>
+    template<VisitType visitType>
     inline void VisitObjectBody(TaggedObject *object, JSHClass *klass, const EcmaObjectRangeVisitor &visitor);
 
 private:

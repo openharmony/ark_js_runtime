@@ -84,7 +84,8 @@ bool ParallelEvacuation::UpdateWeakObjectSlot(TaggedObject *value, ObjectSlot &s
 void ParallelEvacuation::SetObjectFieldRSet(TaggedObject *object, JSHClass *cls)
 {
     Region *region = Region::ObjectAddressToRange(object);
-    auto callbackWithCSet = [region]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end) {
+    auto callbackWithCSet = [region]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end,
+                                     [[maybe_unused]] bool isNative) {
         for (ObjectSlot slot = start; slot < end; slot++) {
             JSTaggedType value = slot.GetTaggedType();
             if (JSTaggedValue(value).IsHeapObject()) {
@@ -97,7 +98,7 @@ void ParallelEvacuation::SetObjectFieldRSet(TaggedObject *object, JSHClass *cls)
             }
         }
     };
-    objXRay_.VisitObjectBody<GCType::OLD_GC>(object, cls, callbackWithCSet);
+    objXRay_.VisitObjectBody<VisitType::OLD_GC_VISIT>(object, cls, callbackWithCSet);
 }
 
 

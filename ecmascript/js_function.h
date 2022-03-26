@@ -50,6 +50,7 @@ public:
     DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, SIZE, SIZE)
+    DECL_VISIT_NATIVE_FIELD(METHOD_OFFSET, SIZE);
 };
 
 static_assert((JSFunctionBase::SIZE % static_cast<uint8_t>(MemAlignment::MEM_ALIGN_OBJECT)) == 0);

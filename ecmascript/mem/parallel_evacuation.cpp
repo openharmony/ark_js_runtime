@@ -147,8 +147,8 @@ void ParallelEvacuation::EvacuateRegion(TlabAllocator *allocator, Region *region
 void ParallelEvacuation::VerifyHeapObject(TaggedObject *object)
 {
     auto klass = object->GetClass();
-    objXRay_.VisitObjectBody<GCType::OLD_GC>(object, klass,
-        [&]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end) {
+    objXRay_.VisitObjectBody<VisitType::OLD_GC_VISIT>(object, klass,
+        [&]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end, [[maybe_unused]] bool isNative) {
             for (ObjectSlot slot = start; slot < end; slot++) {
                 JSTaggedValue value(slot.GetTaggedType());
                 if (value.IsHeapObject()) {
@@ -192,6 +192,9 @@ void ParallelEvacuation::UpdateReference()
         }
         AddWorkload(std::make_unique<UpdateRSetWorkload>(this, current));
         oldRegionCount++;
+    });
+    heap_->EnumerateSnapShotSpaceRegions([this] (Region *current) {
+        AddWorkload(std::make_unique<UpdateRSetWorkload>(this, current));
     });
     LOG(DEBUG, RUNTIME) << "UpdatePointers statistic: younge space region compact moving count:"
                         << youngeRegionMoveCount
@@ -370,8 +373,8 @@ void ParallelEvacuation::UpdateAndSweepNewRegionReference(Region *region)
 
 void ParallelEvacuation::UpdateNewObjectField(TaggedObject *object, JSHClass *cls)
 {
-    objXRay_.VisitObjectBody<GCType::OLD_GC>(object, cls,
-        [this]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end) {
+    objXRay_.VisitObjectBody<VisitType::OLD_GC_VISIT>(object, cls,
+        [this]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end, [[maybe_unused]] bool isNative) {
             for (ObjectSlot slot = start; slot < end; slot++) {
                 UpdateObjectSlot(slot);
             }

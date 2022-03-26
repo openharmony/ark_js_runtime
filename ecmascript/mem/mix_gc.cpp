@@ -89,11 +89,12 @@ void MixGC::MarkingPhase()
         heap_->GetConcurrentMarker()->ReMarking();
         return;
     }
-    heap_->GetNonMovableMarker()->MarkRoots(0);
+    heap_->GetNonMovableMarker()->MarkRoots(MAIN_THREAD_INDEX);
     if (heap_->IsFullMark()) {
-        heap_->GetNonMovableMarker()->ProcessMarkStack(0);
+        heap_->GetNonMovableMarker()->ProcessMarkStack(MAIN_THREAD_INDEX);
     } else {
-        heap_->GetNonMovableMarker()->ProcessOldToNew(0);
+        heap_->GetNonMovableMarker()->ProcessOldToNew(MAIN_THREAD_INDEX);
+        heap_->GetNonMovableMarker()->ProcessSnapshotRSet(MAIN_THREAD_INDEX);
     }
     heap_->WaitRunningTaskFinished();
 }

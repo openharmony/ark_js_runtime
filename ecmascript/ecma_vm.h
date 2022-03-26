@@ -330,6 +330,7 @@ public:
         return tsLoader_;
     }
 
+    void LoadStubs();
     void SetupRegExpResultCache();
 
     JSHandle<JSTaggedValue> GetRegExpCache() const

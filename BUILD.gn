@@ -497,7 +497,6 @@ if (!is_mingw) {
     "ecmascript/dfx/hprof/heap_snapshot_json_serializer.cpp",
     "ecmascript/dfx/hprof/heap_tracker.cpp",
     "ecmascript/dfx/hprof/string_hashmap.cpp",
-    "ecmascript/snapshot/mem/slot_bit.cpp",
     "ecmascript/snapshot/mem/snapshot.cpp",
     "ecmascript/snapshot/mem/snapshot_serialize.cpp",
   ]

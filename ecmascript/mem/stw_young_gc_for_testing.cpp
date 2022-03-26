@@ -76,9 +76,9 @@ void STWYoungGC::ParallelMarkingPhase()
         heap_->GetSemiGcMarker()->ProcessOldToNew(0, region);
     } else {
         heap_->GetSemiGcMarker()->ProcessOldToNew(0, region);
-        heap_->GetSemiGcMarker()->ProcessSnapshotRSet(0);
-        heap_->GetSemiGcMarker()->MarkRoots(0);
-        heap_->GetSemiGcMarker()->ProcessMarkStack(0);
+        heap_->GetSemiGcMarker()->ProcessSnapshotRSet(MAIN_THREAD_INDEX);
+        heap_->GetSemiGcMarker()->MarkRoots(MAIN_THREAD_INDEX);
+        heap_->GetSemiGcMarker()->ProcessMarkStack(MAIN_THREAD_INDEX);
     }
     heap_->WaitRunningTaskFinished();
 

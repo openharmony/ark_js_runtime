@@ -30,42 +30,31 @@
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/object_factory.h"
-#include "ecmascript/snapshot/mem/snapshot_serialize.h"
+#include "ecmascript/ts_types/ts_loader.h"
 #include "libpandabase/mem/mem.h"
 
 namespace panda::ecmascript {
 constexpr uint32_t PANDA_FILE_ALIGNMENT = 4096;
 
-void SnapShot::MakeSnapShotProgramObject(Program *program, const panda_file::File *pf, const CString &fileName)
+void SnapShot::MakeSnapShot(TaggedObject *objectHeader, const panda_file::File *pf, const CString &fileName)
 {
     std::fstream write;
-    std::pair<bool, CString> filePath = VerifyFilePath(fileName);
-    if (!filePath.first) {
-        LOG(ERROR, RUNTIME) << "snapshot file path error";
-        return;
-    }
-    write.open(filePath.second.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
-    if (!write.good()) {
-        LOG(DEBUG, RUNTIME) << "snapshot open file failed";
+    if (!VerifySnapShotFile(write, fileName)) {
         return;
     }
 
-    SnapShotSerialize serialize(vm_, true);
+    SnapShotSerialize serialize(vm_);
 
-    std::unordered_map<uint64_t, SlotBit> data;
+    std::unordered_map<uint64_t, std::pair<uint64_t, EncodeBit>> data;
     CQueue<TaggedObject *> objectQueue;
 
-    serialize.RegisterNativeMethod();
+    if (objectHeader->GetClass()->GetObjectType() == JSType::PROGRAM) {
+        serialize.SetProgramSerializeStart();
+    }
 
-    // handle GlobalEnvConstants
-    auto constant = const_cast<GlobalEnvConstants *>(vm_->GetJSThread()->GlobalConstants());
-    constant->VisitRangeSlot([&objectQueue, &data]([[maybe_unused]] Root type, ObjectSlot start, ObjectSlot end) {
-        SerializeHelper::AddTaggedObjectRangeToData(start, end, &objectQueue, &data);
-    });
+    serialize.EncodeTaggedObject(objectHeader, &objectQueue, &data);
 
-    vm_->Iterate([&objectQueue, &data]([[maybe_unused]] Root type, ObjectSlot object) {
-        SerializeHelper::AddObjectHeaderToData(object.GetTaggedObjectHeader(), &objectQueue, &data);
-    });
+    size_t rootObjSize = objectQueue.size();
 
     while (!objectQueue.empty()) {
         auto taggedObject = objectQueue.front();
@@ -76,53 +65,46 @@ void SnapShot::MakeSnapShotProgramObject(Program *program, const panda_file::Fil
 
         serialize.Serialize(taggedObject, &objectQueue, &data);
     }
-
-    serialize.SetProgramSerializeStart();
-
-    // handle program
-    if (program != nullptr) {
-        SerializeHelper::AddObjectHeaderToData(program, &objectQueue, &data);
-    }
-
-    while (!objectQueue.empty()) {
-        auto taggedObject = objectQueue.front();
-        if (taggedObject == nullptr) {
-            break;
-        }
-        objectQueue.pop();
-        serialize.Serialize(taggedObject, &objectQueue, &data);
-    }
-
-    serialize.SerializePandaFileMethod();
 
     vm_->GetHeap()->GetSnapShotSpace()->Stop();
 
-    // write to file
-    SnapShotSpace *space = vm_->GetHeap()->GetSnapShotSpace();
-    size_t defaultSnapshotSpaceCapacity = vm_->GetJSOptions().DefaultSnapshotSpaceCapacity();
-    uint32_t snapshot_size = space->GetRegionCount() * defaultSnapshotSpaceCapacity;
-    uint32_t panda_file_begin = RoundUp(snapshot_size + sizeof(Header), PANDA_FILE_ALIGNMENT);
-    Header hdr {snapshot_size, panda_file_begin};
-    write.write(reinterpret_cast<char *>(&hdr), sizeof(hdr));
-
-    space->EnumerateRegions([&write, &defaultSnapshotSpaceCapacity](Region *current) {
-        write.write(reinterpret_cast<char *>(current), defaultSnapshotSpaceCapacity);
-        write.flush();
-    });
-    space->ReclaimRegions();
-    ASSERT(static_cast<size_t>(write.tellp()) == snapshot_size + sizeof(Header));
-
-    write.seekp(panda_file_begin);
-    write.write(reinterpret_cast<const char *>(pf->GetBase()), pf->GetHeader()->file_size);
-    write.close();
+    WriteToFile(write, pf, rootObjSize);
 }
 
-const JSPandaFile *SnapShot::DeserializeGlobalEnvAndProgram(const CString &abcFile, const CString &snapshotFile)
+void SnapShot::MakeSnapShot(uintptr_t startAddr, size_t size, const CString &fileName)
 {
-    SnapShotSerialize serialize(vm_, false);
+    std::fstream write;
+    if (!VerifySnapShotFile(write, fileName)) {
+        return;
+    }
 
-    serialize.GeneratedNativeMethod();
+    SnapShotSerialize serialize(vm_);
 
+    std::unordered_map<uint64_t, std::pair<uint64_t, EncodeBit>> data;
+    CQueue<TaggedObject *> objectQueue;
+
+    ObjectSlot start(startAddr);
+    ObjectSlot end(startAddr + size * sizeof(JSTaggedType));
+
+    serialize.EncodeTaggedObjectRange(start, end, &objectQueue, &data);
+    size_t rootObjSize = objectQueue.size();
+    while (!objectQueue.empty()) {
+        auto taggedObject = objectQueue.front();
+        if (taggedObject == nullptr) {
+            break;
+        }
+        objectQueue.pop();
+        serialize.Serialize(taggedObject, &objectQueue, &data);
+    }
+
+    vm_->GetHeap()->GetSnapShotSpace()->Stop();
+
+    WriteToFile(write, nullptr, rootObjSize);
+}
+
+const JSPandaFile *SnapShot::SnapShotDeserialize(SnapShotType type, const CString &snapshotFile)
+{
+    SnapShotSerialize serialize(vm_);
     std::pair<bool, CString> filePath = VerifyFilePath(snapshotFile);
     if (!filePath.first) {
         LOG(ERROR, RUNTIME) << "snapshot file path error";
@@ -151,6 +133,11 @@ const JSPandaFile *SnapShot::DeserializeGlobalEnvAndProgram(const CString &abcFi
         auto fileRegion = ToNativePtr<Region>(snapshot_begin + i * defaultSnapshotSpaceCapacity);
 
         uint64_t base = region->allocateBase_;
+        RangeBitmap *markBitmap = region->markBitmap_;
+        if (defaultSnapshotSpaceCapacity == 0) {
+            LOG_ECMA_MEM(FATAL) << "defaultSnapshotSpaceCapacity must have a size bigger than 0";
+            UNREACHABLE();
+        }
         uint64_t begin = (fileRegion->begin_) % defaultSnapshotSpaceCapacity;
         uint64_t waterMark = (fileRegion->highWaterMark_) % defaultSnapshotSpaceCapacity;
 
@@ -172,11 +159,18 @@ const JSPandaFile *SnapShot::DeserializeGlobalEnvAndProgram(const CString &abcFi
         // next_
         region->next_ = nullptr;
         // mark_bitmap_
-        region->markBitmap_ = nullptr;
+        region->markBitmap_ = markBitmap;
         // cross_region_set_
         region->crossRegionSet_ = nullptr;
         // old_to_new_set_
         region->oldToNewSet_ = nullptr;
+        // space_
+        region->space_ = space;
+        // heap_
+        auto heap = const_cast<Heap *>(vm_->GetHeap());
+        region->heap_ = heap;
+        // nativePoniterAllocator_
+        region->nativeAreaAllocator_ = heap->GetNativeAreaAllocator();
 
         space->AddRegion(region);
     }
@@ -184,22 +178,24 @@ const JSPandaFile *SnapShot::DeserializeGlobalEnvAndProgram(const CString &abcFi
     uintptr_t panda_file_mem = readFile + hdr.panda_file_begin;
     auto pf =
         panda_file::File::OpenFromMemory(os::mem::ConstBytePtr(ToNativePtr<std::byte>(panda_file_mem),
-                                                               file_size - hdr.panda_file_begin, os::mem::MmapDeleter),
-                                         abcFile);
+                                                               file_size - hdr.panda_file_begin, os::mem::MmapDeleter));
     close(fd);
     // Snapshot file has translated
-    const JSPandaFile *jsPandaFile = JSPandaFileManager::GetInstance()->NewJSPandaFile(pf.release(), abcFile);
-    // redirect object field
-    serialize.RedirectSlot(jsPandaFile);
+    const JSPandaFile *jsPandaFile = nullptr;
+    if (pf) {
+        jsPandaFile = JSPandaFileManager::GetInstance()->NewJSPandaFile(pf.release(), "");
+    }
+    // relocate object field
+    serialize.Relocate(type, jsPandaFile, hdr.root_object_size);
     return jsPandaFile;
 }
 
 size_t SnapShot::AlignUpPageSize(size_t spaceSize)
 {
-    if (spaceSize % PAGE_SIZE_ALIGN_UP == 0) {
+    if (spaceSize % Constants::PAGE_SIZE_ALIGN_UP == 0) {
         return spaceSize;
     }
-    return PAGE_SIZE_ALIGN_UP * (spaceSize / PAGE_SIZE_ALIGN_UP + 1);
+    return Constants::PAGE_SIZE_ALIGN_UP * (spaceSize / Constants::PAGE_SIZE_ALIGN_UP + 1);
 }
 
 std::pair<bool, CString> SnapShot::VerifyFilePath(const CString &filePath)
@@ -213,5 +209,42 @@ std::pair<bool, CString> SnapShot::VerifyFilePath(const CString &filePath)
         return std::make_pair(true, CString(resolvedPath.data()));
     }
     return std::make_pair(false, "");
+}
+
+bool SnapShot::VerifySnapShotFile(std::fstream &write, const CString &fileName)
+{
+    std::pair<bool, CString> filePath = VerifyFilePath(fileName);
+    if (!filePath.first) {
+        LOG(ERROR, RUNTIME) << "snapshot file path error";
+        return false;
+    }
+    write.open(filePath.second.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
+    if (!write.good()) {
+        LOG(DEBUG, RUNTIME) << "snapshot open file failed";
+        return false;
+    }
+    return true;
+}
+
+void SnapShot::WriteToFile(std::fstream &write, const panda_file::File *pf, size_t size)
+{
+    SnapShotSpace *space = vm_->GetHeap()->GetSnapShotSpace();
+    size_t defaultSnapshotSpaceCapacity = vm_->GetJSOptions().DefaultSnapshotSpaceCapacity();
+    uint32_t snapshot_size = space->GetRegionCount() * defaultSnapshotSpaceCapacity;
+    uint32_t panda_file_begin = RoundUp(snapshot_size + sizeof(Header), PANDA_FILE_ALIGNMENT);
+    Header hdr {snapshot_size, panda_file_begin, size};
+    write.write(reinterpret_cast<char *>(&hdr), sizeof(hdr));
+
+    space->EnumerateRegions([&write, &defaultSnapshotSpaceCapacity](Region *current) {
+        write.write(reinterpret_cast<char *>(current), defaultSnapshotSpaceCapacity);
+        write.flush();
+    });
+    space->ReclaimRegions();
+    ASSERT(static_cast<size_t>(write.tellp()) == snapshot_size + sizeof(Header));
+    if (pf) {
+        write.seekp(panda_file_begin);
+        write.write(reinterpret_cast<const char *>(pf->GetBase()), pf->GetHeader()->file_size);
+    }
+    write.close();
 }
 }  // namespace panda::ecmascript

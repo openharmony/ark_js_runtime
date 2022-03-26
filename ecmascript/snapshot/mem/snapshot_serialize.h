@@ -21,94 +21,63 @@
 #include <sstream>
 
 #include "libpandabase/macros.h"
-#include "ecmascript/snapshot/mem/slot_bit.h"
+#include "ecmascript/snapshot/mem/encode_bit.h"
 #include "ecmascript/js_tagged_value.h"
+#include "ecmascript/mem/object_xray.h"
 
 namespace panda::ecmascript {
 class EcmaVM;
 class JSPandaFile;
 
+enum class SnapShotType {
+    VM_ROOT,
+    GLOBAL_CONST,
+    TS_LOADER
+};
+
 class SnapShotSerialize final {
 public:
-    explicit SnapShotSerialize(EcmaVM *vm, bool serialize);
-    ~SnapShotSerialize();
+    explicit SnapShotSerialize(EcmaVM *vm) : vm_(vm), objXRay_(vm) {}
+    ~SnapShotSerialize() = default;
 
     void Serialize(TaggedObject *objectHeader, CQueue<TaggedObject *> *queue,
-                   std::unordered_map<uint64_t, ecmascript::SlotBit> *data);
-    void RedirectSlot(const JSPandaFile *jsPandaFile);
+                   std::unordered_map<uint64_t, std::pair<uint64_t, ecmascript::EncodeBit>> *data);
+    void Relocate(SnapShotType type, const JSPandaFile *jsPandaFile, uint64_t rootObjSize);
     void SerializePandaFileMethod();
+    EncodeBit EncodeTaggedObject(TaggedObject *objectHeader, CQueue<TaggedObject *> *queue,
+                                 std::unordered_map<uint64_t, std::pair<uint64_t, ecmascript::EncodeBit>> *data);
+    void EncodeTaggedObjectRange(ObjectSlot start, ObjectSlot end, CQueue<TaggedObject *> *queue,
+                                 std::unordered_map<uint64_t, std::pair<uint64_t, ecmascript::EncodeBit>> *data);
 
     void SetProgramSerializeStart()
     {
         programSerialize_ = true;
     }
 
-    void RegisterNativeMethod();
     void GeneratedNativeMethod();
+    size_t GetNativeTableSize() const;
 
 private:
-    void SetObjectSlotField(uintptr_t obj, size_t offset, uint64_t value);
-    void SetObjectSlotFieldUint32(uintptr_t obj, size_t offset, uint32_t value);
+    void SetObjectEncodeField(uintptr_t obj, size_t offset, uint64_t value);
 
-    void NativePointerSerialize(TaggedObject *objectHeader, uintptr_t snapshotObj);
-    void JSObjectSerialize(TaggedObject *objectHeader, uintptr_t snapshotObj, size_t objectSize,
-                           CQueue<TaggedObject *> *queue,
-                           std::unordered_map<uint64_t, ecmascript::SlotBit> *data);
-    void JSFunctionBaseSerialize(TaggedObject *objectHeader, uintptr_t snapshotObj, size_t objectSize,
-                                 CQueue<TaggedObject *> *queue,
-                                 std::unordered_map<uint64_t, ecmascript::SlotBit> *data);
-    void JSProxySerialize(TaggedObject *objectHeader, uintptr_t snapshotObj, size_t objectSize,
-                          CQueue<TaggedObject *> *queue,
-                          std::unordered_map<uint64_t, ecmascript::SlotBit> *data);
-    void DynClassSerialize(TaggedObject *objectHeader, uintptr_t snapshotObj, size_t objectSize,
-                           CQueue<TaggedObject *> *queue,
-                           std::unordered_map<uint64_t, ecmascript::SlotBit> *data);
-    void DynArraySerialize(TaggedObject *objectHeader, uintptr_t snapshotObj, CQueue<TaggedObject *> *queue,
-                           std::unordered_map<uint64_t, ecmascript::SlotBit> *data);
-    void DynStringSerialize(TaggedObject *objectHeader, uintptr_t snapshotObj);
-    void DynProgramSerialize(TaggedObject *objectHeader, uintptr_t snapshotObj, CQueue<TaggedObject *> *queue,
-                             std::unordered_map<uint64_t, ecmascript::SlotBit> *data);
-
-    void NativePointerDeserialize(uint64_t *objectHeader);
-    void JSObjectDeserialize(uint64_t *objectHeader, size_t objectSize);
-    void JSFunctionBaseDeserialize(uint64_t *objectHeader, size_t objectSize);
-    void JSProxyDeserialize(uint64_t *objectHeader, size_t objectSize);
-    void DynClassDeserialize(uint64_t *objectHeader);
-    void DynStringDeserialize(uint64_t *objectHeader);
-    void DynArrayDeserialize(uint64_t *objectHeader);
-    void DynProgramDeserialize(uint64_t *objectHeader, size_t objectSize);
-
-    SlotBit HandleObjectHeader(TaggedObject *objectHeader, uint8_t objectType, size_t objectSize,
-                               CQueue<TaggedObject *> *queue,
-                               std::unordered_map<uint64_t, ecmascript::SlotBit> *data);
+    EncodeBit HandleObjectHeader(TaggedObject *objectHeader, uint8_t objectType, CQueue<TaggedObject *> *queue,
+                                 std::unordered_map<uint64_t, std::pair<uint64_t, ecmascript::EncodeBit>> *data);
     uint64_t HandleTaggedField(JSTaggedType *tagged, CQueue<TaggedObject *> *queue,
-                               std::unordered_map<uint64_t, ecmascript::SlotBit> *data);
+                               std::unordered_map<uint64_t, std::pair<uint64_t, ecmascript::EncodeBit>> *data);
+    void DeserializeHandleField(TaggedObject *objectHeader);
     void DeserializeHandleTaggedField(uint64_t *value);
+    void DeserializeHandleNativePointer(uint64_t *value);
     void DeserializeHandleClassWord(TaggedObject *object);
-    void ExtendObjectArray();
+    void DeserializeHandleRootObject(SnapShotType type, uintptr_t rootObjectAddr, uint8_t objType, size_t objIndex);
 
-    void SetAddressToSlot(size_t index, uintptr_t value)
-    {
-        auto addr = reinterpret_cast<uintptr_t *>(addressSlot_ + index * ADDRESS_SIZE);
-        *addr = value;
-    }
+    EncodeBit NativePointerToEncodeBit(void *nativePointer);
+    void *NativePointerEncodeBitToAddr(EncodeBit nativeBit);
+    uint16_t SearchNativeMethodIndex(void *nativePointer);
+    uintptr_t TaggedObjectEncodeBitToAddr(EncodeBit taggedBit);
 
-    template<typename T>
-    T GetAddress(size_t index)
-    {
-        return *reinterpret_cast<T *>(addressSlot_ + index * ADDRESS_SIZE);
-    }
-
-    SlotBit NativePointerToSlotBit(void *nativePointer);
-    void *NativePointerSlotBitToAddr(SlotBit native);
-    void DeserializeRangeTaggedField(size_t beginAddr, int numOfFields);
-
-    EcmaVM *vm_{nullptr};
-    bool serialize_{false};
-    bool programSerialize_{false};
-    int count_{0};
-    int objectArraySize_{0};
-    uintptr_t addressSlot_;
+    EcmaVM *vm_ {nullptr};
+    ObjectXRay objXRay_;
+    bool programSerialize_ {false};
     CVector<uintptr_t> pandaMethod_;
 
     NO_COPY_SEMANTIC(SnapShotSerialize);
