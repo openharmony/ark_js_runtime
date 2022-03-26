@@ -583,4 +583,145 @@ std::unique_ptr<GetPropertiesParams> GetPropertiesParams::Create(const EcmaVM *e
 
     return paramsObject;
 }
+
+std::unique_ptr<CallFunctionOnParams> CallFunctionOnParams::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
+{
+    ASSERT(ecmaVm);
+    if (params.IsEmpty()) {
+        LOG(ERROR, DEBUGGER) << "CallFunctionOnParams::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto paramsObject = std::make_unique<CallFunctionOnParams>();
+
+    // paramsObject->functionDeclaration_
+    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionDeclaration")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            paramsObject->functionDeclaration_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+        } else {
+            error += "'functionDeclaration' should be a String;";
+        }
+    } else {
+        error += "should contain 'functionDeclaration';";
+    }
+    // paramsObject->objectId_
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            paramsObject->objectId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+        } else {
+            error += "'objectId' should be a String;";
+        }
+    }
+    // paramsObject->arguments_
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "arguments")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsArray(ecmaVm)) {
+            Local<ArrayRef> array = Local<ArrayRef>(result);
+            uint32_t len = array->Length(ecmaVm);
+            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
+            for (uint32_t i = 0; i < len; i++) {
+                key = IntegerRef::New(ecmaVm, i);
+                Local<JSValueRef> value = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
+                if (value->IsObject()) {
+                    std::unique_ptr<CallArgument> obj = CallArgument::Create(ecmaVm, value);
+                    if (obj != nullptr) {
+                        paramsObject->arguments_->emplace_back(std::move(obj));
+                    } else {
+                        error += "'arguments' items CallArgument is invaild;";
+                    }
+                } else {
+                    error += "'arguments' items should be an Object;";
+                }
+            }
+        } else {
+            error += "'arguments' should be an Array;";
+        }
+    }
+    // paramsObject->silent_
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "silent")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsBoolean()) {
+            paramsObject->silent_ = result->IsTrue();
+        } else {
+            error += "'silent' should be a Boolean;";
+        }
+    }
+    // paramsObject->returnByValue_
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "returnByValue")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsBoolean()) {
+            paramsObject->returnByValue_ = result->IsTrue();
+        } else {
+            error += "'returnByValue' should be a Boolean;";
+        }
+    }
+    // paramsObject->generatePreview_
+    result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "generatePreview")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsBoolean()) {
+            paramsObject->generatePreview_ = result->IsTrue();
+        } else {
+            error += "'generatePreview' should be a Boolean;";
+        }
+    }
+    // paramsObject->userGesture_
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "userGesture")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsBoolean()) {
+            paramsObject->userGesture_ = result->IsTrue();
+        } else {
+            error += "'userGesture' should be a Boolean;";
+        }
+    }
+    // paramsObject->awaitPromise_
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "awaitPromise")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsBoolean()) {
+            paramsObject->awaitPromise_ = result->IsTrue();
+        } else {
+            error += "'awaitPromise' should be a Boolean;";
+        }
+    }
+    // paramsObject->executionContextId_
+    result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextId")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            paramsObject->executionContextId_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+        } else {
+            error += "'executionContextId' should be a Number;";
+        }
+    }
+    // paramsObject->objectGroup_
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectGroup")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            paramsObject->objectGroup_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+        } else {
+            error += "'objectGroup' should be a String;";
+        }
+    }
+    // paramsObject->throwOnSideEffect_
+    result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "throwOnSideEffect")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsBoolean()) {
+            paramsObject->throwOnSideEffect_ = result->IsTrue();
+        } else {
+            error += "'throwOnSideEffect' should be a Boolean;";
+        }
+    }
+    // Check whether the CString(error) is empty.
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "CallFunctionOnParams::Create " << error;
+        return nullptr;
+    }
+
+    return paramsObject;
+}
 }  // namespace panda::tooling::ecmascript
