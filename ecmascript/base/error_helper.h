@@ -32,6 +32,9 @@ public:
     static JSTaggedValue ErrorCommonConstructor(EcmaRuntimeCallInfo *argv, const ErrorType &errorType);
 
     static CString BuildNativeEcmaStackTrace(JSThread *thread);
+
+    static CString BuildNativeAndJsStackTrace(JSThread *thread);
+
 private:
     static CString DecodeFunctionName(const CString &name);
     static JSHandle<EcmaString> BuildEcmaStackTrace(JSThread *thread);

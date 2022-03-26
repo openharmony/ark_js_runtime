@@ -231,4 +231,17 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
 
     return data;
 }
+
+CString ErrorHelper::BuildNativeAndJsStackTrace(JSThread *thread)
+{
+    CString stack;
+    stack.append("JS Stack Backtrace: \n");
+    CString jsStack = BuildNativeEcmaStackTrace(thread);
+    if (jsStack.empty()) {
+        stack.append("JS stack backtrace is empty\n");
+    } else {
+        stack.append(jsStack);
+    }
+    return stack;
+}
 }  // namespace panda::ecmascript::base
