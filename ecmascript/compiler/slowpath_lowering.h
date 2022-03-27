@@ -116,9 +116,9 @@ public:
 
 private:
     void LowerHirToCall(CircuitBuilder &cirBuilder, GateRef hirGate, GateRef callGate);
-    void LowerHirToConditionCall(CircuitBuilder &cirBuilder, GateRef hirGate,
-                                              GateRef condGate, GateRef callGate);
-    void LowerHirToThrowCall(CircuitBuilder &cirBuilder, GateRef hirGate, GateRef callGate);
+    void LowerHirToFastCall(CircuitBuilder &cirBuilder, GateRef hirGate, GateRef callGate);
+    void LowerHirToConditionCall(CircuitBuilder &cirBuilder, GateRef hirGate, GateRef condGate, GateRef callGate);
+    void LowerHirToThrowCall(CircuitBuilder &cirBuilder, GateRef hirGate, GateRef condGate, GateRef callGate);
     void LowerExceptionHandler(GateRef hirGate);
     void Lower(GateRef gate, EcmaOpcode op);
     void LowerAdd2Dyn(GateRef gate, GateRef glue);
@@ -127,8 +127,7 @@ private:
     void LowerAsyncFunctionAwaitUncaught(GateRef gate, GateRef glue);
     void LowerAsyncFunctionResolve(GateRef gate, GateRef glue);
     void LowerAsyncFunctionReject(GateRef gate, GateRef glue);
-    GateRef GetValueFromConstantStringTable(CircuitBuilder &builder, GateRef glue,
-                                            GateRef gate, uint32_t inIndex);
+    GateRef GetValueFromConstantStringTable(CircuitBuilder &builder, GateRef glue, GateRef gate, uint32_t inIndex);
     void LowerLoadStr(GateRef gate, GateRef glue);
     void LowerLexicalEnv(GateRef gate, GateRef glue);
     void LowerStGlobalVar(GateRef gate, GateRef glue);
@@ -146,6 +145,8 @@ private:
     void LowerThrowConstAssignment(GateRef gate, GateRef glue);
     void LowerThrowThrowNotExists(GateRef gate, GateRef glue);
     void LowerThrowPatternNonCoercible(GateRef gate, GateRef glue);
+    void LowerThrowIfNotObject(GateRef gate, GateRef glue);
+    void LowerThrowUndefinedIfHole(GateRef gate, GateRef glue);
     void LowerThrowIfSuperNotCorrectCall(GateRef gate, GateRef glue);
     void LowerThrowDeleteSuperProperty(GateRef gate, GateRef glue);
     void LowerLdSymbol(GateRef gate, GateRef glue);
@@ -168,6 +169,18 @@ private:
     void LowerToNumber(GateRef gate, GateRef glue);
     void LowerNegDyn(GateRef gate, GateRef glue);
     void LowerNotDyn(GateRef gate, GateRef glue);
+    void LowerShl2Dyn(GateRef gate, GateRef glue);
+    void LowerShr2Dyn(GateRef gate, GateRef glue);
+    void LowerAshr2Dyn(GateRef gate, GateRef glue);
+    void LowerAnd2Dyn(GateRef gate, GateRef glue);
+    void LowerOr2Dyn(GateRef gate, GateRef glue);
+    void LowerXor2Dyn(GateRef gate, GateRef glue);
+    void LowerDelObjProp(GateRef gate, GateRef glue);
+    void LowerExpDyn(GateRef gate, GateRef glue);
+    void LowerIsInDyn(GateRef gate, GateRef glue);
+    void LowerInstanceofDyn(GateRef gate, GateRef glue);
+    void LowerFastStrictNotEqual(GateRef gate, GateRef glue);
+    void LowerFastStrictEqual(GateRef gate, GateRef glue);
 
     BytecodeCircuitBuilder *builder_;
     Circuit *circuit_;
