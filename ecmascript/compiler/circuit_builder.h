@@ -205,6 +205,7 @@ public:
     inline GateRef CallRuntimeTrampoline(GateRef glue, GateRef target, const std::vector<GateRef> &args);
     // memory
     inline GateRef Load(VariableType type, GateRef base, GateRef offset);
+    inline GateRef Store(VariableType type, GateRef base, GateRef offset, GateRef value);
 
 #define ARITHMETIC_BINARY_OP_WITH_BITWIDTH(NAME, OPCODEID, MACHINETYPEID)                 \
     inline GateRef NAME(GateRef x, GateRef y)                                             \
@@ -251,6 +252,10 @@ public:
     inline GateRef TaggedIsDouble(GateRef x);
     inline GateRef TaggedIsObject(GateRef x);
     inline GateRef TaggedIsNumber(GateRef x);
+    inline GateRef TaggedIsNotHole(GateRef x);
+    inline GateRef TaggedIsHole(GateRef x);
+    inline GateRef TaggedIsUndefined(GateRef x);
+    inline GateRef TaggedIsException(GateRef x);
     inline GateRef TaggedIsSpecial(GateRef x);
     inline GateRef TaggedIsHeapObject(GateRef x);
     inline GateRef TaggedIsGeneratorObject(GateRef x);
