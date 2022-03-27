@@ -59,7 +59,7 @@ public:
 #undef DEF_HANDLER
 };
 
-static std::array<DispatchEntryPoint, BCHandlers::BC_COUNT> asmDispatchTable {
+static std::array<DispatchEntryPoint, BCStubEntries::BC_HANDLER_STUB_ENTRIES_COUNT> asmDispatchTable {
 #define DEF_HANDLER(name, counter) InterpreterAssembly::name,
     ASM_INTERPRETER_BC_STUB_ID_LIST(DEF_HANDLER)
 #undef DEF_HANDLER

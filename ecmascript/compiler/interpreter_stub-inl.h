@@ -415,7 +415,8 @@ void InterpreterStub::DispatchCommonCall(GateRef glue, GateRef callType, GateRef
                                          GateRef actualArgc, Args... args)
 {
     GateRef opcodeOffset = IntPtrMul(
-        GetIntPtrConstant(BCHandlers::BC_COUNT + BytecodeHelperId::HandleCommonCallId), GetIntPtrSize());
+        GetIntPtrConstant(BCStubEntries::BC_HANDLER_STUB_ENTRIES_COUNT + BytecodeHelperId::HandleCommonCallId),
+        GetIntPtrSize());
     const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(HandleCommonCall));
     DispatchBase(opcodeOffset, signature, glue, callType, sp, funcReg, actualArgc, args...);
     Return();

@@ -40,61 +40,61 @@ enum class MarkStatus : uint8_t {
     MARK_FINISHED,
 };
 
-struct BCHandlers {
-    static constexpr size_t BC_HANDER_COUNT = kungfu::BytecodeStubCSigns::NUM_OF_ALL_STUBS;
+struct BCStubEntries {
+    static constexpr size_t EXISTING_BC_HANDLER_STUB_ENTRIES_COUNT = kungfu::BytecodeStubCSigns::NUM_OF_ALL_STUBS;
     // The number of bytecodes.
-    static constexpr size_t BC_COUNT = 0x100;
+    static constexpr size_t BC_HANDLER_STUB_ENTRIES_COUNT = 0x100;
     // Add bytecode helper handlers at the end of bytecode handlers.
-    static constexpr size_t BC_HELPER_COUNT = kungfu::BytecodeHelperId::NUM_OF_BYTECODE_HELPERS;
-    static constexpr size_t ALL_SLOTS_COUNT = BC_COUNT + BC_HELPER_COUNT;
-    static_assert(BC_HANDER_COUNT <= BC_COUNT);
-    Address handlers_[ALL_SLOTS_COUNT] = {0};
+    static constexpr size_t BC_HELPER_STUB_ENTRIES_COUNT = kungfu::BytecodeHelperId::NUM_OF_BYTECODE_HELPERS;
+    static constexpr size_t ALL_BC_STUB_ENTRIES_COUNT = BC_HANDLER_STUB_ENTRIES_COUNT + BC_HELPER_STUB_ENTRIES_COUNT;
+    static_assert(EXISTING_BC_HANDLER_STUB_ENTRIES_COUNT <= BC_HANDLER_STUB_ENTRIES_COUNT);
+    Address stubEntries_[ALL_BC_STUB_ENTRIES_COUNT] = {0};
 
-    static constexpr size_t SizeArch32 = sizeof(uint32_t) * ALL_SLOTS_COUNT;
-    static constexpr size_t SizeArch64 = sizeof(uint64_t) * ALL_SLOTS_COUNT;
+    static constexpr size_t SizeArch32 = sizeof(uint32_t) * ALL_BC_STUB_ENTRIES_COUNT;
+    static constexpr size_t SizeArch64 = sizeof(uint64_t) * ALL_BC_STUB_ENTRIES_COUNT;
 
     void Set(size_t index, Address addr)
     {
-        assert(index < ALL_SLOTS_COUNT);
-        handlers_[index] = addr;
+        assert(index < ALL_BC_STUB_ENTRIES_COUNT);
+        stubEntries_[index] = addr;
     }
 
-    void SetUnrealizedBCHandlers(Address addr)
+    void SetUnrealizedBCHandlerStubEntries(Address addr)
     {
-        for (size_t i = 0; i < BC_HANDER_COUNT; i++) {
-            if (handlers_[i] == 0) {
-                handlers_[i] = addr;
+        for (size_t i = 0; i < EXISTING_BC_HANDLER_STUB_ENTRIES_COUNT; i++) {
+            if (stubEntries_[i] == 0) {
+                stubEntries_[i] = addr;
             }
         }
     }
-    void SetUnusedBCSlotsHandlers(Address addr)
+    void SetNonexistentBCHandlerStubEntries(Address addr)
     {
-        for (size_t i = BC_HANDER_COUNT; i < BC_COUNT; i++) {
-            if (handlers_[i] == 0) {
-                handlers_[i] = addr;
+        for (size_t i = EXISTING_BC_HANDLER_STUB_ENTRIES_COUNT; i < BC_HANDLER_STUB_ENTRIES_COUNT; i++) {
+            if (stubEntries_[i] == 0) {
+                stubEntries_[i] = addr;
             }
         }
     }
 
     Address* GetAddr()
     {
-        return reinterpret_cast<Address*>(handlers_);
+        return reinterpret_cast<Address*>(stubEntries_);
     }
 
-    static int32_t GetHandlerOffset(int32_t handlerId)
+    static int32_t GetStubEntryOffset(int32_t stubId)
     {
 #ifdef PANDA_TARGET_32
-        return handlerId * sizeof(uint32_t);
+        return stubId * sizeof(uint32_t);
 #else
-        return handlerId * sizeof(uint64_t);
+        return stubId * sizeof(uint64_t);
 #endif
     }
 };
-STATIC_ASSERT_EQ_ARCH(sizeof(BCHandlers), BCHandlers::SizeArch32, BCHandlers::SizeArch64);
+STATIC_ASSERT_EQ_ARCH(sizeof(BCStubEntries), BCStubEntries::SizeArch32, BCStubEntries::SizeArch64);
 
-struct RTInterfaces {
+struct RTStubEntries {
     static constexpr size_t COUNT = kungfu::RuntimeStubCSigns::NUM_OF_STUBS;
-    Address interfaces_[COUNT];
+    Address stubEntries_[COUNT];
 
     static constexpr size_t SizeArch32 = sizeof(uint32_t) * COUNT;
     static constexpr size_t SizeArch64 = sizeof(uint64_t) * COUNT;
@@ -102,14 +102,14 @@ struct RTInterfaces {
     void Set(size_t index, Address addr)
     {
         assert(index < COUNT);
-        interfaces_[index] = addr;
+        stubEntries_[index] = addr;
     }
 };
-STATIC_ASSERT_EQ_ARCH(sizeof(RTInterfaces), RTInterfaces::SizeArch32, RTInterfaces::SizeArch64);
+STATIC_ASSERT_EQ_ARCH(sizeof(RTStubEntries), RTStubEntries::SizeArch32, RTStubEntries::SizeArch64);
 
-struct StubEntries {
+struct COStubEntries {
     static constexpr size_t COUNT = kungfu::CommonStubCSigns::NUM_OF_STUBS;
-    Address entries_[COUNT];
+    Address stubEntries_[COUNT];
 
     static constexpr size_t SizeArch32 = sizeof(uint32_t) * COUNT;
     static constexpr size_t SizeArch64 = sizeof(uint64_t) * COUNT;
@@ -117,16 +117,16 @@ struct StubEntries {
     void Set(size_t index, Address addr)
     {
         assert(index < COUNT);
-        entries_[index] = addr;
+        stubEntries_[index] = addr;
     }
 
     Address Get(size_t index)
     {
         assert(index < COUNT);
-        return entries_[index];
+        return stubEntries_[index];
     }
 };
-STATIC_ASSERT_EQ_ARCH(sizeof(StubEntries), StubEntries::SizeArch32, StubEntries::SizeArch64);
+STATIC_ASSERT_EQ_ARCH(sizeof(COStubEntries), COStubEntries::SizeArch32, COStubEntries::SizeArch64);
 
 class JSThread : public ManagedThread {
 public:
@@ -273,22 +273,22 @@ public:
     void RegisterRTInterface(size_t id, Address addr)
     {
         ASSERT(id < kungfu::RuntimeStubCSigns::NUM_OF_STUBS);
-        glueData_.rtInterfaces_.Set(id, addr);
+        glueData_.rtStubEntries_.Set(id, addr);
     }
 
     Address GetFastStubEntry(uint32_t id)
     {
-        return glueData_.stubEntries_.Get(id);
+        return glueData_.coStubEntries_.Get(id);
     }
 
     void SetFastStubEntry(size_t id, Address entry)
     {
-        glueData_.stubEntries_.Set(id, entry);
+        glueData_.coStubEntries_.Set(id, entry);
     }
 
     Address *GetBytecodeHandler()
     {
-        return glueData_.bcHandlers_.GetAddr();
+        return glueData_.bcStubEntries_.GetAddr();
     }
 
     void LoadStubsFromFile(std::string &fileName);
@@ -386,9 +386,9 @@ public:
                                                  JSTaggedValue,
                                                  base::AlignedPointer,
                                                  base::AlignedPointer,
-                                                 BCHandlers,
-                                                 RTInterfaces,
-                                                 StubEntries,
+                                                 BCStubEntries,
+                                                 RTStubEntries,
+                                                 COStubEntries,
                                                  base::AlignedUint64,
                                                  base::AlignedPointer,
                                                  GlobalEnvConstants> {
@@ -397,9 +397,9 @@ public:
             GlobalObjIndex,
             CurrentFrameIndex,
             LeaveFrameIndex,
-            BCHandlersIndex,
-            RTInterfacesIndex,
-            StubEntriesIndex,
+            BCStubEntriesIndex,
+            RTStubEntriesIndex,
+            COStubEntriesIndex,
             StateBitFieldIndex,
             FrameBaseIndex,
             GlobalConstIndex,
@@ -437,19 +437,19 @@ public:
             return GetOffset<static_cast<size_t>(Index::LeaveFrameIndex)>(isArch32);
         }
 
-        static size_t GetBCHandlersOffset(bool isArch32)
+        static size_t GetBCStubEntriesOffset(bool isArch32)
         {
-            return GetOffset<static_cast<size_t>(Index::BCHandlersIndex)>(isArch32);
+            return GetOffset<static_cast<size_t>(Index::BCStubEntriesIndex)>(isArch32);
         }
 
-        static size_t GetRTInterfacesOffset(bool isArch32)
+        static size_t GetRTStubEntriesOffset(bool isArch32)
         {
-            return GetOffset<static_cast<size_t>(Index::RTInterfacesIndex)>(isArch32);
+            return GetOffset<static_cast<size_t>(Index::RTStubEntriesIndex)>(isArch32);
         }
 
-        static size_t GetStubEntriesOffset(bool isArch32)
+        static size_t GetCOStubEntriesOffset(bool isArch32)
         {
-            return GetOffset<static_cast<size_t>(Index::StubEntriesIndex)>(isArch32);
+            return GetOffset<static_cast<size_t>(Index::COStubEntriesIndex)>(isArch32);
         }
 
         static size_t GetFrameBaseOffset(bool isArch32)
@@ -461,14 +461,14 @@ public:
         alignas(EAS) JSTaggedValue globalObject_ {JSTaggedValue::Hole()};
         alignas(EAS) JSTaggedType *currentFrame_ {nullptr};
         alignas(EAS) JSTaggedType *leaveFrame_ {nullptr};
-        alignas(EAS) BCHandlers bcHandlers_;
-        alignas(EAS) RTInterfaces rtInterfaces_;
-        alignas(EAS) StubEntries stubEntries_;
+        alignas(EAS) BCStubEntries bcStubEntries_;
+        alignas(EAS) RTStubEntries rtStubEntries_;
+        alignas(EAS) COStubEntries coStubEntries_;
         alignas(EAS) volatile uint64_t threadStateBitField_ {0ULL};
         alignas(EAS) JSTaggedType *frameBase_ {nullptr};
         alignas(EAS) GlobalEnvConstants globalConst_;
     };
-    static_assert(MEMBER_OFFSET(GlueData, rtInterfaces_) == ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET);
+    static_assert(MEMBER_OFFSET(GlueData, rtStubEntries_) == ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET);
     static_assert(MEMBER_OFFSET(GlueData, currentFrame_) == ASM_GLUE_CURRENT_FRAME_OFFSET);
     static_assert(MEMBER_OFFSET(GlueData, leaveFrame_) == ASM_GLUE_LEAVE_FRAME_OFFSET);
     STATIC_ASSERT_EQ_ARCH(sizeof(GlueData), GlueData::SizeArch32, GlueData::SizeArch64);
