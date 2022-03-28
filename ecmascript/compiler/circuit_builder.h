@@ -267,6 +267,8 @@ public:
     inline GateRef Int8BuildTaggedTypeWithNoGC(GateRef x);
     inline GateRef Int16BuildTaggedWithNoGC(GateRef x);
     inline GateRef Int16BuildTaggedTypeWithNoGC(GateRef x);
+    inline GateRef Int64BuildTaggedNGC(GateRef x);
+    inline GateRef Int64BuildTaggedTypeNGC(GateRef x);
     inline GateRef IntBuildTaggedWithNoGC(GateRef x);
     inline GateRef IntBuildTaggedTypeWithNoGC(GateRef x);
     inline GateRef DoubleBuildTaggedWithNoGC(GateRef x);

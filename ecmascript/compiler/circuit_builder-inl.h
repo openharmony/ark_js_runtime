@@ -227,6 +227,16 @@ GateRef CircuitBuilder::Int16BuildTaggedTypeWithNoGC(GateRef x)
     return Int64Or(val, Int64(JSTaggedValue::TAG_INT));
 }
 
+GateRef CircuitBuilder::Int64BuildTaggedNGC(GateRef x)
+{
+    return ChangeInt64ToTagged(Int64Or(x, Int64(JSTaggedValue::TAG_INT)));
+}
+
+GateRef CircuitBuilder::Int64BuildTaggedTypeNGC(GateRef x)
+{
+    return Int64Or(x, Int64(JSTaggedValue::TAG_INT));
+}
+
 GateRef CircuitBuilder::IntBuildTaggedWithNoGC(GateRef x)
 {
     GateRef val = ZExtInt32ToInt64(x);
@@ -470,7 +480,13 @@ void CircuitBuilder::MergeMirCircuit(GateRef hir, GateRef outir,
         // if no catch block, just throw exception(RETURN)
         } else if ((acc.GetOpCode(*useIt) == OpCode::RETURN) &&
                     acc.GetOpCode(acc.GetIn(*useIt, 0)) == OpCode::IF_EXCEPTION) {
-            noThrow ? acc.DeleteGate(useIt) : acc.ReplaceIn(useIt, exceptionControl[1]);
+            if (noThrow) {
+                // 0 : the index of CONSTANT
+                GetCircuit()->DeleteGate(acc.GetValueIn(*useIt, 0));
+                acc.DeleteGate(useIt);
+            } else {
+                acc.ReplaceIn(useIt, exceptionControl[1]);
+            }
         // if isThrow..
         } else if (useIt.GetIndex() == 1) {
             acc.ReplaceIn(useIt, successControl[1]);
