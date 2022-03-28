@@ -36,7 +36,28 @@ public:
 
     void SetUp() override
     {
-        TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
+        JSRuntimeOptions options;
+#if PANDA_TARGET_LINUX
+        // for consistency requirement, use ohos_icu4j/data as icu-data-path
+        options.SetIcuDataPath("./../../third_party/icu/ohos_icu4j/data");
+#endif
+        options.SetShouldLoadBootPandaFiles(false);
+        options.SetShouldInitializeIntrinsics(false);
+        options.SetBootClassSpaces(
+            {"ecmascript"}
+        );
+        options.SetRuntimeType("ecmascript");
+        options.SetPreGcHeapVerifyEnabled(true);
+        options.SetEnableForceGC(true);
+        JSNApi::SetOptions(options);
+        static EcmaLanguageContext lcEcma;
+        [[maybe_unused]] bool success = Runtime::Create(options, {&lcEcma});
+        ASSERT_TRUE(success) << "Cannot create Runtime";
+        instance = Runtime::GetCurrent()->GetPandaVM();
+        EcmaVM::Cast(instance)->SetEnableForceGC(true);
+        ASSERT_TRUE(instance != nullptr) << "Cannot create EcmaVM";
+        thread = EcmaVM::Cast(instance)->GetJSThread();
+        scope = new EcmaHandleScope(thread);
     }
 
     void TearDown() override
@@ -58,7 +79,6 @@ HWTEST_F_L0(BuiltinsIntlTest, GetCanonicalLocales_001)
 
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
     JSTaggedValue resultObj = BuiltinsIntl::GetCanonicalLocales(ecmaRuntimeCallInfo.get());
-    EXPECT_TRUE(resultObj.IsJSArray());
     JSHandle<JSArray> resultHandle(thread, resultObj);
     EXPECT_EQ(resultHandle->GetArrayLength(), 0U);
 }
@@ -75,7 +95,6 @@ HWTEST_F_L0(BuiltinsIntlTest, GetCanonicalLocales_002)
 
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
     JSTaggedValue resultObj = BuiltinsIntl::GetCanonicalLocales(ecmaRuntimeCallInfo.get());
-    EXPECT_TRUE(resultObj.IsJSArray());
     JSHandle<JSArray> resultHandle(thread, resultObj);
 
     JSHandle<TaggedArray> elements(thread, resultHandle->GetElements());
@@ -103,7 +122,6 @@ HWTEST_F_L0(BuiltinsIntlTest, GetCanonicalLocales_003)
 
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
     JSTaggedValue resultObj = BuiltinsIntl::GetCanonicalLocales(ecmaRuntimeCallInfo.get());
-    EXPECT_TRUE(resultObj.IsJSArray());
     JSHandle<JSArray> resultHandle(thread, resultObj);
 
     JSHandle<TaggedArray> elements(thread, resultHandle->GetElements());

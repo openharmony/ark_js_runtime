@@ -409,7 +409,7 @@ void RuntimeStubs::FatalPrint(int fmtMessageId, ...)
     std::string result = panda::helpers::string::Vformat(format.c_str(), args);
     std::cerr << result << std::endl;
     va_end(args);
-    std::abort();
+    UNREACHABLE();
 }
 
 DEF_RUNTIME_STUBS(NoticeThroughChainAndRefreshUser)
