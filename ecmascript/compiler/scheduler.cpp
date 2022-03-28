@@ -213,7 +213,8 @@ std::optional<std::unordered_map<GateRef, size_t>> Scheduler::CalculateSchedulin
             }
             auto predUpperBound = predResult.value();
             if (!isAncestor(curUpperBound, predUpperBound) && !isAncestor(predUpperBound, curUpperBound)) {
-                std::cerr << "[Verifier][Error] Scheduling upper bound of gate (id=" << curGate << ") does not exist"
+                std::cerr << "[Verifier][Error] Scheduling upper bound of gate (id="
+                          << circuit->LoadGatePtrConst(curGate)->GetId() << ") does not exist"
                           << std::endl;
                 return std::nullopt;
             }
