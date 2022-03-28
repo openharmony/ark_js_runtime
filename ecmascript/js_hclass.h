@@ -109,6 +109,7 @@ class ProtoChangeDetails;
         JS_NUMBER_FORMAT, /* //////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_COLLATOR, /* ///////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_PLURAL_RULES, /* ///////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_DISPLAYNAMES, /* ///////////////////////////////////////////////////////////////////////////////-PADDING */ \
                                                                                                                        \
         JS_ARRAY_BUFFER, /* ///////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_PROMISE,      /* ///////////////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -633,6 +634,10 @@ public:
         return GetObjectType() == JSType::JS_PLURAL_RULES;
     }
 
+    inline bool IsJSDisplayNames() const
+    {
+        return GetObjectType() == JSType::JS_DISPLAYNAMES;
+    }
     // non ECMA standard jsapi containers.
     inline bool IsSpecialContainer() const
     {

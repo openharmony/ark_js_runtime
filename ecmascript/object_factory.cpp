@@ -51,6 +51,7 @@
 #include "ecmascript/js_bigint.h"
 #include "ecmascript/js_dataview.h"
 #include "ecmascript/js_date.h"
+#include "ecmascript/js_displaynames.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_hclass-inl.h"
@@ -702,8 +703,17 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
             case JSType::JS_NUMBER_FORMAT:
             case JSType::JS_RELATIVE_TIME_FORMAT:
             case JSType::JS_COLLATOR:
-            case JSType::JS_PLURAL_RULES:
+            case JSType::JS_PLURAL_RULES: {
                 break;
+            }
+            case JSType::JS_DISPLAYNAMES: {
+			    JSDisplayNames::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
+                JSDisplayNames::Cast(*obj)->SetType(TypednsOption::EXCEPTION);
+                JSDisplayNames::Cast(*obj)->SetStyle(StyOption::EXCEPTION);
+                JSDisplayNames::Cast(*obj)->SetFallback(FallbackOption::EXCEPTION);
+				JSDisplayNames::Cast(*obj)->SetIcuLDN(thread_, JSTaggedValue::Undefined());
+                break;
+            }
             case JSType::JS_ARRAY: {
                 JSArray::Cast(*obj)->SetLength(thread_, JSTaggedValue(0));
                 auto accessor = thread_->GlobalConstants()->GetArrayLengthAccessor();

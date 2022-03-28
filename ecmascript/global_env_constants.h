@@ -312,6 +312,9 @@ class JSThread;
     V(JSTaggedValue, GregoryString, GREGORY_INDEX, gregory)                                                           \
     V(JSTaggedValue, EthioaaString, ETHIOAA_INDEX, ethioaa)                                                           \
     V(JSTaggedValue, ValuesString, VALUES_INDEX, values)                                                              \
+    V(JSTaggedValue, FallbackString, FALLBACK_INDEX, fallback)                                                        \
+    V(JSTaggedValue, DateTimeFieldString, DATETIMEFIELD_INDEX, datetimefield)                                         \
+    V(JSTaggedValue, NoneString, NONE_INDEX, none)                                                                    \
     /* for regexp. */                                                                                                 \
     V(JSTaggedValue, ExecString, EXEC_INDEX, exec)                                                                    \
     V(JSTaggedValue, LastIndexString, LAST_INDEX_INDEX, lastIndex)                                                    \
