@@ -2097,7 +2097,7 @@ void JSDisplayNames::Dump(std::ostream &os) const
     JSObject::Dump(os);
 }
 
-void JSGeneratorObject::Dump(JSThread *thread, std::ostream &os) const
+void JSGeneratorObject::Dump(std::ostream &os) const
 {
     os << " - GeneratorContext: ";
     GetGeneratorContext().D();
