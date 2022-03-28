@@ -588,6 +588,26 @@ namespace panda::ecmascript {
     V(TreeSet, Values)                        \
     V(TreeSet, ForEach)                       \
     V(TreeSet, Entries)                       \
+    V(Deque, Constructor)                     \
+    V(Deque, InsertFront)                     \
+    V(Deque, InsertEnd)                       \
+    V(Deque, GetFront)                        \
+    V(Deque, GetTail)                         \
+    V(Deque, Has)                             \
+    V(Deque, PopFirst)                        \
+    V(Deque, PopLast)                         \
+    V(Deque, ForEach)                         \
+    V(Deque, GetIteratorObj)                  \
+    V(Deque, GetSize)                         \
+    V(Stack, Constructor)                     \
+    V(Stack, Iterator)                        \
+    V(Stack, IsEmpty)                         \
+    V(Stack, Push)                            \
+    V(Stack, Peek)                            \
+    V(Stack, Pop)                             \
+    V(Stack, Locate)                          \
+    V(Stack, ForEach)                         \
+    V(Stack, GetLength)                       \
     V(Queue, Constructor)                     \
     V(Queue, Add)                             \
     V(Queue, GetFirst)                        \

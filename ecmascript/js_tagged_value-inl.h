@@ -609,6 +609,15 @@ inline bool JSTaggedValue::IsJSAPIQueue() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIQueue();
 }
 
+inline bool JSTaggedValue::IsJSAPIDeque() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIDeque();
+}
+inline bool JSTaggedValue::IsJSAPIStack() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIStack();
+}
+
 inline bool JSTaggedValue::IsSpecialContainer() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsSpecialContainer();
@@ -900,6 +909,15 @@ inline bool JSTaggedValue::IsJSAPIArrayListIterator() const
 inline bool JSTaggedValue::IsJSAPIQueueIterator() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIQueueIterator();
+}
+
+inline bool JSTaggedValue::IsJSAPIDequeIterator() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIDequeIterator();
+}
+inline bool JSTaggedValue::IsJSAPIStackIterator() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIStackIterator();
 }
 
 inline bool JSTaggedValue::IsIterator() const

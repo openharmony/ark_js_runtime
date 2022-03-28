@@ -18,7 +18,9 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/internal_call_params.h"
+#include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_queue.h"
+#include "ecmascript/js_api_stack.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_handle.h"
@@ -898,6 +900,12 @@ bool JSTaggedValue::HasContainerProperty(JSThread *thread, const JSHandle<JSTagg
         case JSType::JS_API_QUEUE: {
             return JSHandle<JSAPIQueue>::Cast(obj)->Has(key.GetTaggedValue());
         }
+        case JSType::JS_API_DEQUE: {
+            return JSHandle<JSAPIDeque>::Cast(obj)->Has(key.GetTaggedValue());
+        }
+        case JSType::JS_API_STACK: {
+            return JSHandle<JSAPIStack>::Cast(obj)->Has(key.GetTaggedValue());
+        }
         case JSType::JS_API_TREE_MAP:
         case JSType::JS_API_TREE_SET: {
             return JSObject::HasProperty(thread, JSHandle<JSObject>(obj), key);
@@ -919,6 +927,12 @@ JSHandle<TaggedArray> JSTaggedValue::GetOwnContainerPropertyKeys(JSThread *threa
         }
         case JSType::JS_API_QUEUE: {
             return JSAPIQueue::OwnKeys(thread, JSHandle<JSAPIQueue>::Cast(obj));
+        }
+        case JSType::JS_API_DEQUE: {
+            return JSAPIDeque::OwnKeys(thread, JSHandle<JSAPIDeque>::Cast(obj));
+        }
+        case JSType::JS_API_STACK: {
+            return JSAPIStack::OwnKeys(thread, JSHandle<JSAPIStack>::Cast(obj));
         }
         case JSType::JS_API_TREE_MAP:
         case JSType::JS_API_TREE_SET: {
@@ -942,6 +956,12 @@ bool JSTaggedValue::GetContainerProperty(JSThread *thread, const JSHandle<JSTagg
         }
         case JSType::JS_API_QUEUE: {
             return JSAPIQueue::GetOwnProperty(thread, JSHandle<JSAPIQueue>::Cast(obj), key, desc);
+        }
+        case JSType::JS_API_DEQUE: {
+            return JSAPIDeque::GetOwnProperty(thread, JSHandle<JSAPIDeque>::Cast(obj), key, desc);
+        }
+        case JSType::JS_API_STACK: {
+            return JSAPIStack::GetOwnProperty(thread, JSHandle<JSAPIStack>::Cast(obj), key, desc);
         }
         case JSType::JS_API_TREE_MAP:
         case JSType::JS_API_TREE_SET: {

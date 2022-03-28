@@ -342,6 +342,14 @@ CString *HeapSnapShot::GenerateNodeName(TaggedObject *entry)
             return GetString("Queue");
         case JSType::JS_API_QUEUE_ITERATOR:
             return GetString("QueueIterator");
+        case JSType::JS_API_DEQUE:
+            return GetString("Deque");
+        case JSType::JS_API_DEQUE_ITERATOR:
+            return GetString("DequeIterator");
+        case JSType::JS_API_STACK:
+            return GetString("Stack");
+        case JSType::JS_API_STACK_ITERATOR:
+            return GetString("StackIterator");
         case JSType::SOURCE_TEXT_MODULE_RECORD:
             return GetString("SourceTextModule");
         case JSType::IMPORTENTRY_RECORD:
