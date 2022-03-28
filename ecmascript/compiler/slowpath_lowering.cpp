@@ -16,6 +16,20 @@
 #include "slowpath_lowering.h"
 
 namespace panda::ecmascript::kungfu {
+#define CREATE_DOUBLE_EXIT(SuccessLabel, FailLabel)                 \
+    std::vector<GateRef> successControl;                            \
+    std::vector<GateRef> failControl;                               \
+    cirBuilder.Bind(&SuccessLabel);                                 \
+    {                                                               \
+        successControl.emplace_back(cirBuilder.GetState());         \
+        successControl.emplace_back(cirBuilder.GetDepend());        \
+    }                                                               \
+    cirBuilder.Bind(&FailLabel);                                    \
+    {                                                               \
+        failControl.emplace_back(cirBuilder.GetState());            \
+        failControl.emplace_back(cirBuilder.GetDepend());           \
+    }
+
 void SlowPathLowering::CallRuntimeLowering()
 {
     const auto &gateList = circuit_->GetAllGates();
@@ -207,6 +221,18 @@ void SlowPathLowering::LowerHirToConditionCall(CircuitBuilder &cirBuilder, GateR
     circuit_->DeleteGate(hirGate);
 }
 
+// labelmanager must be initialized
+GateRef SlowPathLowering::GetObjectFromConstPool(CircuitBuilder &cirBuilder, GateRef index)
+{
+    GateRef jsFunc = builder_->GetCommonArgByIndex(CommonArgIdx::FUNC);
+    GateRef constantPool = cirBuilder.Load(VariableType::JS_ANY(), jsFunc,
+        cirBuilder.IntPtrConstant(JSFunction::CONSTANT_POOL_OFFSET));
+    GateRef offset = cirBuilder.IntPtrMul(cirBuilder.ChangeInt32ToIntPtr(index),
+        cirBuilder.IntPtrConstant(JSTaggedValue::TaggedTypeSize()));
+    GateRef dataOffset = cirBuilder.IntPtrAdd(offset, cirBuilder.IntPtrConstant(TaggedArray::DATA_OFFSET));
+    return cirBuilder.Load(VariableType::JS_ANY(), constantPool, dataOffset);
+}
+
 void SlowPathLowering::Lower(GateRef gate, EcmaOpcode op)
 {
     GateRef glue = builder_->GetCommonArgByIndex(CommonArgIdx::GLUE);
@@ -391,6 +417,26 @@ void SlowPathLowering::Lower(GateRef gate, EcmaOpcode op)
             break;
         case STRICTEQDYN_PREF_V8:
             LowerFastStrictEqual(gate, glue);
+        case CREATEEMPTYARRAY_PREF:
+            LowerCreateEmptyArray(gate, glue);
+            break;
+        case CREATEEMPTYOBJECT_PREF:
+            LowerCreateEmptyObject(gate, glue);
+            break;
+        case CREATEOBJECTWITHBUFFER_PREF_IMM16:
+            LowerCreateObjectWithBuffer(gate, glue);
+            break;
+        case CREATEARRAYWITHBUFFER_PREF_IMM16:
+            LowerCreateArrayWithBuffer(gate, glue);
+            break;
+        case STMODULEVAR_PREF_ID32:
+            LowerStModuleVar(gate, glue);
+            break;
+        case GETTEMPLATEOBJECT_PREF_V8:
+            LowerGetTemplateObject(gate, glue);
+            break;
+        case SETOBJECTWITHPROTO_PREF_V8_V8:
+            LowerSetObjectWithProto(gate, glue);
             break;
         default:
             break;
@@ -1127,5 +1173,119 @@ void SlowPathLowering::LowerFastStrictEqual(GateRef gate, GateRef glue)
     GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
                                              {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
     LowerHirToFastCall(cirBuilder, gate, newGate);
+}
+void SlowPathLowering::LowerCreateEmptyArray(GateRef gate, GateRef glue)
+{
+    LabelManager lm(gate, circuit_);
+    CircuitBuilder cirBuilder(circuit_, &lm);
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(CreateEmptyArray));
+    GateRef result = cirBuilder.CallRuntimeTrampoline(glue, id, {});
+    successControl.emplace_back(cirBuilder.GetState());
+    successControl.emplace_back(cirBuilder.GetDepend());
+    failControl.emplace_back(Circuit::NullGate());
+    failControl.emplace_back(Circuit::NullGate());
+    cirBuilder.MergeMirCircuit<true>(gate, result, successControl, failControl);
+}
+
+void SlowPathLowering::LowerCreateEmptyObject(GateRef gate, GateRef glue)
+{
+    LabelManager lm(gate, circuit_);
+    CircuitBuilder cirBuilder(circuit_, &lm);
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(CreateEmptyObject));
+    GateRef result = cirBuilder.CallRuntimeTrampoline(glue, id, {});
+    successControl.emplace_back(cirBuilder.GetState());
+    successControl.emplace_back(cirBuilder.GetDepend());
+    failControl.emplace_back(Circuit::NullGate());
+    failControl.emplace_back(Circuit::NullGate());
+    cirBuilder.MergeMirCircuit<true>(gate, result, successControl, failControl);
+}
+
+void SlowPathLowering::LowerCreateArrayWithBuffer(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    LabelManager lm(gate, circuit_);
+    CircuitBuilder cirBuilder(circuit_, &lm);
+    Label successExit(&lm);
+    Label exceptionExit(&lm);
+    // 1: number of value inputs
+    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
+    GateRef index = gateAcc.GetValueIn(gate, 0);
+    GateRef obj = GetObjectFromConstPool(cirBuilder, cirBuilder.TruncInt64ToInt32(index));
+    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(CreateArrayWithBuffer));
+    GateRef result = cirBuilder.CallRuntimeTrampoline(glue, id, { obj });
+    cirBuilder.Branch(cirBuilder.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+        &successExit, &exceptionExit);
+    CREATE_DOUBLE_EXIT(successExit, exceptionExit)
+    cirBuilder.MergeMirCircuit(gate, result, successControl, failControl);
+}
+
+void SlowPathLowering::LowerCreateObjectWithBuffer(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    LabelManager lm(gate, circuit_);
+    CircuitBuilder cirBuilder(circuit_, &lm);
+    Label successExit(&lm);
+    Label exceptionExit(&lm);
+    // 1: number of value inputs
+    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
+    GateRef index = gateAcc.GetValueIn(gate, 0);
+    GateRef obj = GetObjectFromConstPool(cirBuilder, cirBuilder.TruncInt64ToInt32(index));
+    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(CreateObjectWithBuffer));
+    GateRef result = cirBuilder.CallRuntimeTrampoline(glue, id, { obj });
+    cirBuilder.Branch(cirBuilder.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+        &successExit, &exceptionExit);
+    CREATE_DOUBLE_EXIT(successExit, exceptionExit)
+    cirBuilder.MergeMirCircuit(gate, result, successControl, failControl);
+}
+
+void SlowPathLowering::LowerStModuleVar(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    LabelManager lm(gate, circuit_);
+    CircuitBuilder cirBuilder(circuit_, &lm);
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    // 2: number of value inputs
+    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
+    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(StModuleVar));
+    GateRef prop = GetObjectFromConstPool(cirBuilder, gateAcc.GetValueIn(gate, 0));
+    GateRef result = cirBuilder.CallRuntimeTrampoline(glue, id, { prop, gateAcc.GetValueIn(gate, 1) });
+    successControl.emplace_back(cirBuilder.GetState());
+    successControl.emplace_back(cirBuilder.GetDepend());
+    failControl.emplace_back(Circuit::NullGate());
+    failControl.emplace_back(Circuit::NullGate());
+    // StModuleVar will not be inValue to other hir gates, result will not be used to replace hirgate
+    cirBuilder.MergeMirCircuit<true>(gate, result, successControl, failControl);
+}
+
+void SlowPathLowering::LowerGetTemplateObject(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(GetTemplateObject));
+    // 1: number of value inputs
+    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
+    GateRef literal = gateAcc.GetValueIn(gate, 0);
+    GateRef newGate = cirBuilder.RuntimeCall(glue, id,
+        Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), { literal });
+    LowerHirToCall(cirBuilder, gate, newGate);
+}
+
+void SlowPathLowering::LowerSetObjectWithProto(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(SetObjectWithProto));
+    // 2: number of value inputs
+    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
+    GateRef proto = gateAcc.GetValueIn(gate, 0);
+    GateRef obj = gateAcc.GetValueIn(gate, 1);
+    GateRef newGate = cirBuilder.RuntimeCall(glue, id,
+        Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), { proto, obj });
+    LowerHirToCall(cirBuilder, gate, newGate);
 }
 }  // namespace panda::ecmascript

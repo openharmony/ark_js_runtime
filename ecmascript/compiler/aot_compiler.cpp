@@ -133,6 +133,9 @@ int Main(const int argc, const char **argv)
     PassManager passManager(vm, entry);
     std::string triple = runtimeOptions.GetAotTargetTriple();
     std::string outputFileName = runtimeOptions.GetAOTOutputFile();
+    BytecodeStubCSigns::Initialize();
+    CommonStubCSigns::Initialize();
+    RuntimeStubCSigns::Initialize();
     for (const auto &fileName : pandaFileNames) {
         LOG_ECMA(DEBUG) << "start to execute ark file: " << fileName;
         if (passManager.Compile(fileName, triple, outputFileName) == false) {

@@ -337,6 +337,7 @@ public:
         }
     };
     void DeleteIn(UsesIterator &useIt);
+    void DeleteGate(UsesIterator &useIt);
 private:
     [[nodiscard]] ConstUsesIterator ConstUseBegin(GateRef gate) const
     {

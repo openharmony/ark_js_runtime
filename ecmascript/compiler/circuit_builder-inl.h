@@ -480,7 +480,8 @@ void CircuitBuilder::MergeMirCircuit(GateRef hir, GateRef outir,
         // if no catch block, just throw exception(RETURN)
         } else if ((acc.GetOpCode(*useIt) == OpCode::RETURN) &&
                     acc.GetOpCode(acc.GetIn(*useIt, 0)) == OpCode::IF_EXCEPTION) {
-            noThrow ? acc.DeleteIn(useIt) : acc.ReplaceIn(useIt, exceptionControl[1]);
+            noThrow ? acc.DeleteGate(useIt) : acc.ReplaceIn(useIt, exceptionControl[1]);
+        // if isThrow..
         } else if (useIt.GetIndex() == 1) {
             acc.ReplaceIn(useIt, successControl[1]);
         // replace data flow with data output in label successExit(valueSelector...)
@@ -490,6 +491,16 @@ void CircuitBuilder::MergeMirCircuit(GateRef hir, GateRef outir,
     }
 
     GetCircuit()->DeleteGate(hir);
+}
+
+GateRef CircuitBuilder::GetState() const
+{
+    return lm_->GetCurrentLabel()->GetControl();
+}
+
+GateRef CircuitBuilder::GetDepend() const
+{
+    return lm_->GetCurrentLabel()->GetDepend();
 }
 
 void Label::Seal()

@@ -106,4 +106,10 @@ void GateAccessor::DeleteIn(UsesIterator &useIt)
     curGatePtr->DeleteIn(idx);
     useIt.SetChanged();
 }
+
+void GateAccessor::DeleteGate(UsesIterator &useIt)
+{
+    circuit_->DeleteGate(*useIt);
+    useIt.SetChanged();
+}
 }
