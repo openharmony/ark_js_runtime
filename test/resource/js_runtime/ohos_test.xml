@@ -21,6 +21,11 @@
             <option name="push" value="test/test/libdebugger_entry.so -> /data/test" src="out"/>
         </preparer>
     </target>
+    <target name="AccessorDataTestAction">
+        <preparer>
+            <option name="push" value="test/test/libark_ecma_debugger_test.so -> /data/test" src="out"/>
+        </preparer>
+    </target>
     <target name="DebuggerCommandsTest">
         <preparer>
             <option name="push" value="test/test/libark_ecma_debugger_test.so -> /data/test" src="out"/>
@@ -417,6 +422,11 @@
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
         </preparer>
     </target>
+    <target name="EcmaStringTableTestAction">
+        <preparer>
+            <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
+        </preparer>
+    </target>
     <target name="EcmaStringTest">
         <preparer>
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
@@ -518,6 +528,11 @@
         </preparer>
     </target>
     <target name="EcmaVMTest">
+        <preparer>
+            <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
+        </preparer>
+    </target>
+    <target name="UtfHelperTest">
         <preparer>
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
         </preparer>
