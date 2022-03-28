@@ -66,10 +66,8 @@
 #include "ecmascript/builtins/builtins_weak_set.h"
 #include "ecmascript/containers/containers_private.h"
 #include "ecmascript/ecma_runtime_call_info.h"
-#include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_arraybuffer.h"
-#include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_async_function.h"
 #include "ecmascript/js_collator.h"
@@ -1518,6 +1516,9 @@ void Builtins::InitializeIterator(const JSHandle<GlobalEnv> &env, const JSHandle
     // Iterator.dynclass
     JSHandle<JSHClass> iteratorFuncDynclass =
         factory_->NewEcmaDynClass(JSObject::SIZE, JSType::JS_ITERATOR, JSHandle<JSTaggedValue>(iteratorPrototype));
+
+    auto globalConst = const_cast<GlobalEnvConstants *>(thread_->GlobalConstants());
+    globalConst->SetConstant(ConstantIndex::JS_API_ITERATOR_FUNC_DYN_CLASS_INDEX, iteratorFuncDynclass);
 
     InitializeForinIterator(env, iteratorFuncDynclass);
     InitializeSetIterator(env, iteratorFuncDynclass);

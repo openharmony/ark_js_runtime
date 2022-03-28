@@ -23,8 +23,12 @@
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/js_api_deque.h"
+#include "ecmascript/js_api_deque_iterator.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_queue_iterator.h"
+#include "ecmascript/js_api_stack.h"
+#include "ecmascript/js_api_stack_iterator.h"
 #include "ecmascript/jspandafile/class_info_extractor.h"
 #include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_api_tree_map.h"
@@ -350,6 +354,18 @@ void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const Ec
             break;
         case JSType::JS_API_TREESET_ITERATOR:
             JSAPITreeSetIterator::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::JS_API_DEQUE:
+            JSAPIDeque::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::JS_API_DEQUE_ITERATOR:
+            JSAPIDequeIterator::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::JS_API_STACK:
+            JSAPIStack::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::JS_API_STACK_ITERATOR:
+            JSAPIStackIterator::Cast(object)->VisitRangeSlot(visitor);
             break;
         case JSType::BIGINT:
             BigInt::Cast(object)->VisitRangeSlot(visitor);

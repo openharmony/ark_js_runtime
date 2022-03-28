@@ -54,12 +54,16 @@
 #include "ecmascript/builtins/builtins_weak_map.h"
 #include "ecmascript/builtins/builtins_weak_set.h"
 #include "ecmascript/containers/containers_arraylist.h"
+#include "ecmascript/containers/containers_deque.h"
 #include "ecmascript/containers/containers_queue.h"
+#include "ecmascript/containers/containers_stack.h"
 #include "ecmascript/containers/containers_treemap.h"
 #include "ecmascript/containers/containers_treeset.h"
 #include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/js_api_deque_iterator.h"
 #include "ecmascript/js_api_queue_iterator.h"
+#include "ecmascript/js_api_stack_iterator.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set_iterator.h"
 #include "ecmascript/js_array_iterator.h"
@@ -125,6 +129,8 @@ using ArrayList = containers::ContainersArrayList;
 using TreeMap = containers::ContainersTreeMap;
 using TreeSet = containers::ContainersTreeSet;
 using Queue = containers::ContainersQueue;
+using Deque = containers::ContainersDeque;
+using ContainerStack = panda::ecmascript::containers::ContainersStack;
 
 constexpr int TAGGED_SIZE = JSTaggedValue::TaggedTypeSize();
 constexpr int OBJECT_HEADER_SIZE = TaggedObject::TaggedObjectSize();
@@ -628,6 +634,18 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(TreeSet::GetLength),
     reinterpret_cast<uintptr_t>(JSAPITreeMapIterator::Next),
     reinterpret_cast<uintptr_t>(JSAPITreeSetIterator::Next),
+    reinterpret_cast<uintptr_t>(Deque::DequeConstructor),
+    reinterpret_cast<uintptr_t>(Deque::InsertFront),
+    reinterpret_cast<uintptr_t>(Deque::InsertEnd),
+    reinterpret_cast<uintptr_t>(Deque::GetFirst),
+    reinterpret_cast<uintptr_t>(Deque::GetLast),
+    reinterpret_cast<uintptr_t>(Deque::Has),
+    reinterpret_cast<uintptr_t>(Deque::PopFirst),
+    reinterpret_cast<uintptr_t>(Deque::PopLast),
+    reinterpret_cast<uintptr_t>(Deque::ForEach),
+    reinterpret_cast<uintptr_t>(Deque::GetIteratorObj),
+    reinterpret_cast<uintptr_t>(Deque::GetSize),
+    reinterpret_cast<uintptr_t>(JSAPIDequeIterator::Next),
     reinterpret_cast<uintptr_t>(Queue::QueueConstructor),
     reinterpret_cast<uintptr_t>(Queue::Add),
     reinterpret_cast<uintptr_t>(Queue::GetFirst),
@@ -636,6 +654,16 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(Queue::GetIteratorObj),
     reinterpret_cast<uintptr_t>(Queue::GetSize),
     reinterpret_cast<uintptr_t>(JSAPIQueueIterator::Next),
+    reinterpret_cast<uintptr_t>(ContainerStack::StackConstructor),
+    reinterpret_cast<uintptr_t>(ContainerStack::Iterator),
+    reinterpret_cast<uintptr_t>(ContainerStack::IsEmpty),
+    reinterpret_cast<uintptr_t>(ContainerStack::Push),
+    reinterpret_cast<uintptr_t>(ContainerStack::Peek),
+    reinterpret_cast<uintptr_t>(ContainerStack::Pop),
+    reinterpret_cast<uintptr_t>(ContainerStack::Locate),
+    reinterpret_cast<uintptr_t>(ContainerStack::ForEach),
+    reinterpret_cast<uintptr_t>(ContainerStack::GetLength),
+    reinterpret_cast<uintptr_t>(JSAPIStackIterator::Next),
 
     // not builtins method
     reinterpret_cast<uintptr_t>(JSFunction::PrototypeSetter),
