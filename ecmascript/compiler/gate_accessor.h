@@ -305,6 +305,10 @@ public:
     explicit GateAccessor(Circuit *circuit) : circuit_(circuit)
     {
     }
+    Circuit *GetCircuit() const
+    {
+        return circuit_;
+    }
 
     ~GateAccessor() = default;
 
