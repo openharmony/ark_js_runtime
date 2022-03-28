@@ -185,10 +185,10 @@ void JSHClass::AddProperty(const JSThread *thread, const JSHandle<JSObject> &obj
     JSHandle<JSHClass> jshclass(thread, obj->GetJSHClass());
     JSHClass *newDyn = jshclass->FindTransitions(key.GetTaggedValue(), JSTaggedValue(attr.GetPropertyMetaData()));
     if (newDyn != nullptr) {
+        obj->SetClass(newDyn);
 #if ECMASCRIPT_ENABLE_IC
         JSHClass::NotifyHclassChanged(thread, jshclass, JSHandle<JSHClass>(thread, newDyn));
 #endif
-        obj->SetClass(newDyn);
         return;
     }
 
