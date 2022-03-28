@@ -119,6 +119,7 @@ config("ark_jsruntime_public_config") {
 intl_sources = [
   "ecmascript/builtins/builtins_collator.cpp",
   "ecmascript/builtins/builtins_date_time_format.cpp",
+  "ecmascript/builtins/builtins_displaynames.cpp",
   "ecmascript/builtins/builtins_intl.cpp",
   "ecmascript/builtins/builtins_locale.cpp",
   "ecmascript/builtins/builtins_number_format.cpp",
@@ -126,6 +127,7 @@ intl_sources = [
   "ecmascript/builtins/builtins_relative_time_format.cpp",
   "ecmascript/js_collator.cpp",
   "ecmascript/js_date_time_format.cpp",
+  "ecmascript/js_displaynames.cpp",
   "ecmascript/js_locale.cpp",
   "ecmascript/js_number_format.cpp",
   "ecmascript/js_plural_rules.cpp",

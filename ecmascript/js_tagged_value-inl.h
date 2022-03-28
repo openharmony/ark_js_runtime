@@ -589,6 +589,11 @@ inline bool JSTaggedValue::IsJSPluralRules() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSPluralRules();
 }
 
+inline bool JSTaggedValue::IsJSDisplayNames() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSDisplayNames();
+}
+
 inline bool JSTaggedValue::IsJSAPIArrayList() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIArrayList();

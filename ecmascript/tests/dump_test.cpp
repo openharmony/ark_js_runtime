@@ -59,6 +59,7 @@
 #include "ecmascript/js_number_format.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_plural_rules.h"
+#include "ecmascript/js_displaynames.h"
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_realm.h"
@@ -429,6 +430,11 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
             case JSType::JS_PLURAL_RULES: {
                 CHECK_DUMP_FIELDS(JSObject::SIZE, JSPluralRules::SIZE, 10)
                 NEW_OBJECT_AND_DUMP(JSPluralRules, JS_PLURAL_RULES)
+                break;
+            }
+            case JSType::JS_DISPLAYNAMES: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSDisplayNames::SIZE, 6)
+                NEW_OBJECT_AND_DUMP(JSDisplayNames, JS_DISPLAYNAMES)
                 break;
             }
             case JSType::JS_ARRAY_BUFFER: {
