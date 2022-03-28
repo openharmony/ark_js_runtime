@@ -192,7 +192,7 @@ public:
     GateRef BytecodeCall(const CallSignature *signature, GateRef glue, GateRef target,
                          GateRef depend, const std::vector<GateRef> &args);
     static MachineType GetMachineTypeFromVariableType(VariableType type);
-    Circuit *GetCircuit()
+    Circuit *GetCircuit() const
     {
         return lowBuilder_.GetCircuit();
     }
