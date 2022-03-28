@@ -504,11 +504,11 @@ void LLVMIRBuilder::VisitRuntimeCall(GateRef gate, const std::vector<GateRef> &i
     if (circuit_->GetFrameType() == FrameType::INTERPRETER_FRAME ||
         circuit_->GetFrameType() == FrameType::OPTIMIZED_ENTRY_FRAME) {
         rtoffset = LLVMConstInt(glueType,
-            JSThread::GlueData::GetRTInterfacesOffset(compCfg_->Is32Bit()) +
+            JSThread::GlueData::GetRTStubEntriesOffset(compCfg_->Is32Bit()) +
             (RTSTUB_ID(AsmIntCallRuntime)) * slotSize_, 0);
     } else if (circuit_->GetFrameType() == FrameType::OPTIMIZED_FRAME) {
         rtoffset = LLVMConstInt(glueType,
-            JSThread::GlueData::GetRTInterfacesOffset(compCfg_->Is32Bit()) +
+            JSThread::GlueData::GetRTStubEntriesOffset(compCfg_->Is32Bit()) +
             (RTSTUB_ID(OptimizedCallRuntime)) * slotSize_, 0);
     } else {
         abort();
@@ -625,10 +625,10 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList, 
     // runtime case
     if (op == OpCode::CALL) {
         rtoffset = LLVMConstInt(glueType,
-                                JSThread::GlueData::GetStubEntriesOffset(compCfg_->Is32Bit()) + index * slotSize_, 0);
+                                JSThread::GlueData::GetCOStubEntriesOffset(compCfg_->Is32Bit()) + index * slotSize_, 0);
     } else {
         rtoffset = LLVMConstInt(glueType,
-                                JSThread::GlueData::GetRTInterfacesOffset(compCfg_->Is32Bit()) + index * slotSize_, 0);
+                                JSThread::GlueData::GetRTStubEntriesOffset(compCfg_->Is32Bit()) + index * slotSize_, 0);
     }
     LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
     LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glueType, 0), "");
@@ -674,7 +674,8 @@ void LLVMIRBuilder::VisitBytecodeCall(GateRef gate, const std::vector<GateRef> &
     ASSERT(llvmModule_ != nullptr);
     LLVMValueRef callee;
     LLVMTypeRef rtfuncType;
-    if (BCHandlers::GetHandlerOffset(BCHandlers::BC_COUNT + BytecodeHelperId::HandleCommonCallId) == inList[1]) {
+    if (BCStubEntries::GetStubEntryOffset(
+        BCStubEntries::BC_HANDLER_STUB_ENTRIES_COUNT + BytecodeHelperId::HandleCommonCallId) == inList[1]) {
         const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(HandleCommonCall));
         rtfuncType = llvmModule_->GetFuncType(signature);
     } else {
@@ -686,7 +687,7 @@ void LLVMIRBuilder::VisitBytecodeCall(GateRef gate, const std::vector<GateRef> &
     LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
     LLVMTypeRef glueType = LLVMTypeOf(glue);
     LLVMValueRef bytecodeoffset = LLVMConstInt(glueType,
-                                               JSThread::GlueData::GetBCHandlersOffset(compCfg_->Is32Bit()),
+                                               JSThread::GlueData::GetBCStubEntriesOffset(compCfg_->Is32Bit()),
                                                0);
     LLVMValueRef rtbaseoffset = LLVMBuildAdd(
         builder_, glue, LLVMBuildAdd(builder_, bytecodeoffset, opcodeOffset, ""), "");
