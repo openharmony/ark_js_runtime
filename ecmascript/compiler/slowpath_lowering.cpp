@@ -417,6 +417,7 @@ void SlowPathLowering::Lower(GateRef gate, EcmaOpcode op)
             break;
         case STRICTEQDYN_PREF_V8:
             LowerFastStrictEqual(gate, glue);
+            break;
         case CREATEEMPTYARRAY_PREF:
             LowerCreateEmptyArray(gate, glue);
             break;
