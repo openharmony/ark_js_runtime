@@ -200,7 +200,6 @@ HWTEST_F_L0(BuiltinsDisplayNamesTest, Of_003)
     EXPECT_TRUE(result.IsString());
     JSHandle<EcmaString> handleEcmaStr(thread, result);
     EXPECT_STREQ("Euro", CString(handleEcmaStr->GetCString().get()).c_str());
-    //EXPECT_STREQ("EUR", CString(handleEcmaStr->GetCString().get()).c_str());
 }
 
 // SupportedLocalesOf("best fit")
