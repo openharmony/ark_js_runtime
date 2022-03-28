@@ -86,7 +86,7 @@
 #include "ecmascript/template_map.h"
 #include "ecmascript/transitions_dictionary.h"
 #include "ecmascript/ts_types/ts_type.h"
-#include "ecmascript/js_displaynames.h"  
+#include "ecmascript/js_displaynames.h"
 
 namespace panda::ecmascript {
 using MicroJobQueue = panda::ecmascript::job::MicroJobQueue;
@@ -3660,7 +3660,7 @@ void JSPluralRules::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue
     JSObject::DumpForSnapshot(vec);
 }
 
-void JSDisplayNames::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+void JSDisplayNames::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     vec.push_back(std::make_pair(CString("Locale"), GetLocale()));
     vec.push_back(std::make_pair(CString("Type"), JSTaggedValue(static_cast<int>(GetType()))));
@@ -3670,7 +3670,7 @@ void JSDisplayNames::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CSt
     JSObject::DumpForSnapshot(vec);
 }
 
-void JSGeneratorObject::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+void JSGeneratorObject::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     vec.push_back(std::make_pair(CString("GeneratorContext"), GetGeneratorContext()));
     vec.push_back(std::make_pair(CString("ResumeResult"), GetResumeResult()));

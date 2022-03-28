@@ -707,11 +707,11 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
                 break;
             }
             case JSType::JS_DISPLAYNAMES: {
-			    JSDisplayNames::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
+                JSDisplayNames::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
                 JSDisplayNames::Cast(*obj)->SetType(TypednsOption::EXCEPTION);
                 JSDisplayNames::Cast(*obj)->SetStyle(StyOption::EXCEPTION);
                 JSDisplayNames::Cast(*obj)->SetFallback(FallbackOption::EXCEPTION);
-				JSDisplayNames::Cast(*obj)->SetIcuLDN(thread_, JSTaggedValue::Undefined());
+                JSDisplayNames::Cast(*obj)->SetIcuLDN(thread_, JSTaggedValue::Undefined());
                 break;
             }
             case JSType::JS_ARRAY: {

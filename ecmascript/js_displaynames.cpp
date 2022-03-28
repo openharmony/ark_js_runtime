@@ -85,8 +85,7 @@ JSHandle<TaggedArray> JSDisplayNames::GetAvailableLocales(JSThread *thread)
     return availableLocales;
 }
 
-namespace
-{
+namespace {
     bool IsUnicodeScriptSubtag(const std::string& value)
     {
         UErrorCode status = U_ZERO_ERROR;
