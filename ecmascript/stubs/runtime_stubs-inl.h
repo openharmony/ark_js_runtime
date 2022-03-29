@@ -36,7 +36,7 @@
 namespace panda::ecmascript {
 JSTaggedValue RuntimeStubs::RuntimeIncDyn(JSThread *thread, const JSHandle<JSTaggedValue> &value)
 {
-    JSHandle<JSTaggedValue> inputVal(thread, JSTaggedValue::ToNumeric(thread, value));
+    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, value.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (inputVal->IsBigInt()) {
         JSHandle<BigInt> bigValue(inputVal);
@@ -48,7 +48,7 @@ JSTaggedValue RuntimeStubs::RuntimeIncDyn(JSThread *thread, const JSHandle<JSTag
 
 JSTaggedValue RuntimeStubs::RuntimeDecDyn(JSThread *thread, const JSHandle<JSTaggedValue> &value)
 {
-    JSHandle<JSTaggedValue> inputVal(thread, JSTaggedValue::ToNumeric(thread, value));
+    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, value.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (inputVal->IsBigInt()) {
         JSHandle<BigInt> bigValue(inputVal);
@@ -527,7 +527,7 @@ JSTaggedValue RuntimeStubs::RuntimeStGlobalRecord(JSThread *thread, const JSHand
 
 JSTaggedValue RuntimeStubs::RuntimeNegDyn(JSThread *thread, const JSHandle<JSTaggedValue> &value)
 {
-    JSHandle<JSTaggedValue> inputVal(thread, JSTaggedValue::ToNumeric(thread, value));
+    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, value.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (inputVal->IsBigInt()) {
         JSHandle<BigInt> bigValue(inputVal);
@@ -549,7 +549,7 @@ JSTaggedValue RuntimeStubs::RuntimeNegDyn(JSThread *thread, const JSHandle<JSTag
 
 JSTaggedValue RuntimeStubs::RuntimeNotDyn(JSThread *thread, const JSHandle<JSTaggedValue> &value)
 {
-    JSHandle<JSTaggedValue> inputVal(thread, JSTaggedValue::ToNumeric(thread, value));
+    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, value.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (inputVal->IsBigInt()) {
         JSHandle<BigInt> bigValue(inputVal);
@@ -973,7 +973,7 @@ JSTaggedValue RuntimeStubs::RuntimeStGlobalVar(JSThread *thread, const JSHandle<
 
 JSTaggedValue RuntimeStubs::RuntimeToNumber(JSThread *thread, const JSHandle<JSTaggedValue> &value)
 {
-    return JSTaggedValue::ToNumeric(thread, value);
+    return JSTaggedValue::ToNumeric(thread, value.GetTaggedValue()).GetTaggedValue();
 }
 
 JSTaggedValue RuntimeStubs::RuntimeEqDyn(JSThread *thread, const JSHandle<JSTaggedValue> &left,
@@ -1048,16 +1048,16 @@ JSTaggedValue RuntimeStubs::RuntimeAdd2Dyn(JSThread *thread, const JSHandle<JSTa
         JSHandle<EcmaString> newString = factory->ConcatFromString(stringA0, stringA1);
         return newString.GetTaggedValue();
     }
-    JSHandle<JSTaggedValue> valLeft(thread, JSTaggedValue::ToNumeric(thread, primitiveA0));
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, primitiveA0.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, primitiveA1));
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, primitiveA1.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
-        JSHandle<BigInt> bigLeft(valLeft);
-        JSHandle<BigInt> bigRight(valRight);
-        return BigInt::Add(thread, bigLeft, bigRight).GetTaggedValue();
-    }
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+            JSHandle<BigInt> bigLeft(valLeft);
+            JSHandle<BigInt> bigRight(valRight);
+            return BigInt::Add(thread, bigLeft, bigRight).GetTaggedValue();
+        }
         return RuntimeThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
     double a0Double = valLeft->GetNumber();
@@ -1068,16 +1068,16 @@ JSTaggedValue RuntimeStubs::RuntimeAdd2Dyn(JSThread *thread, const JSHandle<JSTa
 JSTaggedValue RuntimeStubs::RuntimeSub2Dyn(JSThread *thread, const JSHandle<JSTaggedValue> &left,
                                            const JSHandle<JSTaggedValue> &right)
 {
-    JSHandle<JSTaggedValue> valLeft(thread, JSTaggedValue::ToNumeric(thread, left));
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, right));
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
-        JSHandle<BigInt> bigLeft(valLeft);
-        JSHandle<BigInt> bigRight(valRight);
-        return BigInt::Subtract(thread, bigLeft, bigRight).GetTaggedValue();
-    }
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+            JSHandle<BigInt> bigLeft(valLeft);
+            JSHandle<BigInt> bigRight(valRight);
+            return BigInt::Subtract(thread, bigLeft, bigRight).GetTaggedValue();
+        }
         return RuntimeThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
     JSTaggedNumber number0(valLeft.GetTaggedValue());
@@ -1088,17 +1088,17 @@ JSTaggedValue RuntimeStubs::RuntimeSub2Dyn(JSThread *thread, const JSHandle<JSTa
 JSTaggedValue RuntimeStubs::RuntimeMul2Dyn(JSThread *thread, const JSHandle<JSTaggedValue> &left,
                                            const JSHandle<JSTaggedValue> &right)
 {
-    JSHandle<JSTaggedValue> valLeft(thread, JSTaggedValue::ToNumeric(thread, left));
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, right));
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 9. ReturnIfAbrupt(rnum).
-    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
-        JSHandle<BigInt> bigLeft(valLeft);
-        JSHandle<BigInt> bigRight(valRight);
-        return BigInt::Multiply(thread, bigLeft, bigRight).GetTaggedValue();
-    }
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+            JSHandle<BigInt> bigLeft(valLeft);
+            JSHandle<BigInt> bigRight(valRight);
+            return BigInt::Multiply(thread, bigLeft, bigRight).GetTaggedValue();
+        }
         return RuntimeThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
     // 12.6.3.1 Applying the * Operator
@@ -1110,16 +1110,16 @@ JSTaggedValue RuntimeStubs::RuntimeMul2Dyn(JSThread *thread, const JSHandle<JSTa
 JSTaggedValue RuntimeStubs::RuntimeDiv2Dyn(JSThread *thread, const JSHandle<JSTaggedValue> &left,
                                            const JSHandle<JSTaggedValue> &right)
 {
-    JSHandle<JSTaggedValue> valLeft(thread, JSTaggedValue::ToNumeric(thread, left));
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, right));
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
-        JSHandle<BigInt> bigLeft(valLeft);
-        JSHandle<BigInt> bigRight(valRight);
-        return BigInt::Divide(thread, bigLeft, bigRight).GetTaggedValue();
-    }
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+            JSHandle<BigInt> bigLeft(valLeft);
+            JSHandle<BigInt> bigRight(valRight);
+            return BigInt::Divide(thread, bigLeft, bigRight).GetTaggedValue();
+        }
         return RuntimeThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
     double dLeft = valLeft->GetNumber();
@@ -1138,18 +1138,18 @@ JSTaggedValue RuntimeStubs::RuntimeDiv2Dyn(JSThread *thread, const JSHandle<JSTa
 JSTaggedValue RuntimeStubs::RuntimeMod2Dyn(JSThread *thread, const JSHandle<JSTaggedValue> &left,
                                            const JSHandle<JSTaggedValue> &right)
 {
-    JSHandle<JSTaggedValue> valLeft(thread, JSTaggedValue::ToNumeric(thread, left));
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, right));
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     // 12.6.3.3 Applying the % Operator
-    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
-        JSHandle<BigInt> leftBigint(valLeft);
-        JSHandle<BigInt> rightBigint(valRight);
-        return BigInt::Remainder(thread, leftBigint, rightBigint).GetTaggedValue();
-    }
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+            JSHandle<BigInt> leftBigint(valLeft);
+            JSHandle<BigInt> rightBigint(valRight);
+            return BigInt::Remainder(thread, leftBigint, rightBigint).GetTaggedValue();
+        }
         return RuntimeThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
     double dLeft = valLeft->GetNumber();

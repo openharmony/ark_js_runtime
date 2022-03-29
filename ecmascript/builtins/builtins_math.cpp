@@ -552,16 +552,16 @@ JSTaggedValue BuiltinsMath::Pow(EcmaRuntimeCallInfo *argv)
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSTaggedValue> msgX = GetCallArg(argv, 0);
     JSHandle<JSTaggedValue> msgY = GetCallArg(argv, 1);
-    JSHandle<JSTaggedValue> baseVale(thread, JSTaggedValue::ToNumeric(thread, msgX));
+    JSHandle<JSTaggedValue> baseVale = JSTaggedValue::ToNumeric(thread, msgX.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> exponentValue(thread, JSTaggedValue::ToNumeric(thread, msgY));
+    JSHandle<JSTaggedValue> exponentValue = JSTaggedValue::ToNumeric(thread, msgY.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    if (baseVale->IsBigInt() && exponentValue->IsBigInt()) {
-        JSHandle<BigInt> bigBaseVale(baseVale);
-        JSHandle<BigInt> bigExponentValue(exponentValue);
-        return  BigInt::Exponentiate(thread, bigBaseVale, bigExponentValue).GetTaggedValue();
-    }
     if (baseVale->IsBigInt() || exponentValue->IsBigInt()) {
+        if (baseVale->IsBigInt() && exponentValue->IsBigInt()) {
+            JSHandle<BigInt> bigBaseVale(baseVale);
+            JSHandle<BigInt> bigExponentValue(exponentValue);
+            return  BigInt::Exponentiate(thread, bigBaseVale, bigExponentValue).GetTaggedValue();
+        }
         THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot mix BigInt and other types, use explicit conversions",
                                     JSTaggedValue::Exception());
     }

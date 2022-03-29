@@ -953,18 +953,21 @@ bool JSTaggedValue::GetContainerProperty(JSThread *thread, const JSHandle<JSTagg
     }
     return false;
 }
-JSTaggedValue JSTaggedValue::ToNumeric(JSThread *thread, const JSHandle<JSTaggedValue> &tagged)
+JSHandle<JSTaggedValue> JSTaggedValue::ToNumeric(JSThread *thread, JSTaggedValue tagged)
 {
     // 1. Let primValue be ? ToPrimitive(value, number)
-    JSHandle<JSTaggedValue> primValue(thread, ToPrimitive(thread, tagged, PREFER_NUMBER));
-    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSHandle<JSTaggedValue> taggedValue(thread, tagged);
+
+    JSHandle<JSTaggedValue> primValue(thread, ToPrimitive(thread, taggedValue, PREFER_NUMBER));
+    RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSTaggedValue, thread);
     // 2. If Type(primValue) is BigInt, return primValue.
     if (primValue->IsBigInt()) {
-        return primValue.GetTaggedValue();
+        return primValue;
     }
     // 3. Return ? ToNumber(primValue).
     JSTaggedNumber number = ToNumber(thread, primValue);
-    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    return number;
+    RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSTaggedValue, thread);
+    JSHandle<JSTaggedValue> value(thread, number);
+    return value;
 }
 }  // namespace panda::ecmascript
