@@ -743,6 +743,16 @@ inline bool JSTaggedValue::IsJSFloat64Array() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSFloat64Array();
 }
 
+inline bool JSTaggedValue::IsJSBigInt64Array() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSBigInt64Array();
+}
+
+inline bool JSTaggedValue::IsJSBigUint64Array() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSBigUint64Array();
+}
+
 inline bool JSTaggedValue::IsJSMap() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSMap();

@@ -1973,6 +1973,16 @@ bool JSValueRef::IsFloat64Array()
     return JSNApiHelper::ToJSTaggedValue(this).IsJSFloat64Array();
 }
 
+bool JSValueRef::IsBigInt64Array()
+{
+    return JSNApiHelper::ToJSTaggedValue(this).IsJSBigInt64Array();
+}
+
+bool JSValueRef::IsBigUint64Array()
+{
+    return JSNApiHelper::ToJSTaggedValue(this).IsJSBigUint64Array();
+}
+
 bool JSValueRef::IsJSPrimitiveRef()
 {
     return JSNApiHelper::ToJSTaggedValue(this).IsJSPrimitiveRef();

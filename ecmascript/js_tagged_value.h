@@ -267,6 +267,8 @@ public:
     bool IsJSUint32Array() const;
     bool IsJSFloat32Array() const;
     bool IsJSFloat64Array() const;
+    bool IsJSBigInt64Array() const;
+    bool IsJSBigUint64Array() const;
     bool IsArguments() const;
     bool IsDate() const;
     bool IsBoundFunction() const;
