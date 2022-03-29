@@ -159,65 +159,8 @@ HWTEST_F_L0(AccessorDataTest, HasSetter)
 }
 
 /**
- * @tc.name: CallInternalGet
- * @tc.desc: Call internal get function to get object prototype.
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F_L0(AccessorDataTest, CallInternalGet)
-{
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<GlobalEnv> globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
-
-    // Construct objects and specify specific prototypes.
-    JSFunction *func1 = globalEnv->GetObjectFunction().GetObject<JSFunction>();
-    JSFunction *func2 = globalEnv->GetObjectFunction().GetObject<JSFunction>();
-    JSHandle<JSTaggedValue> funcTagVal1(thread, func1);
-    JSHandle<JSTaggedValue> funcTagVal2(thread, func2);
-    JSHandle<JSObject> jsObjectHandle1 =
-        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(funcTagVal1), funcTagVal1);
-    JSHandle<JSObject> jsObjectHandle2 =
-        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(funcTagVal2), funcTagVal2);
-    char array1[] = "x";
-    char array2[] = "y";
-    JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString(array1));
-    JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString(array2));
-    JSHandle<JSTaggedValue> value(thread, JSTaggedValue(100));
-    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(jsObjectHandle1), key1, value);
-    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(jsObjectHandle2), key2, value);
-
-    JSHandle<JSTaggedValue> nullPrototypeHandle(thread, JSTaggedValue::Null());
-    JSHandle<JSTaggedValue> undefPrototypeHandle(thread, JSTaggedValue::Undefined());
-    JSHandle<JSHClass> accDynclass1 =
-        factory->NewEcmaDynClass(JSObject::SIZE, JSType::INTERNAL_ACCESSOR, nullPrototypeHandle);
-    JSHandle<JSHClass> accDynclass2 =
-        factory->NewEcmaDynClass(JSObject::SIZE, JSType::INTERNAL_ACCESSOR, undefPrototypeHandle);
-    ObjectHeader *accObject1 = factory->NewDynObject(accDynclass1);
-    ObjectHeader *accObject2 = factory->NewDynObject(accDynclass2);
-    AccessorData *acc1 = AccessorData::Cast(accObject1);
-    AccessorData *acc2 = AccessorData::Cast(accObject2);
-    JSHandle<JSNativePointer> prototypeGetterFuncNativePtrHandle =
-        factory->NewJSNativePointer(reinterpret_cast<void *>(JSFunction::PrototypeGetter), nullptr, nullptr, true);
-    acc1->SetGetter(thread, prototypeGetterFuncNativePtrHandle);
-    acc2->SetGetter(thread, prototypeGetterFuncNativePtrHandle);
-    ObjectOperator op1(thread, jsObjectHandle1, key1, OperatorType::OWN);
-    ObjectOperator op2(thread, jsObjectHandle2, key2, OperatorType::OWN);
-    PropertyAttributes attr = PropertyAttributes::DefaultAccessor(false, false, true);
-    op1.AddProperty(jsObjectHandle1, nullPrototypeHandle, attr);
-    op2.AddProperty(jsObjectHandle2, undefPrototypeHandle, attr);
-    JSHandle<JSTaggedValue> holder1 = op1.GetHolder();
-    JSHandle<JSTaggedValue> holder2 = op2.GetHolder();
-
-    // Call CallInternalGet function to get prototypes.
-    JSTaggedValue valNullPrototype = acc1->CallInternalGet(thread, JSHandle<JSObject>::Cast(holder1));
-    JSTaggedValue valUndefPrototype = acc2->CallInternalGet(thread, JSHandle<JSObject>::Cast(holder2));
-    EXPECT_EQ(valNullPrototype.GetInt(), JSTaggedValue::Null().GetInt());
-    EXPECT_EQ(valUndefPrototype.GetInt(), JSTaggedValue::Undefined().GetInt());
-}
-
-/**
- * @tc.name: CallInternalSet
- * @tc.desc: Call internal set function to set object prototype.
+ * @tc.name: CallInternalSet/CallInternalGet
+ * @tc.desc: Call internal set & get function to set object prototype.
  * @tc.type: FUNC
  * @tc.require:
  */
@@ -228,42 +171,32 @@ HWTEST_F_L0(AccessorDataTest, CallInternalSet)
 
     // Construct objects and specify specific prototypes.
     JSFunction *func1 = globalEnv->GetObjectFunction().GetObject<JSFunction>();
-    JSHandle<JSTaggedValue> funcTagVal1(thread, func1);
-    JSHandle<JSObject> jsObjectHandle1 =
-        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(funcTagVal1), funcTagVal1);
-    char array1[] = "x";
-    JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString(array1));
-    JSHandle<JSTaggedValue> value(thread, JSTaggedValue(100));
-    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(jsObjectHandle1), key1, value);
+    JSHandle<JSFunction> funcTagVal1 =
+        factory->CloneJSFuction(JSHandle<JSFunction>(thread, func1), FunctionKind::BASE_CONSTRUCTOR);
 
     // Call the CallInternalGet method to inspect prototype.
     JSHandle<JSTaggedValue> nullPrototypeHandle(thread, JSTaggedValue::Null());
     JSHandle<JSHClass> accDynclass1 =
         factory->NewEcmaDynClass(JSObject::SIZE, JSType::INTERNAL_ACCESSOR, nullPrototypeHandle);
-    ObjectHeader *accObject1 = factory->NewDynObject(accDynclass1);
-    AccessorData *acc1 = AccessorData::Cast(accObject1);
+    JSHandle<AccessorData> accObject1(thread, factory->NewDynObject(accDynclass1));
     JSHandle<JSNativePointer> prototypeGetterFuncNativePtrHandle =
         factory->NewJSNativePointer(reinterpret_cast<void *>(JSFunction::PrototypeGetter), nullptr, nullptr, true);
-    acc1->SetGetter(thread, prototypeGetterFuncNativePtrHandle);
-    ObjectOperator op1(thread, jsObjectHandle1, key1, OperatorType::OWN);
-    PropertyAttributes attr = PropertyAttributes::DefaultAccessor(false, false, true);
-    op1.AddProperty(jsObjectHandle1, nullPrototypeHandle, attr);
-    JSHandle<JSTaggedValue> holder1 = op1.GetHolder();
+    accObject1->SetGetter(thread, prototypeGetterFuncNativePtrHandle);
 
-    JSTaggedValue valNullPrototype = acc1->CallInternalGet(thread, JSHandle<JSObject>::Cast(holder1));
-    EXPECT_EQ(valNullPrototype.GetInt(), JSTaggedValue::Null().GetInt());
+    JSTaggedValue valNullPrototype = accObject1->CallInternalGet(thread, JSHandle<JSObject>::Cast(funcTagVal1));
+    EXPECT_NE(valNullPrototype.GetRawData(), JSTaggedValue::Undefined().GetRawData());
 
     // Call the CallInternalSet method to set new prototype.
     JSHandle<JSTaggedValue> undefPrototypeHandle(thread, JSTaggedValue::Undefined());
     JSHandle<JSNativePointer> prototypeSetterFuncNativePtrHandle =
         factory->NewJSNativePointer(reinterpret_cast<void *>(JSFunction::PrototypeSetter), nullptr, nullptr, true);
-    acc1->SetSetter(thread, prototypeSetterFuncNativePtrHandle);
-    bool res1 = acc1->CallInternalSet(thread, JSHandle<JSObject>::Cast(holder1), undefPrototypeHandle);
+    accObject1->SetSetter(thread, prototypeSetterFuncNativePtrHandle);
+    bool res1 = accObject1->CallInternalSet(thread, JSHandle<JSObject>::Cast(funcTagVal1), undefPrototypeHandle);
     EXPECT_TRUE(res1);
 
     // Call the CallInternalGet method to check the changed prototype.
-    valNullPrototype = acc1->CallInternalGet(thread, JSHandle<JSObject>::Cast(holder1));
-    EXPECT_EQ(valNullPrototype.GetInt(), JSTaggedValue::Undefined().GetInt());
+    valNullPrototype = accObject1->CallInternalGet(thread, JSHandle<JSObject>::Cast(funcTagVal1));
+    EXPECT_EQ(valNullPrototype.GetRawData(), JSTaggedValue::Undefined().GetRawData());
 }
 
 /**

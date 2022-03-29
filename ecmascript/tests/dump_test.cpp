@@ -433,7 +433,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::JS_DISPLAYNAMES: {
-                CHECK_DUMP_FIELDS(JSObject::SIZE, JSDisplayNames::SIZE, 6)
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSDisplayNames::SIZE, 3)
                 NEW_OBJECT_AND_DUMP(JSDisplayNames, JS_DISPLAYNAMES)
                 break;
             }
