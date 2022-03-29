@@ -202,7 +202,8 @@ private:
 class LLVMIRBuilder {
 public:
     explicit LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, const Circuit *circuit,
-                           LLVMModule *module, LLVMValueRef function, const CompilationConfig *cfg);
+                           LLVMModule *module, LLVMValueRef function, const CompilationConfig *cfg,
+                           CallSignature::CallConv callConv);
     ~LLVMIRBuilder();
     void Build();
 
@@ -252,6 +253,7 @@ private:
     void SetCurrentSPFrame(LLVMValueRef sp);
     LLVMValueRef GetCurrentFrameType(LLVMValueRef currentSpFrameAddr);
     bool IsGCRelated(GateType typeCode) const;
+    void SetFunctionCallConv();
 
 private:
     const CompilationConfig *compCfg_ {nullptr};
@@ -274,6 +276,7 @@ private:
     std::set<OpCode::Op> opCodeHandleIgnore;
     int slotSize_;
     LLVMTypeRef slotType_;
+    CallSignature::CallConv callConv_ = CallSignature::CallConv::CCallConv;
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_LLVM_IR_BUILDER_H

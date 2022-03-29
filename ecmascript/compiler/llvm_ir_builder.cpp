@@ -54,20 +54,16 @@
 
 namespace panda::ecmascript::kungfu {
 LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, const Circuit *circuit,
-                             LLVMModule *module, LLVMValueRef function, const CompilationConfig *cfg)
+                             LLVMModule *module, LLVMValueRef function, const CompilationConfig *cfg,
+                             CallSignature::CallConv callConv)
     : compCfg_(cfg), schedule_(schedule), circuit_(circuit), module_(module->GetModule()),
-      function_(function), llvmModule_(module)
+      function_(function), llvmModule_(module), callConv_(callConv)
 {
     builder_ = LLVMCreateBuilder();
     context_ = LLVMGetGlobalContext();
     bbIdMapBb_.clear();
-    if (circuit_->GetFrameType() == FrameType::INTERPRETER_FRAME) {
-        LLVMSetFunctionCallConv(function_, LLVMGHCCallConv);
-    } else if (circuit_->GetFrameType() == FrameType::OPTIMIZED_FRAME) {
-        if (!compCfg_->Is32Bit()) {  // Arm32 not support webkit jscc calling convention
-            LLVMSetFunctionCallConv(function_, LLVMWebKitJSCallConv);
-        }
-    }
+    SetFunctionCallConv();
+
     LLVMSetGC(function_, "statepoint-example");
     if (compCfg_->Is32Bit()) {
         slotSize_ = panda::ecmascript::FrameConstants::ARM32_SLOT_SIZE;
@@ -86,6 +82,28 @@ LLVMIRBuilder::~LLVMIRBuilder()
 {
     if (builder_ != nullptr) {
         LLVMDisposeBuilder(builder_);
+    }
+}
+
+void LLVMIRBuilder::SetFunctionCallConv()
+{
+    switch (callConv_) {
+        case CallSignature::CallConv::GHCCallConv:
+            LLVMSetFunctionCallConv(function_, LLVMGHCCallConv);
+            break;
+        case CallSignature::CallConv::WebKitJSCallConv: {
+            if (!compCfg_->Is32Bit()) {
+                LLVMSetFunctionCallConv(function_, LLVMWebKitJSCallConv);
+            } else {
+                LLVMSetFunctionCallConv(function_, LLVMCCallConv);
+            }
+            break;
+        }
+        default: {
+            LLVMSetFunctionCallConv(function_, LLVMCCallConv);
+            callConv_ = CallSignature::CallConv::CCallConv;
+            break;
+        }
     }
 }
 
@@ -642,12 +660,14 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList, 
     // first argument is glue
     GateRef glueGate = inList[paraStartIndex];
     params[dstParaIndex++] = gateToLLVMMaps_[glueGate];
-    // for arm32, r0-r4 must be occupied by fake parameters, then the actual paramters will be in stack.
+    // for arm32, r0-r3 must be occupied by fake parameters, then the actual paramters will be in stack.
     if (compCfg_->Is32Bit() && calleeDescriptor->GetTargetKind() != CallSignature::TargetKind::RUNTIME_STUB) {
-        for (int i = 0; i < CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32; i++) {
-            params[dstParaIndex++] = gateToLLVMMaps_[glueGate];
+        if (calleeDescriptor->GetCallConv() == CallSignature::CallConv::WebKitJSCallConv) {
+            for (int i = 0; i < CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32; i++) {
+                params[dstParaIndex++] = gateToLLVMMaps_[glueGate];
+            }
+            extraParameterCnt += CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32;
         }
-        extraParameterCnt += CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32;
     }
     // then push the actual parameter for js function call
     for (size_t paraIdx = paraStartIndex + 1; paraIdx < inList.size(); ++paraIdx) {
@@ -966,11 +986,12 @@ void LLVMIRBuilder::VisitParameter(GateRef gate)
 {
     int argth = circuit_->LoadGatePtrConst(gate)->GetBitField();
     COMPILER_LOG(DEBUG) << " Parameter value" << argth;
-    if (compCfg_->Is32Bit() && argth > 0) {
-        argth += CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32;
+    if (callConv_ == CallSignature::CallConv::WebKitJSCallConv) {
+        if (compCfg_->Is32Bit() && argth > 0) {
+            argth += CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32;
+        }
     }
     LLVMValueRef value = LLVMGetParam(function_, argth);
-
     ASSERT(LLVMTypeOf(value) == ConvertLLVMTypeFromGate(gate));
     gateToLLVMMaps_[gate] = value;
     COMPILER_LOG(DEBUG) << "VisitParameter set gate:" << gate << "  value:" << value;
@@ -1856,10 +1877,12 @@ LLVMTypeRef LLVMModule::GetFuncType(const CallSignature *stubDescriptor)
     LLVMTypeRef glueType = ConvertLLVMTypeFromVariableType(paramsType[0]);
     paramTys.push_back(glueType);
     if (cfg_.Is32Bit() && stubDescriptor->GetTargetKind() != CallSignature::TargetKind::RUNTIME_STUB) {
-        for (int i = 0; i < CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32; i++) {
-            paramTys.push_back(glueType);  // fake paramter's type is same with glue type
+        if (stubDescriptor->GetCallConv() == CallSignature::CallConv::WebKitJSCallConv) {
+            for (int i = 0; i < CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32; i++) {
+                paramTys.push_back(glueType);  // fake paramter's type is same with glue type
+            }
+            extraParameterCnt += CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32;
         }
-        extraParameterCnt += CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32;
     }
 
     for (int i = 1; i < paramCount; i++) {
