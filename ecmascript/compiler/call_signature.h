@@ -47,6 +47,11 @@ public:
         BCHANDLER_BEGIN = BYTECODE_HANDLER,
         BCHANDLER_END = JSFUNCTION
     };
+    enum class CallConv: uint8_t {
+        CCallConv = 0,
+        GHCCallConv = 1,
+        WebKitJSCallConv = 2,
+    };
 
     explicit CallSignature(std::string name, int flags, int paramCounter, ArgumentsOrder order, VariableType returnType)
         : name_(name), flags_(flags), paramCounter_(paramCounter), order_(order), returnType_(returnType)
@@ -174,6 +179,16 @@ public:
         kind_ = kind;
     }
 
+    CallConv GetCallConv() const
+    {
+        return callConv_;
+    }
+
+    void SetCallConv(CallConv cc)
+    {
+        callConv_ = cc;
+    }
+
     const std::string &GetName()
     {
         return name_;
@@ -216,6 +231,7 @@ private:
     std::unique_ptr<std::vector<VariableType>> paramsType_ {nullptr};
 
     TargetConstructor constructor_ {nullptr};
+    CallConv callConv_ = CallSignature::CallConv::CCallConv;
 };
 
 #define EXPLICIT_CALL_SIGNATURE_LIST(V)     \

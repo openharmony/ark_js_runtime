@@ -51,6 +51,7 @@ DEF_CALL_SIGNATURE(Add)
         VariableType::JS_ANY(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(Sub)
@@ -65,6 +66,7 @@ DEF_CALL_SIGNATURE(Sub)
         VariableType::JS_ANY(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(Mul)
@@ -79,6 +81,7 @@ DEF_CALL_SIGNATURE(Mul)
         VariableType::JS_ANY(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 #ifndef NDEBUG
@@ -94,6 +97,7 @@ DEF_CALL_SIGNATURE(MulGCTest)
         VariableType::INT64(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 #else
 DEF_CALL_SIGNATURE(MulGCTest) {}
@@ -111,6 +115,7 @@ DEF_CALL_SIGNATURE(Div)
         VariableType::JS_ANY(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(Mod)
@@ -126,6 +131,7 @@ DEF_CALL_SIGNATURE(Mod)
         VariableType::JS_ANY(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(TypeOf)
@@ -139,6 +145,7 @@ DEF_CALL_SIGNATURE(TypeOf)
         VariableType::JS_ANY(), // ACC
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(Equal)
@@ -153,6 +160,7 @@ DEF_CALL_SIGNATURE(Equal)
         VariableType::JS_ANY(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(SetPropertyByName)
@@ -169,6 +177,7 @@ DEF_CALL_SIGNATURE(SetPropertyByName)
         VariableType::JS_ANY()
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(SetPropertyByNameWithOwn)
@@ -185,6 +194,7 @@ DEF_CALL_SIGNATURE(SetPropertyByNameWithOwn)
         VariableType::JS_ANY()
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(SetPropertyByValue)
@@ -201,6 +211,7 @@ DEF_CALL_SIGNATURE(SetPropertyByValue)
         VariableType::JS_ANY()
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(GetPropertyByName)
@@ -215,6 +226,7 @@ DEF_CALL_SIGNATURE(GetPropertyByName)
         VariableType::JS_POINTER(), // key
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(GetPropertyByIndex)
@@ -230,6 +242,7 @@ DEF_CALL_SIGNATURE(GetPropertyByIndex)
         VariableType::INT32(), // index
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(SetPropertyByIndex)
@@ -246,6 +259,7 @@ DEF_CALL_SIGNATURE(SetPropertyByIndex)
         VariableType::JS_ANY(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(GetPropertyByValue)
@@ -261,6 +275,7 @@ DEF_CALL_SIGNATURE(GetPropertyByValue)
         VariableType::JS_ANY(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(TryLoadICByName)
@@ -277,6 +292,7 @@ DEF_CALL_SIGNATURE(TryLoadICByName)
         VariableType::JS_ANY(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(TryLoadICByValue)
@@ -294,6 +310,7 @@ DEF_CALL_SIGNATURE(TryLoadICByValue)
         VariableType::JS_ANY(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(TryStoreICByName)
@@ -311,6 +328,7 @@ DEF_CALL_SIGNATURE(TryStoreICByName)
         VariableType::JS_POINTER(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(TryStoreICByValue)
@@ -329,6 +347,7 @@ DEF_CALL_SIGNATURE(TryStoreICByValue)
         VariableType::JS_POINTER(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(TestAbsoluteAddressRelocation)
@@ -395,6 +414,7 @@ DEF_CALL_SIGNATURE(SingleStepDebugging)
         VariableType::INT32(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::GHCCallConv);
 }
 
 DEF_CALL_SIGNATURE(AsmInterpreterEntry)
@@ -413,6 +433,7 @@ DEF_CALL_SIGNATURE(AsmInterpreterEntry)
         VariableType::INT32(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(HandleOverflow)
@@ -431,6 +452,7 @@ DEF_CALL_SIGNATURE(HandleOverflow)
         VariableType::INT32(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::GHCCallConv);
 }
 
 DEF_CALL_SIGNATURE(AsmIntCallRuntime)
@@ -447,6 +469,7 @@ DEF_CALL_SIGNATURE(AsmIntCallRuntime)
     callSign->SetVariableArgs(true);
     callSign->SetParameters(params.data());
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(OptimizedCallRuntime)
@@ -463,6 +486,7 @@ DEF_CALL_SIGNATURE(OptimizedCallRuntime)
     callSign->SetVariableArgs(true);
     callSign->SetParameters(params.data());
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(OptimizedCallOptimized)
@@ -480,6 +504,7 @@ DEF_CALL_SIGNATURE(OptimizedCallOptimized)
     callSign->SetVariableArgs(true);
     callSign->SetParameters(params.data());
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(HandleCommonCall)
