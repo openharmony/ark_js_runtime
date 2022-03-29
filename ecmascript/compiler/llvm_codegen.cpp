@@ -34,6 +34,7 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 
+#include "ecmascript/compiler/call_signature.h"
 #include "llvm-c/Analysis.h"
 #include "llvm-c/Core.h"
 #include "llvm-c/Disassembler.h"
@@ -77,7 +78,8 @@ void LLVMIRGeneratorImpl::GenerateCodeForStub(Circuit *circuit, const ControlFlo
                                                 const CompilationConfig *cfg)
 {
     LLVMValueRef function = module_->GetFunction(index);
-    LLVMIRBuilder builder(&graph, circuit, module_, function, cfg);
+    const CallSignature* cs = module_->GetCSign(index);
+    LLVMIRBuilder builder(&graph, circuit, module_, function, cfg, cs->GetCallConv());
     builder.Build();
 }
 
@@ -85,7 +87,7 @@ void LLVMIRGeneratorImpl::GenerateCode(Circuit *circuit, const ControlFlowGraph 
     const panda::ecmascript::JSMethod *method)
 {
     auto function = module_->AddFunc(method);
-    LLVMIRBuilder builder(&graph, circuit, module_, function, cfg);
+    LLVMIRBuilder builder(&graph, circuit, module_, function, cfg, CallSignature::CallConv::WebKitJSCallConv);
     builder.Build();
 }
 
