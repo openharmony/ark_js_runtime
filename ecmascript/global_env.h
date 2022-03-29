@@ -70,6 +70,7 @@ class JSThread;
     V(JSTaggedValue, NumberFormatFunction, NUMBER_FORMAT_FUNCTION_INDEX)                            \
     V(JSTaggedValue, CollatorFunction, COLLATOR_FUNCTION_INDEX)                                     \
     V(JSTaggedValue, PluralRulesFunction, PLURAL_RULES_FUNCTION_INDEX)                              \
+    V(JSTaggedValue, DisplayNamesFunction, DISPLAY_NAMES_FUNCTION_INDEX)                            \
     V(JSTaggedValue, RegExpFunction, REGEXP_FUNCTION_INDEX)                                         \
     V(JSTaggedValue, BuiltinsSetFunction, BUILTINS_SET_FUNCTION_INDEX)                              \
     V(JSTaggedValue, SetPrototype, SET_PROTOTYPE_INDEX)                                             \

@@ -323,6 +323,7 @@ public:
     bool IsJSNumberFormat() const;
     bool IsJSCollator() const;
     bool IsJSPluralRules() const;
+    bool IsJSDisplayNames() const;
 
     // non ECMA standard jsapis
     bool IsJSAPIArrayList() const;

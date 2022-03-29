@@ -60,6 +60,7 @@
 #include "ecmascript/js_regexp.h"
 #include "ecmascript/js_relative_time_format.h"
 #include "ecmascript/js_set.h"
+#include "ecmascript/js_displaynames.h"
 #include "ecmascript/js_set_iterator.h"
 #include "ecmascript/js_string_iterator.h"
 #include "ecmascript/js_typed_array.h"
@@ -298,6 +299,9 @@ void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const Ec
             break;
         case JSType::JS_PLURAL_RULES:
             JSPluralRules::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::JS_DISPLAYNAMES:
+            JSDisplayNames::Cast(object)->VisitRangeSlot(visitor);
             break;
         case JSType::MACHINE_CODE_OBJECT:
             MachineCode::Cast(object)->VisitRangeSlot(visitor);

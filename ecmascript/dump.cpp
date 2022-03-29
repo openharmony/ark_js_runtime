@@ -86,6 +86,7 @@
 #include "ecmascript/template_map.h"
 #include "ecmascript/transitions_dictionary.h"
 #include "ecmascript/ts_types/ts_type.h"
+#include "ecmascript/js_displaynames.h"
 
 namespace panda::ecmascript {
 using MicroJobQueue = panda::ecmascript::job::MicroJobQueue;
@@ -252,6 +253,8 @@ CString JSHClass::DumpJSType(JSType type)
             return "JSCollator";
         case JSType::JS_PLURAL_RULES:
             return "JSPluralRules";
+        case JSType::JS_DISPLAYNAMES:
+            return "JSDisplayNames";
         case JSType::JS_GENERATOR_OBJECT:
             return "JSGeneratorObject";
         case JSType::JS_GENERATOR_CONTEXT:
@@ -609,6 +612,9 @@ static void DumpObject(TaggedObject *obj, std::ostream &os)
             break;
         case JSType::JS_PLURAL_RULES:
             JSPluralRules::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_DISPLAYNAMES:
+            JSDisplayNames::Cast(obj)->Dump(os);
             break;
         case JSType::JS_GENERATOR_OBJECT:
             JSGeneratorObject::Cast(obj)->Dump(os);
@@ -2074,6 +2080,23 @@ void JSPluralRules::Dump(std::ostream &os) const
     JSObject::Dump(os);
 }
 
+void JSDisplayNames::Dump(std::ostream &os) const
+{
+    os << " - Locale: ";
+    GetLocale().D();
+    os << "\n";
+    os << " - Type: "<< static_cast<int>(GetType());
+    os << "\n";
+    os << " - Style: "<< static_cast<int>(GetStyle());
+    os << "\n";
+    os << " - Fallback: "<< static_cast<int>(GetFallback());
+    os << "\n";
+    os << " - IcuLDN: ";
+    GetIcuLDN().D();
+    os << "\n";
+    JSObject::Dump(os);
+}
+
 void JSGeneratorObject::Dump(std::ostream &os) const
 {
     os << " - GeneratorContext: ";
@@ -2755,6 +2778,9 @@ static void DumpObject(TaggedObject *obj,
             return;
         case JSType::JS_PLURAL_RULES:
             JSPluralRules::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_DISPLAYNAMES:
+            JSDisplayNames::Cast(obj)->DumpForSnapshot(vec);
             return;
         case JSType::JS_GENERATOR_OBJECT:
             JSGeneratorObject::Cast(obj)->DumpForSnapshot(vec);
@@ -3631,6 +3657,16 @@ void JSPluralRules::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue
     vec.push_back(std::make_pair(CString("IcuPR"), GetIcuPR()));
     vec.push_back(std::make_pair(CString("IcuNF"), GetIcuNF()));
     vec.push_back(std::make_pair(CString("Type"), JSTaggedValue(static_cast<int>(GetType()))));
+    JSObject::DumpForSnapshot(vec);
+}
+
+void JSDisplayNames::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("Locale"), GetLocale()));
+    vec.push_back(std::make_pair(CString("Type"), JSTaggedValue(static_cast<int>(GetType()))));
+    vec.push_back(std::make_pair(CString("Style"), JSTaggedValue(static_cast<int>(GetStyle()))));
+    vec.push_back(std::make_pair(CString("Fallback"), JSTaggedValue(static_cast<int>(GetFallback()))));
+    vec.push_back(std::make_pair(CString("IcuLDN"), GetIcuLDN()));
     JSObject::DumpForSnapshot(vec);
 }
 

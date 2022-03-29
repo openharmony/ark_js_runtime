@@ -437,6 +437,9 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::AMBIGUOUS_INDEX, factory->NewFromCanBeCompressString("ambiguous"));
     SetConstant(ConstantIndex::MODULE_INDEX, factory->NewFromCanBeCompressString("module"));
     SetConstant(ConstantIndex::STAR_INDEX, factory->NewFromCanBeCompressString("*"));
+    SetConstant(ConstantIndex::DATETIMEFIELD_INDEX, factory->NewFromCanBeCompressString("datetimefield"));
+    SetConstant(ConstantIndex::NONE_INDEX, factory->NewFromCanBeCompressString("none"));
+    SetConstant(ConstantIndex::FALLBACK_INDEX, factory->NewFromCanBeCompressString("fallback"));
 
     auto accessor = factory->NewInternalAccessor(reinterpret_cast<void *>(JSFunction::PrototypeSetter),
                                                  reinterpret_cast<void *>(JSFunction::PrototypeGetter));
