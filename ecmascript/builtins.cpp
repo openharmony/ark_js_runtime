@@ -50,6 +50,7 @@
 #include "ecmascript/builtins/builtins_number_format.h"
 #include "ecmascript/builtins/builtins_object.h"
 #include "ecmascript/builtins/builtins_plural_rules.h"
+#include "ecmascript/builtins/builtins_displaynames.h"
 #include "ecmascript/builtins/builtins_promise.h"
 #include "ecmascript/builtins/builtins_promise_handler.h"
 #include "ecmascript/builtins/builtins_promise_job.h"
@@ -84,6 +85,7 @@
 #include "ecmascript/js_map_iterator.h"
 #include "ecmascript/js_number_format.h"
 #include "ecmascript/js_plural_rules.h"
+#include "ecmascript/js_displaynames.h"
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_regexp.h"
@@ -148,6 +150,8 @@ using RelativeTimeFormat = builtins::BuiltinsRelativeTimeFormat;
 using NumberFormat = builtins::BuiltinsNumberFormat;
 using Collator = builtins::BuiltinsCollator;
 using PluralRules = builtins::BuiltinsPluralRules;
+using DisplayNames = builtins::BuiltinsDisplayNames;
+
 using ContainersPrivate = containers::ContainersPrivate;
 
 bool GetAbsolutePath(const std::string &relativePath, std::string &absPath)
@@ -335,6 +339,8 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     InitializeRelativeTimeFormat(env);
     InitializeCollator(env);
     InitializePluralRules(env);
+    InitializeDisplayNames(env);
+
     InitializeModuleNamespace(env, objFuncDynclass);
 
     JSHandle<JSHClass> generatorFuncClass =
@@ -2890,6 +2896,39 @@ void Builtins::InitializePluralRules(const JSHandle<GlobalEnv> &env)
 
     // 15.4.5 Intl.PluralRules.prototype.resolvedOptions ()
     SetFunction(env, prPrototype, "resolvedOptions", PluralRules::ResolvedOptions, FunctionLength::ZERO);
+}
+
+void Builtins::InitializeDisplayNames(const JSHandle<GlobalEnv> &env)
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    // DisplayNames.prototype
+    JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
+    JSHandle<JSObject> dnPrototype = factory_->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    JSHandle<JSTaggedValue> dnPrototypeValue(dnPrototype);
+
+    // DisplayNames.prototype_or_dynclass
+    JSHandle<JSHClass> dnFuncInstanceDynclass =
+        factory_->NewEcmaDynClass(JSDisplayNames::SIZE, JSType::JS_DISPLAYNAMES, dnPrototypeValue);
+
+    // DisplayNames = new Function()
+    // 12.4.1 Intl.DisplayNames.prototype.constructor
+    JSHandle<JSObject> dnFunction(NewIntlConstructor(env, dnPrototype, DisplayNames::DisplayNamesConstructor,
+                                                     "DisplayNames", FunctionLength::TWO));
+    JSHandle<JSFunction>(dnFunction)->SetFunctionPrototype(thread_, JSTaggedValue(*dnFuncInstanceDynclass));
+
+    // 12.3.2 Intl.DisplayNames.supportedLocalesOf ( locales [ , options ] )
+    SetFunction(env, dnFunction, "supportedLocalesOf", DisplayNames::SupportedLocalesOf, FunctionLength::ONE);
+
+    // DisplayNames.prototype method
+    // 12.4.2 Intl.DisplayNames.prototype[ @@toStringTag ]
+    SetStringTagSymbol(env, dnPrototype, "Intl.DisplayNames");
+    env->SetDisplayNamesFunction(thread_, dnFunction);
+
+    // 12.4.3 get Intl.DisplayNames.prototype.of
+    SetFunction(env, dnPrototype, "of", DisplayNames::Of, FunctionLength::ONE);
+
+    // 12.4.4 Intl.DisplayNames.prototype.resolvedOptions ()
+    SetFunction(env, dnPrototype, "resolvedOptions", DisplayNames::ResolvedOptions, FunctionLength::ZERO);
 }
 
 JSHandle<JSObject> Builtins::InitializeArkTools(const JSHandle<GlobalEnv> &env) const

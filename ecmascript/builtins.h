@@ -125,6 +125,7 @@ private:
     void InitializeNumberFormat(const JSHandle<GlobalEnv> &env);
     void InitializeCollator(const JSHandle<GlobalEnv> &env);
     void InitializePluralRules(const JSHandle<GlobalEnv> &env);
+    void InitializeDisplayNames(const JSHandle<GlobalEnv> &env);
 
     void GeneralUpdateError(ErrorParameter *error, EcmaEntrypoint constructor, EcmaEntrypoint method, const char *name,
                             JSType type) const;
