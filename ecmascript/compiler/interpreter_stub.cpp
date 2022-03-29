@@ -5516,13 +5516,14 @@ CallSignature BytecodeStubCSigns::callSigns_[BytecodeStubCSigns::NUM_OF_VALID_ST
 
 void BytecodeStubCSigns::Initialize()
 {
-#define INIT_SIGNATURES(name, counter)                             \
-    BytecodeHandlerCallSignature::Initialize(&callSigns_[name]);   \
-    callSigns_[name].SetID(ID_##name);                             \
-    callSigns_[name].SetConstructor(                               \
-    [](void* ciruit) {                                             \
-        return static_cast<void*>(                                 \
-            new name##Stub(static_cast<Circuit*>(ciruit)));        \
+#define INIT_SIGNATURES(name, counter)                                   \
+    BytecodeHandlerCallSignature::Initialize(&callSigns_[name]);         \
+    callSigns_[name].SetID(ID_##name);                                   \
+    callSigns_[name].SetCallConv(CallSignature::CallConv::GHCCallConv);  \
+    callSigns_[name].SetConstructor(                                     \
+    [](void* ciruit) {                                                   \
+        return static_cast<void*>(                                       \
+            new name##Stub(static_cast<Circuit*>(ciruit)));              \
     });
     INTERPRETER_BC_STUB_LIST(INIT_SIGNATURES)
 #undef INIT_SIGNATURES
