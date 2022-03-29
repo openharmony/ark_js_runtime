@@ -225,4 +225,74 @@ HWTEST_F_L0(BuiltinsTypedArrayTest, Species)
     JSTaggedValue result = TypedArray::Species(ecmaRuntimeCallInfo1.get());
     ASSERT_TRUE(result.IsECMAObject());
 }
+
+HWTEST_F_L0(BuiltinsTypedArrayTest, Includes)
+{
+    ASSERT_NE(thread, nullptr);
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    [[maybe_unused]] JSHandle<TaggedArray> array(factory->NewTaggedArray(3));
+    array->Set(thread, 0, JSTaggedValue(2));
+    array->Set(thread, 1, JSTaggedValue(3));
+    array->Set(thread, 2, JSTaggedValue(4));
+
+    [[maybe_unused]] JSHandle<JSTaggedValue> obj =
+        JSHandle<JSTaggedValue>(thread, CreateTypedArrayFromList(thread, array));
+    auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
+    ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo1->SetThis(obj.GetTaggedValue());
+    ecmaRuntimeCallInfo1->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(2)));
+
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
+    [[maybe_unused]] JSTaggedValue result = TypedArray::Includes(ecmaRuntimeCallInfo1.get());
+    TestHelper::TearDownFrame(thread, prev);
+
+    ASSERT_TRUE(result.JSTaggedValue::ToBoolean()); // new Int8Array[2,3,4].includes(2)
+
+    auto ecmaRuntimeCallInfo2 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
+    ecmaRuntimeCallInfo2->SetFunction(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo2->SetThis(obj.GetTaggedValue());
+    ecmaRuntimeCallInfo2->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(1)));
+
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo2.get());
+    result = TypedArray::Includes(ecmaRuntimeCallInfo2.get());
+    TestHelper::TearDownFrame(thread, prev);
+
+    ASSERT_TRUE(!result.JSTaggedValue::ToBoolean()); // new Int8Array[2,3,4].includes(1)
+
+    auto ecmaRuntimeCallInfo3 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
+    ecmaRuntimeCallInfo3->SetFunction(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo3->SetThis(obj.GetTaggedValue());
+    ecmaRuntimeCallInfo3->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(3)));
+    ecmaRuntimeCallInfo3->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(1)));
+
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo3.get());
+    result = TypedArray::Includes(ecmaRuntimeCallInfo3.get());
+    TestHelper::TearDownFrame(thread, prev);
+
+    ASSERT_TRUE(result.JSTaggedValue::ToBoolean()); // new Int8Array[2,3,4].includes(3, 1)
+
+    auto ecmaRuntimeCallInfo4 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
+    ecmaRuntimeCallInfo4->SetFunction(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo4->SetThis(obj.GetTaggedValue());
+    ecmaRuntimeCallInfo4->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(2)));
+    ecmaRuntimeCallInfo4->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(5)));
+
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo4.get());
+    result = Array::Includes(ecmaRuntimeCallInfo4.get());
+    TestHelper::TearDownFrame(thread, prev);
+
+    ASSERT_TRUE(!result.JSTaggedValue::ToBoolean()); // new Int8Array[2,3,4].includes(2, 5)
+
+    auto ecmaRuntimeCallInfo5 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
+    ecmaRuntimeCallInfo5->SetFunction(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo5->SetThis(obj.GetTaggedValue());
+    ecmaRuntimeCallInfo5->SetCallArg(0, JSTaggedValue(static_cast<int32_t>(2)));
+    ecmaRuntimeCallInfo5->SetCallArg(1, JSTaggedValue(static_cast<int32_t>(-2)));
+
+    prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo5.get());
+    result = Array::Includes(ecmaRuntimeCallInfo5.get());
+    TestHelper::TearDownFrame(thread, prev);
+
+    ASSERT_TRUE(!result.JSTaggedValue::ToBoolean()); // new Int8Array[2,3,4].includes(2, -2)
+}
 }  // namespace panda::test
