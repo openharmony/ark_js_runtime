@@ -109,19 +109,20 @@ namespace panda::ecmascript::kungfu {
 
 class SlowPathLowering {
 public:
-    explicit SlowPathLowering(BytecodeCircuitBuilder *builder, Circuit *circuit)
-        : builder_(builder), circuit_(circuit) {}
+    SlowPathLowering(BytecodeCircuitBuilder *bcBuilder, Circuit *circuit)
+        : bcBuilder_(bcBuilder), circuit_(circuit), acc_(circuit), builder_(circuit) {}
     ~SlowPathLowering() = default;
     void CallRuntimeLowering();
 
 private:
-    void LowerHirToCall(CircuitBuilder &cirBuilder, GateRef hirGate, GateRef callGate);
-    void LowerHirToFastCall(CircuitBuilder &cirBuilder, GateRef hirGate, GateRef callGate);
-    void LowerHirToConditionCall(CircuitBuilder &cirBuilder, GateRef hirGate, GateRef condGate, GateRef callGate);
-    void LowerHirToThrowCall(CircuitBuilder &cirBuilder, GateRef hirGate, GateRef condGate, GateRef callGate);
+    void LowerHirToCall(GateRef hirGate, GateRef callGate);
+    void LowerHirToFastCall(GateRef hirGate, GateRef callGate);
+    void LowerHirToConditionCall(GateRef hirGate, GateRef condGate, GateRef callGate);
+    void LowerHirToThrowCall(GateRef hirGate, GateRef condGate, GateRef callGate);
     void LowerExceptionHandler(GateRef hirGate);
     // labelmanager must be initialized
-    GateRef GetObjectFromConstPool(CircuitBuilder &cirBuilder, GateRef index);
+    GateRef GetObjectFromConstPool(GateRef index);
+    GateRef GetValueFromConstStringTable(GateRef glue, GateRef gate, uint32_t inIndex);
     void Lower(GateRef gate, EcmaOpcode op);
     void LowerAdd2Dyn(GateRef gate, GateRef glue);
     void LowerCreateIterResultObj(GateRef gate, GateRef glue);
@@ -129,7 +130,6 @@ private:
     void LowerAsyncFunctionAwaitUncaught(GateRef gate, GateRef glue);
     void LowerAsyncFunctionResolve(GateRef gate, GateRef glue);
     void LowerAsyncFunctionReject(GateRef gate, GateRef glue);
-    GateRef GetValueFromConstantStringTable(CircuitBuilder &builder, GateRef glue, GateRef gate, uint32_t inIndex);
     void LowerLoadStr(GateRef gate, GateRef glue);
     void LowerLexicalEnv(GateRef gate, GateRef glue);
     void LowerStGlobalVar(GateRef gate, GateRef glue);
@@ -190,9 +190,14 @@ private:
     void LowerStModuleVar(GateRef gate, GateRef glue);
     void LowerGetTemplateObject(GateRef gate, GateRef glue);
     void LowerSetObjectWithProto(GateRef gate, GateRef glue);
+    void LowerLdBigInt(GateRef gate, GateRef glue);
+    void LowerLdModuleVar(GateRef gate, GateRef glue);
+    void LowerGetModuleNamespace(GateRef gate, GateRef glue);
 
-    BytecodeCircuitBuilder *builder_;
+    BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;
+    GateAccessor acc_;
+    CircuitBuilder builder_;
 };
 }  // panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_GENERIC_LOWERING_H

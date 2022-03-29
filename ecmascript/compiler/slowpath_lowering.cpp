@@ -16,18 +16,18 @@
 #include "slowpath_lowering.h"
 
 namespace panda::ecmascript::kungfu {
-#define CREATE_DOUBLE_EXIT(SuccessLabel, FailLabel)                 \
-    std::vector<GateRef> successControl;                            \
-    std::vector<GateRef> failControl;                               \
-    cirBuilder.Bind(&SuccessLabel);                                 \
-    {                                                               \
-        successControl.emplace_back(cirBuilder.GetState());         \
-        successControl.emplace_back(cirBuilder.GetDepend());        \
-    }                                                               \
-    cirBuilder.Bind(&FailLabel);                                    \
-    {                                                               \
-        failControl.emplace_back(cirBuilder.GetState());            \
-        failControl.emplace_back(cirBuilder.GetDepend());           \
+#define CREATE_DOUBLE_EXIT(SuccessLabel, FailLabel)               \
+    std::vector<GateRef> successControl;                          \
+    std::vector<GateRef> failControl;                             \
+    builder_.Bind(&SuccessLabel);                                 \
+    {                                                             \
+        successControl.emplace_back(builder_.GetState());         \
+        successControl.emplace_back(builder_.GetDepend());        \
+    }                                                             \
+    builder_.Bind(&FailLabel);                                    \
+    {                                                             \
+        failControl.emplace_back(builder_.GetState());            \
+        failControl.emplace_back(builder_.GetDepend());           \
     }
 
 void SlowPathLowering::CallRuntimeLowering()
@@ -36,7 +36,7 @@ void SlowPathLowering::CallRuntimeLowering()
     for (const auto &gate : gateList) {
         auto op = circuit_->LoadGatePtrConst(gate)->GetOpCode();
         if (op == OpCode::JS_BYTECODE) {
-            auto pc = builder_->GetJSBytecode(gate);
+            auto pc = bcBuilder_->GetJSBytecode(gate);
             Lower(gate, static_cast<EcmaOpcode>(*pc));
         } else if (op == OpCode::GET_EXCEPTION) {
             LowerExceptionHandler(gate);
@@ -44,7 +44,7 @@ void SlowPathLowering::CallRuntimeLowering()
     }
 #if ECMASCRIPT_ENABLE_TS_AOT_PRINT
     std::cout << "=========================================================" << std::endl;
-    circuit_->PrintAllGates(*builder_);
+    circuit_->PrintAllGates(*bcBuilder_);
 #endif
 }
 
@@ -57,32 +57,31 @@ void SlowPathLowering::CallRuntimeLowering()
  * Set(res);
  *
  */
-void SlowPathLowering::LowerHirToCall(CircuitBuilder &cirBuilder, GateRef hirGate, GateRef callGate)
+void SlowPathLowering::LowerHirToCall(GateRef hirGate, GateRef callGate)
 {
-    GateAccessor acc(circuit_);
-    GateRef stateInGate = acc.GetState(hirGate);
+    GateRef stateInGate = acc_.GetState(hirGate);
     // copy depend-wire of hirGate to callGate
-    GateRef dependInGate = acc.GetDep(hirGate);
-    acc.SetDep(callGate, dependInGate);
+    GateRef dependInGate = acc_.GetDep(hirGate);
+    acc_.SetDep(callGate, dependInGate);
 
     // exception value
-    GateRef exceptionVal = cirBuilder.ExceptionConstant(GateType::TAGGED_NO_POINTER);
+    GateRef exceptionVal = builder_.ExceptionConstant(GateType::TAGGED_NO_POINTER);
 
     // compare with trampolines result
-    GateRef equal = cirBuilder.BinaryLogic(OpCode(OpCode::EQ), callGate, exceptionVal);
+    GateRef equal = builder_.BinaryLogic(OpCode(OpCode::EQ), callGate, exceptionVal);
 
-    GateRef ifBranch = cirBuilder.Branch(stateInGate, equal);
-    auto uses = acc.Uses(hirGate);
+    GateRef ifBranch = builder_.Branch(stateInGate, equal);
+    auto uses = acc_.Uses(hirGate);
     for (auto it = uses.begin(); it != uses.end(); it++) {
-        if (acc.GetOpCode(*it) == OpCode::IF_SUCCESS) {
-            acc.SetOpCode(*it, OpCode::IF_FALSE);
-            acc.ReplaceIn(it, ifBranch);
+        if (acc_.GetOpCode(*it) == OpCode::IF_SUCCESS) {
+            acc_.SetOpCode(*it, OpCode::IF_FALSE);
+            acc_.ReplaceIn(it, ifBranch);
         } else {
-            if (acc.GetOpCode(*it) == OpCode::IF_EXCEPTION) {
-                acc.SetOpCode(*it, OpCode::IF_TRUE);
-                acc.ReplaceIn(it, ifBranch);
+            if (acc_.GetOpCode(*it) == OpCode::IF_EXCEPTION) {
+                acc_.SetOpCode(*it, OpCode::IF_TRUE);
+                acc_.ReplaceIn(it, ifBranch);
             } else {
-                acc.ReplaceIn(it, callGate);
+                acc_.ReplaceIn(it, callGate);
             }
         }
     }
@@ -97,25 +96,24 @@ void SlowPathLowering::LowerHirToCall(CircuitBuilder &cirBuilder, GateRef hirGat
  * Set(res);
  *
  */
-void SlowPathLowering::LowerHirToFastCall(CircuitBuilder &cirBuilder, GateRef hirGate, GateRef callGate)
+void SlowPathLowering::LowerHirToFastCall(GateRef hirGate, GateRef callGate)
 {
-    GateAccessor acc(circuit_);
-    GateRef stateInGate = acc.GetState(hirGate);
-    GateRef dependInGate = acc.GetDep(hirGate);
-    acc.SetDep(callGate, dependInGate);
+    GateRef stateInGate = acc_.GetState(hirGate);
+    GateRef dependInGate = acc_.GetDep(hirGate);
+    acc_.SetDep(callGate, dependInGate);
 
-    GateRef ifBranch = cirBuilder.Branch(stateInGate, cirBuilder.BooleanConstant(false));
-    auto uses = acc.Uses(hirGate);
+    GateRef ifBranch = builder_.Branch(stateInGate, builder_.BooleanConstant(false));
+    auto uses = acc_.Uses(hirGate);
     for (auto it = uses.begin(); it != uses.end(); it++) {
-        if (acc.GetOpCode(*it) == OpCode::IF_SUCCESS) {
-            acc.SetOpCode(*it, OpCode::IF_FALSE);
-            acc.ReplaceIn(it, ifBranch);
+        if (acc_.GetOpCode(*it) == OpCode::IF_SUCCESS) {
+            acc_.SetOpCode(*it, OpCode::IF_FALSE);
+            acc_.ReplaceIn(it, ifBranch);
         } else {
-            if (acc.GetOpCode(*it) == OpCode::IF_EXCEPTION) {
-                acc.SetOpCode(*it, OpCode::IF_TRUE);
-                acc.ReplaceIn(it, ifBranch);
+            if (acc_.GetOpCode(*it) == OpCode::IF_EXCEPTION) {
+                acc_.SetOpCode(*it, OpCode::IF_TRUE);
+                acc_.ReplaceIn(it, ifBranch);
             } else {
-                acc.ReplaceIn(it, callGate);
+                acc_.ReplaceIn(it, callGate);
             }
         }
     }
@@ -132,26 +130,24 @@ void SlowPathLowering::LowerHirToFastCall(CircuitBuilder &cirBuilder, GateRef hi
  * }
  *
  */
-void SlowPathLowering::LowerHirToThrowCall(CircuitBuilder &cirBuilder, GateRef hirGate,
-                                           GateRef condGate, GateRef callGate)
+void SlowPathLowering::LowerHirToThrowCall(GateRef hirGate, GateRef condGate, GateRef callGate)
 {
-    GateAccessor acc(circuit_);
-    GateRef stateInGate = acc.GetState(hirGate);
-    GateRef dependInGate = acc.GetDep(hirGate);
-    acc.SetDep(callGate, dependInGate);
+    GateRef stateInGate = acc_.GetState(hirGate);
+    GateRef dependInGate = acc_.GetDep(hirGate);
+    acc_.SetDep(callGate, dependInGate);
 
-    GateRef ifBranch = cirBuilder.Branch(stateInGate, condGate);
-    auto uses = acc.Uses(hirGate);
+    GateRef ifBranch = builder_.Branch(stateInGate, condGate);
+    auto uses = acc_.Uses(hirGate);
     for (auto it = uses.begin(); it != uses.end(); it++) {
-        if (acc.GetOpCode(*it) == OpCode::IF_SUCCESS) {
-            acc.SetOpCode(*it, OpCode::IF_FALSE);
-            acc.ReplaceIn(it, ifBranch);
+        if (acc_.GetOpCode(*it) == OpCode::IF_SUCCESS) {
+            acc_.SetOpCode(*it, OpCode::IF_FALSE);
+            acc_.ReplaceIn(it, ifBranch);
         } else {
-            if (acc.GetOpCode(*it) == OpCode::IF_EXCEPTION) {
-                acc.SetOpCode(*it, OpCode::IF_TRUE);
-                acc.ReplaceIn(it, ifBranch);
+            if (acc_.GetOpCode(*it) == OpCode::IF_EXCEPTION) {
+                acc_.SetOpCode(*it, OpCode::IF_TRUE);
+                acc_.ReplaceIn(it, ifBranch);
             } else {
-                acc.ReplaceIn(it, callGate);
+                acc_.ReplaceIn(it, callGate);
             }
         }
     }
@@ -170,72 +166,78 @@ void SlowPathLowering::LowerHirToThrowCall(CircuitBuilder &cirBuilder, GateRef h
  * }
  *
  */
-void SlowPathLowering::LowerHirToConditionCall(CircuitBuilder &cirBuilder, GateRef hirGate,
-                                               GateRef condGate, GateRef callGate)
+void SlowPathLowering::LowerHirToConditionCall(GateRef hirGate, GateRef condGate, GateRef callGate)
 {
-    GateAccessor acc(circuit_);
-
     // state connect
     // condition branch
-    GateRef stateInGate = acc.GetState(hirGate);
-    GateRef condBranch = cirBuilder.Branch(stateInGate, condGate);
-    GateRef condTrue = cirBuilder.IfTrue(condBranch);
-    GateRef condFalse = cirBuilder.IfFalse(condBranch);
+    GateRef stateInGate = acc_.GetState(hirGate);
+    GateRef condBranch = builder_.Branch(stateInGate, condGate);
+    GateRef condTrue = builder_.IfTrue(condBranch);
+    GateRef condFalse = builder_.IfFalse(condBranch);
     // exception branch
-    GateRef exceptionVal = cirBuilder.ExceptionConstant(GateType::TAGGED_NO_POINTER);
-    GateRef equal = cirBuilder.BinaryLogic(OpCode(OpCode::EQ), callGate, exceptionVal);
-    GateRef exceptionBranch = cirBuilder.Branch(condTrue, equal);
-    GateRef exceptionFalse = cirBuilder.IfFalse(exceptionBranch);
+    GateRef exceptionVal = builder_.ExceptionConstant(GateType::TAGGED_NO_POINTER);
+    GateRef equal = builder_.BinaryLogic(OpCode(OpCode::EQ), callGate, exceptionVal);
+    GateRef exceptionBranch = builder_.Branch(condTrue, equal);
+    GateRef exceptionFalse = builder_.IfFalse(exceptionBranch);
     // merge condition false and exception false state
     std::vector<GateRef> mergeGates = {condFalse, exceptionFalse};
-    GateRef stateMerge = cirBuilder.Merge(mergeGates.data(), mergeGates.size());
+    GateRef stateMerge = builder_.Merge(mergeGates.data(), mergeGates.size());
 
     // depend connect
-    GateRef dependInGate = acc.GetDep(hirGate);
-    GateRef condTrueRelay = cirBuilder.DependRelay(condTrue, dependInGate);
-    acc.SetDep(callGate, condTrueRelay);
-    GateRef condFalseRelay = cirBuilder.DependRelay(condFalse, dependInGate);
+    GateRef dependInGate = acc_.GetDep(hirGate);
+    GateRef condTrueRelay = builder_.DependRelay(condTrue, dependInGate);
+    acc_.SetDep(callGate, condTrueRelay);
+    GateRef condFalseRelay = builder_.DependRelay(condFalse, dependInGate);
     // collect condition false and condition true depend
     std::vector<GateRef> dependGates = {callGate, condFalseRelay};
-    GateRef dependPhi = cirBuilder.Selector(OpCode(OpCode::DEPEND_SELECTOR),
+    GateRef dependPhi = builder_.Selector(OpCode(OpCode::DEPEND_SELECTOR),
         stateMerge, dependGates, dependGates.size());
 
-    auto uses = acc.Uses(hirGate);
+    auto uses = acc_.Uses(hirGate);
     for (auto it = uses.begin(); it != uses.end(); it++) {
-        if (acc.GetOpCode(*it) == OpCode::IF_SUCCESS) {
-            auto usesSuccess = acc.Uses(*it);
+        if (acc_.GetOpCode(*it) == OpCode::IF_SUCCESS) {
+            auto usesSuccess = acc_.Uses(*it);
             for (auto itSuccess = usesSuccess.begin(); itSuccess != usesSuccess.end(); itSuccess++) {
-                acc.ReplaceIn(itSuccess, stateMerge);
+                acc_.ReplaceIn(itSuccess, stateMerge);
             }
             circuit_->DeleteGate(*it);
-        } else if (acc.GetOpCode(*it) == OpCode::IF_EXCEPTION) {
-            acc.SetOpCode(*it, OpCode::IF_TRUE);
-            acc.ReplaceIn(it, exceptionBranch);
-        } else if (((acc.GetOpCode(*it) == OpCode::DEPEND_SELECTOR) || (acc.GetOpCode(*it) == OpCode::DEPEND_RELAY))
-                   && (acc.GetOpCode(acc.GetIn(acc.GetIn(*it, 0), it.GetIndex() - 1)) != OpCode::IF_EXCEPTION)) {
-            acc.ReplaceIn(it, dependPhi);
+        } else if (acc_.GetOpCode(*it) == OpCode::IF_EXCEPTION) {
+            acc_.SetOpCode(*it, OpCode::IF_TRUE);
+            acc_.ReplaceIn(it, exceptionBranch);
+        } else if (((acc_.GetOpCode(*it) == OpCode::DEPEND_SELECTOR) ||
+                   (acc_.GetOpCode(*it) == OpCode::DEPEND_RELAY)) &&
+                   (acc_.GetOpCode(acc_.GetIn(acc_.GetIn(*it, 0),
+                   it.GetIndex() - 1)) != OpCode::IF_EXCEPTION)) {
+            acc_.ReplaceIn(it, dependPhi);
         } else {
-            acc.ReplaceIn(it, callGate);
+            acc_.ReplaceIn(it, callGate);
         }
     }
     circuit_->DeleteGate(hirGate);
 }
 
 // labelmanager must be initialized
-GateRef SlowPathLowering::GetObjectFromConstPool(CircuitBuilder &cirBuilder, GateRef index)
+GateRef SlowPathLowering::GetObjectFromConstPool(GateRef index)
 {
-    GateRef jsFunc = builder_->GetCommonArgByIndex(CommonArgIdx::FUNC);
-    GateRef constantPool = cirBuilder.Load(VariableType::JS_ANY(), jsFunc,
-        cirBuilder.IntPtrConstant(JSFunction::CONSTANT_POOL_OFFSET));
-    GateRef offset = cirBuilder.IntPtrMul(cirBuilder.ChangeInt32ToIntPtr(index),
-        cirBuilder.IntPtrConstant(JSTaggedValue::TaggedTypeSize()));
-    GateRef dataOffset = cirBuilder.IntPtrAdd(offset, cirBuilder.IntPtrConstant(TaggedArray::DATA_OFFSET));
-    return cirBuilder.Load(VariableType::JS_ANY(), constantPool, dataOffset);
+    GateRef jsFunc = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::FUNC);
+    GateRef constantPool = builder_.Load(VariableType::JS_ANY(), jsFunc,
+        builder_.IntPtrConstant(JSFunction::CONSTANT_POOL_OFFSET));
+    GateRef offset = builder_.IntPtrMul(builder_.ChangeInt32ToIntPtr(index),
+        builder_.IntPtrConstant(JSTaggedValue::TaggedTypeSize()));
+    GateRef dataOffset = builder_.IntPtrAdd(offset, builder_.IntPtrConstant(TaggedArray::DATA_OFFSET));
+    return builder_.Load(VariableType::JS_ANY(), constantPool, dataOffset);
+}
+
+GateRef SlowPathLowering::GetValueFromConstStringTable(GateRef glue, GateRef gate, uint32_t inIndex)
+{
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(LoadValueFromConstantStringTable));
+    auto idGate = acc_.GetValueIn(gate, inIndex);
+    return builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {idGate});
 }
 
 void SlowPathLowering::Lower(GateRef gate, EcmaOpcode op)
 {
-    GateRef glue = builder_->GetCommonArgByIndex(CommonArgIdx::GLUE);
+    GateRef glue = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::GLUE);
 
     switch (op) {
         case LDA_STR_ID32:
@@ -439,359 +441,303 @@ void SlowPathLowering::Lower(GateRef gate, EcmaOpcode op)
         case SETOBJECTWITHPROTO_PREF_V8_V8:
             LowerSetObjectWithProto(gate, glue);
             break;
+        case LDBIGINT_PREF_ID32:
+            LowerLdBigInt(gate, glue);
+            break;
+        case LDMODULEVAR_PREF_ID32_IMM8:
+            LowerLdModuleVar(gate, glue);
+            break;
+        case GETMODULENAMESPACE_PREF_ID32:
+            LowerGetModuleNamespace(gate, glue);
+            break;
         default:
             break;
     }
+
+    // clear temporary used label manager
+    builder_.SetLabelManager(nullptr);
 }
 
 void SlowPathLowering::LowerAdd2Dyn(GateRef gate, GateRef glue)
 {
-    GateAccessor acc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(Add2Dyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(Add2Dyn));
     // 2: number of value inputs
-    ASSERT(acc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {acc.GetValueIn(gate, 0), acc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerCreateIterResultObj(GateRef gate, GateRef glue)
 {
-    GateAccessor acc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(CreateIterResultObj));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(CreateIterResultObj));
     // 2: number of value inputs
-    ASSERT(acc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {acc.GetValueIn(gate, 0), acc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerSuspendGenerator(GateRef gate, GateRef glue)
 {
-    GateAccessor acc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(SuspendGenerator));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(SuspendGenerator));
     // 2: number of value inputs
-    ASSERT(acc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {acc.GetValueIn(gate, 0), acc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerAsyncFunctionAwaitUncaught(GateRef gate, GateRef glue)
 {
-    GateAccessor acc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(AsyncFunctionAwaitUncaught));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(AsyncFunctionAwaitUncaught));
     // 2: number of value inputs
-    ASSERT(acc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {acc.GetValueIn(gate, 0), acc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerAsyncFunctionResolve(GateRef gate, GateRef glue)
 {
-    GateAccessor acc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(AsyncFunctionResolveOrReject));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(AsyncFunctionResolveOrReject));
     // 2: number of value inputs
-    ASSERT(acc.GetNumValueIn(gate) == 2);
-    GateRef tureConst = cirBuilder.BooleanConstant(true);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {acc.GetValueIn(gate, 0), acc.GetValueIn(gate, 1), tureConst});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef tureConst = builder_.BooleanConstant(true);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1), tureConst});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerAsyncFunctionReject(GateRef gate, GateRef glue)
 {
-    GateAccessor acc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(AsyncFunctionResolveOrReject));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(AsyncFunctionResolveOrReject));
     // 2: number of value inputs
-    ASSERT(acc.GetNumValueIn(gate) == 2);
-    GateRef falseConst = cirBuilder.BooleanConstant(false);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {acc.GetValueIn(gate, 0), acc.GetValueIn(gate, 1), falseConst});
-    LowerHirToCall(cirBuilder, gate, newGate);
-}
-
-GateRef SlowPathLowering::GetValueFromConstantStringTable(CircuitBuilder &builder, GateRef glue,
-                                                          GateRef gate, uint32_t inIndex)
-{
-    GateAccessor accessor(circuit_);
-    GateRef id = builder.Int64Constant(RTSTUB_ID(LoadValueFromConstantStringTable));
-    auto idGate = accessor.GetValueIn(gate, inIndex);
-    return builder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {idGate});
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef falseConst = builder_.BooleanConstant(false);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1), falseConst});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerLoadStr(GateRef gate, GateRef glue)
 {
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef newGate = GetValueFromConstantStringTable(cirBuilder, glue, gate, 0);
-    LowerHirToCall(cirBuilder, gate, newGate);
+    GateRef newGate = GetValueFromConstStringTable(glue, gate, 0);
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerLexicalEnv(GateRef gate, GateRef glue)
 {
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(GetLexicalEnv));
-    GateRef newGate =
-        cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(GetLexicalEnv));
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerTryLdGlobalByName(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef prop = GetValueFromConstantStringTable(cirBuilder, glue, gate, 0);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(TryLdGlobalByName));
-    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
-    GateRef newGate =
-        cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {prop});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    GateRef prop = GetValueFromConstStringTable(glue, gate, 0);
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(TryLdGlobalByName));
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {prop});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerStGlobalVar(GateRef gate, GateRef glue)
 {
-    GateAccessor acc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef prop = GetValueFromConstantStringTable(cirBuilder, glue, gate, 0);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(StGlobalVar));
-    ASSERT(acc.GetNumValueIn(gate) == 2); // 2: number of value inputs
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {prop, acc.GetValueIn(gate, 0)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    GateRef prop = GetValueFromConstStringTable(glue, gate, 0);
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(StGlobalVar));
+    ASSERT(acc_.GetNumValueIn(gate) == 2); // 2: number of value inputs
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {prop, acc_.GetValueIn(gate, 0)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerGetIterator(GateRef gate, GateRef glue)
 {
-    GateAccessor acc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(GetIterator));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(GetIterator));
     // 1: number of value inputs
-    ASSERT(acc.GetNumValueIn(gate) == 1);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                             {glue, acc.GetValueIn(gate, 0)});
-    GateRef isGeneratorObject = cirBuilder.TaggedIsGeneratorObject(acc.GetValueIn(gate, 0));
-    GateRef isNotGeneratorObject = cirBuilder.BoolNot(isGeneratorObject);
-    LowerHirToConditionCall(cirBuilder, gate, isNotGeneratorObject, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {glue, acc_.GetValueIn(gate, 0)});
+    GateRef isGeneratorObject = builder_.TaggedIsGeneratorObject(acc_.GetValueIn(gate, 0));
+    GateRef isNotGeneratorObject = builder_.BoolNot(isGeneratorObject);
+    LowerHirToConditionCall(gate, isNotGeneratorObject, newGate);
 }
 
 void SlowPathLowering::LowerCallArg0Dyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(CallArg0Dyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(CallArg0Dyn));
 
-    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerCallArg1Dyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(CallArg1Dyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(CallArg1Dyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerCallArgs2Dyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(CallArgs2Dyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(CallArgs2Dyn));
     // 3: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 3);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1), gateAcc.GetValueIn(gate, 2)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 3);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1), acc_.GetValueIn(gate, 2)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerCallArgs3Dyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(CallArgs3Dyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(CallArgs3Dyn));
     // 4: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 4);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1),
-        gateAcc.GetValueIn(gate, 2), gateAcc.GetValueIn(gate, 3)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 4);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1),
+        acc_.GetValueIn(gate, 2), acc_.GetValueIn(gate, 3)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerCallIThisRangeDyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(CallIThisRangeDyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(CallIThisRangeDyn));
     std::vector<GateRef> vec;
-    size_t numArgs = gateAcc.GetNumValueIn(gate);
+    size_t numArgs = acc_.GetNumValueIn(gate);
     for (size_t i = 1; i < numArgs; i++) { // skip imm
-        vec.emplace_back(gateAcc.GetValueIn(gate, i));
+        vec.emplace_back(acc_.GetValueIn(gate, i));
     }
-    GateRef newGate = cirBuilder.VariadicRuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                                     vec);
-    LowerHirToCall(cirBuilder, gate, newGate);
+    GateRef newGate = builder_.VariadicRuntimeCall(
+        glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), vec);
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerCallSpreadDyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(CallSpreadDyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(CallSpreadDyn));
     // 3: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 3);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1), gateAcc.GetValueIn(gate, 2)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 3);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1), acc_.GetValueIn(gate, 2)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerCallIRangeDyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(CallIRangeDyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(CallIRangeDyn));
     std::vector<GateRef> vec;
-    size_t numArgs = gateAcc.GetNumValueIn(gate);
+    size_t numArgs = acc_.GetNumValueIn(gate);
     for (size_t i = 1; i < numArgs; i++) { // skip imm
-        vec.emplace_back(gateAcc.GetValueIn(gate, i));
+        vec.emplace_back(acc_.GetValueIn(gate, i));
     }
-    GateRef newGate = cirBuilder.VariadicRuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                                     vec);
-    LowerHirToCall(cirBuilder, gate, newGate);
+    GateRef newGate = builder_.VariadicRuntimeCall(
+        glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), vec);
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerNewObjSpreadDyn(GateRef gate, GateRef glue)
 {
-    GateAccessor acc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(NewObjSpreadDyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(NewObjSpreadDyn));
     // 3: number of value inputs
-    ASSERT(acc.GetNumValueIn(gate) == 3);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {glue, acc.GetValueIn(gate, 0), acc.GetValueIn(gate, 1), acc.GetValueIn(gate, 2)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 3);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {glue, acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1), acc_.GetValueIn(gate, 2)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerThrowDyn(GateRef gate, GateRef glue)
 {
-    GateAccessor acc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-
-    GateRef exception = acc.GetValueIn(gate, 0);
+    GateRef exception = acc_.GetValueIn(gate, 0);
     GateRef setException = circuit_->NewGate(OpCode(OpCode::STORE), 0,
-                                             {Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), exception, glue},
-                                             VariableType::INT64().GetGateType());
-    LowerHirToThrowCall(cirBuilder, gate, cirBuilder.BooleanConstant(true), setException);
+        {Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), exception, glue}, VariableType::INT64().GetGateType());
+    LowerHirToThrowCall(gate, builder_.BooleanConstant(true), setException);
 }
 
 void SlowPathLowering::LowerThrowConstAssignment(GateRef gate, GateRef glue)
 {
-    GateAccessor acc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(ThrowConstAssignment));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(ThrowConstAssignment));
     // 1: number of value inputs
-    ASSERT(acc.GetNumValueIn(gate) == 1);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                             {glue, acc.GetValueIn(gate, 0)});
-    LowerHirToThrowCall(cirBuilder, gate, cirBuilder.BooleanConstant(true), newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {glue, acc_.GetValueIn(gate, 0)});
+    LowerHirToThrowCall(gate, builder_.BooleanConstant(true), newGate);
 }
 
 void SlowPathLowering::LowerThrowThrowNotExists(GateRef gate, GateRef glue)
 {
-    GateAccessor acc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(ThrowThrowNotExists));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(ThrowThrowNotExists));
     // 1: number of value inputs
-    ASSERT(acc.GetNumValueIn(gate) == 1);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                             {glue, acc.GetValueIn(gate, 0)});
-    LowerHirToThrowCall(cirBuilder, gate, cirBuilder.BooleanConstant(true), newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {glue, acc_.GetValueIn(gate, 0)});
+    LowerHirToThrowCall(gate, builder_.BooleanConstant(true), newGate);
 }
 
 void SlowPathLowering::LowerThrowPatternNonCoercible(GateRef gate, GateRef glue)
 {
-    GateAccessor acc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(ThrowPatternNonCoercible));
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {glue});
-    LowerHirToThrowCall(cirBuilder, gate, cirBuilder.BooleanConstant(true), newGate);
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(ThrowPatternNonCoercible));
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {glue});
+    LowerHirToThrowCall(gate, builder_.BooleanConstant(true), newGate);
 }
 
 void SlowPathLowering::LowerThrowIfNotObject(GateRef gate, GateRef glue)
 {
-    GateAccessor acc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(ThrowIfNotObject));
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {glue});
-    GateRef value = cirBuilder.ZExtInt8ToPtr(acc.GetValueIn(gate, 0));
-    GateRef isEcmaObject = cirBuilder.IsEcmaObject(value);
-    GateRef isNotEcmaObject = cirBuilder.BoolNot(isEcmaObject);
-    LowerHirToThrowCall(cirBuilder, gate, isNotEcmaObject, newGate);
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(ThrowIfNotObject));
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {glue});
+    GateRef value = builder_.ZExtInt8ToPtr(acc_.GetValueIn(gate, 0));
+    GateRef isEcmaObject = builder_.IsEcmaObject(value);
+    GateRef isNotEcmaObject = builder_.BoolNot(isEcmaObject);
+    LowerHirToThrowCall(gate, isNotEcmaObject, newGate);
 }
 
 void SlowPathLowering::LowerThrowUndefinedIfHole(GateRef gate, GateRef glue)
 {
-    GateAccessor acc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(ThrowUndefinedIfHole));
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {glue});
-    GateRef hole = cirBuilder.ZExtInt8ToPtr(acc.GetValueIn(gate, 0));
-    GateRef isHole = cirBuilder.TaggedIsHole(hole);
-    LowerHirToThrowCall(cirBuilder, gate, isHole, newGate);
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(ThrowUndefinedIfHole));
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {glue});
+    GateRef hole = builder_.ZExtInt8ToPtr(acc_.GetValueIn(gate, 0));
+    GateRef isHole = builder_.TaggedIsHole(hole);
+    LowerHirToThrowCall(gate, isHole, newGate);
 }
 
 void SlowPathLowering::LowerThrowIfSuperNotCorrectCall(GateRef gate, GateRef glue)
 {
-    GateAccessor acc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(ThrowIfSuperNotCorrectCall));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(ThrowIfSuperNotCorrectCall));
     // 2: number of value inputs
-    ASSERT(acc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                             {glue, acc.GetValueIn(gate, 0), acc.GetValueIn(gate, 1)});
-    LowerHirToThrowCall(cirBuilder, gate, cirBuilder.BooleanConstant(true), newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {glue, acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToThrowCall(gate, builder_.BooleanConstant(true), newGate);
 }
 
 void SlowPathLowering::LowerThrowDeleteSuperProperty(GateRef gate, GateRef glue)
 {
-    GateAccessor acc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(ThrowDeleteSuperProperty));
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {glue});
-    LowerHirToThrowCall(cirBuilder, gate, cirBuilder.BooleanConstant(true), newGate);
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(ThrowDeleteSuperProperty));
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {glue});
+    LowerHirToThrowCall(gate, builder_.BooleanConstant(true), newGate);
 }
 
 void SlowPathLowering::LowerExceptionHandler(GateRef hirGate)
 {
-    GateAccessor acc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-
-    GateRef glue = builder_->GetCommonArgByIndex(CommonArgIdx::GLUE);
-    GateRef depend = acc.GetDep(hirGate);
+    GateRef glue = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::GLUE);
+    GateRef depend = acc_.GetDep(hirGate);
     GateRef loadException = circuit_->NewGate(OpCode(OpCode::LOAD), VariableType::JS_ANY().GetMachineType(),
         0, { depend, glue }, VariableType::JS_ANY().GetGateType());
-    acc.SetDep(loadException, depend);
-    GateRef holeCst = cirBuilder.HoleConstant(VariableType::JS_ANY().GetGateType());
+    acc_.SetDep(loadException, depend);
+    GateRef holeCst = builder_.HoleConstant(VariableType::JS_ANY().GetGateType());
     GateRef clearException = circuit_->NewGate(OpCode(OpCode::STORE), 0,
         { loadException, holeCst, glue }, VariableType::INT64().GetGateType());
-    auto uses = acc.Uses(hirGate);
+    auto uses = acc_.Uses(hirGate);
     for (auto it = uses.begin(); it != uses.end(); it++) {
-        if (acc.GetDep(*it) == hirGate) {
-            acc.ReplaceIn(it, clearException);
+        if (acc_.GetDep(*it) == hirGate) {
+            acc_.ReplaceIn(it, clearException);
         } else {
-            acc.ReplaceIn(it, loadException);
+            acc_.ReplaceIn(it, loadException);
         }
     }
     circuit_->DeleteGate(hirGate);
@@ -799,494 +745,483 @@ void SlowPathLowering::LowerExceptionHandler(GateRef hirGate)
 
 void SlowPathLowering::LowerLdSymbol(GateRef gate, GateRef glue)
 {
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(GetSymbolFunction));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(GetSymbolFunction));
     GateRef newGate =
-        cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {});
-    LowerHirToCall(cirBuilder, gate, newGate);
+        builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerLdGlobal(GateRef gate, GateRef glue)
 {
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef offset = cirBuilder.Int64Constant(JSThread::GlueData::GetGlobalObjOffset(false));
-    GateRef val = cirBuilder.Int64Add(glue, offset);
+    GateRef offset = builder_.Int64Constant(JSThread::GlueData::GetGlobalObjOffset(false));
+    GateRef val = builder_.Int64Add(glue, offset);
     GateRef newGate = circuit_->NewGate(OpCode(OpCode::LOAD), VariableType::JS_ANY().GetMachineType(),
         0, { Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), val }, VariableType::JS_ANY().GetGateType());
-    LowerHirToCall(cirBuilder, gate, newGate);
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerSub2Dyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(Sub2Dyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(Sub2Dyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerMul2Dyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(Mul2Dyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(Mul2Dyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerDiv2Dyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(Div2Dyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(Div2Dyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerMod2Dyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(Mod2Dyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(Mod2Dyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerEqDyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(EqDyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(EqDyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerNotEqDyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(NotEqDyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(NotEqDyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerLessDyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(LessDyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(LessDyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerLessEqDyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(LessEqDyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(LessEqDyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerGreaterDyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(GreaterDyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(GreaterDyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerGreaterEqDyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(GreaterEqDyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(GreaterEqDyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerGetPropIterator(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(GetPropIterator));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(GetPropIterator));
     // 1: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerIterNext(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(IterNext));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(IterNext));
     // 1: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerCloseIterator(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(CloseIterator));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(CloseIterator));
     // 1: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerIncDyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(IncDyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(IncDyn));
     // 1: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerDecDyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(DecDyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(DecDyn));
     // 1: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerToNumber(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(ToNumber));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(ToNumber));
     // 1: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerNegDyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(NegDyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(NegDyn));
     // 1: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerNotDyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(NotDyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(NotDyn));
     // 1: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-        {gateAcc.GetValueIn(gate, 0)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerShl2Dyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(Shl2Dyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(Shl2Dyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                             {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerShr2Dyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(Shr2Dyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(Shr2Dyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                             {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerAshr2Dyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(Ashr2Dyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(Ashr2Dyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                             {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerAnd2Dyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(And2Dyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(And2Dyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                             {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerOr2Dyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(Or2Dyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(Or2Dyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                             {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerXor2Dyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(Xor2Dyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(Xor2Dyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                             {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerDelObjProp(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(DelObjProp));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(DelObjProp));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                             {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerExpDyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(ExpDyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(ExpDyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                             {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerIsInDyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(IsInDyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(IsInDyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                             {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerInstanceofDyn(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(InstanceOfDyn));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(InstanceOfDyn));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                             {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerFastStrictNotEqual(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(FastStrictNotEqual));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(FastStrictNotEqual));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                             {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToFastCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToFastCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerFastStrictEqual(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(FastStrictEqual));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(FastStrictEqual));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                             {gateAcc.GetValueIn(gate, 0), gateAcc.GetValueIn(gate, 1)});
-    LowerHirToFastCall(cirBuilder, gate, newGate);
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    LowerHirToFastCall(gate, newGate);
 }
 void SlowPathLowering::LowerCreateEmptyArray(GateRef gate, GateRef glue)
 {
     LabelManager lm(gate, circuit_);
-    CircuitBuilder cirBuilder(circuit_, &lm);
+    builder_.SetLabelManager(&lm);
     std::vector<GateRef> successControl;
     std::vector<GateRef> failControl;
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(CreateEmptyArray));
-    GateRef result = cirBuilder.CallRuntimeTrampoline(glue, id, {});
-    successControl.emplace_back(cirBuilder.GetState());
-    successControl.emplace_back(cirBuilder.GetDepend());
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(CreateEmptyArray));
+    GateRef result = builder_.CallRuntimeTrampoline(glue, id, {});
+    successControl.emplace_back(builder_.GetState());
+    successControl.emplace_back(builder_.GetDepend());
     failControl.emplace_back(Circuit::NullGate());
     failControl.emplace_back(Circuit::NullGate());
-    cirBuilder.MergeMirCircuit<true>(gate, result, successControl, failControl);
+    builder_.MergeMirCircuit<true>(gate, result, successControl, failControl);
 }
 
 void SlowPathLowering::LowerCreateEmptyObject(GateRef gate, GateRef glue)
 {
     LabelManager lm(gate, circuit_);
-    CircuitBuilder cirBuilder(circuit_, &lm);
+    builder_.SetLabelManager(&lm);
     std::vector<GateRef> successControl;
     std::vector<GateRef> failControl;
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(CreateEmptyObject));
-    GateRef result = cirBuilder.CallRuntimeTrampoline(glue, id, {});
-    successControl.emplace_back(cirBuilder.GetState());
-    successControl.emplace_back(cirBuilder.GetDepend());
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(CreateEmptyObject));
+    GateRef result = builder_.CallRuntimeTrampoline(glue, id, {});
+    successControl.emplace_back(builder_.GetState());
+    successControl.emplace_back(builder_.GetDepend());
     failControl.emplace_back(Circuit::NullGate());
     failControl.emplace_back(Circuit::NullGate());
-    cirBuilder.MergeMirCircuit<true>(gate, result, successControl, failControl);
+    builder_.MergeMirCircuit<true>(gate, result, successControl, failControl);
 }
 
 void SlowPathLowering::LowerCreateArrayWithBuffer(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
     LabelManager lm(gate, circuit_);
-    CircuitBuilder cirBuilder(circuit_, &lm);
+    builder_.SetLabelManager(&lm);
     Label successExit(&lm);
     Label exceptionExit(&lm);
     // 1: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
-    GateRef index = gateAcc.GetValueIn(gate, 0);
-    GateRef obj = GetObjectFromConstPool(cirBuilder, cirBuilder.TruncInt64ToInt32(index));
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(CreateArrayWithBuffer));
-    GateRef result = cirBuilder.CallRuntimeTrampoline(glue, id, { obj });
-    cirBuilder.Branch(cirBuilder.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef index = acc_.GetValueIn(gate, 0);
+    GateRef obj = GetObjectFromConstPool(builder_.TruncInt64ToInt32(index));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(CreateArrayWithBuffer));
+    GateRef result = builder_.CallRuntimeTrampoline(glue, id, { obj });
+    builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
         &successExit, &exceptionExit);
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
-    cirBuilder.MergeMirCircuit(gate, result, successControl, failControl);
+    builder_.MergeMirCircuit(gate, result, successControl, failControl);
 }
 
 void SlowPathLowering::LowerCreateObjectWithBuffer(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
     LabelManager lm(gate, circuit_);
-    CircuitBuilder cirBuilder(circuit_, &lm);
+    builder_.SetLabelManager(&lm);
     Label successExit(&lm);
     Label exceptionExit(&lm);
     // 1: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
-    GateRef index = gateAcc.GetValueIn(gate, 0);
-    GateRef obj = GetObjectFromConstPool(cirBuilder, cirBuilder.TruncInt64ToInt32(index));
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(CreateObjectWithBuffer));
-    GateRef result = cirBuilder.CallRuntimeTrampoline(glue, id, { obj });
-    cirBuilder.Branch(cirBuilder.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef index = acc_.GetValueIn(gate, 0);
+    GateRef obj = GetObjectFromConstPool(builder_.TruncInt64ToInt32(index));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(CreateObjectWithBuffer));
+    GateRef result = builder_.CallRuntimeTrampoline(glue, id, { obj });
+    builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
         &successExit, &exceptionExit);
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
-    cirBuilder.MergeMirCircuit(gate, result, successControl, failControl);
+    builder_.MergeMirCircuit(gate, result, successControl, failControl);
 }
 
 void SlowPathLowering::LowerStModuleVar(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
     LabelManager lm(gate, circuit_);
-    CircuitBuilder cirBuilder(circuit_, &lm);
+    builder_.SetLabelManager(&lm);
     std::vector<GateRef> successControl;
     std::vector<GateRef> failControl;
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(StModuleVar));
-    GateRef prop = GetObjectFromConstPool(cirBuilder, gateAcc.GetValueIn(gate, 0));
-    GateRef result = cirBuilder.CallRuntimeTrampoline(glue, id, { prop, gateAcc.GetValueIn(gate, 1) });
-    successControl.emplace_back(cirBuilder.GetState());
-    successControl.emplace_back(cirBuilder.GetDepend());
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(StModuleVar));
+    GateRef prop = GetObjectFromConstPool(acc_.GetValueIn(gate, 0));
+    GateRef result = builder_.CallRuntimeTrampoline(glue, id, { prop, acc_.GetValueIn(gate, 1) });
+    successControl.emplace_back(builder_.GetState());
+    successControl.emplace_back(builder_.GetDepend());
     failControl.emplace_back(Circuit::NullGate());
     failControl.emplace_back(Circuit::NullGate());
     // StModuleVar will not be inValue to other hir gates, result will not be used to replace hirgate
-    cirBuilder.MergeMirCircuit<true>(gate, result, successControl, failControl);
+    builder_.MergeMirCircuit<true>(gate, result, successControl, failControl);
 }
 
 void SlowPathLowering::LowerGetTemplateObject(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(GetTemplateObject));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(GetTemplateObject));
     // 1: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
-    GateRef literal = gateAcc.GetValueIn(gate, 0);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id,
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef literal = acc_.GetValueIn(gate, 0);
+    GateRef newGate = builder_.RuntimeCall(glue, id,
         Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), { literal });
-    LowerHirToCall(cirBuilder, gate, newGate);
+    LowerHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerSetObjectWithProto(GateRef gate, GateRef glue)
 {
-    GateAccessor gateAcc(circuit_);
-    CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.Int64Constant(RTSTUB_ID(SetObjectWithProto));
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(SetObjectWithProto));
     // 2: number of value inputs
-    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
-    GateRef proto = gateAcc.GetValueIn(gate, 0);
-    GateRef obj = gateAcc.GetValueIn(gate, 1);
-    GateRef newGate = cirBuilder.RuntimeCall(glue, id,
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef proto = acc_.GetValueIn(gate, 0);
+    GateRef obj = acc_.GetValueIn(gate, 1);
+    GateRef newGate = builder_.RuntimeCall(glue, id,
         Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), { proto, obj });
-    LowerHirToCall(cirBuilder, gate, newGate);
+    LowerHirToCall(gate, newGate);
+}
+
+void SlowPathLowering::LowerLdBigInt(GateRef gate, GateRef glue)
+{
+    LabelManager lm(gate, circuit_);
+    builder_.SetLabelManager(&lm);
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    // 1: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(LdBigInt));
+    GateRef numberBigInt = GetObjectFromConstPool(acc_.GetValueIn(gate, 0));
+    GateRef result = builder_.CallRuntimeTrampoline(glue, id, {numberBigInt});
+    successControl.emplace_back(builder_.GetState());
+    successControl.emplace_back(builder_.GetDepend());
+    failControl.emplace_back(Circuit::NullGate());
+    failControl.emplace_back(Circuit::NullGate());
+    // StModuleVar will not be inValue to other hir gates, result will not be used to replace hirgate
+    builder_.MergeMirCircuit<true>(gate, result, successControl, failControl);
+}
+
+void SlowPathLowering::LowerLdModuleVar(GateRef gate, GateRef glue)
+{
+    LabelManager lm(gate, circuit_);
+    builder_.SetLabelManager(&lm);
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    // 2: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(LdModuleVar));
+    GateRef key = GetObjectFromConstPool(acc_.GetValueIn(gate, 0));
+    GateRef inner = builder_.IntBuildTaggedTypeWithNoGC(acc_.GetValueIn(gate, 1));
+    GateRef result = builder_.CallRuntimeTrampoline(glue, id, {key, inner});
+    successControl.emplace_back(builder_.GetState());
+    successControl.emplace_back(builder_.GetDepend());
+    failControl.emplace_back(Circuit::NullGate());
+    failControl.emplace_back(Circuit::NullGate());
+    // StModuleVar will not be inValue to other hir gates, result will not be used to replace hirgate
+    builder_.MergeMirCircuit<true>(gate, result, successControl, failControl);
+}
+
+void SlowPathLowering::LowerGetModuleNamespace(GateRef gate, GateRef glue)
+{
+    LabelManager lm(gate, circuit_);
+    builder_.SetLabelManager(&lm);
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    // 1: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef id = builder_.Int64Constant(RTSTUB_ID(GetModuleNamespace));
+    GateRef localName = GetObjectFromConstPool(acc_.GetValueIn(gate, 0));
+    GateRef result = builder_.CallRuntimeTrampoline(glue, id, {localName});
+    successControl.emplace_back(builder_.GetState());
+    successControl.emplace_back(builder_.GetDepend());
+    failControl.emplace_back(Circuit::NullGate());
+    failControl.emplace_back(Circuit::NullGate());
+    // StModuleVar will not be inValue to other hir gates, result will not be used to replace hirgate
+    builder_.MergeMirCircuit<true>(gate, result, successControl, failControl);
 }
 }  // namespace panda::ecmascript

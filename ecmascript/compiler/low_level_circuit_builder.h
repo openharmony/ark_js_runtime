@@ -49,7 +49,7 @@ public:
     GateRef DefaultCase(GateRef switchBranch);
     GateRef DependRelay(GateRef state, GateRef depend);
     GateRef DependAnd(std::initializer_list<GateRef> args);
-    Circuit *GetCircuit()
+    Circuit *GetCircuit() const
     {
         return circuit_;
     }
