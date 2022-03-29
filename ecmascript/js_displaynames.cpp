@@ -144,7 +144,7 @@ JSHandle<JSDisplayNames> JSDisplayNames::InitializeDisplayNames(JSThread *thread
     } else {
         availableLocales = JSDisplayNames::GetAvailableLocales(thread);
     }
-    std::set<std::string> relevantExtensionKeys{""};
+    std::set<std::string> relevantExtensionKeys {""};
     ResolvedLocale r =
         JSLocale::ResolveLocale(thread, availableLocales, requestedLocales, matcher, relevantExtensionKeys);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSDisplayNames, thread);

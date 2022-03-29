@@ -30,11 +30,29 @@
 #include "unicode/locdspnm.h"
 
 namespace panda::ecmascript {
-enum class TypednsOption : uint8_t { LANGUAGE = 0x01, CALENDAR, CURRENCY, DATETIMEFIELD, REGION, SCRIPT, UNDEFINED, EXCEPTION };
+enum class TypednsOption : uint8_t {
+    LANGUAGE = 0x01,
+    CALENDAR,
+    CURRENCY,
+    DATETIMEFIELD,
+    REGION,
+    SCRIPT,
+    UNDEFINED,
+    EXCEPTION
+};
 
-enum class StyOption : uint8_t { LONG = 0x01, SHORT, NARROW, EXCEPTION };
+enum class StyOption : uint8_t {
+    LONG = 0x01,
+    SHORT,
+    NARROW,
+    EXCEPTION
+};
 
-enum class FallbackOption : uint8_t { CODE = 0x01, NONE, EXCEPTION };
+enum class FallbackOption : uint8_t {
+    CODE = 0x01,
+    NONE,
+    EXCEPTION
+};
 
 class JSDisplayNames : public JSObject {
 public:
