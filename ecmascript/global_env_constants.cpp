@@ -28,7 +28,9 @@
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_api_arraylist_iterator.h"
+#include "ecmascript/js_api_deque_iterator.h"
 #include "ecmascript/js_api_queue_iterator.h"
+#include "ecmascript/js_api_stack_iterator.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set_iterator.h"
 #include "ecmascript/jspandafile/class_info_extractor.h"
@@ -174,8 +176,12 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
     SetConstant(
         ConstantIndex::JS_API_ARRAYLIST_ITERATOR_CLASS_INDEX,
         factory->NewEcmaDynClass(dynClassClass, JSAPIArrayListIterator::SIZE, JSType::JS_API_ARRAYLIST_ITERATOR));
+    SetConstant(ConstantIndex::JS_API_DEQUE_ITERATOR_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, JSAPIDequeIterator::SIZE, JSType::JS_API_DEQUE_ITERATOR));
     SetConstant(ConstantIndex::JS_API_QUEUE_ITERATOR_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, JSAPIQueueIterator::SIZE, JSType::JS_API_QUEUE_ITERATOR));
+    SetConstant(ConstantIndex::JS_API_STACK_ITERATOR_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, JSAPIStackIterator::SIZE, JSType::JS_API_STACK_ITERATOR));
     SetConstant(ConstantIndex::JS_API_TREE_MAP_ITERATOR_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, JSAPITreeMapIterator::SIZE, JSType::JS_API_TREEMAP_ITERATOR));
     SetConstant(ConstantIndex::JS_API_TREE_SET_ITERATOR_CLASS_INDEX,
@@ -215,6 +221,8 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::TREEMAP_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
     SetConstant(ConstantIndex::TREESET_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
     SetConstant(ConstantIndex::QUEUE_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
+    SetConstant(ConstantIndex::DEQUE_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
+    SetConstant(ConstantIndex::STACK_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
     /* SymbolTable *RegisterSymbols */
     SetConstant(ConstantIndex::NAME_STRING_INDEX, factory->NewFromCanBeCompressString("name"));
     SetConstant(ConstantIndex::GETPROTOTYPEOF_STRING_INDEX, factory->NewFromCanBeCompressString("getPrototypeOf"));

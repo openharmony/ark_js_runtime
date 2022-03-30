@@ -539,6 +539,7 @@ public:
     bool IsJSMapIterator() const;
     bool IsJSArrayIterator() const;
     bool IsJSAPIArrayListIterator() const;
+    bool IsJSAPIStackIterator() const;
     bool IsJSPrimitiveRef() const;
     bool IsElementDict() const;
     bool IsPropertiesDict() const;

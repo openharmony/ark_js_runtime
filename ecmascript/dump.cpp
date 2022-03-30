@@ -28,8 +28,12 @@
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/js_api_deque.h"
+#include "ecmascript/js_api_deque_iterator.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_queue_iterator.h"
+#include "ecmascript/js_api_stack.h"
+#include "ecmascript/js_api_stack_iterator.h"
 #include "ecmascript/jspandafile/class_info_extractor.h"
 #include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/js_api_tree_map.h"
@@ -301,6 +305,14 @@ CString JSHClass::DumpJSType(JSType type)
             return "Queue";
         case JSType::JS_API_QUEUE_ITERATOR:
             return "QueueIterator";
+        case JSType::JS_API_DEQUE:
+            return "Deque";
+        case JSType::JS_API_DEQUE_ITERATOR:
+            return "DequeIterator";
+        case JSType::JS_API_STACK:
+            return "Stack";
+        case JSType::JS_API_STACK_ITERATOR:
+            return "StackIterator";
         default: {
             CString ret = "unknown type ";
             return ret + static_cast<char>(type);
@@ -687,6 +699,18 @@ static void DumpObject(TaggedObject *obj, std::ostream &os)
             break;
         case JSType::JS_API_QUEUE_ITERATOR:
             JSAPIQueueIterator::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_API_DEQUE:
+            JSAPIDeque::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_API_DEQUE_ITERATOR:
+            JSAPIDequeIterator::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_API_STACK:
+            JSAPIStack::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_API_STACK_ITERATOR:
+            JSAPIStackIterator::Cast(obj)->Dump(os);
             break;
         case JSType::SOURCE_TEXT_MODULE_RECORD:
             SourceTextModule::Cast(obj)->Dump(os);
@@ -1401,6 +1425,35 @@ void JSAPIArrayListIterator::Dump(std::ostream &os) const
 {
     JSAPIArrayList *arrayList = JSAPIArrayList::Cast(GetIteratedArrayList().GetTaggedObject());
     os << " - length: " << std::dec << arrayList->GetLength().GetArrayLength() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
+    JSObject::Dump(os);
+}
+
+void JSAPIDeque::Dump(std::ostream &os) const
+{
+    os << " - first: " << std::dec << GetFirst() << "\n";
+    os << " - last: " << std::dec << GetLast() << "\n";
+    JSObject::Dump(os);
+}
+
+void JSAPIDequeIterator::Dump(std::ostream &os) const
+{
+    JSAPIDeque *deque = JSAPIDeque::Cast(GetIteratedDeque().GetTaggedObject());
+    os << " - length: " << std::dec << deque->GetSize() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
+    JSObject::Dump(os);
+}
+
+void JSAPIStack::Dump(std::ostream &os) const
+{
+    os << " - top: " << std::dec << GetTop() << "\n";
+    JSObject::Dump(os);
+}
+
+void JSAPIStackIterator::Dump(std::ostream &os) const
+{
+    JSAPIStack *stack = JSAPIStack::Cast(GetIteratedStack().GetTaggedObject());
+    os << " - length: " << std::dec << stack->GetSize() << "\n";
     os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
     JSObject::Dump(os);
 }
@@ -2815,6 +2868,18 @@ static void DumpObject(TaggedObject *obj,
         case JSType::JS_API_QUEUE_ITERATOR:
             JSAPIQueueIterator::Cast(obj)->DumpForSnapshot(vec);
             return;
+        case JSType::JS_API_DEQUE:
+            JSAPIDeque::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_API_DEQUE_ITERATOR:
+            JSAPIDequeIterator::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_API_STACK:
+            JSAPIStack::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_API_STACK_ITERATOR:
+            JSAPIStackIterator::Cast(obj)->DumpForSnapshot(vec);
+            return;
         case JSType::SOURCE_TEXT_MODULE_RECORD:
             SourceTextModule::Cast(obj)->DumpForSnapshot(vec);
             return;
@@ -3237,6 +3302,31 @@ void JSAPIQueueIterator::DumpForSnapshot(std::vector<std::pair<CString, JSTagged
     JSObject::DumpForSnapshot(vec);
 }
 
+void JSAPIDeque::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    JSObject::DumpForSnapshot(vec);
+}
+
+void JSAPIDequeIterator::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    JSAPIDeque *deque = JSAPIDeque::Cast(GetIteratedDeque().GetTaggedObject());
+    deque->DumpForSnapshot(vec);
+    vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
+    JSObject::DumpForSnapshot(vec);
+}
+void JSAPIStack::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    JSObject::DumpForSnapshot(vec);
+}
+
+void JSAPIStackIterator::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    JSAPIStack *stack = JSAPIStack::Cast(GetIteratedStack().GetTaggedObject());
+    stack->DumpForSnapshot(vec);
+    vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
+    JSObject::DumpForSnapshot(vec);
+}
+
 void JSArrayIterator::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     JSArray *array = JSArray::Cast(GetIteratedArray().GetTaggedObject());
@@ -3413,6 +3503,8 @@ void GlobalEnv::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &
     vec.push_back(std::make_pair(CString("TreeMapIteratorPrototype"), globalConst->GetTreeMapIteratorPrototype()));
     vec.push_back(std::make_pair(CString("TreeSetIteratorPrototype"), globalConst->GetTreeSetIteratorPrototype()));
     vec.push_back(std::make_pair(CString("QueueIteratorPrototype"), globalConst->GetQueueIteratorPrototype()));
+    vec.push_back(std::make_pair(CString("DequeIteratorPrototype"), globalConst->GetDequeIteratorPrototype()));
+    vec.push_back(std::make_pair(CString("StackIteratorPrototype"), globalConst->GetStackIteratorPrototype()));
 }
 
 void JSDataView::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const

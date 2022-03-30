@@ -77,6 +77,11 @@ private:
     static JSHandle<JSTaggedValue> InitializeQueue(JSThread *thread);
     static void InitializeQueueIterator(JSThread *thread, const JSHandle<GlobalEnv> &env,
                                         GlobalEnvConstants *globalConst);
+    static JSHandle<JSTaggedValue> InitializeDeque(JSThread *thread);
+    static void InitializeDequeIterator(JSThread *thread,  const JSHandle<GlobalEnv> &env,
+                                        GlobalEnvConstants *globalConst);
+    static JSHandle<JSTaggedValue> InitializeStack(JSThread *thread);
+    static void InitializeStackIterator(JSThread *thread, GlobalEnvConstants *globalConst);
 };
 }  // namespace panda::ecmascript::containers
 

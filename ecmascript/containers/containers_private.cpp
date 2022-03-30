@@ -16,14 +16,20 @@
 #include "ecmascript/containers/containers_private.h"
 
 #include "containers_arraylist.h"
+#include "containers_deque.h"
 #include "containers_queue.h"
+#include "containers_stack.h"
 #include "containers_treemap.h"
 #include "containers_treeset.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/global_env_constants.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
+#include "ecmascript/js_api_deque.h"
+#include "ecmascript/js_api_deque_iterator.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_queue_iterator.h"
+#include "ecmascript/js_api_stack.h"
+#include "ecmascript/js_api_stack_iterator.h"
 #include "ecmascript/js_api_tree_map.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set.h"
@@ -60,12 +66,18 @@ JSTaggedValue ContainersPrivate::Load(EcmaRuntimeCallInfo *msg)
             res = InitializeContainer(thread, thisValue, InitializeTreeSet, "TreeSetConstructor");
             break;
         }
+        case ContainerTag::Stack: {
+            res = InitializeContainer(thread, thisValue, InitializeStack, "StackConstructor");
+            break;
+        }
         case ContainerTag::Queue: {
             res = InitializeContainer(thread, thisValue, InitializeQueue, "QueueConstructor");
             break;
         }
-        case ContainerTag::Deque:
-        case ContainerTag::Stack:
+        case ContainerTag::Deque: {
+            res = InitializeContainer(thread, thisValue, InitializeDeque, "DequeConstructor");
+            break;
+        }
         case ContainerTag::Vector:
         case ContainerTag::List:
         case ContainerTag::LinkedList:
@@ -421,6 +433,64 @@ void ContainersPrivate::InitializeTreeSetIterator(JSThread *thread)
     globalConst->SetConstant(ConstantIndex::TREESET_ITERATOR_PROTOTYPE_INDEX, setIteratorPrototype.GetTaggedValue());
 }
 
+JSHandle<JSTaggedValue> ContainersPrivate::InitializeStack(JSThread *thread)
+{
+    auto globalConst = const_cast<GlobalEnvConstants *>(thread->GlobalConstants());
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    // Stack.prototype
+    JSHandle<JSObject> stackFuncPrototype = factory->NewEmptyJSObject();
+    JSHandle<JSTaggedValue> stackFuncPrototypeValue(stackFuncPrototype);
+    // Stack.prototype_or_dynclass
+    JSHandle<JSHClass> stackInstanceDynclass =
+        factory->NewEcmaDynClass(JSAPIStack::SIZE, JSType::JS_API_STACK, stackFuncPrototypeValue);
+    // Stack() = new Function()
+    JSHandle<JSTaggedValue> stackFunction(NewContainerConstructor(
+        thread, stackFuncPrototype, ContainersStack::StackConstructor, "Stack", FuncLength::ZERO));
+    JSHandle<JSFunction>(stackFunction)->SetFunctionPrototype(thread, stackInstanceDynclass.GetTaggedValue());
+
+    // "constructor" property on the prototype
+    JSHandle<JSTaggedValue> constructorKey = globalConst->GetHandledConstructorString();
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(stackFuncPrototype), constructorKey, stackFunction);
+
+    // Stack.prototype.push()
+    SetFrozenFunction(thread, stackFuncPrototype, "push", ContainersStack::Push, FuncLength::ONE);
+    // Stack.prototype.empty()
+    SetFrozenFunction(thread, stackFuncPrototype, "isEmpty", ContainersStack::IsEmpty, FuncLength::ONE);
+    // Stack.prototype.peek()
+    SetFrozenFunction(thread, stackFuncPrototype, "peek", ContainersStack::Peek, FuncLength::ONE);
+    // Stack.prototype.pop()
+    SetFrozenFunction(thread, stackFuncPrototype, "pop", ContainersStack::Pop, FuncLength::ONE);
+    // Stack.prototype.search()
+    SetFrozenFunction(thread, stackFuncPrototype, "locate", ContainersStack::Locate, FuncLength::ONE);
+    // Stack.prototype.forEach()
+    SetFrozenFunction(thread, stackFuncPrototype, "forEach", ContainersStack::ForEach, FuncLength::ONE);
+
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    SetStringTagSymbol(thread, env, stackFuncPrototype, "Stack");
+
+    JSHandle<JSTaggedValue> lengthGetter = CreateGetter(thread, ContainersStack::GetLength, "length", FuncLength::ZERO);
+    JSHandle<JSTaggedValue> lengthKey(factory->NewFromCanBeCompressString("length"));
+    SetGetter(thread, stackFuncPrototype, lengthKey, lengthGetter);
+
+    SetFunctionAtSymbol(thread, env, stackFuncPrototype, env->GetIteratorSymbol(), "[Symbol.iterator]",
+                        ContainersStack::Iterator, FuncLength::ONE);
+
+    ContainersPrivate::InitializeStackIterator(thread, globalConst);
+    return stackFunction;
+}
+
+void ContainersPrivate::InitializeStackIterator(JSThread *thread, GlobalEnvConstants *globalConst)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSHClass> iteratorFuncDynclass = JSHandle<JSHClass>(thread, globalConst->
+                        GetHandledJSAPIIteratorFuncDynClass().GetObject<JSHClass>());
+    // StackIterator.prototype
+    JSHandle<JSObject> stackIteratorPrototype(factory->NewJSObject(iteratorFuncDynclass));
+    // Iterator.prototype.next()
+    SetFrozenFunction(thread, stackIteratorPrototype, "next", JSAPIStackIterator::Next, FuncLength::ONE);
+    globalConst->SetConstant(ConstantIndex::STACK_ITERATOR_PROTOTYPE_INDEX, stackIteratorPrototype.GetTaggedValue());
+}
+
 JSHandle<JSTaggedValue> ContainersPrivate::InitializeQueue(JSThread *thread)
 {
     auto globalConst = const_cast<GlobalEnvConstants *>(thread->GlobalConstants());
@@ -472,5 +542,60 @@ void ContainersPrivate::InitializeQueueIterator(JSThread *thread, const JSHandle
     SetFrozenFunction(thread, queueIteratorPrototype, "next", JSAPIQueueIterator::Next, FuncLength::ONE);
     SetStringTagSymbol(thread, env, queueIteratorPrototype, "Queue Iterator");
     globalConst->SetConstant(ConstantIndex::QUEUE_ITERATOR_PROTOTYPE_INDEX, queueIteratorPrototype.GetTaggedValue());
+}
+
+JSHandle<JSTaggedValue> ContainersPrivate::InitializeDeque(JSThread *thread)
+{
+    auto globalConst = const_cast<GlobalEnvConstants *>(thread->GlobalConstants());
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    // Deque.prototype
+    JSHandle<JSObject> dequeFuncPrototype = factory->NewEmptyJSObject();
+    JSHandle<JSTaggedValue> dequeFuncPrototypeValue(dequeFuncPrototype);
+    // Deque.prototype_or_dynclass
+    JSHandle<JSHClass> dequeInstanceDynclass =
+        factory->NewEcmaDynClass(JSAPIDeque::SIZE, JSType::JS_API_DEQUE, dequeFuncPrototypeValue);
+    // Deque() = new Function()
+    JSHandle<JSTaggedValue> dequeFunction(NewContainerConstructor(
+        thread, dequeFuncPrototype, ContainersDeque::DequeConstructor, "Deque", FuncLength::ZERO));
+    JSHandle<JSFunction>(dequeFunction)->SetFunctionPrototype(thread, dequeInstanceDynclass.GetTaggedValue());
+
+    // "constructor" property on the prototype
+    JSHandle<JSTaggedValue> constructorKey = globalConst->GetHandledConstructorString();
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(dequeFuncPrototype), constructorKey, dequeFunction);
+
+    SetFrozenFunction(thread, dequeFuncPrototype, "insertFront", ContainersDeque::InsertFront, FuncLength::ONE);
+    SetFrozenFunction(thread, dequeFuncPrototype, "insertEnd", ContainersDeque::InsertEnd, FuncLength::ONE);
+    SetFrozenFunction(thread, dequeFuncPrototype, "getFirst", ContainersDeque::GetFirst, FuncLength::ZERO);
+    SetFrozenFunction(thread, dequeFuncPrototype, "getLast", ContainersDeque::GetLast, FuncLength::ZERO);
+    SetFrozenFunction(thread, dequeFuncPrototype, "has", ContainersDeque::Has, FuncLength::ONE);
+    SetFrozenFunction(thread, dequeFuncPrototype, "popFirst", ContainersDeque::PopFirst, FuncLength::ZERO);
+    SetFrozenFunction(thread, dequeFuncPrototype, "popLast", ContainersDeque::PopLast, FuncLength::ZERO);
+    SetFrozenFunction(thread, dequeFuncPrototype, "forEach", ContainersDeque::ForEach, FuncLength::TWO);
+
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    SetStringTagSymbol(thread, env, dequeFuncPrototype, "Deque");
+
+    JSHandle<JSTaggedValue> lengthGetter = CreateGetter(thread, ContainersDeque::GetSize, "length", FuncLength::ZERO);
+    JSHandle<JSTaggedValue> lengthKey(factory->NewFromCanBeCompressString("length"));
+    SetGetter(thread, dequeFuncPrototype, lengthKey, lengthGetter);
+
+    SetFunctionAtSymbol(thread, env, dequeFuncPrototype, env->GetIteratorSymbol(), "[Symbol.iterator]",
+                        ContainersDeque::GetIteratorObj, FuncLength::ONE);
+
+    ContainersPrivate::InitializeDequeIterator(thread, env, globalConst);
+
+    return dequeFunction;
+}
+
+void ContainersPrivate::InitializeDequeIterator(JSThread *thread, const JSHandle<GlobalEnv> &env,
+                                                GlobalEnvConstants *globalConst)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSHClass> iteratorFuncDynclass = JSHandle<JSHClass>(thread, globalConst->
+                        GetHandledJSAPIIteratorFuncDynClass().GetObject<JSHClass>());
+    JSHandle<JSObject> dequeIteratorPrototype(factory->NewJSObject(iteratorFuncDynclass));
+    SetFrozenFunction(thread, dequeIteratorPrototype, "next", JSAPIDequeIterator::Next, FuncLength::ONE);
+    SetStringTagSymbol(thread, env, dequeIteratorPrototype, "Deque Iterator");
+    globalConst->SetConstant(ConstantIndex::DEQUE_ITERATOR_PROTOTYPE_INDEX, dequeIteratorPrototype.GetTaggedValue());
 }
 }  // namespace panda::ecmascript::containers
