@@ -578,6 +578,38 @@ HWTEST_F_L0(JSNApiTests, Float64Array)
     ASSERT_EQ(typedArray->GetArrayBuffer(vm_)->GetBuffer(), arrayBuffer->GetBuffer());
 }
 
+HWTEST_F_L0(JSNApiTests, BigInt64Array)
+{
+    LocalScope scope(vm_);
+    const int32_t length = 57;
+    Local<ArrayBufferRef> arrayBuffer = ArrayBufferRef::New(vm_, length);
+    ASSERT_TRUE(arrayBuffer->IsArrayBuffer());
+
+    // 8 : offset of byte, 6 : length
+    Local<BigInt64ArrayRef> typedArray = BigInt64ArrayRef::New(vm_, arrayBuffer, 8, 6);
+    ASSERT_TRUE(typedArray->IsBigInt64Array());
+    ASSERT_EQ(typedArray->ByteLength(vm_), 48);  // 48 : length of bytes
+    ASSERT_EQ(typedArray->ByteOffset(vm_), 8);   // 8 : offset of byte
+    ASSERT_EQ(typedArray->ArrayLength(vm_), 6);  // 6 : length of array
+    ASSERT_EQ(typedArray->GetArrayBuffer(vm_)->GetBuffer(), arrayBuffer->GetBuffer());
+}
+
+HWTEST_F_L0(JSNApiTests, BigUint64Array)
+{
+    LocalScope scope(vm_);
+    const int32_t length = 57;
+    Local<ArrayBufferRef> arrayBuffer = ArrayBufferRef::New(vm_, length);
+    ASSERT_TRUE(arrayBuffer->IsArrayBuffer());
+
+    // 8 : offset of byte, 6 : length
+    Local<BigUint64ArrayRef> typedArray = BigUint64ArrayRef::New(vm_, arrayBuffer, 8, 6);
+    ASSERT_TRUE(typedArray->IsBigUint64Array());
+    ASSERT_EQ(typedArray->ByteLength(vm_), 48);  // 48 : length of bytes
+    ASSERT_EQ(typedArray->ByteOffset(vm_), 8);   // 8 : offset of byte
+    ASSERT_EQ(typedArray->ArrayLength(vm_), 6);  // 6 : length of array
+    ASSERT_EQ(typedArray->GetArrayBuffer(vm_)->GetBuffer(), arrayBuffer->GetBuffer());
+}
+
 HWTEST_F_L0(JSNApiTests, Error)
 {
     LocalScope scope(vm_);

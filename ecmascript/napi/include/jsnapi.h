@@ -317,6 +317,8 @@ public:
     bool IsUint32Array();
     bool IsFloat32Array();
     bool IsFloat64Array();
+    bool IsBigInt64Array();
+    bool IsBigUint64Array();
     bool IsJSPrimitiveRef();
     bool IsJSPrimitiveNumber();
     bool IsJSPrimitiveInt();
@@ -679,6 +681,18 @@ public:
 class PUBLIC_API Float64ArrayRef : public TypedArrayRef {
 public:
     static Local<Float64ArrayRef> New(const EcmaVM *vm, Local<ArrayBufferRef> buffer, int32_t byteOffset,
+                                      int32_t length);
+};
+
+class PUBLIC_API BigInt64ArrayRef : public TypedArrayRef {
+public:
+    static Local<BigInt64ArrayRef> New(const EcmaVM *vm, Local<ArrayBufferRef> buffer, int32_t byteOffset,
+                                      int32_t length);
+};
+
+class PUBLIC_API BigUint64ArrayRef : public TypedArrayRef {
+public:
+    static Local<BigUint64ArrayRef> New(const EcmaVM *vm, Local<ArrayBufferRef> buffer, int32_t byteOffset,
                                       int32_t length);
 };
 

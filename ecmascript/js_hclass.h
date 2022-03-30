@@ -486,6 +486,16 @@ public:
         return GetObjectType() == JSType::JS_FLOAT64_ARRAY;
     }
 
+    inline bool IsJSBigInt64Array() const
+    {
+        return GetObjectType() == JSType::JS_BIGINT64_ARRAY;
+    }
+
+    inline bool IsJSBigUint64Array() const
+    {
+        return GetObjectType() == JSType::JS_BIGUINT64_ARRAY;
+    }
+
     inline bool IsJsGlobalEnv() const
     {
         return GetObjectType() == JSType::GLOBAL_ENV;
