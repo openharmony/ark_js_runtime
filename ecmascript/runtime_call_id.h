@@ -270,6 +270,12 @@ namespace panda::ecmascript {
     V(ArrayBuffer, SetValueInBuffer)          \
     V(ArrayBuffer, CloneArrayBuffer)          \
     V(ArrayBuffer, AllocateArrayBuffer)       \
+    V(SharedArrayBuffer, Constructor)         \
+    V(SharedArrayBuffer, Slice)               \
+    V(SharedArrayBuffer, AllocateSharedArrayBuffer) \
+    V(SharedArrayBuffer, IsSharedArrayBuffer) \
+    V(SharedArrayBuffer, Species)             \
+    V(SharedArrayBuffer, GetByteLength)       \
     V(AsyncFunction, Constructor)             \
     V(Boolean, Constructor)                   \
     V(Boolean, ThisBooleanValue)              \

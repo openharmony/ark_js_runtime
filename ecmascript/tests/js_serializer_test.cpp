@@ -423,6 +423,38 @@ public:
         Destroy();
     }
 
+    void JSSharedArrayBufferTest(std::pair<uint8_t *, size_t> data,
+                           const JSHandle<JSArrayBuffer> &originArrayBuffer, int32_t byteLength, const char *msg)
+    {
+        Init();
+        JSDeserializer deserializer(thread, data.first, data.second);
+        JSHandle<JSTaggedValue> res = deserializer.DeserializeJSTaggedValue();
+        EXPECT_TRUE(!res.IsEmpty()) << "[Empty] Deserialize JSArrayBuffer fail";
+        EXPECT_TRUE(res->IsSharedArrayBuffer()) << "[NotJSArrayBuffer] Deserialize JSArrayBuffer fail";
+        JSHandle<JSArrayBuffer> resJSArrayBuffer = JSHandle<JSArrayBuffer>::Cast(res);
+        int32_t resByteLength = resJSArrayBuffer->GetArrayBufferByteLength();
+        EXPECT_TRUE(resByteLength == byteLength) << "Not Same ByteLength";
+        JSHandle<JSTaggedValue> bufferData(thread, originArrayBuffer->GetArrayBufferData());
+        auto np = JSHandle<JSNativePointer>::Cast(bufferData);
+        void *buffer = np->GetExternalPointer();
+        ASSERT_NE(buffer, nullptr);
+        JSHandle<JSTaggedValue> resBufferData(thread, resJSArrayBuffer->GetArrayBufferData());
+        JSHandle<JSNativePointer> resNp = JSHandle<JSNativePointer>::Cast(resBufferData);
+        void *resBuffer = resNp->GetExternalPointer();
+        ASSERT_NE(resBuffer, nullptr);
+        EXPECT_TRUE((uint64_t)buffer == (uint64_t)resBuffer) << "Not Same pointer!";
+        for (int32_t i = 0; i < resByteLength; i++) {
+            EXPECT_TRUE(static_cast<char *>(resBuffer)[i] == static_cast<char *>(buffer)[i]) << "Not Same Buffer";
+        }
+
+        if (msg != nullptr) {
+            if (memcpy_s(resBuffer, byteLength, msg, byteLength) != EOK) {
+                EXPECT_TRUE(false) << " memcpy error!";
+            }
+        }
+        Destroy();
+    }
+
     void JSRegexpTest(std::pair<uint8_t *, size_t> data)
     {
         Init();
@@ -997,25 +1029,24 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSArrayBufferShared2)
 {
     std::string msg = "hello world";
     int msgBufferLen = msg.length() + 1;
-    char* msgBuffer = new char[msgBufferLen] { 0 };
-    if (memcpy_s(msgBuffer, msgBufferLen, msg.c_str(), msgBufferLen) != EOK) {
-        delete[] msgBuffer;
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSArrayBuffer> jsArrayBuffer = factory->NewJSSharedArrayBuffer(msgBufferLen);
+    JSHandle<JSTaggedValue> BufferData(thread, jsArrayBuffer->GetArrayBufferData());
+    JSHandle<JSNativePointer> resNp = JSHandle<JSNativePointer>::Cast(BufferData);
+    void *Buffer = resNp->GetExternalPointer();
+    if (memcpy_s(Buffer, msgBufferLen, msg.c_str(), msgBufferLen) != EOK) {
         EXPECT_TRUE(false) << " memcpy error";
     }
-
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSArrayBuffer> jsArrayBuffer = factory->NewJSArrayBuffer(msgBuffer, msgBufferLen, nullptr, nullptr, true);
-
     JSSerializer *serializer = new JSSerializer(thread);
     bool success = serializer->SerializeJSTaggedValue(JSHandle<JSTaggedValue>::Cast(jsArrayBuffer));
     EXPECT_TRUE(success) << "Serialize JSArrayBuffer fail";
     std::pair<uint8_t *, size_t> data = serializer->ReleaseBuffer();
     JSDeserializerTest jsDeserializerTest;
     std::string changeStr = "world hello";
-    std::thread t1(&JSDeserializerTest::JSArrayBufferTest,
+    std::thread t1(&JSDeserializerTest::JSSharedArrayBufferTest,
                    jsDeserializerTest, data, jsArrayBuffer, 12, changeStr.c_str());
     t1.join();
-    EXPECT_TRUE(strcmp(msgBuffer, "world hello") == 0) << "Serialize JSArrayBuffer fail";
+    EXPECT_TRUE(strcmp((char *)Buffer, "world hello") == 0) << "Serialize JSArrayBuffer fail";
     delete serializer;
 };
 
