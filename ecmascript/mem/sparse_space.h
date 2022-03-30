@@ -116,7 +116,7 @@ public:
     void ReclaimCSet();
     bool IsCSetEmpty() const
     {
-        return isCSetEmpty_;
+        return collectRegionSet_.empty();
     }
     unsigned long GetSelectedRegionNumber() const
     {
@@ -140,7 +140,6 @@ private:
     static constexpr size_t PARTIAL_GC_MIN_COLLECT_REGION_SIZE = 5;
 
     CVector<Region *> collectRegionSet_;
-    bool isCSetEmpty_ {true};
     os::memory::Mutex lock_;
 };
 
