@@ -57,13 +57,12 @@ void ParallelEvacuation::EvacuateSpace()
 {
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelEvacuation);
     heap_->GetFromSpace()->EnumerateRegions([this] (Region *current) {
-        AddFragment(std::make_unique<EvacuationFragment>(this, current));
+        AddWorkload(std::make_unique<EvacuationWorkload>(this, current));
     });
-    if (!heap_->GetOldSpace()->IsCSetEmpty()) {
-        heap_->GetOldSpace()->EnumerateCollectRegionSet([this](Region *current) {
-            AddFragment(std::make_unique<EvacuationFragment>(this, current));
-        });
-    }
+    heap_->GetOldSpace()->EnumerateCollectRegionSet(
+            [this](Region *current) {
+                AddWorkload(std::make_unique<EvacuationWorkload>(this, current));
+            });
     if (heap_->IsParallelGCEnabled()) {
         os::memory::LockHolder holder(mutex_);
         parallel_ = CalculateEvacuationThreadNum();
@@ -78,10 +77,10 @@ void ParallelEvacuation::EvacuateSpace()
 
 bool ParallelEvacuation::EvacuateSpace(TlabAllocator *allocator, bool isMain)
 {
-    std::unique_ptr<Fragment> region = GetFragmentSafe();
+    std::unique_ptr<Workload> region = GetWorkloadSafe();
     while (region != nullptr) {
         EvacuateRegion(allocator, region->GetRegion());
-        region = GetFragmentSafe();
+        region = GetWorkloadSafe();
     }
     allocator->Finalize();
     if (!isMain) {
@@ -180,10 +179,10 @@ void ParallelEvacuation::UpdateReference()
     uint32_t oldRegionCount = 0;
     heap_->GetNewSpace()->EnumerateRegions([&] (Region *current) {
         if (current->InNewToNewSet()) {
-            AddFragment(std::make_unique<UpdateAndSweepNewRegionFragment>(this, current));
+            AddWorkload(std::make_unique<UpdateAndSweepNewRegionWorkload>(this, current));
             youngeRegionMoveCount++;
         } else {
-            AddFragment(std::make_unique<UpdateNewRegionFragment>(this, current));
+            AddWorkload(std::make_unique<UpdateNewRegionWorkload>(this, current));
             youngeRegionCopyCount++;
         }
     });
@@ -191,7 +190,7 @@ void ParallelEvacuation::UpdateReference()
         if (current->InCollectSet()) {
             return;
         }
-        AddFragment(std::make_unique<UpdateRSetFragment>(this, current));
+        AddWorkload(std::make_unique<UpdateRSetWorkload>(this, current));
         oldRegionCount++;
     });
     LOG(DEBUG, RUNTIME) << "UpdatePointers statistic: younge space region compact moving count:"
@@ -209,7 +208,7 @@ void ParallelEvacuation::UpdateReference()
 
     UpdateRoot();
     UpdateWeakReference();
-    ProcessFragments(true);
+    ProcessWorkloads(true);
     WaitFinished();
 }
 
@@ -392,12 +391,12 @@ void ParallelEvacuation::WaitFinished()
     }
 }
 
-bool ParallelEvacuation::ProcessFragments(bool isMain)
+bool ParallelEvacuation::ProcessWorkloads(bool isMain)
 {
-    std::unique_ptr<Fragment> region = GetFragmentSafe();
+    std::unique_ptr<Workload> region = GetWorkloadSafe();
     while (region != nullptr) {
         region->Process(isMain);
-        region = GetFragmentSafe();
+        region = GetWorkloadSafe();
     }
     if (!isMain) {
         os::memory::LockHolder holder(mutex_);
@@ -426,28 +425,28 @@ bool ParallelEvacuation::EvacuationTask::Run([[maybe_unused]] uint32_t threadInd
 
 bool ParallelEvacuation::UpdateReferenceTask::Run([[maybe_unused]] uint32_t threadIndex)
 {
-    evacuation_->ProcessFragments(false);
+    evacuation_->ProcessWorkloads(false);
     return true;
 }
 
-bool ParallelEvacuation::EvacuationFragment::Process([[maybe_unused]] bool isMain)
+bool ParallelEvacuation::EvacuationWorkload::Process([[maybe_unused]] bool isMain)
 {
     return true;
 }
 
-bool ParallelEvacuation::UpdateRSetFragment::Process([[maybe_unused]] bool isMain)
+bool ParallelEvacuation::UpdateRSetWorkload::Process([[maybe_unused]] bool isMain)
 {
     GetEvacuation()->UpdateRSet(GetRegion());
     return true;
 }
 
-bool ParallelEvacuation::UpdateNewRegionFragment::Process([[maybe_unused]] bool isMain)
+bool ParallelEvacuation::UpdateNewRegionWorkload::Process([[maybe_unused]] bool isMain)
 {
     GetEvacuation()->UpdateNewRegionReference(GetRegion());
     return true;
 }
 
-bool ParallelEvacuation::UpdateAndSweepNewRegionFragment::Process([[maybe_unused]] bool isMain)
+bool ParallelEvacuation::UpdateAndSweepNewRegionWorkload::Process([[maybe_unused]] bool isMain)
 {
     GetEvacuation()->UpdateAndSweepNewRegionReference(GetRegion());
     return true;
