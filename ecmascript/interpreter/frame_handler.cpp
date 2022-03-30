@@ -70,7 +70,11 @@ void InterpretedFrameHandler::PrevFrame()
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+#else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+#endif
     sp_ = frame->base.prev;
 }
 
@@ -84,7 +88,11 @@ InterpretedFrameHandler InterpretedFrameHandler::GetPrevFrame() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+#else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+#endif
     return InterpretedFrameHandler(frame->base.prev);
 }
 
@@ -106,7 +114,11 @@ JSTaggedValue InterpretedFrameHandler::GetAcc() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+#else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+#endif
     return frame->acc;
 }
 
@@ -114,7 +126,11 @@ uint32_t InterpretedFrameHandler::GetSize() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+#else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+#endif
     JSTaggedType *prevSp = frame->base.prev;
     ASSERT(prevSp != nullptr);
     auto size = (prevSp - sp_) - FRAME_STATE_SIZE;
@@ -125,7 +141,11 @@ uint32_t InterpretedFrameHandler::GetBytecodeOffset() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+#else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+#endif
     JSMethod *method = ECMAObject::Cast(frame->function.GetTaggedObject())->GetCallTarget();
     auto offset = frame->pc - method->GetBytecodeArray();
     return static_cast<uint32_t>(offset);
@@ -135,7 +155,11 @@ JSMethod *InterpretedFrameHandler::GetMethod() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+#else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+#endif
     return ECMAObject::Cast(frame->function.GetTaggedObject())->GetCallTarget();
 }
 
@@ -143,7 +167,11 @@ JSTaggedValue InterpretedFrameHandler::GetFunction() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+#else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+#endif
     return frame->function;
 }
 
@@ -151,7 +179,11 @@ const uint8_t *InterpretedFrameHandler::GetPc() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+#else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+#endif
     return frame->pc;
 }
 
@@ -165,15 +197,30 @@ ConstantPool *InterpretedFrameHandler::GetConstpool() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+    JSTaggedValue function = frame->function;
+    if (function.IsJSFunction()) {
+        JSTaggedValue constpool = JSFunction::Cast(function.GetTaggedObject())->GetConstantPool();
+        return ConstantPool::Cast(constpool.GetTaggedObject());
+    } else {
+        return nullptr;
+    }
+#else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
     return ConstantPool::Cast(frame->constpool.GetTaggedObject());
+#endif
 }
 
 JSTaggedValue InterpretedFrameHandler::GetEnv() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+#else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+#endif
     return frame->env;
 }
 
@@ -182,8 +229,23 @@ void InterpretedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisi
     JSTaggedType *current = sp_;
     if (current != nullptr) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+        AsmInterpretedFrame *frame = reinterpret_cast<AsmInterpretedFrame *>(current) - 1;
+        if (frame->function != JSTaggedValue::Hole()) {
+            uintptr_t start = ToUintPtr(current);
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            AsmInterpretedFrame *prev_frame = reinterpret_cast<AsmInterpretedFrame *>(frame->base.prev) - 1;
+            uintptr_t end = ToUintPtr(prev_frame);
+            v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
+            v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->function)));
+            if (frame->pc != nullptr) {
+                // interpreter frame
+                v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->acc)));
+                v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->env)));
+            }
+        }
+#else
         InterpretedFrame *frame = reinterpret_cast<InterpretedFrame *>(current) - 1;
-
         if (frame->sp != nullptr) {
             uintptr_t start = ToUintPtr(current);
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -199,6 +261,7 @@ void InterpretedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisi
                 v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->profileTypeInfo)));
             }
         }
+#endif
     }
 }
 
@@ -321,7 +384,11 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
     while (current) {
         FrameType type = FrameHandler(current).GetFrameType();
         if (type == FrameType::INTERPRETER_FRAME || type == FrameType::INTERPRETER_FAST_NEW_FRAME) {
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+            AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(current);
+#else
             InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(current);
+#endif
             InterpretedFrameHandler(current).Iterate(v0, v1);
             current = frame->GetPrevFrameFp();
         } else if (type == FrameType::OPTIMIZED_FRAME) {

@@ -319,12 +319,10 @@ public:
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(InterpretedFrameBase), InterpretedFrameBase::SizeArch32, InterpretedFrameBase::SizeArch64);
 
-// align with 8
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct InterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
                                                      base::AlignedPointer,
                                                      base::AlignedPointer,
-                                                     base::AlignedSize,
                                                      JSTaggedValue,
                                                      JSTaggedValue,
                                                      JSTaggedValue,
@@ -334,7 +332,6 @@ struct InterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSi
     enum class Index : size_t {
         PcIndex = 0,
         SpIndex,
-        CallSizeIndex,
         ConstPoolIndex,
         FunctionIndex,
         ProFileTypeInfoIndex,
@@ -343,7 +340,6 @@ struct InterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSi
         BaseIndex,
         NumOfMembers
     };
-
     static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
 
     inline JSTaggedType* GetPrevFrameFp()
@@ -356,54 +352,8 @@ struct InterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSi
         return reinterpret_cast<InterpretedFrame *>(sp) - 1;
     }
 
-    static uint32_t GetSpOffset(bool isArch32)
-    {
-        return GetOffset<static_cast<size_t>(Index::SpIndex)>(isArch32);
-    }
-
-    static uint32_t GetCallSizeOffset(bool isArch32)
-    {
-        return GetOffset<static_cast<size_t>(Index::CallSizeIndex)>(isArch32);
-    }
-
-    static uint32_t GetConstpoolOffset(bool isArch32)
-    {
-        return GetOffset<static_cast<size_t>(Index::ConstPoolIndex)>(isArch32);
-    }
-
-    static uint32_t GetFunctionOffset(bool isArch32)
-    {
-        return GetOffset<static_cast<size_t>(Index::FunctionIndex)>(isArch32);
-    }
-
-    static uint32_t GetProfileTypeInfoOffset(bool isArch32)
-    {
-        return GetOffset<static_cast<size_t>(Index::ProFileTypeInfoIndex)>(isArch32);
-    }
-
-    static uint32_t GetAccOffset(bool isArch32)
-    {
-        return GetOffset<static_cast<size_t>(Index::AccIndex)>(isArch32);
-    }
-
-    static uint32_t GetEnvOffset(bool isArch32)
-    {
-        return GetOffset<static_cast<size_t>(Index::EnvIndex)>(isArch32);
-    }
-    
-    static uint32_t GetBaseOffset(bool isArch32)
-    {
-        return GetOffset<static_cast<size_t>(Index::BaseIndex)>(isArch32);
-    }
-
-    static constexpr uint32_t GetSize(bool isArch32)
-    {
-        return isArch32 ? InterpretedFrame::SizeArch32 : InterpretedFrame::SizeArch64;
-    }
-
     alignas(EAS) const uint8_t *pc {nullptr};
     alignas(EAS) JSTaggedType *sp {nullptr};
-    alignas(EAS) size_t callSize {0};
     alignas(EAS) JSTaggedValue constpool {JSTaggedValue::Hole()};
     alignas(EAS) JSTaggedValue function {JSTaggedValue::Hole()};
     alignas(EAS) JSTaggedValue profileTypeInfo {JSTaggedValue::Hole()};
@@ -411,10 +361,77 @@ struct InterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSi
     alignas(EAS) JSTaggedValue env {JSTaggedValue::Hole()};
     alignas(EAS) InterpretedFrameBase base;
 };
-
 STATIC_ASSERT_EQ_ARCH(sizeof(InterpretedFrame), InterpretedFrame::SizeArch32, InterpretedFrame::SizeArch64);
+static_assert(sizeof(InterpretedFrame) % sizeof(uint64_t) == 0u);  // the size should be the multiple of 8 bytes
 
-static_assert(sizeof(InterpretedFrame) % sizeof(uint64_t) == 0u);
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
+                                                        base::AlignedPointer,
+                                                        base::AlignedSize,
+                                                        JSTaggedValue,
+                                                        JSTaggedValue,
+                                                        JSTaggedValue,
+                                                        InterpretedFrameBase> {
+    enum class Index : size_t {
+        PcIndex = 0,
+        CallSizeIndex,
+        FunctionIndex,
+        AccIndex,
+        EnvIndex,
+        BaseIndex,
+        NumOfMembers
+    };
+    static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
+
+    inline JSTaggedType* GetPrevFrameFp()
+    {
+        return base.prev;
+    }
+
+    static AsmInterpretedFrame* GetFrameFromSp(JSTaggedType *sp)
+    {
+        return reinterpret_cast<AsmInterpretedFrame *>(sp) - 1;
+    }
+
+    static size_t GetCallSizeOffset(bool isArch32)
+    {
+        return GetOffset<static_cast<size_t>(Index::CallSizeIndex)>(isArch32);
+    }
+
+    static size_t GetFunctionOffset(bool isArch32)
+    {
+        return GetOffset<static_cast<size_t>(Index::FunctionIndex)>(isArch32);
+    }
+
+    static size_t GetAccOffset(bool isArch32)
+    {
+        return GetOffset<static_cast<size_t>(Index::AccIndex)>(isArch32);
+    }
+
+    static size_t GetEnvOffset(bool isArch32)
+    {
+        return GetOffset<static_cast<size_t>(Index::EnvIndex)>(isArch32);
+    }
+
+    static size_t GetBaseOffset(bool isArch32)
+    {
+        return GetOffset<static_cast<size_t>(Index::BaseIndex)>(isArch32);
+    }
+
+    static constexpr size_t GetSize(bool isArch32)
+    {
+        return isArch32 ? AsmInterpretedFrame::SizeArch32 : AsmInterpretedFrame::SizeArch64;
+    }
+
+    alignas(EAS) const uint8_t *pc {nullptr};
+    alignas(EAS) size_t callSize {0};
+    alignas(EAS) JSTaggedValue function {JSTaggedValue::Hole()};
+    alignas(EAS) JSTaggedValue acc {JSTaggedValue::Hole()};
+    alignas(EAS) JSTaggedValue env {JSTaggedValue::Hole()};
+    alignas(EAS) InterpretedFrameBase base;
+};
+STATIC_ASSERT_EQ_ARCH(sizeof(AsmInterpretedFrame), AsmInterpretedFrame::SizeArch32, AsmInterpretedFrame::SizeArch64);
+static_assert(sizeof(AsmInterpretedFrame) % sizeof(uint64_t) == 0u);  // the size should be the multiple of 8 bytes
 
 struct OptimizedLeaveFrame {
     FrameType type;

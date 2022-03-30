@@ -32,20 +32,28 @@ using AsmDispatchEntryPoint =
 class ConstantPool;
 class ECMAObject;
 class GeneratorContext;
+struct CallParams;
 
 class InterpreterAssembly {
 public:
+    static const uint32_t METHOD_HOTNESS_THRESHOLD = 512;
     enum ActualNumArgsOfCall : uint8_t { CALLARG0 = 0, CALLARG1, CALLARGS2, CALLARGS3 };
     static void RunInternal(JSThread *thread, ConstantPool *constpool, const uint8_t *pc, JSTaggedType *sp);
-    static inline uint32_t FindCatchBlock(JSMethod *caller, uint32_t pc);
+    static void InitStackFrame(JSThread *thread);
+    static JSTaggedValue Execute(JSThread *thread, const CallParams& params);
+    static JSTaggedValue ExecuteNative(JSThread *thread, const CallParams& params);
+    static JSTaggedValue GeneratorReEnterInterpreter(JSThread *thread, JSHandle<GeneratorContext> context);
+    static void ChangeGenContext(JSThread *thread, JSHandle<GeneratorContext> context);
+    static void ResumeContext(JSThread *thread);
+    static uint32_t FindCatchBlock(JSMethod *caller, uint32_t pc);
     static inline size_t GetJumpSizeAfterCall(const uint8_t *prevPc);
 
     static inline JSTaggedValue UpdateHotnessCounter(JSThread* thread, TaggedType *sp);
     static inline void InterpreterFrameCopyArgs(JSTaggedType *newSp, uint32_t numVregs, uint32_t numActualArgs,
                                                 uint32_t numDeclaredArgs, bool haveExtraArgs = true);
-    static inline JSTaggedValue GetThisFunction(JSTaggedType *sp);
-    static inline JSTaggedValue GetNewTarget(JSTaggedType *sp);
-    static inline uint32_t GetNumArgs(JSTaggedType *sp, uint32_t restIdx, uint32_t &startIdx);
+    static JSTaggedValue GetThisFunction(JSTaggedType *sp);
+    static JSTaggedValue GetNewTarget(JSTaggedType *sp);
+    static uint32_t GetNumArgs(JSTaggedType *sp, uint32_t restIdx, uint32_t &startIdx);
 
     static void HandleOverflow(JSThread *thread, const uint8_t *pc, JSTaggedType *sp,
                                JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
