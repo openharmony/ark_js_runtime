@@ -33,8 +33,12 @@
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/js_api_deque.h"
+#include "ecmascript/js_api_deque_iterator.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_queue_iterator.h"
+#include "ecmascript/js_api_stack.h"
+#include "ecmascript/js_api_stack_iterator.h"
 #include "ecmascript/jspandafile/class_info_extractor.h"
 #include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_api_tree_map.h"
@@ -807,6 +811,13 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
                 JSAPIQueue::Cast(*obj)->SetFront(0);
                 JSAPIQueue::Cast(*obj)->SetTail(0);
                 break;
+            case JSType::JS_API_STACK:
+                JSAPIStack::Cast(*obj)->SetTop(0);
+                break;
+            case JSType::JS_API_DEQUE:
+                JSAPIDeque::Cast(*obj)->SetFirst(0);
+                JSAPIDeque::Cast(*obj)->SetLast(0);
+                break;
             case JSType::JS_FUNCTION:
             case JSType::JS_GENERATOR_FUNCTION:
             case JSType::JS_FORIN_ITERATOR:
@@ -816,6 +827,8 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
             case JSType::JS_API_TREEMAP_ITERATOR:
             case JSType::JS_API_TREESET_ITERATOR:
             case JSType::JS_API_QUEUE_ITERATOR:
+            case JSType::JS_API_DEQUE_ITERATOR:
+            case JSType::JS_API_STACK_ITERATOR:
             case JSType::JS_ARRAY_ITERATOR:
             default:
                 UNREACHABLE();
@@ -2391,6 +2404,58 @@ JSHandle<JSAPIArrayListIterator> ObjectFactory::NewJSAPIArrayListIterator(const 
     iter->GetJSHClass()->SetExtensible(true);
     iter->SetIteratedArrayList(thread_, arrayList);
     iter->SetNextIndex(0);
+    return iter;
+}
+
+JSHandle<JSAPIStackIterator> ObjectFactory::NewJSAPIStackIterator(const JSHandle<JSAPIStack> &stack)
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> protoValue(thread_, thread_->GlobalConstants()->GetStackIteratorPrototype());
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSHClass> dynHandle(globalConst->GetHandledJSAPIStackIteratorClass());
+    dynHandle->SetPrototype(thread_, protoValue);
+    JSHandle<JSAPIStackIterator> iter(NewJSObject(dynHandle));
+    iter->GetJSHClass()->SetExtensible(true);
+    iter->SetIteratedStack(thread_, stack);
+    iter->SetNextIndex(0);
+    return iter;
+}
+
+JSHandle<TaggedArray> ObjectFactory::CopyDeque(const JSHandle<TaggedArray> &old, uint32_t newLength,
+                                               [[maybe_unused]] uint32_t oldLength, uint32_t first, uint32_t last)
+{
+    NewObjectHook();
+    size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), newLength);
+    auto header = heap_->AllocateYoungOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetArrayClass().GetTaggedObject()), size);
+    JSHandle<TaggedArray> newArray(thread_, header);
+
+    uint32_t curIndex = first;
+    // newIndex use in new TaggedArray, 0 : New TaggedArray index
+    uint32_t newIndex = 0;
+    uint32_t oldCapacity = old->GetLength();
+    newArray->SetLength(newLength);
+    while (curIndex != last) {
+        JSTaggedValue value = old->Get(curIndex);
+        newArray->Set(thread_, newIndex, value);
+        ASSERT(oldCapacity != 0);
+        curIndex = (curIndex + 1) % oldCapacity;
+        newIndex = newIndex + 1;
+    }
+    return newArray;
+}
+
+JSHandle<JSAPIDequeIterator> ObjectFactory::NewJSAPIDequeIterator(const JSHandle<JSAPIDeque> &deque)
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> protoValue(thread_, thread_->GlobalConstants()->GetDequeIteratorPrototype());
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSHClass> dynHandle(globalConst->GetHandledJSAPIDequeIteratorClass());
+    dynHandle->SetPrototype(thread_, protoValue);
+    JSHandle<JSAPIDequeIterator> iter(NewJSObject(dynHandle));
+    iter->GetJSHClass()->SetExtensible(true);
+    iter->SetIteratedDeque(thread_, deque);
+    iter->SetNextIndex(deque->GetFirst());
     return iter;
 }
 

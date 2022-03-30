@@ -334,6 +334,10 @@ public:
     bool IsJSAPITreeSetIterator() const;
     bool IsJSAPIQueue() const;
     bool IsJSAPIQueueIterator() const;
+    bool IsJSAPIDeque() const;
+    bool IsJSAPIDequeIterator() const;
+    bool IsJSAPIStack() const;
+    bool IsJSAPIStackIterator() const;
     bool IsSpecialContainer() const;
 
     bool IsPrototypeHandler() const;

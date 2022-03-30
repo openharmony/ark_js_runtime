@@ -27,8 +27,12 @@
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/js_api_deque.h"
+#include "ecmascript/js_api_deque_iterator.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_queue_iterator.h"
+#include "ecmascript/js_api_stack.h"
+#include "ecmascript/js_api_stack_iterator.h"
 #include "ecmascript/jspandafile/class_info_extractor.h"
 #include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/js_api_tree_map.h"
@@ -196,6 +200,14 @@ static JSHandle<JSAPIArrayList> NewJSAPIArrayList(JSThread *thread, ObjectFactor
     return jsArrayList;
 }
 
+static JSHandle<JSAPIStack> NewJSAPIStack(ObjectFactory *factory, JSHandle<JSTaggedValue> proto)
+{
+    JSHandle<JSHClass> stackClass = factory->NewEcmaDynClass(JSAPIStack::SIZE, JSType::JS_API_STACK, proto);
+    JSHandle<JSAPIStack> jsStack = JSHandle<JSAPIStack>::Cast(factory->NewJSObject(stackClass));
+    jsStack->SetTop(0);
+    return jsStack;
+}
+
 static JSHandle<JSAPIQueue> NewJSAPIQueue(JSThread *thread, ObjectFactory *factory, JSHandle<JSTaggedValue> proto)
 {
     JSHandle<JSHClass> queueClass = factory->NewEcmaDynClass(JSAPIQueue::SIZE, JSType::JS_API_QUEUE, proto);
@@ -206,6 +218,17 @@ static JSHandle<JSAPIQueue> NewJSAPIQueue(JSThread *thread, ObjectFactory *facto
     jsQueue->SetTail(0);
     jsQueue->SetElements(thread, newElements);
     return jsQueue;
+}
+
+static JSHandle<JSAPIDeque> NewJSAPIDeque(JSThread *thread, ObjectFactory *factory, JSHandle<JSTaggedValue> proto)
+{
+    JSHandle<JSHClass> dequeClass = factory->NewEcmaDynClass(JSAPIDeque::SIZE, JSType::JS_API_DEQUE, proto);
+    JSHandle<JSAPIDeque> jsDeque = JSHandle<JSAPIDeque>::Cast(factory->NewJSObject(dequeClass));
+    JSHandle<TaggedArray> newElements = factory->NewTaggedArray(JSAPIDeque::DEFAULT_CAPACITY_LENGTH);
+    jsDeque->SetFirst(0);
+    jsDeque->SetLast(0);
+    jsDeque->SetElements(thread, newElements);
+    return jsDeque;
 }
 
 HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
@@ -783,6 +806,32 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 JSHandle<JSAPITreeSetIterator> jsTreeSetIter =
                     factory->NewJSAPITreeSetIterator(jsTreeSet, IterationKind::KEY);
                 DUMP_FOR_HANDLE(jsTreeSetIter)
+                break;
+            }
+            case JSType::JS_API_DEQUE: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSAPIDeque::SIZE, 1)
+                JSHandle<JSAPIDeque> jsDeque = NewJSAPIDeque(thread, factory, proto);
+                DUMP_FOR_HANDLE(jsDeque)
+                break;
+            }
+            case JSType::JS_API_DEQUE_ITERATOR: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSAPIDequeIterator::SIZE, 2)
+                JSHandle<JSAPIDequeIterator> jsDequeIter =
+                    factory->NewJSAPIDequeIterator(NewJSAPIDeque(thread, factory, proto));
+                DUMP_FOR_HANDLE(jsDequeIter)
+                break;
+            }
+            case JSType::JS_API_STACK: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSAPIStack::SIZE, 1)
+                JSHandle<JSAPIStack> jsStack = NewJSAPIStack(factory, proto);
+                DUMP_FOR_HANDLE(jsStack)
+                break;
+            }
+            case JSType::JS_API_STACK_ITERATOR: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSAPIStackIterator::SIZE, 2)
+                JSHandle<JSAPIStackIterator> jsStackIter =
+                    factory->NewJSAPIStackIterator(NewJSAPIStack(factory, proto));
+                DUMP_FOR_HANDLE(jsStackIter)
                 break;
             }
             case JSType::MODULE_RECORD: {

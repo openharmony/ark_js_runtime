@@ -22,7 +22,9 @@
 #include "ecmascript/global_env.h"
 #include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_api_arraylist.h"
+#include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_queue.h"
+#include "ecmascript/js_api_stack.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/js_proxy.h"
@@ -1363,6 +1365,12 @@ JSTaggedValue FastRuntimeStub::GetContainerProperty(JSThread *thread, JSTaggedVa
         case JSType::JS_API_QUEUE:
             res = JSAPIQueue::Cast(receiver.GetTaggedObject())->Get(thread, index);
             break;
+        case JSType::JS_API_DEQUE:
+            res = JSAPIDeque::Cast(receiver.GetTaggedObject())->Get(index);
+            break;
+        case JSType::JS_API_STACK:
+            res = JSAPIStack::Cast(receiver.GetTaggedObject())->Get(index);
+            break;
         default:
             break;
     }
@@ -1379,6 +1387,12 @@ JSTaggedValue FastRuntimeStub::SetContainerProperty(JSThread *thread, JSTaggedVa
             break;
         case JSType::JS_API_QUEUE:
             res = JSAPIQueue::Cast(receiver.GetTaggedObject())->Set(thread, index, value);
+            break;
+        case JSType::JS_API_DEQUE:
+            res = JSAPIDeque::Cast(receiver.GetTaggedObject())->Set(thread, index, value);
+            break;
+        case JSType::JS_API_STACK:
+            res = JSAPIStack::Cast(receiver.GetTaggedObject())->Set(thread, index, value);
             break;
         default:
             break;

@@ -98,8 +98,12 @@ class TSFunctionType;
 class TSArrayType;
 class JSAPIArrayList;
 class JSAPIArrayListIterator;
+class JSAPIDeque;
+class JSAPIDequeIterator;
 class JSAPIQueue;
 class JSAPIQueueIterator;
+class JSAPIStack;
+class JSAPIStackIterator;
 class JSAPITreeSet;
 class JSAPITreeMap;
 class JSAPITreeSetIterator;
@@ -397,9 +401,13 @@ public:
     JSHandle<TaggedArray> CopyQueue(const JSHandle<TaggedArray> &old, uint32_t oldLength,
                                     uint32_t newLength, uint32_t front, uint32_t tail);
     JSHandle<JSAPIQueueIterator> NewJSAPIQueueIterator(const JSHandle<JSAPIQueue> &queue);
+    JSHandle<TaggedArray> CopyDeque(const JSHandle<TaggedArray> &old, uint32_t newLength, uint32_t oldLength,
+                                    uint32_t first, uint32_t last);
+    JSHandle<JSAPIDequeIterator> NewJSAPIDequeIterator(const JSHandle<JSAPIDeque> &deque);
     JSHandle<JSAPIArrayListIterator> NewJSAPIArrayListIterator(const JSHandle<JSAPIArrayList> &arrayList);
     JSHandle<JSAPITreeMapIterator> NewJSAPITreeMapIterator(const JSHandle<JSAPITreeMap> &map, IterationKind kind);
     JSHandle<JSAPITreeSetIterator> NewJSAPITreeSetIterator(const JSHandle<JSAPITreeSet> &set, IterationKind kind);
+    JSHandle<JSAPIStackIterator> NewJSAPIStackIterator(const JSHandle<JSAPIStack> &stack);
     // --------------------------------------module--------------------------------------------
     JSHandle<ModuleNamespace> NewModuleNamespace();
     JSHandle<ImportEntry> NewImportEntry();
