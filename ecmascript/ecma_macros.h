@@ -429,8 +429,8 @@
         VisitObjects(visitor);                                                                                   \
         /* visit in object fields */                                                                             \
         auto objSize = this->GetClass()->GetObjectSize();                                                        \
-        if (objSize > SIZE) {                                                                            \
-            visitor(this, ObjectSlot(ToUintPtr(this) + SIZE), ObjectSlot(ToUintPtr(this) + objSize));    \
+        if (objSize > SIZE) {                                                                                    \
+            visitor(this, ObjectSlot(ToUintPtr(this) + SIZE), ObjectSlot(ToUintPtr(this) + objSize));            \
         }                                                                                                        \
     }                                                                                                            \
     void VisitObjects(const EcmaObjectRangeVisitor &visitor)                                                     \

@@ -73,10 +73,10 @@ private:
         ParallelEvacuation *evacuation_;
     };
 
-    class Fragment {
+    class Workload {
     public:
-        Fragment(ParallelEvacuation *evacuation, Region *region) : evacuation_(evacuation), region_(region) {};
-        virtual ~Fragment() = default;
+        Workload(ParallelEvacuation *evacuation, Region *region) : evacuation_(evacuation), region_(region) {};
+        virtual ~Workload() = default;
         virtual bool Process(bool isMain) = 0;
         inline Region *GetRegion()
         {
@@ -92,36 +92,36 @@ private:
         Region *region_;
     };
 
-    class EvacuationFragment : public Fragment {
+    class EvacuationWorkload : public Workload {
     public:
-        EvacuationFragment(ParallelEvacuation *evacuation, Region *region) : Fragment(evacuation, region) {}
-        ~EvacuationFragment() = default;
+        EvacuationWorkload(ParallelEvacuation *evacuation, Region *region) : Workload(evacuation, region) {}
+        ~EvacuationWorkload() = default;
         bool Process(bool isMain) override;
     };
 
-    class UpdateRSetFragment : public Fragment {
+    class UpdateRSetWorkload : public Workload {
     public:
-        UpdateRSetFragment(ParallelEvacuation *evacuation, Region *region) : Fragment(evacuation, region) {}
-        ~UpdateRSetFragment() = default;
+        UpdateRSetWorkload(ParallelEvacuation *evacuation, Region *region) : Workload(evacuation, region) {}
+        ~UpdateRSetWorkload() = default;
         bool Process(bool isMain) override;
     };
 
-    class UpdateNewRegionFragment : public Fragment {
+    class UpdateNewRegionWorkload : public Workload {
     public:
-        UpdateNewRegionFragment(ParallelEvacuation *evacuation, Region *region) : Fragment(evacuation, region) {}
-        ~UpdateNewRegionFragment() = default;
+        UpdateNewRegionWorkload(ParallelEvacuation *evacuation, Region *region) : Workload(evacuation, region) {}
+        ~UpdateNewRegionWorkload() = default;
         bool Process(bool isMain) override;
     };
 
-    class UpdateAndSweepNewRegionFragment : public Fragment {
+    class UpdateAndSweepNewRegionWorkload : public Workload {
     public:
-        UpdateAndSweepNewRegionFragment(ParallelEvacuation *evacuation, Region *region)
-            : Fragment(evacuation, region) {}
-        ~UpdateAndSweepNewRegionFragment() = default;
+        UpdateAndSweepNewRegionWorkload(ParallelEvacuation *evacuation, Region *region)
+            : Workload(evacuation, region) {}
+        ~UpdateAndSweepNewRegionWorkload() = default;
         bool Process(bool isMain) override;
     };
 
-    bool ProcessFragments(bool isMain = false);
+    bool ProcessWorkloads(bool isMain = false);
 
     void EvacuateSpace();
     bool EvacuateSpace(TlabAllocator *allocation, bool isMain = false);
@@ -143,8 +143,8 @@ private:
     inline bool UpdateObjectSlot(ObjectSlot &slot);
     inline bool UpdateWeakObjectSlot(TaggedObject *object, ObjectSlot &slot);
 
-    inline std::unique_ptr<Fragment> GetFragmentSafe();
-    inline void AddFragment(std::unique_ptr<Fragment> region);
+    inline std::unique_ptr<Workload> GetWorkloadSafe();
+    inline void AddWorkload(std::unique_ptr<Workload> region);
 
     inline int CalculateEvacuationThreadNum();
     inline int CalculateUpdateThreadNum();
@@ -155,7 +155,7 @@ private:
     ObjectXRay objXRay_;
 
     uintptr_t waterLine_;
-    std::vector<std::unique_ptr<Fragment>> fragments_;
+    std::vector<std::unique_ptr<Workload>> workloads_;
     std::atomic_int parallel_ = 0;
     os::memory::Mutex mutex_;
     os::memory::ConditionVariable condition_;
