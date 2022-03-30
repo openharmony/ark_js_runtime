@@ -122,6 +122,27 @@ host_unittest_action("ProfileTypeInfoTest") {
   }
 }
 
+host_unittest_action("ProtoChangeDetailsTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "proto_change_details_test.cpp",
+  ]
+
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
+    sdk_libc_secshared_dep,
+  ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
+}
+
 group("unittest") {
   testonly = true
 
@@ -132,6 +153,7 @@ group("unittest") {
     ":ICHandlerTest",
     ":ICInvokeTest",
     ":ProfileTypeInfoTest",
+    ":ProtoChangeDetailsTest",
   ]
 }
 
@@ -145,5 +167,6 @@ group("host_unittest") {
     ":ICHandlerTestAction",
     ":ICInvokeTestAction",
     ":ProfileTypeInfoTestAction",
+    ":ProtoChangeDetailsTestAction",
   ]
 }
