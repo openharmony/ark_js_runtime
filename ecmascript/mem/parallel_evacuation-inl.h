@@ -101,25 +101,25 @@ void ParallelEvacuation::SetObjectFieldRSet(TaggedObject *object, JSHClass *cls)
 }
 
 
-std::unique_ptr<ParallelEvacuation::Fragment> ParallelEvacuation::GetFragmentSafe()
+std::unique_ptr<ParallelEvacuation::Workload> ParallelEvacuation::GetWorkloadSafe()
 {
     os::memory::LockHolder holder(mutex_);
-    std::unique_ptr<Fragment> unit;
-    if (!fragments_.empty()) {
-        unit = std::move(fragments_.back());
-        fragments_.pop_back();
+    std::unique_ptr<Workload> unit;
+    if (!workloads_.empty()) {
+        unit = std::move(workloads_.back());
+        workloads_.pop_back();
     }
     return unit;
 }
 
-void ParallelEvacuation::AddFragment(std::unique_ptr<Fragment> region)
+void ParallelEvacuation::AddWorkload(std::unique_ptr<Workload> region)
 {
-    fragments_.emplace_back(std::move(region));
+    workloads_.emplace_back(std::move(region));
 }
 
 int ParallelEvacuation::CalculateEvacuationThreadNum()
 {
-    int length = fragments_.size();
+    int length = workloads_.size();
     int regionPerThread = 8;
     int maxThreadNum = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum();
     return std::min(std::max(1, length / regionPerThread), maxThreadNum);
@@ -127,7 +127,7 @@ int ParallelEvacuation::CalculateEvacuationThreadNum()
 
 int ParallelEvacuation::CalculateUpdateThreadNum()
 {
-    int length = fragments_.size();
+    int length = workloads_.size();
     double regionPerThread = 1.0 / 4;
     length = static_cast<int>(std::pow(length, regionPerThread));
     int maxThreadNum = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum();

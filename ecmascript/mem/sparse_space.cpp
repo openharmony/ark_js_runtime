@@ -327,7 +327,6 @@ void OldSpace::SelectCSet()
     });
     if (collectRegionSet_.size() < PARTIAL_GC_MIN_COLLECT_REGION_SIZE) {
         LOG_ECMA_MEM(DEBUG) << "Select CSet failure: number is too few";
-        isCSetEmpty_ = true;
         collectRegionSet_.clear();
         return;
     }
@@ -346,7 +345,6 @@ void OldSpace::SelectCSet()
         allocator_->DetachFreeObjectSet(current);
         current->SetFlag(RegionFlags::IS_IN_COLLECT_SET);
     });
-    isCSetEmpty_ = false;
     sweepState_ = SweepState::NO_SWEEP;
     LOG_ECMA_MEM(DEBUG) << "Select CSet success: number is " << collectRegionSet_.size();
 }
@@ -378,7 +376,6 @@ void OldSpace::RevertCSet()
         IncrementLiveObjectSize(region->AliveObject());
     });
     collectRegionSet_.clear();
-    isCSetEmpty_ = true;
 }
 
 void OldSpace::ReclaimCSet()
@@ -392,7 +389,6 @@ void OldSpace::ReclaimCSet()
         heapRegionAllocator_->FreeRegion(region);
     });
     collectRegionSet_.clear();
-    isCSetEmpty_ = true;
 }
 
 LocalSpace::LocalSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
