@@ -416,17 +416,15 @@ public:
     void LoopBegin(Label *loopHead);
     void LoopEnd(Label *loopHead);
     // call operation
-    GateRef CallStub(const CallSignature *descriptor, GateRef glue, GateRef target,
+    GateRef CallRuntime(GateRef glue, size_t index,
         std::initializer_list<GateRef> args);
-    GateRef CallStub(const CallSignature *descriptor, GateRef glue, GateRef target, GateRef depend,
-        std::initializer_list<GateRef> args);
-    GateRef CallRuntime(const CallSignature *descriptor, GateRef glue, GateRef target,
-        std::initializer_list<GateRef> args);
-    GateRef CallRuntime(const CallSignature *descriptor, GateRef glue, GateRef target, GateRef depend,
+    GateRef CallRuntime(GateRef glue, size_t index, GateRef depend,
         std::initializer_list<GateRef> args);
     GateRef CallRuntimeTrampoline(GateRef glue, GateRef target, std::initializer_list<GateRef> args);
     GateRef CallRuntimeTrampoline(GateRef glue, GateRef target, GateRef depend, std::initializer_list<GateRef> args);
-    GateRef CallNoGCRuntime(const CallSignature *descriptor, GateRef glue, GateRef target,
+    GateRef CallNGCRuntime(GateRef glue, size_t index,
+        std::initializer_list<GateRef> args);
+    GateRef CallStub(GateRef glue, size_t index,
         std::initializer_list<GateRef> args);
     void DebugPrint(GateRef thread, std::initializer_list<GateRef> args);
     void FatalPrint(GateRef thread, std::initializer_list<GateRef> args);
