@@ -1552,14 +1552,14 @@ DEF_RUNTIME_STUBS(SuperCall)
         static_cast<uint16_t>(length.GetInt())).GetRawData();
 }
 
-DEF_RUNTIME_STUBS(SetNotCallableException)
+DEF_RUNTIME_STUBS(ThrowNotCallableException)
 {
-    RUNTIME_STUBS_HEADER(SetNotCallableException);
+    RUNTIME_STUBS_HEADER(ThrowNotCallableException);
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
     JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR, "is not callable");
     thread->SetException(error.GetTaggedValue());
-    return JSTaggedValue::Hole().GetRawData();
+    return JSTaggedValue::Exception().GetRawData();
 }
 
 DEF_RUNTIME_STUBS(SetCallConstructorException)
