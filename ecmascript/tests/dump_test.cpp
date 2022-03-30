@@ -437,6 +437,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 NEW_OBJECT_AND_DUMP(JSDisplayNames, JS_DISPLAYNAMES)
                 break;
             }
+            case JSType::JS_SHARED_ARRAY_BUFFER:
             case JSType::JS_ARRAY_BUFFER: {
                 CHECK_DUMP_FIELDS(JSObject::SIZE, JSArrayBuffer::SIZE, 2)
                 NEW_OBJECT_AND_DUMP(JSArrayBuffer, JS_ARRAY_BUFFER)

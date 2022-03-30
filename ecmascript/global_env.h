@@ -54,6 +54,7 @@ class JSThread;
     V(JSTaggedValue, BigInt64ArrayFunction, BIGINT64_ARRAY_FUNCTION_INDEX)                          \
     V(JSTaggedValue, BigUint64ArrayFunction, BIGUINT64_ARRAY_FUNCTION_INDEX)                        \
     V(JSTaggedValue, ArrayBufferFunction, ARRAY_BUFFER_FUNCTION_INDEX)                              \
+    V(JSTaggedValue, SharedArrayBufferFunction, SHAREDARRAY_BUFFER_FUNCTION_INDEX)                  \
     V(JSTaggedValue, ArrayProtoValuesFunction, ARRAY_PROTO_VALUES_FUNCTION_INDEX)                   \
     V(JSTaggedValue, DataViewFunction, DATA_VIEW_FUNCTION_INDEX)                                    \
     V(JSTaggedValue, SymbolFunction, SYMBOL_FUNCTION_INDEX)                                         \

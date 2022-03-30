@@ -952,6 +952,11 @@ inline bool JSTaggedValue::IsArrayBuffer() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsArrayBuffer();
 }
 
+inline bool JSTaggedValue::IsSharedArrayBuffer() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsSharedArrayBuffer();
+}
+
 inline bool JSTaggedValue::IsDataView() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsDataView();
