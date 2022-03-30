@@ -2455,10 +2455,9 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
         }
         Bind(&tryFastPath);
         {
-            const CallSignature *getPropertyByValue = CommonStubCSigns::Get(CommonStubCSigns::GetPropertyByValue);
-            GateRef result = CallRuntime(getPropertyByValue, glue,
-                                         GetInt64Constant(CommonStubCSigns::GetPropertyByValue),
-                                         { glue, receiver, propKey });
+            GateRef result = CallStub(glue,
+                                      CommonStubCSigns::GetPropertyByValue,
+                                      { glue, receiver, propKey });
             Label notHole(env);
             Branch(TaggedIsHole(result), &slowPath, &notHole);
             Bind(&notHole);
@@ -2551,9 +2550,8 @@ DECLARE_ASM_HANDLER(HandleStObjByValuePrefV8V8)
         }
         Bind(&tryFastPath);
         {
-            const CallSignature *setPropertyByValue = CommonStubCSigns::Get(CommonStubCSigns::SetPropertyByValue);
-            GateRef result = CallRuntime(setPropertyByValue, glue,
-                GetInt64Constant(CommonStubCSigns::SetPropertyByValue),
+            GateRef result = CallStub(glue,
+                CommonStubCSigns::SetPropertyByValue,
                 { glue, receiver, propKey, acc }); // acc is value
             Label notHole(env);
             Branch(TaggedIsHole(result), &slowPath, &notHole);
@@ -2598,9 +2596,8 @@ DECLARE_ASM_HANDLER(HandleStOwnByValuePrefV8V8)
     Bind(&notClassPrototype);
     {
         // fast path
-        const CallSignature *setPropertyByValue = CommonStubCSigns::Get(CommonStubCSigns::SetPropertyByValue);
-        GateRef result = CallRuntime(setPropertyByValue, glue, GetInt64Constant(CommonStubCSigns::SetPropertyByValue),
-                                     { glue, receiver, propKey, acc }); // acc is value
+        GateRef result = CallStub(glue, CommonStubCSigns::SetPropertyByValue,
+                                  { glue, receiver, propKey, acc }); // acc is value
         Label notHole(env);
         Branch(TaggedIsHole(result), &slowPath, &notHole);
         Bind(&notHole);
@@ -2731,9 +2728,8 @@ DECLARE_ASM_HANDLER(HandleLdObjByIndexPrefV8Imm32)
     Branch(TaggedIsHeapObject(receiver), &fastPath, &slowPath);
     Bind(&fastPath);
     {
-        const CallSignature *getPropertyByIndex = CommonStubCSigns::Get(CommonStubCSigns::GetPropertyByIndex);
-        GateRef result = CallRuntime(getPropertyByIndex, glue, GetInt64Constant(CommonStubCSigns::GetPropertyByIndex),
-                                     { glue, receiver, index });
+        GateRef result = CallStub(glue, CommonStubCSigns::GetPropertyByIndex,
+                                  { glue, receiver, index });
         Label notHole(env);
         Branch(TaggedIsHole(result), &slowPath, &notHole);
         Bind(&notHole);
@@ -2776,9 +2772,8 @@ DECLARE_ASM_HANDLER(HandleStObjByIndexPrefV8Imm32)
     Branch(TaggedIsHeapObject(receiver), &fastPath, &slowPath);
     Bind(&fastPath);
     {
-        const CallSignature *setPropertyByIndex = CommonStubCSigns::Get(CommonStubCSigns::SetPropertyByIndex);
-        GateRef result = CallRuntime(setPropertyByIndex, glue, GetInt64Constant(CommonStubCSigns::SetPropertyByIndex),
-                                     { glue, receiver, index, acc }); // acc is value
+        GateRef result = CallStub(glue, CommonStubCSigns::SetPropertyByIndex,
+                                  { glue, receiver, index, acc }); // acc is value
         Label notHole(env);
         Branch(TaggedIsHole(result), &slowPath, &notHole);
         Bind(&notHole);
@@ -2820,9 +2815,8 @@ DECLARE_ASM_HANDLER(HandleStOwnByIndexPrefV8Imm32)
     Bind(&notClassPrototype);
     {
         // fast path
-        const CallSignature *setPropertyByIndex = CommonStubCSigns::Get(CommonStubCSigns::SetPropertyByIndex);
-        GateRef result = CallRuntime(setPropertyByIndex, glue, GetInt64Constant(CommonStubCSigns::SetPropertyByIndex),
-                                     { glue, receiver, index, acc }); // acc is value
+        GateRef result = CallStub(glue, CommonStubCSigns::SetPropertyByIndex,
+                                  { glue, receiver, index, acc }); // acc is value
         Label notHole(env);
         Branch(TaggedIsHole(result), &slowPath, &notHole);
         Bind(&notHole);
@@ -3703,9 +3697,8 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
         {
             GateRef stringId = ReadInst32_1(pc);
             GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
-            const CallSignature *getPropertyByName = CommonStubCSigns::Get(CommonStubCSigns::GetPropertyByName);
-            result = CallRuntime(getPropertyByName, glue,
-                GetInt64Constant(CommonStubCSigns::GetPropertyByName), {
+            result = CallStub(glue,
+                CommonStubCSigns::GetPropertyByName, {
                 glue, receiver, propKey
             });
             Branch(TaggedIsHole(*result), &slowPath, &notHole);
@@ -3795,8 +3788,7 @@ DECLARE_ASM_HANDLER(HandleStObjByNamePrefId32V8)
         {
             GateRef stringId = ReadInst32_1(pc);
             GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
-            const CallSignature *setPropertyByName = CommonStubCSigns::Get(CommonStubCSigns::SetPropertyByName);
-            result = CallRuntime(setPropertyByName, glue, GetInt64Constant(CommonStubCSigns::SetPropertyByName), {
+            result = CallStub(glue, CommonStubCSigns::SetPropertyByName, {
                 glue, receiver, propKey, acc
             });
             Branch(TaggedIsHole(*result), &slowPath, &checkResult);
@@ -3848,9 +3840,8 @@ DECLARE_ASM_HANDLER(HandleStOwnByValueWithNameSetPrefV8V8)
             Branch(IsClassPrototype(receiver), &slowPath, &notClassPrototype);
             Bind(&notClassPrototype);
             {
-                const CallSignature *setPropertyByValue = CommonStubCSigns::Get(CommonStubCSigns::SetPropertyByValue);
-                GateRef res = CallRuntime(setPropertyByValue, glue,
-                    GetInt64Constant(CommonStubCSigns::SetPropertyByValue),
+                GateRef res = CallStub(glue,
+                    CommonStubCSigns::SetPropertyByValue,
                     { glue, receiver, propKey, acc });
                 Branch(TaggedIsHole(res), &slowPath, &notHole);
                 Bind(&notHole);
@@ -5009,7 +5000,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Branch(IsCallable(func), &funcIsCallable, &funcNotCallable);                                     \
     Bind(&funcNotCallable);                                                                          \
     {                                                                                                \
-        CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SetNotCallableException)), {});       \
+        CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(ThrowNotCallableException)), {});     \
         DISPATCH_LAST();                                                                             \
     }                                                                                                \
     Bind(&funcIsCallable);                                                                           \

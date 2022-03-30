@@ -348,58 +348,57 @@ inline void Stub::Bind(Label *label)
     env_.SetCurrentLabel(label);
 }
 
-inline GateRef Stub::CallStub(const CallSignature *descriptor, GateRef glue, GateRef target,
+inline GateRef Stub::CallRuntime(GateRef glue, size_t index,
     std::initializer_list<GateRef> args)
 {
-    auto depend = env_.GetCurrentLabel()->GetDepend();
-    GateRef result = env_.GetCircuitBuilder().Call(descriptor, glue, target, args, depend);
-    env_.GetCurrentLabel()->SetDepend(result);
-    return result;
-}
-inline GateRef Stub::CallStub(const CallSignature *descriptor, GateRef glue, GateRef target, GateRef depend,
-    std::initializer_list<GateRef> args)
-{
-    GateRef result = env_.GetCircuitBuilder().Call(descriptor, glue, target, args, depend);
-    env_.GetCurrentLabel()->SetDepend(result);
-    return result;
-}
-
-inline GateRef Stub::CallRuntime(const CallSignature *descriptor, GateRef glue, GateRef target,
-    std::initializer_list<GateRef> args)
-{
+    const CallSignature *descriptor = RuntimeStubCSigns::Get(index);
+    GateRef target = GetIntPtrConstant(index);
     auto depend = env_.GetCurrentLabel()->GetDepend();
     GateRef result = env_.GetCircuitBuilder().Call(descriptor, glue, target, args, depend);
     env_.GetCurrentLabel()->SetDepend(result);
     return result;
 }
 
-inline GateRef Stub::CallRuntime(const CallSignature *descriptor, GateRef glue, GateRef target, GateRef depend,
+inline GateRef Stub::CallRuntime(GateRef glue, size_t index, GateRef depend,
     std::initializer_list<GateRef> args)
 {
+    const CallSignature *descriptor = RuntimeStubCSigns::Get(index);
+    GateRef target = GetIntPtrConstant(index);
     GateRef result = env_.GetCircuitBuilder().Call(descriptor, glue, target, args, depend);
     env_.GetCurrentLabel()->SetDepend(result);
     return result;
 }
 
-inline GateRef Stub::CallNoGCRuntime(const CallSignature *descriptor, GateRef glue, GateRef target,
+inline GateRef Stub::CallNGCRuntime(GateRef glue, size_t index,
     std::initializer_list<GateRef> args)
 {
+    const CallSignature *descriptor = RuntimeStubCSigns::Get(index);
+    GateRef target = GetIntPtrConstant(index);
     auto depend = env_.GetCurrentLabel()->GetDepend();
     GateRef result = env_.GetCircuitBuilder().NoGcRuntimeCall(descriptor, glue, target, depend, args);
     env_.GetCurrentLabel()->SetDepend(result);
     return result;
 }
 
+inline GateRef Stub::CallStub(GateRef glue, size_t index,
+    std::initializer_list<GateRef> args)
+{
+    const CallSignature *descriptor = CommonStubCSigns::Get(index);
+    GateRef target = GetIntPtrConstant(index);
+    auto depend = env_.GetCurrentLabel()->GetDepend();
+    GateRef result = env_.GetCircuitBuilder().Call(descriptor, glue, target, args, depend);
+    env_.GetCurrentLabel()->SetDepend(result);
+    return result;
+}
+
 inline void Stub::DebugPrint(GateRef glue, std::initializer_list<GateRef> args)
 {
-    const CallSignature *debugPrint = RuntimeStubCSigns::Get(RTSTUB_ID(DebugPrint));
-    CallNoGCRuntime(debugPrint, glue, GetInt64Constant(RTSTUB_ID(DebugPrint)), args);
+    CallNGCRuntime(glue, RTSTUB_ID(DebugPrint), args);
 }
 
 inline void Stub::FatalPrint(GateRef glue, std::initializer_list<GateRef> args)
 {
-    const CallSignature *fatalPrint = RuntimeStubCSigns::Get(RTSTUB_ID(FatalPrint));
-    CallNoGCRuntime(fatalPrint, glue, GetInt64Constant(RTSTUB_ID(FatalPrint)), args);
+    CallNGCRuntime(glue, RTSTUB_ID(FatalPrint), args);
 }
 
 inline GateRef Stub::CallRuntimeTrampoline(GateRef glue, GateRef target, std::initializer_list<GateRef> args)
