@@ -178,7 +178,7 @@ extern "C" void HandleCommonCall(uintptr_t glue, uint64_t callType, uintptr_t sp
     V(DefineGeneratorFunc, 2)                \
     V(DefineAsyncFunc, 2)                    \
     V(DefineMethod, 3)                       \
-    V(SetNotCallableException, 0)            \
+    V(ThrowNotCallableException, 0)          \
     V(SetCallConstructorException, 0)        \
     V(SetStackOverflowException, 0)          \
     V(CallNative, 3)                         \
