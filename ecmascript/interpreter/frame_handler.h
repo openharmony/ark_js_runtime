@@ -45,9 +45,15 @@ public:
     bool IsBreakFrame() const
     {
         ASSERT(HasFrame());
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        AsmInterpretedFrame *state = AsmInterpretedFrame::GetFrameFromSp(sp_);
+        return state->function == JSTaggedValue::Hole();
+#else
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
         return state->sp == nullptr;
+#endif
     }
     void PrevFrame();
 
