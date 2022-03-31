@@ -116,6 +116,9 @@ void StubCompiler::RunPipeline(LLVMModule &module)
 bool StubCompiler::BuildStubModuleAndSave(const std::string &triple, const std::string &commonStubFile,
     const std::string &bcHandlerStubFile)
 {
+    BytecodeStubCSigns::Initialize();
+    CommonStubCSigns::Initialize();
+    RuntimeStubCSigns::Initialize();
     size_t res = 0;
     if (!commonStubFile.empty()) {
         std::cerr << "compiling common stubs" << std::endl;
@@ -169,9 +172,7 @@ int main(const int argc, const char **argv)
     std::string commonStubFile = stubOptions.WasSetComStubOut() ? stubOptions.GetComStubOut() : "";
     std::string bcHandlerFile = stubOptions.WasSetBcStubOut() ? stubOptions.GetBcStubOut() : "";
     std::string compiledStubList = stubOptions.GetCompiledStubs();
-    panda::ecmascript::kungfu::BytecodeStubCSigns::Initialize();
-    panda::ecmascript::kungfu::CommonStubCSigns::Initialize();
-    panda::ecmascript::kungfu::RuntimeStubCSigns::Initialize();
+
     panda::ecmascript::kungfu::StubCompiler compiler;
     bool res = compiler.BuildStubModuleAndSave(tripleString, commonStubFile, bcHandlerFile);
     std::cerr << "stub compiler run finish, result condition(T/F):" << std::boolalpha << res << std::endl;

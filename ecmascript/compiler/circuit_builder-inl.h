@@ -19,32 +19,22 @@
 
 namespace panda::ecmascript::kungfu {
 // constant
-GateRef CircuitBuilder::TrueConstant()
+GateRef CircuitBuilder::True()
 {
-    return TruncInt32ToInt1(Int32Constant(1));
+    return TruncInt32ToInt1(Int32(1));
 }
 
-GateRef CircuitBuilder::FalseConstant()
+GateRef CircuitBuilder::False()
 {
-    return TruncInt32ToInt1(Int32Constant(0));
+    return TruncInt32ToInt1(Int32(0));
 }
 
 // call operation
-GateRef CircuitBuilder::CallRuntime(const CallSignature *signature, GateRef glue, GateRef target,
-    const std::vector<GateRef> &args)
+GateRef CircuitBuilder::CallRuntime(GateRef glue, int index, const std::vector<GateRef> &args)
 {
     auto label = lm_->GetCurrentLabel();
     auto depend = label->GetDepend();
-    GateRef result = Call(signature, glue, target, args, depend);
-    label->SetDepend(result);
-    return result;
-}
-
-GateRef CircuitBuilder::CallRuntimeTrampoline(GateRef glue, GateRef target,
-    const std::vector<GateRef> &args)
-{
-    auto label = lm_->GetCurrentLabel();
-    auto depend = label->GetDepend();
+    GateRef target = Int64(index);
     GateRef result = RuntimeCall(glue, target, depend, args);
     label->SetDepend(result);
     return result;
@@ -78,7 +68,7 @@ GateRef CircuitBuilder::Store(VariableType type, GateRef base, GateRef offset, G
 GateRef CircuitBuilder::TaggedCastToInt64(GateRef x)
 {
     GateRef tagged = ChangeTaggedPointerToInt64(x);
-    return Int64And(tagged, Int64Constant(~JSTaggedValue::TAG_MASK));
+    return Int64And(tagged, Int64(~JSTaggedValue::TAG_MASK));
 }
 
 GateRef CircuitBuilder::TaggedCastToInt32(GateRef x)
@@ -89,7 +79,7 @@ GateRef CircuitBuilder::TaggedCastToInt32(GateRef x)
 GateRef CircuitBuilder::TaggedCastToDouble(GateRef x)
 {
     GateRef tagged = ChangeTaggedPointerToInt64(x);
-    GateRef val = Int64Sub(tagged, Int64Constant(JSTaggedValue::DOUBLE_ENCODE_OFFSET));
+    GateRef val = Int64Sub(tagged, Int64(JSTaggedValue::DOUBLE_ENCODE_OFFSET));
     return CastInt64ToFloat64(val);
 }
 
@@ -106,12 +96,12 @@ GateRef CircuitBuilder::ChangeInt64ToTagged(GateRef x)
 // bit operation
 GateRef CircuitBuilder::TaggedSpecialValueChecker(GateRef x, JSTaggedType type)
 {
-    return Int64Equal(x, Int64Constant(type));
+    return Int64Equal(x, Int64(type));
 }
 GateRef CircuitBuilder::TaggedIsInt(GateRef x)
 {
-    return Int64Equal(Int64And(x, Int64Constant(JSTaggedValue::TAG_MASK)),
-                      Int64Constant(JSTaggedValue::TAG_INT));
+    return Int64Equal(Int64And(x, Int64(JSTaggedValue::TAG_MASK)),
+                      Int64(JSTaggedValue::TAG_INT));
 }
 
 GateRef CircuitBuilder::TaggedIsDouble(GateRef x)
@@ -121,8 +111,8 @@ GateRef CircuitBuilder::TaggedIsDouble(GateRef x)
 
 GateRef CircuitBuilder::TaggedIsObject(GateRef x)
 {
-    return Int64Equal(Int64And(x, Int64Constant(JSTaggedValue::TAG_MASK)),
-                      Int64Constant(JSTaggedValue::TAG_OBJECT));
+    return Int64Equal(Int64And(x, Int64(JSTaggedValue::TAG_MASK)),
+                      Int64(JSTaggedValue::TAG_OBJECT));
 }
 
 GateRef CircuitBuilder::TaggedIsNumber(GateRef x)
@@ -132,38 +122,38 @@ GateRef CircuitBuilder::TaggedIsNumber(GateRef x)
 
 GateRef CircuitBuilder::TaggedIsHole(GateRef x)
 {
-    return Int64Equal(x, Int64Constant(JSTaggedValue::VALUE_HOLE));
+    return Int64Equal(x, Int64(JSTaggedValue::VALUE_HOLE));
 }
 
 GateRef CircuitBuilder::TaggedIsNotHole(GateRef x)
 {
-    return Int64NotEqual(x, Int64Constant(JSTaggedValue::VALUE_HOLE));
+    return Int64NotEqual(x, Int64(JSTaggedValue::VALUE_HOLE));
 }
 
 GateRef CircuitBuilder::TaggedIsUndefined(GateRef x)
 {
-    return Int64Equal(x, Int64Constant(JSTaggedValue::VALUE_UNDEFINED));
+    return Int64Equal(x, Int64(JSTaggedValue::VALUE_UNDEFINED));
 }
 
 GateRef CircuitBuilder::TaggedIsException(GateRef x)
 {
-    return Int64Equal(x, Int64Constant(JSTaggedValue::VALUE_EXCEPTION));
+    return Int64Equal(x, Int64(JSTaggedValue::VALUE_EXCEPTION));
 }
 
 GateRef CircuitBuilder::TaggedIsSpecial(GateRef x)
 {
     return TruncInt32ToInt1(Int32And(SExtInt1ToInt32(Int64Equal(Int64And(x,
-        Int64Constant(~JSTaggedValue::TAG_SPECIAL_MASK)),
-        Int64Constant(0))), Int32Or(SExtInt1ToInt32(Int64NotEqual(Int64And(x,
-        Int64Constant(JSTaggedValue::TAG_SPECIAL_VALUE)),
-        Int64Constant(0))), SExtInt1ToInt32(TaggedSpecialValueChecker(x, JSTaggedValue::VALUE_HOLE)))));
+        Int64(~JSTaggedValue::TAG_SPECIAL_MASK)),
+        Int64(0))), Int32Or(SExtInt1ToInt32(Int64NotEqual(Int64And(x,
+        Int64(JSTaggedValue::TAG_SPECIAL_VALUE)),
+        Int64(0))), SExtInt1ToInt32(TaggedSpecialValueChecker(x, JSTaggedValue::VALUE_HOLE)))));
 }
 
 GateRef CircuitBuilder::TaggedIsHeapObject(GateRef x)
 {
     return TruncInt32ToInt1(Int32And(SExtInt1ToInt32(TaggedIsObject(x)),
         SExtInt1ToInt32(Int32Equal(SExtInt1ToInt32(TaggedIsSpecial(x)),
-        Int32Constant(0)))));
+        Int32(0)))));
 }
 
 GateRef CircuitBuilder::TaggedIsGeneratorObject(GateRef x)
@@ -171,9 +161,9 @@ GateRef CircuitBuilder::TaggedIsGeneratorObject(GateRef x)
     GateRef isHeapObj = SExtInt1ToInt32(TaggedIsHeapObject(x));
     GateRef objType = GetObjectType(LoadHClass(x));
     GateRef isGeneratorObj = Int32Or(SExtInt1ToInt32(Int32Equal(objType,
-        Int32Constant(static_cast<int32_t>(JSType::JS_GENERATOR_OBJECT)))),
+        Int32(static_cast<int32_t>(JSType::JS_GENERATOR_OBJECT)))),
         SExtInt1ToInt32(Int32Equal(objType,
-        Int32Constant(static_cast<int32_t>(JSType::JS_ASYNC_FUNC_OBJECT)))));
+        Int32(static_cast<int32_t>(JSType::JS_ASYNC_FUNC_OBJECT)))));
     return TruncInt32ToInt1(Int32And(isHeapObj, isGeneratorObj));
 }
 
@@ -187,8 +177,8 @@ GateRef CircuitBuilder::TaggedIsWeak(GateRef x)
 {
     return TruncInt32ToInt1(Int32And(SExtInt1ToInt32(TaggedIsHeapObject(x)),
         SExtInt1ToInt32(Int64Equal(Int64And(x,
-        Int64Constant(JSTaggedValue::TAG_WEAK_MASK)),
-        Int64Constant(1)))));
+        Int64(JSTaggedValue::TAG_WEAK_MASK)),
+        Int64(1)))));
 }
 
 GateRef CircuitBuilder::TaggedIsPrototypeHandler(GateRef x)
@@ -216,70 +206,70 @@ GateRef CircuitBuilder::TaggedIsBoolean(GateRef x)
 
 GateRef CircuitBuilder::TaggedGetInt(GateRef x)
 {
-    return TruncInt64ToInt32(Int64And(x, Int64Constant(~JSTaggedValue::TAG_MASK)));
+    return TruncInt64ToInt32(Int64And(x, Int64(~JSTaggedValue::TAG_MASK)));
 }
 
 GateRef CircuitBuilder::Int8BuildTaggedTypeWithNoGC(GateRef x)
 {
     GateRef val = ZExtInt8ToInt64(x);
-    return Int64Or(val, Int64Constant(JSTaggedValue::TAG_INT));
+    return Int64Or(val, Int64(JSTaggedValue::TAG_INT));
 }
 
 GateRef CircuitBuilder::Int16BuildTaggedWithNoGC(GateRef x)
 {
     GateRef val = ZExtInt16ToInt64(x);
-    return ChangeInt64ToTagged(Int64Or(val, Int64Constant(JSTaggedValue::TAG_INT)));
+    return ChangeInt64ToTagged(Int64Or(val, Int64(JSTaggedValue::TAG_INT)));
 }
 
 GateRef CircuitBuilder::Int16BuildTaggedTypeWithNoGC(GateRef x)
 {
     GateRef val = ZExtInt16ToInt64(x);
-    return Int64Or(val, Int64Constant(JSTaggedValue::TAG_INT));
+    return Int64Or(val, Int64(JSTaggedValue::TAG_INT));
 }
 
 GateRef CircuitBuilder::IntBuildTaggedWithNoGC(GateRef x)
 {
     GateRef val = ZExtInt32ToInt64(x);
-    return ChangeInt64ToTagged(Int64Or(val, Int64Constant(JSTaggedValue::TAG_INT)));
+    return ChangeInt64ToTagged(Int64Or(val, Int64(JSTaggedValue::TAG_INT)));
 }
 
 GateRef CircuitBuilder::IntBuildTaggedTypeWithNoGC(GateRef x)
 {
     GateRef val = ZExtInt32ToInt64(x);
-    return Int64Or(val, Int64Constant(JSTaggedValue::TAG_INT));
+    return Int64Or(val, Int64(JSTaggedValue::TAG_INT));
 }
 
 GateRef CircuitBuilder::DoubleBuildTaggedWithNoGC(GateRef x)
 {
     GateRef val = CastDoubleToInt64(x);
     return ChangeInt64ToTagged(Int64Add(val,
-        Int64Constant(JSTaggedValue::DOUBLE_ENCODE_OFFSET)));
+        Int64(JSTaggedValue::DOUBLE_ENCODE_OFFSET)));
 }
 
 GateRef CircuitBuilder::DoubleBuildTaggedTypeWithNoGC(GateRef x)
 {
     GateRef val = CastDoubleToInt64(x);
-    return Int64Add(val, Int64Constant(JSTaggedValue::DOUBLE_ENCODE_OFFSET));
+    return Int64Add(val, Int64(JSTaggedValue::DOUBLE_ENCODE_OFFSET));
 }
 
 GateRef CircuitBuilder::IntBuildTagged(GateRef x)
 {
     GateRef val = ZExtInt32ToInt64(x);
     GetCircuit()->SetGateType(val, GateType::TAGGED_VALUE);
-    return Int64Or(val, Int64Constant(JSTaggedValue::TAG_INT));
+    return Int64Or(val, Int64(JSTaggedValue::TAG_INT));
 }
 
 GateRef CircuitBuilder::Int64BuildTagged(GateRef x)
 {
     GetCircuit()->SetGateType(x, GateType::TAGGED_VALUE);
-    return Int64Or(x, Int64Constant(JSTaggedValue::TAG_INT));
+    return Int64Or(x, Int64(JSTaggedValue::TAG_INT));
 }
 
 GateRef CircuitBuilder::DoubleBuildTagged(GateRef x)
 {
     GateRef val = CastDoubleToInt64(x);
     GetCircuit()->SetGateType(val, GateType::TAGGED_VALUE);
-    return Int64Add(val, Int64Constant(JSTaggedValue::DOUBLE_ENCODE_OFFSET));
+    return Int64Add(val, Int64(JSTaggedValue::DOUBLE_ENCODE_OFFSET));
 }
 
 GateRef CircuitBuilder::TaggedTrue()
@@ -295,74 +285,74 @@ GateRef CircuitBuilder::TaggedFalse()
 // object operation
 GateRef CircuitBuilder::LoadHClass(GateRef object)
 {
-    GateRef offset = Int32Constant(0);
+    GateRef offset = Int32(0);
     return Load(VariableType::JS_POINTER(), object, offset);
 }
 
 GateRef CircuitBuilder::IsJsType(GateRef obj, JSType type)
 {
     GateRef objectType = GetObjectType(LoadHClass(obj));
-    return Int32Equal(objectType, Int32Constant(static_cast<int32_t>(type)));
+    return Int32Equal(objectType, Int32(static_cast<int32_t>(type)));
 }
 
 GateRef CircuitBuilder::GetObjectType(GateRef hClass)
 {
-    GateRef bitfieldOffset = IntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = IntPtr(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
-    return Int32And(bitfield, Int32Constant((1LU << JSHClass::ObjectTypeBits::SIZE) - 1));
+    return Int32And(bitfield, Int32((1LU << JSHClass::ObjectTypeBits::SIZE) - 1));
 }
 
 GateRef CircuitBuilder::IsDictionaryModeByHClass(GateRef hClass)
 {
-    GateRef bitfieldOffset = Int32Constant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = Int32(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
     return Int32NotEqual(Int32And(UInt32LSR(bitfield,
-        Int32Constant(JSHClass::IsDictionaryBit::START_BIT)),
-        Int32Constant((1LU << JSHClass::IsDictionaryBit::SIZE) - 1)),
-        Int32Constant(0));
+        Int32(JSHClass::IsDictionaryBit::START_BIT)),
+        Int32((1LU << JSHClass::IsDictionaryBit::SIZE) - 1)),
+        Int32(0));
 }
 
 GateRef CircuitBuilder::IsDictionaryElement(GateRef hClass)
 {
-    GateRef bitfieldOffset = Int32Constant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = Int32(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
     return Int32NotEqual(Int32And(UInt32LSR(bitfield,
-        Int32Constant(JSHClass::DictionaryElementBits::START_BIT)),
-        Int32Constant((1LU << JSHClass::DictionaryElementBits::SIZE) - 1)),
-        Int32Constant(0));
+        Int32(JSHClass::DictionaryElementBits::START_BIT)),
+        Int32((1LU << JSHClass::DictionaryElementBits::SIZE) - 1)),
+        Int32(0));
 }
 
 GateRef CircuitBuilder::IsClassConstructor(GateRef object)
 {
     GateRef hClass = LoadHClass(object);
-    GateRef bitfieldOffset = Int32Constant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = Int32(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
     return Int32NotEqual(Int32And(UInt32LSR(bitfield,
-        Int32Constant(JSHClass::ClassConstructorBit::START_BIT)),
-        Int32Constant((1LU << JSHClass::ClassConstructorBit::SIZE) - 1)),
-        Int32Constant(0));
+        Int32(JSHClass::ClassConstructorBit::START_BIT)),
+        Int32((1LU << JSHClass::ClassConstructorBit::SIZE) - 1)),
+        Int32(0));
 }
 
 GateRef CircuitBuilder::IsClassPrototype(GateRef object)
 {
     GateRef hClass = LoadHClass(object);
-    GateRef bitfieldOffset = Int32Constant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = Int32(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
     return Int32NotEqual(Int32And(UInt32LSR(bitfield,
-        Int32Constant(JSHClass::ClassPrototypeBit::START_BIT)),
-        Int32Constant((1LU << JSHClass::ClassPrototypeBit::SIZE) - 1)),
-        Int32Constant(0));
+        Int32(JSHClass::ClassPrototypeBit::START_BIT)),
+        Int32((1LU << JSHClass::ClassPrototypeBit::SIZE) - 1)),
+        Int32(0));
 }
 
 GateRef CircuitBuilder::IsExtensible(GateRef object)
 {
     GateRef hClass = LoadHClass(object);
-    GateRef bitfieldOffset = Int32Constant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = Int32(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
     return Int32NotEqual(Int32And(UInt32LSR(bitfield,
-        Int32Constant(JSHClass::ExtensibleBit::START_BIT)),
-        Int32Constant((1LU << JSHClass::ExtensibleBit::SIZE) - 1)),
-        Int32Constant(0));
+        Int32(JSHClass::ExtensibleBit::START_BIT)),
+        Int32((1LU << JSHClass::ExtensibleBit::SIZE) - 1)),
+        Int32(0));
 }
 
 GateRef CircuitBuilder::IsEcmaObject(GateRef obj)
@@ -371,15 +361,15 @@ GateRef CircuitBuilder::IsEcmaObject(GateRef obj)
     lm_->PushCurrentLabel(&subentry);
     Label exit(lm_);
     Label isHeapObject(lm_);
-    DEFVAlUE(result, lm_, VariableType::BOOL(), FalseConstant());
+    DEFVAlUE(result, lm_, VariableType::BOOL(), False());
     lm_->Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
     lm_->Bind(&isHeapObject);
     {
         GateRef objectType = GetObjectType(LoadHClass(obj));
         auto ret1 = Int32And(ZExtInt1ToInt32(Int32LessThanOrEqual(objectType,
-            Int32Constant(static_cast<int32_t>(JSType::ECMA_OBJECT_END)))),
+            Int32(static_cast<int32_t>(JSType::ECMA_OBJECT_END)))),
             ZExtInt1ToInt32(Int32GreaterThanOrEqual(objectType,
-            Int32Constant(static_cast<int32_t>(JSType::ECMA_OBJECT_BEGIN)))));
+            Int32(static_cast<int32_t>(JSType::ECMA_OBJECT_BEGIN)))));
         result = TruncInt32ToInt1(ret1);
         lm_->Jump(&exit);
     }

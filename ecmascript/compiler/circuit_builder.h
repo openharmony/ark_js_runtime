@@ -152,13 +152,13 @@ public:
         int valueCounts, VariableType type = VariableType::VOID());
     GateRef Selector(OpCode opcode, GateRef control, const std::vector<GateRef> &values,
         int valueCounts, VariableType type = VariableType::VOID());
-    GateRef Int8Constant(int8_t val);
-    GateRef Int16Constant(int16_t val);
-    GateRef Int32Constant(int32_t value);
-    GateRef Int64Constant(int64_t value);
-    GateRef IntPtrConstant(int64_t val);
-    GateRef BooleanConstant(bool value);
-    GateRef DoubleConstant(double value);
+    GateRef Int8(int8_t val);
+    GateRef Int16(int16_t val);
+    GateRef Int32(int32_t value);
+    GateRef Int64(int64_t value);
+    GateRef IntPtr(int64_t val);
+    GateRef Boolean(bool value);
+    GateRef Double(double value);
     GateRef UndefineConstant(GateType type);
     GateRef HoleConstant(GateType type);
     GateRef NullConstant(GateType type);
@@ -197,12 +197,10 @@ public:
         return lowBuilder_.GetCircuit();
     }
     // constant
-    inline GateRef TrueConstant();
-    inline GateRef FalseConstant();
+    inline GateRef True();
+    inline GateRef False();
     // call operation
-    inline GateRef CallRuntime(const CallSignature *signature, GateRef glue, GateRef target,
-                               const std::vector<GateRef> & args);
-    inline GateRef CallRuntimeTrampoline(GateRef glue, GateRef target, const std::vector<GateRef> &args);
+    inline GateRef CallRuntime(GateRef glue, int id, const std::vector<GateRef> &args);
     // memory
     inline GateRef Load(VariableType type, GateRef base, GateRef offset);
     inline GateRef Store(VariableType type, GateRef base, GateRef offset, GateRef value);

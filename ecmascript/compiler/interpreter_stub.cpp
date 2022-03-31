@@ -41,7 +41,7 @@ void name##Stub::GenerateCircuit(const CompilationConfig *cfg)                  
     GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */  \
     GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */                      \
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */           \
-    DebugPrint(glue, { GetInt32Constant(GET_MESSAGE_STRING_ID(name)) });                  \
+    DebugPrint(glue, { Int32(GET_MESSAGE_STRING_ID(name)) });                  \
     GenerateCircuitImpl(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);   \
 }                                                                                         \
 void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp,                \
@@ -68,11 +68,11 @@ void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp,      
 
 #define DISPATCH(format)                                                                  \
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,               \
-             GetIntPtrConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::format)))
+             IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::format)))
 
 #define DISPATCH_WITH_ACC(format)                                                         \
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter,           \
-             GetIntPtrConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::format)))
+             IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::format)))
 
 #define DISPATCH_LAST()                                                                   \
     DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter)           \
@@ -80,29 +80,28 @@ void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp,      
 #define DISPATCH_LAST_WITH_ACC()                                                          \
     DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter)       \
 
-#define UPDATE_HOTNESS(_sp)                                                                         \
-    varHotnessCounter = Int32Add(offset, *varHotnessCounter);                                       \
-    Branch(Int32LessThan(*varHotnessCounter, GetInt32Constant(0)), &slowPath, &dispatch);           \
-    Bind(&slowPath);                                                                                \
-    {                                                                                               \
-        varProfileTypeInfo = CallRuntimeTrampoline(glue,                                            \
-            GetInt64Constant(RTSTUB_ID(UpdateHotnessCounter)), {});                                 \
-        varHotnessCounter = GetInt32Constant(InterpreterAssembly::METHOD_HOTNESS_THRESHOLD);        \
-        Jump(&dispatch);                                                                            \
-    }                                                                                               \
+#define UPDATE_HOTNESS(_sp)                                                               \
+    varHotnessCounter = Int32Add(offset, *varHotnessCounter);                             \
+    Branch(Int32LessThan(*varHotnessCounter, Int32(0)), &slowPath, &dispatch);            \
+    Bind(&slowPath);                                                                      \
+    {                                                                                     \
+        varProfileTypeInfo = CallRuntime(glue, RTSTUB_ID(UpdateHotnessCounter), {});      \
+        varHotnessCounter = Int32(InterpreterAssembly::METHOD_HOTNESS_THRESHOLD);         \
+        Jump(&dispatch);                                                                  \
+    }                                                                                     \
     Bind(&dispatch);
 
 DECLARE_ASM_HANDLER(HandleLdNanPref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
-    varAcc = DoubleBuildTaggedWithNoGC(GetDoubleConstant(base::NAN_VALUE));
+    varAcc = DoubleBuildTaggedWithNoGC(Double(base::NAN_VALUE));
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
 DECLARE_ASM_HANDLER(HandleLdInfinityPref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
-    varAcc = DoubleBuildTaggedWithNoGC(GetDoubleConstant(base::POSITIVE_INFINITY));
+    varAcc = DoubleBuildTaggedWithNoGC(Double(base::POSITIVE_INFINITY));
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
@@ -116,22 +115,21 @@ DECLARE_ASM_HANDLER(HandleLdGlobalThisPref)
 DECLARE_ASM_HANDLER(HandleLdUndefinedPref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
-    varAcc = GetUndefinedConstant();
+    varAcc = Undefined();
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
 DECLARE_ASM_HANDLER(HandleLdNullPref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
-    varAcc = GetNullConstant();
+    varAcc = Null();
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
 DECLARE_ASM_HANDLER(HandleLdSymbolPref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
-    varAcc = CallRuntimeTrampoline(glue,
-        GetInt64Constant(RTSTUB_ID(GetSymbolFunction)), {});
+    varAcc = CallRuntime(glue, RTSTUB_ID(GetSymbolFunction), {});
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
@@ -145,21 +143,21 @@ DECLARE_ASM_HANDLER(HandleLdGlobalPref)
 DECLARE_ASM_HANDLER(HandleLdTruePref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
-    varAcc = ChangeInt64ToTagged(GetInt64Constant(JSTaggedValue::VALUE_TRUE));
+    varAcc = ChangeInt64ToTagged(Int64(JSTaggedValue::VALUE_TRUE));
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
 DECLARE_ASM_HANDLER(HandleLdFalsePref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
-    varAcc = ChangeInt64ToTagged(GetInt64Constant(JSTaggedValue::VALUE_FALSE));
+    varAcc = ChangeInt64ToTagged(Int64(JSTaggedValue::VALUE_FALSE));
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
 DECLARE_ASM_HANDLER(HandleThrowDynPref)
 {
     SetPcToFrame(glue, GetFrame(sp), pc);
-    CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(ThrowDyn)), { acc });
+    CallRuntime(glue, RTSTUB_ID(ThrowDyn), { acc });
     DISPATCH_LAST();
 }
 
@@ -192,8 +190,7 @@ DECLARE_ASM_HANDLER(HandleGetUnmappedArgsPref)
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     auto env = GetEnvironment();
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(GetUnmapedArgs)),
-        {});
+    GateRef res = CallRuntime(glue, RTSTUB_ID(GetUnmapedArgs), {});
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -212,8 +209,7 @@ DECLARE_ASM_HANDLER(HandleCopyRestArgsPrefImm16)
     auto env = GetEnvironment();
     GateRef restIdx = ZExtInt16ToInt32(ReadInst16_1(pc));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(CopyRestArgs)),
-        { IntBuildTaggedTypeWithNoGC(restIdx) });
+    GateRef res = CallRuntime(glue, RTSTUB_ID(CopyRestArgs), { IntBuildTaggedTypeWithNoGC(restIdx) });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -233,8 +229,7 @@ DECLARE_ASM_HANDLER(HandleCreateArrayWithBufferPrefImm16)
     GateRef imm = ZExtInt16ToInt32(ReadInst16_1(pc));
     GateRef result = GetObjectFromConstPool(constpool, imm);
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef res = CallRuntimeTrampoline(glue,
-        GetInt64Constant(RTSTUB_ID(CreateArrayWithBuffer)), { result });
+    GateRef res = CallRuntime(glue, RTSTUB_ID(CreateArrayWithBuffer), { result });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -254,8 +249,7 @@ DECLARE_ASM_HANDLER(HandleCreateObjectWithBufferPrefImm16)
     GateRef imm = ZExtInt16ToInt32(ReadInst16_1(pc));
     GateRef result = GetObjectFromConstPool(constpool, imm);
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef res = CallRuntimeTrampoline(glue,
-        GetInt64Constant(RTSTUB_ID(CreateObjectWithBuffer)), { result });
+    GateRef res = CallRuntime(glue, RTSTUB_ID(CreateObjectWithBuffer), { result });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -276,7 +270,7 @@ DECLARE_ASM_HANDLER(HandleCreateObjectWithExcludedKeysPrefImm16V8V8)
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_3(pc)));
     GateRef firstArgRegIdx = ZExtInt8ToInt16(ReadInst8_4(pc));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(CreateObjectWithExcludedKeys)),
+    GateRef res = CallRuntime(glue, RTSTUB_ID(CreateObjectWithExcludedKeys),
         { Int16BuildTaggedTypeWithNoGC(numKeys), obj, Int16BuildTaggedTypeWithNoGC(firstArgRegIdx) });
     Label isException(env);
     Label notException(env);
@@ -297,8 +291,7 @@ DECLARE_ASM_HANDLER(HandleCreateObjectHavingMethodPrefImm16)
     GateRef imm = ZExtInt16ToInt32(ReadInst16_1(pc));
     GateRef result = GetObjectFromConstPool(constpool, imm);
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(CreateObjectHavingMethod)),
-        { result, acc, constpool }); // acc is env
+    GateRef res = CallRuntime(glue, RTSTUB_ID(CreateObjectHavingMethod), { result, acc, constpool });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -316,7 +309,7 @@ DECLARE_ASM_HANDLER(HandleThrowIfSuperNotCorrectCallPrefImm16)
     auto env = GetEnvironment();
     GateRef imm = ReadInst16_1(pc);
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(ThrowIfSuperNotCorrectCall)),
+    GateRef res = CallRuntime(glue, RTSTUB_ID(ThrowIfSuperNotCorrectCall),
         { Int16BuildTaggedTypeWithNoGC(imm), acc }); // acc is thisValue
     Label isException(env);
     Label notException(env);
@@ -335,8 +328,7 @@ DECLARE_ASM_HANDLER(HandleNewLexEnvDynPrefImm16)
     auto env = GetEnvironment();
     GateRef numVars = ReadInst16_1(pc);
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(NewLexicalEnvDyn)),
-        { Int16BuildTaggedTypeWithNoGC(numVars) });
+    GateRef res = CallRuntime(glue, RTSTUB_ID(NewLexicalEnvDyn), { Int16BuildTaggedTypeWithNoGC(numVars) });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -356,13 +348,13 @@ DECLARE_ASM_HANDLER(HandleNewObjDynRangePrefImm16V8)
     auto env = GetEnvironment();
     GateRef numArgs = ReadInst16_1(pc);
     GateRef firstArgRegIdx = ZExtInt8ToInt16(ReadInst8_3(pc));
-    GateRef firstArgOffset = GetInt16Constant(2);
+    GateRef firstArgOffset = Int16(2);
     GateRef func = GetVregValue(sp, ZExtInt16ToPtr(firstArgRegIdx));
-    GateRef newTarget = GetVregValue(sp, IntPtrAdd(ZExtInt16ToPtr(firstArgRegIdx), GetIntPtrConstant(1)));
+    GateRef newTarget = GetVregValue(sp, IntPtrAdd(ZExtInt16ToPtr(firstArgRegIdx), IntPtr(1)));
     GateRef firstArgIdx = Int16Add(firstArgRegIdx, firstArgOffset);
     GateRef length = Int16Sub(numArgs, firstArgOffset);
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(NewObjDynRange)),
+    GateRef res = CallRuntime(glue, RTSTUB_ID(NewObjDynRange),
         { func, newTarget, Int16BuildTaggedTypeWithNoGC(firstArgIdx), Int16BuildTaggedTypeWithNoGC(length) });
     Label isException(env);
     Label notException(env);
@@ -392,8 +384,7 @@ DECLARE_ASM_HANDLER(HandleDefineFuncDynPrefId16Imm16V8)
     Bind(&isResolved);
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
-        result = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(DefinefuncDyn)), { *result });
+        result = CallRuntime(glue, RTSTUB_ID(DefinefuncDyn), { *result });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(*result), &isException, &notException);
@@ -409,14 +400,14 @@ DECLARE_ASM_HANDLER(HandleDefineFuncDynPrefId16Imm16V8)
     }
     Bind(&notResolved);
     {
-        SetResolvedToFunction(glue, *result, GetBooleanConstant(true));
+        SetResolvedToFunction(glue, *result, Boolean(true));
         Jump(&defaultLabel);
     }
     Bind(&defaultLabel);
     {
         GateRef hClass = LoadHClass(*result);
         SetPropertyInlinedProps(glue, *result, hClass, Int16BuildTaggedWithNoGC(length),
-            GetInt32Constant(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
+            Int32(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
         GateRef envHandle = GetVregValue(sp, ZExtInt8ToPtr(v0));
         SetLexicalEnvToFunction(glue, *result, envHandle);
         GateRef currentFunc = GetFunctionFromFrame(GetFrame(sp));
@@ -442,8 +433,7 @@ DECLARE_ASM_HANDLER(HandleDefineNCFuncDynPrefId16Imm16V8)
     Bind(&isResolved);
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
-        result = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(DefineNCFuncDyn)), { *result });
+        result = CallRuntime(glue, RTSTUB_ID(DefineNCFuncDyn), { *result });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(*result), &isException, &notException);
@@ -459,14 +449,14 @@ DECLARE_ASM_HANDLER(HandleDefineNCFuncDynPrefId16Imm16V8)
     }
     Bind(&notResolved);
     {
-        SetResolvedToFunction(glue, *result, GetBooleanConstant(true));
+        SetResolvedToFunction(glue, *result, Boolean(true));
         Jump(&defaultLabel);
     }
     Bind(&defaultLabel);
     {
         GateRef hClass = LoadHClass(*result);
         SetPropertyInlinedProps(glue, *result, hClass, Int16BuildTaggedWithNoGC(length),
-            GetInt32Constant(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
+            Int32(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
         GateRef lexEnv = GetVregValue(sp, ZExtInt8ToPtr(v0));
         SetLexicalEnvToFunction(glue, *result, lexEnv);
         SetHomeObjectToFunction(glue, *result, acc);
@@ -493,8 +483,7 @@ DECLARE_ASM_HANDLER(HandleDefineGeneratorFuncPrefId16Imm16V8)
     Bind(&isResolved);
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
-        result = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(DefineGeneratorFunc)), { *result });
+        result = CallRuntime(glue, RTSTUB_ID(DefineGeneratorFunc), { *result });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(*result), &isException, &notException);
@@ -510,14 +499,14 @@ DECLARE_ASM_HANDLER(HandleDefineGeneratorFuncPrefId16Imm16V8)
     }
     Bind(&notResolved);
     {
-        SetResolvedToFunction(glue, *result, GetBooleanConstant(true));
+        SetResolvedToFunction(glue, *result, Boolean(true));
         Jump(&defaultLabel);
     }
     Bind(&defaultLabel);
     {
         GateRef hClass = LoadHClass(*result);
         SetPropertyInlinedProps(glue, *result, hClass, Int16BuildTaggedWithNoGC(length),
-            GetInt32Constant(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
+            Int32(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
         GateRef lexEnv = GetVregValue(sp, ZExtInt8ToPtr(v0));
         SetLexicalEnvToFunction(glue, *result, lexEnv);
         GateRef currentFunc = GetFunctionFromFrame(GetFrame(sp));
@@ -543,8 +532,7 @@ DECLARE_ASM_HANDLER(HandleDefineAsyncFuncPrefId16Imm16V8)
     Bind(&isResolved);
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
-        result = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(DefineAsyncFunc)), { *result });
+        result = CallRuntime(glue, RTSTUB_ID(DefineAsyncFunc), { *result });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(*result), &isException, &notException);
@@ -560,14 +548,14 @@ DECLARE_ASM_HANDLER(HandleDefineAsyncFuncPrefId16Imm16V8)
     }
     Bind(&notResolved);
     {
-        SetResolvedToFunction(glue, *result, GetBooleanConstant(true));
+        SetResolvedToFunction(glue, *result, Boolean(true));
         Jump(&defaultLabel);
     }
     Bind(&defaultLabel);
     {
         GateRef hClass = LoadHClass(*result);
         SetPropertyInlinedProps(glue, *result, hClass, Int16BuildTaggedWithNoGC(length),
-            GetInt32Constant(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
+            Int32(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
         GateRef lexEnv = GetVregValue(sp, ZExtInt8ToPtr(v0));
         SetLexicalEnvToFunction(glue, *result, lexEnv);
         GateRef currentFunc = GetFunctionFromFrame(GetFrame(sp));
@@ -593,8 +581,7 @@ DECLARE_ASM_HANDLER(HandleDefineMethodPrefId16Imm16V8)
     Bind(&isResolved);
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
-        result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(DefineMethod)),
-            { *result, acc }); // acc is homeObject
+        result = CallRuntime(glue, RTSTUB_ID(DefineMethod), { *result, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(*result), &isException, &notException);
@@ -611,14 +598,14 @@ DECLARE_ASM_HANDLER(HandleDefineMethodPrefId16Imm16V8)
     Bind(&notResolved);
     {
         SetHomeObjectToFunction(glue, *result, acc);
-        SetResolvedToFunction(glue, *result, GetBooleanConstant(true));
+        SetResolvedToFunction(glue, *result, Boolean(true));
         Jump(&defaultLabel);
     }
     Bind(&defaultLabel);
     {
         GateRef hClass = LoadHClass(*result);
         SetPropertyInlinedProps(glue, *result, hClass, Int16BuildTaggedWithNoGC(length),
-            GetInt32Constant(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
+            Int32(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
         GateRef lexEnv = GetVregValue(sp, ZExtInt8ToPtr(v0));
         SetLexicalEnvToFunction(glue, *result, lexEnv);
         GateRef currentFunc = GetFunctionFromFrame(GetFrame(sp));
@@ -636,8 +623,7 @@ DECLARE_ASM_HANDLER(HandleCallSpreadDynPrefV8V8V8)
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_2(pc)));
     GateRef array = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_3(pc)));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(CallSpreadDyn)),
-        { func, obj, array });
+    GateRef res = CallRuntime(glue, RTSTUB_ID(CallSpreadDyn), { func, obj, array });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -659,8 +645,8 @@ DECLARE_ASM_HANDLER(HandleAsyncFunctionResolvePrefV8V8V8)
     GateRef asyncFuncObj = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_3(pc)));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(AsyncFunctionResolveOrReject)),
-        { asyncFuncObj, value, TaggedTrue() });
+    GateRef res = CallRuntime(glue, RTSTUB_ID(AsyncFunctionResolveOrReject),
+                              { asyncFuncObj, value, TaggedTrue() });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -681,8 +667,9 @@ DECLARE_ASM_HANDLER(HandleAsyncFunctionRejectPrefV8V8V8)
     GateRef asyncFuncObj = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_3(pc)));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(AsyncFunctionResolveOrReject)),
-        { asyncFuncObj, value, TaggedFalse() });
+    GateRef res = CallRuntime(glue,
+                              RTSTUB_ID(AsyncFunctionResolveOrReject),
+                              { asyncFuncObj, value, TaggedFalse() });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -705,8 +692,8 @@ DECLARE_ASM_HANDLER(HandleDefineGetterSetterByValuePrefV8V8V8V8)
     GateRef getter = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_3(pc)));
     GateRef setter = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_4(pc)));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(DefineGetterSetterByValue)),
-        { obj, prop, getter, setter, acc }); // acc is flag
+    GateRef res = CallRuntime(glue, RTSTUB_ID(DefineGetterSetterByValue),
+                              { obj, prop, getter, setter, acc }); // acc is flag
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -729,7 +716,7 @@ DECLARE_ASM_HANDLER(HandleSuperCallPrefImm16V8)
     GateRef v0 = ZExtInt8ToInt16(ReadInst8_3(pc));
     SetPcToFrame(glue, GetFrame(sp), pc);
     // acc is thisFunc
-    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SuperCall)),
+    GateRef res = CallRuntime(glue, RTSTUB_ID(SuperCall),
         { acc, Int16BuildTaggedTypeWithNoGC(v0), Int16BuildTaggedTypeWithNoGC(range) });
     Label isException(env);
     Label notException(env);
@@ -750,7 +737,7 @@ DECLARE_ASM_HANDLER(HandleGetPropIteratorPref)
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     auto env = GetEnvironment();
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(GetPropIterator)), { *varAcc });
+    GateRef res = CallRuntime(glue, RTSTUB_ID(GetPropIterator), { *varAcc });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -768,7 +755,7 @@ DECLARE_ASM_HANDLER(HandleAsyncFunctionEnterPref)
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     auto env = GetEnvironment();
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(AsyncFunctionEnter)), {});
+    GateRef res = CallRuntime(glue, RTSTUB_ID(AsyncFunctionEnter), {});
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -784,15 +771,14 @@ DECLARE_ASM_HANDLER(HandleAsyncFunctionEnterPref)
 DECLARE_ASM_HANDLER(HandleLdHolePref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
-    varAcc = GetHoleConstant();
+    varAcc = Hole();
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
 DECLARE_ASM_HANDLER(HandleCreateEmptyObjectPref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
-    GateRef res = CallRuntimeTrampoline(glue,
-        GetInt64Constant(RTSTUB_ID(CreateEmptyObject)), {});
+    GateRef res = CallRuntime(glue, RTSTUB_ID(CreateEmptyObject), {});
     varAcc = res;
     DISPATCH_WITH_ACC(PREF_NONE);
 }
@@ -800,8 +786,7 @@ DECLARE_ASM_HANDLER(HandleCreateEmptyObjectPref)
 DECLARE_ASM_HANDLER(HandleCreateEmptyArrayPref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
-    GateRef res = CallRuntimeTrampoline(glue,
-        GetInt64Constant(RTSTUB_ID(CreateEmptyArray)), {});
+    GateRef res = CallRuntime(glue, RTSTUB_ID(CreateEmptyArray), {});
     varAcc = res;
     DISPATCH_WITH_ACC(PREF_NONE);
 }
@@ -822,7 +807,7 @@ DECLARE_ASM_HANDLER(HandleGetIteratorPref)
     Bind(&notGeneratorObj);
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
-        GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(GetIterator)), { *varAcc });
+        GateRef res = CallRuntime(glue, RTSTUB_ID(GetIterator), { *varAcc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(res), &isException, &notException);
@@ -841,14 +826,14 @@ DECLARE_ASM_HANDLER(HandleGetIteratorPref)
 DECLARE_ASM_HANDLER(HandleThrowThrowNotExistsPref)
 {
     SetPcToFrame(glue, GetFrame(sp), pc);
-    CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(ThrowThrowNotExists)), {});
+    CallRuntime(glue, RTSTUB_ID(ThrowThrowNotExists), {});
     DISPATCH_LAST();
 }
 
 DECLARE_ASM_HANDLER(HandleThrowPatternNonCoerciblePref)
 {
     SetPcToFrame(glue, GetFrame(sp), pc);
-    CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(ThrowPatternNonCoercible)), {});
+    CallRuntime(glue, RTSTUB_ID(ThrowPatternNonCoercible), {});
     DISPATCH_LAST();
 }
 
@@ -863,7 +848,7 @@ DECLARE_ASM_HANDLER(HandleLdHomeObjectPref)
 DECLARE_ASM_HANDLER(HandleThrowDeleteSuperPropertyPref)
 {
     SetPcToFrame(glue, GetFrame(sp), pc);
-    CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(ThrowDeleteSuperProperty)), {});
+    CallRuntime(glue, RTSTUB_ID(ThrowDeleteSuperProperty), {});
     DISPATCH_LAST();
 }
 
@@ -877,7 +862,7 @@ DECLARE_ASM_HANDLER(HandleMul2DynPrefV8)
     auto env = GetEnvironment();
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
-    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
     // fast path
     result = FastMul(left, acc);
     Label isHole(env);
@@ -888,7 +873,7 @@ DECLARE_ASM_HANDLER(HandleMul2DynPrefV8)
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
-        result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(Mul2Dyn)), { left, acc });
+        result = CallRuntime(glue, RTSTUB_ID(Mul2Dyn), { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(*result), &isException, &notException);
@@ -916,7 +901,7 @@ DECLARE_ASM_HANDLER(HandleDiv2DynPrefV8)
     auto env = GetEnvironment();
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
-    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
     // fast path
     result = FastDiv(left, acc);
     Label isHole(env);
@@ -927,7 +912,7 @@ DECLARE_ASM_HANDLER(HandleDiv2DynPrefV8)
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
-        result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(Div2Dyn)), { left, acc });
+        result = CallRuntime(glue, RTSTUB_ID(Div2Dyn), { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(*result), &isException, &notException);
@@ -955,7 +940,7 @@ DECLARE_ASM_HANDLER(HandleMod2DynPrefV8)
     auto env = GetEnvironment();
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
-    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
     // fast path
     result = FastMod(glue, left, acc);
     Label isHole(env);
@@ -966,7 +951,7 @@ DECLARE_ASM_HANDLER(HandleMod2DynPrefV8)
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
-        result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(Mod2Dyn)), { left, acc });
+        result = CallRuntime(glue, RTSTUB_ID(Mod2Dyn), { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(*result), &isException, &notException);
@@ -995,7 +980,7 @@ DECLARE_ASM_HANDLER(HandleEqDynPrefV8)
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
     // fast path
-    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
     result = FastEqual(left, acc);
     Label isHole(env);
     Label notHole(env);
@@ -1005,7 +990,7 @@ DECLARE_ASM_HANDLER(HandleEqDynPrefV8)
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
-        result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(EqDyn)), { left, acc });
+        result = CallRuntime(glue, RTSTUB_ID(EqDyn), { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(*result), &isException, &notException);
@@ -1034,7 +1019,7 @@ DECLARE_ASM_HANDLER(HandleNotEqDynPrefV8)
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
     // fast path
-    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
     result = FastEqual(left, acc);
     Label isHole(env);
     Label notHole(env);
@@ -1044,7 +1029,7 @@ DECLARE_ASM_HANDLER(HandleNotEqDynPrefV8)
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
-        result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(NotEqDyn)), { left, acc });
+        result = CallRuntime(glue, RTSTUB_ID(NotEqDyn), { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(*result), &isException, &notException);
@@ -1113,8 +1098,8 @@ DECLARE_ASM_HANDLER(HandleLessDynPrefV8)
             Bind(&rightIsNumber);
             {
                 // fast path
-                DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), GetDoubleConstant(0));
-                DEFVARIABLE(doubleRight, VariableType::FLOAT64(), GetDoubleConstant(0));
+                DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), Double(0));
+                DEFVARIABLE(doubleRight, VariableType::FLOAT64(), Double(0));
                 Label leftIsInt1(env);
                 Label leftNotInt1(env);
                 Label exit1(env);
@@ -1167,7 +1152,7 @@ DECLARE_ASM_HANDLER(HandleLessDynPrefV8)
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
-        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(LessDyn)), { left, acc });
+        GateRef result = CallRuntime(glue, RTSTUB_ID(LessDyn), { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(result), &isException, &notException);
@@ -1220,8 +1205,8 @@ DECLARE_ASM_HANDLER(HandleLessEqDynPrefV8)
             Bind(&rightIsNumber);
             {
                 // fast path
-                DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), GetDoubleConstant(0));
-                DEFVARIABLE(doubleRight, VariableType::FLOAT64(), GetDoubleConstant(0));
+                DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), Double(0));
+                DEFVARIABLE(doubleRight, VariableType::FLOAT64(), Double(0));
                 Label leftIsInt1(env);
                 Label leftNotInt1(env);
                 Label exit1(env);
@@ -1274,7 +1259,7 @@ DECLARE_ASM_HANDLER(HandleLessEqDynPrefV8)
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
-        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(LessEqDyn)), { left, acc });
+        GateRef result = CallRuntime(glue, RTSTUB_ID(LessEqDyn), { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(result), &isException, &notException);
@@ -1327,8 +1312,8 @@ DECLARE_ASM_HANDLER(HandleGreaterDynPrefV8)
             Bind(&rightIsNumber);
             {
                 // fast path
-                DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), GetDoubleConstant(0));
-                DEFVARIABLE(doubleRight, VariableType::FLOAT64(), GetDoubleConstant(0));
+                DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), Double(0));
+                DEFVARIABLE(doubleRight, VariableType::FLOAT64(), Double(0));
                 Label leftIsInt1(env);
                 Label leftNotInt1(env);
                 Label exit1(env);
@@ -1381,7 +1366,7 @@ DECLARE_ASM_HANDLER(HandleGreaterDynPrefV8)
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
-        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(GreaterDyn)), { left, acc });
+        GateRef result = CallRuntime(glue, RTSTUB_ID(GreaterDyn), { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(result), &isException, &notException);
@@ -1434,8 +1419,8 @@ DECLARE_ASM_HANDLER(HandleGreaterEqDynPrefV8)
             Bind(&rightIsNumber);
             {
                 // fast path
-                DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), GetDoubleConstant(0));
-                DEFVARIABLE(doubleRight, VariableType::FLOAT64(), GetDoubleConstant(0));
+                DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), Double(0));
+                DEFVARIABLE(doubleRight, VariableType::FLOAT64(), Double(0));
                 Label leftIsInt1(env);
                 Label leftNotInt1(env);
                 Label exit1(env);
@@ -1489,7 +1474,7 @@ DECLARE_ASM_HANDLER(HandleGreaterEqDynPrefV8)
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
-        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(GreaterEqDyn)), { left, acc });
+        GateRef result = CallRuntime(glue, RTSTUB_ID(GreaterEqDyn), { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(result), &isException, &notException);
@@ -1509,7 +1494,7 @@ DECLARE_ASM_HANDLER(HandleGreaterEqDynPrefV8)
 
 DECLARE_ASM_HANDLER(AsmInterpreterEntry)
 {
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetIntPtrConstant(0));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, IntPtr(0));
 }
 
 DECLARE_ASM_HANDLER(SingleStepDebugging)
@@ -1524,13 +1509,14 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
 
     GateRef tmpFrame = GetFrame(*varSp);
     SetPcToFrame(glue, tmpFrame, *varPc);
-    varPc = TaggedCastToIntPtr(CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(JumpToCInterpreter)), {
-        constpool, profileTypeInfo, acc, IntBuildTaggedTypeWithNoGC(hotnessCounter)
-    }));
+    varPc = TaggedCastToIntPtr(CallRuntime(glue,
+                                           RTSTUB_ID(JumpToCInterpreter),
+                                           { constpool, profileTypeInfo, acc,
+                                             IntBuildTaggedTypeWithNoGC(hotnessCounter)}));
     Label shouldReturn(env);
     Label shouldContinue(env);
 
-    Branch(IntPtrEqual(*varPc, GetIntPtrConstant(0)), &shouldReturn, &shouldContinue);
+    Branch(IntPtrEqual(*varPc, IntPtr(0)), &shouldReturn, &shouldContinue);
     Bind(&shouldReturn);
     {
         Return();
@@ -1545,18 +1531,18 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
         varConstpool = GetConstpoolFromFunction(function);
         GateRef method = Load(VariableType::POINTER(), function,
-            GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
+            IntPtr(JSFunctionBase::METHOD_OFFSET));
         varHotnessCounter = Load(VariableType::INT32(), method,
-                                 GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET));
+                                 IntPtr(JSMethod::HOTNESS_COUNTER_OFFSET));
     }
     Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, *varAcc,
-             *varHotnessCounter, GetIntPtrConstant(0));
+             *varHotnessCounter, IntPtr(0));
 }
 
 DECLARE_ASM_HANDLER(HandleOverflow)
 {
-    FatalPrint(glue, { GetInt32Constant(GET_MESSAGE_STRING_ID(OPCODE_OVERFLOW)) });
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetIntPtrConstant(0));
+    FatalPrint(glue, { Int32(GET_MESSAGE_STRING_ID(OPCODE_OVERFLOW)) });
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, IntPtr(0));
 }
 
 DECLARE_ASM_HANDLER(HandleLdaDynV8)
@@ -1624,7 +1610,7 @@ DECLARE_ASM_HANDLER(HandleLdLexVarDynPrefImm4Imm4)
     GateRef slot = ZExtInt8ToInt32(ReadInst4_3(pc));
     GateRef state = GetFrame(sp);
     DEFVARIABLE(currentEnv, VariableType::JS_ANY(), GetEnvFromFrame(state));
-    DEFVARIABLE(i, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(i, VariableType::INT32(), Int32(0));
 
     Label loopHead(env);
     Label loopEnd(env);
@@ -1632,7 +1618,7 @@ DECLARE_ASM_HANDLER(HandleLdLexVarDynPrefImm4Imm4)
     Branch(Int32LessThan(*i, level), &loopHead, &afterLoop);
     LoopBegin(&loopHead);
     currentEnv = GetParentEnv(*currentEnv);
-    i = Int32Add(*i, GetInt32Constant(1));
+    i = Int32Add(*i, Int32(1));
     Branch(Int32LessThan(*i, level), &loopEnd, &afterLoop);
     Bind(&loopEnd);
     LoopEnd(&loopHead);
@@ -1653,7 +1639,7 @@ DECLARE_ASM_HANDLER(HandleLdLexVarDynPrefImm8Imm8)
 
     GateRef state = GetFrame(sp);
     DEFVARIABLE(currentEnv, VariableType::JS_ANY(), GetEnvFromFrame(state));
-    DEFVARIABLE(i, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(i, VariableType::INT32(), Int32(0));
 
     Label loopHead(env);
     Label loopEnd(env);
@@ -1661,7 +1647,7 @@ DECLARE_ASM_HANDLER(HandleLdLexVarDynPrefImm8Imm8)
     Branch(Int32LessThan(*i, level), &loopHead, &afterLoop);
     LoopBegin(&loopHead);
     currentEnv = GetParentEnv(*currentEnv);
-    i = Int32Add(*i, GetInt32Constant(1));
+    i = Int32Add(*i, Int32(1));
     Branch(Int32LessThan(*i, level), &loopEnd, &afterLoop);
     Bind(&loopEnd);
     LoopEnd(&loopHead);
@@ -1681,7 +1667,7 @@ DECLARE_ASM_HANDLER(HandleLdLexVarDynPrefImm16Imm16)
 
     GateRef state = GetFrame(sp);
     DEFVARIABLE(currentEnv, VariableType::JS_ANY(), GetEnvFromFrame(state));
-    DEFVARIABLE(i, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(i, VariableType::INT32(), Int32(0));
 
     Label loopHead(env);
     Label loopEnd(env);
@@ -1689,7 +1675,7 @@ DECLARE_ASM_HANDLER(HandleLdLexVarDynPrefImm16Imm16)
     Branch(Int32LessThan(*i, level), &loopHead, &afterLoop);
     LoopBegin(&loopHead);
     currentEnv = GetParentEnv(*currentEnv);
-    i = Int32Add(*i, GetInt32Constant(1));
+    i = Int32Add(*i, Int32(1));
     Branch(Int32LessThan(*i, level), &loopEnd, &afterLoop);
     Bind(&loopEnd);
     LoopEnd(&loopHead);
@@ -1709,7 +1695,7 @@ DECLARE_ASM_HANDLER(HandleStLexVarDynPrefImm4Imm4V8)
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef state = GetFrame(sp);
     DEFVARIABLE(currentEnv, VariableType::JS_ANY(), GetEnvFromFrame(state));
-    DEFVARIABLE(i, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(i, VariableType::INT32(), Int32(0));
 
     Label loopHead(env);
     Label loopEnd(env);
@@ -1717,7 +1703,7 @@ DECLARE_ASM_HANDLER(HandleStLexVarDynPrefImm4Imm4V8)
     Branch(Int32LessThan(*i, level), &loopHead, &afterLoop);
     LoopBegin(&loopHead);
     currentEnv = GetParentEnv(*currentEnv);
-    i = Int32Add(*i, GetInt32Constant(1));
+    i = Int32Add(*i, Int32(1));
     Branch(Int32LessThan(*i, level), &loopEnd, &afterLoop);
     Bind(&loopEnd);
     LoopEnd(&loopHead);
@@ -1736,7 +1722,7 @@ DECLARE_ASM_HANDLER(HandleStLexVarDynPrefImm8Imm8V8)
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef state = GetFrame(sp);
     DEFVARIABLE(currentEnv, VariableType::JS_ANY(), GetEnvFromFrame(state));
-    DEFVARIABLE(i, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(i, VariableType::INT32(), Int32(0));
 
     Label loopHead(env);
     Label loopEnd(env);
@@ -1744,7 +1730,7 @@ DECLARE_ASM_HANDLER(HandleStLexVarDynPrefImm8Imm8V8)
     Branch(Int32LessThan(*i, level), &loopHead, &afterLoop);
     LoopBegin(&loopHead);
     currentEnv = GetParentEnv(*currentEnv);
-    i = Int32Add(*i, GetInt32Constant(1));
+    i = Int32Add(*i, Int32(1));
     Branch(Int32LessThan(*i, level), &loopEnd, &afterLoop);
     Bind(&loopEnd);
     LoopEnd(&loopHead);
@@ -1763,7 +1749,7 @@ DECLARE_ASM_HANDLER(HandleStLexVarDynPrefImm16Imm16V8)
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef state = GetFrame(sp);
     DEFVARIABLE(currentEnv, VariableType::JS_ANY(), GetEnvFromFrame(state));
-    DEFVARIABLE(i, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(i, VariableType::INT32(), Int32(0));
 
     Label loopHead(env);
     Label loopEnd(env);
@@ -1771,7 +1757,7 @@ DECLARE_ASM_HANDLER(HandleStLexVarDynPrefImm16Imm16V8)
     Branch(Int32LessThan(*i, level), &loopHead, &afterLoop);
     LoopBegin(&loopHead);
     currentEnv = GetParentEnv(*currentEnv);
-    i = Int32Add(*i, GetInt32Constant(1));
+    i = Int32Add(*i, Int32(1));
     Branch(Int32LessThan(*i, level), &loopEnd, &afterLoop);
     Bind(&loopEnd);
     LoopEnd(&loopHead);
@@ -1796,10 +1782,10 @@ DECLARE_ASM_HANDLER(HandleIncDynPrefV8)
     {
         GateRef valueInt = TaggedCastToInt32(value);
         Label valueNoOverflow(env);
-        Branch(Int32Equal(valueInt, GetInt32Constant(INT32_MAX)), &valueNotInt, &valueNoOverflow);
+        Branch(Int32Equal(valueInt, Int32(INT32_MAX)), &valueNotInt, &valueNoOverflow);
         Bind(&valueNoOverflow);
         {
-            varAcc = IntBuildTaggedWithNoGC(Int32Add(valueInt, GetInt32Constant(1)));
+            varAcc = IntBuildTaggedWithNoGC(Int32Add(valueInt, Int32(1)));
             Jump(&accDispatch);
         }
     }
@@ -1811,7 +1797,7 @@ DECLARE_ASM_HANDLER(HandleIncDynPrefV8)
         Bind(&valueIsDouble);
         {
             GateRef valueDouble = TaggedCastToDouble(value);
-            varAcc = DoubleBuildTaggedWithNoGC(DoubleAdd(valueDouble, GetDoubleConstant(1.0)));
+            varAcc = DoubleBuildTaggedWithNoGC(DoubleAdd(valueDouble, Double(1.0)));
             Jump(&accDispatch);
         }
         Bind(&valueNotDouble);
@@ -1823,7 +1809,7 @@ DECLARE_ASM_HANDLER(HandleIncDynPrefV8)
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
-        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(IncDyn)), { value });
+        GateRef result = CallRuntime(glue, RTSTUB_ID(IncDyn), { value });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(result), &isException, &notException);
@@ -1855,10 +1841,10 @@ DECLARE_ASM_HANDLER(HandleDecDynPrefV8)
     {
         GateRef valueInt = TaggedCastToInt32(value);
         Label valueNoOverflow(env);
-        Branch(Int32Equal(valueInt, GetInt32Constant(INT32_MIN)), &valueNotInt, &valueNoOverflow);
+        Branch(Int32Equal(valueInt, Int32(INT32_MIN)), &valueNotInt, &valueNoOverflow);
         Bind(&valueNoOverflow);
         {
-            varAcc = IntBuildTaggedWithNoGC(Int32Sub(valueInt, GetInt32Constant(1)));
+            varAcc = IntBuildTaggedWithNoGC(Int32Sub(valueInt, Int32(1)));
             Jump(&accDispatch);
         }
     }
@@ -1870,7 +1856,7 @@ DECLARE_ASM_HANDLER(HandleDecDynPrefV8)
         Bind(&valueIsDouble);
         {
             GateRef valueDouble = TaggedCastToDouble(value);
-            varAcc = DoubleBuildTaggedWithNoGC(DoubleSub(valueDouble, GetDoubleConstant(1.0)));
+            varAcc = DoubleBuildTaggedWithNoGC(DoubleSub(valueDouble, Double(1.0)));
             Jump(&accDispatch);
         }
         Bind(&valueNotDouble);
@@ -1882,7 +1868,7 @@ DECLARE_ASM_HANDLER(HandleDecDynPrefV8)
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
-        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(DecDyn)), { value });
+        GateRef result = CallRuntime(glue, RTSTUB_ID(DecDyn), { value });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(result), &isException, &notException);
@@ -1907,8 +1893,7 @@ DECLARE_ASM_HANDLER(HandleExpDynPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef base = GetVregValue(sp, ZExtInt8ToPtr(v0));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(ExpDyn)),
-        { base, acc }); // acc is exponent
+    GateRef result = CallRuntime(glue, RTSTUB_ID(ExpDyn), { base, acc });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1929,8 +1914,7 @@ DECLARE_ASM_HANDLER(HandleIsInDynPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef prop = GetVregValue(sp, ZExtInt8ToPtr(v0));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(IsInDyn)),
-        { prop, acc }); // acc is obj
+    GateRef result = CallRuntime(glue, RTSTUB_ID(IsInDyn), { prop, acc }); // acc is obj
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1951,8 +1935,7 @@ DECLARE_ASM_HANDLER(HandleInstanceOfDynPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v0));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(InstanceOfDyn)),
-        { obj, acc }); // acc is target
+    GateRef result = CallRuntime(glue, RTSTUB_ID(InstanceOfDyn), { obj, acc });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1971,8 +1954,7 @@ DECLARE_ASM_HANDLER(HandleStrictNotEqDynPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(FastStrictNotEqual)),
-        { left, acc }); // acc is right
+    GateRef result = CallRuntime(glue, RTSTUB_ID(FastStrictNotEqual), { left, acc });
     varAcc = result;
     DISPATCH_WITH_ACC(PREF_V8);
 }
@@ -1983,8 +1965,7 @@ DECLARE_ASM_HANDLER(HandleStrictEqDynPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(FastStrictEqual)),
-        { left, acc }); // acc is right
+    GateRef result = CallRuntime(glue, RTSTUB_ID(FastStrictEqual), { left, acc }); // acc is right
     varAcc = result;
     DISPATCH_WITH_ACC(PREF_V8);
 }
@@ -1995,7 +1976,7 @@ DECLARE_ASM_HANDLER(HandleResumeGeneratorPrefV8)
 
     GateRef vs = ReadInst8_1(pc);
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(vs));
-    GateRef resumeResultOffset = GetIntPtrConstant(JSGeneratorObject::GENERATOR_RESUME_RESULT_OFFSET);
+    GateRef resumeResultOffset = IntPtr(JSGeneratorObject::GENERATOR_RESUME_RESULT_OFFSET);
     varAcc = Load(VariableType::JS_ANY(), obj, resumeResultOffset);
     DISPATCH_WITH_ACC(PREF_V8);
 }
@@ -2018,8 +1999,7 @@ DECLARE_ASM_HANDLER(HandleCreateGeneratorObjPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef genFunc = GetVregValue(sp, ZExtInt8ToPtr(v0));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(CreateGeneratorObj)),
-        { genFunc });
+    GateRef result = CallRuntime(glue, RTSTUB_ID(CreateGeneratorObj), { genFunc });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2037,7 +2017,7 @@ DECLARE_ASM_HANDLER(HandleThrowConstAssignmentPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(ThrowConstAssignment)), { value });
+    CallRuntime(glue, RTSTUB_ID(ThrowConstAssignment), { value });
     DISPATCH_LAST();
 }
 
@@ -2048,7 +2028,7 @@ DECLARE_ASM_HANDLER(HandleGetTemplateObjectPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef literal = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(GetTemplateObject)), { literal });
+    GateRef result = CallRuntime(glue, RTSTUB_ID(GetTemplateObject), { literal });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2069,7 +2049,7 @@ DECLARE_ASM_HANDLER(HandleGetNextPropNamePrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef iter = GetVregValue(sp, ZExtInt8ToPtr(v0));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(GetNextPropName)), { iter });
+    GateRef result = CallRuntime(glue, RTSTUB_ID(GetNextPropName), { iter });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2097,7 +2077,7 @@ DECLARE_ASM_HANDLER(HandleThrowIfNotObjectPrefV8)
     }
     Bind(&notEcmaObject);
     SetPcToFrame(glue, GetFrame(sp), pc);
-    CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(ThrowIfNotObject)), {});
+    CallRuntime(glue, RTSTUB_ID(ThrowIfNotObject), {});
     DISPATCH_LAST();
 }
 
@@ -2109,7 +2089,7 @@ DECLARE_ASM_HANDLER(HandleIterNextPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef iter = GetVregValue(sp, ZExtInt8ToPtr(v0));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(IterNext)), { iter });
+    GateRef result = CallRuntime(glue, RTSTUB_ID(IterNext), { iter });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2130,7 +2110,7 @@ DECLARE_ASM_HANDLER(HandleCloseIteratorPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef iter = GetVregValue(sp, ZExtInt8ToPtr(v0));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(CloseIterator)), { iter });
+    GateRef result = CallRuntime(glue, RTSTUB_ID(CloseIterator), { iter });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2156,8 +2136,7 @@ DECLARE_ASM_HANDLER(HandleSuperCallSpreadPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef array = GetVregValue(sp, ZExtInt8ToPtr(v0));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SuperCallSpread)),
-        { acc, array }); // acc is thisFunc, sp for newTarget
+    GateRef result = CallRuntime(glue, RTSTUB_ID(SuperCallSpread), { acc, array });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2180,8 +2159,7 @@ DECLARE_ASM_HANDLER(HandleDelObjPropPrefV8V8)
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef prop = GetVregValue(sp, ZExtInt8ToPtr(v1));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(DelObjProp)),
-        { obj, prop });
+    GateRef result = CallRuntime(glue, RTSTUB_ID(DelObjProp), { obj, prop });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2204,8 +2182,7 @@ DECLARE_ASM_HANDLER(HandleNewObjSpreadDynPrefV8V8)
     GateRef func = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef newTarget = GetVregValue(sp, ZExtInt8ToPtr(v1));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(NewObjSpreadDyn)),
-        { func, newTarget, acc }); // acc is array
+    GateRef result = CallRuntime(glue, RTSTUB_ID(NewObjSpreadDyn), { func, newTarget, acc }); // acc is array
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2228,8 +2205,7 @@ DECLARE_ASM_HANDLER(HandleCreateIterResultObjPrefV8V8)
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef flag = GetVregValue(sp, ZExtInt8ToPtr(v1));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(CreateIterResultObj)),
-        { value, flag });
+    GateRef result = CallRuntime(glue, RTSTUB_ID(CreateIterResultObj), { value, flag });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2252,8 +2228,7 @@ DECLARE_ASM_HANDLER(HandleAsyncFunctionAwaitUncaughtPrefV8V8)
     GateRef asyncFuncObj = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v1));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(AsyncFunctionAwaitUncaught)),
-        { asyncFuncObj, value });
+    GateRef result = CallRuntime(glue, RTSTUB_ID(AsyncFunctionAwaitUncaught), { asyncFuncObj, value });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2284,7 +2259,7 @@ DECLARE_ASM_HANDLER(HandleThrowUndefinedIfHolePrefV8V8)
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v1));
     SetPcToFrame(glue, GetFrame(sp), pc);
     // assert obj.IsString()
-    CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(ThrowUndefinedIfHole)), { obj });
+    CallRuntime(glue, RTSTUB_ID(ThrowUndefinedIfHole), { obj });
     DISPATCH_LAST();
 }
 
@@ -2298,8 +2273,7 @@ DECLARE_ASM_HANDLER(HandleCopyDataPropertiesPrefV8V8)
     GateRef dst = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef src = GetVregValue(sp, ZExtInt8ToPtr(v1));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(CopyDataProperties)),
-        { dst, src });
+    GateRef result = CallRuntime(glue, RTSTUB_ID(CopyDataProperties), { dst, src });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2322,8 +2296,7 @@ DECLARE_ASM_HANDLER(HandleStArraySpreadPrefV8V8)
     GateRef dst = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef index = GetVregValue(sp, ZExtInt8ToPtr(v1));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(StArraySpread)),
-        { dst, index, acc }); // acc is res
+    GateRef result = CallRuntime(glue, RTSTUB_ID(StArraySpread), { dst, index, acc }); // acc is res
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2346,8 +2319,7 @@ DECLARE_ASM_HANDLER(HandleGetIteratorNextPrefV8V8)
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef method = GetVregValue(sp, ZExtInt8ToPtr(v1));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(GetIteratorNext)),
-        { obj, method });
+    GateRef result = CallRuntime(glue, RTSTUB_ID(GetIteratorNext), { obj, method });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2370,8 +2342,7 @@ DECLARE_ASM_HANDLER(HandleSetObjectWithProtoPrefV8V8)
     GateRef proto = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v1));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SetObjectWithProto)),
-        { proto, obj });
+    GateRef result = CallRuntime(glue, RTSTUB_ID(SetObjectWithProto), { proto, obj });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2415,7 +2386,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
                 Label loadElement(env);
                 Label tryPoly(env);
                 GateRef secondValue = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo,
-                    Int32Add(slotId, GetInt32Constant(1)));
+                    Int32Add(slotId, Int32(1)));
                 DEFVARIABLE(cachedHandler, VariableType::JS_ANY(), secondValue);
                 GateRef hclass = LoadHClass(receiver);
                 Branch(Int64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
@@ -2470,8 +2441,8 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
     }
     Bind(&slowPath);
     {
-        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(LoadICByValue)),
-            { profileTypeInfo, receiver, propKey, IntBuildTaggedTypeWithNoGC(slotId) });
+        GateRef result = CallRuntime(glue, RTSTUB_ID(LoadICByValue),
+                                     { profileTypeInfo, receiver, propKey, IntBuildTaggedTypeWithNoGC(slotId) });
         Label notException(env);
         Branch(TaggedIsException(result), &isException, &notException);
         Bind(&notException);
@@ -2517,7 +2488,7 @@ DECLARE_ASM_HANDLER(HandleStObjByValuePrefV8V8)
                 Label storeElement(env);
                 Label tryPoly(env);
                 GateRef secondValue = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo,
-                    Int32Add(slotId, GetInt32Constant(1)));
+                    Int32Add(slotId, Int32(1)));
                 DEFVARIABLE(cachedHandler, VariableType::JS_ANY(), secondValue);
                 GateRef hclass = LoadHClass(receiver);
                 Branch(Int64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
@@ -2561,8 +2532,8 @@ DECLARE_ASM_HANDLER(HandleStObjByValuePrefV8V8)
     }
     Bind(&slowPath);
     {
-        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(StoreICByValue)),
-            { profileTypeInfo, receiver, propKey, acc, IntBuildTaggedTypeWithNoGC(slotId) }); // acc is value
+        GateRef result = CallRuntime(glue, RTSTUB_ID(StoreICByValue),
+                                     { profileTypeInfo, receiver, propKey, acc, IntBuildTaggedTypeWithNoGC(slotId) });
         Branch(TaggedIsException(result), &isException, &notException);
     }
     Bind(&isException);
@@ -2605,8 +2576,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByValuePrefV8V8)
     }
     Bind(&slowPath);
     {
-        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(StOwnByValue)),
-            { receiver, propKey, acc }); // acc is value
+        GateRef result = CallRuntime(glue, RTSTUB_ID(StOwnByValue), { receiver, propKey, acc });
         Branch(TaggedIsException(result), &isException, &notException);
     }
     Bind(&isException);
@@ -2627,8 +2597,7 @@ DECLARE_ASM_HANDLER(HandleLdSuperByValuePrefV8V8)
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef propKey = GetVregValue(sp, ZExtInt8ToPtr(v1));
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(LdSuperByValue)),
-                                           {  receiver, propKey }); // sp for thisFunc
+    GateRef result = CallRuntime(glue, RTSTUB_ID(LdSuperByValue), {  receiver, propKey }); // sp for thisFunc
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2650,8 +2619,7 @@ DECLARE_ASM_HANDLER(HandleStSuperByValuePrefV8V8)
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef propKey = GetVregValue(sp, ZExtInt8ToPtr(v1));
      // acc is value, sp for thisFunc
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(StSuperByValue)),
-        { receiver, propKey, acc });
+    GateRef result = CallRuntime(glue, RTSTUB_ID(StSuperByValue), { receiver, propKey, acc });
     Label isException(env);
     Label notException(env);
     SetPcToFrame(glue, GetFrame(sp), pc);
@@ -2677,8 +2645,7 @@ DECLARE_ASM_HANDLER(HandleLdSuperByNamePrefId32V8)
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef propKey = GetObjectFromConstPool(constpool, stringId);
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(LdSuperByValue)),
-        { receiver, propKey }); // sp for thisFunc
+    GateRef result = CallRuntime(glue, RTSTUB_ID(LdSuperByValue), { receiver, propKey });
     Branch(TaggedIsException(result), &isException, &dispatch);
     Bind(&isException);
     {
@@ -2701,8 +2668,7 @@ DECLARE_ASM_HANDLER(HandleStSuperByNamePrefId32V8)
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef propKey = GetObjectFromConstPool(constpool, stringId);
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(StSuperByValue)),
-        { receiver, propKey, acc }); // sp for thisFunc
+    GateRef result = CallRuntime(glue, RTSTUB_ID(StSuperByValue), { receiver, propKey, acc });
     Branch(TaggedIsException(result), &isException, &dispatch);
     Bind(&isException);
     {
@@ -2741,8 +2707,8 @@ DECLARE_ASM_HANDLER(HandleLdObjByIndexPrefV8Imm32)
     }
     Bind(&slowPath);
     {
-        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(LdObjByIndex)),
-            { receiver, IntBuildTaggedTypeWithNoGC(index), TaggedFalse(), GetUndefinedConstant() });
+        GateRef result = CallRuntime(glue, RTSTUB_ID(LdObjByIndex),
+                                     { receiver, IntBuildTaggedTypeWithNoGC(index), TaggedFalse(), Undefined() });
         Label notException(env);
         Branch(TaggedIsException(result), &isException, &notException);
         Bind(&notException);
@@ -2781,8 +2747,8 @@ DECLARE_ASM_HANDLER(HandleStObjByIndexPrefV8Imm32)
     }
     Bind(&slowPath);
     {
-        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(StObjByIndex)),
-            { receiver, IntBuildTaggedTypeWithNoGC(index), acc }); // acc is value
+        GateRef result = CallRuntime(glue, RTSTUB_ID(StObjByIndex),
+                                     { receiver, IntBuildTaggedTypeWithNoGC(index), acc });
         Branch(TaggedIsException(result), &isException, &notException);
     }
     Bind(&isException);
@@ -2824,8 +2790,8 @@ DECLARE_ASM_HANDLER(HandleStOwnByIndexPrefV8Imm32)
     }
     Bind(&slowPath);
     {
-        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(StOwnByIndex)),
-            { receiver, IntBuildTaggedTypeWithNoGC(index), acc }); // acc is value
+        GateRef result = CallRuntime(glue, RTSTUB_ID(StOwnByIndex),
+                                     { receiver, IntBuildTaggedTypeWithNoGC(index), acc });
         Branch(TaggedIsException(result), &isException, &notException);
     }
     Bind(&isException);
@@ -2846,8 +2812,8 @@ DECLARE_ASM_HANDLER(HandleStConstToGlobalRecordPrefId32)
     GateRef stringId = ReadInst32_1(pc);
     GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(StGlobalRecord)),
-        { propKey, *varAcc, TaggedTrue() });
+    GateRef result = CallRuntime(glue, RTSTUB_ID(StGlobalRecord),
+                                 { propKey, *varAcc, TaggedTrue() });
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
@@ -2867,8 +2833,8 @@ DECLARE_ASM_HANDLER(HandleStLetToGlobalRecordPrefId32)
     GateRef stringId = ReadInst32_1(pc);
     GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(StGlobalRecord)),
-        { propKey, *varAcc, TaggedFalse() });
+    GateRef result = CallRuntime(glue, RTSTUB_ID(StGlobalRecord),
+                                 { propKey, *varAcc, TaggedFalse() });
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
@@ -2888,8 +2854,7 @@ DECLARE_ASM_HANDLER(HandleStClassToGlobalRecordPrefId32)
     GateRef stringId = ReadInst32_1(pc);
     GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(StGlobalRecord)),
-        { propKey, *varAcc, TaggedFalse() });
+    GateRef result = CallRuntime(glue, RTSTUB_ID(StGlobalRecord), { propKey, *varAcc, TaggedFalse() });
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
@@ -2916,16 +2881,16 @@ DECLARE_ASM_HANDLER(HandleNegDynPrefV8)
         GateRef valueInt = TaggedCastToInt32(value);
         Label valueIsZero(env);
         Label valueNotZero(env);
-        Branch(Int32Equal(valueInt, GetInt32Constant(0)), &valueIsZero, &valueNotZero);
+        Branch(Int32Equal(valueInt, Int32(0)), &valueIsZero, &valueNotZero);
         Bind(&valueIsZero);
         {
             // Format::PREF_V8： size = 3
-            varAcc = DoubleBuildTaggedWithNoGC(GetDoubleConstant(-0.0));
+            varAcc = DoubleBuildTaggedWithNoGC(Double(-0.0));
             Jump(&accDispatch);
         }
         Bind(&valueNotZero);
         {
-            varAcc = IntBuildTaggedWithNoGC(Int32Sub(GetInt32Constant(0), valueInt));
+            varAcc = IntBuildTaggedWithNoGC(Int32Sub(Int32(0), valueInt));
             Jump(&accDispatch);
         }
     }
@@ -2937,7 +2902,7 @@ DECLARE_ASM_HANDLER(HandleNegDynPrefV8)
         Bind(&valueIsDouble);
         {
             GateRef valueDouble = TaggedCastToDouble(value);
-            varAcc = DoubleBuildTaggedWithNoGC(DoubleSub(GetDoubleConstant(0), valueDouble));
+            varAcc = DoubleBuildTaggedWithNoGC(DoubleSub(Double(0), valueDouble));
             Jump(&accDispatch);
         }
         Label isException(env);
@@ -2946,7 +2911,7 @@ DECLARE_ASM_HANDLER(HandleNegDynPrefV8)
         {
             SetPcToFrame(glue, GetFrame(sp), pc);
             // slow path
-            GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(NegDyn)), { value });
+            GateRef result = CallRuntime(glue, RTSTUB_ID(NegDyn), { value });
             Branch(TaggedIsException(result), &isException, &notException);
             Bind(&isException);
             {
@@ -2969,7 +2934,7 @@ DECLARE_ASM_HANDLER(HandleNotDynPrefV8)
 
     GateRef vsrc = ReadInst8_1(pc);
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(vsrc));
-    DEFVARIABLE(number, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(number, VariableType::INT32(), Int32(0));
     Label numberIsInt(env);
     Label numberNotInt(env);
     Label accDispatch(env);
@@ -2996,7 +2961,7 @@ DECLARE_ASM_HANDLER(HandleNotDynPrefV8)
         {
             SetPcToFrame(glue, GetFrame(sp), pc);
             // slow path
-            GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(NotDyn)), { value });
+            GateRef result = CallRuntime(glue, RTSTUB_ID(NotDyn), { value });
             Label isException(env);
             Label notException(env);
             Branch(TaggedIsException(result), &isException, &notException);
@@ -3022,8 +2987,8 @@ DECLARE_ASM_HANDLER(HandleAnd2DynPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, VariableType::INT32(), GetInt32Constant(0));
-    DEFVARIABLE(opNumber1, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(opNumber0, VariableType::INT32(), Int32(0));
+    DEFVARIABLE(opNumber1, VariableType::INT32(), Int32(0));
 
     Label accDispatch(env);
     Label leftIsNumber(env);
@@ -3084,8 +3049,7 @@ DECLARE_ASM_HANDLER(HandleAnd2DynPrefV8)
     Bind(&leftNotNumberOrRightNotNumber);
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
-        GateRef taggedNumber = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(And2Dyn)), { left, right });
+        GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(And2Dyn), { left, right });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -3115,8 +3079,8 @@ DECLARE_ASM_HANDLER(HandleOr2DynPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, VariableType::INT32(), GetInt32Constant(0));
-    DEFVARIABLE(opNumber1, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(opNumber0, VariableType::INT32(), Int32(0));
+    DEFVARIABLE(opNumber1, VariableType::INT32(), Int32(0));
 
     Label accDispatch(env);
     Label leftIsNumber(env);
@@ -3177,8 +3141,7 @@ DECLARE_ASM_HANDLER(HandleOr2DynPrefV8)
     Bind(&leftNotNumberOrRightNotNumber);
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
-        GateRef taggedNumber = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(Or2Dyn)), { left, right });
+        GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(Or2Dyn), { left, right });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -3208,8 +3171,8 @@ DECLARE_ASM_HANDLER(HandleXOr2DynPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, VariableType::INT32(), GetInt32Constant(0));
-    DEFVARIABLE(opNumber1, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(opNumber0, VariableType::INT32(), Int32(0));
+    DEFVARIABLE(opNumber1, VariableType::INT32(), Int32(0));
 
     Label accDispatch(env);
     Label leftIsNumber(env);
@@ -3270,8 +3233,7 @@ DECLARE_ASM_HANDLER(HandleXOr2DynPrefV8)
     Bind(&leftNotNumberOrRightNotNumber);
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
-        GateRef taggedNumber = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(Xor2Dyn)), { left, right });
+        GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(Xor2Dyn), { left, right });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -3301,8 +3263,8 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, VariableType::INT32(), GetInt32Constant(0));
-    DEFVARIABLE(opNumber1, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(opNumber0, VariableType::INT32(), Int32(0));
+    DEFVARIABLE(opNumber1, VariableType::INT32(), Int32(0));
 
     Label accDispatch(env);
     Label doShr(env);
@@ -3366,8 +3328,7 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
     Bind(&leftNotNumberOrRightNotNumber);
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
-        GateRef taggedNumber = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(Ashr2Dyn)), { left, right });
+        GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(Ashr2Dyn), { left, right });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -3383,9 +3344,9 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
     }
     Bind(&doShr);
     {
-        GateRef shift = Int32And(*opNumber1, GetInt32Constant(0x1f));
+        GateRef shift = Int32And(*opNumber1, Int32(0x1f));
         GateRef ret = UInt32LSR(*opNumber0, shift);
-        auto condition = UInt32GreaterThan(ret, GetInt32Constant(INT32_MAX));
+        auto condition = UInt32GreaterThan(ret, Int32(INT32_MAX));
         Branch(condition, &overflow, &notOverflow);
         Bind(&overflow);
         {
@@ -3412,8 +3373,8 @@ DECLARE_ASM_HANDLER(HandleShr2DynPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, VariableType::INT32(), GetInt32Constant(0));
-    DEFVARIABLE(opNumber1, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(opNumber0, VariableType::INT32(), Int32(0));
+    DEFVARIABLE(opNumber1, VariableType::INT32(), Int32(0));
 
     Label accDispatch(env);
     Label leftIsNumber(env);
@@ -3474,8 +3435,7 @@ DECLARE_ASM_HANDLER(HandleShr2DynPrefV8)
     Bind(&leftNotNumberOrRightNotNumber);
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
-        GateRef taggedNumber = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(Shr2Dyn)), { left, right });
+        GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(Shr2Dyn), { left, right });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -3491,7 +3451,7 @@ DECLARE_ASM_HANDLER(HandleShr2DynPrefV8)
     }
     Bind(&accDispatch);
     {
-        GateRef shift = Int32And(*opNumber1, GetInt32Constant(0x1f));
+        GateRef shift = Int32And(*opNumber1, Int32(0x1f));
         GateRef ret = Int32ASR(*opNumber0, shift);
         varAcc = IntBuildTaggedWithNoGC(ret);
         DISPATCH_WITH_ACC(PREF_V8);
@@ -3505,8 +3465,8 @@ DECLARE_ASM_HANDLER(HandleShl2DynPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, VariableType::INT32(), GetInt32Constant(0));
-    DEFVARIABLE(opNumber1, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(opNumber0, VariableType::INT32(), Int32(0));
+    DEFVARIABLE(opNumber1, VariableType::INT32(), Int32(0));
 
     Label accDispatch(env);
     Label leftIsNumber(env);
@@ -3567,8 +3527,7 @@ DECLARE_ASM_HANDLER(HandleShl2DynPrefV8)
     Bind(&leftNotNumberOrRightNotNumber);
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
-        GateRef taggedNumber = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(Shl2Dyn)), { left, right });
+        GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(Shl2Dyn), { left, right });
         Label IsException(env);
         Label NotException(env);
         Branch(TaggedIsException(taggedNumber), &IsException, &NotException);
@@ -3584,7 +3543,7 @@ DECLARE_ASM_HANDLER(HandleShl2DynPrefV8)
     }
     Bind(&accDispatch);
     {
-        GateRef shift = Int32And(*opNumber1, GetInt32Constant(0x1f));
+        GateRef shift = Int32And(*opNumber1, Int32(0x1f));
         GateRef ret = Int32LSL(*opNumber0, shift);
         varAcc = IntBuildTaggedWithNoGC(ret);
         DISPATCH_WITH_ACC(PREF_V8);
@@ -3607,7 +3566,7 @@ DECLARE_ASM_HANDLER(HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8)
     GateRef lexicalEnv = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef proto = GetVregValue(sp, ZExtInt8ToPtr(v1));
 
-    DEFVARIABLE(res, VariableType::JS_ANY(), GetUndefinedConstant());
+    DEFVARIABLE(res, VariableType::JS_ANY(), Undefined());
 
     Label isResolved(env);
     Label isNotResolved(env);
@@ -3616,14 +3575,13 @@ DECLARE_ASM_HANDLER(HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8)
     Branch(FunctionIsResolved(classTemplate), &isResolved, &isNotResolved);
     Bind(&isResolved);
     {
-        res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(CloneClassFromTemplate)),
-                                    { classTemplate, proto, lexicalEnv, constpool });
+        res = CallRuntime(glue, RTSTUB_ID(CloneClassFromTemplate), { classTemplate, proto, lexicalEnv, constpool });
         Jump(&afterCheckResolved);
     }
     Bind(&isNotResolved);
     {
-        res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(ResolveClass)),
-                                    { classTemplate, literalBuffer, proto, lexicalEnv, constpool });
+        res = CallRuntime(glue, RTSTUB_ID(ResolveClass),
+                          { classTemplate, literalBuffer, proto, lexicalEnv, constpool });
         Jump(&afterCheckResolved);
     }
     Bind(&afterCheckResolved);
@@ -3637,8 +3595,7 @@ DECLARE_ASM_HANDLER(HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8)
     Bind(&isNotException);
     GateRef newLexicalEnv = GetVregValue(sp, ZExtInt8ToPtr(v0));  // slow runtime may gc
     SetLexicalEnvToFunction(glue, *res, newLexicalEnv);
-    CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SetClassConstructorLength)),
-        { *res, Int16BuildTaggedTypeWithNoGC(length) });
+    CallRuntime(glue, RTSTUB_ID(SetClassConstructorLength), { *res, Int16BuildTaggedTypeWithNoGC(length) });
     varAcc = *res;
     DISPATCH_WITH_ACC(PREF_ID16_IMM16_IMM16_V8_V8);
 }
@@ -3647,7 +3604,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
 {
     auto env = GetEnvironment();
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
-    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
 
     GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_5(pc)));
@@ -3674,7 +3631,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
                 Label tryPoly(env);
                 Label loadWithHandler(env);
                 GateRef secondValue = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo,
-                    Int32Add(slotId, GetInt32Constant(1)));
+                    Int32Add(slotId, Int32(1)));
                 DEFVARIABLE(cachedHandler, VariableType::JS_ANY(), secondValue);
                 GateRef hclass = LoadHClass(receiver);
                 Branch(Int64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
@@ -3721,9 +3678,8 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
         Label noException(env);
         GateRef stringId = ReadInst32_1(pc);
         GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
-        result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(LoadICByName)), {
-            profileTypeInfo, receiver, propKey, IntBuildTaggedTypeWithNoGC(slotId)
-        });
+        result = CallRuntime(glue, RTSTUB_ID(LoadICByName),
+                             { profileTypeInfo, receiver, propKey, IntBuildTaggedTypeWithNoGC(slotId) });
         Branch(TaggedIsException(*result), &isException, &noException);
         Bind(&isException);
         {
@@ -3743,7 +3699,7 @@ DECLARE_ASM_HANDLER(HandleStObjByNamePrefId32V8)
 
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_5(pc)));
     GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
-    DEFVARIABLE(result, VariableType::INT64(), GetHoleConstant(VariableType::INT64()));
+    DEFVARIABLE(result, VariableType::INT64(), Hole(VariableType::INT64()));
     SetPcToFrame(glue, GetFrame(sp), pc);
 
     Label checkResult(env);
@@ -3767,7 +3723,7 @@ DECLARE_ASM_HANDLER(HandleStObjByNamePrefId32V8)
                 Label tryPoly(env);
                 Label storeWithHandler(env);
                 GateRef secondValue = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo,
-                    Int32Add(slotId, GetInt32Constant(1)));
+                    Int32Add(slotId, Int32(1)));
                 DEFVARIABLE(cachedHandler, VariableType::JS_ANY(), secondValue);
                 GateRef hclass = LoadHClass(receiver);
                 Branch(Int64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
@@ -3798,8 +3754,9 @@ DECLARE_ASM_HANDLER(HandleStObjByNamePrefId32V8)
     {
         GateRef stringId = ReadInst32_1(pc);
         GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
-        result = ChangeTaggedPointerToInt64(CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(StoreICByName)),
-            { profileTypeInfo, receiver, propKey, acc, IntBuildTaggedTypeWithNoGC(slotId) }));
+        result = ChangeTaggedPointerToInt64(CallRuntime(glue, RTSTUB_ID(StoreICByName),
+                                                        { profileTypeInfo, receiver, propKey, acc,
+                                                          IntBuildTaggedTypeWithNoGC(slotId) }));
         Jump(&checkResult);
     }
     Bind(&checkResult);
@@ -3852,8 +3809,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByValueWithNameSetPrefV8V8)
                         DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
                     }
                     Bind(&notException);
-                    CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SetFunctionNameNoPrefix)),
-                                          { acc, propKey });
+                    CallRuntime(glue, RTSTUB_ID(SetFunctionNameNoPrefix), { acc, propKey });
                     DISPATCH(PREF_V8_V8);
                 }
             }
@@ -3861,8 +3817,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByValueWithNameSetPrefV8V8)
     }
     Bind(&slowPath);
     {
-        GateRef res = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(StOwnByValueWithNameSet)), { receiver, propKey, acc });
+        GateRef res = CallRuntime(glue, RTSTUB_ID(StOwnByValueWithNameSet), { receiver, propKey, acc });
         Branch(TaggedIsException(res), &isException1, &notException1);
         Bind(&isException1);
         {
@@ -3879,7 +3834,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByNamePrefId32V8)
     GateRef stringId = ReadInst32_1(pc);
     GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_5(pc)));
-    DEFVARIABLE(result, VariableType::INT64(), GetHoleConstant(VariableType::INT64()));
+    DEFVARIABLE(result, VariableType::INT64(), Hole(VariableType::INT64()));
     SetPcToFrame(glue, GetFrame(sp), pc);
     Label checkResult(env);
     Label dispatch(env);
@@ -3904,8 +3859,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByNamePrefId32V8)
     }
     Bind(&slowPath);
     {
-        result = ChangeTaggedPointerToInt64(CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(StOwnByName)),
-            { receiver, propKey, acc }));
+        result = ChangeTaggedPointerToInt64(CallRuntime(glue, RTSTUB_ID(StOwnByName), { receiver, propKey, acc }));
         Jump(&checkResult);
     }
     Bind(&checkResult);
@@ -3956,8 +3910,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByNameWithNameSetPrefId32V8)
                         DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
                     }
                     Bind(&notException);
-                    CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SetFunctionNameNoPrefix)),
-                                          { acc, propKey });
+                    CallRuntime(glue, RTSTUB_ID(SetFunctionNameNoPrefix), { acc, propKey });
                     DISPATCH(PREF_ID32_V8);
                 }
             }
@@ -3965,8 +3918,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByNameWithNameSetPrefId32V8)
     }
     Bind(&notJSObject);
     {
-        GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(StOwnByNameWithNameSet)),
-            { receiver, propKey, acc });
+        GateRef res = CallRuntime(glue, RTSTUB_ID(StOwnByNameWithNameSet), { receiver, propKey, acc });
         Branch(TaggedIsException(res), &isException1, &notException1);
         Bind(&isException1);
         {
@@ -4059,14 +4011,14 @@ DECLARE_ASM_HANDLER(HandleJeqzImm8)
         Branch(TaggedIsInt(acc), &accIsInt, &accNotInt);
         Bind(&accIsInt);
         {
-            Branch(Int32Equal(TaggedGetInt(acc), GetInt32Constant(0)), &accEqualFalse, &accNotInt);
+            Branch(Int32Equal(TaggedGetInt(acc), Int32(0)), &accEqualFalse, &accNotInt);
         }
         Bind(&accNotInt);
         {
             Branch(TaggedIsDouble(acc), &accIsDouble, &last);
             Bind(&accIsDouble);
             {
-                Branch(DoubleEqual(TaggedCastToDouble(acc), GetDoubleConstant(0)), &accEqualFalse, &last);
+                Branch(DoubleEqual(TaggedCastToDouble(acc), Double(0)), &accEqualFalse, &last);
             }
         }
     }
@@ -4079,7 +4031,7 @@ DECLARE_ASM_HANDLER(HandleJeqzImm8)
     }
     Bind(&last);
     Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter,
-             GetIntPtrConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
+             IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
 }
 
 DECLARE_ASM_HANDLER(HandleJeqzImm16)
@@ -4102,14 +4054,14 @@ DECLARE_ASM_HANDLER(HandleJeqzImm16)
         Branch(TaggedIsInt(acc), &accIsInt, &accNotInt);
         Bind(&accIsInt);
         {
-            Branch(Int32Equal(TaggedGetInt(acc), GetInt32Constant(0)), &accEqualFalse, &accNotInt);
+            Branch(Int32Equal(TaggedGetInt(acc), Int32(0)), &accEqualFalse, &accNotInt);
         }
         Bind(&accNotInt);
         {
             Branch(TaggedIsDouble(acc), &accIsDouble, &last);
             Bind(&accIsDouble);
             {
-                Branch(DoubleEqual(TaggedCastToDouble(acc), GetDoubleConstant(0)), &accEqualFalse, &last);
+                Branch(DoubleEqual(TaggedCastToDouble(acc), Double(0)), &accEqualFalse, &last);
             }
         }
     }
@@ -4122,7 +4074,7 @@ DECLARE_ASM_HANDLER(HandleJeqzImm16)
     }
     Bind(&last);
     Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter,
-             GetIntPtrConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::IMM16)));
+             IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::IMM16)));
 }
 
 DECLARE_ASM_HANDLER(HandleJnezImm8)
@@ -4145,14 +4097,14 @@ DECLARE_ASM_HANDLER(HandleJnezImm8)
         Branch(TaggedIsInt(acc), &accIsInt, &accNotInt);
         Bind(&accIsInt);
         {
-            Branch(Int32Equal(TaggedGetInt(acc), GetInt32Constant(0)), &accNotInt, &accEqualTrue);
+            Branch(Int32Equal(TaggedGetInt(acc), Int32(0)), &accNotInt, &accEqualTrue);
         }
         Bind(&accNotInt);
         {
             Branch(TaggedIsDouble(acc), &accIsDouble, &last);
             Bind(&accIsDouble);
             {
-                Branch(DoubleEqual(TaggedCastToDouble(acc), GetDoubleConstant(0)), &last, &accEqualTrue);
+                Branch(DoubleEqual(TaggedCastToDouble(acc), Double(0)), &last, &accEqualTrue);
             }
         }
     }
@@ -4165,7 +4117,7 @@ DECLARE_ASM_HANDLER(HandleJnezImm8)
     }
     Bind(&last);
     Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter,
-             GetIntPtrConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
+             IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
 }
 
 DECLARE_ASM_HANDLER(HandleJnezImm16)
@@ -4188,14 +4140,14 @@ DECLARE_ASM_HANDLER(HandleJnezImm16)
         Branch(TaggedIsInt(acc), &accIsInt, &accNotInt);
         Bind(&accIsInt);
         {
-            Branch(Int32Equal(TaggedGetInt(acc), GetInt32Constant(0)), &accNotInt, &accEqualTrue);
+            Branch(Int32Equal(TaggedGetInt(acc), Int32(0)), &accNotInt, &accEqualTrue);
         }
         Bind(&accNotInt);
         {
             Branch(TaggedIsDouble(acc), &accIsDouble, &last);
             Bind(&accIsDouble);
             {
-                Branch(DoubleEqual(TaggedCastToDouble(acc), GetDoubleConstant(0)), &last, &accEqualTrue);
+                Branch(DoubleEqual(TaggedCastToDouble(acc), Double(0)), &last, &accEqualTrue);
             }
         }
     }
@@ -4208,7 +4160,7 @@ DECLARE_ASM_HANDLER(HandleJnezImm16)
     }
     Bind(&last);
     Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter,
-             GetIntPtrConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::IMM16)));
+             IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::IMM16)));
 }
 
 DECLARE_ASM_HANDLER(HandleReturnDyn)
@@ -4233,22 +4185,22 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
     {
         GateRef function = GetFunctionFromFrame(frame);
         GateRef method = Load(VariableType::POINTER(), function,
-            GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
+            IntPtr(JSFunctionBase::METHOD_OFFSET));
         GateRef fistPC = Load(VariableType::POINTER(), method,
-            GetIntPtrConstant(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
+            IntPtr(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
         GateRef offset = Int32Not(TruncPtrToInt32(IntPtrSub(*varPc, fistPC)));
         UPDATE_HOTNESS(*varSp);
         Store(VariableType::INT32(), glue, method,
-              GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET), *varHotnessCounter);
+              IntPtr(JSMethod::HOTNESS_COUNTER_OFFSET), *varHotnessCounter);
         Jump(&tryContinue);
     }
 
     Bind(&tryContinue);
     varSp = Load(VariableType::POINTER(), frame,
-        GetIntPtrConstant(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
+        IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
     GateRef prevState = GetFrame(*varSp);
     varPc = GetPcFromFrame(prevState);
-    Branch(IntPtrEqual(*varPc, GetIntPtrConstant(0)), &pcEqualNullptr, &pcNotEqualNullptr);
+    Branch(IntPtrEqual(*varPc, IntPtr(0)), &pcEqualNullptr, &pcNotEqualNullptr);
     Bind(&pcEqualNullptr);
     {
         SetAccToFrame(glue, frame, acc);
@@ -4261,9 +4213,9 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
         varConstpool = GetConstpoolFromFunction(function);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
         GateRef method = Load(VariableType::POINTER(), function,
-            GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
+            IntPtr(JSFunctionBase::METHOD_OFFSET));
         varHotnessCounter = Load(VariableType::INT32(), method,
-                                 GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET));
+                                 IntPtr(JSMethod::HOTNESS_COUNTER_OFFSET));
         GateRef jumpSize = GetCallSizeFromFrame(prevState);
         Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, acc,
                  *varHotnessCounter, jumpSize);
@@ -4293,23 +4245,23 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
     {
         GateRef function = GetFunctionFromFrame(frame);
         GateRef method = Load(VariableType::POINTER(), function,
-            GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
+            IntPtr(JSFunctionBase::METHOD_OFFSET));
         GateRef fistPC = Load(VariableType::POINTER(), method,
-            GetIntPtrConstant(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
+            IntPtr(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
         GateRef offset = Int32Not(TruncPtrToInt32(IntPtrSub(*varPc, fistPC)));
         UPDATE_HOTNESS(*varSp);
         Store(VariableType::INT32(), glue, method,
-              GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET), *varHotnessCounter);
+              IntPtr(JSMethod::HOTNESS_COUNTER_OFFSET), *varHotnessCounter);
         Jump(&tryContinue);
     }
 
     Bind(&tryContinue);
     varSp = Load(VariableType::POINTER(), frame,
-        GetIntPtrConstant(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
+        IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
     GateRef prevState = GetFrame(*varSp);
     varPc = GetPcFromFrame(prevState);
-    varAcc = GetUndefinedConstant();
-    Branch(IntPtrEqual(*varPc, GetIntPtrConstant(0)), &pcEqualNullptr, &pcNotEqualNullptr);
+    varAcc = Undefined();
+    Branch(IntPtrEqual(*varPc, IntPtr(0)), &pcEqualNullptr, &pcNotEqualNullptr);
     Bind(&pcEqualNullptr);
     {
         SetAccToFrame(glue, frame, *varAcc);
@@ -4322,9 +4274,9 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
         varConstpool = GetConstpoolFromFunction(function);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
         GateRef method = Load(VariableType::POINTER(), function,
-            GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
+            IntPtr(JSFunctionBase::METHOD_OFFSET));
         varHotnessCounter = Load(VariableType::INT32(), method,
-                                 GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET));
+                                 IntPtr(JSMethod::HOTNESS_COUNTER_OFFSET));
         GateRef jumpSize = GetCallSizeFromFrame(prevState);
         Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, *varAcc,
                  *varHotnessCounter, jumpSize);
@@ -4352,8 +4304,7 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_2(pc)));
     GateRef frame = GetFrame(*varSp);
     SetPcToFrame(glue, frame, pc);
-    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SuspendGenerator)),
-        { genObj, value });
+    GateRef res = CallRuntime(glue, RTSTUB_ID(SuspendGenerator), { genObj, value });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -4368,22 +4319,22 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
     {
         GateRef function = GetFunctionFromFrame(frame);
         GateRef method = Load(VariableType::POINTER(), function,
-            GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
+            IntPtr(JSFunctionBase::METHOD_OFFSET));
         GateRef fistPC = Load(VariableType::POINTER(), method,
-            GetIntPtrConstant(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
+            IntPtr(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
         GateRef offset = Int32Not(TruncPtrToInt32(IntPtrSub(*varPc, fistPC)));
         UPDATE_HOTNESS(*varSp);
         Store(VariableType::INT32(), glue, method,
-              GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET), *varHotnessCounter);
+              IntPtr(JSMethod::HOTNESS_COUNTER_OFFSET), *varHotnessCounter);
         Jump(&tryContinue);
     }
 
     Bind(&tryContinue);
     varSp = Load(VariableType::POINTER(), frame,
-        GetIntPtrConstant(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
+        IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
     GateRef prevState = GetFrame(*varSp);
     varPc = GetPcFromFrame(prevState);
-    Branch(IntPtrEqual(*varPc, GetIntPtrConstant(0)), &pcEqualNullptr, &pcNotEqualNullptr);
+    Branch(IntPtrEqual(*varPc, IntPtr(0)), &pcEqualNullptr, &pcNotEqualNullptr);
     Bind(&pcEqualNullptr);
     {
         SetAccToFrame(glue, frame, acc);
@@ -4396,9 +4347,9 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
         varConstpool = GetConstpoolFromFunction(function);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
         GateRef method = Load(VariableType::POINTER(), function,
-            GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
+            IntPtr(JSFunctionBase::METHOD_OFFSET));
         varHotnessCounter = Load(VariableType::INT32(), method,
-                                 GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET));
+                                 IntPtr(JSMethod::HOTNESS_COUNTER_OFFSET));
         GateRef jumpSize = GetCallSizeFromFrame(prevState);
         Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, acc,
                  *varHotnessCounter, jumpSize);
@@ -4417,9 +4368,9 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
 
     Label pcIsInvalid(env);
     Label pcNotInvalid(env);
-    GateRef exception = Load(VariableType::JS_ANY(), glue, GetIntPtrConstant(0));
-    varPc = TaggedCastToIntPtr(CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(UpFrame)), {}));
-    Branch(IntPtrEqual(*varPc, GetIntPtrConstant(0)), &pcIsInvalid, &pcNotInvalid);
+    GateRef exception = Load(VariableType::JS_ANY(), glue, IntPtr(0));
+    varPc = TaggedCastToIntPtr(CallRuntime(glue, RTSTUB_ID(UpFrame), {}));
+    Branch(IntPtrEqual(*varPc, IntPtr(0)), &pcIsInvalid, &pcNotInvalid);
     Bind(&pcIsInvalid);
     {
         Return();
@@ -4429,16 +4380,16 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
         varSp = GetCurrentSpFrame(glue);
         varAcc = exception;
         // clear exception
-        Store(VariableType::INT64(), glue, glue, GetIntPtrConstant(0), GetHoleConstant());
+        Store(VariableType::INT64(), glue, glue, IntPtr(0), Hole());
         GateRef function = GetFunctionFromFrame(GetFrame(*varSp));
         varConstpool = GetConstpoolFromFunction(function);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
         GateRef method = Load(VariableType::POINTER(), function,
-            GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
+            IntPtr(JSFunctionBase::METHOD_OFFSET));
         varHotnessCounter = Load(VariableType::INT32(), method,
-                                 GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET));
+                                 IntPtr(JSMethod::HOTNESS_COUNTER_OFFSET));
         Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, *varAcc,
-                 *varHotnessCounter, GetIntPtrConstant(0));
+                 *varHotnessCounter, IntPtr(0));
     }
 }
 
@@ -4448,7 +4399,7 @@ DECLARE_ASM_HANDLER(HandleGetModuleNamespacePrefId32)
 
     GateRef stringId = ReadInst32_1(pc);
     GateRef prop = GetObjectFromConstPool(constpool, stringId);
-    GateRef moduleRef = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(GetModuleNamespace)), { prop });
+    GateRef moduleRef = CallRuntime(glue, RTSTUB_ID(GetModuleNamespace), { prop });
     varAcc = moduleRef;
     DISPATCH_WITH_ACC(PREF_ID32);
 }
@@ -4459,7 +4410,7 @@ DECLARE_ASM_HANDLER(HandleStModuleVarPrefId32)
     GateRef prop = GetObjectFromConstPool(constpool, stringId);
     GateRef value = acc;
 
-    CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(StModuleVar)), { prop, value });
+    CallRuntime(glue, RTSTUB_ID(StModuleVar), { prop, value });
     DISPATCH(PREF_ID32);
 }
 
@@ -4471,8 +4422,7 @@ DECLARE_ASM_HANDLER(HandleLdModuleVarPrefId32Imm8)
     GateRef flag = ReadInst8_5(pc);
     GateRef key = GetObjectFromConstPool(constpool, stringId);
     GateRef innerFlag = ZExtInt8ToInt32(flag);
-    GateRef moduleVar = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(LdModuleVar)),
-                                              { key, IntBuildTaggedTypeWithNoGC(innerFlag) });
+    GateRef moduleVar = CallRuntime(glue, RTSTUB_ID(LdModuleVar), { key, IntBuildTaggedTypeWithNoGC(innerFlag) });
     varAcc = moduleVar;
     DISPATCH_WITH_ACC(PREF_ID32_IMM8);
 }
@@ -4492,7 +4442,7 @@ DECLARE_ASM_HANDLER(HandleTryLdGlobalByNamePrefId32)
     Branch(TaggedIsUndefined(profileTypeInfo), &icNotAvailable, &icAvailable);
     Bind(&icAvailable);
     {
-        DEFVARIABLE(icResult, VariableType::JS_ANY(), GetUndefinedConstant());
+        DEFVARIABLE(icResult, VariableType::JS_ANY(), Undefined());
         GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
         GateRef handler = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo, slotId);
         Label isHeapObject(env);
@@ -4507,10 +4457,9 @@ DECLARE_ASM_HANDLER(HandleTryLdGlobalByNamePrefId32)
         Bind(&ldMiss);
         {
             GateRef globalObject = GetGlobalObject(glue);
-            icResult = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(LoadMiss)), {
-                profileTypeInfo, globalObject, prop, IntBuildTaggedTypeWithNoGC(slotId),
-                IntBuildTaggedTypeWithNoGC(GetInt32Constant(static_cast<int>(ICKind::NamedGlobalLoadIC)))
-            });
+            icResult = CallRuntime(glue, RTSTUB_ID(LoadMiss),
+                                   { profileTypeInfo, globalObject, prop, IntBuildTaggedTypeWithNoGC(slotId),
+                                     IntBuildTaggedTypeWithNoGC(Int32(static_cast<int>(ICKind::NamedGlobalLoadIC))) });
             Jump(&icResultCheck);
         }
         Bind(&icResultCheck);
@@ -4531,22 +4480,19 @@ DECLARE_ASM_HANDLER(HandleTryLdGlobalByNamePrefId32)
     {
         // order: 1. global record 2. global object
         // if we find a way to get global record, we can inline LdGlobalRecord directly
-        GateRef recordResult = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(LdGlobalRecord)),
-                                                     { prop });
+        GateRef recordResult = CallRuntime(glue, RTSTUB_ID(LdGlobalRecord), { prop });
         Label isFound(env);
         Label isNotFound(env);
         Branch(TaggedIsUndefined(recordResult), &isNotFound, &isFound);
         Bind(&isNotFound);
         {
-            GateRef globalResult = CallRuntimeTrampoline(glue,
-                GetInt64Constant(RTSTUB_ID(GetGlobalOwnProperty)), { prop });
+            GateRef globalResult = CallRuntime(glue, RTSTUB_ID(GetGlobalOwnProperty), { prop });
             Label isFoundInGlobal(env);
             Label slowPath(env);
             Branch(TaggedIsHole(globalResult), &slowPath, &isFoundInGlobal);
             Bind(&slowPath);
             {
-                GateRef slowResult = CallRuntimeTrampoline(glue,
-                    GetInt64Constant(RTSTUB_ID(TryLdGlobalByName)), { prop });
+                GateRef slowResult = CallRuntime(glue, RTSTUB_ID(TryLdGlobalByName), { prop });
                 Label isException(env);
                 Label isNotException(env);
                 Branch(TaggedIsException(slowResult), &isException, &isNotException);
@@ -4566,7 +4512,7 @@ DECLARE_ASM_HANDLER(HandleTryLdGlobalByNamePrefId32)
         }
         Bind(&isFound);
         {
-            varAcc = Load(VariableType::JS_ANY(), recordResult, GetIntPtrConstant(PropertyBox::VALUE_OFFSET));
+            varAcc = Load(VariableType::JS_ANY(), recordResult, IntPtr(PropertyBox::VALUE_OFFSET));
             Jump(&dispatch);
         }
     }
@@ -4579,7 +4525,7 @@ DECLARE_ASM_HANDLER(HandleTryStGlobalByNamePrefId32)
     auto env = GetEnvironment();
     GateRef stringId = ReadInst32_1(pc);
     GateRef propKey = GetObjectFromConstPool(constpool, stringId);
-    DEFVARIABLE(result, VariableType::JS_ANY(), GetUndefinedConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), Undefined());
 
     Label checkResult(env);
     Label dispatch(env);
@@ -4603,44 +4549,38 @@ DECLARE_ASM_HANDLER(HandleTryStGlobalByNamePrefId32)
         Bind(&stMiss);
         {
             GateRef globalObject = GetGlobalObject(glue);
-            result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(StoreMiss)), {
-                profileTypeInfo, globalObject, propKey, acc, IntBuildTaggedTypeWithNoGC(slotId),
-                IntBuildTaggedTypeWithNoGC(GetInt32Constant(static_cast<int>(ICKind::NamedGlobalStoreIC)))
-            });
+            result = CallRuntime(glue, RTSTUB_ID(StoreMiss),
+                                 { profileTypeInfo, globalObject, propKey, acc, IntBuildTaggedTypeWithNoGC(slotId),
+                                   IntBuildTaggedTypeWithNoGC(Int32(static_cast<int>(ICKind::NamedGlobalStoreIC))) });
             Jump(&checkResult);
         }
     }
     Bind(&icNotAvailable);
     // order: 1. global record 2. global object
     // if we find a way to get global record, we can inline LdGlobalRecord directly
-    GateRef recordInfo = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(LdGlobalRecord)),
-                                               { propKey });
+    GateRef recordInfo = CallRuntime(glue, RTSTUB_ID(LdGlobalRecord), { propKey });
     Label isFound(env);
     Label isNotFound(env);
     Branch(TaggedIsUndefined(recordInfo), &isNotFound, &isFound);
     Bind(&isFound);
     {
-        result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(TryUpdateGlobalRecord)),
-                                       { propKey, acc });
+        result = CallRuntime(glue, RTSTUB_ID(TryUpdateGlobalRecord), { propKey, acc });
         Jump(&checkResult);
     }
     Bind(&isNotFound);
     {
         Label foundInGlobal(env);
         Label notFoundInGlobal(env);
-        GateRef globalResult = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(GetGlobalOwnProperty)), { propKey });
+        GateRef globalResult = CallRuntime(glue, RTSTUB_ID(GetGlobalOwnProperty), { propKey });
         Branch(TaggedIsHole(globalResult), &notFoundInGlobal, &foundInGlobal);
         Bind(&notFoundInGlobal);
         {
-            result = CallRuntimeTrampoline(glue,
-                GetInt64Constant(RTSTUB_ID(ThrowReferenceError)), { propKey });
+            result = CallRuntime(glue, RTSTUB_ID(ThrowReferenceError), { propKey });
             DISPATCH_LAST();
         }
         Bind(&foundInGlobal);
         {
-            result = CallRuntimeTrampoline(glue,
-                GetInt64Constant(RTSTUB_ID(StGlobalVar)), { propKey, acc });
+            result = CallRuntime(glue, RTSTUB_ID(StGlobalVar), { propKey, acc });
             Jump(&checkResult);
         }
     }
@@ -4664,7 +4604,7 @@ DECLARE_ASM_HANDLER(HandleLdGlobalVarPrefId32)
 
     GateRef stringId = ReadInst32_1(pc);
     GateRef propKey = GetObjectFromConstPool(constpool, stringId);
-    DEFVARIABLE(result, VariableType::JS_ANY(), GetUndefinedConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), Undefined());
 
     Label checkResult(env);
     Label dispatch(env);
@@ -4688,22 +4628,19 @@ DECLARE_ASM_HANDLER(HandleLdGlobalVarPrefId32)
         }
         Bind(&ldMiss);
         {
-            result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(LoadMiss)), {
-                profileTypeInfo, globalObject, propKey, IntBuildTaggedTypeWithNoGC(slotId),
-                IntBuildTaggedTypeWithNoGC(GetInt32Constant(static_cast<int>(ICKind::NamedGlobalLoadIC)))
-            });
+            result = CallRuntime(glue, RTSTUB_ID(LoadMiss),
+                                 { profileTypeInfo, globalObject, propKey, IntBuildTaggedTypeWithNoGC(slotId),
+                                   IntBuildTaggedTypeWithNoGC(Int32(static_cast<int>(ICKind::NamedGlobalLoadIC))) });
             Jump(&checkResult);
         }
     }
     Bind(&icNotAvailable);
     {
-        result = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(GetGlobalOwnProperty)), { propKey });
+        result = CallRuntime(glue, RTSTUB_ID(GetGlobalOwnProperty), { propKey });
         Branch(TaggedIsHole(*result), &slowPath, &dispatch);
         Bind(&slowPath);
         {
-            result = CallRuntimeTrampoline(glue,
-                GetInt64Constant(RTSTUB_ID(LdGlobalVar)), { globalObject, propKey });
+            result = CallRuntime(glue, RTSTUB_ID(LdGlobalVar), { globalObject, propKey });
             Jump(&checkResult);
         }
     }
@@ -4727,7 +4664,7 @@ DECLARE_ASM_HANDLER(HandleStGlobalVarPrefId32)
 
     GateRef stringId = ReadInst32_1(pc);
     GateRef propKey = GetObjectFromConstPool(constpool, stringId);
-    DEFVARIABLE(result, VariableType::JS_ANY(), GetUndefinedConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), Undefined());
 
     Label checkResult(env);
     Label dispatch(env);
@@ -4751,17 +4688,15 @@ DECLARE_ASM_HANDLER(HandleStGlobalVarPrefId32)
         Bind(&stMiss);
         {
             GateRef globalObject = GetGlobalObject(glue);
-            result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(StoreMiss)), {
-                profileTypeInfo, globalObject, propKey, acc, IntBuildTaggedTypeWithNoGC(slotId),
-                IntBuildTaggedTypeWithNoGC(GetInt32Constant(static_cast<int>(ICKind::NamedGlobalStoreIC)))
-            });
+            result = CallRuntime(glue, RTSTUB_ID(StoreMiss),
+                                 { profileTypeInfo, globalObject, propKey, acc, IntBuildTaggedTypeWithNoGC(slotId),
+                                   IntBuildTaggedTypeWithNoGC(Int32(static_cast<int>(ICKind::NamedGlobalStoreIC))) });
             Jump(&checkResult);
         }
     }
     Bind(&icNotAvailable);
     {
-        result = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(StGlobalVar)), { propKey, acc });
+        result = CallRuntime(glue, RTSTUB_ID(StGlobalVar), { propKey, acc });
         Jump(&checkResult);
     }
     Bind(&checkResult);
@@ -4785,8 +4720,8 @@ DECLARE_ASM_HANDLER(HandleCreateRegExpWithLiteralPrefId32Imm8)
     GateRef pattern = GetObjectFromConstPool(constpool, stringId);
     GateRef flags = ReadInst8_5(pc);
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(CreateRegExpWithLiteral)),
-        { pattern, Int8BuildTaggedTypeWithNoGC(flags) });
+    GateRef res = CallRuntime(glue, RTSTUB_ID(CreateRegExpWithLiteral),
+                              { pattern, Int8BuildTaggedTypeWithNoGC(flags) });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -4819,8 +4754,7 @@ DECLARE_ASM_HANDLER(HandleIsTruePref)
     }
 
     Bind(&slowPath);
-    GateRef result = CallRuntimeTrampoline(glue,
-        GetInt64Constant(RTSTUB_ID(ToBoolean)), { *varAcc });
+    GateRef result = CallRuntime(glue, RTSTUB_ID(ToBoolean), { *varAcc });
     Branch(TaggedIsTrue(result), &isTrue, &isFalse);
     Bind(&isTrue);
     {
@@ -4855,8 +4789,7 @@ DECLARE_ASM_HANDLER(HandleIsFalsePref)
     }
 
     Bind(&slowPath);
-    GateRef result = CallRuntimeTrampoline(glue,
-        GetInt64Constant(RTSTUB_ID(ToBoolean)), { *varAcc });
+    GateRef result = CallRuntime(glue, RTSTUB_ID(ToBoolean), { *varAcc });
     Branch(TaggedIsTrue(result), &isTrue, &isFalse);
     Bind(&isTrue);
     {
@@ -4889,7 +4822,7 @@ DECLARE_ASM_HANDLER(HandleToNumberPrefV8)
     Bind(&valueNotNumber);
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
-        GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(ToNumber)), { value });
+        GateRef res = CallRuntime(glue, RTSTUB_ID(ToNumber), { value });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(res), &isException, &notException);
@@ -4927,8 +4860,7 @@ DECLARE_ASM_HANDLER(HandleAdd2DynPrefV8)
     Bind(&slowPath);
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
-        GateRef taggedNumber = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(Add2Dyn)),
-                                                     { left, right });
+        GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(Add2Dyn), { left, right });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -4969,8 +4901,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Bind(&slowPath);
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
-        GateRef taggedNumber = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(Sub2Dyn)),
-                                                     { left, right });
+        GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(Sub2Dyn), { left, right });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -5000,11 +4931,11 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Branch(IsCallable(func), &funcIsCallable, &funcNotCallable);                                     \
     Bind(&funcNotCallable);                                                                          \
     {                                                                                                \
-        CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(ThrowNotCallableException)), {});     \
+        CallRuntime(glue, RTSTUB_ID(ThrowNotCallableException), {});                                 \
         DISPATCH_LAST();                                                                             \
     }                                                                                                \
     Bind(&funcIsCallable);                                                                           \
-    DEFVARIABLE(methodOffset, VariableType::INT32(), GetInt32Constant(0));                           \
+    DEFVARIABLE(methodOffset, VariableType::INT32(), Int32(0));                                      \
     /* method = func->GetCallTarget() */                                                             \
     /* ASSERT(JSTaggedValue(func).IsJSFunctionBase() || JSTaggedValue(func).IsJSProxy()) */          \
     Label funcIsJSFunctionBase(env);                                                                 \
@@ -5013,51 +4944,51 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Branch(IsJSFunctionBase(func), &funcIsJSFunctionBase, &funcIsJSProxy);                           \
     Bind(&funcIsJSFunctionBase);                                                                     \
     {                                                                                                \
-        methodOffset = GetInt32Constant(JSFunctionBase::METHOD_OFFSET);                              \
+        methodOffset = Int32(JSFunctionBase::METHOD_OFFSET);                              \
         Jump(&getMethod);                                                                            \
     }                                                                                                \
     Bind(&funcIsJSProxy);                                                                            \
     {                                                                                                \
-        methodOffset = GetInt32Constant(JSProxy::METHOD_OFFSET);                                     \
+        methodOffset = Int32(JSProxy::METHOD_OFFSET);                                     \
         Jump(&getMethod);                                                                            \
     }                                                                                                \
     Bind(&getMethod);                                                                                \
     GateRef method = Load(VariableType::POINTER(), func, ChangeInt32ToIntPtr(*methodOffset));        \
-    GateRef callFieldOffset = GetIntPtrConstant(JSMethod::GetCallFieldOffset(env->IsArch32Bit()));   \
+    GateRef callFieldOffset = IntPtr(JSMethod::GetCallFieldOffset(env->IsArch32Bit()));   \
     GateRef callField = Load(VariableType::INT64(), method, callFieldOffset);                        \
     DEFVARIABLE(newSp, VariableType::POINTER(),                                                      \
-                PointerSub(sp, GetIntPtrConstant(AsmInterpretedFrame::GetSize(env->IsArch32Bit()))))
+                PointerSub(sp, IntPtr(AsmInterpretedFrame::GetSize(env->IsArch32Bit()))))
 
 #define CALL_PUSH_UNDEFINED(n)                                            \
-    i = GetInt32Constant(0);                                              \
+    i = Int32(0);                                              \
     Label pushUndefined(env);                                             \
     Label pushUndefinedAgain(env);                                        \
     Label pushUndefinedEnd(env);                                          \
     Branch(Int32LessThan(*i, n), &pushUndefined, &pushUndefinedEnd);      \
     LoopBegin(&pushUndefined);                                            \
-    newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));  \
-    Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0),      \
-          GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED));              \
-    i = Int32Add(*i, GetInt32Constant(1));                                \
+    newSp = PointerSub(*newSp, IntPtr(sizeof(JSTaggedType)));  \
+    Store(VariableType::INT64(), glue, *newSp, IntPtr(0),      \
+          Int64(JSTaggedValue::VALUE_UNDEFINED));              \
+    i = Int32Add(*i, Int32(1));                                \
     Branch(Int32LessThan(*i, n), &pushUndefinedAgain, &pushUndefinedEnd); \
     Bind(&pushUndefinedAgain);                                            \
     LoopEnd(&pushUndefined);                                              \
     Bind(&pushUndefinedEnd)
 
 #define CALL_PUSH_ARGS(format)                                                                                        \
-    DEFVARIABLE(i, VariableType::INT32(), GetInt32Constant(0));                                                       \
-    GateRef isNativeMask = GetInt64Constant(static_cast<uint64_t>(1) << JSMethod::IsNativeBit::START_BIT);            \
+    DEFVARIABLE(i, VariableType::INT32(), Int32(0));                                                       \
+    GateRef isNativeMask = Int64(static_cast<uint64_t>(1) << JSMethod::IsNativeBit::START_BIT);            \
     Label methodIsNative(env);                                                                                        \
     Label methodNotNative(env);                                                                                       \
-    Branch(Int64NotEqual(Int64And(callField, isNativeMask), GetInt64Constant(0)), &methodIsNative, &methodNotNative); \
+    Branch(Int64NotEqual(Int64And(callField, isNativeMask), Int64(0)), &methodIsNative, &methodNotNative); \
     Bind(&methodIsNative);                                                                                            \
     {                                                                                                                 \
         CALL_PUSH_ARGS_##format();                                                                                    \
         SET_VREGS_AND_FRAME_NATIVE(format);                                                                           \
     }                                                                                                                 \
     Bind(&methodNotNative);                                                                                           \
-    GateRef numArgsOffset = GetInt64Constant(JSMethod::NumArgsBits::START_BIT);                                       \
-    GateRef numArgsMask = GetInt64Constant((static_cast<uint64_t>(1) << JSMethod::NumArgsBits::SIZE) - 1);            \
+    GateRef numArgsOffset = Int64(JSMethod::NumArgsBits::START_BIT);                                       \
+    GateRef numArgsMask = Int64((static_cast<uint64_t>(1) << JSMethod::NumArgsBits::SIZE) - 1);            \
     GateRef declaredNumArgs = ChangeInt64ToInt32(Int64And(UInt64LSR(callField, numArgsOffset), numArgsMask));         \
     Label fastPath(env);                                                                                              \
     Label slowPath(env);                                                                                              \
@@ -5069,10 +5000,10 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
         Jump(&setVregsAndFrameNotNative);                                                                             \
     }                                                                                                                 \
     Bind(&slowPath);                                                                                                  \
-    GateRef haveExtraMask = GetInt64Constant(static_cast<uint64_t>(1) << JSMethod::HaveExtraBit::START_BIT);          \
+    GateRef haveExtraMask = Int64(static_cast<uint64_t>(1) << JSMethod::HaveExtraBit::START_BIT);          \
     Label methodNoExtra(env);                                                                                         \
     Label methodHaveExtra(env);                                                                                       \
-    Branch(Int64NotEqual(Int64And(callField, haveExtraMask), GetInt64Constant(0)), &methodHaveExtra, &methodNoExtra); \
+    Branch(Int64NotEqual(Int64And(callField, haveExtraMask), Int64(0)), &methodHaveExtra, &methodNoExtra); \
     Bind(&methodNoExtra);                                                                                             \
     {                                                                                                                 \
         GateRef undefinedNumArgs = Int32Sub(declaredNumArgs, actualNumArgs);                                          \
@@ -5082,8 +5013,8 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     }                                                                                                                 \
     Bind(&methodHaveExtra);                                                                                           \
     {                                                                                                                 \
-        newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                                          \
-        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), IntBuildTaggedTypeWithNoGC(actualNumArgs));  \
+        newSp = PointerSub(*newSp, IntPtr(sizeof(JSTaggedType)));                                          \
+        Store(VariableType::INT64(), glue, *newSp, IntPtr(0), IntBuildTaggedTypeWithNoGC(actualNumArgs));  \
         GateRef undefinedNumArgs = Int32Sub(declaredNumArgs, actualNumArgs);                                          \
         CALL_PUSH_UNDEFINED(undefinedNumArgs);                                                                        \
         CALL_PUSH_ARGS_##format();                                                                                    \
@@ -5093,57 +5024,57 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     SET_VREGS_AND_FRAME_NOT_NATIVE(format)
 
 #define SET_VREGS_AND_FRAME_NATIVE(format)                                                                   \
-    newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                                     \
+    newSp = PointerSub(*newSp, IntPtr(sizeof(JSTaggedType)));                                     \
     Label pushThis(env);                                                                                     \
     Label pushThisUndefined(env);                                                                            \
     Label pushNewTarget(env);                                                                                \
     Branch(callThis, &pushThis, &pushThisUndefined);                                                         \
     Bind(&pushThis);                                                                                         \
     {                                                                                                        \
-        GateRef thisValue = GetVregValue(sp, IntPtrAdd(ZExtInt8ToPtr(funcReg), GetIntPtrConstant(1)));       \
-        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), thisValue);                         \
+        GateRef thisValue = GetVregValue(sp, IntPtrAdd(ZExtInt8ToPtr(funcReg), IntPtr(1)));       \
+        Store(VariableType::INT64(), glue, *newSp, IntPtr(0), thisValue);                         \
         Jump(&pushNewTarget);                                                                                \
     }                                                                                                        \
     Bind(&pushThisUndefined);                                                                                \
     {                                                                                                        \
-        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0),                                     \
-              GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED));                                             \
+        Store(VariableType::INT64(), glue, *newSp, IntPtr(0),                                     \
+              Int64(JSTaggedValue::VALUE_UNDEFINED));                                             \
         Jump(&pushNewTarget);                                                                                \
     }                                                                                                        \
     Bind(&pushNewTarget);                                                                                    \
-    newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                                     \
-    Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0),                                         \
-          GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED));                                                 \
-    newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                                     \
-    Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), func);                                  \
+    newSp = PointerSub(*newSp, IntPtr(sizeof(JSTaggedType)));                                     \
+    Store(VariableType::INT64(), glue, *newSp, IntPtr(0),                                         \
+          Int64(JSTaggedValue::VALUE_UNDEFINED));                                                 \
+    newSp = PointerSub(*newSp, IntPtr(sizeof(JSTaggedType)));                                     \
+    Store(VariableType::INT64(), glue, *newSp, IntPtr(0), func);                                  \
     /* ASSERT(JSMethod::NumVregsBits::Decode(callField) == 0) */                                             \
     /* thread->DoStackOverflowCheck(newSp) */                                                                \
-    GateRef frameBaseOffset = GetIntPtrConstant(JSThread::GlueData::GetFrameBaseOffset(env->IsArch32Bit())); \
+    GateRef frameBaseOffset = IntPtr(JSThread::GlueData::GetFrameBaseOffset(env->IsArch32Bit()));            \
     GateRef frameBase = Load(VariableType::POINTER(), glue, frameBaseOffset);                                \
     Label stackOverflow(env);                                                                                \
     Label stackNotOverflow(env);                                                                             \
     Branch(UInt64LessThanOrEqual(*newSp, IntPtrAdd(frameBase,                                                \
         /* 2: double size in case */                                                                         \
-        GetIntPtrConstant(JSThread::RESERVE_STACK_SIZE * sizeof(JSTaggedType) * 2))),                        \
+        IntPtr(JSThread::RESERVE_STACK_SIZE * sizeof(JSTaggedType) * 2))),                                   \
         &stackOverflow, &stackNotOverflow);                                                                  \
     Bind(&stackOverflow);                                                                                    \
     {                                                                                                        \
-        CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SetStackOverflowException)), {});             \
+        CallRuntime(glue, RTSTUB_ID(SetStackOverflowException), {});                                         \
         DISPATCH_LAST();                                                                                     \
     }                                                                                                        \
     Bind(&stackNotOverflow);                                                                                 \
     GateRef state = GetFrame(*newSp);                                                                        \
-    GateRef prevOffset = GetIntPtrConstant(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit()));          \
+    GateRef prevOffset = IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit()));                     \
     Store(VariableType::POINTER(), glue, state, prevOffset, sp);                                             \
-    GateRef frameTypeOffset = IntPtrAdd(prevOffset, GetIntPtrSize());                                        \
+    GateRef frameTypeOffset = IntPtrAdd(prevOffset, IntPtrSize());                                           \
     Store(VariableType::INT64(), glue, state, frameTypeOffset,                                               \
-          GetInt64Constant(static_cast<uint64_t>(FrameType::INTERPRETER_FRAME)));                            \
-    SetPcToFrame(glue, state, GetIntPtrConstant(0));                                                         \
+          Int64(static_cast<uint64_t>(FrameType::INTERPRETER_FRAME)));                                       \
+    SetPcToFrame(glue, state, IntPtr(0));                                                                    \
     SetFunctionToFrame(glue, state, func);                                                                   \
     SetCurrentSpFrame(glue, *newSp);                                                                         \
-    GateRef numArgs = Int32Add(GetInt32Constant(NUM_MANDATORY_JSFUNC_ARGS), actualNumArgs);                  \
-    GateRef retValue = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(CallNative)),                  \
-                                             {IntBuildTaggedTypeWithNoGC(numArgs), *newSp, method});         \
+    GateRef numArgs = Int32Add(Int32(NUM_MANDATORY_JSFUNC_ARGS), actualNumArgs);                             \
+    GateRef retValue = CallRuntime(glue, RTSTUB_ID(CallNative),                                              \
+                                   {IntBuildTaggedTypeWithNoGC(numArgs), *newSp, method});                   \
     SetCurrentSpFrame(glue, sp);                                                                             \
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), retValue);                                                   \
     DISPATCH_WITH_ACC(format)
@@ -5154,64 +5085,64 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Branch(IsClassConstructor(func), &funcIsClassConstructor, &funcNotClassConstructor);                         \
     Bind(&funcIsClassConstructor);                                                                               \
     {                                                                                                            \
-        CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SetCallConstructorException)), {});               \
+        CallRuntime(glue, RTSTUB_ID(SetCallConstructorException), {});                                           \
         DISPATCH_LAST();                                                                                         \
     }                                                                                                            \
     Bind(&funcNotClassConstructor);                                                                              \
     Label notNormalCallType(env);                                                                                \
     Label isNormalCallType(env);                                                                                 \
-    Branch(Int64Equal(Int64And(callField, GetInt64Constant(CALL_TYPE_MASK)), GetInt64Constant(0)),               \
+    Branch(Int64Equal(Int64And(callField, Int64(CALL_TYPE_MASK)), Int64(0)),                                     \
            &isNormalCallType, &notNormalCallType);                                                               \
     Bind(&notNormalCallType);                                                                                    \
     {                                                                                                            \
-        GateRef haveThisMask = GetInt64Constant(static_cast<uint64_t>(1) << JSMethod::HaveThisBit::START_BIT);   \
+        GateRef haveThisMask = Int64(static_cast<uint64_t>(1) << JSMethod::HaveThisBit::START_BIT);              \
         Label methodHaveThis(env);                                                                               \
         Label methodNoThis(env);                                                                                 \
-        Branch(Int64NotEqual(Int64And(callField, haveThisMask), GetInt64Constant(0)),                            \
+        Branch(Int64NotEqual(Int64And(callField, haveThisMask), Int64(0)),                                       \
                &methodHaveThis, &methodNoThis);                                                                  \
         Bind(&methodHaveThis);                                                                                   \
         {                                                                                                        \
-            newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                                 \
+            newSp = PointerSub(*newSp, IntPtr(sizeof(JSTaggedType)));                                            \
             Label pushThis(env);                                                                                 \
             Label pushThisUndefined(env);                                                                        \
             Branch(callThis, &pushThis, &pushThisUndefined);                                                     \
             Bind(&pushThis);                                                                                     \
             {                                                                                                    \
-                GateRef thisValue = GetVregValue(sp, IntPtrAdd(ZExtInt8ToPtr(funcReg), GetIntPtrConstant(1)));   \
-                Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), thisValue);                     \
+                GateRef thisValue = GetVregValue(sp, IntPtrAdd(ZExtInt8ToPtr(funcReg), IntPtr(1)));              \
+                Store(VariableType::INT64(), glue, *newSp, IntPtr(0), thisValue);                                \
                 Jump(&methodNoThis);                                                                             \
             }                                                                                                    \
             Bind(&pushThisUndefined);                                                                            \
             {                                                                                                    \
-                Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0),                                 \
-                      GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED));                                         \
+                Store(VariableType::INT64(), glue, *newSp, IntPtr(0),                                            \
+                      Int64(JSTaggedValue::VALUE_UNDEFINED));                                                    \
                 Jump(&methodNoThis);                                                                             \
             }                                                                                                    \
         }                                                                                                        \
         Bind(&methodNoThis);                                                                                     \
-        GateRef haveNewTargetMask = GetInt64Constant(static_cast<uint64_t>(1) <<                                 \
+        GateRef haveNewTargetMask = Int64(static_cast<uint64_t>(1) <<                                            \
                                                      JSMethod::HaveNewTargetBit::START_BIT);                     \
         Label methodHaveNewTarget(env);                                                                          \
         Label methodNoNewTarget(env);                                                                            \
-        Branch(Int64NotEqual(Int64And(callField, haveNewTargetMask), GetInt64Constant(0)),                       \
+        Branch(Int64NotEqual(Int64And(callField, haveNewTargetMask), Int64(0)),                                  \
                &methodHaveNewTarget, &methodNoNewTarget);                                                        \
         Bind(&methodHaveNewTarget);                                                                              \
         {                                                                                                        \
-            newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                                 \
-            Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0),                                     \
-                  GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED));                                             \
+            newSp = PointerSub(*newSp, IntPtr(sizeof(JSTaggedType)));                                            \
+            Store(VariableType::INT64(), glue, *newSp, IntPtr(0),                                                \
+                  Int64(JSTaggedValue::VALUE_UNDEFINED));                                                        \
             Jump(&methodNoNewTarget);                                                                            \
         }                                                                                                        \
         Bind(&methodNoNewTarget);                                                                                \
-        GateRef haveFuncMask = GetInt64Constant(static_cast<uint64_t>(1) << JSMethod::HaveFuncBit::START_BIT);   \
+        GateRef haveFuncMask = Int64(static_cast<uint64_t>(1) << JSMethod::HaveFuncBit::START_BIT);              \
         Label methodHaveFunc(env);                                                                               \
         Label methodNoFunc(env);                                                                                 \
-        Branch(Int64NotEqual(Int64And(callField, haveFuncMask), GetInt64Constant(0)),                            \
+        Branch(Int64NotEqual(Int64And(callField, haveFuncMask), Int64(0)),                                       \
                &methodHaveFunc, &methodNoFunc);                                                                  \
         Bind(&methodHaveFunc);                                                                                   \
         {                                                                                                        \
-            newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                                 \
-            Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), func);                              \
+            newSp = PointerSub(*newSp, IntPtr(sizeof(JSTaggedType)));                                            \
+            Store(VariableType::INT64(), glue, *newSp, IntPtr(0), func);                                         \
             Jump(&methodNoFunc);                                                                                 \
         }                                                                                                        \
         Bind(&methodNoFunc);                                                                                     \
@@ -5219,48 +5150,48 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     }                                                                                                            \
     Bind(&isNormalCallType);                                                                                     \
     {                                                                                                            \
-        GateRef numVregsOffset = GetInt64Constant(JSMethod::NumVregsBits::START_BIT);                            \
-        GateRef numVregsMask = GetInt64Constant((static_cast<uint64_t>(1) << JSMethod::NumVregsBits::SIZE) - 1); \
+        GateRef numVregsOffset = Int64(JSMethod::NumVregsBits::START_BIT);                                       \
+        GateRef numVregsMask = Int64((static_cast<uint64_t>(1) << JSMethod::NumVregsBits::SIZE) - 1);            \
         GateRef numVregs = ChangeInt64ToInt32(Int64And(UInt64LSR(callField, numVregsOffset), numVregsMask));     \
         CALL_PUSH_UNDEFINED(numVregs);                                                                           \
         /* thread->DoStackOverflowCheck(newSp) */                                                                \
-        GateRef frameBaseOffset = GetIntPtrConstant(JSThread::GlueData::GetFrameBaseOffset(env->IsArch32Bit())); \
+        GateRef frameBaseOffset = IntPtr(JSThread::GlueData::GetFrameBaseOffset(env->IsArch32Bit()));            \
         GateRef frameBase = Load(VariableType::POINTER(), glue, frameBaseOffset);                                \
         Label stackOverflow(env);                                                                                \
         Label stackNotOverflow(env);                                                                             \
         Branch(UInt64LessThanOrEqual(*newSp, IntPtrAdd(frameBase,                                                \
             /* 2: double size in case */                                                                         \
-            GetIntPtrConstant(JSThread::RESERVE_STACK_SIZE * sizeof(JSTaggedType) * 2))),                        \
+            IntPtr(JSThread::RESERVE_STACK_SIZE * sizeof(JSTaggedType) * 2))),                                   \
             &stackOverflow, &stackNotOverflow);                                                                  \
         Bind(&stackOverflow);                                                                                    \
         {                                                                                                        \
-            CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SetStackOverflowException)), {});             \
+            CallRuntime(glue, RTSTUB_ID(SetStackOverflowException), {});                                         \
             DISPATCH_LAST();                                                                                     \
         }                                                                                                        \
         Bind(&stackNotOverflow);                                                                                 \
         SetCallSizeToFrame(glue, GetFrame(sp),                                                                   \
-            GetIntPtrConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::format)));                  \
+            IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::format)));                             \
         GateRef state = GetFrame(*newSp);                                                                        \
-        GateRef prevOffset = GetIntPtrConstant(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit()));          \
+        GateRef prevOffset = IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit()));                     \
         Store(VariableType::POINTER(), glue, state, prevOffset, sp);                                             \
-        GateRef frameTypeOffset = IntPtrAdd(prevOffset, GetIntPtrConstant(                                       \
+        GateRef frameTypeOffset = IntPtrAdd(prevOffset, IntPtr(                                                  \
             env->IsArch32Bit() ? InterpretedFrameBase::TYPE_OFFSET_32 : InterpretedFrameBase::TYPE_OFFSET_64));  \
         Store(VariableType::INT64(), glue, state, frameTypeOffset,                                               \
-              GetInt64Constant(static_cast<uint64_t>(FrameType::INTERPRETER_FRAME)));                            \
-        GateRef bytecodeArrayOffset = GetIntPtrConstant(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit()));   \
+              Int64(static_cast<uint64_t>(FrameType::INTERPRETER_FRAME)));                                       \
+        GateRef bytecodeArrayOffset = IntPtr(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit()));              \
         GateRef bytecodeArray = Load(VariableType::POINTER(), method, bytecodeArrayOffset);                      \
         SetPcToFrame(glue, state, bytecodeArray);                                                                \
         SetFunctionToFrame(glue, state, func);                                                                   \
-        SetAccToFrame(glue, state, GetHoleConstant(VariableType::JS_ANY()));                                     \
+        SetAccToFrame(glue, state, Hole(VariableType::JS_ANY()));                                                \
         GateRef newEnv = GetEnvFromFunction(func);                                                               \
         SetEnvToFrame(glue, state, newEnv);                                                                      \
         SetCurrentSpFrame(glue, *newSp);                                                                         \
         GateRef newConstpool = GetConstpoolFromFunction(func);                                                   \
         GateRef newProfileTypeInfo = GetProfileTypeInfoFromFunction(func);                                       \
         GateRef newHotnessCounter = Load(VariableType::INT32(), method,                                          \
-                                         GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET));                   \
+                                         IntPtr(JSMethod::HOTNESS_COUNTER_OFFSET));                              \
         Dispatch(glue, bytecodeArray, *newSp, newConstpool, newProfileTypeInfo,                                  \
-                 GetHoleConstant(VariableType::JS_ANY()), newHotnessCounter, GetIntPtrConstant(0));              \
+                 Hole(VariableType::JS_ANY()), newHotnessCounter, IntPtr(0));                                    \
     }
 
 #define CALL_PUSH_ARGS_PREF_V8() \
@@ -5271,60 +5202,60 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
 
 #define CALL_PUSH_ARGS_PREF_V8_V8()                                           \
     GateRef a0Value = GetVregValue(sp, ZExtInt8ToPtr(a0));                    \
-    newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));      \
-    Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a0Value)
+    newSp = PointerSub(*newSp, IntPtr(sizeof(JSTaggedType)));                 \
+    Store(VariableType::INT64(), glue, *newSp, IntPtr(0), a0Value)
 
 #define CALL_PUSH_ARGS_NO_EXTRA_PREF_V8_V8()                                                    \
     Label push0(env);                                                                           \
     Label skip0(env);                                                                           \
     Branch(Int32GreaterThanOrEqual(declaredNumArgs,                                             \
-        GetInt32Constant(InterpreterAssembly::ActualNumArgsOfCall::CALLARG1)), &push0, &skip0); \
+        Int32(InterpreterAssembly::ActualNumArgsOfCall::CALLARG1)), &push0, &skip0);            \
     Bind(&push0);                                                                               \
     {                                                                                           \
         GateRef a0Value = GetVregValue(sp, ZExtInt8ToPtr(a0));                                  \
-        newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                    \
-        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a0Value);              \
+        newSp = PointerSub(*newSp, IntPtr(sizeof(JSTaggedType)));                               \
+        Store(VariableType::INT64(), glue, *newSp, IntPtr(0), a0Value);                         \
         Jump(&skip0);                                                                           \
     }                                                                                           \
     Bind(&skip0)
 
 #define CALL_PUSH_ARGS_PREF_V8_V8_V8()                                         \
     GateRef a1Value = GetVregValue(sp, ZExtInt8ToPtr(a1));                     \
-    newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));       \
-    Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a1Value); \
+    newSp = PointerSub(*newSp, IntPtr(sizeof(JSTaggedType)));                  \
+    Store(VariableType::INT64(), glue, *newSp, IntPtr(0), a1Value);            \
     CALL_PUSH_ARGS_PREF_V8_V8()
 
 #define CALL_PUSH_ARGS_NO_EXTRA_PREF_V8_V8_V8()                                                  \
     Label push1(env);                                                                            \
     Label skip1(env);                                                                            \
     Branch(Int32GreaterThanOrEqual(declaredNumArgs,                                              \
-        GetInt32Constant(InterpreterAssembly::ActualNumArgsOfCall::CALLARGS2)), &push1, &skip1); \
+        Int32(InterpreterAssembly::ActualNumArgsOfCall::CALLARGS2)), &push1, &skip1);            \
     Bind(&push1);                                                                                \
     {                                                                                            \
         GateRef a1Value = GetVregValue(sp, ZExtInt8ToPtr(a1));                                   \
-        newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                     \
-        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a1Value);               \
+        newSp = PointerSub(*newSp, IntPtr(sizeof(JSTaggedType)));                                \
+        Store(VariableType::INT64(), glue, *newSp, IntPtr(0), a1Value);                          \
         Jump(&skip1);                                                                            \
     }                                                                                            \
     Bind(&skip1);                                                                                \
     CALL_PUSH_ARGS_NO_EXTRA_PREF_V8_V8()
 
-#define CALL_PUSH_ARGS_PREF_V8_V8_V8_V8()                                      \
-    GateRef a2Value = GetVregValue(sp, ZExtInt8ToPtr(a2));                     \
-    newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));       \
-    Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a2Value); \
+#define CALL_PUSH_ARGS_PREF_V8_V8_V8_V8()                                                        \
+    GateRef a2Value = GetVregValue(sp, ZExtInt8ToPtr(a2));                                       \
+    newSp = PointerSub(*newSp, IntPtr(sizeof(JSTaggedType)));                                    \
+    Store(VariableType::INT64(), glue, *newSp, IntPtr(0), a2Value);                              \
     CALL_PUSH_ARGS_PREF_V8_V8_V8()
 
 #define CALL_PUSH_ARGS_NO_EXTRA_PREF_V8_V8_V8_V8()                                               \
     Label push2(env);                                                                            \
     Label skip2(env);                                                                            \
     Branch(Int32GreaterThanOrEqual(declaredNumArgs,                                              \
-        GetInt32Constant(InterpreterAssembly::ActualNumArgsOfCall::CALLARGS3)), &push2, &skip2); \
+        Int32(InterpreterAssembly::ActualNumArgsOfCall::CALLARGS3)), &push2, &skip2);            \
     Bind(&push2);                                                                                \
     {                                                                                            \
         GateRef a2Value = GetVregValue(sp, ZExtInt8ToPtr(a2));                                   \
-        newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                     \
-        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a2Value);               \
+        newSp = PointerSub(*newSp, IntPtr(sizeof(JSTaggedType)));                                \
+        Store(VariableType::INT64(), glue, *newSp, IntPtr(0), a2Value);                          \
         Jump(&skip2);                                                                            \
     }                                                                                            \
     Bind(&skip2);                                                                                \
@@ -5353,16 +5284,16 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Branch(callThis, &pushWithThis, &pushWithoutThis);                                                 \
     Bind(&pushWithThis);                                                                               \
     {                                                                                                  \
-        i = Int32Add(*i, GetInt32Constant(1)); /* 1: skip this */                                      \
+        i = Int32Add(*i, Int32(1)); /* 1: skip this */                                                 \
         Label pushArgs(env);                                                                           \
         Label pushArgsAgain(env);                                                                      \
-        Branch(Int32GreaterThan(*i, GetInt32Constant(1)), &pushArgs, &pushArgsEnd);                    \
+        Branch(Int32GreaterThan(*i, Int32(1)), &pushArgs, &pushArgsEnd);                               \
         LoopBegin(&pushArgs);                                                                          \
         GateRef aValue = GetVregValue(sp, IntPtrAdd(ZExtInt8ToPtr(funcReg), ChangeInt32ToIntPtr(*i))); \
-        newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                           \
-        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), aValue);                      \
-        i = Int32Sub(*i, GetInt32Constant(1));                                                         \
-        Branch(Int32GreaterThan(*i, GetInt32Constant(1)), &pushArgsAgain, &pushArgsEnd);               \
+        newSp = PointerSub(*newSp, IntPtr(sizeof(JSTaggedType)));                                      \
+        Store(VariableType::INT64(), glue, *newSp, IntPtr(0), aValue);                                 \
+        i = Int32Sub(*i, Int32(1));                                                                    \
+        Branch(Int32GreaterThan(*i, Int32(1)), &pushArgsAgain, &pushArgsEnd);                          \
         Bind(&pushArgsAgain);                                                                          \
         LoopEnd(&pushArgs);                                                                            \
     }                                                                                                  \
@@ -5370,13 +5301,13 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     {                                                                                                  \
         Label pushArgs(env);                                                                           \
         Label pushArgsAgain(env);                                                                      \
-        Branch(Int32GreaterThan(*i, GetInt32Constant(0)), &pushArgs, &pushArgsEnd);                    \
+        Branch(Int32GreaterThan(*i, Int32(0)), &pushArgs, &pushArgsEnd);                               \
         LoopBegin(&pushArgs);                                                                          \
         GateRef aValue = GetVregValue(sp, IntPtrAdd(ZExtInt8ToPtr(funcReg), ChangeInt32ToIntPtr(*i))); \
-        newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                           \
-        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), aValue);                      \
-        i = Int32Sub(*i, GetInt32Constant(1));                                                         \
-        Branch(Int32GreaterThan(*i, GetInt32Constant(0)), &pushArgsAgain, &pushArgsEnd);               \
+        newSp = PointerSub(*newSp, IntPtr(sizeof(JSTaggedType)));                                      \
+        Store(VariableType::INT64(), glue, *newSp, IntPtr(0), aValue);                                 \
+        i = Int32Sub(*i, Int32(1));                                                                    \
+        Branch(Int32GreaterThan(*i, Int32(0)), &pushArgsAgain, &pushArgsEnd);                          \
         Bind(&pushArgsAgain);                                                                          \
         LoopEnd(&pushArgs);                                                                            \
     }                                                                                                  \
@@ -5386,10 +5317,10 @@ DECLARE_ASM_HANDLER(HandleCallArg0DynPrefV8)
 {
     auto env = GetEnvironment();
 
-    GateRef actualNumArgs = GetInt32Constant(InterpreterAssembly::ActualNumArgsOfCall::CALLARG0);
+    GateRef actualNumArgs = Int32(InterpreterAssembly::ActualNumArgsOfCall::CALLARG0);
     GateRef funcReg = ReadInst8_1(pc);
     CALL_INITIALIZE();
-    GateRef callThis = FalseConstant();
+    GateRef callThis = False();
     CALL_PUSH_ARGS(PREF_V8);
 }
 
@@ -5397,11 +5328,11 @@ DECLARE_ASM_HANDLER(HandleCallArg1DynPrefV8V8)
 {
     auto env = GetEnvironment();
 
-    GateRef actualNumArgs = GetInt32Constant(InterpreterAssembly::ActualNumArgsOfCall::CALLARG1);
+    GateRef actualNumArgs = Int32(InterpreterAssembly::ActualNumArgsOfCall::CALLARG1);
     GateRef funcReg = ReadInst8_1(pc);
     GateRef a0 = ReadInst8_2(pc);
     CALL_INITIALIZE();
-    GateRef callThis = FalseConstant();
+    GateRef callThis = False();
     CALL_PUSH_ARGS(PREF_V8_V8);
 }
 
@@ -5409,12 +5340,12 @@ DECLARE_ASM_HANDLER(HandleCallArgs2DynPrefV8V8V8)
 {
     auto env = GetEnvironment();
 
-    GateRef actualNumArgs = GetInt32Constant(InterpreterAssembly::ActualNumArgsOfCall::CALLARGS2);
+    GateRef actualNumArgs = Int32(InterpreterAssembly::ActualNumArgsOfCall::CALLARGS2);
     GateRef funcReg = ReadInst8_1(pc);
     GateRef a0 = ReadInst8_2(pc);
     GateRef a1 = ReadInst8_3(pc);
     CALL_INITIALIZE();
-    GateRef callThis = FalseConstant();
+    GateRef callThis = False();
     CALL_PUSH_ARGS(PREF_V8_V8_V8);
 }
 
@@ -5422,13 +5353,13 @@ DECLARE_ASM_HANDLER(HandleCallArgs3DynPrefV8V8V8V8)
 {
     auto env = GetEnvironment();
 
-    GateRef actualNumArgs = GetInt32Constant(InterpreterAssembly::ActualNumArgsOfCall::CALLARGS3);
+    GateRef actualNumArgs = Int32(InterpreterAssembly::ActualNumArgsOfCall::CALLARGS3);
     GateRef funcReg = ReadInst8_1(pc);
     GateRef a0 = ReadInst8_2(pc);
     GateRef a1 = ReadInst8_3(pc);
     GateRef a2 = ReadInst8_4(pc);
     CALL_INITIALIZE();
-    GateRef callThis = FalseConstant();
+    GateRef callThis = False();
     CALL_PUSH_ARGS(PREF_V8_V8_V8_V8);
 }
 
@@ -5439,7 +5370,7 @@ DECLARE_ASM_HANDLER(HandleCallIRangeDynPrefImm16V8)
     GateRef actualNumArgs = ZExtInt16ToInt32(ReadInst16_1(pc));
     GateRef funcReg = ReadInst8_3(pc);
     CALL_INITIALIZE();
-    GateRef callThis = FalseConstant();
+    GateRef callThis = False();
     CALL_PUSH_ARGS(PREF_IMM16_V8);
 }
 
@@ -5447,10 +5378,10 @@ DECLARE_ASM_HANDLER(HandleCallIThisRangeDynPrefImm16V8)
 {
     auto env = GetEnvironment();
 
-    GateRef actualNumArgs = Int32Sub(ZExtInt16ToInt32(ReadInst16_1(pc)), GetInt32Constant(1));  // 1: exclude this
+    GateRef actualNumArgs = Int32Sub(ZExtInt16ToInt32(ReadInst16_1(pc)), Int32(1));  // 1: exclude this
     GateRef funcReg = ReadInst8_3(pc);
     CALL_INITIALIZE();
-    GateRef callThis = TrueConstant();
+    GateRef callThis = True();
     CALL_PUSH_ARGS(PREF_IMM16_V8);
 }
 
@@ -5461,8 +5392,7 @@ DECLARE_ASM_HANDLER(HandleLdBigIntPrefId32)
     GateRef stringId = ReadInst32_1(pc);
     GateRef numberBigInt = GetObjectFromConstPool(constpool, stringId);
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(LdBigInt)),
-        { numberBigInt });
+    GateRef res = CallRuntime(glue, RTSTUB_ID(LdBigInt), { numberBigInt });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -5482,8 +5412,8 @@ DECLARE_ASM_HANDLER(HandleNewLexEnvWithNameDynPrefImm16Imm16)
     GateRef numVars = ReadInst16_1(pc);
     GateRef scopeId = ReadInst16_3(pc);
     SetPcToFrame(glue, GetFrame(sp), pc);
-    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(NewLexicalEnvWithNameDyn)),
-        { Int16BuildTaggedTypeWithNoGC(numVars), Int16BuildTaggedTypeWithNoGC(scopeId) });
+    GateRef res = CallRuntime(glue, RTSTUB_ID(NewLexicalEnvWithNameDyn),
+                              { Int16BuildTaggedTypeWithNoGC(numVars), Int16BuildTaggedTypeWithNoGC(scopeId) });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
