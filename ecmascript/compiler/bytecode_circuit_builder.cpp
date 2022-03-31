@@ -1422,10 +1422,12 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
         case EcmaOpcode::CREATEOBJECTWITHEXCLUDEDKEYS_PREF_IMM16_V8_V8: {
             uint16_t numKeys = READ_INST_16_1();
             uint16_t v0 = READ_INST_8_3();
+            uint16_t firstArgRegIdx = READ_INST_8_4();
             info.accOut = true;
             info.offset = BytecodeOffset::SIX;
             info.inputs.emplace_back(Immediate(numKeys));
             info.inputs.emplace_back(VirtualRegister(v0));
+            info.inputs.emplace_back(Immediate(firstArgRegIdx));
             break;
         }
         case EcmaOpcode::DEFINEGENERATORFUNC_PREF_ID16_IMM16_V8: {
@@ -1891,9 +1893,19 @@ bool BytecodeCircuitBuilder::IsThrow(EcmaOpcode opcode)
     }
 }
 
+bool BytecodeCircuitBuilder::IsDiscarded(EcmaOpcode opcode)
+{
+    switch (opcode) {
+        case EcmaOpcode::COPYMODULE_PREF_V8:
+            return true;
+        default:
+            return false;
+    }
+}
+
 bool BytecodeCircuitBuilder::IsGeneral(EcmaOpcode opcode)
 {
-    return !IsMov(opcode) && !IsJump(opcode) && !IsReturn(opcode) && !IsSetConstant(opcode);
+    return !IsMov(opcode) && !IsJump(opcode) && !IsReturn(opcode) && !IsSetConstant(opcode) && !IsDiscarded(opcode);
 }
 
 bool BytecodeCircuitBuilder::IsSetConstant(EcmaOpcode opcode)
@@ -2241,6 +2253,8 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     bbNext->expandedPreds.push_back( {bb.id, pcPrev, false} );
                     ASSERT(bbNext->statePredIndex <= bbNext->numOfStatePreds);
                 }
+            } else if (IsDiscarded(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+                continue;
             } else {
                 abort();
             }

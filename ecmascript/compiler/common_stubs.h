@@ -42,7 +42,8 @@ namespace panda::ecmascript::kungfu {
     V(TryLoadICByName, 4)                \
     V(TryLoadICByValue, 5)               \
     V(TryStoreICByName, 5)               \
-    V(TryStoreICByValue, 6)
+    V(TryStoreICByValue, 6)              \
+    V(SetValueWithBarrier, 4)
 
 #define COMMON_EXPROTED_TO_BC_STUB_LIST(V)
 
@@ -280,6 +281,19 @@ public:
     ~TryStoreICByValueStub() = default;
     NO_MOVE_SEMANTIC(TryStoreICByValueStub);
     NO_COPY_SEMANTIC(TryStoreICByValueStub);
+    void GenerateCircuit(const CompilationConfig *cfg) override;
+};
+
+class SetValueWithBarrierStub : public Stub {
+public:
+    // 4 : 4 means argument counts
+    explicit SetValueWithBarrierStub(Circuit *circuit) : Stub("SetValueWithBarrier", 4, circuit)
+    {
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+    }
+    ~SetValueWithBarrierStub() = default;
+    NO_MOVE_SEMANTIC(SetValueWithBarrierStub);
+    NO_COPY_SEMANTIC(SetValueWithBarrierStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
 

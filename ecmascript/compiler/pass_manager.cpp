@@ -34,13 +34,13 @@ bool PassManager::Compile(const std::string &fileName, const std::string &triple
         return false;
     }
     LLVMModule aotModule("aot_file", triple);
-
+    CompilationConfig cmpCfg(triple);
     for (size_t i = 0; i < translationInfo.methodPcInfos.size(); i++) {
         BytecodeCircuitBuilder builder(vm_, translationInfo, i);
         builder.BytecodeToCircuit();
         PassData data(builder.GetCircuit());
         PassRunner<PassData> pipeline(&data);
-        pipeline.RunPass<SlowPathLoweringPass>(&builder);
+        pipeline.RunPass<SlowPathLoweringPass>(&builder, &cmpCfg);
         pipeline.RunPass<VerifierPass>();
         pipeline.RunPass<SchedulingPass>();
         pipeline.RunPass<LLVMIRGenPass>(&aotModule, translationInfo.methodPcInfos[i].method);
