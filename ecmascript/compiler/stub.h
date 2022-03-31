@@ -216,7 +216,7 @@ public:
         {
             currentLabel_ = label;
         }
-        CircuitBuilder &GetCircuitBuilder()
+        CircuitBuilder &GetBuilder()
         {
             return builder_;
         }
@@ -379,21 +379,21 @@ public:
         return methodName_;
     }
     // constant
-    GateRef GetInt8Constant(int8_t value);
-    GateRef GetInt16Constant(int16_t value);
-    GateRef GetInt32Constant(int32_t value);
-    GateRef GetInt64Constant(int64_t value);
-    GateRef GetIntPtrConstant(int64_t value);
-    GateRef GetIntPtrSize();
-    GateRef GetRelocatableData(uint64_t value);
-    GateRef TrueConstant();
-    GateRef FalseConstant();
-    GateRef GetBooleanConstant(bool value);
-    GateRef GetDoubleConstant(double value);
-    GateRef GetUndefinedConstant(VariableType type = VariableType::JS_ANY());
-    GateRef GetHoleConstant(VariableType type = VariableType::JS_ANY());
-    GateRef GetNullConstant(VariableType type = VariableType::JS_ANY());
-    GateRef GetExceptionConstant(VariableType type = VariableType::JS_ANY());
+    GateRef Int8(int8_t value);
+    GateRef Int16(int16_t value);
+    GateRef Int32(int32_t value);
+    GateRef Int64(int64_t value);
+    GateRef IntPtr(int64_t value);
+    GateRef IntPtrSize();
+    GateRef RelocatableData(uint64_t value);
+    GateRef True();
+    GateRef False();
+    GateRef Boolean(bool value);
+    GateRef Double(double value);
+    GateRef Undefined(VariableType type = VariableType::JS_ANY());
+    GateRef Hole(VariableType type = VariableType::JS_ANY());
+    GateRef Null(VariableType type = VariableType::JS_ANY());
+    GateRef Exception(VariableType type = VariableType::JS_ANY());
     GateRef IntPtrMul(GateRef x, GateRef y);
     // parameter
     GateRef Argument(size_t index);
@@ -416,16 +416,9 @@ public:
     void LoopBegin(Label *loopHead);
     void LoopEnd(Label *loopHead);
     // call operation
-    GateRef CallRuntime(GateRef glue, size_t index,
-        std::initializer_list<GateRef> args);
-    GateRef CallRuntime(GateRef glue, size_t index, GateRef depend,
-        std::initializer_list<GateRef> args);
-    GateRef CallRuntimeTrampoline(GateRef glue, GateRef target, std::initializer_list<GateRef> args);
-    GateRef CallRuntimeTrampoline(GateRef glue, GateRef target, GateRef depend, std::initializer_list<GateRef> args);
-    GateRef CallNGCRuntime(GateRef glue, size_t index,
-        std::initializer_list<GateRef> args);
-    GateRef CallStub(GateRef glue, size_t index,
-        std::initializer_list<GateRef> args);
+    GateRef CallRuntime(GateRef glue, int index, std::initializer_list<GateRef> args);
+    GateRef CallNGCRuntime(GateRef glue, size_t index, std::initializer_list<GateRef> args);
+    GateRef CallStub(GateRef glue, size_t index, std::initializer_list<GateRef> args);
     void DebugPrint(GateRef thread, std::initializer_list<GateRef> args);
     void FatalPrint(GateRef thread, std::initializer_list<GateRef> args);
     // memory
