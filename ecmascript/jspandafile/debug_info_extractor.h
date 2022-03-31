@@ -16,41 +16,42 @@
 #ifndef ECMASCRIPT_JSPANDAFILE_DEBUG_INFO_EXTRACTOR_H
 #define ECMASCRIPT_JSPANDAFILE_DEBUG_INFO_EXTRACTOR_H
 
-#include <vector>
-#include <unordered_map>
-
+#include "ecmascript/mem/c_containers.h"
+#include "ecmascript/mem/c_string.h"
 #include "ecmascript/common.h"
 #include "libpandafile/file.h"
 
 namespace panda::ecmascript {
+class JSPandaFile;
+
 struct LineTableEntry {
     uint32_t offset;
-    size_t line;
+    int32_t line;
 };
 
 struct ColumnTableEntry {
     uint32_t offset;
-    size_t column;
+    int32_t column;
 };
 
-using LineNumberTable = std::vector<LineTableEntry>;
-using ColumnNumberTable = std::vector<ColumnTableEntry>;
+using LineNumberTable = CVector<LineTableEntry>;
+using ColumnNumberTable = CVector<ColumnTableEntry>;
 
 /*
  * LocalVariableInfo define in frontend, now only use name and regNumber:
- *   std::string name
- *   std::string type
- *   std::string typeSignature
+ *   CString name
+ *   CString type
+ *   CString typeSignature
  *   int32_t regNumber
  *   uint32_t startOffset
  *   uint32_t endOffset
  */
-using LocalVariableTable = std::unordered_map<std::string, int32_t>;
+using LocalVariableTable = CUnorderedMap<CString, int32_t>;
 
 // public for debugger
 class PUBLIC_API DebugInfoExtractor {
 public:
-    explicit DebugInfoExtractor(const panda_file::File *pf);
+    explicit DebugInfoExtractor(const JSPandaFile *jsPandaFile);
 
     ~DebugInfoExtractor() = default;
 
@@ -63,24 +64,24 @@ public:
 
     const LocalVariableTable &GetLocalVariableTable(panda_file::File::EntityId methodId) const;
 
-    const char *GetSourceFile(panda_file::File::EntityId methodId) const;
+    const CString &GetSourceFile(panda_file::File::EntityId methodId) const;
 
-    const char *GetSourceCode(panda_file::File::EntityId methodId) const;
+    const CString &GetSourceCode(panda_file::File::EntityId methodId) const;
 
-    std::vector<panda_file::File::EntityId> GetMethodIdList() const;
+    CVector<panda_file::File::EntityId> GetMethodIdList() const;
 
 private:
     void Extract(const panda_file::File *pf);
 
     struct MethodDebugInfo {
-        std::string sourceFile;
-        std::string sourceCode;
+        CString sourceFile;
+        CString sourceCode;
         LineNumberTable lineNumberTable;
         ColumnNumberTable columnNumberTable;
         LocalVariableTable localVariableTable;
     };
 
-    std::unordered_map<uint32_t, MethodDebugInfo> methods_;
+    CUnorderedMap<uint32_t, MethodDebugInfo> methods_;
 };
 }  // namespace panda::ecmascript
 

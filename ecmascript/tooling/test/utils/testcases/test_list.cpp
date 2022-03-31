@@ -33,10 +33,10 @@ static void RegisterTests()
     TestUtil::RegisterTest(panda_file::SourceLang::ECMASCRIPT, "JsBreakpointTest", GetJsBreakpointTest());
 }
 
-std::vector<const char *> GetTestList(panda_file::SourceLang language)
+CVector<const char *> GetTestList(panda_file::SourceLang language)
 {
     RegisterTests();
-    std::vector<const char *> res;
+    CVector<const char *> res;
     auto &tests = TestUtil::GetTests();
     auto languageIt = tests.find(language);
     if (languageIt == tests.end()) {

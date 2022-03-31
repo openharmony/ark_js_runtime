@@ -23,7 +23,6 @@
 #include "ecmascript/tooling/base/pt_script.h"
 #include "ecmascript/tooling/base/pt_types.h"
 #include "ecmascript/tooling/dispatcher.h"
-#include "ecmascript/mem/c_containers.h"
 
 namespace panda::tooling::ecmascript {
 using panda::ecmascript::EcmaVM;
@@ -99,13 +98,13 @@ public:
         return &callFrames_;
     }
 
-    Paused &SetCallFrames(CVector<std::unique_ptr<CallFrame>> call_frames)
+    Paused &SetCallFrames(CVector<std::unique_ptr<CallFrame>> callFrames)
     {
-        callFrames_ = std::move(call_frames);
+        callFrames_ = std::move(callFrames);
         return *this;
     }
 
-    CString GetReason() const
+    const CString &GetReason() const
     {
         return reason_;
     }
@@ -238,13 +237,13 @@ public:
         return scriptId_;
     }
 
-    ScriptFailedToParse &SetScriptId(const ScriptId &scriptId)
+    ScriptFailedToParse &SetScriptId(ScriptId scriptId)
     {
         scriptId_ = scriptId;
         return *this;
     }
 
-    CString GetUrl() const
+    const CString &GetUrl() const
     {
         return url_;
     }
@@ -310,7 +309,7 @@ public:
         return *this;
     }
 
-    CString GetHash() const
+    const CString &GetHash() const
     {
         return hash_;
     }
@@ -337,9 +336,9 @@ public:
         return execContextAuxData_.has_value();
     }
 
-    CString GetSourceMapURL() const
+    const CString &GetSourceMapURL() const
     {
-        return sourceMapUrl_.value_or("");
+        return sourceMapUrl_.value();
     }
 
     ScriptFailedToParse &SetSourceMapURL(const CString &sourceMapUrl)
@@ -417,9 +416,9 @@ public:
         return codeOffset_.has_value();
     }
 
-    CString GetScriptLanguage() const
+    const CString &GetScriptLanguage() const
     {
-        return scriptLanguage_.value_or("");
+        return scriptLanguage_.value();
     }
 
     ScriptFailedToParse &SetScriptLanguage(const CString &scriptLanguage)
@@ -433,9 +432,9 @@ public:
         return scriptLanguage_.has_value();
     }
 
-    CString GetEmbedderName() const
+    const CString &GetEmbedderName() const
     {
-        return embedderName_.value_or("");
+        return embedderName_.value();
     }
 
     ScriptFailedToParse &SetEmbedderName(const CString &embedderName)
@@ -489,13 +488,13 @@ public:
         return scriptId_;
     }
 
-    ScriptParsed &SetScriptId(const ScriptId &scriptId)
+    ScriptParsed &SetScriptId(ScriptId scriptId)
     {
         scriptId_ = scriptId;
         return *this;
     }
 
-    CString GetUrl() const
+    const CString &GetUrl() const
     {
         return url_;
     }
@@ -561,7 +560,7 @@ public:
         return *this;
     }
 
-    CString GetHash() const
+    const CString &GetHash() const
     {
         return hash_;
     }
@@ -604,9 +603,9 @@ public:
         return execContextAuxData_.has_value();
     }
 
-    CString GetSourceMapURL() const
+    const CString &GetSourceMapURL() const
     {
-        return sourceMapUrl_.value_or("");
+        return sourceMapUrl_.value();
     }
 
     ScriptParsed &SetSourceMapURL(const CString &sourceMapUrl)
@@ -684,9 +683,9 @@ public:
         return codeOffset_.has_value();
     }
 
-    CString GetScriptLanguage() const
+    const CString &GetScriptLanguage() const
     {
-        return scriptLanguage_.value_or("");
+        return scriptLanguage_.value();
     }
 
     ScriptParsed &SetScriptLanguage(const CString &scriptLanguage)
@@ -700,9 +699,9 @@ public:
         return scriptLanguage_.has_value();
     }
 
-    CString GetEmbedderName() const
+    const CString &GetEmbedderName() const
     {
-        return embedderName_.value_or("");
+        return embedderName_.value();
     }
 
     ScriptParsed &SetEmbedderName(const CString &embedderName)

@@ -28,21 +28,21 @@ std::optional<Error> JSDebugger::SetBreakpoint(const PtLocation &location)
     JSMethod *method = FindMethod(location);
     if (method == nullptr) {
         return Error(Error::Type::METHOD_NOT_FOUND,
-                     std::string("Cannot find JSMethod with id ") + std::to_string(location.GetMethodId().GetOffset()) +
-                         " in panda file '" + std::string(location.GetPandaFile()) + "'");
+                     "Cannot find JSMethod with id " + std::to_string(location.GetMethodId().GetOffset()) +
+                     " in panda file '" + location.GetPandaFile() + "'");
     }
 
     if (location.GetBytecodeOffset() >= method->GetCodeSize()) {
-        return Error(Error::Type::INVALID_BREAKPOINT, std::string("Invalid breakpoint location: bytecode offset (") +
-                                                          std::to_string(location.GetBytecodeOffset()) +
-                                                          ") >= JSMethod code size (" +
-                                                          std::to_string(method->GetCodeSize()) + ")");
+        return Error(Error::Type::INVALID_BREAKPOINT, "Invalid breakpoint location: bytecode offset (" +
+                                                      std::to_string(location.GetBytecodeOffset()) +
+                                                      ") >= JSMethod code size (" +
+                                                      std::to_string(method->GetCodeSize()) + ")");
     }
 
     if (!breakpoints_.emplace(method, location.GetBytecodeOffset()).second) {
         return Error(Error::Type::BREAKPOINT_ALREADY_EXISTS,
-                     std::string("Breakpoint already exists: bytecode offset ") +
-                         std::to_string(location.GetBytecodeOffset()));
+                     "Breakpoint already exists: bytecode offset " +
+                     std::to_string(location.GetBytecodeOffset()));
     }
 
     return {};
@@ -53,8 +53,8 @@ std::optional<Error> JSDebugger::RemoveBreakpoint(const PtLocation &location)
     JSMethod *method = FindMethod(location);
     if (method == nullptr) {
         return Error(Error::Type::METHOD_NOT_FOUND,
-                     std::string("Cannot find JSMethod with id ") + std::to_string(location.GetMethodId().GetOffset()) +
-                         " in panda file '" + std::string(location.GetPandaFile()) + "'");
+                     "Cannot find JSMethod with id " + std::to_string(location.GetMethodId().GetOffset()) +
+                     " in panda file '" + location.GetPandaFile() + "'");
     }
 
     if (!RemoveBreakpoint(method, location.GetBytecodeOffset())) {
@@ -143,7 +143,7 @@ JSMethod *JSDebugger::FindMethod(const PtLocation &location) const
     JSMethod *method = nullptr;
     ::panda::ecmascript::JSPandaFileManager::GetInstance()->EnumerateJSPandaFiles([&method, location](
         const panda::ecmascript::JSPandaFile *jsPandaFile) {
-        if (location.GetPandaFile() == jsPandaFile->GetJSPandaFileDesc()) {
+        if (jsPandaFile->GetJSPandaFileDesc() == location.GetPandaFile()) {
             JSMethod *methodsData = jsPandaFile->GetMethods();
             uint32_t numberMethods = jsPandaFile->GetNumMethods();
             for (uint32_t i = 0; i < numberMethods; ++i) {

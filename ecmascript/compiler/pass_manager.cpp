@@ -57,7 +57,7 @@ bool PassManager::CollectInfoOfPandaFile(const std::string &fileName, BytecodeTr
         return false;
     }
     const JSPandaFile *jsPandaFile =
-        JSPandaFileManager::GetInstance()->LoadAotInfoFromPf(fileName, &(translateInfo->methodPcInfos));
+        JSPandaFileManager::GetInstance()->LoadAotInfoFromPf(fileName.c_str(), &(translateInfo->methodPcInfos));
     if (jsPandaFile == nullptr) {
         return false;
     }

@@ -80,11 +80,11 @@ void ModuleManager::StoreModuleValue(JSTaggedValue key, JSTaggedValue value)
     currentModule->StoreModuleValue(thread, keyHandle, valueHandle);
 }
 
-JSHandle<SourceTextModule> ModuleManager::HostGetImportedModule(const std::string &referencingModule)
+JSHandle<SourceTextModule> ModuleManager::HostGetImportedModule(const CString &referencingModule)
 {
     ObjectFactory *factory = vm_->GetFactory();
     JSHandle<JSTaggedValue> referencingHandle =
-        JSHandle<JSTaggedValue>::Cast(factory->NewFromStdString(referencingModule));
+        JSHandle<JSTaggedValue>::Cast(factory->NewFromString(referencingModule));
     int entry =
         NameDictionary::Cast(resolvedModules_.GetTaggedObject())->FindEntry(referencingHandle.GetTaggedValue());
     LOG_IF(entry == -1, FATAL, ECMASCRIPT) << "cannot get module: " << referencingModule;
@@ -93,12 +93,12 @@ JSHandle<SourceTextModule> ModuleManager::HostGetImportedModule(const std::strin
                                       NameDictionary::Cast(resolvedModules_.GetTaggedObject())->GetValue(entry));
 }
 
-JSHandle<SourceTextModule> ModuleManager::HostResolveImportedModule(const std::string &referencingModule)
+JSHandle<SourceTextModule> ModuleManager::HostResolveImportedModule(const CString &referencingModule)
 {
     JSThread *thread = vm_->GetJSThread();
     ObjectFactory *factory = vm_->GetFactory();
     JSHandle<JSTaggedValue> referencingHandle =
-        JSHandle<JSTaggedValue>::Cast(factory->NewFromStdString(referencingModule));
+        JSHandle<JSTaggedValue>::Cast(factory->NewFromString(referencingModule));
     int entry =
         NameDictionary::Cast(resolvedModules_.GetTaggedObject())->FindEntry(referencingHandle.GetTaggedValue());
     if (entry != -1) {
@@ -119,13 +119,13 @@ JSHandle<SourceTextModule> ModuleManager::HostResolveImportedModule(const std::s
     return JSHandle<SourceTextModule>::Cast(moduleRecord);
 }
 
-void ModuleManager::AddResolveImportedModule(const JSPandaFile *jsPandaFile, const std::string &referencingModule)
+void ModuleManager::AddResolveImportedModule(const JSPandaFile *jsPandaFile, const CString &referencingModule)
 {
     JSThread *thread = vm_->GetJSThread();
     ObjectFactory *factory = vm_->GetFactory();
     JSHandle<JSTaggedValue> moduleRecord = ModuleDataExtractor::ParseModule(thread, jsPandaFile, referencingModule);
     JSHandle<JSTaggedValue> referencingHandle =
-        JSHandle<JSTaggedValue>::Cast(factory->NewFromStdString(referencingModule));
+        JSHandle<JSTaggedValue>::Cast(factory->NewFromString(referencingModule));
     JSHandle<NameDictionary> dict(thread, resolvedModules_);
     resolvedModules_ =
         NameDictionary::Put(thread, dict, referencingHandle, moduleRecord, PropertyAttributes::Default())

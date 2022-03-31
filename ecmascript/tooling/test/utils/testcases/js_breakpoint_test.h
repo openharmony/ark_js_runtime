@@ -16,7 +16,6 @@
 #ifndef ECMASCRIPT_TOOLING_TEST_UTILS_TESTCASES_JS_BREAKPOINT_TEST_H
 #define ECMASCRIPT_TOOLING_TEST_UTILS_TESTCASES_JS_BREAKPOINT_TEST_H
 
-#include "ecmascript/mem/c_string.h"
 #include "ecmascript/tooling/test/utils/test_util.h"
 
 namespace panda::tooling::ecmascript::test {

@@ -19,13 +19,15 @@
 #include <utility>
 #include <vector>
 
+#include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/c_string.h"
 #include "libpandafile/file_items.h"
 
 namespace panda::tooling::ecmascript::test {
 using panda::ecmascript::CString;
+using panda::ecmascript::CVector;
 
-std::vector<const char *> GetTestList(panda_file::SourceLang language);
+CVector<const char *> GetTestList(panda_file::SourceLang language);
 
 void SetCurrentTestName(const char *testName);
 const char *GetCurrentTestName();

@@ -63,8 +63,7 @@ DispatchRequest::DispatchRequest(const EcmaVM *ecmaVm, const CString &message) :
         LOG(ERROR, DEBUGGER) << "method format error";
         return;
     }
-    CString wholeMethod =
-        DebuggerApi::ConvertToString(StringRef::Cast(*methodResult)->ToString());
+    CString wholeMethod = DebuggerApi::ToCString(methodResult);
     CString::size_type length = wholeMethod.length();
     CString::size_type indexPoint;
     indexPoint = wholeMethod.find_first_of('.', 0);
@@ -106,7 +105,7 @@ DispatchResponse DispatchResponse::Create(std::optional<Error> error)
     DispatchResponse response;
     if (error.has_value()) {
         response.code_ = ResponseCode::NOK;
-        response.errorMsg_ = DebuggerApi::ConvertToString(error->GetMessage());
+        response.errorMsg_ = error->GetMessage();
     }
     return response;
 }

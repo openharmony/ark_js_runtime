@@ -26,10 +26,10 @@
 
 namespace panda::tooling::ecmascript {
 using panda::ecmascript::CList;
-using panda::ecmascript::CMap;
-using panda::ecmascript::CQueue;
+using panda::ecmascript::CUnorderedMap;
 using panda::ecmascript::CString;
 using panda::ecmascript::CVector;
+using panda::ecmascript::ToCString;
 
 // ========== Base types begin
 class PtBaseTypes {
@@ -55,7 +55,7 @@ using BreakpointId = CString;
 struct BreakpointDetails {
     static BreakpointId ToString(const BreakpointDetails &metaData)
     {
-        return "id:" + DebuggerApi::ToCString(metaData.line_) + ":" + DebuggerApi::ToCString(metaData.column_) + ":" +
+        return "id:" + ToCString<uint32_t>(metaData.line_) + ":" + ToCString<uint32_t>(metaData.column_) + ":" +
                metaData.url_;
     }
 
@@ -76,27 +76,27 @@ struct BreakpointDetails {
         CString lineStr = id.substr(lineStart + 1, columnStart - lineStart - 1);
         CString columnStr = id.substr(columnStart + 1, urlStart - columnStart - 1);
         CString url = id.substr(urlStart + 1);
-        metaData->line_ = DebuggerApi::CStringToULL(lineStr);
-        metaData->column_ = DebuggerApi::CStringToULL(columnStr);
+        metaData->line_ = DebuggerApi::CStringToInt(lineStr);
+        metaData->column_ = DebuggerApi::CStringToInt(columnStr);
         metaData->url_ = url;
 
         return true;
     }
 
-    size_t line_ {0};
-    size_t column_ {0};
+    int32_t line_ {0};
+    int32_t column_ {0};
     CString url_ {};
 };
 
 // Debugger.CallFrameId
-using CallFrameId = CString;
+using CallFrameId = uint32_t;
 
 // ========== Runtime types begin
 // Runtime.ScriptId
-using ScriptId = CString;
+using ScriptId = uint32_t;
 
 // Runtime.RemoteObjectId
-using RemoteObjectId = CString;
+using RemoteObjectId = uint32_t;
 
 // Runtime.ExecutionContextId
 using ExecutionContextId = int32_t;
@@ -105,7 +105,7 @@ using ExecutionContextId = int32_t;
 using UnserializableValue = CString;
 
 // Runtime.UniqueDebuggerId
-using UniqueDebuggerId = CString;
+using UniqueDebuggerId = uint32_t;
 
 // Runtime.RemoteObject
 class RemoteObject : public PtBaseTypes {
@@ -120,7 +120,7 @@ public:
     /*
      * @see {#ObjectType}
      */
-    CString GetType() const
+    const CString &GetType() const
     {
         return type_;
     }
@@ -133,9 +133,9 @@ public:
     /*
      * @see {#ObjectSubType}
      */
-    CString GetSubType() const
+    const CString &GetSubType() const
     {
-        return subtype_.value_or("");
+        return subtype_.value();
     }
 
     RemoteObject &SetSubType(const CString &type)
@@ -149,9 +149,9 @@ public:
         return subtype_.has_value();
     }
 
-    CString GetClassName() const
+    const CString &GetClassName() const
     {
-        return className_.value_or("");
+        return className_.value();
     }
 
     RemoteObject &SetClassName(const CString &className)
@@ -181,9 +181,9 @@ public:
         return value_.has_value();
     }
 
-    UnserializableValue GetUnserializableValue() const
+    const UnserializableValue &GetUnserializableValue() const
     {
-        return unserializableValue_.value_or("");
+        return unserializableValue_.value();
     }
 
     RemoteObject &SetUnserializableValue(const UnserializableValue &unserializableValue)
@@ -197,9 +197,9 @@ public:
         return unserializableValue_.has_value();
     }
 
-    CString GetDescription() const
+    const CString &GetDescription() const
     {
-        return description_.value_or("");
+        return description_.value();
     }
 
     RemoteObject &SetDescription(const CString &description)
@@ -215,18 +215,12 @@ public:
 
     RemoteObjectId GetObjectId() const
     {
-        return objectId_.value_or("");
+        return objectId_.value_or(0);
     }
 
-    RemoteObject &SetObjectId(const RemoteObjectId &objectId)
+    RemoteObject &SetObjectId(RemoteObjectId objectId)
     {
         objectId_ = objectId;
-        return *this;
-    }
-
-    RemoteObject &SetObjectId(uint32_t objectId)
-    {
-        objectId_ = DebuggerApi::ToCString(objectId);
         return *this;
     }
 
@@ -426,7 +420,7 @@ public:
         return *this;
     }
 
-    CString GetText() const
+    const CString &GetText() const
     {
         return text_;
     }
@@ -442,7 +436,7 @@ public:
         return line_;
     }
 
-    ExceptionDetails &SetLine(size_t line)
+    ExceptionDetails &SetLine(int32_t line)
     {
         line_ = line;
         return *this;
@@ -453,7 +447,7 @@ public:
         return column_;
     }
 
-    ExceptionDetails &SetColumn(size_t column)
+    ExceptionDetails &SetColumn(int32_t column)
     {
         column_ = column;
         return *this;
@@ -461,10 +455,10 @@ public:
 
     ScriptId GetScriptId() const
     {
-        return scriptId_.value_or("");
+        return scriptId_.value_or(0);
     }
 
-    ExceptionDetails &SetScriptId(const ScriptId &scriptId)
+    ExceptionDetails &SetScriptId(ScriptId scriptId)
     {
         scriptId_ = scriptId;
         return *this;
@@ -475,9 +469,9 @@ public:
         return scriptId_.has_value();
     }
 
-    CString GetUrl() const
+    const CString &GetUrl() const
     {
-        return url_.value_or("");
+        return url_.value();
     }
 
     ExceptionDetails &SetUrl(const CString &url)
@@ -532,8 +526,8 @@ private:
 
     int32_t exceptionId_ {0};
     CString text_ {};
-    size_t line_ {0};
-    size_t column_ {0};
+    int32_t line_ {0};
+    int32_t column_ {0};
     std::optional<ScriptId> scriptId_ {};
     std::optional<CString> url_ {};
     std::optional<std::unique_ptr<RemoteObject>> exception_ {};
@@ -883,9 +877,9 @@ public:
         return value_.has_value();
     }
 
-    UnserializableValue GetUnserializableValue() const
+    const UnserializableValue &GetUnserializableValue() const
     {
-        return unserializableValue_.value_or("");
+        return unserializableValue_.value();
     }
 
     CallArgument &SetUnserializableValue(const UnserializableValue &unserializableValue)
@@ -901,10 +895,10 @@ public:
 
     RemoteObjectId GetObjectId() const
     {
-        return objectId_.value_or("");
+        return objectId_.value_or(0);
     }
 
-    CallArgument &SetObjectId(const RemoteObjectId &objectId)
+    CallArgument &SetObjectId(RemoteObjectId objectId)
     {
         objectId_ = objectId;
         return *this;
@@ -955,7 +949,7 @@ public:
         return scriptId_;
     }
 
-    Location &SetScriptId(const ScriptId &scriptId)
+    Location &SetScriptId(ScriptId scriptId)
     {
         scriptId_ = scriptId;
         return *this;
@@ -966,7 +960,7 @@ public:
         return line_;
     }
 
-    Location &SetLine(size_t line)
+    Location &SetLine(int32_t line)
     {
         line_ = line;
         return *this;
@@ -977,7 +971,7 @@ public:
         return column_.value_or(-1);
     }
 
-    Location &SetColumn(size_t column)
+    Location &SetColumn(int32_t column)
     {
         column_ = column;
         return *this;
@@ -993,7 +987,7 @@ private:
     NO_MOVE_SEMANTIC(Location);
 
     ScriptId scriptId_ {};
-    size_t line_ {0};
+    int32_t line_ {0};
     std::optional<int32_t> column_ {};
 };
 
@@ -1011,7 +1005,7 @@ public:
         return line_;
     }
 
-    ScriptPosition &SetLine(size_t line)
+    ScriptPosition &SetLine(int32_t line)
     {
         line_ = line;
         return *this;
@@ -1022,7 +1016,7 @@ public:
         return column_;
     }
 
-    ScriptPosition &SetColumn(size_t column)
+    ScriptPosition &SetColumn(int32_t column)
     {
         column_ = column;
         return *this;
@@ -1032,8 +1026,8 @@ private:
     NO_COPY_SEMANTIC(ScriptPosition);
     NO_MOVE_SEMANTIC(ScriptPosition);
 
-    size_t line_ {0};
-    size_t column_ {0};
+    int32_t line_ {0};
+    int32_t column_ {0};
 };
 
 // Debugger.SearchMatch
@@ -1048,7 +1042,7 @@ private:
     NO_COPY_SEMANTIC(SearchMatch);
     NO_MOVE_SEMANTIC(SearchMatch);
 
-    size_t lineNumber_ {0};
+    int32_t lineNumber_ {0};
     CString lineContent_ {};
 };
 
@@ -1066,7 +1060,7 @@ public:
         return scriptId_;
     }
 
-    LocationRange &SetScriptId(const ScriptId &scriptId)
+    LocationRange &SetScriptId(ScriptId scriptId)
     {
         scriptId_ = scriptId;
         return *this;
@@ -1117,7 +1111,7 @@ public:
         return scriptId_;
     }
 
-    BreakLocation &SetScriptId(const ScriptId &scriptId)
+    BreakLocation &SetScriptId(ScriptId scriptId)
     {
         scriptId_ = scriptId;
         return *this;
@@ -1128,7 +1122,7 @@ public:
         return line_;
     }
 
-    BreakLocation &SetLine(size_t line)
+    BreakLocation &SetLine(int32_t line)
     {
         line_ = line;
         return *this;
@@ -1139,7 +1133,7 @@ public:
         return column_.value_or(-1);
     }
 
-    BreakLocation &SetColumn(size_t column)
+    BreakLocation &SetColumn(int32_t column)
     {
         column_ = column;
         return *this;
@@ -1153,9 +1147,9 @@ public:
     /*
      * @see {#BreakType}
      */
-    CString GetType() const
+    const CString &GetType() const
     {
-        return type_.value_or("");
+        return type_.value();
     }
 
     BreakLocation &SetType(const CString &type)
@@ -1193,7 +1187,7 @@ private:
     NO_MOVE_SEMANTIC(BreakLocation);
 
     ScriptId scriptId_ {};
-    size_t line_ {0};
+    int32_t line_ {0};
     std::optional<int32_t> column_ {};
     std::optional<CString> type_ {};
 };
@@ -1224,7 +1218,7 @@ public:
     /*
      * @see {#Scope::Type}
      */
-    CString GetType() const
+    const CString &GetType() const
     {
         return type_;
     }
@@ -1246,9 +1240,9 @@ public:
         return *this;
     }
 
-    CString GetName() const
+    const CString &GetName() const
     {
-        return name_.value_or("");
+        return name_.value();
     }
 
     Scope &SetName(const CString &name)
@@ -1374,13 +1368,13 @@ public:
         return callFrameId_;
     }
 
-    CallFrame &SetCallFrameId(const CallFrameId &callFrameId)
+    CallFrame &SetCallFrameId(CallFrameId callFrameId)
     {
         callFrameId_ = callFrameId;
         return *this;
     }
 
-    CString GetFunctionName() const
+    const CString &GetFunctionName() const
     {
         return functionName_;
     }
@@ -1421,7 +1415,7 @@ public:
         return *this;
     }
 
-    CString GetUrl() const
+    const CString &GetUrl() const
     {
         return url_;
     }

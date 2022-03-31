@@ -16,19 +16,17 @@
 #ifndef ECMASCRIPT_TOOLING_TEST_UTILS_TEST_EXTRACTOR_H
 #define ECMASCRIPT_TOOLING_TEST_UTILS_TEST_EXTRACTOR_H
 
-#include "ecmascript/mem/c_string.h"
 #include "ecmascript/tooling/js_pt_extractor.h"
 
 namespace panda::tooling::ecmascript::test {
 using EntityId = panda_file::File::EntityId;
 using panda::ecmascript::CString;
-using panda::tooling::ecmascript::JSPtExtractor;
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct SourceLocation {
     CString path;  // NOLINT(misc-non-private-member-variables-in-classes)
-    size_t line;          // NOLINT(misc-non-private-member-variables-in-classes)
-    size_t column;
+    int32_t line;          // NOLINT(misc-non-private-member-variables-in-classes)
+    int32_t column;
 
     bool operator==(const SourceLocation &other) const
     {
@@ -43,7 +41,7 @@ struct SourceLocation {
 
 class TestExtractor : public JSPtExtractor {
 public:
-    explicit TestExtractor(const panda_file::File *pandaFileData) : JSPtExtractor(pandaFileData) {}
+    explicit TestExtractor(const JSPandaFile *pandaFile) : JSPtExtractor(pandaFile) {}
     ~TestExtractor() = default;
 
     std::pair<EntityId, uint32_t> GetBreakpointAddress(const SourceLocation &sourceLocation);

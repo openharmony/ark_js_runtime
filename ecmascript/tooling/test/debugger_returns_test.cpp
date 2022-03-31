@@ -64,23 +64,23 @@ protected:
 
 HWTEST_F_L0(DebuggerReturnsTest, EnableReturnsToObjectTest)
 {
-    std::unique_ptr<EnableReturns> enableReturns = std::make_unique<EnableReturns>("100");
+    std::unique_ptr<EnableReturns> enableReturns = std::make_unique<EnableReturns>(100U);
     ASSERT_NE(enableReturns, nullptr);
     Local<ObjectRef> enableObject = enableReturns->ToObject(ecmaVm);
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "debuggerId");
     ASSERT_TRUE(enableObject->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = enableObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("100"), Local<StringRef>(result)->ToString());
+    EXPECT_EQ(CString("100"), DebuggerApi::ToCString(result));
 }
 
 HWTEST_F_L0(DebuggerReturnsTest, SetBreakpointByUrlReturnsToObjectTest)
 {
     auto locations = CVector<std::unique_ptr<Location>>();
     std::unique_ptr<Location> location = std::make_unique<Location>();
-    location->SetScriptId("id_1");
+    location->SetScriptId(1);
     locations.emplace_back(std::move(location));
-    ASSERT_EQ(locations.back()->GetScriptId(), "id_1");
+    ASSERT_EQ(locations.back()->GetScriptId(), 1U);
 
     std::unique_ptr<SetBreakpointByUrlReturns> setBreakpointByUrlReturns
                      = std::make_unique<SetBreakpointByUrlReturns>("11", std::move(locations));
@@ -90,7 +90,7 @@ HWTEST_F_L0(DebuggerReturnsTest, SetBreakpointByUrlReturnsToObjectTest)
     ASSERT_TRUE(setObject->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = setObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("11"), Local<StringRef>(result)->ToString());
+    EXPECT_EQ(CString("11"), DebuggerApi::ToCString(result));
 }
 
 HWTEST_F_L0(DebuggerReturnsTest, EvaluateOnCallFrameReturnsToObjectTest)
@@ -138,13 +138,13 @@ HWTEST_F_L0(DebuggerReturnsTest, GetScriptSourceReturnsToObjectTest)
     ASSERT_TRUE(scriptObject->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = scriptObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("source_1"), Local<StringRef>(result)->ToString());
+    EXPECT_EQ(CString("source_1"), DebuggerApi::ToCString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "bytecode");
     ASSERT_TRUE(scriptObject->Has(ecmaVm, tmpStr));
     result = scriptObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("bytecode_1"), Local<StringRef>(result)->ToString());
+    EXPECT_EQ(CString("bytecode_1"), DebuggerApi::ToCString(result));
 }
 
 HWTEST_F_L0(DebuggerReturnsTest, RestartFrameReturnsToObjectTest)
@@ -172,7 +172,7 @@ HWTEST_F_L0(DebuggerReturnsTest, SetBreakpointReturnsToObjectTest)
     ASSERT_TRUE(breakObject->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = breakObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("breakpointId_1"), Local<StringRef>(result)->ToString());
+    EXPECT_EQ(CString("breakpointId_1"), DebuggerApi::ToCString(result));
     
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "actualLocation");
     ASSERT_TRUE(breakObject->Has(ecmaVm, tmpStr));
@@ -191,7 +191,7 @@ HWTEST_F_L0(DebuggerReturnsTest, SetInstrumentationBreakpointReturnsToObjectTest
     ASSERT_TRUE(instrumentationObject->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = instrumentationObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string("111"), Local<StringRef>(result)->ToString());
+    EXPECT_EQ(CString("111"), DebuggerApi::ToCString(result));
 }
 
 HWTEST_F_L0(DebuggerReturnsTest, SetScriptSourceReturnsToObjectTest)
@@ -209,8 +209,8 @@ HWTEST_F_L0(DebuggerReturnsTest, SetScriptSourceReturnsToObjectTest)
     ASSERT_TRUE(result->IsArray(ecmaVm));
 
     ASSERT_NE(setScriptSourceReturns, nullptr);
-    exceptionDetails->SetScriptId("id_5");
-    ASSERT_EQ(exceptionDetails->GetScriptId(), "id_5");
+    exceptionDetails->SetScriptId(5);
+    ASSERT_EQ(exceptionDetails->GetScriptId(), 5U);
 }
 
 HWTEST_F_L0(DebuggerReturnsTest, GetPropertiesReturnsToObjectTest)
@@ -221,8 +221,8 @@ HWTEST_F_L0(DebuggerReturnsTest, GetPropertiesReturnsToObjectTest)
     std::unique_ptr<GetPropertiesReturns> getPropertiesReturns = std::make_unique
                                                         <GetPropertiesReturns>(std::move(descriptor));
     ASSERT_NE(getPropertiesReturns, nullptr);
-    exceptionDetails->SetScriptId("id_6");
-    ASSERT_EQ(exceptionDetails->GetScriptId(), "id_6");
+    exceptionDetails->SetScriptId(6);
+    ASSERT_EQ(exceptionDetails->GetScriptId(), 6U);
 
     Local<ArrayRef> getObject = getPropertiesReturns->ToObject(ecmaVm);
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "result");

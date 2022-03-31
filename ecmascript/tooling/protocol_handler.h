@@ -49,9 +49,6 @@ private:
     std::unique_ptr<Dispatcher> dispatcher_ {};
 
     bool waitingForDebugger_ {false};
-    CQueue<CString> msgQueue_ {};
-    os::memory::Mutex queueLock_;
-    os::memory::ConditionVariable queueCond_ GUARDED_BY(queueLock_);
     const EcmaVM *vm_ {nullptr};
 };
 }  // namespace panda::tooling::ecmascript

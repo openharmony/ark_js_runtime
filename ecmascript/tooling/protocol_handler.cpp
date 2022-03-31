@@ -53,8 +53,8 @@ void ProtocolHandler::ProcessCommand(const CString &msg)
     if (!exception->IsHole()) {
         DebuggerApi::SetException(vm_, exception);
     }
-    std::string startDebugging("Runtime.runIfWaitingForDebugger");
-    if (msg.find(startDebugging, 0) != std::string::npos) {
+    CString startDebugging("Runtime.runIfWaitingForDebugger");
+    if (msg.find(startDebugging, 0) != CString::npos) {
         waitingForDebugger_ = false;
     }
 }

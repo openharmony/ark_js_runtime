@@ -19,8 +19,6 @@
 #include "ecmascript/tooling/base/pt_types.h"
 
 namespace panda::tooling::ecmascript {
-using panda::ecmascript::CString;
-
 class PtBaseReturns : public PtBaseTypes {
 public:
     PtBaseReturns() = default;
@@ -38,7 +36,7 @@ private:
 
 class EnableReturns : public PtBaseReturns {
 public:
-    explicit EnableReturns(UniqueDebuggerId id) : debuggerId_(std::move(id)) {}
+    explicit EnableReturns(UniqueDebuggerId id) : debuggerId_(id) {}
     ~EnableReturns() override = default;
 
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
@@ -53,8 +51,8 @@ private:
 
 class SetBreakpointByUrlReturns : public PtBaseReturns {
 public:
-    explicit SetBreakpointByUrlReturns(CString id, CVector<std::unique_ptr<Location>> locations)
-        : id_(std::move(id)), locations_(std::move(locations))
+    explicit SetBreakpointByUrlReturns(const CString &id, CVector<std::unique_ptr<Location>> locations)
+        : id_(id), locations_(std::move(locations))
     {}
     ~SetBreakpointByUrlReturns() override = default;
 
@@ -124,7 +122,8 @@ private:
 
 class RestartFrameReturns : public PtBaseReturns {
 public:
-    explicit RestartFrameReturns(CVector<std::unique_ptr<CallFrame>> callFrames) : callFrames_(std::move(callFrames))
+    explicit RestartFrameReturns(CVector<std::unique_ptr<CallFrame>> callFrames)
+        : callFrames_(std::move(callFrames))
     {}
     ~RestartFrameReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
@@ -154,8 +153,8 @@ private:
 
 class SetBreakpointReturns : public PtBaseReturns {
 public:
-    explicit SetBreakpointReturns(CString id, std::unique_ptr<Location> location)
-        : breakpointId_(std::move(id)), location_(std::move(location))
+    explicit SetBreakpointReturns(const CString &id, std::unique_ptr<Location> location)
+        : breakpointId_(id), location_(std::move(location))
     {}
     ~SetBreakpointReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
@@ -170,7 +169,7 @@ private:
 
 class SetInstrumentationBreakpointReturns : public PtBaseReturns {
 public:
-    explicit SetInstrumentationBreakpointReturns(CString id) : breakpointId_(std::move(id))
+    explicit SetInstrumentationBreakpointReturns(const CString &id) : breakpointId_(id)
     {}
     ~SetInstrumentationBreakpointReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;

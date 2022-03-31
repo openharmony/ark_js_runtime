@@ -19,15 +19,16 @@
 #include <map>
 #include <memory>
 
-#include "libpandabase/macros.h"
-#include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/c_string.h"
+#include "ecmascript/napi/include/jsnapi.h"
 #include "include/tooling/debug_interface.h"
+#include "libpandabase/macros.h"
 
 namespace panda::tooling::ecmascript {
-using panda::ecmascript::CMap;
 using panda::ecmascript::CString;
+using panda::ecmascript::CUnorderedMap;
+
 class FrontEnd;
 class PtBaseReturns;
 class PtBaseEvents;
@@ -64,11 +65,11 @@ public:
     {
         return params_;
     }
-    CString GetDomain() const
+    const CString &GetDomain() const
     {
         return domain_;
     }
-    CString GetMethod() const
+    const CString &GetMethod() const
     {
         return method_;
     }
@@ -101,7 +102,7 @@ public:
         return code_;
     }
 
-    CString GetMessage() const
+    const CString &GetMessage() const
     {
         return errorMsg_;
     }
@@ -147,7 +148,7 @@ public:
     void Dispatch(const DispatchRequest &request);
 
 private:
-    CMap<CString, std::unique_ptr<DispatcherBase>> dispatchers_ {};
+    CUnorderedMap<CString, std::unique_ptr<DispatcherBase>> dispatchers_ {};
 
     NO_COPY_SEMANTIC(Dispatcher);
     NO_MOVE_SEMANTIC(Dispatcher);

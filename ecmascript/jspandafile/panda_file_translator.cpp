@@ -132,7 +132,7 @@ JSTaggedValue PandaFileTranslator::ParseConstPool(EcmaVM *vm, const JSPandaFile 
     JSHandle<JSHClass> asyncDynclass = JSHandle<JSHClass>::Cast(env->GetAsyncFunctionClass());
     JSHandle<JSHClass> generatorDynclass = JSHandle<JSHClass>::Cast(env->GetGeneratorFunctionClass());
 
-    const std::unordered_map<uint32_t, uint64_t> &constpoolMap = jsPandaFile->GetConstpoolMap();
+    const CUnorderedMap<uint32_t, uint64_t> &constpoolMap = jsPandaFile->GetConstpoolMap();
     [[maybe_unused]] uint32_t mainMethodIndex = jsPandaFile->GetMainMethodIndex();
     for (const auto &it : constpoolMap) {
         ConstPoolValue value(it.second);

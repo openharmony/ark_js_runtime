@@ -33,7 +33,7 @@ void UninitializeDebugger()
 void DispatchProtocolMessage(const std::string &message)
 {
     if (g_handler != nullptr) {
-        g_handler->ProcessCommand(DebuggerApi::ConvertToString(message));
+        g_handler->ProcessCommand(message.c_str());
     }
 }
 }  // namespace panda::tooling::ecmascript

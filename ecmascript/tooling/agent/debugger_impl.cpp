@@ -225,14 +225,14 @@ void DebuggerImpl::DispatcherImpl::SetBlackboxPatterns(const DispatchRequest &re
 DispatchResponse DebuggerImpl::Enable([[maybe_unused]] std::unique_ptr<EnableParams> params, UniqueDebuggerId *id)
 {
     ASSERT(id != nullptr);
-    *id = "0";
+    *id = 0;
     return DispatchResponse::Ok();
 }
 
 DispatchResponse DebuggerImpl::EvaluateOnCallFrame(std::unique_ptr<EvaluateOnCallFrameParams> params,
                                                    std::unique_ptr<RemoteObject> *result)
 {
-    CString callFrameId = params->GetCallFrameId();
+    CallFrameId callFrameId = params->GetCallFrameId();
     CString expression = params->GetExpression();
     return DispatchResponse::Create(backend_->EvaluateValue(callFrameId, expression, result));
 }
@@ -248,13 +248,8 @@ DispatchResponse DebuggerImpl::GetPossibleBreakpoints(std::unique_ptr<GetPossibl
 
 DispatchResponse DebuggerImpl::GetScriptSource(std::unique_ptr<GetScriptSourceParams> params, CString *source)
 {
-    auto scriptFunc = [source](PtScript *script) -> bool {
-        *source = script->GetScriptSource();
-        return true;
-    };
-    if (!backend_->MatchScripts(scriptFunc, params->GetScriptId(), ScriptMatchType::SCRIPT_ID)) {
-        *source = "";
-        return DispatchResponse::Fail("unknown script id: " + params->GetScriptId());
+    if (!backend_->GetScriptSource(params->GetScriptId(), source)) {
+        return DispatchResponse::Fail("unknown script id: " + ToCString<uint32_t>(params->GetScriptId()));
     }
 
     return DispatchResponse::Ok();

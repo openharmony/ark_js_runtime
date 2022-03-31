@@ -22,8 +22,6 @@
 #include "ecmascript/tooling/dispatcher.h"
 
 namespace panda::tooling::ecmascript {
-using panda::ecmascript::CString;
-
 class RuntimeImpl final {
 public:
     explicit RuntimeImpl(JSBackend *backend) : backend_(backend) {}
@@ -55,7 +53,7 @@ public:
 
     private:
         using AgentHandler = void (RuntimeImpl::DispatcherImpl::*)(const DispatchRequest &request);
-        CMap<CString, AgentHandler> dispatcherTable_ {};
+        CUnorderedMap<CString, AgentHandler> dispatcherTable_ {};
         std::unique_ptr<RuntimeImpl> runtime_ {};
 
         NO_COPY_SEMANTIC(DispatcherImpl);

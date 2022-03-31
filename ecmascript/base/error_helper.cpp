@@ -215,10 +215,10 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
             }
             data.push_back(':');
             // line number and column number
-            auto callbackFunc = [&data](size_t line, size_t column) -> bool {
-                data += ToCString(static_cast<int>(line) + 1);
+            auto callbackFunc = [&data](int32_t line, int32_t column) -> bool {
+                data += ToCString(line + 1);
                 data.push_back(':');
-                data += ToCString(static_cast<int>(column) + 1);
+                data += ToCString(column + 1);
                 return true;
             };
             if (!debugExtractor->MatchWithOffset(callbackFunc, method->GetFileId(), frameHandler.GetBytecodeOffset())) {
