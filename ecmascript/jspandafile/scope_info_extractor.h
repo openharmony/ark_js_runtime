@@ -19,6 +19,10 @@
 #include "ecmascript/js_tagged_value-inl.h"
 
 namespace panda::ecmascript {
+struct ScopeDebugInfo {
+    std::unordered_map<std::string, uint32_t> scopeInfo;
+};
+
 class ScopeInfoExtractor {
 public:
     explicit ScopeInfoExtractor() = default;

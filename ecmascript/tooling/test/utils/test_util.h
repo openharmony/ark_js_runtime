@@ -146,12 +146,6 @@ public:
         return extractor.GetSourceLocation(location.GetMethodId(), location.GetBytecodeOffset());
     }
 
-    static std::vector<panda_file::LocalVariableInfo> GetVariables(JSMethod *method, uint32_t offset);
-
-    static std::vector<panda_file::LocalVariableInfo> GetVariables(PtLocation location);
-
-    static int32_t GetValueRegister(JSMethod *method, const char *varName);
-
     static bool SuspendUntilContinue(DebugEvent reason, PtThread thread, PtLocation location)
     {
         {

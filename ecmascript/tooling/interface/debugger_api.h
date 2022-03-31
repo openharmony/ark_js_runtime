@@ -97,8 +97,8 @@ public:
     // ScopeInfo
     static Local<JSValueRef> GetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t slot);
     static void SetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t slot, Local<JSValueRef> value);
-    static bool EvaluateLexicalValue(const EcmaVM *ecmaVm, const CString &name, int32_t &level, uint32_t &slot);
-    static Local<JSValueRef> GetLexicalValueInfo(const EcmaVM *ecmaVm, const CString &name);
+    static bool EvaluateLexicalValue(const EcmaVM *ecmaVm, const std::string &name, int32_t &level, uint32_t &slot);
+    static Local<JSValueRef> GetLexicalValueInfo(const EcmaVM *ecmaVm, const std::string &name);
 };
 }  // namespace panda::tooling::ecmascript
 

@@ -19,14 +19,14 @@
 #include "libpandafile/method_data_accessor-inl.h"
 
 namespace panda::ecmascript {
-JSMethod::JSMethod(Class *klass, const JSPandaFile *jsPandaFile, panda_file::File::EntityId fileId,
+JSMethod::JSMethod(const JSPandaFile *jsPandaFile, panda_file::File::EntityId fileId,
                    panda_file::File::EntityId codeId, uint32_t accessFlags,
-                   uint32_t numArgs, const uint16_t *shorty)
-    : Method(klass, jsPandaFile != nullptr ? jsPandaFile->GetPandaFile() : nullptr,
-                fileId, codeId, accessFlags, numArgs, shorty)
+                   uint32_t numArgs)
+    : Method(nullptr, jsPandaFile != nullptr ? jsPandaFile->GetPandaFile() : nullptr,
+             fileId, codeId, accessFlags, numArgs, nullptr)
 {
-    bytecodeArray_ = JSMethod::GetInstructions();
-    bytecodeArraySize_ = JSMethod::GetCodeSize();
+    bytecodeArray_ = GetInstructions();
+    bytecodeArraySize_ = GetCodeSize();
     jsPandaFile_ = jsPandaFile;
 }
 

@@ -19,15 +19,6 @@
 #include "ecmascript/js_object.h"
 
 namespace panda::ecmascript {
-struct ScopeInfo {
-    uint32_t slot;
-    CString name;
-};
-
-struct ScopeDebugInfo {
-    std::vector<ScopeInfo> scopeInfo;
-};
-
 class LexicalEnv : public TaggedArray {
 public:
     static constexpr uint32_t PARENT_ENV_INDEX = 0;

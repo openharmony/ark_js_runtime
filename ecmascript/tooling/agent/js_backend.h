@@ -19,7 +19,7 @@
 #include "ecmascript/tooling/agent/js_pt_hooks.h"
 #include "ecmascript/tooling/base/pt_types.h"
 #include "ecmascript/tooling/dispatcher.h"
-#include "ecmascript/tooling/pt_js_extractor.h"
+#include "ecmascript/tooling/js_pt_extractor.h"
 #include "libpandabase/macros.h"
 
 namespace panda::tooling::ecmascript {
@@ -115,9 +115,9 @@ private:
     NO_MOVE_SEMANTIC(JSBackend);
     NO_COPY_SEMANTIC(JSBackend);
     CString Trim(const CString &str);
-    PtJSExtractor *GenerateExtractor(const panda_file::File *file);
-    PtJSExtractor *GetExtractor(const panda_file::File *file);
-    PtJSExtractor *GetExtractor(const CString &url);
+    JSPtExtractor *GenerateExtractor(const panda_file::File *file);
+    JSPtExtractor *GetExtractor(const panda_file::File *file);
+    JSPtExtractor *GetExtractor(const CString &url);
     bool GenerateCallFrame(CallFrame *callFrame, const InterpretedFrameHandler *frameHandler, int32_t frameId);
     std::unique_ptr<Scope> GetLocalScopeChain(const InterpretedFrameHandler *frameHandler,
         std::unique_ptr<RemoteObject> *thisObj);
@@ -137,13 +137,13 @@ private:
     const EcmaVM *ecmaVm_ {nullptr};
     std::unique_ptr<JSPtHooks> hooks_ {nullptr};
     JSDebugger *debugger_ {nullptr};
-    CMap<const std::string, std::unique_ptr<PtJSExtractor>> extractors_ {};
+    CMap<const std::string, std::unique_ptr<JSPtExtractor>> extractors_ {};
     CMap<CString, std::unique_ptr<PtScript>> scripts_ {};
     CMap<uint32_t, Global<JSValueRef>> propertiesPair_ {};
     uint32_t curObjectId_ {0};
     bool pauseOnException_ {false};
     bool pauseOnNextByteCode_ {false};
-    std::unique_ptr<PtJSExtractor::SingleStepper> singleStepper_ {nullptr};
+    std::unique_ptr<JSPtExtractor::SingleStepper> singleStepper_ {nullptr};
 
     friend class JSPtHooks;
 };

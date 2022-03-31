@@ -26,10 +26,10 @@
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/object_factory.h"
-#include "ecmascript/tooling/pt_js_extractor.h"
+#include "ecmascript/tooling/js_pt_extractor.h"
 
 namespace panda::ecmascript::base {
-using panda::tooling::ecmascript::PtJSExtractor;
+using panda::tooling::ecmascript::JSPtExtractor;
 
 JSTaggedValue ErrorHelper::ErrorCommonToString(EcmaRuntimeCallInfo *argv, const ErrorType &errorType)
 {
@@ -205,8 +205,8 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
             data += DecodeFunctionName(method->ParseFunctionName());
             data.append(" (");
             // source file
-            PtJSExtractor *debugExtractor =
-                JSPandaFileManager::GetInstance()->GetPtJSExtractor(method->GetJSPandaFile());
+            JSPtExtractor *debugExtractor =
+                JSPandaFileManager::GetInstance()->GetJSPtExtractor(method->GetJSPandaFile());
             const CString &sourceFile = debugExtractor->GetSourceFile(method->GetFileId());
             if (sourceFile.empty()) {
                 data.push_back('?');
