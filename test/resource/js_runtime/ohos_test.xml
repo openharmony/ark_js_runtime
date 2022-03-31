@@ -21,11 +21,6 @@
             <option name="push" value="test/test/libdebugger_entry.so -> /data/test" src="out"/>
         </preparer>
     </target>
-    <target name="AccessorDataTestAction">
-        <preparer>
-            <option name="push" value="test/test/libark_ecma_debugger_test.so -> /data/test" src="out"/>
-        </preparer>
-    </target>
     <target name="DebuggerCommandsTest">
         <preparer>
             <option name="push" value="test/test/libark_ecma_debugger_test.so -> /data/test" src="out"/>
@@ -57,6 +52,11 @@
         </preparer>
     </target>
     <target name="SnapshotTest">
+        <preparer>
+            <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
+        </preparer>
+    </target>
+    <target name="AccessorDataTest">
         <preparer>
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
         </preparer>
@@ -287,6 +287,11 @@
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
         </preparer>
     </target>
+    <target name="BuiltinsDisplayNamesTest">
+        <preparer>
+            <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
+        </preparer>
+    </target>
     <target name="BuiltinsErrorsTest">
         <preparer>
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
@@ -397,6 +402,16 @@
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
         </preparer>
     </target>
+    <target name="ContainersDequeTest">
+        <preparer>
+            <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
+        </preparer>
+    </target>
+    <target name="ContainersStackTest">
+        <preparer>
+            <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
+        </preparer>
+    </target>
     <target name="ContainersTreeMapTest">
         <preparer>
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
@@ -427,12 +442,22 @@
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
         </preparer>
     </target>
-    <target name="EcmaStringTableTestAction">
+    <target name="EcmaStringTableTest">
         <preparer>
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
         </preparer>
     </target>
     <target name="EcmaStringTest">
+        <preparer>
+            <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
+        </preparer>
+    </target>
+    <target name="JSAPIDequeTest">
+        <preparer>
+            <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
+        </preparer>
+    </target>
+    <target name="JSAPIStackTest">
         <preparer>
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
         </preparer>
@@ -458,11 +483,6 @@
         </preparer>
     </target>
     <target name="JsArgumentsTest">
-        <preparer>
-            <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
-        </preparer>
-    </target>
-    <target name="TaggedTreeTest">
         <preparer>
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
         </preparer>
