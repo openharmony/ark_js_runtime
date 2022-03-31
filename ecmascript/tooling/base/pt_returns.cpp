@@ -22,7 +22,7 @@ Local<ObjectRef> EnableReturns::ToObject(const EcmaVM *ecmaVm)
 
     result->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "debuggerId")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, debuggerId_.c_str())));
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(debuggerId_).c_str())));
 
     return result;
 }

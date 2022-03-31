@@ -29,7 +29,7 @@ std::unique_ptr<BreakpointResolved> BreakpointResolved::Create(const EcmaVM *ecm
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "breakpointId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            breakpointResolved->breakpointId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            breakpointResolved->breakpointId_ = DebuggerApi::ToCString(result);
         } else {
             error += "'breakpointId' should a String;";
         }
@@ -113,7 +113,7 @@ std::unique_ptr<Paused> Paused::Create(const EcmaVM *ecmaVm, const Local<JSValue
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "reason")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paused->reason_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            paused->reason_ = DebuggerApi::ToCString(result);
         } else {
             error += "'reason' should a String;";
         }
@@ -141,7 +141,7 @@ std::unique_ptr<Paused> Paused::Create(const EcmaVM *ecmaVm, const Local<JSValue
                 if (resultValue.IsEmpty()) {
                     error += "'hitBreakpoints' format invalid;";
                 }
-                breakPoints.emplace_back(DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString()));
+                breakPoints.emplace_back(DebuggerApi::ToCString(result));
             }
             paused->hitBreakpoints_ = std::move(breakPoints);
         } else {
@@ -224,7 +224,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "scriptId"));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptEvent->scriptId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            scriptEvent->scriptId_ = DebuggerApi::StringToInt(result);
         } else {
             error += "'scriptId' should a String;";
         }
@@ -234,7 +234,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptEvent->url_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            scriptEvent->url_ = DebuggerApi::ToCString(result);
         } else {
             error += "'url' should a String;";
         }
@@ -295,7 +295,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "hash")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptEvent->hash_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            scriptEvent->hash_ = DebuggerApi::ToCString(result);
         } else {
             error += "'hash' should a String;";
         }
@@ -314,7 +314,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "sourceMapURL")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptEvent->sourceMapUrl_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            scriptEvent->sourceMapUrl_ = DebuggerApi::ToCString(result);
         } else {
             error += "'sourceMapURL' should a String;";
         }
@@ -354,7 +354,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptLanguage")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptEvent->scriptLanguage_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            scriptEvent->scriptLanguage_ = DebuggerApi::ToCString(result);
         } else {
             error += "'scriptLanguage' should a String;";
         }
@@ -362,7 +362,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "embedderName")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptEvent->embedderName_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            scriptEvent->embedderName_ = DebuggerApi::ToCString(result);
         } else {
             error += "'embedderName' should a String;";
         }
@@ -381,7 +381,7 @@ Local<ObjectRef> ScriptFailedToParse::ToObject(const EcmaVM *ecmaVm)
 
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, scriptId_.c_str())));
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(scriptId_).c_str())));
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, url_.c_str())));
@@ -477,7 +477,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptEvent->scriptId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            scriptEvent->scriptId_ = DebuggerApi::StringToInt(result);
         } else {
             error += "'scriptId' should a String;";
         }
@@ -487,7 +487,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptEvent->url_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            scriptEvent->url_ = DebuggerApi::ToCString(result);
         } else {
             error += "'url' should a String;";
         }
@@ -548,7 +548,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "hash")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptEvent->hash_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            scriptEvent->hash_ = DebuggerApi::ToCString(result);
         } else {
             error += "'hash' should a String;";
         }
@@ -575,7 +575,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "sourceMapURL")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptEvent->sourceMapUrl_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            scriptEvent->sourceMapUrl_ = DebuggerApi::ToCString(result);
         } else {
             error += "'sourceMapURL' should a String;";
         }
@@ -615,7 +615,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptLanguage")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptEvent->scriptLanguage_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            scriptEvent->scriptLanguage_ = DebuggerApi::ToCString(result);
         } else {
             error += "'scriptLanguage' should a String;";
         }
@@ -623,7 +623,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "embedderName")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptEvent->embedderName_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            scriptEvent->embedderName_ = DebuggerApi::ToCString(result);
         } else {
             error += "'embedderName' should a String;";
         }
@@ -642,7 +642,7 @@ Local<ObjectRef> ScriptParsed::ToObject(const EcmaVM *ecmaVm)
 
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, scriptId_.c_str())));
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(scriptId_).c_str())));
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, url_.c_str())));

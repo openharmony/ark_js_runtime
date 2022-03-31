@@ -116,7 +116,7 @@ DispatchResponse RuntimeImpl::GetProperties(std::unique_ptr<GetPropertiesParams>
     [[maybe_unused]] std::optional<CVector<std::unique_ptr<PrivatePropertyDescriptor>>> *outPrivateProps,
     [[maybe_unused]] std::optional<std::unique_ptr<ExceptionDetails>> *outExceptionDetails)
 {
-    backend_->GetProperties(DebuggerApi::CStringToULL(params->GetObjectId()),
+    backend_->GetProperties(params->GetObjectId(),
         params->GetOwnProperties(),
         params->GetAccessPropertiesOnly(),
         outPropertyDesc);
@@ -128,7 +128,7 @@ DispatchResponse RuntimeImpl::CallFunctionOn(std::unique_ptr<CallFunctionOnParam
     [[maybe_unused]] std::optional<std::unique_ptr<ExceptionDetails>> *outExceptionDetails)
 {
     backend_->CallFunctionOn(params->GetFunctionDeclaration(),
-        DebuggerApi::CStringToULL(params->GetObjectId()),
+        params->GetObjectId(),
         params->GetArguments(),
         params->GetSilent(),
         params->GetReturnByValue(),

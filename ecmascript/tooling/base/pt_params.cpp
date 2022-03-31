@@ -58,7 +58,7 @@ std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(con
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrameId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->callFrameId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            paramsObject->callFrameId_ = DebuggerApi::StringToInt(result);
         } else {
             error += "'callframeid' should be a String;";
         }
@@ -69,7 +69,7 @@ std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(con
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "expression")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->expression_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            paramsObject->expression_ = DebuggerApi::ToCString(result);
         } else {
             error += "'expression' should be a String;";
         }
@@ -79,7 +79,7 @@ std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(con
 
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectGroup")));
     if (!result.IsEmpty() && result->IsString()) {
-        paramsObject->objectGroup_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+        paramsObject->objectGroup_ = DebuggerApi::ToCString(result);
     }
 
     result = Local<ObjectRef>(params)->Get(ecmaVm,
@@ -189,7 +189,7 @@ std::unique_ptr<GetScriptSourceParams> GetScriptSourceParams::Create(const EcmaV
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->scriptId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            paramsObject->scriptId_ = DebuggerApi::StringToInt(result);
         } else {
             error += "'scriptId' should be a String;";
         }
@@ -219,7 +219,7 @@ std::unique_ptr<RemoveBreakpointParams> RemoveBreakpointParams::Create(const Ecm
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "breakpointId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->breakpointId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            paramsObject->breakpointId_ = DebuggerApi::ToCString(result);
         } else {
             error += "'breakpointId' should be a String;";
         }
@@ -314,7 +314,7 @@ std::unique_ptr<SetBlackboxPatternsParams> SetBlackboxPatternsParams::Create(con
                 Local<JSValueRef> value = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 if (value->IsString()) {
                     paramsObject->patterns_.emplace_back(
-                        DebuggerApi::ConvertToString(StringRef::Cast(*value)->ToString()));
+                        DebuggerApi::ToCString(value));
                 } else {
                     error += "'patterns' items should be a String;";
                 }
@@ -358,7 +358,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->url_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            paramsObject->url_ = DebuggerApi::ToCString(result);
         } else {
             error += "'url' should be a String;";
         }
@@ -366,7 +366,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "urlRegex")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->urlRegex_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            paramsObject->urlRegex_ = DebuggerApi::ToCString(result);
         } else {
             error += "'urlRegex' should be a String;";
         }
@@ -374,7 +374,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptHash")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->scriptHash_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            paramsObject->scriptHash_ = DebuggerApi::ToCString(result);
         } else {
             error += "'scriptHash' should be a String;";
         }
@@ -390,7 +390,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "condition")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->condition_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            paramsObject->condition_ = DebuggerApi::ToCString(result);
         } else {
             error += "'condition' should be a String;";
         }
@@ -418,7 +418,7 @@ std::unique_ptr<SetPauseOnExceptionsParams> SetPauseOnExceptionsParams::Create(c
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "state")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            if (!paramsObject->StoreState(DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString()))) {
+            if (!paramsObject->StoreState(DebuggerApi::ToCString(result))) {
                 error += "'state' is invalid;";
             }
         } else {
@@ -543,7 +543,7 @@ std::unique_ptr<GetPropertiesParams> GetPropertiesParams::Create(const EcmaVM *e
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->objectId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            paramsObject->objectId_ = DebuggerApi::StringToInt(result);
         } else {
             error += "'objectId' should be a String;";
         }
@@ -600,7 +600,7 @@ std::unique_ptr<CallFunctionOnParams> CallFunctionOnParams::Create(const EcmaVM 
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionDeclaration")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->functionDeclaration_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            paramsObject->functionDeclaration_ = DebuggerApi::ToCString(result);
         } else {
             error += "'functionDeclaration' should be a String;";
         }
@@ -611,7 +611,7 @@ std::unique_ptr<CallFunctionOnParams> CallFunctionOnParams::Create(const EcmaVM 
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->objectId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            paramsObject->objectId_ = DebuggerApi::StringToInt(result);
         } else {
             error += "'objectId' should be a String;";
         }
@@ -701,7 +701,7 @@ std::unique_ptr<CallFunctionOnParams> CallFunctionOnParams::Create(const EcmaVM 
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectGroup")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->objectGroup_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            paramsObject->objectGroup_ = DebuggerApi::ToCString(result);
         } else {
             error += "'objectGroup' should be a String;";
         }

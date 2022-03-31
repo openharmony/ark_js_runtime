@@ -74,8 +74,8 @@ void JSPtHooks::LoadModule(std::string_view pandaFileName)
 
     [[maybe_unused]] LocalScope scope(backend_->ecmaVm_);
 
-    static int32_t scriptId = 0;
-    if (backend_->NotifyScriptParsed(scriptId++, DebuggerApi::ConvertToString(pandaFileName.data()))) {
+    static uint32_t scriptId = 0;
+    if (backend_->NotifyScriptParsed(scriptId++, pandaFileName.data())) {
         firstTime_ = true;
     }
 }

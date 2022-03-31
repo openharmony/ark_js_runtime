@@ -32,7 +32,7 @@ JSPandaFileManager::~JSPandaFileManager()
 }
 
 // generate aot info on host
-const JSPandaFile *JSPandaFileManager::LoadAotInfoFromPf(const std::string &filename,
+const JSPandaFile *JSPandaFileManager::LoadAotInfoFromPf(const CString &filename,
                                                          std::vector<MethodPcInfo> *methodPcInfos)
 {
     JSPandaFile *jsPandaFile = OpenJSPandaFile(filename);
@@ -45,7 +45,7 @@ const JSPandaFile *JSPandaFileManager::LoadAotInfoFromPf(const std::string &file
     return jsPandaFile;
 }
 
-const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(const std::string &filename)
+const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(const CString &filename)
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "JSPandaFileManager::LoadJSPandaFile");
     const JSPandaFile *jsPandaFile = FindJSPandaFile(filename);
@@ -64,7 +64,7 @@ const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(const std::string &filena
     return jsPandaFile;
 }
 
-const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(const std::string &filename, const void *buffer, size_t size)
+const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(const CString &filename, const void *buffer, size_t size)
 {
     if (buffer == nullptr || size == 0) {
         return nullptr;
@@ -95,7 +95,7 @@ JSHandle<Program> JSPandaFileManager::GenerateProgram(EcmaVM *vm, const JSPandaF
     return program;
 }
 
-const JSPandaFile *JSPandaFileManager::FindJSPandaFile(const std::string &filename)
+const JSPandaFile *JSPandaFileManager::FindJSPandaFile(const CString &filename)
 {
     if (filename.empty()) {
         return nullptr;
@@ -156,7 +156,7 @@ void JSPandaFileManager::DecreaseRefJSPandaFile(const JSPandaFile *jsPandaFile)
     ReleaseJSPandaFile(jsPandaFile);
 }
 
-JSPandaFile *JSPandaFileManager::OpenJSPandaFile(const std::string &filename)
+JSPandaFile *JSPandaFileManager::OpenJSPandaFile(const CString &filename)
 {
     auto pf = panda_file::OpenPandaFileOrZip(filename, panda_file::File::READ_WRITE);
     if (pf == nullptr) {
@@ -168,7 +168,7 @@ JSPandaFile *JSPandaFileManager::OpenJSPandaFile(const std::string &filename)
     return jsPandaFile;
 }
 
-JSPandaFile *JSPandaFileManager::NewJSPandaFile(const panda_file::File *pf, const std::string &desc)
+JSPandaFile *JSPandaFileManager::NewJSPandaFile(const panda_file::File *pf, const CString &desc)
 {
     return new JSPandaFile(pf, desc);
 }
@@ -191,7 +191,7 @@ tooling::ecmascript::JSPtExtractor *JSPandaFileManager::GetJSPtExtractor(const J
 
     auto iter = extractors_.find(jsPandaFile);
     if (iter == extractors_.end()) {
-        auto extractorPtr = std::make_unique<tooling::ecmascript::JSPtExtractor>(jsPandaFile->GetPandaFile());
+        auto extractorPtr = std::make_unique<tooling::ecmascript::JSPtExtractor>(jsPandaFile);
         tooling::ecmascript::JSPtExtractor *extractor = extractorPtr.get();
         extractors_[jsPandaFile] = std::move(extractorPtr);
         return extractor;
@@ -200,7 +200,7 @@ tooling::ecmascript::JSPtExtractor *JSPandaFileManager::GetJSPtExtractor(const J
     return iter->second.get();
 }
 
-const JSPandaFile *JSPandaFileManager::GenerateJSPandaFile(const panda_file::File *pf, const std::string &desc)
+const JSPandaFile *JSPandaFileManager::GenerateJSPandaFile(const panda_file::File *pf, const CString &desc)
 {
     ASSERT(GetJSPandaFile(pf) == nullptr);
 

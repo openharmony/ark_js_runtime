@@ -70,12 +70,12 @@ public:
         return Local<ObjectRef>();
     }
 
-    CString GetCallFrameId()
+    CallFrameId GetCallFrameId()
     {
         return callFrameId_;
     }
 
-    CString GetExpression()
+    const CString &GetExpression()
     {
         return expression_;
     }
@@ -84,7 +84,7 @@ private:
     NO_COPY_SEMANTIC(EvaluateOnCallFrameParams);
     NO_MOVE_SEMANTIC(EvaluateOnCallFrameParams);
 
-    CString callFrameId_ {};
+    CallFrameId callFrameId_ {};
     CString expression_ {};
     std::optional<CString> objectGroup_ {};
     std::optional<bool> includeCommandLineApi_ {};
@@ -277,9 +277,9 @@ public:
         return line_;
     }
 
-    CString GetUrl() const
+    const CString &GetUrl() const
     {
-        return url_.value_or("");
+        return url_.value();
     }
 
     bool HasUrl() const
@@ -287,9 +287,9 @@ public:
         return url_.has_value();
     }
 
-    CString GetUrlRegex() const
+    const CString &GetUrlRegex() const
     {
-        return urlRegex_.value_or("");
+        return urlRegex_.value();
     }
 
     bool HasUrlRegex() const
@@ -297,9 +297,9 @@ public:
         return urlRegex_.has_value();
     }
 
-    CString GetScriptHash() const
+    const CString &GetScriptHash() const
     {
-        return scriptHash_.value_or("");
+        return scriptHash_.value();
     }
 
     bool HasScriptHash() const
@@ -317,9 +317,9 @@ public:
         return column_.has_value();
     }
 
-    CString GetCondition() const
+    const CString &GetCondition() const
     {
-        return condition_.value_or("");
+        return condition_.value();
     }
 
     bool HasCondition() const
@@ -331,11 +331,11 @@ private:
     NO_COPY_SEMANTIC(SetBreakpointByUrlParams);
     NO_MOVE_SEMANTIC(SetBreakpointByUrlParams);
 
-    size_t line_ {0};
+    int32_t line_ {0};
     std::optional<CString> url_ {};
     std::optional<CString> urlRegex_ {};
     std::optional<CString> scriptHash_ {};
-    std::optional<size_t> column_ {0};
+    std::optional<int32_t> column_ {0};
     std::optional<CString> condition_ {};
 };
 
@@ -520,7 +520,7 @@ public:
         return Local<ObjectRef>();
     }
 
-    CString GetFunctionDeclaration()
+    const CString &GetFunctionDeclaration()
     {
         return functionDeclaration_;
     }
@@ -620,9 +620,9 @@ public:
         return executionContextId_.has_value();
     }
 
-    CString GetObjectGroup() const
+    const CString &GetObjectGroup() const
     {
-        return objectGroup_.value_or("");
+        return objectGroup_.value();
     }
 
     bool HasObjectGroup() const
