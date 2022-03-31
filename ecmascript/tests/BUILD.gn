@@ -1039,14 +1039,14 @@ group("unittest") {
     ":ConcurrentMarkingTest",
     ":DumpTest",
     ":EcmaModuleTest",
-    ":EcmaStringTableTest",
+    ":EcmaStringTableTest", # 3
     ":EcmaStringTest",
     ":EcmaVMTest",
     ":GcTest",
     ":GlueRegsTest",
     ":HugeObjectTest",
-    ":JSAPIDequeTest",
-    ":JSAPIStackTest",
+    ":JSAPIDequeTest", # 1
+    ":JSAPIStackTest", # 2
     ":JSAPITreeMapTest",
     ":JSAPITreeSetTest",
     ":JsArgumentsTest",
