@@ -36,8 +36,8 @@ debugger_sources = [
   "base/pt_types.cpp",
   "debugger_service.cpp",
   "dispatcher.cpp",
+  "js_pt_extractor.cpp",
   "protocol_handler.cpp",
-  "pt_js_extractor.cpp",
 ]
 
 source_set("libark_ecma_debugger_static") {

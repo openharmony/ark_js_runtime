@@ -39,19 +39,6 @@ std::pair<EntityId, uint32_t> TestExtractor::GetBreakpointAddress(const SourceLo
     return {retId, retOffset};
 }
 
-std::vector<panda_file::LocalVariableInfo> TestExtractor::GetLocalVariableInfo(EntityId methodId, size_t offset)
-{
-    const std::vector<panda_file::LocalVariableInfo> &variables = GetLocalVariableTable(methodId);
-    std::vector<panda_file::LocalVariableInfo> result;
-
-    for (const auto &variable : variables) {
-        if (variable.start_offset <= offset && offset <= variable.end_offset) {
-            result.push_back(variable);
-        }
-    }
-    return result;
-}
-
 SourceLocation TestExtractor::GetSourceLocation(EntityId methodId, uint32_t bytecodeOffset)
 {
     SourceLocation location {GetSourceFile(methodId), 0, 0};

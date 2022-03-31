@@ -359,8 +359,8 @@ JSMethod *EcmaVM::GetMethodForNativeFunction(const void *func)
     uint32_t accessFlags = ACC_PUBLIC | ACC_STATIC | ACC_FINAL | ACC_NATIVE;
     uint32_t numArgs = 2;  // function object and this
 
-    auto method = chunk_.New<JSMethod>(nullptr, nullptr, panda_file::File::EntityId(0), panda_file::File::EntityId(0),
-                                       accessFlags, numArgs, nullptr);
+    auto method = chunk_.New<JSMethod>(nullptr, panda_file::File::EntityId(0), panda_file::File::EntityId(0),
+                                       accessFlags, numArgs);
     method->SetNativePointer(const_cast<void *>(func));
     method->SetNativeBit(true);
 

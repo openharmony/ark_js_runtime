@@ -224,7 +224,7 @@ void DebuggerApi::SetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t sl
     LexicalEnv::Cast(env.GetTaggedObject())->SetProperties(ecmaVm->GetJSThread(), slot, target);
 }
 
-bool DebuggerApi::EvaluateLexicalValue(const EcmaVM *ecmaVm, const CString &name, int32_t &level, uint32_t &slot)
+bool DebuggerApi::EvaluateLexicalValue(const EcmaVM *ecmaVm, const std::string &name, int32_t &level, uint32_t &slot)
 {
     JSTaggedValue curEnv = ecmaVm->GetJSThread()->GetCurrentLexenv();
     for (; curEnv.IsTaggedArray(); curEnv = LexicalEnv::Cast(curEnv.GetTaggedObject())->GetParentEnv()) {
@@ -235,17 +235,17 @@ bool DebuggerApi::EvaluateLexicalValue(const EcmaVM *ecmaVm, const CString &name
         }
         auto result = JSNativePointer::Cast(lexicalEnv->GetScopeInfo().GetTaggedObject())->GetExternalPointer();
         ScopeDebugInfo *scopeDebugInfo = reinterpret_cast<ScopeDebugInfo *>(result);
-        for (const auto &info : scopeDebugInfo->scopeInfo) {
-            if (info.name == name) {
-                slot = info.slot;
-                return true;
-            }
+        auto iter = scopeDebugInfo->scopeInfo.find(name);
+        if (iter == scopeDebugInfo->scopeInfo.end()) {
+            continue;
         }
+        slot = iter->second;
+        return true;
     }
     return false;
 }
 
-Local<JSValueRef> DebuggerApi::GetLexicalValueInfo(const EcmaVM *ecmaVm, const CString &name)
+Local<JSValueRef> DebuggerApi::GetLexicalValueInfo(const EcmaVM *ecmaVm, const std::string &name)
 {
     JSThread *thread = ecmaVm->GetJSThread();
     JSTaggedValue curEnv = thread->GetCurrentLexenv();
@@ -256,14 +256,14 @@ Local<JSValueRef> DebuggerApi::GetLexicalValueInfo(const EcmaVM *ecmaVm, const C
         }
         void *pointer = JSNativePointer::Cast(lexicalEnv->GetScopeInfo().GetTaggedObject())->GetExternalPointer();
         ScopeDebugInfo *scopeDebugInfo = static_cast<ScopeDebugInfo *>(pointer);
-        for (const auto &info : scopeDebugInfo->scopeInfo) {
-            if (info.name == name) {
-                uint16_t slot = info.slot;
-                JSTaggedValue value = lexicalEnv->GetProperties(slot);
-                JSHandle<JSTaggedValue> handledValue(thread, value);
-                return JSNApiHelper::ToLocal<JSValueRef>(handledValue);
-            }
+        auto iter = scopeDebugInfo->scopeInfo.find(name);
+        if (iter == scopeDebugInfo->scopeInfo.end()) {
+            continue;
         }
+        uint32_t slot = iter->second;
+        JSTaggedValue value = lexicalEnv->GetProperties(slot);
+        JSHandle<JSTaggedValue> handledValue(thread, value);
+        return JSNApiHelper::ToLocal<JSValueRef>(handledValue);
     }
     JSHandle<JSTaggedValue> handledValue(thread, JSTaggedValue::Hole());
     return JSNApiHelper::ToLocal<JSValueRef>(handledValue);

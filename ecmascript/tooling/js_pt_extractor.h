@@ -13,24 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_TOOLING_JS_EXTRACTOR_H
-#define PANDA_TOOLING_JS_EXTRACTOR_H
+#ifndef ECMASCRIPT_TOOLING_JS_PT_EXTRACTOR_H
+#define ECMASCRIPT_TOOLING_JS_PT_EXTRACTOR_H
 
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_thread.h"
+#include "ecmascript/jspandafile/debug_info_extractor.h"
 #include "ecmascript/mem/c_containers.h"
-#include "libpandafile/debug_info_extractor.h"
 #include "libpandabase/macros.h"
 #include "include/tooling/debug_interface.h"
 
 namespace panda::tooling::ecmascript {
 using panda::ecmascript::CList;
+using panda::ecmascript::DebugInfoExtractor;
 using panda::ecmascript::EcmaVM;
 using panda::ecmascript::JSMethod;
-using panda::panda_file::DebugInfoExtractor;
 using panda::panda_file::File;
 
-class PtJSExtractor : public DebugInfoExtractor {
+class JSPtExtractor : public DebugInfoExtractor {
 public:
     class SingleStepper {
     public:
@@ -60,8 +60,8 @@ public:
         Type type_;
     };
 
-    explicit PtJSExtractor(const File *pf) : DebugInfoExtractor(pf) {}
-    virtual ~PtJSExtractor() = default;
+    explicit JSPtExtractor(const File *pf) : DebugInfoExtractor(pf) {}
+    virtual ~JSPtExtractor() = default;
 
     template<class Callback>
     bool MatchWithLocation(const Callback &cb, size_t line, size_t column)
@@ -122,10 +122,10 @@ public:
     std::unique_ptr<SingleStepper> GetStepOutStepper(const EcmaVM *ecmaVm);
 
 private:
-    NO_COPY_SEMANTIC(PtJSExtractor);
-    NO_MOVE_SEMANTIC(PtJSExtractor);
+    NO_COPY_SEMANTIC(JSPtExtractor);
+    NO_MOVE_SEMANTIC(JSPtExtractor);
     CList<PtStepRange> GetStepRanges(File::EntityId methodId, uint32_t offset);
     std::unique_ptr<SingleStepper> GetStepper(const EcmaVM *ecmaVm, SingleStepper::Type type);
 };
 }  // namespace panda::tooling::ecmascript
-#endif
+#endif  // ECMASCRIPT_TOOLING_JS_PT_EXTRACTOR_H
