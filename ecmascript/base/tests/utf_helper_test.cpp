@@ -547,23 +547,23 @@ HWTEST_F_L0(UtfHelperTest, ConvertRegionUtf8ToUtf16)
         0xF4, 0x8F, 0xBF, 0xBF}; // 2-length UTF16 encoding
     const uint8_t *utf8ValuePtr = utf8Value;
     uint16_t *utf16Out = (uint16_t*)malloc(utf16Len);
-    size_t outPos = ConvertRegionUtf8ToUtf16(utf8ValuePtr, utf16Out, sizeof(utf8ValuePtr), utf16Len, start);
+    size_t outPos = ConvertRegionUtf8ToUtf16(utf8ValuePtr, utf16Out, sizeof(utf8Value), utf16Len, start);
     // 1 + 1 + 1 + 2 = 5s
     EXPECT_EQ(outPos, 5U);
     // 1 + 2 = 3
     start = 3;
-    outPos = ConvertRegionUtf8ToUtf16(utf8ValuePtr, utf16Out, sizeof(utf8ValuePtr), utf16Len, start);
+    outPos = ConvertRegionUtf8ToUtf16(utf8ValuePtr, utf16Out, sizeof(utf8Value), utf16Len, start);
     EXPECT_EQ(outPos, 3U);
 
     // When "start" is in the middle of a symbol sequence
     start = 2;
-    outPos = ConvertRegionUtf8ToUtf16(utf8ValuePtr, utf16Out, sizeof(utf8ValuePtr), utf16Len, start);
+    outPos = ConvertRegionUtf8ToUtf16(utf8ValuePtr, utf16Out, sizeof(utf8Value), utf16Len, start);
     EXPECT_EQ(outPos, 0U);
     start = 4;
-    outPos = ConvertRegionUtf8ToUtf16(utf8ValuePtr, utf16Out, sizeof(utf8ValuePtr), utf16Len, start);
+    outPos = ConvertRegionUtf8ToUtf16(utf8ValuePtr, utf16Out, sizeof(utf8Value), utf16Len, start);
     EXPECT_EQ(outPos, 0U);
     start = 7;
-    outPos = ConvertRegionUtf8ToUtf16(utf8ValuePtr, utf16Out, sizeof(utf8ValuePtr), utf16Len, start);
-    EXPECT_EQ(outPos, 1U);
+    outPos = ConvertRegionUtf8ToUtf16(utf8ValuePtr, utf16Out, sizeof(utf8Value), utf16Len, start);
+    EXPECT_EQ(outPos, 0U);
 }
 } // namespace panda:test
