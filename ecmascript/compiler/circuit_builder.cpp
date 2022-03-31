@@ -15,6 +15,8 @@
 
 #include "ecmascript/compiler/circuit_builder.h"
 #include "ecmascript/compiler/circuit_builder-inl.h"
+#include "ecmascript/js_thread.h"
+#include "ecmascript/js_function.h"
 #include "ecmascript/compiler/common_stubs.h"
 #include "ecmascript/compiler/rt_call_signature.h"
 #include "include/coretypes/tagged_value.h"
@@ -34,6 +36,14 @@ using TaggedValue = panda::coretypes::TaggedValue;
     MachineType machineType = CallSignature->GetReturnType().GetMachineType();    \
     GateType type = CallSignature->GetReturnType().GetGateType();                 \
     return GetCircuit()->NewGate(opcode, machineType, args.size() + 2, inputs, type)
+
+CircuitBuilder::~CircuitBuilder()
+{
+    if (lm_ != nullptr) {
+        delete lm_;
+        lm_ = nullptr;
+    }
+}
 
 GateRef CircuitBuilder::Arguments(size_t index)
 {
@@ -230,7 +240,7 @@ GateRef CircuitBuilder::RuntimeCall(GateRef glue, GateRef target,
 }
 
 GateRef CircuitBuilder::NoGcRuntimeCall(const CallSignature *signature, GateRef glue, GateRef target,
-                                        GateRef depend, std::initializer_list<GateRef> args)
+                                        GateRef depend, const std::vector<GateRef> &args)
 {
     DEF_CALL_GATE(OpCode::NOGC_RUNTIME_CALL, signature);
 }
@@ -255,6 +265,56 @@ GateRef CircuitBuilder::VariadicRuntimeCall(GateRef glue, GateRef target, GateRe
     return GetCircuit()->NewGate(opcode, machineType, args.size() + extraparamCnt, inputs, type);
 }
 
+// call operation
+GateRef CircuitBuilder::CallRuntime(GateRef glue, int index,
+    const std::vector<GateRef> &args)
+{
+    auto label = GetCurrentLabel();
+    auto depend = label->GetDepend();
+    GateRef target = Int64(index);
+    GateRef result = RuntimeCall(glue, target, depend, args);
+    label->SetDepend(result);
+    return result;
+}
+
+GateRef CircuitBuilder::CallNGCRuntime(GateRef glue, size_t index,
+    const std::vector<GateRef> &args)
+{
+    const CallSignature *signature = RuntimeStubCSigns::Get(index);
+    GateRef target = IntPtr(index);
+    auto label = GetCurrentLabel();
+    auto depend = label->GetDepend();
+    GateRef result = NoGcRuntimeCall(signature, glue, target, depend, args);
+    label->SetDepend(result);
+    return result;
+}
+
+GateRef CircuitBuilder::CallStub(GateRef glue, size_t index,
+    const std::vector<GateRef> &args)
+{
+    const CallSignature *signature = CommonStubCSigns::Get(index);
+    GateRef target = IntPtr(index);
+    auto label = GetCurrentLabel();
+    auto depend = label->GetDepend();
+    GateRef result = Call(signature, glue, target, args, depend);
+    label->SetDepend(result);
+    return result;
+}
+
+// memory
+void CircuitBuilder::Store(VariableType type, GateRef glue, GateRef base, GateRef offset, GateRef value)
+{
+    auto label = GetCurrentLabel();
+    auto depend = label->GetDepend();
+    GateRef ptr = IntPtrAdd(base, offset);
+    GateRef result = GetCircuit()->NewGate(OpCode(OpCode::STORE), 0, { depend, value, ptr }, type.GetGateType());
+    label->SetDepend(result);
+    if (type == VariableType::JS_POINTER() || type == VariableType::JS_ANY()) {
+        CallStub(glue, CommonStubCSigns::SetValueWithBarrier, {glue, base, offset, value});
+    }
+    return;
+}
+
 GateRef CircuitBuilder::Alloca(int size)
 {
     auto allocaList = Circuit::GetCircuitRoot(OpCode(OpCode::ALLOCA_LIST));
@@ -271,7 +331,7 @@ GateRef CircuitBuilder::TaggedIsString(GateRef obj)
     lm_->Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
     lm_->Bind(&isHeapObject);
     {
-        result = Int32Equal(GetObjectType(LoadHClass(obj)),
+        result = Equal(GetObjectType(LoadHClass(obj)),
             Int32(static_cast<int32_t>(JSType::STRING)));
         lm_->Jump(&exit);
     }
@@ -292,13 +352,13 @@ GateRef CircuitBuilder::TaggedIsStringOrSymbol(GateRef obj)
     lm_->Bind(&isHeapObject);
     {
         GateRef objType = GetObjectType(LoadHClass(obj));
-        result = Int32Equal(objType, Int32(static_cast<int32_t>(JSType::STRING)));
+        result = Equal(objType, Int32(static_cast<int32_t>(JSType::STRING)));
         Label isString(lm_);
         Label notString(lm_);
         lm_->Branch(*result, &exit, &notString);
         lm_->Bind(&notString);
         {
-            result = Int32Equal(objType, Int32(static_cast<int32_t>(JSType::SYMBOL)));
+            result = Equal(objType, Int32(static_cast<int32_t>(JSType::SYMBOL)));
             lm_->Jump(&exit);
         }
     }
@@ -306,6 +366,82 @@ GateRef CircuitBuilder::TaggedIsStringOrSymbol(GateRef obj)
     auto ret = *result;
     lm_->PopCurrentLabel();
     return ret;
+}
+
+GateRef CircuitBuilder::GetFunctionBitFieldFromJSFunction(GateRef function)
+{
+    GateRef offset = IntPtr(JSFunction::BIT_FIELD_OFFSET);
+    return Load(VariableType::INT32(), function, offset);
+}
+
+GateRef CircuitBuilder::GetModuleFromFunction(GateRef function)
+{
+    GateRef offset = IntPtr(JSFunction::ECMA_MODULE_OFFSET);
+    return Load(VariableType::JS_POINTER(), function, offset);
+}
+
+GateRef CircuitBuilder::FunctionIsResolved(GateRef function)
+{
+    GateRef bitfield = GetFunctionBitFieldFromJSFunction(function);
+    return NotEqual(Int32And(UInt32LSR(bitfield, Int32(JSFunction::ResolvedBits::START_BIT)),
+        Int32((1LU << JSFunction::ResolvedBits::SIZE) - 1)), Int32(0));
+}
+
+void CircuitBuilder::SetResolvedToFunction(GateRef glue, GateRef function, GateRef value)
+{
+    GateRef bitfield = GetFunctionBitFieldFromJSFunction(function);
+    GateRef mask = Int32(~(((1<<JSFunction::ResolvedBits::SIZE) - 1) << JSFunction::ResolvedBits::START_BIT));
+    GateRef result = Int32Or(Int32And(bitfield, mask),
+        Int32LSL(ZExtInt1ToInt32(value), Int32(JSFunction::ResolvedBits::START_BIT)));
+    Store(VariableType::INT32(), glue, function, IntPtr(JSFunction::BIT_FIELD_OFFSET), result);
+}
+
+void CircuitBuilder::SetConstPoolToFunction(GateRef glue, GateRef function, GateRef value)
+{
+    GateRef offset = IntPtr(JSFunction::CONSTANT_POOL_OFFSET);
+    Store(VariableType::INT64(), glue, function, offset, value);
+}
+
+void CircuitBuilder::SetLexicalEnvToFunction(GateRef glue, GateRef function, GateRef value)
+{
+    GateRef offset = IntPtr(JSFunction::LEXICAL_ENV_OFFSET);
+    Store(VariableType::JS_ANY(), glue, function, offset, value);
+}
+
+void CircuitBuilder::SetModuleToFunction(GateRef glue, GateRef function, GateRef value)
+{
+    GateRef offset = IntPtr(JSFunction::ECMA_MODULE_OFFSET);
+    Store(VariableType::JS_POINTER(), glue, function, offset, value);
+}
+
+void CircuitBuilder::SetPropertyInlinedProps(GateRef glue, GateRef obj, GateRef hClass,
+    GateRef value, GateRef attrOffset, VariableType type)
+{
+    GateRef bitfield = Load(VariableType::INT32(), hClass, IntPtr(JSHClass::BIT_FIELD1_OFFSET));
+    GateRef inlinedPropsStart = Int32And(UInt32LSR(bitfield,
+        Int32(JSHClass::InlinedPropsStartBits::START_BIT)),
+        Int32((1LU << JSHClass::InlinedPropsStartBits::SIZE) - 1));
+    GateRef propOffset = Int32Mul(Int32Add(inlinedPropsStart, attrOffset),
+        Int32(JSTaggedValue::TaggedTypeSize()));
+    Store(type, glue, obj, ChangeInt32ToIntPtr(propOffset), value);
+}
+
+void CircuitBuilder::NewLabelManager(GateRef hir)
+{
+    if (lm_ == nullptr) {
+        lm_ = new LabelManager(hir, GetCircuit());
+    } else {
+        delete lm_;
+        lm_ = new LabelManager(hir, GetCircuit());
+    }
+}
+
+void CircuitBuilder::DeleteCurrentLabelManager()
+{
+    if (lm_ != nullptr) {
+        delete lm_;
+        lm_ = nullptr;
+    }
 }
 
 void CircuitBuilder::Jump(Label *label)
@@ -447,6 +583,12 @@ void LabelManager::LoopEnd(Label *loopHead)
 
 Label::Label(LabelManager *lm)
 {
+    impl_ = lm->NewLabel(lm);
+}
+
+Label::Label(CircuitBuilder *cirBuilder)
+{
+    auto lm = cirBuilder->GetCurrentLabelManager();
     impl_ = lm->NewLabel(lm);
 }
 

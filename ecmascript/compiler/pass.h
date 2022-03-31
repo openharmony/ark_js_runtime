@@ -66,9 +66,9 @@ private:
 
 class SlowPathLoweringPass {
 public:
-    bool Run(PassData* data, BytecodeCircuitBuilder *builder)
+    bool Run(PassData* data, BytecodeCircuitBuilder *builder, CompilationConfig *cmpCfg)
     {
-        SlowPathLowering lowering(builder, data->GetCircuit());
+        SlowPathLowering lowering(builder, data->GetCircuit(), cmpCfg);
         lowering.CallRuntimeLowering();
         return true;
     }

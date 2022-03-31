@@ -109,19 +109,29 @@ namespace panda::ecmascript::kungfu {
 
 class SlowPathLowering {
 public:
-    SlowPathLowering(BytecodeCircuitBuilder *bcBuilder, Circuit *circuit)
-        : bcBuilder_(bcBuilder), circuit_(circuit), acc_(circuit), builder_(circuit) {}
+    SlowPathLowering(BytecodeCircuitBuilder *bcBuilder, Circuit *circuit, CompilationConfig *cmpCfg)
+        : bcBuilder_(bcBuilder), circuit_(circuit), acc_(circuit), builder_(circuit, cmpCfg), cmpCfg_(cmpCfg) {}
     ~SlowPathLowering() = default;
     void CallRuntimeLowering();
 
 private:
+    inline bool IsArch32Bit() const
+    {
+        return cmpCfg_->Is32Bit();
+    }
+    inline bool IsArch64Bit() const
+    {
+        return cmpCfg_->IsAmd64() || cmpCfg_->IsAArch64();
+    }
     void LowerHirToCall(GateRef hirGate, GateRef callGate);
     void LowerHirToFastCall(GateRef hirGate, GateRef callGate);
     void LowerHirToConditionCall(GateRef hirGate, GateRef condGate, GateRef callGate);
     void LowerHirToThrowCall(GateRef hirGate, GateRef condGate, GateRef callGate);
     void LowerExceptionHandler(GateRef hirGate);
     // labelmanager must be initialized
-    GateRef GetObjectFromConstPool(GateRef index);
+    GateRef GetConstPool(GateRef jsFunc);
+    // labelmanager must be initialized
+    GateRef GetObjectFromConstPool(GateRef jsFunc, GateRef index);
     GateRef GetValueFromConstStringTable(GateRef glue, GateRef gate, uint32_t inIndex);
     void Lower(GateRef gate, EcmaOpcode op);
     void LowerAdd2Dyn(GateRef gate, GateRef glue);
@@ -185,25 +195,35 @@ private:
     void LowerFastStrictEqual(GateRef gate, GateRef glue);
     void LowerCreateEmptyArray(GateRef gate, GateRef glue);
     void LowerCreateEmptyObject(GateRef gate, GateRef glue);
-    void LowerCreateArrayWithBuffer(GateRef gate, GateRef glue);
-    void LowerCreateObjectWithBuffer(GateRef gate, GateRef glue);
-    void LowerStModuleVar(GateRef gate, GateRef glue);
+    void LowerCreateArrayWithBuffer(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerCreateObjectWithBuffer(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerStModuleVar(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerGetTemplateObject(GateRef gate, GateRef glue);
     void LowerSetObjectWithProto(GateRef gate, GateRef glue);
-    void LowerLdBigInt(GateRef gate, GateRef glue);
-    void LowerLdModuleVar(GateRef gate, GateRef glue);
-    void LowerGetModuleNamespace(GateRef gate, GateRef glue);
+    void LowerLdBigInt(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerLdModuleVar(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerGetModuleNamespace(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerGetIteratorNext(GateRef gate, GateRef glue);
     void LowerSuperCall(GateRef gate, GateRef glue, GateRef newTarget);
     void LowerSuperCallSpread(GateRef gate, GateRef glue, GateRef newTarget);
     void LowerIsTrueOrFalse(GateRef gate, GateRef glue, bool flag);
     void LowerNewObjDynRange(GateRef gate, GateRef glue);
     void LowerConditionJump(GateRef gate, bool isEqualJump);
+    void LowerGetNextPropName(GateRef gate, GateRef glue);
+    void LowerCopyDataProperties(GateRef gate, GateRef glue);
+    void LowerCreateObjectWithExcludedKeys(GateRef gate, GateRef glue);
+    void LowerCreateRegExpWithLiteral(GateRef gate, GateRef glue);
+    void LowerStOwnByValue(GateRef gate, GateRef glue);
+    void LowerStOwnByIndex(GateRef gate, GateRef glue);
+    void LowerStOwnByName(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerDefineGeneratorFunc(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerDefineAsyncFunc(GateRef gate, GateRef glue, GateRef jsFunc);
 
     BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;
     GateAccessor acc_;
     CircuitBuilder builder_;
+    CompilationConfig *cmpCfg_;
 };
 }  // panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_GENERIC_LOWERING_H
