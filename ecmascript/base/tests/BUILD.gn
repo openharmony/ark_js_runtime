@@ -122,6 +122,27 @@ host_unittest_action("JsonStringifierTest") {
   }
 }
 
+host_unittest_action("NumberHelperTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "number_helper_test.cpp",
+  ]
+
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
+    sdk_libc_secshared_dep,
+  ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
+}
+
 host_unittest_action("UtfHelperTest") {
   module_out_path = module_output_path
 
@@ -159,6 +180,7 @@ group("unittest") {
     ":GCRingBufferTest",
     ":JsonParserTest",
     ":JsonStringifierTest",
+    ":NumberHelperTest",
     ":UtfHelperTest",
   ]
 }
@@ -173,6 +195,7 @@ group("host_unittest") {
     ":GCRingBufferTestAction",
     ":JsonParserTestAction",
     ":JsonStringifierTestAction",
+    ":NumberHelperTestAction",
     ":UtfHelperTestAction",
   ]
 }
