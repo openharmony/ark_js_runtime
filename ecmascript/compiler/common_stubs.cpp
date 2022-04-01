@@ -35,11 +35,11 @@ void MulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef x = Int64Argument(1);
     GateRef y = Int64Argument(2); // 2: 3rd argument
 
-    DEFVARIABLE(intX, VariableType::INT64(), GetInt64Constant(0));
-    DEFVARIABLE(intY, VariableType::INT64(), GetInt64Constant(0));
-    DEFVARIABLE(valuePtr, VariableType::INT64(), GetInt64Constant(0));
-    DEFVARIABLE(doubleX, VariableType::FLOAT64(), GetDoubleConstant(0));
-    DEFVARIABLE(doubleY, VariableType::FLOAT64(), GetDoubleConstant(0));
+    DEFVARIABLE(intX, VariableType::INT64(), Int64(0));
+    DEFVARIABLE(intY, VariableType::INT64(), Int64(0));
+    DEFVARIABLE(valuePtr, VariableType::INT64(), Int64(0));
+    DEFVARIABLE(doubleX, VariableType::FLOAT64(), Double(0));
+    DEFVARIABLE(doubleY, VariableType::FLOAT64(), Double(0));
     Label xIsNumber(env);
     Label xNotNumberOryNotNumber(env);
     Label xIsNumberAndyIsNumber(env);
@@ -69,7 +69,7 @@ void MulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(VariableType::JS_ANY()));
+    Return(Hole(VariableType::JS_ANY()));
     Label yIsInt(env);
     Label yNotInt(env);
     Bind(&xIsNumberAndyIsNumber);
@@ -89,13 +89,12 @@ void MulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
     }
     Bind(&xIsDoubleAndyIsDouble);
     doubleX = DoubleMul(*doubleX, *doubleY);
-    GateRef ptr1 = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(GetTaggedArrayPtrTest)),
-        {GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED)});
-    GateRef ptr2 = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(GetTaggedArrayPtrTest)), {ptr1});
-    auto value1 = GetValueFromTaggedArray(VariableType::INT64(), ptr1, GetInt32Constant(0));
+    GateRef ptr1 = CallRuntime(glue, RTSTUB_ID(GetTaggedArrayPtrTest), {Int64(JSTaggedValue::VALUE_UNDEFINED)});
+    GateRef ptr2 = CallRuntime(glue, RTSTUB_ID(GetTaggedArrayPtrTest), {ptr1});
+    auto value1 = GetValueFromTaggedArray(VariableType::INT64(), ptr1, Int32(0));
     GateRef tmp = CastInt64ToFloat64(value1);
     doubleX = DoubleMul(*doubleX, tmp);
-    auto value2 = GetValueFromTaggedArray(VariableType::INT64(), ptr2, GetInt32Constant(1));
+    auto value2 = GetValueFromTaggedArray(VariableType::INT64(), ptr2, Int32(1));
     tmp = CastInt64ToFloat64(value2);
     doubleX = DoubleMul(*doubleX, tmp);
     Return(DoubleBuildTaggedWithNoGC(*doubleX));
@@ -237,7 +236,7 @@ void GetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
         Branch(TaggedIsStringOrSymbol(*key), &isNumberOrStringSymbol, &notStringOrSymbol);
         Bind(&notStringOrSymbol);
         {
-            Return(GetHoleConstant());
+            Return(Hole());
         }
     }
     Bind(&isNumberOrStringSymbol);
@@ -245,7 +244,7 @@ void GetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
         GateRef index = TryToElementsIndex(*key);
         Label validIndex(env);
         Label notValidIndex(env);
-        Branch(Int32GreaterThanOrEqual(index, GetInt32Constant(0)), &validIndex, &notValidIndex);
+        Branch(Int32GreaterThanOrEqual(index, Int32(0)), &validIndex, &notValidIndex);
         Bind(&validIndex);
         {
             Return(GetPropertyByIndex(glue, receiver, index));
@@ -269,8 +268,7 @@ void GetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
                     Jump(&getByName);
                     Bind(&notIntenalString);
                     {
-                        key = CallRuntimeTrampoline(glue,
-                            GetInt64Constant(RTSTUB_ID(NewInternalString)), { *key });
+                        key = CallRuntime(glue, RTSTUB_ID(NewInternalString), { *key });
                         Jump(&getByName);
                     }
                 }
@@ -286,7 +284,7 @@ void GetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&exit);
-    Return(GetHoleConstant());
+    Return(Hole());
 }
 
 void SetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -310,7 +308,7 @@ void SetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
         Branch(TaggedIsStringOrSymbol(*key), &isNumberOrStringSymbol, &notStringOrSymbol);
         Bind(&notStringOrSymbol);
         {
-            Return(GetHoleConstant(VariableType::INT64()));
+            Return(Hole(VariableType::INT64()));
         }
     }
     Bind(&isNumberOrStringSymbol);
@@ -318,7 +316,7 @@ void SetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
         GateRef index = TryToElementsIndex(*key);
         Label validIndex(env);
         Label notValidIndex(env);
-        Branch(Int32GreaterThanOrEqual(index, GetInt32Constant(0)), &validIndex, &notValidIndex);
+        Branch(Int32GreaterThanOrEqual(index, Int32(0)), &validIndex, &notValidIndex);
         Bind(&validIndex);
         {
             Return(SetPropertyByIndex(glue, receiver, index, value));
@@ -342,8 +340,7 @@ void SetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
                     Jump(&getByName);
                     Bind(&notIntenalString);
                     {
-                        key = CallRuntimeTrampoline(glue,
-                            GetInt64Constant(RTSTUB_ID(NewInternalString)), { *key });
+                        key = CallRuntime(glue, RTSTUB_ID(NewInternalString), { *key });
                         Jump(&getByName);
                     }
                 }
@@ -359,7 +356,7 @@ void SetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&exit);
-    Return(GetHoleConstant(VariableType::INT64()));
+    Return(Hole(VariableType::INT64()));
 }
 
 void TryLoadICByNameStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -398,7 +395,7 @@ void TryLoadICByNameStub::GenerateCircuit(const CompilationConfig *cfg)
     }
     Bind(&receiverNotHeapObject);
     {
-        Return(GetHoleConstant());
+        Return(Hole());
     }
 }
 
@@ -439,7 +436,7 @@ void TryLoadICByValueStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&receiverNotHeapObject);
-    Return(GetHoleConstant());
+    Return(Hole());
 }
 
 void TryStoreICByNameStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -477,7 +474,7 @@ void TryStoreICByNameStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&receiverNotHeapObject);
-    Return(GetHoleConstant(VariableType::INT64()));
+    Return(Hole(VariableType::INT64()));
 }
 
 void TryStoreICByValueStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -517,7 +514,7 @@ void TryStoreICByValueStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&receiverNotHeapObject);
-    Return(GetHoleConstant(VariableType::INT64()));
+    Return(Hole(VariableType::INT64()));
 }
 
 void TestAbsoluteAddressRelocationStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -529,8 +526,8 @@ void TestAbsoluteAddressRelocationStub::GenerateCircuit(const CompilationConfig 
     Label start(env);
     Jump(&start);
     Bind(&start);
-    GateRef globalValueC = GetRelocatableData(0xabc);
-    GateRef globalValueD = GetRelocatableData(0xbcd);
+    GateRef globalValueC = RelocatableData(0xabc);
+    GateRef globalValueD = RelocatableData(0xbcd);
     GateRef dummyValueC = Load(VariableType::INT64(), globalValueC);
     GateRef dummyValueD = Load(VariableType::INT64(), globalValueD);
     // Load from same relocatable data twice to see if it breaks constant fold opt. Result shows it doesn't.
