@@ -130,18 +130,15 @@ void BytecodeCircuitBuilder::CollectBytecodeBlockInfo(uint8_t *pc, std::vector<C
         }
             break;
         case EcmaOpcode::RETURN_DYN:
-        case EcmaOpcode::RETURNUNDEFINED_PREF: {
-            bytecodeBlockInfos.emplace_back(pc, SplitKind::END, std::vector<uint8_t *>(1, pc));
-            break;
-        }
+        case EcmaOpcode::RETURNUNDEFINED_PREF:
         case EcmaOpcode::THROWDYN_PREF:
         case EcmaOpcode::THROWCONSTASSIGNMENT_PREF_V8:
         case EcmaOpcode::THROWTHROWNOTEXISTS_PREF:
         case EcmaOpcode::THROWPATTERNNONCOERCIBLE_PREF:
         case EcmaOpcode::THROWDELETESUPERPROPERTY_PREF: {
             bytecodeBlockInfos.emplace_back(pc, SplitKind::END, std::vector<uint8_t *>(1, pc));
-        }
             break;
+        }
         default:
             break;
     }
@@ -1126,6 +1123,7 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
             info.accOut = true;
             info.offset = BytecodeOffset::FIVE;
             info.inputs.emplace_back(Immediate(READ_INST_16_1()));
+            info.inputs.emplace_back(Immediate(firstArgRegIdx));
             info.inputs.emplace_back(VirtualRegister(firstArgRegIdx));
             info.inputs.emplace_back(VirtualRegister(firstArgRegIdx + 1));
             break;
@@ -2421,7 +2419,6 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
     circuit_.PrintAllGates(*this);
 #endif
 }
-
 
 size_t BytecodeCircuitBuilder::GetFunctionArgIndex(size_t currentVreg, size_t numVregs) const
 {

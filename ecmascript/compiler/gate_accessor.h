@@ -337,6 +337,7 @@ public:
         }
         DeleteGate(useIt);
     };
+
     void DeleteIn(UsesIterator &useIt);
     void DeleteGate(UsesIterator &useIt);
 private:

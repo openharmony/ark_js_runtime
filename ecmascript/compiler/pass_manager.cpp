@@ -24,7 +24,7 @@
 
 namespace panda::ecmascript::kungfu {
 bool PassManager::Compile(const std::string &fileName, const std::string &triple,
-    const std::string &outputFileName)
+                          const std::string &outputFileName)
 {
     BytecodeTranslationInfo translationInfo;
     [[maybe_unused]] EcmaHandleScope handleScope(vm_->GetJSThread());
