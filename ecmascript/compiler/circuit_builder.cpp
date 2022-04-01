@@ -58,27 +58,27 @@ GateRef CircuitBuilder::Selector(OpCode opcode, GateRef control,
     return lowBuilder_.Selector(opcode, control, values, valueCounts, type);
 }
 
-GateRef CircuitBuilder::Int8Constant(int8_t val)
+GateRef CircuitBuilder::Int8(int8_t val)
 {
     return GetCircuit()->GetConstantGate(MachineType::I8, val, GateType::C_VALUE);
 }
 
-GateRef CircuitBuilder::Int16Constant(int16_t val)
+GateRef CircuitBuilder::Int16(int16_t val)
 {
     return GetCircuit()->GetConstantGate(MachineType::I16, val, GateType::C_VALUE);
 }
 
-GateRef CircuitBuilder::Int32Constant(int32_t val)
+GateRef CircuitBuilder::Int32(int32_t val)
 {
     return GetCircuit()->GetConstantGate(MachineType::I32, val, GateType::C_VALUE);
 }
 
-GateRef CircuitBuilder::Int64Constant(int64_t val)
+GateRef CircuitBuilder::Int64(int64_t val)
 {
     return GetCircuit()->GetConstantGate(MachineType::I64, val, GateType::C_VALUE);
 }
 
-GateRef CircuitBuilder::IntPtrConstant(int64_t val)
+GateRef CircuitBuilder::IntPtr(int64_t val)
 {
     return GetCircuit()->GetConstantGate(MachineType::ARCH, val, GateType::C_VALUE);
 }
@@ -89,12 +89,12 @@ GateRef CircuitBuilder::RelocatableData(uint64_t val)
     return GetCircuit()->NewGate(OpCode(OpCode::RELOCATABLE_DATA), val, {constantList}, GateType::EMPTY);
 }
 
-GateRef CircuitBuilder::BooleanConstant(bool val)
+GateRef CircuitBuilder::Boolean(bool val)
 {
     return GetCircuit()->GetConstantGate(MachineType::I1, val ? 1 : 0, GateType::C_VALUE);
 }
 
-GateRef CircuitBuilder::DoubleConstant(double val)
+GateRef CircuitBuilder::Double(double val)
 {
     return GetCircuit()->GetConstantGate(MachineType::F64, bit_cast<int64_t>(val), GateType::C_VALUE);
 }
@@ -266,13 +266,13 @@ GateRef CircuitBuilder::TaggedIsString(GateRef obj)
     Label entry(lm_);
     lm_->PushCurrentLabel(&entry);
     Label exit(lm_);
-    DEFVAlUE(result, lm_, VariableType::BOOL(), FalseConstant());
+    DEFVAlUE(result, lm_, VariableType::BOOL(), False());
     Label isHeapObject(lm_);
     lm_->Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
     lm_->Bind(&isHeapObject);
     {
         result = Int32Equal(GetObjectType(LoadHClass(obj)),
-            Int32Constant(static_cast<int32_t>(JSType::STRING)));
+            Int32(static_cast<int32_t>(JSType::STRING)));
         lm_->Jump(&exit);
     }
     lm_->Bind(&exit);
@@ -286,19 +286,19 @@ GateRef CircuitBuilder::TaggedIsStringOrSymbol(GateRef obj)
     Label entry(lm_);
     lm_->PushCurrentLabel(&entry);
     Label exit(lm_);
-    DEFVAlUE(result, lm_, VariableType::BOOL(), FalseConstant());
+    DEFVAlUE(result, lm_, VariableType::BOOL(), False());
     Label isHeapObject(lm_);
     lm_->Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
     lm_->Bind(&isHeapObject);
     {
         GateRef objType = GetObjectType(LoadHClass(obj));
-        result = Int32Equal(objType, Int32Constant(static_cast<int32_t>(JSType::STRING)));
+        result = Int32Equal(objType, Int32(static_cast<int32_t>(JSType::STRING)));
         Label isString(lm_);
         Label notString(lm_);
         lm_->Branch(*result, &exit, &notString);
         lm_->Bind(&notString);
         {
-            result = Int32Equal(objType, Int32Constant(static_cast<int32_t>(JSType::SYMBOL)));
+            result = Int32Equal(objType, Int32(static_cast<int32_t>(JSType::SYMBOL)));
             lm_->Jump(&exit);
         }
     }
