@@ -131,6 +131,8 @@ Properties OpCode::GetProperties() const
             return {I32, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case TRUNC_TO_INT1:
             return {I1, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
+        case TRUNC_TO_INT16:
+            return {I16, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case REV:
             return {FLEX, NO_STATE, NO_DEPEND, VALUE(FLEX), NO_ROOT};
         case ADD:
@@ -248,6 +250,7 @@ std::string OpCode::Str() const
         {SEXT_TO_ARCH, "SEXT_TO_ARCH"},
         {TRUNC_TO_INT32, "TRUNC_TO_INT32"},
         {TRUNC_TO_INT1, "TRUNC_TO_INT1"},
+        {TRUNC_TO_INT16, "TRUNC_TO_INT16"},
         {REV, "REV"},
         {ADD, "ADD"},
         {SUB, "SUB"},

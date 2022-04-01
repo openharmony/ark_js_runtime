@@ -154,6 +154,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::SEXT_TO_ARCH, &LLVMIRBuilder::HandleSExtInt},
         {OpCode::TRUNC_TO_INT1, &LLVMIRBuilder::HandleCastIntXToIntY},
         {OpCode::TRUNC_TO_INT32, &LLVMIRBuilder::HandleCastIntXToIntY},
+        {OpCode::TRUNC_TO_INT16, &LLVMIRBuilder::HandleCastIntXToIntY},
         {OpCode::REV, &LLVMIRBuilder::HandleIntRev},
         {OpCode::ADD, &LLVMIRBuilder::HandleAdd},
         {OpCode::SUB, &LLVMIRBuilder::HandleSub},

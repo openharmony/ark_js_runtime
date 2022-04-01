@@ -108,6 +108,7 @@ class Variable;
     V(TruncInt64ToInt32, OpCode::TRUNC_TO_INT32)                                  \
     V(TruncPtrToInt32, OpCode::TRUNC_TO_INT32)                                    \
     V(TruncInt64ToInt1, OpCode::TRUNC_TO_INT1)                                    \
+    V(TruncInt64ToInt16, OpCode::TRUNC_TO_INT16)                                  \
     V(TruncInt32ToInt1, OpCode::TRUNC_TO_INT1)
 
 #define BINARY_LOGIC_METHOD_LIST_WITHOUT_BITWIDTH(V)                              \
