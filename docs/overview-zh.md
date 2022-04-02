@@ -1,6 +1,6 @@
 # 概述<a name="ZH-CN_TOPIC_0000001174295771"></a>
 
-方舟编译器\(ArkCompiler\)是OpenHarmony内置的组件化、可配置的多语言编译和运行平台，包含编译器、工具链、运行时等核心部件，支持高级编程语言在多种芯片平台上编译与运行，并支撑OpenHarmony标准操作系统及其应用和服务运行在手机、个人电脑、平板、电视、汽车和智能穿戴等多种设备上的需求。开源的ArkCompiler JS Runtime提供的能力是在OpenHarmony操作系统中编译和运行JavaScript语言\(本文后面简称JS\)。
+方舟编译器\(ArkCompiler\)是OpenHarmony内置的组件化、可配置的多语言编译和运行平台，包含编译器、工具链、运行时等核心部件，支持高级编程语言在多种芯片平台上编译与运行。开源的ArkCompiler JS Runtime提供的能力是在OpenHarmony操作系统中编译和运行JavaScript语言\(本文后面简称JS\)。
 
 ArkCompiler JS Runtime分成两个部分，分别是JS编译工具链与JS运行时。JS工具链将JS源码编译成方舟字节码\(ArkCompiler Bytecode\)，JS运行时负责执行生成的方舟字节码\(后续如无特殊说明，字节码特指方舟字节码\)。
 
