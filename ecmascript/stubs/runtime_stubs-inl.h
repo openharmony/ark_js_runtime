@@ -58,19 +58,26 @@ JSTaggedValue RuntimeStubs::RuntimeDecDyn(JSThread *thread, const JSHandle<JSTag
     return JSTaggedValue(--number);
 }
 
-JSTaggedValue RuntimeStubs::RuntimeExpDyn(JSThread *thread, const JSHandle<JSTaggedValue> &base,
-                                          const JSHandle<JSTaggedValue> &exponent)
+JSTaggedValue RuntimeStubs::RuntimeExpDyn(JSThread *thread, JSTaggedValue base, JSTaggedValue exponent)
 {
-    JSTaggedNumber baseNumber = JSTaggedValue::ToNumber(thread, base);
+    JSHandle<JSTaggedValue> valBase = JSTaggedValue::ToNumeric(thread, base);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    double doubleBase = baseNumber.GetNumber();
-    JSTaggedNumber exponentNumber = JSTaggedValue::ToNumber(thread, exponent);
+    JSHandle<JSTaggedValue> valExponent = JSTaggedValue::ToNumeric(thread, exponent);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    double doubleExponent = exponentNumber.GetNumber();
+    if (valBase->IsBigInt() || valExponent->IsBigInt()) {
+        if (valBase->IsBigInt() && valExponent->IsBigInt()) {
+            JSHandle<BigInt> bigBaseVale(valBase);
+            JSHandle<BigInt> bigExponentValue(valExponent);
+            return BigInt::Exponentiate(thread, bigBaseVale, bigExponentValue).GetTaggedValue();
+        }
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot mix BigInt and other types, use explicit conversions",
+                                    JSTaggedValue::Exception());
+    }
+    double doubleBase = valBase->GetNumber();
+    double doubleExponent = valExponent->GetNumber();
     if (std::abs(doubleBase) == 1 && std::isinf(doubleExponent)) {
         return JSTaggedValue(base::NAN_VALUE);
     }
-
     if (((doubleBase == 0) && ((bit_cast<uint64_t>(doubleBase)) & base::DOUBLE_SIGN_MASK) == base::DOUBLE_SIGN_MASK) &&
         std::isfinite(doubleExponent) && base::NumberHelper::TruncateDouble(doubleExponent) == doubleExponent &&
         base::NumberHelper::TruncateDouble(doubleExponent / 2) + base::HALF == (doubleExponent / 2)) {  // 2: half

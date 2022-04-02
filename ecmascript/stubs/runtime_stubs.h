@@ -222,8 +222,7 @@ private:
 
     static inline JSTaggedValue RuntimeIncDyn(JSThread *thread, const JSHandle<JSTaggedValue> &value);
     static inline JSTaggedValue RuntimeDecDyn(JSThread *thread, const JSHandle<JSTaggedValue> &value);
-    static inline JSTaggedValue RuntimeExpDyn(JSThread *thread, const JSHandle<JSTaggedValue> &base,
-                                              const JSHandle<JSTaggedValue> &exponent);
+    static inline JSTaggedValue RuntimeExpDyn(JSThread *thread, JSTaggedValue base, JSTaggedValue exponent);
     static inline JSTaggedValue RuntimeIsInDyn(JSThread *thread, const JSHandle<JSTaggedValue> &prop,
                                                const JSHandle<JSTaggedValue> &obj);
     static inline JSTaggedValue RuntimeInstanceofDyn(JSThread *thread, const JSHandle<JSTaggedValue> &obj,

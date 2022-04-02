@@ -468,8 +468,7 @@ DEF_RUNTIME_STUBS(ExpDyn)
         return JSTaggedValue(std::pow(doubleBase, doubleExponent)).GetRawData();
     }
     // Slow path
-    JSTaggedValue res = RuntimeExpDyn(thread, JSHandle<JSTaggedValue>(thread, baseValue),
-                                      JSHandle<JSTaggedValue>(thread, exponentValue));
+    JSTaggedValue res = RuntimeExpDyn(thread, baseValue, exponentValue);
     return res.GetRawData();
 }
 
