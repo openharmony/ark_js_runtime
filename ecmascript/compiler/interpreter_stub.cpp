@@ -41,7 +41,7 @@ void name##Stub::GenerateCircuit(const CompilationConfig *cfg)                  
     GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */  \
     GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */                      \
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */           \
-    DebugPrint(glue, { Int32(GET_MESSAGE_STRING_ID(name)) });                  \
+    DebugPrint(glue, { Int32(GET_MESSAGE_STRING_ID(name)) });                             \
     GenerateCircuitImpl(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);   \
 }                                                                                         \
 void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp,                \
