@@ -23,7 +23,7 @@ void AotFileManager::CollectAOTCodeInfoOfStubs()
     auto engine = assembler_.GetEngine();
     std::map<uintptr_t, std::string> addr2name;
     auto callSigns = llvmModule_->GetCSigns();
-    for (size_t i = 0; i < llvmModule_->GetFuncsSize(); i++) {
+    for (size_t i = 0; i < llvmModule_->GetFuncCount(); i++) {
         auto cs = callSigns[i];
         LLVMValueRef func = llvmModule_->GetFunction(i);
         ASSERT(func != nullptr);
@@ -47,14 +47,15 @@ void AotFileManager::CollectAOTCodeInfo()
 {
     auto codeBuff = reinterpret_cast<uint64_t>(assembler_.GetCodeBuffer());
     auto engine = assembler_.GetEngine();
-    auto moduleInllvm = llvmModule_->GetModule();
-    for (auto func = LLVMGetFirstFunction(moduleInllvm); func; func = LLVMGetNextFunction(func)) {
+    for (size_t i = 0; i < llvmModule_->GetFuncCount(); i++) {
+        LLVMValueRef func = llvmModule_->GetFunction(i);
         uint64_t funcEntry = reinterpret_cast<uint64_t>(LLVMGetPointerToGlobal(engine, func));
         uint64_t length = 0;
         std::string tmp(LLVMGetValueName2(func, &length));
         if (length == 0) {
             continue;
         }
+        std::cout << "CollectAOTCodeInfo " << tmp.c_str() << std::endl;
         aotInfo_.SetAOTFuncOffset(tmp, funcEntry - codeBuff);
     }
     aotInfo_.SetHostCodeSectionAddr(codeBuff);

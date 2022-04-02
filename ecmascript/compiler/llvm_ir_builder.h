@@ -138,7 +138,7 @@ public:
         return callSigns_;
     }
 
-    size_t GetFuncsSize() const
+    size_t GetFuncCount() const
     {
         return functions_.size();
     }

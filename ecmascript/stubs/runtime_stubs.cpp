@@ -757,7 +757,7 @@ DEF_RUNTIME_STUBS(Shl2Dyn)
     RUNTIME_STUBS_HEADER(Shl2Dyn);
     CONVERT_ARG_TAGGED_CHECKED(left, 0);
     CONVERT_ARG_TAGGED_CHECKED(right, 1);
-    
+
     auto res = SlowRuntimeStub::Shl2Dyn(thread, left, right);
     return JSTaggedValue(res).GetRawData();
 }
@@ -767,7 +767,7 @@ DEF_RUNTIME_STUBS(Shr2Dyn)
     RUNTIME_STUBS_HEADER(Shr2Dyn);
     CONVERT_ARG_TAGGED_CHECKED(left, 0);
     CONVERT_ARG_TAGGED_CHECKED(right, 1);
-    
+
     auto res = SlowRuntimeStub::Shr2Dyn(thread, left, right);
     return JSTaggedValue(res).GetRawData();
 }
@@ -777,7 +777,7 @@ DEF_RUNTIME_STUBS(Ashr2Dyn)
     RUNTIME_STUBS_HEADER(Ashr2Dyn);
     CONVERT_ARG_TAGGED_CHECKED(left, 0);
     CONVERT_ARG_TAGGED_CHECKED(right, 1);
-    
+
     auto res = SlowRuntimeStub::Ashr2Dyn(thread, left, right);
     return JSTaggedValue(res).GetRawData();
 }
@@ -787,7 +787,7 @@ DEF_RUNTIME_STUBS(And2Dyn)
     RUNTIME_STUBS_HEADER(And2Dyn);
     CONVERT_ARG_TAGGED_CHECKED(left, 0);
     CONVERT_ARG_TAGGED_CHECKED(right, 1);
-    
+
     auto res = SlowRuntimeStub::And2Dyn(thread, left, right);
     return JSTaggedValue(res).GetRawData();
 }
@@ -807,7 +807,7 @@ DEF_RUNTIME_STUBS(Or2Dyn)
     RUNTIME_STUBS_HEADER(Or2Dyn);
     CONVERT_ARG_TAGGED_CHECKED(left, 0);
     CONVERT_ARG_TAGGED_CHECKED(right, 1);
-    
+
     auto res = SlowRuntimeStub::Or2Dyn(thread, left, right);
     return JSTaggedValue(res).GetRawData();
 }
@@ -1260,9 +1260,9 @@ DEF_RUNTIME_STUBS(GetLexicalEnv)
 DEF_RUNTIME_STUBS(LoadValueFromConstantStringTable)
 {
     RUNTIME_STUBS_HEADER(LoadValueFromConstantStringTable);
-    CONVERT_ARG_TAGGED_CHECKED(id, 0);
+    CONVERT_ARG_TAGGED_TYPE_CHECKED(id, 0);
     auto tsLoader = thread->GetEcmaVM()->GetTSLoader();
-    return tsLoader->GetStringById(id.GetInt()).GetTaggedValue().GetRawData();
+    return tsLoader->GetStringById(id).GetTaggedValue().GetRawData();
 }
 
 DEF_RUNTIME_STUBS(CallArg0Dyn)

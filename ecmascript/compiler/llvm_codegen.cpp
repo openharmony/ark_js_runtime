@@ -173,9 +173,9 @@ void LLVMAssembler::BuildAndRunPasses()
     COMPILER_LOG(DEBUG) << "BuildAndRunPasses  + ";
 }
 
-LLVMAssembler::LLVMAssembler(LLVMModuleRef module, bool isFpElim) : module_(module)
+LLVMAssembler::LLVMAssembler(LLVMModuleRef module, bool genFp) : module_(module)
 {
-    Initialize(isFpElim);
+    Initialize(genFp);
 }
 
 LLVMAssembler::~LLVMAssembler()
@@ -216,7 +216,7 @@ void LLVMAssembler::Run()
     LLVMPrintModuleToFile(module_, optName.c_str(), &error);
 }
 
-void LLVMAssembler::Initialize(bool isFpElim)
+void LLVMAssembler::Initialize(bool genFp)
 {
     std::string triple(LLVMGetTarget(module_));
     if (triple.compare("x86_64-unknown-linux-gnu") == 0) {
@@ -248,7 +248,7 @@ void LLVMAssembler::Initialize(bool isFpElim)
     LLVMInitializeMCJITCompilerOptions(&options_, sizeof(options_));
     options_.OptLevel = 3; // opt level 3
     // NOTE: Just ensure that this field still exists for PIC option
-    options_.NoFramePointerElim = isFpElim ? false : true;
+    options_.NoFramePointerElim = genFp;
     options_.CodeModel = LLVMCodeModelSmall;
 }
 
