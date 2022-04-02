@@ -107,7 +107,7 @@ void JSAPIArrayList::TrimToCurrentLength(JSThread *thread, const JSHandle<JSAPIA
 
 JSTaggedValue JSAPIArrayList::Get(JSThread *thread, const uint32_t index)
 {
-    if (index < 0 || index >= GetLength().GetArrayLength()) {
+    if (index >= GetLength().GetArrayLength()) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "Get property index out-of-bounds", JSTaggedValue::Exception());
     }
 
@@ -249,7 +249,7 @@ JSTaggedValue JSAPIArrayList::ReplaceAllElements(JSThread *thread, const JSHandl
 
 JSTaggedValue JSAPIArrayList::Set(JSThread *thread, const uint32_t index, JSTaggedValue value)
 {
-    if (index < 0 || index >= GetLength().GetArrayLength()) {
+    if (index >= GetLength().GetArrayLength()) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "Set property index out-of-bounds", JSTaggedValue::Exception());
     }
 
@@ -375,7 +375,7 @@ bool JSAPIArrayList::GetOwnProperty(JSThread *thread, const JSHandle<JSAPIArrayL
     }
 
     uint32_t length = obj->GetLength().GetArrayLength();
-    if (index < 0 || index >= length) {
+    if (index >= length) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "GetOwnProperty index out-of-bounds", false);
     }
     return JSObject::GetOwnProperty(thread, JSHandle<JSObject>::Cast(obj), key, desc);
