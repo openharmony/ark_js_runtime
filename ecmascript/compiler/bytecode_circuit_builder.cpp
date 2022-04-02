@@ -2000,7 +2000,13 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
     const size_t actualNumArgs = GetActualNumArgs(numArgs);
     std::vector<GateRef> argGates(actualNumArgs);
 
-    for (size_t argIdx = 0; argIdx < CommonArgIdx::NUM_OF_ARGS; argIdx++) {
+    auto glueGate = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, 0,
+                                     {Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST))},
+                                     GateType::C_VALUE);
+    argGates.at(0) = glueGate;
+    commonArgs_.at(0) = glueGate;
+
+    for (size_t argIdx = 1; argIdx < CommonArgIdx::NUM_OF_ARGS; argIdx++) {
         auto argGate = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, argIdx,
                                         {Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST))},
                                         GateType::TAGGED_VALUE);
@@ -2011,7 +2017,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
     for (size_t argIdx = CommonArgIdx::NUM_OF_ARGS; argIdx < actualNumArgs; argIdx++) {
         argGates.at(argIdx) = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, argIdx,
                                                {Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST))},
-                                               GateType::JS_ANY);
+                                               GateType::TAGGED_VALUE);
     }
     // get number of expanded state predicates of each block
     // one block-level try catch edge may correspond to multiple bytecode-level edges

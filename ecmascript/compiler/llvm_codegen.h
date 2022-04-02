@@ -103,6 +103,7 @@ struct CodeInfo {
         dataSectionList_.push_back(std::vector<uint8_t>());
         dataSectionList_.back().resize(size);
         dataSectionNames_.push_back(sectionName);
+        std::cout << "AllocaDataSection " << sectionName << std::endl;
         addr = static_cast<uint8_t *>(dataSectionList_.back().data());
         if (!strcmp(sectionName, ".llvm_stackmaps")) {
             LOG_ECMA(INFO) << "llvm_stackmaps : " << addr << " size:" << size;
@@ -165,7 +166,7 @@ private:
 
 class LLVMAssembler {
 public:
-    LLVMAssembler(LLVMModuleRef module, bool isFpElim = false);
+    LLVMAssembler(LLVMModuleRef module, bool genFp = true);
     virtual ~LLVMAssembler();
     void Run();
     const LLVMExecutionEngineRef &GetEngine()
@@ -202,7 +203,7 @@ private:
     void UseRoundTripSectionMemoryManager();
     bool BuildMCJITEngine();
     void BuildAndRunPasses();
-    void Initialize(bool isFpElim);
+    void Initialize(bool genFp);
 
     LLVMMCJITCompilerOptions options_ {};
     LLVMModuleRef module_;
