@@ -325,6 +325,12 @@ public:
 
     JSHandle<JSDataView> NewJSDataView(JSHandle<JSArrayBuffer> buffer, uint32_t offset, uint32_t length);
 
+    void NewJSSharedArrayBufferData(const JSHandle<JSArrayBuffer> &array, int32_t length);
+
+    JSHandle<JSArrayBuffer> NewJSSharedArrayBuffer(int32_t length);
+
+    JSHandle<JSArrayBuffer> NewJSSharedArrayBuffer(void *buffer, int32_t length);
+
     void NewJSRegExpByteCodeData(const JSHandle<JSRegExp> &regexp, void *buffer, size_t size);
 
     template<typename T, typename S>

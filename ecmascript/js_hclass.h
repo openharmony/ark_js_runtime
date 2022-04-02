@@ -114,6 +114,7 @@ class ProtoChangeDetails;
         JS_DISPLAYNAMES, /* ///////////////////////////////////////////////////////////////////////////////-PADDING */ \
                                                                                                                        \
         JS_ARRAY_BUFFER, /* ///////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_SHARED_ARRAY_BUFFER, /* ////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_PROMISE,      /* ///////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_DATA_VIEW,    /* /////////////////////////////////////////////////////////////////////////////////////// */ \
         JS_ARGUMENTS, /* //////////////////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -731,6 +732,11 @@ public:
     inline bool IsArrayBuffer() const
     {
         return GetObjectType() == JSType::JS_ARRAY_BUFFER;
+    }
+
+    inline bool IsSharedArrayBuffer() const
+    {
+        return GetObjectType() == JSType::JS_SHARED_ARRAY_BUFFER;
     }
 
     inline bool IsDataView() const

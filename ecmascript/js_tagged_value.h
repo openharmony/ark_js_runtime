@@ -293,6 +293,7 @@ public:
     bool IsForinIterator() const;
     bool IsStringIterator() const;
     bool IsArrayBuffer() const;
+    bool IsSharedArrayBuffer() const;
 
     bool IsJSSetIterator() const;
     bool IsJSMapIterator() const;

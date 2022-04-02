@@ -59,6 +59,7 @@
 #include "ecmascript/builtins/builtins_regexp.h"
 #include "ecmascript/builtins/builtins_relative_time_format.h"
 #include "ecmascript/builtins/builtins_set.h"
+#include "ecmascript/builtins/builtins_sharedarraybuffer.h"
 #include "ecmascript/builtins/builtins_string.h"
 #include "ecmascript/builtins/builtins_string_iterator.h"
 #include "ecmascript/builtins/builtins_symbol.h"
@@ -151,6 +152,7 @@ using PluralRules = builtins::BuiltinsPluralRules;
 using DisplayNames = builtins::BuiltinsDisplayNames;
 
 using ContainersPrivate = containers::ContainersPrivate;
+using SharedArrayBuffer = builtins::BuiltinsSharedArrayBuffer;
 
 bool GetAbsolutePath(const std::string &relativePath, std::string &absPath)
 {
@@ -300,6 +302,7 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     InitializeString(env, primRefObjDynclass);
     InitializeArrayBuffer(env, objFuncDynclass);
     InitializeDataView(env, objFuncDynclass);
+    InitializeSharedArrayBuffer(env, objFuncDynclass);
 
     JSHandle<JSHClass> argumentsDynclass = factory_->CreateJSArguments();
     env->SetArgumentsClass(thread_, argumentsDynclass);
@@ -2223,6 +2226,51 @@ void Builtins::InitializeReflect(const JSHandle<GlobalEnv> &env,
     SetStringTagSymbol(env, reflectObject, "Reflect");
 
     env->SetReflectFunction(thread_, reflectObject.GetTaggedValue());
+}
+
+void Builtins::InitializeSharedArrayBuffer(const JSHandle<GlobalEnv> &env,
+                                           const JSHandle<JSHClass> &objFuncDynclass) const
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    // SharedArrayBuffer.prototype
+    JSHandle<JSObject> sharedArrayBufferFuncPrototype = factory_->NewJSObject(objFuncDynclass);
+    JSHandle<JSTaggedValue> sharedArrayBufferFuncPrototypeValue(sharedArrayBufferFuncPrototype);
+
+    //  SharedArrayBuffer.prototype_or_dynclass
+    JSHandle<JSHClass> sharedArrayBufferFuncInstanceDynclass =
+        factory_->NewEcmaDynClass(
+            JSArrayBuffer::SIZE, JSType::JS_SHARED_ARRAY_BUFFER, sharedArrayBufferFuncPrototypeValue);
+
+    // SharedArrayBuffer = new Function()
+    JSHandle<JSObject> SharedArrayBufferFunction(NewBuiltinConstructor(env, sharedArrayBufferFuncPrototype,
+        SharedArrayBuffer::SharedArrayBufferConstructor, "SharedArrayBuffer", FunctionLength::ONE));
+
+    JSHandle<JSFunction>(SharedArrayBufferFunction)
+        ->SetFunctionPrototype(thread_, sharedArrayBufferFuncInstanceDynclass.GetTaggedValue());
+
+    // SharedArrayBuffer prototype method
+    SetFunction(env, sharedArrayBufferFuncPrototype, "slice", SharedArrayBuffer::Slice, FunctionLength::TWO);
+
+    // SharedArrayBuffer method
+    SetFunction(env, SharedArrayBufferFunction,
+                "IsSharedArrayBuffer", SharedArrayBuffer::IsSharedArrayBuffer, FunctionLength::ONE);
+
+    // 25.2.3.2 get SharedArrayBuffer [ @@species ]
+    JSHandle<JSTaggedValue> speciesSymbol = env->GetSpeciesSymbol();
+    JSHandle<JSTaggedValue> speciesGetter =
+        CreateGetter(env, SharedArrayBuffer::Species, "[Symbol.species]", FunctionLength::ZERO);
+    SetGetter(JSHandle<JSObject>(SharedArrayBufferFunction), speciesSymbol, speciesGetter);
+
+    // 25.2.4.1 get SharedArrayBuffer.prototype.byteLength
+    JSHandle<JSTaggedValue> lengthGetter =
+        CreateGetter(env, SharedArrayBuffer::GetByteLength, "byteLength", FunctionLength::ZERO);
+    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromCanBeCompressString("byteLength"));
+    SetGetter(sharedArrayBufferFuncPrototype, lengthKey, lengthGetter);
+
+    // 25.2.4.4 SharedArrayBuffer.prototype [ @@toStringTag ]
+    SetStringTagSymbol(env, sharedArrayBufferFuncPrototype, "SharedArrayBuffer");
+
+    env->SetSharedArrayBufferFunction(thread_, SharedArrayBufferFunction.GetTaggedValue());
 }
 
 void Builtins::InitializePromise(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &promiseFuncDynclass)

@@ -27,6 +27,7 @@
 #include "ecmascript/js_set.h"
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/linked_hash_table-inl.h"
+#include "ecmascript/sharedMemoryManaged/sharedmemorymanager.h"
 #include "libpandabase/mem/mem.h"
 #include "securec.h"
 
@@ -292,6 +293,7 @@ bool JSSerializer::WriteTaggedObject(const JSHandle<JSTaggedValue> &value)
         case JSType::JS_BIGUINT64_ARRAY:
             return WriteJSTypedArray(value, SerializationUID::JS_BIGUINT64_ARRAY);
         case JSType::JS_ARRAY_BUFFER:
+        case JSType::JS_SHARED_ARRAY_BUFFER:
             return WriteJSArrayBuffer(value);
         case JSType::STRING:
             return WriteEcmaString(value);
@@ -602,8 +604,15 @@ bool JSSerializer::WriteJSArrayBuffer(const JSHandle<JSTaggedValue> &value)
         return false;
     }
 
-    if (!WriteType(SerializationUID::JS_ARRAY_BUFFER)) {
-        return false;
+    bool shared = arrayBuffer->GetShared();
+    if (shared) {
+        if (!WriteType(SerializationUID::JS_SHARED_ARRAY_BUFFER)) {
+            return false;
+        }
+    } else {
+        if (!WriteType(SerializationUID::JS_ARRAY_BUFFER)) {
+            return false;
+        }
     }
 
     // Write Accessors(ArrayBufferByteLength)
@@ -614,7 +623,6 @@ bool JSSerializer::WriteJSArrayBuffer(const JSHandle<JSTaggedValue> &value)
     }
 
     // write Accessor shared which indicate the C memory is shared
-    bool shared = arrayBuffer->GetShared();
     if (!WriteBoolean(shared)) {
         bufferSize_ = oldSize;
         return false;
@@ -623,6 +631,7 @@ bool JSSerializer::WriteJSArrayBuffer(const JSHandle<JSTaggedValue> &value)
     if (shared) {
         JSHandle<JSNativePointer> np(thread_, arrayBuffer->GetArrayBufferData());
         void *buffer = np->GetExternalPointer();
+        JSSharedMemoryManager::GetInstance()->CreateOrLoad(&buffer, arrayLength);
         uint64_t bufferAddr = (uint64_t)buffer;
         if (!WriteRawData(&bufferAddr, sizeof(uint64_t))) {
             bufferSize_ = oldSize;
@@ -895,6 +904,7 @@ JSHandle<JSTaggedValue> JSDeserializer::DeserializeJSTaggedValue()
             return ReadJSTypedArray(SerializationUID::JS_BIGUINT64_ARRAY);
         case SerializationUID::NATIVE_FUNCTION_POINTER:
             return ReadNativeFunctionPointer();
+        case SerializationUID::JS_SHARED_ARRAY_BUFFER:
         case SerializationUID::JS_ARRAY_BUFFER:
             return ReadJSArrayBuffer();
         case SerializationUID::TAGGED_OBJECT_REFERNCE:
@@ -1243,7 +1253,7 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSArrayBuffer()
     if (shared) {
         uint64_t *bufferAddr = reinterpret_cast<uint64_t*>(GetBuffer(sizeof(uint64_t)));
         void* bufferData = ToVoidPtr(*bufferAddr);
-        JSHandle<JSArrayBuffer> arrayBuffer = factory_->NewJSArrayBuffer(bufferData, arrayLength, nullptr, nullptr);
+        JSHandle<JSArrayBuffer> arrayBuffer = factory_->NewJSSharedArrayBuffer(bufferData, arrayLength);
         arrayBufferTag = JSHandle<JSTaggedValue>::Cast(arrayBuffer);
         referenceMap_.insert(std::pair(objectId_++, arrayBufferTag));
     } else {

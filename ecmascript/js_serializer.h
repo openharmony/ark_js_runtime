@@ -54,6 +54,7 @@ enum class SerializationUID : uint8_t {
     JS_MAP,
     JS_ARRAY,
     JS_ARRAY_BUFFER,
+    JS_SHARED_ARRAY_BUFFER,
     // TypedArray begin
     JS_UINT8_ARRAY,
     JS_UINT8_CLAMPED_ARRAY,

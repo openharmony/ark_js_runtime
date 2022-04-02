@@ -72,7 +72,7 @@ JSTaggedValue TypedArrayHelper::TypedArrayConstructor(EcmaRuntimeCallInfo *argv,
     if (firstArg->IsTypedArray()) {
         return TypedArrayHelper::CreateFromTypedArray(argv, obj, constructorName);
     }
-    if (firstArg->IsArrayBuffer()) {
+    if (firstArg->IsArrayBuffer() || firstArg->IsSharedArrayBuffer()) {
         return TypedArrayHelper::CreateFromArrayBuffer(argv, obj, constructorName);
     }
     return TypedArrayHelper::CreateFromOrdinaryObject(argv, obj);
