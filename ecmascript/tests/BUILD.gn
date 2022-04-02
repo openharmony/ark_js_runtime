@@ -218,6 +218,27 @@ host_unittest_action("GlueRegsTest") {
   }
 }
 
+host_unittest_action("JsArrayBufferTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "js_array_buffer_test.cpp",
+  ]
+
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
+    sdk_libc_secshared_dep,
+  ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
+}
+
 host_unittest_action("JsArrayIteratorTest") {
   module_out_path = module_output_path
 
@@ -1050,6 +1071,7 @@ group("unittest") {
     ":JSAPITreeMapTest",
     ":JSAPITreeSetTest",
     ":JsArgumentsTest",
+    ":JsArrayBufferTest",
     ":JsArrayIteratorTest",
     ":JsArrayTest",
     ":JsDataViewTest",
@@ -1104,6 +1126,7 @@ group("host_unittest") {
     ":JSAPITreeMapTestAction",
     ":JSAPITreeSetTestAction",
     ":JsArgumentsTestAction",
+    ":JsArrayBufferTestAction",
     ":JsArrayIteratorTestAction",
     ":JsArrayTestAction",
     ":JsDataViewTestAction",
