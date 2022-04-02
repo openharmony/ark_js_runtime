@@ -238,6 +238,7 @@ GateRef SlowPathLowering::GetValueFromConstStringTable(GateRef glue, GateRef gat
 void SlowPathLowering::Lower(GateRef gate, EcmaOpcode op)
 {
     GateRef glue = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::GLUE);
+    GateRef newTarget = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::NEW_TARGET);
 
     switch (op) {
         case LDA_STR_ID32:
@@ -449,6 +450,21 @@ void SlowPathLowering::Lower(GateRef gate, EcmaOpcode op)
             break;
         case GETMODULENAMESPACE_PREF_ID32:
             LowerGetModuleNamespace(gate, glue);
+            break;
+        case GETITERATORNEXT_PREF_V8_V8:
+            LowerGetIteratorNext(gate, glue);
+            break;
+        case SUPERCALL_PREF_IMM16_V8:
+            LowerSuperCall(gate, glue, newTarget);
+            break;
+        case SUPERCALLSPREAD_PREF_V8:
+            LowerSuperCallSpread(gate, glue, newTarget);
+            break;
+        case ISTRUE_PREF:
+            LowerIsTrueOrFalse(gate, glue, true);
+            break;
+        case ISFALSE_PREF:
+            LowerIsTrueOrFalse(gate, glue, false);
             break;
         default:
             break;
@@ -1215,5 +1231,78 @@ void SlowPathLowering::LowerGetModuleNamespace(GateRef gate, GateRef glue)
     failControl.emplace_back(Circuit::NullGate());
     // StModuleVar will not be inValue to other hir gates, result will not be used to replace hirgate
     builder_.MergeMirCircuit<true>(gate, result, successControl, failControl);
+}
+
+void SlowPathLowering::LowerGetIteratorNext(GateRef gate, GateRef glue)
+{
+    GateRef id = builder_.Int64(RTSTUB_ID(GetIteratorNext));
+    // 2: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef obj = acc_.GetValueIn(gate, 0);
+    GateRef method = acc_.GetValueIn(gate, 1);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        { obj, method });
+    LowerHirToCall(gate, newGate);
+}
+
+void SlowPathLowering::LowerSuperCall(GateRef gate, GateRef glue, GateRef newTarget)
+{
+    GateRef id = builder_.Int64(RTSTUB_ID(SuperCall));
+    // 3: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 3);
+    GateRef func = acc_.GetValueIn(gate, 2);
+    GateRef firstVRegIdx = acc_.GetValueIn(gate, 1);
+    GateRef length = acc_.GetValueIn(gate, 0);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        { func, newTarget, builder_.Int64BuildTaggedTypeNGC(firstVRegIdx),
+          builder_.Int64BuildTaggedTypeNGC(length) });
+    LowerHirToCall(gate, newGate);
+}
+
+void SlowPathLowering::LowerSuperCallSpread(GateRef gate, GateRef glue, GateRef newTarget)
+{
+    GateRef id = builder_.Int64(RTSTUB_ID(SuperCallSpread));
+    // 2: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef func = acc_.GetValueIn(gate, 1);
+    GateRef array = acc_.GetValueIn(gate, 0);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+        { func, newTarget, array });
+    LowerHirToCall(gate, newGate);
+}
+
+void SlowPathLowering::LowerIsTrueOrFalse(GateRef gate, GateRef glue, bool flag)
+{
+    LabelManager lm(gate, circuit_);
+    builder_.SetLabelManager(&lm);
+    Label isTrue(&lm);
+    Label isFalse(&lm);
+    Label successExit(&lm);
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> exceptionControl;
+    // 1: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    DEFVAlUE(result, (&lm), VariableType::JS_ANY(), acc_.GetValueIn(gate, 0));
+    GateRef callResult = builder_.CallRuntime(glue, RTSTUB_ID(ToBoolean), { *result });
+    builder_.Branch(builder_.TaggedSpecialValueChecker(callResult, JSTaggedValue::VALUE_TRUE),
+        &isTrue, &isFalse);
+    builder_.Bind(&isTrue);
+    {
+        auto trueResult = flag ? builder_.TaggedTrue() : builder_.TaggedFalse();
+        result = builder_.ChangeInt64ToTagged(trueResult);
+        builder_.Jump(&successExit);
+    }
+    builder_.Bind(&isFalse);
+    {
+        auto falseResult = flag ? builder_.TaggedFalse() : builder_.TaggedTrue();
+        result = builder_.ChangeInt64ToTagged(falseResult);
+        builder_.Jump(&successExit);
+    }
+    builder_.Bind(&successExit);
+    successControl.emplace_back(builder_.GetState());
+    successControl.emplace_back(builder_.GetDepend());
+    exceptionControl.emplace_back(Circuit::NullGate());
+    exceptionControl.emplace_back(Circuit::NullGate());
+    builder_.MergeMirCircuit<true>(gate, *result, successControl, exceptionControl);
 }
 }  // namespace panda::ecmascript

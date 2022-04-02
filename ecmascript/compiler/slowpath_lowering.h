@@ -193,6 +193,10 @@ private:
     void LowerLdBigInt(GateRef gate, GateRef glue);
     void LowerLdModuleVar(GateRef gate, GateRef glue);
     void LowerGetModuleNamespace(GateRef gate, GateRef glue);
+    void LowerGetIteratorNext(GateRef gate, GateRef glue);
+    void LowerSuperCall(GateRef gate, GateRef glue, GateRef newTarget);
+    void LowerSuperCallSpread(GateRef gate, GateRef glue, GateRef newTarget);
+    void LowerIsTrueOrFalse(GateRef gate, GateRef glue, bool flag);
 
     BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;
