@@ -334,11 +334,8 @@ public:
             Gate *oldPtr = circuit_->LoadGatePtr(*useIt);
             oldPtr->GetFirstOut()->GetGate()->ModifyIn(oldPtr->GetFirstOut()->GetIndex(),
                                                        circuit_->LoadGatePtr(newGate));
-            circuit_->DeleteGate(*useIt);
-            useIt.SetChanged();
-        } else {
-            DeleteIn(useIt);
         }
+        DeleteGate(useIt);
     };
     void DeleteIn(UsesIterator &useIt);
     void DeleteGate(UsesIterator &useIt);
