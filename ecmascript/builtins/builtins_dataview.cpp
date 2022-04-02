@@ -43,7 +43,7 @@ JSTaggedValue BuiltinsDataView::DataViewConstructor(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "buffer is not Object", JSTaggedValue::Exception());
     }
     // 3. If buffer does not have an [[ArrayBufferData]] internal slot, throw a TypeError exception.
-    if (!bufferHandle->IsArrayBuffer()) {
+    if (!bufferHandle->IsArrayBuffer() && !bufferHandle->IsSharedArrayBuffer()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "buffer is not ArrayBuffer", JSTaggedValue::Exception());
     }
     JSHandle<JSTaggedValue> offsetHandle = GetCallArg(argv, 1);

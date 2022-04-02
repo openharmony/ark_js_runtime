@@ -168,6 +168,9 @@ void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const Ec
         case JSType::JS_ARRAY_BUFFER:
             JSArrayBuffer::Cast(object)->VisitRangeSlot(visitor);
             break;
+        case JSType::JS_SHARED_ARRAY_BUFFER:
+            JSArrayBuffer::Cast(object)->VisitRangeSlot(visitor);
+            break;
         case JSType::JS_PROMISE:
             JSPromise::Cast(object)->VisitRangeSlot(visitor);
             break;

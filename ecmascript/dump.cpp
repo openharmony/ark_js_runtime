@@ -197,6 +197,8 @@ CString JSHClass::DumpJSType(JSType type)
             return "StringIterator";
         case JSType::JS_ARRAY_BUFFER:
             return "ArrayBuffer";
+        case JSType::JS_SHARED_ARRAY_BUFFER:
+            return "SharedArrayBuffer";
         case JSType::JS_PROXY_REVOC_FUNCTION:
             return "ProxyRevocFunction";
         case JSType::PROMISE_REACTIONS:
@@ -522,6 +524,9 @@ static void DumpObject(TaggedObject *obj, std::ostream &os)
             JSDataView::Cast(obj)->Dump(os);
             break;
         case JSType::JS_ARRAY_BUFFER:
+            JSArrayBuffer::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_SHARED_ARRAY_BUFFER:
             JSArrayBuffer::Cast(obj)->Dump(os);
             break;
         case JSType::PROMISE_REACTIONS:
@@ -1579,6 +1584,8 @@ void GlobalEnv::Dump(std::ostream &os) const
     GetInt16ArrayFunction().GetTaggedValue().Dump(os);
     os << " - ArrayBufferFunction: ";
     GetArrayBufferFunction().GetTaggedValue().Dump(os);
+    os << " - SharedArrayBufferFunction: ";
+    GetSharedArrayBufferFunction().GetTaggedValue().Dump(os);
     os << " - SymbolFunction: ";
     GetSymbolFunction().GetTaggedValue().Dump(os);
     os << " - RangeErrorFunction: ";
@@ -2793,6 +2800,9 @@ static void DumpObject(TaggedObject *obj,
         case JSType::JS_ARRAY_BUFFER:
             JSArrayBuffer::Cast(obj)->DumpForSnapshot(vec);
             return;
+        case JSType::JS_SHARED_ARRAY_BUFFER:
+            JSArrayBuffer::Cast(obj)->DumpForSnapshot(vec);
+            return;
         case JSType::JS_PROXY_REVOC_FUNCTION:
             JSProxyRevocFunction::Cast(obj)->DumpForSnapshot(vec);
             return;
@@ -3407,6 +3417,8 @@ void GlobalEnv::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &
     vec.push_back(std::make_pair(CString("Float32ArrayFunction"), GetFloat32ArrayFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("Float64ArrayFunction"), GetFloat64ArrayFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("ArrayBufferFunction"), GetArrayBufferFunction().GetTaggedValue()));
+    vec.push_back(
+        std::make_pair(CString("SharedArrayBufferFunction"), GetSharedArrayBufferFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("SymbolFunction"), GetSymbolFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("RangeErrorFunction"), GetRangeErrorFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("ReferenceErrorFunction"), GetReferenceErrorFunction().GetTaggedValue()));

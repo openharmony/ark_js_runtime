@@ -84,6 +84,7 @@
 #include "ecmascript/module/js_module_namespace.h"
 #include "ecmascript/module/js_module_source_text.h"
 #include "ecmascript/record.h"
+#include "ecmascript/sharedMemoryManaged/sharedmemorymanager.h"
 #include "ecmascript/symbol_table-inl.h"
 #include "ecmascript/tagged_tree-inl.h"
 #include "ecmascript/template_map.h"
@@ -172,7 +173,23 @@ void ObjectFactory::NewJSArrayBufferData(const JSHandle<JSArrayBuffer> &array, i
     }
     JSHandle<JSNativePointer> pointer = NewJSNativePointer(newData, NativeAreaAllocator::FreeBufferFunc,
                                                            vm_->GetNativeAreaAllocator());
-    array->SetArrayBufferData(thread_, pointer.GetTaggedValue());
+    array->SetArrayBufferData(thread_, pointer);
+}
+
+void ObjectFactory::NewJSSharedArrayBufferData(const JSHandle<JSArrayBuffer> &array, int32_t length)
+{
+    if (length == 0) {
+        return;
+    }
+    void *newData = nullptr;
+    JSSharedMemoryManager::GetInstance()->CreateOrLoad(&newData, length);
+    if (memset_s(newData, length, 0, length) != EOK) {
+        LOG_ECMA(FATAL) << "memset_s failed";
+        UNREACHABLE();
+    }
+    JSHandle<JSNativePointer> pointer = NewJSNativePointer(newData, JSSharedMemoryManager::RemoveSharedMemory,
+                                                           JSSharedMemoryManager::GetInstance());
+    array->SetArrayBufferData(thread_, pointer);
 }
 
 JSHandle<JSArrayBuffer> ObjectFactory::NewJSArrayBuffer(int32_t length)
@@ -232,6 +249,39 @@ JSHandle<JSDataView> ObjectFactory::NewJSDataView(JSHandle<JSArrayBuffer> buffer
     arrayBuffer->SetByteLength(length);
     arrayBuffer->SetByteOffset(offset);
     return arrayBuffer;
+}
+
+JSHandle<JSArrayBuffer> ObjectFactory::NewJSSharedArrayBuffer(int32_t length)
+{
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+
+    JSHandle<JSFunction> constructor(env->GetSharedArrayBufferFunction());
+    JSHandle<JSTaggedValue> newTarget(constructor);
+    JSHandle<JSArrayBuffer> sharedArrayBuffer(NewJSObjectByConstructor(constructor, newTarget));
+    sharedArrayBuffer->SetArrayBufferByteLength(length);
+    if (length > 0) {
+        NewJSSharedArrayBufferData(sharedArrayBuffer, length);
+        sharedArrayBuffer->SetShared(true);
+    }
+    return sharedArrayBuffer;
+}
+
+JSHandle<JSArrayBuffer> ObjectFactory::NewJSSharedArrayBuffer(void *buffer, int32_t length)
+{
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+
+    JSHandle<JSFunction> constructor(env->GetSharedArrayBufferFunction());
+    JSHandle<JSTaggedValue> newTarget(constructor);
+    JSHandle<JSArrayBuffer> sharedArrayBuffer(NewJSObjectByConstructor(constructor, newTarget));
+    length = buffer == nullptr ? 0 : length;
+    sharedArrayBuffer->SetArrayBufferByteLength(length);
+    if (length > 0) {
+        JSHandle<JSNativePointer> pointer = NewJSNativePointer(buffer, JSSharedMemoryManager::RemoveSharedMemory,
+                                                               JSSharedMemoryManager::GetInstance());
+        sharedArrayBuffer->SetArrayBufferData(thread_, pointer);
+        sharedArrayBuffer->SetShared(true);
+    }
+    return sharedArrayBuffer;
 }
 
 void ObjectFactory::NewJSRegExpByteCodeData(const JSHandle<JSRegExp> &regexp, void *buffer, size_t size)
@@ -781,6 +831,11 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
                 JSArrayBuffer::Cast(*obj)->SetArrayBufferData(thread_, JSTaggedValue::Undefined());
                 JSArrayBuffer::Cast(*obj)->SetArrayBufferByteLength(0);
                 JSArrayBuffer::Cast(*obj)->ClearBitField();
+                break;
+            case JSType::JS_SHARED_ARRAY_BUFFER:
+                JSArrayBuffer::Cast(*obj)->SetArrayBufferData(thread_, JSTaggedValue::Undefined());
+                JSArrayBuffer::Cast(*obj)->SetArrayBufferByteLength(0);
+                JSArrayBuffer::Cast(*obj)->SetShared(true);
                 break;
             case JSType::JS_PROMISE:
                 JSPromise::Cast(*obj)->SetPromiseState(PromiseState::PENDING);
