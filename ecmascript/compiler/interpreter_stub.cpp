@@ -4337,7 +4337,7 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
     Branch(IntPtrEqual(*varPc, IntPtr(0)), &pcEqualNullptr, &pcNotEqualNullptr);
     Bind(&pcEqualNullptr);
     {
-        SetAccToFrame(glue, frame, acc);
+        SetAccToFrame(glue, frame, *varAcc);
         Return();
     }
     Bind(&pcNotEqualNullptr);
@@ -4351,7 +4351,7 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
         varHotnessCounter = Load(VariableType::INT32(), method,
                                  IntPtr(JSMethod::HOTNESS_COUNTER_OFFSET));
         GateRef jumpSize = GetCallSizeFromFrame(prevState);
-        Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, acc,
+        Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, *varAcc,
                  *varHotnessCounter, jumpSize);
     }
 }
