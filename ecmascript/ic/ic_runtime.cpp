@@ -47,7 +47,12 @@ void ICRuntime::UpdateLoadHandler(const ObjectOperator &op, JSHandle<JSTaggedVal
         handlerValue = LoadHandler::LoadElement(thread_);
     } else {
         if (!op.IsFound()) {
-            handlerValue = PrototypeHandler::LoadPrototype(thread_, op, hclass);
+            JSTaggedValue proto = hclass->GetPrototype();
+            if (!proto.IsECMAObject()) {
+                handlerValue = LoadHandler::LoadProperty(thread_, op);
+            } else {
+                handlerValue = PrototypeHandler::LoadPrototype(thread_, op, hclass);
+            }
         } else if (!op.IsOnPrototype()) {
             handlerValue = LoadHandler::LoadProperty(thread_, op);
         } else {

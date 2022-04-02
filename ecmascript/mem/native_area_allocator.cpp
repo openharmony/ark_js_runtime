@@ -33,13 +33,16 @@ Area *NativeAreaAllocator::AllocateArea(size_t capacity)
     }
     // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     void *mem = malloc(capacity);
-#if ECMASCRIPT_ENABLE_ZAP_MEM
-    memset_s(mem, capacity, 0, capacity);
-#endif
     if (mem == nullptr) {
         LOG_ECMA_MEM(FATAL) << "malloc failed";
         UNREACHABLE();
     }
+#if ECMASCRIPT_ENABLE_ZAP_MEM
+    if (memset_s(mem, capacity, 0, capacity) != EOK) {
+        LOG_ECMA(FATAL) << "memset_s failed";
+        UNREACHABLE();
+    }
+#endif
     IncreaseNativeMemoryUsage(capacity);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     uintptr_t begin = reinterpret_cast<uintptr_t>(mem) + headerSize;
@@ -59,7 +62,10 @@ void NativeAreaAllocator::FreeArea(Area *area)
     auto size = area->GetSize() + sizeof(Area);
     DecreaseNativeMemoryUsage(size);
 #if ECMASCRIPT_ENABLE_ZAP_MEM
-    memset_s(area, size, INVALID_VALUE, size);
+    if (memset_s(area, size, INVALID_VALUE, size) != EOK) {
+        LOG_ECMA(FATAL) << "memset_s failed";
+        UNREACHABLE();
+    }
 #endif
     // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     free(reinterpret_cast<std::byte *>(area));
@@ -72,7 +78,10 @@ void NativeAreaAllocator::Free(void *mem, size_t size)
     }
     DecreaseNativeMemoryUsage(size);
 #if ECMASCRIPT_ENABLE_ZAP_MEM
-    memset_s(mem, size, INVALID_VALUE, size);
+    if (memset_s(mem, size, INVALID_VALUE, size) != EOK) {
+        LOG_ECMA(FATAL) << "memset_s failed";
+        UNREACHABLE();
+    }
 #endif
     // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     free(mem);
@@ -91,7 +100,10 @@ void *NativeAreaAllocator::AllocateBuffer(size_t size)
         UNREACHABLE();
     }
 #if ECMASCRIPT_ENABLE_ZAP_MEM
-    memset_s(ptr, size, INVALID_VALUE, size);
+    if (memset_s(ptr, size, INVALID_VALUE, size) != EOK) {
+        LOG_ECMA(FATAL) << "memset_s failed";
+        UNREACHABLE();
+    }
 #endif
     IncreaseNativeMemoryUsage(size);
     return ptr;
@@ -109,7 +121,10 @@ void NativeAreaAllocator::FreeBuffer(void *mem)
 #endif
 
 #if ECMASCRIPT_ENABLE_ZAP_MEM
-    memset_s(mem, size, INVALID_VALUE, size);
+    if (memset_s(mem, size, INVALID_VALUE, size) != EOK) {
+        LOG_ECMA(FATAL) << "memset_s failed";
+        UNREACHABLE();
+    }
 #endif
     // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     free(mem);
