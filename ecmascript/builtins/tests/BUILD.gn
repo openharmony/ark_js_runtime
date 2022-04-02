@@ -164,6 +164,27 @@ host_unittest_action("BuiltinsDateTest") {
   }
 }
 
+host_unittest_action("BuiltinsDateTimeFormatTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_date_time_format_test.cpp",
+  ]
+
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
+    sdk_libc_secshared_dep,
+  ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
+}
+
 host_unittest_action("BuiltinsErrorsTest") {
   module_out_path = module_output_path
 
@@ -665,6 +686,7 @@ group("unittest") {
     ":BuiltinsCollatorTest",
     ":BuiltinsDataviewTest",
     ":BuiltinsDateTest",
+    ":BuiltinsDateTimeFormatTest",
     ":BuiltinsDisplayNamesTest",
     ":BuiltinsErrorsTest",
     ":BuiltinsFunctionTest",
@@ -703,6 +725,7 @@ group("host_unittest") {
     ":BuiltinsCollatorTestAction",
     ":BuiltinsDataviewTestAction",
     ":BuiltinsDateTestAction",
+    ":BuiltinsDateTimeFormatTestAction",
     ":BuiltinsDisplayNamesTestAction",
     ":BuiltinsErrorsTestAction",
     ":BuiltinsFunctionTestAction",
