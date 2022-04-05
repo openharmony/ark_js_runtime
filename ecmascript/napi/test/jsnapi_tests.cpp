@@ -21,7 +21,7 @@
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/napi/include/jsnapi.h"
-#include "ecmascript/napi/jsnapi_helper-inl.h"
+#include "ecmascript/napi/jsnapi_helper.h"
 #include "ecmascript/object_factory.h"
 
 using namespace panda;

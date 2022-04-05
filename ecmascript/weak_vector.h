@@ -18,7 +18,7 @@
 
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_thread.h"
-#include "ecmascript/tagged_array.h"
+#include "ecmascript/tagged_array-inl.h"
 
 namespace panda::ecmascript {
 class WeakVector : public TaggedArray {
@@ -35,17 +35,37 @@ public:
     // just set index value to Hole
     bool Delete(const JSThread *thread, uint32_t index);
 
-    inline uint32_t GetEnd() const;
+    inline uint32_t GetEnd() const
+    {
+        return TaggedArray::Get(END_INDEX).GetArrayLength();
+    }
 
-    inline bool Full() const;
+    inline bool Full() const
+    {
+        return GetEnd() == GetCapacity();
+    }
 
-    inline bool Empty() const;
+    inline bool Empty() const
+    {
+        return GetEnd() == 0;
+    }
 
-    inline uint32_t GetCapacity() const;
+    inline uint32_t GetCapacity() const
+    {
+        return TaggedArray::GetLength() - ELEMENTS_START_INDEX;
+    }
 
-    inline JSTaggedValue Get(uint32_t index) const;
+    inline JSTaggedValue Get(uint32_t index) const
+    {
+        ASSERT(index < GetCapacity());
+        return TaggedArray::Get(VectorToArrayIndex(index));
+    }
 
-    inline void Set(const JSThread *thread, uint32_t index, JSTaggedValue value);
+    inline void Set(const JSThread *thread, uint32_t index, JSTaggedValue value)
+    {
+        ASSERT(index < GetCapacity());
+        TaggedArray::Set(thread, VectorToArrayIndex(index), value);
+    }
 
 private:
     static const uint32_t MIN_CAPACITY = 2;
@@ -58,7 +78,11 @@ private:
         return index + ELEMENTS_START_INDEX;
     }
 
-    inline void SetEnd(const JSThread *thread, uint32_t end);
+    inline void SetEnd(const JSThread *thread, uint32_t end)
+    {
+        ASSERT(end <= GetCapacity());
+        TaggedArray::Set(thread, END_INDEX, JSTaggedValue(end));
+    }
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_WEAK_VECTOR_H

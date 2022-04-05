@@ -22,7 +22,7 @@
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/tagged_queue.h"
-#include "ecmascript/tagged_queue-inl.h"
+#include "ecmascript/tagged_queue.h"
 
 namespace panda::ecmascript {
 enum class PromiseState : uint8_t { PENDING = 0, FULFILLED, REJECTED };

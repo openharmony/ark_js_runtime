@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#include "weak_vector.h"
+#include "ecmascript/weak_vector.h"
+
 #include "ecmascript/object_factory.h"
-#include "ecmascript/weak_vector-inl.h"
 
 namespace panda::ecmascript {
 JSHandle<WeakVector> WeakVector::Create(const JSThread *thread, uint32_t capacity)

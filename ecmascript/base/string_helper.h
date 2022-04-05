@@ -27,7 +27,7 @@
 #include "ecmascript/ecma_string-inl.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_thread.h"
-#include "ecmascript/mem/assert_scope-inl.h"
+#include "ecmascript/mem/assert_scope.h"
 #include "ecmascript/object_factory.h"
 #include "libpandafile/file_items.h"
 #include "unicode/unistr.h"

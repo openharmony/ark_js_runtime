@@ -77,7 +77,6 @@ public:
     }
 
     int FindElementWithCache(JSThread *thread, JSHClass *cls, JSTaggedValue key, int propertiesNumber);
-    int FindElement(JSTaggedValue key, int propertiesNumber);
     int BinarySearch(JSTaggedValue key, int propertiesNumber);
     void GetAllKeys(const JSThread *thread, int end, int offset, TaggedArray *keyArray);
     void GetAllKeys(const JSThread *thread, int end, std::vector<JSTaggedValue> &keyVector);

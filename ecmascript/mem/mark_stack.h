@@ -102,8 +102,24 @@ public:
     NO_COPY_SEMANTIC(ContinuousStack);
     NO_MOVE_SEMANTIC(ContinuousStack);
 
-    inline void BeginMarking(Heap *heap, ContinuousStack<T> *other);
-    inline void FinishMarking(ContinuousStack<T> *other);
+    inline void BeginMarking(Heap *heap, ContinuousStack<T> *other)
+    {
+        heap_ = heap;
+        currentArea_ = other->currentArea_;
+        if (currentArea_ == nullptr) {
+            currentArea_ = NativeAreaAllocator::AllocateSpace(DEFAULT_MARK_STACK_SIZE);
+        }
+        ResetBegin(currentArea_->GetBegin(), currentArea_->GetEnd());
+    }
+    inline void FinishMarking(ContinuousStack<T> *other)
+    {
+        other->currentArea_ = currentArea_;
+
+        while (!unusedList_.IsEmpty()) {
+            Area *node = unusedList_.PopBack();
+            NativeAreaAllocator::FreeSpace(node);
+        }
+    }
 
     T *PopBack()
     {
@@ -128,10 +144,22 @@ public:
         PushBackUnchecked(ToUintPtr(obj));
     }
 
-    inline void Destroy();
+    inline void Destroy()
+    {
+        if (currentArea_ != nullptr) {
+            NativeAreaAllocator::FreeSpace(currentArea_);
+            currentArea_ = nullptr;
+        }
+    }
 
 private:
-    inline void Extend();
+    inline void Extend()
+    {
+        auto area = NativeAreaAllocator::AllocateSpace(DEFAULT_MARK_STACK_SIZE);
+        areaList_.AddNode(currentArea_);
+        currentArea_ = area;
+        ResetBegin(currentArea_->GetBegin(), currentArea_->GetEnd());
+    }
 
     Heap *heap_{nullptr};
     Area *currentArea_{nullptr};

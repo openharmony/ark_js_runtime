@@ -17,11 +17,12 @@
 
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/interpreter/frame_handler.h"
-#include "ecmascript/jspandafile/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
-#include "ecmascript/napi/jsnapi_helper-inl.h"
+#include "ecmascript/mem/c_string.h"
+#include "ecmascript/napi/jsnapi_helper.h"
 #include "ecmascript/tooling/interface/js_debugger.h"
 
 namespace panda::tooling::ecmascript {

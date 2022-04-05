@@ -85,10 +85,10 @@
 #include "ecmascript/module/js_module_source_text.h"
 #include "ecmascript/record.h"
 #include "ecmascript/sharedMemoryManaged/sharedmemorymanager.h"
-#include "ecmascript/symbol_table-inl.h"
+#include "ecmascript/symbol_table.h"
 #include "ecmascript/tagged_tree-inl.h"
 #include "ecmascript/template_map.h"
-#include "ecmascript/ts_types/ts_obj_layout_info-inl.h"
+#include "ecmascript/ts_types/ts_obj_layout_info.h"
 #include "ecmascript/ts_types/ts_type.h"
 #include "ecmascript/ts_types/ts_type_table.h"
 

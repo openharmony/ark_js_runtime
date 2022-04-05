@@ -23,7 +23,7 @@
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array-inl.h"
 #include "ecmascript/tagged_dictionary.h"
-#include "ecmascript/tagged_queue-inl.h"
+#include "ecmascript/tagged_queue.h"
 #include "ecmascript/tagged_queue.h"
 
 namespace panda::ecmascript {

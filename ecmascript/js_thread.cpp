@@ -15,7 +15,7 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
 #include "ecmascript/global_env_constants-inl.h"
-#include "ecmascript/ic/properties_cache-inl.h"
+#include "ecmascript/ic/properties_cache.h"
 #include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/mem/machine_code.h"

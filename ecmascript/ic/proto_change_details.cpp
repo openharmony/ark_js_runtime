@@ -14,7 +14,7 @@
  */
 
 #include "ecmascript/ic/proto_change_details.h"
-#include "ecmascript/weak_vector-inl.h"
+#include "ecmascript/weak_vector.h"
 
 namespace panda::ecmascript {
 JSHandle<ChangeListener> ChangeListener::Add(const JSThread *thread, const JSHandle<ChangeListener> &array,
