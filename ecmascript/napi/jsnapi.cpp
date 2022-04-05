@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "jsnapi_helper-inl.h"
+#include "jsnapi_helper.h"
 
 #include <array>
 #include <cstdint>

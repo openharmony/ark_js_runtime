@@ -26,7 +26,7 @@
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_regexp.h"
 #include "ecmascript/js_tagged_value-inl.h"
-#include "ecmascript/mem/assert_scope-inl.h"
+#include "ecmascript/mem/assert_scope.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/chunk_containers.h"
 #include "ecmascript/object_factory.h"

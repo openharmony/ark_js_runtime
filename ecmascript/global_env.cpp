@@ -18,7 +18,7 @@
 #include "ecmascript/ic/ic_handler.h"
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/jobs/micro_job_queue.h"
-#include "ecmascript/jspandafile/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_promise.h"

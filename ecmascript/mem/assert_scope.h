@@ -22,6 +22,8 @@
 #include "utils/bit_field.h"
 
 namespace panda::ecmascript {
+static thread_local size_t currentAssertData(~0);
+
 using AssertGarbageCollectBit = panda::BitField<bool, 0, 1>;
 using AssertHeapAllocBit = AssertGarbageCollectBit::NextFlag;
 
@@ -45,11 +47,41 @@ public:
 template<AssertType type, bool isAllow>
 class AssertScopeT<type, isAllow, true> {
 public:
-    AssertScopeT();
+    AssertScopeT() : oldData_(currentAssertData)
+    {
+        switch (type) {
+            case AssertType::GARBAGE_COLLECTION_ASSERT:
+                currentAssertData = AssertGarbageCollectBit::Update(oldData_.value(), isAllow);
+                break;
+            case AssertType::HEAP_ALLOC_ASSERT:
+                currentAssertData = AssertHeapAllocBit::Update(oldData_.value(), isAllow);
+                break;
+            default:
+                break;
+        }
+    }
 
-    ~AssertScopeT();
+    ~AssertScopeT()
+    {
+        if (!oldData_.has_value()) {
+            return;
+        }
 
-    static bool IsAllowed();
+        currentAssertData = oldData_.value();
+        oldData_.reset();
+    }
+
+    static bool IsAllowed()
+    {
+        switch (type) {
+            case AssertType::GARBAGE_COLLECTION_ASSERT:
+                return AssertGarbageCollectBit::Decode(currentAssertData);
+            case AssertType::HEAP_ALLOC_ASSERT:
+                return AssertHeapAllocBit::Decode(currentAssertData);
+            default:
+                return true;
+        }
+    }
 
     NO_COPY_SEMANTIC(AssertScopeT);
     DEFAULT_NOEXCEPT_MOVE_SEMANTIC(AssertScopeT);

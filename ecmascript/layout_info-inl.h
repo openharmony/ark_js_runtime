@@ -18,7 +18,7 @@
 
 #include "ecmascript/layout_info.h"
 #include "ecmascript/tagged_array-inl.h"
-#include "ecmascript/ic/properties_cache-inl.h"
+#include "ecmascript/ic/properties_cache.h"
 
 namespace panda::ecmascript {
 inline int LayoutInfo::GetPropertiesCapacity() const

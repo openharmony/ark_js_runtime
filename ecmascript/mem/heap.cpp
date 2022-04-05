@@ -24,7 +24,7 @@
 #include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
 #endif
 #include "ecmascript/ecma_vm.h"
-#include "ecmascript/mem/assert_scope-inl.h"
+#include "ecmascript/mem/assert_scope.h"
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/mem/concurrent_sweeper.h"
 #include "ecmascript/mem/full_gc.h"

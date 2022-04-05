@@ -22,7 +22,7 @@
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/object_factory.h"
-#include "ecmascript/tagged_queue-inl.h"
+#include "ecmascript/tagged_queue.h"
 #include "ecmascript/tagged_queue.h"
 #include "utils/expected.h"
 

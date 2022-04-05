@@ -16,7 +16,7 @@
 #ifndef ECMASCRIPT_MEM_PARALLEL_WORK_HELPER_H
 #define ECMASCRIPT_MEM_PARALLEL_WORK_HELPER_H
 
-#include "ecmascript/mem/mark_stack-inl.h"
+#include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/slots.h"
 #include "ecmascript/taskpool/taskpool.h"
 

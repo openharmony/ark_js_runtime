@@ -64,13 +64,28 @@ namespace panda {
 class JSNApiHelper {
 public:
     template<typename T>
-    static inline Local<T> ToLocal(ecmascript::JSHandle<ecmascript::JSTaggedValue> from);
+    static inline Local<T> ToLocal(ecmascript::JSHandle<ecmascript::JSTaggedValue> from)
+    {
+        return Local<T>(from.GetAddress());
+    }
 
-    static inline ecmascript::JSTaggedValue ToJSTaggedValue(JSValueRef *from);
+    static inline ecmascript::JSTaggedValue ToJSTaggedValue(JSValueRef *from)
+    {
+        ASSERT(from != nullptr);
+        return *reinterpret_cast<ecmascript::JSTaggedValue *>(from);
+    }
 
-    static inline ecmascript::JSHandle<ecmascript::JSTaggedValue> ToJSHandle(Local<JSValueRef> from);
+    static inline ecmascript::JSHandle<ecmascript::JSTaggedValue> ToJSHandle(Local<JSValueRef> from)
+    {
+        ASSERT(!from.IsEmpty());
+        return ecmascript::JSHandle<ecmascript::JSTaggedValue>(reinterpret_cast<uintptr_t>(*from));
+    }
 
-    static inline ecmascript::JSHandle<ecmascript::JSTaggedValue> ToJSHandle(JSValueRef *from);
+    static inline ecmascript::JSHandle<ecmascript::JSTaggedValue> ToJSHandle(JSValueRef *from)
+    {
+        ASSERT(from != nullptr);
+        return ecmascript::JSHandle<ecmascript::JSTaggedValue>(reinterpret_cast<uintptr_t>(from));
+    }
 };
 
 class Callback {

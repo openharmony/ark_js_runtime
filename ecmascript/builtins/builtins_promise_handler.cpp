@@ -23,7 +23,7 @@
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_tagged_value-inl.h"
-#include "ecmascript/mem/assert_scope-inl.h"
+#include "ecmascript/mem/assert_scope.h"
 
 namespace panda::ecmascript::builtins {
 // es6 25.4.1.3.2 Promise Resolve Functions

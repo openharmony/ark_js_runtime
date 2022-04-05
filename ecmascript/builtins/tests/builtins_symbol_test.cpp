@@ -26,7 +26,7 @@
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/object_factory.h"
-#include "ecmascript/symbol_table-inl.h"
+#include "ecmascript/symbol_table.h"
 #include "ecmascript/tests/test_helper.h"
 #include "utils/bit_utils.h"
 
