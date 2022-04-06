@@ -114,10 +114,7 @@ public:
     void CheckRegionSize();
     void RevertCSet();
     void ReclaimCSet();
-    bool IsCSetEmpty() const
-    {
-        return collectRegionSet_.empty();
-    }
+
     unsigned long GetSelectedRegionNumber() const
     {
         return std::max(committedSize_ / PARTIAL_GC_MAX_COLLECT_REGION_RATE, PARTIAL_GC_INITIAL_COLLECT_REGION_SIZE);

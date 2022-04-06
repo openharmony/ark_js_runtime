@@ -91,7 +91,7 @@ void ParallelEvacuation::SetObjectFieldRSet(TaggedObject *object, JSHClass *cls)
                 Region *valueRegion = Region::ObjectAddressToRange(value);
                 if (valueRegion->InYoungGeneration()) {
                     region->InsertOldToNewRememberedSet(slot.SlotAddress());
-                } else if (valueRegion->InCollectSet()) {
+                } else if (valueRegion->InCollectSet() || JSTaggedValue(value).IsWeakForHeapObject()) {
                     region->InsertCrossRegionRememberedSet(slot.SlotAddress());
                 }
             }

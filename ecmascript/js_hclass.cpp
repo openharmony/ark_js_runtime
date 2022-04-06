@@ -320,7 +320,7 @@ JSHandle<JSTaggedValue> JSHClass::EnableProtoChangeMarker(const JSThread *thread
     JSTaggedValue proto = jshclass->GetPrototype();
     if (!proto.IsECMAObject()) {
         // Return JSTaggedValue directly. No proto check is needed.
-        return JSHandle<JSTaggedValue>(thread, JSTaggedValue(false));
+        UNREACHABLE();
     }
     JSHandle<JSObject> protoHandle(thread, proto);
     JSHandle<JSHClass> protoDyncalss(thread, protoHandle->GetJSHClass());
