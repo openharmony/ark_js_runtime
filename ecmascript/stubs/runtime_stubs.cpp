@@ -1561,27 +1561,27 @@ DEF_RUNTIME_STUBS(ThrowNotCallableException)
     return JSTaggedValue::Exception().GetRawData();
 }
 
-DEF_RUNTIME_STUBS(SetCallConstructorException)
+DEF_RUNTIME_STUBS(ThrowCallConstructorException)
 {
-    RUNTIME_STUBS_HEADER(SetCallConstructorException);
+    RUNTIME_STUBS_HEADER(ThrowCallConstructorException);
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
     JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR,
                                                    "class constructor cannot called without 'new'");
     thread->SetException(error.GetTaggedValue());
-    return JSTaggedValue::Hole().GetRawData();
+    return JSTaggedValue::Exception().GetRawData();
 }
 
-DEF_RUNTIME_STUBS(SetStackOverflowException)
+DEF_RUNTIME_STUBS(ThrowStackOverflowException)
 {
-    RUNTIME_STUBS_HEADER(SetStackOverflowException);
+    RUNTIME_STUBS_HEADER(ThrowStackOverflowException);
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
-    JSHandle<JSObject> error = factory->GetJSError(base::ErrorType::RANGE_ERROR, "Stack overflow!");
+    JSHandle<JSObject> error = factory->GetJSError(ErrorType::RANGE_ERROR, "Stack overflow!");
     if (LIKELY(!thread->HasPendingException())) {
         thread->SetException(error.GetTaggedValue());
     }
-    return JSTaggedValue::Hole().GetRawData();
+    return JSTaggedValue::Exception().GetRawData();
 }
 
 DEF_RUNTIME_STUBS(CallNative)
@@ -1594,6 +1594,9 @@ DEF_RUNTIME_STUBS(CallNative)
     EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, numArgs.GetInt(), sp);
     JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
         const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);
+    if (UNLIKELY(thread->HasPendingException())) {
+        return JSTaggedValue::Exception().GetRawData();
+    }
     return retValue.GetRawData();
 }
 

@@ -82,7 +82,7 @@ namespace panda::ecmascript::kungfu {
     T(HandleThrowConstAssignmentPrefV8, 7)                  \
     T(HandleGetTemplateObjectPrefV8, 7)                     \
     T(HandleGetNextPropNamePrefV8, 7)                       \
-    I(HandleCallArg0DynPrefV8, 7)                           \
+    T(HandleCallArg0DynPrefV8, 7)                           \
     T(HandleThrowIfNotObjectPrefV8, 7)                      \
     T(HandleIterNextPrefV8, 7)                              \
     T(HandleCloseIteratorPrefV8, 7)                         \
@@ -94,7 +94,7 @@ namespace panda::ecmascript::kungfu {
     T(HandleSuspendGeneratorPrefV8V8, 7)                    \
     T(HandleAsyncFunctionAwaitUncaughtPrefV8V8, 7)          \
     T(HandleThrowUndefinedIfHolePrefV8V8, 7)                \
-    I(HandleCallArg1DynPrefV8V8, 7)                         \
+    T(HandleCallArg1DynPrefV8V8, 7)                         \
     T(HandleCopyDataPropertiesPrefV8V8, 7)                  \
     T(HandleStArraySpreadPrefV8V8, 7)                       \
     T(HandleGetIteratorNextPrefV8V8, 7)                     \
@@ -110,12 +110,12 @@ namespace panda::ecmascript::kungfu {
     T(HandleCallSpreadDynPrefV8V8V8, 7)                     \
     T(HandleAsyncFunctionResolvePrefV8V8V8, 7)              \
     T(HandleAsyncFunctionRejectPrefV8V8V8, 7)               \
-    I(HandleCallArgs2DynPrefV8V8V8, 7)                      \
-    I(HandleCallArgs3DynPrefV8V8V8V8, 7)                    \
+    T(HandleCallArgs2DynPrefV8V8V8, 7)                      \
+    T(HandleCallArgs3DynPrefV8V8V8V8, 7)                    \
     T(HandleDefineGetterSetterByValuePrefV8V8V8V8, 7)       \
     T(HandleNewObjDynRangePrefImm16V8, 7)                   \
-    I(HandleCallIRangeDynPrefImm16V8, 7)                    \
-    I(HandleCallIThisRangeDynPrefImm16V8, 7)                \
+    T(HandleCallIRangeDynPrefImm16V8, 7)                    \
+    T(HandleCallIThisRangeDynPrefImm16V8, 7)                \
     T(HandleSuperCallPrefImm16V8, 7)                        \
     T(HandleCreateObjectWithExcludedKeysPrefImm16V8V8, 7)   \
     T(HandleDefineFuncDynPrefId16Imm16V8, 7)                \

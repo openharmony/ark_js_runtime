@@ -278,7 +278,7 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
             goto setVregsAndFrameNotNative;                                        \
         }                                                                          \
         /* slow path */                                                            \
-        if (!method->HaveExtraWithCallField()) {                                 \
+        if (!method->HaveExtraWithCallField()) {                                   \
             /* push length = declaredNumArgs, may push undefined */                \
             CALL_PUSH_UNDEFINED(declaredNumArgs - actualNumArgs);                  \
             CALL_PUSH_ARGS_##ARG_TYPE##_NO_EXTRA();                                \
