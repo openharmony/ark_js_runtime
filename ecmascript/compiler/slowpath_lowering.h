@@ -197,6 +197,8 @@ private:
     void LowerSuperCall(GateRef gate, GateRef glue, GateRef newTarget);
     void LowerSuperCallSpread(GateRef gate, GateRef glue, GateRef newTarget);
     void LowerIsTrueOrFalse(GateRef gate, GateRef glue, bool flag);
+    void LowerNewObjDynRange(GateRef gate, GateRef glue);
+    void LowerConditionJump(GateRef gate, bool isEqualJump);
 
     BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;

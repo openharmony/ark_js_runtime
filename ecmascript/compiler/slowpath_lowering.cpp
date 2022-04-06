@@ -452,6 +452,17 @@ void SlowPathLowering::Lower(GateRef gate, EcmaOpcode op)
         case GETMODULENAMESPACE_PREF_ID32:
             LowerGetModuleNamespace(gate, glue);
             break;
+        case NEWOBJDYNRANGE_PREF_IMM16_V8:
+            LowerNewObjDynRange(gate, glue);
+            break;
+        case JEQZ_IMM8:
+        case JEQZ_IMM16:
+            LowerConditionJump(gate, true);
+            break;
+        case JNEZ_IMM8:
+        case JNEZ_IMM16:
+            LowerConditionJump(gate, false);
+            break;
         case GETITERATORNEXT_PREF_V8_V8:
             LowerGetIteratorNext(gate, glue);
             break;
@@ -553,8 +564,8 @@ void SlowPathLowering::LowerLexicalEnv(GateRef gate, GateRef glue)
 void SlowPathLowering::LowerTryLdGlobalByName(GateRef gate, GateRef glue)
 {
     GateRef prop = GetValueFromConstStringTable(glue, gate, 0);
-    GateRef id = builder_.Int64(RTSTUB_ID(TryLdGlobalByName));
     acc_.SetDep(gate, prop);
+    GateRef id = builder_.Int64(RTSTUB_ID(TryLdGlobalByName));
     ASSERT(acc_.GetNumValueIn(gate) == 1);
     GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {prop});
     LowerHirToCall(gate, newGate);
@@ -563,8 +574,8 @@ void SlowPathLowering::LowerTryLdGlobalByName(GateRef gate, GateRef glue)
 void SlowPathLowering::LowerStGlobalVar(GateRef gate, GateRef glue)
 {
     GateRef prop = GetValueFromConstStringTable(glue, gate, 0);
-    GateRef id = builder_.Int64(RTSTUB_ID(StGlobalVar));
     acc_.SetDep(gate, prop);
+    GateRef id = builder_.Int64(RTSTUB_ID(StGlobalVar));
     ASSERT(acc_.GetNumValueIn(gate) == 2); // 2: number of value inputs
     GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
         {prop, acc_.GetValueIn(gate, 0)});
@@ -1078,6 +1089,7 @@ void SlowPathLowering::LowerFastStrictEqual(GateRef gate, GateRef glue)
         {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
     LowerHirToFastCall(gate, newGate);
 }
+
 void SlowPathLowering::LowerCreateEmptyArray(GateRef gate, GateRef glue)
 {
     LabelManager lm(gate, circuit_);
@@ -1307,5 +1319,93 @@ void SlowPathLowering::LowerIsTrueOrFalse(GateRef gate, GateRef glue, bool flag)
     exceptionControl.emplace_back(Circuit::NullGate());
     exceptionControl.emplace_back(Circuit::NullGate());
     builder_.MergeMirCircuit<true>(gate, *result, successControl, exceptionControl);
+}
+
+void SlowPathLowering::LowerNewObjDynRange(GateRef gate, GateRef glue)
+{
+    GateRef id = builder_.Int64(RTSTUB_ID(NewObjDynRange));
+    // 4: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 4);
+    // 2 : 2 first argument offset
+    GateRef firstArgOffset = builder_.Int16(2);
+    GateRef firstArgRegIdx = acc_.GetValueIn(gate, 1);
+    GateRef firstArgIdx = builder_.Int16Add(builder_.TruncInt64ToInt16(firstArgRegIdx), firstArgOffset);
+    GateRef numArgs = acc_.GetValueIn(gate, 0);
+    GateRef length = builder_.Int16Sub(builder_.TruncInt64ToInt16(numArgs), firstArgOffset);
+    // 2 : 2 input value
+    GateRef ctor = acc_.GetValueIn(gate, 2);
+    // 3 : 3 input value
+    GateRef newTarget = acc_.GetValueIn(gate, 3);
+    GateRef newGate = builder_.RuntimeCall(glue, id,Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                           {ctor, newTarget, firstArgIdx, length});
+    LowerHirToCall(gate, newGate);
+}
+
+void SlowPathLowering::LowerConditionJump(GateRef gate, bool isEqualJump)
+{
+    std::vector<GateRef> trueState;
+    GateRef value = acc_.GetValueIn(gate, 0);
+    // GET_ACC() == JSTaggedValue::False()
+    GateRef condition = builder_.TaggedSpecialValueChecker(value, JSTaggedValue::VALUE_FALSE);
+    GateRef ifBranch = builder_.Branch(acc_.GetState(gate), condition);
+    GateRef ifTrue = builder_.IfTrue(ifBranch);
+    trueState.emplace_back(ifTrue);
+    GateRef ifFalse = builder_.IfFalse(ifBranch);
+
+    // (GET_ACC().IsInt() && GET_ACC().GetInt())
+    std::vector<GateRef> intFalseState;
+    ifBranch = builder_.Branch(ifFalse, builder_.TaggedIsInt(value));
+    GateRef isInt = builder_.IfTrue(ifBranch);
+    GateRef notInt = builder_.IfFalse(ifBranch);
+    intFalseState.emplace_back(notInt);
+    condition = builder_.Int32Equal(builder_.TaggedGetInt(value), builder_.Int32(0));
+    ifBranch = builder_.Branch(isInt, condition);
+    GateRef isZero = builder_.IfTrue(ifBranch);
+    trueState.emplace_back(isZero);
+    GateRef notZero = builder_.IfFalse(ifBranch);
+    if (isEqualJump) {
+        intFalseState.emplace_back(notZero);
+    } else {
+        intFalseState.emplace_back(isZero);
+    }
+    auto mergeIntState = builder_.Merge(intFalseState.data(), intFalseState.size());
+
+    // (GET_ACC().IsDouble() && GET_ACC().GetDouble() == 0)
+    std::vector<GateRef> doubleFalseState;
+    ifBranch = builder_.Branch(mergeIntState, builder_.TaggedIsDouble(value));
+    GateRef isDouble = builder_.IfTrue(ifBranch);
+    GateRef notDouble = builder_.IfFalse(ifBranch);
+    doubleFalseState.emplace_back(notDouble);
+    condition = builder_.DoubleEqual(builder_.TaggedCastToDouble(value), builder_.Double(0));
+    ifBranch = builder_.Branch(isDouble, condition);
+    GateRef isDoubleZero = builder_.IfTrue(ifBranch);
+    trueState.emplace_back(isDoubleZero);
+    GateRef notDoubleZero = builder_.IfFalse(ifBranch);
+    if (isEqualJump) {
+        doubleFalseState.emplace_back(notDoubleZero);
+    } else {
+        doubleFalseState.emplace_back(isDoubleZero);
+    }
+    auto mergeFalseState = builder_.Merge(doubleFalseState.data(), doubleFalseState.size());
+
+    GateRef mergeTrueState = builder_.Merge(trueState.data(), trueState.size());
+    auto uses = acc_.Uses(gate);
+    for (auto it = uses.begin(); it != uses.end(); it++) {
+        if (acc_.GetOpCode(*it) == OpCode::IF_TRUE) {
+            acc_.SetOpCode(*it, OpCode::ORDINARY_BLOCK);
+            acc_.ReplaceIn(it, mergeTrueState);
+        } else if (acc_.GetOpCode(*it) == OpCode::IF_FALSE) {
+            acc_.SetOpCode(*it, OpCode::ORDINARY_BLOCK);
+            acc_.ReplaceIn(it, mergeFalseState);
+        } else if (((acc_.GetOpCode(*it) == OpCode::DEPEND_SELECTOR) ||
+                    (acc_.GetOpCode(*it) == OpCode::DEPEND_RELAY)) &&
+                    (acc_.GetOpCode(acc_.GetIn(acc_.GetIn(*it, 0), it.GetIndex() - 1)) != OpCode::IF_EXCEPTION)) {
+            acc_.ReplaceIn(it, acc_.GetDep(gate));
+        } else {
+            abort();
+        }
+    }
+    // delete old gate
+    circuit_->DeleteGate(gate);
 }
 }  // namespace panda::ecmascript
