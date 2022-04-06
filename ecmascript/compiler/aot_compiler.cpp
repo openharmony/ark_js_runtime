@@ -68,7 +68,7 @@ int Main(const int argc, const char **argv)
     panda::PandArg<bool> options("options", false, "Print compiler and runtime options");
     // tail arguments
     panda::PandArg<arg_list_t> files("files", {""}, "path to pandafiles", ":");
-    panda::PandArg<std::string> entrypoint("entrypoint", "_GLOBAL::func_main_0",
+    panda::PandArg<std::string> entrypoint("entrypoint", "init::func_main_0",
                                            "full name of entrypoint function or method");
     panda::PandArgParser paParser;
 

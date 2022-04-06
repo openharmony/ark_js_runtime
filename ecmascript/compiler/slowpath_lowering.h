@@ -223,6 +223,7 @@ private:
     void LowerStOwnByValue(GateRef gate, GateRef glue);
     void LowerStOwnByIndex(GateRef gate, GateRef glue);
     void LowerStOwnByName(GateRef gate, GateRef glue);
+    void LowerDefineFuncDyn(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerDefineGeneratorFunc(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerDefineAsyncFunc(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerNewLexicalEnvDyn(GateRef gate, GateRef glue);
