@@ -501,25 +501,30 @@ void PandaFileTranslator::TranslateBytecode(JSPandaFile *jsPandaFile, uint32_t i
                     FixInstructionId32(bcIns, index);
                     break;
                 case BytecodeInstruction::Opcode::ECMA_CREATEOBJECTWITHBUFFER_PREF_IMM16:
-                case BytecodeInstruction::Opcode::ECMA_CREATEOBJECTHAVINGMETHOD_PREF_IMM16:
-                    index = jsPandaFile->GetOrInsertConstantPool(
-                        ConstPoolType::OBJECT_LITERAL, bcIns.GetImm<BytecodeInstruction::Format::PREF_IMM16>());
+                case BytecodeInstruction::Opcode::ECMA_CREATEOBJECTHAVINGMETHOD_PREF_IMM16: {
+                    auto imm = bcIns.GetImm<BytecodeInstruction::Format::PREF_IMM16>();
+                    index = jsPandaFile->GetOrInsertConstantPool(ConstPoolType::OBJECT_LITERAL,
+                        static_cast<uint16_t>(imm));
                     FixInstructionId32(bcIns, index);
                     break;
-                case BytecodeInstruction::Opcode::ECMA_CREATEARRAYWITHBUFFER_PREF_IMM16:
-                    index = jsPandaFile->GetOrInsertConstantPool(
-                        ConstPoolType::ARRAY_LITERAL, bcIns.GetImm<BytecodeInstruction::Format::PREF_IMM16>());
+                }
+                case BytecodeInstruction::Opcode::ECMA_CREATEARRAYWITHBUFFER_PREF_IMM16: {
+                    auto imm = bcIns.GetImm<BytecodeInstruction::Format::PREF_IMM16>();
+                    index = jsPandaFile->GetOrInsertConstantPool(ConstPoolType::ARRAY_LITERAL,
+                        static_cast<uint16_t>(imm));
                     FixInstructionId32(bcIns, index);
                     break;
-                case BytecodeInstruction::Opcode::ECMA_DEFINECLASSWITHBUFFER_PREF_ID16_IMM16_IMM16_V8_V8:
+                }
+                case BytecodeInstruction::Opcode::ECMA_DEFINECLASSWITHBUFFER_PREF_ID16_IMM16_IMM16_V8_V8: {
                     methodId = pf->ResolveMethodIndex(method->GetFileId(), bcIns.GetId().AsIndex()).GetOffset();
                     index = jsPandaFile->GetOrInsertConstantPool(ConstPoolType::CLASS_FUNCTION, methodId);
                     FixInstructionId32(bcIns, index);
-                    index = jsPandaFile->GetOrInsertConstantPool(
-                        ConstPoolType::CLASS_LITERAL,
-                        bcIns.GetImm<BytecodeInstruction::Format::PREF_ID16_IMM16_IMM16_V8_V8>());
+                    auto imm = bcIns.GetImm<BytecodeInstruction::Format::PREF_ID16_IMM16_IMM16_V8_V8>();
+                    index = jsPandaFile->GetOrInsertConstantPool(ConstPoolType::CLASS_LITERAL,
+                        static_cast<uint16_t>(imm));
                     FixInstructionId32(bcIns, index, 1);
                     break;
+                }
                 default:
                     break;
             }
