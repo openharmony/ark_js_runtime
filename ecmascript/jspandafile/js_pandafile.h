@@ -18,7 +18,6 @@
 
 #include "ecmascript/js_method.h"
 #include "ecmascript/jspandafile/constpool_value.h"
-#include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/mem/c_containers.h"
 #include "libpandafile/file.h"
 #include "libpandabase/utils/logger.h"

@@ -14,6 +14,7 @@
  */
 
 #include "ecmascript/jspandafile/js_pandafile.h"
+
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/jspandafile/program_object-inl.h"
 
