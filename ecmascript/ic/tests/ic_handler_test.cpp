@@ -227,12 +227,8 @@ HWTEST_F_L0(ICHandlerTest, LoadPrototype)
     handleOp2.SetFastMode(true);
     handleOp2.SetIndex(2);
     // test op is not Found and hclass has no Prototype
-    JSHandle<JSTaggedValue> handlerValue1 = PrototypeHandler::LoadPrototype(thread, handleOp1, obj1Dynclass);
-    JSHandle<PrototypeHandler> handler1 =  JSHandle<PrototypeHandler>::Cast(handlerValue1);
-    JSHandle<JSTaggedValue> handlerInfo1(thread, handler1->GetHandlerInfo());
-    EXPECT_EQ(HandlerBase::GetOffset(handlerInfo1->GetInt()), 0);
-    EXPECT_EQ(handler1->GetProtoCell(), JSTaggedValue(false));
-    EXPECT_FALSE(handler1->GetHolder().IsJSGlobalObject());
+    JSHandle<JSTaggedValue> handlerValue1 = LoadHandler::LoadProperty(thread, handleOp1);
+    EXPECT_TRUE(HandlerBase::IsNonExist(handlerValue1->GetInt()));
     // test op is Found and hclass has Prototype
     JSHandle<JSTaggedValue> handlerValue2 = PrototypeHandler::LoadPrototype(thread, handleOp2, obj2Dynclass);
     JSHandle<PrototypeHandler> handler2 =  JSHandle<PrototypeHandler>::Cast(handlerValue2);
@@ -259,29 +255,21 @@ HWTEST_F_L0(ICHandlerTest, StorePrototype)
     JSHandle<JSTaggedValue> handleValue(thread, JSTaggedValue(3));
 
     JSHandle<JSObject> nullHandle(thread, JSTaggedValue::Null());
-    JSHandle<JSObject> handleObj1 = JSObject::ObjectCreate(thread, nullHandle);
-    JSHandle<JSObject> handleObj2 = JSObject::ObjectCreate(thread, handleObj1);
+    JSHandle<JSObject> nullObj = JSObject::ObjectCreate(thread, nullHandle);
+    JSHandle<JSObject> handleObj = JSObject::ObjectCreate(thread, nullObj);
 
-    JSHandle<JSHClass> obj1Dynclass(thread, handleObj1->GetJSHClass());
-    JSHandle<JSHClass> obj2Dynclass(thread, handleObj2->GetJSHClass());
+    JSHandle<JSHClass> objDynclass(thread, handleObj->GetJSHClass());
 
     ObjectOperator handleOp(thread, handleKey, OperatorType::OWN);
     handleOp.SetFastMode(true);
     handleOp.SetIndex(2);
-    // test hclass has no Prototype
-    JSHandle<JSTaggedValue> handlerValue1 = PrototypeHandler::StorePrototype(thread, handleOp, obj1Dynclass);
-    JSHandle<PrototypeHandler> handler1 =  JSHandle<PrototypeHandler>::Cast(handlerValue1);
-    JSHandle<JSTaggedValue> handlerInfo1(thread, handler1->GetHandlerInfo());
-    EXPECT_EQ(HandlerBase::GetOffset(handlerInfo1->GetInt()), 2);
-    EXPECT_EQ(handler1->GetProtoCell(), JSTaggedValue(false));
-    EXPECT_TRUE(handler1->GetHolder().IsJSGlobalObject());
     // test hclass has Prototype
-    JSHandle<JSTaggedValue> handlerValue2 = PrototypeHandler::StorePrototype(thread, handleOp, obj2Dynclass);
-    JSHandle<PrototypeHandler> handler2 =  JSHandle<PrototypeHandler>::Cast(handlerValue2);
-    JSHandle<JSTaggedValue> handlerInfo2(thread, handler2->GetHandlerInfo());
-    EXPECT_EQ(HandlerBase::GetOffset(handlerInfo2->GetInt()), 2);
-    JSHandle<JSTaggedValue> resultMarker(thread, handler2->GetProtoCell());
+    JSHandle<JSTaggedValue> handlerValue = PrototypeHandler::StorePrototype(thread, handleOp, objDynclass);
+    JSHandle<PrototypeHandler> handler =  JSHandle<PrototypeHandler>::Cast(handlerValue);
+    JSHandle<JSTaggedValue> handlerInfo(thread, handler->GetHandlerInfo());
+    EXPECT_EQ(HandlerBase::GetOffset(handlerInfo->GetInt()), 2);
+    JSHandle<JSTaggedValue> resultMarker(thread, handler->GetProtoCell());
     EXPECT_TRUE(resultMarker->IsProtoChangeMarker());
-    EXPECT_TRUE(handler2->GetHolder().IsJSGlobalObject());
+    EXPECT_TRUE(handler->GetHolder().IsJSGlobalObject());
 }
 } // namespace panda::test

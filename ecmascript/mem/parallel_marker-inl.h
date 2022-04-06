@@ -90,8 +90,9 @@ inline void NonMovableMarker::HandleOldToNewRSet(uint32_t threadId, Region *regi
 inline void NonMovableMarker::RecordWeakReference(uint32_t threadId, JSTaggedType *ref)
 {
     auto value = JSTaggedValue(*ref);
-    Region *objectRegion = Region::ObjectAddressToRange(value.GetTaggedWeakRef());
-    if (!objectRegion->InYoungOrCSetGeneration()) {
+    Region *valueRegion = Region::ObjectAddressToRange(value.GetTaggedWeakRef());
+    Region *objectRegion = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(ref));
+    if (!objectRegion->InYoungOrCSetGeneration() && !valueRegion->InYoungOrCSetGeneration()) {
         heap_->GetWorkList()->PushWeakReference(threadId, ref);
     }
 }
