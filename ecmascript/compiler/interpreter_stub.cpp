@@ -4738,36 +4738,9 @@ DECLARE_ASM_HANDLER(HandleCreateRegExpWithLiteralPrefId32Imm8)
 
 DECLARE_ASM_HANDLER(HandleIsTruePref)
 {
-    auto env = GetEnvironment();
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
-    Label objNotTrue(env);
-    Label dispatch(env);
-    Label slowPath(env);
-    Label isTrue(env);
-    Label isFalse(env);
-
-    Branch(TaggedIsTrue(*varAcc), &isTrue, &objNotTrue);
-    Bind(&objNotTrue);
-    {
-        Branch(TaggedIsFalse(*varAcc), &isFalse, &slowPath);
-    }
-
-    Bind(&slowPath);
-    GateRef result = CallRuntime(glue, RTSTUB_ID(ToBoolean), { *varAcc });
-    Branch(TaggedIsTrue(result), &isTrue, &isFalse);
-    Bind(&isTrue);
-    {
-        varAcc = ChangeInt64ToTagged(TaggedTrue());
-        Jump(&dispatch);
-    }
-    Bind(&isFalse);
-    {
-        varAcc = ChangeInt64ToTagged(TaggedFalse());
-        Jump(&dispatch);
-    }
-
-    Bind(&dispatch);
+    varAcc = FastToBoolean(*varAcc);
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
@@ -4776,20 +4749,10 @@ DECLARE_ASM_HANDLER(HandleIsFalsePref)
     auto env = GetEnvironment();
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
-    Label objNotTrue(env);
-    Label dispatch(env);
-    Label slowPath(env);
     Label isTrue(env);
     Label isFalse(env);
-
-    Branch(TaggedIsTrue(*varAcc), &isTrue, &objNotTrue);
-    Bind(&objNotTrue);
-    {
-        Branch(TaggedIsFalse(*varAcc), &isFalse, &slowPath);
-    }
-
-    Bind(&slowPath);
-    GateRef result = CallRuntime(glue, RTSTUB_ID(ToBoolean), { *varAcc });
+    Label dispatch(env);
+    auto result = FastToBoolean(*varAcc);
     Branch(TaggedIsTrue(result), &isTrue, &isFalse);
     Bind(&isTrue);
     {

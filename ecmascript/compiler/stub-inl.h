@@ -1497,6 +1497,12 @@ inline GateRef Stub::GetBitFieldFromHClass(GateRef hClass)
     return Load(VariableType::INT32(), hClass, offset);
 }
 
+inline GateRef Stub::GetLengthFromString(GateRef value)
+{
+    GateRef len = Load(VariableType::INT32(), value, IntPtr(EcmaString::MIX_LENGTH_OFFSET));
+    return UInt32LSR(len, Int32(2));  // 2 : 2 means len must be right shift 2 bits
+}
+
 inline void Stub::SetBitFieldToHClass(GateRef glue, GateRef hClass, GateRef bitfield)
 {
     GateRef offset = IntPtr(JSHClass::BIT_FIELD_OFFSET);
