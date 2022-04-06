@@ -178,7 +178,7 @@ void CpuProfiler::GetFrameStack(JSThread *thread)
         JSTaggedType *sp_ = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
         InterpretedFrameHandler frameHandler(sp_);
         for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
-            if (frameHandler.IsBreakFrame()) {
+            if (frameHandler.IsEntryFrame()) {
                 continue;
             }
             auto *method = frameHandler.GetMethod();

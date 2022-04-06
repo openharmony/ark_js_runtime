@@ -101,6 +101,15 @@
 //   |  prevLeaveFrameFp    |   v
 //   +--------------------------+
 
+//   Interpreted Entry Frame(alias InterpretedEntryFrame) layout
+//   +--------------------------+
+//   |      base.type       |   ^
+//   |----------------------|   |
+//   |      base.prev       | InterpretedEntryFrame
+//   |----------------------|   |
+//   |          pc          |   v
+//   +--------------------------+
+
 // ```
 // address space grow from high address to low address.we add new field  **FrameType** ,
 // the field's value is INTERPRETER_FRAME(represent interpreter frame).
@@ -215,6 +224,7 @@ enum class FrameType: uintptr_t {
     OPTIMIZED_LEAVE_FRAME = 3,
     INTERPRETER_FAST_NEW_FRAME = 4,
     ASM_LEAVE_FRAME = 5,
+    INTERPRETER_ENTRY_FRAME = 6,
 };
 
 class FrameConstants {
@@ -432,6 +442,24 @@ struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTyp
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(AsmInterpretedFrame), AsmInterpretedFrame::SizeArch32, AsmInterpretedFrame::SizeArch64);
 static_assert(sizeof(AsmInterpretedFrame) % sizeof(uint64_t) == 0u);  // the size should be the multiple of 8 bytes
+
+class InterpretedEntryFrame {
+public:
+    InterpretedEntryFrame() = default;
+    ~InterpretedEntryFrame() = default;
+    const uint8_t *pc {nullptr};
+    InterpretedFrameBase base;
+
+    inline JSTaggedType* GetPrevFrameFp()
+    {
+        return base.prev;
+    }
+
+    static InterpretedEntryFrame* GetFrameFromSp(JSTaggedType *sp)
+    {
+        return reinterpret_cast<InterpretedEntryFrame *>(sp) - 1;
+    }
+};
 
 struct OptimizedLeaveFrame {
     FrameType type;

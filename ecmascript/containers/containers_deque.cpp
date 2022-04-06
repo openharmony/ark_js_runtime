@@ -19,7 +19,7 @@
 #include "ecmascript/base/typed_array_helper.h"
 #include "ecmascript/base/typed_array_helper-inl.h"
 #include "ecmascript/ecma_vm.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/object_factory.h"
@@ -188,19 +188,19 @@ JSTaggedValue ContainersDeque::ForEach(EcmaRuntimeCallInfo *argv)
     }
     JSHandle<JSTaggedValue> thisArgHandle = GetCallArg(argv, 1);
 
-    InternalCallParams *arguments = thread->GetInternalCallParams();
     uint32_t first = deque->GetFirst();
     uint32_t last = deque->GetLast();
 
     JSHandle<TaggedArray> elements(thread, deque->GetElements());
     uint32_t capacity = elements->GetLength();
-    
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     uint32_t index = 0;
     while (first != last) {
         JSTaggedValue kValue = deque->Get(index);
-        arguments->MakeArgv(kValue, JSTaggedValue(index), thisHandle.GetTaggedValue());
-        JSTaggedValue funcResult =
-            JSFunction::Call(thread, callbackFnHandle, thisArgHandle, 3, arguments->GetArgv()); // 3: three args
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, callbackFnHandle, thisArgHandle, undefined, 3); // 3:three args
+        info.SetCallArg(kValue, JSTaggedValue(index), thisHandle.GetTaggedValue());
+        JSTaggedValue funcResult = JSFunction::Call(&info);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, funcResult);
         ASSERT(capacity != 0);
         first = (first + 1) % capacity;

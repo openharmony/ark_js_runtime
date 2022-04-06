@@ -17,7 +17,7 @@
 #include "ecma_macros.h"
 #include "ecma_vm.h"
 #include "ecmascript/accessor_data.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "global_env.h"
 #include "js_symbol.h"
 #include "object_factory.h"
@@ -56,14 +56,15 @@ JSHandle<JSTaggedValue> JSIterator::GetIterator(JSThread *thread, const JSHandle
     // 1.ReturnIfAbrupt(obj).
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, obj);
     // 3.Let iterator be Call(method,obj).
-    JSTaggedValue ret = JSFunction::Call(thread, method, obj, 0, nullptr);
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, method, obj, undefined, 0);
+    JSTaggedValue ret = JSFunction::Call(&info);
     JSHandle<JSTaggedValue> iter(thread, ret);
     // 4.ReturnIfAbrupt(iterator).
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, iter);
     // 5.If Type(iterator) is not Object, throw a TypeError exception
     if (!iter->IsECMAObject()) {
-        JSHandle<JSTaggedValue> undefinedHandle(thread, JSTaggedValue::Undefined());
-        THROW_TYPE_ERROR_AND_RETURN(thread, "", undefinedHandle);
+        THROW_TYPE_ERROR_AND_RETURN(thread, "", undefined);
     }
     return iter;
 }  // namespace panda::ecmascript
@@ -74,7 +75,9 @@ JSHandle<JSObject> JSIterator::IteratorNext(JSThread *thread, const JSHandle<JST
     JSHandle<JSTaggedValue> key(thread->GlobalConstants()->GetHandledNextString());
     JSHandle<JSTaggedValue> next(JSObject::GetMethod(thread, iter, key));
     ASSERT(next->IsCallable());
-    JSTaggedValue ret = JSFunction::Call(thread, next, iter, 0, nullptr);
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, next, iter, undefined, 0);
+    JSTaggedValue ret = JSFunction::Call(&info);
     JSHandle<JSObject> result(thread, ret);
     // 3.ReturnIfAbrupt(result)
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, result);
@@ -92,10 +95,10 @@ JSHandle<JSObject> JSIterator::IteratorNext(JSThread *thread, const JSHandle<JST
     JSHandle<JSTaggedValue> key(thread->GlobalConstants()->GetHandledNextString());
     JSHandle<JSTaggedValue> next(JSObject::GetMethod(thread, iter, key));
     ASSERT(next->IsCallable());
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgv(value);
-    JSTaggedValue ret = JSFunction::Call(thread, next, iter, 1, arguments->GetArgv());
-
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, next, iter, undefined, 1);
+    info.SetCallArg(value.GetTaggedValue());
+    JSTaggedValue ret = JSFunction::Call(&info);
     JSHandle<JSObject> result(thread, ret);
     // 3.ReturnIfAbrupt(result)
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, result);
@@ -167,7 +170,9 @@ JSHandle<JSTaggedValue> JSIterator::IteratorClose(JSThread *thread, const JSHand
         return completion;
     }
     // 6.Let innerResult be Call(return, iterator, «‍ »).
-    JSTaggedValue ret = JSFunction::Call(thread, returnFunc, iter, 0, nullptr);
+    JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
+    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, returnFunc, iter, undefined, 0);
+    JSTaggedValue ret = JSFunction::Call(&info);
     if (!exceptionOnThread.IsEmpty()) {
         thread->SetException(exceptionOnThread.GetTaggedValue());
     }
@@ -189,8 +194,7 @@ JSHandle<JSTaggedValue> JSIterator::IteratorClose(JSThread *thread, const JSHand
     }
     // 9.If Type(innerResult.[[value]]) is not Object, throw a TypeError exception.
     if (!innerResult->IsECMAObject()) {
-        JSHandle<JSTaggedValue> undefinedHandle(thread, JSTaggedValue::Undefined());
-        THROW_TYPE_ERROR_AND_RETURN(thread, "", undefinedHandle);
+        THROW_TYPE_ERROR_AND_RETURN(thread, "", undefined);
     }
     if (!exceptionOnThread.IsEmpty()) {
         thread->SetException(exceptionOnThread.GetTaggedValue());

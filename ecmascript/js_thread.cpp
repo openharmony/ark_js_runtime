@@ -16,7 +16,6 @@
 #include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
 #include "ecmascript/global_env_constants-inl.h"
 #include "ecmascript/ic/properties_cache.h"
-#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/mem/machine_code.h"
 #include "include/panda_vm.h"
@@ -47,7 +46,6 @@ JSThread::JSThread(Runtime *runtime, PandaVM *vm)
     SetLanguageContext(runtime->GetLanguageContext(panda_file::SourceLang::ECMASCRIPT));
     auto chunk = EcmaVM::Cast(vm)->GetChunk();
     globalStorage_ = chunk->New<EcmaGlobalStorage>(chunk);
-    internalCallParams_ = new InternalCallParams();
     propertiesCache_ = new PropertiesCache();
     vmThreadControl_ = new VmThreadControl();
 }
@@ -67,10 +65,6 @@ JSThread::~JSThread()
     glueData_.frameBase_ = nullptr;
     nativeAreaAllocator_ = nullptr;
     heapRegionAllocator_ = nullptr;
-    if (internalCallParams_ != nullptr) {
-        delete internalCallParams_;
-        internalCallParams_ = nullptr;
-    }
     if (propertiesCache_ != nullptr) {
         delete propertiesCache_;
         propertiesCache_ = nullptr;
@@ -118,8 +112,6 @@ void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
     // visit stack roots
     FrameIterator iterator(glueData_.currentFrame_, this);
     iterator.Iterate(v0, v1);
-    // visit internal call params；
-    internalCallParams_->Iterate(v1);
     // visit tagged handle storage roots
     if (currentHandleStorageIndex_ != -1) {
         int32_t nid = currentHandleStorageIndex_;

@@ -17,6 +17,7 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_date.h"
 #include "ecmascript/js_date_time_format.h"
 #include "ecmascript/js_function.h"
@@ -175,7 +176,10 @@ JSTaggedValue BuiltinsDate::ToJSON(EcmaRuntimeCallInfo *argv)
         }
     }
     JSHandle<JSTaggedValue> calleeKey(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("toISOString"));
-    return JSFunction::Invoke(thread, objectHandle, calleeKey, 0, nullptr);
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, objectHandle, undefined, 0);
+    return JSFunction::Invoke(&info, calleeKey);
 }
 
 // 20.4.4.44

@@ -21,13 +21,12 @@
 #include "ecmascript/object_factory.h"
 
 namespace panda::ecmascript {
+class EcmaRuntimeCallInfo;
 class SlowRuntimeHelper {
 public:
-    static JSTaggedValue NewObject(JSThread *thread, JSHandle<JSTaggedValue> func, JSHandle<JSTaggedValue> newTarget,
-                                   uint32_t argc, const JSTaggedType argv[]);
+    static JSTaggedValue NewObject(EcmaRuntimeCallInfo *info);
 
-    static JSTaggedValue CallBoundFunction(JSThread *thread, JSHandle<JSBoundFunction> boundFunc,
-                                           JSHandle<JSTaggedValue> obj);
+    static JSTaggedValue CallBoundFunction(EcmaRuntimeCallInfo *info);
 
     static void SaveFrameToContext(JSThread *thread, JSHandle<GeneratorContext> context);
 

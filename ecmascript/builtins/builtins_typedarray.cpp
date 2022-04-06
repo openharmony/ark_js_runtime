@@ -22,7 +22,7 @@
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_function.h"
@@ -183,9 +183,8 @@ JSTaggedValue BuiltinsTypedArray::From(EcmaRuntimeCallInfo *argv)
             }
         }
         int32_t len = vec.size();
-        InternalCallParams *arguments = thread->GetInternalCallParams();
-        arguments->MakeArgv(JSTaggedValue(len));
-        JSHandle<JSObject> targetObj = TypedArrayHelper::TypedArrayCreate(thread, thisHandle, 1, arguments->GetArgv());
+        JSTaggedType args[1] = {JSTaggedValue(len).GetRawData()};
+        JSHandle<JSObject> targetObj = TypedArrayHelper::TypedArrayCreate(thread, thisHandle, 1, args);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         //   d. Let k be 0.
         //   e. Repeat, while k < len
@@ -198,14 +197,17 @@ JSTaggedValue BuiltinsTypedArray::From(EcmaRuntimeCallInfo *argv)
         //     vi. Set k to k + 1.
         JSMutableHandle<JSTaggedValue> tKey(thread, JSTaggedValue::Undefined());
         JSMutableHandle<JSTaggedValue> mapValue(thread, JSTaggedValue::Undefined());
+        const size_t argsLength = 2;
         double k = 0;
+        JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
         while (k < len) {
             tKey.Update(JSTaggedValue(k));
             JSHandle<JSTaggedValue> kValue = vec[k];
             if (mapping) {
-                arguments->MakeArgv(kValue, tKey);
-                JSTaggedValue callResult =
-                    JSFunction::Call(thread, mapfn, thisArgHandle, 2, arguments->GetArgv());  // 2: two args
+                EcmaRuntimeCallInfo info =
+                    EcmaInterpreter::NewRuntimeCallInfo(thread, mapfn, thisArgHandle, undefined, argsLength);
+                info.SetCallArg(kValue.GetTaggedValue(), tKey.GetTaggedValue());
+                JSTaggedValue callResult = JSFunction::Call(&info);
                 RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
                 mapValue.Update(callResult);
             } else {
@@ -236,9 +238,8 @@ JSTaggedValue BuiltinsTypedArray::From(EcmaRuntimeCallInfo *argv)
     double len = tLen.GetNumber();
 
     // 10. Let targetObj be ? TypedArrayCreate(C, « len »).
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgv(JSTaggedValue(len));
-    JSHandle<JSObject> targetObj = TypedArrayHelper::TypedArrayCreate(thread, thisHandle, 1, arguments->GetArgv());
+    JSTaggedType args[1] = {JSTaggedValue(len).GetRawData()};
+    JSHandle<JSObject> targetObj = TypedArrayHelper::TypedArrayCreate(thread, thisHandle, 1, args);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 11. Let k be 0.
     // 12. Repeat, while k < len
@@ -250,7 +251,9 @@ JSTaggedValue BuiltinsTypedArray::From(EcmaRuntimeCallInfo *argv)
     //   e. Perform ? Set(targetObj, Pk, mappedValue, true).
     //   f. Set k to k + 1.
     JSMutableHandle<JSTaggedValue> tKey(thread, JSTaggedValue::Undefined());
+    const size_t argsLength = 2;
     double k = 0;
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     while (k < len) {
         tKey.Update(JSTaggedValue(k));
         JSHandle<JSTaggedValue> kKey(JSTaggedValue::ToString(thread, tKey));
@@ -258,9 +261,10 @@ JSTaggedValue BuiltinsTypedArray::From(EcmaRuntimeCallInfo *argv)
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         JSHandle<JSTaggedValue> mapValue;
         if (mapping) {
-            arguments->MakeArgv(kValue, tKey);
-            JSTaggedValue callResult =
-                JSFunction::Call(thread, mapfn, thisArgHandle, 2, arguments->GetArgv());  // 2: two args
+            EcmaRuntimeCallInfo info =
+                EcmaInterpreter::NewRuntimeCallInfo(thread, mapfn, thisArgHandle, undefined, argsLength);
+            info.SetCallArg(kValue.GetTaggedValue()), tKey.GetTaggedValue();
+            JSTaggedValue callResult = JSFunction::Call(&info);
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
             mapValue = JSHandle<JSTaggedValue>(thread, callResult);
         } else {
@@ -291,9 +295,8 @@ JSTaggedValue BuiltinsTypedArray::Of(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "the this value is not a Constructor.", JSTaggedValue::Exception());
     }
     // 5. Let newObj be TypedArrayCreate(C, « len »).
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgv(JSTaggedValue(len));
-    JSHandle<JSObject> newObj = TypedArrayHelper::TypedArrayCreate(thread, thisHandle, 1, arguments->GetArgv());
+    JSTaggedType args[1] = {JSTaggedValue(len).GetRawData()};
+    JSHandle<JSObject> newObj = TypedArrayHelper::TypedArrayCreate(thread, thisHandle, 1, args);
     // 6. ReturnIfAbrupt(newObj).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 7. Let k be 0.
@@ -485,16 +488,18 @@ JSTaggedValue BuiltinsTypedArray::Every(EcmaRuntimeCallInfo *argv)
     //     v. If testResult is false, return false.
     //   e. Increase k by 1.
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
-    InternalCallParams *arguments = thread->GetInternalCallParams();
+    const size_t argsLength = 3;
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     int32_t k = 0;
     while (k < len) {
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         JSHandle<JSTaggedValue> kValue = JSTaggedValue::GetProperty(thread, thisObjVal, k).GetValue();
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         key.Update(JSTaggedValue(k));
-        arguments->MakeArgv(kValue, key, thisObjVal);
-        JSTaggedValue callResult =
-            JSFunction::Call(thread, callbackFnHandle, thisArgHandle, 3, arguments->GetArgv());  // 3: three args
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, callbackFnHandle, thisArgHandle, undefined, argsLength);
+        info.SetCallArg(kValue.GetTaggedValue(), key.GetTaggedValue(), thisObjVal.GetTaggedValue());
+        JSTaggedValue callResult = JSFunction::Call(&info);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         bool boolResult = callResult.ToBoolean();
         if (!boolResult) {
@@ -560,15 +565,17 @@ JSTaggedValue BuiltinsTypedArray::Filter(EcmaRuntimeCallInfo *argv)
     //   g. Increase k by 1.
     int32_t captured = 0;
     JSMutableHandle<JSTaggedValue> tKey(thread, JSTaggedValue::Undefined());
-    InternalCallParams *arguments = thread->GetInternalCallParams();
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     for (int32_t k = 0; k < len; k++) {
         tKey.Update(JSTaggedValue(k));
         JSHandle<JSTaggedValue> kKey(JSTaggedValue::ToString(thread, tKey));
         JSHandle<JSTaggedValue> kValue = JSTaggedValue::GetProperty(thread, thisHandle, kKey).GetValue();
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-        arguments->MakeArgv(kValue, tKey, thisHandle);
-        JSTaggedValue callResult =
-            JSFunction::Call(thread, callbackFnHandle, thisArgHandle, 3, arguments->GetArgv());  // 3: three args
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, callbackFnHandle, thisArgHandle,
+            undefined, 3); // 3: «kValue, k, O»
+        info.SetCallArg(kValue.GetTaggedValue(), tKey.GetTaggedValue(), thisHandle.GetTaggedValue());
+        JSTaggedValue callResult = JSFunction::Call(&info);
         bool testResult = callResult.ToBoolean();
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         if (testResult) {
@@ -577,8 +584,8 @@ JSTaggedValue BuiltinsTypedArray::Filter(EcmaRuntimeCallInfo *argv)
         }
     }
     // es11 9. Let A be ? TypedArraySpeciesCreate(O, « captured »).
-    arguments->MakeArgv(JSTaggedValue(captured));
-    JSHandle<JSObject> newArrObj = TypedArrayHelper::TypedArraySpeciesCreate(thread, thisObj, 1, arguments->GetArgv());
+    JSTaggedType args[1] = {JSTaggedValue(captured).GetRawData()};
+    JSHandle<JSObject> newArrObj = TypedArrayHelper::TypedArraySpeciesCreate(thread, thisObj, 1, args);
     // 15. ReturnIfAbrupt(A).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 16. Let n be 0.
@@ -663,15 +670,17 @@ JSTaggedValue BuiltinsTypedArray::ForEach(EcmaRuntimeCallInfo *argv)
     //     iv. ReturnIfAbrupt(funcResult).
     //   e. Increase k by 1.
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
-    InternalCallParams *arguments = thread->GetInternalCallParams();
+    const size_t argsLength = 3;
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     int32_t k = 0;
     while (k < len) {
         JSHandle<JSTaggedValue> kValue = JSTaggedValue::GetProperty(thread, thisObjVal, k).GetValue();
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         key.Update(JSTaggedValue(k));
-        arguments->MakeArgv(kValue, key, thisObjVal);
-        JSTaggedValue funcResult =
-            JSFunction::Call(thread, callbackFnHandle, thisArgHandle, 3, arguments->GetArgv());  // 3: three args
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, callbackFnHandle, thisArgHandle, undefined, argsLength);
+        info.SetCallArg(kValue.GetTaggedValue(), key.GetTaggedValue(), thisObjVal.GetTaggedValue());
+        JSTaggedValue funcResult = JSFunction::Call(&info);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, funcResult);
         k++;
     }
@@ -863,9 +872,8 @@ JSTaggedValue BuiltinsTypedArray::Map(EcmaRuntimeCallInfo *argv)
     // 6. If thisArg was supplied, let T be thisArg; else let T be undefined.
     JSHandle<JSTaggedValue> thisArgHandle = GetCallArg(argv, 1);
     // es11 5. Let A be ? TypedArraySpeciesCreate(O, « len »).
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgv(JSTaggedValue(len));
-    JSHandle<JSObject> newArrObj = TypedArrayHelper::TypedArraySpeciesCreate(thread, thisObj, 1, arguments->GetArgv());
+    JSTaggedType args[1] = {JSTaggedValue(len).GetRawData()};
+    JSHandle<JSObject> newArrObj = TypedArrayHelper::TypedArraySpeciesCreate(thread, thisObj, 1, args); // 1: one arg.
     // 11. ReturnIfAbrupt(A).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
@@ -881,13 +889,16 @@ JSTaggedValue BuiltinsTypedArray::Map(EcmaRuntimeCallInfo *argv)
     //   h. Increase k by 1.
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> mapValue(thread, JSTaggedValue::Undefined());
+    const size_t argsLength = 3;
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     for (int32_t k = 0; k < len; k++) {
         key.Update(JSTaggedValue(k));
         JSHandle<JSTaggedValue> kValue = JSTaggedValue::GetProperty(thread, thisHandle, key).GetValue();
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-        arguments->MakeArgv(kValue, key, thisHandle);
-        JSTaggedValue callResult =
-            JSFunction::Call(thread, callbackfnHandle, thisArgHandle, 3, arguments->GetArgv());  // 3: three args
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, callbackfnHandle, thisArgHandle, undefined, argsLength);
+        info.SetCallArg(kValue.GetTaggedValue(), key.GetTaggedValue(), thisHandle.GetTaggedValue());
+        JSTaggedValue callResult = JSFunction::Call(&info);
         mapValue.Update(callResult);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         JSTaggedValue::SetProperty(thread, JSHandle<JSTaggedValue>(newArrObj), key, mapValue, true);
@@ -1193,9 +1204,8 @@ JSTaggedValue BuiltinsTypedArray::Slice(EcmaRuntimeCallInfo *argv)
     // 11. Let count be max(final – k, 0).
     double count = (final - k) > 0 ? (final - k) : 0;
     // es11 9. Let A be ? TypedArraySpeciesCreate(O, « count »).
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgv(JSTaggedValue(count));
-    JSHandle<JSObject> newArrObj = TypedArrayHelper::TypedArraySpeciesCreate(thread, thisObj, 1, arguments->GetArgv());
+    JSTaggedType args[1] = {JSTaggedValue(count).GetRawData()};
+    JSHandle<JSObject> newArrObj = TypedArrayHelper::TypedArraySpeciesCreate(thread, thisObj, 1, args);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 17. Let srcName be the String value of O’s [[TypedArrayName]] internal slot.
     // 18. Let srcType be the String value of the Element Type value in Table 49 for srcName.
@@ -1399,10 +1409,11 @@ JSTaggedValue BuiltinsTypedArray::Subarray(EcmaRuntimeCallInfo *argv)
     // 5. Let buffer be the value of O’s [[ViewedArrayBuffer]] internal slot.
     JSTaggedValue buffer = JSTypedArray::Cast(*thisObj)->GetViewedArrayBuffer();
     // 22. Return Construct(constructor, argumentsList).
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgv(buffer, JSTaggedValue(beginByteOffset), JSTaggedValue(newLength));
-    JSHandle<JSObject> newArr =
-        TypedArrayHelper::TypedArraySpeciesCreate(thread, thisObj, 3, arguments->GetArgv());  // 3: three args
+    const size_t argsLength = 3;
+    JSTaggedType args[argsLength] = {
+        buffer.GetRawData(), JSTaggedValue(beginByteOffset).GetRawData(), JSTaggedValue(newLength).GetRawData()
+    };
+    JSHandle<JSObject> newArr = TypedArrayHelper::TypedArraySpeciesCreate(thread, thisObj, argsLength, args);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return newArr.GetTaggedValue();
 }

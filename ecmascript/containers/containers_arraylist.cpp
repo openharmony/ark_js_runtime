@@ -17,7 +17,6 @@
 #include "ecmascript/base/array_helper.h"
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/ecma_vm.h"
-#include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_array.h"

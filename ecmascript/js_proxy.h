@@ -17,6 +17,7 @@
 #define ECMASCRIPT_JSPROXY_H
 
 #include "ecmascript/tagged_array.h"
+#include "ecmascript/ecma_runtime_call_info.h"
 #include "js_object.h"
 
 namespace panda::ecmascript {
@@ -84,12 +85,9 @@ public:
     JSHandle<JSTaggedValue> GetSourceTarget(JSThread *thread) const;
 
     // ES6 9.5.13 [[Call]] (thisArgument, argumentsList)
-    static JSTaggedValue CallInternal(JSThread *thread, const JSHandle<JSProxy> &proxy,
-                                      const JSHandle<JSTaggedValue> &thisArg, uint32_t argc,
-                                      const JSTaggedType argv[]);
+    static JSTaggedValue CallInternal(EcmaRuntimeCallInfo *info);
     // ES6 9.5.14 [[Construct]] ( argumentsList, newTarget)
-    static JSTaggedValue ConstructInternal(JSThread *thread, const JSHandle<JSProxy> &proxy, uint32_t argc,
-                                           const JSTaggedType argv[], const JSHandle<JSTaggedValue> &newTarget);
+    static JSTaggedValue ConstructInternal(EcmaRuntimeCallInfo *info);
 
     bool IsArray(JSThread *thread) const;
 

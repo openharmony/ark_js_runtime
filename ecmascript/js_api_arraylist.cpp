@@ -17,7 +17,7 @@
 #include "js_api_arraylist_iterator.h"
 #include "js_iterator.h"
 #include "ecmascript/js_function.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/object_factory.h"
 
@@ -229,16 +229,17 @@ JSTaggedValue JSAPIArrayList::ReplaceAllElements(JSThread *thread, const JSHandl
     JSHandle<JSAPIArrayList> arraylist = JSHandle<JSAPIArrayList>::Cast(thisHandle);
     uint32_t length = arraylist->GetSize();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-
+    const size_t argsLength = 3;
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     for (uint32_t k = 0; k < length; k++) {
         JSHandle<JSTaggedValue> kValue = JSHandle<JSTaggedValue>(thread, arraylist->Get(thread, k));
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
         key.Update(JSTaggedValue(k));
-        arguments->MakeArgv(kValue, key, thisHandle);
-        JSTaggedValue funcResult =
-            JSFunction::Call(thread, callbackFn, thisArg, 3, arguments->GetArgv()); // 3: three args
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, callbackFn, thisArg, undefined, argsLength);
+        info.SetCallArg(kValue.GetTaggedValue(), key.GetTaggedValue(), thisHandle.GetTaggedValue());
+        JSTaggedValue funcResult = JSFunction::Call(&info);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, funcResult);
 
         arraylist->Set(thread, k, funcResult);
@@ -302,15 +303,16 @@ JSTaggedValue JSAPIArrayList::ForEach(JSThread *thread, const JSHandle<JSTaggedV
     JSHandle<JSAPIArrayList> arrayList = JSHandle<JSAPIArrayList>::Cast(thisHandle);
     uint32_t length = arrayList->GetSize();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-
+    const size_t argsLength = 3;
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     for (uint32_t k = 0; k < length; k++) {
         JSHandle<JSTaggedValue> kValue = JSHandle<JSTaggedValue>(thread, arrayList->Get(thread, k));
 
         key.Update(JSTaggedValue(k));
-        arguments->MakeArgv(kValue, key, thisHandle);
-        JSTaggedValue funcResult =
-            JSFunction::Call(thread, callbackFn, thisArg, 3, arguments->GetArgv()); // 3: three args
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, callbackFn, thisArg, undefined, argsLength);
+        info.SetCallArg(kValue.GetTaggedValue(), key.GetTaggedValue(), thisHandle.GetTaggedValue());
+        JSTaggedValue funcResult = JSFunction::Call(&info);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, funcResult);
         if (static_cast<int>(length) != arrayList->GetSize()) {
             length = arrayList->GetSize();

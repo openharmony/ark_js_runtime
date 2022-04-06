@@ -104,24 +104,14 @@ JSTaggedValue InvokeCache::Construct(JSThread *thread, JSTaggedValue firstValue,
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj = factory->NewJSObject(instanceHClass);
-
-    CVector<JSTaggedType> values;
-    values.reserve(length);
-
+    EcmaRuntimeCallInfo info =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, JSHandle<JSTaggedValue>(constructor), JSHandle<JSTaggedValue>(obj),
+        JSHandle<JSTaggedValue>(newTgt), length);
     InterpretedFrameHandler frameHandler(thread);
-    CallParams params;
-    params.callTarget = ECMAObject::Cast(*constructor);
-    params.newTarget = newTgt.GetTaggedType();
-    params.thisArg = obj.GetTaggedType();
-    params.argc = length;
-    for (uint32_t i = 0; i < length; ++i) {
-        JSTaggedValue value = frameHandler.GetVRegValue(firstArgIdx + i);
-        values.emplace_back(value.GetRawData());
+    for (size_t i = 0; i < length; i++) {
+        info.SetCallArg(i, frameHandler.GetVRegValue(firstArgIdx + i));
     }
-    params.argv = values.data();
-
-    EcmaInterpreter::Execute(thread, params);
-
+    EcmaInterpreter::Execute(&info);
     return obj.GetTaggedValue();
 }
 

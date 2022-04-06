@@ -18,7 +18,7 @@
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_object-inl.h"
@@ -146,10 +146,10 @@ HWTEST_F_L0(JSFunctionTest, Invoke)
     calleeFunc->SetCallable(true);
     JSHandle<JSTaggedValue> calleeValue(calleeFunc);
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(callee), calleeKey, calleeValue);
-
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgv(JSTaggedValue(1));
-    JSTaggedValue res = JSFunction::Invoke(thread, callee, calleeKey, 1, arguments->GetArgv());
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, callee, undefined, 1);
+    info.SetCallArg(JSTaggedValue(1));
+    JSTaggedValue res = JSFunction::Invoke(&info, calleeKey);
 
     JSTaggedValue ruler = BuiltinsBase::GetTaggedBoolean(true);
     EXPECT_EQ(res.GetRawData(), ruler.GetRawData());

@@ -16,7 +16,7 @@
 #include "ecmascript/builtins/builtins_promise_handler.h"
 
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_async_function.h"
@@ -204,10 +204,11 @@ JSTaggedValue BuiltinsPromiseHandler::ResolveElementFunction(EcmaRuntimeCallInfo
         JSHandle<JSArray> jsArrayValues = JSArray::CreateArrayFromList(thread, arrayValues);
         // b. Return Call(promiseCapability.[[Resolve]], undefined, «valuesArray»).
         JSHandle<JSTaggedValue> capaResolve(thread, capa->GetResolve());
-        JSHandle<JSTaggedValue> undefine = globalConst->GetHandledUndefined();
-        InternalCallParams *arguments = thread->GetInternalCallParams();
-        arguments->MakeArgv(jsArrayValues);
-        return JSFunction::Call(thread, capaResolve, undefine, 1, arguments->GetArgv());
+        JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, capaResolve, undefined, undefined, 1);
+        info.SetCallArg(jsArrayValues.GetTaggedValue());
+        return JSFunction::Call(&info);
     }
     // 11. Return undefined.
     return JSTaggedValue::Undefined();

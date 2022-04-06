@@ -16,7 +16,7 @@
 #include "ecmascript/builtins/builtins_weak_map.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_map_iterator.h"
 #include "ecmascript/js_weak_container.h"
 #include "ecmascript/linked_hash_table.h"
@@ -76,6 +76,7 @@ JSTaggedValue BuiltinsWeakMap::WeakMapConstructor(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> next = JSIterator::IteratorStep(thread, iter);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, next.GetTaggedValue());
     JSMutableHandle<JSTaggedValue> status(thread, JSTaggedValue::Undefined());
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     while (!next->IsFalse()) {
         // ReturnIfAbrupt(next).
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, next.GetTaggedValue());
@@ -109,10 +110,11 @@ JSTaggedValue BuiltinsWeakMap::WeakMapConstructor(EcmaRuntimeCallInfo *argv)
         }
 
         // Let status be Call(adder, weakMap, «nextValue.[[value]]»).
-        InternalCallParams *arguments = thread->GetInternalCallParams();
-        arguments->MakeArgv(key, value);
-        JSFunction::Call(thread,
-            adder, JSHandle<JSTaggedValue>(weakMap), 2, arguments->GetArgv());  // 2: key and value pair
+        const size_t argsLength = 2;  // 2: key and value pair
+        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, adder, JSHandle<JSTaggedValue>(weakMap),
+            undefined, argsLength);
+        info.SetCallArg(key.GetTaggedValue(), value.GetTaggedValue());
+        JSFunction::Call(&info);
         // If status is an abrupt completion, return IteratorClose(iter, status).
         if (thread->HasPendingException()) {
             return JSIterator::IteratorCloseAndReturn(thread, iter);

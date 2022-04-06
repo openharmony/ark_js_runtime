@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_INTERPRETER_INTERPRETER_H
 #define ECMASCRIPT_INTERPRETER_INTERPRETER_H
 
+#include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_handle.h"
@@ -29,9 +30,11 @@ class GeneratorContext;
 
 // NOLINTNEXTLINE(bugprone-sizeof-expression)
 #if ECMASCRIPT_COMPILE_ASM_INTERPRETER
-static const uint32_t FRAME_STATE_SIZE = sizeof(AsmInterpretedFrame) / sizeof(uint64_t);
+static const uint32_t INTERPRETER_FRAME_STATE_SIZE = sizeof(AsmInterpretedFrame) / sizeof(uint64_t);
+static const uint32_t INTERPRETER_ENTRY_FRAME_STATE_SIZE = sizeof(InterpretedEntryFrame) / sizeof(uint64_t);
 #else
-static const uint32_t FRAME_STATE_SIZE = sizeof(InterpretedFrame) / sizeof(uint64_t);
+static const uint32_t INTERPRETER_FRAME_STATE_SIZE = sizeof(InterpretedFrame) / sizeof(uint64_t);
+static const uint32_t INTERPRETER_ENTRY_FRAME_STATE_SIZE = sizeof(InterpretedEntryFrame) / sizeof(uint64_t);
 #endif
 
 static constexpr uint32_t RESERVED_CALL_ARGCOUNT = 3;
@@ -39,24 +42,16 @@ static constexpr uint32_t RESERVED_INDEX_CALL_TARGET = 0;
 static constexpr uint32_t RESERVED_INDEX_NEW_TARGET = 1;
 static constexpr uint32_t RESERVED_INDEX_THIS = 2;
 
-struct CallParams {
-    ECMAObject *callTarget;
-    JSTaggedType newTarget;
-    JSTaggedType thisArg;
-    const JSTaggedType *argv;
-    uint32_t argc;
-};
-
 class EcmaInterpreter {
 public:
     static const uint32_t METHOD_HOTNESS_THRESHOLD = 512;
     enum ActualNumArgsOfCall : uint8_t { CALLARG0 = 0, CALLARG1, CALLARGS2, CALLARGS3 };
 
-    static inline JSTaggedValue Execute(JSThread *thread, const JSHandle<JSFunction> &func,
-                                        const JSHandle<JSTaggedValue> &obj,
-                                        const JSHandle<JSTaggedValue> &newTgt, InternalCallParams *arguments);
-    static inline JSTaggedValue Execute(JSThread *thread, const CallParams& params);
-    static inline JSTaggedValue ExecuteNative(JSThread *thread, const CallParams& params);
+    static inline JSTaggedValue Execute(EcmaRuntimeCallInfo *info);
+    static inline JSTaggedValue ExecuteNative(EcmaRuntimeCallInfo *info);
+    static EcmaRuntimeCallInfo NewRuntimeCallInfo(
+        JSThread *thread, JSHandle<JSTaggedValue> func, JSHandle<JSTaggedValue> thisObj,
+        JSHandle<JSTaggedValue> newTarget, size_t numArgs);
     static inline JSTaggedValue GeneratorReEnterInterpreter(JSThread *thread, JSHandle<GeneratorContext> context);
     static inline void ChangeGenContext(JSThread *thread, JSHandle<GeneratorContext> context);
     static inline void ResumeContext(JSThread *thread);
@@ -72,7 +67,6 @@ public:
     static inline JSTaggedValue GetThisFunction(JSTaggedType *sp);
     static inline JSTaggedValue GetNewTarget(JSTaggedType *sp);
     static inline uint32_t GetNumArgs(JSTaggedType *sp, uint32_t restIdx, uint32_t &startIdx);
-    static inline JSTaggedType* GetCurrentFrameState(JSTaggedType *sp);
     static inline JSTaggedValue GetThisObjectFromFastNewFrame(JSTaggedType *sp);
     static inline bool IsFastNewFrameEnter(JSMethod *method);
     static inline bool IsFastNewFrameExit(JSTaggedType *sp);

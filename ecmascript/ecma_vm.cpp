@@ -31,7 +31,6 @@
 #include "ecmascript/global_env.h"
 #include "ecmascript/global_env_constants-inl.h"
 #include "ecmascript/global_env_constants.h"
-#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jspandafile/js_pandafile.h"
@@ -403,33 +402,36 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
     notificationManager_->LoadModuleEvent(jsPandaFile->GetJSPandaFileDesc());
 
     JSHandle<JSFunction> func = JSHandle<JSFunction>(thread_, program->GetMainFunction());
-    JSHandle<JSTaggedValue> newTarget(thread_, JSTaggedValue::Undefined());
-    JSHandle<TaggedArray> jsargs = factory_->NewTaggedArray(args.size());
+    const size_t argsLength = args.size();
+    JSHandle<TaggedArray> jsargs = factory_->NewTaggedArray(argsLength);
     uint32_t i = 0;
     for (const std::string &str : args) {
         JSHandle<JSTaggedValue> strobj(factory_->NewFromStdString(str));
         jsargs->Set(thread_, i++, strobj);
     }
 
-    InternalCallParams *params = thread_->GetInternalCallParams();
-    params->MakeArgList(*jsargs);
-    JSRuntimeOptions options = this->GetJSOptions();
     JSHandle<JSTaggedValue> global = GlobalEnv::Cast(globalEnv_.GetTaggedObject())->GetJSGlobalObject();
-
     if (jsPandaFile->IsModule()) {
         global = JSHandle<JSTaggedValue>(thread_, JSTaggedValue::Undefined());
         JSHandle<SourceTextModule> module = moduleManager_->HostGetImportedModule(jsPandaFile->GetJSPandaFileDesc());
         func->SetModule(thread_, module);
     }
+
+    JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info =
+        EcmaInterpreter::NewRuntimeCallInfo(thread_, JSHandle<JSTaggedValue>(func), global, undefined, argsLength);
+    info.SetCallArg(argsLength, jsargs);
+
+    JSRuntimeOptions options = this->GetJSOptions();
     if (options.IsEnableCpuProfiler()) {
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
         CpuProfiler *profiler = CpuProfiler::GetInstance();
         profiler->CpuProfiler::StartCpuProfiler(this, "");
-        EcmaInterpreter::Execute(thread_, func, global, newTarget, params);
+        EcmaInterpreter::Execute(&info);
         profiler->CpuProfiler::StopCpuProfiler();
 #endif
     } else {
-        EcmaInterpreter::Execute(thread_, func, global, newTarget, params);
+        EcmaInterpreter::Execute(&info);
     }
     if (!thread_->HasPendingException()) {
         job::MicroJobQueue::ExecutePendingJob(thread_, GetMicroJobQueue());

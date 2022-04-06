@@ -45,7 +45,7 @@ uint32_t DebuggerApi::GetStackDepth(const EcmaVM *ecmaVm)
     uint32_t count = 0;
     InterpretedFrameHandler frameHandler(ecmaVm->GetJSThread());
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
-        if (frameHandler.IsBreakFrame()) {
+        if (frameHandler.IsEntryFrame()) {
             continue;
         }
         ++count;
@@ -57,7 +57,7 @@ bool DebuggerApi::StackWalker(const EcmaVM *ecmaVm, std::function<StackState(con
 {
     InterpretedFrameHandler frameHandler(ecmaVm->GetJSThread());
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
-        if (frameHandler.IsBreakFrame()) {
+        if (frameHandler.IsEntryFrame()) {
             continue;
         }
         StackState state = func(&frameHandler);
