@@ -16,7 +16,7 @@
 #include "builtins_weak_set.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_set_iterator.h"
 #include "ecmascript/js_weak_container.h"
 #include "ecmascript/linked_hash_table-inl.h"
@@ -75,6 +75,7 @@ JSTaggedValue BuiltinsWeakSet::WeakSetConstructor(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> valueIndex(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> next = JSIterator::IteratorStep(thread, iter);
     JSMutableHandle<JSTaggedValue> status(thread, JSTaggedValue::Undefined());
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     while (!next->IsFalse()) {
         // ReturnIfAbrupt(next).
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, next.GetTaggedValue());
@@ -82,14 +83,15 @@ JSTaggedValue BuiltinsWeakSet::WeakSetConstructor(EcmaRuntimeCallInfo *argv)
         JSHandle<JSTaggedValue> nextValue(JSIterator::IteratorValue(thread, next));
         // ReturnIfAbrupt(nextValue).
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, nextValue.GetTaggedValue());
-        InternalCallParams *arguments = thread->GetInternalCallParams();
-        arguments->MakeArgv(nextValue);
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, adder, JSHandle<JSTaggedValue>(weakSet), undefined, 1);
+        info.SetCallArg(nextValue.GetTaggedValue());
         if (nextValue->IsArray(thread)) {
             auto prop = JSObject::GetProperty(thread, nextValue, valueIndex).GetValue();
-            arguments->MakeArgv(prop);
+            info.SetCallArg(prop.GetTaggedValue());
         }
         // Let status be Call(adder, weakset, «nextValue.[[value]]»).
-        JSFunction::Call(thread, adder, JSHandle<JSTaggedValue>(weakSet), 1, arguments->GetArgv());
+        JSFunction::Call(&info);
         // If status is an abrupt completion, return IteratorClose(iter, status).
         if (thread->HasPendingException()) {
             return JSIterator::IteratorCloseAndReturn(thread, iter);

@@ -18,6 +18,7 @@
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_hclass.h"
@@ -558,11 +559,13 @@ HWTEST_F_L0(JSProxyTest, Call)
 
     JSHandle<JSProxy> proxyHandle = JSProxy::ProxyCreate(thread, targetHandle, handlerHandle);
     EXPECT_TRUE(*proxyHandle != nullptr);
-    JSTaggedValue res =
-        JSProxy::CallInternal(thread, proxyHandle, JSHandle<JSTaggedValue>::Cast(proxyHandle), 0, nullptr);
-    JSHandle<JSTaggedValue> taggedRes(thread, res);
-
-    EXPECT_TRUE(JSTaggedValue::SameValue(taggedRes.GetTaggedValue(), JSTaggedValue::True()));
+    
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, JSHandle<JSTaggedValue>(proxyHandle),
+        JSHandle<JSTaggedValue>(proxyHandle), undefined, 0);
+    JSTaggedValue res = JSProxy::CallInternal(&info);
+    EXPECT_TRUE(JSTaggedValue::SameValue(res, JSTaggedValue::True()));
 
     // 2. handler has "Call"
     JSHandle<JSTaggedValue> funcKey = thread->GlobalConstants()->GetHandledApplyString();
@@ -571,11 +574,12 @@ HWTEST_F_L0(JSProxyTest, Call)
 
     JSHandle<JSProxy> proxyHandle2 = JSProxy::ProxyCreate(thread, targetHandle, handlerHandle);
     EXPECT_TRUE(*proxyHandle2 != nullptr);
-    JSTaggedValue res2 =
-        JSProxy::CallInternal(thread, proxyHandle2, JSHandle<JSTaggedValue>::Cast(proxyHandle2), 0, nullptr);
-    JSHandle<JSTaggedValue> taggedRes2(thread, res2);
 
-    EXPECT_TRUE(JSTaggedValue::SameValue(taggedRes2.GetTaggedValue(), JSTaggedValue::False()));
+    EcmaRuntimeCallInfo runtimeInfo =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, JSHandle<JSTaggedValue>(proxyHandle2),
+        JSHandle<JSTaggedValue>(proxyHandle2), undefined, 0);
+    JSTaggedValue res2 = JSProxy::CallInternal(&runtimeInfo);
+    EXPECT_TRUE(JSTaggedValue::SameValue(res2, JSTaggedValue::False()));
 }
 
 JSTaggedValue HandlerConstruct([[maybe_unused]] EcmaRuntimeCallInfo *argv)
@@ -619,7 +623,10 @@ HWTEST_F_L0(JSProxyTest, Construct)
 
     JSHandle<JSProxy> proxyHandle = JSProxy::ProxyCreate(thread, targetHandle, handlerHandle);
     EXPECT_TRUE(*proxyHandle != nullptr);
-    JSTaggedValue res = JSProxy::ConstructInternal(thread, proxyHandle, 0, nullptr, targetHandle);
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, JSHandle<JSTaggedValue>(proxyHandle), handlerHandle, undefined, 0);
+    JSTaggedValue res = JSProxy::ConstructInternal(&info);
     JSHandle<JSTaggedValue> taggedRes(thread, res);
     JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("x"));
     EXPECT_EQ(JSObject::GetProperty(thread, taggedRes, key).GetValue()->GetInt(), 1);
@@ -631,7 +638,9 @@ HWTEST_F_L0(JSProxyTest, Construct)
 
     JSHandle<JSProxy> proxyHandle2 = JSProxy::ProxyCreate(thread, targetHandle, handlerHandle);
     EXPECT_TRUE(*proxyHandle2 != nullptr);
-    JSTaggedValue res2 = JSProxy::ConstructInternal(thread, proxyHandle2, 0, nullptr, targetHandle);
+    EcmaRuntimeCallInfo runtimeInfo =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, JSHandle<JSTaggedValue>(proxyHandle2), targetHandle, undefined, 0);
+    JSTaggedValue res2 = JSProxy::ConstructInternal(&runtimeInfo);
     JSHandle<JSTaggedValue> taggedRes2(thread, res2);
     EXPECT_EQ(JSObject::GetProperty(thread, taggedRes2, key).GetValue()->GetInt(), 2);
 }

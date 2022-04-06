@@ -19,7 +19,7 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_tagged_number.h"
@@ -80,11 +80,11 @@ int32_t ArrayHelper::SortCompare(JSThread *thread, const JSHandle<JSTaggedValue>
     // c. If v is NaN, return +0.
     // d. Return v.
     if (!callbackfnHandle->IsUndefined()) {
-        JSHandle<JSTaggedValue> thisArgHandle(thread, JSTaggedValue::Undefined());
-        InternalCallParams *arguments = thread->GetInternalCallParams();
-        arguments->MakeArgv(valueX, valueY);
-        JSTaggedValue callResult =
-            JSFunction::Call(thread, callbackfnHandle, thisArgHandle, 2, arguments->GetArgv());  // 2: two args
+        JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, callbackfnHandle, undefined, undefined, 2); // 2: «x, y»
+        info.SetCallArg(valueX.GetTaggedValue(), valueY.GetTaggedValue());
+        JSTaggedValue callResult = JSFunction::Call(&info);
         if (callResult.IsInt()) {
             return callResult.GetInt();
         }
@@ -153,7 +153,6 @@ JSTaggedValue ArrayHelper::FlattenIntoArray(JSThread *thread, const JSHandle<JSO
     //    thisArg is present, and depth is 1.
     ASSERT(mapperFunctionHandle->IsUndefined() || mapperFunctionHandle->IsCallable() ||
            (!thisArg->IsUndefined() && args.depth == 1));
-    InternalCallParams *arguments = thread->GetInternalCallParams();
     // 4. Let targetIndex be start.
     // 5. Let sourceIndex be +0!.
     FlattenArgs tempArgs;
@@ -194,9 +193,12 @@ JSTaggedValue ArrayHelper::FlattenIntoArray(JSThread *thread, const JSHandle<JSO
             element.Update(JSArray::FastGetPropertyByValue(thread, thisObjVal, p).GetTaggedValue());
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
             if (!mapperFunctionHandle->IsUndefined()) {
-                arguments->MakeArgv(element, p, thisObjVal);
-                JSTaggedValue obj = JSFunction::Call(thread, mapperFunctionHandle, thisArg,
-                                                     3, arguments->GetArgv()); // 3: three args
+                const size_t argsLength = 3; // 3: « element, sourceIndex, source »
+                JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+                EcmaRuntimeCallInfo info =
+                    EcmaInterpreter::NewRuntimeCallInfo(thread, mapperFunctionHandle, thisArg, undefined, argsLength);
+                info.SetCallArg(element.GetTaggedValue(), p.GetTaggedValue(), thisObjVal.GetTaggedValue());
+                JSTaggedValue obj = JSFunction::Call(&info);
                 RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
                 element.Update(obj);
             }

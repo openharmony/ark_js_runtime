@@ -18,8 +18,8 @@
 #include "ecmascript/ecma_string-inl.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_hclass.h"
@@ -806,11 +806,12 @@ JSTaggedValue BuiltinsRegExp::Replace(EcmaRuntimeCallInfo *argv)
             replacerArgs->Set(thread, index + 1, JSTaggedValue(position));
             replacerArgs->Set(thread, index + 2, inputStr.GetTaggedValue());  // 2: position of string
             // iv. Let replValue be Call(replaceValue, undefined, replacerArgs).
+            const size_t argsLength = replacerArgs->GetLength();
             JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-            ecmascript::InternalCallParams *args = thread->GetInternalCallParams();
-            args->MakeArgList(*replacerArgs);
-            JSTaggedValue replaceResult =
-                JSFunction::Call(thread, inputReplaceValue, undefined, replacerArgs->GetLength(), args->GetArgv());
+            EcmaRuntimeCallInfo info =
+                EcmaInterpreter::NewRuntimeCallInfo(thread, inputReplaceValue, undefined, undefined, argsLength);
+            info.SetCallArg(argsLength, replacerArgs);
+            JSTaggedValue replaceResult = JSFunction::Call(&info);
             JSHandle<JSTaggedValue> replValue(thread, replaceResult);
             // v. Let replacement be ToString(replValue).
             JSHandle<EcmaString> replacementString = JSTaggedValue::ToString(thread, replValue);
@@ -990,11 +991,11 @@ JSTaggedValue BuiltinsRegExp::Split(EcmaRuntimeCallInfo *argv)
 
     // 13. Let splitter be Construct(C, «rx, newFlags»).
     JSHandle<JSObject> globalObject(thread, thread->GetEcmaVM()->GetGlobalEnv()->GetGlobalObject());
-    JSHandle<JSTaggedValue> undefined(thread, JSTaggedValue::Undefined());
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgv(thisObj, newFlagsHandle);
-    JSTaggedValue taggedSplitter =
-        JSFunction::Construct(thread, constructor, 2, arguments->GetArgv(), undefined);  // 2: two args
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo runtimeInfo =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, constructor, undefined, undefined, 2); // 2: two args
+    runtimeInfo.SetCallArg(thisObj.GetTaggedValue(), newFlagsHandle.GetTaggedValue());
+    JSTaggedValue taggedSplitter = JSFunction::Construct(&runtimeInfo);
     // 14. ReturnIfAbrupt(splitter).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
@@ -1365,9 +1366,10 @@ JSTaggedValue BuiltinsRegExp::RegExpExec(JSThread *thread, const JSHandle<JSTagg
             return RegExpBuiltinExec(thread, regexp, inputString, isCached);
         }
         JSHandle<JSTaggedValue> obj = JSHandle<JSTaggedValue>::Cast(thisObj);
-        InternalCallParams *arguments = thread->GetInternalCallParams();
-        arguments->MakeArgv(inputStr.GetTaggedValue());
-        JSTaggedValue result = JSFunction::Call(thread, exec, obj, 1, arguments->GetArgv());
+        JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, exec, obj, undefined, 1);
+        info.SetCallArg(inputStr.GetTaggedValue());
+        JSTaggedValue result = JSFunction::Call(&info);
         // b. ReturnIfAbrupt(result).
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         if (!result.IsECMAObject() && !result.IsNull()) {

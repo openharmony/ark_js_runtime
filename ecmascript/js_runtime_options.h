@@ -376,7 +376,7 @@ private:
         256 * 1024,
         R"(set default snapshot space capacity)"};
     PandArg<std::string> asmInter_ {"asmInter",
-        "",
+        "1",
         R"(set asm interpreter control properties)"};
     AsmInterParsedOption asmInterParsedOption_;
 };

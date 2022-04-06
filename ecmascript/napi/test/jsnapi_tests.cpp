@@ -62,10 +62,10 @@ protected:
     EcmaVM *vm_ = nullptr;
 };
 
-Local<JSValueRef> FunctionCallback(EcmaVM *vm, Local<JSValueRef>, const Local<JSValueRef> *, int32_t length, void *)
+Local<JSValueRef> FunctionCallback(JsiRuntimeCallInfo* info)
 {
-    EscapeLocalScope scope(vm);
-    return scope.Escape(ArrayRef::New(vm, length));
+    EscapeLocalScope scope(info->GetVM());
+    return scope.Escape(ArrayRef::New(info->GetVM(), info->GetArgsNumber()));
 }
 
 void ThreadCheck(const EcmaVM *vm)
@@ -93,7 +93,7 @@ HWTEST_F_L0(JSNApiTests, ThreadIdCheck)
 HWTEST_F_L0(JSNApiTests, RegisterFunction)
 {
     LocalScope scope(vm_);
-    Local<FunctionRef> callback = FunctionRef::New(vm_, FunctionCallback, nullptr);
+    Local<FunctionRef> callback = FunctionRef::New(vm_, FunctionCallback);
     ASSERT_TRUE(!callback.IsEmpty());
     std::vector<Local<JSValueRef>> arguments;
     arguments.emplace_back(JSValueRef::Undefined(vm_));
@@ -168,7 +168,7 @@ HWTEST_F_L0(JSNApiTests, StrictEqual)
 HWTEST_F_L0(JSNApiTests, InstanceOf)
 {
     LocalScope scope(vm_);
-    Local<FunctionRef> target = FunctionRef::New(vm_, nullptr, nullptr);
+    Local<FunctionRef> target = FunctionRef::New(vm_, nullptr);
     Local<ArrayRef> origin = ArrayRef::New(vm_, 1);
 
     ASSERT_FALSE(origin->InstanceOf(vm_, target));
@@ -287,7 +287,7 @@ HWTEST_F_L0(JSNApiTests, DeleteProperty)
 HWTEST_F_L0(JSNApiTests, GetProtoType)
 {
     LocalScope scope(vm_);
-    Local<FunctionRef> function = FunctionRef::New(vm_, nullptr, nullptr);
+    Local<FunctionRef> function = FunctionRef::New(vm_, nullptr);
     Local<JSValueRef> protoType = function->GetPrototype(vm_);
     ASSERT_TRUE(protoType->IsObject());
 
@@ -296,20 +296,19 @@ HWTEST_F_L0(JSNApiTests, GetProtoType)
     ASSERT_TRUE(protoType->IsObject());
 }
 
-void CheckReject(EcmaVM *, Local<JSValueRef>, const Local<JSValueRef> argv[], int32_t length, void *)
+void CheckReject(JsiRuntimeCallInfo* info)
 {
-    ASSERT_EQ(length, 1);
-    Local<JSValueRef> reason = argv[0];
+    ASSERT_EQ(info->GetArgsNumber(), 1U);
+    Local<JSValueRef> reason = info->GetCallArgRef(0);
     ASSERT_TRUE(reason->IsString());
     ASSERT_EQ(Local<StringRef>(reason)->ToString(), "Reject");
 }
 
-Local<JSValueRef> RejectCallback(EcmaVM *vm, Local<JSValueRef> thisArg, const Local<JSValueRef> argv[], int32_t length,
-                                 void *data)
+Local<JSValueRef> RejectCallback(JsiRuntimeCallInfo* info)
 {
-    LocalScope scope(vm);
-    CheckReject(vm, thisArg, argv, length, data);
-    return JSValueRef::Undefined(vm);
+    LocalScope scope(info->GetVM());
+    CheckReject(info);
+    return JSValueRef::Undefined(info->GetVM());
 }
 
 HWTEST_F_L0(JSNApiTests, PromiseCatch)
@@ -318,7 +317,7 @@ HWTEST_F_L0(JSNApiTests, PromiseCatch)
     Local<PromiseCapabilityRef> capability = PromiseCapabilityRef::New(vm_);
 
     Local<PromiseRef> promise = capability->GetPromise(vm_);
-    Local<FunctionRef> reject = FunctionRef::New(vm_, RejectCallback, nullptr);
+    Local<FunctionRef> reject = FunctionRef::New(vm_, RejectCallback);
     Local<PromiseRef> catchPromise = promise->Catch(vm_, reject);
     ASSERT_TRUE(promise->IsPromise());
     ASSERT_TRUE(catchPromise->IsPromise());
@@ -329,20 +328,19 @@ HWTEST_F_L0(JSNApiTests, PromiseCatch)
     vm_->ExecutePromisePendingJob();
 }
 
-void CheckResolve(EcmaVM *, Local<JSValueRef>, const Local<JSValueRef> argv[], int32_t length, void *)
+void CheckResolve(JsiRuntimeCallInfo* info)
 {
-    ASSERT_EQ(length, 1);
-    Local<JSValueRef> value = argv[0];
+    ASSERT_EQ(info->GetArgsNumber(), 1U);
+    Local<JSValueRef> value = info->GetCallArgRef(0);
     ASSERT_TRUE(value->IsNumber());
     ASSERT_EQ(Local<NumberRef>(value)->Value(), 300.3); // 300.3 : test case of input
 }
 
-Local<JSValueRef> ResolvedCallback(EcmaVM *vm, Local<JSValueRef> thisArg, const Local<JSValueRef> argv[],
-                                   int32_t length, void *data)
+Local<JSValueRef> ResolvedCallback(JsiRuntimeCallInfo* info)
 {
-    LocalScope scope(vm);
-    CheckResolve(vm, thisArg, argv, length, data);
-    return JSValueRef::Undefined(vm);
+    LocalScope scope(info->GetVM());
+    CheckResolve(info);
+    return JSValueRef::Undefined(info->GetVM());
 }
 
 HWTEST_F_L0(JSNApiTests, PromiseThen)
@@ -351,8 +349,8 @@ HWTEST_F_L0(JSNApiTests, PromiseThen)
     Local<PromiseCapabilityRef> capability = PromiseCapabilityRef::New(vm_);
 
     Local<PromiseRef> promise = capability->GetPromise(vm_);
-    Local<FunctionRef> resolve = FunctionRef::New(vm_, ResolvedCallback, nullptr);
-    Local<FunctionRef> reject = FunctionRef::New(vm_, RejectCallback, nullptr);
+    Local<FunctionRef> resolve = FunctionRef::New(vm_, ResolvedCallback);
+    Local<FunctionRef> reject = FunctionRef::New(vm_, RejectCallback);
     Local<PromiseRef> thenPromise = promise->Then(vm_, resolve, reject);
     ASSERT_TRUE(promise->IsPromise());
     ASSERT_TRUE(thenPromise->IsPromise());

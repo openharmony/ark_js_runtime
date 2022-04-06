@@ -19,7 +19,7 @@
 #include "ecmascript/tagged_tree.h"
 
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "tagged_array-inl.h"
 #include "utils/bit_utils.h"
 
@@ -375,10 +375,12 @@ ComparisonResult TaggedTree<Derived>::EntryCompare(JSThread *thread, const JSHan
 
     JSHandle<JSTaggedValue> compareFn(thread, fn);
     JSHandle<JSTaggedValue> thisArgHandle = thread->GlobalConstants()->GetHandledUndefined();
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgv(valueX, valueY);
-    JSTaggedValue callResult =
-        JSFunction::Call(thread, compareFn, thisArgHandle, 2, arguments->GetArgv());  // 2: two args
+    const size_t argsLength = 2;
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, compareFn, thisArgHandle, undefined, argsLength);
+    info.SetCallArg(valueX.GetTaggedValue(), valueY.GetTaggedValue());
+    JSTaggedValue callResult = JSFunction::Call(&info);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ComparisonResult::UNDEFINED);
     int compareResult = 0;
     if (callResult.IsInt()) {

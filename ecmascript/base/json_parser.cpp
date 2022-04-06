@@ -55,9 +55,11 @@ JSHandle<JSTaggedValue> Internalize::InternalizeJsonProperty(JSThread *thread, c
     }
 
     // Return ? Call(receiver, holder, « name, val »).
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgv(name, val);
-    JSTaggedValue result = JSFunction::Call(thread, receiver, objHandle, 2, arguments->GetArgv());  // 2: two args
+    const size_t argsLength = 2;  // 2: « name, val »
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, receiver, objHandle, undefined, argsLength);
+    info.SetCallArg(name.GetTaggedValue(), val.GetTaggedValue());
+    JSTaggedValue result = JSFunction::Call(&info);
     return JSHandle<JSTaggedValue>(thread, result);
 }
 

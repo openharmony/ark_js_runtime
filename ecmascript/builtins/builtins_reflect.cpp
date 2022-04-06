@@ -14,7 +14,7 @@
  */
 
 #include "ecmascript/builtins/builtins_reflect.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_tagged_value-inl.h"
 
 namespace panda::ecmascript::builtins {
@@ -39,9 +39,12 @@ JSTaggedValue BuiltinsReflect::ReflectApply(EcmaRuntimeCallInfo *argv)
 
     // 3. Perform PrepareForTailCall().
     // 4. Return ? Call(target, thisArgument, args).
-    ecmascript::InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgList(*args);
-    return JSFunction::Call(thread, target, thisArgument, args->GetLength(), arguments->GetArgv());
+    const size_t argsLength = args->GetLength();
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, target, thisArgument, undefined, argsLength);
+    info.SetCallArg(argsLength, args);
+    return JSFunction::Call(&info);
 }
 
 // ecma 26.1.2 Reflect.construct (target, argumentsList [ , newTarget])
@@ -70,9 +73,11 @@ JSTaggedValue BuiltinsReflect::ReflectConstruct(EcmaRuntimeCallInfo *argv)
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     JSHandle<TaggedArray> args = JSHandle<TaggedArray>::Cast(argOrAbrupt);
     // 5. Return ? Construct(target, args, newTarget).
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgList(*args);
-    return JSFunction::Construct(thread, target, args->GetLength(), arguments->GetArgv(), newTarget);
+    const size_t argsLength = args->GetLength();
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, target, undefined, newTarget, argsLength);
+    info.SetCallArg(argsLength, args);
+    return JSFunction::Construct(&info);
 }
 
 // ecma 26.1.3 Reflect.defineProperty (target, propertyKey, attributes)

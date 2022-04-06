@@ -16,7 +16,7 @@
 #include "builtins_set.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_set.h"
 #include "ecmascript/js_set_iterator.h"
 #include "ecmascript/linked_hash_table-inl.h"
@@ -74,7 +74,6 @@ JSTaggedValue BuiltinsSet::SetConstructor(EcmaRuntimeCallInfo *argv)
     // jsarray
     JSHandle<JSTaggedValue> valueIndex(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> next = JSIterator::IteratorStep(thread, iter);
-    InternalCallParams *arguments = thread->GetInternalCallParams();
     while (!next->IsFalse()) {
         // ReturnIfAbrupt(next).
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, next.GetTaggedValue());
@@ -82,14 +81,15 @@ JSTaggedValue BuiltinsSet::SetConstructor(EcmaRuntimeCallInfo *argv)
         JSHandle<JSTaggedValue> nextValue(JSIterator::IteratorValue(thread, next));
         // ReturnIfAbrupt(nextValue).
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, nextValue.GetTaggedValue());
-        arguments->MakeArgv(nextValue);
+        JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, adder, setHandle, undefined, 1);
+        info.SetCallArg(nextValue.GetTaggedValue());
         if (nextValue->IsArray(thread)) {
             auto prop = JSObject::GetProperty(thread, nextValue, valueIndex).GetValue();
-            arguments->MakeArgv(prop);
+            info.SetCallArg(prop.GetTaggedValue());
         }
-        JSFunction::Call(thread, adder, JSHandle<JSTaggedValue>(set), 1, arguments->GetArgv());
+        JSFunction::Call(&info);
         // Let status be Call(adder, set, «nextValue.[[value]]»).
-
         if (thread->HasPendingException()) {
             return JSIterator::IteratorCloseAndReturn(thread, iter);
         }
@@ -200,13 +200,14 @@ JSTaggedValue BuiltinsSet::ForEach([[maybe_unused]] EcmaRuntimeCallInfo *argv)
     // composed arguments
     JSHandle<JSTaggedValue> iter(factory->NewJSSetIterator(set, IterationKind::KEY));
     JSHandle<JSTaggedValue> result = JSIterator::IteratorStep(thread, iter);
-    InternalCallParams *arguments = thread->GetInternalCallParams();
     while (!result->IsFalse()) {
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, result.GetTaggedValue());
         JSHandle<JSTaggedValue> value = JSIterator::IteratorValue(thread, result);
-        // Let funcResult be Call(callbackfn, T, «e, e, S»).
-        arguments->MakeArgv(value, value, JSHandle<JSTaggedValue>(set));
-        JSTaggedValue ret = JSFunction::Call(thread, func, thisArg, 3, arguments->GetArgv());  // 3: three args
+        const size_t argsLength = 3;
+        JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, argsLength);
+        info.SetCallArg(value.GetTaggedValue(), value.GetTaggedValue(), set.GetTaggedValue());
+        JSTaggedValue ret = JSFunction::Call(&info);
         // returnIfAbrupt
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ret);
         result = JSIterator::IteratorStep(thread, iter);

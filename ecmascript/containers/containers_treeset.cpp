@@ -15,7 +15,7 @@
 
 #include "containers_treeset.h"
 #include "ecmascript/ecma_vm.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_api_tree_set.h"
 #include "ecmascript/js_api_tree_set_iterator.h"
 #include "ecmascript/object_factory.h"
@@ -287,15 +287,17 @@ JSTaggedValue ContainersTreeSet::ForEach(EcmaRuntimeCallInfo *argv)
 
     int index = 0;
     int length = entries->GetLength();
-    InternalCallParams *arguments = thread->GetInternalCallParams();
+    const size_t argsLength = 3;
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     while (index < elements) {
         int entriesIndex = entries->Get(index).GetInt();
         key.Update(iteratedSet->GetKey(entriesIndex));
 
         // Let funcResult be Call(callbackfn, T, «e, e, S»).
-        arguments->MakeArgv(key, key, self);
-        JSTaggedValue ret = JSFunction::Call(thread, func, thisArg, 3, arguments->GetArgv());  // 3: three args
+        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, argsLength);
+        info.SetCallArg(key.GetTaggedValue(), key.GetTaggedValue(), self.GetTaggedValue());
+        JSTaggedValue ret = JSFunction::Call(&info);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ret);
 
         // check entries should be update, size will be update by set add and remove.

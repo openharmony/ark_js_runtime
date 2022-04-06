@@ -19,7 +19,6 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/jspandafile/class_info_extractor.h"
 #include "ecmascript/js_handle.h"
@@ -248,11 +247,13 @@ bool JSFunction::MakeConstructor(JSThread *thread, const JSHandle<JSFunction> &f
     return status;
 }
 
-JSTaggedValue JSFunction::Call(JSThread *thread, const JSHandle<JSTaggedValue> &func,
-                               const JSHandle<JSTaggedValue> &thisArg, uint32_t argc, const JSTaggedType argv[])
+JSTaggedValue JSFunction::Call(EcmaRuntimeCallInfo *info)
 {
+    ASSERT(info);
+    JSThread *thread = info->GetThread();
     // 1. ReturnIfAbrupt(F).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSHandle<JSTaggedValue> func = info->GetFunction();
     // 2. If argumentsList was not passed, let argumentsList be a new empty List.
     // 3. If IsCallable(F) is false, throw a TypeError exception.
     if (!func->IsCallable()) {
@@ -260,70 +261,75 @@ JSTaggedValue JSFunction::Call(JSThread *thread, const JSHandle<JSTaggedValue> &
     }
 
     if (func->IsJSFunction()) {
-        return JSFunction::CallInternal(thread, JSHandle<JSFunction>(func), thisArg, argc, argv);
+        return JSFunction::CallInternal(info);
     }
 
     if (func->IsBoundFunction()) {
-        return JSBoundFunction::CallInternal(thread, JSHandle<JSBoundFunction>(func));
+        return JSBoundFunction::CallInternal(info);
     }
 
     if (func->IsJSProxy()) {
-        return JSProxy::CallInternal(thread, JSHandle<JSProxy>(func), thisArg, argc, argv);
+        return JSProxy::CallInternal(info);
     }
 
     THROW_TYPE_ERROR_AND_RETURN(thread, "Call NonCallable", JSTaggedValue::Exception());
 }
 
-JSTaggedValue JSFunction::Construct(JSThread *thread, const JSHandle<JSTaggedValue> &func, uint32_t argc,
-                                    const JSTaggedType argv[], const JSHandle<JSTaggedValue> &newTarget)
+JSTaggedValue JSFunction::Construct(EcmaRuntimeCallInfo *info)
 {
-    JSMutableHandle<JSTaggedValue> target(thread, newTarget.GetTaggedValue());
+    ASSERT(info);
+    JSThread *thread = info->GetThread();
+    JSHandle<JSTaggedValue> func(info->GetFunction());
+    JSMutableHandle<JSTaggedValue> target(info->GetNewTarget());
     if (target->IsUndefined()) {
         target.Update(func.GetTaggedValue());
+        info->SetNewTarget(target.GetTaggedValue());
     }
     if (!(func->IsConstructor() && target->IsConstructor())) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Constructor is false", JSTaggedValue::Exception());
     }
     if (func->IsJSFunction()) {
-        return JSFunction::ConstructInternal(thread, JSHandle<JSFunction>(func), argc, argv, target);
+        return JSFunction::ConstructInternal(info);
     }
     if (func->IsBoundFunction()) {
-        return JSBoundFunction::ConstructInternal(thread, JSHandle<JSBoundFunction>(func), target);
+        return JSBoundFunction::ConstructInternal(info);
     }
     if (func->IsJSProxy()) {
-        return JSProxy::ConstructInternal(thread, JSHandle<JSProxy>(func), argc, argv, target);
+        return JSProxy::ConstructInternal(info);
     }
     THROW_TYPE_ERROR_AND_RETURN(thread, "Constructor NonConstructor", JSTaggedValue::Exception());
 }
 
-JSTaggedValue JSFunction::Invoke(JSThread *thread, const JSHandle<JSTaggedValue> &thisArg,
-                                 const JSHandle<JSTaggedValue> &key, uint32_t argc, const JSTaggedType argv[])
+JSTaggedValue JSFunction::Invoke(EcmaRuntimeCallInfo *info, const JSHandle<JSTaggedValue> &key)
 {
+    ASSERT(info);
     ASSERT(JSTaggedValue::IsPropertyKey(key));
+    JSThread *thread = info->GetThread();
+    JSHandle<JSTaggedValue> thisArg = info->GetThis();
     JSHandle<JSTaggedValue> func(JSTaggedValue::GetProperty(thread, thisArg, key).GetValue());
-    return JSFunction::Call(thread, func, thisArg, argc, argv);
+    info->SetFunction(func.GetTaggedValue());
+    return JSFunction::Call(info);
 }
 
 // [[Call]]
-JSTaggedValue JSFunction::CallInternal(JSThread *thread, const JSHandle<JSFunction> &func,
-                                       const JSHandle<JSTaggedValue> &thisArg, uint32_t argc, const JSTaggedType argv[])
+JSTaggedValue JSFunction::CallInternal(EcmaRuntimeCallInfo *info)
 {
+    ASSERT(info);
+    JSThread *thread = info->GetThread();
+    JSHandle<JSFunction> func(info->GetFunction());
     if (!func->IsBuiltinsConstructor() && func->IsClassConstructor()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "class constructor cannot call", JSTaggedValue::Exception());
     }
-    CallParams params;
-    params.callTarget = ECMAObject::Cast(*func);
-    params.newTarget = JSTaggedValue::VALUE_UNDEFINED;
-    params.thisArg = thisArg.GetTaggedType();
-    params.argc = argc;
-    params.argv = argv;
-    return EcmaInterpreter::Execute(thread, params);
+    return EcmaInterpreter::Execute(info);
 }
 
 // [[Construct]]
-JSTaggedValue JSFunction::ConstructInternal(JSThread *thread, const JSHandle<JSFunction> &func, uint32_t argc,
-                                            const JSTaggedType argv[], const JSHandle<JSTaggedValue> &newTarget)
+JSTaggedValue JSFunction::ConstructInternal(EcmaRuntimeCallInfo *info)
 {
+    ASSERT(info);
+    JSThread *thread = info->GetThread();
+    JSHandle<JSFunction> func(info->GetFunction());
+    JSHandle<JSTaggedValue> newTarget(info->GetNewTarget());
     ASSERT(newTarget->IsECMAObject());
     if (!func->IsConstructor()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Constructor is false", JSTaggedValue::Exception());
@@ -335,14 +341,8 @@ JSTaggedValue JSFunction::ConstructInternal(JSThread *thread, const JSHandle<JSF
         obj = JSHandle<JSTaggedValue>(factory->NewJSObjectByConstructor(func, newTarget));
     }
 
-    CallParams params;
-    params.callTarget = ECMAObject::Cast(*func);
-    params.newTarget = newTarget.GetTaggedType();
-    params.thisArg = obj.GetTaggedType();
-    params.argc = argc;
-    params.argv = argv;
-
-    JSTaggedValue resultValue = EcmaInterpreter::Execute(thread, params);
+    info->SetThis(obj.GetTaggedValue());
+    JSTaggedValue resultValue = EcmaInterpreter::Execute(info);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 9.3.2 [[Construct]] (argumentsList, newTarget)
     if (func->IsBuiltinsConstructor() || resultValue.IsECMAObject()) {
@@ -430,29 +430,56 @@ bool JSFunction::SetFunctionLength(JSThread *thread, const JSHandle<JSFunction> 
     return JSTaggedValue::DefinePropertyOrThrow(thread, funcHandle, lengthKeyHandle, lengthDesc);
 }
 
-JSTaggedValue JSBoundFunction::CallInternal(JSThread *thread, const JSHandle<JSBoundFunction> &func)
+JSTaggedValue JSBoundFunction::CallInternal(EcmaRuntimeCallInfo *info)
 {
+    JSThread *thread = info->GetThread();
+    JSHandle<JSBoundFunction> func(info->GetFunction());
     JSHandle<JSTaggedValue> target(thread, func->GetBoundTarget());
     JSHandle<JSTaggedValue> boundThis(thread, func->GetBoundThis());
+    JSHandle<TaggedArray> boundArgs(thread, func->GetBoundArguments());
 
-    InternalCallParams *params = thread->GetInternalCallParams();
-    params->MakeBoundArgv(thread, func);
-    return JSFunction::Call(thread, target, boundThis, params->GetLength(), params->GetArgv());
+    const size_t boundLength = boundArgs->GetLength();
+    const size_t argsLength = info->GetArgsNumber() + boundLength;
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo runtimeInfo =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, target, boundThis, undefined, argsLength);
+    if (boundLength == 0) {
+        runtimeInfo.SetCallArg(argsLength, 0, info, 0);
+    } else {
+        // 0 ~ boundLength is boundArgs; boundLength ~ argsLength is args of EcmaRuntimeCallInfo.
+        runtimeInfo.SetCallArg(boundLength, boundArgs);
+        runtimeInfo.SetCallArg(argsLength, boundLength, info, 0);
+    }
+    return JSFunction::Call(&runtimeInfo);
 }
 
 // 9.4.1.2[[Construct]](argumentsList, newTarget)
-JSTaggedValue JSBoundFunction::ConstructInternal(JSThread *thread, const JSHandle<JSBoundFunction> &func,
-                                                 const JSHandle<JSTaggedValue> &newTarget)
+JSTaggedValue JSBoundFunction::ConstructInternal(EcmaRuntimeCallInfo *info)
 {
+    JSThread *thread = info->GetThread();
+    JSHandle<JSBoundFunction> func(info->GetFunction());
     JSHandle<JSTaggedValue> target(thread, func->GetBoundTarget());
     ASSERT(target->IsConstructor());
+    JSHandle<JSTaggedValue> newTarget = info->GetNewTarget();
     JSMutableHandle<JSTaggedValue> newTargetMutable(thread, newTarget.GetTaggedValue());
     if (JSTaggedValue::SameValue(func.GetTaggedValue(), newTarget.GetTaggedValue())) {
         newTargetMutable.Update(target.GetTaggedValue());
     }
-    InternalCallParams *params = thread->GetInternalCallParams();
-    params->MakeBoundArgv(thread, func);
-    return JSFunction::Construct(thread, target, params->GetLength(), params->GetArgv(), newTargetMutable);
+
+    JSHandle<TaggedArray> boundArgs(thread, func->GetBoundArguments());
+    const size_t boundLength = boundArgs->GetLength();
+    const size_t argsLength = info->GetArgsNumber() + boundLength;
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo runtimeInfo =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, target, undefined, newTargetMutable, argsLength);
+    if (boundLength == 0) {
+        runtimeInfo.SetCallArg(argsLength, 0, info, 0);
+    } else {
+        // 0 ~ boundLength is boundArgs; boundLength ~ argsLength is args of EcmaRuntimeCallInfo.
+        runtimeInfo.SetCallArg(boundLength, boundArgs);
+        runtimeInfo.SetCallArg(argsLength, boundLength, info, 0);
+    }
+    return JSFunction::Construct(&runtimeInfo);
 }
 
 void JSProxyRevocFunction::ProxyRevocFunctions(const JSThread *thread, const JSHandle<JSProxyRevocFunction> &revoker)

@@ -17,7 +17,7 @@
 #define ECMASCRIPT_JOBS_PENDING_JOB_H
 
 #include "ecmascript/ecma_macros.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/record.h"
 #include "ecmascript/js_handle.h"
@@ -38,11 +38,12 @@ public:
     {
         JSHandle<JSTaggedValue> job(thread, pendingJob->GetJob());
         ASSERT(job->IsCallable());
-        JSHandle<JSTaggedValue> thisValue(thread, JSTaggedValue::Undefined());
         JSHandle<TaggedArray> argv(thread, pendingJob->GetArguments());
-        InternalCallParams *args = thread->GetInternalCallParams();
-        args->MakeArgList(*argv);
-        return JSFunction::Call(thread, job, thisValue, argv->GetLength(), args->GetArgv());
+        const size_t argsLength = argv->GetLength();
+        JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, job, undefined, undefined, argsLength);
+        info.SetCallArg(argsLength, argv);
+        return JSFunction::Call(&info);
     }
 
     static constexpr size_t JOB_OFFSET = Record::SIZE;

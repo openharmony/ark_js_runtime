@@ -16,7 +16,7 @@
 #include "builtins_map.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_map.h"
 #include "ecmascript/js_map_iterator.h"
 #include "ecmascript/linked_hash_table.h"
@@ -105,11 +105,12 @@ JSTaggedValue BuiltinsMap::MapConstructor(EcmaRuntimeCallInfo *argv)
         if (thread->HasPendingException()) {
             return JSIterator::IteratorCloseAndReturn(thread, iter);
         }
-        // Let status be Call(adder, map, «nextValue.[[value]]»).
-        InternalCallParams *arguments = thread->GetInternalCallParams();
-        arguments->MakeArgv(key, value);
-        JSFunction::Call(
-            thread, adder, JSHandle<JSTaggedValue>(map), 2, arguments->GetArgv());  // 2: key and value pair
+        const size_t argsLength = 2;  // 2: key and value pair
+        JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, adder, JSHandle<JSTaggedValue>(map), undefined, argsLength);
+        info.SetCallArg(key.GetTaggedValue(), value.GetTaggedValue());
+        JSFunction::Call(&info);
         // If status is an abrupt completion, return IteratorClose(iter, status).
         if (thread->HasPendingException()) {
             return JSIterator::IteratorCloseAndReturn(thread, iter);
@@ -237,15 +238,17 @@ JSTaggedValue BuiltinsMap::ForEach([[maybe_unused]] EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> keyIndex(thread, JSTaggedValue(0));
     JSHandle<JSTaggedValue> valueIndex(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> result = JSIterator::IteratorStep(thread, iter);
-    InternalCallParams *arguments = thread->GetInternalCallParams();
+    const size_t argsLength = 3;
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     while (!result->IsFalse()) {
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, result.GetTaggedValue());
         JSHandle<JSTaggedValue> iterValue(JSIterator::IteratorValue(thread, result));
         JSHandle<JSTaggedValue> key = JSObject::GetProperty(thread, iterValue, keyIndex).GetValue();
         JSHandle<JSTaggedValue> value = JSObject::GetProperty(thread, iterValue, valueIndex).GetValue();
         // Let funcResult be Call(callbackfn, T, «e, e, S»).
-        arguments->MakeArgv(value, key, JSHandle<JSTaggedValue>(map));
-        JSTaggedValue ret = JSFunction::Call(thread, func, thisArg, 3, arguments->GetArgv());  // 3: three args
+        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, argsLength);
+        info.SetCallArg(value.GetTaggedValue(), key.GetTaggedValue(), map.GetTaggedValue());
+        JSTaggedValue ret = JSFunction::Call(&info);
         // returnIfAbrupt
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ret);
         result = JSIterator::IteratorStep(thread, iter);

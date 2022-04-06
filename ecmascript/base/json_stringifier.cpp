@@ -23,7 +23,6 @@
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/ecma_string-inl.h"
 #include "ecmascript/ecma_vm.h"
-#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"
@@ -286,6 +285,7 @@ JSTaggedValue JsonStringifier::GetSerializeValue(const JSHandle<JSTaggedValue> &
                                                  const JSHandle<JSTaggedValue> &replacer)
 {
     JSTaggedValue tagValue = value.GetTaggedValue();
+    JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
     // If Type(value) is Object, then
     if (value->IsECMAObject()) {
         // a. Let toJSON be Get(value, "toJSON").
@@ -298,9 +298,9 @@ JSTaggedValue JsonStringifier::GetSerializeValue(const JSHandle<JSTaggedValue> &
         // c. If IsCallable(toJSON) is true
         if (UNLIKELY(toJsonFun->IsCallable())) {
             // Let value be Call(toJSON, value, «key»).
-            InternalCallParams *arguments = thread_->GetInternalCallParams();
-            arguments->MakeArgv(key);
-            tagValue = JSFunction::Call(thread_, toJsonFun, value, 1, arguments->GetArgv());
+            EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread_, toJsonFun, value, undefined, 1);
+            info.SetCallArg(key.GetTaggedValue());
+            tagValue = JSFunction::Call(&info);
             // ii. ReturnIfAbrupt(value).
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread_);
         }
@@ -309,9 +309,11 @@ JSTaggedValue JsonStringifier::GetSerializeValue(const JSHandle<JSTaggedValue> &
     if (UNLIKELY(replacer->IsCallable())) {
         handleValue_.Update(tagValue);
         // a. Let value be Call(ReplacerFunction, holder, «key, value»).
-        InternalCallParams *arguments = thread_->GetInternalCallParams();
-        arguments->MakeArgv(key, handleValue_);
-        tagValue = JSFunction::Call(thread_, replacer, object, 2, arguments->GetArgv());  // 2: two args
+        const size_t argsLength = 2; // 2: «key, value»
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread_, replacer, object, undefined, argsLength);
+        info.SetCallArg(key.GetTaggedValue(), handleValue_.GetTaggedValue());
+        tagValue = JSFunction::Call(&info);
         // b. ReturnIfAbrupt(value).
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread_);
     }

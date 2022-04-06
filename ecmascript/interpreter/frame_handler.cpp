@@ -56,6 +56,11 @@ void FrameHandler::PrevFrame()
             framehandle->PrevFrame();
             break;
         }
+        case FrameType::INTERPRETER_ENTRY_FRAME: {
+            auto framehandle = reinterpret_cast<InterpretedEntryFrameHandler *>(this);
+            framehandle->PrevFrame();
+            break;
+        }
         default:
             UNREACHABLE();
     }
@@ -81,7 +86,7 @@ void InterpretedFrameHandler::PrevFrame()
 void InterpretedFrameHandler::PrevInterpretedFrame()
 {
     FrameHandler::PrevFrame();
-    for (; HasFrame() && !IsInterpretedFrame(); FrameHandler::PrevFrame());
+    for (; HasFrame() && !(IsInterpretedFrame() || IsInterpretedEntryFrame()); FrameHandler::PrevFrame());
 }
 
 InterpretedFrameHandler InterpretedFrameHandler::GetPrevFrame() const
@@ -133,8 +138,12 @@ uint32_t InterpretedFrameHandler::GetSize() const
 #endif
     JSTaggedType *prevSp = frame->base.prev;
     ASSERT(prevSp != nullptr);
-    auto size = (prevSp - sp_) - FRAME_STATE_SIZE;
-    return static_cast<uint32_t>(size);
+    // The prev frame of InterpretedFrame may entry frame or interpreter frame.
+    if (FrameHandler(prevSp).GetFrameType() == FrameType::INTERPRETER_ENTRY_FRAME) {
+        return static_cast<uint32_t>((prevSp - sp_) - INTERPRETER_ENTRY_FRAME_STATE_SIZE);
+    } else {
+        return static_cast<uint32_t>((prevSp - sp_) - INTERPRETER_FRAME_STATE_SIZE);
+    }
 }
 
 uint32_t InterpretedFrameHandler::GetBytecodeOffset() const
@@ -227,42 +236,55 @@ JSTaggedValue InterpretedFrameHandler::GetEnv() const
 void InterpretedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
 {
     JSTaggedType *current = sp_;
-    if (current != nullptr) {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
-        AsmInterpretedFrame *frame = reinterpret_cast<AsmInterpretedFrame *>(current) - 1;
-        if (frame->function != JSTaggedValue::Hole()) {
-            uintptr_t start = ToUintPtr(current);
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            AsmInterpretedFrame *prev_frame = reinterpret_cast<AsmInterpretedFrame *>(frame->base.prev) - 1;
-            uintptr_t end = ToUintPtr(prev_frame);
-            v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
-            v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->function)));
-            if (frame->pc != nullptr) {
-                // interpreter frame
-                v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->acc)));
-                v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->env)));
-            }
-        }
-#else
-        InterpretedFrame *frame = reinterpret_cast<InterpretedFrame *>(current) - 1;
-        if (frame->sp != nullptr) {
-            uintptr_t start = ToUintPtr(current);
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            InterpretedFrame *prev_frame = reinterpret_cast<InterpretedFrame *>(frame->base.prev) - 1;
-            uintptr_t end = ToUintPtr(prev_frame);
-            v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
-            v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->function)));
-            if (frame->pc != nullptr) {
-                // interpreter frame
-                v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->acc)));
-                v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->constpool)));
-                v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->env)));
-                v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->profileTypeInfo)));
-            }
-        }
-#endif
+    if (current == nullptr) {
+        return;
     }
+
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    AsmInterpretedFrame *frame = reinterpret_cast<AsmInterpretedFrame *>(current) - 1;
+    if (frame->function != JSTaggedValue::Hole()) {
+        uintptr_t start = ToUintPtr(current);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        AsmInterpretedFrame *prev_frame = reinterpret_cast<AsmInterpretedFrame *>(frame->base.prev) - 1;
+        uintptr_t end = ToUintPtr(prev_frame);
+        v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
+        v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->function)));
+        if (frame->pc != nullptr) {
+            // interpreter frame
+            v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->acc)));
+            v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->env)));
+        }
+    }
+#else
+    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(current);
+    if (frame->sp == nullptr) {
+        return;
+    }
+
+    uintptr_t start = ToUintPtr(current);
+    uintptr_t end = 0U;
+    FrameType type = FrameHandler(frame->base.prev).GetFrameType();
+    if (type == FrameType::INTERPRETER_FRAME || type == FrameType::INTERPRETER_FAST_NEW_FRAME) {
+        InterpretedFrame *prevFrame = InterpretedFrame::GetFrameFromSp(frame->base.prev);
+        end = ToUintPtr(prevFrame);
+    } else if (type == FrameType::INTERPRETER_ENTRY_FRAME) {
+        JSTaggedType *prevSp = frame->base.prev;
+        int32_t argc = InterpretedEntryFrameHandler(prevSp).GetArgsNumber();
+        end = ToUintPtr(prevSp - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - argc - RESERVED_CALL_ARGCOUNT);
+    } else {
+        LOG_ECMA(FATAL) << "frame type error!";
+        UNREACHABLE();
+    }
+    v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
+    v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->function)));
+    if (frame->pc != nullptr) {
+        // interpreter frame
+        v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->acc)));
+        v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->constpool)));
+        v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->env)));
+        v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->profileTypeInfo)));
+    }
+#endif
 }
 
 void InterpretedFrameHandler::DumpStack(std::ostream &os) const
@@ -284,6 +306,35 @@ void InterpretedFrameHandler::DumpPC(std::ostream &os, const uint8_t *pc) const
     // NOLINTNEXTLINE(cppcoreguidelines-narrowing-conversions, bugprone-narrowing-conversions)
     int offset = pc - JSMethod::Cast(frameHandler.GetMethod())->GetBytecodeArray();
     os << "offset: " << offset << "\n";
+}
+
+// -----------------------------------------------InterpretedEntryFrameHandler------------------------------------------
+InterpretedEntryFrameHandler::InterpretedEntryFrameHandler(JSThread *thread)
+    : FrameHandler(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame())) {}
+
+void InterpretedEntryFrameHandler::PrevFrame()
+{
+    ASSERT(HasFrame());
+    InterpretedEntryFrame *frame = InterpretedEntryFrame::GetFrameFromSp(sp_);
+    sp_ = frame->base.prev;
+}
+
+int32_t InterpretedEntryFrameHandler::GetArgsNumber()
+{
+    JSTaggedType *argcSp = sp_ - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1;
+    return argcSp[0];
+}
+
+void InterpretedEntryFrameHandler::Iterate([[maybe_unused]] const RootVisitor &v0, const RootRangeVisitor &v1)
+{
+    if (sp_ == nullptr) {
+        return;
+    }
+
+    int32_t argc = GetArgsNumber();
+    uintptr_t start = ToUintPtr(sp_ - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - argc - RESERVED_CALL_ARGCOUNT);
+    uintptr_t end = ToUintPtr(sp_ - INTERPRETER_ENTRY_FRAME_STATE_SIZE);
+    v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
 }
 
 void OptimizedFrameHandler::PrevFrame()
@@ -391,6 +442,10 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
 #endif
             InterpretedFrameHandler(current).Iterate(v0, v1);
             current = frame->GetPrevFrameFp();
+        } else if (type == FrameType::INTERPRETER_ENTRY_FRAME) {
+            InterpretedEntryFrame *frame = InterpretedEntryFrame::GetFrameFromSp(current);
+            InterpretedEntryFrameHandler(current).Iterate(v0, v1);
+            current = frame->GetPrevFrameFp();
         } else if (type == FrameType::OPTIMIZED_FRAME) {
             OptimizedFrame *frame = OptimizedFrame::GetFrameFromSp(current);
             OptimizedFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0, v1, derivedPointers, isVerifying);
@@ -411,7 +466,8 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
             current = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
             ASSERT(FrameHandler(current).GetFrameType() == FrameType::OPTIMIZED_ENTRY_FRAME ||
             FrameHandler(current).GetFrameType() == FrameType::OPTIMIZED_FRAME ||
-            FrameHandler(current).GetFrameType() == FrameType::INTERPRETER_FRAME);
+            FrameHandler(current).GetFrameType() == FrameType::INTERPRETER_FRAME ||
+            FrameHandler(current).GetFrameType() == FrameType::INTERPRETER_ENTRY_FRAME);
         }
     }
 }

@@ -18,7 +18,7 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_tagged_number.h"
@@ -219,9 +219,10 @@ JSTaggedValue BuiltinsSharedArrayBuffer::Slice(EcmaRuntimeCallInfo *argv)
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 15. Let new be Construct(ctor, «newLen»).
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgv(JSTaggedValue(newLen));
-    JSTaggedValue taggedNewArrBuf = JSFunction::Construct(thread, constructor, 1, arguments->GetArgv(), undefined);
+    EcmaRuntimeCallInfo info =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, constructor, undefined, undefined, 1);
+    info.SetCallArg(JSTaggedValue(newLen));
+    JSTaggedValue taggedNewArrBuf = JSFunction::Construct(&info);
     JSHandle<JSTaggedValue> newArrBuf(thread, taggedNewArrBuf);
     // 16. ReturnIfAbrupt(new).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);

@@ -40,6 +40,7 @@ class FunctionRef;
 class NumberRef;
 class BooleanRef;
 class NativePointerRef;
+class JsiRuntimeCallInfo;
 namespace test {
 class JSNApiTests;
 }  // namespace test
@@ -47,10 +48,13 @@ class JSNApiTests;
 namespace ecmascript {
 class EcmaVM;
 class JSRuntimeOptions;
+class JSThread;
+class EcmaRuntimeCallInfo;
 }  // namespace ecmascript
 
 using Deleter = void (*)(void *nativePointer, void *data);
 using EcmaVM = ecmascript::EcmaVM;
+using JSThread = ecmascript::JSThread;
 using JSTaggedType = uint64_t;
 
 static constexpr uint32_t DEFAULT_GC_POOL_SIZE = 256 * 1024 * 1024;
@@ -119,6 +123,7 @@ private:
     uintptr_t address_ = 0U;
     friend JSNApiHelper;
     friend EscapeLocalScope;
+    friend JsiRuntimeCallInfo;
 };
 
 template<typename T>
@@ -560,21 +565,16 @@ public:
                                void *data = nullptr);
 };
 
-using FunctionCallback = Local<JSValueRef> (*)(EcmaVM *, Local<JSValueRef>,
-                                               const Local<JSValueRef>[],  // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-                                               int32_t, void *);
-using FunctionCallbackWithNewTarget =
-    Local<JSValueRef> (*)(EcmaVM *, Local<JSValueRef>, Local<JSValueRef>, const Local<JSValueRef>[], int32_t, void *);
+using FunctionCallback = Local<JSValueRef>(*)(JsiRuntimeCallInfo*);
 class PUBLIC_API FunctionRef : public ObjectRef {
 public:
-    static Local<FunctionRef> New(EcmaVM *vm, FunctionCallback nativeFunc, void *data);
-    static Local<FunctionRef> New(EcmaVM *vm, FunctionCallback nativeFunc, Deleter deleter, void *data);
-    static Local<FunctionRef> NewWithProperty(EcmaVM *vm, FunctionCallback nativeFunc, void *data);
-    static Local<FunctionRef> NewClassFunction(EcmaVM *vm, FunctionCallbackWithNewTarget nativeFunc, Deleter deleter,
-        void *data);
+    static Local<FunctionRef> New(EcmaVM *vm, FunctionCallback nativeFunc, Deleter deleter = nullptr,
+        void *data = nullptr);
+    static Local<FunctionRef> NewClassFunction(EcmaVM *vm, FunctionCallback nativeFunc, Deleter deleter, void *data);
     Local<JSValueRef> Call(const EcmaVM *vm, Local<JSValueRef> thisObj, const Local<JSValueRef> argv[],
         int32_t length);
     Local<JSValueRef> Constructor(const EcmaVM *vm, const Local<JSValueRef> argv[], int32_t length);
+
     Local<JSValueRef> GetFunctionPrototype(const EcmaVM *vm);
     // Inherit Prototype from parent function
     // set this.Prototype.__proto__ to parent.Prototype, set this.__proto__ to parent function
@@ -957,6 +957,79 @@ private:
     friend class test::JSNApiTests;
 };
 
+/**
+ * JsiRuntimeCallInfo is used for ace_engine and napi, same to ark EcamRuntimeCallInfo.
+ */
+class PUBLIC_API JsiRuntimeCallInfo {
+public:
+    JsiRuntimeCallInfo(ecmascript::EcmaRuntimeCallInfo* ecmaInfo);
+
+    inline JSThread *GetThread() const
+    {
+        return thread_;
+    }
+
+    EcmaVM *GetVM() const;
+
+    inline size_t GetArgsNumber() const
+    {
+        return numArgs_;
+    }
+
+    inline void* GetData() const
+    {
+        return data_;
+    }
+
+    inline Local<JSValueRef> GetFunctionRef() const
+    {
+        return GetArgRef(FUNC_INDEX);
+    }
+
+    inline Local<JSValueRef> GetNewTargetRef() const
+    {
+        return GetArgRef(NEW_TARGET_INDEX);
+    }
+
+    inline Local<JSValueRef> GetThisRef() const
+    {
+        return GetArgRef(THIS_INDEX);
+    }
+
+    inline Local<JSValueRef> GetCallArgRef(uint32_t idx) const
+    {
+        return GetArgRef(FIRST_ARGS_INDEX + idx);
+    }
+
+    inline JSTaggedType *GetArgs() const
+    {
+        return stackArgs_;
+    }
+
+private:
+    enum ArgsIndex : uint8_t { FUNC_INDEX = 0, NEW_TARGET_INDEX, THIS_INDEX, FIRST_ARGS_INDEX };
+
+    Local<JSValueRef> GetArgRef(uint32_t idx) const
+    {
+        return Local<JSValueRef>(GetArgAddress(idx));
+    }
+
+    uintptr_t GetArgAddress(uint32_t idx) const
+    {
+        if (idx < numArgs_ + FIRST_ARGS_INDEX) {
+            return reinterpret_cast<uintptr_t>(&stackArgs_[idx]);
+        }
+        return 0U;
+    }
+
+private:
+    JSThread *thread_ {nullptr};
+    size_t numArgs_ = 0;
+    JSTaggedType *stackArgs_ {nullptr};
+    void *data_ {nullptr};
+    JSTaggedType *prevSp_ {nullptr};
+    friend class FunctionRef;
+};
 
 template<typename T>
 template<typename S>

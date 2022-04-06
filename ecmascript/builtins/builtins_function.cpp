@@ -16,7 +16,7 @@
 #include "ecmascript/builtins/builtins_function.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_stable_array.h"
 #include "ecmascript/tagged_array-inl.h"
@@ -39,34 +39,49 @@ JSTaggedValue BuiltinsFunction::FunctionPrototypeInvokeSelf([[maybe_unused]] Ecm
     return JSTaggedValue::Undefined();
 }
 namespace {
-static bool BuildArgumentsListFast(JSThread *thread, const JSHandle<JSTaggedValue> &arrayObj)
+static size_t MakeArgListWithHole(JSThread *thread, TaggedArray *argv, size_t length)
+{
+    if (length > argv->GetLength()) {
+        length = argv->GetLength();
+    }
+    for (size_t index = 0; index < length; ++index) {
+        JSTaggedValue value = argv->Get(thread, index);
+        if (value.IsHole()) {
+            argv->Set(thread, index, JSTaggedValue::Undefined());
+        }
+    }
+    return length;
+}
+
+static std::pair<TaggedArray*, size_t> BuildArgumentsListFast(JSThread *thread,
+                                                              const JSHandle<JSTaggedValue> &arrayObj)
 {
     if (!arrayObj->HasStableElements(thread)) {
-        return false;
+        return std::make_pair(nullptr, 0);
     }
-    InternalCallParams *arguments = thread->GetInternalCallParams();
     if (arrayObj->IsStableJSArguments(thread)) {
         JSHandle<JSArguments> argList = JSHandle<JSArguments>::Cast(arrayObj);
         TaggedArray *elements = TaggedArray::Cast(argList->GetElements().GetTaggedObject());
         auto env = thread->GetEcmaVM()->GetGlobalEnv();
         if (argList->GetClass() != env->GetArgumentsClass().GetObject<JSHClass>()) {
-            return false;
+            return std::make_pair(nullptr, 0);
         }
         auto result = argList->GetPropertyInlinedProps(JSArguments::LENGTH_INLINE_PROPERTY_INDEX);
         if (!result.IsInt()) {
-            return false;
+            return std::make_pair(nullptr, 0);
         }
-        uint32_t length = static_cast<uint32_t>(result.GetInt());
-        arguments->MakeArgListWithHole(elements, length);
+        size_t length = static_cast<size_t>(result.GetInt());
+        size_t res = MakeArgListWithHole(thread, elements, length);
+        return std::make_pair(elements, res);
     } else if (arrayObj->IsStableJSArray(thread)) {
         JSHandle<JSArray> argList = JSHandle<JSArray>::Cast(arrayObj);
         TaggedArray *elements = TaggedArray::Cast(argList->GetElements().GetTaggedObject());
-        uint32_t length = argList->GetArrayLength();
-        arguments->MakeArgListWithHole(elements, length);
+        size_t length = argList->GetArrayLength();
+        size_t res = MakeArgListWithHole(thread, elements, length);
+        return std::make_pair(elements, res);
     } else {
         UNREACHABLE();
     }
-    return true;
 }
 }  // anonymous namespace
 
@@ -85,24 +100,31 @@ JSTaggedValue BuiltinsFunction::FunctionPrototypeApply(EcmaRuntimeCallInfo *argv
 
     JSHandle<JSTaggedValue> func = GetThis(argv);
     JSHandle<JSTaggedValue> thisArg = GetCallArg(argv, 0);
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     // 2. If argArray is null or undefined, then
     if (GetCallArg(argv, 1)->IsUndefined()) {  // null will also get undefined
         // a. Return Call(func, thisArg).
-        return JSFunction::Call(thread, func, thisArg, 0, nullptr);
+        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, 0);
+        return JSFunction::Call(&info);
     }
     // 3. Let argList be CreateListFromArrayLike(argArray).
     JSHandle<JSTaggedValue> arrayObj = GetCallArg(argv, 1);
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    if (!BuildArgumentsListFast(thread, arrayObj)) {
+    std::pair<TaggedArray*, size_t> argumentsList = BuildArgumentsListFast(thread, arrayObj);
+    if (!argumentsList.first) {
         JSHandle<TaggedArray> argList = JSHandle<TaggedArray>::Cast(
             JSObject::CreateListFromArrayLike(thread, arrayObj));
         // 4. ReturnIfAbrupt(argList).
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-        arguments->MakeArgList(*argList);
+        const size_t argsLength = argList->GetLength();
+        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, argsLength);
+        info.SetCallArg(argsLength, argList);
+        return JSFunction::Call(&info);
     }
-
     // 6. Return Call(func, thisArg, argList).
-    return JSFunction::Call(thread, func, thisArg, arguments->GetLength(), arguments->GetArgv());
+    const size_t argsLength = argumentsList.second;
+    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, argsLength);
+    info.SetCallArg(argsLength, argumentsList.first);
+    return JSFunction::Call(&info);
 }
 
 // ecma 19.2.3.2 Function.prototype.bind (thisArg , ...args)
@@ -122,7 +144,7 @@ JSTaggedValue BuiltinsFunction::FunctionPrototypeBind(EcmaRuntimeCallInfo *argv)
     }
 
     JSHandle<JSTaggedValue> thisArg = GetCallArg(argv, 0);
-    uint32_t argsLength = 0;
+    size_t argsLength = 0;
     if (argv->GetArgsNumber() > 1) {
         argsLength = argv->GetArgsNumber() - 1;
     }
@@ -130,7 +152,7 @@ JSTaggedValue BuiltinsFunction::FunctionPrototypeBind(EcmaRuntimeCallInfo *argv)
     // 3. Let args be a new (possibly empty) List consisting of all of the argument
     //    values provided after thisArg in order.
     JSHandle<TaggedArray> argsArray = factory->NewTaggedArray(argsLength);
-    for (uint32_t index = 0; index < argsLength; ++index) {
+    for (size_t index = 0; index < argsLength; ++index) {
         argsArray->Set(thread, index, GetCallArg(argv, index + 1));
     }
     // 4. Let F be BoundFunctionCreate(Target, thisArg, args).
@@ -212,18 +234,18 @@ JSTaggedValue BuiltinsFunction::FunctionPrototypeCall(EcmaRuntimeCallInfo *argv)
 
     JSHandle<JSTaggedValue> func = GetThis(argv);
     JSHandle<JSTaggedValue> thisArg = GetCallArg(argv, 0);
-    uint32_t argsLength = 0;
+    size_t argsLength = 0;
     if (argv->GetArgsNumber() > 1) {
         argsLength = argv->GetArgsNumber() - 1;
     }
     // 2. Let argList be an empty List.
     // 3. If this method was called with more than one argument then in left to right order,
     //    starting with the second argument, append each argument as the last element of argList.
-    InternalCallParams *argsList = thread->GetInternalCallParams();
-    argsList->MakeArgv(argv, 1);
-
     // 5. Return Call(func, thisArg, argList).
-    return JSFunction::Call(thread, func, thisArg, argsLength, argsList->GetArgv());
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, argsLength);
+    info.SetCallArg(argsLength, 0, argv, 1);
+    return JSFunction::Call(&info);
 }
 
 // ecma 19.2.3.5 Function.prototype.toString ()
