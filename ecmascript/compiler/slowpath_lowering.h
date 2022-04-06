@@ -221,6 +221,10 @@ private:
     void LowerNewLexicalEnvDyn(GateRef gate, GateRef glue);
     void LowerNewLexicalEnvWithNameDyn(GateRef gate, GateRef glue);
     void LowerPopLexicalEnv(GateRef gate, GateRef glue);
+    void LowerLdSuperByValue(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerStSuperByValue(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerTryStGlobalByName(GateRef gate, GateRef glue);
+    void LowerStConstToGlobalRecord(GateRef gate, GateRef glue);
 
     BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;
