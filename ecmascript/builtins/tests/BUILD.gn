@@ -506,6 +506,27 @@ host_unittest_action("BuiltinsRegexpTest") {
   }
 }
 
+host_unittest_action("BuiltinsRelativeTimeFormatTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_relative_time_format_test.cpp",
+  ]
+
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
+    sdk_libc_secshared_dep,
+  ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
+}
+
 host_unittest_action("BuiltinsSetTest") {
   module_out_path = module_output_path
 
@@ -703,6 +724,7 @@ group("unittest") {
     ":BuiltinsProxyTest",
     ":BuiltinsReflectTest",
     ":BuiltinsRegexpTest",
+    ":BuiltinsRelativeTimeFormatTest",
     ":BuiltinsSetTest",
     ":BuiltinsStringIteratorTest",
     ":BuiltinsStringTest",
@@ -742,6 +764,7 @@ group("host_unittest") {
     ":BuiltinsProxyTestAction",
     ":BuiltinsReflectTestAction",
     ":BuiltinsRegexpTestAction",
+    ":BuiltinsRelativeTimeFormatTestAction",
     ":BuiltinsSetTestAction",
     ":BuiltinsStringIteratorTestAction",
     ":BuiltinsStringTestAction",
