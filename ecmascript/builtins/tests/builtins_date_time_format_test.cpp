@@ -281,8 +281,10 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, FormatRange_001)
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
     JSTaggedValue result = BuiltinsDateTimeFormat::FormatRange(ecmaRuntimeCallInfo.get());
     TestHelper::TearDownFrame(thread, prev);
-    JSHandle<EcmaString> resultStr(thread, result);
-    EXPECT_EQ("2020/11/1周日 24:00:00 – 2021/7/1周四 24:00:00", CString(resultStr->GetCString().get()).c_str());
+    
+    JSHandle<EcmaString> handleStr(thread, result);
+    JSHandle<EcmaString> resultStr = factory->NewFromString("2020/11/1周日 24:00:00 – 2021/7/1周四 24:00:00");
+    EXPECT_EQ(handleStr->Compare(*resultStr), 0);
 }
 
 // FormatRange(en)
@@ -304,8 +306,10 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, FormatRange_002)
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
     JSTaggedValue result = BuiltinsDateTimeFormat::FormatRange(ecmaRuntimeCallInfo.get());
     TestHelper::TearDownFrame(thread, prev);
-    JSHandle<EcmaString> resultStr(thread, result);
-    EXPECT_EQ("Fri, 1/1/2021, 24:00:00 – Mon, 3/1/2021, 24:00:00", CString(resultStr->GetCString().get()).c_str());
+    
+    JSHandle<EcmaString> handleStr(thread, result);
+    JSHandle<EcmaString> resultStr = factory->NewFromString("Fri, 1/1/2021, 24:00:00 – Mon, 3/1/2021, 24:00:00");
+    EXPECT_EQ(handleStr->Compare(*resultStr), 0);
 }
 
 HWTEST_F_L0(BuiltinsDateTimeFormatTest, FormatRangeToParts)
