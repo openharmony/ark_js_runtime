@@ -3041,41 +3041,40 @@ GateRef Stub::FastTypeOf(GateRef glue, GateRef obj)
     env->PushCurrentLabel(&entry);
     Label exit(env);
 
-    GateRef gConstOffset = IntPtrAdd(glue,
-                                     IntPtr(JSThread::GlueData::GetGlobalConstOffset(env->Is32Bit())));
-    GateRef booleanIndex = GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX);
-    GateRef gConstUndefindStr = Load(VariableType::JS_POINTER(), gConstOffset, booleanIndex);
-    DEFVARIABLE(resultRep, VariableType::JS_POINTER(), gConstUndefindStr);
+    GateRef gConstAddr = IntPtrAdd(glue,
+        IntPtr(JSThread::GlueData::GetGlobalConstOffset(env->Is32Bit())));
+    GateRef undefinedIndex = GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX);
+    GateRef gConstUndefinedStr = Load(VariableType::JS_POINTER(), gConstAddr, undefinedIndex);
+    DEFVARIABLE(result, VariableType::JS_POINTER(), gConstUndefinedStr);
     Label objIsTrue(env);
     Label objNotTrue(env);
     Label defaultLabel(env);
-    GateRef gConstBooleanStr = Load(
-        VariableType::JS_POINTER(), gConstOffset, GetGlobalConstantString(ConstantIndex::BOOLEAN_STRING_INDEX));
-    Branch(Int64Equal(obj, Int64(JSTaggedValue::VALUE_TRUE)), &objIsTrue, &objNotTrue);
+    GateRef gConstBooleanStr = Load(VariableType::JS_POINTER(), gConstAddr,
+        GetGlobalConstantString(ConstantIndex::BOOLEAN_STRING_INDEX));
+    Branch(TaggedIsTrue(obj), &objIsTrue, &objNotTrue);
     Bind(&objIsTrue);
     {
-        resultRep = gConstBooleanStr;
+        result = gConstBooleanStr;
         Jump(&exit);
     }
     Bind(&objNotTrue);
     {
         Label objIsFalse(env);
         Label objNotFalse(env);
-        Branch(Int64Equal(obj, Int64(JSTaggedValue::VALUE_FALSE)), &objIsFalse, &objNotFalse);
+        Branch(TaggedIsFalse(obj), &objIsFalse, &objNotFalse);
         Bind(&objIsFalse);
         {
-            resultRep = gConstBooleanStr;
+            result = gConstBooleanStr;
             Jump(&exit);
         }
         Bind(&objNotFalse);
         {
             Label objIsNull(env);
             Label objNotNull(env);
-            Branch(Int64Equal(obj, Int64(JSTaggedValue::VALUE_NULL)), &objIsNull, &objNotNull);
+            Branch(TaggedIsNull(obj), &objIsNull, &objNotNull);
             Bind(&objIsNull);
             {
-                resultRep = Load(
-                    VariableType::JS_POINTER(), gConstOffset,
+                result = Load(VariableType::JS_POINTER(), gConstAddr,
                     GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
                 Jump(&exit);
             }
@@ -3083,11 +3082,10 @@ GateRef Stub::FastTypeOf(GateRef glue, GateRef obj)
             {
                 Label objIsUndefined(env);
                 Label objNotUndefined(env);
-                Branch(Int64Equal(obj, Int64(JSTaggedValue::VALUE_UNDEFINED)), &objIsUndefined,
-                    &objNotUndefined);
+                Branch(TaggedIsUndefined(obj), &objIsUndefined, &objNotUndefined);
                 Bind(&objIsUndefined);
                 {
-                    resultRep = Load(VariableType::JS_POINTER(), gConstOffset,
+                    result = Load(VariableType::JS_POINTER(), gConstAddr,
                         GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX));
                     Jump(&exit);
                 }
@@ -3108,8 +3106,7 @@ GateRef Stub::FastTypeOf(GateRef glue, GateRef obj)
             Branch(IsString(obj), &objIsString, &objNotString);
             Bind(&objIsString);
             {
-                resultRep = Load(
-                    VariableType::JS_POINTER(), gConstOffset,
+                result = Load(VariableType::JS_POINTER(), gConstAddr,
                     GetGlobalConstantString(ConstantIndex::STRING_STRING_INDEX));
                 Jump(&exit);
             }
@@ -3120,7 +3117,7 @@ GateRef Stub::FastTypeOf(GateRef glue, GateRef obj)
                 Branch(IsSymbol(obj), &objIsSymbol, &objNotSymbol);
                 Bind(&objIsSymbol);
                 {
-                    resultRep = Load(VariableType::JS_POINTER(), gConstOffset,
+                    result = Load(VariableType::JS_POINTER(), gConstAddr,
                         GetGlobalConstantString(ConstantIndex::SYMBOL_STRING_INDEX));
                     Jump(&exit);
                 }
@@ -3131,17 +3128,27 @@ GateRef Stub::FastTypeOf(GateRef glue, GateRef obj)
                     Branch(IsCallable(obj), &objIsCallable, &objNotCallable);
                     Bind(&objIsCallable);
                     {
-                        resultRep = Load(
-                            VariableType::JS_POINTER(), gConstOffset,
+                        result = Load(VariableType::JS_POINTER(), gConstAddr,
                             GetGlobalConstantString(ConstantIndex::FUNCTION_STRING_INDEX));
                         Jump(&exit);
                     }
                     Bind(&objNotCallable);
                     {
-                        resultRep = Load(
-                            VariableType::JS_POINTER(), gConstOffset,
-                            GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
-                        Jump(&exit);
+                        Label objIsBigInt(env);
+                        Label objNotBigInt(env);
+                        Branch(IsBigInt(obj), &objIsBigInt, &objNotBigInt);
+                        Bind(&objIsBigInt);
+                        {
+                            result = Load(VariableType::JS_POINTER(), gConstAddr,
+                                GetGlobalConstantString(ConstantIndex::BIGINT_STRING_INDEX));
+                            Jump(&exit);
+                        }
+                        Bind(&objNotBigInt);
+                        {
+                            result = Load(VariableType::JS_POINTER(), gConstAddr,
+                                GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
+                            Jump(&exit);
+                        }
                     }
                 }
             }
@@ -3153,8 +3160,7 @@ GateRef Stub::FastTypeOf(GateRef glue, GateRef obj)
             Branch(TaggedIsNumber(obj), &objIsNum, &objNotNum);
             Bind(&objIsNum);
             {
-                resultRep = Load(
-                    VariableType::JS_POINTER(), gConstOffset,
+                result = Load(VariableType::JS_POINTER(), gConstAddr,
                     GetGlobalConstantString(ConstantIndex::NUMBER_STRING_INDEX));
                 Jump(&exit);
             }
@@ -3163,7 +3169,7 @@ GateRef Stub::FastTypeOf(GateRef glue, GateRef obj)
         }
     }
     Bind(&exit);
-    auto ret = *resultRep;
+    auto ret = *result;
     env->PopCurrentLabel();
     return ret;
 }
