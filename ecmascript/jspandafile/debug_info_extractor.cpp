@@ -301,7 +301,7 @@ const CString &DebugInfoExtractor::GetSourceFile(panda_file::File::EntityId meth
 {
     auto iter = methods_.find(methodId.GetOffset());
     if (iter == methods_.end()) {
-        return CString("");
+        LOG(FATAL, DEBUGGER) << "Get source file of unknown method id: " << methodId.GetOffset();
     }
     return iter->second.sourceFile;
 }
@@ -310,7 +310,7 @@ const CString &DebugInfoExtractor::GetSourceCode(panda_file::File::EntityId meth
 {
     auto iter = methods_.find(methodId.GetOffset());
     if (iter == methods_.end()) {
-        return CString("");
+        LOG(FATAL, DEBUGGER) << "Get source code of unknown method id: " << methodId.GetOffset();
     }
     return iter->second.sourceCode;
 }
