@@ -254,19 +254,20 @@ HWTEST_F_L0(ProtoChangeDetailsTest, Get)
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
     JSHandle<JSObject> handleObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
-    JSTaggedValue weakRefValue(handleObj.GetTaggedValue());
-    weakRefValue.CreateWeakRef();
+    JSTaggedValue objValue(handleObj.GetTaggedValue());
+    objValue.CreateWeakRef();
+    JSHandle<JSTaggedValue> weakRefValue(thread, objValue);
 
     array_size_t weakVectorCapacity = 3;
     JSHandle<WeakVector> weakVector = WeakVector::Create(thread, weakVectorCapacity);
     weakVector->Set(thread, 0, JSTaggedValue(0));
-    weakVector->Set(thread, 1, weakRefValue);
+    weakVector->Set(thread, 1, weakRefValue.GetTaggedValue());
     weakVector->Set(thread, 2, JSTaggedValue::Undefined());
 
     JSHandle<ChangeListener> handleChangeListenerArr = JSHandle<ChangeListener>::Cast(weakVector);
     EXPECT_TRUE(*handleChangeListenerArr != nullptr);
     EXPECT_EQ(handleChangeListenerArr->Get(0).GetInt(), 0);
-    EXPECT_NE(handleChangeListenerArr->Get(1), weakRefValue);
+    EXPECT_NE(handleChangeListenerArr->Get(1), weakRefValue.GetTaggedValue());
     EXPECT_TRUE(handleChangeListenerArr->Get(2).IsUndefined());
 }
 } // namespace panda::test
