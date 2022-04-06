@@ -136,8 +136,8 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
     if (!snapshotSerializeEnable_) {
         snapshotDeserializeEnable_ = options_.IsSnapshotDeserializeEnabled();
     }
-    snapshotFileName_ = options_.GetSnapshotFile();
-    frameworkAbcFileName_ = options_.GetFrameworkAbcFile();
+    snapshotFileName_ = options_.GetSnapshotFile().c_str();
+    frameworkAbcFileName_ = options_.GetFrameworkAbcFile().c_str();
     options_.ParseAsmInterOption();
 
     auto runtime = Runtime::GetCurrent();
@@ -583,7 +583,7 @@ void EcmaVM::RemoveFromNativePointerList(JSNativePointer *array)
 }
 
 // Do not support snapshot on windows
-bool EcmaVM::VerifyFilePath(const std::string &filePath) const
+bool EcmaVM::VerifyFilePath(const CString &filePath) const
 {
 #ifndef PANDA_TARGET_WINDOWS
     if (filePath.size() > PATH_MAX) {

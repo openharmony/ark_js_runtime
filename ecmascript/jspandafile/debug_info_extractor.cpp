@@ -15,6 +15,7 @@
 
 #include "ecmascript/jspandafile/debug_info_extractor.h"
 
+#include "ecmascript/jspandafile/js_pandafile.h"
 #include "libpandabase/utils/utf.h"
 #include "libpandafile/class_data_accessor-inl.h"
 #include "libpandafile/debug_data_accessor-inl.h"
@@ -33,9 +34,9 @@ static const char *GetStringFromConstantPool(const panda_file::File &pf, uint32_
     return utf::Mutf8AsCString(pf.GetStringData(panda_file::File::EntityId(offset)).data);
 }
 
-DebugInfoExtractor::DebugInfoExtractor(const panda_file::File *pf)
+DebugInfoExtractor::DebugInfoExtractor(const JSPandaFile *jsPandaFile)
 {
-    Extract(pf);
+    Extract(jsPandaFile->GetPandaFile());
 }
 
 class LineNumberProgramProcessor {
@@ -50,7 +51,7 @@ public:
     void Process()
     {
         auto opcode = ReadOpcode();
-        lnt_.push_back({state_.GetAddress(), state_.GetLine()});
+        lnt_.push_back({static_cast<int32_t>(state_.GetAddress()), static_cast<int32_t>(state_.GetLine())});
         while (opcode != Opcode::END_SEQUENCE) {
             switch (opcode) {
                 case Opcode::ADVANCE_LINE: {
@@ -200,7 +201,7 @@ private:
     {
         auto cn = state_.ReadULeb128();
         state_.SetColumn(cn);
-        cnt_.push_back({state_.GetAddress(), state_.GetColumn()});
+        cnt_.push_back({static_cast<int32_t>(state_.GetAddress()), static_cast<int32_t>(state_.GetColumn())});
     }
 
     void HandleSpecialOpcode(LineNumberProgramItem::Opcode opcode)
@@ -213,7 +214,7 @@ private:
             static_cast<int32_t>(adjustOpcode) % LineNumberProgramItem::LINE_RANGE + LineNumberProgramItem::LINE_BASE;
         state_.AdvancePc(pcOffset);
         state_.AdvanceLine(lineOffset);
-        lnt_.push_back({state_.GetAddress(), state_.GetLine()});
+        lnt_.push_back({static_cast<int32_t>(state_.GetAddress()), static_cast<int32_t>(state_.GetLine())});
     }
 
     LineProgramState state_;
@@ -296,27 +297,27 @@ const LocalVariableTable &DebugInfoExtractor::GetLocalVariableTable(panda_file::
     return iter->second.localVariableTable;
 }
 
-const char *DebugInfoExtractor::GetSourceFile(panda_file::File::EntityId methodId) const
+const CString &DebugInfoExtractor::GetSourceFile(panda_file::File::EntityId methodId) const
 {
     auto iter = methods_.find(methodId.GetOffset());
     if (iter == methods_.end()) {
-        return "";
+        return CString("");
     }
-    return iter->second.sourceFile.c_str();
+    return iter->second.sourceFile;
 }
 
-const char *DebugInfoExtractor::GetSourceCode(panda_file::File::EntityId methodId) const
+const CString &DebugInfoExtractor::GetSourceCode(panda_file::File::EntityId methodId) const
 {
     auto iter = methods_.find(methodId.GetOffset());
     if (iter == methods_.end()) {
-        return "";
+        return CString("");
     }
-    return iter->second.sourceCode.c_str();
+    return iter->second.sourceCode;
 }
 
-std::vector<panda_file::File::EntityId> DebugInfoExtractor::GetMethodIdList() const
+CVector<panda_file::File::EntityId> DebugInfoExtractor::GetMethodIdList() const
 {
-    std::vector<panda_file::File::EntityId> list;
+    CVector<panda_file::File::EntityId> list;
 
     for (const auto &method : methods_) {
         list.push_back(panda_file::File::EntityId(method.first));

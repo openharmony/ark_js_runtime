@@ -19,7 +19,6 @@
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/jspandafile/debug_info_extractor.h"
-#include "ecmascript/mem/c_containers.h"
 #include "libpandabase/macros.h"
 #include "include/tooling/debug_interface.h"
 
@@ -28,6 +27,7 @@ using panda::ecmascript::CList;
 using panda::ecmascript::DebugInfoExtractor;
 using panda::ecmascript::EcmaVM;
 using panda::ecmascript::JSMethod;
+using panda::ecmascript::JSPandaFile;
 using panda::panda_file::File;
 
 class JSPtExtractor : public DebugInfoExtractor {
@@ -60,11 +60,11 @@ public:
         Type type_;
     };
 
-    explicit JSPtExtractor(const File *pf) : DebugInfoExtractor(pf) {}
+    explicit JSPtExtractor(const JSPandaFile *jsPandaFile) : DebugInfoExtractor(jsPandaFile) {}
     virtual ~JSPtExtractor() = default;
 
     template<class Callback>
-    bool MatchWithLocation(const Callback &cb, size_t line, size_t column)
+    bool MatchWithLocation(const Callback &cb, int32_t line, int32_t column)
     {
         auto methods = GetMethodIdList();
         for (const auto &method : methods) {
@@ -92,8 +92,8 @@ public:
     {
         auto lineTable = GetLineNumberTable(methodId);
         auto columnTable = GetColumnNumberTable(methodId);
-        size_t line = 0;
-        size_t column = 0;
+        int32_t line = 0;
+        int32_t column = 0;
 
         for (const auto &pair : lineTable) {
             if (offset < pair.offset) {

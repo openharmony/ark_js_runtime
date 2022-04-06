@@ -175,7 +175,7 @@ PrimitiveRemoteObject::PrimitiveRemoteObject(const EcmaVM *ecmaVm, const Local<J
         this->SetType(ObjectType::Undefined);
     } else if (tagged->IsNumber()) {
         this->SetType(ObjectType::Number)
-            .SetDescription(DebuggerApi::ConvertToString(tagged->ToString(ecmaVm)->ToString()));
+            .SetDescription(DebuggerApi::ToCString(tagged->ToString(ecmaVm)));
         double val = Local<NumberRef>(tagged)->Value();
         if (!std::isfinite(val) || (val == 0 && ((bit_cast<uint64_t>(val) & DOUBLE_SIGN_MASK) == DOUBLE_SIGN_MASK))) {
             this->SetUnserializableValue(this->GetDescription());
@@ -237,32 +237,32 @@ CString ObjectRemoteObject::DescriptionForObject(const EcmaVM *ecmaVm, const Loc
 
 CString ObjectRemoteObject::DescriptionForArray(const EcmaVM *ecmaVm, const Local<ArrayRef> &tagged)
 {
-    CString description = "Array(" + DebuggerApi::ToCString(tagged->Length(ecmaVm)) + ")";
+    CString description = "Array(" + ToCString<uint32_t>(tagged->Length(ecmaVm)) + ")";
     return description;
 }
 
 CString ObjectRemoteObject::DescriptionForRegexp(const EcmaVM *ecmaVm, const Local<RegExpRef> &tagged)
 {
-    CString regexpSource = DebuggerApi::ConvertToString(tagged->GetOriginalSource(ecmaVm)->ToString());
+    CString regexpSource = DebuggerApi::ToCString(tagged->GetOriginalSource(ecmaVm));
     CString description = "/" + regexpSource + "/";
     return description;
 }
 
 CString ObjectRemoteObject::DescriptionForDate(const EcmaVM *ecmaVm, const Local<DateRef> &tagged)
 {
-    CString description = DebuggerApi::ConvertToString(tagged->ToString(ecmaVm)->ToString());
+    CString description = DebuggerApi::ToCString(tagged->ToString(ecmaVm));
     return description;
 }
 
 CString ObjectRemoteObject::DescriptionForMap(const Local<MapRef> &tagged)
 {
-    CString description = ("Map(" + DebuggerApi::ToCString(tagged->GetSize()) + ")");
+    CString description = ("Map(" + ToCString<uint32_t>(tagged->GetSize()) + ")");
     return description;
 }
 
 CString ObjectRemoteObject::DescriptionForSet(const Local<SetRef> &tagged)
 {
-    CString description = ("Set(" + DebuggerApi::ToCString(tagged->GetSize()) + ")");
+    CString description = ("Set(" + ToCString<uint32_t>(tagged->GetSize()) + ")");
     return description;
 }
 
@@ -270,20 +270,20 @@ CString ObjectRemoteObject::DescriptionForError(const EcmaVM *ecmaVm, const Loca
 {
     Local<JSValueRef> stack = StringRef::NewFromUtf8(ecmaVm, "stack");
     Local<JSValueRef> result = Local<ObjectRef>(tagged)->Get(ecmaVm, stack);
-    return DebuggerApi::ConvertToString(result->ToString(ecmaVm)->ToString());
+    return DebuggerApi::ToCString(result->ToString(ecmaVm));
 }
 
 CString ObjectRemoteObject::DescriptionForArrayBuffer(const EcmaVM *ecmaVm, const Local<ArrayBufferRef> &tagged)
 {
     int32_t len = tagged->ByteLength(ecmaVm);
-    CString description = ("ArrayBuffer(" + DebuggerApi::ToCString(len) + ")");
+    CString description = ("ArrayBuffer(" + ToCString<uint32_t>(len) + ")");
     return description;
 }
 
 CString SymbolRemoteObject::DescriptionForSymbol(const EcmaVM *ecmaVm, const Local<SymbolRef> &tagged) const
 {
     CString description =
-        "Symbol(" + DebuggerApi::ConvertToString(Local<StringRef>(tagged->GetDescription(ecmaVm))->ToString()) + ")";
+        "Symbol(" + DebuggerApi::ToCString(tagged->GetDescription(ecmaVm)) + ")";
     return description;
 }
 
@@ -296,7 +296,7 @@ CString FunctionRemoteObject::DescriptionForFunction(const EcmaVM *ecmaVm, const
         sourceCode = "[js code]";
     }
     Local<StringRef> name = tagged->GetName(ecmaVm);
-    CString description = "function " + DebuggerApi::ConvertToString(name->ToString()) + "() { " + sourceCode + " }";
+    CString description = "function " + DebuggerApi::ToCString(name) + "( { " + sourceCode + " }";
     return description;
 }
 
@@ -313,7 +313,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "type")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            auto type = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            auto type = DebuggerApi::ToCString(result);
             if (ObjectType::Valid(type)) {
                 remoteObject->type_ = type;
             } else {
@@ -328,7 +328,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "subtype")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            auto type = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            auto type = DebuggerApi::ToCString(result);
             if (ObjectSubType::Valid(type)) {
                 remoteObject->subtype_ = type;
             } else {
@@ -341,7 +341,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "className")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            remoteObject->className_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            remoteObject->className_ = DebuggerApi::ToCString(result);
         } else {
             error += "'className' should be a String;";
         }
@@ -354,7 +354,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "unserializableValue")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            remoteObject->unserializableValue_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            remoteObject->unserializableValue_ = DebuggerApi::ToCString(result);
         } else {
             error += "'unserializableValue' should be a String;";
         }
@@ -362,7 +362,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "description")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            remoteObject->description_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            remoteObject->description_ = DebuggerApi::ToCString(result);
         } else {
             error += "'description' should be a String;";
         }
@@ -370,7 +370,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            remoteObject->objectId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            remoteObject->objectId_ = DebuggerApi::StringToInt(result);
         } else {
             error += "'objectId' should be a String;";
         }
@@ -416,7 +416,7 @@ Local<ObjectRef> RemoteObject::ToObject(const EcmaVM *ecmaVm)
     if (objectId_) {
         params->Set(ecmaVm,
             Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, objectId_->c_str())));
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(objectId_.value()).c_str())));
     }
 
     return params;
@@ -445,7 +445,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "text")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            exceptionDetails->text_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            exceptionDetails->text_ = DebuggerApi::ToCString(result);
         } else {
             error += "'text' should be a String;";
         }
@@ -475,7 +475,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            exceptionDetails->scriptId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            exceptionDetails->scriptId_ = DebuggerApi::StringToInt(result);
         } else {
             error += "'scriptId' should be a String;";
         }
@@ -483,7 +483,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            exceptionDetails->url_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            exceptionDetails->url_ = DebuggerApi::ToCString(result);
         } else {
             error += "'url' should be a String;";
         }
@@ -536,7 +536,7 @@ Local<ObjectRef> ExceptionDetails::ToObject(const EcmaVM *ecmaVm)
     if (scriptId_) {
         params->Set(ecmaVm,
             Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, scriptId_->c_str())));
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(scriptId_.value()).c_str())));
     }
     if (url_) {
         params->Set(ecmaVm,
@@ -572,7 +572,7 @@ std::unique_ptr<InternalPropertyDescriptor> InternalPropertyDescriptor::Create(c
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            internalPropertyDescriptor->name_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            internalPropertyDescriptor->name_ = DebuggerApi::ToCString(result);
         } else {
             error += "'name' should be a String;";
         }
@@ -631,7 +631,7 @@ std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(con
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            propertyDescriptor->name_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            propertyDescriptor->name_ = DebuggerApi::ToCString(result);
         } else {
             error += "'name' should be a String;";
         }
@@ -723,10 +723,10 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::FromProperty(const EcmaV
     if (name->IsSymbol()) {
         Local<SymbolRef> symbol(name);
         nameStr =
-            "Symbol(" + DebuggerApi::ConvertToString(Local<SymbolRef>(name)->GetDescription(ecmaVm)->ToString()) + ")";
+            "Symbol(" + DebuggerApi::ToCString(Local<SymbolRef>(name)->GetDescription(ecmaVm)) + ")";
         debuggerProperty->symbol_ = RemoteObject::FromTagged(ecmaVm, name);
     } else {
-        nameStr = DebuggerApi::ConvertToString(name->ToString(ecmaVm)->ToString());
+        nameStr = DebuggerApi::ToCString(name->ToString(ecmaVm));
     }
 
     debuggerProperty->name_ = nameStr;
@@ -762,7 +762,7 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const EcmaVM *ecm
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            propertyDescriptor->name_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            propertyDescriptor->name_ = DebuggerApi::ToCString(result);
         } else {
             error += "'name' should be a String;";
         }
@@ -946,7 +946,7 @@ std::unique_ptr<CallArgument> CallArgument::Create(const EcmaVM *ecmaVm, const L
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "unserializableValue")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            callArgument->unserializableValue_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            callArgument->unserializableValue_ = DebuggerApi::ToCString(result);
         } else {
             error += "'unserializableValue' should be a String;";
         }
@@ -954,7 +954,7 @@ std::unique_ptr<CallArgument> CallArgument::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            callArgument->objectId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            callArgument->objectId_ = DebuggerApi::StringToInt(result);
         } else {
             error += "'objectId' should be a String;";
         }
@@ -982,7 +982,7 @@ Local<ObjectRef> CallArgument::ToObject(const EcmaVM *ecmaVm)
     if (objectId_) {
         params->Set(ecmaVm,
             Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, objectId_->c_str())));
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(objectId_.value()).c_str())));
     }
 
     return params;
@@ -1001,7 +1001,7 @@ std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSV
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            location->scriptId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            location->scriptId_ = DebuggerApi::StringToInt(result);
         } else {
             error += "'scriptId' should be a String;";
         }
@@ -1040,7 +1040,7 @@ Local<ObjectRef> Location::ToObject(const EcmaVM *ecmaVm)
 
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, scriptId_.c_str())));
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(scriptId_).c_str())));
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")),
         IntegerRef::New(ecmaVm, line_));
     if (column_) {
@@ -1126,7 +1126,7 @@ std::unique_ptr<SearchMatch> SearchMatch::Create(const EcmaVM *ecmaVm, const Loc
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineContent")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            locationSearch->lineContent_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            locationSearch->lineContent_ = DebuggerApi::ToCString(result);
         } else {
             error += "'lineContent' should be a String;";
         }
@@ -1167,7 +1167,7 @@ std::unique_ptr<LocationRange> LocationRange::Create(const EcmaVM *ecmaVm, const
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            locationRange->scriptId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            locationRange->scriptId_ = DebuggerApi::StringToInt(result);
         } else {
             error += "'scriptId' should be a String;";
         }
@@ -1218,7 +1218,7 @@ Local<ObjectRef> LocationRange::ToObject(const EcmaVM *ecmaVm)
 
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, scriptId_.c_str())));
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(scriptId_).c_str())));
     ASSERT(start_ != nullptr);
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "object")),
@@ -1243,7 +1243,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            breakLocation->scriptId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            breakLocation->scriptId_ = DebuggerApi::StringToInt(result);
         } else {
             error += "'scriptId' should be a String;";
         }
@@ -1271,7 +1271,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "type")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            auto type = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            auto type = DebuggerApi::ToCString(result);
             if (BreakType::Valid(type)) {
                 breakLocation->type_ = type;
             } else {
@@ -1295,7 +1295,7 @@ Local<ObjectRef> BreakLocation::ToObject(const EcmaVM *ecmaVm)
 
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, scriptId_.c_str())));
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(scriptId_).c_str())));
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")),
         IntegerRef::New(ecmaVm, line_));
     if (column_) {
@@ -1325,7 +1325,7 @@ std::unique_ptr<Scope> Scope::Create(const EcmaVM *ecmaVm, const Local<JSValueRe
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "type")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            auto type = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            auto type = DebuggerApi::ToCString(result);
             if (Scope::Type::Valid(type)) {
                 scope->type_ = type;
             } else {
@@ -1355,7 +1355,7 @@ std::unique_ptr<Scope> Scope::Create(const EcmaVM *ecmaVm, const Local<JSValueRe
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scope->name_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            scope->name_ = DebuggerApi::ToCString(result);
         } else {
             error += "'name' should be a String;";
         }
@@ -1439,7 +1439,7 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrameId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            callFrame->callFrameId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            callFrame->callFrameId_ = DebuggerApi::StringToInt(result);
         } else {
             error += "'callFrameId' should be a String;";
         }
@@ -1449,7 +1449,7 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionName")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            callFrame->functionName_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            callFrame->functionName_ = DebuggerApi::ToCString(result);
         } else {
             error += "'functionName' should be a String;";
         }
@@ -1488,7 +1488,7 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            callFrame->url_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
+            callFrame->url_ = DebuggerApi::ToCString(result);
         } else {
             error += "'url' should be a String;";
         }
@@ -1558,7 +1558,7 @@ Local<ObjectRef> CallFrame::ToObject(const EcmaVM *ecmaVm)
 
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrameId")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, callFrameId_.c_str())));
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(callFrameId_).c_str())));
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionName")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, functionName_.c_str())));

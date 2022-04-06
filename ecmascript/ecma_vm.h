@@ -412,7 +412,7 @@ private:
 
     void InitializeEcmaScriptRunStat();
 
-    bool VerifyFilePath(const std::string &filePath) const;
+    bool VerifyFilePath(const CString &filePath) const;
 
     void ClearBufferData();
 
@@ -454,8 +454,8 @@ private:
     EcmaRuntimeStat *runtimeStat_ {nullptr};
 
     // For framewrok file snapshot.
-    std::string snapshotFileName_;
-    std::string frameworkAbcFileName_;
+    CString snapshotFileName_;
+    CString frameworkAbcFileName_;
     JSTaggedValue frameworkProgram_ {JSTaggedValue::Hole()};
     const JSPandaFile *frameworkPandaFile_ {nullptr};
     CMap<const JSPandaFile *, JSTaggedValue> cachedConstpools_ {};

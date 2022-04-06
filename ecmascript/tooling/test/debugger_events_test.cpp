@@ -92,12 +92,12 @@ HWTEST_F_L0(DebuggerEventsTest, BreakpointResolvedCreateTest)
     EXPECT_EQ(breakpointResolved, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-        {"location":{"scriptId":"id2","lineNumber":99}}})";
+        {"location":{"scriptId":"2","lineNumber":99}}})";
     breakpointResolved = BreakpointResolved::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakpointResolved, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"breakpointId":"00",
-        "location":{"scriptId":"id2","lineNumber":99}}})";
+        "location":{"scriptId":"2","lineNumber":99}}})";
     breakpointResolved = BreakpointResolved::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(breakpointResolved, nullptr);
 }
@@ -109,7 +109,7 @@ HWTEST_F_L0(DebuggerEventsTest, BreakpointResolvedToObjectTest)
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"breakpointId":"00",
-        "location":{"scriptId":"id2","lineNumber":99}}})";
+        "location":{"scriptId":"2","lineNumber":99}}})";
     breakpointResolved = BreakpointResolved::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
 
     ASSERT_NE(breakpointResolved, nullptr);
@@ -123,7 +123,7 @@ HWTEST_F_L0(DebuggerEventsTest, BreakpointResolvedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("00", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("00", DebuggerApi::ToCString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "location");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -166,7 +166,7 @@ HWTEST_F_L0(DebuggerEventsTest, PausedCreateTest)
           {"callFrames":[)" +
           R"({"id":0,"method":"Debugger.Test","params":{
           "callFrameId":10,"functionName":"name0",
-          "location":{"scriptId":"id5","lineNumber":19},"url":"url7","scopeChain":
+          "location":{"scriptId":"5","lineNumber":19},"url":"url7","scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})" +
@@ -176,7 +176,7 @@ HWTEST_F_L0(DebuggerEventsTest, PausedCreateTest)
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"callFrames":[)" +
           R"({"callFrameId":"10","functionName":"name0",
-          "location":{"scriptId":"id5","lineNumber":19},"url":"url7","scopeChain":
+          "location":{"scriptId":"5","lineNumber":19},"url":"url7","scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}})" +
@@ -193,7 +193,7 @@ HWTEST_F_L0(DebuggerEventsTest, PausedToObjectTest)
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
     {"callFrames":[{"callFrameId":"10","functionName":"name0",
-    "location":{"scriptId":"id5","lineNumber":19},"url":"url7",
+    "location":{"scriptId":"5","lineNumber":19},"url":"url7",
     "scopeChain":[{"type":"global","object":{"type":"object"}}, {"type":"local","object":{"type":"object"}}],
     "this":{"type":"object","subtype":"v128"}}],"reason":"exception"}})";
     paused = Paused::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
@@ -209,7 +209,7 @@ HWTEST_F_L0(DebuggerEventsTest, PausedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("exception", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("exception", DebuggerApi::ToCString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "callFrames");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -230,7 +230,7 @@ HWTEST_F_L0(DebuggerEventsTest, ResumedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string(resumed->GetName().c_str()), Local<StringRef>(result)->ToString());
+    EXPECT_EQ(CString(resumed->GetName().c_str()), DebuggerApi::ToCString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -265,7 +265,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     EXPECT_EQ(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -276,7 +276,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     EXPECT_EQ(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -286,7 +286,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     EXPECT_EQ(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -295,7 +295,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     EXPECT_EQ(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4}})";
@@ -303,20 +303,20 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     EXPECT_EQ(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0}})";
     parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js"}})";
     parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00"}})";
+    {"scriptId":"100"}})";
     parse = ScriptFailedToParse::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(parse, nullptr);
 
@@ -332,7 +332,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     EXPECT_EQ(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -346,7 +346,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     "isModule":true,
     "length":34,
     "stackTrace":{"callFrames":[{"callFrameId":"10","functionName":"name0",
-    "location":{"scriptId":"id5","lineNumber":19},"url":"url7",
+    "location":{"scriptId":"5","lineNumber":19},"url":"url7",
     "scopeChain":[{"type":"global","object":{"type":"object"}}, {"type":"local","object":{"type":"object"}}],
     "this":{"type":"object","subtype":"v128"}}]},
     "codeOffset":432,
@@ -356,7 +356,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     ASSERT_NE(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -370,7 +370,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     "isModule":true,
     "length":34,
     "stackTrace":{"callFrames":[{"callFrameId":"10","functionName":"name0",
-    "location":{"scriptId":"id5","lineNumber":19},"url":"url7",
+    "location":{"scriptId":"5","lineNumber":19},"url":"url7",
     "scopeChain":[{"type":"global","object":{"type":"object"}}, {"type":"local","object":{"type":"object"}}],
     "this":{"type":"object","subtype":"v128"}}]},
     "codeOffset":432
@@ -379,7 +379,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     ASSERT_NE(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -393,7 +393,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     "isModule":true,
     "length":34,
     "stackTrace":{"callFrames":[{"callFrameId":"10","functionName":"name0",
-    "location":{"scriptId":"id5","lineNumber":19},"url":"url7",
+    "location":{"scriptId":"5","lineNumber":19},"url":"url7",
     "scopeChain":[{"type":"global","object":{"type":"object"}}, {"type":"local","object":{"type":"object"}}],
     "this":{"type":"object","subtype":"v128"}}]}
     }})";
@@ -401,7 +401,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     ASSERT_NE(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -419,7 +419,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     ASSERT_NE(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -436,7 +436,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     ASSERT_NE(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -452,7 +452,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     ASSERT_NE(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -467,7 +467,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     ASSERT_NE(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -481,7 +481,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     ASSERT_NE(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -494,7 +494,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     ASSERT_NE(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -508,7 +508,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseCreateTest)
     "isModule":true,
     "length":34,
     "stackTrace":{"callFrames":[{"callFrameId":"10","functionName":"name0",
-    "location":{"scriptId":"id5","lineNumber":19},"url":"url7",
+    "location":{"scriptId":"5","lineNumber":19},"url":"url7",
     "scopeChain":[{"type":"global","object":{"type":"object"}}, {"type":"local","object":{"type":"object"}}],
     "this":{"type":"object","subtype":"v128"}}]},
     "codeOffset":432,
@@ -526,7 +526,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseToObjectTest)
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -540,7 +540,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseToObjectTest)
     "isModule":true,
     "length":34,
     "stackTrace":{"callFrames":[{"callFrameId":"10","functionName":"name0",
-    "location":{"scriptId":"id5","lineNumber":19},"url":"url7",
+    "location":{"scriptId":"5","lineNumber":19},"url":"url7",
     "scopeChain":[{"type":"global","object":{"type":"object"}}, {"type":"local","object":{"type":"object"}}],
     "this":{"type":"object","subtype":"v128"}}]},
     "codeOffset":432,
@@ -560,13 +560,13 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("00", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("100", DebuggerApi::ToCString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "url");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("use/test.js", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("use/test.js", DebuggerApi::ToCString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "startLine");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -602,7 +602,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("hash0001", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("hash0001", DebuggerApi::ToCString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "executionContextAuxData");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -614,7 +614,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("usr/", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("usr/", DebuggerApi::ToCString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "hasSourceURL");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -644,13 +644,13 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("JavaScript", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("JavaScript", DebuggerApi::ToCString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "embedderName");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("hh", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("hh", DebuggerApi::ToCString(result));
 }
 
 HWTEST_F_L0(DebuggerEventsTest, ScriptParsedCreateTest)
@@ -679,7 +679,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedCreateTest)
     EXPECT_EQ(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -690,7 +690,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedCreateTest)
     EXPECT_EQ(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -700,7 +700,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedCreateTest)
     EXPECT_EQ(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -709,7 +709,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedCreateTest)
     EXPECT_EQ(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4}})";
@@ -717,20 +717,20 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedCreateTest)
     EXPECT_EQ(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0}})";
     parse = ScriptParsed::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js"}})";
     parse = ScriptParsed::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00"}})";
+    {"scriptId":"100"}})";
     parse = ScriptParsed::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(parse, nullptr);
 
@@ -746,7 +746,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedCreateTest)
     EXPECT_EQ(parse, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"100",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -761,7 +761,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedCreateTest)
     "isModule":true,
     "length":34,
     "stackTrace":{"callFrames":[{"callFrameId":"10","functionName":"name0",
-    "location":{"scriptId":"id5","lineNumber":19},"url":"url7",
+    "location":{"scriptId":"5","lineNumber":19},"url":"url7",
     "scopeChain":[{"type":"global","object":{"type":"object"}}, {"type":"local","object":{"type":"object"}}],
     "this":{"type":"object","subtype":"v128"}}]},
     "codeOffset":432,
@@ -779,7 +779,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"scriptId":"00",
+    {"scriptId":"10",
     "url":"use/test.js",
     "startLine":0,
     "startColumn":4,
@@ -794,7 +794,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
     "isModule":true,
     "length":34,
     "stackTrace":{"callFrames":[{"callFrameId":"10","functionName":"name0",
-    "location":{"scriptId":"id5","lineNumber":19},"url":"url7",
+    "location":{"scriptId":"5","lineNumber":19},"url":"url7",
     "scopeChain":[{"type":"global","object":{"type":"object"}}, {"type":"local","object":{"type":"object"}}],
     "this":{"type":"object","subtype":"v128"}}]},
     "codeOffset":432,
@@ -814,13 +814,13 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("00", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("10", DebuggerApi::ToCString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "url");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("use/test.js", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("use/test.js", DebuggerApi::ToCString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "startLine");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -856,7 +856,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("hash0001", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("hash0001", DebuggerApi::ToCString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "executionContextAuxData");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -874,7 +874,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("usr/", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("usr/", DebuggerApi::ToCString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "hasSourceURL");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -904,12 +904,12 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("JavaScript", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("JavaScript", DebuggerApi::ToCString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "embedderName");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("hh", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("hh", DebuggerApi::ToCString(result));
 }
 }  // namespace panda::test

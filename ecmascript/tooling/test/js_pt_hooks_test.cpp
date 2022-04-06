@@ -371,7 +371,7 @@ HWTEST_F_L0(JSPtHooksTest, ExceptionRevokedTest)
 {
     auto backend = std::make_unique<JSBackend>(ecmaVm);
     std::unique_ptr<JSPtHooks>jspthooks = std::make_unique<JSPtHooks>(backend.get());
-    jspthooks->ExceptionRevoked(std::string(), panda_file::File::EntityId());
+    jspthooks->ExceptionRevoked("", panda_file::File::EntityId());
     ASSERT_NE(jspthooks, nullptr);
 }
 

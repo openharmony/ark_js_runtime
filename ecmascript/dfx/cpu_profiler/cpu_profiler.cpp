@@ -222,11 +222,11 @@ void CpuProfiler::ParseMethodInfo(JSMethod *method, InterpretedFrameHandler fram
             }
         }
         // line number
-        int lineNumber = 0;
-        int columnNumber = 0;
-        auto callbackFunc = [&](size_t line, size_t column) -> bool {
-            lineNumber = static_cast<int>(line) + 1;
-            columnNumber = static_cast<int>(column) + 1;
+        int32_t lineNumber = 0;
+        int32_t columnNumber = 0;
+        auto callbackFunc = [&](int32_t line, int32_t column) -> bool {
+            lineNumber = line + 1;
+            columnNumber = column + 1;
             return true;
         };
         if (!debugExtractor->MatchWithOffset(callbackFunc, method->GetFileId(), frameHandler.GetBytecodeOffset())) {

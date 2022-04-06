@@ -56,11 +56,6 @@ enum StackState {
 
 class PUBLIC_API DebuggerApi {
 public:
-    // CString
-    static uint64_t CStringToULL(const CString &str);
-    static CString ToCString(int32_t number);
-    static CString ConvertToString(const std::string &str);
-
     // InterpretedFrameHandler
     static uint32_t GetStackDepth(const EcmaVM *ecmaVm);
     static bool StackWalker(const EcmaVM *ecmaVm, std::function<StackState(const InterpretedFrameHandler *)> func);
@@ -73,13 +68,15 @@ public:
     static Local<JSValueRef> GetVRegValue(const EcmaVM *ecmaVm,
         const InterpretedFrameHandler *frameHandler, size_t index);
 
+    // String
+    static int32_t CStringToInt(const CString &str);
+    static CString ToCString(Local<JSValueRef> str);
+    static int32_t StringToInt(Local<JSValueRef> str);
+
     // JSThread
     static Local<JSValueRef> GetException(const EcmaVM *ecmaVm);
     static void SetException(const EcmaVM *ecmaVm, Local<JSValueRef> exception);
     static void ClearException(const EcmaVM *ecmaVm);
-
-    // EcmaVM
-    static const panda_file::File *FindPandaFile(const CString &fileName);
 
     // NumberHelper
     static double StringToDouble(const uint8_t *start, const uint8_t *end, uint8_t radix);
@@ -97,8 +94,8 @@ public:
     // ScopeInfo
     static Local<JSValueRef> GetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t slot);
     static void SetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t slot, Local<JSValueRef> value);
-    static bool EvaluateLexicalValue(const EcmaVM *ecmaVm, const std::string &name, int32_t &level, uint32_t &slot);
-    static Local<JSValueRef> GetLexicalValueInfo(const EcmaVM *ecmaVm, const std::string &name);
+    static bool EvaluateLexicalValue(const EcmaVM *ecmaVm, const CString &name, int32_t &level, uint32_t &slot);
+    static Local<JSValueRef> GetLexicalValueInfo(const EcmaVM *ecmaVm, const CString &name);
 };
 }  // namespace panda::tooling::ecmascript
 

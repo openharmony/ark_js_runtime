@@ -21,7 +21,7 @@
 #include "ecmascript/module/js_module_manager.h"
 
 namespace panda::ecmascript {
-bool JSPandaFileExecutor::ExecuteFromFile(JSThread *thread, const std::string &filename, std::string_view entryPoint,
+bool JSPandaFileExecutor::ExecuteFromFile(JSThread *thread, const CString &filename, std::string_view entryPoint,
                                           const std::vector<std::string> &args)
 {
     const JSPandaFile *jsPandaFile = JSPandaFileManager::GetInstance()->LoadJSPandaFile(filename);
@@ -49,7 +49,7 @@ bool JSPandaFileExecutor::ExecuteFromFile(JSThread *thread, const std::string &f
 
 bool JSPandaFileExecutor::ExecuteFromBuffer(JSThread *thread, const void *buffer, size_t size,
                                             std::string_view entryPoint, const std::vector<std::string> &args,
-                                            const std::string &filename)
+                                            const CString &filename)
 {
     const JSPandaFile *jsPandaFile = JSPandaFileManager::GetInstance()->LoadJSPandaFile(filename, buffer, size);
     if (jsPandaFile == nullptr) {

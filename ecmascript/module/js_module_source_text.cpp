@@ -112,15 +112,15 @@ JSHandle<SourceTextModule> SourceTextModule::HostResolveImportedModule(JSThread 
                                                                        const JSHandle<SourceTextModule> &module,
                                                                        const JSHandle<JSTaggedValue> &moduleRequest)
 {
-    std::string moduleFilename = base::StringHelper::ToStdString(EcmaString::Cast(moduleRequest->GetHeapObject()));
+    CString moduleFilename = ConvertToString(EcmaString::Cast(moduleRequest->GetHeapObject()));
     ASSERT(module->GetEcmaModuleFilename().IsHeapObject());
-    std::string baseFilename =
-        base::StringHelper::ToStdString(EcmaString::Cast(module->GetEcmaModuleFilename().GetHeapObject()));
+    CString baseFilename =
+        ConvertToString(EcmaString::Cast(module->GetEcmaModuleFilename().GetHeapObject()));
     int suffixEnd = moduleFilename.find_last_of('.');
     if (suffixEnd == -1) {
         RETURN_HANDLE_IF_ABRUPT_COMPLETION(SourceTextModule, thread);
     }
-    std::string moduleFullname;
+    CString moduleFullname;
     if (moduleFilename[0] == '/') { // absoluteFilePath
         moduleFullname = moduleFilename.substr(0, suffixEnd) + ".abc";
     } else {
@@ -657,7 +657,7 @@ void SourceTextModule::ModuleExecution(JSThread *thread, const JSHandle<SourceTe
 {
     JSTaggedValue moduleFileName = module->GetEcmaModuleFilename();
     ASSERT(moduleFileName.IsString());
-    std::string moduleFilenameStr = base::StringHelper::ToStdString(EcmaString::Cast(moduleFileName.GetHeapObject()));
+    CString moduleFilenameStr = ConvertToString(EcmaString::Cast(moduleFileName.GetHeapObject()));
     const JSPandaFile *jsPandaFile = JSPandaFileManager::GetInstance()->LoadJSPandaFile(moduleFilenameStr);
     if (jsPandaFile == nullptr) {
         LOG_ECMA(ERROR) << "open jsPandaFile " << moduleFilenameStr << " error";

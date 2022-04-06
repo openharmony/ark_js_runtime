@@ -25,7 +25,7 @@ void TSLoader::DecodeTSTypes(const JSPandaFile *jsPandaFile)
     ObjectFactory *factory = vm_->GetFactory();
     JSHandle<TSModuleTable> table = GetTSModuleTable();
 
-    JSHandle<EcmaString> queryFileName = factory->NewFromStdString(jsPandaFile->GetJSPandaFileDesc());
+    JSHandle<EcmaString> queryFileName = factory->NewFromString(jsPandaFile->GetJSPandaFileDesc());
     int index = table->GetGlobalModuleID(thread, queryFileName);
     if (index == TSModuleTable::NOT_FOUND) {
         CVector<JSHandle<EcmaString>> recordImportModules {};

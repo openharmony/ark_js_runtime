@@ -21,11 +21,12 @@
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
-#include "ecmascript/mem/c_string.h"
 #include "ecmascript/napi/jsnapi_helper-inl.h"
 #include "ecmascript/tooling/interface/js_debugger.h"
 
 namespace panda::tooling::ecmascript {
+using panda::ecmascript::CStringToL;
+using panda::ecmascript::EcmaString;
 using panda::ecmascript::JSHandle;
 using panda::ecmascript::JSTaggedValue;
 using panda::ecmascript::JSNativePointer;
@@ -36,22 +37,6 @@ using panda::ecmascript::base::ALLOW_BINARY;
 using panda::ecmascript::base::ALLOW_HEX;
 using panda::ecmascript::base::ALLOW_OCTAL;
 using panda::ecmascript::base::NumberHelper;
-
-// CString
-uint64_t DebuggerApi::CStringToULL(const CString &str)
-{
-    return panda::ecmascript::CStringToULL(str);
-}
-
-CString DebuggerApi::ToCString(int32_t number)
-{
-    return panda::ecmascript::ToCString(number);
-}
-
-CString DebuggerApi::ConvertToString(const std::string &str)
-{
-    return panda::ecmascript::ConvertToString(str);
-}
 
 // InterpretedFrameHandler
 uint32_t DebuggerApi::GetStackDepth(const EcmaVM *ecmaVm)
@@ -126,6 +111,24 @@ Local<JSValueRef> DebuggerApi::GetVRegValue(const EcmaVM *ecmaVm,
     return JSNApiHelper::ToLocal<JSValueRef>(handledValue);
 }
 
+CString DebuggerApi::ToCString(Local<JSValueRef> str)
+{
+    ecmascript::JSHandle<ecmascript::JSTaggedValue> ret = JSNApiHelper::ToJSHandle(str);
+    ASSERT(ret->IsString());
+    EcmaString *ecmaStr = EcmaString::Cast(ret.GetTaggedValue().GetTaggedObject());
+    return ConvertToString(ecmaStr);
+}
+
+int32_t DebuggerApi::CStringToInt(const CString &str)
+{
+    return CStringToL(str);
+}
+
+int32_t DebuggerApi::StringToInt(Local<JSValueRef> str)
+{
+    return CStringToInt(ToCString(str));
+}
+
 // JSThread
 Local<JSValueRef> DebuggerApi::GetException(const EcmaVM *ecmaVm)
 {
@@ -142,22 +145,6 @@ void DebuggerApi::SetException(const EcmaVM *ecmaVm, Local<JSValueRef> exception
 void DebuggerApi::ClearException(const EcmaVM *ecmaVm)
 {
     return ecmaVm->GetJSThread()->ClearException();
-}
-
-// EcmaVM
-const panda_file::File *DebuggerApi::FindPandaFile(const CString &fileName)
-{
-    const panda_file::File *pfs = nullptr;
-    ::panda::ecmascript::JSPandaFileManager::GetInstance()->EnumerateJSPandaFiles([&pfs, fileName](
-        const panda::ecmascript::JSPandaFile *jsPandaFile) {
-        if (ConvertToString(jsPandaFile->GetJSPandaFileDesc()) == fileName) {
-            pfs = jsPandaFile->GetPandaFile();
-            return false;
-        }
-        return true;
-    });
-
-    return pfs;
 }
 
 // NumberHelper
@@ -224,7 +211,7 @@ void DebuggerApi::SetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t sl
     LexicalEnv::Cast(env.GetTaggedObject())->SetProperties(ecmaVm->GetJSThread(), slot, target);
 }
 
-bool DebuggerApi::EvaluateLexicalValue(const EcmaVM *ecmaVm, const std::string &name, int32_t &level, uint32_t &slot)
+bool DebuggerApi::EvaluateLexicalValue(const EcmaVM *ecmaVm, const CString &name, int32_t &level, uint32_t &slot)
 {
     JSTaggedValue curEnv = ecmaVm->GetJSThread()->GetCurrentLexenv();
     for (; curEnv.IsTaggedArray(); curEnv = LexicalEnv::Cast(curEnv.GetTaggedObject())->GetParentEnv()) {
@@ -245,7 +232,7 @@ bool DebuggerApi::EvaluateLexicalValue(const EcmaVM *ecmaVm, const std::string &
     return false;
 }
 
-Local<JSValueRef> DebuggerApi::GetLexicalValueInfo(const EcmaVM *ecmaVm, const std::string &name)
+Local<JSValueRef> DebuggerApi::GetLexicalValueInfo(const EcmaVM *ecmaVm, const CString &name)
 {
     JSThread *thread = ecmaVm->GetJSThread();
     JSTaggedValue curEnv = thread->GetCurrentLexenv();

@@ -17,13 +17,10 @@
 #define ECMASCRIPT_TOOLING_BASE_PT_SCRIPT_H
 
 #include "libpandabase/macros.h"
-#include "ecmascript/mem/c_string.h"
+#include "ecmascript/tooling/base/pt_types.h"
 
 namespace panda::tooling::ecmascript {
-using panda::ecmascript::CString;
-
 enum class ScriptMatchType : uint8_t {
-    SCRIPT_ID,
     URL,
     FILE_NAME,
     HASH,
@@ -31,20 +28,20 @@ enum class ScriptMatchType : uint8_t {
 
 class PtScript {
 public:
-    PtScript(int32_t scriptId, CString fileName, CString url, CString source);
+    PtScript(ScriptId scriptId, const CString &fileName, const CString &url, const CString &source);
     ~PtScript() = default;
 
-    CString GetScriptId() const
+    ScriptId GetScriptId() const
     {
         return scriptId_;
     }
 
-    void SetScriptId(const CString &scriptId)
+    void SetScriptId(ScriptId scriptId)
     {
         scriptId_ = scriptId;
     }
 
-    CString GetFileName() const
+    const CString &GetFileName() const
     {
         return fileName_;
     }
@@ -54,7 +51,7 @@ public:
         fileName_ = fileName;
     }
 
-    CString GetUrl() const
+    const CString &GetUrl() const
     {
         return url_;
     }
@@ -64,7 +61,7 @@ public:
         url_ = url;
     }
 
-    CString GetHash() const
+    const CString &GetHash() const
     {
         return hash_;
     }
@@ -74,7 +71,7 @@ public:
         hash_ = hash;
     }
 
-    CString GetScriptSource() const
+    const CString &GetScriptSource() const
     {
         return scriptSource_;
     }
@@ -84,7 +81,7 @@ public:
         scriptSource_ = scriptSource;
     }
 
-    CString GetSourceMapUrl() const
+    const CString &GetSourceMapUrl() const
     {
         return sourceMapUrl_;
     }
@@ -108,7 +105,7 @@ private:
     NO_COPY_SEMANTIC(PtScript);
     NO_MOVE_SEMANTIC(PtScript);
 
-    CString scriptId_ {};      // start from 0, such as "0","1","2"...
+    ScriptId scriptId_ {};         // start from 0, such as "0","1","2"...
     CString fileName_ {};      // binary file name, such as xx.bin
     CString url_ {};           // source file name, such as xx.js
     CString hash_ {};          // js source file hash code

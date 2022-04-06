@@ -178,7 +178,7 @@ HWTEST_F_L0(DebuggerTypesTest, RemoteObjectCreateTest)
     ASSERT_NE(remoteObject, nullptr);
     EXPECT_EQ(ObjectType::Object, remoteObject->GetType());
     ASSERT_TRUE(remoteObject->HasValue());
-    EXPECT_EQ("Test", Local<StringRef>(remoteObject->GetValue())->ToString());
+    EXPECT_EQ("Test", DebuggerApi::ToCString(remoteObject->GetValue()));
 
     // abnormal params of params.sub-key = [ type = "object", unserializableValue = 100]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object +
@@ -236,12 +236,12 @@ HWTEST_F_L0(DebuggerTypesTest, RemoteObjectCreateTest)
 
     // normal params of params.sub-key = [ type = "object", objectId = "id_1"]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object +
-          R"(","objectId":"id_1"}})";
+          R"(","objectId":"1"}})";
     remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(remoteObject, nullptr);
     EXPECT_EQ(ObjectType::Object, remoteObject->GetType());
     ASSERT_TRUE(remoteObject->HasObjectId());
-    EXPECT_EQ("id_1", remoteObject->GetObjectId());
+    EXPECT_EQ(1U, remoteObject->GetObjectId());
 }
 
 HWTEST_F_L0(DebuggerTypesTest, RemoteObjectToObjectTest)
@@ -253,7 +253,7 @@ HWTEST_F_L0(DebuggerTypesTest, RemoteObjectToObjectTest)
     msg =
         CString() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object + R"(","subtype":")" +
         ObjectSubType::Array +
-        R"(","className":"TestClass","value":100,"unserializableValue":"Test","description":"Test","objectId":"id_1"}})";
+        R"(","className":"TestClass","value":100,"unserializableValue":"Test","description":"Test","objectId":"1"}})";
     remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(remoteObject, nullptr);
     Local<ObjectRef> object = remoteObject->ToObject(ecmaVm);
@@ -262,17 +262,17 @@ HWTEST_F_L0(DebuggerTypesTest, RemoteObjectToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string(ObjectType::Object.c_str()), Local<StringRef>(result)->ToString());
+    EXPECT_EQ(CString(ObjectType::Object.c_str()), DebuggerApi::ToCString(result));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "subtype");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(std::string(ObjectSubType::Array.c_str()), Local<StringRef>(result)->ToString());
+    EXPECT_EQ(CString(ObjectSubType::Array.c_str()), DebuggerApi::ToCString(result));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "className");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("TestClass", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("TestClass", DebuggerApi::ToCString(result));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "value");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
@@ -282,17 +282,17 @@ HWTEST_F_L0(DebuggerTypesTest, RemoteObjectToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("Test", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("Test", DebuggerApi::ToCString(result));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "description");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("Test", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("Test", DebuggerApi::ToCString(result));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "objectId");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("id_1", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("1", DebuggerApi::ToCString(result));
 }
 
 HWTEST_F_L0(DebuggerTypesTest, ExceptionDetailsCreateTest)
@@ -395,14 +395,14 @@ HWTEST_F_L0(DebuggerTypesTest, ExceptionDetailsCreateTest)
     // normal params of params.sub-key =
     // [exceptionId=3,"text"="text0","lineNumber"=10,"columnNumber"=20,"scriptId"="id0"]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "exceptionId":3,"text":"text0","lineNumber":10,"columnNumber":20,"scriptId":"id0"}})";
+          "exceptionId":3,"text":"text0","lineNumber":10,"columnNumber":20,"scriptId":"0"}})";
     exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(exceptionMetaData, nullptr);
     EXPECT_EQ(exceptionMetaData->GetExceptionId(), 3);
     EXPECT_EQ("text0", exceptionMetaData->GetText());
     EXPECT_EQ(exceptionMetaData->GetLine(), 10);
     EXPECT_EQ(exceptionMetaData->GetColumn(), 20);
-    EXPECT_EQ("id0", exceptionMetaData->GetScriptId());
+    EXPECT_EQ(0U, exceptionMetaData->GetScriptId());
 
     // abnormal params of params.sub-key =
     // [exceptionId=3,"text"="text0","lineNumber"=10,"columnNumber"=20,"url"=10]
@@ -494,7 +494,7 @@ HWTEST_F_L0(DebuggerTypesTest, ExceptionDetailsToObjectTest)
     Local<StringRef> tmpStr;
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "exceptionId":5,"text":"text0","lineNumber":10,"columnNumber":20,"scriptId":"ScriptId0","url":"url0",
+          "exceptionId":5,"text":"text0","lineNumber":10,"columnNumber":20,"scriptId":"100","url":"url0",
           "exception":{"type":")" +
           ObjectType::Object + R"(","subtype":")" + ObjectSubType::Error + R"("},"executionContextId":30}})";
     exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
@@ -510,7 +510,7 @@ HWTEST_F_L0(DebuggerTypesTest, ExceptionDetailsToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("text0", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("text0", DebuggerApi::ToCString(result));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "lineNumber");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
@@ -525,12 +525,12 @@ HWTEST_F_L0(DebuggerTypesTest, ExceptionDetailsToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("ScriptId0", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("100", DebuggerApi::ToCString(result));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "url");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("url0", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("url0", DebuggerApi::ToCString(result));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "exception");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
@@ -540,12 +540,12 @@ HWTEST_F_L0(DebuggerTypesTest, ExceptionDetailsToObjectTest)
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     Local<JSValueRef> subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ(std::string(ObjectType::Object.c_str()), Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ(CString(ObjectType::Object.c_str()), DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "subtype");
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ(std::string(ObjectSubType::Error.c_str()), Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ(CString(ObjectSubType::Error.c_str()), DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "executionContextId");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
@@ -659,7 +659,7 @@ HWTEST_F_L0(DebuggerTypesTest, InternalPropertyDescriptorToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("name8", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("name8", DebuggerApi::ToCString(result));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "value");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
@@ -669,12 +669,12 @@ HWTEST_F_L0(DebuggerTypesTest, InternalPropertyDescriptorToObjectTest)
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     Local<JSValueRef> subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ(std::string(ObjectType::Object.c_str()), Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ(CString(ObjectType::Object.c_str()), DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "subtype");
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ(std::string(ObjectSubType::Map.c_str()), Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ(CString(ObjectSubType::Map.c_str()), DebuggerApi::ToCString(subResult));
 }
 
 HWTEST_F_L0(DebuggerTypesTest, PropertyDescriptorCreateTest)
@@ -927,7 +927,7 @@ HWTEST_F_L0(DebuggerTypesTest, PropertyDescriptorToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("name8", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("name8", DebuggerApi::ToCString(result));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "value");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
@@ -937,12 +937,12 @@ HWTEST_F_L0(DebuggerTypesTest, PropertyDescriptorToObjectTest)
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     Local<JSValueRef> subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ(std::string(ObjectType::Object.c_str()), Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ(CString(ObjectType::Object.c_str()), DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "subtype");
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ(std::string(ObjectSubType::Map.c_str()), Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ(CString(ObjectSubType::Map.c_str()), DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "writable");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
@@ -957,12 +957,12 @@ HWTEST_F_L0(DebuggerTypesTest, PropertyDescriptorToObjectTest)
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ(std::string(ObjectType::Object.c_str()), Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ(CString(ObjectType::Object.c_str()), DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "subtype");
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ(std::string(ObjectSubType::Regexp.c_str()), Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ(CString(ObjectSubType::Regexp.c_str()), DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "set");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
@@ -972,12 +972,12 @@ HWTEST_F_L0(DebuggerTypesTest, PropertyDescriptorToObjectTest)
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ(std::string(ObjectType::Object.c_str()), Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ(CString(ObjectType::Object.c_str()), DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "subtype");
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ(std::string(ObjectSubType::Generator.c_str()), Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ(CString(ObjectSubType::Generator.c_str()), DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "configurable");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
@@ -1007,12 +1007,12 @@ HWTEST_F_L0(DebuggerTypesTest, PropertyDescriptorToObjectTest)
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ(std::string(ObjectType::Object.c_str()), Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ(CString(ObjectType::Object.c_str()), DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "subtype");
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ(std::string(ObjectSubType::Proxy.c_str()), Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ(CString(ObjectSubType::Proxy.c_str()), DebuggerApi::ToCString(subResult));
 }
 
 HWTEST_F_L0(DebuggerTypesTest, LocationCreateTest)
@@ -1054,44 +1054,44 @@ HWTEST_F_L0(DebuggerTypesTest, LocationCreateTest)
     location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(location, nullptr);
 
-    // abnormal params of params.sub-key=["scriptId":"id222","lineNumber":"99"]
+    // abnormal params of params.sub-key=["scriptId":"222","lineNumber":"99"]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "scriptId":"id222","lineNumber":"99"
+          "scriptId":"222","lineNumber":"99"
     }})";
     location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(location, nullptr);
 
-    // abnormal params of params.sub-key=["scriptId":"id222","lineNumber":[99]]
+    // abnormal params of params.sub-key=["scriptId":"222","lineNumber":[99]]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "scriptId":"id222","lineNumber":[99]
+          "scriptId":"222","lineNumber":[99]
     }})";
     location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(location, nullptr);
 
-    // abnormal params of params.sub-key=["scriptId":"id2","lineNumber":99,"columnNumber":"18"]
+    // abnormal params of params.sub-key=["scriptId":"2","lineNumber":99,"columnNumber":"18"]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "scriptId":"id222","lineNumber":899,"columnNumber":"18"
+          "scriptId":"222","lineNumber":899,"columnNumber":"18"
     }})";
     location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(location, nullptr);
 
-    // normal params of params.sub-key=["scriptId":"id2","lineNumber":99,"columnNumber":138]
+    // normal params of params.sub-key=["scriptId":"2","lineNumber":99,"columnNumber":138]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "scriptId":"id222","lineNumber":899,"columnNumber":138
+          "scriptId":"222","lineNumber":899,"columnNumber":138
     }})";
     location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(location, nullptr);
-    EXPECT_EQ("id222", location->GetScriptId());
+    EXPECT_EQ(222U, location->GetScriptId());
     EXPECT_EQ(location->GetLine(), 899);
     EXPECT_EQ(location->GetColumn(), 138);
 
-    // normal params of params.sub-key=["scriptId":"id2122","lineNumber":8299]
+    // normal params of params.sub-key=["scriptId":"2122","lineNumber":8299]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "scriptId":"id2122","lineNumber":8299
+          "scriptId":"2122","lineNumber":8299
     }})";
     location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(location, nullptr);
-    EXPECT_EQ("id2122", location->GetScriptId());
+    EXPECT_EQ(2122U, location->GetScriptId());
     EXPECT_EQ(location->GetLine(), 8299);
 }
 
@@ -1102,7 +1102,7 @@ HWTEST_F_L0(DebuggerTypesTest, LocationToObjectTest)
     Local<StringRef> tmpStr;
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "scriptId":"id2","lineNumber":99,"columnNumber":18
+          "scriptId":"2","lineNumber":99,"columnNumber":18
     }})";
     location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(location, nullptr);
@@ -1112,7 +1112,7 @@ HWTEST_F_L0(DebuggerTypesTest, LocationToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("id2", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("2", DebuggerApi::ToCString(result));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "lineNumber");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
@@ -1164,59 +1164,59 @@ HWTEST_F_L0(DebuggerTypesTest, BreakLocationCreateTest)
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
-    // abnormal params of params.sub-key=["scriptId":"id222","lineNumber":"99"]
+    // abnormal params of params.sub-key=["scriptId":"222","lineNumber":"99"]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "scriptId":"id222","lineNumber":"99"
+          "scriptId":"222","lineNumber":"99"
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
-    // abnormal params of params.sub-key=["scriptId":"id222","lineNumber":[99]]
+    // abnormal params of params.sub-key=["scriptId":"222","lineNumber":[99]]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "scriptId":"id222","lineNumber":[99]
+          "scriptId":"222","lineNumber":[99]
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
-    // abnormal params of params.sub-key=["scriptId":"id2","lineNumber":99,"columnNumber":"18"]
+    // abnormal params of params.sub-key=["scriptId":"2","lineNumber":99,"columnNumber":"18"]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "scriptId":"id222","lineNumber":899,"columnNumber":"18"
+          "scriptId":"222","lineNumber":899,"columnNumber":"18"
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
-    // abnormal params of params.sub-key=["scriptId":"id2","lineNumber":99,"columnNumber":"18","type":10]
+    // abnormal params of params.sub-key=["scriptId":"2","lineNumber":99,"columnNumber":"18","type":10]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "scriptId":"id222","lineNumber":899,"columnNumber":"18","type":10
+          "scriptId":"222","lineNumber":899,"columnNumber":"18","type":10
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
-    // abnormal params of params.sub-key=["scriptId":"id2","lineNumber":99,"columnNumber":"18","type":"ee"]
+    // abnormal params of params.sub-key=["scriptId":"2","lineNumber":99,"columnNumber":"18","type":"ee"]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "scriptId":"id222","lineNumber":899,"columnNumber":"18","type":"ee"
+          "scriptId":"222","lineNumber":899,"columnNumber":"18","type":"ee"
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
-    // normal params of params.sub-key=["scriptId":"id2","lineNumber":99,"columnNumber":138,"type":"return"]
+    // normal params of params.sub-key=["scriptId":"2","lineNumber":99,"columnNumber":138,"type":"return"]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "scriptId":"id222","lineNumber":899,"columnNumber":138,"type":"return"
+          "scriptId":"222","lineNumber":899,"columnNumber":138,"type":"return"
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(breakLocation, nullptr);
-    EXPECT_EQ("id222", breakLocation->GetScriptId());
+    EXPECT_EQ(222U, breakLocation->GetScriptId());
     EXPECT_EQ(breakLocation->GetLine(), 899);
     EXPECT_EQ(breakLocation->GetColumn(), 138);
     EXPECT_EQ("return", breakLocation->GetType());
 
-    // normal params of params.sub-key=["scriptId":"id2122","lineNumber":8299]
+    // normal params of params.sub-key=["scriptId":"2122","lineNumber":8299]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "scriptId":"id2122","lineNumber":8299
+          "scriptId":"2122","lineNumber":8299
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(breakLocation, nullptr);
-    EXPECT_EQ("id2122", breakLocation->GetScriptId());
+    EXPECT_EQ(2122U, breakLocation->GetScriptId());
     EXPECT_EQ(breakLocation->GetLine(), 8299);
 }
 
@@ -1227,7 +1227,7 @@ HWTEST_F_L0(DebuggerTypesTest, BreakLocationToObjectTest)
     Local<StringRef> tmpStr;
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "scriptId":"id12","lineNumber":919,"columnNumber":148,"type":"call"
+          "scriptId":"12","lineNumber":919,"columnNumber":148,"type":"call"
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(breakLocation, nullptr);
@@ -1237,7 +1237,7 @@ HWTEST_F_L0(DebuggerTypesTest, BreakLocationToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("id12", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("12", DebuggerApi::ToCString(result));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "lineNumber");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
@@ -1252,7 +1252,7 @@ HWTEST_F_L0(DebuggerTypesTest, BreakLocationToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("call", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("call", DebuggerApi::ToCString(result));
 }
 
 HWTEST_F_L0(DebuggerTypesTest, ScopeCreateTest)
@@ -1378,8 +1378,8 @@ HWTEST_F_L0(DebuggerTypesTest, ScopeToObjectTest)
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
           "type":"global","object":{"type":")" +
           ObjectType::Object + R"(","subtype":")" + ObjectSubType::Dataview + R"("},"name":"name9",
-          "startLocation":{"scriptId":"id2","lineNumber":99},
-          "endLocation":{"scriptId":"id13","lineNumber":146}
+          "startLocation":{"scriptId":"2","lineNumber":99},
+          "endLocation":{"scriptId":"13","lineNumber":146}
     }})";
     scope = Scope::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(scope, nullptr);
@@ -1389,7 +1389,7 @@ HWTEST_F_L0(DebuggerTypesTest, ScopeToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("global", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("global", DebuggerApi::ToCString(result));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "object");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
@@ -1399,17 +1399,17 @@ HWTEST_F_L0(DebuggerTypesTest, ScopeToObjectTest)
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     Local<JSValueRef> subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ(std::string(ObjectType::Object.c_str()), Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ(CString(ObjectType::Object.c_str()), DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "subtype");
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ(std::string(ObjectSubType::Dataview.c_str()), Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ(CString(ObjectSubType::Dataview.c_str()), DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "name");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("name9", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("name9", DebuggerApi::ToCString(result));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "startLocation");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
@@ -1419,7 +1419,7 @@ HWTEST_F_L0(DebuggerTypesTest, ScopeToObjectTest)
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ("id2", Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ("2", DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "lineNumber");
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
@@ -1434,7 +1434,7 @@ HWTEST_F_L0(DebuggerTypesTest, ScopeToObjectTest)
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ("id13", Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ("13", DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "lineNumber");
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
@@ -1470,7 +1470,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
     // abnormal params of params.sub-key=[..]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
           "callFrameId":10,"functionName":"name0",
-          "location":{"scriptId":"id5","lineNumber":19},"url":"url7","scopeChain":
+          "location":{"scriptId":"5","lineNumber":19},"url":"url7","scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
@@ -1479,8 +1479,8 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 
     // abnormal params of params.sub-key=[..]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":["id0"],"functionName":"name0",
-          "location":{"scriptId":"id5","lineNumber":19},"url":"url7","scopeChain":
+          "callFrameId":["0"],"functionName":"name0",
+          "location":{"scriptId":"5","lineNumber":19},"url":"url7","scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
@@ -1489,8 +1489,8 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 
     // abnormal params of params.sub-key=[..]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":"id0","functionName":10,
-          "location":{"scriptId":"id5","lineNumber":19},"url":"url7","scopeChain":
+          "callFrameId":"0","functionName":10,
+          "location":{"scriptId":"5","lineNumber":19},"url":"url7","scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
@@ -1499,8 +1499,8 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 
     // abnormal params of params.sub-key=[..]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":"id0","functionName":["name0"],
-          "location":{"scriptId":"id5","lineNumber":19},"url":"url7","scopeChain":
+          "callFrameId":"0","functionName":["name0"],
+          "location":{"scriptId":"5","lineNumber":19},"url":"url7","scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
@@ -1509,8 +1509,8 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 
     // abnormal params of params.sub-key=[..]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":"id0","functionName":"name0","functionLocation":10,
-          "location":{"scriptId":"id5","lineNumber":19},"url":"url7","scopeChain":
+          "callFrameId":"0","functionName":"name0","functionLocation":10,
+          "location":{"scriptId":"5","lineNumber":19},"url":"url7","scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
@@ -1519,8 +1519,8 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 
     // abnormal params of params.sub-key=[..]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":"id0","functionName":"name0","functionLocation":{"scriptId11":"id5","lineNumber":19},
-          "location":{"scriptId":"id5","lineNumber":19},"url":"url7","scopeChain":
+          "callFrameId":"0","functionName":"name0","functionLocation":{"scriptId11":"id5","lineNumber":19},
+          "location":{"scriptId":"5","lineNumber":19},"url":"url7","scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
@@ -1529,7 +1529,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 
     // abnormal params of params.sub-key=[..]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":"id0","functionName":"name0",
+          "callFrameId":"0","functionName":"name0",
           "location":{"scriptId2":"id5","lineNumber":19},"url":"url7","scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
@@ -1539,7 +1539,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 
     // abnormal params of params.sub-key=[..]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":"id0","functionName":"name0",
+          "callFrameId":"0","functionName":"name0",
           "location":10,"url":"url7","scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
@@ -1549,8 +1549,8 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 
     // abnormal params of params.sub-key=[..]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":"id0","functionName":"name0",
-          "location":{"scriptId":"id5","lineNumber":19},"url":10,"scopeChain":
+          "callFrameId":"0","functionName":"name0",
+          "location":{"scriptId":"5","lineNumber":19},"url":10,"scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
@@ -1559,8 +1559,8 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 
     // abnormal params of params.sub-key=[..]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":"id0","functionName":"name0",
-          "location":{"scriptId":"id5","lineNumber":19},"url":{"url":"url7"},"scopeChain":
+          "callFrameId":"0","functionName":"name0",
+          "location":{"scriptId":"5","lineNumber":19},"url":{"url":"url7"},"scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
@@ -1569,7 +1569,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 
     // abnormal params of params.sub-key=[..]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":"id0","functionName":"name0", "location":{"scriptId":"id5","lineNumber":19},
+          "callFrameId":"0","functionName":"name0", "location":{"scriptId":"5","lineNumber":19},
           "url":"url7","scopeChain":10,"this":{"type":")" +
           ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
     callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
@@ -1577,8 +1577,8 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 
     // abnormal params of params.sub-key=[..]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":"id0","functionName":"name0",
-          "location":{"scriptId":"id5","lineNumber":19},"url":"url7","scopeChain":
+          "callFrameId":"0","functionName":"name0",
+          "location":{"scriptId":"5","lineNumber":19},"url":"url7","scopeChain":
           {"type":"22","object":{"type":")" +
           ObjectType::Object + R"("}},"this":{"type":")" + ObjectType::Object + R"(","subtype":")" +
           ObjectSubType::V128 + R"("}}})";
@@ -1587,8 +1587,8 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 
     // abnormal params of params.sub-key=[..]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":"id0","functionName":"name0",
-          "location":{"scriptId":"id5","lineNumber":19},"url":"url7","scopeChain":
+          "callFrameId":"0","functionName":"name0",
+          "location":{"scriptId":"5","lineNumber":19},"url":"url7","scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":10}})";
@@ -1597,8 +1597,8 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 
     // abnormal params of params.sub-key=[..]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":"id0","functionName":"name0",
-          "location":{"scriptId":"id5","lineNumber":19},"url":"url7","scopeChain":
+          "callFrameId":"0","functionName":"name0",
+          "location":{"scriptId":"5","lineNumber":19},"url":"url7","scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"11":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
@@ -1607,8 +1607,8 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 
     // abnormal params of params.sub-key=[..]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":"id0","functionName":"name0",
-          "location":{"scriptId":"id5","lineNumber":19},"url":"url7","scopeChain":
+          "callFrameId":"0","functionName":"name0",
+          "location":{"scriptId":"5","lineNumber":19},"url":"url7","scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("},
@@ -1618,8 +1618,8 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 
     // abnormal params of params.sub-key=[..]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":"id0","functionName":"name0",
-          "location":{"scriptId":"id5","lineNumber":19},"url":"url7","scopeChain":
+          "callFrameId":"0","functionName":"name0",
+          "location":{"scriptId":"5","lineNumber":19},"url":"url7","scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("},
@@ -1629,18 +1629,18 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 
     // normal params of params.sub-key=[..]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":"id0","functionName":"name0",
-          "location":{"scriptId":"id5","lineNumber":19},"url":"url7","scopeChain":
+          "callFrameId":"0","functionName":"name0",
+          "location":{"scriptId":"5","lineNumber":19},"url":"url7","scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
     callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(callFrame, nullptr);
-    EXPECT_EQ("id0", callFrame->GetCallFrameId());
+    EXPECT_EQ(0U, callFrame->GetCallFrameId());
     EXPECT_EQ("name0", callFrame->GetFunctionName());
     ASSERT_FALSE(callFrame->HasFunctionLocation());
     Location *location = callFrame->GetLocation();
-    EXPECT_EQ("id5", location->GetScriptId());
+    EXPECT_EQ(5U, location->GetScriptId());
     EXPECT_EQ(location->GetLine(), 19);
     EXPECT_EQ("url7", callFrame->GetUrl());
     const CVector<std::unique_ptr<Scope>> *scopeChain = callFrame->GetScopeChain();
@@ -1653,21 +1653,21 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 
     // normal params of params.sub-key=[..]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":"id0","functionName":"name0","functionLocation":{"scriptId":"id3","lineNumber":16},
-          "location":{"scriptId":"id5","lineNumber":19},"url":"url7","scopeChain":
+          "callFrameId":"10","functionName":"name0","functionLocation":{"scriptId":"3","lineNumber":16},
+          "location":{"scriptId":"5","lineNumber":19},"url":"url7","scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 +
           R"("},"returnValue":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::I32 + R"("}}})";
     callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(callFrame, nullptr);
-    EXPECT_EQ("id0", callFrame->GetCallFrameId());
+    EXPECT_EQ(10U, callFrame->GetCallFrameId());
     EXPECT_EQ("name0", callFrame->GetFunctionName());
     Location *functionLocation = callFrame->GetFunctionLocation();
-    EXPECT_EQ("id3", functionLocation->GetScriptId());
+    EXPECT_EQ(3U, functionLocation->GetScriptId());
     EXPECT_EQ(functionLocation->GetLine(), 16);
     location = callFrame->GetLocation();
-    EXPECT_EQ("id5", location->GetScriptId());
+    EXPECT_EQ(5U, location->GetScriptId());
     EXPECT_EQ(location->GetLine(), 19);
     EXPECT_EQ("url7", callFrame->GetUrl());
     scopeChain = callFrame->GetScopeChain();
@@ -1689,8 +1689,8 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameToObjectTest)
     Local<StringRef> tmpStr;
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrameId":"id0","functionName":"name0","functionLocation":{"scriptId":"id3","lineNumber":16},
-          "location":{"scriptId":"id5","lineNumber":19},"url":"url7","scopeChain":
+          "callFrameId":"0","functionName":"name0","functionLocation":{"scriptId":"3","lineNumber":16},
+          "location":{"scriptId":"5","lineNumber":19},"url":"url7","scopeChain":
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::Iterator +
@@ -1703,12 +1703,12 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("id0", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("0", DebuggerApi::ToCString(result));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "functionName");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("name0", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("name0", DebuggerApi::ToCString(result));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "functionLocation");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
@@ -1718,7 +1718,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameToObjectTest)
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     Local<JSValueRef> subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ("id3", Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ("3", DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "lineNumber");
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
@@ -1733,7 +1733,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameToObjectTest)
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ("id5", Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ("5", DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "lineNumber");
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
@@ -1743,7 +1743,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("url7", Local<StringRef>(result)->ToString());
+    EXPECT_EQ("url7", DebuggerApi::ToCString(result));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "scopeChain");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
@@ -1760,12 +1760,12 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameToObjectTest)
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ(std::string(ObjectType::Object.c_str()), Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ(CString(ObjectType::Object.c_str()), DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "subtype");
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ(std::string(ObjectSubType::Iterator.c_str()), Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ(CString(ObjectSubType::Iterator.c_str()), DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "returnValue");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
@@ -1775,11 +1775,11 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameToObjectTest)
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ(std::string(ObjectType::Object.c_str()), Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ(CString(ObjectType::Object.c_str()), DebuggerApi::ToCString(subResult));
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "subtype");
     ASSERT_TRUE(Local<ObjectRef>(result)->Has(ecmaVm, Local<JSValueRef>(tmpStr)));
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
-    EXPECT_EQ(std::string(ObjectSubType::I64.c_str()), Local<StringRef>(subResult)->ToString());
+    EXPECT_EQ(CString(ObjectSubType::I64.c_str()), DebuggerApi::ToCString(subResult));
 }
 }  // namespace panda::test

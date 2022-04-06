@@ -17,11 +17,11 @@
 #include "ecmascript/tooling/interface/debugger_api.h"
 
 namespace panda::tooling::ecmascript {
-PtScript::PtScript(int32_t scriptId, CString fileName, CString url, CString source)
-    : scriptId_(DebuggerApi::ToCString(scriptId)),
-      fileName_(std::move(fileName)),
-      url_(std::move(url)),
-      scriptSource_(std::move(source))
+PtScript::PtScript(ScriptId scriptId, const CString &fileName, const CString &url, const CString &source)
+    : scriptId_(scriptId),
+      fileName_(fileName),
+      url_(url),
+      scriptSource_(source)
 {
     endLine_ = std::count(scriptSource_.begin(), scriptSource_.end(), '\n');
 }
