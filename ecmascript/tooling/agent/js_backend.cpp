@@ -15,13 +15,14 @@
 
 #include "ecmascript/tooling/agent/js_backend.h"
 
-#include "ecmascript/jspandafile/js_pandafile.h"
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/tooling/base/pt_events.h"
 #include "ecmascript/tooling/front_end.h"
 #include "ecmascript/tooling/protocol_handler.h"
 #include "libpandafile/class_data_accessor-inl.h"
 
 namespace panda::tooling::ecmascript {
+using panda::ecmascript::JSPandaFileManager;
 using ObjectType = RemoteObject::TypeName;
 using ObjectSubType = RemoteObject::SubTypeName;
 using ObjectClassName = RemoteObject::ClassName;
@@ -112,6 +113,11 @@ void JSBackend::NotifyAllScriptParsed()
 
 bool JSBackend::NotifyScriptParsed(ScriptId scriptId, const CString &fileName)
 {
+    if (fileName.substr(0, DATA_APP_PATH.length()) != DATA_APP_PATH) {
+        LOG(WARNING, DEBUGGER) << "NotifyScriptParsed: unsupport file: " << fileName;
+        return false;
+    }
+
     auto scriptFunc = []([[maybe_unused]] PtScript *script) -> bool {
         return true;
     };
@@ -120,7 +126,7 @@ bool JSBackend::NotifyScriptParsed(ScriptId scriptId, const CString &fileName)
         return false;
     }
     const JSPandaFile *jsPandaFile = nullptr;
-    ::panda::ecmascript::JSPandaFileManager::GetInstance()->EnumerateJSPandaFiles([&jsPandaFile, &fileName](
+    JSPandaFileManager::GetInstance()->EnumerateJSPandaFiles([&jsPandaFile, &fileName](
         const panda::ecmascript::JSPandaFile *pf) {
         if (pf->GetJSPandaFileDesc() == fileName) {
             jsPandaFile = pf;
@@ -129,31 +135,27 @@ bool JSBackend::NotifyScriptParsed(ScriptId scriptId, const CString &fileName)
         return true;
     });
     if (jsPandaFile == nullptr) {
-        LOG(WARNING, DEBUGGER) << "NotifyScriptParsed: unknown file: " << fileName;
+        LOG(ERROR, DEBUGGER) << "NotifyScriptParsed: unknown file: " << fileName;
         return false;
     }
 
-    JSPtExtractor *extractor = GenerateExtractor(jsPandaFile);
+    JSPtExtractor *extractor = GetExtractor(jsPandaFile);
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "NotifyScriptParsed: Unsupported file: " << fileName;
         return false;
     }
 
-    CString url;
-    CString source;
+    auto mainMethodIndex = panda_file::File::EntityId(jsPandaFile->GetMainMethodIndex());
+    const CString &source = extractor->GetSourceCode(mainMethodIndex);
+    const CString &url = extractor->GetSourceFile(mainMethodIndex);
     const uint32_t MIN_SOURCE_CODE_LENGTH = 5;  // maybe return 'ANDA' when source code is empty
-    for (const auto &method : extractor->GetMethodIdList()) {
-        source = extractor->GetSourceCode(method);
-        // only main function has source code
-        if (source.size() >= MIN_SOURCE_CODE_LENGTH) {
-            url = extractor->GetSourceFile(method);
-            break;
-        }
-    }
-    if (url.empty()) {
+    if (source.size() < MIN_SOURCE_CODE_LENGTH) {
         LOG(ERROR, DEBUGGER) << "NotifyScriptParsed: invalid file: " << fileName;
         return false;
     }
+    // store here for performance of get extractor from url
+    extractors_[url] = extractor;
+
     // Notify script parsed event
     std::unique_ptr<PtScript> script = std::make_unique<PtScript>(scriptId, fileName, url, source);
 
@@ -200,6 +202,10 @@ std::optional<Error> JSBackend::GetPossibleBreakpoints(Location *start, [[maybe_
         return Error(Error::Type::INVALID_BREAKPOINT, "extractor not found");
     }
     JSPtExtractor *extractor = GetExtractor(iter->second->GetUrl());
+    if (extractor == nullptr) {
+        LOG(ERROR, DEBUGGER) << "GetPossibleBreakpoints: extractor is null";
+        return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
+    }
 
     int32_t line = start->GetLine();
     int32_t column = start->GetColumn();
@@ -418,40 +424,19 @@ CString JSBackend::Trim(const CString &str)
     return ret;
 }
 
-JSPtExtractor *JSBackend::GenerateExtractor(const JSPandaFile *jsPandaFile)
-{
-    const CString &fileName = jsPandaFile->GetJSPandaFileDesc();
-    if (fileName.substr(0, DATA_APP_PATH.length()) != DATA_APP_PATH) {
-        return nullptr;
-    }
-    auto extractor = std::make_unique<JSPtExtractor>(jsPandaFile);
-    JSPtExtractor *res = extractor.get();
-    extractors_[fileName] = std::move(extractor);
-    return res;
-}
-
 JSPtExtractor *JSBackend::GetExtractor(const JSPandaFile *jsPandaFile)
 {
-    const CString &fileName = jsPandaFile->GetJSPandaFileDesc();
-    if (extractors_.find(fileName) == extractors_.end()) {
-        return nullptr;
-    }
-
-    return extractors_[fileName].get();
+    return JSPandaFileManager::GetInstance()->GetJSPtExtractor(jsPandaFile);
 }
 
 JSPtExtractor *JSBackend::GetExtractor(const CString &url)
 {
-    for (const auto &iter : extractors_) {
-        auto methods = iter.second->GetMethodIdList();
-        for (const auto &method : methods) {
-            auto sourceFile = iter.second->GetSourceFile(method);
-            if (sourceFile == url) {
-                return iter.second.get();
-            }
-        }
+    auto iter = extractors_.find(url);
+    if (iter == extractors_.end()) {
+        return nullptr;
     }
-    return nullptr;
+
+    return iter->second;
 }
 
 bool JSBackend::GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames)

@@ -134,7 +134,7 @@ private:
     const EcmaVM *ecmaVm_ {nullptr};
     std::unique_ptr<JSPtHooks> hooks_ {nullptr};
     JSDebugger *debugger_ {nullptr};
-    CUnorderedMap<CString, std::unique_ptr<JSPtExtractor>> extractors_ {};
+    CUnorderedMap<CString, JSPtExtractor *> extractors_ {};
     CUnorderedMap<ScriptId, std::unique_ptr<PtScript>> scripts_ {};
     CUnorderedMap<RemoteObjectId, Global<JSValueRef>> propertiesPair_ {};
     RemoteObjectId curObjectId_ {0};
