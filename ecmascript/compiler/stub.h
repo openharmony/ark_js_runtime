@@ -603,6 +603,7 @@ public:
     GateRef GetPrototypeFromHClass(GateRef hClass);
     GateRef GetLayoutFromHClass(GateRef hClass);
     GateRef GetBitFieldFromHClass(GateRef hClass);
+    GateRef GetLengthFromString(GateRef value);
     void SetBitFieldToHClass(GateRef glue, GateRef hClass, GateRef bitfield);
     void SetPrototypeToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef proto);
     void SetProtoChangeDetailsToHClass(VariableType type, GateRef glue, GateRef hClass,
@@ -745,6 +746,7 @@ public:
     GateRef FastDiv(GateRef left, GateRef right);
     GateRef FastAdd(GateRef left, GateRef right);
     GateRef FastSub(GateRef left, GateRef right);
+    GateRef FastToBoolean(GateRef value);
 
     // Add SpecialContainer
     GateRef GetContainerProperty(GateRef glue, GateRef receiver, GateRef index, GateRef jsType);

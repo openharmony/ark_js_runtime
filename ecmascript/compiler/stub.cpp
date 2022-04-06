@@ -1287,8 +1287,7 @@ GateRef Stub::StringToElementIndex(GateRef string)
     DEFVARIABLE(result, VariableType::INT32(), Int32(-1));
     Label greatThanZero(env);
     Label inRange(env);
-    GateRef len = Load(VariableType::INT32(), string, IntPtr(EcmaString::MIX_LENGTH_OFFSET));
-    len = UInt32LSR(len, Int32(2));  // 2 : 2 means len must be right shift 2 bits
+    auto len = GetLengthFromString(string);
     Branch(Int32Equal(len, Int32(0)), &exit, &greatThanZero);
     Bind(&greatThanZero);
     Branch(Int32GreaterThan(len, Int32(MAX_INDEX_LEN)), &exit, &inRange);
@@ -3274,6 +3273,92 @@ GateRef Stub::FastEqual(GateRef left, GateRef right)
             }
         }
     }
+    Bind(&exit);
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
+}
+
+GateRef Stub::FastToBoolean(GateRef value)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->PushCurrentLabel(&entry);
+    DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
+    Label exit(env);
+
+    Label isSpecial(env);
+    Label notSpecial(env);
+    Label isNumber(env);
+    Label isInt(env);
+    Label isDouble(env);
+    Label notNumber(env);
+    Label notNan(env);
+    Label isString(env);
+    Label notString(env);
+    Label isBigint(env);
+    Label lengthIsOne(env);
+    Label returnTrue(env);
+    Label returnFalse(env);
+
+    Branch(TaggedIsSpecial(value), &isSpecial, &notSpecial);
+    Bind(&isSpecial);
+    {
+        Branch(TaggedIsTrue(value), &returnTrue, &returnFalse);
+    }
+    Bind(&notSpecial);
+    {
+        Branch(TaggedIsNumber(value), &isNumber, &notNumber);
+        Bind(&notNumber);
+        {
+            Branch(IsString(value), &isString, &notString);
+            Bind(&isString);
+            {
+                auto len = GetLengthFromString(value);
+                Branch(Int32Equal(len, Int32(0)), &returnFalse, &returnTrue);
+            }
+            Bind(&notString);
+            Branch(IsBigInt(value), &isBigint, &returnTrue);
+            Bind(&isBigint);
+            {
+                auto data = Load(VariableType::JS_POINTER(), value, IntPtr(BigInt::DATA_OFFSET));
+                auto len = GetLengthOfTaggedArray(data);
+                Branch(Int32Equal(len, Int32(1)), &lengthIsOne, &returnTrue);
+                Bind(&lengthIsOne);
+                {
+                    auto data0 = GetValueFromTaggedArray(VariableType::JS_POINTER(), data, Int32(0));
+                    Branch(Int64Equal(data0, Int64(JSTaggedValue::VALUE_ZERO)), &returnFalse, &returnTrue);
+                }
+            }
+        }
+        Bind(&isNumber);
+        {
+            Branch(TaggedIsInt(value), &isInt, &isDouble);
+            Bind(&isInt);
+            {
+                auto intValue = TaggedCastToInt32(value);
+                Branch(Int32Equal(intValue, Int32(0)), &returnFalse, &returnTrue);
+            }
+            Bind(&isDouble);
+            {
+                auto doubleValue = TaggedCastToDouble(value);
+                Branch(DoubleIsNAN(doubleValue), &returnFalse, &notNan);
+                Bind(&notNan);
+                Branch(DoubleEqual(doubleValue, Double(0.0)), &returnFalse, &returnTrue);
+            }
+        }
+    }
+    Bind(&returnTrue);
+    {
+        result = ChangeInt64ToTagged(TaggedTrue());
+        Jump(&exit);
+    }
+    Bind(&returnFalse);
+    {
+        result = ChangeInt64ToTagged(TaggedFalse());
+        Jump(&exit);
+    }
+
     Bind(&exit);
     auto ret = *result;
     env->PopCurrentLabel();
