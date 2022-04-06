@@ -100,6 +100,8 @@ public:
 
     static inline JSTaggedValue NewThisObject(JSThread *thread, JSTaggedValue ctor, JSTaggedValue newTarget,
                                               InterpretedFrame* state);
+    static inline JSTaggedValue NewThisObject(JSThread *thread, JSTaggedValue ctor, JSTaggedValue newTarget,
+                                              AsmInterpretedFrame* state);
 
 private:
     friend class ICRuntimeStub;
