@@ -24,7 +24,13 @@
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript {
-constexpr int BASE = 10;
+long CStringToL(const CString &str)
+{
+    [[maybe_unused]] char *endPtr = nullptr;
+    int64_t result = std::strtol(str.c_str(), &endPtr, BASE);
+    ASSERT(!(result == 0 && str.c_str() == endPtr) && "CString argument is not long int");
+    return result;
+}
 
 int64_t CStringToLL(const CString &str)
 {

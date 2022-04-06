@@ -22,8 +22,6 @@
 #include "ecmascript/tooling/dispatcher.h"
 
 namespace panda::tooling::ecmascript {
-using panda::ecmascript::CString;
-
 class DebuggerImpl final {
 public:
     explicit DebuggerImpl(std::unique_ptr<JSBackend> backend) : backend_(std::move(backend)) {}
@@ -72,7 +70,7 @@ public:
         NO_MOVE_SEMANTIC(DispatcherImpl);
 
         using AgentHandler = void (DebuggerImpl::DispatcherImpl::*)(const DispatchRequest &request);
-        CMap<CString, AgentHandler> dispatcherTable_ {};
+        CUnorderedMap<CString, AgentHandler> dispatcherTable_ {};
         std::unique_ptr<DebuggerImpl> debugger_ {};
     };
 

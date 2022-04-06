@@ -36,10 +36,10 @@
 namespace panda::ecmascript {
 constexpr uint32_t PANDA_FILE_ALIGNMENT = 4096;
 
-void SnapShot::MakeSnapShotProgramObject(Program *program, const panda_file::File *pf, const std::string &fileName)
+void SnapShot::MakeSnapShotProgramObject(Program *program, const panda_file::File *pf, const CString &fileName)
 {
     std::fstream write;
-    std::pair<bool, std::string> filePath = VerifyFilePath(fileName);
+    std::pair<bool, CString> filePath = VerifyFilePath(fileName);
     if (!filePath.first) {
         LOG(ERROR, RUNTIME) << "snapshot file path error";
         return;
@@ -117,13 +117,13 @@ void SnapShot::MakeSnapShotProgramObject(Program *program, const panda_file::Fil
     write.close();
 }
 
-const JSPandaFile *SnapShot::DeserializeGlobalEnvAndProgram(const std::string &abcFile, const std::string &snapshotFile)
+const JSPandaFile *SnapShot::DeserializeGlobalEnvAndProgram(const CString &abcFile, const CString &snapshotFile)
 {
     SnapShotSerialize serialize(vm_, false);
 
     serialize.GeneratedNativeMethod();
 
-    std::pair<bool, std::string> filePath = VerifyFilePath(snapshotFile);
+    std::pair<bool, CString> filePath = VerifyFilePath(snapshotFile);
     if (!filePath.first) {
         LOG(ERROR, RUNTIME) << "snapshot file path error";
         return nullptr;
@@ -202,7 +202,7 @@ size_t SnapShot::AlignUpPageSize(size_t spaceSize)
     return PAGE_SIZE_ALIGN_UP * (spaceSize / PAGE_SIZE_ALIGN_UP + 1);
 }
 
-std::pair<bool, std::string> SnapShot::VerifyFilePath(const std::string &filePath)
+std::pair<bool, CString> SnapShot::VerifyFilePath(const CString &filePath)
 {
     if (filePath.size() > PATH_MAX) {
         return std::make_pair(false, "");
@@ -210,7 +210,7 @@ std::pair<bool, std::string> SnapShot::VerifyFilePath(const std::string &filePat
     CVector<char> resolvedPath(PATH_MAX);
     auto result = realpath(filePath.c_str(), resolvedPath.data());
     if (result == resolvedPath.data() || errno == ENOENT) {
-        return std::make_pair(true, std::string(resolvedPath.data()));
+        return std::make_pair(true, CString(resolvedPath.data()));
     }
     return std::make_pair(false, "");
 }

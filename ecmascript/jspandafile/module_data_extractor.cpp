@@ -27,7 +27,7 @@ using ModuleTag = jspandafile::ModuleTag;
 using StringData = panda_file::StringData;
 
 JSHandle<JSTaggedValue> ModuleDataExtractor::ParseModule(JSThread *thread, const JSPandaFile *jsPandaFile,
-                                                         const std::string &descriptor)
+                                                         const CString &descriptor)
 {
     const panda_file::File *pf = jsPandaFile->GetPandaFile();
     Span<const uint32_t> classIndexes = pf->GetClasses();
@@ -59,7 +59,7 @@ JSHandle<JSTaggedValue> ModuleDataExtractor::ParseModule(JSThread *thread, const
     JSHandle<SourceTextModule> moduleRecord = factory->NewSourceTextModule();
     ModuleDataExtractor::ExtractModuleDatas(thread, jsPandaFile, moduleId, moduleRecord);
 
-    JSHandle<EcmaString> ecmaModuleFilename = factory->NewFromStdString(descriptor);
+    JSHandle<EcmaString> ecmaModuleFilename = factory->NewFromString(descriptor);
     moduleRecord->SetEcmaModuleFilename(thread, ecmaModuleFilename);
 
     moduleRecord->SetStatus(ModuleStatus::UNINSTANTIATED);

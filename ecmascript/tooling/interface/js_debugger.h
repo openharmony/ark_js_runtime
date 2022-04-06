@@ -18,7 +18,6 @@
 
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_method.h"
-#include "ecmascript/mem/c_containers.h"
 #include "ecmascript/tooling/interface/debugger_api.h"
 #include "tooling/debugger.h"
 

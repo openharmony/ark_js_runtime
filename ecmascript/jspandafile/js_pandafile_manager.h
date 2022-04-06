@@ -32,9 +32,9 @@ class EcmaVm;
 namespace ecmascript {
 class Program;
 
-class JSPandaFileManager {
+class PUBLIC_API JSPandaFileManager {
 public:
-    PUBLIC_API ~JSPandaFileManager();
+    ~JSPandaFileManager();
 
     static JSPandaFileManager *GetInstance()
     {
@@ -44,16 +44,16 @@ public:
 
     JSHandle<Program> GenerateProgram(EcmaVM *vm, const JSPandaFile *jsPandaFile);
 
-    const JSPandaFile* PUBLIC_API LoadAotInfoFromPf(const std::string &filename,
+    const JSPandaFile* LoadAotInfoFromPf(const CString &filename,
                                                     std::vector<MethodPcInfo> *methodPcInfos);
 
-    const JSPandaFile *LoadJSPandaFile(const std::string &filename);
+    const JSPandaFile *LoadJSPandaFile(const CString &filename);
 
-    const JSPandaFile *LoadJSPandaFile(const std::string &filename, const void *buffer, size_t size);
+    const JSPandaFile *LoadJSPandaFile(const CString &filename, const void *buffer, size_t size);
 
-    JSPandaFile *OpenJSPandaFile(const std::string &filename);
+    JSPandaFile *OpenJSPandaFile(const CString &filename);
 
-    JSPandaFile *NewJSPandaFile(const panda_file::File *pf, const std::string &desc);
+    JSPandaFile *NewJSPandaFile(const panda_file::File *pf, const CString &desc);
 
     tooling::ecmascript::JSPtExtractor *GetJSPtExtractor(const JSPandaFile *jsPandaFile);
 
@@ -81,10 +81,10 @@ private:
         static void FreeBuffer(void *mem);
     };
 
-    const JSPandaFile *GenerateJSPandaFile(const panda_file::File *pf, const std::string &desc);
+    const JSPandaFile *GenerateJSPandaFile(const panda_file::File *pf, const CString &desc);
     void ReleaseJSPandaFile(const JSPandaFile *jsPandaFile);
     const JSPandaFile *GetJSPandaFile(const panda_file::File *pf);
-    const JSPandaFile *FindJSPandaFile(const std::string &filename);
+    const JSPandaFile *FindJSPandaFile(const CString &filename);
     void InsertJSPandaFile(const JSPandaFile *jsPandaFile);
     void IncreaseRefJSPandaFile(const JSPandaFile *jsPandaFile);
     void DecreaseRefJSPandaFile(const JSPandaFile *jsPandaFile);

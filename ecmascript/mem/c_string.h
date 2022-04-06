@@ -30,9 +30,22 @@ class JSTaggedValue;
 using CString = std::basic_string<char, std::char_traits<char>, CAddressAllocator<char>>;
 using CStringStream = std::basic_stringstream<char, std::char_traits<char>, CAddressAllocator<char>>;
 
+struct CStringHash {
+    using argument_type = panda::ecmascript::CString;
+    using result_type = std::size_t;
+
+    size_t operator()(const CString &str) const noexcept
+    {
+        return std::hash<std::string_view>()(std::string_view(str.data(), str.size()));
+    }
+};
+
+constexpr int BASE = 10;
+
 // PRINT will skip '\0' in utf16 during conversion of utf8
 enum StringConvertedUsage { PRINT, LOGICOPERATION };
 
+long CStringToL(const CString &str);
 int64_t CStringToLL(const CString &str);
 uint64_t CStringToULL(const CString &str);
 float CStringToF(const CString &str);
@@ -79,5 +92,18 @@ std::enable_if_t<std::is_integral_v<T>, CString> ToCString(T number)
     return CString(&buf[position]);
 }
 }  // namespace panda::ecmascript
+
+namespace std {
+template <>
+struct hash<panda::ecmascript::CString> {
+    using argument_type = panda::ecmascript::CStringHash::argument_type;
+    using result_type = panda::ecmascript::CStringHash::result_type;
+
+    size_t operator()(const panda::ecmascript::CString &str) const noexcept
+    {
+        return panda::ecmascript::CStringHash()(str);
+    }
+};
+}  // namespace std
 
 #endif  // ECMASCRIPT_MEM_C_STRING_H

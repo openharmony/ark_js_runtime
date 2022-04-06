@@ -33,7 +33,7 @@ void TSTypeTable::Initialize(JSThread *thread, const JSPandaFile *jsPandaFile,
     JSHandle<TSTypeTable> tsTypetable = GenerateTypeTable(thread, jsPandaFile, recordImportModules);
 
     // Set TStypeTable -> GlobleModuleTable
-    JSHandle<EcmaString> fileName = factory->NewFromStdString(jsPandaFile->GetJSPandaFileDesc());
+    JSHandle<EcmaString> fileName = factory->NewFromString(jsPandaFile->GetJSPandaFileDesc());
     tsLoader->AddTypeTable(JSHandle<JSTaggedValue>(tsTypetable), fileName);
 
     // management dependency module
@@ -63,7 +63,7 @@ JSHandle<TSTypeTable> TSTypeTable::GenerateTypeTable(JSThread *thread, const JSP
     JSHandle<TSTypeTable> table = factory->NewTSTypeTable(length);
     JSMutableHandle<TaggedArray> typeLiteral(thread, JSTaggedValue::Undefined());
 
-    JSHandle<EcmaString> fileName = factory->NewFromStdString(jsPandaFile->GetJSPandaFileDesc());
+    JSHandle<EcmaString> fileName = factory->NewFromString(jsPandaFile->GetJSPandaFileDesc());
     for (; idx <= length; ++idx) {
         typeLiteral.Update(LiteralDataExtractor::GetDatasIgnoreType(thread, jsPandaFile, idx).GetTaggedValue());
         JSHandle<JSTaggedValue> type = ParseType(thread, table, typeLiteral, fileName, recordImportModules);

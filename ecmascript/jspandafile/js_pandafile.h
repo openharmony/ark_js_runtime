@@ -35,10 +35,10 @@ namespace ecmascript {
 
 class JSPandaFile {
 public:
-    JSPandaFile(const panda_file::File *pf, const std::string &descriptor);
+    JSPandaFile(const panda_file::File *pf, const CString &descriptor);
     ~JSPandaFile();
 
-    const std::string &GetJSPandaFileDesc() const
+    const CString &GetJSPandaFileDesc() const
     {
         return desc_;
     }
@@ -75,7 +75,7 @@ public:
         return mainMethodIndex_;
     }
 
-    const std::unordered_map<uint32_t, uint64_t> &GetConstpoolMap() const
+    const CUnorderedMap<uint32_t, uint64_t> &GetConstpoolMap() const
     {
         return constpoolMap_;
     }
@@ -100,13 +100,13 @@ private:
     void Initialize();
 
     uint32_t constpoolIndex_ {0};
-    std::unordered_map<uint32_t, uint64_t> constpoolMap_;
+    CUnorderedMap<uint32_t, uint64_t> constpoolMap_;
     uint32_t numMethods_ {0};
     uint32_t mainMethodIndex_ {0};
     JSMethod *methods_ {nullptr};
-    std::unordered_map<uint32_t, JSMethod *> methodMap_;
+    CUnorderedMap<uint32_t, JSMethod *> methodMap_;
     const panda_file::File *pf_ {nullptr};
-    std::string desc_;
+    CString desc_;
     bool isModule_ {false};
 };
 }  // namespace ecmascript

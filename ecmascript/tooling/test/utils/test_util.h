@@ -16,7 +16,7 @@
 #ifndef ECMASCRIPT_TOOLING_TEST_UTILS_TEST_UTIL_H
 #define ECMASCRIPT_TOOLING_TEST_UTILS_TEST_UTIL_H
 
-#include "ecmascript/mem/c_containers.h"
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/tooling/interface/js_debugger.h"
 #include "ecmascript/tooling/test/utils/test_events.h"
 #include "ecmascript/tooling/test/utils/test_extractor.h"
@@ -123,26 +123,24 @@ public:
         return lastEvent_ == DebugEvent::VM_DEATH;
     }
 
-    static PtLocation GetLocation(const char *sourceFile, size_t line, size_t column, const char *pandaFile)
+    static PtLocation GetLocation(const char *sourceFile, int32_t line, int32_t column, const char *pandaFile)
     {
-        std::unique_ptr<const panda_file::File> uFile = panda_file::File::Open(pandaFile);
-        const panda_file::File *pf = uFile.get();
-        if (pf == nullptr) {
+        auto jsPandaFile = ::panda::ecmascript::JSPandaFileManager::GetInstance()->OpenJSPandaFile(pandaFile);
+        if (jsPandaFile == nullptr) {
             return PtLocation("", EntityId(0), 0);
         }
-        TestExtractor extractor(pf);
+        TestExtractor extractor(jsPandaFile);
         auto [id, offset] = extractor.GetBreakpointAddress({sourceFile, line, column});
         return PtLocation(pandaFile, id, offset);
     }
 
     static SourceLocation GetSourceLocation(const PtLocation &location, const char *pandaFile)
     {
-        std::unique_ptr<const panda_file::File> uFile = panda_file::File::Open(pandaFile);
-        const panda_file::File *pf = uFile.get();
-        if (pf == nullptr) {
+        auto jsPandaFile = ::panda::ecmascript::JSPandaFileManager::GetInstance()->OpenJSPandaFile(pandaFile);
+        if (jsPandaFile == nullptr) {
             return SourceLocation();
         }
-        TestExtractor extractor(pf);
+        TestExtractor extractor(jsPandaFile);
         return extractor.GetSourceLocation(location.GetMethodId(), location.GetBytecodeOffset());
     }
 

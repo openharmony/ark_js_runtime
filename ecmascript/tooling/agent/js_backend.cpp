@@ -13,8 +13,9 @@
  * limitations under the License.
  */
 
-#include "js_backend.h"
-#include <regex>
+#include "ecmascript/tooling/agent/js_backend.h"
+
+#include "ecmascript/jspandafile/js_pandafile.h"
 #include "ecmascript/tooling/base/pt_events.h"
 #include "ecmascript/tooling/front_end.h"
 #include "ecmascript/tooling/protocol_handler.h"
@@ -25,7 +26,7 @@ using ObjectType = RemoteObject::TypeName;
 using ObjectSubType = RemoteObject::SubTypeName;
 using ObjectClassName = RemoteObject::ClassName;
 
-const std::string DATA_APP_PATH = "/data/";
+const CString DATA_APP_PATH = "/data/";
 
 JSBackend::JSBackend(FrontEnd *frontend) : frontend_(frontend)
 {
@@ -66,7 +67,7 @@ void JSBackend::NotifyPaused(std::optional<PtLocation> location, PauseReason rea
             extractor = GetExtractor(detail.url_);
             return true;
         };
-        auto callbackFunc = [&detail](size_t line, size_t column) -> bool {
+        auto callbackFunc = [&detail](int32_t line, int32_t column) -> bool {
             detail.line_ = line;
             detail.column_ = column;
             return true;
@@ -109,7 +110,7 @@ void JSBackend::NotifyAllScriptParsed()
     }
 }
 
-bool JSBackend::NotifyScriptParsed(int32_t scriptId, const CString &fileName)
+bool JSBackend::NotifyScriptParsed(ScriptId scriptId, const CString &fileName)
 {
     auto scriptFunc = []([[maybe_unused]] PtScript *script) -> bool {
         return true;
@@ -118,26 +119,34 @@ bool JSBackend::NotifyScriptParsed(int32_t scriptId, const CString &fileName)
         LOG(WARNING, DEBUGGER) << "NotifyScriptParsed: already loaded: " << fileName;
         return false;
     }
-    const panda_file::File *pfs = DebuggerApi::FindPandaFile(fileName);
-    if (pfs == nullptr) {
+    const JSPandaFile *jsPandaFile = nullptr;
+    ::panda::ecmascript::JSPandaFileManager::GetInstance()->EnumerateJSPandaFiles([&jsPandaFile, &fileName](
+        const panda::ecmascript::JSPandaFile *pf) {
+        if (pf->GetJSPandaFileDesc() == fileName) {
+            jsPandaFile = pf;
+            return false;
+        }
+        return true;
+    });
+    if (jsPandaFile == nullptr) {
         LOG(WARNING, DEBUGGER) << "NotifyScriptParsed: unknown file: " << fileName;
         return false;
     }
 
-    CString url;
-    CString source;
-    JSPtExtractor *extractor = GenerateExtractor(pfs);
+    JSPtExtractor *extractor = GenerateExtractor(jsPandaFile);
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "NotifyScriptParsed: Unsupported file: " << fileName;
         return false;
     }
 
+    CString url;
+    CString source;
     const uint32_t MIN_SOURCE_CODE_LENGTH = 5;  // maybe return 'ANDA' when source code is empty
     for (const auto &method : extractor->GetMethodIdList()) {
-        source = CString(extractor->GetSourceCode(method));
+        source = extractor->GetSourceCode(method);
         // only main function has source code
         if (source.size() >= MIN_SOURCE_CODE_LENGTH) {
-            url = CString(extractor->GetSourceFile(method));
+            url = extractor->GetSourceFile(method);
             break;
         }
     }
@@ -164,8 +173,8 @@ bool JSBackend::StepComplete(const PtLocation &location)
         extractor = GetExtractor(script->GetUrl());
         return true;
     };
-    auto callbackFunc = [](size_t line, [[maybe_unused]] size_t column) -> bool {
-        return line == static_cast<size_t>(SPECIAL_LINE_MARK);
+    auto callbackFunc = [](int32_t line, [[maybe_unused]] int32_t column) -> bool {
+        return line == SPECIAL_LINE_MARK;
     };
     if (MatchScripts(scriptFunc, location.GetPandaFile(), ScriptMatchType::FILE_NAME) && extractor != nullptr &&
         extractor->MatchWithOffset(callbackFunc, location.GetMethodId(), location.GetBytecodeOffset())) {
@@ -186,17 +195,14 @@ bool JSBackend::StepComplete(const PtLocation &location)
 std::optional<Error> JSBackend::GetPossibleBreakpoints(Location *start, [[maybe_unused]] Location *end,
     CVector<std::unique_ptr<BreakLocation>> *locations)
 {
-    JSPtExtractor *extractor = nullptr;
-    auto scriptFunc = [this, &extractor](PtScript *script) -> bool {
-        extractor = GetExtractor(script->GetUrl());
-        return true;
-    };
-    if (!MatchScripts(scriptFunc, start->GetScriptId(), ScriptMatchType::SCRIPT_ID) || extractor == nullptr) {
+    auto iter = scripts_.find(start->GetScriptId());
+    if (iter == scripts_.end()) {
         return Error(Error::Type::INVALID_BREAKPOINT, "extractor not found");
     }
+    JSPtExtractor *extractor = GetExtractor(iter->second->GetUrl());
 
-    size_t line = start->GetLine();
-    size_t column = start->GetColumn();
+    int32_t line = start->GetLine();
+    int32_t column = start->GetColumn();
     auto callbackFunc = []([[maybe_unused]] File::EntityId id, [[maybe_unused]] uint32_t offset) -> bool {
         return true;
     };
@@ -209,8 +215,8 @@ std::optional<Error> JSBackend::GetPossibleBreakpoints(Location *start, [[maybe_
     return {};
 }
 
-std::optional<Error> JSBackend::SetBreakpointByUrl(const CString &url, size_t lineNumber,
-    size_t columnNumber, CString *out_id, CVector<std::unique_ptr<Location>> *outLocations)
+std::optional<Error> JSBackend::SetBreakpointByUrl(const CString &url, int32_t lineNumber,
+    int32_t columnNumber, CString *out_id, CVector<std::unique_ptr<Location>> *outLocations)
 {
     JSPtExtractor *extractor = GetExtractor(url);
     if (extractor == nullptr) {
@@ -218,7 +224,7 @@ std::optional<Error> JSBackend::SetBreakpointByUrl(const CString &url, size_t li
         return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
     }
 
-    CString scriptId;
+    ScriptId scriptId;
     CString fileName;
     auto scriptFunc = [&scriptId, &fileName](PtScript *script) -> bool {
         scriptId = script->GetScriptId();
@@ -283,7 +289,7 @@ std::optional<Error> JSBackend::RemoveBreakpoint(const BreakpointDetails &metaDa
         return Error(Error::Type::INVALID_BREAKPOINT, "Breakpoint not found");
     }
 
-    LOG(INFO, DEBUGGER) << "remove breakpoint line number:" << metaData.line_;
+    LOG(INFO, DEBUGGER) << "remove breakpoint32_t line number:" << metaData.line_;
     return ret;
 }
 
@@ -304,7 +310,7 @@ std::optional<Error> JSBackend::Resume()
 std::optional<Error> JSBackend::StepInto()
 {
     JSMethod *method = DebuggerApi::GetMethod(ecmaVm_);
-    JSPtExtractor *extractor = GetExtractor(method->GetPandaFile());
+    JSPtExtractor *extractor = GetExtractor(method->GetJSPandaFile());
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "StepInto: extractor is null";
         return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
@@ -319,7 +325,7 @@ std::optional<Error> JSBackend::StepInto()
 std::optional<Error> JSBackend::StepOver()
 {
     JSMethod *method = DebuggerApi::GetMethod(ecmaVm_);
-    JSPtExtractor *extractor = GetExtractor(method->GetPandaFile());
+    JSPtExtractor *extractor = GetExtractor(method->GetJSPandaFile());
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "StepOver: extractor is null";
         return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
@@ -334,7 +340,7 @@ std::optional<Error> JSBackend::StepOver()
 std::optional<Error> JSBackend::StepOut()
 {
     JSMethod *method = DebuggerApi::GetMethod(ecmaVm_);
-    JSPtExtractor *extractor = GetExtractor(method->GetPandaFile());
+    JSPtExtractor *extractor = GetExtractor(method->GetJSPandaFile());
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "StepOut: extractor is null";
         return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
@@ -346,7 +352,7 @@ std::optional<Error> JSBackend::StepOut()
     return {};
 }
 
-std::optional<Error> JSBackend::EvaluateValue(const CString &callFrameId, const CString &expression,
+std::optional<Error> JSBackend::EvaluateValue(CallFrameId callFrameId, const CString &expression,
     std::unique_ptr<RemoteObject> *result)
 {
     JSMethod *method = DebuggerApi::GetMethod(ecmaVm_);
@@ -356,7 +362,7 @@ std::optional<Error> JSBackend::EvaluateValue(const CString &callFrameId, const 
             Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Runtime internal error")));
         return Error(Error::Type::METHOD_NOT_FOUND, "Native Frame not support");
     }
-    JSPtExtractor *extractor = GetExtractor(method->GetPandaFile());
+    JSPtExtractor *extractor = GetExtractor(method->GetJSPandaFile());
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "EvaluateValue: extractor is null";
         *result = RemoteObject::FromTagged(ecmaVm_,
@@ -371,7 +377,7 @@ std::optional<Error> JSBackend::EvaluateValue(const CString &callFrameId, const 
         varValue = Trim(expression.substr(indexEqual + 1, expression.length()));
     }
 
-    if (!varValue.empty() && callFrameId != "0") {
+    if (!varValue.empty() && callFrameId != 0) {
         *result = RemoteObject::FromTagged(ecmaVm_,
             Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Only allow set value in current frame")));
         return Error(Error::Type::METHOD_NOT_FOUND, "Unsupported parent frame set value");
@@ -412,20 +418,21 @@ CString JSBackend::Trim(const CString &str)
     return ret;
 }
 
-JSPtExtractor *JSBackend::GenerateExtractor(const panda_file::File *file)
+JSPtExtractor *JSBackend::GenerateExtractor(const JSPandaFile *jsPandaFile)
 {
-    if (file->GetFilename().substr(0, DATA_APP_PATH.length()) != DATA_APP_PATH) {
+    const CString &fileName = jsPandaFile->GetJSPandaFileDesc();
+    if (fileName.substr(0, DATA_APP_PATH.length()) != DATA_APP_PATH) {
         return nullptr;
     }
-    auto extractor = std::make_unique<JSPtExtractor>(file);
+    auto extractor = std::make_unique<JSPtExtractor>(jsPandaFile);
     JSPtExtractor *res = extractor.get();
-    extractors_[file->GetFilename()] = std::move(extractor);
+    extractors_[fileName] = std::move(extractor);
     return res;
 }
 
-JSPtExtractor *JSBackend::GetExtractor(const panda_file::File *file)
+JSPtExtractor *JSBackend::GetExtractor(const JSPandaFile *jsPandaFile)
 {
-    const std::string fileName = file->GetFilename();
+    const CString &fileName = jsPandaFile->GetJSPandaFileDesc();
     if (extractors_.find(fileName) == extractors_.end()) {
         return nullptr;
     }
@@ -449,7 +456,7 @@ JSPtExtractor *JSBackend::GetExtractor(const CString &url)
 
 bool JSBackend::GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames)
 {
-    int32_t callFrameId = 0;
+    CallFrameId callFrameId = 0;
     auto walkerFunc = [this, &callFrameId, &callFrames](const InterpretedFrameHandler *frameHandler) -> StackState {
         JSMethod *method = DebuggerApi::GetMethod(frameHandler);
         if (method->IsNative()) {
@@ -471,11 +478,10 @@ bool JSBackend::GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFram
 }
 
 bool JSBackend::GenerateCallFrame(CallFrame *callFrame,
-    const InterpretedFrameHandler *frameHandler, int32_t callFrameId)
+    const InterpretedFrameHandler *frameHandler, CallFrameId callFrameId)
 {
     JSMethod *method = DebuggerApi::GetMethod(frameHandler);
-    auto *pf = method->GetPandaFile();
-    JSPtExtractor *extractor = GetExtractor(pf);
+    JSPtExtractor *extractor = GetExtractor(method->GetJSPandaFile());
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "GenerateCallFrame: extractor is null";
         return false;
@@ -492,7 +498,7 @@ bool JSBackend::GenerateCallFrame(CallFrame *callFrame,
         LOG(ERROR, DEBUGGER) << "GenerateCallFrame: Unknown url: " << url;
         return false;
     }
-    auto callbackFunc = [&location](size_t line, size_t column) -> bool {
+    auto callbackFunc = [&location](int32_t line, int32_t column) -> bool {
         location->SetLine(line);
         location->SetColumn(column);
         return true;
@@ -513,7 +519,7 @@ bool JSBackend::GenerateCallFrame(CallFrame *callFrame,
     // functionName
     CString functionName = DebuggerApi::ParseFunctionName(method);
 
-    callFrame->SetCallFrameId(DebuggerApi::ToCString(callFrameId))
+    callFrame->SetCallFrameId(callFrameId)
         .SetFunctionName(functionName)
         .SetLocation(std::move(location))
         .SetUrl(url)
@@ -535,7 +541,7 @@ std::unique_ptr<Scope> JSBackend::GetLocalScopeChain(const InterpretedFrameHandl
         .SetDescription(RemoteObject::ObjectDescription);
     propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, localObject);
 
-    JSPtExtractor *extractor = GetExtractor(DebuggerApi::GetMethod(frameHandler)->GetPandaFile());
+    JSPtExtractor *extractor = GetExtractor(DebuggerApi::GetMethod(frameHandler)->GetJSPandaFile());
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "GetScopeChain: extractor is null";
         return localScope;
@@ -601,6 +607,18 @@ std::unique_ptr<Scope> JSBackend::GetGlobalScopeChain()
     globalScope->SetType(Scope::Type::Global()).SetObject(std::move(global));
     propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, JSNApi::GetGlobalObject(ecmaVm_));
     return globalScope;
+}
+
+bool JSBackend::GetScriptSource(ScriptId scriptId, CString *source)
+{
+    auto iter = scripts_.find(scriptId);
+    if (iter == scripts_.end()) {
+        *source = "";
+        return false;
+    }
+
+    *source = iter->second->GetScriptSource();
+    return true;
 }
 
 void JSBackend::SetPauseOnException(bool flag)
@@ -722,7 +740,7 @@ void JSBackend::GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn, 
     outPropertyDesc->emplace_back(std::move(debuggerProperty));
 }
 
-void JSBackend::GetProperties(uint32_t objectId, bool isOwn, bool isAccessorOnly,
+void JSBackend::GetProperties(RemoteObjectId objectId, bool isOwn, bool isAccessorOnly,
     CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
 {
     auto iter = propertiesPair_.find(objectId);
@@ -773,7 +791,8 @@ void JSBackend::GetProperties(uint32_t objectId, bool isOwn, bool isAccessorOnly
     GetProtoOrProtoType(value, isOwn, isAccessorOnly, outPropertyDesc);
 }
 
-void JSBackend::CallFunctionOn([[maybe_unused]] const CString &functionDeclaration, [[maybe_unused]] uint32_t objectId,
+void JSBackend::CallFunctionOn([[maybe_unused]] const CString &functionDeclaration,
+    [[maybe_unused]] RemoteObjectId objectId,
     [[maybe_unused]] const CVector<std::unique_ptr<CallArgument>> *arguments, [[maybe_unused]] bool isSilent,
     [[maybe_unused]] bool returnByValue, [[maybe_unused]] bool generatePreview, [[maybe_unused]] bool userGesture,
     [[maybe_unused]] bool awaitPromise, [[maybe_unused]] ExecutionContextId executionContextId,

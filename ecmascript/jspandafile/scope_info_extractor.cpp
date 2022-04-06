@@ -35,7 +35,7 @@ JSTaggedValue ScopeInfoExtractor::GenerateScopeInfo(JSThread *thread, uint16_t s
     for (size_t i = 1; i < length; i += 2) {  // 2: Each literal buffer contains a pair of key-value.
         JSTaggedValue val = elementsLiteral->Get(i);
         ASSERT(val.IsString());
-        std::string name = base::StringHelper::ToStdString(EcmaString::Cast(val.GetTaggedObject()));
+        CString name = ConvertToString(EcmaString::Cast(val.GetTaggedObject()));
         uint32_t slot = elementsLiteral->Get(i + 1).GetInt();
         scopeDebugInfo->scopeInfo.insert(std::make_pair(name, slot));
     }

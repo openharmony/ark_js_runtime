@@ -290,7 +290,7 @@ bool JSNApi::Execute(EcmaVM *vm, const std::string &fileName, const std::string 
     std::vector<std::string> argv;
     LOG_ECMA(DEBUG) << "start to execute ark file" << fileName;
     JSThread *thread = vm->GetAssociatedJSThread();
-    if (!ecmascript::JSPandaFileExecutor::ExecuteFromFile(thread, fileName, entry, argv)) {
+    if (!ecmascript::JSPandaFileExecutor::ExecuteFromFile(thread, fileName.c_str(), entry, argv)) {
         LOG_ECMA(ERROR) << "Cannot execute ark file '" << fileName
                         << "' with entry '" << entry << "'" << std::endl;
         return false;
@@ -303,7 +303,7 @@ bool JSNApi::Execute(EcmaVM *vm, const uint8_t *data, int32_t size,
 {
     std::vector<std::string> argv;
     JSThread *thread = vm->GetAssociatedJSThread();
-    if (!ecmascript::JSPandaFileExecutor::ExecuteFromBuffer(thread, data, size, entry, argv, filename)) {
+    if (!ecmascript::JSPandaFileExecutor::ExecuteFromBuffer(thread, data, size, entry, argv, filename.c_str())) {
         LOG_ECMA(ERROR) << "Cannot execute ark buffer file '" << filename
                         << "' with entry '" << entry << "'" << std::endl;
         return false;
@@ -483,7 +483,7 @@ bool JSNApi::ExecuteModuleFromBuffer(EcmaVM *vm, const void *data, int32_t size,
 {
     std::vector<std::string> argv;
     JSThread *thread = vm->GetAssociatedJSThread();
-    if (!ecmascript::JSPandaFileExecutor::ExecuteFromBuffer(thread, data, size, ENTRY_POINTER, argv, file)) {
+    if (!ecmascript::JSPandaFileExecutor::ExecuteFromBuffer(thread, data, size, ENTRY_POINTER, argv, file.c_str())) {
         std::cerr << "Cannot execute panda file from memory" << std::endl;
         return false;
     }
@@ -494,7 +494,7 @@ Local<ObjectRef> JSNApi::GetExportObject(EcmaVM *vm, const std::string &file, co
 {
     ecmascript::ModuleManager *moduleManager = vm->GetModuleManager();
     JSThread *thread = vm->GetJSThread();
-    JSHandle<ecmascript::SourceTextModule> ecmaModule = moduleManager->HostResolveImportedModule(file);
+    JSHandle<ecmascript::SourceTextModule> ecmaModule = moduleManager->HostResolveImportedModule(file.c_str());
 
     ObjectFactory *factory = vm->GetFactory();
     JSHandle<EcmaString> keyHandle = factory->NewFromStdStringUnCheck(key, true);
