@@ -1,15 +1,12 @@
-# Environment Setup and Compilation<a name="EN-US_TOPIC_0000001174215863"></a>
+# Environment Setup and Compilation
 
--   [Configuring the Environment](#section922419503415)
--   [Compilation](#section1166711064317)
-
-## Configuring the Environment<a name="section922419503415"></a>
+## Environment Configuration
 
 Use Ubuntu 18.04 or 20.04. For details about how to set up the environment, see:
 
 [Setting Up Ubuntu Development Environment with Installation Package and Building Source Code](https://gitee.com/openharmony/docs/blob/master/en/device-dev/quick-start/quickstart-standard-package-environment.md)
 
-## Compilation<a name="section1166711064317"></a>
+## Compilation
 
 1.  First compilation:
 
@@ -20,7 +17,7 @@ Use Ubuntu 18.04 or 20.04. For details about how to set up the environment, see:
 2.  Compile an ARK runtime after the first compilation:
 
     ```
-    ./build.sh --product-name Hi3516DV300 --build-target ark_js_host_linux_tools_packages  # arm platform and host side running tool
+    ./build.sh --product-name Hi3516DV300 --build-target ark_js_host_linux_tools_packages  # Arm platform and host runtime tool
     ```
 
 3.  Compile the ARK frontend after the first compilation:
@@ -38,4 +35,3 @@ out/hi3516dv300/ark/ark_js_runtime/
 out/hi3516dv300/clang_x64/ark/ark/
 out/hi3516dv300/clang_x64/ark/ark_js_runtime
 ```
-
