@@ -46,7 +46,7 @@ using ColumnNumberTable = CVector<ColumnTableEntry>;
  *   uint32_t startOffset
  *   uint32_t endOffset
  */
-using LocalVariableTable = CUnorderedMap<CString, int32_t>;
+using LocalVariableTable = CUnorderedMap<CString, int32_t>;  // name, regNumber
 
 // public for debugger
 class PUBLIC_API DebugInfoExtractor {
