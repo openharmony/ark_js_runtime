@@ -251,18 +251,6 @@ void AdjustBCStubEntries(BCStubEntries& bcStubEntries,
     bcStubEntries.Set(BytecodeStubCSigns::ID_##name, defaultBCStubDes.codeAddr_);
     INTERPRETER_IGNORED_BC_STUB_LIST(UNDEF_STUB)
 #undef UNDEF_STUB
-
-#define ADD_COMMON_BC_HELPER(name)                                                                              \
-    bcStubEntries.Set(BCStubEntries::BC_HANDLER_STUB_ENTRIES_COUNT + kungfu::BytecodeHelperId::name##Id,        \
-        stubs[CommonStubCSigns::name].codeAddr_);
-    COMMON_EXPROTED_TO_BC_STUB_LIST(ADD_COMMON_BC_HELPER)
-#undef ADD_COMMON_BC_HELPER
-
-#define ADD_RUNTIME_BC_HELPER(name)                                                                             \
-    bcStubEntries.Set(BCStubEntries::BC_HANDLER_STUB_ENTRIES_COUNT + kungfu::BytecodeHelperId::name##Id,        \
-        reinterpret_cast<uintptr_t>(name));
-    RUNTIME_EXPROTED_TO_BC_STUB_LIST(ADD_RUNTIME_BC_HELPER)
-#undef ADD_RUNTIME_BC_HELPER
     for (int i = asmInterOpt.handleStart; i <= asmInterOpt.handleEnd && i >= 0; i++) {
         bcStubEntries.Set(static_cast<size_t>(i), defaultBCStubDes.codeAddr_);
     }

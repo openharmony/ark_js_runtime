@@ -505,7 +505,7 @@ JSTaggedValue InterpreterAssembly::Execute(JSThread *thread, const CallParams& p
     AsmInterpretedFrame *breakState = GET_ASM_FRAME(newSp);
     auto leaveFrame = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
     if (leaveFrame != nullptr) {
-        [[maybe_unused]] OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(leaveFrame);
+        OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(leaveFrame);
         frame->callsiteFp = reinterpret_cast<uintptr_t>(sp);
         breakState->base.prev = leaveFrame;
     } else {

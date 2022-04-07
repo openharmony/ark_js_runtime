@@ -365,7 +365,6 @@ void InterpreterStub::DispatchBase(GateRef bcOffset, const CallSignature *signat
     GetEnvironment()->GetCurrentLabel()->SetDepend(result);
 }
 
-
 void InterpreterStub::Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool, GateRef profileTypeInfo,
                                GateRef acc, GateRef hotnessCounter, GateRef format)
 {
@@ -387,39 +386,28 @@ void InterpreterStub::DispatchLast(GateRef glue, GateRef pc, GateRef sp, GateRef
     Return();
 }
 
-// Decode for callType:
-// high 32 bits: jumpSize
-// bit0: isNew
-// bit1: callThis
-// ...
-
-// +--------------- +--------+------------+---------+-----------+--------------+-----------+-----------+-----------+
-// |type:           | POINTER|   INT64    | POINTER |   INT64   |    INT64     |   INT64   |   INT64   |   INT64   |
-// +--------------- +--------+------------+---------+-----------+--------------+-----------+-----------+-----------+
-// |callarg0:       |  glue  |  callType  |   sp    |  funcReg  |  actualArgc  |
-// +--------------- +--------+------------+---------+-----------+--------------+-----------+
-// |callarg1:       |  glue  |  callType  |   sp    |  funcReg  |  actualArgc  |  arg0Reg  |
-// +--------------- +--------+------------+---------+-----------+--------------+-----------+-----------+
-// |callargs2:      |  glue  |  callType  |   sp    |  funcReg  |  actualArgc  |  arg0Reg  |  arg1Reg  |
-// +--------------- +--------+------------+---------+-----------+--------------+-----------+-----------+-----------+
-// |callargs3:      |  glue  |  callType  |   sp    |  funcReg  |  actualArgc  |  arg0Reg  |  arg1Reg  |  arg2Reg  |
-// +--------------- +--------+------------+---------+-----------+--------------+-----------+-----------+-----------+
-// |callirange:     |  glue  |  callType  |   sp    |  funcReg  |  actualArgc  |
-// +--------------- +--------+------------+---------+-----------+--------------+
-// |callithisrange: |  glue  |  callType  |   sp    |  funcReg  |  actualArgc  |
-// +--------------- +--------+------------+---------+-----------+--------------+
-// |newobjdynrange: |  glue  |  callType  |   sp    |  funcReg  |  actualArgc  |
-// +--------------- +--------+------------+---------+-----------+--------------+
-template<typename... Args>
-void InterpreterStub::DispatchCommonCall(GateRef glue, GateRef callType, GateRef sp, GateRef funcReg,
-                                         GateRef actualArgc, Args... args)
+template<RuntimeStubCSigns::ID id, typename... Args>
+void InterpreterStub::DispatchCommonCall(GateRef glue, GateRef function, Args... args)
 {
-    GateRef opcodeOffset = IntPtrMul(
-        IntPtr(BCStubEntries::BC_HANDLER_STUB_ENTRIES_COUNT + BytecodeHelperId::HandleCommonCallId),
-        IntPtrSize());
-    const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(HandleCommonCall));
-    DispatchBase(opcodeOffset, signature, glue, callType, sp, funcReg, actualArgc, args...);
+    GateRef index = IntPtr(id);
+    const CallSignature *signature = RuntimeStubCSigns::Get(id);
+    auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
+    GateRef result = GetEnvironment()->GetBuilder().NoGcRuntimeCall(
+        signature, glue, index, depend, {glue, function, args...});
+    GetEnvironment()->GetCurrentLabel()->SetDepend(result);
     Return();
+}
+
+template<RuntimeStubCSigns::ID id, typename... Args>
+GateRef InterpreterStub::CommonCallNative(GateRef glue, GateRef function, Args... args)
+{
+    GateRef index = IntPtr(id);
+    const CallSignature *signature = RuntimeStubCSigns::Get(id);
+    auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
+    GateRef result = GetEnvironment()->GetBuilder().NoGcRuntimeCall(
+        signature, glue, index, depend, {glue, function, args...});
+    GetEnvironment()->GetCurrentLabel()->SetDepend(result);
+    return result;
 }
 
 GateRef InterpreterStub::GetObjectFromConstPool(GateRef constpool, GateRef index)

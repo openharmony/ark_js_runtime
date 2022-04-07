@@ -34,8 +34,52 @@ extern "C" JSTaggedType OptimizedCallRuntime(uintptr_t glue, uint64_t runtime_id
 extern "C" JSTaggedType AsmIntCallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
 extern "C" JSTaggedType OptimizedCallOptimized(uintptr_t glue, uint32_t expectedNumArgs,
     uint32_t actualNumArgs, uintptr_t codeAddr, ...);
-extern "C" void HandleCommonCall(uintptr_t glue, uint64_t callType, uintptr_t sp, uint64_t funcReg,
-                                 uint64_t actualArgc, ...);
+
+extern "C" void PushCallArgs0AndDispatch(uintptr_t glue, uintptr_t function,
+    uintptr_t sp, uintptr_t method, uint64_t callField);
+extern "C" void PushCallArgs0AndDispatchNative(uintptr_t glue, uintptr_t function,
+    uintptr_t sp, uintptr_t method, uint64_t actualArgc);
+extern "C" void PushCallArgs0AndDispatchSlowPath(uintptr_t glue, uintptr_t function,
+    uintptr_t sp, uintptr_t method, uint64_t callField);
+
+extern "C" void PushCallArgs1AndDispatch(uintptr_t glue, uintptr_t function,
+    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0);
+extern "C" void PushCallArgs1AndDispatchNative(uintptr_t glue, uintptr_t function,
+    uintptr_t sp, uintptr_t method, uint64_t actualArgc, uint64_t arg0);
+extern "C" void PushCallArgs1AndDispatchSlowPath(uintptr_t glue, uintptr_t function,
+    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0);
+
+extern "C" void PushCallArgs2AndDispatch(uintptr_t glue, uintptr_t function,
+    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0, uint64_t arg1);
+extern "C" void PushCallArgs2AndDispatchNative(uintptr_t glue, uintptr_t function,
+    uintptr_t sp, uintptr_t method, uint64_t actualArgc, uint64_t arg0, uint64_t arg1);
+extern "C" void PushCallArgs2AndDispatchSlowPath(uintptr_t glue, uintptr_t function,
+    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0, uint64_t arg1);
+
+extern "C" void PushCallArgs3AndDispatch(uintptr_t glue, uintptr_t function,
+    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0, uint64_t arg1, uint64_t arg2);
+extern "C" void PushCallArgs3AndDispatchNative(uintptr_t glue, uintptr_t function,
+    uintptr_t sp, uintptr_t method, uint64_t actualArgc, uint64_t arg0, uint64_t arg1, uint64_t arg2);
+extern "C" void PushCallArgs3AndDispatchSlowPath(uintptr_t glue, uintptr_t function,
+    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0, uint64_t arg1, uint64_t arg2);
+
+extern "C" void PushCallIRangeAndDispatch(uintptr_t glue, uintptr_t function,
+    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t actualArgc, uintptr_t argv);
+extern "C" void PushCallIRangeAndDispatchNative(uintptr_t glue, uintptr_t function,
+    uintptr_t sp, uintptr_t method, uint64_t actualArgc, uintptr_t argv);
+extern "C" void PushCallIRangeAndDispatchSlowPath(uintptr_t glue, uintptr_t function,
+    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t actualArgc, uintptr_t argv);
+
+extern "C" void PushCallIThisRangeAndDispatch(uintptr_t glue, uintptr_t function,
+    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t actualArgc, uintptr_t argv);
+extern "C" void PushCallIThisRangeAndDispatchNative(uintptr_t glue, uintptr_t function,
+    uintptr_t sp, uintptr_t method, uint64_t actualArgc, uintptr_t argv);
+extern "C" void PushCallIThisRangeAndDispatchSlowPath(uintptr_t glue, uintptr_t function,
+    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t actualArgc, uintptr_t argv);
+
+extern "C" void ResumeRspAndDispatch(uintptr_t glue, uintptr_t pc, uintptr_t sp, uintptr_t constantPool,
+    uint64_t profileTypeInfo, uint64_t acc, uint32_t hotnessCounter, size_t jumpSize);
+extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
 #define RUNTIME_STUB_WITHOUT_GC_LIST(V)       \
     V(DebugPrint, 1)                          \
     V(FatalPrint, 1)                          \
@@ -45,7 +89,27 @@ extern "C" void HandleCommonCall(uintptr_t glue, uint64_t callType, uintptr_t sp
     V(OptimizedCallRuntime, 3)                \
     V(OptimizedCallOptimized, 4)              \
     V(AsmIntCallRuntime, 3)                   \
-    V(HandleCommonCall, 5)
+    V(PushCallArgs0AndDispatch, 2)            \
+    V(PushCallArgs0AndDispatchNative, 2)      \
+    V(PushCallArgs0AndDispatchSlowPath, 2)    \
+    V(PushCallArgs1AndDispatch, 2)            \
+    V(PushCallArgs1AndDispatchNative, 2)      \
+    V(PushCallArgs1AndDispatchSlowPath, 2)    \
+    V(PushCallArgs2AndDispatch, 2)            \
+    V(PushCallArgs2AndDispatchNative, 2)      \
+    V(PushCallArgs2AndDispatchSlowPath, 2)    \
+    V(PushCallArgs3AndDispatch, 2)            \
+    V(PushCallArgs3AndDispatchNative, 2)      \
+    V(PushCallArgs3AndDispatchSlowPath, 2)    \
+    V(PushCallIRangeAndDispatch, 2)           \
+    V(PushCallIRangeAndDispatchNative, 2)     \
+    V(PushCallIRangeAndDispatchSlowPath, 2)   \
+    V(PushCallIThisRangeAndDispatch, 2)           \
+    V(PushCallIThisRangeAndDispatchNative, 2)     \
+    V(PushCallIThisRangeAndDispatchSlowPath, 2)   \
+    V(ResumeRspAndDispatch, 8)                    \
+    V(ResumeRspAndReturn, 2)
+
 
 #define RUNTIME_STUB_WITH_GC_LIST(V)         \
     V(AddElementInternal, 5)                 \
@@ -193,9 +257,6 @@ extern "C" void HandleCommonCall(uintptr_t glue, uint64_t callType, uintptr_t sp
     V(CallIRangeDyn, 2)                      \
     V(LdBigInt, 2)                           \
     V(NewLexicalEnvWithNameDyn, 3)
-
-#define RUNTIME_EXPROTED_TO_BC_STUB_LIST(V) \
-    V(HandleCommonCall)
 
 #define RUNTIME_STUB_LIST(V)                 \
     RUNTIME_STUB_WITHOUT_GC_LIST(V)          \

@@ -669,6 +669,8 @@ public:
     void SetPropertiesToLexicalEnv(GateRef glue, GateRef object, GateRef index, GateRef value);
     GateRef GetFunctionBitFieldFromJSFunction(GateRef object);
     GateRef GetHomeObjectFromJSFunction(GateRef object);
+    GateRef GetMethodFromJSFunction(GateRef object);
+    GateRef GetCallFieldFromMethod(GateRef method);
     void SetLexicalEnvToFunction(GateRef glue, GateRef object, GateRef lexicalEnv);
     GateRef GetGlobalObject(GateRef glue);
     GateRef GetEntryIndexOfGlobalDictionary(GateRef entry);
