@@ -517,6 +517,17 @@ void TryStoreICByValueStub::GenerateCircuit(const CompilationConfig *cfg)
     Return(Hole(VariableType::INT64()));
 }
 
+void SetValueWithBarrierStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    GateRef glue = PtrArgument(0);
+    GateRef obj = PtrArgument(1);
+    GateRef offset = PtrArgument(2); // 2 : 3rd para
+    GateRef value = TaggedArgument(3); // 3 : 4th para
+    SetValueWithBarrier(glue, obj, offset, value);
+    Return();
+}
+
 void TestAbsoluteAddressRelocationStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);

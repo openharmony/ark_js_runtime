@@ -29,66 +29,6 @@ using namespace panda::ecmascript;
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DEFVARIABLE(varname, type, val) Stub::Variable varname(GetEnvironment(), type, NextVariableId(), val)
 #define NOGC_RTSTUB_CSIGNS_BEGIN (CommonStubCSigns::NUM_OF_STUBS + BytecodeStubCSigns::NUM_OF_VALID_STUBS)
-class CompilationConfig {
-public:
-    enum class Triple {
-        TRIPLE_AMD64,
-        TRIPLE_AARCH64,
-        TRIPLE_ARM32,
-    };
-    // fake parameters for register r1 ~ r3
-    static constexpr int FAKE_REGISTER_PARAMTERS_ARM32 = 3;
-
-    explicit CompilationConfig(const std::string &triple)
-        : triple_(GetTripleFromString(triple))
-    {
-    }
-    ~CompilationConfig() = default;
-
-    inline bool Is32Bit() const
-    {
-        return triple_ == Triple::TRIPLE_ARM32;
-    }
-
-    inline bool IsAArch64() const
-    {
-        return triple_ == Triple::TRIPLE_AARCH64;
-    }
-
-    inline bool IsAmd64() const
-    {
-        return triple_ == Triple::TRIPLE_AMD64;
-    }
-
-    inline bool Is64Bit() const
-    {
-        return IsAArch64() || IsAmd64();
-    }
-
-    Triple GetTriple() const
-    {
-        return triple_;
-    }
-
-private:
-    inline Triple GetTripleFromString(const std::string &triple)
-    {
-        if (triple.compare("x86_64-unknown-linux-gnu") == 0) {
-            return Triple::TRIPLE_AMD64;
-        }
-
-        if (triple.compare("aarch64-unknown-linux-gnu") == 0) {
-            return Triple::TRIPLE_AARCH64;
-        }
-
-        if (triple.compare("arm-unknown-linux-gnu") == 0) {
-            return Triple::TRIPLE_ARM32;
-        }
-        UNREACHABLE();
-    }
-    Triple triple_;
-};
-
 class Stub {
 public:
     class Environment;

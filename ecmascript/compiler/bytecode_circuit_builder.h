@@ -285,6 +285,7 @@ private:
     static bool IsMov(EcmaOpcode opcode);
     static bool IsReturn(EcmaOpcode opcode);
     static bool IsThrow(EcmaOpcode opcode);
+    static bool IsDiscarded(EcmaOpcode opcode);
     static bool IsGeneral(EcmaOpcode opcode);
     static bool IsSetConstant(EcmaOpcode opcode);
     size_t GetActualNumArgs(size_t numArgs)

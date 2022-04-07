@@ -350,6 +350,23 @@ DEF_CALL_SIGNATURE(TryStoreICByValue)
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
+DEF_CALL_SIGNATURE(SetValueWithBarrier)
+{
+    // 4 : 4 input parameters
+    CallSignature setValueWithBarrier("SetValueWithBarrier", 0, 4, ArgumentsOrder::DEFAULT_ORDER,
+        VariableType::VOID());
+    *callSign = setValueWithBarrier;
+
+    std::array<VariableType, 4> params = { // 4 : 4 input parameters
+        VariableType::POINTER(),
+        VariableType::POINTER(),
+        VariableType::POINTER(),
+        VariableType::JS_ANY()
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
+}
+
 DEF_CALL_SIGNATURE(TestAbsoluteAddressRelocation)
 {
     // 2 : 2 input parameters

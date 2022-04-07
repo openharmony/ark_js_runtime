@@ -254,6 +254,7 @@ private:
     V(TryLoadICByValue)                     \
     V(TryStoreICByName)                     \
     V(TryStoreICByValue)                    \
+    V(SetValueWithBarrier)                  \
     V(TestAbsoluteAddressRelocation)        \
     V(GetTaggedArrayPtrTest)                \
     V(BytecodeHandler)                      \
