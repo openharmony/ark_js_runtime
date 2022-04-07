@@ -16,6 +16,8 @@
 #define ECMASCRIPT_COMPILER_CIRCUIT_BUILDER_INL_H
 
 #include "ecmascript/compiler/circuit_builder.h"
+#include "ecmascript/mem/region.h"
+#include "ecmascript/mem/remembered_set.h"
 
 namespace panda::ecmascript::kungfu {
 // constant
@@ -29,36 +31,14 @@ GateRef CircuitBuilder::False()
     return TruncInt32ToInt1(Int32(0));
 }
 
-// call operation
-GateRef CircuitBuilder::CallRuntime(GateRef glue, int index, const std::vector<GateRef> &args)
-{
-    auto label = lm_->GetCurrentLabel();
-    auto depend = label->GetDepend();
-    GateRef target = Int64(index);
-    GateRef result = RuntimeCall(glue, target, depend, args);
-    label->SetDepend(result);
-    return result;
-}
-
 // memory
 GateRef CircuitBuilder::Load(VariableType type, GateRef base, GateRef offset)
 {
-    auto label = lm_->GetCurrentLabel();
+    auto label = GetCurrentLabel();
     auto depend = label->GetDepend();
     GateRef val = IntPtrAdd(base, offset);
     GateRef result = GetCircuit()->NewGate(OpCode(OpCode::LOAD), type.GetMachineType(),
                                            0, { depend, val }, type.GetGateType());
-    label->SetDepend(result);
-    return result;
-}
-
-GateRef CircuitBuilder::Store(VariableType type, GateRef base, GateRef offset, GateRef value)
-{
-    auto label = lm_->GetCurrentLabel();
-    auto depend = label->GetDepend();
-    GateRef ptr = IntPtrAdd(base, offset);
-    GateRef result = GetCircuit()->NewGate(OpCode(OpCode::STORE), type.GetMachineType(),
-                                           0, { depend, value, ptr }, type.GetGateType());
     label->SetDepend(result);
     return result;
 }
@@ -74,6 +54,12 @@ GateRef CircuitBuilder::TaggedCastToInt64(GateRef x)
 GateRef CircuitBuilder::TaggedCastToInt32(GateRef x)
 {
     return ChangeInt64ToInt32(TaggedCastToInt64(x));
+}
+
+GateRef CircuitBuilder::TaggedCastToIntPtr(GateRef x)
+{
+    ASSERT(cmpCfg_ != nullptr);
+    return cmpCfg_->Is32Bit() ? TaggedCastToInt32(x) : TaggedCastToInt64(x);
 }
 
 GateRef CircuitBuilder::TaggedCastToDouble(GateRef x)
@@ -96,12 +82,12 @@ GateRef CircuitBuilder::ChangeInt64ToTagged(GateRef x)
 // bit operation
 GateRef CircuitBuilder::TaggedSpecialValueChecker(GateRef x, JSTaggedType type)
 {
-    return Int64Equal(x, Int64(type));
+    return Equal(x, Int64(type));
 }
 GateRef CircuitBuilder::TaggedIsInt(GateRef x)
 {
-    return Int64Equal(Int64And(x, Int64(JSTaggedValue::TAG_MASK)),
-                      Int64(JSTaggedValue::TAG_INT));
+    return Equal(Int64And(x, Int64(JSTaggedValue::TAG_MASK)),
+                 Int64(JSTaggedValue::TAG_INT));
 }
 
 GateRef CircuitBuilder::TaggedIsDouble(GateRef x)
@@ -111,8 +97,8 @@ GateRef CircuitBuilder::TaggedIsDouble(GateRef x)
 
 GateRef CircuitBuilder::TaggedIsObject(GateRef x)
 {
-    return Int64Equal(Int64And(x, Int64(JSTaggedValue::TAG_MASK)),
-                      Int64(JSTaggedValue::TAG_OBJECT));
+    return Equal(Int64And(x, Int64(JSTaggedValue::TAG_MASK)),
+                 Int64(JSTaggedValue::TAG_OBJECT));
 }
 
 GateRef CircuitBuilder::TaggedIsNumber(GateRef x)
@@ -122,29 +108,29 @@ GateRef CircuitBuilder::TaggedIsNumber(GateRef x)
 
 GateRef CircuitBuilder::TaggedIsHole(GateRef x)
 {
-    return Int64Equal(x, Int64(JSTaggedValue::VALUE_HOLE));
+    return Equal(x, Int64(JSTaggedValue::VALUE_HOLE));
 }
 
 GateRef CircuitBuilder::TaggedIsNotHole(GateRef x)
 {
-    return Int64NotEqual(x, Int64(JSTaggedValue::VALUE_HOLE));
+    return NotEqual(x, Int64(JSTaggedValue::VALUE_HOLE));
 }
 
 GateRef CircuitBuilder::TaggedIsUndefined(GateRef x)
 {
-    return Int64Equal(x, Int64(JSTaggedValue::VALUE_UNDEFINED));
+    return Equal(x, Int64(JSTaggedValue::VALUE_UNDEFINED));
 }
 
 GateRef CircuitBuilder::TaggedIsException(GateRef x)
 {
-    return Int64Equal(x, Int64(JSTaggedValue::VALUE_EXCEPTION));
+    return Equal(x, Int64(JSTaggedValue::VALUE_EXCEPTION));
 }
 
 GateRef CircuitBuilder::TaggedIsSpecial(GateRef x)
 {
-    return TruncInt32ToInt1(Int32And(SExtInt1ToInt32(Int64Equal(Int64And(x,
+    return TruncInt32ToInt1(Int32And(SExtInt1ToInt32(Equal(Int64And(x,
         Int64(~JSTaggedValue::TAG_SPECIAL_MASK)),
-        Int64(0))), Int32Or(SExtInt1ToInt32(Int64NotEqual(Int64And(x,
+        Int64(0))), Int32Or(SExtInt1ToInt32(NotEqual(Int64And(x,
         Int64(JSTaggedValue::TAG_SPECIAL_VALUE)),
         Int64(0))), SExtInt1ToInt32(TaggedSpecialValueChecker(x, JSTaggedValue::VALUE_HOLE)))));
 }
@@ -152,7 +138,7 @@ GateRef CircuitBuilder::TaggedIsSpecial(GateRef x)
 GateRef CircuitBuilder::TaggedIsHeapObject(GateRef x)
 {
     return TruncInt32ToInt1(Int32And(SExtInt1ToInt32(TaggedIsObject(x)),
-        SExtInt1ToInt32(Int32Equal(SExtInt1ToInt32(TaggedIsSpecial(x)),
+        SExtInt1ToInt32(Equal(SExtInt1ToInt32(TaggedIsSpecial(x)),
         Int32(0)))));
 }
 
@@ -160,9 +146,9 @@ GateRef CircuitBuilder::TaggedIsGeneratorObject(GateRef x)
 {
     GateRef isHeapObj = SExtInt1ToInt32(TaggedIsHeapObject(x));
     GateRef objType = GetObjectType(LoadHClass(x));
-    GateRef isGeneratorObj = Int32Or(SExtInt1ToInt32(Int32Equal(objType,
+    GateRef isGeneratorObj = Int32Or(SExtInt1ToInt32(Equal(objType,
         Int32(static_cast<int32_t>(JSType::JS_GENERATOR_OBJECT)))),
-        SExtInt1ToInt32(Int32Equal(objType,
+        SExtInt1ToInt32(Equal(objType,
         Int32(static_cast<int32_t>(JSType::JS_ASYNC_FUNC_OBJECT)))));
     return TruncInt32ToInt1(Int32And(isHeapObj, isGeneratorObj));
 }
@@ -176,7 +162,7 @@ GateRef CircuitBuilder::TaggedIsPropertyBox(GateRef x)
 GateRef CircuitBuilder::TaggedIsWeak(GateRef x)
 {
     return TruncInt32ToInt1(Int32And(SExtInt1ToInt32(TaggedIsHeapObject(x)),
-        SExtInt1ToInt32(Int64Equal(Int64And(x,
+        SExtInt1ToInt32(Equal(Int64And(x,
         Int64(JSTaggedValue::TAG_WEAK_MASK)),
         Int64(1)))));
 }
@@ -302,7 +288,7 @@ GateRef CircuitBuilder::LoadHClass(GateRef object)
 GateRef CircuitBuilder::IsJsType(GateRef obj, JSType type)
 {
     GateRef objectType = GetObjectType(LoadHClass(obj));
-    return Int32Equal(objectType, Int32(static_cast<int32_t>(type)));
+    return Equal(objectType, Int32(static_cast<int32_t>(type)));
 }
 
 GateRef CircuitBuilder::GetObjectType(GateRef hClass)
@@ -316,7 +302,7 @@ GateRef CircuitBuilder::IsDictionaryModeByHClass(GateRef hClass)
 {
     GateRef bitfieldOffset = Int32(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
-    return Int32NotEqual(Int32And(UInt32LSR(bitfield,
+    return NotEqual(Int32And(UInt32LSR(bitfield,
         Int32(JSHClass::IsDictionaryBit::START_BIT)),
         Int32((1LU << JSHClass::IsDictionaryBit::SIZE) - 1)),
         Int32(0));
@@ -326,7 +312,7 @@ GateRef CircuitBuilder::IsDictionaryElement(GateRef hClass)
 {
     GateRef bitfieldOffset = Int32(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
-    return Int32NotEqual(Int32And(UInt32LSR(bitfield,
+    return NotEqual(Int32And(UInt32LSR(bitfield,
         Int32(JSHClass::DictionaryElementBits::START_BIT)),
         Int32((1LU << JSHClass::DictionaryElementBits::SIZE) - 1)),
         Int32(0));
@@ -337,7 +323,7 @@ GateRef CircuitBuilder::IsClassConstructor(GateRef object)
     GateRef hClass = LoadHClass(object);
     GateRef bitfieldOffset = Int32(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
-    return Int32NotEqual(Int32And(UInt32LSR(bitfield,
+    return NotEqual(Int32And(UInt32LSR(bitfield,
         Int32(JSHClass::ClassConstructorBit::START_BIT)),
         Int32((1LU << JSHClass::ClassConstructorBit::SIZE) - 1)),
         Int32(0));
@@ -348,7 +334,7 @@ GateRef CircuitBuilder::IsClassPrototype(GateRef object)
     GateRef hClass = LoadHClass(object);
     GateRef bitfieldOffset = Int32(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
-    return Int32NotEqual(Int32And(UInt32LSR(bitfield,
+    return NotEqual(Int32And(UInt32LSR(bitfield,
         Int32(JSHClass::ClassPrototypeBit::START_BIT)),
         Int32((1LU << JSHClass::ClassPrototypeBit::SIZE) - 1)),
         Int32(0));
@@ -359,7 +345,7 @@ GateRef CircuitBuilder::IsExtensible(GateRef object)
     GateRef hClass = LoadHClass(object);
     GateRef bitfieldOffset = Int32(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
-    return Int32NotEqual(Int32And(UInt32LSR(bitfield,
+    return NotEqual(Int32And(UInt32LSR(bitfield,
         Int32(JSHClass::ExtensibleBit::START_BIT)),
         Int32((1LU << JSHClass::ExtensibleBit::SIZE) - 1)),
         Int32(0));
@@ -389,16 +375,45 @@ GateRef CircuitBuilder::IsEcmaObject(GateRef obj)
     return ret;
 }
 
+GateRef CircuitBuilder::IsJsObject(GateRef obj)
+{
+    Label subentry(lm_);
+    PushCurrentLabel(&subentry);
+    Label exit(lm_);
+    Label isHeapObject(lm_);
+    DEFVAlUE(result, lm_, VariableType::BOOL(), False());
+    Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
+    Bind(&isHeapObject);
+    {
+        GateRef objectType = GetObjectType(LoadHClass(obj));
+        auto ret1 = Int32And(ZExtInt1ToInt32(Int32LessThanOrEqual(objectType,
+            Int32(static_cast<int32_t>(JSType::JS_OBJECT_END)))),
+            ZExtInt1ToInt32(Int32GreaterThanOrEqual(objectType,
+            Int32(static_cast<int32_t>(JSType::JS_OBJECT_BEGIN)))));
+        result = TruncInt32ToInt1(ret1);
+        Jump(&exit);
+    }
+    Bind(&exit);
+    auto ret = *result;
+    PopCurrentLabel();
+    return ret;
+}
+
 GateRef CircuitBuilder::BothAreString(GateRef x, GateRef y)
 {
     return TruncInt32ToInt1(Int32And(SExtInt1ToInt32(IsJsType(x, JSType::STRING)),
         SExtInt1ToInt32(IsJsType(y, JSType::STRING))));
 }
 
+int CircuitBuilder::NextVariableId()
+{
+    return lm_->NextVariableId();
+}
+
 void CircuitBuilder::HandleException(GateRef result, Label *success, Label *fail, Label *exit, VariableType type)
 {
     ASSERT(lm_ != nullptr);
-    lm_->Branch(Int64Equal(result, ExceptionConstant(type.GetGateType())), success, fail);
+    lm_->Branch(Equal(result, ExceptionConstant(type.GetGateType())), fail, success);
     lm_->Bind(fail);
     {
         lm_->Jump(exit);
@@ -408,7 +423,7 @@ void CircuitBuilder::HandleException(GateRef result, Label *success, Label *fail
 void CircuitBuilder::HandleException(GateRef result, Label *success, Label *fail, Label *exit, GateRef exceptionVal)
 {
     ASSERT(lm_ != nullptr);
-    lm_->Branch(Int64Equal(result, exceptionVal), success, fail);
+    lm_->Branch(Equal(result, exceptionVal), fail, success);
     lm_->Bind(fail);
     {
         lm_->Jump(exit);
@@ -457,8 +472,9 @@ void CircuitBuilder::MergeMirCircuit(GateRef hir, GateRef outir,
                                      const std::vector<GateRef> &exceptionControl)
 {
     GateAccessor acc(GetCircuit());
-    acc.SetGateType(outir, acc.GetGateType(hir));
-
+    if (outir != Circuit::NullGate()) {
+        acc.SetGateType(outir, acc.GetGateType(hir));
+    }
     auto uses = acc.Uses(hir);
     for (auto useIt = uses.begin(); useIt != uses.end(); useIt++) {
         // replace HIR:IF_SUCCESS/IF_EXCEPTION with control flow in Label successExit/failExit of MIR Circuit
@@ -499,14 +515,19 @@ void CircuitBuilder::MergeMirCircuit(GateRef hir, GateRef outir,
     GetCircuit()->DeleteGate(hir);
 }
 
+Label *CircuitBuilder::GetCurrentLabel() const
+{
+    return lm_->GetCurrentLabel();
+}
+
 GateRef CircuitBuilder::GetState() const
 {
-    return lm_->GetCurrentLabel()->GetControl();
+    return GetCurrentLabel()->GetControl();
 }
 
 GateRef CircuitBuilder::GetDepend() const
 {
-    return lm_->GetCurrentLabel()->GetDepend();
+    return GetCurrentLabel()->GetDepend();
 }
 
 void Label::Seal()

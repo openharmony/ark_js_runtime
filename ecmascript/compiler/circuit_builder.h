@@ -28,8 +28,8 @@
 
 namespace panda::ecmascript::kungfu {
 using namespace panda::ecmascript;
-#define DEFVAlUE(varname, labelmanager, type, val) \
-        Variable varname(labelmanager, type, labelmanager->NextVariableId(), val)
+#define DEFVAlUE(varname, cirBuilder, type, val) \
+        Variable varname(cirBuilder, type, cirBuilder->NextVariableId(), val)
 
 class LabelManager;
 class Label;
@@ -112,13 +112,8 @@ class Variable;
     V(TruncInt32ToInt1, OpCode::TRUNC_TO_INT1)
 
 #define BINARY_LOGIC_METHOD_LIST_WITHOUT_BITWIDTH(V)                              \
-    V(Int8Equal, OpCode::EQ)                                                      \
-    V(Int32Equal, OpCode::EQ)                                                     \
-    V(Int64Equal, OpCode::EQ)                                                     \
-    V(IntPtrEqual, OpCode::EQ)                                                    \
-    V(DoubleEqual, OpCode::EQ)                                                    \
-    V(Int32NotEqual, OpCode::NE)                                                  \
-    V(Int64NotEqual, OpCode::NE)                                                  \
+    V(Equal, OpCode::EQ)                                                          \
+    V(NotEqual, OpCode::NE)                                                       \
     V(DoubleLessThan, OpCode::SLT)                                                \
     V(DoubleLessThanOrEqual, OpCode::SLE)                                         \
     V(DoubleGreaterThan, OpCode::SGT)                                             \
@@ -140,11 +135,72 @@ class Variable;
     V(UInt6464GreaterThan, OpCode::UGT)                                           \
     V(UInt6464GreaterThanOrEqual, OpCode::UGE)
 
+class CompilationConfig {
+public:
+    enum class Triple {
+        TRIPLE_AMD64,
+        TRIPLE_AARCH64,
+        TRIPLE_ARM32,
+    };
+    // fake parameters for register r1 ~ r3
+    static constexpr int FAKE_REGISTER_PARAMTERS_ARM32 = 3;
+
+    explicit CompilationConfig(const std::string &triple)
+        : triple_(GetTripleFromString(triple))
+    {
+    }
+    ~CompilationConfig() = default;
+
+    inline bool Is32Bit() const
+    {
+        return triple_ == Triple::TRIPLE_ARM32;
+    }
+
+    inline bool IsAArch64() const
+    {
+        return triple_ == Triple::TRIPLE_AARCH64;
+    }
+
+    inline bool IsAmd64() const
+    {
+        return triple_ == Triple::TRIPLE_AMD64;
+    }
+
+    inline bool Is64Bit() const
+    {
+        return IsAArch64() || IsAmd64();
+    }
+
+    Triple GetTriple() const
+    {
+        return triple_;
+    }
+
+private:
+    inline Triple GetTripleFromString(const std::string &triple)
+    {
+        if (triple.compare("x86_64-unknown-linux-gnu") == 0) {
+            return Triple::TRIPLE_AMD64;
+        }
+
+        if (triple.compare("aarch64-unknown-linux-gnu") == 0) {
+            return Triple::TRIPLE_AARCH64;
+        }
+
+        if (triple.compare("arm-unknown-linux-gnu") == 0) {
+            return Triple::TRIPLE_ARM32;
+        }
+        UNREACHABLE();
+    }
+    Triple triple_;
+};
+
 class CircuitBuilder {
 public:
     explicit CircuitBuilder(Circuit *circuit) : lowBuilder_(circuit) {}
+    explicit CircuitBuilder(Circuit *circuit, CompilationConfig *cmpCfg) : lowBuilder_(circuit), cmpCfg_(cmpCfg) {}
     explicit CircuitBuilder(Circuit *circuit, LabelManager *lm) : lm_(lm), lowBuilder_(circuit) {}
-    ~CircuitBuilder() = default;
+    ~CircuitBuilder();
     NO_MOVE_SEMANTIC(CircuitBuilder);
     NO_COPY_SEMANTIC(CircuitBuilder);
     GateRef Arguments(size_t index);
@@ -188,7 +244,7 @@ public:
         GateRef depend = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)));
     GateRef RuntimeCall(GateRef glue, GateRef target, GateRef depend, const std::vector<GateRef> &args);
     GateRef NoGcRuntimeCall(const CallSignature *signature, GateRef glue, GateRef target,
-                            GateRef depend, std::initializer_list<GateRef> args);
+                            GateRef depend, const std::vector<GateRef> &args);
     GateRef VariadicRuntimeCall(GateRef glue, GateRef target, GateRef depend, const std::vector<GateRef> &args);
     GateRef BytecodeCall(const CallSignature *signature, GateRef glue, GateRef target,
                          GateRef depend, const std::vector<GateRef> &args);
@@ -201,10 +257,12 @@ public:
     inline GateRef True();
     inline GateRef False();
     // call operation
-    inline GateRef CallRuntime(GateRef glue, int id, const std::vector<GateRef> &args);
+    GateRef CallRuntime(GateRef glue, int id, const std::vector<GateRef> &args);
+    GateRef CallNGCRuntime(GateRef glue, size_t index, const std::vector<GateRef> &args);
+    GateRef CallStub(GateRef glue, size_t index, const std::vector<GateRef> &args);
     // memory
     inline GateRef Load(VariableType type, GateRef base, GateRef offset);
-    inline GateRef Store(VariableType type, GateRef base, GateRef offset, GateRef value);
+    void Store(VariableType type, GateRef glue, GateRef base, GateRef offset, GateRef value);
 
 #define ARITHMETIC_BINARY_OP_WITH_BITWIDTH(NAME, OPCODEID, MACHINETYPEID)                 \
     inline GateRef NAME(GateRef x, GateRef y)                                             \
@@ -242,6 +300,7 @@ public:
     // cast operation
     inline GateRef TaggedCastToInt64(GateRef x);
     inline GateRef TaggedCastToInt32(GateRef x);
+    inline GateRef TaggedCastToIntPtr(GateRef x);
     inline GateRef TaggedCastToDouble(GateRef x);
     inline GateRef ChangeTaggedPointerToInt64(GateRef x);
     inline GateRef ChangeInt64ToTagged(GateRef x);
@@ -291,12 +350,33 @@ public:
     inline GateRef IsClassPrototype(GateRef object);
     inline GateRef IsExtensible(GateRef object);
     inline GateRef IsEcmaObject(GateRef obj);
+    inline GateRef IsJsObject(GateRef obj);
     inline GateRef BothAreString(GateRef x, GateRef y);
+    GateRef GetFunctionBitFieldFromJSFunction(GateRef function);
+    GateRef GetModuleFromFunction(GateRef function);
+    GateRef FunctionIsResolved(GateRef function);
+    void SetResolvedToFunction(GateRef glue, GateRef function, GateRef value);
+    void SetConstPoolToFunction(GateRef glue, GateRef function, GateRef value);
+    void SetLexicalEnvToFunction(GateRef glue, GateRef function, GateRef value);
+    void SetModuleToFunction(GateRef glue, GateRef function, GateRef value);
+    void SetPropertyInlinedProps(GateRef glue, GateRef obj, GateRef hClass,
+        GateRef value, GateRef attrOffset, VariableType type);
     void SetLabelManager(LabelManager *lm)
     {
         lm_ = lm;
     }
+    LabelManager *GetCurrentLabelManager() const
+    {
+        return lm_;
+    }
+    void SetCompilationConfig(CompilationConfig *cmpCfg)
+    {
+        cmpCfg_ = cmpCfg;
+    }
     // label related
+    void NewLabelManager(GateRef hir);
+    void DeleteCurrentLabelManager();
+    inline int NextVariableId();
     inline void HandleException(GateRef result, Label *success, Label *exception, Label *exit, VariableType type);
     inline void HandleException(GateRef result, Label *success, Label *fail, Label *exit, GateRef exceptionVal);
     inline void PushCurrentLabel(Label *entry);
@@ -314,17 +394,20 @@ public:
     void Switch(GateRef index, Label *defaultLabel, int64_t *keysValue, Label *keysLabel, int numberOfKeys);
     void LoopBegin(Label *loopHead);
     void LoopEnd(Label *loopHead);
+    inline Label *GetCurrentLabel() const;
     inline GateRef GetState() const;
     inline GateRef GetDepend() const;
 private:
     LabelManager *lm_ {nullptr};
     LCircuitBuilder lowBuilder_;
+    CompilationConfig *cmpCfg_ {nullptr};
 };
 
 class Label {
 public:
     explicit Label() = default;
     explicit Label(LabelManager *lm);
+    explicit Label(CircuitBuilder *cirBuilder);
     ~Label() = default;
     Label(Label const &label) = default;
     Label &operator=(Label const &label) = default;
@@ -482,6 +565,12 @@ private:
 class Variable {
 public:
     Variable(LabelManager *lm, VariableType type, uint32_t id, GateRef value) : id_(id), type_(type), lm_(lm)
+    {
+        Bind(value);
+        lm_->GetCurrentLabel()->WriteVariable(this, value);
+    }
+    Variable(CircuitBuilder *cirbuilder, VariableType type, uint32_t id, GateRef value)
+        : id_(id), type_(type), lm_(cirbuilder->GetCurrentLabelManager())
     {
         Bind(value);
         lm_->GetCurrentLabel()->WriteVariable(this, value);
