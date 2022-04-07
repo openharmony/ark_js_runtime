@@ -262,7 +262,7 @@ static const char *SymbolLookupCallback([[maybe_unused]] void *disInfo, [[maybe_
 }
 #endif
 
-void LLVMAssembler::Disassemble([[maybe_unused]] const std::map<uint64_t, std::string> &addr2name) const
+void LLVMAssembler::Disassemble([[maybe_unused]] std::map<uint64_t, std::string> &addr2name) const
 {
 #if ECMASCRIPT_ENABLE_COMPILER_LOG
     LLVMDisasmContextRef dcr = LLVMCreateDisasm(LLVMGetTarget(module_), nullptr, 0, nullptr, SymbolLookupCallback);

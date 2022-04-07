@@ -45,8 +45,6 @@ namespace panda::ecmascript::kungfu {
     V(TryStoreICByValue, 6)              \
     V(SetValueWithBarrier, 4)
 
-#define COMMON_EXPROTED_TO_BC_STUB_LIST(V)
-
 #define COMMON_STUB_ID_LIST(V)      \
     COMMON_STUB_LIST(V)             \
     INTERPRETER_STUB_HELPER_LIST(V)

@@ -1985,6 +1985,39 @@ inline GateRef Stub::GetHomeObjectFromJSFunction(GateRef object)
     return Load(VariableType::JS_ANY(), object, offset);
 }
 
+inline GateRef Stub::GetMethodFromJSFunction(GateRef object)
+{
+    auto env = GetEnvironment();
+    Label subentry(env);
+    env->PushCurrentLabel(&subentry);
+
+    DEFVARIABLE(methodOffset, VariableType::INT32(), Int32(0));
+    Label funcIsJSFunctionBase(env);
+    Label funcIsJSProxy(env);
+    Label getMethod(env);
+    Branch(IsJSFunctionBase(object), &funcIsJSFunctionBase, &funcIsJSProxy);
+    Bind(&funcIsJSFunctionBase);
+    {
+        methodOffset = Int32(JSFunctionBase::METHOD_OFFSET);
+        Jump(&getMethod);
+    }
+    Bind(&funcIsJSProxy);
+    {
+        methodOffset = Int32(JSProxy::METHOD_OFFSET);
+        Jump(&getMethod);
+    }
+    Bind(&getMethod);
+    GateRef method = Load(VariableType::POINTER(), object, ChangeInt32ToIntPtr(*methodOffset));
+    env->PopCurrentLabel();
+    return method;
+}
+
+inline GateRef Stub::GetCallFieldFromMethod(GateRef method)
+{
+    GateRef callFieldOffset = IntPtr(JSMethod::GetCallFieldOffset(env_.IsArch32Bit()));
+    return Load(VariableType::INT64(), method, callFieldOffset);
+}
+
 inline void Stub::SetLexicalEnvToFunction(GateRef glue, GateRef object, GateRef lexicalEnv)
 {
     GateRef offset = IntPtr(JSFunction::LEXICAL_ENV_OFFSET);
