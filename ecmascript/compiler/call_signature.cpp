@@ -214,6 +214,23 @@ DEF_CALL_SIGNATURE(SetPropertyByValue)
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
+DEF_CALL_SIGNATURE(SetPropertyByValueWithOwn)
+{
+    // 4 : 4 input parameters
+    CallSignature setPropertyByValueWithOwn("SetPropertyByValueWithOwn", 0, 4, ArgumentsOrder::DEFAULT_ORDER,
+        VariableType::INT64());
+    *callSign = setPropertyByValueWithOwn;
+
+    std::array<VariableType, 4> params = { // 4 : 4 input parameters
+        VariableType::POINTER(),
+        VariableType::JS_POINTER(),
+        VariableType::JS_ANY(),
+        VariableType::JS_ANY()
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
+}
+
 DEF_CALL_SIGNATURE(GetPropertyByName)
 {
         // 3 : 3 input parameters
@@ -256,7 +273,24 @@ DEF_CALL_SIGNATURE(SetPropertyByIndex)
         VariableType::POINTER(),
         VariableType::JS_POINTER(),
         VariableType::INT32(),
-        VariableType::JS_ANY(),
+        VariableType::JS_ANY()
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
+}
+
+DEF_CALL_SIGNATURE(SetPropertyByIndexWithOwn)
+{
+    // 4 : 4 input parameters
+    CallSignature setPropertyByIndexWithOwn("SetPropertyByIndexWithOwn", 0, 4, ArgumentsOrder::DEFAULT_ORDER,
+        VariableType::INT64()); // hole or undefined
+    *callSign = setPropertyByIndexWithOwn;
+    // 4 : 4 input parameters
+    std::array<VariableType, 4> params = {
+        VariableType::POINTER(),
+        VariableType::JS_POINTER(),
+        VariableType::INT32(),
+        VariableType::JS_ANY()
     };
     callSign->SetParameters(params.data());
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);

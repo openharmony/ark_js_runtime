@@ -246,9 +246,11 @@ private:
     V(SetPropertyByName)                    \
     V(SetPropertyByNameWithOwn)             \
     V(SetPropertyByValue)                   \
+    V(SetPropertyByValueWithOwn)            \
     V(GetPropertyByName)                    \
     V(GetPropertyByIndex)                   \
     V(SetPropertyByIndex)                   \
+    V(SetPropertyByIndexWithOwn)            \
     V(GetPropertyByValue)                   \
     V(TryLoadICByName)                      \
     V(TryLoadICByValue)                     \
