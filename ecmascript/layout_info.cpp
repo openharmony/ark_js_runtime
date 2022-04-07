@@ -16,7 +16,7 @@
 #include "ecmascript/layout_info-inl.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/js_symbol.h"
-#include "ecmascript/mem/assert_scope-inl.h"
+#include "ecmascript/mem/assert_scope.h"
 
 namespace panda::ecmascript {
 void LayoutInfo::AddKey(const JSThread *thread, [[maybe_unused]] int index, const JSTaggedValue &key,

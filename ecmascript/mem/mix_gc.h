@@ -19,7 +19,7 @@
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/allocator.h"
-#include "ecmascript/mem/mark_stack-inl.h"
+#include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mark_word.h"
 #include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/slots.h"

@@ -22,7 +22,7 @@
 #include "ecmascript/dfx/hprof/heap_snapshot.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_thread.h"
-#include "ecmascript/mem/assert_scope-inl.h"
+#include "ecmascript/mem/assert_scope.h"
 #include "ecmascript/mem/concurrent_sweeper.h"
 #include "ecmascript/mem/heap-inl.h"
 

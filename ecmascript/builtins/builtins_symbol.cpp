@@ -21,7 +21,7 @@
 #include "ecmascript/js_symbol.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/object_factory.h"
-#include "ecmascript/symbol_table-inl.h"
+#include "ecmascript/symbol_table.h"
 #include "utils/bit_utils.h"
 
 namespace panda::ecmascript::builtins {

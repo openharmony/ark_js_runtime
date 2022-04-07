@@ -19,16 +19,36 @@
 #include <array>
 
 #include "ecmascript/js_hclass.h"
-#include "ecmascript/js_tagged_value.h"
+#include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/ecma_macros.h"
 
 namespace panda::ecmascript {
 class EcmaVM;
 class PropertiesCache {
 public:
-    inline int Get(JSHClass *jsHclass, JSTaggedValue key);
-    inline void Set(JSHClass *jsHclass, JSTaggedValue key, int index);
-    inline void Clear();
+    inline int Get(JSHClass *jsHclass, JSTaggedValue key)
+    {
+        int hash = Hash(jsHclass, key);
+        PropertyKey &prop = keys_[hash];
+        if ((prop.hclass_ == jsHclass) && (prop.key_ == key)) {
+            return keys_[hash].results_;
+        }
+        return NOT_FOUND;
+    }
+    inline void Set(JSHClass *jsHclass, JSTaggedValue key, int index)
+    {
+        int hash = Hash(jsHclass, key);
+        PropertyKey &prop = keys_[hash];
+        prop.hclass_ = jsHclass;
+        prop.key_ = key;
+        keys_[hash].results_ = index;
+    }
+    inline void Clear()
+    {
+        for (auto &key : keys_) {
+            key.hclass_ = nullptr;
+        }
+    }
 
     static const int NOT_FOUND = -1;
 
@@ -49,7 +69,12 @@ private:
         int results_{NOT_FOUND};
     };
 
-    static inline int Hash(JSHClass *cls, JSTaggedValue key);
+    static inline int Hash(JSHClass *cls, JSTaggedValue key)
+    {
+        uint32_t clsHash = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(cls)) >> 3U;  // skip 8bytes
+        uint32_t keyHash = key.GetKeyHashCode();
+        return static_cast<int>((clsHash ^ keyHash) & CACHE_LENGTH_MASK);
+    }
 
     static const uint32_t CACHE_LENGTH_BIT = 10;
     static const uint32_t CACHE_LENGTH = (1U << CACHE_LENGTH_BIT);

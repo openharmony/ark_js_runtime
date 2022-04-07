@@ -17,7 +17,7 @@
 #include "ecmascript/global_env.h"
 #include "ecmascript/tagged_array.h"
 #include "ecmascript/tests/test_helper.h"
-#include "ecmascript/weak_vector-inl.h"
+#include "ecmascript/weak_vector.h"
 
 using namespace panda::ecmascript;
 

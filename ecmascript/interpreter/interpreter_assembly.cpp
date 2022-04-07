@@ -24,7 +24,7 @@
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/interpreter/slow_runtime_stub.h"
 #include "ecmascript/jspandafile/literal_data_extractor.h"
-#include "ecmascript/jspandafile/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/mem/concurrent_marker.h"

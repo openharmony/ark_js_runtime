@@ -20,7 +20,7 @@
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/allocator.h"
-#include "ecmascript/mem/mark_stack-inl.h"
+#include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mark_word.h"
 #include "ecmascript/mem/slots.h"
 #include "ecmascript/mem/object_xray.h"
@@ -59,7 +59,16 @@ private:
     void SweepPhases();
     void FinishPhase();
 
-    inline void UpdatePromotedSlot(TaggedObject *object, ObjectSlot slot);
+    inline void UpdatePromotedSlot(TaggedObject *object, ObjectSlot slot)
+    {
+#ifndef NDEBUG
+        JSTaggedValue value(slot.GetTaggedType());
+        ASSERT(value.IsHeapObject());
+#endif
+        Region *objectRegion = Region::ObjectAddressToRange(object);
+        ASSERT(!objectRegion->InYoungGeneration());
+        objectRegion->InsertOldToNewRememberedSet(slot.SlotAddress());
+    }
 
     Heap *heap_;
     size_t promotedSize_{0};

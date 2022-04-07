@@ -29,7 +29,21 @@ public:
         return reinterpret_cast<TaggedQueue *>(object);
     }
 
-    JSTaggedValue Pop(JSThread *thread);
+    inline JSTaggedValue Pop(JSThread *thread)
+    {
+        if (Empty()) {
+            return JSTaggedValue::Hole();
+        }
+
+        uint32_t start = GetStart().GetArrayLength();
+        JSTaggedValue value = Get(start);
+
+        uint32_t capacity = GetCapacity().GetArrayLength();
+        ASSERT(capacity != 0);
+        SetStart(thread, JSTaggedValue((start + 1) % capacity));
+        return value;
+    }
+
     static TaggedQueue *Push(const JSThread *thread, const JSHandle<TaggedQueue> &queue,
                              const JSHandle<JSTaggedValue> &value)
     {
@@ -175,7 +189,17 @@ private:
         return TaggedArray::Get(END_INDEX);
     }
 
-    static TaggedQueue *Create(JSThread *thread, uint32_t capacity, JSTaggedValue initVal = JSTaggedValue::Hole());
+    static inline TaggedQueue *Create(JSThread *thread, uint32_t capacity,
+                                      JSTaggedValue initVal = JSTaggedValue::Hole())
+    {
+        uint32_t length = QueueToArrayIndex(capacity);
+
+        auto queue = TaggedQueue::Cast(*thread->GetEcmaVM()->GetFactory()->NewTaggedArray(length, initVal));
+        queue->SetStart(thread, JSTaggedValue(0));  // equal to 0 when add 1.
+        queue->SetEnd(thread, JSTaggedValue(0));
+        queue->SetCapacity(thread, JSTaggedValue(capacity));
+        return queue;
+    }
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_TAGGED_QUEUE_H

@@ -43,7 +43,11 @@ public:
         return static_cast<ConstantPool *>(object);
     }
 
-    inline JSTaggedValue GetObjectFromCache(uint32_t index) const;
+    inline JSTaggedValue GetObjectFromCache(uint32_t index) const
+    {
+        return Get(index);
+    }
+
     DECL_DUMP()
 };
 }  // namespace ecmascript

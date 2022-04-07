@@ -30,7 +30,7 @@
 #include "ecmascript/tagged_array-inl.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/tests/test_helper.h"
-#include "ecmascript/weak_vector-inl.h"
+#include "ecmascript/weak_vector.h"
 
 using namespace panda::ecmascript;
 using namespace panda::ecmascript::base;
