@@ -15,7 +15,7 @@
 
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 
-#include "ecmascript/jspandafile/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object.h"
 
 namespace panda::ecmascript {
 static const size_t MALLOC_SIZE_LIMIT = 2147483648; // Max internal memory used by the VM declared in options

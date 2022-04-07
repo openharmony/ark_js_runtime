@@ -20,7 +20,7 @@
 #include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/ts_types/ts_loader.h"
-#include "ecmascript/ts_types/ts_obj_layout_info-inl.h"
+#include "ecmascript/ts_types/ts_obj_layout_info.h"
 
 namespace panda::ecmascript {
 void TSTypeTable::Initialize(JSThread *thread, const JSPandaFile *jsPandaFile,

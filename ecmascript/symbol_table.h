@@ -18,6 +18,7 @@
 
 #include "ecmascript/tagged_hash_table.h"
 #include "ecmascript/ecma_string.h"
+#include "ecmascript/js_symbol.h"
 #include "ecmascript/js_thread.h"
 
 namespace panda::ecmascript {
@@ -44,8 +45,27 @@ public:
     {
         return ENTRY_SIZE;
     }
-    static inline bool IsMatch(const JSTaggedValue &name, const JSTaggedValue &other);
-    static inline uint32_t Hash(const JSTaggedValue &obj);
+    static inline bool IsMatch(const JSTaggedValue &name, const JSTaggedValue &other)
+    {
+        if (name.IsHole() || name.IsUndefined()) {
+            return false;
+        }
+
+        auto *nameString = static_cast<EcmaString *>(name.GetTaggedObject());
+        auto *otherString = static_cast<EcmaString *>(other.GetTaggedObject());
+        return EcmaString::StringsAreEqual(nameString, otherString);
+    }
+    static inline uint32_t Hash(const JSTaggedValue &obj)
+    {
+        if (obj.IsHeapObject()) {
+            if (obj.IsString()) {
+                auto *nameString = static_cast<EcmaString *>(obj.GetTaggedObject());
+                return nameString->GetHashcode();
+            }
+            return JSSymbol::ComputeHash();
+        }
+        UNREACHABLE();
+    }
 
     static const int DEFAULT_ELEMENTS_NUMBER = 64;
     static JSHandle<SymbolTable> Create(JSThread *thread, int numberOfElements = DEFAULT_ELEMENTS_NUMBER)
@@ -53,11 +73,30 @@ public:
         return HashTable::Create(thread, numberOfElements);
     }
 
-    inline bool ContainsKey(const JSTaggedValue &key);
+    inline bool ContainsKey(const JSTaggedValue &key)
+    {
+        int entry = FindEntry(key);
+        return entry != -1;
+    }
 
-    inline JSTaggedValue GetSymbol(const JSTaggedValue &key);
+    inline JSTaggedValue GetSymbol(const JSTaggedValue &key)
+    {
+        int entry = FindEntry(key);
+        ASSERT(entry != -1);
+        return GetValue(entry);
+    }
 
-    inline JSTaggedValue FindSymbol(const JSTaggedValue &value);
+    inline JSTaggedValue FindSymbol(const JSTaggedValue &value)
+    {
+        JSSymbol *symbol = JSSymbol::Cast(value.GetTaggedObject());
+        JSTaggedValue des = symbol->GetDescription();
+        if (!des.IsUndefined()) {
+            if (ContainsKey(des)) {
+                return des;
+            }
+        }
+        return JSTaggedValue::Undefined();
+    }
     static constexpr int ENTRY_KEY_INDEX = 0;
     static constexpr int ENTRY_VALUE_INDEX = 1;
     static constexpr int ENTRY_SIZE = 2;

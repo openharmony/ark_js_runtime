@@ -17,7 +17,7 @@
 
 #include "ecmascript/free_object.h"
 #include "ecmascript/mem/free_object_set.h"
-#include "ecmascript/mem/free_object_list-inl.h"
+#include "ecmascript/mem/free_object_list.h"
 #include "ecmascript/mem/mem.h"
 
 namespace panda::ecmascript {

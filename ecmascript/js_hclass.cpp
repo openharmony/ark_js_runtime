@@ -24,7 +24,7 @@
 #include "ecmascript/js_symbol.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/tagged_array-inl.h"
-#include "ecmascript/weak_vector-inl.h"
+#include "ecmascript/weak_vector.h"
 
 namespace panda::ecmascript {
 JSHandle<TransitionsDictionary> TransitionsDictionary::PutIfAbsent(const JSThread *thread,

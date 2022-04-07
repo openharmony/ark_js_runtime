@@ -24,7 +24,7 @@
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/interpreter/slow_runtime_helper.h"
-#include "ecmascript/jspandafile/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/jspandafile/scope_info_extractor.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_array.h"

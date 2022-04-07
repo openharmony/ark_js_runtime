@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/mem/stw_young_gc_for_testing-inl.h"
+#include "ecmascript/mem/stw_young_gc_for_testing.h"
 
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/clock_scope.h"

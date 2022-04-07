@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/symbol_table-inl.h"
+#include "ecmascript/symbol_table.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/js_symbol.h"
 #include "ecmascript/object_factory.h"

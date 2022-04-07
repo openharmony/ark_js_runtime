@@ -16,7 +16,7 @@
 #include "ecmascript/jspandafile/js_pandafile.h"
 
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
-#include "ecmascript/jspandafile/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object.h"
 
 namespace panda::ecmascript {
 JSPandaFile::JSPandaFile(const panda_file::File *pf, const CString &descriptor) : pf_(pf), desc_(descriptor)

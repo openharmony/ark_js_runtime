@@ -89,11 +89,35 @@ private:
     static constexpr size_t MAX_BIT_OF_SIZET = sizeof(size_t) << INTERVAL_OFFSET;
     const int smallSetOffsetIndex = 2;
 
-    inline SetType SelectSetType(size_t size) const;
+    inline SetType SelectSetType(size_t size) const
+    {
+        if (size < SMALL_SET_MAX_SIZE) {
+            if (UNLIKELY(size < MIN_SIZE)) {
+                return FreeObjectSet::INVALID_SET_TYPE;
+            }
+            return (size >> INTERVAL_OFFSET) - smallSetOffsetIndex;
+        }
+        if (size < LARGE_SET_MAX_SIZE) {
+            return MAX_BIT_OF_SIZET - __builtin_clzl(size) + LOG2_OFFSET;
+        }
+        if (size >= HUGE_SET_MAX_SIZE) {
+            return NUMBER_OF_LAST_HUGE;
+        }
 
-    inline void SetNoneEmptyBit(SetType type);
-    inline void ClearNoneEmptyBit(SetType type);
-    inline size_t CalcNextNoneEmptyIndex(SetType start);
+        return NUMBER_OF_LAST_LARGE;
+    }
+    inline void SetNoneEmptyBit(SetType type)
+    {
+        noneEmptySetBitMap_ |= 1ULL << static_cast<uint32_t>(type);
+    }
+    inline void ClearNoneEmptyBit(SetType type)
+    {
+        noneEmptySetBitMap_ &= ~(1ULL << static_cast<uint32_t>(type));
+    }
+    inline size_t CalcNextNoneEmptyIndex(SetType start)
+    {
+        return __builtin_ffsll(noneEmptySetBitMap_ >> static_cast<uint32_t>(start)) + start - 1;
+    }
 
     size_t available_ = 0;
     size_t wasted_ = 0;

@@ -19,7 +19,7 @@
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tests/test_helper.h"
 #include "ecmascript/ts_types/ts_type_table.h"
-#include "ecmascript/ts_types/ts_obj_layout_info-inl.h"
+#include "ecmascript/ts_types/ts_obj_layout_info.h"
 
 using namespace panda::ecmascript;
 namespace panda::test {

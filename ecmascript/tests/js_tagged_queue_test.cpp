@@ -19,7 +19,7 @@
 #include "ecmascript/js_handle.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/snapshot/mem/snapshot.h"
-#include "ecmascript/tagged_queue-inl.h"
+#include "ecmascript/tagged_queue.h"
 #include "ecmascript/tagged_queue.h"
 #include "ecmascript/tests/test_helper.h"
 
