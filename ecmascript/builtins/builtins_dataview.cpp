@@ -242,7 +242,18 @@ JSTaggedValue BuiltinsDataView::GetUint32(EcmaRuntimeCallInfo *argv)
     ASSERT(argv);
     return GetTypedValue(argv, DataViewType::UINT32);
 }
-
+// 25.3.4.5
+JSTaggedValue BuiltinsDataView::GetBigInt64(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    return GetTypedValue(argv, DataViewType::BIGINT64);
+}
+// 25.3.4.6
+JSTaggedValue BuiltinsDataView::GetBigUint64(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    return GetTypedValue(argv, DataViewType::BIGUINT64);
+}
 // 24.2.4.13
 JSTaggedValue BuiltinsDataView::SetFloat32(EcmaRuntimeCallInfo *argv)
 {
@@ -297,6 +308,20 @@ JSTaggedValue BuiltinsDataView::SetUint32(EcmaRuntimeCallInfo *argv)
 {
     ASSERT(argv);
     return SetTypedValue(argv, DataViewType::UINT32);
+}
+
+// 25.3.4.15
+JSTaggedValue BuiltinsDataView::SetBigInt64(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    return SetTypedValue(argv, DataViewType::BIGINT64);
+}
+
+// 25.3.4.16
+JSTaggedValue BuiltinsDataView::SetBigUint64(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    return SetTypedValue(argv, DataViewType::BIGUINT64);
 }
 
 // 24.2.1.1
@@ -376,7 +401,7 @@ JSTaggedValue BuiltinsDataView::SetViewValue(JSThread *thread, const JSHandle<JS
     if (index < 0) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "getIndex < 0", JSTaggedValue::Exception());
     }
-    JSHandle<JSTaggedValue> numValueHandle = JSHandle<JSTaggedValue>(thread, JSTaggedValue::ToNumber(thread, value));
+    JSHandle<JSTaggedValue> numValueHandle = JSTaggedValue::ToNumeric(thread, value.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 7. Let isLittleEndian be ToBoolean(isLittleEndian).
     bool isLittleEndian = false;
