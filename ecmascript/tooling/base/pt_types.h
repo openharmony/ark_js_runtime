@@ -1529,6 +1529,49 @@ private:
     size_t ordinal_ {};
 }; 
 
+class RuntimeCallFrame  final :  public PtBaseTypes {
+public:
+    RuntimeCallFrame() = default;
+    ~RuntimeCallFrame() override = default;
+    static std::unique_ptr<RuntimeCallFrame> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    const CString &GetFunctionName() const
+    {
+        return functionName_;
+    }
+
+    const CString &GetScriptId() const
+    {
+        return scriptId_;
+    }
+
+    const CString &GetUrl() const
+    {
+        return url_;
+    }
+
+    int32_t GetLineNumber() const
+    {
+        return lineNumber_;
+    }
+
+    int32_t GetColumnNumber() const
+    {
+        return columnNumber_;
+    }
+
+private:
+    NO_COPY_SEMANTIC(RuntimeCallFrame);
+    NO_MOVE_SEMANTIC(RuntimeCallFrame);
+
+    CString functionName_ {};
+    CString scriptId_ {};
+    CString url_ {};
+    int32_t lineNumber_ {};
+    int32_t columnNumber_ {};
+}; 
+
 class SamplingHeapProfileNode  final :  public PtBaseTypes {
 public:
     SamplingHeapProfileNode() = default;
@@ -1536,10 +1579,15 @@ public:
     static std::unique_ptr<SamplingHeapProfileNode> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
 
-    SamplingHeapProfileNode &SetCallFrame(std::unique_ptr<CallFrame> callFrame)
+    SamplingHeapProfileNode &SetCallFrame(std::unique_ptr<RuntimeCallFrame> callFrame)
     {
         callFrame_ = std::move(callFrame);
         return *this;
+    }
+
+    RuntimeCallFrame *GetCallFrame() const
+    {
+        return callFrame_.get();
     }
 
     SamplingHeapProfileNode &SetSelfSize(size_t selfSize)
@@ -1570,11 +1618,16 @@ public:
         return *this;
     }
 
+    const CVector<std::unique_ptr<SamplingHeapProfileNode>> *GetChildren() const
+    {
+        return &children_;
+    }
+
 private:
     NO_COPY_SEMANTIC(SamplingHeapProfileNode);
     NO_MOVE_SEMANTIC(SamplingHeapProfileNode);
 
-    std::unique_ptr<CallFrame> callFrame_ {nullptr};
+    std::unique_ptr<RuntimeCallFrame> callFrame_ {nullptr};
     size_t selfSize_ {};
     int32_t id_ {};
     CVector<std::unique_ptr<SamplingHeapProfileNode>> children_ {};
@@ -1592,11 +1645,21 @@ public:
         head_ = std::move(head);
         return *this;
     }
+
+    SamplingHeapProfileNode *GetHead() const
+    {
+        return head_.get();
+    }
     
     SamplingHeapProfile &SetSamples(CVector<std::unique_ptr<SamplingHeapProfileSample>> samples)
     {
         samples_ = std::move(samples);
         return *this;
+    }
+
+    const CVector<std::unique_ptr<SamplingHeapProfileSample>> *GetSamples() const
+    {
+        return &samples_;
     }
 
 private:
