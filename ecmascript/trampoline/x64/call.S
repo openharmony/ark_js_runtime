@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
- #include "asm_defines.h"
+ #include "../asm_defines.h"
 
  .global JSFunctionEntry
 .type JSFunctionEntry, %function
@@ -135,7 +135,7 @@ JSFunctionEntry:
     // 16 bytes align check
     movl    %edx, %r14d
     testb   $1, %r14b
-    je      .LAlign16Bytes
+    jne     .LAlign16Bytes
     pushq   $0                  // push zero to align 16 bytes stack
 
 .LAlign16Bytes:
@@ -165,13 +165,14 @@ JSFunctionEntry:
     addq    $-1, %rax
     jne     .LCopyLoop
 
+    push    %r14
     movq    %rdi, %rax          // move glue to rax
     call    *%r9                // then call jsFunction
     leaq    (,%r14,8), %rcx   // NOTE: fixed for 3 extra arguments
     addq    %rcx, %rsp
-
+    addq    $8, %rsp
     testb   $1, %r14b           // stack 16bytes align check
-    je      .LPopFrame
+    jne     .LPopFrame
     addq    $8, %rsp
 
 .LPopFrame:
@@ -180,22 +181,22 @@ JSFunctionEntry:
     popq    %rbp
 
     POP_GENERAL_REGS
-    movq    %rsi, ASM_GLUE_CURRENT_FRAME_OFFSET(%rdi)   // restore thread->currentFrame_
+    movq    %rsi, ASM_GLUE_LEAVE_FRAME_OFFSET(%rdi)   // restore thread->leaveFrame_
     ret
 
 
 // uint64_t OptimizedCallOptimized(uintptr_t glue, uint32_t expectedNumArgs,
-//                                uint32_t actualNumArgs, uintptr_t codeAddr, ...);
+//                                uint32_t actualNumArgs, uintptr_t codeAddr, argv);
 // Input:
 // %rdi - glue
 // %rsi - expectedNumArgs
 // %rdx - actualNumArgs
-// %ecx - codeAddr
-// %r8  - argv[0]
-// %r9  - argv[1]
-// sp[0 * 8]  -  argv[2]
-// sp[1 * 8]  -  argv[3]
-// sp[2 * 8]  -  argv[4]
+// %rcx - codeAddr
+// %r8  - argv
+
+// sp[0 * 8]  -  argc
+// sp[1 * 8]  -  argv[0]
+// sp[2 * 8]  -  argv[1]
 // .....
 // sp[(N -3) * 8] - argv[N - 1]
 // Output:
@@ -206,12 +207,17 @@ JSFunctionEntry:
 // sp[- 8(N - 1)] - arg[0]
 
 OptimizedCallOptimized:
-    PUSH_GENERAL_REGS
-
+    pushq   %rbp
+    pushq   $OPTIMIZE_FRAME_TYPE
+    //callee save
+    pushq   %r14
+    pushq   %rbx
+    pushq   %rax
+    
     // 16 bytes align check
     movl    %esi, %r14d
     testb   $1, %r14b
-    je      .LAlign16Bytes1
+    jne      .LAlign16Bytes1
     pushq   $0                  // push zero to align 16 bytes stack
 
 .LAlign16Bytes1:
@@ -234,54 +240,109 @@ OptimizedCallOptimized:
     cmovbe  %ebx, %edx
     movl    %edx, %eax
 
-    // r12: extraArgument alignment
-    movq %r14, %r12
-    subq %rdx, %r12
+.LCopyLoop1:
+    movq    -8(%r8, %rax, 8), %rbx
+    pushq   %rbx
 
-    testb   $1, %r14b           // stack 16bytes align check
-    je      .align16
-    addq $1, %r12
-.align16:
-    cmpq  $0, %rax
-    jbe  .ArgNumsEqualZero
-    cmpq  $1, %rax
-    jbe  .ArgNumsEqualOne
-    cmpq  $2, %rax
-    jbe  .ArgNumsEqualTwo
-
-    // r12: extragArgument size
-    leaq    (,%r12,8), %r12
-    movq %rsp, %r15
-    addq $ARGS_STACK_TOP_TO_FP_OFFSET, %r15
-    addq %r12, %r15
-
-    // argV[0] - r8 ;argv[1]-r9
-    addq $-2, %rax
-.ArgNumsMoreTwo:
-    movq    -8(%r15, %rax, 8), %r12
-    pushq   %r12
     addq    $-1, %rax
-    jne     .ArgNumsMoreTwo
-.ArgNumsEqualTwo:
-    // argv[1] r9
-    push %r9
-.ArgNumsEqualOne:
-    // argv[0] r8
-    pushq   %r8
-.ArgNumsEqualZero:
+    jne     .LCopyLoop1
+
+    pushq   %r14
     movq    %rdi, %rax          // move glue to rax
-    movq    %rcx, %r8
-    callq   *%r8                // then call jsFunction
+    callq   *%rcx               // then call jsFunction
     leaq    (,%r14,8), %rcx
     addq    %rcx, %rsp
+    addq    $8, %rsp
 
     testb   $1, %r14b           // stack 16bytes align check
-    je      .LPopFrame1
+    jne      .LPopFrame1
     addq    $8, %rsp
 
 .LPopFrame1:
-    POP_GENERAL_REGS
+    addq    $8, %rsp
+    popq    %rbx
+    popq    %r14
+    addq    $8, %rsp
+    pop     %rbp
     ret
+
+// uint64_t CallNativeTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
+// webkit_jscc calling convention call runtime_id's runtion function(c-abi)
+// Input:
+// %rax - glue
+// stack layout:
+// sp + N*8 argvN
+// ........
+// sp + 24: argv1
+// sp + 16: argv0
+// sp + 8:  actualArgc
+// sp:      codeAddress
+// construct Native Leave Frame:
+//   +--------------------------+
+//   |       argv0              | calltarget , newTarget, this, ....
+//   +--------------------------+ ---
+//   |       argc               |   ^
+//   |--------------------------|  Fixed
+//   |       codeAddress        | OptimizedLeaveFrame
+//   |--------------------------|   |
+//   |       returnAddr         |   |
+//   |--------------------------|   |
+//   |       callsiteFp         |   |
+//   |--------------------------|   |
+//   |       frameType          |   v
+//   +--------------------------+ ---
+
+// Output:
+//  sp - 8 : pc
+//  sp - 16: rbp <---------current rbp & current sp
+//  current sp - 8:  type
+
+.global CallNativeTrampoline
+.type CallNativeTrampoline, %function
+CallNativeTrampoline:
+    pushq   %rbp
+    movq    %rsp, %rbp     // set frame pointer
+    movq    %rbp, ASM_GLUE_LEAVE_FRAME_OFFSET(%rax)   // save to thread->leaveFrame_
+    pushq   $LEAVE_FRAME_TYPE
+
+    // callee save
+    pushq    %r10
+    pushq    %rbx
+
+    movq    %rbp, %rdx
+    addq    $16, %rdx        // 16 : for rbp & return address
+
+    // load native pointer address
+    movq    (%rdx), %r10
+    subq    $ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE, %rsp
+
+    // construct ecma_runtime_call_info    
+    // get thread
+    subq  $ASM_GLUE_TO_THREAD_OFFSET, %rax
+    movq    %rax, (%rsp)                                         // thread_
+    // get numArgs
+    movq    $0, %rax
+    movl    8(%rdx), %eax
+    movl    %eax, ECMA_RUNTIME_CALLINFO_NUMARGS_OFFSET(%rsp)     // numArgs
+    // get gpr data
+    movq    %rdx, %rbx
+    addq    $16, %rbx
+    movq    %rbx, ECMA_RUNTIME_CALLINFO_GPRARGS_OFFSET(%rsp)       // data_
+    movq    %rax, ECMA_RUNTIME_CALLINFO_GPRARGS_SIZE_OFFSET(%rsp)  // size_
+    movq    $0,  ECMA_RUNTIME_CALLINFO_STACKARGS_OFFSET(%rsp)
+    movq    $0,  ECMA_RUNTIME_CALLINFO_STACKARGS_SIZE_OFFSET(%rsp)
+
+    movq   %rsp, %rdi
+    call   *%r10
+    addq   $ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE, %rsp
+    popq   %rbx
+    popq   %r10
+    addq   $8, %rsp
+    popq   %rbp
+    popq   %rdx        // load pc
+    addq   $8, %rsp    // skip code address
+    pushq   %rdx        // save pc
+    ret 
 
 // uint64_t OptimizedCallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
@@ -318,7 +379,7 @@ OptimizedCallOptimized:
 OptimizedCallRuntime:
     pushq   %rbp
     movq    %rsp, %rbp     // set frame pointer
-    movq    %rbp, ASM_GLUE_CURRENT_FRAME_OFFSET(%rax)   // save to thread->currentFrame_
+    movq    %rbp, ASM_GLUE_LEAVE_FRAME_OFFSET(%rax)   // save to thread->currentFrame_
     pushq   $LEAVE_FRAME_TYPE
 
     // callee save
@@ -377,6 +438,213 @@ AsmIntCallRuntime:
     addq    $8, %rsp
     ret
 
+// uint64_t JSCallWithArgV(uintptr_t glue, uint32_t argc, JSTaggedType calltarget, uintptr_t argv[]);
+// c++ calling convention call js function
+// Input:
+// %rdi - glue
+// %rsi - argc
+// %rdx - calltarget
+// %rcx - argV (calltarget, newtarget, thisObj, ...)
+.global JSCallWithArgV
+.type JSCallWithArgV, %function
+
+
+// uint64_t JSCall(uintptr_t glue, uint32_t argc, JSTaggedType calltarget, JSTaggedType new, JSTaggedType this, ...);
+// webkit_jscc calling convention call js function()
+// Input:
+// %rax - glue
+// stack layout:
+// sp + N*8 argvN
+// ........
+// sp + 24: argc
+// sp + 16: this
+// sp + 8:  new
+// sp:      jsfunc
+//   +--------------------------+
+//   |       ...                |
+//   +--------------------------+
+//   |       arg0               |
+//   +--------------------------+
+//   |       this               |
+//   +--------------------------+
+//   |       new                |
+//   +--------------------------+ ---
+//   |       jsfunction         |   ^
+//   |--------------------------|  Fixed
+//   |       argc               | OptimizedLeaveFrame
+//   |--------------------------|   |
+//   |       returnAddr         |   |
+//   |--------------------------|   |
+//   |       callsiteFp         |   |
+//   |--------------------------|   |
+//   |       frameType          |   v
+//   +--------------------------+ ---
+.global JSCall
+.type JSCall, %function
+
+JSCallWithArgV:
+    mov     %rdx, (%rcx)
+    mov     %rdx, %rax
+    jmp     .LJSCallStart
+JSCall:
+    mov     %rax, %rdi
+    mov     16(%rsp), %rax               // get jsfunc
+.LJSCallStart:
+    movabs  $TAGGED_MASK, %rdx           // IsTaggedInt
+    and     %rax, %rdx
+    cmp     $0x0, %rdx
+    jne     .LNonCallable
+    cmp     $0x0, %rax                   // IsHole
+    je      .LNonCallable
+    movabs  $TAGGED_SPECIAL_VALUE, %rdx
+    and     %rax, %rdx                   // IsSpecial
+    cmp     $0x0, %rdx
+    jne     .LNonCallable
+
+    mov     %rax, %r8               // save jsfunc
+    mov     (%rax), %rax            // get jshclass
+    movl    JS_HCLASS_BITFIELD_OFFSET(%rax), %eax
+    btl     $JS_HCLASS_BITFIELD_CALLABLE_BIT, %eax  // IsCallable
+    jnb     .LNonCallable
+
+    shll    $24, %eax               // objecttype << 24
+    leal    -50331649(%rax), %edx
+    cmpl    $0x9FFFFFF, %edx        // objecttype in (0x04 ~ 0x0c)
+    ja      .LNotJSFunction
+    jmp     .LJSFunctionCall
+.LNotJSFunction:
+    cmpl    $0xd000000, %eax        // IsJsBoundFunction
+    je      .LJSBoundFunction
+    cmpl    $0x4d000000, %eax       // IsJsProxy
+    je      .LJSProxy
+
+.LNonCallable:
+    pushq   %rbp
+    movq    %rsp, %rbp                          // set frame pointer
+    pushq   $OPTIMIZE_FRAME_TYPE                // set frame type
+    mov     $MESSAGE_STRING_NON_CALLABLE_ID, %rax
+    pushq   %rax                                //message id
+    pushq   $1                                  //argc
+    pushq   $RUNTIME_ID_THROW_TYPE_ERROR        //runtime id
+    mov     %rcx, %rax        // glue
+    call    OptimizedCallRuntime
+    movabs  $TAGGED_VALUE_EXCEPTION, %rax       // reteurn exception
+    addq    $32, %rsp
+    pop     %rbp
+    ret
+
+//  %rdi -- glue
+//  %r8  -- jsfunc
+.LJSFunctionCall:
+    mov     JS_FUNCTION_METHOD_OFFSET(%r8), %rsi    // get method
+    movl    8(%rsp), %edx                            // Actual argc
+    mov     JS_METHOD_CALLFIELD_OFFSET(%rsi), %rax   // get call field
+    btq     $JS_METHOD_CALL_FIELD_NATIVE_BIT, %rax   // is native
+    jb      .LCallNativeMethod
+    btq     $JS_METHOD_CALL_FIELD_AOT_BIT, %rax      // is aot
+    jb      .LCallOptimziedMethod
+    // todo: need to fix it                   // is bytecode
+    int3
+    ret
+
+.LCallOptimziedMethod:
+    mov     JS_FUNCTION_METHOD_OFFSET(%r8), %rsi      // get method
+    mov     JS_FUNCTION_CODE_ENTRY_OFFSET(%r8), %rcx  // get codeaddress
+    shr     $JS_METHOD_NUM_ARGS_SHIFT, %rax
+    andl    $ASM_JS_METHOD_NUM_ARGS_MASK, %eax
+    addl    $3,   %eax      // add mandatory arguments
+    mov     %eax, %esi      // expected numbers
+    movq    %rsp,  %r8
+    addq    $16,   %r8      // r8 argv
+    cmpl    %esi, %edx       // expectedNumArgs <= actualNumArgs
+    jg      .LDirectCallCodeEntry
+    jmp     OptimizedCallOptimized
+.LDirectCallCodeEntry:
+    mov     %rdi, %rax
+    jmp     *%rcx
+
+.LCallNativeMethod:
+    pop     %rax                                    // pc
+    mov     JS_FUNCTION_METHOD_OFFSET(%r8), %rsi    // get method
+    mov     JS_METHOD_NATIVE_POINTER_OFFSET(%rsi), %rsi  // get native pointer
+    push    %rsi                                    // native code address
+    push    %rax                                    // pc
+    mov     %rdi,  %rax
+    jmp     CallNativeTrampoline
+
+//  input
+//  %rdi -- glue
+//  %r8  -- jsfunc
+.LJSBoundFunction:
+    // construct frame
+    pushq   %rbp
+    pushq   $OPTIMIZE_FRAME_TYPE                // set frame type
+    
+    // callee save
+    pushq   %r10
+    
+    mov     %rsp, %rdx
+    addq    $32,  %rdx
+    mov     (%rdx), %rax        // get origin argc
+    mov     %rax, %r10
+
+    // get bound target
+    mov     JS_FUNCTION_BOUND_ARG_OFFSET(%r8), %rcx
+    // get bound length
+    mov     TAGGED_ARRAY_LENGTH_OFFSET(%rcx), %rcx
+    addq    %rcx, %r10
+    addq    $3,   %r10
+
+     // 16 bytes align check
+    testb   $1, %r10b
+    je      .LAlign16Bytes2
+    pushq   $0                  // push zero to align 16 bytes stack   
+
+.LAlign16Bytes2:
+    cmp     $0, %rax
+    je      .LCopyBoundArgument
+.LCopyArgument2:
+    movq    (%rdx, %rax, 8), %rcx
+    pushq   %rcx
+
+    addq    $-1, %rax
+    jne     .LCopyArgument2
+
+    // get bound target
+    mov     JS_FUNCTION_BOUND_ARG_OFFSET(%r8), %rdx
+    // get bound length
+    mov     TAGGED_ARRAY_LENGTH_OFFSET(%rdx), %rax
+    addq    TAGGED_ARRAY_DATA_OFFSET, %rdx
+    addq    %rax, %r10
+.LCopyBoundArgument:
+    cmp     $0, %rax
+.LCopyBoundArgumentLoop:
+    movq    (%rdx, %rax, 8), %rcx
+    pushq   %rcx
+    addq    $-1, %rax
+    jne     .LCopyBoundArgumentLoop
+    mov     JS_FUNCTION_BOUND_THIS_OFFSET(%r8), %rax     // thisObj
+    pushq   %rax
+    pushq   $0xa                                         // newtarget
+    mov     JS_FUNCTION_BOUND_TARGET_OFFSET(%r8), %rax   // calltarget
+    pushq   %rax
+    pushq   %r10                                         // push actual arguments
+    call    JSCall
+    leaq    (, %r10, 8), %rcx
+    addq    %rcx, %rsp
+
+    testb   $1, %r10b           // stack 16bytes align check
+    je      .LPopFrame2
+    addq    $8, %rsp
+
+.LPopFrame2:
+    pop     %r10
+    addq    $8, %rsp
+    pop     %rbp
+    ret
+.LJSProxy:
+    int3
+    ret
 // ==================================================================================
 // void PushCallArgsxAndDispatch(uintptr_t glue, uint64_t function,
 //     uintptr_t sp, uintptr_t method, uint64_t callField, ...);

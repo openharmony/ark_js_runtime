@@ -177,6 +177,9 @@ config("ark_jsruntime_common_config") {
   if (enable_stub_aot) {
     defines += [ "ECMASCRIPT_ENABLE_STUB_AOT" ]
   }
+  if (enable_test_stub) {
+    defines += [ "ECMASCRIPT_ENABLE_TEST_STUB" ]
+  }
 
   if (is_standard_system) {
     defines += [ "IS_STANDARD_SYSTEM" ]
@@ -504,13 +507,13 @@ if (!is_mingw) {
 }
 
 if (current_cpu == "arm") {
-  ecma_source += [ "ecmascript/trampoline/call_trampoline_arm32.S" ]
+  ecma_source += [ "ecmascript/trampoline/arm32/call.S" ]
 } else if (current_cpu == "arm64") {
-  ecma_source += [ "ecmascript/trampoline/call_trampoline_aarch64.S" ]
+  ecma_source += [ "ecmascript/trampoline/aarch64/call.S" ]
 } else if (current_cpu == "amd64" || current_cpu == "x64" ||
            current_cpu == "x86_64") {
   if (is_linux) {
-    ecma_source += [ "ecmascript/trampoline/call_trampoline_amd64.S" ]
+    ecma_source += [ "ecmascript/trampoline/x64/call.S" ]
   }
 }
 

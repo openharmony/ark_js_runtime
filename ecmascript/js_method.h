@@ -121,6 +121,7 @@ public:
     using NumVregsBits = HaveFuncBit::NextField<uint32_t, VREGS_ARGS_NUM_BITS>;  // offset 4-31
     using NumArgsBits = NumVregsBits::NextField<uint32_t, VREGS_ARGS_NUM_BITS>;  // offset 32-59
     using IsNativeBit = NumArgsBits::NextFlag;  // offset 60
+    using IsAotCodeBit = IsNativeBit::NextFlag; // offset 61
 
     uint64_t GetCallField() const
     {
@@ -135,9 +136,19 @@ public:
         return JS_METHOD_CALLFIELD_OFFSET_64;
     }
 
+    void SetNumArgsWithCallField(uint32_t numargs)
+    {
+        callField_ = NumArgsBits::Update(callField_, numargs);
+    }
+
     void SetNativeBit(bool isNative)
     {
         callField_ = IsNativeBit::Update(callField_, isNative);
+    }
+
+    void SetAotCodeBit(bool isCompiled)
+    {
+        callField_ = IsAotCodeBit::Update(callField_, isCompiled);
     }
 
     CString PUBLIC_API ParseFunctionName() const;

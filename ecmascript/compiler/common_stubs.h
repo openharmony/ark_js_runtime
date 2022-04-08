@@ -17,6 +17,7 @@
 #define ECMASCRIPT_COMPILER_COMMON_STUBS_H
 
 #include "ecmascript/compiler/stub.h"
+#include "ecmascript/compiler/test_stubs.h"
 
 namespace panda::ecmascript::kungfu {
 #define INTERPRETER_STUB_HELPER_LIST(V)  \
@@ -45,9 +46,10 @@ namespace panda::ecmascript::kungfu {
     V(TryStoreICByValue, 6)              \
     V(SetValueWithBarrier, 4)
 
-#define COMMON_STUB_ID_LIST(V)      \
-    COMMON_STUB_LIST(V)             \
-    INTERPRETER_STUB_HELPER_LIST(V)
+#define COMMON_STUB_ID_LIST(V)          \
+    COMMON_STUB_LIST(V)                 \
+    INTERPRETER_STUB_HELPER_LIST(V)     \
+    TEST_STUB_LIST(V)
 
 class MulGCTestStub : public Stub {
 public:

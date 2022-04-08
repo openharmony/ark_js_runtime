@@ -3831,4 +3831,20 @@ GateRef Stub::DoubleToInt(GateRef glue, GateRef x)
     env->PopCurrentLabel();
     return ret;
 }
+
+void Stub::ReturnExceptionIfAbruptCompletion(GateRef glue)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->PushCurrentLabel(&entry);
+    Label exit(env);
+    Label hasPendingException(env);
+    GateRef exception = Load(VariableType::JS_ANY(), glue);
+    Branch(Int64NotEqual(exception, Int64(JSTaggedValue::VALUE_HOLE)), &hasPendingException, &exit);
+    Bind(&hasPendingException);
+    Return(Exception());
+    Bind(&exit);
+    env->PopCurrentLabel();
+    return;
+}
 }  // namespace panda::ecmascript::kungfu

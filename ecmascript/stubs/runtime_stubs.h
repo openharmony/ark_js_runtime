@@ -32,6 +32,10 @@ class JSFunction;
 class ObjectFactory;
 extern "C" JSTaggedType OptimizedCallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
 extern "C" JSTaggedType AsmIntCallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
+extern "C" void JSCall(uintptr_t glue, uint32_t argc, JSTaggedType callTarget,
+                       JSTaggedType newTarget, JSTaggedType thisObj, ...);
+extern "C" void JSCallWithArgV(uintptr_t glue, uint32_t argc, JSTaggedType callTarget, JSTaggedType argV[]);
+
 extern "C" JSTaggedType OptimizedCallOptimized(uintptr_t glue, uint32_t expectedNumArgs,
     uint32_t actualNumArgs, uintptr_t codeAddr, ...);
 
@@ -87,8 +91,9 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(MarkingBarrier, 5)                      \
     V(DoubleToInt, 1)                         \
     V(OptimizedCallRuntime, 3)                \
-    V(OptimizedCallOptimized, 4)              \
     V(AsmIntCallRuntime, 3)                   \
+    V(JSCall, 5)                              \
+    V(JSCallWithArgV, 3)                      \
     V(PushCallArgs0AndDispatch, 2)            \
     V(PushCallArgs0AndDispatchNative, 2)      \
     V(PushCallArgs0AndDispatchSlowPath, 2)    \
@@ -256,7 +261,9 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(CallIThisRangeDyn, 3)                  \
     V(CallIRangeDyn, 2)                      \
     V(LdBigInt, 2)                           \
-    V(NewLexicalEnvWithNameDyn, 3)
+    V(NewLexicalEnvWithNameDyn, 3)           \
+    V(DefineAotFunc, 3)                      \
+    V(GetPrintFunc, 0)
 
 #define RUNTIME_STUB_LIST(V)                 \
     RUNTIME_STUB_WITHOUT_GC_LIST(V)          \

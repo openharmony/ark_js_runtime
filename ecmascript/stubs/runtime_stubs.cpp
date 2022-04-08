@@ -1617,6 +1617,37 @@ DEF_RUNTIME_STUBS(NewLexicalEnvWithNameDyn)
         static_cast<uint16_t>(scopeId.GetInt())).GetRawData();
 }
 
+DEF_RUNTIME_STUBS(DefineAotFunc)
+{
+    RUNTIME_STUBS_HEADER(DefineAotFunc);
+    CONVERT_ARG_TAGGED_CHECKED(funcIndex, 0);
+    CONVERT_ARG_TAGGED_CHECKED(numArgs, 1);
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    JSHandle<GlobalEnv> env = ecmaVm->GetGlobalEnv();
+    auto codeEntry = thread->GetFastStubEntry(funcIndex.GetInt());
+    JSMethod *method = ecmaVm->GetMethodForNativeFunction(reinterpret_cast<void *>(codeEntry));
+    method->SetAotCodeBit(true);
+    method->SetNativeBit(false);
+    method->SetNumArgsWithCallField(numArgs.GetInt());
+    JSHandle<JSFunction> jsfunc = factory->NewJSFunction(env, method, FunctionKind::NORMAL_FUNCTION);
+    jsfunc->SetCodeEntry(reinterpret_cast<uintptr_t>(codeEntry));
+    return jsfunc.GetTaggedValue().GetRawData();
+}
+
+DEF_RUNTIME_STUBS(GetPrintFunc)
+{
+    RUNTIME_STUBS_HEADER(GetPrintFunc);
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    auto env = ecmaVm->GetGlobalEnv();
+    JSHandle<JSTaggedValue> globalObject(thread, env->GetGlobalObject());
+    JSHandle<JSTaggedValue> printString(thread, factory->NewFromStdString("print").GetTaggedValue());
+        
+    return JSObject::GetProperty(thread, globalObject, printString).
+        GetValue().GetTaggedValue().GetRawData();
+}
+
 int32_t RuntimeStubs::DoubleToInt(double x)
 {
     return base::NumberHelper::DoubleToInt(x, base::INT32_BITS);
