@@ -106,7 +106,8 @@ JSHandle<SourceTextModule> ModuleManager::HostResolveImportedModule(const CStrin
             thread, NameDictionary::Cast(resolvedModules_.GetTaggedObject())->GetValue(entry));
     }
 
-    const JSPandaFile *jsPandaFile = JSPandaFileManager::GetInstance()->LoadJSPandaFile(referencingModule);
+    const JSPandaFile *jsPandaFile =
+        JSPandaFileManager::GetInstance()->LoadJSPandaFile(referencingModule, ENTRY_MAIN_FUNCTION);
     if (jsPandaFile == nullptr) {
         LOG_ECMA(ERROR) << "open jsPandaFile " << referencingModule << " error";
         UNREACHABLE();
