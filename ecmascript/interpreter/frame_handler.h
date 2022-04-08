@@ -42,7 +42,8 @@ public:
         // Breakframe also is a frame
         return sp_ != nullptr;
     }
-    bool IsBreakFrame() const
+
+    bool IsEntryFrame() const
     {
         ASSERT(HasFrame());
 #if ECMASCRIPT_COMPILE_ASM_INTERPRETER
@@ -50,11 +51,17 @@ public:
         AsmInterpretedFrame *state = AsmInterpretedFrame::GetFrameFromSp(sp_);
         return state->function == JSTaggedValue::Hole();
 #else
+        // interpreter entry frame or interpreter frame which sp is nullptr.
+        FrameType type = GetFrameType();
+        if (type == FrameType::INTERPRETER_ENTRY_FRAME) {
+            return true;
+        }
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
         return state->sp == nullptr;
 #endif
     }
+
     void PrevFrame();
 
     FrameType GetFrameType() const
@@ -68,6 +75,12 @@ public:
     {
         FrameType type = GetFrameType();
         return (type == FrameType::INTERPRETER_FRAME) || (type == FrameType::INTERPRETER_FAST_NEW_FRAME);
+    }
+
+    bool IsInterpretedEntryFrame() const
+    {
+        FrameType type = GetFrameType();
+        return (type == FrameType::INTERPRETER_ENTRY_FRAME);
     }
 
     bool IsOptimizedLeaveFrame() const
@@ -123,6 +136,18 @@ public:
     }
 };
 
+class InterpretedEntryFrameHandler : public FrameHandler {
+public:
+    explicit InterpretedEntryFrameHandler(JSThread *thread);
+    explicit InterpretedEntryFrameHandler(JSTaggedType *sp) : FrameHandler(sp) {}
+    DEFAULT_COPY_SEMANTIC(InterpretedEntryFrameHandler);
+    DEFAULT_MOVE_SEMANTIC(InterpretedEntryFrameHandler);
+
+    void PrevFrame();
+    int32_t GetArgsNumber();
+    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1);
+};
+
 class OptimizedFrameHandler : public FrameHandler {
 public:
     explicit OptimizedFrameHandler(uintptr_t *sp)
@@ -145,6 +170,7 @@ public:
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
                 ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
                 bool isVerifying) const;
+    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1);
 };
 
 class OptimizedLeaveFrameHandler : public FrameHandler {

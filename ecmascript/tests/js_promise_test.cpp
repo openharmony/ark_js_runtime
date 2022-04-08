@@ -17,7 +17,7 @@
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_thread.h"
@@ -103,10 +103,10 @@ HWTEST_F_L0(JSPromiseTest, FullFillPromise)
     EXPECT_EQ(newPromise->GetPromiseResult().IsUndefined(), true);
 
     JSHandle<JSTaggedValue> resolve(thread, capbility->GetResolve());
-    JSHandle<JSTaggedValue> undefined(thread, JSTaggedValue::Undefined());
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgv(JSTaggedValue(33));
-    JSFunction::Call(thread, resolve, undefined, 1, arguments->GetArgv());
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, resolve, undefined, undefined, 1);
+    info.SetCallArg(JSTaggedValue(33));
+    JSFunction::Call(&info);
     EXPECT_EQ(newPromise->GetPromiseState(), PromiseState::FULFILLED);
     EXPECT_EQ(JSTaggedValue::SameValue(newPromise->GetPromiseResult(), JSTaggedValue(33)), true);
 }
@@ -122,10 +122,10 @@ HWTEST_F_L0(JSPromiseTest, RejectPromise)
     EXPECT_EQ(newPromise->GetPromiseResult().IsUndefined(), true);
 
     JSHandle<JSTaggedValue> reject(thread, capbility->GetReject());
-    JSHandle<JSTaggedValue> undefined(thread, JSTaggedValue::Undefined());
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgv(JSTaggedValue(44));
-    JSFunction::Call(thread, reject, undefined, 1, arguments->GetArgv());
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, reject, undefined, undefined, 1);
+    info.SetCallArg(JSTaggedValue(44));
+    JSFunction::Call(&info);
     EXPECT_EQ(newPromise->GetPromiseState(), PromiseState::REJECTED);
     EXPECT_EQ(JSTaggedValue::SameValue(newPromise->GetPromiseResult(), JSTaggedValue(44)), true);
 }

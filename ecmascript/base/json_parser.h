@@ -23,7 +23,6 @@
 #include "ecmascript/base/utf_helper.h"
 #include "ecmascript/ecma_string-inl.h"
 #include "ecmascript/ecma_string.h"
-#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"

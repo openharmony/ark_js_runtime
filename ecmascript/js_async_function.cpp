@@ -20,7 +20,7 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/generator_helper.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/object_factory.h"
@@ -46,9 +46,12 @@ void JSAsyncFunction::AsyncFunctionAwait(JSThread *thread, const JSHandle<JSAsyn
     // 3.Let resolveResult be ! Call(promiseCapability.[[Resolve]], undefined, « value »).
     JSHandle<JSTaggedValue> resolve(thread, pcap->GetResolve());
     JSHandle<JSTaggedValue> thisArg = globalConst->GetHandledUndefined();
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgv(value);
-    [[maybe_unused]] JSTaggedValue res = JSFunction::Call(thread, resolve, thisArg, 1, arguments->GetArgv());
+
+    JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
+    EcmaRuntimeCallInfo info =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, resolve, thisArg, undefined, 1);
+    info.SetCallArg(value.GetTaggedValue());
+    [[maybe_unused]] JSTaggedValue res = JSFunction::Call(&info);
 
     // 4.Let onFulfilled be a new built-in function object as defined in AsyncFunction Awaited Fulfilled.
     JSHandle<JSAsyncAwaitStatusFunction> fulFunc =

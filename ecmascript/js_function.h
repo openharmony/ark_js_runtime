@@ -77,21 +77,16 @@ public:
     // ecma6 9.2
     // 7.3.12 Call(F, V, argumentsList)
 
-    static JSTaggedValue Call(JSThread *thread, const JSHandle<JSTaggedValue> &func,
-                              const JSHandle<JSTaggedValue> &thisArg, uint32_t argc, const JSTaggedType argv[]);
+    static JSTaggedValue Call(EcmaRuntimeCallInfo *info);
 
-    static JSTaggedValue Construct(JSThread *thread, const JSHandle<JSTaggedValue> &func, uint32_t argc,
-                                   const JSTaggedType argv[], const JSHandle<JSTaggedValue> &newTarget);
-    static JSTaggedValue Invoke(JSThread *thread, const JSHandle<JSTaggedValue> &thisArg,
-                                 const JSHandle<JSTaggedValue> &key, uint32_t argc, const JSTaggedType argv[]);
+    static JSTaggedValue Construct(EcmaRuntimeCallInfo *info);
+    static JSTaggedValue Invoke(EcmaRuntimeCallInfo *info, const JSHandle<JSTaggedValue> &key);
     // 9.2.1[[Call]](thisArgument, argumentsList)
     // 9.3.1[[Call]](thisArgument, argumentsList)
-    static JSTaggedValue CallInternal(JSThread *thread, const JSHandle<JSFunction> &func,
-                                      const JSHandle<JSTaggedValue> &thisArg, uint32_t argc, const JSTaggedType argv[]);
+    static JSTaggedValue CallInternal(EcmaRuntimeCallInfo *info);
     // 9.2.2[[Construct]](argumentsList, newTarget)
     // 9.3.2[[Construct]](argumentsList, newTarget)
-    static JSTaggedValue ConstructInternal(JSThread *thread, const JSHandle<JSFunction> &func, uint32_t argc,
-                                            const JSTaggedType argv[], const JSHandle<JSTaggedValue> &newTarget);
+    static JSTaggedValue ConstructInternal(EcmaRuntimeCallInfo *info);
 
     static bool AddRestrictedFunctionProperties(const JSHandle<JSFunction> &func, const JSHandle<JSTaggedValue> &realm);
     static bool MakeConstructor(JSThread *thread, const JSHandle<JSFunction> &func,
@@ -264,11 +259,10 @@ public:
     CAST_CHECK(JSBoundFunction, IsBoundFunction);
 
     // 9.4.1.1[[Call]](thisArgument, argumentsList)
-    static JSTaggedValue CallInternal(JSThread *thread, const JSHandle<JSBoundFunction> &func);
+    static JSTaggedValue CallInternal(EcmaRuntimeCallInfo *info);
 
     // 9.4.1.2[[Construct]](argumentsList, newTarget)
-    static JSTaggedValue ConstructInternal(JSThread *thread, const JSHandle<JSBoundFunction> &func,
-                                           const JSHandle<JSTaggedValue> &newTarget);
+    static JSTaggedValue ConstructInternal(EcmaRuntimeCallInfo *info);
 
     static constexpr size_t BOUND_TARGET_OFFSET = JSFunctionBase::SIZE;
     ACCESSORS(BoundTarget, BOUND_TARGET_OFFSET, BOUND_THIS_OFFSET);

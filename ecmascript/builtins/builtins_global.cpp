@@ -21,7 +21,6 @@
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/base/string_helper.h"
 #include "ecmascript/ecma_macros.h"
-#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/slow_runtime_helper.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/tagged_array-inl.h"
@@ -501,10 +500,8 @@ JSTaggedValue BuiltinsGlobal::CallJsBoundFunction(EcmaRuntimeCallInfo *msg)
 
     JSHandle<JSBoundFunction> boundFunc(GetConstructor(msg));
     JSHandle<JSTaggedValue> thisObj(thread, boundFunc->GetBoundThis());
-
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgv(msg, 0);
-    return SlowRuntimeHelper::CallBoundFunction(thread, boundFunc, thisObj);
+    msg->SetThis(thisObj.GetTaggedValue());
+    return SlowRuntimeHelper::CallBoundFunction(msg);
 }
 
 JSTaggedValue BuiltinsGlobal::CallJsProxy(EcmaRuntimeCallInfo *msg)
@@ -519,12 +516,7 @@ JSTaggedValue BuiltinsGlobal::CallJsProxy(EcmaRuntimeCallInfo *msg)
     }
 
     // Calling proxy directly should transfer 'undefined' as this
-    JSHandle<JSTaggedValue> thisObj(GetThis(msg));
-
-    JSHandle<TaggedArray> argsList = GetArgsArray(msg);
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgList(*argsList);
-    return JSProxy::CallInternal(thread, proxy, thisObj, argsList->GetLength(), arguments->GetArgv());
+    return JSProxy::CallInternal(msg);
 }
 
 #if ECMASCRIPT_ENABLE_RUNTIME_STAT

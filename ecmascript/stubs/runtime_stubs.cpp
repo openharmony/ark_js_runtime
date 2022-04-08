@@ -943,7 +943,7 @@ DEF_RUNTIME_STUBS(UpFrame)
     InterpretedFrameHandler frameHandler(sp);
     uint32_t pcOffset = panda_file::INVALID_OFFSET;
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
-        if (frameHandler.IsBreakFrame()) {
+        if (frameHandler.IsEntryFrame()) {
             return JSTaggedValue(static_cast<uint64_t>(0)).GetRawData();
         }
         auto method = frameHandler.GetMethod();
@@ -1591,7 +1591,8 @@ DEF_RUNTIME_STUBS(CallNative)
     CONVERT_ARG_PTR_CHECKED(JSTaggedValue *, sp, 1);
     CONVERT_ARG_PTR_CHECKED(JSMethod *, method, 2);
 
-    EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, numArgs.GetInt(), sp);
+    EcmaRuntimeCallInfo ecmaRuntimeCallInfo(
+        thread, numArgs.GetInt() - RESERVED_CALL_ARGCOUNT, reinterpret_cast<JSTaggedType*>(sp));
     JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
         const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);
     if (UNLIKELY(thread->HasPendingException())) {

@@ -16,6 +16,7 @@ group("ark_js_moduletest") {
   deps = [
     "allocatearraybuffer:allocatearraybufferAction",
     "async:asyncAction",
+    "bindfunction:bindfunctionAction",
     "bitwiseop:bitwiseopAction",
     "callframe:callframeAction",
     "class:classAction",

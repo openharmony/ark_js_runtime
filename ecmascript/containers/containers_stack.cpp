@@ -15,7 +15,7 @@
 
 #include "containers_stack.h"
 #include "ecmascript/ecma_vm.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_api_stack.h"
 #include "ecmascript/js_api_stack_iterator.h"
 #include "ecmascript/js_function.h"
@@ -153,14 +153,14 @@ JSTaggedValue ContainersStack::ForEach(EcmaRuntimeCallInfo *argv)
     }
     
     JSHandle<JSTaggedValue> thisArgHandle = GetCallArg(argv, 1);
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     int k = 0;
     while (k < len + 1) {
         JSTaggedValue kValue = stack->Get(k);
-        arguments->MakeArgv(kValue, JSTaggedValue(k), thisHandle.GetTaggedValue());
-        JSTaggedValue funcResult =
-            JSFunction::Call(thread, callbackFnHandle, thisArgHandle, 3, arguments->GetArgv()); // 3: three args
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, callbackFnHandle, thisArgHandle, undefined, 3); // 3:three args
+        info.SetCallArg(kValue, JSTaggedValue(k), thisHandle.GetTaggedValue());
+        JSTaggedValue funcResult = JSFunction::Call(&info);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, funcResult);
         k++;
     }

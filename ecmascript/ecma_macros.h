@@ -359,9 +359,10 @@
             if (record->IsThrow()) {                                                               \
                 JSHandle<JSTaggedValue> reject(thread, (capability)->GetReject());                 \
                 JSHandle<JSTaggedValue> undefine = globalConst->GetHandledUndefined();             \
-                InternalCallParams *arg = (thread)->GetInternalCallParams();                       \
-                arg->MakeArgv(record->GetValue());                                                 \
-                JSTaggedValue res = JSFunction::Call(thread, reject, undefine, 1, arg->GetArgv()); \
+                EcmaRuntimeCallInfo info =                                                         \
+                    EcmaInterpreter::NewRuntimeCallInfo(thread, reject, undefine, undefine, 1);    \
+                info.SetCallArg(record->GetValue());                                               \
+                JSTaggedValue res = JSFunction::Call(&info);                                       \
                 RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, res);                                    \
                 return (capability)->GetPromise();                                                 \
             }                                                                                      \
@@ -370,9 +371,10 @@
             (thread)->ClearException();                                                            \
             JSHandle<JSTaggedValue> reject(thread, (capability)->GetReject());                     \
             JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();                \
-            InternalCallParams *arg = (thread)->GetInternalCallParams();                           \
-            arg->MakeArgv(value);                                                                  \
-            JSTaggedValue res = JSFunction::Call(thread, reject, undefined, 1, arg->GetArgv());    \
+            EcmaRuntimeCallInfo info =                                                             \
+                EcmaInterpreter::NewRuntimeCallInfo(thread, reject, undefined, undefined, 1);      \
+            info.SetCallArg(value.GetTaggedValue());                                               \
+            JSTaggedValue res = JSFunction::Call(&info);                                           \
             RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, res);                                        \
             return (capability)->GetPromise();                                                     \
         }                                                                                          \

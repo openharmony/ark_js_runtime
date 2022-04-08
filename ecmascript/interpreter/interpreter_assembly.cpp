@@ -202,7 +202,7 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
         funcObject = ECMAObject::Cast(funcValue.GetTaggedObject());   \
         method = funcObject->GetCallTarget();                         \
         callField = method->GetCallField();                           \
-        newSp = sp - FRAME_STATE_SIZE;                                \
+        newSp = sp - INTERPRETER_FRAME_STATE_SIZE;                    \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -345,8 +345,7 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
         if (UNLIKELY(thread->DoStackOverflowCheck(newSp))) {                                       \
             INTERPRETER_GOTO_EXCEPTION_HANDLER();                                                  \
         }                                                                                          \
-        EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, actualNumArgs + NUM_MANDATORY_JSFUNC_ARGS, \
-                                                reinterpret_cast<JSTaggedValue *>(newSp));         \
+        EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, actualNumArgs, newSp);                     \
         AsmInterpretedFrame *state = GET_ASM_FRAME(newSp);                                         \
         state->base.prev = sp;                                                                     \
         state->base.type = FrameType::INTERPRETER_FRAME;                                           \
@@ -444,36 +443,39 @@ void InterpreterAssembly::InitStackFrame(JSThread *thread)
     state->base.prev = nullptr;
 }
 
-JSTaggedValue InterpreterAssembly::ExecuteNative(JSThread *thread, const CallParams& params)
+JSTaggedValue InterpreterAssembly::ExecuteNative(EcmaRuntimeCallInfo *info)
 {
-    JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-
-    JSMethod *method = params.callTarget->GetCallTarget();
+    ASSERT(info);
+    JSThread *thread = info->GetThread();
+    INTERPRETER_TRACE(thread, ExecuteNative);
+    ECMAObject *callTarget = reinterpret_cast<ECMAObject*>(info->GetFunctionValue().GetTaggedObject());
+    JSMethod *method = callTarget->GetCallTarget();
     ASSERT(method->GetNumVregsWithCallField() == 0);
-    uint32_t numActualArgs = params.argc + RESERVED_CALL_ARGCOUNT;
-    // Tags and values of thread, new_tgt and argv_length are put into frames too for native frames
-    // NOLINTNEXTLINE(hicpp-signed-bitwise)
-    size_t frameSize = FRAME_STATE_SIZE + numActualArgs;
-    JSTaggedType *newSp = sp - frameSize;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
+    JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    int32_t actualNumArgs = info->GetArgsNumber();
+    JSTaggedType *newSp = sp - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - actualNumArgs - RESERVED_CALL_ARGCOUNT;
     if (thread->DoStackOverflowCheck(newSp) || thread->HasPendingException()) {
         return JSTaggedValue::Undefined();
     }
-
-    EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, numActualArgs, reinterpret_cast<JSTaggedValue *>(newSp));
-    newSp[RESERVED_INDEX_CALL_TARGET] = reinterpret_cast<JSTaggedType>(params.callTarget);
-    newSp[RESERVED_INDEX_NEW_TARGET] = params.newTarget;
-    newSp[RESERVED_INDEX_THIS] = params.thisArg;
-    for (size_t i = 0; i < params.argc; i++) {
+    for (int i = actualNumArgs - 1; i >= 0; i--) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        newSp[i + RESERVED_CALL_ARGCOUNT] = params.argv[i];
+        *(--newSp) = info->GetCallArgValue(i).GetRawData();
     }
+    newSp -= RESERVED_CALL_ARGCOUNT;
+
+    EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, actualNumArgs, newSp);
+    newSp[RESERVED_INDEX_CALL_TARGET] = info->GetFunctionValue().GetRawData();
+    newSp[RESERVED_INDEX_NEW_TARGET] = info->GetNewTargetValue().GetRawData();
+    newSp[RESERVED_INDEX_THIS] = info->GetThisValue().GetRawData();
 
     AsmInterpretedFrame *state = GET_ASM_FRAME(newSp);
     state->base.prev = sp;
     state->base.type = FrameType::INTERPRETER_FRAME;
     state->pc = nullptr;
-    state->function = JSTaggedValue(params.callTarget);
+    state->function = info->GetFunctionValue();
     thread->SetCurrentSPFrame(newSp);
+
 #if ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER
     CpuProfiler::IsNeedAndGetStack(thread);
 #endif
@@ -482,50 +484,48 @@ JSTaggedValue InterpreterAssembly::ExecuteNative(JSThread *thread, const CallPar
     JSTaggedValue tagged =
         reinterpret_cast<EcmaEntrypoint>(const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);
     LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call.";
-    thread->SetCurrentSPFrame(sp);
+    thread->SetCurrentSPFrame(info->GetPrevFrameSp());
 #if ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER
     CpuProfiler::IsNeedAndGetStack(thread);
 #endif
     return tagged;
 }
 
-JSTaggedValue InterpreterAssembly::Execute(JSThread *thread, const CallParams& params)
+JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
 {
-    JSMethod *method = params.callTarget->GetCallTarget();
-    if (method->IsNativeWithCallField()) {
-        return InterpreterAssembly::ExecuteNative(thread, params);
+    ASSERT(info);
+    JSThread *thread = info->GetThread();
+    INTERPRETER_TRACE(thread, Execute);
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
+    if (asmInterOpt.enableAsm) {
+        return InterpreterAssembly::Execute(info);
     }
-    JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    JSTaggedType *newSp = sp - FRAME_STATE_SIZE;
-    // push break state
+#endif
+    JSHandle<JSTaggedValue> func = info->GetFunction();
+    ECMAObject *callTarget = reinterpret_cast<ECMAObject*>(func.GetTaggedValue().GetTaggedObject());
+    ASSERT(callTarget != nullptr);
+    JSMethod *method = callTarget->GetCallTarget();
+    if (method->IsNativeWithCallField()) {
+        return InterpreterAssembly::ExecuteNative(info);
+    }
+
+    JSTaggedType *newSp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    JSTaggedType *entrySp = newSp;
+    int32_t actualNumArgs = info->GetArgsNumber();
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    newSp = newSp - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - actualNumArgs - RESERVED_CALL_ARGCOUNT;
     if (thread->DoStackOverflowCheck(newSp) || thread->HasPendingException()) {
         return JSTaggedValue::Undefined();
     }
-    AsmInterpretedFrame *breakState = GET_ASM_FRAME(newSp);
-    auto leaveFrame = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
-    if (leaveFrame != nullptr) {
-        OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(leaveFrame);
-        frame->callsiteFp = reinterpret_cast<uintptr_t>(sp);
-        breakState->base.prev = leaveFrame;
-    } else {
-        breakState->base.prev = sp;
-    }
-    breakState->pc = nullptr;
-    breakState->function = JSTaggedValue::Hole();
-    breakState->base.type = FrameType::INTERPRETER_FRAME;
-    JSTaggedType *prevSp = newSp;
 
-    int32_t actualNumArgs = static_cast<int32_t>(params.argc);
     int32_t declaredNumArgs = static_cast<int32_t>(method->GetNumArgsWithCallField());
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    newSp -= FRAME_STATE_SIZE;
     // push args
     if (actualNumArgs == declaredNumArgs) {
         // fast path, just push all args directly
         for (int i = actualNumArgs - 1; i >= 0; i--) {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            *(--newSp) = params.argv[i];
+            *(--newSp) = info->GetCallArgValue(i).GetRawData();
         }
     } else {
         // slow path
@@ -534,7 +534,7 @@ JSTaggedValue InterpreterAssembly::Execute(JSThread *thread, const CallParams& p
             CALL_PUSH_UNDEFINED(declaredNumArgs - actualNumArgs);
             for (int i = std::min(actualNumArgs, declaredNumArgs) - 1; i >= 0; i--) {
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                *(--newSp) = params.argv[i];
+                *(--newSp) = info->GetCallArgValue(i).GetRawData();
             }
         } else {
             // push actualNumArgs in the end, then all args, may push undefined
@@ -543,7 +543,7 @@ JSTaggedValue InterpreterAssembly::Execute(JSThread *thread, const CallParams& p
             CALL_PUSH_UNDEFINED(declaredNumArgs - actualNumArgs);
             for (int i = actualNumArgs - 1; i >= 0; i--) {
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                *(--newSp) = params.argv[i];
+                *(--newSp) = info->GetCallArgValue(i).GetRawData();
             }
         }
     }
@@ -552,15 +552,15 @@ JSTaggedValue InterpreterAssembly::Execute(JSThread *thread, const CallParams& p
         // not normal call type, setting func/newTarget/this cannot be skipped
         if (method->HaveThisWithCallField()) {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            *(--newSp) = params.thisArg;  // push this
+            *(--newSp) = info->GetThisValue().GetRawData();  // push this
         }
         if (method->HaveNewTargetWithCallField()) {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            *(--newSp) = params.newTarget;  // push new target
+            *(--newSp) = info->GetNewTargetValue().GetRawData();  // push new target
         }
         if (method->HaveFuncWithCallField()) {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            *(--newSp) = reinterpret_cast<JSTaggedType>(params.callTarget);  // push func
+            *(--newSp) = info->GetFunctionValue().GetRawData();  // push func
         }
     }
     int32_t numVregs = static_cast<int32_t>(method->GetNumVregsWithCallField());
@@ -573,16 +573,13 @@ JSTaggedValue InterpreterAssembly::Execute(JSThread *thread, const CallParams& p
     const uint8_t *pc = method->GetBytecodeArray();
     AsmInterpretedFrame *state = GET_ASM_FRAME(newSp);
     state->pc = pc;
-    state->function = JSTaggedValue(params.callTarget);
+    state->function = info->GetFunctionValue();
     state->acc = JSTaggedValue::Hole();
-    JSHandle<JSTaggedValue> callTargetHandle(thread, params.callTarget);
-    JSHandle<JSFunction> thisFunc = JSHandle<JSFunction>::Cast(callTargetHandle);
+    JSHandle<JSFunction> thisFunc = JSHandle<JSFunction>::Cast(func);
     JSTaggedValue constpool = thisFunc->GetConstantPool();
-    state->base.prev = prevSp;
+    state->base.prev = entrySp;
     state->base.type = FrameType::INTERPRETER_FRAME;
-
-    JSTaggedValue env = thisFunc->GetLexicalEnv();
-    state->env = env;
+    state->env = thisFunc->GetLexicalEnv();
     thread->SetCurrentSPFrame(newSp);
 #if ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER
     CpuProfiler::IsNeedAndGetStack(thread);
@@ -598,7 +595,7 @@ JSTaggedValue InterpreterAssembly::Execute(JSThread *thread, const CallParams& p
     // NOLINTNEXTLINE(readability-identifier-naming)
     const JSTaggedValue resAcc = state->acc;
     // pop frame
-    thread->SetCurrentSPFrame(sp);
+    thread->SetCurrentSPFrame(info->GetPrevFrameSp());
 #if ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER
     CpuProfiler::IsNeedAndGetStack(thread);
 #endif
@@ -614,7 +611,7 @@ JSTaggedValue InterpreterAssembly::GeneratorReEnterInterpreter(JSThread *thread,
 
     // push break frame
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    JSTaggedType *breakSp = currentSp - FRAME_STATE_SIZE;
+    JSTaggedType *breakSp = currentSp - INTERPRETER_FRAME_STATE_SIZE;
     if (thread->DoStackOverflowCheck(breakSp) || thread->HasPendingException()) {
         return JSTaggedValue::Exception();
     }
@@ -626,7 +623,7 @@ JSTaggedValue InterpreterAssembly::GeneratorReEnterInterpreter(JSThread *thread,
 
     // create new frame and resume sp and pc
     uint32_t nregs = context->GetNRegs();
-    size_t newFrameSize = FRAME_STATE_SIZE + nregs;
+    size_t newFrameSize = INTERPRETER_FRAME_STATE_SIZE + nregs;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic
     JSTaggedType *newSp = breakSp - newFrameSize;
     if (thread->DoStackOverflowCheck(newSp) || thread->HasPendingException()) {
@@ -673,7 +670,7 @@ void InterpreterAssembly::ChangeGenContext(JSThread *thread, JSHandle<GeneratorC
 
     // push break frame
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    JSTaggedType *breakSp = currentSp - FRAME_STATE_SIZE;
+    JSTaggedType *breakSp = currentSp - INTERPRETER_FRAME_STATE_SIZE;
     if (thread->DoStackOverflowCheck(breakSp) || thread->HasPendingException()) {
         return;
     }
@@ -685,7 +682,7 @@ void InterpreterAssembly::ChangeGenContext(JSThread *thread, JSHandle<GeneratorC
 
     // create new frame and resume sp and pc
     uint32_t nregs = context->GetNRegs();
-    size_t newFrameSize = FRAME_STATE_SIZE + nregs;
+    size_t newFrameSize = INTERPRETER_FRAME_STATE_SIZE + nregs;
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic
     JSTaggedType *newSp = breakSp - newFrameSize;
@@ -1047,15 +1044,16 @@ void InterpreterAssembly::HandleReturnDyn(
     JSTaggedType *currentSp = sp;
     sp = state->base.prev;
     ASSERT(sp != nullptr);
-    AsmInterpretedFrame *prevState = GET_ASM_FRAME(sp);
-    pc = prevState->pc;
 
     // break frame
-    if (pc == nullptr) {
+    if (FrameHandler(sp).IsEntryFrame()) {
         thread->SetCurrentSPFrame(sp);
         state->acc = acc;
         return;
     }
+
+    AsmInterpretedFrame *prevState = GET_ASM_FRAME(sp);
+    pc = prevState->pc;
     thread->SetCurrentSPFrame(sp);
 
     if (IsFastNewFrameExit(currentSp)) {
@@ -1105,15 +1103,16 @@ void InterpreterAssembly::HandleReturnUndefinedPref(
     JSTaggedType *currentSp = sp;
     sp = state->base.prev;
     ASSERT(sp != nullptr);
-    AsmInterpretedFrame *prevState = GET_ASM_FRAME(sp);
-    pc = prevState->pc;
 
     // break frame
-    if (pc == nullptr) {
+    if (FrameHandler(sp).IsEntryFrame()) {
         thread->SetCurrentSPFrame(sp);
         state->acc = JSTaggedValue::Undefined();
         return;
     }
+
+    AsmInterpretedFrame *prevState = GET_ASM_FRAME(sp);
+    pc = prevState->pc;
     thread->SetCurrentSPFrame(sp);
 
     if (IsFastNewFrameExit(currentSp)) {
@@ -2237,13 +2236,13 @@ void InterpreterAssembly::HandleNewObjDynRangePrefImm16V8(
         JSMethod *ctorMethod = ctorFunc->GetMethod();
         if (ctorFunc->IsBuiltinsConstructor()) {
             ASSERT(ctorMethod->GetNumVregsWithCallField() == 0);
-            size_t frameSize = FRAME_STATE_SIZE + numArgs + 1;  // +1 for this
+            size_t frameSize = INTERPRETER_FRAME_STATE_SIZE + numArgs + 1;  // +1 for this
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             JSTaggedType *newSp = sp - frameSize;
             if (UNLIKELY(thread->DoStackOverflowCheck(newSp))) {
                 INTERPRETER_GOTO_EXCEPTION_HANDLER();
             }
-            EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, numArgs + 1, reinterpret_cast<JSTaggedValue *>(newSp));
+            EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, numArgs + 1 - RESERVED_CALL_ARGCOUNT, newSp);
             // copy args
             uint32_t index = 0;
             // func
@@ -2287,7 +2286,7 @@ void InterpreterAssembly::HandleNewObjDynRangePrefImm16V8(
             uint32_t numVregs = ctorMethod->GetNumVregsWithCallField();
             uint32_t numDeclaredArgs = ctorMethod->GetNumArgsWithCallField() + 1;  // +1 for this
             // +1 for hidden this, explicit this may be overwritten after bc optimizer
-            size_t frameSize = FRAME_STATE_SIZE + numVregs + numDeclaredArgs + 1;
+            size_t frameSize = INTERPRETER_FRAME_STATE_SIZE + numVregs + numDeclaredArgs + 1;
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             JSTaggedType *newSp = sp - frameSize;
             AsmInterpretedFrame *state = GET_ASM_FRAME(newSp);
@@ -2662,15 +2661,16 @@ void InterpreterAssembly::HandleSuspendGeneratorPrefV8V8(
                             << std::hex << reinterpret_cast<uintptr_t>(state->pc);
     sp = state->base.prev;
     ASSERT(sp != nullptr);
-    AsmInterpretedFrame *prevState = GET_ASM_FRAME(sp);
-    pc = prevState->pc;
 
     // break frame
-    if (pc == nullptr) {
+    if (FrameHandler(sp).IsEntryFrame()) {
         thread->SetCurrentSPFrame(sp);
         state->acc = acc;
         return;
     }
+
+    AsmInterpretedFrame *prevState = GET_ASM_FRAME(sp);
+    pc = prevState->pc;
     thread->SetCurrentSPFrame(sp);
 
     ASSERT(prevState->callSize == GetJumpSizeAfterCall(pc));
@@ -4135,7 +4135,7 @@ void InterpreterAssembly::ExceptionHandler(
     InterpretedFrameHandler frameHandler(sp);
     uint32_t pcOffset = panda_file::INVALID_OFFSET;
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
-        if (frameHandler.IsBreakFrame()) {
+        if (frameHandler.IsEntryFrame()) {
             thread->SetCurrentSPFrame(frameHandler.GetSp());
             return;
         }
@@ -4235,7 +4235,13 @@ uint32_t InterpreterAssembly::GetNumArgs(JSTaggedType *sp, uint32_t restIdx, uin
     uint32_t copyArgs = haveFunc + haveNewTarget + haveThis;
     uint32_t numArgs = JSMethod::NumArgsBits::Decode(callField);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    JSTaggedType *lastFrame = state->base.prev - FRAME_STATE_SIZE;
+    JSTaggedType *lastFrame = state->base.prev;
+    if (FrameHandler(state->base.prev).GetFrameType() == FrameType::INTERPRETER_ENTRY_FRAME) {
+        int32_t argc = InterpretedEntryFrameHandler(state->base.prev).GetArgsNumber();
+        lastFrame = lastFrame - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - argc - RESERVED_CALL_ARGCOUNT;
+    } else {
+        lastFrame = lastFrame - INTERPRETER_FRAME_STATE_SIZE;
+    }
     if (static_cast<uint32_t>(lastFrame - sp) > numVregs + copyArgs + numArgs) {
         // In this case, actualNumArgs is in the end
         // If not, then actualNumArgs == declaredNumArgs, therefore do nothing

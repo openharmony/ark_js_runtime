@@ -20,7 +20,7 @@
 
 #include "ecmascript/global_dictionary-inl.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_queue.h"
@@ -1065,9 +1065,10 @@ bool FastRuntimeStub::SetGlobalOwnProperty(JSThread *thread, JSTaggedValue recei
 
         JSHandle<JSTaggedValue> objHandle(thread, receiver);
         JSHandle<JSTaggedValue> setFunc(thread, setter);
-        InternalCallParams *arguments = thread->GetInternalCallParams();
-        arguments->MakeArgv(value);
-        JSFunction::Call(thread, setFunc, objHandle, 1, arguments->GetArgv());
+        JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, setFunc, objHandle, undefined, 1);
+        info.SetCallArg(value);
+        JSFunction::Call(&info);
         // 10. ReturnIfAbrupt(setterResult).
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
         return true;
