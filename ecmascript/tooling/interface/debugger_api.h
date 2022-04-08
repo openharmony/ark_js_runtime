@@ -56,6 +56,10 @@ enum StackState {
 
 class PUBLIC_API DebuggerApi {
 public:
+    // JSPandaFileExecutor
+    Local<JSValueRef> Execute(const EcmaVM *ecmaVm, const void *buffer, size_t size,
+                              std::string_view entryPoint);
+
     // InterpretedFrameHandler
     static uint32_t GetStackDepth(const EcmaVM *ecmaVm);
     static bool StackWalker(const EcmaVM *ecmaVm, std::function<StackState(const InterpretedFrameHandler *)> func);

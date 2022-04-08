@@ -59,11 +59,7 @@ std::pair<Method *, uint32_t> EcmaLanguageContext::GetCatchMethodAndOffset(Metho
 
 PandaVM *EcmaLanguageContext::CreateVM(Runtime *runtime, [[maybe_unused]] const RuntimeOptions &options) const
 {
-    auto ret = EcmaVM::Create(runtime);
-    if (ret) {
-        return ret.Value();
-    }
-    return nullptr;
+    return EcmaVM::Create(runtime);
 }
 
 std::unique_ptr<ClassLinkerExtension> EcmaLanguageContext::CreateClassLinkerExtension() const

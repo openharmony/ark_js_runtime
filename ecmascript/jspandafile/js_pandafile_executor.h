@@ -25,15 +25,11 @@
 namespace panda::ecmascript {
 class JSPandaFileExecutor {
 public:
-    static bool ExecuteFromFile(JSThread *thread, const CString &filename, std::string_view entryPoint,
-                                const std::vector<std::string> &args);
-    static bool ExecuteFromBuffer(JSThread *thread, const void *buffer, size_t size, std::string_view entryPoint,
-                                  const std::vector<std::string> &args, const CString &filename = "");
-private:
-    static bool Execute(JSThread *thread, const JSPandaFile *jsPandaFile, std::string_view entryPoint,
-                        const std::vector<std::string> &args);
-
-friend class SourceTextModule;
+    static Expected<JSTaggedValue, bool> ExecuteFromFile(JSThread *thread, const CString &filename,
+                                                         std::string_view entryPoint);
+    static Expected<JSTaggedValue, bool> ExecuteFromBuffer(JSThread *thread, const void *buffer, size_t size,
+                                                           std::string_view entryPoint, const CString &filename = "");
+    static Expected<JSTaggedValue, bool> Execute(JSThread *thread, const JSPandaFile *jsPandaFile);
 };
 }  // namespace panda::ecmascript
 #endif // ECMASCRIPT_JSPANDAFILE_JS_PANDAFILE_EXECUTOR_H

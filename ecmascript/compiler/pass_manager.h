@@ -24,7 +24,8 @@ class PassManager {
 public:
     PassManager(EcmaVM* vm, std::string entry) : vm_(vm), entry_(entry) {}
     PassManager() = default;
-    bool CollectInfoOfPandaFile(const std::string &filename, BytecodeTranslationInfo *translateInfo);
+    bool CollectInfoOfPandaFile(const std::string &filename, std::string_view entryPoint,
+                                BytecodeTranslationInfo *translateInfo);
     bool Compile(const std::string &fileName, const std::string &triple, const std::string &outputFileName);
 
 private:

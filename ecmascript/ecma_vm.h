@@ -87,11 +87,11 @@ public:
 
     static EcmaVM *Create(const JSRuntimeOptions &options);
 
+    static EcmaVM *Create(Runtime *runtime);
+
     static bool Destroy(PandaVM *vm);
 
     explicit EcmaVM(JSRuntimeOptions options);
-
-    static Expected<EcmaVM *, CString> Create([[maybe_unused]] Runtime *runtime);
 
     EcmaVM();
 
@@ -407,8 +407,7 @@ private:
 
     void SetMicroJobQueue(job::MicroJobQueue *queue);
 
-    Expected<int, Runtime::Error> InvokeEcmaEntrypoint(const JSPandaFile *jsPandaFile, const CString &methodName,
-                                                       const std::vector<std::string> &args);
+    Expected<JSTaggedValue, bool> InvokeEcmaEntrypoint(const JSPandaFile *jsPandaFile);
 
     void InitializeEcmaScriptRunStat();
 

@@ -30,7 +30,7 @@ class File;
 namespace ecmascript {
 #define ENTRY_FUNCTION_NAME "func_main_0"
 #define MODULE_CLASS "L_ESModuleRecord;"
-#define ENTRY_MAIN_FUNCTION "_GLOBAL::func_main_0"
+#define ENTRY_MAIN_FUNCTION "_GLOBAL::" ENTRY_FUNCTION_NAME
 
 class JSPandaFile {
 public:
