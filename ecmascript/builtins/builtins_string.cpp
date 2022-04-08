@@ -33,6 +33,7 @@
 #include "ecmascript/js_locale.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_primitive_ref.h"
+#include "ecmascript/js_regexp.h"
 #include "ecmascript/js_string_iterator.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/mem/c_containers.h"
@@ -599,6 +600,17 @@ JSTaggedValue BuiltinsString::Match(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> regexp = BuiltinsString::GetCallArg(argv, 0);
     JSHandle<JSTaggedValue> matchTag = thread->GetEcmaVM()->GetGlobalEnv()->GetMatchSymbol();
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
+    if (regexp->IsJSRegExp()) {
+        JSHandle<RegExpExecResultCache> cacheTable(thread->GetEcmaVM()->GetRegExpCache());
+        JSHandle<JSRegExp> re(regexp);
+        JSHandle<JSTaggedValue> pattern(thread, re->GetOriginalSource());
+        JSHandle<JSTaggedValue> flags(thread, re->GetOriginalFlags());
+        JSTaggedValue cacheResult = cacheTable->FindCachedResult(thread, pattern, flags, thisTag,
+                                                                 RegExpExecResultCache::MATCH_TYPE, regexp);
+        if (cacheResult != JSTaggedValue::Undefined()) {
+            return cacheResult;
+        }
+    }
     if (!regexp->IsUndefined() && !regexp->IsNull()) {
         if (regexp->IsECMAObject()) {
             JSHandle<JSTaggedValue> matcher = JSObject::GetMethod(thread, regexp, matchTag);
@@ -739,6 +751,19 @@ JSTaggedValue BuiltinsString::Replace(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> replaceTag = BuiltinsString::GetCallArg(argv, 1);
 
     ObjectFactory *factory = ecmaVm->GetFactory();
+
+    if (searchTag->IsJSRegExp() && replaceTag->IsString()) {
+        JSHandle<RegExpExecResultCache> cacheTable(thread->GetEcmaVM()->GetRegExpCache());
+        JSHandle<JSRegExp> re(searchTag);
+        JSHandle<JSTaggedValue> pattern(thread, re->GetOriginalSource());
+        JSHandle<JSTaggedValue> flags(thread, re->GetOriginalFlags());
+        JSTaggedValue cacheResult = cacheTable->FindCachedResult(thread, pattern, flags, thisTag,
+                                                                 RegExpExecResultCache::REPLACE_TYPE, searchTag,
+                                                                 replaceTag.GetTaggedValue());
+        if (cacheResult != JSTaggedValue::Undefined()) {
+            return cacheResult;
+        }
+    }
 
     // If searchValue is neither undefined nor null, then
     if (searchTag->IsECMAObject()) {

@@ -80,10 +80,10 @@ private:
                                  const uint8_t mask);
     // 21.2.5.2.2 Runtime Semantics: RegExpBuiltinExec ( R, S )
     static JSTaggedValue RegExpBuiltinExec(JSThread *thread, const JSHandle<JSTaggedValue> &regexp,
-                                           const JSHandle<JSTaggedValue> &inputStr, bool isCached);
+                                           const JSHandle<JSTaggedValue> &inputStr, bool useCache);
     // 21.2.5.2.1 Runtime Semantics: RegExpExec ( R, S )
     static JSTaggedValue RegExpExec(JSThread *thread, const JSHandle<JSTaggedValue> &regexp,
-                                    const JSHandle<JSTaggedValue> &inputString, bool isCached);
+                                    const JSHandle<JSTaggedValue> &inputString, bool useCache);
     // 21.2.3.2.1 Runtime Semantics: RegExpAlloc ( newTarget )
     static JSTaggedValue RegExpAlloc(JSThread *thread, const JSHandle<JSTaggedValue> &newTarget);
 
@@ -112,21 +112,25 @@ public:
         return reinterpret_cast<RegExpExecResultCache *>(object);
     }
     static JSTaggedValue CreateCacheTable(JSThread *thread);
+    // extend as an additional parameter to judge cached
     JSTaggedValue FindCachedResult(JSThread *thread, const JSHandle<JSTaggedValue> &patten,
                                    const JSHandle<JSTaggedValue> &flags, const JSHandle<JSTaggedValue> &input,
-                                   CacheType type, const JSHandle<JSTaggedValue> &regexp);
+                                   CacheType type, const JSHandle<JSTaggedValue> &regexp,
+                                   JSTaggedValue extend = JSTaggedValue::Undefined());
+    // extend as an additional parameter to judge cached
     static void AddResultInCache(JSThread *thread, JSHandle<RegExpExecResultCache> cache,
                                  const JSHandle<JSTaggedValue> &patten, const JSHandle<JSTaggedValue> &flags,
                                  const JSHandle<JSTaggedValue> &input, const JSHandle<JSTaggedValue> &resultArray,
-                                 CacheType type, uint32_t lastIndex);
+                                 CacheType type, uint32_t lastIndex, JSTaggedValue extend = JSTaggedValue::Undefined());
 
     static void GrowRegexpCache(JSThread *thread, JSHandle<RegExpExecResultCache> cache);
 
     void ClearEntry(JSThread *thread, int entry);
     void SetEntry(JSThread *thread, int entry, JSTaggedValue &patten, JSTaggedValue &flags, JSTaggedValue &input,
-                  JSTaggedValue &lastIndexValue);
+                  JSTaggedValue &lastIndexValue, JSTaggedValue &extendValue);
     void UpdateResultArray(JSThread *thread, int entry, JSTaggedValue resultArray, CacheType type);
-    bool Match(int entry, JSTaggedValue &pattenStr, JSTaggedValue &flagsStr, JSTaggedValue &inputStr);
+    bool Match(int entry, JSTaggedValue &pattenStr, JSTaggedValue &flagsStr, JSTaggedValue &inputStr,
+               JSTaggedValue &extend);
     inline void SetHitCount(JSThread *thread, int hitCount)
     {
         Set(thread, CACHE_HIT_COUNT_INDEX, JSTaggedValue(hitCount));
@@ -213,7 +217,9 @@ private:
     static constexpr int RESULT_SPLIT_INDEX = 5;
     static constexpr int RESULT_MATCH_INDEX = 6;
     static constexpr int RESULT_EXEC_INDEX = 7;
-    static constexpr int ENTRY_SIZE = 8;
+    // Extend index used for saving an additional parameter to judge cached
+    static constexpr int EXTEND_INDEX = 8;
+    static constexpr int ENTRY_SIZE = 9;
 };
 }  // namespace panda::ecmascript::builtins
 #endif  // ECMASCRIPT_BUILTINS_BUILTINS_REGEXP_H
