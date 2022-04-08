@@ -17,7 +17,7 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_stack.h"
@@ -334,9 +334,11 @@ JSTaggedValue JSTaggedValue::ToPrimitive(JSThread *thread, const JSHandle<JSTagg
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
         if (!exoticToprim->IsUndefined()) {
             JSTaggedValue value = GetTypeString(thread, type).GetTaggedValue();
-            InternalCallParams *arguments = thread->GetInternalCallParams();
-            arguments->MakeArgv(value);
-            JSTaggedValue valueResult = JSFunction::Call(thread, exoticToprim, tagged, 1, arguments->GetArgv());
+            JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+            EcmaRuntimeCallInfo info =
+                EcmaInterpreter::NewRuntimeCallInfo(thread, exoticToprim, tagged, undefined, 1);
+            info.SetCallArg(value);
+            JSTaggedValue valueResult = JSFunction::Call(&info);
             RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
             if (!valueResult.IsECMAObject()) {
                 return valueResult;
@@ -365,7 +367,10 @@ JSTaggedValue JSTaggedValue::OrdinaryToPrimitive(JSThread *thread, const JSHandl
         }
         JSHandle<JSTaggedValue> entryfunc = GetProperty(thread, tagged, keyString).GetValue();
         if (entryfunc->IsCallable()) {
-            JSTaggedValue valueResult = JSFunction::Call(thread, entryfunc, tagged, 0, nullptr);
+            JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
+            EcmaRuntimeCallInfo info =
+                EcmaInterpreter::NewRuntimeCallInfo(thread, entryfunc, tagged, undefined, 0);
+            JSTaggedValue valueResult = JSFunction::Call(&info);
             RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
             if (!valueResult.IsECMAObject()) {
                 return valueResult;

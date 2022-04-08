@@ -18,7 +18,6 @@
 #include "ecmascript/builtins/builtins_promise_handler.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_handle.h"
@@ -99,10 +98,10 @@ JSHandle<PromiseCapability> JSPromise::NewPromiseCapability(JSThread *thread, co
     executor->SetCapability(thread, promiseCapability.GetTaggedValue());
     // 6. Let promise be Construct(C, «executor»).
     // 7. ReturnIfAbrupt(promise).
-    JSHandle<JSTaggedValue> newTarget(thread, JSTaggedValue::Undefined());
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgv(executor);
-    JSTaggedValue result = JSFunction::Construct(thread, obj, 1, arguments->GetArgv(), newTarget);
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, obj, undefined, undefined, 1);
+    info.SetCallArg(executor.GetTaggedValue());
+    JSTaggedValue result = JSFunction::Construct(&info);
     JSHandle<JSPromise> promise(thread, result);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, factory->NewPromiseCapability());
     // 8. If IsCallable(promiseCapability.[[Resolve]]) is false, throw a TypeError exception.

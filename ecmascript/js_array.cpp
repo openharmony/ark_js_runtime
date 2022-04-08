@@ -18,7 +18,6 @@
 #include "ecmascript/base/array_helper.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/object_factory.h"
 #include "interpreter/fast_runtime_stub-inl.h"
@@ -156,10 +155,11 @@ JSTaggedValue JSArray::ArraySpeciesCreate(JSThread *thread, const JSHandle<JSObj
         THROW_TYPE_ERROR_AND_RETURN(thread, "Not a constructor", JSTaggedValue::Exception());
     }
     // Return Construct(C, «length»).
-    JSHandle<JSTaggedValue> newTarget(thread, JSTaggedValue::Undefined());
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgv(JSTaggedValue(arrayLength));
-    JSTaggedValue result = JSFunction::Construct(thread, constructor, 1, arguments->GetArgv(), newTarget);
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, constructor, undefined, undefined, 1);
+    info.SetCallArg(JSTaggedValue(arrayLength));
+    JSTaggedValue result = JSFunction::Construct(&info);
 
     // NOTEIf originalArray was created using the standard built-in Array constructor for
     // a Realm that is not the Realm of the running execution context, then a new Array is

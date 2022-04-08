@@ -31,7 +31,6 @@ namespace panda::ecmascript {
 class EcmaHandleScope;
 class EcmaVM;
 class HeapRegionAllocator;
-class InternalCallParams;
 class PropertiesCache;
 
 enum class MarkStatus : uint8_t {
@@ -290,11 +289,6 @@ public:
 
     void LoadStubsFromFile(std::string &fileName);
 
-    InternalCallParams *GetInternalCallParams() const
-    {
-        return internalCallParams_;
-    }
-
     ThreadId GetThreadId() const
     {
         return GetId();
@@ -501,7 +495,6 @@ private:
     VmThreadControl *vmThreadControl_ {nullptr};
 
     bool stableArrayElementsGuardians_ {true};
-    InternalCallParams *internalCallParams_ {nullptr};
     GlueData glueData_;
 
     friend class EcmaHandleScope;

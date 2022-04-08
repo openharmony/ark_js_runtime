@@ -29,7 +29,6 @@
 #include "ecmascript/ic/profile_type_info.h"
 #include "ecmascript/ic/property_box.h"
 #include "ecmascript/ic/proto_change_details.h"
-#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
@@ -716,10 +715,11 @@ JSHandle<JSObject> ObjectFactory::NewJSError(const ErrorType &errorType, const J
     JSHandle<JSFunction> nativeFunc = JSHandle<JSFunction>::Cast(nativeConstructor);
     JSHandle<JSTaggedValue> nativePrototype(thread_, nativeFunc->GetFunctionPrototype());
     JSHandle<JSTaggedValue> ctorKey = globalConst->GetHandledConstructorString();
-
-    InternalCallParams *arguments = thread_->GetInternalCallParams();
-    arguments->MakeArgv(message.GetTaggedValue());
-    JSTaggedValue obj = JSFunction::Invoke(thread_, nativePrototype, ctorKey, 1, arguments->GetArgv());
+    JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info =
+        EcmaInterpreter::NewRuntimeCallInfo(thread_, undefined, nativePrototype, undefined, 1);
+    info.SetCallArg(message.GetTaggedValue());
+    JSTaggedValue obj = JSFunction::Invoke(&info, ctorKey);
     JSHandle<JSObject> handleNativeInstanceObj(thread_, obj);
     return handleNativeInstanceObj;
 }

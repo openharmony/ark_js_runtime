@@ -16,8 +16,8 @@
 #include "ecmascript/builtins/builtins_object.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_handle.h"
@@ -744,11 +744,11 @@ JSTaggedValue BuiltinsObject::ToLocaleString(EcmaRuntimeCallInfo *argv)
 
     // 2. Return Invoke(O, "toString").
     JSHandle<JSTaggedValue> calleeKey = thread->GlobalConstants()->GetHandledToStringString();
-
-    JSHandle<TaggedArray> argsList = GetArgsArray(argv);
-    ecmascript::InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgList(*argsList);
-    return JSFunction::Invoke(thread, object, calleeKey, argsList->GetLength(), arguments->GetArgv());
+    const size_t argsLength = argv->GetArgsNumber();
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, object, undefined, argsLength);
+    info.SetCallArg(argsLength, 0, argv, 0);
+    return JSFunction::Invoke(&info, calleeKey);
 }
 
 JSTaggedValue BuiltinsObject::GetBuiltinTag(JSThread *thread, const JSHandle<JSObject> &object)

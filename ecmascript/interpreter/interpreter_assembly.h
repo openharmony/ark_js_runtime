@@ -17,6 +17,7 @@
 #define ECMASCRIPT_INTERPRETER_INTERPRETER_ASSEMBLY_64BIT_H
 
 #include "ecmascript/base/config.h"
+#include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_handle.h"
@@ -40,8 +41,8 @@ public:
     enum ActualNumArgsOfCall : uint8_t { CALLARG0 = 0, CALLARG1, CALLARGS2, CALLARGS3 };
     static void RunInternal(JSThread *thread, ConstantPool *constpool, const uint8_t *pc, JSTaggedType *sp);
     static void InitStackFrame(JSThread *thread);
-    static JSTaggedValue Execute(JSThread *thread, const CallParams& params);
-    static JSTaggedValue ExecuteNative(JSThread *thread, const CallParams& params);
+    static JSTaggedValue Execute(EcmaRuntimeCallInfo *info);
+    static JSTaggedValue ExecuteNative(EcmaRuntimeCallInfo *info);
     static JSTaggedValue GeneratorReEnterInterpreter(JSThread *thread, JSHandle<GeneratorContext> context);
     static void ChangeGenContext(JSThread *thread, JSHandle<GeneratorContext> context);
     static void ResumeContext(JSThread *thread);

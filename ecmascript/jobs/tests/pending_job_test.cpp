@@ -263,10 +263,10 @@ JSTaggedValue TestPromiseResolveThenableJob(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> result = BuiltinsBase::GetCallArg(argv, 0);
     EXPECT_TRUE(result->IsJSFunction());
     JSHandle<JSTaggedValue> undefined(argv->GetThread(), JSTaggedValue::Undefined());
-    InternalCallParams *arguments = argv->GetThread()->GetInternalCallParams();
-    arguments->MakeArgv(JSTaggedValue(44)); // 44 : 44 promise result
-    JSFunction::Call(argv->GetThread(), result, undefined, 1, arguments->GetArgv());
-    return JSTaggedValue::Undefined();
+    EcmaRuntimeCallInfo info =
+        EcmaInterpreter::NewRuntimeCallInfo(argv->GetThread(), result, undefined, undefined, 1);
+    info.SetCallArg(JSTaggedValue(44));  // 44 : 44 promise result
+    return JSFunction::Call(&info);
 }
 
 /**

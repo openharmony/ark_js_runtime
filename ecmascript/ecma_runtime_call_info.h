@@ -19,9 +19,10 @@
 #include <algorithm>
 
 #include "ecmascript/common.h"
+#include "ecmascript/js_handle.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_thread.h"
-#include "js_handle.h"
+#include "ecmascript/tagged_array.h"
 
 namespace panda::ecmascript {
 class EcmaRuntimeCallInfo;
@@ -30,11 +31,8 @@ using EcmaEntrypoint = JSTaggedValue (*)(EcmaRuntimeCallInfo *);
 class EcmaRuntimeCallInfo {
 public:
     // For builtins interpreter call
-    EcmaRuntimeCallInfo(JSThread *thread, uint32_t numArgs, JSTaggedValue *args)
-        : thread_(thread), numArgs_(numArgs), gprArgs_(args, numArgs), stackArgs_(nullptr, static_cast<size_t>(0))
-    {
-        ASSERT(numArgs_ >= NUM_MANDATORY_JSFUNC_ARGS);
-    }
+    EcmaRuntimeCallInfo(JSThread *thread, size_t numArgs, JSTaggedType *args)
+        : thread_(thread), numArgs_(numArgs), stackArgs_(args) {}
 
     ~EcmaRuntimeCallInfo() = default;
 
@@ -43,28 +41,87 @@ public:
         return thread_;
     }
 
-    inline void SetNewTarget(JSTaggedValue tagged, [[maybe_unused]] int64_t tag = 0)
+    inline void SetNewTarget(const JSTaggedValue tagged)
     {
         SetArg(NEW_TARGET_INDEX, tagged);
     }
 
-    inline void SetFunction(JSTaggedValue tagged, [[maybe_unused]] int64_t tag = 0)
+    inline void SetFunction(const JSTaggedValue tagged)
     {
         SetArg(FUNC_INDEX, tagged);
     }
 
-    inline void SetThis(JSTaggedValue tagged, [[maybe_unused]] int64_t tag = 0)
+    inline void SetThis(const JSTaggedValue tagged)
     {
         SetArg(THIS_INDEX, tagged);
     }
 
-    inline void SetCallArg(uint32_t idx, JSTaggedValue tagged, [[maybe_unused]] int64_t tag = 0)
+    inline void SetCallArg(size_t idx, const JSTaggedValue tagged)
     {
         ASSERT_PRINT(idx < GetArgsNumber(), "Can not set values out of index range");
         SetArg(idx + FIRST_ARGS_INDEX, tagged);
     }
 
-    inline JSHandle<JSTaggedValue> GetArg(uint32_t idx) const
+    inline void SetCallArg(const JSTaggedValue arg)
+    {
+        ASSERT_PRINT(GetArgsNumber() == 1, "args number is not 1");
+        SetArg(FIRST_ARGS_INDEX, arg);
+    }
+
+    inline void SetCallArg(const JSTaggedValue arg0, const JSTaggedValue arg1)
+    {
+        ASSERT_PRINT(GetArgsNumber() == 2, "args number is not 2");  // 2: args number
+        SetArg(FIRST_ARGS_INDEX, arg0);
+        SetArg(FIRST_ARGS_INDEX + 1, arg1);
+    }
+
+    inline void SetCallArg(const JSTaggedValue arg0, const JSTaggedValue arg1, const JSTaggedValue arg2)
+    {
+        ASSERT_PRINT(GetArgsNumber() == 3, "args number is not 3");  // 3: args number
+        SetArg(FIRST_ARGS_INDEX, arg0);
+        SetArg(FIRST_ARGS_INDEX + 1, arg1);
+        SetArg(FIRST_ARGS_INDEX + 2, arg2);  // 2: second index
+    }
+
+    inline void SetCallArg(const JSTaggedValue arg0, const JSTaggedValue arg1, const JSTaggedValue arg2,
+                           const JSTaggedValue arg3)
+    {
+        ASSERT_PRINT(GetArgsNumber() == 4, "args number is not 4");  // 4: args number
+        SetArg(FIRST_ARGS_INDEX, arg0);
+        SetArg(FIRST_ARGS_INDEX + 1, arg1);
+        SetArg(FIRST_ARGS_INDEX + 2, arg2);  // 2: second index
+        SetArg(FIRST_ARGS_INDEX + 3, arg3);  // 3: third index
+    }
+
+    inline void SetCallArg(size_t argc, const JSTaggedType argv[])
+    {
+        for (size_t i = 0; i < argc; i++) {
+            SetCallArg(i, JSTaggedValue(argv[i]));
+        }
+    }
+
+    inline void SetCallArg(size_t argsLength, const JSHandle<TaggedArray> args)
+    {
+        for (size_t i = 0; i < argsLength; i++) {
+            SetCallArg(i, args->Get(thread_, i));
+        }
+    }
+
+    inline void SetCallArg(size_t argsLength, const TaggedArray* args)
+    {
+        for (size_t i = 0; i < argsLength; i++) {
+            SetCallArg(i, args->Get(thread_, i));
+        }
+    }
+
+    inline void SetCallArg(size_t argsLength, size_t startIndex, const EcmaRuntimeCallInfo* argv, size_t offset)
+    {
+        for (size_t i = startIndex; i < argsLength; i++) {
+            SetCallArg(i, argv->GetCallArgValue(i - startIndex + offset));
+        }
+    }
+
+    inline JSHandle<JSTaggedValue> GetArg(size_t idx) const
     {
         return JSHandle<JSTaggedValue>(GetArgAddress(idx));
     }
@@ -84,44 +141,91 @@ public:
         return GetArg(THIS_INDEX);
     }
 
-    inline JSHandle<JSTaggedValue> GetCallArg(uint32_t idx) const
+    inline JSHandle<JSTaggedValue> GetCallArg(size_t idx) const
     {
         return GetArg(idx + FIRST_ARGS_INDEX);
+    }
+
+    inline JSTaggedValue GetFunctionValue() const
+    {
+        JSHandle<JSTaggedValue> func = GetFunction();
+        return func.GetTaggedValue();
+    }
+
+    inline JSTaggedValue GetNewTargetValue() const
+    {
+        JSHandle<JSTaggedValue> newTarget = GetNewTarget();
+        return newTarget.GetTaggedValue();
+    }
+
+    inline JSTaggedValue GetThisValue() const
+    {
+        JSHandle<JSTaggedValue> thisObj = GetThis();
+        return thisObj.GetTaggedValue();
+    }
+
+    inline JSTaggedValue GetCallArgValue(size_t idx) const
+    {
+        JSHandle<JSTaggedValue> arg = GetCallArg(idx);
+        return arg.GetTaggedValue();
     }
 
     /*
      * The number of arguments pairs excluding the 'func', 'new.target' and 'this'. For instance:
      * for code fragment: " foo(v1); ", GetArgsNumber() returns 1
      */
-    inline uint32_t GetArgsNumber() const
+    inline size_t GetArgsNumber() const
     {
-        return numArgs_ - NUM_MANDATORY_JSFUNC_ARGS;
+        return numArgs_;
     }
 
-    inline uintptr_t GetArgAddress(uint32_t idx) const
+    inline JSTaggedType *GetArgs()
     {
-        if (idx < gprArgs_.size()) {
-            return reinterpret_cast<uintptr_t>(&gprArgs_[idx]);
+        return stackArgs_;
+    }
+
+    inline uintptr_t GetArgAddress(size_t idx) const
+    {
+        if (idx < numArgs_ + NUM_MANDATORY_JSFUNC_ARGS) {
+            return reinterpret_cast<uintptr_t>(&stackArgs_[idx]);
         }
-        return reinterpret_cast<uintptr_t>(&stackArgs_[idx - gprArgs_.size()]);
+        return 0U;
+    }
+
+    inline void SetData(void *data)
+    {
+        data_ = data;
+    }
+
+    inline void *GetData() const
+    {
+        return data_;
+    }
+
+    inline void SetPrevFrameSp(JSTaggedType *sp)
+    {
+        prevSp_ = sp;
+    }
+
+    inline JSTaggedType *GetPrevFrameSp() const
+    {
+        return prevSp_;
     }
 
 private:
-    DEFAULT_COPY_SEMANTIC(EcmaRuntimeCallInfo);
-    DEFAULT_MOVE_SEMANTIC(EcmaRuntimeCallInfo);
-
     enum ArgsIndex : uint8_t { FUNC_INDEX = 0, NEW_TARGET_INDEX, THIS_INDEX, FIRST_ARGS_INDEX };
 
-    inline void SetArg(uint32_t idx, JSTaggedValue tagged)
+    inline void SetArg(size_t idx, const JSTaggedValue tagged)
     {
         *reinterpret_cast<JSTaggedValue *>(GetArgAddress(idx)) = tagged;
     }
 
 private:
-    JSThread *thread_;
-    uint32_t numArgs_;
-    Span<JSTaggedValue> gprArgs_;
-    Span<JSTaggedValue> stackArgs_;
+    JSThread *thread_ {nullptr};
+    size_t numArgs_ = 0;
+    JSTaggedType *stackArgs_ {nullptr};
+    void *data_ {nullptr};
+    JSTaggedType *prevSp_ {nullptr};
 };
 }  // namespace panda::ecmascript
 

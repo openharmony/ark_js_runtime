@@ -22,7 +22,7 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_hclass.h"
@@ -470,8 +470,10 @@ JSHandle<JSObject> TypedArrayHelper::TypedArrayCreate(JSThread *thread, const JS
                                                       uint32_t argc, const JSTaggedType argv[])
 {
     // 1. Let newTypedArray be ? Construct(constructor, argumentList).
-    JSTaggedValue taggedArray = JSFunction::Construct(thread, constructor, argc, argv,
-                                                      JSHandle<JSTaggedValue>(thread, JSTaggedValue::Undefined()));
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, constructor, undefined, undefined, argc);
+    info.SetCallArg(argc, argv);
+    JSTaggedValue taggedArray = JSFunction::Construct(&info);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSHandle<JSObject>(thread, JSTaggedValue::Exception()));
     if (!taggedArray.IsECMAObject()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Failed to construct the Typedarray.",
@@ -486,7 +488,7 @@ JSHandle<JSObject> TypedArrayHelper::TypedArrayCreate(JSThread *thread, const JS
     //   a. If newTypedArray.[[ArrayLength]] < argumentList[0], throw a TypeError exception.
     if (argc == 1) {
         if (TypedArrayHelper::GetArrayLength(thread, newTypedArray) <
-            JSTaggedValue::ToInt32(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(argv[0])))) {
+            JSTaggedValue::ToInt32(thread, info.GetCallArg(0))) {
             THROW_TYPE_ERROR_AND_RETURN(thread, "the length of newTypedArray is not a correct value.",
                                         JSHandle<JSObject>(thread, JSTaggedValue::Exception()));
         }
@@ -528,11 +530,12 @@ int32_t TypedArrayHelper::SortCompare(JSThread *thread, const JSHandle<JSTaggedV
     //   d. If v is NaN, return +0.
     //   e. Return v.
     if (!callbackfnHandle->IsUndefined()) {
-        JSHandle<JSTaggedValue> thisArgHandle = globalConst->GetHandledUndefined();
-        InternalCallParams *arguments = thread->GetInternalCallParams();
-        arguments->MakeArgv(firstValue, secondValue);
-        JSTaggedValue callResult =
-            JSFunction::Call(thread, callbackfnHandle, thisArgHandle, 2, arguments->GetArgv());  // 2: two args
+        const size_t argsLength = 2;
+        JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, callbackfnHandle, undefined, undefined, argsLength);
+        info.SetCallArg(firstValue.GetTaggedValue(), secondValue.GetTaggedValue());
+        JSTaggedValue callResult = JSFunction::Call(&info);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, 0);
         if (BuiltinsArrayBuffer::IsDetachedBuffer(buffer.GetTaggedValue())) {
             THROW_TYPE_ERROR_AND_RETURN(thread, "The buffer is detached buffer.", 0);

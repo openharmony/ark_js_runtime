@@ -17,7 +17,6 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_thread.h"
@@ -632,9 +631,10 @@ bool JSObject::CallSetter(JSThread *thread, const AccessorData &accessor, const 
     }
 
     JSHandle<JSTaggedValue> func(thread, setter);
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-    arguments->MakeArgv(value);
-    JSFunction::Call(thread, func, receiver, 1, arguments->GetArgv());
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, receiver, undefined, 1);
+    info.SetCallArg(value.GetTaggedValue());
+    JSFunction::Call(&info);
 
     // 10. ReturnIfAbrupt(setterResult).
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
@@ -652,7 +652,9 @@ JSTaggedValue JSObject::CallGetter(JSThread *thread, const AccessorData *accesso
     }
 
     JSHandle<JSTaggedValue> func(thread, getter);
-    JSTaggedValue res = JSFunction::Call(thread, func, receiver, 0, nullptr);
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, receiver, undefined, 0);
+    JSTaggedValue res = JSFunction::Call(&info);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return res;
 }
@@ -1438,10 +1440,11 @@ bool JSObject::InstanceOf(JSThread *thread, const JSHandle<JSTaggedValue> &objec
     // 4. If instOfHandler is not undefined, then
     if (!instOfHandler->IsUndefined()) {
         // a. Return ! ToBoolean(? Call(instOfHandler, target, «object»)).
-        InternalCallParams *arguments = thread->GetInternalCallParams();
-        arguments->MakeArgv(object);
-        JSTaggedValue tagged = JSFunction::Call(thread, instOfHandler, target, 1, arguments->GetArgv());
-
+        JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, instOfHandler, target, undefined, 1);
+        info.SetCallArg(object.GetTaggedValue());
+        JSTaggedValue tagged = JSFunction::Call(&info);
         return tagged.ToBoolean();
     }
 

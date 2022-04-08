@@ -15,8 +15,9 @@
 
 #include "containers_queue.h"
 #include "ecmascript/ecma_vm.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_api_queue.h"
+#include "ecmascript/js_function.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array-inl.h"
 
@@ -118,18 +119,19 @@ JSTaggedValue ContainersQueue::ForEach(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> thisArgHandle = GetCallArg(argv, 1);
 
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
-    InternalCallParams *arguments = thread->GetInternalCallParams();
-
     uint32_t index = queue->GetCurrentFront();
     uint32_t k = 0;
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     while (k < len) {
         JSHandle<JSTaggedValue> kValue =
             JSHandle<JSTaggedValue>(thread, queue->Get(thread, index));
         index = queue->GetNextPosition(index);
         key.Update(JSTaggedValue(k));
-        arguments->MakeArgv(kValue, key, thisHandle);
-        JSTaggedValue funcResult =
-            JSFunction::Call(thread, callbackFnHandle, thisArgHandle, 3, arguments->GetArgv()); // 3: three args
+        const size_t argsLength = 3;
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, callbackFnHandle, thisArgHandle, undefined, argsLength);
+        info.SetCallArg(kValue.GetTaggedValue(), key.GetTaggedValue(), thisHandle.GetTaggedValue());
+        JSTaggedValue funcResult = JSFunction::Call(&info);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, funcResult);
         k++;
     }

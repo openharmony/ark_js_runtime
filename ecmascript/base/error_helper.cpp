@@ -196,7 +196,7 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
     auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     InterpretedFrameHandler frameHandler(sp);
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
-        if (frameHandler.IsBreakFrame()) {
+        if (frameHandler.IsEntryFrame()) {
             continue;
         }
         auto method = frameHandler.GetMethod();
