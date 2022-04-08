@@ -656,5 +656,97 @@ private:
     std::optional<CString> objectGroup_ {};
     std::optional<bool> throwOnSideEffect_ {};
 };
+
+class StartSamplingParams : public PtBaseParams {
+public:
+    StartSamplingParams() = default;
+    ~StartSamplingParams() override = default;
+
+    static std::unique_ptr<StartSamplingParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    int32_t GetSamplingInterval() const
+    {
+        return samplingInterval_.value_or(32768);
+    }
+
+private:
+    NO_COPY_SEMANTIC(StartSamplingParams);
+    NO_MOVE_SEMANTIC(StartSamplingParams);
+
+    std::optional<size_t> samplingInterval_ {32768};
+};
+
+class StartTrackingHeapObjectsParams : public PtBaseParams {
+public:
+    StartTrackingHeapObjectsParams() = default;
+    ~StartTrackingHeapObjectsParams() override = default;
+
+    static std::unique_ptr<StartTrackingHeapObjectsParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    bool GetTrackAllocations() const
+    {
+        return trackAllocations_.value_or(false);
+    }
+
+    bool HasTrackAllocations() const
+    {
+        return trackAllocations_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(StartTrackingHeapObjectsParams);
+    NO_MOVE_SEMANTIC(StartTrackingHeapObjectsParams);
+
+    std::optional<bool> trackAllocations_;
+};
+
+class StopTrackingHeapObjectsParams : public PtBaseParams {
+public:
+    StopTrackingHeapObjectsParams() = default;
+    ~StopTrackingHeapObjectsParams() override = default;
+
+    static std::unique_ptr<StopTrackingHeapObjectsParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    bool GetReportProgress() const
+    {
+        return reportProgress_.value_or(false);
+    }
+
+    bool HasReportProgress() const
+    {
+        return reportProgress_.has_value();
+    }
+
+    bool GetTreatGlobalObjectsAsRoots() const
+    {
+        return treatGlobalObjectsAsRoots_.value_or(false);
+    }
+
+    bool HasTreatGlobalObjectsAsRoots() const
+    {
+        return treatGlobalObjectsAsRoots_.has_value();
+    }
+
+    bool GetCaptureNumericValue() const
+    {
+        return captureNumericValue_.value_or(false);
+    }
+
+    bool HasCaptureNumericValue() const
+    {
+        return captureNumericValue_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(StopTrackingHeapObjectsParams);
+    NO_MOVE_SEMANTIC(StopTrackingHeapObjectsParams);
+
+    std::optional<bool> reportProgress_ {};
+    std::optional<bool> treatGlobalObjectsAsRoots_ {};
+    std::optional<bool> captureNumericValue_ {};
+};
 }  // namespace panda::tooling::ecmascript
 #endif
