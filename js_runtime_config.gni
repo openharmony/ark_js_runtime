@@ -16,6 +16,7 @@ js_root = "//ark/js_runtime"
 compile_llvm_online = false
 run_with_asan = false
 enable_stub_aot = false
+enable_test_stub = false
 enable_bytrace = true
 asan_lib_path = "/usr/lib/llvm-10/lib/clang/10.0.0/lib/linux"
 

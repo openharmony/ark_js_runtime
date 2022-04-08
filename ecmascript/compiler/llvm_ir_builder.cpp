@@ -579,7 +579,7 @@ void LLVMIRBuilder::SaveCurrentSP()
         LLVMValueRef llvmFpAddr = CallingFp(module_, builder_, false);
         LLVMValueRef frameAddr = LLVMBuildPtrToInt(builder_, llvmFpAddr, slotType_, "cast_int_t");
         LLVMValueRef frameSpSlotAddr = LLVMBuildSub(builder_, frameAddr, LLVMConstInt(slotType_,
-            3 * slotSize_, false), ""); // 3: type + threadsp + current sp
+            2 * slotSize_, false), ""); // 2: type + current sp
         LLVMValueRef addr = LLVMBuildIntToPtr(builder_, frameSpSlotAddr,
                                               LLVMPointerType(slotType_, 0), "frameCallSiteSP.Addr");
         LLVMMetadataRef meta;
@@ -691,6 +691,8 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList, 
                                                               strlen(attrValue));
         LLVMAddCallSiteAttribute(call, LLVMAttributeFunctionIndex, llvmAttr);
         LLVMSetInstructionCallConv(call, LLVMGHCCallConv);
+    } else if (calleeDescriptor->GetCallConv() == CallSignature::CallConv::WebKitJSCallConv) {
+        LLVMSetInstructionCallConv(call, LLVMWebKitJSCallConv);
     }
     gateToLLVMMaps_[gate] = call;
     return;
