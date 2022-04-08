@@ -53,7 +53,7 @@ JSTaggedValue JSAPITreeMapIterator::Next(EcmaRuntimeCallInfo *argv)
     }
 
     // Let index be Map.[[NextIndex]].
-    int index = iter->GetNextIndex();
+    int index = static_cast<int>(iter->GetNextIndex());
     if (index < elements) {
         IterationKind itemKind = IterationKind(iter->GetIterationKind());
 
