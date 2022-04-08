@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_TOOLING_AGENT_DEBUGGER_IMPL_H
-#define ECMASCRIPT_TOOLING_AGENT_DEBUGGER_IMPL_H
+#ifndef ECMASCRIPT_TOOLING_AGENT_HEAPPROFILER_IMPL_H
+#define ECMASCRIPT_TOOLING_AGENT_HEAPPROFILER_IMPL_H
 
 #include "libpandabase/macros.h"
 #include "ecmascript/tooling/agent/js_backend.h"
