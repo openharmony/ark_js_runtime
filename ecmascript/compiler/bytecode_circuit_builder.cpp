@@ -1907,6 +1907,7 @@ bool BytecodeCircuitBuilder::IsDiscarded(EcmaOpcode opcode)
 {
     switch (opcode) {
         case EcmaOpcode::COPYMODULE_PREF_V8:
+        case EcmaOpcode::DEBUGGER_PREF:
             return true;
         default:
             return false;
