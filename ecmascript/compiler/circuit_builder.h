@@ -25,6 +25,7 @@
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/compiler/low_level_circuit_builder.h"
 #include "ecmascript/js_tagged_value.h"
+#include "ecmascript/tagged_array.h"
 
 namespace panda::ecmascript::kungfu {
 using namespace panda::ecmascript;
@@ -338,6 +339,7 @@ public:
     inline GateRef DoubleBuildTagged(GateRef x);
     inline GateRef TaggedTrue();
     inline GateRef TaggedFalse();
+    inline GateRef GetValueFromTaggedArray(VariableType returnType, GateRef array, GateRef index);
     GateRef TaggedIsString(GateRef obj);
     GateRef TaggedIsStringOrSymbol(GateRef obj);
     // object operation

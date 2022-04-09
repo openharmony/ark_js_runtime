@@ -95,6 +95,11 @@ JSTaggedValue JSThread::GetCurrentLexenv() const
     return InterpretedFrameHandler(glueData_.currentFrame_).GetEnv();
 }
 
+void JSThread::SetCurrentLexenv(JSTaggedValue env)
+{
+    InterpretedFrameHandler(glueData_.currentFrame_).SetEnv(env);
+}
+
 void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
 {
     if (propertiesCache_ != nullptr) {
