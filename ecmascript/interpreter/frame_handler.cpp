@@ -233,6 +233,18 @@ JSTaggedValue InterpretedFrameHandler::GetEnv() const
     return frame->env;
 }
 
+void InterpretedFrameHandler::SetEnv(JSTaggedValue env)
+{
+    ASSERT(HasFrame());
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+#else
+    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+#endif
+    frame->env = env;
+}
+
 void InterpretedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
 {
     JSTaggedType *current = sp_;

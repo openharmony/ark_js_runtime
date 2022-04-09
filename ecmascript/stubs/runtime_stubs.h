@@ -223,6 +223,7 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(Div2Dyn, 3)                            \
     V(Mod2Dyn, 3)                            \
     V(GetLexicalEnv, 1)                      \
+    V(SetLexicalEnv, 2)                      \
     V(LoadValueFromConstantStringTable, 2)   \
     V(CreateEmptyObject, 1)                  \
     V(CreateEmptyArray, 1)                   \

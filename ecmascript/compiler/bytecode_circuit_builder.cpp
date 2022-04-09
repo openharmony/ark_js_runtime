@@ -1232,7 +1232,17 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
             info.inputs.emplace_back(Immediate(numVars));
             break;
         }
+        case EcmaOpcode::NEWLEXENVWITHNAMEDYN_PREF_IMM16_IMM16: {
+            uint16_t numVars = READ_INST_16_1();
+            uint16_t scopeId = READ_INST_16_3();
+            info.accOut = true;
+            info.offset = BytecodeOffset::SIX;
+            info.inputs.emplace_back(Immediate(numVars));
+            info.inputs.emplace_back(Immediate(scopeId));
+            break;
+        }
         case EcmaOpcode::POPLEXENVDYN_PREF: {
+            info.accOut = false;
             info.offset = BytecodeOffset::TWO;
             break;
         }
@@ -1734,7 +1744,7 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
             break;
         }
         default: {
-            std::cout << opcode << std::endl;
+            std::cout << "Error bytecode: " << opcode << ", pls check bytecode offset." << std::endl;
             abort();
             break;
         }
