@@ -34,6 +34,7 @@ Runner::Runner(uint32_t threadNum) : totalThreadNum_(threadNum)
 
 void Runner::TerminateTask()
 {
+    os::memory::LockHolder holder(mtx_);
     for (uint32_t i = 0; i < runningTask_.size(); i++) {
         if (runningTask_[i] != nullptr) {
             runningTask_[i]->Terminated();
@@ -53,12 +54,18 @@ void Runner::TerminateThread()
     threadPool_.clear();
 }
 
+void Runner::SetRunTask(uint32_t threadId, Task *task)
+{
+    os::memory::LockHolder holder(mtx_);
+    runningTask_[threadId] = task;
+}
+
 void Runner::Run(uint32_t threadId)
 {
     while (std::unique_ptr<Task> task = taskQueue_.PopTask()) {
-        runningTask_[threadId] = task.get();
+        SetRunTask(threadId, task.get());
         task->Run(threadId);
-        runningTask_[threadId] = nullptr;
+        SetRunTask(threadId, nullptr);
     }
 }
 }  // namespace panda::ecmascript

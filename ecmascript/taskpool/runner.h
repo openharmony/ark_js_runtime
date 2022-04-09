@@ -23,6 +23,7 @@
 
 #include "ecmascript/common.h"
 #include "ecmascript/taskpool/task_queue.h"
+#include "os/mutex.h"
 
 namespace panda::ecmascript {
 static constexpr uint32_t MAX_TASKPOOL_THREAD_NUM = 7;
@@ -61,11 +62,13 @@ public:
 
 private:
     void Run(uint32_t threadId);
+    void SetRunTask(uint32_t threadId, Task *task);
 
     std::vector<std::unique_ptr<std::thread>> threadPool_ {};
     TaskQueue taskQueue_ {};
     std::array<Task*, MAX_TASKPOOL_THREAD_NUM + 1> runningTask_;
     uint32_t totalThreadNum_ {0};
+    os::memory::Mutex mtx_;
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_TASKPOOL_RUNNER_H
