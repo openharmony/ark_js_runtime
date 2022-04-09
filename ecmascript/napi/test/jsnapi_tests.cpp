@@ -675,12 +675,12 @@ HWTEST_F_L0(JSNApiTests, InheritPrototype_001)
     Local<FunctionRef> mapLocal = JSNApiHelper::ToLocal<FunctionRef>(map);
     JSHandle<JSTaggedValue> setPrototype(thread_, JSHandle<JSFunction>::Cast(set)->GetFunctionPrototype());
     JSHandle<JSTaggedValue> mapPrototype(thread_, JSHandle<JSFunction>::Cast(map)->GetFunctionPrototype());
-    JSHandle<JSTaggedValue> mapPrototypeProto(thread_, JSHandle<JSObject>::Cast(mapPrototype)->GetPrototype(thread_));
+    JSHandle<JSTaggedValue> mapPrototypeProto(thread_, JSTaggedValue::GetPrototype(thread_, mapPrototype));
     bool same = JSTaggedValue::SameValue(setPrototype, mapPrototypeProto);
     // before inherit, map.Prototype.__proto__ should be different from set.Prototype
     ASSERT_FALSE(same);
     // before inherit, map.__proto__ should be different from set
-    JSHandle<JSTaggedValue> mapProto(thread_, JSHandle<JSObject>::Cast(map)->GetPrototype(thread_));
+    JSHandle<JSTaggedValue> mapProto(thread_, JSTaggedValue::GetPrototype(thread_, map));
     bool same1 = JSTaggedValue::SameValue(set, mapProto);
     ASSERT_FALSE(same1);
 
@@ -699,10 +699,10 @@ HWTEST_F_L0(JSNApiTests, InheritPrototype_001)
     mapLocal->Inherit(vm_, setLocal);
     JSHandle<JSTaggedValue> sonHandle = JSNApiHelper::ToJSHandle(mapLocal);
     JSHandle<JSTaggedValue> sonPrototype(thread_, JSHandle<JSFunction>::Cast(sonHandle)->GetFunctionPrototype());
-    JSHandle<JSTaggedValue> sonPrototypeProto(thread_, JSHandle<JSObject>::Cast(sonPrototype)->GetPrototype(thread_));
+    JSHandle<JSTaggedValue> sonPrototypeProto(thread_, JSTaggedValue::GetPrototype(thread_, sonPrototype));
     bool same2 = JSTaggedValue::SameValue(setPrototype, sonPrototypeProto);
     ASSERT_TRUE(same2);
-    JSHandle<JSTaggedValue> sonProto(thread_, JSHandle<JSObject>::Cast(map)->GetPrototype(thread_));
+    JSHandle<JSTaggedValue> sonProto(thread_, JSTaggedValue::GetPrototype(thread_, map));
     bool same3 = JSTaggedValue::SameValue(set, sonProto);
     ASSERT_TRUE(same3);
 

@@ -1837,7 +1837,7 @@ JSTaggedValue SlowRuntimeStub::SuperCall(JSThread *thread, JSTaggedValue func, J
     JSHandle<JSTaggedValue> funcHandle(thread, func);
     JSHandle<JSTaggedValue> newTargetHandle(thread, newTarget);
 
-    JSHandle<JSTaggedValue> superFunc(thread, JSHandle<JSObject>::Cast(funcHandle)->GetPrototype(thread));
+    JSHandle<JSTaggedValue> superFunc(thread, JSTaggedValue::GetPrototype(thread, funcHandle));
     ASSERT(superFunc->IsJSFunction());
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     EcmaRuntimeCallInfo info =
@@ -1862,7 +1862,7 @@ JSTaggedValue SlowRuntimeStub::SuperCallSpread(JSThread *thread, JSTaggedValue f
     JSHandle<JSTaggedValue> newTargetHandle(thread, newTarget);
     JSHandle<JSTaggedValue> jsArray(thread, array);
 
-    JSHandle<JSTaggedValue> superFunc(thread, JSHandle<JSObject>::Cast(funcHandle)->GetPrototype(thread));
+    JSHandle<JSTaggedValue> superFunc(thread, JSTaggedValue::GetPrototype(thread, funcHandle));
     ASSERT(superFunc->IsJSFunction());
 
     JSHandle<TaggedArray> argv(thread, GetCallSpreadArgs(thread, jsArray.GetTaggedValue()));

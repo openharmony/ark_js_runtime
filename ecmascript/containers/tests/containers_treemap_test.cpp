@@ -169,7 +169,7 @@ HWTEST_F_L0(ContainersTreeMapTest, TreeMapConstructor)
 
     ASSERT_TRUE(result.IsJSAPITreeMap());
     JSHandle<JSAPITreeMap> mapHandle(thread, result);
-    JSTaggedValue resultProto = JSHandle<JSObject>::Cast(mapHandle)->GetPrototype(thread);
+    JSTaggedValue resultProto = JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(mapHandle));
     JSTaggedValue funcProto = newTarget->GetFunctionPrototype();
     ASSERT_EQ(resultProto, funcProto);
     int size = mapHandle->GetSize();
