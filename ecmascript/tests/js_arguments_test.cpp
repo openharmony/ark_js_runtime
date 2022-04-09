@@ -64,7 +64,7 @@ HWTEST_F_L0(JsArgumentsTest, SetProperty)
     JSHandle<JSArguments> arg = thread->GetEcmaVM()->GetFactory()->NewJSArguments();
 
     char array[] = "x";
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(array));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII(array));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
 
     // receive must be jsarg's conversion
@@ -87,7 +87,7 @@ HWTEST_F_L0(JsArgumentsTest, GetProperty)
     JSHandle<JSArguments> arg = thread->GetEcmaVM()->GetFactory()->NewJSArguments();
 
     char array[] = "x";
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(array));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII(array));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
 
     JSHandle<JSTaggedValue> receiver = JSHandle<JSTaggedValue>::Cast(jsarg);
@@ -109,7 +109,7 @@ HWTEST_F_L0(JsArgumentsTest, DeleteProperty)
     JSHandle<JSArguments> arg = thread->GetEcmaVM()->GetFactory()->NewJSArguments();
 
     char array[] = "delete";
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(array));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII(array));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> receiver = JSHandle<JSTaggedValue>::Cast(jsarg);
     JSArguments::SetProperty(thread, arg, key, value, receiver);
@@ -128,7 +128,7 @@ HWTEST_F_L0(JsArgumentsTest, DefineOwnProperty)
         thread->GetEcmaVM()->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>(argFunc), argFunc);
     JSHandle<JSArguments> arg = thread->GetEcmaVM()->GetFactory()->NewJSArguments();
 
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("x"));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("x"));
     JSHandle<JSTaggedValue> value1(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> value2(thread, JSTaggedValue(2));
     JSHandle<JSTaggedValue> receiver = JSHandle<JSTaggedValue>::Cast(jsarg);
@@ -150,13 +150,13 @@ HWTEST_F_L0(JsArgumentsTest, GetOwnProperty)
         thread->GetEcmaVM()->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>(argFunc), argFunc);
     JSHandle<JSArguments> arg = thread->GetEcmaVM()->GetFactory()->NewJSArguments();
 
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("x"));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("x"));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> receiver = JSHandle<JSTaggedValue>::Cast(jsarg);
     JSArguments::SetProperty(thread, arg, key, value, receiver);
 
     PropertyDescriptor Desc(thread);
-    JSHandle<EcmaString> caller = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("caller");
+    JSHandle<EcmaString> caller = thread->GetEcmaVM()->GetFactory()->NewFromASCII("caller");
     // key is not caller
     EXPECT_FALSE(JSTaggedValue::SameValue(key.GetTaggedValue(), caller.GetTaggedValue()));
     EXPECT_TRUE(JSArguments::GetOwnProperty(thread, JSHandle<JSArguments>(jsarg), key, Desc));

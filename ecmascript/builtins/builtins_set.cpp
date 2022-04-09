@@ -57,7 +57,7 @@ JSTaggedValue BuiltinsSet::SetConstructor(EcmaRuntimeCallInfo *argv)
         return set.GetTaggedValue();
     }
     // Let adder be Get(set, "add").
-    JSHandle<JSTaggedValue> adderKey(factory->NewFromCanBeCompressString("add"));
+    JSHandle<JSTaggedValue> adderKey(factory->NewFromASCII("add"));
     JSHandle<JSTaggedValue> setHandle(set);
     JSHandle<JSTaggedValue> adder = JSObject::GetProperty(thread, setHandle, adderKey).GetValue();
     // ReturnIfAbrupt(adder).

@@ -96,7 +96,7 @@ HWTEST_F_L0(BuiltinsProxyTest, Revocable)
 
     JSHandle<GlobalEnv> globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSFunction> proxyFun(globalEnv->GetProxyFunction());
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("prop"));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("prop"));
     PropertyDescriptor desc(thread);
     desc.SetWritable(false);
     JSObject::DefineOwnProperty(thread, handler, key, desc);

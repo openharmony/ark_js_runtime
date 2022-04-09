@@ -220,8 +220,8 @@ HWTEST_F_L0(ProfileTypeInfoTest, AddHandlerWithKey)
 
     JSHandle<JSTaggedValue> objDynclassVal(thread, handleObj->GetJSHClass());
     JSHandle<JSTaggedValue> HandlerValue(thread, JSTaggedValue(2));
-    JSHandle<JSTaggedValue> HandleKey0(factory->NewFromCanBeCompressString("key0"));
-    JSHandle<JSTaggedValue> HandleKey1(factory->NewFromCanBeCompressString("key1"));
+    JSHandle<JSTaggedValue> HandleKey0(factory->NewFromASCII("key0"));
+    JSHandle<JSTaggedValue> HandleKey1(factory->NewFromASCII("key1"));
 
     JSHandle<TaggedArray> handleTaggedArray = factory->NewTaggedArray(2);
     handleTaggedArray->Set(thread, 0, JSTaggedValue(1));
@@ -271,7 +271,7 @@ HWTEST_F_L0(ProfileTypeInfoTest, AddGlobalHandlerKey)
     JSHandle<TaggedArray> handleTaggedArray = factory->NewTaggedArray(2);
     handleTaggedArray->Set(thread, 0, JSTaggedValue(111));
     handleTaggedArray->Set(thread, 1, JSTaggedValue(333));
-    JSHandle<JSTaggedValue> arrayKey(factory->NewFromCanBeCompressString("array"));
+    JSHandle<JSTaggedValue> arrayKey(factory->NewFromASCII("array"));
 
     JSHandle<TaggedArray> handleDetailsArray = factory->NewTaggedArray(2);
     handleDetailsArray->Set(thread, 0, JSTaggedValue::Undefined());

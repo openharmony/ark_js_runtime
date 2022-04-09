@@ -760,32 +760,32 @@ JSTaggedValue BuiltinsObject::GetBuiltinTag(JSThread *thread, const JSHandle<JSO
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> builtinTag = factory->NewFromCanBeCompressString("Object");
+    JSHandle<EcmaString> builtinTag = factory->NewFromASCII("Object");
     // 6. If isArray is true, let builtinTag be "Array".
     if (isArray) {
-        builtinTag = factory->NewFromCanBeCompressString("Array");
+        builtinTag = factory->NewFromASCII("Array");
     } else if (object->IsJSPrimitiveRef()) {
         // 7. Else, if O is an exotic String object, let builtinTag be "String".
         JSPrimitiveRef *primitiveRef = JSPrimitiveRef::Cast(*object);
         if (primitiveRef->IsString()) {
-            builtinTag = factory->NewFromCanBeCompressString("String");
+            builtinTag = factory->NewFromASCII("String");
         } else if (primitiveRef->IsBoolean()) {
             // 11. Else, if O has a [[BooleanData]] internal slot, let builtinTag be "Boolean".
-            builtinTag = factory->NewFromCanBeCompressString("Boolean");
+            builtinTag = factory->NewFromASCII("Boolean");
         } else if (primitiveRef->IsNumber()) {
             // 12. Else, if O has a [[NumberData]] internal slot, let builtinTag be "Number".
-            builtinTag = factory->NewFromCanBeCompressString("Number");
+            builtinTag = factory->NewFromASCII("Number");
         }
     } else if (object->IsArguments()) {
-        builtinTag = factory->NewFromCanBeCompressString("Arguments");
+        builtinTag = factory->NewFromASCII("Arguments");
     } else if (object->IsCallable()) {
-        builtinTag = factory->NewFromCanBeCompressString("Function");
+        builtinTag = factory->NewFromASCII("Function");
     } else if (object->IsJSError()) {
-        builtinTag = factory->NewFromCanBeCompressString("Error");
+        builtinTag = factory->NewFromASCII("Error");
     } else if (object->IsDate()) {
-        builtinTag = factory->NewFromCanBeCompressString("Date");
+        builtinTag = factory->NewFromASCII("Date");
     } else if (object->IsJSRegExp()) {
-        builtinTag = factory->NewFromCanBeCompressString("RegExp");
+        builtinTag = factory->NewFromASCII("RegExp");
     }
     // 15. Else, let builtinTag be "Object".
     return builtinTag.GetTaggedValue();
@@ -830,8 +830,8 @@ JSTaggedValue BuiltinsObject::ToString(EcmaRuntimeCallInfo *argv)
     }
 
     // 19. Return the String that is the result of concatenating "[object ", tag, and "]".
-    JSHandle<EcmaString> leftString(factory->NewFromCanBeCompressString("[object "));
-    JSHandle<EcmaString> rightString(factory->NewFromCanBeCompressString("]"));
+    JSHandle<EcmaString> leftString(factory->NewFromASCII("[object "));
+    JSHandle<EcmaString> rightString(factory->NewFromASCII("]"));
 
     JSHandle<EcmaString> newLeftStringHandle =
         factory->ConcatFromString(leftString, JSTaggedValue::ToString(thread, tag));

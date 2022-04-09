@@ -109,8 +109,8 @@ HWTEST_F_L0(BuiltinsTest, StrictModeForbiddenAccess)
 
     JSHandle<JSFunction> function = factory->NewJSFunction(env, static_cast<void *>(nullptr));
 
-    JSHandle<JSTaggedValue> callerKey(factory->NewFromCanBeCompressString("caller"));
-    JSHandle<JSTaggedValue> argumentsKey(factory->NewFromCanBeCompressString("arguments"));
+    JSHandle<JSTaggedValue> callerKey(factory->NewFromASCII("caller"));
+    JSHandle<JSTaggedValue> argumentsKey(factory->NewFromASCII("arguments"));
 
     JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(function), callerKey);
     ASSERT_EQ(thread->HasPendingException(), true);

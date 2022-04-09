@@ -139,19 +139,19 @@ HWTEST_F_L0(EcmaModuleTest, StoreModuleValue)
     CString exportName = "bar";
     CString value = "hello world";
 
-    JSHandle<JSTaggedValue> localNameHandle = JSHandle<JSTaggedValue>::Cast(objFactory->NewFromString(localName));
-    JSHandle<JSTaggedValue> exportNameHandle = JSHandle<JSTaggedValue>::Cast(objFactory->NewFromString(exportName));
+    JSHandle<JSTaggedValue> localNameHandle = JSHandle<JSTaggedValue>::Cast(objFactory->NewFromUtf8(localName));
+    JSHandle<JSTaggedValue> exportNameHandle = JSHandle<JSTaggedValue>::Cast(objFactory->NewFromUtf8(exportName));
     JSHandle<JSTaggedValue> defaultValue = thread->GlobalConstants()->GetHandledUndefined();
     JSHandle<ExportEntry> exportEntry =
         objFactory->NewExportEntry(exportNameHandle, defaultValue, defaultValue, localNameHandle);
     JSHandle<SourceTextModule> module = objFactory->NewSourceTextModule();
     SourceTextModule::AddLocalExportEntry(thread, module, exportEntry);
 
-    JSHandle<JSTaggedValue> storeKey = JSHandle<JSTaggedValue>::Cast(objFactory->NewFromString(localName));
-    JSHandle<JSTaggedValue> valueHandle = JSHandle<JSTaggedValue>::Cast(objFactory->NewFromString(value));
+    JSHandle<JSTaggedValue> storeKey = JSHandle<JSTaggedValue>::Cast(objFactory->NewFromUtf8(localName));
+    JSHandle<JSTaggedValue> valueHandle = JSHandle<JSTaggedValue>::Cast(objFactory->NewFromUtf8(value));
     module->StoreModuleValue(thread, storeKey, valueHandle);
 
-    JSHandle<JSTaggedValue> loadKey = JSHandle<JSTaggedValue>::Cast(objFactory->NewFromString(exportName));
+    JSHandle<JSTaggedValue> loadKey = JSHandle<JSTaggedValue>::Cast(objFactory->NewFromUtf8(exportName));
     JSTaggedValue loadValue = module->GetModuleValue(thread, loadKey.GetTaggedValue(), false);
     EXPECT_EQ(valueHandle.GetTaggedValue(), loadValue);
 }
@@ -173,15 +173,15 @@ HWTEST_F_L0(EcmaModuleTest, GetModuleValue)
     CString exportName = "default";
     CString exportValue = "hello world";
     JSHandle<JSTaggedValue> exportLocalNameHandle =
-        JSHandle<JSTaggedValue>::Cast(objFactory->NewFromString(exportLocalName));
+        JSHandle<JSTaggedValue>::Cast(objFactory->NewFromUtf8(exportLocalName));
     JSHandle<JSTaggedValue> exportNameHandle =
-        JSHandle<JSTaggedValue>::Cast(objFactory->NewFromString(exportName));
+        JSHandle<JSTaggedValue>::Cast(objFactory->NewFromUtf8(exportName));
     JSHandle<ExportEntry> exportEntry =
         objFactory->NewExportEntry(exportNameHandle, defaultValue, defaultValue, exportLocalNameHandle);
     JSHandle<SourceTextModule> moduleExport = objFactory->NewSourceTextModule();
     SourceTextModule::AddLocalExportEntry(thread, moduleExport, exportEntry);
     // store module value
-    JSHandle<JSTaggedValue> exportValueHandle = JSHandle<JSTaggedValue>::Cast(objFactory->NewFromString(exportValue));
+    JSHandle<JSTaggedValue> exportValueHandle = JSHandle<JSTaggedValue>::Cast(objFactory->NewFromUtf8(exportValue));
     moduleExport->StoreModuleValue(thread, exportLocalNameHandle, exportValueHandle);
 
     JSTaggedValue importDefaultValue =

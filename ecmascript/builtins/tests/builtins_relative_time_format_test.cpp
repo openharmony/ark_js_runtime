@@ -77,7 +77,7 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, RelativeTimeFormatConstructor)
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSFunction> newTarget(env->GetRelativeTimeFormatFunction());
 
-    JSHandle<JSTaggedValue> localesString(factory->NewFromCanBeCompressString("en"));
+    JSHandle<JSTaggedValue> localesString(factory->NewFromASCII("en"));
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue(*newTarget), 8);
     ecmaRuntimeCallInfo->SetFunction(newTarget.GetTaggedValue());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -121,12 +121,12 @@ static JSTaggedValue JSRelativeTimeFormatCreateWithLocaleTest(JSThread *thread, 
 HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_001)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en"));
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("auto")); // the default value
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("auto")); // the default value
     JSHandle<JSRelativeTimeFormat> jsPluralRules =
         JSHandle<JSRelativeTimeFormat>(thread, JSRelativeTimeFormatCreateWithLocaleTest(
                                         thread, locale, numericValue));
-    JSHandle<JSTaggedValue> unitValue(factory->NewFromCanBeCompressString("day"));
+    JSHandle<JSTaggedValue> unitValue(factory->NewFromASCII("day"));
     JSHandle<JSTaggedValue> numberValue(thread, JSTaggedValue(1));
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -146,12 +146,12 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_001)
 HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_002)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en"));
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("auto"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("auto"));
     JSHandle<JSRelativeTimeFormat> jsPluralRules =
         JSHandle<JSRelativeTimeFormat>(thread, JSRelativeTimeFormatCreateWithLocaleTest(
                                         thread, locale, numericValue));
-    JSHandle<JSTaggedValue> unitValue(factory->NewFromCanBeCompressString("day"));
+    JSHandle<JSTaggedValue> unitValue(factory->NewFromASCII("day"));
     JSHandle<JSTaggedValue> numberValue(thread, JSTaggedValue(0));
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -171,12 +171,12 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_002)
 HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_003)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en"));
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("auto")); // the default value
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("auto")); // the default value
     JSHandle<JSRelativeTimeFormat> jsPluralRules =
         JSHandle<JSRelativeTimeFormat>(thread, JSRelativeTimeFormatCreateWithLocaleTest(
                                         thread, locale, numericValue));
-    JSHandle<JSTaggedValue> unitValue(factory->NewFromCanBeCompressString("day"));
+    JSHandle<JSTaggedValue> unitValue(factory->NewFromASCII("day"));
     JSHandle<JSTaggedValue> numberValue(thread, JSTaggedValue(-1));
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -196,12 +196,12 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_003)
 HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_004)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en"));
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("always")); // the default value
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("always")); // the default value
     JSHandle<JSRelativeTimeFormat> jsPluralRules =
         JSHandle<JSRelativeTimeFormat>(thread, JSRelativeTimeFormatCreateWithLocaleTest(
                                         thread, locale, numericValue));
-    JSHandle<JSTaggedValue> unitValue(factory->NewFromCanBeCompressString("day"));
+    JSHandle<JSTaggedValue> unitValue(factory->NewFromASCII("day"));
     JSHandle<JSTaggedValue> numberValue(thread, JSTaggedValue(-1));
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -221,12 +221,12 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_004)
 HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_005)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en"));
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("always")); // the default value
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("always")); // the default value
     JSHandle<JSRelativeTimeFormat> jsPluralRules =
         JSHandle<JSRelativeTimeFormat>(thread, JSRelativeTimeFormatCreateWithLocaleTest(
                                         thread, locale, numericValue));
-    JSHandle<JSTaggedValue> unitValue(factory->NewFromCanBeCompressString("day"));
+    JSHandle<JSTaggedValue> unitValue(factory->NewFromASCII("day"));
     JSHandle<JSTaggedValue> numberValue(thread, JSTaggedValue(1));
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -246,12 +246,12 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, FormatToParts)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTaggedValue> lengthKey = thread->GlobalConstants()->GetHandledLengthString();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en"));
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("always"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("always"));
     JSHandle<JSRelativeTimeFormat> jsPluralRules =
         JSHandle<JSRelativeTimeFormat>(thread, JSRelativeTimeFormatCreateWithLocaleTest(
                                         thread, locale, numericValue));
-    JSHandle<JSTaggedValue> unitValue(factory->NewFromCanBeCompressString("seconds"));
+    JSHandle<JSTaggedValue> unitValue(factory->NewFromASCII("seconds"));
     JSHandle<JSTaggedValue> numberValue(thread, JSTaggedValue(10));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
@@ -272,8 +272,8 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, ResolvedOptions)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     auto globalConst = thread->GlobalConstants();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("de-DE"));
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("auto"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("de-DE"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("auto"));
     JSHandle<JSRelativeTimeFormat> jsPluralRules =
         JSHandle<JSRelativeTimeFormat>(thread, JSRelativeTimeFormatCreateWithLocaleTest(
                                         thread, locale, numericValue));
@@ -293,11 +293,11 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, ResolvedOptions)
     EXPECT_EQ(JSTaggedValue::SameValue(
         JSObject::GetProperty(thread, resultObj, localeKey).GetValue(), locale), true);
     JSHandle<JSTaggedValue> styleKey = globalConst->GetHandledStyleString();
-    JSHandle<JSTaggedValue> styleValue(factory->NewFromCanBeCompressString("long"));
+    JSHandle<JSTaggedValue> styleValue(factory->NewFromASCII("long"));
     EXPECT_EQ(JSTaggedValue::SameValue(
         JSObject::GetProperty(thread, resultObj, styleKey).GetValue(), styleValue), true);
     JSHandle<JSTaggedValue> numberingSystemKey = globalConst->GetHandledNumberingSystemString();
-    JSHandle<JSTaggedValue> numberingSystemValue(factory->NewFromCanBeCompressString("latn"));
+    JSHandle<JSTaggedValue> numberingSystemValue(factory->NewFromASCII("latn"));
     EXPECT_EQ(JSTaggedValue::SameValue(
         JSObject::GetProperty(thread, resultObj, numberingSystemKey).GetValue(), numberingSystemValue), true);
 }

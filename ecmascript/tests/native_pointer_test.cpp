@@ -60,7 +60,7 @@ HWTEST_F_L0(NativePointerTest, Print)
     char array[] = "Hello World!";
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
-    JSHandle<EcmaString> str = factory->NewFromCanBeCompressString(array);
+    JSHandle<EcmaString> str = factory->NewFromASCII(array);
     EXPECT_TRUE(*str != nullptr);
 
     JSHandle<JSFunction> jsFunction = factory->NewJSFunction(env);

@@ -79,7 +79,7 @@ HWTEST_F_L0(ICHandlerTest, LoadProperty)
 
     JSHandle<JSTaggedValue> objFun = env->GetArrayFunction();
     JSHandle<JSTaggedValue> handleValue(thread, JSTaggedValue(1));
-    JSHandle<JSTaggedValue> handleKey(factory->NewFromCanBeCompressString("key"));
+    JSHandle<JSTaggedValue> handleKey(factory->NewFromASCII("key"));
     int index = 1;
     PropertyAttributes handleAttriButes(2);
     handleAttriButes.SetIsInlinedProps(true);
@@ -146,7 +146,7 @@ HWTEST_F_L0(ICHandlerTest, StoreProperty)
 
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
     JSHandle<JSTaggedValue> handleValue(thread, JSTaggedValue(1));
-    JSHandle<JSTaggedValue> handleKey(factory->NewFromCanBeCompressString("key"));
+    JSHandle<JSTaggedValue> handleKey(factory->NewFromASCII("key"));
     int index = 2;
     PropertyAttributes handleAttriButes(2);
     handleAttriButes.SetIsInlinedProps(true);
@@ -186,7 +186,7 @@ HWTEST_F_L0(ICHandlerTest, StoreTransition)
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
     JSHandle<JSTaggedValue> handleValue(thread, JSTaggedValue(1));
-    JSHandle<JSTaggedValue> handleKey(factory->NewFromCanBeCompressString("key"));
+    JSHandle<JSTaggedValue> handleKey(factory->NewFromASCII("key"));
 
     JSHandle<PropertyBox> cellHandle = factory->NewPropertyBox(handleKey);
     JSHandle<JSTaggedValue> handleHolder(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun));
@@ -211,7 +211,7 @@ HWTEST_F_L0(ICHandlerTest, LoadPrototype)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
-    JSHandle<JSTaggedValue> handleKey(factory->NewFromCanBeCompressString("key"));
+    JSHandle<JSTaggedValue> handleKey(factory->NewFromASCII("key"));
     JSHandle<JSTaggedValue> handleValue(thread, JSTaggedValue(3));
 
     JSHandle<JSObject> nullHandle(thread, JSTaggedValue::Null());
@@ -251,7 +251,7 @@ HWTEST_F_L0(ICHandlerTest, StorePrototype)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
-    JSHandle<JSTaggedValue> handleKey(factory->NewFromCanBeCompressString("key"));
+    JSHandle<JSTaggedValue> handleKey(factory->NewFromASCII("key"));
     JSHandle<JSTaggedValue> handleValue(thread, JSTaggedValue(3));
 
     JSHandle<JSObject> nullHandle(thread, JSTaggedValue::Null());

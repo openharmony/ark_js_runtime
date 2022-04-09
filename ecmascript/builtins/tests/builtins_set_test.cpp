@@ -137,7 +137,7 @@ HWTEST_F_L0(BuiltinsSetTest, AddAndHas)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     // create jsSet
     JSHandle<JSSet> set(thread, CreateBuiltinsSet(thread));
-    JSHandle<JSTaggedValue> key(thread, factory->NewFromCanBeCompressString("key").GetTaggedValue());
+    JSHandle<JSTaggedValue> key(thread, factory->NewFromASCII("key").GetTaggedValue());
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -199,7 +199,7 @@ HWTEST_F_L0(BuiltinsSetTest, ForEach)
     char keyArray[] = "key0";
     for (int i = 0; i < 5; i++) {
         keyArray[3] = '1' + i;
-        JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyArray));
+        JSHandle<JSTaggedValue> key(factory->NewFromASCII(keyArray));
         auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
         ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
         ecmaRuntimeCallInfo->SetThis(set.GetTaggedValue());
@@ -240,7 +240,7 @@ HWTEST_F_L0(BuiltinsSetTest, DeleteAndRemove)
     char keyArray[] = "key0";
     for (int i = 0; i < 40; i++) {
         keyArray[3] = '1' + i;
-        JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyArray));
+        JSHandle<JSTaggedValue> key(factory->NewFromASCII(keyArray));
 
         auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
         ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -256,7 +256,7 @@ HWTEST_F_L0(BuiltinsSetTest, DeleteAndRemove)
     }
     // whether jsSet has delete key
     keyArray[3] = '1' + 8;
-    JSHandle<JSTaggedValue> deleteKey(factory->NewFromCanBeCompressString(keyArray));
+    JSHandle<JSTaggedValue> deleteKey(factory->NewFromASCII(keyArray));
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
@@ -306,34 +306,34 @@ HWTEST_F_L0(BuiltinsSetTest, Species)
     // to string tag
     JSHandle<JSTaggedValue> toStringTagSymbol = env->GetToStringTagSymbol();
     JSHandle<EcmaString> stringTag(JSObject::GetProperty(thread, set, toStringTagSymbol).GetValue());
-    JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("Set");
+    JSHandle<EcmaString> str = factory->NewFromASCII("Set");
     EXPECT_TRUE(!stringTag.GetTaggedValue().IsUndefined());
     EXPECT_TRUE(EcmaString::StringsAreEqual(*str, *stringTag));
 
     JSHandle<JSFunction> constructor = JSHandle<JSFunction>::Cast(JSTaggedValue::ToObject(thread, valueHandle));
     EXPECT_EQ(JSHandle<JSObject>(set)->GetPrototype(thread), constructor->GetFunctionPrototype());
 
-    JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString("add"));
+    JSHandle<JSTaggedValue> key1(factory->NewFromASCII("add"));
     JSTaggedValue value1 = JSObject::GetProperty(thread, set, key1).GetValue().GetTaggedValue();
     EXPECT_FALSE(value1.IsUndefined());
 
-    JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString("has"));
+    JSHandle<JSTaggedValue> key2(factory->NewFromASCII("has"));
     JSTaggedValue value2 = JSObject::GetProperty(thread, set, key1).GetValue().GetTaggedValue();
     EXPECT_FALSE(value2.IsUndefined());
 
-    JSHandle<JSTaggedValue> key3(factory->NewFromCanBeCompressString("clear"));
+    JSHandle<JSTaggedValue> key3(factory->NewFromASCII("clear"));
     JSTaggedValue value3 = JSObject::GetProperty(thread, set, key1).GetValue().GetTaggedValue();
     EXPECT_FALSE(value3.IsUndefined());
 
-    JSHandle<JSTaggedValue> key4(factory->NewFromCanBeCompressString("size"));
+    JSHandle<JSTaggedValue> key4(factory->NewFromASCII("size"));
     JSTaggedValue value4 = JSObject::GetProperty(thread, set, key1).GetValue().GetTaggedValue();
     EXPECT_FALSE(value4.IsUndefined());
 
-    JSHandle<JSTaggedValue> key5(factory->NewFromCanBeCompressString("delete"));
+    JSHandle<JSTaggedValue> key5(factory->NewFromASCII("delete"));
     JSTaggedValue value5 = JSObject::GetProperty(thread, set, key1).GetValue().GetTaggedValue();
     EXPECT_FALSE(value5.IsUndefined());
 
-    JSHandle<JSTaggedValue> key6(factory->NewFromCanBeCompressString("forEach"));
+    JSHandle<JSTaggedValue> key6(factory->NewFromASCII("forEach"));
     JSTaggedValue value6 = JSObject::GetProperty(thread, set, key1).GetValue().GetTaggedValue();
     EXPECT_FALSE(value6.IsUndefined());
 }

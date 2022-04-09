@@ -75,12 +75,12 @@ JSTaggedValue TestFunctionApplyAndCall(EcmaRuntimeCallInfo *argv)
 
     JSTaggedValue testA =
         JSObject::GetProperty(thread, thisValue,
-                              JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_builtins_function_a")))
+                              JSHandle<JSTaggedValue>(factory->NewFromASCII("test_builtins_function_a")))
             .GetValue()
             .GetTaggedValue();
     JSTaggedValue testB =
         JSObject::GetProperty(thread, thisValue,
-                              JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_builtins_function_b")))
+                              JSHandle<JSTaggedValue>(factory->NewFromASCII("test_builtins_function_b")))
             .GetValue()
             .GetTaggedValue();
 
@@ -100,10 +100,10 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeApply)
     // ecma 19.2.3.1: thisArg
     JSHandle<JSObject> thisArg(thread, env->GetGlobalObject());
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(thisArg),
-                          JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_builtins_function_a")),
+                          JSHandle<JSTaggedValue>(factory->NewFromASCII("test_builtins_function_a")),
                           JSHandle<JSTaggedValue>(thread, JSTaggedValue(1)));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(thisArg),
-                          JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_builtins_function_b")),
+                          JSHandle<JSTaggedValue>(factory->NewFromASCII("test_builtins_function_b")),
                           JSHandle<JSTaggedValue>(thread, JSTaggedValue(2)));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
@@ -117,9 +117,9 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeApply)
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(3).GetRawData());
 
     JSObject::DeleteProperty(thread, (thisArg),
-                             JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_builtins_function_a")));
+                             JSHandle<JSTaggedValue>(factory->NewFromASCII("test_builtins_function_a")));
     JSObject::DeleteProperty(thread, (thisArg),
-                             JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_builtins_function_b")));
+                             JSHandle<JSTaggedValue>(factory->NewFromASCII("test_builtins_function_b")));
 }
 
 // func.apply(thisArg, argArray)
@@ -135,10 +135,10 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeApply1)
     // ecma 19.2.3.1: thisArg
     JSHandle<JSObject> thisArg(thread, env->GetGlobalObject());
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(thisArg),
-                          JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_builtins_function_a")),
+                          JSHandle<JSTaggedValue>(factory->NewFromASCII("test_builtins_function_a")),
                           JSHandle<JSTaggedValue>(thread, JSTaggedValue(10)));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(thisArg),
-                          JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_builtins_function_b")),
+                          JSHandle<JSTaggedValue>(factory->NewFromASCII("test_builtins_function_b")),
                           JSHandle<JSTaggedValue>(thread, JSTaggedValue(20)));
 
     // ecma 19.2.3.1: argArray
@@ -161,9 +161,9 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeApply1)
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(100).GetRawData());
 
     JSObject::DeleteProperty(thread, (thisArg),
-                             JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_builtins_function_a")));
+                             JSHandle<JSTaggedValue>(factory->NewFromASCII("test_builtins_function_a")));
     JSObject::DeleteProperty(thread, (thisArg),
-                             JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_builtins_function_b")));
+                             JSHandle<JSTaggedValue>(factory->NewFromASCII("test_builtins_function_b")));
 }
 
 // target.bind(thisArg)
@@ -175,7 +175,7 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeBind)
 
     JSHandle<JSFunction> target = factory->NewJSFunction(env);
     JSFunction::SetFunctionName(thread, JSHandle<JSFunctionBase>(target),
-                                JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("target")),
+                                JSHandle<JSTaggedValue>(factory->NewFromASCII("target")),
                                 JSHandle<JSTaggedValue>(thread, JSTaggedValue::Undefined()));
     JSFunction::SetFunctionLength(thread, target, JSTaggedValue(2));
 
@@ -204,7 +204,7 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeBind)
     JSHandle<JSTaggedValue> nameKey = globalConst->GetHandledNameString();
     JSHandle<JSTaggedValue> resultFuncHandle(thread, *resultFunc);
     JSHandle<EcmaString> resultName(JSObject::GetProperty(thread, resultFuncHandle, nameKey).GetValue());
-    JSHandle<EcmaString> boundTarget = factory->NewFromCanBeCompressString("bound target");
+    JSHandle<EcmaString> boundTarget = factory->NewFromASCII("bound target");
     ASSERT_EQ(resultName->Compare(*boundTarget), 0);
     // test length property
     JSHandle<JSTaggedValue> lengthKey = globalConst->GetHandledLengthString();
@@ -221,12 +221,12 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeBind1)
 
     JSHandle<JSFunction> target = factory->NewJSFunction(env);
     JSFunction::SetFunctionName(thread, JSHandle<JSFunctionBase>(target),
-                                JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("target1")),
+                                JSHandle<JSTaggedValue>(factory->NewFromASCII("target1")),
                                 JSHandle<JSTaggedValue>(thread, JSTaggedValue::Undefined()));
     JSFunction::SetFunctionLength(thread, target, JSTaggedValue(5));
 
     JSHandle<JSObject> thisArg(thread, env->GetGlobalObject());
-    JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("helloworld");
+    JSHandle<EcmaString> str = factory->NewFromASCII("helloworld");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -259,7 +259,7 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeBind1)
     JSHandle<JSTaggedValue> nameKey = globalConst->GetHandledNameString();
     JSHandle<JSTaggedValue> resultFuncHandle(thread, *resultFunc);
     JSHandle<EcmaString> resultName(JSObject::GetProperty(thread, resultFuncHandle, nameKey).GetValue());
-    JSHandle<EcmaString> rulerName = factory->NewFromCanBeCompressString("bound target1");
+    JSHandle<EcmaString> rulerName = factory->NewFromASCII("bound target1");
     ASSERT_EQ(resultName->Compare(*rulerName), 0);
     // test length property
     JSHandle<JSTaggedValue> lengthKey = globalConst->GetHandledLengthString();
@@ -282,7 +282,7 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeBind2)
     JSFunction::SetFunctionLength(thread, target, JSTaggedValue(5));
 
     JSHandle<JSObject> thisArg(thread, env->GetGlobalObject());
-    JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("helloworld");
+    JSHandle<EcmaString> str = factory->NewFromASCII("helloworld");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -315,7 +315,7 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeBind2)
     JSHandle<JSTaggedValue> nameKey = globalConst->GetHandledNameString();
     JSHandle<JSTaggedValue> resultFuncHandle(resultFunc);
     JSHandle<EcmaString> resultName(JSObject::GetProperty(thread, resultFuncHandle, nameKey).GetValue());
-    JSHandle<EcmaString> rulerName = factory->NewFromCanBeCompressString("bound ");
+    JSHandle<EcmaString> rulerName = factory->NewFromASCII("bound ");
     ASSERT_EQ(resultName->Compare(*rulerName), 0);
     // test length property
     JSHandle<JSTaggedValue> lengthKey = globalConst->GetHandledLengthString();
@@ -337,10 +337,10 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeCall)
     // ecma 19.2.3.3: thisArg
     JSHandle<JSObject> thisArg(thread, env->GetGlobalObject());
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(thisArg),
-                          JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_builtins_function_a")),
+                          JSHandle<JSTaggedValue>(factory->NewFromASCII("test_builtins_function_a")),
                           JSHandle<JSTaggedValue>(thread, JSTaggedValue(1)));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(thisArg),
-                          JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_builtins_function_b")),
+                          JSHandle<JSTaggedValue>(factory->NewFromASCII("test_builtins_function_b")),
                           JSHandle<JSTaggedValue>(thread, JSTaggedValue(2)));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
@@ -354,9 +354,9 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeCall)
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(3).GetRawData());
 
     JSObject::DeleteProperty(thread, (thisArg),
-                             JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_builtins_function_a")));
+                             JSHandle<JSTaggedValue>(factory->NewFromASCII("test_builtins_function_a")));
     JSObject::DeleteProperty(thread, (thisArg),
-                             JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_builtins_function_b")));
+                             JSHandle<JSTaggedValue>(factory->NewFromASCII("test_builtins_function_b")));
 }
 
 // func.call(thisArg, 123, 456, 789)
@@ -372,10 +372,10 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeCall1)
     // ecma 19.2.3.3: thisArg
     JSHandle<JSObject> thisArg(thread, env->GetGlobalObject());
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(thisArg),
-                          JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_builtins_function_a")),
+                          JSHandle<JSTaggedValue>(factory->NewFromASCII("test_builtins_function_a")),
                           JSHandle<JSTaggedValue>(thread, JSTaggedValue(1)));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(thisArg),
-                          JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_builtins_function_b")),
+                          JSHandle<JSTaggedValue>(factory->NewFromASCII("test_builtins_function_b")),
                           JSHandle<JSTaggedValue>(thread, JSTaggedValue(2)));
 
     // func thisArg ...args
@@ -393,9 +393,9 @@ HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeCall1)
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(1371).GetRawData());
 
     JSObject::DeleteProperty(thread, (thisArg),
-                             JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_builtins_function_a")));
+                             JSHandle<JSTaggedValue>(factory->NewFromASCII("test_builtins_function_a")));
     JSObject::DeleteProperty(thread, (thisArg),
-                             JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_builtins_function_b")));
+                             JSHandle<JSTaggedValue>(factory->NewFromASCII("test_builtins_function_b")));
 }
 
 HWTEST_F_L0(BuiltinsFunctionTest, FunctionPrototypeHasInstance)

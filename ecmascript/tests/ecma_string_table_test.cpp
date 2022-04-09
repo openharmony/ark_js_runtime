@@ -119,7 +119,7 @@ HWTEST_F_L0(EcmaStringTableTest, GetOrInternString_EcmaString)
     ObjectFactory *factory = vm->GetFactory();
     EcmaStringTable *table = vm->GetEcmaStringTable();
 
-    JSHandle<EcmaString> ecmaStrCreateHandle = factory->NewFromString("hello world");
+    JSHandle<EcmaString> ecmaStrCreateHandle = factory->NewFromASCII("hello world");
     EXPECT_TRUE(ecmaStrCreateHandle->IsInternString());
 
     EcmaString *ecmaStrGetPtr = table->GetOrInternString(*ecmaStrCreateHandle);

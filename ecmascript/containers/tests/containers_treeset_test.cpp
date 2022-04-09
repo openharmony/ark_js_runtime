@@ -115,7 +115,7 @@ protected:
         JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
 
         JSHandle<JSTaggedValue> globalObject = env->GetJSGlobalObject();
-        JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("ArkPrivate"));
+        JSHandle<JSTaggedValue> key(factory->NewFromASCII("ArkPrivate"));
         JSHandle<JSTaggedValue> value =
             JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(globalObject), key).GetValue();
 

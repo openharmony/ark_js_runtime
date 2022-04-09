@@ -38,7 +38,7 @@ JSHandle<JSTaggedValue> GlobalEnv::GetStringPrototypeFunctionByName(JSThread *th
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> stringFuncObj(GetStringFunction());
     JSHandle<JSTaggedValue> stringFuncPrototype(thread, stringFuncObj->GetPrototype(thread));
-    JSHandle<JSTaggedValue> nameKey(factory->NewFromString(name));
+    JSHandle<JSTaggedValue> nameKey(factory->NewFromUtf8(name));
     return JSObject::GetProperty(thread, stringFuncPrototype, nameKey).GetValue();
 }
 
@@ -46,7 +46,7 @@ JSHandle<JSTaggedValue> GlobalEnv::GetStringFunctionByName(JSThread *thread, con
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTaggedValue> stringFuncObj = GetStringFunction();
-    JSHandle<JSTaggedValue> nameKey(factory->NewFromString(name));
+    JSHandle<JSTaggedValue> nameKey(factory->NewFromUtf8(name));
     return JSObject::GetProperty(thread, stringFuncObj, nameKey).GetValue();
 }
 }  // namespace panda::ecmascript

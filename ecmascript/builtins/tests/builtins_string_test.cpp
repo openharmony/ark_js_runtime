@@ -85,7 +85,7 @@ HWTEST_F_L0(BuiltinsStringTest, StringConstructor1)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSFunction> string(env->GetStringFunction());
     JSHandle<JSObject> globalObject(thread, env->GetGlobalObject());
-    JSHandle<EcmaString> string2 = factory->NewFromCanBeCompressString("ABC");
+    JSHandle<EcmaString> string2 = factory->NewFromASCII("ABC");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, string.GetTaggedValue(), 6);
     ecmaRuntimeCallInfo->SetFunction(string.GetTaggedValue());
@@ -97,7 +97,7 @@ HWTEST_F_L0(BuiltinsStringTest, StringConstructor1)
     JSTaggedValue value(static_cast<JSTaggedType>(result.GetRawData()));
     ASSERT_TRUE(value.IsECMAObject());
     JSHandle<JSPrimitiveRef> ref(thread, JSPrimitiveRef::Cast(value.GetTaggedObject()));
-    JSTaggedValue test = factory->NewFromCanBeCompressString("ABC").GetTaggedValue();
+    JSTaggedValue test = factory->NewFromASCII("ABC").GetTaggedValue();
     ASSERT_EQ(
         EcmaString::Cast(ref->GetValue().GetTaggedObject())->Compare(reinterpret_cast<EcmaString *>(test.GetRawData())),
         0);
@@ -123,7 +123,7 @@ HWTEST_F_L0(BuiltinsStringTest, fromCharCode1)
     ASSERT_TRUE(result.IsString());
     JSTaggedValue value(static_cast<JSTaggedType>(result.GetRawData()));
     JSHandle<JSTaggedValue> valueHandle(thread, JSTaggedValue(value.GetTaggedObject()));
-    JSTaggedValue test = factory->NewFromCanBeCompressString("ABC").GetTaggedValue();
+    JSTaggedValue test = factory->NewFromASCII("ABC").GetTaggedValue();
     ASSERT_EQ(
         EcmaString::Cast(valueHandle->GetTaggedObject())->Compare(reinterpret_cast<EcmaString *>(test.GetRawData())),
         0);
@@ -148,7 +148,7 @@ HWTEST_F_L0(BuiltinsStringTest, fromCodePoint1)
     JSTaggedValue result = BuiltinsString::FromCodePoint(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    JSTaggedValue test = factory->NewFromCanBeCompressString("ABC").GetTaggedValue();
+    JSTaggedValue test = factory->NewFromASCII("ABC").GetTaggedValue();
     ASSERT_EQ(resultHandle->Compare(reinterpret_cast<EcmaString *>(test.GetRawData())), 0);
 }
 
@@ -156,7 +156,7 @@ HWTEST_F_L0(BuiltinsStringTest, fromCodePoint1)
 HWTEST_F_L0(BuiltinsStringTest, charAt1)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisVal = factory->NewFromCanBeCompressString("abcabcabc");
+    JSHandle<EcmaString> thisVal = factory->NewFromASCII("abcabcabc");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -167,7 +167,7 @@ HWTEST_F_L0(BuiltinsStringTest, charAt1)
     JSTaggedValue result = BuiltinsString::CharAt(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    JSTaggedValue test = factory->NewFromCanBeCompressString("c").GetTaggedValue();
+    JSTaggedValue test = factory->NewFromASCII("c").GetTaggedValue();
     ASSERT_EQ(resultHandle->Compare(reinterpret_cast<EcmaString *>(test.GetRawData())), 0);
 }
 
@@ -175,7 +175,7 @@ HWTEST_F_L0(BuiltinsStringTest, charAt1)
 HWTEST_F_L0(BuiltinsStringTest, charAt2)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisVal = factory->NewFromString("一二三四");
+    JSHandle<EcmaString> thisVal = factory->NewFromUtf8("一二三四");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -186,7 +186,7 @@ HWTEST_F_L0(BuiltinsStringTest, charAt2)
     JSTaggedValue result = BuiltinsString::CharAt(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    JSTaggedValue test = factory->NewFromString("三").GetTaggedValue();
+    JSTaggedValue test = factory->NewFromUtf8("三").GetTaggedValue();
     ASSERT_EQ(resultHandle->Compare(reinterpret_cast<EcmaString *>(test.GetRawData())), 0);
 }
 
@@ -194,7 +194,7 @@ HWTEST_F_L0(BuiltinsStringTest, charAt2)
 HWTEST_F_L0(BuiltinsStringTest, charAt3)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisVal = factory->NewFromCanBeCompressString("abcabcabc");
+    JSHandle<EcmaString> thisVal = factory->NewFromASCII("abcabcabc");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -213,7 +213,7 @@ HWTEST_F_L0(BuiltinsStringTest, charAt3)
 HWTEST_F_L0(BuiltinsStringTest, charCodeAt1)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisVal = factory->NewFromCanBeCompressString("ABC");
+    JSHandle<EcmaString> thisVal = factory->NewFromASCII("ABC");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -230,7 +230,7 @@ HWTEST_F_L0(BuiltinsStringTest, charCodeAt1)
 HWTEST_F_L0(BuiltinsStringTest, charCodeAt2)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisVal = factory->NewFromCanBeCompressString("ABC");
+    JSHandle<EcmaString> thisVal = factory->NewFromASCII("ABC");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -248,7 +248,7 @@ HWTEST_F_L0(BuiltinsStringTest, charCodeAt2)
 HWTEST_F_L0(BuiltinsStringTest, codePointAt1)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisVal = factory->NewFromCanBeCompressString("ABC");
+    JSHandle<EcmaString> thisVal = factory->NewFromASCII("ABC");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -265,10 +265,10 @@ HWTEST_F_L0(BuiltinsStringTest, codePointAt1)
 HWTEST_F_L0(BuiltinsStringTest, concat1)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("a");
-    JSHandle<EcmaString> val1 = factory->NewFromCanBeCompressString("b");
-    JSHandle<EcmaString> val2 = factory->NewFromCanBeCompressString("c");
-    JSHandle<EcmaString> val3 = factory->NewFromCanBeCompressString("d");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("a");
+    JSHandle<EcmaString> val1 = factory->NewFromASCII("b");
+    JSHandle<EcmaString> val2 = factory->NewFromASCII("c");
+    JSHandle<EcmaString> val3 = factory->NewFromASCII("d");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -281,7 +281,7 @@ HWTEST_F_L0(BuiltinsStringTest, concat1)
     JSTaggedValue result = BuiltinsString::Concat(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    JSTaggedValue test = factory->NewFromCanBeCompressString("abcd").GetTaggedValue();
+    JSTaggedValue test = factory->NewFromASCII("abcd").GetTaggedValue();
     ASSERT_EQ(resultHandle->Compare(reinterpret_cast<EcmaString *>(test.GetRawData())), 0);
 }
 
@@ -289,8 +289,8 @@ HWTEST_F_L0(BuiltinsStringTest, concat1)
 HWTEST_F_L0(BuiltinsStringTest, indexof1)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("abcabcabc");
-    JSHandle<EcmaString> val = factory->NewFromCanBeCompressString("b");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("abcabcabc");
+    JSHandle<EcmaString> val = factory->NewFromASCII("b");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -307,8 +307,8 @@ HWTEST_F_L0(BuiltinsStringTest, indexof1)
 HWTEST_F_L0(BuiltinsStringTest, indexof2)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("abcabcabc");
-    JSHandle<EcmaString> val = factory->NewFromCanBeCompressString("b");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("abcabcabc");
+    JSHandle<EcmaString> val = factory->NewFromASCII("b");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -326,8 +326,8 @@ HWTEST_F_L0(BuiltinsStringTest, indexof2)
 HWTEST_F_L0(BuiltinsStringTest, indexof3)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("abcabcabc");
-    JSHandle<EcmaString> val = factory->NewFromCanBeCompressString("d");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("abcabcabc");
+    JSHandle<EcmaString> val = factory->NewFromASCII("d");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -344,8 +344,8 @@ HWTEST_F_L0(BuiltinsStringTest, indexof3)
 HWTEST_F_L0(BuiltinsStringTest, lastIndexOf1)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("abcabcabc");
-    JSHandle<EcmaString> val = factory->NewFromCanBeCompressString("b");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("abcabcabc");
+    JSHandle<EcmaString> val = factory->NewFromASCII("b");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -361,8 +361,8 @@ HWTEST_F_L0(BuiltinsStringTest, lastIndexOf1)
 HWTEST_F_L0(BuiltinsStringTest, lastIndexOf2)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("abcabcabc");
-    JSHandle<EcmaString> val = factory->NewFromCanBeCompressString("b");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("abcabcabc");
+    JSHandle<EcmaString> val = factory->NewFromASCII("b");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -380,8 +380,8 @@ HWTEST_F_L0(BuiltinsStringTest, lastIndexOf2)
 HWTEST_F_L0(BuiltinsStringTest, lastIndexOf3)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("abcabcabc");
-    JSHandle<EcmaString> val = factory->NewFromCanBeCompressString("d");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("abcabcabc");
+    JSHandle<EcmaString> val = factory->NewFromASCII("d");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -398,8 +398,8 @@ HWTEST_F_L0(BuiltinsStringTest, lastIndexOf3)
 HWTEST_F_L0(BuiltinsStringTest, Includes2)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("abcabcabc");
-    JSHandle<EcmaString> val = factory->NewFromCanBeCompressString("b");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("abcabcabc");
+    JSHandle<EcmaString> val = factory->NewFromASCII("b");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -416,8 +416,8 @@ HWTEST_F_L0(BuiltinsStringTest, Includes2)
 HWTEST_F_L0(BuiltinsStringTest, Includes3)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("abccccccc");
-    JSHandle<EcmaString> val = factory->NewFromCanBeCompressString("b");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("abccccccc");
+    JSHandle<EcmaString> val = factory->NewFromASCII("b");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -435,8 +435,8 @@ HWTEST_F_L0(BuiltinsStringTest, Includes3)
 HWTEST_F_L0(BuiltinsStringTest, Includes4)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromString("一二三四");
-    JSHandle<EcmaString> val = factory->NewFromString("二");
+    JSHandle<EcmaString> thisStr = factory->NewFromUtf8("一二三四");
+    JSHandle<EcmaString> val = factory->NewFromUtf8("二");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -453,8 +453,8 @@ HWTEST_F_L0(BuiltinsStringTest, Includes4)
 HWTEST_F_L0(BuiltinsStringTest, startsWith1)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("To be, or not to be, that is the question.");
-    JSHandle<EcmaString> val = factory->NewFromCanBeCompressString("To be");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("To be, or not to be, that is the question.");
+    JSHandle<EcmaString> val = factory->NewFromASCII("To be");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -471,8 +471,8 @@ HWTEST_F_L0(BuiltinsStringTest, startsWith1)
 HWTEST_F_L0(BuiltinsStringTest, startsWith2)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("To be, or not to be, that is the question.");
-    JSHandle<EcmaString> val = factory->NewFromCanBeCompressString("not to be");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("To be, or not to be, that is the question.");
+    JSHandle<EcmaString> val = factory->NewFromASCII("not to be");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -489,8 +489,8 @@ HWTEST_F_L0(BuiltinsStringTest, startsWith2)
 HWTEST_F_L0(BuiltinsStringTest, startsWith3)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("To be, or not to be, that is the question.");
-    JSHandle<EcmaString> val = factory->NewFromCanBeCompressString("not to be");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("To be, or not to be, that is the question.");
+    JSHandle<EcmaString> val = factory->NewFromASCII("not to be");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -508,8 +508,8 @@ HWTEST_F_L0(BuiltinsStringTest, startsWith3)
 HWTEST_F_L0(BuiltinsStringTest, endsWith1)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("To be, or not to be, that is the question.");
-    JSHandle<EcmaString> val = factory->NewFromCanBeCompressString("question.");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("To be, or not to be, that is the question.");
+    JSHandle<EcmaString> val = factory->NewFromASCII("question.");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -526,8 +526,8 @@ HWTEST_F_L0(BuiltinsStringTest, endsWith1)
 HWTEST_F_L0(BuiltinsStringTest, endsWith2)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("To be, or not to be, that is the question.");
-    JSHandle<EcmaString> val = factory->NewFromCanBeCompressString("to be");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("To be, or not to be, that is the question.");
+    JSHandle<EcmaString> val = factory->NewFromASCII("to be");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -544,8 +544,8 @@ HWTEST_F_L0(BuiltinsStringTest, endsWith2)
 HWTEST_F_L0(BuiltinsStringTest, endsWith3)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("To be, or not to be, that is the question.");
-    JSHandle<EcmaString> val = factory->NewFromCanBeCompressString("to be");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("To be, or not to be, that is the question.");
+    JSHandle<EcmaString> val = factory->NewFromASCII("to be");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -564,7 +564,7 @@ HWTEST_F_L0(BuiltinsStringTest, toLocaleLowerCase2)
 {
     ASSERT_NE(thread, nullptr);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> this_str = factory->NewFromString("有ABC");
+    JSHandle<EcmaString> this_str = factory->NewFromUtf8("有ABC");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -574,7 +574,7 @@ HWTEST_F_L0(BuiltinsStringTest, toLocaleLowerCase2)
     JSTaggedValue result = BuiltinsString::ToLocaleLowerCase(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> result_handle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    JSTaggedValue test = factory->NewFromString("有abc").GetTaggedValue();
+    JSTaggedValue test = factory->NewFromUtf8("有abc").GetTaggedValue();
     ASSERT_EQ(result_handle->Compare(reinterpret_cast<EcmaString *>(test.GetRawData())), 0);
 }
 
@@ -582,7 +582,7 @@ HWTEST_F_L0(BuiltinsStringTest, toLocaleLowerCase2)
 HWTEST_F_L0(BuiltinsStringTest, toLowerCase1)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("ABC");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("ABC");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -592,7 +592,7 @@ HWTEST_F_L0(BuiltinsStringTest, toLowerCase1)
     JSTaggedValue result = BuiltinsString::ToLowerCase(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    JSHandle<EcmaString> test = factory->NewFromCanBeCompressString("abc");
+    JSHandle<EcmaString> test = factory->NewFromASCII("abc");
     ASSERT_TRUE(JSTaggedValue::SameValue(resultHandle.GetTaggedValue(), test.GetTaggedValue()));
 }
 
@@ -600,7 +600,7 @@ HWTEST_F_L0(BuiltinsStringTest, toLowerCase1)
 HWTEST_F_L0(BuiltinsStringTest, toUpperCase1)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("abc");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("abc");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -610,7 +610,7 @@ HWTEST_F_L0(BuiltinsStringTest, toUpperCase1)
     JSTaggedValue result = BuiltinsString::ToUpperCase(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    JSTaggedValue test = factory->NewFromCanBeCompressString("ABC").GetTaggedValue();
+    JSTaggedValue test = factory->NewFromASCII("ABC").GetTaggedValue();
     ASSERT_EQ(resultHandle->Compare(reinterpret_cast<EcmaString *>(test.GetRawData())), 0);
 }
 
@@ -618,8 +618,8 @@ HWTEST_F_L0(BuiltinsStringTest, toUpperCase1)
 HWTEST_F_L0(BuiltinsStringTest, localecompare1)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("abc");
-    JSHandle<EcmaString> val = factory->NewFromCanBeCompressString("b");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("abc");
+    JSHandle<EcmaString> val = factory->NewFromASCII("b");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -636,8 +636,8 @@ HWTEST_F_L0(BuiltinsStringTest, localecompare1)
 HWTEST_F_L0(BuiltinsStringTest, localecompare2)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("abc");
-    JSHandle<EcmaString> val = factory->NewFromCanBeCompressString("abc");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("abc");
+    JSHandle<EcmaString> val = factory->NewFromASCII("abc");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -654,8 +654,8 @@ HWTEST_F_L0(BuiltinsStringTest, localecompare2)
 HWTEST_F_L0(BuiltinsStringTest, localecompare3)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("abc");
-    JSHandle<EcmaString> val = factory->NewFromCanBeCompressString("aa");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("abc");
+    JSHandle<EcmaString> val = factory->NewFromASCII("aa");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -673,8 +673,8 @@ HWTEST_F_L0(BuiltinsStringTest, normalize1)
 {
     ASSERT_NE(thread, nullptr);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> this_str = factory->NewFromString("abc");
-    JSHandle<EcmaString> val = factory->NewFromString("NFC");
+    JSHandle<EcmaString> this_str = factory->NewFromASCII("abc");
+    JSHandle<EcmaString> val = factory->NewFromASCII("NFC");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -685,7 +685,7 @@ HWTEST_F_L0(BuiltinsStringTest, normalize1)
     JSTaggedValue result = BuiltinsString::Normalize(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> result_handle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    JSTaggedValue test = factory->NewFromString("abc").GetTaggedValue();
+    JSTaggedValue test = factory->NewFromASCII("abc").GetTaggedValue();
     ASSERT_EQ(result_handle->Compare(reinterpret_cast<EcmaString *>(test.GetRawData())), 0);
 }
 
@@ -693,7 +693,7 @@ HWTEST_F_L0(BuiltinsStringTest, normalize1)
 HWTEST_F_L0(BuiltinsStringTest, repeat1)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("abc");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("abc");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -704,7 +704,7 @@ HWTEST_F_L0(BuiltinsStringTest, repeat1)
     JSTaggedValue result = BuiltinsString::Repeat(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    JSTaggedValue test = factory->NewFromCanBeCompressString("abcabcabcabcabc").GetTaggedValue();
+    JSTaggedValue test = factory->NewFromASCII("abcabcabcabcabc").GetTaggedValue();
     ASSERT_EQ(resultHandle->Compare(reinterpret_cast<EcmaString *>(test.GetRawData())), 0);
 }
 
@@ -712,7 +712,7 @@ HWTEST_F_L0(BuiltinsStringTest, repeat1)
 HWTEST_F_L0(BuiltinsStringTest, slice1)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("The morning is upon us.");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("The morning is upon us.");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -724,7 +724,7 @@ HWTEST_F_L0(BuiltinsStringTest, slice1)
     JSTaggedValue result = BuiltinsString::Slice(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    JSTaggedValue test = factory->NewFromCanBeCompressString("morning is upon u").GetTaggedValue();
+    JSTaggedValue test = factory->NewFromASCII("morning is upon u").GetTaggedValue();
     ASSERT_EQ(resultHandle->Compare(reinterpret_cast<EcmaString *>(test.GetRawData())), 0);
 }
 
@@ -732,7 +732,7 @@ HWTEST_F_L0(BuiltinsStringTest, slice1)
 HWTEST_F_L0(BuiltinsStringTest, slice2)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("The morning is upon us.");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("The morning is upon us.");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -743,7 +743,7 @@ HWTEST_F_L0(BuiltinsStringTest, slice2)
     JSTaggedValue result = BuiltinsString::Slice(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    JSTaggedValue test = factory->NewFromCanBeCompressString("is upon us.").GetTaggedValue();
+    JSTaggedValue test = factory->NewFromASCII("is upon us.").GetTaggedValue();
     ASSERT_EQ(resultHandle->Compare(reinterpret_cast<EcmaString *>(test.GetRawData())), 0);
 }
 
@@ -751,7 +751,7 @@ HWTEST_F_L0(BuiltinsStringTest, slice2)
 HWTEST_F_L0(BuiltinsStringTest, substring1)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("Mozilla");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("Mozilla");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -763,7 +763,7 @@ HWTEST_F_L0(BuiltinsStringTest, substring1)
     JSTaggedValue result = BuiltinsString::Substring(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    JSTaggedValue test = factory->NewFromCanBeCompressString("Moz").GetTaggedValue();
+    JSTaggedValue test = factory->NewFromASCII("Moz").GetTaggedValue();
     ASSERT_EQ(resultHandle->Compare(reinterpret_cast<EcmaString *>(test.GetRawData())), 0);
 }
 
@@ -771,7 +771,7 @@ HWTEST_F_L0(BuiltinsStringTest, substring1)
 HWTEST_F_L0(BuiltinsStringTest, substring2)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("Mozilla");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("Mozilla");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -783,7 +783,7 @@ HWTEST_F_L0(BuiltinsStringTest, substring2)
     JSTaggedValue result = BuiltinsString::Substring(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    JSTaggedValue test = factory->NewFromCanBeCompressString("lla").GetTaggedValue();
+    JSTaggedValue test = factory->NewFromASCII("lla").GetTaggedValue();
     ASSERT_EQ(resultHandle->Compare(reinterpret_cast<EcmaString *>(test.GetRawData())), 0);
 }
 
@@ -791,7 +791,7 @@ HWTEST_F_L0(BuiltinsStringTest, substring2)
 HWTEST_F_L0(BuiltinsStringTest, trim1)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("   Hello world!   ");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("   Hello world!   ");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -801,7 +801,7 @@ HWTEST_F_L0(BuiltinsStringTest, trim1)
     JSTaggedValue result = BuiltinsString::Trim(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    JSTaggedValue test = factory->NewFromCanBeCompressString("Hello world!").GetTaggedValue();
+    JSTaggedValue test = factory->NewFromASCII("Hello world!").GetTaggedValue();
     ASSERT_EQ(resultHandle->Compare(reinterpret_cast<EcmaString *>(test.GetRawData())), 0);
 }
 
@@ -811,7 +811,7 @@ HWTEST_F_L0(BuiltinsStringTest, trim2)
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("   Hello world!   ");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("   Hello world!   ");
     JSHandle<JSFunction> stringObject(env->GetStringFunction());
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(thisStr.GetTaggedValue().GetTaggedObject()));
     JSHandle<JSPrimitiveRef> str = factory->NewJSPrimitiveRef(stringObject, value);
@@ -824,7 +824,7 @@ HWTEST_F_L0(BuiltinsStringTest, trim2)
     JSTaggedValue result = BuiltinsString::Trim(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    JSTaggedValue test = factory->NewFromCanBeCompressString("Hello world!").GetTaggedValue();
+    JSTaggedValue test = factory->NewFromASCII("Hello world!").GetTaggedValue();
     ASSERT_EQ(resultHandle->Compare(reinterpret_cast<EcmaString *>(test.GetRawData())), 0);
 }
 
@@ -834,7 +834,7 @@ HWTEST_F_L0(BuiltinsStringTest, ToString)
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("abcabcabc");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("abcabcabc");
     JSHandle<JSFunction> stringObject(env->GetStringFunction());
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(thisStr.GetTaggedValue().GetTaggedObject()));
     JSHandle<JSPrimitiveRef> str = factory->NewJSPrimitiveRef(stringObject, value);
@@ -857,7 +857,7 @@ HWTEST_F_L0(BuiltinsStringTest, ValueOf)
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("abcabcabc");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("abcabcabc");
     JSHandle<JSFunction> stringObject(env->GetStringFunction());
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(thisStr.GetTaggedValue().GetTaggedObject()));
     JSHandle<JSPrimitiveRef> str = factory->NewJSPrimitiveRef(stringObject, value);
@@ -884,9 +884,9 @@ static inline JSFunction *BuiltinsStringTestCreate(JSThread *thread)
 HWTEST_F_L0(BuiltinsStringTest, Raw)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> foo(factory->NewFromCanBeCompressString("foo"));
-    JSHandle<JSTaggedValue> bar(factory->NewFromCanBeCompressString("bar"));
-    JSHandle<JSTaggedValue> baz(factory->NewFromCanBeCompressString("baz"));
+    JSHandle<JSTaggedValue> foo(factory->NewFromASCII("foo"));
+    JSHandle<JSTaggedValue> bar(factory->NewFromASCII("bar"));
+    JSHandle<JSTaggedValue> baz(factory->NewFromASCII("baz"));
     JSHandle<JSTaggedValue> rawArray = JSHandle<JSTaggedValue>::Cast(JSArray::ArrayCreate(thread, JSTaggedNumber(0)));
     JSHandle<JSObject> obj(rawArray);
     JSHandle<JSTaggedValue> key0(thread, JSTaggedValue(0));
@@ -902,11 +902,11 @@ HWTEST_F_L0(BuiltinsStringTest, Raw)
     JSHandle<JSTaggedValue> constructor(thread, BuiltinsStringTestCreate(thread));
     JSHandle<JSTaggedValue> templateString(
         factory->NewJSObjectByConstructor(JSHandle<JSFunction>(constructor), constructor));
-    JSHandle<JSTaggedValue> rawKey(factory->NewFromCanBeCompressString("raw"));
+    JSHandle<JSTaggedValue> rawKey(factory->NewFromASCII("raw"));
     JSObject::SetProperty(thread, templateString, rawKey, rawArray);
-    JSHandle<EcmaString> test = factory->NewFromCanBeCompressString("foo5barJavaScriptbaz");
+    JSHandle<EcmaString> test = factory->NewFromASCII("foo5barJavaScriptbaz");
 
-    JSHandle<EcmaString> javascript = factory->NewFromCanBeCompressString("JavaScript");
+    JSHandle<EcmaString> javascript = factory->NewFromASCII("JavaScript");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -924,10 +924,10 @@ HWTEST_F_L0(BuiltinsStringTest, Raw)
 HWTEST_F_L0(BuiltinsStringTest, Replace)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("Twas the night before Xmas...");
-    JSHandle<EcmaString> searchStr = factory->NewFromCanBeCompressString("Xmas");
-    JSHandle<EcmaString> replaceStr = factory->NewFromCanBeCompressString("Christmas");
-    JSHandle<EcmaString> expected = factory->NewFromCanBeCompressString("Twas the night before Christmas...");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("Twas the night before Xmas...");
+    JSHandle<EcmaString> searchStr = factory->NewFromASCII("Xmas");
+    JSHandle<EcmaString> replaceStr = factory->NewFromASCII("Christmas");
+    JSHandle<EcmaString> expected = factory->NewFromASCII("Twas the night before Christmas...");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -942,8 +942,8 @@ HWTEST_F_L0(BuiltinsStringTest, Replace)
     ASSERT_TRUE(result.IsString());
     ASSERT_TRUE(EcmaString::StringsAreEqual(reinterpret_cast<EcmaString *>(result.GetRawData()), *expected));
 
-    JSHandle<EcmaString> replaceStr1 = factory->NewFromCanBeCompressString("abc$$");
-    JSHandle<EcmaString> expected1 = factory->NewFromCanBeCompressString("Twas the night before abc$...");
+    JSHandle<EcmaString> replaceStr1 = factory->NewFromASCII("abc$$");
+    JSHandle<EcmaString> expected1 = factory->NewFromASCII("Twas the night before abc$...");
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
@@ -959,8 +959,8 @@ HWTEST_F_L0(BuiltinsStringTest, Replace)
     ASSERT_TRUE(result1.IsString());
     ASSERT_TRUE(EcmaString::StringsAreEqual(*resultString1, *expected1));
 
-    JSHandle<EcmaString> replaceStr2 = factory->NewFromCanBeCompressString("abc$$dd");
-    JSHandle<EcmaString> expected2 = factory->NewFromCanBeCompressString("Twas the night before abc$dd...");
+    JSHandle<EcmaString> replaceStr2 = factory->NewFromASCII("abc$$dd");
+    JSHandle<EcmaString> expected2 = factory->NewFromASCII("Twas the night before abc$dd...");
 
     auto ecmaRuntimeCallInfo2 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo2->SetFunction(JSTaggedValue::Undefined());
@@ -976,8 +976,8 @@ HWTEST_F_L0(BuiltinsStringTest, Replace)
     ASSERT_TRUE(result2.IsString());
     ASSERT_TRUE(EcmaString::StringsAreEqual(*resultString2, *expected2));
 
-    JSHandle<EcmaString> replaceStr3 = factory->NewFromCanBeCompressString("abc$&dd");
-    JSHandle<EcmaString> expected3 = factory->NewFromCanBeCompressString("Twas the night before abcXmasdd...");
+    JSHandle<EcmaString> replaceStr3 = factory->NewFromASCII("abc$&dd");
+    JSHandle<EcmaString> expected3 = factory->NewFromASCII("Twas the night before abcXmasdd...");
 
     auto ecmaRuntimeCallInfo3 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo3->SetFunction(JSTaggedValue::Undefined());
@@ -993,9 +993,9 @@ HWTEST_F_L0(BuiltinsStringTest, Replace)
     ASSERT_TRUE(result3.IsString());
     ASSERT_TRUE(EcmaString::StringsAreEqual(*resultString3, *expected3));
 
-    JSHandle<EcmaString> replaceStr4 = factory->NewFromCanBeCompressString("abc$`dd");
+    JSHandle<EcmaString> replaceStr4 = factory->NewFromASCII("abc$`dd");
     JSHandle<EcmaString> expected4 =
-        factory->NewFromCanBeCompressString("Twas the night before abcTwas the night before dd...");
+        factory->NewFromASCII("Twas the night before abcTwas the night before dd...");
 
     auto ecmaRuntimeCallInfo4 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo4->SetFunction(JSTaggedValue::Undefined());
@@ -1015,10 +1015,10 @@ HWTEST_F_L0(BuiltinsStringTest, Replace)
 HWTEST_F_L0(BuiltinsStringTest, Replace2)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("Twas the night before Xmas...");
-    JSHandle<EcmaString> searchStr = factory->NewFromCanBeCompressString("Xmas");
-    JSHandle<EcmaString> replaceStr = factory->NewFromCanBeCompressString("abc$\'dd");
-    JSHandle<EcmaString> expected = factory->NewFromCanBeCompressString("Twas the night before abc...dd...");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("Twas the night before Xmas...");
+    JSHandle<EcmaString> searchStr = factory->NewFromASCII("Xmas");
+    JSHandle<EcmaString> replaceStr = factory->NewFromASCII("abc$\'dd");
+    JSHandle<EcmaString> expected = factory->NewFromASCII("Twas the night before abc...dd...");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -1033,9 +1033,9 @@ HWTEST_F_L0(BuiltinsStringTest, Replace2)
     ASSERT_TRUE(result.IsString());
     ASSERT_TRUE(EcmaString::StringsAreEqual(reinterpret_cast<EcmaString *>(result.GetRawData()), *expected));
 
-    JSHandle<EcmaString> replaceStr2 = factory->NewFromCanBeCompressString("abc$`dd$\'$ff");
+    JSHandle<EcmaString> replaceStr2 = factory->NewFromASCII("abc$`dd$\'$ff");
     JSHandle<EcmaString> expected2 =
-        factory->NewFromCanBeCompressString("Twas the night before abcTwas the night before dd...$ff...");
+        factory->NewFromASCII("Twas the night before abcTwas the night before dd...$ff...");
 
     auto ecmaRuntimeCallInfo2 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo2->SetFunction(JSTaggedValue::Undefined());
@@ -1051,9 +1051,9 @@ HWTEST_F_L0(BuiltinsStringTest, Replace2)
     ASSERT_TRUE(result2.IsString());
     ASSERT_TRUE(EcmaString::StringsAreEqual(*resultString2, *expected2));
 
-    JSHandle<EcmaString> replaceStr3 = factory->NewFromCanBeCompressString("abc$`dd$\'$");
+    JSHandle<EcmaString> replaceStr3 = factory->NewFromASCII("abc$`dd$\'$");
     JSHandle<EcmaString> expected3 =
-        factory->NewFromCanBeCompressString("Twas the night before abcTwas the night before dd...$...");
+        factory->NewFromASCII("Twas the night before abcTwas the night before dd...$...");
 
     auto ecmaRuntimeCallInfo3 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo3->SetFunction(JSTaggedValue::Undefined());
@@ -1069,9 +1069,9 @@ HWTEST_F_L0(BuiltinsStringTest, Replace2)
     ASSERT_TRUE(result3.IsString());
     ASSERT_TRUE(EcmaString::StringsAreEqual(*resultString3, *expected3));
 
-    JSHandle<EcmaString> replaceStr4 = factory->NewFromCanBeCompressString("abc$`dd$$");
+    JSHandle<EcmaString> replaceStr4 = factory->NewFromASCII("abc$`dd$$");
     JSHandle<EcmaString> expected4 =
-        factory->NewFromCanBeCompressString("Twas the night before abcTwas the night before dd$...");
+        factory->NewFromASCII("Twas the night before abcTwas the night before dd$...");
 
     auto ecmaRuntimeCallInfo4 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo4->SetFunction(JSTaggedValue::Undefined());
@@ -1091,10 +1091,10 @@ HWTEST_F_L0(BuiltinsStringTest, Replace2)
 HWTEST_F_L0(BuiltinsStringTest, Replace3)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("Twas the night before Xmas...");
-    JSHandle<EcmaString> searchStr = factory->NewFromCanBeCompressString("Xmas");
-    JSHandle<EcmaString> replaceStr = factory->NewFromCanBeCompressString("$&a $` $\' $2 $01 $$1 $21 $32 a");
-    JSHandle<EcmaString> expected = factory->NewFromCanBeCompressString(
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("Twas the night before Xmas...");
+    JSHandle<EcmaString> searchStr = factory->NewFromASCII("Xmas");
+    JSHandle<EcmaString> replaceStr = factory->NewFromASCII("$&a $` $\' $2 $01 $$1 $21 $32 a");
+    JSHandle<EcmaString> expected = factory->NewFromASCII(
         "Twas the night before Xmasa Twas the night before  ... $2 $01 $1 $21 $32 a...");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
@@ -1114,18 +1114,18 @@ HWTEST_F_L0(BuiltinsStringTest, Replace4)
 {
     // invoke RegExpConstructor method
     JSHandle<EcmaString> pattern1 =
-        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("quick\\s(brown).+?(jumps)");
-    JSHandle<EcmaString> flags1 = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("iug");
+        thread->GetEcmaVM()->GetFactory()->NewFromASCII("quick\\s(brown).+?(jumps)");
+    JSHandle<EcmaString> flags1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("iug");
     JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSRegExp> searchStr(thread, reinterpret_cast<JSRegExp *>(result1.GetRawData()));
-    JSHandle<EcmaString> expected = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(
+    JSHandle<EcmaString> expected = thread->GetEcmaVM()->GetFactory()->NewFromASCII(
         "The Quick Brown Fox Jumpsa The   Over The Lazy Dog Jumps Brown $1 Jumps1 $32 a Over The Lazy Dog");
 
     // make dyn_runtime_call_info2
     JSHandle<EcmaString> thisStr =
-        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("The Quick Brown Fox Jumps Over The Lazy Dog");
+        thread->GetEcmaVM()->GetFactory()->NewFromASCII("The Quick Brown Fox Jumps Over The Lazy Dog");
     JSHandle<EcmaString> replaceStr =
-        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("$&a $` $\' $2 $01 $$1 $21 $32 a");
+        thread->GetEcmaVM()->GetFactory()->NewFromASCII("$&a $` $\' $2 $01 $$1 $21 $32 a");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -1144,12 +1144,12 @@ HWTEST_F_L0(BuiltinsStringTest, Split)
 {
     // invoke RegExpConstructor method
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("Hello World. How are you doing?");
-    JSHandle<EcmaString> separatorStr = factory->NewFromCanBeCompressString(" ");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("Hello World. How are you doing?");
+    JSHandle<EcmaString> separatorStr = factory->NewFromASCII(" ");
     JSHandle<JSTaggedValue> limit(thread, JSTaggedValue(3));
-    JSHandle<EcmaString> expected1 = factory->NewFromCanBeCompressString("Hello");
-    JSHandle<EcmaString> expected2 = factory->NewFromCanBeCompressString("World.");
-    JSHandle<EcmaString> expected3 = factory->NewFromCanBeCompressString("How");
+    JSHandle<EcmaString> expected1 = factory->NewFromASCII("Hello");
+    JSHandle<EcmaString> expected2 = factory->NewFromASCII("World.");
+    JSHandle<EcmaString> expected3 = factory->NewFromASCII("How");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -1179,16 +1179,16 @@ HWTEST_F_L0(BuiltinsStringTest, Split2)
 {
     // invoke RegExpConstructor method
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> thisStr = factory->NewFromCanBeCompressString("a-b-c");
-    JSHandle<EcmaString> pattern1 = factory->NewFromCanBeCompressString("-");
-    JSHandle<EcmaString> flags1 = factory->NewFromCanBeCompressString("iug");
+    JSHandle<EcmaString> thisStr = factory->NewFromASCII("a-b-c");
+    JSHandle<EcmaString> pattern1 = factory->NewFromASCII("-");
+    JSHandle<EcmaString> flags1 = factory->NewFromASCII("iug");
     JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSRegExp> separatorObj(thread, result1);
 
     JSHandle<JSTaggedValue> limit(thread, JSTaggedValue(3));
-    JSHandle<EcmaString> expected1 = factory->NewFromCanBeCompressString("a");
-    JSHandle<EcmaString> expected2 = factory->NewFromCanBeCompressString("b");
-    JSHandle<EcmaString> expected3 = factory->NewFromCanBeCompressString("c");
+    JSHandle<EcmaString> expected1 = factory->NewFromASCII("a");
+    JSHandle<EcmaString> expected2 = factory->NewFromASCII("b");
+    JSHandle<EcmaString> expected3 = factory->NewFromASCII("c");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());

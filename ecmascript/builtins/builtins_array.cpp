@@ -84,7 +84,7 @@ JSTaggedValue BuiltinsArray::ArrayConstructor(EcmaRuntimeCallInfo *argv)
         // 9. Let setStatus be Set(array, "length", intLen, true).
         // 10. Assert: setStatus is not an abrupt completion.
         if (!len->IsNumber()) {
-            JSHandle<JSTaggedValue> key0(factory->NewFromCanBeCompressString("0"));
+            JSHandle<JSTaggedValue> key0(factory->NewFromASCII("0"));
             JSObject::CreateDataProperty(thread, newArrayHandle, key0, len);
             newLen = 1;
         } else {
@@ -1187,7 +1187,7 @@ JSTaggedValue BuiltinsArray::Join(EcmaRuntimeCallInfo *argv)
     // 6. Let sep be ToString(separator).
     JSHandle<JSTaggedValue> sepHandle;
     if ((GetCallArg(argv, 0)->IsUndefined())) {
-        sepHandle = JSHandle<JSTaggedValue>::Cast(factory->NewFromCanBeCompressString(","));
+        sepHandle = JSHandle<JSTaggedValue>::Cast(factory->NewFromASCII(","));
     } else {
         sepHandle = GetCallArg(argv, 0);
     }
@@ -2410,7 +2410,7 @@ JSTaggedValue BuiltinsArray::ToLocaleString(EcmaRuntimeCallInfo *argv)
     // current locale (this is derived in an implementation-defined way).
     JSHandle<JSTaggedValue> sepHandle;
     if ((GetCallArg(argv, 0)->IsUndefined())) {
-        sepHandle = JSHandle<JSTaggedValue>::Cast(ecmaVm->GetFactory()->NewFromCanBeCompressString(","));
+        sepHandle = JSHandle<JSTaggedValue>::Cast(ecmaVm->GetFactory()->NewFromASCII(","));
     } else {
         sepHandle = GetCallArg(argv, 0);
     }
@@ -2475,7 +2475,7 @@ JSTaggedValue BuiltinsArray::ToLocaleString(EcmaRuntimeCallInfo *argv)
     }
 
     // 13. Return R.
-    return factory->NewFromString(concatStr).GetTaggedValue();
+    return factory->NewFromUtf8(concatStr).GetTaggedValue();
 }
 
 // 22.1.3.27 Array.prototype.toString ( )
@@ -2496,7 +2496,7 @@ JSTaggedValue BuiltinsArray::ToString(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> thisObjVal(thisObjHandle);
 
     // 3. Let func be Get(array, "join").
-    JSHandle<JSTaggedValue> joinKey(factory->NewFromCanBeCompressString("join"));
+    JSHandle<JSTaggedValue> joinKey(factory->NewFromASCII("join"));
     JSHandle<JSTaggedValue> callbackFnHandle = JSTaggedValue::GetProperty(thread, thisObjVal, joinKey).GetValue();
 
     // 4. ReturnIfAbrupt(func).
@@ -2638,34 +2638,34 @@ JSTaggedValue BuiltinsArray::Unscopables(EcmaRuntimeCallInfo *argv)
     JSHandle<JSObject> unscopableList = factory->OrdinaryNewJSObjectCreate(nullHandle);
 
     JSHandle<JSTaggedValue> trueVal(thread, JSTaggedValue::True());
-    JSHandle<JSTaggedValue> copyWithKey(factory->NewFromCanBeCompressString("copyWithin"));
+    JSHandle<JSTaggedValue> copyWithKey(factory->NewFromASCII("copyWithin"));
     JSObject::CreateDataProperty(thread, unscopableList, copyWithKey, trueVal);
 
-    JSHandle<JSTaggedValue> entriesKey(factory->NewFromCanBeCompressString("entries"));
+    JSHandle<JSTaggedValue> entriesKey(factory->NewFromASCII("entries"));
     JSObject::CreateDataProperty(thread, unscopableList, entriesKey, trueVal);
 
-    JSHandle<JSTaggedValue> fillKey(factory->NewFromCanBeCompressString("fill"));
+    JSHandle<JSTaggedValue> fillKey(factory->NewFromASCII("fill"));
     JSObject::CreateDataProperty(thread, unscopableList, fillKey, trueVal);
 
-    JSHandle<JSTaggedValue> findKey(factory->NewFromCanBeCompressString("find"));
+    JSHandle<JSTaggedValue> findKey(factory->NewFromASCII("find"));
     JSObject::CreateDataProperty(thread, unscopableList, findKey, trueVal);
 
-    JSHandle<JSTaggedValue> findIndexKey(factory->NewFromCanBeCompressString("findIndex"));
+    JSHandle<JSTaggedValue> findIndexKey(factory->NewFromASCII("findIndex"));
     JSObject::CreateDataProperty(thread, unscopableList, findIndexKey, trueVal);
 
-    JSHandle<JSTaggedValue> flatKey(factory->NewFromCanBeCompressString("flat"));
+    JSHandle<JSTaggedValue> flatKey(factory->NewFromASCII("flat"));
     JSObject::CreateDataProperty(thread, unscopableList, flatKey, trueVal);
 
-    JSHandle<JSTaggedValue> flatMapKey(factory->NewFromCanBeCompressString("flatMap"));
+    JSHandle<JSTaggedValue> flatMapKey(factory->NewFromASCII("flatMap"));
     JSObject::CreateDataProperty(thread, unscopableList, flatMapKey, trueVal);
 
-    JSHandle<JSTaggedValue> includesKey(factory->NewFromCanBeCompressString("includes"));
+    JSHandle<JSTaggedValue> includesKey(factory->NewFromASCII("includes"));
     JSObject::CreateDataProperty(thread, unscopableList, includesKey, trueVal);
 
-    JSHandle<JSTaggedValue> keysKey(factory->NewFromCanBeCompressString("keys"));
+    JSHandle<JSTaggedValue> keysKey(factory->NewFromASCII("keys"));
     JSObject::CreateDataProperty(thread, unscopableList, keysKey, trueVal);
 
-    JSHandle<JSTaggedValue> valuesKey(factory->NewFromCanBeCompressString("values"));
+    JSHandle<JSTaggedValue> valuesKey(factory->NewFromASCII("values"));
     JSObject::CreateDataProperty(thread, unscopableList, valuesKey, trueVal);
 
     return unscopableList.GetTaggedValue();

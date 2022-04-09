@@ -291,12 +291,12 @@ JSTaggedValue BuiltinsLocale::GetLanguage(EcmaRuntimeCallInfo *argv)
     // 4. Assert: locale matches the unicode_locale_id production.
     // 5. Return the substring of locale corresponding to the unicode_language_subtag production of the
     //    unicode_language_id.
-    JSHandle<EcmaString> result = factory->NewFromString("undefined");
+    JSHandle<EcmaString> result = factory->NewFromASCII("undefined");
     CString language = locale->GetIcuLocale()->getLanguage();
     if (language.empty()) {
         return result.GetTaggedValue();
     }
-    result = factory->NewFromString(language);
+    result = factory->NewFromUtf8(language);
     return result.GetTaggedValue();
 }
 
@@ -324,7 +324,7 @@ JSTaggedValue BuiltinsLocale::GetScript(EcmaRuntimeCallInfo *argv)
     if (script.empty()) {
         return result.GetTaggedValue();
     }
-    result = factory->NewFromString(script);
+    result = factory->NewFromUtf8(script);
     return result.GetTaggedValue();
 }
 
@@ -352,6 +352,6 @@ JSTaggedValue BuiltinsLocale::GetRegion(EcmaRuntimeCallInfo *argv)
     if (region.empty()) {
         return globalConst->GetUndefined();
     }
-    return factory->NewFromString(region).GetTaggedValue();
+    return factory->NewFromUtf8(region).GetTaggedValue();
 }
 }  // namespace panda::ecmascript::builtins

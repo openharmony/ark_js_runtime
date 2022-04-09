@@ -83,7 +83,7 @@ void ClassInfoExtractor::BuildClassInfoExtractorFromLiteral(JSThread *thread, JS
     } else {
         // without static properties, set class name
         CString clsName = extractor->GetConstructorMethod()->ParseFunctionName();
-        JSHandle<EcmaString> clsNameHandle = factory->NewFromString(clsName.c_str());
+        JSHandle<EcmaString> clsNameHandle = factory->NewFromUtf8(clsName);
         staticProperties->Set(thread, NAME_INDEX, clsNameHandle);
     }
 
@@ -151,7 +151,7 @@ bool ClassInfoExtractor::ExtractAndReturnWhetherWithElements(JSThread *thread, c
             [[maybe_unused]] EcmaHandleScope handleScope(thread);
             ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
             CString clsName = detail.ctorMethod->ParseFunctionName();
-            JSHandle<EcmaString> clsNameHandle = factory->NewFromString(clsName.c_str());
+            JSHandle<EcmaString> clsNameHandle = factory->NewFromUtf8(clsName);
             properties->Set(thread, NAME_INDEX, clsNameHandle);
         } else {
             // class has static name property, reserved length bigger 1 than actual, need trim

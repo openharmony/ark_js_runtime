@@ -153,7 +153,7 @@ HWTEST_F_L0(PendingJobTest, ExecutePendingJob_002)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> promiseFunc = env->GetPromiseFunction();
-    JSHandle<JSTaggedValue> paramMsg(factory->NewFromCanBeCompressString("resolve"));
+    JSHandle<JSTaggedValue> paramMsg(factory->NewFromASCII("resolve"));
     
     JSHandle<PromiseCapability> capbility = JSPromise::NewPromiseCapability(thread, promiseFunc);
     JSHandle<JSTaggedValue> resolve(thread, capbility->GetResolve());
@@ -189,7 +189,7 @@ HWTEST_F_L0(PendingJobTest, ExecutePendingJob_003)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> promiseFunc = env->GetPromiseFunction();
-    JSHandle<JSTaggedValue> paramMsg(factory->NewFromCanBeCompressString("Thrower"));
+    JSHandle<JSTaggedValue> paramMsg(factory->NewFromASCII("Thrower"));
     
     JSHandle<PromiseCapability> capbility = JSPromise::NewPromiseCapability(thread, promiseFunc);
     JSHandle<PromiseReaction> rejectReaction = factory->NewPromiseReaction();
@@ -214,7 +214,7 @@ JSTaggedValue TestPromiseOnResolved(EcmaRuntimeCallInfo *argv)
     auto factory = argv->GetThread()->GetEcmaVM()->GetFactory();
     JSHandle<JSTaggedValue> result = BuiltinsBase::GetCallArg(argv, 0);
     EXPECT_TRUE(result->IsPromiseReaction());
-    auto handlerMsg = factory->NewFromCanBeCompressString("after_resolve");
+    auto handlerMsg = factory->NewFromASCII("after_resolve");
     JSHandle<PromiseReaction> reaction = JSHandle<PromiseReaction>::Cast(result);
     JSHandle<JSTaggedValue> handler(argv->GetThread(), reaction->GetHandler());
     EXPECT_EQ(JSTaggedValue::SameValue(handler.GetTaggedValue(), handlerMsg.GetTaggedValue()), true);
@@ -235,7 +235,7 @@ HWTEST_F_L0(PendingJobTest, ExecutePendingJob_004)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> promiseFunc = env->GetPromiseFunction();
-    JSHandle<JSTaggedValue> paramMsg(factory->NewFromCanBeCompressString("after_resolve"));
+    JSHandle<JSTaggedValue> paramMsg(factory->NewFromASCII("after_resolve"));
     
     JSHandle<PromiseCapability> capbility = JSPromise::NewPromiseCapability(thread, promiseFunc);
     JSHandle<JSTaggedValue> resolve(thread, capbility->GetResolve());

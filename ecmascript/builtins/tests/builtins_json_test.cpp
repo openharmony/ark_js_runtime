@@ -123,18 +123,18 @@ JSTaggedValue CreateBuiltinJSObject1(JSThread *thread, const CString keyCStr)
     JSHandle<JSObject> jsobject(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc));
     EXPECT_TRUE(*jsobject != nullptr);
 
-    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(&keyCStr[0]));
+    JSHandle<JSTaggedValue> key(factory->NewFromASCII(&keyCStr[0]));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(jsobject), key, value);
 
     CString str2 = "y";
-    JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString(str2));
+    JSHandle<JSTaggedValue> key2(factory->NewFromASCII(str2));
     JSHandle<JSTaggedValue> value2(thread, JSTaggedValue(2.5)); // 2.5 : test case
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(jsobject), key2, value2);
 
     CString str3 = "z";
-    JSHandle<JSTaggedValue> key3(factory->NewFromCanBeCompressString(str3));
-    JSHandle<JSTaggedValue> value3(factory->NewFromCanBeCompressString("abc"));
+    JSHandle<JSTaggedValue> key3(factory->NewFromASCII(str3));
+    JSHandle<JSTaggedValue> value3(factory->NewFromASCII("abc"));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(jsobject), key3, value3);
 
     return jsobject.GetTaggedValue();
@@ -145,7 +145,7 @@ HWTEST_F_L0(BuiltinsJsonTest, Parse10)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
-    JSHandle<JSTaggedValue> msg(factory->NewFromCanBeCompressString(
+    JSHandle<JSTaggedValue> msg(factory->NewFromASCII(
         "\t\r \n{\t\r \n \"property\"\t\r \n:\t\r \n{\t\r \n}\t\r \n,\t\r \n \"prop2\"\t\r \n:\t\r \n [\t\r \ntrue\t\r "
         "\n,\t\r \nnull\t\r \n,123.456\t\r \n] \t\r \n}\t\r \n"));
     JSHandle<EcmaString> str(JSTaggedValue::ToString(thread, msg));
@@ -165,7 +165,7 @@ HWTEST_F_L0(BuiltinsJsonTest, Parse21)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
 
-    JSHandle<JSTaggedValue> msg(factory->NewFromCanBeCompressString("[100,2.5,\"abc\"]"));
+    JSHandle<JSTaggedValue> msg(factory->NewFromASCII("[100,2.5,\"abc\"]"));
 
     JSHandle<JSFunction> handleFunc = factory->NewJSFunction(env, reinterpret_cast<void *>(TestClass::TestForParse));
     JSHandle<EcmaString> str(JSTaggedValue::ToString(thread, msg));
@@ -186,7 +186,7 @@ HWTEST_F_L0(BuiltinsJsonTest, Parse)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTaggedValue> lengthKeyHandle = thread->GlobalConstants()->GetHandledLengthString();
 
-    JSHandle<JSTaggedValue> msg(factory->NewFromCanBeCompressString("[100,2.5,\"abc\"]"));
+    JSHandle<JSTaggedValue> msg(factory->NewFromASCII("[100,2.5,\"abc\"]"));
     JSHandle<EcmaString> str(JSTaggedValue::ToString(thread, msg));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
@@ -208,7 +208,7 @@ HWTEST_F_L0(BuiltinsJsonTest, Parse)
 HWTEST_F_L0(BuiltinsJsonTest, Parse2)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> msg(factory->NewFromCanBeCompressString("{\"epf\":100,\"key1\":200}"));
+    JSHandle<JSTaggedValue> msg(factory->NewFromASCII("{\"epf\":100,\"key1\":200}"));
     JSHandle<EcmaString> str(JSTaggedValue::ToString(thread, msg));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
@@ -226,7 +226,7 @@ HWTEST_F_L0(BuiltinsJsonTest, Parse2)
     JSHandle<JSArray> nameResult = JSArray::CreateArrayFromList(thread, nameList);
 
     JSHandle<JSTaggedValue> handleKey(nameResult);
-    JSHandle<JSTaggedValue> lengthKey(factory->NewFromCanBeCompressString("length"));
+    JSHandle<JSTaggedValue> lengthKey(factory->NewFromASCII("length"));
     JSHandle<JSTaggedValue> lenResult = JSObject::GetProperty(thread, handleKey, lengthKey).GetValue();
     uint32_t length = JSTaggedValue::ToLength(thread, lenResult).ToUint32();
     ASSERT_EQ(length, 2U);
@@ -315,7 +315,7 @@ HWTEST_F_L0(BuiltinsJsonTest, Stringify13)
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSFunction> handleFunc =
         factory->NewJSFunction(env, reinterpret_cast<void *>(TestClass::TestForStringfy));
-    JSHandle<JSTaggedValue> msg(factory->NewFromCanBeCompressString("tttt"));
+    JSHandle<JSTaggedValue> msg(factory->NewFromASCII("tttt"));
     JSHandle<EcmaString> str(JSTaggedValue::ToString(thread, msg));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
@@ -338,13 +338,13 @@ HWTEST_F_L0(BuiltinsJsonTest, Stringify14)
 
     JSHandle<JSObject> obj1(thread, arr);
     JSHandle<JSTaggedValue> key0(thread, JSTaggedValue(0));
-    JSHandle<JSTaggedValue> value0(factory->NewFromCanBeCompressString("x"));
+    JSHandle<JSTaggedValue> value0(factory->NewFromASCII("x"));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj), key0, value0);
     JSHandle<JSTaggedValue> key1(thread, JSTaggedValue(1));
-    JSHandle<JSTaggedValue> value1(factory->NewFromCanBeCompressString("z"));
+    JSHandle<JSTaggedValue> value1(factory->NewFromASCII("z"));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj), key1, value1);
 
-    JSHandle<JSTaggedValue> msg(factory->NewFromCanBeCompressString("tttt"));
+    JSHandle<JSTaggedValue> msg(factory->NewFromASCII("tttt"));
     JSHandle<EcmaString> str(JSTaggedValue::ToString(thread, msg));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
@@ -384,7 +384,7 @@ HWTEST_F_L0(BuiltinsJsonTest, Stringify1)
     JSHandle<JSObject> obj(thread, arr);
     JSHandle<JSTaggedValue> key0(thread, JSTaggedValue(0));
 
-    JSHandle<JSTaggedValue> value(factory->NewFromCanBeCompressString("def"));
+    JSHandle<JSTaggedValue> value(factory->NewFromASCII("def"));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj), key0, value);
 
     JSHandle<JSTaggedValue> key1(thread, JSTaggedValue(1));
@@ -392,12 +392,12 @@ HWTEST_F_L0(BuiltinsJsonTest, Stringify1)
     JSArray::DefineOwnProperty(thread, obj, key1, desc1);
 
     JSHandle<JSTaggedValue> key2(thread, JSTaggedValue(2));
-    JSHandle<JSTaggedValue> value2(factory->NewFromCanBeCompressString("abc"));
+    JSHandle<JSTaggedValue> value2(factory->NewFromASCII("abc"));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj), key2, value2);
 
     JSHandle<JSFunction> handleFunc =
         factory->NewJSFunction(env, reinterpret_cast<void *>(TestClass::TestForStringfy));
-    JSHandle<JSTaggedValue> msg(factory->NewFromCanBeCompressString("tttt"));
+    JSHandle<JSTaggedValue> msg(factory->NewFromASCII("tttt"));
     JSHandle<EcmaString> str(JSTaggedValue::ToString(thread, msg));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
@@ -430,7 +430,7 @@ HWTEST_F_L0(BuiltinsJsonTest, Stringify2)
     JSArray::DefineOwnProperty(thread, obj, key1, desc1);
     // 2 : test case
     JSHandle<JSTaggedValue> key2(thread, JSTaggedValue(2));
-    JSHandle<JSTaggedValue> value2(factory->NewFromCanBeCompressString("abc"));
+    JSHandle<JSTaggedValue> value2(factory->NewFromASCII("abc"));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj), key2, value2);
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);

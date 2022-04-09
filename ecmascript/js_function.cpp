@@ -157,7 +157,7 @@ JSTaggedValue JSFunction::NameGetter(JSThread *thread, const JSHandle<JSObject> 
     }
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    return factory->NewFromString(funcName).GetTaggedValue();
+    return factory->NewFromUtf8(funcName).GetTaggedValue();
 }
 
 bool JSFunction::OrdinaryHasInstance(JSThread *thread, const JSHandle<JSTaggedValue> &constructor,
@@ -393,8 +393,8 @@ bool JSFunctionBase::SetFunctionName(JSThread *thread, const JSHandle<JSFunction
         if (description.IsUndefined()) {
             functionName = factory->GetEmptyString();
         } else {
-            JSHandle<EcmaString> leftBrackets = factory->NewFromCanBeCompressString("[");
-            JSHandle<EcmaString> rightBrackets = factory->NewFromCanBeCompressString("]");
+            JSHandle<EcmaString> leftBrackets = factory->NewFromASCII("[");
+            JSHandle<EcmaString> rightBrackets = factory->NewFromASCII("]");
             functionName = factory->ConcatFromString(leftBrackets, descriptionHandle);
             functionName = factory->ConcatFromString(functionName, rightBrackets);
         }
@@ -404,7 +404,7 @@ bool JSFunctionBase::SetFunctionName(JSThread *thread, const JSHandle<JSFunction
     EcmaString *newString;
     if (needPrefix) {
         JSHandle<EcmaString> handlePrefixString = JSTaggedValue::ToString(thread, prefix);
-        JSHandle<EcmaString> spaceString(factory->NewFromCanBeCompressString(" "));
+        JSHandle<EcmaString> spaceString(factory->NewFromASCII(" "));
         JSHandle<EcmaString> concatString = factory->ConcatFromString(handlePrefixString, spaceString);
         newString = *factory->ConcatFromString(concatString, functionName);
     } else {
@@ -532,8 +532,8 @@ void JSFunction::SetFunctionNameNoPrefix(JSThread *thread, JSFunction *func, JST
                 nameHandle.Update(thread->GlobalConstants()->GetEmptyString());
             } else {
                 JSHandle<EcmaString> concatName;
-                JSHandle<EcmaString> leftBrackets = factory->NewFromCanBeCompressString("[");
-                JSHandle<EcmaString> rightBrackets = factory->NewFromCanBeCompressString("]");
+                JSHandle<EcmaString> leftBrackets = factory->NewFromASCII("[");
+                JSHandle<EcmaString> rightBrackets = factory->NewFromASCII("]");
                 concatName = factory->ConcatFromString(
                     leftBrackets,
                     JSHandle<EcmaString>(thread, JSSymbol::Cast(nameBegin->GetHeapObject())->GetDescription()));
