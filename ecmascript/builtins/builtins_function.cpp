@@ -203,7 +203,7 @@ JSTaggedValue BuiltinsFunction::FunctionPrototypeBind(EcmaRuntimeCallInfo *argv)
     // 13. ReturnIfAbrupt(targetName).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
-    JSHandle<JSTaggedValue> boundName(factory->NewFromCanBeCompressString("bound"));
+    JSHandle<JSTaggedValue> boundName(factory->NewFromASCII("bound"));
     // 14. If Type(targetName) is not String, let targetName be the empty string.
     // 15. Perform SetFunctionName(F, targetName, "bound").
     if (!targetName->IsString()) {

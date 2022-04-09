@@ -67,7 +67,7 @@ protected:
         JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
 
         JSHandle<JSTaggedValue> globalObject = env->GetJSGlobalObject();
-        JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("ArkPrivate"));
+        JSHandle<JSTaggedValue> key(factory->NewFromASCII("ArkPrivate"));
         JSHandle<JSTaggedValue> value =
             JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(globalObject), key).GetValue();
 
@@ -163,7 +163,6 @@ HWTEST_F_L0(JSAPIStackTest, Empty)
     for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
         std::string ivalue = myValue + std::to_string(i);
         value.Update(factory->NewFromStdString(ivalue).GetTaggedValue());
-        
         toor->Pop();
         if (num == -1) {
             EXPECT_EQ(toor->Empty(), true);

@@ -262,13 +262,13 @@ private:
                 if (isAscii) {
                     CString value(current_, end_);
                     current_ = end_;
-                    return factory_->NewFromUtf8LiteralUnCheck(
-                        reinterpret_cast<const uint8_t *>(value.c_str()), value.length(), true).GetTaggedValue();
+                    return factory_->NewFromUtf8LiteralCompress(
+                        reinterpret_cast<const uint8_t *>(value.c_str()), value.length()).GetTaggedValue();
                 }
                 std::u16string value(current_, end_);
                 current_ = end_;
-                return factory_->NewFromUtf16LiteralUnCheck(
-                    reinterpret_cast<const uint16_t *>(value.c_str()), value.length(), false).GetTaggedValue();
+                return factory_->NewFromUtf16LiteralNotCompress(
+                    reinterpret_cast<const uint16_t *>(value.c_str()), value.length()).GetTaggedValue();
             }
         } else {
             if (*end_ != '"' || current_ == end_) {
@@ -281,12 +281,12 @@ private:
             if (LIKELY(isFastString)) {
                 if (isAscii) {
                     CString value(current_, end_);
-                    return factory_->NewFromUtf8LiteralUnCheck(
-                        reinterpret_cast<const uint8_t *>(value.c_str()), value.length(), true).GetTaggedValue();
+                    return factory_->NewFromUtf8LiteralCompress(
+                        reinterpret_cast<const uint8_t *>(value.c_str()), value.length()).GetTaggedValue();
                 }
                 std::u16string value(current_, end_);
-                return factory_->NewFromUtf16LiteralUnCheck(
-                    reinterpret_cast<const uint16_t *>(value.c_str()), value.length(), false).GetTaggedValue();
+                return factory_->NewFromUtf16LiteralNotCompress(
+                    reinterpret_cast<const uint16_t *>(value.c_str()), value.length()).GetTaggedValue();
             }
         }
         return SlowParseString();

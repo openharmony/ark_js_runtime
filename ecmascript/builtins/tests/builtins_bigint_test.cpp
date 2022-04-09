@@ -92,7 +92,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, BigIntConstructor_001)
 HWTEST_F_L0(BuiltinsBigIntTest, BigIntConstructor_002)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("456"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("456"));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -110,7 +110,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, BigIntConstructor_002)
 HWTEST_F_L0(BuiltinsBigIntTest, AsIntN_001)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("9223372036854775807"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("9223372036854775807"));
     int bit = 64; // 64-bit
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
@@ -126,7 +126,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, AsIntN_001)
     EXPECT_TRUE(result.IsBigInt());
     JSHandle<BigInt> bigIntHandle(thread, result);
     JSHandle<EcmaString> resultStr = BigInt::ToString(thread, bigIntHandle);
-    JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("9223372036854775807");
+    JSHandle<EcmaString> str = factory->NewFromASCII("9223372036854775807");
     EXPECT_EQ(resultStr->Compare(*str), 0);
 }
 
@@ -134,7 +134,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, AsIntN_001)
 HWTEST_F_L0(BuiltinsBigIntTest, AsIntN_002)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("9223372036854775808"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("9223372036854775808"));
     int bit = 64; // 64-bit
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
@@ -150,7 +150,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, AsIntN_002)
     EXPECT_TRUE(result.IsBigInt());
     JSHandle<BigInt> bigIntHandle(thread, result);
     JSHandle<EcmaString> resultStr = BigInt::ToString(thread, bigIntHandle);
-    JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("-9223372036854775808");
+    JSHandle<EcmaString> str = factory->NewFromASCII("-9223372036854775808");
     EXPECT_EQ(resultStr->Compare(*str), 0);
 }
 
@@ -158,7 +158,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, AsIntN_002)
 HWTEST_F_L0(BuiltinsBigIntTest, AsUintN_001)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("18446744073709551615"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("18446744073709551615"));
     int bit = 64; // 64-bit
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
@@ -174,7 +174,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, AsUintN_001)
     EXPECT_TRUE(result.IsBigInt());
     JSHandle<BigInt> bigIntHandle(thread, result);
     JSHandle<EcmaString> resultStr = BigInt::ToString(thread, bigIntHandle);
-    JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("18446744073709551615");
+    JSHandle<EcmaString> str = factory->NewFromASCII("18446744073709551615");
     EXPECT_EQ(resultStr->Compare(*str), 0);
 }
 
@@ -182,7 +182,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, AsUintN_001)
 HWTEST_F_L0(BuiltinsBigIntTest, AsUintN_002)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("18446744073709551616"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("18446744073709551616"));
     int bit = 64; // 64-bit
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
@@ -198,7 +198,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, AsUintN_002)
     EXPECT_TRUE(result.IsBigInt());
     JSHandle<BigInt> bigIntHandle(thread, result);
     JSHandle<EcmaString> resultStr = BigInt::ToString(thread, bigIntHandle);
-    JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("0");
+    JSHandle<EcmaString> str = factory->NewFromASCII("0");
     EXPECT_EQ(resultStr->Compare(*str), 0);
 }
 
@@ -206,7 +206,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, AsUintN_002)
 HWTEST_F_L0(BuiltinsBigIntTest, ToLocaleString_001)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("123456789123456789"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("123456789123456789"));
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
@@ -218,7 +218,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToLocaleString_001)
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<BigInt> bigIntHandle(thread, result1);
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("de-DE"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("de-DE"));
 
     auto ecmaRuntimeCallInfo2 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo2->SetFunction(JSTaggedValue::Undefined());
@@ -232,7 +232,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToLocaleString_001)
 
     EXPECT_TRUE(result2.IsString());
     JSHandle<EcmaString> ecmaStrHandle(thread, result2);
-    JSHandle<EcmaString> resultStr(factory->NewFromCanBeCompressString("123.456.789.123.456.789"));
+    JSHandle<EcmaString> resultStr(factory->NewFromASCII("123.456.789.123.456.789"));
     EXPECT_EQ(ecmaStrHandle->Compare(*resultStr), 0);
 }
 
@@ -243,10 +243,10 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToLocaleString_002)
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
     JSHandle<JSObject> optionsObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("123456789123456789"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("123456789123456789"));
     JSHandle<JSTaggedValue> formatStyle = thread->GlobalConstants()->GetHandledStyleString();
-    JSHandle<JSTaggedValue> styleKey(factory->NewFromCanBeCompressString("currency"));
-    JSHandle<JSTaggedValue> styleValue(factory->NewFromCanBeCompressString("EUR"));
+    JSHandle<JSTaggedValue> styleKey(factory->NewFromASCII("currency"));
+    JSHandle<JSTaggedValue> styleValue(factory->NewFromASCII("EUR"));
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
@@ -258,7 +258,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToLocaleString_002)
     TestHelper::TearDownFrame(thread, prev);
 
     JSHandle<BigInt> bigIntHandle(thread, result1);
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("de-DE"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("de-DE"));
     JSObject::SetProperty(thread, optionsObj, formatStyle, styleKey);
     JSObject::SetProperty(thread, optionsObj, styleKey, styleValue);
 
@@ -281,7 +281,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToLocaleString_002)
 HWTEST_F_L0(BuiltinsBigIntTest, ToString_001)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("17"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("17"));
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
@@ -311,7 +311,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToString_001)
 HWTEST_F_L0(BuiltinsBigIntTest, ToString_002)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("-0"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("-0"));
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
@@ -341,7 +341,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToString_002)
 HWTEST_F_L0(BuiltinsBigIntTest, ToString_003)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("-10"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("-10"));
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
@@ -372,7 +372,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToString_003)
 HWTEST_F_L0(BuiltinsBigIntTest, ToString_004)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("254"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("254"));
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
@@ -403,7 +403,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, ToString_004)
 HWTEST_F_L0(BuiltinsBigIntTest, ValueOf_001)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("-65536"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("-65536"));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -430,7 +430,7 @@ HWTEST_F_L0(BuiltinsBigIntTest, ValueOf_001)
 HWTEST_F_L0(BuiltinsBigIntTest, ValueOf_002)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("65535"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("65535"));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -495,17 +495,17 @@ HWTEST_F_L0(BuiltinsBigIntTest, BigintToNumber)
     JSHandle<JSTaggedValue> bigint(thread, JSTaggedValue::Undefined());
     JSTaggedNumber number(0);
 
-    JSHandle<JSTaggedValue> parma(factory->NewFromCanBeCompressString("0xffff"));
+    JSHandle<JSTaggedValue> parma(factory->NewFromASCII("0xffff"));
     bigint = JSHandle<JSTaggedValue>(thread, JSTaggedValue::ToBigInt(thread, parma));
     ASSERT_TRUE(bigint->IsBigInt());
     number = BigInt::BigIntToNumber(JSHandle<BigInt>::Cast(bigint));
     ASSERT_EQ(number.GetNumber(), static_cast<double>(0xffff));
 
     parma = JSHandle<JSTaggedValue>(
-        factory->NewFromCanBeCompressString("0xfffffffffffff8000000000000000000000000000000000000000000000000000"
-                                            "0000000000000000000000000000000000000000000000000000000000000000000"
-                                            "0000000000000000000000000000000000000000000000000000000000000000000"
-                                            "000000000000000000000000000000000000000000000000000000000"));
+        factory->NewFromASCII("0xfffffffffffff8000000000000000000000000000000000000000000000000000"
+                              "0000000000000000000000000000000000000000000000000000000000000000000"
+                              "0000000000000000000000000000000000000000000000000000000000000000000"
+                              "000000000000000000000000000000000000000000000000000000000"));
     bigint = JSHandle<JSTaggedValue>(thread, JSTaggedValue::ToBigInt(thread, parma));
     ASSERT_TRUE(bigint->IsBigInt());
     number = BigInt::BigIntToNumber(JSHandle<BigInt>::Cast(bigint));
@@ -546,85 +546,85 @@ HWTEST_F_L0(BuiltinsBigIntTest, StringToBigInt)
     JSHandle<JSTaggedValue> parma;
 
     // hex string
-    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("0xffff"));
+    parma = JSHandle<JSTaggedValue>(factory->NewFromASCII("0xffff"));
     bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
     ASSERT_TRUE(bigint->IsBigInt());
     str = BigInt::ToString(thread, JSHandle<BigInt>::Cast(bigint), BigInt::HEXADECIMAL);
-    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("ffff"));
+    parma = JSHandle<JSTaggedValue>(factory->NewFromASCII("ffff"));
     ASSERT_EQ(str->Compare(reinterpret_cast<EcmaString *>(parma->GetRawData())), 0);
 
-    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("0XFFFF"));
+    parma = JSHandle<JSTaggedValue>(factory->NewFromASCII("0XFFFF"));
     bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
     ASSERT_TRUE(bigint->IsBigInt());
     str = BigInt::ToString(thread, JSHandle<BigInt>::Cast(bigint), BigInt::HEXADECIMAL);
-    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("ffff"));
+    parma = JSHandle<JSTaggedValue>(factory->NewFromASCII("ffff"));
     ASSERT_EQ(str->Compare(reinterpret_cast<EcmaString *>(parma->GetRawData())), 0);
 
     // binary string
-    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("0b11111111"));
+    parma = JSHandle<JSTaggedValue>(factory->NewFromASCII("0b11111111"));
     bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
     ASSERT_TRUE(bigint->IsBigInt());
     str = BigInt::ToString(thread, JSHandle<BigInt>::Cast(bigint), BigInt::BINARY);
-    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("11111111"));
+    parma = JSHandle<JSTaggedValue>(factory->NewFromASCII("11111111"));
     ASSERT_EQ(str->Compare(reinterpret_cast<EcmaString *>(parma->GetRawData())), 0);
 
-    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("0B11111111"));
+    parma = JSHandle<JSTaggedValue>(factory->NewFromASCII("0B11111111"));
     bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
     ASSERT_TRUE(bigint->IsBigInt());
     str = BigInt::ToString(thread, JSHandle<BigInt>::Cast(bigint), BigInt::BINARY);
-    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("11111111"));
+    parma = JSHandle<JSTaggedValue>(factory->NewFromASCII("11111111"));
     ASSERT_EQ(str->Compare(reinterpret_cast<EcmaString *>(parma->GetRawData())), 0);
 
     // octal string
-    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("0o123456"));
+    parma = JSHandle<JSTaggedValue>(factory->NewFromASCII("0o123456"));
     bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
     ASSERT_TRUE(bigint->IsBigInt());
     str = BigInt::ToString(thread, JSHandle<BigInt>::Cast(bigint), BigInt::OCTAL);
-    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("123456"));
+    parma = JSHandle<JSTaggedValue>(factory->NewFromASCII("123456"));
     ASSERT_EQ(str->Compare(reinterpret_cast<EcmaString *>(parma->GetRawData())), 0);
 
-    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("0O123456"));
+    parma = JSHandle<JSTaggedValue>(factory->NewFromASCII("0O123456"));
     bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
     ASSERT_TRUE(bigint->IsBigInt());
     str = BigInt::ToString(thread, JSHandle<BigInt>::Cast(bigint), BigInt::OCTAL);
-    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("123456"));
+    parma = JSHandle<JSTaggedValue>(factory->NewFromASCII("123456"));
     ASSERT_EQ(str->Compare(reinterpret_cast<EcmaString *>(parma->GetRawData())), 0);
 
     // decimal string
-    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("999999999"));
+    parma = JSHandle<JSTaggedValue>(factory->NewFromASCII("999999999"));
     bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
     ASSERT_TRUE(bigint->IsBigInt());
     str = BigInt::ToString(thread, JSHandle<BigInt>::Cast(bigint));
     ASSERT_EQ(str->Compare(reinterpret_cast<EcmaString *>(parma->GetRawData())), 0);
 
     // string has space
-    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("  123  "));
+    parma = JSHandle<JSTaggedValue>(factory->NewFromASCII("  123  "));
     bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
     ASSERT_TRUE(bigint->IsBigInt());
     JSHandle<JSTaggedValue> number(thread, JSTaggedValue(static_cast<double>(123)));
     bool compareRes = JSTaggedValue::Equal(thread, bigint, number);
     ASSERT_TRUE(compareRes);
 
-    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("123   "));
+    parma = JSHandle<JSTaggedValue>(factory->NewFromASCII("123   "));
     bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
     ASSERT_TRUE(bigint->IsBigInt());
     number = JSHandle<JSTaggedValue>(thread, JSTaggedValue(static_cast<double>(123)));
     compareRes = JSTaggedValue::Equal(thread, bigint, number);
     ASSERT_TRUE(compareRes);
 
-    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("   123"));
+    parma = JSHandle<JSTaggedValue>(factory->NewFromASCII("   123"));
     bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
     ASSERT_TRUE(bigint->IsBigInt());
     number = JSHandle<JSTaggedValue>(thread, JSTaggedValue(static_cast<double>(123)));
     compareRes = JSTaggedValue::Equal(thread, bigint, number);
     ASSERT_TRUE(compareRes);
 
-    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString(""));
+    parma = JSHandle<JSTaggedValue>(factory->NewFromASCII(""));
     bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
     ASSERT_TRUE(bigint->IsBigInt());
     ASSERT_TRUE(JSHandle<BigInt>::Cast(bigint)->IsZero());
 
-    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("    "));
+    parma = JSHandle<JSTaggedValue>(factory->NewFromASCII("    "));
     bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
     ASSERT_TRUE(bigint->IsBigInt());
     ASSERT_TRUE(JSHandle<BigInt>::Cast(bigint)->IsZero());

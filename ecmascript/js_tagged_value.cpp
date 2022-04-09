@@ -39,12 +39,12 @@ JSHandle<EcmaString> GetTypeString(JSThread *thread, PreferredPrimitiveType type
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     if (type == NO_PREFERENCE) {
-        return factory->NewFromCanBeCompressString("default");
+        return factory->NewFromASCII("default");
     }
     if (type == PREFER_NUMBER) {
-        return factory->NewFromCanBeCompressString("number");
+        return factory->NewFromASCII("number");
     }
-    return factory->NewFromCanBeCompressString("string");
+    return factory->NewFromASCII("string");
 }
 
 JSHandle<JSTaggedValue> JSTaggedValue::ToPropertyKey(JSThread *thread, const JSHandle<JSTaggedValue> &tagged)
@@ -429,7 +429,7 @@ JSHandle<EcmaString> JSTaggedValue::ToString(JSThread *thread, const JSHandle<JS
 
 JSTaggedValue JSTaggedValue::CanonicalNumericIndexString(JSThread *thread, const JSHandle<JSTaggedValue> &tagged)
 {
-    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-0");
+    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromASCII("-0");
     if (tagged->IsString()) {
         if (EcmaString::StringsAreEqual(static_cast<EcmaString *>(tagged->GetTaggedObject()), *str)) {
             return JSTaggedValue(-0.0);

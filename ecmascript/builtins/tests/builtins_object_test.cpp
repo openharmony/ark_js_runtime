@@ -68,7 +68,7 @@ JSTaggedValue CreateBuiltinJSObject(JSThread *thread, const CString keyCStr)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     JSHandle<JSTaggedValue> obj(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun));
-    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(&keyCStr[0]));
+    JSHandle<JSTaggedValue> key(factory->NewFromASCII(&keyCStr[0]));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
     JSObject::SetProperty(thread, obj, key, value);
     return obj.GetTaggedValue();
@@ -163,12 +163,12 @@ HWTEST_F_L0(BuiltinsObjectTest, Assign)
     JSHandle<JSObject> objHandle2 =
         thread->GetEcmaVM()->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>(function), function);
 
-    JSHandle<JSTaggedValue> key1(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("x"));
+    JSHandle<JSTaggedValue> key1(thread->GetEcmaVM()->GetFactory()->NewFromASCII("x"));
     JSHandle<JSTaggedValue> value1(thread, JSTaggedValue(1));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(objHandle1), key1, value1);
     EXPECT_EQ(JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(objHandle1), key1).GetValue()->GetInt(), 1);
 
-    JSHandle<JSTaggedValue> key2(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("y"));
+    JSHandle<JSTaggedValue> key2(thread->GetEcmaVM()->GetFactory()->NewFromASCII("y"));
     JSHandle<JSTaggedValue> value2(thread, JSTaggedValue(2));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(objHandle2), key2, value2);
     EXPECT_EQ(JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(objHandle2), key2).GetValue()->GetInt(), 2);
@@ -212,7 +212,7 @@ HWTEST_F_L0(BuiltinsObjectTest, Create)
     ASSERT_EQ(resultProto, funcProto.GetTaggedValue());
 
     // has prop
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("prop"));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("prop"));
     JSHandle<JSObject> objHandle =
         thread->GetEcmaVM()->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>::Cast(function), function);
     EXPECT_TRUE(*objHandle != nullptr);
@@ -260,7 +260,7 @@ HWTEST_F_L0(BuiltinsObjectTest, DefineProperties)
     JSHandle<JSFunction> objFunc(env->GetObjectFunction());
     JSHandle<JSObject> objHandle =
         thread->GetEcmaVM()->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>(function), function);
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("prop"));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("prop"));
     JSHandle<JSObject> jsobjHandle =
         thread->GetEcmaVM()->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>(function), function);
 
@@ -306,7 +306,7 @@ HWTEST_F_L0(BuiltinsObjectTest, DefineProperty)
     JSHandle<JSTaggedValue> writable(thread, JSTaggedValue(desc.IsWritable()));
     JSObject::CreateDataProperty(thread, attHandle, writableStr, writable);
 
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("x"));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("x"));
 
     PropertyDescriptor descNw(thread);
     JSObject::GetOwnProperty(thread, objHandle, key, descNw);
@@ -361,7 +361,7 @@ HWTEST_F_L0(BuiltinsObjectTest, GetOwnPropertyDescriptor)
     JSHandle<JSObject> objHandle =
         thread->GetEcmaVM()->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>(function), function);
 
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("x"));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("x"));
 
     PropertyDescriptor descEnum(thread);
     descEnum.SetWritable(true);
@@ -393,7 +393,7 @@ HWTEST_F_L0(BuiltinsObjectTest, GetOwnPropertyNames)
     JSHandle<JSObject> objHandle =
         thread->GetEcmaVM()->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>(function), function);
 
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("x"));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("x"));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(objHandle), key, value);
 
@@ -461,8 +461,8 @@ HWTEST_F_L0(BuiltinsObjectTest, Is)
     ASSERT_EQ(objResult2.GetRawData(), JSTaggedValue::True().GetRawData());
 
     // string compare
-    JSHandle<EcmaString> testStrValue1 = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("helloworld");
-    JSHandle<EcmaString> testStrValue2 = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("helloworld");
+    JSHandle<EcmaString> testStrValue1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("helloworld");
+    JSHandle<EcmaString> testStrValue2 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("helloworld");
 
     auto strCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     strCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -557,7 +557,7 @@ HWTEST_F_L0(BuiltinsObjectTest, IsExtensible)
 HWTEST_F_L0(BuiltinsObjectTest, IsFrozen)
 {
     JSHandle<JSTaggedValue> function(thread, BuiltinsObjectTestCreate(thread));
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("x"));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("x"));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
 
     // An object is extensible by default, so it is also non-frozen.
@@ -712,7 +712,7 @@ HWTEST_F_L0(BuiltinsObjectTest, SetPrototypeOf)
     ASSERT_EQ(result.GetRawData(), obj.GetTaggedValue().GetRawData());
 
     // test obj has property "y".
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("y"));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("y"));
     EXPECT_EQ(JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(obj), key).GetValue()->GetInt(), 1);
 }
 
@@ -721,7 +721,7 @@ HWTEST_F_L0(BuiltinsObjectTest, HasOwnProperty)
 {
     JSHandle<JSTaggedValue> obj(thread, CreateBuiltinJSObject(thread, "x"));
     CString keyCStr = "x";
-    JSHandle<EcmaString> keyString = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(&keyCStr[0]);
+    JSHandle<EcmaString> keyString = thread->GetEcmaVM()->GetFactory()->NewFromASCII(&keyCStr[0]);
     JSHandle<JSTaggedValue> key(keyString);
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
@@ -788,7 +788,7 @@ HWTEST_F_L0(BuiltinsObjectTest, IsPrototypeOfTrue)
 HWTEST_F_L0(BuiltinsObjectTest, PropertyIsEnumerable)
 {
     JSHandle<JSTaggedValue> obj(thread, CreateBuiltinJSObject(thread, "x"));
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("x"));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("x"));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -810,10 +810,10 @@ HWTEST_F_L0(BuiltinsObjectTest, ToLocaleString)
         thread->GetEcmaVM()->GetGlobalEnv(), reinterpret_cast<void *>(BuiltinsObject::ToString));
     calleeFunc->GetClass()->SetCallable(true);
     JSHandle<JSTaggedValue> calleeValue(calleeFunc);
-    JSHandle<JSTaggedValue> calleeKey(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("toString"));
+    JSHandle<JSTaggedValue> calleeKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII("toString"));
     JSObject::SetProperty(thread, obj, calleeKey, calleeValue);
 
-    JSHandle<EcmaString> resultValue = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("[object Object]");
+    JSHandle<EcmaString> resultValue = thread->GetEcmaVM()->GetFactory()->NewFromASCII("[object Object]");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -834,7 +834,7 @@ HWTEST_F_L0(BuiltinsObjectTest, ToString)
     JSHandle<JSTaggedValue> obj = JSHandle<JSTaggedValue>(thread, CreateBuiltinJSObject(thread, "x"));
 
     // object
-    JSHandle<EcmaString> resultValue = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("[object Object]");
+    JSHandle<EcmaString> resultValue = thread->GetEcmaVM()->GetFactory()->NewFromASCII("[object Object]");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(obj.GetTaggedValue());
@@ -849,7 +849,7 @@ HWTEST_F_L0(BuiltinsObjectTest, ToString)
     // array
     JSHandle<JSArray> arr = thread->GetEcmaVM()->GetFactory()->NewJSArray();
     JSHandle<EcmaString> resultArrValue =
-        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("[object Array]");
+        thread->GetEcmaVM()->GetFactory()->NewFromASCII("[object Array]");
     auto arrEcmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     arrEcmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     arrEcmaRuntimeCallInfo->SetThis(arr.GetTaggedValue());
@@ -862,9 +862,9 @@ HWTEST_F_L0(BuiltinsObjectTest, ToString)
     ASSERT_EQ(resultArrValue->Compare(reinterpret_cast<EcmaString *>(resultArr.GetRawData())), 0);
 
     // string
-    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("hello");
+    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromASCII("hello");
     JSHandle<EcmaString> resultStrValue =
-        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("[object String]");
+        thread->GetEcmaVM()->GetFactory()->NewFromASCII("[object String]");
     auto strEcmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     strEcmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     strEcmaRuntimeCallInfo->SetThis(str.GetTaggedValue());
@@ -879,7 +879,7 @@ HWTEST_F_L0(BuiltinsObjectTest, ToString)
     // function
     JSHandle<JSFunction> func = thread->GetEcmaVM()->GetFactory()->NewJSFunction(thread->GetEcmaVM()->GetGlobalEnv());
     JSHandle<EcmaString> resultFuncValue =
-        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("[object Function]");
+        thread->GetEcmaVM()->GetFactory()->NewFromASCII("[object Function]");
     auto funcEcmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     funcEcmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     funcEcmaRuntimeCallInfo->SetThis(func.GetTaggedValue());
@@ -897,7 +897,7 @@ HWTEST_F_L0(BuiltinsObjectTest, ToString)
     JSHandle<JSTaggedValue> errorObject = env->GetErrorFunction();
     JSHandle<JSObject> error =
         thread->GetEcmaVM()->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
-    JSHandle<EcmaString> errorValue = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("[object Error]");
+    JSHandle<EcmaString> errorValue = thread->GetEcmaVM()->GetFactory()->NewFromASCII("[object Error]");
     auto errorEcmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     errorEcmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     errorEcmaRuntimeCallInfo->SetThis(error.GetTaggedValue());
@@ -914,7 +914,7 @@ HWTEST_F_L0(BuiltinsObjectTest, ToString)
     JSHandle<JSFunction> booleanObject(env->GetBooleanFunction());
     JSHandle<JSPrimitiveRef> boolean = thread->GetEcmaVM()->GetFactory()->NewJSPrimitiveRef(booleanObject, value);
     JSHandle<EcmaString> resultBoolValue =
-        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("[object Boolean]");
+        thread->GetEcmaVM()->GetFactory()->NewFromASCII("[object Boolean]");
     auto boolEcmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     boolEcmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     boolEcmaRuntimeCallInfo->SetThis(boolean.GetTaggedValue());
@@ -928,7 +928,7 @@ HWTEST_F_L0(BuiltinsObjectTest, ToString)
 
     // number
     JSHandle<EcmaString> resultNumValue =
-        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("[object Number]");
+        thread->GetEcmaVM()->GetFactory()->NewFromASCII("[object Number]");
     auto numEcmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     numEcmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     numEcmaRuntimeCallInfo->SetThis(JSTaggedValue(static_cast<double>(0)));

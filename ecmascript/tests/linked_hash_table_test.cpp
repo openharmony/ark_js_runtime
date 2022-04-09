@@ -86,12 +86,12 @@ HWTEST_F_L0(LinkedHashTableTest, addKeyAndValue)
     JSHandle<JSTaggedValue> objFun = GetGlobalEnv()->GetObjectFunction();
 
     char keyArray[] = "hello";
-    JSHandle<EcmaString> stringKey1 = factory->NewFromCanBeCompressString(keyArray);
+    JSHandle<EcmaString> stringKey1 = factory->NewFromASCII(keyArray);
     JSHandle<JSTaggedValue> key1(stringKey1);
     JSHandle<JSTaggedValue> value1(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun));
 
     char key2Array[] = "hello2";
-    JSHandle<EcmaString> stringKey2 = factory->NewFromCanBeCompressString(key2Array);
+    JSHandle<EcmaString> stringKey2 = factory->NewFromASCII(key2Array);
     JSHandle<JSTaggedValue> key2(stringKey2);
     JSHandle<JSTaggedValue> value2(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun));
 
@@ -127,12 +127,12 @@ HWTEST_F_L0(LinkedHashTableTest, SetaddKeyAndValue)
     JSHandle<JSTaggedValue> objFun = GetGlobalEnv()->GetObjectFunction();
 
     char keyArray[] = "hello";
-    JSHandle<EcmaString> stringKey1 = factory->NewFromCanBeCompressString(keyArray);
+    JSHandle<EcmaString> stringKey1 = factory->NewFromASCII(keyArray);
     JSHandle<JSTaggedValue> key1(stringKey1);
     JSHandle<JSTaggedValue> value1(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun));
 
     char key2Array[] = "hello2";
-    JSHandle<EcmaString> stringKey2 = factory->NewFromCanBeCompressString(key2Array);
+    JSHandle<EcmaString> stringKey2 = factory->NewFromASCII(key2Array);
     JSHandle<JSTaggedValue> key2(stringKey2);
     JSHandle<JSTaggedValue> value2(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun));
 
@@ -166,7 +166,7 @@ HWTEST_F_L0(LinkedHashTableTest, GrowCapacity)
     for (int i = 0; i < 33; i++) {
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
-        JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyArray));
+        JSHandle<JSTaggedValue> key(factory->NewFromASCII(keyArray));
         JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));
 
         // test insert()
@@ -178,7 +178,7 @@ HWTEST_F_L0(LinkedHashTableTest, GrowCapacity)
     for (int i = 0; i < 33; i++) {
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
-        JSHandle<EcmaString> stringKey = factory->NewFromCanBeCompressString(keyArray);
+        JSHandle<EcmaString> stringKey = factory->NewFromASCII(keyArray);
         // test insert()
         EXPECT_EQ(i, dictHandle->FindElement(stringKey.GetTaggedValue()));
     }
@@ -198,7 +198,7 @@ HWTEST_F_L0(LinkedHashTableTest, SetGrowCapacity)
     for (int i = 0; i < 33; i++) {
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
-        JSHandle<EcmaString> stringKey = factory->NewFromCanBeCompressString(keyArray);
+        JSHandle<EcmaString> stringKey = factory->NewFromASCII(keyArray);
         JSHandle<JSTaggedValue> key(stringKey);
 
         // test insert()
@@ -210,7 +210,7 @@ HWTEST_F_L0(LinkedHashTableTest, SetGrowCapacity)
     for (int i = 0; i < 33; i++) {
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
-        JSHandle<EcmaString> stringKey = factory->NewFromCanBeCompressString(keyArray);
+        JSHandle<EcmaString> stringKey = factory->NewFromASCII(keyArray);
         // test insert()
         EXPECT_EQ(i, setHandle->FindElement(stringKey.GetTaggedValue()));
     }
@@ -229,20 +229,20 @@ HWTEST_F_L0(LinkedHashTableTest, ShrinkCapacity)
     for (int i = 0; i < 10; i++) {
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
-        JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyArray));
+        JSHandle<JSTaggedValue> key(factory->NewFromASCII(keyArray));
         JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));
 
         // test insert()
         dictHandle = LinkedHashMap::Set(thread, dictHandle, key, value);
     }
     keyArray[5] = '1' + 9;
-    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyArray));
+    JSHandle<JSTaggedValue> key(factory->NewFromASCII(keyArray));
     dictHandle = LinkedHashMap::Delete(thread, dictHandle, key);
     // test order
     for (int i = 0; i < 9; i++) {
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
-        JSHandle<EcmaString> stringKey = factory->NewFromCanBeCompressString(keyArray);
+        JSHandle<EcmaString> stringKey = factory->NewFromASCII(keyArray);
         // test insert()
         EXPECT_EQ(i, dictHandle->FindElement(stringKey.GetTaggedValue()));
     }
@@ -262,19 +262,19 @@ HWTEST_F_L0(LinkedHashTableTest, SetShrinkCapacity)
     for (int i = 0; i < 10; i++) {
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
-        JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyArray));
+        JSHandle<JSTaggedValue> key(factory->NewFromASCII(keyArray));
 
         // test insert()
         setHandle = LinkedHashSet::Add(thread, setHandle, key);
     }
     keyArray[5] = '1' + 9;
-    JSHandle<JSTaggedValue> keyHandle(factory->NewFromCanBeCompressString(keyArray));
+    JSHandle<JSTaggedValue> keyHandle(factory->NewFromASCII(keyArray));
     setHandle = LinkedHashSet::Delete(thread, setHandle, keyHandle);
     // test order
     for (int i = 0; i < 9; i++) {
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
-        JSHandle<EcmaString> stringKey = factory->NewFromCanBeCompressString(keyArray);
+        JSHandle<EcmaString> stringKey = factory->NewFromASCII(keyArray);
         // test insert()
         EXPECT_EQ(i, setHandle->FindElement(stringKey.GetTaggedValue()));
     }

@@ -255,8 +255,8 @@ MatchResult RegExpExecutor::GetResult(const JSThread *thread, bool isSuccess) co
                 pair.first = false;
                 if (isWideChar_) {
                     // create utf-16 string
-                    pair.second = factory->NewFromUtf16UnCheck(
-                        reinterpret_cast<const uint16_t *>(captureState->captureStart), len / 2, false);
+                    pair.second = factory->NewFromUtf16(
+                        reinterpret_cast<const uint16_t *>(captureState->captureStart), len / 2);
                 } else {
                     // create utf-8 string
                     CVector<uint8_t> buffer(len + 1);
@@ -268,7 +268,7 @@ MatchResult RegExpExecutor::GetResult(const JSThread *thread, bool isSuccess) co
                     }
                     dest[len] = '\0';  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                     pair.second =
-                        factory->NewFromUtf8UnCheck(reinterpret_cast<const uint8_t *>(buffer.data()), len, true);
+                        factory->NewFromUtf8(reinterpret_cast<const uint8_t *>(buffer.data()), len);
                 }
             } else {
                 // undefined

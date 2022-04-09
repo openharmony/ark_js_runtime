@@ -177,7 +177,7 @@ JSTaggedValue BuiltinsString::Raw(EcmaRuntimeCallInfo *argv)
     // ReturnIfAbrupt(cooked).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // Let raw be ToObject(Get(cooked, "raw")).
-    JSHandle<JSTaggedValue> rawKey(factory->NewFromCanBeCompressString("raw"));
+    JSHandle<JSTaggedValue> rawKey(factory->NewFromASCII("raw"));
     JSHandle<JSTaggedValue> rawTag =
         JSObject::GetProperty(thread, JSHandle<JSTaggedValue>::Cast(cooked), rawKey).GetValue();
     JSHandle<JSObject> rawObj = JSTaggedValue::ToObject(thread, rawTag);
@@ -227,7 +227,8 @@ JSTaggedValue BuiltinsString::Raw(EcmaRuntimeCallInfo *argv)
     }
     // return the result string
     auto *uint16tData = reinterpret_cast<uint16_t *>(const_cast<char16_t *>(u16str.data()));
-    return factory->NewFromUtf16LiteralUnCheck(uint16tData, u16str.size(), canBeCompress).GetTaggedValue();
+    return canBeCompress ? factory->NewFromUtf16LiteralCompress(uint16tData, u16str.size()).GetTaggedValue() :
+                           factory->NewFromUtf16LiteralNotCompress(uint16tData, u16str.size()).GetTaggedValue();
 }
 
 // 21.1.3.1
@@ -357,7 +358,8 @@ JSTaggedValue BuiltinsString::Concat(EcmaRuntimeCallInfo *argv)
     auto *char16tData = const_cast<char16_t *>(constChar16tData);
     auto *uint16tData = reinterpret_cast<uint16_t *>(char16tData);
     int32_t u16strSize = u16strThis.size();
-    return factory->NewFromUtf16LiteralUnCheck(uint16tData, u16strSize, canBeCompress).GetTaggedValue();
+    return canBeCompress ? factory->NewFromUtf16LiteralCompress(uint16tData, u16strSize).GetTaggedValue() :
+                           factory->NewFromUtf16LiteralNotCompress(uint16tData, u16strSize).GetTaggedValue();
 }
 
 // 21.1.3.5 String.prototype.constructor
@@ -647,20 +649,20 @@ JSTaggedValue BuiltinsString::Normalize(EcmaRuntimeCallInfo *argv)
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
     JSHandle<EcmaString> formValue;
     if (argv->GetArgsNumber() == 0) {
-        formValue = factory->NewFromString("NFC");
+        formValue = factory->NewFromASCII("NFC");
     } else {
         JSHandle<JSTaggedValue> formTag = BuiltinsString::GetCallArg(argv, 0);
         if (formTag->IsUndefined()) {
-            formValue = factory->NewFromString("NFC");
+            formValue = factory->NewFromASCII("NFC");
         } else {
             formValue = JSTaggedValue::ToString(thread, formTag);
             RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
         }
     }
-    JSHandle<EcmaString> nfc = factory->NewFromString("NFC");
-    JSHandle<EcmaString> nfd = factory->NewFromString("NFD");
-    JSHandle<EcmaString> nfkc = factory->NewFromString("NFKC");
-    JSHandle<EcmaString> nfkd = factory->NewFromString("NFKD");
+    JSHandle<EcmaString> nfc = factory->NewFromASCII("NFC");
+    JSHandle<EcmaString> nfd = factory->NewFromASCII("NFD");
+    JSHandle<EcmaString> nfkc = factory->NewFromASCII("NFKC");
+    JSHandle<EcmaString> nfkd = factory->NewFromASCII("NFKD");
     if (formValue->Compare(*nfc) != 0 && formValue->Compare(*nfd) != 0 && formValue->Compare(*nfkc) != 0 &&
         formValue->Compare(*nfkd) != 0) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "compare not equal", JSTaggedValue::Exception());
@@ -868,7 +870,8 @@ JSTaggedValue BuiltinsString::Replace(EcmaRuntimeCallInfo *argv)
 
     auto *char16tData = const_cast<char16_t *>(stringBuilder.c_str());
     auto *uint16tData = reinterpret_cast<uint16_t *>(char16tData);
-    return factory->NewFromUtf16LiteralUnCheck(uint16tData, stringBuilder.size(), canBeCompress).GetTaggedValue();
+    return canBeCompress ? factory->NewFromUtf16LiteralCompress(uint16tData, stringBuilder.size()).GetTaggedValue() :
+                           factory->NewFromUtf16LiteralNotCompress(uint16tData, stringBuilder.size()).GetTaggedValue();
 }
 
 JSTaggedValue BuiltinsString::GetSubstitution(JSThread *thread, const JSHandle<EcmaString> &matched,
@@ -879,7 +882,7 @@ JSTaggedValue BuiltinsString::GetSubstitution(JSThread *thread, const JSHandle<E
     BUILTINS_API_TRACE(thread, String, GetSubstitution);
     auto ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
-    JSHandle<EcmaString> dollarString = factory->NewFromCanBeCompressString("$");
+    JSHandle<EcmaString> dollarString = factory->NewFromASCII("$");
     int32_t replaceLength = replacement->GetLength();
     int32_t tailPos = position + matched->GetLength();
 
@@ -907,8 +910,9 @@ JSTaggedValue BuiltinsString::GetSubstitution(JSThread *thread, const JSHandle<E
             stringBuilder += '$';
             auto *char16tData = const_cast<char16_t *>(stringBuilder.c_str());
             auto *uint16tData = reinterpret_cast<uint16_t *>(char16tData);
-            return factory->NewFromUtf16LiteralUnCheck(uint16tData, stringBuilder.length(), canBeCompress)
-                .GetTaggedValue();
+            return canBeCompress ?
+                   factory->NewFromUtf16LiteralCompress(uint16tData, stringBuilder.length()).GetTaggedValue() :
+                   factory->NewFromUtf16LiteralNotCompress(uint16tData, stringBuilder.length()).GetTaggedValue();
         }
         int continueFromIndex = -1;
         uint16_t peek = replacement->At(peekIndex);
@@ -1028,8 +1032,9 @@ JSTaggedValue BuiltinsString::GetSubstitution(JSThread *thread, const JSHandle<E
             }
             auto *char16tData = const_cast<char16_t *>(stringBuilder.c_str());
             auto *uint16tData = reinterpret_cast<uint16_t *>(char16tData);
-            return factory->NewFromUtf16LiteralUnCheck(uint16tData, stringBuilder.length(), canBeCompress)
-                .GetTaggedValue();
+            return canBeCompress ?
+                   factory->NewFromUtf16LiteralCompress(uint16tData, stringBuilder.length()).GetTaggedValue() :
+                   factory->NewFromUtf16LiteralNotCompress(uint16tData, stringBuilder.length()).GetTaggedValue();
         }
         // Append substring between the previous and the next $ character.
         if (nextDollarIndex > continueFromIndex) {

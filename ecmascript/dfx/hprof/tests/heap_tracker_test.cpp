@@ -74,7 +74,7 @@ HWTEST_F_L0(HeapTrackerTest, HeapTracker)
     sleep(1);
     count = 100;
     while (count-- > 0) {
-        JSHandle<EcmaString> string = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("Hello World");
+        JSHandle<EcmaString> string = thread->GetEcmaVM()->GetFactory()->NewFromASCII("Hello World");
         thread->GetEcmaVM()->GetFactory()->NewJSString(JSHandle<JSTaggedValue>(string));
     }
 

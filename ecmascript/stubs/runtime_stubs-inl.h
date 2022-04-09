@@ -876,7 +876,7 @@ void RuntimeStubs::RuntimeThrowPatternNonCoercible(JSThread *thread)
 void RuntimeStubs::RuntimeThrowDeleteSuperProperty(JSThread *thread)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> info = factory->NewFromCanBeCompressString("Can not delete super property");
+    JSHandle<EcmaString> info = factory->NewFromASCII("Can not delete super property");
     JSHandle<JSObject> errorObj = factory->NewJSError(base::ErrorType::REFERENCE_ERROR, info);
     THROW_NEW_ERROR_AND_RETURN(thread, errorObj.GetTaggedValue());
 }
@@ -884,7 +884,7 @@ void RuntimeStubs::RuntimeThrowDeleteSuperProperty(JSThread *thread)
 void RuntimeStubs::RuntimeThrowUndefinedIfHole(JSThread *thread, const JSHandle<EcmaString> &obj)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> info = factory->NewFromCanBeCompressString(" is not initialized");
+    JSHandle<EcmaString> info = factory->NewFromASCII(" is not initialized");
 
     JSHandle<EcmaString> msg = factory->ConcatFromString(info, obj);
     THROW_NEW_ERROR_AND_RETURN(thread, factory->NewJSError(base::ErrorType::REFERENCE_ERROR, msg).GetTaggedValue());
@@ -899,7 +899,7 @@ void RuntimeStubs::RuntimeThrowConstAssignment(JSThread *thread, const JSHandle<
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
-    JSHandle<EcmaString> info = factory->NewFromCanBeCompressString("Assignment to const variable ");
+    JSHandle<EcmaString> info = factory->NewFromASCII("Assignment to const variable ");
 
     JSHandle<EcmaString> msg = factory->ConcatFromString(info, value);
     THROW_NEW_ERROR_AND_RETURN(thread, factory->NewJSError(base::ErrorType::TYPE_ERROR, msg).GetTaggedValue());
@@ -953,7 +953,7 @@ JSTaggedValue RuntimeStubs::RuntimeThrowReferenceError(JSThread *thread, const J
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<EcmaString> propName = JSTaggedValue::ToString(thread, prop);
     ASSERT_NO_ABRUPT_COMPLETION(thread);
-    JSHandle<EcmaString> info = factory->NewFromString(desc);
+    JSHandle<EcmaString> info = factory->NewFromUtf8(desc);
     JSHandle<EcmaString> msg = factory->ConcatFromString(propName, info);
     THROW_NEW_ERROR_AND_RETURN_VALUE(thread,
                                      factory->NewJSError(base::ErrorType::REFERENCE_ERROR, msg).GetTaggedValue(),

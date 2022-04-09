@@ -265,7 +265,7 @@
             THROW_TYPE_ERROR_AND_RETURN(thread, "Not a Date Object", JSTaggedValue::Exception());                  \
         }                                                                                                          \
         if (std::isnan(JSDate::Cast(msg->GetTaggedObject())->GetTimeValue().GetDouble())) {                        \
-            return thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("Invalid Date").GetTaggedValue(); \
+            return thread->GetEcmaVM()->GetFactory()->NewFromASCII("Invalid Date").GetTaggedValue(); \
         }                                                                                                          \
         return JSDate::Cast(msg->GetTaggedObject())->name(thread);                                                 \
     }

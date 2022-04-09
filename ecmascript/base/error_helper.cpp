@@ -82,7 +82,7 @@ JSTaggedValue ErrorHelper::ErrorCommonToString(EcmaRuntimeCallInfo *argv, const 
     }
 
     // 13. Return the result of concatenating name, the code unit 0x003A (COLON), the code unit 0x0020 (SPACE), and msg.
-    JSHandle<EcmaString> space = factory->NewFromCanBeCompressString(": ");
+    JSHandle<EcmaString> space = factory->NewFromASCII(": ");
     JSHandle<EcmaString> jsHandleName = JSHandle<EcmaString>::Cast(name);
     JSHandle<EcmaString> jsHandleMsg = JSHandle<EcmaString>::Cast(msg);
     JSHandle<EcmaString> handleNameSpace = factory->ConcatFromString(jsHandleName, space);
@@ -187,7 +187,7 @@ JSHandle<EcmaString> ErrorHelper::BuildEcmaStackTrace(JSThread *thread)
     CString data = BuildNativeAndJsStackTrace(thread);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     LOG(DEBUG, ECMASCRIPT) << data;
-    return factory->NewFromString(data);
+    return factory->NewFromUtf8(data);
 }
 
 CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
