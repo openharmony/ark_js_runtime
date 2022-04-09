@@ -218,6 +218,9 @@ private:
     void LowerStOwnByName(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerDefineGeneratorFunc(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerDefineAsyncFunc(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerNewLexicalEnvDyn(GateRef gate, GateRef glue);
+    void LowerNewLexicalEnvWithNameDyn(GateRef gate, GateRef glue);
+    void LowerPopLexicalEnv(GateRef gate, GateRef glue);
 
     BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;

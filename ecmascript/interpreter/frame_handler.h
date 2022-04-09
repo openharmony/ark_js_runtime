@@ -121,6 +121,7 @@ public:
     JSTaggedType *GetSp() const;
     ConstantPool *GetConstpool() const;
     JSTaggedValue GetEnv() const;
+    void SetEnv(JSTaggedValue env);
 
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1);
 

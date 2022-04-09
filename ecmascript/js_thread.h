@@ -265,6 +265,7 @@ public:
     void ResetGuardians();
 
     JSTaggedValue GetCurrentLexenv() const;
+    void SetCurrentLexenv(JSTaggedValue env);
 
     void RegisterRTInterface(size_t id, Address addr)
     {
