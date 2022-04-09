@@ -82,11 +82,11 @@ HWTEST_F_L0(BuiltinsLocaleTest, LocaleConstructor)
     JSHandle<JSTaggedValue> regionKey = thread->GlobalConstants()->GetHandledRegionString();
     JSHandle<JSTaggedValue> numericKey =  thread->GlobalConstants()->GetHandledNumericString();
     JSHandle<JSTaggedValue> scriptKey =  thread->GlobalConstants()->GetHandledScriptString();
-    JSHandle<JSTaggedValue> languageValue(factory->NewFromCanBeCompressString("cn"));
-    JSHandle<JSTaggedValue> regionValue(factory->NewFromCanBeCompressString("CN"));
-    JSHandle<JSTaggedValue> scriptValue(factory->NewFromCanBeCompressString("Chin"));
+    JSHandle<JSTaggedValue> languageValue(factory->NewFromASCII("cn"));
+    JSHandle<JSTaggedValue> regionValue(factory->NewFromASCII("CN"));
+    JSHandle<JSTaggedValue> scriptValue(factory->NewFromASCII("Chin"));
     JSHandle<JSTaggedValue> numericValue(thread, JSTaggedValue::True());
-    JSHandle<JSTaggedValue> localeString(factory->NewFromCanBeCompressString("zh-Hans-CN"));
+    JSHandle<JSTaggedValue> localeString(factory->NewFromASCII("zh-Hans-CN"));
 
     JSHandle<JSObject> optionsObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSObject::SetProperty(thread, optionsObj, numericKey, numericValue);
@@ -117,34 +117,34 @@ static JSTaggedValue JSLocaleCreateWithOptionTest(JSThread *thread)
     JSHandle<JSTaggedValue> languageKey = thread->GlobalConstants()->GetHandledLanguageString();
     JSHandle<JSTaggedValue> regionKey = thread->GlobalConstants()->GetHandledRegionString();
     JSHandle<JSTaggedValue> scriptKey =  thread->GlobalConstants()->GetHandledScriptString();
-    JSHandle<JSTaggedValue> languageValue(factory->NewFromCanBeCompressString("en"));
-    JSHandle<JSTaggedValue> regionValue(factory->NewFromCanBeCompressString("US"));
-    JSHandle<JSTaggedValue> scriptValue(factory->NewFromCanBeCompressString("Latn"));
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en-Latn-US"));
+    JSHandle<JSTaggedValue> languageValue(factory->NewFromASCII("en"));
+    JSHandle<JSTaggedValue> regionValue(factory->NewFromASCII("US"));
+    JSHandle<JSTaggedValue> scriptValue(factory->NewFromASCII("Latn"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en-Latn-US"));
     // set option(language, region, script)
     JSHandle<JSObject> optionsObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSObject::SetProperty(thread, optionsObj, languageKey, languageValue);
     JSObject::SetProperty(thread, optionsObj, regionKey, regionValue);
     JSObject::SetProperty(thread, optionsObj, scriptKey, scriptValue);
 
-    JSHandle<JSTaggedValue> calendarValue(factory->NewFromCanBeCompressString("chinese"));
+    JSHandle<JSTaggedValue> calendarValue(factory->NewFromASCII("chinese"));
     JSHandle<JSTaggedValue> calendarKey = thread->GlobalConstants()->GetHandledCalendarString();
     JSObject::SetProperty(thread, optionsObj, calendarKey, calendarValue); // test chinese calendar
 
     JSHandle<JSTaggedValue> hourCycleKey = thread->GlobalConstants()->GetHandledHourCycleString();
-    JSHandle<JSTaggedValue> hourCycleValue(factory->NewFromCanBeCompressString("h24"));
+    JSHandle<JSTaggedValue> hourCycleValue(factory->NewFromASCII("h24"));
     JSObject::SetProperty(thread, optionsObj, hourCycleKey, hourCycleValue); // test h24
 
     JSHandle<JSTaggedValue> numericKey = thread->GlobalConstants()->GetHandledNumericString();
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("true"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("true"));
     JSObject::SetProperty(thread, optionsObj, numericKey, numericValue); // test true
 
     JSHandle<JSTaggedValue> numberingSystemKey = thread->GlobalConstants()->GetHandledNumberingSystemString();
-    JSHandle<JSTaggedValue> numberingSystemValue(factory->NewFromCanBeCompressString("mong"));
+    JSHandle<JSTaggedValue> numberingSystemValue(factory->NewFromASCII("mong"));
     JSObject::SetProperty(thread, optionsObj, numberingSystemKey, numberingSystemValue); // test mong
 
     JSHandle<JSTaggedValue> collationKey = thread->GlobalConstants()->GetHandledCollationString();
-    JSHandle<JSTaggedValue> collationValue(factory->NewFromCanBeCompressString("compat"));
+    JSHandle<JSTaggedValue> collationValue(factory->NewFromASCII("compat"));
     JSObject::SetProperty(thread, optionsObj, collationKey, collationValue); // test compat
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue(*newTarget), 8);
@@ -174,7 +174,7 @@ HWTEST_F_L0(BuiltinsLocaleTest, ToString)
     EXPECT_TRUE(result.IsString());
     JSHandle<EcmaString> handleEcmaStr(thread, result);
     JSHandle<EcmaString> resultStr(
-        factory->NewFromCanBeCompressString("en-Latn-US-u-ca-chinese-co-compat-hc-h24-kn-nu-mong"));
+        factory->NewFromASCII("en-Latn-US-u-ca-chinese-co-compat-hc-h24-kn-nu-mong"));
     EXPECT_EQ(handleEcmaStr->Compare(*resultStr), 0);
 }
 
@@ -355,7 +355,7 @@ static JSTaggedValue JSLocaleCreateWithOptionsTagsTest(JSThread *thread, JSHandl
 
     JSHandle<JSTaggedValue> languageKey = thread->GlobalConstants()->GetHandledLanguageString();
     JSHandle<JSTaggedValue> languageValue = JSHandle<JSTaggedValue>(value);
-    JSHandle<EcmaString> locale = factory->NewFromCanBeCompressString("zh");
+    JSHandle<EcmaString> locale = factory->NewFromASCII("zh");
     // set option(language)
     JSHandle<JSObject> optionsObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSObject::SetProperty(thread, optionsObj, languageKey, languageValue);
@@ -376,7 +376,7 @@ HWTEST_F_L0(BuiltinsLocaleTest, Maximize_001)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     // set language,then call Maximize function get language,script and region
-    JSHandle<JSTaggedValue> languageValue(factory->NewFromCanBeCompressString("zh"));
+    JSHandle<JSTaggedValue> languageValue(factory->NewFromASCII("zh"));
     JSHandle<JSLocale> jsLocale = JSHandle<JSLocale>(thread, JSLocaleCreateWithOptionsTagsTest(thread, languageValue));
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
@@ -459,7 +459,7 @@ HWTEST_F_L0(BuiltinsLocaleTest, Minimize_002)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     // set language and it's minimized
-    JSHandle<JSTaggedValue> languageValue(factory->NewFromCanBeCompressString("zh"));
+    JSHandle<JSTaggedValue> languageValue(factory->NewFromASCII("zh"));
     JSHandle<JSLocale> jsLocale = JSHandle<JSLocale>(thread, JSLocaleCreateWithOptionsTagsTest(thread, languageValue));
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);

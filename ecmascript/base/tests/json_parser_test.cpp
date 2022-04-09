@@ -59,17 +59,17 @@ HWTEST_F_L0(JsonParserTest, Parser_001)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JsonParser<uint8_t> parser(thread);
     // JSON Number
-    JSHandle<JSTaggedValue> handleMsg2(factory->NewFromCanBeCompressString("1234"));
+    JSHandle<JSTaggedValue> handleMsg2(factory->NewFromASCII("1234"));
     JSHandle<EcmaString> handleStr2(JSTaggedValue::ToString(thread, handleMsg2));
     JSHandle<JSTaggedValue> result2 = parser.ParseUtf8(*handleStr2);
     EXPECT_EQ(result2->GetNumber(), 1234);
     // JSON Literal
-    JSHandle<JSTaggedValue> handleMsg3(factory->NewFromCanBeCompressString("true"));
+    JSHandle<JSTaggedValue> handleMsg3(factory->NewFromASCII("true"));
     JSHandle<EcmaString> handleStr3(JSTaggedValue::ToString(thread, handleMsg3));
     JSHandle<JSTaggedValue> result3 = parser.ParseUtf8(*handleStr3);
     EXPECT_EQ(result3.GetTaggedValue(), JSTaggedValue::True());
     // JSON Unexpected
-    JSHandle<JSTaggedValue> handleMsg4(factory->NewFromCanBeCompressString("trus"));
+    JSHandle<JSTaggedValue> handleMsg4(factory->NewFromASCII("trus"));
     JSHandle<EcmaString> handleStr4(JSTaggedValue::ToString(thread, handleMsg4));
     JSHandle<JSTaggedValue> result4 = parser.ParseUtf8(*handleStr4);
     EXPECT_EQ(result4.GetTaggedValue(), JSTaggedValue::Exception());
@@ -123,7 +123,7 @@ HWTEST_F_L0(JsonParserTest, Parser_003)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JsonParser<uint8_t> parser(thread);
 
-    JSHandle<JSTaggedValue> handleMsg(factory->NewFromCanBeCompressString(
+    JSHandle<JSTaggedValue> handleMsg(factory->NewFromASCII(
         "\t\r \n{\t\r \n \"json\"\t\r\n:\t\r \n{\t\r \n}\t\r \n,\t\r \n \"prop2\"\t\r \n:\t\r \n [\t\r \nfalse\t\r"
         "\n,\t\r \nnull\t\r \ntrue\t\r,123.456\t\r \n]\t\r \n}\t\r \n"));
     JSHandle<EcmaString> handleStr(JSTaggedValue::ToString(thread, handleMsg)); // JSON Object
@@ -144,7 +144,7 @@ HWTEST_F_L0(JsonParserTest, Parser_004)
     JSHandle<JSTaggedValue> lengthKeyHandle = thread->GlobalConstants()->GetHandledLengthString();
     JsonParser<uint8_t> parser(thread);
 
-    JSHandle<JSTaggedValue> handleMsg(factory->NewFromCanBeCompressString("[100,2.5,\"abc\"]"));
+    JSHandle<JSTaggedValue> handleMsg(factory->NewFromASCII("[100,2.5,\"abc\"]"));
     JSHandle<EcmaString> handleStr(JSTaggedValue::ToString(thread, handleMsg)); // JSON Array
     JSHandle<JSTaggedValue> result = parser.ParseUtf8(*handleStr);
 
@@ -170,7 +170,7 @@ HWTEST_F_L0(JsonParserTest, Parser_005)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JsonParser<uint8_t> parser(thread);
 
-    JSHandle<JSTaggedValue> handleMsg(factory->NewFromCanBeCompressString("{\"epf\":100,\"key1\":400}"));
+    JSHandle<JSTaggedValue> handleMsg(factory->NewFromASCII("{\"epf\":100,\"key1\":400}"));
     JSHandle<EcmaString> handleStr(JSTaggedValue::ToString(thread, handleMsg)); // JSON Object
 
     JSHandle<JSTaggedValue> result = parser.ParseUtf8(*handleStr);
@@ -182,7 +182,7 @@ HWTEST_F_L0(JsonParserTest, Parser_005)
     JSHandle<JSArray> nameResult = JSArray::CreateArrayFromList(thread, nameList);
 
     JSHandle<JSTaggedValue> handleKey(nameResult);
-    JSHandle<JSTaggedValue> lengthKey(factory->NewFromCanBeCompressString("length"));
+    JSHandle<JSTaggedValue> lengthKey(factory->NewFromASCII("length"));
     JSHandle<JSTaggedValue> lenResult = JSObject::GetProperty(thread, handleKey, lengthKey).GetValue();
     uint32_t length = JSTaggedValue::ToLength(thread, lenResult).ToUint32();
     EXPECT_EQ(length, 2U);

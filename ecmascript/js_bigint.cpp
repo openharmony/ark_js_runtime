@@ -473,7 +473,7 @@ JSHandle<EcmaString> BigInt::ToString(JSThread *thread, JSHandle<BigInt> bigint,
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     std::string result = bigint->ToStdString(conversionToRadix);
-    return factory->NewFromStdStringUnCheck(result, true);
+    return factory->NewFromASCII(result.c_str());
 }
 
 std::string BigInt::ToStdString(uint32_t conversionToRadix) const

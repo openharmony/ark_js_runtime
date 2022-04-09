@@ -25,7 +25,7 @@ void TSLoader::DecodeTSTypes(const JSPandaFile *jsPandaFile)
     ObjectFactory *factory = vm_->GetFactory();
     JSHandle<TSModuleTable> table = GetTSModuleTable();
 
-    JSHandle<EcmaString> queryFileName = factory->NewFromString(jsPandaFile->GetJSPandaFileDesc());
+    JSHandle<EcmaString> queryFileName = factory->NewFromUtf8(jsPandaFile->GetJSPandaFileDesc());
     int index = table->GetGlobalModuleID(thread, queryFileName);
     if (index == TSModuleTable::NOT_FOUND) {
         CVector<JSHandle<EcmaString>> recordImportModules {};
@@ -247,20 +247,20 @@ JSHandle<EcmaString> TSLoader::GenerateAmiPath(JSHandle<EcmaString> cur, JSHandl
 
     if (relativeAbcFile.find("./") != 0 && relativeAbcFile.find("../") != 0) { // not start with "./" or "../"
         fullPath = relativeAbcFile + ".abc";
-        return factory->NewFromString(fullPath); // not relative
+        return factory->NewFromUtf8(fullPath); // not relative
     }
     auto slashPos = currentAbcFile.find_last_of('/');
     if (slashPos == std::string::npos) {
         fullPath.append(relativeAbcFile.substr(2, relativeAbcFile.size() - 2)); // 2: remove "./"
         fullPath.append(".abc"); // ".js" -> ".abc"
-        return factory->NewFromString(fullPath);
+        return factory->NewFromUtf8(fullPath);
     }
 
     fullPath.append(currentAbcFile.substr(0, slashPos + 1)); // 1: with "/"
     fullPath.append(relativeAbcFile.substr(2, relativeAbcFile.size() - 2)); // 2: remove "./"
     fullPath.append(".abc"); // ".js" -> ".abc"
 
-    return factory->NewFromString(fullPath);
+    return factory->NewFromUtf8(fullPath);
 }
 
 JSHandle<EcmaString> TSLoader::GenerateImportVar(JSHandle<EcmaString> import) const
@@ -271,7 +271,7 @@ JSHandle<EcmaString> TSLoader::GenerateImportVar(JSHandle<EcmaString> import) co
     auto firstPos = importVarNamePath.find_first_of('#');
     auto lastPos = importVarNamePath.find_last_of('#');
     CString target = importVarNamePath.substr(firstPos + 1, lastPos - firstPos - 1);
-    return factory->NewFromString(target); // #A#./A -> A
+    return factory->NewFromUtf8(target); // #A#./A -> A
 }
 
 JSHandle<EcmaString> TSLoader::GenerateImportRelativePath(JSHandle<EcmaString> importRel) const
@@ -280,7 +280,7 @@ JSHandle<EcmaString> TSLoader::GenerateImportRelativePath(JSHandle<EcmaString> i
     CString importNamePath = ConvertToString(importRel.GetTaggedValue());
     auto lastPos = importNamePath.find_last_of('#');
     CString path = importNamePath.substr(lastPos + 1, importNamePath.size() - lastPos - 1);
-    return factory->NewFromString(path); // #A#./A -> ./A
+    return factory->NewFromUtf8(path); // #A#./A -> ./A
 }
 
 JSHandle<JSTaggedValue> TSLoader::InitUnionTypeTable()
@@ -357,7 +357,7 @@ GlobalTSTypeRef TSLoader::GetOrCreateUnionType(CVector<GlobalTSTypeRef> unionTyp
     if (finalModuleName != "UnionTypeTable") {
         // Set UnionTypeTable -> GlobalModuleTable
         JSHandle<JSTaggedValue> initUnionTypeTable = InitUnionTypeTable();
-        JSHandle<EcmaString> unionTableName = factory->NewFromString(CString("UnionTypeTable"));
+        JSHandle<EcmaString> unionTableName = factory->NewFromASCII("UnionTypeTable");
         AddTypeTable(initUnionTypeTable, unionTableName);
     }
 

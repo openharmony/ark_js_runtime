@@ -99,7 +99,7 @@ JSTaggedValue ContainersPrivate::InitializeContainer(JSThread *thread, const JSH
                                                      InitializeFunction func, const char *name)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(name));
+    JSHandle<JSTaggedValue> key(factory->NewFromASCII(name));
     JSTaggedValue value =
         FastRuntimeStub::GetPropertyByName<true>(thread, obj.GetTaggedValue(), key.GetTaggedValue());
     if (value != JSTaggedValue::Undefined()) {
@@ -120,7 +120,7 @@ JSHandle<JSFunction> ContainersPrivate::NewContainerConstructor(JSThread *thread
 
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
     JSFunction::SetFunctionLength(thread, ctor, JSTaggedValue(length));
-    JSHandle<JSTaggedValue> nameString(factory->NewFromCanBeCompressString(name));
+    JSHandle<JSTaggedValue> nameString(factory->NewFromASCII(name));
     JSFunction::SetFunctionName(thread, JSHandle<JSFunctionBase>(ctor), nameString,
                                 globalConst->GetHandledUndefined());
     JSHandle<JSTaggedValue> constructorKey = globalConst->GetHandledConstructorString();
@@ -137,7 +137,7 @@ void ContainersPrivate::SetFrozenFunction(JSThread *thread, const JSHandle<JSObj
                                           EcmaEntrypoint func, int length)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> keyString(factory->NewFromCanBeCompressString(key));
+    JSHandle<JSTaggedValue> keyString(factory->NewFromASCII(key));
     JSHandle<JSFunction> function = NewFunction(thread, keyString, func, length);
     PropertyDescriptor descriptor(thread, JSHandle<JSTaggedValue>(function), false, false, false);
     JSObject::DefineOwnProperty(thread, obj, keyString, descriptor);
@@ -148,7 +148,7 @@ void ContainersPrivate::SetFrozenConstructor(JSThread *thread, const JSHandle<JS
 {
     JSObject::PreventExtensions(thread, JSHandle<JSObject>::Cast(value));
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyChar));
+    JSHandle<JSTaggedValue> key(factory->NewFromASCII(keyChar));
     PropertyDescriptor descriptor(thread, value, false, false, false);
     JSObject::DefineOwnProperty(thread, obj, key, descriptor);
 }
@@ -172,7 +172,7 @@ JSHandle<JSTaggedValue> ContainersPrivate::CreateGetter(JSThread *thread, EcmaEn
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSFunction> function = factory->NewJSFunction(env, reinterpret_cast<void *>(func));
     JSFunction::SetFunctionLength(thread, function, JSTaggedValue(length));
-    JSHandle<JSTaggedValue> funcName(factory->NewFromString(name));
+    JSHandle<JSTaggedValue> funcName(factory->NewFromASCII(name));
     JSHandle<JSTaggedValue> prefix = thread->GlobalConstants()->GetHandledGetString();
     JSFunction::SetFunctionName(thread, JSHandle<JSFunctionBase>(function), funcName, prefix);
     return JSHandle<JSTaggedValue>(function);
@@ -195,7 +195,7 @@ void ContainersPrivate::SetFunctionAtSymbol(JSThread *thread, const JSHandle<Glo
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSFunction> function = factory->NewJSFunction(env, reinterpret_cast<void *>(func));
     JSFunction::SetFunctionLength(thread, function, JSTaggedValue(length));
-    JSHandle<JSTaggedValue> nameString(factory->NewFromString(name));
+    JSHandle<JSTaggedValue> nameString(factory->NewFromASCII(name));
     JSHandle<JSFunctionBase> baseFunction(function);
     JSFunction::SetFunctionName(thread, baseFunction, nameString, thread->GlobalConstants()->GetHandledUndefined());
 
@@ -207,7 +207,7 @@ void ContainersPrivate::SetStringTagSymbol(JSThread *thread, const JSHandle<Glob
                                            const JSHandle<JSObject> &obj, const char *key)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> tag(factory->NewFromString(key));
+    JSHandle<JSTaggedValue> tag(factory->NewFromASCII(key));
     JSHandle<JSTaggedValue> symbol = env->GetToStringTagSymbol();
     PropertyDescriptor desc(thread, tag, false, false, false);
     JSObject::DefineOwnProperty(thread, obj, symbol, desc);
@@ -261,7 +261,7 @@ JSHandle<JSTaggedValue> ContainersPrivate::InitializeArrayList(JSThread *thread)
 
     JSHandle<JSTaggedValue> lengthGetter = CreateGetter(thread, ContainersArrayList::GetSize, "length",
                                                         FuncLength::ZERO);
-    JSHandle<JSTaggedValue> lengthKey(factory->NewFromCanBeCompressString("length"));
+    JSHandle<JSTaggedValue> lengthKey(factory->NewFromASCII("length"));
     SetGetter(thread, prototype, lengthKey, lengthGetter);
 
     SetFunctionAtSymbol(thread, env, prototype, env->GetIteratorSymbol(), "[Symbol.iterator]",
@@ -329,7 +329,7 @@ JSHandle<JSTaggedValue> ContainersPrivate::InitializeTreeMap(JSThread *thread)
     SetStringTagSymbol(thread, env, mapFuncPrototype, "TreeMap");
     // %TreeMapPrototype% [ @@iterator ]
     JSHandle<JSTaggedValue> iteratorSymbol = env->GetIteratorSymbol();
-    JSHandle<JSTaggedValue> entries(factory->NewFromCanBeCompressString("entries"));
+    JSHandle<JSTaggedValue> entries(factory->NewFromASCII("entries"));
     JSHandle<JSTaggedValue> entriesFunc =
         JSObject::GetMethod(thread, JSHandle<JSTaggedValue>::Cast(mapFuncPrototype), entries);
     PropertyDescriptor descriptor(thread, entriesFunc, false, false, false);
@@ -469,7 +469,7 @@ JSHandle<JSTaggedValue> ContainersPrivate::InitializeStack(JSThread *thread)
     SetStringTagSymbol(thread, env, stackFuncPrototype, "Stack");
 
     JSHandle<JSTaggedValue> lengthGetter = CreateGetter(thread, ContainersStack::GetLength, "length", FuncLength::ZERO);
-    JSHandle<JSTaggedValue> lengthKey(factory->NewFromCanBeCompressString("length"));
+    JSHandle<JSTaggedValue> lengthKey(factory->NewFromASCII("length"));
     SetGetter(thread, stackFuncPrototype, lengthKey, lengthGetter);
 
     SetFunctionAtSymbol(thread, env, stackFuncPrototype, env->GetIteratorSymbol(), "[Symbol.iterator]",
@@ -576,7 +576,7 @@ JSHandle<JSTaggedValue> ContainersPrivate::InitializeDeque(JSThread *thread)
     SetStringTagSymbol(thread, env, dequeFuncPrototype, "Deque");
 
     JSHandle<JSTaggedValue> lengthGetter = CreateGetter(thread, ContainersDeque::GetSize, "length", FuncLength::ZERO);
-    JSHandle<JSTaggedValue> lengthKey(factory->NewFromCanBeCompressString("length"));
+    JSHandle<JSTaggedValue> lengthKey(factory->NewFromASCII("length"));
     SetGetter(thread, dequeFuncPrototype, lengthKey, lengthGetter);
 
     SetFunctionAtSymbol(thread, env, dequeFuncPrototype, env->GetIteratorSymbol(), "[Symbol.iterator]",

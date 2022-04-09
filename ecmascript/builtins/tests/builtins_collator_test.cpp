@@ -86,13 +86,13 @@ HWTEST_F_L0(BuiltinsCollatorTest, CollatorConstructor)
     JSHandle<JSTaggedValue> sensitivityKey = thread->GlobalConstants()->GetHandledSensitivityString();
     JSHandle<JSTaggedValue> ignorePunctuationKey = thread->GlobalConstants()->GetHandledIgnorePunctuationString();
 
-    JSHandle<JSTaggedValue> usageValue(factory->NewFromCanBeCompressString("search"));
-    JSHandle<JSTaggedValue> localeMatcherValue(factory->NewFromCanBeCompressString("lookup"));
-    JSHandle<JSTaggedValue> numericValue(factory->NewFromCanBeCompressString("true"));
-    JSHandle<JSTaggedValue> caseFirstValue(factory->NewFromCanBeCompressString("lower"));
-    JSHandle<JSTaggedValue> sensitivityValue(factory->NewFromCanBeCompressString("variant"));
-    JSHandle<JSTaggedValue> ignorePunctuationValue(factory->NewFromCanBeCompressString("true"));
-    JSHandle<JSTaggedValue> localesString(factory->NewFromString("en-Latn-US"));
+    JSHandle<JSTaggedValue> usageValue(factory->NewFromASCII("search"));
+    JSHandle<JSTaggedValue> localeMatcherValue(factory->NewFromASCII("lookup"));
+    JSHandle<JSTaggedValue> numericValue(factory->NewFromASCII("true"));
+    JSHandle<JSTaggedValue> caseFirstValue(factory->NewFromASCII("lower"));
+    JSHandle<JSTaggedValue> sensitivityValue(factory->NewFromASCII("variant"));
+    JSHandle<JSTaggedValue> ignorePunctuationValue(factory->NewFromASCII("true"));
+    JSHandle<JSTaggedValue> localesString(factory->NewFromASCII("en-Latn-US"));
 
     JSHandle<JSObject> optionsObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSObject::SetProperty(thread, optionsObj, usageKey, usageValue);
@@ -144,8 +144,8 @@ static JSTaggedValue JSCollatorCreateWithLocaleAndOptionsTest(JSThread *thread, 
     JSHandle<JSTaggedValue> localesString = locale;
     JSHandle<JSTaggedValue> usageKey = thread->GlobalConstants()->GetHandledUsageString();
     JSHandle<JSTaggedValue> sensitivityKey = thread->GlobalConstants()->GetHandledSensitivityString();
-    JSHandle<JSTaggedValue> usageValue(factory->NewFromCanBeCompressString("search"));
-    JSHandle<JSTaggedValue> sensitivityValue(factory->NewFromCanBeCompressString("base"));
+    JSHandle<JSTaggedValue> usageValue(factory->NewFromASCII("search"));
+    JSHandle<JSTaggedValue> sensitivityValue(factory->NewFromASCII("base"));
 
     JSHandle<JSObject> optionsObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSObject::SetProperty(thread, optionsObj, usageKey, usageValue);
@@ -167,7 +167,7 @@ static JSTaggedValue JSCollatorCreateWithLocaleAndOptionsTest(JSThread *thread, 
 HWTEST_F_L0(BuiltinsCollatorTest, Compare_001)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("de"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("de"));
     JSHandle<JSCollator> jsCollator = JSHandle<JSCollator>(thread, JSCollatorCreateWithLocaleTest(thread, locale));
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
@@ -184,15 +184,15 @@ HWTEST_F_L0(BuiltinsCollatorTest, Compare_001)
     JSHandle<JSObject> jsObject(thread, jsArray);
 
     JSHandle<JSTaggedValue> key0(thread, JSTaggedValue(0));
-    JSHandle<JSTaggedValue> value0(factory->NewFromString("Z"));
+    JSHandle<JSTaggedValue> value0(factory->NewFromASCII("Z"));
     PropertyDescriptor desc0(thread, value0, true, true, true);
     JSArray::DefineOwnProperty(thread, jsObject, key0, desc0);
     JSHandle<JSTaggedValue> key1(thread, JSTaggedValue(1));
-    JSHandle<JSTaggedValue> value1(factory->NewFromString("a"));
+    JSHandle<JSTaggedValue> value1(factory->NewFromASCII("a"));
     PropertyDescriptor desc1(thread, value1, true, true, true);
     JSArray::DefineOwnProperty(thread, jsObject, key1, desc1);
     JSHandle<JSTaggedValue> key2(thread, JSTaggedValue(2));
-    JSHandle<JSTaggedValue> value2(factory->NewFromString("ä"));
+    JSHandle<JSTaggedValue> value2(factory->NewFromUtf8("ä"));
     PropertyDescriptor desc2(thread, value2, true, true, true);
     JSArray::DefineOwnProperty(thread, jsObject, key2, desc2);
 
@@ -216,7 +216,7 @@ HWTEST_F_L0(BuiltinsCollatorTest, Compare_001)
 HWTEST_F_L0(BuiltinsCollatorTest, Compare_002)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("sv"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("sv"));
     JSHandle<JSCollator> jsCollator = JSHandle<JSCollator>(thread, JSCollatorCreateWithLocaleTest(thread, locale));
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
@@ -233,15 +233,15 @@ HWTEST_F_L0(BuiltinsCollatorTest, Compare_002)
     JSHandle<JSObject> jsObject(thread, jsArray);
 
     JSHandle<JSTaggedValue> key0(thread, JSTaggedValue(0));
-    JSHandle<JSTaggedValue> value0(factory->NewFromString("Z"));
+    JSHandle<JSTaggedValue> value0(factory->NewFromASCII("Z"));
     PropertyDescriptor desc0(thread, value0, true, true, true);
     JSArray::DefineOwnProperty(thread, jsObject, key0, desc0);
     JSHandle<JSTaggedValue> key1(thread, JSTaggedValue(1));
-    JSHandle<JSTaggedValue> value1(factory->NewFromString("a"));
+    JSHandle<JSTaggedValue> value1(factory->NewFromASCII("a"));
     PropertyDescriptor desc1(thread, value1, true, true, true);
     JSArray::DefineOwnProperty(thread, jsObject, key1, desc1);
     JSHandle<JSTaggedValue> key2(thread, JSTaggedValue(2));
-    JSHandle<JSTaggedValue> value2(factory->NewFromString("ä"));
+    JSHandle<JSTaggedValue> value2(factory->NewFromUtf8("ä"));
     PropertyDescriptor desc2(thread, value2, true, true, true);
     JSArray::DefineOwnProperty(thread, jsObject, key2, desc2);
 
@@ -255,7 +255,7 @@ HWTEST_F_L0(BuiltinsCollatorTest, Compare_002)
     TestHelper::TearDownFrame(thread, prev);
     JSHandle<JSObject> resultObj(thread, result2);
 
-    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromString("a,Z,ä");
+    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromUtf8("a,Z,ä");
     auto ecmaRuntimeCallInfo3 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo3->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo3->SetThis(resultObj.GetTaggedValue());
@@ -271,7 +271,7 @@ HWTEST_F_L0(BuiltinsCollatorTest, Compare_002)
 HWTEST_F_L0(BuiltinsCollatorTest, Compare_003)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("sv"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("sv"));
     JSHandle<JSCollator> jsCollator =
         JSHandle<JSCollator>(thread, JSCollatorCreateWithLocaleAndOptionsTest(thread, locale));
 
@@ -288,10 +288,10 @@ HWTEST_F_L0(BuiltinsCollatorTest, Compare_003)
         JSArray::Cast(JSArray::ArrayCreate(thread, JSTaggedNumber(0)).GetTaggedValue().GetTaggedObject());
     JSHandle<JSObject> jsObject(thread, jsArray);
 
-    JSHandle<JSTaggedValue> value0(factory->NewFromString("Congrès"));
-    JSHandle<JSTaggedValue> value1(factory->NewFromString("congres"));
+    JSHandle<JSTaggedValue> value0(factory->NewFromUtf8("Congrès"));
+    JSHandle<JSTaggedValue> value1(factory->NewFromASCII("congres"));
     PropertyDescriptor desc(thread, JSHandle<JSTaggedValue>(jsFunction), true, true, true);
-    JSHandle<JSTaggedValue> joinKey(factory->NewFromCanBeCompressString("join"));
+    JSHandle<JSTaggedValue> joinKey(factory->NewFromASCII("join"));
     JSArray::DefineOwnProperty(thread, jsObject, joinKey, desc);
 
     auto ecmaRuntimeCallInfo2 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
@@ -311,7 +311,7 @@ HWTEST_F_L0(BuiltinsCollatorTest, ResolvedOptions)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     auto globalConst = thread->GlobalConstants();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("de"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("de"));
     JSHandle<JSCollator> jsCollator = JSHandle<JSCollator>(thread, JSCollatorCreateWithLocaleTest(thread, locale));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
@@ -328,11 +328,11 @@ HWTEST_F_L0(BuiltinsCollatorTest, ResolvedOptions)
     JSHandle<JSTaggedValue> localeKey = globalConst->GetHandledLocaleString();
     EXPECT_EQ(JSTaggedValue::SameValue(JSObject::GetProperty(thread, resultObj, localeKey).GetValue(), locale), true);
     JSHandle<JSTaggedValue> usageKey = globalConst->GetHandledUsageString();
-    JSHandle<JSTaggedValue> defaultUsageValue(factory->NewFromCanBeCompressString("sort"));
+    JSHandle<JSTaggedValue> defaultUsageValue(factory->NewFromASCII("sort"));
     EXPECT_EQ(JSTaggedValue::SameValue(
         JSObject::GetProperty(thread, resultObj, usageKey).GetValue(), defaultUsageValue), true);
     JSHandle<JSTaggedValue> handledCaseFirstKey = globalConst->GetHandledCaseFirstString();
-    JSHandle<JSTaggedValue> handledCaseFirstValue(factory->NewFromCanBeCompressString("upper"));
+    JSHandle<JSTaggedValue> handledCaseFirstValue(factory->NewFromASCII("upper"));
     EXPECT_EQ(JSTaggedValue::SameValue(JSObject::GetProperty(thread, resultObj, handledCaseFirstKey).GetValue(),
                                        handledCaseFirstValue), true);
 }
@@ -344,10 +344,10 @@ HWTEST_F_L0(BuiltinsCollatorTest, SupportedLocalesOf)
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
 
     JSHandle<JSTaggedValue> localeMatcherKey = thread->GlobalConstants()->GetHandledLocaleMatcherString();
-    JSHandle<JSTaggedValue> localeMatcherValue(factory->NewFromCanBeCompressString("lookup"));
+    JSHandle<JSTaggedValue> localeMatcherValue(factory->NewFromASCII("lookup"));
     JSHandle<JSObject> optionsObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSObject::SetProperty(thread, optionsObj, localeMatcherKey, localeMatcherValue);
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("id-u-co-pinyin-de-ID"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("id-u-co-pinyin-de-ID"));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());

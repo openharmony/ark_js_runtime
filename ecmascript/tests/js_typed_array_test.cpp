@@ -265,7 +265,7 @@ HWTEST_F_L0(JSTypedArrayTest, SetTypedArrayName)
 {
     CString cStrName = "cStrName";
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> handleEcmaStrNameFrom = factory->NewFromString(cStrName);
+    JSHandle<EcmaString> handleEcmaStrNameFrom = factory->NewFromASCII(cStrName);
     JSHandle<JSTaggedValue> handleTagValEcmaStrNameFrom = JSHandle<JSTaggedValue>::Cast(handleEcmaStrNameFrom);
 
     for (size_t i = 0; i < cVecJSType.size(); i++) {

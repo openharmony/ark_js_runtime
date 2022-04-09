@@ -59,7 +59,7 @@ JSHandle<JSTaggedValue> ModuleDataExtractor::ParseModule(JSThread *thread, const
     JSHandle<SourceTextModule> moduleRecord = factory->NewSourceTextModule();
     ModuleDataExtractor::ExtractModuleDatas(thread, jsPandaFile, moduleId, moduleRecord);
 
-    JSHandle<EcmaString> ecmaModuleFilename = factory->NewFromString(descriptor);
+    JSHandle<EcmaString> ecmaModuleFilename = factory->NewFromUtf8(descriptor);
     moduleRecord->SetEcmaModuleFilename(thread, ecmaModuleFilename);
 
     moduleRecord->SetStatus(ModuleStatus::UNINSTANTIATED);

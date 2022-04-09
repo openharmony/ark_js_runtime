@@ -677,7 +677,7 @@ JSHandle<JSObject> ObjectFactory::GetJSError(const ErrorType &errorType, const c
                      errorType == ErrorType::URI_ERROR,
                  "The error type is not in the valid range.");
     if (data != nullptr) {
-        JSHandle<EcmaString> handleMsg = NewFromString(data);
+        JSHandle<EcmaString> handleMsg = NewFromUtf8(data);
         return NewJSError(errorType, handleMsg);
     }
     JSHandle<EcmaString> emptyString(thread_->GlobalConstants()->GetHandledEmptyString());
@@ -1381,25 +1381,25 @@ JSHandle<JSSymbol> ObjectFactory::NewSymbolWithTable(const JSHandle<JSTaggedValu
 
 JSHandle<JSSymbol> ObjectFactory::NewPrivateNameSymbolWithChar(const char *description)
 {
-    JSHandle<EcmaString> string = NewFromString(description);
+    JSHandle<EcmaString> string = NewFromUtf8(description);
     return NewPrivateNameSymbol(JSHandle<JSTaggedValue>(string));
 }
 
 JSHandle<JSSymbol> ObjectFactory::NewWellKnownSymbolWithChar(const char *description)
 {
-    JSHandle<EcmaString> string = NewFromString(description);
+    JSHandle<EcmaString> string = NewFromUtf8(description);
     return NewWellKnownSymbol(JSHandle<JSTaggedValue>(string));
 }
 
 JSHandle<JSSymbol> ObjectFactory::NewPublicSymbolWithChar(const char *description)
 {
-    JSHandle<EcmaString> string = NewFromString(description);
+    JSHandle<EcmaString> string = NewFromUtf8(description);
     return NewPublicSymbol(JSHandle<JSTaggedValue>(string));
 }
 
 JSHandle<JSSymbol> ObjectFactory::NewSymbolWithTableWithChar(const char *description)
 {
-    JSHandle<EcmaString> string = NewFromString(description);
+    JSHandle<EcmaString> string = NewFromUtf8(description);
     return NewSymbolWithTable(JSHandle<JSTaggedValue>(string));
 }
 
@@ -2334,18 +2334,18 @@ JSHandle<TSModuleTable> ObjectFactory::NewTSModuleTable(uint32_t length)
     return array;
 }
 // ----------------------------------- new string ----------------------------------------
-JSHandle<EcmaString> ObjectFactory::NewFromString(const CString &data)
-{
-    auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
-    bool canBeCompress = EcmaString::CanBeCompressed(utf8Data, data.length());
-    return GetStringFromStringTable(utf8Data, data.length(), canBeCompress);
-}
-
-JSHandle<EcmaString> ObjectFactory::NewFromCanBeCompressString(const CString &data)
+JSHandle<EcmaString> ObjectFactory::NewFromASCII(const CString &data)
 {
     auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
     ASSERT(EcmaString::CanBeCompressed(utf8Data, data.length()));
     return GetStringFromStringTable(utf8Data, data.length(), true);
+}
+
+JSHandle<EcmaString> ObjectFactory::NewFromUtf8(const CString &data)
+{
+    auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
+    bool canBeCompress = EcmaString::CanBeCompressed(utf8Data, data.length());
+    return GetStringFromStringTable(utf8Data, data.length(), canBeCompress);
 }
 
 JSHandle<EcmaString> ObjectFactory::NewFromStdString(const std::string &data)
@@ -2355,20 +2355,9 @@ JSHandle<EcmaString> ObjectFactory::NewFromStdString(const std::string &data)
     return GetStringFromStringTable(utf8Data, data.size(), canBeCompress);
 }
 
-JSHandle<EcmaString> ObjectFactory::NewFromStdStringUnCheck(const std::string &data, bool canBeCompress)
-{
-    auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
-    return GetStringFromStringTable(utf8Data, data.size(), canBeCompress);
-}
-
 JSHandle<EcmaString> ObjectFactory::NewFromUtf8(const uint8_t *utf8Data, uint32_t utf8Len)
 {
     bool canBeCompress = EcmaString::CanBeCompressed(utf8Data, utf8Len);
-    return GetStringFromStringTable(utf8Data, utf8Len, canBeCompress);
-}
-
-JSHandle<EcmaString> ObjectFactory::NewFromUtf8UnCheck(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress)
-{
     return GetStringFromStringTable(utf8Data, utf8Len, canBeCompress);
 }
 
@@ -2378,10 +2367,16 @@ JSHandle<EcmaString> ObjectFactory::NewFromUtf16(const uint16_t *utf16Data, uint
     return GetStringFromStringTable(utf16Data, utf16Len, canBeCompress);
 }
 
-JSHandle<EcmaString> ObjectFactory::NewFromUtf16UnCheck(const uint16_t *utf16Data, uint32_t utf16Len,
-                                                        bool canBeCompress)
+JSHandle<EcmaString> ObjectFactory::NewFromUtf16Compress(const uint16_t *utf16Data, uint32_t utf16Len)
 {
-    return GetStringFromStringTable(utf16Data, utf16Len, canBeCompress);
+    ASSERT(EcmaString::CanBeCompressed(utf16Data, utf16Len));
+    return GetStringFromStringTable(utf16Data, utf16Len, true);
+}
+
+JSHandle<EcmaString> ObjectFactory::NewFromUtf16NotCompress(const uint16_t *utf16Data, uint32_t utf16Len)
+{
+    ASSERT(!EcmaString::CanBeCompressed(utf16Data, utf16Len));
+    return GetStringFromStringTable(utf16Data, utf16Len, false);
 }
 
 JSHandle<EcmaString> ObjectFactory::NewFromUtf8Literal(const uint8_t *utf8Data, uint32_t utf8Len)
@@ -2391,11 +2386,11 @@ JSHandle<EcmaString> ObjectFactory::NewFromUtf8Literal(const uint8_t *utf8Data, 
     return JSHandle<EcmaString>(thread_, EcmaString::CreateFromUtf8(utf8Data, utf8Len, vm_, canBeCompress));
 }
 
-JSHandle<EcmaString> ObjectFactory::NewFromUtf8LiteralUnCheck(const uint8_t *utf8Data, uint32_t utf8Len,
-                                                              bool canBeCompress)
+JSHandle<EcmaString> ObjectFactory::NewFromUtf8LiteralCompress(const uint8_t *utf8Data, uint32_t utf8Len)
 {
     NewObjectHook();
-    return JSHandle<EcmaString>(thread_, EcmaString::CreateFromUtf8(utf8Data, utf8Len, vm_, canBeCompress));
+    ASSERT(EcmaString::CanBeCompressed(utf8Data, utf8Len));
+    return JSHandle<EcmaString>(thread_, EcmaString::CreateFromUtf8(utf8Data, utf8Len, vm_, true));
 }
 
 JSHandle<EcmaString> ObjectFactory::NewFromUtf16Literal(const uint16_t *utf16Data, uint32_t utf16Len)
@@ -2405,16 +2400,18 @@ JSHandle<EcmaString> ObjectFactory::NewFromUtf16Literal(const uint16_t *utf16Dat
     return JSHandle<EcmaString>(thread_, EcmaString::CreateFromUtf16(utf16Data, utf16Len, vm_, canBeCompress));
 }
 
-JSHandle<EcmaString> ObjectFactory::NewFromUtf16LiteralUnCheck(const uint16_t *utf16Data, uint32_t utf16Len,
-                                                               bool canBeCompress)
+JSHandle<EcmaString> ObjectFactory::NewFromUtf16LiteralCompress(const uint16_t *utf16Data, uint32_t utf16Len)
 {
     NewObjectHook();
-    return JSHandle<EcmaString>(thread_, EcmaString::CreateFromUtf16(utf16Data, utf16Len, vm_, canBeCompress));
+    ASSERT(EcmaString::CanBeCompressed(utf16Data, utf16Len));
+    return JSHandle<EcmaString>(thread_, EcmaString::CreateFromUtf16(utf16Data, utf16Len, vm_, true));
 }
 
-JSHandle<EcmaString> ObjectFactory::NewFromString(EcmaString *str)
+JSHandle<EcmaString> ObjectFactory::NewFromUtf16LiteralNotCompress(const uint16_t *utf16Data, uint32_t utf16Len)
 {
-    return GetStringFromStringTable(str);
+    NewObjectHook();
+    ASSERT(!EcmaString::CanBeCompressed(utf16Data, utf16Len));
+    return JSHandle<EcmaString>(thread_, EcmaString::CreateFromUtf16(utf16Data, utf16Len, vm_, false));
 }
 
 JSHandle<EcmaString> ObjectFactory::ConcatFromString(const JSHandle<EcmaString> &firstString,

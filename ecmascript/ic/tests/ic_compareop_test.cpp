@@ -64,7 +64,7 @@ HWTEST_F_L0(IcCompareOPTest, EqualWithIC)
 {
     ObjectFactory *factory = ecmaVm->GetFactory();
 
-    JSHandle<JSTaggedValue> Str1 = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("1"));
+    JSHandle<JSTaggedValue> Str1 = JSHandle<JSTaggedValue>(factory->NewFromASCII("1"));
     JSTaggedValue arg1(static_cast<uint32_t>(1));
     JSTaggedValue arg2(static_cast<double>(1.0));
     JSTaggedValue arg3(false);
@@ -124,7 +124,7 @@ HWTEST_F_L0(IcCompareOPTest, NotEqualWithIC)
 {
     ObjectFactory *factory = ecmaVm->GetFactory();
 
-    JSHandle<JSTaggedValue> Str1 = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("1"));
+    JSHandle<JSTaggedValue> Str1 = JSHandle<JSTaggedValue>(factory->NewFromASCII("1"));
     JSTaggedValue arg1(static_cast<uint32_t>(1));
     JSTaggedValue arg2(static_cast<double>(2.0));
     JSTaggedValue arg3(false);
@@ -191,7 +191,7 @@ HWTEST_F_L0(IcCompareOPTest, LessDynWithIC)
 {
     ObjectFactory *factory = ecmaVm->GetFactory();
 
-    JSHandle<JSTaggedValue> Str1 = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("0"));
+    JSHandle<JSTaggedValue> Str1 = JSHandle<JSTaggedValue>(factory->NewFromASCII("0"));
     JSTaggedValue arg1(static_cast<uint32_t>(1));
     JSTaggedValue arg2(static_cast<double>(0.5));
     JSTaggedValue arg3(false);
@@ -258,7 +258,7 @@ HWTEST_F_L0(IcCompareOPTest, LessEqDynWithIC)
 {
     ObjectFactory *factory = ecmaVm->GetFactory();
 
-    JSHandle<JSTaggedValue> Str1 = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("1"));
+    JSHandle<JSTaggedValue> Str1 = JSHandle<JSTaggedValue>(factory->NewFromASCII("1"));
     JSTaggedValue arg1(static_cast<uint32_t>(1));
     JSTaggedValue arg2(static_cast<double>(0.5));
     JSTaggedValue arg3(false);
@@ -327,7 +327,7 @@ HWTEST_F_L0(IcCompareOPTest, GreaterDynWithIC)
 {
     ObjectFactory *factory = ecmaVm->GetFactory();
 
-    JSHandle<JSTaggedValue> Str1 = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("1"));
+    JSHandle<JSTaggedValue> Str1 = JSHandle<JSTaggedValue>(factory->NewFromASCII("1"));
     JSTaggedValue arg1(static_cast<uint32_t>(1));
     JSTaggedValue arg2(static_cast<double>(1.0));
     JSTaggedValue arg3(false);
@@ -396,7 +396,7 @@ HWTEST_F_L0(IcCompareOPTest, GreaterEqDynWithIC)
 {
     ObjectFactory *factory = ecmaVm->GetFactory();
 
-    JSHandle<JSTaggedValue> Str1 = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("1"));
+    JSHandle<JSTaggedValue> Str1 = JSHandle<JSTaggedValue>(factory->NewFromASCII("1"));
     JSTaggedValue arg1(static_cast<uint32_t>(1));
     JSTaggedValue arg2(static_cast<double>(1.0));
     JSTaggedValue arg3(false);

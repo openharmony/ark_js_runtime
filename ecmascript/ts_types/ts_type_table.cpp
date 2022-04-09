@@ -33,7 +33,7 @@ void TSTypeTable::Initialize(JSThread *thread, const JSPandaFile *jsPandaFile,
     JSHandle<TSTypeTable> tsTypetable = GenerateTypeTable(thread, jsPandaFile, recordImportModules);
 
     // Set TStypeTable -> GlobleModuleTable
-    JSHandle<EcmaString> fileName = factory->NewFromString(jsPandaFile->GetJSPandaFileDesc());
+    JSHandle<EcmaString> fileName = factory->NewFromUtf8(jsPandaFile->GetJSPandaFileDesc());
     tsLoader->AddTypeTable(JSHandle<JSTaggedValue>(tsTypetable), fileName);
 
     // management dependency module
@@ -63,7 +63,7 @@ JSHandle<TSTypeTable> TSTypeTable::GenerateTypeTable(JSThread *thread, const JSP
     JSHandle<TSTypeTable> table = factory->NewTSTypeTable(length);
     JSMutableHandle<TaggedArray> typeLiteral(thread, JSTaggedValue::Undefined());
 
-    JSHandle<EcmaString> fileName = factory->NewFromString(jsPandaFile->GetJSPandaFileDesc());
+    JSHandle<EcmaString> fileName = factory->NewFromUtf8(jsPandaFile->GetJSPandaFileDesc());
     for (; idx <= length; ++idx) {
         typeLiteral.Update(LiteralDataExtractor::GetDatasIgnoreType(thread, jsPandaFile, idx).GetTaggedValue());
         JSHandle<JSTaggedValue> type = ParseType(thread, table, typeLiteral, fileName, recordImportModules);
@@ -231,7 +231,7 @@ JSHandle<TaggedArray> TSTypeTable::GetExportTableFromPandFile(JSThread *thread, 
     array_size_t length = exportTable.size();
     JSHandle<TaggedArray> exportArray = factory->NewTaggedArray(length);
     for (array_size_t i = 0; i < length; i ++) {
-        JSHandle<EcmaString> typeIdString = factory->NewFromString(exportTable[i]);
+        JSHandle<EcmaString> typeIdString = factory->NewFromUtf8(exportTable[i]);
         exportArray->Set(thread, i, typeIdString);
     }
     return exportArray;
@@ -468,7 +468,7 @@ JSHandle<EcmaString> TSTypeTable::GenerateVarNameAndPath(JSThread *thread, JSHan
     CString target = ConvertToString(targetVarName.GetTaggedValue());
     CString targetNameAndPath = "#" + target + "#" + fullPath; // #A#XXX/XXX/A
 
-    JSHandle<EcmaString> targetNameAndPathEcmaStr = factory->NewFromString(targetNameAndPath);
+    JSHandle<EcmaString> targetNameAndPathEcmaStr = factory->NewFromUtf8(targetNameAndPath);
     return targetNameAndPathEcmaStr;
 }
 

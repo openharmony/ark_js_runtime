@@ -96,8 +96,8 @@ JSTaggedValue BuiltinsRegExp::RegExpConstructor(EcmaRuntimeCallInfo *argv)
         }
         // 6. Else if patternIsRegExp is true
     } else if (patternIsRegExp) {
-        JSHandle<JSTaggedValue> sourceString(factory->NewFromCanBeCompressString("source"));
-        JSHandle<JSTaggedValue> flagsString(factory->NewFromCanBeCompressString("flags"));
+        JSHandle<JSTaggedValue> sourceString(factory->NewFromASCII("source"));
+        JSHandle<JSTaggedValue> flagsString(factory->NewFromASCII("flags"));
         // disable gc
         [[maybe_unused]] DisallowGarbageCollection noGc;
         // 6.a Let P be Get(pattern, "source").
@@ -215,8 +215,8 @@ JSTaggedValue BuiltinsRegExp::ToString(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "this is not Object", JSTaggedValue::Exception());
     }
     ObjectFactory *factory = ecmaVm->GetFactory();
-    JSHandle<JSTaggedValue> sourceString(factory->NewFromCanBeCompressString("source"));
-    JSHandle<JSTaggedValue> flagsString(factory->NewFromCanBeCompressString("flags"));
+    JSHandle<JSTaggedValue> sourceString(factory->NewFromASCII("source"));
+    JSHandle<JSTaggedValue> flagsString(factory->NewFromASCII("flags"));
     // 3. Let pattern be ToString(Get(R, "source")).
     JSHandle<JSTaggedValue> getSource(JSObject::GetProperty(thread, thisObj, sourceString).GetValue());
     JSHandle<JSTaggedValue> getFlags(JSObject::GetProperty(thread, thisObj, flagsString).GetValue());
@@ -227,7 +227,7 @@ JSTaggedValue BuiltinsRegExp::ToString(EcmaRuntimeCallInfo *argv)
     JSHandle<EcmaString> flagsStrHandle = JSTaggedValue::ToString(thread, getFlags);
     // 4. ReturnIfAbrupt(flags).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<EcmaString> slashStr = factory->NewFromCanBeCompressString("/");
+    JSHandle<EcmaString> slashStr = factory->NewFromASCII("/");
     // 7. Let result be the String value formed by concatenating "/", pattern, and "/", and flags.
     JSHandle<EcmaString> tempStr = factory->ConcatFromString(slashStr, sourceStrHandle);
     JSHandle<EcmaString> resultTemp = factory->ConcatFromString(tempStr, slashStr);
@@ -957,7 +957,7 @@ JSTaggedValue BuiltinsRegExp::Search(EcmaRuntimeCallInfo *argv)
     }
     // 10. Return ? Get(result, "index").
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> index(factory->NewFromCanBeCompressString("index"));
+    JSHandle<JSTaggedValue> index(factory->NewFromASCII("index"));
     return JSObject::GetProperty(thread, result, index).GetValue().GetTaggedValue();
 }
 
@@ -993,7 +993,7 @@ JSTaggedValue BuiltinsRegExp::Split(EcmaRuntimeCallInfo *argv)
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 7. Let flags be ToString(Get(rx, "flags")).
     ObjectFactory *factory = ecmaVm->GetFactory();
-    JSHandle<JSTaggedValue> flagsString(factory->NewFromCanBeCompressString("flags"));
+    JSHandle<JSTaggedValue> flagsString(factory->NewFromASCII("flags"));
     JSHandle<JSTaggedValue> taggedFlags = JSObject::GetProperty(thread, thisObj, flagsString).GetValue();
     JSHandle<EcmaString> flags;
 
@@ -1006,16 +1006,16 @@ JSTaggedValue BuiltinsRegExp::Split(EcmaRuntimeCallInfo *argv)
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 9. If flags contains "u", let unicodeMatching be true.
     // 10. Else, let unicodeMatching be false.
-    JSHandle<EcmaString> uStringHandle(factory->NewFromCanBeCompressString("u"));
+    JSHandle<EcmaString> uStringHandle(factory->NewFromASCII("u"));
     bool unicodeMatching = base::StringHelper::Contains(*flags, *uStringHandle);
     // 11. If flags contains "y", let newFlags be flags.
     JSHandle<EcmaString> newFlagsHandle;
-    JSHandle<EcmaString> yStringHandle(factory->NewFromCanBeCompressString("y"));
+    JSHandle<EcmaString> yStringHandle(factory->NewFromASCII("y"));
     if (base::StringHelper::Contains(*flags, *yStringHandle)) {
         newFlagsHandle = flags;
     } else {
         // 12. Else, let newFlags be the string that is the concatenation of flags and "y".
-        JSHandle<EcmaString> yStr = factory->NewFromCanBeCompressString("y");
+        JSHandle<EcmaString> yStr = factory->NewFromASCII("y");
         newFlagsHandle = factory->ConcatFromString(flags, yStr);
     }
 
@@ -1142,7 +1142,7 @@ JSTaggedValue BuiltinsRegExp::Split(EcmaRuntimeCallInfo *argv)
                 // 6. Let p be e.
                 startIndex = lastIndex;
                 // 7. Let numberOfCaptures be ToLength(Get(z, "length")).
-                JSHandle<JSTaggedValue> lengthString(factory->NewFromCanBeCompressString("length"));
+                JSHandle<JSTaggedValue> lengthString(factory->NewFromASCII("length"));
                 JSHandle<JSTaggedValue> capturesHandle =
                     JSObject::GetProperty(thread, execResult, lengthString).GetValue();
                 JSTaggedNumber numberOfCapturesNumber = JSTaggedValue::ToLength(thread, capturesHandle);
@@ -1651,7 +1651,7 @@ EcmaString *BuiltinsRegExp::EscapeRegExpPattern(JSThread *thread, const JSHandle
     // "\\" -> "\"
     srcStdStr = base::StringHelper::RepalceAll(srcStdStr, "\\", "\\");
 
-    return *factory->NewFromString(srcStdStr);
+    return *factory->NewFromUtf8(srcStdStr);
 }
 
 JSTaggedValue RegExpExecResultCache::CreateCacheTable(JSThread *thread)

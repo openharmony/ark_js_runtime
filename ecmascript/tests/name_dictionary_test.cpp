@@ -87,7 +87,7 @@ HWTEST_F_L0(NameDictionaryTest, addKeyAndValue)
     EXPECT_TRUE(*jsObject != nullptr);
 
     char keyArray[] = "hello";
-    JSHandle<EcmaString> stringKey1 = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(keyArray);
+    JSHandle<EcmaString> stringKey1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII(keyArray);
     JSHandle<JSTaggedValue> key1(stringKey1);
     JSHandle<JSTaggedValue> taggedkey1(stringKey1);
     JSHandle<JSTaggedValue> value1(
@@ -95,7 +95,7 @@ HWTEST_F_L0(NameDictionaryTest, addKeyAndValue)
     PropertyAttributes metaData1;
 
     char key2Array[] = "hello2";
-    JSHandle<EcmaString> stringKey2 = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(key2Array);
+    JSHandle<EcmaString> stringKey2 = thread->GetEcmaVM()->GetFactory()->NewFromASCII(key2Array);
     JSHandle<JSTaggedValue> key2(stringKey2);
     JSHandle<JSTaggedValue> taggedkey2(stringKey2);
     JSHandle<JSTaggedValue> value2(
@@ -136,7 +136,7 @@ HWTEST_F_L0(NameDictionaryTest, GrowCapacity)
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
 
-        JSHandle<EcmaString> stringKey = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(keyArray);
+        JSHandle<EcmaString> stringKey = thread->GetEcmaVM()->GetFactory()->NewFromASCII(keyArray);
         ecmascript::JSHandle<JSTaggedValue> key(stringKey);
         JSHandle<JSTaggedValue> keyHandle(key);
         ecmascript::JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));

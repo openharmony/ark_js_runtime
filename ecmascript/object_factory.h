@@ -374,25 +374,24 @@ public:
     ~ObjectFactory() = default;
 
     // ----------------------------------- new string ----------------------------------------
-    JSHandle<EcmaString> NewFromString(const CString &data);
-    JSHandle<EcmaString> NewFromCanBeCompressString(const CString &data);
+    JSHandle<EcmaString> NewFromASCII(const CString &data);
+    JSHandle<EcmaString> NewFromUtf8(const CString &data);
 
     JSHandle<EcmaString> NewFromStdString(const std::string &data);
-    JSHandle<EcmaString> NewFromStdStringUnCheck(const std::string &data, bool canBeCompress);
 
     JSHandle<EcmaString> NewFromUtf8(const uint8_t *utf8Data, uint32_t utf8Len);
-    JSHandle<EcmaString> NewFromUtf8UnCheck(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress);
 
     JSHandle<EcmaString> NewFromUtf16(const uint16_t *utf16Data, uint32_t utf16Len);
-    JSHandle<EcmaString> NewFromUtf16UnCheck(const uint16_t *utf16Data, uint32_t utf16Len, bool canBeCompress);
+    JSHandle<EcmaString> NewFromUtf16Compress(const uint16_t *utf16Data, uint32_t utf16Len);
+    JSHandle<EcmaString> NewFromUtf16NotCompress(const uint16_t *utf16Data, uint32_t utf16Len);
 
     JSHandle<EcmaString> NewFromUtf8Literal(const uint8_t *utf8Data, uint32_t utf8Len);
-    JSHandle<EcmaString> NewFromUtf8LiteralUnCheck(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress);
+    JSHandle<EcmaString> NewFromUtf8LiteralCompress(const uint8_t *utf8Data, uint32_t utf8Len);
 
     JSHandle<EcmaString> NewFromUtf16Literal(const uint16_t *utf16Data, uint32_t utf16Len);
-    JSHandle<EcmaString> NewFromUtf16LiteralUnCheck(const uint16_t *utf16Data, uint32_t utf16Len, bool canBeCompress);
+    JSHandle<EcmaString> NewFromUtf16LiteralCompress(const uint16_t *utf16Data, uint32_t utf16Len);
+    JSHandle<EcmaString> NewFromUtf16LiteralNotCompress(const uint16_t *utf16Data, uint32_t utf16Len);
 
-    JSHandle<EcmaString> NewFromString(EcmaString *str);
     JSHandle<EcmaString> ConcatFromString(const JSHandle<EcmaString> &firstString,
                                           const JSHandle<EcmaString> &secondString);
 

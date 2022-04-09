@@ -178,7 +178,7 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolWithParameterFor)
 
     JSHandle<SymbolTable> tableHandle(env->GetRegisterSymbols());
 
-    JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromCanBeCompressString("ccc");
+    JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromASCII("ccc");
     ASSERT_EQ(string->GetLength(), 3U);
     JSHandle<JSTaggedValue> string_handle(string);
     ASSERT_EQ(tableHandle->ContainsKey(string_handle.GetTaggedValue()), false);
@@ -217,7 +217,7 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolKeyFor)
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::VALUE_UNDEFINED);
 
-    JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromCanBeCompressString("ccc");
+    JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromASCII("ccc");
     ASSERT_EQ(string->GetLength(), 3U);
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
@@ -294,7 +294,7 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolConstructor)
     JSSymbol *sym = reinterpret_cast<JSSymbol *>(result.GetRawData());
     ASSERT_EQ(sym->GetDescription().IsUndefined(), true);
 
-    JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromCanBeCompressString("ddd");
+    JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromASCII("ddd");
 
     auto otherEcmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     otherEcmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -314,7 +314,7 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolGetter)
     auto ecmaVM = thread->GetEcmaVM();
 
     JSHandle<JSSymbol> symbol = ecmaVM->GetFactory()->NewPublicSymbolWithChar("");
-    JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromCanBeCompressString("");
+    JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromASCII("");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());

@@ -85,7 +85,7 @@ HWTEST_F_L0(JSObjectTest, SetProperty)
     EXPECT_TRUE(*jsobject != nullptr);
 
     char array[] = "x";
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(array));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII(array));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
 
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(jsobject), key, value);
@@ -104,7 +104,7 @@ HWTEST_F_L0(JSObjectTest, GetProperty)
     EXPECT_TRUE(*obj != nullptr);
 
     char array[] = "x";
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(array));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII(array));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
 
     EXPECT_TRUE(JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(obj), key).GetValue()->IsUndefined());
@@ -121,7 +121,7 @@ HWTEST_F_L0(JSObjectTest, DeleteProperty)
     EXPECT_TRUE(*obj != nullptr);
 
     char array[] = "print";
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(array));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII(array));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
 
     JSObject::DeleteProperty(thread, (obj), key);
@@ -130,7 +130,7 @@ HWTEST_F_L0(JSObjectTest, DeleteProperty)
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj), key, value);
     EXPECT_EQ(JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(obj), key).GetValue()->GetInt(), 1);
 
-    JSHandle<JSTaggedValue> key2(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("print_test"));
+    JSHandle<JSTaggedValue> key2(thread->GetEcmaVM()->GetFactory()->NewFromASCII("print_test"));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj), key2,
                           JSHandle<JSTaggedValue>(thread, JSTaggedValue(10)));
     EXPECT_EQ(JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(obj), key2).GetValue()->GetInt(), 10);
@@ -144,8 +144,8 @@ HWTEST_F_L0(JSObjectTest, DeletePropertyGlobal)
 {
     JSHandle<GlobalEnv> globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> global(thread, globalEnv->GetGlobalObject());
-    JSHandle<JSTaggedValue> printKey(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("print"));
-    JSHandle<JSTaggedValue> printTestKey(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("print_test"));
+    JSHandle<JSTaggedValue> printKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII("print"));
+    JSHandle<JSTaggedValue> printTestKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII("print_test"));
 
     JSHandle<JSTaggedValue> value = JSObject::GetProperty(thread, global, printKey).GetValue();
 
@@ -165,9 +165,9 @@ HWTEST_F_L0(JSObjectTest, GetPropertyInPrototypeChain)
     JSHandle<JSObject> father = JSObject::ObjectCreate(thread, grandfather);
     JSHandle<JSObject> son = JSObject::ObjectCreate(thread, father);
 
-    JSHandle<JSTaggedValue> sonKey(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key1"));
-    JSHandle<JSTaggedValue> fatherKey(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key2"));
-    JSHandle<JSTaggedValue> grandfatherKey(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key3"));
+    JSHandle<JSTaggedValue> sonKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key1"));
+    JSHandle<JSTaggedValue> fatherKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key2"));
+    JSHandle<JSTaggedValue> grandfatherKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key3"));
     JSHandle<JSTaggedValue> sonValue(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> fatherValue(thread, JSTaggedValue(2));
     JSHandle<JSTaggedValue> grandfatherValue(thread, JSTaggedValue(3));
@@ -192,8 +192,8 @@ HWTEST_F_L0(JSObjectTest, PropertyAttribute)
     JSHandle<JSObject> obj2 =
         thread->GetEcmaVM()->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>(constructor), constructor);
 
-    JSHandle<JSTaggedValue> key1(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key3"));
-    JSHandle<JSTaggedValue> key2(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key3"));
+    JSHandle<JSTaggedValue> key1(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key3"));
+    JSHandle<JSTaggedValue> key2(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key3"));
 
     JSHandle<JSTaggedValue> value1(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> value2(thread, JSTaggedValue(2));
@@ -234,7 +234,7 @@ HWTEST_F_L0(JSObjectTest, CreateDataProperty)
     EXPECT_TRUE(*obj != nullptr);
 
     char array[] = "x";
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(array));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII(array));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
 
     bool success = JSObject::CreateDataProperty(thread, obj, key, value);
@@ -259,7 +259,7 @@ HWTEST_F_L0(JSObjectTest, CreateMethodProperty)
     EXPECT_TRUE(*obj != nullptr);
 
     char array[] = "x";
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(array));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII(array));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
 
     bool success = JSObject::CreateMethodProperty(thread, obj, key, value);
@@ -284,7 +284,7 @@ HWTEST_F_L0(JSObjectTest, DefinePropertyOrThrow)
     EXPECT_TRUE(*obj != nullptr);
 
     char array[] = "x";
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(array));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII(array));
 
     PropertyDescriptor desc1(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(1)), true, true, true);
     bool success = JSTaggedValue::DefinePropertyOrThrow(thread, JSHandle<JSTaggedValue>(obj), key, desc1);
@@ -335,7 +335,7 @@ HWTEST_F_L0(JSObjectTest, HasProperty)
     EXPECT_TRUE(*obj != nullptr);
 
     char array[] = "x";
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(array));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII(array));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
 
     bool flag = JSObject::HasProperty(thread, obj, key);
@@ -362,9 +362,9 @@ HWTEST_F_L0(JSObjectTest, HasPropertyWithProtoType)
     auto testSon = son->GetPrototype(thread);
     EXPECT_TRUE(testSon != testFather);
     EXPECT_TRUE(testGrand != testFather);
-    JSHandle<JSTaggedValue> sonKey(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key1"));
-    JSHandle<JSTaggedValue> fatherKey(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key2"));
-    JSHandle<JSTaggedValue> grandfatherKey(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key3"));
+    JSHandle<JSTaggedValue> sonKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key1"));
+    JSHandle<JSTaggedValue> fatherKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key2"));
+    JSHandle<JSTaggedValue> grandfatherKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key3"));
     JSHandle<JSTaggedValue> sonValue(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> fatherValue(thread, JSTaggedValue(2));
     JSHandle<JSTaggedValue> grandfatherValue(thread, JSTaggedValue(3));
@@ -388,9 +388,9 @@ HWTEST_F_L0(JSObjectTest, HasOwnProperty)
     JSHandle<JSObject> father = JSObject::ObjectCreate(thread, grandfather);
     JSHandle<JSObject> son = JSObject::ObjectCreate(thread, father);
 
-    JSHandle<JSTaggedValue> sonKey(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key1"));
-    JSHandle<JSTaggedValue> fatherKey(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key2"));
-    JSHandle<JSTaggedValue> grandfatherKey(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key3"));
+    JSHandle<JSTaggedValue> sonKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key1"));
+    JSHandle<JSTaggedValue> fatherKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key2"));
+    JSHandle<JSTaggedValue> grandfatherKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key3"));
     JSHandle<JSTaggedValue> sonValue(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> fatherValue(thread, JSTaggedValue(2));
     JSHandle<JSTaggedValue> grandfatherValue(thread, JSTaggedValue(3));
@@ -413,10 +413,10 @@ HWTEST_F_L0(JSObjectTest, GetOwnPropertyKeys)
     JSHandle<JSObject> obj =
         thread->GetEcmaVM()->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>(constructor), constructor);
 
-    JSHandle<JSTaggedValue> key1(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("x"));
-    JSHandle<JSTaggedValue> key2(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("y"));
-    JSHandle<JSTaggedValue> key3(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("3"));
-    JSHandle<JSTaggedValue> key4(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("4"));
+    JSHandle<JSTaggedValue> key1(thread->GetEcmaVM()->GetFactory()->NewFromASCII("x"));
+    JSHandle<JSTaggedValue> key2(thread->GetEcmaVM()->GetFactory()->NewFromASCII("y"));
+    JSHandle<JSTaggedValue> key3(thread->GetEcmaVM()->GetFactory()->NewFromASCII("3"));
+    JSHandle<JSTaggedValue> key4(thread->GetEcmaVM()->GetFactory()->NewFromASCII("4"));
     JSHandle<JSTaggedValue> value1(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> value2(thread, JSTaggedValue(2));
     JSHandle<JSTaggedValue> value3(thread, JSTaggedValue(3));
@@ -458,7 +458,7 @@ HWTEST_F_L0(JSObjectTest, GetMethod)
     JSHandle<JSTaggedValue> func(thread->GetEcmaVM()->GetFactory()->NewJSFunction(env));
     JSHandle<JSFunction>::Cast(func)->GetJSHClass()->SetCallable(true);
     EXPECT_TRUE(*func != nullptr);
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("1"));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("1"));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj), key, func);
     EXPECT_EQ(JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(obj), key).GetValue().GetTaggedValue(),
               func.GetTaggedValue());
@@ -472,7 +472,7 @@ HWTEST_F_L0(JSObjectTest, EnumerableOwnNames)
     EXPECT_TRUE(*obj != nullptr);
 
     CString tagCStr = "x";
-    JSHandle<EcmaString> tagString = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(&tagCStr[0]);
+    JSHandle<EcmaString> tagString = thread->GetEcmaVM()->GetFactory()->NewFromASCII(&tagCStr[0]);
     JSHandle<JSTaggedValue> key(tagString);
 
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
@@ -512,7 +512,7 @@ HWTEST_F_L0(JSObjectTest, SetIntegrityLevelSealed)
         thread->GetEcmaVM()->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass1), dynclass1);
     EXPECT_TRUE(*obj1 != nullptr);
     CString undefinedCStr = "x";
-    JSHandle<JSTaggedValue> key1(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(&undefinedCStr[0]));
+    JSHandle<JSTaggedValue> key1(thread->GetEcmaVM()->GetFactory()->NewFromASCII(&undefinedCStr[0]));
     JSHandle<JSTaggedValue> value1(thread, JSTaggedValue(1));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj1), key1, value1);
 
@@ -538,7 +538,7 @@ HWTEST_F_L0(JSObjectTest, SetIntegrityLevelFrozen)
     EXPECT_TRUE(*obj1 != nullptr);
 
     CString undefinedCStr = "x";
-    JSHandle<JSTaggedValue> key1(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(&undefinedCStr[0]));
+    JSHandle<JSTaggedValue> key1(thread->GetEcmaVM()->GetFactory()->NewFromASCII(&undefinedCStr[0]));
     JSHandle<JSTaggedValue> value1(thread, JSTaggedValue(1));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj1), key1, value1);
 
@@ -561,7 +561,7 @@ HWTEST_F_L0(JSObjectTest, TestIntegrityLevelSealed)
     JSHandle<JSObject> obj1 =
         thread->GetEcmaVM()->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass1), dynclass1);
     CString undefinedCStr = "level";
-    JSHandle<JSTaggedValue> key1(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(&undefinedCStr[0]));
+    JSHandle<JSTaggedValue> key1(thread->GetEcmaVM()->GetFactory()->NewFromASCII(&undefinedCStr[0]));
     JSHandle<JSTaggedValue> value1(thread, JSTaggedValue(1));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj1), key1, value1);
     obj1->GetJSHClass()->SetExtensible(false);
@@ -585,7 +585,7 @@ HWTEST_F_L0(JSObjectTest, TestIntegrityLevelFrozen)
     JSHandle<JSObject> obj1 =
         thread->GetEcmaVM()->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass1), dynclass1);
     CString undefinedCStr = "level";
-    JSHandle<JSTaggedValue> key1(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(&undefinedCStr[0]));
+    JSHandle<JSTaggedValue> key1(thread->GetEcmaVM()->GetFactory()->NewFromASCII(&undefinedCStr[0]));
     JSHandle<JSTaggedValue> value1(thread, JSTaggedValue(1));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj1), key1, value1);
     obj1->GetJSHClass()->SetExtensible(false);
@@ -610,7 +610,7 @@ HWTEST_F_L0(JSObjectTest, TestIntegrityLevelWithoutProperty)
         thread->GetEcmaVM()->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass1), dynclass1));
     JSHandle<JSObject>::Cast(obj1)->GetJSHClass()->SetExtensible(false);
     CString undefinedCStr = "level";
-    JSHandle<JSTaggedValue> key1(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(&undefinedCStr[0]));
+    JSHandle<JSTaggedValue> key1(thread->GetEcmaVM()->GetFactory()->NewFromASCII(&undefinedCStr[0]));
 
     // test SetIntegrityLevel::FROZEN
     JSHandle<JSObject> jsobject(obj1);
@@ -629,7 +629,7 @@ JSTaggedValue TestGetter(EcmaRuntimeCallInfo *argv)
     auto thread = argv->GetThread();
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj(BuiltinsBase::GetThis(argv));
-    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("y"));
+    JSHandle<JSTaggedValue> key(factory->NewFromASCII("y"));
     JSTaggedValue value = JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(obj), key).GetValue().GetTaggedValue();
 
     return JSTaggedValue(value.GetInt() + 1);
@@ -640,8 +640,8 @@ HWTEST_F_L0(JSObjectTest, Getter)
     JSHandle<JSTaggedValue> dynclass1(thread, JSObjectTestCreate(thread));
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass1), dynclass1);
-    JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString("x"));
-    JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString("y"));
+    JSHandle<JSTaggedValue> key1(factory->NewFromASCII("x"));
+    JSHandle<JSTaggedValue> key2(factory->NewFromASCII("y"));
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSFunction> getter =
         thread->GetEcmaVM()->GetFactory()->NewJSFunction(env, reinterpret_cast<void *>(TestGetter));
@@ -665,7 +665,7 @@ JSTaggedValue TestSetter(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj(BuiltinsBase::GetThis(argv));
-    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("y"));
+    JSHandle<JSTaggedValue> key(factory->NewFromASCII("y"));
     JSTaggedValue value(JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(obj), key).GetValue().GetTaggedValue());
     JSHandle<JSTaggedValue> valueHandle(thread, JSTaggedValue(value.GetInt() + 1));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj), key, valueHandle);
@@ -678,8 +678,8 @@ HWTEST_F_L0(JSObjectTest, Setter)
     JSHandle<JSTaggedValue> dynclass1(thread, JSObjectTestCreate(thread));
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass1), dynclass1);
-    JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString("x"));
-    JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString("y"));
+    JSHandle<JSTaggedValue> key1(factory->NewFromASCII("x"));
+    JSHandle<JSTaggedValue> key2(factory->NewFromASCII("y"));
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSFunction> setter =
         thread->GetEcmaVM()->GetFactory()->NewJSFunction(env, reinterpret_cast<void *>(TestSetter));
@@ -750,7 +750,7 @@ HWTEST_F_L0(JSObjectTest, GetterIsUndefined)
     JSHandle<JSTaggedValue> dynclass1(thread, JSObjectTestCreate(thread));
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass1), dynclass1);
-    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("property"));
+    JSHandle<JSTaggedValue> key(factory->NewFromASCII("property"));
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSFunction> getter =
         thread->GetEcmaVM()->GetFactory()->NewJSFunction(env, reinterpret_cast<void *>(TestUndefinedGetter));
@@ -783,7 +783,7 @@ HWTEST_F_L0(JSObjectTest, SetterIsUndefined)
     JSHandle<JSTaggedValue> dynclass1(thread, JSObjectTestCreate(thread));
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass1), dynclass1);
-    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("property"));
+    JSHandle<JSTaggedValue> key(factory->NewFromASCII("property"));
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSFunction> getter =
         thread->GetEcmaVM()->GetFactory()->NewJSFunction(env, reinterpret_cast<void *>(TestUndefinedGetter));
@@ -824,8 +824,8 @@ HWTEST_F_L0(JSObjectTest, Transitions)
     JSHandle<JSHClass> hc2(thread, obj2->GetJSHClass());
     EXPECT_EQ(hc1.GetTaggedValue(), hc2.GetTaggedValue());
 
-    JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString("x"));
-    JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString("y"));
+    JSHandle<JSTaggedValue> key1(factory->NewFromASCII("x"));
+    JSHandle<JSTaggedValue> key2(factory->NewFromASCII("y"));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
 
     // key1
@@ -855,7 +855,7 @@ HWTEST_F_L0(JSObjectTest, FastToSlow)
     JSHandle<JSTaggedValue> objFunc(thread, JSObjectTestCreate(thread));
     JSHandle<JSObject> obj1 = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFunc), objFunc);
 
-    JSMutableHandle<EcmaString> key(factory->NewFromCanBeCompressString("x"));
+    JSMutableHandle<EcmaString> key(factory->NewFromASCII("x"));
     JSMutableHandle<JSTaggedValue> number(thread, JSTaggedValue(0));
     JSMutableHandle<JSTaggedValue> newkey(thread, JSTaggedValue(0));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
@@ -893,7 +893,7 @@ HWTEST_F_L0(JSObjectTest, DeleteMiddle)
     JSHandle<JSTaggedValue> objFunc(thread, JSObjectTestCreate(thread));
     JSHandle<JSObject> obj1 = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFunc), objFunc);
 
-    JSMutableHandle<EcmaString> key(factory->NewFromCanBeCompressString("x"));
+    JSMutableHandle<EcmaString> key(factory->NewFromASCII("x"));
     JSMutableHandle<JSTaggedValue> number(thread, JSTaggedValue(0));
     JSMutableHandle<JSTaggedValue> newkey(thread, JSTaggedValue(0));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
@@ -908,7 +908,7 @@ HWTEST_F_L0(JSObjectTest, DeleteMiddle)
 
     EXPECT_FALSE(TaggedArray::Cast(obj1->GetProperties().GetTaggedObject())->IsDictionaryMode());
 
-    JSMutableHandle<JSTaggedValue> key5(factory->NewFromCanBeCompressString("x5"));
+    JSMutableHandle<JSTaggedValue> key5(factory->NewFromASCII("x5"));
     JSObject::DeleteProperty(thread, (obj1), key5);
 
     EXPECT_TRUE(TaggedArray::Cast(obj1->GetProperties().GetTaggedObject())->IsDictionaryMode());
@@ -925,7 +925,7 @@ HWTEST_F_L0(JSObjectTest, ElementFastToSlow)
     JSHandle<JSTaggedValue> key1(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> key2(thread, JSTaggedValue(2));
     JSHandle<JSTaggedValue> key2000(thread, JSTaggedValue(2000));
-    JSHandle<JSTaggedValue> keyStr(factory->NewFromCanBeCompressString("str"));
+    JSHandle<JSTaggedValue> keyStr(factory->NewFromASCII("str"));
 
     // test dictionary [0,1,2,...,2000]
     JSHandle<JSObject> obj1 = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFunc), objFunc);
@@ -992,9 +992,9 @@ HWTEST_F_L0(JSObjectTest, EnableProtoChangeMarker)
     JSHandle<JSObject> obj2 = JSObject::ObjectCreate(thread, obj1);
     JSHandle<JSObject> obj3 = JSObject::ObjectCreate(thread, obj2);
 
-    JSHandle<JSTaggedValue> obj1Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key1"));
-    JSHandle<JSTaggedValue> obj2Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key2"));
-    JSHandle<JSTaggedValue> obj3Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key3"));
+    JSHandle<JSTaggedValue> obj1Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key1"));
+    JSHandle<JSTaggedValue> obj2Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key2"));
+    JSHandle<JSTaggedValue> obj3Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key3"));
     JSHandle<JSTaggedValue> obj1Value(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> obj2Value(thread, JSTaggedValue(2));
     JSHandle<JSTaggedValue> obj3Value(thread, JSTaggedValue(3));
@@ -1042,13 +1042,13 @@ HWTEST_F_L0(JSObjectTest, BuildRegisterTree)
     JSHandle<JSObject> obj6 = JSObject::ObjectCreate(thread, obj2);
     JSHandle<JSObject> obj7 = JSObject::ObjectCreate(thread, obj6);
 
-    JSHandle<JSTaggedValue> obj1Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key1"));
-    JSHandle<JSTaggedValue> obj2Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key2"));
-    JSHandle<JSTaggedValue> obj3Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key3"));
-    JSHandle<JSTaggedValue> obj4Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key4"));
-    JSHandle<JSTaggedValue> obj5Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key5"));
-    JSHandle<JSTaggedValue> obj6Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key6"));
-    JSHandle<JSTaggedValue> obj7Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key7"));
+    JSHandle<JSTaggedValue> obj1Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key1"));
+    JSHandle<JSTaggedValue> obj2Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key2"));
+    JSHandle<JSTaggedValue> obj3Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key3"));
+    JSHandle<JSTaggedValue> obj4Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key4"));
+    JSHandle<JSTaggedValue> obj5Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key5"));
+    JSHandle<JSTaggedValue> obj6Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key6"));
+    JSHandle<JSTaggedValue> obj7Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key7"));
 
     JSHandle<JSTaggedValue> obj1Value(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> obj2Value(thread, JSTaggedValue(2));
@@ -1125,13 +1125,13 @@ HWTEST_F_L0(JSObjectTest, NoticeThroughChain)
     JSHandle<JSObject> obj6 = JSObject::ObjectCreate(thread, obj2);
     JSHandle<JSObject> obj7 = JSObject::ObjectCreate(thread, obj6);
 
-    JSHandle<JSTaggedValue> obj1Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key1"));
-    JSHandle<JSTaggedValue> obj2Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key2"));
-    JSHandle<JSTaggedValue> obj3Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key3"));
-    JSHandle<JSTaggedValue> obj4Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key4"));
-    JSHandle<JSTaggedValue> obj5Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key5"));
-    JSHandle<JSTaggedValue> obj6Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key6"));
-    JSHandle<JSTaggedValue> obj7Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key7"));
+    JSHandle<JSTaggedValue> obj1Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key1"));
+    JSHandle<JSTaggedValue> obj2Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key2"));
+    JSHandle<JSTaggedValue> obj3Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key3"));
+    JSHandle<JSTaggedValue> obj4Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key4"));
+    JSHandle<JSTaggedValue> obj5Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key5"));
+    JSHandle<JSTaggedValue> obj6Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key6"));
+    JSHandle<JSTaggedValue> obj7Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key7"));
 
     JSHandle<JSTaggedValue> obj1Value(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> obj2Value(thread, JSTaggedValue(2));
@@ -1200,13 +1200,13 @@ HWTEST_F_L0(JSObjectTest, ChangeProtoAndNoticeTheChain)
     JSHandle<JSObject> obj6 = JSObject::ObjectCreate(thread, obj2);
     JSHandle<JSObject> obj7 = JSObject::ObjectCreate(thread, obj6);
 
-    JSHandle<JSTaggedValue> obj1Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key1"));
-    JSHandle<JSTaggedValue> obj2Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key2"));
-    JSHandle<JSTaggedValue> obj3Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key3"));
-    JSHandle<JSTaggedValue> obj4Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key4"));
-    JSHandle<JSTaggedValue> obj5Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key5"));
-    JSHandle<JSTaggedValue> obj6Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key6"));
-    JSHandle<JSTaggedValue> obj7Key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key7"));
+    JSHandle<JSTaggedValue> obj1Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key1"));
+    JSHandle<JSTaggedValue> obj2Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key2"));
+    JSHandle<JSTaggedValue> obj3Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key3"));
+    JSHandle<JSTaggedValue> obj4Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key4"));
+    JSHandle<JSTaggedValue> obj5Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key5"));
+    JSHandle<JSTaggedValue> obj6Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key6"));
+    JSHandle<JSTaggedValue> obj7Key(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key7"));
 
     JSHandle<JSTaggedValue> obj1Value(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> obj2Value(thread, JSTaggedValue(2));
@@ -1320,8 +1320,8 @@ HWTEST_F_L0(JSObjectTest, UpdateWeakTransitions)
     JSHandle<JSObject> obj1 = factory->NewJSObject(hc0);
     JSHandle<JSObject> obj2 = factory->NewJSObject(hc0);
 
-    JSHandle<JSTaggedValue> keyA(factory->NewFromCanBeCompressString("a"));
-    JSHandle<JSTaggedValue> keyB(factory->NewFromCanBeCompressString("b"));
+    JSHandle<JSTaggedValue> keyA(factory->NewFromASCII("a"));
+    JSHandle<JSTaggedValue> keyB(factory->NewFromASCII("b"));
 
     {
         // need a new handle scope to ensure no scope refers hc1, hc2.
