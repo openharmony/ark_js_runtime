@@ -129,7 +129,7 @@ HWTEST_F_L0(ContainersDequeTest, DequeConstructor)
 
     ASSERT_TRUE(result.IsJSAPIDeque());
     JSHandle<JSAPIDeque> deque(thread, result);
-    JSTaggedValue resultProto = JSHandle<JSObject>::Cast(deque)->GetPrototype(thread);
+    JSTaggedValue resultProto = JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(deque));
     JSTaggedValue funcProto = newTarget->GetFunctionPrototype();
     ASSERT_EQ(resultProto, funcProto);
 }

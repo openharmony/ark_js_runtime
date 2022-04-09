@@ -53,7 +53,7 @@ HWTEST_F_L0(JSForinIteratorTest, Create)
 {
     JSHandle<JSObject> nullHandle(thread, JSTaggedValue::Null());
     JSHandle<JSObject> grandfather = JSObject::ObjectCreate(thread, nullHandle);
-    EXPECT_TRUE(grandfather->GetPrototype(thread).IsNull());
+    EXPECT_TRUE(JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(grandfather)).IsNull());
 
     JSHandle<JSObject> father = JSObject::ObjectCreate(thread, grandfather);
 

@@ -747,13 +747,23 @@ bool JSTaggedValue::SetPrototype(JSThread *thread, const JSHandle<JSTaggedValue>
     if (obj->IsModuleNamespace()) {
         return ModuleNamespace::SetPrototype(obj, proto);
     }
-    if (obj->IsSpecialContainer()) {
-        THROW_TYPE_ERROR_AND_RETURN(thread, "Can not set Prototype on Container Object", false);
+    if (obj->IsSpecialContainer() || !obj->IsECMAObject()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Can not set Prototype on Container or non ECMA Object", false);
     }
 
     return JSObject::SetPrototype(thread, JSHandle<JSObject>(obj), proto);
 }
 
+JSTaggedValue JSTaggedValue::GetPrototype(JSThread *thread, const JSHandle<JSTaggedValue> &obj)
+{
+    if (!obj->IsECMAObject()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Can not get Prototype on non ECMA Object", JSTaggedValue::Exception());
+    }
+    if (obj->IsJSProxy()) {
+        return JSProxy::GetPrototype(thread, JSHandle<JSProxy>(obj));
+    }
+    return JSObject::GetPrototype(JSHandle<JSObject>(obj));
+}
 bool JSTaggedValue::PreventExtensions(JSThread *thread, const JSHandle<JSTaggedValue> &obj)
 {
     if (obj->IsJSProxy()) {
@@ -890,7 +900,7 @@ JSTaggedValue JSTaggedValue::GetSuperBase(JSThread *thread, const JSHandle<JSTag
     }
 
     ASSERT(obj->IsECMAObject());
-    return JSObject::Cast(obj.GetTaggedValue())->GetPrototype(thread);
+    return JSTaggedValue::GetPrototype(thread, obj);
 }
 
 bool JSTaggedValue::HasContainerProperty(JSThread *thread, const JSHandle<JSTaggedValue> &obj,

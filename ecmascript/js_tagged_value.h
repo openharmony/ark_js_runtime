@@ -225,6 +225,7 @@ public:
                                PropertyDescriptor &desc);
     static bool SetPrototype(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
                              const JSHandle<JSTaggedValue> &proto);
+    static JSTaggedValue GetPrototype(JSThread *thread, const JSHandle<JSTaggedValue> &obj);
     static bool PreventExtensions(JSThread *thread, const JSHandle<JSTaggedValue> &obj);
     static JSHandle<TaggedArray> GetOwnPropertyKeys(JSThread *thread, const JSHandle<JSTaggedValue> &obj);
     static bool HasProperty(JSThread *thread, const JSHandle<JSTaggedValue> &obj, const JSHandle<JSTaggedValue> &key);

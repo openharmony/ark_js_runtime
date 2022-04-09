@@ -984,20 +984,16 @@ bool JSObject::IsCompatiblePropertyDescriptor(bool extensible, const PropertyDes
     return ValidateAndApplyPropertyDescriptor(&op, extensible, desc, current);
 }
 
-JSTaggedValue JSObject::GetPrototype(JSThread *thread) const
+JSTaggedValue JSObject::GetPrototype(const JSHandle<JSObject> &obj)
 {
-    JSHandle<JSTaggedValue> obj(thread, JSTaggedValue(this));
-    if (obj->IsJSProxy()) {
-        return JSProxy::GetPrototype(thread, JSHandle<JSProxy>(obj));
-    }
-    JSHClass *hclass = GetJSHClass();
+    JSHClass *hclass = obj->GetJSHClass();
     return hclass->GetPrototype();
 }
 
 bool JSObject::SetPrototype(JSThread *thread, const JSHandle<JSObject> &obj, const JSHandle<JSTaggedValue> &proto)
 {
     ASSERT_PRINT(proto->IsECMAObject() || proto->IsNull(), "proto must be object or null");
-    JSTaggedValue current = obj->GetPrototype(thread);
+    JSTaggedValue current = JSObject::GetPrototype(obj);
     if (current == proto.GetTaggedValue()) {
         return true;
     }
@@ -1005,17 +1001,17 @@ bool JSObject::SetPrototype(JSThread *thread, const JSHandle<JSObject> &obj, con
         return false;
     }
     bool done = false;
-    JSTaggedValue tempProto = proto.GetTaggedValue();
+    JSMutableHandle<JSTaggedValue> tempProtoHandle(thread, proto.GetTaggedValue());
     while (!done) {
-        if (tempProto.IsNull() || !tempProto.IsECMAObject()) {
+        if (tempProtoHandle->IsNull() || !tempProtoHandle->IsECMAObject()) {
             done = true;
-        } else if (JSTaggedValue::SameValue(tempProto, obj.GetTaggedValue())) {
+        } else if (JSTaggedValue::SameValue(tempProtoHandle.GetTaggedValue(), obj.GetTaggedValue())) {
             return false;
         } else {
-            if (tempProto.IsJSProxy()) {
+            if (tempProtoHandle->IsJSProxy()) {
                 break;
             }
-            tempProto = JSObject::Cast(tempProto.GetTaggedObject())->GetPrototype(thread);
+            tempProtoHandle.Update(JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(tempProtoHandle)));
         }
     }
     // map transition

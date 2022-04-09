@@ -187,9 +187,8 @@ JSTaggedValue BuiltinsReflect::ReflectGetPrototypeOf(EcmaRuntimeCallInfo *argv)
     if (!val->IsECMAObject()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Reflect.getPrototypeOf target is not object", JSTaggedValue::Exception());
     }
-    JSHandle<JSObject> target = JSHandle<JSObject>::Cast(val);
     // 2. Return ? target.[[GetPrototypeOf]]().
-    return target->GetPrototype(thread);
+    return JSTaggedValue::GetPrototype(thread, val);
 }
 
 // ecma 26.1.8 Reflect.has (target, propertyKey)
