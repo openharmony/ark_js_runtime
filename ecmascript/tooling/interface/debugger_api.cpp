@@ -17,6 +17,7 @@
 
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/interpreter/frame_handler.h"
+#include "ecmascript/jspandafile/js_pandafile_executor.h"
 #include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_method.h"
@@ -29,15 +30,31 @@ namespace panda::tooling::ecmascript {
 using panda::ecmascript::CStringToL;
 using panda::ecmascript::EcmaString;
 using panda::ecmascript::JSHandle;
-using panda::ecmascript::JSTaggedValue;
+using panda::ecmascript::JSPandaFileExecutor;
 using panda::ecmascript::JSNativePointer;
+using panda::ecmascript::JSTaggedValue;
 using panda::ecmascript::LexicalEnv;
-using panda::ecmascript::ScopeDebugInfo;
 using panda::ecmascript::Program;
+using panda::ecmascript::ScopeDebugInfo;
+using panda::ecmascript::TaggedArray;
+using panda::ecmascript::JSThread;
 using panda::ecmascript::base::ALLOW_BINARY;
 using panda::ecmascript::base::ALLOW_HEX;
 using panda::ecmascript::base::ALLOW_OCTAL;
 using panda::ecmascript::base::NumberHelper;
+
+// JSPandaFileExecutor
+Local<JSValueRef> DebuggerApi::Execute(const EcmaVM *ecmaVm, const void *buffer, size_t size,
+                                       std::string_view entryPoint)
+{
+    JSThread *thread = ecmaVm->GetJSThread();
+    auto result = JSPandaFileExecutor::ExecuteFromBuffer(thread, buffer, size, entryPoint);
+    if (!result) {
+        return JSValueRef::Undefined(ecmaVm);
+    }
+
+    return JSNApiHelper::ToLocal<JSValueRef>(JSHandle<JSTaggedValue>(thread, result.Value()));
+}
 
 // InterpretedFrameHandler
 uint32_t DebuggerApi::GetStackDepth(const EcmaVM *ecmaVm)

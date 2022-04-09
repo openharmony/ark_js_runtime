@@ -38,6 +38,7 @@ group("ark_js_moduletest") {
     "promise:promiseAction",
     "spreadoperator:spreadoperatorAction",
     "throwdyn:throwdynAction",
+    "watch:watchAction",
     "yieldstar:yieldstarAction",
   ]
   if (!is_debug) {

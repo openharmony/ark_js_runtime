@@ -20,6 +20,12 @@
 namespace panda::ecmascript {
 static const size_t MALLOC_SIZE_LIMIT = 2147483648; // Max internal memory used by the VM declared in options
 
+JSPandaFileManager *JSPandaFileManager::GetInstance()
+{
+    static JSPandaFileManager jsFileManager;
+    return &jsFileManager;
+}
+
 JSPandaFileManager::~JSPandaFileManager()
 {
     os::memory::LockHolder lock(jsPandaFileLock_);
@@ -32,7 +38,7 @@ JSPandaFileManager::~JSPandaFileManager()
 }
 
 // generate aot info on host
-const JSPandaFile *JSPandaFileManager::LoadAotInfoFromPf(const CString &filename,
+const JSPandaFile *JSPandaFileManager::LoadAotInfoFromPf(const CString &filename, std::string_view entryPoint,
                                                          std::vector<MethodPcInfo> *methodPcInfos)
 {
     JSPandaFile *jsPandaFile = OpenJSPandaFile(filename);
@@ -41,11 +47,20 @@ const JSPandaFile *JSPandaFileManager::LoadAotInfoFromPf(const CString &filename
         return nullptr;
     }
 
-    PandaFileTranslator::TranslateClasses(jsPandaFile, ENTRY_FUNCTION_NAME, methodPcInfos);
+    CString methodName;
+    auto pos = entryPoint.find_last_of("::");
+    if (pos != std::string_view::npos) {
+        methodName = entryPoint.substr(pos + 1);
+    } else {
+        // default use func_main_0 as entryPoint
+        methodName = ENTRY_FUNCTION_NAME;
+    }
+
+    PandaFileTranslator::TranslateClasses(jsPandaFile, methodName, methodPcInfos);
     return jsPandaFile;
 }
 
-const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(const CString &filename)
+const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(const CString &filename, std::string_view entryPoint)
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "JSPandaFileManager::LoadJSPandaFile");
     const JSPandaFile *jsPandaFile = FindJSPandaFile(filename);
@@ -60,11 +75,12 @@ const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(const CString &filename)
         return nullptr;
     }
 
-    jsPandaFile = GenerateJSPandaFile(pf.release(), filename);
+    jsPandaFile = GenerateJSPandaFile(pf.release(), filename, entryPoint);
     return jsPandaFile;
 }
 
-const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(const CString &filename, const void *buffer, size_t size)
+const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(const CString &filename, std::string_view entryPoint,
+                                                       const void *buffer, size_t size)
 {
     if (buffer == nullptr || size == 0) {
         return nullptr;
@@ -81,7 +97,7 @@ const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(const CString &filename, 
         LOG_ECMA(ERROR) << "open file " << filename << " error";
         return nullptr;
     }
-    jsPandaFile = GenerateJSPandaFile(pf.release(), filename);
+    jsPandaFile = GenerateJSPandaFile(pf.release(), filename, entryPoint);
     return jsPandaFile;
 }
 
@@ -200,13 +216,22 @@ tooling::ecmascript::JSPtExtractor *JSPandaFileManager::GetJSPtExtractor(const J
     return iter->second.get();
 }
 
-const JSPandaFile *JSPandaFileManager::GenerateJSPandaFile(const panda_file::File *pf, const CString &desc)
+const JSPandaFile *JSPandaFileManager::GenerateJSPandaFile(const panda_file::File *pf, const CString &desc,
+                                                           std::string_view entryPoint)
 {
     ASSERT(GetJSPandaFile(pf) == nullptr);
-
     JSPandaFile *newJsPandaFile = NewJSPandaFile(pf, desc);
-    PandaFileTranslator::TranslateClasses(newJsPandaFile, ENTRY_FUNCTION_NAME);
 
+    CString methodName;
+    auto pos = entryPoint.find_last_of("::");
+    if (pos != std::string_view::npos) {
+        methodName = entryPoint.substr(pos + 1);
+    } else {
+        // default use func_main_0 as entryPoint
+        methodName = ENTRY_FUNCTION_NAME;
+    }
+
+    PandaFileTranslator::TranslateClasses(newJsPandaFile, methodName);
     {
         os::memory::LockHolder lock(jsPandaFileLock_);
         const JSPandaFile *jsPandaFile = FindJSPandaFile(desc);

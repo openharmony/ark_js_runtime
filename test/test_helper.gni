@@ -101,9 +101,12 @@ template("host_moduletest_action") {
       _extra_modules_ += [ "$target_out_dir/${module}.abc" ]
     }
   }
-  _test_abc_paths_ = rebase_path(_test_abc_path_)
+  _script_args_ = rebase_path(_test_abc_path_)
   foreach(extra_module, _extra_modules_) {
-    _test_abc_paths_ += ":" + rebase_path(extra_module)
+    _script_args_ += ":" + rebase_path(extra_module)
+  }
+  if (defined(invoker.entry_point)) {
+    _script_args_ += " " + invoker.entry_point
   }
 
   action("${_target_name_}Action") {
@@ -132,7 +135,7 @@ template("host_moduletest_action") {
       "--script-options",
       js_vm_options,
       "--script-args",
-      _test_abc_paths_,
+      _script_args_,
       "--expect-file",
       rebase_path(_test_expect_path_),
       "--env-path",

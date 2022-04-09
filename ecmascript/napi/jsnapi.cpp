@@ -287,10 +287,9 @@ bool JSNApi::StopDebugger(const char *library_path)
 
 bool JSNApi::Execute(EcmaVM *vm, const std::string &fileName, const std::string &entry)
 {
-    std::vector<std::string> argv;
     LOG_ECMA(DEBUG) << "start to execute ark file" << fileName;
     JSThread *thread = vm->GetAssociatedJSThread();
-    if (!ecmascript::JSPandaFileExecutor::ExecuteFromFile(thread, fileName.c_str(), entry, argv)) {
+    if (!ecmascript::JSPandaFileExecutor::ExecuteFromFile(thread, fileName.c_str(), entry)) {
         LOG_ECMA(ERROR) << "Cannot execute ark file '" << fileName
                         << "' with entry '" << entry << "'" << std::endl;
         return false;
@@ -301,9 +300,8 @@ bool JSNApi::Execute(EcmaVM *vm, const std::string &fileName, const std::string 
 bool JSNApi::Execute(EcmaVM *vm, const uint8_t *data, int32_t size,
                      const std::string &entry, const std::string &filename)
 {
-    std::vector<std::string> argv;
     JSThread *thread = vm->GetAssociatedJSThread();
-    if (!ecmascript::JSPandaFileExecutor::ExecuteFromBuffer(thread, data, size, entry, argv, filename.c_str())) {
+    if (!ecmascript::JSPandaFileExecutor::ExecuteFromBuffer(thread, data, size, entry, filename.c_str())) {
         LOG_ECMA(ERROR) << "Cannot execute ark buffer file '" << filename
                         << "' with entry '" << entry << "'" << std::endl;
         return false;
@@ -481,9 +479,8 @@ void* PromiseRejectInfo::GetData() const
 
 bool JSNApi::ExecuteModuleFromBuffer(EcmaVM *vm, const void *data, int32_t size, const std::string &file)
 {
-    std::vector<std::string> argv;
     JSThread *thread = vm->GetAssociatedJSThread();
-    if (!ecmascript::JSPandaFileExecutor::ExecuteFromBuffer(thread, data, size, ENTRY_POINTER, argv, file.c_str())) {
+    if (!ecmascript::JSPandaFileExecutor::ExecuteFromBuffer(thread, data, size, ENTRY_POINTER, file.c_str())) {
         std::cerr << "Cannot execute panda file from memory" << std::endl;
         return false;
     }
@@ -1505,7 +1502,9 @@ JSExecutionScope::~JSExecutionScope()
 // ----------------------------------- JSValueRef --------------------------------------
 Local<PrimitiveRef> JSValueRef::Undefined(const EcmaVM *vm)
 {
-    return JSNApiHelper::ToLocal<PrimitiveRef>(JSHandle<JSTaggedValue>(vm->GetJSThread(), JSTaggedValue::Undefined()));
+    JSThread *thread = vm->GetJSThread();
+    const GlobalEnvConstants *constants = thread->GlobalConstants();
+    return JSNApiHelper::ToLocal<PrimitiveRef>(constants->GetHandledUndefined());
 }
 
 Local<PrimitiveRef> JSValueRef::Null(const EcmaVM *vm)
