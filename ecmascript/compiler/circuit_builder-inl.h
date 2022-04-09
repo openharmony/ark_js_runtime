@@ -278,6 +278,14 @@ GateRef CircuitBuilder::TaggedFalse()
     return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_FALSE, GateType::C_VALUE);
 }
 
+GateRef CircuitBuilder::GetValueFromTaggedArray(VariableType returnType, GateRef array, GateRef index)
+{
+    GateRef offset =
+        IntPtrMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize()));
+    GateRef dataOffset = IntPtrAdd(offset, IntPtr(TaggedArray::DATA_OFFSET));
+    return Load(returnType, array, dataOffset);
+}
+
 // object operation
 GateRef CircuitBuilder::LoadHClass(GateRef object)
 {

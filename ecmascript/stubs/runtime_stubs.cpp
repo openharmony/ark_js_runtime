@@ -52,7 +52,7 @@ namespace panda::ecmascript {
 #endif
 
 #define DEF_RUNTIME_STUBS(name) \
-JSTaggedType RuntimeStubs::name(uintptr_t argGlue, uint32_t argc, uintptr_t argv) \
+    JSTaggedType RuntimeStubs::name(uintptr_t argGlue, uint32_t argc, uintptr_t argv)
 
 #define RUNTIME_STUBS_HEADER(name)                        \
     auto thread = JSThread::GlueToJSThread(argGlue);      \
@@ -1254,6 +1254,14 @@ DEF_RUNTIME_STUBS(GetLexicalEnv)
 {
     RUNTIME_STUBS_HEADER(GetLexicalEnv);
     return thread->GetCurrentLexenv().GetRawData();
+}
+
+DEF_RUNTIME_STUBS(SetLexicalEnv)
+{
+    RUNTIME_STUBS_HEADER(SetLexicalEnv);
+    CONVERT_ARG_TAGGED_CHECKED(env, 0);
+    thread->SetCurrentLexenv(env);
+    return JSTaggedType(0);
 }
 
 DEF_RUNTIME_STUBS(LoadValueFromConstantStringTable)

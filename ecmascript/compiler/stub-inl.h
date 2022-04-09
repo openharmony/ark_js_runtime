@@ -36,7 +36,6 @@
 
 namespace panda::ecmascript::kungfu {
 using LabelImpl = Stub::Label::LabelImpl;
-using JSTaggedValue = JSTaggedValue;
 using JSFunction = panda::ecmascript::JSFunction;
 using PropertyBox = panda::ecmascript::PropertyBox;
 

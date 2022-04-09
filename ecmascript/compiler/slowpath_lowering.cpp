@@ -510,6 +510,15 @@ void SlowPathLowering::Lower(GateRef gate, EcmaOpcode op)
         case DEFINEASYNCFUNC_PREF_ID16_IMM16_V8:
             LowerDefineAsyncFunc(gate, glue, jsFunc);
             break;
+        case NEWLEXENVDYN_PREF_IMM16:
+            LowerNewLexicalEnvDyn(gate, glue);
+            break;
+        case NEWLEXENVWITHNAMEDYN_PREF_IMM16_IMM16:
+            LowerNewLexicalEnvWithNameDyn(gate, glue);
+            break;
+        case POPLEXENVDYN_PREF:
+            LowerPopLexicalEnv(gate, glue);
+            break;
         default:
             break;
     }
@@ -590,7 +599,7 @@ void SlowPathLowering::LowerLexicalEnv(GateRef gate, GateRef glue)
 {
     GateRef id = builder_.Int64(RTSTUB_ID(GetLexicalEnv));
     GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {});
-    LowerHirToCall(gate, newGate);
+    LowerHirToFastCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerTryLdGlobalByName(GateRef gate, GateRef glue)
@@ -1702,5 +1711,56 @@ void SlowPathLowering::LowerDefineAsyncFunc(GateRef gate, GateRef glue, GateRef 
     }
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
     builder_.MergeMirCircuit(gate, result, successControl, failControl);
+}
+
+void SlowPathLowering::LowerNewLexicalEnvDyn(GateRef gate, GateRef glue)
+{
+    builder_.NewLabelManager(gate);
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    // 1: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(NewLexicalEnvDyn),
+        {builder_.Int16BuildTaggedTypeWithNoGC(acc_.GetValueIn(gate, 0))});
+    builder_.CallRuntime(glue, RTSTUB_ID(SetLexicalEnv), {result});
+    successControl.emplace_back(builder_.GetState());
+    successControl.emplace_back(builder_.GetDepend());
+    failControl.emplace_back(Circuit::NullGate());
+    failControl.emplace_back(Circuit::NullGate());
+    builder_.MergeMirCircuit<true>(gate, result, successControl, failControl);
+}
+
+void SlowPathLowering::LowerNewLexicalEnvWithNameDyn(GateRef gate, GateRef glue)
+{
+    builder_.NewLabelManager(gate);
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    // 2: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(NewLexicalEnvWithNameDyn),
+        {builder_.Int16BuildTaggedTypeWithNoGC(acc_.GetValueIn(gate, 0)),
+        builder_.Int16BuildTaggedTypeWithNoGC(acc_.GetValueIn(gate, 1))});
+    builder_.CallRuntime(glue, RTSTUB_ID(SetLexicalEnv), {result});
+    successControl.emplace_back(builder_.GetState());
+    successControl.emplace_back(builder_.GetDepend());
+    failControl.emplace_back(Circuit::NullGate());
+    failControl.emplace_back(Circuit::NullGate());
+    builder_.MergeMirCircuit<true>(gate, result, successControl, failControl);
+}
+
+void SlowPathLowering::LowerPopLexicalEnv(GateRef gate, GateRef glue)
+{
+    builder_.NewLabelManager(gate);
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(GetLexicalEnv), {});
+    GateRef index = builder_.Int32(LexicalEnv::PARENT_ENV_INDEX);
+    GateRef parentLexEnv = builder_.GetValueFromTaggedArray(VariableType::JS_ANY(), result, index);
+    builder_.CallRuntime(glue, RTSTUB_ID(SetLexicalEnv), {parentLexEnv});
+    successControl.emplace_back(builder_.GetState());
+    successControl.emplace_back(builder_.GetDepend());
+    failControl.emplace_back(Circuit::NullGate());
+    failControl.emplace_back(Circuit::NullGate());
+    builder_.MergeMirCircuit<false>(gate, result, successControl, failControl);
 }
 }  // namespace panda::ecmascript
