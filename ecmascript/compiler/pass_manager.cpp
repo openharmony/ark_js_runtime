@@ -28,7 +28,7 @@ bool PassManager::Compile(const std::string &fileName, const std::string &triple
 {
     BytecodeTranslationInfo translationInfo;
     [[maybe_unused]] EcmaHandleScope handleScope(vm_->GetJSThread());
-    bool res = CollectInfoOfPandaFile(fileName, &translationInfo);
+    bool res = CollectInfoOfPandaFile(fileName, entry_, &translationInfo);
     if (!res) {
         std::cerr << "Cannot execute panda file '" << fileName << "'" << std::endl;
         return false;
@@ -51,13 +51,15 @@ bool PassManager::Compile(const std::string &fileName, const std::string &triple
     return true;
 }
 
-bool PassManager::CollectInfoOfPandaFile(const std::string &fileName, BytecodeTranslationInfo *translateInfo)
+bool PassManager::CollectInfoOfPandaFile(const std::string &fileName, std::string_view entryPoint,
+                                         BytecodeTranslationInfo *translateInfo)
 {
     if (translateInfo == nullptr) {
         return false;
     }
     const JSPandaFile *jsPandaFile =
-        JSPandaFileManager::GetInstance()->LoadAotInfoFromPf(fileName.c_str(), &(translateInfo->methodPcInfos));
+        JSPandaFileManager::GetInstance()->LoadAotInfoFromPf(fileName.c_str(), entryPoint,
+                                                             &(translateInfo->methodPcInfos));
     if (jsPandaFile == nullptr) {
         return false;
     }

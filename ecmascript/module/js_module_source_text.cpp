@@ -658,13 +658,13 @@ void SourceTextModule::ModuleExecution(JSThread *thread, const JSHandle<SourceTe
     JSTaggedValue moduleFileName = module->GetEcmaModuleFilename();
     ASSERT(moduleFileName.IsString());
     CString moduleFilenameStr = ConvertToString(EcmaString::Cast(moduleFileName.GetHeapObject()));
-    const JSPandaFile *jsPandaFile = JSPandaFileManager::GetInstance()->LoadJSPandaFile(moduleFilenameStr);
+    const JSPandaFile *jsPandaFile =
+        JSPandaFileManager::GetInstance()->LoadJSPandaFile(moduleFilenameStr, ENTRY_MAIN_FUNCTION);
     if (jsPandaFile == nullptr) {
         LOG_ECMA(ERROR) << "open jsPandaFile " << moduleFilenameStr << " error";
         UNREACHABLE();
     }
-    std::vector<std::string> argv;
-    JSPandaFileExecutor::Execute(thread, jsPandaFile, ENTRY_MAIN_FUNCTION, argv);
+    JSPandaFileExecutor::Execute(thread, jsPandaFile);
 }
 
 void SourceTextModule::AddImportEntry(JSThread *thread, const JSHandle<SourceTextModule> &module,

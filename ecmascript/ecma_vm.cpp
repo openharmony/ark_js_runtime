@@ -106,7 +106,7 @@ bool EcmaVM::Destroy(PandaVM *vm)
 }
 
 // static
-Expected<EcmaVM *, CString> EcmaVM::Create(Runtime *runtime)
+EcmaVM *EcmaVM::Create(Runtime *runtime)
 {
     EcmaVM *vm = runtime->GetInternalAllocator()->New<EcmaVM>();
     auto jsThread = ecmascript::JSThread::Create(runtime, vm);
@@ -367,10 +367,9 @@ JSMethod *EcmaVM::GetMethodForNativeFunction(const void *func)
     return nativeMethods_.back();
 }
 
-Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *jsPandaFile,
-                                                           [[maybe_unused]] const CString &methodName,
-                                                           const std::vector<std::string> &args)
+Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *jsPandaFile)
 {
+    JSTaggedValue result;
     [[maybe_unused]] EcmaHandleScope scope(thread_);
     JSHandle<Program> program;
     if (snapshotSerializeEnable_) {
@@ -396,20 +395,12 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
     }
     if (program.IsEmpty()) {
         LOG_ECMA(ERROR) << "program is empty, invoke entrypoint failed";
-        return Unexpected(Runtime::Error::PANDA_FILE_LOAD_ERROR);
+        return Unexpected(false);
     }
     // for debugger
     notificationManager_->LoadModuleEvent(jsPandaFile->GetJSPandaFileDesc());
 
     JSHandle<JSFunction> func = JSHandle<JSFunction>(thread_, program->GetMainFunction());
-    const size_t argsLength = args.size();
-    JSHandle<TaggedArray> jsargs = factory_->NewTaggedArray(argsLength);
-    uint32_t i = 0;
-    for (const std::string &str : args) {
-        JSHandle<JSTaggedValue> strobj(factory_->NewFromStdString(str));
-        jsargs->Set(thread_, i++, strobj);
-    }
-
     JSHandle<JSTaggedValue> global = GlobalEnv::Cast(globalEnv_.GetTaggedObject())->GetJSGlobalObject();
     if (jsPandaFile->IsModule()) {
         global = JSHandle<JSTaggedValue>(thread_, JSTaggedValue::Undefined());
@@ -419,19 +410,18 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
 
     JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
     EcmaRuntimeCallInfo info =
-        EcmaInterpreter::NewRuntimeCallInfo(thread_, JSHandle<JSTaggedValue>(func), global, undefined, argsLength);
-    info.SetCallArg(argsLength, jsargs);
+        EcmaInterpreter::NewRuntimeCallInfo(thread_, JSHandle<JSTaggedValue>(func), global, undefined, 0);
 
     JSRuntimeOptions options = this->GetJSOptions();
     if (options.IsEnableCpuProfiler()) {
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
         CpuProfiler *profiler = CpuProfiler::GetInstance();
         profiler->CpuProfiler::StartCpuProfiler(this, "");
-        EcmaInterpreter::Execute(&info);
+        result = EcmaInterpreter::Execute(&info);
         profiler->CpuProfiler::StopCpuProfiler();
 #endif
     } else {
-        EcmaInterpreter::Execute(&info);
+        result = EcmaInterpreter::Execute(&info);
     }
     if (!thread_->HasPendingException()) {
         job::MicroJobQueue::ExecutePendingJob(thread_, GetMicroJobQueue());
@@ -442,7 +432,7 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
         auto exception = thread_->GetException();
         HandleUncaughtException(exception.GetTaggedObject());
     }
-    return 0;
+    return result;
 }
 
 JSTaggedValue EcmaVM::FindConstpool(const JSPandaFile *jsPandaFile)
