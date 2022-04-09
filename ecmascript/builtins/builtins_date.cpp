@@ -175,7 +175,7 @@ JSTaggedValue BuiltinsDate::ToJSON(EcmaRuntimeCallInfo *argv)
             return JSTaggedValue::Null();
         }
     }
-    JSHandle<JSTaggedValue> calleeKey(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("toISOString"));
+    JSHandle<JSTaggedValue> calleeKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII("toISOString"));
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     EcmaRuntimeCallInfo info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, objectHandle, undefined, 0);
@@ -212,12 +212,12 @@ JSTaggedValue BuiltinsDate::ToPrimitive(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> hint = GetCallArg(argv, 0);
     PreferredPrimitiveType tryFirst = PREFER_STRING;
     if (hint->IsString()) {
-        JSHandle<EcmaString> numberStrHandle = factory->NewFromCanBeCompressString("number");
+        JSHandle<EcmaString> numberStrHandle = factory->NewFromASCII("number");
         if (EcmaString::StringsAreEqual(hint.GetObject<EcmaString>(), *numberStrHandle)) {
             tryFirst = PREFER_NUMBER;
         } else {
-            JSHandle<EcmaString> stringStrHandle = factory->NewFromCanBeCompressString("string");
-            JSHandle<EcmaString> defaultStrHandle = factory->NewFromCanBeCompressString("default");
+            JSHandle<EcmaString> stringStrHandle = factory->NewFromASCII("string");
+            JSHandle<EcmaString> defaultStrHandle = factory->NewFromASCII("default");
             if (EcmaString::StringsAreEqual(hint.GetObject<EcmaString>(), *stringStrHandle) ||
                 EcmaString::StringsAreEqual(hint.GetObject<EcmaString>(), *defaultStrHandle)) {
                 tryFirst = PREFER_STRING;

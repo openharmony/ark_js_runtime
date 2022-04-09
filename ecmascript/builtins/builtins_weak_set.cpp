@@ -56,7 +56,7 @@ JSTaggedValue BuiltinsWeakSet::WeakSetConstructor(EcmaRuntimeCallInfo *argv)
         return weakSet.GetTaggedValue();
     }
     // Let adder be Get(weakset, "add").
-    JSHandle<JSTaggedValue> adderKey(factory->NewFromCanBeCompressString("add"));
+    JSHandle<JSTaggedValue> adderKey(factory->NewFromASCII("add"));
     JSHandle<JSTaggedValue> weakSetHandle(weakSet);
     JSHandle<JSTaggedValue> adder = JSObject::GetProperty(thread, weakSetHandle, adderKey).GetValue();
     // ReturnIfAbrupt(adder).

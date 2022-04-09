@@ -77,7 +77,7 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, PluralRulesConstructor)
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSFunction> newTarget(env->GetPluralRulesFunction());
 
-    JSHandle<JSTaggedValue> localesString(factory->NewFromCanBeCompressString("en-US"));
+    JSHandle<JSTaggedValue> localesString(factory->NewFromASCII("en-US"));
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue(*newTarget), 8);
     ecmaRuntimeCallInfo->SetFunction(newTarget.GetTaggedValue());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -123,8 +123,8 @@ static JSTaggedValue JSPluralRulesCreateWithLocaleTest(JSThread *thread, JSHandl
 HWTEST_F_L0(BuiltinsPluralRulesTest, Select_001)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en-US"));
-    JSHandle<JSTaggedValue> typeValue(factory->NewFromCanBeCompressString("cardinal"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en-US"));
+    JSHandle<JSTaggedValue> typeValue(factory->NewFromASCII("cardinal"));
     JSHandle<JSPluralRules> jsPluralRules =
         JSHandle<JSPluralRules>(thread, JSPluralRulesCreateWithLocaleTest(thread, locale, typeValue));
         
@@ -147,8 +147,8 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, Select_001)
 HWTEST_F_L0(BuiltinsPluralRulesTest, Select_002)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en-US"));
-    JSHandle<JSTaggedValue> typeValue(factory->NewFromCanBeCompressString("cardinal"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en-US"));
+    JSHandle<JSTaggedValue> typeValue(factory->NewFromASCII("cardinal"));
     JSHandle<JSPluralRules> jsPluralRules =
         JSHandle<JSPluralRules>(thread, JSPluralRulesCreateWithLocaleTest(thread, locale, typeValue));
         
@@ -171,8 +171,8 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, Select_002)
 HWTEST_F_L0(BuiltinsPluralRulesTest, Select_003)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en-US"));
-    JSHandle<JSTaggedValue> typeValue(factory->NewFromCanBeCompressString("cardinal"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en-US"));
+    JSHandle<JSTaggedValue> typeValue(factory->NewFromASCII("cardinal"));
     JSHandle<JSPluralRules> jsPluralRules =
         JSHandle<JSPluralRules>(thread, JSPluralRulesCreateWithLocaleTest(thread, locale, typeValue));
         
@@ -195,8 +195,8 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, Select_003)
 HWTEST_F_L0(BuiltinsPluralRulesTest, Select_004)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en-US"));
-    JSHandle<JSTaggedValue> typeValue(factory->NewFromCanBeCompressString("ordinal"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en-US"));
+    JSHandle<JSTaggedValue> typeValue(factory->NewFromASCII("ordinal"));
     JSHandle<JSPluralRules> jsPluralRules =
         JSHandle<JSPluralRules>(thread, JSPluralRulesCreateWithLocaleTest(thread, locale, typeValue));
 
@@ -219,8 +219,8 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, Select_004)
 HWTEST_F_L0(BuiltinsPluralRulesTest, Select_005)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en-US"));
-    JSHandle<JSTaggedValue> typeValue(factory->NewFromCanBeCompressString("ordinal"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en-US"));
+    JSHandle<JSTaggedValue> typeValue(factory->NewFromASCII("ordinal"));
     JSHandle<JSPluralRules> jsPluralRules =
         JSHandle<JSPluralRules>(thread, JSPluralRulesCreateWithLocaleTest(thread, locale, typeValue));
         
@@ -243,8 +243,8 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, Select_005)
 HWTEST_F_L0(BuiltinsPluralRulesTest, Select_006)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en-US"));
-    JSHandle<JSTaggedValue> typeValue(factory->NewFromCanBeCompressString("ordinal"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en-US"));
+    JSHandle<JSTaggedValue> typeValue(factory->NewFromASCII("ordinal"));
     JSHandle<JSPluralRules> jsPluralRules =
         JSHandle<JSPluralRules>(thread, JSPluralRulesCreateWithLocaleTest(thread, locale, typeValue));
 
@@ -267,8 +267,8 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, Select_006)
 HWTEST_F_L0(BuiltinsPluralRulesTest, Select_007)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en-US"));
-    JSHandle<JSTaggedValue> typeValue(factory->NewFromCanBeCompressString("ordinal"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en-US"));
+    JSHandle<JSTaggedValue> typeValue(factory->NewFromASCII("ordinal"));
     JSHandle<JSPluralRules> jsPluralRules =
         JSHandle<JSPluralRules>(thread, JSPluralRulesCreateWithLocaleTest(thread, locale, typeValue));
 
@@ -290,7 +290,7 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, Select_007)
 HWTEST_F_L0(BuiltinsPluralRulesTest, SupportedLocalesOf)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("id-u-co-pinyin-de-ID"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("id-u-co-pinyin-de-ID"));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -314,8 +314,8 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, ResolvedOptions)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     auto globalConst = thread->GlobalConstants();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en-US"));
-    JSHandle<JSTaggedValue> typeValue(factory->NewFromCanBeCompressString("ordinal"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en-US"));
+    JSHandle<JSTaggedValue> typeValue(factory->NewFromASCII("ordinal"));
     JSHandle<JSPluralRules> jsPluralRules =
         JSHandle<JSPluralRules>(thread, JSPluralRulesCreateWithLocaleTest(thread, locale, typeValue));
 
@@ -331,7 +331,7 @@ HWTEST_F_L0(BuiltinsPluralRulesTest, ResolvedOptions)
         JSHandle<JSTaggedValue>(thread, JSTaggedValue(static_cast<JSTaggedType>(result.GetRawData())));
     // judge whether the properties of the object are the same as those of jspluralrulesformat tag
     JSHandle<JSTaggedValue> localeKey = globalConst->GetHandledLocaleString();
-    JSHandle<JSTaggedValue> localeValue(factory->NewFromCanBeCompressString("en"));
+    JSHandle<JSTaggedValue> localeValue(factory->NewFromASCII("en"));
     EXPECT_EQ(JSTaggedValue::SameValue(
         JSObject::GetProperty(thread, resultObj, localeKey).GetValue(), localeValue), true);
     JSHandle<JSTaggedValue> typeKey = globalConst->GetHandledTypeString();

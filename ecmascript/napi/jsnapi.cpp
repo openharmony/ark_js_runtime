@@ -497,7 +497,7 @@ Local<ObjectRef> JSNApi::GetExportObject(EcmaVM *vm, const std::string &file, co
     JSHandle<ecmascript::SourceTextModule> ecmaModule = moduleManager->HostResolveImportedModule(file.c_str());
 
     ObjectFactory *factory = vm->GetFactory();
-    JSHandle<EcmaString> keyHandle = factory->NewFromStdStringUnCheck(key, true);
+    JSHandle<EcmaString> keyHandle = factory->NewFromASCII(key.c_str());
 
     JSHandle<JSTaggedValue> exportObj(thread, ecmaModule->GetModuleValue(thread, keyHandle.GetTaggedValue(), false));
     return JSNApiHelper::ToLocal<ObjectRef>(exportObj);
@@ -662,7 +662,7 @@ Local<StringRef> StringRef::NewFromUtf8(const EcmaVM *vm, const char *utf8, int 
 {
     ObjectFactory *factory = vm->GetFactory();
     if (length < 0) {
-        JSHandle<JSTaggedValue> current(factory->NewFromString(utf8));
+        JSHandle<JSTaggedValue> current(factory->NewFromUtf8(utf8));
         return JSNApiHelper::ToLocal<StringRef>(current);
     }
     JSHandle<JSTaggedValue> current(factory->NewFromUtf8(reinterpret_cast<const uint8_t *>(utf8), length));

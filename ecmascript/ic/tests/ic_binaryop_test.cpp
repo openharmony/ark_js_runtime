@@ -59,8 +59,8 @@ HWTEST_F_L0(ICBinaryOPTest, AddWithTSType)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
-    JSHandle<EcmaString> Str1 = factory->NewFromCanBeCompressString("AddTest");
-    JSHandle<EcmaString> Str2 = factory->NewFromCanBeCompressString("IC");
+    JSHandle<EcmaString> Str1 = factory->NewFromASCII("AddTest");
+    JSHandle<EcmaString> Str2 = factory->NewFromASCII("IC");
     JSHandle<JSObject> arg4 = factory->NewEmptyJSObject();
     JSTaggedValue arg1Value(static_cast<uint32_t>(2));
     JSTaggedValue arg2Value(static_cast<uint32_t>(3));
@@ -281,7 +281,7 @@ HWTEST_F_L0(ICBinaryOPTest, ShlWithTSType)
 {
     ObjectFactory *factory = ecmaVm->GetFactory();
 
-    JSHandle<EcmaString> Str1 = factory->NewFromCanBeCompressString("225");
+    JSHandle<EcmaString> Str1 = factory->NewFromASCII("225");
     JSTaggedValue arg1(static_cast<uint32_t>(286));
     JSTaggedValue arg3(static_cast<uint32_t>(5));
 
@@ -298,7 +298,7 @@ HWTEST_F_L0(ICBinaryOPTest, ShrWithTSType)
 {
     ObjectFactory *factory = ecmaVm->GetFactory();
 
-    JSHandle<EcmaString> Str1 = factory->NewFromCanBeCompressString("225");
+    JSHandle<EcmaString> Str1 = factory->NewFromASCII("225");
     JSTaggedValue arg1(static_cast<uint32_t>(286));
     JSTaggedValue arg3(static_cast<uint32_t>(5));
 
@@ -315,7 +315,7 @@ HWTEST_F_L0(ICBinaryOPTest, AshrWithTSType)
 {
     ObjectFactory *factory = ecmaVm->GetFactory();
 
-    JSHandle<EcmaString> Str1 = factory->NewFromCanBeCompressString("225");
+    JSHandle<EcmaString> Str1 = factory->NewFromASCII("225");
     JSTaggedValue arg1(static_cast<uint32_t>(286));
     JSTaggedValue arg2(static_cast<uint32_t>(-286));
     JSTaggedValue arg3(static_cast<uint32_t>(5));
@@ -337,7 +337,7 @@ HWTEST_F_L0(ICBinaryOPTest, AndWithTSType)
 {
     ObjectFactory *factory = ecmaVm->GetFactory();
 
-    JSHandle<EcmaString> Str1 = factory->NewFromCanBeCompressString("225");
+    JSHandle<EcmaString> Str1 = factory->NewFromASCII("225");
     JSTaggedValue arg1(static_cast<uint32_t>(286));
     JSTaggedValue arg3(static_cast<uint32_t>(541));
 
@@ -353,7 +353,7 @@ HWTEST_F_L0(ICBinaryOPTest, OrWithTSType)
 {
     ObjectFactory *factory = ecmaVm->GetFactory();
 
-    JSHandle<EcmaString> Str1 = factory->NewFromCanBeCompressString("225");
+    JSHandle<EcmaString> Str1 = factory->NewFromASCII("225");
     JSTaggedValue arg1(static_cast<uint32_t>(286));
     JSTaggedValue arg3(static_cast<uint32_t>(523));
 
@@ -369,7 +369,7 @@ HWTEST_F_L0(ICBinaryOPTest, XorWithTSType)
 {
     ObjectFactory *factory = ecmaVm->GetFactory();
 
-    JSHandle<EcmaString> Str1 = factory->NewFromCanBeCompressString("1225");
+    JSHandle<EcmaString> Str1 = factory->NewFromASCII("1225");
     JSTaggedValue arg1(static_cast<uint32_t>(286));
     JSTaggedValue arg3(static_cast<uint32_t>(523));
 

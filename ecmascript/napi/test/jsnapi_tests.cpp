@@ -690,7 +690,7 @@ HWTEST_F_L0(JSNApiTests, InheritPrototype_001)
     PropertyDescriptor desc = PropertyDescriptor(thread_, defaultString);
     bool success = JSObject::DefineOwnProperty(thread_, JSHandle<JSObject>::Cast(set), defaultString, desc);
     ASSERT_TRUE(success);
-    JSHandle<JSTaggedValue> property1String(thread_, factory->NewFromCanBeCompressString("property1").GetTaggedValue());
+    JSHandle<JSTaggedValue> property1String(thread_, factory->NewFromASCII("property1").GetTaggedValue());
     JSHandle<JSTaggedValue> func = env->GetTypedArrayFunction();
     PropertyDescriptor desc1 = PropertyDescriptor(thread_, func);
     bool success1 = JSObject::DefineOwnProperty(thread_, JSHandle<JSObject>::Cast(set), property1String, desc1);
@@ -740,7 +740,7 @@ HWTEST_F_L0(JSNApiTests, InheritPrototype_002)
     weakMapLocal->Inherit(vm_, weakSetLocal);
 
     auto factory = vm_->GetFactory();
-    JSHandle<JSTaggedValue> property1String(thread_, factory->NewFromCanBeCompressString("property1").GetTaggedValue());
+    JSHandle<JSTaggedValue> property1String(thread_, factory->NewFromASCII("property1").GetTaggedValue());
     JSHandle<JSTaggedValue> func = env->GetArrayFunction();
     PropertyDescriptor desc1 = PropertyDescriptor(thread_, func);
     bool success1 = JSObject::DefineOwnProperty(thread_, JSHandle<JSObject>::Cast(weakMap), property1String, desc1);
@@ -793,7 +793,7 @@ HWTEST_F_L0(JSNApiTests, InheritPrototype_003)
     OperationResult res = JSObject::GetProperty(thread_, JSHandle<JSObject>::Cast(son1Handle), defaultString);
     EXPECT_EQ(JSTaggedValue::SameValue(defaultString, res.GetValue()), true);
 
-    JSHandle<JSTaggedValue> propertyString(thread_, factory->NewFromCanBeCompressString("property").GetTaggedValue());
+    JSHandle<JSTaggedValue> propertyString(thread_, factory->NewFromASCII("property").GetTaggedValue());
     JSHandle<JSTaggedValue> func = env->GetArrayFunction();
     PropertyDescriptor desc1 = PropertyDescriptor(thread_, func);
     JSObject::DefineOwnProperty(thread_, JSHandle<JSObject>::Cast(protoFunc), propertyString, desc1);
@@ -808,8 +808,8 @@ HWTEST_F_L0(JSNApiTests, InheritPrototype_004)
     auto factory = vm_->GetFactory();
 
     JSHandle<JSTaggedValue> weakSet = env->GetBuiltinsWeakSetFunction();
-    JSHandle<JSTaggedValue> deleteString(factory->NewFromCanBeCompressString("delete"));
-    JSHandle<JSTaggedValue> addString(factory->NewFromCanBeCompressString("add"));
+    JSHandle<JSTaggedValue> deleteString(factory->NewFromASCII("delete"));
+    JSHandle<JSTaggedValue> addString(factory->NewFromASCII("add"));
     JSHandle<JSTaggedValue> defaultString = thread_->GlobalConstants()->GetHandledDefaultString();
     JSHandle<JSTaggedValue> deleteMethod = JSObject::GetMethod(thread_, weakSet, deleteString);
     JSHandle<JSTaggedValue> addMethod = JSObject::GetMethod(thread_, weakSet, addString);

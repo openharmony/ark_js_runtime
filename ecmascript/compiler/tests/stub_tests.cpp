@@ -306,7 +306,7 @@ HWTEST_F_L0(StubTest, FastModTest)
     int x5 = 7;
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
     thread->SetLastLeaveFrame(nullptr);
-    auto y5 = factory->NewFromStdString("hello world");
+    auto y5 = factory->NewFromASCII("hello world");
     auto result5 = fn(thread->GetGlueAddr(), JSTaggedValue(x5).GetRawData(), y5.GetTaggedValue().GetRawData());
     EXPECT_EQ(result5, JSTaggedValue::Hole());
     auto expectRes5 = FastRuntimeStub::FastMod(JSTaggedValue(x5), y5.GetTaggedValue());
@@ -949,8 +949,8 @@ HWTEST_F_L0(StubTest, GetPropertyByNameStub)
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
     int x = 256;
     int y = 10;
-    JSHandle<JSTaggedValue> strA(factory->NewFromCanBeCompressString("a"));
-    JSHandle<JSTaggedValue> strBig(factory->NewFromCanBeCompressString("biggest"));
+    JSHandle<JSTaggedValue> strA(factory->NewFromASCII("a"));
+    JSHandle<JSTaggedValue> strBig(factory->NewFromASCII("biggest"));
     FastRuntimeStub::SetPropertyByName(thread, obj.GetTaggedValue(), strA.GetTaggedValue(), JSTaggedValue(x));
     FastRuntimeStub::SetPropertyByName(thread, obj.GetTaggedValue(), strBig.GetTaggedValue(), JSTaggedValue(y));
     JSTaggedValue resVal = getPropertyByNamePtr(thread->GetGlueAddr(), obj.GetTaggedValue().GetRawData(),
@@ -984,8 +984,8 @@ HWTEST_F_L0(StubTest, SetPropertyByNameStub)
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
     int x = 256;
     int y = 10;
-    JSHandle<JSTaggedValue> strA(factory->NewFromCanBeCompressString("hello"));
-    JSHandle<JSTaggedValue> strBig(factory->NewFromCanBeCompressString("biggest"));
+    JSHandle<JSTaggedValue> strA(factory->NewFromASCII("hello"));
+    JSHandle<JSTaggedValue> strBig(factory->NewFromASCII("biggest"));
     setPropertyByName(thread->GetGlueAddr(), obj.GetTaggedValue(), strA.GetTaggedValue(), JSTaggedValue(x), false);
     setPropertyByName(thread->GetGlueAddr(), obj.GetTaggedValue(), strBig.GetTaggedValue(), JSTaggedValue(y), false);
     auto resA = FastRuntimeStub::GetPropertyByName(thread, obj.GetTaggedValue(), strA.GetTaggedValue());
@@ -1051,9 +1051,9 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
     FastRuntimeStub::SetOwnElement(thread, obj.GetTaggedValue(), 1, JSTaggedValue(x));
     FastRuntimeStub::SetOwnElement(thread, obj.GetTaggedValue(), 10250, JSTaggedValue(y));
 
-    JSHandle<JSTaggedValue> strA(factory->NewFromCanBeCompressString("a"));
-    JSHandle<JSTaggedValue> strBig(factory->NewFromCanBeCompressString("biggest"));
-    JSHandle<JSTaggedValue> strDigit(factory->NewFromCanBeCompressString("10250"));
+    JSHandle<JSTaggedValue> strA(factory->NewFromASCII("a"));
+    JSHandle<JSTaggedValue> strBig(factory->NewFromASCII("biggest"));
+    JSHandle<JSTaggedValue> strDigit(factory->NewFromASCII("10250"));
 
     FastRuntimeStub::SetPropertyByName(thread, obj.GetTaggedValue(), strA.GetTaggedValue(), JSTaggedValue(x));
     FastRuntimeStub::SetPropertyByName(thread, obj.GetTaggedValue(), strBig.GetTaggedValue(), JSTaggedValue(y));
@@ -1076,7 +1076,7 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
     EXPECT_EQ(resVal.GetNumber(), y);
     thread->SetCurrentSPFrame(sp);
     thread->SetLastLeaveFrame(nullptr);
-    JSHandle<JSTaggedValue> strHello(factory->NewFromCanBeCompressString("hello world"));
+    JSHandle<JSTaggedValue> strHello(factory->NewFromASCII("hello world"));
     double key = 4.29497e+09;
     resVal = getPropertyByValuePtr(thread->GetGlueAddr(), strHello.GetTaggedValue().GetRawData(),
                                    JSTaggedValue(key).GetRawData());
@@ -1138,8 +1138,8 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
 
     // obj is String
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> str1 = factory->NewFromStdString("a");
-    JSHandle<EcmaString> str2 = factory->NewFromStdString("a");
+    JSHandle<EcmaString> str1 = factory->NewFromASCII("a");
+    JSHandle<EcmaString> str2 = factory->NewFromASCII("a");
     JSTaggedValue expectResult6 = FastRuntimeStub::FastTypeOf(thread, str1.GetTaggedValue());
     JSTaggedValue resultVal6 = typeOfPtr(thread->GetGlueAddr(), str2.GetTaggedValue().GetRawData());
     EXPECT_EQ(resultVal6, globalConst->GetStringString());
@@ -1204,7 +1204,7 @@ HWTEST_F_L0(StubTest, FastEqualTest)
 
     // test for "hello world" == undefined
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
-    auto str = factory->NewFromStdString("hello world");
+    auto str = factory->NewFromASCII("hello world");
     auto resD = fn(thread->GetGlueAddr(), str.GetTaggedValue().GetRawData(), JSTaggedValue::Undefined().GetRawData());
     auto expectD = FastRuntimeStub::FastEqual(str.GetTaggedValue(), JSTaggedValue::Undefined());
     EXPECT_EQ(resD, expectD);

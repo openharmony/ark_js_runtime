@@ -81,10 +81,10 @@ HWTEST_F_L0(BuiltinsDisplayNamesTest, DisplayNamesConstructor)
     JSHandle<JSTaggedValue> styleKey = thread->GlobalConstants()->GetHandledStyleString();
     JSHandle<JSTaggedValue> fallbackKey = thread->GlobalConstants()->GetHandledFallbackString();
 
-    JSHandle<JSTaggedValue> localeString(factory->NewFromCanBeCompressString("en"));
-    JSHandle<JSTaggedValue> typeValue(factory->NewFromCanBeCompressString("language"));
-    JSHandle<JSTaggedValue> styleValue(factory->NewFromCanBeCompressString("narrow"));
-    JSHandle<JSTaggedValue> fallbackValue(factory->NewFromCanBeCompressString("code"));
+    JSHandle<JSTaggedValue> localeString(factory->NewFromASCII("en"));
+    JSHandle<JSTaggedValue> typeValue(factory->NewFromASCII("language"));
+    JSHandle<JSTaggedValue> styleValue(factory->NewFromASCII("narrow"));
+    JSHandle<JSTaggedValue> fallbackValue(factory->NewFromASCII("code"));
 
     JSHandle<JSObject> optionsObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSObject::SetProperty(thread, optionsObj, typeKey, typeValue);
@@ -134,12 +134,12 @@ static JSTaggedValue JSDisplayNamesCreateWithOptionTest(JSThread *thread, JSHand
 HWTEST_F_L0(BuiltinsDisplayNamesTest, Of_001)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en"));
-    JSHandle<JSTaggedValue> typeValue(factory->NewFromCanBeCompressString("language"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en"));
+    JSHandle<JSTaggedValue> typeValue(factory->NewFromASCII("language"));
     JSHandle<JSDisplayNames> jsDisplayNames =
         JSHandle<JSDisplayNames>(thread, JSDisplayNamesCreateWithOptionTest(thread, locale, typeValue));
 
-    JSHandle<JSTaggedValue> stringValue(factory->NewFromCanBeCompressString("fr"));
+    JSHandle<JSTaggedValue> stringValue(factory->NewFromASCII("fr"));
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsDisplayNames.GetTaggedValue());
@@ -158,12 +158,12 @@ HWTEST_F_L0(BuiltinsDisplayNamesTest, Of_001)
 HWTEST_F_L0(BuiltinsDisplayNamesTest, Of_002)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en"));
-    JSHandle<JSTaggedValue> typeValue(factory->NewFromCanBeCompressString("region"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en"));
+    JSHandle<JSTaggedValue> typeValue(factory->NewFromASCII("region"));
     JSHandle<JSDisplayNames> jsDisplayNames =
         JSHandle<JSDisplayNames>(thread, JSDisplayNamesCreateWithOptionTest(thread, locale, typeValue));
 
-    JSHandle<JSTaggedValue> stringValue(factory->NewFromCanBeCompressString("419"));
+    JSHandle<JSTaggedValue> stringValue(factory->NewFromASCII("419"));
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsDisplayNames.GetTaggedValue());
@@ -182,12 +182,12 @@ HWTEST_F_L0(BuiltinsDisplayNamesTest, Of_002)
 HWTEST_F_L0(BuiltinsDisplayNamesTest, Of_003)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en"));
-    JSHandle<JSTaggedValue> typeValue(factory->NewFromCanBeCompressString("currency"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en"));
+    JSHandle<JSTaggedValue> typeValue(factory->NewFromASCII("currency"));
     JSHandle<JSDisplayNames> jsDisplayNames =
         JSHandle<JSDisplayNames>(thread, JSDisplayNamesCreateWithOptionTest(thread, locale, typeValue));
 
-    JSHandle<JSTaggedValue> stringValue(factory->NewFromCanBeCompressString("EUR"));
+    JSHandle<JSTaggedValue> stringValue(factory->NewFromASCII("EUR"));
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsDisplayNames.GetTaggedValue());
@@ -206,7 +206,7 @@ HWTEST_F_L0(BuiltinsDisplayNamesTest, Of_003)
 HWTEST_F_L0(BuiltinsDisplayNamesTest, SupportedLocalesOf_001)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("id-u-co-pinyin-de-ID"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("id-u-co-pinyin-de-ID"));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -234,10 +234,10 @@ HWTEST_F_L0(BuiltinsDisplayNamesTest, SupportedLocalesOf_002)
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
 
     JSHandle<JSTaggedValue> localeMatcherKey = thread->GlobalConstants()->GetHandledLocaleMatcherString();
-    JSHandle<JSTaggedValue> localeMatcherValue(factory->NewFromCanBeCompressString("lookup"));
+    JSHandle<JSTaggedValue> localeMatcherValue(factory->NewFromASCII("lookup"));
     JSHandle<JSObject> optionsObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSObject::SetProperty(thread, optionsObj, localeMatcherKey, localeMatcherValue);
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("de-DE-u-co-phonebk"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("de-DE-u-co-phonebk"));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -260,8 +260,8 @@ HWTEST_F_L0(BuiltinsDisplayNamesTest, ResolvedOptions)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     auto globalConst = thread->GlobalConstants();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("de-DE"));
-    JSHandle<JSTaggedValue> typeValue(factory->NewFromCanBeCompressString("currency"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("de-DE"));
+    JSHandle<JSTaggedValue> typeValue(factory->NewFromASCII("currency"));
     JSHandle<JSDisplayNames> jsDisplayNames =
         JSHandle<JSDisplayNames>(thread, JSDisplayNamesCreateWithOptionTest(
                                             thread, locale, typeValue));
@@ -277,7 +277,7 @@ HWTEST_F_L0(BuiltinsDisplayNamesTest, ResolvedOptions)
         JSHandle<JSTaggedValue>(thread, JSTaggedValue(static_cast<JSTaggedType>(result.GetRawData())));
     // judge whether the properties of the object are the same as those of jsdatetimeformat tag
     JSHandle<JSTaggedValue> localeKey = globalConst->GetHandledLocaleString();
-    JSHandle<JSTaggedValue> localeValue(factory->NewFromCanBeCompressString("de-DE"));
+    JSHandle<JSTaggedValue> localeValue(factory->NewFromASCII("de-DE"));
     EXPECT_EQ(JSTaggedValue::SameValue(
         JSObject::GetProperty(thread, resultObj, localeKey).GetValue(), localeValue), true);
     JSHandle<JSTaggedValue> typeKey = globalConst->GetHandledTypeString();

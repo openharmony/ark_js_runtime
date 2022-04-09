@@ -48,7 +48,7 @@ bool JSArguments::GetOwnProperty(JSThread *thread, const JSHandle<JSArguments> &
 
     // 8.If IsDataDescriptor(desc) is true and P is "caller" and desc.[[Value]] is a strict mode Function object,
     //   throw a TypeError exception.
-    JSHandle<EcmaString> caller = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("caller");
+    JSHandle<EcmaString> caller = thread->GetEcmaVM()->GetFactory()->NewFromASCII("caller");
     if (desc.IsDataDescriptor() && JSTaggedValue::SameValue(key.GetTaggedValue(), caller.GetTaggedValue()) &&
         desc.GetValue()->IsJSFunction()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Arguments GetOwnProperty: type error", false);

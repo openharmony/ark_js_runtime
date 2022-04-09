@@ -56,7 +56,8 @@ EcmaString *StringHelper::Repeat(JSThread *thread, const std::u16string &thisStr
     auto *char16tData = const_cast<char16_t *>(constChar16tData);
     auto *uint16tData = reinterpret_cast<uint16_t *>(char16tData);
     int32_t length = tmpStr.size();
-    return *factory->NewFromUtf16UnCheck(uint16tData, length, canBeCompress);
+    return canBeCompress ? *factory->NewFromUtf16Compress(uint16tData, length) :
+                           *factory->NewFromUtf16NotCompress(uint16tData, length);
 }
 
 EcmaString *StringHelper::Trim(JSThread *thread, const std::u16string &thisStr)

@@ -54,7 +54,7 @@ static JSTaggedValue CreateBuiltinsJSStringIterator(JSThread *thread, const CStr
     EcmaVM *ecmaVM = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVM->GetFactory();
 
-    JSHandle<EcmaString> string = factory->NewFromString(&keyCStr[0]);
+    JSHandle<EcmaString> string = factory->NewFromUtf8(&keyCStr[0]);
     JSHandle<JSStringIterator> stringIterator = JSStringIterator::CreateStringIterator(thread, string);
     EXPECT_TRUE(*stringIterator != nullptr);
 
@@ -69,7 +69,7 @@ HWTEST_F_L0(BuiltinsStringIteratorTest, Next_001)
     JSHandle<JSStringIterator> stringIterator =
         JSHandle<JSStringIterator>(thread, CreateBuiltinsJSStringIterator(thread, string));
     JSHandle<JSTaggedValue> valueStr = globalConst->GetHandledValueString();
-    
+
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetThis(stringIterator.GetTaggedValue());

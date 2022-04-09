@@ -85,7 +85,7 @@ HWTEST_F_L0(SymbolTableTest, IsMatch)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
-    JSHandle<EcmaString> symbolTableString = factory->NewFromCanBeCompressString("name");
+    JSHandle<EcmaString> symbolTableString = factory->NewFromASCII("name");
     JSTaggedValue symbolTableOther = symbolTableString.GetTaggedValue();
 
     JSTaggedValue symbolTableName1 = JSTaggedValue::Hole();
@@ -182,9 +182,9 @@ HWTEST_F_L0(SymbolTableTest, Create)
 HWTEST_F_L0(SymbolTableTest, ContainsKey)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> symbolTableStringKey1 = factory->NewFromCanBeCompressString("key");
-    JSHandle<EcmaString> symbolTableStringKey2 = factory->NewFromCanBeCompressString("key1");
-    JSHandle<EcmaString> symbolTableStringKey3 = factory->NewFromCanBeCompressString("value");
+    JSHandle<EcmaString> symbolTableStringKey1 = factory->NewFromASCII("key");
+    JSHandle<EcmaString> symbolTableStringKey2 = factory->NewFromASCII("key1");
+    JSHandle<EcmaString> symbolTableStringKey3 = factory->NewFromASCII("value");
 
     int numberOfElements = 2;
     JSHandle<SymbolTable> symbolTable = SymbolTable::Create(thread, numberOfElements);
@@ -220,7 +220,7 @@ HWTEST_F_L0(SymbolTableTest, GetSymbol)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     int numberOfElements = 2;
 
-    JSHandle<EcmaString> symbolTableStringKey = factory->NewFromCanBeCompressString("key");
+    JSHandle<EcmaString> symbolTableStringKey = factory->NewFromASCII("key");
     JSHandle<SymbolTable> symbolTable = SymbolTable::Create(thread, numberOfElements);
 
     symbolTable->SetKey(thread, 1, symbolTableStringKey.GetTaggedValue());
@@ -246,8 +246,8 @@ HWTEST_F_L0(SymbolTableTest, GetSymbol)
 HWTEST_F_L0(SymbolTableTest, FindSymbol)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> symbolTableStringKey1(factory->NewFromCanBeCompressString("key"));
-    JSHandle<JSTaggedValue> symbolTableStringKey2(factory->NewFromCanBeCompressString("key1"));
+    JSHandle<JSTaggedValue> symbolTableStringKey1(factory->NewFromASCII("key"));
+    JSHandle<JSTaggedValue> symbolTableStringKey2(factory->NewFromASCII("key1"));
 
     int numberOfElements = 2;
     JSHandle<JSSymbol> handleSymbol = factory->NewJSSymbol();

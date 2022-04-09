@@ -58,18 +58,18 @@ static JSTaggedValue CreateBaseJSObject(JSThread *thread, const CString keyCStr)
     JSHandle<JSObject> jsObject(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc));
     EXPECT_TRUE(*jsObject != nullptr);
 
-    JSHandle<JSTaggedValue> handleKey1(factory->NewFromCanBeCompressString(&keyCStr[0]));
+    JSHandle<JSTaggedValue> handleKey1(factory->NewFromASCII(&keyCStr[0]));
     JSHandle<JSTaggedValue> handleValue1(thread, JSTaggedValue(1)); // 1 : test case
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(jsObject), handleKey1, handleValue1);
 
     CString str2 = "x";
-    JSHandle<JSTaggedValue> handleKey2(factory->NewFromCanBeCompressString(str2));
+    JSHandle<JSTaggedValue> handleKey2(factory->NewFromASCII(str2));
     JSHandle<JSTaggedValue> handleValue2(thread, JSTaggedValue(3.6)); // 3.6 : test case
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(jsObject), handleKey2, handleValue2);
 
     CString str3 = "y";
-    JSHandle<JSTaggedValue> handleKey3(factory->NewFromCanBeCompressString(str3));
-    JSHandle<JSTaggedValue> handleValue3(factory->NewFromCanBeCompressString("abc"));
+    JSHandle<JSTaggedValue> handleKey3(factory->NewFromASCII(str3));
+    JSHandle<JSTaggedValue> handleValue3(factory->NewFromASCII("abc"));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(jsObject), handleKey3, handleValue3);
 
     return jsObject.GetTaggedValue();
@@ -160,7 +160,7 @@ HWTEST_F_L0(JsonStringifierTest, Stringify_003)
     JsonStringifier stringifier(thread);
 
     JSHandle<JSTaggedValue> handleObj = JSHandle<JSTaggedValue>(thread, CreateBaseJSObject(thread, "z"));
-    JSHandle<JSTaggedValue> handleMsg(factory->NewFromCanBeCompressString("tttt"));
+    JSHandle<JSTaggedValue> handleMsg(factory->NewFromASCII("tttt"));
     JSHandle<EcmaString> handleStr(JSTaggedValue::ToString(thread, handleMsg));
 
     JSHandle<JSTaggedValue> handleValue(thread, handleObj.GetTaggedValue());
@@ -170,7 +170,7 @@ HWTEST_F_L0(JsonStringifierTest, Stringify_003)
     JSHandle<JSTaggedValue> resultString = stringifier.Stringify(handleValue, handleReplacer, handleGap);
     EXPECT_TRUE(resultString->IsString());
     JSHandle<EcmaString> resultStr =
-        factory->NewFromCanBeCompressString("{\ntttt\"z\": 1,\ntttt\"x\": 3.6,\ntttt\"y\": \"abc\"\n}");
+        factory->NewFromASCII("{\ntttt\"z\": 1,\ntttt\"x\": 3.6,\ntttt\"y\": \"abc\"\n}");
     EXPECT_EQ(resultStr->Compare(reinterpret_cast<EcmaString *>(resultString->GetRawData())), 0);
 }
 
@@ -193,14 +193,14 @@ HWTEST_F_L0(JsonStringifierTest, Stringify_004)
         JSArray::Cast(JSArray::ArrayCreate(thread, JSTaggedNumber(0)).GetTaggedValue().GetTaggedObject());
     JSHandle<JSObject> handleObj2(thread, handleArr);
     JSHandle<JSTaggedValue> handleKey0(thread, JSTaggedValue(0));
-    JSHandle<JSTaggedValue> handleValue0(factory->NewFromCanBeCompressString("z"));
+    JSHandle<JSTaggedValue> handleValue0(factory->NewFromASCII("z"));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(handleObj2), handleKey0, handleValue0);
 
     JSHandle<JSTaggedValue> handleKey1(thread, JSTaggedValue(1));
-    JSHandle<JSTaggedValue> handleValue1(factory->NewFromCanBeCompressString("x"));
+    JSHandle<JSTaggedValue> handleValue1(factory->NewFromASCII("x"));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(handleObj2), handleKey1, handleValue1);
 
-    JSHandle<JSTaggedValue> handleMsg(factory->NewFromCanBeCompressString("tttt"));
+    JSHandle<JSTaggedValue> handleMsg(factory->NewFromASCII("tttt"));
     JSHandle<EcmaString> handleStr(JSTaggedValue::ToString(thread, handleMsg));
 
     JSHandle<JSTaggedValue> handleValue(thread, handleObj1.GetTaggedValue());
@@ -254,7 +254,7 @@ HWTEST_F_L0(JsonStringifierTest, Stringify_006)
     JSHandle<JSObject> handleObj(thread, handleArr);
 
     JSHandle<JSTaggedValue> handleKey0(thread, JSTaggedValue(0));
-    JSHandle<JSTaggedValue> handleValue0(factory->NewFromCanBeCompressString("json"));
+    JSHandle<JSTaggedValue> handleValue0(factory->NewFromASCII("json"));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(handleObj), handleKey0, handleValue0);
 
     JSHandle<JSTaggedValue> handleKey1(thread, JSTaggedValue(1));
@@ -262,10 +262,10 @@ HWTEST_F_L0(JsonStringifierTest, Stringify_006)
     JSArray::DefineOwnProperty(thread, handleObj, handleKey1, handleDesc);
 
     JSHandle<JSTaggedValue> handleKey2(thread, JSTaggedValue(2));
-    JSHandle<JSTaggedValue> handleValue2(factory->NewFromCanBeCompressString("abc"));
+    JSHandle<JSTaggedValue> handleValue2(factory->NewFromASCII("abc"));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(handleObj), handleKey2, handleValue2);
 
-    JSHandle<JSTaggedValue> handleMsg(factory->NewFromCanBeCompressString("tttt"));
+    JSHandle<JSTaggedValue> handleMsg(factory->NewFromASCII("tttt"));
     JSHandle<EcmaString> handleStr(JSTaggedValue::ToString(thread, handleMsg));
 
     JSHandle<JSTaggedValue> handleValue(thread, handleObj.GetTaggedValue());
@@ -304,7 +304,7 @@ HWTEST_F_L0(JsonStringifierTest, Stringify_007)
     JSArray::DefineOwnProperty(thread, handleObj, handleKey1, handleDesc1);
 
     JSHandle<JSTaggedValue> handleKey2(thread, JSTaggedValue(2));
-    JSHandle<JSTaggedValue> handleValue2(factory->NewFromCanBeCompressString("abc"));
+    JSHandle<JSTaggedValue> handleValue2(factory->NewFromASCII("abc"));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(handleObj), handleKey2, handleValue2);
 
     JSHandle<JSTaggedValue> handleValue(thread, handleObj.GetTaggedValue());
@@ -331,7 +331,7 @@ HWTEST_F_L0(JsonStringifierTest, Stringify_008)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JsonStringifier stringifier(thread);
 
-    JSHandle<JSTaggedValue> handleStr(factory->NewFromCanBeCompressString("\"\\\b\f\n\r\t"));
+    JSHandle<JSTaggedValue> handleStr(factory->NewFromASCII("\"\\\b\f\n\r\t"));
     JSHandle<JSPrimitiveRef> handlePrimitiveRef = factory->NewJSString(handleStr);
     JSHandle<JSObject> handleObj(thread, handlePrimitiveRef.GetTaggedValue());
 

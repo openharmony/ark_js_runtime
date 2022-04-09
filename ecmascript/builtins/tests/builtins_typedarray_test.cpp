@@ -181,7 +181,7 @@ JSTaggedValue CreateBuiltinsJSObject(JSThread *thread, const CString keyCStr)
     ObjectFactory *factory = ecmaVM->GetFactory();
 
     JSHandle<JSTaggedValue> obj(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass), dynclass));
-    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(&keyCStr[0]));
+    JSHandle<JSTaggedValue> key(factory->NewFromASCII(&keyCStr[0]));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
     JSObject::SetProperty(thread, obj, key, value);
     return obj.GetTaggedValue();

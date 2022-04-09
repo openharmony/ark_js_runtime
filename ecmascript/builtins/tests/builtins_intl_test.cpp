@@ -86,7 +86,7 @@ HWTEST_F_L0(BuiltinsIntlTest, GetCanonicalLocales_001)
 HWTEST_F_L0(BuiltinsIntlTest, GetCanonicalLocales_002)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> handleStr = factory->NewFromCanBeCompressString("ko-kore-kr");
+    JSHandle<EcmaString> handleStr = factory->NewFromASCII("ko-kore-kr");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -110,9 +110,9 @@ HWTEST_F_L0(BuiltinsIntlTest, GetCanonicalLocales_003)
     JSArray *arr = JSArray::ArrayCreate(thread, JSTaggedNumber(0)).GetObject<JSArray>();
     JSHandle<JSTaggedValue> obj(thread, arr);
 
-    JSHandle<JSTaggedValue> handleStr(factory->NewFromCanBeCompressString("zh-Hans-Cn"));
+    JSHandle<JSTaggedValue> handleStr(factory->NewFromASCII("zh-Hans-Cn"));
     PropertyDescriptor desc(thread, handleStr, true, true, true);
-    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("1"));
+    JSHandle<JSTaggedValue> key(factory->NewFromASCII("1"));
     JSArray::DefineOwnProperty(thread, JSHandle<JSObject>(obj), key, desc);
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);

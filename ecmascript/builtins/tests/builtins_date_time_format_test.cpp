@@ -80,7 +80,7 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, DateTimeFormatConstructor)
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSFunction> newTarget(env->GetDateTimeFormatFunction());
 
-    JSHandle<JSTaggedValue> localesString(factory->NewFromCanBeCompressString("en-US"));
+    JSHandle<JSTaggedValue> localesString(factory->NewFromASCII("en-US"));
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue(*newTarget), 8);
     ecmaRuntimeCallInfo->SetFunction(newTarget.GetTaggedValue());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -107,11 +107,11 @@ static JSTaggedValue BuiltinsDateTimeOptionsSet(JSThread *thread)
     JSHandle<JSTaggedValue> dayPeriod = globalConst->GetHandledDayPeriodString();
     JSHandle<JSTaggedValue> hourCycle = globalConst->GetHandledHourCycleString();
     JSHandle<JSTaggedValue> timeZone = globalConst->GetHandledTimeZoneString();
-    JSHandle<JSTaggedValue> numicValue(factory->NewFromCanBeCompressString("numeric")); // test numeric
-    JSHandle<JSTaggedValue> weekDayValue(factory->NewFromCanBeCompressString("short")); // test short
-    JSHandle<JSTaggedValue> dayPeriodValue(factory->NewFromCanBeCompressString("long")); // test long
-    JSHandle<JSTaggedValue> hourCycleValue(factory->NewFromCanBeCompressString("h24")); // test h24
-    JSHandle<JSTaggedValue> timeZoneValue(factory->NewFromCanBeCompressString("UTC")); // test UTC
+    JSHandle<JSTaggedValue> numicValue(factory->NewFromASCII("numeric")); // test numeric
+    JSHandle<JSTaggedValue> weekDayValue(factory->NewFromASCII("short")); // test short
+    JSHandle<JSTaggedValue> dayPeriodValue(factory->NewFromASCII("long")); // test long
+    JSHandle<JSTaggedValue> hourCycleValue(factory->NewFromASCII("h24")); // test h24
+    JSHandle<JSTaggedValue> timeZoneValue(factory->NewFromASCII("UTC")); // test UTC
 
     JSHandle<TaggedArray> keyArray = factory->NewTaggedArray(6); // 6 : 6 length
     keyArray->Set(thread, 0, globalConst->GetHandledYearString()); // 0 : 0 first position
@@ -165,7 +165,7 @@ static double BuiltinsDateCreate(const double year, const double month, const do
 HWTEST_F_L0(BuiltinsDateTimeFormatTest, Format_001)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en-US"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en-US"));
     JSHandle<JSDateTimeFormat> jsDateTimeFormat =
        JSHandle<JSDateTimeFormat>(thread, JSDateTimeFormatCreateWithLocaleTest(thread, locale));
 
@@ -186,7 +186,7 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, Format_001)
     double days = BuiltinsDateCreate(2020, 10, 1);
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(static_cast<double>(days)));
     PropertyDescriptor desc(thread, JSHandle<JSTaggedValue>(jsFunction), true, true, true);
-    JSHandle<JSTaggedValue> joinKey(factory->NewFromCanBeCompressString("join"));
+    JSHandle<JSTaggedValue> joinKey(factory->NewFromASCII("join"));
     JSArray::DefineOwnProperty(thread, jsObject, joinKey, desc);
 
     auto ecmaRuntimeCallInfo2 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
@@ -205,7 +205,7 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, Format_001)
 HWTEST_F_L0(BuiltinsDateTimeFormatTest, Format_002)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("pt-BR"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("pt-BR"));
     JSHandle<JSDateTimeFormat> jsDateTimeFormat =
        JSHandle<JSDateTimeFormat>(thread, JSDateTimeFormatCreateWithLocaleTest(thread, locale));
 
@@ -226,7 +226,7 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, Format_002)
     double days = BuiltinsDateCreate(2020, 5, 11);
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(static_cast<double>(days)));
     PropertyDescriptor desc(thread, JSHandle<JSTaggedValue>(jsFunction), true, true, true);
-    JSHandle<JSTaggedValue> joinKey(factory->NewFromCanBeCompressString("join"));
+    JSHandle<JSTaggedValue> joinKey(factory->NewFromASCII("join"));
     JSArray::DefineOwnProperty(thread, jsObject, joinKey, desc);
 
     auto ecmaRuntimeCallInfo2 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
@@ -244,7 +244,7 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, Format_002)
 HWTEST_F_L0(BuiltinsDateTimeFormatTest, FormatToParts)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en-US"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en-US"));
     JSHandle<JSDateTimeFormat> jsDateTimeFormat =
        JSHandle<JSDateTimeFormat>(thread, JSDateTimeFormatCreateWithLocaleTest(thread, locale));
 
@@ -266,7 +266,7 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, FormatToParts)
 HWTEST_F_L0(BuiltinsDateTimeFormatTest, FormatRange_001)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("zh"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("zh"));
     JSHandle<JSDateTimeFormat> jsDateTimeFormat =
        JSHandle<JSDateTimeFormat>(thread, JSDateTimeFormatCreateWithLocaleTest(thread, locale));
 
@@ -283,7 +283,7 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, FormatRange_001)
     TestHelper::TearDownFrame(thread, prev);
     
     JSHandle<EcmaString> handleStr(thread, result);
-    JSHandle<EcmaString> resultStr = factory->NewFromString("2020/11/1周日 24:00:00 – 2021/7/1周四 24:00:00");
+    JSHandle<EcmaString> resultStr = factory->NewFromUtf8("2020/11/1周日 24:00:00 – 2021/7/1周四 24:00:00");
     EXPECT_EQ(handleStr->Compare(*resultStr), 0);
 }
 
@@ -291,7 +291,7 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, FormatRange_001)
 HWTEST_F_L0(BuiltinsDateTimeFormatTest, FormatRange_002)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en-US"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en-US"));
     JSHandle<JSDateTimeFormat> jsDateTimeFormat =
        JSHandle<JSDateTimeFormat>(thread, JSDateTimeFormatCreateWithLocaleTest(thread, locale));
 
@@ -308,14 +308,14 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, FormatRange_002)
     TestHelper::TearDownFrame(thread, prev);
     
     JSHandle<EcmaString> handleStr(thread, result);
-    JSHandle<EcmaString> resultStr = factory->NewFromString("Fri, 1/1/2021, 24:00:00 – Mon, 3/1/2021, 24:00:00");
+    JSHandle<EcmaString> resultStr = factory->NewFromUtf8("Fri, 1/1/2021, 24:00:00 – Mon, 3/1/2021, 24:00:00");
     EXPECT_EQ(handleStr->Compare(*resultStr), 0);
 }
 
 HWTEST_F_L0(BuiltinsDateTimeFormatTest, FormatRangeToParts)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("en-US"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("en-US"));
     JSHandle<JSDateTimeFormat> jsDateTimeFormat =
        JSHandle<JSDateTimeFormat>(thread, JSDateTimeFormatCreateWithLocaleTest(thread, locale));
 
@@ -340,7 +340,7 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, ResolvedOptions)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     auto globalConst = thread->GlobalConstants();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("de-ID"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("de-ID"));
     JSHandle<JSDateTimeFormat> jsDateTimeFormat =
        JSHandle<JSDateTimeFormat>(thread, JSDateTimeFormatCreateWithLocaleTest(thread, locale));
 
@@ -356,11 +356,11 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, ResolvedOptions)
         JSHandle<JSTaggedValue>(thread, JSTaggedValue(static_cast<JSTaggedType>(result.GetRawData())));
     // judge whether the properties of the object are the same as those of jsdatetimeformat tag
     JSHandle<JSTaggedValue> localeKey = globalConst->GetHandledLocaleString();
-    JSHandle<JSTaggedValue> localeValue(factory->NewFromCanBeCompressString("de"));
+    JSHandle<JSTaggedValue> localeValue(factory->NewFromASCII("de"));
     EXPECT_EQ(JSTaggedValue::SameValue(
         JSObject::GetProperty(thread, resultObj, localeKey).GetValue(), localeValue), true);
     JSHandle<JSTaggedValue> timeZone = globalConst->GetHandledTimeZoneString();
-    JSHandle<JSTaggedValue> timeZoneValue(factory->NewFromCanBeCompressString("UTC"));
+    JSHandle<JSTaggedValue> timeZoneValue(factory->NewFromASCII("UTC"));
     EXPECT_EQ(JSTaggedValue::SameValue(
         JSObject::GetProperty(thread, resultObj, timeZone).GetValue(), timeZoneValue), true);
 }
@@ -369,7 +369,7 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, ResolvedOptions)
 HWTEST_F_L0(BuiltinsDateTimeFormatTest, SupportedLocalesOf_001)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("id-u-co-pinyin-de-ID"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("id-u-co-pinyin-de-ID"));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -397,8 +397,8 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, SupportedLocalesOf_002)
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
    
     JSHandle<JSTaggedValue> localeMatcherKey = thread->GlobalConstants()->GetHandledLocaleMatcherString();
-    JSHandle<JSTaggedValue> localeMatcherValue(factory->NewFromCanBeCompressString("lookup"));
-    JSHandle<JSTaggedValue> locale(factory->NewFromCanBeCompressString("id-u-co-pinyin-de-DE"));
+    JSHandle<JSTaggedValue> localeMatcherValue(factory->NewFromASCII("lookup"));
+    JSHandle<JSTaggedValue> locale(factory->NewFromASCII("id-u-co-pinyin-de-DE"));
 
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
     JSHandle<JSObject> optionsObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);

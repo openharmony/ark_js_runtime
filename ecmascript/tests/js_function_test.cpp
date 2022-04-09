@@ -95,9 +95,9 @@ HWTEST_F_L0(JSFunctionTest, MakeConstructor)
     JSFunction::MakeConstructor(thread, func, objValue);
 
     JSHandle<JSTaggedValue> constructorKey(
-        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("constructor"));
+        thread->GetEcmaVM()->GetFactory()->NewFromASCII("constructor"));
 
-    JSHandle<JSTaggedValue> protoKey(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("prototype"));
+    JSHandle<JSTaggedValue> protoKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII("prototype"));
     JSTaggedValue proto = JSObject::GetProperty(thread, funcHandle, protoKey).GetValue().GetTaggedValue();
     JSTaggedValue constructor =
         JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(obj), constructorKey).GetValue().GetTaggedValue();
@@ -140,7 +140,7 @@ HWTEST_F_L0(JSFunctionTest, Invoke)
     EXPECT_TRUE(*callee != nullptr);
 
     char keyArray[] = "invoked";
-    JSHandle<JSTaggedValue> calleeKey(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(&keyArray[0]));
+    JSHandle<JSTaggedValue> calleeKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII(&keyArray[0]));
     JSHandle<JSFunction> calleeFunc =
         thread->GetEcmaVM()->GetFactory()->NewJSFunction(env, reinterpret_cast<void *>(TestInvokeInternal));
     calleeFunc->SetCallable(true);
@@ -161,7 +161,7 @@ HWTEST_F_L0(JSFunctionTest, SetSymbolFunctionName)
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSFunction> jsFunction = factory->NewJSFunction(env);
     JSHandle<JSSymbol> symbol = factory->NewPublicSymbolWithChar("name");
-    JSHandle<EcmaString> name = factory->NewFromCanBeCompressString("[name]");
+    JSHandle<EcmaString> name = factory->NewFromASCII("[name]");
     JSHandle<JSTaggedValue> prefix(thread, JSTaggedValue::Undefined());
     JSFunction::SetFunctionName(thread, JSHandle<JSFunctionBase>(jsFunction), JSHandle<JSTaggedValue>(symbol), prefix);
     JSHandle<JSTaggedValue> functionName =

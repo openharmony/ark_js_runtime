@@ -517,7 +517,7 @@ void Builtins::InitializeObject(const JSHandle<GlobalEnv> &env, const JSHandle<J
     SetFunction(env, objFuncPrototype, "createRealm", Object::CreateRealm, FunctionLength::ZERO);
 
     // B.2.2.1 Object.prototype.__proto__
-    JSHandle<JSTaggedValue> protoKey(factory_->NewFromCanBeCompressString("__proto__"));
+    JSHandle<JSTaggedValue> protoKey(factory_->NewFromASCII("__proto__"));
     JSHandle<JSTaggedValue> protoGetter = CreateGetter(env, Object::ProtoGetter, "__proto__", FunctionLength::ZERO);
     JSHandle<JSTaggedValue> protoSetter = CreateSetter(env, Object::ProtoSetter, "__proto__", FunctionLength::ONE);
     SetAccessor(objFuncPrototype, protoKey, protoGetter, protoSetter);
@@ -574,7 +574,7 @@ void Builtins::InitializeSymbol(const JSHandle<GlobalEnv> &env, const JSHandle<J
 
     // symbol.prototype.description
     PropertyDescriptor descriptionDesc(thread_);
-    JSHandle<JSTaggedValue> getterKey(factory_->NewFromCanBeCompressString("description"));
+    JSHandle<JSTaggedValue> getterKey(factory_->NewFromASCII("description"));
     JSHandle<JSTaggedValue> getter(factory_->NewJSFunction(env, reinterpret_cast<void *>(Symbol::DescriptionGetter)));
     SetGetter(symbolFuncPrototype, getterKey, getter);
 
@@ -656,7 +656,7 @@ void Builtins::InitializeSymbolWithRealm(const JSHandle<GlobalEnv> &realm,
 
     // symbol.prototype.description
     PropertyDescriptor descriptionDesc(thread_);
-    JSHandle<JSTaggedValue> getterKey(factory_->NewFromCanBeCompressString("description"));
+    JSHandle<JSTaggedValue> getterKey(factory_->NewFromASCII("description"));
     JSHandle<JSTaggedValue> getter(factory_->NewJSFunction(realm, reinterpret_cast<void *>(Symbol::DescriptionGetter)));
     SetGetter(symbolFuncPrototype, getterKey, getter);
 
@@ -906,7 +906,7 @@ JSHandle<JSFunction> Builtins::InitializeExoticConstructor(const JSHandle<Global
         factory_->NewJSFunction(env, reinterpret_cast<void *>(ctorFunc), FunctionKind::BUILTIN_PROXY_CONSTRUCTOR);
 
     JSFunction::SetFunctionLength(thread_, ctor, JSTaggedValue(length));
-    JSHandle<JSTaggedValue> nameString(factory_->NewFromString(name));
+    JSHandle<JSTaggedValue> nameString(factory_->NewFromUtf8(name));
     JSFunction::SetFunctionName(thread_, JSHandle<JSFunctionBase>(ctor), nameString,
                                 JSHandle<JSTaggedValue>(thread_, JSTaggedValue::Undefined()));
 
@@ -1135,7 +1135,7 @@ void Builtins::InitializeCtor(const JSHandle<GlobalEnv> &env, const JSHandle<JSO
 {
     const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
     JSFunction::SetFunctionLength(thread_, ctor, JSTaggedValue(length));
-    JSHandle<JSTaggedValue> nameString(factory_->NewFromString(name));
+    JSHandle<JSTaggedValue> nameString(factory_->NewFromUtf8(name));
     JSFunction::SetFunctionName(thread_, JSHandle<JSFunctionBase>(ctor), nameString,
                                 JSHandle<JSTaggedValue>(thread_, JSTaggedValue::Undefined()));
     JSHandle<JSTaggedValue> constructorKey = globalConst->GetHandledConstructorString();
@@ -1185,8 +1185,8 @@ void Builtins::InitializeSet(const JSHandle<GlobalEnv> &env, const JSHandle<JSHC
     // set.prototype.keys()
     SetFunction(env, setFuncPrototype, "values", BuiltinsSet::Values, FunctionLength::ZERO);
     // set.prototype.values()
-    JSHandle<JSTaggedValue> keys(factory_->NewFromCanBeCompressString("keys"));
-    JSHandle<JSTaggedValue> values(factory_->NewFromCanBeCompressString("values"));
+    JSHandle<JSTaggedValue> keys(factory_->NewFromASCII("keys"));
+    JSHandle<JSTaggedValue> values(factory_->NewFromASCII("values"));
     JSHandle<JSTaggedValue> valuesFunc =
         JSObject::GetMethod(thread_, JSHandle<JSTaggedValue>::Cast(setFuncPrototype), values);
     PropertyDescriptor descriptor(thread_, valuesFunc, true, false, true);
@@ -1197,7 +1197,7 @@ void Builtins::InitializeSet(const JSHandle<GlobalEnv> &env, const JSHandle<JSHC
 
     // 23.1.3.10get Set.prototype.size
     JSHandle<JSTaggedValue> sizeGetter = CreateGetter(env, BuiltinsSet::GetSize, "size", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> sizeKey(factory_->NewFromCanBeCompressString("size"));
+    JSHandle<JSTaggedValue> sizeKey(factory_->NewFromASCII("size"));
     SetGetter(setFuncPrototype, sizeKey, sizeGetter);
 
     // 23.1.2.2get Set [ @@species ]
@@ -1257,7 +1257,7 @@ void Builtins::InitializeMap(const JSHandle<GlobalEnv> &env, const JSHandle<JSHC
 
     // 23.1.3.10get Map.prototype.size
     JSHandle<JSTaggedValue> sizeGetter = CreateGetter(env, BuiltinsMap::GetSize, "size", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> sizeKey(factory_->NewFromCanBeCompressString("size"));
+    JSHandle<JSTaggedValue> sizeKey(factory_->NewFromASCII("size"));
     SetGetter(mapFuncPrototype, sizeKey, sizeGetter);
 
     // 23.1.2.2get Map [ @@species ]
@@ -1268,7 +1268,7 @@ void Builtins::InitializeMap(const JSHandle<GlobalEnv> &env, const JSHandle<JSHC
 
     // %MapPrototype% [ @@iterator ]
     JSHandle<JSTaggedValue> iteratorSymbol = env->GetIteratorSymbol();
-    JSHandle<JSTaggedValue> entries(factory_->NewFromCanBeCompressString("entries"));
+    JSHandle<JSTaggedValue> entries(factory_->NewFromASCII("entries"));
     JSHandle<JSTaggedValue> entriesFunc =
         JSObject::GetMethod(thread_, JSHandle<JSTaggedValue>::Cast(mapFuncPrototype), entries);
     PropertyDescriptor descriptor(thread_, entriesFunc, true, false, true);
@@ -1395,7 +1395,7 @@ void Builtins::InitializeMath(const JSHandle<GlobalEnv> &env, const JSHandle<JST
     SetConstant(mathObject, "SQRT1_2", JSTaggedValue(Math::SQRT1_2));
     SetConstant(mathObject, "SQRT2", JSTaggedValue(Math::SQRT2));
 
-    JSHandle<JSTaggedValue> mathString(factory_->NewFromCanBeCompressString("Math"));
+    JSHandle<JSTaggedValue> mathString(factory_->NewFromASCII("Math"));
     JSHandle<JSObject> globalObject(thread_, env->GetGlobalObject());
     PropertyDescriptor mathDesc(thread_, JSHandle<JSTaggedValue>::Cast(mathObject), true, false, true);
     JSObject::DefineOwnProperty(thread_, globalObject, mathString, mathDesc);
@@ -1414,7 +1414,7 @@ void Builtins::InitializeJson(const JSHandle<GlobalEnv> &env, const JSHandle<JST
     SetFunction(env, jsonObject, "stringify", Json::Stringify, FunctionLength::THREE);
 
     PropertyDescriptor jsonDesc(thread_, JSHandle<JSTaggedValue>::Cast(jsonObject), true, false, true);
-    JSHandle<JSTaggedValue> jsonString(factory_->NewFromCanBeCompressString("JSON"));
+    JSHandle<JSTaggedValue> jsonString(factory_->NewFromASCII("JSON"));
     JSHandle<JSObject> globalObject(thread_, env->GetGlobalObject());
     JSObject::DefineOwnProperty(thread_, globalObject, jsonString, jsonDesc);
     // @@ToStringTag
@@ -1479,7 +1479,7 @@ void Builtins::InitializeString(const JSHandle<GlobalEnv> &env, const JSHandle<J
 
     // String.prototype.length
     JSHandle<JSTaggedValue> lengthGetter = CreateGetter(env, BuiltinsString::GetLength, "length", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromCanBeCompressString("length"));
+    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromASCII("length"));
     SetGetter(stringFuncPrototype, lengthKey, lengthGetter);
 
     env->SetStringFunction(thread_, stringFunction);
@@ -1607,37 +1607,37 @@ void Builtins::InitializeRegExp(const JSHandle<GlobalEnv> &env)
                 FunctionLength::ZERO);
 
     JSHandle<JSTaggedValue> flagsGetter = CreateGetter(env, RegExp::GetFlags, "flags", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> flagsKey(factory_->NewFromCanBeCompressString("flags"));
+    JSHandle<JSTaggedValue> flagsKey(factory_->NewFromASCII("flags"));
     SetGetter(regPrototype, flagsKey, flagsGetter);
 
     JSHandle<JSTaggedValue> sourceGetter = CreateGetter(env, RegExp::GetSource, "source", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> sourceKey(factory_->NewFromCanBeCompressString("source"));
+    JSHandle<JSTaggedValue> sourceKey(factory_->NewFromASCII("source"));
     SetGetter(regPrototype, sourceKey, sourceGetter);
 
     JSHandle<JSTaggedValue> globalGetter = CreateGetter(env, RegExp::GetGlobal, "global", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> globalKey(factory_->NewFromCanBeCompressString("global"));
+    JSHandle<JSTaggedValue> globalKey(factory_->NewFromASCII("global"));
     SetGetter(regPrototype, globalKey, globalGetter);
 
     JSHandle<JSTaggedValue> ignoreCaseGetter =
         CreateGetter(env, RegExp::GetIgnoreCase, "ignoreCase", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> ignoreCaseKey(factory_->NewFromCanBeCompressString("ignoreCase"));
+    JSHandle<JSTaggedValue> ignoreCaseKey(factory_->NewFromASCII("ignoreCase"));
     SetGetter(regPrototype, ignoreCaseKey, ignoreCaseGetter);
 
     JSHandle<JSTaggedValue> multilineGetter =
         CreateGetter(env, RegExp::GetMultiline, "multiline", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> multilineKey(factory_->NewFromCanBeCompressString("multiline"));
+    JSHandle<JSTaggedValue> multilineKey(factory_->NewFromASCII("multiline"));
     SetGetter(regPrototype, multilineKey, multilineGetter);
 
     JSHandle<JSTaggedValue> dotAllGetter = CreateGetter(env, RegExp::GetDotAll, "dotAll", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> dotAllKey(factory_->NewFromCanBeCompressString("dotAll"));
+    JSHandle<JSTaggedValue> dotAllKey(factory_->NewFromASCII("dotAll"));
     SetGetter(regPrototype, dotAllKey, dotAllGetter);
 
     JSHandle<JSTaggedValue> stickyGetter = CreateGetter(env, RegExp::GetSticky, "sticky", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> stickyKey(factory_->NewFromCanBeCompressString("sticky"));
+    JSHandle<JSTaggedValue> stickyKey(factory_->NewFromASCII("sticky"));
     SetGetter(regPrototype, stickyKey, stickyGetter);
 
     JSHandle<JSTaggedValue> unicodeGetter = CreateGetter(env, RegExp::GetUnicode, "unicode", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> unicodeKey(factory_->NewFromCanBeCompressString("unicode"));
+    JSHandle<JSTaggedValue> unicodeKey(factory_->NewFromASCII("unicode"));
     SetGetter(regPrototype, unicodeKey, unicodeGetter);
 
     // Set RegExp [ @@species ]
@@ -1726,7 +1726,7 @@ void Builtins::InitializeArray(const JSHandle<GlobalEnv> &env, const JSHandle<JS
     SetFunction(env, arrFuncPrototype, "flatMap", BuiltinsArray::FlatMap, FunctionLength::ONE);
 
     // %ArrayPrototype% [ @@iterator ]
-    JSHandle<JSTaggedValue> values(factory_->NewFromCanBeCompressString("values"));
+    JSHandle<JSTaggedValue> values(factory_->NewFromASCII("values"));
     JSHandle<JSTaggedValue> iteratorSymbol = env->GetIteratorSymbol();
     JSHandle<JSTaggedValue> valuesFunc =
         JSObject::GetMethod(thread_, JSHandle<JSTaggedValue>::Cast(arrFuncPrototype), values);
@@ -1750,7 +1750,7 @@ void Builtins::InitializeArray(const JSHandle<GlobalEnv> &env, const JSHandle<JS
                                   false);
     JSObject::DefineOwnProperty(thread_, arrFuncPrototype, key_string, descriptor);
 
-    JSHandle<JSTaggedValue> valuesKey(factory_->NewFromCanBeCompressString("values"));
+    JSHandle<JSTaggedValue> valuesKey(factory_->NewFromASCII("values"));
     PropertyDescriptor desc(thread_);
     JSObject::GetOwnProperty(thread_, arrFuncPrototype, valuesKey, desc);
 
@@ -1812,22 +1812,22 @@ void Builtins::InitializeTypedArray(const JSHandle<GlobalEnv> &env, const JSHand
 
     JSHandle<JSTaggedValue> bufferGetter =
         CreateGetter(env, BuiltinsTypedArray::GetBuffer, "buffer", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> bufferKey(factory_->NewFromCanBeCompressString("buffer"));
+    JSHandle<JSTaggedValue> bufferKey(factory_->NewFromASCII("buffer"));
     SetGetter(typedArrFuncPrototype, bufferKey, bufferGetter);
 
     JSHandle<JSTaggedValue> byteLengthGetter =
         CreateGetter(env, BuiltinsTypedArray::GetByteLength, "byteLength", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> byteLengthKey(factory_->NewFromCanBeCompressString("byteLength"));
+    JSHandle<JSTaggedValue> byteLengthKey(factory_->NewFromASCII("byteLength"));
     SetGetter(typedArrFuncPrototype, byteLengthKey, byteLengthGetter);
 
     JSHandle<JSTaggedValue> byteOffsetGetter =
         CreateGetter(env, BuiltinsTypedArray::GetByteOffset, "byteOffset", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> byteOffsetKey(factory_->NewFromCanBeCompressString("byteOffset"));
+    JSHandle<JSTaggedValue> byteOffsetKey(factory_->NewFromASCII("byteOffset"));
     SetGetter(typedArrFuncPrototype, byteOffsetKey, byteOffsetGetter);
 
     JSHandle<JSTaggedValue> lengthGetter =
         CreateGetter(env, BuiltinsTypedArray::GetLength, "length", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromCanBeCompressString("length"));
+    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromASCII("length"));
     SetGetter(typedArrFuncPrototype, lengthKey, lengthGetter);
 
     // %TypedArray%.prototype.toString()
@@ -1839,7 +1839,7 @@ void Builtins::InitializeTypedArray(const JSHandle<GlobalEnv> &env, const JSHand
                                 toStringDesc);
 
     // %TypedArray%.prototype [ @@iterator ] ( )
-    JSHandle<JSTaggedValue> values(factory_->NewFromCanBeCompressString("values"));
+    JSHandle<JSTaggedValue> values(factory_->NewFromASCII("values"));
     JSHandle<JSTaggedValue> iteratorSymbol = env->GetIteratorSymbol();
     JSHandle<JSTaggedValue> valuesFunc =
         JSObject::GetMethod(thread_, JSHandle<JSTaggedValue>::Cast(typedArrFuncPrototype), values);
@@ -2185,7 +2185,7 @@ void Builtins::InitializeArrayBuffer(const JSHandle<GlobalEnv> &env, const JSHan
     // 24.1.4.1 get ArrayBuffer.prototype.byteLength
     JSHandle<JSTaggedValue> lengthGetter =
         CreateGetter(env, ArrayBuffer::GetByteLength, "byteLength", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromCanBeCompressString("byteLength"));
+    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromASCII("byteLength"));
     SetGetter(arrayBufferFuncPrototype, lengthKey, lengthGetter);
 
     // 24.1.4.4 ArrayBuffer.prototype[@@toStringTag]
@@ -2217,7 +2217,7 @@ void Builtins::InitializeReflect(const JSHandle<GlobalEnv> &env,
     SetFunction(env, reflectObject, "set", Reflect::ReflectSet, FunctionLength::THREE);
     SetFunction(env, reflectObject, "setPrototypeOf", Reflect::ReflectSetPrototypeOf, FunctionLength::TWO);
 
-    JSHandle<JSTaggedValue> reflectString(factory_->NewFromCanBeCompressString("Reflect"));
+    JSHandle<JSTaggedValue> reflectString(factory_->NewFromASCII("Reflect"));
     JSHandle<JSObject> globalObject(thread_, env->GetGlobalObject());
     PropertyDescriptor reflectDesc(thread_, JSHandle<JSTaggedValue>::Cast(reflectObject), true, false, true);
     JSObject::DefineOwnProperty(thread_, globalObject, reflectString, reflectDesc);
@@ -2264,7 +2264,7 @@ void Builtins::InitializeSharedArrayBuffer(const JSHandle<GlobalEnv> &env,
     // 25.2.4.1 get SharedArrayBuffer.prototype.byteLength
     JSHandle<JSTaggedValue> lengthGetter =
         CreateGetter(env, SharedArrayBuffer::GetByteLength, "byteLength", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromCanBeCompressString("byteLength"));
+    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromASCII("byteLength"));
     SetGetter(sharedArrayBufferFuncPrototype, lengthKey, lengthGetter);
 
     // 25.2.4.4 SharedArrayBuffer.prototype [ @@toStringTag ]
@@ -2354,18 +2354,18 @@ void Builtins::InitializeDataView(const JSHandle<GlobalEnv> &env, const JSHandle
 
     // 24.2.4.1 get DataView.prototype.buffer
     JSHandle<JSTaggedValue> bufferGetter = CreateGetter(env, DataView::GetBuffer, "buffer", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> bufferKey(factory_->NewFromCanBeCompressString("buffer"));
+    JSHandle<JSTaggedValue> bufferKey(factory_->NewFromASCII("buffer"));
     SetGetter(dataViewFuncPrototype, bufferKey, bufferGetter);
 
     // 24.2.4.2 get DataView.prototype.byteLength
     JSHandle<JSTaggedValue> lengthGetter =
         CreateGetter(env, DataView::GetByteLength, "byteLength", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromCanBeCompressString("byteLength"));
+    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromASCII("byteLength"));
     SetGetter(dataViewFuncPrototype, lengthKey, lengthGetter);
 
     // 24.2.4.3 get DataView.prototype.byteOffset
     JSHandle<JSTaggedValue> offsetGetter = CreateGetter(env, DataView::GetOffset, "byteOffset", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> offsetKey(factory_->NewFromCanBeCompressString("byteOffset"));
+    JSHandle<JSTaggedValue> offsetKey(factory_->NewFromASCII("byteOffset"));
     SetGetter(dataViewFuncPrototype, offsetKey, offsetGetter);
 
     // 24.2.4.21 DataView.prototype[ @@toStringTag ]
@@ -2397,7 +2397,7 @@ JSHandle<JSFunction> Builtins::NewFunction(const JSHandle<GlobalEnv> &env, const
 void Builtins::SetFunction(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &obj, const char *key,
                            EcmaEntrypoint func, int length) const
 {
-    JSHandle<JSTaggedValue> keyString(factory_->NewFromString(key));
+    JSHandle<JSTaggedValue> keyString(factory_->NewFromUtf8(key));
     SetFunction(env, obj, keyString, func, length);
 }
 
@@ -2412,7 +2412,7 @@ void Builtins::SetFunction(const JSHandle<GlobalEnv> &env, const JSHandle<JSObje
 void Builtins::SetFrozenFunction(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &obj, const char *key,
                                  EcmaEntrypoint func, int length) const
 {
-    JSHandle<JSTaggedValue> keyString(factory_->NewFromString(key));
+    JSHandle<JSTaggedValue> keyString(factory_->NewFromUtf8(key));
     JSHandle<JSFunction> function = NewFunction(env, keyString, func, length);
     PropertyDescriptor descriptor(thread_, JSHandle<JSTaggedValue>(function), false, false, false);
     JSObject::DefineOwnProperty(thread_, obj, keyString, descriptor);
@@ -2425,7 +2425,7 @@ void Builtins::SetFunctionAtSymbol(const JSHandle<GlobalEnv> &env, const JSHandl
 {
     JSHandle<JSFunction> function = factory_->NewJSFunction(env, reinterpret_cast<void *>(func));
     JSFunction::SetFunctionLength(thread_, function, JSTaggedValue(length));
-    JSHandle<JSTaggedValue> nameString(factory_->NewFromString(name));
+    JSHandle<JSTaggedValue> nameString(factory_->NewFromUtf8(name));
     JSHandle<JSFunctionBase> baseFunction(function);
     JSHandle<JSTaggedValue> handleUndefine(thread_, JSTaggedValue::Undefined());
     JSFunction::SetFunctionName(thread_, baseFunction, nameString, handleUndefine);
@@ -2447,7 +2447,7 @@ void Builtins::SetFunctionAtSymbol(const JSHandle<GlobalEnv> &env, const JSHandl
 
 void Builtins::SetStringTagSymbol(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &obj, const char *key) const
 {
-    JSHandle<JSTaggedValue> tag(factory_->NewFromString(key));
+    JSHandle<JSTaggedValue> tag(factory_->NewFromUtf8(key));
     JSHandle<JSTaggedValue> symbol = env->GetToStringTagSymbol();
     PropertyDescriptor desc(thread_, tag, false, false, true);
     JSObject::DefineOwnProperty(thread_, obj, symbol, desc);
@@ -2458,7 +2458,7 @@ JSHandle<JSTaggedValue> Builtins::CreateGetter(const JSHandle<GlobalEnv> &env, E
 {
     JSHandle<JSFunction> function = factory_->NewJSFunction(env, reinterpret_cast<void *>(func));
     JSFunction::SetFunctionLength(thread_, function, JSTaggedValue(length));
-    JSHandle<JSTaggedValue> funcName(factory_->NewFromString(name));
+    JSHandle<JSTaggedValue> funcName(factory_->NewFromUtf8(name));
     JSHandle<JSTaggedValue> prefix = thread_->GlobalConstants()->GetHandledGetString();
     JSFunction::SetFunctionName(thread_, JSHandle<JSFunctionBase>(function), funcName, prefix);
     return JSHandle<JSTaggedValue>(function);
@@ -2469,7 +2469,7 @@ JSHandle<JSTaggedValue> Builtins::CreateSetter(const JSHandle<GlobalEnv> &env, E
 {
     JSHandle<JSFunction> function = factory_->NewJSFunction(env, reinterpret_cast<void *>(func));
     JSFunction::SetFunctionLength(thread_, function, JSTaggedValue(length));
-    JSHandle<JSTaggedValue> funcName(factory_->NewFromString(name));
+    JSHandle<JSTaggedValue> funcName(factory_->NewFromUtf8(name));
     JSHandle<JSTaggedValue> prefix = thread_->GlobalConstants()->GetHandledSetString();
     JSFunction::SetFunctionName(thread_, JSHandle<JSFunctionBase>(function), funcName, prefix);
     return JSHandle<JSTaggedValue>(function);
@@ -2477,36 +2477,36 @@ JSHandle<JSTaggedValue> Builtins::CreateSetter(const JSHandle<GlobalEnv> &env, E
 
 void Builtins::SetConstant(const JSHandle<JSObject> &obj, const char *key, JSTaggedValue value) const
 {
-    JSHandle<JSTaggedValue> keyString(factory_->NewFromString(key));
+    JSHandle<JSTaggedValue> keyString(factory_->NewFromUtf8(key));
     PropertyDescriptor descriptor(thread_, JSHandle<JSTaggedValue>(thread_, value), false, false, false);
     JSObject::DefineOwnProperty(thread_, obj, keyString, descriptor);
 }
 
 void Builtins::SetConstantObject(const JSHandle<JSObject> &obj, const char *key, JSHandle<JSTaggedValue> &value) const
 {
-    JSHandle<JSTaggedValue> keyString(factory_->NewFromString(key));
+    JSHandle<JSTaggedValue> keyString(factory_->NewFromUtf8(key));
     PropertyDescriptor descriptor(thread_, value, false, false, false);
     JSObject::DefineOwnProperty(thread_, obj, keyString, descriptor);
 }
 
 void Builtins::SetGlobalThis(const JSHandle<JSObject> &obj, const char *key, const JSHandle<JSTaggedValue> &globalValue)
 {
-    JSHandle<JSTaggedValue> keyString(factory_->NewFromString(key));
+    JSHandle<JSTaggedValue> keyString(factory_->NewFromUtf8(key));
     PropertyDescriptor descriptor(thread_, globalValue, true, false, true);
     JSObject::DefineOwnProperty(thread_, obj, keyString, descriptor);
 }
 
 void Builtins::SetAttribute(const JSHandle<JSObject> &obj, const char *key, const char *value) const
 {
-    JSHandle<JSTaggedValue> keyString(factory_->NewFromString(key));
-    PropertyDescriptor descriptor(thread_, JSHandle<JSTaggedValue>(factory_->NewFromString(value)), true, false, true);
+    JSHandle<JSTaggedValue> keyString(factory_->NewFromUtf8(key));
+    PropertyDescriptor descriptor(thread_, JSHandle<JSTaggedValue>(factory_->NewFromUtf8(value)), true, false, true);
     JSObject::DefineOwnProperty(thread_, obj, keyString, descriptor);
 }
 
 void Builtins::SetNoneAttributeProperty(const JSHandle<JSObject> &obj, const char *key,
                                         const JSHandle<JSTaggedValue> &value) const
 {
-    JSHandle<JSTaggedValue> keyString(factory_->NewFromString(key));
+    JSHandle<JSTaggedValue> keyString(factory_->NewFromUtf8(key));
     PropertyDescriptor des(thread_, value, false, false, false);
     JSObject::DefineOwnProperty(thread_, obj, keyString, des);
 }
@@ -2516,7 +2516,7 @@ void Builtins::SetFuncToObjAndGlobal(const JSHandle<GlobalEnv> &env, const JSHan
 {
     JSHandle<JSFunction> function = factory_->NewJSFunction(env, reinterpret_cast<void *>(func));
     JSFunction::SetFunctionLength(thread_, function, JSTaggedValue(length));
-    JSHandle<JSTaggedValue> keyString(factory_->NewFromString(key));
+    JSHandle<JSTaggedValue> keyString(factory_->NewFromUtf8(key));
     JSHandle<JSFunctionBase> baseFunction(function);
     JSHandle<JSTaggedValue> handleUndefine(thread_, JSTaggedValue::Undefined());
     JSFunction::SetFunctionName(thread_, baseFunction, keyString, handleUndefine);
@@ -2531,10 +2531,10 @@ void Builtins::StrictModeForbiddenAccessCallerArguments(const JSHandle<GlobalEnv
     JSHandle<JSFunction> function =
         factory_->NewJSFunction(env, reinterpret_cast<void *>(JSFunction::AccessCallerArgumentsThrowTypeError));
 
-    JSHandle<JSTaggedValue> caller(factory_->NewFromCanBeCompressString("caller"));
+    JSHandle<JSTaggedValue> caller(factory_->NewFromASCII("caller"));
     SetAccessor(prototype, caller, JSHandle<JSTaggedValue>::Cast(function), JSHandle<JSTaggedValue>::Cast(function));
 
-    JSHandle<JSTaggedValue> arguments(factory_->NewFromCanBeCompressString("arguments"));
+    JSHandle<JSTaggedValue> arguments(factory_->NewFromASCII("arguments"));
     SetAccessor(prototype, arguments, JSHandle<JSTaggedValue>::Cast(function), JSHandle<JSTaggedValue>::Cast(function));
 }
 
@@ -2662,7 +2662,7 @@ void Builtins::InitializeIntlCtor(const JSHandle<GlobalEnv> &env, const JSHandle
 {
     const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
     JSFunction::SetFunctionLength(thread_, ctor, JSTaggedValue(length));
-    JSHandle<JSTaggedValue> nameString(factory_->NewFromString(name));
+    JSHandle<JSTaggedValue> nameString(factory_->NewFromUtf8(name));
     JSFunction::SetFunctionName(thread_, JSHandle<JSFunctionBase>(ctor), nameString,
                                 JSHandle<JSTaggedValue>(thread_, JSTaggedValue::Undefined()));
     JSHandle<JSTaggedValue> constructorKey = globalConst->GetHandledConstructorString();
@@ -2691,7 +2691,7 @@ void Builtins::InitializeIntl(const JSHandle<GlobalEnv> &env, const JSHandle<JST
     SetFunction(env, intlObject, "getCanonicalLocales", Intl::GetCanonicalLocales, FunctionLength::ONE);
 
     // initial value of the "Intl" property of the global object.
-    JSHandle<JSTaggedValue> intlString(factory_->NewFromString("Intl"));
+    JSHandle<JSTaggedValue> intlString(factory_->NewFromASCII("Intl"));
     JSHandle<JSObject> globalObject(thread_, env->GetGlobalObject());
     PropertyDescriptor intlDesc(thread_, JSHandle<JSTaggedValue>::Cast(intlObject), true, false, true);
     JSObject::DefineOwnProperty(thread_, globalObject, intlString, intlDesc);

@@ -75,7 +75,7 @@ public:
 
     static inline JSTaggedValue GetTaggedString(JSThread *thread, const char *str)
     {
-        return thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(str).GetTaggedValue();
+        return thread->GetEcmaVM()->GetFactory()->NewFromASCII(str).GetTaggedValue();
     }
 };
 }  // namespace base

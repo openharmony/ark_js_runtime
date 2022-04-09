@@ -142,7 +142,8 @@ void EcmaString::WriteData(EcmaString *src, uint32_t start, uint32_t destSize, u
         }
     } else {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        if (length != 0 && memcpy_s(GetDataUtf16Writable() + start, destSize, src->GetDataUtf16(), length) != EOK) {
+        if (length != 0 && memcpy_s(GetDataUtf16Writable() + start, ComputeSizeUtf16(destSize), src->GetDataUtf16(),
+                                    ComputeSizeUtf16(length)) != EOK) {
             LOG_ECMA(FATAL) << "memcpy_s failed";
             UNREACHABLE();
         }

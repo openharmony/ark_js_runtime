@@ -106,7 +106,7 @@ JSTaggedValue TestPromiseThenOnResolved(EcmaRuntimeCallInfo *argv)
 {
     auto factory = argv->GetThread()->GetEcmaVM()->GetFactory();
     JSHandle<JSTaggedValue> result = BuiltinsBase::GetCallArg(argv, 0);
-    auto expect = factory->NewFromCanBeCompressString("resolve");
+    auto expect = factory->NewFromASCII("resolve");
     EXPECT_EQ(JSTaggedValue::SameValue(result.GetTaggedValue(), expect.GetTaggedValue()), true);
     return JSTaggedValue::Undefined();
 }
@@ -116,7 +116,7 @@ JSTaggedValue TestPromiseThenOnRejected(EcmaRuntimeCallInfo *argv)
 {
     auto factory = argv->GetThread()->GetEcmaVM()->GetFactory();
     JSHandle<JSTaggedValue> result = BuiltinsBase::GetCallArg(argv, 0);
-    auto expect = factory->NewFromCanBeCompressString("reject");
+    auto expect = factory->NewFromASCII("reject");
     EXPECT_EQ(JSTaggedValue::SameValue(result.GetTaggedValue(), expect.GetTaggedValue()), true);
     return JSTaggedValue::Undefined();
 }
@@ -161,7 +161,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, Reject2)
     // constructor promise1
     JSHandle<JSFunction> promise = JSHandle<JSFunction>::Cast(env->GetPromiseFunction());
     JSHandle<JSTaggedValue> paramMsg1 =
-        JSHandle<JSTaggedValue>::Cast(factory->NewFromCanBeCompressString("Promise reject"));
+        JSHandle<JSTaggedValue>::Cast(factory->NewFromASCII("Promise reject"));
 
     /**
      * @tc.steps: step1. var p1 = Promise.reject("Promise reject")
@@ -235,7 +235,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, Resolve2)
     // constructor promise1
     JSHandle<JSFunction> promise = JSHandle<JSFunction>::Cast(env->GetPromiseFunction());
     JSHandle<JSTaggedValue> paramMsg1 =
-        JSHandle<JSTaggedValue>::Cast(factory->NewFromCanBeCompressString("Promise reject"));
+        JSHandle<JSTaggedValue>::Cast(factory->NewFromASCII("Promise reject"));
 
     /**
      * @tc.steps: step1. var p1 = Promise.reject("Promise reject")
@@ -585,7 +585,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, ThenResolve)
     auto factory = EcmaVM::Cast(instance)->GetFactory();
 
     JSHandle<JSFunction> promise = JSHandle<JSFunction>::Cast(env->GetPromiseFunction());
-    JSHandle<JSTaggedValue> paramMsg = JSHandle<JSTaggedValue>::Cast(factory->NewFromCanBeCompressString("resolve"));
+    JSHandle<JSTaggedValue> paramMsg = JSHandle<JSTaggedValue>::Cast(factory->NewFromASCII("resolve"));
 
     /**
      * @tc.steps: step1. var p1 = Promise.resolve("resolve")
@@ -639,7 +639,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, ThenReject)
     auto factory = EcmaVM::Cast(instance)->GetFactory();
 
     JSHandle<JSFunction> promise = JSHandle<JSFunction>::Cast(env->GetPromiseFunction());
-    JSHandle<JSTaggedValue> paramMsg = JSHandle<JSTaggedValue>::Cast(factory->NewFromCanBeCompressString("reject"));
+    JSHandle<JSTaggedValue> paramMsg = JSHandle<JSTaggedValue>::Cast(factory->NewFromASCII("reject"));
 
     /**
      * @tc.steps: step1. var p1 = Promise.Reject(5)

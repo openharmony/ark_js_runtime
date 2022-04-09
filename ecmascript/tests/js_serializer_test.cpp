@@ -130,8 +130,8 @@ public:
         JSDeserializer deserializer(thread, data.first, data.second);
         JSHandle<JSTaggedValue> objValue1 = deserializer.DeserializeJSTaggedValue();
 
-        JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString("detectResultItems"));
-        JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString("adviceId"));
+        JSHandle<JSTaggedValue> key1(factory->NewFromASCII("detectResultItems"));
+        JSHandle<JSTaggedValue> key2(factory->NewFromASCII("adviceId"));
         OperationResult result = JSObject::GetProperty(thread, objValue1, key1);
         JSHandle<JSTaggedValue> value1 = result.GetRawValue();
         EXPECT_TRUE(value1->IsJSArray());
@@ -150,8 +150,8 @@ public:
     {
         Init();
         ObjectFactory *factory = ecmaVm->GetFactory();
-        JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString("x"));
-        JSHandle<JSTaggedValue> key2(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("y"));
+        JSHandle<JSTaggedValue> key1(factory->NewFromASCII("x"));
+        JSHandle<JSTaggedValue> key2(thread->GetEcmaVM()->GetFactory()->NewFromASCII("y"));
         JSHandle<JSTaggedValue> value1(thread, JSTaggedValue(1));
         JSHandle<JSTaggedValue> value2(thread, JSTaggedValue(2)); // 2 : test case
 
@@ -187,8 +187,8 @@ public:
         ObjectFactory *factory = ecmaVm->GetFactory();
         JSHandle<JSTaggedValue> value1(thread, JSTaggedValue(7)); // 7 : test case
         JSHandle<JSTaggedValue> value2(thread, JSTaggedValue(9)); // 9 : test case
-        JSHandle<JSTaggedValue> value3(factory->NewFromCanBeCompressString("x"));
-        JSHandle<JSTaggedValue> value4(factory->NewFromCanBeCompressString("y"));
+        JSHandle<JSTaggedValue> value3(factory->NewFromASCII("x"));
+        JSHandle<JSTaggedValue> value4(factory->NewFromASCII("y"));
 
         JSDeserializer deserializer(thread, data.first, data.second);
         JSHandle<JSTaggedValue> setValue = deserializer.DeserializeJSTaggedValue();
@@ -256,7 +256,7 @@ public:
     {
         Init();
         const char *rawStr = "this is a test ecmaString";
-        JSHandle<EcmaString> ecmaString = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(rawStr);
+        JSHandle<EcmaString> ecmaString = thread->GetEcmaVM()->GetFactory()->NewFromASCII(rawStr);
 
         JSDeserializer deserializer(thread, data.first, data.second);
         JSHandle<JSTaggedValue> res = deserializer.DeserializeJSTaggedValue();
@@ -275,7 +275,7 @@ public:
         "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss"\
         "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss"\
         "ssssss";
-        JSHandle<EcmaString> ecmaString = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(rawStr);
+        JSHandle<EcmaString> ecmaString = thread->GetEcmaVM()->GetFactory()->NewFromASCII(rawStr);
 
         JSDeserializer deserializer(thread, data.first, data.second);
         JSHandle<JSTaggedValue> res = deserializer.DeserializeJSTaggedValue();
@@ -458,8 +458,8 @@ public:
     void JSRegexpTest(std::pair<uint8_t *, size_t> data)
     {
         Init();
-        JSHandle<EcmaString> pattern = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key2");
-        JSHandle<EcmaString> flags = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("i");
+        JSHandle<EcmaString> pattern = thread->GetEcmaVM()->GetFactory()->NewFromASCII("key2");
+        JSHandle<EcmaString> flags = thread->GetEcmaVM()->GetFactory()->NewFromASCII("i");
         char buffer[] = "1234567";  // use char buffer to simulate byteCodeBuffer
         uint32_t bufferSize = 7;
 
@@ -593,14 +593,14 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSPlainObject)
     JSHandle<JSObject> obj1 = factory->NewEmptyJSObject();
     JSHandle<JSObject> obj2 = factory->NewEmptyJSObject();
 
-    JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString("2"));
-    JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString("3"));
-    JSHandle<JSTaggedValue> key3(factory->NewFromCanBeCompressString("x"));
-    JSHandle<JSTaggedValue> key4(factory->NewFromCanBeCompressString("y"));
-    JSHandle<JSTaggedValue> key5(factory->NewFromCanBeCompressString("a"));
-    JSHandle<JSTaggedValue> key6(factory->NewFromCanBeCompressString("b"));
-    JSHandle<JSTaggedValue> key7(factory->NewFromCanBeCompressString("5"));
-    JSHandle<JSTaggedValue> key8(factory->NewFromCanBeCompressString("6"));
+    JSHandle<JSTaggedValue> key1(factory->NewFromASCII("2"));
+    JSHandle<JSTaggedValue> key2(factory->NewFromASCII("3"));
+    JSHandle<JSTaggedValue> key3(factory->NewFromASCII("x"));
+    JSHandle<JSTaggedValue> key4(factory->NewFromASCII("y"));
+    JSHandle<JSTaggedValue> key5(factory->NewFromASCII("a"));
+    JSHandle<JSTaggedValue> key6(factory->NewFromASCII("b"));
+    JSHandle<JSTaggedValue> key7(factory->NewFromASCII("5"));
+    JSHandle<JSTaggedValue> key8(factory->NewFromASCII("6"));
     JSHandle<JSTaggedValue> value1(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> value2(thread, JSTaggedValue(2));
     JSHandle<JSTaggedValue> value3(thread, JSTaggedValue(3));
@@ -638,19 +638,19 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSPlainObject01)
     JSHandle<JSObject> obj1 = factory->NewEmptyJSObject();
     JSHandle<JSObject> obj2 = factory->NewEmptyJSObject();
 
-    JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString("diagnosisItem"));
-    JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString("detectStatus"));
-    JSHandle<JSTaggedValue> key3(factory->NewFromCanBeCompressString("detectResultItems"));
-    JSHandle<JSTaggedValue> key4(factory->NewFromCanBeCompressString("faultId"));
-    JSHandle<JSTaggedValue> key5(factory->NewFromCanBeCompressString("faultContent"));
-    JSHandle<JSTaggedValue> key6(factory->NewFromCanBeCompressString("faultContentParams"));
-    JSHandle<JSTaggedValue> key7(factory->NewFromCanBeCompressString("adviceId"));
-    JSHandle<JSTaggedValue> key8(factory->NewFromCanBeCompressString("adviceContent"));
-    JSHandle<JSTaggedValue> key9(factory->NewFromCanBeCompressString("adviceContentParams"));
-    JSHandle<JSTaggedValue> value1 = JSHandle<JSTaggedValue>::Cast(factory->NewFromCanBeCompressString("VoiceDetect1"));
+    JSHandle<JSTaggedValue> key1(factory->NewFromASCII("diagnosisItem"));
+    JSHandle<JSTaggedValue> key2(factory->NewFromASCII("detectStatus"));
+    JSHandle<JSTaggedValue> key3(factory->NewFromASCII("detectResultItems"));
+    JSHandle<JSTaggedValue> key4(factory->NewFromASCII("faultId"));
+    JSHandle<JSTaggedValue> key5(factory->NewFromASCII("faultContent"));
+    JSHandle<JSTaggedValue> key6(factory->NewFromASCII("faultContentParams"));
+    JSHandle<JSTaggedValue> key7(factory->NewFromASCII("adviceId"));
+    JSHandle<JSTaggedValue> key8(factory->NewFromASCII("adviceContent"));
+    JSHandle<JSTaggedValue> key9(factory->NewFromASCII("adviceContentParams"));
+    JSHandle<JSTaggedValue> value1 = JSHandle<JSTaggedValue>::Cast(factory->NewFromASCII("VoiceDetect1"));
     JSHandle<JSTaggedValue> value2(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> value3 = JSHandle<JSTaggedValue>::Cast(factory->NewJSArray());
-    JSHandle<JSTaggedValue> value4 = JSHandle<JSTaggedValue>::Cast(factory->NewFromCanBeCompressString("80000001"));
+    JSHandle<JSTaggedValue> value4 = JSHandle<JSTaggedValue>::Cast(factory->NewFromASCII("80000001"));
     JSHandle<JSTaggedValue> value5 = JSHandle<JSTaggedValue>::Cast(factory->GetEmptyString());
     JSHandle<JSTaggedValue> value6 = JSHandle<JSTaggedValue>::Cast(factory->NewJSArray());
     JSHandle<JSTaggedValue> value7 = JSHandle<JSTaggedValue>::Cast(factory->GetEmptyString());
@@ -685,8 +685,8 @@ HWTEST_F_L0(JSSerializerTest, TestSerializeDescription)
     ObjectFactory *factory = ecmaVm->GetFactory();
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
 
-    JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString("x"));
-    JSHandle<JSTaggedValue> key2(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("y"));
+    JSHandle<JSTaggedValue> key1(factory->NewFromASCII("x"));
+    JSHandle<JSTaggedValue> key2(thread->GetEcmaVM()->GetFactory()->NewFromASCII("y"));
 
     PropertyDescriptor desc1(thread);
     JSHandle<JSTaggedValue> value1(thread, JSTaggedValue(1));
@@ -727,8 +727,8 @@ HWTEST_F_L0(JSSerializerTest, TestSerializeJSSet)
     // set property to set
     JSHandle<JSTaggedValue> value1(thread, JSTaggedValue(7));
     JSHandle<JSTaggedValue> value2(thread, JSTaggedValue(9));
-    JSHandle<JSTaggedValue> value3(factory->NewFromCanBeCompressString("x"));
-    JSHandle<JSTaggedValue> value4(factory->NewFromCanBeCompressString("y"));
+    JSHandle<JSTaggedValue> value3(factory->NewFromASCII("x"));
+    JSHandle<JSTaggedValue> value4(factory->NewFromASCII("y"));
 
     JSSet::Add(thread, set, value1);
     JSSet::Add(thread, set, value2);
@@ -736,8 +736,8 @@ HWTEST_F_L0(JSSerializerTest, TestSerializeJSSet)
     JSSet::Add(thread, set, value4);
 
     // set property to object
-    JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString("5"));
-    JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString("6"));
+    JSHandle<JSTaggedValue> key1(factory->NewFromASCII("5"));
+    JSHandle<JSTaggedValue> key2(factory->NewFromASCII("6"));
 
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(set), key1, value1);
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(set), key2, value2);
@@ -758,8 +758,8 @@ HWTEST_F_L0(JSSerializerTest, TestSerializeJSArray)
     JSHandle<JSArray> array = factory->NewJSArray();
 
     // set property to object
-    JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString("abasd"));
-    JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString("qweqwedasd"));
+    JSHandle<JSTaggedValue> key1(factory->NewFromASCII("abasd"));
+    JSHandle<JSTaggedValue> key2(factory->NewFromASCII("qweqwedasd"));
 
     JSHandle<JSTaggedValue> value1(thread, JSTaggedValue(7));
     JSHandle<JSTaggedValue> value2(thread, JSTaggedValue(9));
@@ -792,10 +792,10 @@ HWTEST_F_L0(JSSerializerTest, TestObjectsPropertyReference)
     JSHandle<JSObject> obj2 = factory->NewEmptyJSObject();
     [[maybe_unused]] JSHandle<JSObject> obj3 = factory->NewEmptyJSObject();
 
-    JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString("abc"));
-    JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString("def"));
-    JSHandle<JSTaggedValue> key3(factory->NewFromCanBeCompressString("dgsdgf"));
-    JSHandle<JSTaggedValue> key4(factory->NewFromCanBeCompressString("qwjhrf"));
+    JSHandle<JSTaggedValue> key1(factory->NewFromASCII("abc"));
+    JSHandle<JSTaggedValue> key2(factory->NewFromASCII("def"));
+    JSHandle<JSTaggedValue> key3(factory->NewFromASCII("dgsdgf"));
+    JSHandle<JSTaggedValue> key4(factory->NewFromASCII("qwjhrf"));
 
     JSHandle<JSTaggedValue> value3(thread, JSTaggedValue(10));
     JSHandle<JSTaggedValue> value4(thread, JSTaggedValue(5));
@@ -823,7 +823,7 @@ HWTEST_F_L0(JSSerializerTest, TestObjectsPropertyReference)
 HWTEST_F_L0(JSSerializerTest, SerializeEcmaString1)
 {
     const char *rawStr = "this is a test ecmaString";
-    JSHandle<EcmaString> ecmaString = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(rawStr);
+    JSHandle<EcmaString> ecmaString = thread->GetEcmaVM()->GetFactory()->NewFromASCII(rawStr);
     JSSerializer *serializer = new JSSerializer(thread);
     bool success = serializer->SerializeJSTaggedValue(JSHandle<JSTaggedValue>(ecmaString));
     EXPECT_TRUE(success) << "Serialize EcmaString fail";
@@ -840,7 +840,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeEcmaString2)
     "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss"\
     "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss"\
     "ssssss";
-    JSHandle<EcmaString> ecmaString = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(rawStr);
+    JSHandle<EcmaString> ecmaString = thread->GetEcmaVM()->GetFactory()->NewFromASCII(rawStr);
     JSSerializer *serializer = new JSSerializer(thread);
     bool success = serializer->SerializeJSTaggedValue(JSHandle<JSTaggedValue>(ecmaString));
     EXPECT_TRUE(success) << "Serialize EcmaString fail";
@@ -951,10 +951,10 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSMap)
 {
     JSHandle<JSMap> map(thread, CreateMap(thread));
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString("3"));
+    JSHandle<JSTaggedValue> key1(factory->NewFromASCII("3"));
     JSHandle<JSTaggedValue> value1(thread, JSTaggedValue(12345));
     JSMap::Set(thread, map, key1, value1);
-    JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString("key1"));
+    JSHandle<JSTaggedValue> key2(factory->NewFromASCII("key1"));
     JSHandle<JSTaggedValue> value2(thread, JSTaggedValue(34567));
     JSMap::Set(thread, map, key2, value2);
 
@@ -1057,8 +1057,8 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSRegExp)
     JSHandle<JSTaggedValue> target = env->GetRegExpFunction();
     JSHandle<JSRegExp> jsRegexp =
         JSHandle<JSRegExp>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(target), target));
-    JSHandle<EcmaString> pattern = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key2");
-    JSHandle<EcmaString> flags = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("i");
+    JSHandle<EcmaString> pattern = thread->GetEcmaVM()->GetFactory()->NewFromASCII("key2");
+    JSHandle<EcmaString> flags = thread->GetEcmaVM()->GetFactory()->NewFromASCII("i");
     char buffer[] = "1234567";  // use char to simulate bytecode
     uint32_t bufferSize = 7;
     factory->NewJSRegExpByteCodeData(jsRegexp, static_cast<void *>(buffer), bufferSize);
@@ -1127,7 +1127,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeObjectWithFunction)
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> function = env->GetRegExpFunction();
     EXPECT_TRUE(function->IsJSFunction());
-    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("2"));
+    JSHandle<JSTaggedValue> key(factory->NewFromASCII("2"));
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj), key, function);
 
@@ -1146,8 +1146,8 @@ HWTEST_F_L0(JSSerializerTest, SerializeSymbolWithProperty)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSSymbol> jsSymbol = factory->NewJSSymbol();
-    JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString("2"));
-    JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString("x"));
+    JSHandle<JSTaggedValue> key1(factory->NewFromASCII("2"));
+    JSHandle<JSTaggedValue> key2(factory->NewFromASCII("x"));
     JSHandle<JSTaggedValue> value1(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> value2(thread, JSTaggedValue(8));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(jsSymbol), key1, value1);

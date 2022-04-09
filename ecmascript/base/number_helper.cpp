@@ -331,18 +331,18 @@ JSHandle<EcmaString> NumberHelper::NumberToString(const JSThread *thread, JSTagg
     ASSERT(number.IsNumber());
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     if (number.IsInt()) {
-        return factory->NewFromCanBeCompressString(IntToString(number.GetInt()));
+        return factory->NewFromASCII(IntToString(number.GetInt()));
     }
 
     double d = number.GetDouble();
     if (std::isnan(d)) {
-        return factory->NewFromCanBeCompressString("NaN");
+        return factory->NewFromASCII("NaN");
     }
     if (d == 0.0) {
-        return factory->NewFromCanBeCompressString("0");
+        return factory->NewFromASCII("0");
     }
     if (d >= INT32_MIN + 1 && d <= INT32_MAX && d == static_cast<double>(static_cast<int32_t>(d))) {
-        return factory->NewFromCanBeCompressString(IntToString(static_cast<int32_t>(d)));
+        return factory->NewFromASCII(IntToString(static_cast<int32_t>(d)));
     }
 
     std::string result;
@@ -353,7 +353,7 @@ JSHandle<EcmaString> NumberHelper::NumberToString(const JSThread *thread, JSTagg
 
     if (std::isinf(d)) {
         result += "Infinity";
-        return factory->NewFromStdStringUnCheck(result, true);
+        return factory->NewFromASCII(result.c_str());
     }
 
     ASSERT(d > 0);
@@ -408,7 +408,7 @@ JSHandle<EcmaString> NumberHelper::NumberToString(const JSThread *thread, JSTagg
         base += "e" + (n >= 1 ? std::string("+") : "") + std::to_string(n - 1);
     }
     result += base;
-    return factory->NewFromStdStringUnCheck(result, true);
+    return factory->NewFromASCII(result.c_str());
 }
 
 double NumberHelper::TruncateDouble(double d)

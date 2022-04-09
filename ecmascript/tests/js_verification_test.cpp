@@ -70,7 +70,7 @@ HWTEST_F_L0(JSVerificationTest, ContainObject)
     };
 
     // new space object
-    JSHandle<EcmaString> string = objectFactory->NewFromCanBeCompressString("123");
+    JSHandle<EcmaString> string = objectFactory->NewFromASCII("123");
     funcVerify(*string, verifier, heap);
 
     // old space object

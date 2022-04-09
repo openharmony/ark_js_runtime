@@ -211,11 +211,11 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapAddKeyAndValue)
     JSHandle<JSTaggedValue> objFun = GetGlobalEnv()->GetObjectFunction();
 
     char keyArray[] = "mykey1";
-    JSHandle<EcmaString> stringKey1 = factory->NewFromCanBeCompressString(keyArray);
+    JSHandle<EcmaString> stringKey1 = factory->NewFromStdString(keyArray);
     JSHandle<JSTaggedValue> key1(stringKey1);
     JSHandle<JSTaggedValue> value1(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun));
     char key2Array[] = "mykey2";
-    JSHandle<EcmaString> stringKey2 = factory->NewFromCanBeCompressString(key2Array);
+    JSHandle<EcmaString> stringKey2 = factory->NewFromStdString(key2Array);
     JSHandle<JSTaggedValue> key2(stringKey2);
     JSHandle<JSTaggedValue> value2(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun));
 
@@ -246,10 +246,10 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeSetAddValue)
     JSMutableHandle<TaggedTreeSet> tset(thread, TaggedTreeSet::Create(thread, NODE_NUMBERS));
 
     char keyArray[] = "mykey1";
-    JSHandle<EcmaString> stringKey1 = factory->NewFromCanBeCompressString(keyArray);
+    JSHandle<EcmaString> stringKey1 = factory->NewFromStdString(keyArray);
     JSHandle<JSTaggedValue> key1(stringKey1);
     char key2Array[] = "mykey2";
-    JSHandle<EcmaString> stringKey2 = factory->NewFromCanBeCompressString(key2Array);
+    JSHandle<EcmaString> stringKey2 = factory->NewFromStdString(key2Array);
     JSHandle<JSTaggedValue> key2(stringKey2);
 
     // test set()
@@ -279,7 +279,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapGrowCapacity)
     for (int i = 0; i < NODE_NUMBERS; i++) {
         keyArray[5] = '1' + i; // 5 means index of keyArray
         keyArray[6] = 0;       // 6 means index of keyArray
-        JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyArray));
+        JSHandle<JSTaggedValue> key(factory->NewFromStdString(keyArray));
         JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));
         // test set()
         tmap.Update(TaggedTreeMap::Set(thread, tmap, key, value));
@@ -289,7 +289,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapGrowCapacity)
     for (int i = 0; i < NODE_NUMBERS; i++) {
         keyArray[5] = '1' + i; // 5 means index of keyArray
         keyArray[6] = 0;       // 6 means index of keyArray
-        JSHandle<JSTaggedValue> stringKey(factory->NewFromCanBeCompressString(keyArray));
+        JSHandle<JSTaggedValue> stringKey(factory->NewFromStdString(keyArray));
         // test get()
         JSTaggedValue res = TaggedTreeMap::Get(thread, tmap, stringKey);
         EXPECT_EQ(JSTaggedValue(i), res);
@@ -308,7 +308,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeSetGrowCapacity)
     for (int i = 0; i < NODE_NUMBERS; i++) {
         keyArray[5] = '1' + i; // 5 means index of keyArray
         keyArray[6] = 0;       // 6 means index of keyArray
-        JSHandle<EcmaString> stringKey = factory->NewFromCanBeCompressString(keyArray);
+        JSHandle<EcmaString> stringKey = factory->NewFromStdString(keyArray);
         JSHandle<JSTaggedValue> key(stringKey);
 
         // test set()
@@ -319,7 +319,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeSetGrowCapacity)
     for (int i = 0; i < NODE_NUMBERS; i++) {
         keyArray[5] = '1' + i; // 5 means index of keyArray
         keyArray[6] = 0;       // 6 means index of keyArray
-        JSHandle<JSTaggedValue> stringKey(factory->NewFromCanBeCompressString(keyArray));
+        JSHandle<JSTaggedValue> stringKey(factory->NewFromStdString(keyArray));
         // test get()
         EXPECT_TRUE(TaggedTreeSet::FindEntry(thread, tset, stringKey) >= 0);
     }

@@ -62,7 +62,7 @@ HWTEST_F_L0(PropertiesCacheTest, SetAndGet)
 
     JSHandle<JSTaggedValue> handleFunction(factory->NewJSFunction(env));
     JSHandle<JSSymbol> handleSymbol(factory->NewJSSymbol());
-    JSHandle<JSTaggedValue> handleKey10(factory->NewFromCanBeCompressString("10"));
+    JSHandle<JSTaggedValue> handleKey10(factory->NewFromASCII("10"));
     JSHClass *FuncClass = JSObject::Cast(handleFunction->GetHeapObject())->GetJSHClass();
 
     PropertiesCache *handleProCache = thread->GetPropertiesCache();
@@ -97,7 +97,7 @@ HWTEST_F_L0(PropertiesCacheTest, Clear)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     
-    JSHandle<JSTaggedValue> handleKey(factory->NewFromCanBeCompressString("10"));
+    JSHandle<JSTaggedValue> handleKey(factory->NewFromASCII("10"));
     JSHandle<JSTaggedValue> handleFunction(factory->NewJSFunction(env));
     JSHClass *FuncClass = JSObject::Cast(handleFunction->GetHeapObject())->GetJSHClass();
     PropertiesCache *handleProCache = thread->GetPropertiesCache();

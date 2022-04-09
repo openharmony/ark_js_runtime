@@ -63,7 +63,7 @@ void JSForInIterator::FastGetAllEnumKeys(const JSThread *thread, const JSHandle<
         if (obj->IsJSPrimitiveRef() && JSPrimitiveRef::Cast(*obj)->IsString()) {
             elementIndex = JSPrimitiveRef::Cast(*obj)->GetStringLength();
             for (uint32_t i = 0; i < elementIndex; i++) {
-                value.Update(factory->NewFromCanBeCompressString(ToCString(i)).GetTaggedValue());
+                value.Update(factory->NewFromASCII(ToCString(i)).GetTaggedValue());
                 TaggedQueue::PushFixedQueue(thread, remaining, value);
             }
         } else {
@@ -72,7 +72,7 @@ void JSForInIterator::FastGetAllEnumKeys(const JSThread *thread, const JSHandle<
                 uint32_t elementsLen = elements->GetLength();
                 for (uint32_t i = 0; i < elementsLen; ++i) {
                     if (!elements->Get(i).IsHole()) {
-                        value.Update(factory->NewFromCanBeCompressString(ToCString(i)).GetTaggedValue());
+                        value.Update(factory->NewFromASCII(ToCString(i)).GetTaggedValue());
                         TaggedQueue::PushFixedQueue(thread, remaining, value);
                     }
                 }
@@ -91,7 +91,7 @@ void JSForInIterator::FastGetAllEnumKeys(const JSThread *thread, const JSHandle<
                 }
                 std::sort(sortArr.begin(), sortArr.end(), NumberDictionary::CompKey);
                 for (const auto &entry : sortArr) {
-                    value.Update(factory->NewFromCanBeCompressString(ToCString(entry.GetInt())).GetTaggedValue());
+                    value.Update(factory->NewFromASCII(ToCString(entry.GetInt())).GetTaggedValue());
                     TaggedQueue::PushFixedQueue(thread, remaining, value);
                 }
             }
