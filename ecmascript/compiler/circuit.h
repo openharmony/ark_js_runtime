@@ -67,9 +67,11 @@ public:
     void NewIn(GateRef gate, size_t idx, GateRef in);
     void ModifyIn(GateRef gate, size_t idx, GateRef in);
     void DeleteIn(GateRef gate, size_t idx);
+    void DecreaseIn(GateRef gate, size_t idx);
     void DeleteGate(GateRef gate);
     [[nodiscard]] GateId GetId(GateRef gate) const;
     [[nodiscard]] BitField GetBitField(GateRef gate) const;
+    void SetBitField(GateRef gate, BitField bitfield);
     void Print(GateRef gate) const;
     void SetOpCode(GateRef gate, OpCode opcode);
     void SetGateType(GateRef gate, GateType type);
