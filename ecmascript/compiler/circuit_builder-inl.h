@@ -195,73 +195,36 @@ GateRef CircuitBuilder::TaggedGetInt(GateRef x)
     return TruncInt64ToInt32(Int64And(x, Int64(~JSTaggedValue::TAG_MASK)));
 }
 
-GateRef CircuitBuilder::Int8BuildTaggedTypeWithNoGC(GateRef x)
-{
-    GateRef val = ZExtInt8ToInt64(x);
-    return Int64Or(val, Int64(JSTaggedValue::TAG_INT));
-}
-
-GateRef CircuitBuilder::Int16BuildTaggedWithNoGC(GateRef x)
-{
-    GateRef val = ZExtInt16ToInt64(x);
-    return ChangeInt64ToTagged(Int64Or(val, Int64(JSTaggedValue::TAG_INT)));
-}
-
-GateRef CircuitBuilder::Int16BuildTaggedTypeWithNoGC(GateRef x)
-{
-    GateRef val = ZExtInt16ToInt64(x);
-    return Int64Or(val, Int64(JSTaggedValue::TAG_INT));
-}
-
-GateRef CircuitBuilder::Int64BuildTaggedNGC(GateRef x)
-{
-    return ChangeInt64ToTagged(Int64Or(x, Int64(JSTaggedValue::TAG_INT)));
-}
-
-GateRef CircuitBuilder::Int64BuildTaggedTypeNGC(GateRef x)
+GateRef CircuitBuilder::TaggedTypeNGC(GateRef x)
 {
     return Int64Or(x, Int64(JSTaggedValue::TAG_INT));
 }
 
-GateRef CircuitBuilder::IntBuildTaggedWithNoGC(GateRef x)
+GateRef CircuitBuilder::TaggedNGC(GateRef x)
 {
-    GateRef val = ZExtInt32ToInt64(x);
-    return ChangeInt64ToTagged(Int64Or(val, Int64(JSTaggedValue::TAG_INT)));
+    return ChangeInt64ToTagged(Int64Or(x, Int64(JSTaggedValue::TAG_INT)));
 }
 
-GateRef CircuitBuilder::IntBuildTaggedTypeWithNoGC(GateRef x)
-{
-    GateRef val = ZExtInt32ToInt64(x);
-    return Int64Or(val, Int64(JSTaggedValue::TAG_INT));
-}
-
-GateRef CircuitBuilder::DoubleBuildTaggedWithNoGC(GateRef x)
+GateRef CircuitBuilder::DoubleToTaggedNGC(GateRef x)
 {
     GateRef val = CastDoubleToInt64(x);
     return ChangeInt64ToTagged(Int64Add(val,
         Int64(JSTaggedValue::DOUBLE_ENCODE_OFFSET)));
 }
 
-GateRef CircuitBuilder::DoubleBuildTaggedTypeWithNoGC(GateRef x)
+GateRef CircuitBuilder::DoubleToTaggedTypeNGC(GateRef x)
 {
     GateRef val = CastDoubleToInt64(x);
     return Int64Add(val, Int64(JSTaggedValue::DOUBLE_ENCODE_OFFSET));
 }
 
-GateRef CircuitBuilder::IntBuildTagged(GateRef x)
-{
-    GateRef val = ZExtInt32ToInt64(x);
-    GetCircuit()->SetGateType(val, GateType::TAGGED_VALUE);
-    return Int64Or(val, Int64(JSTaggedValue::TAG_INT));
-}
-
-GateRef CircuitBuilder::Int64BuildTagged(GateRef x)
+GateRef CircuitBuilder::Tagged(GateRef x)
 {
     GetCircuit()->SetGateType(x, GateType::TAGGED_VALUE);
     return Int64Or(x, Int64(JSTaggedValue::TAG_INT));
 }
 
-GateRef CircuitBuilder::DoubleBuildTagged(GateRef x)
+GateRef CircuitBuilder::DoubleToTagged(GateRef x)
 {
     GateRef val = CastDoubleToInt64(x);
     GetCircuit()->SetGateType(val, GateType::TAGGED_VALUE);
@@ -281,9 +244,17 @@ GateRef CircuitBuilder::TaggedFalse()
 GateRef CircuitBuilder::GetValueFromTaggedArray(VariableType returnType, GateRef array, GateRef index)
 {
     GateRef offset =
-        IntPtrMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize()));
+        ArchMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize()));
     GateRef dataOffset = IntPtrAdd(offset, IntPtr(TaggedArray::DATA_OFFSET));
     return Load(returnType, array, dataOffset);
+}
+
+void CircuitBuilder::SetValueToTaggedArray(VariableType valType, GateRef glue,
+                                           GateRef array, GateRef index, GateRef val)
+{
+    GateRef offset = ArchMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize()));
+    GateRef dataOffset = IntPtrAdd(offset, IntPtr(TaggedArray::DATA_OFFSET));
+    Store(valType, glue, array, dataOffset, val);
 }
 
 // object operation

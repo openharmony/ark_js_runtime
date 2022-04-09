@@ -110,7 +110,8 @@ namespace panda::ecmascript::kungfu {
 class SlowPathLowering {
 public:
     SlowPathLowering(BytecodeCircuitBuilder *bcBuilder, Circuit *circuit, CompilationConfig *cmpCfg)
-        : bcBuilder_(bcBuilder), circuit_(circuit), acc_(circuit), builder_(circuit, cmpCfg), cmpCfg_(cmpCfg) {}
+        : bcBuilder_(bcBuilder), circuit_(circuit), acc_(circuit), builder_(circuit, cmpCfg), cmpCfg_(cmpCfg),
+          dependEntry_(Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY))) {}
     ~SlowPathLowering() = default;
     void CallRuntimeLowering();
 
@@ -130,6 +131,8 @@ private:
     void LowerExceptionHandler(GateRef hirGate);
     // labelmanager must be initialized
     GateRef GetConstPool(GateRef jsFunc);
+    // labelmanager must be initialized
+    GateRef GetCurrentEnv(GateRef jsFunc);
     // labelmanager must be initialized
     GateRef GetObjectFromConstPool(GateRef jsFunc, GateRef index);
     GateRef GetValueFromConstStringTable(GateRef glue, GateRef gate, uint32_t inIndex);
@@ -236,12 +239,15 @@ private:
     void LowerStSuperByName(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerCreateGeneratorObj(GateRef gate, GateRef glue);
     void LowerStArraySpread(GateRef gate, GateRef glue);
+    void LowerLdLexVarDyn(GateRef gate, GateRef jsFunc);
+    void LowerStLexVarDyn(GateRef gate, GateRef glue, GateRef jsFunc);
 
     BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;
     GateAccessor acc_;
     CircuitBuilder builder_;
     CompilationConfig *cmpCfg_;
+    GateRef dependEntry_;
 };
 }  // panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_GENERIC_LOWERING_H
