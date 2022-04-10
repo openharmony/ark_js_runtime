@@ -118,6 +118,14 @@ JSHandle<JSHClass> ObjectFactory::NewEcmaDynClassClass(JSHClass *hclass, uint32_
     return JSHandle<JSHClass>(thread_, newClass);
 }
 
+JSHandle<JSHClass> ObjectFactory::InitClassClass()
+{
+    JSHandle<JSHClass> dynClassClassHandle = NewEcmaDynClassClass(nullptr, JSHClass::SIZE, JSType::HCLASS);
+    JSHClass *dynclass = reinterpret_cast<JSHClass *>(dynClassClassHandle.GetTaggedValue().GetTaggedObject());
+    dynclass->SetClass(dynclass);
+    return dynClassClassHandle;
+}
+
 JSHandle<JSHClass> ObjectFactory::NewEcmaDynClass(JSHClass *hclass, uint32_t size, JSType type, uint32_t inlinedProps)
 {
     NewObjectHook();

@@ -149,6 +149,7 @@ public:
         return GetJSGlobalObject().GetTaggedValue();
     }
 
+    void Init(JSThread *thread);
     void InitGlobalObject();
 
     static GlobalEnv *Cast(ObjectHeader *object)

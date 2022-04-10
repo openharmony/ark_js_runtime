@@ -64,11 +64,12 @@ void ConcurrentMarker::ReMarking()
     MEM_ALLOCATE_AND_GC_TRACE(vm_, ReMarking);
     ClockScope scope;
     Marker *nonMoveMarker =  heap_->GetNonMovableMarker();
-    nonMoveMarker->MarkRoots(0);
+    nonMoveMarker->MarkRoots(MAIN_THREAD_INDEX);
     if (!heap_->IsFullMark() && !heap_->IsParallelGCEnabled()) {
-        heap_->GetNonMovableMarker()->ProcessOldToNew(0);
+        heap_->GetNonMovableMarker()->ProcessOldToNew(MAIN_THREAD_INDEX);
+        heap_->GetNonMovableMarker()->ProcessSnapshotRSet(MAIN_THREAD_INDEX);
     } else {
-        nonMoveMarker->ProcessMarkStack(0);
+        nonMoveMarker->ProcessMarkStack(MAIN_THREAD_INDEX);
     }
     heap_->WaitRunningTaskFinished();
     heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticConcurrentRemark(scope.GetPauseTime());
@@ -129,7 +130,7 @@ void ConcurrentMarker::InitializeMarking()
         heapObjectSize_ = heap_->GetNewSpace()->GetHeapObjectSize();
     }
     workList_->Initialize(TriggerGCType::OLD_GC, ParallelGCTaskPhase::CONCURRENT_HANDLE_GLOBAL_POOL_TASK);
-    heap_->GetNonMovableMarker()->MarkRoots(0);
+    heap_->GetNonMovableMarker()->MarkRoots(MAIN_THREAD_INDEX);
 }
 
 bool ConcurrentMarker::MarkerTask::Run(uint32_t threadId)

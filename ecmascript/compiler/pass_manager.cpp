@@ -19,6 +19,7 @@
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/jspandafile/panda_file_translator.h"
+#include "ecmascript/snapshot/mem/snapshot.h"
 #include "ecmascript/ts_types/ts_loader.h"
 #include "pass.h"
 
@@ -48,6 +49,10 @@ bool PassManager::Compile(const std::string &fileName, const std::string &triple
 
     AotFileManager manager(&aotModule);
     manager.SaveAOTFile(outputFileName);
+    TSLoader *tsLoader = vm_->GetTSLoader();
+    SnapShot snapShot(vm_);
+    CVector<JSTaggedType> constStringTable = tsLoader->GetConstStringTable();
+    snapShot.MakeSnapShot(reinterpret_cast<uintptr_t>(constStringTable.data()), constStringTable.size(), "snapshot");
     return true;
 }
 

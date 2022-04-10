@@ -465,7 +465,7 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
         } else if (type == FrameType::OPTIMIZED_ENTRY_FRAME) {
             OptimizedEntryFrame *frame = OptimizedEntryFrame::GetFrameFromSp(current);
             current = frame->GetPrevFrameFp();
-            ASSERT(FrameHandler(current).IsInterpretedFrame());
+            // NOTE: due to "AotInfo" iteration, current frame might not be interpreted frame
         } else {
             ASSERT(type == FrameType::OPTIMIZED_LEAVE_FRAME || type == FrameType::ASM_LEAVE_FRAME);
             OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(current);

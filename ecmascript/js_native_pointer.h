@@ -51,6 +51,8 @@ public:
     ACCESSORS_NATIVE_FIELD(Data, void, DATA_OFFSET, LAST_OFFSET);
     DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
+    DECL_VISIT_NATIVE_FIELD(POINTER_OFFSET, SIZE)
+
 private:
     inline void DeleteExternalPointer()
     {

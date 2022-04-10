@@ -19,7 +19,9 @@
 #include "libpandabase/macros.h"
 #include "libpandafile/file.h"
 
-#include "ecmascript/snapshot/mem/slot_bit.h"
+#include "ecmascript/common.h"
+#include "ecmascript/snapshot/mem/encode_bit.h"
+#include "ecmascript/snapshot/mem/snapshot_serialize.h"
 #include "ecmascript/mem/c_string.h"
 
 namespace panda::ecmascript {
@@ -27,25 +29,27 @@ class Program;
 class EcmaVM;
 class JSPandaFile;
 
-class SnapShot final {
+class PUBLIC_API SnapShot final {
 public:
     explicit SnapShot(EcmaVM *vm) : vm_(vm) {}
     ~SnapShot() = default;
 
-    void MakeSnapShotProgramObject(Program *program, const panda_file::File *pf,
-                                   const CString &fileName = "./snapshot");
-    const JSPandaFile *DeserializeGlobalEnvAndProgram(const CString &abcFile,
-                                                      const CString &snapshotFile = "./snapshot");
+    void MakeSnapShot(TaggedObject *objectHeader, const panda_file::File *pf, const CString &fileName = "./snapshot");
+    void MakeSnapShot(uintptr_t startAddr, size_t size, const CString &fileName = "./snapshot");
+    const JSPandaFile *SnapShotDeserialize(SnapShotType type, const CString &snapshotFile = "./snapshot");
 
 private:
     struct Header {
         uint32_t snapshot_size;
         uint32_t panda_file_begin;
+        uint64_t root_object_size;
     };
 
 private:
     size_t AlignUpPageSize(size_t spaceSize);
     std::pair<bool, CString> VerifyFilePath(const CString &filePath);
+    bool VerifySnapShotFile(std::fstream &write, const CString &fileName);
+    void WriteToFile(std::fstream &write, const panda_file::File *pf, size_t size);
 
     NO_MOVE_SEMANTIC(SnapShot);
     NO_COPY_SEMANTIC(SnapShot);

@@ -207,6 +207,11 @@ public:
         return (GetMixLength() & STRING_INTERN_BIT) != 0;
     }
 
+    void ClearInternStringFlag()
+    {
+        SetMixLength(GetMixLength() & ~STRING_INTERN_BIT);
+    }
+
     size_t ObjectSize() const
     {
         uint32_t length = GetLength();
