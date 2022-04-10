@@ -14,6 +14,8 @@
  */
 
 #include "ecmascript/global_env.h"
+
+#include "ecmascript/global_dictionary.h"
 #include "ecmascript/builtins/builtins_promise_handler.h"
 #include "ecmascript/ic/ic_handler.h"
 #include "ecmascript/ic/proto_change_details.h"
@@ -23,10 +25,22 @@
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_promise.h"
 #include "ecmascript/object_factory.h"
+#include "ecmascript/symbol_table.h"
+#include "ecmascript/template_map.h"
 #include "js_array.h"
 #include "js_realm.h"
 
 namespace panda::ecmascript {
+void GlobalEnv::Init(JSThread *thread)
+{
+    SetRegisterSymbols(thread, SymbolTable::Create(thread));
+    SetGlobalRecord(thread, GlobalDictionary::Create(thread));
+    JSTaggedValue emptyStr = thread->GlobalConstants()->GetEmptyString();
+    EcmaStringTable *stringTable = thread->GetEcmaVM()->GetEcmaStringTable();
+    stringTable->InternEmptyString(EcmaString::Cast(emptyStr.GetTaggedObject()));
+    SetTemplateMap(thread, TemplateMap::Create(thread));
+    SetRegisterSymbols(thread, SymbolTable::Create(thread));
+}
 JSHandle<JSTaggedValue> GlobalEnv::GetSymbol(JSThread *thread, const JSHandle<JSTaggedValue> &string)
 {
     JSHandle<JSTaggedValue> symbolFunction(GetSymbolFunction());

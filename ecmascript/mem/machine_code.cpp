@@ -71,7 +71,7 @@ bool AotCodeInfo::DeserializeForStub(JSThread *thread, const std::string &filena
             hostCodeSectionAddr_, devicesCodeSectionAddr_);
     }
     for (size_t i = 0; i < stubEntries_.size(); i++) {
-        stubEntries_[i].codeAddr_ += code_->GetDataOffsetAddress();
+        stubEntries_[i].codeAddr_ += codeHandle->GetDataOffsetAddress();
     }
     modulefile.close();
     return true;
@@ -139,9 +139,14 @@ bool AotCodeInfo::Deserialize(EcmaVM *vm, const std::string &filename)
             hostCodeSectionAddr_, devicesCodeSectionAddr_);
     }
     for (auto &aotEntry : aotFuncEntryOffsets_) {
-        aotEntry.second += code_->GetDataOffsetAddress();
+        aotEntry.second += codeHandle->GetDataOffsetAddress();
     }
     moduleFile.close();
     return true;
+}
+
+void AotCodeInfo::Iterate(const RootVisitor &v)
+{
+    v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&code_)));
 }
 } // panda::ecmascript

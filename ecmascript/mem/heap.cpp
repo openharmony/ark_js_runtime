@@ -401,7 +401,7 @@ bool Heap::CheckConcurrentMark()
             [[maybe_unused]] ClockScope clockScope;
             ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "Heap::CheckConcurrentMark");
             MEM_ALLOCATE_AND_GC_TRACE(GetEcmaVM(), WaitConcurrentMarkingFinished);
-            GetNonMovableMarker()->ProcessMarkStack(0);
+            GetNonMovableMarker()->ProcessMarkStack(MAIN_THREAD_INDEX);
             WaitConcurrentMarkingFinished();
             ecmaVm_->GetEcmaGCStats()->StatisticConcurrentMarkWait(clockScope.GetPauseTime());
             ECMA_GC_LOG() << "wait concurrent marking finish pause time " << clockScope.TotalSpentTime();

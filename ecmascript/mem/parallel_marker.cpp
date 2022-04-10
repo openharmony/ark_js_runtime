@@ -51,7 +51,8 @@ void Marker::ProcessSnapshotRSet(uint32_t threadId)
 void NonMovableMarker::ProcessMarkStack(uint32_t threadId)
 {
     bool isFullMark = heap_->IsFullMark();
-    auto visitor = [this, threadId, isFullMark](TaggedObject *root, ObjectSlot start, ObjectSlot end) {
+    auto visitor = [this, threadId, isFullMark](TaggedObject *root, ObjectSlot start, ObjectSlot end,
+                                                [[maybe_unused]] bool isNative) {
         Region *rootRegion = Region::ObjectAddressToRange(root);
         bool needBarrier = isFullMark && !rootRegion->InYoungOrCSetGeneration();
         for (ObjectSlot slot = start; slot < end; slot++) {
@@ -84,7 +85,7 @@ void NonMovableMarker::ProcessMarkStack(uint32_t threadId)
 
         JSHClass *jsHclass = obj->GetClass();
         MarkObject(threadId, jsHclass);
-        objXRay_.VisitObjectBody<GCType::OLD_GC>(obj, jsHclass, visitor);
+        objXRay_.VisitObjectBody<VisitType::OLD_GC_VISIT>(obj, jsHclass, visitor);
     }
 }
 
@@ -95,7 +96,8 @@ void SemiGcMarker::Initialized()
 
 void SemiGcMarker::ProcessMarkStack(uint32_t threadId)
 {
-    auto visitor = [this, threadId](TaggedObject *root, ObjectSlot start, ObjectSlot end) {
+    auto visitor = [this, threadId](TaggedObject *root, ObjectSlot start, ObjectSlot end,
+                                    [[maybe_unused]] bool isNative) {
         for (ObjectSlot slot = start; slot < end; slot++) {
             JSTaggedValue value(slot.GetTaggedType());
             if (value.IsHeapObject()) {
@@ -121,13 +123,14 @@ void SemiGcMarker::ProcessMarkStack(uint32_t threadId)
         }
 
         auto jsHclass = obj->GetClass();
-        objXRay_.VisitObjectBody<GCType::SEMI_GC>(obj, jsHclass, visitor);
+        objXRay_.VisitObjectBody<VisitType::SEMI_GC_VISIT>(obj, jsHclass, visitor);
     }
 }
 
 void CompressGcMarker::ProcessMarkStack(uint32_t threadId)
 {
-    auto visitor = [this, threadId]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end) {
+    auto visitor = [this, threadId]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end,
+                                    [[maybe_unused]] bool isNative) {
         for (ObjectSlot slot = start; slot < end; slot++) {
             JSTaggedValue value(slot.GetTaggedType());
             if (value.IsHeapObject()) {
@@ -150,7 +153,7 @@ void CompressGcMarker::ProcessMarkStack(uint32_t threadId)
         auto jsHclass = obj->GetClass();
         ObjectSlot objectSlot(ToUintPtr(obj));
         MarkObject(threadId, jsHclass, objectSlot);
-        objXRay_.VisitObjectBody<GCType::OLD_GC>(obj, jsHclass, visitor);
+        objXRay_.VisitObjectBody<VisitType::OLD_GC_VISIT>(obj, jsHclass, visitor);
     }
 }
 }  // namespace panda::ecmascript

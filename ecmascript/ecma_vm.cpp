@@ -27,7 +27,6 @@
 #endif
 #include "ecmascript/dfx/vmstat/runtime_stat.h"
 #include "ecmascript/ecma_string_table.h"
-#include "ecmascript/global_dictionary.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/global_env_constants-inl.h"
 #include "ecmascript/global_env_constants.h"
@@ -53,15 +52,13 @@
 #ifndef PANDA_TARGET_WINDOWS
 #include "ecmascript/stubs/runtime_stubs.h"
 #endif
-#include "ecmascript/snapshot/mem/slot_bit.h"
+#include "ecmascript/snapshot/mem/encode_bit.h"
 #include "ecmascript/snapshot/mem/snapshot.h"
 #include "ecmascript/snapshot/mem/snapshot_serialize.h"
-#include "ecmascript/symbol_table.h"
 #include "ecmascript/tagged_array-inl.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/tagged_queue.h"
 #include "ecmascript/tagged_queue.h"
-#include "ecmascript/template_map.h"
 #include "ecmascript/ts_types/ts_loader.h"
 #include "include/runtime_notification.h"
 #include "libpandafile/file.h"
@@ -162,51 +159,22 @@ bool EcmaVM::Initialize()
         UNREACHABLE();
     }
     [[maybe_unused]] EcmaHandleScope scope(thread_);
-    if (!snapshotDeserializeEnable_ || !VerifyFilePath(snapshotFileName_)) {
-        LOG_ECMA(DEBUG) << "EcmaVM::Initialize run builtins";
 
-        JSHandle<JSHClass> dynClassClassHandle =
-            factory_->NewEcmaDynClassClass(nullptr, JSHClass::SIZE, JSType::HCLASS);
-        JSHClass *dynclass = reinterpret_cast<JSHClass *>(dynClassClassHandle.GetTaggedValue().GetTaggedObject());
-        dynclass->SetClass(dynclass);
-        JSHandle<JSHClass> globalEnvClass =
-            factory_->NewEcmaDynClass(*dynClassClassHandle, GlobalEnv::SIZE, JSType::GLOBAL_ENV);
-
-        JSHandle<GlobalEnv> globalEnvHandle = factory_->NewGlobalEnv(*globalEnvClass);
-        globalEnv_ = globalEnvHandle.GetTaggedValue();
-        auto globalEnv = GlobalEnv::Cast(globalEnv_.GetTaggedObject());
-
-        // init global env
-        globalConst->InitRootsClass(thread_, *dynClassClassHandle);
-        globalConst->InitGlobalConstant(thread_);
-        globalEnv->SetRegisterSymbols(thread_, SymbolTable::Create(thread_));
-        globalEnv->SetGlobalRecord(thread_, GlobalDictionary::Create(thread_));
-        JSTaggedValue emptyStr = thread_->GlobalConstants()->GetEmptyString();
-        stringTable_->InternEmptyString(EcmaString::Cast(emptyStr.GetTaggedObject()));
-        globalEnv->SetTemplateMap(thread_, TemplateMap::Create(thread_));
-        globalEnv->SetRegisterSymbols(GetJSThread(), SymbolTable::Create(GetJSThread()));
+    LOG_ECMA(DEBUG) << "EcmaVM::Initialize run builtins";
+    JSHandle<JSHClass> dynClassClassHandle = factory_->InitClassClass();
+    JSHandle<JSHClass> globalEnvClass =
+        factory_->NewEcmaDynClass(*dynClassClassHandle, GlobalEnv::SIZE, JSType::GLOBAL_ENV);
+    globalConst->Init(thread_, *dynClassClassHandle);
+    JSHandle<GlobalEnv> globalEnv = factory_->NewGlobalEnv(*globalEnvClass);
+    globalEnv->Init(thread_);
+    globalEnv_ = globalEnv.GetTaggedValue();
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-        std::string comStubFile = options_.GetComStubFile();
-        thread_->LoadStubsFromFile(comStubFile);
-        std::string bcStubFile = options_.GetBcStubFile();
-        thread_->LoadStubsFromFile(bcStubFile);
+    LoadStubs();
 #endif
-        SetupRegExpResultCache();
-        microJobQueue_ = factory_->NewMicroJobQueue().GetTaggedValue();
-        {
-            Builtins builtins;
-            builtins.Initialize(globalEnvHandle, thread_);
-        }
-    } else {
-#if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
-        LOG_ECMA(DEBUG) << "EcmaVM::Initialize run snapshot";
-        SnapShot snapShot(this);
-        frameworkPandaFile_ = snapShot.DeserializeGlobalEnvAndProgram(snapshotFileName_, frameworkAbcFileName_);
-        globalConst->InitGlobalUndefined();
-#else
-        LOG_ECMA(FATAL) << "Don't support snapshot now.";
-#endif
-    }
+    SetupRegExpResultCache();
+    microJobQueue_ = factory_->NewMicroJobQueue().GetTaggedValue();
+    Builtins builtins;
+    builtins.Initialize(globalEnv, thread_);
     thread_->SetGlobalObject(GetGlobalEnv()->GetGlobalObject());
     moduleManager_ = new ModuleManager(this);
     tsLoader_ = new TSLoader(this);
@@ -352,6 +320,26 @@ JSHandle<job::MicroJobQueue> EcmaVM::GetMicroJobQueue() const
     return JSHandle<job::MicroJobQueue>(reinterpret_cast<uintptr_t>(&microJobQueue_));
 }
 
+EcmaVM::CpuProfilingScope::CpuProfilingScope(EcmaVM* vm) : vm_(vm), profiler_(nullptr)
+{
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
+    JSRuntimeOptions options = vm_->GetJSOptions();
+    if (options.IsEnableCpuProfiler()) {
+        profiler_ = CpuProfiler::GetInstance();
+        profiler_->CpuProfiler::StartCpuProfiler(vm, "");
+    }
+#endif
+}
+
+EcmaVM::CpuProfilingScope::~CpuProfilingScope()
+{
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
+    if (profiler_ != nullptr) {
+        profiler_->CpuProfiler::StopCpuProfiler();
+    }
+#endif
+}
+
 JSMethod *EcmaVM::GetMethodForNativeFunction(const void *func)
 {
     // signature: any foo(any function_obj, any this)
@@ -367,31 +355,30 @@ JSMethod *EcmaVM::GetMethodForNativeFunction(const void *func)
     return nativeMethods_.back();
 }
 
+void EcmaVM::InvokeEcmaAotEntrypoint()
+{
+    const std::string funcName = "func_main_0";
+    auto ptr = static_cast<uintptr_t>(aotInfo_->GetAOTFuncEntry(funcName));
+    std::vector<JSTaggedType> args(6, JSTaggedValue::Undefined().GetRawData()); // 6: number of para
+    auto res = JSFunctionEntry(thread_->GetGlueAddr(),
+                               reinterpret_cast<uintptr_t>(thread_->GetCurrentSPFrame()),
+                               static_cast<uint32_t>(args.size()),
+                               static_cast<uint32_t>(args.size()),
+                               args.data(),
+                               ptr);
+    std::cout << " LoadAOTFile call func_main_0 res: " << res << std::endl;
+}
+
 Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *jsPandaFile)
 {
     JSTaggedValue result;
     [[maybe_unused]] EcmaHandleScope scope(thread_);
     JSHandle<Program> program;
-    if (snapshotSerializeEnable_) {
-#if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
+    if (jsPandaFile != frameworkPandaFile_) {
         program = JSPandaFileManager::GetInstance()->GenerateProgram(this, jsPandaFile);
-
-        auto index = jsPandaFile->GetJSPandaFileDesc().find(frameworkAbcFileName_);
-        if (index != CString::npos) {
-            LOG_ECMA(DEBUG) << "snapShot MakeSnapShotProgramObject abc " << jsPandaFile->GetJSPandaFileDesc();
-            SnapShot snapShot(this);
-            snapShot.MakeSnapShotProgramObject(*program, jsPandaFile->GetPandaFile(), snapshotFileName_);
-#else
-        LOG_ECMA(FATAL) << "Don't support snapshot now.";
-#endif
-        }
     } else {
-        if (jsPandaFile != frameworkPandaFile_) {
-            program = JSPandaFileManager::GetInstance()->GenerateProgram(this, jsPandaFile);
-        } else {
-            program = JSHandle<Program>(thread_, frameworkProgram_);
-            frameworkProgram_ = JSTaggedValue::Hole();
-        }
+        program = JSHandle<Program>(thread_, frameworkProgram_);
+        frameworkProgram_ = JSTaggedValue::Hole();
     }
     if (program.IsEmpty()) {
         LOG_ECMA(ERROR) << "program is empty, invoke entrypoint failed";
@@ -412,16 +399,12 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
     EcmaRuntimeCallInfo info =
         EcmaInterpreter::NewRuntimeCallInfo(thread_, JSHandle<JSTaggedValue>(func), global, undefined, 0);
 
-    JSRuntimeOptions options = this->GetJSOptions();
-    if (options.IsEnableCpuProfiler()) {
-#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
-        CpuProfiler *profiler = CpuProfiler::GetInstance();
-        profiler->CpuProfiler::StartCpuProfiler(this, "");
-        result = EcmaInterpreter::Execute(&info);
-        profiler->CpuProfiler::StopCpuProfiler();
-#endif
+    auto options = GetJSOptions();
+    if (options.EnableTSAot()) {
+        InvokeEcmaAotEntrypoint();
     } else {
-        result = EcmaInterpreter::Execute(&info);
+        CpuProfilingScope profilingScope(this);
+        EcmaInterpreter::Execute(&info);
     }
     if (!thread_->HasPendingException()) {
         job::MicroJobQueue::ExecutePendingJob(thread_, GetMicroJobQueue());
@@ -640,6 +623,7 @@ void EcmaVM::Iterate(const RootVisitor &v)
     v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&frameworkProgram_)));
     moduleManager_->Iterate(v);
     tsLoader_->Iterate(v);
+    aotInfo_->Iterate(v);
 }
 
 void EcmaVM::SetGlobalEnv(GlobalEnv *global)
@@ -662,6 +646,14 @@ void EcmaVM::ClearNativeMethodsData()
     nativeMethods_.clear();
 }
 
+void EcmaVM::LoadStubs()
+{
+    std::string comStubFile = options_.GetComStubFile();
+    thread_->LoadStubsFromFile(comStubFile);
+    std::string bcStubFile = options_.GetBcStubFile();
+    thread_->LoadStubsFromFile(bcStubFile);
+}
+
 void EcmaVM::SetupRegExpResultCache()
 {
     regexpCache_ = builtins::RegExpExecResultCache::CreateCacheTable(thread_);
@@ -672,5 +664,7 @@ void EcmaVM::LoadAOTFile(std::string fileName)
     if (!aotInfo_->Deserialize(this, fileName)) {
         return;
     }
+    SnapShot snapShot(this);
+    snapShot.SnapShotDeserialize(SnapShotType::TS_LOADER, "snapshot");
 }
 }  // namespace panda::ecmascript

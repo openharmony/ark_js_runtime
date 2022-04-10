@@ -24,8 +24,9 @@ namespace panda::ecmascript {
 void VerifyObjectVisitor::VisitAllObjects(TaggedObject *obj)
 {
     auto jsHclass = obj->GetClass();
-    objXRay_.VisitObjectBody<GCType::OLD_GC>(
-        obj, jsHclass, [this]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end) {
+    objXRay_.VisitObjectBody<VisitType::OLD_GC_VISIT>(
+        obj, jsHclass, [this]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end,
+                              [[maybe_unused]] bool isNative) {
             for (ObjectSlot slot = start; slot < end; slot++) {
                 JSTaggedValue value(slot.GetTaggedType());
                 if (value.IsWeak()) {
