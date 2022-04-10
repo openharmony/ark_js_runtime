@@ -55,7 +55,7 @@ public:
         parser->Add(&bcStubFile_);
         parser->Add(&enableCpuprofiler_);
         parser->Add(&arkProperties_);
-        parser->Add(&enableTsAot_);
+        parser->Add(&enableTSAot_);
         parser->Add(&maxNonmovableSpaceCapacity_);
         parser->Add(&asmInter_);
         parser->Add(&aotOutputFile_);
@@ -172,19 +172,14 @@ public:
         enableCpuprofiler_.SetValue(value);
     }
 
-    bool IsEnableTsAot() const
+    bool EnableTSAot() const
     {
-        return enableTsAot_.GetValue();
+        return enableTSAot_.GetValue();
     }
 
     void SetEnableTsAot(bool value)
     {
-        enableTsAot_.SetValue(value);
-    }
-
-    bool WasSetEnableTsAot() const
-    {
-        return enableTsAot_.WasSet();
+        enableTSAot_.SetValue(value);
     }
 
     void SetArkProperties(int prop)
@@ -346,7 +341,7 @@ private:
         true,
         R"(if true trigger full gc, else trigger semi and old gc)"};
     PandArg<int> arkProperties_ {"ark-properties", GetDefaultProperties(), R"(set ark properties)"};
-    PandArg<int> enableTsAot_ {"enable-ts-aot", true, R"(enable aot of fast stub. Default: false)"};
+    PandArg<bool> enableTSAot_ {"enable-ts-aot", false, R"(enable aot of fast stub. Default: false)"};
     PandArg<std::string> aotOutputFile_ {"aot-output-file",
         R"(aot_output_file.m)",
         R"(Path to AOT output file. Default: "aot_output_file.m")"};

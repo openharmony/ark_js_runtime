@@ -418,10 +418,11 @@
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DECL_VISIT_OBJECT(BEGIN_OFFSET, END_OFFSET)                                                                    \
-    void VisitRangeSlot(const EcmaObjectRangeVisitor &visitor)                                                         \
-    {                                                                                                                  \
-        visitor(this, ObjectSlot(ToUintPtr(this) + (BEGIN_OFFSET)), ObjectSlot(ToUintPtr(this) + (END_OFFSET)),false); \
+#define DECL_VISIT_OBJECT(BEGIN_OFFSET, END_OFFSET)                 \
+    void VisitRangeSlot(const EcmaObjectRangeVisitor &visitor)      \
+    {                                                               \
+        visitor(this, ObjectSlot(ToUintPtr(this) + (BEGIN_OFFSET)), \
+                ObjectSlot(ToUintPtr(this) + (END_OFFSET)), false); \
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -432,23 +433,24 @@
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DECL_VISIT_OBJECT_FOR_JS_OBJECT(PARENTCLASS, BEGIN_OFFSET, END_OFFSET)                                         \
-    void VisitRangeSlot(const EcmaObjectRangeVisitor &visitor)                                                         \
-    {                                                                                                                  \
-        VisitObjects(visitor);                                                                                         \
-        /* visit in object fields */                                                                                   \
-        auto objSize = this->GetClass()->GetObjectSize();                                                              \
-        if (objSize > SIZE) {                                                                                          \
-            visitor(this, ObjectSlot(ToUintPtr(this) + SIZE), ObjectSlot(ToUintPtr(this) + objSize), false);           \
-        }                                                                                                              \
-    }                                                                                                                  \
-    void VisitObjects(const EcmaObjectRangeVisitor &visitor)                                                           \
-    {                                                                                                                  \
-        PARENTCLASS::VisitObjects(visitor);                                                                            \
-        if ((BEGIN_OFFSET) == (END_OFFSET)) {                                                                          \
-            return;                                                                                                    \
-        }                                                                                                              \
-        visitor(this, ObjectSlot(ToUintPtr(this) + (BEGIN_OFFSET)), ObjectSlot(ToUintPtr(this) + (END_OFFSET)), false);\
+#define DECL_VISIT_OBJECT_FOR_JS_OBJECT(PARENTCLASS, BEGIN_OFFSET, END_OFFSET)                               \
+    void VisitRangeSlot(const EcmaObjectRangeVisitor &visitor)                                               \
+    {                                                                                                        \
+        VisitObjects(visitor);                                                                               \
+        /* visit in object fields */                                                                         \
+        auto objSize = this->GetClass()->GetObjectSize();                                                    \
+        if (objSize > SIZE) {                                                                                \
+            visitor(this, ObjectSlot(ToUintPtr(this) + SIZE), ObjectSlot(ToUintPtr(this) + objSize), false); \
+        }                                                                                                    \
+    }                                                                                                        \
+    void VisitObjects(const EcmaObjectRangeVisitor &visitor)                                                 \
+    {                                                                                                        \
+        PARENTCLASS::VisitObjects(visitor);                                                                  \
+        if ((BEGIN_OFFSET) == (END_OFFSET)) {                                                                \
+            return;                                                                                          \
+        }                                                                                                    \
+        visitor(this, ObjectSlot(ToUintPtr(this) + (BEGIN_OFFSET)),                                          \
+                ObjectSlot(ToUintPtr(this) + (END_OFFSET)), false);                                          \
     }
 
 #if ECMASCRIPT_ENABLE_CAST_CHECK
