@@ -53,6 +53,7 @@ class Heap;
 class HeapTracker;
 class JSNativePointer;
 class Program;
+class CpuProfiler;
 class RegExpExecResultCache;
 class JSPromise;
 enum class PromiseRejectionEvent : uint8_t;
@@ -404,11 +405,22 @@ protected:
     void PrintJSErrorInfo(const JSHandle<JSTaggedValue> &exceptionInfo);
 
 private:
+    class CpuProfilingScope {
+    public:
+        explicit CpuProfilingScope(EcmaVM* vm);
+        ~CpuProfilingScope();
+
+    private:
+        EcmaVM* vm_;
+        CpuProfiler* profiler_;
+    };
     void SetGlobalEnv(GlobalEnv *global);
 
     void SetMicroJobQueue(job::MicroJobQueue *queue);
 
     Expected<JSTaggedValue, bool> InvokeEcmaEntrypoint(const JSPandaFile *jsPandaFile);
+
+    void InvokeEcmaAotEntrypoint();
 
     void InitializeEcmaScriptRunStat();
 

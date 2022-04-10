@@ -61,7 +61,7 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMInTwoWays)
     options2.SetEnableForceGC(false);
     options2.SetForceFullGC(false);
     options2.SetEnableCpuprofiler(true);
-    options2.SetEnableTsAot(false);
+    options2.SetEnableTsAot(true);
     options2.SetArkProperties(ArkProperties::GC_STATS_PRINT);
 
     // // GC
@@ -82,7 +82,7 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMInTwoWays)
     EXPECT_TRUE(options1Out.IsEnableForceGC() != options2Out.IsEnableForceGC());
     EXPECT_TRUE(options1Out.IsForceFullGC() != options2Out.IsForceFullGC());
     EXPECT_TRUE(options1Out.IsEnableCpuProfiler() != options2Out.IsEnableCpuProfiler());
-    EXPECT_TRUE(options1Out.IsEnableTsAot() != options2Out.IsEnableTsAot());
+    EXPECT_TRUE(options1Out.EnableTSAot() != options2Out.EnableTSAot());
     EXPECT_TRUE(options1Out.GetArkProperties() != options2Out.GetArkProperties());
 
     auto runtime = Runtime::GetCurrent();

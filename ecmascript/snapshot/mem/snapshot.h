@@ -19,6 +19,7 @@
 #include "libpandabase/macros.h"
 #include "libpandafile/file.h"
 
+#include "ecmascript/common.h"
 #include "ecmascript/snapshot/mem/encode_bit.h"
 #include "ecmascript/snapshot/mem/snapshot_serialize.h"
 #include "ecmascript/mem/c_string.h"
@@ -28,7 +29,7 @@ class Program;
 class EcmaVM;
 class JSPandaFile;
 
-class SnapShot final {
+class PUBLIC_API SnapShot final {
 public:
     explicit SnapShot(EcmaVM *vm) : vm_(vm) {}
     ~SnapShot() = default;

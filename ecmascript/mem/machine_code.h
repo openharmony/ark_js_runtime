@@ -118,9 +118,16 @@ public:
         return stubEntries_;
     }
 
+    void Iterate(const RootVisitor &v);
+
     void SetCode(MachineCode *code)
     {
-        code_ = code;
+        code_ = JSTaggedValue(code);
+    }
+
+    JSTaggedValue GetCode()
+    {
+        return code_;
     }
 
     void SetCodePtr(uintptr_t codePtr)
@@ -158,11 +165,6 @@ public:
         return devicesCodeSectionAddr_;
     }
 
-    JSTaggedValue GetCode()
-    {
-        return JSTaggedValue(code_);
-    }
-
     void SetStackMapAddr(uint64_t addr)
     {
         stackMapAddr_ = addr;
@@ -193,9 +195,9 @@ public:
         return codeSize_;
     }
 
-    uint64_t GetAOTFuncEntry(std::string &name)
+    uint64_t GetAOTFuncEntry(const std::string &name)
     {
-        ASSERT(code_ != nullptr);
+        ASSERT(!code_.IsHole());
         return aotFuncEntryOffsets_[name];
     }
 
@@ -226,7 +228,7 @@ private:
     // NOTE: code object is non movable(code space) currently.
     // The thought use of code->GetDataOffsetAddress() as data base rely on this premise.
     // A stable technique or mechanism for code object against other GC situation is future work.
-    MachineCode *code_ {nullptr};
+    JSTaggedValue code_ {JSTaggedValue::Hole()};
     uintptr_t stackMapAddr_ {0};
     uintptr_t codePtr_ {0};
     uint32_t codeSize_ {0};

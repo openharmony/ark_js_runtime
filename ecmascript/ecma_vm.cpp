@@ -320,6 +320,26 @@ JSHandle<job::MicroJobQueue> EcmaVM::GetMicroJobQueue() const
     return JSHandle<job::MicroJobQueue>(reinterpret_cast<uintptr_t>(&microJobQueue_));
 }
 
+EcmaVM::CpuProfilingScope::CpuProfilingScope(EcmaVM* vm) : vm_(vm), profiler_(nullptr)
+{
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
+    JSRuntimeOptions options = vm_->GetJSOptions();
+    if (options.IsEnableCpuProfiler()) {
+        profiler_ = CpuProfiler::GetInstance();
+        profiler_->CpuProfiler::StartCpuProfiler(vm, "");
+    }
+#endif
+}
+
+EcmaVM::CpuProfilingScope::~CpuProfilingScope()
+{
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
+    if (profiler_ != nullptr) {
+        profiler_->CpuProfiler::StopCpuProfiler();
+    }
+#endif
+}
+
 JSMethod *EcmaVM::GetMethodForNativeFunction(const void *func)
 {
     // signature: any foo(any function_obj, any this)
@@ -333,6 +353,20 @@ JSMethod *EcmaVM::GetMethodForNativeFunction(const void *func)
 
     nativeMethods_.push_back(method);
     return nativeMethods_.back();
+}
+
+void EcmaVM::InvokeEcmaAotEntrypoint()
+{
+    const std::string funcName = "func_main_0";
+    auto ptr = static_cast<uintptr_t>(aotInfo_->GetAOTFuncEntry(funcName));
+    std::vector<JSTaggedType> args(6, JSTaggedValue::Undefined().GetRawData()); // 6: number of para
+    auto res = JSFunctionEntry(thread_->GetGlueAddr(),
+                               reinterpret_cast<uintptr_t>(thread_->GetCurrentSPFrame()),
+                               static_cast<uint32_t>(args.size()),
+                               static_cast<uint32_t>(args.size()),
+                               args.data(),
+                               ptr);
+    std::cout << " LoadAOTFile call func_main_0 res: " << res << std::endl;
 }
 
 Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *jsPandaFile)
@@ -365,16 +399,12 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
     EcmaRuntimeCallInfo info =
         EcmaInterpreter::NewRuntimeCallInfo(thread_, JSHandle<JSTaggedValue>(func), global, undefined, 0);
 
-    JSRuntimeOptions options = this->GetJSOptions();
-    if (options.IsEnableCpuProfiler()) {
-#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
-        CpuProfiler *profiler = CpuProfiler::GetInstance();
-        profiler->CpuProfiler::StartCpuProfiler(this, "");
-        result = EcmaInterpreter::Execute(&info);
-        profiler->CpuProfiler::StopCpuProfiler();
-#endif
+    auto options = GetJSOptions();
+    if (options.EnableTSAot()) {
+        InvokeEcmaAotEntrypoint();
     } else {
-        result = EcmaInterpreter::Execute(&info);
+        CpuProfilingScope profilingScope(this);
+        EcmaInterpreter::Execute(&info);
     }
     if (!thread_->HasPendingException()) {
         job::MicroJobQueue::ExecutePendingJob(thread_, GetMicroJobQueue());
@@ -593,6 +623,7 @@ void EcmaVM::Iterate(const RootVisitor &v)
     v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&frameworkProgram_)));
     moduleManager_->Iterate(v);
     tsLoader_->Iterate(v);
+    aotInfo_->Iterate(v);
 }
 
 void EcmaVM::SetGlobalEnv(GlobalEnv *global)
@@ -633,5 +664,7 @@ void EcmaVM::LoadAOTFile(std::string fileName)
     if (!aotInfo_->Deserialize(this, fileName)) {
         return;
     }
+    SnapShot snapShot(this);
+    snapShot.SnapShotDeserialize(SnapShotType::TS_LOADER, "snapshot");
 }
 }  // namespace panda::ecmascript
