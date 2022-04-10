@@ -162,8 +162,9 @@ bool EcmaVM::Initialize()
 
     LOG_ECMA(DEBUG) << "EcmaVM::Initialize run builtins";
     JSHandle<JSHClass> dynClassClassHandle = factory_->InitClassClass();
-    JSHandle<JSHClass> globalEnvClass =
-        factory_->NewEcmaDynClass(*dynClassClassHandle, GlobalEnv::SIZE, JSType::GLOBAL_ENV);
+    JSHandle<JSHClass> globalEnvClass = factory_->NewEcmaDynClass(*dynClassClassHandle,
+                                                                  GlobalEnv::SIZE,
+                                                                  JSType::GLOBAL_ENV);
     globalConst->Init(thread_, *dynClassClassHandle);
     JSHandle<GlobalEnv> globalEnv = factory_->NewGlobalEnv(*globalEnvClass);
     globalEnv->Init(thread_);
@@ -179,8 +180,10 @@ bool EcmaVM::Initialize()
     moduleManager_ = new ModuleManager(this);
     tsLoader_ = new TSLoader(this);
     aotInfo_ = new AotCodeInfo();
-    std::string file = options_.GetAOTOutputFile();
-    LoadAOTFile(file);
+    if (options_.EnableTSAot()) {
+        std::string file = options_.GetAOTOutputFile();
+        LoadAOTFile(file);
+    }
     InitializeFinish();
     notificationManager_->VmStartEvent();
     notificationManager_->VmInitializationEvent(thread_->GetThreadId());
