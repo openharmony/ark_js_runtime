@@ -55,6 +55,13 @@ source_set("libark_jsoptimizer_static") {
     "verifier.cpp",
   ]
 
+  if (enable_test_stub) {
+    sources += [
+      "test_stubs.cpp",
+      "test_stubs_signature.cpp",
+    ]
+  }
+
   public_configs = [
     ":include_llvm",
     "//ark/js_runtime:ark_jsruntime_compiler_config",
