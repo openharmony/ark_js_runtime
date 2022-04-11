@@ -389,7 +389,7 @@ DEF_CALL_SIGNATURE(SetValueWithBarrier)
 
     std::array<VariableType, 4> params = { // 4 : 4 input parameters
         VariableType::POINTER(),
-        VariableType::POINTER(),
+        VariableType::JS_POINTER(),
         VariableType::POINTER(),
         VariableType::JS_ANY()
     };
