@@ -311,7 +311,7 @@ HWTEST_F_L0(BuiltinsSetTest, Species)
     EXPECT_TRUE(EcmaString::StringsAreEqual(*str, *stringTag));
 
     JSHandle<JSFunction> constructor = JSHandle<JSFunction>::Cast(JSTaggedValue::ToObject(thread, valueHandle));
-    EXPECT_EQ(JSHandle<JSObject>(set)->GetPrototype(thread), constructor->GetFunctionPrototype());
+    EXPECT_EQ(JSTaggedValue::GetPrototype(thread, set), constructor->GetFunctionPrototype());
 
     JSHandle<JSTaggedValue> key1(factory->NewFromASCII("add"));
     JSTaggedValue value1 = JSObject::GetProperty(thread, set, key1).GetValue().GetTaggedValue();

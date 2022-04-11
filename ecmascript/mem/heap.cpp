@@ -380,7 +380,7 @@ void Heap::RecomputeLimits()
     double gcSpeed = memController_->CalculateMarkCompactSpeedPerMS();
     double mutatorSpeed = memController_->GetCurrentOldSpaceAllocationThroughtputPerMS();
     size_t oldSpaceSize = oldSpace_->GetHeapObjectSize() + hugeObjectSpace_->GetHeapObjectSize();
-    size_t newSpaceCapacity = toSpace_->GetCommittedSize();
+    size_t newSpaceCapacity = toSpace_->GetMaximumCapacity();
 
     double growingFactor = memController_->CalculateGrowingFactor(gcSpeed, mutatorSpeed);
     size_t maxOldSpaceCapacity = GetEcmaVM()->GetJSOptions().MaxOldSpaceCapacity();

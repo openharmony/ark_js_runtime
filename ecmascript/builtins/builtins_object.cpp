@@ -443,7 +443,7 @@ JSTaggedValue BuiltinsObject::GetPrototypeOf(EcmaRuntimeCallInfo *argv)
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     // 3.Return obj.[[GetPrototypeOf]]().
-    return obj->GetPrototype(thread);
+    return JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(obj));
 }
 
 // 19.1.2.10 Object.is ( value1, value2 )
@@ -687,12 +687,12 @@ JSTaggedValue BuiltinsObject::IsPrototypeOf(EcmaRuntimeCallInfo *argv)
     //    a. Let V be V.[[GetPrototypeOf]]().
     //    b. If V is null, return false
     //    c. If SameValue(O, V) is true, return true.
-    JSTaggedValue msgValue = msg.GetTaggedValue();
-    while (!msgValue.IsNull()) {
-        if (JSTaggedValue::SameValue(object.GetTaggedValue(), msgValue)) {
+    JSMutableHandle<JSTaggedValue> msgValueHandle(thread, msg.GetTaggedValue());
+    while (!msgValueHandle->IsNull()) {
+        if (JSTaggedValue::SameValue(object.GetTaggedValue(), msgValueHandle.GetTaggedValue())) {
             return GetTaggedBoolean(true);
         }
-        msgValue = JSObject::Cast(msgValue)->GetPrototype(thread);
+        msgValueHandle.Update(JSTaggedValue::GetPrototype(thread, msgValueHandle));
     }
     return GetTaggedBoolean(false);
 }
@@ -867,7 +867,7 @@ JSTaggedValue BuiltinsObject::ProtoGetter(EcmaRuntimeCallInfo *argv)
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     // 3.Return obj.[[GetPrototypeOf]]().
-    return obj->GetPrototype(thread);
+    return JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(obj));
 }
 
 JSTaggedValue BuiltinsObject::ProtoSetter(EcmaRuntimeCallInfo *argv)

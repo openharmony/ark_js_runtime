@@ -256,7 +256,7 @@ std::pair<JSTaggedValue, bool> JSForInIterator::NextInternal(JSThread *thread, c
         if (notModiObjProto) {
             return std::make_pair(JSTaggedValue::Undefined(), true);
         }
-        JSTaggedValue proto = JSHandle<JSObject>::Cast(object)->GetPrototype(thread);
+        JSTaggedValue proto = JSTaggedValue::GetPrototype(thread, object);
         it->SetObject(thread, proto);
         it->SetWasVisited(false);
     }
