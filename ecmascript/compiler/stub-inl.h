@@ -1591,7 +1591,7 @@ inline void Stub::SetNumberOfPropsToHClass(GateRef glue, GateRef hClass, GateRef
 {
     GateRef bitfield1 = Load(VariableType::INT32(), hClass, IntPtr(JSHClass::BIT_FIELD1_OFFSET));
     GateRef oldWithMask = Int32And(bitfield1,
-        Int32(~static_cast<int32_t>(JSHClass::NumberOfPropsBits::Mask())));
+        Int32(~static_cast<uint32_t>(JSHClass::NumberOfPropsBits::Mask())));
     GateRef newValue = UInt32LSR(value, Int32(JSHClass::NumberOfPropsBits::START_BIT));
     Store(VariableType::INT32(), glue, hClass, IntPtr(JSHClass::BIT_FIELD1_OFFSET),
         Int32Or(oldWithMask, newValue));

@@ -121,7 +121,7 @@ void BytecodeCircuitBuilder::CollectBytecodeBlockInfo(uint8_t *pc, std::vector<C
         case EcmaOpcode::JNEZ_IMM16: {
             std::vector<uint8_t *> temp;
             temp.emplace_back(pc + BytecodeOffset::THREE); // first successor
-            int8_t offset = READ_INST_16_0();
+            int8_t offset = static_cast<int8_t>(READ_INST_16_0());
             temp.emplace_back(pc + offset); // second successor
             bytecodeBlockInfos.emplace_back(pc, SplitKind::END, temp);
             bytecodeBlockInfos.emplace_back(pc + BytecodeOffset::THREE, SplitKind::START,
@@ -457,17 +457,17 @@ void BytecodeCircuitBuilder::ComputeDominatorTree(BytecodeGraph &byteCodeGraph)
 #endif
 
     // compute immediate dominator
-    immDom[0] = doms[0].front();
+    immDom[0] = static_cast<int32_t>(doms[0].front());
     for (size_t i = 1; i < doms.size(); i++) {
         if (graph[i].isDead) {
             continue;
         }
         auto it = std::remove(doms[i].begin(), doms[i].end(), i);
         doms[i].resize(it - doms[i].begin());
-        immDom[i] = *std::max_element(
+        immDom[i] = static_cast<int32_t>(*std::max_element(
             doms[i].begin(), doms[i].end(), [graph, bbIdToDfsTimestamp](size_t lhs, size_t rhs) -> bool {
                 return bbIdToDfsTimestamp.at(graph[lhs].id) < bbIdToDfsTimestamp.at(graph[rhs].id);
-            });
+            }));
     }
 
 #if ECMASCRIPT_ENABLE_TS_AOT_PRINT
@@ -1942,7 +1942,7 @@ GateRef BytecodeCircuitBuilder::SetGateConstant(const BytecodeInfo &info)
     GateRef gate = 0;
     // ts loader
     panda::ecmascript::TSLoader* tsLoader = vm_->GetTSLoader();
-    auto tsType = 0;
+    uint64_t tsType = 0;
     switch (opcode) {
         case EcmaOpcode::LDNAN_PREF:
             tsType = tsLoader->GetPrimitiveGT(TSTypeKind::TS_NUMBER).GetGlobalTSTypeRef();
@@ -2002,7 +2002,7 @@ GateRef BytecodeCircuitBuilder::SetGateConstant(const BytecodeInfo &info)
                                     static_cast<GateType>(tsType));
             break;
         default:
-            abort();
+            UNREACHABLE();
     }
     return gate;
 }
@@ -2200,7 +2200,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     auto ifTrue = circuit_.NewGate(OpCode(OpCode::IF_TRUE), 0, {gate}, GateType::EMPTY);
                     auto ifFalse = circuit_.NewGate(OpCode(OpCode::IF_FALSE), 0, {gate}, GateType::EMPTY);
                     ASSERT(bb.succs.size() == 2); // 2 : 2 num of successors
-                    int bitSet = 0;
+                    uint32_t bitSet = 0;
                     for (auto &bbNext: bb.succs) {
                         if (bbNext->id == bb.id + 1) {
                             circuit_.NewIn(bbNext->stateStart, bbNext->statePredIndex, ifFalse);
@@ -2266,7 +2266,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
             } else if (IsDiscarded(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
                 continue;
             } else {
-                abort();
+                UNREACHABLE();
             }
         }
     }

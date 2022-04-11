@@ -111,7 +111,7 @@ JSTaggedValue TypedArrayHelper::CreateFromOrdinaryObject(EcmaRuntimeCallInfo *ar
                 vec.push_back(nextValue);
             }
         }
-        int32_t len = vec.size();
+        int32_t len = static_cast<int32_t>(vec.size());
         TypedArrayHelper::AllocateTypedArrayBuffer(thread, ecmaVm, obj, len);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         // d. Let k be 0.
@@ -276,11 +276,11 @@ JSTaggedValue TypedArrayHelper::CreateFromArrayBuffer(EcmaRuntimeCallInfo *argv,
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     // 5. Let elementSize be the Element Size value specified in Table 61 for constructorName.
     // 6. Let offset be ? ToIndex(byteOffset).
-    int32_t elementSize = TypedArrayHelper::GetSizeFromName(thread, constructorName);
+    uint32_t elementSize = static_cast<uint32_t>(TypedArrayHelper::GetSizeFromName(thread, constructorName));
     JSHandle<JSTaggedValue> byteOffset = BuiltinsBase::GetCallArg(argv, 1);
     JSTaggedNumber index = JSTaggedValue::ToIndex(thread, byteOffset);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    auto offset = static_cast<int32_t>(index.GetNumber());
+    auto offset = static_cast<uint32_t>(index.GetNumber());
     // 7. If offset modulo elementSize ≠ 0, throw a RangeError exception.
     if (offset % elementSize != 0) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "The offset cannot be an integral multiple of elementSize.",
@@ -312,7 +312,7 @@ JSTaggedValue TypedArrayHelper::CreateFromArrayBuffer(EcmaRuntimeCallInfo *argv,
             THROW_RANGE_ERROR_AND_RETURN(thread, "The bufferByteLength cannot be an integral multiple of elementSize.",
                                          JSTaggedValue::Exception());
         }
-        newByteLength = bufferByteLength - offset;
+        newByteLength = static_cast<int32_t>(bufferByteLength - offset);
         if (newByteLength < 0) {
             THROW_RANGE_ERROR_AND_RETURN(thread, "The newByteLength is less than 0.", JSTaggedValue::Exception());
         }

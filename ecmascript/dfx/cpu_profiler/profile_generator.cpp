@@ -49,7 +49,7 @@ void ProfileGenerator::AddSample(CVector<JSMethod *> sample, uint64_t sampleTime
         methodNode.parentId = methodkey.parentId = PreviousId;
         auto result = methodMap_.find(methodkey);
         if (result == methodMap_.end()) {
-            methodNode.id = methodMap_.size() + 1;
+            methodNode.id = static_cast<int>(methodMap_.size() + 1);
             methodMap_.insert(std::make_pair(methodkey, methodNode.id));
             methodNode.codeEntry = GetGcInfo();
             stackTopLines_.push_back(0);
@@ -69,7 +69,7 @@ void ProfileGenerator::AddSample(CVector<JSMethod *> sample, uint64_t sampleTime
             }
             auto result = methodMap_.find(methodkey);
             if (result == methodMap_.end()) {
-                int id = methodMap_.size() + 1;
+                int id = static_cast<int>(methodMap_.size() + 1);
                 methodMap_.insert(std::make_pair(methodkey, id));
                 PreviousId = methodNode.id = id;
                 methodNode.codeEntry = GetMethodInfo(methodkey.method);
@@ -161,12 +161,12 @@ void ProfileGenerator::WriteMethodsAndSampleInfo(bool timeEnd)
     sampleData_ += "\"cat\":\"disabled-by-default-ark.cpu_profiler\",\"id\":"
                     "\"0x2\",\"name\":\"ProfileChunk\",\"ph\":\"P\",\"pid\":";
     pid_t pid = getpid();
-    pthread_t tid = syscall(SYS_gettid);
+    int64_t tid = syscall(SYS_gettid);
     uint64_t ts = ProfileProcessor::GetMicrosecondsTimeStamp();
     ts = ts % TIME_CHANGE;
     struct timespec time = {0, 0};
     clock_gettime(CLOCK_MONOTONIC, &time);
-    uint64_t tts = time.tv_nsec / 1000; // 1000:Nanoseconds to milliseconds.
+    uint64_t tts = static_cast<uint64_t>(time.tv_nsec) / 1000; // 1000:Nanoseconds to milliseconds.
     sampleData_ += std::to_string(pid) + ",\"tid\":" +
                    std::to_string(tid) + ",\"ts\":" +
                    std::to_string(ts) + ",\"tts\":" +

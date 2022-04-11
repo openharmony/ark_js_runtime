@@ -713,7 +713,8 @@ JSTaggedValue BuiltinsTypedArray::Join(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(argv->GetThread(), "This is not a TypedArray.", JSTaggedValue::Exception());
     }
 
-    uint32_t length = TypedArrayHelper::GetArrayLength(thread, JSHandle<JSObject>::Cast(thisHandle));
+    uint32_t length =
+        static_cast<uint32_t>(TypedArrayHelper::GetArrayLength(thread, JSHandle<JSObject>::Cast(thisHandle)));
 
     JSHandle<JSTaggedValue> sepHandle = GetCallArg(argv, 0);
     int sep = ',';
@@ -779,8 +780,8 @@ JSTaggedValue BuiltinsTypedArray::Join(EcmaRuntimeCallInfo *argv)
             current += sepLength;
         }
         JSHandle<EcmaString> nextStr = vec[k];
-        int nextLength = nextStr->GetLength();
-        newString->WriteData(*nextStr, current, allocateLength - current, nextLength);
+        int nextLength = static_cast<int>(nextStr->GetLength());
+        newString->WriteData(*nextStr, current, static_cast<size_t>(allocateLength - current), nextLength);
         current += nextLength;
     }
     return JSTaggedValue(newString);

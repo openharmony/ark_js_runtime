@@ -49,7 +49,7 @@ CString *StringHashMap::GetStringByKey(StringKey key) const
 CString *StringHashMap::FormatString(CString *string) const
 {
     // remove "\"" | "\r\n" | "\\" | "\t" | "\f"
-    int length = string->length();
+    int length = static_cast<int>(string->length());
     char *charSeq = const_cast<char *>(string->c_str());
     for (int i = 0; i < length; i++) {
         if (charSeq[i] == '\"') {         // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)

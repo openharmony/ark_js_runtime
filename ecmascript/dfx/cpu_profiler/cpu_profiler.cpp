@@ -164,10 +164,14 @@ void CpuProfiler::GetCurrentProcessInfo(struct CurrentProcessInfo &currentProces
 {
     currentProcessInfo.nowTimeStamp = ProfileProcessor::GetMicrosecondsTimeStamp() % TIME_CHANGE;
     currentProcessInfo.pid = getpid();
-    tid_ = currentProcessInfo.tid = syscall(SYS_gettid);
+    if (syscall(SYS_gettid) == -1) {
+        LOG_ECMA(FATAL) << "syscall failed";
+        UNREACHABLE();
+    }
+    tid_ = currentProcessInfo.tid = static_cast<pthread_t>(syscall(SYS_gettid));
     struct timespec time = {0, 0};
     clock_gettime(CLOCK_MONOTONIC, &time);
-    currentProcessInfo.tts = time.tv_nsec / 1000; // 1000:Nanoseconds to milliseconds.
+    currentProcessInfo.tts = static_cast<uint64_t>(time.tv_nsec) / 1000; // 1000:Nanoseconds to milliseconds.
 }
 
 void CpuProfiler::GetFrameStack(JSThread *thread)
@@ -216,7 +220,7 @@ void CpuProfiler::ParseMethodInfo(JSMethod *method, InterpretedFrameHandler fram
             auto iter = scriptIdMap_.find(codeEntry.url);
             if (iter == scriptIdMap_.end()) {
                 scriptIdMap_.insert(std::make_pair(codeEntry.url, scriptIdMap_.size() + 1));
-                codeEntry.scriptId = scriptIdMap_.size();
+                codeEntry.scriptId = static_cast<int>(scriptIdMap_.size());
             } else {
                 codeEntry.scriptId = iter->second;
             }

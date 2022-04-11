@@ -100,7 +100,7 @@ inline EcmaString *EcmaString::CreateFromUtf16(const uint16_t *utf16Data, uint32
 template<bool verify>
 inline uint16_t EcmaString::At(int32_t index) const
 {
-    int32_t length = GetLength();
+    int32_t length = static_cast<int32_t>(GetLength());
     if (verify) {
         if ((index < 0) || (index >= length)) {
             return 0;
