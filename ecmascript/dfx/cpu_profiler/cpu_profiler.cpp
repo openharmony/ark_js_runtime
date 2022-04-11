@@ -117,7 +117,9 @@ void CpuProfiler::StopCpuProfiler()
         return;
     }
     generator_->WriteMethodsAndSampleInfo(true);
-    generator_->fileHandle_ << generator_->GetSampleData();
+    std::string fileData = generator_->GetSampleData();
+    fileData.replace(fileData.size() - 2, 1, "]"); // 2: Subscript with comma at end of string
+    generator_->fileHandle_ << fileData;
     if (singleton_ != nullptr) {
         delete singleton_;
         singleton_ = nullptr;
