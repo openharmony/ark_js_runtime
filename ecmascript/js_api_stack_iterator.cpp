@@ -43,7 +43,7 @@ JSTaggedValue JSAPIStackIterator::Next(EcmaRuntimeCallInfo *argv)
     }
     uint32_t index = iter->GetNextIndex();
 
-    uint32_t length = static_cast<int>((JSHandle<JSAPIStack>::Cast(stack))->GetSize()) + 1;
+    uint32_t length = static_cast<uint32_t>((JSHandle<JSAPIStack>::Cast(stack))->GetSize() + 1);
 
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
