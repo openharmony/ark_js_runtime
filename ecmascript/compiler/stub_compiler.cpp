@@ -145,7 +145,6 @@ bool StubCompiler::BuildStubModuleAndSave(const std::string &triple, const std::
 }
 }  // namespace panda::ecmascript::kungfu
 
-
 int main(const int argc, const char **argv)
 {
     panda::Span<const char *> sp(argv, argc);

@@ -106,6 +106,11 @@ public:
         {
             return (kind_ == kungfu::CallSignature::TargetKind::COMMON_STUB);
         }
+
+        bool IsAsmStub() const
+        {
+            return (kind_ == kungfu::CallSignature::TargetKind::ASM_STUB);
+        }
     };
 
     const StubDes& GetStubDes(int index) const

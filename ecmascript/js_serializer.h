@@ -25,7 +25,7 @@
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/js_typed_array.h"
-#include "ecmascript/regexp/dyn_chunk.h"
+#include "ecmascript/mem/dyn_chunk.h"
 
 namespace panda::ecmascript {
 enum class SerializationUID : uint8_t {
