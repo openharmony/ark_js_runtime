@@ -519,6 +519,18 @@ void SlowPathLowering::Lower(GateRef gate, EcmaOpcode op)
         case POPLEXENVDYN_PREF:
             LowerPopLexicalEnv(gate, glue);
             break;
+        case LDSUPERBYVALUE_PREF_V8_V8:
+            LowerLdSuperByValue(gate, glue, jsFunc);
+            break;
+        case STSUPERBYVALUE_PREF_V8_V8:
+            LowerStSuperByValue(gate, glue, jsFunc);
+            break;
+        case TRYSTGLOBALBYNAME_PREF_ID32:
+            LowerTryStGlobalByName(gate, glue);
+            break;
+        case STCONSTTOGLOBALRECORD_PREF_ID32:
+            LowerStConstToGlobalRecord(gate, glue);
+            break;
         default:
             break;
     }
@@ -550,8 +562,8 @@ void SlowPathLowering::LowerCreateIterResultObj(GateRef gate, GateRef glue)
 void SlowPathLowering::LowerSuspendGenerator(GateRef gate, GateRef glue)
 {
     GateRef id = builder_.Int64(RTSTUB_ID(SuspendGenerator));
-    // 2: number of value inputs
-    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    // 3: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 3);
     GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
         {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
     LowerHirToCall(gate, newGate);
@@ -604,12 +616,53 @@ void SlowPathLowering::LowerLexicalEnv(GateRef gate, GateRef glue)
 
 void SlowPathLowering::LowerTryLdGlobalByName(GateRef gate, GateRef glue)
 {
-    GateRef prop = GetValueFromConstStringTable(glue, gate, 0);
-    acc_.SetDep(gate, prop);
-    GateRef id = builder_.Int64(RTSTUB_ID(TryLdGlobalByName));
+    // order: 1. global record 2. global object
+    builder_.NewLabelManager(gate);
+    DEFVAlUE(varAcc, (&builder_), VariableType::JS_ANY(), builder_.Int64(JSTaggedValue::VALUE_HOLE));
     ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {prop});
-    LowerHirToCall(gate, newGate);
+    GateRef stringId = acc_.GetValueIn(gate, 0);
+    GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), { stringId });
+    Label isUndefined(&builder_);
+    Label notUndefined(&builder_);
+    Label successExit(&builder_);
+    Label exceptionExit(&builder_);
+
+    // order: 1. global record 2. global object
+    // if we find a way to get global record, we can inline LdGlobalRecord directly
+    GateRef recordResult = builder_.CallRuntime(glue, RTSTUB_ID(LdGlobalRecord), { prop });
+    builder_.Branch(builder_.TaggedSpecialValueChecker(recordResult, JSTaggedValue::VALUE_UNDEFINED),
+                    &isUndefined, &notUndefined);
+    builder_.Bind(&isUndefined);
+    {
+        GateRef globalResult = builder_.CallRuntime(glue, RTSTUB_ID(GetGlobalOwnProperty), { prop });
+        Label isHole(&builder_);
+        Label notHole(&builder_);
+        builder_.Branch(builder_.TaggedSpecialValueChecker(globalResult, JSTaggedValue::VALUE_HOLE), &isHole, &notHole);
+        builder_.Bind(&isHole);
+        {
+            GateRef slowResult = builder_.CallRuntime(glue, RTSTUB_ID(TryLdGlobalByName), { prop });
+            Label notException(&builder_);
+            builder_.Branch(builder_.TaggedSpecialValueChecker(slowResult, JSTaggedValue::VALUE_EXCEPTION),
+                            &exceptionExit, &notException);
+            builder_.Bind(&notException);
+            {
+                varAcc = slowResult;
+                builder_.Jump(&successExit);
+            }
+        }
+        builder_.Bind(&notHole);
+        {
+            varAcc = globalResult;
+            builder_.Jump(&successExit);
+        }
+    }
+    builder_.Bind(&notUndefined);
+    {
+        varAcc = builder_.Load(VariableType::JS_ANY(), recordResult, builder_.Int64(PropertyBox::VALUE_OFFSET));
+        builder_.Jump(&successExit);
+    }
+    CREATE_DOUBLE_EXIT(successExit, exceptionExit);
+    builder_.MergeMirCircuit(gate, *varAcc, successControl, failControl);
 }
 
 void SlowPathLowering::LowerStGlobalVar(GateRef gate, GateRef glue)
@@ -1359,17 +1412,18 @@ void SlowPathLowering::LowerNewObjDynRange(GateRef gate, GateRef glue)
     // 4: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 4);
     // 2 : 2 first argument offset
-    GateRef firstArgOffset = builder_.Int16(2);
+    GateRef firstArgOffset = builder_.Int64(2);
     GateRef firstArgRegIdx = acc_.GetValueIn(gate, 1);
-    GateRef firstArgIdx = builder_.Int16Add(builder_.TruncInt64ToInt16(firstArgRegIdx), firstArgOffset);
+    GateRef firstArgIdx = builder_.Int64Add(firstArgRegIdx, firstArgOffset);
     GateRef numArgs = acc_.GetValueIn(gate, 0);
-    GateRef length = builder_.Int16Sub(builder_.TruncInt64ToInt16(numArgs), firstArgOffset);
+    GateRef length = builder_.Int64Sub(numArgs, firstArgOffset);
     // 2 : 2 input value
     GateRef ctor = acc_.GetValueIn(gate, 2);
     // 3 : 3 input value
     GateRef newTarget = acc_.GetValueIn(gate, 3);
-    GateRef newGate = builder_.RuntimeCall(glue, id,Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                           {ctor, newTarget, firstArgIdx, length});
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                           {ctor, newTarget, builder_.Int64BuildTaggedTypeNGC(firstArgIdx),
+                                            builder_.Int64BuildTaggedTypeNGC(length)});
     LowerHirToCall(gate, newGate);
 }
 
@@ -1605,14 +1659,14 @@ void SlowPathLowering::LowerStOwnByName(GateRef gate, GateRef glue, GateRef jsFu
         builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
         builder_.Bind(&notHole);
         builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
-            &successExit, &exceptionExit);
+            &exceptionExit, &successExit);
     }
     builder_.Bind(&slowPath);
     {
         result = builder_.CallRuntime(glue, RTSTUB_ID(StOwnByName),
             {receiver, propKey, accValue });
         builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
-            &successExit, &exceptionExit);
+            &exceptionExit, &successExit);
     }
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
     // StOwnByName will not be inValue to other hir gates, result gate will be ignored
@@ -1672,7 +1726,7 @@ void SlowPathLowering::LowerDefineAsyncFunc(GateRef gate, GateRef glue, GateRef 
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
     DEFVAlUE(method, (&builder_), VariableType::JS_POINTER(),
-        GetObjectFromConstPool(jsFunc, acc_.GetValueIn(gate, 0)));
+             GetObjectFromConstPool(jsFunc, acc_.GetValueIn(gate, 0)));
     GateRef length = acc_.GetValueIn(gate, 1);
     GateRef lexEnv = acc_.GetValueIn(gate, 2);
     GateRef result;
@@ -1762,5 +1816,92 @@ void SlowPathLowering::LowerPopLexicalEnv(GateRef gate, GateRef glue)
     failControl.emplace_back(Circuit::NullGate());
     failControl.emplace_back(Circuit::NullGate());
     builder_.MergeMirCircuit<false>(gate, result, successControl, failControl);
+}
+
+void SlowPathLowering::LowerLdSuperByValue(GateRef gate, GateRef glue, GateRef jsFunc)
+{
+    GateRef id = builder_.Int64(RTSTUB_ID(LdSuperByValue));
+    // 2: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef receiver = acc_.GetValueIn(gate, 0);
+    GateRef propKey = acc_.GetValueIn(gate, 1);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                           { receiver, propKey, jsFunc });
+    LowerHirToCall(gate, newGate);
+}
+
+void SlowPathLowering::LowerStSuperByValue(GateRef gate, GateRef glue, GateRef jsFunc)
+{
+    GateRef id = builder_.Int64(RTSTUB_ID(StSuperByValue));
+    // 3: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 3);
+    GateRef receiver = acc_.GetValueIn(gate, 0);
+    GateRef propKey = acc_.GetValueIn(gate, 1);
+    GateRef value = acc_.GetValueIn(gate, 2);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                           { receiver, propKey, value, jsFunc});
+    LowerHirToCall(gate, newGate);
+}
+
+void SlowPathLowering::LowerTryStGlobalByName(GateRef gate, GateRef glue)
+{
+    // order: 1. global record 2. global object
+    builder_.NewLabelManager(gate);
+    DEFVAlUE(res, (&builder_), VariableType::JS_ANY(), builder_.Int64(JSTaggedValue::VALUE_HOLE));
+    // 2 : number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef stringId = acc_.GetValueIn(gate, 0);
+    GateRef propKey = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), { stringId });
+    Label isUndefined(&builder_);
+    Label notUndefined(&builder_);
+    Label successExit(&builder_);
+    Label exceptionExit(&builder_);
+
+    // order: 1. global record 2. global object
+    GateRef value = acc_.GetValueIn(gate, 1);
+    GateRef recordInfo = builder_.CallRuntime(glue, RTSTUB_ID(LdGlobalRecord), { propKey });
+    builder_.Branch(builder_.TaggedSpecialValueChecker(recordInfo, JSTaggedValue::VALUE_UNDEFINED),
+                    &isUndefined, &notUndefined);
+    builder_.Bind(&notUndefined);
+    {
+        res = builder_.CallRuntime(glue, RTSTUB_ID(TryUpdateGlobalRecord), { propKey, value });
+        builder_.Branch(builder_.TaggedSpecialValueChecker(*res, JSTaggedValue::VALUE_EXCEPTION),
+                        &exceptionExit, &successExit);
+    }
+    builder_.Bind(&isUndefined);
+    {
+        Label isHole(&builder_);
+        Label notHole(&builder_);
+        GateRef globalResult = builder_.CallRuntime(glue, RTSTUB_ID(GetGlobalOwnProperty), { propKey });
+        builder_.Branch(builder_.TaggedSpecialValueChecker(globalResult, JSTaggedValue::VALUE_HOLE), &isHole, &notHole);
+        builder_.Bind(&isHole);
+        {
+            res = builder_.CallRuntime(glue, RTSTUB_ID(ThrowReferenceError), { propKey });
+            builder_.Branch(builder_.TaggedSpecialValueChecker(*res, JSTaggedValue::VALUE_EXCEPTION),
+                            &exceptionExit, &successExit);
+        }
+        builder_.Bind(&notHole);
+        {
+            res = builder_.CallRuntime(glue, RTSTUB_ID(StGlobalVar), { propKey, value });
+            builder_.Branch(builder_.TaggedSpecialValueChecker(*res, JSTaggedValue::VALUE_EXCEPTION),
+                            &exceptionExit, &successExit);
+        }
+    }
+    CREATE_DOUBLE_EXIT(successExit, exceptionExit);
+    builder_.MergeMirCircuit(gate, Circuit::NullGate(), successControl, failControl);
+}
+
+void SlowPathLowering::LowerStConstToGlobalRecord(GateRef gate, GateRef glue)
+{
+    GateRef propKey = GetValueFromConstStringTable(glue, gate, 0);
+    acc_.SetDep(gate, propKey);
+    // 2 : number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef id = builder_.Int64(RTSTUB_ID(StGlobalRecord));
+    GateRef value = acc_.GetValueIn(gate, 1);
+    GateRef isConst = builder_.Int64(JSTaggedValue::VALUE_TRUE);
+    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                           { propKey, value, isConst });
+    LowerHirToCall(gate, newGate);
 }
 }  // namespace panda::ecmascript

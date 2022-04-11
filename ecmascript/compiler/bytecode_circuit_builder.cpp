@@ -1930,6 +1930,7 @@ bool BytecodeCircuitBuilder::IsSetConstant(EcmaOpcode opcode)
         case EcmaOpcode::LDHOLE_PREF:
         case EcmaOpcode::LDAI_DYN_IMM32:
         case EcmaOpcode::FLDAI_DYN_IMM64:
+        case EcmaOpcode::LDFUNCTION_PREF:
             return true;
         default:
             return false;
@@ -1942,7 +1943,7 @@ GateRef BytecodeCircuitBuilder::SetGateConstant(const BytecodeInfo &info)
     GateRef gate = 0;
     // ts loader
     panda::ecmascript::TSLoader* tsLoader = vm_->GetTSLoader();
-    auto tsType = 0;
+    uint64_t tsType = 0;
     switch (opcode) {
         case EcmaOpcode::LDNAN_PREF:
             tsType = tsLoader->GetPrimitiveGT(TSTypeKind::TS_NUMBER).GetGlobalTSTypeRef();
@@ -2000,6 +2001,9 @@ GateRef BytecodeCircuitBuilder::SetGateConstant(const BytecodeInfo &info)
                                     std::get<Immediate>(info.inputs.at(0)).GetValue(),
                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
                                     static_cast<GateType>(tsType));
+            break;
+        case EcmaOpcode::LDFUNCTION_PREF:
+            gate = GetCommonArgByIndex(CommonArgIdx::FUNC);
             break;
         default:
             abort();
@@ -2122,7 +2126,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                         inList[i + length] = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I16,
                                                               std::get<MethodId>(input).GetId(),
                                                               {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                                              GateType::JS_ANY);
+                                                              GateType::C_VALUE);
                     } else if (std::holds_alternative<StringId>(input)) {
                         auto tsLoader = vm_->GetTSLoader();
                         JSHandle<ConstantPool> newConstPool(vm_->GetJSThread(), constantPool_.GetTaggedValue());
@@ -2130,12 +2134,12 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                         uint64_t index = tsLoader->AddConstString(string);
                         inList[i + length] = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I32, index,
                                                               {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                                              GateType::JS_ANY);
+                                                              GateType::C_VALUE);
                     } else if (std::holds_alternative<Immediate>(input)) {
                         inList[i + length] = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
                                                               std::get<Immediate>(input).GetValue(),
                                                               {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                                              GateType::JS_ANY);
+                                                              GateType::C_VALUE);
                     } else {
                         ASSERT(std::holds_alternative<VirtualRegister>(input));
                         continue;
