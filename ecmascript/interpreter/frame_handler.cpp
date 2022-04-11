@@ -437,13 +437,13 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
     isVerifying = thread_->GetEcmaVM()->GetHeap()->GetIsVerifying();
 #endif
-    auto leaveFrame = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
-    if (leaveFrame != nullptr) {
-        ASSERT(OptimizedLeaveFrame::GetFrameFromSp(leaveFrame)->type == FrameType::ASM_LEAVE_FRAME);
-        OptimizedLeaveFrameHandler(reinterpret_cast<uintptr_t *>(leaveFrame)).Iterate(v0,
-            v1, derivedPointers, isVerifying);
+
+    // asm interpreter leaveframe
+    JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
+    if (current == nullptr) {
+        // c++ interpreter frame
+        current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
     }
-    JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
     while (current) {
         FrameType type = FrameHandler(current).GetFrameType();
         if (type == FrameType::INTERPRETER_FRAME || type == FrameType::INTERPRETER_FAST_NEW_FRAME) {
@@ -469,10 +469,8 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
         } else {
             ASSERT(type == FrameType::OPTIMIZED_LEAVE_FRAME || type == FrameType::ASM_LEAVE_FRAME);
             OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(current);
-            if (leaveFrame != current) { // avoid iterating from same leaveframe again
-                OptimizedLeaveFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
-                    v1, derivedPointers, isVerifying);
-            }
+            OptimizedLeaveFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
+                v1, derivedPointers, isVerifying);
             //  arm32, arm64 and x86_64 support stub and aot, when aot/stub call runtime, generate Optimized
             // Leave Frame.
             current = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);

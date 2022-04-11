@@ -667,7 +667,6 @@ public:
     void SetPropertiesToLexicalEnv(GateRef glue, GateRef object, GateRef index, GateRef value);
     GateRef GetFunctionBitFieldFromJSFunction(GateRef object);
     GateRef GetHomeObjectFromJSFunction(GateRef object);
-    GateRef GetMethodFromJSFunction(GateRef object);
     GateRef GetCallFieldFromMethod(GateRef method);
     void SetLexicalEnvToFunction(GateRef glue, GateRef object, GateRef lexicalEnv);
     GateRef GetGlobalObject(GateRef glue);
@@ -691,6 +690,18 @@ public:
     // Add SpecialContainer
     GateRef GetContainerProperty(GateRef glue, GateRef receiver, GateRef index, GateRef jsType);
     GateRef JSArrayListGet(GateRef glue, GateRef receiver, GateRef index);
+
+    // Exception handle
+    void ReturnExceptionIfAbruptCompletion(GateRef glue);
+
+    // method operator
+    GateRef IsJSFunction(GateRef obj);
+    GateRef IsBoundFunction(GateRef obj);
+    GateRef GetMethodFromJSFunction(GateRef jsfunc);
+    GateRef IsNativeMethod(GateRef method);
+    GateRef HasAotCode(GateRef method);
+    GateRef GetExpectedNumOfArgs(GateRef method);
+
 private:
     using BinaryOperation = std::function<GateRef(Environment*, GateRef, GateRef)>;
     template<OpCode::Op Op>

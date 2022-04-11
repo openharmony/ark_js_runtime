@@ -2054,5 +2054,67 @@ inline GateRef Stub::GetPropertiesFromJSObject(GateRef object)
     GateRef offset = IntPtr(JSObject::PROPERTIES_OFFSET);
     return Load(VariableType::JS_ANY(), object, offset);
 }
+
+inline GateRef Stub::IsJSFunction(GateRef obj)
+{
+    GateRef objectType = GetObjectType(LoadHClass(obj));
+    GateRef greater = ZExtInt1ToInt32(Int32GreaterThanOrEqual(objectType,
+        Int32(static_cast<int32_t>(JSType::JS_FUNCTION_BEGIN))));
+    GateRef less = ZExtInt1ToInt32(Int32LessThanOrEqual(objectType,
+        Int32(static_cast<int32_t>(JSType::JS_FUNCTION_END))));
+    return TruncInt32ToInt1(Int32And(greater, less));
+}
+
+inline GateRef Stub::IsBoundFunction(GateRef obj)
+{
+    GateRef objectType = GetObjectType(LoadHClass(obj));
+    return Int32Equal(objectType, Int32(static_cast<int32_t>(JSType::JS_BOUND_FUNCTION)));
+}
+
+inline GateRef Stub::IsNativeMethod(GateRef method)
+{
+    GateRef callFieldOffset;
+    if (env_.Is32Bit()) {
+        callFieldOffset =  IntPtr(JS_METHOD_CALLFIELD_OFFSET_32);
+    } else {
+        callFieldOffset = IntPtr(JS_METHOD_CALLFIELD_OFFSET_64);
+    }
+    GateRef callfield = Load(VariableType::INT64(), method, callFieldOffset);
+    return Int64NotEqual(
+        Int64And(
+            UInt64LSR(callfield, Int32(JSMethod::IsNativeBit::START_BIT)),
+            Int64((1LU << JSMethod::IsNativeBit::SIZE) - 1)),
+        Int64(0));
+}
+
+inline GateRef Stub::HasAotCode(GateRef method)
+{
+    GateRef callFieldOffset;
+    if (env_.Is32Bit()) {
+        callFieldOffset =  IntPtr(JS_METHOD_CALLFIELD_OFFSET_32);
+    } else {
+        callFieldOffset = IntPtr(JS_METHOD_CALLFIELD_OFFSET_64);
+    }
+    GateRef callfield = Load(VariableType::INT64(), method, callFieldOffset);
+    return Int64NotEqual(
+        Int64And(
+            UInt64LSR(callfield, Int32(JSMethod::IsAotCodeBit::START_BIT)),
+            Int64((1LU << JSMethod::IsAotCodeBit::SIZE) - 1)),
+        Int64(0));
+}
+
+inline GateRef Stub::GetExpectedNumOfArgs(GateRef method)
+{
+    GateRef callFieldOffset;
+    if (env_.Is32Bit()) {
+        callFieldOffset =  IntPtr(JS_METHOD_CALLFIELD_OFFSET_32);
+    } else {
+        callFieldOffset = IntPtr(JS_METHOD_CALLFIELD_OFFSET_64);
+    }
+    GateRef callfield = Load(VariableType::INT64(), method, callFieldOffset);
+    return TruncInt64ToInt32(Int64And(
+        UInt64LSR(callfield, Int32(JSMethod::NumArgsBits::START_BIT)),
+        Int64((1LU << JSMethod::NumArgsBits::SIZE) - 1)));
+}
 } //  namespace panda::ecmascript::kungfu
 #endif // ECMASCRIPT_COMPILER_STUB_INL_H

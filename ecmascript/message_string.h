@@ -28,6 +28,7 @@ namespace panda::ecmascript {
     V(SetPropertyWhenNotExtensible, "Cannot add property in prevent extensions ") \
     V(GetPropertyOutOfBounds, "Get Property index out-of-bounds")                 \
     V(CanNotSetPropertyOnContainer, "Cannot set property on Container")           \
+    V(NonCallable, "CallObj is NonCallable")                                      \
     V(ASM_INTERPRETER_STUB_NAME, "ASM_INTERPRETER stub name: ")                   \
     V(OPCODE_OVERFLOW, "opcode overflow!")                                        \
     V(INT32_VALUE, "value: %ld")

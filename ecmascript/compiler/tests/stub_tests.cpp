@@ -73,6 +73,20 @@ public:
 #endif
     }
 
+    JSTaggedValue NewAotFunction(uint32_t numArgs, uintptr_t codeEntry)
+    {
+        auto ecmaVm = thread->GetEcmaVM();
+        ObjectFactory *factory = ecmaVm->GetFactory();
+        JSHandle<GlobalEnv> env = ecmaVm->GetGlobalEnv();
+        JSMethod *method = ecmaVm->GetMethodForNativeFunction(reinterpret_cast<void *>(codeEntry));
+        method->SetAotCodeBit(true);
+        method->SetNativeBit(false);
+        method->SetNumArgsWithCallField(numArgs);
+        JSHandle<JSFunction> jsfunc = factory->NewJSFunction(env, method, FunctionKind::NORMAL_FUNCTION);
+        jsfunc->SetCodeEntry(codeEntry);
+        return jsfunc.GetTaggedValue();
+    }
+
     PandaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
@@ -1238,4 +1252,88 @@ HWTEST_F_L0(StubTest, FastEqualTest)
     auto expectI = FastRuntimeStub::FastEqual(obj1.GetTaggedValue(), obj2.GetTaggedValue());
     EXPECT_EQ(resI, expectI);
 }
+
+#ifdef ECMASCRIPT_ENABLE_TEST_STUB
+HWTEST_F_L0(StubTest, JSCallTest)
+{
+    auto fooEntry = thread->GetFastStubEntry(CommonStubCSigns::FooAOT);
+    auto footarget = NewAotFunction(2, fooEntry);
+    auto glue = thread->GetGlueAddr();
+    int x = 1;
+    int y = 2;
+    JSTaggedType argV[6] = {
+        footarget.GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue(x).GetRawData(),
+        JSTaggedValue(y).GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+    };
+    auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5,
+                                  argV, fooEntry);
+    EXPECT_EQ(result, JSTaggedValue(3.0).GetRawData());
+
+    auto result1 = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 6,
+                                   argV, fooEntry);
+    EXPECT_EQ(result1, JSTaggedValue(3.0).GetRawData());
+}
+
+HWTEST_F_L0(StubTest, JSCallTest1)
+{
+    auto foo2Entry = thread->GetFastStubEntry(CommonStubCSigns::Foo2AOT);
+    auto foo2target = NewAotFunction(2, foo2Entry);
+    auto glue = thread->GetGlueAddr();
+    int x = 1;
+    int y = 2;
+    JSTaggedType argV[6] = {
+        foo2target.GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue(x).GetRawData(),
+        JSTaggedValue(y).GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+    };
+    auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5,
+                                  argV, foo2Entry);
+    EXPECT_EQ(result, JSTaggedValue(3.0).GetRawData());
+}
+
+HWTEST_F_L0(StubTest, JSCallTest2)
+{
+    auto foo1Entry = thread->GetFastStubEntry(CommonStubCSigns::Foo1AOT);
+    auto foo1target = NewAotFunction(2, foo1Entry);
+    auto glue = thread->GetGlueAddr();
+    int x = 1;
+    int y = 2;
+    JSTaggedType argV[5] = {
+        foo1target.GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue(x).GetRawData(),
+        JSTaggedValue(y).GetRawData(),
+    };
+    auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5,
+                                  argV, foo1Entry);
+    EXPECT_EQ(result, 0x7ff9000000000000UL);
+}
+
+HWTEST_F_L0(StubTest, JSCallNativeTest)
+{
+    auto fooEntry = thread->GetFastStubEntry(CommonStubCSigns::FooNativeAOT);
+    auto footarget = NewAotFunction(2, fooEntry);
+    auto glue = thread->GetGlueAddr();
+    int x = 1;
+    int y = 2;
+    JSTaggedType argV[5] = {
+        footarget.GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue(x).GetRawData(),
+        JSTaggedValue(y).GetRawData(),
+    };
+    auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5,
+                                  argV, fooEntry);
+    EXPECT_EQ(result, JSTaggedValue::Undefined().GetRawData());
+}
+#endif
 }  // namespace panda::test
