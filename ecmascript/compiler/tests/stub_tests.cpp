@@ -1263,11 +1263,11 @@ HWTEST_F_L0(StubTest, JSCallTest)
     int y = 2;
     JSTaggedType argV[6] = {
         footarget.GetRawData(),
-        0xa,
-        0xa,
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
         JSTaggedValue(x).GetRawData(),
         JSTaggedValue(y).GetRawData(),
-        0xa,
+        JSTaggedValue::Undefined().GetRawData(),
     };
     auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5,
                                   argV, fooEntry);
@@ -1287,11 +1287,11 @@ HWTEST_F_L0(StubTest, JSCallTest1)
     int y = 2;
     JSTaggedType argV[6] = {
         foo2target.GetRawData(),
-        0xa,
-        0xa,
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
         JSTaggedValue(x).GetRawData(),
         JSTaggedValue(y).GetRawData(),
-        0xa,
+        JSTaggedValue::Undefined().GetRawData(),
     };
     auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5,
                                   argV, foo2Entry);
@@ -1307,8 +1307,8 @@ HWTEST_F_L0(StubTest, JSCallTest2)
     int y = 2;
     JSTaggedType argV[5] = {
         foo1target.GetRawData(),
-        0xa,
-        0xa,
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
         JSTaggedValue(x).GetRawData(),
         JSTaggedValue(y).GetRawData(),
     };
@@ -1326,14 +1326,14 @@ HWTEST_F_L0(StubTest, JSCallNativeTest)
     int y = 2;
     JSTaggedType argV[5] = {
         footarget.GetRawData(),
-        0xa,
-        0xa,
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
         JSTaggedValue(x).GetRawData(),
         JSTaggedValue(y).GetRawData(),
     };
     auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5,
                                   argV, fooEntry);
-    EXPECT_EQ(result, 0xaUL);
+    EXPECT_EQ(result, JSTaggedValue::Undefined().GetRawData());
 }
 #endif
 }  // namespace panda::test
