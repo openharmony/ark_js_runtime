@@ -118,7 +118,7 @@ bool JSTypedArray::HasProperty(JSThread *thread, const JSHandle<JSTaggedValue> &
     if (JSObject::OrdinaryGetOwnProperty(thread, typedarrayObj, key, desc)) {
         return true;
     }
-    JSTaggedValue parent = typedarrayObj->GetPrototype(thread);
+    JSTaggedValue parent = JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(typedarrayObj));
     if (!parent.IsNull()) {
         return JSTaggedValue::HasProperty(thread, JSHandle<JSTaggedValue>(thread, parent), key);
     }

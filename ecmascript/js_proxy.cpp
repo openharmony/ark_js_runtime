@@ -66,7 +66,7 @@ JSTaggedValue JSProxy::GetPrototype(JSThread *thread, const JSHandle<JSProxy> &p
 
     // 7. If trap is undefined, then Return target.[[GetPrototypeOf]]().
     if (trap->IsUndefined()) {
-        return JSHandle<JSObject>(targetHandle)->GetPrototype(thread);
+        return JSTaggedValue::GetPrototype(thread, targetHandle);
     }
     // 8. Let handlerProto be Call(trap, handler, «target»).
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
@@ -90,7 +90,7 @@ JSTaggedValue JSProxy::GetPrototype(JSThread *thread, const JSHandle<JSProxy> &p
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     // 14. Let targetProto be target.[[GetPrototypeOf]]().
-    JSTaggedValue targetProto = JSHandle<JSObject>(targetHandle)->GetPrototype(thread);
+    JSTaggedValue targetProto = JSTaggedValue::GetPrototype(thread, targetHandle);
     // 15. ReturnIfAbrupt(targetProto).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 16. If SameValue(handlerProto, targetProto) is false, throw a TypeError exception.
@@ -150,7 +150,7 @@ bool JSProxy::SetPrototype(JSThread *thread, const JSHandle<JSProxy> &proxy, con
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
 
     // 14. Let targetProto be target.[[GetPrototypeOf]]().
-    JSTaggedValue targetProto = JSHandle<JSObject>(targetHandle)->GetPrototype(thread);
+    JSTaggedValue targetProto = JSTaggedValue::GetPrototype(thread, targetHandle);
     // 15. ReturnIfAbrupt(targetProto).
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
 

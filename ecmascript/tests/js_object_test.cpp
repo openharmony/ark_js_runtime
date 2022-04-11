@@ -357,11 +357,12 @@ HWTEST_F_L0(JSObjectTest, HasPropertyWithProtoType)
     JSHandle<JSObject> father = JSObject::ObjectCreate(thread, grandfather);
     JSHandle<JSObject> son = JSObject::ObjectCreate(thread, father);
 
-    auto testGrand = grandfather->GetPrototype(thread);
-    auto testFather = father->GetPrototype(thread);
-    auto testSon = son->GetPrototype(thread);
-    EXPECT_TRUE(testSon != testFather);
-    EXPECT_TRUE(testGrand != testFather);
+    JSHandle<JSTaggedValue> testGrand(thread,
+        JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(grandfather)));
+    JSHandle<JSTaggedValue> testFather(thread, JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(father)));
+    JSHandle<JSTaggedValue> testSon(thread, JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(son)));
+    EXPECT_TRUE(testSon.GetTaggedValue() != testFather.GetTaggedValue());
+    EXPECT_TRUE(testGrand.GetTaggedValue() != testFather.GetTaggedValue());
     JSHandle<JSTaggedValue> sonKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key1"));
     JSHandle<JSTaggedValue> fatherKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key2"));
     JSHandle<JSTaggedValue> grandfatherKey(thread->GetEcmaVM()->GetFactory()->NewFromASCII("key3"));
@@ -445,9 +446,9 @@ HWTEST_F_L0(JSObjectTest, ObjectCreateMethod)
     JSHandle<JSObject> father = JSObject::ObjectCreate(thread, grandfather);
     JSHandle<JSObject> son = JSObject::ObjectCreate(thread, father);
 
-    EXPECT_EQ(son->GetPrototype(thread), father.GetTaggedValue());
-    EXPECT_EQ(father->GetPrototype(thread), grandfather.GetTaggedValue());
-    EXPECT_EQ(grandfather->GetPrototype(thread), JSTaggedValue::Null());
+    EXPECT_EQ(JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(son)), father.GetTaggedValue());
+    EXPECT_EQ(JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(father)), grandfather.GetTaggedValue());
+    EXPECT_EQ(JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(grandfather)), JSTaggedValue::Null());
 }
 
 HWTEST_F_L0(JSObjectTest, GetMethod)

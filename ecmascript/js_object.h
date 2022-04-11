@@ -417,7 +417,7 @@ public:
 
     // ecma6 9.1
     // [[GetPrototypeOf]]
-    JSTaggedValue GetPrototype(JSThread *thread) const;
+    static JSTaggedValue GetPrototype(const JSHandle<JSObject> &obj);
 
     // [[SetPrototypeOf]]
     static bool SetPrototype(JSThread *thread, const JSHandle<JSObject> &obj, const JSHandle<JSTaggedValue> &proto);

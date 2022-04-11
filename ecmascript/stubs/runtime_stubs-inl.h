@@ -175,7 +175,7 @@ JSTaggedValue RuntimeStubs::RuntimeSuperCallSpread(JSThread *thread, const JSHan
 {
     InterpretedFrameHandler frameHandler(thread);
 
-    JSHandle<JSTaggedValue> superFunc(thread, JSHandle<JSObject>::Cast(func)->GetPrototype(thread));
+    JSHandle<JSTaggedValue> superFunc(thread, JSTaggedValue::GetPrototype(thread, func));
     ASSERT(superFunc->IsJSFunction());
 
     JSHandle<TaggedArray> argv(thread, RuntimeGetCallSpreadArgs(thread, array.GetTaggedValue()));
@@ -1521,7 +1521,7 @@ JSTaggedValue RuntimeStubs::RuntimeSuperCall(JSThread *thread, const JSHandle<JS
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     InterpretedFrameHandler frameHandler(thread);
 
-    JSHandle<JSTaggedValue> superFunc(thread, JSHandle<JSObject>::Cast(func)->GetPrototype(thread));
+    JSHandle<JSTaggedValue> superFunc(thread, JSTaggedValue::GetPrototype(thread, func));
     ASSERT(superFunc->IsJSFunction());
 
     JSHandle<TaggedArray> argv = factory->NewTaggedArray(length);
