@@ -175,16 +175,15 @@ const JSPandaFile *SnapShot::SnapShotDeserialize(SnapShotType type, const CStrin
         space->AddRegion(region);
     }
     munmap(ToNativePtr<void>(readFile), hdr.panda_file_begin);
-    uintptr_t panda_file_mem = readFile + hdr.panda_file_begin;
-    auto pf =
-        panda_file::File::OpenFromMemory(os::mem::ConstBytePtr(ToNativePtr<std::byte>(panda_file_mem),
-                                                               file_size - hdr.panda_file_begin, os::mem::MmapDeleter));
-    close(fd);
-    // Snapshot file has translated
     const JSPandaFile *jsPandaFile = nullptr;
-    if (pf) {
+    if (file_size > hdr.panda_file_begin) {
+        uintptr_t panda_file_mem = readFile + hdr.panda_file_begin;
+        auto pf = panda_file::File::OpenFromMemory(os::mem::ConstBytePtr(ToNativePtr<std::byte>(panda_file_mem),
+                                                                         file_size - hdr.panda_file_begin,
+                                                                         os::mem::MmapDeleter));
         jsPandaFile = JSPandaFileManager::GetInstance()->NewJSPandaFile(pf.release(), "");
     }
+    close(fd);
     // relocate object field
     serialize.Relocate(type, jsPandaFile, hdr.root_object_size);
     return jsPandaFile;
