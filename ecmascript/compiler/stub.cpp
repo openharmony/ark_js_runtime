@@ -2399,7 +2399,7 @@ GateRef Stub::FindTransitions(GateRef glue, GateRef receiver, GateRef hclass, Ga
     return ret;
 }
 
-GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, GateRef value)
+GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, GateRef value, bool useOwn)
 {
     auto env = GetEnvironment();
     Label entry(env);
@@ -2407,95 +2407,112 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
     DEFVARIABLE(returnValue, VariableType::INT64(), Hole(VariableType::INT64()));
     DEFVARIABLE(holder, VariableType::JS_ANY(), receiver);
     Label exit(env);
+    Label ifEnd(env);
     Label loopHead(env);
     Label loopEnd(env);
     Label loopExit(env);
     Label afterLoop(env);
-    Jump(&loopHead);
-    LoopBegin(&loopHead);
+    if (!useOwn) {
+        Jump(&loopHead);
+        LoopBegin(&loopHead);
+    }
+    GateRef hclass = LoadHClass(*holder);
+    GateRef jsType = GetObjectType(hclass);
+    Label isSpecialIndex(env);
+    Label notSpecialIndex(env);
+    Branch(IsSpecialIndexedObj(jsType), &isSpecialIndex, &notSpecialIndex);
+    Bind(&isSpecialIndex);
     {
-        GateRef hclass = LoadHClass(*holder);
-        GateRef jsType = GetObjectType(hclass);
-        Label isSpecialIndex(env);
-        Label notSpecialIndex(env);
-        Branch(IsSpecialIndexedObj(jsType), &isSpecialIndex, &notSpecialIndex);
-        Bind(&isSpecialIndex);
+        returnValue = Hole(VariableType::INT64());
+        Jump(&exit);
+    }
+    Bind(&notSpecialIndex);
+    {
+        GateRef elements = GetElementsArray(*holder);
+        Label isDictionaryElement(env);
+        Label notDictionaryElement(env);
+        Branch(IsDictionaryElement(hclass), &isDictionaryElement, &notDictionaryElement);
+        Bind(&notDictionaryElement);
         {
-            returnValue = Hole(VariableType::INT64());
-            Jump(&exit);
-        }
-        Bind(&notSpecialIndex);
-        {
-            GateRef elements = GetElementsArray(*holder);
-            Label isDictionaryElement(env);
-            Label notDictionaryElement(env);
-            Branch(IsDictionaryElement(hclass), &isDictionaryElement, &notDictionaryElement);
-            Bind(&notDictionaryElement);
+            Label isReceiver(env);
+            if (useOwn) {
+                Branch(Int64Equal(*holder, receiver), &isReceiver, &ifEnd);
+            } else {
+                Branch(Int64Equal(*holder, receiver), &isReceiver, &afterLoop);
+            }
+            Bind(&isReceiver);
             {
-                Label isReceiver(env);
-                Label notReceiver(env);
-                Branch(Int64Equal(*holder, receiver), &isReceiver, &notReceiver);
-                Bind(&isReceiver);
-                {
-                    GateRef length = GetLengthOfTaggedArray(elements);
-                    Label inRange(env);
+                GateRef length = GetLengthOfTaggedArray(elements);
+                Label inRange(env);
+                if (useOwn) {
+                    Branch(Int64LessThan(index, length), &inRange, &ifEnd);
+                } else {
                     Branch(Int64LessThan(index, length), &inRange, &loopExit);
-                    Bind(&inRange);
-                    {
-                        GateRef value1 = GetValueFromTaggedArray(VariableType::JS_ANY(), elements, index);
-                        Label notHole(env);
+                }
+                Bind(&inRange);
+                {
+                    GateRef value1 = GetValueFromTaggedArray(VariableType::JS_ANY(), elements, index);
+                    Label notHole(env);
+                    if (useOwn) {
+                        Branch(Int64NotEqual(value1, Hole()), &notHole, &ifEnd);
+                    } else {
                         Branch(Int64NotEqual(value1, Hole()), &notHole, &loopExit);
-                        Bind(&notHole);
-                        {
-                            SetValueToTaggedArray(VariableType::JS_ANY(), glue, elements, index, value);
-                            returnValue = Undefined(VariableType::INT64());
-                            Jump(&exit);
-                        }
+                    }
+                    Bind(&notHole);
+                    {
+                        SetValueToTaggedArray(VariableType::JS_ANY(), glue, elements, index, value);
+                        returnValue = Undefined(VariableType::INT64());
+                        Jump(&exit);
                     }
                 }
-                Bind(&notReceiver);
-                Jump(&afterLoop);
             }
-            Bind(&isDictionaryElement);
+        }
+        Bind(&isDictionaryElement);
+        {
             returnValue = Hole(VariableType::INT64());
             Jump(&exit);
         }
+    }
+    if (useOwn) {
+        Bind(&ifEnd);
+    } else {
         Bind(&loopExit);
         {
             holder = GetPrototypeFromHClass(LoadHClass(*holder));
             Branch(TaggedIsHeapObject(*holder), &loopEnd, &afterLoop);
         }
+        Bind(&loopEnd);
+        LoopEnd(&loopHead);
+        Bind(&afterLoop);
     }
-    Bind(&loopEnd);
-    LoopEnd(&loopHead);
-    Bind(&afterLoop);
+    Label isExtensible(env);
+    Label notExtensible(env);
+    Branch(IsExtensible(receiver), &isExtensible, &notExtensible);
+    Bind(&isExtensible);
     {
-        Label isExtensible(env);
-        Label notExtensible(env);
-        Branch(IsExtensible(receiver), &isExtensible, &notExtensible);
-        Bind(&isExtensible);
+        GateRef result = CallRuntime(glue, RTSTUB_ID(AddElementInternal),
+            { receiver, IntBuildTaggedTypeWithNoGC(index), value,
+            IntBuildTaggedTypeWithNoGC(Int32(PropertyAttributes::GetDefaultAttributes())) });
+        Label success(env);
+        Label failed(env);
+        Branch(TaggedIsTrue(result), &success, &failed);
+        Bind(&success);
         {
-            GateRef result =
-                CallRuntime(glue, RTSTUB_ID(AddElementInternal),
-                            { receiver, IntBuildTaggedTypeWithNoGC(index), value,
-                              IntBuildTaggedTypeWithNoGC(Int32(PropertyAttributes::GetDefaultAttributes())) });
-            Label success(env);
-            Label failed(env);
-            Branch(TaggedIsTrue(result), &success, &failed);
-            Bind(&success);
             returnValue = Undefined(VariableType::INT64());
             Jump(&exit);
-            Bind(&failed);
-            returnValue = Exception(VariableType::INT64());
-            Jump(&exit);
         }
-        Bind(&notExtensible);
+        Bind(&failed);
         {
-            GateRef taggedId = Int32(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
-            CallRuntime(glue, RTSTUB_ID(ThrowTypeError), { IntBuildTaggedTypeWithNoGC(taggedId) });
             returnValue = Exception(VariableType::INT64());
             Jump(&exit);
         }
+    }
+    Bind(&notExtensible);
+    {
+        GateRef taggedId = Int32(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
+        CallRuntime(glue, RTSTUB_ID(ThrowTypeError), { IntBuildTaggedTypeWithNoGC(taggedId) });
+        returnValue = Exception(VariableType::INT64());
+        Jump(&exit);
     }
     Bind(&exit);
     auto ret = *returnValue;
@@ -2503,7 +2520,7 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
     return ret;
 }
 
-GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, GateRef value)
+GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, GateRef value, bool useOwn)
 {
     auto env = GetEnvironment();
     Label entryPass(env);
@@ -2511,248 +2528,16 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
     DEFVARIABLE(result, VariableType::INT64(), Hole(VariableType::INT64()));
     DEFVARIABLE(holder, VariableType::JS_POINTER(), receiver);
     Label exit(env);
+    Label ifEnd(env);
     Label loopHead(env);
     Label loopEnd(env);
     Label loopExit(env);
     Label afterLoop(env);
-    // a do-while loop
-    Jump(&loopHead);
-    LoopBegin(&loopHead);
-    {
-        // auto *hclass = holder.GetTaggedObject()->GetClass()
-        // JSType jsType = hclass->GetObjectType()
-        GateRef hClass = LoadHClass(*holder);
-        GateRef jsType = GetObjectType(hClass);
-        Label isSIndexObj(env);
-        Label notSIndexObj(env);
-        // if branch condition : IsSpecialIndexedObj(jsType)
-        Branch(IsSpecialIndexedObj(jsType), &isSIndexObj, &notSIndexObj);
-        Bind(&isSIndexObj);
-        {
-            Label isSpecialContainer(env);
-            Label notSpecialContainer(env);
-            // Add SpecialContainer
-            Branch(IsSpecialContainer(jsType), &isSpecialContainer, &notSpecialContainer);
-            Bind(&isSpecialContainer);
-            {
-                GateRef taggedId = Int32(GET_MESSAGE_STRING_ID(CanNotSetPropertyOnContainer));
-                CallRuntime(glue, RTSTUB_ID(ThrowTypeError), { IntBuildTaggedTypeWithNoGC(taggedId) });
-                result = Exception(VariableType::INT64());
-                Jump(&exit);
-            }
-            Bind(&notSpecialContainer);
-            {
-                result = Hole(VariableType::INT64());
-                Jump(&exit);
-            }
-        }
-        Bind(&notSIndexObj);
-        {
-            Label isDicMode(env);
-            Label notDicMode(env);
-            // if branch condition : LIKELY(!hclass->IsDictionaryMode())
-            Branch(IsDictionaryModeByHClass(hClass), &isDicMode, &notDicMode);
-            Bind(&notDicMode);
-            {
-                // LayoutInfo *layoutInfo = LayoutInfo::Cast(hclass->GetAttributes().GetTaggedObject())
-                GateRef layOutInfo = GetLayoutFromHClass(hClass);
-                // int propsNumber = hclass->NumberOfPropsFromHClass()
-                GateRef propsNum = GetNumberOfPropsFromHClass(hClass);
-                // int entry = layoutInfo->FindElementWithCache(thread, hclass, key, propsNumber)
-                GateRef entry = FindElementWithCache(glue, layOutInfo, hClass, key, propsNum);
-                Label hasEntry(env);
-                Label noEntry(env);
-                // if branch condition : entry != -1
-                Branch(Int32NotEqual(entry, Int32(-1)), &hasEntry, &noEntry);
-                Bind(&hasEntry);
-                {
-                    // PropertyAttributes attr(layoutInfo->GetAttr(entry))
-                    GateRef propAttr = GetPropAttrFromLayoutInfo(layOutInfo, entry);
-                    GateRef attr = TaggedCastToInt32(propAttr);
-                    Label isAccessor(env);
-                    Label notAccessor(env);
-                    Label afterIsAccessor(env);
-                    Branch(IsAccessor(attr), &isAccessor, &notAccessor);
-                    Bind(&isAccessor);
-                    {
-                        // auto accessor = JSObject::Cast(holder)->GetProperty(hclass, attr)
-                        GateRef accessor = JSObjectGetProperty(VariableType::JS_ANY(), *holder, hClass, attr);
-                        Label shouldCall(env);
-                        Label shouldNotCall(env);
-                        // ShouldCallSetter(receiver, *holder, accessor, attr)
-                        Branch(ShouldCallSetter(receiver, *holder, accessor, attr), &shouldCall, &shouldNotCall);
-                        {
-                            Bind(&shouldCall);
-                            result = CallSetterUtil(glue, receiver, accessor, value);
-                            Jump(&exit);
-                            Bind(&shouldNotCall);
-                            Jump(&afterIsAccessor);
-                        }
-                    }
-                    Bind(&notAccessor);
-                    Jump(&afterIsAccessor);
-                    Bind(&afterIsAccessor);
-                    {
-                        Label writable(env);
-                        Label notWritable(env);
-                        Label afterIsWritable(env);
-                        Branch(IsWritable(attr), &writable, &notWritable);
-                        {
-                            Bind(&writable);
-                            Jump(&afterIsWritable);
-                            Bind(&notWritable);
-                            GateRef taggedId = Int32(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
-                            CallRuntime(glue, RTSTUB_ID(ThrowTypeError), { IntBuildTaggedTypeWithNoGC(taggedId) });
-                            result = Exception(VariableType::INT64());
-                            Jump(&exit);
-                        }
-                        Bind(&afterIsWritable);
-                        {
-                            Label holdEqualsRecv(env);
-                            Label holdNotEqualsRecv(env);
-                            Label afterComp(env);
-                            Branch(Int64Equal(*holder, receiver), &holdEqualsRecv, &holdNotEqualsRecv);
-                            {
-                                Bind(&holdEqualsRecv);
-                                Jump(&afterComp);
-                                Bind(&holdNotEqualsRecv);
-                                Jump(&afterLoop);
-                            }
-                            Bind(&afterComp);
-                            // JSObject::Cast(holder)->SetProperty(thread, hclass, attr, value)
-                            // return JSTaggedValue::Undefined()
-                            JSObjectSetProperty(glue, *holder, hClass, attr, value);
-                            result = Undefined(VariableType::INT64());
-                            Jump(&exit);
-                        }
-                    }
-                }
-                Bind(&noEntry);
-                {
-                    Jump(&loopExit);
-                }
-            }
-            Bind(&isDicMode);
-            {
-                GateRef array = GetPropertiesArray(*holder);
-                // int entry = dict->FindEntry(key)
-                GateRef entry1 = FindEntryFromNameDictionary(glue, array, key);
-                Label notNegtiveOne(env);
-                Label negtiveOne(env);
-                // if branch condition : entry != -1
-                Branch(Int32NotEqual(entry1, Int32(-1)), &notNegtiveOne, &negtiveOne);
-                Bind(&notNegtiveOne);
-                {
-                    // auto attr = dict->GetAttributes(entry)
-                    GateRef attr1 = GetAttributesFromDictionary<NameDictionary>(array, entry1);
-                    Label isAccessor1(env);
-                    Label notAccessor1(env);
-                    Label afterIsAccessor1(env);
-                    // if branch condition : UNLIKELY(attr.IsAccessor())
-                    Branch(IsAccessor(attr1), &isAccessor1, &notAccessor1);
-                    Bind(&isAccessor1);
-                    {
-                        Label isInternal1(env);
-                        Label notInternal1(env);
-                        // auto accessor = dict->GetValue(entry)
-                        GateRef accessor1 = GetValueFromDictionary<NameDictionary>(VariableType::JS_ANY(),
-                            array, entry1);
-                        Label shouldCall1(env);
-                        Label shouldNotCall1(env);
-                        Branch(ShouldCallSetter(receiver, *holder, accessor1, attr1), &shouldCall1, &shouldNotCall1);
-                        Bind(&shouldCall1);
-                        result = CallSetterUtil(glue, receiver, accessor1, value);
-                        Jump(&exit);
-                        Bind(&shouldNotCall1);
-                        Jump(&afterIsAccessor1);
-                    }
-                    Bind(&notAccessor1);
-                    Jump(&afterIsAccessor1);
-                    Bind(&afterIsAccessor1);
-                    {
-                        Label writable1(env);
-                        Label notWritable1(env);
-                        Label afterIsWritable1(env);
-                        Branch(IsWritable(attr1), &writable1, &notWritable1);
-                        {
-                            Bind(&writable1);
-                            Jump(&afterIsWritable1);
-                            Bind(&notWritable1);
-                            GateRef taggedId = Int32(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
-                            CallRuntime(glue, RTSTUB_ID(ThrowTypeError), { IntBuildTaggedTypeWithNoGC(taggedId) });
-                            result = Exception(VariableType::INT64());
-                            Jump(&exit);
-                        }
-                        Bind(&afterIsWritable1);
-                        {
-                            Label holdEqualsRecv1(env);
-                            Label holdNotEqualsRecv1(env);
-                            Label afterComp1(env);
-                            Branch(Int64Equal(*holder, receiver), &holdEqualsRecv1, &holdNotEqualsRecv1);
-                            {
-                                Bind(&holdEqualsRecv1);
-                                Jump(&afterComp1);
-                                Bind(&holdNotEqualsRecv1);
-                                Jump(&afterLoop);
-                            }
-                            Bind(&afterComp1);
-                            // dict->UpdateValue(thread, entry, value)
-                            // return JSTaggedValue::Undefined()
-                            UpdateValueInDict(glue, array, entry1, value);
-                            result = Undefined(VariableType::INT64());
-                            Jump(&exit);
-                        }
-                    }
-                }
-                Bind(&negtiveOne);
-                Jump(&loopExit);
-            }
-            Bind(&loopExit);
-            {
-                // holder = hclass->GetPrototype()
-                holder = GetPrototypeFromHClass(LoadHClass(*holder));
-                // loop condition for a do-while loop
-                Branch(TaggedIsHeapObject(*holder), &loopEnd, &afterLoop);
-            }
-        }
+    if (!useOwn) {
+        // a do-while loop
+        Jump(&loopHead);
+        LoopBegin(&loopHead);
     }
-    Bind(&loopEnd);
-    LoopEnd(&loopHead);
-    Bind(&afterLoop);
-    {
-        Label extensible(env);
-        Label inextensible(env);
-        Label afterExtenCon(env);
-        Branch(IsExtensible(receiver), &extensible, &inextensible);
-        {
-            Bind(&extensible);
-            Jump(&afterExtenCon);
-            Bind(&inextensible);
-            GateRef taggedId = Int32(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
-            CallRuntime(glue, RTSTUB_ID(ThrowTypeError), { IntBuildTaggedTypeWithNoGC(taggedId) });
-            result = Exception(VariableType::INT64());
-            Jump(&exit);
-        }
-        Bind(&afterExtenCon);
-        result = AddPropertyByName(glue, receiver, key, value,
-                                   Int32(PropertyAttributes::GetDefaultAttributes()));
-        Jump(&exit);
-    }
-    Bind(&exit);
-    auto ret = *result;
-    env->PopCurrentLabel();
-    return ret;
-}
-
-GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef key, GateRef value)
-{
-    auto env = GetEnvironment();
-    Label entry(env);
-    env->PushCurrentLabel(&entry);
-    DEFVARIABLE(result, VariableType::INT64(), Hole(VariableType::INT64()));
-    DEFVARIABLE(holder, VariableType::JS_POINTER(), receiver);
-    Label exit(env);
-    Label ifEnd(env);
     // auto *hclass = holder.GetTaggedObject()->GetClass()
     // JSType jsType = hclass->GetObjectType()
     GateRef hClass = LoadHClass(*holder);
@@ -2793,174 +2578,234 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
             // int propsNumber = hclass->NumberOfPropsFromHClass()
             GateRef propsNum = GetNumberOfPropsFromHClass(hClass);
             // int entry = layoutInfo->FindElementWithCache(thread, hclass, key, propsNumber)
-            GateRef entryA = FindElementWithCache(glue, layOutInfo, hClass, key, propsNum);
+            GateRef entry = FindElementWithCache(glue, layOutInfo, hClass, key, propsNum);
             Label hasEntry(env);
-            Label noEntry(env);
             // if branch condition : entry != -1
-            Branch(Int32NotEqual(entryA, Int32(-1)), &hasEntry, &noEntry);
+            if (useOwn) {
+                Branch(Int32NotEqual(entry, Int32(-1)), &hasEntry, &ifEnd);
+            } else {
+                Branch(Int32NotEqual(entry, Int32(-1)), &hasEntry, &loopExit);
+            }
             Bind(&hasEntry);
             {
                 // PropertyAttributes attr(layoutInfo->GetAttr(entry))
-                GateRef propAttr = GetPropAttrFromLayoutInfo(layOutInfo, entryA);
+                GateRef propAttr = GetPropAttrFromLayoutInfo(layOutInfo, entry);
                 GateRef attr = TaggedCastToInt32(propAttr);
                 Label isAccessor(env);
                 Label notAccessor(env);
-                Label afterIsAccessor(env);
                 Branch(IsAccessor(attr), &isAccessor, &notAccessor);
                 Bind(&isAccessor);
                 {
                     // auto accessor = JSObject::Cast(holder)->GetProperty(hclass, attr)
                     GateRef accessor = JSObjectGetProperty(VariableType::JS_ANY(), *holder, hClass, attr);
                     Label shouldCall(env);
-                    Label shouldNotCall(env);
                     // ShouldCallSetter(receiver, *holder, accessor, attr)
-                    Branch(ShouldCallSetter(receiver, *holder, accessor, attr), &shouldCall, &shouldNotCall);
+                    Branch(ShouldCallSetter(receiver, *holder, accessor, attr), &shouldCall, &notAccessor);
+                    Bind(&shouldCall);
                     {
-                        Bind(&shouldCall);
                         result = CallSetterUtil(glue, receiver, accessor, value);
                         Jump(&exit);
-                        Bind(&shouldNotCall);
-                        Jump(&afterIsAccessor);
                     }
                 }
                 Bind(&notAccessor);
-                Jump(&afterIsAccessor);
-                Bind(&afterIsAccessor);
                 {
                     Label writable(env);
                     Label notWritable(env);
-                    Label afterIsWritable(env);
                     Branch(IsWritable(attr), &writable, &notWritable);
+                    Bind(&notWritable);
                     {
-                        Bind(&writable);
-                        Jump(&afterIsWritable);
-                        Bind(&notWritable);
-                        GateRef taggedId = Int32(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
+                        GateRef taggedId = Int32(GET_MESSAGE_STRING_ID(SetReadOnlyProperty));
                         CallRuntime(glue, RTSTUB_ID(ThrowTypeError), { IntBuildTaggedTypeWithNoGC(taggedId) });
                         result = Exception(VariableType::INT64());
                         Jump(&exit);
                     }
-                    Bind(&afterIsWritable);
+                    Bind(&writable);
                     {
                         Label holdEqualsRecv(env);
-                        Label holdNotEqualsRecv(env);
-                        Label afterComp(env);
-                        Branch(Int64Equal(*holder, receiver), &holdEqualsRecv, &holdNotEqualsRecv);
-                        {
-                            Bind(&holdEqualsRecv);
-                            Jump(&afterComp);
-                            Bind(&holdNotEqualsRecv);
-                            Jump(&ifEnd);
+                        if (useOwn) {
+                            Branch(Int64Equal(*holder, receiver), &holdEqualsRecv, &ifEnd);
+                        } else {
+                            Branch(Int64Equal(*holder, receiver), &holdEqualsRecv, &afterLoop);
                         }
-                        Bind(&afterComp);
-                        // JSObject::Cast(holder)->SetProperty(thread, hclass, attr, value)
-                        // return JSTaggedValue::Undefined()
-                        JSObjectSetProperty(glue, *holder, hClass, attr, value);
-                        result = Undefined(VariableType::INT64());
-                        Jump(&exit);
+                        Bind(&holdEqualsRecv);
+                        {
+                            // JSObject::Cast(holder)->SetProperty(thread, hclass, attr, value)
+                            // return JSTaggedValue::Undefined()
+                            JSObjectSetProperty(glue, *holder, hClass, attr, value);
+                            result = Undefined(VariableType::INT64());
+                            Jump(&exit);
+                        }
                     }
                 }
-            }
-            Bind(&noEntry);
-            {
-                Jump(&ifEnd);
             }
         }
         Bind(&isDicMode);
         {
-            // TaggedArray *array = TaggedArray::Cast(JSObject::Cast(holder)->GetPropertiesArray().GetTaggedObject())
             GateRef array = GetPropertiesArray(*holder);
             // int entry = dict->FindEntry(key)
             GateRef entry1 = FindEntryFromNameDictionary(glue, array, key);
             Label notNegtiveOne(env);
-            Label negtiveOne(env);
             // if branch condition : entry != -1
-            Branch(Int32NotEqual(entry1, Int32(-1)), &notNegtiveOne, &negtiveOne);
+            if (useOwn) {
+                Branch(Int32NotEqual(entry1, Int32(-1)), &notNegtiveOne, &ifEnd);
+            } else {
+                Branch(Int32NotEqual(entry1, Int32(-1)), &notNegtiveOne, &loopExit);
+            }
             Bind(&notNegtiveOne);
             {
                 // auto attr = dict->GetAttributes(entry)
                 GateRef attr1 = GetAttributesFromDictionary<NameDictionary>(array, entry1);
                 Label isAccessor1(env);
                 Label notAccessor1(env);
-                Label afterIsAccessor1(env);
                 // if branch condition : UNLIKELY(attr.IsAccessor())
                 Branch(IsAccessor(attr1), &isAccessor1, &notAccessor1);
                 Bind(&isAccessor1);
                 {
-                    Label isInternal1(env);
-                    Label notInternal1(env);
                     // auto accessor = dict->GetValue(entry)
-                    GateRef accessor1 = GetValueFromDictionary<NameDictionary>(VariableType::JS_ANY(), array, entry1);
+                    GateRef accessor1 = GetValueFromDictionary<NameDictionary>(VariableType::JS_ANY(),
+                        array, entry1);
                     Label shouldCall1(env);
-                    Label shouldNotCall1(env);
-                    Branch(ShouldCallSetter(receiver, *holder, accessor1, attr1), &shouldCall1, &shouldNotCall1);
+                    Branch(ShouldCallSetter(receiver, *holder, accessor1, attr1), &shouldCall1, &notAccessor1);
                     Bind(&shouldCall1);
-                    result = CallSetterUtil(glue, receiver, accessor1, value);
-                    Jump(&exit);
-                    Bind(&shouldNotCall1);
-                    Jump(&afterIsAccessor1);
+                    {
+                        result = CallSetterUtil(glue, receiver, accessor1, value);
+                        Jump(&exit);
+                    }
                 }
                 Bind(&notAccessor1);
-                Jump(&afterIsAccessor1);
-                Bind(&afterIsAccessor1);
                 {
                     Label writable1(env);
                     Label notWritable1(env);
-                    Label afterIsWritable1(env);
                     Branch(IsWritable(attr1), &writable1, &notWritable1);
+                    Bind(&notWritable1);
                     {
-                        Bind(&writable1);
-                        Jump(&afterIsWritable1);
-                        Bind(&notWritable1);
-                        GateRef taggedId = Int32(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
+                        GateRef taggedId = Int32(GET_MESSAGE_STRING_ID(SetReadOnlyProperty));
                         CallRuntime(glue, RTSTUB_ID(ThrowTypeError), { IntBuildTaggedTypeWithNoGC(taggedId) });
                         result = Exception(VariableType::INT64());
                         Jump(&exit);
                     }
-                    Bind(&afterIsWritable1);
+                    Bind(&writable1);
                     {
                         Label holdEqualsRecv1(env);
-                        Label holdNotEqualsRecv1(env);
-                        Label afterComp1(env);
-                        Branch(Int64Equal(*holder, receiver), &holdEqualsRecv1, &holdNotEqualsRecv1);
-                        {
-                            Bind(&holdEqualsRecv1);
-                            Jump(&afterComp1);
-                            Bind(&holdNotEqualsRecv1);
-                            Jump(&ifEnd);
+                        if (useOwn) {
+                            Branch(Int64Equal(*holder, receiver), &holdEqualsRecv1, &ifEnd);
+                        } else {
+                            Branch(Int64Equal(*holder, receiver), &holdEqualsRecv1, &afterLoop);
                         }
-                        Bind(&afterComp1);
-                        // dict->UpdateValue(thread, entry, value)
-                        // return JSTaggedValue::Undefined()
-                        UpdateValueInDict(glue, array, entry1, value);
-                        result = Undefined(VariableType::INT64());
-                        Jump(&exit);
+                        Bind(&holdEqualsRecv1);
+                        {
+                            // dict->UpdateValue(thread, entry, value)
+                            // return JSTaggedValue::Undefined()
+                            UpdateValueInDict(glue, array, entry1, value);
+                            result = Undefined(VariableType::INT64());
+                            Jump(&exit);
+                        }
                     }
                 }
             }
-            Bind(&negtiveOne);
-            Jump(&ifEnd);
         }
     }
-    Bind(&ifEnd);
-    {
-        Label extensible(env);
-        Label inextensible(env);
-        Label afterExtenCon(env);
-        Branch(IsExtensible(receiver), &extensible, &inextensible);
+    if (useOwn) {
+        Bind(&ifEnd);
+    } else {
+        Bind(&loopExit);
         {
-            Bind(&extensible);
-            Jump(&afterExtenCon);
-            Bind(&inextensible);
-            GateRef taggedId = Int32(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
-            CallRuntime(glue, RTSTUB_ID(ThrowTypeError), { IntBuildTaggedTypeWithNoGC(taggedId) });
-            result = Exception(VariableType::INT64());
+            // holder = hclass->GetPrototype()
+            holder = GetPrototypeFromHClass(LoadHClass(*holder));
+            // loop condition for a do-while loop
+            Branch(TaggedIsHeapObject(*holder), &loopEnd, &afterLoop);
+        }
+        Bind(&loopEnd);
+        LoopEnd(&loopHead);
+        Bind(&afterLoop);
+    }
+    Label extensible(env);
+    Label inextensible(env);
+    Branch(IsExtensible(receiver), &extensible, &inextensible);
+    Bind(&inextensible);
+    {
+        GateRef taggedId = Int32(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
+        CallRuntime(glue, RTSTUB_ID(ThrowTypeError), { IntBuildTaggedTypeWithNoGC(taggedId) });
+        result = Exception(VariableType::INT64());
+        Jump(&exit);
+    }
+    Bind(&extensible);
+    {
+        result = AddPropertyByName(glue, receiver, key, value,
+            Int32(PropertyAttributes::GetDefaultAttributes()));
+        Jump(&exit);
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
+}
+
+GateRef Stub::SetPropertyByValue(GateRef glue, GateRef receiver, GateRef key, GateRef value, bool useOwn)
+{
+    auto env = GetEnvironment();
+    Label subEntry1(env);
+    env->PushCurrentLabel(&subEntry1);
+    DEFVARIABLE(varKey, VariableType::JS_ANY(), key);
+    DEFVARIABLE(result, VariableType::INT64(), Hole(VariableType::INT64()));
+    Label isNumberOrStringSymbol(env);
+    Label notNumber(env);
+    Label isStringOrSymbol(env);
+    Label notStringOrSymbol(env);
+    Label exit(env);
+    Branch(TaggedIsNumber(*varKey), &isNumberOrStringSymbol, &notNumber);
+    Bind(&notNumber);
+    {
+        Branch(TaggedIsStringOrSymbol(*varKey), &isNumberOrStringSymbol, &notStringOrSymbol);
+        Bind(&notStringOrSymbol);
+        {
+            result = Hole(VariableType::INT64());
             Jump(&exit);
         }
-        Bind(&afterExtenCon);
-        result = AddPropertyByName(glue, receiver, key, value,
-                                   Int32(PropertyAttributes::GetDefaultAttributes()));
-        Jump(&exit);
+    }
+    Bind(&isNumberOrStringSymbol);
+    {
+        GateRef index = TryToElementsIndex(*varKey);
+        Label validIndex(env);
+        Label notValidIndex(env);
+        Branch(Int32GreaterThanOrEqual(index, Int32(0)), &validIndex, &notValidIndex);
+        Bind(&validIndex);
+        {
+            result = SetPropertyByIndex(glue, receiver, index, value, useOwn);
+            Jump(&exit);
+        }
+        Bind(&notValidIndex);
+        {
+            Label isNumber1(env);
+            Label notNumber1(env);
+            Label setByName(env);
+            Branch(TaggedIsNumber(*varKey), &isNumber1, &notNumber1);
+            Bind(&isNumber1);
+            {
+                result = Hole(VariableType::INT64());
+                Jump(&exit);
+            }
+            Bind(&notNumber1);
+            {
+                Label isString(env);
+                Label notIntenalString(env);
+                Branch(TaggedIsString(*varKey), &isString, &setByName);
+                Bind(&isString);
+                {
+                    Branch(IsInternalString(*varKey), &setByName, &notIntenalString);
+                    Bind(&notIntenalString);
+                    {
+                        varKey = CallRuntime(glue, RTSTUB_ID(NewInternalString), { *varKey });
+                        Jump(&setByName);
+                    }
+                }
+            }
+            Bind(&setByName);
+            {
+                result = SetPropertyByName(glue, receiver, *varKey, value, useOwn);
+                Jump(&exit);
+            }
+        }
     }
     Bind(&exit);
     auto ret = *result;
