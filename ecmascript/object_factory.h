@@ -343,8 +343,10 @@ public:
                                                         void *data = nullptr,
                                                         bool nonMovable = false);
 
-    JSHandle<JSObject> NewJSObjectByClass(const JSHandle<TaggedArray> &properties, size_t length);
-
+    JSHandle<JSObject> GetObjectLiteralByHClass(const JSHandle<TaggedArray> &properties, size_t length);
+    JSHandle<JSHClass> SetLayoutInObjHClass(const JSHandle<TaggedArray> &properties, size_t length,
+                                            const JSHandle<JSHClass> &objClass);
+    JSHandle<JSHClass> GetObjectLiteralHClass(const JSHandle<TaggedArray> &properties, size_t length);
     // only use for creating Function.prototype and Function
     JSHandle<JSFunction> NewJSFunctionByDynClass(JSMethod *method, const JSHandle<JSHClass> &clazz,
                                                  FunctionKind kind = FunctionKind::NORMAL_FUNCTION);

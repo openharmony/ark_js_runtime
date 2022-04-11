@@ -178,6 +178,36 @@ void JSHClass::TransitionElementsToDictionary(const JSThread *thread, const JSHa
     obj->GetJSHClass()->SetIsStableElements(false);
 }
 
+JSHandle<JSHClass> JSHClass::SetPropertyOfObjHClass(const JSThread *thread, JSHandle<JSHClass> &jshclass,
+                                                    const JSHandle<JSTaggedValue> &key,
+                                                    const PropertyAttributes &attr)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHClass *newDyn = jshclass->FindTransitions(key.GetTaggedValue(), JSTaggedValue(attr.GetPropertyMetaData()));
+    if (newDyn != nullptr) {
+        return JSHandle<JSHClass>(thread, newDyn);
+    }
+
+    JSHandle<JSHClass> newJshclass = JSHClass::Clone(thread, jshclass);
+    newJshclass->IncNumberOfProps();
+    int offset = attr.GetOffset();
+    {
+        JSMutableHandle<LayoutInfo> layoutInfoHandle(thread, newJshclass->GetLayout());
+        if (layoutInfoHandle->NumberOfElements() != offset) {
+            layoutInfoHandle.Update(factory->CopyAndReSort(layoutInfoHandle, offset, offset + 1));
+            newJshclass->SetLayout(thread, layoutInfoHandle);
+        } else if (layoutInfoHandle->GetPropertiesCapacity() <= offset) { // need to Grow
+            layoutInfoHandle.Update(
+                factory->ExtendLayoutInfo(layoutInfoHandle, LayoutInfo::ComputeGrowCapacity(offset)));
+            newJshclass->SetLayout(thread, layoutInfoHandle);
+        }
+        layoutInfoHandle->AddKey(thread, offset, key.GetTaggedValue(), attr);
+    }
+
+    AddTransitions(thread, jshclass, newJshclass, key, attr);
+    return newJshclass;
+}
+
 void JSHClass::AddProperty(const JSThread *thread, const JSHandle<JSObject> &obj, const JSHandle<JSTaggedValue> &key,
                            const PropertyAttributes &attr)
 {

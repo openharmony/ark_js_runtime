@@ -1807,7 +1807,7 @@ JSHandle<JSObject> JSObject::CreateObjectFromProperties(const JSThread *thread, 
         propsLen++;
     }
     if (propsLen <= PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES) {
-        JSHandle<JSObject> obj = factory->NewJSObjectByClass(properties, propsLen);
+        JSHandle<JSObject> obj = factory->GetObjectLiteralByHClass(properties, propsLen);
         ASSERT_PRINT(obj->IsECMAObject(), "Obj is not a valid object");
         for (size_t i = 0; i < propsLen; i++) {
             // 2: literal contains a pair of key-value
