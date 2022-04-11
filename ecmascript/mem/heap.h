@@ -246,6 +246,8 @@ public:
 
     bool CheckConcurrentMark();
 
+    void CheckAndTriggerOldGC();
+
     NativeAreaAllocator *GetNativeAreaAllocator() const
     {
         return nativeAreaAllocator_;
