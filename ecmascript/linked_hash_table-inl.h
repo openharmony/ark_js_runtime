@@ -126,55 +126,55 @@ uint32_t LinkedHashTable<Derived, HashObject>::BucketToIndex(uint32_t bucket)
 template<typename Derived, typename HashObject>
 uint32_t LinkedHashTable<Derived, HashObject>::EntryToIndex(uint32_t entry) const
 {
-    return ELEMENTS_START_INDEX + Capacity() + entry * (HashObject::ENTRY_SIZE + 1);
+    return ELEMENTS_START_INDEX + Capacity() + static_cast<int>(entry) * (HashObject::ENTRY_SIZE + 1);
 }
 
 template<typename Derived, typename HashObject>
 void LinkedHashTable<Derived, HashObject>::SetKey(const JSThread *thread, int entry, JSTaggedValue key)
 {
-    int index = EntryToIndex(entry);
+    int index = static_cast<int>(EntryToIndex(entry));
     SetElement(thread, index, key);
 }
 
 template<typename Derived, typename HashObject>
 JSTaggedValue LinkedHashTable<Derived, HashObject>::GetKey(int entry) const
 {
-    int index = EntryToIndex(entry);
+    int index = static_cast<int>(EntryToIndex(entry));
     return GetElement(index);
 }
 
 template<typename Derived, typename HashObject>
 JSTaggedValue LinkedHashTable<Derived, HashObject>::GetValue(int entry) const
 {
-    int index = EntryToIndex(entry) + HashObject::ENTRY_VALUE_INDEX;
+    int index = static_cast<int>(EntryToIndex(entry)) + HashObject::ENTRY_VALUE_INDEX;
     return GetElement(index);
 }
 
 template<typename Derived, typename HashObject>
 void LinkedHashTable<Derived, HashObject>::SetValue(const JSThread *thread, int entry, JSTaggedValue value)
 {
-    int index = EntryToIndex(entry) + HashObject::ENTRY_VALUE_INDEX;
+    int index = static_cast<int>(EntryToIndex(entry)) + HashObject::ENTRY_VALUE_INDEX;
     SetElement(thread, index, value);
 }
 
 template<typename Derived, typename HashObject>
 JSTaggedValue LinkedHashTable<Derived, HashObject>::GetNextEntry(int entry) const
 {
-    int index = EntryToIndex(entry) + HashObject::ENTRY_SIZE;
+    int index = static_cast<int>(EntryToIndex(entry)) + HashObject::ENTRY_SIZE;
     return GetElement(index);
 }
 
 template<typename Derived, typename HashObject>
 void LinkedHashTable<Derived, HashObject>::SetNextEntry(const JSThread *thread, int entry, JSTaggedValue nextEntry)
 {
-    int index = EntryToIndex(entry) + HashObject::ENTRY_SIZE;
+    int index = static_cast<int>(EntryToIndex(entry)) + HashObject::ENTRY_SIZE;
     SetElement(thread, index, nextEntry);
 }
 
 template<typename Derived, typename HashObject>
 void LinkedHashTable<Derived, HashObject>::InsertNewEntry(const JSThread *thread, int bucket, int entry)
 {
-    int bucketIndex = BucketToIndex(bucket);
+    int bucketIndex = static_cast<int>(BucketToIndex(bucket));
     JSTaggedValue previousEntry = GetElement(bucketIndex);
     SetNextEntry(thread, entry, previousEntry);
     SetElement(thread, bucketIndex, JSTaggedValue(entry));
@@ -186,7 +186,7 @@ int LinkedHashTable<Derived, HashObject>::FindElement(JSTaggedValue key) const
     if (!IsKey(key)) {
         return -1;
     }
-    int hash = LinkedHash::Hash(key);
+    int hash = static_cast<int>(LinkedHash::Hash(key));
     int bucket = HashToBucket(hash);
     for (JSTaggedValue entry = GetElement(BucketToIndex(bucket)); !entry.IsHole();
          entry = GetNextEntry(entry.GetInt())) {
@@ -237,7 +237,7 @@ template<typename Derived, typename HashObject>
 void LinkedHashTable<Derived, HashObject>::RemoveEntry(const JSThread *thread, int entry)
 {
     ASSERT_PRINT(entry >= 0 && entry < Capacity(), "entry must be a non-negative integer less than capacity");
-    int index = EntryToIndex(entry);
+    int index = static_cast<int>(EntryToIndex(entry));
     for (int i = 0; i < HashObject::ENTRY_SIZE; i++) {
         SetElement(thread, index + i, JSTaggedValue::Hole());
     }

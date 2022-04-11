@@ -137,7 +137,7 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t 
 
 bool LLVMStackMapParser::IsDeriveredPointer(int callsitetime) const
 {
-    return callsitetime & 1;
+    return static_cast<uint32_t>(callsitetime) & 1;
 }
 
 bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp,

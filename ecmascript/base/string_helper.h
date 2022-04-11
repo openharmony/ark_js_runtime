@@ -186,7 +186,7 @@ public:
 
     static inline std::string Utf32ToString(uint32_t u32Data)
     {
-        UChar32 charData = u32Data;
+        UChar32 charData = static_cast<int32_t>(u32Data);
         icu::UnicodeString uString(charData);
         std::string res;
         uString.toUTF8String(res);

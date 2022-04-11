@@ -127,8 +127,8 @@ int32_t EcmaString::Compare(const EcmaString *rhs) const
     if (lhs == rhs) {
         return 0;
     }
-    int32_t lhsCount = lhs->GetLength();
-    int32_t rhsCount = rhs->GetLength();
+    int32_t lhsCount = static_cast<int32_t>(lhs->GetLength());
+    int32_t rhsCount = static_cast<int32_t>(rhs->GetLength());
     int32_t countDiff = lhsCount - rhsCount;
     int32_t minCount = (countDiff < 0) ? lhsCount : rhsCount;
     if (!lhs->IsUtf16() && !rhs->IsUtf16()) {
@@ -199,8 +199,8 @@ int32_t EcmaString::IndexOf(const EcmaString *rhs, int32_t pos) const
         return -1;
     }
     const EcmaString *lhs = this;
-    int32_t lhsCount = lhs->GetLength();
-    int32_t rhsCount = rhs->GetLength();
+    int32_t lhsCount = static_cast<int32_t>(lhs->GetLength());
+    int32_t rhsCount = static_cast<int32_t>(rhs->GetLength());
     if (rhsCount == 0) {
         return pos;
     }
@@ -433,7 +433,7 @@ static int32_t ComputeHashForUtf8(const uint8_t *utf8Data)
 
 uint32_t EcmaString::ComputeHashcode(uint32_t hashSeed) const
 {
-    uint32_t hash;
+    int32_t hash;
     if (compressedStringsEnabled) {
         if (!IsUtf16()) {
             hash = ComputeHashForData(GetDataUtf8(), GetLength(), hashSeed);
@@ -444,13 +444,13 @@ uint32_t EcmaString::ComputeHashcode(uint32_t hashSeed) const
         ASSERT(static_cast<size_t>(GetLength())<(std::numeric_limits<size_t>::max()>>1U));
         hash = ComputeHashForData(GetDataUtf16(), GetLength(), hashSeed);
     }
-    return hash;
+    return static_cast<uint32_t>(hash);
 }
 
 /* static */
 uint32_t EcmaString::ComputeHashcodeUtf8(const uint8_t *utf8Data, size_t utf8Len, bool canBeCompress)
 {
-    uint32_t hash;
+    int32_t hash;
     if (canBeCompress) {
         hash = ComputeHashForUtf8(utf8Data);
     } else {
@@ -461,7 +461,7 @@ uint32_t EcmaString::ComputeHashcodeUtf8(const uint8_t *utf8Data, size_t utf8Len
         ASSERT(len == utf16Len);
         hash = ComputeHashForData(tmpBuffer.data(), utf16Len, 0);
     }
-    return hash;
+    return static_cast<uint32_t>(hash);
 }
 
 /* static */

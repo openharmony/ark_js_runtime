@@ -133,7 +133,7 @@ void HeapSnapShot::MoveNode(uintptr_t address, uintptr_t forward_address)
     int sequenceId = -1;
     Node *node = entryMap_.FindAndEraseNode(address);
     if (node != nullptr) {
-        sequenceId = node->GetId();
+        sequenceId = static_cast<int>(node->GetId());
         EraseNodeUnique(node);
     }
     GenerateNode(JSTaggedValue(forward_address), sequenceId);
@@ -705,18 +705,18 @@ CString EntryVisitor::ConvertKey(JSTaggedValue key)
         keyString = EcmaString::Cast(symbol->GetDescription().GetTaggedObject());
     }
     // convert, expensive but safe
-    int length = 0;
+    uint32_t length = 0;
     if (keyString->IsUtf8()) {
         length = keyString->GetUtf8Length();
         std::vector<uint8_t> buffer(length);
-        [[maybe_unused]] int size = keyString->CopyDataUtf8(buffer.data(), length);
+        [[maybe_unused]] size_t size = keyString->CopyDataUtf8(buffer.data(), length);
         ASSERT(size == length);
         CString keyCopy(reinterpret_cast<char *>(buffer.data()));
         return keyCopy;
     } else {  // NOLINT(readability-else-after-return)
         length = keyString->GetLength();
         std::vector<uint16_t> buffer(length);
-        [[maybe_unused]] int size = keyString->CopyDataUtf16(buffer.data(), length);
+        [[maybe_unused]] size_t size = keyString->CopyDataUtf16(buffer.data(), length);
         ASSERT(size == length);
         CString keyCopy(reinterpret_cast<char *>(buffer.data()));
         return keyCopy;

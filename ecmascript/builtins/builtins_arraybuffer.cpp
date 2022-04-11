@@ -128,7 +128,7 @@ JSTaggedValue BuiltinsArrayBuffer::Slice(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "this value IsDetachedBuffer", JSTaggedValue::Exception());
     }
     // 5. Let len be the value of O’s [[ArrayBufferByteLength]] internal slot.
-    int32_t len = arrBuf->GetArrayBufferByteLength();
+    int32_t len = static_cast<int32_t>(arrBuf->GetArrayBufferByteLength());
     JSHandle<JSTaggedValue> startHandle = GetCallArg(argv, 0);
     // 6. Let relativeStart be ToInteger(start).
     JSTaggedNumber relativeStart = JSTaggedValue::ToInteger(thread, startHandle);
@@ -284,7 +284,7 @@ JSTaggedValue BuiltinsArrayBuffer::CloneArrayBuffer(JSThread *thread, const JSHa
     // 5. Assert: srcByteOffset ≤ srcLength.
     ASSERT(srcByteOffset <= srcLen);
     // 6. Let cloneLength be srcLength – srcByteOffset.
-    int32_t cloneLen = srcLen - srcByteOffset;
+    int32_t cloneLen = static_cast<int32_t>(srcLen - srcByteOffset);
     // 8. Let targetBuffer be AllocateArrayBuffer(cloneConstructor, cloneLength).
     JSTaggedValue taggedBuf = AllocateArrayBuffer(thread, constructor, cloneLen);
     // 9. ReturnIfAbrupt(targetBuffer).
@@ -578,7 +578,7 @@ void BuiltinsArrayBuffer::SetValueInBufferForUint8Clamped(double val, uint8_t *b
     val = val >= UINT8_MAX ? UINT8_MAX : val;
     constexpr double HALF = 0.5;
     val = val == HALF ? 0 : std::round(val);
-    res = static_cast<int64_t>(val);
+    res = static_cast<uint64_t>(val);
     SetTypeData(block, res, byteIndex);
 }
 

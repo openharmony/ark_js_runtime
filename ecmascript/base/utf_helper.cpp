@@ -207,7 +207,7 @@ std::pair<uint32_t, size_t> ConvertUtf8ToUtf16Pair(const uint8_t *data, bool com
     if (combine) {
         uint32_t lead = ((codePoint >> (utf::PAIR_ELEMENT_WIDTH - utf::DATA_WIDTH)) + utf::U16_LEAD);
         uint32_t tail = ((codePoint & utf::MASK_10BIT) + utf::U16_TAIL) & utf::MASK_16BIT;
-        pair = U16_GET_SUPPLEMENTARY(lead, tail);  // NOLINTNEXTLINE(hicpp-signed-bitwise)
+        pair = static_cast<uint32_t>(U16_GET_SUPPLEMENTARY(lead, tail));  // NOLINTNEXTLINE(hicpp-signed-bitwise)
     } else {
         pair |= ((codePoint >> (utf::PAIR_ELEMENT_WIDTH - utf::DATA_WIDTH)) + utf::U16_LEAD) << utf::PAIR_ELEMENT_WIDTH;
         pair |= ((codePoint & utf::MASK_10BIT) + utf::U16_TAIL) & utf::MASK_16BIT;

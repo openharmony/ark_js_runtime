@@ -159,7 +159,7 @@ void GlobalDictionary::InvalidatePropertyBox(JSThread *thread, const JSHandle<Gl
     PropertyAttributes newAttr(metaData);
 
     ASSERT(!box->GetValue().IsHole());
-    int index = originAttr.GetDictionaryOrder();
+    int index = static_cast<int>(originAttr.GetDictionaryOrder());
     JSHandle<JSTaggedValue> oldValue(thread, box->GetValue());
     GlobalDictionary::InvalidateAndReplaceEntry(thread, dictHandle, index, oldValue);
     dictHandle->SetAttributes(thread, entry, newAttr);

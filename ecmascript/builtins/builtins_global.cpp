@@ -201,7 +201,7 @@ JSTaggedValue BuiltinsGlobal::Encode(JSThread *thread, const JSHandle<EcmaString
         // a. If k equals strLen, return R.
         if (k == strLen) {
             auto *uint16tData = reinterpret_cast<uint16_t *>(resStr.data());
-            int32_t resSize = resStr.size();
+            uint32_t resSize = resStr.size();
             return factory->NewFromUtf16Literal(uint16tData, resSize).GetTaggedValue();
         }
 
@@ -261,7 +261,7 @@ JSTaggedValue BuiltinsGlobal::Encode(JSThread *thread, const JSHandle<EcmaString
             uint32_t length = oct.length();
             std::stringstream tmpStr;
             for (uint32_t j = 0; j < length; j++) {
-                uint8_t joct = oct.at(j);
+                uint8_t joct = static_cast<uint8_t>(oct.at(j));
                 tmpStr << '%' << hexStr.at((joct >> 4U) & BIT_MASK)  // NOLINT
                        << hexStr.at(joct & BIT_MASK);                // 4: means shift right by 4 digits
             }
@@ -300,7 +300,7 @@ JSTaggedValue BuiltinsGlobal::Decode(JSThread *thread, const JSHandle<EcmaString
         // a. If k equals strLen, return R.
         if (k == strLen) {
             auto *uint16tData = reinterpret_cast<uint16_t *>(resStr.data());
-            int32_t resSize = resStr.size();
+            uint32_t resSize = resStr.size();
             return factory->NewFromUtf16Literal(uint16tData, resSize).GetTaggedValue();
         }
 
@@ -378,7 +378,7 @@ JSTaggedValue BuiltinsGlobal::Decode(JSThread *thread, const JSHandle<EcmaString
                 //     b. Let H be ((((V – 0x10000) >> 10) & 0x3FF) + 0xD800).
                 //     c. Let S be the String containing the two code units H and L.
                 uint32_t n = 0;
-                while ((((bb << n) & BIT_MASK_ONE) != 0)) {
+                while ((((static_cast<uint32_t>(bb) << n) & BIT_MASK_ONE) != 0)) {
                     n++;
                     if (n > 4) // 4 : 4 means less than 4
                         break;

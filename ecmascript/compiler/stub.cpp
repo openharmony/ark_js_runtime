@@ -285,6 +285,7 @@ Stub::Environment::Environment(size_t arguments, Circuit *circuit)
     currentLabel_->Seal();
     auto depend_entry = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY));
     currentLabel_->SetDepend(depend_entry);
+    compCfg_ = nullptr;
 }
 
 Stub::Environment::~Environment()
