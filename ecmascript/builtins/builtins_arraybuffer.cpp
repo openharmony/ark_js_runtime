@@ -338,9 +338,9 @@ JSTaggedValue BuiltinsArrayBuffer::GetValueFromBuffer(JSThread *thread, JSTagged
         case DataViewType::FLOAT64:
             return GetValueFromBufferForFloat<double, UnionType64, NumberSize::FLOAT64>(block, byteIndex, littleEndian);
         case DataViewType::BIGINT64:
-            return GetValueFromBufferForBigInt(thread, block, byteIndex);
+            return GetValueFromBufferForBigInt<int64_t, NumberSize::BIGINT64>(thread, block, byteIndex, littleEndian);
         case DataViewType::BIGUINT64:
-            return GetValueFromBufferForBigUint(thread, block, byteIndex);
+            return GetValueFromBufferForBigInt<uint64_t, NumberSize::BIGUINT64>(thread, block, byteIndex, littleEndian);
         default:
             break;
     }
@@ -357,14 +357,15 @@ JSTaggedValue BuiltinsArrayBuffer::SetValueInBuffer(JSThread *thread, JSTaggedVa
     JSTaggedValue data = jsArrayBuffer->GetArrayBufferData();
     void *pointer = JSNativePointer::Cast(data.GetTaggedObject())->GetExternalPointer();
     auto *block = reinterpret_cast<uint8_t *>(pointer);
+
     if (IsBigIntElementType(type)) {
         switch (type) {
             case DataViewType::BIGINT64:
-                SetValueInBufferForBigInt(thread, value, block, byteIndex, false);
+                SetValueInBufferForBigInt<int64_t>(thread, value, block, byteIndex, littleEndian);
                 RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
                 break;
             case DataViewType::BIGUINT64:
-                SetValueInBufferForBigInt(thread, value, block, byteIndex, true);
+                SetValueInBufferForBigInt<uint64_t>(thread, value, block, byteIndex, littleEndian);
                 RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
                 break;
             default:
@@ -419,15 +420,8 @@ bool BuiltinsArrayBuffer::IsBigIntElementType(DataViewType type)
 template<typename T>
 void BuiltinsArrayBuffer::SetTypeData(uint8_t *block, T value, uint32_t index)
 {
-    uint32_t sizeCount = 0;
-    uint8_t *res = nullptr;
-    if constexpr (std::is_same_v<T, uint32_t*>) {
-        sizeCount = sizeof(uint32_t) * 2; // 2:Array occupies 8 bytes
-        res = reinterpret_cast<uint8_t *>(value);
-    } else {
-        sizeCount = sizeof(T);
-        res = reinterpret_cast<uint8_t *>(&value);
-    }
+    uint32_t sizeCount = sizeof(T);
+    uint8_t *res = reinterpret_cast<uint8_t *>(&value);
     for (uint32_t i = 0; i < sizeCount; i++) {
         *(block + index + i) = *(res + i);  // NOLINT
     }
@@ -455,8 +449,8 @@ T BuiltinsArrayBuffer::LittleEndianToBigEndian(T liValue)
     }
     return biValue;
 }
-
-uint64_t BuiltinsArrayBuffer::LittleEndianToBigEndianUint64(uint64_t liValue)
+template <typename T>
+T BuiltinsArrayBuffer::LittleEndianToBigEndian64Bit(T liValue)
 {
     return ((liValue & 0x00000000000000FF) << BITS_FIFTY_SIX)      // NOLINT
            | ((liValue & 0x000000000000FF00) << BITS_FORTY)        // NOLINT
@@ -515,41 +509,28 @@ JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForFloat(uint8_t *block, ui
             return GetTaggedDouble(unionValue.value);
         }
         if (!littleEndian) {
-            uint64_t res = LittleEndianToBigEndianUint64(unionValue.uValue);
+            uint64_t res = LittleEndianToBigEndian64Bit(unionValue.uValue);
             return GetTaggedDouble(bit_cast<T>(res));
         }
     }
 
     return GetTaggedDouble(unionValue.value);
 }
-
-JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForBigInt(JSThread *thread, uint8_t *block, uint32_t byteIndex)
+template<typename T, BuiltinsArrayBuffer::NumberSize size>
+JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForBigInt(JSThread *thread, uint8_t *block,
+                                                               uint32_t byteIndex, bool littleEndian)
 {
-    uint32_t *pTmp = reinterpret_cast<uint32_t *>(block + byteIndex);
-    JSHandle<BigInt> valBigInt = BigInt::CreateBigint(thread, 2); // 2:Create a bigint of 2 elements
-    BigInt::SetDigit(thread, valBigInt, 0, *pTmp);
-    uint32_t tmp = *(pTmp + 1);
-    if (tmp >> BITS_THIRTY_ONE) {
-        valBigInt->SetSign(true);
+    static_assert(std::is_same_v<T, uint64_t> || std::is_same_v<T, int64_t>, "T must be uint64_t/int64_t");
+    auto pTmp = *reinterpret_cast<uint64_t *>(block + byteIndex);
+    if (!littleEndian) {
+        pTmp = LittleEndianToBigEndian64Bit(pTmp);
     }
-    if ((*pTmp == 0) && (tmp >> BITS_THIRTY_ONE)) {
-        BigInt::SetDigit(thread, valBigInt, 1, tmp);
-    } else {
-        BigInt::SetDigit(thread, valBigInt, 1, tmp & ~(1 << BITS_THIRTY_ONE));
+    if constexpr (std::is_same_v<T, uint64_t>) {
+        return BigInt::Uint64ToBigInt(thread, pTmp).GetTaggedValue();
     }
-    BigIntHelper::RightTruncate(thread, valBigInt);
-    return valBigInt.GetTaggedValue();
+    return BigInt::Int64ToBigInt(thread, pTmp).GetTaggedValue();
 }
 
-JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForBigUint(JSThread *thread, uint8_t *block, uint32_t byteIndex)
-{
-    uint32_t *pTmp = reinterpret_cast<uint32_t *>(block + byteIndex);
-    JSHandle<BigInt> valBigInt = BigInt::CreateBigint(thread, 2); // 2:2 elements
-    BigInt::SetDigit(thread, valBigInt, 0, *pTmp);
-    BigInt::SetDigit(thread, valBigInt, 1, *(pTmp + 1));
-    BigIntHelper::RightTruncate(thread, valBigInt);
-    return valBigInt.GetTaggedValue();
-}
 
 template<typename T>
 void BuiltinsArrayBuffer::SetValueInBufferForByte(double val, uint8_t *block, uint32_t byteIndex)
@@ -625,32 +606,28 @@ void BuiltinsArrayBuffer::SetValueInBufferForFloat(double val, uint8_t *block, u
             data = bit_cast<T>(LittleEndianToBigEndian(res));
         } else if constexpr (std::is_same_v<T, double>) {
             uint64_t res = bit_cast<uint64_t>(data);
-            data = bit_cast<T>(LittleEndianToBigEndianUint64(res));
+            data = bit_cast<T>(LittleEndianToBigEndian64Bit(res));
         }
     }
     SetTypeData(block, data, byteIndex);
 }
 
-JSTaggedValue BuiltinsArrayBuffer::SetValueInBufferForBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &val,
-                                                             uint8_t *block, uint32_t byteIndex, bool isUint)
+template<typename T>
+void BuiltinsArrayBuffer::SetValueInBufferForBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &val,
+                                                    uint8_t *block, uint32_t byteIndex, bool littleEndian)
 {
-    JSHandle<BigInt> valBigintHandle;
-    if (isUint) {
-        valBigintHandle = JSHandle<BigInt>(thread, val->ToBigUint64(thread, val));
+    static_assert(std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>, "T must be int64_t/uint64_t");
+    T value = 0;
+    bool lossless = true;
+    if constexpr(std::is_same_v<T, uint64_t>) {
+        BigInt::BigIntToUint64(thread, val, reinterpret_cast<uint64_t *>(&value), &lossless);
     } else {
-        valBigintHandle = JSHandle<BigInt>(thread, val->ToBigInt64(thread, val));
+        BigInt::BigIntToInt64(thread, val, reinterpret_cast<int64_t *>(&value), &lossless);
     }
-    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    uint32_t valLength = valBigintHandle->GetLength();
-    uint32_t varBuffer[2] = {0}; // 2:2 elements with 8 bits
-    for (uint32_t i = 0; i < valLength; i++) {
-        varBuffer[i] = valBigintHandle->GetDigit(i);
+    RETURN_IF_ABRUPT_COMPLETION(thread);
+    if (!littleEndian) {
+        value = LittleEndianToBigEndian64Bit<T>(value);
     }
-    if (!isUint) {
-        bool sign = valBigintHandle->GetSign();
-        varBuffer[1] = sign ? (varBuffer[1] |= 1 << BITS_THIRTY_ONE) : varBuffer[1];
-    }
-    SetTypeData(block, varBuffer, byteIndex);
-    return JSTaggedValue::Undefined();
+    SetTypeData(block, value, byteIndex);
 }
 }  // namespace panda::ecmascript::builtins
