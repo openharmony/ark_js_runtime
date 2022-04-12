@@ -1782,4 +1782,337 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameToObjectTest)
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
     EXPECT_EQ(CString(ObjectSubType::I64.c_str()), DebuggerApi::ToCString(subResult));
 }
+
+HWTEST_F_L0(DebuggerTypesTest, SamplingHeapProfileSampleCreateTest)
+{
+    CString msg;
+    std::unique_ptr<SamplingHeapProfileSample> object;
+
+    //  abnormal params of null msg
+    msg = CString() + R"({})";
+    object = SamplingHeapProfileSample::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(object, nullptr);
+
+    // abnormal params of unexist key params
+    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
+    object = SamplingHeapProfileSample::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(object, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    object = SamplingHeapProfileSample::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(object, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    object = SamplingHeapProfileSample::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(object, nullptr);
+
+   // abnormal params of params.sub-key = [ "size"="Test","nodeId"="Test","ordinal"="Test"]
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+          "size":"Test","nodeId":"Test","ordinal":"Test"}})";
+    object = SamplingHeapProfileSample::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(object, nullptr);
+
+    // abnormal params of params.sub-key = [ "size"={"xx":"yy"},"nodeId"={"xx":"yy"},"ordinal"={"xx":"yy"}]
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+          "size":{"xx":"yy"},"nodeId":{"xx":"yy"},"ordinal":{"xx":"yy"}}})";
+    object = SamplingHeapProfileSample::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(object, nullptr);
+
+    // abnormal params of params.sub-key = [ "size"=100,"nodeId"=1,"ordinal"=10]
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"size":100,"nodeId":1,"ordinal":10}})";
+    object = SamplingHeapProfileSample::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(object, nullptr);
+    EXPECT_EQ(object->GetSize(), 100);
+    EXPECT_EQ(object->GetNodeId(), 1);
+    EXPECT_EQ(object->GetOrdinal(), 10);
+}
+
+HWTEST_F_L0(DebuggerTypesTest, SamplingHeapProfileSampleToObjectTest)
+{
+    CString msg;
+    std::unique_ptr<SamplingHeapProfileSample> samplingHeapProfileSampleData;
+    Local<StringRef> tmpStr;
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"size":100,"nodeId":1,"ordinal":10}})";
+    samplingHeapProfileSampleData = SamplingHeapProfileSample::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(samplingHeapProfileSampleData, nullptr);
+    Local<ObjectRef> object = samplingHeapProfileSampleData->ToObject(ecmaVm);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "size");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 100);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "nodeId");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 1);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "ordinal");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 10);
+}
+
+HWTEST_F_L0(DebuggerTypesTest, SamplingHeapProfileNodeCreateTest)
+{
+    CString msg;
+    std::unique_ptr<SamplingHeapProfileNode> object;
+
+    //  abnormal params of null msg
+    msg = CString() + R"({})";
+    object = SamplingHeapProfileNode::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(object, nullptr);
+
+    // abnormal params of unexist key params
+    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
+    object = SamplingHeapProfileNode::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(object, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    object = SamplingHeapProfileNode::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(object, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    object = SamplingHeapProfileNode::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(object, nullptr);
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+        "callFrame": {"functionName":"Create", "scriptId":"10", "url":"url3", "lineNumber":100, "columnNumber":20},
+        "selfSize":10,
+        "id":5,
+        "children":[]
+    }})";
+    object = SamplingHeapProfileNode::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(object, nullptr);
+    RuntimeCallFrame *runTimeCallFrame = object->GetCallFrame();
+    ASSERT_NE(runTimeCallFrame, nullptr);
+    EXPECT_EQ(runTimeCallFrame->GetFunctionName(), "Create");
+    EXPECT_EQ(runTimeCallFrame->GetScriptId(), "10");
+    EXPECT_EQ(runTimeCallFrame->GetUrl(), "url3");
+    EXPECT_EQ(runTimeCallFrame->GetLineNumber(), 100);
+    EXPECT_EQ(runTimeCallFrame->GetColumnNumber(), 20);
+
+    EXPECT_EQ(object->GetSelfSize(), 10);
+    EXPECT_EQ(object->GetId(), 5);
+    const CVector<std::unique_ptr<SamplingHeapProfileNode>> *children = object->GetChildren();
+    ASSERT_NE(children, nullptr);
+    EXPECT_EQ((int)children->size(), 0);
+}
+
+HWTEST_F_L0(DebuggerTypesTest, SamplingHeapProfileNodeToObjectTest)
+{
+    CString msg;
+    std::unique_ptr<SamplingHeapProfileNode> samplingHeapProfileNode;
+    Local<StringRef> tmpStr;
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+        "callFrame": {"functionName":"Create", "scriptId":"10", "url":"url3", "lineNumber":100, "columnNumber":20},
+        "selfSize":10,
+        "id":5,
+        "children":[]
+    }})";
+    samplingHeapProfileNode = SamplingHeapProfileNode::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(samplingHeapProfileNode, nullptr);
+    Local<ObjectRef> object = samplingHeapProfileNode->ToObject(ecmaVm);
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "callFrame");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+
+    Local<ObjectRef> subObject = samplingHeapProfileNode->GetCallFrame()->ToObject(ecmaVm);
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "functionName");
+    ASSERT_TRUE(subObject->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> subResult = subObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(subResult), "Create");
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "scriptId");
+    ASSERT_TRUE(subObject->Has(ecmaVm, tmpStr));
+    subResult = subObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(subResult), "10");
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "url");
+    ASSERT_TRUE(subObject->Has(ecmaVm, tmpStr));
+    subResult = subObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(subResult), "url3");
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "selfSize");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 10);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "id");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 5);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "children");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsArray(ecmaVm));
+}
+
+HWTEST_F_L0(DebuggerTypesTest, SamplingHeapProfileCreateTest)
+{
+    CString msg;
+    std::unique_ptr<SamplingHeapProfile> object;
+
+    //  abnormal params of null msg
+    msg = CString() + R"({})";
+    object = SamplingHeapProfile::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(object, nullptr);
+
+    // abnormal params of unexist key params
+    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
+    object = SamplingHeapProfile::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(object, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    object = SamplingHeapProfile::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(object, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    object = SamplingHeapProfile::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(object, nullptr);
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+        "head": {
+            "callFrame": {"functionName":"Create", "scriptId":"10", "url":"url3", "lineNumber":100, "columnNumber":20},
+            "selfSize":10,
+            "id":5,
+            "children":[]
+        },
+        "samples":[{"size":100, "nodeId":1, "ordinal":10}]
+    }})";
+    object = SamplingHeapProfile::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(object, nullptr);
+    SamplingHeapProfileNode *head = object->GetHead();
+    ASSERT_NE(head, nullptr);
+    
+    RuntimeCallFrame *runTimeCallFrame = head->GetCallFrame();
+    ASSERT_NE(runTimeCallFrame, nullptr);
+    EXPECT_EQ(runTimeCallFrame->GetFunctionName(), "Create");
+    EXPECT_EQ(runTimeCallFrame->GetScriptId(), "10");
+    EXPECT_EQ(runTimeCallFrame->GetUrl(), "url3");
+    EXPECT_EQ(runTimeCallFrame->GetLineNumber(), 100);
+    EXPECT_EQ(runTimeCallFrame->GetColumnNumber(), 20);
+
+    EXPECT_EQ(head->GetSelfSize(), 10);
+    EXPECT_EQ(head->GetId(), 5);
+    const CVector<std::unique_ptr<SamplingHeapProfileNode>> *children = head->GetChildren();
+    ASSERT_NE(children, nullptr);
+    EXPECT_EQ((int)children->size(), 0);
+
+    const CVector<std::unique_ptr<SamplingHeapProfileSample>> *samples = object->GetSamples();
+    ASSERT_NE(samples, nullptr);
+    EXPECT_EQ((int)samples->size(), 1);
+    EXPECT_EQ(samples->data()->get()->GetSize(), 100);
+    EXPECT_EQ(samples->data()->get()->GetNodeId(), 1);
+    EXPECT_EQ(samples->data()->get()->GetOrdinal(), 10);
+}
+
+HWTEST_F_L0(DebuggerTypesTest, SamplingHeapProfileToObjectTest)
+{
+    CString msg;
+    std::unique_ptr<SamplingHeapProfile> samplingHeapProfile;
+    Local<StringRef> tmpStr;
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+        "head": {
+            "callFrame": {"functionName":"Create", "scriptId":"10", "url":"url3", "lineNumber":100, "columnNumber":20},
+            "selfSize":10,
+            "id":5,
+            "children":[]
+        },
+        "samples":[{"size":100, "nodeId":1, "ordinal":10}]
+    }})";
+
+    samplingHeapProfile = SamplingHeapProfile::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(samplingHeapProfile, nullptr);
+    Local<ObjectRef> object = samplingHeapProfile->ToObject(ecmaVm);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "head");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+
+    Local<ObjectRef> headObject = samplingHeapProfile->GetHead()->ToObject(ecmaVm);
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "callFrame");
+    ASSERT_TRUE(headObject->Has(ecmaVm, tmpStr));
+    result = headObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+
+    Local<ObjectRef> callFrameObject = samplingHeapProfile->GetHead()->GetCallFrame()->ToObject(ecmaVm);
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "functionName");
+    ASSERT_TRUE(callFrameObject->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> subResult = callFrameObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(subResult), "Create");
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "scriptId");
+    ASSERT_TRUE(callFrameObject->Has(ecmaVm, tmpStr));
+    subResult = callFrameObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(subResult), "10");
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "url");
+    ASSERT_TRUE(callFrameObject->Has(ecmaVm, tmpStr));
+    subResult = callFrameObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(subResult), "url3");
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "selfSize");
+    ASSERT_TRUE(headObject->Has(ecmaVm, tmpStr));
+    result = headObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 10);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "id");
+    ASSERT_TRUE(headObject->Has(ecmaVm, tmpStr));
+    result = headObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 5);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "children");
+    ASSERT_TRUE(headObject->Has(ecmaVm, tmpStr));
+    result = headObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsArray(ecmaVm));
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "samples");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsArray(ecmaVm));
+
+    Local<ObjectRef> samplesObject = samplingHeapProfile->GetSamples()->data()->get()->ToObject(ecmaVm);
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "size");
+    ASSERT_TRUE(samplesObject->Has(ecmaVm, tmpStr));
+    result = samplesObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 100);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "nodeId");
+    ASSERT_TRUE(samplesObject->Has(ecmaVm, tmpStr));
+    result = samplesObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 1);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "ordinal");
+    ASSERT_TRUE(samplesObject->Has(ecmaVm, tmpStr));
+    result = samplesObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 10);
+}
 }  // namespace panda::test

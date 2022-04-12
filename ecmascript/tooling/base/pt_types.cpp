@@ -1594,4 +1594,353 @@ Local<ObjectRef> CallFrame::ToObject(const EcmaVM *ecmaVm)
 
     return params;
 }
+
+std::unique_ptr<SamplingHeapProfileSample> SamplingHeapProfileSample::Create(const EcmaVM *ecmaVm,
+                                                                             const Local<JSValueRef> &params)
+{
+    if (params.IsEmpty() || !params->IsObject()) {
+        LOG(ERROR, DEBUGGER) << "SamplingHeapProfileSample::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto samplingHeapProfileSample = std::make_unique<SamplingHeapProfileSample>();
+
+    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "size")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            samplingHeapProfileSample->size_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+        } else {
+            error += "'size' should be a Number;";
+        }
+    } else {
+        error += "should contain 'size';";
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "ordinal")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            samplingHeapProfileSample->ordinal_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+        } else {
+            error += "'ordinal' should be a Number;";
+        }
+    } else {
+        error += "should contain 'ordinal';";
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "nodeId")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            samplingHeapProfileSample->nodeId_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+        } else {
+            error += "'nodeId' should be a Number;";
+        }
+    } else {
+        error += "should contain 'nodeId';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "SamplingHeapProfileSample::Create " << error;
+        return nullptr;
+    }
+
+    return samplingHeapProfileSample;
+}
+
+Local<ObjectRef> SamplingHeapProfileSample::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "size")),
+        IntegerRef::New(ecmaVm, size_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "ordinal")),
+        IntegerRef::New(ecmaVm, ordinal_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "nodeId")),
+        IntegerRef::New(ecmaVm, nodeId_));
+
+    return params;
+}
+
+std::unique_ptr<RuntimeCallFrame> RuntimeCallFrame::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+{
+    if (params.IsEmpty() || !params->IsObject()) {
+        LOG(ERROR, DEBUGGER) << "RuntimeCallFrame::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto runtimeCallFrame = std::make_unique<RuntimeCallFrame>();
+
+    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionName")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            runtimeCallFrame->functionName_ = DebuggerApi::ToCString(result);
+        } else {
+            error += "'functionName' should be a String;";
+        }
+    } else {
+        error += "should contain 'functionName';";
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            runtimeCallFrame->scriptId_ = DebuggerApi::ToCString(result);
+        } else {
+            error += "'scriptId' should be a String;";
+        }
+    } else {
+        error += "should contain 'scriptId';";
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            runtimeCallFrame->url_ = DebuggerApi::ToCString(result);
+        } else {
+            error += "'url' should be a String;";
+        }
+    } else {
+        error += "should contain 'url';";
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            runtimeCallFrame->lineNumber_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+        } else {
+            error += "'lineNumber' should be a Number;";
+        }
+    } else {
+        error += "should contain 'lineNumber';";
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            runtimeCallFrame->columnNumber_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+        } else {
+            error += "'columnNumber' should be a Number;";
+        }
+    } else {
+        error += "should contain 'columnNumber';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "RuntimeCallFrame::Create " << error;
+        return nullptr;
+    }
+
+    return runtimeCallFrame;
+}
+
+Local<ObjectRef> RuntimeCallFrame::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionName")),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, functionName_.c_str())));
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, scriptId_.c_str())));
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, url_.c_str())));
+
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")),
+        IntegerRef::New(ecmaVm, lineNumber_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")),
+        IntegerRef::New(ecmaVm, columnNumber_));
+
+    return params;
+}
+
+std::unique_ptr<SamplingHeapProfileNode> SamplingHeapProfileNode::Create(const EcmaVM *ecmaVm,
+                                                                         const Local<JSValueRef> &params)
+{
+    if (params.IsEmpty() || !params->IsObject()) {
+        LOG(ERROR, DEBUGGER) << "SamplingHeapProfileNode::Create params is nullptr";
+        return nullptr;
+    }
+
+    CString error;
+    auto samplingHeapProfileNode = std::make_unique<SamplingHeapProfileNode>();
+
+    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrame")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsObject()) {
+            std::unique_ptr<RuntimeCallFrame> obj = RuntimeCallFrame::Create(ecmaVm, result);
+            if (obj == nullptr) {
+                error += "'callFrame' format error;";
+            } else {
+                samplingHeapProfileNode->callFrame_ = std::move(obj);
+            }
+        } else {
+            error += "'callFrame' should be an Object;";
+        }
+    } else {
+        error += "should contain 'callFrame';";
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "selfSize")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            samplingHeapProfileNode->selfSize_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+        } else {
+            error += "'selfSize' should be a Number;";
+        }
+    } else {
+        error += "should contain 'selfSize';";
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "id")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            samplingHeapProfileNode->id_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+        } else {
+            error += "'id' should be a Number;";
+        }
+    } else {
+        error += "should contain 'id';";
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "children")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsArray(ecmaVm)) {
+            auto array = Local<ArrayRef>(result);
+            uint32_t len = array->Length(ecmaVm);
+            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
+            for (uint32_t i = 0; i < len; ++i) {
+                key = IntegerRef::New(ecmaVm, i);
+                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
+                std::unique_ptr<SamplingHeapProfileNode> node = SamplingHeapProfileNode::Create(ecmaVm, resultValue);
+                if (resultValue.IsEmpty() || node == nullptr) {
+                    error += "'children' format invalid;";
+                }
+                samplingHeapProfileNode->children_.emplace_back(std::move(node));
+            }
+        } else {
+            error += "'children' should be an Array;";
+        }
+    } else {
+        error += "should contain 'children';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "SamplingHeapProfileNode::Create " << error;
+        return nullptr;
+    }
+
+    return samplingHeapProfileNode;
+}
+
+Local<ObjectRef> SamplingHeapProfileNode::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+
+    if (callFrame_ != nullptr) {
+        params->Set(ecmaVm,
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrame")),
+            Local<JSValueRef>(callFrame_->ToObject(ecmaVm)));
+    }
+
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "selfSize")),
+        IntegerRef::New(ecmaVm, selfSize_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "id")),
+        IntegerRef::New(ecmaVm, id_));
+
+    size_t len = children_.size();
+    Local<ArrayRef> values = ArrayRef::New(ecmaVm, len);
+    for (size_t i = 0; i < len; i++) {
+        if (children_[i] != nullptr) {
+            Local<ObjectRef> node = children_[i]->ToObject(ecmaVm);
+            values->Set(ecmaVm, i, node);
+        }
+    }
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "children")), values);
+
+    return params;
+}
+
+std::unique_ptr<SamplingHeapProfile> SamplingHeapProfile::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+{
+    if (params.IsEmpty() || !params->IsObject()) {
+        LOG(ERROR, DEBUGGER) << "SamplingHeapProfile::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto samplingHeapProfile = std::make_unique<SamplingHeapProfile>();
+
+    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "head")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsObject()) {
+            std::unique_ptr<SamplingHeapProfileNode> obj = SamplingHeapProfileNode::Create(ecmaVm, result);
+            if (obj == nullptr) {
+                error += "'head' format error;";
+            } else {
+                samplingHeapProfile->head_ = std::move(obj);
+            }
+        } else {
+            error += "'head' should be an Object;";
+        }
+    } else {
+        error += "should contain 'head';";
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samples")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsArray(ecmaVm)) {
+            auto array = Local<ArrayRef>(result);
+            uint32_t len = array->Length(ecmaVm);
+            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
+            for (uint32_t i = 0; i < len; ++i) {
+                key = IntegerRef::New(ecmaVm, i);
+                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
+                std::unique_ptr<SamplingHeapProfileSample> node = SamplingHeapProfileSample::Create(ecmaVm,
+                                                                                                    resultValue);
+                if (resultValue.IsEmpty() || node == nullptr) {
+                    error += "'samples' format invalid;";
+                }
+                samplingHeapProfile->samples_.emplace_back(std::move(node));
+            }
+        } else {
+            error += "'samples' should be an Array;";
+        }
+    } else {
+        error += "should contain 'samples';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "SamplingHeapProfile::Create " << error;
+        return nullptr;
+    }
+
+    return samplingHeapProfile;
+}
+
+Local<ObjectRef> SamplingHeapProfile::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+
+    if (head_ != nullptr) {
+        params->Set(ecmaVm,
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "head")),
+            Local<JSValueRef>(head_->ToObject(ecmaVm)));
+    }
+
+    size_t len = samples_.size();
+    Local<ArrayRef> values = ArrayRef::New(ecmaVm, len);
+    for (size_t i = 0; i < len; i++) {
+        if (samples_[i] != nullptr) {
+            Local<ObjectRef> node = samples_[i]->ToObject(ecmaVm);
+            values->Set(ecmaVm, i, node);
+        }
+    }
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samples")), values);
+
+    return params;
+}
 }  // namespace panda::tooling::ecmascript
