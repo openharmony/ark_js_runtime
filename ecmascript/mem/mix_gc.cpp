@@ -58,6 +58,8 @@ void MixGC::InitializePhase()
         if (heap_->IsFullMark()) {
             heap_->GetOldSpace()->SelectCSet();
             heap_->EnumerateNonNewSpaceRegions([](Region *current) {
+                current->ClearMarkBitmap();
+                current->ClearCrossRegionRememberedSet();
                 current->ResetAliveObject();
             });
         }

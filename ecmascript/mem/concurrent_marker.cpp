@@ -124,6 +124,8 @@ void ConcurrentMarker::InitializeMarking()
         heap_->GetOldSpace()->SelectCSet();
         // The alive object size of Region in OldSpace will be recompute
         heap_->EnumerateNonNewSpaceRegions([](Region *current) {
+            current->ClearMarkBitmap();
+            current->ClearCrossRegionRememberedSet();
             current->ResetAliveObject();
         });
     } else {
