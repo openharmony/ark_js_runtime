@@ -1757,7 +1757,7 @@ Local<ObjectRef> RuntimeCallFrame::ToObject(const EcmaVM *ecmaVm)
 }
 
 std::unique_ptr<SamplingHeapProfileNode> SamplingHeapProfileNode::Create(const EcmaVM *ecmaVm,
-                                                                        const Local<JSValueRef> &params)
+                                                                         const Local<JSValueRef> &params)
 {
     if (params.IsEmpty() || !params->IsObject()) {
         LOG(ERROR, DEBUGGER) << "SamplingHeapProfileNode::Create params is nullptr";
