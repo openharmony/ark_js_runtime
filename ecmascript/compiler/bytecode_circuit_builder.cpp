@@ -1745,7 +1745,7 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
         }
         default: {
             std::cout << "Error bytecode: " << opcode << ", pls check bytecode offset." << std::endl;
-            abort();
+            UNREACHABLE();
             break;
         }
     }
@@ -2235,8 +2235,8 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                 // handle return.dyn bytecode
                 ASSERT(bb.succs.empty());
                 auto gate = circuit_.NewGate(OpCode(OpCode::RETURN), 0,
-                                             {stateCur, dependCur, Circuit::NullGate(),
-                                              Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST))},
+                                             { stateCur, dependCur, Circuit::NullGate(),
+                                              Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST)) },
                                              GateType::EMPTY);
                 jsgateToBytecode_[gate] = {bb.id, pcPrev};
                 break;
@@ -2245,11 +2245,11 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                 ASSERT(bb.succs.empty());
                 auto constant = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
                                                  TaggedValue::VALUE_UNDEFINED,
-                                                 {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
+                                                 { Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST)) },
                                                  GateType::JS_ANY);
                 auto gate = circuit_.NewGate(OpCode(OpCode::RETURN), 0,
-                                             {stateCur, dependCur, constant,
-                                              Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST))},
+                                             { stateCur, dependCur, constant,
+                                              Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST)) },
                                              GateType::EMPTY);
                 jsgateToBytecode_[gate] = {bb.id, pcPrev};
                 break;

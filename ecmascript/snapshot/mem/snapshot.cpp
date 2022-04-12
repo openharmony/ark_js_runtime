@@ -116,7 +116,11 @@ const JSPandaFile *SnapShot::SnapShotDeserialize(SnapShotType type, const CStrin
         LOG_ECMA(FATAL) << "open file failed";
         UNREACHABLE();
     }
-    size_t file_size = lseek(fd, 0, SEEK_END);
+    int32_t file_size = lseek(fd, 0, SEEK_END);
+    if (file_size == -1) {
+        LOG_ECMA(FATAL) << "lseek failed";
+        UNREACHABLE();
+    }
     auto readFile = ToUintPtr(mmap(nullptr, file_size, PROT_READ, MAP_PRIVATE, fd, 0));
     auto hdr = *ToNativePtr<const Header>(readFile);
     size_t defaultSnapshotSpaceCapacity = vm_->GetJSOptions().DefaultSnapshotSpaceCapacity();
@@ -175,16 +179,14 @@ const JSPandaFile *SnapShot::SnapShotDeserialize(SnapShotType type, const CStrin
         space->AddRegion(region);
     }
     munmap(ToNativePtr<void>(readFile), hdr.panda_file_begin);
-    uintptr_t panda_file_mem = readFile + hdr.panda_file_begin;
-    auto pf =
-        panda_file::File::OpenFromMemory(os::mem::ConstBytePtr(ToNativePtr<std::byte>(panda_file_mem),
-                                                               file_size - hdr.panda_file_begin, os::mem::MmapDeleter));
-    close(fd);
-    // Snapshot file has translated
     const JSPandaFile *jsPandaFile = nullptr;
-    if (pf) {
+    if (static_cast<uint32_t>(file_size) > hdr.panda_file_begin) {
+        uintptr_t panda_file_mem = readFile + hdr.panda_file_begin;
+        auto pf = panda_file::File::OpenFromMemory(os::mem::ConstBytePtr(ToNativePtr<std::byte>(panda_file_mem),
+            static_cast<uint32_t>(file_size) - hdr.panda_file_begin, os::mem::MmapDeleter));
         jsPandaFile = JSPandaFileManager::GetInstance()->NewJSPandaFile(pf.release(), "");
     }
+    close(fd);
     // relocate object field
     serialize.Relocate(type, jsPandaFile, hdr.root_object_size);
     return jsPandaFile;

@@ -146,12 +146,12 @@ void JSObject::ElementsToDictionary(const JSThread *thread, JSHandle<JSObject> o
 {
     JSHandle<TaggedArray> elements(thread, obj->GetElements());
     ASSERT(!obj->GetJSHClass()->IsDictionaryElement());
-    int length = elements->GetLength();
+    uint32_t length = elements->GetLength();
     JSMutableHandle<NumberDictionary> dict(thread, NumberDictionary::Create(thread));
     auto attr = PropertyAttributes(PropertyAttributes::GetDefaultAttributes());
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> valueHandle(thread, JSTaggedValue ::Undefined());
-    for (int i = 0; i < length; i++) {
+    for (uint32_t i = 0; i < length; i++) {
         JSTaggedValue value = elements->Get(i);
         if (value.IsHole()) {
             continue;
@@ -255,7 +255,7 @@ void JSObject::GetAllKeys(const JSThread *thread, const JSHandle<JSObject> &obj,
 {
     TaggedArray *array = TaggedArray::Cast(obj->GetProperties().GetTaggedObject());
     if (!array->IsDictionaryMode()) {
-        int end = obj->GetJSHClass()->NumberOfProps();
+        int end = static_cast<int>(obj->GetJSHClass()->NumberOfProps());
         if (end > 0) {
             LayoutInfo::Cast(obj->GetJSHClass()->GetLayout().GetTaggedObject())
                 ->GetAllKeys(thread, end, offset, *keyArray);
@@ -312,7 +312,7 @@ JSHandle<TaggedArray> JSObject::GetAllEnumKeys(const JSThread *thread, const JSH
             return keyArray;
         }
         JSHandle<TaggedArray> keyArray = factory->NewTaggedArray(numOfKeys);
-        int end = jsHclass->NumberOfProps();
+        int end = static_cast<int>(jsHclass->NumberOfProps());
         if (end > 0) {
             LayoutInfo::Cast(jsHclass->GetLayout().GetTaggedObject())
                 ->GetAllEnumKeys(thread, end, offset, *keyArray, keys);
@@ -335,8 +335,8 @@ void JSObject::GetAllElementKeys(JSThread *thread, const JSHandle<JSObject> &obj
     uint32_t elementIndex = 0;
 
     if (obj->IsJSPrimitiveRef() && JSPrimitiveRef::Cast(*obj)->IsString()) {
-        elementIndex = JSPrimitiveRef::Cast(*obj)->GetStringLength() + offset;
-        for (uint32_t i = offset; i < elementIndex; ++i) {
+        elementIndex = static_cast<uint32_t>(JSPrimitiveRef::Cast(*obj)->GetStringLength() + offset);
+        for (uint32_t i = static_cast<uint32_t>(offset); i < elementIndex; ++i) {
             auto key = base::NumberHelper::NumberToString(thread, JSTaggedValue(i));
             keyArray->Set(thread, i, key);
         }
@@ -384,8 +384,8 @@ JSHandle<TaggedArray> JSObject::GetEnumElementKeys(JSThread *thread, const JSHan
     if (obj->IsJSPrimitiveRef() && JSPrimitiveRef::Cast(*obj)->IsString()) {
         elementIndex = JSPrimitiveRef::Cast(*obj)->GetStringLength();
         *keys += elementIndex;
-        elementIndex += offset;
-        for (uint32_t i = offset; i < elementIndex; ++i) {
+        elementIndex += static_cast<uint32_t>(offset);
+        for (uint32_t i = static_cast<uint32_t>(offset); i < elementIndex; ++i) {
             keyHandle.Update(JSTaggedValue(i));
             auto key = JSTaggedValue::ToString(thread, keyHandle);
             elementArray->Set(thread, i, key);
@@ -452,7 +452,7 @@ uint32_t JSObject::GetNumberOfElements()
             }
         }
     } else {
-        numOfElements += NumberDictionary::Cast(elements)->EntriesCount();
+        numOfElements += static_cast<uint32_t>(NumberDictionary::Cast(elements)->EntriesCount());
     }
 
     return numOfElements;
@@ -1536,8 +1536,8 @@ bool JSObject::ToPropertyDescriptorFast(JSThread *thread, const JSHandle<JSTagge
         return false;
     }
     LayoutInfo *layoutInfo = LayoutInfo::Cast(hclass->GetLayout().GetTaggedObject());
-    int propsNumber = hclass->NumberOfProps();
-    for (int i = 0; i < propsNumber; i++) {
+    uint32_t propsNumber = hclass->NumberOfProps();
+    for (uint32_t i = 0; i < propsNumber; i++) {
         auto attr = layoutInfo->GetAttr(i);
         if (attr.IsAccessor()) {
             return false;
@@ -1936,7 +1936,7 @@ int32_t ECMAObject::GetNativePointerFieldCount() const
     JSTaggedValue value(hashField);
     if (value.IsHeapObject()) {
         TaggedArray *array = TaggedArray::Cast(value.GetHeapObject());
-        len = array->GetLength() - 1;
+        len = static_cast<int32_t>(array->GetLength() - 1);
     }
     return len;
 }

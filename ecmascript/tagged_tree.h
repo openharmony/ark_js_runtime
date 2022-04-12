@@ -107,7 +107,7 @@ protected:
     inline void SetColor(const JSThread *thread, int entry, TreeColor color);
     inline void SetParent(const JSThread *thread, int entry, JSTaggedValue value);
 
-    inline uint32_t EntryToIndex(uint32_t entry) const;
+    inline int EntryToIndex(uint32_t entry) const;
     inline void InsertLeftEntry(const JSThread *thread, uint32_t parentIndex, uint32_t entry, JSTaggedValue key,
                                 JSTaggedValue value);
     inline void InsertRightEntry(const JSThread *thread, uint32_t parentIndex, uint32_t entry, JSTaggedValue key,

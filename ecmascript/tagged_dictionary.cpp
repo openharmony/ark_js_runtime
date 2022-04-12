@@ -76,7 +76,7 @@ void NameDictionary::GetAllEnumKeys(const JSThread *thread, int offset, TaggedAr
     }
     std::sort(sortArr.begin(), sortArr.end(), CompKey);
     for (auto entry : sortArr) {
-        keyArray->Set(thread, arrayIndex + offset, entry.first);
+        keyArray->Set(thread, static_cast<uint32_t>(arrayIndex + offset), entry.first);
         arrayIndex++;
     }
     *keys += arrayIndex;
@@ -198,7 +198,7 @@ void NumberDictionary::GetAllEnumKeys(const JSThread *thread, const JSHandle<Num
         JSHandle<JSTaggedValue> key_handle(thread, entry);
         JSHandle<EcmaString> str = JSTaggedValue::ToString(const_cast<JSThread *>(thread), key_handle);
         ASSERT_NO_ABRUPT_COMPLETION(thread);
-        keyArray->Set(thread, arrayIndex + offset, str.GetTaggedValue());
+        keyArray->Set(thread, static_cast<uint32_t>(arrayIndex + offset), str.GetTaggedValue());
         arrayIndex++;
     }
     *keys += arrayIndex;

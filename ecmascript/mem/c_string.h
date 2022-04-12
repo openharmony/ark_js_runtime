@@ -83,7 +83,7 @@ std::enable_if_t<std::is_integral_v<T>, CString> ToCString(T number)
     uint32_t position = BUFF_SIZE - 1;
     buf[position] = '\0';
     while (number > 0) {
-        buf[--position] = number % 10 + '0'; // 10 : decimal
+        buf[--position] = static_cast<int8_t>(number % 10 + '0'); // 10 : decimal
         number /= 10; // 10 : decimal
     }
     if (IsNeg) {

@@ -47,8 +47,8 @@ void Runner::TerminateThread()
     taskQueue_.Terminate();
     TerminateTask();
 
-    int threadNum = threadPool_.size();
-    for (int i = 0; i < threadNum; i++) {
+    uint32_t threadNum = threadPool_.size();
+    for (uint32_t i = 0; i < threadNum; i++) {
         threadPool_.at(i)->join();
     }
     threadPool_.clear();

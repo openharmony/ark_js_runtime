@@ -36,7 +36,10 @@ JSTaggedValue ScopeInfoExtractor::GenerateScopeInfo(JSThread *thread, uint16_t s
         JSTaggedValue val = elementsLiteral->Get(i);
         ASSERT(val.IsString());
         CString name = ConvertToString(EcmaString::Cast(val.GetTaggedObject()));
-        uint32_t slot = elementsLiteral->Get(i + 1).GetInt();
+        int32_t slot = elementsLiteral->Get(i + 1).GetInt();
+        if (scopeDebugInfo == nullptr) {
+            return JSTaggedValue::Hole();
+        }
         scopeDebugInfo->scopeInfo.insert(std::make_pair(name, slot));
     }
 

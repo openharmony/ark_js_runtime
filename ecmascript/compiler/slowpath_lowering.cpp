@@ -1434,7 +1434,7 @@ void SlowPathLowering::LowerConditionJump(GateRef gate, bool isEqualJump)
                     (acc_.GetOpCode(acc_.GetIn(acc_.GetIn(*it, 0), it.GetIndex() - 1)) != OpCode::IF_EXCEPTION)) {
             acc_.ReplaceIn(it, acc_.GetDep(gate));
         } else {
-            abort();
+            UNREACHABLE();
         }
     }
     // delete old gate

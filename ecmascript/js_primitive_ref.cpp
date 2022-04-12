@@ -36,7 +36,7 @@ JSHandle<JSPrimitiveRef> JSPrimitiveRef::StringCreate(JSThread *thread, const JS
     // false, [[Enumerable]]: false, [[Configurable]]: false }).
     JSHandle<JSTaggedValue> lengthStr = thread->GlobalConstants()->GetHandledLengthString();
 
-    int32_t length = EcmaString::Cast(value->GetTaggedObject())->GetLength();
+    uint32_t length = EcmaString::Cast(value->GetTaggedObject())->GetLength();
     PropertyDescriptor desc(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(length)), false, false, false);
     [[maybe_unused]] bool status = JSTaggedValue::DefinePropertyOrThrow(thread, str, lengthStr, desc);
     // 13. Assert: status is not an abrupt completion.

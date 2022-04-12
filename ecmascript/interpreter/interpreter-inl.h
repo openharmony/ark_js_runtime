@@ -806,7 +806,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         }
     }
     HANDLE_OPCODE(HANDLE_JNEZ_IMM16) {
-        int16_t offset = READ_INST_16_0();
+        int16_t offset = static_cast<int16_t>(READ_INST_16_0());
         LOG_INST() << "jnez ->\t"
                    << "cond jmpz " << std::hex << static_cast<int32_t>(offset);
         if (GET_ACC() == JSTaggedValue::True() || (GET_ACC().IsInt() && GET_ACC().GetInt() != 0) ||
@@ -831,7 +831,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         DISPATCH(BytecodeInstruction::Format::V8);
     }
     HANDLE_OPCODE(HANDLE_LDAI_DYN_IMM32) {
-        int32_t imm = READ_INST_32_0();
+        int32_t imm = static_cast<int32_t>(READ_INST_32_0());
         LOG_INST() << "ldai.dyn " << std::hex << imm;
         SET_ACC(JSTaggedValue(imm))
         DISPATCH(BytecodeInstruction::Format::IMM32);
@@ -895,7 +895,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             CALL_PUSH_ARGS(3);
         }
         HANDLE_OPCODE(HANDLE_CALLITHISRANGEDYN_PREF_IMM16_V8) {
-            actualNumArgs = READ_INST_16_1() - 1;  // 1: exclude this
+            actualNumArgs = static_cast<int32_t>(READ_INST_16_1() - 1);  // 1: exclude this
             funcReg = READ_INST_8_3();
             LOG_INST() << "calli.dyn.this.range " << actualNumArgs << ", v" << funcReg;
             CALL_INITIALIZE();
@@ -920,7 +920,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             DISPATCH(BytecodeInstruction::Format::PREF_V8_V8_V8);
         }
         HANDLE_OPCODE(HANDLE_CALLIRANGEDYN_PREF_IMM16_V8) {
-            actualNumArgs = READ_INST_16_1();
+            actualNumArgs = static_cast<int32_t>(READ_INST_16_1());
             funcReg = READ_INST_8_3();
             LOG_INST() << "calli.rangedyn " << actualNumArgs << ", v" << funcReg;
             CALL_INITIALIZE();
@@ -2229,7 +2229,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         InterpretedFrame *state = GET_FRAME(sp);
         JSTaggedValue currentLexenv = state->env;
         JSTaggedValue env(currentLexenv);
-        for (int i = 0; i < level; i++) {
+        for (uint32_t i = 0; i < level; i++) {
             JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
             ASSERT(!taggedParentEnv.IsUndefined());
             env = taggedParentEnv;
@@ -2246,7 +2246,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         InterpretedFrame *state = GET_FRAME(sp);
         JSTaggedValue currentLexenv = state->env;
         JSTaggedValue env(currentLexenv);
-        for (int i = 0; i < level; i++) {
+        for (uint32_t i = 0; i < level; i++) {
             JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
             ASSERT(!taggedParentEnv.IsUndefined());
             env = taggedParentEnv;
@@ -2263,7 +2263,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         InterpretedFrame *state = GET_FRAME(sp);
         JSTaggedValue currentLexenv = state->env;
         JSTaggedValue env(currentLexenv);
-        for (int i = 0; i < level; i++) {
+        for (uint32_t i = 0; i < level; i++) {
             JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
             ASSERT(!taggedParentEnv.IsUndefined());
             env = taggedParentEnv;
@@ -2281,7 +2281,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue value = GET_VREG_VALUE(v0);
         InterpretedFrame *state = GET_FRAME(sp);
         JSTaggedValue env = state->env;
-        for (int i = 0; i < level; i++) {
+        for (uint32_t i = 0; i < level; i++) {
             JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
             ASSERT(!taggedParentEnv.IsUndefined());
             env = taggedParentEnv;
@@ -2314,7 +2314,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue value = GET_VREG_VALUE(v0);
         InterpretedFrame *state = GET_FRAME(sp);
         JSTaggedValue env = state->env;
-        for (int i = 0; i < level; i++) {
+        for (uint32_t i = 0; i < level; i++) {
             JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
             ASSERT(!taggedParentEnv.IsUndefined());
             env = taggedParentEnv;
@@ -2333,7 +2333,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue value = GET_VREG_VALUE(v0);
         InterpretedFrame *state = GET_FRAME(sp);
         JSTaggedValue env = state->env;
-        for (int i = 0; i < level; i++) {
+        for (uint32_t i = 0; i < level; i++) {
             JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
             ASSERT(!taggedParentEnv.IsUndefined());
             env = taggedParentEnv;
@@ -3807,7 +3807,7 @@ uint32_t EcmaInterpreter::GetNumArgs(JSTaggedType *sp, uint32_t restIdx, uint32_
         // In this case, actualNumArgs is in the end
         // If not, then actualNumArgs == declaredNumArgs, therefore do nothing
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        numArgs = JSTaggedValue(*(lastFrame - 1)).GetInt();
+        numArgs = static_cast<uint32_t>(JSTaggedValue(*(lastFrame - 1)).GetInt());
     }
     startIdx = numVregs + copyArgs + restIdx;
     return ((numArgs > restIdx) ? (numArgs - restIdx) : 0);

@@ -360,7 +360,7 @@ JSTaggedValue JSTaggedValue::OrdinaryToPrimitive(JSThread *thread, const JSHandl
     auto globalConst = thread->GlobalConstants();
     for (uint8_t i = 0; i < 2; i++) {  // 2: 2 means value has 2 target types, string or value.
         JSHandle<JSTaggedValue> keyString;
-        if ((type ^ i) != 0) {
+        if ((static_cast<uint8_t>(type) ^ i) != 0) {
             keyString = globalConst->GetHandledToStringString();
         } else {
             keyString = globalConst->GetHandledValueOfString();
