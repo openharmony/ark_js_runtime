@@ -1596,7 +1596,7 @@ Local<ObjectRef> CallFrame::ToObject(const EcmaVM *ecmaVm)
 }
 
 std::unique_ptr<SamplingHeapProfileSample> SamplingHeapProfileSample::Create(const EcmaVM *ecmaVm, 
-                                                                             const Local<JSValueRef> &params)
+                                                                            const Local<JSValueRef> &params)
 {
     if (params.IsEmpty() || !params->IsObject()) {
         LOG(ERROR, DEBUGGER) << "SamplingHeapProfileSample::Create params is nullptr";
@@ -1606,7 +1606,7 @@ std::unique_ptr<SamplingHeapProfileSample> SamplingHeapProfileSample::Create(con
     auto samplingHeapProfileSample = std::make_unique<SamplingHeapProfileSample>();
 
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm, 
-                                                             Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "size")));
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "size")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             samplingHeapProfileSample->size_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
@@ -1671,7 +1671,7 @@ std::unique_ptr<RuntimeCallFrame> RuntimeCallFrame::Create(const EcmaVM *ecmaVm,
     auto runtimeCallFrame = std::make_unique<RuntimeCallFrame>();
 
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm, 
-                                                    Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionName")));
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionName")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             runtimeCallFrame->functionName_ = DebuggerApi::ToCString(result);
@@ -1768,7 +1768,7 @@ std::unique_ptr<SamplingHeapProfileNode> SamplingHeapProfileNode::Create(const E
     auto samplingHeapProfileNode = std::make_unique<SamplingHeapProfileNode>();
 
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm, 
-                                                        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrame")));
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrame")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<RuntimeCallFrame> obj = RuntimeCallFrame::Create(ecmaVm, result);
@@ -1874,7 +1874,7 @@ std::unique_ptr<SamplingHeapProfile> SamplingHeapProfile::Create(const EcmaVM *e
     auto samplingHeapProfile = std::make_unique<SamplingHeapProfile>();
 
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm, 
-                                                             Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "head")));
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "head")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<SamplingHeapProfileNode> obj = SamplingHeapProfileNode::Create(ecmaVm, result);
@@ -1900,7 +1900,7 @@ std::unique_ptr<SamplingHeapProfile> SamplingHeapProfile::Create(const EcmaVM *e
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 std::unique_ptr<SamplingHeapProfileSample> node = SamplingHeapProfileSample::Create(ecmaVm, 
-                                                                                                    resultValue);
+                    resultValue);
                 if (resultValue.IsEmpty() || node == nullptr) {
                     error += "'samples' format invalid;";
                 }

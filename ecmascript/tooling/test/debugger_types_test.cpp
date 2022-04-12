@@ -1787,7 +1787,6 @@ HWTEST_F_L0(DebuggerTypesTest, SamplingHeapProfileSampleCreateTest)
 {
     CString msg;
     std::unique_ptr<SamplingHeapProfileSample> object;
-    //Local<StringRef> tmpStr;
 
     //  abnormal params of null msg
     msg = CString() + R"({})";
@@ -1886,11 +1885,11 @@ HWTEST_F_L0(DebuggerTypesTest, SamplingHeapProfileNodeCreateTest)
     EXPECT_EQ(object, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrame":{"functionName":"Create","scriptId":"10","url":"url3","lineNumber":100,"columnNumber":20},
+          "callFrame": {"functionName":"Create","scriptId":"10","url":"url3","lineNumber":100,"columnNumber":20},
           "selfSize":10,
           "id":5,
           "children":[]
-       }})";
+      }})";
     object = SamplingHeapProfileNode::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(object, nullptr);
     RuntimeCallFrame *runTimeCallFrame = object->GetCallFrame();
@@ -1915,11 +1914,11 @@ HWTEST_F_L0(DebuggerTypesTest, SamplingHeapProfileNodeToObjectTest)
     Local<StringRef> tmpStr;
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "callFrame":{"functionName":"Create","scriptId":"10","url":"url3","lineNumber":100,"columnNumber":20},
+          "callFrame": {"functionName":"Create","scriptId":"10","url":"url3","lineNumber":100,"columnNumber":20},
           "selfSize":10,
           "id":5,
           "children":[]
-       }})";
+      }})";
     samplingHeapProfileNode = SamplingHeapProfileNode::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(samplingHeapProfileNode, nullptr);
     Local<ObjectRef> object = samplingHeapProfileNode->ToObject(ecmaVm);
@@ -1990,13 +1989,13 @@ HWTEST_F_L0(DebuggerTypesTest, SamplingHeapProfileCreateTest)
     EXPECT_EQ(object, nullptr);
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "head":{
-                  "callFrame":{"functionName":"Create","scriptId":"10","url":"url3","lineNumber":100,"columnNumber":20},
+          "head": {
+                  "callFrame": {"functionName":"Create","scriptId":"10","url":"url3","lineNumber":100,"columnNumber":20},
                   "selfSize":10,
                   "id":5,
                   "children":[]
-                 },
-          "samples":[{"size":100,"nodeId":1,"ordinal":10}]
+                },
+          "samples": [{"size":100,"nodeId":1,"ordinal":10}]
     }})";
     object = SamplingHeapProfile::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(object, nullptr);
@@ -2032,13 +2031,13 @@ HWTEST_F_L0(DebuggerTypesTest, SamplingHeapProfileToObjectTest)
     Local<StringRef> tmpStr;
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-          "head":{
-                  "callFrame":{"functionName":"Create","scriptId":"10","url":"url3","lineNumber":100,"columnNumber":20},
+          "head": {
+                  "callFrame": {"functionName":"Create","scriptId":"10","url":"url3","lineNumber":100,"columnNumber":20},
                   "selfSize":10,
                   "id":5,
                   "children":[]
-                 },
-          "samples":[{"size":100,"nodeId":1,"ordinal":10}]
+                },
+          "samples": [{"size":100,"nodeId":1,"ordinal":10}]
     }})";
 
     samplingHeapProfile = SamplingHeapProfile::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());

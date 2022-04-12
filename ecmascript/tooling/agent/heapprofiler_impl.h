@@ -22,7 +22,6 @@
 #include "ecmascript/tooling/dispatcher.h"
 
 namespace panda::tooling::ecmascript {
-
 class HeapProfilerImpl final {
 public:
     explicit HeapProfilerImpl(std::unique_ptr<JSBackend> backend) : backend_(std::move(backend)) {}
