@@ -455,7 +455,8 @@ JSTaggedValue InterpreterAssembly::ExecuteNative(EcmaRuntimeCallInfo *info)
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     int32_t actualNumArgs = info->GetArgsNumber();
     JSTaggedType *newSp = sp - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - actualNumArgs - RESERVED_CALL_ARGCOUNT;
-    if (thread->DoStackOverflowCheck(newSp) || thread->HasPendingException()) {
+    if (thread->DoStackOverflowCheck(newSp - actualNumArgs - RESERVED_CALL_ARGCOUNT) ||
+        thread->HasPendingException()) {
         return JSTaggedValue::Undefined();
     }
     for (int i = actualNumArgs - 1; i >= 0; i--) {
@@ -515,7 +516,8 @@ JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
     int32_t actualNumArgs = info->GetArgsNumber();
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     newSp = newSp - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - actualNumArgs - RESERVED_CALL_ARGCOUNT;
-    if (thread->DoStackOverflowCheck(newSp) || thread->HasPendingException()) {
+    if (thread->DoStackOverflowCheck(newSp - actualNumArgs - RESERVED_CALL_ARGCOUNT) ||
+        thread->HasPendingException()) {
         return JSTaggedValue::Undefined();
     }
 
