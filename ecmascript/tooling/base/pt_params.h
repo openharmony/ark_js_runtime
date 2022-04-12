@@ -682,8 +682,8 @@ public:
     StartTrackingHeapObjectsParams() = default;
     ~StartTrackingHeapObjectsParams() override = default;
 
-    static std::unique_ptr<StartTrackingHeapObjectsParams> Create(const EcmaVM *ecmaVm, 
-                                                                const Local<JSValueRef> &params);
+    static std::unique_ptr<StartTrackingHeapObjectsParams> Create(const EcmaVM *ecmaVm,
+                                                                  const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
 
     bool GetTrackAllocations() const
