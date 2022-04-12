@@ -250,7 +250,7 @@ HWTEST_F_L0(DebuggerReturnsTest, StopSamplingReturnsToObjectTest)
 {
     std::unique_ptr<SamplingHeapProfile> profile = std::make_unique<SamplingHeapProfile>();
     std::unique_ptr<StopSamplingReturns> stopSamplingReturns = 
-                                         std::make_unique<StopSamplingReturns>(std::move(profile));
+                                        std::make_unique<StopSamplingReturns>(std::move(profile));
     ASSERT_NE(stopSamplingReturns, nullptr);
     Local<ObjectRef> object = stopSamplingReturns->ToObject(ecmaVm);
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "profile");

@@ -222,7 +222,6 @@ HWTEST_F_L0(DebuggerParamsTest, StopTrackingHeapObjectsParamsCreateTest)
     ASSERT_FALSE(objectData->GetTreatGlobalObjectsAsRoots());
     ASSERT_FALSE(objectData->GetCaptureNumericValue());
 
-    // abnormal params of params.sub-key=["reportProgress":10,"treatGlobalObjectsAsRoots":10,"captureNumericValue":10]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
             "reportProgress":10,
             "treatGlobalObjectsAsRoots":10,
@@ -230,7 +229,6 @@ HWTEST_F_L0(DebuggerParamsTest, StopTrackingHeapObjectsParamsCreateTest)
     objectData = StopTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
-    // abnormal params of params.sub-key=["reportProgress":"Test","treatGlobalObjectsAsRoots":"Test","captureNumericValue":"Test"]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
             "reportProgress":"Test",
             "treatGlobalObjectsAsRoots":"Test",
@@ -238,7 +236,6 @@ HWTEST_F_L0(DebuggerParamsTest, StopTrackingHeapObjectsParamsCreateTest)
     objectData = StopTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(objectData, nullptr);
 
-    // abnormal params of params.sub-key=["reportProgress":true,"treatGlobalObjectsAsRoots":true,"captureNumericValue":true]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
             "reportProgress":true,
             "treatGlobalObjectsAsRoots":true,
