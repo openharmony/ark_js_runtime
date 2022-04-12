@@ -21,10 +21,6 @@
 namespace panda::ecmascript {
 void AotCodeInfo::SerializeForStub(const std::string &filename)
 {
-    if (!VerifyFilePath(filename.c_str())) {
-        LOG_ECMA(FATAL) << "file path illegal !";
-        UNREACHABLE();
-    }
     std::ofstream modulefile(filename.c_str(), std::ofstream::binary);
     SetStubNum(stubEntries_.size());
     /* write stub entries offset  */
@@ -48,8 +44,7 @@ bool AotCodeInfo::DeserializeForStub(JSThread *thread, const std::string &filena
     //  then MachineCode will support movable, code is saved to MachineCode and stackmap is saved
     // to different heap which will be freed when stackmap is parsed by EcmaVM is started.
     if (!VerifyFilePath(filename.c_str())) {
-        LOG_ECMA(FATAL) << "file path illegal !";
-        UNREACHABLE();
+        return false;
     }
     std::ifstream modulefile(filename.c_str(), std::ofstream::binary);
     if (!modulefile.good()) {
@@ -87,10 +82,6 @@ bool AotCodeInfo::DeserializeForStub(JSThread *thread, const std::string &filena
 
 void AotCodeInfo::Serialize(const std::string &filename)
 {
-    if (!VerifyFilePath(filename.c_str())) {
-        LOG_ECMA(FATAL) << "file path illegal !";
-        UNREACHABLE();
-    }
     std::ofstream moduleFile(filename.c_str(), std::ofstream::binary);
     uint32_t funcNum = aotFuncEntryOffsets_.size();
     moduleFile.write(reinterpret_cast<char *>(&funcNum), sizeof(funcNum));
@@ -115,8 +106,7 @@ void AotCodeInfo::Serialize(const std::string &filename)
 bool AotCodeInfo::Deserialize(EcmaVM *vm, const std::string &filename)
 {
     if (!VerifyFilePath(filename.c_str())) {
-        LOG_ECMA(FATAL) << "file path illegal !";
-        UNREACHABLE();
+        return false;
     }
     std::ifstream moduleFile(filename.c_str(), std::ofstream::binary);
     if (!moduleFile.good()) {
