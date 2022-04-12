@@ -29,6 +29,7 @@
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_plain_array_iterator.h"
 #include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_stack_iterator.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
@@ -184,6 +185,9 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
         factory->NewEcmaDynClass(dynClassClass, JSAPIArrayListIterator::SIZE, JSType::JS_API_ARRAYLIST_ITERATOR));
     SetConstant(ConstantIndex::JS_API_DEQUE_ITERATOR_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, JSAPIDequeIterator::SIZE, JSType::JS_API_DEQUE_ITERATOR));
+    SetConstant(
+        ConstantIndex::JS_API_PLAIN_ARRAY_ITERATOR_CLASS_INDEX,
+        factory->NewEcmaDynClass(dynClassClass, JSAPIPlainArrayIterator::SIZE, JSType::JS_API_PLAIN_ARRAY_ITERATOR));
     SetConstant(ConstantIndex::JS_API_QUEUE_ITERATOR_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, JSAPIQueueIterator::SIZE, JSType::JS_API_QUEUE_ITERATOR));
     SetConstant(ConstantIndex::JS_API_STACK_ITERATOR_CLASS_INDEX,

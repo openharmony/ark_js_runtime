@@ -33,6 +33,7 @@ namespace panda::ecmascript {
 class JSMethod;
 class JSObject;
 class JSArray;
+class JSAPIPlainArray;
 class JSSymbol;
 class JSFunctionBase;
 class JSFunction;
@@ -57,6 +58,7 @@ class JSRegExp;
 class JSSetIterator;
 class JSMapIterator;
 class JSArrayIterator;
+class JSAPIPlainArrayIterator;
 class JSStringIterator;
 class JSGeneratorObject;
 class CompletionRecord;
@@ -404,6 +406,9 @@ public:
     JSHandle<JSHClass> NewEcmaDynClass(uint32_t size, JSType type, const JSHandle<JSTaggedValue> &prototype);
 
     // It is used to provide iterators for non ECMA standard jsapi containers.
+    JSHandle<JSAPIPlainArray> NewJSAPIPlainArray(array_size_t capacity);
+    JSHandle<JSAPIPlainArrayIterator> NewJSAPIPlainArrayIterator(const JSHandle<JSAPIPlainArray> &plainarray,
+                                                                 IterationKind kind);
     JSHandle<JSAPIArrayList> NewJSAPIArrayList(uint32_t capacity);
     JSHandle<TaggedArray> CopyQueue(const JSHandle<TaggedArray> &old, uint32_t oldLength,
                                     uint32_t newLength, uint32_t front, uint32_t tail);

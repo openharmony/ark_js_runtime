@@ -29,6 +29,8 @@
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_plain_array.h"
+#include "ecmascript/js_api_plain_array_iterator.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_stack.h"
@@ -180,6 +182,22 @@ static JSHandle<JSAPITreeSet> NewJSAPITreeSet(JSThread *thread, ObjectFactory *f
     JSHandle<TaggedTreeSet> treeSet(thread, TaggedTreeSet::Create(thread));
     jsTreeSet->SetTreeSet(thread, treeSet);
     return jsTreeSet;
+}
+
+static JSHandle<JSAPIPlainArray> NewJSAPIPlainArray(JSThread *thread, ObjectFactory *factory)
+{
+    auto globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<JSTaggedValue> proto = globalEnv->GetObjectFunctionPrototype();
+    JSHandle<JSHClass> mapClass = factory->NewEcmaDynClass(JSAPIPlainArray::SIZE, JSType::JS_API_PLAIN_ARRAY, proto);
+    JSHandle<JSAPIPlainArray> jSAPIPlainArray = JSHandle<JSAPIPlainArray>::Cast(factory->NewJSObject(mapClass));
+    JSHandle<TaggedArray> keys =
+            JSAPIPlainArray::CreateSlot(thread, JSAPIPlainArray::DEFAULT_CAPACITY_LENGTH);
+    JSHandle<TaggedArray> values =
+            JSAPIPlainArray::CreateSlot(thread, JSAPIPlainArray::DEFAULT_CAPACITY_LENGTH);
+    jSAPIPlainArray->SetKeys(thread, keys);
+    jSAPIPlainArray->SetValues(thread, values);
+    jSAPIPlainArray->SetLength(0);
+    return jSAPIPlainArray;
 }
 
 static JSHandle<JSObject> NewJSObject(JSThread *thread, ObjectFactory *factory, JSHandle<GlobalEnv> globalEnv)
@@ -775,6 +793,20 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 JSHandle<JSAPIQueueIterator> jsQueueIter =
                     factory->NewJSAPIQueueIterator(jsQueue);
                 DUMP_FOR_HANDLE(jsQueueIter)
+                break;
+            }
+            case JSType::JS_API_PLAIN_ARRAY: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSAPIPlainArray::SIZE, 3)
+                JSHandle<JSAPIPlainArray> jSAPIPlainArray = NewJSAPIPlainArray(thread, factory);
+                DUMP_FOR_HANDLE(jSAPIPlainArray)
+                break;
+            }
+            case JSType::JS_API_PLAIN_ARRAY_ITERATOR: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSAPIPlainArrayIterator::SIZE, 2)
+                JSHandle<JSAPIPlainArray> jSAPIPlainArray = NewJSAPIPlainArray(thread, factory);
+                JSHandle<JSAPIPlainArrayIterator> jSAPIPlainArrayIter =
+                    factory->NewJSAPIPlainArrayIterator(jSAPIPlainArray, IterationKind::KEY);
+                DUMP_FOR_HANDLE(jSAPIPlainArrayIter)
                 break;
             }
             case JSType::JS_API_TREE_MAP: {
