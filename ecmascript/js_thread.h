@@ -471,7 +471,7 @@ private:
 
     void DumpStack() DUMP_API_ATTR;
 
-    static constexpr uint32_t MAX_STACK_SIZE = 128 * 1024;
+    static constexpr uint32_t MAX_STACK_SIZE = 512 * 1024;
     static const uint32_t NODE_BLOCK_SIZE_LOG2 = 10;
     static const uint32_t NODE_BLOCK_SIZE = 1U << NODE_BLOCK_SIZE_LOG2;
     static constexpr int32_t MIN_HANDLE_STORAGE_SIZE = 2;
