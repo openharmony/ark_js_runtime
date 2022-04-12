@@ -468,8 +468,10 @@ private:
     static inline JSTaggedValue RuntimeGetCallSpreadArgs(JSThread *thread, JSTaggedValue array);
     static inline JSTaggedValue RuntimeThrowReferenceError(JSThread *thread, JSTaggedValue prop, const char *desc);
     static inline JSTaggedValue RuntimeThrowSyntaxError(JSThread *thread, const char *message);
-    static inline JSTaggedType RuntimeNativeCall(JSThread *thread, JSTaggedValue func, bool callThis,
+    static inline JSTaggedType RuntimeNativeCall(JSThread *thread, JSHandle<JSTaggedValue> func, bool callThis,
                                                  uint32_t actualNumArgs, std::vector<JSTaggedType> &actualArgs);
+    static inline JSTaggedType RuntimeCall1(JSThread *thread, JSHandle<JSTaggedValue> func,
+        JSHandle<JSTaggedValue> arg);
     static inline JSTaggedValue RuntimeLdBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &numberBigInt);
     static inline JSTaggedValue RuntimeNewLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId);
 };

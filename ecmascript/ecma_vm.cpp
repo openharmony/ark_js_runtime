@@ -141,6 +141,14 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
     notificationManager_->SetRendezvous(rendezvous_);
 }
 
+void EcmaVM::TryLoadSnapshotFile()
+{
+    if (VerifyFilePath("snapshot")) {
+        SnapShot snapShot(this);
+        snapShot.SnapShotDeserialize(SnapShotType::TS_LOADER, "snapshot");
+    }
+}
+
 bool EcmaVM::Initialize()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "EcmaVM::Initialize");
@@ -165,7 +173,15 @@ bool EcmaVM::Initialize()
     JSHandle<JSHClass> globalEnvClass = factory_->NewEcmaDynClass(*dynClassClassHandle,
                                                                   GlobalEnv::SIZE,
                                                                   JSType::GLOBAL_ENV);
-    globalConst->Init(thread_, *dynClassClassHandle);
+    globalConst->InitRootsClass(thread_, *dynClassClassHandle);
+    tsLoader_ = new TSLoader(this);
+    aotInfo_ = new AotCodeInfo();
+    if (options_.EnableTSAot()) {
+        TryLoadSnapshotFile();
+        std::string file = options_.GetAOTOutputFile();
+        LoadAOTFile(file);
+    }
+    globalConst->InitGlobalConstant(thread_);
     JSHandle<GlobalEnv> globalEnv = factory_->NewGlobalEnv(*globalEnvClass);
     globalEnv->Init(thread_);
     globalEnv_ = globalEnv.GetTaggedValue();
@@ -178,12 +194,6 @@ bool EcmaVM::Initialize()
     builtins.Initialize(globalEnv, thread_);
     thread_->SetGlobalObject(GetGlobalEnv()->GetGlobalObject());
     moduleManager_ = new ModuleManager(this);
-    tsLoader_ = new TSLoader(this);
-    aotInfo_ = new AotCodeInfo();
-    if (options_.EnableTSAot()) {
-        std::string file = options_.GetAOTOutputFile();
-        LoadAOTFile(file);
-    }
     InitializeFinish();
     notificationManager_->VmStartEvent();
     notificationManager_->VmInitializationEvent(thread_->GetThreadId());
@@ -662,12 +672,10 @@ void EcmaVM::SetupRegExpResultCache()
     regexpCache_ = builtins::RegExpExecResultCache::CreateCacheTable(thread_);
 }
 
-void EcmaVM::LoadAOTFile(std::string fileName)
+void EcmaVM::LoadAOTFile(const std::string &fileName)
 {
     if (!aotInfo_->Deserialize(this, fileName)) {
         return;
     }
-    SnapShot snapShot(this);
-    snapShot.SnapShotDeserialize(SnapShotType::TS_LOADER, "snapshot");
 }
 }  // namespace panda::ecmascript
