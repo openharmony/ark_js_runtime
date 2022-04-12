@@ -73,7 +73,7 @@ Class *EcmaClassLinkerExtension::NewClass(const uint8_t *descriptor, size_t vtab
     void *ptr = vm_->GetChunk()->Allocate(coretypes::Class::GetSize(size));
     // CODECHECK-NOLINTNEXTLINE(CPP_RULE_ID_SMARTPOINTER_INSTEADOF_ORIGINPOINTER)
     auto *res = reinterpret_cast<coretypes::Class *>(ptr);
-    res->InitClass(descriptor, vtableSize, imtSize, size);
+    res->InitClass(descriptor, vtableSize, imtSize, static_cast<uint32_t>(size));
     res->SetClass(GetClassRoot(ClassRoot::CLASS));
     auto *klass = res->GetRuntimeClass();
     klass->SetManagedObject(res);

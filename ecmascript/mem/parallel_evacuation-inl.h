@@ -120,19 +120,19 @@ void ParallelEvacuation::AddWorkload(std::unique_ptr<Workload> region)
 
 int ParallelEvacuation::CalculateEvacuationThreadNum()
 {
-    int length = workloads_.size();
-    int regionPerThread = 8;
-    int maxThreadNum = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum();
-    return std::min(std::max(1, length / regionPerThread), maxThreadNum);
+    uint32_t length = workloads_.size();
+    uint32_t regionPerThread = 8;
+    uint32_t maxThreadNum = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum();
+    return static_cast<int>(std::min(std::max(1U, length / regionPerThread), maxThreadNum));
 }
 
 int ParallelEvacuation::CalculateUpdateThreadNum()
 {
     int length = workloads_.size();
     double regionPerThread = 1.0 / 4;
-    length = static_cast<int>(std::pow(length, regionPerThread));
+    length = std::pow(length, regionPerThread);
     int maxThreadNum = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum();
-    return std::min(std::max(1, length), maxThreadNum);
+    return static_cast<int>(std::min(std::max(1, length), maxThreadNum));
 }
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_PARALLEL_EVACUATION_INL_H

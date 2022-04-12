@@ -74,15 +74,15 @@ bool TSUnionType::IsEqual(JSHandle<TSUnionType> unionB)
 
     TaggedArray *unionArrayA = TaggedArray::Cast(TSUnionType::GetComponentTypes().GetTaggedObject());
     TaggedArray *unionArrayB = TaggedArray::Cast(unionB->GetComponentTypes().GetTaggedObject());
-    int unionALength = unionArrayA->GetLength();
-    int unionBLength = unionArrayB->GetLength();
+    uint32_t unionALength = unionArrayA->GetLength();
+    uint32_t unionBLength = unionArrayB->GetLength();
     if (unionALength != unionBLength) {
         return false;
     }
-    for (int unionAIndex = 0; unionAIndex < unionALength; unionAIndex++) {
+    for (uint32_t unionAIndex = 0; unionAIndex < unionALength; unionAIndex++) {
         int argUnionA = unionArrayA->Get(unionAIndex).GetNumber();
         bool findArgTag = 0;
-        for (int unionBIndex = 0; unionBIndex < unionBLength; unionBIndex++) {
+        for (uint32_t unionBIndex = 0; unionBIndex < unionBLength; unionBIndex++) {
             int argUnionB = unionArrayB->Get(unionBIndex).GetNumber();
             if (argUnionA == argUnionB) {
                 findArgTag = 1;
@@ -112,7 +112,7 @@ GlobalTSTypeRef TSClassInstanceType::GetPropTypeGT(const JSThread *thread, JSHan
 {
     JSHandle<TSClassInstanceType> classInstanceType(thread, table->Get(localtypeId));
     GlobalTSTypeRef createClassTypeRefGT = classInstanceType->GetClassRefGT();
-    int localId = createClassTypeRefGT.GetLocalId();
+    uint32_t localId = createClassTypeRefGT.GetLocalId();
     int localTableIndex = TSTypeTable::GetUserdefinedTypeId(localId);
 
     JSHandle<TSClassType> createClassType(thread, table->Get(localTableIndex));

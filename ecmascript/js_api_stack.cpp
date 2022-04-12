@@ -125,7 +125,7 @@ bool JSAPIStack::Has(JSTaggedValue value) const
 
 JSHandle<TaggedArray> JSAPIStack::OwnKeys(JSThread *thread, const JSHandle<JSAPIStack> &obj)
 {
-    uint32_t top = obj->GetTop();
+    uint32_t top = static_cast<uint32_t>(obj->GetTop());
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TaggedArray> keys = factory->NewTaggedArray(top);
 
@@ -144,7 +144,7 @@ bool JSAPIStack::GetOwnProperty(JSThread *thread, const JSHandle<JSAPIStack> &ob
         THROW_TYPE_ERROR_AND_RETURN(thread, "Can not obtain attributes of no-number type", false);
     }
 
-    uint32_t length = static_cast<int>(obj->GetTop()) + 1;
+    uint32_t length = static_cast<uint32_t>(obj->GetTop() + 1);
     if (index + 1 > length) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "GetOwnProperty index out-of-bounds", false);
     }

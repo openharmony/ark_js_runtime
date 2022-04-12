@@ -303,7 +303,7 @@ JSTaggedValue RuntimeStubs::RuntimeStArraySpread(JSThread *thread, const JSHandl
     if (src->IsString()) {
         JSHandle<EcmaString> srcString = JSTaggedValue::ToString(thread, src);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-        uint32_t dstLen = index.GetInt();
+        uint32_t dstLen = static_cast<uint32_t>(index.GetInt());
         uint32_t strLen = srcString->GetLength();
         for (uint32_t i = 0; i < strLen; i++) {
             uint16_t res = srcString->At<false>(i);
@@ -1199,7 +1199,7 @@ JSTaggedValue RuntimeStubs::RuntimeGetUnmapedArgs(JSThread *thread, JSTaggedType
                            JSTaggedValue(sp[startIdx + i]));  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     }
     // 1. Let len be the number of elements in argumentsList
-    int32_t len = argumentsList->GetLength();
+    uint32_t len = argumentsList->GetLength();
     // 2. Let obj be ObjectCreate(%ObjectPrototype%, «[[ParameterMap]]»).
     // 3. Set obj’s [[ParameterMap]] internal slot to undefined.
     JSHandle<JSArguments> obj = factory->NewJSArguments();

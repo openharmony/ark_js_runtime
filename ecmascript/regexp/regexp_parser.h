@@ -37,7 +37,7 @@ public:
     static constexpr auto FLAG_DOTALL = (1U << 3U);
     static constexpr auto FLAG_UTF16 = (1U << 4U);
     static constexpr auto FLAG_STICKY = (1U << 5U);
-    static const int KEY_EOF = -1;
+    static const uint32_t KEY_EOF = UINT32_MAX;
     static constexpr int CLASS_RANGE_BASE = 0x40000000;
     static constexpr uint32_t NUM_CAPTURE__OFFSET = 4;
     static constexpr uint32_t NUM_STACK_OFFSET = 8;
@@ -221,7 +221,7 @@ private:
     uint8_t *pc_;
     uint8_t *end_;
     uint32_t flags_;
-    int c0_;
+    uint32_t c0_;
     int captureCount_;
     int stackCount_;
     bool isError_;

@@ -27,7 +27,8 @@
 
 namespace panda::ecmascript {
 WorkerHelper::WorkerHelper(Heap *heap, uint32_t threadNum)
-    : heap_(heap), threadNum_(threadNum), markSpace_(0), spaceTop_(0), markSpaceEnd_(0)
+    : heap_(heap), threadNum_(threadNum), continuousQueue_ { nullptr }, markSpace_(0), spaceTop_(0), markSpaceEnd_(0),
+      parallelTask_(UNDEFINED_TASK)
 {
     for (uint32_t i = 0; i < threadNum_; i++) {
         continuousQueue_[i] = new ProcessQueue(heap);

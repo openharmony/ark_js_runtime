@@ -36,7 +36,10 @@ class LocalSpace;
 class SparseSpace : public Space {
 public:
     explicit SparseSpace(Heap *heap, MemSpaceType type, size_t initialCapacity, size_t maximumCapacity);
-    ~SparseSpace() override = default;
+    ~SparseSpace() override
+    {
+        delete allocator_;
+    }
     NO_COPY_SEMANTIC(SparseSpace);
     NO_MOVE_SEMANTIC(SparseSpace);
 

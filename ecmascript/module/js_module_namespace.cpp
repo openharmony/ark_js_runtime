@@ -230,8 +230,8 @@ bool ModuleNamespace::ValidateKeysAvailable(JSThread *thread, const JSHandle<Tag
 {
     JSHandle<ModuleNamespace> moduleNamespace(thread, this);
     JSHandle<SourceTextModule> mm(thread, moduleNamespace->GetModule());
-    int32_t exportsLength = exports->GetLength();
-    for (int32_t idx = 0; idx < exportsLength; idx++) {
+    uint32_t exportsLength = exports->GetLength();
+    for (uint32_t idx = 0; idx < exportsLength; idx++) {
         JSHandle<JSTaggedValue> key(thread, exports->Get(idx));
         CVector<std::pair<JSHandle<SourceTextModule>, JSHandle<JSTaggedValue>>> resolveSet;
         JSHandle<JSTaggedValue> binding = SourceTextModule::ResolveExport(thread, mm, key, resolveSet);

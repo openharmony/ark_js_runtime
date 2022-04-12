@@ -1131,7 +1131,7 @@ inline bool JSTaggedValue::ToElementIndex(JSTaggedValue key, uint32_t *output)
         }
     } else if (key.IsDouble()) {
         double d = key.GetDouble();
-        uint32_t index = base::NumberHelper::DoubleToInt(d, base::INT32_BITS);
+        uint32_t index = static_cast<uint32_t>(base::NumberHelper::DoubleToInt(d, base::INT32_BITS));
         if (d - static_cast<double>(index) == 0.0) {
             *output = index;
             return true;

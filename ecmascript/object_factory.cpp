@@ -1245,7 +1245,7 @@ JSHandle<JSPrimitiveRef> ObjectFactory::NewJSPrimitiveRef(const JSHandle<JSFunct
     if (function.GetTaggedValue() == env->GetStringFunction().GetTaggedValue()) {
         JSHandle<JSTaggedValue> lengthStr = globalConst->GetHandledLengthString();
 
-        int32_t length = EcmaString::Cast(object.GetTaggedValue().GetTaggedObject())->GetLength();
+        uint32_t length = EcmaString::Cast(object.GetTaggedValue().GetTaggedObject())->GetLength();
         PropertyDescriptor desc(thread_, JSHandle<JSTaggedValue>(thread_, JSTaggedValue(length)), false, false, false);
         JSTaggedValue::DefinePropertyOrThrow(thread_, JSHandle<JSTaggedValue>(obj), lengthStr, desc);
     }
@@ -1714,7 +1714,7 @@ JSHandle<TaggedArray> ObjectFactory::CopyArray(const JSHandle<TaggedArray> &old,
 
 JSHandle<LayoutInfo> ObjectFactory::CreateLayoutInfo(int properties, JSTaggedValue initVal)
 {
-    int arrayLength = LayoutInfo::ComputeArrayLength(LayoutInfo::ComputeGrowCapacity(properties));
+    uint32_t arrayLength = LayoutInfo::ComputeArrayLength(LayoutInfo::ComputeGrowCapacity(properties));
     JSHandle<LayoutInfo> layoutInfoHandle = JSHandle<LayoutInfo>::Cast(NewTaggedArray(arrayLength, initVal));
     layoutInfoHandle->SetNumberOfElements(thread_, 0);
     return layoutInfoHandle;
@@ -1724,13 +1724,13 @@ JSHandle<LayoutInfo> ObjectFactory::ExtendLayoutInfo(const JSHandle<LayoutInfo> 
                                                      JSTaggedValue initVal)
 {
     ASSERT(properties > old->NumberOfElements());
-    int arrayLength = LayoutInfo::ComputeArrayLength(LayoutInfo::ComputeGrowCapacity(properties));
+    uint32_t arrayLength = LayoutInfo::ComputeArrayLength(LayoutInfo::ComputeGrowCapacity(properties));
     return JSHandle<LayoutInfo>(ExtendArray(JSHandle<TaggedArray>(old), arrayLength, initVal));
 }
 
 JSHandle<LayoutInfo> ObjectFactory::CopyLayoutInfo(const JSHandle<LayoutInfo> &old)
 {
-    int newLength = old->GetLength();
+    uint32_t newLength = old->GetLength();
     return JSHandle<LayoutInfo>(CopyArray(JSHandle<TaggedArray>::Cast(old), newLength, newLength));
 }
 
@@ -2150,6 +2150,10 @@ JSHandle<MachineCode> ObjectFactory::NewMachineCodeObject(size_t length, const u
     TaggedObject *obj = heap_->AllocateMachineCodeObject(JSHClass::Cast(
         thread_->GlobalConstants()->GetMachineCodeClass().GetTaggedObject()), length + MachineCode::SIZE);
     MachineCode *code = MachineCode::Cast(obj);
+    if (code == nullptr) {
+        LOG_ECMA(FATAL) << "machine code cast failed";
+        UNREACHABLE();
+    }
     code->SetInstructionSizeInBytes(static_cast<uint32_t>(length));
     if (data != nullptr) {
         code->SetData(data, length);
@@ -2181,7 +2185,7 @@ JSHandle<ClassInfoExtractor> ObjectFactory::NewClassInfoExtractor(JSMethod *ctor
 // ----------------------------------- new TSType ----------------------------------------
 JSHandle<TSObjLayoutInfo> ObjectFactory::CreateTSObjLayoutInfo(int propNum, JSTaggedValue initVal)
 {
-    int arrayLength = TSObjLayoutInfo::ComputeArrayLength(propNum);
+    uint32_t arrayLength = TSObjLayoutInfo::ComputeArrayLength(propNum);
     JSHandle<TSObjLayoutInfo> tsPropInfoHandle = JSHandle<TSObjLayoutInfo>::Cast(NewTaggedArray(arrayLength, initVal));
     tsPropInfoHandle->SetNumberOfElements(thread_, 0);
     return tsPropInfoHandle;
