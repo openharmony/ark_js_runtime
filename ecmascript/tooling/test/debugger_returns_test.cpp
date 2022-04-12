@@ -245,4 +245,17 @@ HWTEST_F_L0(DebuggerReturnsTest, GetPropertiesReturnsToObjectTest)
     privateProperties.emplace_back(std::move(privatePropertyDescriptor));
     ASSERT_EQ(privateProperties.back()->GetName(), "filename2");
 }
+
+HWTEST_F_L0(DebuggerReturnsTest, StopSamplingReturnsToObjectTest)
+{
+    std::unique_ptr<SamplingHeapProfile> profile = std::make_unique<SamplingHeapProfile>();
+    std::unique_ptr<StopSamplingReturns> stopSamplingReturns =
+                                         std::make_unique<StopSamplingReturns>(std::move(profile));
+    ASSERT_NE(stopSamplingReturns, nullptr);
+    Local<ObjectRef> object = stopSamplingReturns->ToObject(ecmaVm);
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "profile");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+}
 }  // namespace panda::test
