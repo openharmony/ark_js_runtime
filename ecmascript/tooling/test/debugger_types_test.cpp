@@ -1995,7 +1995,7 @@ HWTEST_F_L0(DebuggerTypesTest, SamplingHeapProfileCreateTest)
             "id":5,
             "children":[]
         },
-        "samples": [{"size":100, "nodeId":1, "ordinal":10}]
+        "samples":[{"size":100, "nodeId":1, "ordinal":10}]
     }})";
     object = SamplingHeapProfile::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(object, nullptr);
@@ -2037,7 +2037,7 @@ HWTEST_F_L0(DebuggerTypesTest, SamplingHeapProfileToObjectTest)
             "id":5,
             "children":[]
         },
-        "samples": [{"size":100, "nodeId":1, "ordinal":10}]
+        "samples":[{"size":100, "nodeId":1, "ordinal":10}]
     }})";
 
     samplingHeapProfile = SamplingHeapProfile::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
