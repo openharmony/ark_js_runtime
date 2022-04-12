@@ -1847,39 +1847,38 @@ void InterpreterAssembly::HandleShr2DynPrefV8(
     JSTaggedValue acc, int32_t hotnessCounter)
 {
     uint16_t v0 = READ_INST_8_1();
-
     LOG_INST() << "intrinsics::shr2dyn"
                << " v" << v0;
-    int32_t opNumber0;
-    int32_t opNumber1;
     JSTaggedValue left = GET_VREG_VALUE(v0);
     JSTaggedValue right = GET_ACC();
     // both number, fast path
     if (left.IsInt() && right.IsInt()) {
-        opNumber0 = left.GetInt();
-        opNumber1 = right.GetInt();
+        int32_t opNumber0 = left.GetInt();
+        int32_t opNumber1 = right.GetInt();
+        uint32_t shift =
+            static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
+        using unsigned_type = std::make_unsigned_t<uint32_t>;
+        auto ret =
+            static_cast<uint32_t>(static_cast<unsigned_type>(opNumber0) >> shift); // NOLINT(hicpp-signed-bitwise)
+        SET_ACC(JSTaggedValue(ret))
     } else if (left.IsNumber() && right.IsNumber()) {
-        opNumber0 =
+        int32_t opNumber0 =
             left.IsInt() ? left.GetInt() : base::NumberHelper::DoubleToInt(left.GetDouble(), base::INT32_BITS);
-        opNumber1 =
+        int32_t opNumber1 =
             right.IsInt() ? right.GetInt() : base::NumberHelper::DoubleToInt(right.GetDouble(), base::INT32_BITS);
+        uint32_t shift =
+            static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
+        using unsigned_type = std::make_unsigned_t<uint32_t>;
+        auto ret =
+            static_cast<uint32_t>(static_cast<unsigned_type>(opNumber0) >> shift); // NOLINT(hicpp-signed-bitwise)
+        SET_ACC(JSTaggedValue(ret))
     } else {
         // slow path
-        SAVE_ACC();
-        JSTaggedValue taggedNumber0 = SlowRuntimeStub::ToJSTaggedValueWithInt32(thread, left);
-        INTERPRETER_RETURN_IF_ABRUPT(taggedNumber0);
-        RESTORE_ACC();
-        right = GET_ACC();  // Maybe moved by GC
-        JSTaggedValue taggedNumber1 = SlowRuntimeStub::ToJSTaggedValueWithUint32(thread, right);
-        INTERPRETER_RETURN_IF_ABRUPT(taggedNumber1);
-        opNumber0 = taggedNumber0.GetInt();
-        opNumber1 = taggedNumber1.GetInt();
+        SAVE_PC();
+        JSTaggedValue res = SlowRuntimeStub::Shr2Dyn(thread, left, right);
+        INTERPRETER_RETURN_IF_ABRUPT(res);
+        SET_ACC(res);
     }
-
-    uint32_t shift =
-        static_cast<uint32_t>(opNumber1) & 0x1f;          // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
-    auto ret = static_cast<int32_t>(opNumber0 >> shift);  // NOLINT(hicpp-signed-bitwise)
-    SET_ACC(JSTaggedValue(ret))
     DISPATCH(BytecodeInstruction::Format::PREF_V8);
 }
 
@@ -1888,41 +1887,34 @@ void InterpreterAssembly::HandleAshr2DynPrefV8(
     JSTaggedValue acc, int32_t hotnessCounter)
 {
     uint16_t v0 = READ_INST_8_1();
-
     LOG_INST() << "intrinsics::ashr2dyn"
                << " v" << v0;
-    int32_t opNumber0;
-    int32_t opNumber1;
     JSTaggedValue left = GET_VREG_VALUE(v0);
     JSTaggedValue right = GET_ACC();
+    // both number, fast path
     if (left.IsInt() && right.IsInt()) {
-        opNumber0 = left.GetInt();
-        opNumber1 = right.GetInt();
+        int32_t opNumber0 = left.GetInt();
+        int32_t opNumber1 = right.GetInt();
+        uint32_t shift =
+            static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
+        auto ret = static_cast<int32_t>(opNumber0 >> shift); // NOLINT(hicpp-signed-bitwise)
+        SET_ACC(JSTaggedValue(ret))
     } else if (left.IsNumber() && right.IsNumber()) {
-        opNumber0 =
+        int32_t opNumber0 =
             left.IsInt() ? left.GetInt() : base::NumberHelper::DoubleToInt(left.GetDouble(), base::INT32_BITS);
-        opNumber1 =
+        int32_t opNumber1 =
             right.IsInt() ? right.GetInt() : base::NumberHelper::DoubleToInt(right.GetDouble(), base::INT32_BITS);
+        uint32_t shift =
+            static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
+        auto ret = static_cast<int32_t>(opNumber0 >> shift); // NOLINT(hicpp-signed-bitwise)
+        SET_ACC(JSTaggedValue(ret))
     } else {
         // slow path
-        SAVE_ACC();
-        JSTaggedValue taggedNumber0 = SlowRuntimeStub::ToJSTaggedValueWithUint32(thread, left);
-        INTERPRETER_RETURN_IF_ABRUPT(taggedNumber0);
-        RESTORE_ACC();
-        right = GET_ACC();  // Maybe moved by GC
-        JSTaggedValue taggedNumber1 = SlowRuntimeStub::ToJSTaggedValueWithUint32(thread, right);
-        INTERPRETER_RETURN_IF_ABRUPT(taggedNumber1);
-        opNumber0 = taggedNumber0.GetInt();
-        opNumber1 = taggedNumber1.GetInt();
+        SAVE_PC();
+        JSTaggedValue res = SlowRuntimeStub::Ashr2Dyn(thread, left, right);
+        INTERPRETER_RETURN_IF_ABRUPT(res);
+        SET_ACC(res);
     }
-
-    uint32_t shift =
-        static_cast<uint32_t>(opNumber1) & 0x1f;  // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
-    using unsigned_type = std::make_unsigned_t<uint32_t>;
-    auto ret =
-        static_cast<uint32_t>(static_cast<unsigned_type>(opNumber0) >> shift);  // NOLINT(hicpp-signed-bitwise)
-    SET_ACC(JSTaggedValue(ret))
-
     DISPATCH(BytecodeInstruction::Format::PREF_V8);
 }
 
