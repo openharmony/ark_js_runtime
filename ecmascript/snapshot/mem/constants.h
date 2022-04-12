@@ -47,7 +47,6 @@ public:
 
     // serialize use constants
     static constexpr uint8_t MASK_METHOD_SPACE_BEGIN = 0x7F;
-    static constexpr int NATIVE_METHOD_SIZE = 525;
 };
 }  // namespace panda::ecmascript
 
