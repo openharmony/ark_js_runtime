@@ -195,12 +195,11 @@ JSHandle<JSHClass> JSHClass::SetPropertyOfObjHClass(const JSThread *thread, JSHa
         JSMutableHandle<LayoutInfo> layoutInfoHandle(thread, newJshclass->GetLayout());
         if (layoutInfoHandle->NumberOfElements() != offset) {
             layoutInfoHandle.Update(factory->CopyAndReSort(layoutInfoHandle, offset, offset + 1));
-            newJshclass->SetLayout(thread, layoutInfoHandle);
         } else if (layoutInfoHandle->GetPropertiesCapacity() <= offset) { // need to Grow
             layoutInfoHandle.Update(
                 factory->ExtendLayoutInfo(layoutInfoHandle, LayoutInfo::ComputeGrowCapacity(offset)));
-            newJshclass->SetLayout(thread, layoutInfoHandle);
         }
+        newJshclass->SetLayout(thread, layoutInfoHandle);
         layoutInfoHandle->AddKey(thread, offset, key.GetTaggedValue(), attr);
     }
 
