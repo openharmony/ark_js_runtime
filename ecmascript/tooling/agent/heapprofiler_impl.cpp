@@ -123,8 +123,7 @@ DispatchResponse HeapProfilerImpl::StartSampling([[maybe_unused]]std::unique_ptr
     return DispatchResponse::Ok();
 }
 
-DispatchResponse HeapProfilerImpl::StartTrackingHeapObjects(
-    [[maybe_unused]]std::unique_ptr<StartTrackingHeapObjectsParams> params)
+DispatchResponse HeapProfilerImpl::StartTrackingHeapObjects([[maybe_unused]]std::unique_ptr<StartTrackingHeapObjectsParams> params)
 {
     return DispatchResponse::Ok();
 }
@@ -135,8 +134,7 @@ DispatchResponse HeapProfilerImpl::StopSampling([[maybe_unused]]std::unique_ptr<
     return DispatchResponse::Ok();
 }
 
-DispatchResponse HeapProfilerImpl::StopTrackingHeapObjects (
-    [[maybe_unused]]std::unique_ptr<StopTrackingHeapObjectsParams> params)
+DispatchResponse HeapProfilerImpl::StopTrackingHeapObjects([[maybe_unused]]std::unique_ptr<StopTrackingHeapObjectsParams> params)
 {
     return DispatchResponse::Ok();
 }

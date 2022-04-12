@@ -1527,7 +1527,7 @@ private:
     size_t size_ {};
     int32_t nodeId_ {};
     size_t ordinal_ {};
-}; 
+};
 
 class RuntimeCallFrame  final :  public PtBaseTypes {
 public:
@@ -1570,7 +1570,7 @@ private:
     CString url_ {};
     int32_t lineNumber_ {};
     int32_t columnNumber_ {};
-}; 
+};
 
 class SamplingHeapProfileNode  final :  public PtBaseTypes {
 public:

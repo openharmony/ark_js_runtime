@@ -736,7 +736,7 @@ std::unique_ptr<StartSamplingParams> StartSamplingParams::Create(const EcmaVM *e
     CString error;
     auto paramsObject = std::make_unique<StartSamplingParams>();
 
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm, 
+    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samplingInterval")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
@@ -744,7 +744,7 @@ std::unique_ptr<StartSamplingParams> StartSamplingParams::Create(const EcmaVM *e
         } else {
             error += "'samplingInterval' should be a Number;";
         }
-    } 
+    }
 
     if (!error.empty()) {
         LOG(ERROR, DEBUGGER) << "StartSamplingParams::Create " << error;
@@ -774,7 +774,7 @@ std::unique_ptr<StartTrackingHeapObjectsParams> StartTrackingHeapObjectsParams::
     CString error;
     auto paramsObject = std::make_unique<StartTrackingHeapObjectsParams>();
 
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm, 
+    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "trackAllocations")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
@@ -811,7 +811,7 @@ std::unique_ptr<StopTrackingHeapObjectsParams> StopTrackingHeapObjectsParams::Cr
     CString error;
     auto paramsObject = std::make_unique<StopTrackingHeapObjectsParams>();
 
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm, 
+    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "reportProgress")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
@@ -821,7 +821,7 @@ std::unique_ptr<StopTrackingHeapObjectsParams> StopTrackingHeapObjectsParams::Cr
         }
     }
 
-    result = Local<ObjectRef>(params)->Get(ecmaVm, 
+    result = Local<ObjectRef>(params)->Get(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "treatGlobalObjectsAsRoots")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
@@ -831,7 +831,7 @@ std::unique_ptr<StopTrackingHeapObjectsParams> StopTrackingHeapObjectsParams::Cr
         }
     }
 
-    result = Local<ObjectRef>(params)->Get(ecmaVm, 
+    result = Local<ObjectRef>(params)->Get(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "captureNumericValue")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
