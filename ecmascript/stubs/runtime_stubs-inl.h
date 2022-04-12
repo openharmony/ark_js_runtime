@@ -920,7 +920,7 @@ JSTaggedValue RuntimeStubs::RuntimeLdGlobalRecord(JSThread *thread, JSTaggedValu
 JSTaggedValue RuntimeStubs::RuntimeTryLdGlobalByName(JSThread *thread, JSTaggedValue global,
                                                      const JSHandle<JSTaggedValue> &prop)
 {
-    JSHandle<JSTaggedValue> obj(thread, global.GetTaggedObject()->GetClass()->GetPrototype());
+    JSHandle<JSTaggedValue> obj(thread, global);
     OperationResult res = JSTaggedValue::GetProperty(thread, obj, prop);
     if (!res.GetPropertyMetaData().IsFound()) {
         return RuntimeThrowReferenceError(thread, prop, " is not defined");
@@ -1576,12 +1576,24 @@ JSTaggedValue RuntimeStubs::RuntimeThrowSyntaxError(JSThread *thread, const char
     THROW_SYNTAX_ERROR_AND_RETURN(thread, message, JSTaggedValue::Exception());
 }
 
-JSTaggedType RuntimeStubs::RuntimeNativeCall(JSThread *thread, JSTaggedValue func, bool callThis,
+JSTaggedType RuntimeStubs::RuntimeCall1(JSThread *thread, JSHandle<JSTaggedValue> func, JSHandle<JSTaggedValue> arg)
+{
+    thread->CheckSafepoint();
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info =
+        ecmascript::EcmaInterpreter::NewRuntimeCallInfo(thread, func, undefined, undefined, 1);
+    info.SetCallArg(0, arg.GetTaggedValue());
+
+    JSTaggedValue result = JSFunction::Call(&info);
+    return result.GetRawData();
+}
+
+JSTaggedType RuntimeStubs::RuntimeNativeCall(JSThread *thread, JSHandle<JSTaggedValue> func, bool callThis,
                                              uint32_t actualNumArgs, std::vector<JSTaggedType> &actualArgs)
 {
     thread->CheckSafepoint();
 
-    if (!func.IsCallable()) {
+    if (!func->IsCallable()) {
         [[maybe_unused]] EcmaHandleScope handleScope(thread);
         EcmaVM *ecmaVm = thread->GetEcmaVM();
         ObjectFactory *factory = ecmaVm->GetFactory();
@@ -1589,7 +1601,7 @@ JSTaggedType RuntimeStubs::RuntimeNativeCall(JSThread *thread, JSTaggedValue fun
         thread->SetException(error.GetTaggedValue());
         return JSTaggedValue::VALUE_EXCEPTION;
     }
-    ECMAObject *funcObject = ECMAObject::Cast(func.GetTaggedObject());
+    ECMAObject *funcObject = ECMAObject::Cast(func->GetTaggedObject());
     JSMethod *method = funcObject->GetCallTarget();
     [[maybe_unused]] uint64_t callField = method->GetCallField();
     ASSERT(JSMethod::IsNativeBit::Decode(callField));
