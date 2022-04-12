@@ -273,7 +273,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::JS_FUNCTION_BASE: {
-                CHECK_DUMP_FIELDS(JSObject::SIZE, JSFunctionBase::SIZE, 1)
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSFunctionBase::SIZE, 2)
                 break;
             }
             case JSType::JS_FUNCTION: {

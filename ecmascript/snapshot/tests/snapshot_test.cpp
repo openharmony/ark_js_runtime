@@ -71,13 +71,6 @@ public:
     JSThread *thread {nullptr};
 };
 
-HWTEST_F_L0(SnapShotTest, NativeMethodNumber)
-{
-    SnapShotSerialize snapShotSerialize(EcmaVM::Cast(instance));
-    size_t nativeMethodSize = snapShotSerialize.GetNativeTableSize();
-    EXPECT_TRUE(nativeMethodSize == Constants::PROGRAM_NATIVE_METHOD_BEGIN + Constants::NATIVE_METHOD_SIZE);
-}
-
 HWTEST_F_L0(SnapShotTest, SnapShotSerialize)
 {
     auto ecmaVm = EcmaVM::Cast(instance);
