@@ -301,7 +301,7 @@ JSTaggedValue ContainersTreeSet::ForEach(EcmaRuntimeCallInfo *argv)
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ret);
 
         // check entries should be update, size will be update by set add and remove.
-        if (tset->GetSize() != length) {
+        if (tset->GetSize() != static_cast<int>(length)) {
             iteratedSet.Update(tset->GetTreeSet());
             entries.Update(TaggedTreeSet::GetArrayFromSet(thread, iteratedSet).GetTaggedValue());
             elements = iteratedSet->NumberOfElements();

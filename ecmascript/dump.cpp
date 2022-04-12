@@ -991,7 +991,7 @@ void JSObject::Dump(std::ostream &os) const
         }
 
         LayoutInfo *layoutInfo = LayoutInfo::Cast(attrs.GetTaggedObject());
-        int propNumber = jshclass->NumberOfProps();
+        int propNumber = static_cast<int>(jshclass->NumberOfProps());
         os << " <LayoutInfo[" << std::dec << propNumber << "]>\n";
         for (int i = 0; i < propNumber; i++) {
             JSTaggedValue key = layoutInfo->GetKey(i);
@@ -1004,7 +1004,7 @@ void JSObject::Dump(std::ostream &os) const
             if (attr.IsInlinedProps()) {
                 val = GetPropertyInlinedProps(i);
             } else {
-                val = properties->Get(i - jshclass->GetInlinedProperties());
+                val = properties->Get(i - static_cast<int>(jshclass->GetInlinedProperties()));
             }
             val.DumpTaggedValue(os);
             os << ") ";
@@ -3143,7 +3143,7 @@ void JSObject::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &v
         }
 
         LayoutInfo *layoutInfo = LayoutInfo::Cast(attrs.GetTaggedObject());
-        int propNumber = jshclass->NumberOfProps();
+        int propNumber = static_cast<int>(jshclass->NumberOfProps());
         for (int i = 0; i < propNumber; i++) {
             JSTaggedValue key = layoutInfo->GetKey(i);
             PropertyAttributes attr = layoutInfo->GetAttr(i);
@@ -3152,7 +3152,7 @@ void JSObject::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &v
             if (attr.IsInlinedProps()) {
                 val = GetPropertyInlinedProps(i);
             } else {
-                val = properties->Get(i - jshclass->GetInlinedProperties());
+                val = properties->Get(i - static_cast<int>(jshclass->GetInlinedProperties()));
             }
 
             CString str;

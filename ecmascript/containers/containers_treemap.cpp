@@ -348,7 +348,7 @@ JSTaggedValue ContainersTreeMap::ForEach(EcmaRuntimeCallInfo *argv)
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ret);
 
         // check entries should be update, size will be update in tmap set or remove.
-        if (tmap->GetSize() != length) {
+        if (tmap->GetSize() != static_cast<int>(length)) {
             iteratedMap.Update(tmap->GetTreeMap());
             entries.Update(TaggedTreeMap::GetArrayFromMap(thread, iteratedMap).GetTaggedValue());
             elements = iteratedMap->NumberOfElements();

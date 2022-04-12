@@ -1195,7 +1195,7 @@ JSTaggedValue BuiltinsArray::Join(EcmaRuntimeCallInfo *argv)
     JSHandle<EcmaString> sepStringHandle = JSTaggedValue::ToString(thread, sepHandle);
     // 7. ReturnIfAbrupt(sep).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    int32_t sepLen = sepStringHandle->GetLength();
+    uint32_t sepLen = sepStringHandle->GetLength();
     std::u16string sepStr;
     if (sepStringHandle->IsUtf16()) {
         sepStr = base::StringHelper::Utf16ToU16String(sepStringHandle->GetDataUtf16(), sepLen);
@@ -1228,7 +1228,7 @@ JSTaggedValue BuiltinsArray::Join(EcmaRuntimeCallInfo *argv)
         if (!element->IsUndefined() && !element->IsNull()) {
             JSHandle<EcmaString> nextStringHandle = JSTaggedValue::ToString(thread, element);
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-            int32_t nextLen = nextStringHandle->GetLength();
+            uint32_t nextLen = nextStringHandle->GetLength();
             if (nextStringHandle->IsUtf16()) {
                 nextStr = base::StringHelper::Utf16ToU16String(nextStringHandle->GetDataUtf16(), nextLen);
             } else {
@@ -1247,7 +1247,7 @@ JSTaggedValue BuiltinsArray::Join(EcmaRuntimeCallInfo *argv)
     const char16_t *constChar16tData = concatStr.data();
     auto *char16tData = const_cast<char16_t *>(constChar16tData);
     auto *uint16tData = reinterpret_cast<uint16_t *>(char16tData);
-    int32_t u16strSize = concatStr.size();
+    uint32_t u16strSize = concatStr.size();
     return factory->NewFromUtf16Literal(uint16tData, u16strSize).GetTaggedValue();
 }
 

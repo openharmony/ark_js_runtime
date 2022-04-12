@@ -107,8 +107,12 @@ EcmaVM *EcmaVM::Create(Runtime *runtime)
 {
     EcmaVM *vm = runtime->GetInternalAllocator()->New<EcmaVM>();
     auto jsThread = ecmascript::JSThread::Create(runtime, vm);
-    vm->thread_ = jsThread;
-    return vm;
+    if (vm == nullptr) {
+        return nullptr;
+    } else {
+        vm->thread_ = jsThread;
+        return vm;
+    }
 }
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
