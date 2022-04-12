@@ -2120,16 +2120,16 @@ JSHandle<JSHClass> ObjectFactory::SetLayoutInObjHClass(const JSHandle<TaggedArra
     JSMutableHandle<JSTaggedValue> key(thread_, JSTaggedValue::Undefined());
     JSHandle<JSHClass> newObjHclass(objClass);
 
-    for (uint32_t fieldOrder = 0; fieldOrder < length; fieldOrder++) {
-        key.Update(properties->Get(fieldOrder * 2)); // 2 : pair of key and value
+    for (size_t fieldOffset = 0; fieldOffset < length; fieldOffset++) {
+        key.Update(properties->Get(fieldOffset * 2)); // 2 : pair of key and value
         ASSERT_PRINT(JSTaggedValue::IsPropertyKey(key), "Key is not a property key");
         PropertyAttributes attributes = PropertyAttributes::Default();
-        if (properties->Get(fieldOrder * 2 + 1).IsAccessor()) {  // 2: Meaning to double
+        if (properties->Get(fieldOffset * 2 + 1).IsAccessor()) {  // 2: Meaning to double
             attributes.SetIsAccessor(true);
         }
         attributes.SetIsInlinedProps(true);
         attributes.SetRepresentation(Representation::MIXED);
-        attributes.SetOffset(fieldOrder);
+        attributes.SetOffset(fieldOffset);
         newObjHclass = JSHClass::SetPropertyOfObjHClass(thread_, newObjHclass, key, attributes);
     }
     return newObjHclass;
