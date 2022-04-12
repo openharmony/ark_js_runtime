@@ -27,6 +27,7 @@ namespace panda::ecmascript::kungfu {
     V(Foo1AOT, 7)                       \
     V(Foo2AOT, 7)                       \
     V(FooNativeAOT, 7)                  \
+    V(FooBoundAOT, 7)                   \
     V(BarAOT, 7)                        \
     V(Bar1AOT, 8)
 #else
@@ -90,6 +91,18 @@ public:
     ~FooNativeAOTStub() = default;
     NO_MOVE_SEMANTIC(FooNativeAOTStub);
     NO_COPY_SEMANTIC(FooNativeAOTStub);
+    void GenerateCircuit(const CompilationConfig *cfg) override;
+};
+
+class FooBoundAOTStub : public Stub {
+public:
+    // 7 : 7 means argument counts
+    explicit FooBoundAOTStub(Circuit *circuit) : Stub("FooBoundAOT", 7, circuit)
+    {
+    }
+    ~FooBoundAOTStub() = default;
+    NO_MOVE_SEMANTIC(FooBoundAOTStub);
+    NO_COPY_SEMANTIC(FooBoundAOTStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
 
