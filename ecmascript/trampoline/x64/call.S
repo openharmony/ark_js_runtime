@@ -509,8 +509,8 @@ JSCall:
 
     shll    $24, %eax               // objecttype << 24
     leal    -50331649(%rax), %edx
-    cmpl    $0x9FFFFFF, %edx        // objecttype in (0x04 ~ 0x0c)
-    ja      .LNotJSFunction
+    cmpl    $0x9FFFFFF, %edx
+    jae     .LNotJSFunction         // objecttype in (0x04 ~ 0x0c)
     jmp     .LJSFunctionCall
 .LNotJSFunction:
     cmpl    $0xd000000, %eax        // IsJsBoundFunction
@@ -593,18 +593,18 @@ JSCall:
     // get bound length
     mov     TAGGED_ARRAY_LENGTH_OFFSET(%rcx), %rcx
     addq    %rcx, %r10
-    addq    $3,   %r10
 
      // 16 bytes align check
     testb   $1, %r10b
-    je      .LAlign16Bytes2
+    jne      .LAlign16Bytes2
     pushq   $0                  // push zero to align 16 bytes stack   
 
 .LAlign16Bytes2:
+    subq    $3, %rax
     cmp     $0, %rax
     je      .LCopyBoundArgument
 .LCopyArgument2:
-    movq    (%rdx, %rax, 8), %rcx
+    movq    24(%rdx, %rax, 8), %rcx
     pushq   %rcx
 
     addq    $-1, %rax
@@ -614,27 +614,29 @@ JSCall:
     mov     JS_FUNCTION_BOUND_ARG_OFFSET(%r8), %rdx
     // get bound length
     mov     TAGGED_ARRAY_LENGTH_OFFSET(%rdx), %rax
-    addq    TAGGED_ARRAY_DATA_OFFSET, %rdx
-    addq    %rax, %r10
+    addq    $TAGGED_ARRAY_DATA_OFFSET, %rdx
 .LCopyBoundArgument:
     cmp     $0, %rax
+    je      .LPushCallTarget
 .LCopyBoundArgumentLoop:
+    addq    $-1, %rax
     movq    (%rdx, %rax, 8), %rcx
     pushq   %rcx
-    addq    $-1, %rax
     jne     .LCopyBoundArgumentLoop
+.LPushCallTarget:
     mov     JS_FUNCTION_BOUND_THIS_OFFSET(%r8), %rax     // thisObj
     pushq   %rax
     pushq   $0xa                                         // newtarget
     mov     JS_FUNCTION_BOUND_TARGET_OFFSET(%r8), %rax   // calltarget
     pushq   %rax
     pushq   %r10                                         // push actual arguments
+    mov     %rdi, %rax
     call    JSCall
-    leaq    (, %r10, 8), %rcx
+    leaq    8(, %r10, 8), %rcx
     addq    %rcx, %rsp
 
     testb   $1, %r10b           // stack 16bytes align check
-    je      .LPopFrame2
+    jne     .LPopFrame2
     addq    $8, %rsp
 
 .LPopFrame2:

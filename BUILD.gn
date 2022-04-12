@@ -479,6 +479,10 @@ if (!is_mingw) {
   ecma_source += [ "ecmascript/napi/dfx_jsnapi.cpp" ]
 }
 
+if (enable_test_stub) {
+  ecma_source += [ "ecmascript/stubs/test_runtime_stubs.cpp" ]
+}
+
 ecma_debugger_source = []
 if (!is_mingw) {
   ecma_debugger_source += [
