@@ -2116,5 +2116,4 @@ HWTEST_F_L0(DebuggerTypesTest, SamplingHeapProfileToObjectTest)
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
     EXPECT_EQ(Local<IntegerRef>(result)->Value(), 10);
 }
-
 }  // namespace panda::test
