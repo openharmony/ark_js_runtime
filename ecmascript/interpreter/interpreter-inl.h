@@ -1772,8 +1772,10 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             int32_t opNumber0 = left.GetInt();
             int32_t opNumber1 = right.GetInt();
             uint32_t shift =
-            static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
-                auto ret = static_cast<int32_t>(opNumber0 >> shift); // NOLINT(hicpp-signed-bitwise)
+                static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
+            using unsigned_type = std::make_unsigned_t<uint32_t>;
+            auto ret =
+                static_cast<uint32_t>(static_cast<unsigned_type>(opNumber0) >> shift); // NOLINT(hicpp-signed-bitwise)
             SET_ACC(JSTaggedValue(ret))
         } else if (left.IsNumber() && right.IsNumber()) {
             int32_t opNumber0 =
@@ -1782,7 +1784,9 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 right.IsInt() ? right.GetInt() : base::NumberHelper::DoubleToInt(right.GetDouble(), base::INT32_BITS);
             uint32_t shift =
                 static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
-            auto ret = static_cast<int32_t>(opNumber0 >> shift); // NOLINT(hicpp-signed-bitwise)
+            using unsigned_type = std::make_unsigned_t<uint32_t>;
+            auto ret =
+                static_cast<uint32_t>(static_cast<unsigned_type>(opNumber0) >> shift); // NOLINT(hicpp-signed-bitwise)
             SET_ACC(JSTaggedValue(ret))
         } else {
             // slow path
@@ -1800,14 +1804,13 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                    << " v" << v0;
         JSTaggedValue left = GET_VREG_VALUE(v0);
         JSTaggedValue right = GET_ACC();
+        // both number, fast path
         if (left.IsInt() && right.IsInt()) {
             int32_t opNumber0 = left.GetInt();
             int32_t opNumber1 = right.GetInt();
             uint32_t shift =
                 static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
-            using unsigned_type = std::make_unsigned_t<uint32_t>;
-            auto ret =
-                static_cast<uint32_t>(static_cast<unsigned_type>(opNumber0) >> shift); // NOLINT(hicpp-signed-bitwise)
+            auto ret = static_cast<int32_t>(opNumber0 >> shift); // NOLINT(hicpp-signed-bitwise)
             SET_ACC(JSTaggedValue(ret))
         } else if (left.IsNumber() && right.IsNumber()) {
             int32_t opNumber0 =
@@ -1816,10 +1819,8 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 right.IsInt() ? right.GetInt() : base::NumberHelper::DoubleToInt(right.GetDouble(), base::INT32_BITS);
             uint32_t shift =
                 static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
-            using unsigned_type = std::make_unsigned_t<uint32_t>;
-            auto ret =
-                static_cast<uint32_t>(static_cast<unsigned_type>(opNumber0) >> shift); // NOLINT(hicpp-signed-bitwise)
-        SET_ACC(JSTaggedValue(ret))
+            auto ret = static_cast<int32_t>(opNumber0 >> shift); // NOLINT(hicpp-signed-bitwise)
+            SET_ACC(JSTaggedValue(ret))
         } else {
             // slow path
             SAVE_PC();
@@ -3971,8 +3972,8 @@ std::string GetEcmaOpcodeStr(EcmaOpcode opcode)
         {GREATERDYN_PREF_V8, "GREATERDYN"},
         {GREATEREQDYN_PREF_V8, "GREATEREQDYN"},
         {SHL2DYN_PREF_V8, "SHL2DYN"},
-        {SHR2DYN_PREF_V8, "SHR2DYN"},
         {ASHR2DYN_PREF_V8, "ASHR2DYN"},
+        {SHR2DYN_PREF_V8, "SHR2DYN"},
         {AND2DYN_PREF_V8, "AND2DYN"},
         {OR2DYN_PREF_V8, "OR2DYN"},
         {XOR2DYN_PREF_V8, "XOR2DYN"},
