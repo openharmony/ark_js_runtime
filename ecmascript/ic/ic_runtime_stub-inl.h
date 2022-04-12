@@ -240,12 +240,12 @@ void ICRuntimeStub::StoreWithTransition(JSThread *thread, JSObject *receiver, JS
     TransitionHandler *transitionHandler = TransitionHandler::Cast(handler.GetTaggedObject());
     JSHClass *newHClass = JSHClass::Cast(transitionHandler->GetTransitionHClass().GetTaggedObject());
     receiver->SetClass(newHClass);
-    uint32_t handlerInfo = transitionHandler->GetHandlerInfo().GetInt();
+    uint32_t handlerInfo = static_cast<uint32_t>(transitionHandler->GetHandlerInfo().GetInt());
     ASSERT(HandlerBase::IsField(handlerInfo));
 
     if (!HandlerBase::IsInlinedProps(handlerInfo)) {
         TaggedArray *array = TaggedArray::Cast(receiver->GetProperties().GetHeapObject());
-        int capacity = array->GetLength();
+        int capacity = static_cast<int>(array->GetLength());
         int index = HandlerBase::GetOffset(handlerInfo);
         if (index >= capacity) {
             ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
@@ -275,7 +275,7 @@ ARK_INLINE void ICRuntimeStub::StoreField(JSThread *thread, JSObject *receiver, 
     INTERPRETER_TRACE(thread, StoreField);
     int index = HandlerBase::GetOffset(handler);
     if (HandlerBase::IsInlinedProps(handler)) {
-        SET_VALUE_WITH_BARRIER(thread, receiver, index * JSTaggedValue::TaggedTypeSize(), value);
+        SET_VALUE_WITH_BARRIER(thread, receiver, static_cast<uint32_t>(index) * JSTaggedValue::TaggedTypeSize(), value);
         return;
     }
     TaggedArray *array = TaggedArray::Cast(receiver->GetProperties().GetHeapObject());
@@ -287,7 +287,7 @@ ARK_INLINE JSTaggedValue ICRuntimeStub::LoadFromField(JSObject *receiver, uint32
 {
     int index = HandlerBase::GetOffset(handlerInfo);
     if (HandlerBase::IsInlinedProps(handlerInfo)) {
-        return JSTaggedValue(GET_VALUE(receiver, index * JSTaggedValue::TaggedTypeSize()));
+        return JSTaggedValue(GET_VALUE(receiver, static_cast<size_t>(index) * JSTaggedValue::TaggedTypeSize()));
     }
     return TaggedArray::Cast(receiver->GetProperties().GetHeapObject())->Get(index);
 }
@@ -363,7 +363,7 @@ ARK_INLINE JSTaggedValue ICRuntimeStub::LoadElement(JSObject *receiver, JSTagged
     if (index < 0) {
         return JSTaggedValue::Hole();
     }
-    uint32_t elementIndex = index;
+    uint32_t elementIndex = static_cast<uint32_t>(index);
     TaggedArray *elements = TaggedArray::Cast(receiver->GetElements().GetHeapObject());
     if (elements->GetLength() <= elementIndex) {
         return JSTaggedValue::Hole();
@@ -382,7 +382,7 @@ JSTaggedValue ICRuntimeStub::StoreElement(JSThread *thread, JSObject *receiver, 
     if (index < 0) {
         return JSTaggedValue::Hole();
     }
-    uint32_t elementIndex = index;
+    uint32_t elementIndex = static_cast<uint32_t>(index);
     if (handler.IsInt()) {
         auto handlerInfo = static_cast<uint32_t>(handler.GetInt());
         if (HandlerBase::IsJSArray(handlerInfo)) {

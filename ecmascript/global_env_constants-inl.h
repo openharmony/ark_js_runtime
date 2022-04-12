@@ -47,7 +47,7 @@ inline void GlobalEnvConstants::SetConstant(ConstantIndex index, JSHandle<T> val
 
 inline uintptr_t GlobalEnvConstants::GetGlobalConstantAddr(ConstantIndex index) const
 {
-    return ToUintPtr(this) + sizeof(JSTaggedValue) * static_cast<int>(index);
+    return ToUintPtr(this) + sizeof(JSTaggedValue) * static_cast<uint32_t>(index);
 }
 
 // clang-format off

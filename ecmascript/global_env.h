@@ -183,7 +183,7 @@ public:
     template<typename T>                                                                               \
     inline void Set##name(const JSThread *thread, JSHandle<T> value, BarrierMode mode = WRITE_BARRIER)  \
     {                                                                                                   \
-        int offset = HEADER_SIZE + index * JSTaggedValue::TaggedTypeSize();                             \
+        uint32_t offset = HEADER_SIZE + index * JSTaggedValue::TaggedTypeSize();                             \
         if (mode == WRITE_BARRIER && value.GetTaggedValue().IsHeapObject()) {                           \
             Barriers::SetDynObject<true>(thread, this, offset, value.GetTaggedValue().GetRawData());    \
         } else {                                                                                        \
@@ -192,7 +192,7 @@ public:
     }                                                                                                   \
     inline void Set##name(const JSThread *thread, type value, BarrierMode mode = WRITE_BARRIER)         \
     {                                                                                                   \
-        int offset = HEADER_SIZE + index * JSTaggedValue::TaggedTypeSize();                             \
+        uint32_t offset = HEADER_SIZE + index * JSTaggedValue::TaggedTypeSize();                             \
         if (mode == WRITE_BARRIER && value.IsHeapObject()) {                                            \
             Barriers::SetDynObject<true>(thread, this, offset, value.GetRawData());                     \
         } else {                                                                                        \

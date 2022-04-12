@@ -56,7 +56,7 @@ JSTaggedValue BuiltinsDataView::DataViewConstructor(EcmaRuntimeCallInfo *argv)
     if (offsetInt < 0) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "Offset out of range", JSTaggedValue::Exception());
     }
-    uint32_t offset = offsetInt;
+    uint32_t offset = static_cast<uint32_t>(offsetInt);
     // 8. If IsDetachedBuffer(buffer) is true, throw a TypeError exception.
     if (BuiltinsArrayBuffer::IsDetachedBuffer(bufferHandle.GetTaggedValue())) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "buffer is Detached Buffer", JSTaggedValue::Exception());
@@ -78,7 +78,7 @@ JSTaggedValue BuiltinsDataView::DataViewConstructor(EcmaRuntimeCallInfo *argv)
         JSTaggedNumber byteLen = JSTaggedValue::ToIndex(thread, byteLenHandle);
         // ReturnIfAbrupt(viewByteLength).
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-        viewByteLen = byteLen.ToInt32();
+        viewByteLen = static_cast<uint32_t>(byteLen.ToInt32());
         // If offset+viewByteLength > bufferByteLength, throw a RangeError exception.
         if (offset + viewByteLen > bufByteLen) {
             THROW_RANGE_ERROR_AND_RETURN(thread, "offset + viewByteLen > bufByteLen", JSTaggedValue::Exception());
@@ -347,7 +347,7 @@ JSTaggedValue BuiltinsDataView::GetViewValue(JSThread *thread, const JSHandle<JS
     if (indexInt < 0) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "getIndex < 0", JSTaggedValue::Exception());
     }
-    uint32_t index = indexInt;
+    uint32_t index = static_cast<uint32_t>(indexInt);
     // 7. Let isLittleEndian be ToBoolean(isLittleEndian).
     bool isLittleEndian = false;
     if (littleEndian.IsUndefined()) {
@@ -424,11 +424,11 @@ JSTaggedValue BuiltinsDataView::SetViewValue(JSThread *thread, const JSHandle<JS
     // 12. Let elementSize be the Number value of the Element Size value specified in Table 49 for Element Type type.
     uint32_t elementSize = JSDataView::GetElementSize(type);
     // 13. If getIndex +elementSize > viewSize, throw a RangeError exception.
-    if (index + elementSize > size) {
+    if (static_cast<uint32_t>(index) + elementSize > size) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "getIndex +elementSize > viewSize", JSTaggedValue::Exception());
     }
     // 14. Let bufferIndex be getIndex + viewOffset.
-    uint32_t bufferIndex = index + offset;
+    uint32_t bufferIndex = static_cast<uint32_t>(index) + offset;
     // 15. Return SetValueFromBuffer(buffer, bufferIndex, type, value, isLittleEndian).
     return BuiltinsArrayBuffer::SetValueInBuffer(thread, buffer, bufferIndex, type, numValueHandle, isLittleEndian);
 }

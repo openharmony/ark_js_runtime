@@ -238,7 +238,7 @@ JSTaggedValue NumberHelper::StringToDoubleWithRadix(const uint8_t *start, const 
                 break;
             }
 
-            int currentBit = ToDigit(*p);
+            int currentBit = static_cast<int>(ToDigit(*p));
             if (currentBit >= radix) {
                 isDone = true;
                 break;
@@ -581,10 +581,10 @@ double NumberHelper::StringToDouble(const uint8_t *start, const uint8_t *end, ui
         }
         uint8_t digit;
         while ((digit = ToDigit(*p)) < radix) {
-            if (additionalExponent > MAX_EXPONENT / radix) {
+            if (additionalExponent > static_cast<int>(MAX_EXPONENT / radix)) {
                 additionalExponent = MAX_EXPONENT;
             } else {
-                additionalExponent = additionalExponent * radix + digit;
+                additionalExponent = static_cast<int>(additionalExponent * radix + digit);
             }
             if (++p == end) {
                 break;

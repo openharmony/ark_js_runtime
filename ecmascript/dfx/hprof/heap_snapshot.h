@@ -272,11 +272,11 @@ public:
     }
     void AccumulateNodeSize(size_t size)
     {
-        totalNodesSize_ += size;
+        totalNodesSize_ += static_cast<int>(size);
     }
     void DecreaseNodeSize(size_t size)
     {
-        totalNodesSize_ -= size;
+        totalNodesSize_ -= static_cast<int>(size);
     }
     CString *GenerateNodeName(TaggedObject *entry);
     NodeType GenerateNodeType(TaggedObject *entry);

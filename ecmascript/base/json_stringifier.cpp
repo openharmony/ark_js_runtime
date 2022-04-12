@@ -269,9 +269,9 @@ bool JsonStringifier::CalculateNumberGap(JSTaggedValue gap)
 bool JsonStringifier::CalculateStringGap(const JSHandle<EcmaString> &primString)
 {
     CString gapString = ConvertToString(*primString, StringConvertedUsage::LOGICOPERATION);
-    int gapLen = gapString.length();
+    uint32_t gapLen = gapString.length();
     if (gapLen > 0) {
-        int gapLength = std::min(gapLen, GAP_MAX_LEN);
+        int gapLength = std::min(gapLen, static_cast<uint32_t>(GAP_MAX_LEN));
         CString str = gapString.substr(0, gapLength);
         gap_ += str;
         gap_.append("\0");
@@ -696,7 +696,7 @@ bool JsonStringifier::SerializeKeys(const JSHandle<JSObject> &obj, const JSHandl
         JSHandle<JSHClass> jsHclass(thread_, obj->GetJSHClass());
         JSTaggedValue enumCache = jsHclass->GetEnumCache();
         if (!enumCache.IsNull()) {
-            int propsNumber = jsHclass->NumberOfProps();
+            int propsNumber = static_cast<int>(jsHclass->NumberOfProps());
             JSHandle<TaggedArray> cache(thread_, enumCache);
             uint32_t length = cache->GetLength();
             for (uint32_t i = 0; i < length; i++) {
@@ -711,8 +711,8 @@ bool JsonStringifier::SerializeKeys(const JSHandle<JSObject> &obj, const JSHandl
                 PropertyAttributes attr(layoutInfo->GetAttr(index));
                 ASSERT(static_cast<int>(attr.GetOffset()) == index);
                 value = attr.IsInlinedProps()
-                        ? obj->GetPropertyInlinedProps(index)
-                        : propertiesArr->Get(index - jsHclass->GetInlinedProperties());
+                        ? obj->GetPropertyInlinedProps(static_cast<uint32_t>(index))
+                        : propertiesArr->Get(static_cast<uint32_t>(index - jsHclass->GetInlinedProperties()));
                 if (UNLIKELY(value.IsAccessor())) {
                     value = JSObject::CallGetter(thread_, AccessorData::Cast(value.GetTaggedObject()),
                                                  JSHandle<JSTaggedValue>(obj));
@@ -723,11 +723,11 @@ bool JsonStringifier::SerializeKeys(const JSHandle<JSObject> &obj, const JSHandl
             }
             return hasContent;
         }
-        int end = jsHclass->NumberOfProps();
+        int end = static_cast<int>(jsHclass->NumberOfProps());
         if (end <= 0) {
             return hasContent;
         }
-        int propsNumber = jsHclass->NumberOfProps();
+        int propsNumber = static_cast<int>(jsHclass->NumberOfProps());
         for (int i = 0; i < end; i++) {
             LayoutInfo *layoutInfo = LayoutInfo::Cast(jsHclass->GetLayout().GetTaggedObject());
             JSTaggedValue key = layoutInfo->GetKey(i);
@@ -738,8 +738,8 @@ bool JsonStringifier::SerializeKeys(const JSHandle<JSObject> &obj, const JSHandl
                 PropertyAttributes attr(layoutInfo->GetAttr(index));
                 ASSERT(static_cast<int>(attr.GetOffset()) == index);
                 value = attr.IsInlinedProps()
-                        ? obj->GetPropertyInlinedProps(index)
-                        : propertiesArr->Get(index - jsHclass->GetInlinedProperties());
+                        ? obj->GetPropertyInlinedProps(static_cast<uint32_t>(index))
+                        : propertiesArr->Get(static_cast<uint32_t>(index - jsHclass->GetInlinedProperties()));
                 if (UNLIKELY(value.IsAccessor())) {
                     value = JSObject::CallGetter(thread_, AccessorData::Cast(value.GetTaggedObject()),
                                                  JSHandle<JSTaggedValue>(obj));

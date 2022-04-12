@@ -513,7 +513,7 @@ JSTaggedValue BuiltinsRegExp::RegExpReplaceFast(JSThread *thread, JSHandle<JSTag
         JSTaggedValue thisIndex =
             FastRuntimeStub::FastGetProperty(thread, regexp.GetTaggedValue(), lastIndexHandle.GetTaggedValue());
         if (thisIndex.IsInt()) {
-            lastIndex = thisIndex.GetInt();
+            lastIndex = static_cast<uint32_t>(thisIndex.GetInt());
         } else {
             JSHandle<JSTaggedValue> thisIndexHandle(thread, thisIndex);
             lastIndex = JSTaggedValue::ToLength(thread, thisIndexHandle).GetNumber();
@@ -751,7 +751,7 @@ JSTaggedValue BuiltinsRegExp::Replace(EcmaRuntimeCallInfo *argv)
                 thread, FastRuntimeStub::FastGetProperty(thread, thisObj.GetTaggedValue(), lastIndex.GetTaggedValue()));
             uint32_t thisIndex = 0;
             if (thisIndexHandle->IsInt()) {
-                thisIndex = thisIndexHandle->GetInt();
+                thisIndex = static_cast<uint32_t>(thisIndexHandle->GetInt());
             } else {
                 thisIndex = JSTaggedValue::ToLength(thread, thisIndexHandle).GetNumber();
                 // b. ReturnIfAbrupt(thisIndex).
@@ -802,7 +802,7 @@ JSTaggedValue BuiltinsRegExp::Replace(EcmaRuntimeCallInfo *argv)
         JSHandle<JSTaggedValue> positionHandle(thread, positionTag);
         uint32_t position = 0;
         if (positionHandle->IsInt()) {
-            position = positionHandle->GetInt();
+            position = static_cast<uint32_t>(positionHandle->GetInt());
         } else {
             position = JSTaggedValue::ToUint32(thread, positionHandle);
             // h. ReturnIfAbrupt(position).
@@ -1325,7 +1325,7 @@ JSTaggedValue BuiltinsRegExp::RegExpBuiltinExec(JSThread *thread, const JSHandle
     JSHandle<EcmaString> flagsStr = JSTaggedValue::ToString(thread, flagsValue);
     JSHandle<EcmaString> uString(globalConst->GetHandledUString());
     [[maybe_unused]] bool fullUnicode = base::StringHelper::Contains(*flagsStr, *uString);
-    if (lastIndex > length) {
+    if (lastIndex > static_cast<int32_t>(length)) {
         FastRuntimeStub::FastSetPropertyByValue(thread, regexp.GetTaggedValue(), lastIndexHandle.GetTaggedValue(),
                                                 JSTaggedValue(0));
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -1742,7 +1742,7 @@ void RegExpExecResultCache::AddResultInCache(JSThread *thread, JSHandle<RegExpEx
     } else if (cache->Match(entry, patternValue, flagsValue, inputValue, extend)) {
         cache->UpdateResultArray(thread, entry, resultArray.GetTaggedValue(), type);
     } else {
-        uint32_t entry2 = (entry + 1) & (cache->GetCacheLength() - 1);
+        uint32_t entry2 = (entry + 1) & static_cast<uint32_t>(cache->GetCacheLength() - 1);
         uint32_t index2 = CACHE_TABLE_HEADER_SIZE + entry2 * ENTRY_SIZE;
         JSHandle<JSTaggedValue> extendHandle(thread, extend);
         if (cache->GetCacheLength() < DEFAULT_CACHE_NUMBER) {
@@ -1753,7 +1753,7 @@ void RegExpExecResultCache::AddResultInCache(JSThread *thread, JSHandle<RegExpEx
             inputValue = input.GetTaggedValue();
 
             cache->SetCacheLength(thread, DEFAULT_CACHE_NUMBER);
-            entry2 = hash & (cache->GetCacheLength() - 1);
+            entry2 = hash & static_cast<uint32_t>(cache->GetCacheLength() - 1);
             index2 = CACHE_TABLE_HEADER_SIZE + entry2 * ENTRY_SIZE;
         }
         JSTaggedValue extendValue = extendHandle.GetTaggedValue();

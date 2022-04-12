@@ -85,6 +85,7 @@ public:
     void Serialize(const std::string &filename);
     bool DeserializeForStub(JSThread *thread, const std::string &filename);
     bool Deserialize(EcmaVM *vm, const std::string &filename);
+    bool VerifyFilePath(const CString &filePath) const;
 
     struct StubDes {
         uint64_t codeAddr_;
@@ -215,7 +216,7 @@ public:
     {
         StubDes des;
         des.kind_ = kind;
-        des.indexInKind_ = indexInKind;
+        des.indexInKind_ = static_cast<uint32_t>(indexInKind);
         des.codeAddr_ = offset;
         stubEntries_.emplace_back(des);
     }

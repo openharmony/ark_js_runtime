@@ -81,7 +81,7 @@ EcmaString *StringHelper::Trim(JSThread *thread, const std::u16string &thisStr)
     const char16_t *constChar16tData = tmpStr.data();
     auto *char16tData = const_cast<char16_t *>(constChar16tData);
     auto *uint16tData = reinterpret_cast<uint16_t *>(char16tData);
-    int32_t length = tmpStr.size();
+    uint32_t length = tmpStr.size();
     return *factory->NewFromUtf16(uint16tData, length);
 }
 }  // namespace panda::ecmascript::base
