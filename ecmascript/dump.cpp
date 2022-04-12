@@ -28,14 +28,18 @@
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/jspandafile/class_info_extractor.h"
+#include "ecmascript/jspandafile/program_object.h"
+#include "ecmascript/js_api_arraylist.h"
+#include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_plain_array.h"
+#include "ecmascript/js_api_plain_array_iterator.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_stack.h"
 #include "ecmascript/js_api_stack_iterator.h"
-#include "ecmascript/jspandafile/class_info_extractor.h"
-#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_api_tree_map.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set.h"
@@ -43,8 +47,6 @@
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
-#include "ecmascript/js_api_arraylist.h"
-#include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_async_function.h"
 #include "ecmascript/js_bigint.h"
 #include "ecmascript/js_collator.h"
@@ -307,6 +309,10 @@ CString JSHClass::DumpJSType(JSType type)
             return "Queue";
         case JSType::JS_API_QUEUE_ITERATOR:
             return "QueueIterator";
+        case JSType::JS_API_PLAIN_ARRAY:
+            return "PlainArray";
+        case JSType::JS_API_PLAIN_ARRAY_ITERATOR:
+            return "PlainArrayIterator";
         case JSType::JS_API_DEQUE:
             return "Deque";
         case JSType::JS_API_DEQUE_ITERATOR:
@@ -731,6 +737,12 @@ static void DumpObject(TaggedObject *obj, std::ostream &os)
             break;
         case JSType::JS_MODULE_NAMESPACE:
             ModuleNamespace::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_API_PLAIN_ARRAY:
+            JSAPIPlainArray::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_API_PLAIN_ARRAY_ITERATOR:
+            JSAPIPlainArrayIterator::Cast(obj)->Dump(os);
             break;
         default:
             UNREACHABLE();
@@ -1330,6 +1342,44 @@ void TaggedTreeSet::Dump(std::ostream &os) const
             DumpTaggedTreeEntry(const_cast<TaggedTreeSet *>(this), os, index);
         }
     }
+}
+
+void JSAPIPlainArray::Dump(std::ostream &os) const
+{
+    TaggedArray *keys = TaggedArray::Cast(GetKeys().GetTaggedObject());
+    TaggedArray *values = TaggedArray::Cast(GetValues().GetTaggedObject());
+    uint32_t len = GetLength();
+    for (uint32_t i = 0; i < len; i++) {
+        os << " - keys: ";
+        keys->Get(i).DumpTaggedValue(os);
+        os << "\n";
+        os << " - values: ";
+        values->Get(i).DumpTaggedValue(os);
+        os << "\n";
+    }
+    os << " - length: " << std::dec << len << "\n";
+    JSObject::Dump(os);
+}
+
+void JSAPIPlainArray::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    JSObject::DumpForSnapshot(vec);
+}
+
+void JSAPIPlainArrayIterator::Dump(std::ostream &os) const
+{
+    JSAPIPlainArray *array = JSAPIPlainArray::Cast(GetIteratedPlainArray().GetTaggedObject());
+    os << " - length: " << std::dec << array->GetSize() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
+    JSObject::Dump(os);
+}
+
+void JSAPIPlainArrayIterator::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    JSAPIPlainArray *array = JSAPIPlainArray::Cast(GetIteratedPlainArray().GetTaggedObject());
+    array->DumpForSnapshot(vec);
+    vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
+    JSObject::DumpForSnapshot(vec);
 }
 
 void JSForInIterator::Dump(std::ostream &os) const
@@ -2905,6 +2955,12 @@ static void DumpObject(TaggedObject *obj,
         case JSType::JS_MODULE_NAMESPACE:
             ModuleNamespace::Cast(obj)->DumpForSnapshot(vec);
             return;
+        case JSType::JS_API_PLAIN_ARRAY:
+            JSAPIPlainArray::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_API_PLAIN_ARRAY_ITERATOR:
+            JSAPIPlainArrayIterator::Cast(obj)->DumpForSnapshot(vec);
+            return;
         default:
             break;
     }
@@ -3515,6 +3571,8 @@ void GlobalEnv::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &
     vec.push_back(std::make_pair(CString("TreeMapIteratorPrototype"), globalConst->GetTreeMapIteratorPrototype()));
     vec.push_back(std::make_pair(CString("TreeSetIteratorPrototype"), globalConst->GetTreeSetIteratorPrototype()));
     vec.push_back(std::make_pair(CString("QueueIteratorPrototype"), globalConst->GetQueueIteratorPrototype()));
+    vec.push_back(
+        std::make_pair(CString("PlainArrayIteratorPrototype"), globalConst->GetPlainArrayIteratorPrototype()));
     vec.push_back(std::make_pair(CString("DequeIteratorPrototype"), globalConst->GetDequeIteratorPrototype()));
     vec.push_back(std::make_pair(CString("StackIteratorPrototype"), globalConst->GetStackIteratorPrototype()));
 }

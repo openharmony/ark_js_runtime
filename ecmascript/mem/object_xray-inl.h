@@ -25,6 +25,8 @@
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_plain_array.h"
+#include "ecmascript/js_api_plain_array_iterator.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_stack.h"
@@ -430,6 +432,12 @@ void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const Ec
             break;
         case JSType::JS_API_TREESET_ITERATOR:
             JSAPITreeSetIterator::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::JS_API_PLAIN_ARRAY:
+            JSAPIPlainArray::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::JS_API_PLAIN_ARRAY_ITERATOR:
+            JSAPIPlainArrayIterator::Cast(object)->VisitRangeSlot(visitor);
             break;
         case JSType::JS_API_DEQUE:
             JSAPIDeque::Cast(object)->VisitRangeSlot(visitor);

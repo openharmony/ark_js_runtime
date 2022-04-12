@@ -34,6 +34,8 @@
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_plain_array.h"
+#include "ecmascript/js_api_plain_array_iterator.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_stack.h"
@@ -874,6 +876,11 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
                 JSAPIQueue::Cast(*obj)->SetFront(0);
                 JSAPIQueue::Cast(*obj)->SetTail(0);
                 break;
+            case JSType::JS_API_PLAIN_ARRAY:
+                JSAPIPlainArray::Cast(*obj)->SetLength(0);
+                JSAPIPlainArray::Cast(*obj)->SetValues(thread_, JSTaggedValue(0));
+                JSAPIPlainArray::Cast(*obj)->SetKeys(thread_, JSTaggedValue(0));
+                break;
             case JSType::JS_API_STACK:
                 JSAPIStack::Cast(*obj)->SetTop(0);
                 break;
@@ -893,6 +900,7 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
             case JSType::JS_API_DEQUE_ITERATOR:
             case JSType::JS_API_STACK_ITERATOR:
             case JSType::JS_ARRAY_ITERATOR:
+            case JSType::JS_API_PLAIN_ARRAY_ITERATOR:
             default:
                 UNREACHABLE();
         }
@@ -2518,6 +2526,38 @@ JSHandle<JSAPIArrayListIterator> ObjectFactory::NewJSAPIArrayListIterator(const 
     iter->GetJSHClass()->SetExtensible(true);
     iter->SetIteratedArrayList(thread_, arrayList);
     iter->SetNextIndex(0);
+    return iter;
+}
+
+JSHandle<JSAPIPlainArray> ObjectFactory::NewJSAPIPlainArray(array_size_t capacity)
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> builtinObj(thread_, thread_->GlobalConstants()->GetPlainArrayFunction());
+
+    JSHandle<JSAPIPlainArray> obj =
+        JSHandle<JSAPIPlainArray>(NewJSObjectByConstructor(JSHandle<JSFunction>(builtinObj), builtinObj));
+    ObjectFactory *factory = thread_->GetEcmaVM()->GetFactory();
+    JSHandle<TaggedArray> keyArray = factory->NewTaggedArray(capacity);
+    JSHandle<TaggedArray> valueArray = factory->NewTaggedArray(capacity);
+    obj->SetKeys(thread_, keyArray);
+    obj->SetValues(thread_, valueArray);
+
+    return obj;
+}
+
+JSHandle<JSAPIPlainArrayIterator> ObjectFactory::NewJSAPIPlainArrayIterator(const JSHandle<JSAPIPlainArray> &plainarray,
+                                                                            IterationKind kind)
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> protoValue(thread_, thread_->GlobalConstants()->GetPlainArrayIteratorPrototype());
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSHClass> dynHandle(globalConst->GetHandledJSAPIPlainArrayIteratorClass());
+    dynHandle->SetPrototype(thread_, protoValue);
+    JSHandle<JSAPIPlainArrayIterator> iter(NewJSObject(dynHandle));
+    iter->GetJSHClass()->SetExtensible(true);
+    iter->SetIteratedPlainArray(thread_, plainarray);
+    iter->SetNextIndex(0);
+    iter->SetIterationKind(kind);
     return iter;
 }
 

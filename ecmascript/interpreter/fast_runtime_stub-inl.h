@@ -23,6 +23,7 @@
 #include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_api_deque.h"
+#include "ecmascript/js_api_plain_array.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_stack.h"
 #include "ecmascript/js_function.h"
@@ -1366,6 +1367,9 @@ JSTaggedValue FastRuntimeStub::GetContainerProperty(JSThread *thread, JSTaggedVa
         case JSType::JS_API_QUEUE:
             res = JSAPIQueue::Cast(receiver.GetTaggedObject())->Get(thread, index);
             break;
+        case JSType::JS_API_PLAIN_ARRAY:
+            res = JSAPIPlainArray::Cast(receiver.GetTaggedObject())->Get(JSTaggedValue(index));
+            break;
         case JSType::JS_API_DEQUE:
             res = JSAPIDeque::Cast(receiver.GetTaggedObject())->Get(index);
             break;
@@ -1388,6 +1392,9 @@ JSTaggedValue FastRuntimeStub::SetContainerProperty(JSThread *thread, JSTaggedVa
             break;
         case JSType::JS_API_QUEUE:
             res = JSAPIQueue::Cast(receiver.GetTaggedObject())->Set(thread, index, value);
+            break;
+        case JSType::JS_API_PLAIN_ARRAY:
+            res = JSAPIPlainArray::Set(thread, JSHandle<JSAPIPlainArray> (thread, receiver), index, value);
             break;
         case JSType::JS_API_DEQUE:
             res = JSAPIDeque::Cast(receiver.GetTaggedObject())->Set(thread, index, value);
