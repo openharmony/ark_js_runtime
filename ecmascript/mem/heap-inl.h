@@ -275,14 +275,14 @@ void Heap::SwapNewSpace()
     toSpace_ = newSpace;
 }
 
-void Heap::ReclaimRegions(TriggerGCType gcType)
+void Heap::ReclaimRegions(TriggerGCType gcType, Region *lastRegionOfToSpace)
 {
     toSpace_->EnumerateRegions([] (Region *region) {
         region->ClearMarkBitmap();
         region->ClearCrossRegionRememberedSet();
         region->ResetAliveObject();
         region->ClearFlag(RegionFlags::IS_IN_NEW_TO_NEW_SET);
-    });
+    }, lastRegionOfToSpace);
     if (gcType == TriggerGCType::FULL_GC) {
         compressSpace_->Reset();
     } else if (gcType == TriggerGCType::OLD_GC) {
@@ -290,11 +290,6 @@ void Heap::ReclaimRegions(TriggerGCType gcType)
     }
     fromSpace_->ReclaimRegions();
 
-    sweeper_->WaitAllTaskFinished();
-    EnumerateNonNewSpaceRegions([] (Region *region) {
-        region->ClearMarkBitmap();
-        region->ClearCrossRegionRememberedSet();
-    });
     if (!isClearTaskFinished_) {
         os::memory::LockHolder holder(waitClearTaskFinishedMutex_);
         isClearTaskFinished_ = true;
