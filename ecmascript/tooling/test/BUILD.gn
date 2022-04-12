@@ -296,7 +296,7 @@ group("unittest") {
   deps = [
     ":DebuggerCommandsTest",
     ":DebuggerEventsTest",
-    ":DebuggerParamsTest",	
+    ":DebuggerParamsTest",
     ":DebuggerReturnsTest",
     ":DebuggerScriptTest",
     ":DebuggerTypesTest",
@@ -312,7 +312,7 @@ group("host_unittest") {
   deps = [
     ":DebuggerCommandsTestAction",
     ":DebuggerEventsTestAction",
-    ":DebuggerParamsTestAction",	
+    ":DebuggerParamsTestAction",
     ":DebuggerReturnsTestAction",
     ":DebuggerScriptTestAction",
     ":DebuggerTypesTestAction",
