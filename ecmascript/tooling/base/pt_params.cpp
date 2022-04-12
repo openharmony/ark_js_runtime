@@ -736,7 +736,8 @@ std::unique_ptr<StartSamplingParams> StartSamplingParams::Create(const EcmaVM *e
     CString error;
     auto paramsObject = std::make_unique<StartSamplingParams>();
 
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samplingInterval")));
+    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
+                                            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samplingInterval")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             paramsObject->samplingInterval_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
@@ -773,7 +774,8 @@ std::unique_ptr<StartTrackingHeapObjectsParams> StartTrackingHeapObjectsParams::
     CString error;
     auto paramsObject = std::make_unique<StartTrackingHeapObjectsParams>();
 
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "trackAllocations")));
+    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm, 
+                                                Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "trackAllocations")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             paramsObject->trackAllocations_ = result->IsTrue();
@@ -792,7 +794,7 @@ Local<ObjectRef> StartTrackingHeapObjectsParams::ToObject(const EcmaVM *ecmaVm)
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
-    params->Set(ecmaVm,Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "trackAllocations")),
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "trackAllocations")),
         BooleanRef::New(ecmaVm, trackAllocations_.value()));
 
     return params;
@@ -809,7 +811,8 @@ std::unique_ptr<StopTrackingHeapObjectsParams> StopTrackingHeapObjectsParams::Cr
     CString error;
     auto paramsObject = std::make_unique<StopTrackingHeapObjectsParams>();
 
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "reportProgress")));
+    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm, 
+                                                Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "reportProgress")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             paramsObject->reportProgress_ = result->IsTrue();
@@ -818,7 +821,8 @@ std::unique_ptr<StopTrackingHeapObjectsParams> StopTrackingHeapObjectsParams::Cr
         }
     }
 
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "treatGlobalObjectsAsRoots")));
+    result = Local<ObjectRef>(params)->Get(ecmaVm, 
+                                        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "treatGlobalObjectsAsRoots")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             paramsObject->treatGlobalObjectsAsRoots_ = result->IsTrue();
@@ -827,7 +831,8 @@ std::unique_ptr<StopTrackingHeapObjectsParams> StopTrackingHeapObjectsParams::Cr
         }
     }
 
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "captureNumericValue")));
+    result = Local<ObjectRef>(params)->Get(ecmaVm, 
+                                            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "captureNumericValue")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             paramsObject->captureNumericValue_ = result->IsTrue();
@@ -843,18 +848,18 @@ std::unique_ptr<StopTrackingHeapObjectsParams> StopTrackingHeapObjectsParams::Cr
     return paramsObject;
 }
 
+
 Local<ObjectRef> StopTrackingHeapObjectsParams::ToObject(const EcmaVM *ecmaVm)
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
-    params->Set(ecmaVm,Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "reportProgress")),
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "reportProgress")),
         BooleanRef::New(ecmaVm, reportProgress_.value()));
-    params->Set(ecmaVm,Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "treatGlobalObjectsAsRoots")),
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "treatGlobalObjectsAsRoots")),
         BooleanRef::New(ecmaVm, treatGlobalObjectsAsRoots_.value()));
-    params->Set(ecmaVm,Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "captureNumericValue")),
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "captureNumericValue")),
         BooleanRef::New(ecmaVm, captureNumericValue_.value()));
 
     return params;
 }
-
 }  // namespace panda::tooling::ecmascript

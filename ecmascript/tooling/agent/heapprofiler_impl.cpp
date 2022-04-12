@@ -70,7 +70,6 @@ void HeapProfilerImpl::DispatcherImpl::StartSampling(const DispatchRequest &requ
     DispatchResponse response = heapprofiler_->StartSampling(std::move(params));
     std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
     SendResponse(request, response, std::move(result));
-
 }
 
 void HeapProfilerImpl::DispatcherImpl::StartTrackingHeapObjects(const DispatchRequest &request)
@@ -124,7 +123,8 @@ DispatchResponse HeapProfilerImpl::StartSampling([[maybe_unused]]std::unique_ptr
     return DispatchResponse::Ok();
 }
 
-DispatchResponse HeapProfilerImpl::StartTrackingHeapObjects([[maybe_unused]]std::unique_ptr<StartTrackingHeapObjectsParams> params)
+DispatchResponse HeapProfilerImpl::StartTrackingHeapObjects(
+    [[maybe_unused]]std::unique_ptr<StartTrackingHeapObjectsParams> params)
 {
     return DispatchResponse::Ok();
 }
@@ -135,9 +135,9 @@ DispatchResponse HeapProfilerImpl::StopSampling([[maybe_unused]]std::unique_ptr<
     return DispatchResponse::Ok();
 }
 
-DispatchResponse HeapProfilerImpl::StopTrackingHeapObjects ([[maybe_unused]]std::unique_ptr<StopTrackingHeapObjectsParams> params)
+DispatchResponse HeapProfilerImpl::StopTrackingHeapObjects (
+    [[maybe_unused]]std::unique_ptr<StopTrackingHeapObjectsParams> params)
 {
     return DispatchResponse::Ok();
 }
-
 }  // namespace panda::tooling::ecmascript

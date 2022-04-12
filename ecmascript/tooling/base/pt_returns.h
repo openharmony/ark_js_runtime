@@ -264,6 +264,5 @@ private:
 
     std::unique_ptr<SamplingHeapProfile> profile_ {};
 };
-
 }  // namespace panda::tooling::ecmascript
 #endif
