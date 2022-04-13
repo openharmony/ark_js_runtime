@@ -83,7 +83,7 @@
 #include "ecmascript/module/js_module_namespace.h"
 #include "ecmascript/module/js_module_source_text.h"
 #include "ecmascript/record.h"
-#include "ecmascript/sharedMemoryManaged/sharedmemorymanager.h"
+#include "ecmascript/shared_mm/shared_mm.h"
 #include "ecmascript/symbol_table.h"
 #include "ecmascript/tagged_tree-inl.h"
 #include "ecmascript/template_map.h"
