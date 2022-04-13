@@ -246,4 +246,14 @@ Local<ObjectRef> StopSamplingReturns::ToObject(const EcmaVM *ecmaVm)
     }
     return result;
 }
+
+Local<ObjectRef> StopReturns::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> result = NewObject(ecmaVm);
+
+    Local<ObjectRef> profile = profile_->ToObject(ecmaVm);
+    result->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "profile")), Local<JSValueRef>(profile));
+
+    return result;
+}
 }  // namespace panda::tooling::ecmascript
