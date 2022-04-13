@@ -60,6 +60,11 @@ uintptr_t SparseSpace::Allocate(size_t size, bool isAllowGC)
         CHECK_OBJECT_AND_INC_OBJ_SIZE(size);
     }
 
+    if (isAllowGC) {
+        // Check whether it is necessary to trigger Old GC before expanding or OOM risk.
+        heap_->CheckAndTriggerOldGC();
+    }
+
     if (Expand()) {
         object = allocator_->Allocate(size);
         CHECK_OBJECT_AND_INC_OBJ_SIZE(size);
@@ -80,6 +85,7 @@ bool SparseSpace::Expand()
         LOG_ECMA_MEM(INFO) << "Expand::Committed size " << committedSize_ << " of old space is too big. ";
         return false;
     }
+
     Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     region->SetFlag(GetRegionFlag());
     if (spaceType_ == MemSpaceType::MACHINE_CODE_SPACE) {
