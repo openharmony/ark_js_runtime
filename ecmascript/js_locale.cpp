@@ -509,7 +509,7 @@ JSHandle<EcmaString> JSLocale::ToLanguageTag(JSThread *thread, const icu::Locale
     }
     size_t specialBeginning  = findBeginning + INTL_INDEX_THREE;
     size_t specialCount = 0;
-    while (result[specialBeginning] != '-') {
+    while ((specialBeginning < result.size()) && (result[specialBeginning] != '-')) {
         specialCount++;
         specialBeginning++;
     }
