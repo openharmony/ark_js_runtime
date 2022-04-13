@@ -204,6 +204,7 @@ enum BytecodeOffset {
 
 enum CommonArgIdx : uint8_t {
     GLUE = 0,
+    ACTUAL_ARGC,
     FUNC,
     NEW_TARGET,
     THIS,
