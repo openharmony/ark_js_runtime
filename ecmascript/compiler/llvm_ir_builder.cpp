@@ -1962,7 +1962,9 @@ LLVMValueRef LLVMModule::AddFunc(const panda::ecmascript::JSMethod *method)
     auto paramCount = method->GetNumArgs() + CommonArgIdx::NUM_OF_ARGS;
     VariableType glueParamType(MachineType::I64, GateType::C_VALUE);
     paramTys.push_back(ConvertLLVMTypeFromVariableType(glueParamType));
-    for (uint32_t i = 1; i < CommonArgIdx::NUM_OF_ARGS; i++) {
+    VariableType actualArgc(MachineType::I32, GateType::C_VALUE);
+    paramTys.push_back(ConvertLLVMTypeFromVariableType(actualArgc));
+    for (uint32_t i = CommonArgIdx::FUNC; i < CommonArgIdx::NUM_OF_ARGS; i++) {
         VariableType paramsType(MachineType::I64, GateType::TAGGED_VALUE);
         paramTys.push_back(ConvertLLVMTypeFromVariableType(paramsType));
     }
