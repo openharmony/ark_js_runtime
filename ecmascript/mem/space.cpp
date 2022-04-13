@@ -80,6 +80,10 @@ uintptr_t HugeObjectSpace::Allocate(size_t objectSize)
         LOG_ECMA_MEM(INFO) << "Committed size " << committedSize_ << " of huge object space is too big.";
         return 0;
     }
+
+    // Check whether it is necessary to trigger Old GC before expanding or OOM risk.
+    heap_->CheckAndTriggerOldGC();
+
     size_t alignedSize = AlignUp(objectSize + sizeof(Region), PANDA_POOL_ALIGNMENT_IN_BYTES);
     if (UNLIKELY(alignedSize > MAX_HUGE_OBJECT_SIZE)) {
         LOG_ECMA_MEM(FATAL) << "The size is too big for this allocator. Return nullptr.";
