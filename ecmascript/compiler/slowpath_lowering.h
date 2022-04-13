@@ -135,8 +135,10 @@ private:
     GateRef GetCurrentEnv(GateRef jsFunc);
     // labelmanager must be initialized
     GateRef GetObjectFromConstPool(GateRef jsFunc, GateRef index);
+    // labelmanager must be initialized
+    GateRef GetHomeObjectFromJSFunction(GateRef jsFunc);
     GateRef GetValueFromConstStringTable(GateRef glue, GateRef gate, uint32_t inIndex);
-    void Lower(GateRef gate, EcmaOpcode op);
+    void Lower(GateRef gate);
     void LowerAdd2Dyn(GateRef gate, GateRef glue);
     void LowerCreateIterResultObj(GateRef gate, GateRef glue);
     void LowerSuspendGenerator(GateRef gate, GateRef glue);
@@ -241,6 +243,9 @@ private:
     void LowerStArraySpread(GateRef gate, GateRef glue);
     void LowerLdLexVarDyn(GateRef gate, GateRef jsFunc);
     void LowerStLexVarDyn(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerCreateObjectHavingMethod(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerLdHomeObject(GateRef gate, GateRef thisFunc);
+    void LowerDefineClassWithBuffer(GateRef gate, GateRef glue, GateRef jsFunc);
 
     BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;
