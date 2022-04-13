@@ -333,6 +333,7 @@ namespace panda::ecmascript {
     V(Map, Set)                               \
     V(Map, GetSize)                           \
     V(Map, Values)                            \
+    V(Map, ForEach)                           \
     V(Math, Abs)                              \
     V(Math, Acos)                             \
     V(Math, Acosh)                            \
@@ -463,6 +464,7 @@ namespace panda::ecmascript {
     V(Set, Has)                               \
     V(Set, GetSize)                           \
     V(Set, Values)                            \
+    V(Set, ForEach)                           \
     V(StringIterator, Next)                   \
     V(String, Constructor)                    \
     V(String, FromCharCode)                   \

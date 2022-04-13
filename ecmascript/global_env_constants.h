@@ -320,6 +320,7 @@ class JSThread;
     V(JSTaggedValue, FallbackString, FALLBACK_INDEX, fallback)                                                        \
     V(JSTaggedValue, DateTimeFieldString, DATETIMEFIELD_INDEX, datetimefield)                                         \
     V(JSTaggedValue, NoneString, NONE_INDEX, none)                                                                    \
+    V(JSTaggedValue, AddString, ADD_INDEX, none)                                                                      \
     /* for regexp. */                                                                                                 \
     V(JSTaggedValue, ExecString, EXEC_INDEX, exec)                                                                    \
     V(JSTaggedValue, LastIndexString, LAST_INDEX_INDEX, lastIndex)                                                    \
