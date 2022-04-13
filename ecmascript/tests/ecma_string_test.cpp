@@ -14,6 +14,7 @@
  */
 
 #include "ecmascript/ecma_string-inl.h"
+#include "ecmascript/object_factory.h"
 #include "ecmascript/tests/test_helper.h"
 
 using namespace panda::ecmascript;
@@ -1849,5 +1850,104 @@ HWTEST_F_L0(EcmaStringTest, SetIsInternString)
     EXPECT_FALSE(handleEcmaStrU16NotComp->IsInternString());
     handleEcmaStrU16NotComp->SetIsInternString();
     EXPECT_TRUE(handleEcmaStrU16NotComp->IsInternString());
+}
+
+/*
+ * @tc.name: EqualToSplicedString
+ * @tc.desc: Tests whether the source string is equal to the concatenated string.
+ * is within expectations.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F_L0(EcmaStringTest, EqualToSplicedString)
+{
+    ObjectFactory* factory = EcmaVM::Cast(instance)->GetFactory();
+    {
+        JSHandle<EcmaString> sourceString = factory->NewFromUtf8("Start开始");
+        JSHandle<EcmaString> firstString = factory->NewFromASCII("Start");
+        JSHandle<EcmaString> secondString = factory->NewFromUtf8("开始");
+        EXPECT_TRUE(sourceString->IsUtf16());
+        EXPECT_TRUE(firstString->IsUtf8());
+        EXPECT_TRUE(secondString->IsUtf16());
+        bool result = sourceString->EqualToSplicedString(*firstString, *secondString);
+        EXPECT_TRUE(result);
+    }
+
+    {
+        JSHandle<EcmaString> sourceString = factory->NewFromUtf8("Start开始");
+        JSHandle<EcmaString> firstString = factory->NewFromASCII("Start");
+        JSHandle<EcmaString> secondString = factory->NewFromASCII("start");
+        EXPECT_TRUE(sourceString->IsUtf16());
+        EXPECT_TRUE(firstString->IsUtf8());
+        EXPECT_TRUE(secondString->IsUtf8());
+        bool result = sourceString->EqualToSplicedString(*firstString, *secondString);
+        EXPECT_TRUE(!result);
+    }
+
+    {
+        JSHandle<EcmaString> sourceString = factory->NewFromUtf8("Start开始");
+        JSHandle<EcmaString> firstString = factory->NewFromUtf8("Start开");
+        JSHandle<EcmaString> secondString = factory->NewFromUtf8("始");
+        EXPECT_TRUE(sourceString->IsUtf16());
+        EXPECT_TRUE(firstString->IsUtf16());
+        EXPECT_TRUE(secondString->IsUtf16());
+        bool result = sourceString->EqualToSplicedString(*firstString, *secondString);
+        EXPECT_TRUE(result);
+    }
+
+    {
+        JSHandle<EcmaString> sourceString = factory->NewFromUtf8("Startstart");
+        JSHandle<EcmaString> firstString = factory->NewFromASCII("Start");
+        JSHandle<EcmaString> secondString = factory->NewFromASCII("start");
+        EXPECT_TRUE(sourceString->IsUtf8());
+        EXPECT_TRUE(firstString->IsUtf8());
+        EXPECT_TRUE(secondString->IsUtf8());
+        bool result = sourceString->EqualToSplicedString(*firstString, *secondString);
+        EXPECT_TRUE(result);
+    }
+
+    {
+        JSHandle<EcmaString> sourceString = factory->NewFromUtf8("Startstart");
+        JSHandle<EcmaString> firstString = factory->NewFromASCII("Start");
+        JSHandle<EcmaString> secondString = factory->NewFromUtf8("开始");
+        EXPECT_TRUE(sourceString->IsUtf8());
+        EXPECT_TRUE(firstString->IsUtf8());
+        EXPECT_TRUE(secondString->IsUtf16());
+        bool result = sourceString->EqualToSplicedString(*firstString, *secondString);
+        EXPECT_TRUE(!result);
+    }
+
+    {
+        JSHandle<EcmaString> sourceString = factory->NewFromUtf8("Startstat");
+        JSHandle<EcmaString> firstString = factory->NewFromASCII("Start");
+        JSHandle<EcmaString> secondString = factory->NewFromASCII("start");
+        EXPECT_TRUE(sourceString->IsUtf8());
+        EXPECT_TRUE(firstString->IsUtf8());
+        EXPECT_TRUE(secondString->IsUtf8());
+        bool result = sourceString->EqualToSplicedString(*firstString, *secondString);
+        EXPECT_TRUE(!result);
+    }
+
+    {
+        JSHandle<EcmaString> sourceString = factory->NewFromUtf8("Start开始");
+        JSHandle<EcmaString> firstString = factory->NewFromUtf8("Stat开");
+        JSHandle<EcmaString> secondString = factory->NewFromUtf8("始");
+        EXPECT_TRUE(sourceString->IsUtf16());
+        EXPECT_TRUE(firstString->IsUtf16());
+        EXPECT_TRUE(secondString->IsUtf16());
+        bool result = sourceString->EqualToSplicedString(*firstString, *secondString);
+        EXPECT_TRUE(!result);
+    }
+
+    {
+        JSHandle<EcmaString> sourceString = factory->NewFromUtf8("Start开始");
+        JSHandle<EcmaString> firstString = factory->NewFromASCII("Stat");
+        JSHandle<EcmaString> secondString = factory->NewFromUtf8("开始");
+        EXPECT_TRUE(sourceString->IsUtf16());
+        EXPECT_TRUE(firstString->IsUtf8());
+        EXPECT_TRUE(secondString->IsUtf16());
+        bool result = sourceString->EqualToSplicedString(*firstString, *secondString);
+        EXPECT_TRUE(!result);
+    }
 }
 }  // namespace panda::test

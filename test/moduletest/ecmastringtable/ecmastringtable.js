@@ -14,50 +14,105 @@
  */
 
 // Using to test the concat interface of EcmaStringTable about intern string and non-intern string
-let REGISTRY = Symbol();
-function System() {
-  this[REGISTRY] = {};
+{
+    let REGISTRY = Symbol();
+    function System() {
+      this[REGISTRY] = {};
+    }
+    function getOrCreateLoad(loader, id) {
+      let load = loader[REGISTRY][id];
+      print("id: " + id + " - load: "+ load);
+      load = loader[REGISTRY][id] = {};
+      return load;
+    }
+
+    // non-intern + non-intern
+    let head1 = "no-".concat("schema:");
+    let tail1 = "/src/".concat("xxx-js/instantiated-1af0bf5b.js");
+    let key1 = head1 + tail1;
+    let key2 = head1 + tail1;
+
+    // intern + intern
+    let key3 = "no-schema:/src/xxx-js/instantiation.js";
+    let key4 = "no-schema:" + "/src/xxx-js/instantiation.js";
+
+    // non-intern + intern
+    let head2 = "no-".concat("schema:");
+    let tail2 = "/src/xxx-js/cc.js";
+    let key5 = "no-schema:" + "/src/xxx-js/cc.js";
+    let key6 = head2 + tail2;
+
+    // intern + non-intern
+    let head3 = "no-schema:";
+    let tail3 = "/src".concat("/instantiated-1af0bf5b.js");
+    let key7 = "no-schema:" + "/src/instantiated-1af0bf5b.js";
+    let key8 = head3 + tail3;
+
+    let keyArray = [key1, key3, key5, key7];
+    let system = new System();
+    for (let i = 0; i < keyArray.length; i++) {
+        getOrCreateLoad(system, keyArray[i]);
+    }
+
+    print("key1 === key2: ", key1 === key2);
+    print("key3 === key4: ", key3 === key4);
+    print("key5 === key6: ", key5 === key6);
+    print("key7 === key8: ", key7 === key8);
+    getOrCreateLoad(system, key2);
+    getOrCreateLoad(system, key4);
+    getOrCreateLoad(system, key6);
+    getOrCreateLoad(system, key8);
 }
-function getOrCreateLoad(loader, id) {
-  let load = loader[REGISTRY][id];
-  print("id: " + id + " - load: "+ load);
-  load = loader[REGISTRY][id] = {};
-  return load;
+
+{
+    let obj = {
+        "123一二三": "value 123一二三",
+        "1一2二3三": "value 1一2二3三",
+        "123456": "value 123456",
+    }
+    {
+        let key1 = "123一二三";
+        let tmp1 = "123";
+        let tmp2 = "一二三";
+        let key2 = tmp1 + tmp2;
+        let res1 = obj[key1];
+        let res2 = obj[key2]
+        print("res:", res1 === res2)
+    }
+    {
+        let key1 = "1一2二3三";
+        let tmp1 = "1一2";
+        let tmp2 = "二3三";
+        let key2 = tmp1 + tmp2;
+        let res1 = obj[key1];
+        let res2 = obj[key2]
+        print("res:", res1 === res2)
+    }
+    {
+        let key1 = "123一二三";
+        let tmp1 = "123";
+        let tmp2 = "123";
+        let key2 = tmp1 + tmp2;
+        let res1 = obj[key1];
+        let res2 = obj[key2]
+        print("res:", res1 !== res2)
+    }
+    {
+        let key1 = "123456";
+        let tmp1 = "123";
+        let tmp2 = "456";
+        let key2 = tmp1 + tmp2;
+        let res1 = obj[key1];
+        let res2 = obj[key2]
+        print("res:", res1 === res2)
+    }
+    {
+        let key1 = "123456";
+        let tmp1 = "一二三";
+        let tmp2 = "456";
+        let key2 = tmp1 + tmp2;
+        let res1 = obj[key1];
+        let res2 = obj[key2]
+        print("res:", res1 !== res2)
+    }
 }
-
-// non-intern + non-intern
-let head1 = "no-".concat("schema:");
-let tail1 = "/src/".concat("xxx-js/instantiated-1af0bf5b.js");
-let key1 = head1 + tail1;
-let key2 = head1 + tail1;
-
-// intern + intern
-let key3 = "no-schema:/src/xxx-js/instantiation.js";
-let key4 = "no-schema:" + "/src/xxx-js/instantiation.js";
-
-// non-intern + intern
-let head2 = "no-".concat("schema:");
-let tail2 = "/src/xxx-js/cc.js";
-let key5 = "no-schema:" + "/src/xxx-js/cc.js";
-let key6 = head2 + tail2;
-
-// intern + non-intern
-let head3 = "no-schema:";
-let tail3 = "/src".concat("/instantiated-1af0bf5b.js");
-let key7 = "no-schema:" + "/src/instantiated-1af0bf5b.js";
-let key8 = head3 + tail3;
-
-let keyArray = [key1, key3, key5, key7];
-let system = new System();
-for (let i = 0; i < keyArray.length; i++) {
-    getOrCreateLoad(system, keyArray[i]);
-}
-
-print("key1 === key2: ", key1 === key2);
-print("key3 === key4: ", key3 === key4);
-print("key5 === key6: ", key5 === key6);
-print("key7 === key8: ", key7 === key8);
-getOrCreateLoad(system, key2);
-getOrCreateLoad(system, key4);
-getOrCreateLoad(system, key6);
-getOrCreateLoad(system, key8);
