@@ -3267,6 +3267,99 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
     DEFVARIABLE(opNumber1, VariableType::INT32(), Int32(0));
 
     Label accDispatch(env);
+    Label leftIsNumber(env);
+    Label leftNotNumberOrRightNotNumber(env);
+    Branch(TaggedIsNumber(left), &leftIsNumber, &leftNotNumberOrRightNotNumber);
+    Bind(&leftIsNumber);
+    {
+        Label rightIsNumber(env);
+        Branch(TaggedIsNumber(right), &rightIsNumber, &leftNotNumberOrRightNotNumber);
+        Bind(&rightIsNumber);
+        {
+            Label leftIsInt(env);
+            Label leftIsDouble(env);
+            Branch(TaggedIsInt(left), &leftIsInt, &leftIsDouble);
+            Bind(&leftIsInt);
+            {
+                Label rightIsInt(env);
+                Label rightIsDouble(env);
+                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
+                Bind(&rightIsInt);
+                {
+                    opNumber0 = TaggedCastToInt32(left);
+                    opNumber1 = TaggedCastToInt32(right);
+                    Jump(&accDispatch);
+                }
+                Bind(&rightIsDouble);
+                {
+                    GateRef rightDouble = TaggedCastToDouble(right);
+                    opNumber0 = TaggedCastToInt32(left);
+                    opNumber1 = DoubleToInt(glue, rightDouble);
+                    Jump(&accDispatch);
+                }
+            }
+            Bind(&leftIsDouble);
+            {
+                Label rightIsInt(env);
+                Label rightIsDouble(env);
+                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
+                Bind(&rightIsInt);
+                {
+                    GateRef leftDouble = TaggedCastToDouble(left);
+                    opNumber0 = DoubleToInt(glue, leftDouble);
+                    opNumber1 = TaggedCastToInt32(right);
+                    Jump(&accDispatch);
+                }
+                Bind(&rightIsDouble);
+                {
+                    GateRef rightDouble = TaggedCastToDouble(right);
+                    GateRef leftDouble = TaggedCastToDouble(left);
+                    opNumber0 = DoubleToInt(glue, leftDouble);
+                    opNumber1 = DoubleToInt(glue, rightDouble);
+                    Jump(&accDispatch);
+                }
+            }
+        }
+    }
+    // slow path
+    Bind(&leftNotNumberOrRightNotNumber);
+    {
+        SetPcToFrame(glue, GetFrame(sp), pc);
+        GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(Ashr2Dyn), { left, right });
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(taggedNumber), &isException, &notException);
+        Bind(&isException);
+        {
+            DISPATCH_LAST_WITH_ACC();
+        }
+        Bind(&notException);
+        {
+            varAcc = taggedNumber;
+            DISPATCH_WITH_ACC(PREF_V8);
+        }
+    }
+    Bind(&accDispatch);
+    {
+        GateRef shift = Int32And(*opNumber1, Int32(0x1f));
+        GateRef ret = Int32ASR(*opNumber0, shift);
+        varAcc = IntBuildTaggedWithNoGC(ret);
+        DISPATCH_WITH_ACC(PREF_V8);
+    }
+}
+
+DECLARE_ASM_HANDLER(HandleShr2DynPrefV8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    GateRef right = *varAcc;
+    DEFVARIABLE(opNumber0, VariableType::INT32(), Int32(0));
+    DEFVARIABLE(opNumber1, VariableType::INT32(), Int32(0));
+
+    Label accDispatch(env);
     Label doShr(env);
     Label overflow(env);
     Label notOverflow(env);
@@ -3328,7 +3421,7 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
     Bind(&leftNotNumberOrRightNotNumber);
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
-        GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(Ashr2Dyn), { left, right });
+        GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(Shr2Dyn), { left, right });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -3365,98 +3458,6 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
     }
 }
 
-DECLARE_ASM_HANDLER(HandleShr2DynPrefV8)
-{
-    auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
-
-    GateRef v0 = ReadInst8_1(pc);
-    GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, VariableType::INT32(), Int32(0));
-    DEFVARIABLE(opNumber1, VariableType::INT32(), Int32(0));
-
-    Label accDispatch(env);
-    Label leftIsNumber(env);
-    Label leftNotNumberOrRightNotNumber(env);
-    Branch(TaggedIsNumber(left), &leftIsNumber, &leftNotNumberOrRightNotNumber);
-    Bind(&leftIsNumber);
-    {
-        Label rightIsNumber(env);
-        Branch(TaggedIsNumber(right), &rightIsNumber, &leftNotNumberOrRightNotNumber);
-        Bind(&rightIsNumber);
-        {
-            Label leftIsInt(env);
-            Label leftIsDouble(env);
-            Branch(TaggedIsInt(left), &leftIsInt, &leftIsDouble);
-            Bind(&leftIsInt);
-            {
-                Label rightIsInt(env);
-                Label rightIsDouble(env);
-                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
-                Bind(&rightIsInt);
-                {
-                    opNumber0 = TaggedCastToInt32(left);
-                    opNumber1 = TaggedCastToInt32(right);
-                    Jump(&accDispatch);
-                }
-                Bind(&rightIsDouble);
-                {
-                    GateRef rightDouble = TaggedCastToDouble(right);
-                    opNumber0 = TaggedCastToInt32(left);
-                    opNumber1 = DoubleToInt(glue, rightDouble);
-                    Jump(&accDispatch);
-                }
-            }
-            Bind(&leftIsDouble);
-            {
-                Label rightIsInt(env);
-                Label rightIsDouble(env);
-                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
-                Bind(&rightIsInt);
-                {
-                    GateRef leftDouble = TaggedCastToDouble(left);
-                    opNumber0 = DoubleToInt(glue, leftDouble);
-                    opNumber1 = TaggedCastToInt32(right);
-                    Jump(&accDispatch);
-                }
-                Bind(&rightIsDouble);
-                {
-                    GateRef rightDouble = TaggedCastToDouble(right);
-                    GateRef leftDouble = TaggedCastToDouble(left);
-                    opNumber0 = DoubleToInt(glue, leftDouble);
-                    opNumber1 = DoubleToInt(glue, rightDouble);
-                    Jump(&accDispatch);
-                }
-            }
-        }
-    }
-    // slow path
-    Bind(&leftNotNumberOrRightNotNumber);
-    {
-        SetPcToFrame(glue, GetFrame(sp), pc);
-        GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(Shr2Dyn), { left, right });
-        Label isException(env);
-        Label notException(env);
-        Branch(TaggedIsException(taggedNumber), &isException, &notException);
-        Bind(&isException);
-        {
-            DISPATCH_LAST_WITH_ACC();
-        }
-        Bind(&notException);
-        {
-            varAcc = taggedNumber;
-            DISPATCH_WITH_ACC(PREF_V8);
-        }
-    }
-    Bind(&accDispatch);
-    {
-        GateRef shift = Int32And(*opNumber1, Int32(0x1f));
-        GateRef ret = Int32ASR(*opNumber0, shift);
-        varAcc = IntBuildTaggedWithNoGC(ret);
-        DISPATCH_WITH_ACC(PREF_V8);
-    }
-}
 DECLARE_ASM_HANDLER(HandleShl2DynPrefV8)
 {
     auto env = GetEnvironment();
