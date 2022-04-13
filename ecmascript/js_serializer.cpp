@@ -27,7 +27,7 @@
 #include "ecmascript/js_set.h"
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/linked_hash_table-inl.h"
-#include "ecmascript/sharedMemoryManaged/sharedmemorymanager.h"
+#include "ecmascript/shared_mm/shared_mm.h"
 #include "libpandabase/mem/mem.h"
 #include "securec.h"
 
