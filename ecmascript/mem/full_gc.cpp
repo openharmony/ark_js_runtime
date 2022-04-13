@@ -61,6 +61,10 @@ void FullGC::InitializePhase()
         }
     };
     heap_->EnumerateNonMovableRegions(callback);
+    heap_->EnumerateNonNewSpaceRegions([](Region *current) {
+        current->ClearMarkBitmap();
+        current->ClearCrossRegionRememberedSet();
+    });
     heap_->SwapNewSpace();
     workList_->Initialize(TriggerGCType::FULL_GC, ParallelGCTaskPhase::COMPRESS_HANDLE_GLOBAL_POOL_TASK);
     heap_->GetCompressGcMarker()->Initialized();
