@@ -462,7 +462,7 @@ ecma_source = [
   "ecmascript/regexp/regexp_parser.cpp",
   "ecmascript/regexp/regexp_parser_cache.cpp",
   "ecmascript/runtime_api.cpp",
-  "ecmascript/sharedMemoryManaged/sharedmemorymanager.cpp",
+  "ecmascript/shared_mm/shared_mm.cpp",
   "ecmascript/tagged_dictionary.cpp",
   "ecmascript/tagged_tree.cpp",
   "ecmascript/template_string.cpp",
