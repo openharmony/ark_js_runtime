@@ -26,7 +26,6 @@ config("ark_ecma_debugger_config") {
 
 debugger_sources = [
   "agent/debugger_impl.cpp",
-  "agent/heapprofiler_impl.cpp",
   "agent/js_backend.cpp",
   "agent/js_pt_hooks.cpp",
   "agent/runtime_impl.cpp",
