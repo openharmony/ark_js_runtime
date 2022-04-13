@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#ifndef ARK_DISPATCHPROTOCOLMESSAGE_FUZZER_H
-#define ARK_DISPATCHPROTOCOLMESSAGE_FUZZER_H
+#ifndef DISPATCHPROTOCOLMESSAGE_FUZZER_H
+#define DISPATCHPROTOCOLMESSAGE_FUZZER_H
 
-#define FUZZ_PROJECT_NAME "ark_DispatchProtocolMessage_fuzzer"
+#define FUZZ_PROJECT_NAME "dispatchprotocolmessage_fuzzer"
 
 #endif
