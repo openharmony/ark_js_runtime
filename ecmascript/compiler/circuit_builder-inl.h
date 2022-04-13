@@ -31,6 +31,11 @@ GateRef CircuitBuilder::False()
     return TruncInt32ToInt1(Int32(0));
 }
 
+GateRef CircuitBuilder::Undefined(VariableType type)
+{
+    return UndefineConstant(type.GetGateType());
+}
+
 // memory
 GateRef CircuitBuilder::Load(VariableType type, GateRef base, GateRef offset)
 {

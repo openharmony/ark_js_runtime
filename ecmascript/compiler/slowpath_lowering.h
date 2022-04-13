@@ -150,11 +150,12 @@ private:
     void LowerStGlobalVar(GateRef gate, GateRef glue);
     void LowerTryLdGlobalByName(GateRef gate, GateRef glue);
     void LowerGetIterator(GateRef gate, GateRef glue);
+    void LowerToJSCall(GateRef gate, GateRef glue, const std::vector<GateRef> &args);
     void LowerCallArg0Dyn(GateRef gate, GateRef glue);
     void LowerCallArg1Dyn(GateRef gate, GateRef glue);
     void LowerCallArgs2Dyn(GateRef gate, GateRef glue);
     void LowerCallArgs3Dyn(GateRef gate, GateRef glue);
-    void LowerCallIThisRangeDyn(GateRef gate, GateRef glue);
+    void LowerCallIThisRangeDyn(GateRef gate, GateRef glue, GateRef thisObj);
     void LowerCallSpreadDyn(GateRef gate, GateRef glue);
     void LowerCallIRangeDyn(GateRef gate, GateRef glue);
     void LowerNewObjSpreadDyn(GateRef gate, GateRef glue);

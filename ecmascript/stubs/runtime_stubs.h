@@ -17,6 +17,7 @@
 #define ECMASCRIPT_RUNTIME_TRAMPOLINES_NEW_H
 
 #include "ecmascript/compiler/call_signature.h"
+#include "ecmascript/stubs/test_runtime_stubs.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_method.h"
@@ -262,13 +263,12 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(CallIThisRangeDyn, 3)                  \
     V(CallIRangeDyn, 2)                      \
     V(LdBigInt, 2)                           \
-    V(NewLexicalEnvWithNameDyn, 3)           \
-    V(DefineAotFunc, 3)                      \
-    V(GetPrintFunc, 0)
+    V(NewLexicalEnvWithNameDyn, 3)
 
 #define RUNTIME_STUB_LIST(V)                 \
     RUNTIME_STUB_WITHOUT_GC_LIST(V)          \
-    RUNTIME_STUB_WITH_GC_LIST(V)
+    RUNTIME_STUB_WITH_GC_LIST(V)             \
+    TEST_RUNTIME_STUB_GC_LIST(V)
 
 class RuntimeStubs {
 public:
@@ -277,6 +277,7 @@ public:
 #define DECLARE_RUNTIME_STUBS(name, counter) \
     static JSTaggedType name(uintptr_t argGlue, uint32_t argc, uintptr_t argv);
     RUNTIME_STUB_WITH_GC_LIST(DECLARE_RUNTIME_STUBS)
+    TEST_RUNTIME_STUB_GC_LIST(DECLARE_RUNTIME_STUBS)
 #undef DECLARE_RUNTIME_STUBS
 
     static void DebugPrint(int fmtMessageId, ...);

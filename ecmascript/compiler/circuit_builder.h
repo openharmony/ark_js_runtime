@@ -257,6 +257,8 @@ public:
     // constant
     inline GateRef True();
     inline GateRef False();
+    inline GateRef Undefined(VariableType type = VariableType::JS_ANY());
+
     // call operation
     GateRef CallRuntime(GateRef glue, int id, const std::vector<GateRef> &args);
     GateRef CallNGCRuntime(GateRef glue, size_t index, const std::vector<GateRef> &args);
