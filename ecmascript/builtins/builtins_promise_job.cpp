@@ -107,7 +107,7 @@ JSTaggedValue BuiltinsPromiseJob::PromiseResolveThenableJob(EcmaRuntimeCallInfo 
         JSHandle<JSTaggedValue> reject(thread, resolvingFunctions->GetRejectFunction());
         EcmaRuntimeCallInfo runtimeInfo =
             EcmaInterpreter::NewRuntimeCallInfo(thread, reject, undefined, undefined, 1);
-        info.SetCallArg(thenResult.GetTaggedValue());
+        runtimeInfo.SetCallArg(thenResult.GetTaggedValue());
         return JSFunction::Call(&runtimeInfo);
     }
     // 4. NextJob Completion(thenCallResult).
