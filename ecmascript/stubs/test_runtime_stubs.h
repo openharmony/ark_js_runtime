@@ -12,21 +12,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef ECMASCRIPT_COMPILER_TEST_STUBS_SIGNATURE_H
-#define ECMASCRIPT_COMPILER_TEST_STUBS_SIGNATURE_H
 
-namespace panda::ecmascript::kungfu {
+#ifndef ECMASCRIPT_TEST_RUNTIME_STUBS_H
+#define ECMASCRIPT_TEST_RUNTIME_STUBS_H
+namespace panda::ecmascript {
 #ifdef ECMASCRIPT_ENABLE_TEST_STUB
-#define TEST_STUB_SIGNATRUE_LIST(V)         \
-    V(FooAOT)                               \
-    V(BarAOT)                               \
-    V(Foo1AOT)                              \
-    V(Foo2AOT)                              \
-    V(FooNativeAOT)                         \
-    V(FooBoundAOT)                          \
-    V(Bar1AOT)
+    #define TEST_RUNTIME_STUB_GC_LIST(V)         \
+        V(DefineAotFunc, 3)                      \
+        V(GetPrintFunc, 0)                       \
+        V(GetBindFunc, 1)
 #else
-    #define TEST_STUB_SIGNATRUE_LIST(V)
+    #define TEST_RUNTIME_STUB_GC_LIST(V)
 #endif
-}  // namespace panda::ecmascript::kungfu
+}  // namespace panda::ecmascript
 #endif

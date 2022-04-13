@@ -446,16 +446,16 @@ CallNativeTrampoline:
     // construct ecma_runtime_call_info
     sub     sp, sp, #ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE
     mov     x1, #ASM_GLUE_TO_THREAD_OFFSET
-    sub    x0, x0, x1       // get thread
+    sub     x0, x0, x1       // get thread
     str     x0, [sp]
     ldr     x0, [x29, #24]  // argc
+    sub     x0, x0, #3
     str     x0, [sp, #ECMA_RUNTIME_CALLINFO_NUMARGS_OFFSET]     // numArgs
     add     x1, x29, #32    //argV
-    str     x1, [sp, #ECMA_RUNTIME_CALLINFO_GPRARGS_OFFSET]     // data_
-    str     x0, [sp, #ECMA_RUNTIME_CALLINFO_GPRARGS_SIZE_OFFSET] // size_
+    str     x1, [sp, #ECMA_RUNTIME_CALLINFO_STACKARGS_OFFSET]     // data_
     mov     x0, 0
-    str     x0, [sp, #ECMA_RUNTIME_CALLINFO_STACKARGS_OFFSET]
-    str     x0, [sp, #ECMA_RUNTIME_CALLINFO_STACKARGS_SIZE_OFFSET]
+    str     x0, [sp, #ECMA_RUNTIME_CALLINFO_DATA_OFFSET]
+    str     x0, [sp, #ECMA_RUNTIME_CALLINFO_PPREV_SP_OFFSET]
 
     mov     x0, sp
     blr     x19

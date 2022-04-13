@@ -254,7 +254,7 @@ void SlowPathLowering::Lower(GateRef gate)
     GateRef glue = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::GLUE);
     GateRef newTarget = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::NEW_TARGET);
     GateRef jsFunc = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::FUNC);
-    GateRef thisFunc = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::THIS);
+    GateRef thisObj = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::THIS);
 
     auto pc = bcBuilder_->GetJSBytecode(gate);
     EcmaOpcode op = static_cast<EcmaOpcode>(*pc);
@@ -277,7 +277,7 @@ void SlowPathLowering::Lower(GateRef gate)
             LowerCallArgs3Dyn(gate, glue);
             break;
         case CALLITHISRANGEDYN_PREF_IMM16_V8:
-            LowerCallIThisRangeDyn(gate, glue);
+            LowerCallIThisRangeDyn(gate, glue, thisObj);
             break;
         case CALLSPREADDYN_PREF_V8_V8_V8:
             LowerCallSpreadDyn(gate, glue);
@@ -592,7 +592,7 @@ void SlowPathLowering::Lower(GateRef gate)
             LowerCreateObjectHavingMethod(gate, glue, jsFunc);
             break;
         case LDHOMEOBJECT_PREF:
-            LowerLdHomeObject(gate, thisFunc);
+            LowerLdHomeObject(gate, thisObj);
             break;
         case DEFINECLASSWITHBUFFER_PREF_ID16_IMM16_IMM16_V8_V8:
             LowerDefineClassWithBuffer(gate, glue, jsFunc);
@@ -712,62 +712,79 @@ void SlowPathLowering::LowerGetIterator(GateRef gate, GateRef glue)
     LowerHirToConditionCall(gate, isNotGeneratorObject, newGate);
 }
 
+void SlowPathLowering::LowerToJSCall(GateRef gate, GateRef glue, const std::vector<GateRef> &args)
+{
+    const CallSignature *descriptor = RuntimeStubCSigns::Get(RTSTUB_ID(JSCall));
+    GateRef target = builder_.IntPtr(RTSTUB_ID(JSCall));
+    GateRef newGate = builder_.NoGcRuntimeCall(descriptor, glue, target, dependEntry_, args);
+    LowerHirToCall(gate, newGate);
+}
+
 void SlowPathLowering::LowerCallArg0Dyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(CallArg0Dyn));
-
     ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0)});
-    LowerHirToCall(gate, newGate);
+    GateRef actualArgc = builder_.Int32(acc_.GetNumValueIn(gate) - 1 + NUM_MANDATORY_JSFUNC_ARGS);
+    GateRef newTarget = builder_.Undefined();
+    GateRef thisObj = builder_.Undefined();
+    LowerToJSCall(gate, glue, {glue, actualArgc, acc_.GetValueIn(gate, 0), newTarget, thisObj});
 }
 
 void SlowPathLowering::LowerCallArg1Dyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(CallArg1Dyn));
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef actualArgc = builder_.Int32(acc_.GetNumValueIn(gate) - 1 + NUM_MANDATORY_JSFUNC_ARGS);
+    GateRef newTarget = builder_.Undefined();
+    GateRef thisObj = builder_.Undefined();
+    LowerToJSCall(gate, glue, {glue, actualArgc,
+        acc_.GetValueIn(gate, 0), newTarget, thisObj, acc_.GetValueIn(gate, 1)});
 }
 
 void SlowPathLowering::LowerCallArgs2Dyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(CallArgs2Dyn));
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1), acc_.GetValueIn(gate, 2)});
-    LowerHirToCall(gate, newGate);
+    GateRef actualArgc = builder_.Int32(acc_.GetNumValueIn(gate) - 1 + NUM_MANDATORY_JSFUNC_ARGS);
+    GateRef newTarget = builder_.Undefined();
+    GateRef thisObj = builder_.Undefined();
+    LowerToJSCall(gate, glue, {glue, actualArgc,
+        acc_.GetValueIn(gate, 0), newTarget, thisObj, acc_.GetValueIn(gate, 1), acc_.GetValueIn(gate, 2)});
 }
 
 void SlowPathLowering::LowerCallArgs3Dyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(CallArgs3Dyn));
     // 4: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 4);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1),
+    GateRef actualArgc = builder_.Int32(acc_.GetNumValueIn(gate) - 1 + NUM_MANDATORY_JSFUNC_ARGS);
+    GateRef newTarget = builder_.Undefined();
+    GateRef thisObj = builder_.Undefined();
+    LowerToJSCall(gate, glue, {glue, actualArgc,
+        acc_.GetValueIn(gate, 0), newTarget, thisObj, acc_.GetValueIn(gate, 1),
         acc_.GetValueIn(gate, 2), acc_.GetValueIn(gate, 3)});
-    LowerHirToCall(gate, newGate);
 }
 
-void SlowPathLowering::LowerCallIThisRangeDyn(GateRef gate, GateRef glue)
+void SlowPathLowering::LowerCallIThisRangeDyn(GateRef gate, GateRef glue, GateRef thisObj)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(CallIThisRangeDyn));
     std::vector<GateRef> vec;
-    size_t numArgs = acc_.GetNumValueIn(gate);
+    size_t numArgs = acc_.GetNumValueIn(gate) - 1;
+    GateRef actualArgc = builder_.Int32(numArgs + NUM_MANDATORY_JSFUNC_ARGS);
+    GateRef callTarget = acc_.GetValueIn(gate, 0);
+    GateRef newTarget = builder_.Undefined();
+    vec.emplace_back(glue);
+    vec.emplace_back(actualArgc);
+    vec.emplace_back(callTarget);
+    vec.emplace_back(newTarget);
+    vec.emplace_back(thisObj);
+
     for (size_t i = 1; i < numArgs; i++) { // skip imm
         vec.emplace_back(acc_.GetValueIn(gate, i));
     }
-    GateRef newGate = builder_.VariadicRuntimeCall(
-        glue, id, dependEntry_, vec);
-    LowerHirToCall(gate, newGate);
+    LowerToJSCall(gate, glue, vec);
 }
 
 void SlowPathLowering::LowerCallSpreadDyn(GateRef gate, GateRef glue)
 {
+    // need to fixed in later
     GateRef id = builder_.Int64(RTSTUB_ID(CallSpreadDyn));
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
@@ -778,15 +795,22 @@ void SlowPathLowering::LowerCallSpreadDyn(GateRef gate, GateRef glue)
 
 void SlowPathLowering::LowerCallIRangeDyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(CallIRangeDyn));
     std::vector<GateRef> vec;
-    size_t numArgs = acc_.GetNumValueIn(gate);
+    size_t numArgs = acc_.GetNumValueIn(gate) - 1;
+    GateRef actualArgc = builder_.Int32(numArgs + NUM_MANDATORY_JSFUNC_ARGS);
+    GateRef callTarget = acc_.GetValueIn(gate, 0);
+    GateRef newTarget = builder_.Undefined();
+    GateRef thisObj = builder_.Undefined();
+    vec.emplace_back(glue);
+    vec.emplace_back(actualArgc);
+    vec.emplace_back(callTarget);
+    vec.emplace_back(newTarget);
+    vec.emplace_back(thisObj);
+
     for (size_t i = 1; i < numArgs; i++) { // skip imm
         vec.emplace_back(acc_.GetValueIn(gate, i));
     }
-    GateRef newGate = builder_.VariadicRuntimeCall(
-        glue, id, dependEntry_, vec);
-    LowerHirToCall(gate, newGate);
+    LowerToJSCall(gate, glue, vec);
 }
 
 void SlowPathLowering::LowerNewObjSpreadDyn(GateRef gate, GateRef glue)
