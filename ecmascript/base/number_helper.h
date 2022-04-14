@@ -54,7 +54,7 @@ static constexpr double POSITIVE_INFINITY = std::numeric_limits<double>::infinit
 static constexpr double NAN_VALUE = std::numeric_limits<double>::quiet_NaN();
 
 // Helper defines for double
-static constexpr int DOUBLE_MAX_PRECISION = 15;
+static constexpr int DOUBLE_MAX_PRECISION = 17;
 static constexpr int DOUBLE_EXPONENT_BIAS = 0x3FF;
 static constexpr size_t DOUBLE_SIGNIFICAND_SIZE = 52;
 static constexpr uint64_t DOUBLE_SIGN_MASK = 0x8000000000000000ULL;
@@ -66,6 +66,7 @@ static constexpr size_t INT64_BITS = 64;
 static constexpr size_t INT32_BITS = 32;
 static constexpr size_t INT16_BITS = 16;
 static constexpr size_t INT8_BITS = 8;
+static constexpr size_t JS_DTOA_BUF_SIZE = 128;
 
 class NumberHelper {
 public:
@@ -98,6 +99,8 @@ private:
     static CString DecimalsToString(double *numberInteger, double fraction, int radix, double delta);
     static bool IsNonspace(uint16_t c);
     static bool GotoNonspace(uint8_t **ptr, const uint8_t *end);
+    static void GetBase(double d, int digits, int *decpt, char *buf, char *bufTmp, int size);
+    static int GetMinmumDigits(double d, int *decpt, char *buf);
 };
 }  // namespace panda::ecmascript::base
 #endif  // ECMASCRIPT_BASE_NUMBER_HELPER_H
