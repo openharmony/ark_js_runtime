@@ -18,7 +18,7 @@
 
 #include <list>
 
-#include "ecmascript/regexp/dyn_chunk.h"
+#include "ecmascript/mem/dyn_chunk.h"
 
 namespace panda {
 namespace ecmascript {

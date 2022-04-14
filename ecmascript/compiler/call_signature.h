@@ -40,6 +40,7 @@ public:
         COMMON_STUB = 0,
         RUNTIME_STUB,
         RUNTIME_STUB_NO_GC,
+        ASM_STUB,
         BYTECODE_HANDLER,
         JSFUNCTION,
 
@@ -103,6 +104,11 @@ public:
     bool IsCommonStub() const
     {
         return (kind_ == TargetKind::COMMON_STUB);
+    }
+
+    bool IsAsmStub() const
+    {
+        return (kind_ == TargetKind::ASM_STUB);
     }
 
     bool IsStub() const
