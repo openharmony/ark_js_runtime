@@ -110,7 +110,8 @@ namespace panda::ecmascript::kungfu {
 class SlowPathLowering {
 public:
     SlowPathLowering(BytecodeCircuitBuilder *bcBuilder, Circuit *circuit, CompilationConfig *cmpCfg)
-        : bcBuilder_(bcBuilder), circuit_(circuit), acc_(circuit), builder_(circuit, cmpCfg), cmpCfg_(cmpCfg) {}
+        : bcBuilder_(bcBuilder), circuit_(circuit), acc_(circuit), builder_(circuit, cmpCfg), cmpCfg_(cmpCfg),
+          dependEntry_(Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY))) {}
     ~SlowPathLowering() = default;
     void CallRuntimeLowering();
 
@@ -131,9 +132,13 @@ private:
     // labelmanager must be initialized
     GateRef GetConstPool(GateRef jsFunc);
     // labelmanager must be initialized
+    GateRef GetCurrentEnv(GateRef jsFunc);
+    // labelmanager must be initialized
     GateRef GetObjectFromConstPool(GateRef jsFunc, GateRef index);
+    // labelmanager must be initialized
+    GateRef GetHomeObjectFromJSFunction(GateRef jsFunc);
     GateRef GetValueFromConstStringTable(GateRef glue, GateRef gate, uint32_t inIndex);
-    void Lower(GateRef gate, EcmaOpcode op);
+    void Lower(GateRef gate);
     void LowerAdd2Dyn(GateRef gate, GateRef glue);
     void LowerCreateIterResultObj(GateRef gate, GateRef glue);
     void LowerSuspendGenerator(GateRef gate, GateRef glue);
@@ -145,11 +150,12 @@ private:
     void LowerStGlobalVar(GateRef gate, GateRef glue);
     void LowerTryLdGlobalByName(GateRef gate, GateRef glue);
     void LowerGetIterator(GateRef gate, GateRef glue);
+    void LowerToJSCall(GateRef gate, GateRef glue, const std::vector<GateRef> &args);
     void LowerCallArg0Dyn(GateRef gate, GateRef glue);
     void LowerCallArg1Dyn(GateRef gate, GateRef glue);
     void LowerCallArgs2Dyn(GateRef gate, GateRef glue);
     void LowerCallArgs3Dyn(GateRef gate, GateRef glue);
-    void LowerCallIThisRangeDyn(GateRef gate, GateRef glue);
+    void LowerCallIThisRangeDyn(GateRef gate, GateRef glue, GateRef thisObj);
     void LowerCallSpreadDyn(GateRef gate, GateRef glue);
     void LowerCallIRangeDyn(GateRef gate, GateRef glue);
     void LowerNewObjSpreadDyn(GateRef gate, GateRef glue);
@@ -221,12 +227,33 @@ private:
     void LowerNewLexicalEnvDyn(GateRef gate, GateRef glue);
     void LowerNewLexicalEnvWithNameDyn(GateRef gate, GateRef glue);
     void LowerPopLexicalEnv(GateRef gate, GateRef glue);
+    void LowerLdSuperByValue(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerStSuperByValue(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerTryStGlobalByName(GateRef gate, GateRef glue);
+    void LowerStConstToGlobalRecord(GateRef gate, GateRef glue);
+    void LowerStLetToGlobalRecord(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerStClassToGlobalRecord(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerStOwnByValueWithNameSet(GateRef gate, GateRef glue);
+    void LowerStOwnByNameWithNameSet(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerLdGlobalVar(GateRef gate, GateRef glue);
+    void LowerLdObjByName(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerStObjByName(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerLdSuperByName(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerStSuperByName(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerCreateGeneratorObj(GateRef gate, GateRef glue);
+    void LowerStArraySpread(GateRef gate, GateRef glue);
+    void LowerLdLexVarDyn(GateRef gate, GateRef jsFunc);
+    void LowerStLexVarDyn(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerCreateObjectHavingMethod(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerLdHomeObject(GateRef gate, GateRef thisFunc);
+    void LowerDefineClassWithBuffer(GateRef gate, GateRef glue, GateRef jsFunc);
 
     BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;
     GateAccessor acc_;
     CircuitBuilder builder_;
     CompilationConfig *cmpCfg_;
+    GateRef dependEntry_;
 };
 }  // panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_GENERIC_LOWERING_H

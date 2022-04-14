@@ -72,8 +72,8 @@ public:
 private:
     template <typename T>
     static T LittleEndianToBigEndian(T liValue);
-
-    static uint64_t LittleEndianToBigEndianUint64(uint64_t liValue);
+    template<typename T>
+    static T LittleEndianToBigEndian64Bit(T liValue);
 
     template<typename T>
     static void SetTypeData(uint8_t *block, T value, uint32_t index);
@@ -83,10 +83,9 @@ private:
 
     template<typename T, typename UnionType, NumberSize size>
     static JSTaggedValue GetValueFromBufferForFloat(uint8_t *block, uint32_t byteIndex, bool littleEndian);
-
-    static JSTaggedValue GetValueFromBufferForBigInt(JSThread *thread, uint8_t *block, uint32_t byteIndex);
-
-    static JSTaggedValue GetValueFromBufferForBigUint(JSThread *thread, uint8_t *block, uint32_t byteIndex);
+    template<typename T, NumberSize size>
+    static JSTaggedValue GetValueFromBufferForBigInt(JSThread *thread, uint8_t *block,
+                                                     uint32_t byteIndex, bool littleEndian);
 
     template<typename T>
     static void SetValueInBufferForByte(double val, uint8_t *block, uint32_t byteIndex);
@@ -99,8 +98,9 @@ private:
     template<typename T>
     static void SetValueInBufferForFloat(double val, uint8_t *block, uint32_t byteIndex, bool littleEndian);
 
-    static JSTaggedValue SetValueInBufferForBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &val, uint8_t *block,
-                                                   uint32_t byteIndex, bool isUint);
+    template<typename T>
+    static void SetValueInBufferForBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &val, uint8_t *block,
+                                                   uint32_t byteIndex, bool littleEndian);
 };
 }  // namespace panda::ecmascript::builtins
 

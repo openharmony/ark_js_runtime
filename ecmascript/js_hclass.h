@@ -267,6 +267,9 @@ public:
     static JSHandle<JSHClass> CloneWithoutInlinedProperties(const JSThread *thread, const JSHandle<JSHClass> &jshclass);
 
     static void TransitionElementsToDictionary(const JSThread *thread, const JSHandle<JSObject> &obj);
+    static JSHandle<JSHClass> SetPropertyOfObjHClass(const JSThread *thread, JSHandle<JSHClass> &jshclass,
+                                                     const JSHandle<JSTaggedValue> &key,
+                                                     const PropertyAttributes &attr);
     static void AddProperty(const JSThread *thread, const JSHandle<JSObject> &obj, const JSHandle<JSTaggedValue> &key,
                             const PropertyAttributes &attr);
 

@@ -1744,6 +1744,7 @@ void RegExpExecResultCache::AddResultInCache(JSThread *thread, JSHandle<RegExpEx
     } else {
         uint32_t entry2 = (entry + 1) & static_cast<uint32_t>(cache->GetCacheLength() - 1);
         uint32_t index2 = CACHE_TABLE_HEADER_SIZE + entry2 * ENTRY_SIZE;
+        JSHandle<JSTaggedValue> extendHandle(thread, extend);
         if (cache->GetCacheLength() < DEFAULT_CACHE_NUMBER) {
             GrowRegexpCache(thread, cache);
             // update value after gc.
@@ -1755,17 +1756,18 @@ void RegExpExecResultCache::AddResultInCache(JSThread *thread, JSHandle<RegExpEx
             entry2 = hash & static_cast<uint32_t>(cache->GetCacheLength() - 1);
             index2 = CACHE_TABLE_HEADER_SIZE + entry2 * ENTRY_SIZE;
         }
+        JSTaggedValue extendValue = extendHandle.GetTaggedValue();
         if (cache->Get(index2) == JSTaggedValue::Undefined()) {
             cache->SetCacheCount(thread, cache->GetCacheCount() + 1);
-            cache->SetEntry(thread, entry2, patternValue, flagsValue, inputValue, lastIndexValue, extend);
+            cache->SetEntry(thread, entry2, patternValue, flagsValue, inputValue, lastIndexValue, extendValue);
             cache->UpdateResultArray(thread, entry2, resultArray.GetTaggedValue(), type);
-        } else if (cache->Match(entry2, patternValue, flagsValue, inputValue, extend)) {
+        } else if (cache->Match(entry2, patternValue, flagsValue, inputValue, extendValue)) {
             cache->UpdateResultArray(thread, entry2, resultArray.GetTaggedValue(), type);
         } else {
             cache->SetConflictCount(thread, cache->GetConflictCount() > 1 ? (cache->GetConflictCount() - 1) : 0);
             cache->SetCacheCount(thread, cache->GetCacheCount() - 1);
             cache->ClearEntry(thread, entry2);
-            cache->SetEntry(thread, entry, patternValue, flagsValue, inputValue, lastIndexValue, extend);
+            cache->SetEntry(thread, entry, patternValue, flagsValue, inputValue, lastIndexValue, extendValue);
             cache->UpdateResultArray(thread, entry, resultArray.GetTaggedValue(), type);
         }
     }

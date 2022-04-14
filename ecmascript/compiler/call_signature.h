@@ -22,6 +22,7 @@
 #include "ecmascript/compiler/variable_type.h"
 #include "libpandabase/macros.h"
 #include "libpandabase/utils/bit_field.h"
+#include "test_stubs_signature.h"
 
 namespace panda::ecmascript::kungfu {
 class Stub;
@@ -246,9 +247,11 @@ private:
     V(SetPropertyByName)                    \
     V(SetPropertyByNameWithOwn)             \
     V(SetPropertyByValue)                   \
+    V(SetPropertyByValueWithOwn)            \
     V(GetPropertyByName)                    \
     V(GetPropertyByIndex)                   \
     V(SetPropertyByIndex)                   \
+    V(SetPropertyByIndexWithOwn)            \
     V(GetPropertyByValue)                   \
     V(TryLoadICByName)                      \
     V(TryLoadICByValue)                     \
@@ -294,7 +297,10 @@ private:
     V(CallArgs2Dyn)                         \
     V(CallArgs3Dyn)                         \
     V(CallIThisRangeDyn)                    \
-    V(CallIRangeDyn)
+    V(CallIRangeDyn)                        \
+    V(JSCall)                               \
+    V(JSCallWithArgV)                       \
+    TEST_STUB_SIGNATRUE_LIST(V)
 
 #define DECL_CALL_SIGNATURE(name)                                  \
 class name##CallSignature final {                                  \
@@ -302,5 +308,9 @@ class name##CallSignature final {                                  \
         static void Initialize(CallSignature *descriptor);         \
     };
 EXPLICIT_CALL_SIGNATURE_LIST(DECL_CALL_SIGNATURE)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define DEF_CALL_SIGNATURE(name)                                  \
+    void name##CallSignature::Initialize([[maybe_unused]] CallSignature *callSign)
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_CALL_SIGNATURE_H

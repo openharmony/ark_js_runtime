@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- #include "asm_defines.h"
+ #include "../asm_defines.h"
 
  .global JSFunctionEntry
 .type JSFunctionEntry, %function
@@ -394,6 +394,125 @@ OptimizedCallOptimized:
     lsl     w8, w19, #3
     add     sp, sp, x8
     POP_CALLEE_SAVED_REGS
+    ret
+
+// uint64_t CallNativeTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
+// webkit_jscc calling convention call runtime_id's runtion function(c-abi)
+// Input:
+// %x0 - glue
+// stack layout:
+// sp + N*8 argvN
+// ........
+// sp + 24: argv1
+// sp + 16: argv0
+// sp + 8:  actualArgc
+// sp:      codeAddress
+// construct Native Leave Frame:
+//   +--------------------------+
+//   |       argv0              | calltarget , newtARGET, this, ....
+//   +--------------------------+ ---
+//   |       argc               |   ^
+//   |--------------------------|  Fixed
+//   |       codeAddress        | OptimizedLeaveFrame
+//   |--------------------------|   |
+//   |       returnAddr         |   |
+//   |--------------------------|   |
+//   |       callsiteFp         |   |
+//   |--------------------------|   |
+//   |       frameType          |   v
+//   +--------------------------+ ---
+
+// Output:
+//  sp - 8 : pc
+//  sp - 16: rbp <---------current rbp & current sp
+//  current sp - 8:  type
+
+.global CallNativeTrampoline
+.type CallNativeTrampoline, %function
+CallNativeTrampoline:
+    stp     x29, x30, [sp, #-16]!  // save register for fp, rip
+    mov     x29, sp                // set frame pointer = callsiteFp
+    str     x29, [x0, #ASM_GLUE_CURRENT_FRAME_OFFSET]       // save to thread->currentFrame_
+    str     x19, [sp, #-16]        // callee save register
+
+    // construct leave frame
+    mov     x19, #LEAVE_FRAME_TYPE
+    str     x19, [sp, #-8]
+    add     sp, sp, #-16
+
+    // load runtime trampoline address
+    ldr     x19, [x29, #16]  // codeaddress
+
+    // construct ecma_runtime_call_info
+    sub     sp, sp, #ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE
+    mov     x1, #ASM_GLUE_TO_THREAD_OFFSET
+    sub     x0, x0, x1       // get thread
+    str     x0, [sp]
+    ldr     x0, [x29, #24]  // argc
+    sub     x0, x0, #3
+    str     x0, [sp, #ECMA_RUNTIME_CALLINFO_NUMARGS_OFFSET]     // numArgs
+    add     x1, x29, #32    //argV
+    str     x1, [sp, #ECMA_RUNTIME_CALLINFO_STACKARGS_OFFSET]     // data_
+    mov     x0, 0
+    str     x0, [sp, #ECMA_RUNTIME_CALLINFO_DATA_OFFSET]
+    str     x0, [sp, #ECMA_RUNTIME_CALLINFO_PPREV_SP_OFFSET]
+
+    mov     x0, sp
+    blr     x19
+
+    add     sp, sp, #ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE
+    // descontruct leave frame and callee save register
+    ldr     x19, [sp]
+    add     sp, sp, #16
+    // restore register
+    ldp     x29, x30, [sp], #16
+    ret
+
+// uint64_t JSCallWithArgV(uintptr_t glue, uint32_t argc, uintptr_t argv[]);
+// c++ calling convention call js function
+// Input:
+// %x0 - glue
+// %x1 - argc
+// %x2 - argV (calltarget, newtarget, thisObj, )
+.global JSCallWithArgV
+.type JSCallWithArgV, %function
+
+
+// uint64_t JSCall(uintptr_t glue, uint32_t argc, JSTaggedType calltarget, JSTaggedType new, JSTaggedType this, ...);
+// webkit_jscc calling convention call js function()
+// Input:
+// %x0 - glue
+// stack layout:
+// sp + N*8 argvN
+// ........
+// sp + 24: argc
+// sp + 16: this
+// sp + 8:  new
+// sp:      jsfunc
+//   +--------------------------+
+//   |       ...                |
+//   +--------------------------+
+//   |       arg0               |
+//   +--------------------------+
+//   |       this               |
+//   +--------------------------+
+//   |       new                |
+//   +--------------------------+ ---
+//   |       jsfunction         |   ^
+//   |--------------------------|  Fixed
+//   |       argc               | OptimizedLeaveFrame
+//   |--------------------------|   |
+//   |       returnAddr         |   |
+//   |--------------------------|   |
+//   |       callsiteFp         |   |
+//   |--------------------------|   |
+//   |       frameType          |   v
+//   +--------------------------+ ---
+.global JSCall
+.type JSCall, %function
+JSCall:
+    ret
+JSCallWithArgV:
     ret
 
 PushCallIThisRangeAndDispatch:

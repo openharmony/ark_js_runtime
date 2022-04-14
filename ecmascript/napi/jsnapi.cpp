@@ -743,6 +743,7 @@ Local<ObjectRef> ObjectRef::New(const EcmaVM *vm)
 
 bool ObjectRef::Set(const EcmaVM *vm, Local<JSValueRef> key, Local<JSValueRef> value)
 {
+    [[maybe_unused]] LocalScope scope(vm);
     JSHandle<JSTaggedValue> obj = JSNApiHelper::ToJSHandle(this);
     JSHandle<JSTaggedValue> keyValue = JSNApiHelper::ToJSHandle(key);
     JSHandle<JSTaggedValue> valueValue = JSNApiHelper::ToJSHandle(value);
@@ -753,6 +754,7 @@ bool ObjectRef::Set(const EcmaVM *vm, Local<JSValueRef> key, Local<JSValueRef> v
 
 bool ObjectRef::Set(const EcmaVM *vm, uint32_t key, Local<JSValueRef> value)
 {
+    [[maybe_unused]] LocalScope scope(vm);
     Local<JSValueRef> keyValue = NumberRef::New(vm, key);
     return Set(vm, keyValue, value);
 }
@@ -760,6 +762,7 @@ bool ObjectRef::Set(const EcmaVM *vm, uint32_t key, Local<JSValueRef> value)
 bool ObjectRef::SetAccessorProperty(const EcmaVM *vm, Local<JSValueRef> key, Local<FunctionRef> getter,
     Local<FunctionRef> setter, PropertyAttribute attribute)
 {
+    [[maybe_unused]] LocalScope scope(vm);
     JSThread *thread = vm->GetJSThread();
     JSHandle<JSTaggedValue> getterValue = JSNApiHelper::ToJSHandle(getter);
     JSHandle<JSTaggedValue> setterValue = JSNApiHelper::ToJSHandle(setter);
@@ -776,6 +779,7 @@ bool ObjectRef::SetAccessorProperty(const EcmaVM *vm, Local<JSValueRef> key, Loc
 
 Local<JSValueRef> ObjectRef::Get(const EcmaVM *vm, Local<JSValueRef> key)
 {
+    EscapeLocalScope scope(vm);
     JSThread *thread = vm->GetJSThread();
     JSHandle<JSTaggedValue> obj = JSNApiHelper::ToJSHandle(this);
     JSHandle<JSTaggedValue> keyValue = JSNApiHelper::ToJSHandle(key);
@@ -784,7 +788,7 @@ Local<JSValueRef> ObjectRef::Get(const EcmaVM *vm, Local<JSValueRef> key)
     if (!ret.GetPropertyMetaData().IsFound()) {
         return JSValueRef::Undefined(vm);
     }
-    return JSNApiHelper::ToLocal<JSValueRef>(ret.GetValue());
+    return scope.Escape(JSNApiHelper::ToLocal<JSValueRef>(ret.GetValue()));
 }
 
 Local<JSValueRef> ObjectRef::Get(const EcmaVM *vm, int32_t key)
@@ -847,7 +851,7 @@ Local<JSValueRef> ObjectRef::GetPrototype(const EcmaVM *vm)
 {
     JSThread *thread = vm->GetJSThread();
     JSHandle<JSObject> object(JSNApiHelper::ToJSHandle(this));
-    JSHandle<JSTaggedValue> prototype(thread, object->GetPrototype(thread));
+    JSHandle<JSTaggedValue> prototype(thread, JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(object)));
     RETURN_VALUE_IF_ABRUPT(thread, JSValueRef::Exception(vm));
     return JSNApiHelper::ToLocal<JSValueRef>(prototype);
 }
@@ -943,6 +947,7 @@ Local<FunctionRef> FunctionRef::New(EcmaVM *vm, FunctionCallback nativeFunc, Del
 
 Local<FunctionRef> FunctionRef::NewClassFunction(EcmaVM *vm, FunctionCallback nativeFunc, Deleter deleter, void *data)
 {
+    EscapeLocalScope scope(vm);
     JSThread *thread = vm->GetJSThread();
     ObjectFactory *factory = vm->GetFactory();
     JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
@@ -968,13 +973,15 @@ Local<FunctionRef> FunctionRef::NewClassFunction(EcmaVM *vm, FunctionCallback na
     JSHandle<JSTaggedValue> parent = env->GetFunctionPrototype();
     JSObject::SetPrototype(thread, JSHandle<JSObject>::Cast(current), parent);
     current->SetHomeObject(thread, clsPrototype);
-    return JSNApiHelper::ToLocal<FunctionRef>(JSHandle<JSTaggedValue>(current));
+    Local<FunctionRef> result = JSNApiHelper::ToLocal<FunctionRef>(JSHandle<JSTaggedValue>(current));
+    return scope.Escape(result);
 }
 
 Local<JSValueRef> FunctionRef::Call(const EcmaVM *vm, Local<JSValueRef> thisObj,
     const Local<JSValueRef> argv[],  // NOLINTNEXTLINE(modernize-avoid-c-arrays)
     int32_t length)
 {
+    EscapeLocalScope scope(vm);
     JSThread *thread = vm->GetJSThread();
     if (!IsFunction()) {
         return JSValueRef::Undefined(vm);
@@ -995,7 +1002,7 @@ Local<JSValueRef> FunctionRef::Call(const EcmaVM *vm, Local<JSValueRef> thisObj,
     vm->ExecutePromisePendingJob();
     RETURN_VALUE_IF_ABRUPT_NOT_CLEAR_EXCEPTION(thread, JSValueRef::Exception(vm));
 
-    return JSNApiHelper::ToLocal<JSValueRef>(resultValue);
+    return scope.Escape(JSNApiHelper::ToLocal<JSValueRef>(resultValue));
 }
 
 Local<JSValueRef> FunctionRef::Constructor(const EcmaVM *vm,
@@ -1032,6 +1039,7 @@ Local<JSValueRef> FunctionRef::GetFunctionPrototype(const EcmaVM *vm)
 
 bool FunctionRef::Inherit(const EcmaVM *vm, Local<FunctionRef> parent)
 {
+    [[maybe_unused]] LocalScope scope(vm);
     JSThread *thread = vm->GetJSThread();
     JSHandle<JSTaggedValue> parentValue = JSNApiHelper::ToJSHandle(parent);
     JSHandle<JSObject> parentHandle = JSHandle<JSObject>::Cast(parentValue);
@@ -1049,6 +1057,7 @@ bool FunctionRef::Inherit(const EcmaVM *vm, Local<FunctionRef> parent)
 
 void FunctionRef::SetName(const EcmaVM *vm, Local<StringRef> name)
 {
+    [[maybe_unused]] LocalScope scope(vm);
     JSThread *thread = vm->GetJSThread();
     JSFunction *func = JSFunction::Cast(JSNApiHelper::ToJSTaggedValue(this).GetTaggedObject());
     JSTaggedValue key = JSNApiHelper::ToJSTaggedValue(*name);
@@ -1057,6 +1066,7 @@ void FunctionRef::SetName(const EcmaVM *vm, Local<StringRef> name)
 
 Local<StringRef> FunctionRef::GetName(const EcmaVM *vm)
 {
+    [[maybe_unused]] LocalScope scope(vm);
     JSThread *thread = vm->GetJSThread();
     JSHandle<JSFunctionBase> func = JSHandle<JSFunctionBase>(thread, JSNApiHelper::ToJSTaggedValue(this));
     JSHandle<JSTaggedValue> name = JSFunctionBase::GetFunctionName(thread, func);

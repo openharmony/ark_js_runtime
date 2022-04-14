@@ -1275,7 +1275,7 @@ DEF_RUNTIME_STUBS(LoadValueFromConstantStringTable)
 DEF_RUNTIME_STUBS(CallArg0Dyn)
 {
     RUNTIME_STUBS_HEADER(CallArg0Dyn);
-    CONVERT_ARG_TAGGED_CHECKED(func, 0);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, func, 0);
     uint32_t actualNumArgs = InterpreterAssembly::ActualNumArgsOfCall::CALLARG0;
     bool callThis = false;
     std::vector<JSTaggedType> actualArgs;
@@ -1285,19 +1285,15 @@ DEF_RUNTIME_STUBS(CallArg0Dyn)
 DEF_RUNTIME_STUBS(CallArg1Dyn)
 {
     RUNTIME_STUBS_HEADER(CallArg1Dyn);
-    CONVERT_ARG_TAGGED_CHECKED(func, 0);
-    CONVERT_ARG_TAGGED_TYPE_CHECKED(arg0, 1);
-    uint32_t actualNumArgs = InterpreterAssembly::ActualNumArgsOfCall::CALLARG1;
-    bool callThis = false;
-    std::vector<JSTaggedType> actualArgs;
-    actualArgs.emplace_back(arg0);
-    return RuntimeNativeCall(thread, func, callThis, actualNumArgs, actualArgs);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, func, 0);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, arg0, 1);
+    return RuntimeCall1(thread, func, arg0);
 }
 
 DEF_RUNTIME_STUBS(CallArgs2Dyn)
 {
     RUNTIME_STUBS_HEADER(CallArgs2Dyn);
-    CONVERT_ARG_TAGGED_CHECKED(func, 0);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, func, 0);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(arg0, 1);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(arg1, 2);
     uint32_t actualNumArgs = InterpreterAssembly::ActualNumArgsOfCall::CALLARGS2;
@@ -1311,7 +1307,7 @@ DEF_RUNTIME_STUBS(CallArgs2Dyn)
 DEF_RUNTIME_STUBS(CallArgs3Dyn)
 {
     RUNTIME_STUBS_HEADER(CallArgs3Dyn);
-    CONVERT_ARG_TAGGED_CHECKED(func, 0);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, func, 0);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(arg0, 1);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(arg1, 2);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(arg2, 3);
@@ -1327,7 +1323,7 @@ DEF_RUNTIME_STUBS(CallArgs3Dyn)
 DEF_RUNTIME_STUBS(CallIThisRangeDyn)
 {
     RUNTIME_STUBS_HEADER(CallIThisRangeDyn);
-    CONVERT_ARG_TAGGED_CHECKED(func, 0);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, func, 0);
     uint32_t actualNumArgs = argc - 2; // 2 : skip func and this
     std::vector<JSTaggedType> actualArgs;
     for (size_t i = 1; i < argc; i++) {
@@ -1341,7 +1337,7 @@ DEF_RUNTIME_STUBS(CallIThisRangeDyn)
 DEF_RUNTIME_STUBS(CallIRangeDyn)
 {
     RUNTIME_STUBS_HEADER(CallIRangeDyn);
-    CONVERT_ARG_TAGGED_CHECKED(func, 0);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, func, 0);
     std::vector<JSTaggedType> actualArgs;
     uint32_t actualNumArgs = argc - 1; // 1 : skip func
     for (size_t i = 1; i < argc; i++) {

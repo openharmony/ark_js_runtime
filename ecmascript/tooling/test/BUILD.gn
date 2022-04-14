@@ -241,6 +241,27 @@ host_unittest_action("DebuggerTypesTest") {
   }
 }
 
+host_unittest_action("DebuggerParamsTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "debugger_params_test.cpp",
+  ]
+
+  configs = [ "//ark/js_runtime:ecma_test_config" ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
+    sdk_libc_secshared_dep,
+  ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
+}
+
 host_unittest_action("JSPtHooksTest") {
   module_out_path = module_output_path
 
@@ -275,6 +296,7 @@ group("unittest") {
   deps = [
     ":DebuggerCommandsTest",
     ":DebuggerEventsTest",
+    ":DebuggerParamsTest",
     ":DebuggerReturnsTest",
     ":DebuggerScriptTest",
     ":DebuggerTypesTest",
@@ -290,6 +312,7 @@ group("host_unittest") {
   deps = [
     ":DebuggerCommandsTestAction",
     ":DebuggerEventsTestAction",
+    ":DebuggerParamsTestAction",
     ":DebuggerReturnsTestAction",
     ":DebuggerScriptTestAction",
     ":DebuggerTypesTestAction",

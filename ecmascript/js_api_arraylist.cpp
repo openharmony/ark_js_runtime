@@ -37,7 +37,7 @@ bool JSAPIArrayList::Add(JSThread *thread, const JSHandle<JSAPIArrayList> &array
 void JSAPIArrayList::Insert(JSThread *thread, const JSHandle<JSAPIArrayList> &arrayList,
                             const JSHandle<JSTaggedValue> &value, const int &index)
 {
-    int length = static_cast<int>(arrayList->GetLength().GetArrayLength());
+    int length = arrayList->GetLength().GetInt();
     if (index < 0 || index >= length) {
         THROW_ERROR(thread, ErrorType::RANGE_ERROR, "ArrayList: set out-of-bounds");
     }
@@ -87,7 +87,7 @@ void JSAPIArrayList::IncreaseCapacityTo(JSThread *thread, const JSHandle<JSAPIAr
 {
     JSHandle<TaggedArray> elementData(thread, arrayList->GetElements());
     ASSERT(!elementData->IsDictionaryMode());
-    int length = static_cast<int>(arrayList->GetLength().GetArrayLength());
+    int length = arrayList->GetLength().GetInt();
     if (length < capacity) {
         JSHandle<TaggedArray> newElements =
             thread->GetEcmaVM()->GetFactory()->CopyArray(elementData, length, capacity);
@@ -208,7 +208,7 @@ JSTaggedValue JSAPIArrayList::RemoveByRange(JSThread *thread, const JSHandle<JSA
         THROW_RANGE_ERROR_AND_RETURN(thread, "ArrayList: set out-of-bounds", JSTaggedValue::Exception());
     }
 
-    int toIndex = endIndex >= length - 1 ? length - 1 : endIndex;
+    int32_t toIndex = endIndex >= length - 1 ? length - 1 : endIndex;
 
     JSHandle<TaggedArray> elements(thread, arrayList->GetElements());
     ASSERT(!elements->IsDictionaryMode());
@@ -217,7 +217,7 @@ JSTaggedValue JSAPIArrayList::RemoveByRange(JSThread *thread, const JSHandle<JSA
         elements->Set(thread, startIndex + i, elements->Get(static_cast<uint32_t>(toIndex + i)));
     }
     
-    int newLength = length - (toIndex - startIndex);
+    int32_t newLength = length - (toIndex - startIndex);
     arrayList->SetLength(thread, JSTaggedValue(newLength));
     return JSTaggedValue::True();
 }
@@ -229,12 +229,11 @@ JSTaggedValue JSAPIArrayList::ReplaceAllElements(JSThread *thread, const JSHandl
     JSHandle<JSAPIArrayList> arraylist = JSHandle<JSAPIArrayList>::Cast(thisHandle);
     uint32_t length = static_cast<uint32_t>(arraylist->GetSize());
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
+    JSMutableHandle<JSTaggedValue> kValue(thread, JSTaggedValue::Undefined());
     const size_t argsLength = 3;
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     for (uint32_t k = 0; k < length; k++) {
-        JSHandle<JSTaggedValue> kValue = JSHandle<JSTaggedValue>(thread, arraylist->Get(thread, k));
-        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-
+        kValue.Update(arraylist->Get(thread, k));
         key.Update(JSTaggedValue(k));
         EcmaRuntimeCallInfo info =
             EcmaInterpreter::NewRuntimeCallInfo(thread, callbackFn, thisArg, undefined, argsLength);
@@ -263,7 +262,7 @@ JSHandle<JSAPIArrayList> JSAPIArrayList::SubArrayList(JSThread *thread, const JS
                                                       const JSHandle<JSTaggedValue> &value1,
                                                       const JSHandle<JSTaggedValue> &value2)
 {
-    int length = static_cast<int>(arrayList->GetLength().GetArrayLength());
+    int length = arrayList->GetLength().GetInt();
     int fromIndex = JSTaggedValue::ToInt32(thread, value1);
     int toIndex = JSTaggedValue::ToInt32(thread, value2);
     if (toIndex <= fromIndex) {
@@ -303,11 +302,11 @@ JSTaggedValue JSAPIArrayList::ForEach(JSThread *thread, const JSHandle<JSTaggedV
     JSHandle<JSAPIArrayList> arrayList = JSHandle<JSAPIArrayList>::Cast(thisHandle);
     uint32_t length = static_cast<uint32_t>(arrayList->GetSize());
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
+    JSMutableHandle<JSTaggedValue> kValue(thread, JSTaggedValue::Undefined());
     const size_t argsLength = 3;
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     for (uint32_t k = 0; k < length; k++) {
-        JSHandle<JSTaggedValue> kValue = JSHandle<JSTaggedValue>(thread, arrayList->Get(thread, k));
-
+        kValue.Update(arrayList->Get(thread, k));
         key.Update(JSTaggedValue(k));
         EcmaRuntimeCallInfo info =
             EcmaInterpreter::NewRuntimeCallInfo(thread, callbackFn, thisArg, undefined, argsLength);

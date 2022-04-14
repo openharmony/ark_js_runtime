@@ -579,7 +579,7 @@ void LLVMIRBuilder::SaveCurrentSP()
         LLVMValueRef llvmFpAddr = CallingFp(module_, builder_, false);
         LLVMValueRef frameAddr = LLVMBuildPtrToInt(builder_, llvmFpAddr, slotType_, "cast_int_t");
         LLVMValueRef frameSpSlotAddr = LLVMBuildSub(builder_, frameAddr, LLVMConstInt(slotType_,
-            3 * slotSize_, false), ""); // 3: type + threadsp + current sp
+            2 * slotSize_, false), ""); // 2: type + current sp
         LLVMValueRef addr = LLVMBuildIntToPtr(builder_, frameSpSlotAddr,
                                               LLVMPointerType(slotType_, 0), "frameCallSiteSP.Addr");
         LLVMMetadataRef meta;
@@ -691,6 +691,8 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList, 
                                                               strlen(attrValue));
         LLVMAddCallSiteAttribute(call, LLVMAttributeFunctionIndex, llvmAttr);
         LLVMSetInstructionCallConv(call, LLVMGHCCallConv);
+    } else if (calleeDescriptor->GetCallConv() == CallSignature::CallConv::WebKitJSCallConv) {
+        LLVMSetInstructionCallConv(call, LLVMWebKitJSCallConv);
     }
     gateToLLVMMaps_[gate] = call;
     return;
@@ -1286,6 +1288,20 @@ void LLVMIRBuilder::HandleAdd(GateRef gate)
     VisitAdd(gate, g0, g1);
 }
 
+bool IsAddIntergerType(MachineType machineType)
+{
+    switch (machineType) {
+        case MachineType::I8:
+        case MachineType::I16:
+        case MachineType::I32:
+        case MachineType::I64:
+        case MachineType::ARCH:
+            return true;
+        default:
+            return false;
+    }
+}
+
 void LLVMIRBuilder::VisitAdd(GateRef gate, GateRef e1, GateRef e2)
 {
     COMPILER_LOG(DEBUG) << "add gate:" << gate;
@@ -1300,8 +1316,7 @@ void LLVMIRBuilder::VisitAdd(GateRef gate, GateRef e1, GateRef e2)
     LLVMTypeRef returnType = ConvertLLVMTypeFromGate(gate);
 
     auto machineType = circuit_->LoadGatePtrConst(gate)->GetMachineType();
-    if (machineType == MachineType::I32 || machineType == MachineType::I64 ||
-        machineType == MachineType::I8 || machineType == MachineType::I16) {
+    if (IsAddIntergerType(machineType)) {
         auto e1Type = LLVMGetTypeKind(ConvertLLVMTypeFromGate(e1));
         if (e1Type == LLVMVectorTypeKind) {
             result = VectorAdd(e1Value, e2Value, returnType);
@@ -1359,6 +1374,18 @@ void LLVMIRBuilder::HandleMul(GateRef gate)
     VisitMul(gate, g0, g1);
 }
 
+bool IsMulIntergerType(MachineType machineType)
+{
+    switch (machineType) {
+        case MachineType::I32:
+        case MachineType::I64:
+        case MachineType::ARCH:
+            return true;
+        default:
+            return false;
+    }
+}
+
 void LLVMIRBuilder::VisitMul(GateRef gate, GateRef e1, GateRef e2)
 {
     COMPILER_LOG(DEBUG) << "mul gate:" << gate;
@@ -1368,7 +1395,7 @@ void LLVMIRBuilder::VisitMul(GateRef gate, GateRef e1, GateRef e2)
     COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = nullptr;
     auto machineType = circuit_->LoadGatePtrConst(gate)->GetMachineType();
-    if (machineType == MachineType::I32 || machineType == MachineType::I64) {
+    if (IsMulIntergerType(machineType)) {
         result = LLVMBuildMul(builder_, e1Value, e2Value, "");
     } else if (machineType == MachineType::F64) {
         result = LLVMBuildFMul(builder_, e1Value, e2Value, "");
@@ -1935,7 +1962,9 @@ LLVMValueRef LLVMModule::AddFunc(const panda::ecmascript::JSMethod *method)
     auto paramCount = method->GetNumArgs() + CommonArgIdx::NUM_OF_ARGS;
     VariableType glueParamType(MachineType::I64, GateType::C_VALUE);
     paramTys.push_back(ConvertLLVMTypeFromVariableType(glueParamType));
-    for (uint32_t i = 1; i < CommonArgIdx::NUM_OF_ARGS; i++) {
+    VariableType actualArgc(MachineType::I32, GateType::C_VALUE);
+    paramTys.push_back(ConvertLLVMTypeFromVariableType(actualArgc));
+    for (uint32_t i = CommonArgIdx::FUNC; i < CommonArgIdx::NUM_OF_ARGS; i++) {
         VariableType paramsType(MachineType::I64, GateType::TAGGED_VALUE);
         paramTys.push_back(ConvertLLVMTypeFromVariableType(paramsType));
     }

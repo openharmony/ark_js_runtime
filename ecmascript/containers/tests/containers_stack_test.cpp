@@ -129,7 +129,7 @@ HWTEST_F_L0(ContainersStackTest, StackConstructor)
 
     ASSERT_TRUE(result.IsJSAPIStack());
     JSHandle<JSAPIStack> stack(thread, result);
-    JSTaggedValue resultProto = JSHandle<JSObject>::Cast(stack)->GetPrototype(thread);
+    JSTaggedValue resultProto = JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(stack));
     JSTaggedValue funcProto = newTarget->GetFunctionPrototype();
     ASSERT_EQ(resultProto, funcProto);
 }

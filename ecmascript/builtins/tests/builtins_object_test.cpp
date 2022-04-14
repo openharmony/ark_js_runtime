@@ -108,7 +108,7 @@ HWTEST_F_L0(BuiltinsObjectTest, ObjectConstructor)
 
     ASSERT_TRUE(result.IsECMAObject());
     JSHandle<JSObject> jtHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(result.GetRawData())));
-    JSTaggedValue resultProto = jtHandle->GetPrototype(thread);
+    JSTaggedValue resultProto = JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(jtHandle));
     JSTaggedValue funcProto = objectFunc->GetFunctionPrototype();
     ASSERT_EQ(resultProto, funcProto);
     ASSERT_TRUE(jtHandle->IsExtensible());
@@ -127,7 +127,7 @@ HWTEST_F_L0(BuiltinsObjectTest, ObjectConstructor)
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_TRUE(resultTg.IsObject());
     JSHandle<JSObject> jtHandleTg(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(resultTg.GetRawData())));
-    JSTaggedValue resultProtoTg = jtHandleTg->GetPrototype(thread);
+    JSTaggedValue resultProtoTg = JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(jtHandleTg));
     JSTaggedValue funcProtoTg = objectFunc->GetFunctionPrototype();
     ASSERT_EQ(resultProtoTg, funcProtoTg);
     ASSERT_TRUE(jtHandleTg->IsExtensible());
@@ -148,7 +148,7 @@ HWTEST_F_L0(BuiltinsObjectTest, ObjectConstructor)
 
     ASSERT_TRUE(resultVn.IsObject());
     JSHandle<JSObject> jtHandleVn(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(resultVn.GetRawData())));
-    JSTaggedValue resultProtoVn = jtHandleVn->GetPrototype(thread);
+    JSTaggedValue resultProtoVn = JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(jtHandleVn));
     JSTaggedValue funcProtoVn = objectFunc->GetFunctionPrototype();
     ASSERT_EQ(resultProtoVn, funcProtoVn);
     ASSERT_TRUE(jtHandleVn->IsExtensible());
@@ -207,8 +207,8 @@ HWTEST_F_L0(BuiltinsObjectTest, Create)
     TestHelper::TearDownFrame(thread, prev);
 
     ASSERT_TRUE(result.IsECMAObject());
-    JSHandle<JSObject> jtHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(result.GetRawData())));
-    JSTaggedValue resultProto = jtHandle->GetPrototype(thread);
+    JSHandle<JSTaggedValue> jtHandle(thread, result);
+    JSTaggedValue resultProto = JSTaggedValue::GetPrototype(thread, jtHandle);
     ASSERT_EQ(resultProto, funcProto.GetTaggedValue());
 
     // has prop

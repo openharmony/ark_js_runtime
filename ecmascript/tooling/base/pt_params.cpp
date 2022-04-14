@@ -724,4 +724,142 @@ std::unique_ptr<CallFunctionOnParams> CallFunctionOnParams::Create(const EcmaVM 
 
     return paramsObject;
 }
+
+std::unique_ptr<StartSamplingParams> StartSamplingParams::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
+{
+    ASSERT(ecmaVm);
+    if (params.IsEmpty()) {
+        LOG(ERROR, DEBUGGER) << "StartSamplingParams::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto paramsObject = std::make_unique<StartSamplingParams>();
+
+    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samplingInterval")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            paramsObject->samplingInterval_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+        } else {
+            error += "'samplingInterval' should be a Number;";
+        }
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "StartSamplingParams::Create " << error;
+        return nullptr;
+    }
+    return paramsObject;
+}
+
+Local<ObjectRef> StartSamplingParams::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samplingInterval")),
+            NumberRef::New(ecmaVm, samplingInterval_.value()));
+
+    return params;
+}
+
+std::unique_ptr<StartTrackingHeapObjectsParams> StartTrackingHeapObjectsParams::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
+{
+    ASSERT(ecmaVm);
+    if (params.IsEmpty()) {
+        LOG(ERROR, DEBUGGER) << "StartTrackingHeapObjectsParams::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto paramsObject = std::make_unique<StartTrackingHeapObjectsParams>();
+
+    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "trackAllocations")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsBoolean()) {
+            paramsObject->trackAllocations_ = result->IsTrue();
+        } else {
+            error += "'trackAllocations' should be a boolean;";
+        }
+    }
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "StartTrackingHeapObjectsParams::Create " << error;
+        return nullptr;
+    }
+    return paramsObject;
+}
+
+Local<ObjectRef> StartTrackingHeapObjectsParams::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "trackAllocations")),
+        BooleanRef::New(ecmaVm, trackAllocations_.value()));
+
+    return params;
+}
+
+std::unique_ptr<StopTrackingHeapObjectsParams> StopTrackingHeapObjectsParams::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
+{
+    ASSERT(ecmaVm);
+    if (params.IsEmpty()) {
+        LOG(ERROR, DEBUGGER) << "StopTrackingHeapObjectsParams::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto paramsObject = std::make_unique<StopTrackingHeapObjectsParams>();
+
+    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "reportProgress")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsBoolean()) {
+            paramsObject->reportProgress_ = result->IsTrue();
+        } else {
+            error += "'reportProgress' should be a boolean;";
+        }
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "treatGlobalObjectsAsRoots")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsBoolean()) {
+            paramsObject->treatGlobalObjectsAsRoots_ = result->IsTrue();
+        } else {
+            error += "'treatGlobalObjectsAsRoots' should be a boolean;";
+        }
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "captureNumericValue")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsBoolean()) {
+            paramsObject->captureNumericValue_ = result->IsTrue();
+        } else {
+            error += "'captureNumericValue' should be a boolean;";
+        }
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "StopTrackingHeapObjectsParams::Create " << error;
+        return nullptr;
+    }
+    return paramsObject;
+}
+
+
+Local<ObjectRef> StopTrackingHeapObjectsParams::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "reportProgress")),
+        BooleanRef::New(ecmaVm, reportProgress_.value()));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "treatGlobalObjectsAsRoots")),
+        BooleanRef::New(ecmaVm, treatGlobalObjectsAsRoots_.value()));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "captureNumericValue")),
+        BooleanRef::New(ecmaVm, captureNumericValue_.value()));
+
+    return params;
+}
 }  // namespace panda::tooling::ecmascript

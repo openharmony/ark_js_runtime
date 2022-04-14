@@ -11,18 +11,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#####################################hydra-fuzz###############################
+##################################hydra-fuzz###################################
 import("//ark/js_runtime/js_runtime_config.gni")
 import("//ark/js_runtime/test/test_helper.gni")
 import("//build/config/features.gni")
 import("//build/ohos.gni")
 import("//build/test.gni")
 
-####################################fuzztest##################################
-ohos_fuzztest("test_ark_InitializeDebugger_fuzzer") {
+##################################fuzztest#####################################
+ohos_fuzztest("DispatchProtocolMessagefuzztest") {
   module_out_path = "ark/js_runtime"
 
-  sources = [ "ark_InitializeDebugger_fuzzer.cpp" ]
+  fuzz_config_file =
+      "//ark/ark_js_runtime/test/fuzztest/dispatchprotocolmessage_fuzzer"
+
+  sources = [ "dispatchprotocolmessage_fuzzer.cpp" ]
 
   configs = [ "//ark/js_runtime:ecma_test_config" ]
 
@@ -38,5 +41,5 @@ ohos_fuzztest("test_ark_InitializeDebugger_fuzzer") {
 group("fuzztest") {
   testonly = true
   deps = []
-  deps += [ ":test_ark_InitializeDebugger_fuzzer" ]
+  deps += [ ":DispatchProtocolMessagefuzztest" ]
 }

@@ -1907,6 +1907,7 @@ bool BytecodeCircuitBuilder::IsDiscarded(EcmaOpcode opcode)
 {
     switch (opcode) {
         case EcmaOpcode::COPYMODULE_PREF_V8:
+        case EcmaOpcode::DEBUGGER_PREF:
             return true;
         default:
             return false;
@@ -1930,6 +1931,7 @@ bool BytecodeCircuitBuilder::IsSetConstant(EcmaOpcode opcode)
         case EcmaOpcode::LDHOLE_PREF:
         case EcmaOpcode::LDAI_DYN_IMM32:
         case EcmaOpcode::FLDAI_DYN_IMM64:
+        case EcmaOpcode::LDFUNCTION_PREF:
             return true;
         default:
             return false;
@@ -2001,6 +2003,9 @@ GateRef BytecodeCircuitBuilder::SetGateConstant(const BytecodeInfo &info)
                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
                                     static_cast<GateType>(tsType));
             break;
+        case EcmaOpcode::LDFUNCTION_PREF:
+            gate = GetCommonArgByIndex(CommonArgIdx::FUNC);
+            break;
         default:
             UNREACHABLE();
     }
@@ -2025,10 +2030,13 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                                      GateType::C_VALUE);
     argGates.at(0) = glueGate;
     commonArgs_.at(0) = glueGate;
-
-    for (size_t argIdx = 1; argIdx < CommonArgIdx::NUM_OF_ARGS; argIdx++) {
-        auto argGate = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, argIdx,
-                                        {Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST))},
+    auto argRoot = Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST));
+    auto actualArgc = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I32, CommonArgIdx::ACTUAL_ARGC,
+                                       {argRoot}, GateType::C_VALUE);
+    argGates.at(CommonArgIdx::ACTUAL_ARGC) = actualArgc;
+    commonArgs_.at(CommonArgIdx::ACTUAL_ARGC) = actualArgc;
+    for (size_t argIdx = CommonArgIdx::FUNC; argIdx < CommonArgIdx::NUM_OF_ARGS; argIdx++) {
+        auto argGate = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, argIdx, {argRoot},
                                         GateType::TAGGED_VALUE);
         argGates.at(argIdx) = argGate;
         commonArgs_.at(argIdx) = argGate;
@@ -2122,7 +2130,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                         inList[i + length] = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I16,
                                                               std::get<MethodId>(input).GetId(),
                                                               {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                                              GateType::JS_ANY);
+                                                              GateType::C_VALUE);
                     } else if (std::holds_alternative<StringId>(input)) {
                         auto tsLoader = vm_->GetTSLoader();
                         JSHandle<ConstantPool> newConstPool(vm_->GetJSThread(), constantPool_.GetTaggedValue());
@@ -2130,12 +2138,12 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                         uint64_t index = tsLoader->AddConstString(string);
                         inList[i + length] = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I32, index,
                                                               {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                                              GateType::JS_ANY);
+                                                              GateType::C_VALUE);
                     } else if (std::holds_alternative<Immediate>(input)) {
                         inList[i + length] = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
                                                               std::get<Immediate>(input).GetValue(),
                                                               {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                                              GateType::JS_ANY);
+                                                              GateType::C_VALUE);
                     } else {
                         ASSERT(std::holds_alternative<VirtualRegister>(input));
                         continue;

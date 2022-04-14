@@ -50,35 +50,35 @@ class Variable;
     V(Int32Mul, OpCode::MUL, MachineType::I32)                                    \
     V(Int64Mul, OpCode::MUL, MachineType::I64)                                    \
     V(DoubleMul, OpCode::MUL, MachineType::F64)                                   \
-    V(IntPtrMul, OpCode::MUL, MachineType::ARCH)                                  \
+    V(ArchMul, OpCode::MUL, MachineType::ARCH)                                    \
     V(Int32Div, OpCode::SDIV, MachineType::I32)                                   \
     V(Int64Div, OpCode::SDIV, MachineType::I64)                                   \
     V(UInt32Div, OpCode::UDIV, MachineType::I32)                                  \
     V(UInt64Div, OpCode::UDIV, MachineType::I64)                                  \
     V(DoubleDiv, OpCode::FDIV, MachineType::F64)                                  \
-    V(IntPtrDiv, OpCode::SDIV, MachineType::ARCH)                                 \
+    V(ArchDiv, OpCode::SDIV, MachineType::ARCH)                                   \
     V(Int32Mod, OpCode::SMOD, MachineType::I32)                                   \
     V(DoubleMod, OpCode::SMOD, MachineType::F64)                                  \
     V(BoolAnd, OpCode::AND, MachineType::I1)                                      \
     V(Int8And, OpCode::AND, MachineType::I8)                                      \
     V(Int32And, OpCode::AND, MachineType::I32)                                    \
     V(Int64And, OpCode::AND, MachineType::I64)                                    \
-    V(IntPtrAnd, OpCode::AND, MachineType::ARCH)                                  \
+    V(ArchAnd, OpCode::AND, MachineType::ARCH)                                    \
     V(BoolOr, OpCode::OR, MachineType::I1)                                        \
     V(Int32Or, OpCode::OR, MachineType::I32)                                      \
     V(Int64Or, OpCode::OR, MachineType::I64)                                      \
-    V(IntPtrOr, OpCode::OR, MachineType::ARCH)                                    \
+    V(ArchOr, OpCode::OR, MachineType::ARCH)                                      \
     V(Int32Xor, OpCode::XOR, MachineType::I32)                                    \
     V(Int64Xor, OpCode::XOR, MachineType::I64)                                    \
     V(Int16LSL, OpCode::LSL, MachineType::I16)                                    \
     V(Int32LSL, OpCode::LSL, MachineType::I32)                                    \
     V(Int64LSL, OpCode::LSL, MachineType::I64)                                    \
     V(UInt64LSL, OpCode::LSL, MachineType::I64)                                   \
-    V(IntPtrLSL, OpCode::LSL, MachineType::ARCH)                                  \
+    V(ArchLSL, OpCode::LSL, MachineType::ARCH)                                    \
     V(Int8LSR, OpCode::LSR, MachineType::I8)                                      \
     V(UInt32LSR, OpCode::LSR, MachineType::I32)                                   \
     V(UInt64LSR, OpCode::LSR, MachineType::I64)                                   \
-    V(IntPtrLSR, OpCode::LSR, MachineType::ARCH)                                  \
+    V(ArchLSR, OpCode::LSR, MachineType::ARCH)                                    \
     V(Int32ASR, OpCode::ASR, MachineType::I32)
 
 #define UNARY_ARITHMETIC_METHOD_LIST_WITH_BITWIDTH(V)                             \
@@ -217,10 +217,10 @@ public:
     GateRef IntPtr(int64_t val);
     GateRef Boolean(bool value);
     GateRef Double(double value);
-    GateRef UndefineConstant(GateType type);
-    GateRef HoleConstant(GateType type);
-    GateRef NullConstant(GateType type);
-    GateRef ExceptionConstant(GateType type);
+    GateRef UndefineConstant(GateType type = GateType::TAGGED_VALUE);
+    GateRef HoleConstant(GateType type = GateType::TAGGED_VALUE);
+    GateRef NullConstant(GateType type = GateType::TAGGED_VALUE);
+    GateRef ExceptionConstant(GateType type = GateType::TAGGED_VALUE);
     GateRef RelocatableData(uint64_t val);
     GateRef Alloca(int size);
     GateRef Branch(GateRef state, GateRef condition);
@@ -257,6 +257,8 @@ public:
     // constant
     inline GateRef True();
     inline GateRef False();
+    inline GateRef Undefined(VariableType type = VariableType::JS_ANY());
+
     // call operation
     GateRef CallRuntime(GateRef glue, int id, const std::vector<GateRef> &args);
     GateRef CallNGCRuntime(GateRef glue, size_t index, const std::vector<GateRef> &args);
@@ -325,21 +327,16 @@ public:
     inline GateRef TaggedIsUndefinedOrNull(GateRef x);
     inline GateRef TaggedIsBoolean(GateRef x);
     inline GateRef TaggedGetInt(GateRef x);
-    inline GateRef Int8BuildTaggedTypeWithNoGC(GateRef x);
-    inline GateRef Int16BuildTaggedWithNoGC(GateRef x);
-    inline GateRef Int16BuildTaggedTypeWithNoGC(GateRef x);
-    inline GateRef Int64BuildTaggedNGC(GateRef x);
-    inline GateRef Int64BuildTaggedTypeNGC(GateRef x);
-    inline GateRef IntBuildTaggedWithNoGC(GateRef x);
-    inline GateRef IntBuildTaggedTypeWithNoGC(GateRef x);
-    inline GateRef DoubleBuildTaggedWithNoGC(GateRef x);
-    inline GateRef DoubleBuildTaggedTypeWithNoGC(GateRef x);
-    inline GateRef IntBuildTagged(GateRef x);
-    inline GateRef Int64BuildTagged(GateRef x);
-    inline GateRef DoubleBuildTagged(GateRef x);
+    inline GateRef TaggedTypeNGC(GateRef x);
+    inline GateRef TaggedNGC(GateRef x);
+    inline GateRef DoubleToTaggedNGC(GateRef x);
+    inline GateRef DoubleToTaggedTypeNGC(GateRef x);
+    inline GateRef Tagged(GateRef x);
+    inline GateRef DoubleToTagged(GateRef x);
     inline GateRef TaggedTrue();
     inline GateRef TaggedFalse();
     inline GateRef GetValueFromTaggedArray(VariableType returnType, GateRef array, GateRef index);
+    inline void SetValueToTaggedArray(VariableType valType, GateRef glue, GateRef array, GateRef index, GateRef val);
     GateRef TaggedIsString(GateRef obj);
     GateRef TaggedIsStringOrSymbol(GateRef obj);
     // object operation

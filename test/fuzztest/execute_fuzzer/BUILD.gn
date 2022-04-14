@@ -19,10 +19,12 @@ import("//build/ohos.gni")
 import("//build/test.gni")
 
 ############################fuzztest################################
-ohos_fuzztest("test_ark_Execute_fuzzer") {
+ohos_fuzztest("ExecutefuzzTest") {
   module_out_path = "ark/js_runtime"
 
-  sources = [ "ark_Execute_fuzzer.cpp" ]
+  fuzz_config_file = "//ark/ark_js_runtime/test/fuzztest/execute_fuzzer"
+
+  sources = [ "execute_fuzzer.cpp" ]
 
   configs = [ "//ark/js_runtime:ecma_test_config" ]
 
@@ -39,5 +41,5 @@ ohos_fuzztest("test_ark_Execute_fuzzer") {
 group("fuzztest") {
   testonly = true
   deps = []
-  deps += [ ":test_ark_Execute_fuzzer" ]
+  deps += [ ":ExecutefuzzTest" ]
 }

@@ -13,18 +13,32 @@
  * limitations under the License.
  */
 
-#include "ark_DispatchProtocolMessage_fuzzer.h"
-#include<cstddef>
-#include<cstdint>
-#include "ecmascript/tooling/debugger_service.h"
+#include "execute_fuzzer.h"
+#include "ecmascript/napi/include/jsnapi.h"
+#include "unistd.h"
 
-using namespace panda::tooling::ecmascript;
-
+using namespace panda;
+using namespace panda::ecmascript;
+bool createstatus = true;
 namespace OHOS {
+    // staic constexpr auto PANDA_MAIN_PATH = "pandastdlib/pandastdlib.bin";
+    static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
+
     bool doSomethingInterestingWithMyAPI(const uint8_t* data, size_t size)
     {
-        std::string message(data, data+size);
-        panda::tooling::ecmascript::DispatchProtocolMessage(message);
+        RuntimeOption option;
+        if (createstatus) {
+            JSNApi::CreateJSVM(option);
+            createstatus = false;
+        }
+
+        option.SetGcType(RuntimeOption::GC_TYPE::GEN_GC);
+        option.SetLogLevel(RuntimeOption::LOG_LEVEL::ERROR);
+        auto jsvm = JSNApi::CreateJSVM(option);
+        Local<StringRef> entry = StringRef::NewFromUtf8(jsvm, PANDA_MAIN_FUNCTION);
+        std::string a = entry->StringRef::ToString();
+        JSNApi::Execute(jsvm, data, size, a);
+        JSNApi::DestroyJSVM(jsvm);
         return true;
     }
 }

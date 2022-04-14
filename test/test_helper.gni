@@ -129,6 +129,12 @@ template("host_moduletest_action") {
       js_vm_options += "--maxNonmovableSpaceCapacity=524288"  # 0.5M
     }
 
+    js_vm_options = " "
+    if (defined(invoker.is_enable_enableArkTools_) &&
+        invoker.is_enable_enableArkTools_) {
+      js_vm_options += "--enableArkTools_=true"
+    }
+
     args = [
       "--script-file",
       rebase_path(_root_out_dir_) + "/ark/ark_js_runtime/ark_js_vm",

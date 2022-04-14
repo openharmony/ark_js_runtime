@@ -57,7 +57,7 @@ JSTaggedValue BuiltinsSet::SetConstructor(EcmaRuntimeCallInfo *argv)
         return set.GetTaggedValue();
     }
     // Let adder be Get(set, "add").
-    JSHandle<JSTaggedValue> adderKey(factory->NewFromASCII("add"));
+    JSHandle<JSTaggedValue> adderKey(thread->GlobalConstants()->GetHandledAddString());
     JSHandle<JSTaggedValue> setHandle(set);
     JSHandle<JSTaggedValue> adder = JSObject::GetProperty(thread, setHandle, adderKey).GetValue();
     // ReturnIfAbrupt(adder).
@@ -178,15 +178,15 @@ JSTaggedValue BuiltinsSet::Has(EcmaRuntimeCallInfo *argv)
 JSTaggedValue BuiltinsSet::ForEach([[maybe_unused]] EcmaRuntimeCallInfo *argv)
 {
     JSThread *thread = argv->GetThread();
+    BUILTINS_API_TRACE(thread, Set, ForEach);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTaggedValue> self = GetThis(argv);
     // 2.If Type(S) is not Object, throw a TypeError exception.
     // 3.If S does not have a [[SetData]] internal slot, throw a TypeError exception.
     if (!self->IsJSSet()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "obj is not JSSet", JSTaggedValue::Exception());
     }
-    JSHandle<JSSet> set(thread, JSSet::Cast(*JSTaggedValue::ToObject(thread, self)));
+    JSHandle<JSSet> set(self);
 
     // 4.If IsCallable(callbackfn) is false, throw a TypeError exception.
     JSHandle<JSTaggedValue> func(GetCallArg(argv, 0));
@@ -197,20 +197,33 @@ JSTaggedValue BuiltinsSet::ForEach([[maybe_unused]] EcmaRuntimeCallInfo *argv)
     // 5.If thisArg was supplied, let T be thisArg; else let T be undefined.
     JSHandle<JSTaggedValue> thisArg = GetCallArg(argv, 1);
 
-    // composed arguments
-    JSHandle<JSTaggedValue> iter(factory->NewJSSetIterator(set, IterationKind::KEY));
-    JSHandle<JSTaggedValue> result = JSIterator::IteratorStep(thread, iter);
-    while (!result->IsFalse()) {
-        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, result.GetTaggedValue());
-        JSHandle<JSTaggedValue> value = JSIterator::IteratorValue(thread, result);
-        const size_t argsLength = 3;
-        JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, argsLength);
-        info.SetCallArg(value.GetTaggedValue(), value.GetTaggedValue(), set.GetTaggedValue());
-        JSTaggedValue ret = JSFunction::Call(&info);
-        // returnIfAbrupt
-        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ret);
-        result = JSIterator::IteratorStep(thread, iter);
+    // 6.Let entries be the List that is the value of S’s [[SetData]] internal slot.
+    JSMutableHandle<LinkedHashSet> hashSet(thread, set->GetLinkedSet());
+    const size_t argsLength = 3;
+    int index = 0;
+    int totalElements = hashSet->NumberOfElements() + hashSet->NumberOfDeletedElements();
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    // 7.Repeat for each e that is an element of entries, in original insertion order
+    while (index < totalElements) {
+        JSHandle<JSTaggedValue> key(thread, hashSet->GetKey(index++));
+        // a. If e is not empty, then
+        if (!key->IsHole()) {
+            EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(
+                thread, func, thisArg, undefined, argsLength);
+            info.SetCallArg(key.GetTaggedValue(), key.GetTaggedValue(), set.GetTaggedValue());
+            // i. Let funcResult be Call(callbackfn, T, «e, e, S»).
+            JSTaggedValue ret = JSFunction::Call(&info);  // 3: three args
+            // ii. ReturnIfAbrupt(funcResult).
+            RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ret);
+            // Maybe add or delete
+            JSTaggedValue nextTable = hashSet->GetNextTable();
+            while (!nextTable.IsHole()) {
+                index -= hashSet->GetDeletedElementsAt(index);
+                hashSet.Update(nextTable);
+                nextTable = hashSet->GetNextTable();
+            }
+            totalElements = hashSet->NumberOfElements() + hashSet->NumberOfDeletedElements();
+        }
     }
     return JSTaggedValue::Undefined();
 }
