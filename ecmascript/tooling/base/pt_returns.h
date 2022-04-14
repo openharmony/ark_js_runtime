@@ -264,5 +264,39 @@ private:
 
     std::unique_ptr<SamplingHeapProfile> profile_ {};
 };
+
+class GetHeapObjectIdReturns : public PtBaseReturns {
+public:
+    explicit GetHeapObjectIdReturns(HeapSnapshotObjectId heapSnapshotObjectId)
+        : heapSnapshotObjectId_(std::move(heapSnapshotObjectId))
+    {}
+    ~GetHeapObjectIdReturns() override = default;
+
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+private:
+    GetHeapObjectIdReturns() = default;
+    NO_COPY_SEMANTIC(GetHeapObjectIdReturns);
+    NO_MOVE_SEMANTIC(GetHeapObjectIdReturns);
+
+    HeapSnapshotObjectId heapSnapshotObjectId_ {};
+};
+
+class GetObjectByHeapObjectIdReturns : public PtBaseReturns {
+public:
+    explicit GetObjectByHeapObjectIdReturns(std::unique_ptr<RemoteObject> remoteObjectResult)
+        : remoteObjectResult_(std::move(remoteObjectResult))
+    {}
+    ~GetObjectByHeapObjectIdReturns() override = default;
+
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+private:
+    GetObjectByHeapObjectIdReturns() = default;
+    NO_COPY_SEMANTIC(GetObjectByHeapObjectIdReturns);
+    NO_MOVE_SEMANTIC(GetObjectByHeapObjectIdReturns);
+
+    std::unique_ptr<RemoteObject> remoteObjectResult_ {};
+};
 }  // namespace panda::tooling::ecmascript
 #endif

@@ -749,5 +749,76 @@ private:
     std::optional<bool> treatGlobalObjectsAsRoots_ {};
     std::optional<bool> captureNumericValue_ {};
 };
+
+class AddInspectedHeapObjectParams : public PtBaseParams {
+public:
+    AddInspectedHeapObjectParams() = default;
+    ~AddInspectedHeapObjectParams() override = default;
+
+    static std::unique_ptr<AddInspectedHeapObjectParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    HeapSnapshotObjectId GetHeapObjectId() const
+    {
+        return heapObjectId_;
+    }
+
+private:
+    NO_COPY_SEMANTIC(AddInspectedHeapObjectParams);
+    NO_MOVE_SEMANTIC(AddInspectedHeapObjectParams);
+
+    HeapSnapshotObjectId heapObjectId_ {};
+};
+
+class GetHeapObjectIdParams : public PtBaseParams {
+public:
+    GetHeapObjectIdParams() = default;
+    ~GetHeapObjectIdParams() override = default;
+
+    static std::unique_ptr<GetHeapObjectIdParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    RemoteObjectId GetObjectId() const
+    {
+        return objectId_;
+    }
+
+private:
+    NO_COPY_SEMANTIC(GetHeapObjectIdParams);
+    NO_MOVE_SEMANTIC(GetHeapObjectIdParams);
+
+    RemoteObjectId objectId_ {};
+};
+
+class GetObjectByHeapObjectIdParams : public PtBaseParams {
+public:
+    GetObjectByHeapObjectIdParams() = default;
+    ~GetObjectByHeapObjectIdParams() override = default;
+
+    static std::unique_ptr<GetObjectByHeapObjectIdParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    HeapSnapshotObjectId GetObjectId() const
+    {
+        return objectId_;
+    }
+
+    const CString &GetObjectGroup() const
+    {
+        return objectGroup_.value();
+    }
+
+    bool HasObjectGroup() const
+    {
+        return objectGroup_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(GetObjectByHeapObjectIdParams);
+    NO_MOVE_SEMANTIC(GetObjectByHeapObjectIdParams);
+
+    HeapSnapshotObjectId objectId_ {};
+    std::optional<CString> objectGroup_ {};
+};
 }  // namespace panda::tooling::ecmascript
 #endif

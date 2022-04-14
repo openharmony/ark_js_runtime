@@ -96,6 +96,7 @@ using CallFrameId = uint32_t;
 using ScriptId = uint32_t;
 
 // Runtime.RemoteObjectId
+
 using RemoteObjectId = uint32_t;
 
 // Runtime.ExecutionContextId
@@ -1479,6 +1480,10 @@ private:
     std::unique_ptr<RemoteObject> this_ {nullptr};
     std::optional<std::unique_ptr<RemoteObject>> returnValue_ {};
 };
+
+// ========== Heapprofiler types begin
+
+using HeapSnapshotObjectId = uint32_t;
 
 class SamplingHeapProfileSample  final :  public PtBaseTypes {
 public:

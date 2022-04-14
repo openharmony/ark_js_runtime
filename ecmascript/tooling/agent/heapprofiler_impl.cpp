@@ -26,12 +26,18 @@ namespace panda::tooling::ecmascript {
 HeapProfilerImpl::DispatcherImpl::DispatcherImpl(FrontEnd *frontend, std::unique_ptr<HeapProfilerImpl> heapprofiler)
     : DispatcherBase(frontend), heapprofiler_(std::move(heapprofiler))
 {
+    dispatcherTable_["addInspectedHeapObject"] = &HeapProfilerImpl::DispatcherImpl::AddInspectedHeapObject;
+    dispatcherTable_["collectGarbage"] = &HeapProfilerImpl::DispatcherImpl::CollectGarbage;
     dispatcherTable_["enable"] = &HeapProfilerImpl::DispatcherImpl::Enable;
     dispatcherTable_["disable"] = &HeapProfilerImpl::DispatcherImpl::Disable;
+    dispatcherTable_["getHeapObjectId"] = &HeapProfilerImpl::DispatcherImpl::GetHeapObjectId;
+    dispatcherTable_["getObjectByHeapObjectId"] = &HeapProfilerImpl::DispatcherImpl::GetObjectByHeapObjectId;
+    dispatcherTable_["getSamplingProfile"] = &HeapProfilerImpl::DispatcherImpl::GetSamplingProfile;
     dispatcherTable_["startSampling"] = &HeapProfilerImpl::DispatcherImpl::StartSampling;
     dispatcherTable_["startTrackingHeapObjects"] = &HeapProfilerImpl::DispatcherImpl::StartTrackingHeapObjects;
     dispatcherTable_["stopSampling"] = &HeapProfilerImpl::DispatcherImpl::StopSampling;
     dispatcherTable_["stopTrackingHeapObjects"] = &HeapProfilerImpl::DispatcherImpl::StopTrackingHeapObjects;
+    dispatcherTable_["takeHeapSnapshot"] = &HeapProfilerImpl::DispatcherImpl::TakeHeapSnapshot;
 }
 
 void HeapProfilerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
@@ -46,6 +52,25 @@ void HeapProfilerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
     }
 }
 
+void HeapProfilerImpl::DispatcherImpl::AddInspectedHeapObject(const DispatchRequest &request)
+{
+    std::unique_ptr<AddInspectedHeapObjectParams> params =
+        AddInspectedHeapObjectParams::Create(request.GetEcmaVM(), request.GetParams());
+    if (params == nullptr) {
+        SendResponse(request, DispatchResponse::Fail("HeapProfiler got wrong params"), nullptr);
+        return;
+    }
+    DispatchResponse response = heapprofiler_->AddInspectedHeapObject(std::move(params));
+    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
+    SendResponse(request, response, std::move(result));
+}
+
+void HeapProfilerImpl::DispatcherImpl::CollectGarbage(const DispatchRequest &request)
+{
+    DispatchResponse response = heapprofiler_->CollectGarbage();
+    SendResponse(request, response, nullptr);
+}
+
 void HeapProfilerImpl::DispatcherImpl::Enable(const DispatchRequest &request)
 {
     DispatchResponse response = heapprofiler_->Enable();
@@ -58,6 +83,45 @@ void HeapProfilerImpl::DispatcherImpl::Disable(const DispatchRequest &request)
     SendResponse(request, response, nullptr);
 }
 
+void HeapProfilerImpl::DispatcherImpl::GetHeapObjectId(const DispatchRequest &request)
+{
+    std::unique_ptr<GetHeapObjectIdParams> params =
+        GetHeapObjectIdParams::Create(request.GetEcmaVM(), request.GetParams());
+    if (params == nullptr) {
+        SendResponse(request, DispatchResponse::Fail("HeapProfiler got wrong params"), nullptr);
+        return;
+    }
+
+    HeapSnapshotObjectId objectId;
+    DispatchResponse response = heapprofiler_->GetHeapObjectId(std::move(params), &objectId);
+    std::unique_ptr<GetHeapObjectIdReturns> result = std::make_unique<GetHeapObjectIdReturns>(std::move(objectId));
+    SendResponse(request, response, std::move(result));
+}
+
+void HeapProfilerImpl::DispatcherImpl::GetObjectByHeapObjectId(const DispatchRequest &request)
+{
+    std::unique_ptr<GetObjectByHeapObjectIdParams> params =
+        GetObjectByHeapObjectIdParams::Create(request.GetEcmaVM(), request.GetParams());
+    if (params == nullptr) {
+        SendResponse(request, DispatchResponse::Fail("HeapProfiler got wrong params"), nullptr);
+        return;
+    }
+
+    std::unique_ptr<RemoteObject> remoteObjectResult;
+    DispatchResponse response = heapprofiler_->GetObjectByHeapObjectId(std::move(params), &remoteObjectResult);
+    std::unique_ptr<GetObjectByHeapObjectIdReturns> result = 
+        std::make_unique<GetObjectByHeapObjectIdReturns>(std::move(remoteObjectResult));
+    SendResponse(request, response, std::move(result));
+}
+
+void HeapProfilerImpl::DispatcherImpl::GetSamplingProfile(const DispatchRequest &request)
+{
+    std::unique_ptr<SamplingHeapProfile> profile;
+    DispatchResponse response = heapprofiler_->GetSamplingProfile(&profile);
+    //GetSamplingProfile与StopSampling返回值类型一样，后续如果有变更再区分
+    std::unique_ptr<StopSamplingReturns> result = std::make_unique<StopSamplingReturns>(std::move(profile));
+    SendResponse(request, response, std::move(result));
+}
 
 void HeapProfilerImpl::DispatcherImpl::StartSampling(const DispatchRequest &request)
 {
@@ -107,13 +171,56 @@ void HeapProfilerImpl::DispatcherImpl::StopTrackingHeapObjects(const DispatchReq
     SendResponse(request, response, std::move(result));
 }
 
+void HeapProfilerImpl::DispatcherImpl::TakeHeapSnapshot(const DispatchRequest &request)
+{
+    std::unique_ptr<StopTrackingHeapObjectsParams> params =
+        StopTrackingHeapObjectsParams::Create(request.GetEcmaVM(), request.GetParams());
+    if (params == nullptr) {
+        SendResponse(request, DispatchResponse::Fail("HeapProfiler got wrong params"), nullptr);
+        return;
+    }
+    DispatchResponse response = heapprofiler_->TakeHeapSnapshot(std::move(params));
+    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
+    SendResponse(request, response, std::move(result));
+}
+
+DispatchResponse HeapProfilerImpl::AddInspectedHeapObject(
+    [[maybe_unused]] std::unique_ptr<AddInspectedHeapObjectParams> params)
+{
+    return DispatchResponse::Ok();
+}
+
+DispatchResponse HeapProfilerImpl::CollectGarbage()
+{
+    return DispatchResponse::Ok();
+}
+
 DispatchResponse HeapProfilerImpl::Enable()
 {
     return DispatchResponse::Ok();
 }
 
-
 DispatchResponse HeapProfilerImpl::Disable()
+{
+    return DispatchResponse::Ok();
+}
+
+DispatchResponse HeapProfilerImpl::GetHeapObjectId([[maybe_unused]] std::unique_ptr<GetHeapObjectIdParams> params,
+                                                    HeapSnapshotObjectId *objectId)
+{
+    ASSERT(objectId != nullptr);
+    *objectId = 0;
+    return DispatchResponse::Ok();
+}
+
+DispatchResponse HeapProfilerImpl::GetObjectByHeapObjectId(
+    [[maybe_unused]] std::unique_ptr<GetObjectByHeapObjectIdParams> params,
+    [[maybe_unused]] std::unique_ptr<RemoteObject> *remoteObjectResult)
+{
+    return DispatchResponse::Ok();
+}
+
+DispatchResponse HeapProfilerImpl::GetSamplingProfile([[maybe_unused]]std::unique_ptr<SamplingHeapProfile> *profile)
 {
     return DispatchResponse::Ok();
 }
@@ -136,6 +243,12 @@ DispatchResponse HeapProfilerImpl::StopSampling([[maybe_unused]]std::unique_ptr<
 }
 
 DispatchResponse HeapProfilerImpl::StopTrackingHeapObjects(
+    [[maybe_unused]] std::unique_ptr<StopTrackingHeapObjectsParams> params)
+{
+    return DispatchResponse::Ok();
+}
+
+DispatchResponse HeapProfilerImpl::TakeHeapSnapshot(
     [[maybe_unused]] std::unique_ptr<StopTrackingHeapObjectsParams> params)
 {
     return DispatchResponse::Ok();
