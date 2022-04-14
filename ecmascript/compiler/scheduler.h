@@ -30,7 +30,7 @@ class Scheduler {
 public:
     static std::tuple<std::vector<GateRef>, std::unordered_map<GateRef, size_t>, std::vector<size_t>>
     CalculateDominatorTree(const Circuit *circuit);
-    static ControlFlowGraph Run(const Circuit *circuit);
+    static ControlFlowGraph Run(const Circuit *circuit, bool enableLog = false);
     static std::optional<std::unordered_map<GateRef, size_t>> CalculateSchedulingUpperBound(const Circuit *circuit,
         const std::unordered_map<GateRef, size_t> &bbGatesAddrToIdx,
         const std::function<bool(size_t, size_t)> &isAncestor, const std::vector<GateRef> &schedulableGatesList);

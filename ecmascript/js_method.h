@@ -199,6 +199,8 @@ public:
         return jsPandaFile_;
     }
 
+    const char * PUBLIC_API GetMethodName() const;
+
 private:
     uint64_t callField_ {0};
     const JSPandaFile *jsPandaFile_ {nullptr};

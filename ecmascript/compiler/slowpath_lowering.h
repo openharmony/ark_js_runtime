@@ -109,11 +109,17 @@ namespace panda::ecmascript::kungfu {
 
 class SlowPathLowering {
 public:
-    SlowPathLowering(BytecodeCircuitBuilder *bcBuilder, Circuit *circuit, CompilationConfig *cmpCfg)
+    SlowPathLowering(BytecodeCircuitBuilder *bcBuilder, Circuit *circuit, CompilationConfig *cmpCfg,
+                     bool enableLog)
         : bcBuilder_(bcBuilder), circuit_(circuit), acc_(circuit), builder_(circuit, cmpCfg), cmpCfg_(cmpCfg),
-          dependEntry_(Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY))) {}
+          dependEntry_(Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY))), enableLog_(enableLog) {}
     ~SlowPathLowering() = default;
     void CallRuntimeLowering();
+
+    bool IsLogEnabled() const
+    {
+        return enableLog_;
+    }
 
 private:
     inline bool IsArch32Bit() const
@@ -254,6 +260,7 @@ private:
     CircuitBuilder builder_;
     CompilationConfig *cmpCfg_;
     GateRef dependEntry_;
+    bool enableLog_ {false};
 };
 }  // panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_GENERIC_LOWERING_H

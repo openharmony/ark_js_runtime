@@ -16,7 +16,6 @@
 #include "llvm_stackmap_parser.h"
 
 #include <iostream>
-#include "ecmascript/compiler/compiler_macros.h"
 #include "ecmascript/frames.h"
 #include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/slots.h"
@@ -62,6 +61,10 @@ const CallSiteInfo* LLVMStackMapParser::GetCallSiteInfoByPatchID(uint64_t patchP
 
 void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptimizedLeaveFrame *frame) const
 {
+    if (!IsLogEnabled()) {
+        return;
+    }
+
     int i = 0;
     uintptr_t address = 0;
     uintptr_t base = 0;
@@ -70,26 +73,26 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptimizedL
         if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
             uintptr_t rsp = frame->GetCallSiteSp();
             address = rsp + info.second;
-            LOG_ECMA(DEBUG) << std::dec << "SP_DWARF_REG_NUM:  info.second:" << info.second
-                            << std::hex << "rsp :" << rsp;
+            COMPILER_LOG(DEBUG) << std::dec << "SP_DWARF_REG_NUM:  info.second:" << info.second
+                                << std::hex << "rsp :" << rsp;
         } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
             ASSERT(frame->type != FrameType::ASM_LEAVE_FRAME);
             uintptr_t fp = frame->callsiteFp;
             address = fp + info.second;
-            LOG_ECMA(DEBUG) << std::dec << "FP_DWARF_REG_NUM:  info.second:" << info.second
-                            << std::hex << "rfp :" << fp;
+            COMPILER_LOG(DEBUG) << std::dec << "FP_DWARF_REG_NUM:  info.second:" << info.second
+                                << std::hex << "rfp :" << fp;
         } else {
-            LOG_ECMA(DEBUG) << "REG_NUM :  info.first:" << info.first;
+            COMPILER_LOG(DEBUG) << "REG_NUM :  info.first:" << info.first;
             UNREACHABLE();
         }
 
         if (IsDeriveredPointer(i)) {
             derived = reinterpret_cast<uintptr_t>(address);
             if (base == derived) {
-                LOG_ECMA(INFO) << std::hex << "visit base:" << base << " base Value: " <<
+                COMPILER_LOG(INFO) << std::hex << "visit base:" << base << " base Value: " <<
                     *reinterpret_cast<uintptr_t *>(base);
             } else {
-                LOG_ECMA(INFO) << std::hex << "push base:" << base << " base Value: " <<
+                COMPILER_LOG(INFO) << std::hex << "push base:" << base << " base Value: " <<
                     *reinterpret_cast<uintptr_t *>(base) << " derived:" << derived;
             }
         } else {
@@ -102,6 +105,10 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptimizedL
 
 void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp) const
 {
+    if (!IsLogEnabled()) {
+        return;
+    }
+
     int i = 0;
     uintptr_t address = 0;
     uintptr_t base = 0;
@@ -122,10 +129,10 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t 
         if (IsDeriveredPointer(i)) {
             derived = reinterpret_cast<uintptr_t>(address);
             if (base == derived) {
-                LOG_ECMA(DEBUG) << std::hex << "visit base:" << base << " base Value: " <<
+                COMPILER_LOG(DEBUG) << std::hex << "visit base:" << base << " base Value: " <<
                     *reinterpret_cast<uintptr_t *>(base);
             } else {
-                LOG_ECMA(DEBUG) << std::hex << "push base:" << base << " base Value: " <<
+                COMPILER_LOG(DEBUG) << std::hex << "push base:" << base << " base Value: " <<
                     *reinterpret_cast<uintptr_t *>(base) << " derived:" << derived;
             }
         } else {
@@ -152,9 +159,11 @@ bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t 
     uintptr_t base = 0;
     uintptr_t derived = 0;
     int i = 0;
-#if ECMASCRIPT_ENABLE_COMPILER_LOG
-    PrintCallSiteInfo(infos, fp);
-#endif
+
+    if (IsLogEnabled()) {
+        PrintCallSiteInfo(infos, fp);
+    }
+
     uintptr_t callsiteFp = *fp;
     uintptr_t callsiteSp;
     if (FrameHandler(reinterpret_cast<JSTaggedType *>(frameFp)).GetFrameType() == FrameType::ASM_LEAVE_FRAME) {
@@ -204,11 +213,10 @@ void LLVMStackMapParser::CalcCallSite()
                 uintptr_t callsite = address + instructionOffset;
                 uint64_t  patchPointID = recordHead.PatchPointID;
                 if (loc.location == LocationTy::Kind::INDIRECT) {
-#if ECMASCRIPT_ENABLE_COMPILER_LOG
-                    LOG_ECMA(DEBUG) << "DwarfRegNum:" << loc.DwarfRegNum << " loc.OffsetOrSmallConstant:" <<
-                        loc.OffsetOrSmallConstant << "address:" << address << " instructionOffset:" <<
-                        instructionOffset << " callsite:" << "  patchPointID :" << std::hex << patchPointID << callsite;
-#endif
+                    COMPILER_OPTIONAL_LOG(DEBUG) << "DwarfRegNum:" << loc.DwarfRegNum << " loc.OffsetOrSmallConstant:"
+                        << loc.OffsetOrSmallConstant << "address:" << address << " instructionOffset:" <<
+                        instructionOffset << " callsite:" << "  patchPointID :" << std::hex << patchPointID <<
+                        callsite;
                     DwarfRegAndOffsetType info(loc.DwarfRegNum, loc.OffsetOrSmallConstant);
                     auto it = pc2CallSiteInfo_.find(callsite);
                     if (pc2CallSiteInfo_.find(callsite) == pc2CallSiteInfo_.end()) {
@@ -241,7 +249,7 @@ bool LLVMStackMapParser::CalculateStackMap(std::unique_ptr<uint8_t []> stackMapA
 {
     stackMapAddr_ = std::move(stackMapAddr);
     if (!stackMapAddr_) {
-        LOG_ECMA(ERROR) << "stackMapAddr_ nullptr error ! " << std::endl;
+        COMPILER_LOG(ERROR) << "stackMapAddr_ nullptr error ! ";
         return false;
     }
     dataInfo_ = std::make_unique<DataInfo>(std::move(stackMapAddr_));
@@ -294,17 +302,16 @@ bool LLVMStackMapParser::CalculateStackMap(std::unique_ptr<uint8_t []> stackMapA
     if (!ret) {
         return ret;
     }
+
     // update functionAddress from host side to device side
-#if ECMASCRIPT_ENABLE_COMPILER_LOG
-    LOG_ECMA(DEBUG) << "stackmap calculate update funcitonaddress ";
-#endif
+    COMPILER_OPTIONAL_LOG(DEBUG) << "stackmap calculate update funcitonaddress ";
+
     for (size_t i = 0; i < llvmStackMap_.StkSizeRecords.size(); i++) {
         uintptr_t hostAddr = llvmStackMap_.StkSizeRecords[i].functionAddress;
         uintptr_t deviceAddr = hostAddr - hostCodeSectionAddr + deviceCodeSectionAddr;
         llvmStackMap_.StkSizeRecords[i].functionAddress = deviceAddr;
-#if ECMASCRIPT_ENABLE_COMPILER_LOG
-        LOG_ECMA(DEBUG) << std::dec << i << "th function " << std::hex << hostAddr << " ---> " << deviceAddr;
-#endif
+        COMPILER_OPTIONAL_LOG(DEBUG) << std::dec << i << "th function " << std::hex << hostAddr << " ---> "
+                                     << deviceAddr;
     }
     pc2CallSiteInfo_.clear();
     pid2CallSiteInfo_.clear();

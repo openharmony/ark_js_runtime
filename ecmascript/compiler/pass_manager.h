@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_COMPILER_PASS_MANAGER_H
 #define ECMASCRIPT_COMPILER_PASS_MANAGER_H
 
+#include "compiler_log.h"
 #include "ecmascript/ecma_vm.h"
 #include "bytecode_circuit_builder.h"
 
@@ -26,7 +27,8 @@ public:
     PassManager() = default;
     bool CollectInfoOfPandaFile(const std::string &filename, std::string_view entryPoint,
                                 BytecodeTranslationInfo *translateInfo);
-    bool Compile(const std::string &fileName, const std::string &triple, const std::string &outputFileName);
+    bool Compile(const std::string &fileName, const std::string &triple, const std::string &outputFileName,
+                 const AotLog &log);
 
 private:
     EcmaVM* vm_;

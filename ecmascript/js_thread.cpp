@@ -273,7 +273,8 @@ void JSThread::LoadStubsFromFile(std::string &fileName)
     AsmInterParsedOption asmInterOpt = GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
     AdjustBCStubEntries(glueData_.bcStubEntries_, stubs, asmInterOpt);
 #ifdef NDEBUG
-    kungfu::LLVMStackMapParser::GetInstance().Print();
+    bool enableCompilerLog = GetEcmaVM()->GetJSOptions().WasSetlogCompiledMethods();
+    kungfu::LLVMStackMapParser::GetInstance(enableCompilerLog).Print();
 #endif
     stubCode_ = aotInfo.GetCode();
 }

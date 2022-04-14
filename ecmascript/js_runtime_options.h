@@ -60,6 +60,7 @@ public:
         parser->Add(&asmInter_);
         parser->Add(&aotOutputFile_);
         parser->Add(&aotTargetTriple_);
+        parser->Add(&logCompiledMethods);
     }
 
     bool IsEnableArkTools() const
@@ -326,6 +327,21 @@ public:
 
     static JSRuntimeOptions temporary_options;
 
+    std::string GetlogCompiledMethods() const
+    {
+        return logCompiledMethods.GetValue();
+    }
+
+    void SetlogCompiledMethods(std::string value)
+    {
+        logCompiledMethods.SetValue(std::move(value));
+    }
+
+    bool WasSetlogCompiledMethods() const
+    {
+        return logCompiledMethods.WasSet() && GetlogCompiledMethods().compare("none") != 0;
+    }
+
 private:
     PandArg<bool> enableArkTools_ {"enable-ark-tools", false, R"(Enable ark tools to debug. Default: false)"};
     PandArg<bool> enableCpuprofiler_ {"enable-cpuprofiler", false,
@@ -375,6 +391,9 @@ private:
         "1",
         R"(set asm interpreter control properties)"};
     AsmInterParsedOption asmInterParsedOption_;
+    PandArg<std::string> logCompiledMethods {"log-compiled-methods",
+        R"(none)",
+        R"(print stub or aot logs in units of method, "none": no log, "all": every method)"};
 };
 }  // namespace panda::ecmascript
 

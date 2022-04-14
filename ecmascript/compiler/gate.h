@@ -334,7 +334,7 @@ public:
     void AppendIn(const Gate *in);  // considered very slow
     void Print(std::string bytecode = "", bool inListPreview = false, size_t highlightIdx = -1) const;
     size_t PrintInGate(size_t numIns, size_t idx, size_t size, bool inListPreview, size_t highlightIdx,
-                       bool isEnd = false) const;
+                       std::string &log, bool isEnd = false) const;
     void PrintByteCode(std::string bytecode) const;
     [[nodiscard]] std::optional<std::pair<std::string, size_t>> CheckNullInput() const;
     [[nodiscard]] std::optional<std::pair<std::string, size_t>> CheckStateInput() const;
