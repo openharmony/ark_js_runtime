@@ -37,6 +37,8 @@ config("include_llvm") {
 source_set("libark_jsoptimizer_static") {
   sources = [
     "aot_file_manager.cpp",
+    "assembler/assembler_x64.cpp",
+    "assembler_module.cpp",
     "bytecode_circuit_builder.cpp",
     "call_signature.cpp",
     "circuit.cpp",
@@ -51,6 +53,7 @@ source_set("libark_jsoptimizer_static") {
     "rt_call_signature.cpp",
     "scheduler.cpp",
     "stub.cpp",
+    "trampoline/x64/assembler_module_x64.cpp",
     "type.cpp",
     "verifier.cpp",
   ]

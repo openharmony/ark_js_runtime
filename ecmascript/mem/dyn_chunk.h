@@ -17,12 +17,11 @@
 #define ECMASCRIPT_REGEXP_DYN_BUFFER_H
 
 #include <cstring>
-#include "ecmascript/ecma_vm.h"
-#include "ecmascript/js_thread.h"
+#include "ecmascript/common.h"
 #include "ecmascript/mem/chunk.h"
 
 namespace panda::ecmascript {
-class DynChunk {
+class PUBLIC_API DynChunk {
 public:
     static constexpr size_t ALLOCATE_MIN_SIZE = 64;
     static constexpr int FAILURE = -1;
@@ -123,6 +122,11 @@ public:
     ALWAYS_INLINE static inline constexpr uint32_t GetBufferOffset()
     {
         return MEMBER_OFFSET(DynChunk, buf_);
+    }
+
+    uint8_t *GetBegin() const
+    {
+        return buf_;
     }
 
 private:

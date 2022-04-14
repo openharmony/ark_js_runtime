@@ -267,7 +267,7 @@ void JSThread::LoadStubsFromFile(std::string &fileName)
         } else if (des.IsBCHandler()) {
             glueData_.bcStubEntries_.Set(des.indexInKind_, des.codeAddr_);
         } else {
-            UNREACHABLE();
+            glueData_.rtStubEntries_.Set(des.indexInKind_, des.codeAddr_);
         }
     }
     AsmInterParsedOption asmInterOpt = GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();

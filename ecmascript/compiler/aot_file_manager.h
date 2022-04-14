@@ -16,6 +16,7 @@
 #define ECMASCRIPT_KUNGFU_AOT_FILE_MANAGER_H
 
 #include "ecmascript/mem/machine_code.h"
+#include "assembler_module.h"
 #include "llvm_ir_builder.h"
 #include "llvm_codegen.h"
 
@@ -35,10 +36,13 @@ private:
     AotCodeInfo aotInfo_;
     LLVMModule *llvmModule_;
     LLVMAssembler assembler_;
+    AssemblerModule asmModule_;
+
     void RunLLVMAssembler()
     {
         assembler_.Run();
     }
+    void RunAsmAssembler();
     // collect aot component info
     void CollectAOTCodeInfoOfStubs();
     void CollectAOTCodeInfo();

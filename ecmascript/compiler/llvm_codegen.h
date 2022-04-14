@@ -199,6 +199,11 @@ public:
         return LLVMGetPointerToGlobal(engine_, function);
     }
 
+    uint8_t *AllocaCodeSection(uintptr_t size, const char *sectionName)
+    {
+        return codeInfo_.AllocaCodeSection(size, sectionName);
+    }
+
 private:
     void UseRoundTripSectionMemoryManager();
     bool BuildMCJITEngine();
