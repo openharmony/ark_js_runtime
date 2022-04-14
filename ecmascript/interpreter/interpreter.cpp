@@ -15,6 +15,8 @@
 
 #include "ecmascript/interpreter/interpreter.h"
 
+#include "ecmascript/frames.h"
+#include "ecmascript/interpreter/frame_handler.h"
 namespace panda::ecmascript {
 // make EcmaRuntimeCallInfo in stack pointer as fallows:
 //   +----------------------+   —
@@ -39,6 +41,13 @@ EcmaRuntimeCallInfo EcmaInterpreter::NewRuntimeCallInfo(
     size_t numArgs)
 {
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    // current frame may be entry frame, in this case sp = the prev frame (interpreter frame).
+    FrameType type = FrameHandler(sp).GetFrameType();
+    if (type == FrameType::INTERPRETER_ENTRY_FRAME) {
+        InterpretedEntryFrame *entryState = InterpretedEntryFrame::GetFrameFromSp(sp);
+        sp = entryState->base.prev;
+    }
+
     JSTaggedType *newSp = sp - INTERPRETER_FRAME_STATE_SIZE;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     thread->SetCurrentSPFrame(newSp);
 
