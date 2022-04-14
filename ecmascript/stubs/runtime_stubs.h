@@ -252,7 +252,7 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(ThrowNotCallableException, 0)          \
     V(ThrowCallConstructorException, 0)      \
     V(ThrowStackOverflowException, 0)        \
-    V(CallNative, 3)                         \
+    V(CallNative, 1)                         \
     V(CallSpreadDyn, 4)                      \
     V(DefineGetterSetterByValue, 6)          \
     V(SuperCall, 5)                          \

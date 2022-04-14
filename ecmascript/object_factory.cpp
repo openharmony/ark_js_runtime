@@ -696,6 +696,20 @@ JSHandle<JSObject> ObjectFactory::GetJSError(const ErrorType &errorType, const c
 
 JSHandle<JSObject> ObjectFactory::NewJSError(const ErrorType &errorType, const JSHandle<EcmaString> &message)
 {
+    // if there have exception in thread, then return current exception, no need to new js error.
+    if (thread_->HasPendingException()) {
+        JSHandle<JSObject> obj(thread_, thread_->GetException());
+        return obj;
+    }
+
+    // current frame may be entry frame, in this case sp = the prev frame (interpreter frame).
+    JSTaggedType *sp = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
+    if (FrameHandler(sp).GetFrameType() == FrameType::INTERPRETER_ENTRY_FRAME) {
+        InterpretedFrameHandler frameHandler(sp);
+        frameHandler.PrevInterpretedFrame();
+        thread_->SetCurrentSPFrame(frameHandler.GetSp());
+    }
+
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
     JSHandle<JSTaggedValue> nativeConstructor;

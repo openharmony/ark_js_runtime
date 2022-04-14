@@ -445,7 +445,6 @@ void InterpreterAssembly::InitStackFrame(JSThread *thread)
 
 JSTaggedValue InterpreterAssembly::ExecuteNative(EcmaRuntimeCallInfo *info)
 {
-    ASSERT(info);
     JSThread *thread = info->GetThread();
     INTERPRETER_TRACE(thread, ExecuteNative);
     ECMAObject *callTarget = reinterpret_cast<ECMAObject*>(info->GetFunctionValue().GetTaggedObject());
@@ -494,28 +493,19 @@ JSTaggedValue InterpreterAssembly::ExecuteNative(EcmaRuntimeCallInfo *info)
 
 JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
 {
-    ASSERT(info);
     JSThread *thread = info->GetThread();
-    INTERPRETER_TRACE(thread, Execute);
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
-    AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
-    if (asmInterOpt.enableAsm) {
-        return InterpreterAssembly::Execute(info);
-    }
-#endif
-    JSHandle<JSTaggedValue> func = info->GetFunction();
-    ECMAObject *callTarget = reinterpret_cast<ECMAObject*>(func.GetTaggedValue().GetTaggedObject());
+    ECMAObject *callTarget = reinterpret_cast<ECMAObject*>(info->GetFunctionValue().GetTaggedObject());
     ASSERT(callTarget != nullptr);
     JSMethod *method = callTarget->GetCallTarget();
     if (method->IsNativeWithCallField()) {
         return InterpreterAssembly::ExecuteNative(info);
     }
 
-    JSTaggedType *newSp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    JSTaggedType *entrySp = newSp;
+    // current sp is entry frame.
+    JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     int32_t actualNumArgs = info->GetArgsNumber();
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    newSp = newSp - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - actualNumArgs - RESERVED_CALL_ARGCOUNT;
+    JSTaggedType *newSp = sp - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - actualNumArgs - RESERVED_CALL_ARGCOUNT;
     if (thread->DoStackOverflowCheck(newSp - actualNumArgs - RESERVED_CALL_ARGCOUNT) ||
         thread->HasPendingException()) {
         return JSTaggedValue::Undefined();
@@ -577,9 +567,9 @@ JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
     state->pc = pc;
     state->function = info->GetFunctionValue();
     state->acc = JSTaggedValue::Hole();
-    JSHandle<JSFunction> thisFunc = JSHandle<JSFunction>::Cast(func);
+    JSHandle<JSFunction> thisFunc = JSHandle<JSFunction>::Cast(info->GetFunction());
     JSTaggedValue constpool = thisFunc->GetConstantPool();
-    state->base.prev = entrySp;
+    state->base.prev = sp;
     state->base.type = FrameType::INTERPRETER_FRAME;
     state->env = thisFunc->GetLexicalEnv();
     thread->SetCurrentSPFrame(newSp);
@@ -1047,16 +1037,14 @@ void InterpreterAssembly::HandleReturnDyn(
     sp = state->base.prev;
     ASSERT(sp != nullptr);
 
-    // break frame
-    if (FrameHandler(sp).IsEntryFrame()) {
-        thread->SetCurrentSPFrame(sp);
-        state->acc = acc;
-        return;
-    }
-
     AsmInterpretedFrame *prevState = GET_ASM_FRAME(sp);
     pc = prevState->pc;
     thread->SetCurrentSPFrame(sp);
+    // entry frame
+    if (pc == nullptr) {
+        state->acc = acc;
+        return;
+    }
 
     if (IsFastNewFrameExit(currentSp)) {
         JSFunction *func = JSFunction::Cast(GetThisFunction(currentSp).GetTaggedObject());
@@ -1106,16 +1094,14 @@ void InterpreterAssembly::HandleReturnUndefinedPref(
     sp = state->base.prev;
     ASSERT(sp != nullptr);
 
-    // break frame
-    if (FrameHandler(sp).IsEntryFrame()) {
-        thread->SetCurrentSPFrame(sp);
-        state->acc = JSTaggedValue::Undefined();
-        return;
-    }
-
     AsmInterpretedFrame *prevState = GET_ASM_FRAME(sp);
     pc = prevState->pc;
     thread->SetCurrentSPFrame(sp);
+    // entry frame
+    if (pc == nullptr) {
+        state->acc = JSTaggedValue::Undefined();
+        return;
+    }
 
     if (IsFastNewFrameExit(currentSp)) {
         JSFunction *func = JSFunction::Cast(GetThisFunction(currentSp).GetTaggedObject());
@@ -2656,16 +2642,14 @@ void InterpreterAssembly::HandleSuspendGeneratorPrefV8V8(
     sp = state->base.prev;
     ASSERT(sp != nullptr);
 
-    // break frame
-    if (FrameHandler(sp).IsEntryFrame()) {
-        thread->SetCurrentSPFrame(sp);
-        state->acc = acc;
-        return;
-    }
-
     AsmInterpretedFrame *prevState = GET_ASM_FRAME(sp);
     pc = prevState->pc;
     thread->SetCurrentSPFrame(sp);
+    // entry frame
+    if (pc == nullptr) {
+        state->acc = acc;
+        return;
+    }
 
     ASSERT(prevState->callSize == GetJumpSizeAfterCall(pc));
     DISPATCH_OFFSET(prevState->callSize);
