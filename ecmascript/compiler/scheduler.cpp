@@ -18,6 +18,7 @@
 #include <cmath>
 
 #include "ecmascript/compiler/verifier.h"
+#include "ecmascript/ecma_macros.h"
 
 namespace panda::ecmascript::kungfu {
 using DominatorTreeInfo = std::tuple<std::vector<GateRef>, std::unordered_map<GateRef, size_t>,
@@ -101,10 +102,10 @@ DominatorTreeInfo Scheduler::CalculateDominatorTree(const Circuit *circuit)
     return {bbGatesList, bbGatesAddrToIdx, immDom};
 }
 
-std::vector<std::vector<GateRef>> Scheduler::Run(const Circuit *circuit)
+std::vector<std::vector<GateRef>> Scheduler::Run(const Circuit *circuit, [[maybe_unused]] bool enableLog)
 {
 #ifndef NDEBUG
-    if (!Verifier::Run(circuit)) {
+    if (!Verifier::Run(circuit, enableLog)) {
         UNREACHABLE();
     }
 #endif
@@ -213,9 +214,8 @@ std::optional<std::unordered_map<GateRef, size_t>> Scheduler::CalculateSchedulin
             }
             auto predUpperBound = predResult.value();
             if (!isAncestor(curUpperBound, predUpperBound) && !isAncestor(predUpperBound, curUpperBound)) {
-                std::cerr << "[Verifier][Error] Scheduling upper bound of gate (id="
-                          << circuit->LoadGatePtrConst(curGate)->GetId() << ") does not exist"
-                          << std::endl;
+                COMPILER_LOG(ERROR) << "[Verifier][Error] Scheduling upper bound of gate (id="
+                                    << circuit->LoadGatePtrConst(curGate)->GetId() << ") does not exist";
                 return std::nullopt;
             }
             if (isAncestor(curUpperBound, predUpperBound)) {
@@ -304,32 +304,31 @@ void Scheduler::Print(const std::vector<std::vector<GateRef>> *cfg, const Circui
     std::unordered_map<GateRef, size_t> bbGatesAddrToIdx;
     std::vector<size_t> immDom;
     std::tie(bbGatesList, bbGatesAddrToIdx, immDom) = Scheduler::CalculateDominatorTree(circuit);
-    std::cout << "==========================================================================" << std::endl;
+    COMPILER_LOG(INFO) << "==========================================================================";
     for (size_t bbIdx = 0; bbIdx < cfg->size(); bbIdx++) {
-        std::cout << "BB_" << bbIdx << "_" << circuit->GetOpCode((*cfg)[bbIdx].front()).Str() << ":"
-                  << "  immDom=" << immDom[bbIdx];
-        std::cout << "  pred=[";
+        COMPILER_LOG(INFO) << "BB_" << bbIdx << "_" << circuit->GetOpCode((*cfg)[bbIdx].front()).Str() << ":"
+                           << "  immDom=" << immDom[bbIdx];
+        COMPILER_LOG(INFO) << "  pred=[";
         bool isFirst = true;
         for (const auto &predStates : circuit->GetInVector((*cfg)[bbIdx].front())) {
             if (circuit->GetOpCode(predStates).IsState() || circuit->GetOpCode(predStates) == OpCode::STATE_ENTRY) {
-                std::cout << (isFirst ? "" : " ") << bbGatesAddrToIdx.at(predStates);
+                COMPILER_LOG(INFO) << (isFirst ? "" : " ") << bbGatesAddrToIdx.at(predStates);
                 isFirst = false;
             }
         }
-        std::cout << "]  succ=[";
+        COMPILER_LOG(INFO) << "]  succ=[";
         isFirst = true;
         for (const auto &succStates : circuit->GetOutVector((*cfg)[bbIdx].front())) {
             if (circuit->GetOpCode(succStates).IsState() || circuit->GetOpCode(succStates) == OpCode::STATE_ENTRY) {
-                std::cout << (isFirst ? "" : " ") << bbGatesAddrToIdx.at(succStates);
+                COMPILER_LOG(INFO) << (isFirst ? "" : " ") << bbGatesAddrToIdx.at(succStates);
                 isFirst = false;
             }
         }
-        std::cout << "]";
-        std::cout << std::endl;
+        COMPILER_LOG(INFO) << "]";
         for (size_t instIdx = (*cfg)[bbIdx].size(); instIdx > 0; instIdx--) {
             circuit->Print((*cfg)[bbIdx][instIdx - 1]);
         }
     }
-    std::cout << "==========================================================================" << std::endl;
+    COMPILER_LOG(INFO) << "==========================================================================";
 }
 }  // namespace panda::ecmascript::kungfu

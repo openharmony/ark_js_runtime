@@ -24,6 +24,7 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_runtime_options.h"
 #include "ecmascript/napi/include/jsnapi.h"
+#include "generated/base_options.h"
 #include "include/runtime.h"
 #include "libpandabase/os/native_stack.h"
 #include "libpandabase/utils/pandargs.h"
@@ -37,18 +38,18 @@ void BlockSignals()
 #if defined(PANDA_TARGET_UNIX)
     sigset_t set;
     if (sigemptyset(&set) == -1) {
-        LOG(ERROR, RUNTIME) << "sigemptyset failed";
+        COMPILER_LOG(ERROR) << "sigemptyset failed";
         return;
     }
     int rc = 0;
 
     if (rc < 0) {
-        LOG(ERROR, RUNTIME) << "sigaddset failed";
+        COMPILER_LOG(ERROR) << "sigaddset failed";
         return;
     }
 
     if (panda::os::native_stack::g_PandaThreadSigmask(SIG_BLOCK, &set, nullptr) != 0) {
-        LOG(ERROR, RUNTIME) << "g_PandaThreadSigmask failed";
+        COMPILER_LOG(ERROR) << "g_PandaThreadSigmask failed";
     }
 #endif  // PANDA_TARGET_UNIX
 }
@@ -61,6 +62,7 @@ int Main(const int argc, const char **argv)
     BlockSignals();
     Span<const char *> sp(argv, argc);
     JSRuntimeOptions runtimeOptions(sp[0]);
+    base_options::Options baseOptions(sp[0]);
 
     panda::PandArg<bool> help("help", false, "Print this message and exit");
     panda::PandArg<bool> options("options", false, "Print compiler and runtime options");
@@ -71,6 +73,7 @@ int Main(const int argc, const char **argv)
     panda::PandArgParser paParser;
 
     runtimeOptions.AddOptions(&paParser);
+    baseOptions.AddOptions(&paParser);
 
     paParser.Add(&help);
     paParser.Add(&options);
@@ -90,16 +93,20 @@ int Main(const int argc, const char **argv)
         return 1;
     }
 
+    Logger::Initialize(baseOptions);
+    Logger::SetLevel(Logger::Level::INFO);
+    Logger::ResetComponentMask();  // disable all Component
+    Logger::EnableComponent(Logger::Component::ECMASCRIPT);  // enable ECMASCRIPT
+
     arg_list_t arguments = paParser.GetRemainder();
 
     if (runtimeOptions.IsStartupTime()) {
-        std::cout << "\n"
-                  << "Startup start time: " << startTime << std::endl;
+        COMPILER_LOG(DEBUG) << "Startup start time: " << startTime;
     }
 
     auto runtimeOptionsErr = runtimeOptions.Validate();
     if (runtimeOptionsErr) {
-        std::cerr << "Error: " << runtimeOptionsErr.value().GetMessage() << std::endl;
+        COMPILER_LOG(ERROR) << "Error Runtime Option: " << runtimeOptionsErr.value().GetMessage();
         return 1;
     }
 
@@ -111,14 +118,10 @@ int Main(const int argc, const char **argv)
     static EcmaLanguageContext lcEcma;
     bool ret = Runtime::Create(runtimeOptions, {&lcEcma});
     if (!ret) {
-        std::cerr << "Error: cannot Create Runtime" << std::endl;
+        COMPILER_LOG(ERROR) << "Cannot Create Runtime";
         return -1;
     }
     auto runtime = Runtime::GetCurrent();
-
-    if (options.GetValue()) {
-        std::cout << paParser.GetRegularArgs() << std::endl;
-    }
 
     EcmaVM *vm = EcmaVM::Cast(runtime->GetPandaVM());
 
@@ -132,16 +135,19 @@ int Main(const int argc, const char **argv)
     BytecodeStubCSigns::Initialize();
     CommonStubCSigns::Initialize();
     RuntimeStubCSigns::Initialize();
+
+    std::string logMethods = vm->GetJSOptions().GetlogCompiledMethods();
+    AotLog log(logMethods);
     for (const auto &fileName : pandaFileNames) {
-        LOG_ECMA(DEBUG) << "start to execute ark file: " << fileName;
-        if (passManager.Compile(fileName, triple, outputFileName) == false) {
+        COMPILER_LOG(INFO) << "AOT start to execute ark file: " << fileName;
+        if (passManager.Compile(fileName, triple, outputFileName, log) == false) {
             ret = false;
             break;
         }
     }
 
     if (!Runtime::Destroy()) {
-        std::cerr << "Error: cannot destroy Runtime" << std::endl;
+        COMPILER_LOG(ERROR) << "Cannot Destroy Runtime";
         return -1;
     }
     paParser.DisableTail();
@@ -152,6 +158,6 @@ int Main(const int argc, const char **argv)
 int main(const int argc, const char **argv)
 {
     auto result = panda::ecmascript::kungfu::Main(argc, argv);
-    std::cout << (result == 0 ? "ts aot execute success" : "ts aot execute failed") << std::endl;
+    COMPILER_LOG(INFO) << (result == 0 ? "ts aot execute success" : "ts aot execute failed");
     return result;
 }

@@ -70,7 +70,8 @@ bool AotCodeInfo::DeserializeForStub(JSThread *thread, const std::string &filena
     std::unique_ptr<uint8_t[]> stackmapPtr(std::make_unique<uint8_t[]>(stackmapSize));
     modulefile.read(reinterpret_cast<char *>(stackmapPtr.get()), stackmapSize);
     if (stackmapSize != 0) {
-        kungfu::LLVMStackMapParser::GetInstance().CalculateStackMap(std::move(stackmapPtr),
+        bool enableLog = thread->GetEcmaVM()->GetJSOptions().WasSetlogCompiledMethods();
+        kungfu::LLVMStackMapParser::GetInstance(enableLog).CalculateStackMap(std::move(stackmapPtr),
             hostCodeSectionAddr_, devicesCodeSectionAddr_);
     }
     for (size_t i = 0; i < stubEntries_.size(); i++) {
@@ -141,7 +142,8 @@ bool AotCodeInfo::Deserialize(EcmaVM *vm, const std::string &filename)
     std::unique_ptr<uint8_t[]> stackmapPtr(std::make_unique<uint8_t[]>(stackmapSize));
     moduleFile.read(reinterpret_cast<char *>(stackmapPtr.get()), stackmapSize);
     if (stackmapSize != 0) {
-        kungfu::LLVMStackMapParser::GetInstance().CalculateStackMap(std::move(stackmapPtr),
+        bool enableLog = vm->GetJSOptions().WasSetlogCompiledMethods();
+        kungfu::LLVMStackMapParser::GetInstance(enableLog).CalculateStackMap(std::move(stackmapPtr),
             hostCodeSectionAddr_, devicesCodeSectionAddr_);
     }
     for (auto &aotEntry : aotFuncEntryOffsets_) {

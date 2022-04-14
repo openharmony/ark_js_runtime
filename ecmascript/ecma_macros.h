@@ -32,6 +32,9 @@
 #define OPTIONAL_LOG(ecmaVM, level, component) \
     LOG_IF(ecmaVM->IsOptionalLogEnabled(), level, component)
 
+#define COMPILER_LOG(level) LOG(level, ECMASCRIPT)
+#define COMPILER_OPTIONAL_LOG(level) LOG_IF(IsLogEnabled(), level, ECMASCRIPT)
+
 #if !defined(ENABLE_BYTRACE)
     #define ECMA_BYTRACE_NAME(tag, name)
 #elif !defined(PANDA_TARGET_LINUX) && !defined(PANDA_TARGET_WINDOWS) && defined(IS_PUBLIC_VERSION)

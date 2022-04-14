@@ -41,10 +41,11 @@ void SlowPathLowering::CallRuntimeLowering()
             LowerExceptionHandler(gate);
         }
     }
-#if ECMASCRIPT_ENABLE_TS_AOT_PRINT
-    std::cout << "=========================================================" << std::endl;
-    circuit_->PrintAllGates(*bcBuilder_);
-#endif
+
+    if (IsLogEnabled()) {
+        COMPILER_LOG(INFO) << "=========================================================";
+        circuit_->PrintAllGates(*bcBuilder_);
+    }
 }
 
 /*

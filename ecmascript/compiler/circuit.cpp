@@ -14,7 +14,6 @@
  */
 
 #include "ecmascript/compiler/circuit.h"
-#include "ecmascript/compiler/compiler_macros.h"
 #include "ecmascript/compiler/bytecode_circuit_builder.h"
 
 namespace panda::ecmascript::kungfu {
@@ -63,10 +62,9 @@ GateRef Circuit::NewGate(OpCode opcode, MachineType bitValue, BitField bitfield,
 {
 #ifndef NDEBUG
     if (numIns != opcode.GetOpCodeNumIns(bitfield)) {
-        std::cerr << "Invalid input list!"
-                  << " op=" << opcode.Str() << " bitfield=" << bitfield
-                  << " expected_num_in=" << opcode.GetOpCodeNumIns(bitfield) << " actual_num_in=" << numIns
-                  << std::endl;
+        COMPILER_LOG(ERROR) << "Invalid input list!"
+                            << " op=" << opcode.Str() << " bitfield=" << bitfield
+                            << " expected_num_in=" << opcode.GetOpCodeNumIns(bitfield) << " actual_num_in=" << numIns;
         UNREACHABLE();
     }
 #endif
@@ -94,10 +92,9 @@ GateRef Circuit::NewGate(OpCode opcode, BitField bitfield, size_t numIns, const 
 {
 #ifndef NDEBUG
     if (numIns != opcode.GetOpCodeNumIns(bitfield)) {
-        std::cerr << "Invalid input list!"
-                  << " op=" << opcode.Str() << " bitfield=" << bitfield
-                  << " expected_num_in=" << opcode.GetOpCodeNumIns(bitfield) << " actual_num_in=" << numIns
-                  << std::endl;
+        COMPILER_LOG(ERROR) << "Invalid input list!"
+                            << " op=" << opcode.Str() << " bitfield=" << bitfield
+                            << " expected_num_in=" << opcode.GetOpCodeNumIns(bitfield) << " actual_num_in=" << numIns;
         UNREACHABLE();
     }
 #endif

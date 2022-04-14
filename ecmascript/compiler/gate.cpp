@@ -184,7 +184,7 @@ Properties OpCode::GetProperties() const
         case BITCAST:
             return {FLEX, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         default:
-            std::cerr << "Please complete OpCode properties (OpCode=" << op_ << ")" << std::endl;
+            COMPILER_LOG(ERROR) << "Please complete OpCode properties (OpCode=" << op_ << ")";
             UNREACHABLE();
     }
 #undef STATE
@@ -652,9 +652,9 @@ bool Gate::Verify() const
         }
     }
     if (failed) {
-        std::cerr << "[Verifier][Error] Gate level input list schema verify failed" << std::endl;
+        COMPILER_LOG(ERROR) << "[Verifier][Error] Gate level input list schema verify failed";
         Print("", true, highlightIdx);
-        std::cerr << "Note: " << errorString << std::endl;
+        COMPILER_LOG(ERROR) << "Note: " << errorString;
     }
     return !failed;
 }
@@ -934,7 +934,7 @@ In *Gate::GetIn(size_t idx)
 {
 #ifndef NDEBUG
     if (idx >= GetNumIns()) {
-        std::cerr << std::dec << "Gate In access out-of-bound! (idx=" << idx << ")" << std::endl;
+        COMPILER_LOG(INFO) << std::dec << "Gate In access out-of-bound! (idx=" << idx << ")";
         Print();
         ASSERT(false);
     }
@@ -947,7 +947,7 @@ const In *Gate::GetInConst(size_t idx) const
 {
 #ifndef NDEBUG
     if (idx >= GetNumIns()) {
-        std::cerr << std::dec << "Gate In access out-of-bound! (idx=" << idx << ")" << std::endl;
+        COMPILER_LOG(INFO) << std::dec << "Gate In access out-of-bound! (idx=" << idx << ")";
         Print();
         ASSERT(false);
     }
@@ -1082,66 +1082,63 @@ std::string Gate::GateTypeStr(GateType gateType) const
 void Gate::Print(std::string bytecode, bool inListPreview, size_t highlightIdx) const
 {
     if (GetOpCode() != OpCode::NOP) {
-        std::cerr << std::dec << "("
-                  << "id=" << id_ << ", "
-                  << "op=" << GetOpCode().Str() << ", "
-                  << ((bytecode.compare("") == 0) ? "" : "bytecode=") << bytecode
-                  << ((bytecode.compare("") == 0) ? "" : ", ")
-                  << "machineType=" << MachineTypeStr(GetMachineType()) << ", "
-                  << "bitfield=" << std::to_string(bitfield_) << ", "
-                  << "type=" << GateTypeStr(type_) << ", "
-                  << "stamp=" << static_cast<uint32_t>(stamp_) << ", "
-                  << "mark=" << static_cast<uint32_t>(mark_) << ", ";
-        std::cerr << "in="
-                  << "[";
+        std::string log("(id=" + std::to_string(id_) + ", op=" + GetOpCode().Str() + ", ");
+        log += ((bytecode.compare("") == 0) ? "" : "bytecode=") + bytecode;
+        log += ((bytecode.compare("") == 0) ? "" : ", ");
+        log += "machineType=" + MachineTypeStr(GetMachineType()) + ", ";
+        log += "bitfield=" + std::to_string(bitfield_) + ", ";
+        log += "type=" + GateTypeStr(type_) + ", ";
+        log += "stamp=" + std::to_string(static_cast<uint32_t>(stamp_)) + ", ";
+        log += "mark=" + std::to_string(static_cast<uint32_t>(mark_)) + ", ";
+        log += "in=[";
+
         size_t idx = 0;
         auto stateSize = GetStateCount();
         auto dependSize = GetDependCount();
         auto valueSize = GetInValueCount();
         auto rootSize = GetRootCount();
-        idx = PrintInGate(stateSize, idx, 0, inListPreview, highlightIdx);
-        idx = PrintInGate(stateSize + dependSize, idx, stateSize, inListPreview, highlightIdx);
-        idx = PrintInGate(stateSize + dependSize + valueSize, idx, stateSize + dependSize, inListPreview, highlightIdx);
+        idx = PrintInGate(stateSize, idx, 0, inListPreview, highlightIdx, log);
+        idx = PrintInGate(stateSize + dependSize, idx, stateSize, inListPreview, highlightIdx, log);
+        idx = PrintInGate(stateSize + dependSize + valueSize, idx, stateSize + dependSize,
+                          inListPreview, highlightIdx, log);
         PrintInGate(stateSize + dependSize + valueSize + rootSize, idx, stateSize + dependSize + valueSize,
-                    inListPreview, highlightIdx, true);
+                    inListPreview, highlightIdx, log, true);
 
-        std::cerr << "]"
-                  << ", ";
-        std::cerr << "out="
-                  << "[";
+        log += "], out=[";
+
         if (!IsFirstOutNull()) {
             const Out *curOut = GetFirstOutConst();
-            std::cerr << std::dec << ""
-                      << std::to_string(curOut->GetGateConst()->GetId()) +
+            log += std::to_string(curOut->GetGateConst()->GetId()) +
                     (inListPreview ? std::string(":" + curOut->GetGateConst()->GetOpCode().Str()) : std::string(""));
+
             while (!curOut->IsNextOutNull()) {
                 curOut = curOut->GetNextOutConst();
-                std::cerr << std::dec << " "
-                          << std::to_string(curOut->GetGateConst()->GetId()) +
-                        (inListPreview ? std::string(":" + curOut->GetGateConst()->GetOpCode().Str())
+                log += " " +  std::to_string(curOut->GetGateConst()->GetId()) +
+                       (inListPreview ? std::string(":" + curOut->GetGateConst()->GetOpCode().Str())
                                        : std::string(""));
             }
         }
-        std::cerr << "]"
-                  << ")" << std::endl;
+        log += "])";
+        COMPILER_LOG(INFO) << std::dec << log;
     }
 }
 
 size_t Gate::PrintInGate(size_t numIns, size_t idx, size_t size, bool inListPreview, size_t highlightIdx,
-                         bool isEnd) const
+                         std::string &log, bool isEnd) const
 {
-    std::cerr << "[";
+    log += "[";
     for (; idx < numIns; idx++) {
-        std::cerr << std::dec << ((idx == size) ? "" : " ") << ((idx == highlightIdx) ? "\033[4;31m" : "")
-                  << ((IsInGateNull(idx)
+        log += ((idx == size) ? "" : " ");
+        log += ((idx == highlightIdx) ? "\033[4;31m" : "");
+        log += ((IsInGateNull(idx)
                        ? "N"
                        : (std::to_string(GetInGateConst(idx)->GetId()) +
                           (inListPreview ? std::string(":" + GetInGateConst(idx)->GetOpCode().Str())
-                                         : std::string("")))))
-                  << ((idx == highlightIdx) ? "\033[0m" : "");
+                                         : std::string("")))));
+        log += ((idx == highlightIdx) ? "\033[0m" : "");
     }
-    std::cerr << "]"
-              << ((isEnd) ? "" : ", ");
+    log += "]";
+    log += ((isEnd) ? "" : ", ");
     return idx;
 }
 
