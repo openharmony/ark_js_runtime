@@ -14,10 +14,10 @@
 import("//ark/js_runtime/js_runtime_config.gni")
 import("//build/ohos.gni")
 
-ohos_executable("ark_js_vm") {
+source_set("ark_js_vm_static") {
   sources = [ "main.cpp" ]
 
-  configs = [
+  public_configs = [
     "//ark/js_runtime:ark_jsruntime_common_config",
     "//ark/js_runtime:ark_jsruntime_public_config",
     "$ark_root/runtime:arkruntime_public_config",
@@ -31,6 +31,10 @@ ohos_executable("ark_js_vm") {
   if (!is_standard_system) {
     deps += [ "$ark_root/runtime:libarkruntime" ]
   }
+}
+
+ohos_executable("ark_js_vm") {
+  deps = [ ":ark_js_vm_static" ]
 
   part_name = "ark_js_runtime"
   install_enable = false
