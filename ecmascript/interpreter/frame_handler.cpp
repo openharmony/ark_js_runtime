@@ -56,6 +56,12 @@ void FrameHandler::PrevFrame()
             framehandle->PrevFrame();
             break;
         }
+        case FrameType::OPTIMIZED_WITH_ARGV_LEAVE_FRAME: {
+            auto framehandle =
+                reinterpret_cast<OptimizedWithArgvLeaveFrameHandler *>(this);
+            framehandle->PrevFrame();
+            break;
+        }
         case FrameType::INTERPRETER_ENTRY_FRAME: {
             auto framehandle = reinterpret_cast<InterpretedEntryFrameHandler *>(this);
             framehandle->PrevFrame();
@@ -411,7 +417,13 @@ void OptimizedLeaveFrameHandler::PrevFrame()
     sp_ = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
 }
 
-void OptimizedLeaveFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
+void OptimizedWithArgvLeaveFrameHandler::PrevFrame()
+{
+    OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(sp_);
+    sp_ = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
+}
+
+void OptimizedLeaveFrameHandler::Iterate(const RootVisitor &v0, [[maybe_unused]] const RootRangeVisitor &v1,
     ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const
 {
     OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(sp_);
@@ -420,9 +432,31 @@ void OptimizedLeaveFrameHandler::Iterate(const RootVisitor &v0, const RootRangeV
         uintptr_t end = ToUintPtr(&frame->argc + 1 + frame->argc);
         v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
     }
+
     std::set<uintptr_t> slotAddrs;
-    bool enableCompilerLog = thread_->GetEcmaVM()->GetJSOptions().WasSetlogCompiledMethods();
-    bool ret = kungfu::LLVMStackMapParser::GetInstance(enableCompilerLog).CollectStackMapSlots(
+    bool ret = kungfu::LLVMStackMapParser::GetInstance().CollectStackMapSlots(
+        frame->returnAddr, reinterpret_cast<uintptr_t>(sp_), slotAddrs, derivedPointers, isVerifying);
+    if (ret == false) {
+        return;
+    }
+    for (auto slot : slotAddrs) {
+        v0(Root::ROOT_FRAME, ObjectSlot(slot));
+    }
+}
+
+void OptimizedWithArgvLeaveFrameHandler::Iterate(const RootVisitor &v0, [[maybe_unused]] const RootRangeVisitor &v1,
+    ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const
+{
+    OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(sp_);
+    if (frame->argc > 0) {
+        JSTaggedType *argv = &frame->argc + 1;
+        uintptr_t start = ToUintPtr(reinterpret_cast<JSTaggedType *>(argv[0])); // argv
+        uintptr_t end = ToUintPtr(reinterpret_cast<JSTaggedType *>(argv[frame->argc]));
+        v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
+    }
+
+    std::set<uintptr_t> slotAddrs;
+    bool ret = kungfu::LLVMStackMapParser::GetInstance().CollectStackMapSlots(
         frame->returnAddr, reinterpret_cast<uintptr_t>(sp_), slotAddrs, derivedPointers, isVerifying);
     if (ret == false) {
         return;
@@ -470,6 +504,11 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
             OptimizedEntryFrame *frame = OptimizedEntryFrame::GetFrameFromSp(current);
             current = frame->GetPrevFrameFp();
             // NOTE: due to "AotInfo" iteration, current frame might not be interpreted frame
+        } else if (type == FrameType::OPTIMIZED_WITH_ARGV_LEAVE_FRAME) {
+            OptimizedWithArgvLeaveFrame *frame = OptimizedWithArgvLeaveFrame::GetFrameFromSp(current);
+            OptimizedWithArgvLeaveFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
+                v1, derivedPointers, isVerifying);
+            current = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
         } else {
             ASSERT(type == FrameType::OPTIMIZED_LEAVE_FRAME || type == FrameType::ASM_LEAVE_FRAME);
             OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(current);

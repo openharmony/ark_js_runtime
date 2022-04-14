@@ -89,6 +89,7 @@
 #define OPTIMIZE_FRAME_TYPE                (0)
 #define JS_ENTRY_FRAME_TYPE                (1)
 #define LEAVE_FRAME_TYPE                   (3)
+#define PARMERA_INDIRECT_LEAVE_FRAME       (7)
 #define ASM_LEAVE_FRAME_TYPE               (5)
 #define ASM_INTERPRETER_FRAME              (3)
 #define JSUNDEFINED                        (0xa)
@@ -146,5 +147,13 @@
 // MESSAGE_STRING_ID
 #define MESSAGE_STRING_NON_CALLABLE_ID   0xffff000000000005
 #define RUNTIME_ID_THROW_TYPE_ERROR      0x16
+
+// com stub
+#ifdef PANDA_TARGET_64
+#define ASM_GLUE_COMSTUB_ENTRY_OFFSET     (0xde8)
+#else
+#define ASM_GLUE_COMSTUB_ENTRY_OFFSET     (0x708)
+#endif
+#define JSPROXY_CALL_INTERNAL_INDEX       (0x15)
 
 #endif  // ECMASCRIPT_ASM_DEFINES_H

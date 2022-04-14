@@ -86,6 +86,9 @@
 .global ResumeRspAndReturn
 .type ResumeRspAndReturn, %function
 
+.global OptimizedCallRuntimeWithArgv
+.type OptimizedCallRuntimeWithArgv, %function
+
  /* JSFunctionEntry Callee Register Save Macro */
 .macro PUSH_CALLEE_SAVED_REGS
     stp x27, x28, [sp, #-16]!
@@ -216,7 +219,13 @@ JSFunctionEntry:
 // sp:      runtime_id
 // construct Leave Frame:
 //   +--------------------------+
-//   |       argv[]             |
+//   |       argv[argc-1]       |
+//   +--------------------------+
+//   |       ..........         |
+//   +--------------------------+
+//   |       argv[1]            |
+//   +--------------------------+
+//   |       argv[0]            |
 //   +--------------------------+ ---
 //   |       argc               |   ^
 //   |--------------------------|  Fixed
@@ -468,7 +477,7 @@ CallNativeTrampoline:
     ldp     x29, x30, [sp], #16
     ret
 
-// uint64_t JSCallWithArgV(uintptr_t glue, uint32_t argc, uintptr_t argv[]);
+// uint64_t JSCallWithArgV(uintptr_t glue, uint32_t argc, JSTaggedType callTarget, JSTaggedType argV[]);
 // c++ calling convention call js function
 // Input:
 // %x0 - glue
@@ -490,17 +499,17 @@ CallNativeTrampoline:
 // sp + 8:  new
 // sp:      jsfunc
 //   +--------------------------+
-//   |       ...                |
+//   |       argv[N-1]          |
 //   +--------------------------+
-//   |       arg0               |
+//   |       ..........         |
 //   +--------------------------+
-//   |       this               |
+//   |       argv[1]            |
 //   +--------------------------+
-//   |       new                |
+//   |       argv[0]            |
 //   +--------------------------+ ---
-//   |       jsfunction         |   ^
+//   |       argc               |   ^
 //   |--------------------------|  Fixed
-//   |       argc               | OptimizedLeaveFrame
+//   |       RuntimeId          | OptimizedLeaveFrame
 //   |--------------------------|   |
 //   |       returnAddr         |   |
 //   |--------------------------|   |
@@ -573,4 +582,7 @@ ResumeRspAndDispatch:
     ret
 
 ResumeRspAndReturn:
+    ret
+
+OptimizedCallRuntimeWithArgv:
     ret

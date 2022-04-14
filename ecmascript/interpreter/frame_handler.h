@@ -190,6 +190,20 @@ public:
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
                 ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
                 bool isVerifying) const;
+private:
+    const JSThread *thread_ {nullptr};
+};
+
+class OptimizedWithArgvLeaveFrameHandler : public FrameHandler {
+public:
+    explicit OptimizedWithArgvLeaveFrameHandler(uintptr_t *sp)
+        : FrameHandler(reinterpret_cast<JSTaggedType *>(sp)) {}
+    explicit OptimizedWithArgvLeaveFrameHandler(const JSThread *thread);
+    ~OptimizedWithArgvLeaveFrameHandler() = default;
+    void PrevFrame();
+    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
+                ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
+                bool isVerifying) const;
 
 private:
     const JSThread *thread_ {nullptr};

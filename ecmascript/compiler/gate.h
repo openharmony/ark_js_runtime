@@ -96,6 +96,7 @@ public:
         GET_EXCEPTION,
         // Middle Level IR
         RUNTIME_CALL,
+        RUNTIME_CALL_WITH_ARGV,
         NOGC_RUNTIME_CALL,
         CALL,
         BYTECODE_CALL,

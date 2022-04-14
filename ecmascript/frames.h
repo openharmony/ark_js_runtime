@@ -60,6 +60,29 @@
 
 //   Optimized Leave Frame(alias OptimizedLeaveFrame) layout
 //   +--------------------------+
+//   |       argv[argc-1]       |
+//   +--------------------------+
+//   |       ..........         |
+//   +--------------------------+
+//   |       argv[1]            |
+//   +--------------------------+
+//   |       argv[0]            |
+//   +--------------------------+ ---
+//   |       argc               |   ^
+//   |--------------------------|  Fixed
+//   |       RuntimeId          | OptimizedLeaveFrame
+//   |--------------------------|   |
+//   |       returnAddr         |   |
+//   |--------------------------|   |
+//   |       callsiteFp         |   |
+//   |--------------------------|   |
+//   |       frameType          |   v
+//   +--------------------------+ ---
+//   |  callee save registers   |
+//   +--------------------------+
+
+//   Optimized Leave Frame with Argv(alias OptimizedWithArgvLeaveFrame) layout
+//   +--------------------------+
 //   |       argv[]             |
 //   +--------------------------+ ---
 //   |       argc               |   ^
@@ -225,6 +248,7 @@ enum class FrameType: uintptr_t {
     INTERPRETER_FAST_NEW_FRAME = 4,
     ASM_LEAVE_FRAME = 5,
     INTERPRETER_ENTRY_FRAME = 6,
+    OPTIMIZED_WITH_ARGV_LEAVE_FRAME = 7,
 };
 
 class FrameConstants {
@@ -469,7 +493,7 @@ struct OptimizedLeaveFrame {
     uint64_t argRuntimeId;
 #endif
     uint64_t argc;
-    // argv[] is dynamic
+    // argv[0]...argv[argc-1] dynamic according to agc
     static OptimizedLeaveFrame* GetFrameFromSp(JSTaggedType *sp)
     {
         return reinterpret_cast<OptimizedLeaveFrame *>(reinterpret_cast<uintptr_t>(sp) -
@@ -481,6 +505,30 @@ struct OptimizedLeaveFrame {
         return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argRuntimeId);
 #else
         return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argc) + argc * sizeof(JSTaggedType);
+#endif
+    }
+};
+
+struct OptimizedWithArgvLeaveFrame {
+    FrameType type;
+    uintptr_t callsiteFp; // thread sp set here
+    uintptr_t returnAddr;
+#ifndef PANDA_TARGET_32
+    uint64_t argRuntimeId;
+#endif
+    uint64_t argc;
+    // uintptr_t argv[]
+    static OptimizedWithArgvLeaveFrame* GetFrameFromSp(JSTaggedType *sp)
+    {
+        return reinterpret_cast<OptimizedWithArgvLeaveFrame *>(reinterpret_cast<uintptr_t>(sp) -
+            MEMBER_OFFSET(OptimizedWithArgvLeaveFrame, callsiteFp));
+    }
+    uintptr_t GetCallSiteSp()
+    {
+#ifndef PANDA_TARGET_32
+        return ToUintPtr(this) + MEMBER_OFFSET(OptimizedWithArgvLeaveFrame, argRuntimeId);
+#else
+        return ToUintPtr(this) + MEMBER_OFFSET(OptimizedWithArgvLeaveFrame, argc) + argc * sizeof(JSTaggedType);
 #endif
     }
 };

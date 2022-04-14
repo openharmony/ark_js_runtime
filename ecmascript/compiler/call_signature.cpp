@@ -536,6 +536,24 @@ DEF_CALL_SIGNATURE(OptimizedCallRuntime)
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
+DEF_CALL_SIGNATURE(OptimizedCallRuntimeWithArgv)
+{
+    /* 4 : 4 input parameters */
+    CallSignature runtimeCallTrampoline("OptimizedCallRuntimeWithArgv", 0, 4,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *callSign = runtimeCallTrampoline;
+    std::array<VariableType, 4> params = { /* 4 : 4 input parameters */
+        VariableType::POINTER(), // glue
+        VariableType::INT64(),   // runtimeId
+        VariableType::INT32(),   // argc
+        VariableType::POINTER(), // argv
+    };
+    callSign->SetVariableArgs(false);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
+}
+
 DEF_CALL_SIGNATURE(OptimizedCallOptimized)
 {
     /* 4 : 4 input parameters */
@@ -587,6 +605,7 @@ DEF_CALL_SIGNATURE(JSCallWithArgV)
     };
     callSign->SetParameters(params.data());
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTailCall(true);
 }
 
 DEF_CALL_SIGNATURE(ResumeRspAndDispatch)
@@ -908,6 +927,58 @@ DEF_CALL_SIGNATURE(CallIRangeDyn)
     };
     callSign->SetVariableArgs(true);
     callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+}
+
+DEF_CALL_SIGNATURE(JsProxyCallInternal)
+{
+    // 4 : 4 input parameters
+    CallSignature proxyCallInternal("JsProxyCallInternal", 0, 4,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_POINTER());
+    *callSign = proxyCallInternal;
+    std::array<VariableType, 4> params = { // 4 : 4 input parameters
+        VariableType::POINTER(),    // glue
+        VariableType::INT32(),      // actual argC
+        VariableType::JS_POINTER(), // callTarget
+        VariableType::POINTER(),    // argv
+    };
+    callSign->SetVariableArgs(false);
+    callSign->SetParameters(params.data());
+    callSign->SetTailCall(true);
+    callSign->SetTargetKind(CallSignature::TargetKind::COMMON_STUB);
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
+}
+
+DEF_CALL_SIGNATURE(CreateArrayFromList)
+{
+    // 3 : 3 input parameters
+    CallSignature createArrayFromList("CreateArrayFromList", 0, 3, ArgumentsOrder::DEFAULT_ORDER,
+                                     VariableType::JS_POINTER());
+    *callSign = createArrayFromList;
+    // 3 : 3 input parameters
+    std::array<VariableType, 3> params = {
+        VariableType::POINTER(),
+        VariableType::INT32(),
+        VariableType::POINTER(),
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+}
+
+DEF_CALL_SIGNATURE(JSObjectGetMethod)
+{
+    // 3 : 3 input parameters
+    CallSignature jsObjectGetMethod("JSObjectGetMethod", 0, 3, ArgumentsOrder::DEFAULT_ORDER,
+                                     VariableType::JS_POINTER());
+    *callSign = jsObjectGetMethod;
+    // 3 : 3 input parameters
+    std::array<VariableType, 3> params = {
+        VariableType::POINTER(),
+        VariableType::JS_POINTER(),
+        VariableType::JS_POINTER(),
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetTailCall(false);
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 }  // namespace panda::ecmascript::kungfu
