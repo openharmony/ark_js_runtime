@@ -35,13 +35,13 @@ JSHandle<JSTaggedValue> TemplateString::GetTemplateObject(JSThread *thread, JSHa
     }
     JSHandle<JSTaggedValue> cookedStringsTag = JSObject::GetProperty(thread, templateLiteral, 1).GetValue();
     JSHandle<JSArray> cookedStrings(cookedStringsTag);
-    int32_t count = cookedStrings->GetArrayLength();
+    uint32_t count = cookedStrings->GetArrayLength();
     auto countNum = JSTaggedNumber(count);
     JSHandle<JSTaggedValue> templateArr = JSArray::ArrayCreate(thread, countNum);
     JSHandle<JSTaggedValue> rawArr = JSArray::ArrayCreate(thread, countNum);
     JSHandle<JSObject> templateObj(templateArr);
     JSHandle<JSObject> rawObj(rawArr);
-    for (int32_t i = 0; i < count; i++) {
+    for (uint32_t i = 0; i < count; i++) {
         JSHandle<JSTaggedValue> cookedValue = JSObject::GetProperty(thread, cookedStringsTag, i).GetValue();
         PropertyDescriptor descCooked(thread, cookedValue, true, false, false);
         JSArray::DefineOwnProperty(thread, templateObj, i, descCooked);

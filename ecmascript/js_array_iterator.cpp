@@ -55,7 +55,7 @@ JSTaggedValue JSArrayIterator::Next(EcmaRuntimeCallInfo *argv)
     // 8. If a has a [[TypedArrayName]] internal slot, then
     //   a. Let len be the value of O’s [[ArrayLength]] internal slot.
     if (array->IsTypedArray()) {
-        length = base::TypedArrayHelper::GetArrayLength(thread, JSHandle<JSObject>(array));
+        length = static_cast<uint32_t>(base::TypedArrayHelper::GetArrayLength(thread, JSHandle<JSObject>(array)));
     } else {
         // 9.Else
         JSHandle<JSTaggedValue> lengthKey = thread->GlobalConstants()->GetHandledLengthString();

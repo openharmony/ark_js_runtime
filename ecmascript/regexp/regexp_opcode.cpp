@@ -452,8 +452,8 @@ uint32_t RangeOpCode::DumpOpCode(std::ostream &out, const DynChunk &buf, uint32_
 {
     out << offset << ":\t"
         << "range\t";
-    int size = buf.GetU16(offset + 1);
-    for (int i = 0; i < size; i++) {
+    size_t size = buf.GetU16(offset + 1);
+    for (size_t i = 0; i < size; i++) {
         out << buf.GetU16(offset + RegExpOpCode::OP_SIZE_THREE + (i * RegExpOpCode::OP_SIZE_FOUR)) << "\t"
             << buf.GetU16(offset + RegExpOpCode::OP_SIZE_THREE +
                           (i * RegExpOpCode::OP_SIZE_FOUR + RegExpOpCode::OP_SIZE_TWO))
@@ -479,8 +479,8 @@ uint32_t Range32OpCode::DumpOpCode(std::ostream &out, const DynChunk &buf, uint3
 {
     out << offset << ":\t"
         << "range32\t";
-    int size = buf.GetU16(offset + 1);
-    for (int i = 0; i < size; i++) {
+    size_t size = buf.GetU16(offset + 1);
+    for (size_t i = 0; i < size; i++) {
         out << buf.GetU32(offset + RegExpOpCode::OP_SIZE_THREE + (i * RegExpOpCode::OP_SIZE_EIGHT)) << "\t"
             << buf.GetU32(offset + RegExpOpCode::OP_SIZE_THREE +
                           (i * RegExpOpCode::OP_SIZE_EIGHT + RegExpOpCode::OP_SIZE_FOUR))

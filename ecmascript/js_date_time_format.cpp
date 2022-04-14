@@ -1308,7 +1308,7 @@ std::string JSDateTimeFormat::ToTitleCaseTimezonePosition(const std::string &inp
     std::vector<std::string> charEntry;
     int32_t leftPosition = 0;
     int32_t titleLength = 0;
-    for (size_t i = 0; i < input.length(); i++) {
+    for (int32_t i = 0; i < static_cast<int>(input.length()); i++) {
         if (input[i] == '_' || input[i] == '-' || input[i] == '/') {
             std::string s(1, input[i]);
             charEntry.emplace_back(s);

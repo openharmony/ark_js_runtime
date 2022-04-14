@@ -242,7 +242,7 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CALL_PUSH_ARGS_I()                        \
     do {                                          \
-        for (int i = actualNumArgs; i > 0; i--) { \
+        for (uint32_t i = static_cast<uint32_t>(actualNumArgs); i > 0; i--) { \
             *(--newSp) = sp[funcReg + i];         \
         }                                         \
     } while (false)
@@ -251,7 +251,7 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
 #define CALL_PUSH_ARGS_I_THIS()                       \
     do {                                              \
         /* 1: skip this */                            \
-        for (int i = actualNumArgs + 1; i > 1; i--) { \
+        for (uint32_t i = static_cast<uint32_t>(actualNumArgs) + 1; i > 1; i--) { \
             *(--newSp) = sp[funcReg + i];             \
         }                                             \
     } while (false)
@@ -778,7 +778,7 @@ void InterpreterAssembly::HandleJmpImm16(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {
-    int16_t offset = READ_INST_16_0();
+    int16_t offset = static_cast<int16_t>(READ_INST_16_0());
     UPDATE_HOTNESS_COUNTER(offset);
     LOG_INST() << "jmp " << std::hex << static_cast<int32_t>(offset);
     DISPATCH_OFFSET(offset);
@@ -788,7 +788,7 @@ void InterpreterAssembly::HandleJmpImm32(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {
-    int32_t offset = READ_INST_32_0();
+    int32_t offset = static_cast<int32_t>(READ_INST_32_0());
     UPDATE_HOTNESS_COUNTER(offset);
     LOG_INST() << "jmp " << std::hex << offset;
     DISPATCH_OFFSET(offset);
@@ -814,7 +814,7 @@ void InterpreterAssembly::HandleJeqzImm16(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {
-    int16_t offset = READ_INST_16_0();
+    int16_t offset = static_cast<int16_t>(READ_INST_16_0());
     LOG_INST() << "jeqz ->\t"
                 << "cond jmpz " << std::hex << static_cast<int32_t>(offset);
     if (GET_ACC() == JSTaggedValue::False() || (GET_ACC().IsInt() && GET_ACC().GetInt() == 0) ||
@@ -846,7 +846,7 @@ void InterpreterAssembly::HandleJnezImm16(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {
-    int16_t offset = READ_INST_16_0();
+    int16_t offset = static_cast<int16_t>(READ_INST_16_0());
     LOG_INST() << "jnez ->\t"
                 << "cond jmpz " << std::hex << static_cast<int32_t>(offset);
     if (GET_ACC() == JSTaggedValue::True() || (GET_ACC().IsInt() && GET_ACC().GetInt() != 0) ||
@@ -883,7 +883,7 @@ void InterpreterAssembly::HandleLdaiDynImm32(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {
-    int32_t imm = READ_INST_32_0();
+    int32_t imm = static_cast<int32_t>(READ_INST_32_0());
     LOG_INST() << "ldai.dyn " << std::hex << imm;
     SET_ACC(JSTaggedValue(imm))
     DISPATCH(BytecodeInstruction::Format::IMM32);
@@ -981,7 +981,7 @@ void InterpreterAssembly::HandleCallIThisRangeDynPrefImm16V8(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {
-    int32_t actualNumArgs = READ_INST_16_1() - 1;  // 1: exclude this
+    int32_t actualNumArgs = static_cast<int32_t>(READ_INST_16_1() - 1);  // 1: exclude this
     uint32_t funcReg = READ_INST_8_3();
     LOG_INST() << "calli.dyn.this.range " << actualNumArgs << ", v" << funcReg;
     JSTaggedValue funcValue;
@@ -1018,7 +1018,7 @@ void InterpreterAssembly::HandleCallIRangeDynPrefImm16V8(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {
-    int32_t actualNumArgs = READ_INST_16_1();
+    int32_t actualNumArgs = static_cast<int32_t>(READ_INST_16_1());
     uint32_t funcReg = READ_INST_8_3();
     LOG_INST() << "calli.rangedyn " << actualNumArgs << ", v" << funcReg;
     JSTaggedValue funcValue;
@@ -2464,7 +2464,7 @@ void InterpreterAssembly::HandleLdLexVarDynPrefImm16Imm16(
     AsmInterpretedFrame *state = GET_ASM_FRAME(sp);
     JSTaggedValue currentLexenv = state->env;
     JSTaggedValue env(currentLexenv);
-    for (int i = 0; i < level; i++) {
+    for (uint32_t i = 0; i < level; i++) {
         JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
         ASSERT(!taggedParentEnv.IsUndefined());
         env = taggedParentEnv;
@@ -2485,7 +2485,7 @@ void InterpreterAssembly::HandleLdLexVarDynPrefImm8Imm8(
     AsmInterpretedFrame *state = GET_ASM_FRAME(sp);
     JSTaggedValue currentLexenv = state->env;
     JSTaggedValue env(currentLexenv);
-    for (int i = 0; i < level; i++) {
+    for (uint32_t i = 0; i < level; i++) {
         JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
         ASSERT(!taggedParentEnv.IsUndefined());
         env = taggedParentEnv;
@@ -2506,7 +2506,7 @@ void InterpreterAssembly::HandleLdLexVarDynPrefImm4Imm4(
     AsmInterpretedFrame *state = GET_ASM_FRAME(sp);
     JSTaggedValue currentLexenv = state->env;
     JSTaggedValue env(currentLexenv);
-    for (int i = 0; i < level; i++) {
+    for (uint32_t i = 0; i < level; i++) {
         JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
         ASSERT(!taggedParentEnv.IsUndefined());
         env = taggedParentEnv;
@@ -2528,7 +2528,7 @@ void InterpreterAssembly::HandleStLexVarDynPrefImm16Imm16V8(
     JSTaggedValue value = GET_VREG_VALUE(v0);
     AsmInterpretedFrame *state = GET_ASM_FRAME(sp);
     JSTaggedValue env = state->env;
-    for (int i = 0; i < level; i++) {
+    for (uint32_t i = 0; i < level; i++) {
         JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
         ASSERT(!taggedParentEnv.IsUndefined());
         env = taggedParentEnv;
@@ -2551,7 +2551,7 @@ void InterpreterAssembly::HandleStLexVarDynPrefImm8Imm8V8(
     JSTaggedValue value = GET_VREG_VALUE(v0);
     AsmInterpretedFrame *state = GET_ASM_FRAME(sp);
     JSTaggedValue env = state->env;
-    for (int i = 0; i < level; i++) {
+    for (uint32_t i = 0; i < level; i++) {
         JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
         ASSERT(!taggedParentEnv.IsUndefined());
         env = taggedParentEnv;
@@ -2574,7 +2574,7 @@ void InterpreterAssembly::HandleStLexVarDynPrefImm4Imm4V8(
     JSTaggedValue value = GET_VREG_VALUE(v0);
     AsmInterpretedFrame *state = GET_ASM_FRAME(sp);
     JSTaggedValue env = state->env;
-    for (int i = 0; i < level; i++) {
+    for (uint32_t i = 0; i < level; i++) {
         JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
         ASSERT(!taggedParentEnv.IsUndefined());
         env = taggedParentEnv;
@@ -4240,7 +4240,7 @@ uint32_t InterpreterAssembly::GetNumArgs(JSTaggedType *sp, uint32_t restIdx, uin
         // In this case, actualNumArgs is in the end
         // If not, then actualNumArgs == declaredNumArgs, therefore do nothing
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        numArgs = JSTaggedValue(*(lastFrame - 1)).GetInt();
+        numArgs = static_cast<uint32_t>(JSTaggedValue(*(lastFrame - 1)).GetInt());
     }
     startIdx = numVregs + copyArgs + restIdx;
     return ((numArgs > restIdx) ? (numArgs - restIdx) : 0);

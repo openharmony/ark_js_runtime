@@ -45,14 +45,14 @@ public:
     {
         ASSERT(key.IsStringOrSymbol());
 
-        int hash = 0;
+        uint32_t hash = 0;
         if (key.IsString()) {
             hash = EcmaString::Cast(key.GetTaggedObject())->GetHashcode();
         } else if (key.IsSymbol()) {
             hash = JSSymbol::Cast(key.GetTaggedObject())->GetHashField();
         }
         int metaDataHash = metaData.IsInt() ? metaData.GetInt() : static_cast<int>(metaData.GetRawData());
-        return hash + metaDataHash;
+        return static_cast<int>(hash) + metaDataHash;
     }
 
     inline static int GetKeyIndex(int entry)

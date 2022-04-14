@@ -29,7 +29,7 @@ void ClassInfoExtractor::BuildClassInfoExtractorFromLiteral(JSThread *thread, JS
 
     uint32_t literalBufferLength = literal->GetLength();
     // non static properties number is hidden in the last index of Literal buffer
-    uint32_t nonStaticNum = literal->Get(thread, literalBufferLength - 1).GetInt();
+    uint32_t nonStaticNum = static_cast<uint32_t>(literal->Get(thread, literalBufferLength - 1).GetInt());
 
     // Reserve sufficient length to prevent frequent creation.
     JSHandle<TaggedArray> nonStaticKeys = factory->NewTaggedArray(nonStaticNum + NON_STATIC_RESERVED_LENGTH);

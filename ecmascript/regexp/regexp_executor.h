@@ -104,7 +104,7 @@ public:
         }
         uint32_t currentChar = GetCurrentChar();
         if (IsIgnoreCase()) {
-            currentChar = RegExpParser::Canonicalize(currentChar, IsUtf16());
+            currentChar = static_cast<uint32_t>(RegExpParser::Canonicalize(currentChar, IsUtf16()));
         }
         if (currentChar == expectedChar) {
             Advance(opCode);
@@ -320,7 +320,7 @@ public:
         }
         uint32_t currentChar = GetCurrentChar();
         if (IsIgnoreCase()) {
-            currentChar = RegExpParser::Canonicalize(currentChar, IsUtf16());
+            currentChar = static_cast<uint32_t>(RegExpParser::Canonicalize(currentChar, IsUtf16()));
         }
         uint16_t rangeCount = byteCode.GetU16(GetCurrentPC() + 1);
         bool isFound = false;
@@ -333,10 +333,10 @@ public:
         if (currentChar <= high) {
             while (idxMin <= idxMax) {
                 idx = (idxMin + idxMax) / RANGE32_OFFSET;
-                low = byteCode.GetU16(GetCurrentPC() + RANGE32_HEAD_OFFSET + idx * RANGE32_MAX_HALF_OFFSET);
-                high =
-                    byteCode.GetU16(GetCurrentPC() + RANGE32_HEAD_OFFSET + idx * RANGE32_MAX_HALF_OFFSET +
-                                    RANGE32_OFFSET);
+                low = byteCode.GetU16(GetCurrentPC() + RANGE32_HEAD_OFFSET + static_cast<uint32_t>(idx) *
+                    RANGE32_MAX_HALF_OFFSET);
+                high = byteCode.GetU16(GetCurrentPC() + RANGE32_HEAD_OFFSET + static_cast<uint32_t>(idx) *
+                    RANGE32_MAX_HALF_OFFSET + RANGE32_OFFSET);
                 if (currentChar < low) {
                     idxMax = idx - 1;
                 } else if (currentChar > high) {
@@ -384,8 +384,8 @@ public:
                 // NOLINTNEXTLINE(readability-identifier-naming)
                 uint32_t c2 = GetChar(&currentPtr_, inputEnd_);
                 if (IsIgnoreCase()) {
-                    c1 = RegExpParser::Canonicalize(c1, IsUtf16());
-                    c2 = RegExpParser::Canonicalize(c2, IsUtf16());
+                    c1 = static_cast<uint32_t>(RegExpParser::Canonicalize(c1, IsUtf16()));
+                    c2 = static_cast<uint32_t>(RegExpParser::Canonicalize(c2, IsUtf16()));
                 }
                 if (c1 != c2) {
                     isMatched = false;
@@ -411,8 +411,8 @@ public:
                 // NOLINTNEXTLINE(readability-identifier-naming)
                 uint32_t c2 = GetPrevChar(&currentPtr_, input_);
                 if (IsIgnoreCase()) {
-                    c1 = RegExpParser::Canonicalize(c1, IsUtf16());
-                    c2 = RegExpParser::Canonicalize(c2, IsUtf16());
+                    c1 = static_cast<uint32_t>(RegExpParser::Canonicalize(c1, IsUtf16()));
+                    c2 = static_cast<uint32_t>(RegExpParser::Canonicalize(c2, IsUtf16()));
                 }
                 if (c1 != c2) {
                     isMatched = false;
@@ -432,7 +432,7 @@ public:
 
     inline void Advance(uint8_t opCode, uint32_t offset = 0)
     {
-        currentPc_ += offset + RegExpOpCode::GetRegExpOpCode(opCode)->GetSize();
+        currentPc_ += offset + static_cast<uint32_t>(RegExpOpCode::GetRegExpOpCode(opCode)->GetSize());
     }
 
     inline void AdvanceOffset(uint32_t offset)
@@ -467,7 +467,7 @@ public:
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
                 c1 = *(reinterpret_cast<const uint16_t *>(cptr));
                 if (U16_IS_TRAIL(c1)) {
-                    c = U16_GET_SUPPLEMENTARY(c, c1);  // NOLINTNEXTLINE(hicpp-signed-bitwise)
+                    c = static_cast<uint32_t>(U16_GET_SUPPLEMENTARY(c, c1));  // NOLINTNEXTLINE(hicpp-signed-bitwise)
                     cptr += WIDE_CHAR_SIZE;  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 }
             }
@@ -490,7 +490,7 @@ public:
             if (U16_IS_LEAD(c) && IsUtf16() && cptr < end) {
                 c1 = *(uint16_t *)cptr;  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
                 if (U16_IS_TRAIL(c1)) {
-                    c = U16_GET_SUPPLEMENTARY(c, c1);  // NOLINTNEXTLINE(hicpp-signed-bitwise)
+                    c = static_cast<uint32_t>(U16_GET_SUPPLEMENTARY(c, c1));  // NOLINTNEXTLINE(hicpp-signed-bitwise)
                     cptr += WIDE_CHAR_SIZE;  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 }
             }
@@ -534,7 +534,7 @@ public:
                  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 c1 = (reinterpret_cast<const uint16_t *>(cptr))[-1];
                 if (U16_IS_LEAD(c1)) {
-                    c = U16_GET_SUPPLEMENTARY(c1, c);  // NOLINTNEXTLINE(hicpp-signed-bitwise)
+                    c = static_cast<uint32_t>(U16_GET_SUPPLEMENTARY(c1, c));  // NOLINTNEXTLINE(hicpp-signed-bitwise)
                     cptr -= WIDE_CHAR_SIZE;  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 }
             }
@@ -559,7 +559,7 @@ public:
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 c1 = (reinterpret_cast<const uint16_t *>(cptr))[-1];
                 if (U16_IS_LEAD(c1)) {
-                    c = U16_GET_SUPPLEMENTARY(c1, c);  // NOLINTNEXTLINE(hicpp-signed-bitwise)
+                    c = static_cast<uint32_t>(U16_GET_SUPPLEMENTARY(c1, c));  // NOLINTNEXTLINE(hicpp-signed-bitwise)
                     cptr -= WIDE_CHAR_SIZE;  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 }
             }

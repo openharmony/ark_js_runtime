@@ -56,7 +56,7 @@ private:
 
     private:
         ParallelEvacuation *evacuation_;
-        TlabAllocator *allocator_;
+        TlabAllocator *allocator_ {nullptr};
     };
 
     class UpdateReferenceTask : public Task {

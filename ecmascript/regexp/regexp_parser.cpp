@@ -403,11 +403,11 @@ void RegExpParser::ParseAlternative(bool isBackward)
                         int32_t length = end_ - pc_ + 1;
                         // NOLINTNEXTLINE(hicpp-signed-bitwise)
                         U8_NEXT(pc_, i, length, c);  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                        matchedChar = c;
+                        matchedChar = static_cast<uint32_t>(c);
                         pc_ += i;  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                     }
                     if (IsIgnoreCase()) {
-                        matchedChar = Canonicalize(matchedChar, IsUtf16());
+                        matchedChar = static_cast<uint32_t>(Canonicalize(matchedChar, IsUtf16()));
                     }
                     if (matchedChar > UINT16_MAX) {
                         Char32OpCode charOp;
@@ -593,7 +593,7 @@ int RegExpParser::ParseDecimalDigits()
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
     PrintF("Parse DecimalDigits------\n");
-    int result = 0;
+    uint32_t result = 0;
     bool overflow = false;
     while (true) {
         if (c0_ < '0' || c0_ > '9') {
@@ -1111,8 +1111,8 @@ bool RegExpParser::ParseClassRanges(RangeSet *result)
                 return false;
             }
             if (IsIgnoreCase()) {
-                c1 = Canonicalize(c1, IsUtf16());
-                c2 = Canonicalize(c2, IsUtf16());
+                c1 = static_cast<uint32_t>(Canonicalize(c1, IsUtf16()));
+                c2 = static_cast<uint32_t>(Canonicalize(c2, IsUtf16()));
             }
 
             result->Insert(c1, c2);
@@ -1130,7 +1130,7 @@ uint32_t RegExpParser::ParseClassAtom(RangeSet *atom)
     switch (c0_) {
         case '\\': {
             Advance();
-            ret = ParseClassEscape(atom);
+            ret = static_cast<uint32_t>(ParseClassEscape(atom));
         } break;
         case KEY_EOF:
             break;
@@ -1141,7 +1141,7 @@ uint32_t RegExpParser::ParseClassAtom(RangeSet *atom)
             [[fallthrough]];
         default:
             uint32_t value = c0_;
-            int u16_size = 0;
+            size_t u16_size = 0;
             if (c0_ > INT8_MAX) {  // NOLINTNEXTLINE(readability-magic-numbers)
                 pc_ -= 1;          // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 auto u16_result = base::utf_helper::ConvertUtf8ToUtf16Pair(pc_, true);
@@ -1152,7 +1152,7 @@ uint32_t RegExpParser::ParseClassAtom(RangeSet *atom)
                 Advance();
             }
             if (IsIgnoreCase()) {
-                value = Canonicalize(value, IsUtf16());
+                value = static_cast<uint32_t>(Canonicalize(value, IsUtf16()));
             }
             atom->Insert(RangeSet(value));
             ret = value;

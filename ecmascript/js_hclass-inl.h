@@ -41,7 +41,7 @@ void JSHClass::AddTransitions(const JSThread *thread, const JSHandle<JSHClass> &
     JSMutableHandle<TransitionsDictionary> dict(thread, JSTaggedValue::Undefined());
     if (transitions.IsWeak()) {
         auto cachedHClass = JSHClass::Cast(transitions.GetTaggedWeakRef());
-        int last = cachedHClass->NumberOfProps() - 1;
+        uint32_t last = cachedHClass->NumberOfProps() - 1;
         LayoutInfo *layoutInfo = LayoutInfo::Cast(cachedHClass->GetLayout().GetTaggedObject());
         auto attr = JSHandle<JSTaggedValue>(thread, JSTaggedValue(layoutInfo->GetAttr(last).GetPropertyMetaData()));
         auto lastKey = JSHandle<JSTaggedValue>(thread, layoutInfo->GetKey(last));
@@ -73,7 +73,7 @@ void JSHClass::AddProtoTransitions(const JSThread *thread, const JSHandle<JSHCla
         transitions = TransitionsDictionary::Create(thread).GetTaggedValue();
     } else if (transitions.IsWeak()) {
         auto cachedHClass = JSHClass::Cast(transitions.GetTaggedWeakRef());
-        int last = cachedHClass->NumberOfProps() - 1;
+        uint32_t last = cachedHClass->NumberOfProps() - 1;
         LayoutInfo *layoutInfo = LayoutInfo::Cast(cachedHClass->GetLayout().GetTaggedObject());
         auto attr = JSHandle<JSTaggedValue>(thread, JSTaggedValue(layoutInfo->GetAttr(last).GetPropertyMetaData()));
         auto lastKey = JSHandle<JSTaggedValue>(thread, layoutInfo->GetKey(last));
@@ -152,7 +152,7 @@ inline void JSHClass::UpdatePropertyMetaData(const JSThread *thread, [[maybe_unu
     ASSERT(!GetLayout().IsNull());
     LayoutInfo *layoutInfo = LayoutInfo::Cast(GetLayout().GetTaggedObject());
     ASSERT(layoutInfo->GetLength() != 0);
-    int entry = metaData.GetOffset();
+    uint32_t entry = metaData.GetOffset();
 
     layoutInfo->SetNormalAttr(thread, entry, metaData);
 }

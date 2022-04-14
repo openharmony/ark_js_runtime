@@ -44,16 +44,16 @@ JSTaggedValue JSAPITreeMapIterator::Next(EcmaRuntimeCallInfo *argv)
         return JSIterator::CreateIterResultObject(thread, globalConst->GetHandledUndefined(), true).GetTaggedValue();
     }
     JSHandle<TaggedTreeMap> map(thread, JSHandle<JSAPITreeMap>::Cast(iteratedMap)->GetTreeMap());
-    int elements = map->NumberOfElements();
+    uint32_t elements = map->NumberOfElements();
 
     JSMutableHandle<TaggedArray> entries(thread, iter->GetEntries());
-    if (elements != static_cast<int>(entries->GetLength())) {
+    if (elements != entries->GetLength()) {
         entries.Update(TaggedTreeMap::GetArrayFromMap(thread, map).GetTaggedValue());
         iter->SetEntries(thread, entries);
     }
 
     // Let index be Map.[[NextIndex]].
-    int index = static_cast<int>(iter->GetNextIndex());
+    uint32_t index = static_cast<uint32_t>(iter->GetNextIndex());
     if (index < elements) {
         IterationKind itemKind = IterationKind(iter->GetIterationKind());
 

@@ -384,7 +384,7 @@ private:
     MixGC *mixGC_ {nullptr};
     FullGC *fullGC_ {nullptr};
     ConcurrentSweeper *sweeper_ {nullptr};
-    ConcurrentMarker *concurrentMarker_;
+    ConcurrentMarker *concurrentMarker_ {nullptr};
     WorkerHelper *workList_ {nullptr};
     Marker *nonMovableMarker_ {nullptr};
     Marker *semiGcMarker_ {nullptr};

@@ -170,7 +170,7 @@ bool JSThread::DoStackOverflowCheck(const JSTaggedType *sp)
 uintptr_t *JSThread::ExpandHandleStorage()
 {
     uintptr_t *result = nullptr;
-    int32_t lastIndex = handleStorageNodes_.size() - 1;
+    int32_t lastIndex = static_cast<int32_t>(handleStorageNodes_.size() - 1);
     if (currentHandleStorageIndex_ == lastIndex) {
         auto n = new std::array<JSTaggedType, NODE_BLOCK_SIZE>();
         handleStorageNodes_.push_back(n);
@@ -190,7 +190,7 @@ uintptr_t *JSThread::ExpandHandleStorage()
 void JSThread::ShrinkHandleStorage(int prevIndex)
 {
     currentHandleStorageIndex_ = prevIndex;
-    int32_t lastIndex = handleStorageNodes_.size() - 1;
+    int32_t lastIndex = static_cast<int32_t>(handleStorageNodes_.size() - 1);
 #if ECMASCRIPT_ENABLE_ZAP_MEM
     uintptr_t size = ToUintPtr(handleScopeStorageEnd_) - ToUintPtr(handleScopeStorageNext_);
     if (memset_s(handleScopeStorageNext_, size, 0, size) != EOK) {

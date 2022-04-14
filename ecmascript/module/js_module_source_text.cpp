@@ -116,7 +116,7 @@ JSHandle<SourceTextModule> SourceTextModule::HostResolveImportedModule(JSThread 
     ASSERT(module->GetEcmaModuleFilename().IsHeapObject());
     CString baseFilename =
         ConvertToString(EcmaString::Cast(module->GetEcmaModuleFilename().GetHeapObject()));
-    int suffixEnd = moduleFilename.find_last_of('.');
+    int suffixEnd = static_cast<int>(moduleFilename.find_last_of('.'));
     if (suffixEnd == -1) {
         RETURN_HANDLE_IF_ABRUPT_COMPLETION(SourceTextModule, thread);
     }
@@ -124,7 +124,7 @@ JSHandle<SourceTextModule> SourceTextModule::HostResolveImportedModule(JSThread 
     if (moduleFilename[0] == '/') { // absoluteFilePath
         moduleFullname = moduleFilename.substr(0, suffixEnd) + ".abc";
     } else {
-        int pos = baseFilename.find_last_of('/');
+        int pos = static_cast<int>(baseFilename.find_last_of('/'));
         if (pos == -1) {
             RETURN_HANDLE_IF_ABRUPT_COMPLETION(SourceTextModule, thread);
         }

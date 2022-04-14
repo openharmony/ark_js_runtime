@@ -309,8 +309,8 @@ DEF_RUNTIME_STUBS(PropertiesSetValue)
     CONVERT_ARG_HANDLE_CHECKED(TaggedArray, arrayHandle, 2);
     CONVERT_ARG_TAGGED_CHECKED(taggedCapacity, 3);
     CONVERT_ARG_TAGGED_CHECKED(taggedIndex, 4);
-    uint32_t capacity = taggedCapacity.GetInt();
-    uint32_t index = taggedIndex.GetInt();
+    int capacity = taggedCapacity.GetInt();
+    int index = taggedIndex.GetInt();
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TaggedArray> properties;
@@ -333,8 +333,8 @@ DEF_RUNTIME_STUBS(TaggedArraySetValue)
     CONVERT_ARG_TAGGED_CHECKED(taggedElementIndex, 3);
     CONVERT_ARG_TAGGED_CHECKED(taggedCapacity, 4);
 
-    uint32_t elementIndex = taggedElementIndex.GetInt();
-    uint32_t capacity = taggedCapacity.GetInt();
+    int elementIndex = taggedElementIndex.GetInt();
+    int capacity = taggedCapacity.GetInt();
     auto elements = reinterpret_cast<TaggedArray *>(argElement);
     if (elementIndex >= capacity) {
         if (JSObject::ShouldTransToDict(capacity, elementIndex)) {
@@ -372,16 +372,16 @@ DEF_RUNTIME_STUBS(UpdateLayOutAndAddTransition)
 
     auto factory = thread->GetEcmaVM()->GetFactory();
     PropertyAttributes attrValue(attr.GetInt());
-    int offset = attrValue.GetOffset();
+    uint32_t offset = attrValue.GetOffset();
     newHClassHandle->IncNumberOfProps();
 
     {
         JSMutableHandle<LayoutInfo> layoutInfoHandle(thread, newHClassHandle->GetLayout());
 
-        if (layoutInfoHandle->NumberOfElements() != offset) {
+        if (layoutInfoHandle->NumberOfElements() != static_cast<int>(offset)) {
             layoutInfoHandle.Update(factory->CopyAndReSort(layoutInfoHandle, offset, offset + 1));
             newHClassHandle->SetLayout(thread, layoutInfoHandle);
-        } else if (layoutInfoHandle->GetPropertiesCapacity() <= offset) {  // need to Grow
+        } else if (layoutInfoHandle->GetPropertiesCapacity() <= static_cast<int>(offset)) {  // need to Grow
             layoutInfoHandle.Update(
                 factory->ExtendLayoutInfo(layoutInfoHandle, LayoutInfo::ComputeGrowCapacity(offset)));
             newHClassHandle->SetLayout(thread, layoutInfoHandle);
