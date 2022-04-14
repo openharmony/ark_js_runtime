@@ -27,24 +27,38 @@ public:
     explicit HeapProfilerImpl(std::unique_ptr<JSBackend> backend) : backend_(std::move(backend)) {}
     ~HeapProfilerImpl() = default;
 
+    DispatchResponse AddInspectedHeapObject(std::unique_ptr<AddInspectedHeapObjectParams> params);
+    DispatchResponse CollectGarbage();
     DispatchResponse Enable();
     DispatchResponse Disable();
+    DispatchResponse GetHeapObjectId(std::unique_ptr<GetHeapObjectIdParams> params, HeapSnapshotObjectId *objectId);
+    DispatchResponse GetObjectByHeapObjectId(std::unique_ptr<GetObjectByHeapObjectIdParams> params,
+                                             std::unique_ptr<RemoteObject> *remoteObjectResult);
+    DispatchResponse GetSamplingProfile(std::unique_ptr<SamplingHeapProfile> *profile);
     DispatchResponse StartSampling(std::unique_ptr<StartSamplingParams> params);
     DispatchResponse StartTrackingHeapObjects(std::unique_ptr<StartTrackingHeapObjectsParams> params);
     DispatchResponse StopSampling(std::unique_ptr<SamplingHeapProfile> *profile);
-    DispatchResponse StopTrackingHeapObjects (std::unique_ptr<StopTrackingHeapObjectsParams> params);
+    DispatchResponse StopTrackingHeapObjects(std::unique_ptr<StopTrackingHeapObjectsParams> params);
+    //TakeHeapSnapshot和StopTrackingHeapObjects接口入参一样，目前使用同一个，后续有变动再分开
+    DispatchResponse TakeHeapSnapshot(std::unique_ptr<StopTrackingHeapObjectsParams> params);
 
     class DispatcherImpl final : public DispatcherBase {
     public:
         DispatcherImpl(FrontEnd *frontend, std::unique_ptr<HeapProfilerImpl> heapprofiler);
         ~DispatcherImpl() override = default;
         void Dispatch(const DispatchRequest &request) override;
+        void AddInspectedHeapObject(const DispatchRequest &request);
+        void CollectGarbage(const DispatchRequest &request);
         void Enable(const DispatchRequest &request);
         void Disable(const DispatchRequest &request);
+        void GetHeapObjectId(const DispatchRequest &request);
+        void GetObjectByHeapObjectId(const DispatchRequest &request);
+        void GetSamplingProfile(const DispatchRequest &request);
         void StartSampling(const DispatchRequest &request);
         void StartTrackingHeapObjects(const DispatchRequest &request);
         void StopSampling(const DispatchRequest &request);
         void StopTrackingHeapObjects(const DispatchRequest &request);
+        void TakeHeapSnapshot(const DispatchRequest &request);
 
     private:
         NO_COPY_SEMANTIC(DispatcherImpl);

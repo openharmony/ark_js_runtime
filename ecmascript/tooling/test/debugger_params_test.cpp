@@ -279,4 +279,197 @@ HWTEST_F_L0(DebuggerParamsTest, StopTrackingHeapObjectsParamsToObjectTest)
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
     ASSERT_TRUE(result->IsTrue());
 }
+
+HWTEST_F_L0(DebuggerParamsTest, AddInspectedHeapObjectParamsCreateTest)
+{
+    CString msg;
+    std::unique_ptr<AddInspectedHeapObjectParams> objectData;
+
+    //  abnormal params of null msg
+    msg = CString() + R"({})";
+    objectData = AddInspectedHeapObjectParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of unexist key params
+    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
+    objectData = AddInspectedHeapObjectParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    objectData = AddInspectedHeapObjectParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    objectData = AddInspectedHeapObjectParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of params.sub-key=["heapObjectId":10]
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"heapObjectId":10}})";
+    objectData = AddInspectedHeapObjectParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of params.sub-key=["heapObjectId":true]
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"heapObjectId":true}})";
+    objectData = AddInspectedHeapObjectParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of params.sub-key=["heapObjectId":“10”]
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"heapObjectId":"10"}})";
+    objectData = AddInspectedHeapObjectParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+    EXPECT_EQ((int)objectData->GetHeapObjectId(), 10);
+}
+
+HWTEST_F_L0(DebuggerParamsTest, AddInspectedHeapObjectParamsToObjectTest)
+{
+    CString msg;
+    std::unique_ptr<AddInspectedHeapObjectParams> objectData;
+    Local<StringRef> tmpStr;
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"heapObjectId":"10"}})";
+    objectData = AddInspectedHeapObjectParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+    Local<ObjectRef> object = objectData->ToObject(ecmaVm);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "heapObjectId");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(result), "10");
+}
+
+HWTEST_F_L0(DebuggerParamsTest, GetHeapObjectIdParamsCreateTest)
+{
+    CString msg;
+    std::unique_ptr<GetHeapObjectIdParams> objectData;
+
+    //  abnormal params of null msg
+    msg = CString() + R"({})";
+    objectData = GetHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of unexist key params
+    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
+    objectData = GetHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    objectData = GetHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    objectData = GetHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of params.sub-key=["objectId":10]
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"objectId":10}})";
+    objectData = GetHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of params.sub-key=["objectId":true]
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"objectId":true}})";
+    objectData = GetHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of params.sub-key=["objectId":“10”]
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"objectId":"10"}})";
+    objectData = GetHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+    EXPECT_EQ((int)objectData->GetObjectId(), 10);
+}
+
+HWTEST_F_L0(DebuggerParamsTest, GetHeapObjectIdParamsToObjectTest)
+{
+    CString msg;
+    std::unique_ptr<GetHeapObjectIdParams> objectData;
+    Local<StringRef> tmpStr;
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"objectId":"10"}})";
+    objectData = GetHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+    Local<ObjectRef> object = objectData->ToObject(ecmaVm);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "objectId");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(result), "10");
+}
+
+HWTEST_F_L0(DebuggerParamsTest, GetObjectByHeapObjectIdParamsCreateTest)
+{
+    CString msg;
+    std::unique_ptr<GetObjectByHeapObjectIdParams> objectData;
+
+    //  abnormal params of null msg
+    msg = CString() + R"({})";
+    objectData = GetObjectByHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of unexist key params
+    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
+    objectData = GetObjectByHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    objectData = GetObjectByHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    objectData = GetObjectByHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of params.sub-key=["objectId":10]
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"objectId":10}})";
+    objectData = GetObjectByHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of params.sub-key=["objectId":true]
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"objectId":"10", "objectGroup":10}})";
+    objectData = GetObjectByHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of params.sub-key=["objectId":“10”]
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"objectId":"10"}})";
+    objectData = GetObjectByHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+    EXPECT_EQ((int)objectData->GetObjectId(), 10);
+    ASSERT_FALSE(objectData->HasObjectGroup());
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"objectId":"10", "objectGroup":"groupname"}})";
+    objectData = GetObjectByHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+    EXPECT_EQ((int)objectData->GetObjectId(), 10);
+    EXPECT_EQ(objectData->GetObjectGroup(), "groupname");
+}
+
+HWTEST_F_L0(DebuggerParamsTest, GetObjectByHeapObjectIdParamsToObjectTest)
+{
+    CString msg;
+    std::unique_ptr<GetObjectByHeapObjectIdParams> objectData;
+    Local<StringRef> tmpStr;
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"objectId":"10", "objectGroup":"groupname"}})";
+    objectData = GetObjectByHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+    Local<ObjectRef> object = objectData->ToObject(ecmaVm);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "objectId");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(result), "10");
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "objectGroup");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(result), "groupname");
+}
 }  // namespace panda::test
