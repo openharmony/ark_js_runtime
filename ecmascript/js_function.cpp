@@ -200,12 +200,12 @@ bool JSFunction::OrdinaryHasInstance(JSThread *thread, const JSHandle<JSTaggedVa
     //    b.ReturnIfAbrupt(O).
     //    c.If O is null, return false.
     //    d.If SameValue(P, O) is true, return true.
-    JSTaggedValue objPrototype = obj.GetTaggedValue();
-    while (!objPrototype.IsNull()) {
-        if (JSTaggedValue::SameValue(objPrototype, constructorPrototype.GetTaggedValue())) {
+    JSMutableHandle<JSTaggedValue> object(thread, obj.GetTaggedValue());
+    while (!object->IsNull()) {
+        if (JSTaggedValue::SameValue(object, constructorPrototype)) {
             return true;
         }
-        objPrototype = JSObject::Cast(objPrototype)->GetPrototype(thread);
+        object.Update(JSTaggedValue::GetPrototype(thread, object));
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
     }
     return false;
@@ -560,7 +560,7 @@ JSHandle<JSHClass> JSFunction::GetInstanceJSHClass(JSThread *thread, JSHandle<JS
     if (newTarget->IsJSFunction()) {
         JSHandle<JSFunction> newTargetFunc = JSHandle<JSFunction>::Cast(newTarget);
         if (newTargetFunc->IsDerivedConstructor()) {
-            JSTaggedValue newTargetProto = JSHandle<JSObject>::Cast(newTarget)->GetPrototype(thread);
+            JSTaggedValue newTargetProto = JSTaggedValue::GetPrototype(thread, newTarget);
             if (newTargetProto == constructor.GetTaggedValue()) {
                 return GetOrCreateDerivedJSHClass(thread, newTargetFunc, ctorInitialJSHClass);
             }

@@ -386,6 +386,8 @@ public:
 
     JSTaggedValue FindConstpool(const JSPandaFile *jsPandaFile);
 
+    void TryLoadSnapshotFile();
+
 protected:
     bool CheckEntrypointSignature([[maybe_unused]] Method *entrypoint) override
     {
@@ -430,7 +432,7 @@ private:
 
     void ClearNativeMethodsData();
 
-    void LoadAOTFile(std::string fileName);
+    void LoadAOTFile(const std::string &fileName);
 
     NO_MOVE_SEMANTIC(EcmaVM);
     NO_COPY_SEMANTIC(EcmaVM);

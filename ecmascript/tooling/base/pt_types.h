@@ -1479,5 +1479,394 @@ private:
     std::unique_ptr<RemoteObject> this_ {nullptr};
     std::optional<std::unique_ptr<RemoteObject>> returnValue_ {};
 };
+
+class SamplingHeapProfileSample  final :  public PtBaseTypes {
+public:
+    SamplingHeapProfileSample() = default;
+    ~SamplingHeapProfileSample() override = default;
+    static std::unique_ptr<SamplingHeapProfileSample> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    SamplingHeapProfileSample &SetSize(size_t size)
+    {
+        size_ = size;
+        return *this;
+    }
+    
+    int32_t GetSize() const
+    {
+        return size_;
+    }
+
+    SamplingHeapProfileSample &SetNodeId(int32_t nodeId)
+    {
+        nodeId_ = nodeId;
+        return *this;
+    }
+
+    int32_t GetNodeId() const
+    {
+        return nodeId_;
+    }
+
+    SamplingHeapProfileSample &SetOrdinal(size_t ordinal)
+    {
+        ordinal_ = ordinal;
+        return *this;
+    }
+
+    int32_t GetOrdinal() const
+    {
+        return ordinal_;
+    }
+
+private:
+    NO_COPY_SEMANTIC(SamplingHeapProfileSample);
+    NO_MOVE_SEMANTIC(SamplingHeapProfileSample);
+
+    size_t size_ {};
+    int32_t nodeId_ {};
+    size_t ordinal_ {};
+};
+
+class RuntimeCallFrame  final :  public PtBaseTypes {
+public:
+    RuntimeCallFrame() = default;
+    ~RuntimeCallFrame() override = default;
+    static std::unique_ptr<RuntimeCallFrame> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    const CString &GetFunctionName() const
+    {
+        return functionName_;
+    }
+
+    const CString &GetScriptId() const
+    {
+        return scriptId_;
+    }
+
+    const CString &GetUrl() const
+    {
+        return url_;
+    }
+
+    int32_t GetLineNumber() const
+    {
+        return lineNumber_;
+    }
+
+    int32_t GetColumnNumber() const
+    {
+        return columnNumber_;
+    }
+
+private:
+    NO_COPY_SEMANTIC(RuntimeCallFrame);
+    NO_MOVE_SEMANTIC(RuntimeCallFrame);
+
+    CString functionName_ {};
+    CString scriptId_ {};
+    CString url_ {};
+    int32_t lineNumber_ {};
+    int32_t columnNumber_ {};
+};
+
+class SamplingHeapProfileNode  final :  public PtBaseTypes {
+public:
+    SamplingHeapProfileNode() = default;
+    ~SamplingHeapProfileNode() override = default;
+    static std::unique_ptr<SamplingHeapProfileNode> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    SamplingHeapProfileNode &SetCallFrame(std::unique_ptr<RuntimeCallFrame> callFrame)
+    {
+        callFrame_ = std::move(callFrame);
+        return *this;
+    }
+
+    RuntimeCallFrame *GetCallFrame() const
+    {
+        return callFrame_.get();
+    }
+
+    SamplingHeapProfileNode &SetSelfSize(size_t selfSize)
+    {
+        selfSize_ = selfSize;
+        return *this;
+    }
+
+    int32_t GetSelfSize() const
+    {
+        return selfSize_;
+    }
+
+    SamplingHeapProfileNode &SetId(int32_t id)
+    {
+        id_ = id;
+        return *this;
+    }
+
+    int32_t GetId() const
+    {
+        return id_;
+    }
+    
+    SamplingHeapProfileNode &SetChildren(CVector<std::unique_ptr<SamplingHeapProfileNode>> children)
+    {
+        children_ = std::move(children);
+        return *this;
+    }
+
+    const CVector<std::unique_ptr<SamplingHeapProfileNode>> *GetChildren() const
+    {
+        return &children_;
+    }
+
+private:
+    NO_COPY_SEMANTIC(SamplingHeapProfileNode);
+    NO_MOVE_SEMANTIC(SamplingHeapProfileNode);
+
+    std::unique_ptr<RuntimeCallFrame> callFrame_ {nullptr};
+    size_t selfSize_ {};
+    int32_t id_ {};
+    CVector<std::unique_ptr<SamplingHeapProfileNode>> children_ {};
+};
+
+class SamplingHeapProfile final : public PtBaseTypes {
+public:
+    SamplingHeapProfile() = default;
+    ~SamplingHeapProfile() override = default;
+    static std::unique_ptr<SamplingHeapProfile> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    SamplingHeapProfile &SetHead(std::unique_ptr<SamplingHeapProfileNode> head)
+    {
+        head_ = std::move(head);
+        return *this;
+    }
+
+    SamplingHeapProfileNode *GetHead() const
+    {
+        return head_.get();
+    }
+    
+    SamplingHeapProfile &SetSamples(CVector<std::unique_ptr<SamplingHeapProfileSample>> samples)
+    {
+        samples_ = std::move(samples);
+        return *this;
+    }
+
+    const CVector<std::unique_ptr<SamplingHeapProfileSample>> *GetSamples() const
+    {
+        return &samples_;
+    }
+
+private:
+    NO_COPY_SEMANTIC(SamplingHeapProfile);
+    NO_MOVE_SEMANTIC(SamplingHeapProfile);
+
+    std::unique_ptr<SamplingHeapProfileNode> head_ {nullptr};
+    CVector<std::unique_ptr<SamplingHeapProfileSample>> samples_ {};
+};
+
+// ========== Profiler types begin
+// Profiler.PositionTickInfo
+class PositionTickInfo final : public PtBaseTypes {
+public:
+    PositionTickInfo() = default;
+    ~PositionTickInfo() override = default;
+
+    static std::unique_ptr<PositionTickInfo> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    int32_t GetLine() const
+    {
+        return line_;
+    }
+
+    PositionTickInfo &SetLine(size_t line)
+    {
+        line_ = line;
+        return *this;
+    }
+
+    int32_t GetTicks() const
+    {
+        return ticks_;
+    }
+
+    PositionTickInfo &SetTicks(size_t ticks)
+    {
+        ticks_ = ticks;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(PositionTickInfo);
+    NO_MOVE_SEMANTIC(PositionTickInfo);
+    size_t line_ {0};
+    size_t ticks_ {0};
+};
+
+// Profiler.ProfileNode
+class ProfileNode final : public PtBaseTypes {
+public:
+    ProfileNode() = default;
+    ~ProfileNode() override = default;
+
+    static std::unique_ptr<ProfileNode> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    
+    int32_t GetId() const
+    {
+        return id_;
+    }
+
+    ProfileNode &SetId(size_t id)
+    {
+        id_ = id;
+        return *this;
+    }
+
+    RuntimeCallFrame *GetCallFrame() const
+    {
+        return callFrame_.get();
+    }
+
+    ProfileNode &SetCallFrame(std::unique_ptr<RuntimeCallFrame> callFrame)
+    {
+        callFrame_ = std::move(callFrame);
+        return *this;
+    }
+
+    int32_t GetHitCount() const
+    {
+        return hitCount_;
+    }
+
+    ProfileNode &SetHitCount(size_t hitCount)
+    {
+        hitCount_ = hitCount;
+        return *this;
+    }
+
+    const CVector<std::unique_ptr<int32_t>> *GetChildren() const
+    {
+        return &children_;
+    }
+
+    ProfileNode &SetChildren(CVector<std::unique_ptr<int32_t>> children)
+    {
+        children_ = std::move(children);
+        return *this;
+    }
+
+    const CVector<std::unique_ptr<PositionTickInfo>> *GetPositionTicks() const
+    {
+        return &positionTicks_;
+    }
+
+    ProfileNode &SetPositionTicks(CVector<std::unique_ptr<PositionTickInfo>> positionTicks)
+    {
+        positionTicks_ = std::move(positionTicks);
+        return *this;
+    }
+
+    const CString &GetDeoptReason() const
+    {
+        return deoptReason_;
+    }
+
+    ProfileNode &SetDeoptReason(const CString &deoptReason)
+    {
+        deoptReason_ = deoptReason;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(ProfileNode);
+    NO_MOVE_SEMANTIC(ProfileNode);
+    size_t id_ {0};
+    std::unique_ptr<RuntimeCallFrame> callFrame_ {nullptr};
+    size_t hitCount_ {0};
+    CVector<std::unique_ptr<int32_t>> children_ {};
+    CVector<std::unique_ptr<PositionTickInfo>> positionTicks_ {};
+    CString deoptReason_ {};
+};
+
+// Profiler.Profile
+class Profile final : public PtBaseTypes {
+public:
+    Profile() = default;
+    ~Profile() override = default;
+
+    static std::unique_ptr<Profile> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    int32_t GetStartTime() const
+    {
+        return startTime_;
+    }
+
+    Profile &SetStartTime(size_t startTime)
+    {
+        startTime_ = startTime;
+        return *this;
+    }
+
+    int32_t GetEndTime() const
+    {
+        return endTime_;
+    }
+
+    Profile &SetEndTime(size_t endTime)
+    {
+        endTime_ = endTime;
+        return *this;
+    }
+
+    const CVector<std::unique_ptr<ProfileNode>> *GetNodes() const
+    {
+        return &nodes_;
+    }
+
+    Profile &SetPositionTicks(CVector<std::unique_ptr<ProfileNode>> nodes)
+    {
+        nodes_ = std::move(nodes);
+        return *this;
+    }
+
+    const CVector<std::unique_ptr<int32_t>> *GetSamples() const
+    {
+        return &samples_;
+    }
+
+    Profile &SetSamples(CVector<std::unique_ptr<int32_t>> samples)
+    {
+        samples_ = std::move(samples);
+        return *this;
+    }
+
+    const CVector<std::unique_ptr<int32_t>> *GetTimeDeltas() const
+    {
+        return &timeDeltas_;
+    }
+
+    Profile &SetTimeDeltas(CVector<std::unique_ptr<int32_t>> timeDeltas)
+    {
+        timeDeltas_ = std::move(timeDeltas);
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(Profile);
+    NO_MOVE_SEMANTIC(Profile);
+
+    size_t startTime_ {0};
+    size_t endTime_ {0};
+    CVector<std::unique_ptr<ProfileNode>> nodes_ {};
+    CVector<std::unique_ptr<int32_t>> samples_ {};
+    CVector<std::unique_ptr<int32_t>> timeDeltas_ {};
+};
 }  // namespace panda::tooling::ecmascript
 #endif

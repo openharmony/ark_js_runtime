@@ -247,5 +247,36 @@ private:
     std::unique_ptr<RemoteObject> result_ {};
     std::optional<std::unique_ptr<ExceptionDetails>> exceptionDetails_ {};
 };
+
+class StopSamplingReturns : public PtBaseReturns {
+public:
+    explicit StopSamplingReturns(std::unique_ptr<SamplingHeapProfile> profile)
+        : profile_(std::move(profile))
+    {}
+    ~StopSamplingReturns() override = default;
+
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+private:
+    StopSamplingReturns() = default;
+    NO_COPY_SEMANTIC(StopSamplingReturns);
+    NO_MOVE_SEMANTIC(StopSamplingReturns);
+
+    std::unique_ptr<SamplingHeapProfile> profile_ {};
+};
+
+class StopReturns : public PtBaseReturns {
+public:
+    explicit StopReturns(std::unique_ptr<Profile> profile) : profile_(std::move(profile)) {}
+    ~StopReturns() override = default;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+private:
+    StopReturns() = default;
+    NO_COPY_SEMANTIC(StopReturns);
+    NO_MOVE_SEMANTIC(StopReturns);
+
+    std::unique_ptr<Profile> profile_ {};
+};
 }  // namespace panda::tooling::ecmascript
 #endif

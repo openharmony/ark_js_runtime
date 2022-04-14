@@ -470,21 +470,20 @@ JSTaggedValue SlowRuntimeStub::Shr2Dyn(JSThread *thread, JSTaggedValue left, JST
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
         if (valLeft->IsBigInt() && valRight->IsBigInt()) {
-            JSHandle<BigInt> bigLeft(valLeft);
-            JSHandle<BigInt> bigRight(valRight);
-            return BigInt::SignedRightShift(thread, bigLeft, bigRight).GetTaggedValue();
+            return BigInt::UnsignedRightShift(thread);
         }
         return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
-    JSTaggedValue taggedNumber0 = SlowRuntimeStub::ToJSTaggedValueWithInt32(thread, valLeft.GetTaggedValue());
+    JSTaggedValue taggedNumber0 = SlowRuntimeStub::ToJSTaggedValueWithUint32(thread, valLeft.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     JSTaggedValue taggedNumber1 = SlowRuntimeStub::ToJSTaggedValueWithUint32(thread, valRight.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     int32_t opNumber0 = taggedNumber0.GetInt();
     int32_t opNumber1 = taggedNumber1.GetInt();
-    uint32_t shift =
-            static_cast<uint32_t>(opNumber1) & 0x1f;          // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
-    auto ret = static_cast<int32_t>(opNumber0 >> shift);  // NOLINT(hicpp-signed-bitwise)
+    uint32_t shift = static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
+    using unsigned_type = std::make_unsigned_t<uint32_t>;
+    auto ret =
+        static_cast<uint32_t>(static_cast<unsigned_type>(opNumber0) >> shift); // NOLINT(hicpp-signed-bitwise)
     return JSTaggedValue(ret);
 }
 
@@ -499,21 +498,20 @@ JSTaggedValue SlowRuntimeStub::Ashr2Dyn(JSThread *thread, JSTaggedValue left, JS
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
         if (valLeft->IsBigInt() && valRight->IsBigInt()) {
-            return BigInt::UnsignedRightShift(thread);
+            JSHandle<BigInt> bigLeft(valLeft);
+            JSHandle<BigInt> bigRight(valRight);
+            return BigInt::SignedRightShift(thread, bigLeft, bigRight).GetTaggedValue();
         }
         return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
-    JSTaggedValue taggedNumber0 = SlowRuntimeStub::ToJSTaggedValueWithUint32(thread, valLeft.GetTaggedValue());
+    JSTaggedValue taggedNumber0 = SlowRuntimeStub::ToJSTaggedValueWithInt32(thread, valLeft.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     JSTaggedValue taggedNumber1 = SlowRuntimeStub::ToJSTaggedValueWithUint32(thread, valRight.GetTaggedValue());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     int32_t opNumber0 = taggedNumber0.GetInt();
     int32_t opNumber1 = taggedNumber1.GetInt();
-    uint32_t shift =
-        static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
-    using unsigned_type = std::make_unsigned_t<uint32_t>;
-    auto ret =
-        static_cast<uint32_t>(static_cast<unsigned_type>(opNumber0) >> shift); // NOLINT(hicpp-signed-bitwise)
+    uint32_t shift = static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
+    auto ret = static_cast<int32_t>(opNumber0 >> shift); // NOLINT(hicpp-signed-bitwise)
     return JSTaggedValue(ret);
 }
 
@@ -1837,7 +1835,7 @@ JSTaggedValue SlowRuntimeStub::SuperCall(JSThread *thread, JSTaggedValue func, J
     JSHandle<JSTaggedValue> funcHandle(thread, func);
     JSHandle<JSTaggedValue> newTargetHandle(thread, newTarget);
 
-    JSHandle<JSTaggedValue> superFunc(thread, JSHandle<JSObject>::Cast(funcHandle)->GetPrototype(thread));
+    JSHandle<JSTaggedValue> superFunc(thread, JSTaggedValue::GetPrototype(thread, funcHandle));
     ASSERT(superFunc->IsJSFunction());
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     EcmaRuntimeCallInfo info =
@@ -1856,13 +1854,12 @@ JSTaggedValue SlowRuntimeStub::SuperCallSpread(JSThread *thread, JSTaggedValue f
 {
     INTERPRETER_TRACE(thread, SuperCallSpread);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    InterpretedFrameHandler frameHandler(thread);
 
     JSHandle<JSTaggedValue> funcHandle(thread, func);
     JSHandle<JSTaggedValue> newTargetHandle(thread, newTarget);
     JSHandle<JSTaggedValue> jsArray(thread, array);
 
-    JSHandle<JSTaggedValue> superFunc(thread, JSHandle<JSObject>::Cast(funcHandle)->GetPrototype(thread));
+    JSHandle<JSTaggedValue> superFunc(thread, JSTaggedValue::GetPrototype(thread, funcHandle));
     ASSERT(superFunc->IsJSFunction());
 
     JSHandle<TaggedArray> argv(thread, GetCallSpreadArgs(thread, jsArray.GetTaggedValue()));

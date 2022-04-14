@@ -184,7 +184,17 @@ void SetPropertyByIndexStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef receiver = TaggedArgument(1);
     GateRef index = Int32Argument(2); /* 2 : 3rd parameter is index */
     GateRef value = TaggedArgument(3); /* 3 : 4th parameter is value */
-    Return(SetPropertyByIndex(glue, receiver, index, value));
+    Return(SetPropertyByIndex(glue, receiver, index, value, false));
+}
+
+void SetPropertyByIndexWithOwnStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    GateRef glue = PtrArgument(0);
+    GateRef receiver = TaggedArgument(1);
+    GateRef index = Int32Argument(2); /* 2 : 3rd parameter is index */
+    GateRef value = TaggedArgument(3); /* 3 : 4th parameter is value */
+    Return(SetPropertyByIndex(glue, receiver, index, value, true));
 }
 
 void GetPropertyByNameStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -203,7 +213,7 @@ void SetPropertyByNameStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef receiver = TaggedArgument(1);
     GateRef key = TaggedArgument(2); // 2 : 3rd para
     GateRef value = TaggedArgument(3); // 3 : 4th para
-    Return(SetPropertyByName(glue, receiver, key, value));
+    Return(SetPropertyByName(glue, receiver, key, value, false));
 }
 
 void SetPropertyByNameWithOwnStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -213,7 +223,7 @@ void SetPropertyByNameWithOwnStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef receiver = TaggedArgument(1);
     GateRef key = TaggedArgument(2); // 2 : 3rd para
     GateRef value = TaggedArgument(3); // 3 : 4th para
-    Return(SetPropertyByNameWithOwn(glue, receiver, key, value));
+    Return(SetPropertyByName(glue, receiver, key, value, true));
 }
 
 void GetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -290,73 +300,21 @@ void GetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
 void SetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
-    auto env = GetEnvironment();
     GateRef glue = PtrArgument(0);
     GateRef receiver = TaggedArgument(1);
-    DEFVARIABLE(key, VariableType::JS_ANY(), TaggedArgument(2)); /* 2 : 3rd parameter is key */
+    GateRef key = TaggedArgument(2);              /* 2 : 3rd parameter is key */
     GateRef value = TaggedArgument(3);            /* 3 : 4th parameter is value */
+    Return(SetPropertyByValue(glue, receiver, key, value, false));
+}
 
-    Label isNumberOrStringSymbol(env);
-    Label notNumber(env);
-    Label isStringOrSymbol(env);
-    Label notStringOrSymbol(env);
-    Label exit(env);
-
-    Branch(TaggedIsNumber(*key), &isNumberOrStringSymbol, &notNumber);
-    Bind(&notNumber);
-    {
-        Branch(TaggedIsStringOrSymbol(*key), &isNumberOrStringSymbol, &notStringOrSymbol);
-        Bind(&notStringOrSymbol);
-        {
-            Return(Hole(VariableType::INT64()));
-        }
-    }
-    Bind(&isNumberOrStringSymbol);
-    {
-        GateRef index = TryToElementsIndex(*key);
-        Label validIndex(env);
-        Label notValidIndex(env);
-        Branch(Int32GreaterThanOrEqual(index, Int32(0)), &validIndex, &notValidIndex);
-        Bind(&validIndex);
-        {
-            Return(SetPropertyByIndex(glue, receiver, index, value));
-        }
-        Bind(&notValidIndex);
-        {
-            Label notNumber1(env);
-            Label getByName(env);
-            Branch(TaggedIsNumber(*key), &exit, &notNumber1);
-            Bind(&notNumber1);
-            {
-                Label isString(env);
-                Label notString(env);
-                Label isInternalString(env);
-                Label notIntenalString(env);
-                Branch(TaggedIsString(*key), &isString, &notString);
-                Bind(&isString);
-                {
-                    Branch(IsInternalString(*key), &isInternalString, &notIntenalString);
-                    Bind(&isInternalString);
-                    Jump(&getByName);
-                    Bind(&notIntenalString);
-                    {
-                        key = CallRuntime(glue, RTSTUB_ID(NewInternalString), { *key });
-                        Jump(&getByName);
-                    }
-                }
-                Bind(&notString);
-                {
-                    Jump(&getByName);
-                }
-            }
-            Bind(&getByName);
-            {
-                Return(SetPropertyByName(glue, receiver, *key, value));
-            }
-        }
-    }
-    Bind(&exit);
-    Return(Hole(VariableType::INT64()));
+void SetPropertyByValueWithOwnStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    GateRef glue = PtrArgument(0);
+    GateRef receiver = TaggedArgument(1);
+    GateRef key = TaggedArgument(2);              /* 2 : 3rd parameter is key */
+    GateRef value = TaggedArgument(3);            /* 3 : 4th parameter is value */
+    Return(SetPropertyByValue(glue, receiver, key, value, true));
 }
 
 void TryLoadICByNameStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -521,7 +479,7 @@ void SetValueWithBarrierStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     GateRef glue = PtrArgument(0);
-    GateRef obj = PtrArgument(1);
+    GateRef obj = TaggedArgument(1);
     GateRef offset = PtrArgument(2); // 2 : 3rd para
     GateRef value = TaggedArgument(3); // 3 : 4th para
     SetValueWithBarrier(glue, obj, offset, value);

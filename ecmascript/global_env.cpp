@@ -40,6 +40,7 @@ void GlobalEnv::Init(JSThread *thread)
     stringTable->InternEmptyString(EcmaString::Cast(emptyStr.GetTaggedObject()));
     SetTemplateMap(thread, TemplateMap::Create(thread));
     SetRegisterSymbols(thread, SymbolTable::Create(thread));
+    SetObjectLiteralHClassCache(thread, JSTaggedValue::Hole());
 }
 JSHandle<JSTaggedValue> GlobalEnv::GetSymbol(JSThread *thread, const JSHandle<JSTaggedValue> &string)
 {
@@ -50,8 +51,8 @@ JSHandle<JSTaggedValue> GlobalEnv::GetSymbol(JSThread *thread, const JSHandle<JS
 JSHandle<JSTaggedValue> GlobalEnv::GetStringPrototypeFunctionByName(JSThread *thread, const char *name)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSObject> stringFuncObj(GetStringFunction());
-    JSHandle<JSTaggedValue> stringFuncPrototype(thread, stringFuncObj->GetPrototype(thread));
+    JSHandle<JSTaggedValue> stringFuncPrototype(thread,
+        JSObject::GetPrototype(JSHandle<JSObject>(GetStringFunction())));
     JSHandle<JSTaggedValue> nameKey(factory->NewFromUtf8(name));
     return JSObject::GetProperty(thread, stringFuncPrototype, nameKey).GetValue();
 }

@@ -439,6 +439,8 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(DataView::GetUint32),
     reinterpret_cast<uintptr_t>(DataView::SetFloat32),
     reinterpret_cast<uintptr_t>(DataView::SetFloat64),
+    reinterpret_cast<uintptr_t>(DataView::GetBigInt64),
+    reinterpret_cast<uintptr_t>(DataView::GetBigUint64),
     reinterpret_cast<uintptr_t>(DataView::SetInt8),
     reinterpret_cast<uintptr_t>(DataView::SetInt16),
     reinterpret_cast<uintptr_t>(DataView::SetInt32),
@@ -448,6 +450,8 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(DataView::GetBuffer),
     reinterpret_cast<uintptr_t>(DataView::GetByteLength),
     reinterpret_cast<uintptr_t>(DataView::GetOffset),
+    reinterpret_cast<uintptr_t>(DataView::SetBigInt64),
+    reinterpret_cast<uintptr_t>(DataView::SetBigUint64),
     reinterpret_cast<uintptr_t>(Global::PrintEntrypoint),
     reinterpret_cast<uintptr_t>(Global::NotSupportEval),
     reinterpret_cast<uintptr_t>(Global::IsFinite),
@@ -927,10 +931,9 @@ EncodeBit SnapShotSerialize::NativePointerToEncodeBit(void *nativePointer)
 
         if (programSerialize_) {
             pandaMethod_.emplace_back(ToUintPtr(nativePointer));
-            ASSERT(pandaMethod_.size() + Constants::PROGRAM_NATIVE_METHOD_BEGIN +
-                   Constants::NATIVE_METHOD_SIZE <= Constants::MAX_UINT_16);
+            ASSERT(pandaMethod_.size() + GetNativeTableSize() <= Constants::MAX_UINT_16);
             // NOLINTNEXTLINE(bugprone-narrowing-conversions, cppcoreguidelines-narrowing-conversions)
-            index = pandaMethod_.size() + Constants::PROGRAM_NATIVE_METHOD_BEGIN + Constants::NATIVE_METHOD_SIZE - 1;
+            index = pandaMethod_.size() + GetNativeTableSize() - 1;
         } else {
             index = SearchNativeMethodIndex(nativePointer);
         }
@@ -946,29 +949,30 @@ void *SnapShotSerialize::NativePointerEncodeBitToAddr(EncodeBit nativeBit)
 {
     uint16_t index = nativeBit.GetNativePointerIndex();
     void *addr = nullptr;
+    size_t nativeTableSize = GetNativeTableSize();
 
-    if (index < Constants::Constants::NATIVE_METHOD_SIZE) {
+    if (index < nativeTableSize - Constants::PROGRAM_NATIVE_METHOD_BEGIN) {
         addr = reinterpret_cast<void *>(vm_->nativeMethods_.at(index));
-    } else if (index < Constants::NATIVE_METHOD_SIZE + Constants::PROGRAM_NATIVE_METHOD_BEGIN) {
+    } else if (index < nativeTableSize) {
         addr = reinterpret_cast<void *>(g_nativeTable[index]);
     } else {
-        addr = ToVoidPtr(pandaMethod_.at(index - Constants::PROGRAM_NATIVE_METHOD_BEGIN -
-                                         Constants::NATIVE_METHOD_SIZE));
+        addr = ToVoidPtr(pandaMethod_.at(index - nativeTableSize));
     }
     return addr;
 }
 
 uint16_t SnapShotSerialize::SearchNativeMethodIndex(void *nativePointer)
 {
+    size_t nativeMethodSize = GetNativeTableSize() - Constants::PROGRAM_NATIVE_METHOD_BEGIN;
     for (size_t i = 0; i < Constants::PROGRAM_NATIVE_METHOD_BEGIN; i++) {
-        if (nativePointer == reinterpret_cast<void *>(g_nativeTable[i + Constants::NATIVE_METHOD_SIZE])) {
-            return i + Constants::NATIVE_METHOD_SIZE;
+        if (nativePointer == reinterpret_cast<void *>(g_nativeTable[i + nativeMethodSize])) {
+            return i + nativeMethodSize;
         }
     }
 
     // not found
     auto nativeMethod = reinterpret_cast<JSMethod *>(nativePointer)->GetNativePointer();
-    for (size_t i = 0; i < Constants::NATIVE_METHOD_SIZE; i++) {
+    for (size_t i = 0; i < nativeMethodSize; i++) {
         if (nativeMethod == reinterpret_cast<void *>(g_nativeTable[i])) {
             return i;
         }
@@ -991,13 +995,14 @@ void SnapShotSerialize::DeserializeHandleNativePointer(uint64_t *value)
     EncodeBit native(*value);
     uint32_t index = native.GetNativePointerIndex();
     uintptr_t addr = 0U;
+    size_t nativeTableSize = GetNativeTableSize();
 
-    if (index < Constants::NATIVE_METHOD_SIZE) {
+    if (index < nativeTableSize - Constants::PROGRAM_NATIVE_METHOD_BEGIN) {
         addr = reinterpret_cast<uintptr_t>(vm_->nativeMethods_.at(index));
-    } else if (index < Constants::NATIVE_METHOD_SIZE + Constants::PROGRAM_NATIVE_METHOD_BEGIN) {
+    } else if (index < nativeTableSize) {
         addr = g_nativeTable[index];
     } else {
-        addr = pandaMethod_.at(index - Constants::PROGRAM_NATIVE_METHOD_BEGIN - Constants::NATIVE_METHOD_SIZE);
+        addr = pandaMethod_.at(index - nativeTableSize);
     }
     *value = addr;
 }
@@ -1082,7 +1087,8 @@ void SnapShotSerialize::EncodeTaggedObjectRange(ObjectSlot start, ObjectSlot end
 
 void SnapShotSerialize::GeneratedNativeMethod()  // NOLINT(readability-function-size)
 {
-    for (int i = 0; i < Constants::NATIVE_METHOD_SIZE; i++) {
+    size_t nativeMethodSize = GetNativeTableSize() - Constants::PROGRAM_NATIVE_METHOD_BEGIN;
+    for (size_t i = 0; i < nativeMethodSize; i++) {
         vm_->GetMethodForNativeFunction(reinterpret_cast<void *>(g_nativeTable[i]));
     }
 }

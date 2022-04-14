@@ -47,6 +47,10 @@ public:
     static JSTaggedValue GetUint16(EcmaRuntimeCallInfo *argv);
     // 24.2.4.12 DataView.prototype.getUint32 ( byteOffset [ , littleEndian ] )
     static JSTaggedValue GetUint32(EcmaRuntimeCallInfo *argv);
+    // 25.3.4.5 DataView.prototype.getBigInt64 ( byteOffset [ , littleEndian ] )
+    static JSTaggedValue GetBigInt64(EcmaRuntimeCallInfo *argv);
+    // 25.3.4.6 DataView.prototype.getBigUint64 ( byteOffset [ , littleEndian ] )
+    static JSTaggedValue GetBigUint64 (EcmaRuntimeCallInfo *argv);
     // 24.2.4.13 DataView.prototype.setFloat32 ( byteOffset, value [ , littleEndian ] )
     static JSTaggedValue SetFloat32(EcmaRuntimeCallInfo *argv);
     // 24.2.4.14 DataView.prototype.setFloat64 ( byteOffset, value [ , littleEndian ] )
@@ -63,6 +67,10 @@ public:
     static JSTaggedValue SetUint16(EcmaRuntimeCallInfo *argv);
     // 24.2.4.20 DataView.prototype.setUint32 ( byteOffset, value [ , littleEndian ] )
     static JSTaggedValue SetUint32(EcmaRuntimeCallInfo *argv);
+    // 25.3.4.15 DataView.prototype.setBigInt64 ( byteOffset, value [ , littleEndian ] )
+    static JSTaggedValue SetBigInt64(EcmaRuntimeCallInfo *argv);
+    // 25.3.4.16 DataView.prototype.setBigUint64 ( byteOffset, value [ , littleEndian ] )
+    static JSTaggedValue SetBigUint64(EcmaRuntimeCallInfo *argv);
 
 private:
     // 24.2.1.1 GetViewValue ( view, requestIndex, isLittleEndian, type )

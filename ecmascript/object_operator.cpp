@@ -232,7 +232,7 @@ void ObjectOperator::GlobalLookupProperty()
     if (IsFound()) {
         return;
     }
-    JSTaggedValue proto = JSObject::Cast(holder_->GetTaggedObject())->GetPrototype(thread_);
+    JSTaggedValue proto = JSTaggedValue::GetPrototype(thread_, holder_);
     if (!proto.IsHeapObject()) {
         return;
     }
@@ -252,7 +252,7 @@ void ObjectOperator::LookupProperty()
             return;
         }
 
-        JSTaggedValue proto = holder_.GetObject<JSObject>()->GetPrototype(thread_);
+        JSTaggedValue proto = JSTaggedValue::GetPrototype(thread_, holder_);
         if (!proto.IsHeapObject()) {
             return;
         }

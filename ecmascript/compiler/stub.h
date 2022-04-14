@@ -658,18 +658,15 @@ public:
     void SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRef value);
     GateRef GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index);
     GateRef GetPropertyByName(GateRef glue, GateRef receiver, GateRef key);
-    GateRef SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, GateRef value);
+    GateRef SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, GateRef value, bool useOwn);
     GateRef SetPropertyByName(GateRef glue, GateRef receiver, GateRef key,
-                               GateRef value); // Crawl prototype chain
-
-    GateRef SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef key,
-                               GateRef value); // Do not crawl the prototype chain
+        GateRef value, bool useOwn); // Crawl prototype chain
+    GateRef SetPropertyByValue(GateRef glue, GateRef receiver, GateRef key, GateRef value, bool useOwn);
     GateRef GetParentEnv(GateRef object);
     GateRef GetPropertiesFromLexicalEnv(GateRef object, GateRef index);
     void SetPropertiesToLexicalEnv(GateRef glue, GateRef object, GateRef index, GateRef value);
     GateRef GetFunctionBitFieldFromJSFunction(GateRef object);
     GateRef GetHomeObjectFromJSFunction(GateRef object);
-    GateRef GetMethodFromJSFunction(GateRef object);
     GateRef GetCallFieldFromMethod(GateRef method);
     void SetLexicalEnvToFunction(GateRef glue, GateRef object, GateRef lexicalEnv);
     GateRef GetGlobalObject(GateRef glue);
@@ -693,6 +690,18 @@ public:
     // Add SpecialContainer
     GateRef GetContainerProperty(GateRef glue, GateRef receiver, GateRef index, GateRef jsType);
     GateRef JSArrayListGet(GateRef glue, GateRef receiver, GateRef index);
+
+    // Exception handle
+    void ReturnExceptionIfAbruptCompletion(GateRef glue);
+
+    // method operator
+    GateRef IsJSFunction(GateRef obj);
+    GateRef IsBoundFunction(GateRef obj);
+    GateRef GetMethodFromJSFunction(GateRef jsfunc);
+    GateRef IsNativeMethod(GateRef method);
+    GateRef HasAotCode(GateRef method);
+    GateRef GetExpectedNumOfArgs(GateRef method);
+
 private:
     using BinaryOperation = std::function<GateRef(Environment*, GateRef, GateRef)>;
     template<OpCode::Op Op>

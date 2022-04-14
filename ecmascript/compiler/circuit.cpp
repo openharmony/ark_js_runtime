@@ -345,6 +345,16 @@ void Circuit::DeleteGate(GateRef gate)
     LoadGatePtr(gate)->DeleteGate();
 }
 
+void Circuit::DecreaseIn(GateRef gate, size_t idx)
+{
+    auto numIns = LoadGatePtrConst(gate)->GetNumIns();
+    for (size_t i = idx; i < numIns - 1; i++) {
+        ModifyIn(gate, i, GetIn(gate, i + 1));
+    }
+    DeleteIn(gate, numIns - 1);
+    SetBitField(gate, GetBitField(gate) - 1);
+}
+
 void Circuit::SetOpCode(GateRef gate, OpCode opcode)
 {
     LoadGatePtr(gate)->SetOpCode(opcode);
@@ -383,6 +393,11 @@ GateId Circuit::GetId(GateRef gate) const
 BitField Circuit::GetBitField(GateRef gate) const
 {
     return LoadGatePtrConst(gate)->GetBitField();
+}
+
+void Circuit::SetBitField(GateRef gate, BitField bitfield)
+{
+    LoadGatePtr(gate)->SetBitField(bitfield);
 }
 
 void Circuit::Print(GateRef gate) const

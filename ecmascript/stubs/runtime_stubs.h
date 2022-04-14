@@ -17,6 +17,7 @@
 #define ECMASCRIPT_RUNTIME_TRAMPOLINES_NEW_H
 
 #include "ecmascript/compiler/call_signature.h"
+#include "ecmascript/stubs/test_runtime_stubs.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_method.h"
@@ -32,6 +33,10 @@ class JSFunction;
 class ObjectFactory;
 extern "C" JSTaggedType OptimizedCallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
 extern "C" JSTaggedType AsmIntCallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
+extern "C" void JSCall(uintptr_t glue, uint32_t argc, JSTaggedType callTarget,
+                       JSTaggedType newTarget, JSTaggedType thisObj, ...);
+extern "C" void JSCallWithArgV(uintptr_t glue, uint32_t argc, JSTaggedType callTarget, JSTaggedType argV[]);
+
 extern "C" JSTaggedType OptimizedCallOptimized(uintptr_t glue, uint32_t expectedNumArgs,
     uint32_t actualNumArgs, uintptr_t codeAddr, ...);
 
@@ -87,8 +92,9 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(MarkingBarrier, 5)                      \
     V(DoubleToInt, 1)                         \
     V(OptimizedCallRuntime, 3)                \
-    V(OptimizedCallOptimized, 4)              \
     V(AsmIntCallRuntime, 3)                   \
+    V(JSCall, 5)                              \
+    V(JSCallWithArgV, 3)                      \
     V(PushCallArgs0AndDispatch, 2)            \
     V(PushCallArgs0AndDispatchNative, 2)      \
     V(PushCallArgs0AndDispatchSlowPath, 2)    \
@@ -261,7 +267,8 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
 
 #define RUNTIME_STUB_LIST(V)                 \
     RUNTIME_STUB_WITHOUT_GC_LIST(V)          \
-    RUNTIME_STUB_WITH_GC_LIST(V)
+    RUNTIME_STUB_WITH_GC_LIST(V)             \
+    TEST_RUNTIME_STUB_GC_LIST(V)
 
 class RuntimeStubs {
 public:
@@ -270,6 +277,7 @@ public:
 #define DECLARE_RUNTIME_STUBS(name, counter) \
     static JSTaggedType name(uintptr_t argGlue, uint32_t argc, uintptr_t argv);
     RUNTIME_STUB_WITH_GC_LIST(DECLARE_RUNTIME_STUBS)
+    TEST_RUNTIME_STUB_GC_LIST(DECLARE_RUNTIME_STUBS)
 #undef DECLARE_RUNTIME_STUBS
 
     static void DebugPrint(int fmtMessageId, ...);
@@ -461,8 +469,10 @@ private:
     static inline JSTaggedValue RuntimeGetCallSpreadArgs(JSThread *thread, JSTaggedValue array);
     static inline JSTaggedValue RuntimeThrowReferenceError(JSThread *thread, JSTaggedValue prop, const char *desc);
     static inline JSTaggedValue RuntimeThrowSyntaxError(JSThread *thread, const char *message);
-    static inline JSTaggedType RuntimeNativeCall(JSThread *thread, JSTaggedValue func, bool callThis,
+    static inline JSTaggedType RuntimeNativeCall(JSThread *thread, JSHandle<JSTaggedValue> func, bool callThis,
                                                  uint32_t actualNumArgs, std::vector<JSTaggedType> &actualArgs);
+    static inline JSTaggedType RuntimeCall1(JSThread *thread, JSHandle<JSTaggedValue> func,
+        JSHandle<JSTaggedValue> arg);
     static inline JSTaggedValue RuntimeLdBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &numberBigInt);
     static inline JSTaggedValue RuntimeNewLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId);
 };

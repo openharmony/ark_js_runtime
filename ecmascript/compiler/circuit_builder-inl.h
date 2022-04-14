@@ -31,6 +31,11 @@ GateRef CircuitBuilder::False()
     return TruncInt32ToInt1(Int32(0));
 }
 
+GateRef CircuitBuilder::Undefined(VariableType type)
+{
+    return UndefineConstant(type.GetGateType());
+}
+
 // memory
 GateRef CircuitBuilder::Load(VariableType type, GateRef base, GateRef offset)
 {
@@ -195,73 +200,36 @@ GateRef CircuitBuilder::TaggedGetInt(GateRef x)
     return TruncInt64ToInt32(Int64And(x, Int64(~JSTaggedValue::TAG_MASK)));
 }
 
-GateRef CircuitBuilder::Int8BuildTaggedTypeWithNoGC(GateRef x)
-{
-    GateRef val = ZExtInt8ToInt64(x);
-    return Int64Or(val, Int64(JSTaggedValue::TAG_INT));
-}
-
-GateRef CircuitBuilder::Int16BuildTaggedWithNoGC(GateRef x)
-{
-    GateRef val = ZExtInt16ToInt64(x);
-    return ChangeInt64ToTagged(Int64Or(val, Int64(JSTaggedValue::TAG_INT)));
-}
-
-GateRef CircuitBuilder::Int16BuildTaggedTypeWithNoGC(GateRef x)
-{
-    GateRef val = ZExtInt16ToInt64(x);
-    return Int64Or(val, Int64(JSTaggedValue::TAG_INT));
-}
-
-GateRef CircuitBuilder::Int64BuildTaggedNGC(GateRef x)
-{
-    return ChangeInt64ToTagged(Int64Or(x, Int64(JSTaggedValue::TAG_INT)));
-}
-
-GateRef CircuitBuilder::Int64BuildTaggedTypeNGC(GateRef x)
+GateRef CircuitBuilder::TaggedTypeNGC(GateRef x)
 {
     return Int64Or(x, Int64(JSTaggedValue::TAG_INT));
 }
 
-GateRef CircuitBuilder::IntBuildTaggedWithNoGC(GateRef x)
+GateRef CircuitBuilder::TaggedNGC(GateRef x)
 {
-    GateRef val = ZExtInt32ToInt64(x);
-    return ChangeInt64ToTagged(Int64Or(val, Int64(JSTaggedValue::TAG_INT)));
+    return ChangeInt64ToTagged(Int64Or(x, Int64(JSTaggedValue::TAG_INT)));
 }
 
-GateRef CircuitBuilder::IntBuildTaggedTypeWithNoGC(GateRef x)
-{
-    GateRef val = ZExtInt32ToInt64(x);
-    return Int64Or(val, Int64(JSTaggedValue::TAG_INT));
-}
-
-GateRef CircuitBuilder::DoubleBuildTaggedWithNoGC(GateRef x)
+GateRef CircuitBuilder::DoubleToTaggedNGC(GateRef x)
 {
     GateRef val = CastDoubleToInt64(x);
     return ChangeInt64ToTagged(Int64Add(val,
         Int64(JSTaggedValue::DOUBLE_ENCODE_OFFSET)));
 }
 
-GateRef CircuitBuilder::DoubleBuildTaggedTypeWithNoGC(GateRef x)
+GateRef CircuitBuilder::DoubleToTaggedTypeNGC(GateRef x)
 {
     GateRef val = CastDoubleToInt64(x);
     return Int64Add(val, Int64(JSTaggedValue::DOUBLE_ENCODE_OFFSET));
 }
 
-GateRef CircuitBuilder::IntBuildTagged(GateRef x)
-{
-    GateRef val = ZExtInt32ToInt64(x);
-    GetCircuit()->SetGateType(val, GateType::TAGGED_VALUE);
-    return Int64Or(val, Int64(JSTaggedValue::TAG_INT));
-}
-
-GateRef CircuitBuilder::Int64BuildTagged(GateRef x)
+GateRef CircuitBuilder::Tagged(GateRef x)
 {
     GetCircuit()->SetGateType(x, GateType::TAGGED_VALUE);
     return Int64Or(x, Int64(JSTaggedValue::TAG_INT));
 }
 
-GateRef CircuitBuilder::DoubleBuildTagged(GateRef x)
+GateRef CircuitBuilder::DoubleToTagged(GateRef x)
 {
     GateRef val = CastDoubleToInt64(x);
     GetCircuit()->SetGateType(val, GateType::TAGGED_VALUE);
@@ -281,9 +249,17 @@ GateRef CircuitBuilder::TaggedFalse()
 GateRef CircuitBuilder::GetValueFromTaggedArray(VariableType returnType, GateRef array, GateRef index)
 {
     GateRef offset =
-        IntPtrMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize()));
+        ArchMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize()));
     GateRef dataOffset = IntPtrAdd(offset, IntPtr(TaggedArray::DATA_OFFSET));
     return Load(returnType, array, dataOffset);
+}
+
+void CircuitBuilder::SetValueToTaggedArray(VariableType valType, GateRef glue,
+                                           GateRef array, GateRef index, GateRef val)
+{
+    GateRef offset = ArchMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize()));
+    GateRef dataOffset = IntPtrAdd(offset, IntPtr(TaggedArray::DATA_OFFSET));
+    Store(valType, glue, array, dataOffset, val);
 }
 
 // object operation
@@ -491,10 +467,15 @@ void CircuitBuilder::MergeMirCircuit(GateRef hir, GateRef outir,
         } else if (acc.GetOpCode(*useIt) == OpCode::IF_EXCEPTION) {
             acc.ReplaceHirControlGate<noThrow>(useIt, exceptionControl[0]);
         // change depend flow in catch block from HIR:JS_BYTECODE to depend flow in MIR Circuit
-        } else if ((acc.GetOpCode(*useIt) == OpCode::DEPEND_SELECTOR) ||
-                   (acc.GetOpCode(*useIt) == OpCode::DEPEND_RELAY)) {
+        } else if (acc.GetOpCode(*useIt) == OpCode::DEPEND_SELECTOR) {
             if (acc.GetOpCode(acc.GetIn(acc.GetIn(*useIt, 0), useIt.GetIndex() - 1)) == OpCode::IF_EXCEPTION) {
-                noThrow ? acc.DeleteIn(useIt) : acc.ReplaceIn(useIt, exceptionControl[1]);
+                noThrow ? acc.DeleteExceptionDep(useIt) : acc.ReplaceIn(useIt, exceptionControl[1]);
+            } else {
+                acc.ReplaceIn(useIt, successControl[1]);
+            }
+        } else if (acc.GetOpCode(*useIt) == OpCode::DEPEND_RELAY) {
+            if (acc.GetOpCode(acc.GetIn(*useIt, 0)) == OpCode::IF_EXCEPTION) {
+                acc.ReplaceIn(useIt, exceptionControl[1]);
             } else {
                 acc.ReplaceIn(useIt, successControl[1]);
             }
@@ -504,13 +485,7 @@ void CircuitBuilder::MergeMirCircuit(GateRef hir, GateRef outir,
         // if no catch block, just throw exception(RETURN)
         } else if ((acc.GetOpCode(*useIt) == OpCode::RETURN) &&
                     acc.GetOpCode(acc.GetIn(*useIt, 0)) == OpCode::IF_EXCEPTION) {
-            if (noThrow) {
-                // 0 : the index of CONSTANT
-                GetCircuit()->DeleteGate(acc.GetValueIn(*useIt, 0));
-                acc.DeleteGate(useIt);
-            } else {
-                acc.ReplaceIn(useIt, exceptionControl[1]);
-            }
+            noThrow ? acc.DeleteExceptionDep(useIt) : acc.ReplaceIn(useIt, exceptionControl[1]);
         // if isThrow..
         } else if (useIt.GetIndex() == 1) {
             acc.ReplaceIn(useIt, successControl[1]);

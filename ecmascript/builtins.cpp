@@ -2343,6 +2343,8 @@ void Builtins::InitializeDataView(const JSHandle<GlobalEnv> &env, const JSHandle
     SetFunction(env, dataViewFuncPrototype, "getUint8", DataView::GetUint8, FunctionLength::ONE);
     SetFunction(env, dataViewFuncPrototype, "getUint16", DataView::GetUint16, FunctionLength::ONE);
     SetFunction(env, dataViewFuncPrototype, "getUint32", DataView::GetUint32, FunctionLength::ONE);
+    SetFunction(env, dataViewFuncPrototype, "getBigInt64", DataView::GetBigInt64, FunctionLength::ONE);
+    SetFunction(env, dataViewFuncPrototype, "getBigUint64", DataView::GetBigUint64, FunctionLength::ONE);
     SetFunction(env, dataViewFuncPrototype, "setFloat32", DataView::SetFloat32, FunctionLength::TWO);
     SetFunction(env, dataViewFuncPrototype, "setFloat64", DataView::SetFloat64, FunctionLength::TWO);
     SetFunction(env, dataViewFuncPrototype, "setInt8", DataView::SetInt8, FunctionLength::TWO);
@@ -2351,6 +2353,8 @@ void Builtins::InitializeDataView(const JSHandle<GlobalEnv> &env, const JSHandle
     SetFunction(env, dataViewFuncPrototype, "setUint8", DataView::SetUint8, FunctionLength::TWO);
     SetFunction(env, dataViewFuncPrototype, "setUint16", DataView::SetUint16, FunctionLength::TWO);
     SetFunction(env, dataViewFuncPrototype, "setUint32", DataView::SetUint32, FunctionLength::TWO);
+    SetFunction(env, dataViewFuncPrototype, "setBigInt64", DataView::SetBigInt64, FunctionLength::TWO);
+    SetFunction(env, dataViewFuncPrototype, "setBigUint64", DataView::SetBigUint64, FunctionLength::TWO);
 
     // 24.2.4.1 get DataView.prototype.buffer
     JSHandle<JSTaggedValue> bufferGetter = CreateGetter(env, DataView::GetBuffer, "buffer", FunctionLength::ZERO);
@@ -2984,6 +2988,7 @@ JSHandle<JSObject> Builtins::InitializeArkTools(const JSHandle<GlobalEnv> &env) 
 {
     JSHandle<JSObject> tools = factory_->NewEmptyJSObject();
     SetFunction(env, tools, "print", builtins::BuiltinsArkTools::ObjectDump, FunctionLength::ZERO);
+    SetFunction(env, tools, "compareHClass", builtins::BuiltinsArkTools::CompareHClass, FunctionLength::TWO);
     return tools;
 }
 

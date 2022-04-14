@@ -44,7 +44,7 @@ static constexpr size_t MIN_OLD_SPACE_LIMIT = 2 * 1024 * 1024;
 static constexpr size_t OLD_SPACE_LIMIT_BEGIN = 256 * 1024 * 1024;
 static constexpr size_t GLOBAL_SPACE_LIMIT_BEGIN = 256 * 1024 * 1024;
 static constexpr size_t MIN_GROWING_STEP = 16 * 1024 * 1024;
-static constexpr size_t MIN_AllOC_LIMIT_GROWING_STEP = 2 * 1024 * 1024;
+static constexpr size_t MIN_AllOC_LIMIT_GROWING_STEP = 8 * 1024 * 1024;
 
 static constexpr size_t REGION_SIZE_LOG2 = 18U;
 

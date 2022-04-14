@@ -166,7 +166,7 @@ HWTEST_F_L0(ContainersTreeSetTest, TreeSetConstructor)
 
     ASSERT_TRUE(result.IsJSAPITreeSet());
     JSHandle<JSAPITreeSet> setHandle(thread, result);
-    JSTaggedValue resultProto = JSHandle<JSObject>::Cast(setHandle)->GetPrototype(thread);
+    JSTaggedValue resultProto = JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(setHandle));
     JSTaggedValue funcProto = newTarget->GetFunctionPrototype();
     ASSERT_EQ(resultProto, funcProto);
     int size = setHandle->GetSize();

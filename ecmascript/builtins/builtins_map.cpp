@@ -19,7 +19,7 @@
 #include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_map.h"
 #include "ecmascript/js_map_iterator.h"
-#include "ecmascript/linked_hash_table.h"
+#include "ecmascript/linked_hash_table-inl.h"
 #include "ecmascript/object_factory.h"
 
 namespace panda::ecmascript::builtins {
@@ -215,15 +215,15 @@ JSTaggedValue BuiltinsMap::Get(EcmaRuntimeCallInfo *argv)
 JSTaggedValue BuiltinsMap::ForEach([[maybe_unused]] EcmaRuntimeCallInfo *argv)
 {
     JSThread *thread = argv->GetThread();
+    BUILTINS_API_TRACE(thread, Map, ForEach);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTaggedValue> self = GetThis(argv);
     // 2.If Type(S) is not Object, throw a TypeError exception.
     // 3.If S does not have a [[MapData]] internal slot, throw a TypeError exception.
     if (!self->IsJSMap()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "obj is not JSMap", JSTaggedValue::Exception());
     }
-    JSHandle<JSMap> map(thread, JSMap::Cast(*JSTaggedValue::ToObject(thread, self)));
+    JSHandle<JSMap> map(self);
 
     // 4.If IsCallable(callbackfn) is false, throw a TypeError exception.
     JSHandle<JSTaggedValue> func(GetCallArg(argv, 0));
@@ -233,25 +233,33 @@ JSTaggedValue BuiltinsMap::ForEach([[maybe_unused]] EcmaRuntimeCallInfo *argv)
     // 5.If thisArg was supplied, let T be thisArg; else let T be undefined.
     JSHandle<JSTaggedValue> thisArg = GetCallArg(argv, 1);
 
-    // composed arguments
-    JSHandle<JSTaggedValue> iter(factory->NewJSMapIterator(map, IterationKind::KEY_AND_VALUE));
-    JSHandle<JSTaggedValue> keyIndex(thread, JSTaggedValue(0));
-    JSHandle<JSTaggedValue> valueIndex(thread, JSTaggedValue(1));
-    JSHandle<JSTaggedValue> result = JSIterator::IteratorStep(thread, iter);
+    JSMutableHandle<LinkedHashMap> hashMap(thread, map->GetLinkedMap());
     const size_t argsLength = 3;
+    int index = 0;
+    int totalElements = hashMap->NumberOfElements() + hashMap->NumberOfDeletedElements();
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    while (!result->IsFalse()) {
-        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, result.GetTaggedValue());
-        JSHandle<JSTaggedValue> iterValue(JSIterator::IteratorValue(thread, result));
-        JSHandle<JSTaggedValue> key = JSObject::GetProperty(thread, iterValue, keyIndex).GetValue();
-        JSHandle<JSTaggedValue> value = JSObject::GetProperty(thread, iterValue, valueIndex).GetValue();
-        // Let funcResult be Call(callbackfn, T, «e, e, S»).
-        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, func, thisArg, undefined, argsLength);
-        info.SetCallArg(value.GetTaggedValue(), key.GetTaggedValue(), map.GetTaggedValue());
-        JSTaggedValue ret = JSFunction::Call(&info);
-        // returnIfAbrupt
-        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ret);
-        result = JSIterator::IteratorStep(thread, iter);
+    // 7.Repeat for each e that is an element of entries, in original insertion order
+    while (index < totalElements) {
+        JSHandle<JSTaggedValue> key(thread, hashMap->GetKey(index++));
+        // a. If e is not empty, then
+        if (!key->IsHole()) {
+            JSHandle<JSTaggedValue> value(thread, hashMap->GetValue(index - 1));
+            EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(
+                thread, func, thisArg, undefined, argsLength);
+            info.SetCallArg(value.GetTaggedValue(), key.GetTaggedValue(), map.GetTaggedValue());
+            // i. Let funcResult be Call(callbackfn, T, «e, e, S»).
+            JSTaggedValue ret = JSFunction::Call(&info);  // 3: three args
+            // ii. ReturnIfAbrupt(funcResult).
+            RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ret);
+            // Maybe add or delete
+            JSTaggedValue nextTable = hashMap->GetNextTable();
+            while (!nextTable.IsHole()) {
+                index -= hashMap->GetDeletedElementsAt(index);
+                hashMap.Update(nextTable);
+                nextTable = hashMap->GetNextTable();
+            }
+            totalElements = hashMap->NumberOfElements() + hashMap->NumberOfDeletedElements();
+        }
     }
 
     return JSTaggedValue::Undefined();

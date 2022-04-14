@@ -17,6 +17,7 @@
 #define ECMASCRIPT_COMPILER_COMMON_STUBS_H
 
 #include "ecmascript/compiler/stub.h"
+#include "ecmascript/compiler/test_stubs.h"
 
 namespace panda::ecmascript::kungfu {
 #define INTERPRETER_STUB_HELPER_LIST(V)  \
@@ -37,17 +38,20 @@ namespace panda::ecmascript::kungfu {
     V(SetPropertyByNameWithOwn, 4)       \
     V(GetPropertyByIndex, 3)             \
     V(SetPropertyByIndex, 4)             \
+    V(SetPropertyByIndexWithOwn, 4)      \
     V(GetPropertyByValue, 3)             \
     V(SetPropertyByValue, 4)             \
+    V(SetPropertyByValueWithOwn, 4)      \
     V(TryLoadICByName, 4)                \
     V(TryLoadICByValue, 5)               \
     V(TryStoreICByName, 5)               \
     V(TryStoreICByValue, 6)              \
     V(SetValueWithBarrier, 4)
 
-#define COMMON_STUB_ID_LIST(V)      \
-    COMMON_STUB_LIST(V)             \
-    INTERPRETER_STUB_HELPER_LIST(V)
+#define COMMON_STUB_ID_LIST(V)          \
+    COMMON_STUB_LIST(V)                 \
+    INTERPRETER_STUB_HELPER_LIST(V)     \
+    TEST_STUB_LIST(V)
 
 class MulGCTestStub : public Stub {
 public:
@@ -125,6 +129,19 @@ public:
     ~SetPropertyByIndexStub() = default;
     NO_MOVE_SEMANTIC(SetPropertyByIndexStub);
     NO_COPY_SEMANTIC(SetPropertyByIndexStub);
+    void GenerateCircuit(const CompilationConfig *cfg) override;
+};
+
+class SetPropertyByIndexWithOwnStub : public Stub {
+public:
+    // 4 : 4 means argument counts
+    explicit SetPropertyByIndexWithOwnStub(Circuit *circuit) : Stub("SetPropertyByIndexWithOwn", 4, circuit)
+    {
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+    }
+    ~SetPropertyByIndexWithOwnStub() = default;
+    NO_MOVE_SEMANTIC(SetPropertyByIndexWithOwnStub);
+    NO_COPY_SEMANTIC(SetPropertyByIndexWithOwnStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
 
@@ -223,6 +240,19 @@ public:
     ~SetPropertyByValueStub() = default;
     NO_MOVE_SEMANTIC(SetPropertyByValueStub);
     NO_COPY_SEMANTIC(SetPropertyByValueStub);
+    void GenerateCircuit(const CompilationConfig *cfg) override;
+};
+
+class SetPropertyByValueWithOwnStub : public Stub {
+public:
+    // 4 : 4 means argument counts
+    explicit SetPropertyByValueWithOwnStub(Circuit *circuit) : Stub("SetPropertyByValueWithOwn", 4, circuit)
+    {
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+    }
+    ~SetPropertyByValueWithOwnStub() = default;
+    NO_MOVE_SEMANTIC(SetPropertyByValueWithOwnStub);
+    NO_COPY_SEMANTIC(SetPropertyByValueWithOwnStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
 

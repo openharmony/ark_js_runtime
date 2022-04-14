@@ -380,7 +380,7 @@ void Heap::RecomputeLimits()
     double gcSpeed = memController_->CalculateMarkCompactSpeedPerMS();
     double mutatorSpeed = memController_->GetCurrentOldSpaceAllocationThroughtputPerMS();
     size_t oldSpaceSize = oldSpace_->GetHeapObjectSize() + hugeObjectSpace_->GetHeapObjectSize();
-    size_t newSpaceCapacity = toSpace_->GetCommittedSize();
+    size_t newSpaceCapacity = toSpace_->GetMaximumCapacity();
 
     double growingFactor = memController_->CalculateGrowingFactor(gcSpeed, mutatorSpeed);
     size_t maxOldSpaceCapacity = GetEcmaVM()->GetJSOptions().MaxOldSpaceCapacity();
@@ -392,6 +392,13 @@ void Heap::RecomputeLimits()
     oldSpace_->SetInitialCapacity(newOldSpaceLimit);
     OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "RecomputeLimits oldSpaceAllocLimit_" << newOldSpaceLimit
         << " globalSpaceAllocLimit_" << globalSpaceAllocLimit_;
+}
+
+void Heap::CheckAndTriggerOldGC()
+{
+    if (GetHeapObjectSize() > globalSpaceAllocLimit_) {
+        CollectGarbage(TriggerGCType::OLD_GC);
+    }
 }
 
 bool Heap::CheckConcurrentMark()
@@ -437,6 +444,7 @@ void Heap::TryTriggerConcurrentMarking()
             markType_ = MarkType::FULL_MARK;
             OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Trigger the first full mark";
             TriggerConcurrentMarking();
+            return;
         }
     } else {
         if (oldSpaceHeapObjectSize >= oldSpaceAllocLimit || globalHeapObjectSize >= globalSpaceAllocLimit_) {
@@ -604,7 +612,7 @@ bool Heap::ParallelGCTask::Run(uint32_t threadIndex)
 
 bool Heap::AsyncClearTask::Run([[maybe_unused]] uint32_t threadIndex)
 {
-    heap_->ReclaimRegions(gcType_);
+    heap_->ReclaimRegions(gcType_, lastRegionOfToSpace_);
     return true;
 }
 

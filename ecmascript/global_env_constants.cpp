@@ -448,6 +448,7 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::UNICODE_INDEX, factory->NewFromASCII("unicode"));
     SetConstant(ConstantIndex::ZERO_INDEX, factory->NewFromASCII("0"));
     SetConstant(ConstantIndex::VALUES_INDEX, factory->NewFromASCII("values"));
+    SetConstant(ConstantIndex::ADD_INDEX, factory->NewFromASCII("add"));
     SetConstant(ConstantIndex::AMBIGUOUS_INDEX, factory->NewFromASCII("ambiguous"));
     SetConstant(ConstantIndex::MODULE_INDEX, factory->NewFromASCII("module"));
     SetConstant(ConstantIndex::STAR_INDEX, factory->NewFromASCII("*"));

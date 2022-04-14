@@ -321,7 +321,7 @@ HWTEST_F_L0(JSProxyTest, GetPrototypeOf)
     EXPECT_TRUE(targetHandle->IsECMAObject());
     JSObject::SetPrototype(thread, JSHandle<JSObject>(targetHandle), proto);
     EXPECT_TRUE(
-        JSTaggedValue::SameValue(JSHandle<JSObject>(targetHandle)->GetPrototype(thread), proto.GetTaggedValue()));
+        JSTaggedValue::SameValue(JSTaggedValue::GetPrototype(thread, targetHandle), proto.GetTaggedValue()));
 
     JSHandle<JSTaggedValue> handlerHandle(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass), dynclass));
     EXPECT_TRUE(handlerHandle->IsECMAObject());
@@ -366,7 +366,7 @@ HWTEST_F_L0(JSProxyTest, SetPrototypeOf)
 
     JSProxy::SetPrototype(thread, proxyHandle, proto);
     EXPECT_TRUE(
-        JSTaggedValue::SameValue(JSHandle<JSObject>(targetHandle)->GetPrototype(thread), proto.GetTaggedValue()));
+        JSTaggedValue::SameValue(JSTaggedValue::GetPrototype(thread, targetHandle), proto.GetTaggedValue()));
 
     // 2. handler has "SetPrototypeOf"
     EcmaVM *vm = thread->GetEcmaVM();

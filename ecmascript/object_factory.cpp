@@ -83,7 +83,7 @@
 #include "ecmascript/module/js_module_namespace.h"
 #include "ecmascript/module/js_module_source_text.h"
 #include "ecmascript/record.h"
-#include "ecmascript/sharedMemoryManaged/sharedmemorymanager.h"
+#include "ecmascript/shared_mm/shared_mm.h"
 #include "ecmascript/symbol_table.h"
 #include "ecmascript/tagged_tree-inl.h"
 #include "ecmascript/template_map.h"
@@ -2114,9 +2114,63 @@ JSHandle<JSHClass> ObjectFactory::CreateObjectClass(const JSHandle<TaggedArray> 
     return objClass;
 }
 
-JSHandle<JSObject> ObjectFactory::NewJSObjectByClass(const JSHandle<TaggedArray> &properties, size_t length)
+JSHandle<JSHClass> ObjectFactory::SetLayoutInObjHClass(const JSHandle<TaggedArray> &properties, size_t length,
+                                                       const JSHandle<JSHClass> &objClass)
 {
-    JSHandle<JSHClass> dynclass = CreateObjectClass(properties, length);
+    JSMutableHandle<JSTaggedValue> key(thread_, JSTaggedValue::Undefined());
+    JSHandle<JSHClass> newObjHclass(objClass);
+
+    for (size_t fieldOffset = 0; fieldOffset < length; fieldOffset++) {
+        key.Update(properties->Get(fieldOffset * 2)); // 2 : pair of key and value
+        ASSERT_PRINT(JSTaggedValue::IsPropertyKey(key), "Key is not a property key");
+        PropertyAttributes attributes = PropertyAttributes::Default();
+        if (properties->Get(fieldOffset * 2 + 1).IsAccessor()) {  // 2: Meaning to double
+            attributes.SetIsAccessor(true);
+        }
+        attributes.SetIsInlinedProps(true);
+        attributes.SetRepresentation(Representation::MIXED);
+        attributes.SetOffset(fieldOffset);
+        newObjHclass = JSHClass::SetPropertyOfObjHClass(thread_, newObjHclass, key, attributes);
+    }
+    return newObjHclass;
+}
+
+JSHandle<JSHClass> ObjectFactory::GetObjectLiteralHClass(const JSHandle<TaggedArray> &properties, size_t length)
+{
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+    JSHandle<JSTaggedValue> proto = env->GetObjectFunctionPrototype();
+
+    // 64 : If object literal gets too many properties, create hclass directly.
+    const int HCLASS_CACHE_SIZE = 64;
+    if (length >= HCLASS_CACHE_SIZE) {
+        return CreateObjectClass(properties, length);
+    }
+    JSHandle<JSTaggedValue> maybeCache = env->GetObjectLiteralHClassCache();
+    ASSERT(length > 0);
+    if (maybeCache->IsHole()) {
+        JSHandle<TaggedArray> cacheArr = NewTaggedArray(HCLASS_CACHE_SIZE);
+        env->SetObjectLiteralHClassCache(thread_, cacheArr.GetTaggedValue());
+    }
+    JSHandle<JSTaggedValue> hclassCache = env->GetObjectLiteralHClassCache();
+    JSHandle<TaggedArray> hclassCacheArr = JSHandle<TaggedArray>::Cast(hclassCache);
+    JSTaggedValue maybeHClass = hclassCacheArr->Get(length);
+    if (maybeHClass.IsHole()) {
+        JSHandle<JSHClass> objHClass = NewEcmaDynClass(JSObject::SIZE, JSType::JS_OBJECT, length);
+        objHClass->SetPrototype(thread_, proto.GetTaggedValue());
+        {
+            objHClass->SetNumberOfProps(0);
+            objHClass->SetExtensible(true);
+            objHClass->SetIsLiteral(true);
+        }
+        hclassCacheArr->Set(thread_, length, objHClass);
+        return SetLayoutInObjHClass(properties, length, objHClass);
+    }
+    return SetLayoutInObjHClass(properties, length, JSHandle<JSHClass>(thread_, maybeHClass));
+}
+
+JSHandle<JSObject> ObjectFactory::GetObjectLiteralByHClass(const JSHandle<TaggedArray> &properties, size_t length)
+{
+    JSHandle<JSHClass> dynclass = GetObjectLiteralHClass(properties, length);
     JSHandle<JSObject> obj = NewJSObject(dynclass);
     return obj;
 }

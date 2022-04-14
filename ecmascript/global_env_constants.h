@@ -320,6 +320,7 @@ class JSThread;
     V(JSTaggedValue, FallbackString, FALLBACK_INDEX, fallback)                                                        \
     V(JSTaggedValue, DateTimeFieldString, DATETIMEFIELD_INDEX, datetimefield)                                         \
     V(JSTaggedValue, NoneString, NONE_INDEX, none)                                                                    \
+    V(JSTaggedValue, AddString, ADD_INDEX, none)                                                                      \
     /* for regexp. */                                                                                                 \
     V(JSTaggedValue, ExecString, EXEC_INDEX, exec)                                                                    \
     V(JSTaggedValue, LastIndexString, LAST_INDEX_INDEX, lastIndex)                                                    \
@@ -375,6 +376,9 @@ public:
 
     void Init(JSThread *thread, JSHClass *dynClassClass);
 
+    void InitRootsClass(JSThread *thread, JSHClass *dynClassClass);
+    void InitGlobalConstantSpecial(JSThread *thread);
+
     void InitGlobalConstant(JSThread *thread);
 
     void InitGlobalUndefined();
@@ -407,9 +411,6 @@ public:
         JSTaggedValue::TaggedTypeSize() * static_cast<size_t>(ConstantIndex::CONSTATNT_COUNT);
 
 private:
-    void InitRootsClass(JSThread *thread, JSHClass *dynClassClass);
-    void InitGlobalConstantSpecial(JSThread *thread);
-
     JSTaggedValue constants_[static_cast<int>(ConstantIndex::CONSTATNT_COUNT)];  // NOLINT(modernize-avoid-c-arrays)
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(GlobalEnvConstants), GlobalEnvConstants::SizeArch32, GlobalEnvConstants::SizeArch64);
