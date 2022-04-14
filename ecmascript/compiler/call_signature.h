@@ -35,7 +35,6 @@ enum class ArgumentsOrder {
 class CallSignature {
 public:
     using TargetConstructor = std::function<void *(void *)>;
-    using VariableArgsBits = panda::BitField<bool, 0, 1>;  // 1 variable argument
     enum class TargetKind : uint8_t {
         COMMON_STUB = 0,
         RUNTIME_STUB,
@@ -54,10 +53,20 @@ public:
         GHCCallConv = 1,
         WebKitJSCallConv = 2,
     };
+    static constexpr uint32_t TARGET_KIND_BIT_LENGTH = 3;
+    static constexpr uint32_t CALL_CONV_BIT_LENGTH = 2;
+    using TargetKindBit = panda::BitField<TargetKind, 0, TARGET_KIND_BIT_LENGTH>;
+    using CallConvBit = TargetKindBit::NextField<CallConv, CALL_CONV_BIT_LENGTH>;
+    using VariableArgsBit = CallConvBit::NextField<bool, 1>;
+    using TailCallBit = VariableArgsBit::NextField<bool, 1>;
 
     explicit CallSignature(std::string name, int flags, int paramCounter, ArgumentsOrder order, VariableType returnType)
-        : name_(name), flags_(flags), paramCounter_(paramCounter), order_(order), returnType_(returnType)
+        : name_(name), paramCounter_(paramCounter), order_(order), returnType_(returnType)
     {
+        SetTargetKind(TargetKind::COMMON_STUB);
+        SetCallConv(CallSignature::CallConv::CCallConv);
+        SetTailCall(false);
+        SetVariableArgs(flags);
     }
 
     CallSignature() = default;
@@ -67,10 +76,8 @@ public:
     CallSignature(CallSignature const &other)
     {
         name_ = other.name_;
-        flags_ = other.flags_;
         paramCounter_ = other.paramCounter_;
         order_ = other.order_;
-        kind_ = other.kind_;
         id_ = other.id_;
         returnType_ = other.returnType_;
         constructor_ = other.constructor_;
@@ -80,15 +87,14 @@ public:
                 (*paramsType_)[i] = other.GetParametersType()[i];
             }
         }
+        kind_ = other.kind_;
     }
 
     CallSignature &operator=(CallSignature const &other)
     {
         name_ = other.name_;
-        flags_ = other.flags_;
         paramCounter_ = other.paramCounter_;
         order_ = other.order_;
-        kind_ = other.kind_;
         id_ = other.id_;
         returnType_ = other.returnType_;
         constructor_ = other.constructor_;
@@ -98,27 +104,30 @@ public:
                 (*paramsType_)[i] = other.GetParametersType()[i];
             }
         }
+        kind_ = other.kind_;
         return *this;
     }
 
     bool IsCommonStub() const
     {
-        return (kind_ == TargetKind::COMMON_STUB);
+        return (GetTargetKind() == TargetKind::COMMON_STUB);
     }
 
     bool IsAsmStub() const
     {
-        return (kind_ == TargetKind::ASM_STUB);
+        return (GetTargetKind() == TargetKind::ASM_STUB);
     }
 
     bool IsStub() const
     {
-        return TargetKind::STUB_BEGIN <= kind_ && kind_ < TargetKind::STUB_END;
+        TargetKind targetKind = GetTargetKind();
+        return TargetKind::STUB_BEGIN <= targetKind && targetKind < TargetKind::STUB_END;
     }
 
     bool IsBCHandler() const
     {
-        return TargetKind::BCHANDLER_BEGIN <= kind_ && kind_ < TargetKind::BCHANDLER_END;
+        TargetKind targetKind = GetTargetKind();
+        return TargetKind::BCHANDLER_BEGIN <= targetKind && targetKind < TargetKind::BCHANDLER_END;
     }
 
     void SetParameters(VariableType *paramsType)
@@ -155,45 +164,44 @@ public:
         return order_;
     }
 
-    int GetFlags() const
-    {
-        return flags_;
-    }
-
-    void SetFlags(int flag)
-    {
-        flags_ = flag;
-    }
-
     bool GetVariableArgs() const
     {
-        return VariableArgsBits::Decode(flags_);
+        return VariableArgsBit::Decode(kind_);
     }
 
     void SetVariableArgs(bool variable)
     {
-        uint64_t newVal = VariableArgsBits::Update(flags_, variable);
-        SetFlags(newVal);
+        VariableArgsBit::Set<uint64_t>(variable, &kind_);
+    }
+
+    void SetTailCall(bool tailCall)
+    {
+        TailCallBit::Set<uint64_t>(tailCall, &kind_);
+    }
+
+    bool GetTailCall() const
+    {
+        return TailCallBit::Decode(kind_);
     }
 
     TargetKind GetTargetKind() const
     {
-        return kind_;
+        return TargetKindBit::Decode(kind_);
     }
 
     void SetTargetKind(TargetKind kind)
     {
-        kind_ = kind;
+        TargetKindBit::Set<uint64_t>(kind, &kind_);
     }
 
     CallConv GetCallConv() const
     {
-        return callConv_;
+        return CallConvBit::Decode(kind_);
     }
 
     void SetCallConv(CallConv cc)
     {
-        callConv_ = cc;
+        CallConvBit::Set<uint64_t>(cc, &kind_);
     }
 
     const std::string &GetName()
@@ -228,17 +236,13 @@ public:
 
 private:
     std::string name_;
-    TargetKind kind_ {TargetKind::COMMON_STUB};
-    int flags_ {0};
     int paramCounter_ {0};
     int id_ {-1};
     ArgumentsOrder order_ {ArgumentsOrder::DEFAULT_ORDER};
-
     VariableType returnType_ {VariableType::VOID()};
     std::unique_ptr<std::vector<VariableType>> paramsType_ {nullptr};
-
     TargetConstructor constructor_ {nullptr};
-    CallConv callConv_ = CallSignature::CallConv::CCallConv;
+    uint64_t kind_ {0};
 };
 
 #define EXPLICIT_CALL_SIGNATURE_LIST(V)     \
@@ -272,6 +276,7 @@ private:
     V(HandleOverflow)                       \
     V(AsmIntCallRuntime)                    \
     V(OptimizedCallRuntime)                 \
+    V(OptimizedCallRuntimeWithArgv)         \
     V(OptimizedCallOptimized)               \
     V(PushCallArgs0AndDispatch)             \
     V(PushCallArgs0AndDispatchNative)       \
@@ -306,6 +311,9 @@ private:
     V(CallIRangeDyn)                        \
     V(JSCall)                               \
     V(JSCallWithArgV)                       \
+    V(CreateArrayFromList)                  \
+    V(JSObjectGetMethod)                    \
+    V(JsProxyCallInternal)                  \
     TEST_STUB_SIGNATRUE_LIST(V)
 
 #define DECL_CALL_SIGNATURE(name)                                  \

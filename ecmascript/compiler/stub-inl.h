@@ -388,6 +388,15 @@ inline GateRef Stub::CallRuntime(GateRef glue, int index, std::initializer_list<
     return result;
 }
 
+inline GateRef Stub::CallRuntime(GateRef glue, int index, GateRef argc, GateRef argv)
+{
+    auto depend = env_.GetCurrentLabel()->GetDepend();
+    GateRef target = env_.GetBuilder().Int64(index);
+    GateRef result = env_.GetBuilder().RuntimeCall(glue, target, depend, argc, argv);
+    env_.GetCurrentLabel()->SetDepend(result);
+    return result;
+}
+
 // memory
 inline GateRef Stub::Load(VariableType type, GateRef base, GateRef offset)
 {
@@ -2115,6 +2124,24 @@ inline GateRef Stub::GetExpectedNumOfArgs(GateRef method)
     return TruncInt64ToInt32(Int64And(
         UInt64LSR(callfield, Int32(JSMethod::NumArgsBits::START_BIT)),
         Int64((1LU << JSMethod::NumArgsBits::SIZE) - 1)));
+}
+
+inline GateRef Stub::GetMethodFromJSProxy(GateRef proxy)
+{
+    GateRef offset = IntPtr(JSProxy::METHOD_OFFSET);
+    return Load(VariableType::JS_ANY(), proxy, offset);
+}
+
+inline GateRef Stub::GetHandlerFromJSProxy(GateRef proxy)
+{
+    GateRef offset = IntPtr(JSProxy::HANDLER_OFFSET);
+    return Load(VariableType::JS_ANY(), proxy, offset);
+}
+
+inline GateRef Stub::GetTargetFromJSProxy(GateRef proxy)
+{
+    GateRef offset = IntPtr(JSProxy::TARGET_OFFSET);
+    return Load(VariableType::JS_ANY(), proxy, offset);
 }
 } //  namespace panda::ecmascript::kungfu
 #endif // ECMASCRIPT_COMPILER_STUB_INL_H

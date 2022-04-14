@@ -21,6 +21,9 @@
 .global OptimizedCallRuntime
 .type OptimizedCallRuntime, %function
 
+.global OptimizedCallRuntimeWithArgv
+.type OptimizedCallRuntimeWithArgv, %function
+
 .global AsmIntCallRuntime
 .type AsmIntCallRuntime, %function
 
@@ -350,7 +353,7 @@ CallNativeTrampoline:
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // JSTaggedType (*)(uintptr_t argGlue, uint64_t argc, JSTaggedType argv[])
 // Input:
-// %x0 - glue
+// %rax - glue
 // stack layout:
 // sp + N*8 argvN
 // ........
@@ -360,7 +363,13 @@ CallNativeTrampoline:
 // sp:      runtime_id
 // construct Leave Frame:
 //   +--------------------------+
-//   |       argv[]             |
+//   |       argv[argc-1]       |
+//   +--------------------------+
+//   |       ..........         |
+//   +--------------------------+
+//   |       argv[1]            |
+//   +--------------------------+
+//   |       argv[0]            |
 //   +--------------------------+ ---
 //   |       argc               |   ^
 //   |--------------------------|  Fixed
@@ -647,8 +656,17 @@ JSCall:
     pop     %rbp
     ret
 .LJSProxy:
-    int3
+    mov     %rsp, %rcx
+    addq    $8,  %rcx
+    mov     (%rcx), %rsi        // get origin argc
+    mov     %r8, %rdx           // calltarget
+    addq    $8,  %rcx           // argv
+
+    movq    $JSPROXY_CALL_INTERNAL_INDEX, %r9
+    movq    ASM_GLUE_COMSTUB_ENTRY_OFFSET(%rdi, %r9, 8), %r8
+    jmp     *%r8
     ret
+
 // ==================================================================================
 // void PushCallArgsxAndDispatch(uintptr_t glue, uint64_t function,
 //     uintptr_t sp, uintptr_t method, uint64_t callField, ...);
@@ -1155,3 +1173,63 @@ ResumeRspAndDispatch:
 ResumeRspAndReturn:
     movq    %rbp, %rsp
     retq
+
+
+// uint64_t OptimizedCallRuntimeWithArgv(uintptr_t glue, uint64_t runtime_id, uint64_t argc, uintptr_t argv);
+// cc calling convention call runtime_id's runtion function(c-abi)
+// JSTaggedType (*)(uintptr_t argGlue, uint64_t argc, JSTaggedType argv[])
+// Input:
+// %rdi - glue
+// %rsi - runtime_id
+// %edx - argc
+// %rcx - argv
+// stack layout:
+//   +--------------------------+
+//   |       return addr        |
+//   +--------------------------+
+
+// %r8  - argV
+// %r9  - codeAddr
+
+// Output:
+// construct Leave Frame:
+//   +--------------------------+
+//   |       returnAddr         |
+//   +--------------------------+
+//   |       argv[]             |
+//   +--------------------------+ ---
+//   |       argc               |   ^
+//   |--------------------------|  Fixed
+//   |       RuntimeId          | OptimizedLeaveFrame
+//   |--------------------------|   |
+//   |       returnAddr         |   |
+//   |--------------------------|   |
+//   |       callsiteFp         |   |
+//   |--------------------------|   |
+//   |       frameType          |   v
+//   +--------------------------+ ---
+
+OptimizedCallRuntimeWithArgv:
+    movq %rsp, %r8
+    movq (%rsp), %r9
+    pushq  %rcx  // argv[]
+    pushq  %rdx  // argc
+    pushq  %rsi  // RuntimeId
+    pushq  %r9   // returnAddr
+
+    // construct leave frame
+    pushq   %rbp
+    movq    %rsp, %rbp     // set frame pointer
+    movq    %rbp, ASM_GLUE_LEAVE_FRAME_OFFSET(%rdi)   // save to thread->leaveFrame_
+    pushq   $PARMERA_INDIRECT_LEAVE_FRAME
+
+    movq    ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET(%rdi, %rsi, 8), %r9
+    movq    %rdx, %rsi // argc
+    movq    %rcx, %rdx // argv
+    pushq   %r8
+    call    *%r9
+    popq    %r8
+    addq    $8, %rsp // skip type
+    popq    %rbp
+    movq    %r8, %rsp
+    ret

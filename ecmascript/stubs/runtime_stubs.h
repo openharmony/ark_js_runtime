@@ -32,6 +32,8 @@ class JSthread;
 class JSFunction;
 class ObjectFactory;
 extern "C" JSTaggedType OptimizedCallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
+extern "C" JSTaggedType OptimizedCallRuntimeWithArgv(uintptr_t glue, uint64_t runtime_id,
+    uint64_t argc, uintptr_t argv);
 extern "C" JSTaggedType AsmIntCallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
 extern "C" void JSCall(uintptr_t glue, uint32_t argc, JSTaggedType callTarget,
                        JSTaggedType newTarget, JSTaggedType thisObj, ...);
@@ -85,6 +87,7 @@ extern "C" void PushCallIThisRangeAndDispatchSlowPath(uintptr_t glue, uintptr_t 
 extern "C" void ResumeRspAndDispatch(uintptr_t glue, uintptr_t pc, uintptr_t sp, uintptr_t constantPool,
     uint64_t profileTypeInfo, uint64_t acc, uint32_t hotnessCounter, size_t jumpSize);
 extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
+
 #define RUNTIME_STUB_WITHOUT_GC_LIST(V)       \
     V(DebugPrint, 1)                          \
     V(FatalPrint, 1)                          \
@@ -92,9 +95,12 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(MarkingBarrier, 5)                      \
     V(DoubleToInt, 1)                         \
     V(OptimizedCallRuntime, 3)                \
+    V(OptimizedCallRuntimeWithArgv, 4)        \
     V(AsmIntCallRuntime, 3)                   \
     V(JSCall, 5)                              \
     V(JSCallWithArgV, 3)                      \
+    V(JSObjectGetMethod, 3)                   \
+    V(CreateArrayFromList, 3)                 \
     V(PushCallArgs0AndDispatch, 2)            \
     V(PushCallArgs0AndDispatchNative, 2)      \
     V(PushCallArgs0AndDispatchSlowPath, 2)    \
@@ -115,7 +121,6 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(PushCallIThisRangeAndDispatchSlowPath, 2)   \
     V(ResumeRspAndDispatch, 8)                    \
     V(ResumeRspAndReturn, 2)
-
 
 #define RUNTIME_STUB_WITH_GC_LIST(V)         \
     V(AddElementInternal, 5)                 \
@@ -284,6 +289,8 @@ public:
     static void FatalPrint(int fmtMessageId, ...);
     static void MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintptr_t slotAddr,
         Region *objectRegion, TaggedObject *value, Region *valueRegion);
+    static JSTaggedType JSObjectGetMethod([[maybe_unused]]uintptr_t argGlue, JSTaggedValue handler, JSTaggedValue key);
+    static JSTaggedType CreateArrayFromList([[maybe_unused]]uintptr_t argGlue, int32_t argc, JSTaggedValue *argv);
     static void InsertOldToNewRememberedSet([[maybe_unused]]uintptr_t argGlue, Region* region, uintptr_t addr);
     static int32_t DoubleToInt(double x);
 
