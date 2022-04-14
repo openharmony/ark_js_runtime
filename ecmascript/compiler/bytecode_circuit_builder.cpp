@@ -2140,7 +2140,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                         auto tsLoader = vm_->GetTSLoader();
                         JSHandle<ConstantPool> newConstPool(vm_->GetJSThread(), constantPool_.GetTaggedValue());
                         auto string = newConstPool->GetObjectFromCache(std::get<StringId>(input).GetId());
-                        uint64_t index = tsLoader->AddConstString(string);
+                        size_t index = tsLoader->AddConstString(string);
                         inList[i + length] = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I32, index,
                                                               {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
                                                               GateType::C_VALUE);
