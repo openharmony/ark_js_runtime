@@ -54,7 +54,6 @@ public:
     ecmascript::EcmaHandleScope *scope {nullptr};
 };
 
-#if !defined(NDEBUG)
 static JSObject *JSObjectTestCreate(JSThread *thread)
 {
     [[maybe_unused]] ecmascript::EcmaHandleScope scope(thread);
@@ -65,8 +64,7 @@ static JSObject *JSObjectTestCreate(JSThread *thread)
         ecmaVM->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>(jsFunc), jsFunc);
     return *newObj;
 }
-#endif
-#if !defined(NDEBUG)
+
 static TaggedArray *LargeArrayTestCreate(JSThread *thread)
 {
     [[maybe_unused]] ecmascript::EcmaHandleScope scope(thread);
@@ -74,11 +72,10 @@ static TaggedArray *LargeArrayTestCreate(JSThread *thread)
     JSHandle<TaggedArray> array = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(SIZE);
     return *array;
 }
-#endif
+
 
 HWTEST_F_L0(HugeObjectTest, LargeArrayKeep)
 {
-#if !defined(NDEBUG)
     TaggedArray *array = LargeArrayTestCreate(thread);
     EXPECT_TRUE(array != nullptr);
     JSHandle<TaggedArray> arrayHandle(thread, array);
@@ -90,39 +87,35 @@ HWTEST_F_L0(HugeObjectTest, LargeArrayKeep)
     ecmaVm->CollectGarbage(TriggerGCType::OLD_GC);  // Trigger GC.
     EXPECT_EQ(*newObj, array->Get(0).GetTaggedObject());
     EXPECT_EQ(*arrayHandle, reinterpret_cast<TaggedObject *>(array));
-#endif
 }
 
 HWTEST_F_L0(HugeObjectTest, MultipleArrays)
 {
-#if !defined(NDEBUG)
     auto ecmaVm = thread->GetEcmaVM();
     auto heap = ecmaVm->GetHeap();
-    Region *firstPage = nullptr;
-    Region *secondPage = nullptr;
-    Region *thirdPage = nullptr;
-    JSHandle<TaggedArray> array1(thread, LargeArrayTestCreate(thread));
-    firstPage = Region::ObjectAddressToRange(*array1);
     {
-        DISALLOW_GARBAGE_COLLECTION;
-        [[maybe_unused]] TaggedArray *array2 = LargeArrayTestCreate(thread);
-        secondPage = Region::ObjectAddressToRange(array2);
+        [[maybe_unused]] ecmascript::EcmaHandleScope scope(thread);
+        for (int i = 0; i <= 20; i++) {
+            JSHandle<TaggedArray> array1(thread, LargeArrayTestCreate(thread));
+        }
     }
-    JSHandle<TaggedArray> array3(thread, LargeArrayTestCreate(thread));
-    thirdPage = Region::ObjectAddressToRange(*array3);
 
-    EXPECT_EQ(firstPage->GetNext(), secondPage);
-    EXPECT_EQ(secondPage->GetNext(), thirdPage);
+    {
+        [[maybe_unused]] ecmascript::EcmaHandleScope scope(thread);
+        for (int i = 0; i <= 20; i++) {
+            JSHandle<TaggedArray> array2(thread, LargeArrayTestCreate(thread));
+        }
+    }
 
-    const_cast<Heap *>(thread->GetEcmaVM()->GetHeap())->SetMarkType(MarkType::FULL_MARK);
-    ecmaVm->CollectGarbage(TriggerGCType::OLD_GC);  // Trigger GC.
-
-    EXPECT_EQ(firstPage->GetNext(), thirdPage);
-
+    {
+        [[maybe_unused]] ecmascript::EcmaHandleScope scope(thread);
+        for (int i = 0; i <= 20; i++) {
+            JSHandle<TaggedArray> array2(thread, LargeArrayTestCreate(thread));
+        }
+    }
     size_t failCount = 0;
     VerifyObjectVisitor objVerifier(heap, &failCount);
     heap->GetHugeObjectSpace()->IterateOverObjects(objVerifier);  // newspace reference the old space
     EXPECT_TRUE(failCount == 0);
-#endif
 }
 }  // namespace panda::test
