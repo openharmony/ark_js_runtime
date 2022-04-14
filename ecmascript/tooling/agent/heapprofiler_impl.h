@@ -39,7 +39,7 @@ public:
     DispatchResponse StartTrackingHeapObjects(std::unique_ptr<StartTrackingHeapObjectsParams> params);
     DispatchResponse StopSampling(std::unique_ptr<SamplingHeapProfile> *profile);
     DispatchResponse StopTrackingHeapObjects(std::unique_ptr<StopTrackingHeapObjectsParams> params);
-    //TakeHeapSnapshot和StopTrackingHeapObjects接口入参一样，目前使用同一个，后续有变动再分开
+    // TakeHeapSnapshot和StopTrackingHeapObjects接口入参一样，目前使用同一个，后续有变动再分开
     DispatchResponse TakeHeapSnapshot(std::unique_ptr<StopTrackingHeapObjectsParams> params);
 
     class DispatcherImpl final : public DispatcherBase {

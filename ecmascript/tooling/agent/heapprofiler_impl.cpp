@@ -109,7 +109,7 @@ void HeapProfilerImpl::DispatcherImpl::GetObjectByHeapObjectId(const DispatchReq
 
     std::unique_ptr<RemoteObject> remoteObjectResult;
     DispatchResponse response = heapprofiler_->GetObjectByHeapObjectId(std::move(params), &remoteObjectResult);
-    std::unique_ptr<GetObjectByHeapObjectIdReturns> result = 
+    std::unique_ptr<GetObjectByHeapObjectIdReturns> result =
         std::make_unique<GetObjectByHeapObjectIdReturns>(std::move(remoteObjectResult));
     SendResponse(request, response, std::move(result));
 }
@@ -118,7 +118,7 @@ void HeapProfilerImpl::DispatcherImpl::GetSamplingProfile(const DispatchRequest 
 {
     std::unique_ptr<SamplingHeapProfile> profile;
     DispatchResponse response = heapprofiler_->GetSamplingProfile(&profile);
-    //GetSamplingProfile与StopSampling返回值类型一样，后续如果有变更再区分
+    // GetSamplingProfile与StopSampling返回值类型一样，后续如果有变更再区分
     std::unique_ptr<StopSamplingReturns> result = std::make_unique<StopSamplingReturns>(std::move(profile));
     SendResponse(request, response, std::move(result));
 }
@@ -206,7 +206,7 @@ DispatchResponse HeapProfilerImpl::Disable()
 }
 
 DispatchResponse HeapProfilerImpl::GetHeapObjectId([[maybe_unused]] std::unique_ptr<GetHeapObjectIdParams> params,
-                                                    HeapSnapshotObjectId *objectId)
+    HeapSnapshotObjectId *objectId)
 {
     ASSERT(objectId != nullptr);
     *objectId = 0;
