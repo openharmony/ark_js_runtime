@@ -297,6 +297,8 @@ private:
     NO_MOVE_SEMANTIC(GetObjectByHeapObjectIdReturns);
 
     std::unique_ptr<RemoteObject> remoteObjectResult_ {};
+};
+
 class StopReturns : public PtBaseReturns {
 public:
     explicit StopReturns(std::unique_ptr<Profile> profile) : profile_(std::move(profile)) {}

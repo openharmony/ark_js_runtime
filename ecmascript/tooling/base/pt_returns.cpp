@@ -267,6 +267,10 @@ Local<ObjectRef> GetObjectByHeapObjectIdReturns::ToObject(const EcmaVM *ecmaVm)
         result->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "result")),
             Local<JSValueRef>(remoteObjectResult));
     }
+
+    return result;
+}
+
 Local<ObjectRef> StopReturns::ToObject(const EcmaVM *ecmaVm)
 {
     Local<ObjectRef> result = NewObject(ecmaVm);

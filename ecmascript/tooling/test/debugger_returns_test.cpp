@@ -276,7 +276,7 @@ HWTEST_F_L0(DebuggerReturnsTest, GetHeapObjectIdReturnsToObjectTest)
 HWTEST_F_L0(DebuggerReturnsTest, GetObjectByHeapObjectIdReturnsToObjectTest)
 {
     std::unique_ptr<RemoteObject> remoteObjectResult = std::make_unique<RemoteObject>();
-    std::unique_ptr<GetObjectByHeapObjectIdReturns> getObjectByHeapObjectIdReturns = 
+    std::unique_ptr<GetObjectByHeapObjectIdReturns> getObjectByHeapObjectIdReturns =
                                     std::make_unique<GetObjectByHeapObjectIdReturns>(std::move(remoteObjectResult));
     ASSERT_NE(getObjectByHeapObjectIdReturns, nullptr);
 
@@ -287,6 +287,8 @@ HWTEST_F_L0(DebuggerReturnsTest, GetObjectByHeapObjectIdReturnsToObjectTest)
     Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
     ASSERT_EQ(std::move(remoteObjectResult), nullptr);
+}
+
 HWTEST_F_L0(DebuggerReturnsTest, StopReturnsToObjectTest)
 {
     std::unique_ptr<Profile> profile = std::make_unique<Profile>();
