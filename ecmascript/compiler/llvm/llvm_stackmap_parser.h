@@ -38,9 +38,9 @@ struct Header {
     uint16_t Reserved1; // Reserved (expected to be 0)
     void Print() const
     {
-        LOG_ECMA(DEBUG) << "----- head ----";
-        LOG_ECMA(DEBUG) << "   version:" << static_cast<int>(stackmapversion);
-        LOG_ECMA(DEBUG) << "+++++ head ++++";
+        COMPILER_LOG(DEBUG) << "----- head ----";
+        COMPILER_LOG(DEBUG) << "   version:" << static_cast<int>(stackmapversion);
+        COMPILER_LOG(DEBUG) << "+++++ head ++++";
     }
 };
 
@@ -51,9 +51,9 @@ struct StkSizeRecordTy {
     uint64_t recordCount;
     void Print() const
     {
-        LOG_ECMA(DEBUG) << "               functionAddress:0x" << std::hex << functionAddress;
-        LOG_ECMA(DEBUG) << "               stackSize:0x" << std::hex << stackSize;
-        LOG_ECMA(DEBUG) << "               recordCount:" << std::hex << recordCount;
+        COMPILER_LOG(DEBUG) << "               functionAddress:0x" << std::hex << functionAddress;
+        COMPILER_LOG(DEBUG) << "               stackSize:0x" << std::hex << stackSize;
+        COMPILER_LOG(DEBUG) << "               recordCount:" << std::hex << recordCount;
     }
 };
 #pragma pack()
@@ -62,7 +62,7 @@ struct ConstantsTy {
     uintptr_t LargeConstant;
     void Print() const
     {
-        LOG_ECMA(DEBUG) << "               LargeConstant:0x" << std::hex << LargeConstant;
+        COMPILER_LOG(DEBUG) << "               LargeConstant:0x" << std::hex << LargeConstant;
     }
 };
 
@@ -73,10 +73,10 @@ struct StkMapRecordHeadTy {
     uint16_t NumLocations;
     void Print() const
     {
-        LOG_ECMA(DEBUG) << "               PatchPointID:0x" << std::hex << PatchPointID;
-        LOG_ECMA(DEBUG) << "               instructionOffset:0x" << std::hex << InstructionOffset;
-        LOG_ECMA(DEBUG) << "               Reserved:0x" << std::hex << Reserved;
-        LOG_ECMA(DEBUG) << "               NumLocations:0x" << std::hex << NumLocations;
+        COMPILER_LOG(DEBUG) << "               PatchPointID:0x" << std::hex << PatchPointID;
+        COMPILER_LOG(DEBUG) << "               instructionOffset:0x" << std::hex << InstructionOffset;
+        COMPILER_LOG(DEBUG) << "               Reserved:0x" << std::hex << Reserved;
+        COMPILER_LOG(DEBUG) << "               NumLocations:0x" << std::hex << NumLocations;
     }
 };
 
@@ -99,10 +99,10 @@ struct  LocationTy {
 
     void Print() const
     {
-        LOG_ECMA(DEBUG)  << TypeToString(location);
-        LOG_ECMA(DEBUG) << ", size:" << std::dec << LocationSize;
-        LOG_ECMA(DEBUG) << "\tDwarfRegNum:" << DwarfRegNum;
-        LOG_ECMA(DEBUG) << "\t OffsetOrSmallConstant:" << OffsetOrSmallConstant;
+        COMPILER_LOG(DEBUG)  << TypeToString(location);
+        COMPILER_LOG(DEBUG) << ", size:" << std::dec << LocationSize;
+        COMPILER_LOG(DEBUG) << "\tDwarfRegNum:" << DwarfRegNum;
+        COMPILER_LOG(DEBUG) << "\t OffsetOrSmallConstant:" << OffsetOrSmallConstant;
     }
 };
 
@@ -112,9 +112,9 @@ struct LiveOutsTy {
     uint8_t SizeinBytes;
     void Print() const
     {
-        LOG_ECMA(DEBUG) << "                  Dwarf RegNum:" << DwarfRegNum;
-        LOG_ECMA(DEBUG) << "                  Reserved:" << Reserved;
-        LOG_ECMA(DEBUG) << "                  SizeinBytes:" << SizeinBytes;
+        COMPILER_LOG(DEBUG) << "                  Dwarf RegNum:" << DwarfRegNum;
+        COMPILER_LOG(DEBUG) << "                  Reserved:" << Reserved;
+        COMPILER_LOG(DEBUG) << "                  SizeinBytes:" << SizeinBytes;
     }
 };
 
@@ -127,12 +127,12 @@ struct StkMapRecordTy {
         head.Print();
         auto size = Locations.size();
         for (size_t i = 0; i < size; i++) {
-            LOG_ECMA(DEBUG) << "                   #" << std::dec << i << ":";
+            COMPILER_LOG(DEBUG) << "                   #" << std::dec << i << ":";
             Locations[i].Print();
         }
         size = LiveOuts.size();
         for (size_t i = 0; i < size; i++) {
-            LOG_ECMA(DEBUG) << "               liveOuts[" << i << "] info:";
+            COMPILER_LOG(DEBUG) << "               liveOuts[" << i << "] info:";
         }
     }
 };
@@ -170,15 +170,15 @@ struct LLVMStackMap {
     {
         head.Print();
         for (size_t i = 0; i < StkSizeRecords.size(); i++) {
-            LOG_ECMA(DEBUG) << "stkSizeRecord[" << i << "] info:";
+            COMPILER_LOG(DEBUG) << "stkSizeRecord[" << i << "] info:";
             StkSizeRecords[i].Print();
         }
         for (size_t i = 0; i < Constants.size(); i++) {
-            LOG_ECMA(DEBUG) << "constants[" << i << "] info:";
+            COMPILER_LOG(DEBUG) << "constants[" << i << "] info:";
             Constants[i].Print();
         }
         for (size_t i = 0; i < StkMapRecord.size(); i++) {
-            LOG_ECMA(DEBUG) << "StkMapRecord[" << i << "] info:";
+            COMPILER_LOG(DEBUG) << "StkMapRecord[" << i << "] info:";
             StkMapRecord[i].Print();
         }
     }
@@ -186,9 +186,9 @@ struct LLVMStackMap {
 
 class LLVMStackMapParser {
 public:
-    static LLVMStackMapParser& GetInstance()
+    static LLVMStackMapParser& GetInstance(bool enableLog = false)
     {
-        static LLVMStackMapParser instance;
+        static LLVMStackMapParser instance(enableLog);
         return instance;
     }
     bool PUBLIC_API CalculateStackMap(std::unique_ptr<uint8_t []> stackMapAddr);
@@ -196,18 +196,28 @@ public:
     uintptr_t hostCodeSectionAddr, uintptr_t deviceCodeSectionAddr);
     void PUBLIC_API Print() const
     {
-        llvmStackMap_.Print();
+        if (IsLogEnabled()) {
+            llvmStackMap_.Print();
+        }
     }
     const CallSiteInfo *GetCallSiteInfoByPc(uintptr_t funcAddr) const;
-    bool CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp, std::set<uintptr_t> &baseSet,
-                            ChunkMap<DerivedDataKey, uintptr_t> *data, [[maybe_unused]] bool isVerifying) const;
+    bool CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp,
+                            std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, uintptr_t> *data,
+                            [[maybe_unused]] bool isVerifying) const;
+
+    bool IsLogEnabled() const
+    {
+        return enableLog_;
+    }
+
 private:
-    LLVMStackMapParser()
+    explicit LLVMStackMapParser(bool enableLog)
     {
         stackMapAddr_ = nullptr;
         pc2CallSiteInfo_.clear();
         pid2CallSiteInfo_.clear();
         dataInfo_ = nullptr;
+        enableLog_ = enableLog;
     }
     ~LLVMStackMapParser()
     {
@@ -223,11 +233,13 @@ private:
     const CallSiteInfo* GetCallSiteInfoByPatchID(uint64_t patchPointId) const;
     void PrintCallSiteInfo(const CallSiteInfo *infos, OptimizedLeaveFrame *frame) const;
     void PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp) const;
+
     std::unique_ptr<uint8_t[]> stackMapAddr_;
     struct LLVMStackMap llvmStackMap_;
     std::unordered_map<uintptr_t, CallSiteInfo> pc2CallSiteInfo_;
     std::unordered_map<uint64_t, CallSiteInfo> pid2CallSiteInfo_;
     [[maybe_unused]] std::unique_ptr<DataInfo> dataInfo_;
+    bool enableLog_ {false};
 };
 } // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_LLVM_LLVMSTACKPARSE_H

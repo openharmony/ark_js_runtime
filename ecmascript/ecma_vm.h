@@ -218,7 +218,7 @@ public:
         return Runtime::GetOptions();
     }
 
-    const JSRuntimeOptions &GetJSOptions()
+    const JSRuntimeOptions &GetJSOptions() const
     {
         return options_;
     }

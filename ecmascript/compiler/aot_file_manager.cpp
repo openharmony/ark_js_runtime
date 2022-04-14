@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 #include "aot_file_manager.h"
-#include "compiler_macros.h"
 #include "llvm_ir_builder.h"
 
 namespace panda::ecmascript::kungfu {
@@ -50,8 +49,10 @@ void AotFileManager::CollectAOTCodeInfoOfStubs()
     aotInfo_.SetStackMapSize(assembler_.GetStackMapsSize());
     aotInfo_.SetCodeSize(assembler_.GetCodeSize());
     aotInfo_.SetCodePtr(reinterpret_cast<uintptr_t>(assembler_.GetCodeBuffer()));
+
 #ifndef NDEBUG
-    assembler_.Disassemble(addr2name);
+    const CompilerLog *log = GetLog();
+    assembler_.Disassemble(addr2name, *log);
 #endif
 }
 
@@ -67,7 +68,7 @@ void AotFileManager::CollectAOTCodeInfo()
         if (length == 0) {
             continue;
         }
-        std::cout << "CollectAOTCodeInfo " << tmp.c_str() << std::endl;
+        COMPILER_LOG(INFO) << "CollectAOTCodeInfo " << tmp.c_str();
         aotInfo_.SetAOTFuncOffset(tmp, funcEntry - codeBuff);
     }
 

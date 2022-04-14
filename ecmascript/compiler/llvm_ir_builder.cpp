@@ -21,7 +21,6 @@
 
 #include "ecmascript/compiler/bytecode_circuit_builder.h"
 #include "ecmascript/compiler/circuit.h"
-#include "ecmascript/compiler/compiler_macros.h"
 #include "ecmascript/compiler/call_signature.h"
 #include "ecmascript/compiler/common_stubs.h"
 #include "ecmascript/compiler/gate.h"
@@ -55,9 +54,9 @@
 namespace panda::ecmascript::kungfu {
 LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, const Circuit *circuit,
                              LLVMModule *module, LLVMValueRef function, const CompilationConfig *cfg,
-                             CallSignature::CallConv callConv)
+                             CallSignature::CallConv callConv, bool enableLog)
     : compCfg_(cfg), schedule_(schedule), circuit_(circuit), module_(module->GetModule()),
-      function_(function), llvmModule_(module), callConv_(callConv)
+      function_(function), llvmModule_(module), callConv_(callConv), enableLog_(enableLog)
 {
     builder_ = LLVMCreateBuilder();
     context_ = LLVMGetGlobalContext();
@@ -207,14 +206,12 @@ std::string LLVMIRBuilder::LLVMValueToString(LLVMValueRef val) const
 
 void LLVMIRBuilder::Build()
 {
-    COMPILER_LOG(INFO) << "LLVM IR Builder Create Id Map of Blocks...";
     for (size_t bbIdx = 0; bbIdx < schedule_->size(); bbIdx++) {
         for (size_t instIdx = (*schedule_)[bbIdx].size(); instIdx > 0; instIdx--) {
             GateId gateId = circuit_->GetId((*schedule_)[bbIdx][instIdx - 1]);
             instIdMapBbId_[gateId] = static_cast<int>(bbIdx);
         }
     }
-    COMPILER_LOG(INFO) << "LLVM IR Builder Visit Gate...";
 
     AssignHandleMap();
     for (size_t bbIdx = 0; bbIdx < (*schedule_).size(); bbIdx++) {
@@ -231,16 +228,18 @@ void LLVMIRBuilder::Build()
             GateRef gate = (*schedule_)[bbIdx][instIdx - 1];
             std::vector<GateRef> ins = circuit_->GetInVector(gate);
             std::vector<GateRef> outs = circuit_->GetOutVector(gate);
-#if ECMASCRIPT_ENABLE_COMPILER_LOG
-            circuit_->Print(gate);
-#endif
+
+            if (IsLogEnabled()) {
+                circuit_->Print(gate);
+            }
+
             auto found = opCodeHandleMap_.find(circuit_->GetOpCode(gate));
             if (found != opCodeHandleMap_.end()) {
                 (this->*(found->second))(gate);
                 continue;
             }
             if (opCodeHandleIgnore.find(circuit_->GetOpCode(gate)) == opCodeHandleIgnore.end()) {
-                LOG_ECMA(ERROR) << "The gate below need to be translated ";
+                COMPILER_OPTIONAL_LOG(ERROR) << "The gate below need to be translated ";
                 circuit_->Print(gate);
                 UNREACHABLE();
             }
@@ -267,12 +266,11 @@ void LLVMIRBuilder::StartBuilder(BasicBlock *bb) const
     EnsureBasicBlock(bb);
     LLVMTFBuilderBasicBlockImpl *impl = bb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
     if ((impl == nullptr) || (impl->llvm_bb_ == nullptr)) {
-        COMPILER_LOG(ERROR) << "StartBuilder failed ";
+        COMPILER_OPTIONAL_LOG(ERROR) << "StartBuilder failed ";
         return;
     }
     impl->started = true;
     bb->SetImpl(impl);
-    COMPILER_LOG(DEBUG) << "Basicblock id :" << bb->GetId() << "impl:" << bb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
     LLVMPositionBuilderAtEnd(builder_, impl->llvm_bb_);
 }
 
@@ -283,12 +281,12 @@ void LLVMIRBuilder::ProcessPhiWorkList()
         for (auto &e : impl->not_merged_phis) {
             BasicBlock *pred = e.pred;
             if (impl->started == 0) {
-                COMPILER_LOG(ERROR) << " ProcessPhiWorkList error hav't start ";
+                COMPILER_OPTIONAL_LOG(ERROR) << " ProcessPhiWorkList error hav't start ";
                 return;
             }
             LLVMValueRef value = gateToLLVMMaps_[e.operand];
             if (LLVMTypeOf(value) != LLVMTypeOf(e.phi)) {
-                COMPILER_LOG(ERROR) << " ProcessPhiWorkList LLVMTypeOf don't match error ";
+                COMPILER_OPTIONAL_LOG(ERROR) << " ProcessPhiWorkList LLVMTypeOf don't match error ";
             }
             LLVMBasicBlockRef llvmBB = EnsureBasicBlock(pred);
             LLVMAddIncoming(e.phi, &value, &llvmBB, 1);
@@ -372,7 +370,7 @@ void LLVMIRBuilder::GenPrologue([[maybe_unused]] LLVMModuleRef &module, LLVMBuil
     } else if (frameType == panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME) {
         LLVMAddTargetDependentFunctionAttr(function_, "js-stub-call", "1");
     } else {
-        LOG_ECMA(FATAL) << "frameType interpret type error !";
+        COMPILER_OPTIONAL_LOG(FATAL) << "frameType interpret type error !";
         ASSERT_PRINT(static_cast<uintptr_t>(frameType), "is not support !");
     }
 
@@ -393,8 +391,6 @@ void LLVMIRBuilder::GenPrologue([[maybe_unused]] LLVMModuleRef &module, LLVMBuil
         FrameConstants::INTERPER_FRAME_FP_TO_FP_DELTA * slotSize_, true), "");
     value = LLVMBuildStore(builder_, threadFpValue,
         LLVMBuildIntToPtr(builder_, addr, LLVMPointerType(slotType_, 0), "cast"));
-    LOG_ECMA(DEBUG) << "store value:" << value << " "
-                << "value type" << LLVMTypeOf(value);
 }
 
 LLVMValueRef LLVMIRBuilder::CallingFp(LLVMModuleRef &module, LLVMBuilderRef &builder, bool isCaller)
@@ -443,7 +439,6 @@ LLVMBasicBlockRef LLVMIRBuilder::EnsureBasicBlock(BasicBlock *bb) const
     impl->llvm_bb_ = llvmBB;
     impl->continuation = llvmBB;
     bb->SetImpl(impl);
-    COMPILER_LOG(DEBUG) << "create LLVMBB = " << buf << " impl:" << bb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
     return llvmBB;
 }
 
@@ -547,7 +542,7 @@ void LLVMIRBuilder::VisitRuntimeCall(GateRef gate, const std::vector<GateRef> &i
         params[paraIdx] = gateToLLVMMaps_[gateTmp];
     }
     if (callee == nullptr) {
-        COMPILER_LOG(ERROR) << "callee nullptr";
+        COMPILER_OPTIONAL_LOG(ERROR) << "callee nullptr";
         return;
     }
     LLVMValueRef runtimeCall = LLVMBuildCall(builder_, callee, params, inList.size(), "");
@@ -676,7 +671,7 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList, 
         params[dstParaIndex++] = gateToLLVMMaps_[gateTmp];
     }
     if (callee == nullptr) {
-        COMPILER_LOG(ERROR) << "callee nullptr";
+        COMPILER_OPTIONAL_LOG(ERROR) << "callee nullptr";
         return;
     }
     if (compCfg_->Is32Bit() || compCfg_->Is64Bit()) {
@@ -744,8 +739,6 @@ void LLVMIRBuilder::VisitAlloca(GateRef gate)
 {
     uint64_t machineRep = circuit_->GetBitField(gate);
     LLVMTypeRef dataType = GetMachineRepType(static_cast<MachineRep>(machineRep));
-    COMPILER_LOG(DEBUG) << LLVMPrintTypeToString(dataType);
-    COMPILER_LOG(DEBUG) << LLVMPrintTypeToString(ConvertLLVMTypeFromGate(gate));
     gateToLLVMMaps_[gate] = LLVMBuildPtrToInt(builder_, LLVMBuildAlloca(builder_, dataType, ""),
                                               ConvertLLVMTypeFromGate(gate), "");
 }
@@ -765,20 +758,17 @@ void LLVMIRBuilder::VisitPhi(GateRef gate, const std::vector<GateRef> &srcGates)
     for (int i = 1; i < static_cast<int>(srcGates.size()); i++) {
         GateId gateId = circuit_->GetId(relMergeIns[i - 1]);
         int bbIdx = instIdMapBbId_[gateId];
-        COMPILER_LOG(DEBUG) << "srcGate: " << srcGates[i] << " dominated gateId:" << gateId << "dominated bbIdx: " <<
-            bbIdx;
         int cnt = static_cast<int>(bbIdMapBb_.count(bbIdx));
         // if cnt = 0 means bb with current bbIdx hasn't been created
         if (cnt > 0) {
             BasicBlock *bb = bbIdMapBb_[bbIdx].get();
-            COMPILER_LOG(DEBUG) << "bb : " << bb;
             if (bb == nullptr) {
-                COMPILER_LOG(ERROR) << "VisitPhi failed BasicBlock nullptr";
+                COMPILER_OPTIONAL_LOG(ERROR) << "VisitPhi failed BasicBlock nullptr";
                 return;
             }
             LLVMTFBuilderBasicBlockImpl *impl = bb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
             if (impl == nullptr) {
-                COMPILER_LOG(ERROR) << "VisitPhi failed impl nullptr";
+                COMPILER_OPTIONAL_LOG(ERROR) << "VisitPhi failed impl nullptr";
                 return;
             }
             LLVMBasicBlockRef llvmBB = EnsureBasicBlock(bb);  // The llvm bb
@@ -805,14 +795,12 @@ void LLVMIRBuilder::VisitPhi(GateRef gate, const std::vector<GateRef> &srcGates)
     }
 }
 
-void LLVMIRBuilder::VisitReturn(GateRef gate, GateRef popCount, const std::vector<GateRef> &operands)
+void LLVMIRBuilder::VisitReturn([[maybe_unused]] GateRef gate, [[maybe_unused]] GateRef popCount,
+                                const std::vector<GateRef> &operands)
 {
     // [STATE] [DEPEND] [VALUE] [RETURN_LIST]
     GateRef operand = operands[2];  // 2: skip 2 in gate that are not data gate
-    COMPILER_LOG(DEBUG) << " gate: " << gate << " popCount: " << popCount;
-    COMPILER_LOG(DEBUG) << " return: " << operand << " gateId: " << circuit_->GetId(operand);
     LLVMValueRef returnValue = gateToLLVMMaps_[operand];
-    COMPILER_LOG(DEBUG) << LLVMValueToString(returnValue);
     LLVMBuildRet(builder_, returnValue);
 }
 
@@ -822,10 +810,9 @@ void LLVMIRBuilder::HandleReturn(GateRef gate)
     VisitReturn(gate, 1, ins);
 }
 
-void LLVMIRBuilder::VisitReturnVoid(GateRef gate)
+void LLVMIRBuilder::VisitReturnVoid([[maybe_unused]] GateRef gate)
 {
     // [STATE] [DEPEND] [VALUE] [RETURN_LIST]
-    COMPILER_LOG(DEBUG) << " gate: " << gate;
     LLVMBuildRetVoid(builder_);
 }
 
@@ -836,24 +823,21 @@ void LLVMIRBuilder::HandleReturnVoid(GateRef gate)
 
 void LLVMIRBuilder::VisitBlock(int gate, const OperandsVector &predecessors)  // NOLINTNEXTLINE(misc-unused-parameters)
 {
-    COMPILER_LOG(DEBUG) << " BBIdx:" << gate;
     BasicBlock *bb = EnsureBasicBlock(gate);
     if (bb == nullptr) {
-        COMPILER_LOG(ERROR) << " block create failed ";
+        COMPILER_OPTIONAL_LOG(ERROR) << " block create failed ";
         return;
     }
     currentBb_ = bb;
     LLVMBasicBlockRef llvmbb = EnsureBasicBlock(bb);
     StartBuilder(bb);
-    COMPILER_LOG(DEBUG) << "predecessors :";
     for (int predecessor : predecessors) {
         BasicBlock *pre = EnsureBasicBlock(predecessor);
         if (pre == nullptr) {
-            COMPILER_LOG(ERROR) << " block setup failed, predecessor:%d nullptr" << predecessor;
+            COMPILER_OPTIONAL_LOG(ERROR) << " block setup failed, predecessor:%d nullptr" << predecessor;
             return;
         }
         LLVMBasicBlockRef llvmpre = EnsureBasicBlock(pre);
-        COMPILER_LOG(DEBUG) << "  " << predecessor;
         LLVMMoveBasicBlockBefore(llvmpre, llvmbb);
     }
     if (gate == 0) { // insert prologue
@@ -889,7 +873,7 @@ void LLVMIRBuilder::VisitGoto(int block, int bbOut)
     }
     BasicBlock *bb = EnsureBasicBlock(bbOut);
     if (bb == nullptr) {
-        COMPILER_LOG(ERROR) << " block is nullptr ";
+        COMPILER_OPTIONAL_LOG(ERROR) << " block is nullptr ";
         return;
     }
     llvm::BasicBlock *self = llvm::unwrap(EnsureBasicBlock(bbIdMapBb_[block].get()));
@@ -950,8 +934,6 @@ void LLVMIRBuilder::VisitConstant(GateRef gate, std::bitset<64> value) // 64: bi
         abort();
     }
     gateToLLVMMaps_[gate] = llvmValue;
-    COMPILER_LOG(DEBUG) << "VisitConstant set gate:" << gate << "  value:" << value;
-    COMPILER_LOG(DEBUG) << "VisitConstant " << LLVMValueToString(llvmValue);
 }
 
 void LLVMIRBuilder::HandleRelocatableData(GateRef gate)
@@ -965,8 +947,6 @@ void LLVMIRBuilder::VisitRelocatableData(GateRef gate, uint64_t value)
     LLVMValueRef globalValue = LLVMAddGlobal(module_, LLVMInt64Type(), "G");
     LLVMSetInitializer(globalValue, LLVMConstInt(LLVMInt64Type(), value, 0));
     gateToLLVMMaps_[gate] = globalValue;
-    COMPILER_LOG(DEBUG) << "VisitRelocatableData set gate:" << gate << "  value:" << value;
-    COMPILER_LOG(DEBUG) << "VisitRelocatableData " << LLVMValueToString(globalValue);
 }
 
 void LLVMIRBuilder::HandleZExtInt(GateRef gate)
@@ -989,7 +969,6 @@ void LLVMIRBuilder::HandleParameter(GateRef gate)
 void LLVMIRBuilder::VisitParameter(GateRef gate)
 {
     int argth = static_cast<int>(circuit_->LoadGatePtrConst(gate)->GetBitField());
-    COMPILER_LOG(DEBUG) << " Parameter value" << argth;
     if (callConv_ == CallSignature::CallConv::WebKitJSCallConv) {
         if (compCfg_->Is32Bit() && argth > 0) {
             argth += CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32;
@@ -998,13 +977,11 @@ void LLVMIRBuilder::VisitParameter(GateRef gate)
     LLVMValueRef value = LLVMGetParam(function_, argth);
     ASSERT(LLVMTypeOf(value) == ConvertLLVMTypeFromGate(gate));
     gateToLLVMMaps_[gate] = value;
-    COMPILER_LOG(DEBUG) << "VisitParameter set gate:" << gate << "  value:" << value;
     // NOTE: caller put args, otherwise crash
     if (value == nullptr) {
-        COMPILER_LOG(FATAL) << "generate LLVM IR for para: " << argth << "fail";
+        COMPILER_OPTIONAL_LOG(FATAL) << "generate LLVM IR for para: " << argth << "fail";
         return;
     }
-    COMPILER_LOG(DEBUG) << "para arg:" << argth << "value IR:" << LLVMValueToString(value);
 }
 
 void LLVMIRBuilder::HandleBranch(GateRef gate)
@@ -1027,11 +1004,8 @@ void LLVMIRBuilder::HandleMod(GateRef gate)
 
 void LLVMIRBuilder::VisitMod(GateRef gate, GateRef e1, GateRef e2)
 {
-    COMPILER_LOG(DEBUG) << "mod gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = gateToLLVMMaps_[e2];
-    COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = nullptr;
     ASSERT(ConvertLLVMTypeFromGate(gate) == ConvertLLVMTypeFromGate(e1));
     ASSERT(ConvertLLVMTypeFromGate(gate) == ConvertLLVMTypeFromGate(e2));
@@ -1044,14 +1018,12 @@ void LLVMIRBuilder::VisitMod(GateRef gate, GateRef e1, GateRef e2)
         abort();
     }
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitBranch(GateRef gate, GateRef cmp, int btrue, int bfalse)
 {
-    COMPILER_LOG(DEBUG) << "cmp gate:" << cmp;
     if (gateToLLVMMaps_.count(cmp) == 0) {
-        COMPILER_LOG(ERROR) << "Branch condition gate is nullptr!";
+        COMPILER_OPTIONAL_LOG(ERROR) << "Branch condition gate is nullptr!";
         return;
     }
     LLVMValueRef cond = gateToLLVMMaps_[cmp];
@@ -1105,7 +1077,6 @@ void LLVMIRBuilder::VisitSwitch(GateRef gate, GateRef input, const std::vector<G
 
 void LLVMIRBuilder::VisitLoad(GateRef gate, GateRef base)
 {
-    COMPILER_LOG(DEBUG) << "Load base gate:" << base;
     LLVMValueRef baseAddr = gateToLLVMMaps_[base];
     LLVMTypeRef returnType;
     baseAddr = CanonicalizeToPtr(baseAddr);
@@ -1118,7 +1089,6 @@ void LLVMIRBuilder::VisitLoad(GateRef gate, GateRef base)
 
 void LLVMIRBuilder::VisitStore(GateRef gate, GateRef base, GateRef dataToStore)
 {
-    COMPILER_LOG(DEBUG) << "store base gate:" << base;
     LLVMValueRef baseAddr = gateToLLVMMaps_[base];
     baseAddr = CanonicalizeToPtr(baseAddr);
     LLVMValueRef data = gateToLLVMMaps_[dataToStore];
@@ -1126,7 +1096,6 @@ void LLVMIRBuilder::VisitStore(GateRef gate, GateRef base, GateRef dataToStore)
         LLVMPointerType(ConvertLLVMTypeFromGate(dataToStore), LLVMGetPointerAddressSpace(LLVMTypeOf(baseAddr))), "");
     LLVMValueRef value = LLVMBuildStore(builder_, data, baseAddr);
     gateToLLVMMaps_[gate] = value;
-    COMPILER_LOG(DEBUG) << "store value:" << value << " " << "value type" << LLVMTypeOf(value);
 }
 
 LLVMValueRef LLVMIRBuilder::CanonicalizeToInt(LLVMValueRef value)
@@ -1145,7 +1114,7 @@ LLVMValueRef LLVMIRBuilder::CanonicalizeToInt(LLVMValueRef value)
     } else if (LLVMGetTypeKind(LLVMTypeOf(value)) == LLVMIntegerTypeKind) {
         return value;
     } else {
-        COMPILER_LOG(DEBUG) << "can't Canonicalize to Int64: ";
+        COMPILER_OPTIONAL_LOG(ERROR) << "can't Canonicalize to Int64: ";
         abort();
     }
 }
@@ -1162,7 +1131,7 @@ LLVMValueRef LLVMIRBuilder::CanonicalizeToPtr(LLVMValueRef value)
         LLVMValueRef tmp = LLVMBuildIntToPtr(builder_, value, LLVMPointerType(LLVMInt64Type(), 0), "");
         return LLVMBuildPointerCast(builder_, tmp, LLVMPointerType(LLVMInt8Type(), 0), "");
     } else {
-        COMPILER_LOG(DEBUG) << "can't Canonicalize to Ptr: ";
+        COMPILER_OPTIONAL_LOG(ERROR) << "can't Canonicalize to Ptr: ";
         abort();
     }
 }
@@ -1175,9 +1144,7 @@ void LLVMIRBuilder::HandleIntRev(GateRef gate)
 
 void LLVMIRBuilder::VisitIntRev(GateRef gate, GateRef e1)
 {
-    COMPILER_LOG(DEBUG) << "int sign invert gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     ASSERT(ConvertLLVMTypeFromGate(gate) == ConvertLLVMTypeFromGate(e1));
     auto machineType = circuit_->LoadGatePtrConst(gate)->GetMachineType();
     LLVMValueRef result = nullptr;
@@ -1187,7 +1154,6 @@ void LLVMIRBuilder::VisitIntRev(GateRef gate, GateRef e1)
         abort();
     }
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 LLVMValueRef LLVMIRBuilder::PointerAdd(LLVMValueRef baseAddr, LLVMValueRef offset, LLVMTypeRef rep)
@@ -1304,11 +1270,8 @@ bool IsAddIntergerType(MachineType machineType)
 
 void LLVMIRBuilder::VisitAdd(GateRef gate, GateRef e1, GateRef e2)
 {
-    COMPILER_LOG(DEBUG) << "add gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = gateToLLVMMaps_[e2];
-    COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = nullptr;
     /* pointer                          int
       vector{i8 * x 2}          int
@@ -1336,7 +1299,6 @@ void LLVMIRBuilder::VisitAdd(GateRef gate, GateRef e1, GateRef e2)
         abort();
     }
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::HandleSub(GateRef gate)
@@ -1348,11 +1310,8 @@ void LLVMIRBuilder::HandleSub(GateRef gate)
 
 void LLVMIRBuilder::VisitSub(GateRef gate, GateRef e1, GateRef e2)
 {
-    COMPILER_LOG(DEBUG) << "sub gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = gateToLLVMMaps_[e2];
-    COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = nullptr;
     auto machineType = circuit_->LoadGatePtrConst(gate)->GetMachineType();
     if (machineType == MachineType::I16 || machineType == MachineType::I32 ||
@@ -1364,7 +1323,6 @@ void LLVMIRBuilder::VisitSub(GateRef gate, GateRef e1, GateRef e2)
         abort();
     }
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::HandleMul(GateRef gate)
@@ -1388,11 +1346,8 @@ bool IsMulIntergerType(MachineType machineType)
 
 void LLVMIRBuilder::VisitMul(GateRef gate, GateRef e1, GateRef e2)
 {
-    COMPILER_LOG(DEBUG) << "mul gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = gateToLLVMMaps_[e2];
-    COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = nullptr;
     auto machineType = circuit_->LoadGatePtrConst(gate)->GetMachineType();
     if (IsMulIntergerType(machineType)) {
@@ -1403,7 +1358,6 @@ void LLVMIRBuilder::VisitMul(GateRef gate, GateRef e1, GateRef e2)
         abort();
     }
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::HandleFloatDiv(GateRef gate)
@@ -1464,11 +1418,8 @@ void LLVMIRBuilder::HandleCmp(GateRef gate)
 
 void LLVMIRBuilder::VisitCmp(GateRef gate, GateRef e1, GateRef e2)
 {
-    COMPILER_LOG(DEBUG) << "cmp gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = gateToLLVMMaps_[e2];
-    COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = nullptr;
     auto e1ValCode = circuit_->LoadGatePtrConst(e1)->GetMachineType();
     [[maybe_unused]]auto e2ValCode = circuit_->LoadGatePtrConst(e2)->GetMachineType();
@@ -1545,7 +1496,6 @@ void LLVMIRBuilder::VisitCmp(GateRef gate, GateRef e1, GateRef e2)
         abort();
     }
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::HandleLoad(GateRef gate)
@@ -1611,30 +1561,22 @@ void LLVMIRBuilder::VisitUDiv(GateRef gate, GateRef e1, GateRef e2)
 
 void LLVMIRBuilder::VisitFloatDiv(GateRef gate, GateRef e1, GateRef e2)
 {
-    COMPILER_LOG(DEBUG) << "float div gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = gateToLLVMMaps_[e2];
-    COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
 
     LLVMValueRef result = LLVMBuildFDiv(builder_, e1Value, e2Value, "");
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitIntOr(GateRef gate, GateRef e1, GateRef e2)
 {
-    COMPILER_LOG(DEBUG) << "int or gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = gateToLLVMMaps_[e2];
-    COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
 
     e1Value = CanonicalizeToInt(e1Value);
     e2Value = CanonicalizeToInt(e2Value);
     LLVMValueRef result = LLVMBuildOr(builder_, e1Value, e2Value, "");
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::HandleIntAnd(GateRef gate)
@@ -1646,58 +1588,42 @@ void LLVMIRBuilder::HandleIntAnd(GateRef gate)
 
 void LLVMIRBuilder::VisitIntAnd(GateRef gate, GateRef e1, GateRef e2)
 {
-    COMPILER_LOG(DEBUG) << "int and gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = gateToLLVMMaps_[e2];
-    COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
     e1Value = CanonicalizeToInt(e1Value);
     e2Value = CanonicalizeToInt(e2Value);
     LLVMValueRef result = LLVMBuildAnd(builder_, e1Value, e2Value, "");
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitIntXor(GateRef gate, GateRef e1, GateRef e2)
 {
-    COMPILER_LOG(DEBUG) << "int xor gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = gateToLLVMMaps_[e2];
-    COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
     e1Value = CanonicalizeToInt(e1Value);
     e2Value = CanonicalizeToInt(e2Value);
     LLVMValueRef result = LLVMBuildXor(builder_, e1Value, e2Value, "");
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitIntLsr(GateRef gate, GateRef e1, GateRef e2)
 {
-    COMPILER_LOG(DEBUG) << "int lsr gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = gateToLLVMMaps_[e2];
-    COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
     e1Value = CanonicalizeToInt(e1Value);
     e2Value = CanonicalizeToInt(e2Value);
     LLVMValueRef result = LLVMBuildLShr(builder_, e1Value, e2Value, "");
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitIntAsr(GateRef gate, GateRef e1, GateRef e2)
 {
-    COMPILER_LOG(DEBUG) << "int lsr gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = gateToLLVMMaps_[e2];
-    COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
     e1Value = CanonicalizeToInt(e1Value);
     e2Value = CanonicalizeToInt(e2Value);
     LLVMValueRef result = LLVMBuildAShr(builder_, e1Value, e2Value, "");
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::HandleIntLsl(GateRef gate)
@@ -1709,38 +1635,28 @@ void LLVMIRBuilder::HandleIntLsl(GateRef gate)
 
 void LLVMIRBuilder::VisitIntLsl(GateRef gate, GateRef e1, GateRef e2)
 {
-    COMPILER_LOG(DEBUG) << "int lsl gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = gateToLLVMMaps_[e2];
-    COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
     e1Value = CanonicalizeToInt(e1Value);
     e2Value = CanonicalizeToInt(e2Value);
     LLVMValueRef result = LLVMBuildShl(builder_, e1Value, e2Value, "");
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitZExtInt(GateRef gate, GateRef e1)
 {
-    COMPILER_LOG(DEBUG) << "int zero extension gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     ASSERT(GetBitWidthFromMachineType(circuit_->LoadGatePtrConst(e1)->GetMachineType()) <=
         GetBitWidthFromMachineType(circuit_->LoadGatePtrConst(gate)->GetMachineType()));
     LLVMValueRef result = LLVMBuildZExt(builder_, e1Value, ConvertLLVMTypeFromGate(gate), "");
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitSExtInt(GateRef gate, GateRef e1)
 {
-    COMPILER_LOG(DEBUG) << "int sign extension gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef result = LLVMBuildSExt(builder_, e1Value, ConvertLLVMTypeFromGate(gate), "");
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::HandleCastIntXToIntY(GateRef gate)
@@ -1751,61 +1667,44 @@ void LLVMIRBuilder::HandleCastIntXToIntY(GateRef gate)
 
 void LLVMIRBuilder::VisitCastIntXToIntY(GateRef gate, GateRef e1)
 {
-    COMPILER_LOG(DEBUG) << "int cast2 int gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     ASSERT(GetBitWidthFromMachineType(circuit_->LoadGatePtrConst(e1)->GetMachineType()) >=
         GetBitWidthFromMachineType(circuit_->LoadGatePtrConst(gate)->GetMachineType()));
     LLVMValueRef result = LLVMBuildIntCast2(builder_, e1Value, ConvertLLVMTypeFromGate(gate), 1, "");
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitChangeInt32ToDouble(GateRef gate, GateRef e1)
 {
-    COMPILER_LOG(DEBUG) << "int cast2 double gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef result = LLVMBuildSIToFP(builder_, e1Value, LLVMDoubleType(), "");
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitChangeUInt32ToDouble(GateRef gate, GateRef e1)
 {
-    COMPILER_LOG(DEBUG) << "int cast2 double gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef result = LLVMBuildUIToFP(builder_, e1Value, LLVMDoubleType(), "");
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitChangeDoubleToInt32(GateRef gate, GateRef e1)
 {
-    COMPILER_LOG(DEBUG) << "double cast2 int32 gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef result = LLVMBuildFPToSI(builder_, e1Value, LLVMInt32Type(), "");
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitChangeTaggedPointerToInt64(GateRef gate, GateRef e1)
 {
-    COMPILER_LOG(DEBUG) << "tagged pointer cast2 int64 gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef result = CanonicalizeToInt(e1Value);
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitChangeInt64ToTagged(GateRef gate, GateRef e1)
 {
-    COMPILER_LOG(DEBUG) << "int64 cast2 tagged gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     ASSERT(LLVMGetTypeKind(LLVMTypeOf(e1Value)) == LLVMIntegerTypeKind);
     LLVMValueRef result;
     if (compCfg_->Is32Bit()) {
@@ -1822,7 +1721,6 @@ void LLVMIRBuilder::VisitChangeInt64ToTagged(GateRef gate, GateRef e1)
         result = LLVMBuildIntToPtr(builder_, e1Value, LLVMPointerType(LLVMInt64Type(), 1), "");
     }
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::HandleBitCast(GateRef gate)
@@ -1833,16 +1731,13 @@ void LLVMIRBuilder::HandleBitCast(GateRef gate)
 
 void LLVMIRBuilder::VisitBitCast(GateRef gate, GateRef e1)
 {
-    COMPILER_LOG(DEBUG) << "bitcast gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     [[maybe_unused]] auto gateValCode = circuit_->LoadGatePtrConst(gate)->GetMachineType();
     [[maybe_unused]] auto e1ValCode = circuit_->LoadGatePtrConst(e1)->GetMachineType();
     ASSERT(GetBitWidthFromMachineType(gateValCode) == GetBitWidthFromMachineType(e1ValCode));
     auto returnType = ConvertLLVMTypeFromGate(gate);
     LLVMValueRef result = LLVMBuildBitCast(builder_, e1Value, returnType, "");
     gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
 LLVMModule::LLVMModule(const std::string &name, const std::string &triple)

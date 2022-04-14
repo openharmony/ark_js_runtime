@@ -69,4 +69,9 @@ void JSMethod::InitializeCallField()
                                                   - HaveThisBit::Decode(callType)) |  // exclude this
                  IsNativeBit::Encode(IsNative());
 }
+
+const char *JSMethod::GetMethodName() const
+{
+    return utf::Mutf8AsCString(GetName().data);
+}
 } // namespace panda::ecmascript

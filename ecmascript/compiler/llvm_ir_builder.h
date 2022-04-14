@@ -203,7 +203,7 @@ class LLVMIRBuilder {
 public:
     explicit LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, const Circuit *circuit,
                            LLVMModule *module, LLVMValueRef function, const CompilationConfig *cfg,
-                           CallSignature::CallConv callConv);
+                           CallSignature::CallConv callConv, bool enableLog = false);
     ~LLVMIRBuilder();
     void Build();
 
@@ -255,6 +255,11 @@ private:
     bool IsGCRelated(GateType typeCode) const;
     void SetFunctionCallConv();
 
+    bool IsLogEnabled() const
+    {
+        return enableLog_;
+    }
+
 private:
     const CompilationConfig *compCfg_ {nullptr};
     const std::vector<std::vector<GateRef>> *schedule_ {nullptr};
@@ -277,6 +282,7 @@ private:
     int slotSize_;
     LLVMTypeRef slotType_;
     CallSignature::CallConv callConv_ = CallSignature::CallConv::CCallConv;
+    bool enableLog_ {false};
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_LLVM_IR_BUILDER_H

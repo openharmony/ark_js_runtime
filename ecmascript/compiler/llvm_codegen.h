@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "code_generator.h"
+#include "compiler_log.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_thread.h"
 #include "llvm_ir_builder.h"
@@ -85,11 +86,10 @@ struct CodeInfo {
     {
         uint8_t *addr = nullptr;
         if (codeBufferPos_ + size > MAX_MACHINE_CODE_SIZE) {
-            LOG_ECMA(INFO) << std::hex << "AllocaCodeSection failed alloc codeBufferPos_:" << codeBufferPos_
+            COMPILER_LOG(ERROR) << std::hex << "AllocaCodeSection failed alloc codeBufferPos_:" << codeBufferPos_
                       << " size:" << size << "  larger MAX_MACHINE_CODE_SIZE:" << MAX_MACHINE_CODE_SIZE;
             return nullptr;
         }
-        LOG_ECMA(INFO) << "AllocaCodeSection size:" << size;
         codeSectionNames_.push_back(sectionName);
         addr = machineCode_ + codeBufferPos_;
         codeInfo_.push_back({addr, size});
@@ -103,10 +103,8 @@ struct CodeInfo {
         dataSectionList_.push_back(std::vector<uint8_t>());
         dataSectionList_.back().resize(size);
         dataSectionNames_.push_back(sectionName);
-        std::cout << "AllocaDataSection " << sectionName << std::endl;
         addr = static_cast<uint8_t *>(dataSectionList_.back().data());
         if (!strcmp(sectionName, ".llvm_stackmaps")) {
-            LOG_ECMA(INFO) << "llvm_stackmaps : " << addr << " size:" << size;
             stackMapsSection_ = addr;
             stackMapsSize_ = size;
         }
@@ -166,14 +164,14 @@ private:
 
 class LLVMAssembler {
 public:
-    LLVMAssembler(LLVMModuleRef module, bool genFp = true);
+    explicit LLVMAssembler(LLVMModuleRef module, bool enableLog = false, bool genFp = true);
     virtual ~LLVMAssembler();
     void Run();
     const LLVMExecutionEngineRef &GetEngine()
     {
         return engine_;
     }
-    void Disassemble(std::map<uint64_t, std::string> &addr2name) const;
+    void Disassemble(const std::map<uint64_t, std::string> &addr2name, const CompilerLog &log) const;
     uint8_t *GetStackMapsSection() const
     {
         return codeInfo_.GetStackMapsSection();
@@ -204,6 +202,11 @@ public:
         return codeInfo_.AllocaCodeSection(size, sectionName);
     }
 
+    bool IsLogEnabled() const
+    {
+        return enableLog_;
+    }
+
 private:
     void UseRoundTripSectionMemoryManager();
     bool BuildMCJITEngine();
@@ -215,19 +218,27 @@ private:
     LLVMExecutionEngineRef engine_ {nullptr};
     char *error_ {nullptr};
     struct CodeInfo codeInfo_ {};
+    bool enableLog_ {false};
 };
 
 class LLVMIRGeneratorImpl : public CodeGeneratorImpl {
 public:
-    explicit LLVMIRGeneratorImpl(LLVMModule *module) : module_(module) {}
+    explicit LLVMIRGeneratorImpl(LLVMModule *module, bool enableLog)
+        : module_(module), enableLog_(enableLog) {}
     ~LLVMIRGeneratorImpl() = default;
     void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, size_t index,
                              const CompilationConfig *cfg) override;
     void GenerateCode(Circuit *circuit, const ControlFlowGraph &graph, const CompilationConfig *cfg,
         const JSMethod *method) override;
 
+    bool IsLogEnabled() const
+    {
+        return enableLog_;
+    }
+
 private:
     LLVMModule *module_;
+    bool enableLog_ {false};
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_LLVM_CODEGEN_H
