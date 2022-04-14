@@ -31,6 +31,11 @@ GateRef CircuitBuilder::False()
     return TruncInt32ToInt1(Int32(0));
 }
 
+GateRef CircuitBuilder::Undefined(VariableType type)
+{
+    return UndefineConstant(type.GetGateType());
+}
+
 // memory
 GateRef CircuitBuilder::Load(VariableType type, GateRef base, GateRef offset)
 {
@@ -462,10 +467,15 @@ void CircuitBuilder::MergeMirCircuit(GateRef hir, GateRef outir,
         } else if (acc.GetOpCode(*useIt) == OpCode::IF_EXCEPTION) {
             acc.ReplaceHirControlGate<noThrow>(useIt, exceptionControl[0]);
         // change depend flow in catch block from HIR:JS_BYTECODE to depend flow in MIR Circuit
-        } else if ((acc.GetOpCode(*useIt) == OpCode::DEPEND_SELECTOR) ||
-                   (acc.GetOpCode(*useIt) == OpCode::DEPEND_RELAY)) {
+        } else if (acc.GetOpCode(*useIt) == OpCode::DEPEND_SELECTOR) {
             if (acc.GetOpCode(acc.GetIn(acc.GetIn(*useIt, 0), useIt.GetIndex() - 1)) == OpCode::IF_EXCEPTION) {
-                noThrow ? acc.DeleteIn(useIt) : acc.ReplaceIn(useIt, exceptionControl[1]);
+                noThrow ? acc.DeleteExceptionDep(useIt) : acc.ReplaceIn(useIt, exceptionControl[1]);
+            } else {
+                acc.ReplaceIn(useIt, successControl[1]);
+            }
+        } else if (acc.GetOpCode(*useIt) == OpCode::DEPEND_RELAY) {
+            if (acc.GetOpCode(acc.GetIn(*useIt, 0)) == OpCode::IF_EXCEPTION) {
+                acc.ReplaceIn(useIt, exceptionControl[1]);
             } else {
                 acc.ReplaceIn(useIt, successControl[1]);
             }
@@ -475,13 +485,7 @@ void CircuitBuilder::MergeMirCircuit(GateRef hir, GateRef outir,
         // if no catch block, just throw exception(RETURN)
         } else if ((acc.GetOpCode(*useIt) == OpCode::RETURN) &&
                     acc.GetOpCode(acc.GetIn(*useIt, 0)) == OpCode::IF_EXCEPTION) {
-            if (noThrow) {
-                // 0 : the index of CONSTANT
-                GetCircuit()->DeleteGate(acc.GetValueIn(*useIt, 0));
-                acc.DeleteGate(useIt);
-            } else {
-                acc.ReplaceIn(useIt, exceptionControl[1]);
-            }
+            noThrow ? acc.DeleteExceptionDep(useIt) : acc.ReplaceIn(useIt, exceptionControl[1]);
         // if isThrow..
         } else if (useIt.GetIndex() == 1) {
             acc.ReplaceIn(useIt, successControl[1]);

@@ -246,6 +246,8 @@ public:
 
     bool CheckConcurrentMark();
 
+    void CheckAndTriggerOldGC();
+
     NativeAreaAllocator *GetNativeAreaAllocator() const
     {
         return nativeAreaAllocator_;
@@ -350,7 +352,10 @@ private:
 
     class AsyncClearTask : public Task {
     public:
-        AsyncClearTask(Heap *heap, TriggerGCType type) : heap_(heap), gcType_(type) {}
+        AsyncClearTask(Heap *heap, TriggerGCType type) : heap_(heap), gcType_(type)
+        {
+            lastRegionOfToSpace_ = heap->GetNewSpace()->GetCurrentRegion();
+        }
         ~AsyncClearTask() override = default;
         bool Run(uint32_t threadIndex) override;
 
@@ -358,10 +363,11 @@ private:
         NO_MOVE_SEMANTIC(AsyncClearTask);
     private:
         Heap *heap_;
+        Region *lastRegionOfToSpace_;
         TriggerGCType gcType_;
     };
 
-    inline void ReclaimRegions(TriggerGCType gcType);
+    inline void ReclaimRegions(TriggerGCType gcType, Region *lastRegionOfToSpace = nullptr);
     void WaitClearTaskFinished();
 
     EcmaVM *ecmaVm_ {nullptr};

@@ -247,7 +247,7 @@ OptimizedCallOptimized:
     addq    $-1, %rax
     jne     .LCopyLoop1
 
-    pushq   %r14
+    pushq   %rdx                // actual argc
     movq    %rdi, %rax          // move glue to rax
     callq   *%rcx               // then call jsFunction
     leaq    (,%r14,8), %rcx
@@ -314,27 +314,29 @@ CallNativeTrampoline:
 
     // load native pointer address
     movq    (%rdx), %r10
+    subq    $8, %rsp         // align 16bytes
     subq    $ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE, %rsp
 
     // construct ecma_runtime_call_info    
     // get thread
-    subq  $ASM_GLUE_TO_THREAD_OFFSET, %rax
+    subq    $ASM_GLUE_TO_THREAD_OFFSET, %rax
     movq    %rax, (%rsp)                                         // thread_
     // get numArgs
     movq    $0, %rax
     movl    8(%rdx), %eax
-    movl    %eax, ECMA_RUNTIME_CALLINFO_NUMARGS_OFFSET(%rsp)     // numArgs
+    subl    $3, %eax
+    movq    %rax, ECMA_RUNTIME_CALLINFO_NUMARGS_OFFSET(%rsp)     // numArgs
     // get gpr data
     movq    %rdx, %rbx
     addq    $16, %rbx
-    movq    %rbx, ECMA_RUNTIME_CALLINFO_GPRARGS_OFFSET(%rsp)       // data_
-    movq    %rax, ECMA_RUNTIME_CALLINFO_GPRARGS_SIZE_OFFSET(%rsp)  // size_
-    movq    $0,  ECMA_RUNTIME_CALLINFO_STACKARGS_OFFSET(%rsp)
-    movq    $0,  ECMA_RUNTIME_CALLINFO_STACKARGS_SIZE_OFFSET(%rsp)
+    movq    %rbx, ECMA_RUNTIME_CALLINFO_STACKARGS_OFFSET(%rsp)
+    movq    $0,  ECMA_RUNTIME_CALLINFO_DATA_OFFSET(%rsp)
+    movq    $0,  ECMA_RUNTIME_CALLINFO_PPREV_SP_OFFSET(%rsp)
 
     movq   %rsp, %rdi
     call   *%r10
     addq   $ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE, %rsp
+    addq   $8, %rsp         // align 16bytes
     popq   %rbx
     popq   %r10
     addq   $8, %rsp
@@ -509,8 +511,8 @@ JSCall:
 
     shll    $24, %eax               // objecttype << 24
     leal    -50331649(%rax), %edx
-    cmpl    $0x9FFFFFF, %edx        // objecttype in (0x04 ~ 0x0c)
-    ja      .LNotJSFunction
+    cmpl    $0x9FFFFFF, %edx
+    jae     .LNotJSFunction         // objecttype in (0x04 ~ 0x0c)
     jmp     .LJSFunctionCall
 .LNotJSFunction:
     cmpl    $0xd000000, %eax        // IsJsBoundFunction
@@ -593,18 +595,18 @@ JSCall:
     // get bound length
     mov     TAGGED_ARRAY_LENGTH_OFFSET(%rcx), %rcx
     addq    %rcx, %r10
-    addq    $3,   %r10
 
      // 16 bytes align check
     testb   $1, %r10b
-    je      .LAlign16Bytes2
+    jne      .LAlign16Bytes2
     pushq   $0                  // push zero to align 16 bytes stack   
 
 .LAlign16Bytes2:
+    subq    $3, %rax
     cmp     $0, %rax
     je      .LCopyBoundArgument
 .LCopyArgument2:
-    movq    (%rdx, %rax, 8), %rcx
+    movq    24(%rdx, %rax, 8), %rcx
     pushq   %rcx
 
     addq    $-1, %rax
@@ -614,27 +616,29 @@ JSCall:
     mov     JS_FUNCTION_BOUND_ARG_OFFSET(%r8), %rdx
     // get bound length
     mov     TAGGED_ARRAY_LENGTH_OFFSET(%rdx), %rax
-    addq    TAGGED_ARRAY_DATA_OFFSET, %rdx
-    addq    %rax, %r10
+    addq    $TAGGED_ARRAY_DATA_OFFSET, %rdx
 .LCopyBoundArgument:
     cmp     $0, %rax
+    je      .LPushCallTarget
 .LCopyBoundArgumentLoop:
+    addq    $-1, %rax
     movq    (%rdx, %rax, 8), %rcx
     pushq   %rcx
-    addq    $-1, %rax
     jne     .LCopyBoundArgumentLoop
+.LPushCallTarget:
     mov     JS_FUNCTION_BOUND_THIS_OFFSET(%r8), %rax     // thisObj
     pushq   %rax
     pushq   $0xa                                         // newtarget
     mov     JS_FUNCTION_BOUND_TARGET_OFFSET(%r8), %rax   // calltarget
     pushq   %rax
     pushq   %r10                                         // push actual arguments
+    mov     %rdi, %rax
     call    JSCall
-    leaq    (, %r10, 8), %rcx
+    leaq    8(, %r10, 8), %rcx
     addq    %rcx, %rsp
 
     testb   $1, %r10b           // stack 16bytes align check
-    je      .LPopFrame2
+    jne     .LPopFrame2
     addq    $8, %rsp
 
 .LPopFrame2:
@@ -1095,18 +1099,17 @@ PushCallArgs0AndDispatchNative:
 .CallNative:
     // load native pointer address
     movq    ASM_JS_METHOD_NATIVE_POINTER_OFFSET(%rcx), %r10
+    subq    $8, %rsp                                               // align 16bytes
     subq    $ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE, %rsp
 
     // construct ecma_runtime_call_info
     movq    %rdi, %rax
     subq    $ASM_GLUE_TO_THREAD_OFFSET, %rax
     movq    %rax, (%rsp)                                           // thread_
-    addq    $3, %r8  // add NUM_MANDATORY_JSFUNC_ARGS
     movq    %r8, ECMA_RUNTIME_CALLINFO_NUMARGS_OFFSET(%rsp)        // numArgs
-    movq    %r15, ECMA_RUNTIME_CALLINFO_GPRARGS_OFFSET(%rsp)       // gprArgs_data_
-    movq    %r8, ECMA_RUNTIME_CALLINFO_GPRARGS_SIZE_OFFSET(%rsp)   // gprArgs_size_
-    movq    $0, ECMA_RUNTIME_CALLINFO_STACKARGS_OFFSET(%rsp)       // stackArgs_data_
-    movq    $0, ECMA_RUNTIME_CALLINFO_STACKARGS_SIZE_OFFSET(%rsp)  // stackArgs_size_
+    movq    %r15, ECMA_RUNTIME_CALLINFO_STACKARGS_OFFSET(%rsp)     // stackArgs_
+    movq    $0, ECMA_RUNTIME_CALLINFO_DATA_OFFSET(%rsp)            // data_
+    movq    $0, ECMA_RUNTIME_CALLINFO_PPREV_SP_OFFSET(%rsp)        // prevsp_
 
     leaq    (, %r8, 8), %r12  // store argc * 8 into callee-saved register
     movq    %rsp, %rdi  // &ecma_runtime_call_info
@@ -1114,6 +1117,7 @@ PushCallArgs0AndDispatchNative:
     // ingore exception check now
     // optimize these three add operations
     addq    $ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE, %rsp
+    addq    $8, %rsp                                                // align 16bytes
     addq    $ASM_INTERPRETED_FRAME_STATE_SIZE, %rsp
     addq    %r12, %rsp  // add NUM_MANDATORY_JSFUNC_ARGS + argc * 8
 

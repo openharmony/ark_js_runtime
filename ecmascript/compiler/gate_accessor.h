@@ -331,15 +331,16 @@ public:
     {
         ASSERT(GetOpCode(*useIt) == OpCode::IF_SUCCESS || GetOpCode(*useIt) == OpCode::IF_EXCEPTION);
         if (!noThrow) {
-            Gate *oldPtr = circuit_->LoadGatePtr(*useIt);
-            oldPtr->GetFirstOut()->GetGate()->ModifyIn(oldPtr->GetFirstOut()->GetIndex(),
-                                                       circuit_->LoadGatePtr(newGate));
+            auto firstUse = Uses(*useIt).begin();
+            circuit_->ModifyIn(*firstUse, firstUse.GetIndex(), newGate);
         }
         DeleteGate(useIt);
     };
 
+    void DeleteExceptionDep(UsesIterator &useIt);
     void DeleteIn(UsesIterator &useIt);
     void DeleteGate(UsesIterator &useIt);
+    void DecreaseIn(UsesIterator &useIt);
 
 private:
     [[nodiscard]] ConstUsesIterator ConstUseBegin(GateRef gate) const
