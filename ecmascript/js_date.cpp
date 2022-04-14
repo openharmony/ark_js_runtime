@@ -248,7 +248,7 @@ JSTaggedValue JSDate::LocalParseStringToMs(const CString &str)
     int seconds = 0;
     int ms = 0;
     int index = 0;
-    int len = str.length();
+    int len = static_cast<int>(str.length());
     bool isLocal = false;
     CString::size_type indexGmt;
     CString::size_type indexPlus = CString::npos;
@@ -318,7 +318,7 @@ JSTaggedValue JSDate::UtcParseStringToMs(const CString &str)
     int seconds = 0;
     int ms = 0;
     int index = 0;
-    int len = str.length();
+    int len = static_cast<int>(str.length());
     CString::size_type indexGmt;
     CString::size_type indexPlus = CString::npos;
     int localTime = 0;
@@ -386,7 +386,7 @@ JSTaggedValue JSDate::IsoParseStringToMs(const CString &str)
     int seconds = 0;
     int ms = 0;
     int index = 0;
-    int len = str.length();
+    int len = static_cast<int>(str.length());
     year = GetSignedNumFromString(str, len, &index);
     CString::size_type indexT = str.find(FLAG_TIME, index);
     CString::size_type indexZ = str.find(FLAG_UTC, index);
@@ -402,9 +402,9 @@ JSTaggedValue JSDate::IsoParseStringToMs(const CString &str)
         flag = PLUS;
     }
     if (indexT != CString::npos) {
-        if ((indexT - index) == LENGTH_PER_TIME) {
+        if (static_cast<int>(indexT - index) == LENGTH_PER_TIME) {
             GetNumFromString(str, len, &index, &month);
-        } else if ((indexT - index) == (LENGTH_PER_TIME + LENGTH_PER_TIME)) {
+        } else if (static_cast<int>(indexT - index) == (LENGTH_PER_TIME + LENGTH_PER_TIME)) {
             GetNumFromString(str, len, &index, &month);
             GetNumFromString(str, len, &index, &date);
         }
@@ -606,6 +606,9 @@ int64_t JSDate::GetLocalOffsetFromOS(int64_t timeMs, bool isLocal)
     // localtime_r is only suitable for linux.
     struct tm *t = localtime_r(&tv, &tm);
     // tm_gmtoff includes any daylight savings offset.
+    if (t == nullptr) {
+        return 0;
+    }
     return t->tm_gmtoff / SEC_PER_MINUTE;
 #else
     TIME_ZONE_INFORMATION tmp;

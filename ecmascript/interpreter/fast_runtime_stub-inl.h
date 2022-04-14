@@ -273,7 +273,7 @@ PropertyAttributes FastRuntimeStub::AddPropertyByName(JSThread *thread, JSHandle
     if (!array->IsDictionaryMode()) {
         attr.SetIsInlinedProps(false);
 
-        uint32_t nonInlinedProps = objHandle->GetJSHClass()->GetNextNonInlinedPropsIndex();
+        uint32_t nonInlinedProps = static_cast<uint32_t>(objHandle->GetJSHClass()->GetNextNonInlinedPropsIndex());
         ASSERT(length >= nonInlinedProps);
         // if array is full, grow array or change to dictionary mode
         if (length == nonInlinedProps) {
@@ -413,7 +413,7 @@ JSTaggedValue FastRuntimeStub::GetPropertyByName(JSThread *thread, JSTaggedValue
             ASSERT(!TaggedArray::Cast(JSObject::Cast(holder)->GetProperties().GetTaggedObject())->IsDictionaryMode());
 
             LayoutInfo *layoutInfo = LayoutInfo::Cast(hclass->GetLayout().GetTaggedObject());
-            int propsNumber = hclass->NumberOfProps();
+            uint32_t propsNumber = hclass->NumberOfProps();
             int entry = layoutInfo->FindElementWithCache(thread, hclass, key, propsNumber);
             if (entry != -1) {
                 PropertyAttributes attr(layoutInfo->GetAttr(entry));
@@ -471,7 +471,7 @@ JSTaggedValue FastRuntimeStub::SetPropertyByName(JSThread *thread, JSTaggedValue
 
             LayoutInfo *layoutInfo = LayoutInfo::Cast(hclass->GetLayout().GetTaggedObject());
 
-            int propsNumber = hclass->NumberOfProps();
+            uint32_t propsNumber = hclass->NumberOfProps();
             int entry = layoutInfo->FindElementWithCache(thread, hclass, key, propsNumber);
             if (entry != -1) {
                 PropertyAttributes attr(layoutInfo->GetAttr(entry));
@@ -1218,7 +1218,7 @@ JSTaggedValue FastRuntimeStub::FindOwnProperty(JSThread *thread, JSObject *obj, 
         JSTaggedValue attrs = cls->GetLayout();
         if (!attrs.IsNull()) {
             LayoutInfo *layoutInfo = LayoutInfo::Cast(attrs.GetHeapObject());
-            int propNumber = cls->NumberOfProps();
+            uint32_t propNumber = cls->NumberOfProps();
             int entry = layoutInfo->FindElementWithCache(thread, cls, key, propNumber);
             if (entry != -1) {
                 *attr = layoutInfo->GetAttr(entry);
@@ -1291,7 +1291,7 @@ JSTaggedValue FastRuntimeStub::FindOwnProperty(JSThread *thread, JSObject *obj, 
         JSTaggedValue attrs = cls->GetLayout();
         if (!attrs.IsNull()) {
             LayoutInfo *layoutInfo = LayoutInfo::Cast(attrs.GetHeapObject());
-            int propsNumber = cls->NumberOfProps();
+            uint32_t propsNumber = cls->NumberOfProps();
             int entry = layoutInfo->FindElementWithCache(thread, cls, key, propsNumber);
             if (entry != -1) {
                 PropertyAttributes attr(layoutInfo->GetAttr(entry));

@@ -129,7 +129,7 @@ TreeColor TaggedTree<Derived>::GetColor(int entry) const
 }
 
 template<typename Derived>
-uint32_t TaggedTree<Derived>::EntryToIndex(uint32_t entry) const
+int TaggedTree<Derived>::EntryToIndex(uint32_t entry) const
 {
     return ELEMENTS_START_INDEX + entry * (Derived::ENTRY_SIZE);
 }

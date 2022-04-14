@@ -175,9 +175,9 @@ void JSArray::SetCapacity(JSThread *thread, const JSHandle<JSObject> &array, uin
 
     if (element->IsDictionaryMode()) {
         ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-        int32_t numOfElements = array->GetNumberOfElements();
+        uint32_t numOfElements = array->GetNumberOfElements();
         uint32_t newNumOfElements = newLen;
-        if (newLen < oldLen && numOfElements != 0) {
+        if (newLen < oldLen && numOfElements != 0U) {
             JSHandle<NumberDictionary> dictHandle(thread, element);
             JSHandle<TaggedArray> newArr = factory->NewTaggedArray(numOfElements);
             GetAllElementKeys(thread, array, 0, newArr);
@@ -431,7 +431,7 @@ bool JSArray::IncludeInSortedValue(JSThread *thread, const JSHandle<JSTaggedValu
 {
     ASSERT(obj->IsJSArray());
     JSHandle<JSArray> arrayObj = JSHandle<JSArray>::Cast(obj);
-    int32_t length = arrayObj->GetArrayLength();
+    int32_t length = static_cast<int32_t>(arrayObj->GetArrayLength());
     if (length == 0) {
         return false;
     }
@@ -456,10 +456,10 @@ JSHandle<TaggedArray> JSArray::ToTaggedArray(JSThread *thread, const JSHandle<JS
 {
     ASSERT(obj->IsJSArray());
     JSHandle<JSArray> arrayObj = JSHandle<JSArray>::Cast(obj);
-    int32_t length = arrayObj->GetArrayLength();
+    uint32_t length = arrayObj->GetArrayLength();
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(length);
-    for (int32_t idx = 0; idx < length; idx++) {
+    for (uint32_t idx = 0; idx < length; idx++) {
         JSHandle<JSTaggedValue> vv = JSArray::FastGetPropertyByValue(thread, obj, idx);
         taggedArray->Set(thread, idx, vv);
     }

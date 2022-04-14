@@ -64,7 +64,8 @@ public:
 
     bool IsEnableArkTools() const
     {
-        return (enableArkTools_.GetValue()) || ((arkProperties_.GetValue() & ArkProperties::ENABLE_ARKTOOLS) != 0);
+        return (enableArkTools_.GetValue()) ||
+            ((static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::ENABLE_ARKTOOLS) != 0);
     }
 
     void SetEnableArkTools(bool value)
@@ -201,32 +202,32 @@ public:
 
     bool IsEnableOptionalLog() const
     {
-        return (arkProperties_.GetValue() & ArkProperties::OPTIONAL_LOG) != 0;
+        return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::OPTIONAL_LOG) != 0;
     }
 
     bool IsEnableGCStatsPrint() const
     {
-        return (arkProperties_.GetValue() & ArkProperties::GC_STATS_PRINT) != 0;
+        return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::GC_STATS_PRINT) != 0;
     }
 
     bool IsEnableParallelGC() const
     {
-        return (arkProperties_.GetValue() & ArkProperties::PARALLEL_GC) != 0;
+        return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::PARALLEL_GC) != 0;
     }
 
     bool IsEnableConcurrentMark() const
     {
-        return (arkProperties_.GetValue() & ArkProperties::CONCURRENT_MARK) != 0;
+        return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::CONCURRENT_MARK) != 0;
     }
 
     bool IsEnableConcurrentSweep() const
     {
-        return (arkProperties_.GetValue() & ArkProperties::CONCURRENT_SWEEP) != 0;
+        return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::CONCURRENT_SWEEP) != 0;
     }
 
     bool IsEnableThreadCheck() const
     {
-        return (arkProperties_.GetValue() & ArkProperties::THREAD_CHECK) != 0;
+        return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::THREAD_CHECK) != 0;
     }
 
     size_t MaxSemiSpaceCapacity() const

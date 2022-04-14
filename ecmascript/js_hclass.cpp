@@ -58,11 +58,11 @@ JSHandle<TransitionsDictionary> TransitionsDictionary::PutIfAbsent(const JSThrea
 
 int TransitionsDictionary::FindEntry(const JSTaggedValue &key, const JSTaggedValue &metaData)
 {
-    size_t size = Size();
+    size_t size = static_cast<size_t>(Size());
     uint32_t count = 1;
-    uint32_t hash = TransitionsDictionary::Hash(key, metaData);
+    int32_t hash = TransitionsDictionary::Hash(key, metaData);
     // GrowHashTable will guarantee the hash table is never full.
-    for (int entry = GetFirstPosition(hash, size);; entry = GetNextPosition(entry, count++, size)) {
+    for (uint32_t entry = GetFirstPosition(hash, size);; entry = GetNextPosition(entry, count++, size)) {
         JSTaggedValue element = GetKey(entry);
         if (element.IsHole()) {
             continue;
@@ -72,7 +72,7 @@ int TransitionsDictionary::FindEntry(const JSTaggedValue &key, const JSTaggedVal
         }
 
         if (TransitionsDictionary::IsMatch(key, metaData, element, GetAttributes(entry))) {
-            return entry;
+            return static_cast<int>(entry);
         }
     }
     return -1;
@@ -225,16 +225,16 @@ void JSHClass::AddProperty(const JSThread *thread, const JSHandle<JSObject> &obj
     JSHandle<JSHClass> newJshclass = JSHClass::Clone(thread, jshclass);
 
     // 3. Add Property and metaData
-    int offset = attr.GetOffset();
+    uint32_t offset = attr.GetOffset();
     newJshclass->IncNumberOfProps();
 
     {
         JSMutableHandle<LayoutInfo> layoutInfoHandle(thread, newJshclass->GetLayout());
 
-        if (layoutInfoHandle->NumberOfElements() != offset) {
+        if (layoutInfoHandle->NumberOfElements() != static_cast<int>(offset)) {
             layoutInfoHandle.Update(factory->CopyAndReSort(layoutInfoHandle, offset, offset + 1));
             newJshclass->SetLayout(thread, layoutInfoHandle);
-        } else if (layoutInfoHandle->GetPropertiesCapacity() <= offset) {  // need to Grow
+        } else if (layoutInfoHandle->GetPropertiesCapacity() <= static_cast<int>(offset)) {  // need to Grow
             layoutInfoHandle.Update(
                 factory->ExtendLayoutInfo(layoutInfoHandle, LayoutInfo::ComputeGrowCapacity(offset)));
             newJshclass->SetLayout(thread, layoutInfoHandle);

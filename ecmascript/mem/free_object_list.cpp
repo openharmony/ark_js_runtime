@@ -50,8 +50,8 @@ FreeObject *FreeObjectList::Allocate(size_t size)
     }
 
     SetType lastType = type - 1;
-    for (type = CalcNextNoneEmptyIndex(type); type > lastType && type < NUMBER_OF_SETS;
-        type = CalcNextNoneEmptyIndex(type + 1)) {
+    for (type = static_cast<int32_t>(CalcNextNoneEmptyIndex(type)); type > lastType && type < NUMBER_OF_SETS;
+        type = static_cast<int32_t>(CalcNextNoneEmptyIndex(type + 1))) {
         lastType = type;
         FreeObjectSet *current = sets_[type];
         while (current != nullptr) {
@@ -93,8 +93,8 @@ FreeObject *FreeObjectList::LookupSuitableFreeObject(size_t size)
     }
 
     SetType lastType = type - 1;
-    for (type = CalcNextNoneEmptyIndex(type); type > lastType && type < NUMBER_OF_SETS;
-        type = CalcNextNoneEmptyIndex(type + 1)) {
+    for (type = static_cast<int32_t>(CalcNextNoneEmptyIndex(type)); type > lastType && type < NUMBER_OF_SETS;
+        type = static_cast<int32_t>(CalcNextNoneEmptyIndex(type + 1))) {
         lastType = type;
         FreeObjectSet *current = sets_[type];
         while (current != nullptr) {

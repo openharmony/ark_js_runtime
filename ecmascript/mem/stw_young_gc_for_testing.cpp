@@ -94,7 +94,8 @@ void STWYoungGC::ParallelMarkingPhase()
 void STWYoungGC::SweepPhases()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::SweepPhases");
-    auto totalThreadCount = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1;  // gc thread and main thread
+    auto totalThreadCount = static_cast<uint32_t>(
+        Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1);  // gc thread and main thread
     for (uint32_t i = 0; i < totalThreadCount; i++) {
         ProcessQueue *queue = workList_->GetWeakReferenceQueue(i);
         while (true) {

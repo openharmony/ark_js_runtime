@@ -30,7 +30,7 @@ public:
         survivalObjectSize_ -= objSize;
     }
 protected:
-    BumpPointerAllocator *allocator_;
+    BumpPointerAllocator *allocator_ {nullptr};
     size_t overShootSize_ {0};
     size_t allocateAfterLastGC_ {0};
     size_t survivalObjectSize_ {0};

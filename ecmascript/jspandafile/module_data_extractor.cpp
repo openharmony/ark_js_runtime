@@ -53,7 +53,7 @@ JSHandle<JSTaggedValue> ModuleDataExtractor::ParseModule(JSThread *thread, const
     ASSERT(moduleIdx != -1);
     panda_file::File::EntityId literalArraysId = pf->GetLiteralArraysId();
     panda_file::LiteralDataAccessor lda(*pf, literalArraysId);
-    panda_file::File::EntityId moduleId = lda.GetLiteralArrayId(moduleIdx);
+    panda_file::File::EntityId moduleId = lda.GetLiteralArrayId(static_cast<size_t>(moduleIdx));
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<SourceTextModule> moduleRecord = factory->NewSourceTextModule();
