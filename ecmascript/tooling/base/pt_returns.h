@@ -297,6 +297,18 @@ private:
     NO_MOVE_SEMANTIC(GetObjectByHeapObjectIdReturns);
 
     std::unique_ptr<RemoteObject> remoteObjectResult_ {};
+class StopReturns : public PtBaseReturns {
+public:
+    explicit StopReturns(std::unique_ptr<Profile> profile) : profile_(std::move(profile)) {}
+    ~StopReturns() override = default;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+private:
+    StopReturns() = default;
+    NO_COPY_SEMANTIC(StopReturns);
+    NO_MOVE_SEMANTIC(StopReturns);
+
+    std::unique_ptr<Profile> profile_ {};
 };
 }  // namespace panda::tooling::ecmascript
 #endif

@@ -1335,5 +1335,24 @@ HWTEST_F_L0(StubTest, JSCallNativeTest)
                                   argV, fooEntry);
     EXPECT_EQ(result, JSTaggedValue::Undefined().GetRawData());
 }
+
+HWTEST_F_L0(StubTest, JSCallBoundTest)
+{
+    auto fooEntry = thread->GetFastStubEntry(CommonStubCSigns::FooBoundAOT);
+    auto footarget = NewAotFunction(2, fooEntry);
+    auto glue = thread->GetGlueAddr();
+    int x = 1;
+    int y = 2;
+    JSTaggedType argV[5] = {
+        footarget.GetRawData(),
+        0xa,
+        0xa,
+        JSTaggedValue(x).GetRawData(),
+        JSTaggedValue(y).GetRawData(),
+    };
+    auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5,
+                                  argV, fooEntry);
+    EXPECT_EQ(result, JSTaggedValue(38.0).GetRawData());
+}
 #endif
 }  // namespace panda::test

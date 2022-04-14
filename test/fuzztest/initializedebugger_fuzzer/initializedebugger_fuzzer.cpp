@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ark_InitializeDebugger_fuzzer.h"
+#include "initializedebugger_fuzzer.h"
 #include <cstddef>
 #include <cstdint>
 #include "ecmascript/napi/include/jsnapi.h"

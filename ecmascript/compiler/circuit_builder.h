@@ -217,10 +217,10 @@ public:
     GateRef IntPtr(int64_t val);
     GateRef Boolean(bool value);
     GateRef Double(double value);
-    GateRef UndefineConstant(GateType type);
-    GateRef HoleConstant(GateType type);
-    GateRef NullConstant(GateType type);
-    GateRef ExceptionConstant(GateType type);
+    GateRef UndefineConstant(GateType type = GateType::TAGGED_VALUE);
+    GateRef HoleConstant(GateType type = GateType::TAGGED_VALUE);
+    GateRef NullConstant(GateType type = GateType::TAGGED_VALUE);
+    GateRef ExceptionConstant(GateType type = GateType::TAGGED_VALUE);
     GateRef RelocatableData(uint64_t val);
     GateRef Alloca(int size);
     GateRef Branch(GateRef state, GateRef condition);
@@ -257,6 +257,8 @@ public:
     // constant
     inline GateRef True();
     inline GateRef False();
+    inline GateRef Undefined(VariableType type = VariableType::JS_ANY());
+
     // call operation
     GateRef CallRuntime(GateRef glue, int id, const std::vector<GateRef> &args);
     GateRef CallNGCRuntime(GateRef glue, size_t index, const std::vector<GateRef> &args);

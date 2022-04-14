@@ -394,6 +394,13 @@ void Heap::RecomputeLimits()
         << " globalSpaceAllocLimit_" << globalSpaceAllocLimit_;
 }
 
+void Heap::CheckAndTriggerOldGC()
+{
+    if (GetHeapObjectSize() > globalSpaceAllocLimit_) {
+        CollectGarbage(TriggerGCType::OLD_GC);
+    }
+}
+
 bool Heap::CheckConcurrentMark()
 {
     if (concurrentMarkingEnabled_ && !thread_->IsReadyToMark()) {
@@ -437,6 +444,7 @@ void Heap::TryTriggerConcurrentMarking()
             markType_ = MarkType::FULL_MARK;
             OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Trigger the first full mark";
             TriggerConcurrentMarking();
+            return;
         }
     } else {
         if (oldSpaceHeapObjectSize >= oldSpaceAllocLimit || globalHeapObjectSize >= globalSpaceAllocLimit_) {
@@ -604,7 +612,7 @@ bool Heap::ParallelGCTask::Run(uint32_t threadIndex)
 
 bool Heap::AsyncClearTask::Run([[maybe_unused]] uint32_t threadIndex)
 {
-    heap_->ReclaimRegions(gcType_);
+    heap_->ReclaimRegions(gcType_, lastRegionOfToSpace_);
     return true;
 }
 

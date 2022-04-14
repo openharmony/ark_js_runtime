@@ -99,6 +99,23 @@ void GateAccessor::SetGateType(GateRef gate, GateType gt)
     circuit_->LoadGatePtr(gate)->SetGateType(gt);
 }
 
+void GateAccessor::DeleteExceptionDep(UsesIterator &useIt)
+{
+    ASSERT(GetOpCode(*useIt) == OpCode::RETURN || GetOpCode(*useIt) == OpCode::DEPEND_SELECTOR);
+    if (GetOpCode(*useIt) == OpCode::RETURN) {
+        // 0 : the index of CONSTANT
+        circuit_->DeleteGate(GetValueIn(*useIt, 0));
+        DeleteGate(useIt);
+    } else {
+        size_t idx = useIt.GetIndex();
+        auto merge = GetState(*useIt, 0);
+        circuit_->DecreaseIn(merge, idx - 1);
+        auto valueSelector = *(Uses(merge).begin());
+        circuit_->DecreaseIn(valueSelector, idx);
+        DecreaseIn(useIt);
+    }
+}
+
 void GateAccessor::DeleteIn(UsesIterator &useIt)
 {
     size_t idx = useIt.GetIndex();
@@ -110,6 +127,13 @@ void GateAccessor::DeleteIn(UsesIterator &useIt)
 void GateAccessor::DeleteGate(UsesIterator &useIt)
 {
     circuit_->DeleteGate(*useIt);
+    useIt.SetChanged();
+}
+
+void GateAccessor::DecreaseIn(UsesIterator &useIt)
+{
+    size_t idx = useIt.GetIndex();
+    circuit_->DecreaseIn(*useIt, idx);
     useIt.SetChanged();
 }
 }

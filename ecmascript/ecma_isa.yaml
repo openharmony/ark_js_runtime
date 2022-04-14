@@ -102,6 +102,7 @@ groups:
       - sig: ecma.returnundefined
         acc: none
         prefix: ecma
+        properties: [return]
         format: [pref_op_none]
       - sig: ecma.createemptyobject
         acc: out:top

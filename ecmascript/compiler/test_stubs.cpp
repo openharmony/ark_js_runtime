@@ -133,4 +133,27 @@ void FooNativeAOTStub::GenerateCircuit(const CompilationConfig *cfg)
                                     a, b, Undefined()});
     Return(result);
 }
+
+void FooBoundAOTStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    GateRef glue = PtrArgument(0);
+    GateRef argc = Int32Argument(1);
+    GateRef calltarget = TaggedArgument(2);
+    GateRef newtarget = TaggedArgument(3);
+    GateRef thisObj = TaggedArgument(4);
+    GateRef a = TaggedArgument(5);
+    GateRef b = TaggedArgument(6);
+    GateRef bindArguments = IntBuildTaggedTypeWithNoGC(Int32(37));
+    (void)calltarget;
+    GateRef numArgs = IntBuildTaggedTypeWithNoGC(Int32(2));
+    GateRef barIndex = IntBuildTaggedTypeWithNoGC(Int32(CommonStubCSigns::BarAOT));
+    GateRef barfunc = CallRuntime(glue, RTSTUB_ID(DefineAotFunc), {barIndex, numArgs});
+    GateRef bindfunc = CallRuntime(glue, RTSTUB_ID(GetBindFunc), {barfunc});
+    GateRef newjsfunc = CallNGCRuntime(glue, RTSTUB_ID(JSCall), {glue, Int32(5), bindfunc, newtarget, barfunc,
+                                    Int64(0x02), bindArguments});
+    GateRef result = CallNGCRuntime(glue, RTSTUB_ID(JSCall), {glue, argc, newjsfunc, newtarget, thisObj,
+                                a, b});
+    Return(result);
+}
 }   // namespace panda::ecmascript::kungfu

@@ -1907,6 +1907,7 @@ bool BytecodeCircuitBuilder::IsDiscarded(EcmaOpcode opcode)
 {
     switch (opcode) {
         case EcmaOpcode::COPYMODULE_PREF_V8:
+        case EcmaOpcode::DEBUGGER_PREF:
             return true;
         default:
             return false;
@@ -2029,10 +2030,13 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                                      GateType::C_VALUE);
     argGates.at(0) = glueGate;
     commonArgs_.at(0) = glueGate;
-
-    for (size_t argIdx = 1; argIdx < CommonArgIdx::NUM_OF_ARGS; argIdx++) {
-        auto argGate = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, argIdx,
-                                        {Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST))},
+    auto argRoot = Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST));
+    auto actualArgc = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I32, CommonArgIdx::ACTUAL_ARGC,
+                                       {argRoot}, GateType::C_VALUE);
+    argGates.at(CommonArgIdx::ACTUAL_ARGC) = actualArgc;
+    commonArgs_.at(CommonArgIdx::ACTUAL_ARGC) = actualArgc;
+    for (size_t argIdx = CommonArgIdx::FUNC; argIdx < CommonArgIdx::NUM_OF_ARGS; argIdx++) {
+        auto argGate = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, argIdx, {argRoot},
                                         GateType::TAGGED_VALUE);
         argGates.at(argIdx) = argGate;
         commonArgs_.at(argIdx) = argGate;

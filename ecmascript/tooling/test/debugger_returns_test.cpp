@@ -287,5 +287,15 @@ HWTEST_F_L0(DebuggerReturnsTest, GetObjectByHeapObjectIdReturnsToObjectTest)
     Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
     ASSERT_EQ(std::move(remoteObjectResult), nullptr);
+HWTEST_F_L0(DebuggerReturnsTest, StopReturnsToObjectTest)
+{
+    std::unique_ptr<Profile> profile = std::make_unique<Profile>();
+    std::unique_ptr<StopReturns> stopReturns= std::make_unique<StopReturns>(std::move(profile));
+    ASSERT_NE(stopReturns, nullptr);
+    Local<ObjectRef> temp = stopReturns->ToObject(ecmaVm);
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "profile");
+    ASSERT_TRUE(temp->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> result = temp->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
 }
 }  // namespace panda::test
