@@ -25,29 +25,43 @@
 
 namespace panda::ecmascript::kungfu {
 bool PassManager::Compile(const std::string &fileName, const std::string &triple,
-                          const std::string &outputFileName)
+                          const std::string &outputFileName, const AotLog &log)
 {
     BytecodeTranslationInfo translationInfo;
     [[maybe_unused]] EcmaHandleScope handleScope(vm_->GetJSThread());
     bool res = CollectInfoOfPandaFile(fileName, entry_, &translationInfo);
     if (!res) {
-        std::cerr << "Cannot execute panda file '" << fileName << "'" << std::endl;
+        COMPILER_LOG(ERROR) << "Cannot execute panda file '" << fileName << "'";
         return false;
     }
     LLVMModule aotModule("aot_file", triple);
     CompilationConfig cmpCfg(triple);
+
+    bool enableLog = log.IsAlwaysEnabled();
+
     for (size_t i = 0; i < translationInfo.methodPcInfos.size(); i++) {
-        BytecodeCircuitBuilder builder(vm_, translationInfo, i);
+        const JSMethod *method = translationInfo.methodPcInfos[i].method;
+        const std::string methodName(method->GetMethodName());
+        if (!log.IsAlwaysEnabled() && !log.IsAlwaysDisabled()) {  // neither "all" nor "none"
+            enableLog = log.IncludesMethod(fileName, methodName);
+        }
+
+        if (enableLog) {
+            COMPILER_LOG(INFO) << "\033[34m" << "aot method [" << fileName << ":"
+                               << methodName << "] log:" << "\033[0m";
+        }
+
+        BytecodeCircuitBuilder builder(vm_, translationInfo, i, enableLog);
         builder.BytecodeToCircuit();
         PassData data(builder.GetCircuit());
-        PassRunner<PassData> pipeline(&data);
+        PassRunner<PassData> pipeline(&data, enableLog);
         pipeline.RunPass<SlowPathLoweringPass>(&builder, &cmpCfg);
         pipeline.RunPass<VerifierPass>();
         pipeline.RunPass<SchedulingPass>();
-        pipeline.RunPass<LLVMIRGenPass>(&aotModule, translationInfo.methodPcInfos[i].method);
+        pipeline.RunPass<LLVMIRGenPass>(&aotModule, method);
     }
 
-    AotFileManager manager(&aotModule);
+    AotFileManager manager(&aotModule, &log);
     manager.SaveAOTFile(outputFileName);
     TSLoader *tsLoader = vm_->GetTSLoader();
     SnapShot snapShot(vm_);
