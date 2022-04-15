@@ -376,21 +376,22 @@ static_assert(sizeof(InterpretedFrame) % sizeof(uint64_t) == 0u);  // the size s
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
-                                                        base::AlignedPointer,
+                                                        JSTaggedValue,
+                                                        JSTaggedValue,
+                                                        JSTaggedValue,
                                                         base::AlignedSize,
-                                                        JSTaggedValue,
-                                                        JSTaggedValue,
-                                                        JSTaggedValue,
+                                                        base::AlignedPointer,
                                                         InterpretedFrameBase> {
     enum class Index : size_t {
-        PcIndex = 0,
-        CallSizeIndex,
-        FunctionIndex,
+        FunctionIndex = 0,
         AccIndex,
         EnvIndex,
+        CallSizeIndex,
+        PcIndex,
         BaseIndex,
         NumOfMembers
     };
+
     static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
 
     inline JSTaggedType* GetPrevFrameFp()
@@ -428,16 +429,21 @@ struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTyp
         return GetOffset<static_cast<size_t>(Index::BaseIndex)>(isArch32);
     }
 
+    static size_t GetPcOffset(bool isArch32)
+    {
+        return GetOffset<static_cast<size_t>(Index::PcIndex)>(isArch32);
+    }
+
     static constexpr size_t GetSize(bool isArch32)
     {
         return isArch32 ? AsmInterpretedFrame::SizeArch32 : AsmInterpretedFrame::SizeArch64;
     }
 
-    alignas(EAS) const uint8_t *pc {nullptr};
-    alignas(EAS) size_t callSize {0};
     alignas(EAS) JSTaggedValue function {JSTaggedValue::Hole()};
     alignas(EAS) JSTaggedValue acc {JSTaggedValue::Hole()};
     alignas(EAS) JSTaggedValue env {JSTaggedValue::Hole()};
+    alignas(EAS) size_t callSize {0};
+    alignas(EAS) const uint8_t *pc {nullptr};
     alignas(EAS) InterpretedFrameBase base;
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(AsmInterpretedFrame), AsmInterpretedFrame::SizeArch32, AsmInterpretedFrame::SizeArch64);

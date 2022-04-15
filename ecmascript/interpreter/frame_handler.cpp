@@ -253,31 +253,25 @@ void InterpretedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisi
     }
 
 #if ECMASCRIPT_COMPILE_ASM_INTERPRETER
-    AsmInterpretedFrame *frame = reinterpret_cast<AsmInterpretedFrame *>(current) - 1;
-    if (frame->function != JSTaggedValue::Hole()) {
-        uintptr_t start = ToUintPtr(current);
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        AsmInterpretedFrame *prev_frame = reinterpret_cast<AsmInterpretedFrame *>(frame->base.prev) - 1;
-        uintptr_t end = ToUintPtr(prev_frame);
-        v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
-        v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->function)));
-        if (frame->pc != nullptr) {
-            // interpreter frame
-            v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->acc)));
-            v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->env)));
-        }
+    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(current);
+    if (frame->function == JSTaggedValue::Hole()) {
+        return;
     }
 #else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(current);
     if (frame->sp == nullptr) {
         return;
     }
-
+#endif
     uintptr_t start = ToUintPtr(current);
     uintptr_t end = 0U;
     FrameType type = FrameHandler(frame->base.prev).GetFrameType();
     if (type == FrameType::INTERPRETER_FRAME || type == FrameType::INTERPRETER_FAST_NEW_FRAME) {
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+        AsmInterpretedFrame *prevFrame = AsmInterpretedFrame::GetFrameFromSp(frame->base.prev);
+#else
         InterpretedFrame *prevFrame = InterpretedFrame::GetFrameFromSp(frame->base.prev);
+#endif
         end = ToUintPtr(prevFrame);
     } else if (type == FrameType::INTERPRETER_ENTRY_FRAME) {
         JSTaggedType *prevSp = frame->base.prev;
@@ -290,13 +284,18 @@ void InterpretedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisi
     v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
     v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->function)));
     if (frame->pc != nullptr) {
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+        // asm interpreter frame
+        v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->acc)));
+        v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->env)));
+#else
         // interpreter frame
         v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->acc)));
         v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->constpool)));
         v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->env)));
         v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->profileTypeInfo)));
-    }
 #endif
+    }
 }
 
 void InterpretedFrameHandler::DumpStack(std::ostream &os) const
@@ -441,12 +440,23 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
     isVerifying = thread_->GetEcmaVM()->GetHeap()->GetIsVerifying();
 #endif
 
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    auto leaveFrame = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
+    if (leaveFrame != nullptr) {
+        ASSERT(OptimizedLeaveFrame::GetFrameFromSp(leaveFrame)->type == FrameType::ASM_LEAVE_FRAME);
+        OptimizedLeaveFrameHandler(thread_, reinterpret_cast<uintptr_t *>(leaveFrame)).Iterate(v0,
+            v1, derivedPointers, isVerifying);
+    }
+    JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
+#else
     // asm interpreter leaveframe
     JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
     if (current == nullptr) {
         // c++ interpreter frame
         current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
     }
+#endif
+
     while (current) {
         FrameType type = FrameHandler(current).GetFrameType();
         if (type == FrameType::INTERPRETER_FRAME || type == FrameType::INTERPRETER_FAST_NEW_FRAME) {
@@ -473,8 +483,15 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
         } else {
             ASSERT(type == FrameType::OPTIMIZED_LEAVE_FRAME || type == FrameType::ASM_LEAVE_FRAME);
             OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(current);
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+            if (leaveFrame != current) { // avoid iterating from same leaveframe again
+                OptimizedLeaveFrameHandler(thread_, reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
+                    v1, derivedPointers, isVerifying);
+            }
+#else
             OptimizedLeaveFrameHandler(thread_, reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
                 v1, derivedPointers, isVerifying);
+#endif
             //  arm32, arm64 and x86_64 support stub and aot, when aot/stub call runtime, generate Optimized
             // Leave Frame.
             current = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
