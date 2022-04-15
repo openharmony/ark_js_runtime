@@ -111,7 +111,7 @@ class SlowPathLowering {
 public:
     SlowPathLowering(BytecodeCircuitBuilder *bcBuilder, Circuit *circuit, CompilationConfig *cmpCfg,
                      bool enableLog)
-        : bcBuilder_(bcBuilder), circuit_(circuit), acc_(circuit), builder_(circuit, cmpCfg), cmpCfg_(cmpCfg),
+        : bcBuilder_(bcBuilder), circuit_(circuit), acc_(circuit), builder_(circuit, cmpCfg),
           dependEntry_(Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY))), enableLog_(enableLog) {}
     ~SlowPathLowering() = default;
     void CallRuntimeLowering();
@@ -122,26 +122,21 @@ public:
     }
 
 private:
-    inline bool IsArch32Bit() const
-    {
-        return cmpCfg_->Is32Bit();
-    }
-    inline bool IsArch64Bit() const
-    {
-        return cmpCfg_->IsAmd64() || cmpCfg_->IsAArch64();
-    }
-    void LowerHirToCall(GateRef hirGate, GateRef callGate);
-    void LowerHirToFastCall(GateRef hirGate, GateRef callGate);
-    void LowerHirToConditionCall(GateRef hirGate, GateRef condGate, GateRef callGate);
+    void ReplaceHirControlGate(GateAccessor::UsesIterator &useIt, GateRef newGate, bool noThrow = false);
+    void LowerHirToMir(GateRef hir, GateRef outir,
+                       const std::vector<GateRef> &successControl,
+                       const std::vector<GateRef> &exceptionControl,
+                       bool noThrow = false);
+    void LowerHirToCall(GateRef hirGate, GateRef callGate, bool noThrow = false);
     void LowerHirToThrowCall(GateRef hirGate, GateRef condGate, GateRef callGate);
     void LowerExceptionHandler(GateRef hirGate);
-    // labelmanager must be initialized
+    // environment must be initialized
     GateRef GetConstPool(GateRef jsFunc);
-    // labelmanager must be initialized
+    // environment must be initialized
     GateRef GetCurrentEnv(GateRef jsFunc);
-    // labelmanager must be initialized
+    // environment must be initialized
     GateRef GetObjectFromConstPool(GateRef jsFunc, GateRef index);
-    // labelmanager must be initialized
+    // environment must be initialized
     GateRef GetHomeObjectFromJSFunction(GateRef jsFunc);
     GateRef GetValueFromConstStringTable(GateRef glue, GateRef gate, uint32_t inIndex);
     void Lower(GateRef gate);
@@ -258,7 +253,6 @@ private:
     Circuit *circuit_;
     GateAccessor acc_;
     CircuitBuilder builder_;
-    CompilationConfig *cmpCfg_;
     GateRef dependEntry_;
     bool enableLog_ {false};
 };
