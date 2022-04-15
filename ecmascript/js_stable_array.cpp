@@ -252,13 +252,14 @@ JSTaggedValue JSStableArray::Join(JSHandle<JSArray> receiver, EcmaRuntimeCallInf
             if (sep >= 0) {
                 newString->WriteData(static_cast<char>(sep), current);
             } else if (sep != JSStableArray::SeparatorFlag::MINUS_TWO) {
-                newString->WriteData(*sepStringHandle, current, allocateLength - current, sepLength);
+                newString->WriteData(*sepStringHandle, current,
+                    allocateLength - static_cast<uint32_t>(current), sepLength);
             }
             current += static_cast<int>(sepLength);
         }
         JSHandle<EcmaString> nextStr = vec[k];
         int nextLength = static_cast<int>(nextStr->GetLength());
-        newString->WriteData(*nextStr, current, static_cast<uint32_t>(allocateLength - current), nextLength);
+        newString->WriteData(*nextStr, current, allocateLength - static_cast<uint32_t>(current), nextLength);
         current += nextLength;
     }
     return JSTaggedValue(newString);

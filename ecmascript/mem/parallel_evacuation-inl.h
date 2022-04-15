@@ -128,11 +128,11 @@ int ParallelEvacuation::CalculateEvacuationThreadNum()
 
 int ParallelEvacuation::CalculateUpdateThreadNum()
 {
-    int length = workloads_.size();
+    uint32_t length = workloads_.size();
     double regionPerThread = 1.0 / 4;
     length = std::pow(length, regionPerThread);
-    int maxThreadNum = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum();
-    return static_cast<int>(std::min(std::max(1, length), maxThreadNum));
+    uint32_t maxThreadNum = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum();
+    return static_cast<int>(std::min(std::max(1U, length), maxThreadNum));
 }
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_PARALLEL_EVACUATION_INL_H

@@ -50,7 +50,7 @@ void BytecodeCircuitBuilder::CollectBytecodeBlockInfo(uint8_t *pc, std::vector<C
     auto opcode = static_cast<EcmaOpcode>(*pc);
     switch (opcode) {
         case EcmaOpcode::JMP_IMM8: {
-            int8_t offset = READ_INST_8_0();
+            int8_t offset = static_cast<int8_t>(READ_INST_8_0());
             std::vector<uint8_t *> temp;
             temp.emplace_back(pc + offset);
             // current basic block end
@@ -62,7 +62,7 @@ void BytecodeCircuitBuilder::CollectBytecodeBlockInfo(uint8_t *pc, std::vector<C
         }
             break;
         case EcmaOpcode::JMP_IMM16: {
-            int16_t offset = READ_INST_16_0();
+            int16_t offset = static_cast<int16_t>(READ_INST_16_0());
             std::vector<uint8_t *> temp;
             temp.emplace_back(pc + offset);
             bytecodeBlockInfos.emplace_back(pc, SplitKind::END, temp);
@@ -73,7 +73,7 @@ void BytecodeCircuitBuilder::CollectBytecodeBlockInfo(uint8_t *pc, std::vector<C
         }
             break;
         case EcmaOpcode::JMP_IMM32: {
-            int32_t offset = READ_INST_32_0();
+            int32_t offset = static_cast<int32_t>(READ_INST_32_0());
             std::vector<uint8_t *> temp;
             temp.emplace_back(pc + offset);
             bytecodeBlockInfos.emplace_back(pc, SplitKind::END, temp);
@@ -85,7 +85,7 @@ void BytecodeCircuitBuilder::CollectBytecodeBlockInfo(uint8_t *pc, std::vector<C
         case EcmaOpcode::JEQZ_IMM8: {
             std::vector<uint8_t *> temp;
             temp.emplace_back(pc + BytecodeOffset::TWO);   // first successor
-            int8_t offset = READ_INST_8_0();
+            int8_t offset = static_cast<int8_t>(READ_INST_8_0());
             temp.emplace_back(pc + offset);  // second successor
             // condition branch current basic block end
             bytecodeBlockInfos.emplace_back(pc, SplitKind::END, temp);
@@ -99,7 +99,7 @@ void BytecodeCircuitBuilder::CollectBytecodeBlockInfo(uint8_t *pc, std::vector<C
         case EcmaOpcode::JEQZ_IMM16: {
             std::vector<uint8_t *> temp;
             temp.emplace_back(pc + BytecodeOffset::THREE);   // first successor
-            int16_t offset = READ_INST_16_0();
+            int16_t offset = static_cast<int16_t>(READ_INST_16_0());
             temp.emplace_back(pc + offset);  // second successor
             bytecodeBlockInfos.emplace_back(pc, SplitKind::END, temp); // end
             bytecodeBlockInfos.emplace_back(pc + BytecodeOffset::THREE, SplitKind::START,
@@ -110,7 +110,7 @@ void BytecodeCircuitBuilder::CollectBytecodeBlockInfo(uint8_t *pc, std::vector<C
         case EcmaOpcode::JNEZ_IMM8: {
             std::vector<uint8_t *> temp;
             temp.emplace_back(pc + BytecodeOffset::TWO); // first successor
-            int8_t offset = READ_INST_8_0();
+            int8_t offset = static_cast<int8_t>(READ_INST_8_0());
             temp.emplace_back(pc + offset); // second successor
             bytecodeBlockInfos.emplace_back(pc, SplitKind::END, temp);
             bytecodeBlockInfos.emplace_back(pc + BytecodeOffset::TWO, SplitKind::START,
@@ -2170,7 +2170,9 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     circuit_.NewIn(bbNext->stateStart, bbNext->statePredIndex, ifException);
                     circuit_.NewIn(bbNext->dependStart, bbNext->statePredIndex + 1, gate);
                     bbNext->statePredIndex++;
-                    bbNext->expandedPreds.push_back( {bb.id, pcPrev, true} );
+                    bbNext->expandedPreds.push_back(
+                        {bb.id, pcPrev, true}
+                    );
                     ASSERT(bbNext->statePredIndex <= bbNext->numOfStatePreds);
                 } else {
                     auto constant = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
@@ -2197,7 +2199,9 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     circuit_.NewIn(bbNext->stateStart, bbNext->statePredIndex, stateCur);
                     circuit_.NewIn(bbNext->dependStart, bbNext->statePredIndex + 1, dependCur);
                     bbNext->statePredIndex++;
-                    bbNext->expandedPreds.push_back( {bb.id, pcPrev, false} );
+                    bbNext->expandedPreds.push_back(
+                        {bb.id, pcPrev, false}
+                    );
                     ASSERT(bbNext->statePredIndex <= bbNext->numOfStatePreds);
                 }
             } else if (IsJump(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
@@ -2219,14 +2223,18 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                             circuit_.NewIn(bbNext->stateStart, bbNext->statePredIndex, ifFalse);
                             circuit_.NewIn(bbNext->dependStart, bbNext->statePredIndex + 1, gate);
                             bbNext->statePredIndex++;
-                            bbNext->expandedPreds.push_back( {bb.id, pcPrev, false} );
+                            bbNext->expandedPreds.push_back(
+                                {bb.id, pcPrev, false}
+                            );
                             ASSERT(bbNext->statePredIndex <= bbNext->numOfStatePreds);
                             bitSet |= 1;
                         } else {
                             circuit_.NewIn(bbNext->stateStart, bbNext->statePredIndex, ifTrue);
                             circuit_.NewIn(bbNext->dependStart, bbNext->statePredIndex + 1, gate);
                             bbNext->statePredIndex++;
-                            bbNext->expandedPreds.push_back( {bb.id, pcPrev, false} );
+                            bbNext->expandedPreds.push_back(
+                                {bb.id, pcPrev, false}
+                            );
                             ASSERT(bbNext->statePredIndex <= bbNext->numOfStatePreds);
                             bitSet |= 2; // 2:verify
                         }
@@ -2240,7 +2248,9 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     circuit_.NewIn(bbNext->stateStart, bbNext->statePredIndex, stateCur);
                     circuit_.NewIn(bbNext->dependStart, bbNext->statePredIndex + 1, dependCur);
                     bbNext->statePredIndex++;
-                    bbNext->expandedPreds.push_back( {bb.id, pcPrev, false} );
+                    bbNext->expandedPreds.push_back(
+                        {bb.id, pcPrev, false}
+                    );
                     ASSERT(bbNext->statePredIndex <= bbNext->numOfStatePreds);
                     break;
                 }
@@ -2273,7 +2283,9 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     circuit_.NewIn(bbNext->stateStart, bbNext->statePredIndex, stateCur);
                     circuit_.NewIn(bbNext->dependStart, bbNext->statePredIndex + 1, dependCur);
                     bbNext->statePredIndex++;
-                    bbNext->expandedPreds.push_back( {bb.id, pcPrev, false} );
+                    bbNext->expandedPreds.push_back(
+                        {bb.id, pcPrev, false}
+                    );
                     ASSERT(bbNext->statePredIndex <= bbNext->numOfStatePreds);
                 }
             } else if (IsDiscarded(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {

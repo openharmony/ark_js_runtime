@@ -44,14 +44,14 @@ void TaggedTree<Derived>::SetRoot(JSThread *thread, int index, JSTaggedValue key
 template<typename Derived>
 void TaggedTree<Derived>::SetKey(const JSThread *thread, uint32_t entry, JSTaggedValue key)
 {
-    uint32_t index = EntryToIndex(entry);
+    int index = EntryToIndex(entry);
     SetElement(thread, index, key);
 }
 
 template<typename Derived>
 void TaggedTree<Derived>::SetValue(const JSThread *thread, uint32_t entry, JSTaggedValue value)
 {
-    uint32_t index = EntryToIndex(entry) + Derived::ENTRY_VALUE_INDEX;
+    int index = static_cast<int>(EntryToIndex(entry) + Derived::ENTRY_VALUE_INDEX);
     SetElement(thread, index, value);
 }
 
@@ -59,7 +59,7 @@ template<typename Derived>
 void TaggedTree<Derived>::SetColor(const JSThread *thread, int entry, TreeColor color)
 {
     if (entry >= 0) {
-        uint32_t index = EntryToIndex(entry) + Derived::ENTRY_COLOR_INDEX;
+        int index = static_cast<int>(EntryToIndex(entry) + Derived::ENTRY_COLOR_INDEX);
         SetElement(thread, index, JSTaggedValue(static_cast<int>(color)));
     }
 }
@@ -70,21 +70,21 @@ void TaggedTree<Derived>::SetParent(const JSThread *thread, int entry, JSTaggedV
     if (entry < 0) {
         return;
     }
-    uint32_t index = EntryToIndex(entry) + Derived::ENTRY_PARENT_INDEX;
+    int index = static_cast<int>(EntryToIndex(entry) + Derived::ENTRY_PARENT_INDEX);
     SetElement(thread, index, value);
 }
 
 template<typename Derived>
 void TaggedTree<Derived>::SetLeftChild(const JSThread *thread, uint32_t entry, JSTaggedValue value)
 {
-    uint32_t index = EntryToIndex(entry) + Derived::ENTRY_LEFT_CHILD_INDEX;
+    int index = static_cast<int>(EntryToIndex(entry) + Derived::ENTRY_LEFT_CHILD_INDEX);
     SetElement(thread, index, value);
 }
 
 template<typename Derived>
 void TaggedTree<Derived>::SetRightChild(const JSThread *thread, uint32_t entry, JSTaggedValue value)
 {
-    uint32_t index = EntryToIndex(entry) + Derived::ENTRY_RIGHT_CHILD_INDEX;
+    int index = static_cast<int>(EntryToIndex(entry) + Derived::ENTRY_RIGHT_CHILD_INDEX);
     SetElement(thread, index, value);
 }
 
@@ -113,7 +113,7 @@ JSTaggedValue TaggedTree<Derived>::GetKey(int entry) const
 template<typename Derived>
 JSTaggedValue TaggedTree<Derived>::GetValue(int entry) const
 {
-    int index = EntryToIndex(entry) + Derived::ENTRY_VALUE_INDEX;
+    int index = static_cast<int>(EntryToIndex(entry) + Derived::ENTRY_VALUE_INDEX);
     return GetElement(index);
 }
 
@@ -123,7 +123,7 @@ TreeColor TaggedTree<Derived>::GetColor(int entry) const
     if (entry < 0) {
         return TreeColor::BLACK;
     }
-    int index = EntryToIndex(entry) + Derived::ENTRY_COLOR_INDEX;
+    int index = static_cast<int>(EntryToIndex(entry) + Derived::ENTRY_COLOR_INDEX);
     JSTaggedValue color = GetElement(index);
     return color.GetInt() == TreeColor::RED ? TreeColor::RED : TreeColor::BLACK;
 }
@@ -190,7 +190,7 @@ JSTaggedValue TaggedTree<Derived>::GetLeftChild(int parent) const
     if (parent < 0) {
         return JSTaggedValue::Hole();
     }
-    int index = EntryToIndex(parent) + Derived::ENTRY_LEFT_CHILD_INDEX;
+    int index = static_cast<int>(EntryToIndex(parent) + Derived::ENTRY_LEFT_CHILD_INDEX);
     return Get(index);
 }
 
@@ -200,7 +200,7 @@ JSTaggedValue TaggedTree<Derived>::GetRightChild(int parent) const
     if (parent < 0) {
         return JSTaggedValue::Hole();
     }
-    int index = EntryToIndex(parent) + Derived::ENTRY_RIGHT_CHILD_INDEX;
+    int index = static_cast<int>(EntryToIndex(parent) + Derived::ENTRY_RIGHT_CHILD_INDEX);
     return Get(index);
 }
 
@@ -210,7 +210,7 @@ int TaggedTree<Derived>::GetLeftChildIndex(int parent) const
     if (parent < 0) {
         return -1;
     }
-    int index = EntryToIndex(parent) + Derived::ENTRY_LEFT_CHILD_INDEX;
+    int index = static_cast<int>(EntryToIndex(parent) + Derived::ENTRY_LEFT_CHILD_INDEX);
     JSTaggedValue child = Get(index);
     return child.IsHole() ? -1 : child.GetInt();
 }
@@ -221,7 +221,7 @@ int TaggedTree<Derived>::GetRightChildIndex(int parent) const
     if (parent < 0) {
         return -1;
     }
-    int index = EntryToIndex(parent) + Derived::ENTRY_RIGHT_CHILD_INDEX;
+    int index = static_cast<int>(EntryToIndex(parent) + Derived::ENTRY_RIGHT_CHILD_INDEX);
     JSTaggedValue child = Get(index);
     return child.IsHole() ? -1: child.GetInt();
 }
@@ -229,7 +229,7 @@ int TaggedTree<Derived>::GetRightChildIndex(int parent) const
 template<typename Derived>
 int TaggedTree<Derived>::GetParent(int entry) const
 {
-    int index = EntryToIndex(entry) + Derived::ENTRY_PARENT_INDEX;
+    int index = static_cast<int>(EntryToIndex(entry) + Derived::ENTRY_PARENT_INDEX);
     JSTaggedValue parent = GetElement(index);
     return parent.GetInt();
 }
@@ -305,7 +305,7 @@ int TaggedTree<Derived>::Capacity() const
 template<typename Derived>
 int TaggedTree<Derived>::ComputeCapacity(int oldCapacity)
 {
-    int capacity = (oldCapacity << 1) + 1;
+    int capacity = (static_cast<uint32_t>(oldCapacity) << 1) + 1;
     return (capacity > MIN_CAPACITY) ? capacity : MIN_CAPACITY;
 }
 

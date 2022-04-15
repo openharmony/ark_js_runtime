@@ -470,7 +470,7 @@ JSHandle<Derived> TaggedTree<Derived>::Shrink(const JSThread *thread, const JSHa
         return tree;
     }
 
-    int length = ELEMENTS_START_INDEX + newCapacity * (Derived::ENTRY_SIZE);
+    int length = ELEMENTS_START_INDEX + static_cast<int>(newCapacity) * (Derived::ENTRY_SIZE);
     JSHandle<Derived> newTree = AdjustTaggedTree(thread, tree, length);
     newTree->SetCapacity(thread, newCapacity);
     return newTree;

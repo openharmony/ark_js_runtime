@@ -150,11 +150,11 @@ bool RegExpParser::ParseUnlimitedLengthHexNumber(uint32_t maxValue, uint32_t *va
         return false;
     }
     while (d >= 0) {
-        if (UNLIKELY(x > (std::numeric_limits<uint32_t>::max() - d) / HEX_VALUE)) {
+        if (UNLIKELY(x > (std::numeric_limits<uint32_t>::max() - static_cast<uint32_t>(d)) / HEX_VALUE)) {
             LOG_ECMA(FATAL) << "value overflow";
             return false;
         }
-        x = x * HEX_VALUE + d;
+        x = x * HEX_VALUE + static_cast<uint32_t>(d);
         if (x > maxValue) {
             return false;
         }
@@ -215,7 +215,7 @@ bool RegExpParser::ParseHexEscape(int length, uint32_t *value)
             Advance();
             return false;
         }
-        val = val * HEX_VALUE + d;
+        val = val * HEX_VALUE + static_cast<uint32_t>(d);
         Advance();
     }
     *value = val;
@@ -407,7 +407,7 @@ void RegExpParser::ParseAlternative(bool isBackward)
                         pc_ += i;  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                     }
                     if (IsIgnoreCase()) {
-                        matchedChar = static_cast<uint32_t>(Canonicalize(matchedChar, IsUtf16()));
+                        matchedChar = static_cast<uint32_t>(Canonicalize(static_cast<int>(matchedChar), IsUtf16()));
                     }
                     if (matchedChar > UINT16_MAX) {
                         Char32OpCode charOp;

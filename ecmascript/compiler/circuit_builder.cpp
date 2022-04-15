@@ -80,7 +80,7 @@ GateRef CircuitBuilder::Int16(int16_t val)
 
 GateRef CircuitBuilder::Int32(int32_t val)
 {
-    return GetCircuit()->GetConstantGate(MachineType::I32, val, GateType::C_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I32, static_cast<BitField>(val), GateType::C_VALUE);
 }
 
 GateRef CircuitBuilder::Int64(int64_t val)
@@ -95,7 +95,6 @@ GateRef CircuitBuilder::IntPtr(int64_t val)
 
 GateRef CircuitBuilder::RelocatableData(uint64_t val)
 {
-    auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
     return GetCircuit()->NewGate(OpCode(OpCode::RELOCATABLE_DATA), val, {constantList}, GateType::EMPTY);
 }
 

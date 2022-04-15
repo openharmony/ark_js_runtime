@@ -84,7 +84,7 @@ JSHandle<BigInt> BigIntHelper::SetBigInt(JSThread *thread, const std::string &nu
     size_t mod = binaryStrLen % BigInt::DATEBITS;
     int index = 0;
     if (mod == 0) {
-        index = len - 1;
+        index = static_cast<int>(len - 1);
         bigint = BigInt::CreateBigint(thread, len);
     } else {
         len++;
@@ -589,7 +589,7 @@ void BigInt::BigIntToInt64(JSThread *thread, JSHandle<JSTaggedValue> bigint, int
         *(addr + index) = bigInt64->GetDigit(index);
     }
     if (bigInt64->GetSign()) {
-        *cValue = static_cast<int64_t>(~(*cValue - 1));
+        *cValue = ~(static_cast<uint64_t>(static_cast<int64_t>(*cValue - 1)));
     }
 }
 

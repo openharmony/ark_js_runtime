@@ -187,7 +187,7 @@ void AssemblerX64::Ret()
 void AssemblerX64::Jmp(Label *target, Distance distance)
 {
     if (target->IsBound()) {
-        int32_t offset = target->GetPos() - GetCurrentPosition();
+        int32_t offset = static_cast<int32_t>(target->GetPos() - GetCurrentPosition());
         EmitJmp(offset);
         return;
     }
@@ -198,7 +198,7 @@ void AssemblerX64::Jmp(Label *target, Distance distance)
         // EB: Jmp rel8
         EmitU8(0xEB);
         if (target->IsLinkedNear()) {
-            emitPos = target->GetLinkedNearPos() - pos;
+            emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
         target->LinkNearPos(pos);
         ASSERT(InRange8(emitPos));
@@ -224,7 +224,10 @@ void AssemblerX64::Bind(Label *target)
         uint32_t linkPos = target->GetLinkedPos();
         while (linkPos != 0) {
             linkPos = GetU32(linkPos);
-            int32_t disp = (pos - linkPos - sizeof(int32_t));
+            if (linkPos == 0) {
+                break;
+            }
+            int32_t disp = static_cast<int32_t>(pos - linkPos - sizeof(int32_t));
             PutI32(linkPos, disp);
         }
     }
@@ -233,8 +236,11 @@ void AssemblerX64::Bind(Label *target)
         uint32_t linkPos = target->GetLinkedNearPos();
         while (linkPos != 0) {
             int8_t offsetToNext = GetI8(static_cast<size_t>(linkPos));
-            linkPos += offsetToNext;
-            int32_t disp = (pos - linkPos - sizeof(int8_t));
+            if (offsetToNext == 0) {
+                break;
+            }
+            linkPos += static_cast<uint32_t>(offsetToNext);
+            int32_t disp = static_cast<int32_t>(pos - linkPos - sizeof(int8_t));
             ASSERT(InRange8(disp));
             PutI8(linkPos, static_cast<int8_t>(disp));
         }
@@ -308,7 +314,7 @@ void Operand::BuildDisp32(int32_t disp)
 void AssemblerX64::EmitOperand(int32_t reg, Operand rm)
 {
     // moderm
-    EmitU8(rm.moderm_ | (reg << LOW_BITS_SIZE));
+    EmitU8(rm.moderm_ | (static_cast<uint32_t>(reg) << LOW_BITS_SIZE));
     if (rm.hasSIB_) {
         EmitU8(rm.sib_);
     }

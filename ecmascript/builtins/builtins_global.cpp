@@ -288,14 +288,14 @@ uint8_t BuiltinsGlobal::GetValueFromTwoHex(uint16_t front, uint16_t behind)
 JSTaggedValue BuiltinsGlobal::Decode(JSThread *thread, const JSHandle<EcmaString> &str, judgURIFunc IsInURISet)
 {
     // 1. Let strLen be the number of code units in string.
-    [[maybe_unused]] uint32_t strLen = str->GetLength();
+    [[maybe_unused]] int32_t strLen = static_cast<int32_t>(str->GetLength());
     // 2. Let R be the empty String.
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     std::u16string resStr;
 
     // 3. Let k be 0.
     // 4. Repeat
-    uint32_t k = 0;
+    int32_t k = 0;
     while (true) {
         // a. If k equals strLen, return R.
         if (k == strLen) {
@@ -377,8 +377,8 @@ JSTaggedValue BuiltinsGlobal::Decode(JSThread *thread, const JSHandle<EcmaString
                 //     a. Let L be (((V – 0x10000) & 0x3FF) + 0xDC00).
                 //     b. Let H be ((((V – 0x10000) >> 10) & 0x3FF) + 0xD800).
                 //     c. Let S be the String containing the two code units H and L.
-                uint32_t n = 0;
-                while ((((static_cast<uint32_t>(bb) << n) & BIT_MASK_ONE) != 0)) {
+                int32_t n = 0;
+                while ((((static_cast<uint32_t>(bb) << static_cast<uint32_t>(n)) & BIT_MASK_ONE) != 0)) {
                     n++;
                     if (n > 4) // 4 : 4 means less than 4
                         break;
@@ -396,7 +396,7 @@ JSTaggedValue BuiltinsGlobal::Decode(JSThread *thread, const JSHandle<EcmaString
                     THROW_URI_ERROR_AND_RETURN(thread, "DecodeURI: The format of the URI to be parsed is incorrect",
                                                JSTaggedValue::Exception());
                 }
-                uint32_t j = 1;
+                int32_t j = 1;
                 while (j < n) {
                     k++;
                     uint16_t codeUnit = str->At(k);
