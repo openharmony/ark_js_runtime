@@ -374,7 +374,7 @@ GateRef Stub::FindElementWithCache(GateRef glue, GateRef layoutInfo, GateRef hCl
 {
     auto env = GetEnvironment();
     Label subEntry(env);
-    env->PushCurrentLabel(&subEntry);
+    env->SubCfgEntry(&subEntry);
     DEFVARIABLE(result, VariableType::INT32(), Int32(-1));
     DEFVARIABLE(i, VariableType::INT32(), Int32(0));
     Label exit(env);
@@ -428,7 +428,7 @@ GateRef Stub::FindElementWithCache(GateRef glue, GateRef layoutInfo, GateRef hCl
     Jump(&exit);
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -436,7 +436,7 @@ GateRef Stub::FindElementFromNumberDictionary(GateRef glue, GateRef elements, Ga
 {
     auto env = GetEnvironment();
     Label subentry(env);
-    env->PushCurrentLabel(&subentry);
+    env->SubCfgEntry(&subentry);
     DEFVARIABLE(result, VariableType::INT32(), Int32(-1));
     Label exit(env);
     GateRef capcityoffset =
@@ -484,7 +484,7 @@ GateRef Stub::FindElementFromNumberDictionary(GateRef glue, GateRef elements, Ga
     LoopEnd(&loopHead);
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -493,7 +493,7 @@ GateRef Stub::FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRe
 {
     auto env = GetEnvironment();
     Label funcEntry(env);
-    env->PushCurrentLabel(&funcEntry);
+    env->SubCfgEntry(&funcEntry);
     Label exit(env);
     DEFVARIABLE(result, VariableType::INT32(), Int32(-1));
     GateRef capcityoffset =
@@ -589,7 +589,7 @@ GateRef Stub::FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRe
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -604,7 +604,7 @@ GateRef Stub::FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, 
 {
     auto env = GetEnvironment();
     Label funcEntry(env);
-    env->PushCurrentLabel(&funcEntry);
+    env->SubCfgEntry(&funcEntry);
     Label exit(env);
     DEFVARIABLE(result, VariableType::INT32(), Int32(-1));
     GateRef capcityoffset =
@@ -705,7 +705,7 @@ GateRef Stub::FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, 
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -713,7 +713,7 @@ GateRef Stub::JSObjectGetProperty(VariableType returnType, GateRef obj, GateRef 
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     DEFVARIABLE(result, returnType, Undefined(returnType));
     Label inlinedProp(env);
@@ -743,7 +743,7 @@ GateRef Stub::JSObjectGetProperty(VariableType returnType, GateRef obj, GateRef 
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -751,7 +751,7 @@ void Stub::JSObjectSetProperty(GateRef glue, GateRef obj, GateRef hClass, GateRe
 {
     auto env = GetEnvironment();
     Label subEntry(env);
-    env->PushCurrentLabel(&subEntry);
+    env->SubCfgEntry(&subEntry);
     Label exit(env);
     Label inlinedProp(env);
     Label notInlinedProp(env);
@@ -774,7 +774,7 @@ void Stub::JSObjectSetProperty(GateRef glue, GateRef obj, GateRef hClass, GateRe
         }
     }
     Bind(&exit);
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return;
 }
 
@@ -782,7 +782,7 @@ GateRef Stub::ComputePropertyCapacityInJSObj(GateRef oldLength)
 {
     auto env = GetEnvironment();
     Label subEntry(env);
-    env->PushCurrentLabel(&subEntry);
+    env->SubCfgEntry(&subEntry);
     Label exit(env);
     DEFVARIABLE(result, VariableType::INT32(), Int32(0));
     GateRef newL = Int32Add(oldLength, Int32(JSObject::PROPERTIES_GROW_SIZE));
@@ -800,7 +800,7 @@ GateRef Stub::ComputePropertyCapacityInJSObj(GateRef oldLength)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -808,7 +808,7 @@ GateRef Stub::CallSetterUtil(GateRef glue, GateRef holder, GateRef accessor, Gat
 {
     auto env = GetEnvironment();
     Label subEntry(env);
-    env->PushCurrentLabel(&subEntry);
+    env->SubCfgEntry(&subEntry);
     Label exit(env);
     DEFVARIABLE(result, VariableType::INT64(), Undefined(VariableType::INT64()));
     GateRef callRes = CallRuntime(glue, RTSTUB_ID(CallSetter), { accessor, holder, value, TaggedTrue() });
@@ -825,7 +825,7 @@ GateRef Stub::CallSetterUtil(GateRef glue, GateRef holder, GateRef accessor, Gat
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -833,7 +833,7 @@ GateRef Stub::ShouldCallSetter(GateRef receiver, GateRef holder, GateRef accesso
 {
     auto env = GetEnvironment();
     Label subEntry(env);
-    env->PushCurrentLabel(&subEntry);
+    env->SubCfgEntry(&subEntry);
     Label exit(env);
     DEFVARIABLE(result, VariableType::BOOL(), True());
     Label isInternal(env);
@@ -862,7 +862,7 @@ GateRef Stub::ShouldCallSetter(GateRef receiver, GateRef holder, GateRef accesso
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -870,7 +870,7 @@ void Stub::JSHClassAddProperty(GateRef glue, GateRef receiver, GateRef key, Gate
 {
     auto env = GetEnvironment();
     Label subEntry(env);
-    env->PushCurrentLabel(&subEntry);
+    env->SubCfgEntry(&subEntry);
     Label exit(env);
     GateRef hclass = LoadHClass(receiver);
     GateRef metaData = GetPropertyMetaDataFromAttr(attr);
@@ -901,7 +901,7 @@ void Stub::JSHClassAddProperty(GateRef glue, GateRef receiver, GateRef key, Gate
         Jump(&exit);
     }
     Bind(&exit);
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return;
 }
 
@@ -926,7 +926,7 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
 {
     auto env = GetEnvironment();
     Label subentry(env);
-    env->PushCurrentLabel(&subentry);
+    env->SubCfgEntry(&subentry);
     Label exit(env);
     DEFVARIABLE(result, VariableType::INT64(), Undefined(VariableType::INT64()));
     Label setHasCtor(env);
@@ -1044,7 +1044,7 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1059,7 +1059,7 @@ GateRef Stub::TaggedToRepresentation(GateRef value)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     DEFVARIABLE(resultRep, VariableType::INT64(),
                 Int64(static_cast<int32_t>(Representation::OBJECT)));
@@ -1090,7 +1090,7 @@ GateRef Stub::TaggedToRepresentation(GateRef value)
     }
     Bind(&exit);
     auto ret = *resultRep;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1125,7 +1125,7 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     Label isHeapObject(env);
     Label isVailedIndex(env);
@@ -1192,7 +1192,7 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
         }
     }
     Bind(&exit);
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return;
 }
 
@@ -1200,7 +1200,7 @@ GateRef Stub::TaggedIsString(GateRef obj)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     DEFVARIABLE(result, VariableType::BOOL(), False());
     Label isHeapObject(env);
@@ -1213,7 +1213,7 @@ GateRef Stub::TaggedIsString(GateRef obj)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1221,7 +1221,7 @@ GateRef Stub::TaggedIsStringOrSymbol(GateRef obj)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     DEFVARIABLE(result, VariableType::BOOL(), False());
     Label isHeapObject(env);
@@ -1241,7 +1241,7 @@ GateRef Stub::TaggedIsStringOrSymbol(GateRef obj)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1283,7 +1283,7 @@ GateRef Stub::StringToElementIndex(GateRef string)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     DEFVARIABLE(result, VariableType::INT32(), Int32(-1));
     Label greatThanZero(env);
@@ -1390,7 +1390,7 @@ GateRef Stub::StringToElementIndex(GateRef string)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1398,7 +1398,7 @@ GateRef Stub::TryToElementsIndex(GateRef key)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     Label isKeyInt(env);
     Label notKeyInt(env);
@@ -1440,7 +1440,7 @@ GateRef Stub::TryToElementsIndex(GateRef key)
     }
     Bind(&exit);
     auto ret = *resultKey;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1448,7 +1448,7 @@ GateRef Stub::LoadFromField(GateRef receiver, GateRef handlerInfo)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     Label handlerInfoIsInlinedProps(env);
     Label handlerInfoNotInlinedProps(env);
@@ -1468,7 +1468,7 @@ GateRef Stub::LoadFromField(GateRef receiver, GateRef handlerInfo)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1476,7 +1476,7 @@ GateRef Stub::LoadGlobal(GateRef cell)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     Label cellIsInvalid(env);
     Label cellNotInvalid(env);
@@ -1493,7 +1493,7 @@ GateRef Stub::LoadGlobal(GateRef cell)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1501,7 +1501,7 @@ GateRef Stub::CheckPolyHClass(GateRef cachedValue, GateRef hclass)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     Label loopHead(env);
     Label loopEnd(env);
@@ -1534,7 +1534,7 @@ GateRef Stub::CheckPolyHClass(GateRef cachedValue, GateRef hclass)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1542,7 +1542,7 @@ GateRef Stub::LoadICWithHandler(GateRef glue, GateRef receiver, GateRef argHolde
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     Label handlerIsInt(env);
     Label handlerNotInt(env);
@@ -1606,7 +1606,7 @@ GateRef Stub::LoadICWithHandler(GateRef glue, GateRef receiver, GateRef argHolde
 
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1614,7 +1614,7 @@ GateRef Stub::LoadElement(GateRef receiver, GateRef key)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     Label indexLessZero(env);
     Label indexNotLessZero(env);
@@ -1639,7 +1639,7 @@ GateRef Stub::LoadElement(GateRef receiver, GateRef key)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1647,7 +1647,7 @@ GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRe
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     Label indexLessZero(env);
     Label indexNotLessZero(env);
@@ -1728,7 +1728,7 @@ GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRe
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1736,7 +1736,7 @@ GateRef Stub::GetArrayLength(GateRef object)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     Label lengthIsInt(env);
     Label lengthNotInt(env);
@@ -1756,7 +1756,7 @@ GateRef Stub::GetArrayLength(GateRef object)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1764,7 +1764,7 @@ GateRef Stub::StoreICWithHandler(GateRef glue, GateRef receiver, GateRef argHold
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     Label handlerIsInt(env);
     Label handlerNotInt(env);
@@ -1845,7 +1845,7 @@ GateRef Stub::StoreICWithHandler(GateRef glue, GateRef receiver, GateRef argHold
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1853,7 +1853,7 @@ void Stub::StoreField(GateRef glue, GateRef receiver, GateRef value, GateRef han
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     Label handlerIsInlinedProperty(env);
     Label handlerNotInlinedProperty(env);
@@ -1873,14 +1873,14 @@ void Stub::StoreField(GateRef glue, GateRef receiver, GateRef value, GateRef han
         Jump(&exit);
     }
     Bind(&exit);
-    env->PopCurrentLabel();
+    env->SubCfgExit();
 }
 
 void Stub::StoreWithTransition(GateRef glue, GateRef receiver, GateRef value, GateRef handler)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
 
     Label handlerInfoIsInlinedProps(env);
@@ -1919,14 +1919,14 @@ void Stub::StoreWithTransition(GateRef glue, GateRef receiver, GateRef value, Ga
         Jump(&exit);
     }
     Bind(&exit);
-    env->PopCurrentLabel();
+    env->SubCfgExit();
 }
 
 GateRef Stub::StoreGlobal(GateRef glue, GateRef value, GateRef cell)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     Label cellIsInvalid(env);
     Label cellNotInvalid(env);
@@ -1944,7 +1944,7 @@ GateRef Stub::StoreGlobal(GateRef glue, GateRef value, GateRef cell)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1975,7 +1975,7 @@ GateRef Stub::GetKeyFromDictionary(VariableType returnType, GateRef elements, Ga
 {
     auto env = GetEnvironment();
     Label subentry(env);
-    env->PushCurrentLabel(&subentry);
+    env->SubCfgEntry(&subentry);
     Label exit(env);
     DEFVARIABLE(result, returnType, Undefined());
     Label ltZero(env);
@@ -1999,7 +1999,7 @@ GateRef Stub::GetKeyFromDictionary(VariableType returnType, GateRef elements, Ga
     Jump(&exit);
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -2031,7 +2031,7 @@ GateRef Stub::GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
     DEFVARIABLE(holder, VariableType::JS_ANY(), receiver);
     Label exit(env);
@@ -2151,7 +2151,7 @@ GateRef Stub::GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -2159,7 +2159,7 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
     DEFVARIABLE(holder, VariableType::JS_ANY(), receiver);
     Label exit(env);
@@ -2290,7 +2290,7 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -2298,7 +2298,7 @@ void Stub::CopyAllHClass(GateRef glue, GateRef dstHClass, GateRef srcHClass)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     auto proto = GetPrototypeFromHClass(srcHClass);
     SetPrototypeToHClass(VariableType::JS_POINTER(), glue, dstHClass, proto);
     SetBitFieldToHClass(glue, dstHClass, GetBitFieldFromHClass(srcHClass));
@@ -2308,7 +2308,7 @@ void Stub::CopyAllHClass(GateRef glue, GateRef dstHClass, GateRef srcHClass)
                                   Int64(JSTaggedValue::VALUE_NULL));
     SetEnumCacheToHClass(VariableType::INT64(), glue, dstHClass, Int64(JSTaggedValue::VALUE_NULL));
     SetLayoutToHClass(VariableType::JS_POINTER(), glue, dstHClass, GetLayoutFromHClass(srcHClass));
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return;
 }
 
@@ -2316,7 +2316,7 @@ GateRef Stub::FindTransitions(GateRef glue, GateRef receiver, GateRef hclass, Ga
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     GateRef transitionOffset = IntPtr(JSHClass::TRANSTIONS_OFFSET);
     GateRef transition = Load(VariableType::JS_POINTER(), hclass, transitionOffset);
@@ -2396,7 +2396,7 @@ GateRef Stub::FindTransitions(GateRef glue, GateRef receiver, GateRef hclass, Ga
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -2404,7 +2404,7 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     DEFVARIABLE(returnValue, VariableType::INT64(), Hole(VariableType::INT64()));
     DEFVARIABLE(holder, VariableType::JS_ANY(), receiver);
     Label exit(env);
@@ -2517,7 +2517,7 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
     }
     Bind(&exit);
     auto ret = *returnValue;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -2525,7 +2525,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
 {
     auto env = GetEnvironment();
     Label entryPass(env);
-    env->PushCurrentLabel(&entryPass);
+    env->SubCfgEntry(&entryPass);
     DEFVARIABLE(result, VariableType::INT64(), Hole(VariableType::INT64()));
     DEFVARIABLE(holder, VariableType::JS_POINTER(), receiver);
     Label exit(env);
@@ -2738,7 +2738,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -2746,7 +2746,7 @@ GateRef Stub::SetPropertyByValue(GateRef glue, GateRef receiver, GateRef key, Ga
 {
     auto env = GetEnvironment();
     Label subEntry1(env);
-    env->PushCurrentLabel(&subEntry1);
+    env->SubCfgEntry(&subEntry1);
     DEFVARIABLE(varKey, VariableType::JS_ANY(), key);
     DEFVARIABLE(result, VariableType::INT64(), Hole(VariableType::INT64()));
     Label isNumberOrStringSymbol(env);
@@ -2810,7 +2810,7 @@ GateRef Stub::SetPropertyByValue(GateRef glue, GateRef receiver, GateRef key, Ga
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -2818,7 +2818,7 @@ void Stub::NotifyHClassChanged(GateRef glue, GateRef oldHClass, GateRef newHClas
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     Label isProtoType(env);
     Branch(IsProtoTypeHClass(oldHClass), &isProtoType, &exit);
@@ -2834,7 +2834,7 @@ void Stub::NotifyHClassChanged(GateRef glue, GateRef oldHClass, GateRef newHClas
         }
     }
     Bind(&exit);
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return;
 }
 
@@ -2842,7 +2842,7 @@ GateRef Stub::GetContainerProperty(GateRef glue, GateRef receiver, GateRef index
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     DEFVARIABLE(result, VariableType::JS_ANY(), Undefined());
 
@@ -2875,7 +2875,7 @@ GateRef Stub::GetContainerProperty(GateRef glue, GateRef receiver, GateRef index
 
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -2883,7 +2883,7 @@ GateRef Stub::FastTypeOf(GateRef glue, GateRef obj)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
 
     GateRef gConstAddr = IntPtrAdd(glue,
@@ -3015,7 +3015,7 @@ GateRef Stub::FastTypeOf(GateRef glue, GateRef obj)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -3023,7 +3023,7 @@ GateRef Stub::FastEqual(GateRef left, GateRef right)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
     Label leftEqualRight(env);
     Label leftNotEqualRight(env);
@@ -3121,7 +3121,7 @@ GateRef Stub::FastEqual(GateRef left, GateRef right)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -3129,7 +3129,7 @@ GateRef Stub::FastToBoolean(GateRef value)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
     Label exit(env);
 
@@ -3207,7 +3207,7 @@ GateRef Stub::FastToBoolean(GateRef value)
 
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -3215,7 +3215,7 @@ GateRef Stub::FastDiv(GateRef left, GateRef right)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
     DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), Double(0));
     DEFVARIABLE(doubleRight, VariableType::FLOAT64(), Double(0));
@@ -3314,7 +3314,7 @@ GateRef Stub::FastDiv(GateRef left, GateRef right)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -3324,7 +3324,7 @@ GateRef Stub::FastBinaryOp(GateRef left, GateRef right,
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
     DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), Double(0));
     DEFVARIABLE(doubleRight, VariableType::FLOAT64(), Double(0));
@@ -3387,7 +3387,7 @@ GateRef Stub::FastBinaryOp(GateRef left, GateRef right,
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -3396,7 +3396,7 @@ GateRef Stub::FastAddSubAndMul(GateRef left, GateRef right)
 {
     auto intOperation = [=](Environment *env, GateRef left, GateRef right) {
         Label entry(env);
-        env->PushCurrentLabel(&entry);
+        env->SubCfgEntry(&entry);
         DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
         Label exit(env);
         Label overflow(env);
@@ -3420,7 +3420,7 @@ GateRef Stub::FastAddSubAndMul(GateRef left, GateRef right)
         }
         Bind(&exit);
         auto ret = *result;
-        env->PopCurrentLabel();
+        env->SubCfgExit();
         return ret;
     };
     auto floatOperation = [=]([[maybe_unused]] Environment *env, GateRef left, GateRef right) {
@@ -3449,7 +3449,7 @@ GateRef Stub::FastMod(GateRef glue, GateRef left, GateRef right)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
     DEFVARIABLE(intLeft, VariableType::INT32(), Int32(0));
     DEFVARIABLE(intRight, VariableType::INT32(), Int32(0));
@@ -3583,7 +3583,7 @@ GateRef Stub::FastMod(GateRef glue, GateRef left, GateRef right)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -3591,7 +3591,7 @@ GateRef Stub::GetGlobalOwnProperty(GateRef glue, GateRef receiver, GateRef key)
 {
     auto env = GetEnvironment();
     Label entryLabel(env);
-    env->PushCurrentLabel(&entryLabel);
+    env->SubCfgEntry(&entryLabel);
     DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
     GateRef properties = GetPropertiesFromJSObject(receiver);
     GateRef entry = FindEntryFromNameDictionary(glue, properties, key);
@@ -3605,7 +3605,7 @@ GateRef Stub::GetGlobalOwnProperty(GateRef glue, GateRef receiver, GateRef key)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -3613,7 +3613,7 @@ GateRef Stub::JSArrayListGet(GateRef glue, GateRef receiver, GateRef index)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     DEFVARIABLE(result, VariableType::JS_ANY(), Undefined());
 
@@ -3639,7 +3639,7 @@ GateRef Stub::JSArrayListGet(GateRef glue, GateRef receiver, GateRef index)
 
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -3647,7 +3647,7 @@ GateRef Stub::DoubleToInt(GateRef glue, GateRef x)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     Label overflow(env);
 
@@ -3674,7 +3674,7 @@ GateRef Stub::DoubleToInt(GateRef glue, GateRef x)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -3682,7 +3682,7 @@ void Stub::ReturnExceptionIfAbruptCompletion(GateRef glue)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    env->PushCurrentLabel(&entry);
+    env->SubCfgEntry(&entry);
     Label exit(env);
     Label hasPendingException(env);
     GateRef exception = Load(VariableType::JS_ANY(), glue);
@@ -3690,7 +3690,7 @@ void Stub::ReturnExceptionIfAbruptCompletion(GateRef glue)
     Bind(&hasPendingException);
     Return(Exception());
     Bind(&exit);
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return;
 }
 }  // namespace panda::ecmascript::kungfu

@@ -123,7 +123,7 @@ inline LabelImpl *Stub::Environment::NewLabel(Stub::Environment *env, GateRef co
     return impl;
 }
 
-inline void Stub::Environment::PushCurrentLabel(Stub::Label *entry)
+inline void Stub::Environment::SubCfgEntry(Stub::Label *entry)
 {
     if (currentLabel_ != nullptr) {
         GateRef control = currentLabel_->GetControl();
@@ -135,7 +135,7 @@ inline void Stub::Environment::PushCurrentLabel(Stub::Label *entry)
     }
 }
 
-inline void Stub::Environment::PopCurrentLabel()
+inline void Stub::Environment::SubCfgExit()
 {
     GateRef control = currentLabel_->GetControl();
     GateRef depend = currentLabel_->GetDepend();
@@ -382,8 +382,7 @@ inline void Stub::FatalPrint(GateRef glue, std::initializer_list<GateRef> args)
 inline GateRef Stub::CallRuntime(GateRef glue, int index, std::initializer_list<GateRef> args)
 {
     auto depend = env_.GetCurrentLabel()->GetDepend();
-    GateRef target = env_.GetBuilder().Int64(index);
-    GateRef result = env_.GetBuilder().RuntimeCall(glue, target, depend, args);
+    GateRef result = env_.GetBuilder().CallRuntimeWithDepend(glue, index, depend, args);
     env_.GetCurrentLabel()->SetDepend(result);
     return result;
 }
@@ -1190,7 +1189,7 @@ inline GateRef Stub::IsEcmaObject(GateRef obj)
 {
     auto env = GetEnvironment();
     Label subentry(env);
-    env->PushCurrentLabel(&subentry);
+    env->SubCfgEntry(&subentry);
     Label exit(env);
     Label isHeapObject(env);
     DEFVARIABLE(result, VariableType::BOOL(), False());
@@ -1209,7 +1208,7 @@ inline GateRef Stub::IsEcmaObject(GateRef obj)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1217,7 +1216,7 @@ inline GateRef Stub::IsJSObject(GateRef obj)
 {
     auto env = GetEnvironment();
     Label subentry(env);
-    env->PushCurrentLabel(&subentry);
+    env->SubCfgEntry(&subentry);
     Label exit(env);
     Label isHeapObject(env);
     DEFVARIABLE(result, VariableType::BOOL(), False());
@@ -1236,7 +1235,7 @@ inline GateRef Stub::IsJSObject(GateRef obj)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1244,7 +1243,7 @@ inline GateRef Stub::IsJSFunctionBase(GateRef obj)
 {
     auto env = GetEnvironment();
     Label subentry(env);
-    env->PushCurrentLabel(&subentry);
+    env->SubCfgEntry(&subentry);
     Label exit(env);
     Label isHeapObject(env);
     DEFVARIABLE(result, VariableType::BOOL(), False());
@@ -1263,7 +1262,7 @@ inline GateRef Stub::IsJSFunctionBase(GateRef obj)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1988,7 +1987,7 @@ inline GateRef Stub::GetMethodFromJSFunction(GateRef object)
 {
     auto env = GetEnvironment();
     Label subentry(env);
-    env->PushCurrentLabel(&subentry);
+    env->SubCfgEntry(&subentry);
 
     DEFVARIABLE(methodOffset, VariableType::INT32(), Int32(0));
     Label funcIsJSFunctionBase(env);
@@ -2007,7 +2006,7 @@ inline GateRef Stub::GetMethodFromJSFunction(GateRef object)
     }
     Bind(&getMethod);
     GateRef method = Load(VariableType::POINTER(), object, ChangeInt32ToIntPtr(*methodOffset));
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return method;
 }
 
