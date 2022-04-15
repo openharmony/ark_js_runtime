@@ -479,10 +479,15 @@ GlobalTSTypeRef TSLoader::GetArrayParameterTypeGT(GlobalTSTypeRef gt) const
     return arrayType->GetElementTypeGT(typeTable);
 }
 
-uint64_t TSLoader::AddConstString(JSTaggedValue string)
+size_t TSLoader::AddConstString(JSTaggedValue string)
 {
-    constantStringTable_.emplace_back(string.GetRawData());
-    return constantStringTable_.size() - 1;
+    auto it = std::find(constantStringTable_.begin(), constantStringTable_.end(), string.GetRawData());
+    if (it != constantStringTable_.end()) {
+        return it - constantStringTable_.begin();
+    } else {
+        constantStringTable_.emplace_back(string.GetRawData());
+        return constantStringTable_.size() - 1;
+    }
 }
 
 JSHandle<EcmaString> TSModuleTable::GetAmiPathByModuleId(JSThread *thread, int entry) const
