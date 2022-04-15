@@ -338,6 +338,8 @@ public:
     bool IsJSAPITreeSetIterator() const;
     bool IsJSAPIQueue() const;
     bool IsJSAPIQueueIterator() const;
+    bool IsJSAPIPlainArray() const;
+    bool IsJSAPIPlainArrayIterator() const;
     bool IsJSAPIDeque() const;
     bool IsJSAPIDequeIterator() const;
     bool IsJSAPIStack() const;
@@ -396,6 +398,8 @@ private:
     static JSHandle<TaggedArray> GetOwnContainerPropertyKeys(JSThread *thread, const JSHandle<JSTaggedValue> &obj);
     static bool GetContainerProperty(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
                                      const JSHandle<JSTaggedValue> &key, PropertyDescriptor &desc);
+    static OperationResult GetJSAPIProperty(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
+                                            const JSHandle<JSTaggedValue> &key);
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(JSTaggedValue), JSTaggedValue::SizeArch32, JSTaggedValue::SizeArch64);
 }  // namespace panda::ecmascript

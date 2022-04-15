@@ -364,6 +364,10 @@ CString *HeapSnapShot::GenerateNodeName(TaggedObject *entry)
             return GetString("ResolvedBinding");
         case JSType::JS_MODULE_NAMESPACE:
             return GetString("ModuleNamespace");
+        case JSType::JS_API_PLAIN_ARRAY:
+            return GetString("PlainArray");
+        case JSType::JS_API_PLAIN_ARRAY_ITERATOR:
+            return GetString("PlainArrayIterator");
         default:
             break;
     }
