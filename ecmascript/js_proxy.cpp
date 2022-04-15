@@ -858,9 +858,9 @@ JSTaggedValue JSProxy::CallInternal(EcmaRuntimeCallInfo *info)
     }
     // 8.Let argArray be CreateArrayFromList(argumentsList).
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    uint32_t argc = info->GetArgsNumber();
+    size_t argc = info->GetArgsNumber();
     JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(argc);
-    for (uint32_t index = 0; index < argc; ++index) {
+    for (size_t index = 0; index < argc; ++index) {
         taggedArray->Set(thread, index, info->GetCallArg(index));
     }
     JSHandle<JSArray> arrHandle = JSArray::CreateArrayFromList(thread, taggedArray);
@@ -906,9 +906,9 @@ JSTaggedValue JSProxy::ConstructInternal(EcmaRuntimeCallInfo *info)
 
     // 8.Let argArray be CreateArrayFromList(argumentsList).
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    uint32_t argc = info->GetArgsNumber();
+    size_t argc = info->GetArgsNumber();
     JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(argc);
-    for (uint32_t index = 0; index < argc; ++index) {
+    for (size_t index = 0; index < argc; ++index) {
         taggedArray->Set(thread, index, info->GetCallArg(index));
     }
     JSHandle<JSArray> arrHandle = JSArray::CreateArrayFromList(thread, taggedArray);

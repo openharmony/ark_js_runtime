@@ -227,7 +227,8 @@ bool Verifier::RunFixedGatesRelationsCheck(const Circuit *circuit, const std::ve
                 circuit->GetOpCode(circuit->GetIn(predGate, 0)) != OpCode::LOOP_BACK) {
                 ASSERT(cnt > 0);
                 auto a = bbGatesAddrToIdx.at(circuit->GetIn(predGate, 0));
-                auto b = bbGatesAddrToIdx.at(circuit->GetIn(circuit->GetIn(fixedGate, 0), cnt - 1));
+                auto b = bbGatesAddrToIdx.at(circuit->GetIn(circuit->GetIn(fixedGate, 0),
+                    static_cast<size_t>(cnt - 1)));
                 if (!isAncestor(a, b)) {
                     COMPILER_LOG(ERROR) << "[Verifier][Error] Fixed gates relationship is not consistent";
                     COMPILER_LOG(ERROR) << "Proof:";
@@ -235,7 +236,8 @@ bool Verifier::RunFixedGatesRelationsCheck(const Circuit *circuit, const std::ve
                                         << fixedGate << ")";
                     COMPILER_LOG(ERROR) << "BB_" << bbGatesAddrToIdx.at(circuit->GetIn(predGate, 0))
                                         << " does not dominate BB_"
-                                        << bbGatesAddrToIdx.at(circuit->GetIn(circuit->GetIn(fixedGate, 0), cnt - 1));
+                                        << bbGatesAddrToIdx.at(circuit->GetIn(circuit->GetIn(fixedGate, 0),
+                                            static_cast<size_t>(cnt - 1)));
                     return false;
                 }
             }

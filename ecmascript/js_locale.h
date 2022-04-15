@@ -264,7 +264,7 @@ public:
             size_t strValuesSize = strValues.size();
             for (size_t i = 0; i < strValuesSize; i++) {
                 if (strValues[i] == valueStr) {
-                    existIdx = i;
+                    existIdx = static_cast<int>(i);
                 }
             }
             if (existIdx == -1) {

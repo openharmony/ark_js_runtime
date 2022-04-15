@@ -190,12 +190,12 @@ JSHandle<JSHClass> JSHClass::SetPropertyOfObjHClass(const JSThread *thread, JSHa
 
     JSHandle<JSHClass> newJshclass = JSHClass::Clone(thread, jshclass);
     newJshclass->IncNumberOfProps();
-    int offset = attr.GetOffset();
+    uint32_t offset = attr.GetOffset();
     {
         JSMutableHandle<LayoutInfo> layoutInfoHandle(thread, newJshclass->GetLayout());
-        if (layoutInfoHandle->NumberOfElements() != offset) {
+        if (layoutInfoHandle->NumberOfElements() != static_cast<int>(offset)) {
             layoutInfoHandle.Update(factory->CopyAndReSort(layoutInfoHandle, offset, offset + 1));
-        } else if (layoutInfoHandle->GetPropertiesCapacity() <= offset) { // need to Grow
+        } else if (layoutInfoHandle->GetPropertiesCapacity() <= static_cast<int>(offset)) { // need to Grow
             layoutInfoHandle.Update(
                 factory->ExtendLayoutInfo(layoutInfoHandle, LayoutInfo::ComputeGrowCapacity(offset)));
         }

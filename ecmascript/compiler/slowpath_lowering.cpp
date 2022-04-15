@@ -2132,7 +2132,7 @@ void SlowPathLowering::LowerStSuperByName(GateRef gate, GateRef glue, GateRef js
 {
     Label successExit(&builder_);
     Label exceptionExit(&builder_);
-    // 2: number of value inputs
+    // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
     GateRef prop = GetObjectFromConstPool(jsFunc, acc_.GetValueIn(gate, 0));
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(StSuperByValue), {prop, acc_.GetValueIn(gate, 1),

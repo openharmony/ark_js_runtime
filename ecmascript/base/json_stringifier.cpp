@@ -712,7 +712,7 @@ bool JsonStringifier::SerializeKeys(const JSHandle<JSObject> &obj, const JSHandl
                 ASSERT(static_cast<int>(attr.GetOffset()) == index);
                 value = attr.IsInlinedProps()
                         ? obj->GetPropertyInlinedProps(static_cast<uint32_t>(index))
-                        : propertiesArr->Get(static_cast<uint32_t>(index - jsHclass->GetInlinedProperties()));
+                        : propertiesArr->Get(static_cast<uint32_t>(index) - jsHclass->GetInlinedProperties());
                 if (UNLIKELY(value.IsAccessor())) {
                     value = JSObject::CallGetter(thread_, AccessorData::Cast(value.GetTaggedObject()),
                                                  JSHandle<JSTaggedValue>(obj));
@@ -739,7 +739,7 @@ bool JsonStringifier::SerializeKeys(const JSHandle<JSObject> &obj, const JSHandl
                 ASSERT(static_cast<int>(attr.GetOffset()) == index);
                 value = attr.IsInlinedProps()
                         ? obj->GetPropertyInlinedProps(static_cast<uint32_t>(index))
-                        : propertiesArr->Get(static_cast<uint32_t>(index - jsHclass->GetInlinedProperties()));
+                        : propertiesArr->Get(static_cast<uint32_t>(index) - jsHclass->GetInlinedProperties());
                 if (UNLIKELY(value.IsAccessor())) {
                     value = JSObject::CallGetter(thread_, AccessorData::Cast(value.GetTaggedObject()),
                                                  JSHandle<JSTaggedValue>(obj));

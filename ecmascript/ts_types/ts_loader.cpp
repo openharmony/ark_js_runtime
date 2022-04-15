@@ -100,7 +100,7 @@ void TSLoader::RecursivelyResolveTargetType(JSMutableHandle<TSImportType>& impor
     if (bindType.GetTaggedValue().IsTSImportType()) {
         JSMutableHandle<TSImportType> redirectImportType(bindType);
         RecursivelyResolveTargetType(redirectImportType);
-        typeTable->Set(thread, userDefId, redirectImportType);
+        typeTable->Set(thread, static_cast<uint32_t>(userDefId), redirectImportType);
         importType->SetTargetRefGT(redirectImportType->GetTargetRefGT());
     } else {
         importType->SetTargetRefGT(bindType->GetGTRef());
@@ -365,7 +365,8 @@ GlobalTSTypeRef TSLoader::GetOrCreateUnionType(CVector<GlobalTSTypeRef> unionTyp
     JSHandle<TaggedArray> unionTypeArray(thread, unionType->GetComponentTypes());
 
     for (int unionArgIndex = 0; unionArgIndex < size; unionArgIndex++) {
-        unionTypeArray->Set(thread, unionArgIndex, JSTaggedValue(unionTypeRef[unionArgIndex].GetGlobalTSTypeRef()));
+        unionTypeArray->Set(thread, static_cast<uint32_t>(unionArgIndex),
+            JSTaggedValue(unionTypeRef[unionArgIndex].GetGlobalTSTypeRef()));
     }
     unionType->SetComponentTypes(thread, unionTypeArray);
 

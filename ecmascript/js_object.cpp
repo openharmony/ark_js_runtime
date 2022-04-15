@@ -280,7 +280,7 @@ void JSObject::GetAllKeys(const JSThread *thread, const JSHandle<JSObject> &obj,
     ASSERT_PRINT(!obj->IsJSGlobalObject(), "Do not support get key of JSGlobal Object");
     TaggedArray *array = TaggedArray::Cast(obj->GetProperties().GetTaggedObject());
     if (!array->IsDictionaryMode()) {
-        int end = obj->GetJSHClass()->NumberOfProps();
+        int end = static_cast<int>(obj->GetJSHClass()->NumberOfProps());
         if (end > 0) {
             LayoutInfo::Cast(obj->GetJSHClass()->GetLayout().GetTaggedObject())
                 ->GetAllKeys(thread, end, keyVector);
@@ -335,7 +335,7 @@ void JSObject::GetAllElementKeys(JSThread *thread, const JSHandle<JSObject> &obj
     uint32_t elementIndex = 0;
 
     if (obj->IsJSPrimitiveRef() && JSPrimitiveRef::Cast(*obj)->IsString()) {
-        elementIndex = static_cast<uint32_t>(JSPrimitiveRef::Cast(*obj)->GetStringLength() + offset);
+        elementIndex = JSPrimitiveRef::Cast(*obj)->GetStringLength() + static_cast<uint32_t>(offset);
         for (uint32_t i = static_cast<uint32_t>(offset); i < elementIndex; ++i) {
             auto key = base::NumberHelper::NumberToString(thread, JSTaggedValue(i));
             keyArray->Set(thread, i, key);

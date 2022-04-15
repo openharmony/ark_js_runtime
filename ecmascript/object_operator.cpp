@@ -355,7 +355,7 @@ void ObjectOperator::TransitionForAttributeChanged(const JSHandle<JSObject> &rec
         if (!receiver->GetJSHClass()->IsDictionaryElement()) {
             JSObject::ElementsToDictionary(thread_, receiver);
             auto dict = NumberDictionary::Cast(receiver->GetElements().GetTaggedObject());
-            index = static_cast<int>(dict->FindEntry(JSTaggedValue(index)));
+            index = static_cast<uint32_t>(dict->FindEntry(JSTaggedValue(index)));
             PropertyAttributes origin = dict->GetAttributes(index);
             attr.SetDictionaryOrder(origin.GetDictionaryOrder());
             dict->SetAttributes(thread_, index, attr);
@@ -372,7 +372,7 @@ void ObjectOperator::TransitionForAttributeChanged(const JSHandle<JSObject> &rec
         uint32_t index = GetIndex();
         if (!receiver->GetJSHClass()->IsDictionaryMode()) {
             JSHandle<NameDictionary> dict(JSObject::TransitionToDictionary(thread_, receiver));
-            index = static_cast<int>(dict->FindEntry(key_.GetTaggedValue()));
+            index = static_cast<uint32_t>(dict->FindEntry(key_.GetTaggedValue()));
             PropertyAttributes origin = dict->GetAttributes(index);
             attr.SetDictionaryOrder(origin.GetDictionaryOrder());
             dict->SetAttributes(thread_, index, attr);

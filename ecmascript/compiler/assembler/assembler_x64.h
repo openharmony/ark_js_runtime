@@ -126,7 +126,7 @@ private:
     // +---+---+---+---+---+---+---+---+
     void EmitModrm(int32_t reg, Register rm)
     {
-        EmitU8(MODE_RM | (reg << LOW_BITS_SIZE) | LowBits(rm));
+        EmitU8(MODE_RM | (static_cast<uint32_t>(reg) << LOW_BITS_SIZE) | LowBits(rm));
     }
 
     void EmitModrm(Register reg, Register rm)
@@ -159,7 +159,7 @@ private:
         // [r/m + disp8]
         // [r/m + disp32]
         // 6: offset of mode
-        return (mode << 6) | LowBits(rm);
+        return (static_cast<uint32_t>(mode) << 6) | LowBits(rm);
     }
     static uint8_t GetModrmRex(Register rm)
     {
@@ -171,7 +171,7 @@ private:
     static uint8_t GetSIB(Scale scale, Register index, Register base)
     {
         // 6: offset of scale
-        return (scale << 6) | (LowBits(index) << LOW_BITS_SIZE) |
+        return (static_cast<uint8_t>(scale) << 6) | (LowBits(index) << LOW_BITS_SIZE) |
             LowBits(base);
     }
     static uint8_t GetSIBRex(Register index, Register base)
@@ -180,11 +180,11 @@ private:
     }
     static uint32_t LowBits(Register x)
     {
-        return x & LOW_BITS_MASK;
+        return static_cast<uint8_t>(x) & LOW_BITS_MASK;
     }
     static uint32_t HighBit(Register x)
     {
-        return x >> LOW_BITS_SIZE;
+        return static_cast<uint8_t>(x) >> LOW_BITS_SIZE;
     }
     friend class Operand;
 };
