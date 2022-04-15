@@ -55,6 +55,7 @@
 #include "ecmascript/builtins/builtins_weak_set.h"
 #include "ecmascript/containers/containers_arraylist.h"
 #include "ecmascript/containers/containers_deque.h"
+#include "ecmascript/containers/containers_plainarray.h"
 #include "ecmascript/containers/containers_private.h"
 #include "ecmascript/containers/containers_queue.h"
 #include "ecmascript/containers/containers_stack.h"
@@ -63,6 +64,7 @@
 #include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_plain_array_iterator.h"
 #include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_stack_iterator.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
@@ -131,6 +133,7 @@ using ArrayList = containers::ContainersArrayList;
 using TreeMap = containers::ContainersTreeMap;
 using TreeSet = containers::ContainersTreeSet;
 using Queue = containers::ContainersQueue;
+using PlainArray = containers::ContainersPlainArray;
 using Deque = containers::ContainersDeque;
 using ContainerStack = panda::ecmascript::containers::ContainersStack;
 using ContainersPrivate = containers::ContainersPrivate;
@@ -660,6 +663,26 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(Queue::GetIteratorObj),
     reinterpret_cast<uintptr_t>(Queue::GetSize),
     reinterpret_cast<uintptr_t>(JSAPIQueueIterator::Next),
+    reinterpret_cast<uintptr_t>(PlainArray::PlainArrayConstructor),
+    reinterpret_cast<uintptr_t>(PlainArray::Add),
+    reinterpret_cast<uintptr_t>(PlainArray::Clear),
+    reinterpret_cast<uintptr_t>(PlainArray::Clone),
+    reinterpret_cast<uintptr_t>(PlainArray::Has),
+    reinterpret_cast<uintptr_t>(PlainArray::Get),
+    reinterpret_cast<uintptr_t>(PlainArray::GetIteratorObj),
+    reinterpret_cast<uintptr_t>(PlainArray::ForEach),
+    reinterpret_cast<uintptr_t>(PlainArray::ToString),
+    reinterpret_cast<uintptr_t>(PlainArray::GetIndexOfKey),
+    reinterpret_cast<uintptr_t>(PlainArray::GetIndexOfValue),
+    reinterpret_cast<uintptr_t>(PlainArray::IsEmpty),
+    reinterpret_cast<uintptr_t>(PlainArray::GetKeyAt),
+    reinterpret_cast<uintptr_t>(PlainArray::Remove),
+    reinterpret_cast<uintptr_t>(PlainArray::RemoveAt),
+    reinterpret_cast<uintptr_t>(PlainArray::RemoveRangeFrom),
+    reinterpret_cast<uintptr_t>(PlainArray::SetValueAt),
+    reinterpret_cast<uintptr_t>(PlainArray::GetValueAt),
+    reinterpret_cast<uintptr_t>(PlainArray::GetSize),
+    reinterpret_cast<uintptr_t>(JSAPIPlainArrayIterator::Next),
     reinterpret_cast<uintptr_t>(ContainerStack::StackConstructor),
     reinterpret_cast<uintptr_t>(ContainerStack::Iterator),
     reinterpret_cast<uintptr_t>(ContainerStack::IsEmpty),

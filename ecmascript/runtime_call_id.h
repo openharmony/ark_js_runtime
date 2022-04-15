@@ -561,6 +561,25 @@ namespace panda::ecmascript {
     V(ArrayList, Get)                         \
     V(ArrayList, Set)                         \
     V(ArrayList, GetSize)                     \
+    V(PlainArray, Constructor)                \
+    V(PlainArray, Add)                        \
+    V(PlainArray, Clear)                      \
+    V(PlainArray, Clone)                      \
+    V(PlainArray, Has)                        \
+    V(PlainArray, Get)                        \
+    V(PlainArray, GetIteratorObj)             \
+    V(PlainArray, ForEach)                    \
+    V(PlainArray, ToString)                   \
+    V(PlainArray, GetIndexOfKey)              \
+    V(PlainArray, GetIndexOfValue)            \
+    V(PlainArray, IsEmpty)                    \
+    V(PlainArray, GetKeyAt)                   \
+    V(PlainArray, Remove)                     \
+    V(PlainArray, RemoveAt)                   \
+    V(PlainArray, RemoveRangeFrom)            \
+    V(PlainArray, SetValueAt)                 \
+    V(PlainArray, GetValueAt)                 \
+    V(PlainArray, GetSize)                    \
     V(TreeMap, Constructor)                   \
     V(TreeMap, HasKey)                        \
     V(TreeMap, HasValue)                      \

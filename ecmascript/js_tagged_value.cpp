@@ -19,6 +19,7 @@
 #include "ecmascript/global_env.h"
 #include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_api_deque.h"
+#include "ecmascript/js_api_plain_array.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_stack.h"
 #include "ecmascript/js_array.h"
@@ -507,6 +508,10 @@ OperationResult JSTaggedValue::GetProperty(JSThread *thread, const JSHandle<JSTa
         return ModuleNamespace::GetProperty(thread, obj, key);
     }
 
+    if (obj->IsSpecialContainer()) {
+        return GetJSAPIProperty(thread, obj, key);
+    }
+
     return JSObject::GetProperty(thread, obj, key);
 }
 
@@ -526,6 +531,11 @@ OperationResult JSTaggedValue::GetProperty(JSThread *thread, const JSHandle<JSTa
         return JSTypedArray::GetProperty(thread, obj, key);
     }
 
+    if (obj->IsSpecialContainer()) {
+        JSHandle<JSTaggedValue> keyHandle = JSHandle<JSTaggedValue>(thread, JSTaggedValue(key));
+        return GetJSAPIProperty(thread, obj, keyHandle);
+    }
+
     return JSObject::GetProperty(thread, obj, key);
 }
 
@@ -543,6 +553,10 @@ OperationResult JSTaggedValue::GetProperty(JSThread *thread, const JSHandle<JSTa
     }
     if (obj->IsTypedArray()) {
         return JSTypedArray::GetProperty(thread, obj, JSTypedArray::ToPropKey(thread, key), receiver);
+    }
+
+    if (obj->IsSpecialContainer()) {
+        return GetJSAPIProperty(thread, obj, key);
     }
 
     return JSObject::GetProperty(thread, obj, key, receiver);
@@ -915,6 +929,9 @@ bool JSTaggedValue::HasContainerProperty(JSThread *thread, const JSHandle<JSTagg
         case JSType::JS_API_QUEUE: {
             return JSHandle<JSAPIQueue>::Cast(obj)->Has(key.GetTaggedValue());
         }
+        case JSType::JS_API_PLAIN_ARRAY: {
+            return JSObject::HasProperty(thread, JSHandle<JSObject>(obj), key);
+        }
         case JSType::JS_API_DEQUE: {
             return JSHandle<JSAPIDeque>::Cast(obj)->Has(key.GetTaggedValue());
         }
@@ -942,6 +959,9 @@ JSHandle<TaggedArray> JSTaggedValue::GetOwnContainerPropertyKeys(JSThread *threa
         }
         case JSType::JS_API_QUEUE: {
             return JSAPIQueue::OwnKeys(thread, JSHandle<JSAPIQueue>::Cast(obj));
+        }
+        case JSType::JS_API_PLAIN_ARRAY: {
+            return JSObject::GetOwnPropertyKeys(thread, JSHandle<JSObject>(obj));
         }
         case JSType::JS_API_DEQUE: {
             return JSAPIDeque::OwnKeys(thread, JSHandle<JSAPIDeque>::Cast(obj));
@@ -971,6 +991,9 @@ bool JSTaggedValue::GetContainerProperty(JSThread *thread, const JSHandle<JSTagg
         }
         case JSType::JS_API_QUEUE: {
             return JSAPIQueue::GetOwnProperty(thread, JSHandle<JSAPIQueue>::Cast(obj), key, desc);
+        }
+        case JSType::JS_API_PLAIN_ARRAY: {
+            return JSAPIPlainArray::GetOwnProperty(thread, JSHandle<JSAPIPlainArray>::Cast(obj), key, desc);
         }
         case JSType::JS_API_DEQUE: {
             return JSAPIDeque::GetOwnProperty(thread, JSHandle<JSAPIDeque>::Cast(obj), key, desc);
@@ -1004,5 +1027,23 @@ JSHandle<JSTaggedValue> JSTaggedValue::ToNumeric(JSThread *thread, JSTaggedValue
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSTaggedValue, thread);
     JSHandle<JSTaggedValue> value(thread, number);
     return value;
+}
+OperationResult JSTaggedValue::GetJSAPIProperty(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
+                                                const JSHandle<JSTaggedValue> &key)
+{
+    auto *hclass = obj->GetTaggedObject()->GetClass();
+    JSType jsType = hclass->GetObjectType();
+    if (key->IsNumber()) {
+        switch (jsType) {
+            case JSType::JS_API_PLAIN_ARRAY:
+                return JSAPIPlainArray::GetProperty(thread, JSHandle<JSAPIPlainArray>::Cast(obj), key);
+            default: {
+                return JSObject::GetProperty(thread, JSHandle<JSObject>(obj), key);
+            }
+        }
+    } else {
+        return JSObject::GetProperty(thread, JSHandle<JSObject>(obj), key);
+    }
+    return OperationResult(thread, JSTaggedValue::Exception(), PropertyMetaData(false));
 }
 }  // namespace panda::ecmascript
