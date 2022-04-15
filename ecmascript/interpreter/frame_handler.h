@@ -46,16 +46,15 @@ public:
     bool IsEntryFrame() const
     {
         ASSERT(HasFrame());
+        FrameType type = GetFrameType();
+        if (type == FrameType::INTERPRETER_ENTRY_FRAME) {
+            return true;
+        }
 #if ECMASCRIPT_COMPILE_ASM_INTERPRETER
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         AsmInterpretedFrame *state = AsmInterpretedFrame::GetFrameFromSp(sp_);
         return state->function == JSTaggedValue::Hole();
 #else
-        // interpreter entry frame or interpreter frame which sp is nullptr.
-        FrameType type = GetFrameType();
-        if (type == FrameType::INTERPRETER_ENTRY_FRAME) {
-            return true;
-        }
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
         return state->sp == nullptr;

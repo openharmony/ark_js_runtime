@@ -178,7 +178,8 @@ GateRef InterpreterStub::GetFrame(GateRef CurrentSp)
 
 GateRef InterpreterStub::GetPcFromFrame(GateRef frame)
 {
-    return Load(VariableType::POINTER(), frame, IntPtr(0));
+    return Load(VariableType::POINTER(), frame,
+        IntPtr(AsmInterpretedFrame::GetPcOffset(GetEnvironment()->IsArch32Bit())));
 }
 
 GateRef InterpreterStub::GetFunctionFromFrame(GateRef frame)
@@ -236,7 +237,8 @@ GateRef InterpreterStub::GetResumeModeFromGeneratorObject(GateRef obj)
 
 void InterpreterStub::SetPcToFrame(GateRef glue, GateRef frame, GateRef value)
 {
-    Store(VariableType::INT64(), glue, frame, IntPtr(0), value);
+    Store(VariableType::INT64(), glue, frame,
+        IntPtr(AsmInterpretedFrame::GetPcOffset(GetEnvironment()->IsArch32Bit())), value);
 }
 
 void InterpreterStub::SetCallSizeToFrame(GateRef glue, GateRef frame, GateRef value)
