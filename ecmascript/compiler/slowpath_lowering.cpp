@@ -72,7 +72,7 @@ void SlowPathLowering::ReplaceHirToSubCfg(GateRef hir, GateRef outir,
     for (auto useIt = uses.begin(); useIt != uses.end(); useIt++) {
         // replace HIR:IF_SUCCESS/IF_EXCEPTION with control flow in Label successExit/failExit of MIR Circuit
         if (acc.GetOpCode(*useIt) == OpCode::IF_SUCCESS) {
-            ReplaceHirControlGate(useIt, successControl[0], noThrow);
+            ReplaceHirControlGate(useIt, successControl[0]);
         } else if (acc.GetOpCode(*useIt) == OpCode::IF_EXCEPTION) {
             ReplaceHirControlGate(useIt, exceptionControl[0], noThrow);
         // change depend flow in catch block from HIR:JS_BYTECODE to depend flow in MIR Circuit
