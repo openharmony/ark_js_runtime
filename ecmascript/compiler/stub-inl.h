@@ -391,7 +391,7 @@ inline GateRef Stub::CallRuntime(GateRef glue, int index, GateRef argc, GateRef 
 {
     auto depend = env_.GetCurrentLabel()->GetDepend();
     GateRef target = env_.GetBuilder().Int64(index);
-    GateRef result = env_.GetBuilder().RuntimeCall(glue, target, depend, argc, argv);
+    GateRef result = env_.GetBuilder().CallRuntimeWithDepend(glue, target, depend, argc, argv);
     env_.GetCurrentLabel()->SetDepend(result);
     return result;
 }
@@ -402,7 +402,7 @@ inline GateRef Stub::Load(VariableType type, GateRef base, GateRef offset)
     auto depend = env_.GetCurrentLabel()->GetDepend();
     if (env_.IsArch64Bit()) {
         GateRef val = Int64Add(base, offset);
-        if (type == VariableType::POINTER()) {
+        if (type == VariableType::NATIVE_POINTER()) {
             type = VariableType::INT64();
         }
         GateRef result = env_.GetCircuit()->NewGate(OpCode(OpCode::LOAD), type.GetMachineType(),
@@ -412,7 +412,7 @@ inline GateRef Stub::Load(VariableType type, GateRef base, GateRef offset)
     }
     if (env_.IsArch32Bit()) {
         GateRef val = Int32Add(base, offset);
-        if (type == VariableType::POINTER()) {
+        if (type == VariableType::NATIVE_POINTER()) {
             type = VariableType::INT32();
         }
         GateRef result = env_.GetCircuit()->NewGate(OpCode(OpCode::LOAD), type.GetMachineType(),
@@ -425,7 +425,7 @@ inline GateRef Stub::Load(VariableType type, GateRef base, GateRef offset)
 
 inline GateRef Stub::Load(VariableType type, GateRef base)
 {
-    if (type == VariableType::POINTER()) {
+    if (type == VariableType::NATIVE_POINTER()) {
         if (env_.IsArch64Bit()) {
             type = VariableType::INT64();
         } else {
@@ -1951,7 +1951,7 @@ inline GateRef Stub::ObjectAddressToRange(GateRef x)
 inline GateRef Stub::InYoungGeneration(GateRef region)
 {
     auto offset = env_.Is32Bit() ? Region::REGION_FLAG_OFFSET_32 : Region::REGION_FLAG_OFFSET_64;
-    GateRef x = Load(VariableType::POINTER(), IntPtrAdd(IntPtr(offset), region),
+    GateRef x = Load(VariableType::NATIVE_POINTER(), IntPtrAdd(IntPtr(offset), region),
         IntPtr(0));
     if (env_.Is32Bit()) {
         return Int32NotEqual(Int32And(x,
@@ -2014,7 +2014,7 @@ inline GateRef Stub::GetMethodFromJSFunction(GateRef object)
         Jump(&getMethod);
     }
     Bind(&getMethod);
-    GateRef method = Load(VariableType::POINTER(), object, ChangeInt32ToIntPtr(*methodOffset));
+    GateRef method = Load(VariableType::NATIVE_POINTER(), object, ChangeInt32ToIntPtr(*methodOffset));
     env->SubCfgExit();
     return method;
 }

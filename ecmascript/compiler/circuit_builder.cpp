@@ -254,22 +254,6 @@ GateRef CircuitBuilder::Call(const CallSignature *signature, GateRef glue, GateR
     return result;
 }
 
-GateRef CircuitBuilder::RuntimeCall(GateRef glue, GateRef target,
-                                    GateRef depend, GateRef argc, GateRef argv)
-{
-    std::vector<GateRef> inputs {depend, target, glue};
-    inputs.emplace(inputs.end(), argc);
-    inputs.emplace(inputs.end(), argv);
-    OpCode opcode(OpCode::RUNTIME_CALL_WITH_ARGV);
-    const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(OptimizedCallRuntimeWithArgv));
-    MachineType machineType = signature->GetReturnType().GetMachineType();
-    GateType type = signature->GetReturnType().GetGateType();
-    // 2 : 2 means extra two input gates (target glue)
-    constexpr size_t extraparamCnt = 2;
-    // 2: argc and argv
-    return GetCircuit()->NewGate(opcode, machineType, 2 + extraparamCnt, inputs, type);
-}
-
 GateRef CircuitBuilder::NoGcRuntimeCall(const CallSignature *signature, GateRef glue, GateRef target,
                                         GateRef depend, const std::vector<GateRef> &args)
 {
@@ -305,6 +289,22 @@ GateRef CircuitBuilder::CallRuntimeWithDepend(GateRef glue, int index,
     const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(OptimizedCallRuntime));
     DEF_CALL_GATE(OpCode::RUNTIME_CALL, signature);
     return result;
+}
+
+GateRef CircuitBuilder::CallRuntimeWithDepend(GateRef glue, GateRef target,
+    GateRef depend, GateRef argc, GateRef argv)
+{
+    std::vector<GateRef> inputs {depend, target, glue};
+    inputs.emplace(inputs.end(), argc);
+    inputs.emplace(inputs.end(), argv);
+    OpCode opcode(OpCode::RUNTIME_CALL_WITH_ARGV);
+    const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(OptimizedCallRuntimeWithArgv));
+    MachineType machineType = signature->GetReturnType().GetMachineType();
+    GateType type = signature->GetReturnType().GetGateType();
+    // 2 : 2 means extra two input gates (target glue)
+    constexpr size_t extraparamCnt = 2;
+    // 2: argc and argv
+    return GetCircuit()->NewGate(opcode, machineType, 2 + extraparamCnt, inputs, type);
 }
 
 // call operation

@@ -22,7 +22,7 @@ DEF_CALL_SIGNATURE(FooAOT)
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *callSign = fooAot;
     std::array<VariableType, 7> params = { // 7 : 7 input parameters
-        VariableType::POINTER(),
+        VariableType::NATIVE_POINTER(),
         VariableType::INT32(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
@@ -41,7 +41,7 @@ DEF_CALL_SIGNATURE(Foo1AOT)
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *callSign = foo1Aot;
     std::array<VariableType, 7> params = { // 7 : 7 input parameters
-        VariableType::POINTER(),
+        VariableType::NATIVE_POINTER(),
         VariableType::INT32(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
@@ -60,7 +60,7 @@ DEF_CALL_SIGNATURE(Foo2AOT)
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *callSign = foo2Aot;
     std::array<VariableType, 7> params = { // 7 : 7 input parameters
-        VariableType::POINTER(),
+        VariableType::NATIVE_POINTER(),
         VariableType::INT32(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
@@ -79,7 +79,7 @@ DEF_CALL_SIGNATURE(FooNativeAOT)
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *callSign = foo2Aot;
     std::array<VariableType, 7> params = { // 7 : 7 input parameters
-        VariableType::POINTER(),
+        VariableType::NATIVE_POINTER(),
         VariableType::INT32(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
@@ -98,7 +98,7 @@ DEF_CALL_SIGNATURE(FooBoundAOT)
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *callSign = foo2Aot;
     std::array<VariableType, 7> params = { // 7 : 7 input parameters
-        VariableType::POINTER(),
+        VariableType::NATIVE_POINTER(),
         VariableType::INT32(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
@@ -117,7 +117,7 @@ DEF_CALL_SIGNATURE(Bar1AOT)
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *callSign = barAot;
     std::array<VariableType, 8> params = { // 8 : 8 input parameters
-        VariableType::POINTER(),
+        VariableType::NATIVE_POINTER(),
         VariableType::INT32(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
@@ -137,7 +137,7 @@ DEF_CALL_SIGNATURE(BarAOT)
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *callSign = barAot;
     std::array<VariableType, 7> params = { // 7 : 7 input parameters
-        VariableType::POINTER(),
+        VariableType::NATIVE_POINTER(),
         VariableType::INT32(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
@@ -156,7 +156,7 @@ DEF_CALL_SIGNATURE(FooProxyAOT)
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *callSign = fooProxyAot;
     std::array<VariableType, 7> params = { // 7 : 7 input parameters
-        VariableType::POINTER(),
+        VariableType::NATIVE_POINTER(),
         VariableType::INT32(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
@@ -175,7 +175,7 @@ DEF_CALL_SIGNATURE(FooProxy2AOT)
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *callSign = FooProxy2AOT;
     std::array<VariableType, 7> params = { // 7 : 7 input parameters
-        VariableType::POINTER(),
+        VariableType::NATIVE_POINTER(),
         VariableType::INT32(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget
@@ -194,7 +194,7 @@ DEF_CALL_SIGNATURE(Bar2AOT)
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *callSign = bar2Aot;
     std::array<VariableType, 5> params = { // 5 : 5 input parameters
-        VariableType::POINTER(),
+        VariableType::NATIVE_POINTER(),
         VariableType::INT32(),
         VariableType::JS_ANY(),     // calltarget
         VariableType::JS_ANY(),     // newTarget

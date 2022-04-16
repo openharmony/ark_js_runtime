@@ -57,8 +57,8 @@ public:
     static constexpr size_t CALL_CONV_BIT_LENGTH = 2;
     using TargetKindBit = panda::BitField<TargetKind, 0, TARGET_KIND_BIT_LENGTH>;
     using CallConvBit = TargetKindBit::NextField<CallConv, CALL_CONV_BIT_LENGTH>;
-    using VariableArgsBit = CallConvBit::NextField<bool, 1>;
-    using TailCallBit = VariableArgsBit::NextField<bool, 1>;
+    using VariadicArgsBit = CallConvBit::NextField<bool, 1>;
+    using TailCallBit = VariadicArgsBit::NextField<bool, 1>;
 
     explicit CallSignature(std::string name, int flags, int paramCounter, ArgumentsOrder order, VariableType returnType)
         : name_(name), paramCounter_(paramCounter), order_(order), returnType_(returnType)
@@ -166,12 +166,12 @@ public:
 
     bool IsVariadicArgs() const
     {
-        return VariableArgsBit::Decode(kind_);
+        return VariadicArgsBit::Decode(kind_);
     }
 
     void SetVariadicArgs(bool variable)
     {
-        VariableArgsBit::Set<uint64_t>(variable, &kind_);
+        VariadicArgsBit::Set<uint64_t>(variable, &kind_);
     }
 
     void SetTailCall(bool tailCall)

@@ -81,7 +81,7 @@ public:
         return VariableType(MachineType::F64, GateType::C_VALUE);
     }
 
-    static VariableType POINTER()
+    static VariableType NATIVE_POINTER()
     {
         return VariableType(MachineType::ARCH, GateType::C_VALUE);
     }
