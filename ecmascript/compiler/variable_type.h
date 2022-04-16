@@ -98,7 +98,7 @@ public:
 
     static VariableType JS_NOT_POINTER()
     {
-        return VariableType(MachineType::I64, GateType::TAGGED_NO_POINTER);
+        return VariableType(MachineType::I64, GateType::TAGGED_NPOINTER);
     }
 
     bool operator==(const VariableType &rhs) const

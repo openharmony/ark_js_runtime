@@ -1068,7 +1068,7 @@ std::string Gate::GateTypeStr(GateType gateType) const
             {NJS_VALUE, "NJS_VALUE"},
             {TAGGED_VALUE, "TAGGED_VALUE"},
             {TAGGED_POINTER, "TAGGED_POINTER"},
-            {TAGGED_NO_POINTER, "TAGGED_NO_POINTER"},
+            {TAGGED_NPOINTER, "TAGGED_NPOINTER"},
             {EMPTY, "EMPTY"},
             {JS_ANY, "JS_ANY"},
     };

@@ -131,7 +131,7 @@ void SlowPathLowering::ReplaceHirToCall(GateRef hirGate, GateRef callGate, bool 
     GateRef ifBranch;
     if (!noThrow) {
         // exception value
-        GateRef exceptionVal = builder_.ExceptionConstant(GateType::TAGGED_NO_POINTER);
+        GateRef exceptionVal = builder_.ExceptionConstant(GateType::TAGGED_NPOINTER);
         // compare with trampolines result
         GateRef equal = builder_.BinaryLogic(OpCode(OpCode::EQ), callGate, exceptionVal);
         ifBranch = builder_.Branch(stateInGate, equal);
@@ -572,6 +572,9 @@ void SlowPathLowering::Lower(GateRef gate)
             break;
         case DEFINECLASSWITHBUFFER_PREF_ID16_IMM16_IMM16_V8_V8:
             LowerDefineClassWithBuffer(gate, glue, jsFunc);
+            break;
+        case DEFINEFUNCDYN_PREF_ID16_IMM16_V8:
+            LowerDefineFuncDyn(gate, glue, jsFunc);
             break;
         default:
             break;
@@ -2237,5 +2240,52 @@ void SlowPathLowering::LowerDefineClassWithBuffer(GateRef gate, GateRef glue, Ga
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());
     ReplaceHirToSubCfg(gate, *res, successControl, exceptionControl);
+}
+
+void SlowPathLowering::LowerDefineFuncDyn(GateRef gate, GateRef glue, GateRef jsFunc)
+{
+    GateRef methodId = acc_.GetValueIn(gate, 0);
+    GateRef length = acc_.GetValueIn(gate, 1);
+    GateRef v0 = acc_.GetValueIn(gate, 2);
+    DEFVAlUE(result, (&builder_),
+        VariableType::JS_POINTER(), GetObjectFromConstPool(jsFunc, builder_.ZExtInt16ToInt32(methodId)));
+    Label isResolved(&builder_);
+    Label notResolved(&builder_);
+    Label defaultLabel(&builder_);
+    Label successExit(&builder_);
+    Label exceptionExit(&builder_);
+    builder_.Branch(builder_.FunctionIsResolved(*result), &isResolved, &notResolved);
+    builder_.Bind(&isResolved);
+    {
+        result = builder_.CallRuntime(glue, RTSTUB_ID(DefinefuncDyn), { *result });
+        Label isException(&builder_);
+        Label notException(&builder_);
+        builder_.Branch(builder_.TaggedIsException(*result), &isException, &notException);
+        builder_.Bind(&isException);
+        {
+            builder_.Jump(&exceptionExit);
+        }
+        builder_.Bind(&notException);
+        {
+            builder_.SetConstPoolToFunction(glue, *result, GetConstPool(jsFunc));
+            builder_.Jump(&defaultLabel);
+        }
+    }
+    builder_.Bind(&notResolved);
+    {
+        builder_.SetResolvedToFunction(glue, *result, builder_.Boolean(true));
+        builder_.Jump(&defaultLabel);
+    }
+    builder_.Bind(&defaultLabel);
+    {
+        GateRef hClass = builder_.LoadHClass(*result);
+        builder_.SetPropertyInlinedProps(glue, *result, hClass, builder_.TaggedNGC(length),
+            builder_.Int32(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
+        builder_.SetLexicalEnvToFunction(glue, *result, v0);
+        builder_.SetModuleToFunction(glue, *result, builder_.GetModuleFromFunction(jsFunc));
+        builder_.Jump(&successExit);
+    }
+    CREATE_DOUBLE_EXIT(successExit, exceptionExit)
+    ReplaceHirToSubCfg(gate, *result, successControl, failControl);
 }
 }  // namespace panda::ecmascript

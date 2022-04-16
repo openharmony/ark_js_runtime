@@ -262,7 +262,7 @@ void LLVMAssembler::Disassemble(const std::map<uint64_t, std::string> &addr2name
         unsigned pc = 0;
         const char outStringSize = 100;
         char outString[outStringSize];
-        while (numBytes != 0) {
+        while (numBytes > 0) {
             uint64_t addr = reinterpret_cast<uint64_t>(byteSp);
             if (addr2name.find(addr) != addr2name.end()) {
                 std::string methodName = addr2name.at(addr);
