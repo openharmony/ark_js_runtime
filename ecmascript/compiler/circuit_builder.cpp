@@ -459,6 +459,12 @@ void CircuitBuilder::SetPropertyInlinedProps(GateRef glue, GateRef obj, GateRef 
     Store(type, glue, obj, ChangeInt32ToIntPtr(propOffset), value);
 }
 
+void CircuitBuilder::SetHomeObjectToFunction(GateRef glue, GateRef function, GateRef value)
+{
+    GateRef offset = IntPtr(JSFunction::HOME_OBJECT_OFFSET);
+    Store(VariableType::INT64(), glue, function, offset, value);
+}
+
 Environment::Environment(GateRef hir, Circuit *circuit, CircuitBuilder *builder)
     : circuit_(circuit), circuitBuilder_(builder)
 {

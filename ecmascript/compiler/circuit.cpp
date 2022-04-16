@@ -464,7 +464,8 @@ void Circuit::SetFrameType(panda::ecmascript::FrameType type)
 GateRef Circuit::GetConstantGate(MachineType bitValue, BitField bitfield,
                                  GateType type)
 {
-    if (constantCache_.count({bitValue, bitfield, type})) {
+    auto search = constantCache_.find({bitValue, bitfield, type});
+    if (search != constantCache_.end()) {
         return constantCache_.at({bitValue, bitfield, type});
     }
     auto gate = NewGate(OpCode(OpCode::CONSTANT), bitValue, bitfield,

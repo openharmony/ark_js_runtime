@@ -22,6 +22,7 @@
 #include "ecmascript/compiler/variable_type.h"
 #include "ecmascript/compiler/call_signature.h"
 #include "ecmascript/base/number_helper.h"
+#include "ecmascript/global_env_constants.h"
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/tagged_array.h"
@@ -326,6 +327,9 @@ public:
     inline GateRef TaggedIsPrototypeHandler(GateRef x);
     inline GateRef TaggedIsTransitionHandler(GateRef x);
     inline GateRef TaggedIsUndefinedOrNull(GateRef x);
+    inline GateRef TaggedIsTrue(GateRef x);
+    inline GateRef TaggedIsFalse(GateRef x);
+    inline GateRef TaggedIsNull(GateRef x);
     inline GateRef TaggedIsBoolean(GateRef x);
     inline GateRef TaggedGetInt(GateRef x);
     inline GateRef TaggedTypeNGC(GateRef x);
@@ -340,6 +344,7 @@ public:
     inline void SetValueToTaggedArray(VariableType valType, GateRef glue, GateRef array, GateRef index, GateRef val);
     GateRef TaggedIsString(GateRef obj);
     GateRef TaggedIsStringOrSymbol(GateRef obj);
+    inline GateRef GetGlobalConstantString(ConstantIndex index);
     // object operation
     inline GateRef LoadHClass(GateRef object);
     inline GateRef IsJsType(GateRef object, JSType type);
@@ -352,6 +357,7 @@ public:
     inline GateRef IsEcmaObject(GateRef obj);
     inline GateRef IsJsObject(GateRef obj);
     inline GateRef BothAreString(GateRef x, GateRef y);
+    inline GateRef IsCallable(GateRef obj);
     GateRef GetFunctionBitFieldFromJSFunction(GateRef function);
     GateRef GetModuleFromFunction(GateRef function);
     GateRef FunctionIsResolved(GateRef function);
@@ -361,6 +367,7 @@ public:
     void SetModuleToFunction(GateRef glue, GateRef function, GateRef value);
     void SetPropertyInlinedProps(GateRef glue, GateRef obj, GateRef hClass,
         GateRef value, GateRef attrOffset, VariableType type);
+    void SetHomeObjectToFunction(GateRef glue, GateRef function, GateRef value);
     void SetEnvironment(Environment *env)
     {
         env_ = env;
@@ -372,6 +379,10 @@ public:
     void SetCompilationConfig(CompilationConfig *cmpCfg)
     {
         cmpCfg_ = cmpCfg;
+    }
+    CompilationConfig *GetCompilationConfig()
+    {
+        return cmpCfg_;
     }
     // label related
     void NewEnvironment(GateRef hir);

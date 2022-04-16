@@ -22,14 +22,14 @@ namespace panda::ecmascript::kungfu {
 class RuntimeStubCSigns {
 public:
     enum ID {
-#define DEF_RUNTIME_STUB_ID(name, counter) ID_##name,
+#define DEF_RUNTIME_STUB_ID(name) ID_##name,
         RUNTIME_STUB_LIST(DEF_RUNTIME_STUB_ID)
 #undef DEF_RUNTIME_STUB_ID
         NUM_OF_STUBS
     };
 
     enum NoGCStubID {
-#define DEF_RUNTIME_STUB_ID(name, counter) NOGCSTUB_ID_##name,
+#define DEF_RUNTIME_STUB_ID(name) NOGCSTUB_ID_##name,
         RUNTIME_STUB_WITHOUT_GC_LIST(DEF_RUNTIME_STUB_ID)
 #undef DEF_RUNTIME_STUB_ID
         NUM_OF_RTSTUBS_WITHOUT_GC
