@@ -129,7 +129,7 @@ bool LLVMAssembler::BuildMCJITEngine()
 {
     LLVMBool ret = LLVMCreateMCJITCompilerForModule(&engine_, module_, &options_, sizeof(options_), &error_);
     if (ret) {
-        COMPILER_OPTIONAL_LOG(FATAL) << "error_ : " << error_;
+        COMPILER_LOG(FATAL) << "error_ : " << error_;
         return false;
     }
     return true;
@@ -165,8 +165,7 @@ void LLVMAssembler::BuildAndRunPasses()
     LLVMDisposePassManager(modPass1);
 }
 
-LLVMAssembler::LLVMAssembler(LLVMModuleRef module, bool enableLog, bool genFp)
-    : module_(module), enableLog_(enableLog)
+LLVMAssembler::LLVMAssembler(LLVMModuleRef module, bool genFp) : module_(module)
 {
     Initialize(genFp);
 }
