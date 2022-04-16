@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #include "ecmascript/tooling/agent/js_pt_hooks.h"
 #include "ecmascript/tooling/base/pt_types.h"
 #include "ecmascript/tooling/dispatcher.h"
+#include "ecmascript/tooling/interface/js_debugger.h"
 #include "ecmascript/tooling/js_pt_extractor.h"
 #include "libpandabase/macros.h"
 
@@ -45,7 +46,7 @@ public:
     }
 
     std::optional<CString> SetBreakpointByUrl(const CString &url, int32_t lineNumber, int32_t columnNumber,
-                                            CString *outId,
+                                            const std::optional<CString> &condition, CString *outId,
                                             CVector<std::unique_ptr<Location>> *outLocations);
     std::optional<CString> RemoveBreakpoint(const BreakpointDetails &metaData);
 
@@ -55,6 +56,8 @@ public:
     std::optional<CString> StepOver();
     std::optional<CString> StepOut();
     std::optional<CString> EvaluateValue(CallFrameId callFrameId, const CString &expression,
+                                       std::unique_ptr<RemoteObject> *result);
+    std::optional<CString> EvaluateValueCmpt(CallFrameId callFrameId, const CString &expression,
                                        std::unique_ptr<RemoteObject> *result);
 
     /**
@@ -125,6 +128,8 @@ private:
     std::optional<CString> GetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result, uint32_t slot);
     void GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn, bool isAccessorOnly,
                              CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
+    bool DecodeAndCheckBase64(const CString &src, CString &dest);
+
     constexpr static int32_t SPECIAL_LINE_MARK = -1;
 
     FrontEnd *frontend_ {nullptr};

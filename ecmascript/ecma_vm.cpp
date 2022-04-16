@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -140,6 +140,7 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
     options_.ParseAsmInterOption();
 
     notificationManager_ = chunk_.New<tooling::NotificationManager>();
+    debuggerManager_ = chunk_.New<tooling::JsDebuggerManager>();
 }
 
 void EcmaVM::TryLoadSnapshotFile()
@@ -368,7 +369,7 @@ JSMethod *EcmaVM::GetMethodForNativeFunction(const void *func)
     return nativeMethods_.back();
 }
 
-void EcmaVM::InvokeEcmaAotEntrypoint()
+JSTaggedValue EcmaVM::InvokeEcmaAotEntrypoint()
 {
     const std::string funcName = "func_main_0";
     auto ptr = static_cast<uintptr_t>(aotInfo_->GetAOTFuncEntry(funcName));
@@ -380,6 +381,7 @@ void EcmaVM::InvokeEcmaAotEntrypoint()
                                args.data(),
                                ptr);
     std::cout << " LoadAOTFile call func_main_0 res: " << res << std::endl;
+    return JSTaggedValue(res);
 }
 
 Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *jsPandaFile)
@@ -414,10 +416,10 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
 
     auto options = GetJSOptions();
     if (options.EnableTSAot()) {
-        InvokeEcmaAotEntrypoint();
+        result = InvokeEcmaAotEntrypoint();
     } else {
         CpuProfilingScope profilingScope(this);
-        EcmaInterpreter::Execute(&info);
+        result = EcmaInterpreter::Execute(&info);
     }
     if (!thread_->HasPendingException()) {
         job::MicroJobQueue::ExecutePendingJob(thread_, GetMicroJobQueue());
@@ -474,7 +476,7 @@ void EcmaVM::HandleUncaughtException(ObjectHeader *exception)
     if (isUncaughtExceptionRegistered_) {
         return;
     }
-    [[maybe_unused]] EcmaHandleScope handle_scope(thread_);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread_);
     JSHandle<JSTaggedValue> exceptionHandle(thread_, JSTaggedValue(exception));
     // if caught exceptionHandle type is JSError
     thread_->ClearException();
