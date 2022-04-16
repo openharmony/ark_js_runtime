@@ -20,7 +20,11 @@ namespace panda::ecmascript {
     #define TEST_RUNTIME_STUB_GC_LIST(V)         \
         V(DefineAotFunc, 3)                      \
         V(GetPrintFunc, 0)                       \
-        V(GetBindFunc, 1)
+        V(GetBindFunc, 1)                        \
+        V(DefineProxyFunc, 3)                    \
+        V(DefineProxyFunc2, 3)                   \
+        V(DefineProxyHandler, 3)                 \
+        V(DumpTaggedType, 1)
 #else
     #define TEST_RUNTIME_STUB_GC_LIST(V)
 #endif

@@ -137,6 +137,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::LOOP_BACK, &LLVMIRBuilder::HandleGoto},
         {OpCode::VALUE_SELECTOR, &LLVMIRBuilder::HandlePhi},
         {OpCode::RUNTIME_CALL, &LLVMIRBuilder::HandleRuntimeCall},
+        {OpCode::RUNTIME_CALL_WITH_ARGV, &LLVMIRBuilder::HandleRuntimeCallWithArgv},
         {OpCode::NOGC_RUNTIME_CALL, &LLVMIRBuilder::HandleCall},
         {OpCode::CALL, &LLVMIRBuilder::HandleCall},
         {OpCode::BYTECODE_CALL, &LLVMIRBuilder::HandleBytecodeCall},
@@ -552,6 +553,56 @@ void LLVMIRBuilder::VisitRuntimeCall(GateRef gate, const std::vector<GateRef> &i
     gateToLLVMMaps_[gate] = runtimeCall;
 }
 
+void LLVMIRBuilder::HandleRuntimeCallWithArgv(GateRef gate)
+{
+    std::vector<GateRef> ins = circuit_->GetInVector(gate);
+    VisitRuntimeCallWithArgv(gate, ins);
+}
+
+void LLVMIRBuilder::VisitRuntimeCallWithArgv(GateRef gate, const std::vector<GateRef> &inList)
+{
+    int paraStartIndex = 3;
+    ASSERT(llvmModule_ != nullptr);
+    LLVMValueRef callee;
+    LLVMValueRef rtoffset;
+    const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(OptimizedCallRuntimeWithArgv));
+    LLVMTypeRef rtfuncType = llvmModule_->GetFuncType(signature);
+    LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
+    LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
+    LLVMTypeRef glueType = LLVMTypeOf(glue);
+    if (circuit_->GetFrameType() == FrameType::INTERPRETER_FRAME ||
+        circuit_->GetFrameType() == FrameType::OPTIMIZED_ENTRY_FRAME) {
+        rtoffset = LLVMConstInt(glueType,
+            JSThread::GlueData::GetRTStubEntriesOffset(compCfg_->Is32Bit()) +
+            (RTSTUB_ID(AsmIntCallRuntime)) * slotSize_, 0);
+    } else if (circuit_->GetFrameType() == FrameType::OPTIMIZED_FRAME) {
+        rtoffset = LLVMConstInt(glueType,
+            JSThread::GlueData::GetRTStubEntriesOffset(compCfg_->Is32Bit()) +
+            (RTSTUB_ID(OptimizedCallRuntimeWithArgv)) * slotSize_, 0);
+    } else {
+        abort();
+    }
+    LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
+    LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glueType, 0), "");
+    LLVMValueRef llvmAddr = LLVMBuildLoad(builder_, rtbaseAddr, "");
+    callee = LLVMBuildIntToPtr(builder_, llvmAddr, rtfuncTypePtr, "cast");
+    // 16 : params limit
+    LLVMValueRef params[16];
+    params[0] = glue;
+    int index = circuit_->GetBitField(inList[1]);
+    params[1] = LLVMConstInt(LLVMInt64Type(), index, 0);
+    for (size_t paraIdx = paraStartIndex; paraIdx < inList.size(); ++paraIdx) {
+        GateRef gateTmp = inList[paraIdx];
+        params[paraIdx - 1] = gateToLLVMMaps_[gateTmp];
+    }
+    if (callee == nullptr) {
+        COMPILER_LOG(ERROR) << "callee nullptr";
+        return;
+    }
+    LLVMValueRef runtimeCall = LLVMBuildCall(builder_, callee, params, inList.size() - 1, "");
+    gateToLLVMMaps_[gate] = runtimeCall;
+}
+
 LLVMValueRef LLVMIRBuilder::GetCurrentSP()
 {
     LLVMMetadataRef meta;
@@ -688,6 +739,14 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList, 
         LLVMSetInstructionCallConv(call, LLVMGHCCallConv);
     } else if (calleeDescriptor->GetCallConv() == CallSignature::CallConv::WebKitJSCallConv) {
         LLVMSetInstructionCallConv(call, LLVMWebKitJSCallConv);
+    }
+    if (calleeDescriptor->GetTailCall()) {
+        LLVMSetTailCall(call, true);
+        const char *attrName = "gc-leaf-function";
+        const char *attrValue = "true";
+        LLVMAttributeRef llvmAttr = LLVMCreateStringAttribute(context_, attrName, strlen(attrName), attrValue,
+           strlen(attrValue));
+        LLVMAddCallSiteAttribute(call, LLVMAttributeFunctionIndex, llvmAttr);
     }
     gateToLLVMMaps_[gate] = call;
     return;
@@ -1817,7 +1876,7 @@ LLVMTypeRef LLVMModule::GetFuncType(const CallSignature *stubDescriptor)
         UNREACHABLE();
     }
     auto functype = LLVMFunctionType(returnType, paramTys.data(), paramCount + extraParameterCnt,
-        stubDescriptor->GetVariableArgs());
+        stubDescriptor->IsVariadicArgs());
     return functype;
 }
 

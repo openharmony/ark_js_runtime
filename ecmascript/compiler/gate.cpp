@@ -101,6 +101,7 @@ Properties OpCode::GetProperties() const
         case NOGC_RUNTIME_CALL:
         case BYTECODE_CALL:
         case CALL:
+        case RUNTIME_CALL_WITH_ARGV:
             return {FLEX, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
         case ALLOCA:
             return {ARCH, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(ALLOCA_LIST)};
