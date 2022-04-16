@@ -123,12 +123,12 @@ public:
 
 private:
     void ReplaceHirControlGate(GateAccessor::UsesIterator &useIt, GateRef newGate, bool noThrow = false);
-    void LowerHirToMir(GateRef hir, GateRef outir,
+    void ReplaceHirToSubCfg(GateRef hir, GateRef outir,
                        const std::vector<GateRef> &successControl,
                        const std::vector<GateRef> &exceptionControl,
                        bool noThrow = false);
-    void LowerHirToCall(GateRef hirGate, GateRef callGate, bool noThrow = false);
-    void LowerHirToThrowCall(GateRef hirGate, GateRef condGate, GateRef callGate);
+    void ReplaceHirToCall(GateRef hirGate, GateRef callGate, bool noThrow = false);
+    void ReplaceHirToThrowCall(GateRef hirGate, GateRef condGate, GateRef callGate);
     void LowerExceptionHandler(GateRef hirGate);
     // environment must be initialized
     GateRef GetConstPool(GateRef jsFunc);

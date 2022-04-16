@@ -238,12 +238,12 @@ GateRef CircuitBuilder::DoubleToTagged(GateRef x)
 
 GateRef CircuitBuilder::TaggedTrue()
 {
-    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_TRUE, GateType::C_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_TRUE, GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::TaggedFalse()
 {
-    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_FALSE, GateType::C_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_FALSE, GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::GetValueFromTaggedArray(VariableType returnType, GateRef array, GateRef index)

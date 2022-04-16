@@ -48,42 +48,42 @@ public:
 
     static VariableType BOOL()
     {
-        return VariableType(MachineType::I1, GateType::C_VALUE);
+        return VariableType(MachineType::I1, GateType::NJS_VALUE);
     }
 
     static VariableType INT8()
     {
-        return VariableType(MachineType::I8, GateType::C_VALUE);
+        return VariableType(MachineType::I8, GateType::NJS_VALUE);
     }
 
     static VariableType INT16()
     {
-        return VariableType(MachineType::I16, GateType::C_VALUE);
+        return VariableType(MachineType::I16, GateType::NJS_VALUE);
     }
 
     static VariableType INT32()
     {
-        return VariableType(MachineType::I32, GateType::C_VALUE);
+        return VariableType(MachineType::I32, GateType::NJS_VALUE);
     }
 
     static VariableType INT64()
     {
-        return VariableType(MachineType::I64, GateType::C_VALUE);
+        return VariableType(MachineType::I64, GateType::NJS_VALUE);
     }
 
     static VariableType FLOAT32()
     {
-        return VariableType(MachineType::F32, GateType::C_VALUE);
+        return VariableType(MachineType::F32, GateType::NJS_VALUE);
     }
 
     static VariableType FLOAT64()
     {
-        return VariableType(MachineType::F64, GateType::C_VALUE);
+        return VariableType(MachineType::F64, GateType::NJS_VALUE);
     }
 
     static VariableType POINTER()
     {
-        return VariableType(MachineType::ARCH, GateType::C_VALUE);
+        return VariableType(MachineType::ARCH, GateType::NJS_VALUE);
     }
 
     static VariableType JS_ANY()
