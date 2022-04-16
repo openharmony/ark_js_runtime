@@ -75,8 +75,6 @@ static constexpr size_t MIN_CHUNK_AREA_SIZE = 4 * 1024;
 static constexpr size_t MAX_CACHED_CHUNK_AREA_SIZE = 16 * 1024;
 static constexpr size_t MAX_CHUNK_AREA_SIZE = 1 * 1024 * 1024;
 
-static constexpr uintptr_t PANDA_32BITS_HEAP_START_ADDRESS_256 = 256_KB;
-
 template<typename T>
 constexpr inline bool IsAligned(T value, size_t alignment)
 {

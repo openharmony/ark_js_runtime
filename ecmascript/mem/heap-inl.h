@@ -28,6 +28,7 @@
 #include "ecmascript/mem/sparse_space.h"
 #include "ecmascript/mem/tagged_object.h"
 #include "ecmascript/mem/barriers-inl.h"
+#include "ecmascript/mem/mem_map_allocator.h"
 
 namespace panda::ecmascript {
 template<class Callback>
