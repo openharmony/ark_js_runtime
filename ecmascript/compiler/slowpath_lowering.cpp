@@ -264,6 +264,9 @@ void SlowPathLowering::Lower(GateRef gate)
         case LDLEXENVDYN_PREF:
             LowerLexicalEnv(gate, glue);
             break;
+        case ASYNCFUNCTIONENTER_PREF:
+            LowerAsyncFunctionEnter(gate, glue);
+            break;
         case INCDYN_PREF_V8:
             LowerIncDyn(gate, glue);
             break;
@@ -272,6 +275,12 @@ void SlowPathLowering::Lower(GateRef gate)
             break;
         case GETPROPITERATOR_PREF:
             LowerGetPropIterator(gate, glue);
+            break;
+        case RESUMEGENERATOR_PREF_V8:
+            LowerResumeGenerator(gate);
+            break;
+        case GETRESUMEMODE_PREF_V8:
+            LowerGetResumeMode(gate);
             break;
         case ITERNEXT_PREF_V8:
             LowerIterNext(gate, glue);
@@ -342,6 +351,9 @@ void SlowPathLowering::Lower(GateRef gate)
         case THROWDYN_PREF:
             LowerThrowDyn(gate, glue);
             break;
+        case TYPEOFDYN_PREF:
+            LowerTypeOfDyn(gate, glue);
+            break;
         case THROWCONSTASSIGNMENT_PREF_V8:
             LowerThrowConstAssignment(gate, glue);
             break;
@@ -401,6 +413,12 @@ void SlowPathLowering::Lower(GateRef gate)
             break;
         case DELOBJPROP_PREF_V8_V8:
             LowerDelObjProp(gate, glue);
+            break;
+        case DEFINENCFUNCDYN_PREF_ID16_IMM16_V8:
+            LowerDefineNCFuncDyn(gate, glue, jsFunc);
+            break;
+        case DEFINEMETHOD_PREF_ID16_IMM16_V8:
+            LowerDefineMethod(gate, glue, jsFunc);
             break;
         case EXPDYN_PREF_V8:
             LowerExpDyn(gate, glue);
@@ -602,8 +620,8 @@ void SlowPathLowering::LowerCreateIterResultObj(GateRef gate, GateRef glue)
 void SlowPathLowering::LowerSuspendGenerator(GateRef gate, GateRef glue)
 {
     int id = RTSTUB_ID(SuspendGenerator);
-    // 3: number of value inputs
-    ASSERT(acc_.GetNumValueIn(gate) == 3);
+    // 2: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
     ReplaceHirToCall(gate, newGate);
 }
@@ -2287,5 +2305,294 @@ void SlowPathLowering::LowerDefineFuncDyn(GateRef gate, GateRef glue, GateRef js
     }
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
     ReplaceHirToSubCfg(gate, *result, successControl, failControl);
+}
+
+void SlowPathLowering::LowerAsyncFunctionEnter(GateRef gate, GateRef glue)
+{
+    int id = RTSTUB_ID(AsyncFunctionEnter);
+    // 0: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 0);
+    GateRef newGate = builder_.CallRuntime(glue, id, {});
+    ReplaceHirToCall(gate, newGate);
+}
+
+void SlowPathLowering::LowerTypeOfDyn(GateRef gate, GateRef glue)
+{
+    // 1: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    GateRef obj = acc_.GetValueIn(gate, 0);
+    Label entry(&builder_);
+    Label exit(&builder_);
+
+    GateRef gConstAddr = builder_.IntPtrAdd(glue,
+        builder_.IntPtr(JSThread::GlueData::GetGlobalConstOffset(builder_.GetCompilationConfig()->Is32Bit())));
+    GateRef undefinedIndex = builder_.GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX);
+    GateRef gConstUndefinedStr = builder_.Load(VariableType::JS_POINTER(), gConstAddr, undefinedIndex);
+    DEFVAlUE(result, (&builder_), VariableType::JS_POINTER(), gConstUndefinedStr);
+    Label objIsTrue(&builder_);
+    Label objNotTrue(&builder_);
+    Label defaultLabel(&builder_);
+    GateRef gConstBooleanStr = builder_.Load(VariableType::JS_POINTER(), gConstAddr,
+        builder_.GetGlobalConstantString(ConstantIndex::BOOLEAN_STRING_INDEX));
+    builder_.Branch(builder_.TaggedIsTrue(obj), &objIsTrue, &objNotTrue);
+    builder_.Bind(&objIsTrue);
+    {
+        result = gConstBooleanStr;
+        builder_.Jump(&exit);
+    }
+    builder_.Bind(&objNotTrue);
+    {
+        Label objIsFalse(&builder_);
+        Label objNotFalse(&builder_);
+        builder_.Branch(builder_.TaggedIsFalse(obj), &objIsFalse, &objNotFalse);
+        builder_.Bind(&objIsFalse);
+        {
+            result = gConstBooleanStr;
+            builder_.Jump(&exit);
+        }
+        builder_.Bind(&objNotFalse);
+        {
+            Label objIsNull(&builder_);
+            Label objNotNull(&builder_);
+            builder_.Branch(builder_.TaggedIsNull(obj), &objIsNull, &objNotNull);
+            builder_.Bind(&objIsNull);
+            {
+                result = builder_.Load(VariableType::JS_POINTER(), gConstAddr,
+                    builder_.GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
+                builder_.Jump(&exit);
+            }
+            builder_.Bind(&objNotNull);
+            {
+                Label objIsUndefined(&builder_);
+                Label objNotUndefined(&builder_);
+                builder_.Branch(builder_.TaggedIsUndefined(obj), &objIsUndefined, &objNotUndefined);
+                builder_.Bind(&objIsUndefined);
+                {
+                    result = builder_.Load(VariableType::JS_POINTER(), gConstAddr,
+                        builder_.GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX));
+                    builder_.Jump(&exit);
+                }
+                builder_.Bind(&objNotUndefined);
+                builder_.Jump(&defaultLabel);
+            }
+        }
+    }
+    builder_.Bind(&defaultLabel);
+    {
+        Label objIsHeapObject(&builder_);
+        Label objNotHeapObject(&builder_);
+        builder_.Branch(builder_.TaggedIsHeapObject(obj), &objIsHeapObject, &objNotHeapObject);
+        builder_.Bind(&objIsHeapObject);
+        {
+            Label objIsString(&builder_);
+            Label objNotString(&builder_);
+            builder_.Branch(builder_.IsJsType(obj, JSType::STRING), &objIsString, &objNotString);
+            builder_.Bind(&objIsString);
+            {
+                result = builder_.Load(VariableType::JS_POINTER(), gConstAddr,
+                    builder_.GetGlobalConstantString(ConstantIndex::STRING_STRING_INDEX));
+                builder_.Jump(&exit);
+            }
+            builder_.Bind(&objNotString);
+            {
+                Label objIsSymbol(&builder_);
+                Label objNotSymbol(&builder_);
+                builder_.Branch(builder_.IsJsType(obj, JSType::SYMBOL), &objIsSymbol, &objNotSymbol);
+                builder_.Bind(&objIsSymbol);
+                {
+                    result = builder_.Load(VariableType::JS_POINTER(), gConstAddr,
+                        builder_.GetGlobalConstantString(ConstantIndex::SYMBOL_STRING_INDEX));
+                    builder_.Jump(&exit);
+                }
+                builder_.Bind(&objNotSymbol);
+                {
+                    Label objIsCallable(&builder_);
+                    Label objNotCallable(&builder_);
+                    builder_.Branch(builder_.IsCallable(obj), &objIsCallable, &objNotCallable);
+                    builder_.Bind(&objIsCallable);
+                    {
+                        result = builder_.Load(VariableType::JS_POINTER(), gConstAddr,
+                            builder_.GetGlobalConstantString(ConstantIndex::FUNCTION_STRING_INDEX));
+                        builder_.Jump(&exit);
+                    }
+                    builder_.Bind(&objNotCallable);
+                    {
+                        Label objIsBigInt(&builder_);
+                        Label objNotBigInt(&builder_);
+                        builder_.Branch(builder_.IsJsType(obj, JSType::BIGINT), &objIsBigInt, &objNotBigInt);
+                        builder_.Bind(&objIsBigInt);
+                        {
+                            result = builder_.Load(VariableType::JS_POINTER(), gConstAddr,
+                                builder_.GetGlobalConstantString(ConstantIndex::BIGINT_STRING_INDEX));
+                            builder_.Jump(&exit);
+                        }
+                        builder_.Bind(&objNotBigInt);
+                        {
+                            result = builder_.Load(VariableType::JS_POINTER(), gConstAddr,
+                                builder_.GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
+                            builder_.Jump(&exit);
+                        }
+                    }
+                }
+            }
+        }
+        builder_.Bind(&objNotHeapObject);
+        {
+            Label objIsNum(&builder_);
+            Label objNotNum(&builder_);
+            builder_.Branch(builder_.TaggedIsNumber(obj), &objIsNum, &objNotNum);
+            builder_.Bind(&objIsNum);
+            {
+                result = builder_.Load(VariableType::JS_POINTER(), gConstAddr,
+                    builder_.GetGlobalConstantString(ConstantIndex::NUMBER_STRING_INDEX));
+                builder_.Jump(&exit);
+            }
+            builder_.Bind(&objNotNum);
+            builder_.Jump(&exit);
+        }
+    }
+    builder_.Bind(&exit);
+    successControl.emplace_back(builder_.GetState());
+    successControl.emplace_back(builder_.GetDepend());
+    failControl.emplace_back(Circuit::NullGate());
+    failControl.emplace_back(Circuit::NullGate());
+    ReplaceHirToSubCfg(gate, *result, successControl, failControl, true);
+}
+
+void SlowPathLowering::LowerResumeGenerator(GateRef gate)
+{
+    // 1: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    GateRef obj = acc_.GetValueIn(gate, 0);
+    GateRef resumeResultOffset = builder_.IntPtr(JSGeneratorObject::GENERATOR_RESUME_RESULT_OFFSET);
+    GateRef result = builder_.Load(VariableType::JS_ANY(), obj, resumeResultOffset);
+    successControl.emplace_back(builder_.GetState());
+    successControl.emplace_back(builder_.GetDepend());
+    failControl.emplace_back(Circuit::NullGate());
+    failControl.emplace_back(Circuit::NullGate());
+    ReplaceHirToSubCfg(gate, result, successControl, failControl, true);
+}
+
+void SlowPathLowering::LowerGetResumeMode(GateRef gate)
+{
+    // 1: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    GateRef obj = acc_.GetValueIn(gate, 0);
+    GateRef bitFieldOffset = builder_.IntPtr(JSGeneratorObject::BIT_FIELD_OFFSET);
+    GateRef bitField = builder_.Load(VariableType::INT64(), obj, bitFieldOffset);
+    GateRef resumeMode = builder_.Int32And(
+        builder_.UInt32LSR(builder_.TruncInt64ToInt32(bitField),
+                           builder_.Int32(JSGeneratorObject::ResumeModeBits::START_BIT)),
+        builder_.Int32((1LU << JSGeneratorObject::ResumeModeBits::SIZE) - 1));
+    GateRef result = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(resumeMode));
+    successControl.emplace_back(builder_.GetState());
+    successControl.emplace_back(builder_.GetDepend());
+    failControl.emplace_back(Circuit::NullGate());
+    failControl.emplace_back(Circuit::NullGate());
+    ReplaceHirToSubCfg(gate, result, successControl, failControl, true);
+}
+
+void SlowPathLowering::LowerDefineNCFuncDyn(GateRef gate, GateRef glue, GateRef jsFunc)
+{
+    // 4: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 4);
+    GateRef methodId = acc_.GetValueIn(gate, 0);
+    GateRef length = acc_.GetValueIn(gate, 1);
+    GateRef env = acc_.GetValueIn(gate, 2);
+    GateRef result;
+    DEFVAlUE(method, (&builder_), VariableType::JS_POINTER(),
+             GetObjectFromConstPool(GetConstPool(jsFunc), builder_.ZExtInt16ToInt32(methodId)));
+    Label isResolved(&builder_);
+    Label notResolved(&builder_);
+    Label defaultLabel(&builder_);
+    Label successExit(&builder_);
+    Label exceptionExit(&builder_);
+    builder_.Branch(builder_.FunctionIsResolved(*method), &isResolved, &notResolved);
+    builder_.Bind(&isResolved);
+    {
+        method = builder_.CallRuntime(glue, RTSTUB_ID(DefineNCFuncDyn), {*method});
+        Label notException(&builder_);
+        builder_.Branch(builder_.TaggedSpecialValueChecker(*method, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &notException);
+        builder_.Bind(&notException);
+        {
+            builder_.SetConstPoolToFunction(glue, *method, GetConstPool(jsFunc));
+            builder_.Jump(&defaultLabel);
+        }
+    }
+    builder_.Bind(&notResolved);
+    {
+        builder_.SetResolvedToFunction(glue, *method, builder_.Boolean(true));
+        builder_.Jump(&defaultLabel);
+    }
+    builder_.Bind(&defaultLabel);
+    {
+        GateRef hclass = builder_.LoadHClass(*method);
+        builder_.SetPropertyInlinedProps(glue, *method, hclass, builder_.TaggedNGC(length),
+            builder_.Int32(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
+        builder_.SetLexicalEnvToFunction(glue, *method, env);
+        GateRef homeObject = acc_.GetValueIn(gate, 3);
+        builder_.SetHomeObjectToFunction(glue, *method, homeObject);
+        builder_.SetModuleToFunction(glue, *method, builder_.GetModuleFromFunction(jsFunc));
+        result = *method;
+        builder_.Jump(&successExit);
+    }
+    CREATE_DOUBLE_EXIT(successExit, exceptionExit)
+    ReplaceHirToSubCfg(gate, result, successControl, failControl);
+}
+
+void SlowPathLowering::LowerDefineMethod(GateRef gate, GateRef glue, GateRef jsFunc)
+{
+    // 4: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 4);
+    GateRef methodId = acc_.GetValueIn(gate, 0);
+    GateRef length = acc_.GetValueIn(gate, 1);
+    GateRef env = acc_.GetValueIn(gate, 2);
+    GateRef result;
+    DEFVAlUE(method, (&builder_), VariableType::JS_POINTER(),
+             GetObjectFromConstPool(GetConstPool(jsFunc), builder_.ZExtInt16ToInt32(methodId)));
+    Label isResolved(&builder_);
+    Label notResolved(&builder_);
+    Label defaultLabel(&builder_);
+    Label successExit(&builder_);
+    Label exceptionExit(&builder_);
+    builder_.Branch(builder_.FunctionIsResolved(*method), &isResolved, &notResolved);
+    builder_.Bind(&isResolved);
+    {
+        method = builder_.CallRuntime(glue, RTSTUB_ID(DefineMethod), {*method});
+        Label notException(&builder_);
+        builder_.Branch(builder_.TaggedSpecialValueChecker(*method, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &notException);
+        builder_.Bind(&notException);
+        {
+            builder_.SetConstPoolToFunction(glue, *method, GetConstPool(jsFunc));
+            builder_.Jump(&defaultLabel);
+        }
+    }
+    builder_.Bind(&notResolved);
+    {
+        builder_.SetResolvedToFunction(glue, *method, builder_.Boolean(true));
+        GateRef homeObject = acc_.GetValueIn(gate, 3);
+        builder_.SetHomeObjectToFunction(glue, *method, homeObject);
+        builder_.Jump(&defaultLabel);
+    }
+    builder_.Bind(&defaultLabel);
+    {
+        GateRef hclass = builder_.LoadHClass(*method);
+        builder_.SetPropertyInlinedProps(glue, *method, hclass, builder_.TaggedNGC(length),
+            builder_.Int32(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
+        builder_.SetLexicalEnvToFunction(glue, *method, env);
+        builder_.SetModuleToFunction(glue, *method, builder_.GetModuleFromFunction(jsFunc));
+        result = *method;
+        builder_.Jump(&successExit);
+    }
+    CREATE_DOUBLE_EXIT(successExit, exceptionExit)
+    ReplaceHirToSubCfg(gate, result, successControl, failControl);
 }
 }  // namespace panda::ecmascript
