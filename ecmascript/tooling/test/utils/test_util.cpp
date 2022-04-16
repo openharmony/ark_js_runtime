@@ -15,7 +15,7 @@
 
 #include "ecmascript/tooling/test/utils/test_util.h"
 
-namespace panda::tooling::ecmascript::test {
+namespace panda::ecmascript::tooling::test {
 TestMap TestUtil::testMap_;
 os::memory::Mutex TestUtil::eventMutex_;
 os::memory::ConditionVariable TestUtil::eventCv_;
@@ -24,8 +24,7 @@ bool TestUtil::initialized_ = false;
 os::memory::Mutex TestUtil::suspendMutex_;
 os::memory::ConditionVariable TestUtil::suspendCv_;
 bool TestUtil::suspended_ = false;
-PtThread TestUtil::lastEventThread_ = PtThread::NONE;
-PtLocation TestUtil::lastEventLocation_("", EntityId(0), 0);
+JSPtLocation TestUtil::lastEventLocation_("", EntityId(0), 0);
 
 std::ostream &operator<<(std::ostream &out, DebugEvent value)
 {
@@ -68,4 +67,4 @@ TestEvents::TestEvents()
         return true;
     };
 }
-}  // namespace panda::tooling::ecmascript::test
+}  // namespace panda::ecmascript::tooling::test

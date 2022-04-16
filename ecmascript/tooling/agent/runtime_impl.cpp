@@ -18,7 +18,7 @@
 #include "ecmascript/tooling/base/pt_returns.h"
 #include "libpandabase/utils/logger.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 RuntimeImpl::DispatcherImpl::DispatcherImpl(FrontEnd *frontend, std::unique_ptr<RuntimeImpl> runtime)
     : DispatcherBase(frontend), runtime_(std::move(runtime))
 {
@@ -100,7 +100,8 @@ void RuntimeImpl::DispatcherImpl::CallFunctionOn(const DispatchRequest &request)
 
 DispatchResponse RuntimeImpl::Enable()
 {
-    Runtime::GetCurrent()->SetDebugMode(true);
+    auto ecmaVm = const_cast<EcmaVM *>(backend_->GetEcmaVm());
+    ecmaVm->SetDebugMode(true);
     backend_->NotifyAllScriptParsed();
     return DispatchResponse::Ok();
 }
@@ -127,18 +128,7 @@ DispatchResponse RuntimeImpl::CallFunctionOn(std::unique_ptr<CallFunctionOnParam
     std::unique_ptr<RemoteObject> *outRemoteObject,
     [[maybe_unused]] std::optional<std::unique_ptr<ExceptionDetails>> *outExceptionDetails)
 {
-    backend_->CallFunctionOn(params->GetFunctionDeclaration(),
-        params->GetObjectId(),
-        params->GetArguments(),
-        params->GetSilent(),
-        params->GetReturnByValue(),
-        params->GetGeneratePreview(),
-        params->GetUserGesture(),
-        params->GetAwaitPromise(),
-        params->GetExecutionContextId(),
-        params->GetObjectGroup(),
-        params->GetThrowOnSideEffect(),
-        outRemoteObject);
+    backend_->CallFunctionOn(params->GetFunctionDeclaration(), outRemoteObject);
     return DispatchResponse::Ok();
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling

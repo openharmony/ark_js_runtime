@@ -25,8 +25,7 @@
 #include "ecmascript/tooling/base/pt_script.h"
 
 using namespace panda::ecmascript;
-using namespace panda::tooling::ecmascript;
-using namespace panda::tooling;
+using namespace panda::ecmascript::tooling;
 
 namespace panda::test {
 class DebuggerScriptTest : public testing::Test {

@@ -39,7 +39,6 @@
 #endif
 
 namespace panda {
-class RuntimeNotificationManager;
 namespace panda_file {
 class File;
 }  // namespace panda_file
@@ -62,6 +61,10 @@ class JSPandaFile;
 namespace job {
 class MicroJobQueue;
 }  // namespace job
+
+namespace tooling {
+class NotificationManager;
+}  // namespace tooling
 
 template<typename T>
 class JSHandle;
@@ -199,7 +202,7 @@ public:
 
     Rendezvous *GetRendezvous() const override
     {
-        return rendezvous_;
+        return nullptr;
     }
 
     ObjectHeader *GetOOMErrorObject() override
@@ -344,9 +347,29 @@ public:
         regexpCache_ = newCache;
     }
 
-    RuntimeNotificationManager *GetNotificationManager() const
+    tooling::NotificationManager *GetNotificationManager() const
     {
         return notificationManager_;
+    }
+
+    void SetDebugMode(bool isDebugMode)
+    {
+        isDebugMode_ = isDebugMode;
+    }
+
+    bool IsDebugMode() const
+    {
+        return isDebugMode_;
+    }
+
+    void SetDebugLibraryHandle(os::library_loader::LibraryHandle handle)
+    {
+        debuggerLibraryHandle_ = std::move(handle);
+    }
+
+    const os::library_loader::LibraryHandle &GetDebugLibraryHandle() const
+    {
+        return debuggerLibraryHandle_;
     }
 
     void SetEnableForceGC(bool enable)
@@ -437,9 +460,6 @@ private:
     NO_MOVE_SEMANTIC(EcmaVM);
     NO_COPY_SEMANTIC(EcmaVM);
 
-    // Useless/deprecated fields in the future:
-    Rendezvous *rendezvous_ {nullptr};
-
     // VM startup states.
     JSRuntimeOptions options_;
     bool icEnable_ {true};
@@ -482,7 +502,9 @@ private:
     AotCodeInfo *aotInfo_ {nullptr};
 
     // Debugger
-    RuntimeNotificationManager *notificationManager_ {nullptr};
+    tooling::NotificationManager *notificationManager_ {nullptr};
+    os::library_loader::LibraryHandle debuggerLibraryHandle_ {nullptr};
+    bool isDebugMode_ {false};
 
     // Registered Callbacks
     PromiseRejectCallback promiseRejectCallback_ {nullptr};

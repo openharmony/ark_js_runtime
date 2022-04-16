@@ -198,7 +198,7 @@ void JSPandaFileManager::ReleaseJSPandaFile(const JSPandaFile *jsPandaFile)
     delete jsPandaFile;
 }
 
-tooling::ecmascript::JSPtExtractor *JSPandaFileManager::GetJSPtExtractor(const JSPandaFile *jsPandaFile)
+tooling::JSPtExtractor *JSPandaFileManager::GetJSPtExtractor(const JSPandaFile *jsPandaFile)
 {
     LOG_IF(jsPandaFile == nullptr, FATAL, ECMASCRIPT) << "GetJSPtExtractor error, js pandafile is nullptr";
 
@@ -207,8 +207,8 @@ tooling::ecmascript::JSPtExtractor *JSPandaFileManager::GetJSPtExtractor(const J
 
     auto iter = extractors_.find(jsPandaFile);
     if (iter == extractors_.end()) {
-        auto extractorPtr = std::make_unique<tooling::ecmascript::JSPtExtractor>(jsPandaFile);
-        tooling::ecmascript::JSPtExtractor *extractor = extractorPtr.get();
+        auto extractorPtr = std::make_unique<tooling::JSPtExtractor>(jsPandaFile);
+        tooling::JSPtExtractor *extractor = extractorPtr.get();
         extractors_[jsPandaFile] = std::move(extractorPtr);
         return extractor;
     }

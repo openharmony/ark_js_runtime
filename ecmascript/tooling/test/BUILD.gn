@@ -307,7 +307,6 @@ group("unittest") {
     ":DebuggerReturnsTest",
     ":DebuggerScriptTest",
     ":DebuggerTypesTest",
-    ":EcmaDebugApiTest",
     ":JSPtHooksTest",
   ]
 }
