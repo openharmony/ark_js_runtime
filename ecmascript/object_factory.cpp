@@ -676,6 +676,7 @@ JSHandle<JSArguments> ObjectFactory::NewJSArguments()
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetArgumentsClass());
     JSHandle<JSArguments> obj = JSHandle<JSArguments>::Cast(NewJSObject(dynclass));
+    obj->SetParameterMap(thread_, JSTaggedValue::Undefined());
     return obj;
 }
 
