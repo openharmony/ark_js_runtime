@@ -357,6 +357,7 @@ public:
     void LoopEnd(Label *loopHead);
     // call operation
     GateRef CallRuntime(GateRef glue, int index, std::initializer_list<GateRef> args);
+    GateRef CallRuntime(GateRef glue, int index, GateRef argc, GateRef argv);
     GateRef CallNGCRuntime(GateRef glue, size_t index, std::initializer_list<GateRef> args);
     GateRef CallStub(GateRef glue, size_t index, std::initializer_list<GateRef> args);
     void DebugPrint(GateRef thread, std::initializer_list<GateRef> args);
@@ -701,6 +702,10 @@ public:
     GateRef IsNativeMethod(GateRef method);
     GateRef HasAotCode(GateRef method);
     GateRef GetExpectedNumOfArgs(GateRef method);
+    // proxy operator
+    GateRef GetMethodFromJSProxy(GateRef proxy);
+    GateRef GetHandlerFromJSProxy(GateRef proxy);
+    GateRef GetTargetFromJSProxy(GateRef proxy);
 
 private:
     using BinaryOperation = std::function<GateRef(Environment*, GateRef, GateRef)>;

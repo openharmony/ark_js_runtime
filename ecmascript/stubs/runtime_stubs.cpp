@@ -39,6 +39,7 @@
 #include "ecmascript/object_factory.h"
 #include "ecmascript/runtime_api.h"
 #include "ecmascript/tagged_dictionary.h"
+#include "ecmascript/tooling/test/utils/test_util.h"
 #include "libpandabase/utils/string_helpers.h"
 #include "ecmascript/ts_types/ts_loader.h"
 
@@ -1618,6 +1619,34 @@ DEF_RUNTIME_STUBS(NewLexicalEnvWithNameDyn)
     return RuntimeNewLexicalEnvWithNameDyn(thread,
         static_cast<uint16_t>(numVars.GetInt()),
         static_cast<uint16_t>(scopeId.GetInt())).GetRawData();
+}
+
+JSTaggedType RuntimeStubs::CreateArrayFromList([[maybe_unused]]uintptr_t argGlue, int32_t argc, JSTaggedValue *argvPtr)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    std::vector<JSHandle<JSTaggedValue>> argvs;
+    for (int index = 0; index < argc; index++) {
+        argvs.push_back(JSHandle<JSTaggedValue>(thread, argvPtr[index]));
+    }
+    JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(argc);
+    for (int index = 0; index < argc; ++index) {
+        JSTaggedValue value = argvs[index].GetTaggedValue();
+        taggedArray->Set(thread, index, value);
+    }
+    JSHandle<JSArray> arrHandle = JSArray::CreateArrayFromList(thread, taggedArray);
+    arrHandle->Dump();
+    return arrHandle.GetTaggedValue().GetRawData();
+}
+
+JSTaggedType RuntimeStubs::JSObjectGetMethod([[maybe_unused]]uintptr_t argGlue,
+    JSTaggedValue handler, JSTaggedValue key)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    JSHandle<JSTaggedValue> obj(thread, handler);
+    JSHandle<JSTaggedValue> value(thread, key);
+    JSHandle<JSTaggedValue> result = JSObject::GetMethod(thread, obj, value);
+    return result->GetRawData();
 }
 
 int32_t RuntimeStubs::DoubleToInt(double x)
