@@ -20,7 +20,6 @@
 #include "ecmascript/mem/heap_region_allocator.h"
 #include "ecmascript/mem/mem_controller.h"
 #include "ecmascript/mem/region-inl.h"
-#include "ecmascript/mem/remembered_set.h"
 
 namespace panda::ecmascript {
 Space::Space(Heap *heap, MemSpaceType spaceType, size_t initialCapacity, size_t maximumCapacity)
@@ -51,9 +50,8 @@ void Space::ClearAndFreeRegion(Region *region)
 {
     LOG_ECMA_MEM(DEBUG) << "Clear region from:" << region << " to " << ToSpaceTypeName(spaceType_);
     region->SetSpace(nullptr);
-    region->DeleteMarkBitmap();
-    region->DeleteCrossRegionRememberedSet();
-    region->DeleteOldToNewRememberedSet();
+    region->DeleteCrossRegionRSet();
+    region->DeleteOldToNewRSet();
     DecrementCommitted(region->GetCapacity());
     DecrementObjectSize(region->GetSize());
     if (spaceType_ == MemSpaceType::OLD_SPACE || spaceType_ == MemSpaceType::NON_MOVABLE ||
@@ -90,7 +88,6 @@ uintptr_t HugeObjectSpace::Allocate(size_t objectSize)
         return 0;
     }
     Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, alignedSize);
-    region->SetFlag(RegionFlags::IS_HUGE_OBJECT);
     AddRegion(region);
     return region->GetBegin();
 }
@@ -100,10 +97,8 @@ void HugeObjectSpace::Sweeping()
     Region *currentRegion = GetRegionList().GetFirst();
     while (currentRegion != nullptr) {
         Region *next = currentRegion->GetNext();
-        auto markBitmap = currentRegion->GetMarkBitmap();
-        ASSERT(markBitmap != nullptr);
         bool isMarked = false;
-        markBitmap->IterateOverMarkedChunks([&isMarked]([[maybe_unused]] void *mem) { isMarked = true; });
+        currentRegion->IterateAllMarkedBits([&isMarked]([[maybe_unused]] void *mem) { isMarked = true; });
         if (!isMarked) {
             GetRegionList().RemoveNode(currentRegion);
             ClearAndFreeRegion(currentRegion);

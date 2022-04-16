@@ -51,8 +51,7 @@ Region *HeapRegionAllocator::AllocateAlignedRegion(Space *space, size_t capacity
     uintptr_t begin = AlignUp(mem + sizeof(Region), static_cast<size_t>(MemAlignment::MEM_ALIGN_REGION));
     uintptr_t end = mem + capacity;
 
-    return new (ToVoidPtr(mem)) Region(space, space->GetHeap(), mem, begin, end,
-                                       space->GetHeap()->GetNativeAreaAllocator());
+    return new (ToVoidPtr(mem)) Region(space, space->GetHeap(), mem, begin, end, flags);
 }
 
 void HeapRegionAllocator::FreeRegion(Region *region)

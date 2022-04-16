@@ -24,7 +24,6 @@
 #include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/slots.h"
 #include "ecmascript/mem/object_xray.h"
-#include "ecmascript/mem/remembered_set.h"
 #include "ecmascript/mem/stw_young_gc_for_testing.h"
 
 namespace panda {

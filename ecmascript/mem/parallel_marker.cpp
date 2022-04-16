@@ -69,7 +69,7 @@ void NonMovableMarker::ProcessMarkStack(uint32_t threadId)
                 if (needBarrier) {
                     Region *valueRegion = Region::ObjectAddressToRange(obj);
                     if (valueRegion->InCollectSet()) {
-                        rootRegion->AtomicInsertCrossRegionRememberedSet(slot.SlotAddress());
+                        rootRegion->AtomicInsertCrossRegionRSet(slot.SlotAddress());
                     }
                 }
             }

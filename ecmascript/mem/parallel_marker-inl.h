@@ -19,13 +19,12 @@
 #include "ecmascript/mem/parallel_marker.h"
 
 #include "ecmascript/js_hclass-inl.h"
+#include "ecmascript/mem/gc_bitset.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/region-inl.h"
 #include "ecmascript/mem/tlab_allocator-inl.h"
 #include "ecmascript/mem/utils.h"
-
-#include "mem/gc/bitmap.h"
 
 namespace panda::ecmascript {
 constexpr int HEAD_SIZE = TaggedObject::TaggedObjectSize();
@@ -38,9 +37,7 @@ inline void NonMovableMarker::MarkObject(uint32_t threadId, TaggedObject *object
         return;
     }
 
-    auto markBitmap = objectRegion->GetMarkBitmap();
-    ASSERT(markBitmap != nullptr);
-    if (!markBitmap->AtomicTestAndSet(object)) {
+    if (objectRegion->AtomicMark(object)) {
         heap_->GetWorkList()->Push(threadId, object, objectRegion);
     }
 }
@@ -70,21 +67,18 @@ inline void NonMovableMarker::HandleRangeRoots(uint32_t threadId, [[maybe_unused
 
 inline void NonMovableMarker::HandleOldToNewRSet(uint32_t threadId, Region *region)
 {
-    auto oldRSet = region->GetOldToNewRememberedSet();
-    if (LIKELY(oldRSet != nullptr)) {
-        oldRSet->IterateOverMarkedChunks([this, threadId](void *mem) -> bool {
-            ObjectSlot slot(ToUintPtr(mem));
-            JSTaggedValue value(slot.GetTaggedType());
-            if (value.IsHeapObject()) {
-                if (value.IsWeakForHeapObject()) {
-                    RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(mem));
-                } else {
-                    MarkObject(threadId, value.GetTaggedObject());
-                }
+    region->IterateAllOldToNewBits([this, threadId](void *mem) -> bool {
+        ObjectSlot slot(ToUintPtr(mem));
+        JSTaggedValue value(slot.GetTaggedType());
+        if (value.IsHeapObject()) {
+            if (value.IsWeakForHeapObject()) {
+                RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(mem));
+            } else {
+                MarkObject(threadId, value.GetTaggedObject());
             }
-            return true;
-        });
-    }
+        }
+        return true;
+    });
 }
 
 inline void NonMovableMarker::RecordWeakReference(uint32_t threadId, JSTaggedType *ref)
@@ -122,24 +116,21 @@ inline void MovableMarker::HandleRangeRoots(uint32_t threadId, [[maybe_unused]] 
 
 inline void MovableMarker::HandleOldToNewRSet(uint32_t threadId, Region *region)
 {
-    auto oldRSet = region->GetOldToNewRememberedSet();
-    if (LIKELY(oldRSet != nullptr)) {
-        oldRSet->IterateOverMarkedChunks([this, &oldRSet, threadId](void *mem) -> bool {
-            ObjectSlot slot(ToUintPtr(mem));
-            JSTaggedValue value(slot.GetTaggedType());
-            if (value.IsHeapObject()) {
-                if (value.IsWeakForHeapObject()) {
-                    RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(mem));
-                    return true;
-                }
-                auto slotStatus = MarkObject(threadId, value.GetTaggedObject(), slot);
-                if (slotStatus == SlotStatus::CLEAR_SLOT) {
-                    oldRSet->Clear(ToUintPtr(mem));
-                }
+    region->IterateAllOldToNewBits([this, threadId](void *mem) -> bool {
+        ObjectSlot slot(ToUintPtr(mem));
+        JSTaggedValue value(slot.GetTaggedType());
+        if (value.IsHeapObject()) {
+            if (value.IsWeakForHeapObject()) {
+                RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(mem));
+                return true;
             }
-            return true;
-        });
-    }
+            auto slotStatus = MarkObject(threadId, value.GetTaggedObject(), slot);
+            if (slotStatus == SlotStatus::CLEAR_SLOT) {
+                return false;
+            }
+        }
+        return true;
+    });
 }
 
 inline uintptr_t MovableMarker::AllocateDstSpace(uint32_t threadId, size_t size, bool &shouldPromote)
@@ -244,8 +235,7 @@ inline SlotStatus CompressGcMarker::MarkObject(uint32_t threadId, TaggedObject *
 {
     Region *objectRegion = Region::ObjectAddressToRange(object);
     if (!objectRegion->InYoungAndOldGeneration()) {
-        auto markBitmap = objectRegion->GetMarkBitmap();
-        if (!markBitmap->AtomicTestAndSet(object)) {
+        if (objectRegion->AtomicMark(object)) {
             heap_->GetWorkList()->Push(threadId, object);
         }
         return SlotStatus::CLEAR_SLOT;

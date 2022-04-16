@@ -71,6 +71,9 @@ RegionFlags Space::GetRegionFlag() const
         case MemSpaceType::SNAPSHOT_SPACE:
             flags = RegionFlags::IS_IN_SNAPSHOT_GENERATION;
             break;
+        case MemSpaceType::HUGE_OBJECT_SPACE:
+            flags = RegionFlags::IS_HUGE_OBJECT;
+            break;
         default:
             UNREACHABLE();
             break;

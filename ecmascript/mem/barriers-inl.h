@@ -31,7 +31,7 @@ static ARK_INLINE void WriteBarrier(void *obj, size_t offset, JSTaggedType value
     if (!objectRegion->InYoungGeneration() && valueRegion->InYoungGeneration()) {
         // Should align with '8' in 64 and 32 bit platform
         ASSERT((slotAddr % static_cast<uint8_t>(MemAlignment::MEM_ALIGN_OBJECT)) == 0);
-        objectRegion->InsertOldToNewRememberedSet(slotAddr);
+        objectRegion->InsertOldToNewRSet(slotAddr);
     }
 
     if (valueRegion->IsMarking()) {
