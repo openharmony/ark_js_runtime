@@ -106,7 +106,7 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CHECK_SWITCH_TO_DEBUGGER_TABLE()    \
-    if (ecmaVm->IsDebugMode()) {            \
+    if (ecmaVm->GetJsDebuggerManager()->IsDebugMode()) { \
         dispatchTable = debugDispatchTable; \
     }
 

@@ -252,8 +252,8 @@ bool JSNApi::StartDebugger(const char *libraryPath, EcmaVM *vm, bool isDebugMode
 
     bool ret = reinterpret_cast<StartDebugger>(sym.Value())("PandaDebugger", vm, isDebugMode);
     if (ret) {
-        vm->SetDebugMode(isDebugMode);
-        vm->SetDebugLibraryHandle(std::move(handle.Value()));
+        vm->GetJsDebuggerManager()->SetDebugMode(isDebugMode);
+        vm->GetJsDebuggerManager()->SetDebugLibraryHandle(std::move(handle.Value()));
     }
     return ret;
 }
@@ -263,7 +263,7 @@ bool JSNApi::StopDebugger(EcmaVM *vm)
     if (vm == nullptr) {
         return false;
     }
-    const os::library_loader::LibraryHandle &handle = vm->GetDebugLibraryHandle();
+    const auto &handle = vm->GetJsDebuggerManager()->GetDebugLibraryHandle();
 
     using StopDebug = void (*)(const std::string &);
 
@@ -274,7 +274,7 @@ bool JSNApi::StopDebugger(EcmaVM *vm)
     }
 
     reinterpret_cast<StopDebug>(sym.Value())("PandaDebugger");
-    vm->SetDebugMode(false);
+    vm->GetJsDebuggerManager()->SetDebugMode(false);
     return true;
 }
 #endif
