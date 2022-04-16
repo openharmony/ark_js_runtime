@@ -26,13 +26,13 @@ const uint64_t EMPTY_TYPE_OFFSET = 1; // 1 : means offset of empty type
 namespace panda::ecmascript::kungfu {
 enum GateType : uint64_t {
     // for MIR
-    C_VALUE = MIR_BASE_BITS, // (111)
+    NJS_VALUE = MIR_BASE_BITS, // (111)
     TAGGED_VALUE = MIR_BASE_BITS & GC_MASK & NO_GC_MASK, // (100)
     TAGGED_POINTER = MIR_BASE_BITS & GC_MASK, // (101)
     TAGGED_NO_POINTER = MIR_BASE_BITS & NO_GC_MASK, // (110)
 
     // for no value
-    EMPTY = C_VALUE + EMPTY_TYPE_OFFSET,
+    EMPTY = NJS_VALUE + EMPTY_TYPE_OFFSET,
 
     // for TS
     JS_ANY = 0,
