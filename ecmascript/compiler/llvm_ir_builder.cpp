@@ -1808,7 +1808,7 @@ void LLVMModule::InitialLLVMFuncTypeAndFuncByModuleCSigns()
         ASSERT(!cs->GetName().empty());
         if (cs->IsCommonStub() || cs->IsBCHandler()) {
             LLVMValueRef value = AddAndGetFunc(cs);
-            functions_.emplace_back(value);
+            SetFunction(i, value);
         }
     }
 }
@@ -1916,7 +1916,10 @@ LLVMValueRef LLVMModule::AddFunc(const panda::ecmascript::JSMethod *method)
     auto funcType = LLVMFunctionType(returnType, paramTys.data(), paramCount, false); // not variable args
     CString name = method->ParseFunctionName();
     auto function = LLVMAddFunction(module_, name.c_str(), funcType);
-    functions_.emplace_back(function);
+    auto offsetInPandaFile = method->GetMethodId().GetOffset();
+    JSPandaFile *jsPandaFile = const_cast<JSPandaFile *>(method->GetJSPandaFile());
+    size_t index = jsPandaFile->GetIdInConstantPool(offsetInPandaFile);
+    SetFunction(index, function);
     return function;
 }
 }  // namespace panda::ecmascript::kungfu

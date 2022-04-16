@@ -2503,7 +2503,8 @@ void SlowPathLowering::LowerDefineFuncDyn(GateRef gate, GateRef glue, GateRef js
     builder_.Branch(builder_.FunctionIsResolved(*result), &isResolved, &notResolved);
     builder_.Bind(&isResolved);
     {
-        result = builder_.CallRuntime(glue, RTSTUB_ID(DefinefuncDyn), { *result });
+        result = builder_.CallRuntime(glue, RTSTUB_ID(DefinefuncDynWithMethodId),
+            { builder_.TaggedNGC(builder_.ZExtInt16ToInt64(methodId)) });
         Label isException(&builder_);
         Label notException(&builder_);
         builder_.Branch(builder_.TaggedIsException(*result), &isException, &notException);

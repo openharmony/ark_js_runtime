@@ -1429,6 +1429,13 @@ DEF_RUNTIME_STUBS(DefinefuncDyn)
     return RuntimeDefinefuncDyn(thread, reinterpret_cast<JSFunction*>(func)).GetRawData();
 }
 
+DEF_RUNTIME_STUBS(DefinefuncDynWithMethodId)
+{
+    RUNTIME_STUBS_HEADER(DefinefuncDynWithMethod);
+    CONVERT_ARG_TAGGED_CHECKED(methodId, 0);
+    return RuntimeDefinefuncDynWithMethodId(thread, methodId).GetRawData();
+}
+
 DEF_RUNTIME_STUBS(CreateRegExpWithLiteral)
 {
     RUNTIME_STUBS_HEADER(CreateRegExpWithLiteral);

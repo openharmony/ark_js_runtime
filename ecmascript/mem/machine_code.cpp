@@ -88,9 +88,11 @@ void AotCodeInfo::Serialize(const std::string &filename)
     moduleFile.write(reinterpret_cast<char *>(&funcNum), sizeof(funcNum));
     /* write AOT func entries offset  */
     for (auto &it : aotFuncEntryOffsets_) {
-        uint32_t curFuncNameSize = it.first.size();
+        uint32_t curFuncNameSize = it.first.first.size();
         moduleFile.write(reinterpret_cast<char *>(&curFuncNameSize), sizeof(curFuncNameSize));
-        moduleFile.write(const_cast<char *>(it.first.data()), curFuncNameSize);
+        moduleFile.write(const_cast<char *>(it.first.first.data()), curFuncNameSize);
+        uint32_t index = it.first.second;
+        moduleFile.write(reinterpret_cast<char *>(&index), sizeof(uint32_t));
         moduleFile.write(reinterpret_cast<char *>(&it.second), sizeof(uint64_t));
     }
     /* write host code section start addr */
@@ -118,13 +120,15 @@ bool AotCodeInfo::Deserialize(EcmaVM *vm, const std::string &filename)
     moduleFile.read(reinterpret_cast<char *>(&funcNum), sizeof(funcNum));
     uint32_t curfuncNameSize = 0;
     std::string curFuncName;
+    uint32_t curMethodId = 0;
     uint64_t curFuncOffset = 0;
     for (uint32_t i = 0; i < funcNum; i++) {
         moduleFile.read(reinterpret_cast<char *>(&curfuncNameSize), sizeof(uint32_t));
         curFuncName.resize(curfuncNameSize);
         moduleFile.read(reinterpret_cast<char *>(curFuncName.data()), curfuncNameSize);
+        moduleFile.read(reinterpret_cast<char *>(&curMethodId), sizeof(uint32_t));
         moduleFile.read(reinterpret_cast<char *>(&curFuncOffset), sizeof(uint64_t));
-        aotFuncEntryOffsets_.insert(make_pair(curFuncName, curFuncOffset));
+        aotFuncEntryOffsets_.insert(std::make_pair(std::make_pair(curFuncName, curMethodId), curFuncOffset));
     }
     /* read host code section start addr  */
     moduleFile.read(reinterpret_cast<char *>(&hostCodeSectionAddr_), sizeof(hostCodeSectionAddr_));
