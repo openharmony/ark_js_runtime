@@ -241,6 +241,11 @@ public:
         return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::THREAD_CHECK) != 0;
     }
 
+    size_t TotalSpaceCapacity() const
+    {
+        return totalSpaceCapacity_.GetValue();
+    }
+
     size_t MaxSemiSpaceCapacity() const
     {
         return maxSemiSpaceCapacity_.GetValue();
@@ -539,6 +544,9 @@ private:
         R"(stub aot compiler target triple.
         Possible values: ["x86_64-unknown-linux-gnu", "arm-unknown-linux-gnu", "aarch64-unknown-linux-gnu"].
         Default: "x86_64-unknown-linux-gnu")"};
+    PandArg<size_t> totalSpaceCapacity_ {"totalSpaceCapacity",
+        512 * 1024 * 1024,
+        R"(set total space capacity)"};
     PandArg<size_t> maxSemiSpaceCapacity_ {"maxSemiSpaceCapacity",
         16 * 1024 * 1024,
         R"(set max semi space capacity)"};
