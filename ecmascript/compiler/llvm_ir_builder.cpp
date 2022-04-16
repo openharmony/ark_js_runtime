@@ -745,7 +745,7 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList, 
         const char *attrName = "gc-leaf-function";
         const char *attrValue = "true";
         LLVMAttributeRef llvmAttr = LLVMCreateStringAttribute(context_, attrName, strlen(attrName), attrValue,
-           strlen(attrValue));
+                                                             strlen(attrValue));
         LLVMAddCallSiteAttribute(call, LLVMAttributeFunctionIndex, llvmAttr);
     }
     gateToLLVMMaps_[gate] = call;
@@ -1895,12 +1895,12 @@ LLVMTypeRef LLVMModule::ConvertLLVMTypeFromVariableType(VariableType type)
         {VariableType::INT64(), LLVMInt64Type()},
         {VariableType::FLOAT32(), LLVMFloatType()},
         {VariableType::FLOAT64(), LLVMDoubleType()},
-        {VariableType::POINTER(), LLVMInt64Type()},
+        {VariableType::NATIVE_POINTER(), LLVMInt64Type()},
         {VariableType::JS_POINTER(), LLVMPointerType(LLVMInt64Type(), 1)},
         {VariableType::JS_ANY(), LLVMPointerType(LLVMInt64Type(), 1)},
     };
     if (cfg_.Is32Bit()) {
-        machineTypeMap[VariableType::POINTER()] = LLVMInt32Type();
+        machineTypeMap[VariableType::NATIVE_POINTER()] = LLVMInt32Type();
         LLVMTypeRef vectorType = LLVMVectorType(LLVMPointerType(LLVMInt8Type(), 1), 2);  // 2: packed vector type
         machineTypeMap[VariableType::JS_POINTER()] = vectorType;
         machineTypeMap[VariableType::JS_ANY()] = vectorType;

@@ -244,7 +244,6 @@ public:
     // call related
     GateRef Call(const CallSignature *signature, GateRef glue, GateRef target, const std::vector<GateRef> &args,
         GateRef depend = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)));
-    GateRef RuntimeCall(GateRef glue, GateRef target, GateRef depend, GateRef argc, GateRef argv);
     GateRef NoGcRuntimeCall(const CallSignature *signature, GateRef glue, GateRef target,
                             GateRef depend, const std::vector<GateRef> &args);
     GateRef VariadicRuntimeCall(GateRef glue, GateRef target, GateRef depend, const std::vector<GateRef> &args);
@@ -262,6 +261,7 @@ public:
 
     // call operation
     GateRef CallRuntimeWithDepend(GateRef glue, int index, GateRef depend, const std::vector<GateRef> &args);
+    GateRef CallRuntimeWithDepend(GateRef glue, GateRef target, GateRef depend, GateRef argc, GateRef argv);
     GateRef CallRuntime(GateRef glue, int index, const std::vector<GateRef> &args, bool useLabel = false);
     GateRef CallNGCRuntime(GateRef glue, size_t index, const std::vector<GateRef> &args);
     GateRef CallStub(GateRef glue, size_t index, const std::vector<GateRef> &args);
