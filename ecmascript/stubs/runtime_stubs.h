@@ -246,6 +246,7 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(NewLexicalEnvDyn)                   \
     V(NewObjDynRange)                     \
     V(DefinefuncDyn)                      \
+    V(DefinefuncDynWithMethodId)          \
     V(CreateRegExpWithLiteral)            \
     V(ThrowIfSuperNotCorrectCall)         \
     V(CreateObjectHavingMethod)           \
@@ -449,6 +450,7 @@ private:
                                                       const JSHandle<JSTaggedValue> &newTarget, uint16_t firstArgIdx,
                                                       uint16_t length);
     static inline JSTaggedValue RuntimeDefinefuncDyn(JSThread *thread, JSFunction *func);
+    static inline JSTaggedValue RuntimeDefinefuncDynWithMethodId(JSThread *thread, JSTaggedValue methodId);
     static inline JSTaggedValue RuntimeCreateRegExpWithLiteral(JSThread *thread, const JSHandle<JSTaggedValue> &pattern,
                                                                uint8_t flags);
     static inline JSTaggedValue RuntimeThrowIfSuperNotCorrectCall(JSThread *thread, uint16_t index,

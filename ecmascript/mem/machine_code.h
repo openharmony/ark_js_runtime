@@ -146,9 +146,32 @@ public:
         return codePtr_;
     }
 
-    void SetAOTFuncOffset(std::string str, uint64_t offset)
+    void SetAOTFuncEntry(std::string str, uint64_t offset, uint32_t methodId)
     {
-        aotFuncEntryOffsets_[str] = offset;
+        auto it = make_pair(str, methodId);
+        aotFuncEntryOffsets_[it] = offset;
+    }
+
+    uint64_t GetAOTFuncEntry(const std::string &name)
+    {
+        ASSERT(!code_.IsHole());
+        for (auto it : aotFuncEntryOffsets_) {
+            if (it.first.first == name) {
+                return aotFuncEntryOffsets_[it.first];
+            }
+        }
+        return reinterpret_cast<uint64_t>(nullptr);
+    }
+
+    uint64_t GetAOTFuncEntry(uint32_t id)
+    {
+        ASSERT(!code_.IsHole());
+        for (auto it : aotFuncEntryOffsets_) {
+            if (it.first.second == id) {
+                return aotFuncEntryOffsets_[it.first];
+            }
+        }
+        return reinterpret_cast<uint64_t>(nullptr);
     }
 
     void SetHostCodeSectionAddr(uint64_t addr)
@@ -201,12 +224,6 @@ public:
         return codeSize_;
     }
 
-    uint64_t GetAOTFuncEntry(const std::string &name)
-    {
-        ASSERT(!code_.IsHole());
-        return aotFuncEntryOffsets_[name];
-    }
-
     uint64_t GetStubNum() const
     {
         return stubNum_;
@@ -228,7 +245,7 @@ public:
 private:
     uint64_t stubNum_ {0};
     std::vector<StubDes> stubEntries_ {};
-    std::map<std::string, uint64_t> aotFuncEntryOffsets_ {};
+    std::map<std::pair<std::string, uint32_t>, uint64_t> aotFuncEntryOffsets_ {};
     uint64_t hostCodeSectionAddr_  {0};
     uintptr_t devicesCodeSectionAddr_ {0};
     // NOTE: code object is non movable(code space) currently.
