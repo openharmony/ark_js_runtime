@@ -15,7 +15,7 @@
 
 #include "ecmascript/tooling/test/utils/test_entry.h"
 
-namespace panda::tooling::ecmascript::test {
+namespace panda::ecmascript::tooling::test {
 extern "C" int StartDebugger()
 {
     return StartDebuggerImpl();
@@ -25,4 +25,4 @@ extern "C" int StopDebugger()
 {
     return StopDebuggerImpl();
 }
-}  // namespace panda::tooling::ecmascript::test
+}  // namespace panda::ecmascript::tooling::test

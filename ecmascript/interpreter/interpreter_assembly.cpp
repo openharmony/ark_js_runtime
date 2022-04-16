@@ -30,7 +30,6 @@
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/template_string.h"
-#include "include/runtime_notification.h"
 #include "libpandafile/code_data_accessor.h"
 #include "libpandafile/file.h"
 #include "libpandafile/method_data_accessor.h"
@@ -353,7 +352,6 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
         state->function = funcValue;                                                               \
         thread->SetCurrentSPFrame(newSp);                                                          \
         LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call.";                                         \
-        thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);           \
         JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(                                 \
             const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);                 \
         if (UNLIKELY(thread->HasPendingException())) {                                             \
@@ -414,7 +412,6 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
         LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call "                                          \
                                 << std::hex << reinterpret_cast<uintptr_t>(sp) << " "              \
                                 << std::hex << reinterpret_cast<uintptr_t>(pc);                    \
-        thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);           \
         DISPATCH_OFFSET(0);                                                                        \
     } while (false)
 
@@ -580,9 +577,7 @@ JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
     LOG(DEBUG, INTERPRETER) << "break Entry: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(newSp) << " "
                             << std::hex << reinterpret_cast<uintptr_t>(pc);
 
-    thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
     InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
-    thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, method);
 
     // NOLINTNEXTLINE(readability-identifier-naming)
     const JSTaggedValue resAcc = state->acc;
@@ -643,9 +638,7 @@ JSTaggedValue InterpreterAssembly::GeneratorReEnterInterpreter(JSThread *thread,
     // execute interpreter
     thread->SetCurrentSPFrame(newSp);
 
-    thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
     InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
-    thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, method);
 
     JSTaggedValue res = state->acc;
     // pop frame
@@ -2246,7 +2239,6 @@ void InterpreterAssembly::HandleNewObjDynRangePrefImm16V8(
             state->function = ctor;
             thread->SetCurrentSPFrame(newSp);
             LOG(DEBUG, INTERPRETER) << "Entry: Runtime New.";
-            thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, ctorMethod);
             JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
                 const_cast<void *>(ctorMethod->GetNativePointer()))(&ecmaRuntimeCallInfo);
 
@@ -2256,7 +2248,6 @@ void InterpreterAssembly::HandleNewObjDynRangePrefImm16V8(
             LOG(DEBUG, INTERPRETER) << "Exit: Runtime New.";
             thread->SetCurrentSPFrame(sp);
             SET_ACC(retValue);
-            thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, ctorMethod);
             DISPATCH(BytecodeInstruction::Format::PREF_IMM16_V8);
         }
 
@@ -2323,7 +2314,6 @@ void InterpreterAssembly::HandleNewObjDynRangePrefImm16V8(
             thread->SetCurrentSPFrame(newSp);
             LOG(DEBUG, INTERPRETER) << "Entry: Runtime New " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                                     << std::hex << reinterpret_cast<uintptr_t>(pc);
-            thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, ctorMethod);
             DISPATCH_OFFSET(0);
         }
     }

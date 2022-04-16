@@ -59,8 +59,8 @@
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/tagged_queue.h"
 #include "ecmascript/tagged_queue.h"
+#include "ecmascript/tooling/interface/notification_manager.h"
 #include "ecmascript/ts_types/ts_loader.h"
-#include "include/runtime_notification.h"
 #include "libpandafile/file.h"
 #ifdef PANDA_TARGET_WINDOWS
 #include <shlwapi.h>
@@ -131,7 +131,6 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
     options_ = std::move(options);
     icEnable_ = options_.IsIcEnable();
     optionalLogEnabled_ = options_.IsEnableOptionalLog();
-    rendezvous_ = chunk_.New<EmptyRendezvous>();
     snapshotSerializeEnable_ = options_.IsSnapshotSerializeEnabled();
     if (!snapshotSerializeEnable_) {
         snapshotDeserializeEnable_ = options_.IsSnapshotDeserializeEnabled();
@@ -140,9 +139,7 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
     frameworkAbcFileName_ = options_.GetFrameworkAbcFile().c_str();
     options_.ParseAsmInterOption();
 
-    auto runtime = Runtime::GetCurrent();
-    notificationManager_ = chunk_.New<RuntimeNotificationManager>(runtime->GetInternalAllocator());
-    notificationManager_->SetRendezvous(rendezvous_);
+    notificationManager_ = chunk_.New<tooling::NotificationManager>();
 }
 
 void EcmaVM::TryLoadSnapshotFile()
@@ -200,7 +197,6 @@ bool EcmaVM::Initialize()
     moduleManager_ = new ModuleManager(this);
     InitializeFinish();
     notificationManager_->VmStartEvent();
-    notificationManager_->VmInitializationEvent(thread_->GetThreadId());
     return true;
 }
 

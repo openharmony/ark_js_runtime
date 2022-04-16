@@ -24,13 +24,7 @@
 #include "ecmascript/tooling/interface/debugger_api.h"
 #include "libpandabase/macros.h"
 
-namespace panda::tooling::ecmascript {
-using panda::ecmascript::CList;
-using panda::ecmascript::CUnorderedMap;
-using panda::ecmascript::CString;
-using panda::ecmascript::CVector;
-using panda::ecmascript::ToCString;
-
+namespace panda::ecmascript::tooling {
 // ========== Base types begin
 class PtBaseTypes {
 public:
@@ -1868,5 +1862,5 @@ private:
     CVector<std::unique_ptr<int32_t>> samples_ {};
     CVector<std::unique_ptr<int32_t>> timeDeltas_ {};
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif

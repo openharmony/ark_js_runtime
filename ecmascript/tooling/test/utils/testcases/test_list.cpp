@@ -22,7 +22,7 @@
 #include "js_exception_test.h"
 #include "js_single_step_test.h"
 
-namespace panda::tooling::ecmascript::test {
+namespace panda::ecmascript::tooling::test {
 static const char *g_currentTestName = nullptr;
 
 static void RegisterTests()
@@ -63,4 +63,4 @@ std::pair<CString, CString> GetTestEntryPoint(const char *testName)
 {
     return TestUtil::GetTest(testName)->GetEntryPoint();
 }
-}  // namespace panda::tooling::ecmascript::test
+}  // namespace panda::ecmascript::tooling::test

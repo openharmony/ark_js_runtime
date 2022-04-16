@@ -15,7 +15,7 @@
 
 #include "ecmascript/tooling/base/pt_events.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 std::unique_ptr<BreakpointResolved> BreakpointResolved::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
 {
     if (params.IsEmpty()) {
@@ -714,4 +714,4 @@ Local<ObjectRef> ScriptParsed::ToObject(const EcmaVM *ecmaVm)
 
     return object;
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
