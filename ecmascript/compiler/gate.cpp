@@ -1065,7 +1065,7 @@ std::string Gate::MachineTypeStr(MachineType machineType) const
 std::string Gate::GateTypeStr(GateType gateType) const
 {
     const std::map<GateType, const char *> strMap = {
-            {C_VALUE, "C_VALUE"},
+            {NJS_VALUE, "NJS_VALUE"},
             {TAGGED_VALUE, "TAGGED_VALUE"},
             {TAGGED_POINTER, "TAGGED_POINTER"},
             {TAGGED_NO_POINTER, "TAGGED_NO_POINTER"},
