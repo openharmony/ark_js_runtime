@@ -1620,6 +1620,12 @@ DEF_RUNTIME_STUBS(NewLexicalEnvWithNameDyn)
         static_cast<uint16_t>(scopeId.GetInt())).GetRawData();
 }
 
+DEF_RUNTIME_STUBS(GetAotUnmapedArgs)
+{
+    RUNTIME_STUBS_HEADER(GetAotUnmapedArgs);
+    CONVERT_ARG_TAGGED_CHECKED(actualNumArgs, 0);
+    return RuntimeGetAotUnmapedArgs(thread, actualNumArgs.GetInt(), argv).GetRawData();
+}
 int32_t RuntimeStubs::DoubleToInt(double x)
 {
     return base::NumberHelper::DoubleToInt(x, base::INT32_BITS);
@@ -1642,9 +1648,9 @@ void RuntimeStubs::MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintptr_t s
 
 void RuntimeStubs::Initialize(JSThread *thread)
 {
-#define DEF_RUNTIME_STUB(name, counter) kungfu::RuntimeStubCSigns::ID_##name
-#define INITIAL_RUNTIME_FUNCTIONS(name, count) \
-    thread->RegisterRTInterface(DEF_RUNTIME_STUB(name, count), reinterpret_cast<uintptr_t>(name));
+#define DEF_RUNTIME_STUB(name) kungfu::RuntimeStubCSigns::ID_##name
+#define INITIAL_RUNTIME_FUNCTIONS(name) \
+    thread->RegisterRTInterface(DEF_RUNTIME_STUB(name), reinterpret_cast<uintptr_t>(name));
     RUNTIME_STUB_LIST(INITIAL_RUNTIME_FUNCTIONS)
 #undef INITIAL_RUNTIME_FUNCTIONS
 #undef DEF_RUNTIME_STUB

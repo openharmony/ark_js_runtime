@@ -249,6 +249,12 @@ private:
     void LowerCreateObjectHavingMethod(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerLdHomeObject(GateRef gate, GateRef thisFunc);
     void LowerDefineClassWithBuffer(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerAsyncFunctionEnter(GateRef gate, GateRef glue);
+    void LowerTypeOfDyn(GateRef gate, GateRef glue);
+    void LowerResumeGenerator(GateRef gate);
+    void LowerGetResumeMode(GateRef gate);
+    void LowerDefineNCFuncDyn(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerDefineMethod(GateRef gate, GateRef glue, GateRef jsFunc);
 
     BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;
