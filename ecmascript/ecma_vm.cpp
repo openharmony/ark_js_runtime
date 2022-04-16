@@ -222,7 +222,7 @@ void EcmaVM::InitializeEcmaScriptRunStat()
 #define MEM_ALLOCATE_AND_GC_NAME(name) "Memory::" #name,
     MEM_ALLOCATE_AND_GC_LIST(MEM_ALLOCATE_AND_GC_NAME)
 #undef MEM_ALLOCATE_AND_GC_NAME
-#define DEF_RUNTIME_ID(name, c) "Runtime::" #name,
+#define DEF_RUNTIME_ID(name) "Runtime::" #name,
     RUNTIME_STUB_WITH_GC_LIST(DEF_RUNTIME_ID)
 #undef DEF_RUNTIME_ID
     };
