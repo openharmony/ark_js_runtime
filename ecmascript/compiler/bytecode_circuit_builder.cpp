@@ -1991,7 +1991,7 @@ GateRef BytecodeCircuitBuilder::SetGateConstant(const BytecodeInfo &info)
         case EcmaOpcode::LDHOLE_PREF:
             gate = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64, JSTaggedValue::VALUE_HOLE,
                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                    GateType::TAGGED_NO_POINTER);
+                                    GateType::TAGGED_NPOINTER);
             break;
         case EcmaOpcode::LDAI_DYN_IMM32:
             tsType = tsLoader->GetPrimitiveGT(TSTypeKind::TS_NUMBER).GetGlobalTSTypeRef();
