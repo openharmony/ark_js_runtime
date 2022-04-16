@@ -58,8 +58,8 @@ void MixGC::InitializePhase()
         if (heap_->IsFullMark()) {
             heap_->GetOldSpace()->SelectCSet();
             heap_->EnumerateNonNewSpaceRegions([](Region *current) {
-                current->ClearMarkBitmap();
-                current->ClearCrossRegionRememberedSet();
+                current->ClearMarkGCBitset();
+                current->ClearCrossRegionRSet();
                 current->ResetAliveObject();
             });
         }
@@ -117,8 +117,7 @@ void MixGC::ProcessNativeDelete()
         if (!objectRegion->InYoungOrCSetGeneration() && !heap_->IsFullMark()) {
             return header;
         }
-        auto markBitmap = objectRegion->GetMarkBitmap();
-        if (!markBitmap->Test(header)) {
+        if (!objectRegion->Test(header)) {
             return reinterpret_cast<TaggedObject *>(ToUintPtr(nullptr));
         }
         return header;

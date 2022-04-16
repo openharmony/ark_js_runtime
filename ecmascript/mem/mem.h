@@ -21,7 +21,6 @@
 #include "libpandabase/mem/mem.h"
 #include "ecmascript/mem/tagged_object.h"
 #include "libpandabase/utils/logger.h"
-#include "mem/gc/bitmap.h"
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage, bugprone-lambda-function-name)
 #define LOG_ECMA_MEM(type) LOG(type, ECMASCRIPT) << __func__ << " Line:" << __LINE__ << " "
@@ -67,13 +66,15 @@ static constexpr size_t MAX_32BIT_OBJECT_SPACE_SIZE = 1 * 1024 * 1024 * 1024;
 static constexpr size_t MAX_REGULAR_HEAP_OBJECT_SIZE = DEFAULT_REGION_SIZE * 2 / 3;
 static constexpr size_t MAX_HUGE_OBJECT_SIZE = 256 * 1024 * 1024;
 static constexpr size_t MAX_HUGE_OBJECT_SPACE_SIZE = 256 * 1024 * 1024;
-static constexpr size_t LARGE_BITMAP_MIN_SIZE = static_cast<uint8_t>(MemAlignment::MEM_ALIGN_OBJECT)
-                                                << mem::Bitmap::LOG_BITSPERWORD;
 // internal allocator
 static constexpr size_t CHUNK_ALIGN_SIZE = 4 * 1024;
 static constexpr size_t MIN_CHUNK_AREA_SIZE = 4 * 1024;
 static constexpr size_t MAX_CACHED_CHUNK_AREA_SIZE = 16 * 1024;
 static constexpr size_t MAX_CHUNK_AREA_SIZE = 1 * 1024 * 1024;
+
+using TaggedType = uint64_t;
+static constexpr uint32_t TAGGED_TYPE_SIZE = sizeof(TaggedType);
+static constexpr uint32_t TAGGED_TYPE_SIZE_LOG = panda::helpers::math::GetIntLog2(TAGGED_TYPE_SIZE);
 
 template<typename T>
 constexpr inline bool IsAligned(T value, size_t alignment)

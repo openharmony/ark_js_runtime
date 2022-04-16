@@ -24,14 +24,12 @@ void Barriers::Update(uintptr_t slotAddr, Region *objectRegion, TaggedObject *va
         if (!isFullMark && !valueRegion->InYoungGeneration()) {
             return;
         }
-        auto valueBitmap = valueRegion->GetMarkBitmap();
-        if (!valueBitmap->AtomicTestAndSet(value)) {
+        if (valueRegion->AtomicMark(value)) {
             valueRegion->GetWorkList()->Push(0, value, valueRegion);
         }
     }
     if (isFullMark && valueRegion->InCollectSet() && !objectRegion->InYoungOrCSetGeneration()) {
-        auto set = objectRegion->GetOrCreateCrossRegionRememberedSet();
-        set->AtomicInsert(slotAddr);
+        objectRegion->AtomicInsertCrossRegionRSet(slotAddr);
     }
 }
 }  // namespace panda::ecmascript

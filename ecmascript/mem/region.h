@@ -17,14 +17,12 @@
 #define ECMASCRIPT_MEM_REGION_H
 
 #include "ecmascript/mem/free_object_list.h"
-#include "ecmascript/mem/mem.h"
-#include "mem/gc/bitmap.h"
-#include "native_area_allocator.h"
+#include "ecmascript/mem/gc_bitset.h"
+#include "ecmascript/mem/native_area_allocator.h"
+#include "ecmascript/mem/remembered_set.h"
 #include "securec.h"
 
 namespace panda {
-using RangeBitmap = mem::MemBitmap<static_cast<size_t>(ecmascript::MemAlignment::MEM_ALIGN_OBJECT)>;
-
 namespace ecmascript {
 class Space;
 class Heap;
@@ -48,37 +46,36 @@ enum RegionFlags {
 };
 
 #define REGION_OFFSET_LIST(V)                                                             \
-    V(BITMAP, BitMap, markBitmap_, FLAG, sizeof(uint32_t), sizeof(uint64_t))              \
-    V(OLDTONEWSET, OldToNewSet, oldToNewSet_, BITMAP, sizeof(uint32_t), sizeof(uint64_t))
+    V(GCBITSET, GCBitset, markGCBitset_, FLAG, sizeof(uint32_t), sizeof(uint64_t))              \
+    V(OLDTONEWSET, OldToNewSet, oldToNewSet_, GCBITSET, sizeof(uint32_t), sizeof(uint64_t)) \
+    V(BEGIN, Begin, begin_, OLDTONEWSET, sizeof(uint32_t), sizeof(uint64_t))
+
+// |---------------------------------------------------------------------------------------|
+// |                                   Region (256 kb)                                     |
+// |---------------------------------|--------------------------------|--------------------|
+// |     Head (sizeof(Region))       |         Mark bitset (4kb)      |      Data          |
+// |---------------------------------|--------------------------------|--------------------|
 
 class Region {
 public:
-    Region(Space *space, Heap *heap, uintptr_t allocateBase, uintptr_t begin,
-        uintptr_t end, NativeAreaAllocator* nativeAreaAllocator)
-        : flags_(0), space_(space), heap_(heap),
+    Region(Space *space, Heap *heap, uintptr_t allocateBase, uintptr_t begin, uintptr_t end, RegionFlags flags)
+        : space_(space), heap_(heap),
         allocateBase_(allocateBase),
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        begin_(begin),
         end_(end),
         highWaterMark_(end),
         aliveObject_(0),
-        wasted_(0),
-        nativeAreaAllocator_(nativeAreaAllocator)
+        wasted_(0)
     {
-        markBitmap_ = CreateMarkBitmap();
+        SetFlag(flags);
+        bitsetSize_ = IsFlagSet(RegionFlags::IS_HUGE_OBJECT) ?
+            GCBitset::BYTE_PER_WORD : GCBitset::SizeOfGCBitset(GetCapacity());
+        markGCBitset_ = new (ToVoidPtr(begin)) GCBitset();
+        markGCBitset_->Clear(bitsetSize_);
+        begin_ = AlignUp(begin + bitsetSize_, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
     }
     ~Region() = default;
     NO_COPY_SEMANTIC(Region);
     NO_MOVE_SEMANTIC(Region);
-
-    void Reset()
-    {
-        flags_ = 0;
-        highWaterMark_ = end_;
-        if (memset_s(reinterpret_cast<void *>(begin_), GetSize(), 0, GetSize()) != EOK) {
-            UNREACHABLE();
-        }
-    }
 
     void LinkNext(Region *next)
     {
@@ -156,20 +153,28 @@ public:
         return (flags_ & flag) != 0;
     }
 
-    RangeBitmap *GetMarkBitmap()
-    {
-        return markBitmap_;
-    }
-
-    RememberedSet *GetCrossRegionRememberedSet()
-    {
-        return crossRegionSet_;
-    }
-
-    RememberedSet *GetOldToNewRememberedSet()
-    {
-        return oldToNewSet_;
-    }
+    // Mark bitset
+    bool AtomicMark(void *address);
+    void ClearMark(void *address);
+    bool Test(void *addr) const;
+    template <typename Visitor>
+    void IterateAllMarkedBits(Visitor visitor) const;
+    void ClearMarkGCBitset();
+    // Cross region remembered set
+    void InsertCrossRegionRSet(uintptr_t addr);
+    void AtomicInsertCrossRegionRSet(uintptr_t addr);
+    template <typename Visitor>
+    void IterateAllCrossRegionBits(Visitor visitor) const;
+    void ClearCrossRegionRSet();
+    void ClearCrossRegionRSetInRange(uintptr_t start, uintptr_t end);
+    void DeleteCrossRegionRSet();
+    // Old to new remembered set
+    void InsertOldToNewRSet(uintptr_t addr);
+    template <typename Visitor>
+    void IterateAllOldToNewBits(Visitor visitor);
+    void ClearOldToNewRSet();
+    void ClearOldToNewRSetInRange(uintptr_t start, uintptr_t end);
+    void DeleteOldToNewRSet();
 
     static Region *ObjectAddressToRange(TaggedObject *obj)
     {
@@ -226,34 +231,10 @@ public:
         return IsFlagSet(RegionFlags::BELOW_AGE_MARK);
     }
 
-    bool InRange(uintptr_t address)
+    bool InRange(uintptr_t address) const
     {
         return address >= begin_ && address <= end_;
     }
-
-    inline RangeBitmap *CreateMarkBitmap()
-    {
-        size_t heapSize = IsFlagSet(RegionFlags::IS_HUGE_OBJECT) ? LARGE_BITMAP_MIN_SIZE : GetCapacity();
-        // Only one huge object is stored in a region. The BitmapSize of a huge region will always be 8 Bytes.
-        size_t bitmapSize = RangeBitmap::GetBitMapSizeInByte(heapSize);
-        ASSERT(nativeAreaAllocator_ != nullptr);
-        auto bitmapData = const_cast<NativeAreaAllocator *>(nativeAreaAllocator_)->Allocate(bitmapSize);
-        auto *ret = new RangeBitmap(this, heapSize, bitmapData);
-        ret->ClearAllBits();
-        return ret;
-    }
-    RememberedSet *CreateRememberedSet();
-    RememberedSet *GetOrCreateCrossRegionRememberedSet();
-    RememberedSet *GetOrCreateOldToNewRememberedSet();
-    void DeleteMarkBitmap();
-    void DeleteCrossRegionRememberedSet();
-    void DeleteOldToNewRememberedSet();
-    void ClearMarkBitmap();
-    void ClearCrossRegionRememberedSet();
-    void InsertCrossRegionRememberedSet(uintptr_t addr);
-    void AtomicInsertCrossRegionRememberedSet(uintptr_t addr);
-    void InsertOldToNewRememberedSet(uintptr_t addr);
-    void AtomicInsertOldToNewRememberedSet(uintptr_t addr);
 
     uintptr_t GetAllocateBase() const
     {
@@ -372,9 +353,9 @@ public:
         return is32Bit ? REGION_OLDTONEWSET_OFFSET_32 : REGION_OLDTONEWSET_OFFSET_64;
     }
 
-    static constexpr uint32_t GetBitMapOffset(bool is32Bit = false)
+    static constexpr uint32_t GetGCBitsetOffset(bool is32Bit = false)
     {
-        return is32Bit ? REGION_BITMAP_OFFSET_32 : REGION_BITMAP_OFFSET_64;
+        return is32Bit ? REGION_GCBITSET_OFFSET_32 : REGION_GCBITSET_OFFSET_64;
     }
 
     static constexpr uint32_t GetFlagOffset(bool is32Bit = false)
@@ -382,7 +363,12 @@ public:
         return is32Bit ? REGION_FLAG_OFFSET_32 : REGION_FLAG_OFFSET_64;
     }
 
-    #define REGION_OFFSET_MACRO(name, camelName, memberName, lastName, lastSize32, lastSize64)             \
+    static constexpr uint32_t GetBeginOffset(bool is32Bit = false)
+    {
+        return is32Bit ? REGION_BEGIN_OFFSET_32 : REGION_BEGIN_OFFSET_64;
+    }
+
+    #define REGION_OFFSET_MACRO(name, camelName, memberName, lastName, lastSize32, lastSize64)              \
         static constexpr uint32_t REGION_##name##_OFFSET_32 = REGION_##lastName##_OFFSET_32 + (lastSize32); \
         static constexpr uint32_t REGION_##name##_OFFSET_64 = REGION_##lastName##_OFFSET_64 + (lastSize64);
     static constexpr uint32_t REGION_FLAG_OFFSET_32 = 0U;
@@ -411,17 +397,23 @@ public:
 
 private:
     static constexpr double MOST_OBJECT_ALIVE_THRESHOLD_PERCENT = 0.8;
+
+    RememberedSet *CreateRememberedSet();
+    RememberedSet *GetOrCreateCrossRegionRememberedSet();
+    RememberedSet *GetOrCreateOldToNewRememberedSet();
+
     uintptr_t flags_;  // Memory alignment, only low 32bits are used now
-    RangeBitmap *markBitmap_ {nullptr};
+    GCBitset *markGCBitset_ {nullptr};
     RememberedSet *oldToNewSet_ {nullptr};
+    uintptr_t begin_;
     Space *space_;
     Heap *heap_;
 
     uintptr_t allocateBase_;
-    uintptr_t begin_;
     uintptr_t end_;
     uintptr_t highWaterMark_;
     std::atomic_size_t aliveObject_ {0};
+    size_t bitsetSize_ {0};
     Region *next_ {nullptr};
     Region *prev_ {nullptr};
 
@@ -433,40 +425,7 @@ private:
     friend class SnapShot;
 };
 
-class BitmapHelper : public mem::Bitmap {
-public:
-    static const size_t BITSPERWORD_64 = BITSPERBYTE * sizeof(uint64_t);
-    static const size_t BITSPERWORD_32 = BITSPERBYTE * sizeof(uint32_t);
-    static constexpr size_t LOG_BITSPERWORD_64 = panda::helpers::math::GetIntLog2(
-        static_cast<uint32_t>(BITSPERWORD_64));
-    static constexpr size_t LOG_BITSPERWORD_32 = panda::helpers::math::GetIntLog2(
-        static_cast<uint32_t>(BITSPERWORD_32));
-    static constexpr size_t LOG_INTPTR_SIZE_64 = panda::helpers::math::GetIntLog2(
-        static_cast<uint32_t>(sizeof(uint64_t)));
-    static constexpr size_t LOG_INTPTR_SIZE_32 = panda::helpers::math::GetIntLog2(
-        static_cast<uint32_t>(sizeof(uint32_t)));
-    NO_COPY_SEMANTIC(BitmapHelper);
-    NO_MOVE_SEMANTIC(BitmapHelper);
-    static constexpr uint32_t LogBitsPerWord(bool is32Bit = false)
-    {
-        return is32Bit ? LOG_BITSPERWORD_32 : LOG_BITSPERWORD_64;
-    }
-    static constexpr uint32_t LogIntptrSize(bool is32Bit = false)
-    {
-        return is32Bit ? LOG_INTPTR_SIZE_32 : LOG_INTPTR_SIZE_64;
-    }
-    static constexpr bool CheckLayout()
-    {
-    #ifdef PANDA_TARGET_32
-        static_assert(LogBitsPerWord(true) == mem::Bitmap::LOG_BITSPERWORD);
-    #else
-        static_assert(LogBitsPerWord(false) == mem::Bitmap::LOG_BITSPERWORD);
-    #endif
-        return true;
-    }
-};
 static_assert(Region::CheckLayout());
-static_assert(BitmapHelper::CheckLayout());
 }  // namespace ecmascript
 }  // namespace panda
 

@@ -19,18 +19,17 @@
 #include "ecmascript/mem/region.h"
 
 #include "ecmascript/mem/heap.h"
-#include "ecmascript/mem/native_area_allocator.h"
-#include "ecmascript/mem/remembered_set.h"
+#include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/space.h"
 
 namespace panda::ecmascript {
 inline RememberedSet *Region::CreateRememberedSet()
 {
-    auto setSize = RememberedSet::GetSizeInByte(GetCapacity());
-    auto setAddr = const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->Allocate(setSize);
-    uintptr_t setData = ToUintPtr(setAddr);
-    auto ret = new RememberedSet(ToUintPtr(this), GetCapacity(), setData);
-    ret->ClearAllBits();
+    auto bitSize = GCBitset::SizeOfGCBitset(GetSize());
+    auto setAddr = const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->
+        Allocate(bitSize + RememberedSet::GCBITSET_DATA_OFFSET);
+    auto ret = new (setAddr) RememberedSet(bitSize);
+    ret->ClearAll();
     return ret;
 }
 
@@ -56,79 +55,122 @@ inline RememberedSet *Region::GetOrCreateOldToNewRememberedSet()
     return oldToNewSet_;
 }
 
-inline void Region::InsertCrossRegionRememberedSet(uintptr_t addr)
-{
-    auto set = GetOrCreateCrossRegionRememberedSet();
-    set->Insert(addr);
-}
-
-inline void Region::AtomicInsertCrossRegionRememberedSet(uintptr_t addr)
-{
-    auto set = GetOrCreateCrossRegionRememberedSet();
-    set->AtomicInsert(addr);
-}
-
-inline void Region::InsertOldToNewRememberedSet(uintptr_t addr)
-{
-    auto set = GetOrCreateOldToNewRememberedSet();
-    set->Insert(addr);
-}
-
-inline void Region::AtomicInsertOldToNewRememberedSet(uintptr_t addr)
-{
-    auto set = GetOrCreateOldToNewRememberedSet();
-    set->AtomicInsert(addr);
-}
-
 inline WorkerHelper *Region::GetWorkList() const
 {
     return heap_->GetWorkList();
 }
 
-inline void Region::DeleteMarkBitmap()
+inline bool Region::AtomicMark(void *address)
 {
-    if (markBitmap_ != nullptr) {
-        auto size = RangeBitmap::GetBitMapSizeInByte(GetCapacity());
-        const_cast<NativeAreaAllocator *>(
-            heap_->GetNativeAreaAllocator())->Free(markBitmap_->GetBitMap().Data(), size);
-        delete markBitmap_;
-        markBitmap_ = nullptr;
+    auto addrPtr = reinterpret_cast<uintptr_t>(address);
+    ASSERT(InRange(addrPtr));
+    return markGCBitset_->SetBit<AccessType::ATOMIC>((addrPtr & DEFAULT_REGION_MASK) >> TAGGED_TYPE_SIZE_LOG);
+}
+
+inline void Region::ClearMark(void *address)
+{
+    auto addrPtr = reinterpret_cast<uintptr_t>(address);
+    ASSERT(InRange(addrPtr));
+    markGCBitset_->ClearBit((addrPtr & DEFAULT_REGION_MASK) >> TAGGED_TYPE_SIZE_LOG);
+}
+
+inline bool Region::Test(void *addr) const
+{
+    auto addrPtr = reinterpret_cast<uintptr_t>(addr);
+    ASSERT(InRange(addrPtr));
+    return markGCBitset_->TestBit((addrPtr & DEFAULT_REGION_MASK) >> TAGGED_TYPE_SIZE_LOG);
+}
+
+template <typename Visitor>
+inline void Region::IterateAllMarkedBits(Visitor visitor) const
+{
+    markGCBitset_->IterateMarkedBitsConst(reinterpret_cast<uintptr_t>(this), bitsetSize_, visitor);
+}
+
+inline void Region::ClearMarkGCBitset()
+{
+    if (markGCBitset_ != nullptr) {
+        markGCBitset_->Clear(bitsetSize_);
     }
 }
 
-inline void Region::DeleteCrossRegionRememberedSet()
+inline void Region::InsertCrossRegionRSet(uintptr_t addr)
+{
+    auto set = GetOrCreateCrossRegionRememberedSet();
+    set->Insert(begin_, addr);
+}
+
+inline void Region::AtomicInsertCrossRegionRSet(uintptr_t addr)
+{
+    auto set = GetOrCreateCrossRegionRememberedSet();
+    set->AtomicInsert(begin_, addr);
+}
+
+template <typename Visitor>
+inline void Region::IterateAllCrossRegionBits(Visitor visitor) const
 {
     if (crossRegionSet_ != nullptr) {
-        auto size = RememberedSet::GetSizeInByte(GetCapacity());
+        crossRegionSet_->IterateAllMarkedBitsConst(begin_, visitor);
+    }
+}
+
+inline void Region::ClearCrossRegionRSet()
+{
+    if (crossRegionSet_ != nullptr) {
+        crossRegionSet_->ClearAll();
+    }
+}
+
+inline void Region::ClearCrossRegionRSetInRange(uintptr_t start, uintptr_t end)
+{
+    if (crossRegionSet_ != nullptr) {
+        crossRegionSet_->ClearRange(begin_, start, end);
+    }
+}
+
+inline void Region::DeleteCrossRegionRSet()
+{
+    if (crossRegionSet_ != nullptr) {
         const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->Free(
-            crossRegionSet_->GetBitMap().Data(), size);
-        delete crossRegionSet_;
+            crossRegionSet_, crossRegionSet_->Size());
         crossRegionSet_ = nullptr;
     }
 }
 
-inline void Region::DeleteOldToNewRememberedSet()
+inline void Region::InsertOldToNewRSet(uintptr_t addr)
+{
+    auto set = GetOrCreateOldToNewRememberedSet();
+    set->Insert(begin_, addr);
+}
+
+template <typename Visitor>
+inline void Region::IterateAllOldToNewBits(Visitor visitor)
 {
     if (oldToNewSet_ != nullptr) {
-        auto size = RememberedSet::GetSizeInByte(GetCapacity());
+        oldToNewSet_->IterateAllMarkedBits(begin_, visitor);
+    }
+}
+
+inline void Region::ClearOldToNewRSet()
+{
+    if (oldToNewSet_ != nullptr) {
+        oldToNewSet_->ClearAll();
+    }
+}
+
+inline void Region::ClearOldToNewRSetInRange(uintptr_t start, uintptr_t end)
+{
+    if (oldToNewSet_ != nullptr) {
+        oldToNewSet_->ClearRange(begin_, start, end);
+    }
+}
+
+inline void Region::DeleteOldToNewRSet()
+{
+    if (oldToNewSet_ != nullptr) {
         const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->Free(
-            oldToNewSet_->GetBitMap().Data(), size);
-        delete oldToNewSet_;
+            oldToNewSet_, oldToNewSet_->Size());
         oldToNewSet_ = nullptr;
-    }
-}
-
-inline void Region::ClearMarkBitmap()
-{
-    if (markBitmap_ != nullptr) {
-        markBitmap_->ClearAllBits();
-    }
-}
-
-inline void Region::ClearCrossRegionRememberedSet()
-{
-    if (crossRegionSet_ != nullptr) {
-        crossRegionSet_->ClearAllBits();
     }
 }
 

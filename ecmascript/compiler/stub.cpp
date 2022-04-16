@@ -18,6 +18,7 @@
 #include "ecmascript/compiler/stub-inl.h"
 #include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_object.h"
+#include "ecmascript/mem/remembered_set.h"
 #include "ecmascript/message_string.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/tagged_hash_table-inl.h"
@@ -1149,28 +1150,28 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
             Branch(IntptrEuqal(oldToNewSet, IntPtr(0)), &isNullPtr, &notNullPtr);
             Bind(&notNullPtr);
             {
-                // 1. bit_offset set AddrToBitOffset(address)
-                GateRef bitOffset = IntPtrLSR(IntPtrAnd(slotAddr, IntPtr(panda::ecmascript::DEFAULT_REGION_MASK)),
-                                              IntPtr(RememberedSet::BYTESPERCHUNK_LOG2));
-                // (bit_offset >> LOG_BITSPERWORD) << LOG_INTPTR_SIZE
-                GateRef logBitsPerWord = IntPtr(BitmapHelper::LogBitsPerWord(env_.Is32Bit()));
-                GateRef logIntPtrSize = IntPtr(BitmapHelper::LogIntptrSize(env_.Is32Bit()));
-                GateRef wordOffset = IntPtrLSL(IntPtrLSR(bitOffset, logBitsPerWord), logIntPtrSize);
-                // 2. bitmap_[GetWordIdx(bit_offset)] |= GetBitMask(bit_offset)
-                // 2.0: wordIdx GetWordIdx(bit_offset)
-                // 2.1 bitmap_[wordIdx]
-                GateRef bitmapoffset = IntPtr(0);
-                GateRef bitmapData = Load(VariableType::NATIVE_POINTER(), oldToNewSet, bitmapoffset);
-                // 2.2 bitmap_[wordIdx] |= GetBitMask(bit_offset)
-                GateRef oldmapValue = Load(VariableType::NATIVE_POINTER(), bitmapData, wordOffset);
-                Store(VariableType::NATIVE_POINTER(), glue, bitmapData, wordOffset,
-                      IntPtrOr(oldmapValue, GetBitMask(bitOffset)));
+                GateRef beginOffset = IntPtr(Region::GetBeginOffset(env_.Is32Bit()));
+                GateRef beginPtr = Load(VariableType::NATIVE_POINTER(), objectRegion, beginOffset);
+                // (slotAddr - begin_) >> TAGGED_TYPE_SIZE_LOG
+                GateRef bitOffsetPtr = IntPtrLSR(PtrSub(slotAddr, beginPtr), IntPtr(TAGGED_TYPE_SIZE_LOG));
+                GateRef bitOffset = TruncPtrToInt32(bitOffsetPtr);
+                GateRef bitPerWordLog2 = Int32(GCBitset::BIT_PER_WORD_LOG2);
+                GateRef bytePerWord = Int32(GCBitset::BYTE_PER_WORD);
+                // bitOffset >> BIT_PER_WORD_LOG2
+                GateRef index = Int32LSR(bitOffset, bitPerWordLog2);
+                GateRef byteIndex = Int32Mul(index, bytePerWord);
+                // bitset_[index] |= mask;
+                GateRef bitsetData = PtrAdd(oldToNewSet, IntPtr(RememberedSet::GCBITSET_DATA_OFFSET));
+                GateRef oldsetValue = Load(VariableType::INT32(), bitsetData, byteIndex);
+                GateRef newmapValue = Int32Or(oldsetValue, GetBitMask(bitOffset));
+
+                Store(VariableType::INT32(), glue, bitsetData, byteIndex, newmapValue);
                 Jump(&notValidIndex);
             }
             Bind(&isNullPtr);
             {
                 CallNGCRuntime(glue,
-                    RTSTUB_ID(InsertOldToNewRememberedSet),
+                    RTSTUB_ID(InsertOldToNewRSet),
                     { glue, objectRegion, slotAddr });
                 Jump(&notValidIndex);
             }

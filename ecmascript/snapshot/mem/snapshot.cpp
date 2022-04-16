@@ -137,7 +137,7 @@ const JSPandaFile *SnapShot::SnapShotDeserialize(SnapShotType type, const CStrin
         auto fileRegion = ToNativePtr<Region>(snapshot_begin + i * defaultSnapshotSpaceCapacity);
 
         uint64_t base = region->allocateBase_;
-        RangeBitmap *markBitmap = region->markBitmap_;
+        GCBitset *markGCBitset = region->markGCBitset_;
         if (defaultSnapshotSpaceCapacity == 0) {
             LOG_ECMA_MEM(FATAL) << "defaultSnapshotSpaceCapacity must have a size bigger than 0";
             UNREACHABLE();
@@ -162,8 +162,8 @@ const JSPandaFile *SnapShot::SnapShotDeserialize(SnapShotType type, const CStrin
         region->prev_ = nullptr;
         // next_
         region->next_ = nullptr;
-        // mark_bitmap_
-        region->markBitmap_ = markBitmap;
+        // mark_bitset_
+        region->markGCBitset_ = markGCBitset;
         // cross_region_set_
         region->crossRegionSet_ = nullptr;
         // old_to_new_set_
