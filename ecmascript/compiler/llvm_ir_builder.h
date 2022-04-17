@@ -25,6 +25,9 @@
 #include "ecmascript/compiler/gate.h"
 #include "ecmascript/compiler/stub.h"
 #include "ecmascript/compiler/call_signature.h"
+#include "ecmascript/compiler/common_stubs.h"
+#include "ecmascript/compiler/interpreter_stub.h"
+#include "ecmascript/compiler/rt_call_signature.h"
 #include "ecmascript/js_method.h"
 #include "llvm-c/Core.h"
 
@@ -200,6 +203,8 @@ private:
     V(ChangeTaggedPointerToInt64, (GateRef gate, GateRef e1))                             \
     V(ChangeInt64ToTagged, (GateRef gate, GateRef e1))
 
+// runtime/common stub ID, opcodeOffset for bc stub
+using StubIdType = std::variant<RuntimeStubCSigns::ID, CommonStubCSigns::ID, LLVMValueRef>;
 class LLVMIRBuilder {
 public:
     explicit LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, const Circuit *circuit,
@@ -260,6 +265,10 @@ private:
     {
         return enableLog_;
     }
+    LLVMValueRef GetFunction(LLVMValueRef glue, StubIdType id);
+    bool IsInterpreted();
+    bool IsOptimized();
+    void SetTailCallAttr(LLVMValueRef call);
 
 private:
     const CompilationConfig *compCfg_ {nullptr};
@@ -284,6 +293,13 @@ private:
     LLVMTypeRef slotType_;
     CallSignature::CallConv callConv_ = CallSignature::CallConv::CCallConv;
     bool enableLog_ {false};
+
+    enum class CallInputs : size_t {
+        DEPEND = 0,
+        TARGET,
+        GLUE,
+        FIRST_PARAMETER,
+    };
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_LLVM_IR_BUILDER_H

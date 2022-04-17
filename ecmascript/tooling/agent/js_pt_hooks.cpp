@@ -16,8 +16,8 @@
 #include "ecmascript/tooling/agent/js_pt_hooks.h"
 #include "ecmascript/tooling/agent/js_backend.h"
 
-namespace panda::tooling::ecmascript {
-void JSPtHooks::Breakpoint([[maybe_unused]] PtThread thread, const PtLocation &location)
+namespace panda::ecmascript::tooling {
+void JSPtHooks::Breakpoint(const JSPtLocation &location)
 {
     LOG(DEBUG, DEBUGGER) << "JSPtHooks: Breakpoint => " << location.GetMethodId() << ": "
                          << location.GetBytecodeOffset();
@@ -34,23 +34,15 @@ void JSPtHooks::Paused(PauseReason reason)
     backend_->NotifyPaused({}, reason);
 }
 
-void JSPtHooks::Exception([[maybe_unused]] PtThread thread, [[maybe_unused]] const PtLocation &location,
-                          [[maybe_unused]] PtObject exceptionObject, [[maybe_unused]] const PtLocation &catchLocation)
+void JSPtHooks::Exception([[maybe_unused]] const JSPtLocation &location)
 {
     LOG(DEBUG, DEBUGGER) << "JSPtHooks: Exception";
-
     [[maybe_unused]] LocalScope scope(backend_->ecmaVm_);
-    Local<JSValueRef> exception = DebuggerApi::GetException(backend_->ecmaVm_);
-    DebuggerApi::ClearException(backend_->ecmaVm_);
 
     backend_->NotifyPaused({}, EXCEPTION);
-
-    if (!exception->IsHole()) {
-        DebuggerApi::SetException(backend_->ecmaVm_, exception);
-    }
 }
 
-void JSPtHooks::SingleStep([[maybe_unused]] PtThread thread, const PtLocation &location)
+void JSPtHooks::SingleStep(const JSPtLocation &location)
 {
     LOG(DEBUG, DEBUGGER) << "JSPtHooks: SingleStep => " << location.GetBytecodeOffset();
 
@@ -79,4 +71,4 @@ void JSPtHooks::LoadModule(std::string_view pandaFileName)
         firstTime_ = true;
     }
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling

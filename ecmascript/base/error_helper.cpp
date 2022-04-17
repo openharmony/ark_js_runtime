@@ -29,8 +29,6 @@
 #include "ecmascript/tooling/js_pt_extractor.h"
 
 namespace panda::ecmascript::base {
-using panda::tooling::ecmascript::JSPtExtractor;
-
 JSTaggedValue ErrorHelper::ErrorCommonToString(EcmaRuntimeCallInfo *argv, const ErrorType &errorType)
 {
     ASSERT(argv);
@@ -205,7 +203,7 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
             data += DecodeFunctionName(method->ParseFunctionName());
             data.append(" (");
             // source file
-            JSPtExtractor *debugExtractor =
+            tooling::JSPtExtractor *debugExtractor =
                 JSPandaFileManager::GetInstance()->GetJSPtExtractor(method->GetJSPandaFile());
             const CString &sourceFile = debugExtractor->GetSourceFile(method->GetFileId());
             if (sourceFile.empty()) {

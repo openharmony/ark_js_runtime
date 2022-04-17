@@ -123,12 +123,12 @@ public:
 
 private:
     void ReplaceHirControlGate(GateAccessor::UsesIterator &useIt, GateRef newGate, bool noThrow = false);
-    void LowerHirToMir(GateRef hir, GateRef outir,
+    void ReplaceHirToSubCfg(GateRef hir, GateRef outir,
                        const std::vector<GateRef> &successControl,
                        const std::vector<GateRef> &exceptionControl,
                        bool noThrow = false);
-    void LowerHirToCall(GateRef hirGate, GateRef callGate, bool noThrow = false);
-    void LowerHirToThrowCall(GateRef hirGate, GateRef condGate, GateRef callGate);
+    void ReplaceHirToCall(GateRef hirGate, GateRef callGate, bool noThrow = false);
+    void ReplaceHirToThrowCall(GateRef hirGate, GateRef condGate, GateRef callGate);
     void LowerExceptionHandler(GateRef hirGate);
     // environment must be initialized
     GateRef GetConstPool(GateRef jsFunc);
@@ -223,6 +223,7 @@ private:
     void LowerStOwnByValue(GateRef gate, GateRef glue);
     void LowerStOwnByIndex(GateRef gate, GateRef glue);
     void LowerStOwnByName(GateRef gate, GateRef glue);
+    void LowerDefineFuncDyn(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerDefineGeneratorFunc(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerDefineAsyncFunc(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerNewLexicalEnvDyn(GateRef gate, GateRef glue);
@@ -248,6 +249,12 @@ private:
     void LowerCreateObjectHavingMethod(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerLdHomeObject(GateRef gate, GateRef thisFunc);
     void LowerDefineClassWithBuffer(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerAsyncFunctionEnter(GateRef gate, GateRef glue);
+    void LowerTypeOfDyn(GateRef gate, GateRef glue);
+    void LowerResumeGenerator(GateRef gate);
+    void LowerGetResumeMode(GateRef gate);
+    void LowerDefineNCFuncDyn(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerDefineMethod(GateRef gate, GateRef glue, GateRef jsFunc);
 
     BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;

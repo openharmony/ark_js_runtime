@@ -1261,7 +1261,6 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
         case EcmaOpcode::SUSPENDGENERATOR_PREF_V8_V8: {
             uint16_t v0 = READ_INST_8_1();
             uint16_t v1 = READ_INST_8_2();
-            info.accIn = true;
             info.accOut = true;
             info.offset = BytecodeOffset::FOUR;
             info.inputs.emplace_back(VirtualRegister(v0));
@@ -1991,7 +1990,7 @@ GateRef BytecodeCircuitBuilder::SetGateConstant(const BytecodeInfo &info)
         case EcmaOpcode::LDHOLE_PREF:
             gate = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64, JSTaggedValue::VALUE_HOLE,
                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                    GateType::TAGGED_NO_POINTER);
+                                    GateType::TAGGED_NPOINTER);
             break;
         case EcmaOpcode::LDAI_DYN_IMM32:
             tsType = tsLoader->GetPrimitiveGT(TSTypeKind::TS_NUMBER).GetGlobalTSTypeRef();
@@ -2032,12 +2031,12 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
 
     auto glueGate = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, 0,
                                      {Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST))},
-                                     GateType::C_VALUE);
+                                     GateType::NJS_VALUE);
     argGates.at(0) = glueGate;
     commonArgs_.at(0) = glueGate;
     auto argRoot = Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST));
     auto actualArgc = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I32, CommonArgIdx::ACTUAL_ARGC,
-                                       {argRoot}, GateType::C_VALUE);
+                                       {argRoot}, GateType::NJS_VALUE);
     argGates.at(CommonArgIdx::ACTUAL_ARGC) = actualArgc;
     commonArgs_.at(CommonArgIdx::ACTUAL_ARGC) = actualArgc;
     for (size_t argIdx = CommonArgIdx::FUNC; argIdx < CommonArgIdx::NUM_OF_ARGS; argIdx++) {
@@ -2135,7 +2134,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                         inList[i + length] = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I16,
                                                               std::get<MethodId>(input).GetId(),
                                                               {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                                              GateType::C_VALUE);
+                                                              GateType::NJS_VALUE);
                     } else if (std::holds_alternative<StringId>(input)) {
                         auto tsLoader = vm_->GetTSLoader();
                         JSHandle<ConstantPool> newConstPool(vm_->GetJSThread(), constantPool_.GetTaggedValue());
@@ -2143,12 +2142,12 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                         size_t index = tsLoader->AddConstString(string);
                         inList[i + length] = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I32, index,
                                                               {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                                              GateType::C_VALUE);
+                                                              GateType::NJS_VALUE);
                     } else if (std::holds_alternative<Immediate>(input)) {
                         inList[i + length] = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
                                                               std::get<Immediate>(input).GetValue(),
                                                               {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                                              GateType::C_VALUE);
+                                                              GateType::NJS_VALUE);
                     } else {
                         ASSERT(std::holds_alternative<VirtualRegister>(input));
                         continue;
@@ -2184,8 +2183,12 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                 }
                 jsgateToBytecode_[gate] = {bb.id, pcPrev};
                 if (IsThrow(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+                    auto constant = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
+                                                     JSTaggedValue::VALUE_HOLE,
+                                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
+                                                     GateType::JS_ANY);
                     circuit_.NewGate(OpCode(OpCode::RETURN), 0,
-                                     {ifSuccess, gate, TaggedValue::VALUE_HOLE,
+                                     {ifSuccess, gate, constant,
                                       Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST))},
                                      GateType::JS_ANY);
                     break;

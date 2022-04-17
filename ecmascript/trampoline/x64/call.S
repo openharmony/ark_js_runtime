@@ -1221,7 +1221,7 @@ OptimizedCallRuntimeWithArgv:
     pushq   %rbp
     movq    %rsp, %rbp     // set frame pointer
     movq    %rbp, ASM_GLUE_LEAVE_FRAME_OFFSET(%rdi)   // save to thread->leaveFrame_
-    pushq   $PARMERA_INDIRECT_LEAVE_FRAME
+    pushq   $ASM_OPTIMIZED_WITH_ARGV_LEAVE_FRAME
 
     movq    ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET(%rdi, %rsi, 8), %r9
     movq    %rdx, %rsi // argc
