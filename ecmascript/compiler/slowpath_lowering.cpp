@@ -48,29 +48,97 @@ void SlowPathLowering::CallRuntimeLowering()
     }
 }
 
+void SlowPathLowering::ReplaceHirControlGate(GateAccessor::UsesIterator &useIt, GateRef newGate, bool noThrow)
+{
+    GateAccessor acc(circuit_);
+    ASSERT(acc.GetOpCode(*useIt) == OpCode::IF_SUCCESS || acc.GetOpCode(*useIt) == OpCode::IF_EXCEPTION);
+    if (!noThrow) {
+        auto firstUse = acc.Uses(*useIt).begin();
+        circuit_->ModifyIn(*firstUse, firstUse.GetIndex(), newGate);
+    }
+    acc.DeleteGate(useIt);
+}
+
+void SlowPathLowering::ReplaceHirToSubCfg(GateRef hir, GateRef outir,
+                                          const std::vector<GateRef> &successControl,
+                                          const std::vector<GateRef> &exceptionControl,
+                                          bool noThrow)
+{
+    GateAccessor acc(circuit_);
+    if (outir != Circuit::NullGate()) {
+        acc.SetGateType(outir, acc.GetGateType(hir));
+    }
+    auto uses = acc.Uses(hir);
+    for (auto useIt = uses.begin(); useIt != uses.end(); useIt++) {
+        // replace HIR:IF_SUCCESS/IF_EXCEPTION with control flow in Label successExit/failExit of MIR Circuit
+        if (acc.GetOpCode(*useIt) == OpCode::IF_SUCCESS) {
+            ReplaceHirControlGate(useIt, successControl[0]);
+        } else if (acc.GetOpCode(*useIt) == OpCode::IF_EXCEPTION) {
+            ReplaceHirControlGate(useIt, exceptionControl[0], noThrow);
+        // change depend flow in catch block from HIR:JS_BYTECODE to depend flow in MIR Circuit
+        } else if (acc.GetOpCode(*useIt) == OpCode::DEPEND_SELECTOR) {
+            if (acc.GetOpCode(acc.GetIn(acc.GetIn(*useIt, 0), useIt.GetIndex() - 1)) == OpCode::IF_EXCEPTION) {
+                noThrow ? acc.DeleteExceptionDep(useIt) : acc.ReplaceIn(useIt, exceptionControl[1]);
+            } else {
+                acc.ReplaceIn(useIt, successControl[1]);
+            }
+        } else if (acc.GetOpCode(*useIt) == OpCode::DEPEND_RELAY) {
+            if (acc.GetOpCode(acc.GetIn(*useIt, 0)) == OpCode::IF_EXCEPTION) {
+                acc.ReplaceIn(useIt, exceptionControl[1]);
+            } else {
+                acc.ReplaceIn(useIt, successControl[1]);
+            }
+        // replace normal depend
+        } else if ((acc.GetOpCode(*useIt) == OpCode::JS_BYTECODE) && useIt.GetIndex() == 1) {
+            acc.ReplaceIn(useIt, successControl[1]);
+        // if no catch block, just throw exception(RETURN)
+        } else if ((acc.GetOpCode(*useIt) == OpCode::RETURN) &&
+                    acc.GetOpCode(acc.GetIn(*useIt, 0)) == OpCode::IF_EXCEPTION) {
+            noThrow ? acc.DeleteExceptionDep(useIt) : acc.ReplaceIn(useIt, exceptionControl[1]);
+        // if isThrow..
+        } else if (useIt.GetIndex() == 1) {
+            acc.ReplaceIn(useIt, successControl[1]);
+        // replace data flow with data output in label successExit(valueSelector...)
+        } else {
+            acc.ReplaceIn(useIt, outir);
+        }
+    }
+
+    circuit_->DeleteGate(hir);
+}
+
+
 /*
  * lower to slowpath call like this pattern:
+ * have throw:
  * res = Call(...);
  * if (res == VALUE_EXCEPTION) {
  *     goto exception_handle;
  * }
  * Set(res);
  *
+ * no throw:
+ * res = Call(...);
+ * Set(res);
  */
-void SlowPathLowering::LowerHirToCall(GateRef hirGate, GateRef callGate)
+void SlowPathLowering::ReplaceHirToCall(GateRef hirGate, GateRef callGate, bool noThrow)
 {
     GateRef stateInGate = acc_.GetState(hirGate);
     // copy depend-wire of hirGate to callGate
     GateRef dependInGate = acc_.GetDep(hirGate);
     acc_.SetDep(callGate, dependInGate);
 
-    // exception value
-    GateRef exceptionVal = builder_.ExceptionConstant(GateType::TAGGED_NO_POINTER);
+    GateRef ifBranch;
+    if (!noThrow) {
+        // exception value
+        GateRef exceptionVal = builder_.ExceptionConstant(GateType::TAGGED_NPOINTER);
+        // compare with trampolines result
+        GateRef equal = builder_.BinaryLogic(OpCode(OpCode::EQ), callGate, exceptionVal);
+        ifBranch = builder_.Branch(stateInGate, equal);
+    } else {
+        ifBranch = builder_.Branch(stateInGate, builder_.Boolean(false));
+    }
 
-    // compare with trampolines result
-    GateRef equal = builder_.BinaryLogic(OpCode(OpCode::EQ), callGate, exceptionVal);
-
-    GateRef ifBranch = builder_.Branch(stateInGate, equal);
     auto uses = acc_.Uses(hirGate);
     for (auto it = uses.begin(); it != uses.end(); it++) {
         if (acc_.GetOpCode(*it) == OpCode::IF_SUCCESS) {
@@ -91,38 +159,6 @@ void SlowPathLowering::LowerHirToCall(GateRef hirGate, GateRef callGate)
 }
 
 /*
- * lower to fast call like this pattern:
- * res = Call(...);
- * Set(res);
- *
- */
-void SlowPathLowering::LowerHirToFastCall(GateRef hirGate, GateRef callGate)
-{
-    GateRef stateInGate = acc_.GetState(hirGate);
-    GateRef dependInGate = acc_.GetDep(hirGate);
-    acc_.SetDep(callGate, dependInGate);
-
-    GateRef ifBranch = builder_.Branch(stateInGate, builder_.Boolean(false));
-    auto uses = acc_.Uses(hirGate);
-    for (auto it = uses.begin(); it != uses.end(); it++) {
-        if (acc_.GetOpCode(*it) == OpCode::IF_SUCCESS) {
-            acc_.SetOpCode(*it, OpCode::IF_FALSE);
-            acc_.ReplaceIn(it, ifBranch);
-        } else {
-            if (acc_.GetOpCode(*it) == OpCode::IF_EXCEPTION) {
-                acc_.SetOpCode(*it, OpCode::IF_TRUE);
-                acc_.ReplaceIn(it, ifBranch);
-            } else {
-                acc_.ReplaceIn(it, callGate);
-            }
-        }
-    }
-
-    circuit_->DeleteGate(hirGate);
-}
-
-
-/*
  * lower to throw call like this pattern:
  * if (condition) {
  *     Call(...);
@@ -130,7 +166,7 @@ void SlowPathLowering::LowerHirToFastCall(GateRef hirGate, GateRef callGate)
  * }
  *
  */
-void SlowPathLowering::LowerHirToThrowCall(GateRef hirGate, GateRef condGate, GateRef callGate)
+void SlowPathLowering::ReplaceHirToThrowCall(GateRef hirGate, GateRef condGate, GateRef callGate)
 {
     GateRef stateInGate = acc_.GetState(hirGate);
     GateRef dependInGate = acc_.GetDep(hirGate);
@@ -152,67 +188,6 @@ void SlowPathLowering::LowerHirToThrowCall(GateRef hirGate, GateRef condGate, Ga
         }
     }
 
-    circuit_->DeleteGate(hirGate);
-}
-
-/*
- * lower to condition call like this pattern:
- * if (condition) {
- *     res = Call(...);
- *     if (res == VALUE_EXCEPTION) {
- *         goto exception_handle;
- *     }
- *     Set(res);
- * }
- *
- */
-void SlowPathLowering::LowerHirToConditionCall(GateRef hirGate, GateRef condGate, GateRef callGate)
-{
-    // state connect
-    // condition branch
-    GateRef stateInGate = acc_.GetState(hirGate);
-    GateRef condBranch = builder_.Branch(stateInGate, condGate);
-    GateRef condTrue = builder_.IfTrue(condBranch);
-    GateRef condFalse = builder_.IfFalse(condBranch);
-    // exception branch
-    GateRef exceptionVal = builder_.ExceptionConstant(GateType::TAGGED_NO_POINTER);
-    GateRef equal = builder_.BinaryLogic(OpCode(OpCode::EQ), callGate, exceptionVal);
-    GateRef exceptionBranch = builder_.Branch(condTrue, equal);
-    GateRef exceptionFalse = builder_.IfFalse(exceptionBranch);
-    // merge condition false and exception false state
-    std::vector<GateRef> mergeGates = {condFalse, exceptionFalse};
-    GateRef stateMerge = builder_.Merge(mergeGates.data(), mergeGates.size());
-
-    // depend connect
-    GateRef dependInGate = acc_.GetDep(hirGate);
-    GateRef condTrueRelay = builder_.DependRelay(condTrue, dependInGate);
-    acc_.SetDep(callGate, condTrueRelay);
-    GateRef condFalseRelay = builder_.DependRelay(condFalse, dependInGate);
-    // collect condition false and condition true depend
-    std::vector<GateRef> dependGates = {callGate, condFalseRelay};
-    GateRef dependPhi = builder_.Selector(OpCode(OpCode::DEPEND_SELECTOR),
-        stateMerge, dependGates, dependGates.size());
-
-    auto uses = acc_.Uses(hirGate);
-    for (auto it = uses.begin(); it != uses.end(); it++) {
-        if (acc_.GetOpCode(*it) == OpCode::IF_SUCCESS) {
-            auto usesSuccess = acc_.Uses(*it);
-            for (auto itSuccess = usesSuccess.begin(); itSuccess != usesSuccess.end(); itSuccess++) {
-                acc_.ReplaceIn(itSuccess, stateMerge);
-            }
-            circuit_->DeleteGate(*it);
-        } else if (acc_.GetOpCode(*it) == OpCode::IF_EXCEPTION) {
-            acc_.SetOpCode(*it, OpCode::IF_TRUE);
-            acc_.ReplaceIn(it, exceptionBranch);
-        } else if (((acc_.GetOpCode(*it) == OpCode::DEPEND_SELECTOR) ||
-                   (acc_.GetOpCode(*it) == OpCode::DEPEND_RELAY)) &&
-                   (acc_.GetOpCode(acc_.GetIn(acc_.GetIn(*it, 0),
-                   it.GetIndex() - 1)) != OpCode::IF_EXCEPTION)) {
-            acc_.ReplaceIn(it, dependPhi);
-        } else {
-            acc_.ReplaceIn(it, callGate);
-        }
-    }
     circuit_->DeleteGate(hirGate);
 }
 
@@ -244,10 +219,10 @@ GateRef SlowPathLowering::GetHomeObjectFromJSFunction(GateRef jsFunc)
 
 GateRef SlowPathLowering::GetValueFromConstStringTable(GateRef glue, GateRef gate, uint32_t inIndex)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(LoadValueFromConstantStringTable));
+    GateRef id = RTSTUB_ID(LoadValueFromConstantStringTable);
     auto idGate = acc_.GetValueIn(gate, inIndex);
     GateRef dependGate = acc_.GetDep(gate);
-    return builder_.RuntimeCall(glue, id, dependGate, {idGate});
+    return builder_.CallRuntimeWithDepend(glue, id, dependGate, {idGate});
 }
 
 void SlowPathLowering::Lower(GateRef gate)
@@ -260,7 +235,7 @@ void SlowPathLowering::Lower(GateRef gate)
     auto pc = bcBuilder_->GetJSBytecode(gate);
     EcmaOpcode op = static_cast<EcmaOpcode>(*pc);
     // initialize label manager
-    builder_.NewLabelManager(gate);
+    Environment env(gate, circuit_, &builder_);
     switch (op) {
         case LDA_STR_ID32:
             LowerLoadStr(gate, glue);
@@ -289,6 +264,9 @@ void SlowPathLowering::Lower(GateRef gate)
         case LDLEXENVDYN_PREF:
             LowerLexicalEnv(gate, glue);
             break;
+        case ASYNCFUNCTIONENTER_PREF:
+            LowerAsyncFunctionEnter(gate, glue);
+            break;
         case INCDYN_PREF_V8:
             LowerIncDyn(gate, glue);
             break;
@@ -297,6 +275,12 @@ void SlowPathLowering::Lower(GateRef gate)
             break;
         case GETPROPITERATOR_PREF:
             LowerGetPropIterator(gate, glue);
+            break;
+        case RESUMEGENERATOR_PREF_V8:
+            LowerResumeGenerator(gate);
+            break;
+        case GETRESUMEMODE_PREF_V8:
+            LowerGetResumeMode(gate);
             break;
         case ITERNEXT_PREF_V8:
             LowerIterNext(gate, glue);
@@ -367,6 +351,9 @@ void SlowPathLowering::Lower(GateRef gate)
         case THROWDYN_PREF:
             LowerThrowDyn(gate, glue);
             break;
+        case TYPEOFDYN_PREF:
+            LowerTypeOfDyn(gate, glue);
+            break;
         case THROWCONSTASSIGNMENT_PREF_V8:
             LowerThrowConstAssignment(gate, glue);
             break;
@@ -427,6 +414,12 @@ void SlowPathLowering::Lower(GateRef gate)
         case DELOBJPROP_PREF_V8_V8:
             LowerDelObjProp(gate, glue);
             break;
+        case DEFINENCFUNCDYN_PREF_ID16_IMM16_V8:
+            LowerDefineNCFuncDyn(gate, glue, jsFunc);
+            break;
+        case DEFINEMETHOD_PREF_ID16_IMM16_V8:
+            LowerDefineMethod(gate, glue, jsFunc);
+            break;
         case EXPDYN_PREF_V8:
             LowerExpDyn(gate, glue);
             break;
@@ -455,7 +448,7 @@ void SlowPathLowering::Lower(GateRef gate)
             LowerCreateArrayWithBuffer(gate, glue, jsFunc);
             break;
         case STMODULEVAR_PREF_ID32:
-            LowerStModuleVar(gate, glue, jsFunc);
+            LowerStModuleVar(gate, glue);
             break;
         case GETTEMPLATEOBJECT_PREF_V8:
             LowerGetTemplateObject(gate, glue);
@@ -467,10 +460,10 @@ void SlowPathLowering::Lower(GateRef gate)
             LowerLdBigInt(gate, glue, jsFunc);
             break;
         case LDMODULEVAR_PREF_ID32_IMM8:
-            LowerLdModuleVar(gate, glue, jsFunc);
+            LowerLdModuleVar(gate, glue);
             break;
         case GETMODULENAMESPACE_PREF_ID32:
-            LowerGetModuleNamespace(gate, glue, jsFunc);
+            LowerGetModuleNamespace(gate, glue);
             break;
         case NEWOBJDYNRANGE_PREF_IMM16_V8:
             LowerNewObjDynRange(gate, glue);
@@ -517,7 +510,7 @@ void SlowPathLowering::Lower(GateRef gate)
             LowerStOwnByIndex(gate, glue);
             break;
         case STOWNBYNAME_PREF_ID32_V8:
-            LowerStOwnByName(gate, glue, jsFunc);
+            LowerStOwnByName(gate, glue);
             break;
         case DEFINEGENERATORFUNC_PREF_ID16_IMM16_V8:
             LowerDefineGeneratorFunc(gate, glue, jsFunc);
@@ -547,31 +540,31 @@ void SlowPathLowering::Lower(GateRef gate)
             LowerStConstToGlobalRecord(gate, glue);
             break;
         case STLETTOGLOBALRECORD_PREF_ID32:
-            LowerStLetToGlobalRecord(gate, glue, jsFunc);
+            LowerStLetToGlobalRecord(gate, glue);
             break;
         case STCLASSTOGLOBALRECORD_PREF_ID32:
-            LowerStClassToGlobalRecord(gate, glue, jsFunc);
+            LowerStClassToGlobalRecord(gate, glue);
             break;
         case STOWNBYVALUEWITHNAMESET_PREF_V8_V8:
             LowerStOwnByValueWithNameSet(gate, glue);
             break;
         case STOWNBYNAMEWITHNAMESET_PREF_ID32_V8:
-            LowerStOwnByNameWithNameSet(gate, glue, jsFunc);
+            LowerStOwnByNameWithNameSet(gate, glue);
             break;
         case LDGLOBALVAR_PREF_ID32:
             LowerLdGlobalVar(gate, glue);
             break;
         case LDOBJBYNAME_PREF_ID32_V8:
-            LowerLdObjByName(gate, glue, jsFunc);
+            LowerLdObjByName(gate, glue);
             break;
         case STOBJBYNAME_PREF_ID32_V8:
-            LowerStObjByName(gate, glue, jsFunc);
+            LowerStObjByName(gate, glue);
             break;
         case LDSUPERBYNAME_PREF_ID32_V8:
-            LowerLdSuperByName(gate, glue, jsFunc);
+            LowerLdSuperByName(gate, glue);
             break;
         case STSUPERBYNAME_PREF_ID32_V8:
-            LowerStSuperByName(gate, glue, jsFunc);
+            LowerStSuperByName(gate, glue);
             break;
         case CREATEGENERATOROBJ_PREF_V8:
             LowerCreateGeneratorObj(gate, glue);
@@ -598,119 +591,115 @@ void SlowPathLowering::Lower(GateRef gate)
         case DEFINECLASSWITHBUFFER_PREF_ID16_IMM16_IMM16_V8_V8:
             LowerDefineClassWithBuffer(gate, glue, jsFunc);
             break;
+        case DEFINEFUNCDYN_PREF_ID16_IMM16_V8:
+            LowerDefineFuncDyn(gate, glue, jsFunc);
+            break;
         default:
             break;
     }
-
-    // clear temporary used label manager
-    builder_.DeleteCurrentLabelManager();
 }
 
 void SlowPathLowering::LowerAdd2Dyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(Add2Dyn));
+    int id = RTSTUB_ID(Add2Dyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerCreateIterResultObj(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(CreateIterResultObj));
+    int id = RTSTUB_ID(CreateIterResultObj);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerSuspendGenerator(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(SuspendGenerator));
-    // 3: number of value inputs
-    ASSERT(acc_.GetNumValueIn(gate) == 3);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    int id = RTSTUB_ID(SuspendGenerator);
+    // 2: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerAsyncFunctionAwaitUncaught(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(AsyncFunctionAwaitUncaught));
+    int id = RTSTUB_ID(AsyncFunctionAwaitUncaught);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerAsyncFunctionResolve(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(AsyncFunctionResolveOrReject));
+    int id = RTSTUB_ID(AsyncFunctionResolveOrReject);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef tureConst = builder_.Boolean(true);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1), tureConst});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1), tureConst});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerAsyncFunctionReject(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(AsyncFunctionResolveOrReject));
+    int id = RTSTUB_ID(AsyncFunctionResolveOrReject);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef falseConst = builder_.Boolean(false);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1), falseConst});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1), falseConst});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerLoadStr(GateRef gate, GateRef glue)
 {
     GateRef newGate = GetValueFromConstStringTable(glue, gate, 0);
-    LowerHirToCall(gate, newGate);
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerLexicalEnv(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(GetLexicalEnv));
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_, {});
-    LowerHirToFastCall(gate, newGate);
+    int id = RTSTUB_ID(GetLexicalEnv);
+    GateRef newGate = builder_.CallRuntime(glue, id, {});
+    ReplaceHirToCall(gate, newGate, true);
 }
 
 void SlowPathLowering::LowerTryLdGlobalByName(GateRef gate, GateRef glue)
 {
     GateRef prop = GetValueFromConstStringTable(glue, gate, 0);
     acc_.SetDep(gate, prop);
-    GateRef id = builder_.Int64(RTSTUB_ID(TryLdGlobalByName));
-    GateRef newGate = builder_.RuntimeCall(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {prop});
-    LowerHirToCall(gate, newGate);
+    int id = RTSTUB_ID(TryLdGlobalByName);
+    GateRef newGate = builder_.CallRuntime(glue, id, {prop});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerStGlobalVar(GateRef gate, GateRef glue)
 {
     GateRef prop = GetValueFromConstStringTable(glue, gate, 0);
     acc_.SetDep(gate, prop);
-    GateRef id = builder_.Int64(RTSTUB_ID(StGlobalVar));
+    int id = RTSTUB_ID(StGlobalVar);
     ASSERT(acc_.GetNumValueIn(gate) == 2); // 2: number of value inputs
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {prop, acc_.GetValueIn(gate, 0)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {prop, acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerGetIterator(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(GetIterator));
-    // 1: number of value inputs
-    ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {glue, acc_.GetValueIn(gate, 0)});
+    Label condTrue(&builder_);
+    Label condFalse(&builder_);
     GateRef isGeneratorObject = builder_.TaggedIsGeneratorObject(acc_.GetValueIn(gate, 0));
     GateRef isNotGeneratorObject = builder_.BoolNot(isGeneratorObject);
-    LowerHirToConditionCall(gate, isNotGeneratorObject, newGate);
+    builder_.Branch(isNotGeneratorObject, &condTrue, &condFalse);
+    CREATE_DOUBLE_EXIT(condTrue, condTrue)
+    // 1: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    int id = RTSTUB_ID(GetIterator);
+    GateRef result = builder_.CallRuntime(glue, id, {glue, acc_.GetValueIn(gate, 0)}, true);
+    ReplaceHirToSubCfg(gate, result, successControl, failControl);
 }
 
 void SlowPathLowering::LowerToJSCall(GateRef gate, GateRef glue, const std::vector<GateRef> &args)
@@ -718,7 +707,7 @@ void SlowPathLowering::LowerToJSCall(GateRef gate, GateRef glue, const std::vect
     const CallSignature *descriptor = RuntimeStubCSigns::Get(RTSTUB_ID(JSCall));
     GateRef target = builder_.IntPtr(RTSTUB_ID(JSCall));
     GateRef newGate = builder_.NoGcRuntimeCall(descriptor, glue, target, dependEntry_, args);
-    LowerHirToCall(gate, newGate);
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerCallArg0Dyn(GateRef gate, GateRef glue)
@@ -786,12 +775,12 @@ void SlowPathLowering::LowerCallIThisRangeDyn(GateRef gate, GateRef glue, GateRe
 void SlowPathLowering::LowerCallSpreadDyn(GateRef gate, GateRef glue)
 {
     // need to fixed in later
-    GateRef id = builder_.Int64(RTSTUB_ID(CallSpreadDyn));
+    int id = RTSTUB_ID(CallSpreadDyn);
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
+    GateRef newGate = builder_.CallRuntime(glue, id,
         {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1), acc_.GetValueIn(gate, 2)});
-    LowerHirToCall(gate, newGate);
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerCallIRangeDyn(GateRef gate, GateRef glue)
@@ -816,12 +805,12 @@ void SlowPathLowering::LowerCallIRangeDyn(GateRef gate, GateRef glue)
 
 void SlowPathLowering::LowerNewObjSpreadDyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(NewObjSpreadDyn));
+    int id = RTSTUB_ID(NewObjSpreadDyn);
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
+    GateRef newGate = builder_.CallRuntime(glue, id,
         {glue, acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1), acc_.GetValueIn(gate, 2)});
-    LowerHirToCall(gate, newGate);
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerThrowDyn(GateRef gate, GateRef glue)
@@ -829,70 +818,68 @@ void SlowPathLowering::LowerThrowDyn(GateRef gate, GateRef glue)
     GateRef exception = acc_.GetValueIn(gate, 0);
     GateRef setException = circuit_->NewGate(OpCode(OpCode::STORE), 0,
         {dependEntry_, exception, glue}, VariableType::INT64().GetGateType());
-    LowerHirToThrowCall(gate, builder_.Boolean(true), setException);
+    ReplaceHirToThrowCall(gate, builder_.Boolean(true), setException);
 }
 
 void SlowPathLowering::LowerThrowConstAssignment(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(ThrowConstAssignment));
+    int id = RTSTUB_ID(ThrowConstAssignment);
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
+    GateRef newGate = builder_.CallRuntime(glue, id,
         {glue, acc_.GetValueIn(gate, 0)});
-    LowerHirToThrowCall(gate, builder_.Boolean(true), newGate);
+    ReplaceHirToThrowCall(gate, builder_.Boolean(true), newGate);
 }
 
 void SlowPathLowering::LowerThrowThrowNotExists(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(ThrowThrowNotExists));
+    int id = RTSTUB_ID(ThrowThrowNotExists);
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {glue, acc_.GetValueIn(gate, 0)});
-    LowerHirToThrowCall(gate, builder_.Boolean(true), newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {glue, acc_.GetValueIn(gate, 0)});
+    ReplaceHirToThrowCall(gate, builder_.Boolean(true), newGate);
 }
 
 void SlowPathLowering::LowerThrowPatternNonCoercible(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(ThrowPatternNonCoercible));
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_, {glue});
-    LowerHirToThrowCall(gate, builder_.Boolean(true), newGate);
+    int id = RTSTUB_ID(ThrowPatternNonCoercible);
+    GateRef newGate = builder_.CallRuntime(glue, id, {glue});
+    ReplaceHirToThrowCall(gate, builder_.Boolean(true), newGate);
 }
 
 void SlowPathLowering::LowerThrowIfNotObject(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(ThrowIfNotObject));
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_, {glue});
+    int id = RTSTUB_ID(ThrowIfNotObject);
+    GateRef newGate = builder_.CallRuntime(glue, id, {glue});
     GateRef value = builder_.ZExtInt8ToPtr(acc_.GetValueIn(gate, 0));
     GateRef isEcmaObject = builder_.IsEcmaObject(value);
     GateRef isNotEcmaObject = builder_.BoolNot(isEcmaObject);
-    LowerHirToThrowCall(gate, isNotEcmaObject, newGate);
+    ReplaceHirToThrowCall(gate, isNotEcmaObject, newGate);
 }
 
 void SlowPathLowering::LowerThrowUndefinedIfHole(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(ThrowUndefinedIfHole));
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_, {glue});
+    int id = RTSTUB_ID(ThrowUndefinedIfHole);
+    GateRef newGate = builder_.CallRuntime(glue, id, {glue});
     GateRef hole = acc_.GetValueIn(gate, 0);
     GateRef isHole = builder_.TaggedIsHole(hole);
-    LowerHirToThrowCall(gate, isHole, newGate);
+    ReplaceHirToThrowCall(gate, isHole, newGate);
 }
 
 void SlowPathLowering::LowerThrowIfSuperNotCorrectCall(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(ThrowIfSuperNotCorrectCall));
+    int id = RTSTUB_ID(ThrowIfSuperNotCorrectCall);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {glue, acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToThrowCall(gate, builder_.Boolean(true), newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {glue, acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToThrowCall(gate, builder_.Boolean(true), newGate);
 }
 
 void SlowPathLowering::LowerThrowDeleteSuperProperty(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(ThrowDeleteSuperProperty));
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_, {glue});
-    LowerHirToThrowCall(gate, builder_.Boolean(true), newGate);
+    int id = RTSTUB_ID(ThrowDeleteSuperProperty);
+    GateRef newGate = builder_.CallRuntime(glue, id, {glue});
+    ReplaceHirToThrowCall(gate, builder_.Boolean(true), newGate);
 }
 
 void SlowPathLowering::LowerExceptionHandler(GateRef hirGate)
@@ -918,10 +905,10 @@ void SlowPathLowering::LowerExceptionHandler(GateRef hirGate)
 
 void SlowPathLowering::LowerLdSymbol(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(GetSymbolFunction));
+    int id = RTSTUB_ID(GetSymbolFunction);
     GateRef newGate =
-        builder_.RuntimeCall(glue, id, dependEntry_, {});
-    LowerHirToCall(gate, newGate);
+        builder_.CallRuntime(glue, id, {});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerLdGlobal(GateRef gate, GateRef glue)
@@ -930,331 +917,301 @@ void SlowPathLowering::LowerLdGlobal(GateRef gate, GateRef glue)
     GateRef val = builder_.Int64Add(glue, offset);
     GateRef newGate = circuit_->NewGate(OpCode(OpCode::LOAD), VariableType::JS_ANY().GetMachineType(),
         0, { dependEntry_, val }, VariableType::JS_ANY().GetGateType());
-    LowerHirToCall(gate, newGate);
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerSub2Dyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(Sub2Dyn));
+    int id = RTSTUB_ID(Sub2Dyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerMul2Dyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(Mul2Dyn));
+    int id = RTSTUB_ID(Mul2Dyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerDiv2Dyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(Div2Dyn));
+    int id = RTSTUB_ID(Div2Dyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerMod2Dyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(Mod2Dyn));
+    int id = RTSTUB_ID(Mod2Dyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerEqDyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(EqDyn));
+    int id = RTSTUB_ID(EqDyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerNotEqDyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(NotEqDyn));
+    int id = RTSTUB_ID(NotEqDyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerLessDyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(LessDyn));
+    int id = RTSTUB_ID(LessDyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerLessEqDyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(LessEqDyn));
+    int id = RTSTUB_ID(LessEqDyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerGreaterDyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(GreaterDyn));
+    int id = RTSTUB_ID(GreaterDyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerGreaterEqDyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(GreaterEqDyn));
+    int id = RTSTUB_ID(GreaterEqDyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerGetPropIterator(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(GetPropIterator));
+    int id = RTSTUB_ID(GetPropIterator);
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerIterNext(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(IterNext));
+    int id = RTSTUB_ID(IterNext);
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerCloseIterator(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(CloseIterator));
+    int id = RTSTUB_ID(CloseIterator);
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerIncDyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(IncDyn));
+    int id = RTSTUB_ID(IncDyn);
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerDecDyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(DecDyn));
+    int id = RTSTUB_ID(DecDyn);
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerToNumber(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(ToNumber));
+    int id = RTSTUB_ID(ToNumber);
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerNegDyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(NegDyn));
+    int id = RTSTUB_ID(NegDyn);
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerNotDyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(NotDyn));
+    int id = RTSTUB_ID(NotDyn);
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerShl2Dyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(Shl2Dyn));
+    int id = RTSTUB_ID(Shl2Dyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerShr2Dyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(Shr2Dyn));
+    int id = RTSTUB_ID(Shr2Dyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerAshr2Dyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(Ashr2Dyn));
+    int id = RTSTUB_ID(Ashr2Dyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerAnd2Dyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(And2Dyn));
+    int id = RTSTUB_ID(And2Dyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerOr2Dyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(Or2Dyn));
+    int id = RTSTUB_ID(Or2Dyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerXor2Dyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(Xor2Dyn));
+    int id = RTSTUB_ID(Xor2Dyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerDelObjProp(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(DelObjProp));
+    int id = RTSTUB_ID(DelObjProp);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerExpDyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(ExpDyn));
+    int id = RTSTUB_ID(ExpDyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerIsInDyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(IsInDyn));
+    int id = RTSTUB_ID(IsInDyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerInstanceofDyn(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(InstanceOfDyn));
+    int id = RTSTUB_ID(InstanceOfDyn);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerFastStrictNotEqual(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(FastStrictNotEqual));
+    int id = RTSTUB_ID(FastStrictNotEqual);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToFastCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate, true);
 }
 
 void SlowPathLowering::LowerFastStrictEqual(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(FastStrictEqual));
+    int id = RTSTUB_ID(FastStrictEqual);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
-    LowerHirToFastCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});
+    ReplaceHirToCall(gate, newGate, true);
 }
 
 void SlowPathLowering::LowerCreateEmptyArray(GateRef gate, GateRef glue)
 {
     std::vector<GateRef> successControl;
     std::vector<GateRef> failControl;
-    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(CreateEmptyArray), {});
+    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(CreateEmptyArray), {}, true);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());
     failControl.emplace_back(Circuit::NullGate());
     failControl.emplace_back(Circuit::NullGate());
-    builder_.MergeMirCircuit<true>(gate, result, successControl, failControl);
+    ReplaceHirToSubCfg(gate, result, successControl, failControl, true);
 }
 
 void SlowPathLowering::LowerCreateEmptyObject(GateRef gate, GateRef glue)
 {
     std::vector<GateRef> successControl;
     std::vector<GateRef> failControl;
-    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(CreateEmptyObject), {});
+    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(CreateEmptyObject), {}, true);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());
     failControl.emplace_back(Circuit::NullGate());
     failControl.emplace_back(Circuit::NullGate());
-    builder_.MergeMirCircuit<true>(gate, result, successControl, failControl);
+    ReplaceHirToSubCfg(gate, result, successControl, failControl, true);
 }
 
 void SlowPathLowering::LowerCreateArrayWithBuffer(GateRef gate, GateRef glue, GateRef jsFunc)
@@ -1265,11 +1222,11 @@ void SlowPathLowering::LowerCreateArrayWithBuffer(GateRef gate, GateRef glue, Ga
     ASSERT(acc_.GetNumValueIn(gate) == 1);
     GateRef index = acc_.GetValueIn(gate, 0);
     GateRef obj = GetObjectFromConstPool(jsFunc, builder_.TruncInt64ToInt32(index));
-    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(CreateArrayWithBuffer), { obj });
+    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(CreateArrayWithBuffer), { obj }, true);
     builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
         &exceptionExit, &successExit);
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
-    builder_.MergeMirCircuit(gate, result, successControl, failControl);
+    ReplaceHirToSubCfg(gate, result, successControl, failControl);
 }
 
 void SlowPathLowering::LowerCreateObjectWithBuffer(GateRef gate, GateRef glue, GateRef jsFunc)
@@ -1280,50 +1237,49 @@ void SlowPathLowering::LowerCreateObjectWithBuffer(GateRef gate, GateRef glue, G
     ASSERT(acc_.GetNumValueIn(gate) == 1);
     GateRef index = acc_.GetValueIn(gate, 0);
     GateRef obj = GetObjectFromConstPool(jsFunc, builder_.TruncInt64ToInt32(index));
-    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(CreateObjectWithBuffer), { obj });
+    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(CreateObjectWithBuffer), { obj }, true);
     builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
         &exceptionExit, &successExit);
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
-    builder_.MergeMirCircuit(gate, result, successControl, failControl);
+    ReplaceHirToSubCfg(gate, result, successControl, failControl);
 }
 
-void SlowPathLowering::LowerStModuleVar(GateRef gate, GateRef glue, GateRef jsFunc)
+void SlowPathLowering::LowerStModuleVar(GateRef gate, GateRef glue)
 {
     std::vector<GateRef> successControl;
     std::vector<GateRef> failControl;
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef prop = GetObjectFromConstPool(jsFunc, acc_.GetValueIn(gate, 0));
-    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(StModuleVar), { prop, acc_.GetValueIn(gate, 1) });
+    GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
+        { acc_.GetValueIn(gate, 0) }, true);
+    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(StModuleVar), { prop, acc_.GetValueIn(gate, 1) }, true);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());
     failControl.emplace_back(Circuit::NullGate());
     failControl.emplace_back(Circuit::NullGate());
     // StModuleVar will not be inValue to other hir gates, result will not be used to replace hirgate
-    builder_.MergeMirCircuit<true>(gate, result, successControl, failControl);
+    ReplaceHirToSubCfg(gate, result, successControl, failControl, true);
 }
 
 void SlowPathLowering::LowerGetTemplateObject(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(GetTemplateObject));
+    int id = RTSTUB_ID(GetTemplateObject);
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
     GateRef literal = acc_.GetValueIn(gate, 0);
-    GateRef newGate = builder_.RuntimeCall(glue, id,
-        dependEntry_, { literal });
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, { literal });
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerSetObjectWithProto(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(SetObjectWithProto));
+    int id = RTSTUB_ID(SetObjectWithProto);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef proto = acc_.GetValueIn(gate, 0);
     GateRef obj = acc_.GetValueIn(gate, 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id,
-        dependEntry_, { proto, obj });
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, { proto, obj });
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerLdBigInt(GateRef gate, GateRef glue, GateRef jsFunc)
@@ -1333,84 +1289,83 @@ void SlowPathLowering::LowerLdBigInt(GateRef gate, GateRef glue, GateRef jsFunc)
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
     GateRef numberBigInt = GetObjectFromConstPool(jsFunc, acc_.GetValueIn(gate, 0));
-    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(LdBigInt), {numberBigInt});
+    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(LdBigInt), {numberBigInt}, true);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());
     failControl.emplace_back(Circuit::NullGate());
     failControl.emplace_back(Circuit::NullGate());
     // StModuleVar will not be inValue to other hir gates, result will not be used to replace hirgate
-    builder_.MergeMirCircuit<true>(gate, result, successControl, failControl);
+    ReplaceHirToSubCfg(gate, result, successControl, failControl, true);
 }
 
-void SlowPathLowering::LowerLdModuleVar(GateRef gate, GateRef glue, GateRef jsFunc)
+void SlowPathLowering::LowerLdModuleVar(GateRef gate, GateRef glue)
 {
     std::vector<GateRef> successControl;
     std::vector<GateRef> failControl;
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef key = GetObjectFromConstPool(jsFunc, acc_.GetValueIn(gate, 0));
+    GateRef key = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
+        { acc_.GetValueIn(gate, 0) }, true);
     GateRef inner = builder_.TaggedTypeNGC(acc_.GetValueIn(gate, 1));
-    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(LdModuleVar), {key, inner});
+    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(LdModuleVar), {key, inner}, true);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());
     failControl.emplace_back(Circuit::NullGate());
     failControl.emplace_back(Circuit::NullGate());
     // StModuleVar will not be inValue to other hir gates, result will not be used to replace hirgate
-    builder_.MergeMirCircuit<true>(gate, result, successControl, failControl);
+    ReplaceHirToSubCfg(gate, result, successControl, failControl, true);
 }
 
-void SlowPathLowering::LowerGetModuleNamespace(GateRef gate, GateRef glue, GateRef jsFunc)
+void SlowPathLowering::LowerGetModuleNamespace(GateRef gate, GateRef glue)
 {
     std::vector<GateRef> successControl;
     std::vector<GateRef> failControl;
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef localName = GetObjectFromConstPool(jsFunc, acc_.GetValueIn(gate, 0));
-    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(GetModuleNamespace), {localName});
+    GateRef localName = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
+        { acc_.GetValueIn(gate, 0) }, true);
+    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(GetModuleNamespace), {localName}, true);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());
     failControl.emplace_back(Circuit::NullGate());
     failControl.emplace_back(Circuit::NullGate());
     // StModuleVar will not be inValue to other hir gates, result will not be used to replace hirgate
-    builder_.MergeMirCircuit<true>(gate, result, successControl, failControl);
+    ReplaceHirToSubCfg(gate, result, successControl, failControl, true);
 }
 
 void SlowPathLowering::LowerGetIteratorNext(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(GetIteratorNext));
+    int id = RTSTUB_ID(GetIteratorNext);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef obj = acc_.GetValueIn(gate, 0);
     GateRef method = acc_.GetValueIn(gate, 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        { obj, method });
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, { obj, method });
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerSuperCall(GateRef gate, GateRef glue, GateRef newTarget)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(SuperCall));
+    int id = RTSTUB_ID(SuperCall);
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
     GateRef func = acc_.GetValueIn(gate, 2);
     GateRef firstVRegIdx = acc_.GetValueIn(gate, 1);
     GateRef length = acc_.GetValueIn(gate, 0);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        { func, newTarget, builder_.TaggedTypeNGC(firstVRegIdx),
+    GateRef newGate = builder_.CallRuntime(glue, id, { func, newTarget, builder_.TaggedTypeNGC(firstVRegIdx),
           builder_.TaggedTypeNGC(length) });
-    LowerHirToCall(gate, newGate);
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerSuperCallSpread(GateRef gate, GateRef glue, GateRef newTarget)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(SuperCallSpread));
+    int id = RTSTUB_ID(SuperCallSpread);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef func = acc_.GetValueIn(gate, 1);
     GateRef array = acc_.GetValueIn(gate, 0);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        { func, newTarget, array });
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, { func, newTarget, array });
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerIsTrueOrFalse(GateRef gate, GateRef glue, bool flag)
@@ -1423,7 +1378,7 @@ void SlowPathLowering::LowerIsTrueOrFalse(GateRef gate, GateRef glue, bool flag)
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
     DEFVAlUE(result, (&builder_), VariableType::JS_ANY(), acc_.GetValueIn(gate, 0));
-    GateRef callResult = builder_.CallRuntime(glue, RTSTUB_ID(ToBoolean), { *result });
+    GateRef callResult = builder_.CallRuntime(glue, RTSTUB_ID(ToBoolean), { *result }, true);
     builder_.Branch(builder_.TaggedSpecialValueChecker(callResult, JSTaggedValue::VALUE_TRUE),
         &isTrue, &isFalse);
     builder_.Bind(&isTrue);
@@ -1443,12 +1398,12 @@ void SlowPathLowering::LowerIsTrueOrFalse(GateRef gate, GateRef glue, bool flag)
     successControl.emplace_back(builder_.GetDepend());
     exceptionControl.emplace_back(Circuit::NullGate());
     exceptionControl.emplace_back(Circuit::NullGate());
-    builder_.MergeMirCircuit<true>(gate, *result, successControl, exceptionControl);
+    ReplaceHirToSubCfg(gate, *result, successControl, exceptionControl, true);
 }
 
 void SlowPathLowering::LowerNewObjDynRange(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(NewObjDynRange));
+    int id = RTSTUB_ID(NewObjDynRange);
     // 4: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 4);
     // 2 : 2 first argument offset
@@ -1461,10 +1416,9 @@ void SlowPathLowering::LowerNewObjDynRange(GateRef gate, GateRef glue)
     GateRef ctor = acc_.GetValueIn(gate, 2);
     // 3 : 3 input value
     GateRef newTarget = acc_.GetValueIn(gate, 3);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-                                           {ctor, newTarget, builder_.TaggedTypeNGC(firstArgIdx),
+    GateRef newGate = builder_.CallRuntime(glue, id, {ctor, newTarget, builder_.TaggedTypeNGC(firstArgIdx),
                                             builder_.TaggedTypeNGC(length)});
-    LowerHirToCall(gate, newGate);
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerConditionJump(GateRef gate, bool isEqualJump)
@@ -1537,53 +1491,47 @@ void SlowPathLowering::LowerConditionJump(GateRef gate, bool isEqualJump)
 
 void SlowPathLowering::LowerGetNextPropName(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(GetNextPropName));
+    int id = RTSTUB_ID(GetNextPropName);
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
     GateRef iter = acc_.GetValueIn(gate, 0);
-    GateRef newGate = builder_.RuntimeCall(glue, id,
-        dependEntry_, { iter });
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, { iter });
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerCopyDataProperties(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(CopyDataProperties));
+    int id = RTSTUB_ID(CopyDataProperties);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef dst = acc_.GetValueIn(gate, 0);
     GateRef src = acc_.GetValueIn(gate, 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id,
-        dependEntry_, { dst, src });
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, { dst, src });
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerCreateObjectWithExcludedKeys(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(CreateObjectWithExcludedKeys));
+    int id = RTSTUB_ID(CreateObjectWithExcludedKeys);
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
     GateRef numKeys = acc_.GetValueIn(gate, 0);
     GateRef obj = acc_.GetValueIn(gate, 1);
     GateRef firstArgRegIdx = acc_.GetValueIn(gate, 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id,
-        dependEntry_,
-        { builder_.TaggedTypeNGC(numKeys),
+    GateRef newGate = builder_.CallRuntime(glue, id, { builder_.TaggedTypeNGC(numKeys),
         obj, builder_.TaggedTypeNGC(firstArgRegIdx) });
-    LowerHirToCall(gate, newGate);
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerCreateRegExpWithLiteral(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(CreateRegExpWithLiteral));
+    int id = RTSTUB_ID(CreateRegExpWithLiteral);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef pattern = GetValueFromConstStringTable(glue, gate, 0);
     GateRef flags = acc_.GetValueIn(gate, 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id,
-        dependEntry_,
-        { pattern, builder_.TaggedTypeNGC(flags) });
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, { pattern, builder_.TaggedTypeNGC(flags) });
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerStOwnByValue(GateRef gate, GateRef glue)
@@ -1618,13 +1566,13 @@ void SlowPathLowering::LowerStOwnByValue(GateRef gate, GateRef glue)
     builder_.Bind(&slowPath);
     {
         result = builder_.CallRuntime(glue, RTSTUB_ID(StOwnByValue),
-            { receiver, propKey, accValue });
+            { receiver, propKey, accValue }, true);
         builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
     // stOwnByValue will not be inValue to other hir gates, result gate will be ignored
-    builder_.MergeMirCircuit(gate, Circuit::NullGate(), successControl, failControl);
+    ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl);
 }
 
 void SlowPathLowering::LowerStOwnByIndex(GateRef gate, GateRef glue)
@@ -1659,20 +1607,21 @@ void SlowPathLowering::LowerStOwnByIndex(GateRef gate, GateRef glue)
     builder_.Bind(&slowPath);
     {
         result = builder_.CallRuntime(glue, RTSTUB_ID(StOwnByIndex),
-            {receiver, builder_.TaggedTypeNGC(index), accValue });
+            {receiver, builder_.TaggedTypeNGC(index), accValue }, true);
         builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
     // StOwnByIndex will not be inValue to other hir gates, result gate will be ignored
-    builder_.MergeMirCircuit(gate, Circuit::NullGate(), successControl, failControl);
+    ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl);
 }
 
-void SlowPathLowering::LowerStOwnByName(GateRef gate, GateRef glue, GateRef jsFunc)
+void SlowPathLowering::LowerStOwnByName(GateRef gate, GateRef glue)
 {
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
-    GateRef propKey = GetObjectFromConstPool(jsFunc, acc_.GetValueIn(gate, 0));
+    GateRef propKey = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
+        { acc_.GetValueIn(gate, 0) }, true);
     GateRef receiver = acc_.GetValueIn(gate, 1);
     GateRef accValue = acc_.GetValueIn(gate, 2);
     // we do not need to merge outValueGate, so using GateRef directly instead of using Variable
@@ -1701,13 +1650,13 @@ void SlowPathLowering::LowerStOwnByName(GateRef gate, GateRef glue, GateRef jsFu
     builder_.Bind(&slowPath);
     {
         result = builder_.CallRuntime(glue, RTSTUB_ID(StOwnByName),
-            {receiver, propKey, accValue });
+            {receiver, propKey, accValue }, true);
         builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
     // StOwnByName will not be inValue to other hir gates, result gate will be ignored
-    builder_.MergeMirCircuit(gate, Circuit::NullGate(), successControl, failControl);
+    ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl);
 }
 
 void SlowPathLowering::LowerDefineGeneratorFunc(GateRef gate, GateRef glue, GateRef jsFunc)
@@ -1728,7 +1677,7 @@ void SlowPathLowering::LowerDefineGeneratorFunc(GateRef gate, GateRef glue, Gate
     builder_.Branch(builder_.FunctionIsResolved(*method), &isResolved, &notResolved);
     builder_.Bind(&isResolved);
     {
-        method = builder_.CallRuntime(glue, RTSTUB_ID(DefineGeneratorFunc), { *method });
+        method = builder_.CallRuntime(glue, RTSTUB_ID(DefineGeneratorFunc), { *method }, true);
         Label notException(&builder_);
         builder_.Branch(builder_.TaggedSpecialValueChecker(*method, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &notException);
@@ -1754,7 +1703,7 @@ void SlowPathLowering::LowerDefineGeneratorFunc(GateRef gate, GateRef glue, Gate
         builder_.Jump(&successExit);
     }
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
-    builder_.MergeMirCircuit(gate, result, successControl, failControl);
+    ReplaceHirToSubCfg(gate, result, successControl, failControl);
 }
 
 void SlowPathLowering::LowerDefineAsyncFunc(GateRef gate, GateRef glue, GateRef jsFunc)
@@ -1775,7 +1724,7 @@ void SlowPathLowering::LowerDefineAsyncFunc(GateRef gate, GateRef glue, GateRef 
     builder_.Branch(builder_.FunctionIsResolved(*method), &isResolved, &notResolved);
     builder_.Bind(&isResolved);
     {
-        method = builder_.CallRuntime(glue, RTSTUB_ID(DefineAsyncFunc), { *method });
+        method = builder_.CallRuntime(glue, RTSTUB_ID(DefineAsyncFunc), { *method }, true);
         Label notException(&builder_);
         builder_.Branch(builder_.TaggedSpecialValueChecker(*method, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &notException);
@@ -1801,7 +1750,7 @@ void SlowPathLowering::LowerDefineAsyncFunc(GateRef gate, GateRef glue, GateRef 
         builder_.Jump(&successExit);
     }
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
-    builder_.MergeMirCircuit(gate, result, successControl, failControl);
+    ReplaceHirToSubCfg(gate, result, successControl, failControl);
 }
 
 void SlowPathLowering::LowerNewLexicalEnvDyn(GateRef gate, GateRef glue)
@@ -1811,13 +1760,13 @@ void SlowPathLowering::LowerNewLexicalEnvDyn(GateRef gate, GateRef glue)
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(NewLexicalEnvDyn),
-        {builder_.TaggedTypeNGC(acc_.GetValueIn(gate, 0))});
-    builder_.CallRuntime(glue, RTSTUB_ID(SetLexicalEnv), {result});
+        {builder_.TaggedTypeNGC(acc_.GetValueIn(gate, 0))}, true);
+    builder_.CallRuntime(glue, RTSTUB_ID(SetLexicalEnv), {result}, true);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());
     failControl.emplace_back(Circuit::NullGate());
     failControl.emplace_back(Circuit::NullGate());
-    builder_.MergeMirCircuit<true>(gate, result, successControl, failControl);
+    ReplaceHirToSubCfg(gate, result, successControl, failControl, true);
 }
 
 void SlowPathLowering::LowerNewLexicalEnvWithNameDyn(GateRef gate, GateRef glue)
@@ -1828,53 +1777,51 @@ void SlowPathLowering::LowerNewLexicalEnvWithNameDyn(GateRef gate, GateRef glue)
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(NewLexicalEnvWithNameDyn),
         {builder_.TaggedTypeNGC(acc_.GetValueIn(gate, 0)),
-        builder_.TaggedTypeNGC(acc_.GetValueIn(gate, 1))});
-    builder_.CallRuntime(glue, RTSTUB_ID(SetLexicalEnv), {result});
+        builder_.TaggedTypeNGC(acc_.GetValueIn(gate, 1))}, true);
+    builder_.CallRuntime(glue, RTSTUB_ID(SetLexicalEnv), {result}, true);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());
     failControl.emplace_back(Circuit::NullGate());
     failControl.emplace_back(Circuit::NullGate());
-    builder_.MergeMirCircuit<true>(gate, result, successControl, failControl);
+    ReplaceHirToSubCfg(gate, result, successControl, failControl, true);
 }
 
 void SlowPathLowering::LowerPopLexicalEnv(GateRef gate, GateRef glue)
 {
     std::vector<GateRef> successControl;
     std::vector<GateRef> failControl;
-    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(GetLexicalEnv), {});
+    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(GetLexicalEnv), {}, true);
     GateRef index = builder_.Int32(LexicalEnv::PARENT_ENV_INDEX);
     GateRef parentLexEnv = builder_.GetValueFromTaggedArray(VariableType::JS_ANY(), result, index);
-    builder_.CallRuntime(glue, RTSTUB_ID(SetLexicalEnv), {parentLexEnv});
+    builder_.CallRuntime(glue, RTSTUB_ID(SetLexicalEnv), {parentLexEnv}, true);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());
     failControl.emplace_back(Circuit::NullGate());
     failControl.emplace_back(Circuit::NullGate());
-    builder_.MergeMirCircuit<false>(gate, result, successControl, failControl);
+    ReplaceHirToSubCfg(gate, result, successControl, failControl);
 }
 
 void SlowPathLowering::LowerLdSuperByValue(GateRef gate, GateRef glue, GateRef jsFunc)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(LdSuperByValue));
+    int id = RTSTUB_ID(LdSuperByValue);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef receiver = acc_.GetValueIn(gate, 0);
     GateRef propKey = acc_.GetValueIn(gate, 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-                                           { receiver, propKey, jsFunc });
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, { receiver, propKey, jsFunc });
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerStSuperByValue(GateRef gate, GateRef glue, GateRef jsFunc)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(StSuperByValue));
+    int id = RTSTUB_ID(StSuperByValue);
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
     GateRef receiver = acc_.GetValueIn(gate, 0);
     GateRef propKey = acc_.GetValueIn(gate, 1);
     GateRef value = acc_.GetValueIn(gate, 2);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-                                           { receiver, propKey, value, jsFunc});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, { receiver, propKey, value, jsFunc});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerTryStGlobalByName(GateRef gate, GateRef glue)
@@ -1884,7 +1831,7 @@ void SlowPathLowering::LowerTryStGlobalByName(GateRef gate, GateRef glue)
     // 2 : number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef stringId = acc_.GetValueIn(gate, 0);
-    GateRef propKey = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), { stringId });
+    GateRef propKey = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), { stringId }, true);
     Label isUndefined(&builder_);
     Label notUndefined(&builder_);
     Label successExit(&builder_);
@@ -1892,12 +1839,12 @@ void SlowPathLowering::LowerTryStGlobalByName(GateRef gate, GateRef glue)
 
     // order: 1. global record 2. global object
     GateRef value = acc_.GetValueIn(gate, 1);
-    GateRef recordInfo = builder_.CallRuntime(glue, RTSTUB_ID(LdGlobalRecord), { propKey });
+    GateRef recordInfo = builder_.CallRuntime(glue, RTSTUB_ID(LdGlobalRecord), { propKey }, true);
     builder_.Branch(builder_.TaggedSpecialValueChecker(recordInfo, JSTaggedValue::VALUE_UNDEFINED),
                     &isUndefined, &notUndefined);
     builder_.Bind(&notUndefined);
     {
-        res = builder_.CallRuntime(glue, RTSTUB_ID(TryUpdateGlobalRecord), { propKey, value });
+        res = builder_.CallRuntime(glue, RTSTUB_ID(TryUpdateGlobalRecord), { propKey, value }, true);
         builder_.Branch(builder_.TaggedSpecialValueChecker(*res, JSTaggedValue::VALUE_EXCEPTION),
                         &exceptionExit, &successExit);
     }
@@ -1905,23 +1852,23 @@ void SlowPathLowering::LowerTryStGlobalByName(GateRef gate, GateRef glue)
     {
         Label isHole(&builder_);
         Label notHole(&builder_);
-        GateRef globalResult = builder_.CallRuntime(glue, RTSTUB_ID(GetGlobalOwnProperty), { propKey });
+        GateRef globalResult = builder_.CallRuntime(glue, RTSTUB_ID(GetGlobalOwnProperty), { propKey }, true);
         builder_.Branch(builder_.TaggedSpecialValueChecker(globalResult, JSTaggedValue::VALUE_HOLE), &isHole, &notHole);
         builder_.Bind(&isHole);
         {
-            res = builder_.CallRuntime(glue, RTSTUB_ID(ThrowReferenceError), { propKey });
+            res = builder_.CallRuntime(glue, RTSTUB_ID(ThrowReferenceError), { propKey }, true);
             builder_.Branch(builder_.TaggedSpecialValueChecker(*res, JSTaggedValue::VALUE_EXCEPTION),
                             &exceptionExit, &successExit);
         }
         builder_.Bind(&notHole);
         {
-            res = builder_.CallRuntime(glue, RTSTUB_ID(StGlobalVar), { propKey, value });
+            res = builder_.CallRuntime(glue, RTSTUB_ID(StGlobalVar), { propKey, value }, true);
             builder_.Branch(builder_.TaggedSpecialValueChecker(*res, JSTaggedValue::VALUE_EXCEPTION),
                             &exceptionExit, &successExit);
         }
     }
     CREATE_DOUBLE_EXIT(successExit, exceptionExit);
-    builder_.MergeMirCircuit(gate, Circuit::NullGate(), successControl, failControl);
+    ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl);
 }
 
 void SlowPathLowering::LowerStConstToGlobalRecord(GateRef gate, GateRef glue)
@@ -1930,44 +1877,45 @@ void SlowPathLowering::LowerStConstToGlobalRecord(GateRef gate, GateRef glue)
     acc_.SetDep(gate, propKey);
     // 2 : number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef id = builder_.Int64(RTSTUB_ID(StGlobalRecord));
+    int id = RTSTUB_ID(StGlobalRecord);
     GateRef value = acc_.GetValueIn(gate, 1);
     GateRef isConst = builder_.Int64(JSTaggedValue::VALUE_TRUE);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-                                           { propKey, value, isConst });
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, { propKey, value, isConst });
+    ReplaceHirToCall(gate, newGate);
 }
 
-void SlowPathLowering::LowerStLetToGlobalRecord(GateRef gate, GateRef glue, GateRef jsFunc)
+void SlowPathLowering::LowerStLetToGlobalRecord(GateRef gate, GateRef glue)
 {
     Label successExit(&builder_);
     Label exceptionExit(&builder_);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef prop = GetObjectFromConstPool(jsFunc, acc_.GetValueIn(gate, 0));
+    GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
+        { acc_.GetValueIn(gate, 0) }, true);
     GateRef falseConst = builder_.Boolean(false);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(StGlobalRecord),
-        {prop,  acc_.GetValueIn(gate, 1), falseConst});
+        {prop,  acc_.GetValueIn(gate, 1), falseConst}, true);
     builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
         &exceptionExit, &successExit);
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
-    builder_.MergeMirCircuit(gate, Circuit::NullGate(), successControl, failControl);
+    ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl);
 }
 
-void SlowPathLowering::LowerStClassToGlobalRecord(GateRef gate, GateRef glue, GateRef jsFunc)
+void SlowPathLowering::LowerStClassToGlobalRecord(GateRef gate, GateRef glue)
 {
     Label successExit(&builder_);
     Label exceptionExit(&builder_);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef prop = GetObjectFromConstPool(jsFunc, acc_.GetValueIn(gate, 0));
+    GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
+        { acc_.GetValueIn(gate, 0) }, true);
     GateRef falseConst = builder_.Boolean(false);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(StGlobalRecord),
-        {prop,  acc_.GetValueIn(gate, 1), falseConst});
+        {prop,  acc_.GetValueIn(gate, 1), falseConst}, true);
     builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
         &exceptionExit, &successExit);
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
-    builder_.MergeMirCircuit(gate, Circuit::NullGate(), successControl, failControl);
+    ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl);
 }
 
 void SlowPathLowering::LowerStOwnByValueWithNameSet(GateRef gate, GateRef glue)
@@ -2005,7 +1953,7 @@ void SlowPathLowering::LowerStOwnByValueWithNameSet(GateRef gate, GateRef glue)
                         &exceptionExit, &notexception);
                     builder_.Bind(&notexception);
                     res = builder_.CallRuntime(glue, RTSTUB_ID(SetFunctionNameNoPrefix),
-                        { accValue, propKey });
+                        { accValue, propKey }, true);
                     builder_.Branch(builder_.TaggedSpecialValueChecker(res, JSTaggedValue::VALUE_EXCEPTION),
                         &exceptionExit, &successExit);
                 }
@@ -2014,19 +1962,20 @@ void SlowPathLowering::LowerStOwnByValueWithNameSet(GateRef gate, GateRef glue)
     }
     builder_.Bind(&slowPath);
     {
-        res = builder_.CallRuntime(glue, RTSTUB_ID(StOwnByValueWithNameSet), { receiver, propKey, accValue });
+        res = builder_.CallRuntime(glue, RTSTUB_ID(StOwnByValueWithNameSet), { receiver, propKey, accValue }, true);
         builder_.Branch(builder_.TaggedSpecialValueChecker(res, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
-    builder_.MergeMirCircuit(gate, Circuit::NullGate(), successControl, failControl);
+    ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl);
 }
 
-void SlowPathLowering::LowerStOwnByNameWithNameSet(GateRef gate, GateRef glue, GateRef jsFunc)
+void SlowPathLowering::LowerStOwnByNameWithNameSet(GateRef gate, GateRef glue)
 {
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
-    GateRef propKey = GetObjectFromConstPool(jsFunc, acc_.GetValueIn(gate, 0));
+    GateRef propKey = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
+        { acc_.GetValueIn(gate, 0) }, true);
     GateRef receiver = acc_.GetValueIn(gate, 1);
     GateRef accValue = acc_.GetValueIn(gate, 2);
     GateRef result;
@@ -2056,7 +2005,7 @@ void SlowPathLowering::LowerStOwnByNameWithNameSet(GateRef gate, GateRef glue, G
                     builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
                         &exceptionExit, &notException);
                     builder_.Bind(&notException);
-                    result = builder_.CallRuntime(glue, RTSTUB_ID(SetFunctionNameNoPrefix), {accValue, propKey});
+                    result = builder_.CallRuntime(glue, RTSTUB_ID(SetFunctionNameNoPrefix), {accValue, propKey}, true);
                     builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
                         &exceptionExit, &successExit);
                 }
@@ -2065,7 +2014,7 @@ void SlowPathLowering::LowerStOwnByNameWithNameSet(GateRef gate, GateRef glue, G
     }
     builder_.Bind(&notJSObject);
     {
-        result = builder_.CallRuntime(glue, RTSTUB_ID(StOwnByNameWithNameSet), { receiver, propKey, accValue });
+        result = builder_.CallRuntime(glue, RTSTUB_ID(StOwnByNameWithNameSet), { receiver, propKey, accValue }, true);
         builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
@@ -2074,93 +2023,96 @@ void SlowPathLowering::LowerStOwnByNameWithNameSet(GateRef gate, GateRef glue, G
 void SlowPathLowering::LowerLdGlobalVar(GateRef gate, GateRef glue)
 {
     GateRef prop = GetValueFromConstStringTable(glue, gate, 0);
-    GateRef id = builder_.Int64(RTSTUB_ID(TryLdGlobalByName));
+    int id = RTSTUB_ID(TryLdGlobalByName);
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
     GateRef newGate =
-        builder_.RuntimeCall(glue, id, dependEntry_, {prop});
-    LowerHirToCall(gate, newGate);
+        builder_.CallRuntime(glue, id, {prop});
+    ReplaceHirToCall(gate, newGate);
 }
 
-void SlowPathLowering::LowerLdObjByName(GateRef gate, GateRef glue, GateRef jsFunc)
+void SlowPathLowering::LowerLdObjByName(GateRef gate, GateRef glue)
 {
     Label successExit(&builder_);
     Label exceptionExit(&builder_);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef prop = GetObjectFromConstPool(jsFunc, acc_.GetValueIn(gate, 0));
+    GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
+        { acc_.GetValueIn(gate, 0) }, true);
     GateRef undefined = builder_.Int64(JSTaggedValue::VALUE_UNDEFINED);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(LoadICByName), {undefined,
-        acc_.GetValueIn(gate, 1), prop, builder_.TaggedTypeNGC(undefined)});
+        acc_.GetValueIn(gate, 1), prop, builder_.TaggedTypeNGC(undefined)}, true);
     builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
         &exceptionExit, &successExit);
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
-    builder_.MergeMirCircuit(gate, result, successControl, failControl);
+    ReplaceHirToSubCfg(gate, result, successControl, failControl);
 }
 
-void SlowPathLowering::LowerStObjByName(GateRef gate, GateRef glue, GateRef jsFunc)
+void SlowPathLowering::LowerStObjByName(GateRef gate, GateRef glue)
 {
     Label successExit(&builder_);
     Label exceptionExit(&builder_);
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
-    GateRef prop = GetObjectFromConstPool(jsFunc, acc_.GetValueIn(gate, 0));
+    GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
+        { acc_.GetValueIn(gate, 0) }, true);
     GateRef undefined = builder_.Int64(JSTaggedValue::VALUE_UNDEFINED);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(StoreICByName), {undefined,
-        acc_.GetValueIn(gate, 1), prop, acc_.GetValueIn(gate, 2), builder_.TaggedTypeNGC(undefined)});
+        acc_.GetValueIn(gate, 1), prop, acc_.GetValueIn(gate, 2), builder_.TaggedTypeNGC(undefined)}, true);
     builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
         &exceptionExit, &successExit);
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
-    builder_.MergeMirCircuit(gate, Circuit::NullGate(), successControl, failControl);
+    ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl);
 }
 
-void SlowPathLowering::LowerLdSuperByName(GateRef gate, GateRef glue, GateRef jsFunc)
+void SlowPathLowering::LowerLdSuperByName(GateRef gate, GateRef glue)
 {
     Label successExit(&builder_);
     Label exceptionExit(&builder_);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef prop = GetObjectFromConstPool(jsFunc, acc_.GetValueIn(gate, 0));
-    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(LdSuperByValue), {prop, acc_.GetValueIn(gate, 1)});
+    GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
+        { acc_.GetValueIn(gate, 0) }, true);
+    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(LdSuperByValue), {prop, acc_.GetValueIn(gate, 1)}, true);
     builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
         &exceptionExit, &successExit);
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
-    builder_.MergeMirCircuit(gate, result, successControl, failControl);
+    ReplaceHirToSubCfg(gate, result, successControl, failControl);
 }
 
-void SlowPathLowering::LowerStSuperByName(GateRef gate, GateRef glue, GateRef jsFunc)
+void SlowPathLowering::LowerStSuperByName(GateRef gate, GateRef glue)
 {
     Label successExit(&builder_);
     Label exceptionExit(&builder_);
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
-    GateRef prop = GetObjectFromConstPool(jsFunc, acc_.GetValueIn(gate, 0));
+    GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
+        { acc_.GetValueIn(gate, 0) }, true);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(StSuperByValue), {prop, acc_.GetValueIn(gate, 1),
-        acc_.GetValueIn(gate, 2)});
+        acc_.GetValueIn(gate, 2)}, true);
     builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
         &exceptionExit, &successExit);
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
-    builder_.MergeMirCircuit(gate, Circuit::NullGate(), successControl, failControl);
+    ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl);
 }
 
 void SlowPathLowering::LowerCreateGeneratorObj(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(CreateGeneratorObj));
+    int id = RTSTUB_ID(CreateGeneratorObj);
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerStArraySpread(GateRef gate, GateRef glue)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(StArraySpread));
+    int id = RTSTUB_ID(StArraySpread);
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1), acc_.GetValueIn(gate, 2)});
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0),
+        acc_.GetValueIn(gate, 1), acc_.GetValueIn(gate, 2)});
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerLdLexVarDyn(GateRef gate, GateRef jsFunc)
@@ -2192,7 +2144,7 @@ void SlowPathLowering::LowerLdLexVarDyn(GateRef gate, GateRef jsFunc)
     successControl.emplace_back(builder_.GetDepend());
     exceptionControl.emplace_back(Circuit::NullGate());
     exceptionControl.emplace_back(Circuit::NullGate());
-    builder_.MergeMirCircuit<true>(gate, result, successControl, exceptionControl);
+    ReplaceHirToSubCfg(gate, result, successControl, exceptionControl, true);
 }
 
 void SlowPathLowering::LowerStLexVarDyn(GateRef gate, GateRef glue, GateRef jsFunc)
@@ -2225,21 +2177,20 @@ void SlowPathLowering::LowerStLexVarDyn(GateRef gate, GateRef glue, GateRef jsFu
     exceptionControl.emplace_back(Circuit::NullGate());
     exceptionControl.emplace_back(Circuit::NullGate());
     // StLexVarDyn will not be inValue to other hir gates, result gate will be ignored
-    builder_.MergeMirCircuit<true>(gate, Circuit::NullGate(), successControl, exceptionControl);
+    ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, exceptionControl, true);
 }
 
 void SlowPathLowering::LowerCreateObjectHavingMethod(GateRef gate, GateRef glue, GateRef jsFunc)
 {
-    GateRef id = builder_.Int64(RTSTUB_ID(CreateObjectHavingMethod));
+    int id = RTSTUB_ID(CreateObjectHavingMethod);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef imm = builder_.TruncInt64ToInt32(acc_.GetValueIn(gate, 0));
     GateRef literal = GetObjectFromConstPool(jsFunc, imm);
     GateRef env = acc_.GetValueIn(gate, 1);
     GateRef constpool = GetConstPool(jsFunc);
-    GateRef newGate = builder_.RuntimeCall(glue, id, dependEntry_,
-        { literal, env, constpool });
-    LowerHirToCall(gate, newGate);
+    GateRef newGate = builder_.CallRuntime(glue, id, { literal, env, constpool });
+    ReplaceHirToCall(gate, newGate);
 }
 
 void SlowPathLowering::LowerLdHomeObject(GateRef gate, GateRef thisFunc)
@@ -2251,7 +2202,7 @@ void SlowPathLowering::LowerLdHomeObject(GateRef gate, GateRef thisFunc)
     successControl.emplace_back(builder_.GetDepend());
     exceptionControl.emplace_back(Circuit::NullGate());
     exceptionControl.emplace_back(Circuit::NullGate());
-    builder_.MergeMirCircuit<true>(gate, homeObj, successControl, exceptionControl);
+    ReplaceHirToSubCfg(gate, homeObj, successControl, exceptionControl, true);
 }
 
 void SlowPathLowering::LowerDefineClassWithBuffer(GateRef gate, GateRef glue, GateRef jsFunc)
@@ -2277,13 +2228,13 @@ void SlowPathLowering::LowerDefineClassWithBuffer(GateRef gate, GateRef glue, Ga
     builder_.Bind(&isResolved);
     {
         res = builder_.CallRuntime(glue, RTSTUB_ID(CloneClassFromTemplate),
-            { classTemplate, proto, lexicalEnv, constpool });
+            { classTemplate, proto, lexicalEnv, constpool }, true);
         builder_.Jump(&afterCheckResolved);
     }
     builder_.Bind(&isNotResolved);
     {
         res = builder_.CallRuntime(glue, RTSTUB_ID(ResolveClass),
-            { classTemplate, literalBuffer, proto, lexicalEnv, constpool });
+            { classTemplate, literalBuffer, proto, lexicalEnv, constpool }, true);
         builder_.Jump(&afterCheckResolved);
     }
     builder_.Bind(&afterCheckResolved);
@@ -2303,9 +2254,345 @@ void SlowPathLowering::LowerDefineClassWithBuffer(GateRef gate, GateRef glue, Ga
     GateRef newLexicalEnv = acc_.GetValueIn(gate, 3);
     builder_.SetLexicalEnvToFunction(glue, *res, newLexicalEnv);
     builder_.CallRuntime(glue, RTSTUB_ID(SetClassConstructorLength),
-        { *res, builder_.TaggedTypeNGC(length) });
+        { *res, builder_.TaggedTypeNGC(length) }, true);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());
-    builder_.MergeMirCircuit(gate, *res, successControl, exceptionControl);
+    ReplaceHirToSubCfg(gate, *res, successControl, exceptionControl);
+}
+
+void SlowPathLowering::LowerDefineFuncDyn(GateRef gate, GateRef glue, GateRef jsFunc)
+{
+    GateRef methodId = acc_.GetValueIn(gate, 0);
+    GateRef length = acc_.GetValueIn(gate, 1);
+    GateRef v0 = acc_.GetValueIn(gate, 2);
+    DEFVAlUE(result, (&builder_),
+        VariableType::JS_POINTER(), GetObjectFromConstPool(jsFunc, builder_.ZExtInt16ToInt32(methodId)));
+    Label isResolved(&builder_);
+    Label notResolved(&builder_);
+    Label defaultLabel(&builder_);
+    Label successExit(&builder_);
+    Label exceptionExit(&builder_);
+    builder_.Branch(builder_.FunctionIsResolved(*result), &isResolved, &notResolved);
+    builder_.Bind(&isResolved);
+    {
+        result = builder_.CallRuntime(glue, RTSTUB_ID(DefinefuncDyn), { *result });
+        Label isException(&builder_);
+        Label notException(&builder_);
+        builder_.Branch(builder_.TaggedIsException(*result), &isException, &notException);
+        builder_.Bind(&isException);
+        {
+            builder_.Jump(&exceptionExit);
+        }
+        builder_.Bind(&notException);
+        {
+            builder_.SetConstPoolToFunction(glue, *result, GetConstPool(jsFunc));
+            builder_.Jump(&defaultLabel);
+        }
+    }
+    builder_.Bind(&notResolved);
+    {
+        builder_.SetResolvedToFunction(glue, *result, builder_.Boolean(true));
+        builder_.Jump(&defaultLabel);
+    }
+    builder_.Bind(&defaultLabel);
+    {
+        GateRef hClass = builder_.LoadHClass(*result);
+        builder_.SetPropertyInlinedProps(glue, *result, hClass, builder_.TaggedNGC(length),
+            builder_.Int32(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
+        builder_.SetLexicalEnvToFunction(glue, *result, v0);
+        builder_.SetModuleToFunction(glue, *result, builder_.GetModuleFromFunction(jsFunc));
+        builder_.Jump(&successExit);
+    }
+    CREATE_DOUBLE_EXIT(successExit, exceptionExit)
+    ReplaceHirToSubCfg(gate, *result, successControl, failControl);
+}
+
+void SlowPathLowering::LowerAsyncFunctionEnter(GateRef gate, GateRef glue)
+{
+    int id = RTSTUB_ID(AsyncFunctionEnter);
+    // 0: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 0);
+    GateRef newGate = builder_.CallRuntime(glue, id, {});
+    ReplaceHirToCall(gate, newGate);
+}
+
+void SlowPathLowering::LowerTypeOfDyn(GateRef gate, GateRef glue)
+{
+    // 1: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    GateRef obj = acc_.GetValueIn(gate, 0);
+    Label entry(&builder_);
+    Label exit(&builder_);
+
+    GateRef gConstAddr = builder_.IntPtrAdd(glue,
+        builder_.IntPtr(JSThread::GlueData::GetGlobalConstOffset(builder_.GetCompilationConfig()->Is32Bit())));
+    GateRef undefinedIndex = builder_.GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX);
+    GateRef gConstUndefinedStr = builder_.Load(VariableType::JS_POINTER(), gConstAddr, undefinedIndex);
+    DEFVAlUE(result, (&builder_), VariableType::JS_POINTER(), gConstUndefinedStr);
+    Label objIsTrue(&builder_);
+    Label objNotTrue(&builder_);
+    Label defaultLabel(&builder_);
+    GateRef gConstBooleanStr = builder_.Load(VariableType::JS_POINTER(), gConstAddr,
+        builder_.GetGlobalConstantString(ConstantIndex::BOOLEAN_STRING_INDEX));
+    builder_.Branch(builder_.TaggedIsTrue(obj), &objIsTrue, &objNotTrue);
+    builder_.Bind(&objIsTrue);
+    {
+        result = gConstBooleanStr;
+        builder_.Jump(&exit);
+    }
+    builder_.Bind(&objNotTrue);
+    {
+        Label objIsFalse(&builder_);
+        Label objNotFalse(&builder_);
+        builder_.Branch(builder_.TaggedIsFalse(obj), &objIsFalse, &objNotFalse);
+        builder_.Bind(&objIsFalse);
+        {
+            result = gConstBooleanStr;
+            builder_.Jump(&exit);
+        }
+        builder_.Bind(&objNotFalse);
+        {
+            Label objIsNull(&builder_);
+            Label objNotNull(&builder_);
+            builder_.Branch(builder_.TaggedIsNull(obj), &objIsNull, &objNotNull);
+            builder_.Bind(&objIsNull);
+            {
+                result = builder_.Load(VariableType::JS_POINTER(), gConstAddr,
+                    builder_.GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
+                builder_.Jump(&exit);
+            }
+            builder_.Bind(&objNotNull);
+            {
+                Label objIsUndefined(&builder_);
+                Label objNotUndefined(&builder_);
+                builder_.Branch(builder_.TaggedIsUndefined(obj), &objIsUndefined, &objNotUndefined);
+                builder_.Bind(&objIsUndefined);
+                {
+                    result = builder_.Load(VariableType::JS_POINTER(), gConstAddr,
+                        builder_.GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX));
+                    builder_.Jump(&exit);
+                }
+                builder_.Bind(&objNotUndefined);
+                builder_.Jump(&defaultLabel);
+            }
+        }
+    }
+    builder_.Bind(&defaultLabel);
+    {
+        Label objIsHeapObject(&builder_);
+        Label objNotHeapObject(&builder_);
+        builder_.Branch(builder_.TaggedIsHeapObject(obj), &objIsHeapObject, &objNotHeapObject);
+        builder_.Bind(&objIsHeapObject);
+        {
+            Label objIsString(&builder_);
+            Label objNotString(&builder_);
+            builder_.Branch(builder_.IsJsType(obj, JSType::STRING), &objIsString, &objNotString);
+            builder_.Bind(&objIsString);
+            {
+                result = builder_.Load(VariableType::JS_POINTER(), gConstAddr,
+                    builder_.GetGlobalConstantString(ConstantIndex::STRING_STRING_INDEX));
+                builder_.Jump(&exit);
+            }
+            builder_.Bind(&objNotString);
+            {
+                Label objIsSymbol(&builder_);
+                Label objNotSymbol(&builder_);
+                builder_.Branch(builder_.IsJsType(obj, JSType::SYMBOL), &objIsSymbol, &objNotSymbol);
+                builder_.Bind(&objIsSymbol);
+                {
+                    result = builder_.Load(VariableType::JS_POINTER(), gConstAddr,
+                        builder_.GetGlobalConstantString(ConstantIndex::SYMBOL_STRING_INDEX));
+                    builder_.Jump(&exit);
+                }
+                builder_.Bind(&objNotSymbol);
+                {
+                    Label objIsCallable(&builder_);
+                    Label objNotCallable(&builder_);
+                    builder_.Branch(builder_.IsCallable(obj), &objIsCallable, &objNotCallable);
+                    builder_.Bind(&objIsCallable);
+                    {
+                        result = builder_.Load(VariableType::JS_POINTER(), gConstAddr,
+                            builder_.GetGlobalConstantString(ConstantIndex::FUNCTION_STRING_INDEX));
+                        builder_.Jump(&exit);
+                    }
+                    builder_.Bind(&objNotCallable);
+                    {
+                        Label objIsBigInt(&builder_);
+                        Label objNotBigInt(&builder_);
+                        builder_.Branch(builder_.IsJsType(obj, JSType::BIGINT), &objIsBigInt, &objNotBigInt);
+                        builder_.Bind(&objIsBigInt);
+                        {
+                            result = builder_.Load(VariableType::JS_POINTER(), gConstAddr,
+                                builder_.GetGlobalConstantString(ConstantIndex::BIGINT_STRING_INDEX));
+                            builder_.Jump(&exit);
+                        }
+                        builder_.Bind(&objNotBigInt);
+                        {
+                            result = builder_.Load(VariableType::JS_POINTER(), gConstAddr,
+                                builder_.GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
+                            builder_.Jump(&exit);
+                        }
+                    }
+                }
+            }
+        }
+        builder_.Bind(&objNotHeapObject);
+        {
+            Label objIsNum(&builder_);
+            Label objNotNum(&builder_);
+            builder_.Branch(builder_.TaggedIsNumber(obj), &objIsNum, &objNotNum);
+            builder_.Bind(&objIsNum);
+            {
+                result = builder_.Load(VariableType::JS_POINTER(), gConstAddr,
+                    builder_.GetGlobalConstantString(ConstantIndex::NUMBER_STRING_INDEX));
+                builder_.Jump(&exit);
+            }
+            builder_.Bind(&objNotNum);
+            builder_.Jump(&exit);
+        }
+    }
+    builder_.Bind(&exit);
+    successControl.emplace_back(builder_.GetState());
+    successControl.emplace_back(builder_.GetDepend());
+    failControl.emplace_back(Circuit::NullGate());
+    failControl.emplace_back(Circuit::NullGate());
+    ReplaceHirToSubCfg(gate, *result, successControl, failControl, true);
+}
+
+void SlowPathLowering::LowerResumeGenerator(GateRef gate)
+{
+    // 1: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    GateRef obj = acc_.GetValueIn(gate, 0);
+    GateRef resumeResultOffset = builder_.IntPtr(JSGeneratorObject::GENERATOR_RESUME_RESULT_OFFSET);
+    GateRef result = builder_.Load(VariableType::JS_ANY(), obj, resumeResultOffset);
+    successControl.emplace_back(builder_.GetState());
+    successControl.emplace_back(builder_.GetDepend());
+    failControl.emplace_back(Circuit::NullGate());
+    failControl.emplace_back(Circuit::NullGate());
+    ReplaceHirToSubCfg(gate, result, successControl, failControl, true);
+}
+
+void SlowPathLowering::LowerGetResumeMode(GateRef gate)
+{
+    // 1: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 1);
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    GateRef obj = acc_.GetValueIn(gate, 0);
+    GateRef bitFieldOffset = builder_.IntPtr(JSGeneratorObject::BIT_FIELD_OFFSET);
+    GateRef bitField = builder_.Load(VariableType::INT64(), obj, bitFieldOffset);
+    GateRef resumeMode = builder_.Int32And(
+        builder_.UInt32LSR(builder_.TruncInt64ToInt32(bitField),
+                           builder_.Int32(JSGeneratorObject::ResumeModeBits::START_BIT)),
+        builder_.Int32((1LU << JSGeneratorObject::ResumeModeBits::SIZE) - 1));
+    GateRef result = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(resumeMode));
+    successControl.emplace_back(builder_.GetState());
+    successControl.emplace_back(builder_.GetDepend());
+    failControl.emplace_back(Circuit::NullGate());
+    failControl.emplace_back(Circuit::NullGate());
+    ReplaceHirToSubCfg(gate, result, successControl, failControl, true);
+}
+
+void SlowPathLowering::LowerDefineNCFuncDyn(GateRef gate, GateRef glue, GateRef jsFunc)
+{
+    // 4: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 4);
+    GateRef methodId = acc_.GetValueIn(gate, 0);
+    GateRef length = acc_.GetValueIn(gate, 1);
+    GateRef env = acc_.GetValueIn(gate, 2);
+    GateRef result;
+    DEFVAlUE(method, (&builder_), VariableType::JS_POINTER(),
+             GetObjectFromConstPool(GetConstPool(jsFunc), builder_.ZExtInt16ToInt32(methodId)));
+    Label isResolved(&builder_);
+    Label notResolved(&builder_);
+    Label defaultLabel(&builder_);
+    Label successExit(&builder_);
+    Label exceptionExit(&builder_);
+    builder_.Branch(builder_.FunctionIsResolved(*method), &isResolved, &notResolved);
+    builder_.Bind(&isResolved);
+    {
+        method = builder_.CallRuntime(glue, RTSTUB_ID(DefineNCFuncDyn), {*method});
+        Label notException(&builder_);
+        builder_.Branch(builder_.TaggedSpecialValueChecker(*method, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &notException);
+        builder_.Bind(&notException);
+        {
+            builder_.SetConstPoolToFunction(glue, *method, GetConstPool(jsFunc));
+            builder_.Jump(&defaultLabel);
+        }
+    }
+    builder_.Bind(&notResolved);
+    {
+        builder_.SetResolvedToFunction(glue, *method, builder_.Boolean(true));
+        builder_.Jump(&defaultLabel);
+    }
+    builder_.Bind(&defaultLabel);
+    {
+        GateRef hclass = builder_.LoadHClass(*method);
+        builder_.SetPropertyInlinedProps(glue, *method, hclass, builder_.TaggedNGC(length),
+            builder_.Int32(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
+        builder_.SetLexicalEnvToFunction(glue, *method, env);
+        GateRef homeObject = acc_.GetValueIn(gate, 3);
+        builder_.SetHomeObjectToFunction(glue, *method, homeObject);
+        builder_.SetModuleToFunction(glue, *method, builder_.GetModuleFromFunction(jsFunc));
+        result = *method;
+        builder_.Jump(&successExit);
+    }
+    CREATE_DOUBLE_EXIT(successExit, exceptionExit)
+    ReplaceHirToSubCfg(gate, result, successControl, failControl);
+}
+
+void SlowPathLowering::LowerDefineMethod(GateRef gate, GateRef glue, GateRef jsFunc)
+{
+    // 4: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 4);
+    GateRef methodId = acc_.GetValueIn(gate, 0);
+    GateRef length = acc_.GetValueIn(gate, 1);
+    GateRef env = acc_.GetValueIn(gate, 2);
+    GateRef result;
+    DEFVAlUE(method, (&builder_), VariableType::JS_POINTER(),
+             GetObjectFromConstPool(GetConstPool(jsFunc), builder_.ZExtInt16ToInt32(methodId)));
+    Label isResolved(&builder_);
+    Label notResolved(&builder_);
+    Label defaultLabel(&builder_);
+    Label successExit(&builder_);
+    Label exceptionExit(&builder_);
+    builder_.Branch(builder_.FunctionIsResolved(*method), &isResolved, &notResolved);
+    builder_.Bind(&isResolved);
+    {
+        method = builder_.CallRuntime(glue, RTSTUB_ID(DefineMethod), {*method});
+        Label notException(&builder_);
+        builder_.Branch(builder_.TaggedSpecialValueChecker(*method, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &notException);
+        builder_.Bind(&notException);
+        {
+            builder_.SetConstPoolToFunction(glue, *method, GetConstPool(jsFunc));
+            builder_.Jump(&defaultLabel);
+        }
+    }
+    builder_.Bind(&notResolved);
+    {
+        builder_.SetResolvedToFunction(glue, *method, builder_.Boolean(true));
+        GateRef homeObject = acc_.GetValueIn(gate, 3);
+        builder_.SetHomeObjectToFunction(glue, *method, homeObject);
+        builder_.Jump(&defaultLabel);
+    }
+    builder_.Bind(&defaultLabel);
+    {
+        GateRef hclass = builder_.LoadHClass(*method);
+        builder_.SetPropertyInlinedProps(glue, *method, hclass, builder_.TaggedNGC(length),
+            builder_.Int32(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
+        builder_.SetLexicalEnvToFunction(glue, *method, env);
+        builder_.SetModuleToFunction(glue, *method, builder_.GetModuleFromFunction(jsFunc));
+        result = *method;
+        builder_.Jump(&successExit);
+    }
+    CREATE_DOUBLE_EXIT(successExit, exceptionExit)
+    ReplaceHirToSubCfg(gate, result, successControl, failControl);
 }
 }  // namespace panda::ecmascript

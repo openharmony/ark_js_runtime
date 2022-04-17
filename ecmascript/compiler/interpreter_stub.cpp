@@ -5053,9 +5053,8 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     SetPcToFrame(glue, state, IntPtr(0));                                                         \
     SetFunctionToFrame(glue, state, func);                                                        \
     SetCurrentSpFrame(glue, *newSp);                                                              \
-    GateRef numArgs = Int32Add(Int32(NUM_MANDATORY_JSFUNC_ARGS), actualNumArgs);                  \
     GateRef retValue = CallRuntime(glue, RTSTUB_ID(CallNative),                                   \
-                                   {IntBuildTaggedTypeWithNoGC(numArgs), *newSp, method});        \
+                                   {IntBuildTaggedTypeWithNoGC(actualNumArgs)});                  \
     Label hasPendingException(env);                                                               \
     Label noPendingException(env);                                                                \
     Branch(TaggedIsException(retValue), &hasPendingException, &noPendingException);               \

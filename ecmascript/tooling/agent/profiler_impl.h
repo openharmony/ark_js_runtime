@@ -21,10 +21,7 @@
 #include "ecmascript/tooling/base/pt_params.h"
 #include "ecmascript/tooling/dispatcher.h"
 
-namespace panda::tooling::ecmascript {
-using panda::ecmascript::CString;
-
-
+namespace panda::ecmascript::tooling {
 class ProfilerImpl final {
 public:
     explicit ProfilerImpl(JSBackend *backend) : backend_(backend) {}
@@ -60,5 +57,5 @@ private:
     
     std::unique_ptr<JSBackend> backend_ {nullptr};
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif

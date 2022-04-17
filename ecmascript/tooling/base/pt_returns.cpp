@@ -15,7 +15,7 @@
 
 #include "ecmascript/tooling/base/pt_returns.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 Local<ObjectRef> EnableReturns::ToObject(const EcmaVM *ecmaVm)
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
@@ -256,4 +256,4 @@ Local<ObjectRef> StopReturns::ToObject(const EcmaVM *ecmaVm)
 
     return result;
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling

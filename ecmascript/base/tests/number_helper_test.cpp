@@ -83,7 +83,6 @@ HWTEST_F_L0(NumberHelperTest, DoubleToString_001)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     int radix;
-    
     radix = 2;
     JSHandle<EcmaString> resultStr = factory->NewFromASCII("100101");
     JSHandle<EcmaString> handleEcmaStr1(thread, NumberHelper::DoubleToString(thread, 37, radix));
@@ -516,5 +515,25 @@ HWTEST_F_L0(NumberHelperTest, IntegerToString)
 
     integerStr = NumberHelper::IntegerToString(static_cast<double>(23), radix);
     EXPECT_STREQ(integerStr.c_str(), "n");
+}
+
+/**
+ * @tc.name: NumberToString
+ * @tc.desc: The abstract operation NumberToString converts a Number m to String format
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F_L0(NumberHelperTest, NumberToString)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    double d = 8.1999999999999993;
+    JSHandle<EcmaString> result = NumberHelper::NumberToString(thread, JSTaggedValue(d));
+    JSHandle<EcmaString> target = factory->NewFromASCII("8.2");
+    EXPECT_EQ(result->Compare(*target), 0);
+
+    double d2 = 0.30000000000000004;
+    JSHandle<EcmaString> result1 = NumberHelper::NumberToString(thread, JSTaggedValue(d2));
+    JSHandle<EcmaString> target1 = factory->NewFromASCII("0.30000000000000004");
+    EXPECT_EQ(result1->Compare(*target1), 0);
 }
 } // namespace panda::ecmascript

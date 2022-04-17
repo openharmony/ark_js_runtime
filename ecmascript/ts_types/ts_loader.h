@@ -224,7 +224,7 @@ public:
 
     GlobalTSTypeRef PUBLIC_API GetArrayParameterTypeGT(GlobalTSTypeRef gt) const;
 
-    uint64_t PUBLIC_API AddConstString(JSTaggedValue string);
+    size_t PUBLIC_API AddConstString(JSTaggedValue string);
 
     /*
      * Before using this method for type infer, you need to wait until all the

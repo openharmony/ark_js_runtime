@@ -326,17 +326,6 @@ public:
     // Add for lowering
     [[nodiscard]] GateType GetGateType(GateRef gate);
     void SetGateType(GateRef gate, GateType gt);
-    template<bool noThrow = false>
-    void ReplaceHirControlGate(UsesIterator &useIt, [[maybe_unused]] GateRef newGate)
-    {
-        ASSERT(GetOpCode(*useIt) == OpCode::IF_SUCCESS || GetOpCode(*useIt) == OpCode::IF_EXCEPTION);
-        if (!noThrow) {
-            auto firstUse = Uses(*useIt).begin();
-            circuit_->ModifyIn(*firstUse, firstUse.GetIndex(), newGate);
-        }
-        DeleteGate(useIt);
-    };
-
     void DeleteExceptionDep(UsesIterator &useIt);
     void DeleteIn(UsesIterator &useIt);
     void DeleteGate(UsesIterator &useIt);

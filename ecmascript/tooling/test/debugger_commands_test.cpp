@@ -24,8 +24,7 @@
 #include "ecmascript/tooling/interface/js_debugger.h"
 
 using namespace panda::ecmascript;
-using namespace panda::tooling::ecmascript;
-using namespace panda::tooling;
+using namespace panda::ecmascript::tooling;
 
 namespace panda::test {
 class DebuggerCommandsTest : public testing::Test {

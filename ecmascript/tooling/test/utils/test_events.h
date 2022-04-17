@@ -20,16 +20,15 @@
 #include "ecmascript/tooling/agent/js_backend.h"
 #include "ecmascript/tooling/agent/js_pt_hooks.h"
 
-namespace panda::tooling::ecmascript::test {
-using BreakpointCallback = std::function<bool(PtThread, const PtLocation &)>;
+namespace panda::ecmascript::tooling::test {
+using BreakpointCallback = std::function<bool(const JSPtLocation &)>;
 using LoadModuleCallback = std::function<bool(std::string_view)>;
 using PausedCallback = std::function<bool(PauseReason)>;
-using ExceptionCallback = std::function<bool(PtThread, const PtLocation &)>;
-using SingleStepCallback = std::function<bool(PtThread, const PtLocation &)>;
+using ExceptionCallback = std::function<bool(const JSPtLocation &)>;
+using SingleStepCallback = std::function<bool(const JSPtLocation &)>;
 using VmStartCallback = std::function<bool()>;
 using VmInitializationCallback = std::function<bool()>;
 using VmDeathCallback = std::function<bool()>;
-using MethodEntryCallback = std::function<bool(PtThread, PtMethod)>;
 using Scenario = std::function<bool()>;
 
 enum class DebugEvent {
@@ -52,7 +51,6 @@ struct TestEvents {
     LoadModuleCallback loadModule;
     PausedCallback paused;
     ExceptionCallback exception;
-    MethodEntryCallback methodEntry;
     SingleStepCallback singleStep;
     VmStartCallback vmStart;
     VmInitializationCallback vmInit;
@@ -66,6 +64,6 @@ struct TestEvents {
 
     virtual std::pair<CString, CString> GetEntryPoint() = 0;
 };
-}  // namespace panda::tooling::ecmascript::test
+}  // namespace panda::ecmascript::tooling::test
 
 #endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TEST_EVENTS_H
