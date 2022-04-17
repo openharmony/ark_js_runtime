@@ -24,7 +24,10 @@ namespace panda::ecmascript::kungfu {
     V(Foo2AOT)                              \
     V(FooNativeAOT)                         \
     V(FooBoundAOT)                          \
-    V(Bar1AOT)
+    V(Bar1AOT)                              \
+    V(FooProxyAOT)                          \
+    V(FooProxy2AOT)                         \
+    V(Bar2AOT)
 #else
     #define TEST_STUB_SIGNATRUE_LIST(V)
 #endif

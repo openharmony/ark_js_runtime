@@ -262,6 +262,7 @@ public:
 
     // call operation
     GateRef CallRuntimeWithDepend(GateRef glue, int index, GateRef depend, const std::vector<GateRef> &args);
+    GateRef CallRuntimeWithDepend(GateRef glue, GateRef target, GateRef depend, GateRef argc, GateRef argv);
     GateRef CallRuntime(GateRef glue, int index, const std::vector<GateRef> &args, bool useLabel = false);
     GateRef CallNGCRuntime(GateRef glue, size_t index, const std::vector<GateRef> &args);
     GateRef CallStub(GateRef glue, size_t index, const std::vector<GateRef> &args);

@@ -186,9 +186,9 @@ bool EcmaVM::Initialize()
     JSHandle<GlobalEnv> globalEnv = factory_->NewGlobalEnv(*globalEnvClass);
     globalEnv->Init(thread_);
     globalEnv_ = globalEnv.GetTaggedValue();
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT
-    LoadStubs();
-#endif
+    if (options_.IsEnableStubAot()) {
+        LoadStubs();
+    }
     SetupRegExpResultCache();
     microJobQueue_ = factory_->NewMicroJobQueue().GetTaggedValue();
     Builtins builtins;

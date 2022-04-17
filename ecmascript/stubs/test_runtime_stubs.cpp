@@ -20,6 +20,7 @@
 #include "ecmascript/global_env.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/js_function.h"
+#include "ecmascript/tooling/test/utils/test_util.h"
 
 namespace panda::ecmascript {
 #if defined(__clang__)
@@ -94,5 +95,72 @@ DEF_RUNTIME_STUBS(GetBindFunc)
     JSHandle<JSTaggedValue> bindString(thread, factory->NewFromStdString("bind").GetTaggedValue());
 
     return JSObject::GetProperty(thread, target, bindString).GetValue().GetTaggedValue().GetRawData();
+}
+
+DEF_RUNTIME_STUBS(DefineProxyFunc)
+{
+    RUNTIME_STUBS_HEADER(DefineProxyFunc);
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, targetHandle, 0);
+    // 1. handler has no "Call"
+    JSFunction *function = env->GetObjectFunction().GetObject<JSFunction>();
+    JSHandle<JSTaggedValue> dynclass(thread, function);
+    ASSERT_TRUE(targetHandle->IsECMAObject());
+
+    JSHandle<JSTaggedValue> handlerHandle(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass), dynclass));
+    ASSERT_TRUE(handlerHandle->IsECMAObject());
+    ASSERT_TRUE(targetHandle->IsECMAObject());
+
+    JSHandle<JSProxy> proxyHandle = JSProxy::ProxyCreate(thread, targetHandle, handlerHandle);
+    ASSERT_TRUE(*proxyHandle != nullptr);
+    // check taggedvalue
+    proxyHandle.GetTaggedValue().D();
+    return proxyHandle.GetTaggedValue().GetRawData();
+}
+
+DEF_RUNTIME_STUBS(DefineProxyHandler)
+{
+    RUNTIME_STUBS_HEADER(DefineProxyHandler);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, funcHandle, 0);
+    ASSERT_TRUE(funcHandle->IsECMAObject());
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    JSFunction* function = env->GetObjectFunction().GetObject<JSFunction>();
+    JSHandle<JSTaggedValue> dynclass(thread, function);
+
+    JSHandle<JSTaggedValue> handlerHandle(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass), dynclass));
+    ASSERT_TRUE(handlerHandle->IsECMAObject());
+    // 1. handler has "Call"
+    JSHandle<JSTaggedValue> funcKey = thread->GlobalConstants()->GetHandledApplyString();
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(handlerHandle), funcKey, funcHandle);
+    handlerHandle.GetTaggedValue().D();
+    return handlerHandle.GetTaggedValue().GetRawData();
+}
+
+DEF_RUNTIME_STUBS(DefineProxyFunc2)
+{
+    RUNTIME_STUBS_HEADER(DefineProxyFunc2);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, targetHandle, 0);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, handlerHandle, 1);
+    // 1. handler has "Call"
+    ASSERT_TRUE(handlerHandle->IsECMAObject());
+    ASSERT_TRUE(targetHandle->IsECMAObject());
+
+    JSHandle<JSProxy> proxyHandle = JSProxy::ProxyCreate(thread, targetHandle, handlerHandle);
+    targetHandle.GetTaggedValue().D();
+    handlerHandle.GetTaggedValue().D();
+    proxyHandle.GetTaggedValue().D();
+    ASSERT_TRUE(*proxyHandle != nullptr);
+    return proxyHandle.GetTaggedValue().GetRawData();
+}
+
+DEF_RUNTIME_STUBS(DumpTaggedType)
+{
+    RUNTIME_STUBS_HEADER(DumpTaggedType);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 0);
+    ASSERT_TRUE(value->IsECMAObject());
+    value->D();
+    return value.GetTaggedValue().GetRawData();
 }
 }  // namespace panda::ecmascript

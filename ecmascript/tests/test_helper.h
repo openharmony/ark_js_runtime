@@ -92,6 +92,7 @@ public:
         options.SetRuntimeType("ecmascript");
         options.SetPreGcHeapVerifyEnabled(true);
         options.SetEnableForceGC(true);
+        options.SetEnableStubAot(true);
         if (libraryPath != nullptr) {
             // for class Runtime to StartDebugger
             options.SetDebuggerLibraryPath(libraryPath);

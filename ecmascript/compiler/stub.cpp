@@ -1100,13 +1100,13 @@ void Stub::Store(VariableType type, GateRef glue, GateRef base, GateRef offset, 
     GateRef result;
     if (env_.IsArch64Bit()) {
         GateRef ptr = Int64Add(base, offset);
-        if (type == VariableType::POINTER()) {
+        if (type == VariableType::NATIVE_POINTER()) {
             type = VariableType::INT64();
         }
         result = env_.GetCircuit()->NewGate(OpCode(OpCode::STORE), 0, { depend, value, ptr }, type.GetGateType());
         env_.GetCurrentLabel()->SetDepend(result);
     } else if (env_.IsArch32Bit()) {
-        if (type == VariableType::POINTER()) {
+        if (type == VariableType::NATIVE_POINTER()) {
             type = VariableType::INT32();
         }
         GateRef ptr = Int32Add(base, offset);
@@ -1143,7 +1143,7 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
         Bind(&isVailedIndex);
         {
             GateRef loadOffset = IntPtr(Region::GetOldToNewSetOffset(env_.Is32Bit()));
-            auto oldToNewSet = Load(VariableType::POINTER(), objectRegion, loadOffset);
+            auto oldToNewSet = Load(VariableType::NATIVE_POINTER(), objectRegion, loadOffset);
             Label isNullPtr(env);
             Label notNullPtr(env);
             Branch(IntptrEuqal(oldToNewSet, IntPtr(0)), &isNullPtr, &notNullPtr);
@@ -1160,10 +1160,10 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
                 // 2.0: wordIdx GetWordIdx(bit_offset)
                 // 2.1 bitmap_[wordIdx]
                 GateRef bitmapoffset = IntPtr(0);
-                GateRef bitmapData = Load(VariableType::POINTER(), oldToNewSet, bitmapoffset);
+                GateRef bitmapData = Load(VariableType::NATIVE_POINTER(), oldToNewSet, bitmapoffset);
                 // 2.2 bitmap_[wordIdx] |= GetBitMask(bit_offset)
-                GateRef oldmapValue = Load(VariableType::POINTER(), bitmapData, wordOffset);
-                Store(VariableType::POINTER(), glue, bitmapData, wordOffset,
+                GateRef oldmapValue = Load(VariableType::NATIVE_POINTER(), bitmapData, wordOffset);
+                Store(VariableType::NATIVE_POINTER(), glue, bitmapData, wordOffset,
                       IntPtrOr(oldmapValue, GetBitMask(bitOffset)));
                 Jump(&notValidIndex);
             }
