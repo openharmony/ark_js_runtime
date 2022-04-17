@@ -81,7 +81,7 @@ public:
         return VariableType(MachineType::F64, GateType::NJS_VALUE);
     }
 
-    static VariableType POINTER()
+    static VariableType NATIVE_POINTER()
     {
         return VariableType(MachineType::ARCH, GateType::NJS_VALUE);
     }

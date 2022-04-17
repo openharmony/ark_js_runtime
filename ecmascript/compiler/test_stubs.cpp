@@ -44,14 +44,10 @@ void BarAOTStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     GateRef glue = PtrArgument(0);
-    GateRef argc = Int32Argument(1);
-    GateRef calltarget = TaggedArgument(2);
-    GateRef newtarget = TaggedArgument(3);
-    GateRef thisObj = TaggedArgument(4);
-    (void)argc;
-    (void)calltarget;
-    (void)newtarget;
-    (void)thisObj;
+    [[maybe_unused]] GateRef argc = Int32Argument(1);
+    [[maybe_unused]] GateRef calltarget = TaggedArgument(2);
+    [[maybe_unused]] GateRef newtarget = TaggedArgument(3);
+    [[maybe_unused]] GateRef thisObj = TaggedArgument(4);
     GateRef a = TaggedArgument(5);
     GateRef b = TaggedArgument(6);
     GateRef result = CallRuntime(glue, RTSTUB_ID(Add2Dyn), {a, b});
@@ -69,8 +65,8 @@ void Foo1AOTStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef a = TaggedArgument(5);
     GateRef b = TaggedArgument(6);
     (void)calltarget;
-    GateRef barIndex = IntBuildTaggedWithNoGC(Int32(CommonStubCSigns::Bar1AOT));
-    GateRef numArgs = IntBuildTaggedWithNoGC(Int32(3));
+    GateRef barIndex = IntBuildTaggedTypeWithNoGC(Int32(CommonStubCSigns::Bar1AOT));
+    GateRef numArgs = IntBuildTaggedTypeWithNoGC(Int32(3));
     GateRef barfunc = CallRuntime(glue, RTSTUB_ID(DefineAotFunc), {barIndex, numArgs});
     GateRef result = CallNGCRuntime(glue, RTSTUB_ID(JSCall), {glue, argc, barfunc, newtarget, thisObj, a, b});
     Return(result);
@@ -108,8 +104,8 @@ void Foo2AOTStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef b = TaggedArgument(6);
     (void)calltarget;
     GateRef actualArgC = Int32Add(argc, Int32(1));
-    GateRef barIndex = IntBuildTaggedWithNoGC(Int32(CommonStubCSigns::BarAOT));
-    GateRef numArgs = IntBuildTaggedWithNoGC(Int32(2));
+    GateRef barIndex = IntBuildTaggedTypeWithNoGC(Int32(CommonStubCSigns::BarAOT));
+    GateRef numArgs = IntBuildTaggedTypeWithNoGC(Int32(2));
     GateRef barfunc = CallRuntime(glue, RTSTUB_ID(DefineAotFunc), {barIndex, numArgs});
     GateRef result = CallNGCRuntime(glue, RTSTUB_ID(JSCall), {glue, actualArgC, barfunc, newtarget, thisObj,
                                     a, b, Undefined()});
@@ -155,5 +151,58 @@ void FooBoundAOTStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef result = CallNGCRuntime(glue, RTSTUB_ID(JSCall), {glue, argc, newjsfunc, newtarget, thisObj,
                                 a, b});
     Return(result);
+}
+
+void FooProxyAOTStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    GateRef glue = PtrArgument(0);
+    GateRef argc = Int32Argument(1);
+    [[maybe_unused]] GateRef calltarget = TaggedArgument(2);
+    GateRef newtarget = TaggedArgument(3);
+    GateRef thisObj = TaggedArgument(4);
+    GateRef a = TaggedArgument(5);
+    GateRef b = TaggedArgument(6);
+
+    GateRef barIndex = IntBuildTaggedTypeWithNoGC(Int32(CommonStubCSigns::BarAOT));
+    GateRef numArgs = IntBuildTaggedTypeWithNoGC(Int32(2));
+    GateRef barfunc = CallRuntime(glue, RTSTUB_ID(DefineAotFunc), {barIndex, numArgs});
+
+    GateRef proxyfunc = CallRuntime(glue, RTSTUB_ID(DefineProxyFunc), {barfunc});
+    GateRef result = CallNGCRuntime(glue, RTSTUB_ID(JSCall), {glue, argc, proxyfunc, newtarget, thisObj, a, b});
+    Return(result);
+}
+
+void FooProxy2AOTStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    GateRef glue = PtrArgument(0);
+    GateRef argc = Int32Argument(1);
+    [[maybe_unused]] GateRef calltarget = TaggedArgument(2);
+    GateRef newtarget = TaggedArgument(3);
+    GateRef thisObj = TaggedArgument(4);
+    GateRef a = TaggedArgument(5);
+    GateRef b = TaggedArgument(6);
+
+    GateRef barIndex = IntBuildTaggedTypeWithNoGC(Int32(CommonStubCSigns::Bar2AOT));
+    GateRef numArgs = IntBuildTaggedTypeWithNoGC(Int32(2));
+    GateRef barfunc = CallRuntime(glue, RTSTUB_ID(DefineAotFunc), {barIndex, numArgs});
+    GateRef proxyHandler = CallRuntime(glue, RTSTUB_ID(DefineProxyHandler), {barfunc});
+
+    GateRef proxyfunc = CallRuntime(glue, RTSTUB_ID(DefineProxyFunc2), {barfunc, proxyHandler});
+    GateRef result = CallNGCRuntime(glue, RTSTUB_ID(JSCall), {glue, argc, proxyfunc, newtarget, thisObj, a, b});
+    Return(result);
+}
+
+void Bar2AOTStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    [[maybe_unused]] GateRef glue = PtrArgument(0);
+    [[maybe_unused]] GateRef argc = Int32Argument(1);
+    [[maybe_unused]] GateRef calltarget = TaggedArgument(2);
+    [[maybe_unused]] GateRef newtarget = TaggedArgument(3);
+    [[maybe_unused]] GateRef thisObj = TaggedArgument(4);
+    CallRuntime(glue, RTSTUB_ID(DumpTaggedType), {thisObj});
+    Return(thisObj);
 }
 }   // namespace panda::ecmascript::kungfu

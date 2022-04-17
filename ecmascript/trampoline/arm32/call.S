@@ -87,6 +87,9 @@
 .global ResumeRspAndReturn
 .type ResumeRspAndReturn, %function
 
+.global OptimizedCallRuntimeWithArgv
+.type OptimizedCallRuntimeWithArgv, %function
+
 #define CALLEESAVE_REGS_SIZE   (32)
 #define SLOT_SIZE              (4)
 // 1: r11
@@ -177,17 +180,23 @@ JSFunctionEntry:
 // sp:      argc
 // construct Leave Frame:
 //   +--------------------------+
-//   |       argv[]             |
+//   |       argv[argc-1]       |
+//   +--------------------------+
+//   |       ..........         |
+//   +--------------------------+
+//   |       argv[1]            |
+//   +--------------------------+
+//   |       argv[0]            |
 //   +--------------------------+ ---
 //   |       argc               |   ^
-//   |--------------------------|  Fixed OptimizedLeaveFrame
+//   |--------------------------|  Fixed
+//   |       RuntimeId          | OptimizedLeaveFrame
+//   |--------------------------|   |
 //   |       returnAddr         |   |
 //   |--------------------------|   |
 //   |       callsiteFp         |   |
 //   |--------------------------|   |
-//   |       frameType          |   |
-//   |--------------------------|   |
-//   |       padding            |   v
+//   |       frameType          |   v
 //   +--------------------------+ ---
 
 .global OptimizedCallRuntime
@@ -376,16 +385,6 @@ CallNativeTrampoline:
     pop     {r2}
     bx      lr
 
-// uint64_t JSCallWithArgV(uintptr_t glue, uint32_t argc, uintptr_t argv[]);
-// c++ calling convention call js function
-// Input:
-// %rdi - glue
-// %rsi - argc
-// %rdx - argV (calltarget, newtarget, thisObj, )
-.global JSCallWithArgV
-.type JSCallWithArgV, %function
-
-
 // uint64_t JSCall(uintptr_t glue, uint32_t argc, JSTaggedType calltarget, JSTaggedType new, JSTaggedType this, ...);
 // webkit_jscc calling convention call js function()
 // Input:
@@ -420,6 +419,15 @@ CallNativeTrampoline:
 .type JSCall, %function
 JSCall:
     bx      lr
+
+// uint64_t JSCallWithArgV(uintptr_t glue, uint32_t argc, JSTaggedType callTarget, JSTaggedType argV[]);
+// c++ calling convention call js function
+// Input:
+// %x0 - glue
+// %x1 - argc
+// %x2 - argV (calltarget, newtarget, thisObj, )
+.global JSCallWithArgV
+.type JSCallWithArgV, %function
 JSCallWithArgV:
     bx      lr
 
@@ -481,4 +489,7 @@ ResumeRspAndDispatch:
     bx  lr
 
 ResumeRspAndReturn:
+    bx  lr
+
+OptimizedCallRuntimeWithArgv:
     bx  lr
