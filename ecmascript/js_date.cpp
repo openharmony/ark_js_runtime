@@ -395,25 +395,25 @@ JSTaggedValue JSDate::IsoParseStringToMs(const CString &str)
     if (indexZ != CString::npos) {
         indexEndFlag = indexZ;
     } else if (len >= MIN_LENGTH && str.at(len - INDEX_PLUS_NEG) == NEG) {
-        indexEndFlag = len - INDEX_PLUS_NEG;
+        indexEndFlag = static_cast<CString::size_type>(len - INDEX_PLUS_NEG);
         flag = NEG;
     } else if (len >= MIN_LENGTH && str.at(len - INDEX_PLUS_NEG) == PLUS) {
-        indexEndFlag = len - INDEX_PLUS_NEG;
+        indexEndFlag = static_cast<CString::size_type>(len - INDEX_PLUS_NEG);
         flag = PLUS;
     }
     if (indexT != CString::npos) {
-        if (static_cast<int>(indexT - index) == LENGTH_PER_TIME) {
+        if (static_cast<int>(indexT) - index == LENGTH_PER_TIME) {
             GetNumFromString(str, len, &index, &month);
-        } else if (static_cast<int>(indexT - index) == (LENGTH_PER_TIME + LENGTH_PER_TIME)) {
+        } else if (static_cast<int>(indexT) - index == (LENGTH_PER_TIME + LENGTH_PER_TIME)) {
             GetNumFromString(str, len, &index, &month);
             GetNumFromString(str, len, &index, &date);
         }
         GetNumFromString(str, len, &index, &hours);
         GetNumFromString(str, len, &index, &minutes);
         if (indexEndFlag > 0) {
-            if (indexEndFlag - index == LENGTH_PER_TIME) {
+            if (static_cast<int>(indexEndFlag) - index == LENGTH_PER_TIME) {
                 GetNumFromString(str, len, &index, &seconds);
-            } else if (indexEndFlag - index == (LENGTH_PER_TIME + LENGTH_PER_TIME + 1)) {
+            } else if (static_cast<int>(indexEndFlag) - index == (LENGTH_PER_TIME + LENGTH_PER_TIME + 1)) {
                 GetNumFromString(str, len, &index, &seconds);
                 GetNumFromString(str, len, &index, &ms);
             }

@@ -408,7 +408,7 @@ private:
     os::memory::ConditionVariable waitTaskFinishedCV_;
     bool paralledGc_ {true};
 
-    MarkType markType_;
+    MarkType markType_ {MarkType::SEMI_MARK};
     bool concurrentMarkingEnabled_ {true};
     bool isFullGCRequested_ {false};
     bool oldSpaceLimitAdjusted_ {false};

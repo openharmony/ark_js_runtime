@@ -196,20 +196,20 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CALL_PUSH_ARGS_I()                        \
-    do {                                          \
-        for (int i = actualNumArgs; i > 0; i--) { \
-            *(--newSp) = sp[funcReg + i];         \
-        }                                         \
+#define CALL_PUSH_ARGS_I()                                       \
+    do {                                                         \
+        for (int i = actualNumArgs; i > 0; i--) {                \
+            *(--newSp) = sp[funcReg + static_cast<uint32_t>(i)]; \
+        }                                                        \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CALL_PUSH_ARGS_I_THIS()                       \
-    do {                                              \
-        /* 1: skip this */                            \
-        for (int i = actualNumArgs + 1; i > 1; i--) { \
-            *(--newSp) = sp[funcReg + i];             \
-        }                                             \
+#define CALL_PUSH_ARGS_I_THIS()                                  \
+    do {                                                         \
+        /* 1: skip this */                                       \
+        for (int i = actualNumArgs + 1; i > 1; i--) {            \
+            *(--newSp) = sp[funcReg + static_cast<uint32_t>(i)]; \
+        }                                                        \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -248,7 +248,7 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
 #define CALL_PUSH_ARGS_I_NO_EXTRA()                                          \
     do {                                                                     \
         for (int i = std::min(actualNumArgs, declaredNumArgs); i > 0; i--) { \
-            *(--newSp) = sp[funcReg + i];                                    \
+            *(--newSp) = sp[funcReg + static_cast<uint32_t>(i)];             \
         }                                                                    \
     } while (false)
 
@@ -257,7 +257,7 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
     do {                                                                         \
         /* 1: skip this */                                                       \
         for (int i = std::min(actualNumArgs, declaredNumArgs) + 1; i > 1; i--) { \
-            *(--newSp) = sp[funcReg + i];                                        \
+            *(--newSp) = sp[funcReg + static_cast<uint32_t>(i)];                 \
         }                                                                        \
     } while (false)
 
@@ -378,7 +378,7 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(EcmaRuntimeCallInfo *info)
     ASSERT(method->GetNumVregsWithCallField() == 0);
 
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    int32_t actualNumArgs = info->GetArgsNumber();
+    int32_t actualNumArgs = static_cast<int32_t>(info->GetArgsNumber());
     JSTaggedType *newSp = sp - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - actualNumArgs - RESERVED_CALL_ARGCOUNT;
     if (thread->DoStackOverflowCheck(newSp - actualNumArgs - RESERVED_CALL_ARGCOUNT) ||
         thread->HasPendingException()) {
@@ -439,10 +439,11 @@ JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
 
     JSTaggedType *newSp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     JSTaggedType *entrySp = newSp;
-    int32_t actualNumArgs = info->GetArgsNumber();
+    int32_t actualNumArgs = static_cast<int32_t>(info->GetArgsNumber());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    newSp = newSp - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - actualNumArgs - RESERVED_CALL_ARGCOUNT;
-    if (thread->DoStackOverflowCheck(newSp - actualNumArgs - RESERVED_CALL_ARGCOUNT) ||
+    newSp = newSp - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1U - static_cast<uint32_t>(actualNumArgs) -
+            RESERVED_CALL_ARGCOUNT;
+    if (thread->DoStackOverflowCheck(newSp - static_cast<uint32_t>(actualNumArgs) - RESERVED_CALL_ARGCOUNT) ||
         thread->HasPendingException()) {
         return JSTaggedValue::Undefined();
     }
@@ -459,8 +460,10 @@ JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
         // slow path
         if (!method->HaveExtraWithCallField()) {
             // push length = declaredNumArgs, may push undefined
-            CALL_PUSH_UNDEFINED(declaredNumArgs - actualNumArgs);
-            for (int i = std::min(actualNumArgs, declaredNumArgs) - 1; i >= 0; i--) {
+            if (declaredNumArgs > actualNumArgs) {
+                CALL_PUSH_UNDEFINED(declaredNumArgs - actualNumArgs);
+            }
+            for (int32_t i = std::min(actualNumArgs, declaredNumArgs) - 1; i >= 0; i--) {
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 *(--newSp) = info->GetCallArgValue(i).GetRawData();
             }
@@ -468,8 +471,10 @@ JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
             // push actualNumArgs in the end, then all args, may push undefined
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             *(--newSp) = JSTaggedValue(actualNumArgs).GetRawData();
-            CALL_PUSH_UNDEFINED(declaredNumArgs - actualNumArgs);
-            for (int i = actualNumArgs - 1; i >= 0; i--) {
+            if (declaredNumArgs > actualNumArgs) {
+                CALL_PUSH_UNDEFINED(declaredNumArgs - actualNumArgs);
+            }
+            for (int32_t i = actualNumArgs - 1; i >= 0; i--) {
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 *(--newSp) = info->GetCallArgValue(i).GetRawData();
             }
@@ -749,25 +754,25 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         DISPATCH(BytecodeInstruction::Format::ID32);
     }
     HANDLE_OPCODE(HANDLE_JMP_IMM8) {
-        int8_t offset = READ_INST_8_0();
+        int8_t offset = static_cast<int8_t>(READ_INST_8_0());
         UPDATE_HOTNESS_COUNTER(offset);
         LOG_INST() << "jmp " << std::hex << static_cast<int32_t>(offset);
         DISPATCH_OFFSET(offset);
     }
     HANDLE_OPCODE(HANDLE_JMP_IMM16) {
-        int16_t offset = READ_INST_16_0();
+        int16_t offset = static_cast<int16_t>(READ_INST_16_0());
         UPDATE_HOTNESS_COUNTER(offset);
         LOG_INST() << "jmp " << std::hex << static_cast<int32_t>(offset);
         DISPATCH_OFFSET(offset);
     }
     HANDLE_OPCODE(HANDLE_JMP_IMM32) {
-        int32_t offset = READ_INST_32_0();
+        int32_t offset = static_cast<int32_t>(READ_INST_32_0());
         UPDATE_HOTNESS_COUNTER(offset);
         LOG_INST() << "jmp " << std::hex << offset;
         DISPATCH_OFFSET(offset);
     }
     HANDLE_OPCODE(HANDLE_JEQZ_IMM8) {
-        int8_t offset = READ_INST_8_0();
+        int8_t offset = static_cast<int8_t>(READ_INST_8_0());
         LOG_INST() << "jeqz ->\t"
                    << "cond jmpz " << std::hex << static_cast<int32_t>(offset);
         if (GET_ACC() == JSTaggedValue::False() || (GET_ACC().IsInt() && GET_ACC().GetInt() == 0) ||
@@ -779,7 +784,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         }
     }
     HANDLE_OPCODE(HANDLE_JEQZ_IMM16) {
-        int16_t offset = READ_INST_16_0();
+        int16_t offset = static_cast<int16_t>(READ_INST_16_0());
         LOG_INST() << "jeqz ->\t"
                    << "cond jmpz " << std::hex << static_cast<int32_t>(offset);
         if (GET_ACC() == JSTaggedValue::False() || (GET_ACC().IsInt() && GET_ACC().GetInt() == 0) ||
@@ -791,7 +796,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         }
     }
     HANDLE_OPCODE(HANDLE_JNEZ_IMM8) {
-        int8_t offset = READ_INST_8_0();
+        int8_t offset = static_cast<int8_t>(READ_INST_8_0());
         LOG_INST() << "jnez ->\t"
                    << "cond jmpz " << std::hex << static_cast<int32_t>(offset);
         if (GET_ACC() == JSTaggedValue::True() || (GET_ACC().IsInt() && GET_ACC().GetInt() != 0) ||

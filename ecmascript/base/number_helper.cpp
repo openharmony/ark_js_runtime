@@ -572,7 +572,7 @@ double NumberHelper::StringToDouble(const uint8_t *start, const uint8_t *end, ui
             if (additionalExponent > static_cast<int>(MAX_EXPONENT / radix)) {
                 additionalExponent = MAX_EXPONENT;
             } else {
-                additionalExponent = static_cast<int>(additionalExponent * radix + digit);
+                additionalExponent = additionalExponent * static_cast<int>(radix) + static_cast<int>(digit);
             }
             if (++p == end) {
                 break;

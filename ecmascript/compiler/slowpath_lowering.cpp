@@ -2084,7 +2084,7 @@ void SlowPathLowering::LowerStSuperByName(GateRef gate, GateRef glue)
 {
     Label successExit(&builder_);
     Label exceptionExit(&builder_);
-    // 2: number of value inputs
+    // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
     GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
         { acc_.GetValueIn(gate, 0) }, true);

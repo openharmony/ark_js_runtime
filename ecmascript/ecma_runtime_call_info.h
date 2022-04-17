@@ -186,7 +186,7 @@ public:
 
     inline uintptr_t GetArgAddress(size_t idx) const
     {
-        if (idx < numArgs_ + NUM_MANDATORY_JSFUNC_ARGS) {
+        if (idx < static_cast<size_t>(numArgs_ + NUM_MANDATORY_JSFUNC_ARGS)) {
             return reinterpret_cast<uintptr_t>(&stackArgs_[idx]);
         }
         return 0U;

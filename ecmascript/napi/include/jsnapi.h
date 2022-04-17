@@ -1016,7 +1016,7 @@ private:
 
     uintptr_t GetArgAddress(uint32_t idx) const
     {
-        if (idx < numArgs_ + FIRST_ARGS_INDEX) {
+        if (idx < static_cast<uint64_t>(numArgs_ + FIRST_ARGS_INDEX)) {
             return reinterpret_cast<uintptr_t>(&stackArgs_[idx]);
         }
         return 0U;

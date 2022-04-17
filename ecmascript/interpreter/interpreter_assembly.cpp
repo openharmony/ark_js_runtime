@@ -239,20 +239,20 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CALL_PUSH_ARGS_I()                        \
-    do {                                          \
-        for (uint32_t i = static_cast<uint32_t>(actualNumArgs); i > 0; i--) { \
-            *(--newSp) = sp[funcReg + i];         \
-        }                                         \
+#define CALL_PUSH_ARGS_I()                                       \
+    do {                                                         \
+        for (int i = actualNumArgs; i > 0; i--) {                \
+            *(--newSp) = sp[funcReg + static_cast<uint32_t>(i)]; \
+        }                                                        \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CALL_PUSH_ARGS_I_THIS()                       \
-    do {                                              \
-        /* 1: skip this */                            \
-        for (uint32_t i = static_cast<uint32_t>(actualNumArgs) + 1; i > 1; i--) { \
-            *(--newSp) = sp[funcReg + i];             \
-        }                                             \
+#define CALL_PUSH_ARGS_I_THIS()                                  \
+    do {                                                         \
+        /* 1: skip this */                                       \
+        for (int i = actualNumArgs + 1; i > 1; i--) {            \
+            *(--newSp) = sp[funcReg + static_cast<uint32_t>(i)]; \
+        }                                                        \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -291,7 +291,7 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
 #define CALL_PUSH_ARGS_I_NO_EXTRA()                                          \
     do {                                                                     \
         for (int i = std::min(actualNumArgs, declaredNumArgs); i > 0; i--) { \
-            *(--newSp) = sp[funcReg + i];                                    \
+            *(--newSp) = sp[funcReg + static_cast<uint32_t>(i)];             \
         }                                                                    \
     } while (false)
 
@@ -300,7 +300,7 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
     do {                                                                         \
         /* 1: skip this */                                                       \
         for (int i = std::min(actualNumArgs, declaredNumArgs) + 1; i > 1; i--) { \
-            *(--newSp) = sp[funcReg + i];                                        \
+            *(--newSp) = sp[funcReg + static_cast<uint32_t>(i)];                 \
         }                                                                        \
     } while (false)
 
@@ -344,7 +344,7 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
         if (UNLIKELY(thread->DoStackOverflowCheck(newSp))) {                                       \
             INTERPRETER_GOTO_EXCEPTION_HANDLER();                                                  \
         }                                                                                          \
-        EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, actualNumArgs, newSp);                     \
+        EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, static_cast<size_t>(actualNumArgs), newSp); \
         AsmInterpretedFrame *state = GET_ASM_FRAME(newSp);                                         \
         state->base.prev = sp;                                                                     \
         state->base.type = FrameType::INTERPRETER_FRAME;                                           \
@@ -449,9 +449,10 @@ JSTaggedValue InterpreterAssembly::ExecuteNative(EcmaRuntimeCallInfo *info)
     ASSERT(method->GetNumVregsWithCallField() == 0);
 
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    int32_t actualNumArgs = info->GetArgsNumber();
-    JSTaggedType *newSp = sp - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - actualNumArgs - RESERVED_CALL_ARGCOUNT;
-    if (thread->DoStackOverflowCheck(newSp - actualNumArgs - RESERVED_CALL_ARGCOUNT) ||
+    int32_t actualNumArgs = static_cast<int32_t>(info->GetArgsNumber());
+    JSTaggedType *newSp = sp - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1U - static_cast<uint32_t>(actualNumArgs) -
+                          RESERVED_CALL_ARGCOUNT;
+    if (thread->DoStackOverflowCheck(newSp - static_cast<uint32_t>(actualNumArgs) - RESERVED_CALL_ARGCOUNT) ||
         thread->HasPendingException()) {
         return JSTaggedValue::Undefined();
     }
@@ -461,7 +462,7 @@ JSTaggedValue InterpreterAssembly::ExecuteNative(EcmaRuntimeCallInfo *info)
     }
     newSp -= RESERVED_CALL_ARGCOUNT;
 
-    EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, actualNumArgs, newSp);
+    EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, static_cast<size_t>(actualNumArgs), newSp);
     newSp[RESERVED_INDEX_CALL_TARGET] = info->GetFunctionValue().GetRawData();
     newSp[RESERVED_INDEX_NEW_TARGET] = info->GetNewTargetValue().GetRawData();
     newSp[RESERVED_INDEX_THIS] = info->GetThisValue().GetRawData();
@@ -500,10 +501,11 @@ JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
 
     // current sp is entry frame.
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    int32_t actualNumArgs = info->GetArgsNumber();
+    int32_t actualNumArgs = static_cast<int32_t>(info->GetArgsNumber());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    JSTaggedType *newSp = sp - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - actualNumArgs - RESERVED_CALL_ARGCOUNT;
-    if (thread->DoStackOverflowCheck(newSp - actualNumArgs - RESERVED_CALL_ARGCOUNT) ||
+    JSTaggedType *newSp = sp - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - static_cast<uint32_t>(actualNumArgs) -
+                          RESERVED_CALL_ARGCOUNT;
+    if (thread->DoStackOverflowCheck(newSp - static_cast<uint32_t>(actualNumArgs) - RESERVED_CALL_ARGCOUNT) ||
         thread->HasPendingException()) {
         return JSTaggedValue::Undefined();
     }
@@ -520,8 +522,10 @@ JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
         // slow path
         if (!method->HaveExtraWithCallField()) {
             // push length = declaredNumArgs, may push undefined
-            CALL_PUSH_UNDEFINED(declaredNumArgs - actualNumArgs);
-            for (int i = std::min(actualNumArgs, declaredNumArgs) - 1; i >= 0; i--) {
+            if (declaredNumArgs > actualNumArgs) {
+                CALL_PUSH_UNDEFINED(declaredNumArgs - actualNumArgs);
+            }
+            for (int32_t i = std::min(actualNumArgs, declaredNumArgs) - 1; i >= 0; i--) {
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 *(--newSp) = info->GetCallArgValue(i).GetRawData();
             }
@@ -529,8 +533,10 @@ JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
             // push actualNumArgs in the end, then all args, may push undefined
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             *(--newSp) = JSTaggedValue(actualNumArgs).GetRawData();
-            CALL_PUSH_UNDEFINED(declaredNumArgs - actualNumArgs);
-            for (int i = actualNumArgs - 1; i >= 0; i--) {
+            if (declaredNumArgs > actualNumArgs) {
+                CALL_PUSH_UNDEFINED(declaredNumArgs - actualNumArgs);
+            }
+            for (int32_t i = actualNumArgs - 1; i >= 0; i--) {
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 *(--newSp) = info->GetCallArgValue(i).GetRawData();
             }
@@ -2215,7 +2221,8 @@ void InterpreterAssembly::HandleNewObjDynRangePrefImm16V8(
             if (UNLIKELY(thread->DoStackOverflowCheck(newSp))) {
                 INTERPRETER_GOTO_EXCEPTION_HANDLER();
             }
-            EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, numArgs + 1 - RESERVED_CALL_ARGCOUNT, newSp);
+            EcmaRuntimeCallInfo ecmaRuntimeCallInfo(
+                thread, static_cast<size_t>(numArgs + 1 - RESERVED_CALL_ARGCOUNT), newSp);
             // copy args
             uint32_t index = 0;
             // func

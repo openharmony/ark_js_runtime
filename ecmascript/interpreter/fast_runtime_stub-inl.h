@@ -1298,7 +1298,7 @@ JSTaggedValue FastRuntimeStub::FindOwnProperty(JSThread *thread, JSObject *obj, 
                 PropertyAttributes attr(layoutInfo->GetAttr(entry));
                 ASSERT(static_cast<int>(attr.GetOffset()) == entry);
                 return attr.IsInlinedProps() ? obj->GetPropertyInlinedProps(entry)
-                                             : array->Get(entry - cls->GetInlinedProperties());
+                                             : array->Get(static_cast<uint32_t>(entry - cls->GetInlinedProperties()));
             }
         }
         return JSTaggedValue::Hole();  // array == empty array will return here.
