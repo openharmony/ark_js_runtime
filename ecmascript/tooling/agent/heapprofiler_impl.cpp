@@ -22,7 +22,7 @@
 #include "ecmascript/tooling/front_end.h"
 #include "libpandabase/utils/logger.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 HeapProfilerImpl::DispatcherImpl::DispatcherImpl(FrontEnd *frontend, std::unique_ptr<HeapProfilerImpl> heapprofiler)
     : DispatcherBase(frontend), heapprofiler_(std::move(heapprofiler))
 {
@@ -140,4 +140,4 @@ DispatchResponse HeapProfilerImpl::StopTrackingHeapObjects(
 {
     return DispatchResponse::Ok();
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling

@@ -156,32 +156,32 @@ GateRef CircuitBuilder::DependAnd(std::initializer_list<GateRef> args)
 GateRef CircuitBuilder::Arguments(size_t index)
 {
     auto argListOfCircuit = Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST));
-    return GetCircuit()->NewGate(OpCode(OpCode::ARG), MachineType::I64, index, {argListOfCircuit}, GateType::C_VALUE);
+    return GetCircuit()->NewGate(OpCode(OpCode::ARG), MachineType::I64, index, {argListOfCircuit}, GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::Int8(int8_t val)
 {
-    return GetCircuit()->GetConstantGate(MachineType::I8, val, GateType::C_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I8, val, GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::Int16(int16_t val)
 {
-    return GetCircuit()->GetConstantGate(MachineType::I16, val, GateType::C_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I16, val, GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::Int32(int32_t val)
 {
-    return GetCircuit()->GetConstantGate(MachineType::I32, val, GateType::C_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I32, val, GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::Int64(int64_t val)
 {
-    return GetCircuit()->GetConstantGate(MachineType::I64, val, GateType::C_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I64, val, GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::IntPtr(int64_t val)
 {
-    return GetCircuit()->GetConstantGate(MachineType::ARCH, val, GateType::C_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::ARCH, val, GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::RelocatableData(uint64_t val)
@@ -192,12 +192,12 @@ GateRef CircuitBuilder::RelocatableData(uint64_t val)
 
 GateRef CircuitBuilder::Boolean(bool val)
 {
-    return GetCircuit()->GetConstantGate(MachineType::I1, val ? 1 : 0, GateType::C_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I1, val ? 1 : 0, GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::Double(double val)
 {
-    return GetCircuit()->GetConstantGate(MachineType::F64, bit_cast<int64_t>(val), GateType::C_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::F64, bit_cast<int64_t>(val), GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::HoleConstant(GateType type)
@@ -234,17 +234,17 @@ GateRef CircuitBuilder::TaggedNumber(OpCode opcode, GateRef value)
 
 GateRef CircuitBuilder::UnaryArithmetic(OpCode opcode, MachineType machineType, GateRef value)
 {
-    return GetCircuit()->NewGate(opcode, machineType, 0, { value }, GateType::C_VALUE);
+    return GetCircuit()->NewGate(opcode, machineType, 0, { value }, GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::UnaryArithmetic(OpCode opcode, GateRef value)
 {
-    return GetCircuit()->NewGate(opcode, 0, { value }, GateType::C_VALUE);
+    return GetCircuit()->NewGate(opcode, 0, { value }, GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::BinaryLogic(OpCode opcode, GateRef left, GateRef right)
 {
-    return GetCircuit()->NewGate(opcode, 0, { left, right }, GateType::C_VALUE);
+    return GetCircuit()->NewGate(opcode, 0, { left, right }, GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::Call(const CallSignature *signature, GateRef glue, GateRef target,
@@ -367,7 +367,7 @@ void CircuitBuilder::Store(VariableType type, GateRef glue, GateRef base, GateRe
 GateRef CircuitBuilder::Alloca(int size)
 {
     auto allocaList = Circuit::GetCircuitRoot(OpCode(OpCode::ALLOCA_LIST));
-    return GetCircuit()->NewGate(OpCode(OpCode::ALLOCA), size, { allocaList }, GateType::C_VALUE);
+    return GetCircuit()->NewGate(OpCode(OpCode::ALLOCA), size, { allocaList }, GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::TaggedIsString(GateRef obj)
@@ -473,6 +473,12 @@ void CircuitBuilder::SetPropertyInlinedProps(GateRef glue, GateRef obj, GateRef 
     GateRef propOffset = Int32Mul(Int32Add(inlinedPropsStart, attrOffset),
         Int32(JSTaggedValue::TaggedTypeSize()));
     Store(type, glue, obj, ChangeInt32ToIntPtr(propOffset), value);
+}
+
+void CircuitBuilder::SetHomeObjectToFunction(GateRef glue, GateRef function, GateRef value)
+{
+    GateRef offset = IntPtr(JSFunction::HOME_OBJECT_OFFSET);
+    Store(VariableType::INT64(), glue, function, offset, value);
 }
 
 Environment::Environment(GateRef hir, Circuit *circuit, CircuitBuilder *builder)

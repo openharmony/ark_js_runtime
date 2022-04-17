@@ -21,7 +21,7 @@
 #include "ecmascript/tooling/base/pt_params.h"
 #include "ecmascript/tooling/dispatcher.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 class DebuggerImpl final {
 public:
     explicit DebuggerImpl(std::unique_ptr<JSBackend> backend) : backend_(std::move(backend)) {}
@@ -80,5 +80,5 @@ private:
 
     std::unique_ptr<JSBackend> backend_ {nullptr};
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif

@@ -164,7 +164,7 @@ private:
 
 class LLVMAssembler {
 public:
-    explicit LLVMAssembler(LLVMModuleRef module, bool enableLog = false, bool genFp = true);
+    explicit LLVMAssembler(LLVMModuleRef module, bool genFp = true);
     virtual ~LLVMAssembler();
     void Run();
     const LLVMExecutionEngineRef &GetEngine()
@@ -202,11 +202,6 @@ public:
         return codeInfo_.AllocaCodeSection(size, sectionName);
     }
 
-    bool IsLogEnabled() const
-    {
-        return enableLog_;
-    }
-
 private:
     void UseRoundTripSectionMemoryManager();
     bool BuildMCJITEngine();
@@ -218,7 +213,6 @@ private:
     LLVMExecutionEngineRef engine_ {nullptr};
     char *error_ {nullptr};
     struct CodeInfo codeInfo_ {};
-    bool enableLog_ {false};
 };
 
 class LLVMIRGeneratorImpl : public CodeGeneratorImpl {

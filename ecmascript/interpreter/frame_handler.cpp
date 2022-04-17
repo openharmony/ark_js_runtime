@@ -448,9 +448,10 @@ void OptimizedWithArgvLeaveFrameHandler::Iterate(const RootVisitor &v0, [[maybe_
 {
     OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(sp_);
     if (frame->argc > 0) {
-        JSTaggedType *argv = &frame->argc + 1;
-        uintptr_t start = ToUintPtr(reinterpret_cast<JSTaggedType *>(argv[0])); // argv
-        uintptr_t end = ToUintPtr(reinterpret_cast<JSTaggedType *>(argv[frame->argc]));
+        uintptr_t* argvPtr = reinterpret_cast<uintptr_t *>(&frame->argc + 1);
+        JSTaggedType *argv = reinterpret_cast<JSTaggedType *>(*argvPtr);
+        uintptr_t start = ToUintPtr(argv); // argv
+        uintptr_t end = ToUintPtr(argv + frame->argc);
         v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
     }
 

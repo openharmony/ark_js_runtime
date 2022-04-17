@@ -1641,5 +1641,52 @@ JSTaggedValue RuntimeStubs::RuntimeNewLexicalEnvWithNameDyn(JSThread *thread, ui
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return newEnv.GetTaggedValue();
 }
+
+JSTaggedValue RuntimeStubs::RuntimeGetAotUnmapedArgs(JSThread *thread, uint32_t actualNumArgs, uintptr_t argv)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<GlobalEnv> globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<TaggedArray> argumentsList = factory->NewTaggedArray(actualNumArgs);
+    for (uint32_t i = 0; i < actualNumArgs; ++i) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        JSTaggedType arg = reinterpret_cast<JSTaggedType *>(argv)[i + 1]; // skip actualNumArgs
+        argumentsList->Set(thread, i, JSTaggedValue(arg));
+    }
+    // 1. Let len be the number of elements in argumentsList
+    int32_t len = argumentsList->GetLength();
+    // 2. Let obj be ObjectCreate(%ObjectPrototype%, «[[ParameterMap]]»).
+    // 3. Set obj’s [[ParameterMap]] internal slot to undefined.
+    JSHandle<JSArguments> obj = factory->NewJSArguments();
+    // 4. Perform DefinePropertyOrThrow(obj, "length", PropertyDescriptor{[[Value]]: len, [[Writable]]: true,
+    // [[Enumerable]]: false, [[Configurable]]: true}).
+    obj->SetPropertyInlinedProps(thread, JSArguments::LENGTH_INLINE_PROPERTY_INDEX, JSTaggedValue(len));
+    // 5. Let index be 0.
+    // 6. Repeat while index < len,
+    //    a. Let val be argumentsList[index].
+    //    b. Perform CreateDataProperty(obj, ToString(index), val).
+    //    c. Let index be index + 1
+    obj->SetElements(thread, argumentsList.GetTaggedValue());
+    // 7. Perform DefinePropertyOrThrow(obj, @@iterator, PropertyDescriptor
+    // {[[Value]]:%ArrayProto_values%,
+    // [[Writable]]: true, [[Enumerable]]: false, [[Configurable]]: true}).
+    obj->SetPropertyInlinedProps(thread, JSArguments::ITERATOR_INLINE_PROPERTY_INDEX,
+                                 globalEnv->GetArrayProtoValuesFunction().GetTaggedValue());
+    // 8. Perform DefinePropertyOrThrow(obj, "caller", PropertyDescriptor {[[Get]]: %ThrowTypeError%,
+    // [[Set]]: %ThrowTypeError%, [[Enumerable]]: false, [[Configurable]]: false}).
+    JSHandle<JSTaggedValue> throwFunction = globalEnv->GetThrowTypeError();
+    JSHandle<AccessorData> accessor = factory->NewAccessorData();
+    accessor->SetGetter(thread, throwFunction);
+    accessor->SetSetter(thread, throwFunction);
+    obj->SetPropertyInlinedProps(thread, JSArguments::CALLER_INLINE_PROPERTY_INDEX, accessor.GetTaggedValue());
+    // 9. Perform DefinePropertyOrThrow(obj, "callee", PropertyDescriptor {[[Get]]: %ThrowTypeError%,
+    // [[Set]]: %ThrowTypeError%, [[Enumerable]]: false, [[Configurable]]: false}).
+    accessor = factory->NewAccessorData();
+    accessor->SetGetter(thread, throwFunction);
+    accessor->SetSetter(thread, throwFunction);
+    obj->SetPropertyInlinedProps(thread, JSArguments::CALLEE_INLINE_PROPERTY_INDEX, accessor.GetTaggedValue());
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    // 11. Return obj
+    return obj.GetTaggedValue();
+}
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_RUNTIME_TRAMPOLINES_INL_H

@@ -16,6 +16,7 @@
 #define ECMASCRIPT_COMPILER_CIRCUIT_BUILDER_INL_H
 
 #include "ecmascript/compiler/circuit_builder.h"
+#include "ecmascript/js_method.h"
 #include "ecmascript/mem/region.h"
 #include "ecmascript/mem/remembered_set.h"
 
@@ -189,6 +190,21 @@ GateRef CircuitBuilder::TaggedIsUndefinedOrNull(GateRef x)
         SExtInt1ToInt32(TaggedSpecialValueChecker(x, JSTaggedValue::VALUE_NULL))));
 }
 
+GateRef CircuitBuilder::TaggedIsTrue(GateRef x)
+{
+    return Equal(x, Int64(JSTaggedValue::VALUE_TRUE));
+}
+
+GateRef CircuitBuilder::TaggedIsFalse(GateRef x)
+{
+    return Equal(x, Int64(JSTaggedValue::VALUE_FALSE));
+}
+
+GateRef CircuitBuilder::TaggedIsNull(GateRef x)
+{
+    return Equal(x, Int64(JSTaggedValue::VALUE_NULL));
+}
+
 GateRef CircuitBuilder::TaggedIsBoolean(GateRef x)
 {
     return TruncInt32ToInt1(Int32Or(SExtInt1ToInt32(TaggedSpecialValueChecker(x, JSTaggedValue::VALUE_TRUE)),
@@ -238,12 +254,12 @@ GateRef CircuitBuilder::DoubleToTagged(GateRef x)
 
 GateRef CircuitBuilder::TaggedTrue()
 {
-    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_TRUE, GateType::C_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_TRUE, GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::TaggedFalse()
 {
-    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_FALSE, GateType::C_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_FALSE, GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::GetValueFromTaggedArray(VariableType returnType, GateRef array, GateRef index)
@@ -260,6 +276,11 @@ void CircuitBuilder::SetValueToTaggedArray(VariableType valType, GateRef glue,
     GateRef offset = ArchMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize()));
     GateRef dataOffset = IntPtrAdd(offset, IntPtr(TaggedArray::DATA_OFFSET));
     Store(valType, glue, array, dataOffset, val);
+}
+
+GateRef CircuitBuilder::GetGlobalConstantString(ConstantIndex index)
+{
+    return ArchMul(IntPtr(sizeof(JSTaggedValue)), IntPtr(static_cast<int>(index)));
 }
 
 // object operation
@@ -387,6 +408,17 @@ GateRef CircuitBuilder::BothAreString(GateRef x, GateRef y)
 {
     return TruncInt32ToInt1(Int32And(SExtInt1ToInt32(IsJsType(x, JSType::STRING)),
         SExtInt1ToInt32(IsJsType(y, JSType::STRING))));
+}
+
+GateRef CircuitBuilder::IsCallable(GateRef obj)
+{
+    GateRef hclass = LoadHClass(obj);
+    GateRef bitfieldOffset = IntPtr(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfield = Load(VariableType::INT32(), hclass, bitfieldOffset);
+    return NotEqual(
+        Int32And(UInt32LSR(bitfield, Int32(JSHClass::CallableBit::START_BIT)),
+            Int32((1LU << JSHClass::CallableBit::SIZE) - 1)),
+        Int32(0));
 }
 
 int CircuitBuilder::NextVariableId()

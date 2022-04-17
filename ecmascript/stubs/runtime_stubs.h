@@ -87,188 +87,188 @@ extern "C" void PushCallIThisRangeAndDispatchSlowPath(uintptr_t glue, uintptr_t 
 extern "C" void ResumeRspAndDispatch(uintptr_t glue, uintptr_t pc, uintptr_t sp, uintptr_t constantPool,
     uint64_t profileTypeInfo, uint64_t acc, uint32_t hotnessCounter, size_t jumpSize);
 extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
+#define RUNTIME_STUB_WITHOUT_GC_LIST(V)        \
+    V(DebugPrint)                              \
+    V(FatalPrint)                              \
+    V(InsertOldToNewRememberedSet)             \
+    V(MarkingBarrier)                          \
+    V(DoubleToInt)                             \
+    V(OptimizedCallRuntime)                    \
+    V(OptimizedCallRuntimeWithArgv)            \
+    V(AsmIntCallRuntime)                       \
+    V(JSCall)                                  \
+    V(JSCallWithArgV)                          \
+    V(JSObjectGetMethod)                       \
+    V(CreateArrayFromList)                     \
+    V(PushCallArgs0AndDispatch)                \
+    V(PushCallArgs0AndDispatchNative)          \
+    V(PushCallArgs0AndDispatchSlowPath)        \
+    V(PushCallArgs1AndDispatch)                \
+    V(PushCallArgs1AndDispatchNative)          \
+    V(PushCallArgs1AndDispatchSlowPath)        \
+    V(PushCallArgs2AndDispatch)                \
+    V(PushCallArgs2AndDispatchNative)          \
+    V(PushCallArgs2AndDispatchSlowPath)        \
+    V(PushCallArgs3AndDispatch)                \
+    V(PushCallArgs3AndDispatchNative)          \
+    V(PushCallArgs3AndDispatchSlowPath)        \
+    V(PushCallIRangeAndDispatch)               \
+    V(PushCallIRangeAndDispatchNative)         \
+    V(PushCallIRangeAndDispatchSlowPath)       \
+    V(PushCallIThisRangeAndDispatch)           \
+    V(PushCallIThisRangeAndDispatchNative)     \
+    V(PushCallIThisRangeAndDispatchSlowPath)   \
+    V(ResumeRspAndDispatch)                    \
+    V(ResumeRspAndReturn)
 
-#define RUNTIME_STUB_WITHOUT_GC_LIST(V)       \
-    V(DebugPrint, 1)                          \
-    V(FatalPrint, 1)                          \
-    V(InsertOldToNewRememberedSet, 3)         \
-    V(MarkingBarrier, 5)                      \
-    V(DoubleToInt, 1)                         \
-    V(OptimizedCallRuntime, 3)                \
-    V(OptimizedCallRuntimeWithArgv, 4)        \
-    V(AsmIntCallRuntime, 3)                   \
-    V(JSCall, 5)                              \
-    V(JSCallWithArgV, 3)                      \
-    V(JSObjectGetMethod, 3)                   \
-    V(CreateArrayFromList, 3)                 \
-    V(PushCallArgs0AndDispatch, 2)            \
-    V(PushCallArgs0AndDispatchNative, 2)      \
-    V(PushCallArgs0AndDispatchSlowPath, 2)    \
-    V(PushCallArgs1AndDispatch, 2)            \
-    V(PushCallArgs1AndDispatchNative, 2)      \
-    V(PushCallArgs1AndDispatchSlowPath, 2)    \
-    V(PushCallArgs2AndDispatch, 2)            \
-    V(PushCallArgs2AndDispatchNative, 2)      \
-    V(PushCallArgs2AndDispatchSlowPath, 2)    \
-    V(PushCallArgs3AndDispatch, 2)            \
-    V(PushCallArgs3AndDispatchNative, 2)      \
-    V(PushCallArgs3AndDispatchSlowPath, 2)    \
-    V(PushCallIRangeAndDispatch, 2)           \
-    V(PushCallIRangeAndDispatchNative, 2)     \
-    V(PushCallIRangeAndDispatchSlowPath, 2)   \
-    V(PushCallIThisRangeAndDispatch, 2)           \
-    V(PushCallIThisRangeAndDispatchNative, 2)     \
-    V(PushCallIThisRangeAndDispatchSlowPath, 2)   \
-    V(ResumeRspAndDispatch, 8)                    \
-    V(ResumeRspAndReturn, 2)
-
-#define RUNTIME_STUB_WITH_GC_LIST(V)         \
-    V(AddElementInternal, 5)                 \
-    V(CallSetter, 5)                         \
-    V(CallSetter2, 3)                        \
-    V(CallGetter, 3)                         \
-    V(CallGetter2, 4)                        \
-    V(CallInternalGetter, 3)                 \
-    V(ThrowTypeError, 2)                     \
-    V(JSProxySetProperty, 6)                 \
-    V(GetHash32, 2)                          \
-    V(FindElementWithCache, 4)               \
-    V(StringGetHashCode, 1)                  \
-    V(FloatMod, 2)                           \
-    V(GetTaggedArrayPtrTest, 2)              \
-    V(NewInternalString, 2)                  \
-    V(NewTaggedArray, 2)                     \
-    V(CopyArray, 3)                          \
-    V(NameDictPutIfAbsent, 7)                \
-    V(PropertiesSetValue, 6)                 \
-    V(TaggedArraySetValue, 6)                \
-    V(NewEcmaDynClass, 4)                    \
-    V(UpdateLayOutAndAddTransition, 5)       \
-    V(NoticeThroughChainAndRefreshUser, 3)   \
-    V(JumpToCInterpreter, 7)                 \
-    V(StGlobalRecord, 4)                     \
-    V(SetFunctionNameNoPrefix, 3)            \
-    V(StOwnByValueWithNameSet, 4)            \
-    V(StOwnByName, 4)                        \
-    V(StOwnByNameWithNameSet, 7)             \
-    V(SuspendGenerator, 7)                   \
-    V(UpFrame, 1)                            \
-    V(NegDyn, 2)                             \
-    V(NotDyn, 2)                             \
-    V(IncDyn, 2)                             \
-    V(DecDyn, 2)                             \
-    V(Shl2Dyn, 3)                            \
-    V(Shr2Dyn, 3)                            \
-    V(Ashr2Dyn, 3)                           \
-    V(Or2Dyn, 3)                             \
-    V(Xor2Dyn, 3)                            \
-    V(And2Dyn, 3)                            \
-    V(ExpDyn, 3)                             \
-    V(IsInDyn, 3)                            \
-    V(InstanceOfDyn, 3)                      \
-    V(FastStrictEqual, 2)                    \
-    V(FastStrictNotEqual, 2)                 \
-    V(CreateGeneratorObj, 2)                 \
-    V(ThrowConstAssignment, 2)               \
-    V(GetTemplateObject, 2)                  \
-    V(GetNextPropName, 2)                    \
-    V(ThrowIfNotObject, 1)                   \
-    V(IterNext, 2)                           \
-    V(CloseIterator, 2)                      \
-    V(CopyModule, 2)                         \
-    V(SuperCallSpread, 4)                    \
-    V(DelObjProp, 3)                         \
-    V(NewObjSpreadDyn, 4)                    \
-    V(CreateIterResultObj, 3)                \
-    V(AsyncFunctionAwaitUncaught, 3)         \
-    V(AsyncFunctionResolveOrReject, 4)       \
-    V(ThrowUndefinedIfHole, 2)               \
-    V(CopyDataProperties, 3)                 \
-    V(StArraySpread, 4)                      \
-    V(GetIteratorNext, 3)                    \
-    V(SetObjectWithProto, 3)                 \
-    V(LoadICByValue, 5)                      \
-    V(StoreICByValue, 6)                     \
-    V(StOwnByValue, 4)                       \
-    V(LdSuperByValue, 4)                     \
-    V(StSuperByValue, 5)                     \
-    V(LdObjByIndex, 5)                       \
-    V(StObjByIndex, 4)                       \
-    V(StOwnByIndex, 4)                       \
-    V(ResolveClass, 6)                       \
-    V(CloneClassFromTemplate, 5)             \
-    V(SetClassConstructorLength, 3)          \
-    V(LoadICByName, 5)                       \
-    V(StoreICByName, 6)                      \
-    V(UpdateHotnessCounter, 2)               \
-    V(GetModuleNamespace, 2)                 \
-    V(StModuleVar, 3)                        \
-    V(LdModuleVar, 3)                        \
-    V(ThrowDyn, 2)                           \
-    V(GetPropIterator, 2)                    \
-    V(AsyncFunctionEnter, 1)                 \
-    V(GetIterator, 2)                        \
-    V(ThrowThrowNotExists, 1)                \
-    V(ThrowPatternNonCoercible, 1)           \
-    V(ThrowDeleteSuperProperty, 1)           \
-    V(EqDyn, 3)                              \
-    V(LdGlobalRecord, 2)                     \
-    V(GetGlobalOwnProperty, 2)               \
-    V(TryLdGlobalByName, 2)                  \
-    V(LoadMiss, 6)                           \
-    V(StoreMiss, 7)                          \
-    V(TryUpdateGlobalRecord, 3)              \
-    V(ThrowReferenceError, 2)                \
-    V(StGlobalVar, 3)                        \
-    V(LdGlobalVar, 3)                        \
-    V(ToNumber, 2)                           \
-    V(ToBoolean, 1)                          \
-    V(NotEqDyn, 3)                           \
-    V(LessDyn, 3)                            \
-    V(LessEqDyn, 3)                          \
-    V(GreaterDyn, 3)                         \
-    V(GreaterEqDyn, 3)                       \
-    V(Add2Dyn, 3)                            \
-    V(Sub2Dyn, 3)                            \
-    V(Mul2Dyn, 3)                            \
-    V(Div2Dyn, 3)                            \
-    V(Mod2Dyn, 3)                            \
-    V(GetLexicalEnv, 1)                      \
-    V(SetLexicalEnv, 2)                      \
-    V(LoadValueFromConstantStringTable, 2)   \
-    V(CreateEmptyObject, 1)                  \
-    V(CreateEmptyArray, 1)                   \
-    V(GetSymbolFunction, 1)                  \
-    V(GetUnmapedArgs, 2)                     \
-    V(CopyRestArgs, 3)                       \
-    V(CreateArrayWithBuffer, 2)              \
-    V(CreateObjectWithBuffer, 2)             \
-    V(NewLexicalEnvDyn, 2)                   \
-    V(NewObjDynRange, 5)                     \
-    V(DefinefuncDyn, 2)                      \
-    V(CreateRegExpWithLiteral, 3)            \
-    V(ThrowIfSuperNotCorrectCall, 3)         \
-    V(CreateObjectHavingMethod, 4)           \
-    V(CreateObjectWithExcludedKeys, 4)       \
-    V(DefineNCFuncDyn, 2)                    \
-    V(DefineGeneratorFunc, 2)                \
-    V(DefineAsyncFunc, 2)                    \
-    V(DefineMethod, 3)                       \
-    V(ThrowNotCallableException, 0)          \
-    V(ThrowCallConstructorException, 0)      \
-    V(ThrowStackOverflowException, 0)        \
-    V(CallNative, 1)                         \
-    V(CallSpreadDyn, 4)                      \
-    V(DefineGetterSetterByValue, 6)          \
-    V(SuperCall, 5)                          \
-    V(CallArg0Dyn, 2)                        \
-    V(CallArg1Dyn, 3)                        \
-    V(CallArgs2Dyn, 4)                       \
-    V(CallArgs3Dyn, 5)                       \
-    V(CallIThisRangeDyn, 3)                  \
-    V(CallIRangeDyn, 2)                      \
-    V(LdBigInt, 2)                           \
-    V(NewLexicalEnvWithNameDyn, 3)
+#define RUNTIME_STUB_WITH_GC_LIST(V)      \
+    V(AddElementInternal)                 \
+    V(CallSetter)                         \
+    V(CallSetter2)                        \
+    V(CallGetter)                         \
+    V(CallGetter2)                        \
+    V(CallInternalGetter)                 \
+    V(ThrowTypeError)                     \
+    V(JSProxySetProperty)                 \
+    V(GetHash32)                          \
+    V(FindElementWithCache)               \
+    V(StringGetHashCode)                  \
+    V(FloatMod)                           \
+    V(GetTaggedArrayPtrTest)              \
+    V(NewInternalString)                  \
+    V(NewTaggedArray)                     \
+    V(CopyArray)                          \
+    V(NameDictPutIfAbsent)                \
+    V(PropertiesSetValue)                 \
+    V(TaggedArraySetValue)                \
+    V(NewEcmaDynClass)                    \
+    V(UpdateLayOutAndAddTransition)       \
+    V(NoticeThroughChainAndRefreshUser)   \
+    V(JumpToCInterpreter)                 \
+    V(StGlobalRecord)                     \
+    V(SetFunctionNameNoPrefix)            \
+    V(StOwnByValueWithNameSet)            \
+    V(StOwnByName)                        \
+    V(StOwnByNameWithNameSet)             \
+    V(SuspendGenerator)                   \
+    V(UpFrame)                            \
+    V(NegDyn)                             \
+    V(NotDyn)                             \
+    V(IncDyn)                             \
+    V(DecDyn)                             \
+    V(Shl2Dyn)                            \
+    V(Shr2Dyn)                            \
+    V(Ashr2Dyn)                           \
+    V(Or2Dyn)                             \
+    V(Xor2Dyn)                            \
+    V(And2Dyn)                            \
+    V(ExpDyn)                             \
+    V(IsInDyn)                            \
+    V(InstanceOfDyn)                      \
+    V(FastStrictEqual)                    \
+    V(FastStrictNotEqual)                 \
+    V(CreateGeneratorObj)                 \
+    V(ThrowConstAssignment)               \
+    V(GetTemplateObject)                  \
+    V(GetNextPropName)                    \
+    V(ThrowIfNotObject)                   \
+    V(IterNext)                           \
+    V(CloseIterator)                      \
+    V(CopyModule)                         \
+    V(SuperCallSpread)                    \
+    V(DelObjProp)                         \
+    V(NewObjSpreadDyn)                    \
+    V(CreateIterResultObj)                \
+    V(AsyncFunctionAwaitUncaught)         \
+    V(AsyncFunctionResolveOrReject)       \
+    V(ThrowUndefinedIfHole)               \
+    V(CopyDataProperties)                 \
+    V(StArraySpread)                      \
+    V(GetIteratorNext)                    \
+    V(SetObjectWithProto)                 \
+    V(LoadICByValue)                      \
+    V(StoreICByValue)                     \
+    V(StOwnByValue)                       \
+    V(LdSuperByValue)                     \
+    V(StSuperByValue)                     \
+    V(LdObjByIndex)                       \
+    V(StObjByIndex)                       \
+    V(StOwnByIndex)                       \
+    V(ResolveClass)                       \
+    V(CloneClassFromTemplate)             \
+    V(SetClassConstructorLength)          \
+    V(LoadICByName)                       \
+    V(StoreICByName)                      \
+    V(UpdateHotnessCounter)               \
+    V(GetModuleNamespace)                 \
+    V(StModuleVar)                        \
+    V(LdModuleVar)                        \
+    V(ThrowDyn)                           \
+    V(GetPropIterator)                    \
+    V(AsyncFunctionEnter)                 \
+    V(GetIterator)                        \
+    V(ThrowThrowNotExists)                \
+    V(ThrowPatternNonCoercible)           \
+    V(ThrowDeleteSuperProperty)           \
+    V(EqDyn)                              \
+    V(LdGlobalRecord)                     \
+    V(GetGlobalOwnProperty)               \
+    V(TryLdGlobalByName)                  \
+    V(LoadMiss)                           \
+    V(StoreMiss)                          \
+    V(TryUpdateGlobalRecord)              \
+    V(ThrowReferenceError)                \
+    V(StGlobalVar)                        \
+    V(LdGlobalVar)                        \
+    V(ToNumber)                           \
+    V(ToBoolean)                          \
+    V(NotEqDyn)                           \
+    V(LessDyn)                            \
+    V(LessEqDyn)                          \
+    V(GreaterDyn)                         \
+    V(GreaterEqDyn)                       \
+    V(Add2Dyn)                            \
+    V(Sub2Dyn)                            \
+    V(Mul2Dyn)                            \
+    V(Div2Dyn)                            \
+    V(Mod2Dyn)                            \
+    V(GetLexicalEnv)                      \
+    V(SetLexicalEnv)                      \
+    V(LoadValueFromConstantStringTable)   \
+    V(CreateEmptyObject)                  \
+    V(CreateEmptyArray)                   \
+    V(GetSymbolFunction)                  \
+    V(GetUnmapedArgs)                     \
+    V(CopyRestArgs)                       \
+    V(CreateArrayWithBuffer)              \
+    V(CreateObjectWithBuffer)             \
+    V(NewLexicalEnvDyn)                   \
+    V(NewObjDynRange)                     \
+    V(DefinefuncDyn)                      \
+    V(CreateRegExpWithLiteral)            \
+    V(ThrowIfSuperNotCorrectCall)         \
+    V(CreateObjectHavingMethod)           \
+    V(CreateObjectWithExcludedKeys)       \
+    V(DefineNCFuncDyn)                    \
+    V(DefineGeneratorFunc)                \
+    V(DefineAsyncFunc)                    \
+    V(DefineMethod)                       \
+    V(ThrowNotCallableException)          \
+    V(ThrowCallConstructorException)      \
+    V(ThrowStackOverflowException)        \
+    V(CallNative)                         \
+    V(CallSpreadDyn)                      \
+    V(DefineGetterSetterByValue)          \
+    V(SuperCall)                          \
+    V(CallArg0Dyn)                        \
+    V(CallArg1Dyn)                        \
+    V(CallArgs2Dyn)                       \
+    V(CallArgs3Dyn)                       \
+    V(CallIThisRangeDyn)                  \
+    V(CallIRangeDyn)                      \
+    V(LdBigInt)                           \
+    V(NewLexicalEnvWithNameDyn)           \
+    V(GetAotUnmapedArgs)
 
 #define RUNTIME_STUB_LIST(V)                 \
     RUNTIME_STUB_WITHOUT_GC_LIST(V)          \
@@ -279,7 +279,7 @@ class RuntimeStubs {
 public:
     static void Initialize(JSThread *thread);
 
-#define DECLARE_RUNTIME_STUBS(name, counter) \
+#define DECLARE_RUNTIME_STUBS(name) \
     static JSTaggedType name(uintptr_t argGlue, uint32_t argc, uintptr_t argv);
     RUNTIME_STUB_WITH_GC_LIST(DECLARE_RUNTIME_STUBS)
     TEST_RUNTIME_STUB_GC_LIST(DECLARE_RUNTIME_STUBS)
@@ -482,6 +482,7 @@ private:
         JSHandle<JSTaggedValue> arg);
     static inline JSTaggedValue RuntimeLdBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &numberBigInt);
     static inline JSTaggedValue RuntimeNewLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId);
+    static inline JSTaggedValue RuntimeGetAotUnmapedArgs(JSThread *thread, uint32_t actualNumArgs, uintptr_t argv);
 };
 }  // namespace panda::ecmascript
 #endif

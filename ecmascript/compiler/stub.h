@@ -342,7 +342,7 @@ public:
     GateRef Int64Argument(size_t index);
     GateRef TaggedArgument(size_t index);
     GateRef TaggedPointerArgument(size_t index, GateType type = GateType::TAGGED_POINTER);
-    GateRef PtrArgument(size_t index, GateType type = GateType::C_VALUE);
+    GateRef PtrArgument(size_t index, GateType type = GateType::NJS_VALUE);
     GateRef Float32Argument(size_t index);
     GateRef Float64Argument(size_t index);
     GateRef Alloca(int size);

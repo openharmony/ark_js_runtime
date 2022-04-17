@@ -1621,21 +1621,22 @@ DEF_RUNTIME_STUBS(NewLexicalEnvWithNameDyn)
         static_cast<uint16_t>(scopeId.GetInt())).GetRawData();
 }
 
+DEF_RUNTIME_STUBS(GetAotUnmapedArgs)
+{
+    RUNTIME_STUBS_HEADER(GetAotUnmapedArgs);
+    CONVERT_ARG_TAGGED_CHECKED(actualNumArgs, 0);
+    return RuntimeGetAotUnmapedArgs(thread, actualNumArgs.GetInt(), argv).GetRawData();
+}
+
 JSTaggedType RuntimeStubs::CreateArrayFromList([[maybe_unused]]uintptr_t argGlue, int32_t argc, JSTaggedValue *argvPtr)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    std::vector<JSHandle<JSTaggedValue>> argvs;
-    for (int index = 0; index < argc; index++) {
-        argvs.push_back(JSHandle<JSTaggedValue>(thread, argvPtr[index]));
-    }
     JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(argc);
     for (int index = 0; index < argc; ++index) {
-        JSTaggedValue value = argvs[index].GetTaggedValue();
-        taggedArray->Set(thread, index, value);
+        taggedArray->Set(thread, index, argvPtr[index]);
     }
     JSHandle<JSArray> arrHandle = JSArray::CreateArrayFromList(thread, taggedArray);
-    arrHandle->Dump();
     return arrHandle.GetTaggedValue().GetRawData();
 }
 
@@ -1671,9 +1672,9 @@ void RuntimeStubs::MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintptr_t s
 
 void RuntimeStubs::Initialize(JSThread *thread)
 {
-#define DEF_RUNTIME_STUB(name, counter) kungfu::RuntimeStubCSigns::ID_##name
-#define INITIAL_RUNTIME_FUNCTIONS(name, count) \
-    thread->RegisterRTInterface(DEF_RUNTIME_STUB(name, count), reinterpret_cast<uintptr_t>(name));
+#define DEF_RUNTIME_STUB(name) kungfu::RuntimeStubCSigns::ID_##name
+#define INITIAL_RUNTIME_FUNCTIONS(name) \
+    thread->RegisterRTInterface(DEF_RUNTIME_STUB(name), reinterpret_cast<uintptr_t>(name));
     RUNTIME_STUB_LIST(INITIAL_RUNTIME_FUNCTIONS)
 #undef INITIAL_RUNTIME_FUNCTIONS
 #undef DEF_RUNTIME_STUB
