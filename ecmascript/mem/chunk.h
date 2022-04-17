@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef RUNTIME_ECMASCRIPT_CHUNK_H
-#define RUNTIME_ECMASCRIPT_CHUNK_H
+#ifndef ECMASCRIPT_MEM_CHUNK_H
+#define ECMASCRIPT_MEM_CHUNK_H
 
 #include "ecmascript/common.h"
 #include "ecmascript/mem/ecma_list.h"
@@ -97,4 +97,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // RUNTIME_ECMASCRIPT_CHUNK_H
+#endif  // ECMASCRIPT_MEM_CHUNK_H

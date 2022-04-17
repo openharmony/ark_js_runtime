@@ -59,7 +59,7 @@ JSHandle<TSTypeTable> TSTypeTable::GenerateTypeTable(JSThread *thread, const JSP
     ASSERT_PRINT(summaryLiteral->Get(TYPE_KIND_OFFSET).GetInt() == static_cast<int32_t>(TypeLiteralFlag::COUNTER),
                  "summary type literal flag is not counter");
 
-    uint32_t length = summaryLiteral->Get(TABLE_LENGTH_OFFSET_IN_LITREAL).GetInt();
+    uint32_t length = static_cast<uint32_t>(summaryLiteral->Get(TABLE_LENGTH_OFFSET_IN_LITREAL).GetInt());
     JSHandle<TSTypeTable> table = factory->NewTSTypeTable(length);
     JSMutableHandle<TaggedArray> typeLiteral(thread, JSTaggedValue::Undefined());
 
@@ -96,7 +96,7 @@ JSHandle<JSTaggedValue> TSTypeTable::ParseType(JSThread *thread, JSHandle<TSType
         }
         case TypeLiteralFlag::CLASS_INSTANCE: {
             JSHandle<TSClassInstanceType> classInstance = factory->NewTSClassInstanceType();
-            uint32_t classIndex = literal->Get(TSClassInstanceType::CREATE_CLASS_OFFSET).GetInt();;
+            int classIndex = literal->Get(TSClassInstanceType::CREATE_CLASS_OFFSET).GetInt();
             classInstance->SetClassRefGT(GlobalTSTypeRef(classIndex));
             return JSHandle<JSTaggedValue>(classInstance);
         }

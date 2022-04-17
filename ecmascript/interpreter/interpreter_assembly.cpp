@@ -30,7 +30,6 @@
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/template_string.h"
-#include "include/runtime_notification.h"
 #include "libpandafile/code_data_accessor.h"
 #include "libpandafile/file.h"
 #include "libpandafile/method_data_accessor.h"
@@ -353,7 +352,6 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
         state->function = funcValue;                                                               \
         thread->SetCurrentSPFrame(newSp);                                                          \
         LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call.";                                         \
-        thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);           \
         JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(                                 \
             const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);                 \
         if (UNLIKELY(thread->HasPendingException())) {                                             \
@@ -414,7 +412,6 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
         LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call "                                          \
                                 << std::hex << reinterpret_cast<uintptr_t>(sp) << " "              \
                                 << std::hex << reinterpret_cast<uintptr_t>(pc);                    \
-        thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);           \
         DISPATCH_OFFSET(0);                                                                        \
     } while (false)
 
@@ -445,7 +442,6 @@ void InterpreterAssembly::InitStackFrame(JSThread *thread)
 
 JSTaggedValue InterpreterAssembly::ExecuteNative(EcmaRuntimeCallInfo *info)
 {
-    ASSERT(info);
     JSThread *thread = info->GetThread();
     INTERPRETER_TRACE(thread, ExecuteNative);
     ECMAObject *callTarget = reinterpret_cast<ECMAObject*>(info->GetFunctionValue().GetTaggedObject());
@@ -495,17 +491,8 @@ JSTaggedValue InterpreterAssembly::ExecuteNative(EcmaRuntimeCallInfo *info)
 
 JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
 {
-    ASSERT(info);
     JSThread *thread = info->GetThread();
-    INTERPRETER_TRACE(thread, Execute);
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
-    AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
-    if (asmInterOpt.enableAsm) {
-        return InterpreterAssembly::Execute(info);
-    }
-#endif
-    JSHandle<JSTaggedValue> func = info->GetFunction();
-    ECMAObject *callTarget = reinterpret_cast<ECMAObject*>(func.GetTaggedValue().GetTaggedObject());
+    ECMAObject *callTarget = reinterpret_cast<ECMAObject*>(info->GetFunctionValue().GetTaggedObject());
     ASSERT(callTarget != nullptr);
     JSMethod *method = callTarget->GetCallTarget();
     if (method->IsNativeWithCallField()) {
@@ -583,7 +570,7 @@ JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
     state->pc = pc;
     state->function = info->GetFunctionValue();
     state->acc = JSTaggedValue::Hole();
-    JSHandle<JSFunction> thisFunc = JSHandle<JSFunction>::Cast(func);
+    JSHandle<JSFunction> thisFunc = JSHandle<JSFunction>::Cast(info->GetFunction());
     JSTaggedValue constpool = thisFunc->GetConstantPool();
     state->base.prev = sp;
     state->base.type = FrameType::INTERPRETER_FRAME;
@@ -596,9 +583,7 @@ JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
     LOG(DEBUG, INTERPRETER) << "break Entry: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(newSp) << " "
                             << std::hex << reinterpret_cast<uintptr_t>(pc);
 
-    thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
     InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
-    thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, method);
 
     // NOLINTNEXTLINE(readability-identifier-naming)
     const JSTaggedValue resAcc = state->acc;
@@ -659,9 +644,7 @@ JSTaggedValue InterpreterAssembly::GeneratorReEnterInterpreter(JSThread *thread,
     // execute interpreter
     thread->SetCurrentSPFrame(newSp);
 
-    thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
     InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
-    thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, method);
 
     JSTaggedValue res = state->acc;
     // pop frame
@@ -1053,16 +1036,14 @@ void InterpreterAssembly::HandleReturnDyn(
     sp = state->base.prev;
     ASSERT(sp != nullptr);
 
-    // break frame
-    if (FrameHandler(sp).IsEntryFrame()) {
-        thread->SetCurrentSPFrame(sp);
-        state->acc = acc;
-        return;
-    }
-
     AsmInterpretedFrame *prevState = GET_ASM_FRAME(sp);
     pc = prevState->pc;
     thread->SetCurrentSPFrame(sp);
+    // entry frame
+    if (pc == nullptr) {
+        state->acc = acc;
+        return;
+    }
 
     if (IsFastNewFrameExit(currentSp)) {
         JSFunction *func = JSFunction::Cast(GetThisFunction(currentSp).GetTaggedObject());
@@ -1112,16 +1093,14 @@ void InterpreterAssembly::HandleReturnUndefinedPref(
     sp = state->base.prev;
     ASSERT(sp != nullptr);
 
-    // break frame
-    if (FrameHandler(sp).IsEntryFrame()) {
-        thread->SetCurrentSPFrame(sp);
-        state->acc = JSTaggedValue::Undefined();
-        return;
-    }
-
     AsmInterpretedFrame *prevState = GET_ASM_FRAME(sp);
     pc = prevState->pc;
     thread->SetCurrentSPFrame(sp);
+    // entry frame
+    if (pc == nullptr) {
+        state->acc = JSTaggedValue::Undefined();
+        return;
+    }
 
     if (IsFastNewFrameExit(currentSp)) {
         JSFunction *func = JSFunction::Cast(GetThisFunction(currentSp).GetTaggedObject());
@@ -2267,7 +2246,6 @@ void InterpreterAssembly::HandleNewObjDynRangePrefImm16V8(
             state->function = ctor;
             thread->SetCurrentSPFrame(newSp);
             LOG(DEBUG, INTERPRETER) << "Entry: Runtime New.";
-            thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, ctorMethod);
             JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
                 const_cast<void *>(ctorMethod->GetNativePointer()))(&ecmaRuntimeCallInfo);
 
@@ -2277,7 +2255,6 @@ void InterpreterAssembly::HandleNewObjDynRangePrefImm16V8(
             LOG(DEBUG, INTERPRETER) << "Exit: Runtime New.";
             thread->SetCurrentSPFrame(sp);
             SET_ACC(retValue);
-            thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, ctorMethod);
             DISPATCH(BytecodeInstruction::Format::PREF_IMM16_V8);
         }
 
@@ -2344,7 +2321,6 @@ void InterpreterAssembly::HandleNewObjDynRangePrefImm16V8(
             thread->SetCurrentSPFrame(newSp);
             LOG(DEBUG, INTERPRETER) << "Entry: Runtime New " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                                     << std::hex << reinterpret_cast<uintptr_t>(pc);
-            thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, ctorMethod);
             DISPATCH_OFFSET(0);
         }
     }
@@ -2663,16 +2639,14 @@ void InterpreterAssembly::HandleSuspendGeneratorPrefV8V8(
     sp = state->base.prev;
     ASSERT(sp != nullptr);
 
-    // break frame
-    if (FrameHandler(sp).IsEntryFrame()) {
-        thread->SetCurrentSPFrame(sp);
-        state->acc = acc;
-        return;
-    }
-
     AsmInterpretedFrame *prevState = GET_ASM_FRAME(sp);
     pc = prevState->pc;
     thread->SetCurrentSPFrame(sp);
+    // entry frame
+    if (pc == nullptr) {
+        state->acc = acc;
+        return;
+    }
 
     ASSERT(prevState->callSize == GetJumpSizeAfterCall(pc));
     DISPATCH_OFFSET(prevState->callSize);

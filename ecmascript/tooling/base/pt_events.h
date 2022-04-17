@@ -24,9 +24,7 @@
 #include "ecmascript/tooling/base/pt_types.h"
 #include "ecmascript/tooling/dispatcher.h"
 
-namespace panda::tooling::ecmascript {
-using panda::ecmascript::EcmaVM;
-
+namespace panda::ecmascript::tooling {
 class PtBaseEvents : public PtBaseTypes {
 public:
     PtBaseEvents() = default;
@@ -737,5 +735,5 @@ private:
     std::optional<CString> scriptLanguage_ {};
     std::optional<CString> embedderName_ {};
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif

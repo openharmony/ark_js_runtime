@@ -18,7 +18,7 @@
 
 #include "ecmascript/tooling/base/pt_types.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 class PtBaseParams : public PtBaseTypes {
 public:
     PtBaseParams() = default;
@@ -749,5 +749,5 @@ private:
     std::optional<bool> treatGlobalObjectsAsRoots_ {};
     std::optional<bool> captureNumericValue_ {};
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif

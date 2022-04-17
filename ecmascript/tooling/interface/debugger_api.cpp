@@ -26,18 +26,7 @@
 #include "ecmascript/napi/jsnapi_helper.h"
 #include "ecmascript/tooling/interface/js_debugger.h"
 
-namespace panda::tooling::ecmascript {
-using panda::ecmascript::CStringToL;
-using panda::ecmascript::EcmaString;
-using panda::ecmascript::JSHandle;
-using panda::ecmascript::JSPandaFileExecutor;
-using panda::ecmascript::JSNativePointer;
-using panda::ecmascript::JSTaggedValue;
-using panda::ecmascript::LexicalEnv;
-using panda::ecmascript::Program;
-using panda::ecmascript::ScopeDebugInfo;
-using panda::ecmascript::TaggedArray;
-using panda::ecmascript::JSThread;
+namespace panda::ecmascript::tooling {
 using panda::ecmascript::base::ALLOW_BINARY;
 using panda::ecmascript::base::ALLOW_HEX;
 using panda::ecmascript::base::ALLOW_OCTAL;
@@ -148,10 +137,11 @@ int32_t DebuggerApi::StringToInt(Local<JSValueRef> str)
 }
 
 // JSThread
-Local<JSValueRef> DebuggerApi::GetException(const EcmaVM *ecmaVm)
+Local<JSValueRef> DebuggerApi::GetAndClearException(const EcmaVM *ecmaVm)
 {
     auto exception = ecmaVm->GetJSThread()->GetException();
     JSHandle<JSTaggedValue> handledException(ecmaVm->GetJSThread(), exception);
+    ecmaVm->GetJSThread()->ClearException();
     return JSNApiHelper::ToLocal<JSValueRef>(handledException);
 }
 
@@ -182,17 +172,17 @@ void DebuggerApi::DestroyJSDebugger(JSDebugger *debugger)
     delete debugger;
 }
 
-std::optional<Error> DebuggerApi::RegisterHooks(JSDebugger *debugger, PtHooks *hooks)
+void DebuggerApi::RegisterHooks(JSDebugger *debugger, PtHooks *hooks)
 {
-    return debugger->RegisterHooks(hooks);
+    debugger->RegisterHooks(hooks);
 }
 
-std::optional<Error> DebuggerApi::SetBreakpoint(JSDebugger *debugger, const PtLocation &location)
+bool DebuggerApi::SetBreakpoint(JSDebugger *debugger, const JSPtLocation &location)
 {
     return debugger->SetBreakpoint(location);
 }
 
-std::optional<Error> DebuggerApi::RemoveBreakpoint(JSDebugger *debugger, const PtLocation &location)
+bool DebuggerApi::RemoveBreakpoint(JSDebugger *debugger, const JSPtLocation &location)
 {
     return debugger->RemoveBreakpoint(location);
 }
@@ -273,4 +263,4 @@ Local<JSValueRef> DebuggerApi::GetLexicalValueInfo(const EcmaVM *ecmaVm, const C
     JSHandle<JSTaggedValue> handledValue(thread, JSTaggedValue::Hole());
     return JSNApiHelper::ToLocal<JSValueRef>(handledValue);
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling

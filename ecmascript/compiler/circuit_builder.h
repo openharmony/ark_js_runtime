@@ -22,8 +22,8 @@
 #include "ecmascript/compiler/variable_type.h"
 #include "ecmascript/compiler/call_signature.h"
 #include "ecmascript/base/number_helper.h"
+#include "ecmascript/global_env_constants.h"
 #include "ecmascript/js_hclass.h"
-#include "ecmascript/compiler/low_level_circuit_builder.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/tagged_array.h"
 
@@ -32,7 +32,7 @@ using namespace panda::ecmascript;
 #define DEFVAlUE(varname, cirBuilder, type, val) \
         Variable varname(cirBuilder, type, cirBuilder->NextVariableId(), val)
 
-class LabelManager;
+class Environment;
 class Label;
 class Variable;
 
@@ -198,12 +198,12 @@ private:
 
 class CircuitBuilder {
 public:
-    explicit CircuitBuilder(Circuit *circuit) : lowBuilder_(circuit) {}
-    explicit CircuitBuilder(Circuit *circuit, CompilationConfig *cmpCfg) : lowBuilder_(circuit), cmpCfg_(cmpCfg) {}
-    explicit CircuitBuilder(Circuit *circuit, LabelManager *lm) : lm_(lm), lowBuilder_(circuit) {}
-    ~CircuitBuilder();
+    explicit CircuitBuilder(Circuit *circuit) : circuit_(circuit) {}
+    explicit CircuitBuilder(Circuit *circuit, CompilationConfig *cmpCfg) : circuit_(circuit), cmpCfg_(cmpCfg) {}
+    ~CircuitBuilder() = default;
     NO_MOVE_SEMANTIC(CircuitBuilder);
     NO_COPY_SEMANTIC(CircuitBuilder);
+    // low level interface
     GateRef Arguments(size_t index);
     GateRef Merge(GateRef *in, size_t controlCount);
     GateRef Selector(OpCode opcode, MachineType machineType, GateRef control, const std::vector<GateRef> &values,
@@ -241,9 +241,10 @@ public:
     GateRef UnaryArithmetic(OpCode opcode, MachineType machineType, GateRef value);
     GateRef UnaryArithmetic(OpCode opcode, GateRef value);
     GateRef BinaryLogic(OpCode opcode, GateRef left, GateRef right);
+
+    // call related
     GateRef Call(const CallSignature *signature, GateRef glue, GateRef target, const std::vector<GateRef> &args,
         GateRef depend = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)));
-    GateRef RuntimeCall(GateRef glue, GateRef target, GateRef depend, const std::vector<GateRef> &args);
     GateRef NoGcRuntimeCall(const CallSignature *signature, GateRef glue, GateRef target,
                             GateRef depend, const std::vector<GateRef> &args);
     GateRef VariadicRuntimeCall(GateRef glue, GateRef target, GateRef depend, const std::vector<GateRef> &args);
@@ -252,7 +253,7 @@ public:
     static MachineType GetMachineTypeFromVariableType(VariableType type);
     Circuit *GetCircuit() const
     {
-        return lowBuilder_.GetCircuit();
+        return circuit_;
     }
     // constant
     inline GateRef True();
@@ -260,7 +261,8 @@ public:
     inline GateRef Undefined(VariableType type = VariableType::JS_ANY());
 
     // call operation
-    GateRef CallRuntime(GateRef glue, int id, const std::vector<GateRef> &args);
+    GateRef CallRuntimeWithDepend(GateRef glue, int index, GateRef depend, const std::vector<GateRef> &args);
+    GateRef CallRuntime(GateRef glue, int index, const std::vector<GateRef> &args, bool useLabel = false);
     GateRef CallNGCRuntime(GateRef glue, size_t index, const std::vector<GateRef> &args);
     GateRef CallStub(GateRef glue, size_t index, const std::vector<GateRef> &args);
     // memory
@@ -325,6 +327,9 @@ public:
     inline GateRef TaggedIsPrototypeHandler(GateRef x);
     inline GateRef TaggedIsTransitionHandler(GateRef x);
     inline GateRef TaggedIsUndefinedOrNull(GateRef x);
+    inline GateRef TaggedIsTrue(GateRef x);
+    inline GateRef TaggedIsFalse(GateRef x);
+    inline GateRef TaggedIsNull(GateRef x);
     inline GateRef TaggedIsBoolean(GateRef x);
     inline GateRef TaggedGetInt(GateRef x);
     inline GateRef TaggedTypeNGC(GateRef x);
@@ -339,6 +344,7 @@ public:
     inline void SetValueToTaggedArray(VariableType valType, GateRef glue, GateRef array, GateRef index, GateRef val);
     GateRef TaggedIsString(GateRef obj);
     GateRef TaggedIsStringOrSymbol(GateRef obj);
+    inline GateRef GetGlobalConstantString(ConstantIndex index);
     // object operation
     inline GateRef LoadHClass(GateRef object);
     inline GateRef IsJsType(GateRef object, JSType type);
@@ -351,6 +357,7 @@ public:
     inline GateRef IsEcmaObject(GateRef obj);
     inline GateRef IsJsObject(GateRef obj);
     inline GateRef BothAreString(GateRef x, GateRef y);
+    inline GateRef IsCallable(GateRef obj);
     GateRef GetFunctionBitFieldFromJSFunction(GateRef function);
     GateRef GetModuleFromFunction(GateRef function);
     GateRef FunctionIsResolved(GateRef function);
@@ -360,34 +367,35 @@ public:
     void SetModuleToFunction(GateRef glue, GateRef function, GateRef value);
     void SetPropertyInlinedProps(GateRef glue, GateRef obj, GateRef hClass,
         GateRef value, GateRef attrOffset, VariableType type);
-    void SetLabelManager(LabelManager *lm)
+    void SetHomeObjectToFunction(GateRef glue, GateRef function, GateRef value);
+    void SetEnvironment(Environment *env)
     {
-        lm_ = lm;
+        env_ = env;
     }
-    LabelManager *GetCurrentLabelManager() const
+    Environment *GetCurrentEnvironment() const
     {
-        return lm_;
+        return env_;
     }
     void SetCompilationConfig(CompilationConfig *cmpCfg)
     {
         cmpCfg_ = cmpCfg;
     }
+    CompilationConfig *GetCompilationConfig()
+    {
+        return cmpCfg_;
+    }
     // label related
-    void NewLabelManager(GateRef hir);
-    void DeleteCurrentLabelManager();
+    void NewEnvironment(GateRef hir);
+    void DeleteCurrentEnvironment();
     inline int NextVariableId();
     inline void HandleException(GateRef result, Label *success, Label *exception, Label *exit, VariableType type);
     inline void HandleException(GateRef result, Label *success, Label *fail, Label *exit, GateRef exceptionVal);
-    inline void PushCurrentLabel(Label *entry);
-    inline void PopCurrentLabel();
+    inline void SubCfgEntry(Label *entry);
+    inline void SubCfgExit();
     inline GateRef Return(GateRef value);
     inline GateRef Return();
     inline void Bind(Label *label);
     inline void Bind(Label *label, bool justSlowPath);
-    template<bool noThrow = false>
-    inline void MergeMirCircuit(GateRef hir, GateRef outir,
-                                const std::vector<GateRef> &successControl,
-                                const std::vector<GateRef> &exceptionControl);
     void Jump(Label *label);
     void Branch(GateRef condition, Label *trueLabel, Label *falseLabel);
     void Switch(GateRef index, Label *defaultLabel, int64_t *keysValue, Label *keysLabel, int numberOfKeys);
@@ -397,15 +405,15 @@ public:
     inline GateRef GetState() const;
     inline GateRef GetDepend() const;
 private:
-    LabelManager *lm_ {nullptr};
-    LCircuitBuilder lowBuilder_;
+    Circuit *circuit_ {nullptr};
+    Environment *env_ {nullptr};
     CompilationConfig *cmpCfg_ {nullptr};
 };
 
 class Label {
 public:
     explicit Label() = default;
-    explicit Label(LabelManager *lm);
+    explicit Label(Environment *env);
     explicit Label(CircuitBuilder *cirBuilder);
     ~Label() = default;
     Label(Label const &label) = default;
@@ -429,8 +437,8 @@ public:
 private:
     class LabelImpl {
     public:
-        LabelImpl(LabelManager *lm, GateRef control)
-            : lm_(lm), control_(control), predeControl_(-1), isSealed_(false)
+        LabelImpl(Environment *env, GateRef control)
+            : env_(env), control_(control), predeControl_(-1), isSealed_(false)
         {
         }
         ~LabelImpl() = default;
@@ -485,7 +493,7 @@ private:
         bool IsLoopHead() const;
         bool IsControlCase() const;
         GateRef ReadVariableRecursive(Variable *var);
-        LabelManager *lm_;
+        Environment *env_;
         GateRef control_;
         GateRef predeControl_ {-1};
         GateRef dependRelay_ {-1};
@@ -499,7 +507,7 @@ private:
         std::map<Variable *, GateRef> incompletePhis_;
     };
     explicit Label(LabelImpl *impl) : impl_(impl) {}
-    friend class LabelManager;
+    friend class Environment;
     LabelImpl *GetRawLabel() const
     {
         return impl_;
@@ -507,12 +515,13 @@ private:
     LabelImpl *impl_ {nullptr};
 };
 
-class LabelManager {
+class Environment {
 public:
     using LabelImpl = Label::LabelImpl;
-    LabelManager(GateRef hir, Circuit *circuit);
-    LabelManager(GateRef stateEntry, GateRef dependEntry, std::vector<GateRef>& inlist, Circuit *circuit);
-    ~LabelManager();
+    Environment(GateRef hir, Circuit *circuit, CircuitBuilder *builder);
+    Environment(GateRef stateEntry, GateRef dependEntry, std::vector<GateRef>& inlist,
+        Circuit *circuit, CircuitBuilder *builder);
+    ~Environment();
     Label *GetCurrentLabel() const
     {
         return currentLabel_;
@@ -521,9 +530,9 @@ public:
     {
         currentLabel_ = label;
     }
-    LCircuitBuilder *GetLCircuitBuilder()
+    CircuitBuilder *GetCircuitBuilder()
     {
-        return &lBuilder_;
+        return circuitBuilder_;
     }
     Circuit *GetCircuit()
     {
@@ -536,23 +545,14 @@ public:
     inline GateType GetGateType(GateRef gate) const;
     inline Label GetLabelFromSelector(GateRef sel);
     inline void AddSelectorToLabel(GateRef sel, Label label);
-    inline LabelImpl *NewLabel(LabelManager *lm, GateRef control = -1);
-    inline void PushCurrentLabel(Label *entry);
-    inline void PopCurrentLabel();
+    inline LabelImpl *NewLabel(Environment *env, GateRef control = -1);
+    inline void SubCfgEntry(Label *entry);
+    inline void SubCfgExit();
     inline GateRef GetInput(size_t index) const;
-    inline GateRef Return(GateRef value);
-    inline GateRef Return();
-    inline void Bind(Label *label);
-    inline void Bind(Label *label, bool justSlowPath);
-    void Jump(Label *label);
-    void Branch(GateRef condition, Label *trueLabel, Label *falseLabel);
-    void Switch(GateRef index, Label *defaultLabel, int64_t *keysValue, Label *keysLabel, int numberOfKeys);
-    void LoopBegin(Label *loopHead);
-    void LoopEnd(Label *loopHead);
 private:
     Label *currentLabel_ {nullptr};
-    Circuit *circuit_;
-    LCircuitBuilder lBuilder_;
+    Circuit *circuit_ {nullptr};
+    CircuitBuilder *circuitBuilder_ {nullptr};
     std::unordered_map<GateRef, LabelImpl *> phiToLabels_;
     std::vector<GateRef> inputList_;
     Label entry_;
@@ -563,16 +563,16 @@ private:
 
 class Variable {
 public:
-    Variable(LabelManager *lm, VariableType type, uint32_t id, GateRef value) : id_(id), type_(type), lm_(lm)
+    Variable(Environment *env, VariableType type, uint32_t id, GateRef value) : id_(id), type_(type), env_(env)
     {
         Bind(value);
-        lm_->GetCurrentLabel()->WriteVariable(this, value);
+        env_->GetCurrentLabel()->WriteVariable(this, value);
     }
     Variable(CircuitBuilder *cirbuilder, VariableType type, uint32_t id, GateRef value)
-        : id_(id), type_(type), lm_(cirbuilder->GetCurrentLabelManager())
+        : id_(id), type_(type), env_(cirbuilder->GetCurrentEnvironment())
     {
         Bind(value);
-        lm_->GetCurrentLabel()->WriteVariable(this, value);
+        env_->GetCurrentLabel()->WriteVariable(this, value);
     }
     ~Variable() = default;
     NO_MOVE_SEMANTIC(Variable);
@@ -595,13 +595,13 @@ public:
     }
     Variable &operator=(const GateRef value)
     {
-        lm_->GetCurrentLabel()->WriteVariable(this, value);
+        env_->GetCurrentLabel()->WriteVariable(this, value);
         Bind(value);
         return *this;
     }
     GateRef operator*()
     {
-        return lm_->GetCurrentLabel()->ReadVariable(this);
+        return env_->GetCurrentLabel()->ReadVariable(this);
     }
     GateRef AddPhiOperand(GateRef val);
     GateRef AddOperandToSelector(GateRef val, size_t idx, GateRef in);
@@ -609,7 +609,7 @@ public:
     void RerouteOuts(const std::vector<Out *> &outs, Gate *newGate);
     bool IsSelector(GateRef gate) const
     {
-        return lm_->GetCircuit()->IsSelector(gate);
+        return env_->GetCircuit()->IsSelector(gate);
     }
     bool IsSelector(const Gate *gate) const
     {
@@ -623,7 +623,7 @@ private:
     uint32_t id_;
     VariableType type_;
     GateRef currentValue_ {0};
-    LabelManager *lm_;
+    Environment *env_;
 };
 }  // namespace panda::ecmascript::kungfu
 

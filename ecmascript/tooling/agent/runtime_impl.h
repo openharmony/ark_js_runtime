@@ -21,7 +21,7 @@
 #include "ecmascript/tooling/base/pt_params.h"
 #include "ecmascript/tooling/dispatcher.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 class RuntimeImpl final {
 public:
     explicit RuntimeImpl(JSBackend *backend) : backend_(backend) {}
@@ -66,5 +66,5 @@ private:
 
     JSBackend *backend_{nullptr};
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif
