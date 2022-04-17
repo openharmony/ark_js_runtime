@@ -181,7 +181,7 @@ JSTaggedValue BuiltinsSharedArrayBuffer::Slice(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "this value not IsSharedArrayBuffer", JSTaggedValue::Exception());
     }
     // 5. Let len be the value of O’s [[ArrayBufferByteLength]] internal slot.
-    int32_t len = shaArrBuf->GetArrayBufferByteLength();
+    int32_t len = static_cast<int32_t>(shaArrBuf->GetArrayBufferByteLength());
     JSHandle<JSTaggedValue> startHandle = GetCallArg(argv, 0);
     // 6. Let relativeStart be ToInteger(start).
     JSTaggedNumber relativeStart = JSTaggedValue::ToInteger(thread, startHandle);

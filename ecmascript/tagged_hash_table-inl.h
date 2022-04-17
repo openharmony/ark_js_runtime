@@ -90,12 +90,12 @@ void TaggedHashTable<Derived>::GetAllKeys(const JSThread *thread, int offset, Ta
 template<typename Derived>
 int TaggedHashTable<Derived>::FindEntry(const JSTaggedValue &key)
 {
-    size_t size = Size();
+    int size = Size();
     int count = 1;
     JSTaggedValue keyValue;
-    int hash = Derived::Hash(key);
+    uint32_t hash = Derived::Hash(key);
 
-    for (int entry = GetFirstPosition(hash, size);; entry = GetNextPosition(entry, count++, size)) {
+    for (uint32_t entry = GetFirstPosition(hash, size);; entry = GetNextPosition(entry, count++, size)) {
         keyValue = GetKey(entry);
         if (keyValue.IsHole()) {
             continue;
@@ -189,7 +189,7 @@ JSHandle<Derived> TaggedHashTable<Derived>::Insert(const JSThread *thread, JSHan
                                                    const JSHandle<JSTaggedValue> &value)
 {
     // Make sure the key object has an identity hash code.
-    int hash = Derived::Hash(key.GetTaggedValue());
+    uint32_t hash = Derived::Hash(key.GetTaggedValue());
     int entry = table->FindEntry(key.GetTaggedValue());
     if (entry != -1) {
         table->SetValue(thread, entry, value.GetTaggedValue());
@@ -228,7 +228,7 @@ void TaggedHashTable<Derived>::Rehash(const JSThread *thread, Derived *newTable)
         if (!IsKey(k)) {
             continue;
         }
-        int hash = Derived::Hash(k);
+        uint32_t hash = Derived::Hash(k);
         int insertionIndex = Derived::GetKeyIndex(newTable->FindInsertIndex(hash));
         JSTaggedValue tv = Get(fromIndex);
         newTable->Set(thread, insertionIndex, tv);
@@ -328,7 +328,7 @@ int TaggedHashTable<Derived>::FindInsertIndex(int hash)
     int size = Size();
     int count = 1;
     // GrowHashTable will guarantee the hash table is never full.
-    for (int entry = GetFirstPosition(hash, size);; entry = GetNextPosition(entry, count++, size)) {
+    for (uint32_t entry = GetFirstPosition(hash, size);; entry = GetNextPosition(entry, count++, size)) {
         if (!IsKey(GetKey(entry))) {
             return entry;
         }
@@ -349,7 +349,7 @@ JSHandle<Derived> OrderTaggedHashTable<Derived>::PutIfAbsent(const JSThread *thr
                                                              const JSHandle<JSTaggedValue> &value,
                                                              const PropertyAttributes &metaData)
 {
-    int hash = Derived::Hash(key.GetTaggedValue());
+    uint32_t hash = Derived::Hash(key.GetTaggedValue());
 
     /* no need to add key if exist */
     int entry = table->FindEntry(key.GetTaggedValue());
@@ -430,7 +430,7 @@ int OrderTaggedHashTable<Derived>::NextEnumerationIndex(const JSThread *thread)
 
     if (!PropertyAttributes::IsValidIndex(index)) {
         std::vector<int> indexOrder = GetEnumerationOrder();
-        int length = indexOrder.size();
+        int length = static_cast<int>(indexOrder.size());
         for (int i = 0; i < length; i++) {
             int oldIndex = indexOrder[i];
             int enumIndex = PropertyAttributes::INITIAL_PROPERTY_INDEX + i;

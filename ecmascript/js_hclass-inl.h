@@ -97,7 +97,7 @@ inline JSHClass *JSHClass::FindTransitions(const JSTaggedValue &key, const JSTag
     }
     if (transitions.IsWeak()) {
         auto cachedHClass = JSHClass::Cast(transitions.GetTaggedWeakRef());
-        int last = cachedHClass->NumberOfProps() - 1;
+        int last = static_cast<int>(cachedHClass->NumberOfProps()) - 1;
         LayoutInfo *layoutInfo = LayoutInfo::Cast(cachedHClass->GetLayout().GetTaggedObject());
         auto attr = layoutInfo->GetAttr(last).GetPropertyMetaData();
         auto cachedKey = layoutInfo->GetKey(last);

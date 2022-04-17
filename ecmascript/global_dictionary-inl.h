@@ -85,7 +85,7 @@ void GlobalDictionary::UpdateValueAndAttributes(const JSThread *thread, int entr
 
 void GlobalDictionary::SetAttributes(const JSThread *thread, int entry, const PropertyAttributes &metaData)
 {
-    int index = GetEntryIndex(entry) + ENTRY_DETAILS_INDEX;
+    int index = static_cast<int>(GetEntryIndex(entry) + ENTRY_DETAILS_INDEX);
     Set(thread, index, metaData.GetTaggedValue());
 }
 

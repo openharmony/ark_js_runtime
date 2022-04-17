@@ -276,12 +276,12 @@ public:
         }
         uint32_t currentChar = GetCurrentChar();
         if (IsIgnoreCase()) {
-            currentChar = RegExpParser::Canonicalize(currentChar, IsUtf16());
+            currentChar = static_cast<uint32_t>(RegExpParser::Canonicalize(currentChar, IsUtf16()));
         }
         uint16_t rangeCount = byteCode.GetU16(GetCurrentPC() + 1);
         bool isFound = false;
         int32_t idxMin = 0;
-        int32_t idxMax = rangeCount - 1;
+        int32_t idxMax = static_cast<int32_t>(rangeCount) - 1;
         int32_t idx = 0;
         uint32_t low = 0;
         uint32_t high =
@@ -290,8 +290,10 @@ public:
         if (currentChar <= high) {
             while (idxMin <= idxMax) {
                 idx = (idxMin + idxMax) / RANGE32_OFFSET;
-                low = byteCode.GetU32(GetCurrentPC() + RANGE32_HEAD_OFFSET + idx * RANGE32_MAX_OFFSET);
-                high = byteCode.GetU32(GetCurrentPC() + RANGE32_HEAD_OFFSET + idx * RANGE32_MAX_OFFSET +
+                low = byteCode.GetU32(GetCurrentPC() + RANGE32_HEAD_OFFSET +  static_cast<uint32_t>(idx) *
+                    RANGE32_MAX_OFFSET);
+                high = byteCode.GetU32(GetCurrentPC() + RANGE32_HEAD_OFFSET +  static_cast<uint32_t>(idx) *
+                    RANGE32_MAX_OFFSET +
                     RANGE32_MAX_HALF_OFFSET);
                 if (currentChar < low) {
                     idxMax = idx - 1;
@@ -325,7 +327,7 @@ public:
         uint16_t rangeCount = byteCode.GetU16(GetCurrentPC() + 1);
         bool isFound = false;
         int32_t idxMin = 0;
-        int32_t idxMax = rangeCount - 1;
+        int32_t idxMax = static_cast<int32_t>(rangeCount - 1);
         int32_t idx = 0;
         uint32_t low = 0;
         uint32_t high =
