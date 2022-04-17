@@ -18,7 +18,7 @@
 
 #include "ecmascript/tooling/test/utils/test_util.h"
 
-namespace panda::tooling::ecmascript::test {
+namespace panda::ecmascript::tooling::test {
 class JsExceptionTest : public TestEvents {
 public:
     JsExceptionTest()
@@ -29,7 +29,7 @@ public:
             return true;
         };
 
-        breakpoint = [this](PtThread thread, const PtLocation &location) {
+        breakpoint = [this](const JSPtLocation &location) {
             ASSERT_TRUE(location.GetMethodId().IsValid());
             ASSERT_LOCATION_EQ(location, location_);
             ++breakpointCounter_;
@@ -40,11 +40,11 @@ public:
             ASSERT_TRUE(jsLocation != nullptr);
             ASSERT_EQ(jsLocation->GetLine(), 22);
             ASSERT_EQ(jsLocation->GetColumn(), 0);
-            TestUtil::SuspendUntilContinue(DebugEvent::BREAKPOINT, thread, location);
+            TestUtil::SuspendUntilContinue(DebugEvent::BREAKPOINT, location);
             return true;
         };
 
-        exception = [this](PtThread thread, const PtLocation &location) {
+        exception = [this](const JSPtLocation &location) {
             auto sourceLocation = TestUtil::GetSourceLocation(location, pandaFile_.c_str());
             ASSERT_EQ(sourceLocation.line, 17);
             ASSERT_EQ(sourceLocation.column, 27);
@@ -56,7 +56,7 @@ public:
             ASSERT_TRUE(jsLocation != nullptr);
             ASSERT_EQ(jsLocation->GetLine(), 17);
             ASSERT_EQ(jsLocation->GetColumn(), 27);
-            TestUtil::SuspendUntilContinue(DebugEvent::EXCEPTION, thread, location);
+            TestUtil::SuspendUntilContinue(DebugEvent::EXCEPTION, location);
             return true;
         };
 
@@ -68,7 +68,7 @@ public:
                 ASSERT_TRUE(backend_->NotifyScriptParsed(0, pandaFile_));
                 flag_ = false;
                 auto error = debugInterface_->SetBreakpoint(location_);
-                ASSERT_FALSE(error.has_value());
+                ASSERT_FALSE(error);
             }
             return true;
         };
@@ -78,7 +78,7 @@ public:
             TestUtil::Continue();
             TestUtil::WaitForException();
             TestUtil::Continue();
-            ASSERT_SUCCESS(debugInterface_->RemoveBreakpoint(location_));
+            ASSERT_TRUE(debugInterface_->RemoveBreakpoint(location_));
             ASSERT_EXITED();
             return true;
         };
@@ -99,7 +99,7 @@ public:
 private:
     CString pandaFile_ = "/data/test/exception.abc";
     CString entryPoint_ = "_GLOBAL::func_main_0";
-    PtLocation location_ {nullptr, PtLocation::EntityId(0), 0};
+    JSPtLocation location_ {nullptr, JSPtLocation::EntityId(0), 0};
     size_t breakpointCounter_ = 0;
     size_t exceptionCounter_ = 0;
     bool flag_ = true;
@@ -109,6 +109,6 @@ std::unique_ptr<TestEvents> GetJsExceptionTest()
 {
     return std::make_unique<JsExceptionTest>();
 }
-}  // namespace panda::tooling::ecmascript::test
+}  // namespace panda::ecmascript::tooling::test
 
 #endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TESTCASES_JS_EXCEPTION_TEST_H

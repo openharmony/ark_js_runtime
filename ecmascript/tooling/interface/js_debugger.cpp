@@ -18,73 +18,66 @@
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
-#include "runtime/tooling/pt_method_private.h"
 
-namespace panda::tooling::ecmascript {
-using panda::ecmascript::Program;
-
-std::optional<Error> JSDebugger::SetBreakpoint(const PtLocation &location)
+namespace panda::ecmascript::tooling {
+bool JSDebugger::SetBreakpoint(const JSPtLocation &location)
 {
     JSMethod *method = FindMethod(location);
     if (method == nullptr) {
-        return Error(Error::Type::METHOD_NOT_FOUND,
-                     "Cannot find JSMethod with id " + std::to_string(location.GetMethodId().GetOffset()) +
-                     " in panda file '" + location.GetPandaFile() + "'");
+        LOG(ERROR, DEBUGGER) << "SetBreakpoint: Cannot find JSMethod";
+        return false;
     }
 
     if (location.GetBytecodeOffset() >= method->GetCodeSize()) {
-        return Error(Error::Type::INVALID_BREAKPOINT, "Invalid breakpoint location: bytecode offset (" +
-                                                      std::to_string(location.GetBytecodeOffset()) +
-                                                      ") >= JSMethod code size (" +
-                                                      std::to_string(method->GetCodeSize()) + ")");
+        LOG(ERROR, DEBUGGER) << "SetBreakpoint: Invalid breakpoint location";
+        return false;
     }
 
     if (!breakpoints_.emplace(method, location.GetBytecodeOffset()).second) {
-        return Error(Error::Type::BREAKPOINT_ALREADY_EXISTS,
-                     "Breakpoint already exists: bytecode offset " +
-                     std::to_string(location.GetBytecodeOffset()));
+        LOG(ERROR, DEBUGGER) << "SetBreakpoint: Breakpoint already exists";
+        return false;
     }
 
-    return {};
+    return true;
 }
 
-std::optional<Error> JSDebugger::RemoveBreakpoint(const PtLocation &location)
+bool JSDebugger::RemoveBreakpoint(const JSPtLocation &location)
 {
     JSMethod *method = FindMethod(location);
     if (method == nullptr) {
-        return Error(Error::Type::METHOD_NOT_FOUND,
-                     "Cannot find JSMethod with id " + std::to_string(location.GetMethodId().GetOffset()) +
-                     " in panda file '" + location.GetPandaFile() + "'");
+        LOG(ERROR, DEBUGGER) << "RemoveBreakpoint: Cannot find JSMethod";
+        return false;
     }
 
     if (!RemoveBreakpoint(method, location.GetBytecodeOffset())) {
-        return Error(Error::Type::BREAKPOINT_NOT_FOUND, "Breakpoint not found");
+        LOG(ERROR, DEBUGGER) << "RemoveBreakpoint: Breakpoint not found";
+        return false;
     }
 
-    return {};
+    return true;
 }
 
-void JSDebugger::BytecodePcChanged(ManagedThread *thread, Method *method, uint32_t bcOffset)
+void JSDebugger::BytecodePcChanged(JSThread *thread, JSMethod *method, uint32_t bcOffset)
 {
     ASSERT(bcOffset < method->GetCodeSize() && "code size of current JSMethod less then bcOffset");
 
-    HandleExceptionThrowEvent(JSThread::Cast(thread), JSMethod::Cast(method), bcOffset);
+    HandleExceptionThrowEvent(thread, method, bcOffset);
 
     // Step event is reported before breakpoint, according to the spec.
-    HandleStep(JSThread::Cast(thread), JSMethod::Cast(method), bcOffset);
-    HandleBreakpoint(JSThread::Cast(thread), JSMethod::Cast(method), bcOffset);
+    HandleStep(method, bcOffset);
+    HandleBreakpoint(method, bcOffset);
 }
 
-bool JSDebugger::HandleBreakpoint(const JSThread *thread, const JSMethod *method, uint32_t bcOffset)
+bool JSDebugger::HandleBreakpoint(const JSMethod *method, uint32_t bcOffset)
 {
     if (hooks_ == nullptr || !FindBreakpoint(method, bcOffset)) {
         return false;
     }
 
     auto *pf = method->GetPandaFile();
-    PtLocation location {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
+    JSPtLocation location {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
 
-    hooks_->Breakpoint(PtThread(thread->GetId()), location);
+    hooks_->Breakpoint(location);
     return true;
 }
 
@@ -95,21 +88,21 @@ void JSDebugger::HandleExceptionThrowEvent(const JSThread *thread, const JSMetho
     }
 
     auto *pf = method->GetPandaFile();
-    PtLocation throwLocation {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
+    JSPtLocation throwLocation {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
 
-    hooks_->Exception(PtThread(thread->GetId()), throwLocation, PtObject(), throwLocation);
+    hooks_->Exception(throwLocation);
 }
 
-bool JSDebugger::HandleStep(const JSThread *thread, const JSMethod *method, uint32_t bcOffset)
+bool JSDebugger::HandleStep(const JSMethod *method, uint32_t bcOffset)
 {
     if (hooks_ == nullptr) {
         return false;
     }
 
     auto *pf = method->GetPandaFile();
-    PtLocation location {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
+    JSPtLocation location {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
 
-    hooks_->SingleStep(PtThread(thread->GetId()), location);
+    hooks_->SingleStep(location);
     return true;
 }
 
@@ -138,7 +131,7 @@ bool JSDebugger::RemoveBreakpoint(const JSMethod *method, uint32_t bcOffset)
     return false;
 }
 
-JSMethod *JSDebugger::FindMethod(const PtLocation &location) const
+JSMethod *JSDebugger::FindMethod(const JSPtLocation &location) const
 {
     JSMethod *method = nullptr;
     ::panda::ecmascript::JSPandaFileManager::GetInstance()->EnumerateJSPandaFiles([&method, location](
@@ -157,28 +150,4 @@ JSMethod *JSDebugger::FindMethod(const PtLocation &location) const
     });
     return method;
 }
-
-void JSDebugger::MethodEntry(ManagedThread *thread, Method *method)
-{
-    if (hooks_ == nullptr) {
-        return;
-    }
-
-    uint32_t threadId = thread->GetId();
-    PtThread ptThread(threadId);
-    hooks_->MethodEntry(ptThread, MethodToPtMethod(method));
-}
-
-void JSDebugger::MethodExit(ManagedThread *thread, Method *method)
-{
-    if (hooks_ == nullptr) {
-        return;
-    }
-    bool isExceptionTriggered = thread->HasPendingException();
-    PtThread ptThread(thread->GetId());
-    auto sp = const_cast<JSTaggedType *>(JSThread::Cast(thread)->GetCurrentSPFrame());
-    InterpretedFrameHandler frameHandler(sp);
-    PtValue retValue(frameHandler.GetAcc().GetRawData());
-    hooks_->MethodExit(ptThread, MethodToPtMethod(method), isExceptionTriggered, retValue);
-}
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling

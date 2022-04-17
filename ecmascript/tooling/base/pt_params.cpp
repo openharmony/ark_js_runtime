@@ -15,7 +15,7 @@
 
 #include "ecmascript/tooling/base/pt_params.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 std::unique_ptr<EnableParams> EnableParams::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
 {
     ASSERT(ecmaVm);
@@ -862,4 +862,4 @@ Local<ObjectRef> StopTrackingHeapObjectsParams::ToObject(const EcmaVM *ecmaVm)
 
     return params;
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
