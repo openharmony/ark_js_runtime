@@ -16,9 +16,9 @@
 #ifndef ECMASCRIPT_TOOLING_TEST_UTILS_TEST_ENTRY_H
 #define ECMASCRIPT_TOOLING_TEST_UTILS_TEST_ENTRY_H
 
-namespace panda::tooling::ecmascript::test {
+namespace panda::ecmascript::tooling::test {
 int StartDebuggerImpl();
 int StopDebuggerImpl();
-}  // namespace panda::tooling::ecmascript::test
+}  // namespace panda::ecmascript::tooling::test
 
 #endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TEST_ENTRY_H

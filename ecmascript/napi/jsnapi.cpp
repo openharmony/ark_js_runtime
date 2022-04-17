@@ -55,12 +55,8 @@
 #include "ecmascript/module/js_module_source_text.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
+#include "ecmascript/tooling/interface/notification_manager.h"
 #include "generated/base_options.h"
-#include "include/runtime_notification.h"
-
-#ifndef PANDA_TARGET_WINDOWS
-#include "libpandabase/os/library_loader.h"
-#endif
 
 #include "utils/pandargs.h"
 
@@ -239,9 +235,9 @@ void JSNApi::ThrowException(const EcmaVM *vm, Local<JSValueRef> error)
 }
 
 #if defined(ECMASCRIPT_SUPPORT_DEBUGGER)
-bool JSNApi::StartDebugger(const char *library_path, EcmaVM *vm, bool isDebugMode)
+bool JSNApi::StartDebugger(const char *libraryPath, EcmaVM *vm, bool isDebugMode)
 {
-    auto handle = panda::os::library_loader::Load(std::string(library_path));
+    auto handle = panda::os::library_loader::Load(std::string(libraryPath));
     if (!handle) {
         return false;
     }
@@ -256,31 +252,29 @@ bool JSNApi::StartDebugger(const char *library_path, EcmaVM *vm, bool isDebugMod
 
     bool ret = reinterpret_cast<StartDebugger>(sym.Value())("PandaDebugger", vm, isDebugMode);
     if (ret) {
-        auto runtime = Runtime::GetCurrent();
-        runtime->SetDebugMode(isDebugMode);
-        runtime->SetDebuggerLibrary(std::move(handle.Value()));
+        vm->SetDebugMode(isDebugMode);
+        vm->SetDebugLibraryHandle(std::move(handle.Value()));
     }
     return ret;
 }
 
-bool JSNApi::StopDebugger(const char *library_path)
+bool JSNApi::StopDebugger(EcmaVM *vm)
 {
-    auto handle = panda::os::library_loader::Load(std::string(library_path));
-    if (!handle) {
+    if (vm == nullptr) {
         return false;
     }
+    const os::library_loader::LibraryHandle &handle = vm->GetDebugLibraryHandle();
 
     using StopDebug = void (*)(const std::string &);
 
-    auto sym = panda::os::library_loader::ResolveSymbol(handle.Value(), "StopDebug");
+    auto sym = panda::os::library_loader::ResolveSymbol(handle, "StopDebug");
     if (!sym) {
         LOG(ERROR, RUNTIME) << sym.Error().ToString();
         return false;
     }
 
     reinterpret_cast<StopDebug>(sym.Value())("PandaDebugger");
-    auto runtime = Runtime::GetCurrent();
-    runtime->SetDebugMode(false);
+    vm->SetDebugMode(false);
     return true;
 }
 #endif

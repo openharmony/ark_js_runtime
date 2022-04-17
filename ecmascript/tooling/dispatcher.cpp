@@ -21,7 +21,7 @@
 #include "ecmascript/tooling/agent/runtime_impl.h"
 #include "ecmascript/tooling/front_end.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 DispatchRequest::DispatchRequest(const EcmaVM *ecmaVm, const CString &message) : ecmaVm_(ecmaVm)
 {
     Local<JSValueRef> msgValue = JSON::Parse(ecmaVm, StringRef::NewFromUtf8(ecmaVm, message.c_str()));
@@ -100,12 +100,12 @@ DispatchResponse DispatchResponse::Create(ResponseCode code, const CString &msg)
     return response;
 }
 
-DispatchResponse DispatchResponse::Create(std::optional<Error> error)
+DispatchResponse DispatchResponse::Create(std::optional<CString> error)
 {
     DispatchResponse response;
     if (error.has_value()) {
         response.code_ = ResponseCode::NOK;
-        response.errorMsg_ = error->GetMessage();
+        response.errorMsg_ = error.value();
     }
     return response;
 }
@@ -154,4 +154,4 @@ void Dispatcher::Dispatch(const DispatchRequest &request)
         LOG(ERROR, DEBUGGER) << "unknown domain: " << domain;
     }
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling

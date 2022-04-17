@@ -21,7 +21,7 @@
 #include "ecmascript/tooling/base/pt_returns.h"
 #include "ecmascript/tooling/dispatcher.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 class FrontEnd {
 public:
     FrontEnd() = default;
@@ -37,6 +37,6 @@ private:
     NO_COPY_SEMANTIC(FrontEnd);
     NO_MOVE_SEMANTIC(FrontEnd);
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 
 #endif

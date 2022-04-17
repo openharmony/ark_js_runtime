@@ -18,7 +18,7 @@
 #include "ecmascript/tooling/front_end.h"
 #include "libpandabase/utils/logger.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 ProfilerImpl::DispatcherImpl::DispatcherImpl(FrontEnd *frontend, std::unique_ptr<ProfilerImpl> profiler)
     : DispatcherBase(frontend), profiler_(std::move(profiler))
 {
@@ -88,5 +88,5 @@ DispatchResponse ProfilerImpl::Stop()
 {
     return DispatchResponse::Ok();
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 
