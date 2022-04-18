@@ -28,12 +28,15 @@ class File;
 }  // namespace panda_file
 
 namespace ecmascript {
-#define ENTRY_FUNCTION_NAME "func_main_0"
-#define MODULE_CLASS "L_ESModuleRecord;"
-#define ENTRY_MAIN_FUNCTION "_GLOBAL::" ENTRY_FUNCTION_NAME
-
 class JSPandaFile {
 public:
+    static constexpr char ENTRY_FUNCTION_NAME[] = "func_main_0";
+    static constexpr char ENTRY_MAIN_FUNCTION[] = "_GLOBAL::func_main_0";
+    static constexpr char MODULE_CLASS[] = "L_ESModuleRecord;";
+    static constexpr char TS_TYPES_CLASS[] = "L_ESTypeInfoRecord;";
+    static constexpr char TYPE_FLAG[] = "typeFlag";
+    static constexpr char TYPE_SUMMARY_INDEX[] = "typeSummaryIndex";
+
     JSPandaFile(const panda_file::File *pf, const CString &descriptor);
     ~JSPandaFile();
 
@@ -95,6 +98,16 @@ public:
 
     bool IsModule() const;
 
+    bool HasTsTypes() const
+    {
+        return hasTSTypes_;
+    }
+
+    uint32_t GetTypeSummaryIndex() const
+    {
+        return typeSummaryIndex_;
+    }
+
 private:
     void Initialize();
 
@@ -107,6 +120,8 @@ private:
     const panda_file::File *pf_ {nullptr};
     CString desc_;
     bool isModule_ {false};
+    bool hasTSTypes_ {false};
+    uint32_t typeSummaryIndex_ {0};
 };
 }  // namespace ecmascript
 }  // namespace panda

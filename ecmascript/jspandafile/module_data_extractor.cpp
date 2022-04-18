@@ -39,7 +39,7 @@ JSHandle<JSTaggedValue> ModuleDataExtractor::ParseModule(JSThread *thread, const
         }
         panda_file::ClassDataAccessor cda(*pf, classId);
         const char *desc = utf::Mutf8AsCString(cda.GetDescriptor());
-        if (std::strcmp(MODULE_CLASS, desc) == 0) { // module class
+        if (std::strcmp(JSPandaFile::MODULE_CLASS, desc) == 0) { // module class
             cda.EnumerateFields([&](panda_file::FieldDataAccessor &field_accessor) -> void {
                 panda_file::File::EntityId field_name_id = field_accessor.GetNameId();
                 StringData sd = pf->GetStringData(field_name_id);
