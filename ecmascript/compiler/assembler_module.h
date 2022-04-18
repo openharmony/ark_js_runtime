@@ -21,6 +21,7 @@
 
 #include "assembler/assembler.h"
 #include "ecmascript/compiler/call_signature.h"
+#include "ecmascript/stubs/runtime_stubs.h"
 
 namespace panda::ecmascript::kungfu {
 class AssemblerModule {
@@ -63,6 +64,7 @@ public:
     {
         codeBufferOffset_ = offset;
     }
+    void GenerateStubsX64(Chunk* chunk);
 private:
     std::vector<CallSignature *> asmCallSigns_;
     std::vector<size_t> offsetTable_;
@@ -70,5 +72,20 @@ private:
     uint8_t* buffer_ {nullptr};
     size_t bufferSize_ {0};
 };
+
+class AssemblerStub {
+public:
+    virtual void Generate(Assembler* assembler) = 0;
+    virtual ~AssemblerStub() = default;
+};
+
+#define DECLARE_ASM_STUB_CLASS(name)                 \
+class name##Stub : public AssemblerStub {            \
+public:                                              \
+    ~name##Stub() = default;                         \
+    void Generate(Assembler* assembler) override;    \
+}
+RUNTIME_ASM_STUB_LIST(DECLARE_ASM_STUB_CLASS);
+#undef DECLARE_ASM_STUB_CLASS
 }  // namespace panda::ecmascript::kunfu
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_H

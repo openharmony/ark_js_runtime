@@ -23,27 +23,42 @@ void AssemblerModule::Run(const std::string &triple, Chunk* chunk)
 {
     SetUpForAsmStubs();
     if (triple.compare("x86_64-unknown-linux-gnu") == 0) {
-        x64::AssemblerX64 assembler(chunk);
-        x64::AssemblerModuleX64 stubs;
-
-        if (asmCallSigns_.empty()) {
-            return;
-        }
-        auto cs = asmCallSigns_[0];
-        std::cerr << "Stub Name: " << cs->GetName() << std::endl;
-        offsetTable_.push_back(0U);
-        stubs.Generate_AsmInterpCallRuntime(&assembler);
-        assembler.Align16();
-
-        buffer_ = assembler.GetBegin();
-        bufferSize_ = assembler.GetCurrentPosition();
+        GenerateStubsX64(chunk);
     }
+}
+
+void AssemblerModule::GenerateStubsX64(Chunk* chunk)
+{
+    x64::AssemblerX64 assembler(chunk);
+    COMPILER_LOG(INFO) << "compiling asm stubs";
+    for (size_t i = 0; i < asmCallSigns_.size(); i++) {
+        auto cs = asmCallSigns_[0];
+        ASSERT(cs->HasConstructor());
+        COMPILER_LOG(INFO) << "Stub Name: " << cs->GetName();
+        size_t offset = assembler.GetCurrentPosition();
+        offsetTable_.push_back(offset);
+        AssemblerStub *stub = static_cast<AssemblerStub*>(
+            cs->GetConstructor()(nullptr));
+        stub->Generate(&assembler);
+        delete stub;
+    }
+    buffer_ = assembler.GetBegin();
+    bufferSize_ = assembler.GetCurrentPosition();
 }
 
 void AssemblerModule::SetUpForAsmStubs()
 {
     std::vector<CallSignature *> callSigns;
     RuntimeStubCSigns::GetCSigns(callSigns);
+
+#define INIT_SIGNATURES(name)                                    \
+    callSigns[RuntimeStubCSigns::ID_##name]->SetConstructor(     \
+        []([[maybe_unused]]void* arg) {                          \
+            return static_cast<void*>(                           \
+                new name##Stub());                               \
+    })
+    RUNTIME_ASM_STUB_LIST(INIT_SIGNATURES);
+#undef INIT_SIGNATURES
 
     for (size_t i = 0; i < callSigns.size(); i++) {
         CallSignature* cs = callSigns[i];
@@ -52,5 +67,13 @@ void AssemblerModule::SetUpForAsmStubs()
             asmCallSigns_.push_back(cs);
         }
     }
+    callSigns.clear();
+}
+
+void AsmIntCallRuntimeStub::Generate(Assembler *assembler)
+{
+    x64::AssemblerX64 *assemblerX64 = static_cast<x64::AssemblerX64*>(assembler);
+    x64::AssemblerModuleX64::Generate_AsmInterpCallRuntime(assemblerX64);
+    assemblerX64->Align16();
 }
 }  // namespace panda::ecmascript::kunfu
