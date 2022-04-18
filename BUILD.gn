@@ -184,6 +184,10 @@ config("ark_jsruntime_common_config") {
     defines += [ "ECMASCRIPT_ENABLE_TEST_STUB" ]
   }
 
+  if (use_musl) {
+    defines += [ "PANDA_USE_MUSL" ]
+  }
+
   if (is_standard_system) {
     defines += [ "IS_STANDARD_SYSTEM" ]
   }
