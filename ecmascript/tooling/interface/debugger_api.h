@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -47,7 +47,7 @@ enum StackState {
 class PUBLIC_API DebuggerApi {
 public:
     // JSPandaFileExecutor
-    Local<JSValueRef> Execute(const EcmaVM *ecmaVm, const void *buffer, size_t size,
+    static Local<JSValueRef> Execute(const EcmaVM *ecmaVm, const void *buffer, size_t size,
                               std::string_view entryPoint);
 
     // InterpretedFrameHandler
@@ -79,8 +79,12 @@ public:
     static JSDebugger *CreateJSDebugger(const EcmaVM *ecmaVm);
     static void DestroyJSDebugger(JSDebugger *debugger);
     static void RegisterHooks(JSDebugger *debugger, PtHooks *hooks);
-    static bool SetBreakpoint(JSDebugger *debugger, const JSPtLocation &location);
+    static bool SetBreakpoint(JSDebugger *debugger, const JSPtLocation &location,
+        const std::optional<CString> &condition);
     static bool RemoveBreakpoint(JSDebugger *debugger, const JSPtLocation &location);
+    static void InitJSDebugger(JSDebugger *debugger);
+    static void HandleUncaughtException(const EcmaVM *ecmaVm, CString &message);
+    static Local<JSValueRef> ExecuteFromBuffer(EcmaVM *ecmaVm, const void *buffer, size_t size);
 
     // JSMehthod
     static CString ParseFunctionName(const JSMethod *method);

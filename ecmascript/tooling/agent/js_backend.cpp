@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,6 +15,8 @@
 
 #include "ecmascript/tooling/agent/js_backend.h"
 
+#include <boost/beast/core/detail/base64.hpp>
+
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/tooling/base/pt_events.h"
 #include "ecmascript/tooling/front_end.h"
@@ -22,6 +24,8 @@
 #include "libpandafile/class_data_accessor-inl.h"
 
 namespace panda::ecmascript::tooling {
+using namespace boost::beast::detail;
+
 using ObjectType = RemoteObject::TypeName;
 using ObjectSubType = RemoteObject::SubTypeName;
 using ObjectClassName = RemoteObject::ClassName;
@@ -34,6 +38,7 @@ JSBackend::JSBackend(FrontEnd *frontend) : frontend_(frontend)
     hooks_ = std::make_unique<JSPtHooks>(this);
 
     debugger_ = DebuggerApi::CreateJSDebugger(ecmaVm_);
+    DebuggerApi::InitJSDebugger(debugger_);
     DebuggerApi::RegisterHooks(debugger_, hooks_.get());
 }
 
@@ -229,7 +234,8 @@ std::optional<CString> JSBackend::GetPossibleBreakpoints(Location *start, [[mayb
 }
 
 std::optional<CString> JSBackend::SetBreakpointByUrl(const CString &url, int32_t lineNumber,
-    int32_t columnNumber, CString *out_id, CVector<std::unique_ptr<Location>> *outLocations)
+    int32_t columnNumber, const std::optional<CString> &condition, CString *outId,
+    CVector<std::unique_ptr<Location>> *outLocations)
 {
     JSPtExtractor *extractor = GetExtractor(url);
     if (extractor == nullptr) {
@@ -249,9 +255,17 @@ std::optional<CString> JSBackend::SetBreakpointByUrl(const CString &url, int32_t
         return "Unknown file name.";
     }
 
-    auto callbackFunc = [this, fileName](File::EntityId id, uint32_t offset) -> bool {
+    auto callbackFunc = [this, fileName, &condition](File::EntityId id, uint32_t offset) -> bool {
         JSPtLocation location {fileName.c_str(), id, offset};
-        return DebuggerApi::SetBreakpoint(debugger_, location);
+        if (condition.has_value()) {
+            CString dest;
+            if (!DecodeAndCheckBase64(condition.value(), dest)) {
+                LOG(ERROR, DEBUGGER) << "SetBreakpointByUrl: base64 decode failed";
+            }
+            // ignore the condition if it is not executable, which is newly supported
+            return DebuggerApi::SetBreakpoint(debugger_, location, dest.empty() ? std::optional<CString> {} : dest);
+        }
+        return DebuggerApi::SetBreakpoint(debugger_, location, condition);
     };
     if (!extractor->MatchWithLocation(callbackFunc, lineNumber, columnNumber)) {
         LOG(ERROR, DEBUGGER) << "failed to set breakpoint location number: " << lineNumber << ":" << columnNumber;
@@ -259,7 +273,7 @@ std::optional<CString> JSBackend::SetBreakpointByUrl(const CString &url, int32_t
     }
 
     BreakpointDetails metaData{lineNumber, 0, url};
-    *out_id = BreakpointDetails::ToString(metaData);
+    *outId = BreakpointDetails::ToString(metaData);
     *outLocations = CVector<std::unique_ptr<Location>>();
     std::unique_ptr<Location> location = std::make_unique<Location>();
     location->SetScriptId(scriptId).SetLine(lineNumber).SetColumn(0);
@@ -359,7 +373,7 @@ std::optional<CString> JSBackend::StepOut()
     return {};
 }
 
-std::optional<CString> JSBackend::EvaluateValue(CallFrameId callFrameId, const CString &expression,
+std::optional<CString> JSBackend::EvaluateValueCmpt(CallFrameId callFrameId, const CString &expression,
     std::unique_ptr<RemoteObject> *result)
 {
     JSMethod *method = DebuggerApi::GetMethod(ecmaVm_);
@@ -411,6 +425,34 @@ std::optional<CString> JSBackend::EvaluateValue(CallFrameId callFrameId, const C
         return GetLexicalValue(level, result, slot);
     }
     return SetLexicalValue(level, result, varValue, slot);
+}
+
+std::optional<CString> JSBackend::EvaluateValue(CallFrameId callFrameId, const CString &expression,
+    std::unique_ptr<RemoteObject> *result)
+{
+    CString dest;
+    if (!DecodeAndCheckBase64(expression, dest)) {
+        LOG(ERROR, DEBUGGER) << "EvaluateValue: base64 decode failed";
+        return EvaluateValueCmpt(callFrameId, expression, result);
+    }
+
+    auto res = DebuggerApi::ExecuteFromBuffer(const_cast<EcmaVM *>(ecmaVm_), dest.data(), dest.size());
+    if (ecmaVm_->GetJSThread()->HasPendingException()) {
+        LOG(ERROR, DEBUGGER) << "EvaluateValue: has pending exception";
+        CString msg;
+        DebuggerApi::HandleUncaughtException(ecmaVm_, msg);
+        *result = RemoteObject::FromTagged(ecmaVm_,
+            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, msg.data())));
+        return msg;
+    }
+
+    // make sure the result of object type can show normally in the front-end watch/evaluate window
+    *result = RemoteObject::FromTagged(ecmaVm_, res);
+    if (res->IsObject() && !res->IsProxy()) {
+        (*result)->SetObjectId(curObjectId_);
+        propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, res);
+    }
+    return {};
 }
 
 CString JSBackend::Trim(const CString &str)
@@ -782,5 +824,17 @@ void JSBackend::CallFunctionOn([[maybe_unused]] const CString &functionDeclarati
     auto error = Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unsupport eval now"));
 
     *outRemoteObject = RemoteObject::FromTagged(ecmaVm_, error);
+}
+
+bool JSBackend::DecodeAndCheckBase64(const CString &src, CString &dest)
+{
+    dest.resize(base64::decoded_size(src.size()));
+    auto [numOctets, _] = base64::decode(dest.data(), src.data(), src.size());
+    dest.resize(numOctets);
+    if (numOctets > File::MAGIC_SIZE &&
+        memcmp(dest.data(), File::MAGIC.data(), File::MAGIC_SIZE) == 0) {
+        return true;
+    }
+    return false;
 }
 }  // namespace panda::ecmascript::tooling

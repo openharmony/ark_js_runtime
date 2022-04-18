@@ -101,7 +101,7 @@ void RuntimeImpl::DispatcherImpl::CallFunctionOn(const DispatchRequest &request)
 DispatchResponse RuntimeImpl::Enable()
 {
     auto ecmaVm = const_cast<EcmaVM *>(backend_->GetEcmaVm());
-    ecmaVm->SetDebugMode(true);
+    ecmaVm->GetJsDebuggerManager()->SetDebugMode(true);
     backend_->NotifyAllScriptParsed();
     return DispatchResponse::Ok();
 }

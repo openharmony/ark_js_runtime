@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -177,9 +177,10 @@ void DebuggerApi::RegisterHooks(JSDebugger *debugger, PtHooks *hooks)
     debugger->RegisterHooks(hooks);
 }
 
-bool DebuggerApi::SetBreakpoint(JSDebugger *debugger, const JSPtLocation &location)
+bool DebuggerApi::SetBreakpoint(JSDebugger *debugger, const JSPtLocation &location,
+    const std::optional<CString> &condition)
 {
-    return debugger->SetBreakpoint(location);
+    return debugger->SetBreakpoint(location, condition);
 }
 
 bool DebuggerApi::RemoveBreakpoint(JSDebugger *debugger, const JSPtLocation &location)
@@ -200,7 +201,7 @@ Local<JSValueRef> DebuggerApi::GetProperties(const EcmaVM *ecmaVm, int32_t level
     for (int i = 0; i < level; i++) {
         JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
         ASSERT(!taggedParentEnv.IsUndefined());
-        env= taggedParentEnv;
+        env = taggedParentEnv;
     }
     JSTaggedValue value = LexicalEnv::Cast(env.GetTaggedObject())->GetProperties(slot);
     JSHandle<JSTaggedValue> handledValue(ecmaVm->GetJSThread(), value);
@@ -214,7 +215,7 @@ void DebuggerApi::SetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t sl
     for (int i = 0; i < level; i++) {
         JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
         ASSERT(!taggedParentEnv.IsUndefined());
-        env= taggedParentEnv;
+        env = taggedParentEnv;
     }
     LexicalEnv::Cast(env.GetTaggedObject())->SetProperties(ecmaVm->GetJSThread(), slot, target);
 }
@@ -222,8 +223,7 @@ void DebuggerApi::SetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t sl
 bool DebuggerApi::EvaluateLexicalValue(const EcmaVM *ecmaVm, const CString &name, int32_t &level, uint32_t &slot)
 {
     JSTaggedValue curEnv = ecmaVm->GetJSThread()->GetCurrentLexenv();
-    for (; curEnv.IsTaggedArray(); curEnv = LexicalEnv::Cast(curEnv.GetTaggedObject())->GetParentEnv()) {
-        level++;
+    for (; curEnv.IsTaggedArray(); curEnv = LexicalEnv::Cast(curEnv.GetTaggedObject())->GetParentEnv(), level++) {
         LexicalEnv *lexicalEnv = LexicalEnv::Cast(curEnv.GetTaggedObject());
         if (lexicalEnv->GetScopeInfo().IsHole()) {
             continue;
@@ -262,5 +262,45 @@ Local<JSValueRef> DebuggerApi::GetLexicalValueInfo(const EcmaVM *ecmaVm, const C
     }
     JSHandle<JSTaggedValue> handledValue(thread, JSTaggedValue::Hole());
     return JSNApiHelper::ToLocal<JSValueRef>(handledValue);
+}
+
+void DebuggerApi::InitJSDebugger(JSDebugger *debugger)
+{
+    debugger->Init();
+}
+
+void DebuggerApi::HandleUncaughtException(const EcmaVM *ecmaVm, CString &message)
+{
+    JSThread *thread = ecmaVm->GetJSThread();
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    JSHandle<JSTaggedValue> exHandle(thread, thread->GetException());
+    if (exHandle->IsJSError()) {
+        JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
+        JSHandle<EcmaString> name(JSObject::GetProperty(thread, exHandle, nameKey).GetValue());
+        JSHandle<JSTaggedValue> msgKey = thread->GlobalConstants()->GetHandledMessageString();
+        JSHandle<EcmaString> msg(JSObject::GetProperty(thread, exHandle, msgKey).GetValue());
+        message = ConvertToString(*name) + ": " + ConvertToString(*msg);
+    } else {
+        JSHandle<EcmaString> ecmaStr = JSTaggedValue::ToString(thread, exHandle);
+        message = ConvertToString(*ecmaStr);
+    }
+    thread->ClearException();
+}
+
+Local<JSValueRef> DebuggerApi::ExecuteFromBuffer(EcmaVM *ecmaVm, const void *buffer, size_t size)
+{
+    JSNApi::EnableUserUncaughtErrorHandler(ecmaVm);
+
+    JsDebuggerManager *mgr = ecmaVm->GetJsDebuggerManager();
+    bool prevDebugMode = mgr->IsDebugMode();
+    mgr->SetEvaluateCtxFrameSp(const_cast<JSTaggedType *>(ecmaVm->GetJSThread()->GetCurrentSPFrame()));
+    // in order to catch exception
+    mgr->SetDebugMode(false);
+    auto result = Execute(ecmaVm, buffer, size, "_GLOBAL::func_main_0");
+    mgr->SetDebugMode(prevDebugMode);
+    mgr->SetEvaluateCtxFrameSp(nullptr);
+
+    return result;
 }
 }  // namespace panda::ecmascript::tooling
