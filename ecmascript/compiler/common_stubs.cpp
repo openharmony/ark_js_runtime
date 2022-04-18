@@ -505,6 +505,60 @@ void TestAbsoluteAddressRelocationStub::GenerateCircuit(const CompilationConfig 
     Return(result);
 }
 
+void JsProxyCallInternalStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    Label exit(env);
+    Label isNull(env);
+    Label notNull(env);
+    Label isUndefined(env);
+    Label isNotUndefined(env);
+
+    GateRef glue = PtrArgument(0);
+    GateRef argc = Int32Argument(1);
+    GateRef proxy = TaggedPointerArgument(2); // callTarget
+    GateRef argv = PtrArgument(3);
+
+    DEFVARIABLE(result, VariableType::JS_ANY(), Undefined());
+
+    GateRef handler = GetHandlerFromJSProxy(proxy);
+    Branch(TaggedIsNull(handler), &isNull, &notNull);
+    Bind(&isNull);
+    {
+        ThrowTypeAndReturn(glue, GET_MESSAGE_STRING_ID(NonCallable), Exception());
+    }
+    Bind(&notNull);
+    {
+        GateRef target = GetTargetFromJSProxy(proxy);
+        GateRef globalConstOffset = IntPtr(JSThread::GlueData::GetGlobalConstOffset(env->Is32Bit()));
+        GateRef keyOffset = IntPtrAdd(globalConstOffset,
+            IntPtrMul(IntPtr(static_cast<int64_t>(ConstantIndex::APPLY_STRING_INDEX)),
+            IntPtr(sizeof(JSTaggedValue))));
+        GateRef key = Load(VariableType::JS_ANY(), glue, keyOffset);
+        GateRef method = CallNGCRuntime(glue, RTSTUB_ID(JSObjectGetMethod), {glue, handler, key});
+        ReturnExceptionIfAbruptCompletion(glue);
+
+        Branch(TaggedIsUndefined(method), &isUndefined, &isNotUndefined);
+        Bind(&isUndefined);
+        {
+            result = CallNGCRuntime(glue, RTSTUB_ID(JSCallWithArgV), {glue, argc, target, argv});
+            Return(*result);
+        }
+        Bind(&isNotUndefined);
+        {
+            GateRef arrHandle = CallRuntime(glue, RTSTUB_ID(CreateArrayFromList), argc, argv);
+            GateRef thisArg = Load(VariableType::JS_POINTER(), argv, IntPtr(2*sizeof(JSTaggedValue)));
+            GateRef numArgs = Int32(6);
+            result = CallNGCRuntime(glue, RTSTUB_ID(JSCall),
+                {glue,  numArgs, method, Undefined(), handler, target, thisArg, arrHandle});
+            Jump(&exit);
+        }
+    }
+    Bind(&exit);
+    Return(*result);
+}
+
 CallSignature CommonStubCSigns::callSigns_[CommonStubCSigns::NUM_OF_STUBS];
 
 void CommonStubCSigns::Initialize()

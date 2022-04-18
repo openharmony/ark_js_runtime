@@ -18,9 +18,13 @@
 namespace panda::ecmascript {
 #ifdef ECMASCRIPT_ENABLE_TEST_STUB
     #define TEST_RUNTIME_STUB_GC_LIST(V)         \
-        V(DefineAotFunc, 3)                      \
-        V(GetPrintFunc, 0)                       \
-        V(GetBindFunc, 1)
+        V(DefineAotFunc)                         \
+        V(GetPrintFunc)                          \
+        V(GetBindFunc)                           \
+        V(DefineProxyFunc)                       \
+        V(DefineProxyFunc2)                      \
+        V(DefineProxyHandler)                    \
+        V(DumpTaggedType)
 #else
     #define TEST_RUNTIME_STUB_GC_LIST(V)
 #endif

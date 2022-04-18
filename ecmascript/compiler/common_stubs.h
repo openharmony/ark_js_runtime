@@ -46,7 +46,8 @@ namespace panda::ecmascript::kungfu {
     V(TryLoadICByValue, 5)               \
     V(TryStoreICByName, 5)               \
     V(TryStoreICByValue, 6)              \
-    V(SetValueWithBarrier, 4)
+    V(SetValueWithBarrier, 4)            \
+    V(JsProxyCallInternal, 4)
 
 #define COMMON_STUB_ID_LIST(V)          \
     COMMON_STUB_LIST(V)                 \
@@ -338,6 +339,16 @@ public:
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
 
+class JsProxyCallInternalStub : public Stub {
+public:
+    // 4 : 4 means argument counts
+    explicit JsProxyCallInternalStub(Circuit *circuit) : Stub("JsProxyCallInternal", 4, circuit) {}
+    ~JsProxyCallInternalStub() = default;
+    NO_MOVE_SEMANTIC(JsProxyCallInternalStub);
+    NO_COPY_SEMANTIC(JsProxyCallInternalStub);
+    void GenerateCircuit(const CompilationConfig *cfg) override;
+};
+
 class CommonStubCSigns {
 public:
     enum ID {
@@ -359,5 +370,6 @@ public:
 private:
     static CallSignature callSigns_[NUM_OF_STUBS];
 };
+static_assert(CommonStubCSigns::JsProxyCallInternal == JSPROXY_CALL_INTERNAL_INDEX);
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_COMMON_STUBS_H

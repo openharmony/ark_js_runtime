@@ -137,6 +137,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::LOOP_BACK, &LLVMIRBuilder::HandleGoto},
         {OpCode::VALUE_SELECTOR, &LLVMIRBuilder::HandlePhi},
         {OpCode::RUNTIME_CALL, &LLVMIRBuilder::HandleRuntimeCall},
+        {OpCode::RUNTIME_CALL_WITH_ARGV, &LLVMIRBuilder::HandleRuntimeCallWithArgv},
         {OpCode::NOGC_RUNTIME_CALL, &LLVMIRBuilder::HandleCall},
         {OpCode::CALL, &LLVMIRBuilder::HandleCall},
         {OpCode::BYTECODE_CALL, &LLVMIRBuilder::HandleBytecodeCall},
@@ -504,51 +505,115 @@ void LLVMIRBuilder::HandleRuntimeCall(GateRef gate)
     VisitRuntimeCall(gate, ins);
 }
 
-void LLVMIRBuilder::VisitRuntimeCall(GateRef gate, const std::vector<GateRef> &inList)
+LLVMValueRef LLVMIRBuilder::GetFunction(LLVMValueRef glue, StubIdType id)
 {
-    size_t paraStartIndex = 3;
-    ASSERT(llvmModule_ != nullptr);
-    LLVMValueRef callee;
-    LLVMValueRef rtoffset;
-    const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(OptimizedCallRuntime));
+    const CallSignature *signature;
+    int index = 0;
+    if (std::holds_alternative<RuntimeStubCSigns::ID>(id)) {
+        signature = RuntimeStubCSigns::Get(std::get<RuntimeStubCSigns::ID>(id));
+        index = static_cast<int>(std::get<RuntimeStubCSigns::ID>(id));
+    } else if (std::holds_alternative<CommonStubCSigns::ID>(id)) {
+        signature = CommonStubCSigns::Get(std::get<CommonStubCSigns::ID>(id));
+        index = static_cast<int>(std::get<CommonStubCSigns::ID>(id));
+    } else if (std::holds_alternative<LLVMValueRef>(id)) {
+        signature = BytecodeStubCSigns::Get(BYTECODE_STUB_BEGIN_ID);
+    } else {
+        UNREACHABLE();
+    }
     LLVMTypeRef rtfuncType = llvmModule_->GetFuncType(signature);
     LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
-    LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
     LLVMTypeRef glueType = LLVMTypeOf(glue);
-    if (circuit_->GetFrameType() == FrameType::INTERPRETER_FRAME ||
-        circuit_->GetFrameType() == FrameType::OPTIMIZED_ENTRY_FRAME) {
+    LLVMValueRef rtoffset;
+    if (std::holds_alternative<RuntimeStubCSigns::ID>(id)) {
         rtoffset = LLVMConstInt(glueType,
             static_cast<int>(JSThread::GlueData::GetRTStubEntriesOffset(compCfg_->Is32Bit())) +
-            (RTSTUB_ID(AsmIntCallRuntime)) * slotSize_, 0);
-    } else if (circuit_->GetFrameType() == FrameType::OPTIMIZED_FRAME) {
-        rtoffset = LLVMConstInt(glueType,
-            static_cast<int>(JSThread::GlueData::GetRTStubEntriesOffset(compCfg_->Is32Bit())) +
-            (RTSTUB_ID(OptimizedCallRuntime)) * slotSize_, 0);
+            index * slotSize_, 0);
+    } else if (std::holds_alternative<CommonStubCSigns::ID>(id)) {
+        rtoffset = LLVMConstInt(glueType, JSThread::GlueData::GetCOStubEntriesOffset(compCfg_->Is32Bit()) +
+            index * static_cast<size_t>(slotSize_), 0);
+    } else if (std::holds_alternative<LLVMValueRef>(id)) {
+        LLVMValueRef bytecodeoffset = LLVMConstInt(glueType,
+                                                   JSThread::GlueData::GetBCStubEntriesOffset(compCfg_->Is32Bit()),
+                                                   0);
+        LLVMValueRef opcodeOffset = std::get<LLVMValueRef>(id);
+        rtoffset = LLVMBuildAdd(
+            builder_, glue, LLVMBuildAdd(builder_, bytecodeoffset, opcodeOffset, ""), "");
     } else {
-        abort();
+        UNREACHABLE();
     }
     LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
     LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glueType, 0), "");
     LLVMValueRef llvmAddr = LLVMBuildLoad(builder_, rtbaseAddr, "");
-    callee = LLVMBuildIntToPtr(builder_, llvmAddr, rtfuncTypePtr, "cast");
-    // 16 : params limit
-    LLVMValueRef params[16];
-    params[0] = glue;
-    int index = static_cast<int>(circuit_->GetBitField(inList[1]));
-    params[1] = LLVMConstInt(LLVMInt64Type(), index, 0);
-    params[2] = LLVMConstInt(LLVMInt64Type(), inList.size() - paraStartIndex, 0); // 2 : 2 means third parameter
-    for (size_t paraIdx = paraStartIndex; paraIdx < inList.size(); ++paraIdx) {
+    LLVMValueRef callee = LLVMBuildIntToPtr(builder_, llvmAddr, rtfuncTypePtr, "cast");
+    assert(callee != nullptr);
+    return callee;
+}
+
+bool LLVMIRBuilder::IsInterpreted()
+{
+    auto frameType = circuit_->GetFrameType();
+    return (frameType == FrameType::INTERPRETER_FRAME) || (frameType == FrameType::OPTIMIZED_ENTRY_FRAME);
+}
+
+bool LLVMIRBuilder::IsOptimized()
+{
+    return circuit_->GetFrameType() == FrameType::OPTIMIZED_FRAME;
+}
+
+void LLVMIRBuilder::VisitRuntimeCall(GateRef gate, const std::vector<GateRef> &inList)
+{
+    ASSERT(llvmModule_ != nullptr);
+    StubIdType stubId;
+    if (IsInterpreted()) {
+        stubId = RTSTUB_ID(AsmIntCallRuntime);
+    } else if (IsOptimized()) {
+        stubId = RTSTUB_ID(OptimizedCallRuntime);
+    } else {
+        UNREACHABLE();
+    }
+    LLVMValueRef glue = gateToLLVMMaps_[inList[static_cast<size_t>(CallInputs::GLUE)]];
+    LLVMValueRef callee = GetFunction(glue, stubId);
+
+    std::vector<LLVMValueRef> params;
+    params.push_back(glue); // glue
+    int index = static_cast<int>(circuit_->GetBitField(inList[static_cast<int>(CallInputs::TARGET)]));
+    params.push_back(LLVMConstInt(LLVMInt64Type(), index, 0)); // target
+    params.push_back(LLVMConstInt(LLVMInt64Type(),
+        inList.size() - static_cast<size_t>(CallInputs::FIRST_PARAMETER), 0)); // argc
+    for (size_t paraIdx = static_cast<size_t>(CallInputs::FIRST_PARAMETER); paraIdx < inList.size(); ++paraIdx) {
         GateRef gateTmp = inList[paraIdx];
-        params[paraIdx] = gateToLLVMMaps_[gateTmp];
+        params.push_back(gateToLLVMMaps_[gateTmp]);
     }
-    if (callee == nullptr) {
-        COMPILER_OPTIONAL_LOG(ERROR) << "callee nullptr";
-        return;
-    }
-    LLVMValueRef runtimeCall = LLVMBuildCall(builder_, callee, params, inList.size(), "");
+    LLVMValueRef runtimeCall = LLVMBuildCall(builder_, callee, params.data(), inList.size(), "");
     if (!compCfg_->Is32Bit()) {  // Arm32 not support webkit jscc calling convention
         LLVMSetInstructionCallConv(runtimeCall, LLVMWebKitJSCallConv);
     }
+    gateToLLVMMaps_[gate] = runtimeCall;
+}
+
+void LLVMIRBuilder::HandleRuntimeCallWithArgv(GateRef gate)
+{
+    std::vector<GateRef> ins = circuit_->GetInVector(gate);
+    VisitRuntimeCallWithArgv(gate, ins);
+}
+
+void LLVMIRBuilder::VisitRuntimeCallWithArgv(GateRef gate, const std::vector<GateRef> &inList)
+{
+    assert(IsOptimized() == true);
+    LLVMValueRef glue = gateToLLVMMaps_[inList[static_cast<size_t>(CallInputs::GLUE)]];
+    LLVMValueRef callee = GetFunction(glue, RTSTUB_ID(OptimizedCallRuntimeWithArgv));
+
+    std::vector<LLVMValueRef> params;
+    params.push_back(glue); // glue
+
+    int index = circuit_->GetBitField(inList[static_cast<size_t>(CallInputs::TARGET)]);
+    auto targetId = LLVMConstInt(LLVMInt64Type(), index, 0);
+    params.push_back(targetId); // target
+    for (size_t paraIdx = static_cast<size_t>(CallInputs::FIRST_PARAMETER); paraIdx < inList.size(); ++paraIdx) {
+        GateRef gateTmp = inList[paraIdx];
+        params.push_back(gateToLLVMMaps_[gateTmp]);
+    }
+    LLVMValueRef runtimeCall = LLVMBuildCall(builder_, callee, params.data(), inList.size() - 1, "");
     gateToLLVMMaps_[gate] = runtimeCall;
 }
 
@@ -623,44 +688,52 @@ LLVMValueRef LLVMIRBuilder::GetCurrentFrameType(LLVMValueRef currentSpFrameAddr)
     return frameType;
 }
 
+void LLVMIRBuilder::SetTailCallAttr(LLVMValueRef call)
+{
+    LLVMSetTailCall(call, true);
+    const char *attrName = "gc-leaf-function";
+    const char *attrValue = "true";
+    LLVMAttributeRef llvmAttr = LLVMCreateStringAttribute(context_, attrName, strlen(attrName), attrValue,
+                                                          strlen(attrValue));
+    LLVMAddCallSiteAttribute(call, LLVMAttributeFunctionIndex, llvmAttr);
+}
+
+void LLVMIRBuilder::SetCallConvAttr(const CallSignature *calleeDescriptor, LLVMValueRef call)
+{
+    assert(calleeDescriptor != nullptr);
+    if (calleeDescriptor->GetCallConv() == CallSignature::CallConv::GHCCallConv) {
+        SetTailCallAttr(call);
+        LLVMSetInstructionCallConv(call, LLVMGHCCallConv);
+    } else if (calleeDescriptor->GetCallConv() == CallSignature::CallConv::WebKitJSCallConv) {
+        LLVMSetInstructionCallConv(call, LLVMWebKitJSCallConv);
+    }
+    if (calleeDescriptor->GetTailCall()) {
+        SetTailCallAttr(call);
+    }
+}
+
 void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList, OpCode op)
 {
     int paraStartIndex = 3;
-    size_t index = circuit_->GetBitField(inList[1]);
-    ASSERT(llvmModule_ != nullptr);
-    LLVMValueRef callee;
-    LLVMValueRef rtoffset;
+    LLVMValueRef glue = gateToLLVMMaps_[inList[static_cast<size_t>(CallInputs::GLUE)]];
+    size_t index = circuit_->GetBitField(inList[static_cast<size_t>(CallInputs::TARGET)]);
     const CallSignature *calleeDescriptor = (op == OpCode::CALL) ? CommonStubCSigns::Get(index) :
         RuntimeStubCSigns::Get(index);
-    LLVMTypeRef rtfuncType = llvmModule_->GetFuncType(calleeDescriptor);
-    LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
-    LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
-    LLVMTypeRef glueType = LLVMTypeOf(glue);
-    // runtime case
+    StubIdType stubId = static_cast<RuntimeStubCSigns::ID>(index);
     if (op == OpCode::CALL) {
-        rtoffset = LLVMConstInt(glueType, JSThread::GlueData::GetCOStubEntriesOffset(compCfg_->Is32Bit()) +
-            index * static_cast<size_t>(slotSize_), 0);
-    } else {
-        rtoffset = LLVMConstInt(glueType, JSThread::GlueData::GetRTStubEntriesOffset(compCfg_->Is32Bit()) +
-            index * static_cast<size_t>(slotSize_), 0);
+        stubId = static_cast<CommonStubCSigns::ID>(index);
     }
-    LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
-    LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glueType, 0), "");
-    LLVMValueRef llvmAddr = LLVMBuildLoad(builder_, rtbaseAddr, "");
-    callee = LLVMBuildIntToPtr(builder_, llvmAddr, rtfuncTypePtr, "cast");
-    // 16 : function params max limit
-    LLVMValueRef params[16];
+    LLVMValueRef callee = GetFunction(glue, stubId);
     int extraParameterCnt = 0;
+    std::vector<LLVMValueRef> params;
+    GateRef glueGate = inList[static_cast<size_t>(CallInputs::FIRST_PARAMETER)];
+    params.push_back(gateToLLVMMaps_[glueGate]); // glue
 
-    size_t dstParaIndex = 0;
-    // first argument is glue
-    GateRef glueGate = inList[paraStartIndex];
-    params[dstParaIndex++] = gateToLLVMMaps_[glueGate];
     // for arm32, r0-r3 must be occupied by fake parameters, then the actual paramters will be in stack.
     if (compCfg_->Is32Bit() && calleeDescriptor->GetTargetKind() != CallSignature::TargetKind::RUNTIME_STUB) {
         if (calleeDescriptor->GetCallConv() == CallSignature::CallConv::WebKitJSCallConv) {
             for (int i = 0; i < CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32; i++) {
-                params[dstParaIndex++] = gateToLLVMMaps_[glueGate];
+                params.push_back(gateToLLVMMaps_[glueGate]); // glue
             }
             extraParameterCnt += CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32;
         }
@@ -668,64 +741,38 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList, 
     // then push the actual parameter for js function call
     for (size_t paraIdx = static_cast<size_t>(paraStartIndex + 1); paraIdx < inList.size(); ++paraIdx) {
         GateRef gateTmp = inList[paraIdx];
-        params[dstParaIndex++] = gateToLLVMMaps_[gateTmp];
-    }
-    if (callee == nullptr) {
-        COMPILER_OPTIONAL_LOG(ERROR) << "callee nullptr";
-        return;
+        params.push_back(gateToLLVMMaps_[gateTmp]);
     }
     if (compCfg_->Is32Bit() || compCfg_->Is64Bit()) {
         SaveCurrentSP();
     }
-    LLVMValueRef call = LLVMBuildCall(builder_, callee, params, inList.size() - paraStartIndex + extraParameterCnt, "");
-    if (calleeDescriptor->GetCallConv() == CallSignature::CallConv::GHCCallConv) {
-        LLVMSetTailCall(call, true);
-        const char *attrName = "gc-leaf-function";
-        const char *attrValue = "true";
-        LLVMAttributeRef llvmAttr = LLVMCreateStringAttribute(context_, attrName, strlen(attrName), attrValue,
-                                                              strlen(attrValue));
-        LLVMAddCallSiteAttribute(call, LLVMAttributeFunctionIndex, llvmAttr);
-        LLVMSetInstructionCallConv(call, LLVMGHCCallConv);
-    } else if (calleeDescriptor->GetCallConv() == CallSignature::CallConv::WebKitJSCallConv) {
-        LLVMSetInstructionCallConv(call, LLVMWebKitJSCallConv);
-    }
+    LLVMValueRef call = LLVMBuildCall(builder_, callee, params.data(),
+        inList.size() - paraStartIndex + extraParameterCnt, "");
+    SetCallConvAttr(calleeDescriptor, call);
     gateToLLVMMaps_[gate] = call;
     return;
 }
 
 void LLVMIRBuilder::VisitBytecodeCall(GateRef gate, const std::vector<GateRef> &inList)
 {
-    size_t paraStartIndex = 3;
-    LLVMValueRef opcodeOffset = gateToLLVMMaps_[inList[1]];
+    size_t paraStartIndex = static_cast<size_t>(CallInputs::FIRST_PARAMETER);
+    size_t targetIndex = static_cast<size_t>(CallInputs::TARGET);
+    size_t glueIndex = static_cast<size_t>(CallInputs::GLUE);
+    LLVMValueRef opcodeOffset = gateToLLVMMaps_[inList[targetIndex]];
     ASSERT(llvmModule_ != nullptr);
-    LLVMValueRef callee;
+
     // start index of bytecode handler csign in llvmModule
-    const CallSignature *signature = BytecodeStubCSigns::Get(BYTECODE_STUB_BEGIN_ID);
-    LLVMTypeRef rtfuncType = llvmModule_->GetFuncType(signature);
-    LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
-    LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
-    LLVMTypeRef glueType = LLVMTypeOf(glue);
-    LLVMValueRef bytecodeoffset = LLVMConstInt(glueType,
-                                               JSThread::GlueData::GetBCStubEntriesOffset(compCfg_->Is32Bit()),
-                                               0);
-    LLVMValueRef rtbaseoffset = LLVMBuildAdd(
-        builder_, glue, LLVMBuildAdd(builder_, bytecodeoffset, opcodeOffset, ""), "");
-    LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glueType, 0), "");
-    LLVMValueRef llvmAddr = LLVMBuildLoad(builder_, rtbaseAddr, "");
-    callee = LLVMBuildIntToPtr(builder_, llvmAddr, rtfuncTypePtr, "cast");
-    // 16 : params limit
-    LLVMValueRef params[16];
+    LLVMValueRef glue = gateToLLVMMaps_[inList[glueIndex]];
+    StubIdType stubId = opcodeOffset;
+    LLVMValueRef callee = GetFunction(glue, stubId);
+
+    std::vector<LLVMValueRef> params;
     for (size_t paraIdx = paraStartIndex; paraIdx < inList.size(); ++paraIdx) {
         GateRef gateTmp = inList[paraIdx];
-        params[paraIdx - paraStartIndex] = gateToLLVMMaps_[gateTmp];
+        params.push_back(gateToLLVMMaps_[gateTmp]);
     }
-    LLVMValueRef call = LLVMBuildCall(builder_, callee, params, inList.size() - paraStartIndex, "");
-    LLVMSetTailCall(call, true);
-    const char *attrName = "gc-leaf-function";
-    const char *attrValue = "true";
-    LLVMAttributeRef llvmAttr = LLVMCreateStringAttribute(context_, attrName, strlen(attrName), attrValue,
-                                                          strlen(attrValue));
-    LLVMAddCallSiteAttribute(call, LLVMAttributeFunctionIndex, llvmAttr);
+    LLVMValueRef call = LLVMBuildCall(builder_, callee, params.data(), inList.size() - paraStartIndex, "");
+    SetTailCallAttr(call);
     LLVMSetInstructionCallConv(call, LLVMGHCCallConv);
     gateToLLVMMaps_[gate] = call;
 }
@@ -1817,7 +1864,7 @@ LLVMTypeRef LLVMModule::GetFuncType(const CallSignature *stubDescriptor)
         UNREACHABLE();
     }
     auto functype = LLVMFunctionType(returnType, paramTys.data(), paramCount + extraParameterCnt,
-        stubDescriptor->GetVariableArgs());
+        stubDescriptor->IsVariadicArgs());
     return functype;
 }
 
@@ -1836,12 +1883,12 @@ LLVMTypeRef LLVMModule::ConvertLLVMTypeFromVariableType(VariableType type)
         {VariableType::INT64(), LLVMInt64Type()},
         {VariableType::FLOAT32(), LLVMFloatType()},
         {VariableType::FLOAT64(), LLVMDoubleType()},
-        {VariableType::POINTER(), LLVMInt64Type()},
+        {VariableType::NATIVE_POINTER(), LLVMInt64Type()},
         {VariableType::JS_POINTER(), LLVMPointerType(LLVMInt64Type(), 1)},
         {VariableType::JS_ANY(), LLVMPointerType(LLVMInt64Type(), 1)},
     };
     if (cfg_.Is32Bit()) {
-        machineTypeMap[VariableType::POINTER()] = LLVMInt32Type();
+        machineTypeMap[VariableType::NATIVE_POINTER()] = LLVMInt32Type();
         LLVMTypeRef vectorType = LLVMVectorType(LLVMPointerType(LLVMInt8Type(), 1), 2);  // 2: packed vector type
         machineTypeMap[VariableType::JS_POINTER()] = vectorType;
         machineTypeMap[VariableType::JS_ANY()] = vectorType;

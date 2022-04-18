@@ -1332,14 +1332,59 @@ HWTEST_F_L0(StubTest, JSCallBoundTest)
     int y = 2;
     JSTaggedType argV[5] = {
         footarget.GetRawData(),
-        0xa,
-        0xa,
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
         JSTaggedValue(x).GetRawData(),
         JSTaggedValue(y).GetRawData(),
     };
     auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5,
                                   argV, fooEntry);
     EXPECT_EQ(result, JSTaggedValue(38.0).GetRawData());
+}
+
+// test for proxy method is undefined
+HWTEST_F_L0(StubTest, JSCallTest3)
+{
+    auto fooProxyEntry = thread->GetFastStubEntry(CommonStubCSigns::FooProxyAOT);
+    auto foo2target = NewAotFunction(2, fooProxyEntry);
+    auto glue = thread->GetGlueAddr();
+    int x = 1;
+    int y = 2;
+    JSTaggedType argV[6] = {
+        foo2target.GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue(x).GetRawData(),
+        JSTaggedValue(y).GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+    };
+    JSThread::GlueData::GetCOStubEntriesOffset(false);
+    JSThread::GlueData::GetCOStubEntriesOffset(true);
+    auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()),
+        5, 5, argV, fooProxyEntry);
+    EXPECT_EQ(result, JSTaggedValue(3.0).GetRawData());
+}
+
+// test for proxy method isn't undefined
+HWTEST_F_L0(StubTest, JSCallTest4)
+{
+    auto fooProxyEntry = thread->GetFastStubEntry(CommonStubCSigns::FooProxy2AOT);
+    auto foo2target = NewAotFunction(2, fooProxyEntry);
+    auto glue = thread->GetGlueAddr();
+    int x = 1;
+    int y = 2;
+    JSTaggedType argV[6] = {
+        foo2target.GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue(x).GetRawData(),
+        JSTaggedValue(y).GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+    };
+    JSThread::GlueData::GetCOStubEntriesOffset(false);
+    JSThread::GlueData::GetCOStubEntriesOffset(true);
+    [[maybe_unused]] auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()),
+        5, 5, argV, fooProxyEntry);
 }
 #endif
 }  // namespace panda::test

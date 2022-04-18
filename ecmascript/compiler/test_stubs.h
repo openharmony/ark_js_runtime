@@ -22,14 +22,18 @@ namespace panda::ecmascript::kungfu {
 #define IGNORE_TEST_STUB(name, count)
 
 #ifdef ECMASCRIPT_ENABLE_TEST_STUB
-#define TEST_STUB_LIST(V)        \
+
+#define TEST_STUB_LIST(V)               \
     V(FooAOT, 7)                        \
     V(Foo1AOT, 7)                       \
     V(Foo2AOT, 7)                       \
     V(FooNativeAOT, 7)                  \
     V(FooBoundAOT, 7)                   \
     V(BarAOT, 7)                        \
-    V(Bar1AOT, 8)
+    V(Bar1AOT, 8)                       \
+    V(FooProxyAOT, 7)                   \
+    V(FooProxy2AOT, 7)                  \
+    V(Bar2AOT, 7)
 #else
     #define TEST_STUB_LIST(V)
 #endif
@@ -115,6 +119,42 @@ public:
     ~Bar1AOTStub() = default;
     NO_MOVE_SEMANTIC(Bar1AOTStub);
     NO_COPY_SEMANTIC(Bar1AOTStub);
+    void GenerateCircuit(const CompilationConfig *cfg) override;
+};
+
+class FooProxyAOTStub : public Stub {
+public:
+    // 7 : 7 means argument counts
+    explicit FooProxyAOTStub(Circuit *circuit) : Stub("FooProxyAOT", 7, circuit)
+    {
+    }
+    ~FooProxyAOTStub() = default;
+    NO_MOVE_SEMANTIC(FooProxyAOTStub);
+    NO_COPY_SEMANTIC(FooProxyAOTStub);
+    void GenerateCircuit(const CompilationConfig *cfg) override;
+};
+
+class FooProxy2AOTStub : public Stub {
+public:
+    // 7 : 7 means argument counts
+    explicit FooProxy2AOTStub(Circuit *circuit) : Stub("FooProxy2AOTStub", 7, circuit)
+    {
+    }
+    ~FooProxy2AOTStub() = default;
+    NO_MOVE_SEMANTIC(FooProxy2AOTStub);
+    NO_COPY_SEMANTIC(FooProxy2AOTStub);
+    void GenerateCircuit(const CompilationConfig *cfg) override;
+};
+
+class Bar2AOTStub : public Stub {
+public:
+    // 5 : 5 means argument counts
+    explicit Bar2AOTStub(Circuit *circuit) : Stub("Bar2AOT", 5, circuit)
+    {
+    }
+    ~Bar2AOTStub() = default;
+    NO_MOVE_SEMANTIC(Bar2AOTStub);
+    NO_COPY_SEMANTIC(Bar2AOTStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
 }
