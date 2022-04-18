@@ -1268,9 +1268,9 @@ DEF_RUNTIME_STUBS(SetLexicalEnv)
 DEF_RUNTIME_STUBS(LoadValueFromConstantStringTable)
 {
     RUNTIME_STUBS_HEADER(LoadValueFromConstantStringTable);
-    CONVERT_ARG_TAGGED_TYPE_CHECKED(id, 0);
+    CONVERT_ARG_TAGGED_CHECKED(id, 0);
     auto tsLoader = thread->GetEcmaVM()->GetTSLoader();
-    return tsLoader->GetStringById(id).GetTaggedValue().GetRawData();
+    return tsLoader->GetStringById(id.GetInt()).GetTaggedValue().GetRawData();
 }
 
 DEF_RUNTIME_STUBS(CallArg0Dyn)
