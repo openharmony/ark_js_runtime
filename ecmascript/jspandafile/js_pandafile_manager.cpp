@@ -47,13 +47,18 @@ const JSPandaFile *JSPandaFileManager::LoadAotInfoFromPf(const CString &filename
         return nullptr;
     }
 
+    if (!jsPandaFile->HasTsTypes()) {
+        LOG_ECMA(ERROR) << filename << " has no type info";
+        return nullptr;
+    }
+
     CString methodName;
     auto pos = entryPoint.find_last_of("::");
     if (pos != std::string_view::npos) {
         methodName = entryPoint.substr(pos + 1);
     } else {
         // default use func_main_0 as entryPoint
-        methodName = ENTRY_FUNCTION_NAME;
+        methodName = JSPandaFile::ENTRY_FUNCTION_NAME;
     }
 
     PandaFileTranslator::TranslateClasses(jsPandaFile, methodName, methodPcInfos);
@@ -228,7 +233,7 @@ const JSPandaFile *JSPandaFileManager::GenerateJSPandaFile(const panda_file::Fil
         methodName = entryPoint.substr(pos + 1);
     } else {
         // default use func_main_0 as entryPoint
-        methodName = ENTRY_FUNCTION_NAME;
+        methodName = JSPandaFile::ENTRY_FUNCTION_NAME;
     }
 
     PandaFileTranslator::TranslateClasses(newJsPandaFile, methodName);

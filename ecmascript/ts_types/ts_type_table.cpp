@@ -53,9 +53,9 @@ JSHandle<TSTypeTable> TSTypeTable::GenerateTypeTable(JSThread *thread, const JSP
     TSLoader *tsLoader = thread->GetEcmaVM()->GetTSLoader();
     GlobalTSTypeRef ref = GlobalTSTypeRef::Default();
     int typeKind = 0;
-    uint32_t idx = 0;
+    uint32_t summaryIndex = jsPandaFile->GetTypeSummaryIndex();
 
-    JSHandle<TaggedArray> summaryLiteral = LiteralDataExtractor::GetDatasIgnoreType(thread, jsPandaFile, idx++);
+    JSHandle<TaggedArray> summaryLiteral = LiteralDataExtractor::GetDatasIgnoreType(thread, jsPandaFile, summaryIndex);
     ASSERT_PRINT(summaryLiteral->Get(TYPE_KIND_OFFSET).GetInt() == static_cast<int32_t>(TypeLiteralFlag::COUNTER),
                  "summary type literal flag is not counter");
 
@@ -64,8 +64,10 @@ JSHandle<TSTypeTable> TSTypeTable::GenerateTypeTable(JSThread *thread, const JSP
     JSMutableHandle<TaggedArray> typeLiteral(thread, JSTaggedValue::Undefined());
 
     JSHandle<EcmaString> fileName = factory->NewFromUtf8(jsPandaFile->GetJSPandaFileDesc());
-    for (; idx <= length; ++idx) {
-        typeLiteral.Update(LiteralDataExtractor::GetDatasIgnoreType(thread, jsPandaFile, idx).GetTaggedValue());
+    for (uint32_t idx = 1; idx <= length; ++idx) {
+        JSHandle<TaggedArray> literalData = LiteralDataExtractor::GetDatasIgnoreType(thread, jsPandaFile,
+                                                                                     idx + summaryIndex);
+        typeLiteral.Update(literalData);
         JSHandle<JSTaggedValue> type = ParseType(thread, table, typeLiteral, fileName, recordImportModules);
         if (!type->IsNull()) {
             // Set every object type GT
