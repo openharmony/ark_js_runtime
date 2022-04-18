@@ -253,26 +253,18 @@ JSTaggedValue JSFunction::Call(EcmaRuntimeCallInfo *info)
     JSThread *thread = info->GetThread();
     // 1. ReturnIfAbrupt(F).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> func = info->GetFunction();
+    JSHandle<JSTaggedValue> funcValue = info->GetFunction();
     // 2. If argumentsList was not passed, let argumentsList be a new empty List.
     // 3. If IsCallable(F) is false, throw a TypeError exception.
-    if (!func->IsCallable()) {
+    if (!funcValue->IsCallable()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Callable is false", JSTaggedValue::Exception());
     }
 
-    if (func->IsJSFunction()) {
-        return JSFunction::CallInternal(info);
+    JSHandle<JSFunction> func = JSHandle<JSFunction>::Cast(funcValue);
+    if (!func->IsBuiltinsConstructor() && func->IsClassConstructor()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "class constructor cannot call", JSTaggedValue::Exception());
     }
-
-    if (func->IsBoundFunction()) {
-        return JSBoundFunction::CallInternal(info);
-    }
-
-    if (func->IsJSProxy()) {
-        return JSProxy::CallInternal(info);
-    }
-
-    THROW_TYPE_ERROR_AND_RETURN(thread, "Call NonCallable", JSTaggedValue::Exception());
+    return EcmaInterpreter::Execute(info);
 }
 
 JSTaggedValue JSFunction::Construct(EcmaRuntimeCallInfo *info)
@@ -288,16 +280,8 @@ JSTaggedValue JSFunction::Construct(EcmaRuntimeCallInfo *info)
     if (!(func->IsConstructor() && target->IsConstructor())) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Constructor is false", JSTaggedValue::Exception());
     }
-    if (func->IsJSFunction()) {
-        return JSFunction::ConstructInternal(info);
-    }
-    if (func->IsBoundFunction()) {
-        return JSBoundFunction::ConstructInternal(info);
-    }
-    if (func->IsJSProxy()) {
-        return JSProxy::ConstructInternal(info);
-    }
-    THROW_TYPE_ERROR_AND_RETURN(thread, "Constructor NonConstructor", JSTaggedValue::Exception());
+
+    return JSFunction::ConstructInternal(info);
 }
 
 JSTaggedValue JSFunction::Invoke(EcmaRuntimeCallInfo *info, const JSHandle<JSTaggedValue> &key)
@@ -309,18 +293,6 @@ JSTaggedValue JSFunction::Invoke(EcmaRuntimeCallInfo *info, const JSHandle<JSTag
     JSHandle<JSTaggedValue> func(JSTaggedValue::GetProperty(thread, thisArg, key).GetValue());
     info->SetFunction(func.GetTaggedValue());
     return JSFunction::Call(info);
-}
-
-// [[Call]]
-JSTaggedValue JSFunction::CallInternal(EcmaRuntimeCallInfo *info)
-{
-    ASSERT(info);
-    JSThread *thread = info->GetThread();
-    JSHandle<JSFunction> func(info->GetFunction());
-    if (!func->IsBuiltinsConstructor() && func->IsClassConstructor()) {
-        THROW_TYPE_ERROR_AND_RETURN(thread, "class constructor cannot call", JSTaggedValue::Exception());
-    }
-    return EcmaInterpreter::Execute(info);
 }
 
 // [[Construct]]
@@ -428,29 +400,6 @@ bool JSFunction::SetFunctionLength(JSThread *thread, const JSHandle<JSFunction> 
     PropertyDescriptor lengthDesc(thread, JSHandle<JSTaggedValue>(thread, length), false, false, cfg);
     JSHandle<JSTaggedValue> funcHandle(func);
     return JSTaggedValue::DefinePropertyOrThrow(thread, funcHandle, lengthKeyHandle, lengthDesc);
-}
-
-JSTaggedValue JSBoundFunction::CallInternal(EcmaRuntimeCallInfo *info)
-{
-    JSThread *thread = info->GetThread();
-    JSHandle<JSBoundFunction> func(info->GetFunction());
-    JSHandle<JSTaggedValue> target(thread, func->GetBoundTarget());
-    JSHandle<JSTaggedValue> boundThis(thread, func->GetBoundThis());
-    JSHandle<TaggedArray> boundArgs(thread, func->GetBoundArguments());
-
-    const size_t boundLength = boundArgs->GetLength();
-    const size_t argsLength = info->GetArgsNumber() + boundLength;
-    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo runtimeInfo =
-            EcmaInterpreter::NewRuntimeCallInfo(thread, target, boundThis, undefined, argsLength);
-    if (boundLength == 0) {
-        runtimeInfo.SetCallArg(argsLength, 0, info, 0);
-    } else {
-        // 0 ~ boundLength is boundArgs; boundLength ~ argsLength is args of EcmaRuntimeCallInfo.
-        runtimeInfo.SetCallArg(boundLength, boundArgs);
-        runtimeInfo.SetCallArg(argsLength, boundLength, info, 0);
-    }
-    return JSFunction::Call(&runtimeInfo);
 }
 
 // 9.4.1.2[[Construct]](argumentsList, newTarget)
