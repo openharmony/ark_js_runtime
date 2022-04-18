@@ -87,6 +87,9 @@ extern "C" void PushCallIThisRangeAndDispatchSlowPath(uintptr_t glue, uintptr_t 
 extern "C" void ResumeRspAndDispatch(uintptr_t glue, uintptr_t pc, uintptr_t sp, uintptr_t constantPool,
     uint64_t profileTypeInfo, uint64_t acc, uint32_t hotnessCounter, size_t jumpSize);
 extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
+#define RUNTIME_ASM_STUB_LIST(V)       \
+    V(AsmIntCallRuntime)
+
 #define RUNTIME_STUB_WITHOUT_GC_LIST(V)        \
     V(DebugPrint)                              \
     V(FatalPrint)                              \
@@ -95,7 +98,6 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(DoubleToInt)                             \
     V(OptimizedCallRuntime)                    \
     V(OptimizedCallRuntimeWithArgv)            \
-    V(AsmIntCallRuntime)                       \
     V(JSCall)                                  \
     V(JSCallWithArgV)                          \
     V(JSObjectGetMethod)                       \
@@ -119,7 +121,8 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(PushCallIThisRangeAndDispatchNative)     \
     V(PushCallIThisRangeAndDispatchSlowPath)   \
     V(ResumeRspAndDispatch)                    \
-    V(ResumeRspAndReturn)
+    V(ResumeRspAndReturn)                      \
+    RUNTIME_ASM_STUB_LIST(V)
 
 #define RUNTIME_STUB_WITH_GC_LIST(V)      \
     V(AddElementInternal)                 \

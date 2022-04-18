@@ -48,7 +48,7 @@ public:
     uint32_t GetLinkedPos() const
     {
         ASSERT(!IsBound());
-        return static_cast<uint32_t>(-(pos_ - 1));
+        return static_cast<uint32_t>(-pos_ - 1);
     }
 
     void BindTo(int32_t pos)
