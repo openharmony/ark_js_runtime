@@ -20,7 +20,7 @@
 namespace panda::ecmascript::x64 {
 class AssemblerModuleX64 {
 public:
-    void Generate_AsmInterpCallRuntime(AssemblerX64 *assembler);
+    static void Generate_AsmInterpCallRuntime(AssemblerX64 *assembler);
 };
 }  // namespace panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H
