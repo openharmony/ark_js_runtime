@@ -189,7 +189,7 @@ JSFunctionEntry:
 
 
 // uint64_t OptimizedCallOptimized(uintptr_t glue, uint32_t expectedNumArgs,
-//                                uint32_t actualNumArgs, uintptr_t codeAddr, argv);
+//                                uint32_t actualNumArgs, uintptr_t codeAddr, uintptr_t argv);
 // Input:
 // %rdi - glue
 // %rsi - expectedNumArgs
@@ -559,11 +559,10 @@ JSCall:
     ret
 
 .LCallOptimziedMethod:
-    mov     JS_FUNCTION_METHOD_OFFSET(%r8), %rsi      // get method
     mov     JS_FUNCTION_CODE_ENTRY_OFFSET(%r8), %rcx  // get codeaddress
     shr     $JS_METHOD_NUM_ARGS_SHIFT, %rax
     andl    $ASM_JS_METHOD_NUM_ARGS_MASK, %eax
-    addl    $3,   %eax      // add mandatory arguments
+    addl    $ASM_NUM_MANDATORY_JSFUNC_ARGS, %eax      // add mandatory arguments
     mov     %eax, %esi      // expected numbers
     movq    %rsp,  %r8
     addq    $16,   %r8      // r8 argv
@@ -611,7 +610,7 @@ JSCall:
     pushq   $0                  // push zero to align 16 bytes stack   
 
 .LAlign16Bytes2:
-    subq    $3, %rax
+    subq    $ASM_NUM_MANDATORY_JSFUNC_ARGS, %rax
     cmp     $0, %rax
     je      .LCopyBoundArgument
 .LCopyArgument2:
@@ -637,7 +636,7 @@ JSCall:
 .LPushCallTarget:
     mov     JS_FUNCTION_BOUND_THIS_OFFSET(%r8), %rax     // thisObj
     pushq   %rax
-    pushq   $0xa                                         // newtarget
+    pushq   $JSUNDEFINED                                         // newtarget
     mov     JS_FUNCTION_BOUND_TARGET_OFFSET(%r8), %rax   // calltarget
     pushq   %rax
     pushq   %r10                                         // push actual arguments
