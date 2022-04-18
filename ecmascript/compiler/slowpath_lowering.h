@@ -242,6 +242,11 @@ private:
     void LowerStObjByName(GateRef gate, GateRef glue);
     void LowerLdSuperByName(GateRef gate, GateRef glue);
     void LowerStSuperByName(GateRef gate, GateRef glue);
+    void LowerDefineGetterSetterByValue(GateRef gate, GateRef glue);
+    void LowerLdObjByIndex(GateRef gate, GateRef glue);
+    void LowerStObjByIndex(GateRef gate, GateRef glue);
+    void LowerLdObjByValue(GateRef gate, GateRef glue);
+    void LowerStObjByValue(GateRef gate, GateRef glue);
     void LowerCreateGeneratorObj(GateRef gate, GateRef glue);
     void LowerStArraySpread(GateRef gate, GateRef glue);
     void LowerLdLexVarDyn(GateRef gate, GateRef jsFunc);

@@ -560,6 +560,21 @@ void SlowPathLowering::Lower(GateRef gate)
         case STOBJBYNAME_PREF_ID32_V8:
             LowerStObjByName(gate, glue);
             break;
+        case DEFINEGETTERSETTERBYVALUE_PREF_V8_V8_V8_V8:
+            LowerDefineGetterSetterByValue(gate, glue);
+            break;
+        case LDOBJBYINDEX_PREF_V8_IMM32:
+            LowerLdObjByIndex(gate, glue);
+            break;
+        case STOBJBYINDEX_PREF_V8_IMM32:
+            LowerStObjByIndex(gate, glue);
+            break;
+        case LDOBJBYVALUE_PREF_V8_V8:
+            LowerLdObjByValue(gate, glue);
+            break;
+        case STOBJBYVALUE_PREF_V8_V8:
+            LowerStObjByValue(gate, glue);
+            break;
         case LDSUPERBYNAME_PREF_ID32_V8:
             LowerLdSuperByName(gate, glue);
             break;
@@ -1556,7 +1571,8 @@ void SlowPathLowering::LowerStOwnByValue(GateRef gate, GateRef glue)
     builder_.Branch(builder_.IsClassPrototype(receiver), &slowPath, &notClassPrototype);
     builder_.Bind(&notClassPrototype);
     {
-        result = builder_.CallStub(glue, CommonStubCSigns::SetPropertyByValue, { glue, receiver, propKey, accValue });
+        result = builder_.CallStub(glue, CommonStubCSigns::SetPropertyByValueWithOwn,
+            { glue, receiver, propKey, accValue });
         Label notHole(&builder_);
         builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
         builder_.Bind(&notHole);
@@ -1597,7 +1613,8 @@ void SlowPathLowering::LowerStOwnByIndex(GateRef gate, GateRef glue)
     builder_.Branch(builder_.IsClassPrototype(receiver), &slowPath, &notClassPrototype);
     builder_.Bind(&notClassPrototype);
     {
-        result = builder_.CallStub(glue, CommonStubCSigns::SetPropertyByIndex, { glue, receiver, index, accValue });
+        result = builder_.CallStub(glue, CommonStubCSigns::SetPropertyByIndexWithOwn,
+            { glue, receiver, builder_.TruncInt64ToInt32(index), accValue });
         Label notHole(&builder_);
         builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
         builder_.Bind(&notHole);
@@ -2062,6 +2079,185 @@ void SlowPathLowering::LowerStObjByName(GateRef gate, GateRef glue)
     builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
         &exceptionExit, &successExit);
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
+    ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl);
+}
+
+void SlowPathLowering::LowerDefineGetterSetterByValue(GateRef gate, GateRef glue)
+{
+    // 4: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 5);
+    GateRef obj = acc_.GetValueIn(gate, 0);
+    GateRef prop = acc_.GetValueIn(gate, 1);
+    GateRef getter = acc_.GetValueIn(gate, 2);
+    GateRef setter = acc_.GetValueIn(gate, 3);
+    GateRef acc = acc_.GetValueIn(gate, 4);
+    GateRef newGate = builder_.CallRuntimeWithDepend(glue, RTSTUB_ID(DefineGetterSetterByValue),
+        dependEntry_, {obj, prop, getter, setter, acc});
+    ReplaceHirToCall(gate, newGate);
+}
+
+void SlowPathLowering::LowerLdObjByIndex(GateRef gate, GateRef glue)
+{
+    // 2: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    GateRef holeConst = builder_.HoleConstant();
+    DEFVAlUE(varAcc, (&builder_), VariableType::JS_ANY(), holeConst);
+    GateRef result;
+    GateRef receiver = acc_.GetValueIn(gate, 0);
+    GateRef index = acc_.GetValueIn(gate, 1);
+    Label fastPath(&builder_);
+    Label slowPath(&builder_);
+    Label successExit(&builder_);
+    Label exceptionExit(&builder_);
+    builder_.Branch(builder_.TaggedIsHeapObject(receiver), &fastPath, &slowPath);
+    builder_.Bind(&fastPath);
+    {
+        varAcc = builder_.CallStub(glue, CommonStubCSigns::GetPropertyByIndex,
+            {glue, receiver, builder_.TruncInt64ToInt32(index)});
+        Label notHole(&builder_);
+        builder_.Branch(builder_.TaggedSpecialValueChecker(*varAcc, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
+        builder_.Bind(&notHole);
+        builder_.Branch(builder_.TaggedSpecialValueChecker(*varAcc, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &successExit);
+    }
+    builder_.Bind(&slowPath);
+    {
+        GateRef undefined = builder_.UndefineConstant();
+        varAcc = builder_.CallRuntime(glue, RTSTUB_ID(LdObjByIndex),
+            {receiver, builder_.TaggedTypeNGC(index), builder_.TaggedFalse(), builder_.TaggedTypeNGC(undefined)});
+        builder_.Branch(builder_.TaggedSpecialValueChecker(*varAcc, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &successExit);
+    }
+    builder_.Bind(&successExit);
+    {
+        result = *varAcc;
+        successControl.emplace_back(builder_.GetState());
+        successControl.emplace_back(builder_.GetDepend());
+    }
+    builder_.Bind(&exceptionExit);
+    {
+        failControl.emplace_back(builder_.GetState());
+        failControl.emplace_back(builder_.GetDepend());
+    }
+    ReplaceHirToSubCfg(gate, result, successControl, failControl);
+}
+
+void SlowPathLowering::LowerStObjByIndex(GateRef gate, GateRef glue)
+{
+    // 3: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 3);
+    Label successExit(&builder_);
+    Label exceptionExit(&builder_);
+    Label fastPath(&builder_);
+    Label slowPath(&builder_);
+    Label isHeapObj(&builder_);
+    GateRef receiver = acc_.GetValueIn(gate, 0);
+    GateRef index = acc_.GetValueIn(gate, 1);
+    GateRef accValue = acc_.GetValueIn(gate, 2);
+    GateRef result;
+    builder_.Branch(builder_.TaggedIsHeapObject(receiver), &fastPath, &slowPath);
+    builder_.Bind(&fastPath);
+    {
+        result = builder_.CallStub(glue, CommonStubCSigns::SetPropertyByIndex,
+            {glue, receiver, builder_.TruncInt64ToInt32(index), accValue});
+        Label notHole(&builder_);
+        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
+        builder_.Bind(&notHole);
+        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &successExit);
+    }
+    builder_.Bind(&slowPath);
+    {
+        result = builder_.CallRuntime(glue, RTSTUB_ID(StObjByIndex),
+            {receiver, builder_.TaggedTypeNGC(index), accValue});
+        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &successExit);
+    }
+    CREATE_DOUBLE_EXIT(successExit, exceptionExit)
+    ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl);
+}
+
+void SlowPathLowering::LowerLdObjByValue(GateRef gate, GateRef glue)
+{
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef receiver = acc_.GetValueIn(gate, 0);
+    GateRef propKey = acc_.GetValueIn(gate, 1);
+    GateRef holeConst = builder_.HoleConstant();
+    DEFVAlUE(varAcc, (&builder_), VariableType::JS_ANY(), holeConst);
+    GateRef result;
+    Label isHeapObject(&builder_);
+    Label slowPath(&builder_);
+    Label successExit(&builder_);
+    Label exceptionExit(&builder_);
+    builder_.Branch(builder_.TaggedIsHeapObject(receiver), &isHeapObject, &slowPath);
+    builder_.Bind(&isHeapObject);
+    {
+        varAcc = builder_.CallStub(glue, CommonStubCSigns::GetPropertyByValue,
+            {glue, receiver, propKey});
+        Label notHole(&builder_);
+        builder_.Branch(builder_.TaggedSpecialValueChecker(*varAcc, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
+        builder_.Bind(&notHole);
+        builder_.Branch(builder_.TaggedSpecialValueChecker(*varAcc, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &successExit);
+    }
+    builder_.Bind(&slowPath);
+    {
+        GateRef undefined = builder_.UndefineConstant();
+        varAcc = builder_.CallRuntime(glue, RTSTUB_ID(LoadICByValue), {undefined, receiver, propKey,
+            builder_.TaggedTypeNGC(undefined)});
+        builder_.Branch(builder_.TaggedSpecialValueChecker(*varAcc, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &successExit);
+    }
+    builder_.Bind(&successExit);
+    {
+        result = *varAcc;
+        successControl.emplace_back(builder_.GetState());
+        successControl.emplace_back(builder_.GetDepend());
+    }
+    builder_.Bind(&exceptionExit);
+    {
+        failControl.emplace_back(builder_.GetState());
+        failControl.emplace_back(builder_.GetDepend());
+    }
+    ReplaceHirToSubCfg(gate, result, successControl, failControl);
+}
+
+void SlowPathLowering::LowerStObjByValue(GateRef gate, GateRef glue)
+{
+    ASSERT(acc_.GetNumValueIn(gate) == 3);
+    GateRef receiver = acc_.GetValueIn(gate, 0);
+    GateRef propKey = acc_.GetValueIn(gate, 1);
+    GateRef accValue = acc_.GetValueIn(gate, 2);
+    // we do not need to merge outValueGate, so using GateRef directly instead of using Variable
+    GateRef result;
+    Label isHeapObject(&builder_);
+    Label slowPath(&builder_);
+    Label successExit(&builder_);
+    Label exceptionExit(&builder_);
+    builder_.Branch(builder_.TaggedIsHeapObject(receiver), &isHeapObject, &slowPath);
+    builder_.Bind(&isHeapObject);
+    {
+        result = builder_.CallStub(glue, CommonStubCSigns::SetPropertyByValue, {glue, receiver, propKey, accValue});
+        Label notHole(&builder_);
+        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
+        builder_.Bind(&notHole);
+        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &successExit);
+    }
+    builder_.Bind(&slowPath);
+    {
+        GateRef undefined = builder_.UndefineConstant();
+        result = builder_.CallRuntime(glue, RTSTUB_ID(StoreICByValue), {undefined, receiver, propKey, accValue,
+            builder_.TaggedTypeNGC(undefined)});
+        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &successExit);
+    }
+    CREATE_DOUBLE_EXIT(successExit, exceptionExit)
+    // stObjByValue will not be inValue to other hir gates, result gate will be ignored
     ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl);
 }
 
