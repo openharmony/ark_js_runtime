@@ -31,8 +31,12 @@
 #define ASM_JS_METHOD_NATIVE_POINTER_OFFSET      (32)
 #ifdef PANDA_TARGET_ARM64
 #define ASM_GLUE_TO_THREAD_OFFSET                (6584)
-#else 
+#else
+#ifdef  PANDA_USE_MUSL
 #define ASM_GLUE_TO_THREAD_OFFSET                (6608)
+#else
+#define ASM_GLUE_TO_THREAD_OFFSET                (6584)
+#endif
 #endif
 // ecma_runtime_callinfo struct in stack
 // -----------------------------
