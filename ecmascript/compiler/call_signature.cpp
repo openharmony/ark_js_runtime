@@ -515,7 +515,7 @@ DEF_CALL_SIGNATURE(AsmIntCallRuntime)
     };
     callSign->SetVariadicArgs(true);
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::ASM_STUB);
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
