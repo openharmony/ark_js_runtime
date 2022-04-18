@@ -83,9 +83,6 @@ public:
 
     static JSTaggedValue Construct(EcmaRuntimeCallInfo *info);
     static JSTaggedValue Invoke(EcmaRuntimeCallInfo *info, const JSHandle<JSTaggedValue> &key);
-    // 9.2.1[[Call]](thisArgument, argumentsList)
-    // 9.3.1[[Call]](thisArgument, argumentsList)
-    static JSTaggedValue CallInternal(EcmaRuntimeCallInfo *info);
     // 9.2.2[[Construct]](argumentsList, newTarget)
     // 9.3.2[[Construct]](argumentsList, newTarget)
     static JSTaggedValue ConstructInternal(EcmaRuntimeCallInfo *info);
@@ -259,9 +256,6 @@ public:
 class JSBoundFunction : public JSFunctionBase {
 public:
     CAST_CHECK(JSBoundFunction, IsBoundFunction);
-
-    // 9.4.1.1[[Call]](thisArgument, argumentsList)
-    static JSTaggedValue CallInternal(EcmaRuntimeCallInfo *info);
 
     // 9.4.1.2[[Construct]](argumentsList, newTarget)
     static JSTaggedValue ConstructInternal(EcmaRuntimeCallInfo *info);
