@@ -220,7 +220,7 @@ GateRef SlowPathLowering::GetHomeObjectFromJSFunction(GateRef jsFunc)
 GateRef SlowPathLowering::GetValueFromConstStringTable(GateRef glue, GateRef gate, uint32_t inIndex)
 {
     GateRef id = RTSTUB_ID(LoadValueFromConstantStringTable);
-    auto idGate = acc_.GetValueIn(gate, inIndex);
+    auto idGate = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, inIndex)));
     GateRef dependGate = acc_.GetDep(gate);
     return builder_.CallRuntimeWithDepend(glue, id, dependGate, {idGate});
 }
@@ -1847,7 +1847,7 @@ void SlowPathLowering::LowerTryStGlobalByName(GateRef gate, GateRef glue)
     DEFVAlUE(res, (&builder_), VariableType::JS_ANY(), builder_.Int64(JSTaggedValue::VALUE_HOLE));
     // 2 : number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef stringId = acc_.GetValueIn(gate, 0);
+    GateRef stringId = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0)));
     GateRef propKey = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), { stringId }, true);
     Label isUndefined(&builder_);
     Label notUndefined(&builder_);
