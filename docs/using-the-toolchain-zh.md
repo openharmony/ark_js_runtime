@@ -9,13 +9,13 @@
 构建编译：
 
 ```
-$ ./build.sh --product-name Hi3516DV300 --build-target ark_ts2abc_build
+$ ./build.sh --product-name rk3568 --build-target ark_ts2abc_build
 ```
 
 安装`node`和`npm`后, 使用前端工具：
 
 ```
-$ cd out/hi3516dv300/clang_x64/ark/ark/build
+$ cd out/rk3568/clang_x64/ark/ark/build
 $ npm install
 $ node --expose-gc src/index.js [选项] file.js
 ```
@@ -152,7 +152,7 @@ $ node --expose-gc src/index.js [选项] file.js
 编译生成反汇编工具：
 
 ```
-./build.sh --product-name Hi3516DV300 --build-target ark_host_linux_tools_packages
+./build.sh --product-name rk3568 --build-target ark_host_linux_tools_packages
 ```
 
 命令行格式：
