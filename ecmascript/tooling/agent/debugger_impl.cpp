@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -282,11 +282,12 @@ DispatchResponse DebuggerImpl::SetAsyncCallStackDepth()
 }
 
 DispatchResponse DebuggerImpl::SetBreakpointByUrl(std::unique_ptr<SetBreakpointByUrlParams> params,
-                                                  CString *out_id,
+                                                  CString *outId,
                                                   CVector<std::unique_ptr<Location>> *outLocations)
 {
     return DispatchResponse::Create(
-        backend_->SetBreakpointByUrl(params->GetUrl(), params->GetLine(), params->GetColumn(), out_id, outLocations));
+        backend_->SetBreakpointByUrl(params->GetUrl(), params->GetLine(), params->GetColumn(),
+        (params->HasCondition() ? params->GetCondition() : std::optional<CString> {}), outId, outLocations));
 }
 
 DispatchResponse DebuggerImpl::SetPauseOnExceptions(std::unique_ptr<SetPauseOnExceptionsParams> params)

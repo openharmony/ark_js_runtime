@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -25,7 +25,8 @@ namespace panda::ecmascript::tooling {
 class JSBreakpoint {
 public:
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-    JSBreakpoint(JSMethod *method, uint32_t bcOffset) : method_(method), bc_offset_(bcOffset) {}
+    JSBreakpoint(JSMethod *method, uint32_t bcOffset, const std::optional<CString> &condition = {})
+        : method_(method), bcOffset_(bcOffset), condition_(condition) {}
     ~JSBreakpoint() = default;
 
     JSMethod *GetMethod() const
@@ -35,7 +36,7 @@ public:
 
     uint32_t GetBytecodeOffset() const
     {
-        return bc_offset_;
+        return bcOffset_;
     }
 
     bool operator==(const JSBreakpoint &bpoint) const
@@ -43,12 +44,23 @@ public:
         return GetMethod() == bpoint.GetMethod() && GetBytecodeOffset() == bpoint.GetBytecodeOffset();
     }
 
+    const CString &GetCondition() const
+    {
+        return condition_.value();
+    }
+
+    bool HasCondition() const
+    {
+        return condition_.has_value();
+    }
+
     DEFAULT_COPY_SEMANTIC(JSBreakpoint);
     DEFAULT_MOVE_SEMANTIC(JSBreakpoint);
 
 private:
     JSMethod *method_;
-    uint32_t bc_offset_;
+    uint32_t bcOffset_;
+    std::optional<CString> condition_;
 };
 
 class HashJSBreakpoint {
@@ -85,7 +97,9 @@ public:
         hooks_ = nullptr;
     }
 
-    bool SetBreakpoint(const JSPtLocation &location) override;
+    void Init();
+
+    bool SetBreakpoint(const JSPtLocation &location, const std::optional<CString> &condition) override;
     bool RemoveBreakpoint(const JSPtLocation &location) override;
     void BytecodePcChanged(JSThread *thread, JSMethod *method, uint32_t bcOffset) override;
     void LoadModule(std::string_view filename) override
@@ -112,11 +126,19 @@ public:
 
 private:
     JSMethod *FindMethod(const JSPtLocation &location) const;
-    bool FindBreakpoint(const JSMethod *method, uint32_t bcOffset) const;
+    std::optional<JSBreakpoint> FindBreakpoint(const JSMethod *method, uint32_t bcOffset) const;
     bool RemoveBreakpoint(const JSMethod *method, uint32_t bcOffset);
     void HandleExceptionThrowEvent(const JSThread *thread, const JSMethod *method, uint32_t bcOffset);
     bool HandleStep(const JSMethod *method, uint32_t bcOffset);
     bool HandleBreakpoint(const JSMethod *method, uint32_t bcOffset);
+    void SetGlobalFunction(const JSHandle<JSTaggedValue> &funcName, EcmaEntrypoint nativeFunc, int32_t numArgs) const;
+
+    static void PrepareEvaluateEnv(const EcmaVM *ecmaVm, InterpretedFrameHandler &frameHandler);
+    static JSTaggedValue DebuggerSetValue(EcmaRuntimeCallInfo *argv);
+    static JSTaggedValue DebuggerGetValue(EcmaRuntimeCallInfo *argv);
+    static JSTaggedValue GetGlobalValue(const EcmaVM *ecmaVm, JSTaggedValue key);
+    static JSTaggedValue SetGlobalValue(const EcmaVM *ecmaVm, JSTaggedValue key, JSTaggedValue value);
+    static bool EvaluateLocalValue(JSMethod *method, JSThread *thread, const CString &varName, int32_t &regIndex);
 
     const EcmaVM *ecmaVm_;
     PtHooks *hooks_ {nullptr};
