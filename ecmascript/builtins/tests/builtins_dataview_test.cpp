@@ -56,7 +56,7 @@ public:
     JSThread *thread {nullptr};
 };
 
-JSTaggedValue CreateBuiltinsArrayBuffer(JSThread *thread, int32_t length)
+JSTaggedValue CreateBuiltinsDataviewArrayBuffer(JSThread *thread, int32_t length)
 {
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSFunction> arrayBuffer(thread, env->GetArrayBufferFunction().GetTaggedValue());
@@ -77,7 +77,7 @@ JSTaggedValue CreateBuiltinsDataView(JSThread *thread, int32_t length, int32_t b
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSFunction> dataView(thread, env->GetDataViewFunction().GetTaggedValue());
     JSHandle<JSObject> globalObject(thread, env->GetGlobalObject());
-    JSTaggedValue tagged = CreateBuiltinsArrayBuffer(thread, length);
+    JSTaggedValue tagged = CreateBuiltinsDataviewArrayBuffer(thread, length);
     JSHandle<JSArrayBuffer> arrBuf(thread, JSArrayBuffer::Cast(reinterpret_cast<TaggedObject *>(tagged.GetRawData())));
     // 8 : test case
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue(*dataView), 8);
@@ -109,7 +109,7 @@ HWTEST_F_L0(BuiltinsDataViewTest, Constructor)
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSFunction> dataView(thread, env->GetDataViewFunction().GetTaggedValue());
     JSHandle<JSObject> globalObject(thread, env->GetGlobalObject());
-    JSTaggedValue tagged = CreateBuiltinsArrayBuffer(thread, 10);
+    JSTaggedValue tagged = CreateBuiltinsDataviewArrayBuffer(thread, 10);
     JSHandle<JSArrayBuffer> arrBuf(thread, JSArrayBuffer::Cast(reinterpret_cast<TaggedObject *>(tagged.GetRawData())));
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue(*dataView), 8);
     ecmaRuntimeCallInfo->SetFunction(dataView.GetTaggedValue());
