@@ -262,6 +262,7 @@ JSTaggedValue JSStableArray::Join(JSHandle<JSArray> receiver, EcmaRuntimeCallInf
         newString->WriteData(*nextStr, current, allocateLength - current, nextLength);
         current += nextLength;
     }
+    ASSERT_PRINT(isOneByte == EcmaString::CanBeCompressed(newString), "isOneByte does not match the real value!");
     return JSTaggedValue(newString);
 }
 }  // namespace panda::ecmascript

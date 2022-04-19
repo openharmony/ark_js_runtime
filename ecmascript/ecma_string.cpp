@@ -72,6 +72,7 @@ EcmaString *EcmaString::Concat(const JSHandle<EcmaString> &str1Handle, const JSH
         }
     }
 
+    ASSERT_PRINT(compressed == CanBeCompressed(newString), "compressed does not match the real value!");
     return newString;
 }
 
@@ -83,7 +84,7 @@ EcmaString *EcmaString::FastSubString(const JSHandle<EcmaString> &src, uint32_t 
         return vm->GetFactory()->GetEmptyString().GetObject<EcmaString>();
     }
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    bool canBeCompressed = !src->IsUtf16();
+    bool canBeCompressed = src->IsUtf8() ? true : CanBeCompressed(src->GetDataUtf16() + start, utf16Len);
 
     // allocator may trig gc and move src, need to hold it
     auto string = AllocStringObject(utf16Len, canBeCompressed, vm);
@@ -105,6 +106,8 @@ EcmaString *EcmaString::FastSubString(const JSHandle<EcmaString> &src, uint32_t 
         Span<const uint8_t> source(src->GetDataUtf8() + start, utf16Len);
         EcmaString::StringCopy(dst, utf16Len, source, utf16Len);
     }
+
+    ASSERT_PRINT(canBeCompressed == CanBeCompressed(string), "canBeCompresse does not match the real value!");
     return string;
 }
 
@@ -236,6 +239,15 @@ int32_t EcmaString::IndexOf(const EcmaString *rhs, int32_t pos) const
     }
 
     return -1;
+}
+
+// static
+bool EcmaString::CanBeCompressed(const EcmaString *string)
+{
+    if (string->IsUtf8()) {
+        return CanBeCompressed(string->GetDataUtf8(), string->GetLength());
+    }
+    return CanBeCompressed(string->GetDataUtf16(), string->GetLength());
 }
 
 // static
