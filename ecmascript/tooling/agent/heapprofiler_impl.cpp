@@ -118,7 +118,7 @@ void HeapProfilerImpl::DispatcherImpl::GetSamplingProfile(const DispatchRequest 
 {
     std::unique_ptr<SamplingHeapProfile> profile;
     DispatchResponse response = heapprofiler_->GetSamplingProfile(&profile);
-    // GetSamplingProfile与StopSampling返回值类型一样，后续如果有变更再区分
+    // The return value type of GetSamplingProfile is the same as of StopSampling.
     std::unique_ptr<StopSamplingReturns> result = std::make_unique<StopSamplingReturns>(std::move(profile));
     SendResponse(request, response, std::move(result));
 }
@@ -187,21 +187,25 @@ void HeapProfilerImpl::DispatcherImpl::TakeHeapSnapshot(const DispatchRequest &r
 DispatchResponse HeapProfilerImpl::AddInspectedHeapObject(
     [[maybe_unused]] std::unique_ptr<AddInspectedHeapObjectParams> params)
 {
+    LOG(ERROR, DEBUGGER) << "AddInspectedHeapObject not support now."
     return DispatchResponse::Ok();
 }
 
 DispatchResponse HeapProfilerImpl::CollectGarbage()
 {
+    LOG(ERROR, DEBUGGER) << "CollectGarbage not support now."
     return DispatchResponse::Ok();
 }
 
 DispatchResponse HeapProfilerImpl::Enable()
 {
+    LOG(ERROR, DEBUGGER) << "Enable not support now."
     return DispatchResponse::Ok();
 }
 
 DispatchResponse HeapProfilerImpl::Disable()
 {
+    LOG(ERROR, DEBUGGER) << "Disable not support now."
     return DispatchResponse::Ok();
 }
 
@@ -210,6 +214,7 @@ DispatchResponse HeapProfilerImpl::GetHeapObjectId([[maybe_unused]] std::unique_
 {
     ASSERT(objectId != nullptr);
     *objectId = 0;
+    LOG(ERROR, DEBUGGER) << "GetHeapObjectId not support now."
     return DispatchResponse::Ok();
 }
 
@@ -217,16 +222,19 @@ DispatchResponse HeapProfilerImpl::GetObjectByHeapObjectId(
     [[maybe_unused]] std::unique_ptr<GetObjectByHeapObjectIdParams> params,
     [[maybe_unused]] std::unique_ptr<RemoteObject> *remoteObjectResult)
 {
+    LOG(ERROR, DEBUGGER) << "GetObjectByHeapObjectId not support now."
     return DispatchResponse::Ok();
 }
 
 DispatchResponse HeapProfilerImpl::GetSamplingProfile([[maybe_unused]]std::unique_ptr<SamplingHeapProfile> *profile)
 {
+    LOG(ERROR, DEBUGGER) << "GetSamplingProfile not support now."
     return DispatchResponse::Ok();
 }
 
 DispatchResponse HeapProfilerImpl::StartSampling([[maybe_unused]]std::unique_ptr<StartSamplingParams> params)
 {
+    LOG(ERROR, DEBUGGER) << "StartSampling not support now."
     return DispatchResponse::Ok();
 }
 
@@ -239,6 +247,7 @@ DispatchResponse HeapProfilerImpl::StartTrackingHeapObjects(
 
 DispatchResponse HeapProfilerImpl::StopSampling([[maybe_unused]]std::unique_ptr<SamplingHeapProfile> *profile)
 {
+    LOG(ERROR, DEBUGGER) << "StopSampling not support now."
     return DispatchResponse::Ok();
 }
 
