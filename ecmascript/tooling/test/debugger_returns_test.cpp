@@ -270,4 +270,25 @@ HWTEST_F_L0(DebuggerReturnsTest, StopReturnsToObjectTest)
     Local<JSValueRef> result = temp->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
 }
+
+HWTEST_F_L0(DebuggerReturnsTest, GetHeapUsageReturnsToObjectTest)
+{
+    double usedSize = 1;
+    double totalSize = 1;
+    std::unique_ptr<GetHeapUsageReturns> getHeapUsageReturns =
+        std::make_unique<GetHeapUsageReturns>(usedSize, totalSize);
+    ASSERT_NE(getHeapUsageReturns, nullptr);
+    Local<ObjectRef> getObject = getHeapUsageReturns->ToObject(ecmaVm);
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "usedSize");
+    ASSERT_TRUE(getObject->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> result = getObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<NumberRef>(result)->Value(), 1);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "totalSize");
+    ASSERT_TRUE(getObject->Has(ecmaVm, tmpStr));
+    result = getObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<NumberRef>(result)->Value(), 1);
+}
 }  // namespace panda::test

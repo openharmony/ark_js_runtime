@@ -26,6 +26,7 @@ RuntimeImpl::DispatcherImpl::DispatcherImpl(FrontEnd *frontend, std::unique_ptr<
     dispatcherTable_["getProperties"] = &RuntimeImpl::DispatcherImpl::GetProperties;
     dispatcherTable_["runIfWaitingForDebugger"] = &RuntimeImpl::DispatcherImpl::RunIfWaitingForDebugger;
     dispatcherTable_["callFunctionOn"] = &RuntimeImpl::DispatcherImpl::CallFunctionOn;
+    dispatcherTable_["getHeapUsage"] = &RuntimeImpl::DispatcherImpl::GetHeapUsage;
 }
 
 void RuntimeImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
@@ -98,6 +99,17 @@ void RuntimeImpl::DispatcherImpl::CallFunctionOn(const DispatchRequest &request)
     SendResponse(request, response, std::move(result));
 }
 
+void RuntimeImpl::DispatcherImpl::GetHeapUsage(const DispatchRequest &request)
+{
+    double usedSize = 0;
+    double totalSize = 0;
+    EcmaVM *vm = nullptr;
+    DispatchResponse response = runtime_->GetHeapUsage(vm, &usedSize, &totalSize);
+    std::unique_ptr<GetHeapUsageReturns> result = std::make_unique<GetHeapUsageReturns>(usedSize,
+        totalSize);
+    SendResponse(request, response, std::move(result));
+}
+
 DispatchResponse RuntimeImpl::Enable()
 {
     auto ecmaVm = const_cast<EcmaVM *>(backend_->GetEcmaVm());
@@ -129,6 +141,12 @@ DispatchResponse RuntimeImpl::CallFunctionOn(std::unique_ptr<CallFunctionOnParam
     [[maybe_unused]] std::optional<std::unique_ptr<ExceptionDetails>> *outExceptionDetails)
 {
     backend_->CallFunctionOn(params->GetFunctionDeclaration(), outRemoteObject);
+    return DispatchResponse::Ok();
+}
+
+DispatchResponse RuntimeImpl::GetHeapUsage(EcmaVM *vm, double *usedSize, double *totalSize)
+{
+    backend_->GetHeapUsage(vm, usedSize, totalSize);
     return DispatchResponse::Ok();
 }
 }  // namespace panda::ecmascript::tooling

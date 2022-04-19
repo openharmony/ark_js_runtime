@@ -278,5 +278,21 @@ private:
 
     std::unique_ptr<Profile> profile_ {};
 };
+
+class GetHeapUsageReturns : public PtBaseReturns {
+public:
+    explicit GetHeapUsageReturns(double usedSize, double totalSize)
+        : usedSize_(usedSize), totalSize_(totalSize) {}
+    ~GetHeapUsageReturns() override = default;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+private:
+    GetHeapUsageReturns() = default;
+    NO_COPY_SEMANTIC(GetHeapUsageReturns);
+    NO_MOVE_SEMANTIC(GetHeapUsageReturns);
+
+    double usedSize_ {0.0};
+    double totalSize_ {0.0};
+};
 }  // namespace panda::ecmascript::tooling
 #endif
