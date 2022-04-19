@@ -1062,8 +1062,8 @@ void InterpreterAssembly::HandleReturnDyn(
                 [[maybe_unused]] EcmaHandleScope handleScope(thread);
                 EcmaVM *ecmaVm = thread->GetEcmaVM();
                 ObjectFactory *factory = ecmaVm->GetFactory();
-                JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR, 
-                                                "Derived constructor must return object or undefined");
+                JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR,
+                                                               "Derived constructor must return object or undefined");
                 thread->SetException(error.GetTaggedValue());
             }
             INTERPRETER_GOTO_EXCEPTION_HANDLER();
@@ -1116,7 +1116,7 @@ void InterpreterAssembly::HandleReturnUndefinedPref(
                 ObjectFactory *factory = ecmaVm->GetFactory();
                 [[maybe_unused]] EcmaHandleScope handleScope(thread);
                 JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR,
-                                                "Derived constructor must return object or undefined");
+                                                               "Derived constructor must return object or undefined");
                 thread->SetException(error.GetTaggedValue());
             }
             INTERPRETER_GOTO_EXCEPTION_HANDLER();
