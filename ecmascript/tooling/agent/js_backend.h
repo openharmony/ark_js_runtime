@@ -22,6 +22,7 @@
 #include "ecmascript/tooling/interface/js_debugger.h"
 #include "ecmascript/tooling/js_pt_extractor.h"
 #include "libpandabase/macros.h"
+#include "ecmascript/napi/include/dfx_jsnapi.h"
 
 namespace panda::ecmascript::tooling {
 class JSBackend {
@@ -100,6 +101,7 @@ public:
     void GetProperties(RemoteObjectId objectId, bool isOwn, bool isAccessorOnly,
                        CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
     void CallFunctionOn(const CString &functionDeclaration, std::unique_ptr<RemoteObject> *outRemoteObject);
+    void GetHeapUsage(EcmaVM *vm, double *usedSize ,double *totalSize);
     // public for testcases
     bool GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames);
     const EcmaVM *GetEcmaVm() const

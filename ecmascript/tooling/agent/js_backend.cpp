@@ -826,6 +826,12 @@ void JSBackend::CallFunctionOn([[maybe_unused]] const CString &functionDeclarati
     *outRemoteObject = RemoteObject::FromTagged(ecmaVm_, error);
 }
 
+void JSBackend::GetHeapUsage(EcmaVM *vm, double *usedSize ,double *totalSize)
+{
+    totalSize = (double *)DFXJSNApi::GetHeapTotalSize(vm);
+    usedSize = (double *)DFXJSNApi::GetHeapUsedSize(vm);
+}
+
 bool JSBackend::DecodeAndCheckBase64(const CString &src, CString &dest)
 {
     dest.resize(base64::decoded_size(src.size()));

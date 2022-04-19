@@ -39,6 +39,7 @@ public:
         std::unique_ptr<CallFunctionOnParams> params,
         std::unique_ptr<RemoteObject> *outRemoteObject,
         std::optional<std::unique_ptr<ExceptionDetails>> *outExceptionDetails);
+    DispatchResponse GetHeapUsage(EcmaVM *vm, double *usedSize, double *totalSize);
 
     class DispatcherImpl final : public DispatcherBase {
     public:
@@ -50,7 +51,8 @@ public:
         void RunIfWaitingForDebugger(const DispatchRequest &request);
         void GetProperties(const DispatchRequest &request);
         void CallFunctionOn(const DispatchRequest &request);
-
+        void GetHeapUsage(const DispatchRequest &request);
+        
     private:
         using AgentHandler = void (RuntimeImpl::DispatcherImpl::*)(const DispatchRequest &request);
         CUnorderedMap<CString, AgentHandler> dispatcherTable_ {};
