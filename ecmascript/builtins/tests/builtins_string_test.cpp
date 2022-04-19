@@ -59,8 +59,8 @@ public:
     JSThread *thread {nullptr};
 };
 
-JSTaggedValue CreateRegExpObjByPatternAndFlags(JSThread *thread, const JSHandle<EcmaString> &pattern,
-                                               const JSHandle<EcmaString> &flags)
+JSTaggedValue CreateBuiltinsStringRegExpObjByPatternAndFlags(JSThread *thread, const JSHandle<EcmaString> &pattern,
+                                                             const JSHandle<EcmaString> &flags)
 {
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSFunction> regexp(env->GetRegExpFunction());
@@ -1116,7 +1116,7 @@ HWTEST_F_L0(BuiltinsStringTest, Replace4)
     JSHandle<EcmaString> pattern1 =
         thread->GetEcmaVM()->GetFactory()->NewFromASCII("quick\\s(brown).+?(jumps)");
     JSHandle<EcmaString> flags1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("iug");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
+    JSTaggedValue result1 = CreateBuiltinsStringRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSRegExp> searchStr(thread, reinterpret_cast<JSRegExp *>(result1.GetRawData()));
     JSHandle<EcmaString> expected = thread->GetEcmaVM()->GetFactory()->NewFromASCII(
         "The Quick Brown Fox Jumpsa The   Over The Lazy Dog Jumps Brown $1 Jumps1 $32 a Over The Lazy Dog");
@@ -1182,7 +1182,7 @@ HWTEST_F_L0(BuiltinsStringTest, Split2)
     JSHandle<EcmaString> thisStr = factory->NewFromASCII("a-b-c");
     JSHandle<EcmaString> pattern1 = factory->NewFromASCII("-");
     JSHandle<EcmaString> flags1 = factory->NewFromASCII("iug");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
+    JSTaggedValue result1 = CreateBuiltinsStringRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSRegExp> separatorObj(thread, result1);
 
     JSHandle<JSTaggedValue> limit(thread, JSTaggedValue(3));

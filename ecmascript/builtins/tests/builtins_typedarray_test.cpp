@@ -173,7 +173,7 @@ protected:
     };
 };
 
-JSTaggedValue CreateBuiltinsJSObject(JSThread *thread, const CString keyCStr)
+JSTaggedValue CreateBuiltinsTypeArrayJSObject(JSThread *thread, const CString keyCStr)
 {
     auto ecmaVM = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();

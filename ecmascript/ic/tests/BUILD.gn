@@ -17,158 +17,18 @@ import("//build/test.gni")
 
 module_output_path = "ark/js_runtime"
 
-host_unittest_action("ICBinaryOpTest") {
+host_unittest_action("ICTest") {
   module_out_path = module_output_path
 
   sources = [
     # test file
     "ic_binaryop_test.cpp",
-  ]
-
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_jsruntime_test",
-    sdk_libc_secshared_dep,
-  ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
-}
-
-host_unittest_action("ICCompareOpTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
     "ic_compareop_test.cpp",
-  ]
-
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_jsruntime_test",
-    sdk_libc_secshared_dep,
-  ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
-}
-
-host_unittest_action("ICHandlerTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
     "ic_handler_test.cpp",
-  ]
-
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_jsruntime_test",
-    sdk_libc_secshared_dep,
-  ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
-}
-
-host_unittest_action("ICInvokeTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
     "ic_invoke_test.cpp",
-  ]
-
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_jsruntime_test",
-    sdk_libc_secshared_dep,
-  ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
-}
-
-host_unittest_action("ProfileTypeInfoTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
     "profile_type_info_test.cpp",
-  ]
-
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_jsruntime_test",
-    sdk_libc_secshared_dep,
-  ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
-}
-
-host_unittest_action("PropertiesCacheTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
-    "profile_type_info_test.cpp",
-  ]
-
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_jsruntime_test",
-    sdk_libc_secshared_dep,
-  ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
-}
-
-host_unittest_action("PropertyBoxTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
-    "proto_change_details_test.cpp",
-  ]
-
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_jsruntime_test",
-    sdk_libc_secshared_dep,
-  ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
-}
-
-host_unittest_action("ProtoChangeDetailsTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
+    "properties_cache_test.cpp",
+    "property_box_test.cpp",
     "proto_change_details_test.cpp",
   ]
 
@@ -189,30 +49,12 @@ group("unittest") {
   testonly = true
 
   # deps file
-  deps = [
-    ":ICBinaryOpTest",
-    ":ICCompareOpTest",
-    ":ICHandlerTest",
-    ":ICInvokeTest",
-    ":ProfileTypeInfoTest",
-    ":PropertiesCacheTest",
-    ":PropertyBoxTest",
-    ":ProtoChangeDetailsTest",
-  ]
+  deps = [ ":ICTest" ]
 }
 
 group("host_unittest") {
   testonly = true
 
   # deps file
-  deps = [
-    ":ICBinaryOpTestAction",
-    ":ICCompareOpTestAction",
-    ":ICHandlerTestAction",
-    ":ICInvokeTestAction",
-    ":ProfileTypeInfoTestAction",
-    ":PropertiesCacheTestAction",
-    ":PropertyBoxTestAction",
-    ":ProtoChangeDetailsTestAction",
-  ]
+  deps = [ ":ICTestAction" ]
 }

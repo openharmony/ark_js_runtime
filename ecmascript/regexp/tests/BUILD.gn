@@ -17,32 +17,12 @@ import("//build/test.gni")
 
 module_output_path = "ark/js_runtime"
 
-host_unittest_action("DynChunkTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
-    "dyn_chunk_test.cpp",
-  ]
-
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_jsruntime_test",
-    sdk_libc_secshared_dep,
-  ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
-}
-
 host_unittest_action("RegexpTest") {
   module_out_path = module_output_path
 
   sources = [
     # test file
+    "dyn_chunk_test.cpp",
     "regexp_test.cpp",
   ]
 
@@ -61,16 +41,10 @@ host_unittest_action("RegexpTest") {
 
 group("unittest") {
   testonly = true
-  deps = [
-    ":DynChunkTest",
-    ":RegexpTest",
-  ]
+  deps = [ ":RegexpTest" ]
 }
 
 group("host_unittest") {
   testonly = true
-  deps = [
-    ":DynChunkTestAction",
-    ":RegexpTestAction",
-  ]
+  deps = [ ":RegexpTestAction" ]
 }
