@@ -249,7 +249,10 @@ bool JSFunction::MakeConstructor(JSThread *thread, const JSHandle<JSFunction> &f
 
 JSTaggedValue JSFunction::Call(EcmaRuntimeCallInfo *info)
 {
-    ASSERT(info);
+    if (info == nullptr || (info->GetArgsNumber() == INVALID_ARGS_NUMBER)) {
+        return JSTaggedValue::Exception();
+    }
+
     JSThread *thread = info->GetThread();
     // 1. ReturnIfAbrupt(F).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -269,7 +272,10 @@ JSTaggedValue JSFunction::Call(EcmaRuntimeCallInfo *info)
 
 JSTaggedValue JSFunction::Construct(EcmaRuntimeCallInfo *info)
 {
-    ASSERT(info);
+    if (info == nullptr || (info->GetArgsNumber() == INVALID_ARGS_NUMBER)) {
+        return JSTaggedValue::Exception();
+    }
+
     JSThread *thread = info->GetThread();
     JSHandle<JSTaggedValue> func(info->GetFunction());
     JSMutableHandle<JSTaggedValue> target(info->GetNewTarget());
@@ -286,7 +292,10 @@ JSTaggedValue JSFunction::Construct(EcmaRuntimeCallInfo *info)
 
 JSTaggedValue JSFunction::Invoke(EcmaRuntimeCallInfo *info, const JSHandle<JSTaggedValue> &key)
 {
-    ASSERT(info);
+    if (info == nullptr || (info->GetArgsNumber() == INVALID_ARGS_NUMBER)) {
+        return JSTaggedValue::Exception();
+    }
+
     ASSERT(JSTaggedValue::IsPropertyKey(key));
     JSThread *thread = info->GetThread();
     JSHandle<JSTaggedValue> thisArg = info->GetThis();
@@ -298,7 +307,10 @@ JSTaggedValue JSFunction::Invoke(EcmaRuntimeCallInfo *info, const JSHandle<JSTag
 // [[Construct]]
 JSTaggedValue JSFunction::ConstructInternal(EcmaRuntimeCallInfo *info)
 {
-    ASSERT(info);
+    if (info == nullptr || (info->GetArgsNumber() == INVALID_ARGS_NUMBER)) {
+        return JSTaggedValue::Exception();
+    }
+
     JSThread *thread = info->GetThread();
     JSHandle<JSFunction> func(info->GetFunction());
     JSHandle<JSTaggedValue> newTarget(info->GetNewTarget());
