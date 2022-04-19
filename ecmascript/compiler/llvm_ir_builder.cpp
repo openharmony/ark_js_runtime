@@ -524,24 +524,26 @@ LLVMValueRef LLVMIRBuilder::GetFunction(LLVMValueRef glue, StubIdType id)
     LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
     LLVMTypeRef glueType = LLVMTypeOf(glue);
     LLVMValueRef rtoffset;
+    LLVMValueRef rtbaseoffset;
     if (std::holds_alternative<RuntimeStubCSigns::ID>(id)) {
         rtoffset = LLVMConstInt(glueType,
             static_cast<int>(JSThread::GlueData::GetRTStubEntriesOffset(compCfg_->Is32Bit())) +
             index * slotSize_, 0);
+        rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
     } else if (std::holds_alternative<CommonStubCSigns::ID>(id)) {
         rtoffset = LLVMConstInt(glueType, JSThread::GlueData::GetCOStubEntriesOffset(compCfg_->Is32Bit()) +
             index * static_cast<size_t>(slotSize_), 0);
+        rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
     } else if (std::holds_alternative<LLVMValueRef>(id)) {
         LLVMValueRef bytecodeoffset = LLVMConstInt(glueType,
                                                    JSThread::GlueData::GetBCStubEntriesOffset(compCfg_->Is32Bit()),
                                                    0);
         LLVMValueRef opcodeOffset = std::get<LLVMValueRef>(id);
-        rtoffset = LLVMBuildAdd(
+        rtbaseoffset = LLVMBuildAdd(
             builder_, glue, LLVMBuildAdd(builder_, bytecodeoffset, opcodeOffset, ""), "");
     } else {
         UNREACHABLE();
     }
-    LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
     LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glueType, 0), "");
     LLVMValueRef llvmAddr = LLVMBuildLoad(builder_, rtbaseAddr, "");
     LLVMValueRef callee = LLVMBuildIntToPtr(builder_, llvmAddr, rtfuncTypePtr, "cast");
