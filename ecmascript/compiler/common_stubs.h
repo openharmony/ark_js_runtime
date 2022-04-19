@@ -112,7 +112,7 @@ public:
     // 3 : 3 means argument counts
     explicit GetPropertyByIndexStub(Circuit *circuit) : Stub("GetPropertyByIndex", 3, circuit)
     {
-        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_FRAME);
     }
     ~GetPropertyByIndexStub() = default;
     NO_MOVE_SEMANTIC(GetPropertyByIndexStub);
@@ -125,7 +125,7 @@ public:
     // 4 : 4 means argument counts
     explicit SetPropertyByIndexStub(Circuit *circuit) : Stub("SetPropertyByIndex", 4, circuit)
     {
-        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_FRAME);
     }
     ~SetPropertyByIndexStub() = default;
     NO_MOVE_SEMANTIC(SetPropertyByIndexStub);
@@ -138,7 +138,7 @@ public:
     // 4 : 4 means argument counts
     explicit SetPropertyByIndexWithOwnStub(Circuit *circuit) : Stub("SetPropertyByIndexWithOwn", 4, circuit)
     {
-        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_FRAME);
     }
     ~SetPropertyByIndexWithOwnStub() = default;
     NO_MOVE_SEMANTIC(SetPropertyByIndexWithOwnStub);
@@ -151,7 +151,7 @@ public:
     // 3 : 3 means argument counts
     explicit GetPropertyByNameStub(Circuit *circuit) : Stub("GetPropertyByName", 3, circuit)
     {
-        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_FRAME);
     }
     ~GetPropertyByNameStub() = default;
     NO_MOVE_SEMANTIC(GetPropertyByNameStub);
@@ -164,7 +164,7 @@ public:
     // 4 : 4 means argument counts
     explicit SetPropertyByNameStub(Circuit *circuit) : Stub("SetPropertyByName", 4, circuit)
     {
-        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_FRAME);
     }
     ~SetPropertyByNameStub() = default;
     NO_MOVE_SEMANTIC(SetPropertyByNameStub);
@@ -177,7 +177,7 @@ public:
     // 4 : 4 means argument counts
     explicit SetPropertyByNameWithOwnStub(Circuit *circuit) : Stub("SetPropertyByNameWithOwn", 4, circuit)
     {
-        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_FRAME);
     }
     ~SetPropertyByNameWithOwnStub() = default;
     NO_MOVE_SEMANTIC(SetPropertyByNameWithOwnStub);
@@ -190,7 +190,7 @@ public:
     // 3 means argument counts
     explicit ModStub(Circuit *circuit) : Stub("Mod", 3, circuit)
     {
-        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_FRAME);
     }
     ~ModStub() = default;
     NO_MOVE_SEMANTIC(ModStub);
@@ -223,7 +223,7 @@ public:
     // 3 : 3 means argument counts
     explicit GetPropertyByValueStub(Circuit *circuit) : Stub("GetPropertyByValue", 3, circuit)
     {
-        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_FRAME);
     }
     ~GetPropertyByValueStub() = default;
     NO_MOVE_SEMANTIC(GetPropertyByValueStub);
@@ -236,7 +236,7 @@ public:
     // 4 : 4 means argument counts
     explicit SetPropertyByValueStub(Circuit *circuit) : Stub("SetPropertyByValue", 4, circuit)
     {
-        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_FRAME);
     }
     ~SetPropertyByValueStub() = default;
     NO_MOVE_SEMANTIC(SetPropertyByValueStub);
@@ -249,7 +249,7 @@ public:
     // 4 : 4 means argument counts
     explicit SetPropertyByValueWithOwnStub(Circuit *circuit) : Stub("SetPropertyByValueWithOwn", 4, circuit)
     {
-        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_FRAME);
     }
     ~SetPropertyByValueWithOwnStub() = default;
     NO_MOVE_SEMANTIC(SetPropertyByValueWithOwnStub);
@@ -292,7 +292,7 @@ public:
     // 5 : 5 means argument counts
     explicit TryStoreICByNameStub(Circuit *circuit) : Stub("TryStoreICByName", 5, circuit)
     {
-        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_FRAME);
     }
     ~TryStoreICByNameStub() = default;
     NO_MOVE_SEMANTIC(TryStoreICByNameStub);
@@ -305,7 +305,7 @@ public:
     // 6 : 6 means argument counts
     explicit TryStoreICByValueStub(Circuit *circuit) : Stub("TryStoreICByValue", 6, circuit)
     {
-        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_FRAME);
     }
     ~TryStoreICByValueStub() = default;
     NO_MOVE_SEMANTIC(TryStoreICByValueStub);
@@ -318,7 +318,7 @@ public:
     // 4 : 4 means argument counts
     explicit SetValueWithBarrierStub(Circuit *circuit) : Stub("SetValueWithBarrier", 4, circuit)
     {
-        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_FRAME);
     }
     ~SetValueWithBarrierStub() = default;
     NO_MOVE_SEMANTIC(SetValueWithBarrierStub);
@@ -331,7 +331,7 @@ public:
     // 2 : 2 means argument counts
     explicit TestAbsoluteAddressRelocationStub(Circuit *circuit) : Stub("TestAbsoluteAddressRelocation", 2, circuit)
     {
-        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_FRAME);
     }
     ~TestAbsoluteAddressRelocationStub() = default;
     NO_MOVE_SEMANTIC(TestAbsoluteAddressRelocationStub);
