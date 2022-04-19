@@ -43,6 +43,10 @@ EcmaRuntimeCallInfo EcmaInterpreter::NewRuntimeCallInfo(
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     JSTaggedType *newSp = sp - INTERPRETER_FRAME_STATE_SIZE;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     thread->SetCurrentSPFrame(newSp);
+    if (UNLIKELY(thread->DoStackOverflowCheck(newSp - numArgs - RESERVED_CALL_ARGCOUNT))) {
+        EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, INVALID_ARGS_NUMBER, nullptr);
+        return ecmaRuntimeCallInfo;
+    }
 
     // create entry frame.
     InterpretedEntryFrame *entryState = InterpretedEntryFrame::GetFrameFromSp(newSp);

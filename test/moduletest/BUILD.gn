@@ -37,6 +37,7 @@ group("ark_js_moduletest") {
     "objectcloneproperties:objectclonepropertiesAction",
     "promise:promiseAction",
     "spreadoperator:spreadoperatorAction",
+    "stackoverflow:stackoverflowAction",
     "throwdyn:throwdynAction",
     "watch:watchAction",
     "yieldstar:yieldstarAction",

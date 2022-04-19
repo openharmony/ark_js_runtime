@@ -196,20 +196,26 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CALL_PUSH_ARGS_I()                                       \
-    do {                                                         \
-        for (int i = actualNumArgs; i > 0; i--) {                \
-            *(--newSp) = sp[funcReg + static_cast<uint32_t>(i)]; \
-        }                                                        \
+#define CALL_PUSH_ARGS_I()                                                   \
+    do {                                                                     \
+        if (UNLIKELY(thread->DoStackOverflowCheck(newSp - actualNumArgs))) { \
+            INTERPRETER_GOTO_EXCEPTION_HANDLER();                            \
+        }                                                                    \
+        for (int i = actualNumArgs; i > 0; i--) {                            \
+            *(--newSp) = sp[funcReg + static_cast<uint32_t>(i)];             \
+        }                                                                    \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CALL_PUSH_ARGS_I_THIS()                                  \
-    do {                                                         \
-        /* 1: skip this */                                       \
-        for (int i = actualNumArgs + 1; i > 1; i--) {            \
-            *(--newSp) = sp[funcReg + static_cast<uint32_t>(i)]; \
-        }                                                        \
+#define CALL_PUSH_ARGS_I_THIS()                                              \
+    do {                                                                     \
+        if (UNLIKELY(thread->DoStackOverflowCheck(newSp - actualNumArgs))) { \
+            INTERPRETER_GOTO_EXCEPTION_HANDLER();                            \
+        }                                                                    \
+        /* 1: skip this */                                                   \
+        for (int i = actualNumArgs + 1; i > 1; i--) {                        \
+            *(--newSp) = sp[funcReg + static_cast<uint32_t>(i)];             \
+        }                                                                    \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -247,7 +253,11 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CALL_PUSH_ARGS_I_NO_EXTRA()                                          \
     do {                                                                     \
-        for (int i = std::min(actualNumArgs, declaredNumArgs); i > 0; i--) { \
+        int num = std::min(actualNumArgs, declaredNumArgs);                  \
+        if (UNLIKELY(thread->DoStackOverflowCheck(newSp - num))) {           \
+            INTERPRETER_GOTO_EXCEPTION_HANDLER();                            \
+        }                                                                    \
+        for (int i = num; i > 0; i--) {                                      \
             *(--newSp) = sp[funcReg + static_cast<uint32_t>(i)];             \
         }                                                                    \
     } while (false)
@@ -255,8 +265,12 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CALL_PUSH_ARGS_I_THIS_NO_EXTRA()                                         \
     do {                                                                         \
+        int num = std::min(actualNumArgs, declaredNumArgs);                      \
+        if (UNLIKELY(thread->DoStackOverflowCheck(newSp - num))) {               \
+            INTERPRETER_GOTO_EXCEPTION_HANDLER();                                \
+        }                                                                        \
         /* 1: skip this */                                                       \
-        for (int i = std::min(actualNumArgs, declaredNumArgs) + 1; i > 1; i--) { \
+        for (int i = num + 1; i > 1; i--) {                                      \
             *(--newSp) = sp[funcReg + static_cast<uint32_t>(i)];                 \
         }                                                                        \
     } while (false)
@@ -370,7 +384,6 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
 
 JSTaggedValue EcmaInterpreter::ExecuteNative(EcmaRuntimeCallInfo *info)
 {
-    ASSERT(info);
     JSThread *thread = info->GetThread();
     INTERPRETER_TRACE(thread, ExecuteNative);
     ECMAObject *callTarget = reinterpret_cast<ECMAObject*>(info->GetFunctionValue().GetTaggedObject());
@@ -380,8 +393,7 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(EcmaRuntimeCallInfo *info)
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     int32_t actualNumArgs = static_cast<int32_t>(info->GetArgsNumber());
     JSTaggedType *newSp = sp - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - actualNumArgs - RESERVED_CALL_ARGCOUNT;
-    if (thread->DoStackOverflowCheck(newSp - actualNumArgs - RESERVED_CALL_ARGCOUNT) ||
-        thread->HasPendingException()) {
+    if (UNLIKELY(thread->DoStackOverflowCheck(newSp - actualNumArgs - RESERVED_CALL_ARGCOUNT))) {
         return JSTaggedValue::Undefined();
     }
     for (int i = actualNumArgs - 1; i >= 0; i--) {
@@ -420,7 +432,10 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(EcmaRuntimeCallInfo *info)
 
 JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
 {
-    ASSERT(info);
+    if (info == nullptr || (info->GetArgsNumber() == INVALID_ARGS_NUMBER)) {
+        return JSTaggedValue::Exception();
+    }
+
     JSThread *thread = info->GetThread();
     INTERPRETER_TRACE(thread, Execute);
 #if ECMASCRIPT_COMPILE_ASM_INTERPRETER
@@ -443,8 +458,7 @@ JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     newSp = newSp - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1U - static_cast<uint32_t>(actualNumArgs) -
             RESERVED_CALL_ARGCOUNT;
-    if (thread->DoStackOverflowCheck(newSp - static_cast<uint32_t>(actualNumArgs) - RESERVED_CALL_ARGCOUNT) ||
-        thread->HasPendingException()) {
+    if (UNLIKELY(thread->DoStackOverflowCheck(newSp - static_cast<uint32_t>(actualNumArgs) - RESERVED_CALL_ARGCOUNT))) {
         return JSTaggedValue::Undefined();
     }
 
@@ -497,11 +511,11 @@ JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
         }
     }
     int32_t numVregs = static_cast<int32_t>(method->GetNumVregsWithCallField());
-    // push vregs
-    CALL_PUSH_UNDEFINED(numVregs);
-    if (UNLIKELY(thread->DoStackOverflowCheck(newSp))) {
+    if (UNLIKELY(thread->DoStackOverflowCheck(newSp - numVregs))) {
         return JSTaggedValue::Undefined();
     }
+    // push vregs
+    CALL_PUSH_UNDEFINED(numVregs);
 
     const uint8_t *pc = method->GetBytecodeArray();
     InterpretedFrame *state = GET_FRAME(newSp);
@@ -553,7 +567,7 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
     // push break frame
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     JSTaggedType *breakSp = currentSp - INTERPRETER_FRAME_STATE_SIZE;
-    if (thread->DoStackOverflowCheck(breakSp) || thread->HasPendingException()) {
+    if (UNLIKELY(thread->DoStackOverflowCheck(breakSp))) {
         return JSTaggedValue::Exception();
     }
 
@@ -569,7 +583,7 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
     size_t newFrameSize = INTERPRETER_FRAME_STATE_SIZE + nregs;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic
     JSTaggedType *newSp = breakSp - newFrameSize;
-    if (thread->DoStackOverflowCheck(newSp) || thread->HasPendingException()) {
+    if (UNLIKELY(thread->DoStackOverflowCheck(newSp))) {
         return JSTaggedValue::Exception();
     }
     JSHandle<TaggedArray> regsArray(thread, context->GetRegsArray());
@@ -622,7 +636,7 @@ void EcmaInterpreter::ChangeGenContext(JSThread *thread, JSHandle<GeneratorConte
     // push break frame
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     JSTaggedType *breakSp = currentSp - INTERPRETER_FRAME_STATE_SIZE;
-    if (thread->DoStackOverflowCheck(breakSp) || thread->HasPendingException()) {
+    if (UNLIKELY(thread->DoStackOverflowCheck(breakSp))) {
         return;
     }
 
@@ -639,7 +653,7 @@ void EcmaInterpreter::ChangeGenContext(JSThread *thread, JSHandle<GeneratorConte
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic
     JSTaggedType *newSp = breakSp - newFrameSize;
-    if (thread->DoStackOverflowCheck(newSp) || thread->HasPendingException()) {
+    if (UNLIKELY(thread->DoStackOverflowCheck(newSp))) {
         return;
     }
     JSHandle<TaggedArray> regsArray(thread, context->GetRegsArray());
@@ -935,9 +949,6 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             *(--newSp) = JSTaggedValue::VALUE_UNDEFINED;  // push new target
             *(--newSp) = static_cast<JSTaggedType>(ToUintPtr(funcObject));  // push func
             ASSERT(method->GetNumVregsWithCallField() == 0);  // no need to push vregs
-            if (UNLIKELY(thread->DoStackOverflowCheck(newSp))) {
-                INTERPRETER_GOTO_EXCEPTION_HANDLER();
-            }
             EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, actualNumArgs, newSp);
 
             InterpretedFrame *state = GET_FRAME(newSp);
@@ -985,12 +996,12 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 }
             }
             int32_t numVregs = static_cast<int32_t>(method->GetNumVregsWithCallField());
+            if (UNLIKELY(thread->DoStackOverflowCheck(newSp - numVregs))) {
+                INTERPRETER_GOTO_EXCEPTION_HANDLER();
+            }
             // push vregs
             CALL_PUSH_UNDEFINED(numVregs);
             SAVE_PC();
-            if (UNLIKELY(thread->DoStackOverflowCheck(newSp))) {
-                INTERPRETER_GOTO_EXCEPTION_HANDLER();
-            }
 
             InterpretedFrame *state = GET_FRAME(newSp);
             state->base.prev = sp;

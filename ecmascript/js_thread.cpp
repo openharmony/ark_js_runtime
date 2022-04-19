@@ -157,9 +157,10 @@ bool JSThread::DoStackOverflowCheck(const JSTaggedType *sp)
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     if (UNLIKELY(sp <= glueData_.frameBase_ + RESERVE_STACK_SIZE)) {
-        ObjectFactory *factory = GetEcmaVM()->GetFactory();
-        JSHandle<JSObject> error = factory->GetJSError(base::ErrorType::RANGE_ERROR, "Stack overflow!");
+        LOG_ECMA(ERROR) << "Stack overflow! Remaining stack size is: " << (sp - glueData_.frameBase_);
         if (LIKELY(!HasPendingException())) {
+            ObjectFactory *factory = GetEcmaVM()->GetFactory();
+            JSHandle<JSObject> error = factory->GetJSError(base::ErrorType::RANGE_ERROR, "Stack overflow!");
             SetException(error.GetTaggedValue());
         }
         return true;
