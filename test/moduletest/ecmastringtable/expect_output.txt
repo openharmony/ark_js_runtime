@@ -23,3 +23,8 @@ id: no-schema:/src/xxx-js/instantiated-1af0bf5b.js - load: [object Object]
 id: no-schema:/src/xxx-js/instantiation.js - load: [object Object]
 id: no-schema:/src/xxx-js/cc.js - load: [object Object]
 id: no-schema:/src/instantiated-1af0bf5b.js - load: [object Object]
+res: true
+res: true
+res: true
+res: true
+res: true

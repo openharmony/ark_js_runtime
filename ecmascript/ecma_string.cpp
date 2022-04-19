@@ -291,15 +291,11 @@ bool EcmaString::EqualToSplicedString(const EcmaString *str1, const EcmaString *
         return false;
     }
     if (IsUtf16()) {
-        if (str1->IsUtf8() || str2->IsUtf8()) {
+        if (str1->IsUtf8() && str2->IsUtf8()) {
             return false;
         }
-        Span<const uint16_t> concatData(GetDataUtf16(), str1->GetLength());
-        Span<const uint16_t> data1(str1->GetDataUtf16(), str1->GetLength());
-        if (EcmaString::StringsAreEquals(concatData, data1)) {
-            concatData = Span<const uint16_t>(GetDataUtf16() + str1->GetLength(), str2->GetLength());
-            Span<const uint16_t> data2(str2->GetDataUtf16(), str2->GetLength());
-            return EcmaString::StringsAreEquals(concatData, data2);
+        if (EcmaString::StringsAreEqualUtf16(str1, GetDataUtf16(), str1->GetLength())) {
+            return EcmaString::StringsAreEqualUtf16(str2, GetDataUtf16() + str1->GetLength(), str2->GetLength());
         }
     } else {
         if (str1->IsUtf16() || str2->IsUtf16()) {
