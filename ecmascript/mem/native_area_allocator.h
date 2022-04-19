@@ -18,12 +18,13 @@
 
 #include <atomic>
 
+#include "ecmascript/common.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/area.h"
 #include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript {
-class NativeAreaAllocator {
+class PUBLIC_API NativeAreaAllocator {
 public:
     NativeAreaAllocator() = default;
     virtual ~NativeAreaAllocator()

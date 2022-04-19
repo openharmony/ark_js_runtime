@@ -51,24 +51,26 @@ private:
 template<typename T1>
 class PassRunner {
 public:
-    explicit PassRunner(T1* data) : data_(data) {}
+    explicit PassRunner(T1* data, bool enableLog = false)
+        : data_(data), enableLog_(enableLog) {}
     virtual ~PassRunner() = default;
     template<typename T2, typename... Args>
     bool RunPass(Args... args)
     {
         T2 pass;
-        return pass.Run(data_, std::forward<Args>(args)...);
+        return pass.Run(data_, enableLog_, std::forward<Args>(args)...);
     }
 
 private:
     T1* data_;
+    bool enableLog_ {false};
 };
 
 class SlowPathLoweringPass {
 public:
-    bool Run(PassData* data, BytecodeCircuitBuilder *builder, CompilationConfig *cmpCfg)
+    bool Run(PassData* data, bool enableLog, BytecodeCircuitBuilder *builder, CompilationConfig *cmpCfg)
     {
-        SlowPathLowering lowering(builder, data->GetCircuit(), cmpCfg);
+        SlowPathLowering lowering(builder, data->GetCircuit(), cmpCfg, enableLog);
         lowering.CallRuntimeLowering();
         return true;
     }
@@ -76,31 +78,31 @@ public:
 
 class VerifierPass {
 public:
-    bool Run(PassData* data)
+    bool Run(PassData* data, bool enableLog)
     {
-        Verifier::Run(data->GetCircuit());
+        Verifier::Run(data->GetCircuit(), enableLog);
         return true;
     }
 };
 
 class SchedulingPass {
 public:
-    bool Run(PassData* data)
+    bool Run(PassData* data, bool enableLog)
     {
-        data->SetScheduleResult(Scheduler::Run(data->GetCircuit()));
+        data->SetScheduleResult(Scheduler::Run(data->GetCircuit(), enableLog));
         return true;
     }
 };
 
 class LLVMIRGenPass {
 public:
-    void CreateCodeGen(LLVMModule *module)
+    void CreateCodeGen(LLVMModule *module, bool enableLog)
     {
-        llvmImpl_ = std::make_unique<LLVMIRGeneratorImpl>(module);
+        llvmImpl_ = std::make_unique<LLVMIRGeneratorImpl>(module, enableLog);
     }
-    bool Run(PassData *data, LLVMModule *module, const JSMethod *method)
+    bool Run(PassData *data, bool enableLog, LLVMModule *module, const JSMethod *method)
     {
-        CreateCodeGen(module);
+        CreateCodeGen(module, enableLog);
         CodeGenerator codegen(llvmImpl_);
         codegen.Run(data->GetCircuit(), data->GetScheduleResult(), module->GetCompilationConfig(), method);
         return true;

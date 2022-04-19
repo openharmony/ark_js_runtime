@@ -18,20 +18,27 @@
 
 #include <string>
 
+#include "compiler_log.h"
 #include "llvm_ir_builder.h"
 
 namespace panda::ecmascript::kungfu {
 class Stub;
 class StubCompiler {
 public:
-    StubCompiler() = default;
+    explicit StubCompiler(const CompilerLog *log) : log_(log) {}
 
     ~StubCompiler() = default;
 
     bool BuildStubModuleAndSave(const std::string &triple, const std::string &commonStubFile,
         const std::string &bcHandlerStubFile);
+
+    const CompilerLog *GetLog() const
+    {
+        return log_;
+    }
 private:
     void RunPipeline(LLVMModule &module);
+    const CompilerLog *log_ {nullptr};
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_STUB_COMPILER_H

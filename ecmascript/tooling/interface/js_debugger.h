@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,40 +19,89 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/tooling/interface/debugger_api.h"
-#include "tooling/debugger.h"
+#include "ecmascript/tooling/interface/notification_manager.h"
 
-namespace panda::tooling::ecmascript {
-using panda::ecmascript::CUnorderedSet;
+namespace panda::ecmascript::tooling {
+class JSBreakpoint {
+public:
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    JSBreakpoint(JSMethod *method, uint32_t bcOffset, const std::optional<CString> &condition = {})
+        : method_(method), bcOffset_(bcOffset), condition_(condition) {}
+    ~JSBreakpoint() = default;
 
-class JSDebugger : public DebugInterface, RuntimeListener {
+    JSMethod *GetMethod() const
+    {
+        return method_;
+    }
+
+    uint32_t GetBytecodeOffset() const
+    {
+        return bcOffset_;
+    }
+
+    bool operator==(const JSBreakpoint &bpoint) const
+    {
+        return GetMethod() == bpoint.GetMethod() && GetBytecodeOffset() == bpoint.GetBytecodeOffset();
+    }
+
+    const CString &GetCondition() const
+    {
+        return condition_.value();
+    }
+
+    bool HasCondition() const
+    {
+        return condition_.has_value();
+    }
+
+    DEFAULT_COPY_SEMANTIC(JSBreakpoint);
+    DEFAULT_MOVE_SEMANTIC(JSBreakpoint);
+
+private:
+    JSMethod *method_;
+    uint32_t bcOffset_;
+    std::optional<CString> condition_;
+};
+
+class HashJSBreakpoint {
+public:
+    size_t operator()(const JSBreakpoint &bpoint) const
+    {
+        return (std::hash<JSMethod *>()(bpoint.GetMethod())) ^ (std::hash<uint32_t>()(bpoint.GetBytecodeOffset()));
+    }
+};
+
+class JSDebugger : public JSDebugInterface, RuntimeListener {
 public:
     explicit JSDebugger(const EcmaVM *vm) : ecmaVm_(vm)
     {
         auto notificationMgr = ecmaVm_->GetNotificationManager();
-        notificationMgr->AddListener(this, JSDEBUG_EVENT_MASK);
+        if (notificationMgr != nullptr) {
+            notificationMgr->AddListener(this);
+        }
     }
     ~JSDebugger() override
     {
         auto notificationMgr = ecmaVm_->GetNotificationManager();
-        notificationMgr->RemoveListener(this, JSDEBUG_EVENT_MASK);
+        if (notificationMgr != nullptr) {
+            notificationMgr->RemoveListener();
+        }
     }
 
-    std::optional<Error> RegisterHooks(PtHooks *hooks) override
+    void RegisterHooks(PtHooks *hooks) override
     {
         hooks_ = hooks;
-        return {};
     }
-    std::optional<Error> UnregisterHooks() override
+    void UnregisterHooks() override
     {
         hooks_ = nullptr;
-        return {};
     }
 
-    std::optional<Error> SetBreakpoint(const PtLocation &location) override;
-    std::optional<Error> RemoveBreakpoint(const PtLocation &location) override;
-    void BytecodePcChanged(ManagedThread *thread, Method *method, uint32_t bcOffset) override;
-    void MethodEntry(ManagedThread *thread, Method *method) override;
-    void MethodExit(ManagedThread *thread, Method *method) override;
+    void Init();
+
+    bool SetBreakpoint(const JSPtLocation &location, const std::optional<CString> &condition) override;
+    bool RemoveBreakpoint(const JSPtLocation &location) override;
+    void BytecodePcChanged(JSThread *thread, JSMethod *method, uint32_t bcOffset) override;
     void LoadModule(std::string_view filename) override
     {
         if (hooks_ == nullptr) {
@@ -67,13 +116,6 @@ public:
         }
         hooks_->VmStart();
     }
-    void VmInitialization(ManagedThread::ThreadId threadId) override
-    {
-        if (hooks_ == nullptr) {
-            return;
-        }
-        hooks_->VmInitialization(PtThread(threadId));
-    }
     void VmDeath() override
     {
         if (hooks_ == nullptr) {
@@ -82,180 +124,27 @@ public:
         hooks_->VmDeath();
     }
 
-    PtLangExt *GetLangExtension() const override
-    {
-        return nullptr;
-    }
-    Expected<PtMethod, Error> GetPtMethod([[maybe_unused]] const PtLocation &location) const override
-    {
-        return Unexpected(Error(Error::Type::INVALID_VALUE, "Unsupported GetPtMethod"));
-    }
-    std::optional<Error> EnableAllGlobalHook() override
-    {
-        return {};
-    }
-    std::optional<Error> DisableAllGlobalHook() override
-    {
-        return {};
-    }
-    std::optional<Error> SetNotification([[maybe_unused]] PtThread thread, [[maybe_unused]] bool enable,
-                                         [[maybe_unused]] PtHookType hookType) override
-    {
-        return {};
-    }
-    Expected<std::unique_ptr<PtFrame>, Error> GetCurrentFrame([[maybe_unused]] PtThread thread) const override
-    {
-        return Unexpected(Error(Error::Type::INVALID_VALUE, "Unsupported GetCurrentFrame"));
-    }
-    std::optional<Error> EnumerateFrames([[maybe_unused]] PtThread thread,
-                                         [[maybe_unused]] std::function<bool(const PtFrame &)> callback) const override
-    {
-        return {};
-    }
-    std::optional<Error> GetThisVariableByFrame([[maybe_unused]] PtThread thread, [[maybe_unused]] uint32_t frameDepth,
-                                                [[maybe_unused]] PtValue *value) override
-    {
-        return {};
-    }
-    void ThreadStart([[maybe_unused]] ManagedThread::ThreadId threadId) override {}
-    void ThreadEnd([[maybe_unused]] ManagedThread::ThreadId threadId) override {}
-    void GarbageCollectorStart() override {}
-    void GarbageCollectorFinish() override {}
-    void ObjectAlloc([[maybe_unused]] BaseClass *klass, [[maybe_unused]] ObjectHeader *object,
-                     [[maybe_unused]] ManagedThread *thread, [[maybe_unused]] size_t size) override {}
-    void ExceptionCatch([[maybe_unused]] const ManagedThread *thread, [[maybe_unused]] const Method *method,
-                        [[maybe_unused]] uint32_t bcOffset) override {}
-    void ClassLoad([[maybe_unused]] Class *klass) override {}
-    void ClassPrepare([[maybe_unused]] Class *klass) override {}
-    void MonitorWait([[maybe_unused]] ObjectHeader *object, [[maybe_unused]] int64_t timeout) override {}
-    void MonitorWaited([[maybe_unused]] ObjectHeader *object, [[maybe_unused]] bool timedOut) override {}
-    void MonitorContendedEnter([[maybe_unused]] ObjectHeader *object) override {}
-    void MonitorContendedEntered([[maybe_unused]] ObjectHeader *object) override {}
-
-    std::optional<Error> GetThreadList([[maybe_unused]] PandaVector<PtThread> *threadList) const override
-    {
-        return {};
-    }
-    std::optional<Error> GetThreadInfo([[maybe_unused]] PtThread thread,
-                                       [[maybe_unused]] ThreadInfo *infoPtr) const override
-    {
-        return {};
-    }
-    std::optional<Error> SuspendThread([[maybe_unused]] PtThread thread) const override
-    {
-        return {};
-    }
-    std::optional<Error> ResumeThread([[maybe_unused]] PtThread thread) const override
-    {
-        return {};
-    }
-    std::optional<Error> SetVariable([[maybe_unused]] PtThread thread, [[maybe_unused]] uint32_t frameDepth,
-                                     [[maybe_unused]] int32_t regNumber,
-                                     [[maybe_unused]] const PtValue &value) const override
-    {
-        return {};
-    }
-    std::optional<Error> GetVariable([[maybe_unused]] PtThread thread, [[maybe_unused]] uint32_t frameDepth,
-                                     [[maybe_unused]] int32_t regNumber,
-                                     [[maybe_unused]] PtValue *result) const override
-    {
-        return {};
-    }
-    std::optional<Error> GetProperty([[maybe_unused]] PtObject object, [[maybe_unused]] PtProperty property,
-                                     [[maybe_unused]] PtValue *value) const override
-    {
-        return {};
-    }
-    std::optional<Error> SetProperty([[maybe_unused]] PtObject object, [[maybe_unused]] PtProperty property,
-                                     [[maybe_unused]] const PtValue &value) const override
-    {
-        return {};
-    }
-    std::optional<Error> EvaluateExpression([[maybe_unused]] PtThread thread, [[maybe_unused]] uint32_t frameNumber,
-                                            [[maybe_unused]] ExpressionWrapper expr,
-                                            [[maybe_unused]] PtValue *result) const override
-    {
-        return {};
-    }
-    std::optional<Error> RetransformClasses([[maybe_unused]] int32_t classCount,
-                                            [[maybe_unused]] const PtClass *classes) const override
-    {
-        return {};
-    }
-    std::optional<Error> RedefineClasses([[maybe_unused]] int32_t classCount,
-                                         [[maybe_unused]] const PandaClassDefinition *classes) const override
-    {
-        return {};
-    }
-    std::optional<Error> RestartFrame([[maybe_unused]] PtThread thread,
-                                      [[maybe_unused]] uint32_t frameNumber) const override
-    {
-        return {};
-    }
-    std::optional<Error> SetAsyncCallStackDepth([[maybe_unused]] uint32_t maxDepth) const override
-    {
-        return {};
-    }
-    std::optional<Error> AwaitPromise([[maybe_unused]] PtObject promiseObject,
-                                      [[maybe_unused]] PtValue *result) const override
-    {
-        return {};
-    }
-    std::optional<Error> CallFunctionOn([[maybe_unused]] PtObject object, [[maybe_unused]] PtMethod method,
-                                        [[maybe_unused]] const PandaVector<PtValue> &arguments,
-                                        [[maybe_unused]] PtValue *returnValue) const override
-    {
-        return {};
-    }
-    std::optional<Error> GetProperties([[maybe_unused]] uint32_t *countPtr,
-                                       [[maybe_unused]] char ***propertyPtr) const override
-    {
-        return {};
-    }
-    std::optional<Error> NotifyFramePop([[maybe_unused]] PtThread thread,
-                                        [[maybe_unused]] uint32_t depth) const override
-    {
-        return {};
-    }
-    std::optional<Error> SetPropertyAccessWatch([[maybe_unused]] PtClass klass,
-                                                [[maybe_unused]] PtProperty property) override
-    {
-        return {};
-    }
-    std::optional<Error> ClearPropertyAccessWatch([[maybe_unused]] PtClass klass,
-                                                  [[maybe_unused]] PtProperty property) override
-    {
-        return {};
-    }
-    std::optional<Error> SetPropertyModificationWatch([[maybe_unused]] PtClass klass,
-                                                      [[maybe_unused]] PtProperty property) override
-    {
-        return {};
-    }
-    std::optional<Error> ClearPropertyModificationWatch([[maybe_unused]] PtClass klass,
-                                                        [[maybe_unused]] PtProperty property) override
-    {
-        return {};
-    }
-
 private:
-    static constexpr uint32_t JSDEBUG_EVENT_MASK = RuntimeNotificationManager::Event::LOAD_MODULE |
-                                                   RuntimeNotificationManager::Event::BYTECODE_PC_CHANGED |
-                                                   RuntimeNotificationManager::Event::VM_EVENTS |
-                                                   RuntimeNotificationManager::Event::METHOD_EVENTS;
-
-    JSMethod *FindMethod(const PtLocation &location) const;
-    bool FindBreakpoint(const JSMethod *method, uint32_t bcOffset) const;
+    JSMethod *FindMethod(const JSPtLocation &location) const;
+    std::optional<JSBreakpoint> FindBreakpoint(const JSMethod *method, uint32_t bcOffset) const;
     bool RemoveBreakpoint(const JSMethod *method, uint32_t bcOffset);
-    bool HandleBreakpoint(const JSThread *thread, const JSMethod *method, uint32_t bcOffset);
     void HandleExceptionThrowEvent(const JSThread *thread, const JSMethod *method, uint32_t bcOffset);
-    bool HandleStep(const JSThread *thread, const JSMethod *method, uint32_t bcOffset);
+    bool HandleStep(const JSMethod *method, uint32_t bcOffset);
+    bool HandleBreakpoint(const JSMethod *method, uint32_t bcOffset);
+    void SetGlobalFunction(const JSHandle<JSTaggedValue> &funcName, EcmaEntrypoint nativeFunc, int32_t numArgs) const;
+
+    static void PrepareEvaluateEnv(const EcmaVM *ecmaVm, InterpretedFrameHandler &frameHandler);
+    static JSTaggedValue DebuggerSetValue(EcmaRuntimeCallInfo *argv);
+    static JSTaggedValue DebuggerGetValue(EcmaRuntimeCallInfo *argv);
+    static JSTaggedValue GetGlobalValue(const EcmaVM *ecmaVm, JSTaggedValue key);
+    static JSTaggedValue SetGlobalValue(const EcmaVM *ecmaVm, JSTaggedValue key, JSTaggedValue value);
+    static bool EvaluateLocalValue(JSMethod *method, JSThread *thread, const CString &varName, int32_t &regIndex);
 
     const EcmaVM *ecmaVm_;
     PtHooks *hooks_ {nullptr};
 
-    CUnorderedSet<tooling::Breakpoint, tooling::HashBreakpoint> breakpoints_ {};
+    CUnorderedSet<JSBreakpoint, HashJSBreakpoint> breakpoints_ {};
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 
 #endif  // ECMASCRIPT_TOOLING_JS_DEBUGGER_H

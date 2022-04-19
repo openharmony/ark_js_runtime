@@ -50,7 +50,7 @@ uint32_t Taskpool::TheMostSuitableThreadNum(uint32_t threadNum) const
         return std::min<uint32_t>(threadNum, MAX_TASKPOOL_THREAD_NUM);
     }
 #ifndef PANDA_TARGET_WINDOWS
-    uint32_t numOfCpuCore = get_nprocs() - 1;
+    uint32_t numOfCpuCore = static_cast<uint32_t>(get_nprocs() - 1);
 #else
     SYSTEM_INFO info;
     GetSystemInfo(&info);

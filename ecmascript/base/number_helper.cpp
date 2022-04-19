@@ -362,22 +362,10 @@ JSHandle<EcmaString> NumberHelper::NumberToString(const JSThread *thread, JSTagg
     // and k is as small as possible. If there are multiple possibilities for s, choose the value of s for which s ×
     // 10n−k is closest in value to m. If there are two such possible values of s, choose the one that is even. Note
     // that k is the number of digits in the decimal representation of s and that s is not divisible by 10.
-    CStringStream str;
-    str << std::scientific << std::showpoint << std::setprecision(DOUBLE_MAX_PRECISION) << d;
-    if (strtod(str.str().c_str(), nullptr) != d) {
-        str.clear();
-        str.str("");
-        str << std::scientific << std::showpoint << std::setprecision(DOUBLE_MAX_PRECISION + 1) << d;
-    }
-    std::string scientificStr(str.str());
-
-    auto indexOfE = scientificStr.find_last_of('e');
-    ASSERT(indexOfE != std::string::npos);
-    std::string base = scientificStr.substr(0, indexOfE);
-    // skip trailing zeros, and base must not be empty.
-    base = base.substr(0, base.find_last_not_of('0') + 1);
-    int k = static_cast<int>(base.size()) - 1;
-    int n = std::stoi(scientificStr.substr(indexOfE + 1)) + 1;
+    char buffer[JS_DTOA_BUF_SIZE] = {0};
+    int n = 0;
+    int k = GetMinmumDigits(d, &n, buffer);
+    std::string base = buffer;
     if (n > 0 && n <= 21) {  // NOLINT(readability-magic-numbers)
         base.erase(1, 1);
         if (k <= n) {
@@ -584,7 +572,7 @@ double NumberHelper::StringToDouble(const uint8_t *start, const uint8_t *end, ui
             if (additionalExponent > static_cast<int>(MAX_EXPONENT / radix)) {
                 additionalExponent = MAX_EXPONENT;
             } else {
-                additionalExponent = static_cast<int>(additionalExponent * radix + digit);
+                additionalExponent = additionalExponent * static_cast<int>(radix) + static_cast<int>(digit);
             }
             if (++p == end) {
                 break;
@@ -769,5 +757,52 @@ JSTaggedValue NumberHelper::StringToBigInt(JSThread *thread, JSHandle<JSTaggedVa
         buffer += *p;
     } while (++p != end);
     return BigIntHelper::SetBigInt(thread, buffer, radix).GetTaggedValue();
+}
+
+void NumberHelper::GetBase(double d, int digits, int *decpt, char *buf, char *bufTmp, int size)
+{
+    int result = snprintf_s(bufTmp, size, size - 1, "%+.*e", digits - 1, d);
+    if (result == -1) {
+        LOG_ECMA(FATAL) << "snprintf_s failed";
+        UNREACHABLE();
+    }
+    // mantissa
+    buf[0] = bufTmp[1];
+    if (digits > 1) {
+        if (memcpy_s(buf + 1, digits, bufTmp + 2, digits) != EOK) { // 2 means add the point char to buf
+            LOG_ECMA(FATAL) << "memcpy_s failed";
+            UNREACHABLE();
+        }
+    }
+    buf[digits + 1] = '\0';
+    // exponent
+    *decpt = atoi(bufTmp + digits + 2 + (digits > 1)) + 1; // 2 means ignore the integer and point
+}
+
+int NumberHelper::GetMinmumDigits(double d, int *decpt, char *buf)
+{
+    int digits = 0;
+    char bufTmp[JS_DTOA_BUF_SIZE] = {0};
+
+    // find the minimum amount of digits
+    int MinDigits = 1;
+    int MaxDigits = DOUBLE_MAX_PRECISION;
+    while (MinDigits < MaxDigits) {
+        digits = (MinDigits + MaxDigits) / 2;
+        GetBase(d, digits, decpt, buf, bufTmp, sizeof(bufTmp));
+        if (strtod(bufTmp, NULL) == d) {
+            // no need to keep the trailing zeros
+            while (digits >= 2 && buf[digits] == '0') { // 2 means ignore the integer and point
+                digits--;
+            }
+            MaxDigits = digits;
+        } else {
+            MinDigits = digits + 1;
+        }
+    }
+    digits = MaxDigits;
+    GetBase(d, digits, decpt, buf, bufTmp, sizeof(bufTmp));
+
+    return digits;
 }
 }  // namespace panda::ecmascript::base

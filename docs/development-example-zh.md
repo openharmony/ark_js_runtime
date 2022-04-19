@@ -19,17 +19,28 @@
 
 1.  编译方舟运行时，编译命令：
 
-```
-./build.sh --product-name Hi3516DV300 --build-target ark_js_host_linux_tools_packages  # arm平台和host端运行工具
-```
+	编译x64版本：
+	```
+	./build.sh --product-name rk3568 --build-target ark_js_host_linux_tools_packages --build-target ark_ts2abc_build  # arm平台和host端运行工具
+	```
+
+	编译arm64版本：
+	```
+	./build.sh --product-name ohos_arm64 --build-target ark_js_vm --build-target ld-musl-aarch64.so.1
+	```
+
+	编译arm32版本:
+	```
+	./build.sh --product-name rk3568 --build-target libarkruntime --build-target ark_js_runtime --build-target ld-musl-arm.so.1
+	```
 
 2.  编译方舟前端，编译命令：
 
-```
-./build.sh --product-name Hi3516DV300 --build-target ark_ts2abc_build
-```
+	```
+	./build.sh --product-name rk3568 --build-target ark_ts2abc_build
+	```
 
-**说明**：编译命令执行路径为项目根目录。
+**说明**：上述编译命令为release版本，且执行路径为项目根目录。编译debug版本需增加编译选项：--gn-args is_debug=true。
 
 ### 运行hello-world.js
 
@@ -44,20 +55,20 @@
 1.  通过方舟前端生成hello-world.abc文件，编译命令：
 
     ```
-    node --expose-gc /your code path/out/hi3516dv300/clang_x64/ark/ark/build/src/index.js hello-world.js
+    node --expose-gc /your code path/out/rk3568/clang_x64/ark/ark/build/src/index.js hello-world.js
     ```
 
 2.  执行hello-world.abc文件：
     1.  设置搜索路径：
 
         ```
-        export LD_LIBRARY_PATH= /your code path/out/hi3516dv300/clang_x64/ark/ark:/your code path/out/hi3516dv300/clang_x64/ark/ark_js_runtime:/your code path/out/hi3516dv300/clang_x64/global/i18n_standard:/your code path/prebuilts/clang/ohos/linux-x86_64/llvm/lib
+        export LD_LIBRARY_PATH= /your code path/out/rk3568/clang_x64/ark/ark:/your code path/out/rk3568/clang_x64/ark/ark_js_runtime:/your code path/out/rk3568/clang_x64/global/i18n_standard:/your code path/prebuilts/clang/ohos/linux-x86_64/llvm/lib
         ```
 
     2.  执行ark\_js\_vm：
 
         ```
-        /your code path/out/hi3516dv300/clang_x64/ark/ark_js_runtime/ark_js_vm hello-world.abc
+        /your code path/out/rk3568/clang_x64/ark/ark_js_runtime/ark_js_vm hello-world.abc
         ```
 
         执行结果如下：
@@ -75,13 +86,13 @@
 编译生成反汇编工具：
 
 ```
-./build.sh --product-name Hi3516DV300 --build-target ark_host_linux_tools_packages
+./build.sh --product-name rk3568 --build-target ark_host_linux_tools_packages
 ```
 
 执行如下命令，结果输出到output.pa文件中：
 
 ```
-./your code path/out/hi3516dv300/clang_x64/ark/ark/ark_disasm hello-world.abc output.pa
+./your code path/out/rk3568/clang_x64/ark/ark/ark_disasm hello-world.abc output.pa
 ```
 
 hello-world.abc反汇编结果如下：
@@ -128,13 +139,13 @@ hello-world.abc反汇编结果如下：
 1.  编译方舟运行时，编译命令：
 
 ```
-./build.sh --product-name Hi3516DV300 --build-target ark_js_host_linux_tools_packages
+./build.sh --product-name rk3568 --build-target ark_js_host_linux_tools_packages
 ```
 
 1.  编译方舟前端，编译命令：
 
 ```
-./build.sh --product-name Hi3516DV300 --build-target ark_ts2abc_build
+./build.sh --product-name rk3568 --build-target ark_ts2abc_build
 ```
 
 **说明**：编译命令执行路径为项目根目录。
@@ -294,7 +305,7 @@ node
         test262/harness/bin/run.js
         --hostType=panda
         --hostPath=python3
-        --hostArgs='-B test262/run_sunspider.py --ark-tool=/your code path/out/hi3516dv300/clang_x64/ark/ark_js_runtime/ark_js_vm --ark-frontend-tool=/your code path/out/hi3516dv300/clang_x64/ark/ark/build/src/index.js --libs-dir=/your code path/out/hi3516dv300/clang_x64/ark/ark:/your code path/out/hi3516dv300/clang_x64/global/i18n:/your code path/prebuilts/clang/ohos/linux-x86_64/llvm/lib/ --ark-frontend=ts2panda'
+        --hostArgs='-B test262/run_sunspider.py --ark-tool=/your code path/out/rk3568/clang_x64/ark/ark_js_runtime/ark_js_vm --ark-frontend-tool=/your code path/out/rk3568/clang_x64/ark/ark/build/src/index.js --libs-dir=/your code path/out/rk3568/clang_x64/ark/ark:/your code path/out/rk3568/clang_x64/global/i18n:/your code path/prebuilts/clang/ohos/linux-x86_64/llvm/lib/ --ark-frontend=ts2panda'
         --threads=15
         --mode=only strict mode
         --timeout=60000

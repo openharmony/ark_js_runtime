@@ -31,8 +31,12 @@
 #define ASM_JS_METHOD_NATIVE_POINTER_OFFSET      (32)
 #ifdef PANDA_TARGET_ARM64
 #define ASM_GLUE_TO_THREAD_OFFSET                (6584)
-#else 
+#else
+#ifdef  PANDA_USE_MUSL
 #define ASM_GLUE_TO_THREAD_OFFSET                (6608)
+#else
+#define ASM_GLUE_TO_THREAD_OFFSET                (6584)
+#endif
 #endif
 // ecma_runtime_callinfo struct in stack
 // -----------------------------
@@ -86,25 +90,26 @@
 #define JS_METHOD_CALLFIELD_OFFSET         (40)
 #endif
 
-#define OPTIMIZE_FRAME_TYPE                (0)
-#define JS_ENTRY_FRAME_TYPE                (1)
-#define LEAVE_FRAME_TYPE                   (3)
-#define ASM_LEAVE_FRAME_TYPE               (5)
-#define ASM_INTERPRETER_FRAME              (3)
-#define JSUNDEFINED                        (0xa)
-#define JSHOLE                             (0x0)
-#define ASM_JS_METHOD_NUM_VREGS_START_BIT  (4)
-#define ASM_JS_METHOD_NUM_VREGS_BIT_SIZE   (28)
-#define ASM_JS_METHOD_NUM_VREGS_MASK       (0xfffffff)  // ((0x1ULL << ASM_JS_METHOD_NUM_VREGS_BIT_SIZE) - 1)
-#define ASM_JS_METHOD_NUM_ARGS_START_BIT   (32)
-#define ASM_JS_METHOD_NUM_ARGS_BIT_SIZE    (28)
-#define ASM_JS_METHOD_NUM_ARGS_MASK        (0xfffffff)  // ((0x1ULL << ASM_JS_METHOD_NUM_ARGS_BIT_SIZE) - 1)
-#define ASM_JS_METHOD_HAVE_THIS_MASK       (0x1)
-#define ASM_JS_METHOD_HAVE_NEW_TARGET_MASK (0x2)
-#define ASM_JS_METHOD_HAVE_EXTRA_MASK      (0x4)
-#define ASM_JS_METHOD_HAVE_FUNC_MASK       (0x8)
-#define ASM_JS_METHOD_IS_NATIVE_MASK       (0x1000000000000000)
-#define ASM_JS_METHOD_CALL_TYPE_MASK       (0xf)
+#define OPTIMIZE_FRAME_TYPE                   (0)
+#define JS_ENTRY_FRAME_TYPE                   (1)
+#define LEAVE_FRAME_TYPE                      (3)
+#define ASM_OPTIMIZED_WITH_ARGV_LEAVE_FRAME   (7)
+#define ASM_LEAVE_FRAME_TYPE                  (5)
+#define ASM_INTERPRETER_FRAME                 (3)
+#define JSUNDEFINED                           (0xa)
+#define JSHOLE                                (0x0)
+#define ASM_JS_METHOD_NUM_VREGS_START_BIT     (4)
+#define ASM_JS_METHOD_NUM_VREGS_BIT_SIZE      (28)
+#define ASM_JS_METHOD_NUM_VREGS_MASK          (0xfffffff)  // ((0x1ULL << ASM_JS_METHOD_NUM_VREGS_BIT_SIZE) - 1)
+#define ASM_JS_METHOD_NUM_ARGS_START_BIT      (32)
+#define ASM_JS_METHOD_NUM_ARGS_BIT_SIZE       (28)
+#define ASM_JS_METHOD_NUM_ARGS_MASK           (0xfffffff)  // ((0x1ULL << ASM_JS_METHOD_NUM_ARGS_BIT_SIZE) - 1)
+#define ASM_JS_METHOD_HAVE_THIS_MASK          (0x1)
+#define ASM_JS_METHOD_HAVE_NEW_TARGET_MASK    (0x2)
+#define ASM_JS_METHOD_HAVE_EXTRA_MASK         (0x4)
+#define ASM_JS_METHOD_HAVE_FUNC_MASK          (0x8)
+#define ASM_JS_METHOD_IS_NATIVE_MASK          (0x1000000000000000)
+#define ASM_JS_METHOD_CALL_TYPE_MASK          (0xf)
 
 #define ASM_INTERPRETED_FRAME_STATE_SIZE (56)
 #define ASM_INTERPRETED_FRAME_CALL_SIZE_OFFSET (8)
@@ -141,10 +146,19 @@
 #define JS_METHOD_NUM_ARGS_SHIFT            (32)
 
 // JS_HCLASS BIT FIELD DEFINES
-#define JS_HCLASS_BITFIELD_CALLABLE_BIT  8
+#define JS_HCLASS_BITFIELD_CALLABLE_BIT     (8)
 
 // MESSAGE_STRING_ID
-#define MESSAGE_STRING_NON_CALLABLE_ID   0xffff000000000005
-#define RUNTIME_ID_THROW_TYPE_ERROR      0x16
+#define MESSAGE_STRING_NON_CALLABLE_ID      (0xffff000000000005)
+#define RUNTIME_ID_THROW_TYPE_ERROR         (0x16)
 
+// com stub
+#ifdef PANDA_TARGET_64
+#define ASM_GLUE_COMSTUB_ENTRY_OFFSET     (0xdf0)
+#else
+#define ASM_GLUE_COMSTUB_ENTRY_OFFSET     (0x708)
+#endif
+#define JSPROXY_CALL_INTERNAL_INDEX       (0x15)
+
+#define ASM_NUM_MANDATORY_JSFUNC_ARGS       (3)
 #endif  // ECMASCRIPT_ASM_DEFINES_H

@@ -43,7 +43,7 @@ JSTaggedValue JSSetIterator::Next(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> iteratedSet(thread, iter->GetIteratedSet());
 
     // 5.Let index be O.[[SetNextIndex]].
-    int index = iter->GetNextIndex();
+    int index = static_cast<int>(iter->GetNextIndex());
     IterationKind itemKind = iter->GetIterationKind();
     // 7.If s is undefined, return CreateIterResultObject(undefined, true).
     if (iteratedSet->IsUndefined()) {
@@ -86,7 +86,7 @@ void JSSetIterator::Update(const JSThread *thread)
     if (set->GetNextTable().IsHole()) {
         return;
     }
-    int index = GetNextIndex();
+    int index = static_cast<int>(GetNextIndex());
     JSTaggedValue nextTable = set->GetNextTable();
     while (!nextTable.IsHole()) {
         index -= set->GetDeletedElementsAt(index);

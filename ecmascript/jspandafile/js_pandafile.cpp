@@ -66,6 +66,20 @@ void JSPandaFile::Initialize()
         if (!isModule_ && std::strcmp(MODULE_CLASS, desc) == 0) {
             isModule_ = true;
         }
+
+        if (!HasTsTypes() && std::strcmp(TS_TYPES_CLASS, desc) == 0) {
+            cda.EnumerateFields([&](panda_file::FieldDataAccessor &fieldAccessor) -> void {
+                panda_file::File::EntityId fieldNameId = fieldAccessor.GetNameId();
+                panda_file::StringData sd = pf_->GetStringData(fieldNameId);
+                const char *fieldName = utf::Mutf8AsCString(sd.data);
+                if (std::strcmp(TYPE_FLAG, fieldName) == 0) {
+                    hasTSTypes_ = fieldAccessor.GetValue<uint8_t>().value() != 0;
+                }
+                if (std::strcmp(TYPE_SUMMARY_INDEX, fieldName) == 0) {
+                    typeSummaryIndex_ = fieldAccessor.GetValue<uint32_t>().value();
+                }
+            });
+        }
     }
     methods_ = static_cast<JSMethod *>(JSPandaFileManager::AllocateBuffer(sizeof(JSMethod) * numMethods_));
 }

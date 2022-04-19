@@ -177,8 +177,15 @@ config("ark_jsruntime_common_config") {
   if (enable_stub_aot) {
     defines += [ "ECMASCRIPT_ENABLE_STUB_AOT" ]
   }
+  if (enable_asm_interp) {
+    defines += [ "ECMASCRIPT_COMPILE_ASM_INTERPRETER" ]
+  }
   if (enable_test_stub) {
     defines += [ "ECMASCRIPT_ENABLE_TEST_STUB" ]
+  }
+
+  if (use_musl) {
+    defines += [ "PANDA_USE_MUSL" ]
   }
 
   if (is_standard_system) {
@@ -339,6 +346,7 @@ ecma_source = [
   "ecmascript/builtins/builtins_weak_set.cpp",
   "ecmascript/containers/containers_arraylist.cpp",
   "ecmascript/containers/containers_deque.cpp",
+  "ecmascript/containers/containers_plainarray.cpp",
   "ecmascript/containers/containers_private.cpp",
   "ecmascript/containers/containers_queue.cpp",
   "ecmascript/containers/containers_stack.cpp",
@@ -371,12 +379,6 @@ ecma_source = [
   "ecmascript/jobs/micro_job_queue.cpp",
   "ecmascript/jspandafile/js_pandafile.cpp",
   "ecmascript/jspandafile/js_pandafile_manager.cpp",
-  "ecmascript/js_api_deque.cpp",
-  "ecmascript/js_api_deque_iterator.cpp",
-  "ecmascript/js_api_queue.cpp",
-  "ecmascript/js_api_queue_iterator.cpp",
-  "ecmascript/js_api_stack.cpp",
-  "ecmascript/js_api_stack_iterator.cpp",
   "ecmascript/jspandafile/class_info_extractor.cpp",
   "ecmascript/jspandafile/debug_info_extractor.cpp",
   "ecmascript/jspandafile/ecma_class_linker_extension.cpp",
@@ -386,6 +388,16 @@ ecma_source = [
   "ecmascript/jspandafile/panda_file_translator.cpp",
   "ecmascript/jspandafile/js_pandafile_executor.cpp",
   "ecmascript/jspandafile/scope_info_extractor.cpp",
+  "ecmascript/js_api_arraylist.cpp",
+  "ecmascript/js_api_arraylist_iterator.cpp",
+  "ecmascript/js_api_deque.cpp",
+  "ecmascript/js_api_deque_iterator.cpp",
+  "ecmascript/js_api_plain_array.cpp",
+  "ecmascript/js_api_plain_array_iterator.cpp",
+  "ecmascript/js_api_queue.cpp",
+  "ecmascript/js_api_queue_iterator.cpp",
+  "ecmascript/js_api_stack.cpp",
+  "ecmascript/js_api_stack_iterator.cpp",
   "ecmascript/js_api_tree_map.cpp",
   "ecmascript/js_api_tree_map_iterator.cpp",
   "ecmascript/js_api_tree_set.cpp",
@@ -394,8 +406,6 @@ ecma_source = [
   "ecmascript/js_array.cpp",
   "ecmascript/js_array_iterator.cpp",
   "ecmascript/js_arraybuffer.cpp",
-  "ecmascript/js_api_arraylist.cpp",
-  "ecmascript/js_api_arraylist_iterator.cpp",
   "ecmascript/js_async_function.cpp",
   "ecmascript/js_bigint.cpp",
   "ecmascript/js_dataview.cpp",
@@ -425,6 +435,7 @@ ecma_source = [
   "ecmascript/message_string.cpp",
   "ecmascript/mem/c_string.cpp",
   "ecmascript/mem/chunk.cpp",
+  "ecmascript/mem/dyn_chunk.cpp",
   "ecmascript/mem/full_gc.cpp",
   "ecmascript/mem/concurrent_marker.cpp",
   "ecmascript/mem/concurrent_sweeper.cpp",
@@ -456,7 +467,6 @@ ecma_source = [
   "ecmascript/taskpool/runner.cpp",
   "ecmascript/taskpool/task_queue.cpp",
   "ecmascript/layout_info.cpp",
-  "ecmascript/regexp/dyn_chunk.cpp",
   "ecmascript/regexp/regexp_executor.cpp",
   "ecmascript/regexp/regexp_opcode.cpp",
   "ecmascript/regexp/regexp_parser.cpp",
@@ -550,7 +560,7 @@ source_set("libark_jsruntime_static") {
   }
 }
 
-ohos_shared_library("libark_jsruntime") {
+source_set("libark_jsruntime_set_static") {
   if (is_mingw) {
     ldflags = [ "-lshlwapi" ]
   }
@@ -558,6 +568,10 @@ ohos_shared_library("libark_jsruntime") {
     ":libark_js_intl_static",
     ":libark_jsruntime_static",
   ]
+}
+
+ohos_shared_library("libark_jsruntime") {
+  deps = [ ":libark_jsruntime_set_static" ]
 
   defines = []
   if (!is_linux && !is_mingw && !is_mac) {
@@ -606,8 +620,8 @@ source_set("libark_jsruntime_test_static") {
   ]
 }
 
-ohos_shared_library("libark_jsruntime_test") {
-  configs = [
+source_set("libark_jsruntime_test_set_static") {
+  public_configs = [
     "//ark/js_runtime:ark_jsruntime_common_config",
     "//ark/js_runtime:ark_jsruntime_public_config",
     "$ark_root/runtime:arkruntime_public_config",
@@ -615,18 +629,22 @@ ohos_shared_library("libark_jsruntime_test") {
 
   deps = [ ":libark_jsruntime_test_static" ]
 
+  if (is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime_static" ]
+  } else {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
+}
+
+ohos_shared_library("libark_jsruntime_test") {
+  deps = [ ":libark_jsruntime_test_set_static" ]
+
   defines = []
   if (!is_linux && !is_mingw && !is_mac) {
     if (build_public_version && enable_bytrace) {
       defines += [ "ENABLE_BYTRACE" ]
       external_deps = [ "bytrace_standard:bytrace_core" ]
     }
-  }
-
-  if (is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime_static" ]
-  } else {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
   }
 
   output_extension = "so"

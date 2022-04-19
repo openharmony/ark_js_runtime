@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,18 +26,7 @@
 #include "ecmascript/napi/jsnapi_helper.h"
 #include "ecmascript/tooling/interface/js_debugger.h"
 
-namespace panda::tooling::ecmascript {
-using panda::ecmascript::CStringToL;
-using panda::ecmascript::EcmaString;
-using panda::ecmascript::JSHandle;
-using panda::ecmascript::JSPandaFileExecutor;
-using panda::ecmascript::JSNativePointer;
-using panda::ecmascript::JSTaggedValue;
-using panda::ecmascript::LexicalEnv;
-using panda::ecmascript::Program;
-using panda::ecmascript::ScopeDebugInfo;
-using panda::ecmascript::TaggedArray;
-using panda::ecmascript::JSThread;
+namespace panda::ecmascript::tooling {
 using panda::ecmascript::base::ALLOW_BINARY;
 using panda::ecmascript::base::ALLOW_HEX;
 using panda::ecmascript::base::ALLOW_OCTAL;
@@ -148,10 +137,11 @@ int32_t DebuggerApi::StringToInt(Local<JSValueRef> str)
 }
 
 // JSThread
-Local<JSValueRef> DebuggerApi::GetException(const EcmaVM *ecmaVm)
+Local<JSValueRef> DebuggerApi::GetAndClearException(const EcmaVM *ecmaVm)
 {
     auto exception = ecmaVm->GetJSThread()->GetException();
     JSHandle<JSTaggedValue> handledException(ecmaVm->GetJSThread(), exception);
+    ecmaVm->GetJSThread()->ClearException();
     return JSNApiHelper::ToLocal<JSValueRef>(handledException);
 }
 
@@ -182,17 +172,18 @@ void DebuggerApi::DestroyJSDebugger(JSDebugger *debugger)
     delete debugger;
 }
 
-std::optional<Error> DebuggerApi::RegisterHooks(JSDebugger *debugger, PtHooks *hooks)
+void DebuggerApi::RegisterHooks(JSDebugger *debugger, PtHooks *hooks)
 {
-    return debugger->RegisterHooks(hooks);
+    debugger->RegisterHooks(hooks);
 }
 
-std::optional<Error> DebuggerApi::SetBreakpoint(JSDebugger *debugger, const PtLocation &location)
+bool DebuggerApi::SetBreakpoint(JSDebugger *debugger, const JSPtLocation &location,
+    const std::optional<CString> &condition)
 {
-    return debugger->SetBreakpoint(location);
+    return debugger->SetBreakpoint(location, condition);
 }
 
-std::optional<Error> DebuggerApi::RemoveBreakpoint(JSDebugger *debugger, const PtLocation &location)
+bool DebuggerApi::RemoveBreakpoint(JSDebugger *debugger, const JSPtLocation &location)
 {
     return debugger->RemoveBreakpoint(location);
 }
@@ -210,7 +201,7 @@ Local<JSValueRef> DebuggerApi::GetProperties(const EcmaVM *ecmaVm, int32_t level
     for (int i = 0; i < level; i++) {
         JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
         ASSERT(!taggedParentEnv.IsUndefined());
-        env= taggedParentEnv;
+        env = taggedParentEnv;
     }
     JSTaggedValue value = LexicalEnv::Cast(env.GetTaggedObject())->GetProperties(slot);
     JSHandle<JSTaggedValue> handledValue(ecmaVm->GetJSThread(), value);
@@ -224,7 +215,7 @@ void DebuggerApi::SetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t sl
     for (int i = 0; i < level; i++) {
         JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
         ASSERT(!taggedParentEnv.IsUndefined());
-        env= taggedParentEnv;
+        env = taggedParentEnv;
     }
     LexicalEnv::Cast(env.GetTaggedObject())->SetProperties(ecmaVm->GetJSThread(), slot, target);
 }
@@ -232,8 +223,7 @@ void DebuggerApi::SetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t sl
 bool DebuggerApi::EvaluateLexicalValue(const EcmaVM *ecmaVm, const CString &name, int32_t &level, uint32_t &slot)
 {
     JSTaggedValue curEnv = ecmaVm->GetJSThread()->GetCurrentLexenv();
-    for (; curEnv.IsTaggedArray(); curEnv = LexicalEnv::Cast(curEnv.GetTaggedObject())->GetParentEnv()) {
-        level++;
+    for (; curEnv.IsTaggedArray(); curEnv = LexicalEnv::Cast(curEnv.GetTaggedObject())->GetParentEnv(), level++) {
         LexicalEnv *lexicalEnv = LexicalEnv::Cast(curEnv.GetTaggedObject());
         if (lexicalEnv->GetScopeInfo().IsHole()) {
             continue;
@@ -273,4 +263,44 @@ Local<JSValueRef> DebuggerApi::GetLexicalValueInfo(const EcmaVM *ecmaVm, const C
     JSHandle<JSTaggedValue> handledValue(thread, JSTaggedValue::Hole());
     return JSNApiHelper::ToLocal<JSValueRef>(handledValue);
 }
-}  // namespace panda::tooling::ecmascript
+
+void DebuggerApi::InitJSDebugger(JSDebugger *debugger)
+{
+    debugger->Init();
+}
+
+void DebuggerApi::HandleUncaughtException(const EcmaVM *ecmaVm, CString &message)
+{
+    JSThread *thread = ecmaVm->GetJSThread();
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    JSHandle<JSTaggedValue> exHandle(thread, thread->GetException());
+    if (exHandle->IsJSError()) {
+        JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
+        JSHandle<EcmaString> name(JSObject::GetProperty(thread, exHandle, nameKey).GetValue());
+        JSHandle<JSTaggedValue> msgKey = thread->GlobalConstants()->GetHandledMessageString();
+        JSHandle<EcmaString> msg(JSObject::GetProperty(thread, exHandle, msgKey).GetValue());
+        message = ConvertToString(*name) + ": " + ConvertToString(*msg);
+    } else {
+        JSHandle<EcmaString> ecmaStr = JSTaggedValue::ToString(thread, exHandle);
+        message = ConvertToString(*ecmaStr);
+    }
+    thread->ClearException();
+}
+
+Local<JSValueRef> DebuggerApi::ExecuteFromBuffer(EcmaVM *ecmaVm, const void *buffer, size_t size)
+{
+    JSNApi::EnableUserUncaughtErrorHandler(ecmaVm);
+
+    JsDebuggerManager *mgr = ecmaVm->GetJsDebuggerManager();
+    bool prevDebugMode = mgr->IsDebugMode();
+    mgr->SetEvaluateCtxFrameSp(const_cast<JSTaggedType *>(ecmaVm->GetJSThread()->GetCurrentSPFrame()));
+    // in order to catch exception
+    mgr->SetDebugMode(false);
+    auto result = Execute(ecmaVm, buffer, size, "_GLOBAL::func_main_0");
+    mgr->SetDebugMode(prevDebugMode);
+    mgr->SetEvaluateCtxFrameSp(nullptr);
+
+    return result;
+}
+}  // namespace panda::ecmascript::tooling

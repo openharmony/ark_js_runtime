@@ -37,6 +37,8 @@ config("include_llvm") {
 source_set("libark_jsoptimizer_static") {
   sources = [
     "aot_file_manager.cpp",
+    "assembler/assembler_x64.cpp",
+    "assembler_module.cpp",
     "bytecode_circuit_builder.cpp",
     "call_signature.cpp",
     "circuit.cpp",
@@ -47,10 +49,10 @@ source_set("libark_jsoptimizer_static") {
     "interpreter_stub.cpp",
     "llvm_codegen.cpp",
     "llvm_ir_builder.cpp",
-    "low_level_circuit_builder.cpp",
     "rt_call_signature.cpp",
     "scheduler.cpp",
     "stub.cpp",
+    "trampoline/x64/assembler_module_x64.cpp",
     "type.cpp",
     "verifier.cpp",
   ]
@@ -143,7 +145,7 @@ source_set("libark_jsoptimizer_static") {
   ]
 }
 
-ohos_shared_library("libark_jsoptimizer") {
+source_set("libark_jsoptimizer_set_static") {
   deps = [
     ":libark_jsoptimizer_static",
     "//ark/js_runtime:libark_jsruntime",
@@ -152,6 +154,10 @@ ohos_shared_library("libark_jsoptimizer") {
   if (compile_llvm_online) {
     deps += [ ":build_llvm_libs" ]
   }
+}
+
+ohos_shared_library("libark_jsoptimizer") {
+  deps = [ ":libark_jsoptimizer_set_static" ]
 
   install_enable = true
   part_name = "ark_js_runtime"
@@ -163,7 +169,7 @@ ohos_shared_library("libark_jsoptimizer") {
   subsystem_name = "ark"
 }
 
-ohos_shared_library("libark_jsoptimizer_test") {
+source_set("libark_jsoptimizer_test_static") {
   deps = [
     ":libark_jsoptimizer_static",
     "//ark/js_runtime:libark_jsruntime_test_static",
@@ -178,6 +184,10 @@ ohos_shared_library("libark_jsoptimizer_test") {
   if (compile_llvm_online) {
     deps += [ ":build_llvm_libs" ]
   }
+}
+
+ohos_shared_library("libark_jsoptimizer_test") {
+  deps = [ ":libark_jsoptimizer_test_static" ]
 
   output_extension = "so"
   subsystem_name = "test"
@@ -190,11 +200,11 @@ ark_gen_file("stub_aot_options_gen_h") {
   output_file = "$target_gen_dir/generated/stub_aot_options_gen.h"
 }
 
-ohos_executable("ark_stub_compiler") {
+source_set("ark_stub_compiler_static") {
   sources = [ "stub_compiler.cpp" ]
   include_dirs = [ "$target_gen_dir" ]
 
-  configs = [
+  public_configs = [
     ":include_llvm",
     "//ark/js_runtime:ark_jsruntime_compiler_config",
     "//ark/js_runtime:ark_jsruntime_public_config",
@@ -211,6 +221,10 @@ ohos_executable("ark_stub_compiler") {
   if (!is_standard_system) {
     deps += [ "$ark_root/runtime:libarkruntime" ]
   }
+}
+
+ohos_executable("ark_stub_compiler") {
+  deps = [ ":ark_stub_compiler_static" ]
 
   part_name = "ark_js_runtime"
   install_enable = false
@@ -219,14 +233,14 @@ ohos_executable("ark_stub_compiler") {
   subsystem_name = "ark"
 }
 
-ohos_executable("ark_aot_compiler") {
+source_set("ark_aot_compiler_static") {
   sources = [
     "aot_compiler.cpp",
     "pass_manager.cpp",
     "slowpath_lowering.cpp",
   ]
 
-  configs = [
+  public_configs = [
     ":include_llvm",
     "//ark/js_runtime:ark_jsruntime_compiler_config",
     "//ark/js_runtime:ark_jsruntime_public_config",
@@ -242,6 +256,10 @@ ohos_executable("ark_aot_compiler") {
   if (!is_standard_system) {
     deps += [ "$ark_root/runtime:libarkruntime" ]
   }
+}
+
+ohos_executable("ark_aot_compiler") {
+  deps = [ ":ark_aot_compiler_static" ]
 
   part_name = "ark_js_runtime"
   install_enable = false

@@ -60,11 +60,13 @@ public:
         parser->Add(&asmInter_);
         parser->Add(&aotOutputFile_);
         parser->Add(&aotTargetTriple_);
+        parser->Add(&logCompiledMethods);
     }
 
     bool IsEnableArkTools() const
     {
-        return (enableArkTools_.GetValue()) || ((arkProperties_.GetValue() & ArkProperties::ENABLE_ARKTOOLS) != 0);
+        return (enableArkTools_.GetValue()) ||
+            ((static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::ENABLE_ARKTOOLS) != 0);
     }
 
     void SetEnableArkTools(bool value)
@@ -201,32 +203,32 @@ public:
 
     bool IsEnableOptionalLog() const
     {
-        return (arkProperties_.GetValue() & ArkProperties::OPTIONAL_LOG) != 0;
+        return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::OPTIONAL_LOG) != 0;
     }
 
     bool IsEnableGCStatsPrint() const
     {
-        return (arkProperties_.GetValue() & ArkProperties::GC_STATS_PRINT) != 0;
+        return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::GC_STATS_PRINT) != 0;
     }
 
     bool IsEnableParallelGC() const
     {
-        return (arkProperties_.GetValue() & ArkProperties::PARALLEL_GC) != 0;
+        return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::PARALLEL_GC) != 0;
     }
 
     bool IsEnableConcurrentMark() const
     {
-        return (arkProperties_.GetValue() & ArkProperties::CONCURRENT_MARK) != 0;
+        return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::CONCURRENT_MARK) != 0;
     }
 
     bool IsEnableConcurrentSweep() const
     {
-        return (arkProperties_.GetValue() & ArkProperties::CONCURRENT_SWEEP) != 0;
+        return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::CONCURRENT_SWEEP) != 0;
     }
 
     bool IsEnableThreadCheck() const
     {
-        return (arkProperties_.GetValue() & ArkProperties::THREAD_CHECK) != 0;
+        return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::THREAD_CHECK) != 0;
     }
 
     size_t MaxSemiSpaceCapacity() const
@@ -325,6 +327,21 @@ public:
 
     static JSRuntimeOptions temporary_options;
 
+    std::string GetlogCompiledMethods() const
+    {
+        return logCompiledMethods.GetValue();
+    }
+
+    void SetlogCompiledMethods(std::string value)
+    {
+        logCompiledMethods.SetValue(std::move(value));
+    }
+
+    bool WasSetlogCompiledMethods() const
+    {
+        return logCompiledMethods.WasSet() && GetlogCompiledMethods().compare("none") != 0;
+    }
+
 private:
     PandArg<bool> enableArkTools_ {"enable-ark-tools", false, R"(Enable ark tools to debug. Default: false)"};
     PandArg<bool> enableCpuprofiler_ {"enable-cpuprofiler", false,
@@ -374,6 +391,9 @@ private:
         "1",
         R"(set asm interpreter control properties)"};
     AsmInterParsedOption asmInterParsedOption_;
+    PandArg<std::string> logCompiledMethods {"log-compiled-methods",
+        R"(none)",
+        R"(print stub or aot logs in units of method, "none": no log, "all": every method)"};
 };
 }  // namespace panda::ecmascript
 

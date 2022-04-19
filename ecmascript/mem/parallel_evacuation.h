@@ -56,7 +56,7 @@ private:
 
     private:
         ParallelEvacuation *evacuation_;
-        TlabAllocator *allocator_;
+        TlabAllocator *allocator_ {nullptr};
     };
 
     class UpdateReferenceTask : public Task {
@@ -154,7 +154,7 @@ private:
     TlabAllocator *allocator_;
     ObjectXRay objXRay_;
 
-    uintptr_t waterLine_;
+    uintptr_t waterLine_ = 0;
     std::vector<std::unique_ptr<Workload>> workloads_;
     std::atomic_int parallel_ = 0;
     os::memory::Mutex mutex_;

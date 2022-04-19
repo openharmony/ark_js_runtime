@@ -42,7 +42,7 @@ JSTaggedValue JSMapIterator::Next(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> iteratedMap(thread, iter->GetIteratedMap());
 
     // 5.Let index be O.[[MapNextIndex]].
-    int index = iter->GetNextIndex();
+    int index = static_cast<int>(iter->GetNextIndex());
     IterationKind itemKind = iter->GetIterationKind();
     // 7.If m is undefined, return CreateIterResultObject(undefined, true).
     if (iteratedMap->IsUndefined()) {
@@ -92,7 +92,7 @@ void JSMapIterator::Update(const JSThread *thread)
     if (map->GetNextTable().IsHole()) {
         return;
     }
-    int index = GetNextIndex();
+    int index = static_cast<int>(GetNextIndex());
     JSTaggedValue nextTable = map->GetNextTable();
     while (!nextTable.IsHole()) {
         index -= map->GetDeletedElementsAt(index);

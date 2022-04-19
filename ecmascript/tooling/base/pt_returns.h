@@ -18,7 +18,7 @@
 
 #include "ecmascript/tooling/base/pt_types.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 class PtBaseReturns : public PtBaseTypes {
 public:
     PtBaseReturns() = default;
@@ -312,5 +312,5 @@ private:
 
     std::unique_ptr<Profile> profile_ {};
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif

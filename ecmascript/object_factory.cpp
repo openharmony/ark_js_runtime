@@ -34,6 +34,8 @@
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_plain_array.h"
+#include "ecmascript/js_api_plain_array_iterator.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_stack.h"
@@ -674,6 +676,7 @@ JSHandle<JSArguments> ObjectFactory::NewJSArguments()
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetArgumentsClass());
     JSHandle<JSArguments> obj = JSHandle<JSArguments>::Cast(NewJSObject(dynclass));
+    obj->SetParameterMap(thread_, JSTaggedValue::Undefined());
     return obj;
 }
 
@@ -694,6 +697,20 @@ JSHandle<JSObject> ObjectFactory::GetJSError(const ErrorType &errorType, const c
 
 JSHandle<JSObject> ObjectFactory::NewJSError(const ErrorType &errorType, const JSHandle<EcmaString> &message)
 {
+    // if there have exception in thread, then return current exception, no need to new js error.
+    if (thread_->HasPendingException()) {
+        JSHandle<JSObject> obj(thread_, thread_->GetException());
+        return obj;
+    }
+
+    // current frame may be entry frame, in this case sp = the prev frame (interpreter frame).
+    JSTaggedType *sp = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
+    if (FrameHandler(sp).GetFrameType() == FrameType::INTERPRETER_ENTRY_FRAME) {
+        InterpretedFrameHandler frameHandler(sp);
+        frameHandler.PrevInterpretedFrame();
+        thread_->SetCurrentSPFrame(frameHandler.GetSp());
+    }
+
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
     JSHandle<JSTaggedValue> nativeConstructor;
@@ -874,6 +891,11 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
                 JSAPIQueue::Cast(*obj)->SetFront(0);
                 JSAPIQueue::Cast(*obj)->SetTail(0);
                 break;
+            case JSType::JS_API_PLAIN_ARRAY:
+                JSAPIPlainArray::Cast(*obj)->SetLength(0);
+                JSAPIPlainArray::Cast(*obj)->SetValues(thread_, JSTaggedValue(0));
+                JSAPIPlainArray::Cast(*obj)->SetKeys(thread_, JSTaggedValue(0));
+                break;
             case JSType::JS_API_STACK:
                 JSAPIStack::Cast(*obj)->SetTop(0);
                 break;
@@ -893,6 +915,7 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
             case JSType::JS_API_DEQUE_ITERATOR:
             case JSType::JS_API_STACK_ITERATOR:
             case JSType::JS_ARRAY_ITERATOR:
+            case JSType::JS_API_PLAIN_ARRAY_ITERATOR:
             default:
                 UNREACHABLE();
         }
@@ -1245,7 +1268,7 @@ JSHandle<JSPrimitiveRef> ObjectFactory::NewJSPrimitiveRef(const JSHandle<JSFunct
     if (function.GetTaggedValue() == env->GetStringFunction().GetTaggedValue()) {
         JSHandle<JSTaggedValue> lengthStr = globalConst->GetHandledLengthString();
 
-        int32_t length = EcmaString::Cast(object.GetTaggedValue().GetTaggedObject())->GetLength();
+        uint32_t length = EcmaString::Cast(object.GetTaggedValue().GetTaggedObject())->GetLength();
         PropertyDescriptor desc(thread_, JSHandle<JSTaggedValue>(thread_, JSTaggedValue(length)), false, false, false);
         JSTaggedValue::DefinePropertyOrThrow(thread_, JSHandle<JSTaggedValue>(obj), lengthStr, desc);
     }
@@ -1714,7 +1737,7 @@ JSHandle<TaggedArray> ObjectFactory::CopyArray(const JSHandle<TaggedArray> &old,
 
 JSHandle<LayoutInfo> ObjectFactory::CreateLayoutInfo(int properties, JSTaggedValue initVal)
 {
-    int arrayLength = LayoutInfo::ComputeArrayLength(LayoutInfo::ComputeGrowCapacity(properties));
+    uint32_t arrayLength = LayoutInfo::ComputeArrayLength(LayoutInfo::ComputeGrowCapacity(properties));
     JSHandle<LayoutInfo> layoutInfoHandle = JSHandle<LayoutInfo>::Cast(NewTaggedArray(arrayLength, initVal));
     layoutInfoHandle->SetNumberOfElements(thread_, 0);
     return layoutInfoHandle;
@@ -1724,13 +1747,13 @@ JSHandle<LayoutInfo> ObjectFactory::ExtendLayoutInfo(const JSHandle<LayoutInfo> 
                                                      JSTaggedValue initVal)
 {
     ASSERT(properties > old->NumberOfElements());
-    int arrayLength = LayoutInfo::ComputeArrayLength(LayoutInfo::ComputeGrowCapacity(properties));
+    uint32_t arrayLength = LayoutInfo::ComputeArrayLength(LayoutInfo::ComputeGrowCapacity(properties));
     return JSHandle<LayoutInfo>(ExtendArray(JSHandle<TaggedArray>(old), arrayLength, initVal));
 }
 
 JSHandle<LayoutInfo> ObjectFactory::CopyLayoutInfo(const JSHandle<LayoutInfo> &old)
 {
-    int newLength = old->GetLength();
+    uint32_t newLength = old->GetLength();
     return JSHandle<LayoutInfo>(CopyArray(JSHandle<TaggedArray>::Cast(old), newLength, newLength));
 }
 
@@ -2204,6 +2227,10 @@ JSHandle<MachineCode> ObjectFactory::NewMachineCodeObject(size_t length, const u
     TaggedObject *obj = heap_->AllocateMachineCodeObject(JSHClass::Cast(
         thread_->GlobalConstants()->GetMachineCodeClass().GetTaggedObject()), length + MachineCode::SIZE);
     MachineCode *code = MachineCode::Cast(obj);
+    if (code == nullptr) {
+        LOG_ECMA(FATAL) << "machine code cast failed";
+        UNREACHABLE();
+    }
     code->SetInstructionSizeInBytes(static_cast<uint32_t>(length));
     if (data != nullptr) {
         code->SetData(data, length);
@@ -2235,7 +2262,7 @@ JSHandle<ClassInfoExtractor> ObjectFactory::NewClassInfoExtractor(JSMethod *ctor
 // ----------------------------------- new TSType ----------------------------------------
 JSHandle<TSObjLayoutInfo> ObjectFactory::CreateTSObjLayoutInfo(int propNum, JSTaggedValue initVal)
 {
-    int arrayLength = TSObjLayoutInfo::ComputeArrayLength(propNum);
+    uint32_t arrayLength = TSObjLayoutInfo::ComputeArrayLength(propNum);
     JSHandle<TSObjLayoutInfo> tsPropInfoHandle = JSHandle<TSObjLayoutInfo>::Cast(NewTaggedArray(arrayLength, initVal));
     tsPropInfoHandle->SetNumberOfElements(thread_, 0);
     return tsPropInfoHandle;
@@ -2518,6 +2545,38 @@ JSHandle<JSAPIArrayListIterator> ObjectFactory::NewJSAPIArrayListIterator(const 
     iter->GetJSHClass()->SetExtensible(true);
     iter->SetIteratedArrayList(thread_, arrayList);
     iter->SetNextIndex(0);
+    return iter;
+}
+
+JSHandle<JSAPIPlainArray> ObjectFactory::NewJSAPIPlainArray(array_size_t capacity)
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> builtinObj(thread_, thread_->GlobalConstants()->GetPlainArrayFunction());
+
+    JSHandle<JSAPIPlainArray> obj =
+        JSHandle<JSAPIPlainArray>(NewJSObjectByConstructor(JSHandle<JSFunction>(builtinObj), builtinObj));
+    ObjectFactory *factory = thread_->GetEcmaVM()->GetFactory();
+    JSHandle<TaggedArray> keyArray = factory->NewTaggedArray(capacity);
+    JSHandle<TaggedArray> valueArray = factory->NewTaggedArray(capacity);
+    obj->SetKeys(thread_, keyArray);
+    obj->SetValues(thread_, valueArray);
+
+    return obj;
+}
+
+JSHandle<JSAPIPlainArrayIterator> ObjectFactory::NewJSAPIPlainArrayIterator(const JSHandle<JSAPIPlainArray> &plainarray,
+                                                                            IterationKind kind)
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> protoValue(thread_, thread_->GlobalConstants()->GetPlainArrayIteratorPrototype());
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSHClass> dynHandle(globalConst->GetHandledJSAPIPlainArrayIteratorClass());
+    dynHandle->SetPrototype(thread_, protoValue);
+    JSHandle<JSAPIPlainArrayIterator> iter(NewJSObject(dynHandle));
+    iter->GetJSHClass()->SetExtensible(true);
+    iter->SetIteratedPlainArray(thread_, plainarray);
+    iter->SetNextIndex(0);
+    iter->SetIterationKind(kind);
     return iter;
 }
 

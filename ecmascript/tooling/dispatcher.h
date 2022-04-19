@@ -22,13 +22,10 @@
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/napi/include/jsnapi.h"
-#include "include/tooling/debug_interface.h"
+#include "ecmascript/tooling/interface/js_debug_interface.h"
 #include "libpandabase/macros.h"
 
-namespace panda::tooling::ecmascript {
-using panda::ecmascript::CString;
-using panda::ecmascript::CUnorderedMap;
-
+namespace panda::ecmascript::tooling {
 class FrontEnd;
 class PtBaseReturns;
 class PtBaseEvents;
@@ -108,7 +105,7 @@ public:
     }
 
     static DispatchResponse Create(ResponseCode code, const CString &msg = "");
-    static DispatchResponse Create(std::optional<Error> error);
+    static DispatchResponse Create(std::optional<CString> error);
     static DispatchResponse Ok();
     static DispatchResponse Fail(const CString &message);
 
@@ -153,5 +150,5 @@ private:
     NO_COPY_SEMANTIC(Dispatcher);
     NO_MOVE_SEMANTIC(Dispatcher);
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif

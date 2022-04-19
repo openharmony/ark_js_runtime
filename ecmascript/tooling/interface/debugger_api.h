@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,31 +23,21 @@
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/lexical_env.h"
-
-#include "mem/rendezvous.h"
-#include "include/runtime.h"
-#include "include/tooling/debug_interface.h"
+#include "ecmascript/tooling/interface/js_debug_interface.h"
 
 namespace panda {
-namespace tooling::ecmascript {
-class JSDebugger;
-}  // tooling::ecmascript
-
 namespace ecmascript {
 class InterpretedFrameHandler;
 class EcmaVM;
 class JSMethod;
 class JSThread;
+namespace tooling {
+class JSDebugger;
+}
 }  // ecmascript
 }  // panda
 
-namespace panda::tooling::ecmascript {
-using panda::ecmascript::CString;
-using panda::ecmascript::InterpretedFrameHandler;
-using panda::ecmascript::EcmaVM;
-using panda::ecmascript::JSMethod;
-using panda::ecmascript::JSThread;
-
+namespace panda::ecmascript::tooling {
 enum StackState {
     CONTINUE,
     FAILED,
@@ -57,7 +47,7 @@ enum StackState {
 class PUBLIC_API DebuggerApi {
 public:
     // JSPandaFileExecutor
-    Local<JSValueRef> Execute(const EcmaVM *ecmaVm, const void *buffer, size_t size,
+    static Local<JSValueRef> Execute(const EcmaVM *ecmaVm, const void *buffer, size_t size,
                               std::string_view entryPoint);
 
     // InterpretedFrameHandler
@@ -78,7 +68,7 @@ public:
     static int32_t StringToInt(Local<JSValueRef> str);
 
     // JSThread
-    static Local<JSValueRef> GetException(const EcmaVM *ecmaVm);
+    static Local<JSValueRef> GetAndClearException(const EcmaVM *ecmaVm);
     static void SetException(const EcmaVM *ecmaVm, Local<JSValueRef> exception);
     static void ClearException(const EcmaVM *ecmaVm);
 
@@ -88,9 +78,13 @@ public:
     // JSDebugger
     static JSDebugger *CreateJSDebugger(const EcmaVM *ecmaVm);
     static void DestroyJSDebugger(JSDebugger *debugger);
-    static std::optional<Error> RegisterHooks(JSDebugger *debugger, PtHooks *hooks);
-    static std::optional<Error> SetBreakpoint(JSDebugger *debugger, const PtLocation &location);
-    static std::optional<Error> RemoveBreakpoint(JSDebugger *debugger, const PtLocation &location);
+    static void RegisterHooks(JSDebugger *debugger, PtHooks *hooks);
+    static bool SetBreakpoint(JSDebugger *debugger, const JSPtLocation &location,
+        const std::optional<CString> &condition);
+    static bool RemoveBreakpoint(JSDebugger *debugger, const JSPtLocation &location);
+    static void InitJSDebugger(JSDebugger *debugger);
+    static void HandleUncaughtException(const EcmaVM *ecmaVm, CString &message);
+    static Local<JSValueRef> ExecuteFromBuffer(EcmaVM *ecmaVm, const void *buffer, size_t size);
 
     // JSMehthod
     static CString ParseFunctionName(const JSMethod *method);
@@ -101,6 +95,6 @@ public:
     static bool EvaluateLexicalValue(const EcmaVM *ecmaVm, const CString &name, int32_t &level, uint32_t &slot);
     static Local<JSValueRef> GetLexicalValueInfo(const EcmaVM *ecmaVm, const CString &name);
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 
 #endif  // ECMASCRIPT_TOOLING_DEBUGGER_API_H

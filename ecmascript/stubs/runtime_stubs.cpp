@@ -39,6 +39,7 @@
 #include "ecmascript/object_factory.h"
 #include "ecmascript/runtime_api.h"
 #include "ecmascript/tagged_dictionary.h"
+#include "ecmascript/tooling/test/utils/test_util.h"
 #include "libpandabase/utils/string_helpers.h"
 #include "ecmascript/ts_types/ts_loader.h"
 
@@ -309,8 +310,8 @@ DEF_RUNTIME_STUBS(PropertiesSetValue)
     CONVERT_ARG_HANDLE_CHECKED(TaggedArray, arrayHandle, 2);
     CONVERT_ARG_TAGGED_CHECKED(taggedCapacity, 3);
     CONVERT_ARG_TAGGED_CHECKED(taggedIndex, 4);
-    uint32_t capacity = taggedCapacity.GetInt();
-    uint32_t index = taggedIndex.GetInt();
+    int capacity = taggedCapacity.GetInt();
+    int index = taggedIndex.GetInt();
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TaggedArray> properties;
@@ -333,8 +334,8 @@ DEF_RUNTIME_STUBS(TaggedArraySetValue)
     CONVERT_ARG_TAGGED_CHECKED(taggedElementIndex, 3);
     CONVERT_ARG_TAGGED_CHECKED(taggedCapacity, 4);
 
-    uint32_t elementIndex = taggedElementIndex.GetInt();
-    uint32_t capacity = taggedCapacity.GetInt();
+    int elementIndex = taggedElementIndex.GetInt();
+    int capacity = taggedCapacity.GetInt();
     auto elements = reinterpret_cast<TaggedArray *>(argElement);
     if (elementIndex >= capacity) {
         if (JSObject::ShouldTransToDict(capacity, elementIndex)) {
@@ -372,16 +373,16 @@ DEF_RUNTIME_STUBS(UpdateLayOutAndAddTransition)
 
     auto factory = thread->GetEcmaVM()->GetFactory();
     PropertyAttributes attrValue(attr.GetInt());
-    int offset = attrValue.GetOffset();
+    uint32_t offset = attrValue.GetOffset();
     newHClassHandle->IncNumberOfProps();
 
     {
         JSMutableHandle<LayoutInfo> layoutInfoHandle(thread, newHClassHandle->GetLayout());
 
-        if (layoutInfoHandle->NumberOfElements() != offset) {
+        if (layoutInfoHandle->NumberOfElements() != static_cast<int>(offset)) {
             layoutInfoHandle.Update(factory->CopyAndReSort(layoutInfoHandle, offset, offset + 1));
             newHClassHandle->SetLayout(thread, layoutInfoHandle);
-        } else if (layoutInfoHandle->GetPropertiesCapacity() <= offset) {  // need to Grow
+        } else if (layoutInfoHandle->GetPropertiesCapacity() <= static_cast<int>(offset)) {  // need to Grow
             layoutInfoHandle.Update(
                 factory->ExtendLayoutInfo(layoutInfoHandle, LayoutInfo::ComputeGrowCapacity(offset)));
             newHClassHandle->SetLayout(thread, layoutInfoHandle);
@@ -1267,9 +1268,9 @@ DEF_RUNTIME_STUBS(SetLexicalEnv)
 DEF_RUNTIME_STUBS(LoadValueFromConstantStringTable)
 {
     RUNTIME_STUBS_HEADER(LoadValueFromConstantStringTable);
-    CONVERT_ARG_TAGGED_TYPE_CHECKED(id, 0);
+    CONVERT_ARG_TAGGED_CHECKED(id, 0);
     auto tsLoader = thread->GetEcmaVM()->GetTSLoader();
-    return tsLoader->GetStringById(id).GetTaggedValue().GetRawData();
+    return tsLoader->GetStringById(id.GetInt()).GetTaggedValue().GetRawData();
 }
 
 DEF_RUNTIME_STUBS(CallArg0Dyn)
@@ -1592,16 +1593,14 @@ DEF_RUNTIME_STUBS(CallNative)
 {
     RUNTIME_STUBS_HEADER(CallNative);
     CONVERT_ARG_TAGGED_CHECKED(numArgs, 0);
-    CONVERT_ARG_PTR_CHECKED(JSTaggedValue *, sp, 1);
-    CONVERT_ARG_PTR_CHECKED(JSMethod *, method, 2);
 
-    EcmaRuntimeCallInfo ecmaRuntimeCallInfo(
-        thread, numArgs.GetInt() - RESERVED_CALL_ARGCOUNT, reinterpret_cast<JSTaggedType*>(sp));
+    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    auto state = reinterpret_cast<AsmInterpretedFrame *>(sp) - 1;
+    JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
+    EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, numArgs.GetInt(), sp);
     JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
         const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);
-    if (UNLIKELY(thread->HasPendingException())) {
-        return JSTaggedValue::Exception().GetRawData();
-    }
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception().GetRawData());
     return retValue.GetRawData();
 }
 
@@ -1620,6 +1619,35 @@ DEF_RUNTIME_STUBS(NewLexicalEnvWithNameDyn)
     return RuntimeNewLexicalEnvWithNameDyn(thread,
         static_cast<uint16_t>(numVars.GetInt()),
         static_cast<uint16_t>(scopeId.GetInt())).GetRawData();
+}
+
+DEF_RUNTIME_STUBS(GetAotUnmapedArgs)
+{
+    RUNTIME_STUBS_HEADER(GetAotUnmapedArgs);
+    CONVERT_ARG_TAGGED_CHECKED(actualNumArgs, 0);
+    return RuntimeGetAotUnmapedArgs(thread, actualNumArgs.GetInt(), argv).GetRawData();
+}
+
+JSTaggedType RuntimeStubs::CreateArrayFromList([[maybe_unused]]uintptr_t argGlue, int32_t argc, JSTaggedValue *argvPtr)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(argc);
+    for (int index = 0; index < argc; ++index) {
+        taggedArray->Set(thread, index, argvPtr[index]);
+    }
+    JSHandle<JSArray> arrHandle = JSArray::CreateArrayFromList(thread, taggedArray);
+    return arrHandle.GetTaggedValue().GetRawData();
+}
+
+JSTaggedType RuntimeStubs::JSObjectGetMethod([[maybe_unused]]uintptr_t argGlue,
+    JSTaggedValue handler, JSTaggedValue key)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    JSHandle<JSTaggedValue> obj(thread, handler);
+    JSHandle<JSTaggedValue> value(thread, key);
+    JSHandle<JSTaggedValue> result = JSObject::GetMethod(thread, obj, value);
+    return result->GetRawData();
 }
 
 int32_t RuntimeStubs::DoubleToInt(double x)
@@ -1644,9 +1672,9 @@ void RuntimeStubs::MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintptr_t s
 
 void RuntimeStubs::Initialize(JSThread *thread)
 {
-#define DEF_RUNTIME_STUB(name, counter) kungfu::RuntimeStubCSigns::ID_##name
-#define INITIAL_RUNTIME_FUNCTIONS(name, count) \
-    thread->RegisterRTInterface(DEF_RUNTIME_STUB(name, count), reinterpret_cast<uintptr_t>(name));
+#define DEF_RUNTIME_STUB(name) kungfu::RuntimeStubCSigns::ID_##name
+#define INITIAL_RUNTIME_FUNCTIONS(name) \
+    thread->RegisterRTInterface(DEF_RUNTIME_STUB(name), reinterpret_cast<uintptr_t>(name));
     RUNTIME_STUB_LIST(INITIAL_RUNTIME_FUNCTIONS)
 #undef INITIAL_RUNTIME_FUNCTIONS
 #undef DEF_RUNTIME_STUB

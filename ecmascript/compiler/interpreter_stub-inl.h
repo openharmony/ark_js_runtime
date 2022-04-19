@@ -178,7 +178,8 @@ GateRef InterpreterStub::GetFrame(GateRef CurrentSp)
 
 GateRef InterpreterStub::GetPcFromFrame(GateRef frame)
 {
-    return Load(VariableType::POINTER(), frame, IntPtr(0));
+    return Load(VariableType::NATIVE_POINTER(), frame,
+        IntPtr(AsmInterpretedFrame::GetPcOffset(GetEnvironment()->IsArch32Bit())));
 }
 
 GateRef InterpreterStub::GetFunctionFromFrame(GateRef frame)
@@ -189,7 +190,7 @@ GateRef InterpreterStub::GetFunctionFromFrame(GateRef frame)
 
 GateRef InterpreterStub::GetCallSizeFromFrame(GateRef frame)
 {
-    return Load(VariableType::POINTER(), frame,
+    return Load(VariableType::NATIVE_POINTER(), frame,
         IntPtr(AsmInterpretedFrame::GetCallSizeOffset(GetEnvironment()->IsArch32Bit())));
 }
 
@@ -236,12 +237,13 @@ GateRef InterpreterStub::GetResumeModeFromGeneratorObject(GateRef obj)
 
 void InterpreterStub::SetPcToFrame(GateRef glue, GateRef frame, GateRef value)
 {
-    Store(VariableType::INT64(), glue, frame, IntPtr(0), value);
+    Store(VariableType::INT64(), glue, frame,
+        IntPtr(AsmInterpretedFrame::GetPcOffset(GetEnvironment()->IsArch32Bit())), value);
 }
 
 void InterpreterStub::SetCallSizeToFrame(GateRef glue, GateRef frame, GateRef value)
 {
-    Store(VariableType::POINTER(), glue, frame,
+    Store(VariableType::NATIVE_POINTER(), glue, frame,
           IntPtr(AsmInterpretedFrame::GetCallSizeOffset(GetEnvironment()->IsArch32Bit())), value);
 }
 
@@ -295,13 +297,13 @@ GateRef InterpreterStub::GetCurrentSpFrame(GateRef glue)
 {
     bool isArch32 = GetEnvironment()->Is32Bit();
     GateRef spOffset = IntPtr(JSThread::GlueData::GetCurrentFrameOffset(isArch32));
-    return Load(VariableType::POINTER(), glue, spOffset);
+    return Load(VariableType::NATIVE_POINTER(), glue, spOffset);
 }
 
 void InterpreterStub::SetCurrentSpFrame(GateRef glue, GateRef value)
 {
     GateRef spOffset = IntPtr(JSThread::GlueData::GetCurrentFrameOffset(GetEnvironment()->Is32Bit()));
-    Store(VariableType::POINTER(), glue, glue, spOffset, value);
+    Store(VariableType::NATIVE_POINTER(), glue, glue, spOffset, value);
 }
 
 GateRef InterpreterStub::ReadInst32_0(GateRef pc)

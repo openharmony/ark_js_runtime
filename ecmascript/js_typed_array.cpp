@@ -281,7 +281,7 @@ JSHandle<TaggedArray> JSTypedArray::OwnPropertyKeys(JSThread *thread, const JSHa
     JSHandle<JSObject> arrayObj(typedarray);
     JSHandle<TaggedArray> objKeys = JSObject::GetOwnPropertyKeys(thread, arrayObj);
     uint32_t objKeysLen = objKeys->GetLength();
-    uint32_t bufferKeysLen = TypedArrayHelper::GetArrayLength(thread, arrayObj);
+    uint32_t bufferKeysLen = static_cast<uint32_t>(TypedArrayHelper::GetArrayLength(thread, arrayObj));
     uint32_t length = objKeysLen + bufferKeysLen;
     JSHandle<TaggedArray> nameList = factory->NewTaggedArray(length);
 

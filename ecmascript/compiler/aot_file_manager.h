@@ -15,15 +15,17 @@
 #ifndef ECMASCRIPT_KUNGFU_AOT_FILE_MANAGER_H
 #define ECMASCRIPT_KUNGFU_AOT_FILE_MANAGER_H
 
+#include "compiler_log.h"
 #include "ecmascript/mem/machine_code.h"
+#include "assembler_module.h"
 #include "llvm_ir_builder.h"
 #include "llvm_codegen.h"
 
 namespace panda::ecmascript::kungfu {
 class AotFileManager {
 public:
-    AotFileManager(LLVMModule *llvmModule, bool genFp = true) : llvmModule_(llvmModule),
-        assembler_(llvmModule->GetModule(), genFp) {};
+    AotFileManager(LLVMModule *llvmModule, const CompilerLog *log, bool genFp = true) : llvmModule_(llvmModule),
+        assembler_(llvmModule->GetModule(), genFp), log_(log) {};
     ~AotFileManager() = default;
     // save function funcs for aot files containing stubs
     void SaveStubFile(const std::string &filename);
@@ -31,14 +33,23 @@ public:
     // save function for aot files containing normal func translated from JS/TS
     void SaveAOTFile(const std::string &filename);
 
+    const CompilerLog *GetLog() const
+    {
+        return log_;
+    }
+
 private:
     AotCodeInfo aotInfo_;
-    LLVMModule *llvmModule_;
+    LLVMModule *llvmModule_ {nullptr};
     LLVMAssembler assembler_;
+    AssemblerModule asmModule_;
+    const CompilerLog *log_ {nullptr};
+
     void RunLLVMAssembler()
     {
         assembler_.Run();
     }
+    void RunAsmAssembler();
     // collect aot component info
     void CollectAOTCodeInfoOfStubs();
     void CollectAOTCodeInfo();

@@ -17,6 +17,7 @@
 
 #include "containers_arraylist.h"
 #include "containers_deque.h"
+#include "containers_plainarray.h"
 #include "containers_queue.h"
 #include "containers_stack.h"
 #include "containers_treemap.h"
@@ -26,6 +27,8 @@
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_plain_array.h"
+#include "ecmascript/js_api_plain_array_iterator.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_stack.h"
@@ -41,7 +44,7 @@
 namespace panda::ecmascript::containers {
 JSTaggedValue ContainersPrivate::Load(EcmaRuntimeCallInfo *msg)
 {
-    ASSERT(msg);
+    ASSERT(msg != nullptr);
     JSThread *thread = msg->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSTaggedValue> argv = GetCallArg(msg, 0);
@@ -78,6 +81,10 @@ JSTaggedValue ContainersPrivate::Load(EcmaRuntimeCallInfo *msg)
             res = InitializeContainer(thread, thisValue, InitializeDeque, "DequeConstructor");
             break;
         }
+        case ContainerTag::PlainArray: {
+            res = InitializeContainer(thread, thisValue, InitializePlainArray, "PlainArrayConstructor");
+            break;
+        }
         case ContainerTag::Vector:
         case ContainerTag::List:
         case ContainerTag::LinkedList:
@@ -85,7 +92,6 @@ JSTaggedValue ContainersPrivate::Load(EcmaRuntimeCallInfo *msg)
         case ContainerTag::HashSet:
         case ContainerTag::LightWeightMap:
         case ContainerTag::LightWeightSet:
-        case ContainerTag::PlainArray:
         case ContainerTag::END:
             break;
         default:
@@ -198,7 +204,6 @@ void ContainersPrivate::SetFunctionAtSymbol(JSThread *thread, const JSHandle<Glo
     JSHandle<JSTaggedValue> nameString(factory->NewFromASCII(name));
     JSHandle<JSFunctionBase> baseFunction(function);
     JSFunction::SetFunctionName(thread, baseFunction, nameString, thread->GlobalConstants()->GetHandledUndefined());
-
     PropertyDescriptor descriptor(thread, JSHandle<JSTaggedValue>::Cast(function), false, false, false);
     JSObject::DefineOwnProperty(thread, obj, symbol, descriptor);
 }
@@ -431,6 +436,79 @@ void ContainersPrivate::InitializeTreeSetIterator(JSThread *thread)
     SetStringTagSymbol(thread, env, setIteratorPrototype, "TreeSet Iterator");
     auto globalConst = const_cast<GlobalEnvConstants *>(thread->GlobalConstants());
     globalConst->SetConstant(ConstantIndex::TREESET_ITERATOR_PROTOTYPE_INDEX, setIteratorPrototype.GetTaggedValue());
+}
+
+JSHandle<JSTaggedValue> ContainersPrivate::InitializePlainArray(JSThread *thread)
+{
+    auto globalConst = const_cast<GlobalEnvConstants *>(thread->GlobalConstants());
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    // PlainArray.prototype
+    JSHandle<JSObject> plainArrayFuncPrototype = factory->NewEmptyJSObject();
+    JSHandle<JSTaggedValue> plainArrayFuncPrototypeValue(plainArrayFuncPrototype);
+    // PlainArray.prototype_or_dynclass
+    JSHandle<JSHClass> plainArrayInstanceDynclass =
+        factory->NewEcmaDynClass(JSAPIPlainArray::SIZE, JSType::JS_API_PLAIN_ARRAY, plainArrayFuncPrototypeValue);
+    JSHandle<JSTaggedValue> plainArrayFunction(
+        NewContainerConstructor(thread, plainArrayFuncPrototype, ContainersPlainArray::PlainArrayConstructor,
+                                "PlainArray", FuncLength::ZERO));
+    JSHandle<JSFunction>(plainArrayFunction)->SetFunctionPrototype(thread,
+                                                                   plainArrayInstanceDynclass.GetTaggedValue());
+    // "constructor" property on the prototype
+    JSHandle<JSTaggedValue> constructorKey = globalConst->GetHandledConstructorString();
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(plainArrayFuncPrototype), constructorKey,
+                          plainArrayFunction);
+    // PlainArray.prototype.add()
+    SetFrozenFunction(thread, plainArrayFuncPrototype, "add", ContainersPlainArray::Add, FuncLength::ONE);
+    SetFrozenFunction(thread, plainArrayFuncPrototype, "clear", ContainersPlainArray::Clear, FuncLength::ONE);
+    SetFrozenFunction(thread, plainArrayFuncPrototype, "clone", ContainersPlainArray::Clone, FuncLength::ONE);
+    SetFrozenFunction(thread, plainArrayFuncPrototype, "has", ContainersPlainArray::Has, FuncLength::ONE);
+    SetFrozenFunction(thread, plainArrayFuncPrototype, "get", ContainersPlainArray::Get, FuncLength::ONE);
+    SetFrozenFunction(thread, plainArrayFuncPrototype, "forEach", ContainersPlainArray::ForEach, FuncLength::ONE);
+    SetFrozenFunction(thread, plainArrayFuncPrototype, "toString", ContainersPlainArray::ToString,
+                      FuncLength::ZERO);
+    SetFrozenFunction(thread, plainArrayFuncPrototype, "getIndexOfKey", ContainersPlainArray::GetIndexOfKey,
+                      FuncLength::ZERO);
+    SetFrozenFunction(thread, plainArrayFuncPrototype, "getIndexOfValue", ContainersPlainArray::GetIndexOfValue,
+                      FuncLength::ZERO);
+    SetFrozenFunction(thread, plainArrayFuncPrototype, "isEmpty", ContainersPlainArray::IsEmpty, FuncLength::ZERO);
+    SetFrozenFunction(thread, plainArrayFuncPrototype, "getKeyAt",
+                      ContainersPlainArray::GetKeyAt, FuncLength::ZERO);
+    SetFrozenFunction(thread, plainArrayFuncPrototype, "remove", ContainersPlainArray::Remove, FuncLength::ZERO);
+    SetFrozenFunction(thread, plainArrayFuncPrototype, "removeAt", ContainersPlainArray::RemoveAt,
+                      FuncLength::ZERO);
+    SetFrozenFunction(thread, plainArrayFuncPrototype, "removeRangeFrom", ContainersPlainArray::RemoveRangeFrom,
+                      FuncLength::ZERO);
+    SetFrozenFunction(thread, plainArrayFuncPrototype, "setValueAt", ContainersPlainArray::SetValueAt,
+                      FuncLength::ZERO);
+    SetFrozenFunction(thread, plainArrayFuncPrototype, "getValueAt", ContainersPlainArray::GetValueAt,
+                      FuncLength::ZERO);
+    
+    JSHandle<JSTaggedValue> lengthGetter = CreateGetter(thread, ContainersPlainArray::GetSize, "length",
+                                                        FuncLength::ZERO);
+    JSHandle<JSTaggedValue> lengthKey(factory->NewFromASCII("length"));
+    SetGetter(thread, plainArrayFuncPrototype, lengthKey, lengthGetter);
+    
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    SetFunctionAtSymbol(thread, env, plainArrayFuncPrototype, env->GetIteratorSymbol(), "[Symbol.iterator]",
+                        ContainersPlainArray::GetIteratorObj, FuncLength::ONE);
+    InitializePlainArrayIterator(thread);
+    globalConst->SetConstant(ConstantIndex::PLAIN_ARRAY_FUNCTION_INDEX, plainArrayFunction.GetTaggedValue());
+    return plainArrayFunction;
+}
+
+void ContainersPrivate::InitializePlainArrayIterator(JSThread *thread)
+{
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    auto globalConst = const_cast<GlobalEnvConstants *>(thread->GlobalConstants());
+    JSHandle<JSHClass> iteratorDynclass = JSHandle<JSHClass>(thread, globalConst->
+                                                             GetHandledJSAPIIteratorFuncDynClass().
+                                                             GetObject<JSHClass>());
+    JSHandle<JSObject> plainarrayIteratorPrototype(factory->NewJSObject(iteratorDynclass));
+    SetFrozenFunction(thread, plainarrayIteratorPrototype, "next", JSAPIPlainArrayIterator::Next, FuncLength::ONE);
+    SetStringTagSymbol(thread, env, plainarrayIteratorPrototype, "PlainArray Iterator");
+    globalConst->SetConstant(ConstantIndex::PLAIN_ARRAY_ITERATOR_PROTOTYPE_INDEX,
+                             plainarrayIteratorPrototype.GetTaggedValue());
 }
 
 JSHandle<JSTaggedValue> ContainersPrivate::InitializeStack(JSThread *thread)

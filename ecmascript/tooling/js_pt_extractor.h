@@ -19,15 +19,10 @@
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/jspandafile/debug_info_extractor.h"
+#include "ecmascript/tooling/interface/js_debug_interface.h"
 #include "libpandabase/macros.h"
-#include "include/tooling/debug_interface.h"
 
-namespace panda::tooling::ecmascript {
-using panda::ecmascript::CList;
-using panda::ecmascript::DebugInfoExtractor;
-using panda::ecmascript::EcmaVM;
-using panda::ecmascript::JSMethod;
-using panda::ecmascript::JSPandaFile;
+namespace panda::ecmascript::tooling {
 using panda::panda_file::File;
 
 class JSPtExtractor : public DebugInfoExtractor {
@@ -35,7 +30,7 @@ public:
     class SingleStepper {
     public:
         enum class Type { INTO, OVER, OUT };
-        SingleStepper(const EcmaVM *ecmaVm, JSMethod *method, CList<PtStepRange> stepRanges, Type type)
+        SingleStepper(const EcmaVM *ecmaVm, JSMethod *method, CList<JSPtStepRange> stepRanges, Type type)
             : ecmaVm_(ecmaVm),
               method_(method),
               stepRanges_(std::move(stepRanges)),
@@ -55,7 +50,7 @@ public:
 
         const EcmaVM *ecmaVm_;
         JSMethod *method_;
-        CList<PtStepRange> stepRanges_;
+        CList<JSPtStepRange> stepRanges_;
         uint32_t stackDepth_;
         Type type_;
     };
@@ -124,8 +119,8 @@ public:
 private:
     NO_COPY_SEMANTIC(JSPtExtractor);
     NO_MOVE_SEMANTIC(JSPtExtractor);
-    CList<PtStepRange> GetStepRanges(File::EntityId methodId, uint32_t offset);
+    CList<JSPtStepRange> GetStepRanges(File::EntityId methodId, uint32_t offset);
     std::unique_ptr<SingleStepper> GetStepper(const EcmaVM *ecmaVm, SingleStepper::Type type);
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif  // ECMASCRIPT_TOOLING_JS_PT_EXTRACTOR_H

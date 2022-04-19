@@ -109,33 +109,34 @@ namespace panda::ecmascript::kungfu {
 
 class SlowPathLowering {
 public:
-    SlowPathLowering(BytecodeCircuitBuilder *bcBuilder, Circuit *circuit, CompilationConfig *cmpCfg)
-        : bcBuilder_(bcBuilder), circuit_(circuit), acc_(circuit), builder_(circuit, cmpCfg), cmpCfg_(cmpCfg),
-          dependEntry_(Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY))) {}
+    SlowPathLowering(BytecodeCircuitBuilder *bcBuilder, Circuit *circuit, CompilationConfig *cmpCfg,
+                     bool enableLog)
+        : bcBuilder_(bcBuilder), circuit_(circuit), acc_(circuit), builder_(circuit, cmpCfg),
+          dependEntry_(Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY))), enableLog_(enableLog) {}
     ~SlowPathLowering() = default;
     void CallRuntimeLowering();
 
+    bool IsLogEnabled() const
+    {
+        return enableLog_;
+    }
+
 private:
-    inline bool IsArch32Bit() const
-    {
-        return cmpCfg_->Is32Bit();
-    }
-    inline bool IsArch64Bit() const
-    {
-        return cmpCfg_->IsAmd64() || cmpCfg_->IsAArch64();
-    }
-    void LowerHirToCall(GateRef hirGate, GateRef callGate);
-    void LowerHirToFastCall(GateRef hirGate, GateRef callGate);
-    void LowerHirToConditionCall(GateRef hirGate, GateRef condGate, GateRef callGate);
-    void LowerHirToThrowCall(GateRef hirGate, GateRef condGate, GateRef callGate);
+    void ReplaceHirControlGate(GateAccessor::UsesIterator &useIt, GateRef newGate, bool noThrow = false);
+    void ReplaceHirToSubCfg(GateRef hir, GateRef outir,
+                       const std::vector<GateRef> &successControl,
+                       const std::vector<GateRef> &exceptionControl,
+                       bool noThrow = false);
+    void ReplaceHirToCall(GateRef hirGate, GateRef callGate, bool noThrow = false);
+    void ReplaceHirToThrowCall(GateRef hirGate, GateRef condGate, GateRef callGate);
     void LowerExceptionHandler(GateRef hirGate);
-    // labelmanager must be initialized
+    // environment must be initialized
     GateRef GetConstPool(GateRef jsFunc);
-    // labelmanager must be initialized
+    // environment must be initialized
     GateRef GetCurrentEnv(GateRef jsFunc);
-    // labelmanager must be initialized
+    // environment must be initialized
     GateRef GetObjectFromConstPool(GateRef jsFunc, GateRef index);
-    // labelmanager must be initialized
+    // environment must be initialized
     GateRef GetHomeObjectFromJSFunction(GateRef jsFunc);
     GateRef GetValueFromConstStringTable(GateRef glue, GateRef gate, uint32_t inIndex);
     void Lower(GateRef gate);
@@ -203,12 +204,12 @@ private:
     void LowerCreateEmptyObject(GateRef gate, GateRef glue);
     void LowerCreateArrayWithBuffer(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerCreateObjectWithBuffer(GateRef gate, GateRef glue, GateRef jsFunc);
-    void LowerStModuleVar(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerStModuleVar(GateRef gate, GateRef glue);
     void LowerGetTemplateObject(GateRef gate, GateRef glue);
     void LowerSetObjectWithProto(GateRef gate, GateRef glue);
     void LowerLdBigInt(GateRef gate, GateRef glue, GateRef jsFunc);
-    void LowerLdModuleVar(GateRef gate, GateRef glue, GateRef jsFunc);
-    void LowerGetModuleNamespace(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerLdModuleVar(GateRef gate, GateRef glue);
+    void LowerGetModuleNamespace(GateRef gate, GateRef glue);
     void LowerGetIteratorNext(GateRef gate, GateRef glue);
     void LowerSuperCall(GateRef gate, GateRef glue, GateRef newTarget);
     void LowerSuperCallSpread(GateRef gate, GateRef glue, GateRef newTarget);
@@ -221,7 +222,8 @@ private:
     void LowerCreateRegExpWithLiteral(GateRef gate, GateRef glue);
     void LowerStOwnByValue(GateRef gate, GateRef glue);
     void LowerStOwnByIndex(GateRef gate, GateRef glue);
-    void LowerStOwnByName(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerStOwnByName(GateRef gate, GateRef glue);
+    void LowerDefineFuncDyn(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerDefineGeneratorFunc(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerDefineAsyncFunc(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerNewLexicalEnvDyn(GateRef gate, GateRef glue);
@@ -231,15 +233,20 @@ private:
     void LowerStSuperByValue(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerTryStGlobalByName(GateRef gate, GateRef glue);
     void LowerStConstToGlobalRecord(GateRef gate, GateRef glue);
-    void LowerStLetToGlobalRecord(GateRef gate, GateRef glue, GateRef jsFunc);
-    void LowerStClassToGlobalRecord(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerStLetToGlobalRecord(GateRef gate, GateRef glue);
+    void LowerStClassToGlobalRecord(GateRef gate, GateRef glue);
     void LowerStOwnByValueWithNameSet(GateRef gate, GateRef glue);
-    void LowerStOwnByNameWithNameSet(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerStOwnByNameWithNameSet(GateRef gate, GateRef glue);
     void LowerLdGlobalVar(GateRef gate, GateRef glue);
-    void LowerLdObjByName(GateRef gate, GateRef glue, GateRef jsFunc);
-    void LowerStObjByName(GateRef gate, GateRef glue, GateRef jsFunc);
-    void LowerLdSuperByName(GateRef gate, GateRef glue, GateRef jsFunc);
-    void LowerStSuperByName(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerLdObjByName(GateRef gate, GateRef glue);
+    void LowerStObjByName(GateRef gate, GateRef glue);
+    void LowerLdSuperByName(GateRef gate, GateRef glue);
+    void LowerStSuperByName(GateRef gate, GateRef glue);
+    void LowerDefineGetterSetterByValue(GateRef gate, GateRef glue);
+    void LowerLdObjByIndex(GateRef gate, GateRef glue);
+    void LowerStObjByIndex(GateRef gate, GateRef glue);
+    void LowerLdObjByValue(GateRef gate, GateRef glue);
+    void LowerStObjByValue(GateRef gate, GateRef glue);
     void LowerCreateGeneratorObj(GateRef gate, GateRef glue);
     void LowerStArraySpread(GateRef gate, GateRef glue);
     void LowerLdLexVarDyn(GateRef gate, GateRef jsFunc);
@@ -247,13 +254,19 @@ private:
     void LowerCreateObjectHavingMethod(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerLdHomeObject(GateRef gate, GateRef thisFunc);
     void LowerDefineClassWithBuffer(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerAsyncFunctionEnter(GateRef gate, GateRef glue);
+    void LowerTypeOfDyn(GateRef gate, GateRef glue);
+    void LowerResumeGenerator(GateRef gate);
+    void LowerGetResumeMode(GateRef gate);
+    void LowerDefineNCFuncDyn(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerDefineMethod(GateRef gate, GateRef glue, GateRef jsFunc);
 
     BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;
     GateAccessor acc_;
     CircuitBuilder builder_;
-    CompilationConfig *cmpCfg_;
     GateRef dependEntry_;
+    bool enableLog_ {false};
 };
 }  // panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_GENERIC_LOWERING_H

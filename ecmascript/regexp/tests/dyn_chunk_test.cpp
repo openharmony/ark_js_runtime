@@ -16,8 +16,8 @@
 #include "ecmascript/tests/test_helper.h"
 
 #include "ecmascript/ecma_vm.h"
+#include "ecmascript/mem/dyn_chunk.h"
 #include "ecmascript/object_factory.h"
-#include "ecmascript/regexp/dyn_chunk.h"
 
 namespace panda::test {
 using namespace panda::ecmascript;

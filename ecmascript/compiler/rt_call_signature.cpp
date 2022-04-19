@@ -21,8 +21,8 @@ CallSignature RuntimeStubCSigns::callSigns_[RuntimeStubCSigns::NUM_OF_RTSTUBS_WI
 
 void RuntimeStubCSigns::Initialize()
 {
-#define INIT_SIGNATURES(name, counter)                                \
-    name##CallSignature::Initialize(&callSigns_[ID_##name]);          \
+#define INIT_SIGNATURES(name)                                 \
+    name##CallSignature::Initialize(&callSigns_[ID_##name]);  \
     callSigns_[ID_##name].SetID(ID_##name);
     RUNTIME_STUB_WITHOUT_GC_LIST(INIT_SIGNATURES)
 #undef INIT_SIGNATURES

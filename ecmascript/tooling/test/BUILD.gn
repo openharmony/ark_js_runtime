@@ -56,10 +56,10 @@ ts2abc_gen_abc("ark_exception_abc") {
   out_puts = [ test_abc_path ]
 }
 
-ohos_shared_library("debugger_entry") {
+source_set("debugger_entry_static") {
   sources = [ "entry/test_debugger_entry.cpp" ]
 
-  configs = [ ":debug_api_test" ]
+  public_configs = [ ":debug_api_test" ]
 
   deps = [
     ":ark_exception_abc",
@@ -72,12 +72,16 @@ ohos_shared_library("debugger_entry") {
   if (!is_standard_system) {
     deps += [ "$ark_root/runtime:libarkruntime" ]
   }
+}
+
+ohos_shared_library("debugger_entry") {
+  deps = [ ":debugger_entry_static" ]
 
   output_extension = "so"
   subsystem_name = "test"
 }
 
-ohos_shared_library("jsdebugtest") {
+source_set("jsdebugtest_static") {
   sources = [
     "utils/test_entry.cpp",
     "utils/test_extractor.cpp",
@@ -85,7 +89,7 @@ ohos_shared_library("jsdebugtest") {
     "utils/testcases/test_list.cpp",
   ]
 
-  configs = [ ":debug_api_test" ]
+  public_configs = [ ":debug_api_test" ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -94,18 +98,21 @@ ohos_shared_library("jsdebugtest") {
     "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test_static",
   ]
 
-  if (!is_linux && !is_mingw && !is_mac) {
-    if (build_public_version) {
-      external_deps = [ "bytrace_standard:bytrace_core" ]
-    }
-  }
-
   if (is_standard_system) {
     deps += [ "$ark_root/runtime:libarkruntime_static" ]
   } else {
     deps += [ "$ark_root/runtime:libarkruntime" ]
   }
+}
 
+ohos_shared_library("jsdebugtest") {
+  deps = [ ":jsdebugtest_static" ]
+
+  if (!is_linux && !is_mingw && !is_mac) {
+    if (build_public_version) {
+      external_deps = [ "bytrace_standard:bytrace_core" ]
+    }
+  }
   output_extension = "so"
   subsystem_name = "test"
 }
@@ -300,7 +307,6 @@ group("unittest") {
     ":DebuggerReturnsTest",
     ":DebuggerScriptTest",
     ":DebuggerTypesTest",
-    ":EcmaDebugApiTest",
     ":JSPtHooksTest",
   ]
 }

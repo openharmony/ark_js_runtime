@@ -50,7 +50,7 @@ void BytecodeCircuitBuilder::CollectBytecodeBlockInfo(uint8_t *pc, std::vector<C
     auto opcode = static_cast<EcmaOpcode>(*pc);
     switch (opcode) {
         case EcmaOpcode::JMP_IMM8: {
-            int8_t offset = READ_INST_8_0();
+            int8_t offset = static_cast<int8_t>(READ_INST_8_0());
             std::vector<uint8_t *> temp;
             temp.emplace_back(pc + offset);
             // current basic block end
@@ -62,7 +62,7 @@ void BytecodeCircuitBuilder::CollectBytecodeBlockInfo(uint8_t *pc, std::vector<C
         }
             break;
         case EcmaOpcode::JMP_IMM16: {
-            int16_t offset = READ_INST_16_0();
+            int16_t offset = static_cast<int16_t>(READ_INST_16_0());
             std::vector<uint8_t *> temp;
             temp.emplace_back(pc + offset);
             bytecodeBlockInfos.emplace_back(pc, SplitKind::END, temp);
@@ -73,7 +73,7 @@ void BytecodeCircuitBuilder::CollectBytecodeBlockInfo(uint8_t *pc, std::vector<C
         }
             break;
         case EcmaOpcode::JMP_IMM32: {
-            int32_t offset = READ_INST_32_0();
+            int32_t offset = static_cast<int32_t>(READ_INST_32_0());
             std::vector<uint8_t *> temp;
             temp.emplace_back(pc + offset);
             bytecodeBlockInfos.emplace_back(pc, SplitKind::END, temp);
@@ -85,7 +85,7 @@ void BytecodeCircuitBuilder::CollectBytecodeBlockInfo(uint8_t *pc, std::vector<C
         case EcmaOpcode::JEQZ_IMM8: {
             std::vector<uint8_t *> temp;
             temp.emplace_back(pc + BytecodeOffset::TWO);   // first successor
-            int8_t offset = READ_INST_8_0();
+            int8_t offset = static_cast<int8_t>(READ_INST_8_0());
             temp.emplace_back(pc + offset);  // second successor
             // condition branch current basic block end
             bytecodeBlockInfos.emplace_back(pc, SplitKind::END, temp);
@@ -99,7 +99,7 @@ void BytecodeCircuitBuilder::CollectBytecodeBlockInfo(uint8_t *pc, std::vector<C
         case EcmaOpcode::JEQZ_IMM16: {
             std::vector<uint8_t *> temp;
             temp.emplace_back(pc + BytecodeOffset::THREE);   // first successor
-            int16_t offset = READ_INST_16_0();
+            int16_t offset = static_cast<int16_t>(READ_INST_16_0());
             temp.emplace_back(pc + offset);  // second successor
             bytecodeBlockInfos.emplace_back(pc, SplitKind::END, temp); // end
             bytecodeBlockInfos.emplace_back(pc + BytecodeOffset::THREE, SplitKind::START,
@@ -110,7 +110,7 @@ void BytecodeCircuitBuilder::CollectBytecodeBlockInfo(uint8_t *pc, std::vector<C
         case EcmaOpcode::JNEZ_IMM8: {
             std::vector<uint8_t *> temp;
             temp.emplace_back(pc + BytecodeOffset::TWO); // first successor
-            int8_t offset = READ_INST_8_0();
+            int8_t offset = static_cast<int8_t>(READ_INST_8_0());
             temp.emplace_back(pc + offset); // second successor
             bytecodeBlockInfos.emplace_back(pc, SplitKind::END, temp);
             bytecodeBlockInfos.emplace_back(pc + BytecodeOffset::TWO, SplitKind::START,
@@ -234,9 +234,9 @@ void BytecodeCircuitBuilder::CompleteBytecodeBlockInfo(std::map<uint8_t *, uint8
 {
     std::sort(bytecodeBlockInfos.begin(), bytecodeBlockInfos.end());
 
-#if ECMASCRIPT_ENABLE_TS_AOT_PRINT
-    PrintCollectBlockInfo(bytecodeBlockInfos);
-#endif
+    if (IsLogEnabled()) {
+        PrintCollectBlockInfo(bytecodeBlockInfos);
+    }
 
     // Deduplicate
     auto deduplicateIndex = std::unique(bytecodeBlockInfos.begin(), bytecodeBlockInfos.end());
@@ -297,9 +297,9 @@ void BytecodeCircuitBuilder::CompleteBytecodeBlockInfo(std::map<uint8_t *, uint8
     deduplicateIndex = std::unique(bytecodeBlockInfos.begin(), bytecodeBlockInfos.end());
     bytecodeBlockInfos.erase(deduplicateIndex, bytecodeBlockInfos.end());
 
-#if ECMASCRIPT_ENABLE_TS_AOT_PRINT
-    PrintCollectBlockInfo(bytecodeBlockInfos);
-#endif
+    if (IsLogEnabled()) {
+        PrintCollectBlockInfo(bytecodeBlockInfos);
+    }
 }
 
 void BytecodeCircuitBuilder::BuildBasicBlocks(std::map<std::pair<uint8_t *, uint8_t *>,
@@ -370,9 +370,9 @@ void BytecodeCircuitBuilder::BuildBasicBlocks(std::map<std::pair<uint8_t *, uint
         bbIdToBasicBlock_[blocks[i].id] = &blocks[i];
     }
 
-#if ECMASCRIPT_ENABLE_TS_AOT_PRINT
-    PrintGraph(byteCodeGraph.graph);
-#endif
+    if (IsLogEnabled()) {
+        PrintGraph(byteCodeGraph.graph);
+    }
     ComputeDominatorTree(byteCodeGraph);
 }
 
@@ -400,12 +400,13 @@ void BytecodeCircuitBuilder::ComputeDominatorTree(BytecodeGraph &byteCodeGraph)
 
     RemoveDeadRegions(bbIdToDfsTimestamp, byteCodeGraph);
 
-#if ECMASCRIPT_ENABLE_TS_AOT_PRINT
-    // print cfg order
-    for (auto iter : bbIdToDfsTimestamp) {
-        std::cout << "BB_" << iter.first << " depth is : " << iter.second << std::endl;
+    if (IsLogEnabled()) {
+        // print cfg order
+        for (auto iter : bbIdToDfsTimestamp) {
+            COMPILER_LOG(INFO) << "BB_" << iter.first << " depth is : " << iter.second;
+        }
     }
-#endif
+
     std::vector<int32_t> immDom(graph.size()); // immediate dominator
     std::vector<std::vector<size_t>> doms(graph.size()); // dominators set
     doms[0] = {0};
@@ -445,16 +446,16 @@ void BytecodeCircuitBuilder::ComputeDominatorTree(BytecodeGraph &byteCodeGraph)
         }
     }
 
-#if ECMASCRIPT_ENABLE_TS_AOT_PRINT
-    // print dominators set
-    for (size_t i = 0; i < doms.size(); i++) {
-        std::cout << "block " << i << " dominator blocks has: ";
-        for (auto j: doms[i]) {
-            std::cout << j << " , ";
+    if (IsLogEnabled()) {
+        // print dominators set
+        for (size_t i = 0; i < doms.size(); i++) {
+            std::string log("block " + std::to_string(i) + " dominator blocks has: ");
+            for (auto j: doms[i]) {
+                log += std::to_string(j) + " , ";
+            }
+            COMPILER_LOG(INFO) << log;
         }
-        std::cout << std::endl;
     }
-#endif
 
     // compute immediate dominator
     immDom[0] = static_cast<int32_t>(doms[0].front());
@@ -470,13 +471,14 @@ void BytecodeCircuitBuilder::ComputeDominatorTree(BytecodeGraph &byteCodeGraph)
             }));
     }
 
-#if ECMASCRIPT_ENABLE_TS_AOT_PRINT
-    // print immediate dominator
-    for (size_t i = 0; i < immDom.size(); i++) {
-        std::cout << i << " immediate dominator: " << immDom[i] << std::endl;
+    if (IsLogEnabled()) {
+        // print immediate dominator
+        for (size_t i = 0; i < immDom.size(); i++) {
+            COMPILER_LOG(INFO) << i << " immediate dominator: " << immDom[i];
+        }
+        PrintGraph(graph);
     }
-    PrintGraph(graph);
-#endif
+
     BuildImmediateDominator(immDom, byteCodeGraph);
 }
 
@@ -494,15 +496,15 @@ void BytecodeCircuitBuilder::BuildImmediateDominator(std::vector<int32_t> &immDo
         dominatedBlock->iDominator = immDomBlock;
     }
 
-#if ECMASCRIPT_ENABLE_TS_AOT_PRINT
-    for (auto block : graph) {
-        if (block.isDead) {
-            continue;
+    if (IsLogEnabled()) {
+        for (auto block : graph) {
+            if (block.isDead) {
+                continue;
+            }
+            COMPILER_LOG(INFO) << "current block " << block.id
+                               << " immediate dominator block id: " << block.iDominator->id;
         }
-        std::cout << "current block " << block.id
-                  << " immediate dominator block id: " << block.iDominator->id << std::endl;
     }
-#endif
 
     for (auto &block : graph) {
         if (block.isDead) {
@@ -513,18 +515,19 @@ void BytecodeCircuitBuilder::BuildImmediateDominator(std::vector<int32_t> &immDo
         }
     }
 
-#if ECMASCRIPT_ENABLE_TS_AOT_PRINT
-    for (auto &block : graph) {
-        if (block.isDead) {
-            continue;
+    if (IsLogEnabled()) {
+        for (auto &block : graph) {
+            if (block.isDead) {
+                continue;
+            }
+            std::string log ("block " + std::to_string(block.id) + " dominate block has: ");
+            for (size_t i = 0; i < block.immDomBlocks.size(); i++) {
+                log += std::to_string(block.immDomBlocks[i]->id) + ",";
+            }
+            COMPILER_LOG(INFO) << log;
         }
-        std::cout << "block " << block.id << " dominate block has: ";
-        for (size_t i = 0; i < block.immDomBlocks.size(); i++) {
-            std::cout << block.immDomBlocks[i]->id << ",";
-        }
-        std::cout << std::endl;
     }
-#endif
+
     ComputeDomFrontiers(immDom, byteCodeGraph);
     InsertPhi(byteCodeGraph);
     UpdateCFG(byteCodeGraph);
@@ -557,15 +560,15 @@ void BytecodeCircuitBuilder::ComputeDomFrontiers(std::vector<int32_t> &immDom, B
         }
     }
 
-#if ECMASCRIPT_ENABLE_TS_AOT_PRINT
-    for (size_t i = 0; i < domFrontiers.size(); i++) {
-        std::cout << "basic block " << i << " dominate Frontiers is: ";
-        for (auto iter = domFrontiers[i].begin(); iter != domFrontiers[i].end(); iter++) {
-            std::cout << (*iter)->id << " , ";
+    if (IsLogEnabled()) {
+        for (size_t i = 0; i < domFrontiers.size(); i++) {
+            std::string log("basic block " + std::to_string(i) + " dominate Frontiers is: ");
+            for (auto iter = domFrontiers[i].begin(); iter != domFrontiers[i].end(); iter++) {
+                log += std::to_string((*iter)->id) + ", ";
+            }
+            COMPILER_LOG(INFO) << log;
         }
-        std::cout << std::endl;
     }
-#endif
 }
 
 void BytecodeCircuitBuilder::RemoveDeadRegions(const std::map<size_t, size_t> &bbIdToDfsTimestamp,
@@ -1258,7 +1261,6 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
         case EcmaOpcode::SUSPENDGENERATOR_PREF_V8_V8: {
             uint16_t v0 = READ_INST_8_1();
             uint16_t v1 = READ_INST_8_2();
-            info.accIn = true;
             info.accOut = true;
             info.offset = BytecodeOffset::FOUR;
             info.inputs.emplace_back(VirtualRegister(v0));
@@ -1744,8 +1746,8 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
             break;
         }
         default: {
-            std::cout << "Error bytecode: " << opcode << ", pls check bytecode offset." << std::endl;
-            abort();
+            COMPILER_LOG(ERROR) << "Error bytecode: " << opcode << ", pls check bytecode offset.";
+            UNREACHABLE();
             break;
         }
     }
@@ -1770,15 +1772,15 @@ void BytecodeCircuitBuilder::InsertPhi(BytecodeGraph &byteCodeGraph)
         }
     }
 
-#if ECMASCRIPT_ENABLE_TS_AOT_PRINT
-    for (const auto&[variable, defsites] : defsitesInfo) {
-        std::cout << "variable: " << variable << " locate block have: ";
-        for (auto id : defsites) {
-            std::cout << id << " , ";
+    if (IsLogEnabled()) {
+        for (const auto&[variable, defsites] : defsitesInfo) {
+            std::string log("variable: " + std::to_string(variable) + " locate block have: ");
+            for (auto id : defsites) {
+                log += std::to_string(id) + " , ";
+            }
+            COMPILER_LOG(INFO) << log;
         }
-        std::cout << std::endl;
     }
-#endif
 
     for (const auto&[variable, defsites] : defsitesInfo) {
         std::queue<uint16_t> workList;
@@ -1798,9 +1800,10 @@ void BytecodeCircuitBuilder::InsertPhi(BytecodeGraph &byteCodeGraph)
             }
         }
     }
-#if ECMASCRIPT_ENABLE_TS_AOT_PRINT
-    PrintGraph(graph);
-#endif
+
+    if (IsLogEnabled()) {
+        PrintGraph(graph);
+    }
 }
 
 // Update CFG's predecessor, successor and try catch associations
@@ -1987,7 +1990,7 @@ GateRef BytecodeCircuitBuilder::SetGateConstant(const BytecodeInfo &info)
         case EcmaOpcode::LDHOLE_PREF:
             gate = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64, JSTaggedValue::VALUE_HOLE,
                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                    GateType::TAGGED_NO_POINTER);
+                                    GateType::TAGGED_NPOINTER);
             break;
         case EcmaOpcode::LDAI_DYN_IMM32:
             tsType = tsLoader->GetPrimitiveGT(TSTypeKind::TS_NUMBER).GetGlobalTSTypeRef();
@@ -2015,9 +2018,10 @@ GateRef BytecodeCircuitBuilder::SetGateConstant(const BytecodeInfo &info)
 void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
 {
     auto &graph = byteCodeGraph.graph;
-#if ECMASCRIPT_ENABLE_TS_AOT_PRINT
-    PrintBBInfo(graph);
-#endif
+
+    if (IsLogEnabled()) {
+        PrintBBInfo(graph);
+    }
 
     // create arg gates array
     const size_t numArgs = byteCodeGraph.method->GetNumArgs();
@@ -2027,12 +2031,12 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
 
     auto glueGate = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, 0,
                                      {Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST))},
-                                     GateType::C_VALUE);
+                                     GateType::NJS_VALUE);
     argGates.at(0) = glueGate;
     commonArgs_.at(0) = glueGate;
     auto argRoot = Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST));
     auto actualArgc = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I32, CommonArgIdx::ACTUAL_ARGC,
-                                       {argRoot}, GateType::C_VALUE);
+                                       {argRoot}, GateType::NJS_VALUE);
     argGates.at(CommonArgIdx::ACTUAL_ARGC) = actualArgc;
     commonArgs_.at(CommonArgIdx::ACTUAL_ARGC) = actualArgc;
     for (size_t argIdx = CommonArgIdx::FUNC; argIdx < CommonArgIdx::NUM_OF_ARGS; argIdx++) {
@@ -2130,20 +2134,20 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                         inList[i + length] = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I16,
                                                               std::get<MethodId>(input).GetId(),
                                                               {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                                              GateType::C_VALUE);
+                                                              GateType::NJS_VALUE);
                     } else if (std::holds_alternative<StringId>(input)) {
                         auto tsLoader = vm_->GetTSLoader();
                         JSHandle<ConstantPool> newConstPool(vm_->GetJSThread(), constantPool_.GetTaggedValue());
                         auto string = newConstPool->GetObjectFromCache(std::get<StringId>(input).GetId());
-                        uint64_t index = tsLoader->AddConstString(string);
+                        size_t index = tsLoader->AddConstString(string);
                         inList[i + length] = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I32, index,
                                                               {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                                              GateType::C_VALUE);
+                                                              GateType::NJS_VALUE);
                     } else if (std::holds_alternative<Immediate>(input)) {
                         inList[i + length] = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
                                                               std::get<Immediate>(input).GetValue(),
                                                               {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                                              GateType::C_VALUE);
+                                                              GateType::NJS_VALUE);
                     } else {
                         ASSERT(std::holds_alternative<VirtualRegister>(input));
                         continue;
@@ -2165,7 +2169,9 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     circuit_.NewIn(bbNext->stateStart, bbNext->statePredIndex, ifException);
                     circuit_.NewIn(bbNext->dependStart, bbNext->statePredIndex + 1, gate);
                     bbNext->statePredIndex++;
-                    bbNext->expandedPreds.push_back( {bb.id, pcPrev, true} );
+                    bbNext->expandedPreds.push_back(
+                        {bb.id, pcPrev, true}
+                    );
                     ASSERT(bbNext->statePredIndex <= bbNext->numOfStatePreds);
                 } else {
                     auto constant = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
@@ -2179,8 +2185,12 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                 }
                 jsgateToBytecode_[gate] = {bb.id, pcPrev};
                 if (IsThrow(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+                    auto constant = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
+                                                     JSTaggedValue::VALUE_HOLE,
+                                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
+                                                     GateType::JS_ANY);
                     circuit_.NewGate(OpCode(OpCode::RETURN), 0,
-                                     {ifSuccess, gate, TaggedValue::VALUE_HOLE,
+                                     {ifSuccess, gate, constant,
                                       Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST))},
                                      GateType::JS_ANY);
                     break;
@@ -2192,7 +2202,9 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     circuit_.NewIn(bbNext->stateStart, bbNext->statePredIndex, stateCur);
                     circuit_.NewIn(bbNext->dependStart, bbNext->statePredIndex + 1, dependCur);
                     bbNext->statePredIndex++;
-                    bbNext->expandedPreds.push_back( {bb.id, pcPrev, false} );
+                    bbNext->expandedPreds.push_back(
+                        {bb.id, pcPrev, false}
+                    );
                     ASSERT(bbNext->statePredIndex <= bbNext->numOfStatePreds);
                 }
             } else if (IsJump(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
@@ -2214,14 +2226,18 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                             circuit_.NewIn(bbNext->stateStart, bbNext->statePredIndex, ifFalse);
                             circuit_.NewIn(bbNext->dependStart, bbNext->statePredIndex + 1, gate);
                             bbNext->statePredIndex++;
-                            bbNext->expandedPreds.push_back( {bb.id, pcPrev, false} );
+                            bbNext->expandedPreds.push_back(
+                                {bb.id, pcPrev, false}
+                            );
                             ASSERT(bbNext->statePredIndex <= bbNext->numOfStatePreds);
                             bitSet |= 1;
                         } else {
                             circuit_.NewIn(bbNext->stateStart, bbNext->statePredIndex, ifTrue);
                             circuit_.NewIn(bbNext->dependStart, bbNext->statePredIndex + 1, gate);
                             bbNext->statePredIndex++;
-                            bbNext->expandedPreds.push_back( {bb.id, pcPrev, false} );
+                            bbNext->expandedPreds.push_back(
+                                {bb.id, pcPrev, false}
+                            );
                             ASSERT(bbNext->statePredIndex <= bbNext->numOfStatePreds);
                             bitSet |= 2; // 2:verify
                         }
@@ -2235,7 +2251,9 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     circuit_.NewIn(bbNext->stateStart, bbNext->statePredIndex, stateCur);
                     circuit_.NewIn(bbNext->dependStart, bbNext->statePredIndex + 1, dependCur);
                     bbNext->statePredIndex++;
-                    bbNext->expandedPreds.push_back( {bb.id, pcPrev, false} );
+                    bbNext->expandedPreds.push_back(
+                        {bb.id, pcPrev, false}
+                    );
                     ASSERT(bbNext->statePredIndex <= bbNext->numOfStatePreds);
                     break;
                 }
@@ -2243,8 +2261,8 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                 // handle return.dyn bytecode
                 ASSERT(bb.succs.empty());
                 auto gate = circuit_.NewGate(OpCode(OpCode::RETURN), 0,
-                                             {stateCur, dependCur, Circuit::NullGate(),
-                                              Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST))},
+                                             { stateCur, dependCur, Circuit::NullGate(),
+                                              Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST)) },
                                              GateType::EMPTY);
                 jsgateToBytecode_[gate] = {bb.id, pcPrev};
                 break;
@@ -2253,11 +2271,11 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                 ASSERT(bb.succs.empty());
                 auto constant = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
                                                  TaggedValue::VALUE_UNDEFINED,
-                                                 {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
+                                                 { Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST)) },
                                                  GateType::JS_ANY);
                 auto gate = circuit_.NewGate(OpCode(OpCode::RETURN), 0,
-                                             {stateCur, dependCur, constant,
-                                              Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST))},
+                                             { stateCur, dependCur, constant,
+                                              Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST)) },
                                              GateType::EMPTY);
                 jsgateToBytecode_[gate] = {bb.id, pcPrev};
                 break;
@@ -2268,7 +2286,9 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     circuit_.NewIn(bbNext->stateStart, bbNext->statePredIndex, stateCur);
                     circuit_.NewIn(bbNext->dependStart, bbNext->statePredIndex + 1, dependCur);
                     bbNext->statePredIndex++;
-                    bbNext->expandedPreds.push_back( {bb.id, pcPrev, false} );
+                    bbNext->expandedPreds.push_back(
+                        {bb.id, pcPrev, false}
+                    );
                     ASSERT(bbNext->statePredIndex <= bbNext->numOfStatePreds);
                 }
             } else if (IsDiscarded(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
@@ -2291,9 +2311,11 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
         }
         bb.phiAcc = (bb.numOfStatePreds > 1) || (!bb.trys.empty());
     }
-#if ECMASCRIPT_ENABLE_TS_AOT_PRINT
-    PrintBytecodeInfo(graph);
-#endif
+
+    if (IsLogEnabled()) {
+        PrintBytecodeInfo(graph);
+    }
+
     for (const auto &[key, value]: jsgateToBytecode_) {
         byteCodeToJSGate_[value.second] = key;
     }
@@ -2447,9 +2469,10 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
             }
         }
     }
-#if ECMASCRIPT_ENABLE_TS_AOT_PRINT
-    circuit_.PrintAllGates(*this);
-#endif
+
+    if (IsLogEnabled()) {
+        circuit_.PrintAllGates(*this);
+    }
 }
 
 size_t BytecodeCircuitBuilder::GetFunctionArgIndex(size_t currentVreg, size_t numVregs) const
@@ -2460,78 +2483,78 @@ size_t BytecodeCircuitBuilder::GetFunctionArgIndex(size_t currentVreg, size_t nu
 void BytecodeCircuitBuilder::PrintCollectBlockInfo(std::vector<CfgInfo> &bytecodeBlockInfos)
 {
     for (auto iter = bytecodeBlockInfos.begin(); iter != bytecodeBlockInfos.end(); iter++) {
-        std::cout << "offset: " << static_cast<const void *>(iter->pc) << " splitKind: " <<
-                  static_cast<int32_t>(iter->splitKind) << " successor are: ";
+        std::string log("offset: " + std::to_string(reinterpret_cast<uintptr_t>(iter->pc)) + " splitKind: " +
+            std::to_string(static_cast<int32_t>(iter->splitKind)) + " successor are: ");
         auto &vec = iter->succs;
         for (size_t i = 0; i < vec.size(); i++) {
-            std::cout << static_cast<const void *>(vec[i]) << " , ";
+            log += std::to_string(reinterpret_cast<uintptr_t>(vec[i])) + " , ";
         }
-        std::cout << "" << std::endl;
+        COMPILER_LOG(INFO) << log;
     }
-    std::cout << "-----------------------------------------------------------------------" << std::endl;
+    COMPILER_LOG(INFO) << "-----------------------------------------------------------------------";
 }
 
 void BytecodeCircuitBuilder::PrintGraph(std::vector<BytecodeRegion> &graph)
 {
     for (size_t i = 0; i < graph.size(); i++) {
         if (graph[i].isDead) {
-            std::cout << "BB_" << graph[i].id << ":                               ;predsId= invalid BB" << std::endl;
-            std::cout << "curStartPc: " << static_cast<const void *>(graph[i].start) <<
-                      " curEndPc: " << static_cast<const void *>(graph[i].end) << std::endl;
+            COMPILER_LOG(INFO) << "BB_" << graph[i].id << ":                               ;predsId= invalid BB";
+            COMPILER_LOG(INFO) << "curStartPc: " << reinterpret_cast<uintptr_t>(graph[i].start) <<
+                      " curEndPc: " << reinterpret_cast<uintptr_t>(graph[i].end);
             continue;
         }
-        std::cout << "BB_" << graph[i].id << ":                               ;predsId= ";
+        std::string log("BB_" + std::to_string(graph[i].id) + ":                               ;predsId= ");
         for (size_t k = 0; k < graph[i].preds.size(); ++k) {
-            std::cout << graph[i].preds[k]->id << ", ";
+            log += std::to_string(graph[i].preds[k]->id) + ", ";
         }
-        std::cout << "" << std::endl;
-        std::cout << "curStartPc: " << static_cast<const void *>(graph[i].start) <<
-                  " curEndPc: " << static_cast<const void *>(graph[i].end) << std::endl;
+        COMPILER_LOG(INFO) << log;
+        COMPILER_LOG(INFO) << "curStartPc: " << reinterpret_cast<uintptr_t>(graph[i].start) <<
+                  " curEndPc: " << reinterpret_cast<uintptr_t>(graph[i].end);
 
         for (size_t j = 0; j < graph[i].preds.size(); j++) {
-            std::cout << "predsStartPc: " << static_cast<const void *>(graph[i].preds[j]->start) <<
-                      " predsEndPc: " << static_cast<const void *>(graph[i].preds[j]->end) << std::endl;
+            COMPILER_LOG(INFO) << "predsStartPc: " << reinterpret_cast<uintptr_t>(graph[i].preds[j]->start) <<
+                      " predsEndPc: " << reinterpret_cast<uintptr_t>(graph[i].preds[j]->end);
         }
 
         for (size_t j = 0; j < graph[i].succs.size(); j++) {
-            std::cout << "succesStartPc: " << static_cast<const void *>(graph[i].succs[j]->start) <<
-                      " succesEndPc: " << static_cast<const void *>(graph[i].succs[j]->end) << std::endl;
+            COMPILER_LOG(INFO) << "succesStartPc: " << reinterpret_cast<uintptr_t>(graph[i].succs[j]->start) <<
+                      " succesEndPc: " << reinterpret_cast<uintptr_t>(graph[i].succs[j]->end);
         }
 
-        std::cout << "succesId: ";
+        std::string log1("succesId: ");
         for (size_t j = 0; j < graph[i].succs.size(); j++) {
-            std::cout << graph[i].succs[j]->id << ", ";
+            log1 += std::to_string(graph[i].succs[j]->id) + ", ";
         }
-        std::cout << "" << std::endl;
+        COMPILER_LOG(INFO) << log1;
 
         for (size_t j = 0; j < graph[i].catchs.size(); j++) {
-            std::cout << "catchStartPc: " << static_cast<const void *>(graph[i].catchs[j]->start) <<
-                      " catchEndPc: " << static_cast<const void *>(graph[i].catchs[j]->end) << std::endl;
+            COMPILER_LOG(INFO) << "catchStartPc: " << reinterpret_cast<uintptr_t>(graph[i].catchs[j]->start) <<
+                      " catchEndPc: " << reinterpret_cast<uintptr_t>(graph[i].catchs[j]->end);
         }
 
         for (size_t j = 0; j < graph[i].immDomBlocks.size(); j++) {
-            std::cout << "dominate block id: " << graph[i].immDomBlocks[j]->id << " startPc: " <<
-                      static_cast<const void *>(graph[i].immDomBlocks[j]->start) << " endPc: " <<
-                      static_cast<const void *>(graph[i].immDomBlocks[j]->end) << std::endl;
+            COMPILER_LOG(INFO) << "dominate block id: " << graph[i].immDomBlocks[j]->id << " startPc: " <<
+                      reinterpret_cast<uintptr_t>(graph[i].immDomBlocks[j]->start) << " endPc: " <<
+                      reinterpret_cast<uintptr_t>(graph[i].immDomBlocks[j]->end);
         }
 
         if (graph[i].iDominator) {
-            std::cout << "current block " << graph[i].id <<
-                      " immediate dominator is " << graph[i].iDominator->id << std::endl;
+            COMPILER_LOG(INFO) << "current block " << graph[i].id <<
+                      " immediate dominator is " << graph[i].iDominator->id;
         }
 
-        std::cout << "current block " << graph[i].id << " dominance Frontiers: ";
+        std::string log2("current block " + std::to_string(graph[i].id) + " dominance Frontiers: ");
         for (const auto &frontier: graph[i].domFrontiers) {
-            std::cout << frontier->id << " , ";
+            log2 += std::to_string(frontier->id) + " , ";
         }
-        std::cout << std::endl;
+        COMPILER_LOG(INFO) << log2;
 
-        std::cout << "current block " << graph[i].id << " phi variable: ";
+        std::string log3("current block " + std::to_string(graph[i].id) + " phi variable: ");
         for (auto variable: graph[i].phi) {
-            std::cout << variable << " , ";
+            log3 += std::to_string(variable) + " , ";
         }
-        std::cout << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
+        COMPILER_LOG(INFO) << log3;
+        COMPILER_LOG(INFO) << "-------------------------------------------------------";
     }
 }
 
@@ -2542,28 +2565,28 @@ void BytecodeCircuitBuilder::PrintBytecodeInfo(std::vector<BytecodeRegion> &grap
             continue;
         }
         auto pc = bb.start;
-        std::cout << "BB_" << bb.id << ": " << std::endl;
+        COMPILER_LOG(INFO) << "BB_" << bb.id << ": ";
         while (pc <= bb.end) {
+            std::string log;
             auto curInfo = GetBytecodeInfo(pc);
-            std::cout << "Inst_" << GetEcmaOpcodeStr(static_cast<EcmaOpcode>(*pc)) << ": ";
-            std::cout << "In=[";
+            log += "Inst_" + GetEcmaOpcodeStr(static_cast<EcmaOpcode>(*pc)) + ": " + "In=[";
             if (curInfo.accIn) {
-                std::cout << "acc" << ",";
+                log += "acc,";
             }
             for (const auto &in: curInfo.inputs) {
                 if (std::holds_alternative<VirtualRegister>(in)) {
-                    std::cout << std::get<VirtualRegister>(in).GetId() << ",";
+                    log += std::to_string(std::get<VirtualRegister>(in).GetId()) + ",";
                 }
             }
-            std::cout << "] Out=[";
+            log += "] Out=[";
             if (curInfo.accOut) {
-                std::cout << "acc" << ",";
+                log += "acc,";
             }
             for (const auto &out: curInfo.vregOut) {
-                std::cout << out << ",";
+                log +=  std::to_string(out) + ",";
             }
-            std::cout << "]";
-            std::cout << std::endl;
+            log += "]";
+            COMPILER_LOG(INFO) << log;
             pc += curInfo.offset;
         }
     }
@@ -2575,28 +2598,28 @@ void BytecodeCircuitBuilder::PrintBBInfo(std::vector<BytecodeRegion> &graph)
         if (bb.isDead) {
             continue;
         }
-        std::cout << "------------------------" << std::endl;
-        std::cout << "block: " << bb.id << std::endl;
-        std::cout << "preds: ";
+        COMPILER_LOG(INFO) << "------------------------";
+        COMPILER_LOG(INFO) << "block: " << bb.id;
+        std::string log("preds: ");
         for (auto pred: bb.preds) {
-            std::cout << pred->id << " , ";
+            log += std::to_string(pred->id) + " , ";
         }
-        std::cout << std::endl;
-        std::cout << "succs: ";
+        COMPILER_LOG(INFO) << log;
+        std::string log1("succs: ");
         for (auto succ: bb.succs) {
-            std::cout << succ->id << " , ";
+            log1 += std::to_string(succ->id) + " , ";
         }
-        std::cout << std::endl;
-        std::cout << "catchs: ";
+        COMPILER_LOG(INFO) << log1;
+        std::string log2("catchs: ");
         for (auto catchBlock: bb.catchs) {
-            std::cout << catchBlock->id << " , ";
+            log2 += std::to_string(catchBlock->id) + " , ";
         }
-        std::cout << std::endl;
-        std::cout << "trys: ";
+        COMPILER_LOG(INFO) << log2;
+        std::string log3("trys: ");
         for (auto tryBlock: bb.trys) {
-            std::cout << tryBlock->id << " , ";
+            log3 += std::to_string(tryBlock->id) + " , ";
         }
-        std::cout << std::endl;
+        COMPILER_LOG(INFO) << log3;
     }
 }
 }  // namespace panda::ecmascript::kungfu

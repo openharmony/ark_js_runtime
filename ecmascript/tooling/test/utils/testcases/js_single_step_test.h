@@ -18,7 +18,7 @@
 
 #include "ecmascript/tooling/test/utils/test_util.h"
 
-namespace panda::tooling::ecmascript::test {
+namespace panda::ecmascript::tooling::test {
 class JsSingleStepTest : public TestEvents {
 public:
     JsSingleStepTest()
@@ -42,12 +42,12 @@ public:
                 }
                 flag_ = false;
                 auto error = debugInterface_->SetBreakpoint(locationEnd_);
-                ASSERT_FALSE(error.has_value());
+                ASSERT_FALSE(error);
             }
             return true;
         };
 
-        breakpoint = [this](PtThread, const PtLocation &location) {
+        breakpoint = [this](const JSPtLocation &location) {
             ASSERT_TRUE(location.GetMethodId().IsValid());
             ASSERT_LOCATION_EQ(location, locationEnd_);
             // Check what step signalled before breakpoint
@@ -59,7 +59,7 @@ public:
             return true;
         };
 
-        singleStep = [this](PtThread, const PtLocation &location) {
+        singleStep = [this](const JSPtLocation &location) {
             ASSERT_TRUE(location.GetMethodId().IsValid());
             if (!collectSteps_) {
                 if (locationStart_ == location) {
@@ -84,9 +84,9 @@ public:
 private:
     CString pandaFile_ = "/data/test/Sample.abc";
     CString entryPoint_ = "_GLOBAL::func_main_0";
-    PtLocation locationStart_ {nullptr, PtLocation::EntityId(0), 0};
-    PtLocation locationEnd_ {nullptr, PtLocation::EntityId(0), 0};
-    PtLocation locationStep_ {nullptr, PtLocation::EntityId(0), 0};
+    JSPtLocation locationStart_ {nullptr, JSPtLocation::EntityId(0), 0};
+    JSPtLocation locationEnd_ {nullptr, JSPtLocation::EntityId(0), 0};
+    JSPtLocation locationStep_ {nullptr, JSPtLocation::EntityId(0), 0};
     int32_t stepCounter_ = 0;
     int32_t breakpointCounter_ = 0;
     bool collectSteps_ = false;
@@ -98,6 +98,6 @@ std::unique_ptr<TestEvents> GetJsSingleStepTest()
 {
     return std::make_unique<JsSingleStepTest>();
 }
-}  // namespace panda::tooling::ecmascript::test
+}  // namespace panda::ecmascript::tooling::test
 
 #endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TESTCASES_JS_SINGLE_STEP_TEST_H

@@ -14,8 +14,8 @@
  */
 
 #include "ecmascript/tests/test_helper.h"
+#include "ecmascript/tooling/interface/notification_manager.h"
 #include "generated/base_options.h"
-#include "include/runtime_notification.h"
 
 using namespace panda::ecmascript;
 
