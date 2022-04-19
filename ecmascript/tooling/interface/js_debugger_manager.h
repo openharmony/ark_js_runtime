@@ -21,6 +21,7 @@
 #include "ecmascript/tooling/interface/notification_manager.h"
 
 namespace panda::ecmascript::tooling {
+class ProtocolHandler;
 class JsDebuggerManager {
 public:
     using LibraryHandle = os::library_loader::LibraryHandle;
@@ -54,6 +55,16 @@ public:
         return isDebugMode_;
     }
 
+    void SetDebuggerHandler(ProtocolHandler *debuggerHandler)
+    {
+        debuggerHandler_ = debuggerHandler;
+    }
+
+    ProtocolHandler *GetDebuggerHandler() const
+    {
+        return debuggerHandler_;
+    }
+
     void SetDebugLibraryHandle(LibraryHandle handle)
     {
         debuggerLibraryHandle_ = std::move(handle);
@@ -76,6 +87,7 @@ public:
 
 private:
     bool isDebugMode_ {false};
+    ProtocolHandler *debuggerHandler_ {nullptr};
     LibraryHandle debuggerLibraryHandle_ {nullptr};
     JSTaggedType *evaluateCtxFrameSp_ {nullptr};
     NotificationManager *notificationManager_ {nullptr};

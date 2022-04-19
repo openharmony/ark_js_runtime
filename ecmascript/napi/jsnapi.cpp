@@ -201,14 +201,19 @@ void JSNApi::ThrowException(const EcmaVM *vm, Local<JSValueRef> error)
 }
 
 #if defined(ECMASCRIPT_SUPPORT_DEBUGGER)
-bool JSNApi::StartDebugger(const char *libraryPath, EcmaVM *vm, bool isDebugMode)
+bool JSNApi::StartDebugger(const char *libraryPath, EcmaVM *vm, bool isDebugMode, int32_t instanceId)
 {
+    const auto &handler = vm->GetJsDebuggerManager()->GetDebugLibraryHandle();
+    if (handler.IsValid()) {
+        return false;
+    }
+
     auto handle = panda::os::library_loader::Load(std::string(libraryPath));
     if (!handle) {
         return false;
     }
 
-    using StartDebugger = bool (*)(const std::string &, EcmaVM *, bool);
+    using StartDebugger = bool (*)(const std::string &, EcmaVM *, bool, int32_t);
 
     auto sym = panda::os::library_loader::ResolveSymbol(handle.Value(), "StartDebug");
     if (!sym) {
@@ -216,7 +221,7 @@ bool JSNApi::StartDebugger(const char *libraryPath, EcmaVM *vm, bool isDebugMode
         return false;
     }
 
-    bool ret = reinterpret_cast<StartDebugger>(sym.Value())("PandaDebugger", vm, isDebugMode);
+    bool ret = reinterpret_cast<StartDebugger>(sym.Value())("PandaDebugger", vm, isDebugMode, instanceId);
     if (ret) {
         vm->GetJsDebuggerManager()->SetDebugMode(isDebugMode);
         vm->GetJsDebuggerManager()->SetDebugLibraryHandle(std::move(handle.Value()));
