@@ -368,8 +368,8 @@ void JSDebugger::SetGlobalFunction(const JSHandle<JSTaggedValue> &funcName,
     JSHandle<JSFunction> jsFunc = factory->NewJSFunction(env, reinterpret_cast<void *>(nativeFunc));
     JSFunction::SetFunctionLength(thread, jsFunc, JSTaggedValue(numArgs));
     JSHandle<JSFunctionBase> baseFunc(jsFunc);
-    JSHandle<JSTaggedValue> undefinedStr(thread, JSTaggedValue::Undefined());
-    JSFunction::SetFunctionName(thread, baseFunc, funcName, undefinedStr);
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    JSFunction::SetFunctionName(thread, baseFunc, funcName, undefined);
 
     JSHandle<JSFunction> funcHandle(jsFunc);
     PropertyDescriptor desc(thread, JSHandle<JSTaggedValue>(funcHandle), true, false, true);
