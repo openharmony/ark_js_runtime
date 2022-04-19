@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "ecmascript/compiler/call_signature.h"
-#include "ecmascript/compiler/compiler_macros.h"
 #include "ecmascript/compiler/stub-inl.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/object_factory.h"
@@ -79,7 +78,7 @@ void LLVMIRGeneratorImpl::GenerateCodeForStub(Circuit *circuit, const ControlFlo
 {
     LLVMValueRef function = module_->GetFunction(index);
     const CallSignature* cs = module_->GetCSign(index);
-    LLVMIRBuilder builder(&graph, circuit, module_, function, cfg, cs->GetCallConv());
+    LLVMIRBuilder builder(&graph, circuit, module_, function, cfg, cs->GetCallConv(), enableLog_);
     builder.Build();
 }
 
@@ -87,18 +86,16 @@ void LLVMIRGeneratorImpl::GenerateCode(Circuit *circuit, const ControlFlowGraph 
     const panda::ecmascript::JSMethod *method)
 {
     auto function = module_->AddFunc(method);
-    LLVMIRBuilder builder(&graph, circuit, module_, function, cfg, CallSignature::CallConv::WebKitJSCallConv);
+    LLVMIRBuilder builder(&graph, circuit, module_, function, cfg, CallSignature::CallConv::WebKitJSCallConv,
+                          enableLog_);
     builder.Build();
 }
 
 static uint8_t *RoundTripAllocateCodeSection(void *object, uintptr_t size, [[maybe_unused]] unsigned alignment,
                                              [[maybe_unused]] unsigned sectionID, const char *sectionName)
 {
-    COMPILER_LOG(DEBUG) << "RoundTripAllocateCodeSection object " << object << " - ";
     struct CodeInfo& state = *static_cast<struct CodeInfo*>(object);
     uint8_t *addr = state.AllocaCodeSection(size, sectionName);
-    COMPILER_LOG(DEBUG) << "RoundTripAllocateCodeSection  addr:" << std::hex <<
-        reinterpret_cast<std::uintptr_t>(addr) << addr << " size:0x" << size << " + ";
     return addr;
 }
 
@@ -110,15 +107,14 @@ static uint8_t *RoundTripAllocateDataSection(void *object, uintptr_t size, [[may
     return state.AllocaDataSection(size, sectionName);
 }
 
-static LLVMBool RoundTripFinalizeMemory(void *object, [[maybe_unused]] char **errMsg)
+static LLVMBool RoundTripFinalizeMemory([[maybe_unused]] void *object, [[maybe_unused]] char **errMsg)
 {
-    COMPILER_LOG(DEBUG) << "RoundTripFinalizeMemory object " << object << " - ";
     return 0;
 }
 
-static void RoundTripDestroy(void *object)
+static void RoundTripDestroy([[maybe_unused]] void *object)
 {
-    COMPILER_LOG(DEBUG) << "RoundTripDestroy object " << object << " - ";
+    return;
 }
 
 void LLVMAssembler::UseRoundTripSectionMemoryManager()
@@ -131,19 +127,16 @@ void LLVMAssembler::UseRoundTripSectionMemoryManager()
 
 bool LLVMAssembler::BuildMCJITEngine()
 {
-    COMPILER_LOG(DEBUG) << " BuildMCJITEngine  - ";
     LLVMBool ret = LLVMCreateMCJITCompilerForModule(&engine_, module_, &options_, sizeof(options_), &error_);
     if (ret) {
-        LOG_ECMA(FATAL) << "error_ : " << error_;
+        COMPILER_LOG(FATAL) << "error_ : " << error_;
         return false;
     }
-    COMPILER_LOG(DEBUG) << " BuildMCJITEngine  + ";
     return true;
 }
 
 void LLVMAssembler::BuildAndRunPasses()
 {
-    COMPILER_LOG(DEBUG) << "BuildAndRunPasses  - ";
     LLVMPassManagerBuilderRef pmBuilder = LLVMPassManagerBuilderCreate();
     LLVMPassManagerBuilderSetOptLevel(pmBuilder, options_.OptLevel); // using O3 optimization level
     LLVMPassManagerBuilderSetSizeLevel(pmBuilder, 0);
@@ -170,7 +163,6 @@ void LLVMAssembler::BuildAndRunPasses()
     LLVMDisposePassManager(funcPass);
     LLVMDisposePassManager(modPass);
     LLVMDisposePassManager(modPass1);
-    COMPILER_LOG(DEBUG) << "BuildAndRunPasses  + ";
 }
 
 LLVMAssembler::LLVMAssembler(LLVMModuleRef module, bool genFp) : module_(module)
@@ -198,11 +190,6 @@ LLVMAssembler::~LLVMAssembler()
 void LLVMAssembler::Run()
 {
     char *error = nullptr;
-#if ECMASCRIPT_ENABLE_COMPILER_LOG
-    char *info = LLVMPrintModuleToString(module_);
-    COMPILER_LOG(INFO) << "Current Module: " << info;
-    LLVMDisposeMessage(info);
-#endif
     std::string originName = llvm::unwrap(module_)->getModuleIdentifier() + ".ll";
     std::string optName = llvm::unwrap(module_)->getModuleIdentifier() + "_opt" + ".ll";
     LLVMPrintModuleToFile(module_, originName.c_str(), &error);
@@ -252,7 +239,6 @@ void LLVMAssembler::Initialize(bool genFp)
     options_.CodeModel = LLVMCodeModelSmall;
 }
 
-#if ECMASCRIPT_ENABLE_COMPILER_LOG
 static const char *SymbolLookupCallback([[maybe_unused]] void *disInfo, [[maybe_unused]] uint64_t referenceValue,
                                         uint64_t *referenceType, [[maybe_unused]]uint64_t referencePC,
                                         [[maybe_unused]] const char **referenceName)
@@ -260,52 +246,51 @@ static const char *SymbolLookupCallback([[maybe_unused]] void *disInfo, [[maybe_
     *referenceType = LLVMDisassembler_ReferenceType_InOut_None;
     return nullptr;
 }
-#endif
 
-void LLVMAssembler::Disassemble([[maybe_unused]] std::map<uint64_t, std::string> &addr2name) const
+void LLVMAssembler::Disassemble(const std::map<uint64_t, std::string> &addr2name, const CompilerLog &log) const
 {
-#if ECMASCRIPT_ENABLE_COMPILER_LOG
     LLVMDisasmContextRef dcr = LLVMCreateDisasm(LLVMGetTarget(module_), nullptr, 0, nullptr, SymbolLookupCallback);
-    std::cout << "========================================================================" << std::endl;
+    bool logFlag = false;
+
     for (auto it : codeInfo_.GetCodeInfo()) {
         uint8_t *byteSp;
         uintptr_t numBytes;
         byteSp = it.first;
         numBytes = it.second;
-        std::cout << " byteSp:" << std::hex << reinterpret_cast<std::uintptr_t>(byteSp) << "  numBytes:0x" << numBytes
-                  << std::endl;
 
         unsigned pc = 0;
         const char outStringSize = 100;
         char outString[outStringSize];
-        while (numBytes != 0) {
+        while (numBytes > 0) {
+            uint64_t addr = reinterpret_cast<uint64_t>(byteSp);
+            if (addr2name.find(addr) != addr2name.end()) {
+                std::string methodName = addr2name.at(addr);
+                logFlag = log.IsAlwaysEnabled() ? true : log.IncludesMethod(methodName);
+                if (logFlag) {
+                    COMPILER_LOG(INFO) << "=======================================================================";
+                    COMPILER_LOG(INFO) << methodName.c_str() << " disassemble:";
+                }
+            }
+
             size_t InstSize = LLVMDisasmInstruction(dcr, byteSp, numBytes, pc, outString, outStringSize);
             if (InstSize == 0) {
-                std::cerr.fill('0');
-                std::cerr.width(8); // 8:fixed hex print width
-                std::cerr << std::hex << pc << ":";
-                std::cerr.width(8); // 8:fixed hex print width
-                std::cerr << std::hex << *reinterpret_cast<uint32_t *>(byteSp) << "maybe constant"  << std::endl;
+                if (logFlag) {
+                    COMPILER_LOG(INFO) << std::setw(8) << std::setfill('0') << std::hex << pc << ":" << std::setw(8)
+                                        << *reinterpret_cast<uint32_t *>(byteSp) << "maybe constant";
+                }
                 pc += 4; // 4 pc length
                 byteSp += 4; // 4 sp offset
                 numBytes -= 4; // 4 num bytes
             }
-            uint64_t addr = reinterpret_cast<uint64_t>(byteSp);
-            if (addr2name.find(addr) != addr2name.end()) {
-                std::cout << addr2name[addr].c_str() << ":" << std::endl;
+            if (logFlag) {
+                COMPILER_LOG(INFO) << std::setw(8) << std::setfill('0') << std::hex << pc << ":" << std::setw(8)
+                                   << *reinterpret_cast<uint32_t *>(byteSp) << " " << outString;
             }
-            std::cerr.fill('0');
-            std::cerr.width(8); // 8:fixed hex print width
-            std::cerr << std::hex << pc << ":";
-            std::cerr.width(8); // 8:fixed hex print width
-            std::cerr << std::hex << *reinterpret_cast<uint32_t *>(byteSp) << " " << outString << std::endl;
             pc += InstSize;
             byteSp += InstSize;
             numBytes -= InstSize;
         }
     }
-    std::cout << "========================================================================" << std::endl;
     LLVMDisasmDispose(dcr);
-#endif
 }
 }  // namespace panda::ecmascript::kungfu

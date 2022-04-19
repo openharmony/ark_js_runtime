@@ -331,7 +331,7 @@ JSTaggedValue ContainersTreeMap::ForEach(EcmaRuntimeCallInfo *argv)
     JSMutableHandle<TaggedArray> entries(TaggedTreeMap::GetArrayFromMap(thread, iteratedMap));
 
     int index = 0;
-    int length = entries->GetLength();
+    size_t length = entries->GetLength();
     const size_t argsLength = 3;
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());

@@ -318,7 +318,7 @@ void ObjectOperator::LookupPropertyInlinedProps(const JSHandle<JSObject> &obj)
         JSHClass *jshclass = obj->GetJSHClass();
         JSTaggedValue attrs = jshclass->GetLayout();
         LayoutInfo *layoutInfo = LayoutInfo::Cast(attrs.GetTaggedObject());
-        int propsNumber = jshclass->NumberOfProps();
+        uint32_t propsNumber = jshclass->NumberOfProps();
         int entry = layoutInfo->FindElementWithCache(thread_, jshclass, key_.GetTaggedValue(), propsNumber);
         if (entry == -1) {
             return;
@@ -329,7 +329,7 @@ void ObjectOperator::LookupPropertyInlinedProps(const JSHandle<JSObject> &obj)
         if (attr.IsInlinedProps()) {
             value = obj->GetPropertyInlinedProps(entry);
         } else {
-            entry -= jshclass->GetInlinedProperties();
+            entry -= static_cast<int>(jshclass->GetInlinedProperties());
             value = array->Get(entry);
         }
 
@@ -355,7 +355,7 @@ void ObjectOperator::TransitionForAttributeChanged(const JSHandle<JSObject> &rec
         if (!receiver->GetJSHClass()->IsDictionaryElement()) {
             JSObject::ElementsToDictionary(thread_, receiver);
             auto dict = NumberDictionary::Cast(receiver->GetElements().GetTaggedObject());
-            index = dict->FindEntry(JSTaggedValue(index));
+            index = static_cast<uint32_t>(dict->FindEntry(JSTaggedValue(index)));
             PropertyAttributes origin = dict->GetAttributes(index);
             attr.SetDictionaryOrder(origin.GetDictionaryOrder());
             dict->SetAttributes(thread_, index, attr);
@@ -372,7 +372,7 @@ void ObjectOperator::TransitionForAttributeChanged(const JSHandle<JSObject> &rec
         uint32_t index = GetIndex();
         if (!receiver->GetJSHClass()->IsDictionaryMode()) {
             JSHandle<NameDictionary> dict(JSObject::TransitionToDictionary(thread_, receiver));
-            index = dict->FindEntry(key_.GetTaggedValue());
+            index = static_cast<uint32_t>(dict->FindEntry(key_.GetTaggedValue()));
             PropertyAttributes origin = dict->GetAttributes(index);
             attr.SetDictionaryOrder(origin.GetDictionaryOrder());
             dict->SetAttributes(thread_, index, attr);

@@ -22,10 +22,10 @@
 
 #include "ecmascript/tooling/front_end.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 class ProtocolHandler final : public FrontEnd {
 public:
-    explicit ProtocolHandler(std::function<void(std::string)> callback, const EcmaVM *vm);
+    explicit ProtocolHandler(std::function<void(const std::string &)> callback, const EcmaVM *vm);
     ~ProtocolHandler() override = default;
 
     void WaitForDebugger() override;
@@ -45,12 +45,12 @@ private:
     Local<ObjectRef> CreateErrorReply(const EcmaVM *ecmaVm, const DispatchResponse &response);
     void SendReply(const EcmaVM *ecmaVm, Local<ObjectRef> reply);
 
-    std::function<void(std::string)> callback_;
+    std::function<void(const std::string &)> callback_;
     std::unique_ptr<Dispatcher> dispatcher_ {};
 
     bool waitingForDebugger_ {false};
     const EcmaVM *vm_ {nullptr};
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 
 #endif

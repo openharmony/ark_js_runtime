@@ -16,6 +16,7 @@
 #define ECMASCRIPT_COMPILER_CIRCUIT_BUILDER_INL_H
 
 #include "ecmascript/compiler/circuit_builder.h"
+#include "ecmascript/js_method.h"
 #include "ecmascript/mem/region.h"
 #include "ecmascript/mem/remembered_set.h"
 
@@ -189,6 +190,21 @@ GateRef CircuitBuilder::TaggedIsUndefinedOrNull(GateRef x)
         SExtInt1ToInt32(TaggedSpecialValueChecker(x, JSTaggedValue::VALUE_NULL))));
 }
 
+GateRef CircuitBuilder::TaggedIsTrue(GateRef x)
+{
+    return Equal(x, Int64(JSTaggedValue::VALUE_TRUE));
+}
+
+GateRef CircuitBuilder::TaggedIsFalse(GateRef x)
+{
+    return Equal(x, Int64(JSTaggedValue::VALUE_FALSE));
+}
+
+GateRef CircuitBuilder::TaggedIsNull(GateRef x)
+{
+    return Equal(x, Int64(JSTaggedValue::VALUE_NULL));
+}
+
 GateRef CircuitBuilder::TaggedIsBoolean(GateRef x)
 {
     return TruncInt32ToInt1(Int32Or(SExtInt1ToInt32(TaggedSpecialValueChecker(x, JSTaggedValue::VALUE_TRUE)),
@@ -238,12 +254,12 @@ GateRef CircuitBuilder::DoubleToTagged(GateRef x)
 
 GateRef CircuitBuilder::TaggedTrue()
 {
-    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_TRUE, GateType::C_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_TRUE, GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::TaggedFalse()
 {
-    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_FALSE, GateType::C_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_FALSE, GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::GetValueFromTaggedArray(VariableType returnType, GateRef array, GateRef index)
@@ -260,6 +276,11 @@ void CircuitBuilder::SetValueToTaggedArray(VariableType valType, GateRef glue,
     GateRef offset = ArchMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize()));
     GateRef dataOffset = IntPtrAdd(offset, IntPtr(TaggedArray::DATA_OFFSET));
     Store(valType, glue, array, dataOffset, val);
+}
+
+GateRef CircuitBuilder::GetGlobalConstantString(ConstantIndex index)
+{
+    return ArchMul(IntPtr(sizeof(JSTaggedValue)), IntPtr(static_cast<int>(index)));
 }
 
 // object operation
@@ -337,13 +358,13 @@ GateRef CircuitBuilder::IsExtensible(GateRef object)
 
 GateRef CircuitBuilder::IsEcmaObject(GateRef obj)
 {
-    Label subentry(lm_);
-    lm_->PushCurrentLabel(&subentry);
-    Label exit(lm_);
-    Label isHeapObject(lm_);
-    DEFVAlUE(result, lm_, VariableType::BOOL(), False());
-    lm_->Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
-    lm_->Bind(&isHeapObject);
+    Label subentry(env_);
+    env_->SubCfgEntry(&subentry);
+    Label exit(env_);
+    Label isHeapObject(env_);
+    DEFVAlUE(result, env_, VariableType::BOOL(), False());
+    Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
+    Bind(&isHeapObject);
     {
         GateRef objectType = GetObjectType(LoadHClass(obj));
         auto ret1 = Int32And(ZExtInt1ToInt32(Int32LessThanOrEqual(objectType,
@@ -351,21 +372,21 @@ GateRef CircuitBuilder::IsEcmaObject(GateRef obj)
             ZExtInt1ToInt32(Int32GreaterThanOrEqual(objectType,
             Int32(static_cast<int32_t>(JSType::ECMA_OBJECT_BEGIN)))));
         result = TruncInt32ToInt1(ret1);
-        lm_->Jump(&exit);
+        Jump(&exit);
     }
-    lm_->Bind(&exit);
+    Bind(&exit);
     auto ret = *result;
-    lm_->PopCurrentLabel();
+    env_->SubCfgExit();
     return ret;
 }
 
 GateRef CircuitBuilder::IsJsObject(GateRef obj)
 {
-    Label subentry(lm_);
-    PushCurrentLabel(&subentry);
-    Label exit(lm_);
-    Label isHeapObject(lm_);
-    DEFVAlUE(result, lm_, VariableType::BOOL(), False());
+    Label subentry(env_);
+    SubCfgEntry(&subentry);
+    Label exit(env_);
+    Label isHeapObject(env_);
+    DEFVAlUE(result, env_, VariableType::BOOL(), False());
     Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
     Bind(&isHeapObject);
     {
@@ -379,7 +400,7 @@ GateRef CircuitBuilder::IsJsObject(GateRef obj)
     }
     Bind(&exit);
     auto ret = *result;
-    PopCurrentLabel();
+    SubCfgExit();
     return ret;
 }
 
@@ -389,118 +410,83 @@ GateRef CircuitBuilder::BothAreString(GateRef x, GateRef y)
         SExtInt1ToInt32(IsJsType(y, JSType::STRING))));
 }
 
+GateRef CircuitBuilder::IsCallable(GateRef obj)
+{
+    GateRef hclass = LoadHClass(obj);
+    GateRef bitfieldOffset = IntPtr(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfield = Load(VariableType::INT32(), hclass, bitfieldOffset);
+    return NotEqual(
+        Int32And(UInt32LSR(bitfield, Int32(JSHClass::CallableBit::START_BIT)),
+            Int32((1LU << JSHClass::CallableBit::SIZE) - 1)),
+        Int32(0));
+}
+
 int CircuitBuilder::NextVariableId()
 {
-    return lm_->NextVariableId();
+    return env_->NextVariableId();
 }
 
 void CircuitBuilder::HandleException(GateRef result, Label *success, Label *fail, Label *exit, VariableType type)
 {
-    ASSERT(lm_ != nullptr);
-    lm_->Branch(Equal(result, ExceptionConstant(type.GetGateType())), fail, success);
-    lm_->Bind(fail);
+    Branch(Equal(result, ExceptionConstant(type.GetGateType())), fail, success);
+    Bind(fail);
     {
-        lm_->Jump(exit);
+        Jump(exit);
     }
 }
 
 void CircuitBuilder::HandleException(GateRef result, Label *success, Label *fail, Label *exit, GateRef exceptionVal)
 {
-    ASSERT(lm_ != nullptr);
-    lm_->Branch(Equal(result, exceptionVal), fail, success);
-    lm_->Bind(fail);
+    Branch(Equal(result, exceptionVal), fail, success);
+    Bind(fail);
     {
-        lm_->Jump(exit);
+        Jump(exit);
     }
 }
 
-void CircuitBuilder::PushCurrentLabel(Label *entry)
+void CircuitBuilder::SubCfgEntry(Label *entry)
 {
-    ASSERT(lm_ != nullptr);
-    lm_->PushCurrentLabel(entry);
+    ASSERT(env_ != nullptr);
+    env_->SubCfgEntry(entry);
 }
 
-void CircuitBuilder::PopCurrentLabel()
+void CircuitBuilder::SubCfgExit()
 {
-    ASSERT(lm_ != nullptr);
-    lm_->PopCurrentLabel();
+    ASSERT(env_ != nullptr);
+    env_->SubCfgExit();
 }
 
 GateRef CircuitBuilder::Return(GateRef value)
 {
-    ASSERT(lm_ != nullptr);
-    return lm_->Return(value);
+    auto control = GetCurrentLabel()->GetControl();
+    auto depend = GetCurrentLabel()->GetDepend();
+    return Return(control, depend, value);
 }
 
 GateRef CircuitBuilder::Return()
 {
-    ASSERT(lm_ != nullptr);
-    return lm_->Return();
+    auto control = GetCurrentLabel()->GetControl();
+    auto depend = GetCurrentLabel()->GetDepend();
+    return ReturnVoid(control, depend);
 }
 
 void CircuitBuilder::Bind(Label *label)
 {
-    ASSERT(lm_ != nullptr);
-    lm_->Bind(label);
+    label->Bind();
+    env_->SetCurrentLabel(label);
 }
 
 void CircuitBuilder::Bind(Label *label, bool justSlowPath)
 {
-    ASSERT(lm_ != nullptr);
-    lm_->Bind(label, justSlowPath);
-}
-
-template<bool noThrow>
-void CircuitBuilder::MergeMirCircuit(GateRef hir, GateRef outir,
-                                     const std::vector<GateRef> &successControl,
-                                     const std::vector<GateRef> &exceptionControl)
-{
-    GateAccessor acc(GetCircuit());
-    if (outir != Circuit::NullGate()) {
-        acc.SetGateType(outir, acc.GetGateType(hir));
+    if (!justSlowPath) {
+        label->Bind();
+        env_->SetCurrentLabel(label);
     }
-    auto uses = acc.Uses(hir);
-    for (auto useIt = uses.begin(); useIt != uses.end(); useIt++) {
-        // replace HIR:IF_SUCCESS/IF_EXCEPTION with control flow in Label successExit/failExit of MIR Circuit
-        if (acc.GetOpCode(*useIt) == OpCode::IF_SUCCESS) {
-            acc.ReplaceHirControlGate(useIt, successControl[0]);
-        } else if (acc.GetOpCode(*useIt) == OpCode::IF_EXCEPTION) {
-            acc.ReplaceHirControlGate<noThrow>(useIt, exceptionControl[0]);
-        // change depend flow in catch block from HIR:JS_BYTECODE to depend flow in MIR Circuit
-        } else if (acc.GetOpCode(*useIt) == OpCode::DEPEND_SELECTOR) {
-            if (acc.GetOpCode(acc.GetIn(acc.GetIn(*useIt, 0), useIt.GetIndex() - 1)) == OpCode::IF_EXCEPTION) {
-                noThrow ? acc.DeleteExceptionDep(useIt) : acc.ReplaceIn(useIt, exceptionControl[1]);
-            } else {
-                acc.ReplaceIn(useIt, successControl[1]);
-            }
-        } else if (acc.GetOpCode(*useIt) == OpCode::DEPEND_RELAY) {
-            if (acc.GetOpCode(acc.GetIn(*useIt, 0)) == OpCode::IF_EXCEPTION) {
-                acc.ReplaceIn(useIt, exceptionControl[1]);
-            } else {
-                acc.ReplaceIn(useIt, successControl[1]);
-            }
-        // replace normal depend
-        } else if ((acc.GetOpCode(*useIt) == OpCode::JS_BYTECODE) && useIt.GetIndex() == 1) {
-            acc.ReplaceIn(useIt, successControl[1]);
-        // if no catch block, just throw exception(RETURN)
-        } else if ((acc.GetOpCode(*useIt) == OpCode::RETURN) &&
-                    acc.GetOpCode(acc.GetIn(*useIt, 0)) == OpCode::IF_EXCEPTION) {
-            noThrow ? acc.DeleteExceptionDep(useIt) : acc.ReplaceIn(useIt, exceptionControl[1]);
-        // if isThrow..
-        } else if (useIt.GetIndex() == 1) {
-            acc.ReplaceIn(useIt, successControl[1]);
-        // replace data flow with data output in label successExit(valueSelector...)
-        } else {
-            acc.ReplaceIn(useIt, outir);
-        }
-    }
-
-    GetCircuit()->DeleteGate(hir);
 }
 
 Label *CircuitBuilder::GetCurrentLabel() const
 {
-    return lm_->GetCurrentLabel();
+    return GetCurrentEnvironment()->GetCurrentLabel();
 }
 
 GateRef CircuitBuilder::GetState() const
@@ -587,30 +573,30 @@ void Label::SetDepend(GateRef depend)
     return impl_->SetDepend(depend);
 }
 
-GateType LabelManager::GetGateType(GateRef gate) const
+GateType Environment::GetGateType(GateRef gate) const
 {
     return circuit_->LoadGatePtr(gate)->GetGateType();
 }
 
-Label LabelManager::GetLabelFromSelector(GateRef sel)
+Label Environment::GetLabelFromSelector(GateRef sel)
 {
     Label::LabelImpl *rawlabel = phiToLabels_[sel];
     return Label(rawlabel);
 }
 
-void LabelManager::AddSelectorToLabel(GateRef sel, Label label)
+void Environment::AddSelectorToLabel(GateRef sel, Label label)
 {
     phiToLabels_[sel] = label.GetRawLabel();
 }
 
-Label::LabelImpl *LabelManager::NewLabel(LabelManager *lm, GateRef control)
+Label::LabelImpl *Environment::NewLabel(Environment *env, GateRef control)
 {
-    auto impl = new Label::LabelImpl(lm, control);
+    auto impl = new Label::LabelImpl(env, control);
     rawLabels_.emplace_back(impl);
     return impl;
 }
 
-void LabelManager::PushCurrentLabel(Label *entry)
+void Environment::SubCfgEntry(Label *entry)
 {
     if (currentLabel_ != nullptr) {
         GateRef control = currentLabel_->GetControl();
@@ -622,7 +608,7 @@ void LabelManager::PushCurrentLabel(Label *entry)
     }
 }
 
-void LabelManager::PopCurrentLabel()
+void Environment::SubCfgExit()
 {
     GateRef control = currentLabel_->GetControl();
     GateRef depend = currentLabel_->GetDepend();
@@ -634,37 +620,9 @@ void LabelManager::PopCurrentLabel()
     }
 }
 
-GateRef LabelManager::GetInput(size_t index) const
+GateRef Environment::GetInput(size_t index) const
 {
     return inputList_.at(index);
-}
-
-GateRef LabelManager::Return(GateRef value)
-{
-    auto control = GetCurrentLabel()->GetControl();
-    auto depend = GetCurrentLabel()->GetDepend();
-    return lBuilder_.Return(control, depend, value);
-}
-
-GateRef LabelManager::Return()
-{
-    auto control = GetCurrentLabel()->GetControl();
-    auto depend = GetCurrentLabel()->GetDepend();
-    return lBuilder_.ReturnVoid(control, depend);
-}
-
-void LabelManager::Bind(Label *label)
-{
-    label->Bind();
-    SetCurrentLabel(label);
-}
-
-void LabelManager::Bind(Label *label, bool justSlowPath)
-{
-    if (!justSlowPath) {
-        label->Bind();
-        SetCurrentLabel(label);
-    }
 }
 } // namespace panda::ecmascript::kungfu
 

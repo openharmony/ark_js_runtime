@@ -18,7 +18,7 @@
 
 #include <list>
 
-#include "ecmascript/regexp/dyn_chunk.h"
+#include "ecmascript/mem/dyn_chunk.h"
 
 namespace panda {
 namespace ecmascript {
@@ -74,7 +74,7 @@ public:
     static RegExpOpCode *GetRegExpOpCode(const DynChunk &buf, int pcOffset);
     static RegExpOpCode *GetRegExpOpCode(uint8_t opCode);
     static void DumpRegExpOpCode(std::ostream &out, const DynChunk &buf);
-    inline int GetSize() const
+    inline uint8_t GetSize() const
     {
         return size_;
     }

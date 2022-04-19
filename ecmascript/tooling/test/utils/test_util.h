@@ -22,7 +22,7 @@
 #include "ecmascript/tooling/test/utils/test_extractor.h"
 #include "os/mutex.h"
 
-namespace panda::tooling::ecmascript::test {
+namespace panda::ecmascript::tooling::test {
 template<class Key, class T, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
 using CUnorderedMap = panda::ecmascript::CUnorderedMap<Key, T, Hash, KeyEqual>;
 using TestMap = CUnorderedMap<panda_file::SourceLang, CUnorderedMap<const char *, std::unique_ptr<TestEvents>>>;
@@ -54,19 +54,15 @@ public:
         return nullptr;
     }
 
-    static PtThread WaitForBreakpoint(PtLocation location)
+    static void WaitForBreakpoint(JSPtLocation location)
     {
-        PtThread stoppedThread(PtThread::NONE);
         auto predicate = [&location]() REQUIRES(eventMutex_) { return lastEventLocation_ == location; };
-        auto onSuccess = [&stoppedThread]() REQUIRES(eventMutex_) {
-            stoppedThread = lastEventThread_;
-
+        auto onSuccess = []() REQUIRES(eventMutex_) {
             // Need to reset location, because we might want to stop at the same point
-            lastEventLocation_ = PtLocation("", EntityId(0), 0);
+            lastEventLocation_ = JSPtLocation("", EntityId(0), 0);
         };
 
         WaitForEvent(DebugEvent::BREAKPOINT, predicate, onSuccess);
-        return stoppedThread;
     }
 
     static bool WaitForExit()
@@ -91,13 +87,11 @@ public:
             }, [] {});
     }
 
-    static void Event(DebugEvent event, PtThread thread = PtThread::NONE,
-                      PtLocation location = PtLocation("", EntityId(0), 0))
+    static void Event(DebugEvent event, JSPtLocation location = JSPtLocation("", EntityId(0), 0))
     {
-        LOG(DEBUG, DEBUGGER) << "Occurred event " << event << " in thread with id " << thread.GetId();
+        LOG(DEBUG, DEBUGGER) << "Occurred event " << event;
         os::memory::LockHolder holder(eventMutex_);
         lastEvent_ = event;
-        lastEventThread_ = thread;
         lastEventLocation_ = location;
         if (event == DebugEvent::VM_INITIALIZATION) {
             initialized_ = true;
@@ -123,18 +117,18 @@ public:
         return lastEvent_ == DebugEvent::VM_DEATH;
     }
 
-    static PtLocation GetLocation(const char *sourceFile, int32_t line, int32_t column, const char *pandaFile)
+    static JSPtLocation GetLocation(const char *sourceFile, int32_t line, int32_t column, const char *pandaFile)
     {
         auto jsPandaFile = ::panda::ecmascript::JSPandaFileManager::GetInstance()->OpenJSPandaFile(pandaFile);
         if (jsPandaFile == nullptr) {
-            return PtLocation("", EntityId(0), 0);
+            return JSPtLocation("", EntityId(0), 0);
         }
         TestExtractor extractor(jsPandaFile);
         auto [id, offset] = extractor.GetBreakpointAddress({sourceFile, line, column});
-        return PtLocation(pandaFile, id, offset);
+        return JSPtLocation(pandaFile, id, offset);
     }
 
-    static SourceLocation GetSourceLocation(const PtLocation &location, const char *pandaFile)
+    static SourceLocation GetSourceLocation(const JSPtLocation &location, const char *pandaFile)
     {
         auto jsPandaFile = ::panda::ecmascript::JSPandaFileManager::GetInstance()->OpenJSPandaFile(pandaFile);
         if (jsPandaFile == nullptr) {
@@ -144,7 +138,7 @@ public:
         return extractor.GetSourceLocation(location.GetMethodId(), location.GetBytecodeOffset());
     }
 
-    static bool SuspendUntilContinue(DebugEvent reason, PtThread thread, PtLocation location)
+    static bool SuspendUntilContinue(DebugEvent reason, JSPtLocation location)
     {
         {
             os::memory::LockHolder lock(suspendMutex_);
@@ -152,7 +146,7 @@ public:
         }
 
         // Notify the debugger thread about the suspend event
-        Event(reason, thread, location);
+        Event(reason, location);
 
         // Wait for continue
         {
@@ -197,8 +191,7 @@ private:
     static os::memory::Mutex eventMutex_;
     static os::memory::ConditionVariable eventCv_ GUARDED_BY(eventMutex_);
     static DebugEvent lastEvent_ GUARDED_BY(eventMutex_);
-    static PtThread lastEventThread_ GUARDED_BY(eventMutex_);
-    static PtLocation lastEventLocation_ GUARDED_BY(eventMutex_);
+    static JSPtLocation lastEventLocation_ GUARDED_BY(eventMutex_);
     static os::memory::Mutex suspendMutex_;
     static os::memory::ConditionVariable suspendCv_ GUARDED_BY(suspendMutex_);
     static bool suspended_ GUARDED_BY(suspendMutex_);
@@ -282,16 +275,10 @@ std::ostream &operator<<(std::ostream &out, std::nullptr_t);
         ASSERT_EQ((lhs).GetBytecodeOffset(), (rhs).GetBytecodeOffset());             \
     } while (0)
 
-#define ASSERT_THREAD_VALID(ecmaVm)                          \
-    do {                                                     \
-        ASSERT_NE((ecmaVm).GetId(), PtThread::NONE.GetId()); \
-    } while (0)
-
 #define ASSERT_BREAKPOINT_SUCCESS(location)                         \
     do {                                                            \
-        PtThread suspended = TestUtil::WaitForBreakpoint(location); \
-        ASSERT_THREAD_VALID(suspended);                             \
+        TestUtil::WaitForBreakpoint(location);                      \
     } while (0)
-}  // namespace panda::tooling::ecmascript::test
+}  // namespace panda::ecmascript::tooling::test
 
 #endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TEST_UTIL_H

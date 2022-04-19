@@ -123,7 +123,7 @@ inline LabelImpl *Stub::Environment::NewLabel(Stub::Environment *env, GateRef co
     return impl;
 }
 
-inline void Stub::Environment::PushCurrentLabel(Stub::Label *entry)
+inline void Stub::Environment::SubCfgEntry(Stub::Label *entry)
 {
     if (currentLabel_ != nullptr) {
         GateRef control = currentLabel_->GetControl();
@@ -135,7 +135,7 @@ inline void Stub::Environment::PushCurrentLabel(Stub::Label *entry)
     }
 }
 
-inline void Stub::Environment::PopCurrentLabel()
+inline void Stub::Environment::SubCfgExit()
 {
     GateRef control = currentLabel_->GetControl();
     GateRef depend = currentLabel_->GetDepend();
@@ -382,8 +382,16 @@ inline void Stub::FatalPrint(GateRef glue, std::initializer_list<GateRef> args)
 inline GateRef Stub::CallRuntime(GateRef glue, int index, std::initializer_list<GateRef> args)
 {
     auto depend = env_.GetCurrentLabel()->GetDepend();
+    GateRef result = env_.GetBuilder().CallRuntimeWithDepend(glue, index, depend, args);
+    env_.GetCurrentLabel()->SetDepend(result);
+    return result;
+}
+
+inline GateRef Stub::CallRuntime(GateRef glue, int index, GateRef argc, GateRef argv)
+{
+    auto depend = env_.GetCurrentLabel()->GetDepend();
     GateRef target = env_.GetBuilder().Int64(index);
-    GateRef result = env_.GetBuilder().RuntimeCall(glue, target, depend, args);
+    GateRef result = env_.GetBuilder().CallRuntimeWithDepend(glue, target, depend, argc, argv);
     env_.GetCurrentLabel()->SetDepend(result);
     return result;
 }
@@ -394,7 +402,7 @@ inline GateRef Stub::Load(VariableType type, GateRef base, GateRef offset)
     auto depend = env_.GetCurrentLabel()->GetDepend();
     if (env_.IsArch64Bit()) {
         GateRef val = Int64Add(base, offset);
-        if (type == VariableType::POINTER()) {
+        if (type == VariableType::NATIVE_POINTER()) {
             type = VariableType::INT64();
         }
         GateRef result = env_.GetCircuit()->NewGate(OpCode(OpCode::LOAD), type.GetMachineType(),
@@ -404,7 +412,7 @@ inline GateRef Stub::Load(VariableType type, GateRef base, GateRef offset)
     }
     if (env_.IsArch32Bit()) {
         GateRef val = Int32Add(base, offset);
-        if (type == VariableType::POINTER()) {
+        if (type == VariableType::NATIVE_POINTER()) {
             type = VariableType::INT32();
         }
         GateRef result = env_.GetCircuit()->NewGate(OpCode(OpCode::LOAD), type.GetMachineType(),
@@ -417,7 +425,7 @@ inline GateRef Stub::Load(VariableType type, GateRef base, GateRef offset)
 
 inline GateRef Stub::Load(VariableType type, GateRef base)
 {
-    if (type == VariableType::POINTER()) {
+    if (type == VariableType::NATIVE_POINTER()) {
         if (env_.IsArch64Bit()) {
             type = VariableType::INT64();
         } else {
@@ -1190,7 +1198,7 @@ inline GateRef Stub::IsEcmaObject(GateRef obj)
 {
     auto env = GetEnvironment();
     Label subentry(env);
-    env->PushCurrentLabel(&subentry);
+    env->SubCfgEntry(&subentry);
     Label exit(env);
     Label isHeapObject(env);
     DEFVARIABLE(result, VariableType::BOOL(), False());
@@ -1209,7 +1217,7 @@ inline GateRef Stub::IsEcmaObject(GateRef obj)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1217,7 +1225,7 @@ inline GateRef Stub::IsJSObject(GateRef obj)
 {
     auto env = GetEnvironment();
     Label subentry(env);
-    env->PushCurrentLabel(&subentry);
+    env->SubCfgEntry(&subentry);
     Label exit(env);
     Label isHeapObject(env);
     DEFVARIABLE(result, VariableType::BOOL(), False());
@@ -1236,7 +1244,7 @@ inline GateRef Stub::IsJSObject(GateRef obj)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1244,7 +1252,7 @@ inline GateRef Stub::IsJSFunctionBase(GateRef obj)
 {
     auto env = GetEnvironment();
     Label subentry(env);
-    env->PushCurrentLabel(&subentry);
+    env->SubCfgEntry(&subentry);
     Label exit(env);
     Label isHeapObject(env);
     DEFVARIABLE(result, VariableType::BOOL(), False());
@@ -1263,7 +1271,7 @@ inline GateRef Stub::IsJSFunctionBase(GateRef obj)
     }
     Bind(&exit);
     auto ret = *result;
-    env->PopCurrentLabel();
+    env->SubCfgExit();
     return ret;
 }
 
@@ -1943,7 +1951,7 @@ inline GateRef Stub::ObjectAddressToRange(GateRef x)
 inline GateRef Stub::InYoungGeneration(GateRef region)
 {
     auto offset = env_.Is32Bit() ? Region::REGION_FLAG_OFFSET_32 : Region::REGION_FLAG_OFFSET_64;
-    GateRef x = Load(VariableType::POINTER(), IntPtrAdd(IntPtr(offset), region),
+    GateRef x = Load(VariableType::NATIVE_POINTER(), IntPtrAdd(IntPtr(offset), region),
         IntPtr(0));
     if (env_.Is32Bit()) {
         return Int32NotEqual(Int32And(x,
@@ -1988,7 +1996,7 @@ inline GateRef Stub::GetMethodFromJSFunction(GateRef object)
 {
     auto env = GetEnvironment();
     Label subentry(env);
-    env->PushCurrentLabel(&subentry);
+    env->SubCfgEntry(&subentry);
 
     DEFVARIABLE(methodOffset, VariableType::INT32(), Int32(0));
     Label funcIsJSFunctionBase(env);
@@ -2006,8 +2014,8 @@ inline GateRef Stub::GetMethodFromJSFunction(GateRef object)
         Jump(&getMethod);
     }
     Bind(&getMethod);
-    GateRef method = Load(VariableType::POINTER(), object, ChangeInt32ToIntPtr(*methodOffset));
-    env->PopCurrentLabel();
+    GateRef method = Load(VariableType::NATIVE_POINTER(), object, ChangeInt32ToIntPtr(*methodOffset));
+    env->SubCfgExit();
     return method;
 }
 
@@ -2115,6 +2123,24 @@ inline GateRef Stub::GetExpectedNumOfArgs(GateRef method)
     return TruncInt64ToInt32(Int64And(
         UInt64LSR(callfield, Int32(JSMethod::NumArgsBits::START_BIT)),
         Int64((1LU << JSMethod::NumArgsBits::SIZE) - 1)));
+}
+
+inline GateRef Stub::GetMethodFromJSProxy(GateRef proxy)
+{
+    GateRef offset = IntPtr(JSProxy::METHOD_OFFSET);
+    return Load(VariableType::JS_ANY(), proxy, offset);
+}
+
+inline GateRef Stub::GetHandlerFromJSProxy(GateRef proxy)
+{
+    GateRef offset = IntPtr(JSProxy::HANDLER_OFFSET);
+    return Load(VariableType::JS_ANY(), proxy, offset);
+}
+
+inline GateRef Stub::GetTargetFromJSProxy(GateRef proxy)
+{
+    GateRef offset = IntPtr(JSProxy::TARGET_OFFSET);
+    return Load(VariableType::JS_ANY(), proxy, offset);
 }
 } //  namespace panda::ecmascript::kungfu
 #endif // ECMASCRIPT_COMPILER_STUB_INL_H

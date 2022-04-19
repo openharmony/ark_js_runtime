@@ -52,7 +52,7 @@ public:
 
     JSPandaFile *NewJSPandaFile(const panda_file::File *pf, const CString &desc);
 
-    tooling::ecmascript::JSPtExtractor *GetJSPtExtractor(const JSPandaFile *jsPandaFile);
+    tooling::JSPtExtractor *GetJSPtExtractor(const JSPandaFile *jsPandaFile);
 
     static void RemoveJSPandaFile(void *pointer, void *data);
 
@@ -92,7 +92,7 @@ private:
 
     os::memory::RecursiveMutex jsPandaFileLock_;
     std::unordered_map<const JSPandaFile *, uint32_t> loadedJSPandaFiles_;
-    std::unordered_map<const JSPandaFile *, std::unique_ptr<tooling::ecmascript::JSPtExtractor>> extractors_;
+    std::unordered_map<const JSPandaFile *, std::unique_ptr<tooling::JSPtExtractor>> extractors_;
 
     friend class JSPandaFile;
 };

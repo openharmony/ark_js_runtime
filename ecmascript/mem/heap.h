@@ -384,7 +384,7 @@ private:
     MixGC *mixGC_ {nullptr};
     FullGC *fullGC_ {nullptr};
     ConcurrentSweeper *sweeper_ {nullptr};
-    ConcurrentMarker *concurrentMarker_;
+    ConcurrentMarker *concurrentMarker_ {nullptr};
     WorkerHelper *workList_ {nullptr};
     Marker *nonMovableMarker_ {nullptr};
     Marker *semiGcMarker_ {nullptr};
@@ -408,7 +408,7 @@ private:
     os::memory::ConditionVariable waitTaskFinishedCV_;
     bool paralledGc_ {true};
 
-    MarkType markType_;
+    MarkType markType_ {MarkType::SEMI_MARK};
     bool concurrentMarkingEnabled_ {true};
     bool isFullGCRequested_ {false};
     bool oldSpaceLimitAdjusted_ {false};

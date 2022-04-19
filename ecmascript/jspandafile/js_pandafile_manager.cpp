@@ -47,13 +47,18 @@ const JSPandaFile *JSPandaFileManager::LoadAotInfoFromPf(const CString &filename
         return nullptr;
     }
 
+    if (!jsPandaFile->HasTsTypes()) {
+        LOG_ECMA(ERROR) << filename << " has no type info";
+        return nullptr;
+    }
+
     CString methodName;
     auto pos = entryPoint.find_last_of("::");
     if (pos != std::string_view::npos) {
         methodName = entryPoint.substr(pos + 1);
     } else {
         // default use func_main_0 as entryPoint
-        methodName = ENTRY_FUNCTION_NAME;
+        methodName = JSPandaFile::ENTRY_FUNCTION_NAME;
     }
 
     PandaFileTranslator::TranslateClasses(jsPandaFile, methodName, methodPcInfos);
@@ -198,7 +203,7 @@ void JSPandaFileManager::ReleaseJSPandaFile(const JSPandaFile *jsPandaFile)
     delete jsPandaFile;
 }
 
-tooling::ecmascript::JSPtExtractor *JSPandaFileManager::GetJSPtExtractor(const JSPandaFile *jsPandaFile)
+tooling::JSPtExtractor *JSPandaFileManager::GetJSPtExtractor(const JSPandaFile *jsPandaFile)
 {
     LOG_IF(jsPandaFile == nullptr, FATAL, ECMASCRIPT) << "GetJSPtExtractor error, js pandafile is nullptr";
 
@@ -207,8 +212,8 @@ tooling::ecmascript::JSPtExtractor *JSPandaFileManager::GetJSPtExtractor(const J
 
     auto iter = extractors_.find(jsPandaFile);
     if (iter == extractors_.end()) {
-        auto extractorPtr = std::make_unique<tooling::ecmascript::JSPtExtractor>(jsPandaFile);
-        tooling::ecmascript::JSPtExtractor *extractor = extractorPtr.get();
+        auto extractorPtr = std::make_unique<tooling::JSPtExtractor>(jsPandaFile);
+        tooling::JSPtExtractor *extractor = extractorPtr.get();
         extractors_[jsPandaFile] = std::move(extractorPtr);
         return extractor;
     }
@@ -228,7 +233,7 @@ const JSPandaFile *JSPandaFileManager::GenerateJSPandaFile(const panda_file::Fil
         methodName = entryPoint.substr(pos + 1);
     } else {
         // default use func_main_0 as entryPoint
-        methodName = ENTRY_FUNCTION_NAME;
+        methodName = JSPandaFile::ENTRY_FUNCTION_NAME;
     }
 
     PandaFileTranslator::TranslateClasses(newJsPandaFile, methodName);

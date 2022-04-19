@@ -929,8 +929,8 @@ public:
     static Local<ObjectRef> GetUncaughtException(const EcmaVM *vm);
     static void EnableUserUncaughtErrorHandler(EcmaVM *vm);
 
-    static bool StartDebugger(const char *library_path, EcmaVM *vm, bool isDebugMode);
-    static bool StopDebugger(const char *library_path);
+    static bool StartDebugger(const char *libraryPath, EcmaVM *vm, bool isDebugMode);
+    static bool StopDebugger(EcmaVM *vm);
     // Serialize & Deserialize.
     static void* SerializeValue(const EcmaVM *vm, Local<JSValueRef> data, Local<JSValueRef> transfer);
     static Local<JSValueRef> DeserializeValue(const EcmaVM *vm, void* recoder);
@@ -1016,7 +1016,7 @@ private:
 
     uintptr_t GetArgAddress(uint32_t idx) const
     {
-        if (idx < numArgs_ + FIRST_ARGS_INDEX) {
+        if (idx < static_cast<uint64_t>(numArgs_ + FIRST_ARGS_INDEX)) {
             return reinterpret_cast<uintptr_t>(&stackArgs_[idx]);
         }
         return 0U;

@@ -18,7 +18,6 @@
 
 #include "gtest/gtest.h"
 #include "ecmascript/builtins/builtins_promise_handler.h"
-#include "ecmascript/compiler/compiler_macros.h"
 #include "ecmascript/compiler/common_stubs.h"
 #include "ecmascript/compiler/llvm_codegen.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
@@ -62,15 +61,15 @@ public:
     void PrintCircuitByBasicBlock([[maybe_unused]] const std::vector<std::vector<GateRef>> &cfg,
                                   [[maybe_unused]] const Circuit &netOfGates) const
     {
-#if ECMASCRIPT_ENABLE_COMPILER_LOG
-        for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
-            std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                    << std::endl;
-            for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
-                netOfGates.Print(cfg[bbIdx][instIdx - 1]);
+        if (thread->GetEcmaVM()->GetJSOptions().WasSetlogCompiledMethods()) {
+            for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
+                COMPILER_LOG(INFO) << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_")
+                                   << bbIdx << ":";
+                for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
+                    netOfGates.Print(cfg[bbIdx][instIdx - 1]);
+                }
             }
         }
-#endif
     }
 
     JSTaggedValue NewAotFunction(uint32_t numArgs, uintptr_t codeEntry)
@@ -117,9 +116,9 @@ HWTEST_F_L0(StubTest, FastAddTest)
         JSTaggedValue(2).GetRawData());     // 2 : test case
     auto resC = fn(thread->GetGlueAddr(), JSTaggedValue(11).GetRawData(),
         JSTaggedValue(11).GetRawData());  // 11 : test case
-    LOG_ECMA(INFO) << "res for FastAdd(1, 1) = " << resA.GetNumber();
-    LOG_ECMA(INFO) << "res for FastAdd(2, 2) = " << resB.GetNumber();
-    LOG_ECMA(INFO) << "res for FastAdd(11, 11) = " << resC.GetNumber();
+    COMPILER_LOG(INFO) << "res for FastAdd(1, 1) = " << resA.GetNumber();
+    COMPILER_LOG(INFO) << "res for FastAdd(2, 2) = " << resB.GetNumber();
+    COMPILER_LOG(INFO) << "res for FastAdd(11, 11) = " << resC.GetNumber();
     EXPECT_EQ(resA.GetNumber(), JSTaggedValue(2).GetNumber());
     EXPECT_EQ(resB.GetNumber(), JSTaggedValue(4).GetNumber());
     EXPECT_EQ(resC.GetNumber(), JSTaggedValue(22).GetNumber());
@@ -154,9 +153,9 @@ HWTEST_F_L0(StubTest, FastSubTest)
         JSTaggedValue(2).GetRawData());    // 7, 2 : test cases
     auto resC = fn(thread->GetGlueAddr(), JSTaggedValue(11).GetRawData(),
         JSTaggedValue(11).GetRawData());  // 11 : test case
-    LOG_ECMA(INFO) << "res for FastSub(2, 1) = " << resA.GetNumber();
-    LOG_ECMA(INFO) << "res for FastSub(7, 2) = " << resB.GetNumber();
-    LOG_ECMA(INFO) << "res for FastSub(11, 11) = " << resC.GetNumber();
+    COMPILER_LOG(INFO) << "res for FastSub(2, 1) = " << resA.GetNumber();
+    COMPILER_LOG(INFO) << "res for FastSub(7, 2) = " << resB.GetNumber();
+    COMPILER_LOG(INFO) << "res for FastSub(11, 11) = " << resC.GetNumber();
     EXPECT_EQ(resA, JSTaggedValue(1));
     EXPECT_EQ(resB, JSTaggedValue(5));
     EXPECT_EQ(resC, JSTaggedValue(0));
@@ -187,9 +186,9 @@ HWTEST_F_L0(StubTest, FastMulTest)
         JSTaggedValue(-2).GetRawData());  // -7, -2 : test case
     auto resC = fn(thread->GetGlueAddr(), JSTaggedValue(11).GetRawData(),
         JSTaggedValue(11).GetRawData());  // 11 : test case
-    LOG_ECMA(INFO) << "res for FastMul(-2, 1) = " << std::dec << resA.GetNumber();
-    LOG_ECMA(INFO) << "res for FastMul(-7, -2) = " << std::dec << resB.GetNumber();
-    LOG_ECMA(INFO) << "res for FastMul(11, 11) = " << std::dec << resC.GetNumber();
+    COMPILER_LOG(INFO) << "res for FastMul(-2, 1) = " << std::dec << resA.GetNumber();
+    COMPILER_LOG(INFO) << "res for FastMul(-7, -2) = " << std::dec << resB.GetNumber();
+    COMPILER_LOG(INFO) << "res for FastMul(11, 11) = " << std::dec << resC.GetNumber();
     EXPECT_EQ(resA.GetNumber(), -2); // -2: test case
     EXPECT_EQ(resB.GetNumber(), 14); // 14: test case
     EXPECT_EQ(resC.GetNumber(), 121); // 121: test case
@@ -235,27 +234,27 @@ HWTEST_F_L0(StubTest, FastDivTest)
     // test normal Division operation
     uint64_t x1 = JSTaggedValue(50).GetRawData();
     uint64_t y1 = JSTaggedValue(25).GetRawData();
-    LOG_ECMA(INFO) << "x1 = " << x1 << "  y1 = " << y1;
+    COMPILER_LOG(INFO) << "x1 = " << x1 << "  y1 = " << y1;
     auto res1 = fn(thread->GetGlueAddr(), x1, y1);
-    LOG_ECMA(INFO) << "res for FastDiv(50, 25) = " << res1.GetRawData();
+    COMPILER_LOG(INFO) << "res for FastDiv(50, 25) = " << res1.GetRawData();
     auto expectedG1 = FastRuntimeStub::FastDiv(JSTaggedValue(x1), JSTaggedValue(y1));
     EXPECT_EQ(res1, expectedG1);
 
     // test x == 0.0 or std::isnan(x)
     uint64_t x2 = JSTaggedValue(base::NAN_VALUE).GetRawData();
     uint64_t y2 = JSTaggedValue(0).GetRawData();
-    LOG_ECMA(INFO) << "x2 = " << x1 << "  y2 = " << y2;
+    COMPILER_LOG(INFO) << "x2 = " << x1 << "  y2 = " << y2;
     auto res2 = fn(thread->GetGlueAddr(), x2, y2);
-    LOG_ECMA(INFO) << "res for FastDiv(base::NAN_VALUE, 0) = " << res2.GetRawData();
+    COMPILER_LOG(INFO) << "res for FastDiv(base::NAN_VALUE, 0) = " << res2.GetRawData();
     auto expectedG2 = FastRuntimeStub::FastDiv(JSTaggedValue(x2), JSTaggedValue(y2));
     EXPECT_EQ(res2, expectedG2);
 
     // test other
     uint64_t x3 = JSTaggedValue(7).GetRawData();
     uint64_t y3 = JSTaggedValue(0).GetRawData();
-    LOG_ECMA(INFO) << "x2 = " << x3 << "  y2 = " << y3;
+    COMPILER_LOG(INFO) << "x2 = " << x3 << "  y2 = " << y3;
     auto res3 = fn(thread->GetGlueAddr(), x3, y3);
-    LOG_ECMA(INFO) << "res for FastDiv(7, 0) = " << res3.GetRawData();
+    COMPILER_LOG(INFO) << "res for FastDiv(7, 0) = " << res3.GetRawData();
     auto expectedG3 = FastRuntimeStub::FastDiv(JSTaggedValue(x3), JSTaggedValue(y3));
     EXPECT_EQ(res3, expectedG3);
 }
@@ -275,10 +274,6 @@ HWTEST_F_L0(StubTest, FastModTest)
     llvmBuilder.Build();
     LLVMAssembler assembler(module);
     assembler.Run();
-    auto engine = assembler.GetEngine();
-    uint64_t stub1Code = LLVMGetFunctionAddress(engine, "ModStub");
-    std::map<uint64_t, std::string> addr2name = {{stub1Code, "stub1"}};
-    assembler.Disassemble(addr2name);
     auto fn = reinterpret_cast<JSTaggedValue (*)(uintptr_t, int64_t, int64_t)>(
         assembler.GetFuncPtrFromCompiledModule(function));
     // test left, right are all integer
@@ -294,8 +289,8 @@ HWTEST_F_L0(StubTest, FastModTest)
     auto result2 = fn(thread->GetGlueAddr(), JSTaggedValue(x2).GetRawData(), JSTaggedValue(y2).GetRawData());
     auto expectRes2 = FastRuntimeStub::FastMod(JSTaggedValue(x2), JSTaggedValue(y2));
     EXPECT_EQ(result2, expectRes2);
-    LOG_ECMA(INFO) << "result2 for FastMod(7, 'helloworld') = " << result2.GetRawData();
-    LOG_ECMA(INFO) << "expectRes2 for FastMod(7, 'helloworld') = " << expectRes2.GetRawData();
+    COMPILER_LOG(INFO) << "result2 for FastMod(7, 'helloworld') = " << result2.GetRawData();
+    COMPILER_LOG(INFO) << "expectRes2 for FastMod(7, 'helloworld') = " << expectRes2.GetRawData();
 
     // // test modular operation under normal conditions
     auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
@@ -312,8 +307,8 @@ HWTEST_F_L0(StubTest, FastModTest)
     auto result4 = fn(thread->GetGlueAddr(), JSTaggedValue(x4).GetRawData(), JSTaggedValue(y4).GetRawData());
     auto expectRes4 = FastRuntimeStub::FastMod(JSTaggedValue(x4), JSTaggedValue(y4));
 
-    LOG_ECMA(INFO) << "result4 for FastMod(base::NAN_VALUE, 7) = " << result4.GetRawData();
-    LOG_ECMA(INFO) << "expectRes4 for FastMod(base::NAN_VALUE, 7) = " << expectRes4.GetRawData();
+    COMPILER_LOG(INFO) << "result4 for FastMod(base::NAN_VALUE, 7) = " << result4.GetRawData();
+    COMPILER_LOG(INFO) << "expectRes4 for FastMod(base::NAN_VALUE, 7) = " << expectRes4.GetRawData();
     EXPECT_EQ(result4, expectRes4);
 
     // test all non-conforming conditions
@@ -324,7 +319,7 @@ HWTEST_F_L0(StubTest, FastModTest)
     auto result5 = fn(thread->GetGlueAddr(), JSTaggedValue(x5).GetRawData(), y5.GetTaggedValue().GetRawData());
     EXPECT_EQ(result5, JSTaggedValue::Hole());
     auto expectRes5 = FastRuntimeStub::FastMod(JSTaggedValue(x5), y5.GetTaggedValue());
-    LOG_ECMA(INFO) << "result1 for FastMod(7, 'helloworld') = " << result5.GetRawData();
+    COMPILER_LOG(INFO) << "result1 for FastMod(7, 'helloworld') = " << result5.GetRawData();
     EXPECT_EQ(result5, expectRes5);
 }
 
@@ -405,12 +400,12 @@ public:
     StubCallRunTimeThreadFpLock(struct ThreadTy *thread, intptr_t newFp) : oldRbp_(thread->fp), thread_(thread)
     {
         thread_->fp = *(reinterpret_cast<int64_t *>(newFp));
-        std::cout << "StubCallRunTimeThreadFpLock newFp: " << newFp << " oldRbp_ : " << oldRbp_
-                  << " thread_->fp:" << thread_->fp << std::endl;
+        COMPILER_LOG(INFO) << "StubCallRunTimeThreadFpLock newFp: " << newFp << " oldRbp_ : " << oldRbp_
+                           << " thread_->fp:" << thread_->fp;
     }
     ~StubCallRunTimeThreadFpLock()
     {
-        std::cout << "~StubCallRunTimeThreadFpLock oldRbp_: " << oldRbp_ << " thread_->fp:" << thread_->fp << std::endl;
+        COMPILER_LOG(INFO) << "~StubCallRunTimeThreadFpLock oldRbp_: " << oldRbp_ << " thread_->fp:" << thread_->fp;
         thread_->fp = oldRbp_;
     }
 
@@ -434,31 +429,31 @@ int64_t (*g_stub2Func)(struct ThreadTy *) = nullptr;
 
 int RuntimeFunc1(struct ThreadTy *fpInfo)
 {
-    std::cout << "RuntimeFunc1  -" << std::endl;
+    COMPILER_LOG(INFO) << "RuntimeFunc1  -";
     int64_t newRbp;
     asm("mov %%rbp, %0" : "=rm"(newRbp));
     StubCallRunTimeThreadFpLock lock(fpInfo, newRbp);
 
-    std::cout << std::hex << "g_stub2Func " << reinterpret_cast<uintptr_t>(g_stub2Func) << std::endl;
+    COMPILER_LOG(INFO) << std::hex << "g_stub2Func " << reinterpret_cast<uintptr_t>(g_stub2Func);
     if (g_stub2Func != nullptr) {
         g_stub2Func(fpInfo);
     }
-    std::cout << "RuntimeFunc1  +" << std::endl;
+    COMPILER_LOG(INFO) << "RuntimeFunc1  +";
     return 0;
 }
 
 int RuntimeFunc2(struct ThreadTy *fpInfo)
 {
-    std::cout << "RuntimeFunc2  -" << std::endl;
+    COMPILER_LOG(INFO) << "RuntimeFunc2  -";
     // update thread.fp
     int64_t newRbp;
     asm("mov %%rbp, %0" : "=rm"(newRbp));
     StubCallRunTimeThreadFpLock lock(fpInfo, newRbp);
     auto rbp = reinterpret_cast<int64_t *>(fpInfo->fp);
 
-    std::cout << " RuntimeFunc2 rbp:" << rbp <<std::endl;
+    COMPILER_LOG(INFO) << " RuntimeFunc2 rbp:" << rbp;
     for (int i = 0; i < 40; i++) { // print 40 ptr value for debug
-        std::cout << std::hex << &(rbp[i]) << " :" << rbp[i] << std::endl;
+        COMPILER_LOG(INFO) << std::hex << &(rbp[i]) << " :" << rbp[i];
     }
     /* walk back
       stack frame:           0     pre rbp  <-- rbp
@@ -467,7 +462,7 @@ int RuntimeFunc2(struct ThreadTy *fpInfo)
     */
     int64_t *frameType = nullptr;
     int64_t *gcFp = nullptr;
-    std::cout << "-----------------walkback----------------" << std::endl;
+    COMPILER_LOG(INFO) << "-----------------walkback----------------";
     do {
         frameType = rbp - 1;
         if (*frameType == 1) {
@@ -476,11 +471,11 @@ int RuntimeFunc2(struct ThreadTy *fpInfo)
             gcFp = rbp;
         }
         rbp = reinterpret_cast<intptr_t *>(*gcFp);
-        std::cout << std::hex << "frameType :" << *frameType << " gcFp:" << *gcFp << std::endl;
+        COMPILER_LOG(INFO) << std::hex << "frameType :" << *frameType << " gcFp:" << *gcFp;
     } while (*gcFp != 0);
-    std::cout << "+++++++++++++++++walkback++++++++++++++++" << std::endl;
-    std::cout << "call RuntimeFunc2 func ThreadTy fp: " << fpInfo->fp << " magic:" << fpInfo->magic << std::endl;
-    std::cout << "RuntimeFunc2  +" << std::endl;
+    COMPILER_LOG(INFO) << "+++++++++++++++++walkback++++++++++++++++";
+    COMPILER_LOG(INFO) << "call RuntimeFunc2 func ThreadTy fp: " << fpInfo->fp << " magic:" << fpInfo->magic;
+    COMPILER_LOG(INFO) << "RuntimeFunc2  +";
     return 0;
 }
 }
@@ -523,7 +518,7 @@ LLVMValueRef CallingFp(LLVMModuleRef &module, LLVMBuilderRef &builder)
     std::vector<LLVMValueRef> args = {LLVMConstInt(LLVMInt32Type(), 0, false)};
     auto fn = LLVMGetNamedFunction(module, "llvm.frameaddress.p0i8");
     if (!fn) {
-        std::cout << "Could not find function " << std::endl;
+        COMPILER_LOG(INFO) << "Could not find function ";
         return LLVMConstInt(LLVMInt64Type(), 0, false);
     }
     LLVMValueRef fAddrRet = LLVMBuildCall(builder, fn, args.data(), 1, "");
@@ -534,7 +529,7 @@ LLVMValueRef CallingFp(LLVMModuleRef &module, LLVMBuilderRef &builder)
 #ifdef ARK_GC_SUPPORT
 HWTEST_F_L0(StubTest, JSEntryTest)
 {
-    std::cout << " ---------- JSEntryTest ------------- " << std::endl;
+    COMPILER_LOG(INFO) << " ---------- JSEntryTest ------------- ";
     LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
     LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
     LLVMBuilderRef builder = LLVMCreateBuilder();
@@ -654,20 +649,14 @@ HWTEST_F_L0(StubTest, JSEntryTest)
     uint64_t stub1Code = LLVMGetFunctionAddress(engine, "stub1");
     uint64_t stub2Code = LLVMGetFunctionAddress(engine, "stub2");
     uint64_t stub3Code = LLVMGetFunctionAddress(engine, "stub3");
-    std::map<uint64_t, std::string> addr2name = {{stub1Code, "stub1"}, {stub2Code, "stub2"}, {stub3Code, "stub3"}};
-    std::cout << std::endl << " stub1Code : " << stub1Code << std::endl;
-    std::cout << std::endl << " stub2Code : " << stub2Code << std::endl;
-    std::cout << std::endl << " stub3Code : " << stub3Code << std::endl;
-    assembler.Disassemble(addr2name);
     struct ThreadTy parameters = {0x0, 0x0};
     auto stub1Func = reinterpret_cast<int64_t (*)(struct ThreadTy *)>(stub1Code);
     g_stub2Func = reinterpret_cast<int64_t (*)(struct ThreadTy *)>(stub2Code);
     int64_t result = stub1Func(&parameters);
-    std::cout << std::endl
-              << "parameters magic:" << parameters.magic << " parameters.fp " << parameters.fp << std::endl;
+    COMPILER_LOG(INFO) << "parameters magic:" << parameters.magic << " parameters.fp " << parameters.fp;
     EXPECT_EQ(parameters.fp, 0x0);
     EXPECT_EQ(result, 1);
-    std::cout << " ++++++++++ JSEntryTest +++++++++++++ " << std::endl;
+    COMPILER_LOG(INFO) << " ++++++++++ JSEntryTest +++++++++++++ ";
 }
 
 /*
@@ -682,7 +671,7 @@ main          push rbp
 */
 HWTEST_F_L0(StubTest, Prologue)
 {
-    std::cout << " ---------- Prologue ------------- " << std::endl;
+    COMPILER_LOG(INFO) << " ---------- Prologue ------------- ";
     LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
     LLVMSetTarget(module);
     LLVMBuilderRef builder = LLVMCreateBuilder();
@@ -727,7 +716,7 @@ HWTEST_F_L0(StubTest, Prologue)
     auto mainFunc = reinterpret_cast<int64_t (*)(int64_t, int64_t)>(mainCode);
     int64_t result = mainFunc(1, 2);
     EXPECT_EQ(result, 3);
-    std::cout << " ++++++++++ Prologue +++++++++++++ " << std::endl;
+    COMPILER_LOG(INFO) << " ++++++++++ Prologue +++++++++++++ ";
 }
 
 /*
@@ -738,7 +727,7 @@ test:
 */
 HWTEST_F_L0(StubTest, CEntryFp)
 {
-    std::cout << " ---------- CEntryFp ------------- " << std::endl;
+    COMPILER_LOG(INFO) << " ---------- CEntryFp ------------- ";
     LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
     LLVMSetTarget(module);
     LLVMBuilderRef builder = LLVMCreateBuilder();
@@ -764,7 +753,6 @@ HWTEST_F_L0(StubTest, CEntryFp)
     std::vector<LLVMValueRef> indexes1 = {c0, c0};
     std::vector<LLVMValueRef> indexes2 = {c0, c1};
     LLVMValueRef gep1 = LLVMBuildGEP2(builder, threadTy, value, indexes1.data(), indexes1.size(), "");
-    std::cout << std::endl;
     LLVMValueRef gep2 = LLVMBuildGEP2(builder, threadTy, value, indexes2.data(), indexes2.size(), "fpAddr");
     LLVMBuildStore(builder, LLVMConstInt(LLVMInt64Type(), 0x11223344, false), gep1);
 
@@ -786,7 +774,7 @@ HWTEST_F_L0(StubTest, CEntryFp)
     LLVMValueRef runTimeFunc = LLVMAddFunction(module, "RuntimeFunc", funcType);
 
     std::vector<LLVMValueRef> argValue = {value};
-    std::cout << std::endl;
+    COMPILER_LOG(INFO);
     LLVMValueRef retVal = LLVMBuildCall(builder, runTimeFunc, argValue.data(), 1, "");
     LLVMBuildRet(builder, retVal);
     char *error = nullptr;
@@ -796,25 +784,25 @@ HWTEST_F_L0(StubTest, CEntryFp)
     assembler.Run();
     auto engine = assembler.GetEngine();
     uint64_t nativeCode = LLVMGetFunctionAddress(engine, "main");
-    std::cout << std::endl << " nativeCode : " << nativeCode << std::endl;
+    COMPILER_LOG(INFO) << " nativeCode : " << nativeCode;
     struct ThreadTy parameters = {0x0, 0x0};
 
     auto mainFunc = reinterpret_cast<int64_t (*)(struct ThreadTy *)>(nativeCode);
     int64_t result = mainFunc(&parameters);
     EXPECT_EQ(result, 1);
-    std::cout << " ++++++++++ CEntryFp +++++++++++++ " << std::endl;
+    COMPILER_LOG(INFO) << " ++++++++++ CEntryFp +++++++++++++ ";
 }
 
 HWTEST_F_L0(StubTest, LoadGCIRTest)
 {
-    std::cout << "--------------LoadGCIRTest--------------------" << std::endl;
+    COMPILER_LOG(INFO) << "--------------LoadGCIRTest--------------------";
     char *path = get_current_dir_name();
     std::string filePath = std::string(path) + "/ark/js_runtime/ecmascript/compiler/tests/satepoint_GC_0.ll";
 
     char resolvedPath[PATH_MAX];
     char *res = realpath(filePath.c_str(), resolvedPath);
     if (res == nullptr) {
-        std::cerr << "filePath :" << filePath.c_str() << "   is not exist !" << std::endl;
+        COMPILER_LOG(ERROR) << "filePath :" << filePath.c_str() << "   is not exist !";
         return;
     }
 
@@ -824,7 +812,7 @@ HWTEST_F_L0(StubTest, LoadGCIRTest)
     // Load the input module...
     std::unique_ptr<llvm::Module> rawModule = parseIRFile(inputFilename, err, context);
     if (!rawModule) {
-        std::cout << "parseIRFile :" << inputFilename.data() << " failed !" << std::endl;
+        COMPILER_LOG(INFO) << "parseIRFile :" << inputFilename.data() << " failed !";
         err.print("parseIRFile ", llvm::errs());
         return;
     }
@@ -839,7 +827,7 @@ HWTEST_F_L0(StubTest, LoadGCIRTest)
     LLVMStackMapParser::GetInstance().CalculateStackMap(ptr);
 
     int value = reinterpret_cast<int (*)()>(mainPtr)();
-    std::cout << " value:" << value << std::endl;
+    COMPILER_LOG(INFO) << " value:" << value;
 }
 #endif
 
@@ -863,16 +851,15 @@ void DoSafepoint()
                     address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rbp) + info.second);
                 }
                 // print ref and vlue for debug
-                std::cout << std::hex << "ref addr:" << address;
-                std::cout << "  value:" << *address;
-                std::cout << " *value :" << **address << std::endl;
+                COMPILER_LOG(INFO) << std::hex << "ref addr:" << address;
+                COMPILER_LOG(INFO) << "  value:" << *address;
+                COMPILER_LOG(INFO) << " *value :" << **address;
             }
         }
-        std::cout << std::endl << std::endl;
-        std::cout << std::hex << "+++++++++++++++++++ returnAddr : 0x" << returnAddr << " rbp:" << rbp
-                  << " rsp: " << rsp << std::endl;
+        COMPILER_LOG(INFO) << std::hex << "+++++++++++++++++++ returnAddr : 0x" << returnAddr << " rbp:" << rbp
+                           << " rsp: " << rsp;
     }
-    std::cout << "do_safepoint +++ " << std::endl;
+    COMPILER_LOG(INFO) << "do_safepoint +++ ";
 }
 }
 
@@ -1345,14 +1332,59 @@ HWTEST_F_L0(StubTest, JSCallBoundTest)
     int y = 2;
     JSTaggedType argV[5] = {
         footarget.GetRawData(),
-        0xa,
-        0xa,
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
         JSTaggedValue(x).GetRawData(),
         JSTaggedValue(y).GetRawData(),
     };
     auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5,
                                   argV, fooEntry);
     EXPECT_EQ(result, JSTaggedValue(38.0).GetRawData());
+}
+
+// test for proxy method is undefined
+HWTEST_F_L0(StubTest, JSCallTest3)
+{
+    auto fooProxyEntry = thread->GetFastStubEntry(CommonStubCSigns::FooProxyAOT);
+    auto foo2target = NewAotFunction(2, fooProxyEntry);
+    auto glue = thread->GetGlueAddr();
+    int x = 1;
+    int y = 2;
+    JSTaggedType argV[6] = {
+        foo2target.GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue(x).GetRawData(),
+        JSTaggedValue(y).GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+    };
+    JSThread::GlueData::GetCOStubEntriesOffset(false);
+    JSThread::GlueData::GetCOStubEntriesOffset(true);
+    auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()),
+        5, 5, argV, fooProxyEntry);
+    EXPECT_EQ(result, JSTaggedValue(3.0).GetRawData());
+}
+
+// test for proxy method isn't undefined
+HWTEST_F_L0(StubTest, JSCallTest4)
+{
+    auto fooProxyEntry = thread->GetFastStubEntry(CommonStubCSigns::FooProxy2AOT);
+    auto foo2target = NewAotFunction(2, fooProxyEntry);
+    auto glue = thread->GetGlueAddr();
+    int x = 1;
+    int y = 2;
+    JSTaggedType argV[6] = {
+        foo2target.GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+        JSTaggedValue(x).GetRawData(),
+        JSTaggedValue(y).GetRawData(),
+        JSTaggedValue::Undefined().GetRawData(),
+    };
+    JSThread::GlueData::GetCOStubEntriesOffset(false);
+    JSThread::GlueData::GetCOStubEntriesOffset(true);
+    [[maybe_unused]] auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()),
+        5, 5, argV, fooProxyEntry);
 }
 #endif
 }  // namespace panda::test

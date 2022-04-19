@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,14 +15,17 @@
 
 #include "ecmascript/tooling/agent/js_backend.h"
 
+#include <boost/beast/core/detail/base64.hpp>
+
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/tooling/base/pt_events.h"
 #include "ecmascript/tooling/front_end.h"
 #include "ecmascript/tooling/protocol_handler.h"
 #include "libpandafile/class_data_accessor-inl.h"
 
-namespace panda::tooling::ecmascript {
-using panda::ecmascript::JSPandaFileManager;
+namespace panda::ecmascript::tooling {
+using namespace boost::beast::detail;
+
 using ObjectType = RemoteObject::TypeName;
 using ObjectSubType = RemoteObject::SubTypeName;
 using ObjectClassName = RemoteObject::ClassName;
@@ -35,6 +38,7 @@ JSBackend::JSBackend(FrontEnd *frontend) : frontend_(frontend)
     hooks_ = std::make_unique<JSPtHooks>(this);
 
     debugger_ = DebuggerApi::CreateJSDebugger(ecmaVm_);
+    DebuggerApi::InitJSDebugger(debugger_);
     DebuggerApi::RegisterHooks(debugger_, hooks_.get());
 }
 
@@ -54,11 +58,13 @@ void JSBackend::WaitForDebugger()
     frontend_->WaitForDebugger();
 }
 
-void JSBackend::NotifyPaused(std::optional<PtLocation> location, PauseReason reason)
+void JSBackend::NotifyPaused(std::optional<JSPtLocation> location, PauseReason reason)
 {
     if (!pauseOnException_ && reason == EXCEPTION) {
         return;
     }
+    Local<JSValueRef> exception = DebuggerApi::GetAndClearException(ecmaVm_);
+
     CVector<CString> hitBreakpoints;
     if (location.has_value()) {
         BreakpointDetails detail;
@@ -89,10 +95,16 @@ void JSBackend::NotifyPaused(std::optional<PtLocation> location, PauseReason rea
     }
     std::unique_ptr<Paused> paused = std::make_unique<Paused>();
     paused->SetCallFrames(std::move(callFrames)).SetReason(reason).SetHitBreakpoints(std::move(hitBreakpoints));
+    if (reason == EXCEPTION && exception->IsError()) {
+        paused->SetData(exception);
+    }
     frontend_->SendNotification(ecmaVm_, std::move(paused));
 
     // Waiting for Debugger
     frontend_->WaitForDebugger();
+    if (!exception->IsHole()) {
+        DebuggerApi::SetException(ecmaVm_, exception);
+    }
 }
 
 void JSBackend::NotifyResume()
@@ -168,7 +180,7 @@ bool JSBackend::NotifyScriptParsed(ScriptId scriptId, const CString &fileName)
     return true;
 }
 
-bool JSBackend::StepComplete(const PtLocation &location)
+bool JSBackend::StepComplete(const JSPtLocation &location)
 {
     JSPtExtractor *extractor = nullptr;
     auto scriptFunc = [this, &extractor](PtScript *script) -> bool {
@@ -194,17 +206,17 @@ bool JSBackend::StepComplete(const PtLocation &location)
     return false;
 }
 
-std::optional<Error> JSBackend::GetPossibleBreakpoints(Location *start, [[maybe_unused]] Location *end,
+std::optional<CString> JSBackend::GetPossibleBreakpoints(Location *start, [[maybe_unused]] Location *end,
     CVector<std::unique_ptr<BreakLocation>> *locations)
 {
     auto iter = scripts_.find(start->GetScriptId());
     if (iter == scripts_.end()) {
-        return Error(Error::Type::INVALID_BREAKPOINT, "extractor not found");
+        return "Unknown file name.";
     }
     JSPtExtractor *extractor = GetExtractor(iter->second->GetUrl());
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "GetPossibleBreakpoints: extractor is null";
-        return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
+        return "Unknown file name.";
     }
 
     int32_t line = start->GetLine();
@@ -221,13 +233,14 @@ std::optional<Error> JSBackend::GetPossibleBreakpoints(Location *start, [[maybe_
     return {};
 }
 
-std::optional<Error> JSBackend::SetBreakpointByUrl(const CString &url, int32_t lineNumber,
-    int32_t columnNumber, CString *out_id, CVector<std::unique_ptr<Location>> *outLocations)
+std::optional<CString> JSBackend::SetBreakpointByUrl(const CString &url, int32_t lineNumber,
+    int32_t columnNumber, const std::optional<CString> &condition, CString *outId,
+    CVector<std::unique_ptr<Location>> *outLocations)
 {
     JSPtExtractor *extractor = GetExtractor(url);
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "SetBreakpointByUrl: extractor is null";
-        return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
+        return "Unknown file name.";
     }
 
     ScriptId scriptId;
@@ -239,38 +252,42 @@ std::optional<Error> JSBackend::SetBreakpointByUrl(const CString &url, int32_t l
     };
     if (!MatchScripts(scriptFunc, url, ScriptMatchType::URL)) {
         LOG(ERROR, DEBUGGER) << "SetBreakpointByUrl: Unknown url: " << url;
-        return Error(Error::Type::INVALID_BREAKPOINT, "Url not found");
+        return "Unknown file name.";
     }
 
-    std::optional<Error> ret = std::nullopt;
-    auto callbackFunc = [this, fileName, &ret](File::EntityId id, uint32_t offset) -> bool {
-        PtLocation location {fileName.c_str(), id, offset};
-        ret = DebuggerApi::SetBreakpoint(debugger_, location);
-        return true;
+    auto callbackFunc = [this, fileName, &condition](File::EntityId id, uint32_t offset) -> bool {
+        JSPtLocation location {fileName.c_str(), id, offset};
+        if (condition.has_value()) {
+            CString dest;
+            if (!DecodeAndCheckBase64(condition.value(), dest)) {
+                LOG(ERROR, DEBUGGER) << "SetBreakpointByUrl: base64 decode failed";
+            }
+            // ignore the condition if it is not executable, which is newly supported
+            return DebuggerApi::SetBreakpoint(debugger_, location, dest.empty() ? std::optional<CString> {} : dest);
+        }
+        return DebuggerApi::SetBreakpoint(debugger_, location, condition);
     };
     if (!extractor->MatchWithLocation(callbackFunc, lineNumber, columnNumber)) {
         LOG(ERROR, DEBUGGER) << "failed to set breakpoint location number: " << lineNumber << ":" << columnNumber;
-        return Error(Error::Type::INVALID_BREAKPOINT, "Breakpoint not found");
+        return "Breakpoint not found.";
     }
 
-    if (!ret.has_value()) {
-        BreakpointDetails metaData{lineNumber, 0, url};
-        *out_id = BreakpointDetails::ToString(metaData);
-        *outLocations = CVector<std::unique_ptr<Location>>();
-        std::unique_ptr<Location> location = std::make_unique<Location>();
-        location->SetScriptId(scriptId).SetLine(lineNumber).SetColumn(0);
-        outLocations->emplace_back(std::move(location));
-    }
+    BreakpointDetails metaData{lineNumber, 0, url};
+    *outId = BreakpointDetails::ToString(metaData);
+    *outLocations = CVector<std::unique_ptr<Location>>();
+    std::unique_ptr<Location> location = std::make_unique<Location>();
+    location->SetScriptId(scriptId).SetLine(lineNumber).SetColumn(0);
+    outLocations->emplace_back(std::move(location));
 
-    return ret;
+    return {};
 }
 
-std::optional<Error> JSBackend::RemoveBreakpoint(const BreakpointDetails &metaData)
+std::optional<CString> JSBackend::RemoveBreakpoint(const BreakpointDetails &metaData)
 {
     JSPtExtractor *extractor = GetExtractor(metaData.url_);
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "RemoveBreakpoint: extractor is null";
-        return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
+        return "Unknown file name.";
     }
 
     CString fileName;
@@ -280,32 +297,30 @@ std::optional<Error> JSBackend::RemoveBreakpoint(const BreakpointDetails &metaDa
     };
     if (!MatchScripts(scriptFunc, metaData.url_, ScriptMatchType::URL)) {
         LOG(ERROR, DEBUGGER) << "RemoveBreakpoint: Unknown url: " << metaData.url_;
-        return Error(Error::Type::INVALID_BREAKPOINT, "Url not found");
+        return "Unknown file name.";
     }
 
-    std::optional<Error> ret = std::nullopt;
-    auto callbackFunc = [this, fileName, &ret](File::EntityId id, uint32_t offset) -> bool {
-        PtLocation location {fileName.c_str(), id, offset};
-        ret = DebuggerApi::RemoveBreakpoint(debugger_, location);
-        return true;
+    auto callbackFunc = [this, fileName](File::EntityId id, uint32_t offset) -> bool {
+        JSPtLocation location {fileName.c_str(), id, offset};
+        return DebuggerApi::RemoveBreakpoint(debugger_, location);
     };
     if (!extractor->MatchWithLocation(callbackFunc, metaData.line_, metaData.column_)) {
         LOG(ERROR, DEBUGGER) << "failed to set breakpoint location number: "
             << metaData.line_ << ":" << metaData.column_;
-        return Error(Error::Type::INVALID_BREAKPOINT, "Breakpoint not found");
+        return "Breakpoint not found.";
     }
 
     LOG(INFO, DEBUGGER) << "remove breakpoint32_t line number:" << metaData.line_;
-    return ret;
+    return {};
 }
 
-std::optional<Error> JSBackend::Pause()
+std::optional<CString> JSBackend::Pause()
 {
     pauseOnNextByteCode_ = true;
     return {};
 }
 
-std::optional<Error> JSBackend::Resume()
+std::optional<CString> JSBackend::Resume()
 {
     singleStepper_.reset();
 
@@ -313,13 +328,13 @@ std::optional<Error> JSBackend::Resume()
     return {};
 }
 
-std::optional<Error> JSBackend::StepInto()
+std::optional<CString> JSBackend::StepInto()
 {
     JSMethod *method = DebuggerApi::GetMethod(ecmaVm_);
     JSPtExtractor *extractor = GetExtractor(method->GetJSPandaFile());
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "StepInto: extractor is null";
-        return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
+        return "Unknown file name.";
     }
 
     singleStepper_ = extractor->GetStepIntoStepper(ecmaVm_);
@@ -328,13 +343,13 @@ std::optional<Error> JSBackend::StepInto()
     return {};
 }
 
-std::optional<Error> JSBackend::StepOver()
+std::optional<CString> JSBackend::StepOver()
 {
     JSMethod *method = DebuggerApi::GetMethod(ecmaVm_);
     JSPtExtractor *extractor = GetExtractor(method->GetJSPandaFile());
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "StepOver: extractor is null";
-        return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
+        return "Unknown file name.";
     }
 
     singleStepper_ = extractor->GetStepOverStepper(ecmaVm_);
@@ -343,13 +358,13 @@ std::optional<Error> JSBackend::StepOver()
     return {};
 }
 
-std::optional<Error> JSBackend::StepOut()
+std::optional<CString> JSBackend::StepOut()
 {
     JSMethod *method = DebuggerApi::GetMethod(ecmaVm_);
     JSPtExtractor *extractor = GetExtractor(method->GetJSPandaFile());
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "StepOut: extractor is null";
-        return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
+        return "Unknown file name.";
     }
 
     singleStepper_ = extractor->GetStepOutStepper(ecmaVm_);
@@ -358,22 +373,20 @@ std::optional<Error> JSBackend::StepOut()
     return {};
 }
 
-std::optional<Error> JSBackend::EvaluateValue(CallFrameId callFrameId, const CString &expression,
+std::optional<CString> JSBackend::EvaluateValueCmpt(CallFrameId callFrameId, const CString &expression,
     std::unique_ptr<RemoteObject> *result)
 {
     JSMethod *method = DebuggerApi::GetMethod(ecmaVm_);
     if (method->IsNative()) {
-        LOG(ERROR, DEBUGGER) << "EvaluateValue: Native Frame not support";
         *result = RemoteObject::FromTagged(ecmaVm_,
-            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Runtime internal error")));
-        return Error(Error::Type::METHOD_NOT_FOUND, "Native Frame not support");
+            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Native Frame not support.")));
+        return "Native Frame not support.";
     }
     JSPtExtractor *extractor = GetExtractor(method->GetJSPandaFile());
     if (extractor == nullptr) {
-        LOG(ERROR, DEBUGGER) << "EvaluateValue: extractor is null";
         *result = RemoteObject::FromTagged(ecmaVm_,
-            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Runtime internal error")));
-        return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
+            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Internal error.")));
+        return "Internal error.";
     }
     CString varName = expression;
     CString varValue;
@@ -385,8 +398,8 @@ std::optional<Error> JSBackend::EvaluateValue(CallFrameId callFrameId, const CSt
 
     if (!varValue.empty() && callFrameId != 0) {
         *result = RemoteObject::FromTagged(ecmaVm_,
-            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Only allow set value in current frame")));
-        return Error(Error::Type::METHOD_NOT_FOUND, "Unsupported parent frame set value");
+            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Native Frame not support.")));
+        return "Native Frame not support.";
     }
 
     int32_t regIndex = -1;
@@ -405,13 +418,41 @@ std::optional<Error> JSBackend::EvaluateValue(CallFrameId callFrameId, const CSt
     uint32_t slot = 0;
     if (!DebuggerApi::EvaluateLexicalValue(ecmaVm_, varName.c_str(), level, slot)) {
         *result = RemoteObject::FromTagged(ecmaVm_,
-            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unknown input params")));
-        return Error(Error::Type::METHOD_NOT_FOUND, "Unsupported expression");
+            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unsupported expression.")));
+        return "Unsupported expression.";
     }
     if (varValue.empty()) {
         return GetLexicalValue(level, result, slot);
     }
     return SetLexicalValue(level, result, varValue, slot);
+}
+
+std::optional<CString> JSBackend::EvaluateValue(CallFrameId callFrameId, const CString &expression,
+    std::unique_ptr<RemoteObject> *result)
+{
+    CString dest;
+    if (!DecodeAndCheckBase64(expression, dest)) {
+        LOG(ERROR, DEBUGGER) << "EvaluateValue: base64 decode failed";
+        return EvaluateValueCmpt(callFrameId, expression, result);
+    }
+
+    auto res = DebuggerApi::ExecuteFromBuffer(const_cast<EcmaVM *>(ecmaVm_), dest.data(), dest.size());
+    if (ecmaVm_->GetJSThread()->HasPendingException()) {
+        LOG(ERROR, DEBUGGER) << "EvaluateValue: has pending exception";
+        CString msg;
+        DebuggerApi::HandleUncaughtException(ecmaVm_, msg);
+        *result = RemoteObject::FromTagged(ecmaVm_,
+            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, msg.data())));
+        return msg;
+    }
+
+    // make sure the result of object type can show normally in the front-end watch/evaluate window
+    *result = RemoteObject::FromTagged(ecmaVm_, res);
+    if (res->IsObject() && !res->IsProxy()) {
+        (*result)->SetObjectId(curObjectId_);
+        propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, res);
+    }
+    return {};
 }
 
 CString JSBackend::Trim(const CString &str)
@@ -611,7 +652,7 @@ void JSBackend::SetPauseOnException(bool flag)
     pauseOnException_ = flag;
 }
 
-std::optional<Error> JSBackend::ConvertToLocal(Local<JSValueRef> &taggedValue, std::unique_ptr<RemoteObject> *result,
+std::optional<CString> JSBackend::ConvertToLocal(Local<JSValueRef> &taggedValue, std::unique_ptr<RemoteObject> *result,
     const CString &varValue)
 {
     if (varValue == "false") {
@@ -629,19 +670,19 @@ std::optional<Error> JSBackend::ConvertToLocal(Local<JSValueRef> &taggedValue, s
         double d = DebuggerApi::StringToDouble(begin, end, 0);
         if (std::isnan(d)) {
             *result = RemoteObject::FromTagged(ecmaVm_,
-                Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unsupported value")));
-            return Error(Error::Type::METHOD_NOT_FOUND, "Unsupported value");
+                Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unsupported expression.")));
+            return "Unsupported expression.";
         }
         taggedValue = NumberRef::New(ecmaVm_, d);
     }
     return {};
 }
 
-std::optional<Error> JSBackend::SetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result,
+std::optional<CString> JSBackend::SetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result,
     const CString &varValue)
 {
     Local<JSValueRef> taggedValue;
-    std::optional<Error> ret = ConvertToLocal(taggedValue, result, varValue);
+    std::optional<CString> ret = ConvertToLocal(taggedValue, result, varValue);
     if (ret.has_value()) {
         return ret;
     }
@@ -650,11 +691,11 @@ std::optional<Error> JSBackend::SetVregValue(int32_t regIndex, std::unique_ptr<R
     return {};
 }
 
-std::optional<Error> JSBackend::SetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result,
+std::optional<CString> JSBackend::SetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result,
     const CString &varValue, uint32_t slot)
 {
     Local<JSValueRef> taggedValue;
-    std::optional<Error> ret = ConvertToLocal(taggedValue, result, varValue);
+    std::optional<CString> ret = ConvertToLocal(taggedValue, result, varValue);
     if (ret.has_value()) {
         return ret;
     }
@@ -663,7 +704,7 @@ std::optional<Error> JSBackend::SetLexicalValue(int32_t level, std::unique_ptr<R
     return {};
 }
 
-std::optional<Error> JSBackend::GetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result)
+std::optional<CString> JSBackend::GetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result)
 {
     Local<JSValueRef> vValue = DebuggerApi::GetVRegValue(ecmaVm_, regIndex);
     *result = RemoteObject::FromTagged(ecmaVm_, vValue);
@@ -674,7 +715,7 @@ std::optional<Error> JSBackend::GetVregValue(int32_t regIndex, std::unique_ptr<R
     return {};
 }
 
-std::optional<Error> JSBackend::GetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result, uint32_t slot)
+std::optional<CString> JSBackend::GetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result, uint32_t slot)
 {
     Local<JSValueRef> vValue = DebuggerApi::GetProperties(ecmaVm_, level, slot);
     *result = RemoteObject::FromTagged(ecmaVm_, vValue);
@@ -777,16 +818,23 @@ void JSBackend::GetProperties(RemoteObjectId objectId, bool isOwn, bool isAccess
 }
 
 void JSBackend::CallFunctionOn([[maybe_unused]] const CString &functionDeclaration,
-    [[maybe_unused]] RemoteObjectId objectId,
-    [[maybe_unused]] const CVector<std::unique_ptr<CallArgument>> *arguments, [[maybe_unused]] bool isSilent,
-    [[maybe_unused]] bool returnByValue, [[maybe_unused]] bool generatePreview, [[maybe_unused]] bool userGesture,
-    [[maybe_unused]] bool awaitPromise, [[maybe_unused]] ExecutionContextId executionContextId,
-    [[maybe_unused]] const CString &objectGroup, [[maybe_unused]] bool throwOnSideEffect,
-    std::unique_ptr<RemoteObject> *outRemoteObject)
+                               std::unique_ptr<RemoteObject> *outRemoteObject)
 {
-    // Return undefined value temporarily.
-    std::unique_ptr<RemoteObject> remoteObjUndefVal =
-        std::make_unique<PrimitiveRemoteObject>(ecmaVm_, JSValueRef::Undefined(ecmaVm_));
-    (*outRemoteObject) = std::move(remoteObjUndefVal);
+    // Return EvalError temporarily.
+    auto error = Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unsupport eval now"));
+
+    *outRemoteObject = RemoteObject::FromTagged(ecmaVm_, error);
 }
-}  // namespace panda::tooling::ecmascript
+
+bool JSBackend::DecodeAndCheckBase64(const CString &src, CString &dest)
+{
+    dest.resize(base64::decoded_size(src.size()));
+    auto [numOctets, _] = base64::decode(dest.data(), src.data(), src.size());
+    dest.resize(numOctets);
+    if (numOctets > File::MAGIC_SIZE &&
+        memcmp(dest.data(), File::MAGIC.data(), File::MAGIC_SIZE) == 0) {
+        return true;
+    }
+    return false;
+}
+}  // namespace panda::ecmascript::tooling

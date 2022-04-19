@@ -51,7 +51,7 @@ JSHandle<Derived> LinkedHashTable<Derived, HashObject>::Insert(const JSThread *t
 
     JSHandle<Derived> newTable = GrowCapacity(thread, table);
 
-    int bucket = newTable->HashToBucket(hash);
+    uint32_t bucket = newTable->HashToBucket(hash);
     entry = newTable->NumberOfElements() + newTable->NumberOfDeletedElements();
     newTable->InsertNewEntry(thread, bucket, entry);
     newTable->SetKey(thread, entry, key.GetTaggedValue());
@@ -75,7 +75,7 @@ JSHandle<Derived> LinkedHashTable<Derived, HashObject>::InsertWeakRef(const JSTh
 
     JSHandle<Derived> newTable = GrowCapacity(thread, table);
 
-    int bucket = newTable->HashToBucket(hash);
+    uint32_t bucket = newTable->HashToBucket(hash);
     entry = newTable->NumberOfElements() + newTable->NumberOfDeletedElements();
     newTable->InsertNewEntry(thread, bucket, entry);
     JSTaggedValue weakKey(key->CreateAndGetWeakRef());
@@ -99,7 +99,7 @@ void LinkedHashTable<Derived, HashObject>::Rehash(const JSThread *thread, Derive
     int currentDeletedElements = 0;
     SetNextTable(thread, JSTaggedValue(newTable));
     for (int i = 0; i < numberOfAllElements; i++) {
-        int fromIndex = EntryToIndex(i);
+        int fromIndex = static_cast<int>(EntryToIndex(i));
         JSTaggedValue key = GetElement(fromIndex);
         if (key.IsHole()) {
             // store num_of_deleted_element before entry i; it will be used when iterator update.
@@ -113,9 +113,9 @@ void LinkedHashTable<Derived, HashObject>::Rehash(const JSThread *thread, Derive
             key.RemoveWeakTag();
         }
 
-        int bucket = newTable->HashToBucket(LinkedHash::Hash(key));
+        int bucket = static_cast<int>(newTable->HashToBucket(LinkedHash::Hash(key)));
         newTable->InsertNewEntry(thread, bucket, desEntry);
-        int desIndex = newTable->EntryToIndex(desEntry);
+        int desIndex = static_cast<int>(newTable->EntryToIndex(desEntry));
         for (int j = 0; j < HashObject::ENTRY_SIZE; j++) {
             newTable->SetElement(thread, desIndex + j, GetElement(fromIndex + j));
         }
@@ -285,7 +285,8 @@ int LinkedHash::Hash(JSTaggedValue key)
         int32_t hash = ECMAObject::Cast(key.GetHeapObject())->GetHash();
         if (hash == 0) {
             uint64_t keyValue = key.GetRawData();
-            hash = GetHash32(reinterpret_cast<uint8_t *>(&keyValue), sizeof(keyValue) / sizeof(uint8_t));
+            hash = static_cast<int32_t>(
+                GetHash32(reinterpret_cast<uint8_t *>(&keyValue), sizeof(keyValue) / sizeof(uint8_t)));
             ECMAObject::Cast(key.GetHeapObject())->SetHash(hash);
         }
         return hash;

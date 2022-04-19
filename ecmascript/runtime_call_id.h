@@ -561,6 +561,25 @@ namespace panda::ecmascript {
     V(ArrayList, Get)                         \
     V(ArrayList, Set)                         \
     V(ArrayList, GetSize)                     \
+    V(PlainArray, Constructor)                \
+    V(PlainArray, Add)                        \
+    V(PlainArray, Clear)                      \
+    V(PlainArray, Clone)                      \
+    V(PlainArray, Has)                        \
+    V(PlainArray, Get)                        \
+    V(PlainArray, GetIteratorObj)             \
+    V(PlainArray, ForEach)                    \
+    V(PlainArray, ToString)                   \
+    V(PlainArray, GetIndexOfKey)              \
+    V(PlainArray, GetIndexOfValue)            \
+    V(PlainArray, IsEmpty)                    \
+    V(PlainArray, GetKeyAt)                   \
+    V(PlainArray, Remove)                     \
+    V(PlainArray, RemoveAt)                   \
+    V(PlainArray, RemoveRangeFrom)            \
+    V(PlainArray, SetValueAt)                 \
+    V(PlainArray, GetValueAt)                 \
+    V(PlainArray, GetSize)                    \
     V(TreeMap, Constructor)                   \
     V(TreeMap, HasKey)                        \
     V(TreeMap, HasValue)                      \
@@ -663,7 +682,7 @@ enum EcmaRuntimeCallerId {
     INTERPRETER_CALLER_LIST(INTERPRETER_CALLER_ID) BUILTINS_API_LIST(BUILTINS_API_ID)
     ABSTRACT_OPERATION_LIST(ABSTRACT_OPERATION_ID)
     MEM_ALLOCATE_AND_GC_LIST(MEM_ALLOCATE_AND_GC_ID)
-#define DEF_RUNTIME_ID(name, c) RUNTIME_ID_##name,
+#define DEF_RUNTIME_ID(name) RUNTIME_ID_##name,
     RUNTIME_STUB_WITH_GC_LIST(DEF_RUNTIME_ID)
 #undef DEF_RUNTIME_ID
     RUNTIME_CALLER_NUMBER,

@@ -41,6 +41,7 @@ enum ParallelGCTaskPhase {
     COMPRESS_HANDLE_GLOBAL_POOL_TASK,
     CONCURRENT_HANDLE_GLOBAL_POOL_TASK,
     CONCURRENT_HANDLE_OLD_TO_NEW_TASK,
+    UNDEFINED_TASK,
     TASK_LAST  // Count of different Task phase
 };
 

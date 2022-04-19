@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,10 +19,11 @@
 #include "ecmascript/tooling/agent/js_pt_hooks.h"
 #include "ecmascript/tooling/base/pt_types.h"
 #include "ecmascript/tooling/dispatcher.h"
+#include "ecmascript/tooling/interface/js_debugger.h"
 #include "ecmascript/tooling/js_pt_extractor.h"
 #include "libpandabase/macros.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 class JSBackend {
 public:
     explicit JSBackend(FrontEnd *frontend);
@@ -31,30 +32,32 @@ public:
 
     // add for hooks
     void WaitForDebugger();
-    void NotifyPaused(std::optional<PtLocation> location, PauseReason reason);
+    void NotifyPaused(std::optional<JSPtLocation> location, PauseReason reason);
     void NotifyResume();
     void NotifyAllScriptParsed();
     bool NotifyScriptParsed(ScriptId scriptId, const CString &fileName);
-    bool StepComplete(const PtLocation &location);
+    bool StepComplete(const JSPtLocation &location);
 
-    std::optional<Error> GetPossibleBreakpoints(Location *start, Location *end,
+    std::optional<CString> GetPossibleBreakpoints(Location *start, Location *end,
                                                 CVector<std::unique_ptr<BreakLocation>> *locations);
     JSDebugger *GetDebugger() const
     {
         return debugger_;
     }
 
-    std::optional<Error> SetBreakpointByUrl(const CString &url, int32_t lineNumber, int32_t columnNumber,
-                                            CString *outId,
+    std::optional<CString> SetBreakpointByUrl(const CString &url, int32_t lineNumber, int32_t columnNumber,
+                                            const std::optional<CString> &condition, CString *outId,
                                             CVector<std::unique_ptr<Location>> *outLocations);
-    std::optional<Error> RemoveBreakpoint(const BreakpointDetails &metaData);
+    std::optional<CString> RemoveBreakpoint(const BreakpointDetails &metaData);
 
-    std::optional<Error> Pause();
-    std::optional<Error> Resume();
-    std::optional<Error> StepInto();
-    std::optional<Error> StepOver();
-    std::optional<Error> StepOut();
-    std::optional<Error> EvaluateValue(CallFrameId callFrameId, const CString &expression,
+    std::optional<CString> Pause();
+    std::optional<CString> Resume();
+    std::optional<CString> StepInto();
+    std::optional<CString> StepOver();
+    std::optional<CString> StepOut();
+    std::optional<CString> EvaluateValue(CallFrameId callFrameId, const CString &expression,
+                                       std::unique_ptr<RemoteObject> *result);
+    std::optional<CString> EvaluateValueCmpt(CallFrameId callFrameId, const CString &expression,
                                        std::unique_ptr<RemoteObject> *result);
 
     /**
@@ -96,10 +99,7 @@ public:
     void SetPauseOnException(bool flag);
     void GetProperties(RemoteObjectId objectId, bool isOwn, bool isAccessorOnly,
                        CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
-    void CallFunctionOn(const CString &functionDeclaration, RemoteObjectId objectId,
-        const CVector<std::unique_ptr<CallArgument>> *arguments, bool isSilent, bool returnByValue,
-        bool generatePreview, bool userGesture, bool awaitPromise, ExecutionContextId executionContextId,
-        const CString &objectGroup, bool throwOnSideEffect, std::unique_ptr<RemoteObject> *outRemoteObject);
+    void CallFunctionOn(const CString &functionDeclaration, std::unique_ptr<RemoteObject> *outRemoteObject);
     // public for testcases
     bool GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames);
     const EcmaVM *GetEcmaVm() const
@@ -118,16 +118,18 @@ private:
     std::unique_ptr<Scope> GetLocalScopeChain(const InterpretedFrameHandler *frameHandler,
         std::unique_ptr<RemoteObject> *thisObj);
     std::unique_ptr<Scope> GetGlobalScopeChain();
-    std::optional<Error> ConvertToLocal(Local<JSValueRef> &taggedValue, std::unique_ptr<RemoteObject> *result,
+    std::optional<CString> ConvertToLocal(Local<JSValueRef> &taggedValue, std::unique_ptr<RemoteObject> *result,
         const CString &varValue);
-    std::optional<Error> SetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result,
+    std::optional<CString> SetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result,
                                       const CString &varValue);
-    std::optional<Error> SetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result,
+    std::optional<CString> SetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result,
         const CString &varValue, uint32_t slot);
-    std::optional<Error> GetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result);
-    std::optional<Error> GetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result, uint32_t slot);
+    std::optional<CString> GetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result);
+    std::optional<CString> GetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result, uint32_t slot);
     void GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn, bool isAccessorOnly,
                              CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
+    bool DecodeAndCheckBase64(const CString &src, CString &dest);
+
     constexpr static int32_t SPECIAL_LINE_MARK = -1;
 
     FrontEnd *frontend_ {nullptr};
@@ -144,5 +146,5 @@ private:
 
     friend class JSPtHooks;
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif

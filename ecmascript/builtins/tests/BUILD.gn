@@ -16,6 +16,10 @@ import("//ark/js_runtime/test/test_helper.gni")
 import("//build/test.gni")
 
 module_output_path = "ark/js_runtime"
+config("icu_data_path_config") {
+  icu_data_path = rebase_path("//third_party/icu/ohos_icu4j/data")
+  defines = [ "ICU_PATH=\"${icu_data_path}\"" ]
+}
 
 host_unittest_action("BuiltinsArraybufferTest") {
   module_out_path = module_output_path
@@ -67,7 +71,10 @@ host_unittest_action("BuiltinsBigIntTest") {
     "builtins_bigint_test.cpp",
   ]
 
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    ":icu_data_path_config",
+  ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -109,7 +116,10 @@ host_unittest_action("BuiltinsCollatorTest") {
     "builtins_collator_test.cpp",
   ]
 
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    ":icu_data_path_config",
+  ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -172,7 +182,10 @@ host_unittest_action("BuiltinsDateTimeFormatTest") {
     "builtins_date_time_format_test.cpp",
   ]
 
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    ":icu_data_path_config",
+  ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -235,7 +248,10 @@ host_unittest_action("BuiltinsIntlTest") {
     "builtins_intl_test.cpp",
   ]
 
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    ":icu_data_path_config",
+  ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -298,7 +314,10 @@ host_unittest_action("BuiltinsLocaleTest") {
     "builtins_locale_test.cpp",
   ]
 
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    ":icu_data_path_config",
+  ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -405,10 +424,7 @@ host_unittest_action("BuiltinsPluralRulesTest") {
 
   configs = [
     "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
+    ":icu_data_path_config",
   ]
 
   deps = [
@@ -514,7 +530,10 @@ host_unittest_action("BuiltinsRelativeTimeFormatTest") {
     "builtins_relative_time_format_test.cpp",
   ]
 
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    ":icu_data_path_config",
+  ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
@@ -682,7 +701,10 @@ host_unittest_action("BuiltinsDisplayNamesTest") {
     "builtins_displaynames_test.cpp",
   ]
 
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    ":icu_data_path_config",
+  ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",

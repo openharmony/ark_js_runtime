@@ -461,16 +461,16 @@ JSTaggedValue TaggedTree<Derived>::GetHigherKey(JSThread *thread, const JSHandle
 template<typename Derived>
 JSHandle<Derived> TaggedTree<Derived>::Shrink(const JSThread *thread, const JSHandle<Derived> &tree)
 {
-    int oldCapacity = tree->Capacity();
+    int oldCapacity = static_cast<int>(tree->Capacity());
     if (tree->NumberOfElements() >= (oldCapacity + 1) / 4) { // 4: quarter
         return tree;
     }
-    int newCapacity = (oldCapacity - 1) >> 1;
-    if (newCapacity < Derived::MIN_SHRINK_CAPACITY) {
+    uint32_t newCapacity = static_cast<uint32_t>(oldCapacity - 1) >> 1;
+    if (newCapacity < static_cast<uint32_t>(Derived::MIN_SHRINK_CAPACITY)) {
         return tree;
     }
 
-    int length = ELEMENTS_START_INDEX + newCapacity * (Derived::ENTRY_SIZE);
+    int length = ELEMENTS_START_INDEX + static_cast<int>(newCapacity) * (Derived::ENTRY_SIZE);
     JSHandle<Derived> newTree = AdjustTaggedTree(thread, tree, length);
     newTree->SetCapacity(thread, newCapacity);
     return newTree;

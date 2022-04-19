@@ -25,6 +25,9 @@
 #include "ecmascript/compiler/gate.h"
 #include "ecmascript/compiler/stub.h"
 #include "ecmascript/compiler/call_signature.h"
+#include "ecmascript/compiler/common_stubs.h"
+#include "ecmascript/compiler/interpreter_stub.h"
+#include "ecmascript/compiler/rt_call_signature.h"
 #include "ecmascript/js_method.h"
 #include "llvm-c/Core.h"
 
@@ -157,6 +160,7 @@ private:
 #define OPCODES(V) \
     V(Call, (GateRef gate, const std::vector<GateRef> &inList, OpCode op))                \
     V(RuntimeCall, (GateRef gate, const std::vector<GateRef> &inList))                    \
+    V(RuntimeCallWithArgv, (GateRef gate, const std::vector<GateRef> &inList))            \
     V(NoGcRuntimeCall, (GateRef gate, const std::vector<GateRef> &inList))                \
     V(BytecodeCall, (GateRef gate, const std::vector<GateRef> &inList))                   \
     V(Alloca, (GateRef gate))                                                             \
@@ -199,11 +203,13 @@ private:
     V(ChangeTaggedPointerToInt64, (GateRef gate, GateRef e1))                             \
     V(ChangeInt64ToTagged, (GateRef gate, GateRef e1))
 
+// runtime/common stub ID, opcodeOffset for bc stub
+using StubIdType = std::variant<RuntimeStubCSigns::ID, CommonStubCSigns::ID, LLVMValueRef>;
 class LLVMIRBuilder {
 public:
     explicit LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, const Circuit *circuit,
                            LLVMModule *module, LLVMValueRef function, const CompilationConfig *cfg,
-                           CallSignature::CallConv callConv);
+                           CallSignature::CallConv callConv, bool enableLog = false);
     ~LLVMIRBuilder();
     void Build();
 
@@ -255,6 +261,16 @@ private:
     bool IsGCRelated(GateType typeCode) const;
     void SetFunctionCallConv();
 
+    bool IsLogEnabled() const
+    {
+        return enableLog_;
+    }
+    LLVMValueRef GetFunction(LLVMValueRef glue, StubIdType id);
+    bool IsInterpreted();
+    bool IsOptimized();
+    void SetTailCallAttr(LLVMValueRef call);
+    void SetCallConvAttr(const CallSignature *calleeDescriptor, LLVMValueRef call);
+
 private:
     const CompilationConfig *compCfg_ {nullptr};
     const std::vector<std::vector<GateRef>> *schedule_ {nullptr};
@@ -277,6 +293,14 @@ private:
     int slotSize_;
     LLVMTypeRef slotType_;
     CallSignature::CallConv callConv_ = CallSignature::CallConv::CCallConv;
+    bool enableLog_ {false};
+
+    enum class CallInputs : size_t {
+        DEPEND = 0,
+        TARGET,
+        GLUE,
+        FIRST_PARAMETER,
+    };
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_LLVM_IR_BUILDER_H

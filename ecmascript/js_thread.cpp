@@ -170,7 +170,7 @@ bool JSThread::DoStackOverflowCheck(const JSTaggedType *sp)
 uintptr_t *JSThread::ExpandHandleStorage()
 {
     uintptr_t *result = nullptr;
-    int32_t lastIndex = handleStorageNodes_.size() - 1;
+    int32_t lastIndex = static_cast<int32_t>(handleStorageNodes_.size() - 1);
     if (currentHandleStorageIndex_ == lastIndex) {
         auto n = new std::array<JSTaggedType, NODE_BLOCK_SIZE>();
         handleStorageNodes_.push_back(n);
@@ -190,7 +190,7 @@ uintptr_t *JSThread::ExpandHandleStorage()
 void JSThread::ShrinkHandleStorage(int prevIndex)
 {
     currentHandleStorageIndex_ = prevIndex;
-    int32_t lastIndex = handleStorageNodes_.size() - 1;
+    int32_t lastIndex = static_cast<int32_t>(handleStorageNodes_.size() - 1);
 #if ECMASCRIPT_ENABLE_ZAP_MEM
     uintptr_t size = ToUintPtr(handleScopeStorageEnd_) - ToUintPtr(handleScopeStorageNext_);
     if (memset_s(handleScopeStorageNext_, size, 0, size) != EOK) {
@@ -267,13 +267,14 @@ void JSThread::LoadStubsFromFile(std::string &fileName)
         } else if (des.IsBCHandler()) {
             glueData_.bcStubEntries_.Set(des.indexInKind_, des.codeAddr_);
         } else {
-            UNREACHABLE();
+            glueData_.rtStubEntries_.Set(des.indexInKind_, des.codeAddr_);
         }
     }
     AsmInterParsedOption asmInterOpt = GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
     AdjustBCStubEntries(glueData_.bcStubEntries_, stubs, asmInterOpt);
 #ifdef NDEBUG
-    kungfu::LLVMStackMapParser::GetInstance().Print();
+    bool enableCompilerLog = GetEcmaVM()->GetJSOptions().WasSetlogCompiledMethods();
+    kungfu::LLVMStackMapParser::GetInstance(enableCompilerLog).Print();
 #endif
     stubCode_ = aotInfo.GetCode();
 }

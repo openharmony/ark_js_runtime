@@ -39,7 +39,7 @@ public:
         JSRuntimeOptions options;
 #if PANDA_TARGET_LINUX
         // for consistency requirement, use ohos_icu4j/data as icu-data-path
-        options.SetIcuDataPath("./../../third_party/icu/ohos_icu4j/data");
+        options.SetIcuDataPath(ICU_PATH);
 #endif
         options.SetShouldLoadBootPandaFiles(false);
         options.SetShouldInitializeIntrinsics(false);

@@ -15,7 +15,7 @@
 
 #include "pt_types.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 using ObjectType = RemoteObject::TypeName;
 using ObjectSubType = RemoteObject::SubTypeName;
 using ObjectClassName = RemoteObject::ClassName;
@@ -268,7 +268,8 @@ CString ObjectRemoteObject::DescriptionForSet(const Local<SetRef> &tagged)
 
 CString ObjectRemoteObject::DescriptionForError(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
 {
-    Local<JSValueRef> stack = StringRef::NewFromUtf8(ecmaVm, "stack");
+    // add message
+    Local<JSValueRef> stack = StringRef::NewFromUtf8(ecmaVm, "message");
     Local<JSValueRef> result = Local<ObjectRef>(tagged)->Get(ecmaVm, stack);
     return DebuggerApi::ToCString(result->ToString(ecmaVm));
 }
@@ -2255,4 +2256,4 @@ Local<ObjectRef> Profile::ToObject(const EcmaVM *ecmaVm)
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timeDeltas")), timeValues);
     return params;
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling

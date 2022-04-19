@@ -1500,8 +1500,8 @@ DECLARE_ASM_HANDLER(AsmInterpreterEntry)
 DECLARE_ASM_HANDLER(SingleStepDebugging)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varPc, VariableType::POINTER(), pc);
-    DEFVARIABLE(varSp, VariableType::POINTER(), sp);
+    DEFVARIABLE(varPc, VariableType::NATIVE_POINTER(), pc);
+    DEFVARIABLE(varSp, VariableType::NATIVE_POINTER(), sp);
     DEFVARIABLE(varConstpool, VariableType::JS_POINTER(), constpool);
     DEFVARIABLE(varProfileTypeInfo, VariableType::JS_POINTER(), profileTypeInfo);
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
@@ -1530,7 +1530,7 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
         GateRef function = GetFunctionFromFrame(frame);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
         varConstpool = GetConstpoolFromFunction(function);
-        GateRef method = Load(VariableType::POINTER(), function,
+        GateRef method = Load(VariableType::NATIVE_POINTER(), function,
             IntPtr(JSFunctionBase::METHOD_OFFSET));
         varHotnessCounter = Load(VariableType::INT32(), method,
                                  IntPtr(JSMethod::HOTNESS_COUNTER_OFFSET));
@@ -4165,8 +4165,8 @@ DECLARE_ASM_HANDLER(HandleJnezImm16)
 DECLARE_ASM_HANDLER(HandleReturnDyn)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varPc, VariableType::POINTER(), pc);
-    DEFVARIABLE(varSp, VariableType::POINTER(), sp);
+    DEFVARIABLE(varPc, VariableType::NATIVE_POINTER(), pc);
+    DEFVARIABLE(varSp, VariableType::NATIVE_POINTER(), sp);
     DEFVARIABLE(varConstpool, VariableType::JS_POINTER(), constpool);
     DEFVARIABLE(varProfileTypeInfo, VariableType::JS_POINTER(), profileTypeInfo);
     DEFVARIABLE(varHotnessCounter, VariableType::INT32(), hotnessCounter);
@@ -4183,9 +4183,9 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
     Bind(&updateHotness);
     {
         GateRef function = GetFunctionFromFrame(frame);
-        GateRef method = Load(VariableType::POINTER(), function,
+        GateRef method = Load(VariableType::NATIVE_POINTER(), function,
             IntPtr(JSFunctionBase::METHOD_OFFSET));
-        GateRef fistPC = Load(VariableType::POINTER(), method,
+        GateRef fistPC = Load(VariableType::NATIVE_POINTER(), method,
             IntPtr(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
         GateRef offset = Int32Not(TruncPtrToInt32(IntPtrSub(*varPc, fistPC)));
         UPDATE_HOTNESS(*varSp);
@@ -4195,7 +4195,7 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
     }
 
     Bind(&tryContinue);
-    varSp = Load(VariableType::POINTER(), frame,
+    varSp = Load(VariableType::NATIVE_POINTER(), frame,
         IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
     GateRef prevState = GetFrame(*varSp);
     varPc = GetPcFromFrame(prevState);
@@ -4215,7 +4215,7 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
         GateRef function = GetFunctionFromFrame(prevState);
         varConstpool = GetConstpoolFromFunction(function);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
-        GateRef method = Load(VariableType::POINTER(), function,
+        GateRef method = Load(VariableType::NATIVE_POINTER(), function,
             IntPtr(JSFunctionBase::METHOD_OFFSET));
         varHotnessCounter = Load(VariableType::INT32(), method,
                                  IntPtr(JSMethod::HOTNESS_COUNTER_OFFSET));
@@ -4233,8 +4233,8 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
 DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varPc, VariableType::POINTER(), pc);
-    DEFVARIABLE(varSp, VariableType::POINTER(), sp);
+    DEFVARIABLE(varPc, VariableType::NATIVE_POINTER(), pc);
+    DEFVARIABLE(varSp, VariableType::NATIVE_POINTER(), sp);
     DEFVARIABLE(varConstpool, VariableType::JS_POINTER(), constpool);
     DEFVARIABLE(varProfileTypeInfo, VariableType::JS_POINTER(), profileTypeInfo);
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
@@ -4252,9 +4252,9 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
     Bind(&updateHotness);
     {
         GateRef function = GetFunctionFromFrame(frame);
-        GateRef method = Load(VariableType::POINTER(), function,
+        GateRef method = Load(VariableType::NATIVE_POINTER(), function,
             IntPtr(JSFunctionBase::METHOD_OFFSET));
-        GateRef fistPC = Load(VariableType::POINTER(), method,
+        GateRef fistPC = Load(VariableType::NATIVE_POINTER(), method,
             IntPtr(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
         GateRef offset = Int32Not(TruncPtrToInt32(IntPtrSub(*varPc, fistPC)));
         UPDATE_HOTNESS(*varSp);
@@ -4264,7 +4264,7 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
     }
 
     Bind(&tryContinue);
-    varSp = Load(VariableType::POINTER(), frame,
+    varSp = Load(VariableType::NATIVE_POINTER(), frame,
         IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
     GateRef prevState = GetFrame(*varSp);
     varPc = GetPcFromFrame(prevState);
@@ -4285,7 +4285,7 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
         GateRef function = GetFunctionFromFrame(prevState);
         varConstpool = GetConstpoolFromFunction(function);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
-        GateRef method = Load(VariableType::POINTER(), function,
+        GateRef method = Load(VariableType::NATIVE_POINTER(), function,
             IntPtr(JSFunctionBase::METHOD_OFFSET));
         varHotnessCounter = Load(VariableType::INT32(), method,
                                  IntPtr(JSMethod::HOTNESS_COUNTER_OFFSET));
@@ -4303,8 +4303,8 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
 DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varPc, VariableType::POINTER(), pc);
-    DEFVARIABLE(varSp, VariableType::POINTER(), sp);
+    DEFVARIABLE(varPc, VariableType::NATIVE_POINTER(), pc);
+    DEFVARIABLE(varSp, VariableType::NATIVE_POINTER(), sp);
     DEFVARIABLE(varConstpool, VariableType::JS_POINTER(), constpool);
     DEFVARIABLE(varProfileTypeInfo, VariableType::JS_POINTER(), profileTypeInfo);
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
@@ -4335,9 +4335,9 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
     Bind(&updateHotness);
     {
         GateRef function = GetFunctionFromFrame(frame);
-        GateRef method = Load(VariableType::POINTER(), function,
+        GateRef method = Load(VariableType::NATIVE_POINTER(), function,
             IntPtr(JSFunctionBase::METHOD_OFFSET));
-        GateRef fistPC = Load(VariableType::POINTER(), method,
+        GateRef fistPC = Load(VariableType::NATIVE_POINTER(), method,
             IntPtr(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
         GateRef offset = Int32Not(TruncPtrToInt32(IntPtrSub(*varPc, fistPC)));
         UPDATE_HOTNESS(*varSp);
@@ -4347,7 +4347,7 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
     }
 
     Bind(&tryContinue);
-    varSp = Load(VariableType::POINTER(), frame,
+    varSp = Load(VariableType::NATIVE_POINTER(), frame,
         IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
     GateRef prevState = GetFrame(*varSp);
     varPc = GetPcFromFrame(prevState);
@@ -4363,7 +4363,7 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
         GateRef function = GetFunctionFromFrame(prevState);
         varConstpool = GetConstpoolFromFunction(function);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
-        GateRef method = Load(VariableType::POINTER(), function,
+        GateRef method = Load(VariableType::NATIVE_POINTER(), function,
             IntPtr(JSFunctionBase::METHOD_OFFSET));
         varHotnessCounter = Load(VariableType::INT32(), method,
                                  IntPtr(JSMethod::HOTNESS_COUNTER_OFFSET));
@@ -4376,8 +4376,8 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
 DECLARE_ASM_HANDLER(ExceptionHandler)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varPc, VariableType::POINTER(), pc);
-    DEFVARIABLE(varSp, VariableType::POINTER(), sp);
+    DEFVARIABLE(varPc, VariableType::NATIVE_POINTER(), pc);
+    DEFVARIABLE(varSp, VariableType::NATIVE_POINTER(), sp);
     DEFVARIABLE(varConstpool, VariableType::JS_POINTER(), constpool);
     DEFVARIABLE(varProfileTypeInfo, VariableType::JS_POINTER(), profileTypeInfo);
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
@@ -4402,7 +4402,7 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
         GateRef function = GetFunctionFromFrame(GetFrame(*varSp));
         varConstpool = GetConstpoolFromFunction(function);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
-        GateRef method = Load(VariableType::POINTER(), function,
+        GateRef method = Load(VariableType::NATIVE_POINTER(), function,
             IntPtr(JSFunctionBase::METHOD_OFFSET));
         varHotnessCounter = Load(VariableType::INT32(), method,
                                  IntPtr(JSMethod::HOTNESS_COUNTER_OFFSET));
@@ -4933,11 +4933,11 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
         methodOffset = Int32(JSProxy::METHOD_OFFSET);                                         \
         Jump(&getMethod);                                                                     \
     }                                                                                         \
-    Bind(&getMethod);                                                                         \
-    GateRef method = Load(VariableType::POINTER(), func, ChangeInt32ToIntPtr(*methodOffset)); \
-    GateRef callFieldOffset = IntPtr(JSMethod::GetCallFieldOffset(env->IsArch32Bit()));       \
-    GateRef callField = Load(VariableType::INT64(), method, callFieldOffset);                 \
-    DEFVARIABLE(newSp, VariableType::POINTER(),                                               \
+    Bind(&getMethod);                                                                                \
+    GateRef method = Load(VariableType::NATIVE_POINTER(), func, ChangeInt32ToIntPtr(*methodOffset)); \
+    GateRef callFieldOffset = IntPtr(JSMethod::GetCallFieldOffset(env->IsArch32Bit()));              \
+    GateRef callField = Load(VariableType::INT64(), method, callFieldOffset);                        \
+    DEFVARIABLE(newSp, VariableType::NATIVE_POINTER(),                                               \
                 PointerSub(sp, IntPtr(AsmInterpretedFrame::GetSize(env->IsArch32Bit()))))
 
 #define CALL_PUSH_UNDEFINED(n)                                            \
@@ -5031,7 +5031,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     /* ASSERT(JSMethod::NumVregsBits::Decode(callField) == 0) */                                  \
     /* thread->DoStackOverflowCheck(newSp) */                                                     \
     GateRef frameBaseOffset = IntPtr(JSThread::GlueData::GetFrameBaseOffset(env->IsArch32Bit())); \
-    GateRef frameBase = Load(VariableType::POINTER(), glue, frameBaseOffset);                     \
+    GateRef frameBase = Load(VariableType::NATIVE_POINTER(), glue, frameBaseOffset);              \
     Label stackOverflow(env);                                                                     \
     Label stackNotOverflow(env);                                                                  \
     Branch(UInt64LessThanOrEqual(*newSp, IntPtrAdd(frameBase,                                     \
@@ -5046,16 +5046,15 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Bind(&stackNotOverflow);                                                                      \
     GateRef state = GetFrame(*newSp);                                                             \
     GateRef prevOffset = IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit()));          \
-    Store(VariableType::POINTER(), glue, state, prevOffset, sp);                                  \
+    Store(VariableType::NATIVE_POINTER(), glue, state, prevOffset, sp);                           \
     GateRef frameTypeOffset = IntPtrAdd(prevOffset, IntPtrSize());                                \
     Store(VariableType::INT64(), glue, state, frameTypeOffset,                                    \
           Int64(static_cast<uint64_t>(FrameType::INTERPRETER_FRAME)));                            \
     SetPcToFrame(glue, state, IntPtr(0));                                                         \
     SetFunctionToFrame(glue, state, func);                                                        \
     SetCurrentSpFrame(glue, *newSp);                                                              \
-    GateRef numArgs = Int32Add(Int32(NUM_MANDATORY_JSFUNC_ARGS), actualNumArgs);                  \
     GateRef retValue = CallRuntime(glue, RTSTUB_ID(CallNative),                                   \
-                                   {IntBuildTaggedTypeWithNoGC(numArgs), *newSp, method});        \
+                                   {IntBuildTaggedTypeWithNoGC(actualNumArgs)});                  \
     Label hasPendingException(env);                                                               \
     Label noPendingException(env);                                                                \
     Branch(TaggedIsException(retValue), &hasPendingException, &noPendingException);               \
@@ -5145,7 +5144,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
         CALL_PUSH_UNDEFINED(numVregs);                                                                          \
         /* thread->DoStackOverflowCheck(newSp) */                                                               \
         GateRef frameBaseOffset = IntPtr(JSThread::GlueData::GetFrameBaseOffset(env->IsArch32Bit()));           \
-        GateRef frameBase = Load(VariableType::POINTER(), glue, frameBaseOffset);                               \
+        GateRef frameBase = Load(VariableType::NATIVE_POINTER(), glue, frameBaseOffset);                        \
         Label stackOverflow(env);                                                                               \
         Label stackNotOverflow(env);                                                                            \
         Branch(UInt64LessThanOrEqual(*newSp, IntPtrAdd(frameBase,                                               \
@@ -5162,13 +5161,13 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
             IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::format)));                            \
         GateRef state = GetFrame(*newSp);                                                                       \
         GateRef prevOffset = IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit()));                    \
-        Store(VariableType::POINTER(), glue, state, prevOffset, sp);                                            \
+        Store(VariableType::NATIVE_POINTER(), glue, state, prevOffset, sp);                                     \
         GateRef frameTypeOffset = IntPtrAdd(prevOffset, IntPtr(                                                 \
             env->IsArch32Bit() ? InterpretedFrameBase::TYPE_OFFSET_32 : InterpretedFrameBase::TYPE_OFFSET_64)); \
         Store(VariableType::INT64(), glue, state, frameTypeOffset,                                              \
               Int64(static_cast<uint64_t>(FrameType::INTERPRETER_FRAME)));                                      \
         GateRef bytecodeArrayOffset = IntPtr(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit()));             \
-        GateRef bytecodeArray = Load(VariableType::POINTER(), method, bytecodeArrayOffset);                     \
+        GateRef bytecodeArray = Load(VariableType::NATIVE_POINTER(), method, bytecodeArrayOffset);              \
         SetPcToFrame(glue, state, bytecodeArray);                                                               \
         SetFunctionToFrame(glue, state, func);                                                                  \
         SetAccToFrame(glue, state, Hole(VariableType::JS_ANY()));                                               \

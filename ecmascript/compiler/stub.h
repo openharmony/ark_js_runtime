@@ -203,8 +203,8 @@ public:
         Label GetLabelFromSelector(GateRef sel);
         void AddSelectorToLabel(GateRef sel, Label label);
         LabelImpl *NewLabel(Environment *env, GateRef control = -1);
-        void PushCurrentLabel(Label *entry);
-        void PopCurrentLabel();
+        void SubCfgEntry(Label *entry);
+        void SubCfgExit();
         void SetFrameType(FrameType type);
         GateRef GetArgument(size_t index) const;
 
@@ -284,11 +284,11 @@ public:
     public:
         explicit SubCircuitScope(Environment *env, Label *entry) : env_(env)
         {
-            env_->PushCurrentLabel(entry);
+            env_->SubCfgEntry(entry);
         }
         ~SubCircuitScope()
         {
-            env_->PopCurrentLabel();
+            env_->SubCfgExit();
         }
 
     private:
@@ -342,7 +342,7 @@ public:
     GateRef Int64Argument(size_t index);
     GateRef TaggedArgument(size_t index);
     GateRef TaggedPointerArgument(size_t index, GateType type = GateType::TAGGED_POINTER);
-    GateRef PtrArgument(size_t index, GateType type = GateType::C_VALUE);
+    GateRef PtrArgument(size_t index, GateType type = GateType::NJS_VALUE);
     GateRef Float32Argument(size_t index);
     GateRef Float64Argument(size_t index);
     GateRef Alloca(int size);
@@ -357,6 +357,7 @@ public:
     void LoopEnd(Label *loopHead);
     // call operation
     GateRef CallRuntime(GateRef glue, int index, std::initializer_list<GateRef> args);
+    GateRef CallRuntime(GateRef glue, int index, GateRef argc, GateRef argv);
     GateRef CallNGCRuntime(GateRef glue, size_t index, std::initializer_list<GateRef> args);
     GateRef CallStub(GateRef glue, size_t index, std::initializer_list<GateRef> args);
     void DebugPrint(GateRef thread, std::initializer_list<GateRef> args);
@@ -701,6 +702,10 @@ public:
     GateRef IsNativeMethod(GateRef method);
     GateRef HasAotCode(GateRef method);
     GateRef GetExpectedNumOfArgs(GateRef method);
+    // proxy operator
+    GateRef GetMethodFromJSProxy(GateRef proxy);
+    GateRef GetHandlerFromJSProxy(GateRef proxy);
+    GateRef GetTargetFromJSProxy(GateRef proxy);
 
 private:
     using BinaryOperation = std::function<GateRef(Environment*, GateRef, GateRef)>;

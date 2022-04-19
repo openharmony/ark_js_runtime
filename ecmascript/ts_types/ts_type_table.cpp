@@ -53,19 +53,21 @@ JSHandle<TSTypeTable> TSTypeTable::GenerateTypeTable(JSThread *thread, const JSP
     TSLoader *tsLoader = thread->GetEcmaVM()->GetTSLoader();
     GlobalTSTypeRef ref = GlobalTSTypeRef::Default();
     int typeKind = 0;
-    uint32_t idx = 0;
+    uint32_t summaryIndex = jsPandaFile->GetTypeSummaryIndex();
 
-    JSHandle<TaggedArray> summaryLiteral = LiteralDataExtractor::GetDatasIgnoreType(thread, jsPandaFile, idx++);
+    JSHandle<TaggedArray> summaryLiteral = LiteralDataExtractor::GetDatasIgnoreType(thread, jsPandaFile, summaryIndex);
     ASSERT_PRINT(summaryLiteral->Get(TYPE_KIND_OFFSET).GetInt() == static_cast<int32_t>(TypeLiteralFlag::COUNTER),
                  "summary type literal flag is not counter");
 
-    uint32_t length = summaryLiteral->Get(TABLE_LENGTH_OFFSET_IN_LITREAL).GetInt();
+    uint32_t length = static_cast<uint32_t>(summaryLiteral->Get(TABLE_LENGTH_OFFSET_IN_LITREAL).GetInt());
     JSHandle<TSTypeTable> table = factory->NewTSTypeTable(length);
     JSMutableHandle<TaggedArray> typeLiteral(thread, JSTaggedValue::Undefined());
 
     JSHandle<EcmaString> fileName = factory->NewFromUtf8(jsPandaFile->GetJSPandaFileDesc());
-    for (; idx <= length; ++idx) {
-        typeLiteral.Update(LiteralDataExtractor::GetDatasIgnoreType(thread, jsPandaFile, idx).GetTaggedValue());
+    for (uint32_t idx = 1; idx <= length; ++idx) {
+        JSHandle<TaggedArray> literalData = LiteralDataExtractor::GetDatasIgnoreType(thread, jsPandaFile,
+                                                                                     idx + summaryIndex);
+        typeLiteral.Update(literalData);
         JSHandle<JSTaggedValue> type = ParseType(thread, table, typeLiteral, fileName, recordImportModules);
         if (!type->IsNull()) {
             // Set every object type GT
@@ -96,7 +98,7 @@ JSHandle<JSTaggedValue> TSTypeTable::ParseType(JSThread *thread, JSHandle<TSType
         }
         case TypeLiteralFlag::CLASS_INSTANCE: {
             JSHandle<TSClassInstanceType> classInstance = factory->NewTSClassInstanceType();
-            uint32_t classIndex = literal->Get(TSClassInstanceType::CREATE_CLASS_OFFSET).GetInt();;
+            int classIndex = literal->Get(TSClassInstanceType::CREATE_CLASS_OFFSET).GetInt();
             classInstance->SetClassRefGT(GlobalTSTypeRef(classIndex));
             return JSHandle<JSTaggedValue>(classInstance);
         }
@@ -257,14 +259,14 @@ JSHandle<TSClassType> TSTypeTable::ParseClassType(JSThread *thread, JSHandle<TST
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TSClassType> classType = factory->NewTSClassType();
-    uint32_t index = 0;
+    int32_t index = 0;
     ASSERT(static_cast<TypeLiteralFlag>(literal->Get(index).GetInt()) == TypeLiteralFlag::CLASS);
 
     index = index + 2;  // 2: ignore accessFlag and readonly
-    uint32_t extendsTypeId = literal->Get(index++).GetInt();
+    int32_t extendsTypeId = literal->Get(index++).GetInt();
 
     // ignore implement
-    uint32_t numImplement = literal->Get(index++).GetInt();
+    int32_t numImplement = literal->Get(index++).GetInt();
     index += numImplement;
 
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
@@ -272,11 +274,11 @@ JSHandle<TSClassType> TSTypeTable::ParseClassType(JSThread *thread, JSHandle<TST
 
     // resolve instance type
     uint32_t numBaseFields = 0;
-    uint32_t numFields = literal->Get(index++).GetInt();
+    uint32_t numFields = static_cast<uint32_t>(literal->Get(index++).GetInt());
 
     JSHandle<TSObjectType> instanceType;
     if (extendsTypeId) { // base class is 0
-        uint32_t realExtendsTypeId = extendsTypeId - GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT;
+        uint32_t realExtendsTypeId = static_cast<uint32_t>(extendsTypeId - GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT);
         JSHandle<TSClassType> extensionType(thread, typeTable->Get(realExtendsTypeId));
         ASSERT(extensionType.GetTaggedValue().IsTSClassType());
         classType->SetExtensionType(thread, extensionType);
@@ -296,12 +298,12 @@ JSHandle<TSClassType> TSTypeTable::ParseClassType(JSThread *thread, JSHandle<TST
     classType->SetInstanceType(thread, instanceType);
 
     // resolve prototype type
-    uint32_t numNonStatic = literal->Get(index++).GetInt();
+    int32_t numNonStatic = literal->Get(index++).GetInt();
     JSHandle<TSObjectType> prototypeType = factory->NewTSObjectType(numNonStatic);
 
     JSHandle<TSObjLayoutInfo> nonStaticTypeInfo(thread, prototypeType->GetObjLayoutInfo());
-    ASSERT(nonStaticTypeInfo->GetPropertiesCapacity() == numNonStatic);
-    for (uint32_t nonStaticIndex = 0; nonStaticIndex < numNonStatic; ++nonStaticIndex) {
+    ASSERT(nonStaticTypeInfo->GetPropertiesCapacity() == static_cast<uint32_t>(numNonStatic));
+    for (int32_t nonStaticIndex = 0; nonStaticIndex < numNonStatic; ++nonStaticIndex) {
         key.Update(literal->Get(index++));
         typeId.Update(literal->Get(index++));
         nonStaticTypeInfo->SetKey(thread, nonStaticIndex, key.GetTaggedValue(), typeId.GetTaggedValue());
@@ -310,15 +312,15 @@ JSHandle<TSClassType> TSTypeTable::ParseClassType(JSThread *thread, JSHandle<TST
 
     // resolve constructor type
     // stitic include fields and methods, which the former takes up 4 spaces and the latter takes up 2 spaces.
-    uint32_t numStaticFields = literal->Get(index++).GetInt();
-    uint32_t numStaticMethods = literal->Get(index + numStaticFields * TSClassType::FIELD_LENGTH).GetInt();
-    uint32_t numStatic = numStaticFields + numStaticMethods;
+    int32_t numStaticFields = literal->Get(index++).GetInt();
+    int32_t numStaticMethods = literal->Get(index + numStaticFields * TSClassType::FIELD_LENGTH).GetInt();
+    int32_t numStatic = numStaticFields + numStaticMethods;
     // new function type when support it
     JSHandle<TSObjectType> constructorType = factory->NewTSObjectType(numStatic);
 
     JSHandle<TSObjLayoutInfo> staticTypeInfo(thread, constructorType->GetObjLayoutInfo());
-    ASSERT(staticTypeInfo->GetPropertiesCapacity() == numStatic);
-    for (uint32_t staticIndex = 0; staticIndex < numStaticFields; ++staticIndex) {
+    ASSERT(staticTypeInfo->GetPropertiesCapacity() == static_cast<uint32_t>(numStatic));
+    for (int32_t staticIndex = 0; staticIndex < numStaticFields; ++staticIndex) {
         key.Update(literal->Get(index++));
         typeId.Update(literal->Get(index++));
         index += 2;  // 2: ignore accessFlag and readonly
@@ -327,7 +329,7 @@ JSHandle<TSClassType> TSTypeTable::ParseClassType(JSThread *thread, JSHandle<TST
     index++;  // jmp over numStaticMethods
 
     // static methods
-    for (uint32_t staticIndex = numStaticFields; staticIndex < numStatic; ++staticIndex) {
+    for (int32_t staticIndex = numStaticFields; staticIndex < numStatic; ++staticIndex) {
         key.Update(literal->Get(index++));
         typeId.Update(literal->Get(index++));
         staticTypeInfo->SetKey(thread, staticIndex, key.GetTaggedValue(), typeId.GetTaggedValue());
@@ -346,25 +348,25 @@ JSHandle<TSInterfaceType> TSTypeTable::ParseInterfaceType(JSThread *thread, cons
 
     index++;
     // resolve extends of interface
-    uint32_t numExtends = literal->Get(index++).GetInt();
+    int32_t numExtends = literal->Get(index++).GetInt();
     JSHandle<TaggedArray> extendsId = factory->NewTaggedArray(numExtends);
     JSMutableHandle<JSTaggedValue> extendsType(thread, JSTaggedValue::Undefined());
-    for (uint32_t extendsIndex = 0; extendsIndex < numExtends; extendsIndex++) {
+    for (int32_t extendsIndex = 0; extendsIndex < numExtends; extendsIndex++) {
         extendsType.Update(literal->Get(index++));
         extendsId->Set(thread, extendsIndex, extendsType);
     }
     interfaceType->SetExtends(thread, extendsId);
 
     // resolve fields of interface
-    uint32_t numFields = literal->Get(index++).GetInt();
+    int32_t numFields = literal->Get(index++).GetInt();
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> typeId(thread, JSTaggedValue::Undefined());
 
     JSHandle<TSObjectType> fieldsType = factory->NewTSObjectType(numFields);
 
     JSHandle<TSObjLayoutInfo> fieldsTypeInfo(thread, fieldsType->GetObjLayoutInfo());
-    ASSERT(fieldsTypeInfo->GetPropertiesCapacity() == numFields);
-    for (uint32_t fieldsIndex = 0; fieldsIndex < numFields; ++fieldsIndex) {
+    ASSERT(fieldsTypeInfo->GetPropertiesCapacity() == static_cast<uint32_t>(numFields));
+    for (int32_t fieldsIndex = 0; fieldsIndex < numFields; ++fieldsIndex) {
         key.Update(literal->Get(index++));
         typeId.Update(literal->Get(index++));
         index += 2;  // 2: ignore accessFlag and readonly
@@ -405,12 +407,12 @@ JSHandle<TSUnionType> TSTypeTable::ParseUnionType(JSThread *thread, const JSHand
     uint32_t index = 0;
     ASSERT(static_cast<TypeLiteralFlag>(literal->Get(index).GetInt()) == TypeLiteralFlag::UNION);
     index++;
-    uint32_t unionTypeLength = literal->Get(index++).GetInt();
+    int32_t unionTypeLength = literal->Get(index++).GetInt();
 
     JSHandle<TSUnionType> unionType = factory->NewTSUnionType(unionTypeLength);
     JSHandle<TaggedArray> unionTypeArray(thread, unionType->GetComponentTypes());
     JSMutableHandle<JSTaggedValue> localTypeIdHandle(thread, JSTaggedValue::Undefined());
-    for (uint32_t unionTypeId = 0; unionTypeId < unionTypeLength; ++unionTypeId) {
+    for (int32_t unionTypeId = 0; unionTypeId < unionTypeLength; ++unionTypeId) {
         localTypeIdHandle.Update(literal->Get(index++));
         unionTypeArray->Set(thread, unionTypeId, localTypeIdHandle);
     }
@@ -420,7 +422,7 @@ JSHandle<TSUnionType> TSTypeTable::ParseUnionType(JSThread *thread, const JSHand
 
 JSHandle<TaggedArray> TSTypeTable::GetExportValueTable(JSThread *thread, JSHandle<TSTypeTable> typeTable)
 {
-    int index = typeTable->GetLength() - 1;
+    int index = static_cast<int>(typeTable->GetLength()) - 1;
     JSHandle<TaggedArray> exportValueTable(thread, typeTable->Get(index));
     return exportValueTable;
 }
@@ -484,7 +486,7 @@ JSHandle<TSFunctionType> TSTypeTable::ParseFunctionType(JSThread *thread, const 
     JSHandle<JSTaggedValue> functionName(thread, literal->Get(index++));
 
     uint32_t length = 0;
-    length = literal->Get(index++).GetInt();
+    length = static_cast<uint32_t>(literal->Get(index++).GetInt());
     JSHandle<TSFunctionType> functionType = factory->NewTSFunctionType(length);
     JSHandle<TaggedArray> parameterTypes(thread, functionType->GetParameterTypes());
     JSMutableHandle<JSTaggedValue> parameterTypeRef(thread, JSTaggedValue::Undefined());
@@ -520,15 +522,15 @@ JSHandle<TSObjectType> TSTypeTable::ParseObjectType(JSThread *thread, const JSHa
     uint32_t index = 0;
     ASSERT(static_cast<TypeLiteralFlag>(literal->Get(index).GetInt()) == TypeLiteralFlag::OBJECT);
     index++;
-    uint32_t length = literal->Get(index++).GetInt();
+    int32_t length = literal->Get(index++).GetInt();
 
     JSHandle<TSObjectType> objectType = factory->NewTSObjectType(length);
     JSHandle<TSObjLayoutInfo> propertyTypeInfo(thread, objectType->GetObjLayoutInfo());
-    ASSERT(propertyTypeInfo->GetPropertiesCapacity() == length);
+    ASSERT(propertyTypeInfo->GetPropertiesCapacity() == static_cast<uint32_t>(length));
 
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> typeId(thread, JSTaggedValue::Undefined());
-    for (uint32_t fieldIndex = 0; fieldIndex < length; ++fieldIndex) {
+    for (int32_t fieldIndex = 0; fieldIndex < length; ++fieldIndex) {
         key.Update(literal->Get(index++));
         typeId.Update(literal->Get(index++));
         propertyTypeInfo->SetKey(thread, fieldIndex, key.GetTaggedValue(), typeId.GetTaggedValue());

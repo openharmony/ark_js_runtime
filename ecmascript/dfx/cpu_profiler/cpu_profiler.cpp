@@ -212,7 +212,7 @@ void CpuProfiler::ParseMethodInfo(JSMethod *method, InterpretedFrameHandler fram
             codeEntry.functionName = functionName.c_str();
         }
         // source file
-        tooling::ecmascript::JSPtExtractor *debugExtractor =
+        tooling::JSPtExtractor *debugExtractor =
             JSPandaFileManager::GetInstance()->GetJSPtExtractor(method->GetJSPandaFile());
         const CString &sourceFile = debugExtractor->GetSourceFile(method->GetFileId());
         if (sourceFile.empty()) {

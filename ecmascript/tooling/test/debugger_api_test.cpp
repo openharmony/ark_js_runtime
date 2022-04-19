@@ -18,10 +18,7 @@
 #include "ecmascript/tests/test_helper.h"
 #include "ecmascript/tooling/test/utils/testcases/test_list.h"
 
-namespace panda::tooling::ecmascript::test {
-using panda::ecmascript::EcmaHandleScope;
-using panda::ecmascript::EcmaVM;
-using panda::ecmascript::JSThread;
+namespace panda::ecmascript::tooling::test {
 using panda::test::TestHelper;
 
 class DebuggerApiTest : public testing::TestWithParam<const char *> {
@@ -66,4 +63,4 @@ HWTEST_P_L0(DebuggerApiTest, EcmaScriptSuite)
 
 INSTANTIATE_TEST_CASE_P(EcmaDebugApiTest, DebuggerApiTest,
                         testing::ValuesIn(GetTestList(panda::panda_file::SourceLang::ECMASCRIPT)));
-}  // namespace panda::tooling::ecmascript::test
+}  // namespace panda::ecmascript::tooling::test

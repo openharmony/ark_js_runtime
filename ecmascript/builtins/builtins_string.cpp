@@ -359,7 +359,7 @@ JSTaggedValue BuiltinsString::Concat(EcmaRuntimeCallInfo *argv)
     const char16_t *constChar16tData = u16strThis.data();
     auto *char16tData = const_cast<char16_t *>(constChar16tData);
     auto *uint16tData = reinterpret_cast<uint16_t *>(char16tData);
-    int32_t u16strSize = u16strThis.size();
+    uint32_t u16strSize = u16strThis.size();
     return canBeCompress ? factory->NewFromUtf16LiteralCompress(uint16tData, u16strSize).GetTaggedValue() :
                            factory->NewFromUtf16LiteralNotCompress(uint16tData, u16strSize).GetTaggedValue();
 }
@@ -391,7 +391,7 @@ JSTaggedValue BuiltinsString::EndsWith(EcmaRuntimeCallInfo *argv)
     } else {
         JSTaggedNumber posVal = JSTaggedValue::ToInteger(thread, posTag);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-        pos = posVal.ToInt32();
+        pos = static_cast<uint32_t>(posVal.ToInt32());
     }
     uint32_t end = std::min(std::max(pos, 0U), thisLen);
     int32_t start = static_cast<int32_t>(end - searchLen);
@@ -483,7 +483,7 @@ JSTaggedValue BuiltinsString::IndexOf(EcmaRuntimeCallInfo *argv)
     uint32_t thisLen = thisHandle->GetLength();
     JSHandle<EcmaString> searchHandle = JSTaggedValue::ToString(thread, searchTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    int32_t searchLen = searchHandle->GetLength();
+    uint32_t searchLen = searchHandle->GetLength();
     int32_t pos;
     if (argv->GetArgsNumber() == 1) {
         pos = 0;
@@ -885,7 +885,7 @@ JSTaggedValue BuiltinsString::GetSubstitution(JSThread *thread, const JSHandle<E
     auto ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
     JSHandle<EcmaString> dollarString = factory->NewFromASCII("$");
-    int32_t replaceLength = replacement->GetLength();
+    int32_t replaceLength = static_cast<int32_t>(replacement->GetLength());
     int32_t tailPos = position + matched->GetLength();
 
     int32_t nextDollarIndex = replacement->IndexOf(*dollarString, 0);
@@ -1316,7 +1316,7 @@ JSTaggedValue BuiltinsString::Substring(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> thisTag(JSTaggedValue::RequireObjectCoercible(thread, GetThis(argv)));
     JSHandle<EcmaString> thisHandle = JSTaggedValue::ToString(thread, thisTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    int32_t thisLen = thisHandle->GetLength();
+    int32_t thisLen = static_cast<int32_t>(thisHandle->GetLength());
     JSHandle<JSTaggedValue> startTag = BuiltinsString::GetCallArg(argv, 0);
     JSTaggedNumber startVal = JSTaggedValue::ToInteger(thread, startTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);

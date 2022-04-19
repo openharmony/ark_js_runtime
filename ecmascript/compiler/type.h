@@ -18,21 +18,21 @@
 
 #include <cstdint>
 
+namespace panda::ecmascript::kungfu {
 const uint64_t GC_MASK = ~(1 << 30); // 30 : the 30-th bit is unset implies GC-related type
 const uint64_t NO_GC_MASK = ~(1 << 29); // 29 : the 29-th bit is unset implies NO-GC-related type
 const uint64_t MIR_BASE_BITS = (1 << 31) | (1 << 30) | (1 << 29); // 31 : the 31-st bit is set implies MIR type
 const uint64_t EMPTY_TYPE_OFFSET = 1; // 1 : means offset of empty type
 
-namespace panda::ecmascript::kungfu {
 enum GateType : uint64_t {
     // for MIR
-    C_VALUE = MIR_BASE_BITS, // (111)
+    NJS_VALUE = MIR_BASE_BITS, // (111)
     TAGGED_VALUE = MIR_BASE_BITS & GC_MASK & NO_GC_MASK, // (100)
     TAGGED_POINTER = MIR_BASE_BITS & GC_MASK, // (101)
-    TAGGED_NO_POINTER = MIR_BASE_BITS & NO_GC_MASK, // (110)
+    TAGGED_NPOINTER = MIR_BASE_BITS & NO_GC_MASK, // (110)
 
     // for no value
-    EMPTY = C_VALUE + EMPTY_TYPE_OFFSET,
+    EMPTY = NJS_VALUE + EMPTY_TYPE_OFFSET,
 
     // for TS
     JS_ANY = 0,

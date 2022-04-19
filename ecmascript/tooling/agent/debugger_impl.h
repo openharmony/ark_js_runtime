@@ -21,7 +21,7 @@
 #include "ecmascript/tooling/base/pt_params.h"
 #include "ecmascript/tooling/dispatcher.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 class DebuggerImpl final {
 public:
     explicit DebuggerImpl(std::unique_ptr<JSBackend> backend) : backend_(std::move(backend)) {}
@@ -37,7 +37,7 @@ public:
     DispatchResponse RemoveBreakpoint(std::unique_ptr<RemoveBreakpointParams> params);
     DispatchResponse Resume(std::unique_ptr<ResumeParams> params);
     DispatchResponse SetAsyncCallStackDepth();
-    DispatchResponse SetBreakpointByUrl(std::unique_ptr<SetBreakpointByUrlParams> params, CString *out_id,
+    DispatchResponse SetBreakpointByUrl(std::unique_ptr<SetBreakpointByUrlParams> params, CString *outId,
                                         CVector<std::unique_ptr<Location>> *outLocations);
     DispatchResponse SetPauseOnExceptions(std::unique_ptr<SetPauseOnExceptionsParams> params);
     DispatchResponse StepInto(std::unique_ptr<StepIntoParams> params);
@@ -80,5 +80,5 @@ private:
 
     std::unique_ptr<JSBackend> backend_ {nullptr};
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif

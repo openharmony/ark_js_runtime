@@ -46,16 +46,15 @@ public:
     bool IsEntryFrame() const
     {
         ASSERT(HasFrame());
+        FrameType type = GetFrameType();
+        if (type == FrameType::INTERPRETER_ENTRY_FRAME) {
+            return true;
+        }
 #if ECMASCRIPT_COMPILE_ASM_INTERPRETER
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         AsmInterpretedFrame *state = AsmInterpretedFrame::GetFrameFromSp(sp_);
         return state->function == JSTaggedValue::Hole();
 #else
-        // interpreter entry frame or interpreter frame which sp is nullptr.
-        FrameType type = GetFrameType();
-        if (type == FrameType::INTERPRETER_ENTRY_FRAME) {
-            return true;
-        }
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
         return state->sp == nullptr;
@@ -151,20 +150,23 @@ public:
 
 class OptimizedFrameHandler : public FrameHandler {
 public:
-    explicit OptimizedFrameHandler(uintptr_t *sp)
-        : FrameHandler(reinterpret_cast<JSTaggedType *>(sp)) {}
+    explicit OptimizedFrameHandler(const JSThread *thread, uintptr_t *sp)
+        : FrameHandler(reinterpret_cast<JSTaggedType *>(sp)), thread_(thread) {}
     explicit OptimizedFrameHandler(const JSThread *thread);
     ~OptimizedFrameHandler() = default;
     void PrevFrame();
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
                 ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
                  bool isVerifying) const;
+
+private:
+    const JSThread *thread_ {nullptr};
 };
 
 class OptimizedEntryFrameHandler : public FrameHandler {
 public:
-    explicit OptimizedEntryFrameHandler(uintptr_t *sp)
-        : FrameHandler(reinterpret_cast<JSTaggedType *>(sp)) {}
+    explicit OptimizedEntryFrameHandler(const JSThread *thread, uintptr_t *sp)
+        : FrameHandler(reinterpret_cast<JSTaggedType *>(sp)), thread_(thread) {}
     explicit OptimizedEntryFrameHandler(const JSThread *thread);
     ~OptimizedEntryFrameHandler() = default;
     void PrevFrame();
@@ -172,18 +174,38 @@ public:
                 ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
                 bool isVerifying) const;
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1);
+
+private:
+    const JSThread *thread_ {nullptr};
 };
 
 class OptimizedLeaveFrameHandler : public FrameHandler {
 public:
-    explicit OptimizedLeaveFrameHandler(uintptr_t *sp)
-        : FrameHandler(reinterpret_cast<JSTaggedType *>(sp)) {}
+    explicit OptimizedLeaveFrameHandler(const JSThread *thread, uintptr_t *sp)
+        : FrameHandler(reinterpret_cast<JSTaggedType *>(sp)), thread_(thread) {}
     explicit OptimizedLeaveFrameHandler(const JSThread *thread);
     ~OptimizedLeaveFrameHandler() = default;
     void PrevFrame();
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
                 ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
                 bool isVerifying) const;
+private:
+    const JSThread *thread_ {nullptr};
+};
+
+class OptimizedWithArgvLeaveFrameHandler : public FrameHandler {
+public:
+    explicit OptimizedWithArgvLeaveFrameHandler(uintptr_t *sp)
+        : FrameHandler(reinterpret_cast<JSTaggedType *>(sp)) {}
+    explicit OptimizedWithArgvLeaveFrameHandler(const JSThread *thread);
+    ~OptimizedWithArgvLeaveFrameHandler() = default;
+    void PrevFrame();
+    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
+                ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
+                bool isVerifying) const;
+
+private:
+    const JSThread *thread_ {nullptr};
 };
 
 class FrameIterator {

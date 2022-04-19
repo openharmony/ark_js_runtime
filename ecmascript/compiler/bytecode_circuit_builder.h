@@ -213,9 +213,11 @@ enum CommonArgIdx : uint8_t {
 
 class BytecodeCircuitBuilder {
 public:
-    explicit BytecodeCircuitBuilder(EcmaVM *vm, const BytecodeTranslationInfo &translationInfo, size_t index)
+    explicit BytecodeCircuitBuilder(EcmaVM *vm, const BytecodeTranslationInfo &translationInfo, size_t index, 
+                                    bool enableLog)
         : vm_(vm), file_(translationInfo.jsPandaFile), method_(translationInfo.methodPcInfos[index].method),
-        pcArray_(translationInfo.methodPcInfos[index].pcArray), constantPool_(translationInfo.constantPool)
+        pcArray_(translationInfo.methodPcInfos[index].pcArray), constantPool_(translationInfo.constantPool),
+        enableLog_(enableLog)
     {
     }
     ~BytecodeCircuitBuilder() = default;
@@ -255,6 +257,16 @@ public:
     }
 
     BytecodeInfo GetBytecodeInfo(uint8_t *pc);
+
+    EcmaVM *GetEcmaVM() const
+    {
+        return vm_;
+    }
+
+    bool IsLogEnabled() const
+    {
+        return enableLog_;
+    }
 
 private:
     void PUBLIC_API CollectBytecodeBlockInfo(uint8_t* pc, std::vector<CfgInfo> &bytecodeBlockInfos);
@@ -304,6 +316,7 @@ private:
     const JSMethod* method_ {nullptr};
     const std::vector<uint8_t *> pcArray_;
     JSHandle<JSTaggedValue> constantPool_;
+    bool enableLog_ {false};
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_CLASS_LINKER_BYTECODE_CIRCUIT_IR_BUILDER_H

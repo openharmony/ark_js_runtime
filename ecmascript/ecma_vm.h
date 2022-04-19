@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -31,15 +31,12 @@
 #include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/space.h"
 #include "ecmascript/taskpool/task.h"
+#include "ecmascript/tooling/interface/js_debugger_manager.h"
 #include "ecmascript/snapshot/mem/snapshot_serialize.h"
 #include "include/panda_vm.h"
 #include "libpandabase/macros.h"
-#ifndef PANDA_TARGET_WINDOWS
-#include "libpandabase/os/library_loader.h"
-#endif
 
 namespace panda {
-class RuntimeNotificationManager;
 namespace panda_file {
 class File;
 }  // namespace panda_file
@@ -62,6 +59,11 @@ class JSPandaFile;
 namespace job {
 class MicroJobQueue;
 }  // namespace job
+
+namespace tooling {
+class NotificationManager;
+class JsDebuggerManager;
+}  // namespace tooling
 
 template<typename T>
 class JSHandle;
@@ -199,7 +201,7 @@ public:
 
     Rendezvous *GetRendezvous() const override
     {
-        return rendezvous_;
+        return nullptr;
     }
 
     ObjectHeader *GetOOMErrorObject() override
@@ -218,7 +220,7 @@ public:
         return Runtime::GetOptions();
     }
 
-    const JSRuntimeOptions &GetJSOptions()
+    const JSRuntimeOptions &GetJSOptions() const
     {
         return options_;
     }
@@ -344,9 +346,14 @@ public:
         regexpCache_ = newCache;
     }
 
-    RuntimeNotificationManager *GetNotificationManager() const
+    tooling::NotificationManager *GetNotificationManager() const
     {
         return notificationManager_;
+    }
+
+    tooling::JsDebuggerManager *GetJsDebuggerManager() const
+    {
+        return debuggerManager_;
     }
 
     void SetEnableForceGC(bool enable)
@@ -422,7 +429,7 @@ private:
 
     Expected<JSTaggedValue, bool> InvokeEcmaEntrypoint(const JSPandaFile *jsPandaFile);
 
-    void InvokeEcmaAotEntrypoint();
+    JSTaggedValue InvokeEcmaAotEntrypoint();
 
     void InitializeEcmaScriptRunStat();
 
@@ -436,9 +443,6 @@ private:
 
     NO_MOVE_SEMANTIC(EcmaVM);
     NO_COPY_SEMANTIC(EcmaVM);
-
-    // Useless/deprecated fields in the future:
-    Rendezvous *rendezvous_ {nullptr};
 
     // VM startup states.
     JSRuntimeOptions options_;
@@ -482,7 +486,8 @@ private:
     AotCodeInfo *aotInfo_ {nullptr};
 
     // Debugger
-    RuntimeNotificationManager *notificationManager_ {nullptr};
+    tooling::NotificationManager *notificationManager_ {nullptr};
+    tooling::JsDebuggerManager *debuggerManager_ {nullptr};
 
     // Registered Callbacks
     PromiseRejectCallback promiseRejectCallback_ {nullptr};

@@ -21,6 +21,9 @@
 .global OptimizedCallRuntime
 .type OptimizedCallRuntime, %function
 
+.global OptimizedCallRuntimeWithArgv
+.type OptimizedCallRuntimeWithArgv, %function
+
 .global AsmIntCallRuntime
 .type AsmIntCallRuntime, %function
 
@@ -186,7 +189,7 @@ JSFunctionEntry:
 
 
 // uint64_t OptimizedCallOptimized(uintptr_t glue, uint32_t expectedNumArgs,
-//                                uint32_t actualNumArgs, uintptr_t codeAddr, argv);
+//                                uint32_t actualNumArgs, uintptr_t codeAddr, uintptr_t argv);
 // Input:
 // %rdi - glue
 // %rsi - expectedNumArgs
@@ -350,7 +353,7 @@ CallNativeTrampoline:
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // JSTaggedType (*)(uintptr_t argGlue, uint64_t argc, JSTaggedType argv[])
 // Input:
-// %x0 - glue
+// %rax - glue
 // stack layout:
 // sp + N*8 argvN
 // ........
@@ -360,7 +363,13 @@ CallNativeTrampoline:
 // sp:      runtime_id
 // construct Leave Frame:
 //   +--------------------------+
-//   |       argv[]             |
+//   |       argv[argc-1]       |
+//   +--------------------------+
+//   |       ..........         |
+//   +--------------------------+
+//   |       argv[1]            |
+//   +--------------------------+
+//   |       argv[0]            |
 //   +--------------------------+ ---
 //   |       argc               |   ^
 //   |--------------------------|  Fixed
@@ -517,7 +526,7 @@ JSCall:
 .LNotJSFunction:
     cmpl    $0xd000000, %eax        // IsJsBoundFunction
     je      .LJSBoundFunction
-    cmpl    $0x4d000000, %eax       // IsJsProxy
+    cmpl    $0x4f000000, %eax       // IsJsProxy
     je      .LJSProxy
 
 .LNonCallable:
@@ -550,11 +559,10 @@ JSCall:
     ret
 
 .LCallOptimziedMethod:
-    mov     JS_FUNCTION_METHOD_OFFSET(%r8), %rsi      // get method
     mov     JS_FUNCTION_CODE_ENTRY_OFFSET(%r8), %rcx  // get codeaddress
     shr     $JS_METHOD_NUM_ARGS_SHIFT, %rax
     andl    $ASM_JS_METHOD_NUM_ARGS_MASK, %eax
-    addl    $3,   %eax      // add mandatory arguments
+    addl    $ASM_NUM_MANDATORY_JSFUNC_ARGS, %eax      // add mandatory arguments
     mov     %eax, %esi      // expected numbers
     movq    %rsp,  %r8
     addq    $16,   %r8      // r8 argv
@@ -602,7 +610,7 @@ JSCall:
     pushq   $0                  // push zero to align 16 bytes stack   
 
 .LAlign16Bytes2:
-    subq    $3, %rax
+    subq    $ASM_NUM_MANDATORY_JSFUNC_ARGS, %rax
     cmp     $0, %rax
     je      .LCopyBoundArgument
 .LCopyArgument2:
@@ -628,7 +636,7 @@ JSCall:
 .LPushCallTarget:
     mov     JS_FUNCTION_BOUND_THIS_OFFSET(%r8), %rax     // thisObj
     pushq   %rax
-    pushq   $0xa                                         // newtarget
+    pushq   $JSUNDEFINED                                         // newtarget
     mov     JS_FUNCTION_BOUND_TARGET_OFFSET(%r8), %rax   // calltarget
     pushq   %rax
     pushq   %r10                                         // push actual arguments
@@ -647,8 +655,17 @@ JSCall:
     pop     %rbp
     ret
 .LJSProxy:
-    int3
+    mov     %rsp, %rcx
+    addq    $8,  %rcx
+    mov     (%rcx), %rsi        // get origin argc
+    mov     %r8, %rdx           // calltarget
+    addq    $8,  %rcx           // argv
+
+    movq    $JSPROXY_CALL_INTERNAL_INDEX, %r9
+    movq    ASM_GLUE_COMSTUB_ENTRY_OFFSET(%rdi, %r9, 8), %r8
+    jmp     *%r8
     ret
+
 // ==================================================================================
 // void PushCallArgsxAndDispatch(uintptr_t glue, uint64_t function,
 //     uintptr_t sp, uintptr_t method, uint64_t callField, ...);
@@ -1155,3 +1172,63 @@ ResumeRspAndDispatch:
 ResumeRspAndReturn:
     movq    %rbp, %rsp
     retq
+
+
+// uint64_t OptimizedCallRuntimeWithArgv(uintptr_t glue, uint64_t runtime_id, uint64_t argc, uintptr_t argv);
+// cc calling convention call runtime_id's runtion function(c-abi)
+// JSTaggedType (*)(uintptr_t argGlue, uint64_t argc, JSTaggedType argv[])
+// Input:
+// %rdi - glue
+// %rsi - runtime_id
+// %edx - argc
+// %rcx - argv
+// stack layout:
+//   +--------------------------+
+//   |       return addr        |
+//   +--------------------------+
+
+// %r8  - argV
+// %r9  - codeAddr
+
+// Output:
+// construct Leave Frame:
+//   +--------------------------+
+//   |       returnAddr         |
+//   +--------------------------+
+//   |       argv[]             |
+//   +--------------------------+ ---
+//   |       argc               |   ^
+//   |--------------------------|  Fixed
+//   |       RuntimeId          | OptimizedLeaveFrame
+//   |--------------------------|   |
+//   |       returnAddr         |   |
+//   |--------------------------|   |
+//   |       callsiteFp         |   |
+//   |--------------------------|   |
+//   |       frameType          |   v
+//   +--------------------------+ ---
+
+OptimizedCallRuntimeWithArgv:
+    movq %rsp, %r8
+    movq (%rsp), %r9
+    pushq  %rcx  // argv[]
+    pushq  %rdx  // argc
+    pushq  %rsi  // RuntimeId
+    pushq  %r9   // returnAddr
+
+    // construct leave frame
+    pushq   %rbp
+    movq    %rsp, %rbp     // set frame pointer
+    movq    %rbp, ASM_GLUE_LEAVE_FRAME_OFFSET(%rdi)   // save to thread->leaveFrame_
+    pushq   $ASM_OPTIMIZED_WITH_ARGV_LEAVE_FRAME
+
+    movq    ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET(%rdi, %rsi, 8), %r9
+    movq    %rdx, %rsi // argc
+    movq    %rcx, %rdx // argv
+    pushq   %r8
+    call    *%r9
+    popq    %r8
+    addq    $8, %rsp // skip type
+    popq    %rbp
+    movq    %r8, %rsp
+    ret

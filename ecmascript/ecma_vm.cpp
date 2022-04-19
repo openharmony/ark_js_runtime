@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -59,8 +59,8 @@
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/tagged_queue.h"
 #include "ecmascript/tagged_queue.h"
+#include "ecmascript/tooling/interface/notification_manager.h"
 #include "ecmascript/ts_types/ts_loader.h"
-#include "include/runtime_notification.h"
 #include "libpandafile/file.h"
 #ifdef PANDA_TARGET_WINDOWS
 #include <shlwapi.h>
@@ -131,7 +131,6 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
     options_ = std::move(options);
     icEnable_ = options_.IsIcEnable();
     optionalLogEnabled_ = options_.IsEnableOptionalLog();
-    rendezvous_ = chunk_.New<EmptyRendezvous>();
     snapshotSerializeEnable_ = options_.IsSnapshotSerializeEnabled();
     if (!snapshotSerializeEnable_) {
         snapshotDeserializeEnable_ = options_.IsSnapshotDeserializeEnabled();
@@ -140,9 +139,8 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
     frameworkAbcFileName_ = options_.GetFrameworkAbcFile().c_str();
     options_.ParseAsmInterOption();
 
-    auto runtime = Runtime::GetCurrent();
-    notificationManager_ = chunk_.New<RuntimeNotificationManager>(runtime->GetInternalAllocator());
-    notificationManager_->SetRendezvous(rendezvous_);
+    notificationManager_ = chunk_.New<tooling::NotificationManager>();
+    debuggerManager_ = chunk_.New<tooling::JsDebuggerManager>();
 }
 
 void EcmaVM::TryLoadSnapshotFile()
@@ -189,9 +187,9 @@ bool EcmaVM::Initialize()
     JSHandle<GlobalEnv> globalEnv = factory_->NewGlobalEnv(*globalEnvClass);
     globalEnv->Init(thread_);
     globalEnv_ = globalEnv.GetTaggedValue();
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT
-    LoadStubs();
-#endif
+    if (options_.IsEnableStubAot()) {
+        LoadStubs();
+    }
     SetupRegExpResultCache();
     microJobQueue_ = factory_->NewMicroJobQueue().GetTaggedValue();
     Builtins builtins;
@@ -200,7 +198,6 @@ bool EcmaVM::Initialize()
     moduleManager_ = new ModuleManager(this);
     InitializeFinish();
     notificationManager_->VmStartEvent();
-    notificationManager_->VmInitializationEvent(thread_->GetThreadId());
     return true;
 }
 
@@ -222,7 +219,7 @@ void EcmaVM::InitializeEcmaScriptRunStat()
 #define MEM_ALLOCATE_AND_GC_NAME(name) "Memory::" #name,
     MEM_ALLOCATE_AND_GC_LIST(MEM_ALLOCATE_AND_GC_NAME)
 #undef MEM_ALLOCATE_AND_GC_NAME
-#define DEF_RUNTIME_ID(name, c) "Runtime::" #name,
+#define DEF_RUNTIME_ID(name) "Runtime::" #name,
     RUNTIME_STUB_WITH_GC_LIST(DEF_RUNTIME_ID)
 #undef DEF_RUNTIME_ID
     };
@@ -372,7 +369,7 @@ JSMethod *EcmaVM::GetMethodForNativeFunction(const void *func)
     return nativeMethods_.back();
 }
 
-void EcmaVM::InvokeEcmaAotEntrypoint()
+JSTaggedValue EcmaVM::InvokeEcmaAotEntrypoint()
 {
     const std::string funcName = "func_main_0";
     auto ptr = static_cast<uintptr_t>(aotInfo_->GetAOTFuncEntry(funcName));
@@ -384,6 +381,7 @@ void EcmaVM::InvokeEcmaAotEntrypoint()
                                args.data(),
                                ptr);
     std::cout << " LoadAOTFile call func_main_0 res: " << res << std::endl;
+    return JSTaggedValue(res);
 }
 
 Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *jsPandaFile)
@@ -418,10 +416,10 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
 
     auto options = GetJSOptions();
     if (options.EnableTSAot()) {
-        InvokeEcmaAotEntrypoint();
+        result = InvokeEcmaAotEntrypoint();
     } else {
         CpuProfilingScope profilingScope(this);
-        EcmaInterpreter::Execute(&info);
+        result = EcmaInterpreter::Execute(&info);
     }
     if (!thread_->HasPendingException()) {
         job::MicroJobQueue::ExecutePendingJob(thread_, GetMicroJobQueue());
@@ -478,7 +476,7 @@ void EcmaVM::HandleUncaughtException(ObjectHeader *exception)
     if (isUncaughtExceptionRegistered_) {
         return;
     }
-    [[maybe_unused]] EcmaHandleScope handle_scope(thread_);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread_);
     JSHandle<JSTaggedValue> exceptionHandle(thread_, JSTaggedValue(exception));
     // if caught exceptionHandle type is JSError
     thread_->ClearException();

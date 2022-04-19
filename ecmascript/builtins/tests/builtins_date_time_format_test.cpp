@@ -42,7 +42,7 @@ public:
         JSRuntimeOptions options;
 #if PANDA_TARGET_LINUX
         // for consistency requirement, use ohos_icu4j/data as icu-data-path
-        options.SetIcuDataPath("./../../third_party/icu/ohos_icu4j/data");
+        options.SetIcuDataPath(ICU_PATH);
 #endif
         options.SetShouldLoadBootPandaFiles(false);
         options.SetShouldInitializeIntrinsics(false);
@@ -238,7 +238,11 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, Format_002)
     JSTaggedValue result2 = BuiltinsArray::ToString(ecmaRuntimeCallInfo2.get());
     TestHelper::TearDownFrame(thread, prev);
     JSHandle<EcmaString> resultStr(thread, result2);
-    EXPECT_STREQ("qui, 11/06/2020 24:00:00", CString(resultStr->GetCString().get()).c_str());
+    CString resStr = resultStr->GetCString().get();
+    // the index of string "qui" is zero.
+    EXPECT_TRUE(resStr.find("qui") == 0);
+    // the index of string "11/06/2020 24:00:00" is not zero.
+    EXPECT_TRUE(resStr.find("11/06/2020 24:00:00") != 0);
 }
 
 HWTEST_F_L0(BuiltinsDateTimeFormatTest, FormatToParts)

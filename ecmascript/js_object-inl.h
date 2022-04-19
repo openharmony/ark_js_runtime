@@ -272,7 +272,7 @@ inline uint32_t JSObject::ComputeElementCapacity(uint32_t oldCapacity)
 
 inline uint32_t JSObject::ComputePropertyCapacity(uint32_t oldCapacity)
 {
-    uint32_t newCapacity = oldCapacity + PROPERTIES_GROW_SIZE;
+    uint32_t newCapacity = static_cast<uint32_t>(oldCapacity + PROPERTIES_GROW_SIZE);
     return newCapacity > JSHClass::MAX_CAPACITY_OF_OUT_OBJECTS ? JSHClass::MAX_CAPACITY_OF_OUT_OBJECTS
                                                                : newCapacity;
 }
