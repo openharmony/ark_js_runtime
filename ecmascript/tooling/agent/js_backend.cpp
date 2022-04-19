@@ -261,9 +261,9 @@ std::optional<CString> JSBackend::SetBreakpointByUrl(const CString &url, int32_t
             CString dest;
             if (!DecodeAndCheckBase64(condition.value(), dest)) {
                 LOG(ERROR, DEBUGGER) << "SetBreakpointByUrl: base64 decode failed";
+                return false;
             }
-            // ignore the condition if it is not executable, which is newly supported
-            return DebuggerApi::SetBreakpoint(debugger_, location, dest.empty() ? std::optional<CString> {} : dest);
+            return DebuggerApi::SetBreakpoint(debugger_, location, dest);
         }
         return DebuggerApi::SetBreakpoint(debugger_, location, condition);
     };

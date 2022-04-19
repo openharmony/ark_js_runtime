@@ -16,9 +16,7 @@
 #ifndef ECMASCRIPT_TOOLING_INTERFACE_JS_DEBUGGER_MANAGER_H
 #define ECMASCRIPT_TOOLING_INTERFACE_JS_DEBUGGER_MANAGER_H
 
-#ifndef PANDA_TARGET_WINDOWS
 #include "libpandabase/os/library_loader.h"
-#endif
 
 namespace panda::ecmascript::tooling {
 class JsDebuggerManager {
