@@ -760,6 +760,7 @@ JSTaggedValue BuiltinsTypedArray::Join(EcmaRuntimeCallInfo *argv)
         newString->WriteData(*nextStr, current, allocateLength - current, nextLength);
         current += nextLength;
     }
+    ASSERT_PRINT(isOneByte == EcmaString::CanBeCompressed(newString), "isOneByte does not match the real value!");
     return JSTaggedValue(newString);
 }
 
