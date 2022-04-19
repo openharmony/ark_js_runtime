@@ -40,6 +40,7 @@ static constexpr uint32_t RESERVED_CALL_ARGCOUNT = 3;
 static constexpr uint32_t RESERVED_INDEX_CALL_TARGET = 0;
 static constexpr uint32_t RESERVED_INDEX_NEW_TARGET = 1;
 static constexpr uint32_t RESERVED_INDEX_THIS = 2;
+static constexpr uint32_t INVALID_ARGS_NUMBER = -1;
 
 class EcmaInterpreter {
 public:

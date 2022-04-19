@@ -834,6 +834,10 @@ JSHandle<TaggedArray> JSProxy::OwnPropertyKeys(JSThread *thread, const JSHandle<
 // ES6 9.5.13 [[Call]] (thisArgument, argumentsList)
 JSTaggedValue JSProxy::CallInternal(EcmaRuntimeCallInfo *info)
 {
+    if (info == nullptr || (info->GetArgsNumber() == INVALID_ARGS_NUMBER)) {
+        return JSTaggedValue::Exception();
+    }
+
     JSThread *thread = info->GetThread();
     JSHandle<JSProxy> proxy(info->GetFunction());
     // step 1 ~ 4 get ProxyHandler and ProxyTarget
@@ -878,7 +882,10 @@ JSTaggedValue JSProxy::CallInternal(EcmaRuntimeCallInfo *info)
 // ES6 9.5.14 [[Construct]] ( argumentsList, newTarget)
 JSTaggedValue JSProxy::ConstructInternal(EcmaRuntimeCallInfo *info)
 {
-    ASSERT(info);
+    if (info == nullptr || (info->GetArgsNumber() == INVALID_ARGS_NUMBER)) {
+        return JSTaggedValue::Exception();
+    }
+
     JSThread *thread = info->GetThread();
     // step 1 ~ 4 get ProxyHandler and ProxyTarget
     JSHandle<JSProxy> proxy(info->GetFunction());
