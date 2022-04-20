@@ -17,33 +17,13 @@ import("//build/test.gni")
 
 module_output_path = "ark/js_runtime"
 
-host_unittest_action("PendingJobTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
-    "pending_job_test.cpp",
-  ]
-
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_jsruntime_test",
-    sdk_libc_secshared_dep,
-  ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
-}
-
-host_unittest_action("MicroJobQueueTest") {
+host_unittest_action("JobTest") {
   module_out_path = module_output_path
 
   sources = [
     # test file
     "micro_job_queue_test.cpp",
+    "pending_job_test.cpp",
   ]
 
   configs = [ "//ark/js_runtime:ecma_test_config" ]
@@ -63,18 +43,12 @@ group("unittest") {
   testonly = true
 
   # deps file
-  deps = [
-    ":MicroJobQueueTest",
-    ":PendingJobTest",
-  ]
+  deps = [ ":JobTest" ]
 }
 
 group("host_unittest") {
   testonly = true
 
   # deps file
-  deps = [
-    ":MicroJobQueueTestAction",
-    ":PendingJobTestAction",
-  ]
+  deps = [ ":JobTestAction" ]
 }

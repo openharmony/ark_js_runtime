@@ -17,32 +17,15 @@ import("//build/test.gni")
 
 module_output_path = "ark/js_runtime"
 
-host_unittest_action("ContainersTreeMapTest") {
+host_unittest_action("ContainersTest") {
   module_out_path = module_output_path
 
   sources = [
     # test file
+    "containers_deque_test.cpp",
+    "containers_plainarray_test.cpp",
+    "containers_stack_test.cpp",
     "containers_treemap_test.cpp",
-  ]
-
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_jsruntime_test",
-    sdk_libc_secshared_dep,
-  ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
-}
-
-host_unittest_action("ContainersTreeSetTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
     "containers_treeset_test.cpp",
   ]
 
@@ -59,108 +42,16 @@ host_unittest_action("ContainersTreeSetTest") {
   }
 }
 
-host_unittest_action("ContainersPlainArrayTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
-    "containers_plainarray_test.cpp",
-  ]
-
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_jsruntime_test",
-    sdk_libc_secshared_dep,
-  ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
-}
-host_unittest_action("ContainersStackTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
-    "containers_stack_test.cpp",
-  ]
-
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_jsruntime_test",
-    sdk_libc_secshared_dep,
-  ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
-}
-
-host_unittest_action("ContainersDequeTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
-    "containers_deque_test.cpp",
-  ]
-
-  configs = [
-    "//ark/js_runtime:ecma_test_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                     # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "$ark_root/runtime:arkruntime_public_config",
-  ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_jsruntime_test",
-    sdk_libc_secshared_dep,
-  ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
-}
-
 group("unittest") {
   testonly = true
 
   # deps file
-  deps = [
-    ":ContainersDequeTest",
-    ":ContainersPlainArrayTest",
-    ":ContainersStackTest",
-    ":ContainersTreeMapTest",
-    ":ContainersTreeSetTest",
-  ]
+  deps = [ ":ContainersTest" ]
 }
 
 group("host_unittest") {
   testonly = true
 
   # deps file
-  deps = [
-    ":ContainersDequeTestAction",
-    ":ContainersPlainArrayTestAction",
-    ":ContainersStackTestAction",
-    ":ContainersTreeMapTestAction",
-    ":ContainersTreeSetTestAction",
-  ]
+  deps = [ ":ContainersTestAction" ]
 }
