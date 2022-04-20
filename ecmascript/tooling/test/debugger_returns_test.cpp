@@ -259,6 +259,36 @@ HWTEST_F_L0(DebuggerReturnsTest, StopSamplingReturnsToObjectTest)
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
 }
 
+HWTEST_F_L0(DebuggerReturnsTest, GetHeapObjectIdReturnsToObjectTest)
+{
+    std::unique_ptr<GetHeapObjectIdReturns> getHeapObjectIdReturns = std::make_unique<GetHeapObjectIdReturns>(10);
+    ASSERT_NE(getHeapObjectIdReturns, nullptr);
+    
+    Local<ObjectRef> object = getHeapObjectIdReturns->ToObject(ecmaVm);
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "heapSnapshotObjectId");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    
+    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(CString("10"), DebuggerApi::ToCString(result));
+}
+
+HWTEST_F_L0(DebuggerReturnsTest, GetObjectByHeapObjectIdReturnsToObjectTest)
+{
+    std::unique_ptr<RemoteObject> remoteObjectResult = std::make_unique<RemoteObject>();
+    std::unique_ptr<GetObjectByHeapObjectIdReturns> getObjectByHeapObjectIdReturns =
+                                    std::make_unique<GetObjectByHeapObjectIdReturns>(std::move(remoteObjectResult));
+    ASSERT_NE(getObjectByHeapObjectIdReturns, nullptr);
+
+    Local<ObjectRef> object = getObjectByHeapObjectIdReturns->ToObject(ecmaVm);
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "result");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+
+    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_EQ(std::move(remoteObjectResult), nullptr);
+}
+
 HWTEST_F_L0(DebuggerReturnsTest, StopReturnsToObjectTest)
 {
     std::unique_ptr<Profile> profile = std::make_unique<Profile>();

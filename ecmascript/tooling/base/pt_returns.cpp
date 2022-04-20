@@ -247,6 +247,30 @@ Local<ObjectRef> StopSamplingReturns::ToObject(const EcmaVM *ecmaVm)
     return result;
 }
 
+Local<ObjectRef> GetHeapObjectIdReturns::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> result = NewObject(ecmaVm);
+
+    result->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "heapSnapshotObjectId")),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(heapSnapshotObjectId_).c_str())));
+
+    return result;
+}
+
+Local<ObjectRef> GetObjectByHeapObjectIdReturns::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> result = NewObject(ecmaVm);
+    
+    if (remoteObjectResult_ != nullptr) {
+        Local<ObjectRef> remoteObjectResult = remoteObjectResult_->ToObject(ecmaVm);
+        result->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "result")),
+            Local<JSValueRef>(remoteObjectResult));
+    }
+
+    return result;
+}
+
 Local<ObjectRef> StopReturns::ToObject(const EcmaVM *ecmaVm)
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
