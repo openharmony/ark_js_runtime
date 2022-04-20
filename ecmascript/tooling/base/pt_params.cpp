@@ -848,7 +848,6 @@ std::unique_ptr<StopTrackingHeapObjectsParams> StopTrackingHeapObjectsParams::Cr
     return paramsObject;
 }
 
-
 Local<ObjectRef> StopTrackingHeapObjectsParams::ToObject(const EcmaVM *ecmaVm)
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -860,6 +859,140 @@ Local<ObjectRef> StopTrackingHeapObjectsParams::ToObject(const EcmaVM *ecmaVm)
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "captureNumericValue")),
         BooleanRef::New(ecmaVm, captureNumericValue_.value()));
 
+    return params;
+}
+
+std::unique_ptr<AddInspectedHeapObjectParams> AddInspectedHeapObjectParams::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
+{
+    ASSERT(ecmaVm);
+    if (params.IsEmpty()) {
+        LOG(ERROR, DEBUGGER) << "AddInspectedHeapObjectParams::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto paramsObject = std::make_unique<AddInspectedHeapObjectParams>();
+
+    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "heapObjectId")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            paramsObject->heapObjectId_ = DebuggerApi::StringToInt(result);
+        } else {
+            error += "'heapObjectId' should be a String;";
+        }
+    } else {
+        error += "should contain 'heapObjectId';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "AddInspectedHeapObjectParams::Create " << error;
+        return nullptr;
+    }
+    return paramsObject;
+}
+
+Local<ObjectRef> AddInspectedHeapObjectParams::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "heapObjectId")),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(heapObjectId_).c_str())));
+
+    return params;
+}
+
+std::unique_ptr<GetHeapObjectIdParams> GetHeapObjectIdParams::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
+{
+    ASSERT(ecmaVm);
+    if (params.IsEmpty()) {
+        LOG(ERROR, DEBUGGER) << "GetHeapObjectIdParams::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto paramsObject = std::make_unique<GetHeapObjectIdParams>();
+
+    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            paramsObject->objectId_ = DebuggerApi::StringToInt(result);
+        } else {
+            error += "'objectId' should be a String;";
+        }
+    } else {
+        error += "should contain 'objectId';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "GetHeapObjectIdParams::Create " << error;
+        return nullptr;
+    }
+    return paramsObject;
+}
+
+Local<ObjectRef> GetHeapObjectIdParams::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(objectId_).c_str())));
+    return params;
+}
+
+std::unique_ptr<GetObjectByHeapObjectIdParams> GetObjectByHeapObjectIdParams::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
+{
+    ASSERT(ecmaVm);
+    if (params.IsEmpty()) {
+        LOG(ERROR, DEBUGGER) << "GetObjectByHeapObjectIdParams::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto paramsObject = std::make_unique<GetObjectByHeapObjectIdParams>();
+
+    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            paramsObject->objectId_ = DebuggerApi::StringToInt(result);
+        } else {
+            error += "'objectId' should be a String;";
+        }
+    } else {
+        error += "should contain 'objectId';";
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectGroup")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            paramsObject->objectGroup_ = DebuggerApi::ToCString(result);
+        } else {
+            error += "'objectGroup' should be a String;";
+        }
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "GetObjectByHeapObjectIdParams::Create " << error;
+        return nullptr;
+    }
+    return paramsObject;
+}
+
+Local<ObjectRef> GetObjectByHeapObjectIdParams::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(objectId_).c_str())));
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectGroup")),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, objectGroup_->c_str())));
     return params;
 }
 }  // namespace panda::ecmascript::tooling
