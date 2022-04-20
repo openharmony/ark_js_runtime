@@ -39,17 +39,9 @@ public:
     void SetUp() override
     {
         JSRuntimeOptions options;
-        options.SetShouldLoadBootPandaFiles(false);
-        options.SetShouldInitializeIntrinsics(false);
-        options.SetBootClassSpaces({"ecmascript"});
-        options.SetRuntimeType("ecmascript");
-        options.SetEnableParalledYoungGc(false);
-        static EcmaLanguageContext lcEcma;
-        [[maybe_unused]] bool success = Runtime::Create(options, {&lcEcma});
-        ASSERT_TRUE(success) << "Cannot create Runtime";
-        instance = Runtime::GetCurrent()->GetPandaVM();
+        instance = JSNApi::CreateEcmaVM(options);
         ASSERT_TRUE(instance != nullptr) << "Cannot create EcmaVM";
-        thread = EcmaVM::Cast(instance)->GetJSThread();
+        thread = instance->GetJSThread();
         scope = new EcmaHandleScope(thread);
     }
 
@@ -58,7 +50,7 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
-    PandaVM *instance {nullptr};
+    EcmaVM *instance {nullptr};
     ecmascript::EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
 };

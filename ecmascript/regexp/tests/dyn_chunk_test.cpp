@@ -45,7 +45,7 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
-    PandaVM *instance {nullptr};
+    EcmaVM *instance {nullptr};
     JSThread *thread {nullptr};
     EcmaHandleScope *scope {nullptr};
     Chunk *chunk_ {nullptr};

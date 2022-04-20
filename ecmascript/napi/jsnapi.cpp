@@ -27,7 +27,6 @@
 #include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
 #endif
 #include "ecmascript/ecma_global_storage-inl.h"
-#include "ecmascript/ecma_language_context.h"
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"
@@ -117,26 +116,17 @@ constexpr std::string_view ENTRY_POINTER = "_GLOBAL::func_main_0";
 }
 
 int JSNApi::vmCount = 1;
+bool JSNApi::initialize = false;
+bool JSNApi::debugMode = false;
 static os::memory::Mutex mutex;
 
 // ------------------------------------ Panda -----------------------------------------------
-bool JSNApi::CreateRuntime(const RuntimeOption &option)
+EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
 {
     JSRuntimeOptions runtimeOptions;
-    runtimeOptions.SetRuntimeType("ecmascript");
-
-    // GC
-    runtimeOptions.SetGcType(option.GetGcType());
-    runtimeOptions.SetRunGcInPlace(true);
     runtimeOptions.SetArkProperties(option.GetArkProperties());
     // Mem
     runtimeOptions.SetHeapSizeLimit(option.GetGcPoolSize());
-    runtimeOptions.SetInternalAllocatorType("malloc");
-
-    // Boot
-    runtimeOptions.SetShouldLoadBootPandaFiles(false);
-    runtimeOptions.SetShouldInitializeIntrinsics(false);
-    runtimeOptions.SetBootClassSpaces({"ecmascript"});
     // asmInterpreter
     runtimeOptions.SetAsmInterOption(option.GetAsmInterOption());
 
@@ -152,59 +142,38 @@ bool JSNApi::CreateRuntime(const RuntimeOption &option)
     }
 
     runtimeOptions.SetEnableArkTools(option.GetEnableArkTools());
-    SetOptions(runtimeOptions);
-    static EcmaLanguageContext lcEcma;
-    if (!Runtime::Create(runtimeOptions, {&lcEcma})) {
-        std::cerr << "Error: cannot create runtime" << std::endl;
-        return false;
-    }
-    return true;
+    return CreateEcmaVM(runtimeOptions);
 }
 
-bool JSNApi::DestroyRuntime()
+EcmaVM *JSNApi::CreateEcmaVM(const JSRuntimeOptions &options)
 {
-    return Runtime::Destroy();
-}
-
-EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
-{
-    auto runtime = Runtime::GetCurrent();
     os::memory::LockHolder lock(mutex);
     vmCount++;
-    if (runtime == nullptr) {
-        // Only Ark js app
-        if (!CreateRuntime(option)) {
-            vmCount = 0;
-            return nullptr;
+    if (!initialize) {
+        if (!IsArkJavaApp()) {
+            InitializeMemPoolManage(options);
+            vmCount--;
         }
-        vmCount--;
-        runtime = Runtime::GetCurrent();
-        return EcmaVM::Cast(runtime->GetPandaVM());
+        initialize = true;
     }
-    JSRuntimeOptions runtimeOptions;
-    runtimeOptions.SetArkProperties(option.GetArkProperties());
-    runtimeOptions.SetAsmInterOption(option.GetAsmInterOption());
-    // GC
-    runtimeOptions.SetGcTriggerType("no-gc-for-start-up");  // A non-production gc strategy. Prohibit stw-gc 10 times.
-
-    return EcmaVM::Cast(EcmaVM::Create(runtimeOptions));
+    return EcmaVM::Create(options);
 }
 
 void JSNApi::DestroyJSVM(EcmaVM *ecmaVm)
 {
-    ecmaVm->GetNotificationManager()->VmDeathEvent();
-    auto runtime = Runtime::GetCurrent();
-    if (runtime != nullptr) {
+    if (initialize) {
         os::memory::LockHolder lock(mutex);
         vmCount--;
-        PandaVM *mainVm = runtime->GetPandaVM();
-        // Only Ark js app
-        if (mainVm != ecmaVm) {
-            EcmaVM::Destroy(ecmaVm);
-        }
-
         if (vmCount <= 0) {
-            DestroyRuntime();
+            if (!IsArkJavaApp()) {
+                EcmaVM::Destroy(ecmaVm);
+                DestroyMemPoolManage();
+                initialize = false;
+            }
+        } else {
+            if (ecmaVm != nullptr) {
+                EcmaVM::Destroy(ecmaVm);
+            }
         }
     }
 }
@@ -237,6 +206,7 @@ void JSNApi::ThrowException(const EcmaVM *vm, Local<JSValueRef> error)
 #if defined(ECMASCRIPT_SUPPORT_DEBUGGER)
 bool JSNApi::StartDebugger(const char *libraryPath, EcmaVM *vm, bool isDebugMode)
 {
+    debugMode = isDebugMode;
     auto handle = panda::os::library_loader::Load(std::string(libraryPath));
     if (!handle) {
         return false;
@@ -494,9 +464,24 @@ Local<ObjectRef> JSNApi::GetExportObject(EcmaVM *vm, const std::string &file, co
     return JSNApiHelper::ToLocal<ObjectRef>(exportObj);
 }
 
-void JSNApi::SetOptions(const ecmascript::JSRuntimeOptions &options)
+void JSNApi::InitializeMemPoolManage(const ecmascript::JSRuntimeOptions &options)
 {
-    ecmascript::JSRuntimeOptions::temporary_options = options;
+    panda::mem::MemConfig::Initialize(options.GetHeapSizeLimit(), options.GetInternalMemorySizeLimit(),
+                                      options.GetCompilerMemorySizeLimit(), options.GetCodeCacheSizeLimit());
+    PoolManager::Initialize();
+}
+void JSNApi::DestroyMemPoolManage()
+{
+    panda::mem::MemConfig::Finalize();
+    PoolManager::Finalize();
+}
+bool JSNApi::IsArkJavaApp()
+{
+    // current app status is ArkJava + ArkJs
+    if (std::getenv("PANDA_RUNTIME") != nullptr || std::getenv("ARK_RUNTIME") != nullptr) {
+        return true;
+    }
+    return false;
 }
 // ----------------------------------- HandleScope -------------------------------------
 LocalScope::LocalScope(const EcmaVM *vm) : thread_(vm->GetJSThread())

@@ -28,9 +28,7 @@
 #include "ecmascript/tests/test_helper.h"
 
 using namespace panda;
-
 using namespace panda::ecmascript;
-
 using namespace panda::ecmascript::containers;
 
 namespace panda::test {
@@ -56,7 +54,7 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
-    PandaVM *instance {nullptr};
+    EcmaVM *instance {nullptr};
     ecmascript::EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
 

@@ -16,7 +16,8 @@
 #ifndef ECMASCRIPT_JS_THREAD_H
 #define ECMASCRIPT_JS_THREAD_H
 
-#include "include/managed_thread.h"
+#include <atomic>
+
 #include "ecmascript/base/aligned_struct.h"
 #include "ecmascript/compiler/common_stubs.h"
 #include "ecmascript/compiler/interpreter_stub.h"
@@ -124,25 +125,23 @@ struct COStubEntries {
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(COStubEntries), COStubEntries::SizeArch32, COStubEntries::SizeArch64);
 
-class JSThread : public ManagedThread {
+class JSThread {
 public:
     static constexpr int CONCURRENT_MARKING_BITFIELD_NUM = 2;
     static constexpr uint32_t RESERVE_STACK_SIZE = 128;
     using MarkStatusBits = BitField<MarkStatus, 0, CONCURRENT_MARKING_BITFIELD_NUM>;
+    using ThreadId = uint32_t;
 
-    static JSThread *Cast(ManagedThread *thread)
+    JSThread(EcmaVM *vm);
+
+    PUBLIC_API ~JSThread();
+
+    EcmaVM *GetEcmaVM() const
     {
-        ASSERT(thread != nullptr);
-        return reinterpret_cast<JSThread *>(thread);
+        return vm_;
     }
 
-    JSThread(Runtime *runtime, PandaVM *vm);
-
-    PUBLIC_API ~JSThread() override;
-
-    EcmaVM *GetEcmaVM() const;
-
-    static JSThread *Create(Runtime *runtime, PandaVM *vm);
+    static JSThread *Create(EcmaVM *vm);
 
     int GetNestedLevel() const
     {
@@ -292,7 +291,7 @@ public:
 
     ThreadId GetThreadId() const
     {
-        return GetId();
+        return id_.load(std::memory_order_relaxed);
     }
 
     static ThreadId GetCurrentThreadId()
@@ -478,6 +477,8 @@ private:
     static const uint32_t NODE_BLOCK_SIZE_LOG2 = 10;
     static const uint32_t NODE_BLOCK_SIZE = 1U << NODE_BLOCK_SIZE_LOG2;
     static constexpr int32_t MIN_HANDLE_STORAGE_SIZE = 2;
+    std::atomic<ThreadId> id_;
+    EcmaVM *vm_ {nullptr};
 
     // MM: handles, global-handles, and aot-stubs.
     int nestedLevel_ = 0;

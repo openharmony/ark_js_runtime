@@ -22,7 +22,6 @@
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_thread.h"
-#include "thread_manager.h"
 
 using namespace panda::ecmascript;
 using namespace panda::ecmascript::base;
@@ -50,7 +49,7 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
-    PandaVM *instance {nullptr};
+    EcmaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
 };

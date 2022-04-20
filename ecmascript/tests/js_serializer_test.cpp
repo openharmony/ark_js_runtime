@@ -16,7 +16,6 @@
 #include <thread>
 
 #include "ecmascript/builtins/builtins_arraybuffer.h"
-#include "ecmascript/ecma_language_context.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_array.h"
@@ -42,11 +41,6 @@ public:
     void Init()
     {
         JSRuntimeOptions options;
-        options.SetShouldLoadBootPandaFiles(false);
-        options.SetShouldInitializeIntrinsics(false);
-        options.SetBootIntrinsicSpaces({"ecmascript"});
-        options.SetBootClassSpaces({"ecmascript"});
-        options.SetRuntimeType("ecmascript");
         options.SetEnableForceGC(true);
         ecmaVm = EcmaVM::Create(options);
         ecmaVm->SetEnableForceGC(true);
@@ -552,17 +546,15 @@ public:
 
     void SetUp() override
     {
-        TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
-        ecmaVm = EcmaVM::Cast(instance);
+        TestHelper::CreateEcmaVMWithScope(ecmaVm, thread, scope);
     }
 
     void TearDown() override
     {
-        TestHelper::DestroyEcmaVMWithScope(instance, scope);
+        TestHelper::DestroyEcmaVMWithScope(ecmaVm, scope);
     }
 
     JSThread *thread {nullptr};
-    PandaVM *instance {nullptr};
     EcmaVM *ecmaVm {nullptr};
     EcmaHandleScope *scope {nullptr};
 };

@@ -81,24 +81,17 @@ using HostPromiseRejectionTracker = void (*)(const EcmaVM* vm,
                                              void* data);
 using PromiseRejectCallback = void (*)(void* info);
 
-class EcmaVM : public PandaVM {
+class EcmaVM {
 public:
-    static EcmaVM *Cast(PandaVM *object)
-    {
-        return reinterpret_cast<EcmaVM *>(object);
-    }
-
     static EcmaVM *Create(const JSRuntimeOptions &options);
 
-    static EcmaVM *Create(Runtime *runtime);
-
-    static bool Destroy(PandaVM *vm);
+    static bool Destroy(EcmaVM *vm);
 
     explicit EcmaVM(JSRuntimeOptions options);
 
     EcmaVM();
 
-    ~EcmaVM() override;
+    ~EcmaVM();
 
     bool IsInitialized() const
     {
@@ -110,114 +103,18 @@ public:
         return factory_;
     }
 
-    bool Initialize() override;
+    bool Initialize();
 
-    bool InitializeFinish() override;
-    void UninitializeThreads() override {}
-    void PreStartup() override {}
-    void PreZygoteFork() override {}
-    void PostZygoteFork() override {}
-    void InitializeGC() override {}
-    void StartGC() override {}
-    void StopGC() override {}
-
-    void VisitVmRoots([[maybe_unused]] const GCRootVisitor &visitor) override {}
-    void UpdateVmRefs() override {}
-
-    PandaVMType GetPandaVMType() const override
-    {
-        return PandaVMType::ECMA_VM;
-    }
-
-    LanguageContext GetLanguageContext() const override
-    {
-        return Runtime::GetCurrent()->GetLanguageContext(panda_file::SourceLang::ECMASCRIPT);
-    }
-
-    panda::mem::HeapManager *GetHeapManager() const override
-    {
-        return nullptr;
-    }
-
-    panda::mem::GC *GetGC() const override
-    {
-        return nullptr;
-    }
-
-    panda::mem::GCTrigger *GetGCTrigger() const override
-    {
-        return nullptr;
-    }
-
-    StringTable *GetStringTable() const override
-    {
-        return nullptr;
-    }
-
-    panda::mem::GCStats *GetGCStats() const override
-    {
-        return nullptr;
-    }
-
-    panda::mem::MemStatsType *GetMemStats() const override
-    {
-        return nullptr;
-    }
+    bool InitializeFinish();
 
     GCStats *GetEcmaGCStats() const
     {
         return gcStats_;
     }
 
-    panda::mem::GlobalObjectStorage *GetGlobalObjectStorage() const override
-    {
-        return nullptr;
-    }
-
-    MonitorPool *GetMonitorPool() const override
-    {
-        return nullptr;
-    }
-
-    ThreadManager *GetThreadManager() const override
-    {
-        return nullptr;
-    }
-
-    ManagedThread *GetAssociatedThread() const override
-    {
-        return thread_;
-    }
-
     JSThread *GetAssociatedJSThread() const
     {
         return thread_;
-    }
-
-    CompilerInterface *GetCompiler() const override
-    {
-        return nullptr;
-    }
-
-    Rendezvous *GetRendezvous() const override
-    {
-        return nullptr;
-    }
-
-    ObjectHeader *GetOOMErrorObject() override
-    {
-        // preallocated OOM is not implemented for JS
-        UNREACHABLE();
-    }
-
-    panda::mem::ReferenceProcessor *GetReferenceProcessor() const override
-    {
-        return nullptr;
-    }
-
-    const RuntimeOptions &GetOptions() const override
-    {
-        return Runtime::GetOptions();
     }
 
     const JSRuntimeOptions &GetJSOptions() const
@@ -398,20 +295,8 @@ public:
     void TryLoadSnapshotFile();
 
 protected:
-    bool CheckEntrypointSignature([[maybe_unused]] Method *entrypoint) override
-    {
-        // unused interface
-        UNREACHABLE();
-    }
 
-    Expected<int, Runtime::Error> InvokeEntrypointImpl([[maybe_unused]] Method *entrypoint,
-                                                       [[maybe_unused]] const std::vector<std::string> &args) override
-    {
-        // unused interface
-        UNREACHABLE();
-    }
-
-    void HandleUncaughtException(ObjectHeader *exception) override;
+    void HandleUncaughtException(ObjectHeader *exception);
 
     void PrintJSErrorInfo(const JSHandle<JSTaggedValue> &exceptionInfo);
 

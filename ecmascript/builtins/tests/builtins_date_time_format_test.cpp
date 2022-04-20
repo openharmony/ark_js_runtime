@@ -44,22 +44,11 @@ public:
         // for consistency requirement, use ohos_icu4j/data as icu-data-path
         options.SetIcuDataPath(ICU_PATH);
 #endif
-        options.SetShouldLoadBootPandaFiles(false);
-        options.SetShouldInitializeIntrinsics(false);
-        options.SetBootClassSpaces(
-            {"ecmascript"}
-        );
-        options.SetRuntimeType("ecmascript");
-        options.SetPreGcHeapVerifyEnabled(true);
         options.SetEnableForceGC(true);
-        JSNApi::SetOptions(options);
-        static EcmaLanguageContext lcEcma;
-        [[maybe_unused]] bool success = Runtime::Create(options, {&lcEcma});
-        ASSERT_TRUE(success) << "Cannot create Runtime";
-        instance = Runtime::GetCurrent()->GetPandaVM();
-        EcmaVM::Cast(instance)->SetEnableForceGC(true);
+        instance = JSNApi::CreateEcmaVM(options);
+        instance->SetEnableForceGC(true);
         ASSERT_TRUE(instance != nullptr) << "Cannot create EcmaVM";
-        thread = EcmaVM::Cast(instance)->GetJSThread();
+        thread = instance->GetJSThread();
         scope = new EcmaHandleScope(thread);
     }
 
@@ -68,7 +57,7 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
-    PandaVM *instance {nullptr};
+    EcmaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
 };
@@ -285,7 +274,7 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, FormatRange_001)
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
     JSTaggedValue result = BuiltinsDateTimeFormat::FormatRange(ecmaRuntimeCallInfo.get());
     TestHelper::TearDownFrame(thread, prev);
-    
+
     JSHandle<EcmaString> handleStr(thread, result);
     JSHandle<EcmaString> resultStr = factory->NewFromUtf8("2020/11/1周日 24:00:00 – 2021/7/1周四 24:00:00");
     EXPECT_EQ(handleStr->Compare(*resultStr), 0);
@@ -310,7 +299,7 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, FormatRange_002)
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
     JSTaggedValue result = BuiltinsDateTimeFormat::FormatRange(ecmaRuntimeCallInfo.get());
     TestHelper::TearDownFrame(thread, prev);
-    
+
     JSHandle<EcmaString> handleStr(thread, result);
     JSHandle<EcmaString> resultStr = factory->NewFromUtf8("Fri, 1/1/2021, 24:00:00 – Mon, 3/1/2021, 24:00:00");
     EXPECT_EQ(handleStr->Compare(*resultStr), 0);
@@ -399,7 +388,7 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, SupportedLocalesOf_002)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
-   
+
     JSHandle<JSTaggedValue> localeMatcherKey = thread->GlobalConstants()->GetHandledLocaleMatcherString();
     JSHandle<JSTaggedValue> localeMatcherValue(factory->NewFromASCII("lookup"));
     JSHandle<JSTaggedValue> locale(factory->NewFromASCII("id-u-co-pinyin-de-DE"));
@@ -407,7 +396,7 @@ HWTEST_F_L0(BuiltinsDateTimeFormatTest, SupportedLocalesOf_002)
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
     JSHandle<JSObject> optionsObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
     JSObject::SetProperty(thread, optionsObj, localeMatcherKey, localeMatcherValue);
-   
+
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());

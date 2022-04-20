@@ -34,14 +34,15 @@ public:
 
     void SetUp() override
     {
-        TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
+        TestHelper::CreateEcmaVMWithScope(ecmaVMPtr, thread, scope);
     }
 
     void TearDown() override
     {
-        TestHelper::DestroyEcmaVMWithScope(instance, scope);
+        TestHelper::DestroyEcmaVMWithScope(ecmaVMPtr, scope);
     }
-    PandaVM *instance {nullptr};
+
+    EcmaVM *ecmaVMPtr {nullptr};
     ecmascript::EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
 };
@@ -95,8 +96,6 @@ HWTEST_F_L0(EcmaStringTest, CanBeCompressed)
  */
 HWTEST_F_L0(EcmaStringTest, CreateEmptyString)
 {
-    EcmaVM *ecmaVMPtr = EcmaVM::Cast(instance);
-
     JSHandle<EcmaString> handleEcmaStrEmpty(thread, EcmaString::CreateEmptyString(ecmaVMPtr));
     EXPECT_EQ(handleEcmaStrEmpty->GetLength(), 0U);
     EXPECT_TRUE(handleEcmaStrEmpty->IsUtf8());
@@ -118,8 +117,6 @@ HWTEST_F_L0(EcmaStringTest, CreateEmptyString)
  */
 HWTEST_F_L0(EcmaStringTest, AllocStringObject)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // AllocStringObject( , true, ).
     size_t sizeAllocComp = 5;
     JSHandle<EcmaString> handleEcmaStrAllocComp(thread, EcmaString::AllocStringObject(sizeAllocComp, true, ecmaVMPtr));
@@ -153,7 +150,6 @@ HWTEST_F_L0(EcmaStringTest, AllocStringObject)
  */
 HWTEST_F_L0(EcmaStringTest, CreateFromUtf8)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
     uint8_t arrayU8[] = {"xyz123!@#"};
     size_t lengthEcmaStrU8 = sizeof(arrayU8) - 1;
     JSHandle<EcmaString> handleEcmaStrU8(thread,
@@ -175,8 +171,6 @@ HWTEST_F_L0(EcmaStringTest, CreateFromUtf8)
  */
 HWTEST_F_L0(EcmaStringTest, CreateFromUtf16)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // CreateFromUtf16( , , , true).
     uint16_t arrayU16Comp[] = {1, 23, 45, 67, 127};
     size_t lengthEcmaStrU16Comp = sizeof(arrayU16Comp) / sizeof(arrayU16Comp[0]);
@@ -252,8 +246,6 @@ HWTEST_F_L0(EcmaStringTest, ComputeSizeUtf16)
  */
 HWTEST_F_L0(EcmaStringTest, ObjectSize)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     JSHandle<EcmaString> handleEcmaStrEmpty(thread, EcmaString::CreateEmptyString(ecmaVMPtr));
     EXPECT_EQ(handleEcmaStrEmpty->ObjectSize(), EcmaString::SIZE + 0);
 
@@ -298,8 +290,6 @@ HWTEST_F_L0(EcmaStringTest, ObjectSize)
  */
 HWTEST_F_L0(EcmaStringTest, Compare_001)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // Compare(). Between EcmaStrings made by CreateFromUtf8().
     uint8_t arrayU8No1[3] = {1, 23};
     uint8_t arrayU8No2[4] = {1, 23, 49};
@@ -328,8 +318,6 @@ HWTEST_F_L0(EcmaStringTest, Compare_001)
  */
 HWTEST_F_L0(EcmaStringTest, Compare_002)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // Compare(). Between EcmaStrings made by CreateFromUtf16( , , , true).
     uint16_t arrayU16CompNo1[] = {1, 23};
     uint16_t arrayU16CompNo2[] = {1, 23, 49};
@@ -359,8 +347,6 @@ HWTEST_F_L0(EcmaStringTest, Compare_002)
  */
 HWTEST_F_L0(EcmaStringTest, Compare_003)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // Compare(). EcmaString made by CreateFromUtf8() and EcmaString made by CreateFromUtf16( , , , true).
     uint8_t arrayU8No1[3] = {1, 23};
     uint8_t arrayU8No2[4] = {1, 23, 49};
@@ -399,8 +385,6 @@ HWTEST_F_L0(EcmaStringTest, Compare_003)
  */
 HWTEST_F_L0(EcmaStringTest, Compare_004)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // Compare(). Between EcmaStrings made by CreateFromUtf16( , , , false).
     uint16_t arrayU16NotCompNo1[] = {1, 23};
     uint16_t arrayU16NotCompNo2[] = {1, 23, 49};
@@ -429,8 +413,6 @@ HWTEST_F_L0(EcmaStringTest, Compare_004)
  */
 HWTEST_F_L0(EcmaStringTest, Compare_005)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // Compare(). EcmaString made by CreateFromUtf8() and EcmaString made by CreateFromUtf16( , , , false).
     uint8_t arrayU8No1[3] = {1, 23};
     uint8_t arrayU8No2[4] = {1, 23, 49};
@@ -469,8 +451,6 @@ HWTEST_F_L0(EcmaStringTest, Compare_005)
  */
 HWTEST_F_L0(EcmaStringTest, Compare_006)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // Compare(). EcmaString made by CreateFromUtf16( , , , true) and EcmaString made by CreateFromUtf16( , , , false).
     uint16_t arrayU16CompNo1[] = {1, 23};
     uint16_t arrayU16CompNo2[] = {1, 23, 49};
@@ -509,8 +489,6 @@ HWTEST_F_L0(EcmaStringTest, Compare_006)
  */
 HWTEST_F_L0(EcmaStringTest, Concat_001)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // Concat(). EcmaString made by CreateFromUtf8() and EcmaString made by CreateFromUtf8().
     uint8_t arrayFrontU8[] = {"abcdef"};
     uint8_t arrayBackU8[] = {"ABCDEF"};
@@ -541,8 +519,6 @@ HWTEST_F_L0(EcmaStringTest, Concat_001)
  */
 HWTEST_F_L0(EcmaStringTest, Concat_002)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // Concat(). EcmaString made by CreateFromUtf16( , , , false) and EcmaString made by CreateFromUtf16( , , , false).
     uint16_t arrayFrontU16NotComp[] = {128, 129, 256, 11100, 65535, 100};
     uint16_t arrayBackU16NotComp[] = {88, 768, 1, 270, 345, 333};
@@ -573,8 +549,6 @@ HWTEST_F_L0(EcmaStringTest, Concat_002)
  */
 HWTEST_F_L0(EcmaStringTest, Concat_003)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // Concat(). EcmaString made by CreateFromUtf8() and EcmaString made by CreateFromUtf16( , , , false).
     uint8_t arrayFrontU8[] = {"abcdef"};
     uint16_t arrayBackU16NotComp[] = {88, 768, 1, 270, 345, 333};
@@ -606,8 +580,6 @@ HWTEST_F_L0(EcmaStringTest, Concat_003)
  */
 HWTEST_F_L0(EcmaStringTest, Concat_004)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     /* Concat() after SetCompressedStringsEnabled(false). EcmaString made by CreateFromUtf16( , , , false) and
      * EcmaString made by CreateFromUtf16( , , , false).
      */
@@ -643,8 +615,6 @@ HWTEST_F_L0(EcmaStringTest, Concat_004)
  */
 HWTEST_F_L0(EcmaStringTest, FastSubString_001)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // FastSubString(). From EcmaString made by CreateFromUtf8().
     uint8_t arrayU8[6] = {3, 7, 19, 54, 99};
     uint32_t lengthEcmaStrU8 = sizeof(arrayU8) - 1;
@@ -669,8 +639,6 @@ HWTEST_F_L0(EcmaStringTest, FastSubString_001)
  */
 HWTEST_F_L0(EcmaStringTest, FastSubString_002)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // FastSubString(). From EcmaString made by CreateFromUtf16( , , , true).
     uint16_t arrayU16Comp[] = {1, 12, 34, 56, 127};
     uint32_t lengthEcmaStrU16Comp = sizeof(arrayU16Comp) / sizeof(arrayU16Comp[0]);
@@ -695,8 +663,6 @@ HWTEST_F_L0(EcmaStringTest, FastSubString_002)
  */
 HWTEST_F_L0(EcmaStringTest, FastSubString_003)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // FastSubString(). From EcmaString made by CreateFromUtf16( , , , false).
     uint16_t arrayU16NotComp[] = {19, 54, 256, 11100, 65535};
     uint32_t lengthEcmaStrU16NotComp = sizeof(arrayU16NotComp) / sizeof(arrayU16NotComp[0]);
@@ -720,12 +686,12 @@ HWTEST_F_L0(EcmaStringTest, FastSubString_003)
  */
 HWTEST_F_L0(EcmaStringTest, FastSubString_004)
 {
-    ObjectFactory* factory = EcmaVM::Cast(instance)->GetFactory();
+    ObjectFactory* factory = ecmaVMPtr->GetFactory();
     {
         JSHandle<EcmaString> sourceString = factory->NewFromUtf8("整数integer");
         JSHandle<EcmaString> tmpString = factory->NewFromASCII("integer");
         EXPECT_TRUE(sourceString->IsUtf16());
-        EcmaString *res = EcmaString::FastSubString(sourceString, 2, 7, EcmaVM::Cast(instance));
+        EcmaString *res = EcmaString::FastSubString(sourceString, 2, 7, ecmaVMPtr);
         EXPECT_TRUE(res->IsUtf8());
         EXPECT_TRUE(EcmaString::StringsAreEqual(res, *tmpString));
     }
@@ -733,7 +699,7 @@ HWTEST_F_L0(EcmaStringTest, FastSubString_004)
         JSHandle<EcmaString> sourceString = factory->NewFromUtf8("整数integer");
         JSHandle<EcmaString> tmpString = factory->NewFromUtf8("整数");
         EXPECT_TRUE(sourceString->IsUtf16());
-        EcmaString *res = EcmaString::FastSubString(sourceString, 0, 2, EcmaVM::Cast(instance));
+        EcmaString *res = EcmaString::FastSubString(sourceString, 0, 2, ecmaVMPtr);
         EXPECT_TRUE(res->IsUtf16());
         EXPECT_TRUE(EcmaString::StringsAreEqual(res, *tmpString));
     }
@@ -741,7 +707,7 @@ HWTEST_F_L0(EcmaStringTest, FastSubString_004)
         JSHandle<EcmaString> sourceString = factory->NewFromUtf8("整数integer");
         JSHandle<EcmaString> tmpString = factory->NewFromUtf8("数intege");
         EXPECT_TRUE(sourceString->IsUtf16());
-        EcmaString *res = EcmaString::FastSubString(sourceString, 1, 7, EcmaVM::Cast(instance));
+        EcmaString *res = EcmaString::FastSubString(sourceString, 1, 7, ecmaVMPtr);
         EXPECT_TRUE(res->IsUtf16());
         EXPECT_TRUE(EcmaString::StringsAreEqual(res, *tmpString));
     }
@@ -749,7 +715,7 @@ HWTEST_F_L0(EcmaStringTest, FastSubString_004)
         JSHandle<EcmaString> sourceString = factory->NewFromASCII("integer123");
         JSHandle<EcmaString> tmpString = factory->NewFromASCII("integer");
         EXPECT_TRUE(sourceString->IsUtf8());
-        EcmaString *res = EcmaString::FastSubString(sourceString, 0, 7, EcmaVM::Cast(instance));
+        EcmaString *res = EcmaString::FastSubString(sourceString, 0, 7, ecmaVMPtr);
         EXPECT_TRUE(res->IsUtf8());
         EXPECT_TRUE(EcmaString::StringsAreEqual(res, *tmpString));
     }
@@ -764,8 +730,6 @@ HWTEST_F_L0(EcmaStringTest, FastSubString_004)
  */
 HWTEST_F_L0(EcmaStringTest, WriteData_001)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // WriteData(). From EcmaString made by CreateFromUtf8() to EcmaString made by AllocStringObject( , true, ).
     uint8_t arrayU8WriteFrom[6] = {1, 12, 34, 56, 127};
     uint32_t lengthEcmaStrU8WriteFrom = sizeof(arrayU8WriteFrom) - 1;
@@ -792,8 +756,6 @@ HWTEST_F_L0(EcmaStringTest, WriteData_001)
  */
 HWTEST_F_L0(EcmaStringTest, WriteData_002)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // WriteData(). From char to EcmaString made by AllocStringObject( , true, ).
     char u8Write = 'a';
     size_t sizeEcmaStrU8WriteTo = 5;
@@ -813,8 +775,6 @@ HWTEST_F_L0(EcmaStringTest, WriteData_002)
  */
 HWTEST_F_L0(EcmaStringTest, WriteData_003)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     /* WriteData(). From EcmaString made by CreateFromUtf16( , , , false) to EcmaStringU16 made by
      * AllocStringObject( , false, ).
      */
@@ -843,8 +803,6 @@ HWTEST_F_L0(EcmaStringTest, WriteData_003)
  */
 HWTEST_F_L0(EcmaStringTest, WriteData_004)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // WriteData(). From EcmaString made by CreateFromUtf8() to EcmaString made by AllocStringObject( , false, ).
     uint8_t arrayU8WriteFrom[6] = {1, 12, 34, 56, 127};
     uint32_t lengthEcmaStrU8WriteFrom = sizeof(arrayU8WriteFrom) - 1;
@@ -871,8 +829,6 @@ HWTEST_F_L0(EcmaStringTest, WriteData_004)
  */
 HWTEST_F_L0(EcmaStringTest, WriteData_005)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // WriteData(). From char to EcmaString made by AllocStringObject( , false, ).
     size_t sizeEcmaStrU16WriteTo = 10;
     JSHandle<EcmaString> handleEcmaStrU16WriteTo(thread,
@@ -891,7 +847,6 @@ HWTEST_F_L0(EcmaStringTest, WriteData_005)
  */
 HWTEST_F_L0(EcmaStringTest, GetUtf8Length)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
     uint8_t arrayU8[6] = {3, 7, 19, 54, 99};
     uint16_t arrayU16Comp[] = {1, 12, 34, 56, 127};
     uint16_t arrayU16NotComp[] = {19, 54, 256, 11100, 65535};
@@ -917,8 +872,6 @@ HWTEST_F_L0(EcmaStringTest, GetUtf8Length)
  */
 HWTEST_F_L0(EcmaStringTest, GetUtf16Length)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     uint8_t arrayU8[6] = {3, 7, 19, 54, 99};
     uint16_t arrayU16Comp[] = {1, 12, 34, 56, 127};
     uint16_t arrayU16NotComp[] = {19, 54, 256, 11100, 65535};
@@ -944,8 +897,6 @@ HWTEST_F_L0(EcmaStringTest, GetUtf16Length)
  */
 HWTEST_F_L0(EcmaStringTest, GetDataUtf8)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // From EcmaString made by CreateFromUtf8().
     uint8_t arrayU8[] = {"abcde"};
     uint32_t lengthEcmaStrU8 = sizeof(arrayU8) - 1;
@@ -973,8 +924,6 @@ HWTEST_F_L0(EcmaStringTest, GetDataUtf8)
  */
 HWTEST_F_L0(EcmaStringTest, GetDataUtf16)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // From EcmaString made by CreateFromUtf16( , , , false).
     uint16_t arrayU16NotComp[] = {67, 777, 1999, 1, 45, 66, 23456, 65535, 127, 333};
     uint32_t lengthEcmaStrU16NotComp = sizeof(arrayU16NotComp) / sizeof(arrayU16NotComp[0]);
@@ -994,8 +943,6 @@ HWTEST_F_L0(EcmaStringTest, GetDataUtf16)
  */
 HWTEST_F_L0(EcmaStringTest, CopyDataRegionUtf8)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // CopyDataRegionUtf8(). From EcmaString made by CreateFromUtf8().
     uint8_t arrayU8CopyFrom[6] = {1, 12, 34, 56, 127};
     uint32_t lengthEcmaStrU8CopyFrom = sizeof(arrayU8CopyFrom) - 1;
@@ -1055,8 +1002,6 @@ HWTEST_F_L0(EcmaStringTest, CopyDataRegionUtf8)
  */
 HWTEST_F_L0(EcmaStringTest, CopyDataUtf8)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // CopyDataUtf8(). From EcmaString made by CreateFromUtf8().
     uint8_t arrayU8CopyFrom[6] = {1, 12, 34, 56, 127};
     uint32_t lengthEcmaStrU8CopyFrom = sizeof(arrayU8CopyFrom) - 1;
@@ -1100,8 +1045,6 @@ HWTEST_F_L0(EcmaStringTest, CopyDataUtf8)
  */
 HWTEST_F_L0(EcmaStringTest, CopyDataRegionUtf16)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // CopyDataRegionUtf16(). From EcmaString made by CreateFromUtf16( , , , false).
     uint16_t arrayU16NotCompCopyFrom[10] = {67, 777, 1999, 1, 45, 66, 23456, 65535, 127, 333};
     uint32_t lengthEcmaStrU16NotCompCopyFrom = sizeof(arrayU16NotCompCopyFrom) / sizeof(arrayU16NotCompCopyFrom[0]);
@@ -1137,8 +1080,6 @@ HWTEST_F_L0(EcmaStringTest, CopyDataRegionUtf16)
  */
 HWTEST_F_L0(EcmaStringTest, CopyDataUtf16)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // CopyDataUtf16(). From EcmaString made by CreateFromUtf16( , , , false).
     uint16_t arrayU16NotCompCopyFrom[10] = {67, 777, 1999, 1, 45, 66, 23456, 65535, 127, 333};
     uint32_t lengthEcmaStrU16NotCompCopyFrom = sizeof(arrayU16NotCompCopyFrom) / sizeof(arrayU16NotCompCopyFrom[0]);
@@ -1172,8 +1113,6 @@ HWTEST_F_L0(EcmaStringTest, CopyDataUtf16)
  */
 HWTEST_F_L0(EcmaStringTest, IndexOf_001)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // IndexOf(). Find EcmaString made by CreateFromUtf8() From EcmaString made by CreateFromUtf8().
     uint8_t arrayU8From[7] = {23, 25, 1, 3, 39, 80};
     uint8_t arrayU8Target[4] = {1, 3, 39};
@@ -1205,8 +1144,6 @@ HWTEST_F_L0(EcmaStringTest, IndexOf_001)
  */
 HWTEST_F_L0(EcmaStringTest, IndexOf_002)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // IndexOf(). Find EcmaString made by CreateFromUtf8() From EcmaString made by CreateFromUtf16( , , , false).
     uint8_t arrayU8Target[4] = {1, 3, 39};
     uint16_t arrayU16NotCompFromNo1[] = {67, 65535, 127, 777, 1453, 44, 1, 3, 39, 80, 333};
@@ -1238,8 +1175,6 @@ HWTEST_F_L0(EcmaStringTest, IndexOf_002)
  */
 HWTEST_F_L0(EcmaStringTest, IndexOf_003)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     /* IndexOf(). Find EcmaString made by CreateFromUtf16( , , , false) From EcmaString made by
      * CreateFromUtf16( , , , false).
      */
@@ -1273,8 +1208,6 @@ HWTEST_F_L0(EcmaStringTest, IndexOf_003)
  */
 HWTEST_F_L0(EcmaStringTest, IndexOf_004)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // IndexOf(). Find EcmaString made by CreateFromUtf16() From EcmaString made by CreateFromUtf8().
     uint16_t ecmaStrU16NotCompTarget[] = {3, 39, 80};
     uint8_t arrayU8From[7] = {23, 25, 1, 3, 39, 80};
@@ -1306,8 +1239,6 @@ HWTEST_F_L0(EcmaStringTest, IndexOf_004)
  */
 HWTEST_F_L0(EcmaStringTest, StringsAreEqual_001)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // StringsAreEqual().
     uint8_t arrayU8No1[4] = {45, 92, 78};
     uint8_t arrayU8No2[4] = {45, 92, 78};
@@ -1335,8 +1266,6 @@ HWTEST_F_L0(EcmaStringTest, StringsAreEqual_001)
  */
 HWTEST_F_L0(EcmaStringTest, StringsAreEqual_002)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // StringsAreEqual().
     uint8_t arrayU8No1[4] = {45, 92, 78};
     uint16_t arrayU16CompNo2[] = {45, 92, 78};
@@ -1363,8 +1292,6 @@ HWTEST_F_L0(EcmaStringTest, StringsAreEqual_002)
  */
 HWTEST_F_L0(EcmaStringTest, StringsAreEqual_003)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // StringsAreEqual().
     uint16_t arrayU16CompNo1[] = {45, 92, 78};
     uint16_t arrayU16CompNo2[] = {45, 92, 78};
@@ -1392,8 +1319,6 @@ HWTEST_F_L0(EcmaStringTest, StringsAreEqual_003)
  */
 HWTEST_F_L0(EcmaStringTest, StringsAreEqual_004)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // StringsAreEqual().
     uint8_t arrayU8No1[4] = {45, 92, 78};
     uint16_t arrayU16NotCompNo1[] = {45, 92, 78};
@@ -1416,8 +1341,6 @@ HWTEST_F_L0(EcmaStringTest, StringsAreEqual_004)
  */
 HWTEST_F_L0(EcmaStringTest, StringsAreEqual_005)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // StringsAreEqual().
     uint16_t arrayU16CompNo1[] = {45, 92, 78};
     uint16_t arrayU16NotCompNo1[] = {45, 92, 78};
@@ -1440,8 +1363,6 @@ HWTEST_F_L0(EcmaStringTest, StringsAreEqual_005)
  */
 HWTEST_F_L0(EcmaStringTest, StringsAreEqual_006)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // StringsAreEqual().
     uint16_t arrayU16NotCompNo1[] = {234, 345, 127, 2345, 65535, 5};
     uint16_t arrayU16NotCompNo2[] = {234, 345, 127, 2345, 65535, 5};
@@ -1469,8 +1390,6 @@ HWTEST_F_L0(EcmaStringTest, StringsAreEqual_006)
  */
 HWTEST_F_L0(EcmaStringTest, StringsAreEqualUtf8_001)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // StringsAreEqualUtf8(). EcmaString made by CreateFromUtf8(), Array:U8.
     uint8_t arrayU8No1[4] = {45, 92, 78};
     uint8_t arrayU8No2[5] = {45, 92, 78, 24};
@@ -1499,8 +1418,6 @@ HWTEST_F_L0(EcmaStringTest, StringsAreEqualUtf8_001)
  */
 HWTEST_F_L0(EcmaStringTest, StringsAreEqualUtf8_002)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // StringsAreEqualUtf8(). EcmaString made by CreateFromUtf16( , , , true), Array:U8.
     uint8_t arrayU8No1[4] = {45, 92, 78};
     uint16_t arrayU16CompNo1[] = {45, 92, 78};
@@ -1531,8 +1448,6 @@ HWTEST_F_L0(EcmaStringTest, StringsAreEqualUtf8_002)
  */
 HWTEST_F_L0(EcmaStringTest, StringsAreEqualUtf8_003)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // StringsAreEqualUtf8(). EcmaString made by CreateFromUtf16( , , , false), Array:U8.
     uint8_t arrayU8No1[4] = {45, 92, 78};
     uint16_t arrayU16NotCompNo1[] = {45, 92, 78};
@@ -1573,8 +1488,6 @@ HWTEST_F_L0(EcmaStringTest, StringsAreEqualUtf8_003)
  */
 HWTEST_F_L0(EcmaStringTest, StringsAreEqualUtf16_001)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // StringsAreEqualUtf16(). EcmaString made by CreateFromUtf8, Array:U16(1-127).
     uint8_t arrayU8No1[4] = {45, 92, 78};
     uint8_t arrayU8No2[5] = {45, 92, 78, 24};
@@ -1607,8 +1520,6 @@ HWTEST_F_L0(EcmaStringTest, StringsAreEqualUtf16_001)
  */
 HWTEST_F_L0(EcmaStringTest, StringsAreEqualUtf16_002)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // StringsAreEqualUtf16(). EcmaString made by CreateFromUtf16( , , , true), Array:U16(1-127).
     uint16_t arrayU16CompNo1[] = {45, 92, 78};
     uint16_t arrayU16CompNo2[] = {45, 92, 78, 24};
@@ -1645,8 +1556,6 @@ HWTEST_F_L0(EcmaStringTest, StringsAreEqualUtf16_002)
  */
 HWTEST_F_L0(EcmaStringTest, StringsAreEqualUtf16_003)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // StringsAreEqualUtf16(). EcmaString made by CreateFromUtf16( , , , false), Array:U16(0-65535).
     uint16_t arrayU16NotCompNo1[] = {25645, 25692, 25678};
     uint16_t arrayU16NotCompNo2[] = {25645, 25692, 78}; // 25645 % 256 == 45...
@@ -1721,8 +1630,6 @@ HWTEST_F_L0(EcmaStringTest, ComputeHashcodeUtf16)
  */
 HWTEST_F_L0(EcmaStringTest, GetHashcode_001)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // GetHashcode(). EcmaString made by CreateFromUtf8().
     uint8_t arrayU8[] = {"abc"};
     uint32_t lengthEcmaStrU8 = sizeof(arrayU8) - 1;
@@ -1744,8 +1651,6 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_001)
  */
 HWTEST_F_L0(EcmaStringTest, GetHashcode_002)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // GetHashcode(). EcmaString made by CreateFromUtf16( , , , true).
     uint16_t arrayU16Comp[] = {45, 92, 78, 24};
     uint32_t lengthEcmaStrU16Comp = sizeof(arrayU16Comp) / sizeof(arrayU16Comp[0]);
@@ -1768,8 +1673,6 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_002)
  */
 HWTEST_F_L0(EcmaStringTest, GetHashcode_003)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // GetHashcode(). EcmaString made by CreateFromUtf16( , , , false).
     uint16_t arrayU16NotComp[] = {199, 1, 256, 65535, 777};
     uint32_t lengthEcmaStrU16NotComp = sizeof(arrayU16NotComp) / sizeof(arrayU16NotComp[0]);
@@ -1794,8 +1697,6 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_003)
  */
 HWTEST_F_L0(EcmaStringTest, GetHashcode_004)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // GetHashcode(). EcmaString made by CreateEmptyString().
     JSHandle<EcmaString> handleEcmaStrEmpty(thread, EcmaString::CreateEmptyString(ecmaVMPtr));
     EXPECT_EQ(handleEcmaStrEmpty->GetHashcode(), 0U);
@@ -1815,8 +1716,6 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_004)
  */
 HWTEST_F_L0(EcmaStringTest, GetHashcode_005)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     // GetHashcode(). EcmaString made by AllocStringObject().
     size_t sizeAlloc = 5;
     JSHandle<EcmaString> handleEcmaStrAllocComp(thread, EcmaString::AllocStringObject(sizeAlloc, true, ecmaVMPtr));
@@ -1838,8 +1737,6 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_005)
  */
 HWTEST_F_L0(EcmaStringTest, GetCString)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     uint8_t arrayU8[] = {"abc"};
     uint32_t lengthEcmaStrU8 = sizeof(arrayU8) - 1;
     JSHandle<EcmaString> handleEcmaStrU8(thread,
@@ -1868,8 +1765,6 @@ HWTEST_F_L0(EcmaStringTest, GetCString)
  */
 HWTEST_F_L0(EcmaStringTest, SetIsInternString)
 {
-    EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
-
     uint8_t arrayU8[] = {"abc"};
     uint32_t lengthEcmaStrU8 = sizeof(arrayU8) - 1;
     JSHandle<EcmaString> handleEcmaStrU8(thread,
@@ -1904,7 +1799,7 @@ HWTEST_F_L0(EcmaStringTest, SetIsInternString)
  */
 HWTEST_F_L0(EcmaStringTest, EqualToSplicedString)
 {
-    ObjectFactory* factory = EcmaVM::Cast(instance)->GetFactory();
+    ObjectFactory* factory = ecmaVMPtr->GetFactory();
     {
         JSHandle<EcmaString> sourceString = factory->NewFromUtf8("Start开始");
         JSHandle<EcmaString> firstString = factory->NewFromASCII("Start");

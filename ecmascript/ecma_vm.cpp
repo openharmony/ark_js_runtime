@@ -73,51 +73,29 @@
 #endif
 
 namespace panda::ecmascript {
-// NOLINTNEXTLINE(fuchsia-statically-constructed-objects)
-JSRuntimeOptions JSRuntimeOptions::temporary_options;  // NOLINT(fuchsia-statically-constructed-objects)
-
 /* static */
 EcmaVM *EcmaVM::Create(const JSRuntimeOptions &options)
 {
-    auto runtime = Runtime::GetCurrent();
-    auto vm = runtime->GetInternalAllocator()->New<EcmaVM>(options);
+    auto vm = new EcmaVM(options);
     if (UNLIKELY(vm == nullptr)) {
         LOG_ECMA(ERROR) << "Failed to create jsvm";
         return nullptr;
     }
-    auto jsThread = JSThread::Create(runtime, vm);
+    auto jsThread = JSThread::Create(vm);
     vm->thread_ = jsThread;
     vm->Initialize();
     return vm;
 }
 
 // static
-bool EcmaVM::Destroy(PandaVM *vm)
+bool EcmaVM::Destroy(EcmaVM *vm)
 {
     if (vm != nullptr) {
-        auto runtime = Runtime::GetCurrent();
-        runtime->GetInternalAllocator()->Delete(vm);
+        delete vm;
+        vm = nullptr;
         return true;
     }
     return false;
-}
-
-// static
-EcmaVM *EcmaVM::Create(Runtime *runtime)
-{
-    EcmaVM *vm = runtime->GetInternalAllocator()->New<EcmaVM>();
-    auto jsThread = ecmascript::JSThread::Create(runtime, vm);
-    if (vm == nullptr) {
-        return nullptr;
-    } else {
-        vm->thread_ = jsThread;
-        return vm;
-    }
-}
-
-// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-EcmaVM::EcmaVM() : EcmaVM(JSRuntimeOptions::GetTemporaryOptions())
-{
 }
 
 EcmaVM::EcmaVM(JSRuntimeOptions options)

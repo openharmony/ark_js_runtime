@@ -24,7 +24,6 @@
 #include "ecmascript/base/config.h"
 #include "common_stubs.h"
 #include "ecmascript/compiler/aot_file_manager.h"
-#include "ecmascript/ecma_language_context.h"
 #include "ecmascript/napi/include/jsnapi.h"
 #include "interpreter_stub-inl.h"
 #include "generated/base_options.h"
@@ -159,7 +158,7 @@ int main(const int argc, const char **argv)
 {
     panda::Span<const char *> sp(argv, argc);
     panda::Stub_Aot_Options stubOptions(sp[0]);
-    panda::ecmascript::JSRuntimeOptions runtimeOptions(sp[0]);
+    panda::ecmascript::JSRuntimeOptions runtimeOptions;
     panda::base_options::Options baseOptions(sp[0]);
     panda::PandArg<bool> help("help", false, "Print this message and exit");
     panda::PandArg<bool> options("options", false, "Print compiler options");
@@ -182,7 +181,7 @@ int main(const int argc, const char **argv)
         return 1;
     }
 
-    panda::Logger::Initialize(baseOptions); 
+    panda::Logger::Initialize(baseOptions);
     panda::Logger::SetLevel(panda::Logger::Level::INFO);
     panda::Logger::ResetComponentMask();  // disable all Component
     panda::Logger::EnableComponent(panda::Logger::Component::ECMASCRIPT);  // enable ECMASCRIPT
@@ -192,20 +191,11 @@ int main(const int argc, const char **argv)
     std::string bcHandlerFile = stubOptions.WasSetBcStubOut() ? stubOptions.GetBcStubOut() : "";
     std::string compiledStubList = stubOptions.GetCompiledStubs();
 
-    runtimeOptions.SetShouldLoadBootPandaFiles(false);
-    runtimeOptions.SetShouldInitializeIntrinsics(false);
-    runtimeOptions.SetBootClassSpaces({"ecmascript"});
-    runtimeOptions.SetRuntimeType("ecmascript");
-    panda::JSNApi::SetOptions(runtimeOptions);
-    static panda::EcmaLanguageContext lcEcma;
-    bool ret = panda::Runtime::Create(runtimeOptions, {&lcEcma});
-    if (!ret) {
-        COMPILER_LOG(ERROR) << "Cannot Create Runtime";
+    panda::ecmascript::EcmaVM *vm = panda::JSNApi::CreateEcmaVM(runtimeOptions);
+    if (vm == nullptr) {
+        COMPILER_LOG(INFO) << "Cann't Create EcmaVM";
         return -1;
     }
-    auto runtime = panda::Runtime::GetCurrent();
-
-    panda::ecmascript::EcmaVM *vm = panda::ecmascript::EcmaVM::Cast(runtime->GetPandaVM());
     std::string logMethods = vm->GetJSOptions().GetlogCompiledMethods();
     panda::ecmascript::kungfu::CompilerLog log(logMethods);
     panda::ecmascript::kungfu::StubCompiler compiler(&log);
