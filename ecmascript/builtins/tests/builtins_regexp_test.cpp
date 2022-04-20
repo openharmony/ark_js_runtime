@@ -62,8 +62,8 @@ public:
     JSThread *thread {nullptr};
 };
 
-JSTaggedValue CreateRegExpObjByPatternAndFlags(JSThread *thread, const JSHandle<EcmaString> &pattern,
-                                               const JSHandle<EcmaString> &flags)
+JSTaggedValue CreateBuiltinsRegExpObjByPatternAndFlags(JSThread *thread, const JSHandle<EcmaString> &pattern,
+                                                       const JSHandle<EcmaString> &flags)
 {
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSFunction> regexp(env->GetRegExpFunction());
@@ -87,7 +87,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, RegExpConstructor1)
     // invoke RegExpConstructor method
     JSHandle<EcmaString> pattern = thread->GetEcmaVM()->GetFactory()->NewFromASCII("\\w+");
     JSHandle<EcmaString> flags = thread->GetEcmaVM()->GetFactory()->NewFromASCII("i");
-    JSTaggedValue result = CreateRegExpObjByPatternAndFlags(thread, pattern, flags);
+    JSTaggedValue result = CreateBuiltinsRegExpObjByPatternAndFlags(thread, pattern, flags);
 
     // ASSERT IsRegExp()
     JSHandle<JSTaggedValue> regexpObject(thread, result);
@@ -106,7 +106,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, RegExpConstructor2)
     // invoke RegExpConstructor method
     JSHandle<EcmaString> pattern = thread->GetEcmaVM()->GetFactory()->NewFromASCII("\\w+");
     JSHandle<EcmaString> flags = thread->GetEcmaVM()->GetFactory()->NewFromASCII("i");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern, flags);
+    JSTaggedValue result1 = CreateBuiltinsRegExpObjByPatternAndFlags(thread, pattern, flags);
     JSHandle<JSRegExp> value(thread, reinterpret_cast<JSRegExp *>(result1.GetRawData()));
 
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
@@ -140,7 +140,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, RegExpConstructor3)
     // invoke RegExpConstructor method
     JSHandle<EcmaString> pattern1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("\\w+");
     JSHandle<EcmaString> flags1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("i");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
+    JSTaggedValue result1 = CreateBuiltinsRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSRegExp> value(thread, reinterpret_cast<JSRegExp *>(result1.GetRawData()));
 
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
@@ -175,7 +175,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, GetSource1)
     // invoke RegExpConstructor method
     JSHandle<EcmaString> pattern1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("");
     JSHandle<EcmaString> flags1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("i");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
+    JSTaggedValue result1 = CreateBuiltinsRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSTaggedValue> result1Handle(thread, result1);
 
     // invoke GetSource method
@@ -192,7 +192,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, GetSource2)
     // invoke RegExpConstructor method
     JSHandle<EcmaString> pattern1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("/w+");
     JSHandle<EcmaString> flags1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("i");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
+    JSTaggedValue result1 = CreateBuiltinsRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSTaggedValue> result1Handle(thread, result1);
 
     // invoke GetSource method
@@ -208,7 +208,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, Get)
     // invoke RegExpConstructor method
     JSHandle<EcmaString> pattern1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("\\w+");
     JSHandle<EcmaString> flags1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("gimuy");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
+    JSTaggedValue result1 = CreateBuiltinsRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSTaggedValue> result1Handle(thread, result1);
 
     JSHandle<JSTaggedValue> global(thread->GetEcmaVM()->GetFactory()->NewFromASCII("global"));
@@ -242,7 +242,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, GetFlags)
     // invoke RegExpConstructor method
     JSHandle<EcmaString> pattern1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("\\w+");
     JSHandle<EcmaString> flags1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("imuyg");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
+    JSTaggedValue result1 = CreateBuiltinsRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSTaggedValue> result1Handle(thread, result1);
 
     // invoke GetFlags method
@@ -258,7 +258,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, toString)
     // invoke RegExpConstructor method
     JSHandle<EcmaString> pattern1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("\\w+");
     JSHandle<EcmaString> flags1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("imuyg");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
+    JSTaggedValue result1 = CreateBuiltinsRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSRegExp> value(thread, reinterpret_cast<JSRegExp *>(result1.GetRawData()));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
@@ -280,7 +280,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, Exec1)
     JSHandle<EcmaString> pattern1 =
         thread->GetEcmaVM()->GetFactory()->NewFromASCII("quick\\s(brown).+?(jumps)");
     JSHandle<EcmaString> flags1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("ig");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
+    JSTaggedValue result1 = CreateBuiltinsRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSRegExp> value(thread, reinterpret_cast<JSRegExp *>(result1.GetRawData()));
 
     JSHandle<EcmaString> inputString =
@@ -339,7 +339,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, Exec2)
     JSHandle<EcmaString> pattern1 =
         thread->GetEcmaVM()->GetFactory()->NewFromASCII("((1)|(12))((3)|(23))");
     JSHandle<EcmaString> flags1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("ig");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
+    JSTaggedValue result1 = CreateBuiltinsRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSRegExp> value(thread, reinterpret_cast<JSRegExp *>(result1.GetRawData()));
 
     JSHandle<EcmaString> inputString = thread->GetEcmaVM()->GetFactory()->NewFromASCII("123");
@@ -415,7 +415,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, Match1)
     JSHandle<EcmaString> pattern1 =
         thread->GetEcmaVM()->GetFactory()->NewFromASCII("quick\\s(brown).+?(jumps)");
     JSHandle<EcmaString> flags1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("iug");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
+    JSTaggedValue result1 = CreateBuiltinsRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSRegExp> value(thread, reinterpret_cast<JSRegExp *>(result1.GetRawData()));
 
     JSHandle<EcmaString> inputString =
@@ -444,7 +444,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, Test1)
     JSHandle<EcmaString> pattern1 =
         thread->GetEcmaVM()->GetFactory()->NewFromASCII("quick\\s(brown).+?(jumps)");
     JSHandle<EcmaString> flags1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("iug");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
+    JSTaggedValue result1 = CreateBuiltinsRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSRegExp> value(thread, reinterpret_cast<JSRegExp *>(result1.GetRawData()));
 
     JSHandle<EcmaString> inputString =
@@ -466,7 +466,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, Search1)
     JSHandle<EcmaString> pattern1 =
         thread->GetEcmaVM()->GetFactory()->NewFromASCII("quick\\s(brown).+?(jumps)");
     JSHandle<EcmaString> flags1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("iug");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
+    JSTaggedValue result1 = CreateBuiltinsRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSRegExp> value(thread, reinterpret_cast<JSRegExp *>(result1.GetRawData()));
 
     JSHandle<EcmaString> inputString =
@@ -487,7 +487,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, Split1)
     // invoke RegExpConstructor method
     JSHandle<EcmaString> pattern1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("-");
     JSHandle<EcmaString> flags1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("iug");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
+    JSTaggedValue result1 = CreateBuiltinsRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSRegExp> value(thread, reinterpret_cast<JSRegExp *>(result1.GetRawData()));
 
     JSHandle<EcmaString> inputString = thread->GetEcmaVM()->GetFactory()->NewFromASCII("");
@@ -515,7 +515,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, Split2)
     // invoke RegExpConstructor method
     JSHandle<EcmaString> pattern1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("-");
     JSHandle<EcmaString> flags1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("iug");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
+    JSTaggedValue result1 = CreateBuiltinsRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSRegExp> value(thread, reinterpret_cast<JSRegExp *>(result1.GetRawData()));
 
     JSHandle<EcmaString> inputString = thread->GetEcmaVM()->GetFactory()->NewFromASCII("a-b-c");
@@ -570,7 +570,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, Replace1)
     JSHandle<EcmaString> pattern1 =
         thread->GetEcmaVM()->GetFactory()->NewFromASCII("quick\\s(brown).+?(jumps)");
     JSHandle<EcmaString> flags1 = thread->GetEcmaVM()->GetFactory()->NewFromASCII("iug");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
+    JSTaggedValue result1 = CreateBuiltinsRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSRegExp> value(thread, reinterpret_cast<JSRegExp *>(result1.GetRawData()));
 
     JSHandle<EcmaString> inputString =
@@ -598,7 +598,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, Replace2)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<EcmaString> pattern1 = factory->NewFromASCII("b(c)(z)?(.)");
     JSHandle<EcmaString> flags1 = factory->NewFromASCII("");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
+    JSTaggedValue result1 = CreateBuiltinsRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSRegExp> value(thread, reinterpret_cast<JSRegExp *>(result1.GetRawData()));
 
     JSHandle<EcmaString> inputString = factory->NewFromASCII("abcde");
@@ -623,7 +623,7 @@ HWTEST_F_L0(BuiltinsRegExpTest, Replace3)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<EcmaString> pattern1 = factory->NewFromASCII("abc");
     JSHandle<EcmaString> flags1 = factory->NewFromASCII("g");
-    JSTaggedValue result1 = CreateRegExpObjByPatternAndFlags(thread, pattern1, flags1);
+    JSTaggedValue result1 = CreateBuiltinsRegExpObjByPatternAndFlags(thread, pattern1, flags1);
     JSHandle<JSRegExp> value(thread, reinterpret_cast<JSRegExp *>(result1.GetRawData()));
 
     JSHandle<EcmaString> inputString = factory->NewFromASCII("abcde");

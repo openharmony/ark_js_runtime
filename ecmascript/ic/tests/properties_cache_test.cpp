@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#include "ecmascript/ic/properties_cache.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_symbol.h"
 #include "ecmascript/tests/test_helper.h"
