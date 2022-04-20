@@ -294,7 +294,7 @@ JSTaggedValue JsonStringifier::GetSerializeValue(const JSHandle<JSTaggedValue> &
             thread_, FastRuntimeStub::FastGetPropertyByValue(thread_, tagValue, toJson.GetTaggedValue()));
         // b. ReturnIfAbrupt(toJSON).
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread_);
-
+        tagValue = value.GetTaggedValue();
         // c. If IsCallable(toJSON) is true
         if (UNLIKELY(toJsonFun->IsCallable())) {
             // Let value be Call(toJSON, value, «key»).
@@ -455,14 +455,13 @@ bool JsonStringifier::SerializeJSONObject(const JSHandle<JSTaggedValue> &value, 
 
     JSHandle<JSObject> obj(value);
     if (!replacer->IsArray(thread_)) {
-        if (UNLIKELY(value->IsJSProxy())) {  // serialize proxy object
-            JSHandle<JSProxy> proxy(value);
+        if (UNLIKELY(value->IsJSProxy() || value->IsTypedArray())) {  // serialize proxy and typedArray
             JSHandle<TaggedArray> propertyArray = JSObject::EnumerableOwnNames(thread_, obj);
             uint32_t arrLength = propertyArray->GetLength();
             for (uint32_t i = 0; i < arrLength; i++) {
                 handleKey_.Update(propertyArray->Get(i));
-                JSHandle<JSTaggedValue> proxyValue = JSProxy::GetProperty(thread_, proxy, handleKey_).GetValue();
-                JSTaggedValue serializeValue = GetSerializeValue(value, handleKey_, proxyValue, replacer);
+                JSHandle<JSTaggedValue> valueHandle = JSTaggedValue::GetProperty(thread_, value, handleKey_).GetValue();
+                JSTaggedValue serializeValue = GetSerializeValue(value, handleKey_, valueHandle, replacer);
                 RETURN_VALUE_IF_ABRUPT_COMPLETION(thread_, false);
                 if (UNLIKELY(serializeValue.IsUndefined() || serializeValue.IsSymbol() ||
                     (serializeValue.IsECMAObject() && serializeValue.IsCallable()))) {
