@@ -2989,6 +2989,7 @@ JSHandle<JSObject> Builtins::InitializeArkTools(const JSHandle<GlobalEnv> &env) 
     JSHandle<JSObject> tools = factory_->NewEmptyJSObject();
     SetFunction(env, tools, "print", builtins::BuiltinsArkTools::ObjectDump, FunctionLength::ZERO);
     SetFunction(env, tools, "compareHClass", builtins::BuiltinsArkTools::CompareHClass, FunctionLength::TWO);
+    SetFunction(env, tools, "DumpHClass", builtins::BuiltinsArkTools::DumpHClass, FunctionLength::ONE);
     return tools;
 }
 

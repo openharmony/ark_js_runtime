@@ -20,6 +20,7 @@ group("ark_js_moduletest") {
     "bitwiseop:bitwiseopAction",
     "callframe:callframeAction",
     "class:classAction",
+    "compareobjecthclass:compareobjecthclassAction",
     "container:containerAction",
     "dyninstruction:dyninstructionAction",
     "ecmastringtable:ecmastringtableAction",
