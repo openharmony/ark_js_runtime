@@ -66,7 +66,7 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMInTwoWays)
 
     // // GC
     // options2.SetGcTriggerType("no-gc-for-start-up");  // A non-production gc strategy. Prohibit stw-gc 10 times.
-    EcmaVM *ecmaVm2 = EcmaVM::Cast(EcmaVM::Create(options2));
+    EcmaVM *ecmaVm2 = EcmaVM::Create(options2);
 
     EXPECT_TRUE(ecmaVm1 != ecmaVm2);
 
@@ -85,13 +85,7 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMInTwoWays)
     EXPECT_TRUE(options1Out.EnableTSAot() != options2Out.EnableTSAot());
     EXPECT_TRUE(options1Out.GetArkProperties() != options2Out.GetArkProperties());
 
-    auto runtime = Runtime::GetCurrent();
-    PandaVM *mainVm = runtime->GetPandaVM();
-    ecmaVm2->GetNotificationManager()->VmDeathEvent();
-    if (mainVm != ecmaVm2) {
-        EcmaVM::Destroy(ecmaVm2);
-    }
-
+    EcmaVM::Destroy(ecmaVm2);
     JSNApi::DestroyJSVM(ecmaVm1);
 }
 }  // namespace panda::ecmascript

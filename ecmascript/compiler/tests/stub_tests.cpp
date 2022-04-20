@@ -86,7 +86,7 @@ public:
         return jsfunc.GetTaggedValue();
     }
 
-    PandaVM *instance {nullptr};
+    EcmaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
     LLVMModule stubModule {"stub_tests", "x86_64-unknown-linux-gnu"};
@@ -313,7 +313,7 @@ HWTEST_F_L0(StubTest, FastModTest)
 
     // test all non-conforming conditions
     int x5 = 7;
-    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    auto *factory = thread->GetEcmaVM()->GetFactory();
     thread->SetLastLeaveFrame(nullptr);
     auto y5 = factory->NewFromASCII("hello world");
     auto result5 = fn(thread->GetGlueAddr(), JSTaggedValue(x5).GetRawData(), y5.GetTaggedValue().GetRawData());
@@ -880,7 +880,7 @@ HWTEST_F_L0(StubTest, GetPropertyByIndexStub)
     assembler.Run();
     auto *getpropertyByIndex = reinterpret_cast<JSTaggedValue (*)(uintptr_t, JSTaggedValue, uint32_t)>(
         reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function)));
-    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    auto *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
     int x = 213;
     int y = 10;
@@ -912,7 +912,7 @@ HWTEST_F_L0(StubTest, SetPropertyByIndexStub)
     assembler.Run();
     auto *setpropertyByIndex = reinterpret_cast<JSTaggedValue (*)(uintptr_t, JSTaggedValue, uint32_t, JSTaggedValue)>(
         reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function)));
-    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    auto *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSArray> array = factory->NewJSArray();
     // set value to array
     array->SetArrayLength(thread, 20);
@@ -946,7 +946,7 @@ HWTEST_F_L0(StubTest, GetPropertyByNameStub)
     assembler.Run();
     auto *getPropertyByNamePtr = reinterpret_cast<JSTaggedValue (*)(uintptr_t, uint64_t, uint64_t)>(
         reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function)));
-    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    auto *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
     int x = 256;
     int y = 10;
@@ -981,7 +981,7 @@ HWTEST_F_L0(StubTest, SetPropertyByNameStub)
     auto *setPropertyByName = reinterpret_cast<JSTaggedValue (*)(uintptr_t, JSTaggedValue,
         JSTaggedValue, JSTaggedValue, bool)>
         (reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function)));
-    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    auto *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
     int x = 256;
     int y = 10;
@@ -1044,7 +1044,7 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
 
     thread->SetFastStubEntry(CommonStubCSigns::GetPropertyByIndex, reinterpret_cast<uintptr_t>(getpropertyByIndexPtr));
     thread->SetFastStubEntry(CommonStubCSigns::GetPropertyByName, reinterpret_cast<uintptr_t>(getPropertyByNamePtr));
-    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    auto *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
     int x = 213;
     int y = 10;
@@ -1138,7 +1138,7 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     EXPECT_EQ(resultVal5, expectResult5);
 
     // obj is String
-    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    auto *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<EcmaString> str1 = factory->NewFromASCII("a");
     JSHandle<EcmaString> str2 = factory->NewFromASCII("a");
     JSTaggedValue expectResult6 = FastRuntimeStub::FastTypeOf(thread, str1.GetTaggedValue());
@@ -1147,7 +1147,7 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     EXPECT_EQ(resultVal6, expectResult6);
 
     // obj is Symbol
-    JSHandle<GlobalEnv> globalEnv = JSThread::Cast(thread)->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<GlobalEnv> globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
     JSTaggedValue symbol = globalEnv->GetIteratorSymbol().GetTaggedValue();
     JSTaggedValue expectResult7= FastRuntimeStub::FastTypeOf(thread, symbol);
     JSTaggedValue resultVal7 = typeOfPtr(thread->GetGlueAddr(), symbol.GetRawData());
@@ -1204,7 +1204,7 @@ HWTEST_F_L0(StubTest, FastEqualTest)
     EXPECT_EQ(resC, expectC);
 
     // test for "hello world" == undefined
-    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    auto *factory = thread->GetEcmaVM()->GetFactory();
     auto str = factory->NewFromASCII("hello world");
     auto resD = fn(thread->GetGlueAddr(), str.GetTaggedValue().GetRawData(), JSTaggedValue::Undefined().GetRawData());
     auto expectD = FastRuntimeStub::FastEqual(str.GetTaggedValue(), JSTaggedValue::Undefined());

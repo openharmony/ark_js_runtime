@@ -43,17 +43,9 @@ public:
     void SetUp() override
     {
         JSRuntimeOptions options;
-        options.SetShouldLoadBootPandaFiles(false);
-        options.SetShouldInitializeIntrinsics(false);
-        options.SetBootClassSpaces({"ecmascript"});
-        options.SetRuntimeType("ecmascript");
-        options.SetEnableParalledYoungGc(false);
-        static EcmaLanguageContext lcEcma;
-        [[maybe_unused]] bool success = Runtime::Create(options, {&lcEcma});
-        ASSERT_TRUE(success) << "Cannot create Runtime";
-        instance = Runtime::GetCurrent()->GetPandaVM();
-        ASSERT_TRUE(instance != nullptr) << "Cannot create EcmaVM";
-        thread = EcmaVM::Cast(instance)->GetJSThread();
+        ecmaVm = JSNApi::CreateEcmaVM(options);
+        ASSERT_TRUE(ecmaVm != nullptr) << "Cannot create EcmaVM";
+        thread = ecmaVm->GetJSThread();
         scope = new EcmaHandleScope(thread);
     }
 
@@ -61,19 +53,18 @@ public:
     {
         delete scope;
         scope = nullptr;
-        EcmaVM::Cast(instance)->SetEnableForceGC(false);
+        ecmaVm->SetEnableForceGC(false);
         thread->ClearException();
-        JSNApi::DestroyJSVM(EcmaVM::Cast(instance));
+        JSNApi::DestroyJSVM(ecmaVm);
     }
 
-    PandaVM *instance {nullptr};
+    EcmaVM *ecmaVm {nullptr};
     ecmascript::EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
 };
 
 HWTEST_F_L0(SnapShotTest, SnapShotSerialize)
 {
-    auto ecmaVm = EcmaVM::Cast(instance);
     auto factory = ecmaVm->GetFactory();
     auto tsLoader = ecmaVm->GetTSLoader();
     JSHandle<EcmaString> str1 = factory->NewFromASCII("str1");

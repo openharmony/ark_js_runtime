@@ -41,22 +41,11 @@ public:
         // for consistency requirement, use ohos_icu4j/data as icu-data-path
         options.SetIcuDataPath(ICU_PATH);
 #endif
-        options.SetShouldLoadBootPandaFiles(false);
-        options.SetShouldInitializeIntrinsics(false);
-        options.SetBootClassSpaces(
-            {"ecmascript"}
-        );
-        options.SetRuntimeType("ecmascript");
-        options.SetPreGcHeapVerifyEnabled(true);
         options.SetEnableForceGC(true);
-        JSNApi::SetOptions(options);
-        static EcmaLanguageContext lcEcma;
-        [[maybe_unused]] bool success = Runtime::Create(options, {&lcEcma});
-        ASSERT_TRUE(success) << "Cannot create Runtime";
-        instance = Runtime::GetCurrent()->GetPandaVM();
-        EcmaVM::Cast(instance)->SetEnableForceGC(true);
+        instance = JSNApi::CreateEcmaVM(options);
+        instance->SetEnableForceGC(true);
         ASSERT_TRUE(instance != nullptr) << "Cannot create EcmaVM";
-        thread = EcmaVM::Cast(instance)->GetJSThread();
+        thread = instance->GetJSThread();
         scope = new EcmaHandleScope(thread);
     }
 
@@ -65,7 +54,7 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
-    PandaVM *instance {nullptr};
+    EcmaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
 };
@@ -133,7 +122,7 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_001)
     ecmaRuntimeCallInfo->SetThis(jsPluralRules.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, numberValue.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, unitValue.GetTaggedValue());
-    
+
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
     JSTaggedValue result = BuiltinsRelativeTimeFormat::Format(ecmaRuntimeCallInfo.get());
     TestHelper::TearDownFrame(thread, prev);
@@ -158,7 +147,7 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_002)
     ecmaRuntimeCallInfo->SetThis(jsPluralRules.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, numberValue.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, unitValue.GetTaggedValue());
-    
+
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
     JSTaggedValue result = BuiltinsRelativeTimeFormat::Format(ecmaRuntimeCallInfo.get());
     TestHelper::TearDownFrame(thread, prev);
@@ -183,7 +172,7 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_003)
     ecmaRuntimeCallInfo->SetThis(jsPluralRules.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, numberValue.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, unitValue.GetTaggedValue());
-    
+
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
     JSTaggedValue result = BuiltinsRelativeTimeFormat::Format(ecmaRuntimeCallInfo.get());
     TestHelper::TearDownFrame(thread, prev);
@@ -208,7 +197,7 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_004)
     ecmaRuntimeCallInfo->SetThis(jsPluralRules.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, numberValue.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, unitValue.GetTaggedValue());
-    
+
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
     JSTaggedValue result = BuiltinsRelativeTimeFormat::Format(ecmaRuntimeCallInfo.get());
     TestHelper::TearDownFrame(thread, prev);
@@ -233,7 +222,7 @@ HWTEST_F_L0(BuiltinsRelativeTimeFormatTest, Format_005)
     ecmaRuntimeCallInfo->SetThis(jsPluralRules.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(0, numberValue.GetTaggedValue());
     ecmaRuntimeCallInfo->SetCallArg(1, unitValue.GetTaggedValue());
-    
+
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
     JSTaggedValue result = BuiltinsRelativeTimeFormat::Format(ecmaRuntimeCallInfo.get());
     TestHelper::TearDownFrame(thread, prev);

@@ -17,7 +17,6 @@
 #define ECMASCRIPT_TESTS_TEST_HELPER_H
 
 #include "ecmascript/interpreter/interpreter.h"
-#include "ecmascript/ecma_language_context.h"
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_function.h"
@@ -25,7 +24,6 @@
 #include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/object_factory.h"
 #include "gtest/gtest.h"
-#include "include/runtime_options.h"
 
 namespace panda::test {
 using panda::ecmascript::EcmaHandleScope;
@@ -82,42 +80,28 @@ public:
     }
 
     // If you want to call once create, you can refer to BuiltinsMathTest for detail.
-    static void CreateEcmaVMWithScope(PandaVM *&instance, JSThread *&thread, EcmaHandleScope *&scope,
-                                      const char *libraryPath = nullptr)
+    static void CreateEcmaVMWithScope(EcmaVM *&instance, JSThread *&thread, EcmaHandleScope *&scope)
     {
         JSRuntimeOptions options;
-        options.SetShouldLoadBootPandaFiles(false);
-        options.SetShouldInitializeIntrinsics(false);
-        options.SetBootClassSpaces({"ecmascript"});
-        options.SetRuntimeType("ecmascript");
-        options.SetPreGcHeapVerifyEnabled(true);
         options.SetEnableForceGC(true);
         options.SetEnableStubAot(true);
-        if (libraryPath != nullptr) {
-            // for class Runtime to StartDebugger
-            options.SetDebuggerLibraryPath(libraryPath);
-        }
-        static EcmaLanguageContext lcEcma;
-        [[maybe_unused]] bool success = Runtime::Create(options, {&lcEcma});
-        ASSERT_TRUE(success) << "Cannot create Runtime";
-        instance = Runtime::GetCurrent()->GetPandaVM();
-        EcmaVM::Cast(instance)->SetEnableForceGC(true);
+        instance = JSNApi::CreateEcmaVM(options);
+        instance->SetEnableForceGC(true);
         ASSERT_TRUE(instance != nullptr) << "Cannot create EcmaVM";
-        thread = EcmaVM::Cast(instance)->GetJSThread();
+        thread = instance->GetJSThread();
         scope = new EcmaHandleScope(thread);
-        EcmaVM *ecmaVm = thread->GetEcmaVM();
-        auto globalEnv = ecmaVm->GetGlobalEnv();
-        methodFunction_ = ecmaVm->GetFactory()->NewJSFunction(globalEnv);
+        auto globalEnv = instance->GetGlobalEnv();
+        methodFunction_ = instance->GetFactory()->NewJSFunction(globalEnv);
     }
 
-    static inline void DestroyEcmaVMWithScope(PandaVM *instance, EcmaHandleScope *scope)
+    static inline void DestroyEcmaVMWithScope(EcmaVM *instance, EcmaHandleScope *scope)
     {
         delete scope;
         scope = nullptr;
-        EcmaVM::Cast(instance)->SetEnableForceGC(false);
-        auto thread = EcmaVM::Cast(instance)->GetJSThread();
+        instance->SetEnableForceGC(false);
+        auto thread = instance->GetJSThread();
         thread->ClearException();
-        JSNApi::DestroyJSVM(EcmaVM::Cast(instance));
+        JSNApi::DestroyJSVM(instance);
     }
 
 private:

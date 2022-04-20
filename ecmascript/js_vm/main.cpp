@@ -15,17 +15,19 @@
 
 #include <chrono>
 #include <iostream>
+#include <iterator>
 #include <limits>
+#include <ostream>
 #include <signal.h>  // NOLINTNEXTLINE(modernize-deprecated-headers)
 #include <vector>
 
-#include "ecmascript/ecma_language_context.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_runtime_options.h"
+#include "ecmascript/mem/mem_controller.h"
 #include "ecmascript/napi/include/jsnapi.h"
 #include "generated/base_options.h"
-#include "include/runtime.h"
+#include "handle_scope.h"
 #include "libpandabase/os/native_stack.h"
 #include "libpandabase/utils/pandargs.h"
 #include "libpandabase/utils/span.h"
@@ -60,7 +62,7 @@ int Main(const int argc, const char **argv)
 
     BlockSignals();
     Span<const char *> sp(argv, argc);
-    JSRuntimeOptions runtimeOptions(sp[0]);
+    JSRuntimeOptions runtimeOptions;
     base_options::Options baseOptions(sp[0]);
 
     panda::PandArg<bool> help("help", false, "Print this message and exit");
@@ -101,31 +103,12 @@ int Main(const int argc, const char **argv)
                   << "Startup start time: " << startTime << std::endl;
     }
 
-    auto runtimeOptionsErr = runtimeOptions.Validate();
-    if (runtimeOptionsErr) {
-        std::cerr << "Error: " << runtimeOptionsErr.value().GetMessage() << std::endl;
-        return 1;
-    }
-
-    runtimeOptions.SetShouldLoadBootPandaFiles(false);
-    runtimeOptions.SetShouldInitializeIntrinsics(false);
-    runtimeOptions.SetBootClassSpaces({"ecmascript"});
-    runtimeOptions.SetRuntimeType("ecmascript");
-    JSNApi::SetOptions(runtimeOptions);
-    static EcmaLanguageContext lcEcma;
-    bool ret = Runtime::Create(runtimeOptions, {&lcEcma});
-    if (!ret) {
-        std::cerr << "Error: cannot Create Runtime" << std::endl;
+    bool ret = true;
+    EcmaVM *vm = JSNApi::CreateEcmaVM(runtimeOptions);
+    if (vm == nullptr) {
+        std::cerr << "Cannot Create vm" << std::endl;
         return -1;
     }
-
-    auto runtime = Runtime::GetCurrent();
-
-    if (options.GetValue()) {
-        std::cout << paParser.GetRegularArgs() << std::endl;
-    }
-
-    EcmaVM *vm = EcmaVM::Cast(runtime->GetPandaVM());
 
     LocalScope scope(vm);
     std::string entry = entrypoint.GetValue();
@@ -140,10 +123,7 @@ int Main(const int argc, const char **argv)
         }
     }
 
-    if (!Runtime::Destroy()) {
-        std::cerr << "Error: cannot destroy Runtime" << std::endl;
-        return -1;
-    }
+    JSNApi::DestroyJSVM(vm);
     paParser.DisableTail();
     return ret ? 0 : -1;
 }

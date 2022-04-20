@@ -65,7 +65,7 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
-    PandaVM *instance {nullptr};
+    EcmaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
 };
@@ -80,7 +80,7 @@ HWTEST_F_L0(BuiltinsErrorsTest, GetJSErrorObject)
     /**
      * @tc.steps: step1. Create JSError object
      */
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
+    ObjectFactory *factory = instance->GetFactory();
 
     JSHandle<JSObject> handleObj = factory->GetJSError(ErrorType::TYPE_ERROR);
     JSHandle<JSTaggedValue> msgKey(factory->NewFromASCII("message"));
@@ -110,7 +110,7 @@ HWTEST_F_L0(BuiltinsErrorsTest, GetJSErrorObject)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, GetJSErrorWithMessage)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
+    ObjectFactory *factory = instance->GetFactory();
 
     JSHandle<JSObject> handleObj = factory->GetJSError(ErrorType::TYPE_ERROR, "I am type error");
     JSHandle<JSTaggedValue> msgKey(factory->NewFromASCII("message"));
@@ -136,8 +136,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, GetJSErrorWithMessage)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, ErrorNoParameterConstructor)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetErrorFunction());
 
@@ -174,8 +174,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, ErrorNoParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, ErrorParameterConstructor)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetErrorFunction());
     JSHandle<JSTaggedValue> paramMsg(factory->NewFromASCII("Hello Error!"));
@@ -214,8 +214,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, ErrorParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, ErrorNoParameterToString)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
@@ -242,8 +242,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, ErrorNoParameterToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, ErrorToString)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
@@ -275,8 +275,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, ErrorToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorNoParameterConstructor)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetRangeErrorFunction());
 
@@ -312,8 +312,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorNoParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorParameterConstructor)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetRangeErrorFunction());
     JSHandle<JSTaggedValue> paramMsg(factory->NewFromASCII("Hello RangeError!"));
@@ -352,8 +352,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorNoParameterToString)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetRangeErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
@@ -381,8 +381,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorNoParameterToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorToString)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetRangeErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
@@ -411,8 +411,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorNoParameterConstructor)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetReferenceErrorFunction());
 
@@ -448,8 +448,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorNoParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorParameterConstructor)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetReferenceErrorFunction());
     JSHandle<JSTaggedValue> paramMsg(factory->NewFromASCII("Hello ReferenceError!"));
@@ -486,8 +486,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorNoParameterToString)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetReferenceErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
@@ -513,8 +513,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorNoParameterToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorToString)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetReferenceErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
@@ -542,8 +542,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorNoParameterConstructor)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetTypeErrorFunction());
 
@@ -578,8 +578,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorNoParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorParameterConstructor)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetTypeErrorFunction());
     JSHandle<JSTaggedValue> paramMsg(factory->NewFromASCII("Hello TypeError!"));
@@ -617,8 +617,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorNoParameterToString)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetTypeErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
@@ -644,8 +644,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorNoParameterToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorToString)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetTypeErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
@@ -672,8 +672,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, URIErrorNoParameterConstructor)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetURIErrorFunction());
 
@@ -709,8 +709,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, URIErrorNoParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, URIErrorParameterConstructor)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetURIErrorFunction());
     JSHandle<JSTaggedValue> paramMsg(factory->NewFromASCII("Hello URIError!"));
@@ -748,8 +748,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, URIErrorParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, URIErrorNoParameterToString)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetURIErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
@@ -776,8 +776,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, URIErrorNoParameterToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, URIErrorToString)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetURIErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
@@ -810,8 +810,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, URIErrorToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorNoParameterConstructor)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetSyntaxErrorFunction());
 
@@ -847,8 +847,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorNoParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorParameterConstructor)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetSyntaxErrorFunction());
     JSHandle<JSTaggedValue> paramMsg(factory->NewFromASCII("Hello SyntaxError!"));
@@ -886,8 +886,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorNoParameterToString)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetSyntaxErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
@@ -914,8 +914,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorNoParameterToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorToString)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetSyntaxErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
@@ -943,8 +943,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorNoParameterConstructor)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetEvalErrorFunction());
 
@@ -980,8 +980,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorNoParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorParameterConstructor)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetEvalErrorFunction());
     JSHandle<JSTaggedValue> paramMsg(factory->NewFromASCII("Hello EvalError!"));
@@ -1019,8 +1019,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorNoParameterToString)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
     JSHandle<JSTaggedValue> errorObject = env->GetEvalErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
 
@@ -1045,8 +1045,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorNoParameterToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorToString)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetEvalErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);

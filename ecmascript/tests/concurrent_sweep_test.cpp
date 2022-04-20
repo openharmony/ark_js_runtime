@@ -36,22 +36,21 @@ public:
 
     void SetUp() override
     {
-        TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
+        TestHelper::CreateEcmaVMWithScope(vm, thread, scope);
     }
 
     void TearDown() override
     {
-        TestHelper::DestroyEcmaVMWithScope(instance, scope);
+        TestHelper::DestroyEcmaVMWithScope(vm, scope);
     }
 
-    PandaVM *instance {nullptr};
+    EcmaVM *vm {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread;
 };
 
 TEST_F(ConcurrentSweepTest, ConcurrentSweep)
 {
-    auto vm = EcmaVM::Cast(instance);
     const uint8_t *utf8 = reinterpret_cast<const uint8_t *>("test");
     JSHandle<EcmaString> test1(thread, EcmaString::CreateFromUtf8(utf8, 4, vm, true));
     if (vm->IsInitialized()) {

@@ -16,7 +16,7 @@
 #ifndef ECMASCRIPT_JS_RUNTIME_OPTIONS_H_
 #define ECMASCRIPT_JS_RUNTIME_OPTIONS_H_
 
-#include "runtime/include/runtime_options.h"
+#include "libpandabase/utils/pandargs.h"
 #include "utils/logger.h"
 
 // namespace panda {
@@ -39,16 +39,15 @@ struct AsmInterParsedOption {
     bool enableAsm {false};
 };
 
-class JSRuntimeOptions : public RuntimeOptions {
+class JSRuntimeOptions {
 public:
-    explicit JSRuntimeOptions(const std::string &exePath = "") : RuntimeOptions(exePath) {}
+    explicit JSRuntimeOptions() {}
     ~JSRuntimeOptions() = default;
     DEFAULT_COPY_SEMANTIC(JSRuntimeOptions);
     DEFAULT_MOVE_SEMANTIC(JSRuntimeOptions);
 
     void AddOptions(PandArgParser *parser)
     {
-        RuntimeOptions::AddOptions(parser);
         parser->Add(&enableArkTools_);
         parser->Add(&enableStubAot_);
         parser->Add(&comStubFile_);
@@ -61,6 +60,17 @@ public:
         parser->Add(&aotOutputFile_);
         parser->Add(&aotTargetTriple_);
         parser->Add(&logCompiledMethods);
+        parser->Add(&internal_memory_size_limit_);
+        parser->Add(&heap_size_limit_);
+        parser->Add(&ic_enable_);
+        parser->Add(&snapshot_serialize_enabled_);
+        parser->Add(&snapshot_file_);
+        parser->Add(&framework_abc_file_);
+        parser->Add(&compiler_memory_size_limit_);
+        parser->Add(&code_cache_size_limit_);
+        parser->Add(&snapshot_deserialize_enabled_);
+        parser->Add(&icu_data_path_);
+        parser->Add(&startup_time_);
     }
 
     bool IsEnableArkTools() const
@@ -320,13 +330,6 @@ public:
         return asmInterParsedOption_;
     }
 
-    static const JSRuntimeOptions &GetTemporaryOptions()
-    {
-        return temporary_options;
-    }
-
-    static JSRuntimeOptions temporary_options;
-
     std::string GetlogCompiledMethods() const
     {
         return logCompiledMethods.GetValue();
@@ -342,7 +345,177 @@ public:
         return logCompiledMethods.WasSet() && GetlogCompiledMethods().compare("none") != 0;
     }
 
+    uint64_t GetInternalMemorySizeLimit() const
+    {
+        return internal_memory_size_limit_.GetValue();
+    }
+
+    void SetInternalMemorySizeLimit(uint64_t value)
+    {
+        internal_memory_size_limit_.SetValue(value);
+    }
+
+    bool WasSetInternalMemorySizeLimit() const
+    {
+        return internal_memory_size_limit_.WasSet();
+    }
+
+    uint32_t GetHeapSizeLimit() const
+    {
+        return heap_size_limit_.GetValue();
+    }
+
+    void SetHeapSizeLimit(uint32_t value)
+    {
+        heap_size_limit_.SetValue(value);
+    }
+
+    bool WasSetHeapSizeLimit() const
+    {
+        return heap_size_limit_.WasSet();
+    }
+
+    bool IsIcEnable() const
+    {
+        return ic_enable_.GetValue();
+    }
+
+    void SetIcEnable(bool value)
+    {
+        ic_enable_.SetValue(value);
+    }
+
+    bool WasSetIcEnable() const
+    {
+        return ic_enable_.WasSet();
+    }
+
+    bool IsSnapshotSerializeEnabled() const
+    {
+        return snapshot_serialize_enabled_.GetValue();
+    }
+
+    void SetSnapshotSerializeEnabled(bool value)
+    {
+        snapshot_serialize_enabled_.SetValue(value);
+    }
+
+    bool WasSetSnapshotSerializeEnabled() const
+    {
+        return snapshot_serialize_enabled_.WasSet();
+    }
+
+    std::string GetSnapshotFile() const
+    {
+        return snapshot_file_.GetValue();
+    }
+
+    void SetSnapshotFile(std::string value)
+    {
+        snapshot_file_.SetValue(std::move(value));
+    }
+
+    bool WasSetSnapshotFile() const
+    {
+        return snapshot_file_.WasSet();
+    }
+
+    std::string GetFrameworkAbcFile() const
+    {
+        return framework_abc_file_.GetValue();
+    }
+
+    void SetFrameworkAbcFile(std::string value)
+    {
+        framework_abc_file_.SetValue(std::move(value));
+    }
+
+    bool WasSetFrameworkAbcFile() const
+    {
+        return framework_abc_file_.WasSet();
+    }
+
+    uint64_t GetCompilerMemorySizeLimit() const
+    {
+        return compiler_memory_size_limit_.GetValue();
+    }
+
+    void SetCompilerMemorySizeLimit(uint64_t value)
+    {
+        compiler_memory_size_limit_.SetValue(value);
+    }
+
+    bool WasSetCompilerMemorySizeLimit() const
+    {
+        return compiler_memory_size_limit_.WasSet();
+    }
+
+    uint64_t GetCodeCacheSizeLimit() const
+    {
+        return code_cache_size_limit_.GetValue();
+    }
+
+    void SetCodeCacheSizeLimit(uint64_t value)
+    {
+        code_cache_size_limit_.SetValue(value);
+    }
+
+    bool WasSetCodeCacheSizeLimit() const
+    {
+        return code_cache_size_limit_.WasSet();
+    }
+
+    bool IsSnapshotDeserializeEnabled() const
+    {
+        return snapshot_deserialize_enabled_.GetValue();
+    }
+
+    void SetSnapshotDeserializeEnabled(bool value)
+    {
+        snapshot_deserialize_enabled_.SetValue(value);
+    }
+
+    bool WasSetSnapshotDeserializeEnabled() const
+    {
+        return snapshot_deserialize_enabled_.WasSet();
+    }
+
+    std::string GetIcuDataPath() const
+    {
+        return icu_data_path_.GetValue();
+    }
+
+    void SetIcuDataPath(std::string value)
+    {
+        icu_data_path_.SetValue(std::move(value));
+    }
+
+    bool WasSetIcuDataPath() const
+    {
+        return icu_data_path_.WasSet();
+    }
+
+    bool IsStartupTime() const
+    {
+        return startup_time_.GetValue();
+    }
+
+    void SetStartupTime(bool value)
+    {
+        startup_time_.SetValue(value);
+    }
+
+    bool WasSetStartupTime() const
+    {
+        return startup_time_.WasSet();
+    }
+
 private:
+    static constexpr uint64_t INTERNAL_MEMORY_SIZE_LIMIT_DEFAULT = 2147483648;
+    static constexpr uint32_t HEAP_SIZE_LIMIT_DEFAULT = 536870912;
+    static constexpr uint64_t COMPILER_MEMORY_SIZE_LIMIT_DEFAULT = 268435456;
+    static constexpr uint64_t CODE_CACHE_SIZE_LIMIT_DEFAULT = 33554432;
+
     PandArg<bool> enableArkTools_ {"enable-ark-tools", false, R"(Enable ark tools to debug. Default: false)"};
     PandArg<bool> enableCpuprofiler_ {"enable-cpuprofiler", false,
         R"(Enable cpuprofiler to sample call stack and output to json file. Default: false)"};
@@ -390,6 +563,26 @@ private:
     PandArg<std::string> asmInter_ {"asmInter",
         "1",
         R"(set asm interpreter control properties)"};
+    PandArg<uint64_t> internal_memory_size_limit_ {"internal-memory-size-limit", INTERNAL_MEMORY_SIZE_LIMIT_DEFAULT,
+        R"(Max internal memory used by the VM. Default: 2147483648)"};
+    PandArg<uint32_t> heap_size_limit_ {"heap-size-limit", HEAP_SIZE_LIMIT_DEFAULT,
+        R"(Max heap size. Default: 536870912)"};
+    PandArg<bool> ic_enable_ {"ic-enable", true, R"(switch of inline cache. Default: true)"};
+    PandArg<bool> snapshot_serialize_enabled_ {"snapshot-serialize-enabled", false,
+        R"(whether snapshot serialize is enabled. Default: false)"};
+    PandArg<std::string> snapshot_file_ {"snapshot-file", R"(/system/etc/snapshot)",
+        R"(snapshot file. Default: "/system/etc/snapshot")"};
+    PandArg<std::string> framework_abc_file_ {"framework-abc-file", R"(strip.native.min.abc)",
+        R"(snapshot file. Default: "strip.native.min.abc")"};
+    PandArg<uint64_t> compiler_memory_size_limit_ {"compiler-memory-size-limit", COMPILER_MEMORY_SIZE_LIMIT_DEFAULT,
+        R"(Max memory used by the compiler. Default: 268435456)"};
+    PandArg<uint64_t> code_cache_size_limit_ {"code-cache-size-limit", CODE_CACHE_SIZE_LIMIT_DEFAULT,
+        R"(The limit for compiled code size.. Default: 33554432)"};
+    PandArg<bool> snapshot_deserialize_enabled_ {"snapshot-deserialize-enabled", true,
+        R"(whether snapshot deserialize is enabled. Default: true)"};
+    PandArg<std::string> icu_data_path_ {"icu-data-path", R"(default)",
+        R"(Path to generated icu data file. Default: "default")"};
+    PandArg<bool> startup_time_ {"startup-time", false, R"(Print the start time of command execution. Default: false)"};
     AsmInterParsedOption asmInterParsedOption_;
     PandArg<std::string> logCompiledMethods {"log-compiled-methods",
         R"(none)",
