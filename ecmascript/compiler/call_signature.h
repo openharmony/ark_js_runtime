@@ -302,6 +302,8 @@ private:
     V(FatalPrint)                           \
     V(InsertOldToNewRememberedSet)          \
     V(DoubleToInt)                          \
+    V(FloatMod)                             \
+    V(FindElementWithCache)                 \
     V(MarkingBarrier)                       \
     V(CallArg0Dyn)                          \
     V(CallArg1Dyn)                          \

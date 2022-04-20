@@ -173,24 +173,6 @@ DEF_RUNTIME_STUBS(CallInternalGetter)
     return accessor->CallInternalGet(thread, objHandle).GetRawData();
 }
 
-DEF_RUNTIME_STUBS(FindElementWithCache)
-{
-    RUNTIME_STUBS_HEADER(FindElementWithCache);
-    CONVERT_ARG_TAGGED_TYPE_CHECKED(hClass, 0);
-    CONVERT_ARG_TAGGED_CHECKED(key, 1);
-    CONVERT_ARG_TAGGED_CHECKED(num, 2);
-
-    auto cls  = reinterpret_cast<JSHClass *>(hClass);
-    auto layoutInfo = LayoutInfo::Cast(cls->GetLayout().GetTaggedObject());
-    PropertiesCache *cache = thread->GetPropertiesCache();
-    int index = cache->Get(cls, key);
-    if (index == PropertiesCache::NOT_FOUND) {
-        index = layoutInfo->BinarySearch(key, num.GetInt());
-        cache->Set(cls, key, index);
-    }
-    return JSTaggedValue(index).GetRawData();
-}
-
 DEF_RUNTIME_STUBS(StringGetHashCode)
 {
     CONVERT_ARG_TAGGED_TYPE_CHECKED(ecmaString, 0);
@@ -242,14 +224,6 @@ DEF_RUNTIME_STUBS(GetTaggedArrayPtrTest)
     }
     LOG_ECMA(INFO) << " arr->GetData() " << std::hex << "  " << arr1->GetData();
     return arr1.GetTaggedValue().GetRawData();
-}
-
-DEF_RUNTIME_STUBS(FloatMod)
-{
-    CONVERT_ARG_TAGGED_CHECKED(left, 0);
-    CONVERT_ARG_TAGGED_CHECKED(right, 1);
-    double result = std::fmod(left.GetDouble(), right.GetDouble());
-    return JSTaggedValue(result).GetRawData();
 }
 
 DEF_RUNTIME_STUBS(NewInternalString)
@@ -1648,6 +1622,28 @@ JSTaggedType RuntimeStubs::JSObjectGetMethod([[maybe_unused]]uintptr_t argGlue,
     JSHandle<JSTaggedValue> value(thread, key);
     JSHandle<JSTaggedValue> result = JSObject::GetMethod(thread, obj, value);
     return result->GetRawData();
+}
+
+int32_t RuntimeStubs::FindElementWithCache(uintptr_t argGlue, JSTaggedType hClass,
+                                           JSTaggedType key, int32_t num)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    auto cls  = reinterpret_cast<JSHClass *>(hClass);
+    JSTaggedValue propKey = JSTaggedValue(key);
+    auto layoutInfo = LayoutInfo::Cast(cls->GetLayout().GetTaggedObject());
+    PropertiesCache *cache = thread->GetPropertiesCache();
+    int index = cache->Get(cls, propKey);
+    if (index == PropertiesCache::NOT_FOUND) {
+        index = layoutInfo->BinarySearch(propKey, num);
+        cache->Set(cls, propKey, index);
+    }
+    return index;
+}
+
+JSTaggedType RuntimeStubs::FloatMod(double x, double y)
+{
+    double result = std::fmod(x, y);
+    return JSTaggedValue(result).GetRawData();
 }
 
 int32_t RuntimeStubs::DoubleToInt(double x)

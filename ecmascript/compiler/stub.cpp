@@ -423,8 +423,8 @@ GateRef Stub::FindElementWithCache(GateRef glue, GateRef layoutInfo, GateRef hCl
         Jump(&afterExceedCon);
     }
     Bind(&afterExceedCon);
-    result = TaggedCastToInt32(CallRuntime(glue, RTSTUB_ID(FindElementWithCache),
-                                           { hClass, key, IntBuildTaggedTypeWithNoGC(propsNum) }));
+    result = CallNGCRuntime(glue, RTSTUB_ID(FindElementWithCache),
+                                           { glue, hClass, key, propsNum });
     Jump(&exit);
     Bind(&exit);
     auto ret = *result;
@@ -3566,10 +3566,7 @@ GateRef Stub::FastMod(GateRef glue, GateRef left, GateRef right)
                     Branch(DoubleIsINF(*doubleRight), &leftIsZeroOrRightIsInf, &rightNotInf);
                     Bind(&rightNotInf);
                     {
-                        doubleLeft = TaggedCastToDouble(CallRuntime(glue, RTSTUB_ID(FloatMod),
-                                                                    { DoubleBuildTaggedTypeWithNoGC(*doubleLeft),
-                                                                      DoubleBuildTaggedTypeWithNoGC(*doubleRight) }));
-                        result = DoubleBuildTaggedWithNoGC(*doubleLeft);
+                        result = CallNGCRuntime(glue, RTSTUB_ID(FloatMod),{ *doubleLeft, *doubleRight });
                         Jump(&exit);
                     }
                 }
