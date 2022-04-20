@@ -72,6 +72,7 @@ inline EcmaString *EcmaString::CreateFromUtf8(const uint8_t *utf8Data, uint32_t 
         ASSERT(len == utf16Len);
     }
 
+    ASSERT_PRINT(canBeCompress == CanBeCompressed(string), "Bad input canBeCompress!");
     return string;
 }
 
@@ -94,6 +95,7 @@ inline EcmaString *EcmaString::CreateFromUtf16(const uint16_t *utf16Data, uint32
         }
     }
 
+    ASSERT_PRINT(canBeCompress == CanBeCompressed(string), "Bad input canBeCompress!");
     return string;
 }
 

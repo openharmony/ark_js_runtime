@@ -53,11 +53,11 @@ TEST_F(ConcurrentSweepTest, ConcurrentSweep)
 {
     auto vm = EcmaVM::Cast(instance);
     const uint8_t *utf8 = reinterpret_cast<const uint8_t *>("test");
-    JSHandle<EcmaString> test1(thread, EcmaString::CreateFromUtf8(utf8, 4, vm, false));
+    JSHandle<EcmaString> test1(thread, EcmaString::CreateFromUtf8(utf8, 4, vm, true));
     if (vm->IsInitialized()) {
         vm->CollectGarbage(ecmascript::TriggerGCType::OLD_GC);
     }
-    JSHandle<EcmaString> test2(thread, EcmaString::CreateFromUtf8(utf8, 4, vm, false));
+    JSHandle<EcmaString> test2(thread, EcmaString::CreateFromUtf8(utf8, 4, vm, true));
     ASSERT_EQ(test1->GetLength(), 4U);
     ASSERT_NE(test1.GetTaggedValue().GetHeapObject(), test2.GetTaggedValue().GetHeapObject());
 }
