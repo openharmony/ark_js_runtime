@@ -15,5 +15,5 @@ import("//ark/js_runtime/test/test_helper.gni")
 
 host_moduletest_action("compareobjecthclass") {
   deps = []
-  is_enable_enableArkTools_ = true
+  is_enable_enableArkTools = true
 }
