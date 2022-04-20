@@ -20,6 +20,8 @@
 #include "ecmascript/mem/mark_word.h"
 
 namespace panda::ecmascript {
+class Region;
+
 class Barriers {
 public:
     template<class T>
@@ -47,6 +49,8 @@ public:
         auto *addr = reinterpret_cast<T *>(ToUintPtr(obj) + offset);
         return *addr;
     }
+
+    static void Update(uintptr_t slotAddr, Region *objectRegion, TaggedObject *value, Region *valueRegion);
 };
 }  // namespace panda::ecmascript
 

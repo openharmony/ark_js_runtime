@@ -482,7 +482,7 @@ private:
     static inline JSTaggedType RuntimeNativeCall(JSThread *thread, JSHandle<JSTaggedValue> func, bool callThis,
                                                  uint32_t actualNumArgs, std::vector<JSTaggedType> &actualArgs);
     static inline JSTaggedType RuntimeCall1(JSThread *thread, JSHandle<JSTaggedValue> func,
-        JSHandle<JSTaggedValue> arg);
+                                            JSHandle<JSTaggedValue> arg);
     static inline JSTaggedValue RuntimeLdBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &numberBigInt);
     static inline JSTaggedValue RuntimeNewLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId);
     static inline JSTaggedValue RuntimeGetAotUnmapedArgs(JSThread *thread, uint32_t actualNumArgs, uintptr_t argv);
