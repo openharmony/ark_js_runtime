@@ -695,7 +695,7 @@ enum EcmaRuntimeCallerId {
     [[maybe_unused]] EcmaRuntimeStat *_run_stat_ = _js_thread_->GetEcmaVM()->GetRuntimeStat(); \
     RuntimeTimerScope interpret_##name##_scope_(thread, INTERPRETER_CALLER_ID(name) _run_stat_)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define RUNTIME_TRACE(thread, name)                                                        \
+#define RUNTIME_TRACE(thread, name)                                                            \
     [[maybe_unused]] JSThread *_js_thread_ = thread;                                           \
     [[maybe_unused]] EcmaRuntimeStat *_run_stat_ = _js_thread_->GetEcmaVM()->GetRuntimeStat(); \
     RuntimeTimerScope interpret_##name##_scope_(thread, RUNTIME_CALLER_ID(name) _run_stat_)

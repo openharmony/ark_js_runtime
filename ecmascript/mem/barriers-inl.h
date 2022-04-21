@@ -19,7 +19,7 @@
 #include "ecmascript/base/config.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/mem/barriers.h"
-#include "ecmascript/runtime_api.h"
+#include "ecmascript/mem/region-inl.h"
 
 namespace panda::ecmascript {
 static ARK_INLINE void WriteBarrier(void *obj, size_t offset, JSTaggedType value)
@@ -35,7 +35,7 @@ static ARK_INLINE void WriteBarrier(void *obj, size_t offset, JSTaggedType value
     }
 
     if (valueRegion->IsMarking()) {
-        RuntimeApi::MarkObject(slotAddr, objectRegion, reinterpret_cast<TaggedObject *>(value), valueRegion);
+        Barriers::Update(slotAddr, objectRegion, reinterpret_cast<TaggedObject *>(value), valueRegion);
     }
 }
 
