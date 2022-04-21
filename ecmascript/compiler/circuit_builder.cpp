@@ -355,7 +355,7 @@ void CircuitBuilder::Store(VariableType type, GateRef glue, GateRef base, GateRe
 {
     auto label = GetCurrentLabel();
     auto depend = label->GetDepend();
-    GateRef ptr = IntPtrAdd(base, offset);
+    GateRef ptr = PtrAdd(base, offset);
     GateRef result = GetCircuit()->NewGate(OpCode(OpCode::STORE), 0, { depend, value, ptr }, type.GetGateType());
     label->SetDepend(result);
     if (type == VariableType::JS_POINTER() || type == VariableType::JS_ANY()) {
@@ -432,7 +432,7 @@ GateRef CircuitBuilder::GetModuleFromFunction(GateRef function)
 GateRef CircuitBuilder::FunctionIsResolved(GateRef function)
 {
     GateRef bitfield = GetFunctionBitFieldFromJSFunction(function);
-    return NotEqual(Int32And(UInt32LSR(bitfield, Int32(JSFunction::ResolvedBits::START_BIT)),
+    return NotEqual(Int32And(Int32LSR(bitfield, Int32(JSFunction::ResolvedBits::START_BIT)),
         Int32((1LU << JSFunction::ResolvedBits::SIZE) - 1)), Int32(0));
 }
 
@@ -467,7 +467,7 @@ void CircuitBuilder::SetPropertyInlinedProps(GateRef glue, GateRef obj, GateRef 
     GateRef value, GateRef attrOffset, VariableType type)
 {
     GateRef bitfield = Load(VariableType::INT32(), hClass, IntPtr(JSHClass::BIT_FIELD1_OFFSET));
-    GateRef inlinedPropsStart = Int32And(UInt32LSR(bitfield,
+    GateRef inlinedPropsStart = Int32And(Int32LSR(bitfield,
         Int32(JSHClass::InlinedPropsStartBits::START_BIT)),
         Int32((1LU << JSHClass::InlinedPropsStartBits::SIZE) - 1));
     GateRef propOffset = Int32Mul(Int32Add(inlinedPropsStart, attrOffset),
