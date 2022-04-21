@@ -807,6 +807,36 @@ DEF_CALL_SIGNATURE(InsertOldToNewRememberedSet)
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 
+DEF_CALL_SIGNATURE(FloatMod)
+{
+    // 2 : 2 input parameters
+    CallSignature index("FloatMod", 0, 2, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *callSign = index;
+    // 2 : 2 input parameters
+    std::array<VariableType, 2> params = {
+        VariableType::FLOAT64(),
+        VariableType::FLOAT64(),
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+}
+
+DEF_CALL_SIGNATURE(FindElementWithCache)
+{
+    // 4 : 4 input parameters
+    CallSignature index("FindElementWithCache", 0, 4, ArgumentsOrder::DEFAULT_ORDER, VariableType::INT32());
+    *callSign = index;
+    // 4 : 4 input parameters
+    std::array<VariableType, 4> params = {
+        VariableType::NATIVE_POINTER(),
+        VariableType::JS_ANY(),
+        VariableType::JS_ANY(),
+        VariableType::INT32(),
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+}
+
 DEF_CALL_SIGNATURE(DoubleToInt)
 {
     // 1 : 1 input parameters

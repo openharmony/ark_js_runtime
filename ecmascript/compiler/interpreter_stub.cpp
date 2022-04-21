@@ -156,7 +156,6 @@ DECLARE_ASM_HANDLER(HandleLdFalsePref)
 
 DECLARE_ASM_HANDLER(HandleThrowDynPref)
 {
-    SetPcToFrame(glue, GetFrame(sp), pc);
     CallRuntime(glue, RTSTUB_ID(ThrowDyn), { acc });
     DISPATCH_LAST();
 }
@@ -189,7 +188,6 @@ DECLARE_ASM_HANDLER(HandleGetUnmappedArgsPref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     auto env = GetEnvironment();
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef res = CallRuntime(glue, RTSTUB_ID(GetUnmapedArgs), {});
     Label isException(env);
     Label notException(env);
@@ -208,7 +206,6 @@ DECLARE_ASM_HANDLER(HandleCopyRestArgsPrefImm16)
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     auto env = GetEnvironment();
     GateRef restIdx = ZExtInt16ToInt32(ReadInst16_1(pc));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef res = CallRuntime(glue, RTSTUB_ID(CopyRestArgs), { IntBuildTaggedTypeWithNoGC(restIdx) });
     Label isException(env);
     Label notException(env);
@@ -228,7 +225,6 @@ DECLARE_ASM_HANDLER(HandleCreateArrayWithBufferPrefImm16)
     auto env = GetEnvironment();
     GateRef imm = ZExtInt16ToInt32(ReadInst16_1(pc));
     GateRef result = GetObjectFromConstPool(constpool, imm);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef res = CallRuntime(glue, RTSTUB_ID(CreateArrayWithBuffer), { result });
     Label isException(env);
     Label notException(env);
@@ -248,7 +244,6 @@ DECLARE_ASM_HANDLER(HandleCreateObjectWithBufferPrefImm16)
     auto env = GetEnvironment();
     GateRef imm = ZExtInt16ToInt32(ReadInst16_1(pc));
     GateRef result = GetObjectFromConstPool(constpool, imm);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef res = CallRuntime(glue, RTSTUB_ID(CreateObjectWithBuffer), { result });
     Label isException(env);
     Label notException(env);
@@ -269,7 +264,6 @@ DECLARE_ASM_HANDLER(HandleCreateObjectWithExcludedKeysPrefImm16V8V8)
     GateRef numKeys = ReadInst16_1(pc);
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_3(pc)));
     GateRef firstArgRegIdx = ZExtInt8ToInt16(ReadInst8_4(pc));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef res = CallRuntime(glue, RTSTUB_ID(CreateObjectWithExcludedKeys),
         { Int16BuildTaggedTypeWithNoGC(numKeys), obj, Int16BuildTaggedTypeWithNoGC(firstArgRegIdx) });
     Label isException(env);
@@ -290,7 +284,6 @@ DECLARE_ASM_HANDLER(HandleCreateObjectHavingMethodPrefImm16)
     auto env = GetEnvironment();
     GateRef imm = ZExtInt16ToInt32(ReadInst16_1(pc));
     GateRef result = GetObjectFromConstPool(constpool, imm);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef res = CallRuntime(glue, RTSTUB_ID(CreateObjectHavingMethod), { result, acc, constpool });
     Label isException(env);
     Label notException(env);
@@ -308,7 +301,6 @@ DECLARE_ASM_HANDLER(HandleThrowIfSuperNotCorrectCallPrefImm16)
 {
     auto env = GetEnvironment();
     GateRef imm = ReadInst16_1(pc);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef res = CallRuntime(glue, RTSTUB_ID(ThrowIfSuperNotCorrectCall),
         { Int16BuildTaggedTypeWithNoGC(imm), acc }); // acc is thisValue
     Label isException(env);
@@ -327,7 +319,6 @@ DECLARE_ASM_HANDLER(HandleNewLexEnvDynPrefImm16)
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     auto env = GetEnvironment();
     GateRef numVars = ReadInst16_1(pc);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef res = CallRuntime(glue, RTSTUB_ID(NewLexicalEnvDyn), { Int16BuildTaggedTypeWithNoGC(numVars) });
     Label isException(env);
     Label notException(env);
@@ -353,7 +344,6 @@ DECLARE_ASM_HANDLER(HandleNewObjDynRangePrefImm16V8)
     GateRef newTarget = GetVregValue(sp, IntPtrAdd(ZExtInt16ToPtr(firstArgRegIdx), IntPtr(1)));
     GateRef firstArgIdx = Int16Add(firstArgRegIdx, firstArgOffset);
     GateRef length = Int16Sub(numArgs, firstArgOffset);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef res = CallRuntime(glue, RTSTUB_ID(NewObjDynRange),
         { func, newTarget, Int16BuildTaggedTypeWithNoGC(firstArgIdx), Int16BuildTaggedTypeWithNoGC(length) });
     Label isException(env);
@@ -383,7 +373,6 @@ DECLARE_ASM_HANDLER(HandleDefineFuncDynPrefId16Imm16V8)
     Branch(FunctionIsResolved(*result), &isResolved, &notResolved);
     Bind(&isResolved);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         result = CallRuntime(glue, RTSTUB_ID(DefinefuncDyn), { *result });
         Label isException(env);
         Label notException(env);
@@ -432,7 +421,6 @@ DECLARE_ASM_HANDLER(HandleDefineNCFuncDynPrefId16Imm16V8)
     Branch(FunctionIsResolved(*result), &isResolved, &notResolved);
     Bind(&isResolved);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         result = CallRuntime(glue, RTSTUB_ID(DefineNCFuncDyn), { *result });
         Label isException(env);
         Label notException(env);
@@ -482,7 +470,6 @@ DECLARE_ASM_HANDLER(HandleDefineGeneratorFuncPrefId16Imm16V8)
     Branch(FunctionIsResolved(*result), &isResolved, &notResolved);
     Bind(&isResolved);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         result = CallRuntime(glue, RTSTUB_ID(DefineGeneratorFunc), { *result });
         Label isException(env);
         Label notException(env);
@@ -531,7 +518,6 @@ DECLARE_ASM_HANDLER(HandleDefineAsyncFuncPrefId16Imm16V8)
     Branch(FunctionIsResolved(*result), &isResolved, &notResolved);
     Bind(&isResolved);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         result = CallRuntime(glue, RTSTUB_ID(DefineAsyncFunc), { *result });
         Label isException(env);
         Label notException(env);
@@ -580,7 +566,6 @@ DECLARE_ASM_HANDLER(HandleDefineMethodPrefId16Imm16V8)
     Branch(FunctionIsResolved(*result), &isResolved, &notResolved);
     Bind(&isResolved);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         result = CallRuntime(glue, RTSTUB_ID(DefineMethod), { *result, acc });
         Label isException(env);
         Label notException(env);
@@ -622,7 +607,6 @@ DECLARE_ASM_HANDLER(HandleCallSpreadDynPrefV8V8V8)
     GateRef func = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_2(pc)));
     GateRef array = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_3(pc)));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef res = CallRuntime(glue, RTSTUB_ID(CallSpreadDyn), { func, obj, array });
     Label isException(env);
     Label notException(env);
@@ -644,7 +628,6 @@ DECLARE_ASM_HANDLER(HandleAsyncFunctionResolvePrefV8V8V8)
     auto env = GetEnvironment();
     GateRef asyncFuncObj = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_3(pc)));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef res = CallRuntime(glue, RTSTUB_ID(AsyncFunctionResolveOrReject),
                               { asyncFuncObj, value, TaggedTrue() });
     Label isException(env);
@@ -666,7 +649,6 @@ DECLARE_ASM_HANDLER(HandleAsyncFunctionRejectPrefV8V8V8)
     auto env = GetEnvironment();
     GateRef asyncFuncObj = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_3(pc)));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef res = CallRuntime(glue,
                               RTSTUB_ID(AsyncFunctionResolveOrReject),
                               { asyncFuncObj, value, TaggedFalse() });
@@ -691,7 +673,6 @@ DECLARE_ASM_HANDLER(HandleDefineGetterSetterByValuePrefV8V8V8V8)
     GateRef prop = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_2(pc)));
     GateRef getter = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_3(pc)));
     GateRef setter = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_4(pc)));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef res = CallRuntime(glue, RTSTUB_ID(DefineGetterSetterByValue),
                               { obj, prop, getter, setter, acc }); // acc is flag
     Label isException(env);
@@ -714,7 +695,6 @@ DECLARE_ASM_HANDLER(HandleSuperCallPrefImm16V8)
     auto env = GetEnvironment();
     GateRef range = ReadInst16_1(pc);
     GateRef v0 = ZExtInt8ToInt16(ReadInst8_3(pc));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     // acc is thisFunc
     GateRef res = CallRuntime(glue, RTSTUB_ID(SuperCall),
         { acc, Int16BuildTaggedTypeWithNoGC(v0), Int16BuildTaggedTypeWithNoGC(range) });
@@ -736,7 +716,6 @@ DECLARE_ASM_HANDLER(HandleGetPropIteratorPref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     auto env = GetEnvironment();
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef res = CallRuntime(glue, RTSTUB_ID(GetPropIterator), { *varAcc });
     Label isException(env);
     Label notException(env);
@@ -754,7 +733,6 @@ DECLARE_ASM_HANDLER(HandleAsyncFunctionEnterPref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     auto env = GetEnvironment();
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef res = CallRuntime(glue, RTSTUB_ID(AsyncFunctionEnter), {});
     Label isException(env);
     Label notException(env);
@@ -806,7 +784,6 @@ DECLARE_ASM_HANDLER(HandleGetIteratorPref)
     }
     Bind(&notGeneratorObj);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         GateRef res = CallRuntime(glue, RTSTUB_ID(GetIterator), { *varAcc });
         Label isException(env);
         Label notException(env);
@@ -825,14 +802,12 @@ DECLARE_ASM_HANDLER(HandleGetIteratorPref)
 
 DECLARE_ASM_HANDLER(HandleThrowThrowNotExistsPref)
 {
-    SetPcToFrame(glue, GetFrame(sp), pc);
     CallRuntime(glue, RTSTUB_ID(ThrowThrowNotExists), {});
     DISPATCH_LAST();
 }
 
 DECLARE_ASM_HANDLER(HandleThrowPatternNonCoerciblePref)
 {
-    SetPcToFrame(glue, GetFrame(sp), pc);
     CallRuntime(glue, RTSTUB_ID(ThrowPatternNonCoercible), {});
     DISPATCH_LAST();
 }
@@ -847,7 +822,6 @@ DECLARE_ASM_HANDLER(HandleLdHomeObjectPref)
 
 DECLARE_ASM_HANDLER(HandleThrowDeleteSuperPropertyPref)
 {
-    SetPcToFrame(glue, GetFrame(sp), pc);
     CallRuntime(glue, RTSTUB_ID(ThrowDeleteSuperProperty), {});
     DISPATCH_LAST();
 }
@@ -871,7 +845,6 @@ DECLARE_ASM_HANDLER(HandleMul2DynPrefV8)
     Branch(TaggedIsHole(*result), &isHole, &notHole);
     Bind(&isHole);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
         result = CallRuntime(glue, RTSTUB_ID(Mul2Dyn), { left, acc });
         Label isException(env);
@@ -910,7 +883,6 @@ DECLARE_ASM_HANDLER(HandleDiv2DynPrefV8)
     Branch(TaggedIsHole(*result), &isHole, &notHole);
     Bind(&isHole);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
         result = CallRuntime(glue, RTSTUB_ID(Div2Dyn), { left, acc });
         Label isException(env);
@@ -949,7 +921,6 @@ DECLARE_ASM_HANDLER(HandleMod2DynPrefV8)
     Branch(TaggedIsHole(*result), &isHole, &notHole);
     Bind(&isHole);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
         result = CallRuntime(glue, RTSTUB_ID(Mod2Dyn), { left, acc });
         Label isException(env);
@@ -988,7 +959,6 @@ DECLARE_ASM_HANDLER(HandleEqDynPrefV8)
     Branch(TaggedIsHole(*result), &isHole, &notHole);
     Bind(&isHole);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
         result = CallRuntime(glue, RTSTUB_ID(EqDyn), { left, acc });
         Label isException(env);
@@ -1027,7 +997,6 @@ DECLARE_ASM_HANDLER(HandleNotEqDynPrefV8)
     Branch(TaggedIsHole(*result), &isHole, &notHole);
     Bind(&isHole);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
         result = CallRuntime(glue, RTSTUB_ID(NotEqDyn), { left, acc });
         Label isException(env);
@@ -1150,7 +1119,6 @@ DECLARE_ASM_HANDLER(HandleLessDynPrefV8)
     }
     Bind(&slowPath);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
         GateRef result = CallRuntime(glue, RTSTUB_ID(LessDyn), { left, acc });
         Label isException(env);
@@ -1257,7 +1225,6 @@ DECLARE_ASM_HANDLER(HandleLessEqDynPrefV8)
     }
     Bind(&slowPath);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
         GateRef result = CallRuntime(glue, RTSTUB_ID(LessEqDyn), { left, acc });
         Label isException(env);
@@ -1364,7 +1331,6 @@ DECLARE_ASM_HANDLER(HandleGreaterDynPrefV8)
     }
     Bind(&slowPath);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
         GateRef result = CallRuntime(glue, RTSTUB_ID(GreaterDyn), { left, acc });
         Label isException(env);
@@ -1472,7 +1438,6 @@ DECLARE_ASM_HANDLER(HandleGreaterEqDynPrefV8)
     }
     Bind(&slowPath);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
         GateRef result = CallRuntime(glue, RTSTUB_ID(GreaterEqDyn), { left, acc });
         Label isException(env);
@@ -1507,8 +1472,6 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     DEFVARIABLE(varHotnessCounter, VariableType::INT32(), hotnessCounter);
 
-    GateRef tmpFrame = GetFrame(*varSp);
-    SetPcToFrame(glue, tmpFrame, *varPc);
     varPc = TaggedCastToIntPtr(CallRuntime(glue,
                                            RTSTUB_ID(JumpToCInterpreter),
                                            { constpool, profileTypeInfo, acc,
@@ -1807,7 +1770,6 @@ DECLARE_ASM_HANDLER(HandleIncDynPrefV8)
     }
     Bind(&slowPath);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
         GateRef result = CallRuntime(glue, RTSTUB_ID(IncDyn), { value });
         Label isException(env);
@@ -1866,7 +1828,6 @@ DECLARE_ASM_HANDLER(HandleDecDynPrefV8)
     }
     Bind(&slowPath);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         // slow path
         GateRef result = CallRuntime(glue, RTSTUB_ID(DecDyn), { value });
         Label isException(env);
@@ -1892,7 +1853,6 @@ DECLARE_ASM_HANDLER(HandleExpDynPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef base = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(ExpDyn), { base, acc });
     Label isException(env);
     Label notException(env);
@@ -1913,7 +1873,6 @@ DECLARE_ASM_HANDLER(HandleIsInDynPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef prop = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(IsInDyn), { prop, acc }); // acc is obj
     Label isException(env);
     Label notException(env);
@@ -1934,7 +1893,6 @@ DECLARE_ASM_HANDLER(HandleInstanceOfDynPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(InstanceOfDyn), { obj, acc });
     Label isException(env);
     Label notException(env);
@@ -1998,7 +1956,6 @@ DECLARE_ASM_HANDLER(HandleCreateGeneratorObjPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef genFunc = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(CreateGeneratorObj), { genFunc });
     Label isException(env);
     Label notException(env);
@@ -2016,7 +1973,6 @@ DECLARE_ASM_HANDLER(HandleThrowConstAssignmentPrefV8)
 {
     GateRef v0 = ReadInst8_1(pc);
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     CallRuntime(glue, RTSTUB_ID(ThrowConstAssignment), { value });
     DISPATCH_LAST();
 }
@@ -2048,7 +2004,6 @@ DECLARE_ASM_HANDLER(HandleGetNextPropNamePrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef iter = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(GetNextPropName), { iter });
     Label isException(env);
     Label notException(env);
@@ -2076,7 +2031,6 @@ DECLARE_ASM_HANDLER(HandleThrowIfNotObjectPrefV8)
         DISPATCH(PREF_V8);
     }
     Bind(&notEcmaObject);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     CallRuntime(glue, RTSTUB_ID(ThrowIfNotObject), {});
     DISPATCH_LAST();
 }
@@ -2088,7 +2042,6 @@ DECLARE_ASM_HANDLER(HandleIterNextPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef iter = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(IterNext), { iter });
     Label isException(env);
     Label notException(env);
@@ -2109,7 +2062,6 @@ DECLARE_ASM_HANDLER(HandleCloseIteratorPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef iter = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(CloseIterator), { iter });
     Label isException(env);
     Label notException(env);
@@ -2135,7 +2087,6 @@ DECLARE_ASM_HANDLER(HandleSuperCallSpreadPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef array = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(SuperCallSpread), { acc, array });
     Label isException(env);
     Label notException(env);
@@ -2158,7 +2109,6 @@ DECLARE_ASM_HANDLER(HandleDelObjPropPrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef prop = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(DelObjProp), { obj, prop });
     Label isException(env);
     Label notException(env);
@@ -2181,7 +2131,6 @@ DECLARE_ASM_HANDLER(HandleNewObjSpreadDynPrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef func = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef newTarget = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(NewObjSpreadDyn), { func, newTarget, acc }); // acc is array
     Label isException(env);
     Label notException(env);
@@ -2204,7 +2153,6 @@ DECLARE_ASM_HANDLER(HandleCreateIterResultObjPrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef flag = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(CreateIterResultObj), { value, flag });
     Label isException(env);
     Label notException(env);
@@ -2227,7 +2175,6 @@ DECLARE_ASM_HANDLER(HandleAsyncFunctionAwaitUncaughtPrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef asyncFuncObj = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(AsyncFunctionAwaitUncaught), { asyncFuncObj, value });
     Label isException(env);
     Label notException(env);
@@ -2257,7 +2204,6 @@ DECLARE_ASM_HANDLER(HandleThrowUndefinedIfHolePrefV8V8)
     }
     Bind(&isHole);
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     // assert obj.IsString()
     CallRuntime(glue, RTSTUB_ID(ThrowUndefinedIfHole), { obj });
     DISPATCH_LAST();
@@ -2272,7 +2218,6 @@ DECLARE_ASM_HANDLER(HandleCopyDataPropertiesPrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef dst = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef src = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(CopyDataProperties), { dst, src });
     Label isException(env);
     Label notException(env);
@@ -2295,7 +2240,6 @@ DECLARE_ASM_HANDLER(HandleStArraySpreadPrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef dst = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef index = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(StArraySpread), { dst, index, acc }); // acc is res
     Label isException(env);
     Label notException(env);
@@ -2318,7 +2262,6 @@ DECLARE_ASM_HANDLER(HandleGetIteratorNextPrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef method = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(GetIteratorNext), { obj, method });
     Label isException(env);
     Label notException(env);
@@ -2341,7 +2284,6 @@ DECLARE_ASM_HANDLER(HandleSetObjectWithProtoPrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef proto = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(SetObjectWithProto), { proto, obj });
     Label isException(env);
     Label notException(env);
@@ -2369,7 +2311,6 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
     Label slowPath(env);
     Label isException(env);
     Label accDispatch(env);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     Branch(TaggedIsHeapObject(receiver), &receiverIsHeapObject, &slowPath);
     Bind(&receiverIsHeapObject);
     {
@@ -2471,7 +2412,6 @@ DECLARE_ASM_HANDLER(HandleStObjByValuePrefV8V8)
     Label slowPath(env);
     Label isException(env);
     Label notException(env);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     Branch(TaggedIsHeapObject(receiver), &receiverIsHeapObject, &slowPath);
     Bind(&receiverIsHeapObject);
     {
@@ -2562,7 +2502,6 @@ DECLARE_ASM_HANDLER(HandleStOwnByValuePrefV8V8)
     Branch(IsClassConstructor(receiver), &slowPath, &notClassConstructor);
     Bind(&notClassConstructor);
     Label notClassPrototype(env);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     Branch(IsClassPrototype(receiver), &slowPath, &notClassPrototype);
     Bind(&notClassPrototype);
     {
@@ -2596,7 +2535,6 @@ DECLARE_ASM_HANDLER(HandleLdSuperByValuePrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef propKey = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(LdSuperByValue), {  receiver, propKey }); // sp for thisFunc
     Label isException(env);
     Label notException(env);
@@ -2622,7 +2560,6 @@ DECLARE_ASM_HANDLER(HandleStSuperByValuePrefV8V8)
     GateRef result = CallRuntime(glue, RTSTUB_ID(StSuperByValue), { receiver, propKey, acc });
     Label isException(env);
     Label notException(env);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
@@ -2644,7 +2581,6 @@ DECLARE_ASM_HANDLER(HandleLdSuperByNamePrefId32V8)
     GateRef v0 = ReadInst8_5(pc);
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef propKey = GetObjectFromConstPool(constpool, stringId);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(LdSuperByValue), { receiver, propKey });
     Branch(TaggedIsException(result), &isException, &dispatch);
     Bind(&isException);
@@ -2667,7 +2603,6 @@ DECLARE_ASM_HANDLER(HandleStSuperByNamePrefId32V8)
     GateRef v0 = ReadInst8_5(pc);
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef propKey = GetObjectFromConstPool(constpool, stringId);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(StSuperByValue), { receiver, propKey, acc });
     Branch(TaggedIsException(result), &isException, &dispatch);
     Bind(&isException);
@@ -2690,7 +2625,6 @@ DECLARE_ASM_HANDLER(HandleLdObjByIndexPrefV8Imm32)
     Label slowPath(env);
     Label isException(env);
     Label accDispatch(env);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     Branch(TaggedIsHeapObject(receiver), &fastPath, &slowPath);
     Bind(&fastPath);
     {
@@ -2734,7 +2668,6 @@ DECLARE_ASM_HANDLER(HandleStObjByIndexPrefV8Imm32)
     Label slowPath(env);
     Label isException(env);
     Label notException(env);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     Branch(TaggedIsHeapObject(receiver), &fastPath, &slowPath);
     Bind(&fastPath);
     {
@@ -2770,7 +2703,6 @@ DECLARE_ASM_HANDLER(HandleStOwnByIndexPrefV8Imm32)
     Label slowPath(env);
     Label isException(env);
     Label notException(env);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     Branch(TaggedIsHeapObject(receiver), &isHeapObject, &slowPath);
     Bind(&isHeapObject);
     Label notClassConstructor(env);
@@ -2811,7 +2743,6 @@ DECLARE_ASM_HANDLER(HandleStConstToGlobalRecordPrefId32)
     Label notException(env);
     GateRef stringId = ReadInst32_1(pc);
     GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(StGlobalRecord),
                                  { propKey, *varAcc, TaggedTrue() });
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2832,7 +2763,6 @@ DECLARE_ASM_HANDLER(HandleStLetToGlobalRecordPrefId32)
     Label notException(env);
     GateRef stringId = ReadInst32_1(pc);
     GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(StGlobalRecord),
                                  { propKey, *varAcc, TaggedFalse() });
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2853,7 +2783,6 @@ DECLARE_ASM_HANDLER(HandleStClassToGlobalRecordPrefId32)
     Label notException(env);
     GateRef stringId = ReadInst32_1(pc);
     GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef result = CallRuntime(glue, RTSTUB_ID(StGlobalRecord), { propKey, *varAcc, TaggedFalse() });
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
@@ -2909,7 +2838,6 @@ DECLARE_ASM_HANDLER(HandleNegDynPrefV8)
         Label notException(env);
         Bind(&valueNotDouble);
         {
-            SetPcToFrame(glue, GetFrame(sp), pc);
             // slow path
             GateRef result = CallRuntime(glue, RTSTUB_ID(NegDyn), { value });
             Branch(TaggedIsException(result), &isException, &notException);
@@ -2959,7 +2887,6 @@ DECLARE_ASM_HANDLER(HandleNotDynPrefV8)
         }
         Bind(&numberNotDouble);
         {
-            SetPcToFrame(glue, GetFrame(sp), pc);
             // slow path
             GateRef result = CallRuntime(glue, RTSTUB_ID(NotDyn), { value });
             Label isException(env);
@@ -3048,7 +2975,6 @@ DECLARE_ASM_HANDLER(HandleAnd2DynPrefV8)
     // slow path
     Bind(&leftNotNumberOrRightNotNumber);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(And2Dyn), { left, right });
         Label isException(env);
         Label notException(env);
@@ -3140,7 +3066,6 @@ DECLARE_ASM_HANDLER(HandleOr2DynPrefV8)
     // slow path
     Bind(&leftNotNumberOrRightNotNumber);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(Or2Dyn), { left, right });
         Label isException(env);
         Label notException(env);
@@ -3232,7 +3157,6 @@ DECLARE_ASM_HANDLER(HandleXOr2DynPrefV8)
     // slow path
     Bind(&leftNotNumberOrRightNotNumber);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(Xor2Dyn), { left, right });
         Label isException(env);
         Label notException(env);
@@ -3324,7 +3248,6 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
     // slow path
     Bind(&leftNotNumberOrRightNotNumber);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(Ashr2Dyn), { left, right });
         Label isException(env);
         Label notException(env);
@@ -3420,7 +3343,6 @@ DECLARE_ASM_HANDLER(HandleShr2DynPrefV8)
     // slow path
     Bind(&leftNotNumberOrRightNotNumber);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(Shr2Dyn), { left, right });
         Label isException(env);
         Label notException(env);
@@ -3527,7 +3449,6 @@ DECLARE_ASM_HANDLER(HandleShl2DynPrefV8)
     // slow path
     Bind(&leftNotNumberOrRightNotNumber);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(Shl2Dyn), { left, right });
         Label IsException(env);
         Label NotException(env);
@@ -3572,7 +3493,6 @@ DECLARE_ASM_HANDLER(HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8)
     Label isResolved(env);
     Label isNotResolved(env);
     Label afterCheckResolved(env);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     Branch(FunctionIsResolved(classTemplate), &isResolved, &isNotResolved);
     Bind(&isResolved);
     {
@@ -3615,7 +3535,6 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
     Label notHole(env);
     Label hasException(env);
     Label notException(env);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     Branch(TaggedIsHeapObject(receiver), &receiverIsHeapObject, &slowPath);
     Bind(&receiverIsHeapObject);
     {
@@ -3701,7 +3620,6 @@ DECLARE_ASM_HANDLER(HandleStObjByNamePrefId32V8)
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_5(pc)));
     GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
     DEFVARIABLE(result, VariableType::INT64(), Hole(VariableType::INT64()));
-    SetPcToFrame(glue, GetFrame(sp), pc);
 
     Label checkResult(env);
     Label dispatch(env);
@@ -3788,7 +3706,6 @@ DECLARE_ASM_HANDLER(HandleStOwnByValueWithNameSetPrefV8V8)
     Label notException(env);
     Label isException1(env);
     Label notException1(env);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     Branch(TaggedIsHeapObject(receiver), &isHeapObject, &slowPath);
     Bind(&isHeapObject);
     {
@@ -3836,7 +3753,6 @@ DECLARE_ASM_HANDLER(HandleStOwnByNamePrefId32V8)
     GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_5(pc)));
     DEFVARIABLE(result, VariableType::INT64(), Hole(VariableType::INT64()));
-    SetPcToFrame(glue, GetFrame(sp), pc);
     Label checkResult(env);
     Label dispatch(env);
 
@@ -3892,7 +3808,6 @@ DECLARE_ASM_HANDLER(HandleStOwnByNameWithNameSetPrefId32V8)
     Label notException(env);
     Label isException1(env);
     Label notException1(env);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     Branch(IsJSObject(receiver), &isJSObject, &notJSObject);
     Bind(&isJSObject);
     {
@@ -4320,7 +4235,6 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
     GateRef genObj = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_2(pc)));
     GateRef frame = GetFrame(*varSp);
-    SetPcToFrame(glue, frame, pc);
     GateRef res = CallRuntime(glue, RTSTUB_ID(SuspendGenerator), { genObj, value });
     Label isException(env);
     Label notException(env);
@@ -4456,7 +4370,6 @@ DECLARE_ASM_HANDLER(HandleTryLdGlobalByNamePrefId32)
     Label dispatch(env);
     Label icAvailable(env);
     Label icNotAvailable(env);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     Branch(TaggedIsUndefined(profileTypeInfo), &icNotAvailable, &icAvailable);
     Bind(&icAvailable);
     {
@@ -4550,7 +4463,6 @@ DECLARE_ASM_HANDLER(HandleTryStGlobalByNamePrefId32)
 
     Label icAvailable(env);
     Label icNotAvailable(env);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     Branch(TaggedIsUndefined(profileTypeInfo), &icNotAvailable, &icAvailable);
     Bind(&icAvailable);
     {
@@ -4628,7 +4540,6 @@ DECLARE_ASM_HANDLER(HandleLdGlobalVarPrefId32)
     Label dispatch(env);
     Label slowPath(env);
     GateRef globalObject = GetGlobalObject(glue);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     Label icAvailable(env);
     Label icNotAvailable(env);
     Branch(TaggedIsUndefined(profileTypeInfo), &icNotAvailable, &icAvailable);
@@ -4689,7 +4600,6 @@ DECLARE_ASM_HANDLER(HandleStGlobalVarPrefId32)
 
     Label icAvailable(env);
     Label icNotAvailable(env);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     Branch(TaggedIsUndefined(profileTypeInfo), &icNotAvailable, &icAvailable);
     Bind(&icAvailable);
     {
@@ -4737,7 +4647,6 @@ DECLARE_ASM_HANDLER(HandleCreateRegExpWithLiteralPrefId32Imm8)
     GateRef stringId = ReadInst32_1(pc);
     GateRef pattern = GetObjectFromConstPool(constpool, stringId);
     GateRef flags = ReadInst8_5(pc);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef res = CallRuntime(glue, RTSTUB_ID(CreateRegExpWithLiteral),
                               { pattern, Int8BuildTaggedTypeWithNoGC(flags) });
     Label isException(env);
@@ -4802,7 +4711,6 @@ DECLARE_ASM_HANDLER(HandleToNumberPrefV8)
     }
     Bind(&valueNotNumber);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         GateRef res = CallRuntime(glue, RTSTUB_ID(ToNumber), { value });
         Label isException(env);
         Label notException(env);
@@ -4840,7 +4748,6 @@ DECLARE_ASM_HANDLER(HandleAdd2DynPrefV8)
     // slow path
     Bind(&slowPath);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(Add2Dyn), { left, right });
         Label isException(env);
         Label notException(env);
@@ -4881,7 +4788,6 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     // slow path
     Bind(&slowPath);
     {
-        SetPcToFrame(glue, GetFrame(sp), pc);
         GateRef taggedNumber = CallRuntime(glue, RTSTUB_ID(Sub2Dyn), { left, right });
         Label isException(env);
         Label notException(env);
@@ -5492,7 +5398,6 @@ DECLARE_ASM_HANDLER(HandleLdBigIntPrefId32)
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef stringId = ReadInst32_1(pc);
     GateRef numberBigInt = GetObjectFromConstPool(constpool, stringId);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef res = CallRuntime(glue, RTSTUB_ID(LdBigInt), { numberBigInt });
     Label isException(env);
     Label notException(env);
@@ -5512,7 +5417,6 @@ DECLARE_ASM_HANDLER(HandleNewLexEnvWithNameDynPrefImm16Imm16)
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef numVars = ReadInst16_1(pc);
     GateRef scopeId = ReadInst16_3(pc);
-    SetPcToFrame(glue, GetFrame(sp), pc);
     GateRef res = CallRuntime(glue, RTSTUB_ID(NewLexicalEnvWithNameDyn),
                               { Int16BuildTaggedTypeWithNoGC(numVars), Int16BuildTaggedTypeWithNoGC(scopeId) });
     Label isException(env);

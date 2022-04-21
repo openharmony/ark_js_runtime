@@ -96,6 +96,8 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(InsertOldToNewRememberedSet)             \
     V(MarkingBarrier)                          \
     V(DoubleToInt)                             \
+    V(FloatMod)                                \
+    V(FindElementWithCache)                    \
     V(OptimizedCallRuntime)                    \
     V(OptimizedCallRuntimeWithArgv)            \
     V(JSCall)                                  \
@@ -134,9 +136,7 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(ThrowTypeError)                     \
     V(JSProxySetProperty)                 \
     V(GetHash32)                          \
-    V(FindElementWithCache)               \
     V(StringGetHashCode)                  \
-    V(FloatMod)                           \
     V(GetTaggedArrayPtrTest)              \
     V(NewInternalString)                  \
     V(NewTaggedArray)                     \
@@ -296,7 +296,9 @@ public:
     static JSTaggedType CreateArrayFromList([[maybe_unused]]uintptr_t argGlue, int32_t argc, JSTaggedValue *argv);
     static void InsertOldToNewRememberedSet([[maybe_unused]]uintptr_t argGlue, Region* region, uintptr_t addr);
     static int32_t DoubleToInt(double x);
-
+    static JSTaggedType FloatMod(double x, double y);
+    static int32_t FindElementWithCache(uintptr_t argGlue, JSTaggedType hClass,
+                                        JSTaggedType key, int32_t num);
 private:
     static void PrintHeapReginInfo(uintptr_t argGlue);
 

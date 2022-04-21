@@ -361,6 +361,7 @@ inline GateRef Stub::CallNGCRuntime(GateRef glue, size_t index,
 inline GateRef Stub::CallStub(GateRef glue, size_t index,
     std::initializer_list<GateRef> args)
 {
+    SavePcIfNeeded(glue);
     const CallSignature *descriptor = CommonStubCSigns::Get(index);
     GateRef target = IntPtr(index);
     auto depend = env_.GetCurrentLabel()->GetDepend();
@@ -379,8 +380,22 @@ inline void Stub::FatalPrint(GateRef glue, std::initializer_list<GateRef> args)
     CallNGCRuntime(glue, RTSTUB_ID(FatalPrint), args);
 }
 
+void Stub::SavePcIfNeeded(GateRef glue)
+{
+    if (env_.IsAsmInterp()) {
+        GateRef pc = PtrArgument(1);
+        // 2: bytecode handler 3rd parameter is sp
+        GateRef sp = PtrArgument(2);
+        GateRef frame = IntPtrSub(sp,
+            IntPtr(AsmInterpretedFrame::GetSize(GetEnvironment()->IsArch32Bit())));
+        Store(VariableType::INT64(), glue, frame,
+            IntPtr(AsmInterpretedFrame::GetPcOffset(GetEnvironment()->IsArch32Bit())), pc);
+    }
+}
+
 inline GateRef Stub::CallRuntime(GateRef glue, int index, std::initializer_list<GateRef> args)
 {
+    SavePcIfNeeded(glue);
     auto depend = env_.GetCurrentLabel()->GetDepend();
     GateRef result = env_.GetBuilder().CallRuntimeWithDepend(glue, index, depend, args);
     env_.GetCurrentLabel()->SetDepend(result);
@@ -389,6 +404,7 @@ inline GateRef Stub::CallRuntime(GateRef glue, int index, std::initializer_list<
 
 inline GateRef Stub::CallRuntime(GateRef glue, int index, GateRef argc, GateRef argv)
 {
+    SavePcIfNeeded(glue);
     auto depend = env_.GetCurrentLabel()->GetDepend();
     GateRef target = env_.GetBuilder().Int64(index);
     GateRef result = env_.GetBuilder().CallRuntimeWithDepend(glue, target, depend, argc, argv);

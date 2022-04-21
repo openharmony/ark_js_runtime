@@ -257,7 +257,6 @@ public:
     GateRef CommonCallNative(GateRef glue, GateRef function, Args... args);
     inline GateRef FunctionIsResolved(GateRef object);
     inline GateRef GetObjectFromConstPool(GateRef constpool, GateRef index);
-
 private:
     template<typename... Args>
     void DispatchBase(GateRef bcOffset, const CallSignature *signature, GateRef glue, Args... args);
