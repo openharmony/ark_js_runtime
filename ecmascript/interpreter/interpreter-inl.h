@@ -438,10 +438,14 @@ JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
 
     JSThread *thread = info->GetThread();
     INTERPRETER_TRACE(thread, Execute);
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
     AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
     if (asmInterOpt.enableAsm) {
-        return InterpreterAssembly::Execute(info);
+        auto prevLeaveFrame = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
+        thread->SetLastLeaveFrame(nullptr);  // avoid setting again in NewRuntimeCallInfo()
+        JSTaggedValue asmResult = InterpreterAssembly::Execute(info);
+        thread->SetLastLeaveFrame(prevLeaveFrame);
+        return asmResult;
     }
 #endif
     JSHandle<JSTaggedValue> func = info->GetFunction();
@@ -553,7 +557,7 @@ JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
 JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSHandle<GeneratorContext> context)
 {
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
     AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
     if (asmInterOpt.enableAsm) {
         return InterpreterAssembly::GeneratorReEnterInterpreter(thread, context);
@@ -622,7 +626,7 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
 void EcmaInterpreter::ChangeGenContext(JSThread *thread, JSHandle<GeneratorContext> context)
 {
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
     AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
     if (asmInterOpt.enableAsm) {
         return InterpreterAssembly::ChangeGenContext(thread, context);
@@ -682,7 +686,7 @@ void EcmaInterpreter::ChangeGenContext(JSThread *thread, JSHandle<GeneratorConte
 
 void EcmaInterpreter::ResumeContext(JSThread *thread)
 {
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
     AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
     if (asmInterOpt.enableAsm) {
         return InterpreterAssembly::ResumeContext(thread);
@@ -3736,7 +3740,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
 void EcmaInterpreter::InitStackFrame(JSThread *thread)
 {
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
     AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
     if (asmInterOpt.enableAsm) {
         return InterpreterAssembly::InitStackFrame(thread);
