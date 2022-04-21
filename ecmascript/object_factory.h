@@ -30,7 +30,7 @@
 #include "ecmascript/tagged_array.h"
 
 namespace panda::ecmascript {
-class JSMethod;
+struct JSMethod;
 class JSObject;
 class JSArray;
 class JSAPIPlainArray;
@@ -352,7 +352,6 @@ public:
     // only use for creating Function.prototype and Function
     JSHandle<JSFunction> NewJSFunctionByDynClass(JSMethod *method, const JSHandle<JSHClass> &clazz,
                                                  FunctionKind kind = FunctionKind::NORMAL_FUNCTION);
-    EcmaString *ResolveString(uint32_t stringId);
 
     // used for creating jsobject by constructor
     JSHandle<JSObject> NewJSObjectByConstructor(const JSHandle<JSFunction> &constructor,

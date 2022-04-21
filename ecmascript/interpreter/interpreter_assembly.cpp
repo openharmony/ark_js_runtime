@@ -401,7 +401,7 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
         AsmInterpretedFrame *state = GET_ASM_FRAME(newSp);                                         \
         state->base.prev = sp;                                                                     \
         state->base.type = FrameType::INTERPRETER_FRAME;                                           \
-        pc = JSMethod::Cast(method)->GetBytecodeArray();  /* will be stored in DISPATCH_OFFSET */  \
+        pc = method->GetBytecodeArray();  /* will be stored in DISPATCH_OFFSET */                  \
         sp = newSp;  /* for DISPATCH_OFFSET */                                                     \
         state->function = funcValue;                                                               \
         acc = JSTaggedValue::Hole();  /* will be stored in DISPATCH_OFFSET */                      \
@@ -643,9 +643,7 @@ JSTaggedValue InterpreterAssembly::GeneratorReEnterInterpreter(JSThread *thread,
     state->env = env;
     // execute interpreter
     thread->SetCurrentSPFrame(newSp);
-
     InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
-
     JSTaggedValue res = state->acc;
     // pop frame
     thread->SetCurrentSPFrame(currentSp);
@@ -1029,7 +1027,7 @@ void InterpreterAssembly::HandleReturnDyn(
     LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                             << std::hex << reinterpret_cast<uintptr_t>(state->pc);
     JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
-    [[maybe_unused]] auto fistPC = method->GetInstructions();
+    [[maybe_unused]] auto fistPC = method->GetBytecodeArray();
     UPDATE_HOTNESS_COUNTER(-(pc - fistPC));
     method->SetHotnessCounter(static_cast<uint32_t>(hotnessCounter));
     JSTaggedType *currentSp = sp;
@@ -1086,7 +1084,7 @@ void InterpreterAssembly::HandleReturnUndefinedPref(
     LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                             << std::hex << reinterpret_cast<uintptr_t>(state->pc);
     JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
-    [[maybe_unused]] auto fistPC = method->GetInstructions();
+    [[maybe_unused]] auto fistPC = method->GetBytecodeArray();
     UPDATE_HOTNESS_COUNTER(-(pc - fistPC));
     method->SetHotnessCounter(static_cast<uint32_t>(hotnessCounter));
     JSTaggedType *currentSp = sp;
@@ -2632,7 +2630,7 @@ void InterpreterAssembly::HandleSuspendGeneratorPrefV8V8(
 
     AsmInterpretedFrame *state = GET_ASM_FRAME(sp);
     JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
-    [[maybe_unused]] auto fistPC = method->GetInstructions();
+    [[maybe_unused]] auto fistPC = method->GetBytecodeArray();
     UPDATE_HOTNESS_COUNTER(-(pc - fistPC));
     LOG(DEBUG, INTERPRETER) << "Exit: SuspendGenerator " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                             << std::hex << reinterpret_cast<uintptr_t>(state->pc);
@@ -4143,7 +4141,7 @@ void InterpreterAssembly::HandleOverflow(
 uint32_t InterpreterAssembly::FindCatchBlock(JSMethod *caller, uint32_t pc)
 {
     auto *pandaFile = caller->GetPandaFile();
-    panda_file::MethodDataAccessor mda(*pandaFile, caller->GetFileId());
+    panda_file::MethodDataAccessor mda(*pandaFile, caller->GetMethodId());
     panda_file::CodeDataAccessor cda(*pandaFile, mda.GetCodeId().value());
 
     uint32_t pcOffset = panda_file::INVALID_OFFSET;

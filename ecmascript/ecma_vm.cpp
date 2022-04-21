@@ -334,15 +334,12 @@ EcmaVM::CpuProfilingScope::~CpuProfilingScope()
 
 JSMethod *EcmaVM::GetMethodForNativeFunction(const void *func)
 {
-    // signature: any foo(any function_obj, any this)
-    uint32_t accessFlags = ACC_PUBLIC | ACC_STATIC | ACC_FINAL | ACC_NATIVE;
     uint32_t numArgs = 2;  // function object and this
-
-    auto method = chunk_.New<JSMethod>(nullptr, panda_file::File::EntityId(0), panda_file::File::EntityId(0),
-                                       accessFlags, numArgs);
+    auto method = chunk_.New<JSMethod>(nullptr, panda_file::File::EntityId(0));
     method->SetNativePointer(const_cast<void *>(func));
-    method->SetNativeBit(true);
 
+    method->SetNativeBit(true);
+    method->SetNumArgsWithCallField(numArgs);
     nativeMethods_.push_back(method);
     return nativeMethods_.back();
 }

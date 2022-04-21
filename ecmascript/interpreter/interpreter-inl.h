@@ -706,7 +706,7 @@ void EcmaInterpreter::NotifyBytecodePcChanged(JSThread *thread)
         }
         JSMethod *method = frameHandler.GetMethod();
         // Skip builtins method
-        if (method->IsNative()) {
+        if (method->IsNativeWithCallField()) {
             continue;
         }
         auto bcOffset = frameHandler.GetBytecodeOffset();
@@ -1010,7 +1010,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             InterpretedFrame *state = GET_FRAME(newSp);
             state->base.prev = sp;
             state->base.type = FrameType::INTERPRETER_FRAME;
-            state->pc = pc = JSMethod::Cast(method)->GetBytecodeArray();
+            state->pc = pc = method->GetBytecodeArray();
             state->sp = sp = newSp;
             state->function = JSTaggedValue(funcTagged);
             state->acc = JSTaggedValue::Hole();
@@ -1031,7 +1031,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(state->sp) << " "
                                 << std::hex << reinterpret_cast<uintptr_t>(state->pc);
         JSMethod *method = JSFunction::Cast(state->function.GetTaggedObject())->GetMethod();
-        [[maybe_unused]] auto fistPC = method->GetInstructions();
+        [[maybe_unused]] auto fistPC = method->GetBytecodeArray();
         UPDATE_HOTNESS_COUNTER(-(pc - fistPC));
         JSTaggedType *currentSp = sp;
         sp = state->base.prev;
@@ -1084,7 +1084,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                                 << std::hex << reinterpret_cast<uintptr_t>(state->pc);
         JSMethod *method = JSFunction::Cast(state->function.GetTaggedObject())->GetMethod();
-        [[maybe_unused]] auto fistPC = method->GetInstructions();
+        [[maybe_unused]] auto fistPC = method->GetBytecodeArray();
         UPDATE_HOTNESS_COUNTER_NON_ACC(-(pc - fistPC));
         JSTaggedType *currentSp = sp;
         sp = state->base.prev;
@@ -2377,7 +2377,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
         InterpretedFrame *state = GET_FRAME(sp);
         JSMethod *method = JSFunction::Cast(state->function.GetTaggedObject())->GetMethod();
-        [[maybe_unused]] auto fistPC = method->GetInstructions();
+        [[maybe_unused]] auto fistPC = method->GetBytecodeArray();
         UPDATE_HOTNESS_COUNTER(-(pc - fistPC));
         LOG(DEBUG, INTERPRETER) << "Exit: SuspendGenerator " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                                 << std::hex << reinterpret_cast<uintptr_t>(state->pc);
@@ -3667,7 +3667,7 @@ void EcmaInterpreter::InitStackFrame(JSThread *thread)
 uint32_t EcmaInterpreter::FindCatchBlock(JSMethod *caller, uint32_t pc)
 {
     auto *pandaFile = caller->GetPandaFile();
-    panda_file::MethodDataAccessor mda(*pandaFile, caller->GetFileId());
+    panda_file::MethodDataAccessor mda(*pandaFile, caller->GetMethodId());
     panda_file::CodeDataAccessor cda(*pandaFile, mda.GetCodeId().value());
 
     uint32_t pcOffset = panda_file::INVALID_OFFSET;

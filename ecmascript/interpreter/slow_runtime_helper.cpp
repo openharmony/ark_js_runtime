@@ -77,7 +77,7 @@ JSTaggedValue SlowRuntimeHelper::NewObject(EcmaRuntimeCallInfo *info)
     ASSERT(jsFunc->GetCallTarget() != nullptr);
     ASSERT(JSFunction::Cast(info->GetNewTarget()->GetTaggedObject())->GetCallTarget() != nullptr);
 
-    if (jsFunc->GetCallTarget()->IsNative()) {
+    if (jsFunc->GetCallTarget()->IsNativeWithCallField()) {
         if (jsFunc->IsBuiltinsConstructor()) {
             return EcmaInterpreter::Execute(info);
         }

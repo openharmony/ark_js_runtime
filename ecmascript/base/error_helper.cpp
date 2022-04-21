@@ -198,14 +198,14 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
             continue;
         }
         auto method = frameHandler.GetMethod();
-        if (!method->IsNative()) {
+        if (!method->IsNativeWithCallField()) {
             data.append("    at ");
             data += DecodeFunctionName(method->ParseFunctionName());
             data.append(" (");
             // source file
             tooling::JSPtExtractor *debugExtractor =
                 JSPandaFileManager::GetInstance()->GetJSPtExtractor(method->GetJSPandaFile());
-            const CString &sourceFile = debugExtractor->GetSourceFile(method->GetFileId());
+            const CString &sourceFile = debugExtractor->GetSourceFile(method->GetMethodId());
             if (sourceFile.empty()) {
                 data.push_back('?');
             } else {
@@ -219,7 +219,8 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
                 data += ToCString(column + 1);
                 return true;
             };
-            if (!debugExtractor->MatchWithOffset(callbackFunc, method->GetFileId(), frameHandler.GetBytecodeOffset())) {
+            if (!debugExtractor->MatchWithOffset(callbackFunc, method->GetMethodId(),
+                                                 frameHandler.GetBytecodeOffset())) {
                 data.push_back('?');
             }
             data.push_back(')');
