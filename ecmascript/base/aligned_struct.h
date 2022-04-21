@@ -93,5 +93,15 @@ struct AlignedUint64 {
     static constexpr size_t SizeArch32 = sizeof(uint64_t);
     static constexpr size_t SizeArch64 = sizeof(uint64_t);
 };
+
+struct AlignedUint32 {
+    static constexpr size_t SizeArch32 = sizeof(uint32_t);
+    static constexpr size_t SizeArch64 = sizeof(uint32_t);
+};
+
+struct AlignedUint8 {
+    static constexpr size_t SizeArch32 = sizeof(uint8_t);
+    static constexpr size_t SizeArch64 = sizeof(uint8_t);
+};
 }
 #endif // ECMASCRIPT_BASE_ALIGNED_STRUCT_H

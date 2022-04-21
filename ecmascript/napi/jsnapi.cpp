@@ -1058,7 +1058,7 @@ bool FunctionRef::IsNative(const EcmaVM *vm)
     JSThread *thread = vm->GetJSThread();
     JSHandle<JSFunctionBase> func = JSHandle<JSFunctionBase>(thread, JSNApiHelper::ToJSTaggedValue(this));
     JSMethod *method = func->GetMethod();
-    return method->IsNative();
+    return method->IsNativeWithCallField();
 }
 
 // ----------------------------------- ArrayRef ----------------------------------------

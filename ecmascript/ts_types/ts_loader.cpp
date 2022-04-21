@@ -185,7 +185,7 @@ GlobalTSTypeRef TSLoader::GetGTFromPandaFile(const panda_file::File &pf, uint32_
     JSThread *thread = vm_->GetJSThread();
     ObjectFactory *factory = vm_->GetFactory();
 
-    panda_file::File::EntityId fieldId = method->GetFileId();
+    panda_file::File::EntityId fieldId = method->GetMethodId();
     panda_file::MethodDataAccessor mda(pf, fieldId);
 
     uint32_t localId = 0;

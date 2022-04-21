@@ -2205,16 +2205,6 @@ JSHandle<JSObject> ObjectFactory::NewEmptyJSObject()
     return NewJSObjectByConstructor(JSHandle<JSFunction>(builtinObj), builtinObj);
 }
 
-EcmaString *ObjectFactory::ResolveString(uint32_t stringId)
-{
-    JSMethod *caller = InterpretedFrameHandler(thread_).GetMethod();
-    auto *pf = caller->GetPandaFile();
-    auto id = panda_file::File::EntityId(stringId);
-    auto foundStr = pf->GetStringData(id);
-
-    return GetRawStringFromStringTable(foundStr.data, foundStr.utf16_length, foundStr.is_ascii);
-}
-
 uintptr_t ObjectFactory::NewSpaceBySnapShotAllocator(size_t size)
 {
     NewObjectHook();
