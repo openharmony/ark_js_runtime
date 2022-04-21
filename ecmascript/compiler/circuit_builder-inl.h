@@ -42,7 +42,7 @@ GateRef CircuitBuilder::Load(VariableType type, GateRef base, GateRef offset)
 {
     auto label = GetCurrentLabel();
     auto depend = label->GetDepend();
-    GateRef val = IntPtrAdd(base, offset);
+    GateRef val = PtrAdd(base, offset);
     GateRef result = GetCircuit()->NewGate(OpCode(OpCode::LOAD), type.GetMachineType(),
                                            0, { depend, val }, type.GetGateType());
     label->SetDepend(result);
@@ -265,22 +265,22 @@ GateRef CircuitBuilder::TaggedFalse()
 GateRef CircuitBuilder::GetValueFromTaggedArray(VariableType returnType, GateRef array, GateRef index)
 {
     GateRef offset =
-        ArchMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize()));
-    GateRef dataOffset = IntPtrAdd(offset, IntPtr(TaggedArray::DATA_OFFSET));
+        PtrMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize()));
+    GateRef dataOffset = PtrAdd(offset, IntPtr(TaggedArray::DATA_OFFSET));
     return Load(returnType, array, dataOffset);
 }
 
 void CircuitBuilder::SetValueToTaggedArray(VariableType valType, GateRef glue,
                                            GateRef array, GateRef index, GateRef val)
 {
-    GateRef offset = ArchMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize()));
-    GateRef dataOffset = IntPtrAdd(offset, IntPtr(TaggedArray::DATA_OFFSET));
+    GateRef offset = PtrMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize()));
+    GateRef dataOffset = PtrAdd(offset, IntPtr(TaggedArray::DATA_OFFSET));
     Store(valType, glue, array, dataOffset, val);
 }
 
 GateRef CircuitBuilder::GetGlobalConstantString(ConstantIndex index)
 {
-    return ArchMul(IntPtr(sizeof(JSTaggedValue)), IntPtr(static_cast<int>(index)));
+    return PtrMul(IntPtr(sizeof(JSTaggedValue)), IntPtr(static_cast<int>(index)));
 }
 
 // object operation
@@ -307,7 +307,7 @@ GateRef CircuitBuilder::IsDictionaryModeByHClass(GateRef hClass)
 {
     GateRef bitfieldOffset = Int32(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
-    return NotEqual(Int32And(UInt32LSR(bitfield,
+    return NotEqual(Int32And(Int32LSR(bitfield,
         Int32(JSHClass::IsDictionaryBit::START_BIT)),
         Int32((1LU << JSHClass::IsDictionaryBit::SIZE) - 1)),
         Int32(0));
@@ -317,7 +317,7 @@ GateRef CircuitBuilder::IsDictionaryElement(GateRef hClass)
 {
     GateRef bitfieldOffset = Int32(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
-    return NotEqual(Int32And(UInt32LSR(bitfield,
+    return NotEqual(Int32And(Int32LSR(bitfield,
         Int32(JSHClass::DictionaryElementBits::START_BIT)),
         Int32((1LU << JSHClass::DictionaryElementBits::SIZE) - 1)),
         Int32(0));
@@ -328,7 +328,7 @@ GateRef CircuitBuilder::IsClassConstructor(GateRef object)
     GateRef hClass = LoadHClass(object);
     GateRef bitfieldOffset = Int32(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
-    return NotEqual(Int32And(UInt32LSR(bitfield,
+    return NotEqual(Int32And(Int32LSR(bitfield,
         Int32(JSHClass::ClassConstructorBit::START_BIT)),
         Int32((1LU << JSHClass::ClassConstructorBit::SIZE) - 1)),
         Int32(0));
@@ -339,7 +339,7 @@ GateRef CircuitBuilder::IsClassPrototype(GateRef object)
     GateRef hClass = LoadHClass(object);
     GateRef bitfieldOffset = Int32(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
-    return NotEqual(Int32And(UInt32LSR(bitfield,
+    return NotEqual(Int32And(Int32LSR(bitfield,
         Int32(JSHClass::ClassPrototypeBit::START_BIT)),
         Int32((1LU << JSHClass::ClassPrototypeBit::SIZE) - 1)),
         Int32(0));
@@ -350,7 +350,7 @@ GateRef CircuitBuilder::IsExtensible(GateRef object)
     GateRef hClass = LoadHClass(object);
     GateRef bitfieldOffset = Int32(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
-    return NotEqual(Int32And(UInt32LSR(bitfield,
+    return NotEqual(Int32And(Int32LSR(bitfield,
         Int32(JSHClass::ExtensibleBit::START_BIT)),
         Int32((1LU << JSHClass::ExtensibleBit::SIZE) - 1)),
         Int32(0));
@@ -416,7 +416,7 @@ GateRef CircuitBuilder::IsCallable(GateRef obj)
     GateRef bitfieldOffset = IntPtr(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hclass, bitfieldOffset);
     return NotEqual(
-        Int32And(UInt32LSR(bitfield, Int32(JSHClass::CallableBit::START_BIT)),
+        Int32And(Int32LSR(bitfield, Int32(JSHClass::CallableBit::START_BIT)),
             Int32((1LU << JSHClass::CallableBit::SIZE) - 1)),
         Int32(0));
 }

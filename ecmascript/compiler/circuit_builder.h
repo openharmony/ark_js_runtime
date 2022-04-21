@@ -41,44 +41,36 @@ class Variable;
     V(Int32Add, OpCode::ADD, MachineType::I32)                                    \
     V(Int64Add, OpCode::ADD, MachineType::I64)                                    \
     V(DoubleAdd, OpCode::ADD, MachineType::F64)                                   \
-    V(IntPtrAdd, OpCode::ADD, MachineType::ARCH)                                  \
+    V(PtrAdd, OpCode::ADD, MachineType::ARCH)                                     \
     V(Int16Sub, OpCode::SUB, MachineType::I16)                                    \
     V(Int32Sub, OpCode::SUB, MachineType::I32)                                    \
     V(Int64Sub, OpCode::SUB, MachineType::I64)                                    \
     V(DoubleSub, OpCode::SUB, MachineType::F64)                                   \
-    V(IntPtrSub, OpCode::SUB, MachineType::ARCH)                                  \
+    V(PtrSub, OpCode::SUB, MachineType::ARCH)                                     \
     V(Int32Mul, OpCode::MUL, MachineType::I32)                                    \
     V(Int64Mul, OpCode::MUL, MachineType::I64)                                    \
     V(DoubleMul, OpCode::MUL, MachineType::F64)                                   \
-    V(ArchMul, OpCode::MUL, MachineType::ARCH)                                    \
+    V(PtrMul, OpCode::MUL, MachineType::ARCH)                                     \
     V(Int32Div, OpCode::SDIV, MachineType::I32)                                   \
     V(Int64Div, OpCode::SDIV, MachineType::I64)                                   \
-    V(UInt32Div, OpCode::UDIV, MachineType::I32)                                  \
-    V(UInt64Div, OpCode::UDIV, MachineType::I64)                                  \
     V(DoubleDiv, OpCode::FDIV, MachineType::F64)                                  \
-    V(ArchDiv, OpCode::SDIV, MachineType::ARCH)                                   \
     V(Int32Mod, OpCode::SMOD, MachineType::I32)                                   \
     V(DoubleMod, OpCode::SMOD, MachineType::F64)                                  \
     V(BoolAnd, OpCode::AND, MachineType::I1)                                      \
     V(Int8And, OpCode::AND, MachineType::I8)                                      \
     V(Int32And, OpCode::AND, MachineType::I32)                                    \
     V(Int64And, OpCode::AND, MachineType::I64)                                    \
-    V(ArchAnd, OpCode::AND, MachineType::ARCH)                                    \
     V(BoolOr, OpCode::OR, MachineType::I1)                                        \
     V(Int32Or, OpCode::OR, MachineType::I32)                                      \
     V(Int64Or, OpCode::OR, MachineType::I64)                                      \
-    V(ArchOr, OpCode::OR, MachineType::ARCH)                                      \
     V(Int32Xor, OpCode::XOR, MachineType::I32)                                    \
     V(Int64Xor, OpCode::XOR, MachineType::I64)                                    \
     V(Int16LSL, OpCode::LSL, MachineType::I16)                                    \
     V(Int32LSL, OpCode::LSL, MachineType::I32)                                    \
     V(Int64LSL, OpCode::LSL, MachineType::I64)                                    \
-    V(UInt64LSL, OpCode::LSL, MachineType::I64)                                   \
-    V(ArchLSL, OpCode::LSL, MachineType::ARCH)                                    \
     V(Int8LSR, OpCode::LSR, MachineType::I8)                                      \
-    V(UInt32LSR, OpCode::LSR, MachineType::I32)                                   \
-    V(UInt64LSR, OpCode::LSR, MachineType::I64)                                   \
-    V(ArchLSR, OpCode::LSR, MachineType::ARCH)                                    \
+    V(Int32LSR, OpCode::LSR, MachineType::I32)                                    \
+    V(Int64LSR, OpCode::LSR, MachineType::I64)                                    \
     V(Int32ASR, OpCode::ASR, MachineType::I32)
 
 #define UNARY_ARITHMETIC_METHOD_LIST_WITH_BITWIDTH(V)                             \
@@ -123,18 +115,14 @@ class Variable;
     V(Int32LessThanOrEqual, OpCode::SLE)                                          \
     V(Int32GreaterThan, OpCode::SGT)                                              \
     V(Int32GreaterThanOrEqual, OpCode::SGE)                                       \
-    V(UInt32LessThan, OpCode::ULT)                                                \
-    V(UInt32LessThanOrEqual, OpCode::ULE)                                         \
-    V(UInt32GreaterThan, OpCode::UGT)                                             \
-    V(UInt32GreaterThanOrEqual, OpCode::UGE)                                      \
+    V(Int32UnsignedLessThan, OpCode::ULT)                                         \
+    V(Int32UnsignedGreaterThan, OpCode::UGT)                                      \
+    V(Int32UnsignedGreaterThanOrEqual, OpCode::UGE)                               \
     V(Int64LessThan, OpCode::SLT)                                                 \
     V(Int64LessThanOrEqual, OpCode::SLE)                                          \
     V(Int64GreaterThan, OpCode::SGT)                                              \
     V(Int64GreaterThanOrEqual, OpCode::SGE)                                       \
-    V(UInt64LessThan, OpCode::ULT)                                                \
-    V(UInt64LessThanOrEqual, OpCode::ULE)                                         \
-    V(UInt6464GreaterThan, OpCode::UGT)                                           \
-    V(UInt6464GreaterThanOrEqual, OpCode::UGE)
+    V(Int64UnsignedLessThanOrEqual, OpCode::ULE)
 
 class CompilationConfig {
 public:

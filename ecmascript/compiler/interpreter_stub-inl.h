@@ -23,12 +23,12 @@
 namespace panda::ecmascript::kungfu {
 void InterpreterStub::SetVregValue(GateRef glue, GateRef sp, GateRef idx, GateRef val)
 {
-    Store(VariableType::INT64(), glue, sp, IntPtrMul(IntPtr(sizeof(JSTaggedType)), idx), val);
+    Store(VariableType::INT64(), glue, sp, PtrMul(IntPtr(sizeof(JSTaggedType)), idx), val);
 }
 
 GateRef InterpreterStub::GetVregValue(GateRef sp, GateRef idx)
 {
-    return Load(VariableType::JS_ANY(), sp, IntPtrMul(IntPtr(sizeof(JSTaggedType)), idx));
+    return Load(VariableType::JS_ANY(), sp, PtrMul(IntPtr(sizeof(JSTaggedType)), idx));
 }
 
 GateRef InterpreterStub::ReadInst8_0(GateRef pc)
@@ -173,7 +173,7 @@ GateRef InterpreterStub::ReadInst16_5(GateRef pc)
 
 GateRef InterpreterStub::GetFrame(GateRef CurrentSp)
 {
-    return IntPtrSub(CurrentSp, IntPtr(AsmInterpretedFrame::GetSize(GetEnvironment()->IsArch32Bit())));
+    return PtrSub(CurrentSp, IntPtr(AsmInterpretedFrame::GetSize(GetEnvironment()->IsArch32Bit())));
 }
 
 GateRef InterpreterStub::GetPcFromFrame(GateRef frame)
@@ -231,7 +231,7 @@ GateRef InterpreterStub::GetResumeModeFromGeneratorObject(GateRef obj)
     GateRef bitfieldOffset = IntPtr(JSGeneratorObject::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), obj, bitfieldOffset);
     return Int32And(
-        UInt32LSR(bitfield, Int32(JSGeneratorObject::ResumeModeBits::START_BIT)),
+        Int32LSR(bitfield, Int32(JSGeneratorObject::ResumeModeBits::START_BIT)),
         Int32((1LU << JSGeneratorObject::ResumeModeBits::SIZE) - 1));
 }
 
@@ -370,9 +370,9 @@ void InterpreterStub::DispatchBase(GateRef bcOffset, const CallSignature *signat
 void InterpreterStub::Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool, GateRef profileTypeInfo,
                                GateRef acc, GateRef hotnessCounter, GateRef format)
 {
-    GateRef newPc = IntPtrAdd(pc, format);
+    GateRef newPc = PtrAdd(pc, format);
     GateRef opcode = Load(VariableType::INT8(), newPc);
-    GateRef opcodeOffset = IntPtrMul(ChangeInt32ToIntPtr(ZExtInt8ToInt32(opcode)), IntPtrSize());
+    GateRef opcodeOffset = PtrMul(ChangeInt32ToIntPtr(ZExtInt8ToInt32(opcode)), IntPtrSize());
     const CallSignature *bytecodeHandler = BytecodeStubCSigns::Get(BYTECODE_STUB_BEGIN_ID);
     DispatchBase(opcodeOffset, bytecodeHandler, glue, newPc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
     Return();
@@ -381,7 +381,7 @@ void InterpreterStub::Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef con
 void InterpreterStub::DispatchLast(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
                                    GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter)
 {
-    GateRef opcodeOffset = IntPtrMul(
+    GateRef opcodeOffset = PtrMul(
         IntPtr(BytecodeStubCSigns::ID_ExceptionHandler), IntPtrSize());
     const CallSignature *bytecodeHandler = BytecodeStubCSigns::Get(BYTECODE_STUB_BEGIN_ID);
     DispatchBase(opcodeOffset, bytecodeHandler, glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
@@ -423,7 +423,7 @@ GateRef InterpreterStub::FunctionIsResolved(GateRef object)
     // decode
     return Int32NotEqual(
         Int32And(
-            UInt32LSR(bitfield, Int32(JSFunction::ResolvedBits::START_BIT)),
+            Int32LSR(bitfield, Int32(JSFunction::ResolvedBits::START_BIT)),
             Int32((1LU << JSFunction::ResolvedBits::SIZE) - 1)),
         Int32(0));
 }

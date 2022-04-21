@@ -2554,7 +2554,7 @@ void SlowPathLowering::LowerTypeOfDyn(GateRef gate, GateRef glue)
     Label entry(&builder_);
     Label exit(&builder_);
 
-    GateRef gConstAddr = builder_.IntPtrAdd(glue,
+    GateRef gConstAddr = builder_.PtrAdd(glue,
         builder_.IntPtr(JSThread::GlueData::GetGlobalConstOffset(builder_.GetCompilationConfig()->Is32Bit())));
     GateRef undefinedIndex = builder_.GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX);
     GateRef gConstUndefinedStr = builder_.Load(VariableType::JS_POINTER(), gConstAddr, undefinedIndex);
@@ -2715,8 +2715,8 @@ void SlowPathLowering::LowerGetResumeMode(GateRef gate)
     GateRef bitFieldOffset = builder_.IntPtr(JSGeneratorObject::BIT_FIELD_OFFSET);
     GateRef bitField = builder_.Load(VariableType::INT64(), obj, bitFieldOffset);
     GateRef resumeMode = builder_.Int32And(
-        builder_.UInt32LSR(builder_.TruncInt64ToInt32(bitField),
-                           builder_.Int32(JSGeneratorObject::ResumeModeBits::START_BIT)),
+        builder_.Int32LSR(builder_.TruncInt64ToInt32(bitField),
+                          builder_.Int32(JSGeneratorObject::ResumeModeBits::START_BIT)),
         builder_.Int32((1LU << JSGeneratorObject::ResumeModeBits::SIZE) - 1));
     GateRef result = builder_.TaggedTypeNGC(resumeMode);
     successControl.emplace_back(builder_.GetState());
