@@ -1036,15 +1036,14 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedType *currentSp = sp;
         sp = state->base.prev;
         ASSERT(sp != nullptr);
-
+        InterpretedFrame *prevState = GET_FRAME(sp);
+        pc = prevState->pc;
         // entry frame
-        if (FrameHandler(sp).IsEntryFrame()) {
+        if (FrameHandler::IsEntryFrame(pc)) {
             state->acc = acc;
             return;
         }
 
-        InterpretedFrame *prevState = GET_FRAME(sp);
-        pc = prevState->pc;
         thread->SetCurrentSPFrame(sp);
 
         constpool = ConstantPool::Cast(prevState->constpool.GetTaggedObject());
@@ -1089,15 +1088,14 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedType *currentSp = sp;
         sp = state->base.prev;
         ASSERT(sp != nullptr);
-
+        InterpretedFrame *prevState = GET_FRAME(sp);
+        pc = prevState->pc;
         // entry frame
-        if (FrameHandler(sp).IsEntryFrame()) {
+        if (FrameHandler::IsEntryFrame(pc)) {
             state->acc = JSTaggedValue::Undefined();
             return;
         }
 
-        InterpretedFrame *prevState = GET_FRAME(sp);
-        pc = prevState->pc;
         thread->SetCurrentSPFrame(sp);
 
         constpool = ConstantPool::Cast(prevState->constpool.GetTaggedObject());
@@ -2412,14 +2410,14 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                                 << std::hex << reinterpret_cast<uintptr_t>(state->pc);
         sp = state->base.prev;
         ASSERT(sp != nullptr);
+        InterpretedFrame *prevState = GET_FRAME(sp);
+        pc = prevState->pc;
         // entry frame
-        if (FrameHandler(sp).IsEntryFrame()) {
+        if (FrameHandler::IsEntryFrame(pc)) {
             state->acc = acc;
             return;
         }
 
-        InterpretedFrame *prevState = GET_FRAME(sp);
-        pc = prevState->pc;
         thread->SetCurrentSPFrame(sp);
         constpool = ConstantPool::Cast(prevState->constpool.GetTaggedObject());
 

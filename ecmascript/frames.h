@@ -355,22 +355,22 @@ STATIC_ASSERT_EQ_ARCH(sizeof(InterpretedFrameBase), InterpretedFrameBase::SizeAr
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct InterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
+                                                     JSTaggedValue,
+                                                     JSTaggedValue,
+                                                     JSTaggedValue,
+                                                     JSTaggedValue,
+                                                     JSTaggedValue,
                                                      base::AlignedPointer,
                                                      base::AlignedPointer,
-                                                     JSTaggedValue,
-                                                     JSTaggedValue,
-                                                     JSTaggedValue,
-                                                     JSTaggedValue,
-                                                     JSTaggedValue,
                                                      InterpretedFrameBase> {
     enum class Index : size_t {
-        PcIndex = 0,
-        SpIndex,
-        ConstPoolIndex,
+        ConstPoolIndex = 0,
         FunctionIndex,
         ProFileTypeInfoIndex,
         AccIndex,
         EnvIndex,
+        SpIndex,
+        PcIndex,
         BaseIndex,
         NumOfMembers
     };
@@ -386,17 +386,16 @@ struct InterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSi
         return reinterpret_cast<InterpretedFrame *>(sp) - 1;
     }
 
-    alignas(EAS) const uint8_t *pc {nullptr};
-    alignas(EAS) JSTaggedType *sp {nullptr};
     alignas(EAS) JSTaggedValue constpool {JSTaggedValue::Hole()};
     alignas(EAS) JSTaggedValue function {JSTaggedValue::Hole()};
     alignas(EAS) JSTaggedValue profileTypeInfo {JSTaggedValue::Hole()};
     alignas(EAS) JSTaggedValue acc {JSTaggedValue::Hole()};
     alignas(EAS) JSTaggedValue env {JSTaggedValue::Hole()};
+    alignas(EAS) JSTaggedType *sp {nullptr};
+    alignas(EAS) const uint8_t *pc {nullptr};
     alignas(EAS) InterpretedFrameBase base;
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(InterpretedFrame), InterpretedFrame::SizeArch32, InterpretedFrame::SizeArch64);
-static_assert(sizeof(InterpretedFrame) % sizeof(uint64_t) == 0u);  // the size should be the multiple of 8 bytes
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
@@ -471,14 +470,18 @@ struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTyp
     alignas(EAS) InterpretedFrameBase base;
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(AsmInterpretedFrame), AsmInterpretedFrame::SizeArch32, AsmInterpretedFrame::SizeArch64);
-static_assert(sizeof(AsmInterpretedFrame) % sizeof(uint64_t) == 0u);  // the size should be the multiple of 8 bytes
 
-class InterpretedEntryFrame {
-public:
-    InterpretedEntryFrame() = default;
-    ~InterpretedEntryFrame() = default;
-    const uint8_t *pc {nullptr};
-    InterpretedFrameBase base;
+
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+struct InterpretedEntryFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
+                                                          base::AlignedPointer,
+                                                          InterpretedFrameBase> {
+    enum class Index : size_t {
+        PcIndex = 0,
+        BaseIndex,
+        NumOfMembers
+    };
+    static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
 
     inline JSTaggedType* GetPrevFrameFp()
     {
@@ -489,7 +492,13 @@ public:
     {
         return reinterpret_cast<InterpretedEntryFrame *>(sp) - 1;
     }
+
+    alignas(EAS) const uint8_t *pc {nullptr};
+    alignas(EAS) InterpretedFrameBase base;
 };
+STATIC_ASSERT_EQ_ARCH(sizeof(InterpretedEntryFrame),
+                      InterpretedEntryFrame::SizeArch32,
+                      InterpretedEntryFrame::SizeArch64);
 
 struct OptimizedLeaveFrame {
     FrameType type;
