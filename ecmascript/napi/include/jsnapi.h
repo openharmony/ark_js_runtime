@@ -935,12 +935,16 @@ public:
     static void* SerializeValue(const EcmaVM *vm, Local<JSValueRef> data, Local<JSValueRef> transfer);
     static Local<JSValueRef> DeserializeValue(const EcmaVM *vm, void* recoder);
     static void DeleteSerializationData(void *data);
-    static void SetOptions(const ecmascript::JSRuntimeOptions &options);
     static void SetHostPromiseRejectionTracker(EcmaVM *vm, void *cb, void* data);
     static void SetHostEnqueueJob(const EcmaVM* vm, Local<JSValueRef> cb);
-
+    static void InitializeMemPoolManage(const ecmascript::JSRuntimeOptions &options);
+    static void DestroyMemPoolManage();
+    static bool IsArkJavaApp();
+    static EcmaVM* CreateEcmaVM(const ecmascript::JSRuntimeOptions &options);
+    static bool debugMode;
 private:
     static int vmCount;
+    static bool initialize;
     static bool CreateRuntime(const RuntimeOption &option);
     static bool DestroyRuntime();
 

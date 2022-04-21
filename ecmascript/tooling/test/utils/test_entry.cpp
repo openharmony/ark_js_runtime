@@ -27,7 +27,7 @@ static std::unique_ptr<TestHooks> g_hooks = nullptr;
 int StartDebuggerImpl()
 {
     const char *testName = GetCurrentTestName();
-    EcmaVM *vm = EcmaVM::Cast(Runtime::GetCurrent()->GetPandaVM());
+    EcmaVM *vm = EcmaVM::Cast(Runtime::GetCurrent()->GetPandaVM())
     g_hooks = std::make_unique<TestHooks>(testName, vm);
     g_debuggerThread = std::thread([] {
         TestUtil::WaitForInit();

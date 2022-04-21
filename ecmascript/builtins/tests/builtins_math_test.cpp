@@ -41,11 +41,11 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance_, scope_);
     }
 
-    static PandaVM *instance_;
+    static EcmaVM *instance_;
     static EcmaHandleScope *scope_;
     static JSThread *thread_;
 };
-PandaVM *BuiltinsMathTest::instance_ = nullptr;
+EcmaVM *BuiltinsMathTest::instance_ = nullptr;
 EcmaHandleScope *BuiltinsMathTest::scope_ = nullptr;
 JSThread *BuiltinsMathTest::thread_ = nullptr;
 

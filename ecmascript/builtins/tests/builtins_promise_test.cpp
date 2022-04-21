@@ -57,7 +57,7 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
-    PandaVM *instance {nullptr};
+    EcmaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
 };
@@ -128,7 +128,7 @@ JSTaggedValue TestPromiseThenOnRejected(EcmaRuntimeCallInfo *argv)
  */
 HWTEST_F_L0(BuiltinsPromiseTest, Reject1)
 {
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> promise = JSHandle<JSFunction>::Cast(env->GetPromiseFunction());
     JSHandle<JSTaggedValue> paramMsg(thread, JSTaggedValue(3));
@@ -155,8 +155,8 @@ HWTEST_F_L0(BuiltinsPromiseTest, Reject1)
  */
 HWTEST_F_L0(BuiltinsPromiseTest, Reject2)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     // constructor promise1
     JSHandle<JSFunction> promise = JSHandle<JSFunction>::Cast(env->GetPromiseFunction());
@@ -202,7 +202,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, Reject2)
  */
 HWTEST_F_L0(BuiltinsPromiseTest, Resolve1)
 {
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> promise = JSHandle<JSFunction>::Cast(env->GetPromiseFunction());
     JSHandle<JSTaggedValue> paramMsg(thread, JSTaggedValue(5));
@@ -229,8 +229,8 @@ HWTEST_F_L0(BuiltinsPromiseTest, Resolve1)
  */
 HWTEST_F_L0(BuiltinsPromiseTest, Resolve2)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     // constructor promise1
     JSHandle<JSFunction> promise = JSHandle<JSFunction>::Cast(env->GetPromiseFunction());
@@ -275,7 +275,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, Resolve2)
  */
 HWTEST_F_L0(BuiltinsPromiseTest, Race1)
 {
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> promise = JSHandle<JSFunction>::Cast(env->GetPromiseFunction());
     JSHandle<JSTaggedValue> paramMsg1(thread, JSTaggedValue(12345));
@@ -342,8 +342,8 @@ HWTEST_F_L0(BuiltinsPromiseTest, Race1)
  */
 HWTEST_F_L0(BuiltinsPromiseTest, Race2)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> promise = JSHandle<JSFunction>::Cast(env->GetPromiseFunction());
     JSHandle<JSTaggedValue> paramMsg1(thread, JSTaggedValue(12345));
@@ -422,7 +422,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, Race2)
     /**
      * @tc.steps: step6. execute promise queue
      */
-    auto microJobQueue = EcmaVM::Cast(instance)->GetMicroJobQueue();
+    auto microJobQueue = instance->GetMicroJobQueue();
     if (!thread->HasPendingException()) {
         job::MicroJobQueue::ExecutePendingJob(thread, microJobQueue);
     }
@@ -436,8 +436,8 @@ HWTEST_F_L0(BuiltinsPromiseTest, Race2)
  */
 HWTEST_F_L0(BuiltinsPromiseTest, All)
 {
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+    ObjectFactory *factory = instance->GetFactory();
+    JSHandle<GlobalEnv> env = instance->GetGlobalEnv();
 
     JSHandle<JSFunction> promise = JSHandle<JSFunction>::Cast(env->GetPromiseFunction());
     JSHandle<JSTaggedValue> paramMsg1(thread, JSTaggedValue(111));
@@ -516,7 +516,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, All)
     /**
      * @tc.steps: step6. execute promise queue
      */
-    auto microJobQueue = EcmaVM::Cast(instance)->GetMicroJobQueue();
+    auto microJobQueue = instance->GetMicroJobQueue();
     if (!thread->HasPendingException()) {
         job::MicroJobQueue::ExecutePendingJob(thread, microJobQueue);
     }
@@ -529,8 +529,8 @@ HWTEST_F_L0(BuiltinsPromiseTest, All)
  */
 HWTEST_F_L0(BuiltinsPromiseTest, Catch)
 {
-    auto env = EcmaVM::Cast(instance)->GetGlobalEnv();
-    auto factory = EcmaVM::Cast(instance)->GetFactory();
+    auto env = instance->GetGlobalEnv();
+    auto factory = instance->GetFactory();
 
     JSHandle<JSFunction> promise = JSHandle<JSFunction>::Cast(env->GetPromiseFunction());
     JSHandle<JSTaggedValue> paramMsg1(thread, JSTaggedValue(3));
@@ -568,7 +568,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, Catch)
     /**
      * @tc.steps: step3. execute promise queue
      */
-    auto microJobQueue = EcmaVM::Cast(instance)->GetMicroJobQueue();
+    auto microJobQueue = instance->GetMicroJobQueue();
     if (!thread->HasPendingException()) {
         job::MicroJobQueue::ExecutePendingJob(thread, microJobQueue);
     }
@@ -581,8 +581,8 @@ HWTEST_F_L0(BuiltinsPromiseTest, Catch)
  */
 HWTEST_F_L0(BuiltinsPromiseTest, ThenResolve)
 {
-    auto env = EcmaVM::Cast(instance)->GetGlobalEnv();
-    auto factory = EcmaVM::Cast(instance)->GetFactory();
+    auto env = instance->GetGlobalEnv();
+    auto factory = instance->GetFactory();
 
     JSHandle<JSFunction> promise = JSHandle<JSFunction>::Cast(env->GetPromiseFunction());
     JSHandle<JSTaggedValue> paramMsg = JSHandle<JSTaggedValue>::Cast(factory->NewFromASCII("resolve"));
@@ -622,7 +622,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, ThenResolve)
     /**
      * @tc.steps: step3.  execute promise queue
      */
-    auto microJobQueue = EcmaVM::Cast(instance)->GetMicroJobQueue();
+    auto microJobQueue = instance->GetMicroJobQueue();
     if (!thread->HasPendingException()) {
         job::MicroJobQueue::ExecutePendingJob(thread, microJobQueue);
     }
@@ -635,8 +635,8 @@ HWTEST_F_L0(BuiltinsPromiseTest, ThenResolve)
  */
 HWTEST_F_L0(BuiltinsPromiseTest, ThenReject)
 {
-    auto env = EcmaVM::Cast(instance)->GetGlobalEnv();
-    auto factory = EcmaVM::Cast(instance)->GetFactory();
+    auto env = instance->GetGlobalEnv();
+    auto factory = instance->GetFactory();
 
     JSHandle<JSFunction> promise = JSHandle<JSFunction>::Cast(env->GetPromiseFunction());
     JSHandle<JSTaggedValue> paramMsg = JSHandle<JSTaggedValue>::Cast(factory->NewFromASCII("reject"));
@@ -675,7 +675,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, ThenReject)
     /**
      * @tc.steps: step3.  execute promise queue
      */
-    auto microJobQueue = EcmaVM::Cast(instance)->GetMicroJobQueue();
+    auto microJobQueue = instance->GetMicroJobQueue();
     if (!thread->HasPendingException()) {
         job::MicroJobQueue::ExecutePendingJob(thread, microJobQueue);
     }

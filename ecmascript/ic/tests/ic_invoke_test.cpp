@@ -13,11 +13,8 @@
  * limitations under the License.
  */
 
-#include <thread>
-
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/ic/invoke_cache.h"
-#include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tests/test_helper.h"
 
@@ -37,16 +34,14 @@ public:
 
     void SetUp() override
     {
-        TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
-        ecmaVm = EcmaVM::Cast(instance);
+        TestHelper::CreateEcmaVMWithScope(ecmaVm, thread, scope);
     }
 
     void TearDown() override
     {
-        TestHelper::DestroyEcmaVMWithScope(instance, scope);
+        TestHelper::DestroyEcmaVMWithScope(ecmaVm, scope);
     }
 
-    PandaVM *instance {nullptr};
     EcmaVM *ecmaVm = nullptr;
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};

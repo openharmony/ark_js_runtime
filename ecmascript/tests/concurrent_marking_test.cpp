@@ -38,20 +38,12 @@ public:
 
     void SetUp() override
     {
-        RuntimeOptions options;
-        options.SetShouldLoadBootPandaFiles(false);
-        options.SetShouldInitializeIntrinsics(false);
-        options.SetBootClassSpaces({"ecmascript"});
-        options.SetRuntimeType("ecmascript");
-        options.SetPreGcHeapVerifyEnabled(true);
-        static EcmaLanguageContext lcEcma;
-        [[maybe_unused]] bool success = Runtime::Create(options, {&lcEcma});
-        ASSERT_TRUE(success) << "Cannot create Runtime";
-        instance = Runtime::GetCurrent()->GetPandaVM();
+        JSRuntimeOptions options;
+        instance = JSNApi::CreateEcmaVM(options);
         ASSERT_TRUE(instance != nullptr) << "Cannot create EcmaVM";
-        thread = EcmaVM::Cast(instance)->GetJSThread();
+        thread = instance->GetJSThread();
         scope = new EcmaHandleScope(thread);
-        EcmaVM::Cast(instance)->SetEnableForceGC(false);
+        instance->SetEnableForceGC(false);
         auto heap = const_cast<Heap *>(thread->GetEcmaVM()->GetHeap());
         heap->SetConcurrentMarkingEnable(true);
     }
@@ -67,7 +59,7 @@ public:
         return factory->NewTaggedArray(length, initVal, spaceType);
     }
 
-    PandaVM *instance {nullptr};
+    EcmaVM *instance {nullptr};
     ecmascript::EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
 };

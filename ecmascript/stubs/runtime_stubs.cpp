@@ -1033,7 +1033,7 @@ DEF_RUNTIME_STUBS(ThrowTypeError)
     RUNTIME_STUBS_HEADER(ThrowTypeError);
     CONVERT_ARG_TAGGED_CHECKED(argMessageStringId, 0);
     std::string message = MessageString::GetMessageString(argMessageStringId.GetInt());
-    ObjectFactory *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR, message.c_str());
     THROW_NEW_ERROR_AND_RETURN_VALUE(thread, error.GetTaggedValue(), JSTaggedValue::Hole().GetRawData());
 }
