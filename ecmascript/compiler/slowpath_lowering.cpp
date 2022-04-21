@@ -689,7 +689,7 @@ void SlowPathLowering::LowerLexicalEnv(GateRef gate, GateRef glue)
 void SlowPathLowering::LowerTryLdGlobalByName(GateRef gate, GateRef glue)
 {
     DEFVAlUE(result, (&builder_), VariableType::JS_ANY(), acc_.GetValueIn(gate, 0));
-    GateRef stringId = acc_.GetValueIn(gate, 0);
+    GateRef stringId = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0)));
     GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), { stringId }, true);
     GateRef recordResult = builder_.CallRuntime(glue, RTSTUB_ID(LdGlobalRecord), {prop}, true);
     Label isFound(&builder_);
@@ -1298,7 +1298,7 @@ void SlowPathLowering::LowerStModuleVar(GateRef gate, GateRef glue)
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
-        { acc_.GetValueIn(gate, 0) }, true);
+        { builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0))) }, true);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(StModuleVar), { prop, acc_.GetValueIn(gate, 1) }, true);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());
@@ -1352,7 +1352,7 @@ void SlowPathLowering::LowerLdModuleVar(GateRef gate, GateRef glue)
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef key = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
-        { acc_.GetValueIn(gate, 0) }, true);
+        { builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0))) }, true);
     GateRef inner = builder_.TaggedTypeNGC(acc_.GetValueIn(gate, 1));
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(LdModuleVar), {key, inner}, true);
     successControl.emplace_back(builder_.GetState());
@@ -1370,7 +1370,7 @@ void SlowPathLowering::LowerGetModuleNamespace(GateRef gate, GateRef glue)
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
     GateRef localName = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
-        { acc_.GetValueIn(gate, 0) }, true);
+        { builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0))) }, true);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(GetModuleNamespace), {localName}, true);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());
@@ -1670,7 +1670,7 @@ void SlowPathLowering::LowerStOwnByName(GateRef gate, GateRef glue)
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
     GateRef propKey = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
-        { acc_.GetValueIn(gate, 0) }, true);
+        { builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0))) }, true);
     GateRef receiver = acc_.GetValueIn(gate, 1);
     GateRef accValue = acc_.GetValueIn(gate, 2);
     // we do not need to merge outValueGate, so using GateRef directly instead of using Variable
@@ -1940,7 +1940,7 @@ void SlowPathLowering::LowerStLetToGlobalRecord(GateRef gate, GateRef glue)
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
-        { acc_.GetValueIn(gate, 0) }, true);
+        { builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0))) }, true);
     GateRef falseConst = builder_.Boolean(false);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(StGlobalRecord),
         {prop,  acc_.GetValueIn(gate, 1), falseConst}, true);
@@ -1957,7 +1957,7 @@ void SlowPathLowering::LowerStClassToGlobalRecord(GateRef gate, GateRef glue)
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
-        { acc_.GetValueIn(gate, 0) }, true);
+        { builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0))) }, true);
     GateRef falseConst = builder_.Boolean(false);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(StGlobalRecord),
         {prop,  acc_.GetValueIn(gate, 1), falseConst}, true);
@@ -2024,7 +2024,7 @@ void SlowPathLowering::LowerStOwnByNameWithNameSet(GateRef gate, GateRef glue)
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
     GateRef propKey = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
-        { acc_.GetValueIn(gate, 0) }, true);
+        { builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0))) }, true);
     GateRef receiver = acc_.GetValueIn(gate, 1);
     GateRef accValue = acc_.GetValueIn(gate, 2);
     GateRef result;
@@ -2087,7 +2087,7 @@ void SlowPathLowering::LowerLdObjByName(GateRef gate, GateRef glue)
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
-        { acc_.GetValueIn(gate, 0) }, true);
+        { builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0))) }, true);
     GateRef undefined = builder_.Int64(JSTaggedValue::VALUE_UNDEFINED);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(LoadICByName), {undefined,
         acc_.GetValueIn(gate, 1), prop, builder_.TaggedTypeNGC(undefined)}, true);
@@ -2104,7 +2104,7 @@ void SlowPathLowering::LowerStObjByName(GateRef gate, GateRef glue)
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
     GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
-        { acc_.GetValueIn(gate, 0) }, true);
+        { builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0))) }, true);
     GateRef undefined = builder_.Int64(JSTaggedValue::VALUE_UNDEFINED);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(StoreICByName), {undefined,
         acc_.GetValueIn(gate, 1), prop, acc_.GetValueIn(gate, 2), builder_.TaggedTypeNGC(undefined)}, true);
@@ -2300,7 +2300,7 @@ void SlowPathLowering::LowerLdSuperByName(GateRef gate, GateRef glue)
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
-        { acc_.GetValueIn(gate, 0) }, true);
+        { builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0))) }, true);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(LdSuperByValue), {prop, acc_.GetValueIn(gate, 1)}, true);
     builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
         &exceptionExit, &successExit);
@@ -2315,7 +2315,7 @@ void SlowPathLowering::LowerStSuperByName(GateRef gate, GateRef glue)
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
     GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
-        { acc_.GetValueIn(gate, 0) }, true);
+        { builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0))) }, true);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(StSuperByValue), {prop, acc_.GetValueIn(gate, 1),
         acc_.GetValueIn(gate, 2)}, true);
     builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
