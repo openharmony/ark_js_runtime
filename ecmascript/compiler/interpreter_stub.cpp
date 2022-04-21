@@ -341,7 +341,7 @@ DECLARE_ASM_HANDLER(HandleNewObjDynRangePrefImm16V8)
     GateRef firstArgRegIdx = ZExtInt8ToInt16(ReadInst8_3(pc));
     GateRef firstArgOffset = Int16(2);
     GateRef func = GetVregValue(sp, ZExtInt16ToPtr(firstArgRegIdx));
-    GateRef newTarget = GetVregValue(sp, IntPtrAdd(ZExtInt16ToPtr(firstArgRegIdx), IntPtr(1)));
+    GateRef newTarget = GetVregValue(sp, PtrAdd(ZExtInt16ToPtr(firstArgRegIdx), IntPtr(1)));
     GateRef firstArgIdx = Int16Add(firstArgRegIdx, firstArgOffset);
     GateRef length = Int16Sub(numArgs, firstArgOffset);
     GateRef res = CallRuntime(glue, RTSTUB_ID(NewObjDynRange),
@@ -3360,8 +3360,8 @@ DECLARE_ASM_HANDLER(HandleShr2DynPrefV8)
     Bind(&doShr);
     {
         GateRef shift = Int32And(*opNumber1, Int32(0x1f));
-        GateRef ret = UInt32LSR(*opNumber0, shift);
-        auto condition = UInt32GreaterThan(ret, Int32(INT32_MAX));
+        GateRef ret = Int32LSR(*opNumber0, shift);
+        auto condition = Int32UnsignedGreaterThan(ret, Int32(INT32_MAX));
         Branch(condition, &overflow, &notOverflow);
         Bind(&overflow);
         {
@@ -4102,7 +4102,7 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
             IntPtr(JSFunctionBase::METHOD_OFFSET));
         GateRef fistPC = Load(VariableType::NATIVE_POINTER(), method,
             IntPtr(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
-        GateRef offset = Int32Not(TruncPtrToInt32(IntPtrSub(*varPc, fistPC)));
+        GateRef offset = Int32Not(TruncPtrToInt32(PtrSub(*varPc, fistPC)));
         UPDATE_HOTNESS(*varSp);
         Store(VariableType::INT32(), glue, method,
               IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())), *varHotnessCounter);
@@ -4171,7 +4171,7 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
             IntPtr(JSFunctionBase::METHOD_OFFSET));
         GateRef fistPC = Load(VariableType::NATIVE_POINTER(), method,
             IntPtr(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
-        GateRef offset = Int32Not(TruncPtrToInt32(IntPtrSub(*varPc, fistPC)));
+        GateRef offset = Int32Not(TruncPtrToInt32(PtrSub(*varPc, fistPC)));
         UPDATE_HOTNESS(*varSp);
         Store(VariableType::INT32(), glue, method,
               IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())), *varHotnessCounter);
@@ -4253,7 +4253,7 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
             IntPtr(JSFunctionBase::METHOD_OFFSET));
         GateRef fistPC = Load(VariableType::NATIVE_POINTER(), method,
             IntPtr(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
-        GateRef offset = Int32Not(TruncPtrToInt32(IntPtrSub(*varPc, fistPC)));
+        GateRef offset = Int32Not(TruncPtrToInt32(PtrSub(*varPc, fistPC)));
         UPDATE_HOTNESS(*varSp);
         Store(VariableType::INT32(), glue, method,
               IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())), *varHotnessCounter);
@@ -4876,7 +4876,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Bind(&methodNotNative);                                                                                   \
     GateRef numArgsOffset = Int64(JSMethod::NumArgsBits::START_BIT);                                          \
     GateRef numArgsMask = Int64((static_cast<uint64_t>(1) << JSMethod::NumArgsBits::SIZE) - 1);               \
-    GateRef declaredNumArgs = ChangeInt64ToInt32(Int64And(UInt64LSR(callField, numArgsOffset), numArgsMask)); \
+    GateRef declaredNumArgs = ChangeInt64ToInt32(Int64And(Int64LSR(callField, numArgsOffset), numArgsMask));  \
     Label fastPath(env);                                                                                      \
     Label slowPath(env);                                                                                      \
     Label setVregsAndFrameNotNative(env);                                                                     \
@@ -4918,7 +4918,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Branch(callThis, &pushThis, &pushThisUndefined);                                              \
     Bind(&pushThis);                                                                              \
     {                                                                                             \
-        GateRef thisValue = GetVregValue(sp, IntPtrAdd(ZExtInt8ToPtr(funcReg), IntPtr(1)));       \
+        GateRef thisValue = GetVregValue(sp, PtrAdd(ZExtInt8ToPtr(funcReg), IntPtr(1)));          \
         Store(VariableType::INT64(), glue, *newSp, IntPtr(0), thisValue);                         \
         Jump(&pushNewTarget);                                                                     \
     }                                                                                             \
@@ -4940,7 +4940,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     GateRef frameBase = Load(VariableType::NATIVE_POINTER(), glue, frameBaseOffset);              \
     Label stackOverflow(env);                                                                     \
     Label stackNotOverflow(env);                                                                  \
-    Branch(UInt64LessThanOrEqual(*newSp, IntPtrAdd(frameBase,                                     \
+    Branch(Int64UnsignedLessThanOrEqual(*newSp, PtrAdd(frameBase,                                 \
         /* 2: double size in case */                                                              \
         IntPtr(JSThread::RESERVE_STACK_SIZE * sizeof(JSTaggedType) * 2))),                        \
         &stackOverflow, &stackNotOverflow);                                                       \
@@ -4953,7 +4953,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     GateRef state = GetFrame(*newSp);                                                             \
     GateRef prevOffset = IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit()));          \
     Store(VariableType::NATIVE_POINTER(), glue, state, prevOffset, sp);                           \
-    GateRef frameTypeOffset = IntPtrAdd(prevOffset, IntPtrSize());                                \
+    GateRef frameTypeOffset = PtrAdd(prevOffset, IntPtrSize());                                   \
     Store(VariableType::INT64(), glue, state, frameTypeOffset,                                    \
           Int64(static_cast<uint64_t>(FrameType::INTERPRETER_FRAME)));                            \
     SetPcToFrame(glue, state, IntPtr(0));                                                         \
@@ -5003,7 +5003,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
             Branch(callThis, &pushThis, &pushThisUndefined);                                                    \
             Bind(&pushThis);                                                                                    \
             {                                                                                                   \
-                GateRef thisValue = GetVregValue(sp, IntPtrAdd(ZExtInt8ToPtr(funcReg), IntPtr(1)));             \
+                GateRef thisValue = GetVregValue(sp, PtrAdd(ZExtInt8ToPtr(funcReg), IntPtr(1)));                \
                 Store(VariableType::INT64(), glue, *newSp, IntPtr(0), thisValue);                               \
                 Jump(&methodNoThis);                                                                            \
             }                                                                                                   \
@@ -5046,14 +5046,14 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     {                                                                                                           \
         GateRef numVregsOffset = Int64(JSMethod::NumVregsBits::START_BIT);                                      \
         GateRef numVregsMask = Int64((static_cast<uint64_t>(1) << JSMethod::NumVregsBits::SIZE) - 1);           \
-        GateRef numVregs = ChangeInt64ToInt32(Int64And(UInt64LSR(callField, numVregsOffset), numVregsMask));    \
+        GateRef numVregs = ChangeInt64ToInt32(Int64And(Int64LSR(callField, numVregsOffset), numVregsMask));     \
         CALL_PUSH_UNDEFINED(numVregs);                                                                          \
         /* thread->DoStackOverflowCheck(newSp) */                                                               \
         GateRef frameBaseOffset = IntPtr(JSThread::GlueData::GetFrameBaseOffset(env->IsArch32Bit()));           \
         GateRef frameBase = Load(VariableType::NATIVE_POINTER(), glue, frameBaseOffset);                        \
         Label stackOverflow(env);                                                                               \
         Label stackNotOverflow(env);                                                                            \
-        Branch(UInt64LessThanOrEqual(*newSp, IntPtrAdd(frameBase,                                               \
+        Branch(Int64UnsignedLessThanOrEqual(*newSp, PtrAdd(frameBase,                                               \
             /* 2: double size in case */                                                                        \
             IntPtr(JSThread::RESERVE_STACK_SIZE * sizeof(JSTaggedType) * 2))),                                  \
             &stackOverflow, &stackNotOverflow);                                                                 \
@@ -5068,7 +5068,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
         GateRef state = GetFrame(*newSp);                                                                       \
         GateRef prevOffset = IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit()));                    \
         Store(VariableType::NATIVE_POINTER(), glue, state, prevOffset, sp);                                     \
-        GateRef frameTypeOffset = IntPtrAdd(prevOffset, IntPtr(                                                 \
+        GateRef frameTypeOffset = PtrAdd(prevOffset, IntPtr(                                                    \
             env->IsArch32Bit() ? InterpretedFrameBase::TYPE_OFFSET_32 : InterpretedFrameBase::TYPE_OFFSET_64)); \
         Store(VariableType::INT64(), glue, state, frameTypeOffset,                                              \
               Int64(static_cast<uint64_t>(FrameType::INTERPRETER_FRAME)));                                      \
@@ -5183,7 +5183,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
         Label pushArgsAgain(env);                                                                      \
         Branch(Int32GreaterThan(*i, Int32(1)), &pushArgs, &pushArgsEnd);                               \
         LoopBegin(&pushArgs);                                                                          \
-        GateRef aValue = GetVregValue(sp, IntPtrAdd(ZExtInt8ToPtr(funcReg), ChangeInt32ToIntPtr(*i))); \
+        GateRef aValue = GetVregValue(sp, PtrAdd(ZExtInt8ToPtr(funcReg), ChangeInt32ToIntPtr(*i)));    \
         newSp = PointerSub(*newSp, IntPtr(sizeof(JSTaggedType)));                                      \
         Store(VariableType::INT64(), glue, *newSp, IntPtr(0), aValue);                                 \
         i = Int32Sub(*i, Int32(1));                                                                    \
@@ -5197,7 +5197,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
         Label pushArgsAgain(env);                                                                      \
         Branch(Int32GreaterThan(*i, Int32(0)), &pushArgs, &pushArgsEnd);                               \
         LoopBegin(&pushArgs);                                                                          \
-        GateRef aValue = GetVregValue(sp, IntPtrAdd(ZExtInt8ToPtr(funcReg), ChangeInt32ToIntPtr(*i))); \
+        GateRef aValue = GetVregValue(sp, PtrAdd(ZExtInt8ToPtr(funcReg), ChangeInt32ToIntPtr(*i)));    \
         newSp = PointerSub(*newSp, IntPtr(sizeof(JSTaggedType)));                                      \
         Store(VariableType::INT64(), glue, *newSp, IntPtr(0), aValue);                                 \
         i = Int32Sub(*i, Int32(1));                                                                    \
@@ -5248,7 +5248,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Bind(&methodNotNative);                                                                                           \
     GateRef numArgsOffset = Int64(JSMethod::NumArgsBits::START_BIT);                                                  \
     GateRef numArgsMask = Int64((static_cast<uint64_t>(1) << JSMethod::NumArgsBits::SIZE) - 1);                       \
-    GateRef declaredNumArgs = ChangeInt64ToInt32(Int64And(UInt64LSR(callField, numArgsOffset), numArgsMask));         \
+    GateRef declaredNumArgs = ChangeInt64ToInt32(Int64And(Int64LSR(callField, numArgsOffset), numArgsMask));          \
     Label fastPath(env);                                                                                              \
     Label slowPath(env);
 
@@ -5362,8 +5362,8 @@ DECLARE_ASM_HANDLER(HandleCallIRangeDynPrefImm16V8)
     GateRef funcReg = ReadInst8_3(pc);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
     GateRef numArgs = ZExtInt32ToInt64(actualNumArgs);
-    GateRef argv = IntPtrAdd(sp, IntPtrMul(
-        IntPtrAdd(ZExtInt8ToPtr(funcReg), IntPtr(1)), IntPtr(8)));
+    GateRef argv = PtrAdd(sp, PtrMul(
+        PtrAdd(ZExtInt8ToPtr(funcReg), IntPtr(1)), IntPtr(8)));
     DISPATCH_COMMON_CALL_NATIVE_PART(PushCallIRangeAndDispatch, PREF_IMM16_V8, numArgs, argv);
     DISPATCH_COMMON_CALL_RANGE_JS_PART(PushCallIRangeAndDispatch, argv);
 #else
@@ -5381,8 +5381,8 @@ DECLARE_ASM_HANDLER(HandleCallIThisRangeDynPrefImm16V8)
     GateRef funcReg = ReadInst8_3(pc);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
     GateRef numArgs = ZExtInt32ToInt64(actualNumArgs);
-    GateRef argv = IntPtrAdd(sp, IntPtrMul(
-        IntPtrAdd(ZExtInt8ToPtr(funcReg), IntPtr(2)), IntPtr(8)));  // 2: skip function and this
+    GateRef argv = PtrAdd(sp, PtrMul(
+        PtrAdd(ZExtInt8ToPtr(funcReg), IntPtr(2)), IntPtr(8)));  // 2: skip function and this
     DISPATCH_COMMON_CALL_NATIVE_PART(PushCallIThisRangeAndDispatch, PREF_IMM16_V8, numArgs, argv);
     DISPATCH_COMMON_CALL_RANGE_JS_PART(PushCallIThisRangeAndDispatch, argv);
 #else

@@ -228,7 +228,7 @@ inline GateRef Stub::Exception(VariableType type)
     return env_.GetBuilder().ExceptionConstant(type.GetGateType());
 }
 
-inline GateRef Stub::IntPtrMul(GateRef x, GateRef y)
+inline GateRef Stub::PtrMul(GateRef x, GateRef y)
 {
     if (env_.Is32Bit()) {
         return Int32Mul(x, y);
@@ -386,7 +386,7 @@ void Stub::SavePcIfNeeded(GateRef glue)
         GateRef pc = PtrArgument(1);
         // 2: bytecode handler 3rd parameter is sp
         GateRef sp = PtrArgument(2);
-        GateRef frame = IntPtrSub(sp,
+        GateRef frame = PtrSub(sp,
             IntPtr(AsmInterpretedFrame::GetSize(GetEnvironment()->IsArch32Bit())));
         Store(VariableType::INT64(), glue, frame,
             IntPtr(AsmInterpretedFrame::GetPcOffset(GetEnvironment()->IsArch32Bit())), pc);
@@ -476,7 +476,7 @@ inline GateRef Stub::DoubleAdd(GateRef x, GateRef y)
     return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::ADD), MachineType::F64, x, y);
 }
 
-inline GateRef Stub::IntPtrAdd(GateRef x, GateRef y)
+inline GateRef Stub::PtrAdd(GateRef x, GateRef y)
 {
     if (env_.Is32Bit()) {
         return Int32Add(x, y);
@@ -497,7 +497,7 @@ inline GateRef Stub::IntPtrEqual(GateRef x, GateRef y)
     return Int64Equal(x, y);
 }
 
-inline GateRef Stub::IntPtrSub(GateRef x, GateRef y)
+inline GateRef Stub::PtrSub(GateRef x, GateRef y)
 {
     if (env_.Is32Bit()) {
         return Int32Sub(x, y);
@@ -563,16 +563,6 @@ inline GateRef Stub::Int64Div(GateRef x, GateRef y)
 inline GateRef Stub::IntPtrDiv(GateRef x, GateRef y)
 {
     return env_.Is32Bit() ? Int32Div(x, y) : Int64Div(x, y);
-}
-
-inline GateRef Stub::UInt32Div(GateRef x, GateRef y)
-{
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::UDIV), MachineType::I32, x, y);
-}
-
-inline GateRef Stub::UInt64Div(GateRef x, GateRef y)
-{
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::UDIV), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::Int32Mod(GateRef x, GateRef y)
@@ -672,11 +662,6 @@ inline GateRef Stub::Int64LSL(GateRef x, GateRef y)
     return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::LSL), MachineType::I64, x, y);
 }
 
-inline GateRef Stub::UInt64LSL(GateRef x, GateRef y)
-{
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::LSL), MachineType::I64, x, y);
-}
-
 inline GateRef Stub::IntPtrLSL(GateRef x, GateRef y)
 {
     auto ptrSize = env_.Is32Bit() ? MachineType::I32 : MachineType::I64;
@@ -688,12 +673,12 @@ inline GateRef Stub::Int32ASR(GateRef x, GateRef y)
     return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::ASR), MachineType::I32, x, y);
 }
 
-inline GateRef Stub::UInt32LSR(GateRef x, GateRef y)
+inline GateRef Stub::Int32LSR(GateRef x, GateRef y)
 {
     return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::LSR), MachineType::I32, x, y);
 }
 
-inline GateRef Stub::UInt64LSR(GateRef x, GateRef y)
+inline GateRef Stub::Int64LSR(GateRef x, GateRef y)
 {
     return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::LSR), MachineType::I64, x, y);
 }
@@ -808,8 +793,8 @@ inline GateRef Stub::TaggedIsTransitionHandler(GateRef x)
 
 inline GateRef Stub::GetNextPositionForHash(GateRef last, GateRef count, GateRef size)
 {
-    auto nextOffset = UInt32LSR(Int32Mul(count, Int32Add(count, Int32(1))),
-                                Int32(1));
+    auto nextOffset = Int32LSR(Int32Mul(count, Int32Add(count, Int32(1))),
+                               Int32(1));
     return Int32And(Int32Add(last, nextOffset), Int32Sub(size, Int32(1)));
 }
 
@@ -987,22 +972,17 @@ inline GateRef Stub::Int32LessThanOrEqual(GateRef x, GateRef y)
     return env_.GetBuilder().BinaryLogic(OpCode(OpCode::SLE), x, y);
 }
 
-inline GateRef Stub::UInt32GreaterThan(GateRef x, GateRef y)
+inline GateRef Stub::Int32UnsignedGreaterThan(GateRef x, GateRef y)
 {
     return env_.GetBuilder().BinaryLogic(OpCode(OpCode::UGT), x, y);
 }
 
-inline GateRef Stub::UInt32LessThan(GateRef x, GateRef y)
+inline GateRef Stub::Int32UnsignedLessThan(GateRef x, GateRef y)
 {
     return env_.GetBuilder().BinaryLogic(OpCode(OpCode::ULT), x, y);
 }
 
-inline GateRef Stub::UInt32LessThanOrEqual(GateRef x, GateRef y)
-{
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::ULE), x, y);
-}
-
-inline GateRef Stub::UInt32GreaterThanOrEqual(GateRef x, GateRef y)
+inline GateRef Stub::Int32UnsignedGreaterThanOrEqual(GateRef x, GateRef y)
 {
     return env_.GetBuilder().BinaryLogic(OpCode(OpCode::UGE), x, y);
 }
@@ -1027,24 +1007,9 @@ inline GateRef Stub::Int64GreaterThanOrEqual(GateRef x, GateRef y)
     return env_.GetBuilder().BinaryLogic(OpCode(OpCode::SGE), x, y);
 }
 
-inline GateRef Stub::UInt6464GreaterThan(GateRef x, GateRef y)
-{
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::UGT), x, y);
-}
-
-inline GateRef Stub::UInt64LessThan(GateRef x, GateRef y)
-{
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::ULT), x, y);
-}
-
-inline GateRef Stub::UInt64LessThanOrEqual(GateRef x, GateRef y)
+inline GateRef Stub::Int64UnsignedLessThanOrEqual(GateRef x, GateRef y)
 {
     return env_.GetBuilder().BinaryLogic(OpCode(OpCode::ULE), x, y);
-}
-
-inline GateRef Stub::UInt6464GreaterThanOrEqual(GateRef x, GateRef y)
-{
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::UGE), x, y);
 }
 
 // cast operation
@@ -1140,7 +1105,7 @@ inline GateRef Stub::IsDictionaryModeByHClass(GateRef hClass)
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
     return Int32NotEqual(
         Int32And(
-            UInt32LSR(bitfield, Int32(JSHClass::IsDictionaryBit::START_BIT)),
+            Int32LSR(bitfield, Int32(JSHClass::IsDictionaryBit::START_BIT)),
             Int32((1LU << JSHClass::IsDictionaryBit::SIZE) - 1)),
         Int32(0));
 }
@@ -1152,7 +1117,7 @@ inline GateRef Stub::IsDictionaryElement(GateRef hClass)
     // decode
     return Int32NotEqual(
         Int32And(
-            UInt32LSR(bitfield, Int32(JSHClass::DictionaryElementBits::START_BIT)),
+            Int32LSR(bitfield, Int32(JSHClass::DictionaryElementBits::START_BIT)),
             Int32((1LU << JSHClass::DictionaryElementBits::SIZE) - 1)),
         Int32(0));
 }
@@ -1166,7 +1131,7 @@ inline GateRef Stub::NotBuiltinsConstructor(GateRef object)
     // decode
     return Int32Equal(
         Int32And(
-            UInt32LSR(bitfield, Int32(JSHClass::BuiltinsCtorBit::START_BIT)),
+            Int32LSR(bitfield, Int32(JSHClass::BuiltinsCtorBit::START_BIT)),
             Int32((1LU << JSHClass::BuiltinsCtorBit::SIZE) - 1)),
         Int32(0));
 }
@@ -1179,7 +1144,7 @@ inline GateRef Stub::IsClassConstructor(GateRef object)
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
     // decode
     return Int32NotEqual(
-        Int32And(UInt32LSR(bitfield, Int32(JSHClass::ClassConstructorBit::START_BIT)),
+        Int32And(Int32LSR(bitfield, Int32(JSHClass::ClassConstructorBit::START_BIT)),
                  Int32((1LU << JSHClass::ClassConstructorBit::SIZE) - 1)),
         Int32(0));
 }
@@ -1192,7 +1157,7 @@ inline GateRef Stub::IsClassPrototype(GateRef object)
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
     // decode
     return Int32NotEqual(
-        Int32And(UInt32LSR(bitfield, Int32(JSHClass::ClassPrototypeBit::START_BIT)),
+        Int32And(Int32LSR(bitfield, Int32(JSHClass::ClassPrototypeBit::START_BIT)),
             Int32((1LU << JSHClass::ClassPrototypeBit::SIZE) - 1)),
         Int32(0));
 }
@@ -1205,7 +1170,7 @@ inline GateRef Stub::IsExtensible(GateRef object)
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
     // decode
     return Int32NotEqual(
-        Int32And(UInt32LSR(bitfield, Int32(JSHClass::ExtensibleBit::START_BIT)),
+        Int32And(Int32LSR(bitfield, Int32(JSHClass::ExtensibleBit::START_BIT)),
                  Int32((1LU << JSHClass::ExtensibleBit::SIZE) - 1)),
         Int32(0));
 }
@@ -1325,7 +1290,7 @@ inline GateRef Stub::IsWritable(GateRef attr)
 {
     return Int32NotEqual(
         Int32And(
-            UInt32LSR(attr, Int32(PropertyAttributes::WritableField::START_BIT)),
+            Int32LSR(attr, Int32(PropertyAttributes::WritableField::START_BIT)),
             Int32((1LLU << PropertyAttributes::WritableField::SIZE) - 1)),
         Int32(0));
 }
@@ -1333,7 +1298,7 @@ inline GateRef Stub::IsWritable(GateRef attr)
 inline GateRef Stub::IsAccessor(GateRef attr)
 {
     return Int32NotEqual(
-        Int32And(UInt32LSR(attr,
+        Int32And(Int32LSR(attr,
             Int32(PropertyAttributes::IsAccessorField::START_BIT)),
             Int32((1LLU << PropertyAttributes::IsAccessorField::SIZE) - 1)),
         Int32(0));
@@ -1342,7 +1307,7 @@ inline GateRef Stub::IsAccessor(GateRef attr)
 inline GateRef Stub::IsInlinedProperty(GateRef attr)
 {
     return Int32NotEqual(
-        Int32And(UInt32LSR(attr,
+        Int32And(Int32LSR(attr,
             Int32(PropertyAttributes::IsInlinedPropsField::START_BIT)),
             Int32((1LLU << PropertyAttributes::IsInlinedPropsField::SIZE) - 1)),
         Int32(0));
@@ -1396,7 +1361,7 @@ inline GateRef Stub::IsField(GateRef attr)
 {
     return Int32Equal(
         Int32And(
-            UInt32LSR(attr, Int32(HandlerBase::KindBit::START_BIT)),
+            Int32LSR(attr, Int32(HandlerBase::KindBit::START_BIT)),
             Int32((1LLU << HandlerBase::KindBit::SIZE) - 1)),
         Int32(HandlerBase::HandlerKind::FIELD));
 }
@@ -1405,7 +1370,7 @@ inline GateRef Stub::IsNonExist(GateRef attr)
 {
     return Int32Equal(
         Int32And(
-            UInt32LSR(attr, Int32(HandlerBase::KindBit::START_BIT)),
+            Int32LSR(attr, Int32(HandlerBase::KindBit::START_BIT)),
             Int32((1LLU << HandlerBase::KindBit::SIZE) - 1)),
         Int32(HandlerBase::HandlerKind::NON_EXIST));
 }
@@ -1413,7 +1378,7 @@ inline GateRef Stub::IsNonExist(GateRef attr)
 inline GateRef Stub::HandlerBaseIsAccessor(GateRef attr)
 {
     return Int32NotEqual(
-        Int32And(UInt32LSR(attr,
+        Int32And(Int32LSR(attr,
             Int32(HandlerBase::AccessorBit::START_BIT)),
             Int32((1LLU << HandlerBase::AccessorBit::SIZE) - 1)),
         Int32(0));
@@ -1422,7 +1387,7 @@ inline GateRef Stub::HandlerBaseIsAccessor(GateRef attr)
 inline GateRef Stub::HandlerBaseIsJSArray(GateRef attr)
 {
     return Int32NotEqual(
-        Int32And(UInt32LSR(attr,
+        Int32And(Int32LSR(attr,
             Int32(HandlerBase::IsJSArrayBit::START_BIT)),
             Int32((1LLU << HandlerBase::IsJSArrayBit::SIZE) - 1)),
         Int32(0));
@@ -1431,7 +1396,7 @@ inline GateRef Stub::HandlerBaseIsJSArray(GateRef attr)
 inline GateRef Stub::HandlerBaseIsInlinedProperty(GateRef attr)
 {
     return Int32NotEqual(
-        Int32And(UInt32LSR(attr,
+        Int32And(Int32LSR(attr,
             Int32(HandlerBase::InlinedPropsBit::START_BIT)),
             Int32((1LLU << HandlerBase::InlinedPropsBit::SIZE) - 1)),
         Int32(0));
@@ -1439,7 +1404,7 @@ inline GateRef Stub::HandlerBaseIsInlinedProperty(GateRef attr)
 
 inline GateRef Stub::HandlerBaseGetOffset(GateRef attr)
 {
-    return Int32And(UInt32LSR(attr,
+    return Int32And(Int32LSR(attr,
         Int32(HandlerBase::OffsetBit::START_BIT)),
         Int32((1LLU << HandlerBase::OffsetBit::SIZE) - 1));
 }
@@ -1447,7 +1412,7 @@ inline GateRef Stub::HandlerBaseGetOffset(GateRef attr)
 inline GateRef Stub::IsInternalAccessor(GateRef attr)
 {
     return Int32NotEqual(
-        Int32And(UInt32LSR(attr,
+        Int32And(Int32LSR(attr,
             Int32(HandlerBase::InternalAccessorBit::START_BIT)),
             Int32((1LLU << HandlerBase::InternalAccessorBit::SIZE) - 1)),
         Int32(0));
@@ -1487,7 +1452,7 @@ inline GateRef Stub::GetTransitionHandlerInfo(GateRef obj)
 inline GateRef Stub::PropAttrGetOffset(GateRef attr)
 {
     return Int32And(
-        UInt32LSR(attr, Int32(PropertyAttributes::OffsetField::START_BIT)),
+        Int32LSR(attr, Int32(PropertyAttributes::OffsetField::START_BIT)),
         Int32((1LLU << PropertyAttributes::OffsetField::SIZE) - 1));
 }
 
@@ -1523,7 +1488,7 @@ inline GateRef Stub::GetBitFieldFromHClass(GateRef hClass)
 inline GateRef Stub::GetLengthFromString(GateRef value)
 {
     GateRef len = Load(VariableType::INT32(), value, IntPtr(EcmaString::MIX_LENGTH_OFFSET));
-    return UInt32LSR(len, Int32(2));  // 2 : 2 means len must be right shift 2 bits
+    return Int32LSR(len, Int32(2));  // 2 : 2 means len must be right shift 2 bits
 }
 
 inline void Stub::SetBitFieldToHClass(GateRef glue, GateRef hClass, GateRef bitfield)
@@ -1577,7 +1542,7 @@ inline void Stub::SetIsProtoTypeToHClass(GateRef glue, GateRef hClass, GateRef v
 inline GateRef Stub::IsProtoTypeHClass(GateRef hClass)
 {
     GateRef bitfield = GetBitFieldFromHClass(hClass);
-    return TruncInt32ToInt1(Int32And(UInt32LSR(bitfield,
+    return TruncInt32ToInt1(Int32And(Int32LSR(bitfield,
         Int32(JSHClass::IsPrototypeBit::START_BIT)),
         Int32((1LU << JSHClass::IsPrototypeBit::SIZE) - 1)));
 }
@@ -1587,7 +1552,7 @@ inline void Stub::SetPropertyInlinedProps(GateRef glue, GateRef obj, GateRef hCl
 {
     GateRef bitfield = Load(VariableType::INT32(), hClass,
                             IntPtr(JSHClass::BIT_FIELD1_OFFSET));
-    GateRef inlinedPropsStart = Int32And(UInt32LSR(bitfield,
+    GateRef inlinedPropsStart = Int32And(Int32LSR(bitfield,
         Int32(JSHClass::InlinedPropsStartBits::START_BIT)),
         Int32((1LU << JSHClass::InlinedPropsStartBits::SIZE) - 1));
     GateRef propOffset = Int32Mul(
@@ -1606,7 +1571,7 @@ inline void Stub::IncNumberOfProps(GateRef glue, GateRef hClass)
 inline GateRef Stub::GetNumberOfPropsFromHClass(GateRef hClass)
 {
     GateRef bitfield = Load(VariableType::INT32(), hClass, IntPtr(JSHClass::BIT_FIELD1_OFFSET));
-    return Int32And(UInt32LSR(bitfield,
+    return Int32And(Int32LSR(bitfield,
         Int32(JSHClass::NumberOfPropsBits::START_BIT)),
         Int32((1LLU << JSHClass::NumberOfPropsBits::SIZE) - 1));
 }
@@ -1616,7 +1581,7 @@ inline void Stub::SetNumberOfPropsToHClass(GateRef glue, GateRef hClass, GateRef
     GateRef bitfield1 = Load(VariableType::INT32(), hClass, IntPtr(JSHClass::BIT_FIELD1_OFFSET));
     GateRef oldWithMask = Int32And(bitfield1,
         Int32(~static_cast<uint32_t>(JSHClass::NumberOfPropsBits::Mask())));
-    GateRef newValue = UInt32LSR(value, Int32(JSHClass::NumberOfPropsBits::START_BIT));
+    GateRef newValue = Int32LSR(value, Int32(JSHClass::NumberOfPropsBits::START_BIT));
     Store(VariableType::INT32(), glue, hClass, IntPtr(JSHClass::BIT_FIELD1_OFFSET),
         Int32Or(oldWithMask, newValue));
 }
@@ -1624,10 +1589,10 @@ inline void Stub::SetNumberOfPropsToHClass(GateRef glue, GateRef hClass, GateRef
 inline GateRef Stub::GetInlinedPropertiesFromHClass(GateRef hClass)
 {
     GateRef bitfield = Load(VariableType::INT32(), hClass, IntPtr(JSHClass::BIT_FIELD1_OFFSET));
-    GateRef objectSizeInWords = Int32And(UInt32LSR(bitfield,
+    GateRef objectSizeInWords = Int32And(Int32LSR(bitfield,
         Int32(JSHClass::ObjectSizeInWordsBits::START_BIT)),
         Int32((1LU << JSHClass::ObjectSizeInWordsBits::SIZE) - 1));
-    GateRef inlinedPropsStart = Int32And(UInt32LSR(bitfield,
+    GateRef inlinedPropsStart = Int32And(Int32LSR(bitfield,
         Int32(JSHClass::InlinedPropsStartBits::START_BIT)),
         Int32((1LU << JSHClass::InlinedPropsStartBits::SIZE) - 1));
     return Int32Sub(objectSizeInWords, inlinedPropsStart);
@@ -1636,17 +1601,17 @@ inline GateRef Stub::GetInlinedPropertiesFromHClass(GateRef hClass)
 inline GateRef Stub::GetObjectSizeFromHClass(GateRef hClass) // NOTE: check for special case of string and TAGGED_ARRAY
 {
     GateRef bitfield = Load(VariableType::INT32(), hClass, IntPtr(JSHClass::BIT_FIELD1_OFFSET));
-    GateRef objectSizeInWords = Int32And(UInt32LSR(bitfield,
+    GateRef objectSizeInWords = Int32And(Int32LSR(bitfield,
         Int32(JSHClass::ObjectSizeInWordsBits::START_BIT)),
         Int32((1LU << JSHClass::ObjectSizeInWordsBits::SIZE) - 1));
-    return IntPtrMul(ChangeInt32ToIntPtr(objectSizeInWords),
+    return PtrMul(ChangeInt32ToIntPtr(objectSizeInWords),
         IntPtr(JSTaggedValue::TaggedTypeSize()));
 }
 
 inline GateRef Stub::GetInlinedPropsStartFromHClass(GateRef hClass)
 {
     GateRef bitfield = Load(VariableType::INT32(), hClass, IntPtr(JSHClass::BIT_FIELD1_OFFSET));
-    return Int32And(UInt32LSR(bitfield,
+    return Int32And(Int32LSR(bitfield,
         Int32(JSHClass::InlinedPropsStartBits::START_BIT)),
         Int32((1LU << JSHClass::InlinedPropsStartBits::SIZE) - 1));
 }
@@ -1655,16 +1620,16 @@ inline void Stub::SetValueToTaggedArray(VariableType valType, GateRef glue, Gate
 {
     // NOTE: need to translate MarkingBarrier
     GateRef offset =
-        IntPtrMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize()));
-    GateRef dataOffset = IntPtrAdd(offset, IntPtr(TaggedArray::DATA_OFFSET));
+        PtrMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize()));
+    GateRef dataOffset = PtrAdd(offset, IntPtr(TaggedArray::DATA_OFFSET));
     Store(valType, glue, array, dataOffset, val);
 }
 
 inline GateRef Stub::GetValueFromTaggedArray(VariableType returnType, GateRef array, GateRef index)
 {
     GateRef offset =
-        IntPtrMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize()));
-    GateRef dataOffset = IntPtrAdd(offset, IntPtr(TaggedArray::DATA_OFFSET));
+        PtrMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize()));
+    GateRef dataOffset = PtrAdd(offset, IntPtr(TaggedArray::DATA_OFFSET));
     return Load(returnType, array, dataOffset);
 }
 
@@ -1697,7 +1662,7 @@ inline GateRef Stub::GetPropAttrFromLayoutInfo(GateRef layout, GateRef entry)
 
 inline GateRef Stub::GetPropertyMetaDataFromAttr(GateRef attr)
 {
-    return Int32And(UInt32LSR(attr, Int32(PropertyAttributes::PropertyMetaDataField::START_BIT)),
+    return Int32And(Int32LSR(attr, Int32(PropertyAttributes::PropertyMetaDataField::START_BIT)),
         Int32((1LLU << PropertyAttributes::PropertyMetaDataField::SIZE) - 1));
 }
 
@@ -1711,9 +1676,9 @@ inline GateRef Stub::GetKeyFromLayoutInfo(GateRef layout, GateRef entry)
 
 inline GateRef Stub::GetPropertiesAddrFromLayoutInfo(GateRef layout)
 {
-    GateRef eleStartIdx = IntPtrMul(IntPtr(LayoutInfo::ELEMENTS_START_INDEX),
+    GateRef eleStartIdx = PtrMul(IntPtr(LayoutInfo::ELEMENTS_START_INDEX),
         IntPtr(JSTaggedValue::TaggedTypeSize()));
-    return IntPtrAdd(layout, IntPtrAdd(IntPtr(TaggedArray::DATA_OFFSET), eleStartIdx));
+    return PtrAdd(layout, PtrAdd(IntPtr(TaggedArray::DATA_OFFSET), eleStartIdx));
 }
 
 inline GateRef Stub::TaggedCastToInt64(GateRef x)
@@ -1897,7 +1862,7 @@ inline GateRef Stub::IsCallable(GateRef obj)
     GateRef bitfieldOffset = IntPtr(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hclass, bitfieldOffset);
     return Int32NotEqual(
-        Int32And(UInt32LSR(bitfield, Int32(JSHClass::CallableBit::START_BIT)),
+        Int32And(Int32LSR(bitfield, Int32(JSHClass::CallableBit::START_BIT)),
             Int32((1LU << JSHClass::CallableBit::SIZE) - 1)),
         Int32(0));
 }
@@ -1906,7 +1871,7 @@ inline GateRef Stub::IsCallable(GateRef obj)
 inline GateRef Stub::GetOffsetFieldInPropAttr(GateRef attr)
 {
     return Int32And(
-        UInt32LSR(attr, Int32(PropertyAttributes::OffsetField::START_BIT)),
+        Int32LSR(attr, Int32(PropertyAttributes::OffsetField::START_BIT)),
         Int32((1LLU << PropertyAttributes::OffsetField::SIZE) - 1));
 }
 
@@ -1967,7 +1932,7 @@ inline GateRef Stub::ObjectAddressToRange(GateRef x)
 inline GateRef Stub::InYoungGeneration(GateRef region)
 {
     auto offset = env_.Is32Bit() ? Region::REGION_FLAG_OFFSET_32 : Region::REGION_FLAG_OFFSET_64;
-    GateRef x = Load(VariableType::NATIVE_POINTER(), IntPtrAdd(IntPtr(offset), region),
+    GateRef x = Load(VariableType::NATIVE_POINTER(), PtrAdd(IntPtr(offset), region),
         IntPtr(0));
     if (env_.Is32Bit()) {
         return Int32NotEqual(Int32And(x,
@@ -2062,7 +2027,7 @@ inline GateRef Stub::GetEntryIndexOfGlobalDictionary(GateRef entry)
 inline GateRef Stub::GetBoxFromGlobalDictionary(GateRef object, GateRef entry)
 {
     GateRef index = GetEntryIndexOfGlobalDictionary(entry);
-    GateRef offset = IntPtrAdd(ChangeInt32ToIntPtr(index),
+    GateRef offset = PtrAdd(ChangeInt32ToIntPtr(index),
         IntPtr(GlobalDictionary::ENTRY_VALUE_INDEX));
     return Load(VariableType::JS_POINTER(), object, offset);
 }
@@ -2101,7 +2066,7 @@ inline GateRef Stub::IsNativeMethod(GateRef method)
     GateRef callfield = Load(VariableType::INT64(), method, callFieldOffset);
     return Int64NotEqual(
         Int64And(
-            UInt64LSR(callfield, Int32(JSMethod::IsNativeBit::START_BIT)),
+            Int64LSR(callfield, Int32(JSMethod::IsNativeBit::START_BIT)),
             Int64((1LU << JSMethod::IsNativeBit::SIZE) - 1)),
         Int64(0));
 }
@@ -2112,7 +2077,7 @@ inline GateRef Stub::HasAotCode(GateRef method)
     GateRef callfield = Load(VariableType::INT64(), method, callFieldOffset);
     return Int64NotEqual(
         Int64And(
-            UInt64LSR(callfield, Int32(JSMethod::IsAotCodeBit::START_BIT)),
+            Int64LSR(callfield, Int32(JSMethod::IsAotCodeBit::START_BIT)),
             Int64((1LU << JSMethod::IsAotCodeBit::SIZE) - 1)),
         Int64(0));
 }
@@ -2122,7 +2087,7 @@ inline GateRef Stub::GetExpectedNumOfArgs(GateRef method)
     GateRef callFieldOffset = IntPtr(JSMethod::GetCallFieldOffset(env_.Is32Bit()));
     GateRef callfield = Load(VariableType::INT64(), method, callFieldOffset);
     return TruncInt64ToInt32(Int64And(
-        UInt64LSR(callfield, Int32(JSMethod::NumArgsBits::START_BIT)),
+        Int64LSR(callfield, Int32(JSMethod::NumArgsBits::START_BIT)),
         Int64((1LU << JSMethod::NumArgsBits::SIZE) - 1)));
 }
 
