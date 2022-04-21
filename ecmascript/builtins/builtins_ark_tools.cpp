@@ -55,8 +55,8 @@ JSTaggedValue BuiltinsArkTools::CompareHClass(EcmaRuntimeCallInfo *msg)
     std::ostringstream oss;
     obj1Hclass->Dump(oss);
     bool res = (obj1Hclass == obj2Hclass);
-    if (res) {
-        LOG(ERROR, RUNTIME) << "These two object shared same hclass:" << oss.str();
+    if (!res) {
+        LOG(ERROR, RUNTIME) << "These two object don't share the same hclass:" << oss.str();
     }
     return JSTaggedValue(res);
 }

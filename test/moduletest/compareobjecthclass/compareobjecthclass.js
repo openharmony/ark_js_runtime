@@ -18,7 +18,7 @@ var res = false;
     let obj2 = {y : 2, x : 1, z :3};
     let obj3 = {x : 11, y : 12, z :13};    
 
-if(!CompareHClass(obj1, obj2) && CompareHClass(obj1, obj3)) {
+if(!ArkTools.compareHClass(obj1, obj2) && ArkTools.compareHClass(obj1, obj3)) {
     res = true;
 }
 

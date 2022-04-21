@@ -126,13 +126,12 @@ template("host_moduletest_action") {
     js_vm_options = " "
     if (defined(invoker.is_set_maxNonmovableSpaceCapacity) &&
         invoker.is_set_maxNonmovableSpaceCapacity) {
-      js_vm_options += "--maxNonmovableSpaceCapacity=524288"  # 0.5M
+      js_vm_options += " --maxNonmovableSpaceCapacity=524288"  # 0.5M
     }
 
-    js_vm_options = " "
-    if (defined(invoker.is_enable_enableArkTools_) &&
-        invoker.is_enable_enableArkTools_) {
-      js_vm_options += "--enableArkTools_=true"
+    if (defined(invoker.is_enable_enableArkTools) &&
+        invoker.is_enable_enableArkTools) {
+      js_vm_options += " --enable-ark-tools=true"
     }
 
     args = [
