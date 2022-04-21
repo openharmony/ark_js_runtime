@@ -55,7 +55,7 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
-    PandaVM *instance {nullptr};
+    EcmaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
 };
@@ -209,7 +209,7 @@ HWTEST_F_L0(ICRuntimeStubTest, TryStoreICAndLoadIC_ByName)
     TaggedObject *handleTaggedObject = handleFirstObjClassVal.GetWeakReferentUnChecked();
     JSHClass *handleNewObjClass = static_cast<JSHClass *>(handleTaggedObject);
     JSHandle<JSObject> handleNewObj = factory->NewJSObject(JSHandle<JSHClass>(thread, handleNewObjClass));
-    
+
     JSHandle<TaggedArray> handleArr = factory->NewTaggedArray(1);
     handleArr->Set(thread, 0, JSTaggedValue::Undefined());
     JSHandle<JSTaggedValue> handleBoxValue(thread, JSTaggedValue::Undefined());
@@ -316,7 +316,7 @@ HWTEST_F_L0(ICRuntimeStubTest, StoreICWithHandler)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
-    
+
     JSHandle<JSTaggedValue> keyHandle(factory->NewFromASCII("key"));
     JSHandle<PropertyBox> boxHandler = factory->NewPropertyBox(keyHandle);
     JSHandle<JSFunction> setter = factory->NewJSFunction(env, reinterpret_cast<void *>(TestSetter));
@@ -373,7 +373,7 @@ HWTEST_F_L0(ICRuntimeStubTest, LoadICWithHandler)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
-    
+
     JSHandle<JSTaggedValue> keyHandle(factory->NewFromASCII("key"));
     JSHandle<JSTaggedValue> valueHandle(thread, JSTaggedValue(1));
     JSHandle<PropertyBox> boxHandler = factory->NewPropertyBox(keyHandle);
@@ -416,7 +416,7 @@ HWTEST_F_L0(ICRuntimeStubTest, Prototype_StoreAndLoad)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
-    
+
     JSHandle<ProtoChangeMarker> cellValue = factory->NewProtoChangeMarker();
     EXPECT_TRUE(!cellValue->GetHasChanged());
 
@@ -492,7 +492,7 @@ HWTEST_F_L0(ICRuntimeStubTest, StoreWithTransition)
     array_size_t arrayLength = bitOffset + 2U;
     JSHandle<TaggedArray> handleTaggedArr = factory->NewTaggedArray(arrayLength);
     handleObj->SetProperties(thread, handleTaggedArr.GetTaggedValue());
-    
+
     JSHandle<TransitionHandler> handleTransitionHandler = factory->NewTransitionHandler();
     handleTransitionHandler->SetTransitionHClass(thread, JSTaggedValue(hclass));
     handleTransitionHandler->SetHandlerInfo(thread, JSTaggedValue(handler));
