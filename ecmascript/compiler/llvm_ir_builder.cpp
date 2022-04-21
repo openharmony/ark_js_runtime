@@ -142,6 +142,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::NOGC_RUNTIME_CALL, &LLVMIRBuilder::HandleCall},
         {OpCode::CALL, &LLVMIRBuilder::HandleCall},
         {OpCode::BYTECODE_CALL, &LLVMIRBuilder::HandleBytecodeCall},
+        {OpCode::DEBUGGER_BYTECODE_CALL, &LLVMIRBuilder::HandleDebuggerBytecodeCall},
         {OpCode::ALLOCA, &LLVMIRBuilder::HandleAlloca},
         {OpCode::ARG, &LLVMIRBuilder::HandleParameter},
         {OpCode::CONSTANT, &LLVMIRBuilder::HandleConstant},
@@ -504,13 +505,19 @@ void LLVMIRBuilder::HandleBytecodeCall(GateRef gate)
     VisitBytecodeCall(gate, ins);
 }
 
+void LLVMIRBuilder::HandleDebuggerBytecodeCall(GateRef gate)
+{
+    std::vector<GateRef> ins = circuit_->GetInVector(gate);
+    VisitDebuggerBytecodeCall(gate, ins);
+}
+
 void LLVMIRBuilder::HandleRuntimeCall(GateRef gate)
 {
     std::vector<GateRef> ins = circuit_->GetInVector(gate);
     VisitRuntimeCall(gate, ins);
 }
 
-LLVMValueRef LLVMIRBuilder::GetFunction(LLVMValueRef glue, StubIdType id)
+LLVMValueRef LLVMIRBuilder::GetFunction(LLVMValueRef glue, StubIdType id, bool isDebug)
 {
     const CallSignature *signature;
     int index = 0;
@@ -540,9 +547,14 @@ LLVMValueRef LLVMIRBuilder::GetFunction(LLVMValueRef glue, StubIdType id)
             index * static_cast<size_t>(slotSize_), 0);
         rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
     } else if (std::holds_alternative<LLVMValueRef>(id)) {
-        LLVMValueRef bytecodeoffset = LLVMConstInt(glueType,
-                                                   JSThread::GlueData::GetBCStubEntriesOffset(compCfg_->Is32Bit()),
-                                                   0);
+        LLVMValueRef bytecodeoffset;
+        if (isDebug) {
+            bytecodeoffset = LLVMConstInt(glueType,
+                JSThread::GlueData::GetBCDebuggerStubEntriesOffset(compCfg_->Is32Bit()), 0);
+        } else {
+            bytecodeoffset = LLVMConstInt(glueType,
+                JSThread::GlueData::GetBCStubEntriesOffset(compCfg_->Is32Bit()), 0);
+        }
         LLVMValueRef opcodeOffset = std::get<LLVMValueRef>(id);
         rtbaseoffset = LLVMBuildAdd(
             builder_, glue, LLVMBuildAdd(builder_, bytecodeoffset, opcodeOffset, ""), "");
@@ -764,6 +776,30 @@ void LLVMIRBuilder::VisitBytecodeCall(GateRef gate, const std::vector<GateRef> &
     LLVMValueRef glue = gateToLLVMMaps_[inList[glueIndex]];
     StubIdType stubId = opcodeOffset;
     LLVMValueRef callee = GetFunction(glue, stubId);
+
+    std::vector<LLVMValueRef> params;
+    for (size_t paraIdx = paraStartIndex; paraIdx < inList.size(); ++paraIdx) {
+        GateRef gateTmp = inList[paraIdx];
+        params.push_back(gateToLLVMMaps_[gateTmp]);
+    }
+    LLVMValueRef call = LLVMBuildCall(builder_, callee, params.data(), inList.size() - paraStartIndex, "");
+    SetTailCallAttr(call);
+    LLVMSetInstructionCallConv(call, LLVMGHCCallConv);
+    gateToLLVMMaps_[gate] = call;
+}
+
+void LLVMIRBuilder::VisitDebuggerBytecodeCall(GateRef gate, const std::vector<GateRef> &inList)
+{
+    size_t paraStartIndex = static_cast<size_t>(CallInputs::FIRST_PARAMETER);
+    size_t targetIndex = static_cast<size_t>(CallInputs::TARGET);
+    size_t glueIndex = static_cast<size_t>(CallInputs::GLUE);
+    LLVMValueRef opcodeOffset = gateToLLVMMaps_[inList[targetIndex]];
+    ASSERT(llvmModule_ != nullptr);
+
+    // start index of bytecode handler csign in llvmModule
+    LLVMValueRef glue = gateToLLVMMaps_[inList[glueIndex]];
+    StubIdType stubId = opcodeOffset;
+    LLVMValueRef callee = GetFunction(glue, stubId, true);
 
     std::vector<LLVMValueRef> params;
     for (size_t paraIdx = paraStartIndex; paraIdx < inList.size(); ++paraIdx) {

@@ -228,11 +228,13 @@ void JSThread::ResetGuardians()
     stableArrayElementsGuardians_ = true;
 }
 
-void AdjustBCStubEntries(BCStubEntries& bcStubEntries,
-    const std::vector<AotCodeInfo::StubDes>& stubs, const AsmInterParsedOption& asmInterOpt)
+void AdjustBCStubAndDebuggerStubEntries(BCStubEntries &bcStubEntries, BCStubEntries &bcDebuggerStubEntries,
+    const std::vector<AotCodeInfo::StubDes> &stubs, const AsmInterParsedOption &asmInterOpt)
 {
     auto defaultBCStubDes = stubs[CommonStubCSigns::SingleStepDebugging];
     auto defaultNonexistentBCStubDes = stubs[CommonStubCSigns::HandleOverflow];
+    auto defaultBCDebuggerStubDes = stubs[CommonStubCSigns::BCDebuggerEntry];
+    auto defaultBCDebuggerExceptionStubDes = stubs[CommonStubCSigns::BCDebuggerExceptionEntry];
     bcStubEntries.SetUnrealizedBCHandlerStubEntries(defaultBCStubDes.codeAddr_);
     bcStubEntries.SetNonexistentBCHandlerStubEntries(defaultNonexistentBCStubDes.codeAddr_);
 #define UNDEF_STUB(name, counter)                                                                               \
@@ -241,6 +243,15 @@ void AdjustBCStubEntries(BCStubEntries& bcStubEntries,
 #undef UNDEF_STUB
     for (int i = asmInterOpt.handleStart; i <= asmInterOpt.handleEnd && i >= 0; i++) {
         bcStubEntries.Set(static_cast<size_t>(i), defaultBCStubDes.codeAddr_);
+    }
+    // bc debugger stub entries
+    bcDebuggerStubEntries.SetNonexistentBCHandlerStubEntries(defaultNonexistentBCStubDes.codeAddr_);
+    for (size_t i = 0; i < BCStubEntries::EXISTING_BC_HANDLER_STUB_ENTRIES_COUNT; i++) {
+        if (i == BytecodeStubCSigns::ID_ExceptionHandler) {
+            bcDebuggerStubEntries.Set(i, defaultBCDebuggerExceptionStubDes.codeAddr_);
+            continue;
+        }
+        bcDebuggerStubEntries.Set(i, defaultBCDebuggerStubDes.codeAddr_);
     }
 }
 
@@ -262,12 +273,34 @@ void JSThread::LoadStubsFromFile(std::string &fileName)
         }
     }
     AsmInterParsedOption asmInterOpt = GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
-    AdjustBCStubEntries(glueData_.bcStubEntries_, stubs, asmInterOpt);
+    AdjustBCStubAndDebuggerStubEntries(glueData_.bcStubEntries_, glueData_.bcDebuggerStubEntries_, stubs, asmInterOpt);
 #ifdef NDEBUG
     bool enableCompilerLog = GetEcmaVM()->GetJSOptions().WasSetlogCompiledMethods();
     kungfu::LLVMStackMapParser::GetInstance(enableCompilerLog).Print();
 #endif
     stubCode_ = aotInfo.GetCode();
+}
+
+void JSThread::CheckSwitchDebuggerBCStub()
+{
+    auto isDebug = GetEcmaVM()->GetJsDebuggerManager()->IsDebugMode();
+    if (isDebug &&
+        glueData_.bcDebuggerStubEntries_.Get(0) == glueData_.bcDebuggerStubEntries_.Get(1)) {
+        for (size_t i = 0; i < BCStubEntries::BC_HANDLER_STUB_ENTRIES_COUNT; i++) {
+            auto stubEntry = glueData_.bcStubEntries_.Get(i);
+            auto debuggerStubEbtry = glueData_.bcDebuggerStubEntries_.Get(i);
+            glueData_.bcDebuggerStubEntries_.Set(i, stubEntry);
+            glueData_.bcStubEntries_.Set(i, debuggerStubEbtry);
+        }
+    } else if (!isDebug &&
+        glueData_.bcStubEntries_.Get(0) == glueData_.bcStubEntries_.Get(1)) {
+        for (size_t i = 0; i < BCStubEntries::BC_HANDLER_STUB_ENTRIES_COUNT; i++) {
+            auto stubEntry = glueData_.bcDebuggerStubEntries_.Get(i);
+            auto debuggerStubEbtry = glueData_.bcStubEntries_.Get(i);
+            glueData_.bcStubEntries_.Set(i, stubEntry);
+            glueData_.bcDebuggerStubEntries_.Set(i, debuggerStubEbtry);
+        }
+    }
 }
 
 bool JSThread::CheckSafepoint() const

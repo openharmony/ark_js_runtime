@@ -87,6 +87,10 @@ public:
                          GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter, GateRef format);
     inline void DispatchLast(GateRef glue, GateRef sp, GateRef pc, GateRef constpool,
                              GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter);
+    inline void DispatchDebugger(GateRef glue, GateRef sp, GateRef pc, GateRef constpool,
+                                 GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter);
+    inline void DispatchDebuggerLast(GateRef glue, GateRef sp, GateRef pc, GateRef constpool,
+                                     GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter);
     template<RuntimeStubCSigns::ID id, typename... Args>
     void DispatchCommonCall(GateRef glue, GateRef function, Args... args);
     template<RuntimeStubCSigns::ID id, typename... Args>
@@ -117,6 +121,8 @@ private:
     INTERPRETER_BC_STUB_LIST(DECLARE_HANDLE_STUB_CLASS)
     DECLARE_HANDLE_STUB_CLASS(SingleStepDebugging, 7)
     DECLARE_HANDLE_STUB_CLASS(HandleOverflow, 7)
+    DECLARE_HANDLE_STUB_CLASS(BCDebuggerEntry, 7)
+    DECLARE_HANDLE_STUB_CLASS(BCDebuggerExceptionEntry, 7)
 #undef DECLARE_HANDLE_STUB_CLASS
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_INTERPRETER_STUB_H
