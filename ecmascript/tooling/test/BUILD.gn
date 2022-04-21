@@ -91,6 +91,15 @@ source_set("jsdebugtest_static") {
 
   public_configs = [ ":debug_api_test" ]
 
+  test_abc_dir = "/data/test/"
+  target_label = get_label_info(":${target_name}", "label_with_toolchain")
+  target_toolchain = get_label_info(target_label, "toolchain")
+  if (target_toolchain == host_toolchain) {
+    test_abc_dir = rebase_path(target_out_dir)
+  }
+
+  defines = [ "DEBUGGER_ABC_DIR=\"${test_abc_dir}/\"" ]
+
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
@@ -117,13 +126,15 @@ ohos_shared_library("jsdebugtest") {
   subsystem_name = "test"
 }
 
-ohos_unittest("EcmaDebugApiTest") {
+host_unittest_action("EcmaDebugApiTest") {
   module_out_path = module_output_path
 
   sources = [
     # test file
     "debugger_api_test.cpp",
   ]
+
+  cflags_cc = [ "-Wno-gnu-zero-variadic-macro-arguments" ]
 
   resource_config_file =
       "//ark/js_runtime/test/resource/js_runtime/ohos_test.xml"
@@ -307,6 +318,7 @@ group("unittest") {
     ":DebuggerReturnsTest",
     ":DebuggerScriptTest",
     ":DebuggerTypesTest",
+    ":EcmaDebugApiTest",
     ":JSPtHooksTest",
   ]
 }
@@ -322,6 +334,7 @@ group("host_unittest") {
     ":DebuggerReturnsTestAction",
     ":DebuggerScriptTestAction",
     ":DebuggerTypesTestAction",
+    ":EcmaDebugApiTestAction",
     ":JSPtHooksTestAction",
   ]
 }

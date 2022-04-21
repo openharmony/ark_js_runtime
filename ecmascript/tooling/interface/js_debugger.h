@@ -91,15 +91,19 @@ public:
     void RegisterHooks(PtHooks *hooks) override
     {
         hooks_ = hooks;
+        // send vm start event after add hooks
+        ecmaVm_->GetNotificationManager()->VmStartEvent();
     }
     void UnregisterHooks() override
     {
+        // send vm death event before delete hooks
+        ecmaVm_->GetNotificationManager()->VmDeathEvent();
         hooks_ = nullptr;
     }
 
     void Init();
 
-    bool SetBreakpoint(const JSPtLocation &location, const std::optional<CString> &condition) override;
+    bool SetBreakpoint(const JSPtLocation &location, const std::optional<CString> &condition = {}) override;
     bool RemoveBreakpoint(const JSPtLocation &location) override;
     void BytecodePcChanged(JSThread *thread, JSMethod *method, uint32_t bcOffset) override;
     void LoadModule(std::string_view filename) override

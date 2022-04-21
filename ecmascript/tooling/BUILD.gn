@@ -83,6 +83,8 @@ source_set("libark_ecma_debugger_test_static") {
 
   public_configs = [ ":ark_ecma_debugger_config" ]
 
+  defines = [ "DEBUGGER_TEST" ]
+
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",

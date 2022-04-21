@@ -89,6 +89,14 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
 #define SAVE_ACC() (GET_FRAME(sp)->acc = acc)  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define RESTORE_ACC() (acc = GET_FRAME(sp)->acc)  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define GET_VREG(idx) (sp[idx])  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define GET_VREG_VALUE(idx) (JSTaggedValue(sp[idx]))  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define SET_VREG(idx, val) (sp[idx] = (val));  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+#define GET_ACC() (acc)                        // NOLINT(cppcoreguidelines-macro-usage)
+#define SET_ACC(val) (acc = val);              // NOLINT(cppcoreguidelines-macro-usage)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define INTERPRETER_GOTO_EXCEPTION_HANDLER()          \
@@ -138,6 +146,19 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
         SAVE_PC();                       \
         NotifyBytecodePcChanged(thread); \
         RESTORE_ACC();                   \
+    } while (false)
+
+/*
+ * reasons of set acc with hole:
+ * 1. acc will become illegal when new error
+ * 2. debugger logic will save acc, so illegal acc will set to frame
+ * 3. when debugger trigger gc, will mark an invalid acc and crash
+ * 4. acc will set to exception later, so it can set to hole template
+ */
+#define NOTIFY_DEBUGGER_EXCEPTION_EVENT() \
+    do {                                  \
+        SET_ACC(JSTaggedValue::Hole());   \
+        NOTIFY_DEBUGGER_EVENT();          \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -372,15 +393,6 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
         MOVE_AND_READ_INST_8(currentInst, 2)   \
         MOVE_AND_READ_INST_8(currentInst, 1)   \
     })
-
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define GET_VREG(idx) (sp[idx])  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define GET_VREG_VALUE(idx) (JSTaggedValue(sp[idx]))  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define SET_VREG(idx, val) (sp[idx] = (val));  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-#define GET_ACC() (acc)                        // NOLINT(cppcoreguidelines-macro-usage)
-#define SET_ACC(val) (acc = val);              // NOLINT(cppcoreguidelines-macro-usage)
 
 JSTaggedValue EcmaInterpreter::ExecuteNative(EcmaRuntimeCallInfo *info)
 {

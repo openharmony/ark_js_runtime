@@ -42,7 +42,8 @@ bool JSDebugger::SetBreakpoint(const JSPtLocation &location, const std::optional
     }
 
     if (!breakpoints_.emplace(method, location.GetBytecodeOffset(), condition).second) {
-        LOG(ERROR, DEBUGGER) << "SetBreakpoint: Breakpoint already exists";
+        // also return true
+        LOG(WARNING, DEBUGGER) << "SetBreakpoint: Breakpoint already exists";
     }
 
     return true;
