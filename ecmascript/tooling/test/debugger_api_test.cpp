@@ -36,11 +36,13 @@ public:
     void SetUp() override
     {
         SetCurrentTestName(GetParam());
-        TestHelper::CreateEcmaVMWithScope(instance, thread, scope, DEBUGGER_TEST_LIBRARY);
+        TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
+        JSNApi::StartDebugger(DEBUGGER_TEST_LIBRARY, instance, true);
     }
 
     void TearDown() override
     {
+        JSNApi::StopDebugger(instance);
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
@@ -55,7 +57,6 @@ HWTEST_P_L0(DebuggerApiTest, EcmaScriptSuite)
     std::cout << "Running " << testName << std::endl;
     ASSERT_NE(instance, nullptr);
     auto [pandaFile, entryPoint] = GetTestEntryPoint(testName);
-
     auto res = JSNApi::Execute(instance, pandaFile.c_str(), entryPoint.c_str());
     ASSERT_TRUE(res);
 }
