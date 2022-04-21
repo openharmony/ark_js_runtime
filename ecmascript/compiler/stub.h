@@ -55,7 +55,7 @@ public:
             void AppendPredecessor(LabelImpl *predecessor);
             std::vector<LabelImpl *> GetPredecessors() const
             {
-                return predecessors_;
+                return localPreds_;
             }
             void SetControl(GateRef control)
             {
@@ -105,8 +105,8 @@ public:
             std::vector<GateRef> otherPredeControls_;
             bool isSealed_ {false};
             std::map<Variable *, GateRef> valueMap_;
-            std::vector<GateRef> phi;
-            std::vector<LabelImpl *> predecessors_;
+            std::vector<GateRef> phies_;
+            std::vector<LabelImpl *> localPreds_;
             std::map<Variable *, GateRef> incompletePhis_;
         };
         explicit Label() = default;
@@ -339,7 +339,7 @@ public:
     GateRef Hole(VariableType type = VariableType::JS_ANY());
     GateRef Null(VariableType type = VariableType::JS_ANY());
     GateRef Exception(VariableType type = VariableType::JS_ANY());
-    GateRef IntPtrMul(GateRef x, GateRef y);
+    GateRef PtrMul(GateRef x, GateRef y);
     // parameter
     GateRef Argument(size_t index);
     GateRef Int1Argument(size_t index);
@@ -377,8 +377,8 @@ public:
     GateRef Int32Add(GateRef x, GateRef y);
     GateRef Int64Add(GateRef x, GateRef y);
     GateRef DoubleAdd(GateRef x, GateRef y);
-    GateRef IntPtrAdd(GateRef x, GateRef y);
-    GateRef IntPtrSub(GateRef x, GateRef y);
+    GateRef PtrAdd(GateRef x, GateRef y);
+    GateRef PtrSub(GateRef x, GateRef y);
     GateRef PointerSub(GateRef x, GateRef y);
     GateRef IntPtrEqual(GateRef x, GateRef y);
     GateRef Int16Sub(GateRef x, GateRef y);
@@ -390,8 +390,6 @@ public:
     GateRef DoubleMul(GateRef x, GateRef y);
     GateRef DoubleDiv(GateRef x, GateRef y);
     GateRef Int32Div(GateRef x, GateRef y);
-    GateRef UInt32Div(GateRef x, GateRef y);
-    GateRef UInt64Div(GateRef x, GateRef y);
     GateRef Int32Mod(GateRef x, GateRef y);
     GateRef DoubleMod(GateRef x, GateRef y);
     GateRef Int64Div(GateRef x, GateRef y);
@@ -415,11 +413,10 @@ public:
     GateRef Int16LSL(GateRef x, GateRef y);
     GateRef Int32LSL(GateRef x, GateRef y);
     GateRef Int64LSL(GateRef x, GateRef y);
-    GateRef UInt64LSL(GateRef x, GateRef y);
     GateRef IntPtrLSL(GateRef x, GateRef y);
     GateRef Int8LSR(GateRef x, GateRef y);
-    GateRef UInt32LSR(GateRef x, GateRef y);
-    GateRef UInt64LSR(GateRef x, GateRef y);
+    GateRef Int32LSR(GateRef x, GateRef y);
+    GateRef Int64LSR(GateRef x, GateRef y);
     GateRef IntPtrLSR(GateRef x, GateRef y);
     GateRef Int32ASR(GateRef x, GateRef y);
     GateRef TaggedIsInt(GateRef x);
@@ -475,18 +472,14 @@ public:
     GateRef Int32LessThan(GateRef x, GateRef y);
     GateRef Int32GreaterThanOrEqual(GateRef x, GateRef y);
     GateRef Int32LessThanOrEqual(GateRef x, GateRef y);
-    GateRef UInt32GreaterThan(GateRef x, GateRef y);
-    GateRef UInt32LessThan(GateRef x, GateRef y);
-    GateRef UInt32LessThanOrEqual(GateRef x, GateRef y);
-    GateRef UInt32GreaterThanOrEqual(GateRef x, GateRef y);
+    GateRef Int32UnsignedGreaterThan(GateRef x, GateRef y);
+    GateRef Int32UnsignedLessThan(GateRef x, GateRef y);
+    GateRef Int32UnsignedGreaterThanOrEqual(GateRef x, GateRef y);
     GateRef Int64GreaterThan(GateRef x, GateRef y);
     GateRef Int64LessThan(GateRef x, GateRef y);
     GateRef Int64LessThanOrEqual(GateRef x, GateRef y);
     GateRef Int64GreaterThanOrEqual(GateRef x, GateRef y);
-    GateRef UInt6464GreaterThan(GateRef x, GateRef y);
-    GateRef UInt64LessThan(GateRef x, GateRef y);
-    GateRef UInt64LessThanOrEqual(GateRef x, GateRef y);
-    GateRef UInt6464GreaterThanOrEqual(GateRef x, GateRef y);
+    GateRef Int64UnsignedLessThanOrEqual(GateRef x, GateRef y);
     // cast operation
     GateRef ChangeInt64ToInt32(GateRef val);
     GateRef ChangeInt64ToIntPtr(GateRef val);

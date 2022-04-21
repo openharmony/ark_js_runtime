@@ -145,7 +145,7 @@ GateRef LabelImpl::ReadVariableRecursive(Variable *var)
     MachineType machineType = CircuitBuilder::GetMachineTypeFromVariableType(var->Type());
     if (!IsSealed()) {
         // only loopheader gate will be not sealed
-        int valueCounts = static_cast<int>(predecessors_.size()) + 1;
+        int valueCounts = static_cast<int>(localPreds_.size()) + 1;
         if (machineType == MachineType::NOVALUE) {
             val = env_->GetBuilder().Selector(
                 OpCode(OpCode::DEPEND_SELECTOR), predeControl_, {}, valueCounts, var->Type());
@@ -155,15 +155,15 @@ GateRef LabelImpl::ReadVariableRecursive(Variable *var)
         }
         env_->AddSelectorToLabel(val, Label(this));
         incompletePhis_[var] = val;
-    } else if (predecessors_.size() == 1) {
-        val = predecessors_[0]->ReadVariable(var);
+    } else if (localPreds_.size() == 1) {
+        val = localPreds_[0]->ReadVariable(var);
     } else {
         if (machineType == MachineType::NOVALUE) {
             val = env_->GetBuilder().Selector(OpCode(OpCode::DEPEND_SELECTOR),
-                                              predeControl_, {}, predecessors_.size(), var->Type());
+                                              predeControl_, {}, localPreds_.size(), var->Type());
         } else {
             val = env_->GetBuilder().Selector(
-                OpCode(OpCode::VALUE_SELECTOR), machineType, predeControl_, {}, predecessors_.size(), var->Type());
+                OpCode(OpCode::VALUE_SELECTOR), machineType, predeControl_, {}, localPreds_.size(), var->Type());
         }
         env_->AddSelectorToLabel(val, Label(this));
         WriteVariable(var, val);
@@ -175,11 +175,11 @@ GateRef LabelImpl::ReadVariableRecursive(Variable *var)
 
 void LabelImpl::Bind()
 {
-    ASSERT(!predecessors_.empty());
+    ASSERT(!localPreds_.empty());
     if (IsLoopHead()) {
         // 2 means input number of depend selector gate
         loopDepend_ = env_->GetBuilder().Selector(OpCode(OpCode::DEPEND_SELECTOR), predeControl_, {}, 2);
-        env_->GetCircuit()->NewIn(loopDepend_, 1, predecessors_[0]->GetDepend());
+        env_->GetCircuit()->NewIn(loopDepend_, 1, localPreds_[0]->GetDepend());
         depend_ = loopDepend_;
     }
     if (IsNeedSeal()) {
@@ -191,22 +191,22 @@ void LabelImpl::Bind()
 
 void LabelImpl::MergeAllControl()
 {
-    if (predecessors_.size() < 2) {  // 2 : Loop Head only support two predecessors_
+    if (localPreds_.size() < 2) {  // 2 : Loop Head only support two localPreds_
         return;
     }
 
     if (IsLoopHead()) {
-        ASSERT(predecessors_.size() == 2);  // 2 : Loop Head only support two predecessors_
+        ASSERT(localPreds_.size() == 2);  // 2 : Loop Head only support two localPreds_
         ASSERT(otherPredeControls_.size() == 1);
         env_->GetCircuit()->NewIn(predeControl_, 1, otherPredeControls_[0]);
         return;
     }
 
-    // merge all control of predecessors_
-    std::vector<GateRef> inGates(predecessors_.size());
+    // merge all control of localPreds_
+    std::vector<GateRef> inGates(localPreds_.size());
     size_t i = 0;
     ASSERT(predeControl_ != -1);
-    ASSERT((otherPredeControls_.size() + 1) == predecessors_.size());
+    ASSERT((otherPredeControls_.size() + 1) == localPreds_.size());
     inGates[i++] = predeControl_;
     for (auto in : otherPredeControls_) {
         inGates[i++] = in;
@@ -225,19 +225,19 @@ void LabelImpl::MergeAllDepend()
         dependRelay_ = env_->GetBuilder().DependRelay(predeControl_, denpendEntry);
     }
 
-    if (predecessors_.size() < 2) {  // 2 : Loop Head only support two predecessors_
-        depend_ = predecessors_[0]->GetDepend();
+    if (localPreds_.size() < 2) {  // 2 : Loop Head only support two localPreds_
+        depend_ = localPreds_[0]->GetDepend();
         if (dependRelay_ != -1) {
             depend_ = env_->GetBuilder().DependAnd({ depend_, dependRelay_ });
         }
         return;
     }
     if (IsLoopHead()) {
-        ASSERT(predecessors_.size() == 2);  // 2 : Loop Head only support two predecessors_
+        ASSERT(localPreds_.size() == 2);  // 2 : Loop Head only support two localPreds_
         // Add loop depend to in of depend_seclector
         ASSERT(loopDepend_ != -1);
         // 2 mean 3rd input gate for loopDepend_(depend_selector)
-        env_->GetCircuit()->NewIn(loopDepend_, 2, predecessors_[1]->GetDepend());
+        env_->GetCircuit()->NewIn(loopDepend_, 2, localPreds_[1]->GetDepend());
         return;
     }
 
@@ -253,7 +253,7 @@ void LabelImpl::MergeAllDepend()
 void LabelImpl::AppendPredecessor(LabelImpl *predecessor)
 {
     if (predecessor != nullptr) {
-        predecessors_.push_back(predecessor);
+        localPreds_.push_back(predecessor);
     }
 }
 
@@ -261,7 +261,7 @@ bool LabelImpl::IsNeedSeal() const
 {
     auto control = env_->GetCircuit()->LoadGatePtr(predeControl_);
     auto stateCount = control->GetOpCode().GetStateCount(control->GetBitField());
-    return predecessors_.size() >= stateCount;
+    return localPreds_.size() >= stateCount;
 }
 
 bool LabelImpl::IsLoopHead() const
@@ -399,7 +399,7 @@ GateRef Stub::FindElementWithCache(GateRef glue, GateRef layoutInfo, GateRef hCl
                 Bind(&propsNumNotZero);
                 GateRef elementAddr = GetPropertiesAddrFromLayoutInfo(layoutInfo);
                 GateRef keyInProperty = Load(VariableType::INT64(), elementAddr,
-                    IntPtrMul(ChangeInt32ToIntPtr(*i),
+                    PtrMul(ChangeInt32ToIntPtr(*i),
                         IntPtr(sizeof(panda::ecmascript::Properties))));
                 Label equal(env);
                 Label notEqual(env);
@@ -412,7 +412,7 @@ GateRef Stub::FindElementWithCache(GateRef glue, GateRef layoutInfo, GateRef hCl
                 Jump(&afterEqualCon);
                 Bind(&afterEqualCon);
                 i = Int32Add(*i, Int32(1));
-                Branch(UInt32LessThan(*i, propsNum), &loopEnd, &afterLoop);
+                Branch(Int32UnsignedLessThan(*i, propsNum), &loopEnd, &afterLoop);
                 Bind(&loopEnd);
                 LoopEnd(&loopHead);
             }
@@ -440,11 +440,11 @@ GateRef Stub::FindElementFromNumberDictionary(GateRef glue, GateRef elements, Ga
     DEFVARIABLE(result, VariableType::INT32(), Int32(-1));
     Label exit(env);
     GateRef capcityoffset =
-        IntPtrMul(IntPtr(JSTaggedValue::TaggedTypeSize()),
+        PtrMul(IntPtr(JSTaggedValue::TaggedTypeSize()),
             IntPtr(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
     GateRef dataoffset = IntPtr(TaggedArray::DATA_OFFSET);
     GateRef capacity = TaggedCastToInt32(Load(VariableType::INT64(), elements,
-                                              IntPtrAdd(dataoffset, capcityoffset)));
+                                              PtrAdd(dataoffset, capcityoffset)));
     DEFVARIABLE(count, VariableType::INT32(), Int32(1));
     GateRef len = Int32(sizeof(int) / sizeof(uint8_t));
     GateRef hash = CallRuntime(glue, RTSTUB_ID(GetHash32),
@@ -497,11 +497,11 @@ GateRef Stub::FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRe
     Label exit(env);
     DEFVARIABLE(result, VariableType::INT32(), Int32(-1));
     GateRef capcityoffset =
-        IntPtrMul(IntPtr(JSTaggedValue::TaggedTypeSize()),
+        PtrMul(IntPtr(JSTaggedValue::TaggedTypeSize()),
             IntPtr(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
     GateRef dataoffset = IntPtr(TaggedArray::DATA_OFFSET);
     GateRef capacity = TaggedCastToInt32(Load(VariableType::INT64(), elements,
-                                              IntPtrAdd(dataoffset, capcityoffset)));
+                                              PtrAdd(dataoffset, capcityoffset)));
     DEFVARIABLE(count, VariableType::INT32(), Int32(1));
     DEFVARIABLE(hash, VariableType::INT32(), Int32(0));
     // NameDictionary::hash
@@ -608,11 +608,11 @@ GateRef Stub::FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, 
     Label exit(env);
     DEFVARIABLE(result, VariableType::INT32(), Int32(-1));
     GateRef capcityoffset =
-        IntPtrMul(IntPtr(JSTaggedValue::TaggedTypeSize()),
+        PtrMul(IntPtr(JSTaggedValue::TaggedTypeSize()),
             IntPtr(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
     GateRef dataoffset = IntPtr(TaggedArray::DATA_OFFSET);
     GateRef capacity = TaggedCastToInt32(Load(VariableType::INT64(), elements,
-                                              IntPtrAdd(dataoffset, capcityoffset)));
+                                              PtrAdd(dataoffset, capcityoffset)));
     DEFVARIABLE(count, VariableType::INT32(), Int32(1));
     DEFVARIABLE(hash, VariableType::INT32(), Int32(0));
     // TransitionDictionary::hash
@@ -909,8 +909,8 @@ void Stub::JSHClassAddProperty(GateRef glue, GateRef receiver, GateRef key, Gate
 //      keyHandle.GetTaggedValue() == thread->GlobalConstants()->GetConstructorString()
 GateRef Stub::SetHasConstructorCondition(GateRef glue, GateRef receiver, GateRef key)
 {
-    GateRef gConstOffset = IntPtrAdd(glue,
-                                     IntPtr(JSThread::GlueData::GetGlobalConstOffset(env_.Is32Bit())));
+    GateRef gConstOffset = PtrAdd(glue,
+                                  IntPtr(JSThread::GlueData::GetGlobalConstOffset(env_.Is32Bit())));
     GateRef gCtorStr = Load(VariableType::JS_ANY(),
         gConstOffset,
         Int64Mul(Int64(sizeof(JSTaggedValue)),
@@ -949,7 +949,7 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
     Label hasUnusedInProps(env);
     Label noUnusedInProps(env);
     Label afterInPropsCon(env);
-    Branch(UInt32LessThan(numberOfProps, inlinedProperties), &hasUnusedInProps, &noUnusedInProps);
+    Branch(Int32UnsignedLessThan(numberOfProps, inlinedProperties), &hasUnusedInProps, &noUnusedInProps);
     {
         Bind(&noUnusedInProps);
         Jump(&afterInPropsCon);
@@ -1136,7 +1136,7 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
     {
         GateRef objectRegion = ObjectAddressToRange(obj);
         GateRef valueRegion = ObjectAddressToRange(value);
-        GateRef slotAddr = IntPtrAdd(TaggedCastToIntPtr(obj), offset);
+        GateRef slotAddr = PtrAdd(TaggedCastToIntPtr(obj), offset);
         GateRef objectNotInYoung = BoolNot(InYoungGeneration(objectRegion));
         GateRef valueRegionInYoung = InYoungGeneration(valueRegion);
         Branch(BoolAnd(objectNotInYoung, valueRegionInYoung), &isVailedIndex, &notValidIndex);
@@ -1294,7 +1294,7 @@ GateRef Stub::StringToElementIndex(GateRef string)
     Branch(Int32GreaterThan(len, Int32(MAX_INDEX_LEN)), &exit, &inRange);
     Bind(&inRange);
     {
-        GateRef dataUtf16 = IntPtrAdd(string, IntPtr(EcmaString::DATA_OFFSET));
+        GateRef dataUtf16 = PtrAdd(string, IntPtr(EcmaString::DATA_OFFSET));
         DEFVARIABLE(c, VariableType::INT32(), Int32(0));
         Label isUtf16(env);
         Label isUtf8(env);
@@ -1336,7 +1336,7 @@ GateRef Stub::StringToElementIndex(GateRef string)
                 Label loopEnd(env);
                 Label afterLoop(env);
                 Bind(&isDigit);
-                Branch(UInt32LessThan(*i, len), &loopHead, &afterLoop);
+                Branch(Int32UnsignedLessThan(*i, len), &loopHead, &afterLoop);
                 LoopBegin(&loopHead);
                 {
                     Label isUtf16A(env);
@@ -1346,7 +1346,7 @@ GateRef Stub::StringToElementIndex(GateRef string)
                     Bind(&isUtf16A);
                     {
                         // 2 : 2 means utf16 char width is two bytes
-                        auto charOffset = IntPtrMul(ChangeInt32ToIntPtr(*i),  IntPtr(2));
+                        auto charOffset = PtrMul(ChangeInt32ToIntPtr(*i),  IntPtr(2));
                         c = ZExtInt16ToInt32(Load(VariableType::INT16(), dataUtf16, charOffset));
                         Jump(&getChar2);
                     }
@@ -1366,7 +1366,7 @@ GateRef Stub::StringToElementIndex(GateRef string)
                             n = Int32Add(Int32Mul(*n, Int32(10)),
                                          Int32Sub(*c, Int32('0')));
                             i = Int32Add(*i, Int32(1));
-                            Branch(UInt32LessThan(*i, len), &loopEnd, &afterLoop);
+                            Branch(Int32UnsignedLessThan(*i, len), &loopEnd, &afterLoop);
                         }
                         Bind(&notDigit2);
                         Jump(&exit);
@@ -1377,7 +1377,7 @@ GateRef Stub::StringToElementIndex(GateRef string)
                 Bind(&afterLoop);
                 {
                     Label lessThanMaxIndex(env);
-                    Branch(UInt32LessThan(*n, Int32(JSObject::MAX_ELEMENT_INDEX)),
+                    Branch(Int32UnsignedLessThan(*n, Int32(JSObject::MAX_ELEMENT_INDEX)),
                            &lessThanMaxIndex, &exit);
                     Bind(&lessThanMaxIndex);
                     {
@@ -1457,7 +1457,7 @@ GateRef Stub::LoadFromField(GateRef receiver, GateRef handlerInfo)
     Branch(HandlerBaseIsInlinedProperty(handlerInfo), &handlerInfoIsInlinedProps, &handlerInfoNotInlinedProps);
     Bind(&handlerInfoIsInlinedProps);
     {
-        result = Load(VariableType::JS_ANY(), receiver, IntPtrMul(ChangeInt32ToIntPtr(index),
+        result = Load(VariableType::JS_ANY(), receiver, PtrMul(ChangeInt32ToIntPtr(index),
             IntPtr(JSTaggedValue::TaggedTypeSize())));
         Jump(&exit);
     }
@@ -1517,7 +1517,7 @@ GateRef Stub::CheckPolyHClass(GateRef cachedValue, GateRef hclass)
         Jump(&loopHead);
         LoopBegin(&loopHead);
         {
-            Branch(UInt32LessThan(*i, length), &iLessLength, &exit);
+            Branch(Int32UnsignedLessThan(*i, length), &iLessLength, &exit);
             Bind(&iLessLength);
             {
                 GateRef element = GetValueFromTaggedArray(VariableType::JS_ANY(), cachedValue, *i);
@@ -1622,7 +1622,7 @@ GateRef Stub::LoadElement(GateRef receiver, GateRef key)
     Label lengthNotLessIndex(env);
     DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
     GateRef index = TryToElementsIndex(key);
-    Branch(UInt32LessThan(index, Int32(0)), &indexLessZero, &indexNotLessZero);
+    Branch(Int32UnsignedLessThan(index, Int32(0)), &indexLessZero, &indexNotLessZero);
     Bind(&indexLessZero);
     {
         Jump(&exit);
@@ -1666,7 +1666,7 @@ GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRe
     DEFVARIABLE(result, VariableType::INT64(), Hole(VariableType::INT64()));
     DEFVARIABLE(varHandler, VariableType::JS_ANY(), handler);
     GateRef index = TryToElementsIndex(key);
-    Branch(UInt32LessThan(index, Int32(0)), &indexLessZero, &indexNotLessZero);
+    Branch(Int32UnsignedLessThan(index, Int32(0)), &indexLessZero, &indexNotLessZero);
     Bind(&indexLessZero);
     {
         Jump(&exit);
@@ -1862,7 +1862,7 @@ void Stub::StoreField(GateRef glue, GateRef receiver, GateRef value, GateRef han
     Bind(&handlerIsInlinedProperty);
     {
         Store(VariableType::JS_ANY(), glue, receiver,
-            IntPtrMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize())),
+            PtrMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize())),
             value);
         Jump(&exit);
     }
@@ -1907,8 +1907,8 @@ void Stub::StoreWithTransition(GateRef glue, GateRef receiver, GateRef value, Ga
         }
         Bind(&indexLessCapacity);
         {
-            Store(VariableType::INT64(), glue, IntPtrAdd(array, IntPtr(TaggedArray::DATA_OFFSET)),
-                IntPtrMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize())),
+            Store(VariableType::INT64(), glue, PtrAdd(array, IntPtr(TaggedArray::DATA_OFFSET)),
+                PtrMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize())),
                 value);
             Jump(&exit);
         }
@@ -2014,8 +2014,8 @@ inline void Stub::UpdateValueAndAttributes(GateRef glue, GateRef elements, GateR
         Int32Add(arrayIndex, Int32(NameDictionary::ENTRY_DETAILS_INDEX));
     SetValueToTaggedArray(VariableType::JS_ANY(), glue, elements, valueIndex, value);
     GateRef attroffset =
-        IntPtrMul(ChangeInt32ToIntPtr(attributesIndex), IntPtr(JSTaggedValue::TaggedTypeSize()));
-    GateRef dataOffset = IntPtrAdd(attroffset, IntPtr(TaggedArray::DATA_OFFSET));
+        PtrMul(ChangeInt32ToIntPtr(attributesIndex), IntPtr(JSTaggedValue::TaggedTypeSize()));
+    GateRef dataOffset = PtrAdd(attroffset, IntPtr(TaggedArray::DATA_OFFSET));
     Store(VariableType::INT64(), glue, elements, dataOffset, IntBuildTaggedWithNoGC(attr));
 }
 
@@ -2074,7 +2074,8 @@ GateRef Stub::GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index)
             {
                 Label lessThanLength(env);
                 Label notLessThanLength(env);
-                Branch(UInt32LessThan(index, GetLengthOfTaggedArray(elements)), &lessThanLength, &notLessThanLength);
+                Branch(Int32UnsignedLessThan(index, GetLengthOfTaggedArray(elements)),
+                       &lessThanLength, &notLessThanLength);
                 Bind(&lessThanLength);
                 {
                     Label notHole(env);
@@ -2886,7 +2887,7 @@ GateRef Stub::FastTypeOf(GateRef glue, GateRef obj)
     env->SubCfgEntry(&entry);
     Label exit(env);
 
-    GateRef gConstAddr = IntPtrAdd(glue,
+    GateRef gConstAddr = PtrAdd(glue,
         IntPtr(JSThread::GlueData::GetGlobalConstOffset(env->Is32Bit())));
     GateRef undefinedIndex = GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX);
     GateRef gConstUndefinedStr = Load(VariableType::JS_POINTER(), gConstAddr, undefinedIndex);
@@ -3619,7 +3620,7 @@ GateRef Stub::JSArrayListGet(GateRef glue, GateRef receiver, GateRef index)
     Label isVailedIndex(env);
     Label notValidIndex(env);
     Branch(TruncInt32ToInt1(Int32And(ZExtInt1ToInt32(Int32GreaterThanOrEqual(index, Int32(0))),
-        ZExtInt1ToInt32(UInt32LessThan(index, length)))), &isVailedIndex, &notValidIndex);
+        ZExtInt1ToInt32(Int32UnsignedLessThan(index, length)))), &isVailedIndex, &notValidIndex);
     Bind(&isVailedIndex);
     {
         GateRef elements = GetElementsArray(receiver);
@@ -3658,7 +3659,7 @@ GateRef Stub::DoubleToInt(GateRef glue, GateRef x)
         GateRef xInt64 = CastDoubleToInt64(x);
         // exp = (u64 & DOUBLE_EXPONENT_MASK) >> DOUBLE_SIGNIFICAND_SIZE - DOUBLE_EXPONENT_BIAS
         GateRef exp = Int64And(xInt64, Int64(base::DOUBLE_EXPONENT_MASK));
-        exp = ChangeInt64ToInt32(UInt64LSR(exp, Int64(base::DOUBLE_SIGNIFICAND_SIZE)));
+        exp = ChangeInt64ToInt32(Int64LSR(exp, Int64(base::DOUBLE_SIGNIFICAND_SIZE)));
         exp = Int32Sub(exp, Int32(base::DOUBLE_EXPONENT_BIAS));
         GateRef bits = Int32(base::INT32_BITS - 1);
         // exp < 32 - 1

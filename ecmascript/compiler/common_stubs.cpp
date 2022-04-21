@@ -532,8 +532,8 @@ void JsProxyCallInternalStub::GenerateCircuit(const CompilationConfig *cfg)
     {
         GateRef target = GetTargetFromJSProxy(proxy);
         GateRef globalConstOffset = IntPtr(JSThread::GlueData::GetGlobalConstOffset(env->Is32Bit()));
-        GateRef keyOffset = IntPtrAdd(globalConstOffset,
-            IntPtrMul(IntPtr(static_cast<int64_t>(ConstantIndex::APPLY_STRING_INDEX)),
+        GateRef keyOffset = PtrAdd(globalConstOffset,
+            PtrMul(IntPtr(static_cast<int64_t>(ConstantIndex::APPLY_STRING_INDEX)),
             IntPtr(sizeof(JSTaggedValue))));
         GateRef key = Load(VariableType::JS_ANY(), glue, keyOffset);
         GateRef method = CallNGCRuntime(glue, RTSTUB_ID(JSObjectGetMethod), {glue, handler, key});

@@ -505,6 +505,5 @@ private:
     friend class EcmaHandleScope;
     friend class GlobalHandleCollection;
 };
-static_assert(JSThread::GetGlueDataOffset() == ASM_GLUE_TO_THREAD_OFFSET);
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_JS_THREAD_H
