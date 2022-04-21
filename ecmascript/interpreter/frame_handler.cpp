@@ -81,7 +81,7 @@ void InterpretedFrameHandler::PrevFrame()
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
     AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
 #else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
@@ -99,7 +99,7 @@ InterpretedFrameHandler InterpretedFrameHandler::GetPrevFrame() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
     AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
 #else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
@@ -125,7 +125,7 @@ JSTaggedValue InterpretedFrameHandler::GetAcc() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
     AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
 #else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
@@ -137,7 +137,7 @@ uint32_t InterpretedFrameHandler::GetSize() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
     AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
 #else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
@@ -156,7 +156,7 @@ uint32_t InterpretedFrameHandler::GetBytecodeOffset() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
     AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
 #else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
@@ -170,7 +170,7 @@ JSMethod *InterpretedFrameHandler::GetMethod() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
     AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
 #else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
@@ -182,7 +182,7 @@ JSTaggedValue InterpretedFrameHandler::GetFunction() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
     AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
 #else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
@@ -194,7 +194,7 @@ const uint8_t *InterpretedFrameHandler::GetPc() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
     AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
 #else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
@@ -212,7 +212,7 @@ ConstantPool *InterpretedFrameHandler::GetConstpool() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
     AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
     JSTaggedValue function = frame->function;
     if (function.IsJSFunction()) {
@@ -231,7 +231,7 @@ JSTaggedValue InterpretedFrameHandler::GetEnv() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
     AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
 #else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
@@ -243,7 +243,7 @@ void InterpretedFrameHandler::SetEnv(JSTaggedValue env)
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
     AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
 #else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
@@ -258,7 +258,7 @@ void InterpretedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisi
         return;
     }
 
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
     AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(current);
     if (frame->function == JSTaggedValue::Hole()) {
         return;
@@ -273,7 +273,7 @@ void InterpretedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisi
     uintptr_t end = 0U;
     FrameType type = FrameHandler(frame->base.prev).GetFrameType();
     if (type == FrameType::INTERPRETER_FRAME || type == FrameType::INTERPRETER_FAST_NEW_FRAME) {
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
         AsmInterpretedFrame *prevFrame = AsmInterpretedFrame::GetFrameFromSp(frame->base.prev);
 #else
         InterpretedFrame *prevFrame = InterpretedFrame::GetFrameFromSp(frame->base.prev);
@@ -290,7 +290,7 @@ void InterpretedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisi
     v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
     v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->function)));
     if (frame->pc != nullptr) {
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
         // asm interpreter frame
         v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->acc)));
         v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->env)));
@@ -475,7 +475,7 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
     isVerifying = thread_->GetEcmaVM()->GetHeap()->GetIsVerifying();
 #endif
 
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
     auto leaveFrame = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
     if (leaveFrame != nullptr) {
         ASSERT(OptimizedLeaveFrame::GetFrameFromSp(leaveFrame)->type == FrameType::ASM_LEAVE_FRAME);
@@ -495,7 +495,7 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
     while (current) {
         FrameType type = FrameHandler(current).GetFrameType();
         if (type == FrameType::INTERPRETER_FRAME || type == FrameType::INTERPRETER_FAST_NEW_FRAME) {
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
             AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(current);
 #else
             InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(current);
@@ -523,7 +523,7 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
         } else {
             ASSERT(type == FrameType::OPTIMIZED_LEAVE_FRAME || type == FrameType::ASM_LEAVE_FRAME);
             OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(current);
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
             if (leaveFrame != current) { // avoid iterating from same leaveframe again
                 OptimizedLeaveFrameHandler(thread_, reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
                     v1, derivedPointers, isVerifying);
