@@ -194,6 +194,11 @@ public:
             return compCfg_->IsAmd64() ||  compCfg_->IsAArch64();
         }
 
+        inline bool IsAsmInterp() const
+        {
+            return circuit_->GetFrameType() == FrameType::INTERPRETER_FRAME;
+        }
+
         inline bool IsArch32Bit() const
         {
             return compCfg_->Is32Bit();
@@ -706,7 +711,7 @@ public:
     GateRef GetMethodFromJSProxy(GateRef proxy);
     GateRef GetHandlerFromJSProxy(GateRef proxy);
     GateRef GetTargetFromJSProxy(GateRef proxy);
-
+    inline void SavePcIfNeeded(GateRef glue);
 private:
     using BinaryOperation = std::function<GateRef(Environment*, GateRef, GateRef)>;
     template<OpCode::Op Op>

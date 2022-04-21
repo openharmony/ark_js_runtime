@@ -50,5 +50,42 @@ void AssemblerModuleX64::Generate_AsmInterpCallRuntime(AssemblerX64 *assembler)
     __ Addq(16, rsp);
     __ Ret();
 }
+
+void AssemblerModuleX64::Generate_OptimizedCallRuntime(AssemblerX64 *assembler)
+{
+    __ Pushq(rbp);
+    __ Movq(rsp, rbp);
+    __ Movq(rsp, Operand(rax, JSThread::GlueData::GetCurrentFrameOffset(false)));
+    __ Pushq(static_cast<int32_t>(FrameType::ASM_LEAVE_FRAME));
+
+    __ Pushq(r10);
+    __ Pushq(rdx);
+    __ Pushq(rax);
+
+    __ Movq(rbp, rdx);
+    // 16: rbp & return address
+    __ Addq(16, rdx);
+
+    __ Movq(Operand(rdx, 0), r10);
+    __ Movq(Operand(rax, r10, Times8, JSThread::GlueData::GetRTStubEntriesOffset(false)), r10);
+    __ Movq(rax, rdi);
+    // 8: argc
+    __ Movq(Operand(rdx, 8), rsi);
+    // 16: argv
+    __ Addq(16, rdx);
+    __ Callq(r10);
+
+
+    // 8: skip rax
+    __ Addq(8, rsp);
+    __ Popq(rdx);
+    __ Popq(r10);
+
+    // 8: skip frame type
+    __ Addq(8, rsp);
+    __ Popq(rbp);
+    __ Ret();
+}
+
 #undef __
 }  // namespace panda::ecmascript::x64
