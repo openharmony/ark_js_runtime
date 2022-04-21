@@ -2097,12 +2097,7 @@ inline GateRef Stub::IsBoundFunction(GateRef obj)
 
 inline GateRef Stub::IsNativeMethod(GateRef method)
 {
-    GateRef callFieldOffset;
-    if (env_.Is32Bit()) {
-        callFieldOffset =  IntPtr(JS_METHOD_CALLFIELD_OFFSET_32);
-    } else {
-        callFieldOffset = IntPtr(JS_METHOD_CALLFIELD_OFFSET_64);
-    }
+    GateRef callFieldOffset = IntPtr(JSMethod::GetCallFieldOffset(env_.Is32Bit()));
     GateRef callfield = Load(VariableType::INT64(), method, callFieldOffset);
     return Int64NotEqual(
         Int64And(
@@ -2113,12 +2108,7 @@ inline GateRef Stub::IsNativeMethod(GateRef method)
 
 inline GateRef Stub::HasAotCode(GateRef method)
 {
-    GateRef callFieldOffset;
-    if (env_.Is32Bit()) {
-        callFieldOffset =  IntPtr(JS_METHOD_CALLFIELD_OFFSET_32);
-    } else {
-        callFieldOffset = IntPtr(JS_METHOD_CALLFIELD_OFFSET_64);
-    }
+    GateRef callFieldOffset = IntPtr(JSMethod::GetCallFieldOffset(env_.Is32Bit()));
     GateRef callfield = Load(VariableType::INT64(), method, callFieldOffset);
     return Int64NotEqual(
         Int64And(
@@ -2129,12 +2119,7 @@ inline GateRef Stub::HasAotCode(GateRef method)
 
 inline GateRef Stub::GetExpectedNumOfArgs(GateRef method)
 {
-    GateRef callFieldOffset;
-    if (env_.Is32Bit()) {
-        callFieldOffset =  IntPtr(JS_METHOD_CALLFIELD_OFFSET_32);
-    } else {
-        callFieldOffset = IntPtr(JS_METHOD_CALLFIELD_OFFSET_64);
-    }
+    GateRef callFieldOffset = IntPtr(JSMethod::GetCallFieldOffset(env_.Is32Bit()));
     GateRef callfield = Load(VariableType::INT64(), method, callFieldOffset);
     return TruncInt64ToInt32(Int64And(
         UInt64LSR(callfield, Int32(JSMethod::NumArgsBits::START_BIT)),

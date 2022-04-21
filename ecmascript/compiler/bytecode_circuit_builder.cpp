@@ -150,7 +150,7 @@ std::map<std::pair<uint8_t *, uint8_t *>, std::vector<uint8_t *>> BytecodeCircui
     // try contains many catch
     const panda_file::File *file = file_->GetPandaFile();
     std::map<std::pair<uint8_t *, uint8_t *>, std::vector<uint8_t *>> byteCodeException;
-    panda_file::MethodDataAccessor mda(*file, method_->GetFileId());
+    panda_file::MethodDataAccessor mda(*file, method_->GetMethodId());
     panda_file::CodeDataAccessor cda(*file, mda.GetCodeId().value());
     cda.EnumerateTryBlocks([this, &byteCodeCurPrePc, &bytecodeBlockInfos, &byteCodeException](
             panda_file::CodeDataAccessor::TryBlock &try_block) {

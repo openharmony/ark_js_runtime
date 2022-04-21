@@ -773,11 +773,9 @@ void SnapShotSerialize::Relocate(SnapShotType type, const JSPandaFile *jsPandaFi
 {
     SnapShotSpace *space = vm_->GetHeap()->GetSnapShotSpace();
     EcmaStringTable *stringTable = vm_->GetEcmaStringTable();
-    const panda_file::File *pf = nullptr;
     uint32_t methodNums = 0;
     JSMethod *methods = nullptr;
     if (jsPandaFile) {
-        pf = jsPandaFile->GetPandaFile();
         methodNums = jsPandaFile->GetNumMethods();
         methods = jsPandaFile->GetMethods();
     }
@@ -785,7 +783,7 @@ void SnapShotSerialize::Relocate(SnapShotType type, const JSPandaFile *jsPandaFi
     size_t others = 0;
     size_t objIndex = 0;
     space->EnumerateRegions([stringTable, &others, &objIndex, &rootObjSize, &type,
-                            this, pf, methods, &methodNums](Region *current) {
+                            this, methods, &methodNums](Region *current) {
         size_t allocated = current->GetAllocatedBytes();
         uintptr_t begin = current->GetBegin();
         uintptr_t end = begin + allocated;
@@ -794,8 +792,7 @@ void SnapShotSerialize::Relocate(SnapShotType type, const JSPandaFile *jsPandaFi
                 for (size_t i = 0; i < others; i++) {
                     pandaMethod_.emplace_back(begin);
                     auto method = reinterpret_cast<JSMethod *>(begin);
-                    method->SetPandaFile(pf);
-                    method->SetBytecodeArray(method->GetInstructions());
+                    method->SetBytecodeArray(method->GetBytecodeArray());
                     if (memcpy_s(methods + (--methodNums), METHOD_SIZE, method, METHOD_SIZE) != EOK) {
                         LOG_ECMA(FATAL) << "memcpy_s failed";
                         UNREACHABLE();
@@ -814,8 +811,7 @@ void SnapShotSerialize::Relocate(SnapShotType type, const JSPandaFile *jsPandaFi
                 for (size_t i = 0; i < encodeBit.GetNativePointerIndex(); i++) {
                     pandaMethod_.emplace_back(begin);
                     auto method = reinterpret_cast<JSMethod *>(begin);
-                    method->SetPandaFile(pf);
-                    method->SetBytecodeArray(method->GetInstructions());
+                    method->SetBytecodeArray(method->GetBytecodeArray());
                     if (memcpy_s(methods + (--methodNums), METHOD_SIZE, method, METHOD_SIZE) != EOK) {
                         LOG_ECMA(FATAL) << "memcpy_s failed";
                         UNREACHABLE();

@@ -199,7 +199,7 @@ void CpuProfiler::GetFrameStack(JSThread *thread)
 void CpuProfiler::ParseMethodInfo(JSMethod *method, InterpretedFrameHandler frameHandler)
 {
     struct StackInfo codeEntry;
-    if (method != nullptr && method->IsNative()) {
+    if (method != nullptr && method->IsNativeWithCallField()) {
         codeEntry.codeType = "other";
         codeEntry.functionName = "native";
         staticStackInfo_.insert(std::make_pair(method, codeEntry));
@@ -214,7 +214,7 @@ void CpuProfiler::ParseMethodInfo(JSMethod *method, InterpretedFrameHandler fram
         // source file
         tooling::JSPtExtractor *debugExtractor =
             JSPandaFileManager::GetInstance()->GetJSPtExtractor(method->GetJSPandaFile());
-        const CString &sourceFile = debugExtractor->GetSourceFile(method->GetFileId());
+        const CString &sourceFile = debugExtractor->GetSourceFile(method->GetMethodId());
         if (sourceFile.empty()) {
             codeEntry.url = "";
         } else {
@@ -235,7 +235,7 @@ void CpuProfiler::ParseMethodInfo(JSMethod *method, InterpretedFrameHandler fram
             columnNumber = column + 1;
             return true;
         };
-        if (!debugExtractor->MatchWithOffset(callbackFunc, method->GetFileId(), frameHandler.GetBytecodeOffset())) {
+        if (!debugExtractor->MatchWithOffset(callbackFunc, method->GetMethodId(), frameHandler.GetBytecodeOffset())) {
             codeEntry.lineNumber = 0;
             codeEntry.columnNumber = 0;
         } else {

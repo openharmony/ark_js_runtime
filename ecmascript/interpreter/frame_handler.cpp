@@ -321,7 +321,7 @@ void InterpretedFrameHandler::DumpPC(std::ostream &os, const uint8_t *pc) const
     ASSERT(frameHandler.HasFrame());
 
     // NOLINTNEXTLINE(cppcoreguidelines-narrowing-conversions, bugprone-narrowing-conversions)
-    int offset = pc - JSMethod::Cast(frameHandler.GetMethod())->GetBytecodeArray();
+    int offset = pc - frameHandler.GetMethod()->GetBytecodeArray();
     os << "offset: " << offset << "\n";
 }
 

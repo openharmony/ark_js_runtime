@@ -58,7 +58,7 @@ public:
     void SetMethodToMap(JSMethod *method)
     {
         if (method != nullptr) {
-            methodMap_.emplace(method->GetFileId().GetOffset(), method);
+            methodMap_.emplace(method->GetMethodId().GetOffset(), method);
         }
     }
 

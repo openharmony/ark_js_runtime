@@ -377,7 +377,7 @@ std::optional<CString> JSBackend::EvaluateValueCmpt(CallFrameId callFrameId, con
     std::unique_ptr<RemoteObject> *result)
 {
     JSMethod *method = DebuggerApi::GetMethod(ecmaVm_);
-    if (method->IsNative()) {
+    if (method->IsNativeWithCallField()) {
         *result = RemoteObject::FromTagged(ecmaVm_,
             Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Native Frame not support.")));
         return "Native Frame not support.";
@@ -403,7 +403,7 @@ std::optional<CString> JSBackend::EvaluateValueCmpt(CallFrameId callFrameId, con
     }
 
     int32_t regIndex = -1;
-    auto varInfos = extractor->GetLocalVariableTable(method->GetFileId());
+    auto varInfos = extractor->GetLocalVariableTable(method->GetMethodId());
     auto iter = varInfos.find(varName.c_str());
     if (iter != varInfos.end()) {
         regIndex = iter->second;
@@ -485,7 +485,7 @@ bool JSBackend::GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFram
     CallFrameId callFrameId = 0;
     auto walkerFunc = [this, &callFrameId, &callFrames](const InterpretedFrameHandler *frameHandler) -> StackState {
         JSMethod *method = DebuggerApi::GetMethod(frameHandler);
-        if (method->IsNative()) {
+        if (method->IsNativeWithCallField()) {
             LOG(INFO, DEBUGGER) << "GenerateCallFrames: Skip CFrame and Native method";
             return StackState::CONTINUE;
         }
@@ -515,7 +515,7 @@ bool JSBackend::GenerateCallFrame(CallFrame *callFrame,
 
     // location
     std::unique_ptr<Location> location = std::make_unique<Location>();
-    CString url = extractor->GetSourceFile(method->GetFileId());
+    CString url = extractor->GetSourceFile(method->GetMethodId());
     auto scriptFunc = [&location](PtScript *script) -> bool {
         location->SetScriptId(script->GetScriptId());
         return true;
@@ -529,7 +529,8 @@ bool JSBackend::GenerateCallFrame(CallFrame *callFrame,
         location->SetColumn(column);
         return true;
     };
-    if (!extractor->MatchWithOffset(callbackFunc, method->GetFileId(), DebuggerApi::GetBytecodeOffset(frameHandler))) {
+    if (!extractor->MatchWithOffset(callbackFunc, method->GetMethodId(),
+                                    DebuggerApi::GetBytecodeOffset(frameHandler))) {
         LOG(ERROR, DEBUGGER) << "GenerateCallFrame: unknown offset: " << DebuggerApi::GetBytecodeOffset(frameHandler);
         return false;
     }
@@ -572,7 +573,7 @@ std::unique_ptr<Scope> JSBackend::GetLocalScopeChain(const InterpretedFrameHandl
         LOG(ERROR, DEBUGGER) << "GetScopeChain: extractor is null";
         return localScope;
     }
-    panda_file::File::EntityId methodId = DebuggerApi::GetMethod(frameHandler)->GetFileId();
+    panda_file::File::EntityId methodId = DebuggerApi::GetMethod(frameHandler)->GetMethodId();
     Local<JSValueRef> name = JSValueRef::Undefined(ecmaVm_);
     Local<JSValueRef> value = JSValueRef::Undefined(ecmaVm_);
     for (const auto &var : extractor->GetLocalVariableTable(methodId)) {
