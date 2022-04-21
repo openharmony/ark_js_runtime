@@ -29,7 +29,7 @@ namespace panda {
 namespace ecmascript {
 class InterpretedFrameHandler;
 class EcmaVM;
-class JSMethod;
+struct JSMethod;
 class JSThread;
 namespace tooling {
 class JSDebugger;

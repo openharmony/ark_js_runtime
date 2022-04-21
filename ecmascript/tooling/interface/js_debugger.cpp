@@ -102,7 +102,7 @@ bool JSDebugger::HandleBreakpoint(const JSMethod *method, uint32_t bcOffset)
     }
 
     auto *pf = method->GetPandaFile();
-    JSPtLocation location {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
+    JSPtLocation location {pf->GetFilename().c_str(), method->GetMethodId(), bcOffset};
 
     hooks_->Breakpoint(location);
     return true;
@@ -115,7 +115,7 @@ void JSDebugger::HandleExceptionThrowEvent(const JSThread *thread, const JSMetho
     }
 
     auto *pf = method->GetPandaFile();
-    JSPtLocation throwLocation {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
+    JSPtLocation throwLocation {pf->GetFilename().c_str(), method->GetMethodId(), bcOffset};
 
     hooks_->Exception(throwLocation);
 }
@@ -127,7 +127,7 @@ bool JSDebugger::HandleStep(const JSMethod *method, uint32_t bcOffset)
     }
 
     auto *pf = method->GetPandaFile();
-    JSPtLocation location {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
+    JSPtLocation location {pf->GetFilename().c_str(), method->GetMethodId(), bcOffset};
 
     hooks_->SingleStep(location);
     return true;
@@ -138,7 +138,7 @@ std::optional<JSBreakpoint> JSDebugger::FindBreakpoint(const JSMethod *method, u
     for (const auto &bp : breakpoints_) {
         if (bp.GetBytecodeOffset() == bcOffset &&
             bp.GetMethod()->GetPandaFile()->GetFilename() == method->GetPandaFile()->GetFilename() &&
-            bp.GetMethod()->GetFileId() == method->GetFileId()) {
+            bp.GetMethod()->GetMethodId() == method->GetMethodId()) {
             return bp;
         }
     }
@@ -167,7 +167,7 @@ JSMethod *JSDebugger::FindMethod(const JSPtLocation &location) const
             JSMethod *methodsData = jsPandaFile->GetMethods();
             uint32_t numberMethods = jsPandaFile->GetNumMethods();
             for (uint32_t i = 0; i < numberMethods; ++i) {
-                if (methodsData[i].GetFileId() == location.GetMethodId()) {
+                if (methodsData[i].GetMethodId() == location.GetMethodId()) {
                     method = methodsData + i;
                     return false;
                 }
@@ -324,7 +324,7 @@ JSTaggedValue JSDebugger::SetGlobalValue(const EcmaVM *ecmaVm, JSTaggedValue key
 
 bool JSDebugger::EvaluateLocalValue(JSMethod *method, JSThread *thread, const CString &varName, int32_t &regIndex)
 {
-    if (method->IsNative()) {
+    if (method->IsNativeWithCallField()) {
         LOG(ERROR, DEBUGGER) << "EvaluateLocalValue: native frame not support";
         THROW_TYPE_ERROR_AND_RETURN(thread, "native frame not support", false);
     }
@@ -334,7 +334,7 @@ bool JSDebugger::EvaluateLocalValue(JSMethod *method, JSThread *thread, const CS
         THROW_TYPE_ERROR_AND_RETURN(thread, "extractor is null", false);
     }
 
-    auto varTbl = extractor->GetLocalVariableTable(method->GetFileId());
+    auto varTbl = extractor->GetLocalVariableTable(method->GetMethodId());
     auto iter = varTbl.find(varName);
     if (iter == varTbl.end()) {
         return false;
