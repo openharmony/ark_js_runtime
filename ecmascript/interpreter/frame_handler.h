@@ -43,22 +43,17 @@ public:
         return sp_ != nullptr;
     }
 
+    inline static bool IsEntryFrame(const uint8_t *pc)
+    {
+        return pc == nullptr;
+    }
+
     bool IsEntryFrame() const
     {
         ASSERT(HasFrame());
-        FrameType type = GetFrameType();
-        if (type == FrameType::INTERPRETER_ENTRY_FRAME) {
-            return true;
-        }
-#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        AsmInterpretedFrame *state = AsmInterpretedFrame::GetFrameFromSp(sp_);
-        return state->function == JSTaggedValue::Hole();
-#else
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        // The structure of InterpretedFrame, AsmInterpretedFrame, InterpretedEntryFrame is the same, order is pc, base.
         InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
-        return state->sp == nullptr;
-#endif
+        return state->pc == nullptr;
     }
 
     void PrevFrame();
