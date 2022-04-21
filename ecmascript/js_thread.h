@@ -86,6 +86,12 @@ struct BCStubEntries {
         return stubId * sizeof(uint64_t);
 #endif
     }
+
+    Address Get(size_t index)
+    {
+        assert(index < BC_HANDLER_STUB_ENTRIES_COUNT);
+        return stubEntries_[index];
+    }
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(BCStubEntries), BCStubEntries::SizeArch32, BCStubEntries::SizeArch64);
 
@@ -289,6 +295,8 @@ public:
 
     void LoadStubsFromFile(std::string &fileName);
 
+    void CheckSwitchDebuggerBCStub();
+
     ThreadId GetThreadId() const
     {
         return id_.load(std::memory_order_relaxed);
@@ -380,6 +388,7 @@ public:
                                                  BCStubEntries,
                                                  RTStubEntries,
                                                  COStubEntries,
+                                                 BCStubEntries,
                                                  base::AlignedUint64,
                                                  base::AlignedPointer,
                                                  GlobalEnvConstants> {
@@ -391,6 +400,7 @@ public:
             BCStubEntriesIndex,
             RTStubEntriesIndex,
             COStubEntriesIndex,
+            BCDebuggerStubEntriesIndex,
             StateBitFieldIndex,
             FrameBaseIndex,
             GlobalConstIndex,
@@ -443,6 +453,11 @@ public:
             return GetOffset<static_cast<size_t>(Index::COStubEntriesIndex)>(isArch32);
         }
 
+        static size_t GetBCDebuggerStubEntriesOffset(bool isArch32)
+        {
+            return GetOffset<static_cast<size_t>(Index::BCDebuggerStubEntriesIndex)>(isArch32);
+        }
+
         static size_t GetFrameBaseOffset(bool isArch32)
         {
             return GetOffset<static_cast<size_t>(Index::FrameBaseIndex)>(isArch32);
@@ -455,6 +470,7 @@ public:
         alignas(EAS) BCStubEntries bcStubEntries_;
         alignas(EAS) RTStubEntries rtStubEntries_;
         alignas(EAS) COStubEntries coStubEntries_;
+        alignas(EAS) BCStubEntries bcDebuggerStubEntries_;
         alignas(EAS) volatile uint64_t threadStateBitField_ {0ULL};
         alignas(EAS) JSTaggedType *frameBase_ {nullptr};
         alignas(EAS) GlobalEnvConstants globalConst_;

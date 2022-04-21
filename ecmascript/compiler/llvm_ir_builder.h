@@ -163,6 +163,7 @@ private:
     V(RuntimeCallWithArgv, (GateRef gate, const std::vector<GateRef> &inList))            \
     V(NoGcRuntimeCall, (GateRef gate, const std::vector<GateRef> &inList))                \
     V(BytecodeCall, (GateRef gate, const std::vector<GateRef> &inList))                   \
+    V(DebuggerBytecodeCall, (GateRef gate, const std::vector<GateRef> &inList))           \
     V(Alloca, (GateRef gate))                                                             \
     V(Block, (int id, const OperandsVector &predecessors))                                \
     V(Goto, (int block, int bbout))                                                       \
@@ -265,7 +266,7 @@ private:
     {
         return enableLog_;
     }
-    LLVMValueRef GetFunction(LLVMValueRef glue, StubIdType id);
+    LLVMValueRef GetFunction(LLVMValueRef glue, StubIdType id, bool isDebug = false);
     bool IsInterpreted();
     bool IsOptimized();
     void SetTailCallAttr(LLVMValueRef call);

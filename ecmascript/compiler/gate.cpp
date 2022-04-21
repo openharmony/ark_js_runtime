@@ -100,6 +100,7 @@ Properties OpCode::GetProperties() const
         case RUNTIME_CALL:
         case NOGC_RUNTIME_CALL:
         case BYTECODE_CALL:
+        case DEBUGGER_BYTECODE_CALL:
         case CALL:
         case RUNTIME_CALL_WITH_ARGV:
             return {FLEX, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
@@ -236,6 +237,7 @@ std::string OpCode::Str() const
         {NOGC_RUNTIME_CALL, "NOGC_RUNTIME_CALL"},
         {CALL, "CALL"},
         {BYTECODE_CALL, "BYTECODE_CALL"},
+        {DEBUGGER_BYTECODE_CALL, "DEBUGGER_BYTECODE_CALL"},
         {ALLOCA, "ALLOCA"},
         {ARG, "ARG"},
         {MUTABLE_DATA, "MUTABLE_DATA"},
