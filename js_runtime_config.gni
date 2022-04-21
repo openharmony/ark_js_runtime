@@ -15,7 +15,6 @@ ark_root = "//ark/runtime_core"
 js_root = "//ark/js_runtime"
 compile_llvm_online = false
 run_with_asan = false
-enable_stub_aot = false
 enable_asm_interp = false
 enable_test_stub = false
 enable_bytrace = true
