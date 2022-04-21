@@ -50,7 +50,7 @@ public:
         if (type == FrameType::INTERPRETER_ENTRY_FRAME) {
             return true;
         }
-#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         AsmInterpretedFrame *state = AsmInterpretedFrame::GetFrameFromSp(sp_);
         return state->function == JSTaggedValue::Hole();
