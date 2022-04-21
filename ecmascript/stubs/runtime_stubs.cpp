@@ -37,7 +37,6 @@
 #include "ecmascript/mem/space-inl.h"
 #include "ecmascript/message_string.h"
 #include "ecmascript/object_factory.h"
-#include "ecmascript/runtime_api.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/tooling/test/utils/test_util.h"
 #include "libpandabase/utils/string_helpers.h"
@@ -1657,13 +1656,12 @@ void RuntimeStubs::InsertOldToNewRememberedSet([[maybe_unused]]uintptr_t argGlue
 }
 
 void RuntimeStubs::MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintptr_t slotAddr,
-    Region *objectRegion, TaggedObject *value,
-    Region *valueRegion)
+                                  Region *objectRegion, TaggedObject *value, Region *valueRegion)
 {
     if (!valueRegion->IsMarking()) {
         return;
     }
-    ::panda::ecmascript::RuntimeApi::MarkObject(slotAddr, objectRegion, value, valueRegion);
+    Barriers::Update(slotAddr, objectRegion, value, valueRegion);
 }
 
 void RuntimeStubs::Initialize(JSThread *thread)
