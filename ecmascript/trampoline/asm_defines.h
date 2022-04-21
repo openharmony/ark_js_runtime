@@ -30,12 +30,12 @@
 #define ASM_JS_METHOD_HOTNESS_COUNTER_OFFSET     (12)
 #define ASM_JS_METHOD_NATIVE_POINTER_OFFSET      (32)
 #ifdef PANDA_TARGET_ARM64
-#define ASM_GLUE_TO_THREAD_OFFSET                (6584)
+#define ASM_GLUE_TO_THREAD_OFFSET                (136)
 #else
 #ifdef  PANDA_USE_MUSL
-#define ASM_GLUE_TO_THREAD_OFFSET                (6608)
+#define ASM_GLUE_TO_THREAD_OFFSET                (136)
 #else
-#define ASM_GLUE_TO_THREAD_OFFSET                (6584)
+#define ASM_GLUE_TO_THREAD_OFFSET                (136)
 #endif
 #endif
 // ecma_runtime_callinfo struct in stack
@@ -70,7 +70,7 @@
 #define ASM_JF_FUNCTION_PROFILE_TYPE_INFO_OFFSET (80)
 #define ASM_JS_METHOD_HOTNESS_COUNTER_OFFSET     (12)
 #define ASM_JS_METHOD_NATIVE_POINTER_OFFSET      (24)
-#define ASM_GLUE_TO_THREAD_OFFSET                (3328)
+#define ASM_GLUE_TO_THREAD_OFFSET                (80)
 // ecma_runtime_callinfo struct in stack
 // -----------------------------
 // | JSTaggedType *prevSp_     |

@@ -44,7 +44,7 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
-    PandaVM *instance {nullptr};
+    EcmaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
 };
@@ -53,11 +53,10 @@ HWTEST_P_L0(DebuggerApiTest, EcmaScriptSuite)
 {
     const char *testName = GetCurrentTestName();
     std::cout << "Running " << testName << std::endl;
-    EcmaVM *vm = EcmaVM::Cast(instance);
-    ASSERT_NE(vm, nullptr);
+    ASSERT_NE(instance, nullptr);
     auto [pandaFile, entryPoint] = GetTestEntryPoint(testName);
 
-    auto res = JSNApi::Execute(vm, pandaFile.c_str(), entryPoint.c_str());
+    auto res = JSNApi::Execute(instance, pandaFile.c_str(), entryPoint.c_str());
     ASSERT_TRUE(res);
 }
 

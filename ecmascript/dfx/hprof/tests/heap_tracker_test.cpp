@@ -43,7 +43,7 @@ public:
     void SetUp() override
     {
         TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
-        EcmaVM::Cast(instance)->SetEnableForceGC(false);
+        instance->SetEnableForceGC(false);
     }
 
     void TearDown() override
@@ -51,7 +51,7 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
-    PandaVM *instance {nullptr};
+    EcmaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
 };

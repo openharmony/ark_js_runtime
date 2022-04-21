@@ -18,33 +18,28 @@
 #include "ecmascript/ic/properties_cache.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/mem/machine_code.h"
-#include "include/panda_vm.h"
 
 namespace panda::ecmascript {
 using CommonStubCSigns = panda::ecmascript::kungfu::CommonStubCSigns;
 using BytecodeStubCSigns = panda::ecmascript::kungfu::BytecodeStubCSigns;
 // static
-JSThread *JSThread::Create(Runtime *runtime, PandaVM *vm)
+JSThread *JSThread::Create(EcmaVM *vm)
 {
-    auto jsThread = new JSThread(runtime, vm);
+    auto jsThread = new JSThread(vm);
 
-    jsThread->nativeAreaAllocator_ = EcmaVM::Cast(vm)->GetNativeAreaAllocator();
-    jsThread->heapRegionAllocator_ = EcmaVM::Cast(vm)->GetHeapRegionAllocator();
+    jsThread->nativeAreaAllocator_ = vm->GetNativeAreaAllocator();
+    jsThread->heapRegionAllocator_ = vm->GetHeapRegionAllocator();
     // algin with 16
     jsThread->glueData_.frameBase_ = static_cast<JSTaggedType *>(
-        EcmaVM::Cast(vm)->GetNativeAreaAllocator()->Allocate(sizeof(JSTaggedType) * MAX_STACK_SIZE));
+        vm->GetNativeAreaAllocator()->Allocate(sizeof(JSTaggedType) * MAX_STACK_SIZE));
     jsThread->glueData_.currentFrame_ = jsThread->glueData_.frameBase_ + MAX_STACK_SIZE;
-    JSThread::SetCurrent(jsThread);
     EcmaInterpreter::InitStackFrame(jsThread);
     return jsThread;
 }
 
-JSThread::JSThread(Runtime *runtime, PandaVM *vm)
-    : ManagedThread(GetCurrentThreadId(), runtime->GetInternalAllocator(), vm,
-                    Thread::ThreadType::THREAD_TYPE_MANAGED)
+JSThread::JSThread(EcmaVM *vm) : id_(os::thread::GetCurrentThreadId()), vm_(vm)
 {
-    SetLanguageContext(runtime->GetLanguageContext(panda_file::SourceLang::ECMASCRIPT));
-    auto chunk = EcmaVM::Cast(vm)->GetChunk();
+    auto chunk = vm->GetChunk();
     globalStorage_ = chunk->New<EcmaGlobalStorage>(chunk);
     propertiesCache_ = new PropertiesCache();
     vmThreadControl_ = new VmThreadControl();
@@ -59,7 +54,7 @@ JSThread::~JSThread()
     currentHandleStorageIndex_ = -1;
     handleScopeCount_ = 0;
     handleScopeStorageNext_ = handleScopeStorageEnd_ = nullptr;
-    EcmaVM::Cast(GetVM())->GetChunk()->Delete(globalStorage_);
+    GetEcmaVM()->GetChunk()->Delete(globalStorage_);
 
     GetNativeAreaAllocator()->Free(glueData_.frameBase_, sizeof(JSTaggedType) * MAX_STACK_SIZE);
     glueData_.frameBase_ = nullptr;
@@ -73,11 +68,6 @@ JSThread::~JSThread()
         delete vmThreadControl_;
         vmThreadControl_ = nullptr;
     }
-}
-
-EcmaVM *JSThread::GetEcmaVM() const
-{
-    return EcmaVM::Cast(GetVM());
 }
 
 void JSThread::SetException(JSTaggedValue exception)
@@ -286,11 +276,11 @@ bool JSThread::CheckSafepoint() const
         vmThreadControl_->SuspendVM();
     }
 #ifndef NDEBUG
-    EcmaVM::Cast(GetVM())->CollectGarbage(TriggerGCType::FULL_GC);
+    GetEcmaVM()->CollectGarbage(TriggerGCType::FULL_GC);
     return true;
 #endif
     if (IsMarkFinished()) {
-        auto heap = EcmaVM::Cast(GetVM())->GetHeap();
+        auto heap = GetEcmaVM()->GetHeap();
         heap->GetConcurrentMarker()->HandleMarkFinished();
         return true;
     }

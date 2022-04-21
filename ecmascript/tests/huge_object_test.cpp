@@ -50,7 +50,7 @@ public:
     }
 
     JSThread *thread {nullptr};
-    PandaVM *instance {nullptr};
+    EcmaVM *instance {nullptr};
     ecmascript::EcmaHandleScope *scope {nullptr};
 };
 
