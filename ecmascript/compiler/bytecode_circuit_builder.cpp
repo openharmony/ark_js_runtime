@@ -2270,7 +2270,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                 // handle returnundefined bytecode
                 ASSERT(bb.succs.empty());
                 auto constant = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
-                                                 TaggedValue::VALUE_UNDEFINED,
+                                                 coretypes::TaggedValue::VALUE_UNDEFINED,
                                                  { Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST)) },
                                                  GateType::JS_ANY);
                 auto gate = circuit_.NewGate(OpCode(OpCode::RETURN), 0,
