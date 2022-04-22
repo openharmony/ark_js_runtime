@@ -96,11 +96,12 @@ public:
         if (test_->vmStart) {
             test_->vmStart();
         }
+        TestUtil::Event(DebugEvent::VM_START);
     }
 
     void TerminateTest()
     {
-        debugInterface_->RegisterHooks(nullptr);
+        debugInterface_->UnregisterHooks();
         if (TestUtil::IsTestFinished()) {
             return;
         }

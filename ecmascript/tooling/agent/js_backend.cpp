@@ -30,7 +30,11 @@ using ObjectType = RemoteObject::TypeName;
 using ObjectSubType = RemoteObject::SubTypeName;
 using ObjectClassName = RemoteObject::ClassName;
 
+#ifdef DEBUGGER_TEST
+const CString DATA_APP_PATH = "/";
+#else
 const CString DATA_APP_PATH = "/data/";
+#endif
 
 JSBackend::JSBackend(FrontEnd *frontend) : frontend_(frontend)
 {
