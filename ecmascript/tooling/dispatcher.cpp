@@ -19,6 +19,8 @@
 
 #include "ecmascript/tooling/agent/debugger_impl.h"
 #include "ecmascript/tooling/agent/runtime_impl.h"
+#include "ecmascript/tooling/agent/heapprofiler_impl.h"
+#include "ecmascript/tooling/agent/profiler_impl.h"
 #include "ecmascript/tooling/front_end.h"
 
 namespace panda::ecmascript::tooling {
@@ -136,6 +138,10 @@ Dispatcher::Dispatcher(FrontEnd *front)
     std::unique_ptr<JSBackend> backend = std::make_unique<JSBackend>(front);
     dispatchers_["Runtime"] =
         std::make_unique<RuntimeImpl::DispatcherImpl>(front, std::make_unique<RuntimeImpl>(backend.get()));
+    dispatchers_["HeapProfiler"] =
+        std::make_unique<HeapProfilerImpl::DispatcherImpl>(front, std::make_unique<HeapProfilerImpl>(front));
+    dispatchers_["Profiler"] =
+        std::make_unique<ProfilerImpl::DispatcherImpl>(front, std::make_unique<ProfilerImpl>(backend.get()));
     dispatchers_["Debugger"] =
         std::make_unique<DebuggerImpl::DispatcherImpl>(front, std::make_unique<DebuggerImpl>(std::move(backend)));
 }
