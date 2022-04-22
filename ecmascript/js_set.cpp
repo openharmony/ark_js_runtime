@@ -16,7 +16,7 @@
 #include "js_set.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/object_factory.h"
-#include "linked_hash_table-inl.h"
+#include "linked_hash_table.h"
 #include "utils/bit_utils.h"
 
 namespace panda::ecmascript {

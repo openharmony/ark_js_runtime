@@ -20,7 +20,7 @@
 #include "ecmascript/js_api_tree_set_iterator.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array-inl.h"
-#include "ecmascript/tagged_tree-inl.h"
+#include "ecmascript/tagged_tree.h"
 
 namespace panda::ecmascript::containers {
 JSTaggedValue ContainersTreeSet::TreeSetConstructor(EcmaRuntimeCallInfo *argv)
