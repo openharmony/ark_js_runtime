@@ -27,6 +27,8 @@
 namespace panda::ecmascript::tooling {
 class JSBackend {
 public:
+    enum NumberSize : uint8_t { UINT16INT16 = 2, UINT32INT32FLOAT32 = 4, FLOAT64BIGINT64BIGUINT64 = 8 };
+
     explicit JSBackend(FrontEnd *frontend);
     explicit JSBackend(const EcmaVM *vm);
     ~JSBackend();
@@ -131,6 +133,13 @@ private:
     void GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn, bool isAccessorOnly,
                              CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
     bool DecodeAndCheckBase64(const CString &src, CString &dest);
+    void AddTypedArrayRefs(Local<ArrayBufferRef> arrayBufferRef,
+        CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
+    template <typename TypedArrayRef>
+    void AddTypedArrayRef(Local<ArrayBufferRef> arrayBufferRef, int32_t length,
+        const char* name, CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
+    void GetAdditionalProperties(const Local<JSValueRef> &value,
+        CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
 
     constexpr static int32_t SPECIAL_LINE_MARK = -1;
 
