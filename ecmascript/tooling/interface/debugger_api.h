@@ -80,11 +80,13 @@ public:
     static void DestroyJSDebugger(JSDebugger *debugger);
     static void RegisterHooks(JSDebugger *debugger, PtHooks *hooks);
     static bool SetBreakpoint(JSDebugger *debugger, const JSPtLocation &location,
-        const std::optional<CString> &condition);
+        const Local<FunctionRef> &condFuncRef);
     static bool RemoveBreakpoint(JSDebugger *debugger, const JSPtLocation &location);
     static void InitJSDebugger(JSDebugger *debugger);
     static void HandleUncaughtException(const EcmaVM *ecmaVm, CString &message);
-    static Local<JSValueRef> ExecuteFromBuffer(EcmaVM *ecmaVm, const void *buffer, size_t size);
+    static Local<JSValueRef> EvaluateViaFuncCall(EcmaVM *ecmaVm, const Local<FunctionRef> &funcRef);
+    static Local<FunctionRef> GenerateFuncFromBuffer(const EcmaVM *ecmaVm, const void *buffer, size_t size,
+        std::string_view entryPoint);
 
     // JSMehthod
     static CString ParseFunctionName(const JSMethod *method);
@@ -94,6 +96,9 @@ public:
     static void SetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t slot, Local<JSValueRef> value);
     static bool EvaluateLexicalValue(const EcmaVM *ecmaVm, const CString &name, int32_t &level, uint32_t &slot);
     static Local<JSValueRef> GetLexicalValueInfo(const EcmaVM *ecmaVm, const CString &name);
+
+private:
+    static JSTaggedValue GetCurrentEvaluateEnv(const EcmaVM *ecmaVm);
 };
 }  // namespace panda::ecmascript::tooling
 

@@ -25,8 +25,8 @@ namespace panda::ecmascript::tooling {
 class JSBreakpoint {
 public:
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-    JSBreakpoint(JSMethod *method, uint32_t bcOffset, const std::optional<CString> &condition = {})
-        : method_(method), bcOffset_(bcOffset), condition_(condition) {}
+    JSBreakpoint(JSMethod *method, uint32_t bcOffset, const Global<FunctionRef> &condFuncRef)
+        : method_(method), bcOffset_(bcOffset), condFuncRef_(condFuncRef) {}
     ~JSBreakpoint() = default;
 
     JSMethod *GetMethod() const
@@ -44,14 +44,9 @@ public:
         return GetMethod() == bpoint.GetMethod() && GetBytecodeOffset() == bpoint.GetBytecodeOffset();
     }
 
-    const CString &GetCondition() const
+    const Global<FunctionRef> &GetConditionFunction()
     {
-        return condition_.value();
-    }
-
-    bool HasCondition() const
-    {
-        return condition_.has_value();
+        return condFuncRef_;
     }
 
     DEFAULT_COPY_SEMANTIC(JSBreakpoint);
@@ -60,7 +55,7 @@ public:
 private:
     JSMethod *method_;
     uint32_t bcOffset_;
-    std::optional<CString> condition_;
+    Global<FunctionRef> condFuncRef_;
 };
 
 class HashJSBreakpoint {
@@ -75,35 +70,30 @@ class JSDebugger : public JSDebugInterface, RuntimeListener {
 public:
     explicit JSDebugger(const EcmaVM *vm) : ecmaVm_(vm)
     {
-        auto notificationMgr = ecmaVm_->GetNotificationManager();
-        if (notificationMgr != nullptr) {
-            notificationMgr->AddListener(this);
-        }
+        notificationMgr_ = ecmaVm_->GetJsDebuggerManager()->GetNotificationManager();
+        notificationMgr_->AddListener(this);
     }
     ~JSDebugger() override
     {
-        auto notificationMgr = ecmaVm_->GetNotificationManager();
-        if (notificationMgr != nullptr) {
-            notificationMgr->RemoveListener();
-        }
+        notificationMgr_->RemoveListener();
     }
 
     void RegisterHooks(PtHooks *hooks) override
     {
         hooks_ = hooks;
         // send vm start event after add hooks
-        ecmaVm_->GetNotificationManager()->VmStartEvent();
+        notificationMgr_->VmStartEvent();
     }
     void UnregisterHooks() override
     {
         // send vm death event before delete hooks
-        ecmaVm_->GetNotificationManager()->VmDeathEvent();
+        notificationMgr_->VmDeathEvent();
         hooks_ = nullptr;
     }
 
     void Init();
 
-    bool SetBreakpoint(const JSPtLocation &location, const std::optional<CString> &condition = {}) override;
+    bool SetBreakpoint(const JSPtLocation &location, const Local<FunctionRef> &condFuncRef) override;
     bool RemoveBreakpoint(const JSPtLocation &location) override;
     void BytecodePcChanged(JSThread *thread, JSMethod *method, uint32_t bcOffset) override;
     void LoadModule(std::string_view filename) override
@@ -137,7 +127,6 @@ private:
     bool HandleBreakpoint(const JSMethod *method, uint32_t bcOffset);
     void SetGlobalFunction(const JSHandle<JSTaggedValue> &funcName, EcmaEntrypoint nativeFunc, int32_t numArgs) const;
 
-    static void PrepareEvaluateEnv(const EcmaVM *ecmaVm, InterpretedFrameHandler &frameHandler);
     static JSTaggedValue DebuggerSetValue(EcmaRuntimeCallInfo *argv);
     static JSTaggedValue DebuggerGetValue(EcmaRuntimeCallInfo *argv);
     static JSTaggedValue GetGlobalValue(const EcmaVM *ecmaVm, JSTaggedValue key);
@@ -146,6 +135,7 @@ private:
 
     const EcmaVM *ecmaVm_;
     PtHooks *hooks_ {nullptr};
+    NotificationManager *notificationMgr_ {nullptr};
 
     CUnorderedSet<JSBreakpoint, HashJSBreakpoint> breakpoints_ {};
 };
