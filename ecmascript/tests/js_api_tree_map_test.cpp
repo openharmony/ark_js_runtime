@@ -25,7 +25,7 @@
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/object_factory.h"
-#include "ecmascript/tagged_tree-inl.h"
+#include "ecmascript/tagged_tree.h"
 #include "ecmascript/tests/test_helper.h"
 
 using namespace panda;

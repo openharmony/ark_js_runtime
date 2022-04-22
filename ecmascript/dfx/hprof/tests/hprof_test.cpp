@@ -67,7 +67,7 @@
 #include "ecmascript/js_weak_container.h"
 #include "ecmascript/layout_info-inl.h"
 #include "ecmascript/lexical_env.h"
-#include "ecmascript/linked_hash_table-inl.h"
+#include "ecmascript/linked_hash_table.h"
 #include "ecmascript/mem/assert_scope.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/machine_code.h"

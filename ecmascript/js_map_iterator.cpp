@@ -17,7 +17,7 @@
 #include "builtins/builtins_errors.h"
 #include "js_array.h"
 #include "js_map.h"
-#include "linked_hash_table-inl.h"
+#include "linked_hash_table.h"
 #include "object_factory.h"
 
 namespace panda::ecmascript {

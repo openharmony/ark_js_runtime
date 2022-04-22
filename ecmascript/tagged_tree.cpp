@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/tagged_tree-inl.h"
+#include "ecmascript/tagged_tree.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/object_factory.h"
 #include "libpandabase/utils/bit_utils.h"
