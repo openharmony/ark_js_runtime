@@ -838,8 +838,6 @@ void JSBackend::AddTypedArrayRef(Local<ArrayBufferRef> arrayBufferRef, int32_t l
         .SetIsOwn(true)
         .SetValue(std::move(remoteObjectTypedArray));
     outPropertyDesc->emplace_back(std::move(debuggerProperty));
-
-    return;
 }
 
 void JSBackend::AddTypedArrayRefs(Local<ArrayBufferRef> arrayBufferRef,
@@ -874,8 +872,6 @@ void JSBackend::AddTypedArrayRefs(Local<ArrayBufferRef> arrayBufferRef,
         AddTypedArrayRef<BigInt64ArrayRef>(arrayBufferRef, typedArrayLength, "[[BigInt64Array]]", outPropertyDesc);
         AddTypedArrayRef<BigUint64ArrayRef>(arrayBufferRef, typedArrayLength, "[[BigUint64Array]]", outPropertyDesc);
     }
-
-    return;
 }
 
 void JSBackend::GetAdditionalProperties(const Local<JSValueRef> &value,
@@ -916,8 +912,6 @@ void JSBackend::GetAdditionalProperties(const Local<JSValueRef> &value,
             outPropertyDesc->emplace_back(std::move(debuggerProperty));
         }
     }
-
-    return;
 }
 
 void JSBackend::CallFunctionOn([[maybe_unused]] const CString &functionDeclaration,
