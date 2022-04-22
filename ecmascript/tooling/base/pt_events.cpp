@@ -714,4 +714,58 @@ Local<ObjectRef> ScriptParsed::ToObject(const EcmaVM *ecmaVm)
 
     return object;
 }
+
+std::unique_ptr<AddHeapSnapshotChunk> AddHeapSnapshotChunk::Create(char* data, int size)
+{
+    auto addHeapSnapshotChunk = std::make_unique<AddHeapSnapshotChunk>();
+
+    addHeapSnapshotChunk->chunk_.resize(size);
+    for (int i = 0; i < size; ++i) {
+        addHeapSnapshotChunk->chunk_[i] = data[i];
+    }
+
+    return addHeapSnapshotChunk;
+}
+
+
+std::unique_ptr<AddHeapSnapshotChunk> AddHeapSnapshotChunk::Create(const EcmaVM *ecmaVm,
+                                                                   const Local<JSValueRef> &params)
+{
+    if (params.IsEmpty()) {
+        LOG(ERROR, DEBUGGER) << "AddHeapSnapshotChunk::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto addHeapSnapshotChunk = std::make_unique<AddHeapSnapshotChunk>();
+
+    Local<JSValueRef> result =
+        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "chunk")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            addHeapSnapshotChunk->chunk_ = DebuggerApi::ToCString(result);
+        } else {
+            error += "'chunk' should a String;";
+        }
+    } else {
+        error += "should contain 'chunk';";
+    }
+    
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "AddHeapSnapshotChunk::Create " << error;
+        return nullptr;
+    }
+
+    return addHeapSnapshotChunk;
+}
+
+Local<ObjectRef> AddHeapSnapshotChunk::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "chunk")),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, chunk_.c_str())));
+
+    return params;
+}
 }  // namespace panda::ecmascript::tooling

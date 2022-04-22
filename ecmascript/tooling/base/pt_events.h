@@ -735,5 +735,25 @@ private:
     std::optional<CString> scriptLanguage_ {};
     std::optional<CString> embedderName_ {};
 };
+
+class AddHeapSnapshotChunk final : public PtBaseEvents {
+public:
+    AddHeapSnapshotChunk() = default;
+    ~AddHeapSnapshotChunk() override = default;
+    static std::unique_ptr<AddHeapSnapshotChunk> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<AddHeapSnapshotChunk> Create(char* data, int size);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    CString GetName() override
+    {
+        return "HeapProfiler.addHeapSnapshotChunk";
+    }
+
+private:
+    NO_COPY_SEMANTIC(AddHeapSnapshotChunk);
+    NO_MOVE_SEMANTIC(AddHeapSnapshotChunk);
+
+    CString chunk_ {};
+};
 }  // namespace panda::ecmascript::tooling
 #endif
