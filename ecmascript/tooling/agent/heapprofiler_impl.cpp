@@ -15,12 +15,6 @@
 
 #include "ecmascript/tooling/agent/heapprofiler_impl.h"
 
-#include "ecmascript/tooling/base/pt_events.h"
-#include "ecmascript/tooling/base/pt_params.h"
-#include "ecmascript/tooling/base/pt_returns.h"
-#include "ecmascript/tooling/dispatcher.h"
-#include "ecmascript/tooling/front_end.h"
-#include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript::tooling {
 HeapProfilerImpl::DispatcherImpl::DispatcherImpl(FrontEnd *frontend, std::unique_ptr<HeapProfilerImpl> heapprofiler)
@@ -187,25 +181,25 @@ void HeapProfilerImpl::DispatcherImpl::TakeHeapSnapshot(const DispatchRequest &r
 DispatchResponse HeapProfilerImpl::AddInspectedHeapObject(
     [[maybe_unused]] std::unique_ptr<AddInspectedHeapObjectParams> params)
 {
-    LOG(ERROR, DEBUGGER) << "AddInspectedHeapObject not support now."
+    LOG(ERROR, DEBUGGER) << "AddInspectedHeapObject not support now.";
     return DispatchResponse::Ok();
 }
 
 DispatchResponse HeapProfilerImpl::CollectGarbage()
 {
-    LOG(ERROR, DEBUGGER) << "CollectGarbage not support now."
+    LOG(ERROR, DEBUGGER) << "CollectGarbage not support now.";
     return DispatchResponse::Ok();
 }
 
 DispatchResponse HeapProfilerImpl::Enable()
 {
-    LOG(ERROR, DEBUGGER) << "Enable not support now."
+    LOG(ERROR, DEBUGGER) << "Enable not support now.";
     return DispatchResponse::Ok();
 }
 
 DispatchResponse HeapProfilerImpl::Disable()
 {
-    LOG(ERROR, DEBUGGER) << "Disable not support now."
+    LOG(ERROR, DEBUGGER) << "Disable not support now.";
     return DispatchResponse::Ok();
 }
 
@@ -214,7 +208,7 @@ DispatchResponse HeapProfilerImpl::GetHeapObjectId([[maybe_unused]] std::unique_
 {
     ASSERT(objectId != nullptr);
     *objectId = 0;
-    LOG(ERROR, DEBUGGER) << "GetHeapObjectId not support now."
+    LOG(ERROR, DEBUGGER) << "GetHeapObjectId not support now.";
     return DispatchResponse::Ok();
 }
 
@@ -222,32 +216,38 @@ DispatchResponse HeapProfilerImpl::GetObjectByHeapObjectId(
     [[maybe_unused]] std::unique_ptr<GetObjectByHeapObjectIdParams> params,
     [[maybe_unused]] std::unique_ptr<RemoteObject> *remoteObjectResult)
 {
-    LOG(ERROR, DEBUGGER) << "GetObjectByHeapObjectId not support now."
+    LOG(ERROR, DEBUGGER) << "GetObjectByHeapObjectId not support now.";
     return DispatchResponse::Ok();
 }
 
 DispatchResponse HeapProfilerImpl::GetSamplingProfile([[maybe_unused]]std::unique_ptr<SamplingHeapProfile> *profile)
 {
-    LOG(ERROR, DEBUGGER) << "GetSamplingProfile not support now."
+    LOG(ERROR, DEBUGGER) << "GetSamplingProfile not support now.";
     return DispatchResponse::Ok();
 }
 
 DispatchResponse HeapProfilerImpl::StartSampling([[maybe_unused]]std::unique_ptr<StartSamplingParams> params)
 {
-    LOG(ERROR, DEBUGGER) << "StartSampling not support now."
+    LOG(ERROR, DEBUGGER) << "StartSampling not support now.";
     return DispatchResponse::Ok();
 }
 
 DispatchResponse HeapProfilerImpl::StartTrackingHeapObjects(
     [[maybe_unused]] std::unique_ptr<StartTrackingHeapObjectsParams> params)
 {
-    return DispatchResponse::Ok();
+    auto ecmaVm = (panda::EcmaVM *)static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM();
+    bool result = panda::DFXJSNApi::StartHeapTracking(ecmaVm, 0.05, true);
+    if (result == true) {
+        return DispatchResponse::Ok();
+    } else {
+        return DispatchResponse::Fail("StartHeapTracking fail");
+    }
 }
 
 
 DispatchResponse HeapProfilerImpl::StopSampling([[maybe_unused]]std::unique_ptr<SamplingHeapProfile> *profile)
 {
-    LOG(ERROR, DEBUGGER) << "StopSampling not support now."
+    LOG(ERROR, DEBUGGER) << "StopSampling not support now.";
     return DispatchResponse::Ok();
 }
 

@@ -19,12 +19,19 @@
 #include "libpandabase/macros.h"
 #include "ecmascript/tooling/agent/js_backend.h"
 #include "ecmascript/tooling/base/pt_params.h"
+#include "ecmascript/tooling/base/pt_events.h"
+#include "ecmascript/tooling/base/pt_returns.h"
 #include "ecmascript/tooling/dispatcher.h"
+#include "ecmascript/tooling/interface/stream.h"
+#include "ecmascript/tooling/protocol_handler.h"
+#include "ecmascript/tooling/front_end.h"
+#include "ecmascript/napi/include/dfx_jsnapi.h"
+#include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript::tooling {
 class HeapProfilerImpl final {
 public:
-    explicit HeapProfilerImpl(std::unique_ptr<JSBackend> backend) : backend_(std::move(backend)) {}
+    explicit HeapProfilerImpl(FrontEnd *frontend) : frontend_(frontend) {}
     ~HeapProfilerImpl() = default;
 
     DispatchResponse AddInspectedHeapObject(std::unique_ptr<AddInspectedHeapObjectParams> params);
@@ -73,7 +80,28 @@ private:
     NO_COPY_SEMANTIC(HeapProfilerImpl);
     NO_MOVE_SEMANTIC(HeapProfilerImpl);
 
-    std::unique_ptr<JSBackend> backend_ {nullptr};
+    FrontEnd* frontend_ {nullptr};
+};
+
+class HeapProfilerStream final : public Stream {
+public:
+    explicit HeapProfilerStream(FrontEnd* frontend)
+        : frontend_(frontend) {}
+    void EndOfStream() override {}
+    int GetSize() override { return 102400; }
+    bool WriteChunk(char* data, int size) override 
+    {
+        auto ecmaVm = static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM();
+        AddHeapSnapshotChunk::Create(data, size);
+        frontend_->SendNotification(ecmaVm, std::make_unique<AddHeapSnapshotChunk>());
+        return true;
+    }
+
+private:
+    NO_COPY_SEMANTIC(HeapProfilerStream);
+    NO_MOVE_SEMANTIC(HeapProfilerStream);
+
+    FrontEnd* frontend_ {nullptr};
 };
 }  // namespace panda::ecmascript::tooling
 #endif
