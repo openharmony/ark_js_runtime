@@ -20,7 +20,7 @@
 namespace panda::ecmascript::x64 {
 class AssemblerModuleX64 {
 public:
-    static void Generate_CallRuntime(AssemblerX64 *assembler);
+    static void CallRuntime(AssemblerX64 *assembler);
 };
 }  // namespace panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H
