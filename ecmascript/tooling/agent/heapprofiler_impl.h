@@ -91,11 +91,11 @@ public:
         : frontend_(frontend) {}
     
     void EndOfStream() override {}
-    int GetSize() override 
-    { 
-        return MAX_HEAPPROFILER_CHUNK_SIZE; 
+    int GetSize() override
+    {
+        return MAX_HEAPPROFILER_CHUNK_SIZE;
     }
-    bool WriteChunk (char* data, int size) override 
+    bool WriteChunk (char* data, int size) override
     {
         auto ecmaVm = static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM();
         AddHeapSnapshotChunk::Create(data, size);
