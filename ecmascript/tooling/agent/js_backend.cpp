@@ -827,6 +827,13 @@ void JSBackend::CallFunctionOn([[maybe_unused]] const CString &functionDeclarati
     *outRemoteObject = RemoteObject::FromTagged(ecmaVm_, error);
 }
 
+void JSBackend::GetHeapUsage(double *usedSize, double *totalSize)
+{
+    auto ecmaVm = const_cast<EcmaVM *>(static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM());
+    *totalSize = static_cast<double>(DFXJSNApi::GetHeapTotalSize(ecmaVm));
+    *usedSize = static_cast<double>(DFXJSNApi::GetHeapUsedSize(ecmaVm));
+}
+
 bool JSBackend::DecodeAndCheckBase64(const CString &src, CString &dest)
 {
     dest.resize(base64::decoded_size(src.size()));
@@ -838,4 +845,4 @@ bool JSBackend::DecodeAndCheckBase64(const CString &src, CString &dest)
     }
     return false;
 }
-}  // namespace panda::ecmascript::tooling
+}  //  namespace panda::ecmascript::tooling
