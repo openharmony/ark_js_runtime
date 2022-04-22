@@ -15,7 +15,7 @@
 
 #include "ecmascript/js_tagged_value.h"
 #include "js_map.h"
-#include "linked_hash_table-inl.h"
+#include "linked_hash_table.h"
 #include "object_factory.h"
 #include "utils/bit_utils.h"
 

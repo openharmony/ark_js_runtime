@@ -19,7 +19,7 @@
 #include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_set_iterator.h"
 #include "ecmascript/js_weak_container.h"
-#include "ecmascript/linked_hash_table-inl.h"
+#include "ecmascript/linked_hash_table.h"
 #include "ecmascript/object_factory.h"
 
 namespace panda::ecmascript::builtins {
