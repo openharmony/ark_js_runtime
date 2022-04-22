@@ -217,7 +217,10 @@ private:
 
     inline void SetArg(size_t idx, const JSTaggedValue tagged)
     {
-        *reinterpret_cast<JSTaggedValue *>(GetArgAddress(idx)) = tagged;
+        uintptr_t addr = GetArgAddress(idx);
+        if (addr != 0U) {
+            *reinterpret_cast<JSTaggedValue *>(addr) = tagged;
+        }
     }
 
 private:
