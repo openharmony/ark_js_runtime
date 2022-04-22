@@ -25,9 +25,9 @@ public:
 
     virtual void EndOfStream() = 0;
     // Get chunk's size
-    virtual int GetSize() 
-    { 
-        return MAX_CHUNK_SIZE; 
+    virtual int GetSize()
+    {
+        return MAX_CHUNK_SIZE;
     }
     // Writes the chunk of data into the stream
     virtual bool WriteChunk (char* data, int size) = 0;
