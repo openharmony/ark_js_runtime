@@ -236,7 +236,7 @@ DispatchResponse HeapProfilerImpl::StartTrackingHeapObjects(
     [[maybe_unused]] std::unique_ptr<StartTrackingHeapObjectsParams> params)
 {
     auto ecmaVm = (panda::EcmaVM *)static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM();
-    bool result = panda::DFXJSNApi::StartHeapTracking(ecmaVm, 0.05, true);
+    bool result = panda::DFXJSNApi::StartHeapTracking(ecmaVm, INTERVAL, true);
     if (result == true) {
         return DispatchResponse::Ok();
     } else {
