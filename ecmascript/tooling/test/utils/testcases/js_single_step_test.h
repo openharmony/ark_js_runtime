@@ -41,8 +41,8 @@ public:
                     return true;
                 }
                 flag_ = false;
-                auto error = debugInterface_->SetBreakpoint(locationEnd_);
-                ASSERT_FALSE(error);
+                auto ret = debugInterface_->SetBreakpoint(locationEnd_);
+                ASSERT_TRUE(ret);
             }
             return true;
         };
@@ -82,7 +82,7 @@ public:
     }
 
 private:
-    CString pandaFile_ = "/data/test/Sample.abc";
+    CString pandaFile_ = DEBUGGER_ABC_DIR "Sample.abc";
     CString entryPoint_ = "_GLOBAL::func_main_0";
     JSPtLocation locationStart_ {nullptr, JSPtLocation::EntityId(0), 0};
     JSPtLocation locationEnd_ {nullptr, JSPtLocation::EntityId(0), 0};

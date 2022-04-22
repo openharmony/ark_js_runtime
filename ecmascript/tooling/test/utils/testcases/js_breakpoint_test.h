@@ -44,8 +44,8 @@ public:
                 }
                 ASSERT_TRUE(backend_->NotifyScriptParsed(0, pandaFile_));
                 flag_ = false;
-                auto error = debugInterface_->SetBreakpoint(location_);
-                ASSERT_FALSE(error);
+                auto ret = debugInterface_->SetBreakpoint(location_);
+                ASSERT_TRUE(ret);
             }
             return true;
         };
@@ -73,7 +73,7 @@ public:
     ~JsBreakpointTest() = default;
 
 private:
-    CString pandaFile_ = "/data/test/Sample.abc";
+    CString pandaFile_ = DEBUGGER_ABC_DIR "Sample.abc";
     CString entryPoint_ = "_GLOBAL::func_main_0";
     JSPtLocation location_ {nullptr, JSPtLocation::EntityId(0), 0};
     size_t breakpointCounter_ = 0;

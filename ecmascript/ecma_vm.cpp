@@ -175,7 +175,6 @@ bool EcmaVM::Initialize()
     thread_->SetGlobalObject(GetGlobalEnv()->GetGlobalObject());
     moduleManager_ = new ModuleManager(this);
     InitializeFinish();
-    notificationManager_->VmStartEvent();
     return true;
 }
 

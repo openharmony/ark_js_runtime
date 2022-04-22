@@ -81,7 +81,7 @@ public:
 
     static bool WaitForInit()
     {
-        return WaitForEvent(DebugEvent::VM_INITIALIZATION,
+        return WaitForEvent(DebugEvent::VM_START,
             []() REQUIRES(eventMutex_) {
                 return initialized_;
             }, [] {});
@@ -93,7 +93,7 @@ public:
         os::memory::LockHolder holder(eventMutex_);
         lastEvent_ = event;
         lastEventLocation_ = location;
-        if (event == DebugEvent::VM_INITIALIZATION) {
+        if (event == DebugEvent::VM_START) {
             initialized_ = true;
         }
         eventCv_.Signal();
