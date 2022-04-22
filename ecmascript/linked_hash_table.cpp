@@ -13,10 +13,9 @@
  * limitations under the License.
  */
 
+#include "linked_hash_table.h"
 #include "ecmascript/js_object-inl.h"
-
 #include "libpandabase/utils/bit_utils.h"
-#include "linked_hash_table-inl.h"
 #include "object_factory.h"
 
 namespace panda::ecmascript {

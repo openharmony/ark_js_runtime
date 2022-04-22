@@ -26,7 +26,7 @@
 #include "ecmascript/js_set.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/js_typed_array.h"
-#include "ecmascript/linked_hash_table-inl.h"
+#include "ecmascript/linked_hash_table.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tests/test_helper.h"
 

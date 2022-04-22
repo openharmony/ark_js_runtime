@@ -16,7 +16,7 @@
 #include "ecmascript/js_api_tree_set.h"
 
 #include "ecmascript/js_tagged_value.h"
-#include "ecmascript/tagged_tree-inl.h"
+#include "ecmascript/tagged_tree.h"
 
 namespace panda::ecmascript {
 void JSAPITreeSet::Add(JSThread *thread, const JSHandle<JSAPITreeSet> &set, const JSHandle<JSTaggedValue> &value)

@@ -18,7 +18,7 @@
 #include "base/builtins_base.h"
 #include "js_api_tree_set.h"
 #include "js_array.h"
-#include "tagged_tree-inl.h"
+#include "tagged_tree.h"
 #include "object_factory.h"
 
 namespace panda::ecmascript {
