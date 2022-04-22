@@ -59,9 +59,9 @@ public:
     std::optional<CString> StepOver();
     std::optional<CString> StepOut();
     std::optional<CString> EvaluateValue(CallFrameId callFrameId, const CString &expression,
-                                       std::unique_ptr<RemoteObject> *result);
-    std::optional<CString> EvaluateValueCmpt(CallFrameId callFrameId, const CString &expression,
-                                       std::unique_ptr<RemoteObject> *result);
+                                         std::unique_ptr<RemoteObject> *result);
+    std::optional<CString> CmptEvaluateValue(CallFrameId callFrameId, const CString &expression,
+                                         std::unique_ptr<RemoteObject> *result);
 
     /**
      * @brief: match first script and callback

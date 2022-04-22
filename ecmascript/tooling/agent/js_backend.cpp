@@ -261,15 +261,21 @@ std::optional<CString> JSBackend::SetBreakpointByUrl(const CString &url, int32_t
 
     auto callbackFunc = [this, fileName, &condition](File::EntityId id, uint32_t offset) -> bool {
         JSPtLocation location {fileName.c_str(), id, offset};
+        Local<FunctionRef> condFuncRef = FunctionRef::Undefined(ecmaVm_);
         if (condition.has_value()) {
             CString dest;
             if (!DecodeAndCheckBase64(condition.value(), dest)) {
                 LOG(ERROR, DEBUGGER) << "SetBreakpointByUrl: base64 decode failed";
                 return false;
             }
-            return DebuggerApi::SetBreakpoint(debugger_, location, dest);
+            condFuncRef = DebuggerApi::GenerateFuncFromBuffer(ecmaVm_, dest.data(), dest.size(),
+                JSPandaFile::ENTRY_MAIN_FUNCTION);
+            if (condFuncRef->IsUndefined()) {
+                LOG(ERROR, DEBUGGER) << "SetBreakpointByUrl: generate function failed";
+                return false;
+            }
         }
-        return DebuggerApi::SetBreakpoint(debugger_, location, condition);
+        return DebuggerApi::SetBreakpoint(debugger_, location, condFuncRef);
     };
     if (!extractor->MatchWithLocation(callbackFunc, lineNumber, columnNumber)) {
         LOG(ERROR, DEBUGGER) << "failed to set breakpoint location number: " << lineNumber << ":" << columnNumber;
@@ -377,7 +383,7 @@ std::optional<CString> JSBackend::StepOut()
     return {};
 }
 
-std::optional<CString> JSBackend::EvaluateValueCmpt(CallFrameId callFrameId, const CString &expression,
+std::optional<CString> JSBackend::CmptEvaluateValue(CallFrameId callFrameId, const CString &expression,
     std::unique_ptr<RemoteObject> *result)
 {
     JSMethod *method = DebuggerApi::GetMethod(ecmaVm_);
@@ -437,10 +443,12 @@ std::optional<CString> JSBackend::EvaluateValue(CallFrameId callFrameId, const C
     CString dest;
     if (!DecodeAndCheckBase64(expression, dest)) {
         LOG(ERROR, DEBUGGER) << "EvaluateValue: base64 decode failed";
-        return EvaluateValueCmpt(callFrameId, expression, result);
+        return CmptEvaluateValue(callFrameId, expression, result);
     }
 
-    auto res = DebuggerApi::ExecuteFromBuffer(const_cast<EcmaVM *>(ecmaVm_), dest.data(), dest.size());
+    auto funcRef = DebuggerApi::GenerateFuncFromBuffer(ecmaVm_, dest.data(), dest.size(),
+        JSPandaFile::ENTRY_MAIN_FUNCTION);
+    auto res = DebuggerApi::EvaluateViaFuncCall(const_cast<EcmaVM *>(ecmaVm_), funcRef);
     if (ecmaVm_->GetJSThread()->HasPendingException()) {
         LOG(ERROR, DEBUGGER) << "EvaluateValue: has pending exception";
         CString msg;

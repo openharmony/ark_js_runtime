@@ -28,7 +28,7 @@
 namespace panda::ecmascript::tooling {
 using panda::ecmascript::base::BuiltinsBase;
 
-bool JSDebugger::SetBreakpoint(const JSPtLocation &location, const std::optional<CString> &condition)
+bool JSDebugger::SetBreakpoint(const JSPtLocation &location, const Local<FunctionRef> &condFuncRef)
 {
     JSMethod *method = FindMethod(location);
     if (method == nullptr) {
@@ -41,7 +41,9 @@ bool JSDebugger::SetBreakpoint(const JSPtLocation &location, const std::optional
         return false;
     }
 
-    if (!breakpoints_.emplace(method, location.GetBytecodeOffset(), condition).second) {
+    auto [_, success] = breakpoints_.emplace(method, location.GetBytecodeOffset(),
+        Global<FunctionRef>(ecmaVm_, condFuncRef));
+    if (!success) {
         // also return true
         LOG(WARNING, DEBUGGER) << "SetBreakpoint: Breakpoint already exists";
     }
@@ -84,12 +86,10 @@ bool JSDebugger::HandleBreakpoint(const JSMethod *method, uint32_t bcOffset)
     }
 
     JSThread *thread = ecmaVm_->GetJSThread();
-    // evaluate true, iff the condition exists and is executable
-    if (breakpoint.value().HasCondition()) {
+    auto condFuncRef = breakpoint.value().GetConditionFunction();
+    if (condFuncRef->IsFunction()) {
         LOG(INFO, DEBUGGER) << "HandleBreakpoint: begin evaluate condition";
-        const auto &condition = breakpoint.value().GetCondition();
-        auto res = DebuggerApi::ExecuteFromBuffer(const_cast<EcmaVM *>(ecmaVm_),
-            condition.data(), condition.size());
+        auto res = DebuggerApi::EvaluateViaFuncCall(const_cast<EcmaVM *>(ecmaVm_), condFuncRef.ToLocal(ecmaVm_));
         if (thread->HasPendingException()) {
             LOG(ERROR, DEBUGGER) << "HandleBreakpoint: has pending exception";
             thread->ClearException();
@@ -179,19 +179,6 @@ JSMethod *JSDebugger::FindMethod(const JSPtLocation &location) const
     return method;
 }
 
-void JSDebugger::PrepareEvaluateEnv(const EcmaVM *ecmaVm, InterpretedFrameHandler &frameHandler)
-{
-   /*
-    * The abc being executed may have its own lexcial env to resolve symbols, And
-    * the DebuggerSetValue or DebuggerGetValue only need be called when symbols
-    * not in its own env, usually means we need the env under evaluation context.
-    */
-    JSTaggedType *sp = const_cast<JSTaggedType *>(ecmaVm->GetJsDebuggerManager()->GetEvaluateCtxFrameSp());
-    ASSERT(sp);
-    frameHandler = InterpretedFrameHandler {sp};
-    ecmaVm->GetJSThread()->SetCurrentLexenv(frameHandler.GetEnv());
-}
-
 JSTaggedValue JSDebugger::DebuggerSetValue(EcmaRuntimeCallInfo *argv)
 {
     LOG(INFO, DEBUGGER) << "DebuggerSetValue: called";
@@ -200,14 +187,13 @@ JSTaggedValue JSDebugger::DebuggerSetValue(EcmaRuntimeCallInfo *argv)
     const EcmaVM *ecmaVm = thread->GetEcmaVM();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    InterpretedFrameHandler frameHandler {static_cast<JSTaggedType *>(nullptr)};
-    PrepareEvaluateEnv(ecmaVm, frameHandler);
-
     JSHandle<JSTaggedValue> var = BuiltinsBase::GetCallArg(argv, 0);
     JSHandle<JSTaggedValue> newVal = BuiltinsBase::GetCallArg(argv, 1);
     CString varName = ConvertToString(var.GetTaggedValue());
     LOG(INFO, DEBUGGER) << "DebuggerSetValue: name = " << varName;
 
+    const JSTaggedType *sp = ecmaVm->GetJsDebuggerManager()->GetEvaluateCtxFrameSp();
+    InterpretedFrameHandler frameHandler(const_cast<JSTaggedType *>(sp));
     JSMethod *method = frameHandler.GetMethod();
     int32_t regIndex = -1;
     bool found = EvaluateLocalValue(method, thread, varName, regIndex);
@@ -243,14 +229,13 @@ JSTaggedValue JSDebugger::DebuggerGetValue(EcmaRuntimeCallInfo *argv)
     const EcmaVM *ecmaVm = thread->GetEcmaVM();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    InterpretedFrameHandler frameHandler {static_cast<JSTaggedType *>(nullptr)};
-    PrepareEvaluateEnv(ecmaVm, frameHandler);
-
     JSHandle<JSTaggedValue> var = BuiltinsBase::GetCallArg(argv, 0);
     JSHandle<JSTaggedValue> isThrow = BuiltinsBase::GetCallArg(argv, 1);
     CString varName = ConvertToString(var.GetTaggedValue());
     LOG(INFO, DEBUGGER) << "DebuggerGetValue: name = " << varName;
 
+    const JSTaggedType *sp = ecmaVm->GetJsDebuggerManager()->GetEvaluateCtxFrameSp();
+    InterpretedFrameHandler frameHandler(const_cast<JSTaggedType *>(sp));
     JSMethod *method = frameHandler.GetMethod();
     int32_t regIndex = -1;
     bool found = EvaluateLocalValue(method, thread, varName, regIndex);

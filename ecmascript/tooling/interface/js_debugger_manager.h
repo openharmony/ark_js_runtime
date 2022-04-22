@@ -18,15 +18,31 @@
 
 #include "libpandabase/os/library_loader.h"
 
+#include "ecmascript/tooling/interface/notification_manager.h"
+
 namespace panda::ecmascript::tooling {
 class JsDebuggerManager {
 public:
     using LibraryHandle = os::library_loader::LibraryHandle;
 
     JsDebuggerManager() = default;
-    ~JsDebuggerManager() = default;
+    ~JsDebuggerManager()
+    {
+        delete notificationManager_;
+    }
+
     NO_COPY_SEMANTIC(JsDebuggerManager);
     NO_MOVE_SEMANTIC(JsDebuggerManager);
+
+    void Initialize()
+    {
+        notificationManager_ = new NotificationManager();
+    }
+
+    NotificationManager *GetNotificationManager() const
+    {
+        return notificationManager_;
+    }
 
     void SetDebugMode(bool isDebugMode)
     {
@@ -62,6 +78,7 @@ private:
     bool isDebugMode_ {false};
     LibraryHandle debuggerLibraryHandle_ {nullptr};
     JSTaggedType *evaluateCtxFrameSp_ {nullptr};
+    NotificationManager *notificationManager_ {nullptr};
 };
 }  // panda::ecmascript::tooling
 

@@ -59,7 +59,6 @@
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/tagged_queue.h"
 #include "ecmascript/tagged_queue.h"
-#include "ecmascript/tooling/interface/notification_manager.h"
 #include "ecmascript/ts_types/ts_loader.h"
 #include "libpandafile/file.h"
 #ifdef PANDA_TARGET_WINDOWS
@@ -117,7 +116,6 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
     frameworkAbcFileName_ = options_.GetFrameworkAbcFile().c_str();
     options_.ParseAsmInterOption();
 
-    notificationManager_ = chunk_.New<tooling::NotificationManager>();
     debuggerManager_ = chunk_.New<tooling::JsDebuggerManager>();
 }
 
@@ -174,6 +172,7 @@ bool EcmaVM::Initialize()
     builtins.Initialize(globalEnv, thread_);
     thread_->SetGlobalObject(GetGlobalEnv()->GetGlobalObject());
     moduleManager_ = new ModuleManager(this);
+    debuggerManager_->Initialize();
     InitializeFinish();
     return true;
 }
@@ -260,9 +259,9 @@ EcmaVM::~EcmaVM()
     delete regExpParserCache_;
     regExpParserCache_ = nullptr;
 
-    if (notificationManager_ != nullptr) {
-        chunk_.Delete(notificationManager_);
-        notificationManager_ = nullptr;
+    if (debuggerManager_ != nullptr) {
+        chunk_.Delete(debuggerManager_);
+        debuggerManager_ = nullptr;
     }
 
     if (factory_ != nullptr) {
@@ -374,7 +373,7 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
         return Unexpected(false);
     }
     // for debugger
-    notificationManager_->LoadModuleEvent(jsPandaFile->GetJSPandaFileDesc());
+    debuggerManager_->GetNotificationManager()->LoadModuleEvent(jsPandaFile->GetJSPandaFileDesc());
 
     JSHandle<JSFunction> func = JSHandle<JSFunction>(thread_, program->GetMainFunction());
     JSHandle<JSTaggedValue> global = GlobalEnv::Cast(globalEnv_.GetTaggedObject())->GetJSGlobalObject();
