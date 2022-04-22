@@ -28,6 +28,8 @@
 #include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "libpandabase/utils/logger.h"
 
+#define MAX_HEAPPROFILER_CHUNK_SIZE 102400
+
 namespace panda::ecmascript::tooling {
 class HeapProfilerImpl final {
 public:
@@ -87,9 +89,13 @@ class HeapProfilerStream final : public Stream {
 public:
     explicit HeapProfilerStream(FrontEnd* frontend)
         : frontend_(frontend) {}
+    
     void EndOfStream() override {}
-    int GetSize() override { return 102400; }
-    bool WriteChunk(char* data, int size) override 
+    int GetSize() override 
+    { 
+        return MAX_HEAPPROFILER_CHUNK_SIZE; 
+    }
+    bool WriteChunk (char* data, int size) override 
     {
         auto ecmaVm = static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM();
         AddHeapSnapshotChunk::Create(data, size);
