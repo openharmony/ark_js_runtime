@@ -779,6 +779,10 @@ void JSBackend::GetProperties(RemoteObjectId objectId, bool isOwn, bool isAccess
         LOG(ERROR, DEBUGGER) << "JSBackend::GetProperties should a js object";
         return;
     }
+    if (value->IsArrayBuffer()) {
+        Local<ArrayBufferRef> arrayBufferRef(value);
+        AddTypedArrayRefs(arrayBufferRef, outPropertyDesc);
+    }
     Local<ArrayRef> keys = Local<ObjectRef>(value)->GetOwnPropertyNames(ecmaVm_);
     uint32_t length = keys->Length(ecmaVm_);
     Local<JSValueRef> name = JSValueRef::Undefined(ecmaVm_);
@@ -815,6 +819,105 @@ void JSBackend::GetProperties(RemoteObjectId objectId, bool isOwn, bool isAccess
         outPropertyDesc->emplace_back(std::move(debuggerProperty));
     }
     GetProtoOrProtoType(value, isOwn, isAccessorOnly, outPropertyDesc);
+    GetAdditionalProperties(value, outPropertyDesc);
+}
+
+template <typename TypedArrayRef>
+void JSBackend::AddTypedArrayRef(Local<ArrayBufferRef> arrayBufferRef, int32_t length, const char* name,
+    CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
+{
+    Local<JSValueRef> jsValueRefTypedArray(TypedArrayRef::New(ecmaVm_, arrayBufferRef, 0, length));
+    std::unique_ptr<RemoteObject> remoteObjectTypedArray = RemoteObject::FromTagged(ecmaVm_, jsValueRefTypedArray);
+    remoteObjectTypedArray->SetObjectId(curObjectId_);
+    propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, jsValueRefTypedArray);
+    std::unique_ptr<PropertyDescriptor> debuggerProperty = std::make_unique<PropertyDescriptor>();
+    debuggerProperty->SetName(name)
+        .SetWritable(true)
+        .SetConfigurable(true)
+        .SetEnumerable(false)
+        .SetIsOwn(true)
+        .SetValue(std::move(remoteObjectTypedArray));
+    outPropertyDesc->emplace_back(std::move(debuggerProperty));
+
+    return;
+}
+
+void JSBackend::AddTypedArrayRefs(Local<ArrayBufferRef> arrayBufferRef,
+    CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
+{
+    int32_t arrayBufferByteLength = arrayBufferRef->ByteLength(ecmaVm_);
+
+    int32_t typedArrayLength = arrayBufferByteLength;
+    if (typedArrayLength > JSTypedArray::MAX_TYPED_ARRAY_INDEX) {
+        return;
+    }
+    AddTypedArrayRef<Int8ArrayRef>(arrayBufferRef, typedArrayLength, "[[Int8Array]]", outPropertyDesc);
+    AddTypedArrayRef<Uint8ArrayRef>(arrayBufferRef, typedArrayLength, "[[Uint8Array]]", outPropertyDesc);
+    AddTypedArrayRef<Uint8ClampedArrayRef>(arrayBufferRef, typedArrayLength, "[[Uint8ClampedArray]]", outPropertyDesc);
+
+    if ((arrayBufferByteLength % NumberSize::UINT16INT16) == 0) {
+        typedArrayLength = arrayBufferByteLength / NumberSize::UINT16INT16;
+        AddTypedArrayRef<Int16ArrayRef>(arrayBufferRef, typedArrayLength, "[[Int16Array]]", outPropertyDesc);
+        AddTypedArrayRef<Uint16ArrayRef>(arrayBufferRef, typedArrayLength, "[[Uint16Array]]", outPropertyDesc);
+    }
+
+    if ((arrayBufferByteLength % NumberSize::UINT32INT32FLOAT32) == 0) {
+        typedArrayLength = arrayBufferByteLength / NumberSize::UINT32INT32FLOAT32;
+        AddTypedArrayRef<Int32ArrayRef>(arrayBufferRef, typedArrayLength, "[[Int32Array]]", outPropertyDesc);
+        AddTypedArrayRef<Uint32ArrayRef>(arrayBufferRef, typedArrayLength, "[[Uint32Array]]", outPropertyDesc);
+        AddTypedArrayRef<Float32ArrayRef>(arrayBufferRef, typedArrayLength, "[[Float32Array]]", outPropertyDesc);
+    }
+
+    if ((arrayBufferByteLength % NumberSize::FLOAT64BIGINT64BIGUINT64) == 0) {
+        typedArrayLength = arrayBufferByteLength / NumberSize::FLOAT64BIGINT64BIGUINT64;
+        AddTypedArrayRef<Float64ArrayRef>(arrayBufferRef, typedArrayLength, "[[Float64Array]]", outPropertyDesc);
+        AddTypedArrayRef<BigInt64ArrayRef>(arrayBufferRef, typedArrayLength, "[[BigInt64Array]]", outPropertyDesc);
+        AddTypedArrayRef<BigUint64ArrayRef>(arrayBufferRef, typedArrayLength, "[[BigUint64Array]]", outPropertyDesc);
+    }
+
+    return;
+}
+
+void JSBackend::GetAdditionalProperties(const Local<JSValueRef> &value,
+    CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
+{
+    // The length of the TypedArray have to be limited(less than or equal to lengthTypedArrayLimit) until we construct
+    // the PropertyPreview class. Let lengthTypedArrayLimit be 10000 temporarily.
+    static const int32_t lengthTypedArrayLimit = 10000;
+
+    // The width of the string-expression for JSTypedArray::MAX_TYPED_ARRAY_INDEX which is euqal to
+    // JSObject::MAX_ELEMENT_INDEX which is equal to std::numeric_limits<uint32_t>::max(). (42,9496,7295)
+    static const int32_t widthStrExprMaxElementIndex = 10;
+
+    if (value->IsTypedArray()) {
+        Local<TypedArrayRef> localTypedArrayRef(value);
+        int32_t lengthTypedArray = localTypedArrayRef->ArrayLength(ecmaVm_);
+
+        if (lengthTypedArray < 0 || lengthTypedArray > lengthTypedArrayLimit) {
+            LOG(ERROR, DEBUGGER) << "The length of the TypedArray is non-compliant or unsupported.";
+            return;
+        }
+        for (int32_t i = 0; i < lengthTypedArray; i++) {
+            Local<JSValueRef> localValRefElement = localTypedArrayRef->Get(ecmaVm_, i);
+            std::unique_ptr<RemoteObject> remoteObjElement = RemoteObject::FromTagged(ecmaVm_, localValRefElement);
+            remoteObjElement->SetObjectId(curObjectId_);
+            propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, localValRefElement);
+            std::unique_ptr<PropertyDescriptor> debuggerProperty = std::make_unique<PropertyDescriptor>();
+
+            std::ostringstream osNameElement;
+            osNameElement << std::right << std::setw(widthStrExprMaxElementIndex) << i;
+            CString cStrNameElement = CString(osNameElement.str());
+            debuggerProperty->SetName(cStrNameElement)
+                .SetWritable(true)
+                .SetConfigurable(true)
+                .SetEnumerable(false)
+                .SetIsOwn(true)
+                .SetValue(std::move(remoteObjElement));
+            outPropertyDesc->emplace_back(std::move(debuggerProperty));
+        }
+    }
+
+    return;
 }
 
 void JSBackend::CallFunctionOn([[maybe_unused]] const CString &functionDeclaration,
