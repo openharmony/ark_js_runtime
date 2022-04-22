@@ -758,7 +758,7 @@ Local<ObjectRef> StartSamplingParams::ToObject(const EcmaVM *ecmaVm)
     Local<ObjectRef> params = NewObject(ecmaVm);
 
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samplingInterval")),
-            NumberRef::New(ecmaVm, samplingInterval_.value()));
+            NumberRef::New(ecmaVm, static_cast<int64_t>(samplingInterval_.value())));
 
     return params;
 }
