@@ -103,8 +103,7 @@ void RuntimeImpl::DispatcherImpl::GetHeapUsage(const DispatchRequest &request)
 {
     double usedSize = 0;
     double totalSize = 0;
-    EcmaVM *vm = nullptr;
-    DispatchResponse response = runtime_->GetHeapUsage(vm, &usedSize, &totalSize);
+    DispatchResponse response = runtime_->GetHeapUsage(&usedSize, &totalSize);
     std::unique_ptr<GetHeapUsageReturns> result = std::make_unique<GetHeapUsageReturns>(usedSize,
         totalSize);
     SendResponse(request, response, std::move(result));
@@ -144,9 +143,9 @@ DispatchResponse RuntimeImpl::CallFunctionOn(std::unique_ptr<CallFunctionOnParam
     return DispatchResponse::Ok();
 }
 
-DispatchResponse RuntimeImpl::GetHeapUsage(EcmaVM *vm, double *usedSize, double *totalSize)
+DispatchResponse RuntimeImpl::GetHeapUsage(double *usedSize, double *totalSize)
 {
-    backend_->GetHeapUsage(vm, usedSize, totalSize);
+    backend_->GetHeapUsage(usedSize, totalSize);
     return DispatchResponse::Ok();
 }
 }  // namespace panda::ecmascript::tooling

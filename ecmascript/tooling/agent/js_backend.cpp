@@ -826,10 +826,11 @@ void JSBackend::CallFunctionOn([[maybe_unused]] const CString &functionDeclarati
     *outRemoteObject = RemoteObject::FromTagged(ecmaVm_, error);
 }
 
-void JSBackend::GetHeapUsage(EcmaVM *vm, double *usedSize ,double *totalSize)
+void JSBackend::GetHeapUsage(double *usedSize, double *totalSize)
 {
-    totalSize = (double *)DFXJSNApi::GetHeapTotalSize(vm);
-    usedSize = (double *)DFXJSNApi::GetHeapUsedSize(vm);
+    auto ecmaVm = const_cast<EcmaVM *>(static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM());
+    *totalSize = static_cast<double>(DFXJSNApi::GetHeapTotalSize(ecmaVm));
+    *usedSize = static_cast<double>(DFXJSNApi::GetHeapUsedSize(ecmaVm));
 }
 
 bool JSBackend::DecodeAndCheckBase64(const CString &src, CString &dest)
@@ -843,4 +844,4 @@ bool JSBackend::DecodeAndCheckBase64(const CString &src, CString &dest)
     }
     return false;
 }
-}  // namespace panda::ecmascript::tooling
+}  //  namespace panda::ecmascript::tooling

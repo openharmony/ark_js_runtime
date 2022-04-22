@@ -101,7 +101,7 @@ public:
     void GetProperties(RemoteObjectId objectId, bool isOwn, bool isAccessorOnly,
                        CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
     void CallFunctionOn(const CString &functionDeclaration, std::unique_ptr<RemoteObject> *outRemoteObject);
-    void GetHeapUsage(EcmaVM *vm, double *usedSize ,double *totalSize);
+    void GetHeapUsage(double *usedSize, double *totalSize);
     // public for testcases
     bool GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames);
     const EcmaVM *GetEcmaVm() const

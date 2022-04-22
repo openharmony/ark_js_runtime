@@ -39,7 +39,7 @@ public:
         std::unique_ptr<CallFunctionOnParams> params,
         std::unique_ptr<RemoteObject> *outRemoteObject,
         std::optional<std::unique_ptr<ExceptionDetails>> *outExceptionDetails);
-    DispatchResponse GetHeapUsage(EcmaVM *vm, double *usedSize, double *totalSize);
+    DispatchResponse GetHeapUsage(double *usedSize, double *totalSize);
 
     class DispatcherImpl final : public DispatcherBase {
     public:
