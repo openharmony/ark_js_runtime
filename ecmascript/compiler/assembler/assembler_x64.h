@@ -50,6 +50,7 @@ class Operand {
 public:
     Operand(Register base, int32_t disp);
     Operand(Register base, Register index, Scale scale, int32_t disp);
+    Operand(Register index, Scale scale, int32_t disp);
 
     void BuildSIB(Scale scale, Register index, Register base);
     void BuildModerm(int32_t mode, Register rm);
@@ -74,19 +75,60 @@ public:
     }
     void Pushq(Register x);
     void Pushq(Immediate x);
+    void Push(Register x);
     void Popq(Register x);
+    void Pop(Register x);
     void Movq(Register src, Register dst);
     void Movq(Operand src, Register dst);
     void Movq(Register src, Operand dst);
     void Movq(Immediate src, Operand dst);
+    void Movq(Immediate src, Register dst);
+    void Mov(Operand src, Register dst);
     void Addq(Immediate src, Register dst);
     void Subq(Immediate src, Register dst);
+    void Subq(Register src, Register dst);
     void Cmpq(Immediate src, Register dst);
+    void Cmpq(Register src, Register dst);
+    void Cmpl(Immediate src, Register dst);
+    void Cmp(Immediate src, Register dst);
     void Callq(Register addr);
+    void Callq(Label *target);
     void Ret();
     void Jmp(Label *target, Distance distance = Distance::FAR);
+    void Jmpq(Register dst);
+    void Jmp(Immediate offset);
     void Bind(Label* target);
     void Align16();
+
+    void Andq(Immediate src, Register dst);
+    void Andl(Immediate src, Register dst);
+    void And(Register src, Register dst);
+    void Btq(Immediate src, Register dst);
+    void Btl(Immediate src, Register dst);
+    void Cmpl(Register src, Register dst);
+    void CMovbe(Register src, Register dst);
+    void Ja(Label *target, Distance distance = Distance::FAR);
+    void Jb(Label *target, Distance distance = Distance::FAR);
+    void Jz(Label *target, Distance distance = Distance::FAR);
+    void Je(Label *target, Distance distance = Distance::FAR);
+    void Jg(Label *target, Distance distance = Distance::FAR);
+    void Jne(Label *target, Distance distance = Distance::FAR);
+    void Jbe(Label *target, Distance distance = Distance::FAR);
+    void Jnz(Label *target, Distance distance = Distance::FAR);
+    void Jle(Label *target, Distance distance = Distance::FAR);
+    void Jae(Label *target, Distance distance = Distance::FAR);
+    void Leaq(Operand src, Register dst);
+    void Leal(Operand src, Register dst);
+    void Movl(Register src, Register dst);
+    void Movl(Operand src, Register dst);
+    void Movzbq(Operand src, Register dst);
+    void Movabs(uint64_t src, Register dst);
+    void Shrq(Immediate src, Register dst);
+    void Shr(Immediate src, Register dst);
+    void Shll(Immediate src, Register dst);
+    void Testq(Immediate src, Register dst);
+    void Testb(Immediate src, Register dst);
+    void Int3();
 
 private:
     void EmitRexPrefix(Register x)
@@ -114,11 +156,29 @@ private:
         EmitU8(REX_PREFIX_W | (HighBit(reg) << 2) | HighBit(rm));
     }
 
+    void EmitRexPrefixl(Register reg, Register rm)
+    {
+        // 0: Extension to the MODRM.rm field B
+        // 2: Extension to the MODRM.reg field R
+        if (HighBit(reg) != 0 || HighBit(rm) != 0) {
+            EmitU8(REX_PREFIX_FIXED_BITS | (HighBit(reg) << 2) | HighBit(rm));
+        }
+    }
+
     void EmitRexPrefix(Register reg, Operand rm)
     {
         // 0: Extension to the MODRM.rm field B
         // 2: Extension to the MODRM.reg field R
         EmitU8(REX_PREFIX_W | (HighBit(reg) << 2) | rm.rex_);
+    }
+
+    void EmitRexPrefixl(Register reg, Operand rm)
+    {
+        // 0: Extension to the MODRM.rm field B
+        // 2: Extension to the MODRM.reg field R
+        if (HighBit(reg) != 0 || rm.rex_ != 0) {
+            EmitU8(REX_PREFIX_FIXED_BITS | (HighBit(reg) << 2) | rm.rex_);
+        }
     }
 
     // +---+---+---+---+---+---+---+---+
@@ -140,7 +200,17 @@ private:
     }
     void EmitOperand(int32_t reg, Operand rm);
     void EmitJmp(int32_t offset);
-
+    void EmitJa(int32_t offset);
+    void EmitJb(int32_t offset);
+    void EmitJz(int32_t offset);
+    void EmitJne(int32_t offset);
+    void EmitJbe(int32_t offset);
+    void EmitJnz(int32_t offset);
+    void EmitJle(int32_t offset);
+    void EmitJae(int32_t offset);
+    void EmitJg(int32_t offset);
+    void EmitJe(int32_t offset);
+    void EmitCall(int32_t offset);
     // +---+---+---+---+---+---+---+---+
     // | 0   1   0   0 | W | R | X | B |
     // +---+---+---+---+---+---+---+---+
