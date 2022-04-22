@@ -39,7 +39,7 @@
 #include "ecmascript/tooling/interface/notification_manager.h"
 #include "libpandafile/code_data_accessor.h"
 #include "libpandafile/file.h"
-#include "libpandafile/method_data_accessor.h"
+#include "libpandafile/method_data_accessor-inl.h"
 #include "ecmascript/trampoline/trampoline.h"
 
 namespace panda::ecmascript {

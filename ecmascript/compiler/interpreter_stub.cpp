@@ -17,6 +17,7 @@
 
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
+#include "ecmascript/compiler/stub-inl.h"
 #include "ecmascript/compiler/variable_type.h"
 #include "ecmascript/global_env_constants.h"
 #include "ecmascript/ic/profile_type_info.h"
@@ -26,7 +27,7 @@
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/message_string.h"
 #include "ecmascript/tagged_hash_table-inl.h"
-#include "stub-inl.h"
+#include "libpandafile/bytecode_instruction-inl.h"
 
 namespace panda::ecmascript::kungfu {
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_LOG

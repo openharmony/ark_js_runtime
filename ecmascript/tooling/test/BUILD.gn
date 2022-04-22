@@ -68,10 +68,6 @@ source_set("debugger_entry_static") {
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
   ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
 }
 
 ohos_shared_library("debugger_entry") {
@@ -106,12 +102,6 @@ source_set("jsdebugtest_static") {
     "//ark/js_runtime:libark_jsruntime_test_static",
     "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test_static",
   ]
-
-  if (is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime_static" ]
-  } else {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
 }
 
 ohos_shared_library("jsdebugtest") {
@@ -148,10 +138,6 @@ host_unittest_action("EcmaDebugApiTest") {
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
   ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
 }
 
 host_unittest_action("DebuggerCommandsTest") {
@@ -169,10 +155,6 @@ host_unittest_action("DebuggerCommandsTest") {
     "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
     sdk_libc_secshared_dep,
   ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
 }
 
 host_unittest_action("DebuggerScriptTest") {
@@ -190,10 +172,6 @@ host_unittest_action("DebuggerScriptTest") {
     "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
     sdk_libc_secshared_dep,
   ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
 }
 
 host_unittest_action("DebuggerEventsTest") {
@@ -211,10 +189,6 @@ host_unittest_action("DebuggerEventsTest") {
     "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
     sdk_libc_secshared_dep,
   ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
 }
 
 host_unittest_action("DebuggerReturnsTest") {
@@ -232,10 +206,6 @@ host_unittest_action("DebuggerReturnsTest") {
     "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
     sdk_libc_secshared_dep,
   ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
 }
 
 host_unittest_action("DebuggerTypesTest") {
@@ -253,10 +223,6 @@ host_unittest_action("DebuggerTypesTest") {
     "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
     sdk_libc_secshared_dep,
   ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
 }
 
 host_unittest_action("DebuggerParamsTest") {
@@ -274,10 +240,6 @@ host_unittest_action("DebuggerParamsTest") {
     "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
     sdk_libc_secshared_dep,
   ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
 }
 
 host_unittest_action("JSPtHooksTest") {
@@ -295,10 +257,6 @@ host_unittest_action("JSPtHooksTest") {
     "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
     sdk_libc_secshared_dep,
   ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
 }
 
 group("debugger_api_resource") {

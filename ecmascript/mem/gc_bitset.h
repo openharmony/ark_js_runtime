@@ -179,7 +179,9 @@ inline bool GCBitset::SetBit<AccessType::ATOMIC>(uintptr_t offset)
     auto mask = Mask(IndexInWord(offset));
     auto oldValue = word->load(std::memory_order_relaxed);
     do {
-        if (oldValue & mask) return false;
+        if (oldValue & mask) {
+            return false;
+        }
     } while (!word->compare_exchange_weak(oldValue, oldValue | mask, std::memory_order_seq_cst));
     return true;
 }

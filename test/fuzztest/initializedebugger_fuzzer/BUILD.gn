@@ -31,7 +31,6 @@ ohos_fuzztest("InitializeDebuggerFuzzTest") {
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
-    "$ark_root/runtime:libarkruntime",
     "//ark/js_runtime:libark_jsruntime",
     "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_static",
     sdk_libc_secshared_dep,

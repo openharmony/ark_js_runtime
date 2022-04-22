@@ -22,7 +22,6 @@
 #include "ecmascript/lexical_env.h"
 
 namespace panda::ecmascript {
-using panda::coretypes::DynClass;
 class JSThread;
 class EcmaRuntimeCallInfo;
 
@@ -94,9 +93,7 @@ public:
                                   bool cfg = true);
     static JSHandle<JSObject> NewJSFunctionPrototype(JSThread *thread, ObjectFactory *factory,
                                                      const JSHandle<JSFunction> &func);
-    static DynClass *GetOrCreateInitialDynClass(JSThread *thread, const JSHandle<JSFunction> &fun);
     static JSTaggedValue AccessCallerArgumentsThrowTypeError(EcmaRuntimeCallInfo *argv);
-    static bool IsDynClass(JSTaggedValue object);
     static JSTaggedValue PrototypeGetter(JSThread *thread, const JSHandle<JSObject> &self);
     static bool PrototypeSetter(JSThread *thread, const JSHandle<JSObject> &self, const JSHandle<JSTaggedValue> &value,
                                 bool mayThrow);
@@ -104,8 +101,6 @@ public:
     static bool NameSetter(JSThread *thread, const JSHandle<JSObject> &self, const JSHandle<JSTaggedValue> &value,
                            bool mayThrow);
     static void SetFunctionNameNoPrefix(JSThread *thread, JSFunction *func, JSTaggedValue name);
-    static JSHandle<DynClass> GetInstanceDynClass(JSThread *thread, JSHandle<JSFunction> constructor,
-                                                  JSHandle<JSTaggedValue> newTarget);
 
     inline JSTaggedValue GetFunctionPrototype() const
     {
@@ -139,13 +134,6 @@ public:
     {
         JSTaggedValue protoOrDyn = GetProtoOrDynClass();
         return !protoOrDyn.IsHole();
-    }
-
-    inline DynClass *GetInitialDynClass() const
-    {
-        ASSERT(HasInitialDynClass());
-        JSTaggedValue protoOrDyn = GetProtoOrDynClass();
-        return reinterpret_cast<DynClass *>(protoOrDyn.GetTaggedObject());
     }
 
     inline void SetFunctionLength(const JSThread *thread, JSTaggedValue length)

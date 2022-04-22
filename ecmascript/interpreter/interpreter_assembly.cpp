@@ -32,7 +32,7 @@
 #include "ecmascript/template_string.h"
 #include "libpandafile/code_data_accessor.h"
 #include "libpandafile/file.h"
-#include "libpandafile/method_data_accessor.h"
+#include "libpandafile/method_data_accessor-inl.h"
 
 namespace panda::ecmascript {
 using panda::ecmascript::kungfu::CommonStubCSigns;

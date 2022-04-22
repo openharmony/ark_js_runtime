@@ -30,7 +30,6 @@ ohos_fuzztest("ExecutefuzzTest") {
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
-    "$ark_root/runtime:libarkruntime",
     "//ark/js_runtime:libark_js_intl_static",
     "//ark/js_runtime:libark_jsruntime",
     "//ark/js_runtime:libark_jsruntime_static",

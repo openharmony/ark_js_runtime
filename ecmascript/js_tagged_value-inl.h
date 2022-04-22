@@ -970,11 +970,6 @@ inline bool JSTaggedValue::IsAsyncFuncObject() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsAsyncFuncObject();
 }
 
-inline bool JSTaggedValue::IsDynClass() const
-{
-    return IsJSHClass();
-}
-
 inline bool JSTaggedValue::IsJSHClass() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsHClass();

@@ -17,6 +17,7 @@
 #define ECMASCRIPT_ECMA_MACROS_H
 
 #include "ecmascript/common.h"
+#include "libpandabase/trace/trace.h"
 
 #if !defined(PANDA_TARGET_LINUX) && defined(IS_PUBLIC_VERSION) && defined(ENABLE_BYTRACE)
     #include "bytrace.h"

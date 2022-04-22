@@ -33,10 +33,10 @@
 #include "ecmascript/taskpool/task.h"
 #include "ecmascript/tooling/interface/js_debugger_manager.h"
 #include "ecmascript/snapshot/mem/snapshot_serialize.h"
-#include "include/panda_vm.h"
 #include "libpandabase/macros.h"
 
 namespace panda {
+class JSNApi;
 namespace panda_file {
 class File;
 }  // namespace panda_file

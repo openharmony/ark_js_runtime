@@ -15,9 +15,10 @@
 
 #include "ecmascript/ts_types/ts_loader.h"
 
-#include "libpandafile/method_data_accessor-inl.h"
 #include "ecmascript/jspandafile/js_pandafile.h"
 #include "ecmascript/ts_types/ts_type_table.h"
+#include "libpandafile/file-inl.h"
+#include "libpandafile/method_data_accessor-inl.h"
 
 namespace panda::ecmascript {
 void TSLoader::DecodeTSTypes(const JSPandaFile *jsPandaFile)

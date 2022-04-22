@@ -21,6 +21,8 @@
 #include "ecmascript/object_factory.h"
 #include "ecmascript/ts_types/ts_loader.h"
 #include "ecmascript/ts_types/ts_obj_layout_info.h"
+#include "libpandafile/annotation_data_accessor.h"
+#include "libpandafile/class_data_accessor-inl.h"
 
 namespace panda::ecmascript {
 void TSTypeTable::Initialize(JSThread *thread, const JSPandaFile *jsPandaFile,

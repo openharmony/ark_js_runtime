@@ -21,7 +21,6 @@
 #include "ecmascript/mem/tagged_object.h"
 #include "ecmascript/property_attributes.h"
 #include "ecmascript/ts_types/ts_loader.h"
-#include "include/hclass.h"
 #include "utils/bit_field.h"
 #include "ecmascript/ts_types/ts_obj_layout_info.h"
 

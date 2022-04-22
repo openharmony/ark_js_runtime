@@ -25,7 +25,7 @@
 namespace panda::ecmascript {
 inline RememberedSet *Region::CreateRememberedSet()
 {
-    auto bitSize = GCBitset::SizeOfGCBitset(GetSize());
+    auto bitSize = GCBitset::SizeOfGCBitset(GetCapacity());
     auto setAddr = const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->
         Allocate(bitSize + RememberedSet::GCBITSET_DATA_OFFSET);
     auto ret = new (setAddr) RememberedSet(bitSize);
@@ -97,20 +97,20 @@ inline void Region::ClearMarkGCBitset()
 inline void Region::InsertCrossRegionRSet(uintptr_t addr)
 {
     auto set = GetOrCreateCrossRegionRememberedSet();
-    set->Insert(begin_, addr);
+    set->Insert(ToUintPtr(this), addr);
 }
 
 inline void Region::AtomicInsertCrossRegionRSet(uintptr_t addr)
 {
     auto set = GetOrCreateCrossRegionRememberedSet();
-    set->AtomicInsert(begin_, addr);
+    set->AtomicInsert(ToUintPtr(this), addr);
 }
 
 template <typename Visitor>
 inline void Region::IterateAllCrossRegionBits(Visitor visitor) const
 {
     if (crossRegionSet_ != nullptr) {
-        crossRegionSet_->IterateAllMarkedBitsConst(begin_, visitor);
+        crossRegionSet_->IterateAllMarkedBitsConst(ToUintPtr(this), visitor);
     }
 }
 
@@ -124,7 +124,7 @@ inline void Region::ClearCrossRegionRSet()
 inline void Region::ClearCrossRegionRSetInRange(uintptr_t start, uintptr_t end)
 {
     if (crossRegionSet_ != nullptr) {
-        crossRegionSet_->ClearRange(begin_, start, end);
+        crossRegionSet_->ClearRange(ToUintPtr(this), start, end);
     }
 }
 
@@ -140,14 +140,14 @@ inline void Region::DeleteCrossRegionRSet()
 inline void Region::InsertOldToNewRSet(uintptr_t addr)
 {
     auto set = GetOrCreateOldToNewRememberedSet();
-    set->Insert(begin_, addr);
+    set->Insert(ToUintPtr(this), addr);
 }
 
 template <typename Visitor>
 inline void Region::IterateAllOldToNewBits(Visitor visitor)
 {
     if (oldToNewSet_ != nullptr) {
-        oldToNewSet_->IterateAllMarkedBits(begin_, visitor);
+        oldToNewSet_->IterateAllMarkedBits(ToUintPtr(this), visitor);
     }
 }
 
@@ -161,7 +161,7 @@ inline void Region::ClearOldToNewRSet()
 inline void Region::ClearOldToNewRSetInRange(uintptr_t start, uintptr_t end)
 {
     if (oldToNewSet_ != nullptr) {
-        oldToNewSet_->ClearRange(begin_, start, end);
+        oldToNewSet_->ClearRange(ToUintPtr(this), start, end);
     }
 }
 
