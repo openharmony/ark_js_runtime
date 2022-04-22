@@ -280,4 +280,18 @@ Local<ObjectRef> StopReturns::ToObject(const EcmaVM *ecmaVm)
 
     return result;
 }
+
+Local<ObjectRef> GetHeapUsageReturns::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> result = NewObject(ecmaVm);
+
+    result->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "usedSize")),
+        NumberRef::New(ecmaVm, usedSize_));
+    result->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "totalSize")),
+        NumberRef::New(ecmaVm, totalSize_));
+
+    return result;
+}
 }  // namespace panda::ecmascript::tooling
