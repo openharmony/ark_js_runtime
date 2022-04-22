@@ -28,7 +28,8 @@
 #include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "libpandabase/utils/logger.h"
 
-#define MAX_HEAPPROFILER_CHUNK_SIZE 102400
+static const double INTERVAL = 0.05;
+static const int  MAX_HEAPPROFILER_CHUNK_SIZE = 102400;
 
 namespace panda::ecmascript::tooling {
 class HeapProfilerImpl final {

@@ -16,19 +16,16 @@
 #ifndef ECMASCRIPT_TOOLING_INTERFACE_STREAM_H
 #define ECMASCRIPT_TOOLING_INTERFACE_STREAM_H
 
-#define MAX_CHUNK_SIZE 1024
-
 namespace panda::ecmascript::tooling {
 class Stream {
 public:
     virtual ~Stream() = default;
 
     virtual void EndOfStream() = 0;
+
     // Get chunk's size
-    virtual int GetSize()
-    {
-        return MAX_CHUNK_SIZE;
-    }
+    virtual int GetSize() = 0;
+
     // Writes the chunk of data into the stream
     virtual bool WriteChunk (char* data, int size) = 0;
 };
