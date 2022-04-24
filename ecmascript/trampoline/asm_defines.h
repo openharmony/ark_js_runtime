@@ -53,8 +53,8 @@
 #define ECMA_RUNTIME_CALLINFO_DATA_OFFSET           (24)
 #define ECMA_RUNTIME_CALLINFO_PPREV_SP_OFFSET       (32)
 
-#define JS_METHOD_CALLFIELD_OFFSET                  (0x48)
-#define JS_METHOD_NATIVE_POINTER_OFFSET             (32)
+#define JS_METHOD_CALLFIELD_OFFSET                  (0x0)
+#define JS_METHOD_NATIVE_POINTER_OFFSET             (8)
 #endif
 
 #ifdef PANDA_TARGET_32
@@ -86,8 +86,8 @@
 #define ECMA_RUNTIME_CALLINFO_DATA_OFFSET           (12)
 #define ECMA_RUNTIME_CALLINFO_PPREV_SP_OFFSET       (16)
 
-#define JS_METHOD_NATIVE_POINTER_OFFSET    (24)
-#define JS_METHOD_CALLFIELD_OFFSET         (40)
+#define JS_METHOD_NATIVE_POINTER_OFFSET    (8)
+#define JS_METHOD_CALLFIELD_OFFSET         (0)
 #endif
 
 #define OPTIMIZE_FRAME_TYPE                   (0)
