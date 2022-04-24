@@ -177,12 +177,14 @@ private:
 
     MemMap PageMap(size_t size, size_t alignment);
 
-    void PageRelease(void *mem, size_t size)
+    void PageRelease([[maybe_unused]]void *mem, [[maybe_unused]]size_t size)
     {
+#ifdef PANDA_TARGET_UNIX
         madvise(mem, size, MADV_DONTNEED);
+#endif
     }
 
-    void PageTag(void *mem, size_t size, bool remove = false)
+    void PageTag([[maybe_unused]]void *mem, [[maybe_unused]]size_t size, [[maybe_unused]]bool remove = false)
     {
 #ifdef PANDA_TARGET_UNIX
         if (remove) {

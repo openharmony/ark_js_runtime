@@ -17,6 +17,7 @@
 
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/jspandafile/program_object.h"
+#include "libpandafile/class_data_accessor-inl.h"
 
 namespace panda::ecmascript {
 JSPandaFile::JSPandaFile(const panda_file::File *pf, const CString &descriptor) : pf_(pf), desc_(descriptor)
@@ -70,7 +71,7 @@ void JSPandaFile::Initialize()
         if (!HasTsTypes() && std::strcmp(TS_TYPES_CLASS, desc) == 0) {
             cda.EnumerateFields([&](panda_file::FieldDataAccessor &fieldAccessor) -> void {
                 panda_file::File::EntityId fieldNameId = fieldAccessor.GetNameId();
-                panda_file::StringData sd = pf_->GetStringData(fieldNameId);
+                panda_file::File::StringData sd = pf_->GetStringData(fieldNameId);
                 const char *fieldName = utf::Mutf8AsCString(sd.data);
                 if (std::strcmp(TYPE_FLAG, fieldName) == 0) {
                     hasTSTypes_ = fieldAccessor.GetValue<uint8_t>().value() != 0;

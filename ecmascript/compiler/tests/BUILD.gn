@@ -43,7 +43,6 @@ host_unittest_action("StubTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_compiler_config",
     "//ark/js_runtime:ark_jsruntime_public_config",
-    "$ark_root/runtime:arkruntime_public_config",
   ]
 
   if (compile_llvm_online) {
@@ -130,7 +129,6 @@ host_unittest_action("AssemblerTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_compiler_config",
     "//ark/js_runtime:ark_jsruntime_public_config",
-    "$ark_root/runtime:arkruntime_public_config",
   ]
 
   if (compile_llvm_online) {

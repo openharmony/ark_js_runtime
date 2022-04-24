@@ -289,7 +289,6 @@ public:
     bool IsAccessor() const;
     bool IsJSGlobalEnv() const;
     bool IsJSProxy() const;
-    bool IsDynClass() const;
     bool IsJSHClass() const;
     bool IsForinIterator() const;
     bool IsStringIterator() const;

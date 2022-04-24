@@ -23,7 +23,6 @@
 #include "ecmascript/mem/barriers.h"
 #include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/slots.h"
-#include "include/hclass.h"
 #include "utils/bit_field.h"
 
 /*
@@ -784,7 +783,7 @@ public:
     {
         return GetObjectType() == JSType::JS_API_DEQUE_ITERATOR;
     }
-    
+
     inline bool IsJSAPIStackIterator() const
     {
         return GetObjectType() == JSType::JS_API_STACK_ITERATOR;

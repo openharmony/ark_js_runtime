@@ -582,22 +582,6 @@ void JSFunction::InitializeJSFunction(JSThread *thread, [[maybe_unused]] const J
     InitializeJSFunction(thread, func, kind, strict);
 }
 
-bool JSFunction::IsDynClass(JSTaggedValue object)
-{
-    return object.IsJSHClass();
-}
-
-DynClass *JSFunction::GetOrCreateInitialDynClass(JSThread *thread, const JSHandle<JSFunction> &fun)
-{
-    return reinterpret_cast<DynClass *>(JSFunction::GetOrCreateInitialJSHClass(thread, fun));
-}
-
-JSHandle<DynClass> JSFunction::GetInstanceDynClass(JSThread *thread, JSHandle<JSFunction> constructor,
-                                                   JSHandle<JSTaggedValue> newTarget)
-{
-    return JSHandle<DynClass>(JSFunction::GetInstanceJSHClass(thread, constructor, newTarget));
-}
-
 bool JSFunction::NameSetter(JSThread *thread, const JSHandle<JSObject> &self, const JSHandle<JSTaggedValue> &value,
                             [[maybe_unused]] bool mayThrow)
 {

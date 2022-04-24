@@ -16,6 +16,7 @@
 #include "ecmascript/tooling/agent/js_backend.h"
 
 #include <boost/beast/core/detail/base64.hpp>
+#include <iomanip>
 
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/tooling/base/pt_events.h"

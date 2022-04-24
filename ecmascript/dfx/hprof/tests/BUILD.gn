@@ -32,10 +32,6 @@ host_unittest_action("HeapTrackerTest") {
     "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
 }
 
 host_unittest_action("HprofTest") {
@@ -53,10 +49,6 @@ host_unittest_action("HprofTest") {
     "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
 }
 
 group("unittest") {

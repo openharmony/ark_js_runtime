@@ -20,6 +20,7 @@
 #include "ecmascript/global_env.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/tagged_array-inl.h"
+#include "libpandafile/class_data_accessor-inl.h"
 #include "libpandafile/literal_data_accessor-inl.h"
 
 namespace panda::ecmascript {
