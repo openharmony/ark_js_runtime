@@ -17,6 +17,7 @@
 #ifndef ECMASCRIPT_COMPILER_STUB_INL_H
 #define ECMASCRIPT_COMPILER_STUB_INL_H
 
+#include "ecmascript/compiler/bc_call_signature.h"
 #include "ecmascript/compiler/stub.h"
 #include "ecmascript/accessor_data.h"
 #include "ecmascript/base/number_helper.h"
@@ -383,9 +384,8 @@ inline void Stub::FatalPrint(GateRef glue, std::initializer_list<GateRef> args)
 void Stub::SavePcIfNeeded(GateRef glue)
 {
     if (env_.IsAsmInterp()) {
-        GateRef pc = PtrArgument(1);
-        // 2: bytecode handler 3rd parameter is sp
-        GateRef sp = PtrArgument(2);
+        GateRef sp = PtrArgument(static_cast<size_t>(InterpreterHandlerInputs::SP));
+        GateRef pc = PtrArgument(static_cast<size_t>(InterpreterHandlerInputs::PC));
         GateRef frame = PtrSub(sp,
             IntPtr(AsmInterpretedFrame::GetSize(GetEnvironment()->IsArch32Bit())));
         Store(VariableType::INT64(), glue, frame,

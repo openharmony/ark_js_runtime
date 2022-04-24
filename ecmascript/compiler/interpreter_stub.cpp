@@ -16,6 +16,7 @@
 #include "interpreter_stub-inl.h"
 
 #include "ecmascript/base/number_helper.h"
+#include "ecmascript/compiler/bc_call_signature.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
 #include "ecmascript/compiler/variable_type.h"
 #include "ecmascript/global_env_constants.h"
@@ -34,17 +35,20 @@ namespace panda::ecmascript::kungfu {
 void name##Stub::GenerateCircuit(const CompilationConfig *cfg)                            \
 {                                                                                         \
     Stub::GenerateCircuit(cfg);                                                           \
-    GateRef glue = PtrArgument(0);                                                        \
-    GateRef pc = PtrArgument(1);                                                          \
-    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */                         \
-    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */        \
-    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */  \
-    GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */                      \
-    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */           \
+    GateRef glue = PtrArgument(static_cast<size_t>(InterpreterHandlerInputs::GLUE));      \
+    GateRef sp = PtrArgument(static_cast<size_t>(InterpreterHandlerInputs::SP));          \
+    GateRef pc = PtrArgument(static_cast<size_t>(InterpreterHandlerInputs::PC));          \
+    GateRef constpool = TaggedPointerArgument(                                            \
+        static_cast<size_t>(InterpreterHandlerInputs::CONSTPOOL));                        \
+    GateRef profileTypeInfo = TaggedPointerArgument(                                      \
+        static_cast<size_t>(InterpreterHandlerInputs::PROFILE_TYPE_INFO));                \
+    GateRef acc = TaggedArgument(static_cast<size_t>(InterpreterHandlerInputs::ACC));     \
+    GateRef hotnessCounter = Int32Argument(                                               \
+        static_cast<size_t>(InterpreterHandlerInputs::HOTNESS_COUNTER));                  \
     DebugPrint(glue, { Int32(GET_MESSAGE_STRING_ID(name)) });                             \
-    GenerateCircuitImpl(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);   \
+    GenerateCircuitImpl(glue, sp, pc, constpool, profileTypeInfo, acc, hotnessCounter);   \
 }                                                                                         \
-void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp,                \
+void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef sp, GateRef pc,                \
                                      GateRef constpool, GateRef profileTypeInfo,          \
                                      GateRef acc, GateRef hotnessCounter)
 #else
@@ -52,33 +56,36 @@ void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp,      
 void name##Stub::GenerateCircuit(const CompilationConfig *cfg)                            \
 {                                                                                         \
     Stub::GenerateCircuit(cfg);                                                           \
-    GateRef glue = PtrArgument(0);                                                        \
-    GateRef pc = PtrArgument(1);                                                          \
-    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */                         \
-    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */        \
-    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */  \
-    GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */                      \
-    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */           \
-    GenerateCircuitImpl(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);   \
+    GateRef glue = PtrArgument(static_cast<size_t>(InterpreterHandlerInputs::GLUE));      \
+    GateRef sp = PtrArgument(static_cast<size_t>(InterpreterHandlerInputs::SP));          \
+    GateRef pc = PtrArgument(static_cast<size_t>(InterpreterHandlerInputs::PC));          \
+    GateRef constpool = TaggedPointerArgument(                                            \
+        static_cast<size_t>(InterpreterHandlerInputs::CONSTPOOL));                        \
+    GateRef profileTypeInfo = TaggedPointerArgument(                                      \
+        static_cast<size_t>(InterpreterHandlerInputs::PROFILE_TYPE_INFO));                \
+    GateRef acc = TaggedArgument(static_cast<size_t>(InterpreterHandlerInputs::ACC));     \
+    GateRef hotnessCounter = Int32Argument(                                               \
+        static_cast<size_t>(InterpreterHandlerInputs::HOTNESS_COUNTER));                  \
+    GenerateCircuitImpl(glue, sp, pc, constpool, profileTypeInfo, acc, hotnessCounter);   \
 }                                                                                         \
-void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp,                \
+void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef sp, GateRef pc,                \
                                      GateRef constpool, GateRef profileTypeInfo,          \
                                      GateRef acc, GateRef hotnessCounter)
 #endif
 
 #define DISPATCH(format)                                                                  \
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,               \
+    Dispatch(glue, sp, pc, constpool, profileTypeInfo, acc, hotnessCounter,               \
              IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::format)))
 
 #define DISPATCH_WITH_ACC(format)                                                         \
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter,           \
+    Dispatch(glue, sp, pc, constpool, profileTypeInfo, *varAcc, hotnessCounter,           \
              IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::format)))
 
 #define DISPATCH_LAST()                                                                   \
-    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter)           \
+    DispatchLast(glue, sp, pc, constpool, profileTypeInfo, acc, hotnessCounter)           \
 
 #define DISPATCH_LAST_WITH_ACC()                                                          \
-    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter)       \
+    DispatchLast(glue, sp, pc, constpool, profileTypeInfo, *varAcc, hotnessCounter)       \
 
 #define UPDATE_HOTNESS(_sp)                                                               \
     varHotnessCounter = Int32Add(offset, *varHotnessCounter);                             \
@@ -1457,11 +1464,6 @@ DECLARE_ASM_HANDLER(HandleGreaterEqDynPrefV8)
     DISPATCH_WITH_ACC(PREF_V8);
 }
 
-DECLARE_ASM_HANDLER(AsmInterpreterEntry)
-{
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, IntPtr(0));
-}
-
 DECLARE_ASM_HANDLER(SingleStepDebugging)
 {
     auto env = GetEnvironment();
@@ -1482,7 +1484,11 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
     Branch(IntPtrEqual(*varPc, IntPtr(0)), &shouldReturn, &shouldContinue);
     Bind(&shouldReturn);
     {
-        Return();
+        if (env->IsAArch64()) {
+            DispatchCommonCall<RTSTUB_ID(ResumeRspAndReturn)>(glue, *varSp);
+        } else {
+            Return();
+        }
     }
     Bind(&shouldContinue);
     {
@@ -1498,14 +1504,14 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
         varHotnessCounter = Load(VariableType::INT32(), method,
                                  IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())));
     }
-    Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, *varAcc,
+    Dispatch(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo, *varAcc,
              *varHotnessCounter, IntPtr(0));
 }
 
 DECLARE_ASM_HANDLER(HandleOverflow)
 {
     FatalPrint(glue, { Int32(GET_MESSAGE_STRING_ID(OPCODE_OVERFLOW)) });
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, IntPtr(0));
+    Dispatch(glue, sp, pc, constpool, profileTypeInfo, acc, hotnessCounter, IntPtr(0));
 }
 
 DECLARE_ASM_HANDLER(HandleLdaDynV8)
@@ -1534,7 +1540,7 @@ DECLARE_ASM_HANDLER(HandleJmpImm8)
     Label slowPath(env);
 
     UPDATE_HOTNESS(sp);
-    Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter, SExtInt32ToPtr(offset));
+    Dispatch(glue, sp, pc, constpool, *varProfileTypeInfo, acc, *varHotnessCounter, SExtInt32ToPtr(offset));
 }
 
 DECLARE_ASM_HANDLER(HandleJmpImm16)
@@ -1548,7 +1554,7 @@ DECLARE_ASM_HANDLER(HandleJmpImm16)
     Label slowPath(env);
 
     UPDATE_HOTNESS(sp);
-    Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter, SExtInt32ToPtr(offset));
+    Dispatch(glue, sp, pc, constpool, *varProfileTypeInfo, acc, *varHotnessCounter, SExtInt32ToPtr(offset));
 }
 
 DECLARE_ASM_HANDLER(HandleJmpImm32)
@@ -1561,7 +1567,7 @@ DECLARE_ASM_HANDLER(HandleJmpImm32)
     Label dispatch(env);
     Label slowPath(env);
     UPDATE_HOTNESS(sp);
-    Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter, SExtInt32ToPtr(offset));
+    Dispatch(glue, sp, pc, constpool, *varProfileTypeInfo, acc, *varHotnessCounter, SExtInt32ToPtr(offset));
 }
 
 DECLARE_ASM_HANDLER(HandleLdLexVarDynPrefImm4Imm4)
@@ -3724,7 +3730,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByValueWithNameSetPrefV8V8)
                     Branch(TaggedIsException(res), &isException, &notException);
                     Bind(&isException);
                     {
-                        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
+                        DispatchLast(glue, sp, pc, constpool, profileTypeInfo, acc, hotnessCounter);
                     }
                     Bind(&notException);
                     CallRuntime(glue, RTSTUB_ID(SetFunctionNameNoPrefix), { acc, propKey });
@@ -3739,7 +3745,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByValueWithNameSetPrefV8V8)
         Branch(TaggedIsException(res), &isException1, &notException1);
         Bind(&isException1);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
+            DispatchLast(glue, sp, pc, constpool, profileTypeInfo, acc, hotnessCounter);
         }
         Bind(&notException1);
         DISPATCH(PREF_V8_V8);
@@ -3824,7 +3830,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByNameWithNameSetPrefId32V8)
                 {
                     Branch(TaggedIsException(res), &isException, &notException);
                     Bind(&isException);
-                    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
+                    DispatchLast(glue, sp, pc, constpool, profileTypeInfo, acc, hotnessCounter);
                     Bind(&notException);
                     CallRuntime(glue, RTSTUB_ID(SetFunctionNameNoPrefix), { acc, propKey });
                     DISPATCH(PREF_ID32_V8);
@@ -3837,7 +3843,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByNameWithNameSetPrefId32V8)
         GateRef res = CallRuntime(glue, RTSTUB_ID(StOwnByNameWithNameSet), { receiver, propKey, acc });
         Branch(TaggedIsException(res), &isException1, &notException1);
         Bind(&isException1);
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
+        DispatchLast(glue, sp, pc, constpool, profileTypeInfo, acc, hotnessCounter);
         Bind(&notException1);
         DISPATCH(PREF_ID32_V8);
     }
@@ -3941,10 +3947,10 @@ DECLARE_ASM_HANDLER(HandleJeqzImm8)
         Label dispatch(env);
         Label slowPath(env);
         UPDATE_HOTNESS(sp);
-        Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter, SExtInt32ToPtr(offset));
+        Dispatch(glue, sp, pc, constpool, *varProfileTypeInfo, acc, *varHotnessCounter, SExtInt32ToPtr(offset));
     }
     Bind(&last);
-    Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter,
+    Dispatch(glue, sp, pc, constpool, *varProfileTypeInfo, acc, *varHotnessCounter,
              IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
 }
 
@@ -3984,10 +3990,10 @@ DECLARE_ASM_HANDLER(HandleJeqzImm16)
         Label dispatch(env);
         Label slowPath(env);
         UPDATE_HOTNESS(sp);
-        Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter, SExtInt32ToPtr(offset));
+        Dispatch(glue, sp, pc, constpool, *varProfileTypeInfo, acc, *varHotnessCounter, SExtInt32ToPtr(offset));
     }
     Bind(&last);
-    Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter,
+    Dispatch(glue, sp, pc, constpool, *varProfileTypeInfo, acc, *varHotnessCounter,
              IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::IMM16)));
 }
 
@@ -4027,10 +4033,10 @@ DECLARE_ASM_HANDLER(HandleJnezImm8)
         Label dispatch(env);
         Label slowPath(env);
         UPDATE_HOTNESS(sp);
-        Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter, SExtInt32ToPtr(offset));
+        Dispatch(glue, sp, pc, constpool, *varProfileTypeInfo, acc, *varHotnessCounter, SExtInt32ToPtr(offset));
     }
     Bind(&last);
-    Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter,
+    Dispatch(glue, sp, pc, constpool, *varProfileTypeInfo, acc, *varHotnessCounter,
              IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
 }
 
@@ -4070,10 +4076,10 @@ DECLARE_ASM_HANDLER(HandleJnezImm16)
         Label dispatch(env);
         Label slowPath(env);
         UPDATE_HOTNESS(sp);
-        Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter, SExtInt32ToPtr(offset));
+        Dispatch(glue, sp, pc, constpool, *varProfileTypeInfo, acc, *varHotnessCounter, SExtInt32ToPtr(offset));
     }
     Bind(&last);
-    Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter,
+    Dispatch(glue, sp, pc, constpool, *varProfileTypeInfo, acc, *varHotnessCounter,
              IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::IMM16)));
 }
 
@@ -4121,7 +4127,11 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
         DispatchCommonCall<RTSTUB_ID(ResumeRspAndReturn)>(glue, *varSp);
 #else
-        Return();
+        if (env->IsAArch64()) {
+            DispatchCommonCall<RTSTUB_ID(ResumeRspAndReturn)>(glue, *varSp);
+        } else {
+            Return();
+        }
 #endif
     }
     Bind(&pcNotEqualNullptr);
@@ -4136,10 +4146,10 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
                                  IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())));
         GateRef jumpSize = GetCallSizeFromFrame(prevState);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-        DispatchCommonCall<RTSTUB_ID(ResumeRspAndDispatch)>(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo,
+        DispatchCommonCall<RTSTUB_ID(ResumeRspAndDispatch)>(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo,
             acc, *varHotnessCounter, jumpSize);
 #else
-        Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, acc,
+        Dispatch(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo, acc,
                  *varHotnessCounter, jumpSize);
 #endif
     }
@@ -4191,7 +4201,11 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
         DispatchCommonCall<RTSTUB_ID(ResumeRspAndReturn)>(glue, *varSp);
 #else
-        Return();
+        if (env->IsAArch64()) {
+            DispatchCommonCall<RTSTUB_ID(ResumeRspAndReturn)>(glue, *varSp);
+        } else {
+            Return();
+        }
 #endif
     }
     Bind(&pcNotEqualNullptr);
@@ -4206,10 +4220,10 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
                                  IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())));
         GateRef jumpSize = GetCallSizeFromFrame(prevState);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-        DispatchCommonCall<RTSTUB_ID(ResumeRspAndDispatch)>(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo,
+        DispatchCommonCall<RTSTUB_ID(ResumeRspAndDispatch)>(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo,
             *varAcc, *varHotnessCounter, jumpSize);
 #else
-        Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, *varAcc,
+        Dispatch(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo, *varAcc,
                  *varHotnessCounter, jumpSize);
 #endif
     }
@@ -4241,7 +4255,7 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
     Branch(TaggedIsException(res), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, *varAcc, *varHotnessCounter);
+        DispatchLast(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo, *varAcc, *varHotnessCounter);
     }
     Bind(&notException);
     varAcc = res;
@@ -4269,7 +4283,11 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
     Bind(&pcEqualNullptr);
     {
         SetAccToFrame(glue, frame, *varAcc);
-        Return();
+        if (env->IsAArch64()) {
+            DispatchCommonCall<RTSTUB_ID(ResumeRspAndReturn)>(glue, *varSp);
+        } else {
+            Return();
+        }
     }
     Bind(&pcNotEqualNullptr);
     {
@@ -4282,7 +4300,7 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
         varHotnessCounter = Load(VariableType::INT32(), method,
                                  IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())));
         GateRef jumpSize = GetCallSizeFromFrame(prevState);
-        Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, *varAcc,
+        Dispatch(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo, *varAcc,
                  *varHotnessCounter, jumpSize);
     }
 }
@@ -4305,7 +4323,11 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
     Branch(IntPtrEqual(*varPc, IntPtr(0)), &pcIsInvalid, &pcNotInvalid);
     Bind(&pcIsInvalid);
     {
-        Return();
+        if (env->IsAArch64()) {
+            DispatchCommonCall<RTSTUB_ID(ResumeRspAndReturn)>(glue, *varSp);
+        } else {
+            Return();
+        }
     }
     Bind(&pcNotInvalid);
     {
@@ -4320,7 +4342,7 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
             IntPtr(JSFunctionBase::METHOD_OFFSET));
         varHotnessCounter = Load(VariableType::INT32(), method,
                                  IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())));
-        Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, *varAcc,
+        Dispatch(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo, *varAcc,
                  *varHotnessCounter, IntPtr(0));
     }
 }
@@ -5084,7 +5106,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
         GateRef newProfileTypeInfo = GetProfileTypeInfoFromFunction(func);                                      \
         GateRef newHotnessCounter = Load(VariableType::INT32(), method,                                         \
                                          IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())));        \
-        Dispatch(glue, bytecodeArray, *newSp, newConstpool, newProfileTypeInfo,                                 \
+        Dispatch(glue, *newSp, bytecodeArray, newConstpool, newProfileTypeInfo,                                 \
                  Hole(VariableType::JS_ANY()), newHotnessCounter, IntPtr(0));                                   \
     }
 
@@ -5437,28 +5459,4 @@ DECLARE_ASM_HANDLER(HandleNewLexEnvWithNameDynPrefImm16Imm16)
 #undef DISPATCH_WITH_ACC
 #undef DISPATCH_LAST
 #undef DISPATCH_LAST_WITH_ACC
-
-CallSignature BytecodeStubCSigns::callSigns_[BytecodeStubCSigns::NUM_OF_VALID_STUBS];
-
-void BytecodeStubCSigns::Initialize()
-{
-#define INIT_SIGNATURES(name, counter)                                   \
-    BytecodeHandlerCallSignature::Initialize(&callSigns_[name]);         \
-    callSigns_[name].SetID(ID_##name);                                   \
-    callSigns_[name].SetCallConv(CallSignature::CallConv::GHCCallConv);  \
-    callSigns_[name].SetConstructor(                                     \
-    [](void* ciruit) {                                                   \
-        return static_cast<void*>(                                       \
-            new name##Stub(static_cast<Circuit*>(ciruit)));              \
-    });
-    INTERPRETER_BC_STUB_LIST(INIT_SIGNATURES)
-#undef INIT_SIGNATURES
-}
-
-void BytecodeStubCSigns::GetCSigns(std::vector<CallSignature*>& outCSigns)
-{
-    for (size_t i = 0; i < NUM_OF_VALID_STUBS; i++) {
-        outCSigns.push_back(&callSigns_[i]);
-    }
-}
 }  // namespace panda::ecmascript::kungfu

@@ -31,10 +31,9 @@ class GlobalEnv;
 class JSthread;
 class JSFunction;
 class ObjectFactory;
-extern "C" JSTaggedType OptimizedCallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
-extern "C" JSTaggedType OptimizedCallRuntimeWithArgv(uintptr_t glue, uint64_t runtime_id,
+extern "C" JSTaggedType CallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
+extern "C" JSTaggedType CallRuntimeWithArgv(uintptr_t glue, uint64_t runtime_id,
     uint64_t argc, uintptr_t argv);
-extern "C" JSTaggedType AsmIntCallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
 extern "C" void JSCall(uintptr_t glue, uint32_t argc, JSTaggedType callTarget,
                        JSTaggedType newTarget, JSTaggedType thisObj, ...);
 extern "C" void JSCallWithArgV(uintptr_t glue, uint32_t argc, JSTaggedType callTarget, JSTaggedType argV[]);
@@ -88,7 +87,7 @@ extern "C" void ResumeRspAndDispatch(uintptr_t glue, uintptr_t pc, uintptr_t sp,
     uint64_t profileTypeInfo, uint64_t acc, uint32_t hotnessCounter, size_t jumpSize);
 extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
 #define RUNTIME_ASM_STUB_LIST(V)       \
-    V(AsmIntCallRuntime)
+    V(CallRuntime)
 
 #define RUNTIME_STUB_WITHOUT_GC_LIST(V)        \
     V(DebugPrint)                              \
@@ -98,8 +97,7 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(DoubleToInt)                             \
     V(FloatMod)                                \
     V(FindElementWithCache)                    \
-    V(OptimizedCallRuntime)                    \
-    V(OptimizedCallRuntimeWithArgv)            \
+    V(CallRuntimeWithArgv)            \
     V(JSCall)                                  \
     V(JSCallWithArgV)                          \
     V(JSObjectGetMethod)                       \

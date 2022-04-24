@@ -39,6 +39,7 @@ source_set("libark_jsoptimizer_static") {
     "aot_file_manager.cpp",
     "assembler/assembler_x64.cpp",
     "assembler_module.cpp",
+    "bc_call_signature.cpp",
     "bytecode_circuit_builder.cpp",
     "call_signature.cpp",
     "circuit.cpp",

@@ -17,11 +17,8 @@
  .global JSFunctionEntry
 .type JSFunctionEntry, %function
 
-.global OptimizedCallRuntime
-.type OptimizedCallRuntime, %function
-
-.global AsmIntCallRuntime
-.type AsmIntCallRuntime, %function
+.global CallRuntime
+.type CallRuntime, %function
 
  .global OptimizedCallOptimized
 .type OptimizedCallOptimized, %function
@@ -86,8 +83,8 @@
 .global ResumeRspAndReturn
 .type ResumeRspAndReturn, %function
 
-.global OptimizedCallRuntimeWithArgv
-.type OptimizedCallRuntimeWithArgv, %function
+.global CallRuntimeWithArgv
+.type CallRuntimeWithArgv, %function
 
  /* JSFunctionEntry Callee Register Save Macro */
 .macro PUSH_CALLEE_SAVED_REGS
@@ -206,7 +203,7 @@ JSFunctionEntry:
     add     sp, sp, #0x8
     ret
 
-// uint64_t OptimizedCallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
+// uint64_t CallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // JSTaggedType (*)(uintptr_t argGlue, uint64_t argc, JSTaggedType argv[])
 // Input:
@@ -245,10 +242,10 @@ JSFunctionEntry:
 //  current sp - 8:  type
 //  current sp - 16: callee save x19
 
-OptimizedCallRuntime:
+CallRuntime:
     stp     x29, x30, [sp, #-16]!  // save register for fp, rip
     mov     x29, sp                // set frame pointer = callsiteFp
-    str     x29, [x0, #ASM_GLUE_CURRENT_FRAME_OFFSET]       // save to thread->currentFrame_
+    str     x29, [x0, #ASM_GLUE_LEAVE_FRAME_OFFSET]       // save to thread->currentFrame_
     str     x19, [sp, #-16]        // callee save register
 
     // construct leave frame
@@ -270,34 +267,6 @@ OptimizedCallRuntime:
     // restore register
     ldp     x29, x30, [sp], #16
     ret
-
-AsmIntCallRuntime:
-    str     x30, [sp, #-8]             // save register rip
-    add     sp, sp, #-16
-    str     x19, [sp, #-16]        // callee save register
-    mov     x19, sp
-    str     x19, [x0, #ASM_GLUE_LEAVE_FRAME_OFFSET]       // save to thread->leaveFrame_
-
-    // construct leave frame
-    mov     x19, #ASM_LEAVE_FRAME_TYPE
-    str     x19, [sp, #-8]
-    add     sp, sp, #-16
-
-    // load runtime trampoline address
-    ldr     x19, [sp, #32]  // runtime_id
-    add     x19, x0, x19, lsl #3
-    ldr     x19, [x19, #ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET]
-    ldr     x1, [sp, #40]  // argc
-    add     x2, sp,  #48   // argv[]
-    blr     x19
-
-    // descontruct leave frame and callee save register
-    ldr     x19, [sp]
-    add   sp, sp, #24
-    // restore register
-    ldr     x30, [sp], #8
-    ret
-
 
 // extern "C" JSTaggedType OptimizedCallOptimized(uintptr_t glue, uint32_t expectedNumArgs,
 //                                  uint32_t actualNumArgs, uintptr_t codeAddr, uintptr_t argv)
@@ -622,7 +591,7 @@ JSCall:
     mov     x5, #1
     mov     x6, #RUNTIME_ID_THROW_TYPE_ERROR
     stp     x5, x6, [sp, #-16]!
-    bl      OptimizedCallRuntime
+    bl      CallRuntime
     mov     x0, #TAGGED_VALUE_EXCEPTION
     add     sp, sp, #32
     ldp     x29, x30, [sp], #16
@@ -689,7 +658,49 @@ ResumeRspAndDispatch:
     ret
 
 ResumeRspAndReturn:
+    ldr    x30, [sp], #8
     ret
 
-OptimizedCallRuntimeWithArgv:
+CallRuntimeWithArgv:
     ret
+
+.type JSCallEntryInternal, %function
+JSCallEntryInternal:
+    str  x30, [sp, #-8]!
+    br   x8
+
+.global JSCallEntry
+.type JSCallEntry, %function
+JSCallEntry:
+    stp	x29, x30, [sp, #-160]!
+    stp	d15, d14, [sp, #16]
+ 	stp	d13, d12, [sp, #32]
+ 	stp	d11, d10, [sp, #48]
+ 	stp	d9, d8, [sp, #64]
+ 	stp	x28, x27, [sp, #80]
+ 	stp	x26, x25, [sp, #96]
+ 	stp	x24, x23, [sp, #112]
+ 	stp	x22, x21, [sp, #128]
+ 	stp	x20, x19, [sp, #144]
+ 	ldrb	w8, [x2]
+ 	mov	x29, x1
+ 	mov	x19, x0
+ 	mov	x20, x2
+ 	add	x8, x0, x8, lsl #3
+ 	ldr	x8, [x8, #ASM_GLUE_BC_HANDLERS_OFFSET]
+ 	mov	x21, x3
+ 	mov	x22, x4
+ 	mov	x23, x5
+ 	mov	x24, x6
+    bl JSCallEntryInternal
+ 	ldp	x20, x19, [sp, #144]
+ 	ldp	x22, x21, [sp, #128]
+ 	ldp	x24, x23, [sp, #112]
+ 	ldp	x26, x25, [sp, #96]
+ 	ldp	x28, x27, [sp, #80]
+ 	ldp	d9, d8, [sp, #64]
+ 	ldp	d11, d10, [sp, #48]
+ 	ldp	d13, d12, [sp, #32]
+ 	ldp	d15, d14, [sp, #16]
+ 	ldp	x29, x30, [sp], #160
+ 	ret

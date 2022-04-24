@@ -19,6 +19,7 @@
 #include <set>
 #include <string>
 
+#include "ecmascript/compiler/bc_call_signature.h"
 #include "ecmascript/compiler/bytecode_circuit_builder.h"
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/call_signature.h"
@@ -353,7 +354,7 @@ void LLVMIRBuilder::GenPrologue([[maybe_unused]] LLVMModuleRef &module, LLVMBuil
         return;
     }
     auto frameType = circuit_->GetFrameType();
-    if (frameType != FrameType::OPTIMIZED_FRAME) {
+    if (IsInterpreted()) {
         return;
     }
     LLVMAddTargetDependentFunctionAttr(function_, "frame-pointer", "all");
@@ -396,6 +397,10 @@ void LLVMIRBuilder::GenPrologue([[maybe_unused]] LLVMModuleRef &module, LLVMBuil
 
 LLVMValueRef LLVMIRBuilder::CallingFp(LLVMModuleRef &module, LLVMBuilderRef &builder, bool isCaller)
 {
+
+    if (IsInterpreted()) {
+        return LLVMGetParam(function_, static_cast<unsigned>(InterpreterHandlerInputs::SP));
+    }
     /* 0:calling 1:its caller */
     std::vector<LLVMValueRef> args = {LLVMConstInt(LLVMInt32Type(), 0, isCaller)};
     auto fn = LLVMGetNamedFunction(module, "llvm.frameaddress.p0i8");
@@ -553,8 +558,7 @@ LLVMValueRef LLVMIRBuilder::GetFunction(LLVMValueRef glue, StubIdType id)
 
 bool LLVMIRBuilder::IsInterpreted()
 {
-    auto frameType = circuit_->GetFrameType();
-    return (frameType == FrameType::INTERPRETER_FRAME) || (frameType == FrameType::OPTIMIZED_ENTRY_FRAME);
+    return circuit_->GetFrameType() == FrameType::INTERPRETER_FRAME;
 }
 
 bool LLVMIRBuilder::IsOptimized()
@@ -565,14 +569,7 @@ bool LLVMIRBuilder::IsOptimized()
 void LLVMIRBuilder::VisitRuntimeCall(GateRef gate, const std::vector<GateRef> &inList)
 {
     ASSERT(llvmModule_ != nullptr);
-    StubIdType stubId;
-    if (IsInterpreted()) {
-        stubId = RTSTUB_ID(AsmIntCallRuntime);
-    } else if (IsOptimized()) {
-        stubId = RTSTUB_ID(OptimizedCallRuntime);
-    } else {
-        UNREACHABLE();
-    }
+    StubIdType stubId = RTSTUB_ID(CallRuntime);
     LLVMValueRef glue = gateToLLVMMaps_[inList[static_cast<size_t>(CallInputs::GLUE)]];
     LLVMValueRef callee = GetFunction(glue, stubId);
 
@@ -603,7 +600,7 @@ void LLVMIRBuilder::VisitRuntimeCallWithArgv(GateRef gate, const std::vector<Gat
 {
     assert(IsOptimized() == true);
     LLVMValueRef glue = gateToLLVMMaps_[inList[static_cast<size_t>(CallInputs::GLUE)]];
-    LLVMValueRef callee = GetFunction(glue, RTSTUB_ID(OptimizedCallRuntimeWithArgv));
+    LLVMValueRef callee = GetFunction(glue, RTSTUB_ID(CallRuntimeWithArgv));
 
     std::vector<LLVMValueRef> params;
     params.push_back(glue); // glue
@@ -634,7 +631,7 @@ LLVMValueRef LLVMIRBuilder::GetCurrentSP()
 
 void LLVMIRBuilder::SaveCurrentSP()
 {
-    if (circuit_->GetFrameType() != FrameType::OPTIMIZED_FRAME) {
+    if (IsInterpreted()) {
         return;
     }
     if (compCfg_->Is64Bit()) {

@@ -100,7 +100,7 @@ index a9954635705..a0a533a7153 100644
  
  #endif
 diff --git a/llvm/lib/CodeGen/PrologEpilogInserter.cpp b/llvm/lib/CodeGen/PrologEpilogInserter.cpp
-index 3909b571728..d275d9890cf 100644
+index 3909b571728..b9a835d0b39 100644
 --- a/llvm/lib/CodeGen/PrologEpilogInserter.cpp
 +++ b/llvm/lib/CodeGen/PrologEpilogInserter.cpp
 @@ -79,6 +79,9 @@ using MBBVector = SmallVector<MachineBasicBlock *, 4>;
@@ -122,7 +122,7 @@ index 3909b571728..d275d9890cf 100644
 +  Triple::ArchType archType = TFI.GetArkSupportTarget();
 +  if (archType != Triple::UnknownArch) {
 +    int slotSize = sizeof(uint32_t);
-+    if (archType == Triple::aarch64) {
++    if (archType == Triple::aarch64 || archType == Triple::x86_64) {
 +      slotSize = sizeof(uint64_t);
 +    }
 +    if (MF.getFunction().hasFnAttribute("js-stub-call")) {
@@ -261,10 +261,49 @@ index 6da089d1859..271b4e157d9 100644
    case TargetOpcode::PATCHABLE_FUNCTION_ENTER:
      LowerPATCHABLE_FUNCTION_ENTER(*MI);
      return;
+diff --git a/llvm/lib/Target/AArch64/AArch64CallLowering.cpp b/llvm/lib/Target/AArch64/AArch64CallLowering.cpp
+index 76ff238234d..f52d4c5c877 100644
+--- a/llvm/lib/Target/AArch64/AArch64CallLowering.cpp
++++ b/llvm/lib/Target/AArch64/AArch64CallLowering.cpp
+@@ -213,7 +213,11 @@ struct OutgoingArgHandler : public CallLowering::ValueHandler {
+ } // namespace
+ 
+ static bool doesCalleeRestoreStack(CallingConv::ID CallConv, bool TailCallOpt) {
+-  return CallConv == CallingConv::Fast && TailCallOpt;
++  #ifdef ARK_GC_SUPPORT
++    return (CallConv == CallingConv::GHC || (CallConv == CallingConv::Fast)) && TailCallOpt;
++  #else
++    return CallConv == CallingConv::Fast && TailCallOpt;
++  #endif
+ }
+ 
+ void AArch64CallLowering::splitToValueTypes(
+@@ -496,7 +500,11 @@ bool AArch64CallLowering::lowerFormalArguments(
+ 
+ /// Return true if the calling convention is one that we can guarantee TCO for.
+ static bool canGuaranteeTCO(CallingConv::ID CC) {
+-  return CC == CallingConv::Fast;
++  #ifdef ARK_GC_SUPPORT
++    return (CC == CallingConv::GHC) || (CC == CallingConv::Fast);
++  #else
++    return CC == CallingConv::Fast;
++  #endif
+ }
+ 
+ /// Return true if we might ever do TCO for calls with this calling convention.
 diff --git a/llvm/lib/Target/AArch64/AArch64CallingConvention.td b/llvm/lib/Target/AArch64/AArch64CallingConvention.td
-index a0b2d7712b6..59092f1e196 100644
+index a0b2d7712b6..511cd3a3a36 100644
 --- a/llvm/lib/Target/AArch64/AArch64CallingConvention.td
 +++ b/llvm/lib/Target/AArch64/AArch64CallingConvention.td
+@@ -355,7 +355,7 @@ def CC_AArch64_GHC : CallingConv<[
+   CCIfType<[i8, i16, i32], CCPromoteToType<i64>>,
+ 
+   // Pass in STG registers: Base, Sp, Hp, R1, R2, R3, R4, R5, R6, SpLim
+-  CCIfType<[i64], CCAssignToReg<[X19, X20, X21, X22, X23, X24, X25, X26, X27, X28]>>
++  CCIfType<[i64], CCAssignToReg<[X19, FP, X20, X21, X22, X23, X24, X25, X26, X27, X28]>>
+ ]>;
+ 
+ // The order of the callee-saves in this file is important, because the
 @@ -373,9 +373,10 @@ def CC_AArch64_GHC : CallingConv<[
  // vreg on entry, use it in RET & tail call generation; make that vreg def if we
  // end up saving LR as part of a call frame). Watch this space...
@@ -279,7 +318,7 @@ index a0b2d7712b6..59092f1e196 100644
  // Darwin puts the frame-record at the top of the callee-save area.
  def CSR_Darwin_AArch64_AAPCS : CalleeSavedRegs<(add LR, FP, X19, X20, X21, X22,
 diff --git a/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp b/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp
-index 651ad9ad4c8..5e179bd3db8 100644
+index 651ad9ad4c8..729d7122cd0 100644
 --- a/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp
 +++ b/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp
 @@ -385,6 +385,7 @@ void AArch64FrameLowering::emitCalleeSavedFrameMoves(
@@ -330,7 +369,19 @@ index 651ad9ad4c8..5e179bd3db8 100644
  void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
                                          MachineBasicBlock &MBB) const {
    MachineBasicBlock::iterator MBBI = MBB.begin();
-@@ -980,6 +990,7 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
+@@ -920,8 +930,11 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
+ 
+   // All calls are tail calls in GHC calling conv, and functions have no
+   // prologue/epilogue.
++  #ifndef ARK_GC_SUPPORT
+   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
+     return;
++  #endif
++  // asm-int GHC call webkit function, we need push regs to stack.
+ 
+   // Set tagged base pointer to the bottom of the stack frame.
+   // Ideally it should match SP value after prologue.
+@@ -980,6 +993,7 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
    unsigned FixedObject = getFixedObjectSize(MF, AFI, IsWin64, IsFunclet);
  
    auto PrologueSaveSize = AFI->getCalleeSavedStackSize() + FixedObject;
@@ -338,7 +389,7 @@ index 651ad9ad4c8..5e179bd3db8 100644
    // All of the remaining stack allocations are for locals.
    AFI->setLocalStackSize(NumBytes - PrologueSaveSize);
    bool CombineSPBump = shouldCombineCSRLocalStackBump(MF, NumBytes);
-@@ -1020,11 +1031,13 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
+@@ -1020,11 +1034,13 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
      //          mov fp,sp          when FPOffset is zero.
      // Note: All stores of callee-saved registers are marked as "FrameSetup".
      // This code marks the instruction(s) that set the FP also.
@@ -352,7 +403,19 @@ index 651ad9ad4c8..5e179bd3db8 100644
    if (windowsRequiresStackProbe(MF, NumBytes)) {
      uint64_t NumWords = NumBytes >> 4;
      if (NeedsWinCFI) {
-@@ -1514,6 +1527,8 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
+@@ -1405,8 +1421,11 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
+ 
+   // All calls are tail calls in GHC calling conv, and functions have no
+   // prologue/epilogue.
++  #ifndef ARK_GC_SUPPORT
+   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
+     return;
++  #endif
++  // asm-int GHC call webkit function, we need push regs to stack.
+ 
+   // Initial and residual are named for consistency with the prologue. Note that
+   // in the epilogue, the residual adjustment is executed first.
+@@ -1514,6 +1533,8 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
  
    const StackOffset &SVEStackSize = getSVEStackSize(MF);
  
@@ -361,7 +424,7 @@ index 651ad9ad4c8..5e179bd3db8 100644
    // If there is a single SP update, insert it before the ret and we're done.
    if (CombineSPBump) {
      assert(!SVEStackSize && "Cannot combine SP bump with SVE");
-@@ -1552,6 +1567,8 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
+@@ -1552,6 +1573,8 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
      DeallocateAfter = SVEStackSize - DeallocateBefore;
    }
  
@@ -370,7 +433,7 @@ index 651ad9ad4c8..5e179bd3db8 100644
    // Deallocate the SVE area.
    if (SVEStackSize) {
      if (AFI->isStackRealigned()) {
-@@ -1632,6 +1649,7 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
+@@ -1632,6 +1655,7 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
    // This must be placed after the callee-save restore code because that code
    // assumes the SP is at the same location as it was after the callee-save save
    // code in the prologue.
@@ -378,7 +441,7 @@ index 651ad9ad4c8..5e179bd3db8 100644
    if (AfterCSRPopSize) {
      // Find an insertion point for the first ldp so that it goes before the
      // shadow call stack epilog instruction. This ensures that the restore of
-@@ -2079,6 +2097,7 @@ static void computeCalleeSaveRegisterPairs(
+@@ -2079,6 +2103,7 @@ static void computeCalleeSaveRegisterPairs(
      RegPairs.push_back(RPI);
      if (RPI.isPaired())
        ++i;
@@ -386,7 +449,7 @@ index 651ad9ad4c8..5e179bd3db8 100644
    }
  }
  
-@@ -2234,6 +2253,8 @@ bool AArch64FrameLowering::restoreCalleeSavedRegisters(
+@@ -2234,6 +2259,8 @@ bool AArch64FrameLowering::restoreCalleeSavedRegisters(
    SmallVector<RegPairInfo, 8> RegPairs;
    bool NeedsWinCFI = needsWinCFI(MF);
  
@@ -395,7 +458,19 @@ index 651ad9ad4c8..5e179bd3db8 100644
    if (MI != MBB.end())
      DL = MI->getDebugLoc();
  
-@@ -2416,6 +2437,7 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
+@@ -2348,8 +2375,11 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
+                                                 RegScavenger *RS) const {
+   // All calls are tail calls in GHC calling conv, and functions have no
+   // prologue/epilogue.
++  #ifndef ARK_GC_SUPPORT
+   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
+     return;
++  #endif
++  // asm-int GHC call webkit function, we need push regs to stack.
+ 
+   TargetFrameLowering::determineCalleeSaves(MF, SavedRegs, RS);
+   const AArch64RegisterInfo *RegInfo = static_cast<const AArch64RegisterInfo *>(
+@@ -2416,6 +2446,7 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
        CSStackSize += RegSize;
    }
  
@@ -430,7 +505,7 @@ index b5719feb6b1..b09aa05176d 100644
    bool canUseAsPrologue(const MachineBasicBlock &MBB) const override;
  
 diff --git a/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp b/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp
-index 23f05eaad94..974d11aa701 100644
+index 23f05eaad94..cbf1347c4d6 100644
 --- a/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp
 +++ b/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp
 @@ -1498,6 +1498,10 @@ MachineBasicBlock *AArch64TargetLowering::EmitInstrWithCustomInserter(
@@ -444,6 +519,31 @@ index 23f05eaad94..974d11aa701 100644
      return emitPatchPoint(MI, BB);
  
    case AArch64::CATCHRET:
+@@ -3736,7 +3740,11 @@ SDValue AArch64TargetLowering::LowerCallResult(
+ 
+ /// Return true if the calling convention is one that we can guarantee TCO for.
+ static bool canGuaranteeTCO(CallingConv::ID CC) {
+-  return CC == CallingConv::Fast;
++  #ifdef ARK_GC_SUPPORT
++    return (CC == CallingConv::GHC) || (CC == CallingConv::Fast);
++  #else
++    return CC == CallingConv::Fast;
++  #endif
+ }
+ 
+ /// Return true if we might ever do TCO for calls with this calling convention.
+@@ -3903,7 +3911,11 @@ SDValue AArch64TargetLowering::addTokenForArgument(SDValue Chain,
+ 
+ bool AArch64TargetLowering::DoesCalleeRestoreStack(CallingConv::ID CallCC,
+                                                    bool TailCallOpt) const {
++#ifdef ARK_GC_SUPPORT
++  return (CallCC == CallingConv::GHC || (CallCC == CallingConv::Fast)) && TailCallOpt;
++#else
+   return CallCC == CallingConv::Fast && TailCallOpt;
++#endif
+ }
+ 
+ /// LowerCall - Lower a call to a callseq_start + CALL + callseq_end chain,
 diff --git a/llvm/lib/Target/AArch64/AArch64InstrInfo.cpp b/llvm/lib/Target/AArch64/AArch64InstrInfo.cpp
 index 54f3f7c1013..c57374c9c78 100644
 --- a/llvm/lib/Target/AArch64/AArch64InstrInfo.cpp
@@ -465,10 +565,24 @@ index 54f3f7c1013..c57374c9c78 100644
      // This gets lowered to an instruction sequence which takes 16 bytes
      NumBytes = 16;
 diff --git a/llvm/lib/Target/AArch64/AArch64RegisterInfo.cpp b/llvm/lib/Target/AArch64/AArch64RegisterInfo.cpp
-index 14f839cd4f8..f305d3abdbf 100644
+index 14f839cd4f8..a312944f17a 100644
 --- a/llvm/lib/Target/AArch64/AArch64RegisterInfo.cpp
 +++ b/llvm/lib/Target/AArch64/AArch64RegisterInfo.cpp
-@@ -464,8 +464,14 @@ void AArch64RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
+@@ -205,6 +205,13 @@ AArch64RegisterInfo::getReservedRegs(const MachineFunction &MF) const {
+   if (TFI->hasFP(MF) || TT.isOSDarwin())
+     markSuperRegs(Reserved, AArch64::W29);
+ 
++#ifdef ARK_GC_SUPPORT
++  if (MF.getFunction().getCallingConv() == CallingConv::GHC) {
++    markSuperRegs(Reserved, AArch64::W29);
++    markSuperRegs(Reserved, AArch64::W30);
++  }
++#endif
++
+   for (size_t i = 0; i < AArch64::GPR32commonRegClass.getNumRegs(); ++i) {
+     if (MF.getSubtarget<AArch64Subtarget>().isXRegisterReserved(i))
+       markSuperRegs(Reserved, AArch64::GPR32commonRegClass.getRegister(i));
+@@ -464,8 +471,14 @@ void AArch64RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
    unsigned FrameReg;
  
    // Special handling of dbg_value, stackmap and patchpoint instructions.
@@ -691,6 +805,36 @@ index 48f78151025..0970a6259ad 100644
    case ARM::MOVi16_ga_pcrel:
    case ARM::MOVTi16_ga_pcrel:
    case ARM::t2MOVi16_ga_pcrel:
+diff --git a/llvm/lib/Target/ARM/ARMBaseRegisterInfo.cpp b/llvm/lib/Target/ARM/ARMBaseRegisterInfo.cpp
+index 52e6d05c315..034fa157e4a 100644
+--- a/llvm/lib/Target/ARM/ARMBaseRegisterInfo.cpp
++++ b/llvm/lib/Target/ARM/ARMBaseRegisterInfo.cpp
+@@ -196,6 +196,12 @@ getReservedRegs(const MachineFunction &MF) const {
+   markSuperRegs(Reserved, ARM::APSR_NZCV);
+   if (TFI->hasFP(MF))
+     markSuperRegs(Reserved, getFramePointerReg(STI));
++#ifdef ARK_GC_SUPPORT
++  if (MF.getFunction().getCallingConv() == CallingConv::GHC) {
++    markSuperRegs(Reserved, ARM::R11);
++    markSuperRegs(Reserved, ARM::LR);
++  }
++#endif
+   if (hasBasePointer(MF))
+     markSuperRegs(Reserved, BasePtr);
+   // Some targets reserve R9.
+diff --git a/llvm/lib/Target/ARM/ARMCallingConv.td b/llvm/lib/Target/ARM/ARMCallingConv.td
+index 5df5b56f5af..e4c3493ead6 100644
+--- a/llvm/lib/Target/ARM/ARMCallingConv.td
++++ b/llvm/lib/Target/ARM/ARMCallingConv.td
+@@ -119,7 +119,7 @@ def CC_ARM_APCS_GHC : CallingConv<[
+   CCIfType<[i8, i16], CCPromoteToType<i32>>,
+ 
+   // Pass in STG registers: Base, Sp, Hp, R1, R2, R3, R4, SpLim
+-  CCIfType<[i32], CCAssignToReg<[R4, R5, R6, R7, R8, R9, R10, R11]>>
++  CCIfType<[i32], CCAssignToReg<[R4, R11, R5, R6, R7, R8, R9, R10]>>
+ ]>;
+ 
+ //===----------------------------------------------------------------------===//
 diff --git a/llvm/lib/Target/ARM/ARMConstantIslandPass.cpp b/llvm/lib/Target/ARM/ARMConstantIslandPass.cpp
 index 66ad120a111..59335c77394 100644
 --- a/llvm/lib/Target/ARM/ARMConstantIslandPass.cpp
@@ -739,10 +883,24 @@ index 9f504b1eaa4..30a1baf5c85 100644
    case ARM::tLDR_postidx: {
      MachineOperand Def(MI.getOperand(1));
 diff --git a/llvm/lib/Target/X86/X86FrameLowering.cpp b/llvm/lib/Target/X86/X86FrameLowering.cpp
-index 1da20371caf..42b557f97a0 100644
+index 1da20371caf..01f0d6a2801 100644
 --- a/llvm/lib/Target/X86/X86FrameLowering.cpp
 +++ b/llvm/lib/Target/X86/X86FrameLowering.cpp
-@@ -1168,6 +1168,30 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
+@@ -968,6 +968,13 @@ bool X86FrameLowering::has128ByteRedZone(const MachineFunction& MF) const {
+   - for 32-bit code, substitute %e?? registers for %r??
+ */
+ 
++#ifdef ARK_GC_SUPPORT
++Triple::ArchType X86FrameLowering::GetArkSupportTarget() const
++{
++    return Is64Bit ? Triple::x86_64 : Triple::x86;
++}
++#endif
++
+ void X86FrameLowering::emitPrologue(MachineFunction &MF,
+                                     MachineBasicBlock &MBB) const {
+   assert(&STI == &MF.getSubtarget<X86Subtarget>() &&
+@@ -1168,6 +1175,30 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
      else
        MFI.setOffsetAdjustment(-StackSize);
    }
@@ -773,7 +931,7 @@ index 1da20371caf..42b557f97a0 100644
  
    // For EH funclets, only allocate enough space for outgoing calls. Save the
    // NumBytes value that we would've used for the parent frame.
-@@ -1635,6 +1659,31 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
+@@ -1635,6 +1666,31 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
    uint64_t SEHStackAllocAmt = NumBytes;
  
    if (HasFP) {
@@ -805,7 +963,7 @@ index 1da20371caf..42b557f97a0 100644
      // Pop EBP.
      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
              MachineFramePtr)
-@@ -1993,8 +2042,31 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
+@@ -1993,8 +2049,31 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
  
    if (hasFP(MF)) {
      // emitPrologue always spills frame register the first thing.
@@ -838,7 +996,7 @@ index 1da20371caf..42b557f97a0 100644
      // Since emitPrologue and emitEpilogue will handle spilling and restoring of
      // the frame register, we can delete it from CSI list and not have to worry
 diff --git a/llvm/lib/Target/X86/X86FrameLowering.h b/llvm/lib/Target/X86/X86FrameLowering.h
-index 2103d6471ea..3fd89b0d9ee 100644
+index 2103d6471ea..36edb40cb5e 100644
 --- a/llvm/lib/Target/X86/X86FrameLowering.h
 +++ b/llvm/lib/Target/X86/X86FrameLowering.h
 @@ -15,6 +15,8 @@
@@ -850,3 +1008,30 @@ index 2103d6471ea..3fd89b0d9ee 100644
  namespace llvm {
  
  class MachineInstrBuilder;
+@@ -64,6 +66,9 @@ public:
+ 
+   /// emitProlog/emitEpilog - These methods insert prolog and epilog code into
+   /// the function.
++#ifdef ARK_GC_SUPPORT
++  Triple::ArchType GetArkSupportTarget() const override;
++#endif
+   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
+   void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
+ 
+diff --git a/llvm/lib/Target/X86/X86RegisterInfo.cpp b/llvm/lib/Target/X86/X86RegisterInfo.cpp
+index f69626b2622..0a7684d4673 100644
+--- a/llvm/lib/Target/X86/X86RegisterInfo.cpp
++++ b/llvm/lib/Target/X86/X86RegisterInfo.cpp
+@@ -545,6 +545,12 @@ BitVector X86RegisterInfo::getReservedRegs(const MachineFunction &MF) const {
+     for (const MCPhysReg &SubReg : subregs_inclusive(X86::RBP))
+       Reserved.set(SubReg);
+   }
++#ifdef ARK_GC_SUPPORT
++  if (MF.getFunction().getCallingConv() == CallingConv::GHC) {
++    for (const MCPhysReg &SubReg : subregs_inclusive(X86::RBP))
++      Reserved.set(SubReg);
++  }
++#endif
+ 
+   // Set the base-pointer register and its aliases as reserved if needed.
+   if (hasBasePointer(MF)) {

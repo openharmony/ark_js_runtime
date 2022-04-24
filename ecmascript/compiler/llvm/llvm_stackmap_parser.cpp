@@ -76,7 +76,6 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptimizedL
             COMPILER_LOG(DEBUG) << std::dec << "SP_DWARF_REG_NUM:  info.second:" << info.second
                                 << std::hex << "rsp :" << rsp;
         } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
-            ASSERT(frame->type != FrameType::ASM_LEAVE_FRAME);
             uintptr_t fp = frame->callsiteFp;
             address = fp + info.second;
             COMPILER_LOG(DEBUG) << std::dec << "FP_DWARF_REG_NUM:  info.second:" << info.second
@@ -166,12 +165,11 @@ bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t 
 
     uintptr_t callsiteFp = *fp;
     uintptr_t callsiteSp;
-    if (FrameHandler(reinterpret_cast<JSTaggedType *>(frameFp)).GetFrameType() == FrameType::ASM_LEAVE_FRAME) {
+    if (FrameHandler(reinterpret_cast<JSTaggedType *>(frameFp)).IsLeaveFrame()) {
         callsiteSp = OptimizedLeaveFrame::GetFrameFromSp(reinterpret_cast<JSTaggedType *>(frameFp))->GetCallSiteSp();
     } else {
-        callsiteSp = callsiteFp + FrameConstants::CALLSITE_SP_TO_FP_DELTA_OFFSET;
+        callsiteSp = *(reinterpret_cast<uintptr_t *>(callsiteFp) + FrameConstants::CALLSITE_SP_TO_FP_DELTA);
     }
-
     for (auto &info: *infos) {
         if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
             address = callsiteSp + info.second;
