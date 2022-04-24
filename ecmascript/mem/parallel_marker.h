@@ -17,8 +17,8 @@
 #define ECMASCRIPT_MEM_PARALLEL_MARKER_H
 
 #include "ecmascript/js_hclass.h"
+#include "ecmascript/mem/gc_bitset.h"
 #include "ecmascript/mem/object_xray.h"
-#include "ecmascript/mem/remembered_set.h"
 #include "ecmascript/mem/slots.h"
 #include "libpandabase/utils/logger.h"
 

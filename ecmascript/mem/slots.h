@@ -20,6 +20,11 @@
 #include "ecmascript/mem/mem.h"
 
 namespace panda::ecmascript {
+enum class SlotStatus : bool {
+    KEEP_SLOT,
+    CLEAR_SLOT,
+};
+
 class ObjectSlot {
 public:
     explicit ObjectSlot(uintptr_t slotAddr) : slotAddress_(slotAddr) {}

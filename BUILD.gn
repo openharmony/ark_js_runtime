@@ -443,6 +443,7 @@ ecma_source = [
   "ecmascript/mem/linear_space.cpp",
   "ecmascript/mem/machine_code.cpp",
   "ecmascript/mem/mem_controller.cpp",
+  "ecmascript/mem/mem_map_allocator.cpp",
   "ecmascript/mem/mix_gc.cpp",
   "ecmascript/mem/native_area_allocator.cpp",
   "ecmascript/mem/parallel_work_helper.cpp",

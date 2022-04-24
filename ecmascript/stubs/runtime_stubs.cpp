@@ -1650,9 +1650,9 @@ int32_t RuntimeStubs::DoubleToInt(double x)
     return base::NumberHelper::DoubleToInt(x, base::INT32_BITS);
 }
 
-void RuntimeStubs::InsertOldToNewRememberedSet([[maybe_unused]]uintptr_t argGlue, Region* region, uintptr_t addr)
+void RuntimeStubs::InsertOldToNewRSet([[maybe_unused]]uintptr_t argGlue, Region* region, uintptr_t addr)
 {
-    return region->InsertOldToNewRememberedSet(addr);
+    return region->InsertOldToNewRSet(addr);
 }
 
 void RuntimeStubs::MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintptr_t slotAddr,

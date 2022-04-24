@@ -300,7 +300,7 @@ private:
     V(ResumeRspAndReturn)                   \
     V(DebugPrint)                           \
     V(FatalPrint)                           \
-    V(InsertOldToNewRememberedSet)          \
+    V(InsertOldToNewRSet)                   \
     V(DoubleToInt)                          \
     V(FloatMod)                             \
     V(FindElementWithCache)                 \

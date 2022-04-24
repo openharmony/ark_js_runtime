@@ -24,7 +24,6 @@
 #include "ecmascript/mem/mark_word.h"
 #include "ecmascript/mem/slots.h"
 #include "ecmascript/mem/object_xray.h"
-#include "ecmascript/mem/remembered_set.h"
 #include "ecmascript/mem/chunk_containers.h"
 #include "ecmascript/mem/tlab_allocator.h"
 
@@ -67,7 +66,7 @@ private:
 #endif
         Region *objectRegion = Region::ObjectAddressToRange(object);
         ASSERT(!objectRegion->InYoungGeneration());
-        objectRegion->InsertOldToNewRememberedSet(slot.SlotAddress());
+        objectRegion->InsertOldToNewRSet(slot.SlotAddress());
     }
 
     Heap *heap_;
