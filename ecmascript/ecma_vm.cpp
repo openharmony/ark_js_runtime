@@ -355,7 +355,6 @@ JSTaggedValue EcmaVM::InvokeEcmaAotEntrypoint()
                                static_cast<uint32_t>(args.size()),
                                args.data(),
                                ptr);
-    std::cout << " LoadAOTFile call func_main_0 res: " << res << std::endl;
     return JSTaggedValue(res);
 }
 
