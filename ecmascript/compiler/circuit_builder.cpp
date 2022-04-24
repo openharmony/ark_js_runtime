@@ -274,7 +274,7 @@ GateRef CircuitBuilder::VariadicRuntimeCall(GateRef glue, GateRef target, GateRe
     std::vector<GateRef> inputs {depend, target, glue};
     inputs.insert(inputs.end(), args.begin(), args.end());
     OpCode opcode(OpCode::RUNTIME_CALL);
-    const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(OptimizedCallRuntime));
+    const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(CallRuntime));
     MachineType machineType = signature->GetReturnType().GetMachineType();
     GateType type = signature->GetReturnType().GetGateType();
     // 2 : 2 means extra two input gates (target glue)
@@ -286,7 +286,7 @@ GateRef CircuitBuilder::CallRuntimeWithDepend(GateRef glue, int index,
     GateRef depend, const std::vector<GateRef> &args)
 {
     GateRef target = Int64(index);
-    const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(OptimizedCallRuntime));
+    const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(CallRuntime));
     DEF_CALL_GATE(OpCode::RUNTIME_CALL, signature);
     return result;
 }
@@ -298,7 +298,7 @@ GateRef CircuitBuilder::CallRuntimeWithDepend(GateRef glue, GateRef target,
     inputs.emplace(inputs.end(), argc);
     inputs.emplace(inputs.end(), argv);
     OpCode opcode(OpCode::RUNTIME_CALL_WITH_ARGV);
-    const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(OptimizedCallRuntimeWithArgv));
+    const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(CallRuntimeWithArgv));
     MachineType machineType = signature->GetReturnType().GetMachineType();
     GateType type = signature->GetReturnType().GetGateType();
     // 2 : 2 means extra two input gates (target glue)
@@ -311,7 +311,7 @@ GateRef CircuitBuilder::CallRuntimeWithDepend(GateRef glue, GateRef target,
 GateRef CircuitBuilder::CallRuntime(GateRef glue, int index, const std::vector<GateRef> &args, bool useLabel)
 {
     GateRef target = Int64(index);
-    const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(OptimizedCallRuntime));
+    const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(CallRuntime));
 
     if (!useLabel) {
         GateRef depend = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY));

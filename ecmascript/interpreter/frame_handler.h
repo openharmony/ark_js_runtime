@@ -77,14 +77,15 @@ public:
         return (type == FrameType::INTERPRETER_ENTRY_FRAME);
     }
 
-    bool IsOptimizedLeaveFrame() const
+    bool IsLeaveFrame() const
     {
-        return GetFrameType() == FrameType::OPTIMIZED_LEAVE_FRAME || GetFrameType() == FrameType::ASM_LEAVE_FRAME;
+        return (GetFrameType() == FrameType::LEAVE_FRAME) ||
+            (GetFrameType() == FrameType::LEAVE_FRAME_WITH_ARGV);
     }
 
     OptimizedLeaveFrame* GetOptimizedLeaveFrame() const
     {
-        assert(IsOptimizedLeaveFrame());
+        ASSERT(GetFrameType() == FrameType::LEAVE_FRAME);
         return OptimizedLeaveFrame::GetFrameFromSp(sp_);
     }
 

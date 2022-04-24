@@ -21,7 +21,6 @@
 
 namespace panda::ecmascript::kungfu {
 #define INTERPRETER_STUB_HELPER_LIST(V)  \
-    V(AsmInterpreterEntry, 7)            \
     V(SingleStepDebugging, 7)            \
     V(HandleOverflow, 7)
 

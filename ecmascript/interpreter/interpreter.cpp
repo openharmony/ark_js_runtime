@@ -53,8 +53,6 @@ EcmaRuntimeCallInfo EcmaInterpreter::NewRuntimeCallInfo(
     entryState->base.type = FrameType::INTERPRETER_ENTRY_FRAME;
     auto leaveFrame = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
     if (leaveFrame != nullptr) {
-        OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(leaveFrame);
-        frame->callsiteFp = reinterpret_cast<uintptr_t>(sp);
         entryState->base.prev = leaveFrame;
     } else {
         entryState->base.prev = sp;
