@@ -294,4 +294,61 @@ Local<ObjectRef> GetHeapUsageReturns::ToObject(const EcmaVM *ecmaVm)
 
     return result;
 }
+
+Local<ObjectRef> GetBestEffortCoverageReturns::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> result = NewObject(ecmaVm);
+
+    size_t len = result_.size();
+    Local<ArrayRef> values = ArrayRef::New(ecmaVm, len);
+    for (size_t i = 0; i < len; i++) {
+        Local<ObjectRef> scriptCoverage = result_[i]->ToObject(ecmaVm);
+        values->Set(ecmaVm, i, scriptCoverage);
+    }
+    result->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "result")), values);
+
+    return result;
+}
+
+Local<ObjectRef> StartPreciseCoverageReturns::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> result = NewObject(ecmaVm);
+    result->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timestamp")),
+        IntegerRef::New(ecmaVm, timestamp_));
+
+    return result;
+}
+
+Local<ObjectRef> TakePreciseCoverageReturns::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> returns = NewObject(ecmaVm);
+
+    size_t len = result_.size();
+    Local<ArrayRef> values = ArrayRef::New(ecmaVm, len);
+    for (size_t i = 0; i < len; i++) {
+        Local<ObjectRef> scriptCoverage = result_[i]->ToObject(ecmaVm);
+        values->Set(ecmaVm, i, scriptCoverage);
+    }
+    returns->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "result")), values);
+    if (timestamp_) {
+        returns->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timestamp")),
+            IntegerRef::New(ecmaVm, timestamp_));
+    }
+
+    return returns;
+}
+
+Local<ObjectRef> TakeTypeProfileturns::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> result = NewObject(ecmaVm);
+
+    size_t len = result_.size();
+    Local<ArrayRef> values = ArrayRef::New(ecmaVm, len);
+    for (size_t i = 0; i < len; i++) {
+        Local<ObjectRef> scriptTypeProfile = result_[i]->ToObject(ecmaVm);
+        values->Set(ecmaVm, i, scriptTypeProfile);
+    }
+    result->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "result")), values);
+    return result;
+}
 }  // namespace panda::ecmascript::tooling

@@ -31,6 +31,13 @@ public:
     DispatchResponse Enable();
     DispatchResponse Start();
     DispatchResponse Stop();
+    DispatchResponse GetBestEffortCoverage();
+    DispatchResponse StopPreciseCoverage();
+    DispatchResponse TakePreciseCoverage();
+    DispatchResponse StartPreciseCoverage (std::unique_ptr<StartPreciseCoverageParam> params);
+    DispatchResponse StartTypeProfile();
+    DispatchResponse StopTypeProfile();
+    DispatchResponse TakeTypeProfile();
 
     class DispatcherImpl final : public DispatcherBase {
     public:
@@ -41,6 +48,13 @@ public:
         void Disable(const DispatchRequest &request);
         void Start(const DispatchRequest &request);
         void Stop(const DispatchRequest &request);
+        void GetBestEffortCoverage(const DispatchRequest &request);
+        void StopPreciseCoverage(const DispatchRequest &request);
+        void TakePreciseCoverage(const DispatchRequest &request);
+        void StartPreciseCoverage(const DispatchRequest &request);
+        void StartTypeProfile(const DispatchRequest &request);
+        void StopTypeProfile(const DispatchRequest &request);
+        void TakeTypeProfile(const DispatchRequest &request);
 
     private:
         NO_COPY_SEMANTIC(DispatcherImpl);

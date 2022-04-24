@@ -820,5 +820,53 @@ private:
     HeapSnapshotObjectId objectId_ {};
     std::optional<CString> objectGroup_ {};
 };
+
+class StartPreciseCoverageParam : public PtBaseParams {
+public:
+    StartPreciseCoverageParam() = default;
+    ~StartPreciseCoverageParam() override = default;
+
+    static std::unique_ptr<StartPreciseCoverageParam> Create(const EcmaVM *ecmaVm,
+                                                                  const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    bool GetCallCount() const
+    {
+        return callCount_.value_or(false);
+    }
+
+    bool HasCallCount() const
+    {
+        return callCount_.has_value();
+    }
+
+    bool GetDetailed() const
+    {
+        return detailed_.value_or(false);
+    }
+
+    bool HasDetailed() const
+    {
+        return detailed_.has_value();
+    }
+
+    bool GetAllowTriggeredUpdates() const
+    {
+        return allowTriggeredUpdates_.value_or(false);
+    }
+
+    bool HasAllowTriggeredUpdates() const
+    {
+        return allowTriggeredUpdates_.has_value();
+    }
+
+private:
+    NO_COPY_SEMANTIC(StartPreciseCoverageParam);
+    NO_MOVE_SEMANTIC(StartPreciseCoverageParam);
+
+    std::optional<bool> callCount_ {};
+    std::optional<bool> detailed_ {};
+    std::optional<bool> allowTriggeredUpdates_ {};
+};
 }  // namespace panda::ecmascript::tooling
 #endif

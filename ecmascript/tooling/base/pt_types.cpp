@@ -2261,4 +2261,386 @@ Local<ObjectRef> Profile::ToObject(const EcmaVM *ecmaVm)
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timeDeltas")), timeValues);
     return params;
 }
+
+std::unique_ptr<Coverage> Coverage::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+{
+    if (params.IsEmpty() || !params->IsObject()) {
+        LOG(ERROR, DEBUGGER) << "Coverage::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto coverage = std::make_unique<Coverage>();
+
+    Local<JSValueRef> result =
+        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startOffset")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            coverage->startOffset_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+        } else {
+            error += "'startOffset' should be a Number;";
+        }
+    } else {
+        error += "should contain 'startOffset';";
+    }
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endOffset")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            coverage->endOffset_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+        } else {
+            error += "'endOffset' should be a Number;";
+        }
+    } else {
+        error += "should contain 'endOffset';";
+    }
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "count")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            coverage->count_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+        } else {
+            error += "'count' should be a Number;";
+        }
+    } else {
+        error += "should contain 'count';";
+    }
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "Coverage::Create " << error;
+        return nullptr;
+    }
+    return coverage;
+}
+
+Local<ObjectRef> Coverage::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startOffset")), IntegerRef::New(ecmaVm, startOffset_));
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endOffset")), IntegerRef::New(ecmaVm, endOffset_));
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "count")), IntegerRef::New(ecmaVm, count_));
+    return params;
+}
+
+std::unique_ptr<FunctionCoverage> FunctionCoverage::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+{
+    if (params.IsEmpty() || !params->IsObject()) {
+        LOG(ERROR, DEBUGGER) << "FunctionCoverage::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto functionCoverage = std::make_unique<FunctionCoverage>();
+
+    Local<JSValueRef> result =
+        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionName")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            functionCoverage->functionName_ = DebuggerApi::ToCString(result);
+        } else {
+            error += "'functionName' should be a String;";
+        }
+    } else {
+        error += "should contain 'functionName';";
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "ranges")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsArray(ecmaVm)) {
+            auto array = Local<ArrayRef>(result);
+            uint32_t rangesLen = array->Length(ecmaVm);
+            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
+            for (uint32_t i = 0; i < rangesLen; ++i) {
+                key = IntegerRef::New(ecmaVm, i);
+                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
+                std::unique_ptr<Coverage> range = Coverage::Create(ecmaVm, resultValue);
+                functionCoverage->ranges_.emplace_back(std::move(range));
+            }
+        } else {
+            error += "'ranges' should be an Array;";
+        }
+    } else {
+        error += "should contain 'ranges';";
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm,
+                                                                                            "isBlockCoverage")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsBoolean()) {
+            functionCoverage->isBlockCoverage_ = result->IsTrue();
+        } else {
+            error += "'isBlockCoverage' should be a Boolean;";
+        }
+    }
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "FunctionCoverage::Create " << error;
+        return nullptr;
+    }
+    return functionCoverage;
+}
+
+Local<ObjectRef> FunctionCoverage::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionName")),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, functionName_.c_str())));
+    
+    size_t rangesLen = ranges_.size();
+    Local<ArrayRef> rangesValues = ArrayRef::New(ecmaVm, rangesLen);
+    for (size_t i = 0; i < rangesLen; i++) {
+        Local<ObjectRef> coverage = ranges_[i]->ToObject(ecmaVm);
+        rangesValues->Set(ecmaVm, i, coverage);
+    }
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "ranges")), rangesValues);
+    if (isBlockCoverage_) {
+        params->Set(ecmaVm,
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "isBlockCoverage")),
+            BooleanRef::New(ecmaVm, isBlockCoverage_.value()));
+    }
+    return params;
+}
+
+std::unique_ptr<ScriptCoverage> ScriptCoverage::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+{
+    if (params.IsEmpty() || !params->IsObject()) {
+        LOG(ERROR, DEBUGGER) << "ScriptCoverage::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto scriptCoverage = std::make_unique<ScriptCoverage>();
+
+    Local<JSValueRef> result =
+        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            scriptCoverage->scriptId_ = DebuggerApi::ToCString(result);
+        } else {
+            error += "'scriptId' should be a String;";
+        }
+    } else {
+        error += "should contain 'scriptId';";
+    }
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            scriptCoverage->url_ = DebuggerApi::ToCString(result);
+        } else {
+            error += "'url' should be a String;";
+        }
+    } else {
+        error += "should contain 'url';";
+    }
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functions")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsArray(ecmaVm)) {
+            auto array = Local<ArrayRef>(result);
+            uint32_t functionsLen = array->Length(ecmaVm);
+            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
+            for (uint32_t i = 0; i < functionsLen; ++i) {
+                key = IntegerRef::New(ecmaVm, i);
+                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
+                std::unique_ptr<FunctionCoverage> function = FunctionCoverage::Create(ecmaVm, resultValue);
+                scriptCoverage->functions_.emplace_back(std::move(function));
+            }
+        } else {
+            error += "'functions' should be an Array;";
+        }
+    } else {
+        error += "should contain 'functions';";
+    }
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "ScriptCoverage::Create " << error;
+        return nullptr;
+    }
+    return scriptCoverage;
+}
+
+Local<ObjectRef> ScriptCoverage::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, scriptId_.c_str())));
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, url_.c_str())));
+    size_t functionsLen = functions_.size();
+    Local<ArrayRef> rangesValues = ArrayRef::New(ecmaVm, functionsLen);
+    for (size_t i = 0; i < functionsLen; i++) {
+        Local<ObjectRef> functionCoverage = functions_[i]->ToObject(ecmaVm);
+        rangesValues->Set(ecmaVm, i, functionCoverage);
+    }
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functions")), rangesValues);
+    return params;
+}
+
+std::unique_ptr<TypeObject> TypeObject::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+{
+    if (params.IsEmpty() || !params->IsObject()) {
+        LOG(ERROR, DEBUGGER) << "TypeObject::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto typeObject = std::make_unique<TypeObject>();
+
+    Local<JSValueRef> result =
+        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            typeObject->name_ = DebuggerApi::ToCString(result);
+        } else {
+            error += "'name' should be a String;";
+        }
+    } else {
+        error += "should contain 'name';";
+    }
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "TypeObject::Create " << error;
+        return nullptr;
+    }
+    return typeObject;
+}
+
+Local<ObjectRef> TypeObject::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, name_.c_str())));
+    return params;
+}
+
+std::unique_ptr<TypeProfileEntry> TypeProfileEntry::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+{
+    if (params.IsEmpty() || !params->IsObject()) {
+        LOG(ERROR, DEBUGGER) << "TypeProfileEntry::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto typeProfileEntry = std::make_unique<TypeProfileEntry>();
+    Local<JSValueRef> result =
+        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "offset")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            typeProfileEntry->offset_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+        } else {
+            error += "'offset' should be a Number;";
+        }
+    } else {
+        error += "should contain 'offset';";
+    }
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "types")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsArray(ecmaVm)) {
+            auto array = Local<ArrayRef>(result);
+            uint32_t typesLen = array->Length(ecmaVm);
+            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
+            for (uint32_t i = 0; i < typesLen; ++i) {
+                key = IntegerRef::New(ecmaVm, i);
+                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
+                std::unique_ptr<TypeObject> type = TypeObject::Create(ecmaVm, resultValue);
+                typeProfileEntry->types_.emplace_back(std::move(type));
+            }
+        } else {
+            error += "'types' should be an Array;";
+        }
+    } else {
+        error += "should contain 'types';";
+    }
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "TypeProfileEntry::Create " << error;
+        return nullptr;
+    }
+    return typeProfileEntry;
+}
+
+Local<ObjectRef> TypeProfileEntry::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "offset")),
+        IntegerRef::New(ecmaVm, offset_));
+    size_t typeLen = types_.size();
+    Local<ArrayRef> typeValues = ArrayRef::New(ecmaVm, typeLen);
+    for (size_t i = 0; i < typeLen; i++) {
+        Local<ObjectRef> typeObject = types_[i]->ToObject(ecmaVm);
+        typeValues->Set(ecmaVm, i, typeObject);
+    }
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "types")), typeValues);
+    return params;
+}
+
+std::unique_ptr<ScriptTypeProfile> ScriptTypeProfile::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+{
+    if (params.IsEmpty() || !params->IsObject()) {
+        LOG(ERROR, DEBUGGER) << "ScriptTypeProfile::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto scriptTypeProfile = std::make_unique<ScriptTypeProfile>();
+
+    Local<JSValueRef> result =
+        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            scriptTypeProfile->scriptId_ = DebuggerApi::ToCString(result);
+        } else {
+            error += "'scriptId' should be a String;";
+        }
+    } else {
+        error += "should contain 'scriptId';";
+    }
+    result =
+        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsString()) {
+            scriptTypeProfile->url_ = DebuggerApi::ToCString(result);
+        } else {
+            error += "'url' should be a String;";
+        }
+    } else {
+        error += "should contain 'url';";
+    }
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "entries")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsArray(ecmaVm)) {
+            auto array = Local<ArrayRef>(result);
+            uint32_t entriesLen = array->Length(ecmaVm);
+            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
+            for (uint32_t i = 0; i < entriesLen; ++i) {
+                key = IntegerRef::New(ecmaVm, i);
+                Local<JSValueRef> entriesValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
+                std::unique_ptr<TypeProfileEntry> entries = TypeProfileEntry::Create(ecmaVm, entriesValue);
+                scriptTypeProfile->entries_.emplace_back(std::move(entries));
+            }
+        } else {
+            error += "'entries' should be an Array;";
+        }
+    } else {
+        error += "should contain 'entries';";
+    }
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "ScriptTypeProfile::Create " << error;
+        return scriptTypeProfile;
+    }
+    return scriptTypeProfile;
+}
+
+Local<ObjectRef> ScriptTypeProfile::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, scriptId_.c_str())));
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, url_.c_str())));
+    size_t entriesLen = entries_.size();
+    Local<ArrayRef> entriesValues = ArrayRef::New(ecmaVm, entriesLen);
+    for (size_t i = 0; i < entriesLen; i++) {
+        Local<ObjectRef> typeProfileEntryObject = entries_[i]->ToObject(ecmaVm);
+        entriesValues->Set(ecmaVm, i, typeProfileEntryObject);
+    }
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "entries")), entriesValues);
+    return params;
+}
 }  // namespace panda::ecmascript::tooling

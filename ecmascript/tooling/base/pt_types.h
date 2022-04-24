@@ -1867,5 +1867,273 @@ private:
     CVector<std::unique_ptr<int32_t>> samples_ {};
     CVector<std::unique_ptr<int32_t>> timeDeltas_ {};
 };
+
+// Profiler.Coverage
+class Coverage final : public PtBaseTypes {
+public:
+    Coverage() = default;
+    ~Coverage() override = default;
+
+    static std::unique_ptr<Coverage > Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    int32_t GetStartOffset() const
+    {
+        return startOffset_;
+    }
+
+    Coverage &SetStartOffset(size_t startOffset)
+    {
+        startOffset_ = startOffset;
+        return *this;
+    }
+
+    int32_t GetEndOffset() const
+    {
+        return endOffset_;
+    }
+
+    Coverage &SetEndOffset(size_t endOffset)
+    {
+        endOffset_ = endOffset;
+        return *this;
+    }
+
+    int32_t GetCount() const
+    {
+        return count_;
+    }
+
+    Coverage &SetCount(size_t count)
+    {
+        count_ = count;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(Coverage);
+    NO_MOVE_SEMANTIC(Coverage);
+
+    size_t startOffset_ {0};
+    size_t endOffset_ {0};
+    size_t count_ {0};
+};
+
+// Profiler.FunctionCoverage
+class FunctionCoverage final : public PtBaseTypes {
+public:
+    FunctionCoverage() = default;
+    ~FunctionCoverage() override = default;
+
+    static std::unique_ptr<FunctionCoverage > Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    const CString &GetFunctionName() const
+    {
+        return functionName_;
+    }
+
+    FunctionCoverage &SetFunctionName(const CString &functionName)
+    {
+        functionName_ = functionName;
+        return *this;
+    }
+
+    const CVector<std::unique_ptr<Coverage>> *GetRanges() const
+    {
+        return &ranges_;
+    }
+
+    FunctionCoverage &SetFunctions(CVector<std::unique_ptr<Coverage>> ranges)
+    {
+        ranges_ = std::move(ranges);
+        return *this;
+    }
+
+    bool GetIsBlockCoverage() const
+    {
+        return isBlockCoverage_.value_or(false);
+    }
+
+    FunctionCoverage &SetisBlockCoverage(bool isBlockCoverage)
+    {
+        isBlockCoverage_ = isBlockCoverage;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(FunctionCoverage);
+    NO_MOVE_SEMANTIC(FunctionCoverage);
+
+    CString functionName_ {};
+    CVector<std::unique_ptr<Coverage>> ranges_ {};
+    std::optional<bool> isBlockCoverage_ {};
+};
+
+// Profiler.ScriptCoverage
+// Profiler.GetBestEffortCoverage and Profiler.TakePreciseCoverage share this return value type
+class ScriptCoverage final : public PtBaseTypes {
+public:
+    ScriptCoverage() = default;
+    ~ScriptCoverage() override = default;
+
+    static std::unique_ptr<ScriptCoverage> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    const CString &GetScriptId() const
+    {
+        return scriptId_;
+    }
+
+    ScriptCoverage &SetScriptId(const CString &scriptId)
+    {
+        scriptId_ = scriptId;
+        return *this;
+    }
+
+    const CString &GetUrl() const
+    {
+        return url_;
+    }
+
+    ScriptCoverage &SetUrl(const CString &url)
+    {
+        url_ = url;
+        return *this;
+    }
+
+    const CVector<std::unique_ptr<FunctionCoverage>> *GetFunctions() const
+    {
+        return &functions_;
+    }
+
+    ScriptCoverage &SetFunctions(CVector<std::unique_ptr<FunctionCoverage>> functions)
+    {
+        functions_ = std::move(functions);
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(ScriptCoverage);
+    NO_MOVE_SEMANTIC(ScriptCoverage);
+
+    CString scriptId_ {};
+    CString url_ {};
+    CVector<std::unique_ptr<FunctionCoverage>> functions_ {};
+};
+
+// Profiler.TypeObject
+class TypeObject final : public PtBaseTypes {
+public:
+    TypeObject() = default;
+    ~TypeObject() override = default;
+
+    static std::unique_ptr<TypeObject> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    const CString &GetName() const
+    {
+        return name_;
+    }
+
+    TypeObject &SetName(const CString &name)
+    {
+        name_ = name;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(TypeObject);
+    NO_MOVE_SEMANTIC(TypeObject);
+
+    CString name_ {};
+};
+
+// Profiler.TypeProfileEntry
+class TypeProfileEntry final : public PtBaseTypes {
+public:
+    TypeProfileEntry() = default;
+    ~TypeProfileEntry() override = default;
+
+    static std::unique_ptr<TypeProfileEntry> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    int32_t GetOffset() const
+    {
+        return offset_;
+    }
+
+    TypeProfileEntry &SetOffset(size_t offset)
+    {
+        offset_ = offset;
+        return *this;
+    }
+
+    const CVector<std::unique_ptr<TypeObject>> *GetTypes() const
+    {
+        return &types_;
+    }
+
+    TypeProfileEntry &SetTypes(CVector<std::unique_ptr<TypeObject>> types)
+    {
+        types_ = std::move(types);
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(TypeProfileEntry);
+    NO_MOVE_SEMANTIC(TypeProfileEntry);
+
+    size_t offset_ {0};
+    CVector<std::unique_ptr<TypeObject>> types_ {};
+};
+
+// Profiler.ScriptTypeProfile
+class ScriptTypeProfile final : public PtBaseTypes {
+public:
+    ScriptTypeProfile() = default;
+    ~ScriptTypeProfile() override = default;
+
+    static std::unique_ptr<ScriptTypeProfile> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    const CString &GetScriptId() const
+    {
+        return scriptId_;
+    }
+
+    ScriptTypeProfile &SetScriptId(const CString &scriptId)
+    {
+        scriptId_ = scriptId;
+        return *this;
+    }
+
+    const CString &GetUrl() const
+    {
+        return url_;
+    }
+
+    ScriptTypeProfile &SetUrl(const CString &url)
+    {
+        url_ = url;
+        return *this;
+    }
+
+    const CVector<std::unique_ptr<TypeProfileEntry>> *GetEntries() const
+    {
+        return &entries_;
+    }
+
+    ScriptTypeProfile &SetEntries(CVector<std::unique_ptr<TypeProfileEntry>> entries)
+    {
+        entries_ = std::move(entries);
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(ScriptTypeProfile);
+    NO_MOVE_SEMANTIC(ScriptTypeProfile);
+
+    CString scriptId_ {};
+    CString url_ {};
+    CVector<std::unique_ptr<TypeProfileEntry>> entries_ {};
+};
 }  // namespace panda::ecmascript::tooling
 #endif
