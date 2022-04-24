@@ -21,7 +21,7 @@ out_dir="out/hi3516dv300/clang_x64/aottest"
 test_all_mode="no"
 run_args=""
 oat_args=""
-run_mode="x64"
+run_mode="aot"
 cur_dir=$(pwd)
 test_timeout=120
 
@@ -75,19 +75,25 @@ usage()
 {
     echo -e "Usage: runtest.sh [options] test_name
     Options:
-    -timeout n  specify seconds of test timeout, n > 0
-    -v          show version
-    -h          print this usage statement"
+	-mode:aot       run on aot mode, default
+    -mode:int       run on interpret mode
+    -mode:asmint    run on asm interpret mode
+    -timeout n  	specify seconds of test timeout, n > 0
+    -v              show version
+    -h              print this usage statement"
 }
 
 while [ $# -gt 0 ]
 do
     case $1 in
-		-mode:all)
-			test_all_mode="yes"
+		-mode:aot)
+			run_mode="aot"
 			shift 1 ;;
-		-gen)
-			generate_mode="yes"
+		-mode:asmint)
+			run_mode="asmint"
+			shift 1 ;;
+		-mode:int)
+			run_mode="int"
 			shift 1 ;;
 		-v)
 			tail -n +14 $test_dir/version
@@ -115,13 +121,24 @@ echo "Run test: $test_dir/$test_name ================="
 make -n -f $test_dir/makefile test=$test_name abc
 run_check $test_timeout make -s -f $test_dir/makefile test=$test_name abc
 
-make -n -f $test_dir/makefile test=$test_name aot
-run_check $test_timeout make -s -f $test_dir/makefile test=$test_name aot
+case $run_mode in
+	"aot")
+		make -n -f $test_dir/makefile test=$test_name aot
+		run_check $test_timeout make -s -f $test_dir/makefile test=$test_name aot
+		make -n -f $test_dir/makefile test=$test_name run
+		run_check $test_timeout make -s -f $test_dir/makefile test=$test_name run > $out_dir/$test_name/$run_output
+		;;
+	"int")
+		make -n -f $test_dir/makefile test=$test_name int
+		run_check $test_timeout make -s -f $test_dir/makefile test=$test_name int > $out_dir/$test_name/$run_output
+		;;
+	"asmint")
+		make -n -f $test_dir/makefile test=$test_name asmint
+		run_check $test_timeout make -s -f $test_dir/makefile test=$test_name asmint > $out_dir/$test_name/$run_output
+		;;
+esac
 
-make -n -f $test_dir/makefile test=$test_name run
-run_check $test_timeout make -s -f $test_dir/makefile test=$test_name run > $out_dir/$test_name/$run_output
 tail -n +14 $test_dir/$test_name/$expect_output > $out_dir/$test_name/$expect_output
-
 diff $out_dir/$test_name/$run_output $out_dir/$test_name/$expect_output
 
 check_result_fexit "Test Case FAILED!"

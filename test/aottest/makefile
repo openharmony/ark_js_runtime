@@ -48,6 +48,18 @@ run:
 
 rund:
 	cd $(case_dir) && gdb --args $(bin_dir)/ark_js_vm --enable-ts-aot=1 $(test_name).abc
+	
+int:
+	cd $(case_dir) && $(bin_dir)/ark_js_vm $(test_name).abc
+
+intd:
+	cd $(case_dir) && gdb --args $(bin_dir)/ark_js_vm $(test_name).abc
+	
+asmint:
+	cd $(case_dir) && $(bin_dir)/ark_js_vm --enable-stub-aot=1 --asmInter=1 $(test_name).abc
+
+asmintd:
+	cd $(case_dir) && gdb --args $(bin_dir)/ark_js_vm --enable-stub-aot=1 --asmInter=1 $(test_name).abc
 
 env:
 	@echo "root_dir=$(root_dir)"

@@ -13,6 +13,6 @@
 
 import("//ark/js_runtime/test/test_helper.gni")
 
-host_aottest_action("add") {
+host_aottest_action("expdyn") {
   deps = []
 }
