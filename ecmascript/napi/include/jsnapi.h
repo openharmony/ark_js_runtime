@@ -1031,7 +1031,6 @@ private:
     size_t numArgs_ = 0;
     JSTaggedType *stackArgs_ {nullptr};
     void *data_ {nullptr};
-    JSTaggedType *prevSp_ {nullptr};
     friend class FunctionRef;
 };
 
