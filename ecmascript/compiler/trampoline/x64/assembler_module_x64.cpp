@@ -19,7 +19,7 @@
 
 namespace panda::ecmascript::x64 {
 #define __ assembler->
-void AssemblerModuleX64::Generate_CallRuntime(AssemblerX64 *assembler)
+void AssemblerModuleX64::CallRuntime(AssemblerX64 *assembler)
 {
     __ Pushq(rbp);
     __ Movq(rsp, rbp);
