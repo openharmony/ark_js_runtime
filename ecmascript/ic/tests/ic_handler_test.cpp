@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/ic/ic_handler-inl.h"
+#include "ecmascript/ic/ic_handler.h"
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_array.h"
