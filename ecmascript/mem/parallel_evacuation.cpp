@@ -20,6 +20,7 @@
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/object_xray-inl.h"
 #include "ecmascript/mem/space-inl.h"
+#include "ecmascript/mem/gc_bitset.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/tlab_allocator-inl.h"
 #include "ecmascript/mem/utils.h"
@@ -102,10 +103,8 @@ void ParallelEvacuation::EvacuateRegion(TlabAllocator *allocator, Region *region
             return;
         }
     }
-    auto markBitmap = region->GetMarkBitmap();
-    ASSERT(markBitmap != nullptr);
-    markBitmap->IterateOverMarkedChunks([this, &region, &isInOldGen, &isBelowAgeMark,
-                                         &promotedSize, &allocator](void *mem) {
+    region->IterateAllMarkedBits([this, &region, &isInOldGen, &isBelowAgeMark,
+                                  &promotedSize, &allocator](void *mem) {
         ASSERT(region->InRange(ToUintPtr(mem)));
         auto header = reinterpret_cast<TaggedObject *>(mem);
         auto klass = header->GetClass();
@@ -155,12 +154,11 @@ void ParallelEvacuation::VerifyHeapObject(TaggedObject *object)
                     if (value.IsWeakForHeapObject()) {
                         continue;
                     }
-                    Region *object_region = Region::ObjectAddressToRange(value.GetTaggedObject());
-                    if (!heap_->IsFullMark() && !object_region->InYoungGeneration()) {
+                    Region *objectRegion = Region::ObjectAddressToRange(value.GetTaggedObject());
+                    if (!heap_->IsFullMark() && !objectRegion->InYoungGeneration()) {
                         continue;
                     }
-                    auto rset = object_region->GetMarkBitmap();
-                    if (!rset->Test(value.GetTaggedObject())) {
+                    if (!objectRegion->Test(value.GetTaggedObject())) {
                         LOG(FATAL, RUNTIME) << "Miss mark value: " << value.GetTaggedObject()
                                             << ", body address:" << slot.SlotAddress()
                                             << ", header address:" << object;
@@ -261,8 +259,7 @@ void ParallelEvacuation::UpdateWeakReference()
         Region *objectRegion = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(header));
         if (objectRegion->InYoungOrCSetGeneration()) {
             if (objectRegion->InNewToNewSet()) {
-                auto markBitmap = objectRegion->GetMarkBitmap();
-                if (markBitmap->Test(header)) {
+                if (objectRegion->Test(header)) {
                     return header;
                 }
             } else {
@@ -274,8 +271,7 @@ void ParallelEvacuation::UpdateWeakReference()
             return reinterpret_cast<TaggedObject *>(ToUintPtr(nullptr));
         }
         if (isFullMark) {
-            auto markBitmap = objectRegion->GetMarkBitmap();
-            if (markBitmap == nullptr || !markBitmap->Test(header)) {
+            if (!objectRegion->Test(header)) {
                 return reinterpret_cast<TaggedObject *>(ToUintPtr(nullptr));
             }
         }
@@ -289,28 +285,21 @@ void ParallelEvacuation::UpdateWeakReference()
 
 void ParallelEvacuation::UpdateRSet(Region *region)
 {
-    auto rememberedSet = region->GetOldToNewRememberedSet();
-    if (LIKELY(rememberedSet != nullptr)) {
-        rememberedSet->IterateOverMarkedChunks([this, rememberedSet](void *mem) -> bool {
-            ObjectSlot slot(ToUintPtr(mem));
-            if (UpdateObjectSlot(slot)) {
-                Region *valueRegion = Region::ObjectAddressToRange(slot.GetTaggedObjectHeader());
-                if (!valueRegion->InYoungGeneration()) {
-                    rememberedSet->Clear(slot.SlotAddress());
-                }
+    region->IterateAllOldToNewBits([this](void *mem) -> bool {
+        ObjectSlot slot(ToUintPtr(mem));
+        if (UpdateObjectSlot(slot)) {
+            Region *valueRegion = Region::ObjectAddressToRange(slot.GetTaggedObjectHeader());
+            if (!valueRegion->InYoungGeneration()) {
+                return false;
             }
-            return true;
-        });
-    }
-    rememberedSet = region->GetCrossRegionRememberedSet();
-    if (LIKELY(rememberedSet != nullptr)) {
-        rememberedSet->IterateOverMarkedChunks([this](void *mem) -> bool {
-            ObjectSlot slot(ToUintPtr(mem));
-            UpdateObjectSlot(slot);
-            return true;
-        });
-        rememberedSet->ClearAllBits();
-    }
+        }
+        return true;
+    });
+    region->IterateAllCrossRegionBits([this](void *mem) {
+        ObjectSlot slot(ToUintPtr(mem));
+        UpdateObjectSlot(slot);
+    });
+    region->ClearCrossRegionRSet();
 }
 
 void ParallelEvacuation::UpdateNewRegionReference(Region *region)
@@ -344,27 +333,24 @@ void ParallelEvacuation::UpdateNewRegionReference(Region *region)
 
 void ParallelEvacuation::UpdateAndSweepNewRegionReference(Region *region)
 {
-    auto markBitmap = region->GetMarkBitmap();
     uintptr_t freeStart = region->GetBegin();
     uintptr_t freeEnd = freeStart + region->GetAllocatedBytes();
-    if (markBitmap != nullptr) {
-        markBitmap->IterateOverMarkedChunks([&](void *mem) {
-            ASSERT(region->InRange(ToUintPtr(mem)));
-            auto header = reinterpret_cast<TaggedObject *>(mem);
-            JSHClass *klass = header->GetClass();
-            UpdateNewObjectField(header, klass);
+    region->IterateAllMarkedBits([&](void *mem) {
+        ASSERT(region->InRange(ToUintPtr(mem)));
+        auto header = reinterpret_cast<TaggedObject *>(mem);
+        JSHClass *klass = header->GetClass();
+        UpdateNewObjectField(header, klass);
 
-            uintptr_t freeEnd = ToUintPtr(mem);
-            if (freeStart != freeEnd) {
-                size_t freeSize = freeEnd - freeStart;
-                FreeObject::FillFreeObject(heap_->GetEcmaVM(), freeStart, freeSize);
-                SemiSpace *toSpace = const_cast<SemiSpace *>(heap_->GetNewSpace());
-                toSpace->DecrementSurvivalObjectSize(freeSize);
-            }
+        uintptr_t freeEnd = ToUintPtr(mem);
+        if (freeStart != freeEnd) {
+            size_t freeSize = freeEnd - freeStart;
+            FreeObject::FillFreeObject(heap_->GetEcmaVM(), freeStart, freeSize);
+            SemiSpace *toSpace = const_cast<SemiSpace *>(heap_->GetNewSpace());
+            toSpace->DecrementSurvivalObjectSize(freeSize);
+        }
 
-            freeStart = freeEnd + klass->SizeFromJSHClass(header);
-        });
-    }
+        freeStart = freeEnd + klass->SizeFromJSHClass(header);
+    });
     CHECK_REGION_END(freeStart, freeEnd);
     if (freeStart < freeEnd) {
         FreeObject::FillFreeObject(heap_->GetEcmaVM(), freeStart, freeEnd - freeStart);

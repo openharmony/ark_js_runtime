@@ -18,7 +18,6 @@
 #include "ecmascript/compiler/circuit_builder.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/mem/region.h"
-#include "ecmascript/mem/remembered_set.h"
 
 namespace panda::ecmascript::kungfu {
 // constant

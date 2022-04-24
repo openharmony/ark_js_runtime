@@ -21,7 +21,6 @@
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/mark_word.h"
 #include "ecmascript/mem/region-inl.h"
-#include "ecmascript/mem/remembered_set.h"
 #include "ecmascript/taskpool/taskpool.h"
 
 namespace panda::ecmascript {
@@ -55,8 +54,7 @@ bool ParallelEvacuation::UpdateWeakObjectSlot(TaggedObject *value, ObjectSlot &s
     Region *objectRegion = Region::ObjectAddressToRange(value);
     if (objectRegion->InYoungOrCSetGeneration()) {
         if (objectRegion->InNewToNewSet()) {
-            auto markBitmap = objectRegion->GetMarkBitmap();
-            if (!markBitmap->Test(value)) {
+            if (!objectRegion->Test(value)) {
                 slot.Update(static_cast<JSTaggedType>(JSTaggedValue::Undefined().GetRawData()));
             }
         } else {
@@ -73,8 +71,7 @@ bool ParallelEvacuation::UpdateWeakObjectSlot(TaggedObject *value, ObjectSlot &s
     }
 
     if (heap_->IsFullMark()) {
-        auto markBitmap = objectRegion->GetMarkBitmap();
-        if (!markBitmap->Test(value)) {
+        if (!objectRegion->Test(value)) {
             slot.Update(static_cast<JSTaggedType>(JSTaggedValue::Undefined().GetRawData()));
         }
     }
@@ -91,9 +88,9 @@ void ParallelEvacuation::SetObjectFieldRSet(TaggedObject *object, JSHClass *cls)
             if (JSTaggedValue(value).IsHeapObject()) {
                 Region *valueRegion = Region::ObjectAddressToRange(value);
                 if (valueRegion->InYoungGeneration()) {
-                    region->InsertOldToNewRememberedSet(slot.SlotAddress());
+                    region->InsertOldToNewRSet(slot.SlotAddress());
                 } else if (valueRegion->InCollectSet() || JSTaggedValue(value).IsWeakForHeapObject()) {
-                    region->InsertCrossRegionRememberedSet(slot.SlotAddress());
+                    region->InsertCrossRegionRSet(slot.SlotAddress());
                 }
             }
         }

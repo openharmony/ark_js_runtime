@@ -93,7 +93,7 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
 #define RUNTIME_STUB_WITHOUT_GC_LIST(V)        \
     V(DebugPrint)                              \
     V(FatalPrint)                              \
-    V(InsertOldToNewRememberedSet)             \
+    V(InsertOldToNewRSet)             \
     V(MarkingBarrier)                          \
     V(DoubleToInt)                             \
     V(FloatMod)                                \
@@ -294,7 +294,7 @@ public:
         Region *objectRegion, TaggedObject *value, Region *valueRegion);
     static JSTaggedType JSObjectGetMethod([[maybe_unused]]uintptr_t argGlue, JSTaggedValue handler, JSTaggedValue key);
     static JSTaggedType CreateArrayFromList([[maybe_unused]]uintptr_t argGlue, int32_t argc, JSTaggedValue *argv);
-    static void InsertOldToNewRememberedSet([[maybe_unused]]uintptr_t argGlue, Region* region, uintptr_t addr);
+    static void InsertOldToNewRSet([[maybe_unused]]uintptr_t argGlue, Region* region, uintptr_t addr);
     static int32_t DoubleToInt(double x);
     static JSTaggedType FloatMod(double x, double y);
     static int32_t FindElementWithCache(uintptr_t argGlue, JSTaggedType hClass,

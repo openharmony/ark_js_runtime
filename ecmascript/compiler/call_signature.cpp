@@ -792,10 +792,10 @@ DEF_CALL_SIGNATURE(FatalPrint)
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 
-DEF_CALL_SIGNATURE(InsertOldToNewRememberedSet)
+DEF_CALL_SIGNATURE(InsertOldToNewRSet)
 {
     // 3 : 3 input parameters
-    CallSignature index("InsertOldToNewRememberedSet", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    CallSignature index("InsertOldToNewRSet", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
     *callSign = index;
     // 3 : 3 input parameters
     std::array<VariableType, 3> params = {

@@ -24,10 +24,10 @@
 #include "ecmascript/mem/concurrent_sweeper.h"
 #include "ecmascript/mem/linear_space.h"
 #include "ecmascript/mem/mem_controller.h"
-#include "ecmascript/mem/remembered_set.h"
 #include "ecmascript/mem/sparse_space.h"
 #include "ecmascript/mem/tagged_object.h"
 #include "ecmascript/mem/barriers-inl.h"
+#include "ecmascript/mem/mem_map_allocator.h"
 
 namespace panda::ecmascript {
 template<class Callback>
@@ -278,8 +278,8 @@ void Heap::SwapNewSpace()
 void Heap::ReclaimRegions(TriggerGCType gcType, Region *lastRegionOfToSpace)
 {
     toSpace_->EnumerateRegions([] (Region *region) {
-        region->ClearMarkBitmap();
-        region->ClearCrossRegionRememberedSet();
+        region->ClearMarkGCBitset();
+        region->ClearCrossRegionRSet();
         region->ResetAliveObject();
         region->ClearFlag(RegionFlags::IS_IN_NEW_TO_NEW_SET);
     }, lastRegionOfToSpace);
@@ -299,14 +299,8 @@ void Heap::ReclaimRegions(TriggerGCType gcType, Region *lastRegionOfToSpace)
 
 void Heap::ClearSlotsRange(Region *current, uintptr_t freeStart, uintptr_t freeEnd)
 {
-    auto set = current->GetOldToNewRememberedSet();
-    if (set != nullptr) {
-        set->ClearRange(freeStart, freeEnd);
-    }
-    set = current->GetCrossRegionRememberedSet();
-    if (set != nullptr) {
-        set->ClearRange(freeStart, freeEnd);
-    }
+    current->ClearOldToNewRSetInRange(freeStart, freeEnd);
+    current->ClearCrossRegionRSetInRange(freeStart, freeEnd);
 }
 
 size_t Heap::GetCommittedSize() const

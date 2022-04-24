@@ -1915,13 +1915,12 @@ inline GateRef Stub::IntptrEuqal(GateRef x, GateRef y)
 
 inline GateRef Stub::GetBitMask(GateRef bitoffset)
 {
-    auto bitIndexMask = env_.Is32Bit()
-        ? IntPtr(static_cast<size_t>((1UL << BitmapHelper::LOG_BITSPERWORD_32) - 1))
-        : IntPtr(static_cast<size_t>((1UL << BitmapHelper::LOG_BITSPERWORD_64) - 1));
-    // bit_offset & BIT_INDEX_MASK
-    auto mask = IntPtrAnd(bitoffset, bitIndexMask);
-    // 1UL << GetBitIdxWithinWord(bit_offset)
-    return IntPtrLSL(IntPtr(1), mask);
+    // BIT_PER_WORD_MASK
+    GateRef bitPerWordMask = Int32(GCBitset::BIT_PER_WORD_MASK);
+    // IndexInWord(bitOffset) = bitOffset & BIT_PER_WORD_MASK
+    GateRef indexInWord = Int32And(bitoffset, bitPerWordMask);
+    // Mask(indeInWord) = 1 << index
+    return Int32LSL(Int32(1), indexInWord);
 }
 
 inline GateRef Stub::ObjectAddressToRange(GateRef x)

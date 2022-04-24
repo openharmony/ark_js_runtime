@@ -20,7 +20,6 @@
 #include "ecmascript/mem/free_object_set.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/mem_controller.h"
-#include "ecmascript/mem/remembered_set.h"
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
@@ -34,7 +33,6 @@ void SparseSpace::Initialize()
 {
     Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     region->InitializeSet();
-    region->SetFlag(GetRegionFlag());
     if (spaceType_ == MemSpaceType::MACHINE_CODE_SPACE) {
         int res = region->SetCodeExecutableAndReadable();
         LOG_ECMA_MEM(DEBUG) << "MachineCodeSpace::Expand() SetCodeExecutableAndReadable" << res;
@@ -87,7 +85,6 @@ bool SparseSpace::Expand()
     }
 
     Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
-    region->SetFlag(GetRegionFlag());
     if (spaceType_ == MemSpaceType::MACHINE_CODE_SPACE) {
         int res = region->SetCodeExecutableAndReadable();
         LOG_ECMA_MEM(DEBUG) << "MachineCodeSpace::Expand() SetCodeExecutableAndReadable" << res;
@@ -212,10 +209,8 @@ Region *SparseSpace::GetSweptRegionSafe()
 
 void SparseSpace::FreeRegion(Region *current, bool isMain)
 {
-    auto markBitmap = current->GetMarkBitmap();
-    ASSERT(markBitmap != nullptr);
     uintptr_t freeStart = current->GetBegin();
-    markBitmap->IterateOverMarkedChunks([this, &current, &freeStart, isMain](void *mem) {
+    current->IterateAllMarkedBits([this, &current, &freeStart, isMain](void *mem) {
         ASSERT(current->InRange(ToUintPtr(mem)));
         auto header = reinterpret_cast<TaggedObject *>(mem);
         auto klass = header->GetClass();
@@ -388,9 +383,8 @@ void OldSpace::ReclaimCSet()
 {
     EnumerateCollectRegionSet([this](Region *region) {
         region->SetSpace(nullptr);
-        region->DeleteMarkBitmap();
-        region->DeleteCrossRegionRememberedSet();
-        region->DeleteOldToNewRememberedSet();
+        region->DeleteCrossRegionRSet();
+        region->DeleteOldToNewRSet();
         region->DestroySet();
         heapRegionAllocator_->FreeRegion(region);
     });

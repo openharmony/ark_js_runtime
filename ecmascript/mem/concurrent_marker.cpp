@@ -101,8 +101,8 @@ void ConcurrentMarker::Reset(bool isRevertCSet)
         // Mix space gc clear cset when evacuation allocator finalize
         heap_->GetOldSpace()->RevertCSet();
         auto callback = [](Region *region) {
-            region->ClearMarkBitmap();
-            region->ClearCrossRegionRememberedSet();
+            region->ClearMarkGCBitset();
+            region->ClearCrossRegionRSet();
         };
         if (heap_->IsFullMark()) {
             heap_->EnumerateRegions(callback);
@@ -124,8 +124,8 @@ void ConcurrentMarker::InitializeMarking()
         heap_->GetOldSpace()->SelectCSet();
         // The alive object size of Region in OldSpace will be recompute
         heap_->EnumerateNonNewSpaceRegions([](Region *current) {
-            current->ClearMarkBitmap();
-            current->ClearCrossRegionRememberedSet();
+            current->ClearMarkGCBitset();
+            current->ClearCrossRegionRSet();
             current->ResetAliveObject();
         });
     } else {

@@ -22,7 +22,6 @@
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/region.h"
-#include "ecmascript/mem/remembered_set.h"
 #include "ecmascript/mem/space.h"
 #include "ecmascript/mem/tagged_object.h"
 #include "ecmascript/taskpool/task.h"

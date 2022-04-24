@@ -54,16 +54,12 @@ void FullGC::InitializePhase()
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::InitializePhase");
     heap_->Prepare();
     auto callback = [](Region *current) {
-        // ensure mark bitmap
-        auto rememberset = current->GetOldToNewRememberedSet();
-        if (rememberset != nullptr) {
-            rememberset->ClearAllBits();
-        }
+        current->ClearOldToNewRSet();
     };
     heap_->EnumerateNonMovableRegions(callback);
     heap_->EnumerateNonNewSpaceRegions([](Region *current) {
-        current->ClearMarkBitmap();
-        current->ClearCrossRegionRememberedSet();
+        current->ClearMarkGCBitset();
+        current->ClearCrossRegionRSet();
     });
     heap_->SwapNewSpace();
     workList_->Initialize(TriggerGCType::FULL_GC, ParallelGCTaskPhase::COMPRESS_HANDLE_GLOBAL_POOL_TASK);
@@ -103,8 +99,7 @@ void FullGC::SweepPhases()
 
             Region *objectRegion = Region::ObjectAddressToRange(header);
             if (!objectRegion->InYoungAndOldGeneration()) {
-                auto markBitmap = objectRegion->GetMarkBitmap();
-                if (!markBitmap->Test(header)) {
+                if (!objectRegion->Test(header)) {
                     slot.Update(static_cast<JSTaggedType>(JSTaggedValue::Undefined().GetRawData()));
                 }
             } else {
@@ -124,8 +119,7 @@ void FullGC::SweepPhases()
     WeakRootVisitor gcUpdateWeak = [](TaggedObject *header) {
         Region *objectRegion = Region::ObjectAddressToRange(header);
         if (!objectRegion->InYoungAndOldGeneration()) {
-            auto markBitmap = objectRegion->GetMarkBitmap();
-            if (markBitmap->Test(header)) {
+            if (objectRegion->Test(header)) {
                 return header;
             }
             return reinterpret_cast<TaggedObject *>(ToUintPtr(nullptr));

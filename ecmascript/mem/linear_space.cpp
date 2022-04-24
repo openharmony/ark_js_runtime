@@ -19,7 +19,6 @@
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/mem/allocator-inl.h"
 #include "ecmascript/mem/heap.h"
-#include "ecmascript/mem/remembered_set.h"
 
 namespace panda::ecmascript {
 LinearSpace::LinearSpace(Heap *heap, MemSpaceType type, size_t initialCapacity, size_t maximumCapacity)
@@ -71,7 +70,6 @@ bool LinearSpace::Expand(bool isPromoted)
         currentRegion->SetHighWaterMark(top);
     }
     Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
-    region->SetFlag(GetRegionFlag());
     allocator_->Reset(region->GetBegin(), region->GetEnd());
 
     AddRegion(region);
@@ -91,7 +89,6 @@ SemiSpace::SemiSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
 void SemiSpace::Initialize()
 {
     Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
-    region->SetFlag(GetRegionFlag());
     AddRegion(region);
     allocator_->Reset(region->GetBegin(), region->GetEnd());
 }
