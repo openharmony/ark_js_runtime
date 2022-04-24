@@ -25,12 +25,21 @@ public:
     static ARK_INLINE void Copy(void *dest, size_t destCount, void *src, size_t count)
     {
         switch (count) {
+#if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MAC)
 #define COPY_BY_CONST(destCount, value)                              \
             case value:                                              \
                 if (memcpy_sp(dest, destCount, src, value) != EOK) { \
                     LOG_ECMA(FATAL) << "memcpy_s failed";            \
                 }                                                    \
                 break;
+#else
+#define COPY_BY_CONST(destCount, value)                              \
+            case value:                                              \
+                if (memcpy_s(dest, destCount, src, value) != EOK) {  \
+                    LOG_ECMA(FATAL) << "memcpy_s failed";            \
+                }                                                    \
+                break;
+#endif
             COPY_BY_CONST(destCount, 16)
             COPY_BY_CONST(destCount, 24)
             COPY_BY_CONST(destCount, 32)

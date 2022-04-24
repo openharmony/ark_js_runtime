@@ -162,6 +162,10 @@ config("ark_jsruntime_compiler_config") {
   configs = [ "//ark/js_runtime:ark_jsruntime_common_config" ]
 }
 
+config("ark_jsruntime_windows_config") {
+  ldflags = [ "-lshlwapi" ]
+}
+
 config("ark_jsruntime_common_config") {
   defines = [ "PANDA_ENABLE_LTO" ]
   cflags_cc = [
@@ -523,6 +527,8 @@ if (current_cpu == "arm") {
            current_cpu == "x86_64") {
   if (is_linux) {
     ecma_source += [ "ecmascript/trampoline/x64/call.S" ]
+  } else if (is_mingw) {
+    ecma_source += [ "ecmascript/trampoline/win_x64/call.S" ]
   }
 }
 
@@ -554,7 +560,7 @@ source_set("libark_jsruntime_static") {
 
 source_set("libark_jsruntime_set_static") {
   if (is_mingw) {
-    ldflags = [ "-lshlwapi" ]
+    public_configs = [ ":ark_jsruntime_windows_config" ]
   }
   deps = [
     ":libark_js_intl_static",

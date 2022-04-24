@@ -158,7 +158,7 @@ void AotCodeInfo::Iterate(const RootVisitor &v)
     v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&code_)));
 }
 
-bool AotCodeInfo::VerifyFilePath(const CString &filePath) const
+bool AotCodeInfo::VerifyFilePath([[maybe_unused]] const CString &filePath) const
 {
 #ifndef PANDA_TARGET_WINDOWS
     if (filePath.size() > PATH_MAX) {
