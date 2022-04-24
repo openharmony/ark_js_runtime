@@ -415,6 +415,9 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
         DISPATCH_OFFSET(0);                                                                        \
     } while (false)
 
+extern "C" void JSCallEntry(uintptr_t glue, JSTaggedType *sp, const uint8_t *pc, JSTaggedValue constpool, 
+    JSTaggedValue profileTypeInfo, JSTaggedValue acc, uint32_t hotnessCounter);
+
 // NOLINTNEXTLINE(readability-function-size)
 void InterpreterAssembly::RunInternal(JSThread *thread, ConstantPool *constpool, const uint8_t *pc, JSTaggedType *sp)
 {
@@ -424,9 +427,7 @@ void InterpreterAssembly::RunInternal(JSThread *thread, ConstantPool *constpool,
     auto hotnessCounter = static_cast<int32_t>(method->GetHotnessCounter());
     auto profileTypeInfo = JSFunction::Cast(state->function.GetTaggedObject())->GetProfileTypeInfo();
 
-    auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::AsmInterpreterEntry);
-    AsmDispatchEntryPoint asmEntry = reinterpret_cast<AsmDispatchEntryPoint>(stubAddr);
-    asmEntry(thread->GetGlueAddr(), pc, sp, JSTaggedValue(constpool), profileTypeInfo, acc, hotnessCounter);
+    JSCallEntry(thread->GetGlueAddr(), sp, pc, JSTaggedValue(constpool), profileTypeInfo, acc, hotnessCounter);
 }
 
 void InterpreterAssembly::InitStackFrame(JSThread *thread)

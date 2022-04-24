@@ -28,8 +28,6 @@ namespace panda::ecmascript {
 using TaggedType = coretypes::TaggedType;
 using DispatchEntryPoint =
     void (*)(JSThread *, const uint8_t *, JSTaggedType *, JSTaggedValue, JSTaggedValue, JSTaggedValue, int32_t);
-using AsmDispatchEntryPoint =
-    void (*)(uintptr_t, const uint8_t *, JSTaggedType *, JSTaggedValue, JSTaggedValue, JSTaggedValue, int32_t);
 class ConstantPool;
 class ECMAObject;
 class GeneratorContext;

@@ -32,7 +32,7 @@ void AssemblerModule::GenerateStubsX64(Chunk* chunk)
     x64::AssemblerX64 assembler(chunk);
     COMPILER_LOG(INFO) << "compiling asm stubs";
     for (size_t i = 0; i < asmCallSigns_.size(); i++) {
-        auto cs = asmCallSigns_[0];
+        auto cs = asmCallSigns_[i];
         ASSERT(cs->HasConstructor());
         COMPILER_LOG(INFO) << "Stub Name: " << cs->GetName();
         size_t offset = assembler.GetCurrentPosition();
@@ -56,8 +56,8 @@ void AssemblerModule::SetUpForAsmStubs()
         []([[maybe_unused]]void* arg) {                          \
             return static_cast<void*>(                           \
                 new name##Stub());                               \
-    })
-    RUNTIME_ASM_STUB_LIST(INIT_SIGNATURES);
+    });
+    RUNTIME_ASM_STUB_LIST(INIT_SIGNATURES)
 #undef INIT_SIGNATURES
 
     for (size_t i = 0; i < callSigns.size(); i++) {
@@ -70,10 +70,10 @@ void AssemblerModule::SetUpForAsmStubs()
     callSigns.clear();
 }
 
-void AsmIntCallRuntimeStub::Generate(Assembler *assembler)
+void CallRuntimeStub::Generate(Assembler *assembler)
 {
     x64::AssemblerX64 *assemblerX64 = static_cast<x64::AssemblerX64*>(assembler);
-    x64::AssemblerModuleX64::Generate_AsmInterpCallRuntime(assemblerX64);
+    x64::AssemblerModuleX64::Generate_CallRuntime(assemblerX64);
     assemblerX64->Align16();
 }
 }  // namespace panda::ecmascript::kunfu

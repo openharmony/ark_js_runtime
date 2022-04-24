@@ -18,11 +18,8 @@
 .global JSFunctionEntry
 .type JSFunctionEntry, %function
 
-.global OptimizedCallRuntime
-.type OptimizedCallRuntime, %function
-
-.global AsmIntCallRuntime
-.type AsmIntCallRuntime, %function
+.global CallRuntime
+.type CallRuntime, %function
 
  .global OptimizedCallOptimized
 .type OptimizedCallOptimized, %function
@@ -87,8 +84,8 @@
 .global ResumeRspAndReturn
 .type ResumeRspAndReturn, %function
 
-.global OptimizedCallRuntimeWithArgv
-.type OptimizedCallRuntimeWithArgv, %function
+.global CallRuntimeWithArgv
+.type CallRuntimeWithArgv, %function
 
 #define CALLEESAVE_REGS_SIZE   (32)
 #define SLOT_SIZE              (4)
@@ -166,7 +163,7 @@ JSFunctionEntry:
     pop     {r4, r5, r6, r7, r8, r9, r10, lr}
     bx      lr
 
-// uint64_t OptimizedCallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
+// uint64_t CallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // JSTaggedType (*)(uintptr_t argGlue, uint64_t argc, JSTaggedType argv[])
 // Input:
@@ -199,9 +196,9 @@ JSFunctionEntry:
 //   |       frameType          |   v
 //   +--------------------------+ ---
 
-.global OptimizedCallRuntime
-.type OptimizedCallRuntime, %function
-OptimizedCallRuntime:
+.global CallRuntime
+.type CallRuntime, %function
+CallRuntime:
     push    {r11, lr}                                   // save register for fp, rip
     mov     r11, sp                                     // set frame pointer = callsiteFp
     str     r11, [r0, #ASM_GLUE_CURRENT_FRAME_OFFSET]   // save to thread->currentFrame_
@@ -227,36 +224,6 @@ OptimizedCallRuntime:
     add     sp, sp, #8
     pop     {r11, lr}
     bx      lr
-
-.global AsmIntCallRuntime
-.type AsmIntCallRuntime, %function
-AsmIntCallRuntime:
-    add     sp, sp, #-8
-    str     lr, [sp, #4]
-    str     sp, [r0, #ASM_GLUE_LEAVE_FRAME_OFFSET]   // save to thread->currentFrame_
-    add     sp, sp, #-8                                 // increase frame size
-    push    {r4, r5}                                    // callee save
-
-    // construct leave frame
-    mov     r4, #0
-    mov     r5, #ASM_LEAVE_FRAME_TYPE
-    str     r4, [sp, #12]
-    str     r5, [sp, #8]                              // save frame type
-
-
-    // load runtime trampoline address
-    add     r2, r0, r2, lsl #2
-    ldr     r4, [r2, #ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET]
-    ldr     r1, [sp, #24]  // argc
-    add     r2, sp,  #32   // argv[]
-    blx      r4
-
-    // descontruct leave frame and callee save register
-    pop     {r4, r5}
-    add     sp, sp, #12
-    ldr     r1, [sp, #0]
-    bx      lr
-
 
 //extern "C" JSTaggedType OptimizedCallOptimized(uintptr_t glue, uint32_t expectedNumArgs,
 //                                  uint32_t actualNumArgs, uintptr_t codeAddr, ...)
@@ -491,5 +458,10 @@ ResumeRspAndDispatch:
 ResumeRspAndReturn:
     bx  lr
 
-OptimizedCallRuntimeWithArgv:
+CallRuntimeWithArgv:
+    bx  lr
+
+.global JSCallEntry
+.type JSCallEntry, %function
+JSCallEntry:
     bx  lr

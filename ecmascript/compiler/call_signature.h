@@ -272,11 +272,9 @@ private:
     V(GetTaggedArrayPtrTest)                \
     V(BytecodeHandler)                      \
     V(SingleStepDebugging)                  \
-    V(AsmInterpreterEntry)                  \
     V(HandleOverflow)                       \
-    V(AsmIntCallRuntime)                    \
-    V(OptimizedCallRuntime)                 \
-    V(OptimizedCallRuntimeWithArgv)         \
+    V(CallRuntime)                          \
+    V(CallRuntimeWithArgv)                  \
     V(OptimizedCallOptimized)               \
     V(PushCallArgs0AndDispatch)             \
     V(PushCallArgs0AndDispatchNative)       \

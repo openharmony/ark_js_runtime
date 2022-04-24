@@ -244,11 +244,10 @@ enum class FrameType: uintptr_t {
     OPTIMIZED_FRAME = 0,
     OPTIMIZED_ENTRY_FRAME = 1,
     INTERPRETER_FRAME = 2,
-    OPTIMIZED_LEAVE_FRAME = 3,
+    LEAVE_FRAME = 3,
     INTERPRETER_FAST_NEW_FRAME = 4,
-    ASM_LEAVE_FRAME = 5,
-    INTERPRETER_ENTRY_FRAME = 6,
-    OPTIMIZED_WITH_ARGV_LEAVE_FRAME = 7,
+    INTERPRETER_ENTRY_FRAME = 5,
+    LEAVE_FRAME_WITH_ARGV = 6,
 };
 
 class FrameConstants {
@@ -550,8 +549,7 @@ struct OptimizedWithArgvLeaveFrame {
 
 static_assert(static_cast<uint64_t>(FrameType::OPTIMIZED_FRAME) == OPTIMIZE_FRAME_TYPE);
 static_assert(static_cast<uint64_t>(FrameType::OPTIMIZED_ENTRY_FRAME) == JS_ENTRY_FRAME_TYPE);
-static_assert(static_cast<uint64_t>(FrameType::OPTIMIZED_LEAVE_FRAME) == LEAVE_FRAME_TYPE);
-static_assert(static_cast<uint64_t>(FrameType::ASM_LEAVE_FRAME) == ASM_LEAVE_FRAME_TYPE);
+static_assert(static_cast<uint64_t>(FrameType::LEAVE_FRAME) == LEAVE_FRAME_TYPE);
 #ifdef PANDA_TARGET_64
     static_assert(OptimizedFrame::GetCallsiteSpToFpDelta() ==
         FrameConstants::CALLSITE_SP_TO_FP_DELTA * sizeof(uintptr_t));

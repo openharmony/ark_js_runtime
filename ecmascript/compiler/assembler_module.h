@@ -84,8 +84,8 @@ class name##Stub : public AssemblerStub {            \
 public:                                              \
     ~name##Stub() = default;                         \
     void Generate(Assembler* assembler) override;    \
-}
-RUNTIME_ASM_STUB_LIST(DECLARE_ASM_STUB_CLASS);
+};
+RUNTIME_ASM_STUB_LIST(DECLARE_ASM_STUB_CLASS)
 #undef DECLARE_ASM_STUB_CLASS
 }  // namespace panda::ecmascript::kunfu
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_H

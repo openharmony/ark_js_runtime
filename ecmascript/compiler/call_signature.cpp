@@ -464,25 +464,6 @@ DEF_CALL_SIGNATURE(SingleStepDebugging)
     callSign->SetCallConv(CallSignature::CallConv::GHCCallConv);
 }
 
-DEF_CALL_SIGNATURE(AsmInterpreterEntry)
-{
-    // 7 : 7 input parameters
-    CallSignature asmInterpreterEntry("AsmInterpreterEntry", 0, 7,
-        ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
-    *callSign = asmInterpreterEntry;
-    std::array<VariableType, 7> params = { // 7 : 7 input parameters
-        VariableType::NATIVE_POINTER(),
-        VariableType::NATIVE_POINTER(),
-        VariableType::NATIVE_POINTER(),
-        VariableType::JS_POINTER(),
-        VariableType::JS_POINTER(),
-        VariableType::JS_ANY(),
-        VariableType::INT32(),
-    };
-    callSign->SetParameters(params.data());
-    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
-}
-
 DEF_CALL_SIGNATURE(HandleOverflow)
 {
     // 7 : 7 input parameters
@@ -502,12 +483,12 @@ DEF_CALL_SIGNATURE(HandleOverflow)
     callSign->SetCallConv(CallSignature::CallConv::GHCCallConv);
 }
 
-DEF_CALL_SIGNATURE(AsmIntCallRuntime)
+DEF_CALL_SIGNATURE(CallRuntime)
 {
     /* 3 : 3 input parameters */
-    CallSignature asmIntCallRuntime("AsmIntCallRuntime", 0, 3,
+    CallSignature runtimeCallTrampoline("CallRuntime", 0, 3,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *callSign = asmIntCallRuntime;
+    *callSign = runtimeCallTrampoline;
     std::array<VariableType, 3> params = { /* 3 : 3 input parameters */
         VariableType::NATIVE_POINTER(),
         VariableType::INT64(),
@@ -519,27 +500,10 @@ DEF_CALL_SIGNATURE(AsmIntCallRuntime)
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
-DEF_CALL_SIGNATURE(OptimizedCallRuntime)
-{
-    /* 3 : 3 input parameters */
-    CallSignature runtimeCallTrampoline("OptimizedCallRuntime", 0, 3,
-        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *callSign = runtimeCallTrampoline;
-    std::array<VariableType, 3> params = { /* 3 : 3 input parameters */
-        VariableType::NATIVE_POINTER(),
-        VariableType::INT64(),
-        VariableType::INT64(),
-    };
-    callSign->SetVariadicArgs(true);
-    callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
-    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
-}
-
-DEF_CALL_SIGNATURE(OptimizedCallRuntimeWithArgv)
+DEF_CALL_SIGNATURE(CallRuntimeWithArgv)
 {
     /* 4 : 4 input parameters */
-    CallSignature runtimeCallTrampoline("OptimizedCallRuntimeWithArgv", 0, 4,
+    CallSignature runtimeCallTrampoline("CallRuntimeWithArgv", 0, 4,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *callSign = runtimeCallTrampoline;
     std::array<VariableType, 4> params = { /* 4 : 4 input parameters */
