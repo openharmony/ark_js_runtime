@@ -1150,10 +1150,8 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
             Branch(IntptrEuqal(oldToNewSet, IntPtr(0)), &isNullPtr, &notNullPtr);
             Bind(&notNullPtr);
             {
-                GateRef beginOffset = IntPtr(Region::GetBeginOffset(env_.Is32Bit()));
-                GateRef beginPtr = Load(VariableType::NATIVE_POINTER(), objectRegion, beginOffset);
-                // (slotAddr - begin_) >> TAGGED_TYPE_SIZE_LOG
-                GateRef bitOffsetPtr = IntPtrLSR(PtrSub(slotAddr, beginPtr), IntPtr(TAGGED_TYPE_SIZE_LOG));
+                // (slotAddr - this) >> TAGGED_TYPE_SIZE_LOG
+                GateRef bitOffsetPtr = IntPtrLSR(PtrSub(slotAddr, objectRegion), IntPtr(TAGGED_TYPE_SIZE_LOG));
                 GateRef bitOffset = TruncPtrToInt32(bitOffsetPtr);
                 GateRef bitPerWordLog2 = Int32(GCBitset::BIT_PER_WORD_LOG2);
                 GateRef bytePerWord = Int32(GCBitset::BYTE_PER_WORD);

@@ -46,10 +46,6 @@ host_unittest_action("BuiltinsInternationalTest") {
     "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
 }
 
 host_unittest_action("BuiltinsNaturalTest") {
@@ -90,10 +86,6 @@ host_unittest_action("BuiltinsNaturalTest") {
     "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
 }
 
 group("unittest") {

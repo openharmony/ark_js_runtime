@@ -14,12 +14,38 @@
  */
 
 #include "ecmascript/mem/mem_map_allocator.h"
+#ifdef PANDA_TARGET_WINDOWS
+#include <windows.h>
+
+#ifdef ERROR
+#undef ERROR
+#endif
+
+void *mmap(size_t size, int fd, off_t offset)
+{
+    HANDLE handle = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
+    HANDLE extra = CreateFileMapping(handle, nullptr, PAGE_READWRITE,
+                                     (DWORD) ((uint64_t) size >> 32),
+                                     (DWORD) (size & 0xffffffff),
+                                     nullptr);
+    if (extra == nullptr) {
+        return nullptr;
+    }
+
+    void *data = MapViewOfFile(extra, FILE_MAP_WRITE | FILE_MAP_READ,
+                               (DWORD) ((uint64_t) offset >> 32),
+                               (DWORD) (offset & 0xffffffff),
+                               size);
+    CloseHandle(extra);
+    return data;
+}
+#endif
 
 namespace panda::ecmascript {
 MemMap MemMapAllocator::Allocate(size_t size, size_t alignment, bool isRegular)
 {
     if (UNLIKELY(memMapTotalSize_ + size > capacity_)) {
-        LOG(ERROR, RUNTIME) << "mem map overflow";
+        LOG(ERROR, RUNTIME) << "memory map overflow";
         return MemMap();
     }
     MemMap mem;
@@ -55,15 +81,21 @@ void MemMapAllocator::Free(void *mem, size_t size, bool isRegular)
 
 MemMap MemMapAllocator::PageMap(size_t size, size_t alignment)
 {
-    [[maybe_unused]]size_t allocSize = size + alignment;
+    size_t allocSize = size + alignment;
+#ifdef PANDA_TARGET_UNIX
     void *result = mmap(0, allocSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+#else
+    void *result = mmap(allocSize, -1, 0);
+#endif
     LOG_IF(result == nullptr, FATAL, ECMASCRIPT);
     auto alignResult = AlignUp(reinterpret_cast<uintptr_t>(result), alignment);
+#ifdef PANDA_TARGET_UNIX
     size_t leftSize = alignResult - reinterpret_cast<uintptr_t>(result);
     size_t rightSize = alignment - leftSize;
     void *alignEndResult = reinterpret_cast<void *>(alignResult + size);
     munmap(result, leftSize);
     munmap(alignEndResult, rightSize);
+#endif
     return MemMap(reinterpret_cast<void *>(alignResult), size);
 }
 }  // namespace panda::ecmascript

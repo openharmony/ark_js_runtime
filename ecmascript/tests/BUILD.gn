@@ -81,10 +81,6 @@ host_unittest_action("EcmaVmTest") {
     "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
 }
 
 group("unittest") {

@@ -69,7 +69,6 @@ source_set("libark_jsoptimizer_static") {
     ":include_llvm",
     "//ark/js_runtime:ark_jsruntime_compiler_config",
     "//ark/js_runtime:ark_jsruntime_public_config",
-    "$ark_root/runtime:arkruntime_public_config",
   ]
 
   if (compile_llvm_online) {
@@ -142,7 +141,6 @@ source_set("libark_jsoptimizer_static") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
-    "$ark_root/runtime:arkruntime_header_deps",
   ]
 }
 
@@ -176,12 +174,6 @@ source_set("libark_jsoptimizer_test_static") {
     "//ark/js_runtime:libark_jsruntime_test_static",
   ]
 
-  if (is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime_static" ]
-  } else {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
-
   if (compile_llvm_online) {
     deps += [ ":build_llvm_libs" ]
   }
@@ -209,7 +201,6 @@ source_set("ark_stub_compiler_static") {
     ":include_llvm",
     "//ark/js_runtime:ark_jsruntime_compiler_config",
     "//ark/js_runtime:ark_jsruntime_public_config",
-    "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
@@ -218,10 +209,6 @@ source_set("ark_stub_compiler_static") {
     "//ark/js_runtime:libark_jsruntime",
     "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer",
   ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
 }
 
 ohos_executable("ark_stub_compiler") {
@@ -245,7 +232,6 @@ source_set("ark_aot_compiler_static") {
     ":include_llvm",
     "//ark/js_runtime:ark_jsruntime_compiler_config",
     "//ark/js_runtime:ark_jsruntime_public_config",
-    "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
@@ -253,10 +239,6 @@ source_set("ark_aot_compiler_static") {
     "//ark/js_runtime:libark_jsruntime",
     "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer",
   ]
-
-  if (!is_standard_system) {
-    deps += [ "$ark_root/runtime:libarkruntime" ]
-  }
 }
 
 ohos_executable("ark_aot_compiler") {
