@@ -151,7 +151,7 @@ bool Verifier::RunCFGIsDAGCheck(const Circuit *circuit)
                 circuit->LoadGatePtrConst(*use)->GetBitField())) {
                 if (circuit->GetMark(*use) == MarkCode::VISITED) {
                     COMPILER_LOG(ERROR) <<
-                        "[Verifier][Error] CFG without loop back edges is not directed acyclic graph";
+                        "[Verifier][Error] CFG without loop back edges is not a directed acyclic graph";
                     COMPILER_LOG(ERROR) << "Proof:";
                     COMPILER_LOG(ERROR) << "(id=" << circuit->GetId(*use) << ") is succ of "
                               << "(id=" << circuit->GetId(cur) << ")";
@@ -160,7 +160,7 @@ bool Verifier::RunCFGIsDAGCheck(const Circuit *circuit)
                     return false;
                 }
                 if (circuit->GetMark(*use) == MarkCode::FINISHED) {
-                    return true;
+                    continue;
                 }
                 if (!dfs(*use)) {
                     return false;
@@ -224,7 +224,7 @@ bool Verifier::RunFixedGatesRelationsCheck(const Circuit *circuit, const std::ve
         size_t cnt = 0;
         for (const auto &predGate : circuit->GetInVector(fixedGate)) {
             if (circuit->GetOpCode(predGate).IsFixed() &&
-                circuit->GetOpCode(circuit->GetIn(predGate, 0)) != OpCode::LOOP_BACK) {
+                (circuit->GetOpCode(circuit->GetIn(fixedGate, 0)) == OpCode::LOOP_BEGIN && cnt == 2)) {
                 ASSERT(cnt > 0);
                 auto a = bbGatesAddrToIdx.at(circuit->GetIn(predGate, 0));
                 auto b = bbGatesAddrToIdx.at(circuit->GetIn(circuit->GetIn(fixedGate, 0),
@@ -232,8 +232,10 @@ bool Verifier::RunFixedGatesRelationsCheck(const Circuit *circuit, const std::ve
                 if (!isAncestor(a, b)) {
                     COMPILER_LOG(ERROR) << "[Verifier][Error] Fixed gates relationship is not consistent";
                     COMPILER_LOG(ERROR) << "Proof:";
-                    COMPILER_LOG(ERROR) << "Fixed gate (id=" << predGate << ") is pred of fixed gate (id="
-                                        << fixedGate << ")";
+                    COMPILER_LOG(ERROR) << "Fixed gate (id="
+                                        << circuit->GetId(predGate)
+                                        << ") is pred of fixed gate (id="
+                                        << circuit->GetId(fixedGate) << ")";
                     COMPILER_LOG(ERROR) << "BB_" << bbGatesAddrToIdx.at(circuit->GetIn(predGate, 0))
                                         << " does not dominate BB_"
                                         << bbGatesAddrToIdx.at(circuit->GetIn(circuit->GetIn(fixedGate, 0),
