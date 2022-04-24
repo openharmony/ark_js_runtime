@@ -202,16 +202,6 @@ public:
         return data_;
     }
 
-    inline void SetPrevFrameSp(JSTaggedType *sp)
-    {
-        prevSp_ = sp;
-    }
-
-    inline JSTaggedType *GetPrevFrameSp() const
-    {
-        return prevSp_;
-    }
-
 private:
     enum ArgsIndex : uint8_t { FUNC_INDEX = 0, NEW_TARGET_INDEX, THIS_INDEX, FIRST_ARGS_INDEX };
 
@@ -228,7 +218,6 @@ private:
     size_t numArgs_ = 0;
     JSTaggedType *stackArgs_ {nullptr};
     void *data_ {nullptr};
-    JSTaggedType *prevSp_ {nullptr};
 };
 }  // namespace panda::ecmascript
 

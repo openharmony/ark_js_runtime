@@ -1913,7 +1913,6 @@ JsiRuntimeCallInfo::JsiRuntimeCallInfo(ecmascript::EcmaRuntimeCallInfo* ecmaInfo
 {
     stackArgs_ = ecmaInfo->GetArgs();
     data_ = ecmaInfo->GetData();
-    prevSp_ = ecmaInfo->GetPrevFrameSp();
 }
 
 EcmaVM *JsiRuntimeCallInfo::GetVM() const
