@@ -407,7 +407,7 @@ CallNativeTrampoline:
 //   +--------------------------+ ---
 //   |       jsfunction         |   ^
 //   |--------------------------|  Fixed
-//   |       argc               | OptimizedLeaveFrame
+//   |       argc               | OptimizedFrame
 //   |--------------------------|   |
 //   |       returnAddr         |   |
 //   |--------------------------|   |

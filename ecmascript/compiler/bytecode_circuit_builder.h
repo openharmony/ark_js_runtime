@@ -67,6 +67,16 @@ public:
         value_ = value;
     }
 
+    ImmValueType ToJSTaggedValueInt() const
+    {
+        return value_ | JSTaggedValue::TAG_INT;
+    }
+
+    ImmValueType ToJSTaggedValueDouble() const
+    {
+        return JSTaggedValue(bit_cast<double>(value_)).GetRawData();
+    }
+
     ImmValueType GetValue() const
     {
         return value_;
