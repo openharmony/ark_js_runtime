@@ -14,6 +14,7 @@
 
 expected="expect_output.txt"
 generate_mode="no"
+run_mode="aot"
 test_range=""
 run_args=""
 out_dir=""
@@ -25,8 +26,11 @@ usage()
 {
     echo -e "Usage: runtestall.sh [options]
     Options:
-    -v          show version
-    -h          print this usage statement"
+    -mode:aot       run on aot mode, default
+    -mode:int       run on interpret mode
+    -mode:asmint    run on asm interpret mode
+    -v              show version
+    -h              print this usage statement"
 }
 
 echo_pass()
@@ -42,18 +46,27 @@ echo_fail()
 while [ $# -gt 0 ]
 do
     case $1 in
-	-v)
-		tail -n +14 $test_dir/version
-		exit 0 ;;
-    -h)
-        usage
-		exit 0 ;;
-    -*)
-        echo "invalid option $1"
-        exit 0;;
-	*)
-		test_range=$1
-		shift 1;;
+		-mode:aot)
+			run_mode="aot"
+			shift 1 ;;
+		-mode:asmint)
+			run_mode="asmint"
+			shift 1 ;;
+		-mode:int)
+			run_mode="int"
+			shift 1 ;;
+		-v)
+			tail -n +14 $test_dir/version
+			exit 0 ;;
+		-h)
+			usage
+			exit 0 ;;
+		-*)
+			echo "invalid option $1"
+			exit 0;;
+		*)
+			test_range=$1
+			shift 1;;
     esac
 done
 
@@ -72,7 +85,7 @@ for test in $test_dir/*;
 do
 	if [ -d $test -a -f $test/$expected ]; then
 		test_name=$(basename $test)
-		$test_dir/runtest.sh $test_name $run_args
+		$test_dir/runtest.sh -mode:$run_mode $test_name $run_args
 		if [ $? -ne 0 ]; then
 			failed_test_array[failed_count]=$test_name
 			let failed_count++
