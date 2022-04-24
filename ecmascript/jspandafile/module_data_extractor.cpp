@@ -14,7 +14,7 @@
  */
 
 #include "ecmascript/jspandafile/module_data_extractor.h"
-#include "ecmascript/jspandafile/accessor/module_data_accessor-inl.h"
+#include "ecmascript/jspandafile/accessor/module_data_accessor.h"
 #include "ecmascript/base/string_helper.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/global_env.h"

@@ -18,7 +18,7 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env_constants.h"
 #include "ecmascript/global_env_constants-inl.h"
-#include "ecmascript/ic/ic_binary_op-inl.h"
+#include "ecmascript/ic/ic_binary_op.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/interpreter/slow_runtime_stub.h"
 #include "ecmascript/object_factory.h"
