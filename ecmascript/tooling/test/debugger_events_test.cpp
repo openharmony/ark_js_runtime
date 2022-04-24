@@ -910,4 +910,218 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
     EXPECT_EQ("hh", DebuggerApi::ToCString(result));
 }
+
+HWTEST_F_L0(DebuggerEventsTest, ConsoleProfileFinishedCreateTest)
+{
+    CString msg;
+    std::unique_ptr<ConsoleProfileFinished> consoleProfileFinished;
+
+    //  abnormal params of null msg
+    msg = CString() + R"({})";
+    consoleProfileFinished = ConsoleProfileFinished::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(consoleProfileFinished, nullptr);
+
+    // abnormal params of unexist key params
+    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
+    consoleProfileFinished = ConsoleProfileFinished::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(consoleProfileFinished, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    consoleProfileFinished = ConsoleProfileFinished::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(consoleProfileFinished, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    consoleProfileFinished = ConsoleProfileFinished::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(consoleProfileFinished, nullptr);
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+        "id":"11",
+        "location": {"scriptId":"13", "lineNumber":20},
+        "profile": {"nodes":[], "startTime":0, "endTime":15, "samples":[], "timeDeltas":[]},
+        "title":"001"}})";
+    consoleProfileFinished = ConsoleProfileFinished::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(consoleProfileFinished, nullptr);
+}
+
+HWTEST_F_L0(DebuggerEventsTest, ConsoleProfileFinishedToObjectTest)
+{
+    CString msg;
+    std::unique_ptr<ConsoleProfileFinished> consoleProfileFinished;
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+        "id":"11",
+        "location": {"scriptId":"13", "lineNumber":20},
+        "profile": {"nodes":[], "startTime":0, "endTime":15, "samples":[], "timeDeltas":[]},
+        "title":"001"}})";
+    consoleProfileFinished = ConsoleProfileFinished::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(consoleProfileFinished, nullptr);
+    Local<ObjectRef> object1 = consoleProfileFinished->ToObject(ecmaVm);
+    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsObject());
+    Local<ObjectRef> object = Local<ObjectRef>(result);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "id");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(result), "11");
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "location");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsObject());
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "profile");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsObject());
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "title");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(result), "001");
+}
+
+HWTEST_F_L0(DebuggerEventsTest, ConsoleProfileStartedCreateTest)
+{
+    CString msg;
+    std::unique_ptr<ConsoleProfileStarted> consoleProfileStarted;
+
+    //  abnormal params of null msg
+    msg = CString() + R"({})";
+    consoleProfileStarted = ConsoleProfileStarted::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(consoleProfileStarted, nullptr);
+
+    // abnormal params of unexist key params
+    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
+    consoleProfileStarted = ConsoleProfileStarted::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(consoleProfileStarted, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    consoleProfileStarted = ConsoleProfileStarted::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(consoleProfileStarted, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    consoleProfileStarted = ConsoleProfileStarted::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(consoleProfileStarted, nullptr);
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+        "id":"12","location":{"scriptId":"17","lineNumber":30},"title":"002"}})";
+    consoleProfileStarted = ConsoleProfileStarted::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(consoleProfileStarted, nullptr);
+}
+
+HWTEST_F_L0(DebuggerEventsTest, ConsoleProfileStartedToObjectTest)
+{
+    CString msg;
+    std::unique_ptr<ConsoleProfileStarted> consoleProfileStarted;
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+        "id":"12","location":{"scriptId":"17","lineNumber":30},"title":"002"}})";
+    consoleProfileStarted = ConsoleProfileStarted::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(consoleProfileStarted, nullptr);
+    Local<ObjectRef> object1 = consoleProfileStarted->ToObject(ecmaVm);
+    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsObject());
+    Local<ObjectRef> object = Local<ObjectRef>(result);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "id");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(result), "12");
+
+    Local<ObjectRef> tmpObject = consoleProfileStarted->GetLocation()->ToObject(ecmaVm);
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "scriptId");
+    ASSERT_TRUE(tmpObject->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> tmpResult = tmpObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!tmpResult.IsEmpty() && !tmpResult->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(tmpResult), "17");
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "lineNumber");
+    ASSERT_TRUE(tmpObject->Has(ecmaVm, tmpStr));
+    tmpResult = tmpObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!tmpResult.IsEmpty() && !tmpResult->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(tmpResult)->Value(), 30);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "title");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(result), "002");
+}
+
+HWTEST_F_L0(DebuggerEventsTest, PreciseCoverageDeltaUpdateCreateTest)
+{
+    CString msg;
+    std::unique_ptr<PreciseCoverageDeltaUpdate> preciseCoverageDeltaUpdate;
+
+    //  abnormal params of null msg
+    msg = CString() + R"({})";
+    preciseCoverageDeltaUpdate = PreciseCoverageDeltaUpdate::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(preciseCoverageDeltaUpdate, nullptr);
+
+    // abnormal params of unexist key params
+    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
+    preciseCoverageDeltaUpdate = PreciseCoverageDeltaUpdate::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(preciseCoverageDeltaUpdate, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    preciseCoverageDeltaUpdate = PreciseCoverageDeltaUpdate::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(preciseCoverageDeltaUpdate, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    preciseCoverageDeltaUpdate = PreciseCoverageDeltaUpdate::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(preciseCoverageDeltaUpdate, nullptr);
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+        "timestamp":77,"occasion":"percise","result":[]}})";
+    preciseCoverageDeltaUpdate = PreciseCoverageDeltaUpdate::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(preciseCoverageDeltaUpdate, nullptr);
+}
+
+HWTEST_F_L0(DebuggerEventsTest, PreciseCoverageDeltaUpdateToObjectTest)
+{
+    CString msg;
+    std::unique_ptr<PreciseCoverageDeltaUpdate> preciseCoverageDeltaUpdate;
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+        "timestamp":77,"occasion":"percise","result":[]}})";
+    preciseCoverageDeltaUpdate = PreciseCoverageDeltaUpdate::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(preciseCoverageDeltaUpdate, nullptr);
+    Local<ObjectRef> object1 = preciseCoverageDeltaUpdate->ToObject(ecmaVm);
+    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsObject());
+    Local<ObjectRef> object = Local<ObjectRef>(result);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "timestamp");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 77);
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "occasion");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(result), "percise");
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "result");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsArray(ecmaVm));
+}
 }  // namespace panda::test
