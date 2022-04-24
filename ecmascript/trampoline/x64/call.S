@@ -18,14 +18,11 @@
  .global JSFunctionEntry
 .type JSFunctionEntry, %function
 
-.global OptimizedCallRuntime
-.type OptimizedCallRuntime, %function
+.global CallRuntime
+.type CallRuntime, %function
 
-.global OptimizedCallRuntimeWithArgv
-.type OptimizedCallRuntimeWithArgv, %function
-
-.global AsmIntCallRuntime
-.type AsmIntCallRuntime, %function
+.global CallRuntimeWithArgv
+.type CallRuntimeWithArgv, %function
 
  .global OptimizedCallOptimized
 .type OptimizedCallOptimized, %function
@@ -349,7 +346,7 @@ CallNativeTrampoline:
     pushq   %rdx        // save pc
     ret 
 
-// uint64_t OptimizedCallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
+// uint64_t CallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // JSTaggedType (*)(uintptr_t argGlue, uint64_t argc, JSTaggedType argv[])
 // Input:
@@ -387,7 +384,7 @@ CallNativeTrampoline:
 //  sp - 16: rbp <---------current rbp & current sp
 //  current sp - 8:  type
 
-OptimizedCallRuntime:
+CallRuntime:
     pushq   %rbp
     movq    %rsp, %rbp     // set frame pointer
     movq    %rbp, ASM_GLUE_LEAVE_FRAME_OFFSET(%rax)   // save to thread->currentFrame_
@@ -416,37 +413,6 @@ OptimizedCallRuntime:
 
     addq    $8, %rsp
     popq    %rbp
-    ret
-
-AsmIntCallRuntime:
-    pushq   $0
-    movq    %rsp, ASM_GLUE_LEAVE_FRAME_OFFSET(%rax)   // save to thread->leaveFrame_
-    pushq   $ASM_LEAVE_FRAME_TYPE
-
-    // callee save
-    pushq    %r10
-    pushq    %rdx
-    pushq    %rax
-
-    // construct leave frame
-    movq    %rsp, %rdx
-    addq    $48, %rdx        // 16 : for rbp & return address
-
-    // load runtime trampoline address
-    movq    (%rdx), %r10       // runtime id
-    movq    ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET(%rax, %r10, 8), %r10
-    movq    %rax, %rdi       // glue
-    movl    8(%rdx), %esi   // argc
-    addq    $16, %rdx        // argV
-    call    *%r10
-
-    popq    %r10
-    movq    $0, ASM_GLUE_LEAVE_FRAME_OFFSET(%r10)   // save nullptr to thread->leaveFrame_
-    popq    %rdx
-    popq    %r10
-
-    addq    $8, %rsp
-    addq    $8, %rsp
     ret
 
 // uint64_t JSCallWithArgV(uintptr_t glue, uint32_t argc, JSTaggedType calltarget, uintptr_t argv[]);
@@ -538,7 +504,7 @@ JSCall:
     pushq   $1                                  //argc
     pushq   $RUNTIME_ID_THROW_TYPE_ERROR        //runtime id
     mov     %rcx, %rax        // glue
-    call    OptimizedCallRuntime
+    call    CallRuntime
     movabs  $TAGGED_VALUE_EXCEPTION, %rax       // reteurn exception
     addq    $32, %rsp
     pop     %rbp
@@ -956,8 +922,8 @@ PushCallArgs0AndDispatchSlowPath:
     movq    $JSHOLE, %rsi                                         // acc: arg5 of dispatch
     movq    ASM_JF_FUNCTION_PROFILE_TYPE_INFO_OFFSET(%rbp), %r14  // profile_type_info:arg4 of dispatch
     movq    ASM_JS_FUNCTION_CONSTANT_POOL_OFFSET(%rbp), %rbx      // constant_pool: arg3 of dispatch
-    movq    %r15, %r12                                            // sp: arg2 of dispatch
-    movq    %rcx, %rbp                                            // pc: arg1 of dispatch
+    movq    %r15, %rbp                                            // sp: arg1 of dispatch
+    movq    %rcx, %r12                                            // pc: arg2 of dispatch
                                                                   // glue: arg0 of dispatch
     movq    %r15, ASM_GLUE_CURRENT_FRAME_OFFSET(%r13)  // save newSp to thread->current_sp
 
@@ -1174,7 +1140,7 @@ ResumeRspAndReturn:
     retq
 
 
-// uint64_t OptimizedCallRuntimeWithArgv(uintptr_t glue, uint64_t runtime_id, uint64_t argc, uintptr_t argv);
+// uint64_t CallRuntimeWithArgv(uintptr_t glue, uint64_t runtime_id, uint64_t argc, uintptr_t argv);
 // cc calling convention call runtime_id's runtion function(c-abi)
 // JSTaggedType (*)(uintptr_t argGlue, uint64_t argc, JSTaggedType argv[])
 // Input:
@@ -1208,7 +1174,7 @@ ResumeRspAndReturn:
 //   |       frameType          |   v
 //   +--------------------------+ ---
 
-OptimizedCallRuntimeWithArgv:
+CallRuntimeWithArgv:
     movq %rsp, %r8
     movq (%rsp), %r9
     pushq  %rcx  // argv[]
@@ -1220,7 +1186,7 @@ OptimizedCallRuntimeWithArgv:
     pushq   %rbp
     movq    %rsp, %rbp     // set frame pointer
     movq    %rbp, ASM_GLUE_LEAVE_FRAME_OFFSET(%rdi)   // save to thread->leaveFrame_
-    pushq   $ASM_OPTIMIZED_WITH_ARGV_LEAVE_FRAME
+    pushq   $ASM_LEAVE_FRAME_WITH_ARGV
 
     movq    ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET(%rdi, %rsi, 8), %r9
     movq    %rdx, %rsi // argc
@@ -1232,3 +1198,42 @@ OptimizedCallRuntimeWithArgv:
     popq    %rbp
     movq    %r8, %rsp
     ret
+
+// uint64_t JSFunctionEntry(uintptr_t glue, uintptr_t sp, uintptr_t pc, JSTaggedType constpool,
+//                          JSTaggedType profileInfo, JSTaggedType acc, uint32_t hotnessCounter);
+// Input:
+// %rdi - glue
+// %rsi - sp
+// %rdx - pc
+// %rcx - constpool
+// %r8  - profileInfo
+// %r9  - acc
+// sp [0] hotnessCounter
+.global JSCallEntry
+.type JSCallEntry, %function
+JSCallEntry:
+    pushq   %rbp
+    movq    %rsp, %rbp
+    pushq   $JS_ENTRY_FRAME_TYPE
+    pushq   %r15
+    pushq   %r14
+    pushq   %r13
+    pushq   %r12
+    pushq   %rbx
+    movq    %rcx, %rbx  // constpool
+    movq    %rdi, %r13  // glue
+    movzbl  (%rdx), %eax   // opcode
+    movl    16(%rbp), %edi // hotnessCounter
+    movq    %rsi, %rbp  // sp
+    movq    %rdx, %r12  // pc
+    movq    %r8, %r14   // profileInfo
+    movq    %r9, %rsi   // acc
+    callq   *ASM_GLUE_BC_HANDLERS_OFFSET(%r13,%rax,8)
+    popq    %rbx
+    popq    %r12
+    popq    %r13
+    popq    %r14
+    popq    %r15
+    addq    $8, %rsp // skip type
+    popq	%rbp
+    retq

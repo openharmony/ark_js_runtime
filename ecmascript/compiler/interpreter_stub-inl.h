@@ -367,24 +367,24 @@ void InterpreterStub::DispatchBase(GateRef bcOffset, const CallSignature *signat
     GetEnvironment()->GetCurrentLabel()->SetDepend(result);
 }
 
-void InterpreterStub::Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool, GateRef profileTypeInfo,
+void InterpreterStub::Dispatch(GateRef glue, GateRef sp, GateRef pc, GateRef constpool, GateRef profileTypeInfo,
                                GateRef acc, GateRef hotnessCounter, GateRef format)
 {
     GateRef newPc = PtrAdd(pc, format);
     GateRef opcode = Load(VariableType::INT8(), newPc);
     GateRef opcodeOffset = PtrMul(ChangeInt32ToIntPtr(ZExtInt8ToInt32(opcode)), IntPtrSize());
     const CallSignature *bytecodeHandler = BytecodeStubCSigns::Get(BYTECODE_STUB_BEGIN_ID);
-    DispatchBase(opcodeOffset, bytecodeHandler, glue, newPc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
+    DispatchBase(opcodeOffset, bytecodeHandler, glue, sp, newPc, constpool, profileTypeInfo, acc, hotnessCounter);
     Return();
 }
 
-void InterpreterStub::DispatchLast(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
+void InterpreterStub::DispatchLast(GateRef glue, GateRef sp, GateRef pc, GateRef constpool,
                                    GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter)
 {
     GateRef opcodeOffset = PtrMul(
         IntPtr(BytecodeStubCSigns::ID_ExceptionHandler), IntPtrSize());
     const CallSignature *bytecodeHandler = BytecodeStubCSigns::Get(BYTECODE_STUB_BEGIN_ID);
-    DispatchBase(opcodeOffset, bytecodeHandler, glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
+    DispatchBase(opcodeOffset, bytecodeHandler, glue, sp, pc, constpool, profileTypeInfo, acc, hotnessCounter);
     Return();
 }
 

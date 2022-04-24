@@ -49,14 +49,13 @@ void FrameHandler::PrevFrame()
             framehandle->PrevFrame();
             break;
         }
-        case FrameType::ASM_LEAVE_FRAME:
-        case FrameType::OPTIMIZED_LEAVE_FRAME: {
+        case FrameType::LEAVE_FRAME: {
             auto framehandle =
                 reinterpret_cast<OptimizedLeaveFrameHandler *>(this);
             framehandle->PrevFrame();
             break;
         }
-        case FrameType::OPTIMIZED_WITH_ARGV_LEAVE_FRAME: {
+        case FrameType::LEAVE_FRAME_WITH_ARGV: {
             auto framehandle =
                 reinterpret_cast<OptimizedWithArgvLeaveFrameHandler *>(this);
             framehandle->PrevFrame();
@@ -474,23 +473,12 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
     isVerifying = thread_->GetEcmaVM()->GetHeap()->GetIsVerifying();
 #endif
-
-#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
-    auto leaveFrame = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
-    if (leaveFrame != nullptr) {
-        ASSERT(OptimizedLeaveFrame::GetFrameFromSp(leaveFrame)->type == FrameType::ASM_LEAVE_FRAME);
-        OptimizedLeaveFrameHandler(thread_, reinterpret_cast<uintptr_t *>(leaveFrame)).Iterate(v0,
-            v1, derivedPointers, isVerifying);
-    }
-    JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
-#else
     // asm interpreter leaveframe
     JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
     if (current == nullptr) {
         // c++ interpreter frame
         current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
     }
-#endif
 
     while (current) {
         FrameType type = FrameHandler(current).GetFrameType();
@@ -515,23 +503,16 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
             OptimizedEntryFrame *frame = OptimizedEntryFrame::GetFrameFromSp(current);
             current = frame->GetPrevFrameFp();
             // NOTE: due to "AotInfo" iteration, current frame might not be interpreted frame
-        } else if (type == FrameType::OPTIMIZED_WITH_ARGV_LEAVE_FRAME) {
+        } else if (type == FrameType::LEAVE_FRAME_WITH_ARGV) {
             OptimizedWithArgvLeaveFrame *frame = OptimizedWithArgvLeaveFrame::GetFrameFromSp(current);
             OptimizedWithArgvLeaveFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
                 v1, derivedPointers, isVerifying);
             current = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
         } else {
-            ASSERT(type == FrameType::OPTIMIZED_LEAVE_FRAME || type == FrameType::ASM_LEAVE_FRAME);
+            ASSERT(type == FrameType::LEAVE_FRAME);
             OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(current);
-#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
-            if (leaveFrame != current) { // avoid iterating from same leaveframe again
-                OptimizedLeaveFrameHandler(thread_, reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
-                    v1, derivedPointers, isVerifying);
-            }
-#else
             OptimizedLeaveFrameHandler(thread_, reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
                 v1, derivedPointers, isVerifying);
-#endif
             //  arm32, arm64 and x86_64 support stub and aot, when aot/stub call runtime, generate Optimized
             // Leave Frame.
             current = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
