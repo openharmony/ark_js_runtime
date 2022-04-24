@@ -328,6 +328,7 @@ JSHandle<JSTaggedValue> ContainersPrivate::InitializeTreeMap(JSThread *thread)
     SetFrozenFunction(thread, mapFuncPrototype, "replace", ContainersTreeMap::Replace, FuncLength::TWO);
     SetFrozenFunction(thread, mapFuncPrototype, "forEach", ContainersTreeMap::ForEach, FuncLength::ONE);
     SetFrozenFunction(thread, mapFuncPrototype, "entries", ContainersTreeMap::Entries, FuncLength::ZERO);
+    SetFrozenFunction(thread, mapFuncPrototype, "isEmpty", ContainersTreeMap::IsEmpty, FuncLength::ZERO);
 
     // @@ToStringTag
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();

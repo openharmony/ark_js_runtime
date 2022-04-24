@@ -1327,4 +1327,39 @@ HWTEST_F_L0(ContainersTreeMapTest, CustomCompareFunctionTest)
         EXPECT_EQ((NODE_NUMBERS - 1 - i), JSIterator::IteratorValue(thread, result)->GetInt());
     }
 }
+
+// treemap.isEmpty()
+HWTEST_F_L0(ContainersTreeMapTest, IsEmpty)
+{
+    constexpr int NODE_NUMBERS = 8;
+    JSHandle<JSAPITreeMap> tmap = CreateJSAPITreeMap();
+    for (int i = 0; i < NODE_NUMBERS; i++) {
+        auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
+        callInfo->SetFunction(JSTaggedValue::Undefined());
+        callInfo->SetThis(tmap.GetTaggedValue());
+        callInfo->SetCallArg(0, JSTaggedValue(i));
+        callInfo->SetCallArg(1, JSTaggedValue(i));
+
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
+        JSTaggedValue result = ContainersTreeMap::Set(callInfo.get());
+        TestHelper::TearDownFrame(thread, prev);
+        EXPECT_TRUE(result.IsJSAPITreeMap());
+        EXPECT_EQ(JSAPITreeMap::Cast(result.GetTaggedObject())->GetSize(), i + 1);
+        JSTaggedValue isEmpty = ContainersTreeMap::IsEmpty(callInfo.get());
+        EXPECT_EQ(isEmpty, JSTaggedValue::False());
+    }
+
+    // test clear
+    {
+        auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
+        callInfo->SetFunction(JSTaggedValue::Undefined());
+        callInfo->SetThis(tmap.GetTaggedValue());
+
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
+        ContainersTreeMap::Clear(callInfo.get());
+        TestHelper::TearDownFrame(thread, prev);
+        JSTaggedValue isEmpty = ContainersTreeMap::IsEmpty(callInfo.get());
+        EXPECT_EQ(isEmpty, JSTaggedValue::True());
+    }
+}
 }  // namespace panda::test
