@@ -470,4 +470,87 @@ HWTEST_F_L0(DebuggerParamsTest, GetObjectByHeapObjectIdParamsToObjectTest)
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
     EXPECT_EQ(DebuggerApi::ToCString(result), "groupname");
 }
+
+HWTEST_F_L0(DebuggerParamsTest, StartPreciseCoverageParamCreateTest)
+{
+    CString msg;
+    std::unique_ptr<StartPreciseCoverageParam> objectData;
+
+    //  abnormal params of null msg
+    msg = CString() + R"({})";
+    objectData = StartPreciseCoverageParam::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of unexist key params
+    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
+    objectData = StartPreciseCoverageParam::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    objectData = StartPreciseCoverageParam::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    objectData = StartPreciseCoverageParam::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+            "callCount":8,
+            "detailed":8,
+            "allowTriggeredUpdates":8}})";
+    objectData = StartPreciseCoverageParam::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+            "callCount":"Test",
+            "detailed":"Test",
+            "allowTriggeredUpdates":"Test"}})";
+    objectData = StartPreciseCoverageParam::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+            "callCount":true,
+            "detailed":true,
+            "allowTriggeredUpdates":true}})";
+    objectData = StartPreciseCoverageParam::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+    ASSERT_TRUE(objectData->GetCallCount());
+    ASSERT_TRUE(objectData->GetDetailed());
+    ASSERT_TRUE(objectData->GetAllowTriggeredUpdates());
+}
+
+HWTEST_F_L0(DebuggerParamsTest, StartPreciseCoverageParamToObjectTest)
+{
+    CString msg;
+    std::unique_ptr<StartPreciseCoverageParam> startTrackingData;
+    Local<StringRef> tmpStr;
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+            "callCount":true,
+            "detailed":true,
+            "allowTriggeredUpdates":true}})";
+    startTrackingData = StartPreciseCoverageParam::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(startTrackingData, nullptr);
+    Local<ObjectRef> object = startTrackingData->ToObject(ecmaVm);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "callCount");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsTrue());
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "detailed");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsTrue());
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "allowTriggeredUpdates");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsTrue());
+}
 }  // namespace panda::test

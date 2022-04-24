@@ -319,4 +319,66 @@ HWTEST_F_L0(DebuggerReturnsTest, GetHeapUsageReturnsToObjectTest)
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
     EXPECT_EQ(Local<NumberRef>(result)->Value(), 1);
 }
+
+HWTEST_F_L0(DebuggerReturnsTest, GetBestEffortCoverageReturnsToObjectTest)
+{
+    auto result = CVector<std::unique_ptr<ScriptCoverage>>();
+    std::unique_ptr<ScriptCoverage> scriptCoverage = std::make_unique<ScriptCoverage>();
+    std::unique_ptr<GetBestEffortCoverageReturns> getBestEffortCoverageReturns =
+                                                std::make_unique<GetBestEffortCoverageReturns>(std::move(result));
+    Local<ArrayRef> getObject = getBestEffortCoverageReturns->ToObject(ecmaVm);
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "result");
+    ASSERT_TRUE(getObject->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> tmpResult = getObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!tmpResult.IsEmpty() && !tmpResult->IsUndefined());
+    ASSERT_TRUE(tmpResult->IsArray(ecmaVm));
+}
+
+HWTEST_F_L0(DebuggerReturnsTest, StartPreciseCoverageReturnsToObjectTest)
+{
+    std::unique_ptr<StartPreciseCoverageReturns> startPreciseCoverageReturns
+                     = std::make_unique<StartPreciseCoverageReturns>(1001);
+    ASSERT_NE(startPreciseCoverageReturns, nullptr);
+    Local<ObjectRef> getObject = startPreciseCoverageReturns->ToObject(ecmaVm);
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "timestamp");
+    ASSERT_TRUE(getObject->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> result = getObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 1001);
+}
+
+HWTEST_F_L0(DebuggerReturnsTest, TakePreciseCoverageReturnsToObjectTest)
+{
+    auto coverage = CVector<std::unique_ptr<ScriptCoverage>>();
+    std::unique_ptr<TakePreciseCoverageReturns> takePreciseCoverageReturns =
+                                                std::make_unique<TakePreciseCoverageReturns>(std::move(coverage), 1001);
+    ASSERT_NE(takePreciseCoverageReturns, nullptr);
+    Local<ArrayRef> getObject = takePreciseCoverageReturns->ToObject(ecmaVm);
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "result");
+    ASSERT_TRUE(getObject->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> result = getObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsArray(ecmaVm));
+
+    Local<ObjectRef> instrumentationObject = takePreciseCoverageReturns->ToObject(ecmaVm);
+    Local<StringRef> tmperStr = StringRef::NewFromUtf8(ecmaVm, "timestamp");
+    ASSERT_TRUE(instrumentationObject->Has(ecmaVm, tmperStr));
+    Local<JSValueRef> tmpResult = instrumentationObject->Get(ecmaVm, tmperStr);
+    ASSERT_TRUE(!tmpResult.IsEmpty() && !tmpResult->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(tmpResult)->Value(), 1001);
+}
+
+HWTEST_F_L0(DebuggerReturnsTest, TakeTypeProfileturnsToObjectTest)
+{
+    auto result = CVector<std::unique_ptr<ScriptTypeProfile>>();
+    std::unique_ptr<ScriptTypeProfile> scriptTypeProfile = std::make_unique<ScriptTypeProfile>();
+    std::unique_ptr<TakeTypeProfileturns> takeTypeProfileturns = std::make_unique
+                                                    <TakeTypeProfileturns>(std::move(result));
+    Local<ArrayRef> getObject = takeTypeProfileturns->ToObject(ecmaVm);
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "result");
+    ASSERT_TRUE(getObject->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> tmpResult = getObject->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!tmpResult.IsEmpty() && !tmpResult->IsUndefined());
+    ASSERT_TRUE(tmpResult->IsArray(ecmaVm));
+}
 }  // namespace panda::test

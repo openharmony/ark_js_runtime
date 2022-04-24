@@ -328,5 +328,69 @@ private:
     double usedSize_ {0.0};
     double totalSize_ {0.0};
 };
+
+class GetBestEffortCoverageReturns : public PtBaseReturns {
+public:
+    explicit GetBestEffortCoverageReturns(CVector<std::unique_ptr<ScriptCoverage>> result)
+        : result_(std::move(result))
+    {}
+    ~GetBestEffortCoverageReturns() override = default;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+private:
+    GetBestEffortCoverageReturns() = default;
+    NO_COPY_SEMANTIC(GetBestEffortCoverageReturns);
+    NO_MOVE_SEMANTIC(GetBestEffortCoverageReturns);
+
+    CVector<std::unique_ptr<ScriptCoverage>> result_ {};
+};
+
+class StartPreciseCoverageReturns : public PtBaseReturns {
+public:
+    explicit StartPreciseCoverageReturns(size_t tamp) : timestamp_(tamp) {}
+    ~StartPreciseCoverageReturns() override = default;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+private:
+    StartPreciseCoverageReturns() = default;
+    NO_COPY_SEMANTIC(StartPreciseCoverageReturns);
+    NO_MOVE_SEMANTIC(StartPreciseCoverageReturns);
+
+    size_t timestamp_ {0};
+};
+
+class TakePreciseCoverageReturns : public PtBaseReturns {
+public:
+    explicit TakePreciseCoverageReturns(CVector<std::unique_ptr<ScriptCoverage>> result, size_t tamp)
+        : result_(std::move(result)),
+          timestamp_(tamp)
+    {}
+    ~TakePreciseCoverageReturns() override = default;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+private:
+    TakePreciseCoverageReturns() = default;
+    NO_COPY_SEMANTIC(TakePreciseCoverageReturns);
+    NO_MOVE_SEMANTIC(TakePreciseCoverageReturns);
+
+    CVector<std::unique_ptr<ScriptCoverage>> result_ {};
+    size_t timestamp_ {0};
+};
+
+class TakeTypeProfileturns : public PtBaseReturns {
+public:
+    explicit TakeTypeProfileturns(CVector<std::unique_ptr<ScriptTypeProfile>> result)
+        : result_(std::move(result))
+    {}
+    ~TakeTypeProfileturns() override = default;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+private:
+    TakeTypeProfileturns() = default;
+    NO_COPY_SEMANTIC(TakeTypeProfileturns);
+    NO_MOVE_SEMANTIC(TakeTypeProfileturns);
+
+    CVector<std::unique_ptr<ScriptTypeProfile>> result_ {};
+};
 }  // namespace panda::ecmascript::tooling
 #endif

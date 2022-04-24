@@ -995,4 +995,66 @@ Local<ObjectRef> GetObjectByHeapObjectIdParams::ToObject(const EcmaVM *ecmaVm)
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, objectGroup_->c_str())));
     return params;
 }
+
+std::unique_ptr<StartPreciseCoverageParam> StartPreciseCoverageParam::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
+{
+    ASSERT(ecmaVm);
+    if (params.IsEmpty()) {
+        LOG(ERROR, DEBUGGER) << "StartPreciseCoverageParam::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto paramsObject = std::make_unique<StartPreciseCoverageParam>();
+
+    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callCount")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsBoolean()) {
+            paramsObject->callCount_ = result->IsTrue();
+        } else {
+            error += "'callCount' should be a boolean;";
+        }
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "detailed")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsBoolean()) {
+            paramsObject->detailed_ = result->IsTrue();
+        } else {
+            error += "'detailed' should be a boolean;";
+        }
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "allowTriggeredUpdates")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsBoolean()) {
+            paramsObject->allowTriggeredUpdates_ = result->IsTrue();
+        } else {
+            error += "'allowTriggeredUpdates' should be a boolean;";
+        }
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "StartPreciseCoverageParam::Create " << error;
+        return nullptr;
+    }
+    return paramsObject;
+}
+
+Local<ObjectRef> StartPreciseCoverageParam::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callCount")),
+        BooleanRef::New(ecmaVm, callCount_.value()));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "detailed")),
+        BooleanRef::New(ecmaVm, detailed_.value()));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "allowTriggeredUpdates")),
+        BooleanRef::New(ecmaVm, allowTriggeredUpdates_.value()));
+
+    return params;
+}
 }  // namespace panda::ecmascript::tooling

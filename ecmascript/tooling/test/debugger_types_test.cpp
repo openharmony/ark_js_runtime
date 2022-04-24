@@ -2400,4 +2400,204 @@ HWTEST_F_L0(DebuggerTypesTest, ProfileToObjectTest)
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
     ASSERT_TRUE(result->IsArray(ecmaVm));
 }
+
+HWTEST_F_L0(DebuggerTypesTest, CoverageCreateTest)
+{
+    CString msg;
+    std::unique_ptr<Coverage> coverage;
+
+    //  abnormal params of null msg
+    msg = CString() + R"({})";
+    coverage = Coverage::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(coverage, nullptr);
+
+    // abnormal params of unexist key params
+    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
+    coverage = Coverage::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(coverage, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    coverage = Coverage::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(coverage, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    coverage = Coverage::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(coverage, nullptr);
+
+    // normal params of params.sub-key=["startOffset":0,"endOffset":5,"count":13]
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+          "startOffset":0,"endOffset":13,"count":13}})";
+    coverage = Coverage::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(coverage, nullptr);
+    EXPECT_EQ(coverage->GetStartOffset(), 0);
+    EXPECT_EQ(coverage->GetEndOffset(), 13);
+    EXPECT_EQ(coverage->GetCount(), 13);
+}
+
+HWTEST_F_L0(DebuggerTypesTest, CoverageToObjectTest)
+{
+    CString msg;
+    std::unique_ptr<Coverage> coverage;
+    Local<StringRef> tmpStr;
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+          "startOffset":0,"endOffset":13,"count":13}})";
+    coverage = Coverage::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(coverage, nullptr);
+    Local<ObjectRef> object = coverage->ToObject(ecmaVm);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "startOffset");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 0);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "endOffset");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 13);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "count");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 13);
+}
+
+HWTEST_F_L0(DebuggerTypesTest, FunctionCoverageCreateTest)
+{
+    CString msg;
+    std::unique_ptr<FunctionCoverage> functionCoverage;
+
+    //  abnormal params of null msg
+    msg = CString() + R"({})";
+    functionCoverage = FunctionCoverage::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(functionCoverage, nullptr);
+
+    // abnormal params of unexist key params
+    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
+    functionCoverage = FunctionCoverage::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(functionCoverage, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    functionCoverage = FunctionCoverage::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(functionCoverage, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    functionCoverage = FunctionCoverage::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(functionCoverage, nullptr);
+
+    // normal params of params.sub-key=[..]
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+          "functionName":"Create0","ranges":[],"isBlockCoverage":true}})";
+    functionCoverage = FunctionCoverage::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+
+    ASSERT_NE(functionCoverage, nullptr);
+    EXPECT_EQ(functionCoverage->GetFunctionName(), "Create0");
+    const CVector<std::unique_ptr<Coverage>> *ranges = functionCoverage->GetRanges();
+    ASSERT_NE(ranges, nullptr);
+    EXPECT_EQ((int)ranges->size(), 0);
+    ASSERT_TRUE(functionCoverage->GetIsBlockCoverage());
+}
+
+HWTEST_F_L0(DebuggerTypesTest, FunctionCoverageToObjectTest)
+{
+    CString msg;
+    std::unique_ptr<FunctionCoverage> functionCoverage;
+    Local<StringRef> tmpStr;
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+          "functionName":"Create0","ranges":[],"isBlockCoverage":true}})";
+    functionCoverage = FunctionCoverage::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(functionCoverage, nullptr);
+    Local<ObjectRef> object = functionCoverage->ToObject(ecmaVm);
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "functionName");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(result), "Create0");
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "ranges");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsArray(ecmaVm));
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "isBlockCoverage");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsTrue());
+}
+
+HWTEST_F_L0(DebuggerTypesTest, ScriptCoverageCreateTest)
+{
+    CString msg;
+    std::unique_ptr<ScriptCoverage> scriptCoverage;
+
+    //  abnormal params of null msg
+    msg = CString() + R"({})";
+    scriptCoverage = ScriptCoverage::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(scriptCoverage, nullptr);
+
+    // abnormal params of unexist key params
+    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
+    scriptCoverage = ScriptCoverage::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(scriptCoverage, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    scriptCoverage = ScriptCoverage::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(scriptCoverage, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    scriptCoverage = ScriptCoverage::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(scriptCoverage, nullptr);
+
+    // normal params of params.sub-key=[..]
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+          "scriptId":"1001","url":"url17","functions":[]}})";
+    scriptCoverage = ScriptCoverage::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(scriptCoverage, nullptr);
+    EXPECT_EQ(scriptCoverage->GetScriptId(), "1001");
+    EXPECT_EQ(scriptCoverage->GetUrl(), "url17");
+    const CVector<std::unique_ptr<FunctionCoverage>> *functions = scriptCoverage->GetFunctions();
+    ASSERT_NE(functions, nullptr);
+    EXPECT_EQ((int)functions->size(), 0);
+}
+
+HWTEST_F_L0(DebuggerTypesTest, ScriptCoverageToObjectTest)
+{
+    CString msg;
+    std::unique_ptr<ScriptCoverage> scriptCoverage;
+    Local<StringRef> tmpStr;
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+          "scriptId":"1001","url":"url17","functions":[]}})";
+    scriptCoverage = ScriptCoverage::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(scriptCoverage, nullptr);
+    Local<ObjectRef> object = scriptCoverage->ToObject(ecmaVm);
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "scriptId");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(result), "1001");
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "url");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(DebuggerApi::ToCString(result), "url17");
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "functions");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsArray(ecmaVm));
+}
 }  // namespace panda::test

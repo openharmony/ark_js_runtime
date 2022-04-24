@@ -755,5 +755,176 @@ private:
 
     CString chunk_ {};
 };
+
+class ConsoleProfileFinished final : public PtBaseEvents {
+public:
+    ConsoleProfileFinished() = default;
+    ~ConsoleProfileFinished() override = default;
+    static std::unique_ptr<ConsoleProfileFinished> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    CString GetName() override
+    {
+        return "Profile.ConsoleProfileFinished";
+    }
+
+    const CString &GetId() const
+    {
+        return id_;
+    }
+
+    ConsoleProfileFinished &SetId(const CString &id)
+    {
+        id_ = id;
+        return *this;
+    }
+
+    Location *GetLocation() const
+    {
+        return location_.get();
+    }
+
+    ConsoleProfileFinished &SetLocation(std::unique_ptr<Location> location)
+    {
+        location_ = std::move(location);
+        return *this;
+    }
+
+    Profile *GetProfile() const
+    {
+        return profile_.get();
+    }
+
+    ConsoleProfileFinished &SetProfile(std::unique_ptr<Profile> profile)
+    {
+        profile_ = std::move(profile);
+        return *this;
+    }
+
+    const CString &GetTitle() const
+    {
+        return title_;
+    }
+
+    ConsoleProfileFinished &SetTitle(const CString &title)
+    {
+        title_ = title;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(ConsoleProfileFinished);
+    NO_MOVE_SEMANTIC(ConsoleProfileFinished);
+
+    CString id_ {};
+    std::unique_ptr<Location> location_ {nullptr};
+    std::unique_ptr<Profile> profile_ {nullptr};
+    CString title_ {};
+};
+
+class ConsoleProfileStarted final : public PtBaseEvents {
+public:
+    ConsoleProfileStarted() = default;
+    ~ConsoleProfileStarted() override = default;
+    static std::unique_ptr<ConsoleProfileStarted> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    CString GetName() override
+    {
+        return "Profile.ConsoleProfileStarted";
+    }
+
+    const CString &GetId() const
+    {
+        return id_;
+    }
+
+    ConsoleProfileStarted &SetId(const CString &id)
+    {
+        id_ = id;
+        return *this;
+    }
+
+    Location *GetLocation() const
+    {
+        return location_.get();
+    }
+
+    ConsoleProfileStarted &SetLocation(std::unique_ptr<Location> location)
+    {
+        location_ = std::move(location);
+        return *this;
+    }
+
+    const CString &GetTitle() const
+    {
+        return title_;
+    }
+
+    ConsoleProfileStarted &SetTitle(const CString &title)
+    {
+        title_ = title;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(ConsoleProfileStarted);
+    NO_MOVE_SEMANTIC(ConsoleProfileStarted);
+
+    CString id_ {};
+    std::unique_ptr<Location> location_ {nullptr};
+    CString title_ {};
+};
+
+class PreciseCoverageDeltaUpdate final : public PtBaseEvents {
+public:
+    PreciseCoverageDeltaUpdate() = default;
+    ~PreciseCoverageDeltaUpdate() override = default;
+    static std::unique_ptr<PreciseCoverageDeltaUpdate> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    CString GetName() override
+    {
+        return "Profile.PreciseCoverageDeltaUpdate";
+    }
+
+    size_t GetTimestamp() const
+    {
+        return timestamp_;
+    }
+
+    PreciseCoverageDeltaUpdate &SetTimestamp(size_t timestamp)
+    {
+        timestamp_ = timestamp;
+        return *this;
+    }
+
+    const CString &GetOccasion() const
+    {
+        return occasion_;
+    }
+
+    PreciseCoverageDeltaUpdate &SetOccasion(const CString &occasion)
+    {
+        occasion_ = occasion;
+        return *this;
+    }
+
+    const CVector<std::unique_ptr<ScriptCoverage>> *GetResult() const
+    {
+        return &result_;
+    }
+
+    PreciseCoverageDeltaUpdate &SetResult(CVector<std::unique_ptr<ScriptCoverage>> result)
+    {
+        result_ = std::move(result);
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(PreciseCoverageDeltaUpdate);
+    NO_MOVE_SEMANTIC(PreciseCoverageDeltaUpdate);
+
+    size_t timestamp_ {0};
+    CString occasion_ {};
+    CVector<std::unique_ptr<ScriptCoverage>> result_ {};
+};
 }  // namespace panda::ecmascript::tooling
 #endif
