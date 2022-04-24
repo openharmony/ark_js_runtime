@@ -36,7 +36,7 @@
 #include "ecmascript/module/js_module_manager.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/template_string.h"
-#include "ecmascript/tooling/interface/notification_manager.h"
+#include "ecmascript/tooling/interface/js_debugger_manager.h"
 #include "libpandafile/code_data_accessor.h"
 #include "libpandafile/file.h"
 #include "libpandafile/method_data_accessor.h"
@@ -722,7 +722,8 @@ void EcmaInterpreter::NotifyBytecodePcChanged(JSThread *thread)
             continue;
         }
         auto bcOffset = frameHandler.GetBytecodeOffset();
-        thread->GetEcmaVM()->GetNotificationManager()->BytecodePcChangedEvent(thread, method, bcOffset);
+        auto *debuggerMgr = thread->GetEcmaVM()->GetJsDebuggerManager();
+        debuggerMgr->GetNotificationManager()->BytecodePcChangedEvent(thread, method, bcOffset);
         return;
     }
 }
