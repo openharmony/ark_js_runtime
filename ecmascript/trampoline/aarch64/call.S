@@ -478,7 +478,7 @@ CallNativeTrampoline:
 //   +--------------------------+ ---
 //   |       argc               |   ^
 //   |--------------------------|  Fixed
-//   |       RuntimeId          | OptimizedLeaveFrame
+//   |       RuntimeId          | OptimizedFrame
 //   |--------------------------|   |
 //   |       returnAddr         |   |
 //   |--------------------------|   |

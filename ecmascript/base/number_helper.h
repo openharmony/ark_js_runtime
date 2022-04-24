@@ -70,6 +70,16 @@ static constexpr size_t JS_DTOA_BUF_SIZE = 128;
 
 class NumberHelper {
 public:
+    static inline JSTaggedType GetNaN()
+    {
+        return JSTaggedValue(NAN_VALUE).GetRawData();
+    }
+
+    static inline JSTaggedType GetPositiveInfinity()
+    {
+        return JSTaggedValue(POSITIVE_INFINITY).GetRawData();
+    }
+
     static bool IsFinite(JSTaggedValue number)
     {
         return number.IsInt() || (number.IsDouble() && std::isfinite(number.GetDouble()));

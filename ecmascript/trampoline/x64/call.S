@@ -482,7 +482,7 @@ AsmIntCallRuntime:
 //   +--------------------------+ ---
 //   |       jsfunction         |   ^
 //   |--------------------------|  Fixed
-//   |       argc               | OptimizedLeaveFrame
+//   |       argc               | OptimizedFrame
 //   |--------------------------|   |
 //   |       returnAddr         |   |
 //   |--------------------------|   |
