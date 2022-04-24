@@ -66,7 +66,6 @@ EcmaRuntimeCallInfo EcmaInterpreter::NewRuntimeCallInfo(
     *(--newSp) = newTarget.GetTaggedType();
     *(--newSp) = func.GetTaggedType();
     EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, numArgs, newSp);
-    ecmaRuntimeCallInfo.SetPrevFrameSp(sp);
     return ecmaRuntimeCallInfo;
 }
 }  // namespace panda::ecmascript

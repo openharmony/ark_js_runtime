@@ -84,6 +84,12 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
 #define GET_FRAME(CurrentSp) \
     (reinterpret_cast<InterpretedFrame *>(CurrentSp) - 1)  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define GET_ENTRY_FRAME(sp) \
+    (reinterpret_cast<InterpretedEntryFrame *>(sp) - 1)  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define GET_ENTRY_FRAME_WITH_ARGS_SIZE(actualNumArgs) \
+    (INTERPRETER_ENTRY_FRAME_STATE_SIZE + 1 + (actualNumArgs) + RESERVED_CALL_ARGCOUNT)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define SAVE_PC() (GET_FRAME(sp)->pc = pc)  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define SAVE_ACC() (GET_FRAME(sp)->acc = acc)  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -402,12 +408,19 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(EcmaRuntimeCallInfo *info)
     JSMethod *method = callTarget->GetCallTarget();
     ASSERT(method->GetNumVregsWithCallField() == 0);
 
+    // current is entry frame.
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    InterpretedEntryFrame *entryState = GET_ENTRY_FRAME(sp);
+    JSTaggedType *prevSp = entryState->base.prev;
+
     int32_t actualNumArgs = static_cast<int32_t>(info->GetArgsNumber());
-    JSTaggedType *newSp = sp - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - actualNumArgs - RESERVED_CALL_ARGCOUNT;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    JSTaggedType *newSp = sp - GET_ENTRY_FRAME_WITH_ARGS_SIZE(actualNumArgs);
     if (UNLIKELY(thread->DoStackOverflowCheck(newSp - actualNumArgs - RESERVED_CALL_ARGCOUNT))) {
         return JSTaggedValue::Undefined();
     }
+
     for (int i = actualNumArgs - 1; i >= 0; i--) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         *(--newSp) = info->GetCallArgValue(i).GetRawData();
@@ -435,7 +448,7 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(EcmaRuntimeCallInfo *info)
     JSTaggedValue tagged =
         reinterpret_cast<EcmaEntrypoint>(const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);
     LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call.";
-    thread->SetCurrentSPFrame(info->GetPrevFrameSp());
+    thread->SetCurrentSPFrame(prevSp);
 #if ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER
     CpuProfiler::IsNeedAndGetStack(thread);
 #endif
@@ -468,13 +481,15 @@ JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
         return EcmaInterpreter::ExecuteNative(info);
     }
 
-    JSTaggedType *newSp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    JSTaggedType *entrySp = newSp;
+    // current is entry frame.
+    JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    InterpretedEntryFrame *entryState = GET_ENTRY_FRAME(sp);
+    JSTaggedType *prevSp = entryState->base.prev;
+
     int32_t actualNumArgs = static_cast<int32_t>(info->GetArgsNumber());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    newSp = newSp - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1U - static_cast<uint32_t>(actualNumArgs) -
-            RESERVED_CALL_ARGCOUNT;
-    if (UNLIKELY(thread->DoStackOverflowCheck(newSp - static_cast<uint32_t>(actualNumArgs) - RESERVED_CALL_ARGCOUNT))) {
+    JSTaggedType *newSp = sp - GET_ENTRY_FRAME_WITH_ARGS_SIZE(actualNumArgs);
+    if (UNLIKELY(thread->DoStackOverflowCheck(newSp - actualNumArgs - RESERVED_CALL_ARGCOUNT))) {
         return JSTaggedValue::Undefined();
     }
 
@@ -543,7 +558,7 @@ JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
     JSTaggedValue constpool = thisFunc->GetConstantPool();
     state->constpool = constpool;
     state->profileTypeInfo = thisFunc->GetProfileTypeInfo();
-    state->base.prev = entrySp;
+    state->base.prev = sp;
     state->base.type = FrameType::INTERPRETER_FRAME;
     state->env = thisFunc->GetLexicalEnv();
     thread->SetCurrentSPFrame(newSp);
@@ -559,7 +574,7 @@ JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
     // NOLINTNEXTLINE(readability-identifier-naming)
     const JSTaggedValue resAcc = state->acc;
     // pop frame
-    thread->SetCurrentSPFrame(info->GetPrevFrameSp());
+    thread->SetCurrentSPFrame(prevSp);
 #if ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER
     CpuProfiler::IsNeedAndGetStack(thread);
 #endif
@@ -4006,6 +4021,8 @@ std::string GetEcmaOpcodeStr(EcmaOpcode opcode)
 #undef DISPATCH
 #undef DISPATCH_OFFSET
 #undef GET_FRAME
+#undef GET_ENTRY_FRAME
+#undef GET_ENTRY_FRAME_WITH_ARGS_SIZE
 #undef SAVE_PC
 #undef SAVE_ACC
 #undef RESTORE_ACC
