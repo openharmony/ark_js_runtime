@@ -127,6 +127,10 @@ HWTEST_F_L0(ICRuntimeStubTest, CheckPolyHClass)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<JSTaggedValue> handleValue(thread, JSTaggedValue::Undefined());
+    JSHandle<PropertyBox> handlePropertyBox = factory->NewPropertyBox(handleValue);
+    JSHandle<EcmaString> handleEmptyStr = factory->GetEmptyString();
+    JSHandle<TaggedArray> handleCacheArray = factory->NewTaggedArray(5); // 5 : 5 array length
 
     JSHandle<JSTaggedValue> objFun = env->GetArrayFunction();
     JSHandle<JSTaggedValue> handleObj(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun));
@@ -136,17 +140,16 @@ HWTEST_F_L0(ICRuntimeStubTest, CheckPolyHClass)
     TaggedObject *handleWeakObj = TaggedObject::Cast(handleTaggedObjVal.GetWeakReferent());
     JSHClass *handleObjClass = static_cast<JSHClass *>(handleWeakObj);
 
-    array_size_t length = 5U;
-    JSHandle<TaggedArray> handleCacheArray = factory->NewTaggedArray(length);
-    for (int i = 0; i < static_cast<int>(length); i++) {
-        handleCacheArray->Set(thread, i, JSTaggedValue::Undefined());
-    }
     JSHandle<JSTaggedValue> handleTaggedObjWeakVal(thread, handleTaggedObjVal);
-    handleCacheArray->Set(thread, length - 3U, handleTaggedObjWeakVal.GetTaggedValue()); // set in two
+    handleCacheArray->Set(thread, 0, JSTaggedValue::Undefined()); // 0 : 0 set value in zero
+    handleCacheArray->Set(thread, 1, JSTaggedValue::Undefined()); // 1 : 1 set value in one
+    handleCacheArray->Set(thread, 2, handleTaggedObjWeakVal.GetTaggedValue()); // 2 : 2 set weakvalue in two
+    handleCacheArray->Set(thread, 3, handlePropertyBox.GetTaggedValue()); // 3 : 3 set value in three
+    handleCacheArray->Set(thread, 4, handleEmptyStr.GetTaggedValue()); // 4 : 4 set value in four
     JSTaggedValue handleWeakCacheValue(handleCacheArray.GetTaggedValue());
 
     JSTaggedValue resultValue = ICRuntimeStub::CheckPolyHClass(handleWeakCacheValue, handleObjClass);
-    EXPECT_TRUE(resultValue.IsUndefined());
+    EXPECT_TRUE(resultValue.IsPropertyBox());
 }
 
 HWTEST_F_L0(ICRuntimeStubTest,  StoreICAndLoadIC_ByName)
