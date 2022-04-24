@@ -87,7 +87,7 @@
 //   +--------------------------+ ---
 //   |       argc               |   ^
 //   |--------------------------|  Fixed
-//   |       RuntimeId          | OptimizedLeaveFrame
+//   |       RuntimeId          | OptimizedWithArgvLeaveFrame
 //   |--------------------------|   |
 //   |       returnAddr         |   |
 //   |--------------------------|   |

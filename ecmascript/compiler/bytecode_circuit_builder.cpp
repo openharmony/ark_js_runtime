@@ -14,6 +14,7 @@
  */
 
 #include "bytecode_circuit_builder.h"
+#include "ecmascript/base/number_helper.h"
 #include "ecmascript/ts_types/ts_loader.h"
 
 namespace panda::ecmascript::kungfu {
@@ -1950,18 +1951,16 @@ GateRef BytecodeCircuitBuilder::SetGateConstant(const BytecodeInfo &info)
     uint64_t tsType = 0;
     switch (opcode) {
         case EcmaOpcode::LDNAN_PREF:
-            tsType = tsLoader->GetPrimitiveGT(TSTypeKind::TS_NUMBER).GetGlobalTSTypeRef();
             gate = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::F64,
-                                    bit_cast<int64_t>(panda::ecmascript::base::NAN_VALUE),
+                                    base::NumberHelper::GetNaN(),
                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                    static_cast<GateType>(tsType));
+                                    GateType::TAGGED_VALUE);
             break;
         case EcmaOpcode::LDINFINITY_PREF:
-            tsType = tsLoader->GetPrimitiveGT(TSTypeKind::TS_NUMBER).GetGlobalTSTypeRef();
             gate = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::F64,
-                                    bit_cast<int64_t>(panda::ecmascript::base::POSITIVE_INFINITY),
+                                    base::NumberHelper::GetPositiveInfinity(),
                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                    static_cast<GateType>(tsType));
+                                    GateType::TAGGED_VALUE);
             break;
         case EcmaOpcode::LDUNDEFINED_PREF:
             tsType = tsLoader->GetPrimitiveGT(TSTypeKind::TS_UNDEFINED).GetGlobalTSTypeRef();
@@ -1993,16 +1992,15 @@ GateRef BytecodeCircuitBuilder::SetGateConstant(const BytecodeInfo &info)
                                     GateType::TAGGED_NPOINTER);
             break;
         case EcmaOpcode::LDAI_DYN_IMM32:
-            tsType = tsLoader->GetPrimitiveGT(TSTypeKind::TS_NUMBER).GetGlobalTSTypeRef();
             gate = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
-                                    std::get<Immediate>(info.inputs[0]).GetValue(),
+                                    std::get<Immediate>(info.inputs[0]).ToJSTaggedValueInt(),
                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                    static_cast<GateType>(tsType));
+                                    GateType::TAGGED_VALUE);
             break;
         case EcmaOpcode::FLDAI_DYN_IMM64:
             tsType = tsLoader->GetPrimitiveGT(TSTypeKind::TS_NUMBER).GetGlobalTSTypeRef();
             gate = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::F64,
-                                    std::get<Immediate>(info.inputs.at(0)).GetValue(),
+                                    std::get<Immediate>(info.inputs.at(0)).ToJSTaggedValueDouble(),
                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
                                     static_cast<GateType>(tsType));
             break;
