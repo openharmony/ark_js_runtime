@@ -73,7 +73,7 @@ void AssemblerModule::SetUpForAsmStubs()
 void CallRuntimeStub::Generate(Assembler *assembler)
 {
     x64::AssemblerX64 *assemblerX64 = static_cast<x64::AssemblerX64*>(assembler);
-    x64::AssemblerModuleX64::Generate_CallRuntime(assemblerX64);
+    x64::AssemblerModuleX64::CallRuntime(assemblerX64);
     assemblerX64->Align16();
 }
 }  // namespace panda::ecmascript::kunfu

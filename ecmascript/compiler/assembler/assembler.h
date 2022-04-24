@@ -77,7 +77,7 @@ public:
     uint32_t GetLinkedNearPos() const
     {
         ASSERT(!IsBound());
-        return static_cast<uint32_t>(pos_ - 1);
+        return static_cast<uint32_t>(nearPos_ - 1);
     }
 
 private:
