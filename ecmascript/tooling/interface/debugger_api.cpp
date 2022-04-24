@@ -178,9 +178,9 @@ void DebuggerApi::RegisterHooks(JSDebugger *debugger, PtHooks *hooks)
 }
 
 bool DebuggerApi::SetBreakpoint(JSDebugger *debugger, const JSPtLocation &location,
-    const std::optional<CString> &condition)
+    const Local<FunctionRef> &condFuncRef)
 {
-    return debugger->SetBreakpoint(location, condition);
+    return debugger->SetBreakpoint(location, condFuncRef);
 }
 
 bool DebuggerApi::RemoveBreakpoint(JSDebugger *debugger, const JSPtLocation &location)
@@ -197,7 +197,7 @@ CString DebuggerApi::ParseFunctionName(const JSMethod *method)
 // ScopeInfo
 Local<JSValueRef> DebuggerApi::GetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t slot)
 {
-    JSTaggedValue env = ecmaVm->GetJSThread()->GetCurrentLexenv();
+    JSTaggedValue env = GetCurrentEvaluateEnv(ecmaVm);
     for (int i = 0; i < level; i++) {
         JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
         ASSERT(!taggedParentEnv.IsUndefined());
@@ -210,19 +210,19 @@ Local<JSValueRef> DebuggerApi::GetProperties(const EcmaVM *ecmaVm, int32_t level
 
 void DebuggerApi::SetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t slot, Local<JSValueRef> value)
 {
-    JSTaggedValue target = JSNApiHelper::ToJSHandle(value).GetTaggedValue();
-    JSTaggedValue env = ecmaVm->GetJSThread()->GetCurrentLexenv();
+    JSTaggedValue env = GetCurrentEvaluateEnv(ecmaVm);
     for (int i = 0; i < level; i++) {
         JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
         ASSERT(!taggedParentEnv.IsUndefined());
         env = taggedParentEnv;
     }
+    JSTaggedValue target = JSNApiHelper::ToJSHandle(value).GetTaggedValue();
     LexicalEnv::Cast(env.GetTaggedObject())->SetProperties(ecmaVm->GetJSThread(), slot, target);
 }
 
 bool DebuggerApi::EvaluateLexicalValue(const EcmaVM *ecmaVm, const CString &name, int32_t &level, uint32_t &slot)
 {
-    JSTaggedValue curEnv = ecmaVm->GetJSThread()->GetCurrentLexenv();
+    JSTaggedValue curEnv = GetCurrentEvaluateEnv(ecmaVm);
     for (; curEnv.IsTaggedArray(); curEnv = LexicalEnv::Cast(curEnv.GetTaggedObject())->GetParentEnv(), level++) {
         LexicalEnv *lexicalEnv = LexicalEnv::Cast(curEnv.GetTaggedObject());
         if (lexicalEnv->GetScopeInfo().IsHole()) {
@@ -288,7 +288,31 @@ void DebuggerApi::HandleUncaughtException(const EcmaVM *ecmaVm, CString &message
     thread->ClearException();
 }
 
-Local<JSValueRef> DebuggerApi::ExecuteFromBuffer(EcmaVM *ecmaVm, const void *buffer, size_t size)
+JSTaggedValue DebuggerApi::GetCurrentEvaluateEnv(const EcmaVM *ecmaVm)
+{
+    auto sp = ecmaVm->GetJsDebuggerManager()->GetEvaluateCtxFrameSp();
+    if (UNLIKELY(sp == nullptr)) {
+        sp = ecmaVm->GetJSThread()->GetCurrentSPFrame();
+    }
+    InterpretedFrameHandler frameHandler(const_cast<JSTaggedType *>(sp));
+    return frameHandler.GetEnv();
+}
+
+Local<FunctionRef> DebuggerApi::GenerateFuncFromBuffer(const EcmaVM *ecmaVm, const void *buffer,
+                                                       size_t size, std::string_view entryPoint)
+{
+    JSPandaFileManager *mgr = JSPandaFileManager::GetInstance();
+    const auto *jsPandaFile = mgr->LoadJSPandaFile("", entryPoint, buffer, size);
+    if (jsPandaFile == nullptr) {
+        return JSValueRef::Undefined(ecmaVm);
+    }
+
+    JSHandle<Program> program = mgr->GenerateProgram(const_cast<EcmaVM *>(ecmaVm), jsPandaFile);
+    JSTaggedValue func = program->GetMainFunction();
+    return JSNApiHelper::ToLocal<FunctionRef>(JSHandle<JSTaggedValue>(ecmaVm->GetJSThread(), func));
+}
+
+Local<JSValueRef> DebuggerApi::EvaluateViaFuncCall(EcmaVM *ecmaVm, const Local<FunctionRef> &funcRef)
 {
     JSNApi::EnableUserUncaughtErrorHandler(ecmaVm);
 
@@ -297,7 +321,8 @@ Local<JSValueRef> DebuggerApi::ExecuteFromBuffer(EcmaVM *ecmaVm, const void *buf
     mgr->SetEvaluateCtxFrameSp(const_cast<JSTaggedType *>(ecmaVm->GetJSThread()->GetCurrentSPFrame()));
     // in order to catch exception
     mgr->SetDebugMode(false);
-    auto result = Execute(ecmaVm, buffer, size, "_GLOBAL::func_main_0");
+    std::vector<Local<JSValueRef>> args;
+    auto result = funcRef->Call(ecmaVm, JSValueRef::Undefined(ecmaVm), args.data(), args.size());
     mgr->SetDebugMode(prevDebugMode);
     mgr->SetEvaluateCtxFrameSp(nullptr);
 

@@ -18,6 +18,7 @@
 
 #include <string_view>
 
+#include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/tooling/interface/js_pt_location.h"
 #include "libpandabase/macros.h"
 #include "libpandabase/utils/expected.h"
@@ -108,7 +109,7 @@ public:
      * @param condition Optional condition
      * @return Error if any errors occur
      */
-    virtual bool SetBreakpoint(const JSPtLocation &location, const std::optional<CString> &condition) = 0;
+    virtual bool SetBreakpoint(const JSPtLocation &location, const Local<FunctionRef> &condFuncRef) = 0;
 
     /**
      * \brief Remove breakpoint from \param location

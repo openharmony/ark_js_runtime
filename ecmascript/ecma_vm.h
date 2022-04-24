@@ -61,7 +61,6 @@ class MicroJobQueue;
 }  // namespace job
 
 namespace tooling {
-class NotificationManager;
 class JsDebuggerManager;
 }  // namespace tooling
 
@@ -245,11 +244,6 @@ public:
         regexpCache_ = newCache;
     }
 
-    tooling::NotificationManager *GetNotificationManager() const
-    {
-        return notificationManager_;
-    }
-
     tooling::JsDebuggerManager *GetJsDebuggerManager() const
     {
         return debuggerManager_;
@@ -373,7 +367,6 @@ private:
     AotCodeInfo *aotInfo_ {nullptr};
 
     // Debugger
-    tooling::NotificationManager *notificationManager_ {nullptr};
     tooling::JsDebuggerManager *debuggerManager_ {nullptr};
 
     // Registered Callbacks
