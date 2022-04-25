@@ -21,6 +21,8 @@
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/property_attributes.h"
+#include "ecmascript/ecma_vm.h"
+#include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_hash_table.h"
 
 namespace panda {

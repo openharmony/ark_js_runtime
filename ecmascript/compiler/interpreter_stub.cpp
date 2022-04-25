@@ -27,7 +27,7 @@
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/message_string.h"
-#include "ecmascript/tagged_hash_table-inl.h"
+#include "ecmascript/tagged_hash_table.h"
 #include "libpandafile/bytecode_instruction-inl.h"
 
 namespace panda::ecmascript::kungfu {

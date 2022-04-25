@@ -62,7 +62,7 @@ public:
     void Clear(size_t bitSize)
     {
         GCBitsetWord *words = Words();
-        uint32_t wordCount = WordCount(bitSize);
+        uint32_t wordCount = static_cast<uint32_t>(WordCount(bitSize));
         for (uint32_t i = 0; i < wordCount; i++) {
             words[i] = 0;
         }
