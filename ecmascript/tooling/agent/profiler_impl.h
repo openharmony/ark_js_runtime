@@ -24,7 +24,7 @@
 namespace panda::ecmascript::tooling {
 class ProfilerImpl final {
 public:
-    explicit ProfilerImpl(JSBackend *backend) : backend_(backend) {}
+    explicit ProfilerImpl() {}
     ~ProfilerImpl() = default;
 
     DispatchResponse Disable();
@@ -67,9 +67,7 @@ public:
 
 private:
     NO_COPY_SEMANTIC(ProfilerImpl);
-    NO_MOVE_SEMANTIC(ProfilerImpl);
-    
-    std::unique_ptr<JSBackend> backend_ {nullptr};
+    NO_MOVE_SEMANTIC(ProfilerImpl);   
 };
 }  // namespace panda::ecmascript::tooling
 #endif

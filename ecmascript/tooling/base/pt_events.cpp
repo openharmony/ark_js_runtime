@@ -123,7 +123,12 @@ std::unique_ptr<Paused> Paused::Create(const EcmaVM *ecmaVm, const Local<JSValue
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "data")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
-            paused->data_ = Local<ObjectRef>(result);
+            std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
+            if (obj == nullptr) {
+                error += "'data' format error;";
+            } else {
+                paused->data_ = std::move(obj);
+            }
         } else {
             error += "'data' should a Object;";
         }
@@ -172,7 +177,7 @@ Local<ObjectRef> Paused::ToObject(const EcmaVM *ecmaVm)
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, reason_.c_str())));
     if (data_) {
         params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "data")),
-            Local<JSValueRef>(data_.value()));
+            Local<JSValueRef>(data_.value()->ToObject(ecmaVm)));
     }
     if (hitBreakpoints_) {
         len = hitBreakpoints_->size();
@@ -851,9 +856,11 @@ Local<ObjectRef> ConsoleProfileFinished::ToObject(const EcmaVM *ecmaVm)
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "profile")),
         Local<JSValueRef>(profile_->ToObject(ecmaVm)));
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "title")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, title_.c_str())));
+    if (title_) {
+        params->Set(ecmaVm,
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "title")),
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, title_->c_str())));
+    }
     
     Local<ObjectRef> object = NewObject(ecmaVm);
     object->Set(ecmaVm,
@@ -928,9 +935,11 @@ Local<ObjectRef> ConsoleProfileStarted::ToObject(const EcmaVM *ecmaVm)
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "location")),
         Local<JSValueRef>(location_->ToObject(ecmaVm)));
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "title")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, title_.c_str())));
+    if (title_) {
+        params->Set(ecmaVm,
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "title")),
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, title_->c_str())));
+    }
     
     Local<ObjectRef> object = NewObject(ecmaVm);
     object->Set(ecmaVm,

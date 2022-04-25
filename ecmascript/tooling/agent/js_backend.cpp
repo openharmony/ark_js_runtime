@@ -101,7 +101,8 @@ void JSBackend::NotifyPaused(std::optional<JSPtLocation> location, PauseReason r
     std::unique_ptr<Paused> paused = std::make_unique<Paused>();
     paused->SetCallFrames(std::move(callFrames)).SetReason(reason).SetHitBreakpoints(std::move(hitBreakpoints));
     if (reason == EXCEPTION && exception->IsError()) {
-        paused->SetData(exception);
+        std::unique_ptr<RemoteObject> tmpException = RemoteObject::FromTagged(ecmaVm_, exception);
+        paused->SetData(std::move(tmpException));
     }
     frontend_->SendNotification(ecmaVm_, std::move(paused));
 

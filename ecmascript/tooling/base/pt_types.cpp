@@ -2056,7 +2056,7 @@ std::unique_ptr<ProfileNode> ProfileNode::Create(const EcmaVM *ecmaVm, const Loc
                 std::unique_ptr<int32_t> pChildren;
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 *pChildren = resultValue->Int32Value(ecmaVm);
-                profileNode->children_.emplace_back(std::move(pChildren));
+                profileNode->children_->emplace_back(std::move(pChildren));
             }
         } else {
             error += "'children' should be an Array;";
@@ -2074,7 +2074,7 @@ std::unique_ptr<ProfileNode> ProfileNode::Create(const EcmaVM *ecmaVm, const Loc
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 std::unique_ptr<PositionTickInfo> positionTick = PositionTickInfo::Create(ecmaVm, resultValue);
-                profileNode->positionTicks_.emplace_back(std::move(positionTick));
+                profileNode->positionTicks_->emplace_back(std::move(positionTick));
             }
         } else {
             error += "'positionTicks' should be an Array;";
@@ -2108,29 +2108,39 @@ Local<ObjectRef> ProfileNode::ToObject(const EcmaVM *ecmaVm)
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrame")),
         Local<JSValueRef>(callFrame_->ToObject(ecmaVm)));
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "hitCount")),
-        IntegerRef::New(ecmaVm, hitCount_));
-
-    size_t childrenLen = children_.size();
-    Local<ArrayRef> childrenValues = ArrayRef::New(ecmaVm, childrenLen);
-    for (size_t i = 0; i < childrenLen; i++) {
-        Local<IntegerRef> elem = IntegerRef::New(ecmaVm, *(children_[i]));
-        childrenValues->Set(ecmaVm, i, elem);
-    }
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "children")), childrenValues);
     
-    size_t positionTickLen = positionTicks_.size();
-    Local<ArrayRef> positionValues = ArrayRef::New(ecmaVm, positionTickLen);
-    for (size_t i = 0; i < positionTickLen; i++) {
-        Local<ObjectRef> positionTick = positionTicks_[i]->ToObject(ecmaVm);
-        positionValues->Set(ecmaVm, i, positionTick);
+    if (hitCount_) {
+        params->Set(ecmaVm,
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "hitCount")),
+            IntegerRef::New(ecmaVm, hitCount_.value()));
     }
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "positionTicks")), positionValues);
     
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "deoptReason")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, deoptReason_.c_str())));
+    if (children_) {
+        size_t childrenLen = children_->size();
+        Local<ArrayRef> childrenValues = ArrayRef::New(ecmaVm, childrenLen);
+        for (size_t i = 0; i < childrenLen; i++) {
+            Local<IntegerRef> elem = IntegerRef::New(ecmaVm, *(children_.value()[i]));
+            childrenValues->Set(ecmaVm, i, elem);
+        }
+        params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "children")), childrenValues);
+    }
+    
+    if (positionTicks_) {
+        size_t positionTickLen = positionTicks_->size();
+        Local<ArrayRef> positionValues = ArrayRef::New(ecmaVm, positionTickLen);
+        for (size_t i = 0; i < positionTickLen; i++) {
+            Local<ObjectRef> positionTick = positionTicks_.value()[i]->ToObject(ecmaVm);
+            positionValues->Set(ecmaVm, i, positionTick);
+        }
+        params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "positionTicks")), positionValues);
+    }
+    
+    if (deoptReason_) {
+        params->Set(ecmaVm,
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "deoptReason")),
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, deoptReason_->c_str())));
+    }
+    
     return params;
 }
 
@@ -2193,7 +2203,7 @@ std::unique_ptr<Profile> Profile::Create(const EcmaVM *ecmaVm, const Local<JSVal
                 std::unique_ptr<int32_t> pSamples;
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 *pSamples = resultValue->Int32Value(ecmaVm);
-                profile->samples_.emplace_back(std::move(pSamples));
+                profile->samples_->emplace_back(std::move(pSamples));
             }
         } else {
             error += "'samples' should be an Array;";
@@ -2212,7 +2222,7 @@ std::unique_ptr<Profile> Profile::Create(const EcmaVM *ecmaVm, const Local<JSVal
                 std::unique_ptr<int32_t> pTime;
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 *pTime = resultValue->Int32Value(ecmaVm);
-                profile->timeDeltas_.emplace_back(std::move(pTime));
+                profile->timeDeltas_->emplace_back(std::move(pTime));
             }
         } else {
             error += "'timeDeltas' should be an Array;";
@@ -2243,22 +2253,27 @@ Local<ObjectRef> Profile::ToObject(const EcmaVM *ecmaVm)
         nodeValues->Set(ecmaVm, i, profileNode);
     }
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "nodes")), nodeValues);
-
-    size_t samplesLen = samples_.size();
-    Local<ArrayRef> sampleValues = ArrayRef::New(ecmaVm, samplesLen);
-    for (size_t i = 0; i < samplesLen; i++) {
-        Local<IntegerRef> elem = IntegerRef::New(ecmaVm, *(samples_[i]));
-        sampleValues->Set(ecmaVm, i, elem);
-    }
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samples")), sampleValues);
     
-    size_t tdLen = timeDeltas_.size();
-    Local<ArrayRef> timeValues = ArrayRef::New(ecmaVm, tdLen);
-    for (size_t i = 0; i < tdLen; i++) {
-        Local<IntegerRef> elem = IntegerRef::New(ecmaVm, *(timeDeltas_[i]));
-        timeValues->Set(ecmaVm, i, elem);
+    if (samples_) {
+        size_t samplesLen = samples_->size();
+        Local<ArrayRef> sampleValues = ArrayRef::New(ecmaVm, samplesLen);
+        for (size_t i = 0; i < samplesLen; i++) {
+            Local<IntegerRef> elem = IntegerRef::New(ecmaVm, *(samples_.value()[i]));
+            sampleValues->Set(ecmaVm, i, elem);
+        }
+        params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samples")), sampleValues);
     }
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timeDeltas")), timeValues);
+    
+    if (timeDeltas_) {
+        size_t tdLen = timeDeltas_->size();
+        Local<ArrayRef> timeValues = ArrayRef::New(ecmaVm, tdLen);
+        for (size_t i = 0; i < tdLen; i++) {
+            Local<IntegerRef> elem = IntegerRef::New(ecmaVm, *(timeDeltas_.value()[i]));
+            timeValues->Set(ecmaVm, i, elem);
+        }
+        params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timeDeltas")), timeValues);
+    }
+    
     return params;
 }
 
@@ -2394,7 +2409,7 @@ Local<ObjectRef> FunctionCoverage::ToObject(const EcmaVM *ecmaVm)
     if (isBlockCoverage_) {
         params->Set(ecmaVm,
             Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "isBlockCoverage")),
-            BooleanRef::New(ecmaVm, isBlockCoverage_.value()));
+            BooleanRef::New(ecmaVm, isBlockCoverage_));
     }
     return params;
 }
