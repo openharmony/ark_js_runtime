@@ -47,7 +47,7 @@ const JSPandaFile *JSPandaFileManager::LoadAotInfoFromPf(const CString &filename
         return nullptr;
     }
 
-    if (!jsPandaFile->HasTsTypes()) {
+    if (!jsPandaFile->HasTSTypes()) {
         LOG_ECMA(ERROR) << filename << " has no type info";
         return nullptr;
     }

@@ -71,6 +71,7 @@ public:
         parser->Add(&snapshot_deserialize_enabled_);
         parser->Add(&icu_data_path_);
         parser->Add(&startup_time_);
+        parser->Add(&snapshotOutputFile_);
     }
 
     bool IsEnableArkTools() const
@@ -515,6 +516,16 @@ public:
         return startup_time_.WasSet();
     }
 
+    std::string GetSnapshotOutputFile() const
+    {
+        return snapshotOutputFile_.GetValue();
+    }
+
+    void SetSnapshotOutputFile(std::string value)
+    {
+        snapshotOutputFile_.SetValue(std::move(value));
+    }
+
 private:
     static constexpr uint64_t INTERNAL_MEMORY_SIZE_LIMIT_DEFAULT = 2147483648;
     static constexpr uint32_t HEAP_SIZE_LIMIT_DEFAULT = 536870912;
@@ -595,6 +606,9 @@ private:
     PandArg<std::string> logCompiledMethods {"log-compiled-methods",
         R"(none)",
         R"(print stub or aot logs in units of method, "none": no log, "all": every method)"};
+    PandArg<std::string> snapshotOutputFile_ {"snapshot-output-file",
+        R"(snapshot)",
+        R"(Path to snapshot output file. Default: "snapshot")"};
 };
 }  // namespace panda::ecmascript
 
