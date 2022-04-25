@@ -33,7 +33,7 @@ public:
     void PrintHeapStatisticResult(bool isForce = true);
 
     void StatisticSTWYoungGC(Duration time, size_t aliveSize, size_t promoteSize, size_t commitSize);
-    void StatisticMixGC(bool concurrentMark, Duration time, size_t freeSize);
+    void StatisticPartialGC(bool concurrentMark, Duration time, size_t freeSize);
     void StatisticFullGC(Duration time, size_t youngAndOldAliveSize, size_t youngCommitSize,
                          size_t oldCommitSize, size_t nonMoveSpaceFreeSize, size_t nonMoveSpaceCommitSize);
     void StatisticConcurrentMark(Duration time);
@@ -43,7 +43,7 @@ public:
 
 private:
     void PrintSemiStatisticResult(bool isForce);
-    void PrintMixStatisticResult(bool isForce);
+    void PrintPartialStatisticResult(bool isForce);
     void PrintCompressStatisticResult(bool isForce);
 
     size_t TimeToMicroseconds(Duration time)
@@ -71,23 +71,23 @@ private:
     size_t semiTotalPromoteSize_ = 0;
 
     size_t lastOldGCCount_ = 0;
-    size_t mixGCCount_ = 0;
-    size_t mixGCMinPause_ = 0;
-    size_t mixGCMAXPause_ = 0;
-    size_t mixGCTotalPause_ = 0;
-    size_t mixOldSpaceFreeSize_ = 0;
+    size_t partialGCCount_ = 0;
+    size_t partialGCMinPause_ = 0;
+    size_t partialGCMAXPause_ = 0;
+    size_t partialGCTotalPause_ = 0;
+    size_t partialOldSpaceFreeSize_ = 0;
 
     size_t lastOldConcurrentMarkGCCount_ = 0;
-    size_t mixConcurrentMarkGCPauseTime_ = 0;
-    size_t mixConcurrentMarkMarkPause_ = 0;
-    size_t mixConcurrentMarkWaitPause_ = 0;
-    size_t mixConcurrentMarkRemarkPause_ = 0;
-    size_t mixConcurrentMarkEvacuatePause_ = 0;
-    size_t mixConcurrentMarkGCCount_ = 0;
-    size_t mixConcurrentMarkGCMinPause_ = 0;
-    size_t mixConcurrentMarkGCMAXPause_ = 0;
-    size_t mixConcurrentMarkGCTotalPause_ = 0;
-    size_t mixOldSpaceConcurrentMarkFreeSize_ = 0;
+    size_t partialConcurrentMarkGCPauseTime_ = 0;
+    size_t partialConcurrentMarkMarkPause_ = 0;
+    size_t partialConcurrentMarkWaitPause_ = 0;
+    size_t partialConcurrentMarkRemarkPause_ = 0;
+    size_t partialConcurrentMarkEvacuatePause_ = 0;
+    size_t partialConcurrentMarkGCCount_ = 0;
+    size_t partialConcurrentMarkGCMinPause_ = 0;
+    size_t partialConcurrentMarkGCMAXPause_ = 0;
+    size_t partialConcurrentMarkGCTotalPause_ = 0;
+    size_t partialOldSpaceConcurrentMarkFreeSize_ = 0;
 
     size_t lastFullGCCount_ = 0;
     size_t fullGCCount_ = 0;

@@ -98,7 +98,7 @@ void ConcurrentMarker::Reset(bool isRevertCSet)
     thread_->SetMarkStatus(MarkStatus::READY_TO_MARK);
     notifyMarkingFinished_ = false;
     if (isRevertCSet) {
-        // Mix space gc clear cset when evacuation allocator finalize
+        // Partial gc clear cset when evacuation allocator finalize
         heap_->GetOldSpace()->RevertCSet();
         auto callback = [](Region *region) {
             region->ClearMarkGCBitset();

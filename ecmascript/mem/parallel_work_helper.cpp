@@ -21,7 +21,7 @@
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/heap_region_allocator.h"
 #include "ecmascript/mem/mark_stack.h"
-#include "ecmascript/mem/mix_gc.h"
+#include "ecmascript/mem/partial_gc.h"
 #include "ecmascript/mem/region.h"
 #include "ecmascript/mem/tlab_allocator-inl.h"
 
