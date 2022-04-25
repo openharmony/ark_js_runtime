@@ -32,7 +32,7 @@
 #include "ecmascript/mem/mem_controller.h"
 #include "ecmascript/mem/mix_gc.h"
 #include "ecmascript/mem/native_area_allocator.h"
-#include "ecmascript/mem/parallel_evacuation.h"
+#include "ecmascript/mem/parallel_evacuator.h"
 #include "ecmascript/mem/parallel_marker-inl.h"
 #include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/stw_young_gc_for_testing.h"
@@ -89,7 +89,7 @@ void Heap::Initialize()
     nonMovableMarker_ = new NonMovableMarker(this);
     semiGcMarker_ = new SemiGcMarker(this);
     compressGcMarker_ = new CompressGcMarker(this);
-    evacuation_ = new ParallelEvacuation(this);
+    evacuator_ = new ParallelEvacuator(this);
 }
 
 void Heap::Destroy()
@@ -286,7 +286,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
     if (!oldSpaceLimitAdjusted_ && startNewSpaceSize_ > 0) {
         semiSpaceCopiedSize_ = toSpace_->GetHeapObjectSize();
         double copiedRate = semiSpaceCopiedSize_ * 1.0 / startNewSpaceSize_;
-        promotedSize_ = GetEvacuation()->GetPromotedSize();
+        promotedSize_ = GetEvacuator()->GetPromotedSize();
         double promotedRate = promotedSize_ * 1.0 / startNewSpaceSize_;
         memController_->AddSurvivalRate(std::min(copiedRate + promotedRate, 1.0));
         AdjustOldSpaceLimit();

@@ -39,19 +39,19 @@ void FullGC::RunPhases()
         ECMA_GC_LOG() << "FullGC after ConcurrentMarking";
         heap_->GetConcurrentMarker()->Reset();  // HPPGC use mark result to move TaggedObject.
     }
-    InitializePhase();
-    MarkingPhase();
-    SweepPhases();
-    FinishPhase();
+    Initialize();
+    Mark();
+    Sweep();
+    Finish();
     heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticFullGC(clockScope.GetPauseTime(), youngAndOldAliveSize_,
                                                           youngSpaceCommitSize_, oldSpaceCommitSize_,
                                                           nonMoveSpaceFreeSize_, nonMoveSpaceCommitSize_);
     ECMA_GC_LOG() << "FullGC::RunPhases " << clockScope.TotalSpentTime();
 }
 
-void FullGC::InitializePhase()
+void FullGC::Initialize()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::InitializePhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::Initialize");
     heap_->Prepare();
     auto callback = [](Region *current) {
         current->ClearOldToNewRSet();
@@ -72,17 +72,17 @@ void FullGC::InitializePhase()
     nonMoveSpaceCommitSize_ = heap_->GetNonMovableSpace()->GetCommittedSize();
 }
 
-void FullGC::MarkingPhase()
+void FullGC::Mark()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::MarkingPhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::Mark");
     heap_->GetCompressGcMarker()->MarkRoots(MAIN_THREAD_INDEX);
     heap_->GetCompressGcMarker()->ProcessMarkStack(MAIN_THREAD_INDEX);
     heap_->WaitRunningTaskFinished();
 }
 
-void FullGC::SweepPhases()
+void FullGC::Sweep()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::SweepPhases");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::Sweep");
     // process weak reference
     auto totalThreadCount = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1; // gc thread and main thread
     for (uint32_t i = 0; i < totalThreadCount; i++) {
@@ -136,12 +136,12 @@ void FullGC::SweepPhases()
     heap_->GetEcmaVM()->ProcessReferences(gcUpdateWeak);
 
     heap_->UpdateDerivedObjectInStack();
-    heap_->GetSweeper()->SweepPhases(true);
+    heap_->GetSweeper()->Sweep(true);
 }
 
-void FullGC::FinishPhase()
+void FullGC::Finish()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::FinishPhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::Finish");
     heap_->GetSweeper()->PostConcurrentSweepTasks(true);
     heap_->Resume(FULL_GC);
     workList_->Finish(youngAndOldAliveSize_);

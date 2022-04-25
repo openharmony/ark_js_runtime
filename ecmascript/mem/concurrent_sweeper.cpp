@@ -38,7 +38,7 @@ void ConcurrentSweeper::PostConcurrentSweepTasks(bool fullGC)
     }
 }
 
-void ConcurrentSweeper::SweepPhases(bool fullGC)
+void ConcurrentSweeper::Sweep(bool fullGC)
 {
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ConcurrentSweepingInitialize);
     if (concurrentSweep_) {

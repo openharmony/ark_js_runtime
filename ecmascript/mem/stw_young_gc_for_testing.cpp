@@ -44,18 +44,18 @@ void STWYoungGC::RunPhases()
         ECMA_GC_LOG() << "STWYoungGC after ConcurrentMarking";
         heap_->GetConcurrentMarker()->Reset();  // HPPGC use mark result to move TaggedObject.
     }
-    InitializePhase();
-    ParallelMarkingPhase();
-    SweepPhases();
-    FinishPhase();
+    Initialize();
+    Mark();
+    Sweep();
+    Finish();
     heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticSTWYoungGC(clockScope.GetPauseTime(), semiCopiedSize_,
                                                               promotedSize_, commitSize_);
     ECMA_GC_LOG() << "STWYoungGC::RunPhases " << clockScope.TotalSpentTime();
 }
 
-void STWYoungGC::InitializePhase()
+void STWYoungGC::Initialize()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::InitializePhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Initialize");
     heap_->Prepare();
     heap_->SwapNewSpace();
     workList_->Initialize(TriggerGCType::SEMI_GC, ParallelGCTaskPhase::SEMI_HANDLE_GLOBAL_POOL_TASK);
@@ -65,9 +65,9 @@ void STWYoungGC::InitializePhase()
     commitSize_ = heap_->GetFromSpace()->GetCommittedSize();
 }
 
-void STWYoungGC::ParallelMarkingPhase()
+void STWYoungGC::Mark()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::ParallelMarkingPhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Mark");
     auto region = heap_->GetOldSpace()->GetCurrentRegion();
 
     if (paralledGc_) {
@@ -91,9 +91,9 @@ void STWYoungGC::ParallelMarkingPhase()
     }
 }
 
-void STWYoungGC::SweepPhases()
+void STWYoungGC::Sweep()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::SweepPhases");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Sweep");
     auto totalThreadCount = static_cast<uint32_t>(
         Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1);  // gc thread and main thread
     for (uint32_t i = 0; i < totalThreadCount; i++) {
@@ -137,9 +137,9 @@ void STWYoungGC::SweepPhases()
     heap_->UpdateDerivedObjectInStack();
 }
 
-void STWYoungGC::FinishPhase()
+void STWYoungGC::Finish()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::FinishPhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Finish");
     workList_->Finish(semiCopiedSize_, promotedSize_);
     heap_->Resume(SEMI_GC);
 }

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/mem/parallel_evacuation-inl.h"
+#include "ecmascript/mem/parallel_evacuator-inl.h"
 
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/mem/barriers-inl.h"
@@ -27,24 +27,24 @@
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
-void ParallelEvacuation::Initialize()
+void ParallelEvacuator::Initialize()
 {
-    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelEvacuationInitialize);
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelEvacuatorInitialize);
     heap_->SwapNewSpace();
     allocator_ = new TlabAllocator(heap_);
     waterLine_ = heap_->GetFromSpace()->GetWaterLine();
     promotedSize_ = 0;
 }
 
-void ParallelEvacuation::Finalize()
+void ParallelEvacuator::Finalize()
 {
-    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelEvacuationFinalize);
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelEvacuatorFinalize);
     delete allocator_;
     heap_->GetSweeper()->PostConcurrentSweepTasks();
     heap_->Resume(OLD_GC);
 }
 
-void ParallelEvacuation::Evacuate()
+void ParallelEvacuator::Evacuate()
 {
     ClockScope clockScope;
     Initialize();
@@ -54,15 +54,15 @@ void ParallelEvacuation::Evacuate()
     heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticConcurrentEvacuate(clockScope.GetPauseTime());
 }
 
-void ParallelEvacuation::EvacuateSpace()
+void ParallelEvacuator::EvacuateSpace()
 {
-    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelEvacuation);
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelEvacuator);
     heap_->GetFromSpace()->EnumerateRegions([this] (Region *current) {
-        AddWorkload(std::make_unique<EvacuationWorkload>(this, current));
+        AddWorkload(std::make_unique<EvacuateWorkload>(this, current));
     });
     heap_->GetOldSpace()->EnumerateCollectRegionSet(
             [this](Region *current) {
-                AddWorkload(std::make_unique<EvacuationWorkload>(this, current));
+                AddWorkload(std::make_unique<EvacuateWorkload>(this, current));
             });
     if (heap_->IsParallelGCEnabled()) {
         os::memory::LockHolder holder(mutex_);
@@ -76,7 +76,7 @@ void ParallelEvacuation::EvacuateSpace()
     WaitFinished();
 }
 
-bool ParallelEvacuation::EvacuateSpace(TlabAllocator *allocator, bool isMain)
+bool ParallelEvacuator::EvacuateSpace(TlabAllocator *allocator, bool isMain)
 {
     std::unique_ptr<Workload> region = GetWorkloadSafe();
     while (region != nullptr) {
@@ -93,7 +93,7 @@ bool ParallelEvacuation::EvacuateSpace(TlabAllocator *allocator, bool isMain)
     return true;
 }
 
-void ParallelEvacuation::EvacuateRegion(TlabAllocator *allocator, Region *region)
+void ParallelEvacuator::EvacuateRegion(TlabAllocator *allocator, Region *region)
 {
     bool isInOldGen = region->InOldGeneration();
     bool isBelowAgeMark = region->BelowAgeMark();
@@ -143,7 +143,7 @@ void ParallelEvacuation::EvacuateRegion(TlabAllocator *allocator, Region *region
     promotedSize_.fetch_add(promotedSize);
 }
 
-void ParallelEvacuation::VerifyHeapObject(TaggedObject *object)
+void ParallelEvacuator::VerifyHeapObject(TaggedObject *object)
 {
     auto klass = object->GetClass();
     objXRay_.VisitObjectBody<VisitType::OLD_GC_VISIT>(object, klass,
@@ -168,7 +168,7 @@ void ParallelEvacuation::VerifyHeapObject(TaggedObject *object)
         });
 }
 
-void ParallelEvacuation::UpdateReference()
+void ParallelEvacuator::UpdateReference()
 {
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelUpdateReference);
     // Update reference pointers
@@ -213,7 +213,7 @@ void ParallelEvacuation::UpdateReference()
     WaitFinished();
 }
 
-void ParallelEvacuation::UpdateRoot()
+void ParallelEvacuator::UpdateRoot()
 {
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), UpdateRoot);
     RootVisitor gcUpdateYoung = [this]([[maybe_unused]] Root type, ObjectSlot slot) {
@@ -228,7 +228,7 @@ void ParallelEvacuation::UpdateRoot()
     objXRay_.VisitVMRoots(gcUpdateYoung, gcUpdateRangeYoung);
 }
 
-void ParallelEvacuation::UpdateRecordWeakReference()
+void ParallelEvacuator::UpdateRecordWeakReference()
 {
     auto totalThreadCount = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1;
     for (uint32_t i = 0; i < totalThreadCount; i++) {
@@ -249,7 +249,7 @@ void ParallelEvacuation::UpdateRecordWeakReference()
     }
 }
 
-void ParallelEvacuation::UpdateWeakReference()
+void ParallelEvacuator::UpdateWeakReference()
 {
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), UpdateWeakReference);
     UpdateRecordWeakReference();
@@ -283,7 +283,7 @@ void ParallelEvacuation::UpdateWeakReference()
     heap_->GetEcmaVM()->ProcessReferences(gcUpdateWeak);
 }
 
-void ParallelEvacuation::UpdateRSet(Region *region)
+void ParallelEvacuator::UpdateRSet(Region *region)
 {
     region->IterateAllOldToNewBits([this](void *mem) -> bool {
         ObjectSlot slot(ToUintPtr(mem));
@@ -302,7 +302,7 @@ void ParallelEvacuation::UpdateRSet(Region *region)
     region->ClearCrossRegionRSet();
 }
 
-void ParallelEvacuation::UpdateNewRegionReference(Region *region)
+void ParallelEvacuator::UpdateNewRegionReference(Region *region)
 {
     Region *current = heap_->GetNewSpace()->GetCurrentRegion();
     auto curPtr = region->GetBegin();
@@ -331,7 +331,7 @@ void ParallelEvacuation::UpdateNewRegionReference(Region *region)
     CHECK_REGION_END(curPtr, endPtr);
 }
 
-void ParallelEvacuation::UpdateAndSweepNewRegionReference(Region *region)
+void ParallelEvacuator::UpdateAndSweepNewRegionReference(Region *region)
 {
     uintptr_t freeStart = region->GetBegin();
     uintptr_t freeEnd = freeStart + region->GetAllocatedBytes();
@@ -357,7 +357,7 @@ void ParallelEvacuation::UpdateAndSweepNewRegionReference(Region *region)
     }
 }
 
-void ParallelEvacuation::UpdateNewObjectField(TaggedObject *object, JSHClass *cls)
+void ParallelEvacuator::UpdateNewObjectField(TaggedObject *object, JSHClass *cls)
 {
     objXRay_.VisitObjectBody<VisitType::OLD_GC_VISIT>(object, cls,
         [this]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end, [[maybe_unused]] bool isNative) {
@@ -367,7 +367,7 @@ void ParallelEvacuation::UpdateNewObjectField(TaggedObject *object, JSHClass *cl
         });
 }
 
-void ParallelEvacuation::WaitFinished()
+void ParallelEvacuator::WaitFinished()
 {
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), WaitUpdateFinished);
     if (parallel_ > 0) {
@@ -378,7 +378,7 @@ void ParallelEvacuation::WaitFinished()
     }
 }
 
-bool ParallelEvacuation::ProcessWorkloads(bool isMain)
+bool ParallelEvacuator::ProcessWorkloads(bool isMain)
 {
     std::unique_ptr<Workload> region = GetWorkloadSafe();
     while (region != nullptr) {
@@ -394,48 +394,48 @@ bool ParallelEvacuation::ProcessWorkloads(bool isMain)
     return true;
 }
 
-ParallelEvacuation::EvacuationTask::EvacuationTask(ParallelEvacuation *evacuation)
-    : evacuation_(evacuation)
+ParallelEvacuator::EvacuationTask::EvacuationTask(ParallelEvacuator *evacuator)
+    : evacuator_(evacuator)
 {
-    allocator_ = new TlabAllocator(evacuation->heap_);
+    allocator_ = new TlabAllocator(evacuator->heap_);
 }
 
-ParallelEvacuation::EvacuationTask::~EvacuationTask()
+ParallelEvacuator::EvacuationTask::~EvacuationTask()
 {
     delete allocator_;
 }
 
-bool ParallelEvacuation::EvacuationTask::Run([[maybe_unused]] uint32_t threadIndex)
+bool ParallelEvacuator::EvacuationTask::Run([[maybe_unused]] uint32_t threadIndex)
 {
-    return evacuation_->EvacuateSpace(allocator_);
+    return evacuator_->EvacuateSpace(allocator_);
 }
 
-bool ParallelEvacuation::UpdateReferenceTask::Run([[maybe_unused]] uint32_t threadIndex)
+bool ParallelEvacuator::UpdateReferenceTask::Run([[maybe_unused]] uint32_t threadIndex)
 {
-    evacuation_->ProcessWorkloads(false);
+    evacuator_->ProcessWorkloads(false);
     return true;
 }
 
-bool ParallelEvacuation::EvacuationWorkload::Process([[maybe_unused]] bool isMain)
+bool ParallelEvacuator::EvacuateWorkload::Process([[maybe_unused]] bool isMain)
 {
     return true;
 }
 
-bool ParallelEvacuation::UpdateRSetWorkload::Process([[maybe_unused]] bool isMain)
+bool ParallelEvacuator::UpdateRSetWorkload::Process([[maybe_unused]] bool isMain)
 {
-    GetEvacuation()->UpdateRSet(GetRegion());
+    GetEvacuator()->UpdateRSet(GetRegion());
     return true;
 }
 
-bool ParallelEvacuation::UpdateNewRegionWorkload::Process([[maybe_unused]] bool isMain)
+bool ParallelEvacuator::UpdateNewRegionWorkload::Process([[maybe_unused]] bool isMain)
 {
-    GetEvacuation()->UpdateNewRegionReference(GetRegion());
+    GetEvacuator()->UpdateNewRegionReference(GetRegion());
     return true;
 }
 
-bool ParallelEvacuation::UpdateAndSweepNewRegionWorkload::Process([[maybe_unused]] bool isMain)
+bool ParallelEvacuator::UpdateAndSweepNewRegionWorkload::Process([[maybe_unused]] bool isMain)
 {
-    GetEvacuation()->UpdateAndSweepNewRegionReference(GetRegion());
+    GetEvacuator()->UpdateAndSweepNewRegionReference(GetRegion());
     return true;
 }
 }  // namespace panda::ecmascript

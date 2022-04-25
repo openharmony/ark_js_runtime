@@ -16,15 +16,15 @@
 #ifndef ECMASCRIPT_MEM_MIX_GC_H
 #define ECMASCRIPT_MEM_MIX_GC_H
 
-#include "ecmascript/mem/mem.h"
-#include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/allocator.h"
+#include "ecmascript/mem/gc.h"
+#include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mark_word.h"
+#include "ecmascript/mem/mem.h"
+#include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/slots.h"
-#include "ecmascript/mem/object_xray.h"
-#include "ecmascript/mem/stw_young_gc_for_testing.h"
 
 namespace panda {
 namespace ecmascript {
@@ -37,20 +37,23 @@ public:
     ~MixGC() override = default;
     NO_COPY_SEMANTIC(MixGC);
     NO_MOVE_SEMANTIC(MixGC);
-    void RunPhases();
+
+    void RunPhases() override;
 
     Heap *GetHeap() const
     {
         return heap_;
     }
 
+protected:
+    void Initialize() override;
+    void Mark() override;
+    void Sweep() override;
+    void Finish() override;
+
 private:
-    void InitializePhase();
-    void MarkingPhase();
-    void SweepPhases();
+    void Evacuate();
     void ProcessNativeDelete();
-    void EvacuaPhases();
-    void FinishPhase();
 
     Heap *heap_;
     size_t freeSize_ {0};

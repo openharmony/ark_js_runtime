@@ -451,7 +451,7 @@ ecma_source = [
   "ecmascript/mem/mix_gc.cpp",
   "ecmascript/mem/native_area_allocator.cpp",
   "ecmascript/mem/parallel_work_helper.cpp",
-  "ecmascript/mem/parallel_evacuation.cpp",
+  "ecmascript/mem/parallel_evacuator.cpp",
   "ecmascript/mem/parallel_marker.cpp",
   "ecmascript/mem/stw_young_gc_for_testing.cpp",
   "ecmascript/mem/space.cpp",

@@ -19,9 +19,9 @@
 #include "ecmascript/base/config.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/chunk_containers.h"
+#include "ecmascript/mem/linear_space.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/parallel_work_helper.h"
-#include "ecmascript/mem/linear_space.h"
 #include "ecmascript/mem/sparse_space.h"
 #include "ecmascript/taskpool/taskpool.h"
 
@@ -38,7 +38,7 @@ class MemController;
 class ConcurrentSweeper;
 class ConcurrentMarker;
 class Marker;
-class ParallelEvacuation;
+class ParallelEvacuator;
 class WorkerHelper;
 
 using DerivedDataKey = std::pair<uintptr_t, uintptr_t>;
@@ -132,9 +132,9 @@ public:
         return sweeper_;
     }
 
-    ParallelEvacuation *GetEvacuation() const
+    ParallelEvacuator *GetEvacuator() const
     {
-        return evacuation_;
+        return evacuator_;
     }
 
     ConcurrentMarker *GetConcurrentMarker() const
@@ -389,7 +389,7 @@ private:
     Marker *nonMovableMarker_ {nullptr};
     Marker *semiGcMarker_ {nullptr};
     Marker *compressGcMarker_ {nullptr};
-    ParallelEvacuation *evacuation_ {nullptr};
+    ParallelEvacuator *evacuator_ {nullptr};
     NativeAreaAllocator *nativeAreaAllocator_ {nullptr};
     HeapRegionAllocator *heapRegionAllocator_ {nullptr};
     HeapTracker *tracker_ {nullptr};

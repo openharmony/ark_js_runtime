@@ -34,7 +34,7 @@ public:
 
     void PostConcurrentSweepTasks(bool fullGC = false);
 
-    void SweepPhases(bool fullGC = false);
+    void Sweep(bool fullGC = false);
 
     void WaitAllTaskFinished();
     // Help to finish sweeping task. It can be called through js thread
