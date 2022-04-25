@@ -540,6 +540,27 @@ Local<NumberRef> NumberRef::New(const EcmaVM *vm, double input)
     return JSNApiHelper::ToLocal<NumberRef>(number);
 }
 
+Local<NumberRef> NumberRef::New(const EcmaVM *vm, int32_t input)
+{
+    JSThread *thread = vm->GetJSThread();
+    JSHandle<JSTaggedValue> number(thread, JSTaggedValue(input));
+    return JSNApiHelper::ToLocal<NumberRef>(number);
+}
+
+Local<NumberRef> NumberRef::New(const EcmaVM *vm, uint32_t input)
+{
+    JSThread *thread = vm->GetJSThread();
+    JSHandle<JSTaggedValue> number(thread, JSTaggedValue(input));
+    return JSNApiHelper::ToLocal<NumberRef>(number);
+}
+
+Local<NumberRef> NumberRef::New(const EcmaVM *vm, int64_t input)
+{
+    JSThread *thread = vm->GetJSThread();
+    JSHandle<JSTaggedValue> number(thread, JSTaggedValue(input));
+    return JSNApiHelper::ToLocal<NumberRef>(number);
+}
+
 double NumberRef::Value()
 {
     return JSTaggedNumber(JSNApiHelper::ToJSTaggedValue(this)).GetNumber();
