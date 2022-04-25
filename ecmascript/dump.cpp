@@ -1348,7 +1348,7 @@ void JSAPIPlainArray::Dump(std::ostream &os) const
 {
     TaggedArray *keys = TaggedArray::Cast(GetKeys().GetTaggedObject());
     TaggedArray *values = TaggedArray::Cast(GetValues().GetTaggedObject());
-    uint32_t len = GetLength();
+    uint32_t len = static_cast<uint32_t>(GetLength());
     for (uint32_t i = 0; i < len; i++) {
         os << " - keys: ";
         keys->Get(i).DumpTaggedValue(os);

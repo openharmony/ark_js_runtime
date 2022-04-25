@@ -88,7 +88,7 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
     (reinterpret_cast<InterpretedEntryFrame *>(sp) - 1)  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GET_ENTRY_FRAME_WITH_ARGS_SIZE(actualNumArgs) \
-    (INTERPRETER_ENTRY_FRAME_STATE_SIZE + 1 + (actualNumArgs) + RESERVED_CALL_ARGCOUNT)
+    (static_cast<uint32_t>(INTERPRETER_ENTRY_FRAME_STATE_SIZE + 1U + (actualNumArgs) + RESERVED_CALL_ARGCOUNT))
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define SAVE_PC() (GET_FRAME(sp)->pc = pc)  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -416,7 +416,7 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(EcmaRuntimeCallInfo *info)
 
     int32_t actualNumArgs = static_cast<int32_t>(info->GetArgsNumber());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    JSTaggedType *newSp = sp - GET_ENTRY_FRAME_WITH_ARGS_SIZE(actualNumArgs);
+    JSTaggedType *newSp = sp - GET_ENTRY_FRAME_WITH_ARGS_SIZE(static_cast<uint32_t>(actualNumArgs));
     if (UNLIKELY(thread->DoStackOverflowCheck(newSp - actualNumArgs - RESERVED_CALL_ARGCOUNT))) {
         return JSTaggedValue::Undefined();
     }
@@ -427,7 +427,7 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(EcmaRuntimeCallInfo *info)
     }
     newSp -= RESERVED_CALL_ARGCOUNT;
 
-    EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, actualNumArgs, newSp);
+    EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, static_cast<size_t>(actualNumArgs), newSp);
     newSp[RESERVED_INDEX_CALL_TARGET] = info->GetFunctionValue().GetRawData();
     newSp[RESERVED_INDEX_NEW_TARGET] = info->GetNewTargetValue().GetRawData();
     newSp[RESERVED_INDEX_THIS] = info->GetThisValue().GetRawData();
@@ -488,7 +488,7 @@ JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
 
     int32_t actualNumArgs = static_cast<int32_t>(info->GetArgsNumber());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    JSTaggedType *newSp = sp - GET_ENTRY_FRAME_WITH_ARGS_SIZE(actualNumArgs);
+    JSTaggedType *newSp = sp - GET_ENTRY_FRAME_WITH_ARGS_SIZE(static_cast<uint32_t>(actualNumArgs));
     if (UNLIKELY(thread->DoStackOverflowCheck(newSp - actualNumArgs - RESERVED_CALL_ARGCOUNT))) {
         return JSTaggedValue::Undefined();
     }

@@ -21,7 +21,7 @@
 #include "ecmascript/linked_hash_table.h"
 #include "ecmascript/linked_hash_table.h"
 #include "ecmascript/object_factory.h"
-#include "ecmascript/tagged_hash_table-inl.h"
+#include "ecmascript/tagged_hash_table.h"
 #include "ecmascript/tests/test_helper.h"
 
 using namespace panda;

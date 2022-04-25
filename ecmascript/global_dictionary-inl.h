@@ -16,10 +16,11 @@
 #ifndef ECMASCRIPT_GLOBAL_DICTIONARY_INL_H
 #define ECMASCRIPT_GLOBAL_DICTIONARY_INL_H
 
+#include "ecmascript/js_symbol.h"
 #include "ecmascript/global_dictionary.h"
 #include "ecmascript/ic/property_box.h"
 #include "ecmascript/mem/c_containers.h"
-#include "ecmascript/tagged_hash_table-inl.h"
+#include "ecmascript/tagged_hash_table.h"
 
 namespace panda {
 namespace ecmascript {
