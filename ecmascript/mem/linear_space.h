@@ -25,6 +25,7 @@ public:
     uintptr_t Allocate(size_t size, bool isPromoted = false);
     bool Expand(bool isPromoted);
     void Stop();
+    void ResetAllocator();
     void DecrementSurvivalObjectSize(size_t objSize)
     {
         survivalObjectSize_ -= objSize;
