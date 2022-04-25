@@ -27,7 +27,6 @@
 #include "ecmascript/napi/include/jsnapi.h"
 #include "interpreter_stub-inl.h"
 #include "generated/base_options.h"
-#include "generated/stub_aot_options_gen.h"
 #include "libpandabase/utils/pandargs.h"
 #include "libpandabase/utils/span.h"
 #include "llvm_codegen.h"
@@ -124,7 +123,7 @@ void StubCompiler::RunPipeline(LLVMModule &module)
 }
 
 bool StubCompiler::BuildStubModuleAndSave(const std::string &triple, const std::string &commonStubFile,
-    const std::string &bcHandlerStubFile)
+    const std::string &bcHandlerStubFile, size_t optLevel)
 {
     BytecodeStubCSigns::Initialize();
     CommonStubCSigns::Initialize();
@@ -136,7 +135,7 @@ bool StubCompiler::BuildStubModuleAndSave(const std::string &triple, const std::
         LLVMModule commonStubModule("com_stub", triple);
         commonStubModule.SetUpForCommonStubs();
         RunPipeline(commonStubModule);
-        AotFileManager manager(&commonStubModule, log);
+        AotFileManager manager(&commonStubModule, log, LOptions(optLevel, true));
         manager.SaveStubFile(commonStubFile);
         res++;
     }
@@ -146,7 +145,7 @@ bool StubCompiler::BuildStubModuleAndSave(const std::string &triple, const std::
         LLVMModule bcHandlerStubModule("bc_stub", triple);
         bcHandlerStubModule.SetUpForBytecodeHandlerStubs();
         RunPipeline(bcHandlerStubModule);
-        AotFileManager manager(&bcHandlerStubModule, log, false);
+        AotFileManager manager(&bcHandlerStubModule, log, LOptions(optLevel, false));
         manager.SaveStubFile(bcHandlerStubFile);
         res++;
     }
@@ -157,14 +156,12 @@ bool StubCompiler::BuildStubModuleAndSave(const std::string &triple, const std::
 int main(const int argc, const char **argv)
 {
     panda::Span<const char *> sp(argv, argc);
-    panda::Stub_Aot_Options stubOptions(sp[0]);
     panda::ecmascript::JSRuntimeOptions runtimeOptions;
     panda::base_options::Options baseOptions(sp[0]);
     panda::PandArg<bool> help("help", false, "Print this message and exit");
-    panda::PandArg<bool> options("options", false, "Print compiler options");
+    panda::PandArg<bool> options("options", false, "Print options");
     panda::PandArgParser paParser;
 
-    stubOptions.AddOptions(&paParser);
     runtimeOptions.AddOptions(&paParser);
     baseOptions.AddOptions(&paParser);
 
@@ -186,21 +183,21 @@ int main(const int argc, const char **argv)
     panda::Logger::ResetComponentMask();  // disable all Component
     panda::Logger::EnableComponent(panda::Logger::Component::ECMASCRIPT);  // enable ECMASCRIPT
 
-    std::string tripleString = stubOptions.GetTargetTriple();
-    std::string commonStubFile = stubOptions.WasSetComStubOut() ? stubOptions.GetComStubOut() : "";
-    std::string bcHandlerFile = stubOptions.WasSetBcStubOut() ? stubOptions.GetBcStubOut() : "";
-    std::string compiledStubList = stubOptions.GetCompiledStubs();
-
     panda::ecmascript::EcmaVM *vm = panda::JSNApi::CreateEcmaVM(runtimeOptions);
     if (vm == nullptr) {
         COMPILER_LOG(INFO) << "Cann't Create EcmaVM";
         return -1;
     }
+    std::string tripleString = runtimeOptions.GetTargetTriple();
+    std::string commonStubFile = runtimeOptions.WasComStubFileSet() ? runtimeOptions.GetComStubFile() : "";
+    std::string bcHandlerFile = runtimeOptions.WasBcStubFileSet() ? runtimeOptions.GetBcStubFile() : "";
     std::string logMethods = vm->GetJSOptions().GetlogCompiledMethods();
+    size_t optLevel = runtimeOptions.GetOptLevel();
     panda::ecmascript::kungfu::CompilerLog log(logMethods);
     panda::ecmascript::kungfu::StubCompiler compiler(&log);
 
-    bool res = compiler.BuildStubModuleAndSave(tripleString, commonStubFile, bcHandlerFile);
+    bool res = compiler.BuildStubModuleAndSave(tripleString, commonStubFile, bcHandlerFile, optLevel);
     COMPILER_LOG(INFO) << "stub compiler run finish, result condition(T/F):" << std::boolalpha << res;
+    panda::JSNApi::DestroyJSVM(vm);
     return 0;
 }

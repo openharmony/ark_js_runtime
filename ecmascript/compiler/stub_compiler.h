@@ -30,7 +30,7 @@ public:
     ~StubCompiler() = default;
 
     bool BuildStubModuleAndSave(const std::string &triple, const std::string &commonStubFile,
-        const std::string &bcHandlerStubFile);
+        const std::string &bcHandlerStubFile, size_t optLevel);
 
     const CompilerLog *GetLog() const
     {
