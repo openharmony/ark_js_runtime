@@ -278,7 +278,7 @@ void JSThread::LoadStubsFromFile(std::string &fileName)
     bool enableCompilerLog = GetEcmaVM()->GetJSOptions().WasSetlogCompiledMethods();
     kungfu::LLVMStackMapParser::GetInstance(enableCompilerLog).Print();
 #endif
-    stubCode_ = aotInfo.GetCode();
+    stubCode_ = aotInfo.GetCode().GetTaggedValue();
 }
 
 void JSThread::CheckSwitchDebuggerBCStub()

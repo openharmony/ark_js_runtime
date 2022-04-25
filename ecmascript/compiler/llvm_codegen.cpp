@@ -166,9 +166,9 @@ void LLVMAssembler::BuildAndRunPasses()
     LLVMDisposePassManager(modPass1);
 }
 
-LLVMAssembler::LLVMAssembler(LLVMModuleRef module, bool genFp) : module_(module)
+LLVMAssembler::LLVMAssembler(LLVMModuleRef module, LOptions option) : module_(module)
 {
-    Initialize(genFp);
+    Initialize(option);
 }
 
 LLVMAssembler::~LLVMAssembler()
@@ -204,7 +204,7 @@ void LLVMAssembler::Run()
     LLVMPrintModuleToFile(module_, optName.c_str(), &error);
 }
 
-void LLVMAssembler::Initialize(bool genFp)
+void LLVMAssembler::Initialize(LOptions option)
 {
     std::string triple(LLVMGetTarget(module_));
     if (triple.compare("x86_64-unknown-linux-gnu") == 0) {
@@ -234,9 +234,9 @@ void LLVMAssembler::Initialize(bool genFp)
     }
     llvm::linkAllBuiltinGCs();
     LLVMInitializeMCJITCompilerOptions(&options_, sizeof(options_));
-    options_.OptLevel = 3; // opt level 3
+    options_.OptLevel = option.optLevel;
     // NOTE: Just ensure that this field still exists for PIC option
-    options_.NoFramePointerElim = genFp;
+    options_.NoFramePointerElim = option.genFp;
     options_.CodeModel = LLVMCodeModelSmall;
 }
 

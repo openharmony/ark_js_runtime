@@ -21,6 +21,9 @@
 namespace panda::ecmascript {
 void AotCodeInfo::SerializeForStub(const std::string &filename)
 {
+    if (!VerifyFilePath(filename, true)) {
+        return;
+    }
     std::ofstream modulefile(filename.c_str(), std::ofstream::binary);
     SetStubNum(stubEntries_.size());
     /* write stub entries offset  */
@@ -43,7 +46,7 @@ bool AotCodeInfo::DeserializeForStub(JSThread *thread, const std::string &filena
     // by calling NewMachineCodeObject.
     //  then MachineCode will support movable, code is saved to MachineCode and stackmap is saved
     // to different heap which will be freed when stackmap is parsed by EcmaVM is started.
-    if (!VerifyFilePath(filename.c_str())) {
+    if (!VerifyFilePath(filename)) {
         return false;
     }
     std::ifstream modulefile(filename.c_str(), std::ofstream::binary);
@@ -61,7 +64,7 @@ bool AotCodeInfo::DeserializeForStub(JSThread *thread, const std::string &filena
     auto factory = thread->GetEcmaVM()->GetFactory();
     auto codeHandle = factory->NewMachineCodeObject(codeSize, nullptr);
     modulefile.read(reinterpret_cast<char *>(codeHandle->GetDataOffsetAddress()), codeSize);
-    SetCode(*codeHandle);
+    SetCode(codeHandle);
     SetDeviceCodeSectionAddr(codeHandle->GetDataOffsetAddress());
     /* read stackmap */
     uint32_t stackmapSize;
@@ -83,6 +86,9 @@ bool AotCodeInfo::DeserializeForStub(JSThread *thread, const std::string &filena
 
 void AotCodeInfo::Serialize(const std::string &filename)
 {
+    if (!VerifyFilePath(filename, true)) {
+        return;
+    }
     std::ofstream moduleFile(filename.c_str(), std::ofstream::binary);
     uint32_t funcNum = aotFuncEntryOffsets_.size();
     moduleFile.write(reinterpret_cast<char *>(&funcNum), sizeof(funcNum));
@@ -108,7 +114,7 @@ void AotCodeInfo::Serialize(const std::string &filename)
 
 bool AotCodeInfo::Deserialize(EcmaVM *vm, const std::string &filename)
 {
-    if (!VerifyFilePath(filename.c_str())) {
+    if (!VerifyFilePath(filename)) {
         return false;
     }
     std::ifstream moduleFile(filename.c_str(), std::ofstream::binary);
@@ -134,10 +140,11 @@ bool AotCodeInfo::Deserialize(EcmaVM *vm, const std::string &filename)
     moduleFile.read(reinterpret_cast<char *>(&hostCodeSectionAddr_), sizeof(hostCodeSectionAddr_));
     uint32_t codeSize = 0;
     moduleFile.read(reinterpret_cast<char *>(&codeSize), sizeof(codeSize));
+    [[maybe_unused]] EcmaHandleScope handleScope(vm->GetAssociatedJSThread());
     auto factory = vm->GetFactory();
     auto codeHandle = factory->NewMachineCodeObject(codeSize, nullptr);
     moduleFile.read(reinterpret_cast<char *>(codeHandle->GetDataOffsetAddress()), codeSize);
-    SetCode(*codeHandle);
+    SetCode(codeHandle);
     SetDeviceCodeSectionAddr(codeHandle->GetDataOffsetAddress());
     /* read stackmap */
     int stackmapSize;
@@ -162,15 +169,19 @@ void AotCodeInfo::Iterate(const RootVisitor &v)
     v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&code_)));
 }
 
-bool AotCodeInfo::VerifyFilePath([[maybe_unused]] const CString &filePath) const
+bool AotCodeInfo::VerifyFilePath([[maybe_unused]] const std::string &filePath,
+                                 [[maybe_unused]] bool toGenerate) const
 {
 #ifndef PANDA_TARGET_WINDOWS
     if (filePath.size() > PATH_MAX) {
         return false;
     }
 
-    CVector<char> resolvedPath(PATH_MAX);
+    std::vector<char> resolvedPath(PATH_MAX);
     auto result = realpath(filePath.c_str(), resolvedPath.data());
+    if (toGenerate && errno == ENOENT) {
+        return true;
+    }
     if (result == nullptr) {
         return false;
     }
