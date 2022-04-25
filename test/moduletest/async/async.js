@@ -29,4 +29,19 @@ print(async_arrow.name)
 s.then(msg=>{
     print(msg)
 })
+
+// should return Promise
+async function testAsync() {
+    throw new Error("hello world!!!");
+}
+var a = testAsync();
+print(a instanceof Promise);
+a.then(
+    function (result) {
+        print("testAsync success!!!");
+    },
+    function (result) {
+        print("testAsync failed: " + result);
+    }
+)
 print("main over");
