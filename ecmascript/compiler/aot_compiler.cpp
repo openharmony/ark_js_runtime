@@ -139,6 +139,6 @@ int Main(const int argc, const char **argv)
 int main(const int argc, const char **argv)
 {
     auto result = panda::ecmascript::kungfu::Main(argc, argv);
-    COMPILER_LOG(INFO) << (result == 0 ? "ts aot execute success" : "ts aot execute failed");
+    COMPILER_LOG(INFO) << (result == 0 ? "ts aot compile success" : "ts aot compile failed");
     return result;
 }

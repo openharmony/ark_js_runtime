@@ -11,4 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-hello world
+256
+282.24
+147.0333894396205
+160.53018533925774
+256
+256
+0.00390625

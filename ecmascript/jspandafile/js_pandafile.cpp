@@ -78,7 +78,7 @@ void JSPandaFile::Initialize()
             isModule_ = true;
         }
 
-        if (!HasTsTypes() && std::strcmp(TS_TYPES_CLASS, desc) == 0) {
+        if (!HasTSTypes() && std::strcmp(TS_TYPES_CLASS, desc) == 0) {
             cda.EnumerateFields([&](panda_file::FieldDataAccessor &fieldAccessor) -> void {
                 panda_file::File::EntityId fieldNameId = fieldAccessor.GetNameId();
                 panda_file::File::StringData sd = pf_->GetStringData(fieldNameId);

@@ -92,8 +92,8 @@ group("ark_js_host_unittest") {
     # js bytecode test
     deps += [ "//ark/js_runtime/test/moduletest:ark_js_moduletest" ]
 
-    # ts bytecode test
-    # deps += [ "//ark/js_runtime/test/aottest:ark_aottest"]
+    # ts aot test
+    deps += [ "//ark/js_runtime/test/aottest:ark_aot_test" ]
   }
 }
 

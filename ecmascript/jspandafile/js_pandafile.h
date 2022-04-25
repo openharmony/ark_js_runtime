@@ -101,7 +101,7 @@ public:
 
     bool IsModule() const;
 
-    bool HasTsTypes() const
+    bool HasTSTypes() const
     {
         return hasTSTypes_;
     }
