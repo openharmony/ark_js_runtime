@@ -98,7 +98,11 @@ private:
             return (size >> INTERVAL_OFFSET) - smallSetOffsetIndex;
         }
         if (size < LARGE_SET_MAX_SIZE) {
+#ifdef PANDA_TARGET_64
+            return MAX_BIT_OF_SIZET - __builtin_clzll(size) + LOG2_OFFSET;
+#else
             return MAX_BIT_OF_SIZET - __builtin_clzl(size) + LOG2_OFFSET;
+#endif
         }
         if (size >= HUGE_SET_MAX_SIZE) {
             return NUMBER_OF_LAST_HUGE;

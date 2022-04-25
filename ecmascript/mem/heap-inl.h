@@ -247,7 +247,7 @@ uintptr_t Heap::AllocateSnapShotSpace(size_t size)
     return object;
 }
 
-void Heap::OnAllocateEvent(uintptr_t address)
+void Heap::OnAllocateEvent([[maybe_unused]] uintptr_t address)
 {
 #if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
     if (tracker_ != nullptr) {
@@ -256,7 +256,7 @@ void Heap::OnAllocateEvent(uintptr_t address)
 #endif
 }
 
-void Heap::OnMoveEvent(uintptr_t address, uintptr_t forwardAddress)
+void Heap::OnMoveEvent([[maybe_unused]] uintptr_t address, [[maybe_unused]] uintptr_t forwardAddress)
 {
 #if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
     if (tracker_ != nullptr) {

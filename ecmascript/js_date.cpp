@@ -592,7 +592,7 @@ JSTaggedValue JSDate::UTC(EcmaRuntimeCallInfo *argv)
     return JSTaggedValue(TimeClip(MakeDate(day, time)));
 }
 
-int64_t JSDate::GetLocalOffsetFromOS(int64_t timeMs, bool isLocal)
+int64_t JSDate::GetLocalOffsetFromOS([[maybe_unused]] int64_t timeMs, bool isLocal)
 {
     // Preserve the old behavior for non-ICU implementation by ignoring both timeMs and is_utc.
     if (!isLocal) {

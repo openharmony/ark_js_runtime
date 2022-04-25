@@ -301,8 +301,8 @@ private:
         ~CpuProfilingScope();
 
     private:
-        EcmaVM* vm_;
-        CpuProfiler* profiler_;
+        [[maybe_unused]] EcmaVM* vm_;
+        [[maybe_unused]] CpuProfiler* profiler_;
     };
     void SetGlobalEnv(GlobalEnv *global);
 
