@@ -503,40 +503,40 @@ public:
         return *this;
     }
 
-    size_t GetStartLine() const
+    int32_t GetStartLine() const
     {
         return startLine_;
     }
 
-    ScriptParsed &SetStartLine(size_t startLine)
+    ScriptParsed &SetStartLine(int32_t startLine)
     {
         startLine_ = startLine;
         return *this;
     }
 
-    size_t GetStartColumn() const
+    int32_t GetStartColumn() const
     {
         return startColumn_;
     }
 
-    ScriptParsed &SetStartColumn(size_t startColumn)
+    ScriptParsed &SetStartColumn(int32_t startColumn)
     {
         startColumn_ = startColumn;
         return *this;
     }
 
-    size_t GetEndLine() const
+    int32_t GetEndLine() const
     {
         return endLine_;
     }
 
-    ScriptParsed &SetEndLine(size_t endLine)
+    ScriptParsed &SetEndLine(int32_t endLine)
     {
         endLine_ = endLine;
         return *this;
     }
 
-    size_t GetEndColumn() const
+    int32_t GetEndColumn() const
     {
         return endColumn_;
     }
@@ -719,10 +719,10 @@ private:
 
     ScriptId scriptId_ {};
     CString url_ {};
-    size_t startLine_ {0};
-    size_t startColumn_ {0};
-    size_t endLine_ {0};
-    size_t endColumn_ {0};
+    int32_t startLine_ {0};
+    int32_t startColumn_ {0};
+    int32_t endLine_ {0};
+    int32_t endColumn_ {0};
     ExecutionContextId executionContextId_ {0};
     CString hash_ {};
     std::optional<Local<ObjectRef>> execContextAuxData_ {};

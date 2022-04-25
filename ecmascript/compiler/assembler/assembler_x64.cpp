@@ -414,7 +414,7 @@ void AssemblerX64::Callq(Label *target)
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
     if (target->IsLinked()) {
-        emitPos = target->GetLinkedPos();
+        emitPos = static_cast<int32_t>(target->GetLinkedPos());
     }
     // +1: skip opcode
     target->LinkTo(pos + 1);
@@ -450,7 +450,7 @@ void AssemblerX64::Jmp(Label *target, Distance distance)
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
-            emitPos = target->GetLinkedPos();
+            emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
         // +1: skip opcode
         target->LinkTo(pos + 1);
@@ -501,7 +501,7 @@ void AssemblerX64::Ja(Label *target, Distance distance)
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
-            emitPos = target->GetLinkedPos();
+            emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
         // +1: skip opcode
         target->LinkTo(pos + 1);
@@ -532,7 +532,7 @@ void AssemblerX64::Jb(Label *target, Distance distance)
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
-            emitPos = target->GetLinkedPos();
+            emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
         // +1: skip opcode
         target->LinkTo(pos + 1);
@@ -562,7 +562,7 @@ void AssemblerX64::Jz(Label *target, Distance distance)
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
-            emitPos = target->GetLinkedPos();
+            emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
         // +1: skip opcode
         target->LinkTo(pos + 1);
@@ -593,7 +593,7 @@ void AssemblerX64::Je(Label *target, Distance distance)
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
-            emitPos = target->GetLinkedPos();
+            emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
         // +1: skip opcode
         target->LinkTo(pos + 1);
@@ -803,7 +803,7 @@ void AssemblerX64::Jne(Label *target, Distance distance)
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
-            emitPos = target->GetLinkedPos();
+            emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
         // +1: skip opcode
         target->LinkTo(pos + 1);
@@ -842,7 +842,7 @@ void AssemblerX64::Jbe(Label *target, Distance distance)
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
-            emitPos = target->GetLinkedPos();
+            emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
         // +1: skip opcode
         target->LinkTo(pos + 1);
@@ -965,7 +965,7 @@ void AssemblerX64::Jnz(Label *target, Distance distance)
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
-            emitPos = target->GetLinkedPos();
+            emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
         // +1: skip opcode
         target->LinkTo(pos + 1);
@@ -996,7 +996,7 @@ void AssemblerX64::Jle(Label *target, Distance distance)
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
-            emitPos = target->GetLinkedPos();
+            emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
         // +1: skip opcode
         target->LinkTo(pos + 1);
@@ -1027,7 +1027,7 @@ void AssemblerX64::Jae(Label *target, Distance distance)
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
-            emitPos = target->GetLinkedPos();
+            emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
         // +1: skip opcode
         target->LinkTo(pos + 1);
@@ -1058,7 +1058,7 @@ void AssemblerX64::Jg(Label *target, Distance distance)
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
-            emitPos = target->GetLinkedPos();
+            emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
         // +1: skip opcode
         target->LinkTo(pos + 1);

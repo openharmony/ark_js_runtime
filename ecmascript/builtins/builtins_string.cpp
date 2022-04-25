@@ -572,7 +572,7 @@ JSTaggedValue BuiltinsString::LastIndexOf(EcmaRuntimeCallInfo *argv)
         return GetTaggedInt(res);
     }
     res = -1;
-    return GetTaggedInt(res);
+    return GetTaggedInt(static_cast<int32_t>(res));
 }
 
 // 21.1.3.10
@@ -1281,7 +1281,7 @@ JSTaggedValue BuiltinsString::StartsWith(EcmaRuntimeCallInfo *argv)
         pos = posVal.ToInt32();
     }
     pos = std::min(std::max(pos, 0), static_cast<int32_t>(thisLen));
-    if (static_cast<uint32_t>(pos + searchLen) > thisLen) {
+    if (static_cast<uint32_t>(pos) + searchLen > thisLen) {
         return BuiltinsString::GetTaggedBoolean(false);
     }
     std::u16string u16strThis;

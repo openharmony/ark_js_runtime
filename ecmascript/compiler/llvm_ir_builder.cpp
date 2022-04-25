@@ -537,7 +537,7 @@ LLVMValueRef LLVMIRBuilder::GetFunction(LLVMValueRef glue, StubIdType id)
         rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
     } else if (std::holds_alternative<CommonStubCSigns::ID>(id)) {
         rtoffset = LLVMConstInt(glueType, JSThread::GlueData::GetCOStubEntriesOffset(compCfg_->Is32Bit()) +
-            index * static_cast<size_t>(slotSize_), 0);
+            static_cast<size_t>(index * slotSize_), 0);
         rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
     } else if (std::holds_alternative<LLVMValueRef>(id)) {
         LLVMValueRef bytecodeoffset = LLVMConstInt(glueType,
@@ -605,7 +605,7 @@ void LLVMIRBuilder::VisitRuntimeCallWithArgv(GateRef gate, const std::vector<Gat
     std::vector<LLVMValueRef> params;
     params.push_back(glue); // glue
 
-    int index = circuit_->GetBitField(inList[static_cast<size_t>(CallInputs::TARGET)]);
+    BitField index = circuit_->GetBitField(inList[static_cast<size_t>(CallInputs::TARGET)]);
     auto targetId = LLVMConstInt(LLVMInt64Type(), index, 0);
     params.push_back(targetId); // target
     for (size_t paraIdx = static_cast<size_t>(CallInputs::FIRST_PARAMETER); paraIdx < inList.size(); ++paraIdx) {

@@ -1653,7 +1653,7 @@ JSTaggedValue RuntimeStubs::RuntimeGetAotUnmapedArgs(JSThread *thread, uint32_t 
         argumentsList->Set(thread, i, JSTaggedValue(arg));
     }
     // 1. Let len be the number of elements in argumentsList
-    int32_t len = argumentsList->GetLength();
+    uint32_t len = argumentsList->GetLength();
     // 2. Let obj be ObjectCreate(%ObjectPrototype%, «[[ParameterMap]]»).
     // 3. Set obj’s [[ParameterMap]] internal slot to undefined.
     JSHandle<JSArguments> obj = factory->NewJSArguments();

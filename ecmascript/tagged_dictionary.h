@@ -16,6 +16,9 @@
 #ifndef ECMASCRIPT_TAGGED_DICTIONARY_H
 #define ECMASCRIPT_TAGGED_DICTIONARY_H
 
+#include "ecmascript/ecma_vm.h"
+#include "ecmascript/tagged_array-inl.h"
+#include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/tagged_hash_table.h"
 
 namespace panda::ecmascript {
