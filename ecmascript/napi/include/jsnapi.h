@@ -363,6 +363,10 @@ public:
 class PUBLIC_API NumberRef : public PrimitiveRef {
 public:
     static Local<NumberRef> New(const EcmaVM *vm, double input);
+    static Local<NumberRef> New(const EcmaVM *vm, int32_t input);
+    static Local<NumberRef> New(const EcmaVM *vm, uint32_t input);
+    static Local<NumberRef> New(const EcmaVM *vm, int64_t input);
+
     double Value();
 };
 
