@@ -11,10 +11,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-group("ark_aottest") {
+group("ark_aot_test") {
   testonly = true
   deps = [
     "add:addAction",
-    "helloworld:helloworldAction",
+    "and:andAction",
+    "ashr:ashrAction",
+    "definefunc:definefuncAction",
+    "exp:expAction",
+    "helloaot:helloaotAction",
+    "neg:negAction",
+    "not:notAction",
+    "or:orAction",
+    "shl:shlAction",
+    "shr:shrAction",
+    "sub:subAction",
+    "tonumber:tonumberAction",
+    "xor:xorAction",
   ]
 }

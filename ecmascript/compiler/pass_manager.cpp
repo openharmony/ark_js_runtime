@@ -66,7 +66,8 @@ bool PassManager::Compile(const std::string &fileName, const std::string &triple
     TSLoader *tsLoader = vm_->GetTSLoader();
     SnapShot snapShot(vm_);
     CVector<JSTaggedType> constStringTable = tsLoader->GetConstStringTable();
-    snapShot.MakeSnapShot(reinterpret_cast<uintptr_t>(constStringTable.data()), constStringTable.size(), "snapshot");
+    const CString snapshotPath(vm_->GetJSOptions().GetSnapshotOutputFile().c_str());
+    snapShot.MakeSnapShot(reinterpret_cast<uintptr_t>(constStringTable.data()), constStringTable.size(), snapshotPath);
     return true;
 }
 

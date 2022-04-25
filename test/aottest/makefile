@@ -14,7 +14,7 @@
 debug=no
 root_dir=$(shell pwd)
 ifeq ($(test), )
-	test_name=helloworld
+	test_name=helloaot
 else
 	test_name=$(test)
 endif
