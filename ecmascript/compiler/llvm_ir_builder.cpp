@@ -377,22 +377,7 @@ void LLVMIRBuilder::GenPrologue([[maybe_unused]] LLVMModuleRef &module, LLVMBuil
     }
 
     LLVMValueRef llvmFrameType = LLVMConstInt(slotType_, static_cast<uintptr_t>(frameType), 0);
-    LLVMValueRef value = LLVMBuildStore(builder_, llvmFrameType, addr);
-
-    if (frameType != panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME) {
-        return;
-    }
-
-    LLVMValueRef glue = LLVMGetParam(function_, 0);
-    LLVMTypeRef glueType = LLVMTypeOf(glue);
-    LLVMValueRef rtoffset = LLVMConstInt(glueType, JSThread::GlueData::GetCurrentFrameOffset(compCfg_->Is32Bit()), 0);
-    LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
-    LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(slotType_, 0), "");
-    LLVMValueRef threadFpValue = LLVMBuildLoad(builder_, rtbaseAddr, "");
-    addr = LLVMBuildAdd(builder, frameAddr, LLVMConstInt(slotType_,
-        FrameConstants::INTERPER_FRAME_FP_TO_FP_DELTA * slotSize_, true), "");
-    value = LLVMBuildStore(builder_, threadFpValue,
-        LLVMBuildIntToPtr(builder_, addr, LLVMPointerType(slotType_, 0), "cast"));
+    LLVMBuildStore(builder_, llvmFrameType, addr);
 }
 
 LLVMValueRef LLVMIRBuilder::CallingFp(LLVMModuleRef &module, LLVMBuilderRef &builder, bool isCaller)
@@ -631,14 +616,14 @@ LLVMValueRef LLVMIRBuilder::GetCurrentSP()
 
 void LLVMIRBuilder::SaveCurrentSP()
 {
-    if (IsInterpreted()) {
-        return;
-    }
     if (compCfg_->Is64Bit()) {
         LLVMValueRef llvmFpAddr = CallingFp(module_, builder_, false);
         LLVMValueRef frameAddr = LLVMBuildPtrToInt(builder_, llvmFpAddr, slotType_, "cast_int_t");
+        auto callSiteSpOffset = IsInterpreted() ?
+            AsmInterpretedFrame::GetCallSiteFpToSpDelta(compCfg_->Is32Bit()) :
+            OptimizedFrame::GetCallSiteFpToSpDelta(compCfg_->Is32Bit());
         LLVMValueRef frameSpSlotAddr = LLVMBuildSub(builder_, frameAddr, LLVMConstInt(slotType_,
-            2 * slotSize_, false), ""); // 2: type + current sp
+            callSiteSpOffset, false), "");
         LLVMValueRef addr = LLVMBuildIntToPtr(builder_, frameSpSlotAddr,
                                               LLVMPointerType(slotType_, 0), "frameCallSiteSP.Addr");
         LLVMMetadataRef meta;

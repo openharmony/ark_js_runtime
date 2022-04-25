@@ -114,11 +114,12 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t 
     uintptr_t derived = 0;
 
     uintptr_t callsiteFp = *fp;
-    uintptr_t callsiteSp = *(reinterpret_cast<uintptr_t *>(callsiteFp) + FrameConstants::CALLSITE_SP_TO_FP_DELTA);
+    auto frameHandler = FrameHandler(reinterpret_cast<JSTaggedType *>(fp));
+    uintptr_t callSiteSp = frameHandler.GetPrevFrameCallSiteSp();
 
     for (auto &info: *infos) {
         if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
-            address = callsiteSp + info.second;
+            address = callSiteSp + info.second;
         } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
             address = callsiteFp + info.second;
         } else {
@@ -164,15 +165,11 @@ bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t 
     }
 
     uintptr_t callsiteFp = *fp;
-    uintptr_t callsiteSp;
-    if (FrameHandler(reinterpret_cast<JSTaggedType *>(frameFp)).IsLeaveFrame()) {
-        callsiteSp = OptimizedLeaveFrame::GetFrameFromSp(reinterpret_cast<JSTaggedType *>(frameFp))->GetCallSiteSp();
-    } else {
-        callsiteSp = *(reinterpret_cast<uintptr_t *>(callsiteFp) + FrameConstants::CALLSITE_SP_TO_FP_DELTA);
-    }
+    auto frameHandler = FrameHandler(reinterpret_cast<JSTaggedType *>(frameFp));
+    uintptr_t callSiteSp = frameHandler.GetPrevFrameCallSiteSp();
     for (auto &info: *infos) {
         if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
-            address = callsiteSp + info.second;
+            address = callSiteSp + info.second;
         } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
             address = callsiteFp + info.second;
         } else {
