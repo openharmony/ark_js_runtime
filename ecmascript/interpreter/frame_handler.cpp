@@ -71,6 +71,42 @@ void FrameHandler::PrevFrame()
     }
 }
 
+uintptr_t FrameHandler::GetPrevFrameCallSiteSp()
+{
+    auto type = GetFrameType();
+    switch (type) {
+        case FrameType::LEAVE_FRAME: {
+            auto frame = OptimizedLeaveFrame::GetFrameFromSp(sp_);
+            return frame->GetCallSiteSp();
+        }
+        case FrameType::LEAVE_FRAME_WITH_ARGV: {
+            auto frame = OptimizedWithArgvLeaveFrame::GetFrameFromSp(sp_);
+            return frame->GetCallSiteSp();
+        }
+        case FrameType::OPTIMIZED_FRAME: {
+            auto frame = OptimizedFrame::GetFrameFromSp(sp_);
+            sp_ = frame->GetPrevFrameFp();
+            type = GetFrameType();
+            break;
+        }
+        case FrameType::INTERPRETER_FRAME:
+        case FrameType::INTERPRETER_FAST_NEW_FRAME:
+        case FrameType::OPTIMIZED_ENTRY_FRAME:
+        case FrameType::INTERPRETER_ENTRY_FRAME:
+        default:
+            UNREACHABLE();
+            return 0U;
+    }
+    if (type == FrameType::OPTIMIZED_FRAME) {
+        auto frame = OptimizedFrame::GetFrameFromSp(sp_);
+        return frame->GetCallSiteSp();
+    } else {
+        ASSERT(IsInterpretedFrame());
+        auto frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+        return frame->GetCallSiteSp();
+    }
+}
+
 InterpretedFrameHandler::InterpretedFrameHandler(JSThread *thread)
     : FrameHandler(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame()))
 {
@@ -356,7 +392,7 @@ void InterpretedEntryFrameHandler::Iterate([[maybe_unused]] const RootVisitor &v
 void OptimizedFrameHandler::PrevFrame()
 {
     OptimizedFrame *frame = OptimizedFrame::GetFrameFromSp(sp_);
-    sp_ = reinterpret_cast<JSTaggedType *>(frame->base.prevFp);
+    sp_ = reinterpret_cast<JSTaggedType *>(frame->prevFp);
 }
 
 void OptimizedFrameHandler::Iterate(const RootVisitor &v0, [[maybe_unused]] const RootRangeVisitor &v1,
