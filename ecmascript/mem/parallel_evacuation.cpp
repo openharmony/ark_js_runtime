@@ -271,7 +271,7 @@ void ParallelEvacuation::UpdateWeakReference()
             return reinterpret_cast<TaggedObject *>(ToUintPtr(nullptr));
         }
         if (isFullMark) {
-            if (!objectRegion->Test(header)) {
+            if (objectRegion->GetMarkGCBitset() == nullptr || !objectRegion->Test(header)) {
                 return reinterpret_cast<TaggedObject *>(ToUintPtr(nullptr));
             }
         }

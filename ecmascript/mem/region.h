@@ -154,6 +154,7 @@ public:
     }
 
     // Mark bitset
+    GCBitset *GetMarkGCBitset() const;
     bool AtomicMark(void *address);
     void ClearMark(void *address);
     bool Test(void *addr) const;

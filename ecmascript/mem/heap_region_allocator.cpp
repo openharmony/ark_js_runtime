@@ -18,7 +18,6 @@
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/region.h"
 #include "ecmascript/mem/mem_map_allocator.h"
-#include "libpandabase/mem/pool_manager.h"
 
 namespace panda::ecmascript {
 Region *HeapRegionAllocator::AllocateAlignedRegion(Space *space, size_t capacity)
