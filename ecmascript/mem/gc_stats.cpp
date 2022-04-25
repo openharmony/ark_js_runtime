@@ -23,7 +23,7 @@ void GCStats::PrintStatisticResult(bool isForce)
 {
     LOG(INFO, RUNTIME) << "/******************* GCStats statistic: *******************/";
     PrintSemiStatisticResult(isForce);
-    PrintMixStatisticResult(isForce);
+    PrintPartialStatisticResult(isForce);
     PrintCompressStatisticResult(isForce);
     PrintHeapStatisticResult(isForce);
 }
@@ -48,40 +48,40 @@ void GCStats::PrintSemiStatisticResult(bool isForce)
     }
 }
 
-void GCStats::PrintMixStatisticResult(bool isForce)
+void GCStats::PrintPartialStatisticResult(bool isForce)
 {
-    if ((isForce && mixGCCount_ != 0) || (!isForce && lastOldGCCount_ != mixGCCount_)) {
-        lastOldGCCount_ = mixGCCount_;
-        LOG(INFO, RUNTIME) << " MixGC with non-concurrent mark statistic: total old gc count " << mixGCCount_;
-        LOG(INFO, RUNTIME) << " Pause time statistic:: MIN pause time: " << PrintTimeMilliseconds(mixGCMinPause_)
+    if ((isForce && partialGCCount_ != 0) || (!isForce && lastOldGCCount_ != partialGCCount_)) {
+        lastOldGCCount_ = partialGCCount_;
+        LOG(INFO, RUNTIME) << " PartialGC with non-concurrent mark statistic: total old gc count " << partialGCCount_;
+        LOG(INFO, RUNTIME) << " Pause time statistic:: MIN pause time: " << PrintTimeMilliseconds(partialGCMinPause_)
                             << "ms"
-                            << " MAX pause time: " << PrintTimeMilliseconds(mixGCMAXPause_) << "ms"
-                            << " total pause time: " << PrintTimeMilliseconds(mixGCTotalPause_) << "ms"
-                            << " average pause time: " << PrintTimeMilliseconds(mixGCTotalPause_ / mixGCCount_) << "ms";
+                            << " MAX pause time: " << PrintTimeMilliseconds(partialGCMAXPause_) << "ms"
+                            << " total pause time: " << PrintTimeMilliseconds(partialGCTotalPause_) << "ms"
+                            << " average pause time: " << PrintTimeMilliseconds(partialGCTotalPause_ / partialGCCount_) << "ms";
         if (!isForce) {
             PrintHeapStatisticResult(true);
         }
     }
 
-    if ((isForce && mixConcurrentMarkGCCount_ != 0) ||
-            (!isForce && lastOldConcurrentMarkGCCount_ != mixConcurrentMarkGCCount_)) {
-        lastOldConcurrentMarkGCCount_ = mixConcurrentMarkGCCount_;
-        LOG(INFO, RUNTIME) << " MixCollector with concurrent mark statistic: total old gc count "
-                            << mixConcurrentMarkGCCount_;
+    if ((isForce && partialConcurrentMarkGCCount_ != 0) ||
+            (!isForce && lastOldConcurrentMarkGCCount_ != partialConcurrentMarkGCCount_)) {
+        lastOldConcurrentMarkGCCount_ = partialConcurrentMarkGCCount_;
+        LOG(INFO, RUNTIME) << " PartialCollector with concurrent mark statistic: total old gc count "
+                            << partialConcurrentMarkGCCount_;
         LOG(INFO, RUNTIME) << " Pause time statistic:: Current GC pause time: "
-                            << PrintTimeMilliseconds(mixConcurrentMarkGCPauseTime_) << "ms"
-                            << " Concurrent mark pause time: " << PrintTimeMilliseconds(mixConcurrentMarkMarkPause_)
+                            << PrintTimeMilliseconds(partialConcurrentMarkGCPauseTime_) << "ms"
+                            << " Concurrent mark pause time: " << PrintTimeMilliseconds(partialConcurrentMarkMarkPause_)
                             << "ms"
-                            << " Concurrent mark wait time: " << PrintTimeMilliseconds(mixConcurrentMarkWaitPause_)
+                            << " Concurrent mark wait time: " << PrintTimeMilliseconds(partialConcurrentMarkWaitPause_)
                             << "ms"
-                            << " Remark pause time: " << PrintTimeMilliseconds(mixConcurrentMarkRemarkPause_) << "ms"
-                            << " Evacuate pause time: " << PrintTimeMilliseconds(mixConcurrentMarkEvacuatePause_)
+                            << " Remark pause time: " << PrintTimeMilliseconds(partialConcurrentMarkRemarkPause_) << "ms"
+                            << " Evacuate pause time: " << PrintTimeMilliseconds(partialConcurrentMarkEvacuatePause_)
                             << "ms"
-                            << " MIN pause time: " << PrintTimeMilliseconds(mixConcurrentMarkGCMinPause_) << "ms"
-                            << " MAX pause time: " << PrintTimeMilliseconds(mixConcurrentMarkGCMAXPause_) << "ms"
-                            << " total pause time: " << PrintTimeMilliseconds(mixConcurrentMarkGCTotalPause_) << "ms"
+                            << " MIN pause time: " << PrintTimeMilliseconds(partialConcurrentMarkGCMinPause_) << "ms"
+                            << " MAX pause time: " << PrintTimeMilliseconds(partialConcurrentMarkGCMAXPause_) << "ms"
+                            << " total pause time: " << PrintTimeMilliseconds(partialConcurrentMarkGCTotalPause_) << "ms"
                             << " average pause time: "
-                            << PrintTimeMilliseconds(mixConcurrentMarkGCTotalPause_ / mixConcurrentMarkGCCount_)
+                            << PrintTimeMilliseconds(partialConcurrentMarkGCTotalPause_ / partialConcurrentMarkGCCount_)
                             << "ms";
         if (!isForce) {
             PrintHeapStatisticResult(true);
@@ -159,34 +159,34 @@ void GCStats::StatisticSTWYoungGC(Duration time, size_t aliveSize, size_t promot
     semiGCCount_++;
 }
 
-void GCStats::StatisticMixGC(bool concurrentMark, Duration time, size_t freeSize)
+void GCStats::StatisticPartialGC(bool concurrentMark, Duration time, size_t freeSize)
 {
     auto timeToMillion = TimeToMicroseconds(time);
     if (concurrentMark) {
-        timeToMillion += mixConcurrentMarkMarkPause_;
-        timeToMillion += mixConcurrentMarkWaitPause_;
-        if (mixConcurrentMarkGCCount_ == 0) {
-            mixConcurrentMarkGCMinPause_ = timeToMillion;
-            mixConcurrentMarkGCMAXPause_ = timeToMillion;
+        timeToMillion += partialConcurrentMarkMarkPause_;
+        timeToMillion += partialConcurrentMarkWaitPause_;
+        if (partialConcurrentMarkGCCount_ == 0) {
+            partialConcurrentMarkGCMinPause_ = timeToMillion;
+            partialConcurrentMarkGCMAXPause_ = timeToMillion;
         } else {
-            mixConcurrentMarkGCMinPause_ = std::min(mixConcurrentMarkGCMinPause_, timeToMillion);
-            mixConcurrentMarkGCMAXPause_ = std::max(mixConcurrentMarkGCMAXPause_, timeToMillion);
+            partialConcurrentMarkGCMinPause_ = std::min(partialConcurrentMarkGCMinPause_, timeToMillion);
+            partialConcurrentMarkGCMAXPause_ = std::max(partialConcurrentMarkGCMAXPause_, timeToMillion);
         }
-        mixConcurrentMarkGCPauseTime_ = timeToMillion;
-        mixConcurrentMarkGCTotalPause_ += timeToMillion;
-        mixOldSpaceConcurrentMarkFreeSize_ = freeSize;
-        mixConcurrentMarkGCCount_++;
+        partialConcurrentMarkGCPauseTime_ = timeToMillion;
+        partialConcurrentMarkGCTotalPause_ += timeToMillion;
+        partialOldSpaceConcurrentMarkFreeSize_ = freeSize;
+        partialConcurrentMarkGCCount_++;
     } else {
-        if (mixGCCount_ == 0) {
-            mixGCMinPause_ = timeToMillion;
-            mixGCMAXPause_ = timeToMillion;
+        if (partialGCCount_ == 0) {
+            partialGCMinPause_ = timeToMillion;
+            partialGCMAXPause_ = timeToMillion;
         } else {
-            mixGCMinPause_ = std::min(mixGCMinPause_, timeToMillion);
-            mixGCMAXPause_ = std::max(mixGCMAXPause_, timeToMillion);
+            partialGCMinPause_ = std::min(partialGCMinPause_, timeToMillion);
+            partialGCMAXPause_ = std::max(partialGCMAXPause_, timeToMillion);
         }
-        mixGCTotalPause_ += timeToMillion;
-        mixOldSpaceFreeSize_ = freeSize;
-        mixGCCount_++;
+        partialGCTotalPause_ += timeToMillion;
+        partialOldSpaceFreeSize_ = freeSize;
+        partialGCCount_++;
     }
 }
 
@@ -213,21 +213,21 @@ void GCStats::StatisticFullGC(Duration time, size_t youngAndOldAliveSize, size_t
 
 void GCStats::StatisticConcurrentMark(Duration time)
 {
-    mixConcurrentMarkMarkPause_ = TimeToMicroseconds(time);
+    partialConcurrentMarkMarkPause_ = TimeToMicroseconds(time);
 }
 
 void GCStats::StatisticConcurrentMarkWait(Duration time)
 {
-    mixConcurrentMarkWaitPause_ = TimeToMicroseconds(time);
+    partialConcurrentMarkWaitPause_ = TimeToMicroseconds(time);
 }
 
 void GCStats::StatisticConcurrentEvacuate(Duration time)
 {
-    mixConcurrentMarkEvacuatePause_ = TimeToMicroseconds(time);
+    partialConcurrentMarkEvacuatePause_ = TimeToMicroseconds(time);
 }
 
 void GCStats::StatisticConcurrentRemark(Duration time)
 {
-    mixConcurrentMarkRemarkPause_ = TimeToMicroseconds(time);
+    partialConcurrentMarkRemarkPause_ = TimeToMicroseconds(time);
 }
 }  // namespace panda::ecmascript

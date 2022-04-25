@@ -17,6 +17,7 @@
 
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/mem/barriers-inl.h"
+#include "ecmascript/mem/clock_scope.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/object_xray-inl.h"
 #include "ecmascript/mem/space-inl.h"

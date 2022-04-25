@@ -16,24 +16,10 @@
 #ifndef ECMASCRIPT_MEM_GC_H
 #define ECMASCRIPT_MEM_GC_H
 
-#include "ecmascript/mem/clock_scope.h"
-#include "ecmascript/mem/mem.h"
-#include "ecmascript/mem/heap.h"
-#include "ecmascript/mem/allocator.h"
-#include "ecmascript/mem/mark_stack.h"
-#include "ecmascript/mem/mark_word.h"
-#include "ecmascript/mem/slots.h"
-#include "ecmascript/mem/object_xray.h"
-#include "ecmascript/mem/chunk_containers.h"
-#include "ecmascript/mem/tlab_allocator.h"
-
-#include "os/mutex.h"
+#include "libpandabase/macros.h"
 
 namespace panda {
 namespace ecmascript {
-class Heap;
-class JSHClass;
-class WorkerHelper;
 
 class GarbageCollector {
 public:

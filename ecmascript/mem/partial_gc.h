@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_MEM_MIX_GC_H
-#define ECMASCRIPT_MEM_MIX_GC_H
+#ifndef ECMASCRIPT_MEM_PARTIAL_GC_H
+#define ECMASCRIPT_MEM_PARTIAL_GC_H
 
 #include "ecmascript/mem/allocator.h"
 #include "ecmascript/mem/gc.h"
@@ -31,12 +31,12 @@ namespace ecmascript {
 class Heap;
 class JSHClass;
 
-class MixGC : public GarbageCollector {
+class PartialGC : public GarbageCollector {
 public:
-    explicit MixGC(Heap *heap);
-    ~MixGC() override = default;
-    NO_COPY_SEMANTIC(MixGC);
-    NO_MOVE_SEMANTIC(MixGC);
+    explicit PartialGC(Heap *heap);
+    ~PartialGC() override = default;
+    NO_COPY_SEMANTIC(PartialGC);
+    NO_MOVE_SEMANTIC(PartialGC);
 
     void RunPhases() override;
 
@@ -70,4 +70,4 @@ private:
 }  // namespace ecmascript
 }  // namespace panda
 
-#endif  // ECMASCRIPT_MEM_MIX_GC_H
+#endif  // ECMASCRIPT_MEM_PARTIAL_GC_H

@@ -28,7 +28,7 @@
 namespace panda::ecmascript {
 class EcmaVM;
 class STWYoungGC;
-class MixGC;
+class PartialGC;
 class FullGC;
 class BumpPointerAllocator;
 class NativeAreaAllocator;
@@ -117,9 +117,9 @@ public:
         return stwYoungGC_;
     }
 
-    MixGC *GetMixGC() const
+    PartialGC *GetPartialGC() const
     {
-        return mixGC_;
+        return partialGC_;
     }
 
     FullGC *GetFullGC() const
@@ -381,7 +381,7 @@ private:
     HugeObjectSpace *hugeObjectSpace_ {nullptr};
     SnapShotSpace *snapshotSpace_ {nullptr};
     STWYoungGC *stwYoungGC_ {nullptr};
-    MixGC *mixGC_ {nullptr};
+    PartialGC *partialGC_ {nullptr};
     FullGC *fullGC_ {nullptr};
     ConcurrentSweeper *sweeper_ {nullptr};
     ConcurrentMarker *concurrentMarker_ {nullptr};
