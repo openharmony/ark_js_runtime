@@ -60,6 +60,11 @@ inline WorkerHelper *Region::GetWorkList() const
     return heap_->GetWorkList();
 }
 
+inline GCBitset *Region::GetMarkGCBitset() const
+{
+    return markGCBitset_;
+}
+
 inline bool Region::AtomicMark(void *address)
 {
     auto addrPtr = reinterpret_cast<uintptr_t>(address);
