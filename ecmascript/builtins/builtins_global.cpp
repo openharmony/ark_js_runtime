@@ -326,7 +326,7 @@ JSTaggedValue BuiltinsGlobal::Decode(JSThread *thread, const JSHandle<EcmaString
             }
             sStr = StringHelper::Utf16ToU16String(&cc, 1);
         } else {
-            [[maybe_unused]] uint32_t start = k;
+            [[maybe_unused]] uint32_t start = static_cast<uint32_t>(k);
 
             // ii. If k + 2 is greater than or equal to strLen, throw a URIError exception.
             // iii. If the code units at index (k+1) and (k + 2) within string do not represent hexadecimal digits,
@@ -352,7 +352,8 @@ JSTaggedValue BuiltinsGlobal::Decode(JSThread *thread, const JSHandle<EcmaString
                             .GetTaggedValue();
                     }
                 } else {
-                    sStr = StringHelper::StringToU16string(StringHelper::SubString(thread, str, start, k - start + 1));
+                    sStr = StringHelper::StringToU16string(
+                        StringHelper::SubString(thread, str, start, static_cast<uint32_t>(k) - start + 1U));
                 }
             } else {
                 // vii. Else the most significant bit in B is 1,
@@ -439,7 +440,8 @@ JSTaggedValue BuiltinsGlobal::Decode(JSThread *thread, const JSHandle<EcmaString
                         sStr = StringHelper::Utf16ToU16String(reinterpret_cast<uint16_t *>(&vv), 1);
                     } else {
                         sStr =
-                            StringHelper::StringToU16string(StringHelper::SubString(thread, str, start, k - start + 1));
+                            StringHelper::StringToU16string(
+                                StringHelper::SubString(thread, str, start, static_cast<uint32_t>(k) - start + 1U));
                     }
                 } else {
                     uint16_t lv = (((vv - base::utf_helper::DECODE_SECOND_FACTOR) & BIT16_MASK) +

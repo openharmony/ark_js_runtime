@@ -21,7 +21,7 @@
 #include "ecmascript/mem/remembered_set.h"
 #include "ecmascript/message_string.h"
 #include "ecmascript/tagged_dictionary.h"
-#include "ecmascript/tagged_hash_table-inl.h"
+#include "ecmascript/tagged_hash_table.h"
 #include "ecmascript/compiler/rt_call_signature.h"
 #include "libpandabase/macros.h"
 
@@ -489,7 +489,7 @@ GateRef Stub::FindElementFromNumberDictionary(GateRef glue, GateRef elements, Ga
     return ret;
 }
 
-// int TaggedHashTable<Derived>::FindEntry(const JSTaggedValue &key) in tagged_hash_table-inl.h
+// int TaggedHashTable<Derived>::FindEntry(const JSTaggedValue &key) in tagged_hash_table.h
 GateRef Stub::FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRef key)
 {
     auto env = GetEnvironment();

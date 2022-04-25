@@ -171,7 +171,7 @@ GateRef CircuitBuilder::Int16(int16_t val)
 
 GateRef CircuitBuilder::Int32(int32_t val)
 {
-    return GetCircuit()->GetConstantGate(MachineType::I32, val, GateType::NJS_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I32, static_cast<BitField>(val), GateType::NJS_VALUE);
 }
 
 GateRef CircuitBuilder::Int64(int64_t val)

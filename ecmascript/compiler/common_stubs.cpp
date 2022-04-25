@@ -20,7 +20,7 @@
 #include "ecmascript/compiler/variable_type.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/message_string.h"
-#include "ecmascript/tagged_hash_table-inl.h"
+#include "ecmascript/tagged_hash_table.h"
 #include "stub-inl.h"
 
 namespace panda::ecmascript::kungfu {

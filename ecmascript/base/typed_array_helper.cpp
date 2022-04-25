@@ -320,7 +320,7 @@ JSTaggedValue TypedArrayHelper::CreateFromArrayBuffer(EcmaRuntimeCallInfo *argv,
         // 12. Else,
         //   a. Let newByteLength be newLength × elementSize.
         //   b. If offset + newByteLength > bufferByteLength, throw a RangeError exception.
-        newByteLength = newLength * elementSize;
+        newByteLength = static_cast<uint32_t>(newLength) * elementSize;
         if (offset + static_cast<uint32_t>(newByteLength) > bufferByteLength) {
             THROW_RANGE_ERROR_AND_RETURN(thread, "The newByteLength is out of range.", JSTaggedValue::Exception());
         }
@@ -333,7 +333,7 @@ JSTaggedValue TypedArrayHelper::CreateFromArrayBuffer(EcmaRuntimeCallInfo *argv,
     jsTypedArray->SetViewedArrayBuffer(thread, buffer);
     jsTypedArray->SetByteLength(thread, JSTaggedValue(newByteLength));
     jsTypedArray->SetByteOffset(thread, JSTaggedValue(offset));
-    jsTypedArray->SetArrayLength(thread, JSTaggedValue(static_cast<int32_t>(newByteLength / elementSize)));
+    jsTypedArray->SetArrayLength(thread, JSTaggedValue(newByteLength / static_cast<int32_t>(elementSize)));
     // 17. Return O.
     return obj.GetTaggedValue();
 }

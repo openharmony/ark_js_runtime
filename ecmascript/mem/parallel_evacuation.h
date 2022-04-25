@@ -150,7 +150,7 @@ private:
     void WaitFinished();
 
     Heap *heap_;
-    TlabAllocator *allocator_;
+    TlabAllocator *allocator_ {nullptr};
     ObjectXRay objXRay_;
 
     uintptr_t waterLine_ = 0;

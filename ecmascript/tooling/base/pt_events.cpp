@@ -244,7 +244,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startLine")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            scriptEvent->startLine_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            scriptEvent->startLine_ = Local<NumberRef>(result)->Value();
         } else {
             error += "'startLine' should a Number;";
         }
@@ -254,7 +254,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startColumn")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            scriptEvent->startColumn_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            scriptEvent->startColumn_ = Local<NumberRef>(result)->Value();
         } else {
             error += "'startColumn' should a Number;";
         }
@@ -264,7 +264,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endLine")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            scriptEvent->endLine_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            scriptEvent->endLine_ = Local<NumberRef>(result)->Value();
         } else {
             error += "'endLine' should a Number;";
         }
@@ -274,7 +274,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endColumn")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            scriptEvent->endColumn_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            scriptEvent->endColumn_ = Local<NumberRef>(result)->Value();
         } else {
             error += "'endColumn' should a Number;";
         }
@@ -497,7 +497,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startLine")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            scriptEvent->startLine_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            scriptEvent->startLine_ = Local<NumberRef>(result)->Value();
         } else {
             error += "'startLine' should a Number;";
         }
@@ -507,7 +507,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startColumn")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            scriptEvent->startColumn_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            scriptEvent->startColumn_ = Local<NumberRef>(result)->Value();
         } else {
             error += "'startColumn' should a Number;";
         }
@@ -517,7 +517,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endLine")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            scriptEvent->endLine_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            scriptEvent->endLine_ = Local<NumberRef>(result)->Value();
         } else {
             error += "'endLine' should a Number;";
         }
@@ -527,7 +527,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endColumn")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            scriptEvent->endColumn_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            scriptEvent->endColumn_ = Local<NumberRef>(result)->Value();
         } else {
             error += "'endColumn' should a Number;";
         }
