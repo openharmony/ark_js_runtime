@@ -16,7 +16,7 @@
 #include "ecmascript/builtins.h"
 
 #ifdef PANDA_TARGET_WINDOWS
-#include <shlwapi.h>
+#include "shlwapi.h"
 #ifdef ERROR
 #undef ERROR
 #endif

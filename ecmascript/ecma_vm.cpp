@@ -62,7 +62,6 @@
 #include "ecmascript/ts_types/ts_loader.h"
 #include "libpandafile/file.h"
 #ifdef PANDA_TARGET_WINDOWS
-#include <shlwapi.h>
 #ifdef ERROR
 #undef ERROR
 #endif
@@ -123,7 +122,9 @@ void EcmaVM::TryLoadSnapshotFile()
 {
     if (VerifyFilePath("snapshot")) {
         SnapShot snapShot(this);
+#if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MAC)
         snapShot.SnapShotDeserialize(SnapShotType::TS_LOADER, "snapshot");
+#endif
     }
 }
 
@@ -546,7 +547,7 @@ void EcmaVM::RemoveFromNativePointerList(JSNativePointer *array)
 }
 
 // Do not support snapshot on windows
-bool EcmaVM::VerifyFilePath(const CString &filePath) const
+bool EcmaVM::VerifyFilePath([[maybe_unused]] const CString &filePath) const
 {
 #ifndef PANDA_TARGET_WINDOWS
     if (filePath.size() > PATH_MAX) {
