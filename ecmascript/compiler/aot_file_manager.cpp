@@ -58,24 +58,26 @@ void AotFileManager::CollectAOTCodeInfo()
 {
     auto codeBuff = reinterpret_cast<uint64_t>(assembler_.GetCodeBuffer());
     auto engine = assembler_.GetEngine();
-    for (size_t i = 0; i < llvmModule_->GetFuncCount(); i++) {
-        LLVMValueRef func = llvmModule_->GetFunction(i);
+    std::map<uintptr_t, std::string> addr2name;
+    llvmModule_->IteratefuncIndexMap([&](size_t idx, LLVMValueRef func) {
         uint64_t funcEntry = reinterpret_cast<uint64_t>(LLVMGetPointerToGlobal(engine, func));
         uint64_t length = 0;
-        std::string tmp(LLVMGetValueName2(func, &length));
+        std::string funcName(LLVMGetValueName2(func, &length));
         if (length == 0) {
-            continue;
+            return;
         }
-        COMPILER_LOG(INFO) << "CollectAOTCodeInfo " << tmp.c_str();
-        aotInfo_.SetAOTFuncOffset(tmp, funcEntry - codeBuff);
-    }
-
+        COMPILER_LOG(INFO) << "CollectAOTCodeInfo " << funcName.c_str();
+        aotInfo_.SetAOTFuncEntry(funcName, funcEntry - codeBuff, idx);
+        addr2name[funcEntry] = funcName;
+    });
     aotInfo_.SetHostCodeSectionAddr(codeBuff);
     // stackmaps ptr and size
     aotInfo_.SetStackMapAddr(reinterpret_cast<uintptr_t>(assembler_.GetStackMapsSection()));
     aotInfo_.SetStackMapSize(assembler_.GetStackMapsSize());
     aotInfo_.SetCodeSize(assembler_.GetCodeSize());
     aotInfo_.SetCodePtr(reinterpret_cast<uintptr_t>(assembler_.GetCodeBuffer()));
+    const CompilerLog *log = GetLog();
+    assembler_.Disassemble(addr2name, *log);
 }
 
 void AotFileManager::RunAsmAssembler()

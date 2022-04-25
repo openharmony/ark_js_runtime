@@ -53,6 +53,16 @@ uint32_t JSPandaFile::GetOrInsertConstantPool(ConstPoolType type, uint32_t offse
     return index;
 }
 
+uint32_t JSPandaFile::GetIdInConstantPool(uint32_t offset) const
+{
+    auto it = constpoolMap_.find(offset);
+    if (it != constpoolMap_.cend()) {
+        ConstPoolValue value(it->second);
+        return value.GetConstpoolIndex();
+    }
+    return NOT_FOUND_IDX;
+}
+
 void JSPandaFile::Initialize()
 {
     Span<const uint32_t> classIndexes = pf_->GetClasses();

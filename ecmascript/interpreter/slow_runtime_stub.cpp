@@ -654,7 +654,6 @@ JSTaggedValue SlowRuntimeStub::CreateObjectWithExcludedKeys(JSThread *thread, ui
 {
     INTERPRETER_TRACE(thread, CreateObjectWithExcludedKeys);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     ASSERT(objVal.IsJSObject());

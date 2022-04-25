@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_JSPANDAFILE_JS_PANDAFILE_H
 #define ECMASCRIPT_JSPANDAFILE_JS_PANDAFILE_H
 
+#include "ecmascript/common.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/jspandafile/constpool_value.h"
 #include "ecmascript/mem/c_containers.h"
@@ -84,6 +85,8 @@ public:
 
     uint32_t GetOrInsertConstantPool(ConstPoolType type, uint32_t offset);
 
+    uint32_t PUBLIC_API GetIdInConstantPool(uint32_t offset) const;
+
     void UpdateMainMethodIndex(uint32_t mainMethodIndex)
     {
         mainMethodIndex_ = mainMethodIndex;
@@ -110,7 +113,7 @@ public:
 
 private:
     void Initialize();
-
+    static constexpr uint32_t NOT_FOUND_IDX = 0xffffffff;
     uint32_t constpoolIndex_ {0};
     CUnorderedMap<uint32_t, uint64_t> constpoolMap_;
     uint32_t numMethods_ {0};
