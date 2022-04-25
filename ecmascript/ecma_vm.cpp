@@ -120,10 +120,11 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
 
 void EcmaVM::TryLoadSnapshotFile()
 {
-    if (VerifyFilePath("snapshot")) {
+    const CString snapshotPath(options_.GetSnapshotOutputFile().c_str());
+    if (VerifyFilePath(snapshotPath)) {
         SnapShot snapShot(this);
 #if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MAC)
-        snapShot.SnapShotDeserialize(SnapShotType::TS_LOADER, "snapshot");
+        snapShot.SnapShotDeserialize(SnapShotType::TS_LOADER, snapshotPath);
 #endif
     }
 }

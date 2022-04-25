@@ -33,6 +33,7 @@ def parse_args():
     parser.add_argument('--script-options', help='execute script options')
     parser.add_argument('--script-args', help='args of script')
     parser.add_argument('--expect-output', help='expect output')
+    parser.add_argument('--expect-sub-output', help='expect sub output')
     parser.add_argument('--expect-file', help='expect file')
     parser.add_argument('--env-path', help='LD_LIBRARY_PATH env')
     args = parser.parse_args()
@@ -47,7 +48,7 @@ def judge_output(args):
         cmd += input_args.script_options
     if input_args.script_args:
         cmd += " " + input_args.script_args
-    subp = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+    subp = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         env={'LD_LIBRARY_PATH': str(input_args.env_path)})
     try:
         out, err = subp.communicate(timeout=300) # units: s
@@ -60,6 +61,10 @@ def judge_output(args):
         if returncode != args.expect_output:
             print_str = out.decode('UTF-8')
             print(print_str)
+            raise RuntimeError("Run [" + cmd + "] failed!")
+    elif args.expect_sub_output:
+        err_str = err.decode('UTF-8')  # log system use std::cerr
+        if err_str.find(args.expect_sub_output) == -1:
             raise RuntimeError("Run [" + cmd + "] failed!")
     elif args.expect_file:
         with open(args.expect_file, mode='r') as file:
