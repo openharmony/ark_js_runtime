@@ -2443,11 +2443,10 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
         JSTaggedValue asyncFuncObj = GET_VREG_VALUE(v0);
         JSTaggedValue value = GET_VREG_VALUE(v2);
-        SAVE_ACC();
         SAVE_PC();
         JSTaggedValue res = SlowRuntimeStub::AsyncFunctionResolveOrReject(thread, asyncFuncObj, value, false);
         INTERPRETER_RETURN_IF_ABRUPT(res);
-        RESTORE_ACC();
+        SET_ACC(res);
         DISPATCH(BytecodeInstruction::Format::PREF_V8_V8_V8);
     }
     HANDLE_OPCODE(HANDLE_NEWOBJSPREADDYN_PREF_V8_V8) {
