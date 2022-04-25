@@ -61,6 +61,7 @@
 #include "ecmascript/containers/containers_stack.h"
 #include "ecmascript/containers/containers_treemap.h"
 #include "ecmascript/containers/containers_treeset.h"
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_api_deque_iterator.h"
@@ -82,6 +83,7 @@
 #include "ecmascript/mem/object_xray-inl.h"
 #include "ecmascript/mem/space-inl.h"
 #include "ecmascript/object_factory.h"
+#include "ecmascript/snapshot/mem/snapshot_env.h"
 
 namespace panda::ecmascript {
 using Number = builtins::BuiltinsNumber;
@@ -700,6 +702,8 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(JSFunction::NameGetter),
     reinterpret_cast<uintptr_t>(JSArray::LengthSetter),
     reinterpret_cast<uintptr_t>(JSArray::LengthGetter),
+    reinterpret_cast<uintptr_t>(JSPandaFileManager::RemoveJSPandaFile),
+    reinterpret_cast<uintptr_t>(JSPandaFileManager::GetInstance)
 };
 
 void SnapShotSerialize::SetObjectEncodeField(uintptr_t obj, size_t offset, uint64_t value)
@@ -707,8 +711,38 @@ void SnapShotSerialize::SetObjectEncodeField(uintptr_t obj, size_t offset, uint6
     *reinterpret_cast<uint64_t *>(obj + offset) = value;
 }
 
+void SnapShotSerialize::DeserializeString(uintptr_t stringBegin, uintptr_t stringEnd)
+{
+    EcmaStringTable *stringTable = vm_->GetEcmaStringTable();
+    ASSERT(stringVector_.empty());
+    while (stringBegin < stringEnd) {
+        EcmaString *str = reinterpret_cast<EcmaString *>(stringBegin);
+        size_t strSize = str->ObjectSize();
+        strSize = AlignUp(strSize, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
+        auto strFromTable = stringTable->GetString(str);
+
+        if (strFromTable) {
+            stringVector_.emplace_back(ToUintPtr(strFromTable));
+        } else {
+            uintptr_t snapshotObj = const_cast<Heap *>(vm_->GetHeap())->AllocateSnapShotSpace(strSize);
+            if (snapshotObj == 0) {
+                LOG_ECMA_MEM(FATAL) << "SnapShotAllocator OOM";
+            }
+            if (memcpy_s(ToVoidPtr(snapshotObj), strSize, str, strSize) != EOK) {
+                LOG_ECMA(FATAL) << "memcpy_s failed";
+                UNREACHABLE();
+            }
+            str = reinterpret_cast<EcmaString *>(snapshotObj);
+            str->ClearInternStringFlag();
+            stringTable->GetOrInternString(str);
+            stringVector_.emplace_back(snapshotObj);
+        }
+        stringBegin += strSize;
+    }
+}
+
 void SnapShotSerialize::DeserializeHandleRootObject(SnapShotType type, uintptr_t rootObjectAddr,
-                                                    uint8_t objType, size_t objIndex)
+                                                    size_t objType, size_t objIndex)
 {
     switch (type) {
         case SnapShotType::VM_ROOT:
@@ -718,11 +752,6 @@ void SnapShotSerialize::DeserializeHandleRootObject(SnapShotType type, uintptr_t
                 vm_->SetMicroJobQueue(reinterpret_cast<job::MicroJobQueue *>(rootObjectAddr));
             }
             break;
-        case SnapShotType::TS_LOADER: {
-            JSTaggedValue result(rootObjectAddr);
-            vm_->GetTSLoader()->AddConstString(result);
-            break;
-        }
         case SnapShotType::GLOBAL_CONST: {
             JSTaggedValue result(rootObjectAddr);
             auto constants = const_cast<GlobalEnvConstants *>(vm_->GetJSThread()->GlobalConstants());
@@ -734,11 +763,16 @@ void SnapShotSerialize::DeserializeHandleRootObject(SnapShotType type, uintptr_t
     }
 }
 
-void SnapShotSerialize::Serialize(TaggedObject *objectHeader, CQueue<TaggedObject *> *queue,
-                                  std::unordered_map<uint64_t, std::pair<uint64_t, EncodeBit>> *data)
+void SnapShotSerialize::SerializeObject(TaggedObject *objectHeader, CQueue<TaggedObject *> *queue,
+                                        std::unordered_map<uint64_t, std::pair<uint64_t, EncodeBit>> *data)
 {
     auto hclass = objectHeader->GetClass();
-    uint8_t objectType = static_cast<uint8_t>(JSHClass::Cast(hclass)->GetObjectType());
+    JSType objectType = hclass->GetObjectType();
+    if (objectType== JSType::STRING) {
+        EncodeBit encodeBit = HandleObjectHeader(objectHeader, static_cast<size_t>(objectType), queue, data);
+        SetObjectEncodeField(ToUintPtr(objectHeader), 0, encodeBit.GetValue());
+        return;
+    }
     uintptr_t snapshotObj;
     if (UNLIKELY(data->find(ToUintPtr(objectHeader)) == data->end())) {
         LOG_ECMA(FATAL) << "Data map can not find object";
@@ -748,8 +782,8 @@ void SnapShotSerialize::Serialize(TaggedObject *objectHeader, CQueue<TaggedObjec
     }
 
     // header
-    EncodeBit headEncodeBit = HandleObjectHeader(objectHeader, objectType, queue, data);
-    SetObjectEncodeField(snapshotObj, 0, headEncodeBit.GetValue());
+    EncodeBit encodeBit = HandleObjectHeader(objectHeader, static_cast<size_t>(objectType), queue, data);
+    SetObjectEncodeField(snapshotObj, 0, encodeBit.GetValue());
 
     auto visitor = [this, snapshotObj, queue, data](TaggedObject *root, ObjectSlot start, ObjectSlot end,
                                                     bool isNative) {
@@ -772,8 +806,7 @@ void SnapShotSerialize::Serialize(TaggedObject *objectHeader, CQueue<TaggedObjec
 void SnapShotSerialize::Relocate(SnapShotType type, const JSPandaFile *jsPandaFile, uint64_t rootObjSize)
 {
     SnapShotSpace *space = vm_->GetHeap()->GetSnapShotSpace();
-    EcmaStringTable *stringTable = vm_->GetEcmaStringTable();
-    uint32_t methodNums = 0;
+    size_t methodNums = 0;
     JSMethod *methods = nullptr;
     if (jsPandaFile) {
         methodNums = jsPandaFile->GetNumMethods();
@@ -782,8 +815,7 @@ void SnapShotSerialize::Relocate(SnapShotType type, const JSPandaFile *jsPandaFi
 
     size_t others = 0;
     size_t objIndex = 0;
-    space->EnumerateRegions([stringTable, &others, &objIndex, &rootObjSize, &type,
-                            this, methods, &methodNums](Region *current) {
+    space->EnumerateRegions([&others, &objIndex, &rootObjSize, &type, this, methods, &methodNums](Region *current) {
         size_t allocated = current->GetAllocatedBytes();
         uintptr_t begin = current->GetBegin();
         uintptr_t end = begin + allocated;
@@ -808,7 +840,7 @@ void SnapShotSerialize::Relocate(SnapShotType type, const JSPandaFile *jsPandaFi
             auto objType = encodeBit.GetObjectType();
             if (objType == Constants::MASK_METHOD_SPACE_BEGIN) {
                 begin += sizeof(uint64_t);
-                for (size_t i = 0; i < encodeBit.GetNativePointerIndex(); i++) {
+                for (size_t i = 0; i < encodeBit.GetNativeOrGlobalIndex(); i++) {
                     pandaMethod_.emplace_back(begin);
                     auto method = reinterpret_cast<JSMethod *>(begin);
                     method->SetBytecodeArray(method->GetBytecodeArray());
@@ -818,26 +850,18 @@ void SnapShotSerialize::Relocate(SnapShotType type, const JSPandaFile *jsPandaFi
                     }
                     begin += METHOD_SIZE;
                     if (begin >= end) {
-                        others = encodeBit.GetNativePointerIndex() - i - 1;
+                        others = encodeBit.GetNativeOrGlobalIndex() - i - 1;
                         break;
                     }
                 }
                 break;
             }
-
             TaggedObject *objectHeader = reinterpret_cast<TaggedObject *>(begin);
             DeserializeHandleClassWord(objectHeader);
             DeserializeHandleField(objectHeader);
-
-            if (JSType(objType) == JSType::STRING) {
-                auto str = reinterpret_cast<EcmaString *>(begin);
-                str->ClearInternStringFlag();
-                stringTable->InsertStringIfNotExist(str);
-            }
             if (objIndex < rootObjSize) {
                 DeserializeHandleRootObject(type, begin, objType, objIndex);
             }
-
             begin = begin + AlignUp(objectHeader->GetClass()->SizeFromJSHClass(objectHeader),
                                     static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
             objIndex++;
@@ -845,18 +869,24 @@ void SnapShotSerialize::Relocate(SnapShotType type, const JSPandaFile *jsPandaFi
     });
 }
 
-EncodeBit SnapShotSerialize::HandleObjectHeader(TaggedObject *objectHeader, uint8_t objectType,
+EncodeBit SnapShotSerialize::HandleObjectHeader(TaggedObject *objectHeader, size_t objectType,
                                                 CQueue<TaggedObject *> *queue,
                                                 std::unordered_map<uint64_t, std::pair<uint64_t, EncodeBit>> *data)
 {
-    auto *hclassClass = objectHeader->GetClass();
+    auto *hclass = objectHeader->GetClass();
     EncodeBit encodeBit(0);
-
-    ASSERT(hclassClass != nullptr);
-    if (data->find(ToUintPtr(hclassClass)) == data->end()) {
-        encodeBit = EncodeTaggedObject(hclassClass, queue, data);
+    ASSERT(hclass != nullptr);
+    size_t hclassIndex = vm_->GetSnapShotEnv()->GetEnvObjectIndex(ToUintPtr(hclass));
+    if (hclassIndex != SnapShotEnv::MAX_UINT_32) {
+        encodeBit.SetGlobalEnvConst();
+        encodeBit.SetNativeOrGlobalIndex(hclassIndex);
+        encodeBit.SetObjectType(objectType);
+        return encodeBit;
+    }
+    if (data->find(ToUintPtr(hclass)) == data->end()) {
+        encodeBit = EncodeTaggedObject(hclass, queue, data);
     } else {
-        std::pair<uint64_t, EncodeBit> valuePair = data->find(ToUintPtr(hclassClass))->second;
+        std::pair<uint64_t, EncodeBit> valuePair = data->find(ToUintPtr(hclass))->second;
         encodeBit = valuePair.second;
     }
     encodeBit.SetObjectType(objectType);
@@ -884,6 +914,12 @@ uint64_t SnapShotSerialize::HandleTaggedField(JSTaggedType *tagged, CQueue<Tagge
     }
 
     EncodeBit encodeBit(0);
+    size_t globalEnvIndex = vm_->GetSnapShotEnv()->GetEnvObjectIndex(ToUintPtr(taggedValue.GetTaggedObject()));
+    if (globalEnvIndex != SnapShotEnv::MAX_UINT_32) {
+        encodeBit.SetGlobalEnvConst();
+        encodeBit.SetNativeOrGlobalIndex(globalEnvIndex);
+        return encodeBit.GetValue();
+    }
     if (data->find(*tagged) == data->end()) {
         encodeBit = EncodeTaggedObject(taggedValue.GetTaggedObject(), queue, data);
     } else {
@@ -900,16 +936,16 @@ uint64_t SnapShotSerialize::HandleTaggedField(JSTaggedType *tagged, CQueue<Tagge
 void SnapShotSerialize::DeserializeHandleTaggedField(uint64_t *value)
 {
     EncodeBit encodeBit(*value);
+    if (encodeBit.IsGlobalEnvConst()) {
+        size_t index = encodeBit.GetNativeOrGlobalIndex();
+        auto globalEnv = vm_->GetGlobalEnv();
+        auto globalEnvObjectValue = globalEnv->GetGlobalEnvObjectByIndex(index);
+        *value = ToUintPtr(globalEnvObjectValue->GetTaggedObject());
+        return;
+    }
     if (encodeBit.IsReference() && !encodeBit.IsSpecial()) {
         uintptr_t taggedObjectAddr = TaggedObjectEncodeBitToAddr(encodeBit);
-
-        if (encodeBit.IsReferenceToString()) {
-            auto str = vm_->GetEcmaStringTable()->GetString(reinterpret_cast<EcmaString *>(taggedObjectAddr));
-            ASSERT(str != nullptr);
-            *value = ToUintPtr(str);
-        } else {
-            *value = taggedObjectAddr;
-        }
+        *value = taggedObjectAddr;
         return;
     }
 
@@ -922,6 +958,14 @@ void SnapShotSerialize::DeserializeHandleTaggedField(uint64_t *value)
 void SnapShotSerialize::DeserializeHandleClassWord(TaggedObject *object)
 {
     EncodeBit encodeBit(*reinterpret_cast<uint64_t *>(object));
+    if (encodeBit.IsGlobalEnvConst()) {
+        size_t hclassIndex = encodeBit.GetNativeOrGlobalIndex();
+        auto globalConst = const_cast<GlobalEnvConstants *>(vm_->GetJSThread()->GlobalConstants());
+        JSTaggedValue hclassValue = globalConst->GetGlobalConstantObject(hclassIndex);
+        ASSERT(hclassValue.IsJSHClass());
+        object->SetClass(JSHClass::Cast(hclassValue.GetTaggedObject()));
+        return;
+    }
     uintptr_t hclassAddr = TaggedObjectEncodeBitToAddr(encodeBit);
     object->SetClass(reinterpret_cast<JSHClass *>(hclassAddr));
 }
@@ -946,7 +990,7 @@ EncodeBit SnapShotSerialize::NativePointerToEncodeBit(void *nativePointer)
 {
     EncodeBit native(0);
     if (nativePointer != nullptr) {  // nativePointer
-        uint16_t index = Constants::MAX_UINT_16;
+        size_t index = Constants::MAX_C_POINTER_INDEX;
 
         if (programSerialize_) {
             pandaMethod_.emplace_back(ToUintPtr(nativePointer));
@@ -957,16 +1001,15 @@ EncodeBit SnapShotSerialize::NativePointerToEncodeBit(void *nativePointer)
             index = SearchNativeMethodIndex(nativePointer);
         }
 
-        LOG_IF(index == Constants::MAX_UINT_16, FATAL, RUNTIME) << "Not find in native table, please register it first";
         LOG_IF(index > Constants::MAX_C_POINTER_INDEX, FATAL, RUNTIME) << "MAX_C_POINTER_INDEX: " + ToCString(index);
-        native.SetNativePointerIndex(index);
+        native.SetNativeOrGlobalIndex(index);
     }
     return native;
 }
 
 void *SnapShotSerialize::NativePointerEncodeBitToAddr(EncodeBit nativeBit)
 {
-    uint16_t index = nativeBit.GetNativePointerIndex();
+    size_t index = nativeBit.GetNativeOrGlobalIndex();
     void *addr = nullptr;
     size_t nativeTableSize = GetNativeTableSize();
 
@@ -980,7 +1023,7 @@ void *SnapShotSerialize::NativePointerEncodeBitToAddr(EncodeBit nativeBit)
     return addr;
 }
 
-uint16_t SnapShotSerialize::SearchNativeMethodIndex(void *nativePointer)
+size_t SnapShotSerialize::SearchNativeMethodIndex(void *nativePointer)
 {
     size_t nativeMethodSize = GetNativeTableSize() - Constants::PROGRAM_NATIVE_METHOD_BEGIN;
     for (size_t i = 0; i < Constants::PROGRAM_NATIVE_METHOD_BEGIN; i++) {
@@ -996,14 +1039,18 @@ uint16_t SnapShotSerialize::SearchNativeMethodIndex(void *nativePointer)
             return i;
         }
     }
-    return Constants::MAX_UINT_16;
+    return Constants::MAX_C_POINTER_INDEX;
 }
 
 uintptr_t SnapShotSerialize::TaggedObjectEncodeBitToAddr(EncodeBit taggedBit)
 {
     ASSERT(taggedBit.IsReference());
-    uint16_t regionIndex = taggedBit.GetRegionIndex();
-    uint32_t objectOffset  = taggedBit.GetObjectOffsetInRegion();
+    if (taggedBit.IsReferenceToString()) {
+        size_t stringIndex = taggedBit.GetStringIndex();
+        return stringVector_[stringIndex];
+    }
+    size_t regionIndex = taggedBit.GetRegionIndex();
+    size_t objectOffset  = taggedBit.GetObjectOffsetInRegion();
     auto snapShotSpace = const_cast<Heap *>(vm_->GetHeap())->GetSnapShotSpace();
     size_t defaultSnapshotSpaceCapacity = vm_->GetJSOptions().DefaultSnapshotSpaceCapacity();
     return ToUintPtr(snapShotSpace->GetFirstRegion()) + regionIndex * defaultSnapshotSpaceCapacity + objectOffset;
@@ -1012,10 +1059,13 @@ uintptr_t SnapShotSerialize::TaggedObjectEncodeBitToAddr(EncodeBit taggedBit)
 void SnapShotSerialize::DeserializeHandleNativePointer(uint64_t *value)
 {
     EncodeBit native(*value);
-    uint32_t index = native.GetNativePointerIndex();
+    size_t index = native.GetNativeOrGlobalIndex();
     uintptr_t addr = 0U;
     size_t nativeTableSize = GetNativeTableSize();
 
+    if (index == Constants::MAX_C_POINTER_INDEX) {
+        return;
+    }
     if (index < nativeTableSize - Constants::PROGRAM_NATIVE_METHOD_BEGIN) {
         addr = reinterpret_cast<uintptr_t>(vm_->nativeMethods_.at(index));
     } else if (index < nativeTableSize) {
@@ -1030,7 +1080,7 @@ void SnapShotSerialize::SerializePandaFileMethod()
 {
     EncodeBit encodeBit(0);
     encodeBit.SetObjectType(Constants::MASK_METHOD_SPACE_BEGIN);
-    encodeBit.SetNativePointerIndex(pandaMethod_.size());
+    encodeBit.SetNativeOrGlobalIndex(pandaMethod_.size());
 
     ObjectFactory *factory = vm_->GetFactory();
     // panda method space begin
@@ -1062,6 +1112,13 @@ EncodeBit SnapShotSerialize::EncodeTaggedObject(TaggedObject *objectHeader, CQue
                                                                    std::pair<uint64_t, ecmascript::EncodeBit>> *data)
 {
     queue->emplace(objectHeader);
+    if (objectHeader->GetClass()->GetObjectType() == JSType::STRING) {
+        ASSERT(stringVector_.size() < Constants::MAX_STRING_SIZE);
+        EncodeBit encodeBit(stringVector_.size());
+        stringVector_.emplace_back(ToUintPtr(objectHeader));
+        data->emplace(ToUintPtr(objectHeader), std::make_pair(0U, encodeBit));
+        return encodeBit;
+    }
     size_t objectSize = objectHeader->GetClass()->SizeFromJSHClass(objectHeader);
     if (objectSize > MAX_REGULAR_HEAP_OBJECT_SIZE) {
         LOG_ECMA_MEM(FATAL) << "It is a huge object. Not Support.";
@@ -1080,7 +1137,7 @@ EncodeBit SnapShotSerialize::EncodeTaggedObject(TaggedObject *objectHeader, CQue
         UNREACHABLE();
     }
     auto snapShotSpace = heap->GetSnapShotSpace();
-    uint32_t regionIndex = snapShotSpace->GetRegionCount() - 1;
+    size_t regionIndex = snapShotSpace->GetRegionCount() - 1;
     size_t objOffset = snapshotObj - ToUintPtr(snapShotSpace->GetCurrentRegion());
     EncodeBit encodeBit(static_cast<uint64_t>(regionIndex));
     encodeBit.SetObjectOffsetInRegion(objOffset);

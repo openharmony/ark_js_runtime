@@ -41,20 +41,31 @@ public:
 
     explicit EncodeBit(uint64_t value) : value_(value) {}
 
-    using RegionIndexBits = BitField<uint16_t, 0, Constants::REGION_INDEX_BIT_NUMBER>;
-    using ObjectOffsetInRegionBits = RegionIndexBits::NextField<uint32_t, Constants::OBJECT_OFFSET_IN_REGION_NUMBER>;
-    using ObjectToStringBits = ObjectOffsetInRegionBits::NextField<bool, Constants::OBJECT_TO_STRING_FLAG_NUMBER>;
-    using ObjectTypeBits = ObjectToStringBits::NextField<uint8_t, Constants::OBJECT_TYPE_BIT_NUMBER>;
-    using ObjectSpecialBits = ObjectTypeBits::NextField<bool, Constants::OBJECT_SPECIAL>;
-    using NativePointerIndexBits = ObjectSpecialBits::NextField<uint16_t, Constants::NATIVE_POINTER_INDEX_BIT_NUMBER>;
-    using IsReferenceBits = NativePointerIndexBits::NextField<uint32_t, Constants::IS_REFERENCE_BIT_NUMBER>;
+    // encode bit
+    static constexpr int REGION_INDEX_BIT_NUMBER = 10;         // region index
+    static constexpr int OBJECT_OFFSET_IN_REGION_NUMBER = 18;  // object offset in current region
+    static constexpr int OBJECT_TO_STRING_FLAG_NUMBER = 1;     // 1 : reference to string
+    static constexpr int OBJECT_TYPE_BIT_NUMBER = 7;           // js_type
+    static constexpr int OBJECT_SPECIAL = 1;                   // special
+    static constexpr int GLOBAL_ENV_CONST = 1;                 // global object which has initialized before snapshot
+    static constexpr int NATIVE_OR_GLOBAL_INDEX_NUMBER = 10;   // native pointer or global object index
+    static constexpr int IS_REFERENCE_BIT_NUMBER = 16;         // [0x0000] is reference
 
-    void SetRegionIndex(uint16_t region_index)
+    using RegionIndexBits = BitField<size_t, 0, REGION_INDEX_BIT_NUMBER>;
+    using ObjectOffsetInRegionBits = RegionIndexBits::NextField<size_t, OBJECT_OFFSET_IN_REGION_NUMBER>;
+    using ObjectToStringBits = ObjectOffsetInRegionBits::NextField<bool, OBJECT_TO_STRING_FLAG_NUMBER>;
+    using ObjectTypeBits = ObjectToStringBits::NextField<size_t, OBJECT_TYPE_BIT_NUMBER>;
+    using ObjectSpecialBits = ObjectTypeBits::NextField<bool, OBJECT_SPECIAL>;
+    using GlobalEnvConstBits = ObjectSpecialBits::NextField<bool, GLOBAL_ENV_CONST>;
+    using NativeOrGlobalIndexBits = GlobalEnvConstBits::NextField<size_t, NATIVE_OR_GLOBAL_INDEX_NUMBER>;
+    using IsReferenceBits = NativeOrGlobalIndexBits::NextField<size_t, IS_REFERENCE_BIT_NUMBER>;
+
+    void SetRegionIndex(size_t region_index)
     {
         RegionIndexBits::Set<uint64_t>(region_index, &value_);
     }
 
-    void SetObjectOffsetInRegion(uint32_t object_offset)
+    void SetObjectOffsetInRegion(size_t object_offset)
     {
         ObjectOffsetInRegionBits::Set<uint64_t>(object_offset, &value_);
     }
@@ -69,14 +80,14 @@ public:
         return ObjectToStringBits::Decode(value_);
     }
 
-    void SetObjectType(uint8_t object_type)
+    void SetObjectType(size_t object_type)
     {
         ObjectTypeBits::Set<uint64_t>(object_type, &value_);
     }
 
-    void SetNativePointerIndex(uint16_t native_pointer_index)
+    void SetNativeOrGlobalIndex(size_t native_or_global_index)
     {
-        NativePointerIndexBits::Set<uint64_t>(native_pointer_index, &value_);
+        NativeOrGlobalIndexBits::Set<uint64_t>(native_or_global_index, &value_);
     }
 
     uint64_t GetValue() const
@@ -84,24 +95,29 @@ public:
         return value_;
     }
 
-    uint16_t GetRegionIndex() const
+    size_t GetRegionIndex() const
     {
         return RegionIndexBits::Decode(value_);
     }
 
-    uint32_t GetObjectOffsetInRegion() const
+    size_t GetObjectOffsetInRegion() const
     {
         return ObjectOffsetInRegionBits::Decode(value_);
     }
 
-    uint8_t GetObjectType() const
+    size_t GetStringIndex() const
+    {
+        return (ObjectOffsetInRegionBits::Decode(value_) << REGION_INDEX_BIT_NUMBER) + RegionIndexBits::Decode(value_);
+    }
+
+    size_t GetObjectType() const
     {
         return ObjectTypeBits::Decode(value_);
     }
 
-    uint16_t GetNativePointerIndex() const
+    size_t GetNativeOrGlobalIndex() const
     {
-        return NativePointerIndexBits::Decode(value_);
+        return NativeOrGlobalIndexBits::Decode(value_);
     }
 
     bool IsReference() const
@@ -117,6 +133,16 @@ public:
     void SetObjectSpecial()
     {
         ObjectSpecialBits::Set<uint64_t>(true, &value_);
+    }
+
+    bool IsGlobalEnvConst() const
+    {
+        return GlobalEnvConstBits::Decode(value_);
+    }
+
+    void SetGlobalEnvConst()
+    {
+        GlobalEnvConstBits::Set<uint64_t>(true, &value_);
     }
 
     void ClearObjectSpecialFlag()

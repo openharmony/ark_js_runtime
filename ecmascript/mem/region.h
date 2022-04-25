@@ -107,6 +107,11 @@ public:
         return end_;
     }
 
+    uintptr_t GetHighWaterMark() const
+    {
+        return highWaterMark_;
+    }
+
     size_t GetCapacity() const
     {
         return end_ - reinterpret_cast<uintptr_t>(this);
@@ -246,6 +251,11 @@ public:
     {
         ASSERT(top == 0 || InRange(top));
         return (top == 0) ? (highWaterMark_ - begin_) : (top - begin_);
+    }
+
+    size_t GetHighWaterMarkSize() const
+    {
+        return highWaterMark_ - allocateBase_;
     }
 
     void SetHighWaterMark(uintptr_t mark)
