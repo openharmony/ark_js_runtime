@@ -16,8 +16,8 @@
 #ifndef ECMASCRIPT_MEM_FULL_GC_H
 #define ECMASCRIPT_MEM_FULL_GC_H
 
+#include "ecmascript/mem/gc.h"
 #include "ecmascript/mem/parallel_work_helper.h"
-#include "ecmascript/mem/stw_young_gc_for_testing.h"
 
 namespace panda {
 namespace ecmascript {
@@ -32,14 +32,15 @@ public:
     NO_COPY_SEMANTIC(FullGC);
     NO_MOVE_SEMANTIC(FullGC);
 
-    void RunPhases();
+    void RunPhases() override;
+
+protected:
+    void Initialize() override;
+    void Mark() override;
+    void Sweep() override;
+    void Finish() override;
 
 private:
-    void InitializePhase();
-    void MarkingPhase();
-    void SweepPhases();
-    void FinishPhase();
-
     Heap *heap_;
     size_t youngAndOldAliveSize_ = 0;
     size_t nonMoveSpaceFreeSize_ = 0;

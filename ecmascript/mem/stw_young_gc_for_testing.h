@@ -16,15 +16,16 @@
 #ifndef ECMASCRIPT_MEM_STW_YOUNG_GC_FOR_TESTING_H
 #define ECMASCRIPT_MEM_STW_YOUNG_GC_FOR_TESTING_H
 
-#include "ecmascript/mem/clock_scope.h"
-#include "ecmascript/mem/mem.h"
-#include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/allocator.h"
+#include "ecmascript/mem/chunk_containers.h"
+#include "ecmascript/mem/clock_scope.h"
+#include "ecmascript/mem/gc.h"
+#include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mark_word.h"
-#include "ecmascript/mem/slots.h"
+#include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/object_xray.h"
-#include "ecmascript/mem/chunk_containers.h"
+#include "ecmascript/mem/slots.h"
 #include "ecmascript/mem/tlab_allocator.h"
 
 #include "os/mutex.h"
@@ -35,14 +36,6 @@ class Heap;
 class JSHClass;
 class WorkerHelper;
 
-class GarbageCollector {
-public:
-    GarbageCollector() = default;
-    virtual ~GarbageCollector() = default;
-    DEFAULT_COPY_SEMANTIC(GarbageCollector);
-    DEFAULT_MOVE_SEMANTIC(GarbageCollector);
-};
-
 class STWYoungGC : public GarbageCollector {
 public:
     explicit STWYoungGC(Heap *heap, bool paralledGc);
@@ -50,14 +43,15 @@ public:
     NO_COPY_SEMANTIC(STWYoungGC);
     NO_MOVE_SEMANTIC(STWYoungGC);
 
-    void RunPhases();
+    virtual void RunPhases() override;
+
+protected:
+    virtual void Initialize() override;
+    virtual void Mark() override;
+    virtual void Sweep() override;
+    virtual void Finish() override;
 
 private:
-    void InitializePhase();
-    void ParallelMarkingPhase();
-    void SweepPhases();
-    void FinishPhase();
-
     inline void UpdatePromotedSlot(TaggedObject *object, ObjectSlot slot)
     {
 #ifndef NDEBUG
