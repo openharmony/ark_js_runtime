@@ -288,6 +288,11 @@ public:
 
     void TryLoadSnapshotFile();
 
+    AotCodeInfo *GetAotCodeInfo() const
+    {
+        return aotInfo_;
+    }
+
 protected:
 
     void HandleUncaughtException(ObjectHeader *exception);

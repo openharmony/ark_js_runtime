@@ -1111,6 +1111,18 @@ JSHandle<JSFunction> ObjectFactory::NewSpecificTypedArrayFunction(const JSHandle
     return NewJSFunctionByDynClass(target, dynclass, FunctionKind::BUILTIN_CONSTRUCTOR);
 }
 
+JSHandle<JSFunction> ObjectFactory::NewAotFunction(uint32_t numArgs, uintptr_t codeEntry)
+{
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+    JSMethod *method = vm_->GetMethodForNativeFunction(reinterpret_cast<void *>(codeEntry));
+    method->SetAotCodeBit(true);
+    method->SetNativeBit(false);
+    method->SetNumArgsWithCallField(numArgs);
+    JSHandle<JSFunction> jsfunc = NewJSFunction(env, method, FunctionKind::NORMAL_FUNCTION);
+    jsfunc->SetCodeEntry(codeEntry);
+    return jsfunc;
+}
+
 JSHandle<JSBoundFunction> ObjectFactory::NewJSBoundFunction(const JSHandle<JSFunctionBase> &target,
                                                             const JSHandle<JSTaggedValue> &boundThis,
                                                             const JSHandle<TaggedArray> &args)
