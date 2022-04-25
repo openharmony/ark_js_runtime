@@ -108,7 +108,7 @@
 //   |----------------------|   |
 //   |     frameType        |   |
 //   |----------------------|   |
-//   |       callsiteSp     |   v
+//   |       callSiteSp     |   v
 //   +--------------------------+
 
 //   Optimized Entry Frame(alias OptimizedEntryFrame) layout
@@ -255,87 +255,82 @@ public:
 #ifdef PANDA_TARGET_AMD64
     static constexpr int SP_DWARF_REG_NUM = 7;
     static constexpr int FP_DWARF_REG_NUM = 6;
-    static constexpr int CALLSITE_SP_TO_FP_DELTA = -2;
-    static constexpr int INTERPER_FRAME_FP_TO_FP_DELTA = -2;
 #else
 #ifdef PANDA_TARGET_ARM64
     static constexpr int SP_DWARF_REG_NUM = 31;  /* x31 */
     static constexpr int FP_DWARF_REG_NUM = 29;  /* x29 */
-    static constexpr int CALLSITE_SP_TO_FP_DELTA = -2;
-    static constexpr int INTERPER_FRAME_FP_TO_FP_DELTA = -2;
 #else
 #ifdef PANDA_TARGET_ARM32
     static constexpr int SP_DWARF_REG_NUM = 13;
     static constexpr int FP_DWARF_REG_NUM = 11;
-    static constexpr int CALLSITE_SP_TO_FP_DELTA = -2;
-    static constexpr int INTERPER_FRAME_FP_TO_FP_DELTA = -2;
 #else
     static constexpr int SP_DWARF_REG_NUM = 0;
     static constexpr int FP_DWARF_REG_NUM = 0;
-    static constexpr int CALLSITE_SP_TO_FP_DELTA = 0;
-    static constexpr int INTERPER_FRAME_FP_TO_FP_DELTA = 0;
 #endif
 #endif
 #endif
     static constexpr int AARCH64_SLOT_SIZE = sizeof(uint64_t);
     static constexpr int AMD64_SLOT_SIZE = sizeof(uint64_t);
     static constexpr int ARM32_SLOT_SIZE = sizeof(uint32_t);
-    static constexpr int CALLSITE_SP_TO_FP_DELTA_OFFSET = \
-        CALLSITE_SP_TO_FP_DELTA * static_cast<int>(sizeof(uintptr_t));
 };
 
-class OptimizedFrameBase {
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+struct OptimizedFrame : public base::AlignedStruct<base::AlignedPointer::Size(),
+                                                   base::AlignedPointer,
+                                                   base::AlignedPointer,
+                                                   base::AlignedPointer> {
 public:
-    OptimizedFrameBase() = default;
-    ~OptimizedFrameBase() = default;
-    FrameType type;
-    JSTaggedType *prevFp; // fp register
-};
+    enum class Index : size_t {
+        CallSiteSpIndex = 0,
+        TypeIndex,
+        PrevFpIndex,
+        NumOfMembers
+    };
+    static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
 
-class OptimizedFrame {
-public:
-    uintptr_t callsiteSp;
-    OptimizedFrameBase base;
-public:
-    OptimizedFrame() = default;
-    ~OptimizedFrame() = default;
-    static constexpr int64_t GetCallsiteSpToFpDelta()
-    {
-        return MEMBER_OFFSET(OptimizedFrame, callsiteSp) - MEMBER_OFFSET(OptimizedFrame, base.prevFp);
-    }
     static OptimizedFrame* GetFrameFromSp(JSTaggedType *sp)
     {
         return reinterpret_cast<OptimizedFrame *>(reinterpret_cast<uintptr_t>(sp)
-            - MEMBER_OFFSET(OptimizedFrame, base.prevFp));
+            - MEMBER_OFFSET(OptimizedFrame, prevFp));
     }
     inline JSTaggedType* GetPrevFrameFp()
     {
-        return base.prevFp;
+        return prevFp;
     }
-};
+    inline uintptr_t GetCallSiteSp() const
+    {
+        return callSiteSp;
+    }
+    static int32_t GetCallSiteFpToSpDelta(bool isArch32)
+    {
+        auto prevFpOffset = GetOffset<static_cast<size_t>(Index::PrevFpIndex)>(isArch32);
+        auto callSiteSpOffset = GetOffset<static_cast<size_t>(Index::CallSiteSpIndex)>(isArch32);
+        return prevFpOffset - callSiteSpOffset;
+    }
 
-class OptimizedEntryFrame {
+    alignas(EAS) uintptr_t callSiteSp {0};
+    alignas(EAS) FrameType type {0};
+    alignas(EAS) JSTaggedType *prevFp {nullptr};
+};
+STATIC_ASSERT_EQ_ARCH(sizeof(OptimizedFrame), OptimizedFrame::SizeArch32, OptimizedFrame::SizeArch64);
+
+struct OptimizedEntryFrame {
 public:
     OptimizedEntryFrame() = default;
     ~OptimizedEntryFrame() = default;
     JSTaggedType *preLeaveFrameFp;
-    OptimizedFrameBase base;
+    FrameType type;
+    JSTaggedType *prevFp;
 
     inline JSTaggedType* GetPrevFrameFp()
     {
         return preLeaveFrameFp;
     }
 
-    static constexpr int64_t GetInterpreterFrameFpToFpDelta()
-    {
-        return MEMBER_OFFSET(OptimizedEntryFrame, preLeaveFrameFp) -
-            MEMBER_OFFSET(OptimizedEntryFrame, base.prevFp);
-    }
-
     static OptimizedEntryFrame* GetFrameFromSp(JSTaggedType *sp)
     {
         return reinterpret_cast<OptimizedEntryFrame *>(reinterpret_cast<uintptr_t>(sp) -
-            MEMBER_OFFSET(OptimizedEntryFrame, base.prevFp));
+            MEMBER_OFFSET(OptimizedEntryFrame, prevFp));
     }
 };
 
@@ -350,7 +345,6 @@ public:
     static constexpr size_t SizeArch32 = TYPE_OFFSET_32 + sizeof(FrameType);
     static constexpr size_t SizeArch64 = TYPE_OFFSET_64 + sizeof(FrameType);
 };
-STATIC_ASSERT_EQ_ARCH(sizeof(InterpretedFrameBase), InterpretedFrameBase::SizeArch32, InterpretedFrameBase::SizeArch64);
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct InterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
@@ -401,14 +395,14 @@ struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTyp
                                                         JSTaggedValue,
                                                         JSTaggedValue,
                                                         JSTaggedValue,
-                                                        base::AlignedSize,
+                                                        base::AlignedPointer,
                                                         base::AlignedPointer,
                                                         InterpretedFrameBase> {
     enum class Index : size_t {
         FunctionIndex = 0,
         AccIndex,
         EnvIndex,
-        CallSizeIndex,
+        CallSizeOrCallSiteSpIndex,
         PcIndex,
         BaseIndex,
         NumOfMembers
@@ -428,7 +422,7 @@ struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTyp
 
     static size_t GetCallSizeOffset(bool isArch32)
     {
-        return GetOffset<static_cast<size_t>(Index::CallSizeIndex)>(isArch32);
+        return GetOffset<static_cast<size_t>(Index::CallSizeOrCallSiteSpIndex)>(isArch32);
     }
 
     static size_t GetFunctionOffset(bool isArch32)
@@ -461,10 +455,22 @@ struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTyp
         return isArch32 ? AsmInterpretedFrame::SizeArch32 : AsmInterpretedFrame::SizeArch64;
     }
 
+    inline uintptr_t GetCallSiteSp() const
+    {
+        return callSizeOrCallSiteSp;
+    }
+
+    static int32_t GetCallSiteFpToSpDelta(bool isArch32)
+    {
+        auto fpOffset = GetSize(isArch32);
+        auto callSiteSpOffset = GetOffset<static_cast<size_t>(Index::CallSizeOrCallSiteSpIndex)>(isArch32);
+        return fpOffset - callSiteSpOffset;
+    }
+
     alignas(EAS) JSTaggedValue function {JSTaggedValue::Hole()};
     alignas(EAS) JSTaggedValue acc {JSTaggedValue::Hole()};
     alignas(EAS) JSTaggedValue env {JSTaggedValue::Hole()};
-    alignas(EAS) size_t callSize {0};
+    alignas(EAS) uintptr_t callSizeOrCallSiteSp {0};
     alignas(EAS) const uint8_t *pc {nullptr};
     alignas(EAS) InterpretedFrameBase base;
 };
@@ -550,11 +556,5 @@ struct OptimizedWithArgvLeaveFrame {
 static_assert(static_cast<uint64_t>(FrameType::OPTIMIZED_FRAME) == OPTIMIZE_FRAME_TYPE);
 static_assert(static_cast<uint64_t>(FrameType::OPTIMIZED_ENTRY_FRAME) == JS_ENTRY_FRAME_TYPE);
 static_assert(static_cast<uint64_t>(FrameType::LEAVE_FRAME) == LEAVE_FRAME_TYPE);
-#ifdef PANDA_TARGET_64
-    static_assert(OptimizedFrame::GetCallsiteSpToFpDelta() ==
-        FrameConstants::CALLSITE_SP_TO_FP_DELTA * sizeof(uintptr_t));
-    static_assert(OptimizedEntryFrame::GetInterpreterFrameFpToFpDelta() ==
-        FrameConstants::INTERPER_FRAME_FP_TO_FP_DELTA * sizeof(uintptr_t));
-#endif
 }  // namespace panda::ecmascript
 #endif // ECMASCRIPT_FRAMES_H

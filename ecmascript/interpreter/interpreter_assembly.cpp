@@ -98,8 +98,8 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
         JSFunction* prevFunc = JSFunction::Cast(prevState->function.GetTaggedObject()); \
         method = prevFunc->GetMethod();                                                 \
         hotnessCounter = static_cast<int32_t>(method->GetHotnessCounter());             \
-        ASSERT(prevState->callSize == GetJumpSizeAfterCall(pc));                        \
-        DISPATCH_OFFSET(prevState->callSize);                                           \
+        ASSERT(prevState->callSizeOrCallSiteSp == GetJumpSizeAfterCall(pc));                        \
+        DISPATCH_OFFSET(prevState->callSizeOrCallSiteSp);                                           \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -401,7 +401,7 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
             INTERPRETER_GOTO_EXCEPTION_HANDLER();                                                  \
         }                                                                                          \
         SAVE_PC();                                                                                 \
-        GET_ASM_FRAME(sp)->callSize = GetJumpSizeAfterCall(pc);                                    \
+        GET_ASM_FRAME(sp)->callSizeOrCallSiteSp = GetJumpSizeAfterCall(pc);                                    \
         AsmInterpretedFrame *state = GET_ASM_FRAME(newSp);                                         \
         state->base.prev = sp;                                                                     \
         state->base.type = FrameType::INTERPRETER_FRAME;                                           \
@@ -2266,7 +2266,7 @@ void InterpreterAssembly::HandleNewObjDynRangePrefImm16V8(
 
         if (IsFastNewFrameEnter(ctorMethod)) {
             SAVE_PC();
-            GET_ASM_FRAME(sp)->callSize = GetJumpSizeAfterCall(pc);
+            GET_ASM_FRAME(sp)->callSizeOrCallSiteSp = GetJumpSizeAfterCall(pc);
             uint32_t numVregs = ctorMethod->GetNumVregsWithCallField();
             uint32_t numDeclaredArgs = ctorMethod->GetNumArgsWithCallField() + 1;  // +1 for this
             // +1 for hidden this, explicit this may be overwritten after bc optimizer
@@ -2654,8 +2654,8 @@ void InterpreterAssembly::HandleSuspendGeneratorPrefV8V8(
         return;
     }
 
-    ASSERT(prevState->callSize == GetJumpSizeAfterCall(pc));
-    DISPATCH_OFFSET(prevState->callSize);
+    ASSERT(prevState->callSizeOrCallSiteSp == GetJumpSizeAfterCall(pc));
+    DISPATCH_OFFSET(prevState->callSizeOrCallSiteSp);
 }
 
 void InterpreterAssembly::HandleAsyncFunctionAwaitUncaughtPrefV8V8(

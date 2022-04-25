@@ -68,7 +68,8 @@ public:
     bool IsInterpretedFrame() const
     {
         FrameType type = GetFrameType();
-        return (type == FrameType::INTERPRETER_FRAME) || (type == FrameType::INTERPRETER_FAST_NEW_FRAME);
+        return (type == FrameType::INTERPRETER_FRAME)
+                || (type == FrameType::INTERPRETER_FAST_NEW_FRAME);
     }
 
     bool IsInterpretedEntryFrame() const
@@ -82,12 +83,7 @@ public:
         return (GetFrameType() == FrameType::LEAVE_FRAME) ||
             (GetFrameType() == FrameType::LEAVE_FRAME_WITH_ARGV);
     }
-
-    OptimizedLeaveFrame* GetOptimizedLeaveFrame() const
-    {
-        ASSERT(GetFrameType() == FrameType::LEAVE_FRAME);
-        return OptimizedLeaveFrame::GetFrameFromSp(sp_);
-    }
+    uintptr_t GetPrevFrameCallSiteSp();
 
 protected:
     JSTaggedType *sp_ {nullptr};
