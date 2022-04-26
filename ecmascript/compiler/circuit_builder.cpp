@@ -424,6 +424,12 @@ GateRef CircuitBuilder::TaggedIsStringOrSymbol(GateRef obj)
     return ret;
 }
 
+GateRef CircuitBuilder::GetGlobalObject(GateRef glue)
+{
+    GateRef offset = IntPtr(JSThread::GlueData::GetGlobalObjOffset(cmpCfg_->Is32Bit()));
+    return Load(VariableType::JS_ANY(), glue, offset);
+}
+
 GateRef CircuitBuilder::GetFunctionBitFieldFromJSFunction(GateRef function)
 {
     GateRef offset = IntPtr(JSFunction::BIT_FIELD_OFFSET);
