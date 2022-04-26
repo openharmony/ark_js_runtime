@@ -1371,11 +1371,13 @@ TYPED_ARRAY_ALL(TYPED_ARRAY_NEW)
     Local<JSValueRef> Exception::name(const EcmaVM *vm, Local<StringRef> message)           \
     {                                                                                       \
         JSThread *thread = vm->GetJSThread();                                               \
+        if (thread->HasPendingException()) {                                                \
+            thread->ClearException();                                                       \
+        }                                                                                   \
         ObjectFactory *factory = vm->GetFactory();                                          \
                                                                                             \
         JSHandle<EcmaString> messageValue(JSNApiHelper::ToJSHandle(message));               \
         JSHandle<JSTaggedValue> result(factory->NewJSError(ErrorType::type, messageValue)); \
-        RETURN_VALUE_IF_ABRUPT(thread, JSValueRef::Exception(vm));                          \
         return JSNApiHelper::ToLocal<JSValueRef>(result);                                   \
     }
 
