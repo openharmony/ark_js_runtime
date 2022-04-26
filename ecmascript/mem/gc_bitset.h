@@ -109,7 +109,7 @@ public:
         for (uint32_t i = 0; i < wordCount; i++) {
             uint32_t word = words[i];
             while (word != 0) {
-                index = __builtin_ctz(word);
+                index = static_cast<uint32_t>(__builtin_ctz(word));
                 ASSERT(index < BIT_PER_WORD);
                 if (!visitor(reinterpret_cast<void *>(begin + (index << TAGGED_TYPE_SIZE_LOG)))) {
                     Words()[i] &= ~Mask(index);
@@ -129,7 +129,7 @@ public:
         for (uint32_t i = 0; i < wordCount; i++) {
             uint32_t word = words[i];
             while (word != 0) {
-                index = __builtin_ctz(word);
+                index = static_cast<uint32_t>(__builtin_ctz(word));
                 ASSERT(index < BIT_PER_WORD);
                 visitor(reinterpret_cast<void *>(begin + (index << TAGGED_TYPE_SIZE_LOG)));
                 word &= ~(1u << index);

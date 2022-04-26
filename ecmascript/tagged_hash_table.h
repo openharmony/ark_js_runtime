@@ -92,7 +92,7 @@ public:
                                     const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value)
     {
         // Make sure the key object has an identity hash code.
-        int32_t hash = Derived::Hash(key.GetTaggedValue());
+        int32_t hash = static_cast<int32_t>(Derived::Hash(key.GetTaggedValue()));
         int entry = table->FindEntry(key.GetTaggedValue());
         if (entry != -1) {
             table->SetValue(thread, entry, value.GetTaggedValue());
@@ -217,7 +217,7 @@ public:
         int size = Size();
         int count = 1;
         JSTaggedValue keyValue;
-        int32_t hash = Derived::Hash(key);
+        int32_t hash = static_cast<int32_t>(Derived::Hash(key));
 
         for (uint32_t entry = GetFirstPosition(hash, size);; entry = GetNextPosition(entry, count++, size)) {
             keyValue = GetKey(entry);
@@ -338,7 +338,7 @@ protected:
             if (!IsKey(k)) {
                 continue;
             }
-            int32_t hash = Derived::Hash(k);
+            int32_t hash = static_cast<int32_t>(Derived::Hash(k));
             int insertionIndex = Derived::GetKeyIndex(newTable->FindInsertIndex(hash));
             JSTaggedValue tv = Get(fromIndex);
             newTable->Set(thread, insertionIndex, tv);
@@ -381,7 +381,7 @@ public:
                                          const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value,
                                          const PropertyAttributes &metaData)
     {
-        int32_t hash = Derived::Hash(key.GetTaggedValue());
+        int32_t hash = static_cast<int32_t>(Derived::Hash(key.GetTaggedValue()));
 
         /* no need to add key if exist */
         int entry = table->FindEntry(key.GetTaggedValue());
