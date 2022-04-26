@@ -163,7 +163,7 @@ inline void MovableMarker::UpdateForwardAddressIfSuccess(uint32_t threadId, Tagg
 {
     Utils::Copy(ToVoidPtr(toAddress + HEAD_SIZE), size - HEAD_SIZE, ToVoidPtr(ToUintPtr(object) + HEAD_SIZE),
         size - HEAD_SIZE);
-    heap_->GetWorkManager()->IncrementAliveSize(threadId, size);
+    heap_->GetWorkManager()->IncreaseAliveSize(threadId, size);
     *reinterpret_cast<MarkWordType *>(toAddress) = markWord.GetValue();
     heap_->OnMoveEvent(reinterpret_cast<intptr_t>(object), toAddress);
     if (klass->HasReferenceField()) {

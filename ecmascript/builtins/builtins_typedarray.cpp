@@ -592,7 +592,7 @@ JSTaggedValue BuiltinsTypedArray::Filter(EcmaRuntimeCallInfo *argv)
     // 17. For each element e of kept
     //   a. Let status be Set(A, ToString(n), e, true ).
     //   b. ReturnIfAbrupt(status).
-    //   c. Increment n by 1.
+    //   c. Increase n by 1.
     JSMutableHandle<JSTaggedValue> valueHandle(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> ntKey(thread, JSTaggedValue::Undefined());
     for (int32_t n = 0; n < captured; n++) {

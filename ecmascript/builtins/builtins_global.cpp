@@ -310,7 +310,7 @@ JSTaggedValue BuiltinsGlobal::Decode(JSThread *thread, const JSHandle<EcmaString
         // d. Else C is "%",
         //   i. Let start be k.
         //   iv. Let B be the 8-bit value represented by the two hexadecimal digits at index (k + 1) and (k + 2).
-        //   v. Increment k by 2.
+        //   v. Increase k by 2.
         //   vi. If the most significant bit in B is 0, then
         //      1. Let C be the code unit with code unit value B.
         //      2. If C is not in reservedSet, then
@@ -362,12 +362,12 @@ JSTaggedValue BuiltinsGlobal::Decode(JSThread *thread, const JSHandle<EcmaString
                 //   4. Put B into Octets at index 0.
                 //   6. Let j be 1.
                 //   7. Repeat, while j < n
-                //     a. Increment k by 1.
+                //     a. Increase k by 1.
                 //     d. Let B be the 8-bit value represented by the two hexadecimal digits at
                 //        index (k + 1) and (k + 2).
-                //     f. Increment k by 2.
+                //     f. Increase k by 2.
                 //     g. Put B into Octets at index j.
-                //     h. Increment j by 1.
+                //     h. Increase j by 1.
                 //   9. If V < 0x10000, then
                 //     a. Let C be the code unit V.
                 //     b. If C is not in reservedSet, then

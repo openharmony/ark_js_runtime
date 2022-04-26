@@ -23,16 +23,16 @@ void Space::AddRegion(Region *region)
 {
     LOG_ECMA_MEM(DEBUG) << "Add region:" << region << " to " << ToSpaceTypeName(spaceType_);
     regionList_.AddNode(region);
-    IncrementCommitted(region->GetCapacity());
-    IncrementObjectSize(region->GetSize());
+    IncreaseCommitted(region->GetCapacity());
+    IncreaseObjectSize(region->GetSize());
 }
 
 void Space::RemoveRegion(Region *region)
 {
     LOG_ECMA_MEM(DEBUG) << "Remove region:" << region << " to " << ToSpaceTypeName(spaceType_);
     regionList_.RemoveNode(region);
-    DecrementCommitted(region->GetCapacity());
-    DecrementObjectSize(region->GetSize());
+    DecreaseCommitted(region->GetCapacity());
+    DecreaseObjectSize(region->GetSize());
 }
 
 template<class Callback>

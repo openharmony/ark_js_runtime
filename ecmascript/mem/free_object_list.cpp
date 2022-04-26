@@ -122,7 +122,7 @@ void FreeObjectList::Free(uintptr_t start, size_t size, bool isAdd)
     }
     if (UNLIKELY(size < MIN_SIZE)) {
         Region *region = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(start));
-        region->IncrementWasted(size);
+        region->IncreaseWasted(size);
         if (isAdd) {
             wasted_ += size;
         }

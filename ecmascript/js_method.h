@@ -194,7 +194,7 @@ struct PUBLIC_API JSMethod : public base::AlignedStruct<sizeof(uint64_t),
         return hotnessCounter_;
     }
 
-    inline NO_THREAD_SANITIZE void IncrementHotnessCounter()
+    inline NO_THREAD_SANITIZE void IncreaseHotnessCounter()
     {
         ++hotnessCounter_;
     }

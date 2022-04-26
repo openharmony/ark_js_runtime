@@ -82,7 +82,7 @@ uintptr_t FreeListAllocator::Allocate(size_t size)
     auto ret = bpAllocator_.Allocate(size);
     if (LIKELY(ret != 0)) {
         allocationSizeAccumulator_ += size;
-        Region::ObjectAddressToRange(ret)->IncrementAliveObject(size);
+        Region::ObjectAddressToRange(ret)->IncreaseAliveObject(size);
         return ret;
     }
     FreeObject *object = freeList_->Allocate(size);
@@ -102,14 +102,14 @@ uintptr_t FreeListAllocator::Allocate(FreeObject *object, size_t size)
     allocationSizeAccumulator_ += size;
     if (remainSize <= bpAllocator_.Available()) {
         Free(begin + size, remainSize);
-        Region::ObjectAddressToRange(begin)->IncrementAliveObject(size);
+        Region::ObjectAddressToRange(begin)->IncreaseAliveObject(size);
         return begin;
     } else {
         FreeBumpPoint();
         bpAllocator_.Reset(begin, end);
         auto ret = bpAllocator_.Allocate(size);
         if (ret != 0) {
-            Region::ObjectAddressToRange(ret)->IncrementAliveObject(size);
+            Region::ObjectAddressToRange(ret)->IncreaseAliveObject(size);
         }
         return ret;
     }
@@ -164,7 +164,7 @@ inline void FreeListAllocator::CollectFreeObjectSet(Region *region)
         }
         freeList_->AddSet(set);
     });
-    freeList_->IncrementWastedSize(region->GetWastedSize());
+    freeList_->IncreaseWastedSize(region->GetWastedSize());
 }
 
 inline void FreeListAllocator::DetachFreeObjectSet(Region *region)
@@ -175,7 +175,7 @@ inline void FreeListAllocator::DetachFreeObjectSet(Region *region)
         }
         freeList_->RemoveSet(set);
     });
-    freeList_->DecrementWastedSize(region->GetWastedSize());
+    freeList_->DecreaseWastedSize(region->GetWastedSize());
 }
 
 size_t FreeListAllocator::GetAvailableSize() const

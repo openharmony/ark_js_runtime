@@ -533,7 +533,7 @@ void Heap::UpdateDerivedObjectInStack()
 void Heap::WaitRunningTaskFinished()
 {
     os::memory::LockHolder holder(waitTaskFinishedMutex_);
-    while (runningTastCount_ > 0) {
+    while (runningTaskCount_ > 0) {
         waitTaskFinishedCV_.Wait(&waitTaskFinishedMutex_);
     }
 }
@@ -560,20 +560,20 @@ void Heap::PostParallelGCTask(ParallelGCTaskPhase gcTask)
 void Heap::IncreaseTaskCount()
 {
     os::memory::LockHolder holder(waitTaskFinishedMutex_);
-    runningTastCount_++;
+    runningTaskCount_++;
 }
 
 bool Heap::CheckCanDistributeTask()
 {
     os::memory::LockHolder holder(waitTaskFinishedMutex_);
-    return (runningTastCount_ < Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() - 1);
+    return (runningTaskCount_ < Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() - 1);
 }
 
 void Heap::ReduceTaskCount()
 {
     os::memory::LockHolder holder(waitTaskFinishedMutex_);
-    runningTastCount_--;
-    if (runningTastCount_ == 0) {
+    runningTaskCount_--;
+    if (runningTaskCount_ == 0) {
         waitTaskFinishedCV_.SignalAll();
     }
 }
