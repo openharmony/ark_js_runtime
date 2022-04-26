@@ -453,7 +453,7 @@ ecma_source = [
   "ecmascript/mem/parallel_evacuator.cpp",
   "ecmascript/mem/parallel_marker.cpp",
   "ecmascript/mem/partial_gc.cpp",
-  "ecmascript/mem/stw_young_gc_for_testing.cpp",
+  "ecmascript/mem/stw_young_gc.cpp",
   "ecmascript/mem/space.cpp",
   "ecmascript/mem/sparse_space.cpp",
   "ecmascript/mem/verification.cpp",

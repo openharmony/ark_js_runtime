@@ -19,17 +19,17 @@
 #include <atomic>
 #include <memory>
 
+#include "ecmascript/js_hclass.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/region.h"
 #include "ecmascript/mem/space.h"
 #include "ecmascript/mem/tagged_object.h"
+#include "ecmascript/mem/tlab_allocator.h"
 #include "ecmascript/taskpool/task.h"
 #include "os/mutex.h"
 
 namespace panda::ecmascript {
-class JSHClass;
-class TlabAllocator;
 class ParallelEvacuator {
 public:
     explicit ParallelEvacuator(Heap *heap) : heap_(heap), objXRay_(heap->GetEcmaVM()) {}

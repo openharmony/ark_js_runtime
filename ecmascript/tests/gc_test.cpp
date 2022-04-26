@@ -16,7 +16,7 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/full_gc.h"
 #include "ecmascript/object_factory.h"
-#include "ecmascript/mem/stw_young_gc_for_testing.h"
+#include "ecmascript/mem/stw_young_gc.h"
 #include "ecmascript/tests/test_helper.h"
 
 using namespace panda;

@@ -17,7 +17,7 @@
 #define ECMASCRIPT_MEM_PARTIAL_GC_H
 
 #include "ecmascript/mem/allocator.h"
-#include "ecmascript/mem/gc.h"
+#include "ecmascript/mem/garbage_collector.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mark_word.h"
@@ -28,9 +28,6 @@
 
 namespace panda {
 namespace ecmascript {
-class Heap;
-class JSHClass;
-
 class PartialGC : public GarbageCollector {
 public:
     explicit PartialGC(Heap *heap);

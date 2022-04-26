@@ -13,18 +13,19 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_MEM_STW_YOUNG_GC_FOR_TESTING_H
-#define ECMASCRIPT_MEM_STW_YOUNG_GC_FOR_TESTING_H
+#ifndef ECMASCRIPT_MEM_STW_YOUNG_GC_H
+#define ECMASCRIPT_MEM_STW_YOUNG_GC_H
 
 #include "ecmascript/mem/allocator.h"
 #include "ecmascript/mem/chunk_containers.h"
 #include "ecmascript/mem/clock_scope.h"
-#include "ecmascript/mem/gc.h"
+#include "ecmascript/mem/garbage_collector.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mark_word.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/object_xray.h"
+#include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/slots.h"
 #include "ecmascript/mem/tlab_allocator.h"
 
@@ -32,10 +33,6 @@
 
 namespace panda {
 namespace ecmascript {
-class Heap;
-class JSHClass;
-class WorkerHelper;
-
 class STWYoungGC : public GarbageCollector {
 public:
     explicit STWYoungGC(Heap *heap, bool paralledGc);
@@ -64,8 +61,8 @@ private:
     }
 
     Heap *heap_;
-    size_t promotedSize_{0};
-    size_t semiCopiedSize_{0};
+    size_t promotedSize_ {0};
+    size_t semiCopiedSize_ {0};
     size_t commitSize_ = 0;
 
     // obtain from heap
@@ -79,4 +76,4 @@ private:
 }  // namespace ecmascript
 }  // namespace panda
 
-#endif  // ECMASCRIPT_MEM_STW_YOUNG_GC_FOR_TESTING_H
+#endif  // ECMASCRIPT_MEM_STW_YOUNG_GC_H
