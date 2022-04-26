@@ -49,6 +49,8 @@
 #include "ecmascript/js_tagged_number.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/js_typed_array.h"
+#include "ecmascript/mem/mem.h"
+#include "ecmascript/mem/mem_map_allocator.h"
 #include "ecmascript/mem/region.h"
 #include "ecmascript/module/js_module_manager.h"
 #include "ecmascript/module/js_module_source_text.h"
@@ -106,6 +108,7 @@ using ecmascript::job::MicroJobQueue;
 using ecmascript::job::QueueType;
 using ecmascript::JSRuntimeOptions;
 using ecmascript::BigInt;
+using ecmascript::MemMapAllocator;
 template<typename T>
 using JSHandle = ecmascript::JSHandle<T>;
 
@@ -114,9 +117,8 @@ namespace {
 constexpr std::string_view ENTRY_POINTER = "_GLOBAL::func_main_0";
 }
 
-int JSNApi::vmCount = 1;
-bool JSNApi::initialize = false;
-bool JSNApi::debugMode = false;
+int JSNApi::vmCount_ = 0;
+bool JSNApi::initialize_ = false;
 static os::memory::Mutex mutex;
 
 // ------------------------------------ Panda -----------------------------------------------
@@ -146,35 +148,31 @@ EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
 
 EcmaVM *JSNApi::CreateEcmaVM(const JSRuntimeOptions &options)
 {
-    os::memory::LockHolder lock(mutex);
-    vmCount++;
-    if (!initialize) {
-        if (!IsArkJavaApp()) {
-            InitializeMemPoolManage(options);
-            vmCount--;
+    {
+        os::memory::LockHolder lock(mutex);
+        vmCount_++;
+        if (!initialize_) {
+            InitializeMemMapAllocator(options);
+            initialize_ = true;
         }
-        initialize = true;
     }
     return EcmaVM::Create(options);
 }
 
 void JSNApi::DestroyJSVM(EcmaVM *ecmaVm)
 {
-    if (initialize) {
+    {
         os::memory::LockHolder lock(mutex);
-        vmCount--;
-        if (vmCount <= 0) {
-            if (!IsArkJavaApp()) {
-                EcmaVM::Destroy(ecmaVm);
-                DestroyMemPoolManage();
-                initialize = false;
-            }
-        } else {
-            if (ecmaVm != nullptr) {
-                EcmaVM::Destroy(ecmaVm);
-            }
+        if (!initialize_) {
+            return;
+        }
+        vmCount_--;
+        if (vmCount_ <= 0) {
+            DestroyMemMapAllocator();
+            initialize_ = false;
         }
     }
+    EcmaVM::Destroy(ecmaVm);
 }
 
 void JSNApi::TriggerGC(const EcmaVM *vm,  TRIGGER_GC_TYPE gcType)
@@ -205,7 +203,6 @@ void JSNApi::ThrowException(const EcmaVM *vm, Local<JSValueRef> error)
 #if defined(ECMASCRIPT_SUPPORT_DEBUGGER)
 bool JSNApi::StartDebugger(const char *libraryPath, EcmaVM *vm, bool isDebugMode)
 {
-    debugMode = isDebugMode;
     auto handle = panda::os::library_loader::Load(std::string(libraryPath));
     if (!handle) {
         return false;
@@ -463,25 +460,16 @@ Local<ObjectRef> JSNApi::GetExportObject(EcmaVM *vm, const std::string &file, co
     return JSNApiHelper::ToLocal<ObjectRef>(exportObj);
 }
 
-void JSNApi::InitializeMemPoolManage(const ecmascript::JSRuntimeOptions &options)
+void JSNApi::InitializeMemMapAllocator(const ecmascript::JSRuntimeOptions &options)
 {
-    panda::mem::MemConfig::Initialize(options.GetHeapSizeLimit(), options.GetInternalMemorySizeLimit(),
-                                      options.GetCompilerMemorySizeLimit(), options.GetCodeCacheSizeLimit());
-    PoolManager::Initialize();
+    MemMapAllocator::GetInstance()->Initialize(options.TotalSpaceCapacity(), ecmascript::DEFAULT_REGION_SIZE);
 }
-void JSNApi::DestroyMemPoolManage()
+
+void JSNApi::DestroyMemMapAllocator()
 {
-    panda::mem::MemConfig::Finalize();
-    PoolManager::Finalize();
+    MemMapAllocator::GetInstance()->Finalize();
 }
-bool JSNApi::IsArkJavaApp()
-{
-    // current app status is ArkJava + ArkJs
-    if (std::getenv("PANDA_RUNTIME") != nullptr || std::getenv("ARK_RUNTIME") != nullptr) {
-        return true;
-    }
-    return false;
-}
+
 // ----------------------------------- HandleScope -------------------------------------
 LocalScope::LocalScope(const EcmaVM *vm) : thread_(vm->GetJSThread())
 {

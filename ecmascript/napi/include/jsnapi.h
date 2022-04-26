@@ -941,14 +941,12 @@ public:
     static void DeleteSerializationData(void *data);
     static void SetHostPromiseRejectionTracker(EcmaVM *vm, void *cb, void* data);
     static void SetHostEnqueueJob(const EcmaVM* vm, Local<JSValueRef> cb);
-    static void InitializeMemPoolManage(const ecmascript::JSRuntimeOptions &options);
-    static void DestroyMemPoolManage();
-    static bool IsArkJavaApp();
+    static void InitializeMemMapAllocator(const ecmascript::JSRuntimeOptions &options);
+    static void DestroyMemMapAllocator();
     static EcmaVM* CreateEcmaVM(const ecmascript::JSRuntimeOptions &options);
-    static bool debugMode;
 private:
-    static int vmCount;
-    static bool initialize;
+    static int vmCount_;
+    static bool initialize_;
     static bool CreateRuntime(const RuntimeOption &option);
     static bool DestroyRuntime();
 

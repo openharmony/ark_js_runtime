@@ -59,6 +59,11 @@ public:
     explicit MemMapPool() = default;
     ~MemMapPool() = default;
 
+    void Finalize()
+    {
+        memMapCache_.clear();
+    }
+
     NO_COPY_SEMANTIC(MemMapPool);
     NO_MOVE_SEMANTIC(MemMapPool);
 
@@ -98,7 +103,6 @@ private:
     static constexpr size_t REGULAR_MMAP_SIZE = 256_KB;
     os::memory::Mutex lock_;
     std::deque<MemMap> memMapCache_;
-    std::deque<MemMap> freedVMCache_;
 };
 
 // Non regular region with length of DEFAULT_REGION_SIZE(256kb) multiple
@@ -110,6 +114,11 @@ public:
     void Initialize(MemMap memMap)
     {
         freeList_.insert(std::pair<size_t, MemMap>(memMap.GetSize(), memMap));
+    }
+
+    void Finalize()
+    {
+        freeList_.clear();
     }
 
     NO_COPY_SEMANTIC(MemMapFreeList);
@@ -158,6 +167,14 @@ public:
         MemMap memMap = PageMap(NON_REGULAR_MMAP_SIZE, alignment);
         PageRelease(memMap.GetMem(), memMap.GetSize());
         memMapFreeList_.Initialize(memMap);
+    }
+
+    void Finalize()
+    {
+        memMapTotalSize_ = 0;
+        capacity_ = 0;
+        memMapFreeList_.Finalize();
+        memMapPool_.Finalize();
     }
 
     static MemMapAllocator *GetInstance()
