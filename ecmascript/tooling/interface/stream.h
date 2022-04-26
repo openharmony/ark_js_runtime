@@ -16,7 +16,7 @@
 #ifndef ECMASCRIPT_TOOLING_INTERFACE_STREAM_H
 #define ECMASCRIPT_TOOLING_INTERFACE_STREAM_H
 
-namespace panda::ecmascript::tooling {
+namespace panda::ecmascript {
 class Stream {
 public:
     virtual ~Stream() = default;
@@ -29,6 +29,6 @@ public:
     // Writes the chunk of data into the stream
     virtual bool WriteChunk (char* data, int size) = 0;
 };
-}  // namespace panda::ecmascript::tooling
+}  // namespace panda::ecmascript
 
 #endif  // ECMASCRIPT_TOOLING_INTERFACE_STREAM_H
