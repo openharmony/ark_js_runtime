@@ -347,7 +347,7 @@ void ParallelEvacuator::UpdateAndSweepNewRegionReference(Region *region)
             size_t freeSize = freeEnd - freeStart;
             FreeObject::FillFreeObject(heap_->GetEcmaVM(), freeStart, freeSize);
             SemiSpace *toSpace = const_cast<SemiSpace *>(heap_->GetNewSpace());
-            toSpace->DecrementSurvivalObjectSize(freeSize);
+            toSpace->DecreaseSurvivalObjectSize(freeSize);
         }
 
         freeStart = freeEnd + klass->SizeFromJSHClass(header);

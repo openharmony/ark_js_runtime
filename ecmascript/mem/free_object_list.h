@@ -61,11 +61,11 @@ public:
     {
         return wasted_;
     }
-    void DecrementWastedSize(size_t size)
+    void DecreaseWastedSize(size_t size)
     {
         wasted_ -= size;
     }
-    void IncrementWastedSize(size_t size)
+    void IncreaseWastedSize(size_t size)
     {
         wasted_ += size;
     }

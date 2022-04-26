@@ -402,7 +402,7 @@ private:
     bool isClearTaskFinished_ = true;
     os::memory::Mutex waitClearTaskFinishedMutex_;
     os::memory::ConditionVariable waitClearTaskFinishedCV_;
-    uint32_t runningTastCount_ {0};
+    uint32_t runningTaskCount_ {0};
     os::memory::Mutex waitTaskFinishedMutex_;
     os::memory::ConditionVariable waitTaskFinishedCV_;
     bool paralledGc_ {true};

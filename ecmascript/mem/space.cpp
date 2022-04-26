@@ -52,8 +52,8 @@ void Space::ClearAndFreeRegion(Region *region)
     region->SetSpace(nullptr);
     region->DeleteCrossRegionRSet();
     region->DeleteOldToNewRSet();
-    DecrementCommitted(region->GetCapacity());
-    DecrementObjectSize(region->GetSize());
+    DecreaseCommitted(region->GetCapacity());
+    DecreaseObjectSize(region->GetSize());
     if (spaceType_ == MemSpaceType::OLD_SPACE || spaceType_ == MemSpaceType::NON_MOVABLE ||
         spaceType_ == MemSpaceType::MACHINE_CODE_SPACE) {
         region->DestroySet();

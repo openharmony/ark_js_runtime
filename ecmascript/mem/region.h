@@ -309,13 +309,13 @@ public:
 
     inline WorkManager *GetWorkManager() const;
 
-    void IncrementAliveObjectSafe(size_t size)
+    void IncreaseAliveObjectSafe(size_t size)
     {
         ASSERT(aliveObject_ + size <= GetSize());
         aliveObject_ += size;
     }
 
-    void IncrementAliveObject(size_t size)
+    void IncreaseAliveObject(size_t size)
     {
         ASSERT(aliveObject_ + size <= GetSize());
         aliveObject_.fetch_add(size, std::memory_order_relaxed);
@@ -340,7 +340,7 @@ public:
     {
         wasted_ = 0;
     }
-    void IncrementWasted(size_t size)
+    void IncreaseWasted(size_t size)
     {
         wasted_ += size;
     }

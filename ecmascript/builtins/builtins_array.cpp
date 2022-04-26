@@ -2258,7 +2258,7 @@ JSTaggedValue BuiltinsArray::Splice(EcmaRuntimeCallInfo *argv)
     //   d. If fromPresent is true, then
     //     i. Let fromValue be Get(O, from).
     //     iii. Let status be CreateDataPropertyOrThrow(A, ToString(k), fromValue).
-    //   e. Increment k by 1.
+    //   e. Increase k by 1.
     JSMutableHandle<JSTaggedValue> fromKey(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> toKey(thread, JSTaggedValue::Undefined());
     double k = 0;

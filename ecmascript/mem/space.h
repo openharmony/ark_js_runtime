@@ -109,22 +109,22 @@ public:
         return committedSize_;
     }
 
-    void IncrementCommitted(size_t bytes)
+    void IncreaseCommitted(size_t bytes)
     {
         committedSize_ += bytes;
     }
 
-    void DecrementCommitted(size_t bytes)
+    void DecreaseCommitted(size_t bytes)
     {
         committedSize_ -= bytes;
     }
 
-    void IncrementObjectSize(size_t bytes)
+    void IncreaseObjectSize(size_t bytes)
     {
         objectSize_ += bytes;
     }
 
-    void DecrementObjectSize(size_t bytes)
+    void DecreaseObjectSize(size_t bytes)
     {
         objectSize_ -= bytes;
     }

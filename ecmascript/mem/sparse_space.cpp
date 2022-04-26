@@ -116,7 +116,7 @@ void SparseSpace::PrepareSweeping()
     liveObjectSize_ = 0;
     EnumerateRegions([this](Region *current) {
         if (!current->InCollectSet()) {
-            IncrementLiveObjectSize(current->AliveObject());
+            IncreaseLiveObjectSize(current->AliveObject());
             current->ResetWasted();
             AddSweepingRegion(current);
         }
@@ -146,7 +146,7 @@ void SparseSpace::Sweeping()
     allocator_->RebuildFreeList();
     EnumerateRegions([this](Region *current) {
         if (!current->InCollectSet()) {
-            IncrementLiveObjectSize(current->AliveObject());
+            IncreaseLiveObjectSize(current->AliveObject());
             current->ResetWasted();
             FreeRegion(current);
         }
@@ -287,7 +287,7 @@ Region *OldSpace::TryToGetExclusiveRegion(size_t size)
         Region *region = Region::ObjectAddressToRange(result);
         RemoveRegion(region);
         allocator_->DetachFreeObjectSet(region);
-        DecrementLiveObjectSize(region->AliveObject());
+        DecreaseLiveObjectSize(region->AliveObject());
         return region;
     }
     return nullptr;
@@ -300,10 +300,10 @@ void OldSpace::Merge(LocalSpace *localSpace)
     localSpace->EnumerateRegions([&](Region *region) {
         localSpace->DetachFreeObjectSet(region);
         localSpace->RemoveRegion(region);
-        localSpace->DecrementLiveObjectSize(region->AliveObject());
+        localSpace->DecreaseLiveObjectSize(region->AliveObject());
         region->SetSpace(this);
         AddRegion(region);
-        IncrementLiveObjectSize(region->AliveObject());
+        IncreaseLiveObjectSize(region->AliveObject());
         allocator_->CollectFreeObjectSet(region);
     });
     if (committedSize_ >= maximumCapacity_) {
@@ -311,7 +311,7 @@ void OldSpace::Merge(LocalSpace *localSpace)
     }
 
     localSpace->GetRegionList().Clear();
-    allocator_->IncrementAllocatedSize(localSpace->GetTotalAllocatedSize());
+    allocator_->IncreaseAllocatedSize(localSpace->GetTotalAllocatedSize());
 }
 
 void OldSpace::SelectCSet()
@@ -342,7 +342,7 @@ void OldSpace::SelectCSet()
 
     EnumerateCollectRegionSet([&](Region *current) {
         RemoveRegion(current);
-        DecrementLiveObjectSize(current->AliveObject());
+        DecreaseLiveObjectSize(current->AliveObject());
         allocator_->DetachFreeObjectSet(current);
         current->SetFlag(RegionFlags::IS_IN_COLLECT_SET);
     });
@@ -374,7 +374,7 @@ void OldSpace::RevertCSet()
         region->SetSpace(this);
         AddRegion(region);
         allocator_->CollectFreeObjectSet(region);
-        IncrementLiveObjectSize(region->AliveObject());
+        IncreaseLiveObjectSize(region->AliveObject());
     });
     collectRegionSet_.clear();
 }
@@ -403,7 +403,7 @@ bool LocalSpace::AddRegionToList(Region *region)
     region->SetSpace(this);
     AddRegion(region);
     allocator_->CollectFreeObjectSet(region);
-    IncrementLiveObjectSize(region->AliveObject());
+    IncreaseLiveObjectSize(region->AliveObject());
     return true;
 }
 

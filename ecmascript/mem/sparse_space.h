@@ -20,7 +20,7 @@
 
 #define CHECK_OBJECT_AND_INC_OBJ_SIZE(size) \
     if (object != 0) {                      \
-        IncrementLiveObjectSize(size);      \
+        IncreaseLiveObjectSize(size);      \
         return object;                      \
     }
 
@@ -70,12 +70,12 @@ public:
     void IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const;
 
     size_t GetHeapObjectSize() const;
-    void IncrementLiveObjectSize(size_t size)
+    void IncreaseLiveObjectSize(size_t size)
     {
         liveObjectSize_ += size;
     }
 
-    void DecrementLiveObjectSize(size_t size)
+    void DecreaseLiveObjectSize(size_t size)
     {
         liveObjectSize_ -= size;
     }
