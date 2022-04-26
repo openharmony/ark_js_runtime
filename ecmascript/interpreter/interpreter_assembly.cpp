@@ -425,6 +425,8 @@ extern "C" void JSCallEntry(uintptr_t glue, JSTaggedType *sp, const uint8_t *pc,
 // NOLINTNEXTLINE(readability-function-size)
 void InterpreterAssembly::RunInternal(JSThread *thread, ConstantPool *constpool, const uint8_t *pc, JSTaggedType *sp)
 {
+    // check is or not debugger
+    thread->CheckSwitchDebuggerBCStub();
     JSTaggedValue acc = JSTaggedValue::Hole();
     AsmInterpretedFrame *state = GET_ASM_FRAME(sp);
     auto method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();

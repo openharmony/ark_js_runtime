@@ -270,7 +270,8 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(CallIRangeDyn)                      \
     V(LdBigInt)                           \
     V(NewLexicalEnvWithNameDyn)           \
-    V(GetAotUnmapedArgs)
+    V(GetAotUnmapedArgs)                  \
+    V(NotifyBytecodePcChanged)
 
 #define RUNTIME_STUB_LIST(V)                 \
     RUNTIME_STUB_WITHOUT_GC_LIST(V)          \

@@ -1341,6 +1341,27 @@ DEF_RUNTIME_STUBS(JumpToCInterpreter)
     return JSTaggedValue(static_cast<uint64_t>(framePc)).GetRawData();
 }
 
+DEF_RUNTIME_STUBS(NotifyBytecodePcChanged)
+{
+    RUNTIME_STUBS_HEADER(NotifyBytecodePcChanged);
+    InterpretedFrameHandler frameHandler(thread);
+    for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
+        if (frameHandler.IsEntryFrame()) {
+            continue;
+        }
+        JSMethod *method = frameHandler.GetMethod();
+        // Skip builtins method
+        if (method->IsNativeWithCallField()) {
+            continue;
+        }
+        auto bcOffset = frameHandler.GetBytecodeOffset();
+        auto *debuggerMgr = thread->GetEcmaVM()->GetJsDebuggerManager();
+        debuggerMgr->GetNotificationManager()->BytecodePcChangedEvent(thread, method, bcOffset);
+        return JSTaggedValue::Hole().GetRawData();
+    }
+    return JSTaggedValue::Hole().GetRawData();
+}
+
 DEF_RUNTIME_STUBS(CreateEmptyObject)
 {
     RUNTIME_STUBS_HEADER(CreateEmptyObject);

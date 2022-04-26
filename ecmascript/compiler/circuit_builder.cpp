@@ -268,6 +268,13 @@ GateRef CircuitBuilder::BytecodeCall(const CallSignature *signature, GateRef glu
     return result;
 }
 
+GateRef CircuitBuilder::DebuggerBytecodeCall(const CallSignature *signature, GateRef glue, GateRef target,
+                                             GateRef depend, const std::vector<GateRef> &args)
+{
+    DEF_CALL_GATE(OpCode::DEBUGGER_BYTECODE_CALL, signature);
+    return result;
+}
+
 GateRef CircuitBuilder::VariadicRuntimeCall(GateRef glue, GateRef target, GateRef depend,
                                             const std::vector<GateRef> &args)
 {

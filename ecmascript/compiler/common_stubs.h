@@ -22,7 +22,9 @@
 namespace panda::ecmascript::kungfu {
 #define INTERPRETER_STUB_HELPER_LIST(V)  \
     V(SingleStepDebugging, 7)            \
-    V(HandleOverflow, 7)
+    V(HandleOverflow, 7)                 \
+    V(BCDebuggerEntry, 7)                \
+    V(BCDebuggerExceptionEntry, 7)
 
 #define COMMON_STUB_LIST(V)              \
     V(Add, 3)                            \
