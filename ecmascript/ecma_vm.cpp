@@ -138,7 +138,6 @@ bool EcmaVM::Initialize()
 #endif
     auto globalConst = const_cast<GlobalEnvConstants *>(thread_->GlobalConstants());
     regExpParserCache_ = new RegExpParserCache();
-    MemMapAllocator::GetInstance()->Initialize(options_.TotalSpaceCapacity(), DEFAULT_REGION_SIZE);
     heap_ = new Heap(this);
     heap_->Initialize();
     gcStats_ = chunk_.New<GCStats>(heap_);
