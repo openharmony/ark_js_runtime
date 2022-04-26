@@ -1231,29 +1231,49 @@ inline GateRef Stub::IsJSObject(GateRef obj)
 
 inline GateRef Stub::IsJSFunctionBase(GateRef obj)
 {
-    auto env = GetEnvironment();
-    Label subentry(env);
-    env->SubCfgEntry(&subentry);
-    Label exit(env);
-    Label isHeapObject(env);
-    DEFVARIABLE(result, VariableType::BOOL(), False());
-    Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
-    Bind(&isHeapObject);
-    {
-        GateRef objectType = GetObjectType(LoadHClass(obj));
-        auto ret1 = Int32And(
-            ZExtInt1ToInt32(
-                Int32LessThanOrEqual(objectType, Int32(static_cast<int32_t>(JSType::JS_BOUND_FUNCTION)))),
-            ZExtInt1ToInt32(
-                Int32GreaterThanOrEqual(objectType,
-                    Int32(static_cast<int32_t>(JSType::JS_FUNCTION_BASE)))));
-        result = TruncInt32ToInt1(ret1);
-        Jump(&exit);
-    }
-    Bind(&exit);
-    auto ret = *result;
-    env->SubCfgExit();
-    return ret;
+    GateRef objectType = GetObjectType(LoadHClass(obj));
+    GateRef greater = ZExtInt1ToInt32(Int32GreaterThanOrEqual(objectType,
+        Int32(static_cast<int32_t>(JSType::JS_FUNCTION_BASE))));
+    GateRef less = ZExtInt1ToInt32(Int32LessThanOrEqual(objectType,
+        Int32(static_cast<int32_t>(JSType::JS_BOUND_FUNCTION))));
+    return TruncInt32ToInt1(Int32And(greater, less));
+}
+
+inline GateRef Stub::IsConstructor(GateRef object)
+{
+    GateRef hClass = LoadHClass(object);
+    GateRef bitfieldOffset = IntPtr(JSHClass::BIT_FIELD_OFFSET);
+
+    GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
+    // decode
+    return Int32NotEqual(
+        Int32And(Int32LSR(bitfield, Int32(JSHClass::ConstructorBit::START_BIT)),
+                 Int32((1LU << JSHClass::ConstructorBit::SIZE) - 1)),
+        Int32(0));
+}
+
+inline GateRef Stub::IsBuiltinsConstructor(GateRef object)
+{
+    GateRef hClass = LoadHClass(object);
+    GateRef bitfieldOffset = IntPtr(JSHClass::BIT_FIELD_OFFSET);
+
+    GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
+    // decode
+    return Int32NotEqual(
+        Int32And(Int32LSR(bitfield, Int32(JSHClass::BuiltinsCtorBit::START_BIT)),
+                 Int32((1LU << JSHClass::BuiltinsCtorBit::SIZE) - 1)),
+        Int32(0));
+}
+
+inline GateRef Stub::IsBase(GateRef func)
+{
+    GateRef bitfieldOffset = IntPtr(JSFunction::BIT_FIELD_OFFSET);
+    GateRef bitfield = Load(VariableType::INT32(), func, bitfieldOffset);
+    // decode
+    return Int32LessThanOrEqual(
+        Int32And(Int32LSR(bitfield, Int32(JSFunction::FunctionKindBits::START_BIT)),
+                 Int32((1LU << JSFunction::FunctionKindBits::SIZE) - 1)),
+        Int32(static_cast<int32_t>(FunctionKind::CLASS_CONSTRUCTOR)));
 }
 
 inline GateRef Stub::IsSymbol(GateRef obj)

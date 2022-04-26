@@ -67,6 +67,7 @@ public:
     inline GateRef GetFunctionFromFrame(GateRef frame);
     inline GateRef GetAccFromFrame(GateRef frame);
     inline GateRef GetEnvFromFrame(GateRef frame);
+    inline GateRef GetThisObjectFromFastNewFrame(GateRef prevSp);
     inline GateRef GetEnvFromFunction(GateRef frame);
     inline GateRef GetConstpoolFromFunction(GateRef function);
     inline GateRef GetProfileTypeInfoFromFunction(GateRef function);
@@ -86,6 +87,13 @@ public:
     inline void SetResolvedToFunction(GateRef glue, GateRef function, GateRef value);
     inline void SetHomeObjectToFunction(GateRef glue, GateRef function, GateRef value);
     inline void SetModuleToFunction(GateRef glue, GateRef function, GateRef value);
+    inline void SetFrameState(GateRef glue, GateRef sp, GateRef function, GateRef acc,
+                              GateRef env, GateRef pc, GateRef prev, GateRef type);
+
+    inline GateRef CheckStackOverflow(GateRef glue, GateRef sp);
+    inline GateRef PushArg(GateRef glue, GateRef sp, GateRef value);
+    inline GateRef PushUndefined(GateRef glue, GateRef sp, GateRef num);
+    inline GateRef PushRange(GateRef glue, GateRef sp, GateRef array, GateRef startIndex, GateRef endIndex);
 
     inline void Dispatch(GateRef glue, GateRef sp, GateRef pc, GateRef constpool,
                          GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter, GateRef format);
