@@ -484,7 +484,7 @@ void AssemblerX64::Jmp(Immediate offset)
 void AssemblerX64::Ja(Label *target, Distance distance)
 {
     if (target->IsBound()) {
-        int32_t offset = target->GetPos() - GetCurrentPosition();
+        int32_t offset = static_cast<int32_t>(target->GetPos() - GetCurrentPosition());
         EmitJa(offset);
         return;
     }
@@ -494,7 +494,7 @@ void AssemblerX64::Ja(Label *target, Distance distance)
         // 77: ja rel8
         EmitU8(0x77);
         if (target->IsLinkedNear()) {
-            emitPos = target->GetLinkedNearPos() - pos;
+            emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
         target->LinkNearPos(pos);
         ASSERT(InRange8(emitPos));
@@ -515,7 +515,7 @@ void AssemblerX64::Ja(Label *target, Distance distance)
 void AssemblerX64::Jb(Label *target, Distance distance)
 {
     if (target->IsBound()) {
-        int32_t offset = target->GetPos() - GetCurrentPosition();
+        int32_t offset = static_cast<int32_t>(target->GetPos() - GetCurrentPosition());
         EmitJb(offset);
         return;
     }
@@ -525,7 +525,7 @@ void AssemblerX64::Jb(Label *target, Distance distance)
         // 72 : Jb rel8
         EmitU8(0x72);
         if (target->IsLinkedNear()) {
-            emitPos = target->GetLinkedNearPos() - pos;
+            emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
         target->LinkNearPos(pos);
         ASSERT(InRange8(emitPos));
@@ -545,7 +545,7 @@ void AssemblerX64::Jb(Label *target, Distance distance)
 void AssemblerX64::Jz(Label *target, Distance distance)
 {
     if (target->IsBound()) {
-        int32_t offset = target->GetPos() - GetCurrentPosition();
+        int32_t offset = static_cast<int32_t>(target->GetPos() - GetCurrentPosition());
         EmitJz(offset);
         return;
     }
@@ -555,7 +555,7 @@ void AssemblerX64::Jz(Label *target, Distance distance)
         // 74 : Jz rel8
         EmitU8(0x74);
         if (target->IsLinkedNear()) {
-            emitPos = target->GetLinkedNearPos() - pos;
+            emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
         target->LinkNearPos(pos);
         ASSERT(InRange8(emitPos));
@@ -576,7 +576,7 @@ void AssemblerX64::Jz(Label *target, Distance distance)
 void AssemblerX64::Je(Label *target, Distance distance)
 {
     if (target->IsBound()) {
-        int32_t offset = target->GetPos() - GetCurrentPosition();
+        int32_t offset = static_cast<int32_t>(target->GetPos() - GetCurrentPosition());
         EmitJe(offset);
         return;
     }
@@ -586,7 +586,7 @@ void AssemblerX64::Je(Label *target, Distance distance)
         // 74 : Je rel8
         EmitU8(0x74);
         if (target->IsLinkedNear()) {
-            emitPos = target->GetLinkedNearPos() - pos;
+            emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
         target->LinkNearPos(pos);
         ASSERT(InRange8(emitPos));
@@ -786,7 +786,7 @@ void AssemblerX64::Testb(Immediate src, Register dst)
 void AssemblerX64::Jne(Label *target, Distance distance)
 {
     if (target->IsBound()) {
-        int32_t offset = target->GetPos() - GetCurrentPosition();
+        int32_t offset = static_cast<int32_t>(target->GetPos() - GetCurrentPosition());
         EmitJne(offset);
         return;
     }
@@ -796,7 +796,7 @@ void AssemblerX64::Jne(Label *target, Distance distance)
         // 75 : Jne rel8;
         EmitU8(0x75);
         if (target->IsLinkedNear()) {
-            emitPos = target->GetLinkedNearPos() - pos;
+            emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
         target->LinkNearPos(pos);
         ASSERT(InRange8(emitPos));
@@ -825,7 +825,7 @@ void AssemblerX64::Cmpl(Register src, Register dst)
 void AssemblerX64::Jbe(Label *target, Distance distance)
 {
     if (target->IsBound()) {
-        int32_t offset = target->GetPos() - GetCurrentPosition();
+        int32_t offset = static_cast<int32_t>(target->GetPos() - GetCurrentPosition());
         EmitJbe(offset);
         return;
     }
@@ -835,7 +835,7 @@ void AssemblerX64::Jbe(Label *target, Distance distance)
         // 76 : Jbe rel8;
         EmitU8(0x76);
         if (target->IsLinkedNear()) {
-            emitPos = target->GetLinkedNearPos() - pos;
+            emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
         target->LinkNearPos(pos);
         ASSERT(InRange8(emitPos));
@@ -948,7 +948,7 @@ void AssemblerX64::And(Register src, Register dst)
 void AssemblerX64::Jnz(Label *target, Distance distance)
 {
     if (target->IsBound()) {
-        int32_t offset = target->GetPos() - GetCurrentPosition();
+        int32_t offset = static_cast<int32_t>(target->GetPos() - GetCurrentPosition());
         EmitJnz(offset);
         return;
     }
@@ -958,7 +958,7 @@ void AssemblerX64::Jnz(Label *target, Distance distance)
         // 75 : Jnz rel8;
         EmitU8(0x75);
         if (target->IsLinkedNear()) {
-            emitPos = target->GetLinkedNearPos() - pos;
+            emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
         target->LinkNearPos(pos);
         ASSERT(InRange8(emitPos));
@@ -979,7 +979,7 @@ void AssemblerX64::Jnz(Label *target, Distance distance)
 void AssemblerX64::Jle(Label *target, Distance distance)
 {
     if (target->IsBound()) {
-        int32_t offset = target->GetPos() - GetCurrentPosition();
+        int32_t offset = static_cast<int32_t>(target->GetPos() - GetCurrentPosition());
         EmitJle(offset);
         return;
     }
@@ -989,7 +989,7 @@ void AssemblerX64::Jle(Label *target, Distance distance)
         // 7E : Jle rel8;
         EmitU8(0x7E);
         if (target->IsLinkedNear()) {
-            emitPos = target->GetLinkedNearPos() - pos;
+            emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
         target->LinkNearPos(pos);
         ASSERT(InRange8(emitPos));
@@ -1010,7 +1010,7 @@ void AssemblerX64::Jle(Label *target, Distance distance)
 void AssemblerX64::Jae(Label *target, Distance distance)
 {
     if (target->IsBound()) {
-        int32_t offset = target->GetPos() - GetCurrentPosition();
+        int32_t offset = static_cast<int32_t>(target->GetPos() - GetCurrentPosition());
         EmitJae(offset);
         return;
     }
@@ -1020,7 +1020,7 @@ void AssemblerX64::Jae(Label *target, Distance distance)
         // 73 : Jae rel8
         EmitU8(0x73);
         if (target->IsLinkedNear()) {
-            emitPos = target->GetLinkedNearPos() - pos;
+            emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
         target->LinkNearPos(pos);
         ASSERT(InRange8(emitPos));
@@ -1041,7 +1041,7 @@ void AssemblerX64::Jae(Label *target, Distance distance)
 void AssemblerX64::Jg(Label *target, Distance distance)
 {
     if (target->IsBound()) {
-        int32_t offset = target->GetPos() - GetCurrentPosition();
+        int32_t offset = static_cast<int32_t>(target->GetPos() - GetCurrentPosition());
         EmitJg(offset);
         return;
     }
@@ -1051,7 +1051,7 @@ void AssemblerX64::Jg(Label *target, Distance distance)
         // 7F : Jg rel8
         EmitU8(0x7F);
         if (target->IsLinkedNear()) {
-            emitPos = target->GetLinkedNearPos() - pos;
+            emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
         target->LinkNearPos(pos);
         ASSERT(InRange8(emitPos));

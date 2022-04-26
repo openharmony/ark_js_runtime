@@ -237,7 +237,7 @@ struct PUBLIC_API JSMethod : public base::AlignedStruct<sizeof(uint64_t),
     alignas(EAS) const void *nativePointerOrBytecodeArray_ {nullptr};
     alignas(EAS) const JSPandaFile *jsPandaFile_ {nullptr};
     alignas(EAS) uint32_t bytecodeArraySize_ {0};
-    alignas(EAS) uint32_t hotnessCounter_;
+    alignas(EAS) uint32_t hotnessCounter_ {0};
     alignas(EAS) panda_file::File::EntityId methodId_;
     alignas(EAS) uint8_t slotSize_ {0};
 };

@@ -426,15 +426,17 @@ static int32_t ComputeHashForData(const T *data, size_t size, uint32_t hashSeed)
     return static_cast<int32_t>(hash);
 }
 
-static int32_t ComputeHashForUtf8(const uint8_t *utf8Data)
+static int32_t ComputeHashForUtf8(const uint8_t *utf8Data, uint32_t utf8DataLength)
 {
+    uint32_t utf8DataIndex = 0;
     if (utf8Data == nullptr) {
         return 0;
     }
     uint32_t hash = 0;
-    while (*utf8Data != '\0') {  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    while (utf8DataIndex < utf8DataLength) { // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         constexpr size_t SHIFT = 5;
         hash = (hash << SHIFT) - hash + *utf8Data++;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        utf8DataIndex++;
     }
     return static_cast<int32_t>(hash);
 }
@@ -460,7 +462,7 @@ uint32_t EcmaString::ComputeHashcodeUtf8(const uint8_t *utf8Data, size_t utf8Len
 {
     int32_t hash;
     if (canBeCompress) {
-        hash = ComputeHashForUtf8(utf8Data);
+        hash = ComputeHashForUtf8(utf8Data, utf8Len);
     } else {
         auto utf16Len = base::utf_helper::Utf8ToUtf16Size(utf8Data, utf8Len);
         CVector<uint16_t> tmpBuffer(utf16Len);
