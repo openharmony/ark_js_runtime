@@ -233,7 +233,7 @@ void ParallelEvacuator::UpdateRecordWeakReference()
 {
     auto totalThreadCount = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1;
     for (uint32_t i = 0; i < totalThreadCount; i++) {
-        ProcessQueue *queue = heap_->GetWorkList()->GetWeakReferenceQueue(i);
+        ProcessQueue *queue = heap_->GetWorkManager()->GetWeakReferenceQueue(i);
 
         while (true) {
             auto obj = queue->PopBack();

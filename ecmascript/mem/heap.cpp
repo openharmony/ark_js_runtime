@@ -34,9 +34,9 @@
 #include "ecmascript/mem/native_area_allocator.h"
 #include "ecmascript/mem/parallel_evacuator.h"
 #include "ecmascript/mem/parallel_marker-inl.h"
-#include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/stw_young_gc.h"
 #include "ecmascript/mem/verification.h"
+#include "ecmascript/mem/work_manager.h"
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
@@ -78,7 +78,7 @@ void Heap::Initialize()
 #if defined(IS_STANDARD_SYSTEM)
     concurrentMarkingEnabled_ = false;
 #endif
-    workList_ = new WorkerHelper(this, Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1);
+    workManager_ = new WorkManager(this, Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1);
     stwYoungGC_ = new STWYoungGC(this, paralledGc_);
     fullGC_ = new FullGC(this);
 
@@ -135,9 +135,9 @@ void Heap::Destroy()
         delete hugeObjectSpace_;
         hugeObjectSpace_ = nullptr;
     }
-    if (workList_ != nullptr) {
-        delete workList_;
-        workList_ = nullptr;
+    if (workManager_ != nullptr) {
+        delete workManager_;
+        workManager_ = nullptr;
     }
     if (stwYoungGC_ != nullptr) {
         delete stwYoungGC_;

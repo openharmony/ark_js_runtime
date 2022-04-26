@@ -18,7 +18,7 @@
 
 #include "ecmascript/mem/garbage_collector.h"
 #include "ecmascript/mem/heap.h"
-#include "ecmascript/mem/parallel_work_helper.h"
+#include "ecmascript/mem/work_manager.h"
 
 namespace panda {
 namespace ecmascript {
@@ -47,9 +47,9 @@ private:
     size_t nonMoveSpaceCommitSize_ = 0;
 
     // obtain from heap
-    WorkerHelper *workList_ {nullptr};
+    WorkManager *workManager_ {nullptr};
 
-    friend class WorkerHelper;
+    friend class WorkManager;
     friend class Heap;
 };
 }  // namespace ecmascript

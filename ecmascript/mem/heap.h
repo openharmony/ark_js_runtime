@@ -21,8 +21,8 @@
 #include "ecmascript/mem/chunk_containers.h"
 #include "ecmascript/mem/linear_space.h"
 #include "ecmascript/mem/mark_stack.h"
-#include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/sparse_space.h"
+#include "ecmascript/mem/work_manager.h"
 #include "ecmascript/taskpool/taskpool.h"
 
 namespace panda::ecmascript {
@@ -39,7 +39,6 @@ class ConcurrentSweeper;
 class ConcurrentMarker;
 class Marker;
 class ParallelEvacuator;
-class WorkerHelper;
 
 using DerivedDataKey = std::pair<uintptr_t, uintptr_t>;
 
@@ -167,9 +166,9 @@ public:
         return thread_;
     }
 
-    WorkerHelper *GetWorkList() const
+    WorkManager *GetWorkManager() const
     {
-        return workList_;
+        return workManager_;
     }
 
     MemController *GetMemController() const
@@ -285,7 +284,7 @@ public:
 
     bool CheckCanDistributeTask();
 
-    void PostParallelGCTask(ParallelGCTaskPhase gcTask);
+    void PostParallelGCTask(ParallelGCTaskPhase taskPhase);
 
     bool IsParallelGCEnabled() const
     {
@@ -385,7 +384,7 @@ private:
     FullGC *fullGC_ {nullptr};
     ConcurrentSweeper *sweeper_ {nullptr};
     ConcurrentMarker *concurrentMarker_ {nullptr};
-    WorkerHelper *workList_ {nullptr};
+    WorkManager *workManager_ {nullptr};
     Marker *nonMovableMarker_ {nullptr};
     Marker *semiGcMarker_ {nullptr};
     Marker *compressGcMarker_ {nullptr};

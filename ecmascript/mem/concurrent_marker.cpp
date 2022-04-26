@@ -33,7 +33,7 @@ ConcurrentMarker::ConcurrentMarker(Heap *heap)
     : heap_(heap),
       vm_(heap->GetEcmaVM()),
       thread_(vm_->GetJSThread()),
-      workList_(heap->GetWorkList())
+      workManager_(heap->GetWorkManager())
 {
     thread_->SetMarkStatus(MarkStatus::READY_TO_MARK);
 }
@@ -55,7 +55,7 @@ void ConcurrentMarker::ConcurrentMarking()
 void ConcurrentMarker::FinishPhase()
 {
     size_t aliveSize = 0;
-    workList_->Finish(aliveSize);
+    workManager_->Finish(aliveSize);
 }
 
 void ConcurrentMarker::ReMarking()
@@ -131,7 +131,7 @@ void ConcurrentMarker::InitializeMarking()
     } else {
         heapObjectSize_ = heap_->GetNewSpace()->GetHeapObjectSize();
     }
-    workList_->Initialize(TriggerGCType::OLD_GC, ParallelGCTaskPhase::CONCURRENT_HANDLE_GLOBAL_POOL_TASK);
+    workManager_->Initialize(TriggerGCType::OLD_GC, ParallelGCTaskPhase::CONCURRENT_HANDLE_GLOBAL_POOL_TASK);
     heap_->GetNonMovableMarker()->MarkRoots(MAIN_THREAD_INDEX);
 }
 

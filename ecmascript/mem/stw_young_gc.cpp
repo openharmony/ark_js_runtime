@@ -29,7 +29,7 @@
 
 namespace panda::ecmascript {
 STWYoungGC::STWYoungGC(Heap *heap, bool paralledGc)
-    : heap_(heap), paralledGc_(paralledGc), workList_(heap->GetWorkList())
+    : heap_(heap), paralledGc_(paralledGc), workManager_(heap->GetWorkManager())
 {
 }
 
@@ -58,7 +58,7 @@ void STWYoungGC::Initialize()
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Initialize");
     heap_->Prepare();
     heap_->SwapNewSpace();
-    workList_->Initialize(TriggerGCType::SEMI_GC, ParallelGCTaskPhase::SEMI_HANDLE_GLOBAL_POOL_TASK);
+    workManager_->Initialize(TriggerGCType::SEMI_GC, ParallelGCTaskPhase::SEMI_HANDLE_GLOBAL_POOL_TASK);
     heap_->GetSemiGcMarker()->Initialized();
     promotedSize_ = 0;
     semiCopiedSize_ = 0;
@@ -85,7 +85,7 @@ void STWYoungGC::Mark()
     auto totalThreadCount = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1;  // gc thread and main thread
     for (uint32_t i = 0; i < totalThreadCount; i++) {
         SlotNeedUpdate needUpdate(nullptr, ObjectSlot(0));
-        while (workList_->GetSlotNeedUpdate(i, &needUpdate)) {
+        while (workManager_->GetSlotNeedUpdate(i, &needUpdate)) {
             UpdatePromotedSlot(needUpdate.first, needUpdate.second);
         }
     }
@@ -97,7 +97,7 @@ void STWYoungGC::Sweep()
     auto totalThreadCount = static_cast<uint32_t>(
         Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1);  // gc thread and main thread
     for (uint32_t i = 0; i < totalThreadCount; i++) {
-        ProcessQueue *queue = workList_->GetWeakReferenceQueue(i);
+        ProcessQueue *queue = workManager_->GetWeakReferenceQueue(i);
         while (true) {
             auto obj = queue->PopBack();
             if (UNLIKELY(obj == nullptr)) {
@@ -140,7 +140,7 @@ void STWYoungGC::Sweep()
 void STWYoungGC::Finish()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Finish");
-    workList_->Finish(semiCopiedSize_, promotedSize_);
+    workManager_->Finish(semiCopiedSize_, promotedSize_);
     heap_->Resume(SEMI_GC);
 }
 }  // namespace panda::ecmascript
