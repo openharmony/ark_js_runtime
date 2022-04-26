@@ -388,6 +388,34 @@ void InterpreterStub::DispatchLast(GateRef glue, GateRef sp, GateRef pc, GateRef
     Return();
 }
 
+void InterpreterStub::DispatchDebugger(GateRef glue, GateRef sp, GateRef pc, GateRef constpool,
+                                       GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter)
+{
+    GateRef opcode = Load(VariableType::INT8(), pc);
+    GateRef opcodeOffset = PtrMul(ChangeInt32ToIntPtr(ZExtInt8ToInt32(opcode)), IntPtrSize());
+    const CallSignature *bytecodeHandler = BytecodeStubCSigns::Get(BYTECODE_STUB_BEGIN_ID);
+    auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
+    GateRef result =
+        GetEnvironment()->GetBuilder().DebuggerBytecodeCall(bytecodeHandler, glue, opcodeOffset, depend,
+        {glue, sp, pc, constpool, profileTypeInfo, acc, hotnessCounter});
+    GetEnvironment()->GetCurrentLabel()->SetDepend(result);
+    Return();
+}
+
+void InterpreterStub::DispatchDebuggerLast(GateRef glue, GateRef sp, GateRef pc, GateRef constpool,
+                                           GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter)
+{
+    GateRef opcodeOffset = PtrMul(
+        IntPtr(BytecodeStubCSigns::ID_ExceptionHandler), IntPtrSize());
+    const CallSignature *bytecodeHandler = BytecodeStubCSigns::Get(BYTECODE_STUB_BEGIN_ID);
+    auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
+    GateRef result =
+        GetEnvironment()->GetBuilder().DebuggerBytecodeCall(bytecodeHandler, glue, opcodeOffset, depend,
+        {glue, sp, pc, constpool, profileTypeInfo, acc, hotnessCounter});
+    GetEnvironment()->GetCurrentLabel()->SetDepend(result);
+    Return();
+}
+
 template<RuntimeStubCSigns::ID id, typename... Args>
 void InterpreterStub::DispatchCommonCall(GateRef glue, GateRef function, Args... args)
 {

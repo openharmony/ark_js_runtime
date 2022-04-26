@@ -429,7 +429,7 @@ DEF_CALL_SIGNATURE(GetTaggedArrayPtrTest)
 DEF_CALL_SIGNATURE(BytecodeHandler)
 {
     // 7 : 7 input parameters
-    CallSignature bytecodeHandler("bytecodeHandler", 0, 7,
+    CallSignature bytecodeHandler("BytecodeHandler", 0, 7,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
     *callSign = bytecodeHandler;
     std::array<VariableType, 7> params = { // 7 : 7 input parameters
@@ -448,7 +448,7 @@ DEF_CALL_SIGNATURE(BytecodeHandler)
 DEF_CALL_SIGNATURE(SingleStepDebugging)
 {
     // 7 : 7 input parameters
-    CallSignature singleStepDebugging("singleStepDebugging", 0, 7,
+    CallSignature singleStepDebugging("SingleStepDebugging", 0, 7,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
     *callSign = singleStepDebugging;
     std::array<VariableType, 7> params = { // 7 : 7 input parameters
@@ -470,6 +470,44 @@ DEF_CALL_SIGNATURE(HandleOverflow)
     CallSignature handleOverflow("HandleOverflow", 0, 7,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
     *callSign = handleOverflow;
+    std::array<VariableType, 7> params = { // 7 : 7 input parameters
+        VariableType::NATIVE_POINTER(),
+        VariableType::NATIVE_POINTER(),
+        VariableType::NATIVE_POINTER(),
+        VariableType::JS_POINTER(),
+        VariableType::JS_POINTER(),
+        VariableType::JS_ANY(),
+        VariableType::INT32(),
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::GHCCallConv);
+}
+
+DEF_CALL_SIGNATURE(BCDebuggerEntry)
+{
+    // 7 : 7 input parameters
+    CallSignature bcDebuggerEntry("BCDebuggerEntry", 0, 7,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = bcDebuggerEntry;
+    std::array<VariableType, 7> params = { // 7 : 7 input parameters
+        VariableType::NATIVE_POINTER(),
+        VariableType::NATIVE_POINTER(),
+        VariableType::NATIVE_POINTER(),
+        VariableType::JS_POINTER(),
+        VariableType::JS_POINTER(),
+        VariableType::JS_ANY(),
+        VariableType::INT32(),
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetCallConv(CallSignature::CallConv::GHCCallConv);
+}
+
+DEF_CALL_SIGNATURE(BCDebuggerExceptionEntry)
+{
+    // 7 : 7 input parameters
+    CallSignature bcDebuggerExceptionEntry("BCDebuggerExceptionEntry", 0, 7,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = bcDebuggerExceptionEntry;
     std::array<VariableType, 7> params = { // 7 : 7 input parameters
         VariableType::NATIVE_POINTER(),
         VariableType::NATIVE_POINTER(),

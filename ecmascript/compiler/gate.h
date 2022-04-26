@@ -100,6 +100,7 @@ public:
         NOGC_RUNTIME_CALL,
         CALL,
         BYTECODE_CALL,
+        DEBUGGER_BYTECODE_CALL,
         ALLOCA,
         ARG,
         MUTABLE_DATA,

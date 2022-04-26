@@ -273,6 +273,8 @@ private:
     V(BytecodeHandler)                      \
     V(SingleStepDebugging)                  \
     V(HandleOverflow)                       \
+    V(BCDebuggerEntry)                      \
+    V(BCDebuggerExceptionEntry)             \
     V(CallRuntime)                          \
     V(CallRuntimeWithArgv)                  \
     V(OptimizedCallOptimized)               \

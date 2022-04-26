@@ -1509,6 +1509,28 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
              *varHotnessCounter, IntPtr(0));
 }
 
+DECLARE_ASM_HANDLER(BCDebuggerEntry)
+{
+    GateRef frame = GetFrame(sp);
+    SetPcToFrame(glue, frame, pc);
+    // NOTIFY_DEBUGGER_EVENT()
+    CallRuntime(glue, RTSTUB_ID(NotifyBytecodePcChanged), {});
+    // goto normal handle stub
+    DispatchDebugger(glue, sp, pc, constpool, profileTypeInfo, acc, hotnessCounter);
+}
+
+DECLARE_ASM_HANDLER(BCDebuggerExceptionEntry)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    varAcc = Hole();
+    GateRef frame = GetFrame(sp);
+    SetPcToFrame(glue, frame, pc);
+    // NOTIFY_DEBUGGER_EVENT()
+    CallRuntime(glue, RTSTUB_ID(NotifyBytecodePcChanged), {});
+    // goto last handle stub
+    DispatchDebuggerLast(glue, sp, pc, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+}
+
 DECLARE_ASM_HANDLER(HandleOverflow)
 {
     FatalPrint(glue, { Int32(GET_MESSAGE_STRING_ID(OPCODE_OVERFLOW)) });

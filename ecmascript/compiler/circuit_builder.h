@@ -238,6 +238,8 @@ public:
     GateRef VariadicRuntimeCall(GateRef glue, GateRef target, GateRef depend, const std::vector<GateRef> &args);
     GateRef BytecodeCall(const CallSignature *signature, GateRef glue, GateRef target,
                          GateRef depend, const std::vector<GateRef> &args);
+    GateRef DebuggerBytecodeCall(const CallSignature *signature, GateRef glue, GateRef target,
+                                 GateRef depend, const std::vector<GateRef> &args);
     static MachineType GetMachineTypeFromVariableType(VariableType type);
     Circuit *GetCircuit() const
     {
