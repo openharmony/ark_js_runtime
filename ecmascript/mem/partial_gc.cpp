@@ -29,7 +29,7 @@
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
-PartialGC::PartialGC(Heap *heap) : heap_(heap), workList_(heap->GetWorkList()) {}
+PartialGC::PartialGC(Heap *heap) : heap_(heap), workManager_(heap->GetWorkManager()) {}
 
 void PartialGC::RunPhases()
 {
@@ -63,7 +63,7 @@ void PartialGC::Initialize()
                 current->ResetAliveObject();
             });
         }
-        workList_->Initialize(TriggerGCType::OLD_GC, ParallelGCTaskPhase::OLD_HANDLE_GLOBAL_POOL_TASK);
+        workManager_->Initialize(TriggerGCType::OLD_GC, ParallelGCTaskPhase::OLD_HANDLE_GLOBAL_POOL_TASK);
 
         freeSize_ = 0;
         hugeSpaceFreeSize_ = 0;
@@ -80,7 +80,7 @@ void PartialGC::Finish()
         marker->Reset(false);
     } else {
         size_t aliveSize = 0;
-        workList_->Finish(aliveSize);
+        workManager_->Finish(aliveSize);
     }
 }
 

@@ -26,7 +26,7 @@ void Marker::MarkRoots(uint32_t threadId)
         std::bind(&Marker::HandleRoots, this, threadId, std::placeholders::_1, std::placeholders::_2),
         std::bind(&Marker::HandleRangeRoots, this, threadId, std::placeholders::_1, std::placeholders::_2,
                   std::placeholders::_3));
-    heap_->GetWorkList()->PushWorkNodeToGlobal(threadId, false);
+    heap_->GetWorkManager()->PushWorkNodeToGlobal(threadId, false);
 }
 
 void Marker::ProcessOldToNew(uint32_t threadId)
@@ -75,11 +75,11 @@ void NonMovableMarker::ProcessMarkStack(uint32_t threadId)
             }
         }
     };
-    WorkerHelper *worklist = heap_->GetWorkList();
+    WorkManager *workManager = heap_->GetWorkManager();
     TaggedObject *obj = nullptr;
     while (true) {
         obj = nullptr;
-        if (!worklist->Pop(threadId, &obj)) {
+        if (!workManager->Pop(threadId, &obj)) {
             break;
         }
 
@@ -109,16 +109,16 @@ void SemiGcMarker::ProcessMarkStack(uint32_t threadId)
                 auto slotStatus = MarkObject(threadId, value.GetTaggedObject(), slot);
                 if (!rootRegion->InYoungGeneration() && slotStatus == SlotStatus::KEEP_SLOT) {
                     SlotNeedUpdate waitUpdate(reinterpret_cast<TaggedObject *>(root), slot);
-                    heap_->GetWorkList()->PushWaitUpdateSlot(threadId, waitUpdate);
+                    heap_->GetWorkManager()->PushSlotNeedUpdate(threadId, waitUpdate);
                 }
             }
         }
     };
-    WorkerHelper *worklist = heap_->GetWorkList();
+    WorkManager *workManager = heap_->GetWorkManager();
     TaggedObject *obj = nullptr;
     while (true) {
         obj = nullptr;
-        if (!worklist->Pop(threadId, &obj)) {
+        if (!workManager->Pop(threadId, &obj)) {
             break;
         }
 
@@ -142,11 +142,11 @@ void CompressGcMarker::ProcessMarkStack(uint32_t threadId)
             }
         }
     };
-    WorkerHelper *worklist = heap_->GetWorkList();
+    WorkManager *workManager = heap_->GetWorkManager();
     TaggedObject *obj = nullptr;
     while (true) {
         obj = nullptr;
-        if (!worklist->Pop(threadId, &obj)) {
+        if (!workManager->Pop(threadId, &obj)) {
             break;
         }
 

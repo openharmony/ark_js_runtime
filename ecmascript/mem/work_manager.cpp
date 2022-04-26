@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/mem/parallel_work_helper.h"
+#include "ecmascript/mem/work_manager.h"
 
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/mem/area.h"
@@ -26,9 +26,9 @@
 #include "ecmascript/mem/tlab_allocator-inl.h"
 
 namespace panda::ecmascript {
-WorkerHelper::WorkerHelper(Heap *heap, uint32_t threadNum)
+WorkManager::WorkManager(Heap *heap, uint32_t threadNum)
     : heap_(heap), threadNum_(threadNum), continuousQueue_ { nullptr }, markSpace_(0), spaceTop_(0), markSpaceEnd_(0),
-      parallelTask_(UNDEFINED_TASK)
+      parallelGCTaskPhase_(UNDEFINED_TASK)
 {
     for (uint32_t i = 0; i < threadNum_; i++) {
         continuousQueue_[i] = new ProcessQueue(heap);
@@ -37,7 +37,7 @@ WorkerHelper::WorkerHelper(Heap *heap, uint32_t threadNum)
         ToUintPtr(const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->AllocateBuffer(SPACE_SIZE));
 }
 
-WorkerHelper::~WorkerHelper()
+WorkManager::~WorkManager()
 {
     for (uint32_t i = 0; i < threadNum_; i++) {
         continuousQueue_[i]->Destroy();
@@ -48,17 +48,17 @@ WorkerHelper::~WorkerHelper()
         reinterpret_cast<void *>(markSpace_));
 }
 
-bool WorkerHelper::Push(uint32_t threadId, TaggedObject *object)
+bool WorkManager::Push(uint32_t threadId, TaggedObject *object)
 {
-    WorkNode *&pushNode = workList_[threadId].pushNode_;
-    if (!pushNode->Push(ToUintPtr(object))) {
+    WorkNode *&inNode = works_[threadId].inNode_;
+    if (!inNode->PushObject(ToUintPtr(object))) {
         PushWorkNodeToGlobal(threadId);
-        return pushNode->Push(ToUintPtr(object));
+        return inNode->PushObject(ToUintPtr(object));
     }
     return true;
 }
 
-bool WorkerHelper::Push(uint32_t threadId, TaggedObject *object, Region *region)
+bool WorkManager::Push(uint32_t threadId, TaggedObject *object, Region *region)
 {
     if (Push(threadId, object)) {
         auto klass = object->GetClass();
@@ -69,44 +69,44 @@ bool WorkerHelper::Push(uint32_t threadId, TaggedObject *object, Region *region)
     return false;
 }
 
-void WorkerHelper::PushWorkNodeToGlobal(uint32_t threadId, bool postTask)
+void WorkManager::PushWorkNodeToGlobal(uint32_t threadId, bool postTask)
 {
-    WorkNode *&pushNode = workList_[threadId].pushNode_;
-    if (!pushNode->IsEmpty()) {
-        globalWork_.Push(pushNode);
-        pushNode = AllocalWorkNode();
+    WorkNode *&inNode = works_[threadId].inNode_;
+    if (!inNode->IsEmpty()) {
+        workStack_.Push(inNode);
+        inNode = AllocateWorkNode();
         if (postTask && heap_->IsParallelGCEnabled() && heap_->CheckCanDistributeTask()) {
-            heap_->PostParallelGCTask(parallelTask_);
+            heap_->PostParallelGCTask(parallelGCTaskPhase_);
         }
     }
 }
 
-bool WorkerHelper::Pop(uint32_t threadId, TaggedObject **object)
+bool WorkManager::Pop(uint32_t threadId, TaggedObject **object)
 {
-    WorkNode *&popNode = workList_[threadId].popNode_;
-    WorkNode *&pushNode = workList_[threadId].pushNode_;
-    if (!popNode->Pop(reinterpret_cast<uintptr_t *>(object))) {
-        if (!pushNode->IsEmpty()) {
-            WorkNode *tmp = popNode;
-            popNode = pushNode;
-            pushNode = tmp;
+    WorkNode *&outNode = works_[threadId].outNode_;
+    WorkNode *&inNode = works_[threadId].inNode_;
+    if (!outNode->PopObject(reinterpret_cast<uintptr_t *>(object))) {
+        if (!inNode->IsEmpty()) {
+            WorkNode *tmp = outNode;
+            outNode = inNode;
+            inNode = tmp;
         } else if (!PopWorkNodeFromGlobal(threadId)) {
             return false;
         }
-        return popNode->Pop(reinterpret_cast<uintptr_t *>(object));
+        return outNode->PopObject(reinterpret_cast<uintptr_t *>(object));
     }
     return true;
 }
 
-bool WorkerHelper::PopWorkNodeFromGlobal(uint32_t threadId)
+bool WorkManager::PopWorkNodeFromGlobal(uint32_t threadId)
 {
-    return globalWork_.Pop(&workList_[threadId].popNode_);
+    return workStack_.Pop(&works_[threadId].outNode_);
 }
 
-void WorkerHelper::Finish(size_t &aliveSize)
+void WorkManager::Finish(size_t &aliveSize)
 {
     for (uint32_t i = 0; i < threadNum_; i++) {
-        WorkNodeHolder &holder = workList_[i];
+        WorkNodeHolder &holder = works_[i];
         holder.weakQueue_->FinishMarking(continuousQueue_[i]);
         delete holder.weakQueue_;
         holder.weakQueue_ = nullptr;
@@ -115,7 +115,7 @@ void WorkerHelper::Finish(size_t &aliveSize)
             delete holder.allocator_;
             holder.allocator_ = nullptr;
         }
-        holder.waitUpdate_.clear();
+        holder.pendingUpdateSlots_.clear();
         aliveSize += holder.aliveSize_;
     }
 
@@ -126,35 +126,35 @@ void WorkerHelper::Finish(size_t &aliveSize)
     }
 }
 
-void WorkerHelper::Finish(size_t &aliveSize, size_t &promoteSize)
+void WorkManager::Finish(size_t &aliveSize, size_t &promotedSize)
 {
     Finish(aliveSize);
     for (uint32_t i = 0; i < threadNum_; i++) {
-        WorkNodeHolder &holder = workList_[i];
-        promoteSize += holder.aliveSize_;
+        WorkNodeHolder &holder = works_[i];
+        promotedSize += holder.aliveSize_;
     }
 }
 
-void WorkerHelper::Initialize(TriggerGCType gcType, ParallelGCTaskPhase parallelTask)
+void WorkManager::Initialize(TriggerGCType gcType, ParallelGCTaskPhase taskPhase)
 {
-    parallelTask_ = parallelTask;
+    parallelGCTaskPhase_ = taskPhase;
     spaceTop_ = markSpace_;
     markSpaceEnd_ = markSpace_ + SPACE_SIZE;
     for (uint32_t i = 0; i < threadNum_; i++) {
-        WorkNodeHolder &holder = workList_[i];
-        holder.pushNode_ = AllocalWorkNode();
-        holder.popNode_ = AllocalWorkNode();
+        WorkNodeHolder &holder = works_[i];
+        holder.inNode_ = AllocateWorkNode();
+        holder.outNode_ = AllocateWorkNode();
         holder.weakQueue_ = new ProcessQueue();
         holder.weakQueue_->BeginMarking(heap_, continuousQueue_[i]);
         holder.aliveSize_ = 0;
-        holder.promoteSize_ = 0;
+        holder.promotedSize_ = 0;
         if (gcType != TriggerGCType::OLD_GC) {
             holder.allocator_ = new TlabAllocator(heap_);
         }
     }
 }
 
-WorkNode *WorkerHelper::AllocalWorkNode()
+WorkNode *WorkManager::AllocateWorkNode()
 {
     size_t totalSize = sizeof(WorkNode) + sizeof(Stack) + STACK_AREA_SIZE;
     // CAS

@@ -25,7 +25,7 @@ void Barriers::Update(uintptr_t slotAddr, Region *objectRegion, TaggedObject *va
             return;
         }
         if (valueRegion->AtomicMark(value)) {
-            valueRegion->GetWorkList()->Push(0, value, valueRegion);
+            valueRegion->GetWorkManager()->Push(0, value, valueRegion);
         }
     }
     if (isFullMark && valueRegion->InCollectSet() && !objectRegion->InYoungOrCSetGeneration()) {

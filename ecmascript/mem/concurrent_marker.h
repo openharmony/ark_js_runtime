@@ -20,8 +20,8 @@
 #include <atomic>
 
 #include "ecmascript/mem/object_xray.h"
-#include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/space.h"
+#include "ecmascript/mem/work_manager.h"
 #include "ecmascript/taskpool/task.h"
 #include "os/mutex.h"
 
@@ -81,7 +81,7 @@ private:
     JSThread *thread_ {nullptr};
 
     // obtain from heap
-    WorkerHelper *workList_ {nullptr};
+    WorkManager *workManager_ {nullptr};
     size_t heapObjectSize_ {0};
     double duration_ {0.0};
 

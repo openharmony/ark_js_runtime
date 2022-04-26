@@ -26,7 +26,7 @@
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
-FullGC::FullGC(Heap *heap) : heap_(heap), workList_(heap->GetWorkList()) {}
+FullGC::FullGC(Heap *heap) : heap_(heap), workManager_(heap->GetWorkManager()) {}
 
 void FullGC::RunPhases()
 {
@@ -62,7 +62,7 @@ void FullGC::Initialize()
         current->ClearCrossRegionRSet();
     });
     heap_->SwapNewSpace();
-    workList_->Initialize(TriggerGCType::FULL_GC, ParallelGCTaskPhase::COMPRESS_HANDLE_GLOBAL_POOL_TASK);
+    workManager_->Initialize(TriggerGCType::FULL_GC, ParallelGCTaskPhase::COMPRESS_HANDLE_GLOBAL_POOL_TASK);
     heap_->GetCompressGcMarker()->Initialized();
 
     youngAndOldAliveSize_ = 0;
@@ -86,7 +86,7 @@ void FullGC::Sweep()
     // process weak reference
     auto totalThreadCount = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1; // gc thread and main thread
     for (uint32_t i = 0; i < totalThreadCount; i++) {
-        ProcessQueue *queue = workList_->GetWeakReferenceQueue(i);
+        ProcessQueue *queue = workManager_->GetWeakReferenceQueue(i);
 
         while (true) {
             auto obj = queue->PopBack();
@@ -144,6 +144,6 @@ void FullGC::Finish()
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::Finish");
     heap_->GetSweeper()->PostConcurrentSweepTasks(true);
     heap_->Resume(FULL_GC);
-    workList_->Finish(youngAndOldAliveSize_);
+    workManager_->Finish(youngAndOldAliveSize_);
 }
 }  // namespace panda::ecmascript

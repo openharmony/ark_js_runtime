@@ -25,9 +25,9 @@
 #include "ecmascript/mem/mark_word.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/object_xray.h"
-#include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/slots.h"
 #include "ecmascript/mem/tlab_allocator.h"
+#include "ecmascript/mem/work_manager.h"
 
 #include "os/mutex.h"
 
@@ -67,10 +67,10 @@ private:
 
     // obtain from heap
     bool paralledGc_ {false};
-    WorkerHelper *workList_ {nullptr};
+    WorkManager *workManager_ {nullptr};
 
     friend class TlabAllocator;
-    friend class WorkerHelper;
+    friend class WorkManager;
     friend class Heap;
 };
 }  // namespace ecmascript
