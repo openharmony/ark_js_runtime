@@ -456,8 +456,7 @@ JSTaggedValue InterpreterAssembly::ExecuteNative(EcmaRuntimeCallInfo *info)
     ASSERT(method->GetNumVregsWithCallField() == 0);
 
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    InterpretedEntryFrame *entryState = GET_ENTRY_FRAME(sp);
-    JSTaggedType *prevSp = entryState->base.prev;
+    JSTaggedType *prevSp = InterpretedEntryFrameHandler::GetPrevInterpretedFrame(sp);
 
     int32_t actualNumArgs = static_cast<int32_t>(info->GetArgsNumber());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -510,8 +509,7 @@ JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
 
     // current sp is entry frame.
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    InterpretedEntryFrame *entryState = GET_ENTRY_FRAME(sp);
-    JSTaggedType *prevSp = entryState->base.prev;
+    JSTaggedType *prevSp = InterpretedEntryFrameHandler::GetPrevInterpretedFrame(sp);
 
     int32_t actualNumArgs = static_cast<int32_t>(info->GetArgsNumber());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)

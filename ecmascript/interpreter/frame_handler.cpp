@@ -389,6 +389,17 @@ void InterpretedEntryFrameHandler::Iterate([[maybe_unused]] const RootVisitor &v
     v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
 }
 
+JSTaggedType* InterpretedEntryFrameHandler::GetPrevInterpretedFrame(JSTaggedType *sp)
+{
+    InterpretedEntryFrame *entryState = InterpretedEntryFrame::GetFrameFromSp(sp);
+    JSTaggedType *prevSp = entryState->base.prev;
+    if (prevSp != nullptr && FrameHandler(prevSp).GetFrameType() == FrameType::LEAVE_FRAME) {
+        OptimizedLeaveFrame *leaveFrame = OptimizedLeaveFrame::GetFrameFromSp(prevSp);
+        prevSp = reinterpret_cast<JSTaggedType *>(leaveFrame->callsiteFp);
+    }
+    return prevSp;
+}
+
 void OptimizedFrameHandler::PrevFrame()
 {
     OptimizedFrame *frame = OptimizedFrame::GetFrameFromSp(sp_);
