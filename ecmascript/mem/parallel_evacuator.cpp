@@ -62,9 +62,9 @@ void ParallelEvacuator::EvacuateSpace()
         AddWorkload(std::make_unique<EvacuateWorkload>(this, current));
     });
     heap_->GetOldSpace()->EnumerateCollectRegionSet(
-            [this](Region *current) {
-                AddWorkload(std::make_unique<EvacuateWorkload>(this, current));
-            });
+        [this](Region *current) {
+            AddWorkload(std::make_unique<EvacuateWorkload>(this, current));
+        });
     if (heap_->IsParallelGCEnabled()) {
         os::memory::LockHolder holder(mutex_);
         parallel_ = CalculateEvacuationThreadNum();

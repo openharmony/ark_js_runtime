@@ -13,14 +13,13 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_MEM_GC_H
-#define ECMASCRIPT_MEM_GC_H
+#ifndef ECMASCRIPT_MEM_GARBAGE_COLLECTOR_H
+#define ECMASCRIPT_MEM_GARBAGE_COLLECTOR_H
 
 #include "libpandabase/macros.h"
 
 namespace panda {
 namespace ecmascript {
-
 class GarbageCollector {
 public:
     GarbageCollector() = default;
@@ -35,10 +34,8 @@ protected:
     virtual void Mark() = 0;
     virtual void Sweep() = 0;
     virtual void Finish() = 0;
-
 };
-
 }  // namespace ecmascript
 }  // namespace panda
 
-#endif  // ECMASCRIPT_MEM_GC_H
+#endif  // ECMASCRIPT_MEM_GARBAGE_COLLECTOR_H

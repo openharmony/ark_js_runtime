@@ -16,14 +16,12 @@
 #ifndef ECMASCRIPT_MEM_FULL_GC_H
 #define ECMASCRIPT_MEM_FULL_GC_H
 
-#include "ecmascript/mem/gc.h"
+#include "ecmascript/mem/garbage_collector.h"
+#include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/parallel_work_helper.h"
 
 namespace panda {
 namespace ecmascript {
-class Heap;
-class JSHClass;
-
 class FullGC : public GarbageCollector {
 public:
     explicit FullGC(Heap *heap);

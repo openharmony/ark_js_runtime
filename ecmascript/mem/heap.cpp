@@ -35,7 +35,7 @@
 #include "ecmascript/mem/parallel_evacuator.h"
 #include "ecmascript/mem/parallel_marker-inl.h"
 #include "ecmascript/mem/parallel_work_helper.h"
-#include "ecmascript/mem/stw_young_gc_for_testing.h"
+#include "ecmascript/mem/stw_young_gc.h"
 #include "ecmascript/mem/verification.h"
 #include "ecmascript/runtime_call_id.h"
 

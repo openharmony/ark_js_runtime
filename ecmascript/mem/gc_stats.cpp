@@ -57,7 +57,8 @@ void GCStats::PrintPartialStatisticResult(bool isForce)
                             << "ms"
                             << " MAX pause time: " << PrintTimeMilliseconds(partialGCMAXPause_) << "ms"
                             << " total pause time: " << PrintTimeMilliseconds(partialGCTotalPause_) << "ms"
-                            << " average pause time: " << PrintTimeMilliseconds(partialGCTotalPause_ / partialGCCount_) << "ms";
+                            << " average pause time: " << PrintTimeMilliseconds(partialGCTotalPause_ / partialGCCount_)
+                            << "ms";
         if (!isForce) {
             PrintHeapStatisticResult(true);
         }
@@ -74,12 +75,14 @@ void GCStats::PrintPartialStatisticResult(bool isForce)
                             << "ms"
                             << " Concurrent mark wait time: " << PrintTimeMilliseconds(partialConcurrentMarkWaitPause_)
                             << "ms"
-                            << " Remark pause time: " << PrintTimeMilliseconds(partialConcurrentMarkRemarkPause_) << "ms"
+                            << " Remark pause time: " << PrintTimeMilliseconds(partialConcurrentMarkRemarkPause_)
+                            << "ms"
                             << " Evacuate pause time: " << PrintTimeMilliseconds(partialConcurrentMarkEvacuatePause_)
                             << "ms"
                             << " MIN pause time: " << PrintTimeMilliseconds(partialConcurrentMarkGCMinPause_) << "ms"
                             << " MAX pause time: " << PrintTimeMilliseconds(partialConcurrentMarkGCMAXPause_) << "ms"
-                            << " total pause time: " << PrintTimeMilliseconds(partialConcurrentMarkGCTotalPause_) << "ms"
+                            << " total pause time: " << PrintTimeMilliseconds(partialConcurrentMarkGCTotalPause_)
+                            << "ms"
                             << " average pause time: "
                             << PrintTimeMilliseconds(partialConcurrentMarkGCTotalPause_ / partialConcurrentMarkGCCount_)
                             << "ms";
