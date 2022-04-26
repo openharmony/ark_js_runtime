@@ -487,6 +487,7 @@ ecma_source = [
 
 if (!is_mingw) {
   ecma_source += [ "ecmascript/napi/dfx_jsnapi.cpp" ]
+  ecma_source += [ "ecmascript/tooling/interface/file_stream.cpp" ]
 }
 
 if (enable_test_stub) {
