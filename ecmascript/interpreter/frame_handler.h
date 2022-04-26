@@ -142,6 +142,7 @@ public:
     void PrevFrame();
     int32_t GetArgsNumber();
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1);
+    static JSTaggedType *GetPrevInterpretedFrame(JSTaggedType *sp);
 };
 
 class OptimizedFrameHandler : public FrameHandler {
