@@ -2234,12 +2234,6 @@ HWTEST_F_L0(DebuggerTypesTest, ProfileNodeCreateTest)
     EXPECT_EQ(runTimeCallFrame->GetColumnNumber(), 20);
 
     EXPECT_EQ(profileNode->GetHitCount(), 15);
-    const CVector<std::unique_ptr<int32_t>> *children = profileNode->GetChildren();
-    ASSERT_NE(children, nullptr);
-    EXPECT_EQ((int)children->size(), 0);
-    const CVector<std::unique_ptr<PositionTickInfo>> *positionTicks = profileNode->GetPositionTicks();
-    ASSERT_NE(positionTicks, nullptr);
-    EXPECT_EQ((int)positionTicks->size(), 0);
     EXPECT_EQ(profileNode->GetDeoptReason(), "yyy");
 }
 
@@ -2353,12 +2347,6 @@ HWTEST_F_L0(DebuggerTypesTest, ProfileCreateTest)
     const CVector<std::unique_ptr<ProfileNode>> *profileNode = profile->GetNodes();
     ASSERT_NE(profileNode, nullptr);
     EXPECT_EQ((int)profileNode->size(), 0);
-    const CVector<std::unique_ptr<int32_t>> *samples = profile->GetSamples();
-    ASSERT_NE(samples, nullptr);
-    EXPECT_EQ((int)samples->size(), 0);
-    const CVector<std::unique_ptr<int32_t>> *timeDeltas = profile->GetTimeDeltas();
-    ASSERT_NE(timeDeltas, nullptr);
-    EXPECT_EQ((int)timeDeltas->size(), 0);
 }
 
 HWTEST_F_L0(DebuggerTypesTest, ProfileToObjectTest)

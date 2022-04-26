@@ -159,14 +159,17 @@ public:
         return "";
     }
 
-    Local<ObjectRef> GetData() const
+    RemoteObject *GetData() const
     {
-        return data_.value_or(Local<ObjectRef>());
+        if (data_) {
+            return data_->get();
+        }
+        return nullptr;
     }
 
-    Paused &SetData(const Local<ObjectRef> &data)
+    Paused &SetData(std::unique_ptr<RemoteObject> data)
     {
-        data_ = data;
+        data_ = std::move(data);
         return *this;
     }
 
@@ -197,7 +200,7 @@ private:
 
     CVector<std::unique_ptr<CallFrame>> callFrames_ {};
     CString reason_ {};
-    std::optional<Local<ObjectRef>> data_ {};
+    std::optional<std::unique_ptr<RemoteObject>> data_ {};
     std::optional<CVector<BreakpointId>> hitBreakpoints_ {};
 };
 
@@ -802,13 +805,18 @@ public:
 
     const CString &GetTitle() const
     {
-        return title_;
+        return title_.value();
     }
 
     ConsoleProfileFinished &SetTitle(const CString &title)
     {
         title_ = title;
         return *this;
+    }
+
+    bool HasTitle() const
+    {
+        return title_.has_value();
     }
 
 private:
@@ -818,7 +826,7 @@ private:
     CString id_ {};
     std::unique_ptr<Location> location_ {nullptr};
     std::unique_ptr<Profile> profile_ {nullptr};
-    CString title_ {};
+    std::optional<CString> title_ {};
 };
 
 class ConsoleProfileStarted final : public PtBaseEvents {
@@ -856,7 +864,7 @@ public:
 
     const CString &GetTitle() const
     {
-        return title_;
+        return title_.value();
     }
 
     ConsoleProfileStarted &SetTitle(const CString &title)
@@ -865,13 +873,18 @@ public:
         return *this;
     }
 
+    bool HasTitle() const
+    {
+        return title_.has_value();
+    }
+
 private:
     NO_COPY_SEMANTIC(ConsoleProfileStarted);
     NO_MOVE_SEMANTIC(ConsoleProfileStarted);
 
     CString id_ {};
     std::unique_ptr<Location> location_ {nullptr};
-    CString title_ {};
+    std::optional<CString> title_ {};
 };
 
 class PreciseCoverageDeltaUpdate final : public PtBaseEvents {

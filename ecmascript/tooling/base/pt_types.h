@@ -1740,7 +1740,7 @@ public:
 
     int32_t GetHitCount() const
     {
-        return hitCount_;
+        return hitCount_.value();
     }
 
     ProfileNode &SetHitCount(size_t hitCount)
@@ -1749,9 +1749,17 @@ public:
         return *this;
     }
 
+    bool HasHitCount() const
+    {
+        return hitCount_.has_value();
+    }
+
     const CVector<std::unique_ptr<int32_t>> *GetChildren() const
     {
-        return &children_;
+        if (children_) {
+            return &children_.value();
+        }
+        return nullptr;
     }
 
     ProfileNode &SetChildren(CVector<std::unique_ptr<int32_t>> children)
@@ -1760,9 +1768,17 @@ public:
         return *this;
     }
 
+    bool HasChildren() const
+    {
+        return children_.has_value();
+    }
+
     const CVector<std::unique_ptr<PositionTickInfo>> *GetPositionTicks() const
     {
-        return &positionTicks_;
+        if (positionTicks_) {
+            return &positionTicks_.value();
+        }
+        return nullptr;
     }
 
     ProfileNode &SetPositionTicks(CVector<std::unique_ptr<PositionTickInfo>> positionTicks)
@@ -1771,9 +1787,14 @@ public:
         return *this;
     }
 
+    bool HasPositionTicks() const
+    {
+        return positionTicks_.has_value();
+    }
+
     const CString &GetDeoptReason() const
     {
-        return deoptReason_;
+        return deoptReason_.value();
     }
 
     ProfileNode &SetDeoptReason(const CString &deoptReason)
@@ -1782,15 +1803,20 @@ public:
         return *this;
     }
 
+    bool HasDeoptReason() const
+    {
+        return deoptReason_.has_value();
+    }
+
 private:
     NO_COPY_SEMANTIC(ProfileNode);
     NO_MOVE_SEMANTIC(ProfileNode);
     size_t id_ {0};
     std::unique_ptr<RuntimeCallFrame> callFrame_ {nullptr};
-    size_t hitCount_ {0};
-    CVector<std::unique_ptr<int32_t>> children_ {};
-    CVector<std::unique_ptr<PositionTickInfo>> positionTicks_ {};
-    CString deoptReason_ {};
+    std::optional<size_t> hitCount_ {0};
+    std::optional<CVector<std::unique_ptr<int32_t>>> children_ {};
+    std::optional<CVector<std::unique_ptr<PositionTickInfo>>> positionTicks_ {};
+    std::optional<CString> deoptReason_ {};
 };
 
 // Profiler.Profile
@@ -1829,7 +1855,7 @@ public:
         return &nodes_;
     }
 
-    Profile &SetPositionTicks(CVector<std::unique_ptr<ProfileNode>> nodes)
+    Profile &SetNodes(CVector<std::unique_ptr<ProfileNode>> nodes)
     {
         nodes_ = std::move(nodes);
         return *this;
@@ -1837,7 +1863,10 @@ public:
 
     const CVector<std::unique_ptr<int32_t>> *GetSamples() const
     {
-        return &samples_;
+        if (samples_) {
+            return &samples_.value();
+        }
+        return nullptr;
     }
 
     Profile &SetSamples(CVector<std::unique_ptr<int32_t>> samples)
@@ -1846,15 +1875,28 @@ public:
         return *this;
     }
 
+    bool HasSamples() const
+    {
+        return samples_.has_value();
+    }
+
     const CVector<std::unique_ptr<int32_t>> *GetTimeDeltas() const
     {
-        return &timeDeltas_;
+        if (timeDeltas_) {
+            return &timeDeltas_.value();
+        }
+        return nullptr;
     }
 
     Profile &SetTimeDeltas(CVector<std::unique_ptr<int32_t>> timeDeltas)
     {
         timeDeltas_ = std::move(timeDeltas);
         return *this;
+    }
+
+    bool HasTimeDeltas() const
+    {
+        return timeDeltas_.has_value();
     }
 
 private:
@@ -1864,8 +1906,8 @@ private:
     size_t startTime_ {0};
     size_t endTime_ {0};
     CVector<std::unique_ptr<ProfileNode>> nodes_ {};
-    CVector<std::unique_ptr<int32_t>> samples_ {};
-    CVector<std::unique_ptr<int32_t>> timeDeltas_ {};
+    std::optional<CVector<std::unique_ptr<int32_t>>> samples_ {};
+    std::optional<CVector<std::unique_ptr<int32_t>>> timeDeltas_ {};
 };
 
 // Profiler.Coverage
@@ -1952,7 +1994,7 @@ public:
 
     bool GetIsBlockCoverage() const
     {
-        return isBlockCoverage_.value_or(false);
+        return isBlockCoverage_;
     }
 
     FunctionCoverage &SetisBlockCoverage(bool isBlockCoverage)
@@ -1967,7 +2009,7 @@ private:
 
     CString functionName_ {};
     CVector<std::unique_ptr<Coverage>> ranges_ {};
-    std::optional<bool> isBlockCoverage_ {};
+    bool isBlockCoverage_ {};
 };
 
 // Profiler.ScriptCoverage

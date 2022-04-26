@@ -141,7 +141,7 @@ Dispatcher::Dispatcher(FrontEnd *front)
     dispatchers_["HeapProfiler"] =
         std::make_unique<HeapProfilerImpl::DispatcherImpl>(front, std::make_unique<HeapProfilerImpl>(front));
     dispatchers_["Profiler"] =
-        std::make_unique<ProfilerImpl::DispatcherImpl>(front, std::make_unique<ProfilerImpl>(backend.get()));
+        std::make_unique<ProfilerImpl::DispatcherImpl>(front, std::make_unique<ProfilerImpl>());
     dispatchers_["Debugger"] =
         std::make_unique<DebuggerImpl::DispatcherImpl>(front, std::make_unique<DebuggerImpl>(std::move(backend)));
 }
