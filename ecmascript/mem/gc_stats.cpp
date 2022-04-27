@@ -145,7 +145,7 @@ void GCStats::PrintHeapStatisticResult(bool force)
     }
 }
 
-void GCStats::StatisticSTWYoungGC(Duration time, size_t aliveSize, size_t promoteSize, size_t commitSize)
+void GCStats::StatisticSTWYoungGC(Duration time, size_t aliveSize, size_t promotedSize, size_t commitSize)
 {
     auto timeInMS = TimeToMicroseconds(time);
     if (semiGCCount_ == 0) {
@@ -158,7 +158,7 @@ void GCStats::StatisticSTWYoungGC(Duration time, size_t aliveSize, size_t promot
     semiGCTotalPause_ += timeInMS;
     semiTotalAliveSize_ += aliveSize;
     semiTotalCommitSize_ += commitSize;
-    semiTotalPromoteSize_ += promoteSize;
+    semiTotalPromoteSize_ += promotedSize;
     semiGCCount_++;
 }
 

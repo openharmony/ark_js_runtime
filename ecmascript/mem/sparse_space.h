@@ -106,9 +106,9 @@ public:
     /* The most extreme situation:
      * All the younger generation were promoted, and there was no free space in the old space.
      */
-    bool CanExpand(size_t promoteSize)
+    bool CanExpand(size_t promotedSize)
     {
-        return initialCapacity_ > committedSize_ + promoteSize;
+        return initialCapacity_ > committedSize_ + promotedSize;
     }
     Region *TryToGetExclusiveRegion(size_t size);
 

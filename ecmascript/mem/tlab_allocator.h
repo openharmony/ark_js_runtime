@@ -48,7 +48,7 @@ private:
     Heap *heap_;
 
     bool enableExpandYoung_;
-    BumpPointerAllocator youngerAllocator_;
+    BumpPointerAllocator youngAllocator_;
 
     LocalSpace *localSpace_;
 };

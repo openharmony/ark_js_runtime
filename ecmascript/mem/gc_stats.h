@@ -32,7 +32,7 @@ public:
     void PrintStatisticResult(bool force = false);
     void PrintHeapStatisticResult(bool force = true);
 
-    void StatisticSTWYoungGC(Duration time, size_t aliveSize, size_t promoteSize, size_t commitSize);
+    void StatisticSTWYoungGC(Duration time, size_t aliveSize, size_t promotedSize, size_t commitSize);
     void StatisticPartialGC(bool concurrentMark, Duration time, size_t freeSize);
     void StatisticFullGC(Duration time, size_t youngAndOldAliveSize, size_t youngCommitSize,
                          size_t oldCommitSize, size_t nonMoveSpaceFreeSize, size_t nonMoveSpaceCommitSize);

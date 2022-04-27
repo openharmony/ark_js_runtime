@@ -180,7 +180,7 @@ void JSNApi::TriggerGC(const EcmaVM *vm,  TRIGGER_GC_TYPE gcType)
     if (vm->GetJSThread() != nullptr && vm->IsInitialized()) {
         switch (gcType) {
             case TRIGGER_GC_TYPE::SEMI_GC:
-                vm->CollectGarbage(ecmascript::TriggerGCType::SEMI_GC);
+                vm->CollectGarbage(ecmascript::TriggerGCType::YOUNG_GC);
                 break;
             case TRIGGER_GC_TYPE::OLD_GC:
                 vm->CollectGarbage(ecmascript::TriggerGCType::OLD_GC);

@@ -43,8 +43,8 @@ class ParallelEvacuator;
 using DerivedDataKey = std::pair<uintptr_t, uintptr_t>;
 
 enum class MarkType : uint8_t {
-    SEMI_MARK,
-    FULL_MARK
+    MARK_YOUNG,
+    MARK_FULL
 };
 
 class Heap {
@@ -58,14 +58,22 @@ public:
     void Prepare();
     void Resume(TriggerGCType gcType);
 
+    // FIXME: Rename NewSpace to YoungSpace.
+    // This is the active young generation space that the new objects are allocated in
+    // or copied into (from the other semi space) during semi space GC.
     SemiSpace *GetNewSpace() const
     {
-        return toSpace_;
+        return activeSpace_;
     }
 
-    SemiSpace *GetFromSpace() const
+    /*
+     * Return the original active space where the objects are to be evacuated during semi space GC.
+     * This should be invoked only in the evacuation phase of semi space GC.
+     * FIXME: Get rid of this interface or make it safe considering the above implicit limitation / requirement.
+     */
+    SemiSpace *GetFromSpaceDuringEvacuation() const
     {
-        return fromSpace_;
+        return backupSpace_;
     }
 
     OldSpace *GetOldSpace() const
@@ -310,7 +318,7 @@ public:
 
     bool IsFullMark() const
     {
-        return markType_ == MarkType::FULL_MARK;
+        return markType_ == MarkType::MARK_FULL;
     }
 
     size_t GetArrayBufferSize() const;
@@ -371,8 +379,8 @@ private:
 
     EcmaVM *ecmaVm_ {nullptr};
     JSThread *thread_ {nullptr};
-    SemiSpace *fromSpace_ {nullptr};
-    SemiSpace *toSpace_ {nullptr};
+    SemiSpace *backupSpace_ {nullptr};
+    SemiSpace *activeSpace_ {nullptr};
     OldSpace *oldSpace_ {nullptr};
     OldSpace *compressSpace_ {nullptr};
     NonMovableSpace *nonMovableSpace_ {nullptr};
@@ -407,11 +415,10 @@ private:
     os::memory::ConditionVariable waitTaskFinishedCV_;
     bool parallelGc_ {true};
 
-    MarkType markType_ {MarkType::SEMI_MARK};
+    MarkType markType_ {MarkType::MARK_YOUNG};
     bool concurrentMarkingEnabled_ {true};
     bool fullGCRequested_ {false};
     bool oldSpaceLimitAdjusted_ {false};
-    size_t startNewSpaceSize_ {0};
     size_t promotedSize_ {0};
     size_t semiSpaceCopiedSize_ {0};
 };
