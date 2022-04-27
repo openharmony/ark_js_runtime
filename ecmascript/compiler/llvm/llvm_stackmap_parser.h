@@ -31,6 +31,7 @@ using DwarfRegType = uint16_t;
 using DwarfRegAndOffsetType = std::pair<DwarfRegType, OffsetType>;
 using CallSiteInfo = std::vector<DwarfRegAndOffsetType>;
 using Fun2InfoType = std::pair<uintptr_t, DwarfRegAndOffsetType>;
+using Pc2CallSiteInfo = std::unordered_map<uintptr_t, CallSiteInfo>;
 
 struct Header {
     uint8_t  stackmapversion; // Stack Map Version (current version is 3)
@@ -215,7 +216,7 @@ private:
     {
         stackMapAddr_ = nullptr;
         pc2CallSiteInfo_.clear();
-        pid2CallSiteInfo_.clear();
+        pc2CallSiteInfoVec_.clear();
         dataInfo_ = nullptr;
         enableLog_ = enableLog;
     }
@@ -225,19 +226,18 @@ private:
             stackMapAddr_.release();
         }
         pc2CallSiteInfo_.clear();
-        pid2CallSiteInfo_.clear();
+        pc2CallSiteInfoVec_.clear();
         dataInfo_ = nullptr;
     }
     void CalcCallSite();
     bool IsDeriveredPointer(int callsitetime) const;
-    const CallSiteInfo* GetCallSiteInfoByPatchID(uint64_t patchPointId) const;
     void PrintCallSiteInfo(const CallSiteInfo *infos, OptimizedLeaveFrame *frame) const;
     void PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp) const;
 
     std::unique_ptr<uint8_t[]> stackMapAddr_;
     struct LLVMStackMap llvmStackMap_;
-    std::unordered_map<uintptr_t, CallSiteInfo> pc2CallSiteInfo_;
-    std::unordered_map<uint64_t, CallSiteInfo> pid2CallSiteInfo_;
+    Pc2CallSiteInfo pc2CallSiteInfo_;
+    std::vector<Pc2CallSiteInfo> pc2CallSiteInfoVec_;
     [[maybe_unused]] std::unique_ptr<DataInfo> dataInfo_;
     bool enableLog_ {false};
 };
