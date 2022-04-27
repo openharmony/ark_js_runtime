@@ -33,15 +33,15 @@ class JSThread;
 #define GLOBAL_ENV_CONSTANT_CLASS(V)                                                                                  \
     /* GC Root */                                                                                                     \
     V(JSTaggedValue, HClassClass, HCLASS_CLASS_INDEX, ecma_roots_class)                                               \
-    V(JSTaggedValue, StringClass, STRING_CLASS_INDEX, ecma_roots_class)                                               \
-    V(JSTaggedValue, ArrayClass, ARRAY_CLASS_INDEX, ecma_roots_class)                                                 \
-    V(JSTaggedValue, DictionaryClass, DICTIONARY_CLASS_INDEX, ecma_roots_class)                                       \
-    V(JSTaggedValue, JSNativePointerClass, JS_NATIVE_POINTER_CLASS_INDEX, ecma_roots_class)                           \
-    V(JSTaggedValue, BigIntClass, BIGINT_CLASS_INDEX, ecma_roots_class)                                               \
-    V(JSTaggedValue, EnvClass, ENV_CLASS_INDEX, ecma_roots_class)                                                     \
     V(JSTaggedValue, FreeObjectWithNoneFieldClass, FREE_OBJECT_WITH_NONE_FIELD_CLASS_INDEX, ecma_roots_class)         \
     V(JSTaggedValue, FreeObjectWithOneFieldClass, FREE_OBJECT_WITH_ONE_FIELD_CLASS_INDEX, ecma_roots_class)           \
     V(JSTaggedValue, FreeObjectWithTwoFieldClass, FREE_OBJECT_WITH_TWO_FIELD_CLASS_INDEX, ecma_roots_class)           \
+    V(JSTaggedValue, StringClass, STRING_CLASS_INDEX, ecma_roots_class)                                               \
+    V(JSTaggedValue, ArrayClass, ARRAY_CLASS_INDEX, ecma_roots_class)                                                 \
+    V(JSTaggedValue, DictionaryClass, DICTIONARY_CLASS_INDEX, ecma_roots_class)                                       \
+    V(JSTaggedValue, BigIntClass, BIGINT_CLASS_INDEX, ecma_roots_class)                                               \
+    V(JSTaggedValue, JSNativePointerClass, JS_NATIVE_POINTER_CLASS_INDEX, ecma_roots_class)                           \
+    V(JSTaggedValue, EnvClass, ENV_CLASS_INDEX, ecma_roots_class)                                                     \
     V(JSTaggedValue, SymbolClass, SYMBOL_CLASS_INDEX, ecma_roots_class)                                               \
     V(JSTaggedValue, AccessorDataClass, ACCESSOR_DATA_CLASS_INDEX, ecma_roots_class)                                  \
     V(JSTaggedValue, InternalAccessorClass, INTERNAL_ACCESSOR_CLASS_INDEX, ecma_roots_class)                          \
@@ -61,6 +61,10 @@ class JSThread;
     V(JSTaggedValue, TransitionHandlerClass, TRANSITION_HANDLER_CLASS_INDEX, ecma_roots_class)                        \
     V(JSTaggedValue, PropertyBoxClass, PROPERTY_BOX_CLASS_INDEX, ecma_roots_class)                                    \
     V(JSTaggedValue, ProgramClass, PROGRAM_CLASS_INDEX, ecma_roots_class)                                             \
+    V(JSTaggedValue, ImportEntryClass, IMPORT_ENTRY_CLASS_INDEX, ecma_roots_class)                                    \
+    V(JSTaggedValue, ExportEntryClass, EXPORT_ENTRY_CLASS_INDEX, ecma_roots_class)                                    \
+    V(JSTaggedValue, SourceTextModuleClass, SOURCE_TEXT_MODULE_CLASS_INDEX, ecma_roots_class)                         \
+    V(JSTaggedValue, ResolvedBindingClass, RESOLVED_BINDING_CLASS_INDEX, ecma_roots_class)                            \
     V(JSTaggedValue, JSProxyCallableClass, JS_PROXY_CALLABLE_CLASS_INDEX, ecma_roots_class)                           \
     V(JSTaggedValue, JSProxyConstructClass, JS_PROXY_CONSTRUCT_CLASS_INDEX, ecma_roots_class)                         \
     V(JSTaggedValue, JSRealmClass, JS_REALM_CLASS_INDEX, ecma_roots_class)                                            \
@@ -75,10 +79,6 @@ class JSThread;
     V(JSTaggedValue, TSImportTypeClass, TS_IMPORT_TYPE_CLASS_INDEX, ecma_roots_class)                                 \
     V(JSTaggedValue, TSFunctionTypeClass, TS_FUNCTION_TYPE_CLASS_INDEX, ecma_roots_class)                             \
     V(JSTaggedValue, TSArrayTypeClass, TS_ARRAY_TYPE_CLASS_INDEX, ecma_roots_class)                                   \
-    V(JSTaggedValue, ImportEntryClass, IMPORT_ENTRY_CLASS_INDEX, ecma_roots_class)                                    \
-    V(JSTaggedValue, ExportEntryClass, EXPORT_ENTRY_CLASS_INDEX, ecma_roots_class)                                    \
-    V(JSTaggedValue, SourceTextModuleClass, SOURCE_TEXT_MODULE_CLASS_INDEX, ecma_roots_class)                         \
-    V(JSTaggedValue, ResolvedBindingClass, RESOLVED_BINDING_CLASS_INDEX, ecma_roots_class)                            \
     V(JSTaggedValue, JSSetIteratorClass, JS_SET_ITERATOR_CLASS_INDEX, ecma_roots_class)                               \
     V(JSTaggedValue, JSMapIteratorClass, JS_MAP_ITERATOR_CLASS_INDEX, ecma_roots_class)                               \
     V(JSTaggedValue, JSArrayIteratorClass, JS_ARRAY_ITERATOR_CLASS_INDEX, ecma_roots_class)                           \
@@ -302,6 +302,8 @@ class JSThread;
     V(JSTaggedValue, IgnorePunctuationString, IGNORE_PUNCTUATION_INDEX, ignorePunctuation)                            \
     V(JSTaggedValue, CardinalString, CARDINAL_INDEX, cardinal)                                                        \
     V(JSTaggedValue, OrdinalString, ORDINAL_INDEX, ordinal)                                                           \
+    V(JSTaggedValue, ExecString, EXEC_INDEX, exec)                                                                    \
+    V(JSTaggedValue, LastIndexString, LAST_INDEX_INDEX, lastIndex)                                                    \
     V(JSTaggedValue, PluralCategoriesString, PLURAL_CATEGORIES_INDEX, pluralCategories)                               \
     V(JSTaggedValue, SortString, SORT_INDEX, sort)                                                                    \
     V(JSTaggedValue, SearchString, SEARCH_INDEX, search)                                                              \
@@ -319,24 +321,23 @@ class JSThread;
     V(JSTaggedValue, Iso8601String, ISO8601_INDEX, iso8601)                                                           \
     V(JSTaggedValue, GregoryString, GREGORY_INDEX, gregory)                                                           \
     V(JSTaggedValue, EthioaaString, ETHIOAA_INDEX, ethioaa)                                                           \
-    V(JSTaggedValue, ValuesString, VALUES_INDEX, values)                                                              \
-    V(JSTaggedValue, FallbackString, FALLBACK_INDEX, fallback)                                                        \
-    V(JSTaggedValue, DateTimeFieldString, DATETIMEFIELD_INDEX, datetimefield)                                         \
-    V(JSTaggedValue, NoneString, NONE_INDEX, none)                                                                    \
-    V(JSTaggedValue, AddString, ADD_INDEX, none)                                                                      \
-    /* for regexp. */                                                                                                 \
-    V(JSTaggedValue, ExecString, EXEC_INDEX, exec)                                                                    \
-    V(JSTaggedValue, LastIndexString, LAST_INDEX_INDEX, lastIndex)                                                    \
     V(JSTaggedValue, StickyString, STICKY_INDEX, sticky)                                                              \
     V(JSTaggedValue, UString, U_INDEX, u)                                                                             \
     V(JSTaggedValue, IndexString, INDEX_INDEX, index)                                                                 \
     V(JSTaggedValue, InputString, INPUT_INDEX, input)                                                                 \
     V(JSTaggedValue, UnicodeString, UNICODE_INDEX, unicode)                                                           \
     V(JSTaggedValue, ZeroString, ZERO_INDEX, zero)                                                                    \
-    /* for module. */                                                                                                 \
+    V(JSTaggedValue, ValuesString, VALUES_INDEX, values)                                                              \
+    V(JSTaggedValue, AddString, ADD_INDEX, add)                                                                       \
     V(JSTaggedValue, AmbiguousString, AMBIGUOUS_INDEX, ambiguous)                                                     \
     V(JSTaggedValue, ModuleString, MODULE_INDEX, module)                                                              \
-    V(JSTaggedValue, StarString, STAR_INDEX, star)
+    V(JSTaggedValue, StarString, STAR_INDEX, star)                                                                    \
+    V(JSTaggedValue, DateTimeFieldString, DATETIMEFIELD_INDEX, datetimefield)                                         \
+    V(JSTaggedValue, ConjunctionString, CONJUNCTION_INDEX, conjunction)                                               \
+    V(JSTaggedValue, NoneString, NONE_INDEX, none)                                                                    \
+    V(JSTaggedValue, FallbackString, FALLBACK_INDEX, fallback)                                                        \
+    V(JSTaggedValue, DisjunctionString, DISJUNCTION_INDEX, disjunction)                                               \
+    V(JSTaggedValue, ElementString, ELEMENT_INDEX, element)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GLOBAL_ENV_CONSTANT_ACCESSOR(V)                                                           \

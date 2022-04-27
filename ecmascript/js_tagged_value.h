@@ -327,6 +327,7 @@ public:
     bool IsJSCollator() const;
     bool IsJSPluralRules() const;
     bool IsJSDisplayNames() const;
+    bool IsJSListFormat() const;
 
     // non ECMA standard jsapis
     bool IsJSAPIArrayList() const;

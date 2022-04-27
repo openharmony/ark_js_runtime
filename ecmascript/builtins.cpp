@@ -51,6 +51,7 @@
 #include "ecmascript/builtins/builtins_object.h"
 #include "ecmascript/builtins/builtins_plural_rules.h"
 #include "ecmascript/builtins/builtins_displaynames.h"
+#include "ecmascript/builtins/builtins_list_format.h"
 #include "ecmascript/builtins/builtins_promise.h"
 #include "ecmascript/builtins/builtins_promise_handler.h"
 #include "ecmascript/builtins/builtins_promise_job.h"
@@ -85,6 +86,7 @@
 #include "ecmascript/js_number_format.h"
 #include "ecmascript/js_plural_rules.h"
 #include "ecmascript/js_displaynames.h"
+#include "ecmascript/js_list_format.h"
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_regexp.h"
@@ -150,6 +152,7 @@ using NumberFormat = builtins::BuiltinsNumberFormat;
 using Collator = builtins::BuiltinsCollator;
 using PluralRules = builtins::BuiltinsPluralRules;
 using DisplayNames = builtins::BuiltinsDisplayNames;
+using ListFormat = builtins::BuiltinsListFormat;
 
 using ContainersPrivate = containers::ContainersPrivate;
 using SharedArrayBuffer = builtins::BuiltinsSharedArrayBuffer;
@@ -341,6 +344,7 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     InitializeCollator(env);
     InitializePluralRules(env);
     InitializeDisplayNames(env);
+    InitializeListFormat(env);
 
     InitializeModuleNamespace(env, objFuncDynclass);
 
@@ -2982,6 +2986,42 @@ void Builtins::InitializeDisplayNames(const JSHandle<GlobalEnv> &env)
 
     // 12.4.4 Intl.DisplayNames.prototype.resolvedOptions ()
     SetFunction(env, dnPrototype, "resolvedOptions", DisplayNames::ResolvedOptions, FunctionLength::ZERO);
+}
+
+void Builtins::InitializeListFormat(const JSHandle<GlobalEnv> &env)
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    // JSListFormat.prototype
+    JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
+    JSHandle<JSObject> lfPrototype = factory_->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    JSHandle<JSTaggedValue> lfPrototypeValue(lfPrototype);
+
+    // JSListFormat.prototype_or_dynclass
+    JSHandle<JSHClass> lfFuncInstanceDynclass =
+        factory_->NewEcmaDynClass(JSListFormat::SIZE, JSType::JS_LIST_FORMAT, lfPrototypeValue);
+
+    // JSListFormat = new Function()
+    // 13.4.1 Intl.ListFormat.prototype.constructor
+    JSHandle<JSObject> lfFunction(NewIntlConstructor(env, lfPrototype, ListFormat::ListFormatConstructor,
+                                                     "ListFormat", FunctionLength::ZERO));
+    JSHandle<JSFunction>(lfFunction)->SetFunctionPrototype(thread_, JSTaggedValue(*lfFuncInstanceDynclass));
+
+    // 13.3.2 Intl.ListFormat.supportedLocalesOf ( locales [ , options ] )
+    SetFunction(env, lfFunction, "supportedLocalesOf", ListFormat::SupportedLocalesOf, FunctionLength::ONE);
+
+    // ListFormat.prototype method
+    // 13.4.2 Intl.ListFormat.prototype [ @@toStringTag ]
+    SetStringTagSymbol(env, lfPrototype, "Intl.ListFormat");
+    env->SetListFormatFunction(thread_, lfFunction);
+
+    // 13.4.3 get Intl.ListFormat.prototype.format( list )
+    SetFunction(env, lfPrototype, "format", ListFormat::Format, FunctionLength::ONE);
+
+    // 13.4.4 Intl.ListFormat.prototype.formatToParts( list )
+    SetFunction(env, lfPrototype, "formatToParts", ListFormat::FormatToParts, FunctionLength::ONE);
+
+    // 13.4.5 Intl.ListFormat.prototype.resolvedOptions()
+    SetFunction(env, lfPrototype, "resolvedOptions", ListFormat::ResolvedOptions, FunctionLength::ZERO);
 }
 
 JSHandle<JSObject> Builtins::InitializeArkTools(const JSHandle<GlobalEnv> &env) const
