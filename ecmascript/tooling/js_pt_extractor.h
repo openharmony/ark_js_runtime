@@ -83,13 +83,10 @@ public:
     }
 
     template<class Callback>
-    bool MatchWithOffset(const Callback &cb, File::EntityId methodId, uint32_t offset)
+    bool MatchLineWithOffset(const Callback &cb, File::EntityId methodId, uint32_t offset)
     {
         auto lineTable = GetLineNumberTable(methodId);
-        auto columnTable = GetColumnNumberTable(methodId);
         int32_t line = 0;
-        int32_t column = 0;
-
         for (const auto &pair : lineTable) {
             if (offset < pair.offset) {
                 break;
@@ -99,6 +96,14 @@ public:
             }
             line = pair.line;
         }
+        return cb(line);
+    }
+
+    template<class Callback>
+    bool MatchColumnWithOffset(const Callback &cb, File::EntityId methodId, uint32_t offset)
+    {
+        auto columnTable = GetColumnNumberTable(methodId);
+        int32_t column = 0;
 
         for (const auto &pair : columnTable) {
             if (offset < pair.offset) {
@@ -109,9 +114,8 @@ public:
             }
             column = pair.column;
         }
-        return cb(line, column);
+        return cb(column);
     }
-
     std::unique_ptr<SingleStepper> GetStepIntoStepper(const EcmaVM *ecmaVm);
     std::unique_ptr<SingleStepper> GetStepOverStepper(const EcmaVM *ecmaVm);
     std::unique_ptr<SingleStepper> GetStepOutStepper(const EcmaVM *ecmaVm);

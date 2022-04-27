@@ -213,14 +213,19 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
             }
             data.push_back(':');
             // line number and column number
-            auto callbackFunc = [&data](int32_t line, int32_t column) -> bool {
+            auto callbackLineFunc = [&data](int32_t line) -> bool {
                 data += ToCString(line + 1);
                 data.push_back(':');
+                return true;
+            };
+            auto callbackColumnFunc = [&data](int32_t column) -> bool {
                 data += ToCString(column + 1);
                 return true;
             };
-            if (!debugExtractor->MatchWithOffset(callbackFunc, method->GetMethodId(),
-                                                 frameHandler.GetBytecodeOffset())) {
+            panda_file::File::EntityId methodId = method->GetMethodId();
+            uint32_t offset = frameHandler.GetBytecodeOffset();
+            if (!debugExtractor->MatchLineWithOffset(callbackLineFunc, methodId, offset) ||
+                !debugExtractor->MatchColumnWithOffset(callbackColumnFunc, methodId, offset)) {
                 data.push_back('?');
             }
             data.push_back(')');
