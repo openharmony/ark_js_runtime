@@ -55,9 +55,9 @@ inline RememberedSet *Region::GetOrCreateOldToNewRememberedSet()
     return oldToNewSet_;
 }
 
-inline WorkerHelper *Region::GetWorkList() const
+inline WorkManager *Region::GetWorkManager() const
 {
-    return heap_->GetWorkList();
+    return heap_->GetWorkManager();
 }
 
 inline GCBitset *Region::GetMarkGCBitset() const

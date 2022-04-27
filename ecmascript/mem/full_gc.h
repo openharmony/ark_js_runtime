@@ -16,14 +16,12 @@
 #ifndef ECMASCRIPT_MEM_FULL_GC_H
 #define ECMASCRIPT_MEM_FULL_GC_H
 
-#include "ecmascript/mem/parallel_work_helper.h"
-#include "ecmascript/mem/stw_young_gc_for_testing.h"
+#include "ecmascript/mem/garbage_collector.h"
+#include "ecmascript/mem/heap.h"
+#include "ecmascript/mem/work_manager.h"
 
 namespace panda {
 namespace ecmascript {
-class Heap;
-class JSHClass;
-
 class FullGC : public GarbageCollector {
 public:
     explicit FullGC(Heap *heap);
@@ -32,14 +30,15 @@ public:
     NO_COPY_SEMANTIC(FullGC);
     NO_MOVE_SEMANTIC(FullGC);
 
-    void RunPhases();
+    void RunPhases() override;
+
+protected:
+    void Initialize() override;
+    void Mark() override;
+    void Sweep() override;
+    void Finish() override;
 
 private:
-    void InitializePhase();
-    void MarkingPhase();
-    void SweepPhases();
-    void FinishPhase();
-
     Heap *heap_;
     size_t youngAndOldAliveSize_ = 0;
     size_t nonMoveSpaceFreeSize_ = 0;
@@ -48,9 +47,9 @@ private:
     size_t nonMoveSpaceCommitSize_ = 0;
 
     // obtain from heap
-    WorkerHelper *workList_ {nullptr};
+    WorkManager *workManager_ {nullptr};
 
-    friend class WorkerHelper;
+    friend class WorkManager;
     friend class Heap;
 };
 }  // namespace ecmascript

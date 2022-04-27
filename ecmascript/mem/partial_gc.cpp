@@ -13,45 +13,45 @@
  * limitations under the License.
  */
 
-#include "ecmascript/mem/mix_gc.h"
+#include "ecmascript/mem/partial_gc.h"
 
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/barriers-inl.h"
 #include "ecmascript/mem/clock_scope.h"
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/mem/heap-inl.h"
-#include "ecmascript/mem/object_xray-inl.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mem.h"
-#include "ecmascript/mem/parallel_evacuation.h"
+#include "ecmascript/mem/object_xray-inl.h"
+#include "ecmascript/mem/parallel_evacuator.h"
 #include "ecmascript/mem/parallel_marker-inl.h"
 #include "ecmascript/mem/space-inl.h"
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
-MixGC::MixGC(Heap *heap) : heap_(heap), workList_(heap->GetWorkList()) {}
+PartialGC::PartialGC(Heap *heap) : heap_(heap), workManager_(heap->GetWorkManager()) {}
 
-void MixGC::RunPhases()
+void PartialGC::RunPhases()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixGC::RunPhases");
-    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), MixGC_RunPhases);
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "PartialGC::RunPhases");
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), PartialGC_RunPhases);
     ClockScope clockScope;
 
     concurrentMark_ = heap_->CheckConcurrentMark();
 
     ECMA_GC_LOG() << "concurrentMark_" << concurrentMark_;
-    InitializePhase();
-    MarkingPhase();
-    SweepPhases();
-    EvacuaPhases();
-    FinishPhase();
-    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticMixGC(concurrentMark_, clockScope.GetPauseTime(), freeSize_);
-    ECMA_GC_LOG() << "MixGC::RunPhases " << clockScope.TotalSpentTime();
+    Initialize();
+    Mark();
+    Sweep();
+    Evacuate();
+    Finish();
+    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticPartialGC(concurrentMark_, clockScope.GetPauseTime(), freeSize_);
+    ECMA_GC_LOG() << "PartialGC::RunPhases " << clockScope.TotalSpentTime();
 }
 
-void MixGC::InitializePhase()
+void PartialGC::Initialize()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixGC::InitializePhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "PartialGC::Initialize");
     if (!concurrentMark_) {
         LOG(INFO, RUNTIME) << "Concurrent mark failure";
         heap_->Prepare();
@@ -63,7 +63,7 @@ void MixGC::InitializePhase()
                 current->ResetAliveObject();
             });
         }
-        workList_->Initialize(TriggerGCType::OLD_GC, ParallelGCTaskPhase::OLD_HANDLE_GLOBAL_POOL_TASK);
+        workManager_->Initialize(TriggerGCType::OLD_GC, ParallelGCTaskPhase::OLD_HANDLE_GLOBAL_POOL_TASK);
 
         freeSize_ = 0;
         hugeSpaceFreeSize_ = 0;
@@ -72,21 +72,21 @@ void MixGC::InitializePhase()
     }
 }
 
-void MixGC::FinishPhase()
+void PartialGC::Finish()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixGC::FinishPhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "PartialGC::Finish");
     if (concurrentMark_) {
         auto marker = heap_->GetConcurrentMarker();
         marker->Reset(false);
     } else {
         size_t aliveSize = 0;
-        workList_->Finish(aliveSize);
+        workManager_->Finish(aliveSize);
     }
 }
 
-void MixGC::MarkingPhase()
+void PartialGC::Mark()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixGC::MarkingPhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "PartialGC::Mark");
     if (concurrentMark_) {
         heap_->GetConcurrentMarker()->ReMarking();
         return;
@@ -101,16 +101,16 @@ void MixGC::MarkingPhase()
     heap_->WaitRunningTaskFinished();
 }
 
-void MixGC::SweepPhases()
+void PartialGC::Sweep()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixGC::SweepPhases");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "PartialGC::Sweep");
     if (heap_->IsFullMark()) {
         ProcessNativeDelete();
-        heap_->GetSweeper()->SweepPhases();
+        heap_->GetSweeper()->Sweep();
     }
 }
 
-void MixGC::ProcessNativeDelete()
+void PartialGC::ProcessNativeDelete()
 {
     WeakRootVisitor gcUpdateWeak = [this](TaggedObject *header) {
         Region *objectRegion = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(header));
@@ -125,9 +125,9 @@ void MixGC::ProcessNativeDelete()
     heap_->GetEcmaVM()->ProcessNativeDelete(gcUpdateWeak);
 }
 
-void MixGC::EvacuaPhases()
+void PartialGC::Evacuate()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixGC::EvacuaPhases");
-    heap_->GetEvacuation()->Evacuate();
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "PartialGC::Evacuate");
+    heap_->GetEvacuator()->Evacuate();
 }
 }  // namespace panda::ecmascript

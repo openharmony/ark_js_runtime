@@ -13,36 +13,26 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_MEM_STW_YOUNG_GC_FOR_TESTING_H
-#define ECMASCRIPT_MEM_STW_YOUNG_GC_FOR_TESTING_H
+#ifndef ECMASCRIPT_MEM_STW_YOUNG_GC_H
+#define ECMASCRIPT_MEM_STW_YOUNG_GC_H
 
-#include "ecmascript/mem/clock_scope.h"
-#include "ecmascript/mem/mem.h"
-#include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/allocator.h"
+#include "ecmascript/mem/chunk_containers.h"
+#include "ecmascript/mem/clock_scope.h"
+#include "ecmascript/mem/garbage_collector.h"
+#include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mark_word.h"
-#include "ecmascript/mem/slots.h"
+#include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/object_xray.h"
-#include "ecmascript/mem/chunk_containers.h"
+#include "ecmascript/mem/slots.h"
 #include "ecmascript/mem/tlab_allocator.h"
+#include "ecmascript/mem/work_manager.h"
 
 #include "os/mutex.h"
 
 namespace panda {
 namespace ecmascript {
-class Heap;
-class JSHClass;
-class WorkerHelper;
-
-class GarbageCollector {
-public:
-    GarbageCollector() = default;
-    virtual ~GarbageCollector() = default;
-    DEFAULT_COPY_SEMANTIC(GarbageCollector);
-    DEFAULT_MOVE_SEMANTIC(GarbageCollector);
-};
-
 class STWYoungGC : public GarbageCollector {
 public:
     explicit STWYoungGC(Heap *heap, bool paralledGc);
@@ -50,14 +40,15 @@ public:
     NO_COPY_SEMANTIC(STWYoungGC);
     NO_MOVE_SEMANTIC(STWYoungGC);
 
-    void RunPhases();
+    virtual void RunPhases() override;
+
+protected:
+    virtual void Initialize() override;
+    virtual void Mark() override;
+    virtual void Sweep() override;
+    virtual void Finish() override;
 
 private:
-    void InitializePhase();
-    void ParallelMarkingPhase();
-    void SweepPhases();
-    void FinishPhase();
-
     inline void UpdatePromotedSlot(TaggedObject *object, ObjectSlot slot)
     {
 #ifndef NDEBUG
@@ -70,19 +61,19 @@ private:
     }
 
     Heap *heap_;
-    size_t promotedSize_{0};
-    size_t semiCopiedSize_{0};
+    size_t promotedSize_ {0};
+    size_t semiCopiedSize_ {0};
     size_t commitSize_ = 0;
 
     // obtain from heap
     bool paralledGc_ {false};
-    WorkerHelper *workList_ {nullptr};
+    WorkManager *workManager_ {nullptr};
 
     friend class TlabAllocator;
-    friend class WorkerHelper;
+    friend class WorkManager;
     friend class Heap;
 };
 }  // namespace ecmascript
 }  // namespace panda
 
-#endif  // ECMASCRIPT_MEM_STW_YOUNG_GC_FOR_TESTING_H
+#endif  // ECMASCRIPT_MEM_STW_YOUNG_GC_H

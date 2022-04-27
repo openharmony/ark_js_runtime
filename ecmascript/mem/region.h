@@ -27,7 +27,7 @@ namespace ecmascript {
 class Space;
 class Heap;
 class RememberedSet;
-class WorkerHelper;
+class WorkManager;
 
 enum RegionFlags {
     NEVER_EVACUATE = 1,
@@ -307,7 +307,7 @@ public:
 
     inline bool IsMarking() const;
 
-    inline WorkerHelper *GetWorkList() const;
+    inline WorkManager *GetWorkManager() const;
 
     void IncrementAliveObjectSafe(size_t size)
     {

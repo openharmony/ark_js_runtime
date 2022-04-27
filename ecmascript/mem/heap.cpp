@@ -30,13 +30,13 @@
 #include "ecmascript/mem/full_gc.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mem_controller.h"
-#include "ecmascript/mem/mix_gc.h"
+#include "ecmascript/mem/partial_gc.h"
 #include "ecmascript/mem/native_area_allocator.h"
-#include "ecmascript/mem/parallel_evacuation.h"
+#include "ecmascript/mem/parallel_evacuator.h"
 #include "ecmascript/mem/parallel_marker-inl.h"
-#include "ecmascript/mem/parallel_work_helper.h"
-#include "ecmascript/mem/stw_young_gc_for_testing.h"
+#include "ecmascript/mem/stw_young_gc.h"
 #include "ecmascript/mem/verification.h"
+#include "ecmascript/mem/work_manager.h"
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
@@ -78,18 +78,18 @@ void Heap::Initialize()
 #if defined(IS_STANDARD_SYSTEM)
     concurrentMarkingEnabled_ = false;
 #endif
-    workList_ = new WorkerHelper(this, Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1);
+    workManager_ = new WorkManager(this, Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1);
     stwYoungGC_ = new STWYoungGC(this, paralledGc_);
     fullGC_ = new FullGC(this);
 
     derivedPointers_ = new ChunkMap<DerivedDataKey, uintptr_t>(ecmaVm_->GetChunk());
-    mixGC_ = new MixGC(this);
+    partialGC_ = new PartialGC(this);
     sweeper_ = new ConcurrentSweeper(this, ecmaVm_->GetJSOptions().IsEnableConcurrentSweep());
     concurrentMarker_ = new ConcurrentMarker(this);
     nonMovableMarker_ = new NonMovableMarker(this);
     semiGcMarker_ = new SemiGcMarker(this);
     compressGcMarker_ = new CompressGcMarker(this);
-    evacuation_ = new ParallelEvacuation(this);
+    evacuator_ = new ParallelEvacuator(this);
 }
 
 void Heap::Destroy()
@@ -135,17 +135,17 @@ void Heap::Destroy()
         delete hugeObjectSpace_;
         hugeObjectSpace_ = nullptr;
     }
-    if (workList_ != nullptr) {
-        delete workList_;
-        workList_ = nullptr;
+    if (workManager_ != nullptr) {
+        delete workManager_;
+        workManager_ = nullptr;
     }
     if (stwYoungGC_ != nullptr) {
         delete stwYoungGC_;
         stwYoungGC_ = nullptr;
     }
-    if (mixGC_ != nullptr) {
-        delete mixGC_;
-        mixGC_ = nullptr;
+    if (partialGC_ != nullptr) {
+        delete partialGC_;
+        partialGC_ = nullptr;
     }
     if (fullGC_ != nullptr) {
         delete fullGC_;
@@ -260,7 +260,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
             if (!concurrentMarkingEnabled_) {
                 SetMarkType(MarkType::SEMI_MARK);
             }
-            mixGC_->RunPhases();
+            partialGC_->RunPhases();
             break;
         case TriggerGCType::OLD_GC:
             if (concurrentMarkingEnabled_ && markType_ == MarkType::SEMI_MARK) {
@@ -270,7 +270,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
                 }
             }
             SetMarkType(MarkType::FULL_MARK);
-            mixGC_->RunPhases();
+            partialGC_->RunPhases();
             break;
         case TriggerGCType::FULL_GC:
             fullGC_->RunPhases();
@@ -286,7 +286,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
     if (!oldSpaceLimitAdjusted_ && startNewSpaceSize_ > 0) {
         semiSpaceCopiedSize_ = toSpace_->GetHeapObjectSize();
         double copiedRate = semiSpaceCopiedSize_ * 1.0 / startNewSpaceSize_;
-        promotedSize_ = GetEvacuation()->GetPromotedSize();
+        promotedSize_ = GetEvacuator()->GetPromotedSize();
         double promotedRate = promotedSize_ * 1.0 / startNewSpaceSize_;
         memController_->AddSurvivalRate(std::min(copiedRate + promotedRate, 1.0));
         AdjustOldSpaceLimit();
@@ -427,7 +427,7 @@ void Heap::TryTriggerConcurrentMarking()
     // way, if the size of the new space reaches to the capacity, and the predicted duration of the current semi mark
     // can exactly allow the new space to allocate to the capacity, semi mark can be triggered. But when it will spend
     // a lot of time in full mark, the compress full GC will be requested after the spaces reach to limits. And If the
-    // global space is larger than the half max heap size, we will turn to use full mark and trigger mix GC.
+    // global space is larger than the half max heap size, we will turn to use full mark and trigger partial GC.
     if (!concurrentMarkingEnabled_ || !thread_->IsReadyToMark()) {
         return;
     }
