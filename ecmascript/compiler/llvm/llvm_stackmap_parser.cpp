@@ -43,18 +43,11 @@ std::string LocationTy::TypeToString(Kind loc) const
 
 const CallSiteInfo* LLVMStackMapParser::GetCallSiteInfoByPc(uintptr_t callSiteAddr) const
 {
-    auto it = pc2CallSiteInfo_.find(callSiteAddr);
-    if (it != pc2CallSiteInfo_.end()) {
-        return &(it->second);
-    }
-    return nullptr;
-}
-
-const CallSiteInfo* LLVMStackMapParser::GetCallSiteInfoByPatchID(uint64_t patchPointId) const
-{
-    auto it = pid2CallSiteInfo_.find(patchPointId);
-    if (it != pid2CallSiteInfo_.end()) {
-        return &(it->second);
+    for (auto &callSiteInfo: pc2CallSiteInfoVec_) {
+        auto it = callSiteInfo.find(callSiteAddr);
+        if (it != callSiteInfo.end()) {
+            return &(it->second);
+        }
     }
     return nullptr;
 }
@@ -219,14 +212,6 @@ void LLVMStackMapParser::CalcCallSite()
                     } else {
                         it->second.emplace_back(info);
                     }
-
-                    auto it2 = pid2CallSiteInfo_.find(patchPointID);
-                    if (pid2CallSiteInfo_.find(patchPointID) == pid2CallSiteInfo_.end()) {
-                        pid2CallSiteInfo_.insert(std::pair<uint64_t, CallSiteInfo>(patchPointID,
-                            {info}));
-                    } else {
-                        it2->second.emplace_back(info);
-                    }
                 }
         }
     };
@@ -309,8 +294,8 @@ bool LLVMStackMapParser::CalculateStackMap(std::unique_ptr<uint8_t []> stackMapA
                                      << deviceAddr;
     }
     pc2CallSiteInfo_.clear();
-    pid2CallSiteInfo_.clear();
     CalcCallSite();
+    pc2CallSiteInfoVec_.push_back(pc2CallSiteInfo_);
     return true;
 }
 }  // namespace panda::ecmascript::kungfu
