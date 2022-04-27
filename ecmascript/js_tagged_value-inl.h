@@ -594,6 +594,11 @@ inline bool JSTaggedValue::IsJSDisplayNames() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSDisplayNames();
 }
 
+inline bool JSTaggedValue::IsJSListFormat() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSListFormat();
+}
+
 inline bool JSTaggedValue::IsJSAPIArrayList() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIArrayList();

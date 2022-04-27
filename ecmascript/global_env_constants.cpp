@@ -457,8 +457,11 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::MODULE_INDEX, factory->NewFromASCII("module"));
     SetConstant(ConstantIndex::STAR_INDEX, factory->NewFromASCII("*"));
     SetConstant(ConstantIndex::DATETIMEFIELD_INDEX, factory->NewFromASCII("datetimefield"));
+    SetConstant(ConstantIndex::CONJUNCTION_INDEX, factory->NewFromASCII("conjunction"));
     SetConstant(ConstantIndex::NONE_INDEX, factory->NewFromASCII("none"));
     SetConstant(ConstantIndex::FALLBACK_INDEX, factory->NewFromASCII("fallback"));
+    SetConstant(ConstantIndex::DISJUNCTION_INDEX, factory->NewFromASCII("disjunction"));
+    SetConstant(ConstantIndex::ELEMENT_INDEX, factory->NewFromASCII("element"));
 
     auto accessor = factory->NewInternalAccessor(reinterpret_cast<void *>(JSFunction::PrototypeSetter),
                                                  reinterpret_cast<void *>(JSFunction::PrototypeGetter));
