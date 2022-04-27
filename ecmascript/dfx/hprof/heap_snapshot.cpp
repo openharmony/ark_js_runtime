@@ -316,6 +316,8 @@ CString *HeapSnapShot::GenerateNodeName(TaggedObject *entry)
             return GetString("JSPluralRules");
         case JSType::JS_DISPLAYNAMES:
             return GetString("JSDisplayNames");
+        case JSType::JS_LIST_FORMAT:
+            return GetString("JSListFormat");
         case JSType::JS_GENERATOR_OBJECT:
             return GetString("JSGeneratorObject");
         case JSType::JS_GENERATOR_CONTEXT:
