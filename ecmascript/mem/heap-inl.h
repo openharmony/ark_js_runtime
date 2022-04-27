@@ -290,9 +290,9 @@ void Heap::ReclaimRegions(TriggerGCType gcType, Region *lastRegionOfToSpace)
     }
     fromSpace_->ReclaimRegions();
 
-    if (!isClearTaskFinished_) {
+    if (!clearTaskFinished_) {
         os::memory::LockHolder holder(waitClearTaskFinishedMutex_);
-        isClearTaskFinished_ = true;
+        clearTaskFinished_ = true;
         waitClearTaskFinishedCV_.SignalAll();
     }
 }

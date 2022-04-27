@@ -120,7 +120,7 @@ void MemController::StopCalculationAfterGC(TriggerGCType gcType)
         case TriggerGCType::SEMI_GC:
         case TriggerGCType::OLD_GC: {
             if (heap_->IsFullMark()) {
-                if (heap_->ConcurrentMarkingEnable()) {
+                if (heap_->ConcurrentMarkingEnabled()) {
                     duration += heap_->GetConcurrentMarker()->GetDuration();
                 }
                 recordedMarkCompacts_.Push(MakeBytesAndDuration(heap_->GetHeapObjectSize(), duration));

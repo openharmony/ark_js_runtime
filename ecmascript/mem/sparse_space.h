@@ -51,8 +51,8 @@ public:
 
     // For sweeping
     void PrepareSweeping();
-    void AsyncSweeping(bool isMain);
-    void Sweeping();
+    void AsyncSweep(bool isMain);
+    void Sweep();
 
     bool FillSweptRegion();
 

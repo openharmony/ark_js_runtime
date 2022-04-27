@@ -126,7 +126,7 @@ void SparseSpace::PrepareSweeping()
     allocator_->RebuildFreeList();
 }
 
-void SparseSpace::AsyncSweeping(bool isMain)
+void SparseSpace::AsyncSweep(bool isMain)
 {
     Region *current = GetSweepingRegionSafe();
     while (current != nullptr) {
@@ -139,7 +139,7 @@ void SparseSpace::AsyncSweeping(bool isMain)
     }
 }
 
-void SparseSpace::Sweeping()
+void SparseSpace::Sweep()
 {
     liveObjectSize_ = 0;
     sweepState_ = SweepState::SWEEPING;

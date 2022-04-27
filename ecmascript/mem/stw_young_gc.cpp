@@ -59,7 +59,7 @@ void STWYoungGC::Initialize()
     heap_->Prepare();
     heap_->SwapNewSpace();
     workManager_->Initialize(TriggerGCType::SEMI_GC, ParallelGCTaskPhase::SEMI_HANDLE_GLOBAL_POOL_TASK);
-    heap_->GetSemiGcMarker()->Initialized();
+    heap_->GetSemiGcMarker()->Initialize();
     promotedSize_ = 0;
     semiCopiedSize_ = 0;
     commitSize_ = heap_->GetFromSpace()->GetCommittedSize();
