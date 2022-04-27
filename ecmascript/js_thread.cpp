@@ -314,7 +314,7 @@ bool JSThread::CheckSafepoint() const
 #endif
     if (IsMarkFinished()) {
         auto heap = GetEcmaVM()->GetHeap();
-        heap->GetConcurrentMarker()->HandleMarkFinished();
+        heap->GetConcurrentMarker()->HandleMarkingFinished();
         return true;
     }
     return false;

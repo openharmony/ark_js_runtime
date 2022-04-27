@@ -69,17 +69,17 @@ void Heap::Initialize()
     machineCodeSpace_ = new MachineCodeSpace(this, maxMachineCodeSpaceCapacity, maxMachineCodeSpaceCapacity);
     machineCodeSpace_->Initialize();
     hugeObjectSpace_ = new HugeObjectSpace(this);
-    paralledGc_ = ecmaVm_->GetJSOptions().IsEnableParallelGC();
+    parallelGc_ = ecmaVm_->GetJSOptions().IsEnableParallelGC();
     concurrentMarkingEnabled_ = ecmaVm_->GetJSOptions().IsEnableConcurrentMark();
     markType_ = MarkType::SEMI_MARK;
 #if ECMASCRIPT_DISABLE_PARALLEL_GC
-    paralledGc_ = false;
+    parallelGc_ = false;
 #endif
 #if defined(IS_STANDARD_SYSTEM)
     concurrentMarkingEnabled_ = false;
 #endif
     workManager_ = new WorkManager(this, Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1);
-    stwYoungGC_ = new STWYoungGC(this, paralledGc_);
+    stwYoungGC_ = new STWYoungGC(this, parallelGc_);
     fullGC_ = new FullGC(this);
 
     derivedPointers_ = new ChunkMap<DerivedDataKey, uintptr_t>(ecmaVm_->GetChunk());
@@ -206,8 +206,8 @@ void Heap::Resume(TriggerGCType gcType)
     }
 
     toSpace_->SetWaterLine();
-    if (paralledGc_) {
-        isClearTaskFinished_ = false;
+    if (parallelGc_) {
+        clearTaskFinished_ = false;
         Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<AsyncClearTask>(this, gcType));
     } else {
         ReclaimRegions(gcType);
@@ -247,7 +247,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
 #if ECMASCRIPT_SWITCH_GC_MODE_TO_FULL_GC
     gcType = TriggerGCType::FULL_GC;
 #endif
-    if (isFullGCRequested_ && thread_->IsReadyToMark() && gcType != TriggerGCType::FULL_GC) {
+    if (fullGCRequested_ && thread_->IsReadyToMark() && gcType != TriggerGCType::FULL_GC) {
         gcType = TriggerGCType::FULL_GC;
     }
     startNewSpaceSize_ = toSpace_->GetHeapObjectSize();
@@ -274,8 +274,8 @@ void Heap::CollectGarbage(TriggerGCType gcType)
             break;
         case TriggerGCType::FULL_GC:
             fullGC_->RunPhases();
-            if (isFullGCRequested_) {
-                isFullGCRequested_ = false;
+            if (fullGCRequested_) {
+                fullGCRequested_ = false;
             }
             break;
         default:
@@ -466,7 +466,7 @@ void Heap::TryTriggerConcurrentMarking()
         if (toSpace_->GetCommittedSize() >= SEMI_SPACE_TRIGGER_CONCURRENT_MARK) {
             markType_ = MarkType::SEMI_MARK;
             TriggerConcurrentMarking();
-            OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Trigger the first semi mark" << isFullGCRequested_;
+            OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Trigger the first semi mark" << fullGCRequested_;
         }
         return;
     }
@@ -498,8 +498,8 @@ void Heap::TryTriggerConcurrentMarking()
 
 void Heap::TriggerConcurrentMarking()
 {
-    if (concurrentMarkingEnabled_ && !isFullGCRequested_) {
-        concurrentMarker_->ConcurrentMarking();
+    if (concurrentMarkingEnabled_ && !fullGCRequested_) {
+        concurrentMarker_->Mark();
     }
 }
 
@@ -541,14 +541,14 @@ void Heap::WaitRunningTaskFinished()
 void Heap::WaitClearTaskFinished()
 {
     os::memory::LockHolder holder(waitClearTaskFinishedMutex_);
-    while (!isClearTaskFinished_) {
+    while (!clearTaskFinished_) {
         waitClearTaskFinishedCV_.Wait(&waitClearTaskFinishedMutex_);
     }
 }
 
 void Heap::WaitConcurrentMarkingFinished()
 {
-    concurrentMarker_->WaitConcurrentMarkingFinished();
+    concurrentMarker_->WaitMarkingFinished();
 }
 
 void Heap::PostParallelGCTask(ParallelGCTaskPhase gcTask)

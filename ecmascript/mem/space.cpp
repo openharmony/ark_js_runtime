@@ -92,7 +92,7 @@ uintptr_t HugeObjectSpace::Allocate(size_t objectSize)
     return region->GetBegin();
 }
 
-void HugeObjectSpace::Sweeping()
+void HugeObjectSpace::Sweep()
 {
     Region *currentRegion = GetRegionList().GetFirst();
     while (currentRegion != nullptr) {

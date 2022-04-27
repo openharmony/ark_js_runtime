@@ -63,7 +63,7 @@ void FullGC::Initialize()
     });
     heap_->SwapNewSpace();
     workManager_->Initialize(TriggerGCType::FULL_GC, ParallelGCTaskPhase::COMPRESS_HANDLE_GLOBAL_POOL_TASK);
-    heap_->GetCompressGcMarker()->Initialized();
+    heap_->GetCompressGcMarker()->Initialize();
 
     youngAndOldAliveSize_ = 0;
     nonMoveSpaceFreeSize_ = 0;

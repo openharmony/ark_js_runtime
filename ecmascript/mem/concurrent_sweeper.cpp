@@ -57,18 +57,18 @@ void ConcurrentSweeper::Sweep(bool fullGC)
         }
     } else {
         if (!fullGC) {
-            heap_->GetOldSpace()->Sweeping();
+            heap_->GetOldSpace()->Sweep();
         }
-        heap_->GetNonMovableSpace()->Sweeping();
-        heap_->GetMachineCodeSpace()->Sweeping();
+        heap_->GetNonMovableSpace()->Sweep();
+        heap_->GetMachineCodeSpace()->Sweep();
     }
-    heap_->GetHugeObjectSpace()->Sweeping();
+    heap_->GetHugeObjectSpace()->Sweep();
 }
 
 void ConcurrentSweeper::AsyncSweepSpace(MemSpaceType type, bool isMain)
 {
     auto space = heap_->GetSpaceWithType(type);
-    space->AsyncSweeping(isMain);
+    space->AsyncSweep(isMain);
 
     os::memory::LockHolder holder(mutexs_[type]);
     if (--remainderTaskNum_[type] == 0) {

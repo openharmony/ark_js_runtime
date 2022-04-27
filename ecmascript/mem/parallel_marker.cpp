@@ -89,7 +89,7 @@ void NonMovableMarker::ProcessMarkStack(uint32_t threadId)
     }
 }
 
-void SemiGcMarker::Initialized()
+void SemiGcMarker::Initialize()
 {
     waterLine_ = heap_->GetNewSpace()->GetWaterLine();
 }

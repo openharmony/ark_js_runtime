@@ -34,7 +34,7 @@ public:
     explicit Marker(Heap *heap);
     virtual ~Marker() = default;
 
-    virtual void Initialized()
+    virtual void Initialize()
     {
         ECMA_GC_LOG() << "Marker::Initialize do nothing";
     }
@@ -115,7 +115,7 @@ class SemiGcMarker : public MovableMarker {
 public:
     explicit SemiGcMarker(Heap *heap) : MovableMarker(heap) {}
 
-    void Initialized() override;
+    void Initialize() override;
 
 protected:
     void ProcessMarkStack(uint32_t threadId) override;

@@ -288,17 +288,17 @@ public:
 
     bool IsParallelGCEnabled() const
     {
-        return paralledGc_;
+        return parallelGc_;
     }
 
     void WaitConcurrentMarkingFinished();
 
-    void SetConcurrentMarkingEnable(bool flag)
+    void EnableConcurrentMarking(bool flag)
     {
         concurrentMarkingEnabled_ = flag;
     }
 
-    bool ConcurrentMarkingEnable() const
+    bool ConcurrentMarkingEnabled() const
     {
         return concurrentMarkingEnabled_;
     }
@@ -399,17 +399,17 @@ private:
     bool isVerifying_ {false};
 #endif
 
-    bool isClearTaskFinished_ = true;
+    bool clearTaskFinished_ {true};
     os::memory::Mutex waitClearTaskFinishedMutex_;
     os::memory::ConditionVariable waitClearTaskFinishedCV_;
     uint32_t runningTaskCount_ {0};
     os::memory::Mutex waitTaskFinishedMutex_;
     os::memory::ConditionVariable waitTaskFinishedCV_;
-    bool paralledGc_ {true};
+    bool parallelGc_ {true};
 
     MarkType markType_ {MarkType::SEMI_MARK};
     bool concurrentMarkingEnabled_ {true};
-    bool isFullGCRequested_ {false};
+    bool fullGCRequested_ {false};
     bool oldSpaceLimitAdjusted_ {false};
     size_t startNewSpaceSize_ {0};
     size_t promotedSize_ {0};
