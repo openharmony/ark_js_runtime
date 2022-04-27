@@ -61,6 +61,7 @@ void FullGC::Initialize()
         current->ClearMarkGCBitset();
         current->ClearCrossRegionRSet();
     });
+    youngSpaceCommitSize_ = heap_->GetNewSpace()->GetCommittedSize();
     heap_->SwapNewSpace();
     workManager_->Initialize(TriggerGCType::FULL_GC, ParallelGCTaskPhase::COMPRESS_HANDLE_GLOBAL_POOL_TASK);
     heap_->GetCompressGcMarker()->Initialize();
@@ -68,7 +69,6 @@ void FullGC::Initialize()
     youngAndOldAliveSize_ = 0;
     nonMoveSpaceFreeSize_ = 0;
     oldSpaceCommitSize_ = heap_->GetOldSpace()->GetCommittedSize();
-    youngSpaceCommitSize_ = heap_->GetFromSpace()->GetCommittedSize();
     nonMoveSpaceCommitSize_ = heap_->GetNonMovableSpace()->GetCommittedSize();
 }
 

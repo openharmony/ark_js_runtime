@@ -83,7 +83,7 @@ HWTEST_F_L0(WeakRefSemiGCTest, ArrayUndefined)
     array->Set(thread, 1, value);
     EXPECT_EQ(newObj1.GetTaggedValue(), array->Get(0));
     EXPECT_EQ(value, array->Get(1));
-    ecmaVM->CollectGarbage(TriggerGCType::SEMI_GC);
+    ecmaVM->CollectGarbage(TriggerGCType::YOUNG_GC);
     EXPECT_EQ(newObj1.GetTaggedValue(), array->Get(0));
     EXPECT_EQ(JSTaggedValue::Undefined(), array->Get(1));
 }
@@ -102,7 +102,7 @@ HWTEST_F_L0(WeakRefSemiGCTest, ArrayKeep)
     array->Set(thread, 1, value);
     EXPECT_EQ(newObj1.GetTaggedValue(), array->Get(0));
     EXPECT_EQ(value, array->Get(1));
-    ecmaVM->CollectGarbage(TriggerGCType::SEMI_GC);
+    ecmaVM->CollectGarbage(TriggerGCType::YOUNG_GC);
     EXPECT_EQ(newObj1.GetTaggedValue(), array->Get(0));
     EXPECT_EQ(true, array->Get(1).IsWeak());
     value = newObj2.GetTaggedValue();
@@ -117,7 +117,7 @@ HWTEST_F_L0(WeakRefSemiGCTest, DynObjectUndefined)
     array.CreateWeakRef();
     newObj1->SetElements(thread, array);
     EXPECT_EQ(newObj1->GetElements(), array);
-    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::SEMI_GC);
+    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::YOUNG_GC);
     EXPECT_EQ(newObj1->GetElements(), JSTaggedValue::Undefined());
 }
 
@@ -129,7 +129,7 @@ HWTEST_F_L0(WeakRefSemiGCTest, DynObjectKeep)
     value.CreateWeakRef();
     newObj1->SetElements(thread, value);
     EXPECT_EQ(newObj1->GetElements(), value);
-    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::SEMI_GC);
+    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::YOUNG_GC);
     value = array.GetTaggedValue();
     value.CreateWeakRef();
     EXPECT_EQ(newObj1->GetElements(), value);

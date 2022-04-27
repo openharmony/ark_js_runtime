@@ -63,7 +63,7 @@ private:
     Heap *heap_;
     size_t promotedSize_ {0};
     size_t semiCopiedSize_ {0};
-    size_t commitSize_ = 0;
+    size_t commitSize_ {0};
 
     // obtain from heap
     bool paralledGc_ {false};

@@ -30,14 +30,14 @@ TlabAllocator::TlabAllocator(Heap *heap)
 {
     size_t maxOldSpaceCapacity = heap->GetEcmaVM()->GetJSOptions().MaxOldSpaceCapacity();
     localSpace_ = new LocalSpace(heap, maxOldSpaceCapacity, maxOldSpaceCapacity);
-    youngerAllocator_.Reset();
+    youngAllocator_.Reset();
 }
 
 inline void TlabAllocator::Finalize()
 {
-    if (youngerAllocator_.Available() != 0) {
-        FreeObject::FillFreeObject(heap_->GetEcmaVM(), youngerAllocator_.GetTop(), youngerAllocator_.Available());
-        youngerAllocator_.Reset();
+    if (youngAllocator_.Available() != 0) {
+        FreeObject::FillFreeObject(heap_->GetEcmaVM(), youngAllocator_.GetTop(), youngAllocator_.Available());
+        youngAllocator_.Reset();
     }
 
     heap_->MergeToOldSpaceSync(localSpace_);
@@ -69,7 +69,7 @@ uintptr_t TlabAllocator::TlabAllocatorYoungSpace(size_t size)
         uintptr_t address = heap_->AllocateYoungSync(size);
         return address;
     }
-    uintptr_t result = youngerAllocator_.Allocate(size);
+    uintptr_t result = youngAllocator_.Allocate(size);
     if (result != 0) {
         return result;
     }
@@ -77,7 +77,7 @@ uintptr_t TlabAllocator::TlabAllocatorYoungSpace(size_t size)
         enableExpandYoung_ = false;
         return 0;
     }
-    return youngerAllocator_.Allocate(size);
+    return youngAllocator_.Allocate(size);
 }
 
 uintptr_t TlabAllocator::TlabAllocatorCompressSpace(size_t size)
@@ -108,21 +108,21 @@ bool TlabAllocator::ExpandYoung()
 {
     uintptr_t buffer = heap_->AllocateYoungSync(MIN_BUFFER_SIZE);
     if (buffer == 0) {
-        if (youngerAllocator_.Available() != 0) {
-            FreeObject::FillFreeObject(heap_->GetEcmaVM(), youngerAllocator_.GetTop(), youngerAllocator_.Available());
+        if (youngAllocator_.Available() != 0) {
+            FreeObject::FillFreeObject(heap_->GetEcmaVM(), youngAllocator_.GetTop(), youngAllocator_.Available());
         }
         return false;
     }
     uintptr_t end = buffer + MIN_BUFFER_SIZE;
 
-    if (buffer == youngerAllocator_.GetEnd()) {
-        buffer = youngerAllocator_.GetTop();
+    if (buffer == youngAllocator_.GetEnd()) {
+        buffer = youngAllocator_.GetTop();
     } else {
-        if (youngerAllocator_.Available() != 0) {
-            FreeObject::FillFreeObject(heap_->GetEcmaVM(), youngerAllocator_.GetTop(), youngerAllocator_.Available());
+        if (youngAllocator_.Available() != 0) {
+            FreeObject::FillFreeObject(heap_->GetEcmaVM(), youngAllocator_.GetTop(), youngAllocator_.Available());
         }
     }
-    youngerAllocator_.Reset(buffer, end);
+    youngAllocator_.Reset(buffer, end);
     return true;
 }
 

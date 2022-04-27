@@ -57,12 +57,12 @@ void STWYoungGC::Initialize()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Initialize");
     heap_->Prepare();
+    commitSize_ = heap_->GetNewSpace()->GetCommittedSize();
     heap_->SwapNewSpace();
-    workManager_->Initialize(TriggerGCType::SEMI_GC, ParallelGCTaskPhase::SEMI_HANDLE_GLOBAL_POOL_TASK);
+    workManager_->Initialize(TriggerGCType::YOUNG_GC, ParallelGCTaskPhase::SEMI_HANDLE_GLOBAL_POOL_TASK);
     heap_->GetSemiGcMarker()->Initialize();
     promotedSize_ = 0;
     semiCopiedSize_ = 0;
-    commitSize_ = heap_->GetFromSpace()->GetCommittedSize();
 }
 
 void STWYoungGC::Mark()
@@ -141,6 +141,6 @@ void STWYoungGC::Finish()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Finish");
     workManager_->Finish(semiCopiedSize_, promotedSize_);
-    heap_->Resume(SEMI_GC);
+    heap_->Resume(YOUNG_GC);
 }
 }  // namespace panda::ecmascript

@@ -63,7 +63,7 @@ void ConcurrentMarker::ReMark()
     ECMA_GC_LOG() << "ConcurrentMarker: Remarking Begin";
     MEM_ALLOCATE_AND_GC_TRACE(vm_, ReMarking);
     ClockScope scope;
-    Marker *nonMoveMarker =  heap_->GetNonMovableMarker();
+    Marker *nonMoveMarker = heap_->GetNonMovableMarker();
     nonMoveMarker->MarkRoots(MAIN_THREAD_INDEX);
     if (!heap_->IsFullMark() && !heap_->IsParallelGCEnabled()) {
         heap_->GetNonMovableMarker()->ProcessOldToNew(MAIN_THREAD_INDEX);
@@ -79,7 +79,7 @@ void ConcurrentMarker::HandleMarkingFinished()  // js-thread wait for sweep
 {
     os::memory::LockHolder lock(waitMarkingFinishedMutex_);
     if (notifyMarkingFinished_) {
-        heap_->CollectGarbage(TriggerGCType::SEMI_GC);
+        heap_->CollectGarbage(TriggerGCType::YOUNG_GC);
     }
 }
 
@@ -122,7 +122,7 @@ void ConcurrentMarker::InitializeMarking()
     if (heap_->IsFullMark()) {
         heapObjectSize_ = heap_->GetHeapObjectSize();
         heap_->GetOldSpace()->SelectCSet();
-        // The alive object size of Region in OldSpace will be recompute
+        // The alive object size of Region in OldSpace will be recalculated.
         heap_->EnumerateNonNewSpaceRegions([](Region *current) {
             current->ClearMarkGCBitset();
             current->ClearCrossRegionRSet();

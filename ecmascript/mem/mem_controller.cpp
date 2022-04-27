@@ -117,7 +117,7 @@ void MemController::StopCalculationAfterGC(TriggerGCType gcType)
 
     double duration = gcEndTime_ - gcStartTime_;
     switch (gcType) {
-        case TriggerGCType::SEMI_GC:
+        case TriggerGCType::YOUNG_GC:
         case TriggerGCType::OLD_GC: {
             if (heap_->IsFullMark()) {
                 if (heap_->ConcurrentMarkingEnabled()) {

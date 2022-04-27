@@ -95,7 +95,7 @@ HWTEST_F_L0(MemControllerTest, VerifyMutatorSpeed)
     auto objectFactory = ecmaVm->GetFactory();
     auto memController = heap->GetMemController();
 
-    heap->CollectGarbage(TriggerGCType::SEMI_GC);
+    heap->CollectGarbage(TriggerGCType::YOUNG_GC);
     size_t oldSpaceAllocatedSizeBefore = memController->GetOldSpaceAllocAccumulatorSize();
     size_t nonMovableSpaceAllocatedSizeBefore = memController->GetNonMovableSpaceAllocAccumulatorSize();
     double allocDurationBefore = memController->GetAllocTimeMs();
@@ -115,7 +115,7 @@ HWTEST_F_L0(MemControllerTest, VerifyMutatorSpeed)
     ASSERT_TRUE(heap->GetNewSpace()->GetAllocatedSizeSinceGC()
                 == newArray->ComputeSize(JSTaggedValue::TaggedTypeSize(), 2));
 
-    heap->CollectGarbage(TriggerGCType::SEMI_GC);
+    heap->CollectGarbage(TriggerGCType::YOUNG_GC);
 
     size_t oldSpaceAllocatedSizeAfter = memController->GetOldSpaceAllocAccumulatorSize();
     size_t nonMovableSpaceAllocatedSizeAfter = memController->GetNonMovableSpaceAllocAccumulatorSize();

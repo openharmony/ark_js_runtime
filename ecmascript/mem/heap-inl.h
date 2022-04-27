@@ -59,7 +59,7 @@ void Heap::EnumerateNonNewSpaceRegions(const Callback &cb) const
 template<class Callback>
 void Heap::EnumerateNewSpaceRegions(const Callback &cb) const
 {
-    toSpace_->EnumerateRegions(cb);
+    activeSpace_->EnumerateRegions(cb);
 }
 
 template<class Callback>
@@ -74,7 +74,7 @@ void Heap::EnumerateNonMovableRegions(const Callback &cb) const
 template<class Callback>
 void Heap::EnumerateRegions(const Callback &cb) const
 {
-    toSpace_->EnumerateRegions(cb);
+    activeSpace_->EnumerateRegions(cb);
     oldSpace_->EnumerateRegions(cb);
     oldSpace_->EnumerateCollectRegionSet(cb);
     snapshotSpace_->EnumerateRegions(cb);
@@ -86,7 +86,7 @@ void Heap::EnumerateRegions(const Callback &cb) const
 template<class Callback>
 void Heap::IteratorOverObjects(const Callback &cb) const
 {
-    toSpace_->IterateOverObjects(cb);
+    activeSpace_->IterateOverObjects(cb);
     oldSpace_->IterateOverObjects(cb);
     nonMovableSpace_->IterateOverObjects(cb);
     hugeObjectSpace_->IterateOverObjects(cb);
@@ -105,13 +105,13 @@ TaggedObject *Heap::AllocateYoungOrHugeObject(JSHClass *hclass, size_t size)
         return AllocateHugeObject(hclass, size);
     }
 
-    auto object = reinterpret_cast<TaggedObject *>(toSpace_->Allocate(size));
+    auto object = reinterpret_cast<TaggedObject *>(activeSpace_->Allocate(size));
     if (object == nullptr) {
         CollectGarbage(SelectGCType());
-        object = reinterpret_cast<TaggedObject *>(toSpace_->Allocate(size));
+        object = reinterpret_cast<TaggedObject *>(activeSpace_->Allocate(size));
         if (object == nullptr) {
             CollectGarbage(SelectGCType());
-            object = reinterpret_cast<TaggedObject *>(toSpace_->Allocate(size));
+            object = reinterpret_cast<TaggedObject *>(activeSpace_->Allocate(size));
             if  (UNLIKELY(object == nullptr)) {
                 ThrowOutOfMemoryError(size, "AllocateYoungObject");
                 UNREACHABLE();
@@ -126,12 +126,12 @@ TaggedObject *Heap::AllocateYoungOrHugeObject(JSHClass *hclass, size_t size)
 
 uintptr_t Heap::AllocateYoungSync(size_t size)
 {
-    return toSpace_->AllocateSync(size);
+    return activeSpace_->AllocateSync(size);
 }
 
 bool Heap::MoveYoungRegionSync(Region *region)
 {
-    return toSpace_->SwapRegion(region, fromSpace_);
+    return activeSpace_->SwapRegion(region, backupSpace_);
 }
 
 void Heap::MergeToOldSpaceSync(LocalSpace *localSpace)
@@ -145,7 +145,7 @@ TaggedObject *Heap::TryAllocateYoungGeneration(JSHClass *hclass, size_t size)
     if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
         return nullptr;
     }
-    auto object = reinterpret_cast<TaggedObject *>(toSpace_->Allocate(size));
+    auto object = reinterpret_cast<TaggedObject *>(activeSpace_->Allocate(size));
     if (object != nullptr) {
         object->SetClass(hclass);
     }
@@ -267,17 +267,17 @@ void Heap::OnMoveEvent([[maybe_unused]] uintptr_t address, [[maybe_unused]] uint
 
 void Heap::SwapNewSpace()
 {
-    toSpace_->Stop();
-    fromSpace_->Restart();
+    activeSpace_->Stop();
+    backupSpace_->Restart();
 
-    SemiSpace *newSpace = fromSpace_;
-    fromSpace_ = toSpace_;
-    toSpace_ = newSpace;
+    SemiSpace *newSpace = backupSpace_;
+    backupSpace_ = activeSpace_;
+    activeSpace_ = newSpace;
 }
 
 void Heap::ReclaimRegions(TriggerGCType gcType, Region *lastRegionOfToSpace)
 {
-    toSpace_->EnumerateRegions([] (Region *region) {
+    activeSpace_->EnumerateRegions([] (Region *region) {
         region->ClearMarkGCBitset();
         region->ClearCrossRegionRSet();
         region->ResetAliveObject();
@@ -288,7 +288,7 @@ void Heap::ReclaimRegions(TriggerGCType gcType, Region *lastRegionOfToSpace)
     } else if (gcType == TriggerGCType::OLD_GC) {
         oldSpace_->ReclaimCSet();
     }
-    fromSpace_->ReclaimRegions();
+    backupSpace_->ReclaimRegions();
 
     if (!clearTaskFinished_) {
         os::memory::LockHolder holder(waitClearTaskFinishedMutex_);
@@ -305,14 +305,14 @@ void Heap::ClearSlotsRange(Region *current, uintptr_t freeStart, uintptr_t freeE
 
 size_t Heap::GetCommittedSize() const
 {
-    size_t result = toSpace_->GetCommittedSize() + oldSpace_->GetCommittedSize() + hugeObjectSpace_->GetCommittedSize()
+    size_t result = activeSpace_->GetCommittedSize() + oldSpace_->GetCommittedSize() + hugeObjectSpace_->GetCommittedSize()
                     + nonMovableSpace_->GetCommittedSize() + machineCodeSpace_->GetCommittedSize();
     return result;
 }
 
 size_t Heap::GetHeapObjectSize() const
 {
-    size_t result = toSpace_->GetHeapObjectSize() + oldSpace_->GetHeapObjectSize()
+    size_t result = activeSpace_->GetHeapObjectSize() + oldSpace_->GetHeapObjectSize()
                     + hugeObjectSpace_->GetHeapObjectSize() + nonMovableSpace_->GetHeapObjectSize()
                     + machineCodeSpace_->GetCommittedSize();
     return result;

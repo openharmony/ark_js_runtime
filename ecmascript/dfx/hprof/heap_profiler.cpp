@@ -155,7 +155,7 @@ bool HeapProfiler::ForceFullGC(JSThread *thread)
 {
     auto vm = thread->GetEcmaVM();
     if (vm->IsInitialized()) {
-        const_cast<Heap *>(vm->GetHeap())->CollectGarbage(TriggerGCType::SEMI_GC);
+        const_cast<Heap *>(vm->GetHeap())->CollectGarbage(TriggerGCType::YOUNG_GC);
         const_cast<Heap *>(vm->GetHeap())->CollectGarbage(TriggerGCType::OLD_GC);
         return true;
     }
