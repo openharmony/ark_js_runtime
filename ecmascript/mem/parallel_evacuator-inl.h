@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_MEM_PARALLEL_EVACUATION_INL_H
-#define ECMASCRIPT_MEM_PARALLEL_EVACUATION_INL_H
+#ifndef ECMASCRIPT_MEM_PARALLEL_EVACUATOR_INL_H
+#define ECMASCRIPT_MEM_PARALLEL_EVACUATOR_INL_H
 
-#include "ecmascript/mem/parallel_evacuation.h"
+#include "ecmascript/mem/parallel_evacuator.h"
 
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/mark_word.h"
@@ -25,13 +25,13 @@
 
 namespace panda::ecmascript {
 // Move regions with a survival rate of more than 75% to new space
-bool ParallelEvacuation::IsWholeRegionEvacuate(Region *region)
+bool ParallelEvacuator::IsWholeRegionEvacuate(Region *region)
 {
     return (static_cast<double>(region->AliveObject()) / region->GetSize()) > MIN_OBJECT_SURVIVAL_RATE &&
         !region->HasAgeMark();
 }
 
-bool ParallelEvacuation::UpdateObjectSlot(ObjectSlot &slot)
+bool ParallelEvacuator::UpdateObjectSlot(ObjectSlot &slot)
 {
     JSTaggedValue value(slot.GetTaggedType());
     if (value.IsHeapObject()) {
@@ -49,7 +49,7 @@ bool ParallelEvacuation::UpdateObjectSlot(ObjectSlot &slot)
     return false;
 }
 
-bool ParallelEvacuation::UpdateWeakObjectSlot(TaggedObject *value, ObjectSlot &slot)
+bool ParallelEvacuator::UpdateWeakObjectSlot(TaggedObject *value, ObjectSlot &slot)
 {
     Region *objectRegion = Region::ObjectAddressToRange(value);
     if (objectRegion->InYoungOrCSetGeneration()) {
@@ -78,7 +78,7 @@ bool ParallelEvacuation::UpdateWeakObjectSlot(TaggedObject *value, ObjectSlot &s
     return false;
 }
 
-void ParallelEvacuation::SetObjectFieldRSet(TaggedObject *object, JSHClass *cls)
+void ParallelEvacuator::SetObjectFieldRSet(TaggedObject *object, JSHClass *cls)
 {
     Region *region = Region::ObjectAddressToRange(object);
     auto callbackWithCSet = [region]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end,
@@ -99,7 +99,7 @@ void ParallelEvacuation::SetObjectFieldRSet(TaggedObject *object, JSHClass *cls)
 }
 
 
-std::unique_ptr<ParallelEvacuation::Workload> ParallelEvacuation::GetWorkloadSafe()
+std::unique_ptr<ParallelEvacuator::Workload> ParallelEvacuator::GetWorkloadSafe()
 {
     os::memory::LockHolder holder(mutex_);
     std::unique_ptr<Workload> unit;
@@ -110,12 +110,12 @@ std::unique_ptr<ParallelEvacuation::Workload> ParallelEvacuation::GetWorkloadSaf
     return unit;
 }
 
-void ParallelEvacuation::AddWorkload(std::unique_ptr<Workload> region)
+void ParallelEvacuator::AddWorkload(std::unique_ptr<Workload> region)
 {
     workloads_.emplace_back(std::move(region));
 }
 
-int ParallelEvacuation::CalculateEvacuationThreadNum()
+int ParallelEvacuator::CalculateEvacuationThreadNum()
 {
     uint32_t length = workloads_.size();
     uint32_t regionPerThread = 8;
@@ -123,7 +123,7 @@ int ParallelEvacuation::CalculateEvacuationThreadNum()
     return static_cast<int>(std::min(std::max(1U, length / regionPerThread), maxThreadNum));
 }
 
-int ParallelEvacuation::CalculateUpdateThreadNum()
+int ParallelEvacuator::CalculateUpdateThreadNum()
 {
     uint32_t length = workloads_.size();
     double regionPerThread = 1.0 / 4;
@@ -132,4 +132,4 @@ int ParallelEvacuation::CalculateUpdateThreadNum()
     return static_cast<int>(std::min(std::max(1U, length), maxThreadNum));
 }
 }  // namespace panda::ecmascript
-#endif  // ECMASCRIPT_MEM_PARALLEL_EVACUATION_INL_H
+#endif  // ECMASCRIPT_MEM_PARALLEL_EVACUATOR_INL_H

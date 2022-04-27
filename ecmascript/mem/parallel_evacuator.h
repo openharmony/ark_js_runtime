@@ -13,27 +13,27 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_MEM_PARALLEL_EVACUATION_H
-#define ECMASCRIPT_MEM_PARALLEL_EVACUATION_H
+#ifndef ECMASCRIPT_MEM_PARALLEL_EVACUATOR_H
+#define ECMASCRIPT_MEM_PARALLEL_EVACUATOR_H
 
 #include <atomic>
 #include <memory>
 
+#include "ecmascript/js_hclass.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/region.h"
 #include "ecmascript/mem/space.h"
 #include "ecmascript/mem/tagged_object.h"
+#include "ecmascript/mem/tlab_allocator.h"
 #include "ecmascript/taskpool/task.h"
 #include "os/mutex.h"
 
 namespace panda::ecmascript {
-class JSHClass;
-class TlabAllocator;
-class ParallelEvacuation {
+class ParallelEvacuator {
 public:
-    explicit ParallelEvacuation(Heap *heap) : heap_(heap), objXRay_(heap->GetEcmaVM()) {}
-    ~ParallelEvacuation() = default;
+    explicit ParallelEvacuator(Heap *heap) : heap_(heap), objXRay_(heap->GetEcmaVM()) {}
+    ~ParallelEvacuator() = default;
     void Initialize();
     void Finalize();
     void Evacuate();
@@ -46,7 +46,7 @@ public:
 private:
     class EvacuationTask : public Task {
     public:
-        explicit EvacuationTask(ParallelEvacuation *evacuation);
+        explicit EvacuationTask(ParallelEvacuator *evacuator);
         ~EvacuationTask() override;
         bool Run(uint32_t threadIndex) override;
 
@@ -54,13 +54,13 @@ private:
         NO_MOVE_SEMANTIC(EvacuationTask);
 
     private:
-        ParallelEvacuation *evacuation_;
+        ParallelEvacuator *evacuator_;
         TlabAllocator *allocator_ {nullptr};
     };
 
     class UpdateReferenceTask : public Task {
     public:
-        explicit UpdateReferenceTask(ParallelEvacuation *evacuation) : evacuation_(evacuation) {};
+        explicit UpdateReferenceTask(ParallelEvacuator *evacuator) : evacuator_(evacuator) {};
         ~UpdateReferenceTask() override = default;
 
         bool Run(uint32_t threadIndex) override;
@@ -69,12 +69,12 @@ private:
         NO_MOVE_SEMANTIC(UpdateReferenceTask);
 
     private:
-        ParallelEvacuation *evacuation_;
+        ParallelEvacuator *evacuator_;
     };
 
     class Workload {
     public:
-        Workload(ParallelEvacuation *evacuation, Region *region) : evacuation_(evacuation), region_(region) {};
+        Workload(ParallelEvacuator *evacuator, Region *region) : evacuator_(evacuator), region_(region) {};
         virtual ~Workload() = default;
         virtual bool Process(bool isMain) = 0;
         inline Region *GetRegion()
@@ -82,40 +82,40 @@ private:
             return region_;
         }
 
-        inline ParallelEvacuation *GetEvacuation()
+        inline ParallelEvacuator *GetEvacuator()
         {
-            return evacuation_;
+            return evacuator_;
         }
     protected:
-        ParallelEvacuation *evacuation_;
+        ParallelEvacuator *evacuator_;
         Region *region_;
     };
 
-    class EvacuationWorkload : public Workload {
+    class EvacuateWorkload : public Workload {
     public:
-        EvacuationWorkload(ParallelEvacuation *evacuation, Region *region) : Workload(evacuation, region) {}
-        ~EvacuationWorkload() = default;
+        EvacuateWorkload(ParallelEvacuator *evacuator, Region *region) : Workload(evacuator, region) {}
+        ~EvacuateWorkload() = default;
         bool Process(bool isMain) override;
     };
 
     class UpdateRSetWorkload : public Workload {
     public:
-        UpdateRSetWorkload(ParallelEvacuation *evacuation, Region *region) : Workload(evacuation, region) {}
+        UpdateRSetWorkload(ParallelEvacuator *evacuator, Region *region) : Workload(evacuator, region) {}
         ~UpdateRSetWorkload() = default;
         bool Process(bool isMain) override;
     };
 
     class UpdateNewRegionWorkload : public Workload {
     public:
-        UpdateNewRegionWorkload(ParallelEvacuation *evacuation, Region *region) : Workload(evacuation, region) {}
+        UpdateNewRegionWorkload(ParallelEvacuator *evacuator, Region *region) : Workload(evacuator, region) {}
         ~UpdateNewRegionWorkload() = default;
         bool Process(bool isMain) override;
     };
 
     class UpdateAndSweepNewRegionWorkload : public Workload {
     public:
-        UpdateAndSweepNewRegionWorkload(ParallelEvacuation *evacuation, Region *region)
-            : Workload(evacuation, region) {}
+        UpdateAndSweepNewRegionWorkload(ParallelEvacuator *evacuator, Region *region)
+            : Workload(evacuator, region) {}
         ~UpdateAndSweepNewRegionWorkload() = default;
         bool Process(bool isMain) override;
     };
@@ -161,4 +161,4 @@ private:
     std::atomic<size_t> promotedSize_ = 0;
 };
 }  // namespace panda::ecmascript
-#endif  // ECMASCRIPT_MEM_PARALLEL_EVACUATION_H
+#endif  // ECMASCRIPT_MEM_PARALLEL_EVACUATOR_H

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/mem/stw_young_gc_for_testing.h"
+#include "ecmascript/mem/stw_young_gc.h"
 
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/clock_scope.h"
@@ -29,7 +29,7 @@
 
 namespace panda::ecmascript {
 STWYoungGC::STWYoungGC(Heap *heap, bool paralledGc)
-    : heap_(heap), paralledGc_(paralledGc), workList_(heap->GetWorkList())
+    : heap_(heap), paralledGc_(paralledGc), workManager_(heap->GetWorkManager())
 {
 }
 
@@ -44,30 +44,30 @@ void STWYoungGC::RunPhases()
         ECMA_GC_LOG() << "STWYoungGC after ConcurrentMarking";
         heap_->GetConcurrentMarker()->Reset();  // HPPGC use mark result to move TaggedObject.
     }
-    InitializePhase();
-    ParallelMarkingPhase();
-    SweepPhases();
-    FinishPhase();
+    Initialize();
+    Mark();
+    Sweep();
+    Finish();
     heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticSTWYoungGC(clockScope.GetPauseTime(), semiCopiedSize_,
                                                               promotedSize_, commitSize_);
     ECMA_GC_LOG() << "STWYoungGC::RunPhases " << clockScope.TotalSpentTime();
 }
 
-void STWYoungGC::InitializePhase()
+void STWYoungGC::Initialize()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::InitializePhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Initialize");
     heap_->Prepare();
     heap_->SwapNewSpace();
-    workList_->Initialize(TriggerGCType::SEMI_GC, ParallelGCTaskPhase::SEMI_HANDLE_GLOBAL_POOL_TASK);
+    workManager_->Initialize(TriggerGCType::SEMI_GC, ParallelGCTaskPhase::SEMI_HANDLE_GLOBAL_POOL_TASK);
     heap_->GetSemiGcMarker()->Initialized();
     promotedSize_ = 0;
     semiCopiedSize_ = 0;
     commitSize_ = heap_->GetFromSpace()->GetCommittedSize();
 }
 
-void STWYoungGC::ParallelMarkingPhase()
+void STWYoungGC::Mark()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::ParallelMarkingPhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Mark");
     auto region = heap_->GetOldSpace()->GetCurrentRegion();
 
     if (paralledGc_) {
@@ -85,19 +85,19 @@ void STWYoungGC::ParallelMarkingPhase()
     auto totalThreadCount = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1;  // gc thread and main thread
     for (uint32_t i = 0; i < totalThreadCount; i++) {
         SlotNeedUpdate needUpdate(nullptr, ObjectSlot(0));
-        while (workList_->GetSlotNeedUpdate(i, &needUpdate)) {
+        while (workManager_->GetSlotNeedUpdate(i, &needUpdate)) {
             UpdatePromotedSlot(needUpdate.first, needUpdate.second);
         }
     }
 }
 
-void STWYoungGC::SweepPhases()
+void STWYoungGC::Sweep()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::SweepPhases");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Sweep");
     auto totalThreadCount = static_cast<uint32_t>(
         Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1);  // gc thread and main thread
     for (uint32_t i = 0; i < totalThreadCount; i++) {
-        ProcessQueue *queue = workList_->GetWeakReferenceQueue(i);
+        ProcessQueue *queue = workManager_->GetWeakReferenceQueue(i);
         while (true) {
             auto obj = queue->PopBack();
             if (UNLIKELY(obj == nullptr)) {
@@ -137,10 +137,10 @@ void STWYoungGC::SweepPhases()
     heap_->UpdateDerivedObjectInStack();
 }
 
-void STWYoungGC::FinishPhase()
+void STWYoungGC::Finish()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::FinishPhase");
-    workList_->Finish(semiCopiedSize_, promotedSize_);
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Finish");
+    workManager_->Finish(semiCopiedSize_, promotedSize_);
     heap_->Resume(SEMI_GC);
 }
 }  // namespace panda::ecmascript

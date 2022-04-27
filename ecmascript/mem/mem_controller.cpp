@@ -17,7 +17,7 @@
 
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/mem/heap-inl.h"
-#include "ecmascript/mem/parallel_evacuation.h"
+#include "ecmascript/mem/parallel_evacuator.h"
 
 namespace panda::ecmascript {
 MemController::MemController(Heap *heap) : heap_(heap), allocTimeMs_(GetSystemTimeInMs()) {}
@@ -100,7 +100,7 @@ void MemController::StopCalculationAfterGC(TriggerGCType gcType)
     gcEndTime_ = GetSystemTimeInMs();
     allocTimeMs_ = gcEndTime_;
     if (allocDurationSinceGc_ > 0) {
-        oldSpaceAllocSizeSinceGC_ += heap_->GetEvacuation()->GetPromotedSize();
+        oldSpaceAllocSizeSinceGC_ += heap_->GetEvacuator()->GetPromotedSize();
         recordedNewSpaceAllocations_.Push(MakeBytesAndDuration(newSpaceAllocSizeSinceGC_, allocDurationSinceGc_));
         recordedOldSpaceAllocations_.Push(MakeBytesAndDuration(oldSpaceAllocSizeSinceGC_, allocDurationSinceGc_));
         recordedNonmovableSpaceAllocations_.Push(

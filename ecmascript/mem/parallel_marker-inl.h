@@ -21,10 +21,10 @@
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/mem/gc_bitset.h"
 #include "ecmascript/mem/heap.h"
-#include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/region-inl.h"
 #include "ecmascript/mem/tlab_allocator-inl.h"
 #include "ecmascript/mem/utils.h"
+#include "ecmascript/mem/work_manager.h"
 
 namespace panda::ecmascript {
 constexpr int HEAD_SIZE = TaggedObject::TaggedObjectSize();
@@ -38,7 +38,7 @@ inline void NonMovableMarker::MarkObject(uint32_t threadId, TaggedObject *object
     }
 
     if (objectRegion->AtomicMark(object)) {
-        heap_->GetWorkList()->Push(threadId, object, objectRegion);
+        heap_->GetWorkManager()->Push(threadId, object, objectRegion);
     }
 }
 
@@ -87,7 +87,7 @@ inline void NonMovableMarker::RecordWeakReference(uint32_t threadId, JSTaggedTyp
     Region *valueRegion = Region::ObjectAddressToRange(value.GetTaggedWeakRef());
     Region *objectRegion = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(ref));
     if (!objectRegion->InYoungOrCSetGeneration() && !valueRegion->InYoungOrCSetGeneration()) {
-        heap_->GetWorkList()->PushWeakReference(threadId, ref);
+        heap_->GetWorkManager()->PushWeakReference(threadId, ref);
     }
 }
 
@@ -137,16 +137,16 @@ inline uintptr_t MovableMarker::AllocateDstSpace(uint32_t threadId, size_t size,
 {
     uintptr_t forwardAddress = 0;
     if (shouldPromote) {
-        forwardAddress = heap_->GetWorkList()->GetTlabAllocator(threadId)->Allocate(size, COMPRESS_SPACE);
+        forwardAddress = heap_->GetWorkManager()->GetTlabAllocator(threadId)->Allocate(size, COMPRESS_SPACE);
         if (UNLIKELY(forwardAddress == 0)) {
             LOG_ECMA_MEM(FATAL) << "EvacuateObject alloc failed: "
                                 << " size: " << size;
             UNREACHABLE();
         }
     } else {
-        forwardAddress = heap_->GetWorkList()->GetTlabAllocator(threadId)->Allocate(size, SEMI_SPACE);
+        forwardAddress = heap_->GetWorkManager()->GetTlabAllocator(threadId)->Allocate(size, SEMI_SPACE);
         if (UNLIKELY(forwardAddress == 0)) {
-            forwardAddress = heap_->GetWorkList()->GetTlabAllocator(threadId)->Allocate(size, COMPRESS_SPACE);
+            forwardAddress = heap_->GetWorkManager()->GetTlabAllocator(threadId)->Allocate(size, COMPRESS_SPACE);
             if (UNLIKELY(forwardAddress == 0)) {
                 LOG_ECMA_MEM(FATAL) << "EvacuateObject alloc failed: "
                                     << " size: " << size;
@@ -163,11 +163,11 @@ inline void MovableMarker::UpdateForwardAddressIfSuccess(uint32_t threadId, Tagg
 {
     Utils::Copy(ToVoidPtr(toAddress + HEAD_SIZE), size - HEAD_SIZE, ToVoidPtr(ToUintPtr(object) + HEAD_SIZE),
         size - HEAD_SIZE);
-    heap_->GetWorkList()->AddAliveSize(threadId, size);
+    heap_->GetWorkManager()->IncrementAliveSize(threadId, size);
     *reinterpret_cast<MarkWordType *>(toAddress) = markWord.GetValue();
     heap_->OnMoveEvent(reinterpret_cast<intptr_t>(object), toAddress);
     if (klass->HasReferenceField()) {
-        heap_->GetWorkList()->Push(threadId, reinterpret_cast<TaggedObject *>(toAddress));
+        heap_->GetWorkManager()->Push(threadId, reinterpret_cast<TaggedObject *>(toAddress));
     }
     slot.Update(reinterpret_cast<TaggedObject *>(toAddress));
 }
@@ -227,7 +227,7 @@ inline void SemiGcMarker::RecordWeakReference(uint32_t threadId, JSTaggedType *r
     auto value = JSTaggedValue(*ref);
     Region *objectRegion = Region::ObjectAddressToRange(value.GetTaggedWeakRef());
     if (objectRegion->InYoungGeneration()) {
-        heap_->GetWorkList()->PushWeakReference(threadId, ref);
+        heap_->GetWorkManager()->PushWeakReference(threadId, ref);
     }
 }
 
@@ -236,7 +236,7 @@ inline SlotStatus CompressGcMarker::MarkObject(uint32_t threadId, TaggedObject *
     Region *objectRegion = Region::ObjectAddressToRange(object);
     if (!objectRegion->InYoungAndOldGeneration()) {
         if (objectRegion->AtomicMark(object)) {
-            heap_->GetWorkList()->Push(threadId, object);
+            heap_->GetWorkManager()->Push(threadId, object);
         }
         return SlotStatus::CLEAR_SLOT;
     }
@@ -270,7 +270,7 @@ inline SlotStatus CompressGcMarker::EvacuateObject(uint32_t threadId, TaggedObje
 
 inline void CompressGcMarker::RecordWeakReference(uint32_t threadId, JSTaggedType *ref)
 {
-    heap_->GetWorkList()->PushWeakReference(threadId, ref);
+    heap_->GetWorkManager()->PushWeakReference(threadId, ref);
 }
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_PARALLEL_MARKER_INL_H
