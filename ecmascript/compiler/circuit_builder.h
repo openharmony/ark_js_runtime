@@ -301,7 +301,7 @@ public:
     inline GateRef ChangeTaggedPointerToInt64(GateRef x);
     inline GateRef ChangeInt64ToTagged(GateRef x);
     // bit operation
-    inline GateRef TaggedSpecialValueChecker(GateRef x, JSTaggedType type);
+    inline GateRef IsSpecial(GateRef x, JSTaggedType type);
     inline GateRef TaggedIsInt(GateRef x);
     inline GateRef TaggedIsDouble(GateRef x);
     inline GateRef TaggedIsObject(GateRef x);
@@ -349,6 +349,7 @@ public:
     inline GateRef IsJsObject(GateRef obj);
     inline GateRef BothAreString(GateRef x, GateRef y);
     inline GateRef IsCallable(GateRef obj);
+    GateRef GetGlobalObject(GateRef glue);
     GateRef GetFunctionBitFieldFromJSFunction(GateRef function);
     GateRef GetModuleFromFunction(GateRef function);
     GateRef FunctionIsResolved(GateRef function);

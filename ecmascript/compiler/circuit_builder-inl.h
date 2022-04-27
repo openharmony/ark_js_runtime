@@ -85,7 +85,7 @@ GateRef CircuitBuilder::ChangeInt64ToTagged(GateRef x)
 }
 
 // bit operation
-GateRef CircuitBuilder::TaggedSpecialValueChecker(GateRef x, JSTaggedType type)
+GateRef CircuitBuilder::IsSpecial(GateRef x, JSTaggedType type)
 {
     return Equal(x, Int64(type));
 }
@@ -137,7 +137,7 @@ GateRef CircuitBuilder::TaggedIsSpecial(GateRef x)
         Int64(~JSTaggedValue::TAG_SPECIAL_MASK)),
         Int64(0))), Int32Or(SExtInt1ToInt32(NotEqual(Int64And(x,
         Int64(JSTaggedValue::TAG_SPECIAL_VALUE)),
-        Int64(0))), SExtInt1ToInt32(TaggedSpecialValueChecker(x, JSTaggedValue::VALUE_HOLE)))));
+        Int64(0))), SExtInt1ToInt32(IsSpecial(x, JSTaggedValue::VALUE_HOLE)))));
 }
 
 GateRef CircuitBuilder::TaggedIsHeapObject(GateRef x)
@@ -185,8 +185,8 @@ GateRef CircuitBuilder::TaggedIsTransitionHandler(GateRef x)
 
 GateRef CircuitBuilder::TaggedIsUndefinedOrNull(GateRef x)
 {
-    return TruncInt32ToInt1(Int32Or(SExtInt1ToInt32(TaggedSpecialValueChecker(x, JSTaggedValue::VALUE_UNDEFINED)),
-        SExtInt1ToInt32(TaggedSpecialValueChecker(x, JSTaggedValue::VALUE_NULL))));
+    return TruncInt32ToInt1(Int32Or(SExtInt1ToInt32(IsSpecial(x, JSTaggedValue::VALUE_UNDEFINED)),
+        SExtInt1ToInt32(IsSpecial(x, JSTaggedValue::VALUE_NULL))));
 }
 
 GateRef CircuitBuilder::TaggedIsTrue(GateRef x)
@@ -206,8 +206,8 @@ GateRef CircuitBuilder::TaggedIsNull(GateRef x)
 
 GateRef CircuitBuilder::TaggedIsBoolean(GateRef x)
 {
-    return TruncInt32ToInt1(Int32Or(SExtInt1ToInt32(TaggedSpecialValueChecker(x, JSTaggedValue::VALUE_TRUE)),
-        SExtInt1ToInt32(TaggedSpecialValueChecker(x, JSTaggedValue::VALUE_FALSE))));
+    return TruncInt32ToInt1(Int32Or(SExtInt1ToInt32(IsSpecial(x, JSTaggedValue::VALUE_TRUE)),
+        SExtInt1ToInt32(IsSpecial(x, JSTaggedValue::VALUE_FALSE))));
 }
 
 GateRef CircuitBuilder::TaggedGetInt(GateRef x)
