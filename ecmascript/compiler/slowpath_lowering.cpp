@@ -703,7 +703,7 @@ void SlowPathLowering::LowerTryLdGlobalByName(GateRef gate, GateRef glue)
     {
         Label notException(&builder_);
         result = builder_.CallRuntime(glue, RTSTUB_ID(TryLdGlobalByName), {prop}, true);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(*result, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(*result, JSTaggedValue::VALUE_EXCEPTION),
             &exception, &notException);
         builder_.Bind(&notException);
         {
@@ -805,7 +805,7 @@ void SlowPathLowering::LowerCallIThisRangeDyn(GateRef gate, GateRef glue, GateRe
     std::vector<GateRef> vec;
     size_t numArgs = acc_.GetNumValueIn(gate) - 1;
     GateRef actualArgc = builder_.Int32(numArgs + NUM_MANDATORY_JSFUNC_ARGS);
-    GateRef callTarget = acc_.GetValueIn(gate, 0);
+    GateRef callTarget = builder_.TaggedNGC(acc_.GetValueIn(gate, 0));
     GateRef newTarget = builder_.Undefined();
     vec.emplace_back(glue);
     vec.emplace_back(actualArgc);
@@ -1270,7 +1270,7 @@ void SlowPathLowering::LowerCreateArrayWithBuffer(GateRef gate, GateRef glue, Ga
     GateRef index = acc_.GetValueIn(gate, 0);
     GateRef obj = GetObjectFromConstPool(jsFunc, builder_.TruncInt64ToInt32(index));
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(CreateArrayWithBuffer), { obj }, true);
-    builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+    builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
         &exceptionExit, &successExit);
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
     ReplaceHirToSubCfg(gate, result, successControl, failControl);
@@ -1285,7 +1285,7 @@ void SlowPathLowering::LowerCreateObjectWithBuffer(GateRef gate, GateRef glue, G
     GateRef index = acc_.GetValueIn(gate, 0);
     GateRef obj = GetObjectFromConstPool(jsFunc, builder_.TruncInt64ToInt32(index));
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(CreateObjectWithBuffer), { obj }, true);
-    builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+    builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
         &exceptionExit, &successExit);
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
     ReplaceHirToSubCfg(gate, result, successControl, failControl);
@@ -1426,7 +1426,7 @@ void SlowPathLowering::LowerIsTrueOrFalse(GateRef gate, GateRef glue, bool flag)
     ASSERT(acc_.GetNumValueIn(gate) == 1);
     DEFVAlUE(result, (&builder_), VariableType::JS_ANY(), acc_.GetValueIn(gate, 0));
     GateRef callResult = builder_.CallRuntime(glue, RTSTUB_ID(ToBoolean), { *result }, true);
-    builder_.Branch(builder_.TaggedSpecialValueChecker(callResult, JSTaggedValue::VALUE_TRUE),
+    builder_.Branch(builder_.IsSpecial(callResult, JSTaggedValue::VALUE_TRUE),
         &isTrue, &isFalse);
     builder_.Bind(&isTrue);
     {
@@ -1473,7 +1473,7 @@ void SlowPathLowering::LowerConditionJump(GateRef gate, bool isEqualJump)
     std::vector<GateRef> trueState;
     GateRef value = acc_.GetValueIn(gate, 0);
     // GET_ACC() == JSTaggedValue::False()
-    GateRef condition = builder_.TaggedSpecialValueChecker(value, JSTaggedValue::VALUE_FALSE);
+    GateRef condition = builder_.IsSpecial(value, JSTaggedValue::VALUE_FALSE);
     GateRef ifBranch = builder_.Branch(acc_.GetState(gate), condition);
     GateRef ifTrue = builder_.IfTrue(ifBranch);
     trueState.emplace_back(ifTrue);
@@ -1606,16 +1606,16 @@ void SlowPathLowering::LowerStOwnByValue(GateRef gate, GateRef glue)
         result = builder_.CallStub(glue, CommonStubCSigns::SetPropertyByValueWithOwn,
             { glue, receiver, propKey, accValue });
         Label notHole(&builder_);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
         builder_.Bind(&notHole);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     builder_.Bind(&slowPath);
     {
         result = builder_.CallRuntime(glue, RTSTUB_ID(StOwnByValue),
             { receiver, propKey, accValue }, true);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
@@ -1648,16 +1648,16 @@ void SlowPathLowering::LowerStOwnByIndex(GateRef gate, GateRef glue)
         result = builder_.CallStub(glue, CommonStubCSigns::SetPropertyByIndexWithOwn,
             { glue, receiver, builder_.TruncInt64ToInt32(index), accValue });
         Label notHole(&builder_);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
         builder_.Bind(&notHole);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     builder_.Bind(&slowPath);
     {
         result = builder_.CallRuntime(glue, RTSTUB_ID(StOwnByIndex),
             {receiver, builder_.TaggedTypeNGC(index), accValue }, true);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
@@ -1691,16 +1691,16 @@ void SlowPathLowering::LowerStOwnByName(GateRef gate, GateRef glue)
         result = builder_.CallStub(glue, CommonStubCSigns::SetPropertyByNameWithOwn,
             { glue, receiver, propKey, accValue });
         Label notHole(&builder_);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
         builder_.Bind(&notHole);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     builder_.Bind(&slowPath);
     {
         result = builder_.CallRuntime(glue, RTSTUB_ID(StOwnByName),
             {receiver, propKey, accValue }, true);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
@@ -1728,7 +1728,7 @@ void SlowPathLowering::LowerDefineGeneratorFunc(GateRef gate, GateRef glue, Gate
     {
         method = builder_.CallRuntime(glue, RTSTUB_ID(DefineGeneratorFunc), { *method }, true);
         Label notException(&builder_);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(*method, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(*method, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &notException);
         builder_.Bind(&notException);
         {
@@ -1775,7 +1775,7 @@ void SlowPathLowering::LowerDefineAsyncFunc(GateRef gate, GateRef glue, GateRef 
     {
         method = builder_.CallRuntime(glue, RTSTUB_ID(DefineAsyncFunc), { *method }, true);
         Label notException(&builder_);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(*method, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(*method, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &notException);
         builder_.Bind(&notException);
         {
@@ -1889,12 +1889,12 @@ void SlowPathLowering::LowerTryStGlobalByName(GateRef gate, GateRef glue)
     // order: 1. global record 2. global object
     GateRef value = acc_.GetValueIn(gate, 1);
     GateRef recordInfo = builder_.CallRuntime(glue, RTSTUB_ID(LdGlobalRecord), { propKey }, true);
-    builder_.Branch(builder_.TaggedSpecialValueChecker(recordInfo, JSTaggedValue::VALUE_UNDEFINED),
+    builder_.Branch(builder_.IsSpecial(recordInfo, JSTaggedValue::VALUE_UNDEFINED),
                     &isUndefined, &notUndefined);
     builder_.Bind(&notUndefined);
     {
         res = builder_.CallRuntime(glue, RTSTUB_ID(TryUpdateGlobalRecord), { propKey, value }, true);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(*res, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(*res, JSTaggedValue::VALUE_EXCEPTION),
                         &exceptionExit, &successExit);
     }
     builder_.Bind(&isUndefined);
@@ -1902,17 +1902,17 @@ void SlowPathLowering::LowerTryStGlobalByName(GateRef gate, GateRef glue)
         Label isHole(&builder_);
         Label notHole(&builder_);
         GateRef globalResult = builder_.CallRuntime(glue, RTSTUB_ID(GetGlobalOwnProperty), { propKey }, true);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(globalResult, JSTaggedValue::VALUE_HOLE), &isHole, &notHole);
+        builder_.Branch(builder_.IsSpecial(globalResult, JSTaggedValue::VALUE_HOLE), &isHole, &notHole);
         builder_.Bind(&isHole);
         {
             res = builder_.CallRuntime(glue, RTSTUB_ID(ThrowReferenceError), { propKey }, true);
-            builder_.Branch(builder_.TaggedSpecialValueChecker(*res, JSTaggedValue::VALUE_EXCEPTION),
+            builder_.Branch(builder_.IsSpecial(*res, JSTaggedValue::VALUE_EXCEPTION),
                             &exceptionExit, &successExit);
         }
         builder_.Bind(&notHole);
         {
             res = builder_.CallRuntime(glue, RTSTUB_ID(StGlobalVar), { propKey, value }, true);
-            builder_.Branch(builder_.TaggedSpecialValueChecker(*res, JSTaggedValue::VALUE_EXCEPTION),
+            builder_.Branch(builder_.IsSpecial(*res, JSTaggedValue::VALUE_EXCEPTION),
                             &exceptionExit, &successExit);
         }
     }
@@ -1939,12 +1939,12 @@ void SlowPathLowering::LowerStLetToGlobalRecord(GateRef gate, GateRef glue)
     Label exceptionExit(&builder_);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
-        { builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0))) }, true);
+    GateRef stringId = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0)));
+    GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), { stringId }, true);
     GateRef falseConst = builder_.Boolean(false);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(StGlobalRecord),
         {prop,  acc_.GetValueIn(gate, 1), falseConst}, true);
-    builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+    builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
         &exceptionExit, &successExit);
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
     ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl);
@@ -1956,12 +1956,12 @@ void SlowPathLowering::LowerStClassToGlobalRecord(GateRef gate, GateRef glue)
     Label exceptionExit(&builder_);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
-        { builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0))) }, true);
+    GateRef stringId = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0)));
+    GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), { stringId }, true);
     GateRef falseConst = builder_.Boolean(false);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(StGlobalRecord),
         {prop,  acc_.GetValueIn(gate, 1), falseConst}, true);
-    builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+    builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
         &exceptionExit, &successExit);
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
     ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl);
@@ -1993,17 +1993,17 @@ void SlowPathLowering::LowerStOwnByValueWithNameSet(GateRef gate, GateRef glue)
             {
                 res = builder_.CallStub(glue, CommonStubCSigns::SetPropertyByValue,
                     { glue, receiver, propKey, accValue });
-                builder_.Branch(builder_.TaggedSpecialValueChecker(res, JSTaggedValue::VALUE_HOLE),
+                builder_.Branch(builder_.IsSpecial(res, JSTaggedValue::VALUE_HOLE),
                     &slowPath, &notHole);
                 builder_.Bind(&notHole);
                 {
                     Label notexception(&builder_);
-                    builder_.Branch(builder_.TaggedSpecialValueChecker(res, JSTaggedValue::VALUE_EXCEPTION),
+                    builder_.Branch(builder_.IsSpecial(res, JSTaggedValue::VALUE_EXCEPTION),
                         &exceptionExit, &notexception);
                     builder_.Bind(&notexception);
                     res = builder_.CallRuntime(glue, RTSTUB_ID(SetFunctionNameNoPrefix),
                         { accValue, propKey }, true);
-                    builder_.Branch(builder_.TaggedSpecialValueChecker(res, JSTaggedValue::VALUE_EXCEPTION),
+                    builder_.Branch(builder_.IsSpecial(res, JSTaggedValue::VALUE_EXCEPTION),
                         &exceptionExit, &successExit);
                 }
             }
@@ -2012,7 +2012,7 @@ void SlowPathLowering::LowerStOwnByValueWithNameSet(GateRef gate, GateRef glue)
     builder_.Bind(&slowPath);
     {
         res = builder_.CallRuntime(glue, RTSTUB_ID(StOwnByValueWithNameSet), { receiver, propKey, accValue }, true);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(res, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(res, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
@@ -2023,8 +2023,8 @@ void SlowPathLowering::LowerStOwnByNameWithNameSet(GateRef gate, GateRef glue)
 {
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
-    GateRef propKey = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
-        { builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0))) }, true);
+    GateRef stringId = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0)));
+    GateRef propKey = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), { stringId }, true);
     GateRef receiver = acc_.GetValueIn(gate, 1);
     GateRef accValue = acc_.GetValueIn(gate, 2);
     GateRef result;
@@ -2046,16 +2046,16 @@ void SlowPathLowering::LowerStOwnByNameWithNameSet(GateRef gate, GateRef glue)
             {
                 result = builder_.CallStub(glue, CommonStubCSigns::SetPropertyByNameWithOwn,
                     { glue, receiver, propKey, accValue });
-                builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_HOLE),
+                builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_HOLE),
                     &notJSObject, &notHole);
                 builder_.Bind(&notHole);
                 {
                     Label notException(&builder_);
-                    builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+                    builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
                         &exceptionExit, &notException);
                     builder_.Bind(&notException);
                     result = builder_.CallRuntime(glue, RTSTUB_ID(SetFunctionNameNoPrefix), {accValue, propKey}, true);
-                    builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+                    builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
                         &exceptionExit, &successExit);
                 }
             }
@@ -2064,52 +2064,130 @@ void SlowPathLowering::LowerStOwnByNameWithNameSet(GateRef gate, GateRef glue)
     builder_.Bind(&notJSObject);
     {
         result = builder_.CallRuntime(glue, RTSTUB_ID(StOwnByNameWithNameSet), { receiver, propKey, accValue }, true);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
 }
 
 void SlowPathLowering::LowerLdGlobalVar(GateRef gate, GateRef glue)
 {
-    GateRef prop = GetValueFromConstStringTable(glue, gate, 0);
-    int id = RTSTUB_ID(TryLdGlobalByName);
-    // 1: number of value inputs
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    Label successExit(&builder_);
+    Label exceptionExit(&builder_);
+    Label slowPath(&builder_);
+    GateRef ret;
+    DEFVAlUE(result, (&builder_), VariableType::JS_ANY(), builder_.Undefined());
     ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef newGate =
-        builder_.CallRuntime(glue, id, {prop});
-    ReplaceHirToCall(gate, newGate);
+    GateRef propKey = GetValueFromConstStringTable(glue, gate, 0);
+    GateRef globalObject = builder_.GetGlobalObject(glue);
+    result = builder_.CallRuntime(glue, RTSTUB_ID(GetGlobalOwnProperty), { propKey }, true);
+    builder_.Branch(builder_.IsSpecial(*result, JSTaggedValue::VALUE_HOLE),
+        &slowPath, &successExit);
+    builder_.Bind(&slowPath);
+    {
+        result = builder_.CallRuntime(glue, RTSTUB_ID(LdGlobalVar), { globalObject, propKey }, true);
+        builder_.Branch(builder_.IsSpecial(*result, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &successExit);
+    }
+    builder_.Bind(&successExit);
+    {
+        ret = *result;
+        successControl.emplace_back(builder_.GetState());
+        successControl.emplace_back(builder_.GetDepend());
+    }
+    builder_.Bind(&exceptionExit);
+    {
+        failControl.emplace_back(builder_.GetState());
+        failControl.emplace_back(builder_.GetDepend());
+    }
+    ReplaceHirToSubCfg(gate, ret, successControl, failControl);
 }
 
 void SlowPathLowering::LowerLdObjByName(GateRef gate, GateRef glue)
 {
+    std::vector<GateRef> successControl;
+    std::vector<GateRef> failControl;
+    GateRef holeConst = builder_.HoleConstant();
+    DEFVAlUE(varAcc, (&builder_), VariableType::JS_ANY(), holeConst);
+    GateRef result;
+    Label receiverIsHeapObject(&builder_);
+    Label slowPath(&builder_);
     Label successExit(&builder_);
     Label exceptionExit(&builder_);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
-        { builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0))) }, true);
-    GateRef undefined = builder_.Int64(JSTaggedValue::VALUE_UNDEFINED);
-    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(LoadICByName), {undefined,
-        acc_.GetValueIn(gate, 1), prop, builder_.TaggedTypeNGC(undefined)}, true);
-    builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
-        &exceptionExit, &successExit);
-    CREATE_DOUBLE_EXIT(successExit, exceptionExit)
+    GateRef receiver = acc_.GetValueIn(gate, 1);
+    builder_.Branch(builder_.TaggedIsHeapObject(receiver), &receiverIsHeapObject, &slowPath);
+    builder_.Bind(&receiverIsHeapObject);
+    {
+        GateRef stringId = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0)));
+        GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), {stringId}, true);
+        varAcc = builder_.CallStub(glue, CommonStubCSigns::GetPropertyByName,
+            {glue, receiver, prop});
+        Label notHole(&builder_);
+        builder_.Branch(builder_.IsSpecial(*varAcc, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
+        builder_.Bind(&notHole);
+        builder_.Branch(builder_.IsSpecial(*varAcc, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &successExit);
+    }
+    builder_.Bind(&slowPath);
+    {
+        GateRef stringId = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0)));
+        GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), {stringId}, true);
+        GateRef undefined = builder_.UndefineConstant();
+        varAcc = builder_.CallRuntime(glue, RTSTUB_ID(LoadICByName), {undefined,
+            receiver, prop, builder_.TaggedTypeNGC(undefined)}, true);
+        builder_.Branch(builder_.IsSpecial(*varAcc, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &successExit);
+    }
+    builder_.Bind(&successExit);
+    {
+        result = *varAcc;
+        successControl.emplace_back(builder_.GetState());
+        successControl.emplace_back(builder_.GetDepend());
+    }
+    builder_.Bind(&exceptionExit);
+    {
+        failControl.emplace_back(builder_.GetState());
+        failControl.emplace_back(builder_.GetDepend());
+    }
     ReplaceHirToSubCfg(gate, result, successControl, failControl);
 }
 
 void SlowPathLowering::LowerStObjByName(GateRef gate, GateRef glue)
 {
+    Label receiverIsHeapObject(&builder_);
+    Label slowPath(&builder_);
     Label successExit(&builder_);
     Label exceptionExit(&builder_);
-    // 3: number of value inputs
+    // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
-    GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
-        { builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0))) }, true);
-    GateRef undefined = builder_.Int64(JSTaggedValue::VALUE_UNDEFINED);
-    GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(StoreICByName), {undefined,
-        acc_.GetValueIn(gate, 1), prop, acc_.GetValueIn(gate, 2), builder_.TaggedTypeNGC(undefined)}, true);
-    builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
-        &exceptionExit, &successExit);
+    GateRef receiver = acc_.GetValueIn(gate, 1);
+    GateRef result;
+    builder_.Branch(builder_.TaggedIsHeapObject(receiver), &receiverIsHeapObject, &slowPath);
+    builder_.Bind(&receiverIsHeapObject);
+    {
+        GateRef stringId = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0)));
+        GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), {stringId}, true);
+        result = builder_.CallStub(glue, CommonStubCSigns::SetPropertyByName,
+            {glue, receiver, prop, acc_.GetValueIn(gate, 2)});
+        Label notHole(&builder_);
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
+        builder_.Bind(&notHole);
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &successExit);
+    }
+    builder_.Bind(&slowPath);
+    {
+        GateRef stringId = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0)));
+        GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), {stringId}, true);
+        GateRef undefined = builder_.UndefineConstant();
+        result = builder_.CallRuntime(glue, RTSTUB_ID(StoreICByName), {undefined,
+            receiver, prop, acc_.GetValueIn(gate, 2), builder_.TaggedTypeNGC(undefined)}, true);
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &successExit);
+    }
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
     ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl);
 }
@@ -2149,9 +2227,9 @@ void SlowPathLowering::LowerLdObjByIndex(GateRef gate, GateRef glue)
         varAcc = builder_.CallStub(glue, CommonStubCSigns::GetPropertyByIndex,
             {glue, receiver, builder_.TruncInt64ToInt32(index)});
         Label notHole(&builder_);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(*varAcc, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
+        builder_.Branch(builder_.IsSpecial(*varAcc, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
         builder_.Bind(&notHole);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(*varAcc, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(*varAcc, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     builder_.Bind(&slowPath);
@@ -2159,7 +2237,7 @@ void SlowPathLowering::LowerLdObjByIndex(GateRef gate, GateRef glue)
         GateRef undefined = builder_.UndefineConstant();
         varAcc = builder_.CallRuntime(glue, RTSTUB_ID(LdObjByIndex),
             {receiver, builder_.TaggedTypeNGC(index), builder_.TaggedFalse(), builder_.TaggedTypeNGC(undefined)});
-        builder_.Branch(builder_.TaggedSpecialValueChecker(*varAcc, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(*varAcc, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     builder_.Bind(&successExit);
@@ -2195,16 +2273,16 @@ void SlowPathLowering::LowerStObjByIndex(GateRef gate, GateRef glue)
         result = builder_.CallStub(glue, CommonStubCSigns::SetPropertyByIndex,
             {glue, receiver, builder_.TruncInt64ToInt32(index), accValue});
         Label notHole(&builder_);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
         builder_.Bind(&notHole);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     builder_.Bind(&slowPath);
     {
         result = builder_.CallRuntime(glue, RTSTUB_ID(StObjByIndex),
             {receiver, builder_.TaggedTypeNGC(index), accValue});
-        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
@@ -2231,9 +2309,9 @@ void SlowPathLowering::LowerLdObjByValue(GateRef gate, GateRef glue)
         varAcc = builder_.CallStub(glue, CommonStubCSigns::GetPropertyByValue,
             {glue, receiver, propKey});
         Label notHole(&builder_);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(*varAcc, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
+        builder_.Branch(builder_.IsSpecial(*varAcc, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
         builder_.Bind(&notHole);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(*varAcc, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(*varAcc, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     builder_.Bind(&slowPath);
@@ -2241,7 +2319,7 @@ void SlowPathLowering::LowerLdObjByValue(GateRef gate, GateRef glue)
         GateRef undefined = builder_.UndefineConstant();
         varAcc = builder_.CallRuntime(glue, RTSTUB_ID(LoadICByValue), {undefined, receiver, propKey,
             builder_.TaggedTypeNGC(undefined)});
-        builder_.Branch(builder_.TaggedSpecialValueChecker(*varAcc, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(*varAcc, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     builder_.Bind(&successExit);
@@ -2275,9 +2353,9 @@ void SlowPathLowering::LowerStObjByValue(GateRef gate, GateRef glue)
     {
         result = builder_.CallStub(glue, CommonStubCSigns::SetPropertyByValue, {glue, receiver, propKey, accValue});
         Label notHole(&builder_);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_HOLE), &slowPath, &notHole);
         builder_.Bind(&notHole);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     builder_.Bind(&slowPath);
@@ -2285,7 +2363,7 @@ void SlowPathLowering::LowerStObjByValue(GateRef gate, GateRef glue)
         GateRef undefined = builder_.UndefineConstant();
         result = builder_.CallRuntime(glue, RTSTUB_ID(StoreICByValue), {undefined, receiver, propKey, accValue,
             builder_.TaggedTypeNGC(undefined)});
-        builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
@@ -2302,7 +2380,7 @@ void SlowPathLowering::LowerLdSuperByName(GateRef gate, GateRef glue)
     GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable),
         { builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0))) }, true);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(LdSuperByValue), {prop, acc_.GetValueIn(gate, 1)}, true);
-    builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+    builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
         &exceptionExit, &successExit);
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
     ReplaceHirToSubCfg(gate, result, successControl, failControl);
@@ -2318,7 +2396,7 @@ void SlowPathLowering::LowerStSuperByName(GateRef gate, GateRef glue)
         { builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0))) }, true);
     GateRef result = builder_.CallRuntime(glue, RTSTUB_ID(StSuperByValue), {prop, acc_.GetValueIn(gate, 1),
         acc_.GetValueIn(gate, 2)}, true);
-    builder_.Branch(builder_.TaggedSpecialValueChecker(result, JSTaggedValue::VALUE_EXCEPTION),
+    builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
         &exceptionExit, &successExit);
     CREATE_DOUBLE_EXIT(successExit, exceptionExit)
     ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl);
@@ -2468,7 +2546,7 @@ void SlowPathLowering::LowerDefineClassWithBuffer(GateRef gate, GateRef glue, Ga
     builder_.Bind(&afterCheckResolved);
     Label isException(&builder_);
     Label isNotException(&builder_);
-    builder_.Branch(builder_.TaggedSpecialValueChecker(*res, JSTaggedValue::VALUE_EXCEPTION),
+    builder_.Branch(builder_.IsSpecial(*res, JSTaggedValue::VALUE_EXCEPTION),
         &isException, &isNotException);
 
     std::vector<GateRef> successControl;
@@ -2747,7 +2825,7 @@ void SlowPathLowering::LowerDefineNCFuncDyn(GateRef gate, GateRef glue, GateRef 
     {
         method = builder_.CallRuntime(glue, RTSTUB_ID(DefineNCFuncDyn), {*method});
         Label notException(&builder_);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(*method, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(*method, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &notException);
         builder_.Bind(&notException);
         {
@@ -2796,7 +2874,7 @@ void SlowPathLowering::LowerDefineMethod(GateRef gate, GateRef glue, GateRef jsF
     {
         method = builder_.CallRuntime(glue, RTSTUB_ID(DefineMethod), {*method});
         Label notException(&builder_);
-        builder_.Branch(builder_.TaggedSpecialValueChecker(*method, JSTaggedValue::VALUE_EXCEPTION),
+        builder_.Branch(builder_.IsSpecial(*method, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &notException);
         builder_.Bind(&notException);
         {
