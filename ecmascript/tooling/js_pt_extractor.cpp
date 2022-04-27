@@ -86,7 +86,7 @@ CList<JSPtStepRange> JSPtExtractor::GetStepRanges(File::EntityId methodId, uint3
 {
     CList<JSPtStepRange> ranges {};
     auto table = GetLineNumberTable(methodId);
-    auto callbackFunc = [table, &ranges](int32_t line, [[maybe_unused]] int32_t column) -> bool {
+    auto callbackFunc = [table, &ranges](int32_t line) -> bool {
         for (auto it = table.begin(); it != table.end(); ++it) {
             auto next = it + 1;
             if (it->line == line) {
@@ -96,8 +96,7 @@ CList<JSPtStepRange> JSPtExtractor::GetStepRanges(File::EntityId methodId, uint3
         }
         return true;
     };
-    MatchWithOffset(callbackFunc, methodId, offset);
-
+    MatchLineWithOffset(callbackFunc, methodId, offset);
     return ranges;
 }
 

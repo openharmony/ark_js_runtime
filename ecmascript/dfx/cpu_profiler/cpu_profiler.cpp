@@ -230,12 +230,18 @@ void CpuProfiler::ParseMethodInfo(JSMethod *method, InterpretedFrameHandler fram
         // line number
         int32_t lineNumber = 0;
         int32_t columnNumber = 0;
-        auto callbackFunc = [&](int32_t line, int32_t column) -> bool {
+        auto callbackLineFunc = [&](int32_t line) -> bool {
             lineNumber = line + 1;
+            return true;
+        };
+        auto callbackColumnFunc = [&](int32_t column) -> bool {
             columnNumber = column + 1;
             return true;
         };
-        if (!debugExtractor->MatchWithOffset(callbackFunc, method->GetMethodId(), frameHandler.GetBytecodeOffset())) {
+        panda_file::File::EntityId methodId = method->GetMethodId();
+        uint32_t offset = frameHandler.GetBytecodeOffset();
+        if (!debugExtractor->MatchLineWithOffset(callbackLineFunc, methodId, offset) ||
+            !debugExtractor->MatchColumnWithOffset(callbackColumnFunc, methodId, offset)) {
             codeEntry.lineNumber = 0;
             codeEntry.columnNumber = 0;
         } else {

@@ -79,13 +79,19 @@ void JSBackend::NotifyPaused(std::optional<JSPtLocation> location, PauseReason r
             extractor = GetExtractor(detail.url_);
             return true;
         };
-        auto callbackFunc = [&detail](int32_t line, int32_t column) -> bool {
+        auto callbackLineFunc = [&detail](int32_t line) -> bool {
             detail.line_ = line;
+            return true;
+        };
+        auto callbackColumnFunc = [&detail](int32_t column) -> bool {
             detail.column_ = column;
             return true;
         };
-        if (!MatchScripts(scriptFunc, location->GetPandaFile(), ScriptMatchType::FILE_NAME) || extractor == nullptr ||
-            !extractor->MatchWithOffset(callbackFunc, location->GetMethodId(), location->GetBytecodeOffset())) {
+        File::EntityId methodId = location->GetMethodId();
+        uint32_t offset = location->GetBytecodeOffset();
+        if (!MatchScripts(scriptFunc, location->GetPandaFile(), ScriptMatchType::FILE_NAME) ||
+            extractor == nullptr || !extractor->MatchLineWithOffset(callbackLineFunc, methodId, offset) ||
+            !extractor->MatchColumnWithOffset(callbackColumnFunc, methodId, offset)) {
             LOG(ERROR, DEBUGGER) << "NotifyPaused: unknown " << location->GetPandaFile();
             return;
         }
@@ -193,11 +199,13 @@ bool JSBackend::StepComplete(const JSPtLocation &location)
         extractor = GetExtractor(script->GetUrl());
         return true;
     };
-    auto callbackFunc = [](int32_t line, [[maybe_unused]] int32_t column) -> bool {
+    auto callbackFunc = [](int32_t line) -> bool {
         return line == SPECIAL_LINE_MARK;
     };
-    if (MatchScripts(scriptFunc, location.GetPandaFile(), ScriptMatchType::FILE_NAME) && extractor != nullptr &&
-        extractor->MatchWithOffset(callbackFunc, location.GetMethodId(), location.GetBytecodeOffset())) {
+    File::EntityId methodId = location.GetMethodId();
+    uint32_t offset = location.GetBytecodeOffset();
+    if (MatchScripts(scriptFunc, location.GetPandaFile(), ScriptMatchType::FILE_NAME) &&
+        extractor != nullptr && extractor->MatchLineWithOffset(callbackFunc, methodId, offset)) {
         LOG(INFO, DEBUGGER) << "StepComplete: skip -1";
         return false;
     }
@@ -538,13 +546,17 @@ bool JSBackend::GenerateCallFrame(CallFrame *callFrame,
         LOG(ERROR, DEBUGGER) << "GenerateCallFrame: Unknown url: " << url;
         return false;
     }
-    auto callbackFunc = [&location](int32_t line, int32_t column) -> bool {
+    auto callbackLineFunc = [&location](int32_t line) -> bool {
         location->SetLine(line);
+        return true;
+    };
+    auto callbackColumnFunc = [&location](int32_t column) -> bool {
         location->SetColumn(column);
         return true;
     };
-    if (!extractor->MatchWithOffset(callbackFunc, method->GetMethodId(),
-                                    DebuggerApi::GetBytecodeOffset(frameHandler))) {
+    File::EntityId methodId = method->GetMethodId();
+    if (!extractor->MatchLineWithOffset(callbackLineFunc, methodId, DebuggerApi::GetBytecodeOffset(frameHandler)) ||
+        !extractor->MatchColumnWithOffset(callbackColumnFunc, methodId, DebuggerApi::GetBytecodeOffset(frameHandler))) {
         LOG(ERROR, DEBUGGER) << "GenerateCallFrame: unknown offset: " << DebuggerApi::GetBytecodeOffset(frameHandler);
         return false;
     }
