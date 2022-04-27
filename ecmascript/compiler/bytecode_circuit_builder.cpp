@@ -733,7 +733,6 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
             uint32_t funcReg = READ_INST_8_3();
             uint32_t actualNumArgs = READ_INST_16_1();
 
-            info.inputs.emplace_back(Immediate(actualNumArgs));
             info.inputs.emplace_back(VirtualRegister(funcReg));
             for (size_t i = 1; i <= actualNumArgs; i++) {
                 info.inputs.emplace_back(VirtualRegister(funcReg + i));
@@ -757,7 +756,6 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
             uint32_t funcReg = READ_INST_8_3();
             uint32_t actualNumArgs = READ_INST_16_1();
 
-            info.inputs.emplace_back(Immediate(actualNumArgs));
             info.inputs.emplace_back(VirtualRegister(funcReg));
             for (size_t i = 1; i <= actualNumArgs; i++) {
                 info.inputs.emplace_back(VirtualRegister(funcReg + i));
