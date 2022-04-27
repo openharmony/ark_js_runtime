@@ -44,7 +44,7 @@ static constexpr uint32_t INVALID_ARGS_NUMBER = -1;
 
 class EcmaInterpreter {
 public:
-    static const uint32_t METHOD_HOTNESS_THRESHOLD = 512;
+    static const int16_t METHOD_HOTNESS_THRESHOLD = 512;
     enum ActualNumArgsOfCall : uint8_t { CALLARG0 = 0, CALLARG1, CALLARGS2, CALLARGS3 };
 
     static inline JSTaggedValue Execute(EcmaRuntimeCallInfo *info);

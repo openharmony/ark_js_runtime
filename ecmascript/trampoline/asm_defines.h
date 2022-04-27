@@ -27,7 +27,8 @@
 #define ASM_JS_FUNCTION_LEXICAL_ENV_OFFSET       (48)
 #define ASM_JS_FUNCTION_CONSTANT_POOL_OFFSET     (72)
 #define ASM_JF_FUNCTION_PROFILE_TYPE_INFO_OFFSET (80)
-#define ASM_JS_METHOD_HOTNESS_COUNTER_OFFSET     (32)
+// hotness counter is encoded in a jsmethod field, the first uint16_t in a uint64_t.
+#define ASM_JS_METHOD_HOTNESS_COUNTER_OFFSET     (24)
 #define ASM_JS_METHOD_NATIVE_POINTER_OFFSET      (8)
 #if defined(PANDA_TARGET_ARM64) || defined(PANDA_TARGET_WINDOWS)
 #define ASM_GLUE_TO_THREAD_OFFSET                (136)
@@ -68,7 +69,8 @@
 #define ASM_JS_FUNCTION_LEXICAL_ENV_OFFSET       (48)
 #define ASM_JS_FUNCTION_CONSTANT_POOL_OFFSET     (72)
 #define ASM_JF_FUNCTION_PROFILE_TYPE_INFO_OFFSET (80)
-#define ASM_JS_METHOD_HOTNESS_COUNTER_OFFSET     (32)
+// hotness counter is encoded in a js method field, the first uint16_t in a uint64_t.
+#define ASM_JS_METHOD_HOTNESS_COUNTER_OFFSET     (24)
 #define ASM_JS_METHOD_NATIVE_POINTER_OFFSET      (8)
 #define ASM_GLUE_TO_THREAD_OFFSET                (80)
 // ecma_runtime_callinfo struct in stack

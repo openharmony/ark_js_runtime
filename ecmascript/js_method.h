@@ -30,18 +30,12 @@ struct PUBLIC_API JSMethod : public base::AlignedStruct<sizeof(uint64_t),
                                                         base::AlignedUint64,
                                                         base::AlignedPointer,
                                                         base::AlignedPointer,
-                                                        base::AlignedUint32,
-                                                        base::AlignedUint32,
-                                                        base::AlignedUint32,
-                                                        base::AlignedUint8> {
+                                                        base::AlignedUint64> {
     enum class Index : size_t {
         CALL_FIELD_INDEX = 0,
         NATIVE_POINTER_OR_BYTECODE_ARRAY_INDEX,
         JS_PANDA_FILE_INDEX,
-        BYTECODE_ARRAY_SIZE_INDEX,
-        HOTNESS_COUNTER_INDEX,
-        METHOD_ID_INDEX,
-        SLOT_SIZE_INDEX,
+        LITERAL_INFO_INDEX,
         NUM_OF_MEMBERS
     };
 
@@ -67,34 +61,9 @@ struct PUBLIC_API JSMethod : public base::AlignedStruct<sizeof(uint64_t),
         return reinterpret_cast<const uint8_t *>(nativePointerOrBytecodeArray_);
     }
 
-    uint32_t GetBytecodeArraySize() const
-    {
-        return bytecodeArraySize_;
-    }
-
     void SetBytecodeArray(const uint8_t *bc)
     {
         nativePointerOrBytecodeArray_ = reinterpret_cast<const void *>(bc);
-    }
-
-    uint8_t GetSlotSize() const
-    {
-        return slotSize_;
-    }
-
-    void UpdateSlotSize (uint8_t size)
-    {
-        uint16_t end = GetSlotSize() + size;
-        if (end >= MAX_SLOT_SIZE) {
-            slotSize_ = MAX_SLOT_SIZE;
-            return;
-        }
-        slotSize_ = static_cast<uint8_t>(end);
-    }
-
-    static size_t GetHotnessCounterOffset(bool isArch32)
-    {
-        return GetOffset<static_cast<size_t>(Index::HOTNESS_COUNTER_INDEX)>(isArch32);
     }
 
     static constexpr size_t VREGS_ARGS_NUM_BITS = 28; // 28: maximum 268,435,455
@@ -189,34 +158,72 @@ struct PUBLIC_API JSMethod : public base::AlignedStruct<sizeof(uint64_t),
 
     const char * PUBLIC_API GetMethodName() const;
 
-    inline uint32_t GetHotnessCounter() const
+    static constexpr size_t METHOD_ARGS_NUM_BYTES = 8;
+    static constexpr size_t METHOD_ARGS_NUM_BITS = 16;
+    static constexpr size_t METHOD_ARGS_METHODID_BITS = 32;
+    using HotnessCounterBits = BitField<int16_t, 0, METHOD_ARGS_NUM_BITS>; // offset 0-15
+    using MethodIdBits = HotnessCounterBits::NextField<uint32_t, METHOD_ARGS_METHODID_BITS>; // offset 16-47
+    using SlotSizeBits = MethodIdBits::NextField<uint8_t, METHOD_ARGS_NUM_BYTES>; // offset 48-55
+
+    uint32_t GetBytecodeArraySize() const;
+
+    inline int16_t GetHotnessCounter() const
     {
-        return hotnessCounter_;
+        return HotnessCounterBits::Decode(literalInfo_);
+    }
+
+    static size_t GetHotnessCounterOffset(bool isArch32)
+    {
+        // hotness counter is encoded in a js method field, the first uint16_t in a uint64_t.
+        return GetOffset<static_cast<size_t>(Index::LITERAL_INFO_INDEX)>(isArch32);
     }
 
     inline NO_THREAD_SANITIZE void IncrementHotnessCounter()
     {
-        ++hotnessCounter_;
+        auto hotnessCounter = HotnessCounterBits::Decode(literalInfo_);
+        literalInfo_ = HotnessCounterBits::Update(literalInfo_, ++hotnessCounter);
     }
 
     NO_THREAD_SANITIZE void ResetHotnessCounter()
     {
-        hotnessCounter_ = 0;
+        literalInfo_ = HotnessCounterBits::Update(literalInfo_, 0);
     }
 
-    inline NO_THREAD_SANITIZE void SetHotnessCounter(size_t counter)
+    inline NO_THREAD_SANITIZE void SetHotnessCounter(int16_t counter)
     {
-        hotnessCounter_ = counter;
+        literalInfo_ = HotnessCounterBits::Update(literalInfo_, counter);
     }
 
     panda_file::File::EntityId GetMethodId() const
     {
-        return methodId_;
+        return panda_file::File::EntityId(MethodIdBits::Decode(literalInfo_));
+    }
+
+    void SetMethodId(panda_file::File::EntityId methodId)
+    {
+        literalInfo_ = MethodIdBits::Update(literalInfo_, methodId.GetOffset());
+    }
+
+    uint8_t GetSlotSize() const
+    {
+        return SlotSizeBits::Decode(literalInfo_);;
+    }
+
+    void UpdateSlotSize(uint8_t size)
+    {
+        uint16_t end = GetSlotSize() + size;
+        if (end >= MAX_SLOT_SIZE) {
+            literalInfo_ = SlotSizeBits::Update(literalInfo_, MAX_SLOT_SIZE);
+            return;
+        }
+        literalInfo_ = SlotSizeBits::Update(literalInfo_, static_cast<uint8_t>(end));
     }
 
     uint32_t PUBLIC_API GetNumVregs() const;
 
     uint32_t GetCodeSize() const;
+
+    uint32_t GetCodeSize(panda_file::File::EntityId methodId) const;
 
     panda_file::File::StringData GetName() const;
 
@@ -232,18 +239,21 @@ struct PUBLIC_API JSMethod : public base::AlignedStruct<sizeof(uint64_t),
 
     const panda_file::File *GetPandaFile() const;
 
+    uint64_t GetLiteralInfo() const
+    {
+        return literalInfo_;
+    }
+
     alignas(EAS) uint64_t callField_ {0};
     // Native method decides this filed is NativePointer or BytecodeArray pointer.
     alignas(EAS) const void *nativePointerOrBytecodeArray_ {nullptr};
     alignas(EAS) const JSPandaFile *jsPandaFile_ {nullptr};
-    alignas(EAS) uint32_t bytecodeArraySize_ {0};
-    alignas(EAS) uint32_t hotnessCounter_ {0};
-    alignas(EAS) panda_file::File::EntityId methodId_;
-    alignas(EAS) uint8_t slotSize_ {0};
+    // hotnessCounter, methodId and slotSize are encoded in literalInfo_.
+    alignas(EAS) uint64_t literalInfo_ {0};
 };
 static_assert(MEMBER_OFFSET(JSMethod, callField_) == ASM_JS_METHOD_CALLFIELD_OFFSET);
 static_assert(MEMBER_OFFSET(JSMethod, nativePointerOrBytecodeArray_) == ASM_JS_METHOD_BYTECODEARRAY_OFFSET);
-static_assert(MEMBER_OFFSET(JSMethod, hotnessCounter_) == ASM_JS_METHOD_HOTNESS_COUNTER_OFFSET);
+static_assert(MEMBER_OFFSET(JSMethod, literalInfo_) == ASM_JS_METHOD_HOTNESS_COUNTER_OFFSET);
 static_assert(MEMBER_OFFSET(JSMethod, nativePointerOrBytecodeArray_) == ASM_JS_METHOD_NATIVE_POINTER_OFFSET);
 STATIC_ASSERT_EQ_ARCH(sizeof(JSMethod), JSMethod::SizeArch32, JSMethod::SizeArch64);
 }  // namespace panda::ecmascript
