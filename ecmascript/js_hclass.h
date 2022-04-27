@@ -112,6 +112,7 @@ class ProtoChangeDetails;
         JS_COLLATOR, /* ///////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_PLURAL_RULES, /* ///////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_DISPLAYNAMES, /* ///////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_LIST_FORMAT,  /* ///////////////////////////////////////////////////////////////////////////////-PADDING */ \
                                                                                                                        \
         JS_ARRAY_BUFFER, /* ///////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_SHARED_ARRAY_BUFFER, /* ////////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -656,6 +657,11 @@ public:
     inline bool IsJSDisplayNames() const
     {
         return GetObjectType() == JSType::JS_DISPLAYNAMES;
+    }
+
+    inline bool IsJSListFormat() const
+    {
+        return GetObjectType() == JSType::JS_LIST_FORMAT;
     }
     // non ECMA standard jsapi containers.
     inline bool IsSpecialContainer() const

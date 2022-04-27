@@ -72,6 +72,7 @@ class JSThread;
     V(JSTaggedValue, CollatorFunction, COLLATOR_FUNCTION_INDEX)                                     \
     V(JSTaggedValue, PluralRulesFunction, PLURAL_RULES_FUNCTION_INDEX)                              \
     V(JSTaggedValue, DisplayNamesFunction, DISPLAY_NAMES_FUNCTION_INDEX)                            \
+    V(JSTaggedValue, ListFormatFunction, LIST_FORMAT_FUNCTION_INDEX)                                \
     V(JSTaggedValue, RegExpFunction, REGEXP_FUNCTION_INDEX)                                         \
     V(JSTaggedValue, BuiltinsSetFunction, BUILTINS_SET_FUNCTION_INDEX)                              \
     V(JSTaggedValue, SetPrototype, SET_PROTOTYPE_INDEX)                                             \
@@ -139,6 +140,7 @@ class JSThread;
     V(JSTaggedValue, JSIntlBoundFunctionClass, JS_INTL_BOUND_FUNCTION_CLASS)                        \
     V(JSTaggedValue, NumberFormatLocales, NUMBER_FORMAT_LOCALES_INDEX)                              \
     V(JSTaggedValue, DateTimeFormatLocales, DATE_TIMEFORMAT_LOCALES_INDEX)                          \
+    V(JSTaggedValue, ListFormatLocales, LIST_FORMAT_LOCALES_INDEX)                                  \
     V(JSTaggedValue, GlobalRecord, GLOBAL_RECORD)                                                   \
     V(JSTaggedValue, ModuleNamespaceClass, MODULENAMESPACE_CLASS)                                   \
     V(JSTaggedValue, ObjectLiteralHClassCache, OBJECT_LITERAL_HCLASS_CACHE)
