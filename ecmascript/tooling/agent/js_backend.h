@@ -140,6 +140,7 @@ private:
         const char* name, CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
     void GetAdditionalProperties(const Local<JSValueRef> &value,
         CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
+    bool IsSkipLine(const JSPtLocation &location);
 
     constexpr static int32_t SPECIAL_LINE_MARK = -1;
 

@@ -47,7 +47,7 @@ bool JSPtHooks::SingleStep(const JSPtLocation &location)
     LOG(DEBUG, DEBUGGER) << "JSPtHooks: SingleStep => " << location.GetBytecodeOffset();
 
     [[maybe_unused]] LocalScope scope(backend_->ecmaVm_);
-    if (firstTime_) {
+    if (UNLIKELY(firstTime_)) {
         firstTime_ = false;
 
         backend_->NotifyPaused({}, BREAK_ON_START);
