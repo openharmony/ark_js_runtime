@@ -18,6 +18,7 @@
 
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/js_thread.h"
+#include "ecmascript/tooling/interface/stream.h"
 
 namespace panda::ecmascript {
 enum class DumpFormat { JSON, BINARY, OTHER };
@@ -25,8 +26,7 @@ enum class DumpFormat { JSON, BINARY, OTHER };
 class HeapProfilerInterface {
 public:
     static HeapProfilerInterface *GetInstance(JSThread *thread);
-    static void DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat,
-                                 const std::string &filePath, bool isVmMode = true);
+    static void DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, Stream *stream, bool isVmMode = true);
 
     static HeapProfilerInterface *CreateHeapProfiler(JSThread *thread);
     static void Destroy(JSThread *thread, HeapProfilerInterface *heapProfiler);
@@ -35,7 +35,7 @@ public:
     virtual ~HeapProfilerInterface() = default;
 
     virtual bool StartHeapTracking(JSThread *thread, double timeInterval, bool isVmMode = true) = 0;
-    virtual bool StopHeapTracking(JSThread *thread, const std::string &filePath) = 0;
+    virtual bool StopHeapTracking(JSThread *thread, Stream *stream) = 0;
 
     NO_MOVE_SEMANTIC(HeapProfilerInterface);
     NO_COPY_SEMANTIC(HeapProfilerInterface);

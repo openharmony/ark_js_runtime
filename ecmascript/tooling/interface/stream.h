@@ -27,7 +27,7 @@ public:
     virtual int GetSize() = 0;
 
     // Writes the chunk of data into the stream
-    virtual bool WriteChunk (char* data, int size) = 0;
+    virtual bool WriteChunk(char* data, int size) = 0;
 };
 }  // namespace panda::ecmascript
 
