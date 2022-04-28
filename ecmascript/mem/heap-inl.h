@@ -84,7 +84,7 @@ void Heap::EnumerateRegions(const Callback &cb) const
 }
 
 template<class Callback>
-void Heap::IteratorOverObjects(const Callback &cb) const
+void Heap::IterateOverObjects(const Callback &cb) const
 {
     activeSpace_->IterateOverObjects(cb);
     oldSpace_->IterateOverObjects(cb);
