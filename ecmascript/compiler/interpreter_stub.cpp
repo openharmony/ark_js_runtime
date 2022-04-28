@@ -1502,8 +1502,7 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
         varConstpool = GetConstpoolFromFunction(function);
         GateRef method = Load(VariableType::NATIVE_POINTER(), function,
             IntPtr(JSFunctionBase::METHOD_OFFSET));
-        varHotnessCounter = Load(VariableType::INT32(), method,
-                                 IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())));
+        varHotnessCounter = GetHotnessCounterFromMethod(method);
     }
     Dispatch(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo, *varAcc,
              *varHotnessCounter, IntPtr(0));
@@ -4133,8 +4132,7 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
             IntPtr(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
         GateRef offset = Int32Not(TruncPtrToInt32(PtrSub(*varPc, fistPC)));
         UPDATE_HOTNESS(*varSp);
-        Store(VariableType::INT32(), glue, method,
-              IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())), *varHotnessCounter);
+        SetHotnessCounter(glue, method, *varHotnessCounter);
         Jump(&tryContinue);
     }
 
@@ -4165,8 +4163,7 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
         GateRef method = Load(VariableType::NATIVE_POINTER(), function,
             IntPtr(JSFunctionBase::METHOD_OFFSET));
-        varHotnessCounter = Load(VariableType::INT32(), method,
-                                 IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())));
+        varHotnessCounter = GetHotnessCounterFromMethod(method);
         GateRef jumpSize = GetCallSizeFromFrame(prevState);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
         DispatchCommonCall<RTSTUB_ID(ResumeRspAndDispatch)>(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo,
@@ -4206,8 +4203,7 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
             IntPtr(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
         GateRef offset = Int32Not(TruncPtrToInt32(PtrSub(*varPc, fistPC)));
         UPDATE_HOTNESS(*varSp);
-        Store(VariableType::INT32(), glue, method,
-              IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())), *varHotnessCounter);
+        SetHotnessCounter(glue, method, *varHotnessCounter);
         Jump(&tryContinue);
     }
 
@@ -4239,8 +4235,7 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
         GateRef method = Load(VariableType::NATIVE_POINTER(), function,
             IntPtr(JSFunctionBase::METHOD_OFFSET));
-        varHotnessCounter = Load(VariableType::INT32(), method,
-                                 IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())));
+        varHotnessCounter = GetHotnessCounterFromMethod(method);
         GateRef jumpSize = GetCallSizeFromFrame(prevState);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
         DispatchCommonCall<RTSTUB_ID(ResumeRspAndDispatch)>(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo,
@@ -4292,8 +4287,7 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
             IntPtr(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
         GateRef offset = Int32Not(TruncPtrToInt32(PtrSub(*varPc, fistPC)));
         UPDATE_HOTNESS(*varSp);
-        Store(VariableType::INT32(), glue, method,
-              IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())), *varHotnessCounter);
+        SetHotnessCounter(glue, method, *varHotnessCounter);
         Jump(&tryContinue);
     }
 
@@ -4320,8 +4314,7 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
         GateRef method = Load(VariableType::NATIVE_POINTER(), function,
             IntPtr(JSFunctionBase::METHOD_OFFSET));
-        varHotnessCounter = Load(VariableType::INT32(), method,
-                                 IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())));
+        varHotnessCounter = GetHotnessCounterFromMethod(method);
         GateRef jumpSize = GetCallSizeFromFrame(prevState);
         Dispatch(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo, *varAcc,
                  *varHotnessCounter, jumpSize);
@@ -4363,8 +4356,7 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
         GateRef method = Load(VariableType::NATIVE_POINTER(), function,
             IntPtr(JSFunctionBase::METHOD_OFFSET));
-        varHotnessCounter = Load(VariableType::INT32(), method,
-                                 IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())));
+        varHotnessCounter = GetHotnessCounterFromMethod(method);
         Dispatch(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo, *varAcc,
                  *varHotnessCounter, IntPtr(0));
     }
@@ -5127,8 +5119,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
         SetCurrentSpFrame(glue, *newSp);                                                                        \
         GateRef newConstpool = GetConstpoolFromFunction(func);                                                  \
         GateRef newProfileTypeInfo = GetProfileTypeInfoFromFunction(func);                                      \
-        GateRef newHotnessCounter = Load(VariableType::INT32(), method,                                         \
-                                         IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())));        \
+        GateRef newHotnessCounter = GetHotnessCounterFromMethod(method);                                        \
         Dispatch(glue, *newSp, bytecodeArray, newConstpool, newProfileTypeInfo,                                 \
                  Hole(VariableType::JS_ANY()), newHotnessCounter, IntPtr(0));                                   \
     }

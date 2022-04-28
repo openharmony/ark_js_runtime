@@ -3799,7 +3799,7 @@ bool EcmaInterpreter::UpdateHotnessCounter(JSThread* thread, JSTaggedType *sp, J
 {
     InterpretedFrame *state = GET_FRAME(sp);
     auto method = JSFunction::Cast(state->function.GetTaggedObject())->GetMethod();
-    auto hotnessCounter = static_cast<int32_t>(method->GetHotnessCounter());
+    auto hotnessCounter = method->GetHotnessCounter();
 
     hotnessCounter += offset;
     if (UNLIKELY(hotnessCounter <= 0)) {
@@ -3821,7 +3821,7 @@ bool EcmaInterpreter::UpdateHotnessCounter(JSThread* thread, JSTaggedType *sp, J
             return needRestoreAcc;
         }
     }
-    method->SetHotnessCounter(static_cast<uint32_t>(hotnessCounter));
+    method->SetHotnessCounter(hotnessCounter);
     return false;
 }
 
