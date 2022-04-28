@@ -83,6 +83,14 @@ void LinearSpace::Stop()
     }
 }
 
+void LinearSpace::ResetAllocator()
+{
+    auto currentRegion = GetCurrentRegion();
+    if (currentRegion != nullptr) {
+        allocator_->Reset(currentRegion->GetBegin(), currentRegion->GetEnd(), currentRegion->GetHighWaterMark());
+    }
+}
+
 SemiSpace::SemiSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
     : LinearSpace(heap, MemSpaceType::SEMI_SPACE, initialCapacity, maximumCapacity) {}
 

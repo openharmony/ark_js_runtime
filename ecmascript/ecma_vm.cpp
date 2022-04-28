@@ -124,7 +124,7 @@ void EcmaVM::TryLoadSnapshotFile()
     if (VerifyFilePath(snapshotPath)) {
         SnapShot snapShot(this);
 #if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MAC)
-        snapShot.SnapShotDeserialize(SnapShotType::TS_LOADER, snapshotPath);
+        snapShot.Deserialize(SnapShotType::TS_LOADER, snapshotPath);
 #endif
     }
 }
@@ -155,6 +155,7 @@ bool EcmaVM::Initialize()
                                                                   JSType::GLOBAL_ENV);
     globalConst->InitRootsClass(thread_, *dynClassClassHandle);
     tsLoader_ = new TSLoader(this);
+    snapshotEnv_ = new SnapShotEnv(this);
     aotInfo_ = new AotCodeInfo();
     if (options_.EnableTSAot()) {
         TryLoadSnapshotFile();
@@ -615,6 +616,9 @@ void EcmaVM::Iterate(const RootVisitor &v)
     moduleManager_->Iterate(v);
     tsLoader_->Iterate(v);
     aotInfo_->Iterate(v);
+#if !defined(PANDA_TARGET_WINDOWS)
+    snapshotEnv_->Iterate(v);
+#endif
 }
 
 void EcmaVM::SetGlobalEnv(GlobalEnv *global)

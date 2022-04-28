@@ -39,6 +39,13 @@ void BumpPointerAllocator::Reset(uintptr_t begin, uintptr_t end)
     end_ = end;
 }
 
+void BumpPointerAllocator::Reset(uintptr_t begin, uintptr_t end, uintptr_t top)
+{
+    begin_ = begin;
+    top_ = top;
+    end_ = end;
+}
+
 uintptr_t BumpPointerAllocator::Allocate(size_t size)
 {
     ASSERT(size != 0);

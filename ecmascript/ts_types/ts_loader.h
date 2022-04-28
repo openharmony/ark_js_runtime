@@ -179,6 +179,11 @@ public:
         return constantStringTable_;
     }
 
+    void ClearConstStringTable()
+    {
+        constantStringTable_.clear();
+    }
+
     void SetTSModuleTable(JSHandle<TSModuleTable> table)
     {
         globalModuleTable_ = table.GetTaggedValue();
