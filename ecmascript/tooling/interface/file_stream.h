@@ -22,6 +22,7 @@
 
 namespace panda::ecmascript {
 class FileStream : public Stream {
+public:
     FileStream(const std::string &fileName);
     ~FileStream() override;
 
