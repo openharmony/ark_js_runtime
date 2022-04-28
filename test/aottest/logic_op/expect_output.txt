@@ -11,6 +11,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
--97
-4.5
-97
+operator == test list:
+false
+false
+false
+true
+false
+false
+operator != test list:
+true
+true
+true
+false
+true
+true
+operator < test list:
+false
+false
+true
+false
+false
+true
+operator <= test list:
+false
+false
+true
+true
+false
+true
+operator > test list:
+true
+true
+false
+false
+true
+false
+operator >= test list:
+true
+true
+false
+true
+true
+false

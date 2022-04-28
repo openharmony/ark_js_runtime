@@ -1508,6 +1508,19 @@ DEF_RUNTIME_STUBS(DefineGeneratorFunc)
     return RuntimeDefineGeneratorFunc(thread, reinterpret_cast<JSFunction*>(func)).GetRawData();
 }
 
+DEF_RUNTIME_STUBS(DefineGeneratorFuncWithMethodId)
+{
+    RUNTIME_STUBS_HEADER(DefineGeneratorFuncWithMethodId);
+    CONVERT_ARG_TAGGED_TYPE_CHECKED(id, 0);
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    auto methodId = JSTaggedValue(id);
+
+    auto aotCodeInfo  = thread->GetEcmaVM()->GetAotCodeInfo();
+    auto entry = aotCodeInfo->GetAOTFuncEntry(methodId.GetInt());
+    JSHandle<JSFunction> func = factory->NewAotFunction(1, entry);
+    return RuntimeDefineGeneratorFunc(thread, reinterpret_cast<JSFunction*>(*func)).GetRawData();
+}
+
 DEF_RUNTIME_STUBS(DefineAsyncFunc)
 {
     RUNTIME_STUBS_HEADER(DefineAsyncFunc);
