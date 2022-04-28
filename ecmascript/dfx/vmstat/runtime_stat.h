@@ -25,7 +25,7 @@ namespace panda::ecmascript {
 class EcmaRuntimeStat {
 public:
     // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    explicit EcmaRuntimeStat(const char * const runtimeCallerNames[], int count);
+    EcmaRuntimeStat(const char * const runtimeCallerNames[], int count);
     EcmaRuntimeStat() = default;
     virtual ~EcmaRuntimeStat() = default;
 
@@ -43,9 +43,18 @@ private:
     CVector<PandaRuntimeCallerStat> callerStat_ {};
 };
 
+class EcmaRuntimeStatScope {
+public:
+    explicit EcmaRuntimeStatScope(EcmaVM *vm);
+    virtual ~EcmaRuntimeStatScope();
+
+private:
+    EcmaVM *vm_ = nullptr;
+};
+
 class RuntimeTimerScope {
 public:
-    explicit RuntimeTimerScope(JSThread *thread, int callerId, EcmaRuntimeStat *stat)
+    RuntimeTimerScope(JSThread *thread, int callerId, EcmaRuntimeStat *stat)
     {
         bool statEnabled = thread->GetEcmaVM()->IsRuntimeStatEnabled();
         if (!statEnabled || stat == nullptr) {

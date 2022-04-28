@@ -1936,23 +1936,55 @@ DECLARE_ASM_HANDLER(HandleInstanceOfDynPrefV8)
 
 DECLARE_ASM_HANDLER(HandleStrictNotEqDynPrefV8)
 {
+    auto env = GetEnvironment();
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    GateRef result = CallRuntime(glue, RTSTUB_ID(FastStrictNotEqual), { left, acc });
-    varAcc = result;
+
+    Label strictEqual(env);
+    Label notStrictEqual(env);
+    Label dispatch(env);
+    Branch(FastStrictEqual(glue, left, acc), &strictEqual, &notStrictEqual);
+    Bind(&strictEqual);
+    {
+        varAcc = ChangeInt64ToTagged(Int64(JSTaggedValue::VALUE_FALSE));
+        Jump(&dispatch);
+    }
+
+    Bind(&notStrictEqual);
+    {
+        varAcc = ChangeInt64ToTagged(Int64(JSTaggedValue::VALUE_TRUE));
+        Jump(&dispatch);
+    }
+    Bind(&dispatch);
     DISPATCH_WITH_ACC(PREF_V8);
 }
 
 DECLARE_ASM_HANDLER(HandleStrictEqDynPrefV8)
 {
+    auto env = GetEnvironment();
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    GateRef result = CallRuntime(glue, RTSTUB_ID(FastStrictEqual), { left, acc }); // acc is right
-    varAcc = result;
+
+    Label strictEqual(env);
+    Label notStrictEqual(env);
+    Label dispatch(env);
+    Branch(FastStrictEqual(glue, left, acc), &strictEqual, &notStrictEqual);
+    Bind(&strictEqual);
+    {
+        varAcc = ChangeInt64ToTagged(Int64(JSTaggedValue::VALUE_TRUE));
+        Jump(&dispatch);
+    }
+
+    Bind(&notStrictEqual);
+    {
+        varAcc = ChangeInt64ToTagged(Int64(JSTaggedValue::VALUE_FALSE));
+        Jump(&dispatch);
+    }
+    Bind(&dispatch);
     DISPATCH_WITH_ACC(PREF_V8);
 }
 

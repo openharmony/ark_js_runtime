@@ -92,12 +92,12 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
 #define RUNTIME_STUB_WITHOUT_GC_LIST(V)        \
     V(DebugPrint)                              \
     V(FatalPrint)                              \
-    V(InsertOldToNewRSet)             \
+    V(InsertOldToNewRSet)                      \
     V(MarkingBarrier)                          \
     V(DoubleToInt)                             \
     V(FloatMod)                                \
     V(FindElementWithCache)                    \
-    V(CallRuntimeWithArgv)            \
+    V(CallRuntimeWithArgv)                     \
     V(JSCall)                                  \
     V(JSCallWithArgV)                          \
     V(JSObjectGetMethod)                       \
@@ -122,6 +122,8 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(PushCallIThisRangeAndDispatchSlowPath)   \
     V(ResumeRspAndDispatch)                    \
     V(ResumeRspAndReturn)                      \
+    V(StringsAreEquals)                        \
+    V(BigIntEquals)                            \
     RUNTIME_ASM_STUB_LIST(V)
 
 #define RUNTIME_STUB_WITH_GC_LIST(V)      \
@@ -134,7 +136,7 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(ThrowTypeError)                     \
     V(JSProxySetProperty)                 \
     V(GetHash32)                          \
-    V(StringGetHashCode)                  \
+    V(ComputeHashcode)                    \
     V(GetTaggedArrayPtrTest)              \
     V(NewInternalString)                  \
     V(NewTaggedArray)                     \
@@ -299,6 +301,8 @@ public:
     static JSTaggedType FloatMod(double x, double y);
     static int32_t FindElementWithCache(uintptr_t argGlue, JSTaggedType hClass,
                                         JSTaggedType key, int32_t num);
+    static bool StringsAreEquals(EcmaString *str1, EcmaString *str2);
+    static bool BigIntEquals(JSTaggedType left, JSTaggedType right);
 private:
     static void PrintHeapReginInfo(uintptr_t argGlue);
 
