@@ -21,6 +21,7 @@
 
 #include "ecmascript/common.h"
 #include "ecmascript/snapshot/mem/encode_bit.h"
+#include "ecmascript/snapshot/mem/snapshot_env.h"
 #include "ecmascript/snapshot/mem/snapshot_serialize.h"
 #include "ecmascript/mem/c_string.h"
 
@@ -34,22 +35,24 @@ public:
     explicit SnapShot(EcmaVM *vm) : vm_(vm) {}
     ~SnapShot() = default;
 
-    void MakeSnapShot(TaggedObject *objectHeader, const panda_file::File *pf, const CString &fileName = "./snapshot");
-    void MakeSnapShot(uintptr_t startAddr, size_t size, const CString &fileName = "./snapshot");
-    const JSPandaFile *SnapShotDeserialize(SnapShotType type, const CString &snapshotFile = "./snapshot");
+    void Serialize(TaggedObject *objectHeader, const panda_file::File *pf, const CString &fileName = "./snapshot");
+    void Serialize(uintptr_t startAddr, size_t size, const CString &fileName = "./snapshot");
+    const JSPandaFile *Deserialize(SnapShotType type, const CString &snapshotFile = "./snapshot");
 
 private:
     struct Header {
-        uint32_t snapshot_size;
-        uint32_t panda_file_begin;
-        uint64_t root_object_size;
+        uint32_t snapshotSize;
+        uint32_t stringSize;
+        uint32_t pandaFileBegin;
+        uint32_t rootObjectSize;
     };
 
 private:
     size_t AlignUpPageSize(size_t spaceSize);
     std::pair<bool, CString> VerifyFilePath(const CString &filePath);
     bool VerifySnapShotFile(std::fstream &write, const CString &fileName);
-    void WriteToFile(std::fstream &write, const panda_file::File *pf, size_t size);
+    void WriteToFile(std::fstream &write, const panda_file::File *pf, size_t size,
+                     const CVector<uintptr_t> &stringVector);
 
     NO_MOVE_SEMANTIC(SnapShot);
     NO_COPY_SEMANTIC(SnapShot);

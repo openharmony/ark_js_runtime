@@ -33,6 +33,7 @@
 #include "ecmascript/taskpool/task.h"
 #include "ecmascript/tooling/interface/js_debugger_manager.h"
 #include "ecmascript/snapshot/mem/snapshot_serialize.h"
+#include "ecmascript/snapshot/mem/snapshot_env.h"
 #include "libpandabase/macros.h"
 
 namespace panda {
@@ -231,6 +232,11 @@ public:
         return tsLoader_;
     }
 
+    SnapShotEnv *GetSnapShotEnv() const
+    {
+        return snapshotEnv_;
+    }
+
     void LoadStubs();
     void SetupRegExpResultCache();
 
@@ -368,6 +374,7 @@ private:
     ChunkVector<JSMethod *> nativeMethods_;
     ModuleManager *moduleManager_ {nullptr};
     TSLoader *tsLoader_ {nullptr};
+    SnapShotEnv *snapshotEnv_ {nullptr};
     bool optionalLogEnabled_ {false};
     AotCodeInfo *aotInfo_ {nullptr};
 

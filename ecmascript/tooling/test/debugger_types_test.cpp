@@ -2294,16 +2294,7 @@ HWTEST_F_L0(DebuggerTypesTest, ProfileNodeToObjectTest)
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
     EXPECT_EQ(Local<IntegerRef>(result)->Value(), 15);
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "children");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsArray(ecmaVm));
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "positionTicks");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsArray(ecmaVm));
+
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "deoptReason");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
@@ -2373,16 +2364,6 @@ HWTEST_F_L0(DebuggerTypesTest, ProfileToObjectTest)
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
     EXPECT_EQ(Local<IntegerRef>(result)->Value(), 25);
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "nodes");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsArray(ecmaVm));
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "samples");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsArray(ecmaVm));
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "timeDeltas");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
