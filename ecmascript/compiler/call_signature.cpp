@@ -646,6 +646,34 @@ DEF_CALL_SIGNATURE(ResumeRspAndReturn)
     callSign->SetCallConv(CallSignature::CallConv::GHCCallConv);
 }
 
+DEF_CALL_SIGNATURE(StringsAreEquals)
+{
+    // 2 : 2 input parameters
+    CallSignature stringsAreEquals("StringsAreEquals", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::BOOL());
+    *callSign = stringsAreEquals;
+    std::array<VariableType, 2> params = { // 2 : 2 input parameters
+        VariableType::JS_POINTER(),
+        VariableType::JS_POINTER(),
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+}
+
+DEF_CALL_SIGNATURE(BigIntEquals)
+{
+    // 2 : 2 input parameters
+    CallSignature bigIntEquals("BigIntEquals", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::BOOL());
+    *callSign = bigIntEquals;
+    std::array<VariableType, 2> params = { // 2 : 2 input parameters
+        VariableType::JS_POINTER(),
+        VariableType::JS_POINTER(),
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+}
+
 #define PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE(name)                      \
     /* 2 : 2 input parameters */                                         \
     CallSignature signature(#name, 0, 2,                                 \
