@@ -41,6 +41,7 @@ public:
         RUNTIME_STUB_NO_GC,
         ASM_STUB,
         BYTECODE_HANDLER,
+        BYTECODE_HELPER_HANDLER,
         JSFUNCTION,
 
         STUB_BEGIN = COMMON_STUB,
@@ -128,6 +129,11 @@ public:
     {
         TargetKind targetKind = GetTargetKind();
         return TargetKind::BCHANDLER_BEGIN <= targetKind && targetKind < TargetKind::BCHANDLER_END;
+    }
+
+    bool IsBCNormalHandler() const
+    {
+        return (GetTargetKind() == TargetKind::BYTECODE_HANDLER);
     }
 
     void SetParameters(VariableType *paramsType)
@@ -271,10 +277,6 @@ private:
     V(TestAbsoluteAddressRelocation)        \
     V(GetTaggedArrayPtrTest)                \
     V(BytecodeHandler)                      \
-    V(SingleStepDebugging)                  \
-    V(HandleOverflow)                       \
-    V(BCDebuggerEntry)                      \
-    V(BCDebuggerExceptionEntry)             \
     V(CallRuntime)                          \
     V(CallRuntimeWithArgv)                  \
     V(OptimizedCallOptimized)               \

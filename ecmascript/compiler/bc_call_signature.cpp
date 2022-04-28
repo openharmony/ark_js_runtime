@@ -22,7 +22,7 @@ CallSignature BytecodeStubCSigns::callSigns_[BytecodeStubCSigns::NUM_OF_VALID_ST
 
 void BytecodeStubCSigns::Initialize()
 {
-#define INIT_SIGNATURES(name, counter)                                   \
+#define INIT_SIGNATURES(name)                                            \
     BytecodeHandlerCallSignature::Initialize(&callSigns_[name]);         \
     callSigns_[name].SetID(ID_##name);                                   \
     callSigns_[name].SetCallConv(CallSignature::CallConv::GHCCallConv);  \
@@ -33,6 +33,18 @@ void BytecodeStubCSigns::Initialize()
     });
     INTERPRETER_BC_STUB_LIST(INIT_SIGNATURES)
 #undef INIT_SIGNATURES
+#define INIT_HELPER_SIGNATURES(name)                                                        \
+    BytecodeHandlerCallSignature::Initialize(&callSigns_[name]);                            \
+    callSigns_[name].SetID(HELPER_ID_##name);                                               \
+    callSigns_[name].SetCallConv(CallSignature::CallConv::GHCCallConv);                     \
+    callSigns_[name].SetTargetKind(CallSignature::TargetKind::BYTECODE_HELPER_HANDLER);     \
+    callSigns_[name].SetConstructor(                                                        \
+    [](void* ciruit) {                                                                      \
+        return static_cast<void*>(                                                          \
+            new name##Stub(static_cast<Circuit*>(ciruit)));                                 \
+    });
+    ASM_INTERPRETER_BC_HELPER_STUB_LIST(INIT_HELPER_SIGNATURES)
+#undef INIT_HELPER_SIGNATURES
 }
 
 void BytecodeStubCSigns::GetCSigns(std::vector<CallSignature*>& outCSigns)

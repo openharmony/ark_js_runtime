@@ -41,7 +41,8 @@ enum class MarkStatus : uint8_t {
 };
 
 struct BCStubEntries {
-    static constexpr size_t EXISTING_BC_HANDLER_STUB_ENTRIES_COUNT = kungfu::BytecodeStubCSigns::NUM_OF_ALL_STUBS;
+    static constexpr size_t EXISTING_BC_HANDLER_STUB_ENTRIES_COUNT =
+        kungfu::BytecodeStubCSigns::NUM_OF_ALL_NORMAL_STUBS;
     // The number of bytecodes.
     static constexpr size_t BC_HANDLER_STUB_ENTRIES_COUNT = 0x100;
     static_assert(EXISTING_BC_HANDLER_STUB_ENTRIES_COUNT <= BC_HANDLER_STUB_ENTRIES_COUNT);

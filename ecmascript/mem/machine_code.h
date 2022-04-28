@@ -103,6 +103,11 @@ public:
                 kind_ < kungfu::CallSignature::TargetKind::BCHANDLER_END;
         }
 
+        bool IsBCNormalHandler() const
+        {
+            return (kind_ == kungfu::CallSignature::TargetKind::BYTECODE_HANDLER);
+        }
+
         bool IsCommonStub() const
         {
             return (kind_ == kungfu::CallSignature::TargetKind::COMMON_STUB);
