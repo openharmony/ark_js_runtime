@@ -43,7 +43,7 @@ void Marker::ProcessOldToNew(uint32_t threadId, Region *region)
 
 void Marker::ProcessSnapshotRSet(uint32_t threadId)
 {
-    heap_->EnumerateSnapShotSpaceRegions(std::bind(&Marker::HandleOldToNewRSet, this, threadId, std::placeholders::_1));
+    heap_->EnumerateSnapshotSpaceRegions(std::bind(&Marker::HandleOldToNewRSet, this, threadId, std::placeholders::_1));
     ProcessMarkStack(threadId);
 }
 

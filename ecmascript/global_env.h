@@ -165,6 +165,11 @@ public:
         return result;
     }
 
+    size_t GetGlobalEnvFieldSize() const
+    {
+        return FINAL_INDEX;
+    }
+
     void Init(JSThread *thread);
     void InitGlobalObject();
 

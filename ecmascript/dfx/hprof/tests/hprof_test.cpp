@@ -136,10 +136,10 @@ public:
     {
         int retry = 2;
         RemoveExistingFile();
-        HeapProfilerInterface::DumpHeapSnapShot(thread, DumpFormat::JSON, filePath);
+        HeapProfilerInterface::DumpHeapSnapshot(thread, DumpFormat::JSON, filePath);
         while (!IsFileExist() && retry > 0) {
             retry--;
-            HeapProfilerInterface::DumpHeapSnapShot(thread, DumpFormat::JSON, filePath);
+            HeapProfilerInterface::DumpHeapSnapshot(thread, DumpFormat::JSON, filePath);
         }
         return IsFileExist();
     }

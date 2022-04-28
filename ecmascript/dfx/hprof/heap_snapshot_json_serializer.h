@@ -27,18 +27,18 @@ namespace panda::ecmascript {
 using fstream = std::fstream;
 using stringstream = std::stringstream;
 
-class HeapSnapShot;
+class HeapSnapshot;
 
-class HeapSnapShotJSONSerializer {
+class HeapSnapshotJSONSerializer {
 public:
-    explicit HeapSnapShotJSONSerializer() = default;
-    ~HeapSnapShotJSONSerializer() = default;
-    NO_MOVE_SEMANTIC(HeapSnapShotJSONSerializer);
-    NO_COPY_SEMANTIC(HeapSnapShotJSONSerializer);
-    bool Serialize(HeapSnapShot *snapShot, Stream* stream);
+    explicit HeapSnapshotJSONSerializer() = default;
+    ~HeapSnapshotJSONSerializer() = default;
+    NO_MOVE_SEMANTIC(HeapSnapshotJSONSerializer);
+    NO_COPY_SEMANTIC(HeapSnapshotJSONSerializer);
+    bool Serialize(HeapSnapshot *snapshot, Stream* stream);
 
 private:
-    void SerializeSnapShotHeader();
+    void SerializeSnapshotHeader();
     void SerializeNodes();
     void SerializeEdges();
     void SerializeTraceFunctionInfo();
@@ -46,10 +46,10 @@ private:
     void SerializeSamples();
     void SerializeLocations();
     void SerializeStringTable();
-    void SerializerSnapShotClosure();
+    void SerializerSnapshotClosure();
     void WriteChunk();
 
-    HeapSnapShot *snapShot_ {nullptr};
+    HeapSnapshot *snapshot_ {nullptr};
     stringstream stringBuffer_;
     Stream* stream_ {nullptr};
 };

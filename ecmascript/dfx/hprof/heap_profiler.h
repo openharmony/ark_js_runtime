@@ -27,7 +27,7 @@
 #include "os/mem.h"
 
 namespace panda::ecmascript {
-class HeapSnapShot;
+class HeapSnapshot;
 class HeapProfiler : public HeapProfilerInterface {
 public:
     NO_MOVE_SEMANTIC(HeapProfiler);
@@ -35,7 +35,7 @@ public:
     explicit HeapProfiler(const Heap *heap) : heap_(heap), hprofs_(heap_->GetEcmaVM()->GetChunk())
     {
         jsonSerializer_ =
-            const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->New<HeapSnapShotJSONSerializer>();
+            const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->New<HeapSnapshotJSONSerializer>();
         if (UNLIKELY(jsonSerializer_ == nullptr)) {
             LOG_ECMA(FATAL) << "alloc snapshot json serializer failed";
             UNREACHABLE();
@@ -47,8 +47,8 @@ public:
     /**
      * dump the specific snapshot in target format
      */
-    bool DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, Stream *stream, bool isVmMode = true);
-    void AddSnapShot(HeapSnapShot *snapshot);
+    bool DumpHeapSnapshot(JSThread *thread, DumpFormat dumpFormat, Stream *stream, bool isVmMode = true);
+    void AddSnapshot(HeapSnapshot *snapshot);
 
     bool StartHeapTracking(JSThread *thread, double timeInterval, bool isVmMode = true) override;
     bool StopHeapTracking(JSThread *thread, Stream *stream) override;
@@ -62,15 +62,15 @@ private:
     /**
      * make a new heap snapshot and put it into a container eg, vector
      */
-    HeapSnapShot *MakeHeapSnapShot(JSThread *thread, SampleType sampleType, bool isVmMode = true);
+    HeapSnapshot *MakeHeapSnapshot(JSThread *thread, SampleType sampleType, bool isVmMode = true);
     std::string GenDumpFileName(DumpFormat dumpFormat);
     CString GetTimeStamp();
-    void ClearSnapShot();
+    void ClearSnapshot();
 
     const size_t MAX_NUM_HPROF = 5;  // ~10MB
     const Heap *heap_;
-    ChunkVector<HeapSnapShot *> hprofs_;
-    HeapSnapShotJSONSerializer *jsonSerializer_ {nullptr};
+    ChunkVector<HeapSnapshot *> hprofs_;
+    HeapSnapshotJSONSerializer *jsonSerializer_ {nullptr};
     std::unique_ptr<HeapTracker> heapTracker_;
 };
 }  // namespace panda::ecmascript

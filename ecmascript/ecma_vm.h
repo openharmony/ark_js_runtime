@@ -57,7 +57,7 @@ class JSPromise;
 enum class PromiseRejectionEvent : uint8_t;
 class JSPandaFileManager;
 class JSPandaFile;
-class SnapShotSerialize;
+class SnapshotProcessor;
 namespace job {
 class MicroJobQueue;
 }  // namespace job
@@ -233,7 +233,7 @@ public:
         return tsLoader_;
     }
 
-    SnapShotEnv *GetSnapShotEnv() const
+    SnapshotEnv *GetSnapshotEnv() const
     {
         return snapshotEnv_;
     }
@@ -326,8 +326,6 @@ private:
 
     void InitializeEcmaScriptRunStat();
 
-    bool VerifyFilePath(const CString &filePath) const;
-
     void ClearBufferData();
 
     void ClearNativeMethodsData();
@@ -375,7 +373,7 @@ private:
     ChunkVector<JSMethod *> nativeMethods_;
     ModuleManager *moduleManager_ {nullptr};
     TSLoader *tsLoader_ {nullptr};
-    SnapShotEnv *snapshotEnv_ {nullptr};
+    SnapshotEnv *snapshotEnv_ {nullptr};
     bool optionalLogEnabled_ {false};
     AotCodeInfo *aotInfo_ {nullptr};
 
@@ -387,7 +385,8 @@ private:
     HostPromiseRejectionTracker hostPromiseRejectionTracker_ {nullptr};
     void* data_ {nullptr};
 
-    friend class SnapShotSerialize;
+    friend class Snapshot;
+    friend class SnapshotProcessor;
     friend class ObjectFactory;
     friend class ValueSerializer;
     friend class panda::JSNApi;

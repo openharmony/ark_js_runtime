@@ -26,7 +26,7 @@ enum class DumpFormat { JSON, BINARY, OTHER };
 class HeapProfilerInterface {
 public:
     static HeapProfilerInterface *GetInstance(JSThread *thread);
-    static void DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, Stream *stream, bool isVmMode = true);
+    static void DumpHeapSnapshot(JSThread *thread, DumpFormat dumpFormat, Stream *stream, bool isVmMode = true);
 
     static HeapProfilerInterface *CreateHeapProfiler(JSThread *thread);
     static void Destroy(JSThread *thread, HeapProfilerInterface *heapProfiler);

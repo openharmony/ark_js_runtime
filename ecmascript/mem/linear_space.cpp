@@ -236,6 +236,6 @@ size_t SemiSpace::GetAllocatedSizeSinceGC(uintptr_t top) const
     return allocateAfterLastGC_ + currentRegionSize;
 }
 
-SnapShotSpace::SnapShotSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
+SnapshotSpace::SnapshotSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
     : LinearSpace(heap, MemSpaceType::SNAPSHOT_SPACE, initialCapacity, maximumCapacity) {}
 }  // namespace panda::ecmascript

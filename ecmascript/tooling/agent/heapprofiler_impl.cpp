@@ -269,7 +269,7 @@ DispatchResponse HeapProfilerImpl::TakeHeapSnapshot(
 {
     HeapProfilerStream stream(frontend_);
     auto ecmaVm = (panda::EcmaVM *)static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM();
-    panda::DFXJSNApi::DumpHeapSnapShot(ecmaVm, 0, &stream, true);
+    panda::DFXJSNApi::DumpHeapSnapshot(ecmaVm, 0, &stream, true);
     return DispatchResponse::Ok();
 }
 }  // namespace panda::ecmascript::tooling

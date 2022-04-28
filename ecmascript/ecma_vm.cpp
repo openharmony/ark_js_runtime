@@ -54,7 +54,7 @@
 #endif
 #include "ecmascript/snapshot/mem/encode_bit.h"
 #include "ecmascript/snapshot/mem/snapshot.h"
-#include "ecmascript/snapshot/mem/snapshot_serialize.h"
+#include "ecmascript/snapshot/mem/snapshot_processor.h"
 #include "ecmascript/tagged_array-inl.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/tagged_queue.h"
@@ -121,12 +121,10 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
 void EcmaVM::TryLoadSnapshotFile()
 {
     const CString snapshotPath(options_.GetSnapshotOutputFile().c_str());
-    if (VerifyFilePath(snapshotPath)) {
-        SnapShot snapShot(this);
+    Snapshot snapshot(this);
 #if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MAC)
-        snapShot.Deserialize(SnapShotType::TS_LOADER, snapshotPath);
+    snapshot.Deserialize(SnapshotType::TS_LOADER, snapshotPath);
 #endif
-    }
 }
 
 bool EcmaVM::Initialize()
@@ -155,7 +153,7 @@ bool EcmaVM::Initialize()
                                                                   JSType::GLOBAL_ENV);
     globalConst->InitRootsClass(thread_, *dynClassClassHandle);
     tsLoader_ = new TSLoader(this);
-    snapshotEnv_ = new SnapShotEnv(this);
+    snapshotEnv_ = new SnapshotEnv(this);
     aotInfo_ = new AotCodeInfo();
     if (options_.IsEnableStubAot()) {
         LoadStubs();
@@ -547,30 +545,6 @@ void EcmaVM::RemoveFromNativePointerList(JSNativePointer *array)
     if (iter != nativePointerList_.end()) {
         nativePointerList_.erase(iter);
     }
-}
-
-// Do not support snapshot on windows
-bool EcmaVM::VerifyFilePath([[maybe_unused]] const CString &filePath) const
-{
-#ifndef PANDA_TARGET_WINDOWS
-    if (filePath.size() > PATH_MAX) {
-        return false;
-    }
-
-    CVector<char> resolvedPath(PATH_MAX);
-    auto result = realpath(filePath.c_str(), resolvedPath.data());
-    if (result == nullptr) {
-        return false;
-    }
-    std::ifstream file(resolvedPath.data());
-    if (!file.good()) {
-        return false;
-    }
-    file.close();
-    return true;
-#else
-    return false;
-#endif
 }
 
 void EcmaVM::ClearBufferData()

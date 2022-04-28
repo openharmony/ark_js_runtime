@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_SNAPSHOT_MEM_SNAPSHOT_SERIALIZE_H
-#define ECMASCRIPT_SNAPSHOT_MEM_SNAPSHOT_SERIALIZE_H
+#ifndef ECMASCRIPT_SNAPSHOT_MEM_SNAPSHOT_PROCESSOR_H
+#define ECMASCRIPT_SNAPSHOT_MEM_SNAPSHOT_PROCESSOR_H
 
 #include <iostream>
 #include <fstream>
@@ -22,6 +22,7 @@
 
 #include "libpandabase/macros.h"
 #include "ecmascript/snapshot/mem/encode_bit.h"
+#include "ecmascript/js_method.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/mem/object_xray.h"
 
@@ -29,20 +30,20 @@ namespace panda::ecmascript {
 class EcmaVM;
 class JSPandaFile;
 
-enum class SnapShotType {
+enum class SnapshotType {
     VM_ROOT,
     GLOBAL_CONST,
     TS_LOADER
 };
 
-class SnapShotSerialize final {
+class SnapshotProcessor final {
 public:
-    explicit SnapShotSerialize(EcmaVM *vm) : vm_(vm), objXRay_(vm) {}
-    ~SnapShotSerialize() = default;
+    explicit SnapshotProcessor(EcmaVM *vm) : vm_(vm), objXRay_(vm) {}
+    ~SnapshotProcessor() = default;
 
     void SerializeObject(TaggedObject *objectHeader, CQueue<TaggedObject *> *queue,
                          std::unordered_map<uint64_t, std::pair<uint64_t, ecmascript::EncodeBit>> *data);
-    void Relocate(SnapShotType type, const JSPandaFile *jsPandaFile, uint64_t rootObjSize);
+    void Relocate(SnapshotType type, const JSPandaFile *jsPandaFile, uint64_t rootObjSize);
     void SerializePandaFileMethod();
     EncodeBit EncodeTaggedObject(TaggedObject *objectHeader, CQueue<TaggedObject *> *queue,
                                  std::unordered_map<uint64_t, std::pair<uint64_t, ecmascript::EncodeBit>> *data);
@@ -66,15 +67,16 @@ public:
 private:
     void SetObjectEncodeField(uintptr_t obj, size_t offset, uint64_t value);
 
-    EncodeBit HandleObjectHeader(TaggedObject *objectHeader, size_t objectType, CQueue<TaggedObject *> *queue,
-                                 std::unordered_map<uint64_t, std::pair<uint64_t, ecmascript::EncodeBit>> *data);
-    uint64_t HandleTaggedField(JSTaggedType *tagged, CQueue<TaggedObject *> *queue,
-                               std::unordered_map<uint64_t, std::pair<uint64_t, ecmascript::EncodeBit>> *data);
-    void DeserializeHandleField(TaggedObject *objectHeader);
-    void DeserializeHandleTaggedField(uint64_t *value);
-    void DeserializeHandleNativePointer(uint64_t *value);
-    void DeserializeHandleClassWord(TaggedObject *object);
-    void DeserializeHandleRootObject(SnapShotType type, uintptr_t rootObjectAddr, size_t objType, size_t objIndex);
+    EncodeBit SerializeObjectHeader(TaggedObject *objectHeader, size_t objectType, CQueue<TaggedObject *> *queue,
+                                    std::unordered_map<uint64_t, std::pair<uint64_t, ecmascript::EncodeBit>> *data);
+    uint64_t SerializeTaggedField(JSTaggedType *tagged, CQueue<TaggedObject *> *queue,
+                                  std::unordered_map<uint64_t, std::pair<uint64_t, ecmascript::EncodeBit>> *data);
+    void DeserializeField(TaggedObject *objectHeader);
+    void DeserializeTaggedField(uint64_t *value);
+    void DeserializeNativePointer(uint64_t *value);
+    void DeserializeClassWord(TaggedObject *object);
+    void DeserializePandaMethod(uintptr_t begin, uintptr_t end, JSMethod *methods, size_t &methodNums, size_t &others);
+    void HandleRootObject(SnapshotType type, uintptr_t rootObjectAddr, size_t objType, size_t objIndex);
 
     EncodeBit NativePointerToEncodeBit(void *nativePointer);
     void *NativePointerEncodeBitToAddr(EncodeBit nativeBit);
@@ -87,9 +89,9 @@ private:
     CVector<uintptr_t> pandaMethod_;
     CVector<uintptr_t> stringVector_;
 
-    NO_COPY_SEMANTIC(SnapShotSerialize);
-    NO_MOVE_SEMANTIC(SnapShotSerialize);
+    NO_COPY_SEMANTIC(SnapshotProcessor);
+    NO_MOVE_SEMANTIC(SnapshotProcessor);
 };
 }  // namespace panda::ecmascript
 
-#endif  // ECMASCRIPT_SNAPSHOT_MEM_SNAPSHOT_SERIALIZE_H
+#endif  // ECMASCRIPT_SNAPSHOT_MEM_SNAPSHOT_PROCESSOR_H
