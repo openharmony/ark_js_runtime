@@ -91,4 +91,21 @@ CString EcmaRuntimeStat::GetAllStats() const
     }
     return statistic.str();
 }
+
+EcmaRuntimeStatScope::EcmaRuntimeStatScope(EcmaVM *vm) : vm_(vm)
+{
+    JSRuntimeOptions options = vm_->GetJSOptions();
+    if (options.IsEnableRuntimeStat()) {
+        vm_->SetRuntimeStatEnable(true);
+    }
+}
+
+EcmaRuntimeStatScope::~EcmaRuntimeStatScope()
+{
+    JSRuntimeOptions options = vm_->GetJSOptions();
+    if (options.IsEnableRuntimeStat()) {
+        vm_->SetRuntimeStatEnable(false);
+    }
+    vm_ = nullptr;
+}
 }  // namespace panda::ecmascript

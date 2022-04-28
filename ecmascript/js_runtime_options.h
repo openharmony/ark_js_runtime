@@ -72,6 +72,7 @@ public:
         parser->Add(&icu_data_path_);
         parser->Add(&startup_time_);
         parser->Add(&snapshotOutputFile_);
+        parser->Add(&enableRuntimeStat_);
     }
 
     bool IsEnableArkTools() const
@@ -103,6 +104,21 @@ public:
     bool WasSetEnableStubAot() const
     {
         return enableStubAot_.WasSet();
+    }
+
+    bool IsEnableRuntimeStat() const
+    {
+        return enableRuntimeStat_.GetValue();
+    }
+
+    void SetEnableRuntimeStat(bool value)
+    {
+        enableRuntimeStat_.SetValue(value);
+    }
+
+    bool WasSetEnableRuntimeStat() const
+    {
+        return enableRuntimeStat_.WasSet();
     }
 
     std::string GetComStubFile() const
@@ -609,6 +625,8 @@ private:
     PandArg<std::string> snapshotOutputFile_ {"snapshot-output-file",
         R"(snapshot)",
         R"(Path to snapshot output file. Default: "snapshot")"};
+    PandArg<bool> enableRuntimeStat_ {"enable-runtime-stat", false,
+        R"(enable statistics of runtime state. Default: false)"};
 };
 }  // namespace panda::ecmascript
 

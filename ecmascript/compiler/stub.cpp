@@ -526,8 +526,7 @@ GateRef Stub::FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRe
         Branch(IsString(key), &isString, &notString);
         Bind(&isString);
         {
-            hash = TruncInt64ToInt32(ChangeTaggedPointerToInt64(CallRuntime(glue,
-                RTSTUB_ID(StringGetHashCode), { key })));
+            hash = GetHashcodeFromString(glue, key);
             Jump(&beforeDefineHash);
         }
         Bind(&notString);
@@ -637,9 +636,7 @@ GateRef Stub::FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, 
         Branch(IsString(key), &isString, &notString);
         Bind(&isString);
         {
-            hash = TruncInt64ToInt32(ChangeTaggedPointerToInt64(CallRuntime(glue,
-                                                                            RTSTUB_ID(StringGetHashCode),
-                                                                            { key })));
+            hash = GetHashcodeFromString(glue, key);
             Jump(&beforeDefineHash);
         }
         Bind(&notString);
@@ -1237,6 +1234,27 @@ GateRef Stub::TaggedIsStringOrSymbol(GateRef obj)
             result = Int32Equal(objType, Int32(static_cast<int32_t>(JSType::SYMBOL)));
             Jump(&exit);
         }
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->SubCfgExit();
+    return ret;
+}
+
+GateRef Stub::TaggedIsBigInt(GateRef obj)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->SubCfgEntry(&entry);
+    Label exit(env);
+    DEFVARIABLE(result, VariableType::BOOL(), False());
+    Label isHeapObject(env);
+    Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
+    Bind(&isHeapObject);
+    {
+        result = Int32Equal(GetObjectType(LoadHClass(obj)),
+                            Int32(static_cast<int32_t>(JSType::BIGINT)));
+        Jump(&exit);
     }
     Bind(&exit);
     auto ret = *result;
@@ -3019,6 +3037,122 @@ GateRef Stub::FastTypeOf(GateRef glue, GateRef obj)
     return ret;
 }
 
+GateRef Stub::FastStrictEqual(GateRef glue, GateRef left, GateRef right)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->SubCfgEntry(&entry);
+    DEFVARIABLE(result, VariableType::BOOL(), False());
+    Label strictEqual(env);
+    Label leftIsNumber(env);
+    Label leftIsNotNumber(env);
+    Label sameVariableCheck(env);
+    Label stringEqualCheck(env);
+    Label stringCompare(env);
+    Label bigIntEqualCheck(env);
+    Label exit(env);
+    Branch(TaggedIsNumber(left), &leftIsNumber, &leftIsNotNumber);
+    Bind(&leftIsNumber);
+    {
+        Label rightIsNumber(env);
+        Branch(TaggedIsNumber(right), &rightIsNumber, &exit);
+        Bind(&rightIsNumber);
+        {
+            DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), Double(0.0));
+            DEFVARIABLE(doubleRight, VariableType::FLOAT64(), Double(0.0));
+            Label leftIsInt(env);
+            Label leftNotInt(env);
+            Label getRight(env);
+            Label numberEqualCheck(env);
+            Branch(TaggedIsInt(left), &leftIsInt, &leftNotInt);
+            Bind(&leftIsInt);
+            {
+                doubleLeft = ChangeInt32ToFloat64(TaggedCastToInt32(left));
+                Jump(&getRight);
+            }
+            Bind(&leftNotInt);
+            {
+                doubleLeft = TaggedCastToDouble(left);
+                Jump(&getRight);
+            }
+            Bind(&getRight);
+            {
+                Label rightIsInt(env);
+                Label rightNotInt(env);
+                Branch(TaggedIsInt(right), &rightIsInt, &rightNotInt);
+                Bind(&rightIsInt);
+                {
+                    doubleRight = ChangeInt32ToFloat64(TaggedCastToInt32(right));
+                    Jump(&numberEqualCheck);
+                }
+                Bind(&rightNotInt);
+                {
+                    doubleRight = TaggedCastToDouble(right);
+                    Jump(&numberEqualCheck);
+                }
+            }
+            Bind(&numberEqualCheck);
+            {
+                Label doubleEqualCheck(env);
+                Branch(BoolOr(DoubleIsNAN(*doubleLeft), DoubleIsNAN(*doubleRight)), &exit, &doubleEqualCheck);
+                Bind(&doubleEqualCheck);
+                {
+                    result = DoubleEqual(*doubleLeft, *doubleRight);
+                    Jump(&exit);
+                }
+            }
+        }
+    }
+    Bind(&leftIsNotNumber);
+    Branch(TaggedIsNumber(right), &exit, &sameVariableCheck);
+    Bind(&sameVariableCheck);
+    Branch(Int64Equal(left, right), &strictEqual, &stringEqualCheck);
+    Bind(&stringEqualCheck);
+    Branch(BoolAnd(TaggedIsString(left), TaggedIsString(right)), &stringCompare, &bigIntEqualCheck);
+    Bind(&stringCompare);
+    {
+        Label lengthCompare(env);
+        Label hashcodeCompare(env);
+        Label contentsCompare(env);
+        Branch(Int32Equal(ZExtInt1ToInt32(IsUtf16String(left)), ZExtInt1ToInt32(IsUtf16String(right))),
+            &lengthCompare, &exit);
+        Bind(&lengthCompare);
+        Branch(Int32Equal(GetLengthFromString(left), GetLengthFromString(right)), &hashcodeCompare,
+            &exit);
+        Bind(&hashcodeCompare);
+        Branch(Int32Equal(GetHashcodeFromString(glue, left), GetHashcodeFromString(glue, right)), &contentsCompare,
+            &exit);
+        Bind(&contentsCompare);
+        {
+            result = CallNGCRuntime(glue, RTSTUB_ID(StringsAreEquals), { left, right });
+            Jump(&exit);
+        }
+    }
+    Bind(&bigIntEqualCheck);
+    {
+        Label leftIsBigInt(env);
+        Label leftIsNotBigInt(env);
+        Branch(TaggedIsBigInt(left), &leftIsBigInt, &exit);
+        Bind(&leftIsBigInt);
+        {
+            Label rightIsBigInt(env);
+            Branch(TaggedIsBigInt(right), &rightIsBigInt, &exit);
+            Bind(&rightIsBigInt);
+            result = CallNGCRuntime(glue, RTSTUB_ID(BigIntEquals), { left, right });
+            Jump(&exit);
+        }
+    }
+    Bind(&strictEqual);
+    {
+        result = True();
+        Jump(&exit);
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->SubCfgExit();
+    return ret;
+}
+
 GateRef Stub::FastEqual(GateRef left, GateRef right)
 {
     auto env = GetEnvironment();
@@ -3689,5 +3823,27 @@ void Stub::ReturnExceptionIfAbruptCompletion(GateRef glue)
     Bind(&exit);
     env->SubCfgExit();
     return;
+}
+
+GateRef Stub::GetHashcodeFromString(GateRef glue, GateRef value)
+{
+    auto env = GetEnvironment();
+    Label subentry(env);
+    env->SubCfgEntry(&subentry);
+    Label noRawHashcode(env);
+    Label exit(env);
+    DEFVARIABLE(hashcode, VariableType::INT32(), Int32(0));
+    hashcode = Load(VariableType::INT32(), value, IntPtr(EcmaString::HASHCODE_OFFSET));
+    Branch(Int32Equal(*hashcode, Int32(0)), &noRawHashcode, &exit);
+    Bind(&noRawHashcode);
+    {
+        hashcode = TaggedCastToInt32(CallRuntime(glue, RTSTUB_ID(ComputeHashcode), { value }));
+        Store(VariableType::INT32(), glue, value, IntPtr(EcmaString::HASHCODE_OFFSET), *hashcode);
+        Jump(&exit);
+    }
+    Bind(&exit);
+    auto ret = *hashcode;
+    env->SubCfgExit();
+    return ret;
 }
 }  // namespace panda::ecmascript::kungfu

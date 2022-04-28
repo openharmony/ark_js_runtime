@@ -298,6 +298,8 @@ private:
     V(PushCallIThisRangeAndDispatchSlowPath)\
     V(ResumeRspAndDispatch)                 \
     V(ResumeRspAndReturn)                   \
+    V(StringsAreEquals)                     \
+    V(BigIntEquals)                         \
     V(DebugPrint)                           \
     V(FatalPrint)                           \
     V(InsertOldToNewRSet)                   \

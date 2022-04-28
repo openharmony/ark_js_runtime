@@ -396,6 +396,7 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
         result = InvokeEcmaAotEntrypoint();
     } else {
         CpuProfilingScope profilingScope(this);
+        EcmaRuntimeStatScope runtimeStatScope(this);
         result = EcmaInterpreter::Execute(&info);
     }
     if (!thread_->HasPendingException()) {
