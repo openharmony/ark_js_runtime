@@ -65,7 +65,7 @@ public:
     }
     size_t GetHeapObjectSize() const;
     size_t GetSurvivalObjectSize() const;
-    size_t GetAllocatedSizeSinceGC() const;
+    size_t GetAllocatedSizeSinceGC(uintptr_t top = 0) const;
 
     bool SwapRegion(Region *region, SemiSpace *fromSpace);
 

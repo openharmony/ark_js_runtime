@@ -455,5 +455,21 @@ GateRef InterpreterStub::FunctionIsResolved(GateRef object)
             Int32((1LU << JSFunction::ResolvedBits::SIZE) - 1)),
         Int32(0));
 }
+
+GateRef InterpreterStub::GetHotnessCounterFromMethod(GateRef method)
+{
+    auto env = GetEnvironment();
+    GateRef x = Load(VariableType::INT16(), method,
+                     IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())));
+    return GetEnvironment()->GetBuilder().UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT32), x);
+}
+
+void InterpreterStub::SetHotnessCounter(GateRef glue, GateRef method, GateRef value)
+{
+    auto env = GetEnvironment();
+    GateRef newValue = env->GetBuilder().UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT16), value);
+    Store(VariableType::INT16(), glue, method,
+          IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())), newValue);
+}
 } //  namespace panda::ecmascript::kungfu
 #endif // ECMASCRIPT_COMPILER_INTERPRETER_STUB_INL_H

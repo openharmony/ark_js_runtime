@@ -64,7 +64,7 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
         SAVE_ACC();                                                                                           \
         AsmInterpretedFrame *frame = GET_ASM_FRAME(sp);                                                       \
         auto currentMethod = ECMAObject::Cast(frame->function.GetTaggedObject())->GetCallTarget();            \
-        currentMethod->SetHotnessCounter(static_cast<uint32_t>(hotnessCounter));                              \
+        currentMethod->SetHotnessCounter(static_cast<int16_t>(hotnessCounter));                               \
         return;                                                                                               \
     } while (false)
 
@@ -98,8 +98,8 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
         JSFunction* prevFunc = JSFunction::Cast(prevState->function.GetTaggedObject()); \
         method = prevFunc->GetMethod();                                                 \
         hotnessCounter = static_cast<int32_t>(method->GetHotnessCounter());             \
-        ASSERT(prevState->callSizeOrCallSiteSp == GetJumpSizeAfterCall(pc));                        \
-        DISPATCH_OFFSET(prevState->callSizeOrCallSiteSp);                                           \
+        ASSERT(prevState->callSizeOrCallSiteSp == GetJumpSizeAfterCall(pc));            \
+        DISPATCH_OFFSET(prevState->callSizeOrCallSiteSp);                               \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -411,7 +411,7 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
         acc = JSTaggedValue::Hole();  /* will be stored in DISPATCH_OFFSET */                      \
         JSTaggedValue env = JSFunction::Cast(funcObject)->GetLexicalEnv();                         \
         state->env = env;                                                                          \
-        hotnessCounter = static_cast<int32_t>(method->GetHotnessCounter());                        \
+        hotnessCounter = method->GetHotnessCounter();                                              \
         thread->SetCurrentSPFrame(newSp);                                                          \
         LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call "                                          \
                                 << std::hex << reinterpret_cast<uintptr_t>(sp) << " "              \
@@ -430,7 +430,7 @@ void InterpreterAssembly::RunInternal(JSThread *thread, ConstantPool *constpool,
     JSTaggedValue acc = JSTaggedValue::Hole();
     AsmInterpretedFrame *state = GET_ASM_FRAME(sp);
     auto method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
-    auto hotnessCounter = static_cast<int32_t>(method->GetHotnessCounter());
+    auto hotnessCounter = method->GetHotnessCounter();
     auto profileTypeInfo = JSFunction::Cast(state->function.GetTaggedObject())->GetProfileTypeInfo();
 
     JSCallEntry(thread->GetGlueAddr(), sp, pc, JSTaggedValue(constpool), profileTypeInfo, acc, hotnessCounter);
@@ -1037,7 +1037,7 @@ void InterpreterAssembly::HandleReturnDyn(
     JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
     [[maybe_unused]] auto fistPC = method->GetBytecodeArray();
     UPDATE_HOTNESS_COUNTER(-(pc - fistPC));
-    method->SetHotnessCounter(static_cast<uint32_t>(hotnessCounter));
+    method->SetHotnessCounter(static_cast<int16_t>(hotnessCounter));
     JSTaggedType *currentSp = sp;
     sp = state->base.prev;
     ASSERT(sp != nullptr);
@@ -1094,7 +1094,7 @@ void InterpreterAssembly::HandleReturnUndefinedPref(
     JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
     [[maybe_unused]] auto fistPC = method->GetBytecodeArray();
     UPDATE_HOTNESS_COUNTER(-(pc - fistPC));
-    method->SetHotnessCounter(static_cast<uint32_t>(hotnessCounter));
+    method->SetHotnessCounter(static_cast<int16_t>(hotnessCounter));
     JSTaggedType *currentSp = sp;
     sp = state->base.prev;
     ASSERT(sp != nullptr);

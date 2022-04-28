@@ -102,20 +102,21 @@ HWTEST_F_L0(MemControllerTest, VerifyMutatorSpeed)
     sleep(1);
 
     // new space object
-    auto newArray = objectFactory->NewTaggedArray(2, JSTaggedValue::Undefined(), MemSpaceType::SEMI_SPACE);
+    [[maybe_unused]] auto newArray =
+        objectFactory->NewTaggedArray(2, JSTaggedValue::Undefined(), MemSpaceType::SEMI_SPACE);
     // old space object
     auto oldArray = objectFactory->NewTaggedArray(2, JSTaggedValue::Undefined(), MemSpaceType::OLD_SPACE);
     // non movable object
     auto nonMovableArray = objectFactory->NewTaggedArray(2, JSTaggedValue::Undefined(), MemSpaceType::NON_MOVABLE);
-
     // huge space object
     static constexpr size_t SIZE = 1024 * 1024;
     auto hugeArray = objectFactory->NewTaggedArray(SIZE);
-
-    ASSERT_TRUE(heap->GetNewSpace()->GetAllocatedSizeSinceGC()
-                == newArray->ComputeSize(JSTaggedValue::TaggedTypeSize(), 2));
-
+    auto newSpace = heap->GetNewSpace();
+    size_t newSpaceAllocBytesSinceGC = newSpace->GetAllocatedSizeSinceGC(newSpace->GetTop());
+    ASSERT_EQ(newSpaceAllocBytesSinceGC, TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), 2));
     heap->CollectGarbage(TriggerGCType::SEMI_GC);
+    newSpace = heap->GetNewSpace();
+    ASSERT_EQ(newSpace->GetAllocatedSizeSinceGC(newSpace->GetTop()), static_cast<size_t>(0));
 
     size_t oldSpaceAllocatedSizeAfter = memController->GetOldSpaceAllocAccumulatorSize();
     size_t nonMovableSpaceAllocatedSizeAfter = memController->GetNonMovableSpaceAllocAccumulatorSize();
