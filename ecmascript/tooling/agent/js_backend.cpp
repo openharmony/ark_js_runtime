@@ -880,21 +880,21 @@ void JSBackend::AddTypedArrayRefs(Local<ArrayBufferRef> arrayBufferRef,
     AddTypedArrayRef<Uint8ArrayRef>(arrayBufferRef, typedArrayLength, "[[Uint8Array]]", outPropertyDesc);
     AddTypedArrayRef<Uint8ClampedArrayRef>(arrayBufferRef, typedArrayLength, "[[Uint8ClampedArray]]", outPropertyDesc);
 
-    if ((arrayBufferByteLength % NumberSize::UINT16INT16) == 0) {
-        typedArrayLength = arrayBufferByteLength / NumberSize::UINT16INT16;
+    if ((arrayBufferByteLength % NumberSize::BYTES_OF_16BITS) == 0) {
+        typedArrayLength = arrayBufferByteLength / NumberSize::BYTES_OF_16BITS;
         AddTypedArrayRef<Int16ArrayRef>(arrayBufferRef, typedArrayLength, "[[Int16Array]]", outPropertyDesc);
         AddTypedArrayRef<Uint16ArrayRef>(arrayBufferRef, typedArrayLength, "[[Uint16Array]]", outPropertyDesc);
     }
 
-    if ((arrayBufferByteLength % NumberSize::UINT32INT32FLOAT32) == 0) {
-        typedArrayLength = arrayBufferByteLength / NumberSize::UINT32INT32FLOAT32;
+    if ((arrayBufferByteLength % NumberSize::BYTES_OF_32BITS) == 0) {
+        typedArrayLength = arrayBufferByteLength / NumberSize::BYTES_OF_32BITS;
         AddTypedArrayRef<Int32ArrayRef>(arrayBufferRef, typedArrayLength, "[[Int32Array]]", outPropertyDesc);
         AddTypedArrayRef<Uint32ArrayRef>(arrayBufferRef, typedArrayLength, "[[Uint32Array]]", outPropertyDesc);
         AddTypedArrayRef<Float32ArrayRef>(arrayBufferRef, typedArrayLength, "[[Float32Array]]", outPropertyDesc);
     }
 
-    if ((arrayBufferByteLength % NumberSize::FLOAT64BIGINT64BIGUINT64) == 0) {
-        typedArrayLength = arrayBufferByteLength / NumberSize::FLOAT64BIGINT64BIGUINT64;
+    if ((arrayBufferByteLength % NumberSize::BYTES_OF_64BITS) == 0) {
+        typedArrayLength = arrayBufferByteLength / NumberSize::BYTES_OF_64BITS;
         AddTypedArrayRef<Float64ArrayRef>(arrayBufferRef, typedArrayLength, "[[Float64Array]]", outPropertyDesc);
         AddTypedArrayRef<BigInt64ArrayRef>(arrayBufferRef, typedArrayLength, "[[BigInt64Array]]", outPropertyDesc);
         AddTypedArrayRef<BigUint64ArrayRef>(arrayBufferRef, typedArrayLength, "[[BigUint64Array]]", outPropertyDesc);
