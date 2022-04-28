@@ -74,8 +74,9 @@ void JSDebugger::BytecodePcChanged(JSThread *thread, JSMethod *method, uint32_t 
     HandleExceptionThrowEvent(thread, method, bcOffset);
 
     // Step event is reported before breakpoint, according to the spec.
-    HandleStep(method, bcOffset);
-    HandleBreakpoint(method, bcOffset);
+    if (!HandleStep(method, bcOffset)) {
+        HandleBreakpoint(method, bcOffset);
+    }
 }
 
 bool JSDebugger::HandleBreakpoint(const JSMethod *method, uint32_t bcOffset)
@@ -130,8 +131,7 @@ bool JSDebugger::HandleStep(const JSMethod *method, uint32_t bcOffset)
     auto *pf = method->GetPandaFile();
     JSPtLocation location {pf->GetFilename().c_str(), method->GetMethodId(), bcOffset};
 
-    hooks_->SingleStep(location);
-    return true;
+    return hooks_->SingleStep(location);
 }
 
 std::optional<JSBreakpoint> JSDebugger::FindBreakpoint(const JSMethod *method, uint32_t bcOffset) const

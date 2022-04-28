@@ -76,11 +76,12 @@ public:
         }
     }
 
-    void SingleStep(const JSPtLocation &location) override
+    bool SingleStep(const JSPtLocation &location) override
     {
         if (test_->singleStep) {
-            test_->singleStep(location);
+            return test_->singleStep(location);
         }
+        return false;
     }
 
     void VmDeath() override
