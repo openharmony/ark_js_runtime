@@ -73,7 +73,7 @@ public:
      */
     SemiSpace *GetFromSpaceDuringEvacuation() const
     {
-        return backupSpace_;
+        return inactiveSpace_;
     }
 
     OldSpace *GetOldSpace() const
@@ -154,14 +154,14 @@ public:
         return nonMovableMarker_;
     }
 
-    Marker *GetSemiGcMarker() const
+    Marker *GetSemiGCMarker() const
     {
-        return semiGcMarker_;
+        return semiGCMarker_;
     }
 
-    Marker *GetCompressGcMarker() const
+    Marker *GetCompressGCMarker() const
     {
-        return compressGcMarker_;
+        return compressGCMarker_;
     }
 
     EcmaVM *GetEcmaVM() const
@@ -296,7 +296,7 @@ public:
 
     bool IsParallelGCEnabled() const
     {
-        return parallelGc_;
+        return parallelGC_;
     }
 
     void WaitConcurrentMarkingFinished();
@@ -379,33 +379,78 @@ private:
 
     EcmaVM *ecmaVm_ {nullptr};
     JSThread *thread_ {nullptr};
-    SemiSpace *backupSpace_ {nullptr};
+
+    /*
+     * Heap spaces.
+     */
+
+    /*
+     * Young generation spaces where most new objects are allocated.
+     * (only one of the spaces is active at a time in semi space GC).
+     */
     SemiSpace *activeSpace_ {nullptr};
+    SemiSpace *inactiveSpace_ {nullptr};
+
+    // Old generation spaces where some long living objects are allocated or promoted.
     OldSpace *oldSpace_ {nullptr};
     OldSpace *compressSpace_ {nullptr};
+
+    // Spaces used for special kinds of objects.
     NonMovableSpace *nonMovableSpace_ {nullptr};
     MachineCodeSpace *machineCodeSpace_ {nullptr};
     HugeObjectSpace *hugeObjectSpace_ {nullptr};
     SnapShotSpace *snapshotSpace_ {nullptr};
+
+    /*
+     * Garbage collectors collecting garbage in different scopes.
+     */
+
+    /*
+     * Semi sapce GC which collects garbage only in young spaces.
+     * This is however optional for now because the partial GC also covers its functionality.
+     */
     STWYoungGC *stwYoungGC_ {nullptr};
+
+    /*
+     * The mostly used partial GC which collects garbage in young spaces,
+     * and part of old spaces if needed determined by GC heuristics.
+     */
     PartialGC *partialGC_ {nullptr};
+
+    // Full collector which collects garbage in all valid heap spaces.
     FullGC *fullGC_ {nullptr};
-    ConcurrentSweeper *sweeper_ {nullptr};
+
+    // Concurrent marker which coordinates actions of GC markers and mutators.
     ConcurrentMarker *concurrentMarker_ {nullptr};
-    WorkManager *workManager_ {nullptr};
-    Marker *nonMovableMarker_ {nullptr};
-    Marker *semiGcMarker_ {nullptr};
-    Marker *compressGcMarker_ {nullptr};
+
+    // Concurrent sweeper which coordinates actions of sweepers (in spaces excluding young semi spaces) and mutators.
+    ConcurrentSweeper *sweeper_ {nullptr};
+
+    // Parallel evacuator which evacuates objects from one space to another one.
     ParallelEvacuator *evacuator_ {nullptr};
-    NativeAreaAllocator *nativeAreaAllocator_ {nullptr};
-    HeapRegionAllocator *heapRegionAllocator_ {nullptr};
-    HeapTracker *tracker_ {nullptr};
-    MemController *memController_ {nullptr};
+
+    /*
+     * Different kinds of markers used by different collectors.
+     * Depending on the collector algorithm, some markers can do simple marking
+     *  while some others need to handle object movement.
+     */
+    Marker *nonMovableMarker_ {nullptr};
+    Marker *semiGCMarker_ {nullptr};
+    Marker *compressGCMarker_ {nullptr};
+
+    // work manager managing the tasks mostly generated in the GC mark phase.
+    WorkManager *workManager_ {nullptr};
+
+    MarkType markType_ {MarkType::MARK_YOUNG};
+
+    bool parallelGC_ {true};
+    bool concurrentMarkingEnabled_ {true};
+    bool fullGCRequested_ {false};
+
     size_t globalSpaceAllocLimit_ {GLOBAL_SPACE_LIMIT_BEGIN};
-    ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers_ {nullptr};
-#if ECMASCRIPT_ENABLE_HEAP_VERIFY
-    bool isVerifying_ {false};
-#endif
+    bool oldSpaceLimitAdjusted_ {false};
+    size_t promotedSize_ {0};
+    size_t semiSpaceCopiedSize_ {0};
 
     bool clearTaskFinished_ {true};
     os::memory::Mutex waitClearTaskFinishedMutex_;
@@ -413,14 +458,25 @@ private:
     uint32_t runningTaskCount_ {0};
     os::memory::Mutex waitTaskFinishedMutex_;
     os::memory::ConditionVariable waitTaskFinishedCV_;
-    bool parallelGc_ {true};
 
-    MarkType markType_ {MarkType::MARK_YOUNG};
-    bool concurrentMarkingEnabled_ {true};
-    bool fullGCRequested_ {false};
-    bool oldSpaceLimitAdjusted_ {false};
-    size_t promotedSize_ {0};
-    size_t semiSpaceCopiedSize_ {0};
+    /*
+     * The memory controller providing memory statistics (by allocations and coleections),
+     * which is used for GC heuristics.
+     */
+    MemController *memController_ {nullptr};
+
+    // Region allocators.
+    NativeAreaAllocator *nativeAreaAllocator_ {nullptr};
+    HeapRegionAllocator *heapRegionAllocator_ {nullptr};
+
+    ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers_ {nullptr};
+
+    // The tracker tracking heap object allocation and movement events.
+    HeapTracker *tracker_ {nullptr};
+
+#if ECMASCRIPT_ENABLE_HEAP_VERIFY
+    bool isVerifying_ {false};
+#endif
 };
 }  // namespace panda::ecmascript
 

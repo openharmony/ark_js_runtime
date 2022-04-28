@@ -111,9 +111,9 @@ protected:
     inline bool UpdateForwardAddressIfFailed(TaggedObject *object, uintptr_t toAddress, size_t size, ObjectSlot slot);
 };
 
-class SemiGcMarker : public MovableMarker {
+class SemiGCMarker : public MovableMarker {
 public:
-    explicit SemiGcMarker(Heap *heap) : MovableMarker(heap) {}
+    explicit SemiGCMarker(Heap *heap) : MovableMarker(heap) {}
 
     void Initialize() override;
 
@@ -130,9 +130,9 @@ private:
     uintptr_t waterLine_ {0};
 };
 
-class CompressGcMarker : public MovableMarker {
+class CompressGCMarker : public MovableMarker {
 public:
-    explicit CompressGcMarker(Heap *heap) : MovableMarker(heap) {}
+    explicit CompressGCMarker(Heap *heap) : MovableMarker(heap) {}
 
 protected:
     void ProcessMarkStack(uint32_t threadId) override;

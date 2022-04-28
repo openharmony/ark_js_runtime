@@ -181,7 +181,7 @@ inline bool MovableMarker::UpdateForwardAddressIfFailed(TaggedObject *object, ui
     return Region::ObjectAddressToRange(dst)->InYoungGeneration();
 }
 
-inline SlotStatus SemiGcMarker::MarkObject(uint32_t threadId, TaggedObject *object, ObjectSlot slot)
+inline SlotStatus SemiGCMarker::MarkObject(uint32_t threadId, TaggedObject *object, ObjectSlot slot)
 {
     Region *objectRegion = Region::ObjectAddressToRange(object);
     if (!objectRegion->InYoungGeneration()) {
@@ -198,7 +198,7 @@ inline SlotStatus SemiGcMarker::MarkObject(uint32_t threadId, TaggedObject *obje
     return EvacuateObject(threadId, object, markWord, slot);
 }
 
-inline SlotStatus SemiGcMarker::EvacuateObject(uint32_t threadId, TaggedObject *object, const MarkWord &markWord,
+inline SlotStatus SemiGCMarker::EvacuateObject(uint32_t threadId, TaggedObject *object, const MarkWord &markWord,
     ObjectSlot slot)
 {
     JSHClass *klass = markWord.GetJSHClass();
@@ -216,13 +216,13 @@ inline SlotStatus SemiGcMarker::EvacuateObject(uint32_t threadId, TaggedObject *
     return keepSlot ? SlotStatus::KEEP_SLOT : SlotStatus::CLEAR_SLOT;
 }
 
-inline bool SemiGcMarker::ShouldBePromoted(TaggedObject *object)
+inline bool SemiGCMarker::ShouldBePromoted(TaggedObject *object)
 {
     Region *region = Region::ObjectAddressToRange(object);
     return (region->BelowAgeMark() || (region->HasAgeMark() && ToUintPtr(object) < waterLine_));
 }
 
-inline void SemiGcMarker::RecordWeakReference(uint32_t threadId, JSTaggedType *ref)
+inline void SemiGCMarker::RecordWeakReference(uint32_t threadId, JSTaggedType *ref)
 {
     auto value = JSTaggedValue(*ref);
     Region *objectRegion = Region::ObjectAddressToRange(value.GetTaggedWeakRef());
@@ -231,7 +231,7 @@ inline void SemiGcMarker::RecordWeakReference(uint32_t threadId, JSTaggedType *r
     }
 }
 
-inline SlotStatus CompressGcMarker::MarkObject(uint32_t threadId, TaggedObject *object, ObjectSlot slot)
+inline SlotStatus CompressGCMarker::MarkObject(uint32_t threadId, TaggedObject *object, ObjectSlot slot)
 {
     Region *objectRegion = Region::ObjectAddressToRange(object);
     if (!objectRegion->InYoungAndOldGeneration()) {
@@ -250,7 +250,7 @@ inline SlotStatus CompressGcMarker::MarkObject(uint32_t threadId, TaggedObject *
     return EvacuateObject(threadId, object, markWord, slot);
 }
 
-inline SlotStatus CompressGcMarker::EvacuateObject(uint32_t threadId, TaggedObject *object, const MarkWord &markWord,
+inline SlotStatus CompressGCMarker::EvacuateObject(uint32_t threadId, TaggedObject *object, const MarkWord &markWord,
     ObjectSlot slot)
 {
     JSHClass *klass = markWord.GetJSHClass();
@@ -268,7 +268,7 @@ inline SlotStatus CompressGcMarker::EvacuateObject(uint32_t threadId, TaggedObje
     return SlotStatus::CLEAR_SLOT;
 }
 
-inline void CompressGcMarker::RecordWeakReference(uint32_t threadId, JSTaggedType *ref)
+inline void CompressGCMarker::RecordWeakReference(uint32_t threadId, JSTaggedType *ref)
 {
     heap_->GetWorkManager()->PushWeakReference(threadId, ref);
 }

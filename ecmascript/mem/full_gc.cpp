@@ -64,7 +64,7 @@ void FullGC::Initialize()
     youngSpaceCommitSize_ = heap_->GetNewSpace()->GetCommittedSize();
     heap_->SwapNewSpace();
     workManager_->Initialize(TriggerGCType::FULL_GC, ParallelGCTaskPhase::COMPRESS_HANDLE_GLOBAL_POOL_TASK);
-    heap_->GetCompressGcMarker()->Initialize();
+    heap_->GetCompressGCMarker()->Initialize();
 
     youngAndOldAliveSize_ = 0;
     nonMoveSpaceFreeSize_ = 0;
@@ -75,8 +75,8 @@ void FullGC::Initialize()
 void FullGC::Mark()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::Mark");
-    heap_->GetCompressGcMarker()->MarkRoots(MAIN_THREAD_INDEX);
-    heap_->GetCompressGcMarker()->ProcessMarkStack(MAIN_THREAD_INDEX);
+    heap_->GetCompressGCMarker()->MarkRoots(MAIN_THREAD_INDEX);
+    heap_->GetCompressGCMarker()->ProcessMarkStack(MAIN_THREAD_INDEX);
     heap_->WaitRunningTaskFinished();
 }
 

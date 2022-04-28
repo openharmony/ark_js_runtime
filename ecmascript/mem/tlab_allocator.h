@@ -35,12 +35,12 @@ public:
 
     inline void Finalize();
 
-    inline uintptr_t Allocate(size_t size, MemSpaceType spaceAlloc);
+    inline uintptr_t Allocate(size_t size, MemSpaceType space);
 
 private:
-    inline uintptr_t TlabAllocatorYoungSpace(size_t size);
-    inline uintptr_t TlabAllocatorOldSpace(size_t size);
-    inline uintptr_t TlabAllocatorCompressSpace(size_t size);
+    inline uintptr_t AllocateInYoungSpace(size_t size);
+    inline uintptr_t AllocateInOldSpace(size_t size);
+    inline uintptr_t AllocateInCompressSpace(size_t size);
 
     inline bool ExpandYoung();
     inline bool ExpandCompressFromOld(size_t size);

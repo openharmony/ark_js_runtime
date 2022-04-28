@@ -73,7 +73,7 @@ HWTEST_F_L0(MemControllerTest, AllocationVerify)
     }
     sleep(5);
     heap->CollectGarbage(TriggerGCType::FULL_GC);
-    double mutatorSpeed1 = memController->GetCurrentOldSpaceAllocationThroughtputPerMS(0);
+    double mutatorSpeed1 = memController->GetCurrentOldSpaceAllocationThroughputPerMS(0);
     for (int i = 0; i < 1024; i++) {
         // old space object
         [[maybe_unused]] auto oldArray = objectFactory->NewTaggedArray(128, JSTaggedValue::Undefined(),
@@ -82,7 +82,7 @@ HWTEST_F_L0(MemControllerTest, AllocationVerify)
     sleep(10);
 
     heap->CollectGarbage(TriggerGCType::FULL_GC);
-    double mutatorSpeed2 = memController->GetCurrentOldSpaceAllocationThroughtputPerMS(0);
+    double mutatorSpeed2 = memController->GetCurrentOldSpaceAllocationThroughputPerMS(0);
     ASSERT_TRUE(mutatorSpeed2 < mutatorSpeed1);
 #endif
 }
@@ -96,8 +96,8 @@ HWTEST_F_L0(MemControllerTest, VerifyMutatorSpeed)
     auto memController = heap->GetMemController();
 
     heap->CollectGarbage(TriggerGCType::YOUNG_GC);
-    size_t oldSpaceAllocatedSizeBefore = memController->GetOldSpaceAllocAccumulatorSize();
-    size_t nonMovableSpaceAllocatedSizeBefore = memController->GetNonMovableSpaceAllocAccumulatorSize();
+    size_t oldSpaceAllocatedSizeBefore = memController->GetOldSpaceAllocAccumulatedSize();
+    size_t nonMovableSpaceAllocatedSizeBefore = memController->GetNonMovableSpaceAllocAccumulatedSize();
     double allocDurationBefore = memController->GetAllocTimeMs();
     sleep(1);
 
@@ -117,8 +117,8 @@ HWTEST_F_L0(MemControllerTest, VerifyMutatorSpeed)
 
     heap->CollectGarbage(TriggerGCType::YOUNG_GC);
 
-    size_t oldSpaceAllocatedSizeAfter = memController->GetOldSpaceAllocAccumulatorSize();
-    size_t nonMovableSpaceAllocatedSizeAfter = memController->GetNonMovableSpaceAllocAccumulatorSize();
+    size_t oldSpaceAllocatedSizeAfter = memController->GetOldSpaceAllocAccumulatedSize();
+    size_t nonMovableSpaceAllocatedSizeAfter = memController->GetNonMovableSpaceAllocAccumulatedSize();
     double allocDurationAfter = memController->GetAllocTimeMs();
 
     size_t hugeObjectAllocSizeInLastGC = memController->GetHugeObjectAllocSizeSinceGC();

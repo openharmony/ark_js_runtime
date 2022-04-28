@@ -131,7 +131,7 @@ uintptr_t Heap::AllocateYoungSync(size_t size)
 
 bool Heap::MoveYoungRegionSync(Region *region)
 {
-    return activeSpace_->SwapRegion(region, backupSpace_);
+    return activeSpace_->SwapRegion(region, inactiveSpace_);
 }
 
 void Heap::MergeToOldSpaceSync(LocalSpace *localSpace)
@@ -268,10 +268,10 @@ void Heap::OnMoveEvent([[maybe_unused]] uintptr_t address, [[maybe_unused]] uint
 void Heap::SwapNewSpace()
 {
     activeSpace_->Stop();
-    backupSpace_->Restart();
+    inactiveSpace_->Restart();
 
-    SemiSpace *newSpace = backupSpace_;
-    backupSpace_ = activeSpace_;
+    SemiSpace *newSpace = inactiveSpace_;
+    inactiveSpace_ = activeSpace_;
     activeSpace_ = newSpace;
 }
 
@@ -288,7 +288,7 @@ void Heap::ReclaimRegions(TriggerGCType gcType, Region *lastRegionOfToSpace)
     } else if (gcType == TriggerGCType::OLD_GC) {
         oldSpace_->ReclaimCSet();
     }
-    backupSpace_->ReclaimRegions();
+    inactiveSpace_->ReclaimRegions();
 
     if (!clearTaskFinished_) {
         os::memory::LockHolder holder(waitClearTaskFinishedMutex_);
@@ -305,15 +305,20 @@ void Heap::ClearSlotsRange(Region *current, uintptr_t freeStart, uintptr_t freeE
 
 size_t Heap::GetCommittedSize() const
 {
-    size_t result = activeSpace_->GetCommittedSize() + oldSpace_->GetCommittedSize() + hugeObjectSpace_->GetCommittedSize()
-                    + nonMovableSpace_->GetCommittedSize() + machineCodeSpace_->GetCommittedSize();
+    size_t result = activeSpace_->GetCommittedSize()
+                    + oldSpace_->GetCommittedSize()
+                    + hugeObjectSpace_->GetCommittedSize()
+                    + nonMovableSpace_->GetCommittedSize()
+                    + machineCodeSpace_->GetCommittedSize();
     return result;
 }
 
 size_t Heap::GetHeapObjectSize() const
 {
-    size_t result = activeSpace_->GetHeapObjectSize() + oldSpace_->GetHeapObjectSize()
-                    + hugeObjectSpace_->GetHeapObjectSize() + nonMovableSpace_->GetHeapObjectSize()
+    size_t result = activeSpace_->GetHeapObjectSize()
+                    + oldSpace_->GetHeapObjectSize()
+                    + hugeObjectSpace_->GetHeapObjectSize()
+                    + nonMovableSpace_->GetHeapObjectSize()
                     + machineCodeSpace_->GetCommittedSize();
     return result;
 }
