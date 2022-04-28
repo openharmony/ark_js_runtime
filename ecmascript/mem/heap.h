@@ -95,7 +95,7 @@ public:
         return machineCodeSpace_;
     }
 
-    SnapShotSpace *GetSnapShotSpace() const
+    SnapshotSpace *GetSnapshotSpace() const
     {
         return snapshotSpace_;
     }
@@ -204,7 +204,7 @@ public:
     // Machine code
     inline TaggedObject *AllocateMachineCodeObject(JSHClass *hclass, size_t size);
     // Snapshot
-    inline uintptr_t AllocateSnapShotSpace(size_t size);
+    inline uintptr_t AllocateSnapshotSpace(size_t size);
 
     NativeAreaAllocator *GetNativeAreaAllocator() const
     {
@@ -284,7 +284,7 @@ public:
     void EnumerateNewSpaceRegions(const Callback &cb) const;
 
     template<class Callback>
-    void EnumerateSnapShotSpaceRegions(const Callback &cb) const;
+    void EnumerateSnapshotSpaceRegions(const Callback &cb) const;
 
     template<class Callback>
     void EnumerateNonMovableRegions(const Callback &cb) const;
@@ -410,7 +410,7 @@ private:
     NonMovableSpace *nonMovableSpace_ {nullptr};
     MachineCodeSpace *machineCodeSpace_ {nullptr};
     HugeObjectSpace *hugeObjectSpace_ {nullptr};
-    SnapShotSpace *snapshotSpace_ {nullptr};
+    SnapshotSpace *snapshotSpace_ {nullptr};
 
     /*
      * Garbage collectors collecting garbage in different scopes.

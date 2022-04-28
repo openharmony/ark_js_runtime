@@ -153,6 +153,10 @@ public:
 private:
     uint64_t value_;
 };
+static_assert(EncodeBit::REGION_INDEX_BIT_NUMBER + EncodeBit::OBJECT_OFFSET_IN_REGION_NUMBER +
+              EncodeBit::OBJECT_TO_STRING_FLAG_NUMBER + EncodeBit::OBJECT_TYPE_BIT_NUMBER + EncodeBit::OBJECT_SPECIAL +
+              EncodeBit::GLOBAL_ENV_CONST + EncodeBit::NATIVE_OR_GLOBAL_INDEX_NUMBER +
+              EncodeBit::IS_REFERENCE_BIT_NUMBER == Constants::UINT_64_BITS_COUNT);
 }  // namespace panda::ecmascript
 
 #endif  // ECMASCRIPT_SNAPSHOT_MEM_ENCODE_BIT_H

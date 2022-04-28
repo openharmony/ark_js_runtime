@@ -23,12 +23,12 @@
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript {
-class HeapSnapShot;
+class HeapSnapshot;
 
 class HeapTrackerSample {
 public:
-    explicit HeapTrackerSample(HeapSnapShot *snapShot, double timeInterval)
-        : timeInterval_(timeInterval), snapShot_(snapShot)
+    explicit HeapTrackerSample(HeapSnapshot *snapshot, double timeInterval)
+        : timeInterval_(timeInterval), snapshot_(snapshot)
     {
     }
 
@@ -60,12 +60,12 @@ private:
     std::thread thread_;
     std::atomic_bool isInterrupt_ = true;
     double timeInterval_ = 0;
-    HeapSnapShot *snapShot_;
+    HeapSnapshot *snapshot_;
 };
 
 class HeapTracker {
 public:
-    HeapTracker(HeapSnapShot *snapShot, double timeInterval) : snapShot_(snapShot), sample_(snapShot, timeInterval) {}
+    HeapTracker(HeapSnapshot *snapshot, double timeInterval) : snapshot_(snapshot), sample_(snapshot, timeInterval) {}
     ~HeapTracker() = default;
 
     void StartTracing()
@@ -85,7 +85,7 @@ public:
     NO_MOVE_SEMANTIC(HeapTracker);
 
 private:
-    HeapSnapShot *snapShot_;
+    HeapSnapshot *snapshot_;
     HeapTrackerSample sample_;
 };
 }  // namespace panda::ecmascript

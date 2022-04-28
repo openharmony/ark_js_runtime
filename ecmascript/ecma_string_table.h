@@ -60,7 +60,7 @@ private:
 
     CUnorderedMultiMap<uint32_t, EcmaString *> table_;
     const EcmaVM *vm_{nullptr};
-    friend class SnapShotSerialize;
+    friend class SnapshotProcessor;
 };
 }  // namespace panda::ecmascript
 

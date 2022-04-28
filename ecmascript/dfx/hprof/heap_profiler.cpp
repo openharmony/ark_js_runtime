@@ -26,34 +26,34 @@
 namespace panda::ecmascript {
 HeapProfiler::~HeapProfiler()
 {
-    ClearSnapShot();
+    ClearSnapshot();
     const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->Delete(jsonSerializer_);
     jsonSerializer_ = nullptr;
 }
 
-bool HeapProfiler::DumpHeapSnapShot(JSThread *thread,
+bool HeapProfiler::DumpHeapSnapshot(JSThread *thread,
                                     DumpFormat dumpFormat, Stream *stream, bool isVmMode)
 {
     [[maybe_unused]] bool heapClean = ForceFullGC(thread);
     ASSERT(heapClean);
     size_t heapSize = thread->GetEcmaVM()->GetHeap()->GetHeapObjectSize();
     LOG(ERROR, RUNTIME) << "HeapProfiler DumpSnapshot heap size " << heapSize;
-    HeapSnapShot *snapShot = MakeHeapSnapShot(thread, SampleType::ONE_SHOT, isVmMode);
-    ASSERT(snapShot != nullptr);
+    HeapSnapshot *snapshot = MakeHeapSnapshot(thread, SampleType::ONE_SHOT, isVmMode);
+    ASSERT(snapshot != nullptr);
     if (!stream->Good()) {
         FileStream newStream(GenDumpFileName(dumpFormat));
-        return jsonSerializer_->Serialize(snapShot, &newStream);
+        return jsonSerializer_->Serialize(snapshot, &newStream);
     }
-    return jsonSerializer_->Serialize(snapShot, stream);
+    return jsonSerializer_->Serialize(snapshot, stream);
 }
 
 bool HeapProfiler::StartHeapTracking(JSThread *thread, double timeInterval, bool isVmMode)
 {
-    HeapSnapShot *snapShot = MakeHeapSnapShot(thread, SampleType::REAL_TIME, isVmMode);
-    if (snapShot == nullptr) {
+    HeapSnapshot *snapshot = MakeHeapSnapshot(thread, SampleType::REAL_TIME, isVmMode);
+    if (snapshot == nullptr) {
         return false;
     }
-    heapTracker_ = std::make_unique<HeapTracker>(snapShot, timeInterval);
+    heapTracker_ = std::make_unique<HeapTracker>(snapshot, timeInterval);
     thread->GetEcmaVM()->StartHeapTracking(heapTracker_.get());
     heapTracker_->StartTracing();
     return true;
@@ -67,12 +67,12 @@ bool HeapProfiler::StopHeapTracking(JSThread *thread, Stream *stream)
     thread->GetEcmaVM()->StopHeapTracking();
     heapTracker_->StopTracing();
 
-    HeapSnapShot *snapShot = hprofs_.at(0);
-    if (snapShot == nullptr) {
+    HeapSnapshot *snapshot = hprofs_.at(0);
+    if (snapshot == nullptr) {
         return false;
     }
-    snapShot->FinishSnapShot();
-    return jsonSerializer_->Serialize(snapShot, stream);
+    snapshot->FinishSnapshot();
+    return jsonSerializer_->Serialize(snapshot, stream);
 }
 
 std::string HeapProfiler::GenDumpFileName(DumpFormat dumpFormat)
@@ -133,49 +133,49 @@ bool HeapProfiler::ForceFullGC(JSThread *thread)
     return false;
 }
 
-HeapSnapShot *HeapProfiler::MakeHeapSnapShot(JSThread *thread, SampleType sampleType, bool isVmMode)
+HeapSnapshot *HeapProfiler::MakeHeapSnapshot(JSThread *thread, SampleType sampleType, bool isVmMode)
 {
-    LOG(ERROR, RUNTIME) << "HeapProfiler::MakeHeapSnapShot";
+    LOG(ERROR, RUNTIME) << "HeapProfiler::MakeHeapSnapshot";
     DISALLOW_GARBAGE_COLLECTION;
     const_cast<Heap *>(heap_)->Prepare();
     switch (sampleType) {
         case SampleType::ONE_SHOT: {
-            auto *snapShot = const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())
-                                ->New<HeapSnapShot>(thread, heap_, isVmMode);
-            if (snapShot == nullptr) {
+            auto *snapshot = const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())
+                                ->New<HeapSnapshot>(thread, heap_, isVmMode);
+            if (snapshot == nullptr) {
                 LOG_ECMA(FATAL) << "alloc snapshot failed";
                 UNREACHABLE();
             }
-            snapShot->BuildUp(thread);
-            AddSnapShot(snapShot);
-            return snapShot;
+            snapshot->BuildUp(thread);
+            AddSnapshot(snapshot);
+            return snapshot;
         }
         case SampleType::REAL_TIME: {
-            auto *snapShot = const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())
-                                ->New<HeapSnapShot>(thread, heap_, isVmMode);
-            if (snapShot == nullptr) {
+            auto *snapshot = const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())
+                                ->New<HeapSnapshot>(thread, heap_, isVmMode);
+            if (snapshot == nullptr) {
                 LOG_ECMA(FATAL) << "alloc snapshot failed";
                 UNREACHABLE();
             }
-            AddSnapShot(snapShot);
-            snapShot->PrepareSnapShot();
-            return snapShot;
+            AddSnapshot(snapshot);
+            snapshot->PrepareSnapshot();
+            return snapshot;
         }
         default:
             return nullptr;
     }
 }
 
-void HeapProfiler::AddSnapShot(HeapSnapShot *snapshot)
+void HeapProfiler::AddSnapshot(HeapSnapshot *snapshot)
 {
     if (hprofs_.size() >= MAX_NUM_HPROF) {
-        ClearSnapShot();
+        ClearSnapshot();
     }
     ASSERT(snapshot != nullptr);
     hprofs_.emplace_back(snapshot);
 }
 
-void HeapProfiler::ClearSnapShot()
+void HeapProfiler::ClearSnapshot()
 {
     for (auto *snapshot : hprofs_) {
         const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->Delete(snapshot);
