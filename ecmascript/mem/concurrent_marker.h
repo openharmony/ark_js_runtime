@@ -80,12 +80,12 @@ private:
     EcmaVM *vm_ {nullptr};
     JSThread *thread_ {nullptr};
 
-    // obtain from heap
+    // obtained from the shared heap instance.
     WorkManager *workManager_ {nullptr};
     size_t heapObjectSize_ {0};
     double duration_ {0.0};
 
-    bool notifyMarkingFinished_ {false};             // notify js-thread that marking is finished and need sweep
+    bool notifyMarkingFinished_ {false};         // notify js-thread that marking is finished and sweeping is needed
     bool vmThreadWaitMarkingFinished_ {false};   // jsMainThread waiting for concurrentGC FINISHED
     os::memory::Mutex waitMarkingFinishedMutex_;
     os::memory::ConditionVariable waitMarkingFinishedCV_;

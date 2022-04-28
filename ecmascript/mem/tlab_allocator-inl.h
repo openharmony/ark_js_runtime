@@ -43,18 +43,18 @@ inline void TlabAllocator::Finalize()
     heap_->MergeToOldSpaceSync(localSpace_);
 }
 
-uintptr_t TlabAllocator::Allocate(size_t size, MemSpaceType spaceAlloc)
+uintptr_t TlabAllocator::Allocate(size_t size, MemSpaceType space)
 {
     uintptr_t result = 0;
-    switch (spaceAlloc) {
+    switch (space) {
         case SEMI_SPACE:
-            result = TlabAllocatorYoungSpace(size);
+            result = AllocateInYoungSpace(size);
             break;
         case OLD_SPACE:
-            result = TlabAllocatorOldSpace(size);
+            result = AllocateInOldSpace(size);
             break;
         case COMPRESS_SPACE:
-            result = TlabAllocatorCompressSpace(size);
+            result = AllocateInCompressSpace(size);
             break;
         default:
             UNREACHABLE();
@@ -62,7 +62,7 @@ uintptr_t TlabAllocator::Allocate(size_t size, MemSpaceType spaceAlloc)
     return result;
 }
 
-uintptr_t TlabAllocator::TlabAllocatorYoungSpace(size_t size)
+uintptr_t TlabAllocator::AllocateInYoungSpace(size_t size)
 {
     ASSERT(AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT)) == size);
     if (UNLIKELY(size > SMALL_OBJECT_SIZE)) {
@@ -80,7 +80,7 @@ uintptr_t TlabAllocator::TlabAllocatorYoungSpace(size_t size)
     return youngAllocator_.Allocate(size);
 }
 
-uintptr_t TlabAllocator::TlabAllocatorCompressSpace(size_t size)
+uintptr_t TlabAllocator::AllocateInCompressSpace(size_t size)
 {
     ASSERT(AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT)) == size);
     size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
@@ -89,7 +89,7 @@ uintptr_t TlabAllocator::TlabAllocatorCompressSpace(size_t size)
     return result;
 }
 
-uintptr_t TlabAllocator::TlabAllocatorOldSpace(size_t size)
+uintptr_t TlabAllocator::AllocateInOldSpace(size_t size)
 {
     ASSERT(AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT)) == size);
     size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));

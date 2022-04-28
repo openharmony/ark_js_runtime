@@ -64,23 +64,23 @@ void MemController::StartCalculationBeforeGC()
         return;
     }
 
-    // It's unnecessary to calculate newSpaceAllocAccumulatorSize. newSpaceAllocBytesSinceGC can be calculated directly.
+    // It's unnecessary to calculate newSpaceAllocAccumulatedSize. newSpaceAllocBytesSinceGC can be calculated directly.
     size_t newSpaceAllocBytesSinceGC = heap_->GetNewSpace()->GetAllocatedSizeSinceGC();
     size_t hugeObjectAllocSizeSinceGC = heap_->GetHugeObjectSpace()->GetHeapObjectSize() - hugeObjectAllocSizeSinceGC_;
-    size_t oldSpaceAllocAccumulatorSize = heap_->GetOldSpace()->GetTotalAllocatedSize();
-    size_t nonMovableSpaceAllocAccumulatorSize = heap_->GetNonMovableSpace()->GetTotalAllocatedSize();
-    size_t codeSpaceAllocAccumulatorSize = heap_->GetMachineCodeSpace()->GetTotalAllocatedSize();
+    size_t oldSpaceAllocAccumulatedSize = heap_->GetOldSpace()->GetTotalAllocatedSize();
+    size_t nonMovableSpaceAllocAccumulatedSize = heap_->GetNonMovableSpace()->GetTotalAllocatedSize();
+    size_t codeSpaceAllocAccumulatedSize = heap_->GetMachineCodeSpace()->GetTotalAllocatedSize();
     double currentTimeInMs = GetSystemTimeInMs();
     gcStartTime_ = currentTimeInMs;
-    size_t oldSpaceAllocSize = oldSpaceAllocAccumulatorSize - oldSpaceAllocAccumulatorSize_;
-    size_t nonMovableSpaceAllocSize = nonMovableSpaceAllocAccumulatorSize - nonMovableSpaceAllocAccumulatorSize_;
-    size_t codeSpaceAllocSize = codeSpaceAllocAccumulatorSize - codeSpaceAllocAccumulatorSize_;
+    size_t oldSpaceAllocSize = oldSpaceAllocAccumulatedSize - oldSpaceAllocAccumulatedSize_;
+    size_t nonMovableSpaceAllocSize = nonMovableSpaceAllocAccumulatedSize - nonMovableSpaceAllocAccumulatedSize_;
+    size_t codeSpaceAllocSize = codeSpaceAllocAccumulatedSize - codeSpaceAllocAccumulatedSize_;
 
     double duration = currentTimeInMs - allocTimeMs_;
     allocTimeMs_ = currentTimeInMs;
-    oldSpaceAllocAccumulatorSize_ = oldSpaceAllocAccumulatorSize;
-    nonMovableSpaceAllocAccumulatorSize_ = nonMovableSpaceAllocAccumulatorSize;
-    codeSpaceAllocAccumulatorSize_ = codeSpaceAllocAccumulatorSize;
+    oldSpaceAllocAccumulatedSize_ = oldSpaceAllocAccumulatedSize;
+    nonMovableSpaceAllocAccumulatedSize_ = nonMovableSpaceAllocAccumulatedSize;
+    codeSpaceAllocAccumulatedSize_ = codeSpaceAllocAccumulatedSize;
 
     allocDurationSinceGc_ += duration;
     newSpaceAllocSizeSinceGC_ += newSpaceAllocBytesSinceGC;
@@ -188,7 +188,7 @@ double MemController::CalculateAverageSpeed(const base::GCRingBuffer<BytesAndDur
     return CalculateAverageSpeed(buffer, MakeBytesAndDuration(0, 0), 0);
 }
 
-double MemController::GetCurrentOldSpaceAllocationThroughtputPerMS(double timeMs) const
+double MemController::GetCurrentOldSpaceAllocationThroughputPerMS(double timeMs) const
 {
     size_t allocatedSize = oldSpaceAllocSizeSinceGC_;
     double duration = allocDurationSinceGc_;
@@ -196,7 +196,7 @@ double MemController::GetCurrentOldSpaceAllocationThroughtputPerMS(double timeMs
                                  MakeBytesAndDuration(allocatedSize, duration), timeMs);
 }
 
-double MemController::GetNewSpaceAllocationThroughtPerMS() const
+double MemController::GetNewSpaceAllocationThroughputPerMS() const
 {
     return CalculateAverageSpeed(recordedNewSpaceAllocations_);
 }
@@ -206,7 +206,7 @@ double MemController::GetNewSpaceConcurrentMarkSpeedPerMS() const
     return CalculateAverageSpeed(recordedSemiConcurrentMarks_);
 }
 
-double MemController::GetOldSpaceAllocationThroughtPerMS() const
+double MemController::GetOldSpaceAllocationThroughputPerMS() const
 {
     return CalculateAverageSpeed(recordedOldSpaceAllocations_);
 }

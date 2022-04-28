@@ -52,7 +52,7 @@ void Heap::Initialize()
     activeSpace_ = new SemiSpace(this, defaultSemiSpaceCapacity, defaultSemiSpaceCapacity);
     activeSpace_->Restart();
     activeSpace_->SetWaterLine();
-    backupSpace_ = new SemiSpace(this, defaultSemiSpaceCapacity, defaultSemiSpaceCapacity);
+    inactiveSpace_ = new SemiSpace(this, defaultSemiSpaceCapacity, defaultSemiSpaceCapacity);
 
     // not set up from space
     size_t maxOldSpaceCapacity = ecmaVm_->GetJSOptions().MaxOldSpaceCapacity();
@@ -69,17 +69,17 @@ void Heap::Initialize()
     machineCodeSpace_ = new MachineCodeSpace(this, maxMachineCodeSpaceCapacity, maxMachineCodeSpaceCapacity);
     machineCodeSpace_->Initialize();
     hugeObjectSpace_ = new HugeObjectSpace(this);
-    parallelGc_ = ecmaVm_->GetJSOptions().IsEnableParallelGC();
+    parallelGC_ = ecmaVm_->GetJSOptions().IsEnableParallelGC();
     concurrentMarkingEnabled_ = ecmaVm_->GetJSOptions().IsEnableConcurrentMark();
     markType_ = MarkType::MARK_YOUNG;
 #if ECMASCRIPT_DISABLE_PARALLEL_GC
-    parallelGc_ = false;
+    parallelGC_ = false;
 #endif
 #if defined(IS_STANDARD_SYSTEM)
     concurrentMarkingEnabled_ = false;
 #endif
     workManager_ = new WorkManager(this, Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1);
-    stwYoungGC_ = new STWYoungGC(this, parallelGc_);
+    stwYoungGC_ = new STWYoungGC(this, parallelGC_);
     fullGC_ = new FullGC(this);
 
     derivedPointers_ = new ChunkMap<DerivedDataKey, uintptr_t>(ecmaVm_->GetChunk());
@@ -87,8 +87,8 @@ void Heap::Initialize()
     sweeper_ = new ConcurrentSweeper(this, ecmaVm_->GetJSOptions().IsEnableConcurrentSweep());
     concurrentMarker_ = new ConcurrentMarker(this);
     nonMovableMarker_ = new NonMovableMarker(this);
-    semiGcMarker_ = new SemiGcMarker(this);
-    compressGcMarker_ = new CompressGcMarker(this);
+    semiGCMarker_ = new SemiGCMarker(this);
+    compressGCMarker_ = new CompressGCMarker(this);
     evacuator_ = new ParallelEvacuator(this);
 }
 
@@ -100,10 +100,10 @@ void Heap::Destroy()
         delete activeSpace_;
         activeSpace_ = nullptr;
     }
-    if (backupSpace_ != nullptr) {
-        backupSpace_->Destroy();
-        delete backupSpace_;
-        backupSpace_ = nullptr;
+    if (inactiveSpace_ != nullptr) {
+        inactiveSpace_->Destroy();
+        delete inactiveSpace_;
+        inactiveSpace_ = nullptr;
     }
     if (oldSpace_ != nullptr) {
         oldSpace_->Destroy();
@@ -175,13 +175,13 @@ void Heap::Destroy()
         delete nonMovableMarker_;
         nonMovableMarker_ = nullptr;
     }
-    if (semiGcMarker_ != nullptr) {
-        delete semiGcMarker_;
-        semiGcMarker_ = nullptr;
+    if (semiGCMarker_ != nullptr) {
+        delete semiGCMarker_;
+        semiGCMarker_ = nullptr;
     }
-    if (compressGcMarker_ != nullptr) {
-        delete compressGcMarker_;
-        compressGcMarker_ = nullptr;
+    if (compressGCMarker_ != nullptr) {
+        delete compressGCMarker_;
+        compressGCMarker_ = nullptr;
     }
 }
 
@@ -201,12 +201,12 @@ void Heap::Resume(TriggerGCType gcType)
         compressSpace_ = oldSpace_;
         oldSpace_ = oldSpace;
     }
-    if (activeSpace_->AdjustCapacity(backupSpace_->GetAllocatedSizeSinceGC())) {
-        backupSpace_->SetMaximumCapacity(activeSpace_->GetMaximumCapacity());
+    if (activeSpace_->AdjustCapacity(inactiveSpace_->GetAllocatedSizeSinceGC())) {
+        inactiveSpace_->SetMaximumCapacity(activeSpace_->GetMaximumCapacity());
     }
 
     activeSpace_->SetWaterLine();
-    if (parallelGc_) {
+    if (parallelGC_) {
         clearTaskFinished_ = false;
         Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<AsyncClearTask>(this, gcType));
     } else {
@@ -379,7 +379,7 @@ void Heap::AdjustOldSpaceLimit()
 void Heap::RecomputeLimits()
 {
     double gcSpeed = memController_->CalculateMarkCompactSpeedPerMS();
-    double mutatorSpeed = memController_->GetCurrentOldSpaceAllocationThroughtputPerMS();
+    double mutatorSpeed = memController_->GetCurrentOldSpaceAllocationThroughputPerMS();
     size_t oldSpaceSize = oldSpace_->GetHeapObjectSize() + hugeObjectSpace_->GetHeapObjectSize();
     size_t newSpaceCapacity = activeSpace_->GetMaximumCapacity();
 
@@ -422,20 +422,21 @@ bool Heap::CheckConcurrentMark()
 
 void Heap::TryTriggerConcurrentMarking()
 {
-    // When the concurrent mark is enabled, concurrent mark can be tried to triggered. When the size of old space or
-    // global space reaches to the limits, isFullMarkNeeded will be true. If the predicted duration of the current full
-    // mark can allow the new space and old space to allocate to their limits, full mark will be triggered. In the same
-    // way, if the size of the new space reaches to the capacity, and the predicted duration of the current semi mark
-    // can exactly allow the new space to allocate to the capacity, semi mark can be triggered. But when it will spend
-    // a lot of time in full mark, the compress full GC will be requested after the spaces reach to limits. And If the
-    // global space is larger than the half max heap size, we will turn to use full mark and trigger partial GC.
+    // When concurrent marking is enabled, concurrent marking will be attempted to trigger.
+    // When the size of old space or global space reaches the limit, isFullMarkNeeded will be set to true.
+    // If the predicted duration of current full mark may not result in the new and old spaces reaching their limit,
+    // full mark will be triggered.
+    // In the same way, if the size of the new space reaches the capacity, and the predicted duration of current
+    // young mark may not result in the new space reaching its limit, young mark can be triggered.
+    // If it spends much time in full mark, the compress full GC will be requested when the spaces reach the limit.
+    // If the global space is larger than half max heap size, we will turn to use full mark and trigger partial GC.
     if (!concurrentMarkingEnabled_ || !thread_->IsReadyToMark()) {
         return;
     }
     bool isFullMarkNeeded = false;
     double oldSpaceMarkDuration = 0, newSpaceMarkDuration = 0, newSpaceRemainSize = 0, newSpaceAllocToLimitDuration = 0,
            oldSpaceAllocToLimitDuration = 0;
-    double oldSpaceAllocSpeed = memController_->GetOldSpaceAllocationThroughtPerMS();
+    double oldSpaceAllocSpeed = memController_->GetOldSpaceAllocationThroughputPerMS();
     double oldSpaceConcurrentMarkSpeed = memController_->GetFullSpaceConcurrentMarkSpeedPerMS();
     size_t oldSpaceHeapObjectSize = oldSpace_->GetHeapObjectSize() + hugeObjectSpace_->GetHeapObjectSize();
     size_t globalHeapObjectSize = GetHeapObjectSize();
@@ -460,7 +461,7 @@ void Heap::TryTriggerConcurrentMarking()
         }
     }
 
-    double newSpaceAllocSpeed = memController_->GetNewSpaceAllocationThroughtPerMS();
+    double newSpaceAllocSpeed = memController_->GetNewSpaceAllocationThroughputPerMS();
     double newSpaceConcurrentMarkSpeed = memController_->GetNewSpaceConcurrentMarkSpeedPerMS();
 
     if (newSpaceConcurrentMarkSpeed == 0 || newSpaceAllocSpeed == 0) {
@@ -583,20 +584,20 @@ bool Heap::ParallelGCTask::Run(uint32_t threadIndex)
 {
     switch (taskPhase_) {
         case ParallelGCTaskPhase::SEMI_HANDLE_THREAD_ROOTS_TASK:
-            heap_->GetSemiGcMarker()->MarkRoots(threadIndex);
-            heap_->GetSemiGcMarker()->ProcessMarkStack(threadIndex);
+            heap_->GetSemiGCMarker()->MarkRoots(threadIndex);
+            heap_->GetSemiGCMarker()->ProcessMarkStack(threadIndex);
             break;
         case ParallelGCTaskPhase::SEMI_HANDLE_SNAPSHOT_TASK:
-            heap_->GetSemiGcMarker()->ProcessSnapshotRSet(threadIndex);
+            heap_->GetSemiGCMarker()->ProcessSnapshotRSet(threadIndex);
             break;
         case ParallelGCTaskPhase::SEMI_HANDLE_GLOBAL_POOL_TASK:
-            heap_->GetSemiGcMarker()->ProcessMarkStack(threadIndex);
+            heap_->GetSemiGCMarker()->ProcessMarkStack(threadIndex);
             break;
         case ParallelGCTaskPhase::OLD_HANDLE_GLOBAL_POOL_TASK:
             heap_->GetNonMovableMarker()->ProcessMarkStack(threadIndex);
             break;
         case ParallelGCTaskPhase::COMPRESS_HANDLE_GLOBAL_POOL_TASK:
-            heap_->GetCompressGcMarker()->ProcessMarkStack(threadIndex);
+            heap_->GetCompressGCMarker()->ProcessMarkStack(threadIndex);
             break;
         case ParallelGCTaskPhase::CONCURRENT_HANDLE_GLOBAL_POOL_TASK:
             heap_->GetNonMovableMarker()->ProcessMarkStack(threadIndex);
