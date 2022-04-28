@@ -39,10 +39,12 @@ public:
     // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DEF_MESSAGE_ID(name, string) Message_##name,
         COMMON_MESSAGE_STRING_LIST(DEF_MESSAGE_ID)
-        INTERPRETER_STUB_HELPER_LIST(DEF_MESSAGE_ID)
-        ASM_INTERPRETER_BC_STUB_LIST(DEF_MESSAGE_ID, DEF_MESSAGE_ID, DEF_MESSAGE_ID)
 #undef DEF_MESSAGE_ID
-            MAX_MESSAGE_COUNT
+#define DEF_MESSAGE_ID(name) Message_##name,
+        ASM_INTERPRETER_BC_STUB_LIST(DEF_MESSAGE_ID, DEF_MESSAGE_ID, DEF_MESSAGE_ID)
+        ASM_INTERPRETER_BC_HELPER_STUB_LIST(DEF_MESSAGE_ID)
+#undef DEF_MESSAGE_ID
+        MAX_MESSAGE_COUNT
     };
     static const std::string& GetMessageString(int id);
 };
