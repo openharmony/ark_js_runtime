@@ -83,6 +83,14 @@ void LinearSpace::Stop()
     }
 }
 
+void LinearSpace::ResetAllocator()
+{
+    auto currentRegion = GetCurrentRegion();
+    if (currentRegion != nullptr) {
+        allocator_->Reset(currentRegion->GetBegin(), currentRegion->GetEnd(), currentRegion->GetHighWaterMark());
+    }
+}
+
 SemiSpace::SemiSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
     : LinearSpace(heap, MemSpaceType::SEMI_SPACE, initialCapacity, maximumCapacity) {}
 
@@ -215,12 +223,12 @@ void SemiSpace::IterateOverObjects(const std::function<void(TaggedObject *object
     });
 }
 
-size_t SemiSpace::GetAllocatedSizeSinceGC() const
+size_t SemiSpace::GetAllocatedSizeSinceGC(uintptr_t top) const
 {
     size_t currentRegionSize = 0;
     auto currentRegion = GetCurrentRegion();
     if (currentRegion != nullptr) {
-        currentRegionSize = currentRegion->GetAllocatedBytes();
+        currentRegionSize = currentRegion->GetAllocatedBytes(top);
         if (currentRegion->HasAgeMark()) {
             currentRegionSize -= currentRegion->GetAllocatedBytes(waterLine_);
         }

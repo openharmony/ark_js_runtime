@@ -71,7 +71,9 @@ public:
     inline GateRef GetProfileTypeInfoFromFunction(GateRef function);
     inline GateRef GetModuleFromFunction(GateRef function);
     inline GateRef GetResumeModeFromGeneratorObject(GateRef obj);
+    inline GateRef GetHotnessCounterFromMethod(GateRef method);
 
+    inline void SetHotnessCounter(GateRef glue, GateRef method, GateRef value);
     inline void SetCurrentSpFrame(GateRef glue, GateRef sp);
     inline void SetPcToFrame(GateRef glue, GateRef frame, GateRef value);
     inline void SetCallSizeToFrame(GateRef glue, GateRef frame, GateRef value);

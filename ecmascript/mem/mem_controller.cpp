@@ -65,7 +65,8 @@ void MemController::StartCalculationBeforeGC()
     }
 
     // It's unnecessary to calculate newSpaceAllocAccumulatedSize. newSpaceAllocBytesSinceGC can be calculated directly.
-    size_t newSpaceAllocBytesSinceGC = heap_->GetNewSpace()->GetAllocatedSizeSinceGC();
+    auto newSpace = heap_->GetNewSpace();
+    size_t newSpaceAllocBytesSinceGC = newSpace->GetAllocatedSizeSinceGC(newSpace->GetTop());
     size_t hugeObjectAllocSizeSinceGC = heap_->GetHugeObjectSpace()->GetHeapObjectSize() - hugeObjectAllocSizeSinceGC_;
     size_t oldSpaceAllocAccumulatedSize = heap_->GetOldSpace()->GetTotalAllocatedSize();
     size_t nonMovableSpaceAllocAccumulatedSize = heap_->GetNonMovableSpace()->GetTotalAllocatedSize();

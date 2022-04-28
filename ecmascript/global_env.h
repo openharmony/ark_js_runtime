@@ -152,6 +152,19 @@ public:
         return GetJSGlobalObject().GetTaggedValue();
     }
 
+    uintptr_t ComputeObjectAddress(size_t index) const
+    {
+        return reinterpret_cast<uintptr_t>(this) + HEADER_SIZE + index * JSTaggedValue::TaggedTypeSize();
+    }
+
+    JSHandle<JSTaggedValue> GetGlobalEnvObjectByIndex(size_t index) const
+    {
+        ASSERT(index < FINAL_INDEX);
+        uintptr_t address = ComputeObjectAddress(index);
+        JSHandle<JSTaggedValue> result(address);
+        return result;
+    }
+
     void Init(JSThread *thread);
     void InitGlobalObject();
 
