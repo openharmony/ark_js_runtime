@@ -194,26 +194,52 @@ bool JSBackend::NotifyScriptParsed(ScriptId scriptId, const CString &fileName)
 
 bool JSBackend::StepComplete(const JSPtLocation &location)
 {
+    if (UNLIKELY(pauseOnNextByteCode_)) {
+        if (IsSkipLine(location)) {
+            return false;
+        }
+        pauseOnNextByteCode_ = false;
+        LOG(INFO, DEBUGGER) << "StepComplete: pause on next bytecode";
+        return true;
+    }
+
+    if (LIKELY(singleStepper_ == nullptr)) {
+        return false;
+    }
+
+    // step not complete
+    if (!singleStepper_->StepComplete(location.GetBytecodeOffset())) {
+        return false;
+    }
+
+    // skip unknown file or special line -1
+    if (IsSkipLine(location)) {
+        return false;
+    }
+
+    LOG(INFO, DEBUGGER) << "StepComplete: pause on current byte_code";
+    return true;
+}
+
+bool JSBackend::IsSkipLine(const JSPtLocation &location)
+{
     JSPtExtractor *extractor = nullptr;
     auto scriptFunc = [this, &extractor](PtScript *script) -> bool {
         extractor = GetExtractor(script->GetUrl());
         return true;
     };
+    if (!MatchScripts(scriptFunc, location.GetPandaFile(), ScriptMatchType::FILE_NAME) || extractor == nullptr) {
+        LOG(INFO, DEBUGGER) << "StepComplete: skip unknown file";
+        return true;
+    }
+
     auto callbackFunc = [](int32_t line) -> bool {
         return line == SPECIAL_LINE_MARK;
     };
     File::EntityId methodId = location.GetMethodId();
     uint32_t offset = location.GetBytecodeOffset();
-    if (MatchScripts(scriptFunc, location.GetPandaFile(), ScriptMatchType::FILE_NAME) &&
-        extractor != nullptr && extractor->MatchLineWithOffset(callbackFunc, methodId, offset)) {
+    if (extractor->MatchLineWithOffset(callbackFunc, methodId, offset)) {
         LOG(INFO, DEBUGGER) << "StepComplete: skip -1";
-        return false;
-    }
-
-    if (pauseOnNextByteCode_ ||
-        (singleStepper_ != nullptr && singleStepper_->StepComplete(location.GetBytecodeOffset()))) {
-        LOG(INFO, DEBUGGER) << "StepComplete: pause on current byte_code";
-        pauseOnNextByteCode_ = false;
         return true;
     }
 
