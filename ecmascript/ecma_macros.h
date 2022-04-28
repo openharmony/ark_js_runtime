@@ -38,7 +38,8 @@
 
 #if !defined(ENABLE_BYTRACE)
     #define ECMA_BYTRACE_NAME(tag, name)
-#elif !defined(PANDA_TARGET_LINUX) && !defined(PANDA_TARGET_WINDOWS) && defined(IS_PUBLIC_VERSION)
+#elif !defined(PANDA_TARGET_LINUX) && !defined(PANDA_TARGET_WINDOWS)                \
+        && !defined(PANDA_TARGET_MACOS) && defined(IS_PUBLIC_VERSION)
     #define ECMA_BYTRACE_NAME(tag, name) BYTRACE_NAME(tag, name); trace::ScopedTrace scopedTrace(name)
 #elif defined(ENABLE_BYTRACE)
     #define ECMA_BYTRACE_NAME(tag, name) trace::ScopedTrace scopedTrace(name)
