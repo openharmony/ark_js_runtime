@@ -34,7 +34,7 @@ public:
     void LoadModule(std::string_view pandaFileName) override;
     void Paused(PauseReason reason) override;
     void Exception(const JSPtLocation &location) override;
-    void SingleStep(const JSPtLocation &location) override;
+    bool SingleStep(const JSPtLocation &location) override;
     void VmStart() override {}
     void VmDeath() override {}
 
