@@ -325,13 +325,8 @@ bool EcmaString::EqualToSplicedString(const EcmaString *str1, const EcmaString *
 }
 
 /* static */
-bool EcmaString::StringsAreEqual(EcmaString *str1, EcmaString *str2)
+bool EcmaString::StringsAreEqualSameUtfEncoding(EcmaString *str1, EcmaString *str2)
 {
-    if ((str1->IsUtf16() != str2->IsUtf16()) || (str1->GetLength() != str2->GetLength()) ||
-        (str1->GetHashcode() != str2->GetHashcode())) {
-        return false;
-    }
-
     if (str1->IsUtf16()) {
         Span<const uint16_t> data1(str1->GetDataUtf16(), str1->GetLength());
         Span<const uint16_t> data2(str2->GetDataUtf16(), str1->GetLength());
@@ -341,6 +336,16 @@ bool EcmaString::StringsAreEqual(EcmaString *str1, EcmaString *str2)
         Span<const uint8_t> data2(str2->GetDataUtf8(), str1->GetLength());
         return EcmaString::StringsAreEquals(data1, data2);
     }
+}
+
+/* static */
+bool EcmaString::StringsAreEqual(EcmaString *str1, EcmaString *str2)
+{
+    if ((str1->IsUtf16() != str2->IsUtf16()) || (str1->GetLength() != str2->GetLength()) ||
+        (str1->GetHashcode() != str2->GetHashcode())) {
+        return false;
+    }
+    return StringsAreEqualSameUtfEncoding(str1, str2);
 }
 
 /* static */

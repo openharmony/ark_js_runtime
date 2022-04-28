@@ -618,6 +618,8 @@ namespace panda::ecmascript {
     V(Deque, Constructor)                     \
     V(Deque, InsertFront)                     \
     V(Deque, InsertEnd)                       \
+    V(Deque, GetFirst)                        \
+    V(Deque, GetLast)                         \
     V(Deque, GetFront)                        \
     V(Deque, GetTail)                         \
     V(Deque, Has)                             \
@@ -662,7 +664,9 @@ namespace panda::ecmascript {
     V(WaitUpdateFinished)            \
     V(UpdateRoot)                    \
     V(UpdateWeakReference)           \
-    V(ParallelEvacuationFinalize)    \
+    V(ParallelEvacuator)             \
+    V(ParallelEvacuatorInitialize)   \
+    V(ParallelEvacuatorFinalize)     \
     V(HugeSpaceExpand)               \
     V(NonMovableSpaceExpand)         \
     V(HeapPrepare)                   \

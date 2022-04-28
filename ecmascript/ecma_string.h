@@ -246,6 +246,10 @@ public:
      */
     static bool StringsAreEqual(EcmaString *str1, EcmaString *str2);
     /**
+     * Two strings have the same type of utf encoding format.
+     */
+    static bool StringsAreEqualSameUtfEncoding(EcmaString *str1, EcmaString *str2);
+    /**
      * Compares strings by bytes, It doesn't check canonical unicode equivalence.
      */
     static bool StringsAreEqualUtf8(const EcmaString *str1, const uint8_t *utf8Data, uint32_t utf8Len,

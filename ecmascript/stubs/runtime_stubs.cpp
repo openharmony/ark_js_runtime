@@ -172,11 +172,11 @@ DEF_RUNTIME_STUBS(CallInternalGetter)
     return accessor->CallInternalGet(thread, objHandle).GetRawData();
 }
 
-DEF_RUNTIME_STUBS(StringGetHashCode)
+DEF_RUNTIME_STUBS(ComputeHashcode)
 {
     CONVERT_ARG_TAGGED_TYPE_CHECKED(ecmaString, 0);
     auto string = reinterpret_cast<EcmaString *>(ecmaString);
-    uint32_t result = string->GetHashcode();
+    uint32_t result = string->ComputeHashcode(0);
     return JSTaggedValue(static_cast<uint64_t>(result)).GetRawData();
 }
 
@@ -1452,7 +1452,7 @@ DEF_RUNTIME_STUBS(DefinefuncDyn)
 
 DEF_RUNTIME_STUBS(DefinefuncDynWithMethodId)
 {
-    RUNTIME_STUBS_HEADER(DefinefuncDynWithMethod);
+    RUNTIME_STUBS_HEADER(DefinefuncDynWithMethodId);
     CONVERT_ARG_TAGGED_CHECKED(methodId, 0);
     return RuntimeDefinefuncDynWithMethodId(thread, methodId).GetRawData();
 }
@@ -1690,6 +1690,16 @@ void RuntimeStubs::MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintptr_t s
         return;
     }
     Barriers::Update(slotAddr, objectRegion, value, valueRegion);
+}
+
+bool RuntimeStubs::StringsAreEquals(EcmaString *str1, EcmaString *str2)
+{
+    return EcmaString::StringsAreEqualSameUtfEncoding(str1, str2);
+}
+
+bool RuntimeStubs::BigIntEquals(JSTaggedType left, JSTaggedType right)
+{
+    return BigInt::Equal(JSTaggedValue(left), JSTaggedValue(right));
 }
 
 void RuntimeStubs::Initialize(JSThread *thread)

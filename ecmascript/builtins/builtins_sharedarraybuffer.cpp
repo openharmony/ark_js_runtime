@@ -53,7 +53,7 @@ JSTaggedValue BuiltinsSharedArrayBuffer::SharedArrayBufferConstructor(EcmaRuntim
 JSTaggedValue BuiltinsSharedArrayBuffer::IsSharedArrayBuffer(EcmaRuntimeCallInfo *argv)
 {
     ASSERT(argv);
-    BUILTINS_API_TRACE(thread, SharedArrayBuffer, IsSharedArrayBuffer);
+    BUILTINS_API_TRACE(argv->GetThread(), SharedArrayBuffer, IsSharedArrayBuffer);
     [[maybe_unused]] EcmaHandleScope handleScope(argv->GetThread());
     JSHandle<JSTaggedValue> arg = GetCallArg(argv, 0);
     // 1. If Type(arg) is not Object,and it not has an [[ArrayBufferData]] internal slot return false.
