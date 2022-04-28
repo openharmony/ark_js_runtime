@@ -271,7 +271,8 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(LdBigInt)                           \
     V(NewLexicalEnvWithNameDyn)           \
     V(GetAotUnmapedArgs)                  \
-    V(NotifyBytecodePcChanged)
+    V(NotifyBytecodePcChanged)            \
+    V(DefineGeneratorFuncWithMethodId)
 
 #define RUNTIME_STUB_LIST(V)                 \
     RUNTIME_STUB_WITHOUT_GC_LIST(V)          \

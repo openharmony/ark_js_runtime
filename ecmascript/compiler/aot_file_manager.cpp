@@ -76,8 +76,11 @@ void AotFileManager::CollectAOTCodeInfo()
     aotInfo_.SetStackMapSize(assembler_.GetStackMapsSize());
     aotInfo_.SetCodeSize(assembler_.GetCodeSize());
     aotInfo_.SetCodePtr(reinterpret_cast<uintptr_t>(assembler_.GetCodeBuffer()));
+
+#ifndef NDEBUG
     const CompilerLog *log = GetLog();
     assembler_.Disassemble(addr2name, *log);
+#endif
 }
 
 void AotFileManager::RunAsmAssembler()
