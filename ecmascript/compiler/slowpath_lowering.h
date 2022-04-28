@@ -156,7 +156,7 @@ private:
     void LowerCallArg1Dyn(GateRef gate, GateRef glue);
     void LowerCallArgs2Dyn(GateRef gate, GateRef glue);
     void LowerCallArgs3Dyn(GateRef gate, GateRef glue);
-    void LowerCallIThisRangeDyn(GateRef gate, GateRef glue, GateRef thisObj);
+    void LowerCallIThisRangeDyn(GateRef gate, GateRef glue);
     void LowerCallSpreadDyn(GateRef gate, GateRef glue);
     void LowerCallIRangeDyn(GateRef gate, GateRef glue);
     void LowerNewObjSpreadDyn(GateRef gate, GateRef glue);

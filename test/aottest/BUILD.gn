@@ -17,6 +17,8 @@ group("ark_aot_test") {
     "add:addAction",
     "and:andAction",
     "ashr:ashrAction",
+    "createemptyarray:createemptyarrayAction",
+    "createemptyobject:createemptyobjectAction",
     "definefunc:definefuncAction",
     "exp:expAction",
     "helloaot:helloaotAction",
