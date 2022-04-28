@@ -256,15 +256,16 @@ void Heap::CollectGarbage(TriggerGCType gcType)
                                              << " global limit" << globalSpaceAllocLimit_;
     switch (gcType) {
         case TriggerGCType::YOUNG_GC:
-            // FIXME: Add comments.
+            // Use partial GC for young generation.
             if (!concurrentMarkingEnabled_) {
                 SetMarkType(MarkType::MARK_YOUNG);
             }
             partialGC_->RunPhases();
             break;
         case TriggerGCType::OLD_GC:
-            // FIXME: Add comments.
             if (concurrentMarkingEnabled_ && markType_ == MarkType::MARK_YOUNG) {
+                // Wait for existing concurrent marking tasks to be finished (if any),
+                // and reset concurrent marker's status for full mark.
                 bool concurrentMark = CheckConcurrentMark();
                 if (concurrentMark) {
                     GetConcurrentMarker()->Reset();

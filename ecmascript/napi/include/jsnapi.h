@@ -910,7 +910,7 @@ private:
 class PUBLIC_API JSNApi {
 public:
     // JSVM
-    // FIXME: Rename SEMI_GC to YOUNG_GC
+    // fixme: Rename SEMI_GC to YOUNG_GC
     enum class PUBLIC_API TRIGGER_GC_TYPE : uint8_t { SEMI_GC, OLD_GC, FULL_GC };
     static EcmaVM *CreateJSVM(const RuntimeOption &option);
     static void DestroyJSVM(EcmaVM *ecmaVm);
@@ -927,7 +927,7 @@ public:
     static void ExecutePendingJob(const EcmaVM *vm);
 
     // Memory
-    // FIXME: Rename SEMI_GC to YOUNG_GC
+    // fixme: Rename SEMI_GC to YOUNG_GC
     static void TriggerGC(const EcmaVM *vm, TRIGGER_GC_TYPE gcType = TRIGGER_GC_TYPE::SEMI_GC);
     // Exception
     static void ThrowException(const EcmaVM *vm, Local<JSValueRef> error);

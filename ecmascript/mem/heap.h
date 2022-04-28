@@ -58,7 +58,7 @@ public:
     void Prepare();
     void Resume(TriggerGCType gcType);
 
-    // FIXME: Rename NewSpace to YoungSpace.
+    // fixme: Rename NewSpace to YoungSpace.
     // This is the active young generation space that the new objects are allocated in
     // or copied into (from the other semi space) during semi space GC.
     SemiSpace *GetNewSpace() const
@@ -69,7 +69,7 @@ public:
     /*
      * Return the original active space where the objects are to be evacuated during semi space GC.
      * This should be invoked only in the evacuation phase of semi space GC.
-     * FIXME: Get rid of this interface or make it safe considering the above implicit limitation / requirement.
+     * fixme: Get rid of this interface or make it safe considering the above implicit limitation / requirement.
      */
     SemiSpace *GetFromSpaceDuringEvacuation() const
     {
