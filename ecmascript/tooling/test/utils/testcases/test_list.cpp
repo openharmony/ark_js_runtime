@@ -29,7 +29,7 @@ static void RegisterTests()
 {
     // Register testcases
     TestUtil::RegisterTest(panda_file::SourceLang::ECMASCRIPT, "JsExceptionTest", GetJsExceptionTest());
-    TestUtil::RegisterTest(panda_file::SourceLang::ECMASCRIPT, "JsSingleStepTest", GetJsSingleStepTest());
+    // TestUtil::RegisterTest(panda_file::SourceLang::ECMASCRIPT, "JsSingleStepTest", GetJsSingleStepTest())
     TestUtil::RegisterTest(panda_file::SourceLang::ECMASCRIPT, "JsBreakpointTest", GetJsBreakpointTest());
 }
 
