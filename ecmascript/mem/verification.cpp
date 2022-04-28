@@ -16,8 +16,8 @@
 #include "verification.h"
 
 #include "ecmascript/js_tagged_value-inl.h"
-#include "ecmascript/mem/object_xray-inl.h"
 #include "ecmascript/mem/slots.h"
+#include "ecmascript/mem/visitor.h"
 
 namespace panda::ecmascript {
 // Verify the object body

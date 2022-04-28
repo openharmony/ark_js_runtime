@@ -17,12 +17,12 @@
 #define ECMASCRIPT_OBJECT_OPERATOR_H
 
 #include "ecmascript/js_handle.h"
-#include "ecmascript/js_object.h"
 #include "ecmascript/property_attributes.h"
 #include "libpandabase/utils/bit_field.h"
 
 namespace panda::ecmascript {
 class PropertyDescriptor;
+class JSObject;
 
 enum class OperatorType : uint8_t {
     PROTOTYPE_CHAIN,

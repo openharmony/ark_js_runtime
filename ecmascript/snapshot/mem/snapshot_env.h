@@ -16,7 +16,7 @@
 #ifndef ECMASCRIPT_SNAPSHOT_MEM_SNAPSHOT_ENV_H
 #define ECMASCRIPT_SNAPSHOT_MEM_SNAPSHOT_ENV_H
 
-#include "ecmascript/mem/object_xray.h"
+#include "ecmascript/mem/visitor.h"
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript {

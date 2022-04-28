@@ -24,9 +24,9 @@
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mark_word.h"
 #include "ecmascript/mem/mem.h"
-#include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/slots.h"
 #include "ecmascript/mem/tlab_allocator.h"
+#include "ecmascript/mem/visitor.h"
 #include "ecmascript/mem/work_manager.h"
 
 #include "os/mutex.h"
