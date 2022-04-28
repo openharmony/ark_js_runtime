@@ -42,7 +42,7 @@ void JSPtHooks::Exception([[maybe_unused]] const JSPtLocation &location)
     backend_->NotifyPaused({}, EXCEPTION);
 }
 
-void JSPtHooks::SingleStep(const JSPtLocation &location)
+bool JSPtHooks::SingleStep(const JSPtLocation &location)
 {
     LOG(DEBUG, DEBUGGER) << "JSPtHooks: SingleStep => " << location.GetBytecodeOffset();
 
@@ -51,13 +51,15 @@ void JSPtHooks::SingleStep(const JSPtLocation &location)
         firstTime_ = false;
 
         backend_->NotifyPaused({}, BREAK_ON_START);
-        return;
+        return true;
     }
 
     // pause or step complete
     if (backend_->StepComplete(location)) {
         backend_->NotifyPaused({}, OTHER);
+        return true;
     }
+    return false;
 }
 
 void JSPtHooks::LoadModule(std::string_view pandaFileName)
