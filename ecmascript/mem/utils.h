@@ -25,7 +25,7 @@ public:
     static ARK_INLINE void Copy(void *dest, size_t destCount, void *src, size_t count)
     {
         switch (count) {
-#if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MAC)
+#if !defined(PANDA_TARGET_WINDOWS)
 #define COPY_BY_CONST(destCount, value)                              \
             case value:                                              \
                 if (memcpy_sp(dest, destCount, src, value) != EOK) { \
