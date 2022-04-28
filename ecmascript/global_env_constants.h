@@ -409,6 +409,12 @@ public:
         visitor(ecmascript::Root::ROOT_VM, ObjectSlot(ToUintPtr(BeginSlot())), ObjectSlot(ToUintPtr(EndSlot())));
     }
 
+    JSTaggedValue GetGlobalConstantObject(size_t index) const
+    {
+        ASSERT(static_cast<ConstantIndex>(index) < ConstantIndex::CONSTATNT_COUNT);
+        return constants_[index];
+    }
+
     static constexpr size_t SizeArch32 =
         JSTaggedValue::TaggedTypeSize() * static_cast<size_t>(ConstantIndex::CONSTATNT_COUNT);
     static constexpr size_t SizeArch64 =
