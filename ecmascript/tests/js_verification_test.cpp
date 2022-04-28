@@ -66,7 +66,7 @@ HWTEST_F_L0(JSVerificationTest, ContainObject)
 
     auto funcVerify = [](TaggedObject *object, [[maybe_unused]] Verification &v, const Heap *heap) {
         EXPECT_TRUE(heap->ContainObject(object));
-        EXPECT_TRUE(heap->IsLive(object));
+        EXPECT_TRUE(heap->IsAlive(object));
     };
 
     // new space object

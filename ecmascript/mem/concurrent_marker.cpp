@@ -112,7 +112,6 @@ void ConcurrentMarker::Reset(bool isRevertCSet)
     }
 }
 
-// -------------------- privete method ------------------------------------------
 void ConcurrentMarker::InitializeMarking()
 {
     MEM_ALLOCATE_AND_GC_TRACE(vm_, ConcurrentMarkingInitialize);
