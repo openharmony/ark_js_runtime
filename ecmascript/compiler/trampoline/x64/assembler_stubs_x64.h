@@ -15,12 +15,26 @@
 
 #ifndef ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H
 #define ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H
+
 #include "ecmascript/compiler/assembler/assembler_x64.h"
+#include "ecmascript/compiler/assembler/extended_assembler_x64.h"
 
 namespace panda::ecmascript::x64 {
-class AssemblerModuleX64 {
+class AssemblerStubsX64 {
 public:
-    static void CallRuntime(AssemblerX64 *assembler);
+    static void CallRuntime(ExtendedAssemblerX64 *assembler);
+
+    static void JSFunctionEntry(ExtendedAssemblerX64 *assembler);
+
+    static void OptimizedCallOptimized(ExtendedAssemblerX64 *assembler);
+
+    static void CallNativeTrampoline(ExtendedAssemblerX64 *assembler);
+
+    static void JSCallWithArgv(ExtendedAssemblerX64 *assembler);
+
+    static void JSCall(ExtendedAssemblerX64 *assembler);
+
+    static void CallRuntimeWithArgv(ExtendedAssemblerX64 *assembler);
 };
 }  // namespace panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H

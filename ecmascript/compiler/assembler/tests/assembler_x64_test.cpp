@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,6 +18,9 @@
 #include "ecmascript/compiler/assembler/assembler_x64.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/dyn_chunk.h"
+#include "ecmascript/compiler/llvm_codegen.h"
+#include "ecmascript/compiler/trampoline/x64/assembler_stubs_x64.h"
+#include "ecmascript/compiler/assembler/extended_assembler_x64.h"
 
 namespace panda::test {
 using namespace panda::ecmascript;
@@ -62,7 +65,6 @@ HWTEST_F_L0(AssemblerTest, Emit)
     __ Pushq(rbp);
     uint32_t value = masm.GetU8(current++);
     ASSERT_EQ(value, 0x55U);
-
     __ Pushq(0);
     value = masm.GetU8(current++);
     ASSERT_EQ(value, 0x6AU);
@@ -98,6 +100,8 @@ HWTEST_F_L0(AssemblerTest, Emit)
     __ Ret();
     value = masm.GetU8(current++);
     ASSERT_EQ(value, 0xC3U);
+
+    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
 
 HWTEST_F_L0(AssemblerTest, Emit1)
@@ -177,6 +181,8 @@ HWTEST_F_L0(AssemblerTest, Emit1)
     ASSERT_EQ(value, 0x89U);
     value = masm.GetU8(current++);
     ASSERT_EQ(value, 0xE0U);
+
+    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
 
 HWTEST_F_L0(AssemblerTest, Emit2)
@@ -237,6 +243,7 @@ HWTEST_F_L0(AssemblerTest, Emit2)
     ASSERT_EQ(value, 0xE0U);
     value = masm.GetU8(current++);
     ASSERT_EQ(value, 0x08U);
+    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
 
 HWTEST_F_L0(AssemblerTest, Emit3)
@@ -247,13 +254,14 @@ HWTEST_F_L0(AssemblerTest, Emit3)
     // cmovbe  %ebx, %ecx
     __ CMovbe(rbx, rcx);
     uint32_t value = masm.GetU8(current++);
+
     ASSERT_EQ(value, 0x0FU);
     value = masm.GetU8(current++);
     ASSERT_EQ(value, 0x46U);
     value = masm.GetU8(current++);
     ASSERT_EQ(value, 0xCBU);
 
-    // testb   $0x1,%r10b
+    // testb   $0x1, %r14b
     __ Testb(0x1, r14);
     value = masm.GetU8(current++);
     ASSERT_EQ(value, 0x41U);
@@ -313,6 +321,7 @@ HWTEST_F_L0(AssemblerTest, Emit3)
     ASSERT_EQ(value, 0x21U);
     value = masm.GetU8(current++);
     ASSERT_EQ(value, 0xC2U);
+    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
 
 HWTEST_F_L0(AssemblerTest, Emit4)
@@ -378,6 +387,56 @@ HWTEST_F_L0(AssemblerTest, Emit4)
     __ Int3();
     value = masm.GetU8(current++);
     ASSERT_EQ(value, 0xCCU);
+    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
+
+HWTEST_F_L0(AssemblerTest, JSFunctionEntry)
+{
+    x64::AssemblerX64 masm(chunk_);
+    x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
+    x64::AssemblerStubsX64::JSFunctionEntry(assemblerX64);
+    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
+}
+
+HWTEST_F_L0(AssemblerTest, OptimizedCallOptimized)
+{
+    x64::AssemblerX64 masm(chunk_);
+    x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
+    x64::AssemblerStubsX64::OptimizedCallOptimized(assemblerX64);
+    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
+}
+
+HWTEST_F_L0(AssemblerTest, CallNativeTrampoline)
+{
+    x64::AssemblerX64 masm(chunk_);
+    x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
+    x64::AssemblerStubsX64::CallNativeTrampoline(assemblerX64);
+    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
+}
+
+HWTEST_F_L0(AssemblerTest, JSCallWithArgv)
+{
+    x64::AssemblerX64 masm(chunk_);
+    x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
+    x64::AssemblerStubsX64::JSCallWithArgv(assemblerX64);
+    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
+}
+
+HWTEST_F_L0(AssemblerTest, JSCall)
+{
+    x64::AssemblerX64 masm(chunk_);
+    x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
+    x64::AssemblerStubsX64::JSCall(assemblerX64);
+    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
+}
+
+HWTEST_F_L0(AssemblerTest, CallRuntimeWithArgv)
+{
+    x64::AssemblerX64 masm(chunk_);
+    x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
+    x64::AssemblerStubsX64::CallRuntimeWithArgv(assemblerX64);
+    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
+}
+
 #undef __
 }  // namespace panda::test
