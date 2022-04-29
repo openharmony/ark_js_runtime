@@ -160,8 +160,8 @@ HWTEST_F_L0(TSTypeTest, ImportType)
 
     tsLoader->AddTypeTable(JSHandle<JSTaggedValue>(redirectImportTable), redirectImportFileHandle);
 
-    const int literalLength = 4;
-    const int unionLength = 2;
+    const uint32_t literalLength = 4;
+    const uint32_t unionLength = 2;
     CString fileName = "test.abc";
     JSHandle<EcmaString> fileNameHandle = factory->NewFromUtf8(fileName);
 
@@ -197,7 +197,7 @@ HWTEST_F_L0(TSTypeTest, ImportType)
     ASSERT_EQ(linkimportGT.GetGlobalTSTypeRef(), unionTypeGT.GetGlobalTSTypeRef());
     ASSERT_EQ(linkredirectImportGT.GetGlobalTSTypeRef(), unionTypeGT.GetGlobalTSTypeRef());
 
-    int length = tsLoader->GetUnionTypeLength(unionTypeGT);
+    uint32_t length = tsLoader->GetUnionTypeLength(unionTypeGT);
     ASSERT_EQ(length, unionLength);
 }
 

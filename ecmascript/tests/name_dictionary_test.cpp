@@ -133,7 +133,7 @@ HWTEST_F_L0(NameDictionaryTest, GrowCapacity)
     char keyArray[7] = "hello";
     for (int i = 0; i < 9; i++) {
         JSHandle<NameDictionary> tempHandle = dictHandle;
-        keyArray[5] = '1' + i;
+        keyArray[5] = '1' + static_cast<uint32_t>(i);
         keyArray[6] = 0;
 
         JSHandle<EcmaString> stringKey = thread->GetEcmaVM()->GetFactory()->NewFromASCII(keyArray);
@@ -164,7 +164,7 @@ HWTEST_F_L0(NameDictionaryTest, ShrinkCapacity)
 
     auto stringTable = thread->GetEcmaVM()->GetEcmaStringTable();
     for (int i = 0; i < 10; i++) {
-        keyArray[5] = '0' + i;
+        keyArray[5] = '0' + static_cast<uint32_t>(i);
         keyArray[6] = 0;
 
         JSHandle<JSTaggedValue> key(thread, stringTable->GetOrInternString(keyArray, utf::Mutf8Size(keyArray), true));
