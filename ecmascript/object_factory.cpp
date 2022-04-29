@@ -2189,7 +2189,6 @@ JSHandle<JSHClass> ObjectFactory::GetObjectLiteralHClass(const JSHandle<TaggedAr
         return CreateObjectClass(properties, length);
     }
     JSHandle<JSTaggedValue> maybeCache = env->GetObjectLiteralHClassCache();
-    ASSERT(length > 0);
     if (maybeCache->IsHole()) {
         JSHandle<TaggedArray> cacheArr = NewTaggedArray(HCLASS_CACHE_SIZE);
         env->SetObjectLiteralHClassCache(thread_, cacheArr.GetTaggedValue());
