@@ -1730,7 +1730,9 @@ void SlowPathLowering::LowerDefineGeneratorFunc(GateRef gate, GateRef glue, Gate
     builder_.Branch(builder_.FunctionIsResolved(*method), &isResolved, &notResolved);
     builder_.Bind(&isResolved);
     {
-        method = builder_.CallRuntime(glue, RTSTUB_ID(DefineGeneratorFunc), { *method }, true);
+        auto methodIdTagged = builder_.TaggedNGC(builder_.ZExtInt16ToInt64(methodId));
+        method = builder_.CallRuntime(glue,
+            RTSTUB_ID(DefineGeneratorFuncWithMethodId), {methodIdTagged});
         Label notException(&builder_);
         builder_.Branch(builder_.IsSpecial(*method, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &notException);
@@ -2793,10 +2795,12 @@ void SlowPathLowering::LowerGetResumeMode(GateRef gate)
     GateRef obj = acc_.GetValueIn(gate, 0);
     GateRef bitFieldOffset = builder_.IntPtr(JSGeneratorObject::BIT_FIELD_OFFSET);
     GateRef bitField = builder_.Load(VariableType::INT64(), obj, bitFieldOffset);
-    GateRef resumeMode = builder_.Int32And(
-        builder_.Int32LSR(builder_.TruncInt64ToInt32(bitField),
-                          builder_.Int32(JSGeneratorObject::ResumeModeBits::START_BIT)),
+    auto bitfieldlsr = builder_.Int32LSR(builder_.TruncInt64ToInt32(bitField),
+        builder_.Int32(JSGeneratorObject::ResumeModeBits::START_BIT));
+    GateRef resumeModeBits = builder_.Int32And(
+        bitfieldlsr,
         builder_.Int32((1LU << JSGeneratorObject::ResumeModeBits::SIZE) - 1));
+    auto resumeMode = builder_.ZExtInt32ToInt64(resumeModeBits);
     GateRef result = builder_.TaggedTypeNGC(resumeMode);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());

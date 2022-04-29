@@ -262,16 +262,17 @@ void LLVMAssembler::Disassemble(const std::map<uint64_t, std::string> &addr2name
         unsigned pc = 0;
         const char outStringSize = 100;
         char outString[outStringSize];
+        std::string methodName;
         while (numBytes > 0) {
             uint64_t addr = reinterpret_cast<uint64_t>(byteSp);
             if (addr2name.find(addr) != addr2name.end()) {
-                std::string methodName = addr2name.at(addr);
-                logFlag = log.IsAlwaysEnabled() ? true : log.IncludesMethod(methodName);
+                methodName = addr2name.at(addr);
                 if (logFlag) {
                     COMPILER_LOG(INFO) << "=======================================================================";
                     COMPILER_LOG(INFO) << methodName.c_str() << " disassemble:";
                 }
             }
+            logFlag = log.IsAlwaysEnabled() ? true : log.IncludesMethod(methodName);
 
             size_t InstSize = LLVMDisasmInstruction(dcr, byteSp, numBytes, pc, outString, outStringSize);
             if (InstSize == 0) {
