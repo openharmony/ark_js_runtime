@@ -913,8 +913,7 @@ DEF_RUNTIME_STUBS(SuspendGenerator)
 DEF_RUNTIME_STUBS(UpFrame)
 {
     RUNTIME_STUBS_HEADER(UpFrame);
-    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    InterpretedFrameHandler frameHandler(sp);
+    FrameHandler frameHandler(thread);
     uint32_t pcOffset = panda_file::INVALID_OFFSET;
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
         if (frameHandler.IsEntryFrame()) {
@@ -1344,7 +1343,7 @@ DEF_RUNTIME_STUBS(JumpToCInterpreter)
 DEF_RUNTIME_STUBS(NotifyBytecodePcChanged)
 {
     RUNTIME_STUBS_HEADER(NotifyBytecodePcChanged);
-    InterpretedFrameHandler frameHandler(thread);
+    FrameHandler frameHandler(thread);
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
         if (frameHandler.IsEntryFrame()) {
             continue;

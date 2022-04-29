@@ -118,8 +118,8 @@ private:
     JSPtExtractor *GenerateExtractor(const JSPandaFile *jsPandaFile);
     JSPtExtractor *GetExtractor(const JSPandaFile *jsPandaFile);
     JSPtExtractor *GetExtractor(const CString &url);
-    bool GenerateCallFrame(CallFrame *callFrame, const InterpretedFrameHandler *frameHandler, CallFrameId frameId);
-    std::unique_ptr<Scope> GetLocalScopeChain(const InterpretedFrameHandler *frameHandler,
+    bool GenerateCallFrame(CallFrame *callFrame, const FrameHandler *frameHandler, CallFrameId frameId);
+    std::unique_ptr<Scope> GetLocalScopeChain(const FrameHandler *frameHandler,
         std::unique_ptr<RemoteObject> *thisObj);
     std::unique_ptr<Scope> GetGlobalScopeChain();
     std::optional<CString> ConvertToLocal(Local<JSValueRef> &taggedValue, std::unique_ptr<RemoteObject> *result,

@@ -5030,16 +5030,15 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     SetCurrentSpFrame(glue, *newSp);                                                              \
     GateRef retValue = CallRuntime(glue, RTSTUB_ID(CallNative),                                   \
                                    {IntBuildTaggedTypeWithNoGC(actualNumArgs)});                  \
+    SetCurrentSpFrame(glue, sp);                                                                  \
     Label hasPendingException(env);                                                               \
     Label noPendingException(env);                                                                \
     Branch(TaggedIsException(retValue), &hasPendingException, &noPendingException);               \
     Bind(&hasPendingException);                                                                   \
     {                                                                                             \
-        SetCurrentSpFrame(glue, sp);  /* currentSp will be used in UpFrame, therefore use sp. */  \
         DISPATCH_LAST();                                                                          \
     }                                                                                             \
     Bind(&noPendingException);                                                                    \
-    SetCurrentSpFrame(glue, sp);                                                                  \
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), retValue);                                        \
     DISPATCH_WITH_ACC(format)
 

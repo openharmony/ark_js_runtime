@@ -660,7 +660,7 @@ JSTaggedValue SlowRuntimeStub::CreateObjectWithExcludedKeys(JSThread *thread, ui
     JSHandle<JSObject> obj(thread, objVal);
     uint32_t numExcludedKeys = 0;
     JSHandle<TaggedArray> excludedKeys = factory->NewTaggedArray(numKeys + 1);
-    InterpretedFrameHandler frameHandler(thread);
+    FrameHandler frameHandler(thread);
     JSTaggedValue excludedKey = frameHandler.GetVRegValue(firstArgRegIdx);
     if (!excludedKey.IsUndefined()) {
         numExcludedKeys = numKeys + 1;
@@ -1829,7 +1829,7 @@ JSTaggedValue SlowRuntimeStub::SuperCall(JSThread *thread, JSTaggedValue func, J
 {
     INTERPRETER_TRACE(thread, SuperCall);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    InterpretedFrameHandler frameHandler(thread);
+    FrameHandler frameHandler(thread);
 
     JSHandle<JSTaggedValue> funcHandle(thread, func);
     JSHandle<JSTaggedValue> newTargetHandle(thread, newTarget);
@@ -2007,7 +2007,7 @@ JSTaggedValue SlowRuntimeStub::ResolveClass(JSThread *thread, JSTaggedValue ctor
     JSHandle<JSTaggedValue> lexicalEnv(thread, lexenv);
     JSHandle<ConstantPool> constpoolHandle(thread, constpool);
 
-    InterpretedFrameHandler frameHandler(thread);
+    FrameHandler frameHandler(thread);
     JSTaggedValue currentFunc = frameHandler.GetFunction();
     JSHandle<JSTaggedValue> ecmaModule(thread, JSFunction::Cast(currentFunc.GetTaggedObject())->GetModule());
 
