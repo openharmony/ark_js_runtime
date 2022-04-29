@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
--97
-4.5
-97
+import("//ark/js_runtime/test/test_helper.gni")
+
+host_aot_test_action("trystglobalbynameprefid32") {
+  deps = []
+}

@@ -16,14 +16,18 @@
 //declare function print(str:string):string;
 declare function print(str:any):number;
 
-var num1:number = 99
-var num2:number = 2
-var res:number = num2 - num1
-print(res)
-var num3: number = 50
-var num4: number = 45.5
-print(num3 - num4)
+var num1:number = 99;
+var num2: number = 45.5
+var str1: string = "Runoob";
+var flag1 : any = false
 
-var num5:any = "99"
-var num6:any = "2"
-print(num5 - num6)
+const z1 = 4
+print(z1)
+const z2 = num1;
+print(z2)
+const z3 = num2
+print(z3)
+const z4 = str1;
+print(z4)
+const z5 = flag1
+print(z5)
