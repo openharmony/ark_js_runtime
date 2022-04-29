@@ -2361,7 +2361,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
                     Bind(&loadWithHandler);
                     GateRef result = LoadICWithHandler(glue, receiver, receiver, *cachedHandler);
                     Label notHole(env);
-                    Branch(TaggedIsHole(result), &slowPath, &notHole);
+                    Branch(TaggedIsHole(result), &tryFastPath, &notHole);
                     Bind(&notHole);
                     Label notException(env);
                     Branch(TaggedIsException(result), &isException, &notException);
@@ -2459,7 +2459,7 @@ DECLARE_ASM_HANDLER(HandleStObjByValuePrefV8V8)
                     Bind(&loadWithHandler);
                     GateRef result = StoreICWithHandler(glue, receiver, receiver, acc, *cachedHandler); // acc is value
                     Label notHole(env);
-                    Branch(TaggedIsHole(result), &slowPath, &notHole);
+                    Branch(TaggedIsHole(result), &tryFastPath, &notHole);
                     Bind(&notHole);
                     Branch(TaggedIsException(result), &isException, &notException);
                 }
@@ -3566,7 +3566,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
                 Bind(&tryPoly);
                 {
                     cachedHandler = CheckPolyHClass(firstValue, hclass);
-                    Branch(TaggedIsHole(*cachedHandler), &slowPath, &loadWithHandler);
+                    Branch(TaggedIsHole(*cachedHandler), &tryFastPath, &loadWithHandler);
                 }
 
                 Bind(&loadWithHandler);
@@ -3656,7 +3656,7 @@ DECLARE_ASM_HANDLER(HandleStObjByNamePrefId32V8)
                 Bind(&tryPoly);
                 {
                     cachedHandler = CheckPolyHClass(firstValue, hclass);
-                    Branch(TaggedIsHole(*cachedHandler), &slowPath, &storeWithHandler);
+                    Branch(TaggedIsHole(*cachedHandler), &tryFastPath, &storeWithHandler);
                 }
                 Bind(&storeWithHandler);
                 {
