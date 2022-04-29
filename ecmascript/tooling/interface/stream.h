@@ -28,6 +28,7 @@ public:
 
     // Writes the chunk of data into the stream
     virtual bool WriteChunk(char* data, int size) = 0;
+    virtual bool Good() = 0;
 };
 }  // namespace panda::ecmascript
 
