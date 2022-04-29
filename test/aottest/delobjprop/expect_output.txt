@@ -11,8 +11,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-2
-2.1
-1.2000000000000002
+undefined
 helloworld
-hello1
