@@ -18,12 +18,11 @@
 
 #include <cstdint>
 
-#include "ecmascript/mem/object_xray.h"
+#include "ecmascript/mem/visitor.h"
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript {
 // Forward Declaration
-class ObjectFactory;
 template<typename T>
 class JSHandle;
 class JSHClass;

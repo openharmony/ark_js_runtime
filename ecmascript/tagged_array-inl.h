@@ -18,6 +18,7 @@
 
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/js_thread.h"
+#include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
 
 namespace panda::ecmascript {
