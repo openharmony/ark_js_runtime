@@ -705,11 +705,9 @@ JSHandle<JSObject> ObjectFactory::NewJSError(const ErrorType &errorType, const J
     }
 
     // current frame may be entry frame, in this case sp = the prev frame (interpreter frame).
-    JSTaggedType *sp = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
-    if (FrameHandler(sp).GetFrameType() == FrameType::INTERPRETER_ENTRY_FRAME) {
-        InterpretedFrameHandler frameHandler(sp);
-        frameHandler.PrevInterpretedFrame();
-        thread_->SetCurrentSPFrame(frameHandler.GetSp());
+    FrameHandler frameHandler(thread_);
+    if (frameHandler.IsInterpretedEntryFrame()) {
+        thread_->SetCurrentSPFrame(frameHandler.GetPrevInterpretedFrame());
     }
 
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();

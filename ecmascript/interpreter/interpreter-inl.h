@@ -726,7 +726,7 @@ void EcmaInterpreter::ResumeContext(JSThread *thread)
 
 void EcmaInterpreter::NotifyBytecodePcChanged(JSThread *thread)
 {
-    InterpretedFrameHandler frameHandler(thread);
+    FrameHandler frameHandler(thread);
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
         if (frameHandler.IsEntryFrame()) {
             continue;
@@ -993,11 +993,11 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call.";
             JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
                 const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);
+            thread->SetCurrentSPFrame(sp);
             if (UNLIKELY(thread->HasPendingException())) {
                 INTERPRETER_GOTO_EXCEPTION_HANDLER();
             }
             LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call.";
-            thread->SetCurrentSPFrame(sp);
             SET_ACC(retValue);
             INTERPRETER_HANDLE_RETURN();
         }
@@ -2056,15 +2056,15 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 state->sp = newSp;
                 state->function = ctor;
                 thread->SetCurrentSPFrame(newSp);
+
                 LOG(DEBUG, INTERPRETER) << "Entry: Runtime New.";
                 JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
                     const_cast<void *>(ctorMethod->GetNativePointer()))(&ecmaRuntimeCallInfo);
-
+                thread->SetCurrentSPFrame(sp);
                 if (UNLIKELY(thread->HasPendingException())) {
                     INTERPRETER_GOTO_EXCEPTION_HANDLER();
                 }
                 LOG(DEBUG, INTERPRETER) << "Exit: Runtime New.";
-                thread->SetCurrentSPFrame(sp);
                 SET_ACC(retValue);
                 DISPATCH(BytecodeInstruction::Format::PREF_IMM16_V8);
             }
@@ -3641,8 +3641,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         DISPATCH(BytecodeInstruction::Format::PREF_NONE);
     }
     HANDLE_OPCODE(EXCEPTION_HANDLER) {
-        auto exception = thread->GetException();
-        InterpretedFrameHandler frameHandler(sp);
+        FrameHandler frameHandler(thread);
         uint32_t pcOffset = panda_file::INVALID_OFFSET;
         for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
             if (frameHandler.IsEntryFrame()) {
@@ -3662,6 +3661,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             return;
         }
 
+        auto exception = thread->GetException();
         SET_ACC(exception);
         thread->ClearException();
         thread->SetCurrentSPFrame(sp);
@@ -3736,21 +3736,22 @@ uint32_t EcmaInterpreter::GetNumArgs(JSTaggedType *sp, uint32_t restIdx, uint32_
     InterpretedFrame *state = reinterpret_cast<InterpretedFrame *>(sp) - 1;
     JSMethod *method = JSFunction::Cast(state->function.GetTaggedObject())->GetMethod();
     ASSERT(method->HaveExtraWithCallField());
+
     uint32_t numVregs = method->GetNumVregsWithCallField();
     bool haveFunc = method->HaveFuncWithCallField();
     bool haveNewTarget = method->HaveNewTargetWithCallField();
     bool haveThis = method->HaveThisWithCallField();
     uint32_t copyArgs = haveFunc + haveNewTarget + haveThis;
     uint32_t numArgs = method->GetNumArgsWithCallField();
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
     JSTaggedType *lastFrame = state->base.prev;
     // The prev frame of InterpretedFrame may entry frame or interpreter frame.
-    if (FrameHandler(state->base.prev).GetFrameType() == FrameType::INTERPRETER_ENTRY_FRAME) {
-        int32_t argc = InterpretedEntryFrameHandler(state->base.prev).GetArgsNumber();
-        lastFrame = lastFrame - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - argc - RESERVED_CALL_ARGCOUNT;
+    if (FrameHandler::GetFrameType(state->base.prev) == FrameType::INTERPRETER_ENTRY_FRAME) {
+        lastFrame = FrameHandler::GetInterpretedEntryFrameStart(state->base.prev);
     } else {
         lastFrame = lastFrame - INTERPRETER_FRAME_STATE_SIZE;
     }
+
     if (static_cast<uint32_t>(lastFrame - sp) > numVregs + copyArgs + numArgs) {
         // In this case, actualNumArgs is in the end
         // If not, then actualNumArgs == declaredNumArgs, therefore do nothing

@@ -239,7 +239,6 @@
 #include "ecmascript/base/aligned_struct.h"
 
 namespace panda::ecmascript {
-class JSThread;
 enum class FrameType: uintptr_t {
     OPTIMIZED_FRAME = 0,
     OPTIMIZED_ENTRY_FRAME = 1,
@@ -288,7 +287,7 @@ public:
     };
     static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
 
-    static OptimizedFrame* GetFrameFromSp(JSTaggedType *sp)
+    static OptimizedFrame* GetFrameFromSp(const JSTaggedType *sp)
     {
         return reinterpret_cast<OptimizedFrame *>(reinterpret_cast<uintptr_t>(sp)
             - MEMBER_OFFSET(OptimizedFrame, prevFp));
@@ -327,7 +326,7 @@ public:
         return preLeaveFrameFp;
     }
 
-    static OptimizedEntryFrame* GetFrameFromSp(JSTaggedType *sp)
+    static OptimizedEntryFrame* GetFrameFromSp(const JSTaggedType *sp)
     {
         return reinterpret_cast<OptimizedEntryFrame *>(reinterpret_cast<uintptr_t>(sp) -
             MEMBER_OFFSET(OptimizedEntryFrame, prevFp));
@@ -374,9 +373,9 @@ struct InterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSi
         return base.prev;
     }
 
-    static InterpretedFrame* GetFrameFromSp(JSTaggedType *sp)
+    static InterpretedFrame* GetFrameFromSp(const JSTaggedType *sp)
     {
-        return reinterpret_cast<InterpretedFrame *>(sp) - 1;
+        return reinterpret_cast<InterpretedFrame *>(const_cast<JSTaggedType *>(sp)) - 1;
     }
 
     alignas(EAS) JSTaggedValue constpool {JSTaggedValue::Hole()};
@@ -415,9 +414,9 @@ struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTyp
         return base.prev;
     }
 
-    static AsmInterpretedFrame* GetFrameFromSp(JSTaggedType *sp)
+    static AsmInterpretedFrame* GetFrameFromSp(const JSTaggedType *sp)
     {
-        return reinterpret_cast<AsmInterpretedFrame *>(sp) - 1;
+        return reinterpret_cast<AsmInterpretedFrame *>(const_cast<JSTaggedType *>(sp)) - 1;
     }
 
     static size_t GetCallSizeOffset(bool isArch32)
@@ -493,9 +492,9 @@ struct InterpretedEntryFrame : public base::AlignedStruct<JSTaggedValue::TaggedT
         return base.prev;
     }
 
-    static InterpretedEntryFrame* GetFrameFromSp(JSTaggedType *sp)
+    static InterpretedEntryFrame* GetFrameFromSp(const JSTaggedType *sp)
     {
-        return reinterpret_cast<InterpretedEntryFrame *>(sp) - 1;
+        return reinterpret_cast<InterpretedEntryFrame *>(const_cast<JSTaggedType *>(sp)) - 1;
     }
 
     alignas(EAS) const uint8_t *pc {nullptr};
@@ -514,7 +513,7 @@ struct OptimizedLeaveFrame {
 #endif
     uint64_t argc;
     // argv[0]...argv[argc-1] dynamic according to agc
-    static OptimizedLeaveFrame* GetFrameFromSp(JSTaggedType *sp)
+    static OptimizedLeaveFrame* GetFrameFromSp(const JSTaggedType *sp)
     {
         return reinterpret_cast<OptimizedLeaveFrame *>(reinterpret_cast<uintptr_t>(sp) -
             MEMBER_OFFSET(OptimizedLeaveFrame, callsiteFp));
@@ -538,7 +537,7 @@ struct OptimizedWithArgvLeaveFrame {
 #endif
     uint64_t argc;
     // uintptr_t argv[]
-    static OptimizedWithArgvLeaveFrame* GetFrameFromSp(JSTaggedType *sp)
+    static OptimizedWithArgvLeaveFrame* GetFrameFromSp(const JSTaggedType *sp)
     {
         return reinterpret_cast<OptimizedWithArgvLeaveFrame *>(reinterpret_cast<uintptr_t>(sp) -
             MEMBER_OFFSET(OptimizedWithArgvLeaveFrame, callsiteFp));

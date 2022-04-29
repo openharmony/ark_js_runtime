@@ -107,7 +107,7 @@ JSTaggedValue InvokeCache::Construct(JSThread *thread, JSTaggedValue firstValue,
     EcmaRuntimeCallInfo info =
         EcmaInterpreter::NewRuntimeCallInfo(thread, JSHandle<JSTaggedValue>(constructor), JSHandle<JSTaggedValue>(obj),
         JSHandle<JSTaggedValue>(newTgt), length);
-    InterpretedFrameHandler frameHandler(thread);
+    FrameHandler frameHandler(thread);
     for (size_t i = 0; i < length; i++) {
         info.SetCallArg(i, frameHandler.GetVRegValue(firstArgIdx + i));
     }

@@ -82,12 +82,14 @@ void JSThread::ClearException()
 
 JSTaggedValue JSThread::GetCurrentLexenv() const
 {
-    return InterpretedFrameHandler(glueData_.currentFrame_).GetEnv();
+    FrameHandler frameHandler(this);
+    return frameHandler.GetEnv();
 }
 
 void JSThread::SetCurrentLexenv(JSTaggedValue env)
 {
-    InterpretedFrameHandler(glueData_.currentFrame_).SetEnv(env);
+    FrameHandler frameHandler(this);
+    frameHandler.SetEnv(env);
 }
 
 void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
@@ -105,8 +107,8 @@ void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
     // visit global Constant
     glueData_.globalConst_.VisitRangeSlot(v1);
     // visit stack roots
-    FrameIterator iterator(glueData_.currentFrame_, this);
-    iterator.Iterate(v0, v1);
+    FrameHandler frameHandler(this);
+    frameHandler.Iterate(v0, v1);
     // visit tagged handle storage roots
     if (currentHandleStorageIndex_ != -1) {
         int32_t nid = currentHandleStorageIndex_;

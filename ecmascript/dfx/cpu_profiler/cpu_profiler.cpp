@@ -181,8 +181,7 @@ void CpuProfiler::GetFrameStack(JSThread *thread)
     staticFrameStack_.clear();
     ProfileGenerator::staticGcState_ = thread->GetGcState();
     if (!ProfileGenerator::staticGcState_) {
-        JSTaggedType *sp_ = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-        InterpretedFrameHandler frameHandler(sp_);
+        FrameHandler frameHandler(thread);
         for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
             if (frameHandler.IsEntryFrame()) {
                 continue;
@@ -196,7 +195,7 @@ void CpuProfiler::GetFrameStack(JSThread *thread)
     }
 }
 
-void CpuProfiler::ParseMethodInfo(JSMethod *method, InterpretedFrameHandler frameHandler)
+void CpuProfiler::ParseMethodInfo(JSMethod *method, FrameHandler frameHandler)
 {
     struct StackInfo codeEntry;
     if (method != nullptr && method->IsNativeWithCallField()) {
