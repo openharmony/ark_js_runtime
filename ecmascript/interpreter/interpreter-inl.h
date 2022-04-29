@@ -67,17 +67,17 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
 #define GOTO_NEXT()  // NOLINT(clang-diagnostic-gnu-label-as-value, cppcoreguidelines-macro-usage)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DISPATCH(format)                                       \
-    do {                                                       \
-        ADVANCE_PC(BytecodeInstruction::Size(format))          \
-        opcode = READ_INST_OP(); goto * dispatchTable[opcode]; \
+#define DISPATCH(format)                                          \
+    do {                                                          \
+        ADVANCE_PC(BytecodeInstruction::Size(format))             \
+        opcode = READ_INST_OP(); goto * (*dispatchTable)[opcode]; \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DISPATCH_OFFSET(offset)                                \
-    do {                                                       \
-        ADVANCE_PC(offset)                                     \
-        opcode = READ_INST_OP(); goto * dispatchTable[opcode]; \
+#define DISPATCH_OFFSET(offset)                                   \
+    do {                                                          \
+        ADVANCE_PC(offset)                                        \
+        opcode = READ_INST_OP(); goto * (*dispatchTable)[opcode]; \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -108,7 +108,7 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
 #define INTERPRETER_GOTO_EXCEPTION_HANDLER()          \
     do {                                              \
         SAVE_PC();                                    \
-        goto *dispatchTable[EcmaOpcode::LAST_OPCODE]; \
+        goto *(*dispatchTable)[EcmaOpcode::LAST_OPCODE]; \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -121,7 +121,7 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CHECK_SWITCH_TO_DEBUGGER_TABLE()    \
     if (ecmaVm->GetJsDebuggerManager()->IsDebugMode()) { \
-        dispatchTable = debugDispatchTable; \
+        dispatchTable = &debugDispatchTable; \
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -764,9 +764,9 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 #include "templates/debugger_instruction_dispatch.inl"
     };
 
-    std::array<const void *, numOps> dispatchTable = instDispatchTable;
+    std::array<const void *, numOps> *dispatchTable = &instDispatchTable;
     CHECK_SWITCH_TO_DEBUGGER_TABLE();
-    goto *dispatchTable[opcode];
+    goto *(*dispatchTable)[opcode];
 
     HANDLE_OPCODE(HANDLE_MOV_V4_V4) {
         uint16_t vdst = READ_INST_4_0();
