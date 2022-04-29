@@ -478,7 +478,7 @@ bool ObjectOperator::WriteDataProperty(const JSHandle<JSObject> &receiver, const
     } else {
         if (IsAccessorDescriptor() && !IsElement()) {
             TaggedArray *properties = TaggedArray::Cast(receiver->GetProperties().GetTaggedObject());
-            if (!properties->IsDictionaryMode()) {
+            if (attrChanged && !properties->IsDictionaryMode()) {
                 // as some accessorData is in globalEnv, we need to new accessorData.
                 JSHandle<AccessorData> accessor = thread_->GetEcmaVM()->GetFactory()->NewAccessorData();
 

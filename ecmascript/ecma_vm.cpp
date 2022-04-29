@@ -131,6 +131,7 @@ void EcmaVM::TryLoadSnapshotFile()
 
 bool EcmaVM::Initialize()
 {
+    LOG(INFO, RUNTIME) << "EcmaVM Initialize";
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "EcmaVM::Initialize");
     Taskpool::GetCurrentTaskpool()->Initialize();
 #ifndef PANDA_TARGET_WINDOWS
@@ -213,17 +214,20 @@ void EcmaVM::InitializeEcmaScriptRunStat()
 
 void EcmaVM::SetRuntimeStatEnable(bool flag)
 {
+    static uint64_t start = 0;
     if (flag) {
+        start = PandaRuntimeTimer::Now();
         if (runtimeStat_ == nullptr) {
             InitializeEcmaScriptRunStat();
         }
     } else {
-        if (runtimeStatEnabled_) {
+        LOG(INFO, RUNTIME) << "Runtime State duration:" << PandaRuntimeTimer::Now() - start << "(ns)";
+        if (runtimeStat_->IsRuntimeStatEnabled()) {
             runtimeStat_->Print();
             runtimeStat_->ResetAllCount();
         }
     }
-    runtimeStatEnabled_ = flag;
+    runtimeStat_->SetRuntimeStatEnabled(flag);
 }
 
 bool EcmaVM::InitializeFinish()
@@ -238,7 +242,7 @@ EcmaVM::~EcmaVM()
     Taskpool::GetCurrentTaskpool()->Destroy();
     ClearNativeMethodsData();
 
-    if (runtimeStat_ != nullptr && runtimeStatEnabled_) {
+    if (runtimeStat_ != nullptr && runtimeStat_->IsRuntimeStatEnabled()) {
         runtimeStat_->Print();
     }
 
