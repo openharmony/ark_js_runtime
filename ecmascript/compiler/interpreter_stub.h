@@ -104,10 +104,11 @@ private:
     void DispatchBase(GateRef bcOffset, const CallSignature *signature, GateRef glue, Args... args);
 };
 
-#define DECLARE_HANDLE_STUB_CLASS(name, argc)                                                   \
+#define DECLARE_HANDLE_STUB_CLASS(name)                                                         \
     class name##Stub : public InterpreterStub {                                                 \
     public:                                                                                     \
-        explicit name##Stub(Circuit *circuit) : InterpreterStub(#name, argc, circuit)           \
+        explicit name##Stub(Circuit *circuit) : InterpreterStub(#name,                          \
+            static_cast<int>(InterpreterHandlerInputs::NUM_OF_INPUTS), circuit)                 \
         {                                                                                       \
             circuit->SetFrameType(FrameType::INTERPRETER_FRAME);                                \
         }                                                                                       \
@@ -121,10 +122,7 @@ private:
                                  GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter); \
     };
     INTERPRETER_BC_STUB_LIST(DECLARE_HANDLE_STUB_CLASS)
-    DECLARE_HANDLE_STUB_CLASS(SingleStepDebugging, 7)
-    DECLARE_HANDLE_STUB_CLASS(HandleOverflow, 7)
-    DECLARE_HANDLE_STUB_CLASS(BCDebuggerEntry, 7)
-    DECLARE_HANDLE_STUB_CLASS(BCDebuggerExceptionEntry, 7)
+    ASM_INTERPRETER_BC_HELPER_STUB_LIST(DECLARE_HANDLE_STUB_CLASS)
 #undef DECLARE_HANDLE_STUB_CLASS
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_INTERPRETER_STUB_H
