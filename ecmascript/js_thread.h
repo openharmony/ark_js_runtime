@@ -26,7 +26,7 @@
 #include "ecmascript/ecma_global_storage.h"
 #include "ecmascript/frames.h"
 #include "ecmascript/global_env_constants.h"
-#include "ecmascript/mem/object_xray.h"
+#include "ecmascript/mem/visitor.h"
 
 namespace panda::ecmascript {
 class EcmaHandleScope;

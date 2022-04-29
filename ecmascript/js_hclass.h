@@ -21,8 +21,8 @@
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/property_attributes.h"
 #include "ecmascript/mem/barriers.h"
-#include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/slots.h"
+#include "ecmascript/mem/visitor.h"
 #include "utils/bit_field.h"
 
 /*

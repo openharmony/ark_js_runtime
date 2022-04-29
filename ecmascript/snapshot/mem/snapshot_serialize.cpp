@@ -80,8 +80,8 @@
 #include "ecmascript/jspandafile/js_pandafile.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/heap_region_allocator.h"
-#include "ecmascript/mem/object_xray-inl.h"
 #include "ecmascript/mem/space-inl.h"
+#include "ecmascript/mem/visitor.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/snapshot/mem/snapshot_env.h"
 
