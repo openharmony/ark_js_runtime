@@ -14,12 +14,12 @@
  */
 
 declare function print(arg:any):string;
-print(1 + 1);
 
-print(1 + 1.1);
+let num1:number = 2;
+print(--num1);
 
-print(0.1 + 1.1)
+let num2:number = 2.1;
+print(--num2);
 
-print("hello" + "world");
-
-print("hello" + 1);
+let str:any = "a";
+print(--str);

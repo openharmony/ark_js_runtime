@@ -208,6 +208,7 @@ JSFunctionEntry:
 
 OptimizedCallOptimized:
     pushq   %rbp
+    movq    %rsp, %rbp     // set frame pointer
     pushq   $OPTIMIZE_FRAME_TYPE
     //callee save
     pushq   %r14
@@ -554,6 +555,7 @@ JSCall:
 .LJSBoundFunction:
     // construct frame
     pushq   %rbp
+    movq    %rsp, %rbp     // set frame pointer
     pushq   $OPTIMIZE_FRAME_TYPE                // set frame type
     
     // callee save

@@ -33,6 +33,8 @@
 #include "ecmascript/jspandafile/scope_info_extractor.h"
 
 namespace panda::ecmascript {
+static constexpr size_t FIXED_NUM_ARGS = 3;
+
 JSTaggedValue RuntimeStubs::RuntimeIncDyn(JSThread *thread, const JSHandle<JSTaggedValue> &value)
 {
     JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, value.GetTaggedValue());
@@ -1068,9 +1070,9 @@ JSTaggedValue RuntimeStubs::RuntimeAdd2Dyn(JSThread *thread, const JSHandle<JSTa
         }
         return RuntimeThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
-    double a0Double = valLeft->GetNumber();
-    double a1Double = valRight->GetNumber();
-    return JSTaggedValue(a0Double + a1Double);
+    double doubleA0 = valLeft->GetNumber();
+    double doubleA1 = valRight->GetNumber();
+    return JSTaggedValue(doubleA0 + doubleA1);
 }
 
 JSTaggedValue RuntimeStubs::RuntimeSub2Dyn(JSThread *thread, const JSHandle<JSTaggedValue> &left,
@@ -1661,8 +1663,8 @@ JSTaggedValue RuntimeStubs::RuntimeGetAotUnmapedArgs(JSThread *thread, uint32_t 
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
-    JSHandle<TaggedArray> argumentsList = factory->NewTaggedArray(actualNumArgs);
-    for (uint32_t i = 0; i < actualNumArgs; ++i) {
+    JSHandle<TaggedArray> argumentsList = factory->NewTaggedArray(actualNumArgs - FIXED_NUM_ARGS);
+    for (uint32_t i = 0; i < actualNumArgs - FIXED_NUM_ARGS; ++i) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         JSTaggedType arg = reinterpret_cast<JSTaggedType *>(argv)[i + 1]; // skip actualNumArgs
         argumentsList->Set(thread, i, JSTaggedValue(arg));
