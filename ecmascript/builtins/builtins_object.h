@@ -83,11 +83,14 @@ public:
     static JSTaggedValue CreateRealm(EcmaRuntimeCallInfo *argv);
     // 20.1.2.5 Object.entries ( O )
     static JSTaggedValue Entries(EcmaRuntimeCallInfo *argv);
-
+    // 20.1.2.7 Object.fromEntries ( iterable )
+    static JSTaggedValue FromEntries(EcmaRuntimeCallInfo *argv);
     // B.2.2.1 Object.prototype.__proto__
     static JSTaggedValue ProtoGetter(EcmaRuntimeCallInfo *argv);
     static JSTaggedValue ProtoSetter(EcmaRuntimeCallInfo *argv);
 
+    // 20.1.2.7.1 CreateDataPropertyOnObject Functions
+    static JSTaggedValue CreateDataPropertyOnObjectFunctions(EcmaRuntimeCallInfo *argv);
 private:
     static JSTaggedValue ObjectDefineProperties(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
                                                 const JSHandle<JSTaggedValue> &prop);
