@@ -40,7 +40,7 @@ void JSAPIPlainArray::Add(JSThread *thread, const JSHandle<JSAPIPlainArray> &obj
     }
     uint32_t capacity = valueArray->GetLength();
     if (size + 1 >= static_cast<int32_t>(capacity)) {
-        uint32_t newCapacity = static_cast<uint32_t>(capacity) << 1U;
+        uint32_t newCapacity = capacity << 1U;
         keyArray =
             thread->GetEcmaVM()->GetFactory()->CopyArray(keyArray, capacity, newCapacity);
         valueArray =
@@ -104,7 +104,7 @@ int32_t JSAPIPlainArray::BinarySearch(TaggedArray *array, int32_t fromIndex, int
     int32_t low = fromIndex;
     int32_t high = toIndex - 1;
     while (low <= high) {
-        int32_t mid = static_cast<uint32_t>(low + high) >> 1U;
+        int32_t mid = static_cast<int32_t>(static_cast<uint32_t>(low + high) >> 1U);
         int32_t midVal = static_cast<int32_t>(array->Get(mid).GetNumber());
         if (midVal < key) {
             low = mid + 1;

@@ -164,7 +164,7 @@ HWTEST_F_L0(LinkedHashTableTest, GrowCapacity)
     JSHandle<JSFunction> objFun(GetGlobalEnv()->GetObjectFunction());
     char keyArray[7] = "hello";
     for (int i = 0; i < 33; i++) {
-        keyArray[5] = '1' + i;
+        keyArray[5] = '1' + static_cast<uint32_t>(i);
         keyArray[6] = 0;
         JSHandle<JSTaggedValue> key(factory->NewFromASCII(keyArray));
         JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));
@@ -176,7 +176,7 @@ HWTEST_F_L0(LinkedHashTableTest, GrowCapacity)
 
     // test order
     for (int i = 0; i < 33; i++) {
-        keyArray[5] = '1' + i;
+        keyArray[5] = '1' + static_cast<uint32_t>(i);
         keyArray[6] = 0;
         JSHandle<EcmaString> stringKey = factory->NewFromASCII(keyArray);
         // test insert()
@@ -196,7 +196,7 @@ HWTEST_F_L0(LinkedHashTableTest, SetGrowCapacity)
     // create key and values
     char keyArray[7] = "hello";
     for (int i = 0; i < 33; i++) {
-        keyArray[5] = '1' + i;
+        keyArray[5] = '1' + static_cast<uint32_t>(i);
         keyArray[6] = 0;
         JSHandle<EcmaString> stringKey = factory->NewFromASCII(keyArray);
         JSHandle<JSTaggedValue> key(stringKey);
@@ -208,7 +208,7 @@ HWTEST_F_L0(LinkedHashTableTest, SetGrowCapacity)
 
     // test order
     for (int i = 0; i < 33; i++) {
-        keyArray[5] = '1' + i;
+        keyArray[5] = '1' + static_cast<uint32_t>(i);
         keyArray[6] = 0;
         JSHandle<EcmaString> stringKey = factory->NewFromASCII(keyArray);
         // test insert()
@@ -227,7 +227,7 @@ HWTEST_F_L0(LinkedHashTableTest, ShrinkCapacity)
     JSHandle<JSFunction> objFun(GetGlobalEnv()->GetObjectFunction());
     char keyArray[7] = "hello";
     for (int i = 0; i < 10; i++) {
-        keyArray[5] = '1' + i;
+        keyArray[5] = '1' + static_cast<uint32_t>(i);
         keyArray[6] = 0;
         JSHandle<JSTaggedValue> key(factory->NewFromASCII(keyArray));
         JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));
@@ -240,7 +240,7 @@ HWTEST_F_L0(LinkedHashTableTest, ShrinkCapacity)
     dictHandle = LinkedHashMap::Delete(thread, dictHandle, key);
     // test order
     for (int i = 0; i < 9; i++) {
-        keyArray[5] = '1' + i;
+        keyArray[5] = '1' + static_cast<uint32_t>(i);
         keyArray[6] = 0;
         JSHandle<EcmaString> stringKey = factory->NewFromASCII(keyArray);
         // test insert()
@@ -260,7 +260,7 @@ HWTEST_F_L0(LinkedHashTableTest, SetShrinkCapacity)
     // create key and values
     char keyArray[7] = "hello";
     for (int i = 0; i < 10; i++) {
-        keyArray[5] = '1' + i;
+        keyArray[5] = '1' + static_cast<uint32_t>(i);
         keyArray[6] = 0;
         JSHandle<JSTaggedValue> key(factory->NewFromASCII(keyArray));
 
@@ -272,7 +272,7 @@ HWTEST_F_L0(LinkedHashTableTest, SetShrinkCapacity)
     setHandle = LinkedHashSet::Delete(thread, setHandle, keyHandle);
     // test order
     for (int i = 0; i < 9; i++) {
-        keyArray[5] = '1' + i;
+        keyArray[5] = '1' + static_cast<uint32_t>(i);
         keyArray[6] = 0;
         JSHandle<EcmaString> stringKey = factory->NewFromASCII(keyArray);
         // test insert()
