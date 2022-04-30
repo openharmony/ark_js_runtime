@@ -24,6 +24,7 @@
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/tests/test_helper.h"
+#include "ecmascript/tooling/interface/file_stream.h"
 
 using namespace panda::ecmascript;
 
@@ -84,7 +85,8 @@ HWTEST_F_L0(HeapTrackerTest, HeapTracker)
     outputString.close();
     outputString.clear();
 
-    heapProfile->StopHeapTracking(thread, fileName.c_str());
+    FileStream stream(fileName.c_str());
+    heapProfile->StopHeapTracking(thread, &stream);
     HeapProfilerInterface::Destroy(thread, heapProfile);
 
     // Check
@@ -92,10 +94,10 @@ HWTEST_F_L0(HeapTrackerTest, HeapTracker)
     std::string line;
     std::string emptySample = "\"samples\":";
     std::string firstSample = "\"samples\":[0, ";
-    int emptySize = emptySample.size();
+    uint32_t emptySize = emptySample.size();
     bool isFind = false;
     while (getline(inputStream, line)) {
-        if (line.substr(0, emptySize) == emptySample) {
+        if (line.substr(0U, emptySize) == emptySample) {
             ASSERT_TRUE(line.substr(0, firstSample.size()) == firstSample);
             isFind = true;
         }

@@ -23,3 +23,7 @@ print(res)
 var num3: number = 50
 var num4: number = 45.5
 print(num3 - num4)
+
+var num5:any = "99"
+var num6:any = "2"
+print(num5 - num6)

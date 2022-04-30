@@ -20,6 +20,7 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/mem/heap-inl.h"
+#include "ecmascript/tooling/interface/file_stream.h"
 
 namespace panda {
 using ecmascript::CString;
@@ -31,18 +32,25 @@ using ecmascript::JSTaggedValue;
 using ecmascript::GCStats;
 template<typename T>
 using JSHandle = ecmascript::JSHandle<T>;
+using ecmascript::FileStream;
 
 void DFXJSNApi::DumpHeapSnapShot(EcmaVM *vm, int dumpFormat, const std::string &path, bool isVmMode)
 {
+    FileStream stream(path);
+    DumpHeapSnapShot(vm, dumpFormat, &stream, isVmMode);
+}
+
+void DFXJSNApi::DumpHeapSnapShot(EcmaVM *vm, int dumpFormat, Stream *stream, bool isVmMode)
+{
     if (dumpFormat == 0) {
         ecmascript::HeapProfilerInterface::DumpHeapSnapShot(vm->GetJSThread(), ecmascript::DumpFormat::JSON,
-                                                            path, isVmMode);
+                                                            stream, isVmMode);
     } else if (dumpFormat == 1) {
         ecmascript::HeapProfilerInterface::DumpHeapSnapShot(vm->GetJSThread(), ecmascript::DumpFormat::BINARY,
-                                                            path, isVmMode);
+                                                            stream, isVmMode);
     } else if (dumpFormat == 2) { // 2: enum is 2
         ecmascript::HeapProfilerInterface::DumpHeapSnapShot(vm->GetJSThread(), ecmascript::DumpFormat::OTHER,
-                                                            path, isVmMode);
+                                                            stream, isVmMode);
     }
 }
 
@@ -64,9 +72,15 @@ bool DFXJSNApi::StartHeapTracking(EcmaVM *vm, double timeInterval, bool isVmMode
 
 bool DFXJSNApi::StopHeapTracking(EcmaVM *vm, const std::string &filePath)
 {
+    FileStream stream(filePath);
+    return StopHeapTracking(vm, &stream);
+}
+
+bool DFXJSNApi::StopHeapTracking(EcmaVM *vm, Stream* stream)
+{
     bool result = false;
     ecmascript::HeapProfilerInterface *heapProfile = ecmascript::HeapProfilerInterface::GetInstance(vm->GetJSThread());
-    result = heapProfile->StopHeapTracking(vm->GetJSThread(), filePath);
+    result = heapProfile->StopHeapTracking(vm->GetJSThread(), stream);
     const ecmascript::Heap *heap = vm->GetJSThread()->GetEcmaVM()->GetHeap();
     const_cast<ecmascript::NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->Delete(heapProfile);
     return result;

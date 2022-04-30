@@ -953,10 +953,10 @@ std::string BigIntHelper::MultiplyImpl(std::string &a, std::string &b)
             mulflag = temp1 / 10; // 10:help to Remove single digits
             temp1 = temp1 % 10; // 10:help to Take single digit
             int temp2 = str[i + j + 1] - '0' + temp1 + addflag;
-            str[i + j + 1] = temp2 % 10 + 48; // 2 and 10 and 48 is number
+            str[i + j + 1] = static_cast<uint32_t>(temp2 % 10 + 48); // 2 and 10 and 48 is number
             addflag = temp2 / 10;
         }
-        str[i] += mulflag + addflag;
+        str[i] += static_cast<uint32_t>(mulflag + addflag);
     }
     if (str[0] == '0') {
         str = str.substr(1, str.size());
@@ -1116,7 +1116,7 @@ std::string BigIntHelper::Divide(std::string &a, std::string &b)
             j++;
         }
         quotient = quotient + "0";
-        quotient.at(i) = static_cast<int8_t>(j);
+        quotient.at(i) = static_cast<uint8_t>(j);
     }
     for (i = 0; i < quotient.length(); i++) {
         if (quotient.at(i) >= 10) { // 10 is number

@@ -231,13 +231,14 @@ void JSThread::ResetGuardians()
 void AdjustBCStubAndDebuggerStubEntries(BCStubEntries &bcStubEntries, BCStubEntries &bcDebuggerStubEntries,
     const std::vector<AotCodeInfo::StubDes> &stubs, const AsmInterParsedOption &asmInterOpt)
 {
-    auto defaultBCStubDes = stubs[CommonStubCSigns::SingleStepDebugging];
-    auto defaultNonexistentBCStubDes = stubs[CommonStubCSigns::HandleOverflow];
-    auto defaultBCDebuggerStubDes = stubs[CommonStubCSigns::BCDebuggerEntry];
-    auto defaultBCDebuggerExceptionStubDes = stubs[CommonStubCSigns::BCDebuggerExceptionEntry];
+    auto defaultBCStubDes = stubs[CommonStubCSigns::NUM_OF_STUBS + BytecodeStubCSigns::SingleStepDebugging];
+    auto defaultNonexistentBCStubDes = stubs[CommonStubCSigns::NUM_OF_STUBS + BytecodeStubCSigns::HandleOverflow];
+    auto defaultBCDebuggerStubDes = stubs[CommonStubCSigns::NUM_OF_STUBS + BytecodeStubCSigns::BCDebuggerEntry];
+    auto defaultBCDebuggerExceptionStubDes =
+        stubs[CommonStubCSigns::NUM_OF_STUBS + BytecodeStubCSigns::BCDebuggerExceptionEntry];
     bcStubEntries.SetUnrealizedBCHandlerStubEntries(defaultBCStubDes.codeAddr_);
     bcStubEntries.SetNonexistentBCHandlerStubEntries(defaultNonexistentBCStubDes.codeAddr_);
-#define UNDEF_STUB(name, counter)                                                                               \
+#define UNDEF_STUB(name)                                                                               \
     bcStubEntries.Set(BytecodeStubCSigns::ID_##name, defaultBCStubDes.codeAddr_);
     INTERPRETER_IGNORED_BC_STUB_LIST(UNDEF_STUB)
 #undef UNDEF_STUB
@@ -267,7 +268,10 @@ void JSThread::LoadStubsFromFile(std::string &fileName)
         if (des.IsCommonStub()) {
             glueData_.coStubEntries_.Set(des.indexInKind_, des.codeAddr_);
         } else if (des.IsBCHandler()) {
-            glueData_.bcStubEntries_.Set(des.indexInKind_, des.codeAddr_);
+            // bc helper handler use to adjust bc stub, not init bc stub
+            if (des.IsBCNormalHandler()) {
+                glueData_.bcStubEntries_.Set(des.indexInKind_, des.codeAddr_);
+            }
         } else {
             glueData_.rtStubEntries_.Set(des.indexInKind_, des.codeAddr_);
         }
@@ -278,7 +282,7 @@ void JSThread::LoadStubsFromFile(std::string &fileName)
     bool enableCompilerLog = GetEcmaVM()->GetJSOptions().WasSetlogCompiledMethods();
     kungfu::LLVMStackMapParser::GetInstance(enableCompilerLog).Print();
 #endif
-    stubCode_ = aotInfo.GetCode();
+    stubCode_ = aotInfo.GetCode().GetTaggedValue();
 }
 
 void JSThread::CheckSwitchDebuggerBCStub()

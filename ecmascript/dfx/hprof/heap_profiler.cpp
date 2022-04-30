@@ -25,6 +25,7 @@
 #include "ecmascript/mem/assert_scope.h"
 #include "ecmascript/mem/concurrent_sweeper.h"
 #include "ecmascript/mem/heap-inl.h"
+#include "ecmascript/tooling/interface/stream.h"
 
 namespace panda::ecmascript {
 HeapProfiler::~HeapProfiler()
@@ -34,7 +35,8 @@ HeapProfiler::~HeapProfiler()
     jsonSerializer_ = nullptr;
 }
 
-bool HeapProfiler::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, const std::string &filePath, bool isVmMode)
+bool HeapProfiler::DumpHeapSnapShot(JSThread *thread,
+                                    [[maybe_unused]]DumpFormat dumpFormat, Stream *stream, bool isVmMode)
 {
     [[maybe_unused]] bool heapClean = ForceFullGC(thread);
     ASSERT(heapClean);
@@ -42,16 +44,8 @@ bool HeapProfiler::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, con
     LOG(ERROR, RUNTIME) << "HeapProfiler DumpSnapshot heap size " << heapSize;
     HeapSnapShot *snapShot = MakeHeapSnapShot(thread, SampleType::ONE_SHOT, isVmMode);
     ASSERT(snapShot != nullptr);
-    std::pair<bool, CString> realPath = FilePathValid(filePath);
-    if (realPath.first) {
-        return jsonSerializer_->Serialize(snapShot, realPath.second);
-    }
 
-    std::pair<bool, CString> realGenPath = FilePathValid(GenDumpFileName(dumpFormat));
-    if (realGenPath.first) {
-        return jsonSerializer_->Serialize(snapShot, realGenPath.second);
-    }
-    UNREACHABLE();
+    return jsonSerializer_->Serialize(snapShot, stream);
 }
 
 bool HeapProfiler::StartHeapTracking(JSThread *thread, double timeInterval, bool isVmMode)
@@ -66,7 +60,7 @@ bool HeapProfiler::StartHeapTracking(JSThread *thread, double timeInterval, bool
     return true;
 }
 
-bool HeapProfiler::StopHeapTracking(JSThread *thread, const std::string &path)
+bool HeapProfiler::StopHeapTracking(JSThread *thread, Stream *stream)
 {
     if (heapTracker_ == nullptr) {
         return false;
@@ -74,21 +68,12 @@ bool HeapProfiler::StopHeapTracking(JSThread *thread, const std::string &path)
     thread->GetEcmaVM()->StopHeapTracking();
     heapTracker_->StopTracing();
 
-    // check path
-    if (path.empty()) {
-        return false;
-    }
-    std::pair<bool, CString> realPath = FilePathValid(path);
-    if (!realPath.first) {
-        return false;
-    }
-
     HeapSnapShot *snapShot = hprofs_.at(0);
     if (snapShot == nullptr) {
         return false;
     }
     snapShot->FinishSnapShot();
-    return jsonSerializer_->Serialize(snapShot, realPath.second);
+    return jsonSerializer_->Serialize(snapShot, stream);
 }
 
 std::pair<bool, CString> HeapProfiler::FilePathValid(const std::string &filePath)

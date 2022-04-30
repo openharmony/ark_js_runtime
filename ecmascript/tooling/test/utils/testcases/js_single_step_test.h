@@ -66,14 +66,14 @@ public:
                 if (locationStart_ == location) {
                     collectSteps_ = true;
                 }
-                return true;
+                return false;
             }
 
             ASSERT_NE(bytecodeOffset_, location.GetBytecodeOffset());
             locationStep_ = location;
             stepCounter_++;
             bytecodeOffset_ = location.GetBytecodeOffset();
-            return true;
+            return false;
         };
     }
 

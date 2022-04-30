@@ -107,6 +107,13 @@ uintptr_t FrameHandler::GetPrevFrameCallSiteSp()
     }
 }
 
+void FrameHandler::PrevInterpretedFrame()
+{
+    PrevFrame();
+    for (; HasFrame() && !(IsInterpretedFrame() || IsInterpretedEntryFrame());
+        FrameHandler::PrevFrame());
+}
+
 InterpretedFrameHandler::InterpretedFrameHandler(JSThread *thread)
     : FrameHandler(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame()))
 {
@@ -122,12 +129,6 @@ void InterpretedFrameHandler::PrevFrame()
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
 #endif
     sp_ = frame->base.prev;
-}
-
-void InterpretedFrameHandler::PrevInterpretedFrame()
-{
-    FrameHandler::PrevFrame();
-    for (; HasFrame() && !(IsInterpretedFrame() || IsInterpretedEntryFrame()); FrameHandler::PrevFrame());
 }
 
 InterpretedFrameHandler InterpretedFrameHandler::GetPrevFrame() const
@@ -235,12 +236,6 @@ const uint8_t *InterpretedFrameHandler::GetPc() const
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
 #endif
     return frame->pc;
-}
-
-JSTaggedType *InterpretedFrameHandler::GetSp() const
-{
-    ASSERT(HasFrame());
-    return sp_;
 }
 
 ConstantPool *InterpretedFrameHandler::GetConstpool() const
@@ -391,13 +386,9 @@ void InterpretedEntryFrameHandler::Iterate([[maybe_unused]] const RootVisitor &v
 
 JSTaggedType* InterpretedEntryFrameHandler::GetPrevInterpretedFrame(JSTaggedType *sp)
 {
-    InterpretedEntryFrame *entryState = InterpretedEntryFrame::GetFrameFromSp(sp);
-    JSTaggedType *prevSp = entryState->base.prev;
-    if (prevSp != nullptr && FrameHandler(prevSp).GetFrameType() == FrameType::LEAVE_FRAME) {
-        OptimizedLeaveFrame *leaveFrame = OptimizedLeaveFrame::GetFrameFromSp(prevSp);
-        prevSp = reinterpret_cast<JSTaggedType *>(leaveFrame->callsiteFp);
-    }
-    return prevSp;
+    FrameHandler frameHandler(sp);
+    frameHandler.PrevInterpretedFrame();
+    return frameHandler.GetSp();
 }
 
 void OptimizedFrameHandler::PrevFrame()
@@ -520,11 +511,13 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
     isVerifying = thread_->GetEcmaVM()->GetHeap()->IsVerifying();
 #endif
-    // asm interpreter leaveframe
-    JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
-    if (current == nullptr) {
-        // c++ interpreter frame
-        current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
+    JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
+    FrameType entryType = FrameHandler(current).GetFrameType();
+    if (entryType != FrameType::INTERPRETER_ENTRY_FRAME) {
+        auto leaveFrame = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
+        if (leaveFrame != nullptr) {
+            current = leaveFrame;
+        }
     }
 
     while (current) {

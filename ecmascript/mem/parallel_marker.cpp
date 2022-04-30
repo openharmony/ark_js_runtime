@@ -14,8 +14,7 @@
  */
 
 #include "ecmascript/mem/parallel_marker-inl.h"
-
-#include "ecmascript/mem/object_xray-inl.h"
+#include "ecmascript/mem/visitor.h"
 
 namespace panda::ecmascript {
 Marker::Marker(Heap *heap) : heap_(heap), objXRay_(heap_->GetEcmaVM()) {}

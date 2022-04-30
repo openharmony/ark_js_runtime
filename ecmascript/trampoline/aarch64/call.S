@@ -658,7 +658,7 @@ ResumeRspAndDispatch:
     ret
 
 ResumeRspAndReturn:
-    ldr    x30, [sp], #8
+    ldr    x30, [sp], #16 // 16 byte align
     ret
 
 CallRuntimeWithArgv:
@@ -666,7 +666,7 @@ CallRuntimeWithArgv:
 
 .type JSCallEntryInternal, %function
 JSCallEntryInternal:
-    str  x30, [sp, #-8]!
+    str  x30, [sp, #-16]! // 16 byte align
     br   x8
 
 .global JSCallEntry

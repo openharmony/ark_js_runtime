@@ -20,7 +20,7 @@
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/mem/heap.h"
-#include "ecmascript/mem/object_xray.h"
+#include "ecmascript/mem/visitor.h"
 #include "ecmascript/frames.h"
 
 namespace panda {
@@ -83,7 +83,14 @@ public:
         return (GetFrameType() == FrameType::LEAVE_FRAME) ||
             (GetFrameType() == FrameType::LEAVE_FRAME_WITH_ARGV);
     }
+
+    JSTaggedType *GetSp() const
+    {
+        return sp_;
+    }
+
     uintptr_t GetPrevFrameCallSiteSp();
+    void PrevInterpretedFrame();
 
 protected:
     JSTaggedType *sp_ {nullptr};
@@ -97,7 +104,6 @@ public:
     DEFAULT_MOVE_SEMANTIC(InterpretedFrameHandler);
 
     void PrevFrame();
-    void PrevInterpretedFrame();
     InterpretedFrameHandler GetPrevFrame() const;
 
     JSTaggedValue GetVRegValue(size_t index) const;
@@ -109,7 +115,6 @@ public:
     JSMethod *GetMethod() const;
     JSTaggedValue GetFunction() const;
     const uint8_t *GetPc() const;
-    JSTaggedType *GetSp() const;
     ConstantPool *GetConstpool() const;
     JSTaggedValue GetEnv() const;
     void SetEnv(JSTaggedValue env);

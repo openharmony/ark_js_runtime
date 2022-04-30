@@ -99,7 +99,7 @@ HWTEST_F_L0(JSSetTest, DeleteAndGet)
 
     // add 40 keys
     char keyArray[] = "key0";
-    for (int i = 0; i < 40; i++) {
+    for (uint32_t i = 0; i < 40; i++) {
         keyArray[3] = '1' + i;
         JSHandle<JSTaggedValue> key(factory->NewFromASCII(keyArray));
         JSSet::Add(thread, set, key);

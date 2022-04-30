@@ -79,13 +79,19 @@ void JSBackend::NotifyPaused(std::optional<JSPtLocation> location, PauseReason r
             extractor = GetExtractor(detail.url_);
             return true;
         };
-        auto callbackFunc = [&detail](int32_t line, int32_t column) -> bool {
+        auto callbackLineFunc = [&detail](int32_t line) -> bool {
             detail.line_ = line;
+            return true;
+        };
+        auto callbackColumnFunc = [&detail](int32_t column) -> bool {
             detail.column_ = column;
             return true;
         };
-        if (!MatchScripts(scriptFunc, location->GetPandaFile(), ScriptMatchType::FILE_NAME) || extractor == nullptr ||
-            !extractor->MatchWithOffset(callbackFunc, location->GetMethodId(), location->GetBytecodeOffset())) {
+        File::EntityId methodId = location->GetMethodId();
+        uint32_t offset = location->GetBytecodeOffset();
+        if (!MatchScripts(scriptFunc, location->GetPandaFile(), ScriptMatchType::FILE_NAME) ||
+            extractor == nullptr || !extractor->MatchLineWithOffset(callbackLineFunc, methodId, offset) ||
+            !extractor->MatchColumnWithOffset(callbackColumnFunc, methodId, offset)) {
             LOG(ERROR, DEBUGGER) << "NotifyPaused: unknown " << location->GetPandaFile();
             return;
         }
@@ -188,24 +194,52 @@ bool JSBackend::NotifyScriptParsed(ScriptId scriptId, const CString &fileName)
 
 bool JSBackend::StepComplete(const JSPtLocation &location)
 {
+    if (UNLIKELY(pauseOnNextByteCode_)) {
+        if (IsSkipLine(location)) {
+            return false;
+        }
+        pauseOnNextByteCode_ = false;
+        LOG(INFO, DEBUGGER) << "StepComplete: pause on next bytecode";
+        return true;
+    }
+
+    if (LIKELY(singleStepper_ == nullptr)) {
+        return false;
+    }
+
+    // step not complete
+    if (!singleStepper_->StepComplete(location.GetBytecodeOffset())) {
+        return false;
+    }
+
+    // skip unknown file or special line -1
+    if (IsSkipLine(location)) {
+        return false;
+    }
+
+    LOG(INFO, DEBUGGER) << "StepComplete: pause on current byte_code";
+    return true;
+}
+
+bool JSBackend::IsSkipLine(const JSPtLocation &location)
+{
     JSPtExtractor *extractor = nullptr;
     auto scriptFunc = [this, &extractor](PtScript *script) -> bool {
         extractor = GetExtractor(script->GetUrl());
         return true;
     };
-    auto callbackFunc = [](int32_t line, [[maybe_unused]] int32_t column) -> bool {
-        return line == SPECIAL_LINE_MARK;
-    };
-    if (MatchScripts(scriptFunc, location.GetPandaFile(), ScriptMatchType::FILE_NAME) && extractor != nullptr &&
-        extractor->MatchWithOffset(callbackFunc, location.GetMethodId(), location.GetBytecodeOffset())) {
-        LOG(INFO, DEBUGGER) << "StepComplete: skip -1";
-        return false;
+    if (!MatchScripts(scriptFunc, location.GetPandaFile(), ScriptMatchType::FILE_NAME) || extractor == nullptr) {
+        LOG(INFO, DEBUGGER) << "StepComplete: skip unknown file";
+        return true;
     }
 
-    if (pauseOnNextByteCode_ ||
-        (singleStepper_ != nullptr && singleStepper_->StepComplete(location.GetBytecodeOffset()))) {
-        LOG(INFO, DEBUGGER) << "StepComplete: pause on current byte_code";
-        pauseOnNextByteCode_ = false;
+    auto callbackFunc = [](int32_t line) -> bool {
+        return line == SPECIAL_LINE_MARK;
+    };
+    File::EntityId methodId = location.GetMethodId();
+    uint32_t offset = location.GetBytecodeOffset();
+    if (extractor->MatchLineWithOffset(callbackFunc, methodId, offset)) {
+        LOG(INFO, DEBUGGER) << "StepComplete: skip -1";
         return true;
     }
 
@@ -538,13 +572,17 @@ bool JSBackend::GenerateCallFrame(CallFrame *callFrame,
         LOG(ERROR, DEBUGGER) << "GenerateCallFrame: Unknown url: " << url;
         return false;
     }
-    auto callbackFunc = [&location](int32_t line, int32_t column) -> bool {
+    auto callbackLineFunc = [&location](int32_t line) -> bool {
         location->SetLine(line);
+        return true;
+    };
+    auto callbackColumnFunc = [&location](int32_t column) -> bool {
         location->SetColumn(column);
         return true;
     };
-    if (!extractor->MatchWithOffset(callbackFunc, method->GetMethodId(),
-                                    DebuggerApi::GetBytecodeOffset(frameHandler))) {
+    File::EntityId methodId = method->GetMethodId();
+    if (!extractor->MatchLineWithOffset(callbackLineFunc, methodId, DebuggerApi::GetBytecodeOffset(frameHandler)) ||
+        !extractor->MatchColumnWithOffset(callbackColumnFunc, methodId, DebuggerApi::GetBytecodeOffset(frameHandler))) {
         LOG(ERROR, DEBUGGER) << "GenerateCallFrame: unknown offset: " << DebuggerApi::GetBytecodeOffset(frameHandler);
         return false;
     }
@@ -868,21 +906,21 @@ void JSBackend::AddTypedArrayRefs(Local<ArrayBufferRef> arrayBufferRef,
     AddTypedArrayRef<Uint8ArrayRef>(arrayBufferRef, typedArrayLength, "[[Uint8Array]]", outPropertyDesc);
     AddTypedArrayRef<Uint8ClampedArrayRef>(arrayBufferRef, typedArrayLength, "[[Uint8ClampedArray]]", outPropertyDesc);
 
-    if ((arrayBufferByteLength % NumberSize::UINT16INT16) == 0) {
-        typedArrayLength = arrayBufferByteLength / NumberSize::UINT16INT16;
+    if ((arrayBufferByteLength % NumberSize::BYTES_OF_16BITS) == 0) {
+        typedArrayLength = arrayBufferByteLength / NumberSize::BYTES_OF_16BITS;
         AddTypedArrayRef<Int16ArrayRef>(arrayBufferRef, typedArrayLength, "[[Int16Array]]", outPropertyDesc);
         AddTypedArrayRef<Uint16ArrayRef>(arrayBufferRef, typedArrayLength, "[[Uint16Array]]", outPropertyDesc);
     }
 
-    if ((arrayBufferByteLength % NumberSize::UINT32INT32FLOAT32) == 0) {
-        typedArrayLength = arrayBufferByteLength / NumberSize::UINT32INT32FLOAT32;
+    if ((arrayBufferByteLength % NumberSize::BYTES_OF_32BITS) == 0) {
+        typedArrayLength = arrayBufferByteLength / NumberSize::BYTES_OF_32BITS;
         AddTypedArrayRef<Int32ArrayRef>(arrayBufferRef, typedArrayLength, "[[Int32Array]]", outPropertyDesc);
         AddTypedArrayRef<Uint32ArrayRef>(arrayBufferRef, typedArrayLength, "[[Uint32Array]]", outPropertyDesc);
         AddTypedArrayRef<Float32ArrayRef>(arrayBufferRef, typedArrayLength, "[[Float32Array]]", outPropertyDesc);
     }
 
-    if ((arrayBufferByteLength % NumberSize::FLOAT64BIGINT64BIGUINT64) == 0) {
-        typedArrayLength = arrayBufferByteLength / NumberSize::FLOAT64BIGINT64BIGUINT64;
+    if ((arrayBufferByteLength % NumberSize::BYTES_OF_64BITS) == 0) {
+        typedArrayLength = arrayBufferByteLength / NumberSize::BYTES_OF_64BITS;
         AddTypedArrayRef<Float64ArrayRef>(arrayBufferRef, typedArrayLength, "[[Float64Array]]", outPropertyDesc);
         AddTypedArrayRef<BigInt64ArrayRef>(arrayBufferRef, typedArrayLength, "[[BigInt64Array]]", outPropertyDesc);
         AddTypedArrayRef<BigUint64ArrayRef>(arrayBufferRef, typedArrayLength, "[[BigUint64Array]]", outPropertyDesc);

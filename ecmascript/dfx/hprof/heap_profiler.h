@@ -46,11 +46,11 @@ public:
     /**
      * dump the specific snapshot in target format
      */
-    bool DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, const std::string &path, bool isVmMode = true);
+    bool DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, Stream *stream, bool isVmMode = true);
     void AddSnapShot(HeapSnapShot *snapshot);
 
     bool StartHeapTracking(JSThread *thread, double timeInterval, bool isVmMode = true) override;
-    bool StopHeapTracking(JSThread *thread, const std::string &filePath) override;
+    bool StopHeapTracking(JSThread *thread, Stream *stream) override;
 
 private:
     /**

@@ -27,7 +27,7 @@
 namespace panda::ecmascript::tooling {
 class JSBackend {
 public:
-    enum NumberSize : uint8_t { UINT16INT16 = 2, UINT32INT32FLOAT32 = 4, FLOAT64BIGINT64BIGUINT64 = 8 };
+    enum NumberSize : uint8_t { BYTES_OF_16BITS = 2, BYTES_OF_32BITS = 4, BYTES_OF_64BITS = 8 };
 
     explicit JSBackend(FrontEnd *frontend);
     explicit JSBackend(const EcmaVM *vm);
@@ -140,6 +140,7 @@ private:
         const char* name, CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
     void GetAdditionalProperties(const Local<JSValueRef> &value,
         CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
+    bool IsSkipLine(const JSPtLocation &location);
 
     constexpr static int32_t SPECIAL_LINE_MARK = -1;
 

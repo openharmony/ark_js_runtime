@@ -13,11 +13,13 @@
  * limitations under the License.
  */
 
-declare function print(num:number):string;
-var a:number = 3;
-var b:number = 5;
-print(a + b);
+declare function print(arg:any):string;
+print(1 + 1);
 
-var c:number = 3.1;
-var d:number = 5.2;
-print(c + d);
+print(1 + 1.1);
+
+print(0.1 + 1.1)
+
+print("hello" + "world");
+
+print("hello" + 1);

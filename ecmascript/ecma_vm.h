@@ -28,11 +28,11 @@
 #include "ecmascript/mem/chunk_containers.h"
 #include "ecmascript/mem/gc_stats.h"
 #include "ecmascript/mem/heap.h"
-#include "ecmascript/mem/object_xray.h"
+#include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/space.h"
+#include "ecmascript/mem/visitor.h"
 #include "ecmascript/taskpool/task.h"
 #include "ecmascript/tooling/interface/js_debugger_manager.h"
-#include "ecmascript/snapshot/mem/snapshot_serialize.h"
 #include "ecmascript/snapshot/mem/snapshot_env.h"
 #include "libpandabase/macros.h"
 
@@ -57,6 +57,7 @@ class JSPromise;
 enum class PromiseRejectionEvent : uint8_t;
 class JSPandaFileManager;
 class JSPandaFile;
+class SnapShotSerialize;
 namespace job {
 class MicroJobQueue;
 }  // namespace job

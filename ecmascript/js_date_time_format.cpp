@@ -1288,7 +1288,7 @@ std::string JSDateTimeFormat::ToTitleCaseFunction(const std::string &input)
 {
     std::string result(input);
     transform(result.begin(), result.end(), result.begin(), tolower);
-    result[0] = toupper(result[0]);
+    result[0] = static_cast<uint8_t>(toupper(result[0]));
     return result;
 }
 
@@ -1323,7 +1323,7 @@ std::string JSDateTimeFormat::ToTitleCaseTimezonePosition(const std::string &inp
     for (size_t i = 0; i < titleEntry.size()-1; i++) {
         std::string titleValue = ToTitleCaseFunction(titleEntry[i]);
         if (titleValue == "Of" || titleValue == "Es" || titleValue == "Au") {
-            titleValue[0] = tolower(titleValue[0]);
+            titleValue[0] = static_cast<uint8_t>(tolower(titleValue[0]));
         }
         result = result + titleValue + charEntry[i];
     }

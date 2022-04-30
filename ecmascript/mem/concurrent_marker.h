@@ -19,8 +19,8 @@
 #include <array>
 #include <atomic>
 
-#include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/space.h"
+#include "ecmascript/mem/visitor.h"
 #include "ecmascript/mem/work_manager.h"
 #include "ecmascript/taskpool/task.h"
 #include "os/mutex.h"

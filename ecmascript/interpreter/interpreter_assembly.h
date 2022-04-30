@@ -54,14 +54,14 @@ public:
     static JSTaggedValue GetNewTarget(JSTaggedType *sp);
     static uint32_t GetNumArgs(JSTaggedType *sp, uint32_t restIdx, uint32_t &startIdx);
     static inline JSTaggedValue GetThisObjectFromFastNewFrame(JSTaggedType *sp);
-    static inline bool IsFastNewFrameEnter(JSMethod *method);
+    static inline bool IsFastNewFrameEnter(JSFunction *ctor, JSMethod *method);
     static inline bool IsFastNewFrameExit(JSTaggedType *sp);
 
     static void HandleOverflow(JSThread *thread, const uint8_t *pc, JSTaggedType *sp,
                                JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
                                JSTaggedValue acc, int32_t hotnessCounter);
 
-#define DEF_HANDLER(name, counter)                                           \
+#define DEF_HANDLER(name)                                                    \
     static void name(JSThread *thread, const uint8_t *pc, JSTaggedType *sp,  \
                      JSTaggedValue constpool, JSTaggedValue profileTypeInfo, \
                      JSTaggedValue acc, int32_t hotnessCounter);
@@ -70,7 +70,7 @@ public:
 };
 
 static std::array<DispatchEntryPoint, BCStubEntries::BC_HANDLER_STUB_ENTRIES_COUNT> asmDispatchTable {
-#define DEF_HANDLER(name, counter) InterpreterAssembly::name,
+#define DEF_HANDLER(name) InterpreterAssembly::name,
     ASM_INTERPRETER_BC_STUB_ID_LIST(DEF_HANDLER)
 #undef DEF_HANDLER
     InterpreterAssembly::HandleOverflow,

@@ -145,7 +145,7 @@ uint32_t RegExpParser::ParseOctalLiteral()
 bool RegExpParser::ParseUnlimitedLengthHexNumber(uint32_t maxValue, uint32_t *value)
 {
     uint32_t x = 0;
-    int d = HexValue(c0_);
+    int d = static_cast<int>(HexValue(c0_));
     if (d < 0) {
         return false;
     }
@@ -159,7 +159,7 @@ bool RegExpParser::ParseUnlimitedLengthHexNumber(uint32_t maxValue, uint32_t *va
             return false;
         }
         Advance();
-        d = HexValue(c0_);
+        d = static_cast<int>(HexValue(c0_));
     }
     *value = x;
     return true;
@@ -209,7 +209,7 @@ bool RegExpParser::ParseHexEscape(int length, uint32_t *value)
     uint32_t val = 0;
     for (int i = 0; i < length; ++i) {
         uint32_t c = c0_;
-        int d = HexValue(c);
+        int d = static_cast<int>(HexValue(c));
         if (d < 0) {
             pc_ = start;
             Advance();

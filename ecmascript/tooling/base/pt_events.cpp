@@ -93,9 +93,9 @@ std::unique_ptr<Paused> Paused::Create(const EcmaVM *ecmaVm, const Local<JSValue
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             auto array = Local<ArrayRef>(result);
-            uint32_t len = array->Length(ecmaVm);
+            int32_t len = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (uint32_t i = 0; i < len; ++i) {
+            for (int32_t i = 0; i < len; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 std::unique_ptr<CallFrame> callFrame = CallFrame::Create(ecmaVm, resultValue);
@@ -138,9 +138,9 @@ std::unique_ptr<Paused> Paused::Create(const EcmaVM *ecmaVm, const Local<JSValue
         if (result->IsArray(ecmaVm)) {
             CVector<BreakpointId> breakPoints;
             auto array = Local<ArrayRef>(result);
-            uint32_t len = array->Length(ecmaVm);
+            int32_t len = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (uint32_t i = 0; i < len; ++i) {
+            for (int32_t i = 0; i < len; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 if (resultValue.IsEmpty()) {
@@ -229,7 +229,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "scriptId"));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptEvent->scriptId_ = DebuggerApi::StringToInt(result);
+            scriptEvent->scriptId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
         } else {
             error += "'scriptId' should a String;";
         }
@@ -985,9 +985,9 @@ std::unique_ptr<PreciseCoverageDeltaUpdate> PreciseCoverageDeltaUpdate::Create(c
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             auto array = Local<ArrayRef>(result);
-            uint32_t resultLen = array->Length(ecmaVm);
+            int32_t resultLen = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (uint32_t i = 0; i < resultLen; ++i) {
+            for (int32_t i = 0; i < resultLen; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 std::unique_ptr<ScriptCoverage> tmpResult = ScriptCoverage::Create(ecmaVm, resultValue);

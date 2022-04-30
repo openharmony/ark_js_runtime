@@ -25,7 +25,7 @@
 
 namespace panda::ecmascript::kungfu {
 bool PassManager::Compile(const std::string &fileName, const std::string &triple,
-                          const std::string &outputFileName, const AotLog &log)
+                          const std::string &outputFileName, const AotLog &log, size_t optLevel)
 {
     BytecodeTranslationInfo translationInfo;
     [[maybe_unused]] EcmaHandleScope handleScope(vm_->GetJSThread());
@@ -61,7 +61,7 @@ bool PassManager::Compile(const std::string &fileName, const std::string &triple
         pipeline.RunPass<LLVMIRGenPass>(&aotModule, method);
     }
 
-    AotFileManager manager(&aotModule, &log);
+    AotFileManager manager(&aotModule, &log, LOptions(optLevel, true));
     manager.SaveAOTFile(outputFileName);
     TSLoader *tsLoader = vm_->GetTSLoader();
     SnapShot snapShot(vm_);

@@ -509,6 +509,7 @@ public:
     GateRef IsEcmaObject(GateRef obj);
     GateRef IsSymbol(GateRef obj);
     GateRef IsString(GateRef obj);
+    GateRef TaggedIsBigInt(GateRef obj);
     GateRef IsBigInt(GateRef obj);
     GateRef IsJsProxy(GateRef obj);
     GateRef IsJSFunctionBase(GateRef obj);
@@ -543,6 +544,7 @@ public:
     GateRef GetLayoutFromHClass(GateRef hClass);
     GateRef GetBitFieldFromHClass(GateRef hClass);
     GateRef GetLengthFromString(GateRef value);
+    GateRef GetHashcodeFromString(GateRef glue, GateRef value);
     void SetBitFieldToHClass(GateRef glue, GateRef hClass, GateRef bitfield);
     void SetPrototypeToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef proto);
     void SetProtoChangeDetailsToHClass(VariableType type, GateRef glue, GateRef hClass,
@@ -678,6 +680,7 @@ public:
     GateRef GetGlobalOwnProperty(GateRef glue, GateRef receiver, GateRef key);
     // fast path
     GateRef FastEqual(GateRef left, GateRef right);
+    GateRef FastStrictEqual(GateRef glue, GateRef left, GateRef right);
     GateRef FastMod(GateRef gule, GateRef left, GateRef right);
     GateRef FastTypeOf(GateRef left, GateRef right);
     GateRef FastMul(GateRef left, GateRef right);

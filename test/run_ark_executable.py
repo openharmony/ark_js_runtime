@@ -59,22 +59,31 @@ def judge_output(args):
     if args.expect_output:
         returncode = str(subp.returncode)
         if returncode != args.expect_output:
-            print_str = out.decode('UTF-8')
-            print(print_str)
+            out_str = out.decode('UTF-8')
+            err_str = err.decode('UTF-8')
+            print(out_str)
+            print(err_str)
             raise RuntimeError("Run [" + cmd + "] failed!")
     elif args.expect_sub_output:
         err_str = err.decode('UTF-8')  # log system use std::cerr
         if err_str.find(args.expect_sub_output) == -1:
+            out_str = out.decode('UTF-8')
+            print(out_str)
+            print(">>>>> Expect contain: [" + args.expect_sub_output \
+                + "]\n>>>>> But got: [" + err_str + "]")
             raise RuntimeError("Run [" + cmd + "] failed!")
     elif args.expect_file:
         with open(args.expect_file, mode='r') as file:
             # skip license header
             expect_output = ''.join(file.readlines()[13:])
             file.close()
-            print_str = out.decode('UTF-8')
-            if print_str != expect_output:
-                raise RuntimeError("\n>>>>> Expect : [" + expect_output \
-                    + "]\n>>>>> But got: [" + print_str + "]")
+            out_str = out.decode('UTF-8')
+            if out_str != expect_output:
+                err_str = err.decode('UTF-8')
+                print(err_str)
+                print(">>>>> Expect : [" + expect_output \
+                    + "]\n>>>>> But got: [" + out_str + "]")
+                raise RuntimeError("Run [" + cmd + "] failed!")
     else:
         raise RuntimeError("Run [" + cmd + "] with no expect !")
 

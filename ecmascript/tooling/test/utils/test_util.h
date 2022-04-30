@@ -140,20 +140,15 @@ public:
 
     static bool SuspendUntilContinue(DebugEvent reason, JSPtLocation location)
     {
-        {
-            os::memory::LockHolder lock(suspendMutex_);
-            suspended_ = true;
-        }
+        os::memory::LockHolder lock(suspendMutex_);
+        suspended_ = true;
 
         // Notify the debugger thread about the suspend event
         Event(reason, location);
 
         // Wait for continue
-        {
-            os::memory::LockHolder lock(suspendMutex_);
-            while (suspended_) {
-                suspendCv_.Wait(&suspendMutex_);
-            }
+        while (suspended_) {
+            suspendCv_.Wait(&suspendMutex_);
         }
 
         return true;
@@ -176,7 +171,7 @@ private:
             if (lastEvent_ == DebugEvent::VM_DEATH) {
                 return false;
             }
-            constexpr uint64_t TIMEOUT_MSEC = 100000U;
+            constexpr uint64_t TIMEOUT_MSEC = 10000U;
             bool timeExceeded = eventCv_.TimedWait(&eventMutex_, TIMEOUT_MSEC);
             if (timeExceeded) {
                 LOG(FATAL, DEBUGGER) << "Time limit exceeded while waiting " << event;

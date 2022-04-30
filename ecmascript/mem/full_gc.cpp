@@ -18,11 +18,11 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/clock_scope.h"
 #include "ecmascript/mem/concurrent_marker.h"
-#include "ecmascript/mem/object_xray-inl.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/parallel_marker-inl.h"
 #include "ecmascript/mem/space-inl.h"
+#include "ecmascript/mem/visitor.h"
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {

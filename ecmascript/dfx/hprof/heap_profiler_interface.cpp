@@ -27,8 +27,7 @@ HeapProfilerInterface *HeapProfilerInterface::GetInstance(JSThread *thread)
     return HeapProfilerInterface::heapProfile_;
 }
 
-void HeapProfilerInterface::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat,
-                                             const std::string &filePath, bool isVmMode)
+void HeapProfilerInterface::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, Stream *stream, bool isVmMode)
 {
     LOG(ERROR, RUNTIME) << "HeapProfilerInterface::DumpHeapSnapshot";
     const Heap *heap = thread->GetEcmaVM()->GetHeap();
@@ -37,7 +36,7 @@ void HeapProfilerInterface::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFo
         LOG_ECMA(FATAL) << "alloc hprof failed";
         UNREACHABLE();
     }
-    hprof->DumpHeapSnapShot(thread, dumpFormat, filePath, isVmMode);
+    hprof->DumpHeapSnapShot(thread, dumpFormat, stream, isVmMode);
     const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->Delete(hprof);
 }
 

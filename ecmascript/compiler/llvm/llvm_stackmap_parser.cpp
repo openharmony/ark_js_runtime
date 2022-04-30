@@ -17,8 +17,8 @@
 
 #include <iostream>
 #include "ecmascript/frames.h"
-#include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/slots.h"
+#include "ecmascript/mem/visitor.h"
 
 using namespace panda::ecmascript;
 
