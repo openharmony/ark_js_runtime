@@ -63,7 +63,7 @@ int Main(const int argc, const char **argv)
     base_options::Options baseOptions(sp[0]);
 
     panda::PandArg<bool> help("help", false, "Print this message and exit");
-    panda::PandArg<bool> options("options", false, "Print compiler and runtime options");
+    panda::PandArg<bool> options("options", false, "Print options");
     // tail arguments
     panda::PandArg<arg_list_t> files("files", {""}, "path to pandafiles", ":");
     panda::PandArg<std::string> entrypoint("entrypoint", "init::func_main_0",
@@ -114,8 +114,9 @@ int Main(const int argc, const char **argv)
 
     arg_list_t pandaFileNames = files.GetValue();
     PassManager passManager(vm, entry);
-    std::string triple = runtimeOptions.GetAotTargetTriple();
+    std::string triple = runtimeOptions.GetTargetTriple();
     std::string outputFileName = runtimeOptions.GetAOTOutputFile();
+    size_t optLevel = runtimeOptions.GetOptLevel();
     BytecodeStubCSigns::Initialize();
     CommonStubCSigns::Initialize();
     RuntimeStubCSigns::Initialize();
@@ -124,7 +125,7 @@ int Main(const int argc, const char **argv)
     AotLog log(logMethods);
     for (const auto &fileName : pandaFileNames) {
         COMPILER_LOG(INFO) << "AOT start to execute ark file: " << fileName;
-        if (passManager.Compile(fileName, triple, outputFileName, log) == false) {
+        if (passManager.Compile(fileName, triple, outputFileName, log, optLevel) == false) {
             ret = false;
             break;
         }

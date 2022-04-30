@@ -16,6 +16,7 @@
 #define PANDA_RUNTIME_ECMASCRIPT_MEM_MACHINE_CODE_H
 
 #include "ecmascript/ecma_macros.h"
+#include "ecmascript/js_handle.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/tagged_object.h"
@@ -85,7 +86,8 @@ public:
     void Serialize(const std::string &filename);
     bool DeserializeForStub(JSThread *thread, const std::string &filename);
     bool Deserialize(EcmaVM *vm, const std::string &filename);
-    bool VerifyFilePath(const CString &filePath) const;
+    bool VerifyFilePath([[maybe_unused]] const std::string &filePath,
+                        [[maybe_unused]] bool toGenerate = false) const;
 
     struct StubDes {
         uint64_t codeAddr_;
@@ -131,14 +133,14 @@ public:
 
     void Iterate(const RootVisitor &v);
 
-    void SetCode(MachineCode *code)
+    void SetCode(JSHandle<MachineCode> code)
     {
-        code_ = JSTaggedValue(code);
+        code_ = code.GetTaggedValue();
     }
 
-    JSTaggedValue GetCode()
+    JSHandle<MachineCode> GetCode()
     {
-        return code_;
+        return JSHandle<MachineCode>(reinterpret_cast<uintptr_t>(&code_));
     }
 
     void SetCodePtr(uintptr_t codePtr)

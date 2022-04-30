@@ -162,9 +162,16 @@ private:
     size_t stackMapsSize_ {0};
 };
 
+struct LOptions {
+    uint32_t optLevel : 2; // 2 bit for optimized level 0-4
+    uint32_t genFp : 1; // 1 bit for whether to generated frame pointer or not
+    LOptions() : optLevel(3), genFp(1) {}; // 3: default optLevel, 1: generating fp
+    LOptions(size_t level, bool genFp) : optLevel(level), genFp(genFp) {};
+};
+
 class LLVMAssembler {
 public:
-    explicit LLVMAssembler(LLVMModuleRef module, bool genFp = true);
+    explicit LLVMAssembler(LLVMModuleRef module, LOptions option = LOptions());
     virtual ~LLVMAssembler();
     void Run();
     const LLVMExecutionEngineRef &GetEngine()
@@ -206,7 +213,7 @@ private:
     void UseRoundTripSectionMemoryManager();
     bool BuildMCJITEngine();
     void BuildAndRunPasses();
-    void Initialize(bool genFp);
+    void Initialize(LOptions option);
 
     LLVMMCJITCompilerOptions options_ {};
     LLVMModuleRef module_;
