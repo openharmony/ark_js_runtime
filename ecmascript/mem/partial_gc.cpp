@@ -37,23 +37,23 @@ void PartialGC::RunPhases()
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), PartialGC_RunPhases);
     ClockScope clockScope;
 
-    concurrentMark_ = heap_->CheckConcurrentMark();
+    markingInProgress_ = heap_->CheckOngoingConcurrentMarking();
 
-    ECMA_GC_LOG() << "concurrentMark_" << concurrentMark_;
+    ECMA_GC_LOG() << "markingInProgress_" << markingInProgress_;
     Initialize();
     Mark();
     Sweep();
     Evacuate();
     Finish();
-    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticPartialGC(concurrentMark_, clockScope.GetPauseTime(), freeSize_);
+    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticPartialGC(markingInProgress_, clockScope.GetPauseTime(), freeSize_);
     ECMA_GC_LOG() << "PartialGC::RunPhases " << clockScope.TotalSpentTime();
 }
 
 void PartialGC::Initialize()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "PartialGC::Initialize");
-    if (!concurrentMark_) {
-        LOG(INFO, RUNTIME) << "Concurrent mark failure";
+    if (!markingInProgress_) {
+        LOG(INFO, RUNTIME) << "No ongoing Concurrent marking. Initializing...";
         heap_->Prepare();
         if (heap_->IsFullMark()) {
             heap_->GetOldSpace()->SelectCSet();
@@ -75,7 +75,7 @@ void PartialGC::Initialize()
 void PartialGC::Finish()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "PartialGC::Finish");
-    if (concurrentMark_) {
+    if (markingInProgress_) {
         auto marker = heap_->GetConcurrentMarker();
         marker->Reset(false);
     } else {
@@ -87,7 +87,7 @@ void PartialGC::Finish()
 void PartialGC::Mark()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "PartialGC::Mark");
-    if (concurrentMark_) {
+    if (markingInProgress_) {
         heap_->GetConcurrentMarker()->ReMark();
         return;
     }

@@ -69,13 +69,13 @@ void Heap::Initialize()
     machineCodeSpace_ = new MachineCodeSpace(this, maxMachineCodeSpaceCapacity, maxMachineCodeSpaceCapacity);
     machineCodeSpace_->Initialize();
     hugeObjectSpace_ = new HugeObjectSpace(this);
-    parallelGC_ = ecmaVm_->GetJSOptions().IsEnableParallelGC();
-    concurrentMarkingEnabled_ = ecmaVm_->GetJSOptions().IsEnableConcurrentMark();
+    parallelGC_ = ecmaVm_->GetJSOptions().EnableParallelGC();
+    concurrentMarkingEnabled_ = ecmaVm_->GetJSOptions().EnableConcurrentMark();
     markType_ = MarkType::MARK_YOUNG;
 #if ECMASCRIPT_DISABLE_PARALLEL_GC
     parallelGC_ = false;
 #endif
-#if defined(IS_STANDARD_SYSTEM)
+#if ECMASCRIPT_DISABLE_CONCURRENT_MARKING
     concurrentMarkingEnabled_ = false;
 #endif
     workManager_ = new WorkManager(this, Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1);
@@ -84,7 +84,7 @@ void Heap::Initialize()
 
     derivedPointers_ = new ChunkMap<DerivedDataKey, uintptr_t>(ecmaVm_->GetChunk());
     partialGC_ = new PartialGC(this);
-    sweeper_ = new ConcurrentSweeper(this, ecmaVm_->GetJSOptions().IsEnableConcurrentSweep());
+    sweeper_ = new ConcurrentSweeper(this, ecmaVm_->GetJSOptions().EnableConcurrentSweep());
     concurrentMarker_ = new ConcurrentMarker(this);
     nonMovableMarker_ = new NonMovableMarker(this);
     semiGCMarker_ = new SemiGCMarker(this);
@@ -216,7 +216,7 @@ void Heap::Resume(TriggerGCType gcType)
 
 TriggerGCType Heap::SelectGCType() const
 {
-    // If concurrent mark is enable, The TryTriggerConcurrentMarking decide which GC to choose.
+    // If concurrent mark is enabled, the TryTriggerConcurrentMarking decide which GC to choose.
     if (concurrentMarkingEnabled_) {
         return YOUNG_GC;
     }
@@ -266,9 +266,9 @@ void Heap::CollectGarbage(TriggerGCType gcType)
             if (concurrentMarkingEnabled_ && markType_ == MarkType::MARK_YOUNG) {
                 // Wait for existing concurrent marking tasks to be finished (if any),
                 // and reset concurrent marker's status for full mark.
-                bool concurrentMark = CheckConcurrentMark();
+                bool concurrentMark = CheckOngoingConcurrentMarking();
                 if (concurrentMark) {
-                    GetConcurrentMarker()->Reset();
+                    concurrentMarker_->Reset();
                 }
             }
             SetMarkType(MarkType::MARK_FULL);
@@ -403,12 +403,12 @@ void Heap::CheckAndTriggerOldGC()
     }
 }
 
-bool Heap::CheckConcurrentMark()
+bool Heap::CheckOngoingConcurrentMarking()
 {
     if (concurrentMarkingEnabled_ && !thread_->IsReadyToMark()) {
         if (thread_->IsMarking()) {
             [[maybe_unused]] ClockScope clockScope;
-            ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "Heap::CheckConcurrentMark");
+            ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "Heap::CheckOngoingConcurrentMarking");
             MEM_ALLOCATE_AND_GC_TRACE(GetEcmaVM(), WaitConcurrentMarkingFinished);
             GetNonMovableMarker()->ProcessMarkStack(MAIN_THREAD_INDEX);
             WaitConcurrentMarkingFinished();

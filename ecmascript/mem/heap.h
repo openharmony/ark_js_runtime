@@ -219,6 +219,7 @@ public:
     /*
      * GC triggers.
      */
+
     void CollectGarbage(TriggerGCType gcType);
 
     void CheckAndTriggerOldGC();
@@ -226,6 +227,7 @@ public:
     /*
      * Parallel GC related configurations and utilities.
      */
+
     void PostParallelGCTask(ParallelGCTaskPhase taskPhase);
 
     bool IsParallelGCEnabled() const
@@ -240,6 +242,7 @@ public:
     /*
      * Concurrent marking related configurations and utilities.
      */
+
     void EnableConcurrentMarking(bool flag)
     {
         concurrentMarkingEnabled_ = flag;
@@ -254,11 +257,16 @@ public:
 
     void TriggerConcurrentMarking();
 
-    bool CheckConcurrentMark();
+    /*
+     * Wait for existing concurrent marking tasks to be finished (if any).
+     * Return true if there's ongoing concurrent marking.
+     */
+    bool CheckOngoingConcurrentMarking();
 
     /*
      * Functions invoked during GC.
      */
+
     void SetMarkType(MarkType markType)
     {
         markType_ = markType;
@@ -317,6 +325,7 @@ public:
     /*
      * Heap tracking will be used by tools like heap profiler etc.
      */
+
     void StartHeapTracking(HeapTracker *tracker)
     {
         tracker_ = tracker;
@@ -333,6 +342,7 @@ public:
     /*
      * Funtions used by heap verification.
      */
+
     template<class Callback>
     void IterateOverObjects(const Callback &cb) const;
 
@@ -449,7 +459,7 @@ private:
     Marker *semiGCMarker_ {nullptr};
     Marker *compressGCMarker_ {nullptr};
 
-    // work manager managing the tasks mostly generated in the GC mark phase.
+    // Work manager managing the tasks mostly generated in the GC mark phase.
     WorkManager *workManager_ {nullptr};
 
     MarkType markType_ {MarkType::MARK_YOUNG};

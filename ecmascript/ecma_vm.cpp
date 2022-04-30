@@ -105,8 +105,8 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
       nativeMethods_(&chunk_)
 {
     options_ = std::move(options);
-    icEnable_ = options_.IsIcEnable();
-    optionalLogEnabled_ = options_.IsEnableOptionalLog();
+    icEnabled_ = options_.EnableIC();
+    optionalLogEnabled_ = options_.EnableOptionalLog();
     snapshotSerializeEnable_ = options_.IsSnapshotSerializeEnabled();
     if (!snapshotSerializeEnable_) {
         snapshotDeserializeEnable_ = options_.IsSnapshotDeserializeEnabled();
@@ -166,7 +166,7 @@ bool EcmaVM::Initialize()
     JSHandle<GlobalEnv> globalEnv = factory_->NewGlobalEnv(*globalEnvClass);
     globalEnv->Init(thread_);
     globalEnv_ = globalEnv.GetTaggedValue();
-    if (options_.IsEnableStubAot()) {
+    if (options_.EnableStubAot()) {
         LoadStubs();
     }
     SetupRegExpResultCache();
@@ -246,7 +246,7 @@ EcmaVM::~EcmaVM()
     ClearBufferData();
 
     if (gcStats_ != nullptr) {
-        if (options_.IsEnableGCStatsPrint()) {
+        if (options_.EnableGCStatsPrint()) {
             gcStats_->PrintStatisticResult(true);
         }
         chunk_.Delete(gcStats_);
@@ -317,7 +317,7 @@ EcmaVM::CpuProfilingScope::CpuProfilingScope(EcmaVM* vm) : vm_(vm), profiler_(nu
 {
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
     JSRuntimeOptions options = vm_->GetJSOptions();
-    if (options.IsEnableCpuProfiler()) {
+    if (options.EnableCpuProfiler()) {
         profiler_ = CpuProfiler::GetInstance();
         profiler_->CpuProfiler::StartCpuProfiler(vm, "");
     }

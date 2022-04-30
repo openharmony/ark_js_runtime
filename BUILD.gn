@@ -193,10 +193,6 @@ config("ark_jsruntime_common_config") {
     defines += [ "PANDA_USE_MUSL" ]
   }
 
-  if (is_standard_system) {
-    defines += [ "IS_STANDARD_SYSTEM" ]
-  }
-
   if (build_public_version) {
     defines += [ "IS_PUBLIC_VERSION" ]
   }
