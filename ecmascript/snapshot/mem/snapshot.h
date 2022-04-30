@@ -50,7 +50,6 @@ private:
 private:
     size_t AlignUpPageSize(size_t spaceSize);
     std::pair<bool, CString> VerifyFilePath(const CString &filePath);
-    bool VerifySnapShotFile(std::fstream &write, const CString &fileName);
     void WriteToFile(std::fstream &write, const panda_file::File *pf, size_t size,
                      const CVector<uintptr_t> &stringVector);
 
