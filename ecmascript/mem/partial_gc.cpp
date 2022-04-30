@@ -88,7 +88,7 @@ void PartialGC::Mark()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "PartialGC::Mark");
     if (concurrentMark_) {
-        heap_->GetConcurrentMarker()->ReMarking();
+        heap_->GetConcurrentMarker()->ReMark();
         return;
     }
     heap_->GetNonMovableMarker()->MarkRoots(MAIN_THREAD_INDEX);

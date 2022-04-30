@@ -28,8 +28,8 @@
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
-STWYoungGC::STWYoungGC(Heap *heap, bool paralledGc)
-    : heap_(heap), paralledGc_(paralledGc), workManager_(heap->GetWorkManager())
+STWYoungGC::STWYoungGC(Heap *heap, bool parallelGC)
+    : heap_(heap), parallelGC_(parallelGC), workManager_(heap->GetWorkManager())
 {
 }
 
@@ -57,12 +57,12 @@ void STWYoungGC::Initialize()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Initialize");
     heap_->Prepare();
+    commitSize_ = heap_->GetNewSpace()->GetCommittedSize();
     heap_->SwapNewSpace();
-    workManager_->Initialize(TriggerGCType::SEMI_GC, ParallelGCTaskPhase::SEMI_HANDLE_GLOBAL_POOL_TASK);
-    heap_->GetSemiGcMarker()->Initialized();
+    workManager_->Initialize(TriggerGCType::YOUNG_GC, ParallelGCTaskPhase::SEMI_HANDLE_GLOBAL_POOL_TASK);
+    heap_->GetSemiGCMarker()->Initialize();
     promotedSize_ = 0;
     semiCopiedSize_ = 0;
-    commitSize_ = heap_->GetFromSpace()->GetCommittedSize();
 }
 
 void STWYoungGC::Mark()
@@ -70,15 +70,15 @@ void STWYoungGC::Mark()
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Mark");
     auto region = heap_->GetOldSpace()->GetCurrentRegion();
 
-    if (paralledGc_) {
+    if (parallelGC_) {
         heap_->PostParallelGCTask(ParallelGCTaskPhase::SEMI_HANDLE_THREAD_ROOTS_TASK);
         heap_->PostParallelGCTask(ParallelGCTaskPhase::SEMI_HANDLE_SNAPSHOT_TASK);
-        heap_->GetSemiGcMarker()->ProcessOldToNew(0, region);
+        heap_->GetSemiGCMarker()->ProcessOldToNew(0, region);
     } else {
-        heap_->GetSemiGcMarker()->ProcessOldToNew(0, region);
-        heap_->GetSemiGcMarker()->ProcessSnapshotRSet(MAIN_THREAD_INDEX);
-        heap_->GetSemiGcMarker()->MarkRoots(MAIN_THREAD_INDEX);
-        heap_->GetSemiGcMarker()->ProcessMarkStack(MAIN_THREAD_INDEX);
+        heap_->GetSemiGCMarker()->ProcessOldToNew(0, region);
+        heap_->GetSemiGCMarker()->ProcessSnapshotRSet(MAIN_THREAD_INDEX);
+        heap_->GetSemiGCMarker()->MarkRoots(MAIN_THREAD_INDEX);
+        heap_->GetSemiGCMarker()->ProcessMarkStack(MAIN_THREAD_INDEX);
     }
     heap_->WaitRunningTaskFinished();
 
@@ -141,6 +141,6 @@ void STWYoungGC::Finish()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Finish");
     workManager_->Finish(semiCopiedSize_, promotedSize_);
-    heap_->Resume(SEMI_GC);
+    heap_->Resume(YOUNG_GC);
 }
 }  // namespace panda::ecmascript

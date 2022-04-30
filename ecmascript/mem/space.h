@@ -43,11 +43,20 @@ enum MemSpaceType {
     FREE_LIST_NUM = MACHINE_CODE_SPACE - OLD_SPACE + 1,
 };
 
+/*
+ * TriggerGCType is categorized according to the scope the GC expects to cover.
+ * Different GC algorithms may be applied to different GC types.
+ * For example, SemiSpace GC for young generation GC, Mark-Sweep-Compact for full GC, etc.
+ */
 enum TriggerGCType {
-    SEMI_GC,
+    // GC is expected to cover young space only;
+    YOUNG_GC,
+    // GC is expected to cover young space and necessary old spaces;
     OLD_GC,
+    // GC is expected to cover all valid heap spaces;
     FULL_GC,
-    GC_TYPE_LAST  // Count of different types
+
+    GC_TYPE_LAST
 };
 
 static inline std::string ToSpaceTypeName(MemSpaceType type)
@@ -109,22 +118,22 @@ public:
         return committedSize_;
     }
 
-    void IncrementCommitted(size_t bytes)
+    void IncreaseCommitted(size_t bytes)
     {
         committedSize_ += bytes;
     }
 
-    void DecrementCommitted(size_t bytes)
+    void DecreaseCommitted(size_t bytes)
     {
         committedSize_ -= bytes;
     }
 
-    void IncrementObjectSize(size_t bytes)
+    void IncreaseObjectSize(size_t bytes)
     {
         objectSize_ += bytes;
     }
 
-    void DecrementObjectSize(size_t bytes)
+    void DecreaseObjectSize(size_t bytes)
     {
         objectSize_ -= bytes;
     }
@@ -207,7 +216,7 @@ public:
     NO_COPY_SEMANTIC(HugeObjectSpace);
     NO_MOVE_SEMANTIC(HugeObjectSpace);
     uintptr_t Allocate(size_t objectSize);
-    void Sweeping();
+    void Sweep();
     size_t GetHeapObjectSize() const;
     void IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const;
 };

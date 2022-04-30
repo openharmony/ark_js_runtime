@@ -58,9 +58,9 @@ public:
     void RecordAfterConcurrentMark(const bool isFull, const ConcurrentMarker *marker);
 
     double CalculateMarkCompactSpeedPerMS();
-    double GetCurrentOldSpaceAllocationThroughtputPerMS(double timeMs = THROUGHPUT_TIME_FRAME_MS) const;
-    double GetNewSpaceAllocationThroughtPerMS() const;
-    double GetOldSpaceAllocationThroughtPerMS() const;
+    double GetCurrentOldSpaceAllocationThroughputPerMS(double timeMs = THROUGHPUT_TIME_FRAME_MS) const;
+    double GetNewSpaceAllocationThroughputPerMS() const;
+    double GetOldSpaceAllocationThroughputPerMS() const;
     double GetNewSpaceConcurrentMarkSpeedPerMS() const;
     double GetFullSpaceConcurrentMarkSpeedPerMS() const;
 
@@ -69,19 +69,19 @@ public:
         return allocTimeMs_;
     }
 
-    size_t GetOldSpaceAllocAccumulatorSize() const
+    size_t GetOldSpaceAllocAccumulatedSize() const
     {
-        return oldSpaceAllocAccumulatorSize_;
+        return oldSpaceAllocAccumulatedSize_;
     }
 
-    size_t GetNonMovableSpaceAllocAccumulatorSize() const
+    size_t GetNonMovableSpaceAllocAccumulatedSize() const
     {
-        return nonMovableSpaceAllocAccumulatorSize_;
+        return nonMovableSpaceAllocAccumulatedSize_;
     }
 
-    size_t GetCodeSpaceAllocAccumulatorSize() const
+    size_t GetCodeSpaceAllocAccumulatedSize() const
     {
-        return codeSpaceAllocAccumulatorSize_;
+        return codeSpaceAllocAccumulatedSize_;
     }
 
     double GetAllocDurationSinceGc() const
@@ -141,9 +141,9 @@ private:
 
     // Time and allocation accumulators.
     double allocTimeMs_ {0.0};
-    size_t oldSpaceAllocAccumulatorSize_ {0};
-    size_t nonMovableSpaceAllocAccumulatorSize_ {0};
-    size_t codeSpaceAllocAccumulatorSize_ {0};
+    size_t oldSpaceAllocAccumulatedSize_ {0};
+    size_t nonMovableSpaceAllocAccumulatedSize_ {0};
+    size_t codeSpaceAllocAccumulatedSize_ {0};
 
     // Duration and allocation size in last gc.
     double allocDurationSinceGc_ {0.0};

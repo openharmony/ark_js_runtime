@@ -439,7 +439,7 @@ void HeapSnapShot::FillNodes()
     // Iterate Heap Object
     auto heap = thread_->GetEcmaVM()->GetHeap();
     if (heap != nullptr) {
-        heap->IteratorOverObjects([this](TaggedObject *obj) {
+        heap->IterateOverObjects([this](TaggedObject *obj) {
             GenerateNode(JSTaggedValue(obj));
         });
     }

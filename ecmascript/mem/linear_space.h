@@ -26,7 +26,7 @@ public:
     bool Expand(bool isPromoted);
     void Stop();
     void ResetAllocator();
-    void DecrementSurvivalObjectSize(size_t objSize)
+    void DecreaseSurvivalObjectSize(size_t objSize)
     {
         survivalObjectSize_ -= objSize;
     }

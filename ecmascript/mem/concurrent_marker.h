@@ -33,12 +33,12 @@ public:
     explicit ConcurrentMarker(Heap *heap);
     ~ConcurrentMarker() = default;
 
-    void ConcurrentMarking();
-    void FinishPhase();
-    void ReMarking();
+    void Mark();
+    void Finish();
+    void ReMark();
 
-    void HandleMarkFinished();  // call in vm thread.
-    void WaitConcurrentMarkingFinished();  // call in main thread
+    void HandleMarkingFinished();  // call in vm thread.
+    void WaitMarkingFinished();  // call in main thread
     void Reset(bool isRevertCSet = true);
 
     double GetDuration() const
@@ -74,18 +74,18 @@ private:
     }
 
     void InitializeMarking();
-    void MarkingFinished(float spendTime);
+    void FinishMarking(float spendTime);
 
     Heap *heap_ {nullptr};
     EcmaVM *vm_ {nullptr};
     JSThread *thread_ {nullptr};
 
-    // obtain from heap
+    // obtained from the shared heap instance.
     WorkManager *workManager_ {nullptr};
     size_t heapObjectSize_ {0};
     double duration_ {0.0};
 
-    bool notifyMarkingFinished_ {false};             // notify js-thread that marking is finished and need sweep
+    bool notifyMarkingFinished_ {false};         // notify js-thread that marking is finished and sweeping is needed
     bool vmThreadWaitMarkingFinished_ {false};   // jsMainThread waiting for concurrentGC FINISHED
     os::memory::Mutex waitMarkingFinishedMutex_;
     os::memory::ConditionVariable waitMarkingFinishedCV_;

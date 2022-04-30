@@ -31,9 +31,9 @@ namespace panda::ecmascript {
 void ParallelEvacuator::Initialize()
 {
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelEvacuatorInitialize);
+    waterLine_ = heap_->GetNewSpace()->GetWaterLine();
     heap_->SwapNewSpace();
     allocator_ = new TlabAllocator(heap_);
-    waterLine_ = heap_->GetFromSpace()->GetWaterLine();
     promotedSize_ = 0;
 }
 
@@ -58,7 +58,7 @@ void ParallelEvacuator::Evacuate()
 void ParallelEvacuator::EvacuateSpace()
 {
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelEvacuator);
-    heap_->GetFromSpace()->EnumerateRegions([this] (Region *current) {
+    heap_->GetFromSpaceDuringEvacuation()->EnumerateRegions([this] (Region *current) {
         AddWorkload(std::make_unique<EvacuateWorkload>(this, current));
     });
     heap_->GetOldSpace()->EnumerateCollectRegionSet(
@@ -347,7 +347,7 @@ void ParallelEvacuator::UpdateAndSweepNewRegionReference(Region *region)
             size_t freeSize = freeEnd - freeStart;
             FreeObject::FillFreeObject(heap_->GetEcmaVM(), freeStart, freeSize);
             SemiSpace *toSpace = const_cast<SemiSpace *>(heap_->GetNewSpace());
-            toSpace->DecrementSurvivalObjectSize(freeSize);
+            toSpace->DecreaseSurvivalObjectSize(freeSize);
         }
 
         freeStart = freeEnd + klass->SizeFromJSHClass(header);

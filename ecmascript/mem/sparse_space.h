@@ -20,7 +20,7 @@
 
 #define CHECK_OBJECT_AND_INC_OBJ_SIZE(size) \
     if (object != 0) {                      \
-        IncrementLiveObjectSize(size);      \
+        IncreaseLiveObjectSize(size);      \
         return object;                      \
     }
 
@@ -51,8 +51,8 @@ public:
 
     // For sweeping
     void PrepareSweeping();
-    void AsyncSweeping(bool isMain);
-    void Sweeping();
+    void AsyncSweep(bool isMain);
+    void Sweep();
 
     bool FillSweptRegion();
 
@@ -70,12 +70,12 @@ public:
     void IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const;
 
     size_t GetHeapObjectSize() const;
-    void IncrementLiveObjectSize(size_t size)
+    void IncreaseLiveObjectSize(size_t size)
     {
         liveObjectSize_ += size;
     }
 
-    void DecrementLiveObjectSize(size_t size)
+    void DecreaseLiveObjectSize(size_t size)
     {
         liveObjectSize_ -= size;
     }
@@ -106,9 +106,9 @@ public:
     /* The most extreme situation:
      * All the younger generation were promoted, and there was no free space in the old space.
      */
-    bool CanExpand(size_t promoteSize)
+    bool CanExpand(size_t promotedSize)
     {
-        return initialCapacity_ > committedSize_ + promoteSize;
+        return initialCapacity_ > committedSize_ + promotedSize;
     }
     Region *TryToGetExclusiveRegion(size_t size);
 

@@ -41,7 +41,7 @@ public:
     {
         TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
         thread->GetEcmaVM()->SetEnableForceGC(false);
-        const_cast<Heap *>(thread->GetEcmaVM()->GetHeap())->SetMarkType(MarkType::FULL_MARK);
+        const_cast<Heap *>(thread->GetEcmaVM()->GetHeap())->SetMarkType(MarkType::MARK_FULL);
     }
 
     void TearDown() override
@@ -83,7 +83,7 @@ HWTEST_F_L0(HugeObjectTest, LargeArrayKeep)
     arrayHandle->Set(thread, 0, newObj.GetTaggedValue());
     auto ecmaVm = thread->GetEcmaVM();
     EXPECT_EQ(*arrayHandle, reinterpret_cast<TaggedObject *>(array));
-    ecmaVm->CollectGarbage(TriggerGCType::SEMI_GC);   // Trigger GC.
+    ecmaVm->CollectGarbage(TriggerGCType::YOUNG_GC);   // Trigger GC.
     ecmaVm->CollectGarbage(TriggerGCType::OLD_GC);  // Trigger GC.
     EXPECT_EQ(*newObj, array->Get(0).GetTaggedObject());
     EXPECT_EQ(*arrayHandle, reinterpret_cast<TaggedObject *>(array));

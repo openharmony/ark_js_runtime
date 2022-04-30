@@ -53,25 +53,25 @@ void ConcurrentSweeper::Sweep(bool fullGC)
         isSweeping_ = true;
         startSpaceType_ = fullGC ? NON_MOVABLE : OLD_SPACE;
         for (int type = startSpaceType_; type < FREE_LIST_NUM; type++) {
-            remainderTaskNum_[type] = FREE_LIST_NUM - startSpaceType_;
+            remainingTaskNum_[type] = FREE_LIST_NUM - startSpaceType_;
         }
     } else {
         if (!fullGC) {
-            heap_->GetOldSpace()->Sweeping();
+            heap_->GetOldSpace()->Sweep();
         }
-        heap_->GetNonMovableSpace()->Sweeping();
-        heap_->GetMachineCodeSpace()->Sweeping();
+        heap_->GetNonMovableSpace()->Sweep();
+        heap_->GetMachineCodeSpace()->Sweep();
     }
-    heap_->GetHugeObjectSpace()->Sweeping();
+    heap_->GetHugeObjectSpace()->Sweep();
 }
 
 void ConcurrentSweeper::AsyncSweepSpace(MemSpaceType type, bool isMain)
 {
     auto space = heap_->GetSpaceWithType(type);
-    space->AsyncSweeping(isMain);
+    space->AsyncSweep(isMain);
 
     os::memory::LockHolder holder(mutexs_[type]);
-    if (--remainderTaskNum_[type] == 0) {
+    if (--remainingTaskNum_[type] == 0) {
         cvs_[type].SignalAll();
     }
 }
@@ -82,9 +82,9 @@ void ConcurrentSweeper::WaitAllTaskFinished()
         return;
     }
     for (int i = startSpaceType_; i < FREE_LIST_NUM; i++) {
-        if (remainderTaskNum_[i] > 0) {
+        if (remainingTaskNum_[i] > 0) {
             os::memory::LockHolder holder(mutexs_[i]);
-            while (remainderTaskNum_[i] > 0) {
+            while (remainingTaskNum_[i] > 0) {
                 cvs_[i].Wait(&mutexs_[i]);
             }
         }
@@ -114,14 +114,14 @@ void ConcurrentSweeper::EnsureTaskFinished(MemSpaceType type)
 
 void ConcurrentSweeper::WaitingTaskFinish(MemSpaceType type)
 {
-    if (remainderTaskNum_[type] > 0) {
+    if (remainingTaskNum_[type] > 0) {
         {
             os::memory::LockHolder holder(mutexs_[type]);
-            remainderTaskNum_[type]++;
+            remainingTaskNum_[type]++;
         }
         AsyncSweepSpace(type, true);
         os::memory::LockHolder holder(mutexs_[type]);
-        while (remainderTaskNum_[type] > 0) {
+        while (remainingTaskNum_[type] > 0) {
             cvs_[type].Wait(&mutexs_[type]);
         }
     }

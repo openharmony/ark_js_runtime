@@ -127,8 +127,8 @@ bool SemiSpace::SwapRegion(Region *region, SemiSpace *fromSpace)
     region->SetSpace(this);
 
     regionList_.AddNodeToFront(region);
-    IncrementCommitted(region->GetCapacity());
-    IncrementObjectSize(region->GetSize());
+    IncreaseCommitted(region->GetCapacity());
+    IncreaseObjectSize(region->GetSize());
     survivalObjectSize_ += region->GetAllocatedBytes();
     return true;
 }
