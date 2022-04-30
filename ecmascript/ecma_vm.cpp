@@ -157,6 +157,9 @@ bool EcmaVM::Initialize()
     tsLoader_ = new TSLoader(this);
     snapshotEnv_ = new SnapShotEnv(this);
     aotInfo_ = new AotCodeInfo();
+    if (options_.IsEnableStubAot()) {
+        LoadStubs();
+    }
     if (options_.EnableTSAot()) {
         TryLoadSnapshotFile();
         std::string file = options_.GetAOTOutputFile();
@@ -166,9 +169,6 @@ bool EcmaVM::Initialize()
     JSHandle<GlobalEnv> globalEnv = factory_->NewGlobalEnv(*globalEnvClass);
     globalEnv->Init(thread_);
     globalEnv_ = globalEnv.GetTaggedValue();
-    if (options_.IsEnableStubAot()) {
-        LoadStubs();
-    }
     SetupRegExpResultCache();
     microJobQueue_ = factory_->NewMicroJobQueue().GetTaggedValue();
     Builtins builtins;

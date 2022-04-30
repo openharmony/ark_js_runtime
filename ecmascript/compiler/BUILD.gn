@@ -186,13 +186,6 @@ ohos_shared_library("libark_jsoptimizer_test") {
   subsystem_name = "test"
 }
 
-ark_gen_file("stub_aot_options_gen_h") {
-  template_file = "options.h.erb"
-  data_file = "stub_aot_options.yaml"
-  requires = [ "$ark_root/templates/common.rb" ]
-  output_file = "$target_gen_dir/generated/stub_aot_options_gen.h"
-}
-
 source_set("ark_stub_compiler_static") {
   sources = [ "stub_compiler.cpp" ]
   include_dirs = [ "$target_gen_dir" ]
@@ -204,7 +197,6 @@ source_set("ark_stub_compiler_static") {
   ]
 
   deps = [
-    ":stub_aot_options_gen_h",
     "$ark_root/libpandabase:libarkbase",
     "//ark/js_runtime:libark_jsruntime",
     "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer",
