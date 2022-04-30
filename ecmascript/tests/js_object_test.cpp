@@ -429,10 +429,10 @@ HWTEST_F_L0(JSObjectTest, GetOwnPropertyKeys)
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj), key4, value4);
 
     JSHandle<TaggedArray> array = JSObject::GetOwnPropertyKeys(thread, obj);
-    int length = array->GetLength();
-    EXPECT_EQ(length, 4);
+    uint32_t length = array->GetLength();
+    EXPECT_EQ(length, 4U);
     int sum = 0;
-    for (int i = 0; i < length; i++) {
+    for (uint32_t i = 0; i < length; i++) {
         JSHandle<JSTaggedValue> key(thread, array->Get(i));
         sum += JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(obj), key).GetValue()->GetInt();
     }

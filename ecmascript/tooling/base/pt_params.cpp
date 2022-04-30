@@ -189,7 +189,7 @@ std::unique_ptr<GetScriptSourceParams> GetScriptSourceParams::Create(const EcmaV
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->scriptId_ = DebuggerApi::StringToInt(result);
+            paramsObject->scriptId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
         } else {
             error += "'scriptId' should be a String;";
         }
@@ -307,7 +307,7 @@ std::unique_ptr<SetBlackboxPatternsParams> SetBlackboxPatternsParams::Create(con
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             Local<ArrayRef> array = Local<ArrayRef>(result);
-            uint32_t len = array->Length(ecmaVm);
+            uint32_t len = static_cast<uint32_t>(array->Length(ecmaVm));
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
             for (uint32_t i = 0; i < len; i++) {
                 key = IntegerRef::New(ecmaVm, i);
@@ -348,7 +348,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            paramsObject->line_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            paramsObject->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'lineNumber' should be a Number;";
         }

@@ -197,7 +197,7 @@ void HeapSnapShotJSONSerializer::WriteChunk()
     int chunkLen = stream_->GetSize();
 
     std::string subStr = stringBuffer_.str();
-    int strLen = subStr.length();
+    int strLen = static_cast<int>(subStr.length());
     char *subCStr = const_cast<char *>(subStr.c_str());
     while (strLen >= chunkLen) {
         if (!stream_->WriteChunk(subCStr, chunkLen)) {
