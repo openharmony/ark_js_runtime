@@ -183,7 +183,7 @@ struct PUBLIC_API JSMethod : public base::AlignedStruct<sizeof(uint64_t),
         return GetOffset<static_cast<size_t>(Index::LITERAL_INFO_INDEX)>(isArch32);
     }
 
-    inline NO_THREAD_SANITIZE void IncrementHotnessCounter()
+    inline NO_THREAD_SANITIZE void IncreaseHotnessCounter()
     {
         auto hotnessCounter = HotnessCounterBits::Decode(literalInfo_);
         literalInfo_ = HotnessCounterBits::Update(literalInfo_, ++hotnessCounter);

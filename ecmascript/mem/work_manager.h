@@ -161,12 +161,12 @@ public:
         works_[threadId].weakQueue_->PushBack(weak);
     }
 
-    inline void IncrementAliveSize(uint32_t threadId, size_t size)
+    inline void IncreaseAliveSize(uint32_t threadId, size_t size)
     {
         works_[threadId].aliveSize_ += size;
     }
 
-    inline void IncrementPromotedSize(uint32_t threadId, size_t size)
+    inline void IncreasePromotedSize(uint32_t threadId, size_t size)
     {
         works_[threadId].promotedSize_ += size;
     }

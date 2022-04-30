@@ -35,7 +35,7 @@ namespace panda {
 namespace ecmascript {
 class STWYoungGC : public GarbageCollector {
 public:
-    explicit STWYoungGC(Heap *heap, bool paralledGc);
+    explicit STWYoungGC(Heap *heap, bool parallelGC);
     ~STWYoungGC() override = default;
     NO_COPY_SEMANTIC(STWYoungGC);
     NO_MOVE_SEMANTIC(STWYoungGC);
@@ -63,10 +63,10 @@ private:
     Heap *heap_;
     size_t promotedSize_ {0};
     size_t semiCopiedSize_ {0};
-    size_t commitSize_ = 0;
+    size_t commitSize_ {0};
 
     // obtain from heap
-    bool paralledGc_ {false};
+    bool parallelGC_ {false};
     WorkManager *workManager_ {nullptr};
 
     friend class TlabAllocator;

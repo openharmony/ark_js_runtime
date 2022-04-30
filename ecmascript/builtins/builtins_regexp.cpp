@@ -487,7 +487,7 @@ JSTaggedValue BuiltinsRegExp::Match(EcmaRuntimeCallInfo *argv)
             // e. ReturnIfAbrupt(setStatus).
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         }
-        // 6. Increment n.
+        // 6. Increase n.
         resultNum++;
     }
 }

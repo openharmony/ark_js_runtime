@@ -38,10 +38,10 @@ ConcurrentMarker::ConcurrentMarker(Heap *heap)
     thread_->SetMarkStatus(MarkStatus::READY_TO_MARK);
 }
 
-void ConcurrentMarker::ConcurrentMarking()
+void ConcurrentMarker::Mark()
 {
-    ECMA_GC_LOG() << "ConcurrentMarker: Concurrent Mark Begin";
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "ConcurrentMarker::ConcurrentMarking");
+    ECMA_GC_LOG() << "ConcurrentMarker: Concurrent Marking Begin";
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "ConcurrentMarker::Mark");
     MEM_ALLOCATE_AND_GC_TRACE(vm_, ConcurrentMarking);
     ClockScope scope;
     InitializeMarking();
@@ -52,18 +52,18 @@ void ConcurrentMarker::ConcurrentMarking()
     heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticConcurrentMark(scope.GetPauseTime());
 }
 
-void ConcurrentMarker::FinishPhase()
+void ConcurrentMarker::Finish()
 {
     size_t aliveSize = 0;
     workManager_->Finish(aliveSize);
 }
 
-void ConcurrentMarker::ReMarking()
+void ConcurrentMarker::ReMark()
 {
     ECMA_GC_LOG() << "ConcurrentMarker: Remarking Begin";
     MEM_ALLOCATE_AND_GC_TRACE(vm_, ReMarking);
     ClockScope scope;
-    Marker *nonMoveMarker =  heap_->GetNonMovableMarker();
+    Marker *nonMoveMarker = heap_->GetNonMovableMarker();
     nonMoveMarker->MarkRoots(MAIN_THREAD_INDEX);
     if (!heap_->IsFullMark() && !heap_->IsParallelGCEnabled()) {
         heap_->GetNonMovableMarker()->ProcessOldToNew(MAIN_THREAD_INDEX);
@@ -75,15 +75,15 @@ void ConcurrentMarker::ReMarking()
     heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticConcurrentRemark(scope.GetPauseTime());
 }
 
-void ConcurrentMarker::HandleMarkFinished()  // js-thread wait for sweep
+void ConcurrentMarker::HandleMarkingFinished()  // js-thread wait for sweep
 {
     os::memory::LockHolder lock(waitMarkingFinishedMutex_);
     if (notifyMarkingFinished_) {
-        heap_->CollectGarbage(TriggerGCType::SEMI_GC);
+        heap_->CollectGarbage(TriggerGCType::YOUNG_GC);
     }
 }
 
-void ConcurrentMarker::WaitConcurrentMarkingFinished()  // call in EcmaVm thread, wait for mark finished
+void ConcurrentMarker::WaitMarkingFinished()  // call in EcmaVm thread, wait for mark finished
 {
     os::memory::LockHolder lock(waitMarkingFinishedMutex_);
     if (!notifyMarkingFinished_) {
@@ -94,7 +94,7 @@ void ConcurrentMarker::WaitConcurrentMarkingFinished()  // call in EcmaVm thread
 
 void ConcurrentMarker::Reset(bool isRevertCSet)
 {
-    FinishPhase();
+    Finish();
     thread_->SetMarkStatus(MarkStatus::READY_TO_MARK);
     notifyMarkingFinished_ = false;
     if (isRevertCSet) {
@@ -112,7 +112,6 @@ void ConcurrentMarker::Reset(bool isRevertCSet)
     }
 }
 
-// -------------------- privete method ------------------------------------------
 void ConcurrentMarker::InitializeMarking()
 {
     MEM_ALLOCATE_AND_GC_TRACE(vm_, ConcurrentMarkingInitialize);
@@ -122,7 +121,7 @@ void ConcurrentMarker::InitializeMarking()
     if (heap_->IsFullMark()) {
         heapObjectSize_ = heap_->GetHeapObjectSize();
         heap_->GetOldSpace()->SelectCSet();
-        // The alive object size of Region in OldSpace will be recompute
+        // The alive object size of Region in OldSpace will be recalculated.
         heap_->EnumerateNonNewSpaceRegions([](Region *current) {
             current->ClearMarkGCBitset();
             current->ClearCrossRegionRSet();
@@ -140,11 +139,11 @@ bool ConcurrentMarker::MarkerTask::Run(uint32_t threadId)
     ClockScope clockScope;
     heap_->GetNonMovableMarker()->ProcessMarkStack(threadId);
     heap_->WaitRunningTaskFinished();
-    heap_->GetConcurrentMarker()->MarkingFinished(clockScope.TotalSpentTime());
+    heap_->GetConcurrentMarker()->FinishMarking(clockScope.TotalSpentTime());
     return true;
 }
 
-void ConcurrentMarker::MarkingFinished(float spendTime)
+void ConcurrentMarker::FinishMarking(float spendTime)
 {
     os::memory::LockHolder lock(waitMarkingFinishedMutex_);
     thread_->SetMarkStatus(MarkStatus::MARK_FINISHED);

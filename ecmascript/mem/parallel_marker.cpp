@@ -88,12 +88,12 @@ void NonMovableMarker::ProcessMarkStack(uint32_t threadId)
     }
 }
 
-void SemiGcMarker::Initialized()
+void SemiGCMarker::Initialize()
 {
     waterLine_ = heap_->GetNewSpace()->GetWaterLine();
 }
 
-void SemiGcMarker::ProcessMarkStack(uint32_t threadId)
+void SemiGCMarker::ProcessMarkStack(uint32_t threadId)
 {
     auto visitor = [this, threadId](TaggedObject *root, ObjectSlot start, ObjectSlot end,
                                     [[maybe_unused]] bool isNative) {
@@ -126,7 +126,7 @@ void SemiGcMarker::ProcessMarkStack(uint32_t threadId)
     }
 }
 
-void CompressGcMarker::ProcessMarkStack(uint32_t threadId)
+void CompressGCMarker::ProcessMarkStack(uint32_t threadId)
 {
     auto visitor = [this, threadId]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end,
                                     [[maybe_unused]] bool isNative) {

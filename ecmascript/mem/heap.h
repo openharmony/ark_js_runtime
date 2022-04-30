@@ -26,25 +26,24 @@
 #include "ecmascript/taskpool/taskpool.h"
 
 namespace panda::ecmascript {
+class ConcurrentMarker;
+class ConcurrentSweeper;
 class EcmaVM;
-class STWYoungGC;
-class PartialGC;
 class FullGC;
-class BumpPointerAllocator;
-class NativeAreaAllocator;
 class HeapRegionAllocator;
 class HeapTracker;
-class MemController;
-class ConcurrentSweeper;
-class ConcurrentMarker;
 class Marker;
+class MemController;
+class NativeAreaAllocator;
 class ParallelEvacuator;
+class PartialGC;
+class STWYoungGC;
 
 using DerivedDataKey = std::pair<uintptr_t, uintptr_t>;
 
 enum class MarkType : uint8_t {
-    SEMI_MARK,
-    FULL_MARK
+    MARK_YOUNG,
+    MARK_FULL
 };
 
 class Heap {
@@ -58,14 +57,22 @@ public:
     void Prepare();
     void Resume(TriggerGCType gcType);
 
+    // fixme: Rename NewSpace to YoungSpace.
+    // This is the active young generation space that the new objects are allocated in
+    // or copied into (from the other semi space) during semi space GC.
     SemiSpace *GetNewSpace() const
     {
-        return toSpace_;
+        return activeSpace_;
     }
 
-    SemiSpace *GetFromSpace() const
+    /*
+     * Return the original active space where the objects are to be evacuated during semi space GC.
+     * This should be invoked only in the evacuation phase of semi space GC.
+     * fixme: Get rid of this interface or make it safe considering the above implicit limitation / requirement.
+     */
+    SemiSpace *GetFromSpaceDuringEvacuation() const
     {
-        return fromSpace_;
+        return inactiveSpace_;
     }
 
     OldSpace *GetOldSpace() const
@@ -146,14 +153,14 @@ public:
         return nonMovableMarker_;
     }
 
-    Marker *GetSemiGcMarker() const
+    Marker *GetSemiGCMarker() const
     {
-        return semiGcMarker_;
+        return semiGCMarker_;
     }
 
-    Marker *GetCompressGcMarker() const
+    Marker *GetCompressGCMarker() const
     {
-        return compressGcMarker_;
+        return compressGCMarker_;
     }
 
     EcmaVM *GetEcmaVM() const
@@ -176,7 +183,96 @@ public:
         return memController_;
     }
 
+    /*
+     * For object allocations.
+     */
+
+    // Young
+    inline TaggedObject *AllocateYoungOrHugeObject(JSHClass *hclass);
+    inline TaggedObject *AllocateYoungOrHugeObject(JSHClass *hclass, size_t size);
+    inline uintptr_t AllocateYoungSync(size_t size);
+    inline TaggedObject *TryAllocateYoungGeneration(JSHClass *hclass, size_t size);
+    // Old
+    inline TaggedObject *AllocateOldOrHugeObject(JSHClass *hclass);
+    inline TaggedObject *AllocateOldOrHugeObject(JSHClass *hclass, size_t size);
+    // Non-movable
+    inline TaggedObject *AllocateNonMovableOrHugeObject(JSHClass *hclass);
+    inline TaggedObject *AllocateNonMovableOrHugeObject(JSHClass *hclass, size_t size);
+    inline TaggedObject *AllocateDynClassClass(JSHClass *hclass, size_t size);
+    // Huge
+    inline TaggedObject *AllocateHugeObject(JSHClass *hclass, size_t size);
+    // Machine code
+    inline TaggedObject *AllocateMachineCodeObject(JSHClass *hclass, size_t size);
+    // Snapshot
+    inline uintptr_t AllocateSnapShotSpace(size_t size);
+
+    NativeAreaAllocator *GetNativeAreaAllocator() const
+    {
+        return nativeAreaAllocator_;
+    }
+
+    const HeapRegionAllocator *GetHeapRegionAllocator() const
+    {
+        return heapRegionAllocator_;
+    }
+
+    /*
+     * GC triggers.
+     */
+    void CollectGarbage(TriggerGCType gcType);
+
+    void CheckAndTriggerOldGC();
+
+    /*
+     * Parallel GC related configurations and utilities.
+     */
+    void PostParallelGCTask(ParallelGCTaskPhase taskPhase);
+
+    bool IsParallelGCEnabled() const
+    {
+        return parallelGC_;
+    }
+
+    bool CheckCanDistributeTask();
+
+    void WaitRunningTaskFinished();
+
+    /*
+     * Concurrent marking related configurations and utilities.
+     */
+    void EnableConcurrentMarking(bool flag)
+    {
+        concurrentMarkingEnabled_ = flag;
+    }
+
+    bool ConcurrentMarkingEnabled() const
+    {
+        return concurrentMarkingEnabled_;
+    }
+
+    void TryTriggerConcurrentMarking();
+
+    void TriggerConcurrentMarking();
+
+    bool CheckConcurrentMark();
+
+    /*
+     * Functions invoked during GC.
+     */
+    void SetMarkType(MarkType markType)
+    {
+        markType_ = markType;
+    }
+
+    bool IsFullMark() const
+    {
+        return markType_ == MarkType::MARK_FULL;
+    }
+
     inline void SwapNewSpace();
+
+    inline bool MoveYoungRegionSync(Region *region);
+    inline void MergeToOldSpaceSync(LocalSpace *localSpace);
 
     template<class Callback>
     void EnumerateOldSpaceRegions(const Callback &cb, Region *region = nullptr) const;
@@ -196,36 +292,31 @@ public:
     template<class Callback>
     inline void EnumerateRegions(const Callback &cb) const;
 
-    template<class Callback>
-    void IteratorOverObjects(const Callback &cb) const;
+    inline void ClearSlotsRange(Region *current, uintptr_t freeStart, uintptr_t freeEnd);
 
-    TriggerGCType SelectGCType() const;
-    void CollectGarbage(TriggerGCType gcType);
+    void WaitConcurrentMarkingFinished();
 
-    // Young
-    inline TaggedObject *AllocateYoungOrHugeObject(JSHClass *hclass);
-    inline TaggedObject *AllocateYoungOrHugeObject(JSHClass *hclass, size_t size);
-    inline uintptr_t AllocateYoungSync(size_t size);
-    inline TaggedObject *TryAllocateYoungGeneration(JSHClass *hclass, size_t size);
-    // Old
-    inline TaggedObject *AllocateOldOrHugeObject(JSHClass *hclass);
-    inline TaggedObject *AllocateOldOrHugeObject(JSHClass *hclass, size_t size);
-    // Nonmovable
-    inline TaggedObject *AllocateNonMovableOrHugeObject(JSHClass *hclass);
-    inline TaggedObject *AllocateNonMovableOrHugeObject(JSHClass *hclass, size_t size);
-    inline TaggedObject *AllocateDynClassClass(JSHClass *hclass, size_t size);
-    // Huge
-    inline TaggedObject *AllocateHugeObject(JSHClass *hclass, size_t size);
-    // Machine code
-    inline TaggedObject *AllocateMachineCodeObject(JSHClass *hclass, size_t size);
-    // Snapshot
-    inline uintptr_t AllocateSnapShotSpace(size_t size);
+    inline size_t GetCommittedSize() const;
 
-    inline bool MoveYoungRegionSync(Region *region);
-    inline void MergeToOldSpaceSync(LocalSpace *localSpace);
+    inline size_t GetHeapObjectSize() const;
 
-    void ThrowOutOfMemoryError(size_t size, std::string functionName);
+    size_t GetPromotedSize() const
+    {
+        return promotedSize_;
+    }
 
+    size_t GetArrayBufferSize() const;
+
+    ChunkMap<DerivedDataKey, uintptr_t> *GetDerivedPointers() const
+    {
+        return derivedPointers_;
+    }
+    void UpdateDerivedObjectInStack();
+    static constexpr uint32_t STACK_MAP_DEFALUT_DERIVED_SIZE = 8U;
+
+    /*
+     * Heap tracking will be used by tools like heap profiler etc.
+     */
     void StartHeapTracking(HeapTracker *tracker)
     {
         tracker_ = tracker;
@@ -239,101 +330,32 @@ public:
     inline void OnAllocateEvent(uintptr_t address);
     inline void OnMoveEvent(uintptr_t address, uintptr_t forwardAddress);
 
-    void TryTriggerConcurrentMarking();
+    /*
+     * Funtions used by heap verification.
+     */
+    template<class Callback>
+    void IterateOverObjects(const Callback &cb) const;
 
-    void TriggerConcurrentMarking();
-
-    bool CheckConcurrentMark();
-
-    void CheckAndTriggerOldGC();
-
-    NativeAreaAllocator *GetNativeAreaAllocator() const
-    {
-        return nativeAreaAllocator_;
-    }
-
-    const HeapRegionAllocator *GetHeapRegionAllocator() const
-    {
-        return heapRegionAllocator_;
-    }
-
-    bool IsLive(TaggedObject *object) const;
+    bool IsAlive(TaggedObject *object) const;
     bool ContainObject(TaggedObject *object) const;
 
-    void RecomputeLimits();
-
     size_t VerifyHeapObjects() const;
-
-    inline void ClearSlotsRange(Region *current, uintptr_t freeStart, uintptr_t freeEnd);
-
-    ChunkMap<DerivedDataKey, uintptr_t> *GetDerivedPointers() const
-    {
-        return derivedPointers_;
-    }
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
-    bool GetIsVerifying() const
+    bool IsVerifying() const
     {
         return isVerifying_;
     }
 #endif
 
-    void UpdateDerivedObjectInStack();
-    static constexpr uint32_t STACK_MAP_DEFALUT_DERIVED_SIZE = 8U;
-
-    void WaitRunningTaskFinished();
-
-    bool CheckCanDistributeTask();
-
-    void PostParallelGCTask(ParallelGCTaskPhase taskPhase);
-
-    bool IsParallelGCEnabled() const
-    {
-        return paralledGc_;
-    }
-
-    void WaitConcurrentMarkingFinished();
-
-    void SetConcurrentMarkingEnable(bool flag)
-    {
-        concurrentMarkingEnabled_ = flag;
-    }
-
-    bool ConcurrentMarkingEnable() const
-    {
-        return concurrentMarkingEnabled_;
-    }
-
-    void SetMarkType(MarkType markType)
-    {
-        markType_ = markType;
-    }
-
-    bool IsFullMark() const
-    {
-        return markType_ == MarkType::FULL_MARK;
-    }
-
-    size_t GetArrayBufferSize() const;
-
-    inline size_t GetCommittedSize() const;
-
-    inline size_t GetHeapObjectSize() const;
-
-    void AdjustOldSpaceLimit();
-
-    size_t GetPromotedSize() const
-    {
-        return promotedSize_;
-    }
-
-    size_t GetSemiSpaceCopiedSize() const
-    {
-        return semiSpaceCopiedSize_;
-    }
 private:
+    void ThrowOutOfMemoryError(size_t size, std::string functionName);
+    void RecomputeLimits();
+    void AdjustOldSpaceLimit();
+    TriggerGCType SelectGCType() const;
     void IncreaseTaskCount();
-
     void ReduceTaskCount();
+    void WaitClearTaskFinished();
+    inline void ReclaimRegions(TriggerGCType gcType, Region *lastRegionOfToSpace = nullptr);
 
     class ParallelGCTask : public Task {
     public:
@@ -366,54 +388,106 @@ private:
         TriggerGCType gcType_;
     };
 
-    inline void ReclaimRegions(TriggerGCType gcType, Region *lastRegionOfToSpace = nullptr);
-    void WaitClearTaskFinished();
-
     EcmaVM *ecmaVm_ {nullptr};
     JSThread *thread_ {nullptr};
-    SemiSpace *fromSpace_ {nullptr};
-    SemiSpace *toSpace_ {nullptr};
+
+    /*
+     * Heap spaces.
+     */
+
+    /*
+     * Young generation spaces where most new objects are allocated.
+     * (only one of the spaces is active at a time in semi space GC).
+     */
+    SemiSpace *activeSpace_ {nullptr};
+    SemiSpace *inactiveSpace_ {nullptr};
+
+    // Old generation spaces where some long living objects are allocated or promoted.
     OldSpace *oldSpace_ {nullptr};
     OldSpace *compressSpace_ {nullptr};
+
+    // Spaces used for special kinds of objects.
     NonMovableSpace *nonMovableSpace_ {nullptr};
     MachineCodeSpace *machineCodeSpace_ {nullptr};
     HugeObjectSpace *hugeObjectSpace_ {nullptr};
     SnapShotSpace *snapshotSpace_ {nullptr};
+
+    /*
+     * Garbage collectors collecting garbage in different scopes.
+     */
+
+    /*
+     * Semi sapce GC which collects garbage only in young spaces.
+     * This is however optional for now because the partial GC also covers its functionality.
+     */
     STWYoungGC *stwYoungGC_ {nullptr};
+
+    /*
+     * The mostly used partial GC which collects garbage in young spaces,
+     * and part of old spaces if needed determined by GC heuristics.
+     */
     PartialGC *partialGC_ {nullptr};
+
+    // Full collector which collects garbage in all valid heap spaces.
     FullGC *fullGC_ {nullptr};
-    ConcurrentSweeper *sweeper_ {nullptr};
+
+    // Concurrent marker which coordinates actions of GC markers and mutators.
     ConcurrentMarker *concurrentMarker_ {nullptr};
-    WorkManager *workManager_ {nullptr};
-    Marker *nonMovableMarker_ {nullptr};
-    Marker *semiGcMarker_ {nullptr};
-    Marker *compressGcMarker_ {nullptr};
+
+    // Concurrent sweeper which coordinates actions of sweepers (in spaces excluding young semi spaces) and mutators.
+    ConcurrentSweeper *sweeper_ {nullptr};
+
+    // Parallel evacuator which evacuates objects from one space to another one.
     ParallelEvacuator *evacuator_ {nullptr};
+
+    /*
+     * Different kinds of markers used by different collectors.
+     * Depending on the collector algorithm, some markers can do simple marking
+     *  while some others need to handle object movement.
+     */
+    Marker *nonMovableMarker_ {nullptr};
+    Marker *semiGCMarker_ {nullptr};
+    Marker *compressGCMarker_ {nullptr};
+
+    // work manager managing the tasks mostly generated in the GC mark phase.
+    WorkManager *workManager_ {nullptr};
+
+    MarkType markType_ {MarkType::MARK_YOUNG};
+
+    bool parallelGC_ {true};
+    bool concurrentMarkingEnabled_ {true};
+    bool fullGCRequested_ {false};
+
+    size_t globalSpaceAllocLimit_ {GLOBAL_SPACE_LIMIT_BEGIN};
+    bool oldSpaceLimitAdjusted_ {false};
+    size_t promotedSize_ {0};
+    size_t semiSpaceCopiedSize_ {0};
+
+    bool clearTaskFinished_ {true};
+    os::memory::Mutex waitClearTaskFinishedMutex_;
+    os::memory::ConditionVariable waitClearTaskFinishedCV_;
+    uint32_t runningTaskCount_ {0};
+    os::memory::Mutex waitTaskFinishedMutex_;
+    os::memory::ConditionVariable waitTaskFinishedCV_;
+
+    /*
+     * The memory controller providing memory statistics (by allocations and coleections),
+     * which is used for GC heuristics.
+     */
+    MemController *memController_ {nullptr};
+
+    // Region allocators.
     NativeAreaAllocator *nativeAreaAllocator_ {nullptr};
     HeapRegionAllocator *heapRegionAllocator_ {nullptr};
-    HeapTracker *tracker_ {nullptr};
-    MemController *memController_ {nullptr};
-    size_t globalSpaceAllocLimit_ {GLOBAL_SPACE_LIMIT_BEGIN};
+
     ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers_ {nullptr};
+
+    // The tracker tracking heap object allocation and movement events.
+    HeapTracker *tracker_ {nullptr};
+
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
     bool isVerifying_ {false};
 #endif
-
-    bool isClearTaskFinished_ = true;
-    os::memory::Mutex waitClearTaskFinishedMutex_;
-    os::memory::ConditionVariable waitClearTaskFinishedCV_;
-    uint32_t runningTastCount_ {0};
-    os::memory::Mutex waitTaskFinishedMutex_;
-    os::memory::ConditionVariable waitTaskFinishedCV_;
-    bool paralledGc_ {true};
-
-    MarkType markType_ {MarkType::SEMI_MARK};
-    bool concurrentMarkingEnabled_ {true};
-    bool isFullGCRequested_ {false};
-    bool oldSpaceLimitAdjusted_ {false};
-    size_t startNewSpaceSize_ {0};
-    size_t promotedSize_ {0};
-    size_t semiSpaceCopiedSize_ {0};
 };
 }  // namespace panda::ecmascript
 

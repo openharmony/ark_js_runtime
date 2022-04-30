@@ -509,7 +509,7 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
     bool isVerifying = false;
 
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
-    isVerifying = thread_->GetEcmaVM()->GetHeap()->GetIsVerifying();
+    isVerifying = thread_->GetEcmaVM()->GetHeap()->IsVerifying();
 #endif
     JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
     FrameType entryType = FrameHandler(current).GetFrameType();

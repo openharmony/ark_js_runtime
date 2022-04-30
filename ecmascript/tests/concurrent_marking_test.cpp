@@ -45,7 +45,7 @@ public:
         scope = new EcmaHandleScope(thread);
         instance->SetEnableForceGC(false);
         auto heap = const_cast<Heap *>(thread->GetEcmaVM()->GetHeap());
-        heap->SetConcurrentMarkingEnable(true);
+        heap->EnableConcurrentMarking(true);
     }
 
     void TearDown() override

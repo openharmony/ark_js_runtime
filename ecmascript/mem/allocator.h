@@ -104,7 +104,7 @@ public:
         return allocationSizeAccumulator_;
     }
 
-    void IncrementAllocatedSize(size_t allocatedSize)
+    void IncreaseAllocatedSize(size_t allocatedSize)
     {
         allocationSizeAccumulator_ += allocatedSize;
     }
