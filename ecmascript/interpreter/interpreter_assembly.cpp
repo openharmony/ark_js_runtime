@@ -2264,11 +2264,13 @@ void InterpreterAssembly::HandleNewObjDynRangePrefImm16V8(
             DISPATCH(BytecodeInstruction::Format::PREF_IMM16_V8);
         }
 
-        if (IsFastNewFrameEnter(ctorMethod)) {
+        if (IsFastNewFrameEnter(ctorFunc, ctorMethod)) {
             SAVE_PC();
             GET_ASM_FRAME(sp)->callSizeOrCallSiteSp = GetJumpSizeAfterCall(pc);
             uint32_t numVregs = ctorMethod->GetNumVregsWithCallField();
-            uint32_t numDeclaredArgs = ctorMethod->GetNumArgsWithCallField() + 1;  // +1 for this
+            uint32_t numDeclaredArgs = ctorFunc->IsBase() ?
+                                       ctorMethod->GetNumArgsWithCallField() + 1 : // +1 for this
+                                       ctorMethod->GetNumArgsWithCallField() + 2;  // +1 for newTarge and this
             // +1 for hidden this, explicit this may be overwritten after bc optimizer
             size_t frameSize = INTERPRETER_FRAME_STATE_SIZE + numVregs + numDeclaredArgs + 1;
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -2295,6 +2297,8 @@ void InterpreterAssembly::HandleNewObjDynRangePrefImm16V8(
                 newSp[index++] = thisObj.GetRawData();
             } else {
                 ASSERT(ctorFunc->IsDerivedConstructor());
+                JSTaggedValue newTarget = GET_VREG_VALUE(firstArgRegIdx + 1);
+                newSp[index++] = newTarget.GetRawData();
                 thisObj = JSTaggedValue::Undefined();
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 newSp[index++] = thisObj.GetRawData();
@@ -4287,20 +4291,33 @@ JSTaggedValue InterpreterAssembly::GetThisObjectFromFastNewFrame(JSTaggedType *s
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     AsmInterpretedFrame *state = reinterpret_cast<AsmInterpretedFrame *>(sp) - 1;
     JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
-    ASSERT(method->OnlyHaveThisWithCallField());
+    ASSERT(method->OnlyHaveThisWithCallField() || method->OnlyHaveNewTagetAndThisWithCallField());
     uint32_t numVregs = method->GetNumVregsWithCallField();
-    uint32_t numDeclaredArgs = method->GetNumArgsWithCallField() + 1;  // 1: explicit this object
+    uint32_t numDeclaredArgs;
+    if (method->OnlyHaveThisWithCallField()) {
+        numDeclaredArgs = method->GetNumArgsWithCallField() + 1;  // 1: explicit this object
+    } else {
+        numDeclaredArgs = method->GetNumArgsWithCallField() + 2;  // 2: newTarget and explicit this object
+    }
     uint32_t hiddenThisObjectIndex = numVregs + numDeclaredArgs;   // hidden this object in the end of fast new frame
     return JSTaggedValue(sp[hiddenThisObjectIndex]);
 }
 
-bool InterpreterAssembly::IsFastNewFrameEnter(JSMethod *method)
+bool InterpreterAssembly::IsFastNewFrameEnter(JSFunction *ctor, JSMethod *method)
 {
     if (method->IsNativeWithCallField()) {
         return false;
     }
 
-    return method->OnlyHaveThisWithCallField();
+    if (ctor->IsBase()) {
+        return method->OnlyHaveThisWithCallField();
+    }
+
+    if (ctor->IsDerivedConstructor()) {
+        return method->OnlyHaveNewTagetAndThisWithCallField();
+    }
+
+    return false;
 }
 
 bool InterpreterAssembly::IsFastNewFrameExit(JSTaggedType *sp)
