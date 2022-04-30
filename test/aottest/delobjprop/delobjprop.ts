@@ -14,12 +14,13 @@
  */
 
 declare function print(arg:any):string;
-print(1 + 1);
 
-print(1 + 1.1);
-
-print(0.1 + 1.1)
-
-print("hello" + "world");
-
-print("hello" + 1);
+interface objInterface {
+    [key: string]: any
+}
+let obj:objInterface = {};
+obj.a = 100;
+obj.b = "helloworld";
+delete obj.a;
+print(obj.a)
+print(obj.b);

@@ -14,12 +14,29 @@
  */
 
 declare function print(arg:any):string;
-print(1 + 1);
 
-print(1 + 1.1);
+let num1:any = 1;
+let num2:any = 1;
 
-print(0.1 + 1.1)
+let str1:any = "1";
+let str2:any = "1";
 
-print("hello" + "world");
+let boolTrue1:any = true;
+let boolTrue2:any = true;
 
-print("hello" + 1);
+let undefine1:any = undefined;
+let undefine2:any = undefined;
+
+print(num1 !== num2);
+
+print(str1 !== str2);
+
+print(boolTrue1 !== boolTrue2);
+
+print(undefine1 !== undefine2);
+
+print(num1 !== str1);
+
+print(num1 !== boolTrue1);
+
+print(str1 !== boolTrue1);
