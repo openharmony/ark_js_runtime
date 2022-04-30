@@ -14,12 +14,26 @@
  */
 
 declare function print(arg:any):string;
-print(1 + 1);
 
-print(1 + 1.1);
+let num:number = 1;
+print(typeof(num));
 
-print(0.1 + 1.1)
+let str:string = "helloworld";
+print(typeof(str));
 
-print("hello" + "world");
+let boolTrue:boolean = true;
+print(typeof(boolTrue));
 
-print("hello" + 1);
+let boolFalse:boolean = false;
+print(typeof(boolTrue));
+
+let undefine:any = undefined;
+print(typeof(undefine));
+
+let arr:any[] = [];
+print(typeof(arr));
+
+let obj = {};
+print(typeof(obj));
+
+
