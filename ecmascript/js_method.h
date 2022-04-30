@@ -135,6 +135,11 @@ struct PUBLIC_API JSMethod : public base::AlignedStruct<sizeof(uint64_t),
         return (callField_ & CALL_TYPE_MASK) == 1;  // 1: the first bit of callFiled is HaveThisBit
     }
 
+    bool OnlyHaveNewTagetAndThisWithCallField() const
+    {
+        return (callField_ & CALL_TYPE_MASK) == 0b11;  // the first two bit of callFiled is `This` and `NewTarget`
+    }
+
     uint32_t GetNumVregsWithCallField() const
     {
         return NumVregsBits::Decode(callField_);
