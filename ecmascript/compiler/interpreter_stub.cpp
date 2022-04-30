@@ -1936,23 +1936,55 @@ DECLARE_ASM_HANDLER(HandleInstanceOfDynPrefV8)
 
 DECLARE_ASM_HANDLER(HandleStrictNotEqDynPrefV8)
 {
+    auto env = GetEnvironment();
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    GateRef result = CallRuntime(glue, RTSTUB_ID(FastStrictNotEqual), { left, acc });
-    varAcc = result;
+
+    Label strictEqual(env);
+    Label notStrictEqual(env);
+    Label dispatch(env);
+    Branch(FastStrictEqual(glue, left, acc), &strictEqual, &notStrictEqual);
+    Bind(&strictEqual);
+    {
+        varAcc = ChangeInt64ToTagged(Int64(JSTaggedValue::VALUE_FALSE));
+        Jump(&dispatch);
+    }
+
+    Bind(&notStrictEqual);
+    {
+        varAcc = ChangeInt64ToTagged(Int64(JSTaggedValue::VALUE_TRUE));
+        Jump(&dispatch);
+    }
+    Bind(&dispatch);
     DISPATCH_WITH_ACC(PREF_V8);
 }
 
 DECLARE_ASM_HANDLER(HandleStrictEqDynPrefV8)
 {
+    auto env = GetEnvironment();
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    GateRef result = CallRuntime(glue, RTSTUB_ID(FastStrictEqual), { left, acc }); // acc is right
-    varAcc = result;
+
+    Label strictEqual(env);
+    Label notStrictEqual(env);
+    Label dispatch(env);
+    Branch(FastStrictEqual(glue, left, acc), &strictEqual, &notStrictEqual);
+    Bind(&strictEqual);
+    {
+        varAcc = ChangeInt64ToTagged(Int64(JSTaggedValue::VALUE_TRUE));
+        Jump(&dispatch);
+    }
+
+    Bind(&notStrictEqual);
+    {
+        varAcc = ChangeInt64ToTagged(Int64(JSTaggedValue::VALUE_FALSE));
+        Jump(&dispatch);
+    }
+    Bind(&dispatch);
     DISPATCH_WITH_ACC(PREF_V8);
 }
 
@@ -2383,7 +2415,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
                     Bind(&loadWithHandler);
                     GateRef result = LoadICWithHandler(glue, receiver, receiver, *cachedHandler);
                     Label notHole(env);
-                    Branch(TaggedIsHole(result), &slowPath, &notHole);
+                    Branch(TaggedIsHole(result), &tryFastPath, &notHole);
                     Bind(&notHole);
                     Label notException(env);
                     Branch(TaggedIsException(result), &isException, &notException);
@@ -2481,7 +2513,7 @@ DECLARE_ASM_HANDLER(HandleStObjByValuePrefV8V8)
                     Bind(&loadWithHandler);
                     GateRef result = StoreICWithHandler(glue, receiver, receiver, acc, *cachedHandler); // acc is value
                     Label notHole(env);
-                    Branch(TaggedIsHole(result), &slowPath, &notHole);
+                    Branch(TaggedIsHole(result), &tryFastPath, &notHole);
                     Bind(&notHole);
                     Branch(TaggedIsException(result), &isException, &notException);
                 }
@@ -3588,7 +3620,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
                 Bind(&tryPoly);
                 {
                     cachedHandler = CheckPolyHClass(firstValue, hclass);
-                    Branch(TaggedIsHole(*cachedHandler), &slowPath, &loadWithHandler);
+                    Branch(TaggedIsHole(*cachedHandler), &tryFastPath, &loadWithHandler);
                 }
 
                 Bind(&loadWithHandler);
@@ -3678,7 +3710,7 @@ DECLARE_ASM_HANDLER(HandleStObjByNamePrefId32V8)
                 Bind(&tryPoly);
                 {
                     cachedHandler = CheckPolyHClass(firstValue, hclass);
-                    Branch(TaggedIsHole(*cachedHandler), &slowPath, &storeWithHandler);
+                    Branch(TaggedIsHole(*cachedHandler), &tryFastPath, &storeWithHandler);
                 }
                 Bind(&storeWithHandler);
                 {

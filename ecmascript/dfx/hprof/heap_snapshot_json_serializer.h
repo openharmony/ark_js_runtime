@@ -21,6 +21,7 @@
 
 #include "ecmascript/mem/c_string.h"
 #include "os/mem.h"
+#include "ecmascript/tooling/interface/stream.h"
 
 namespace panda::ecmascript {
 using fstream = std::fstream;
@@ -34,7 +35,7 @@ public:
     ~HeapSnapShotJSONSerializer() = default;
     NO_MOVE_SEMANTIC(HeapSnapShotJSONSerializer);
     NO_COPY_SEMANTIC(HeapSnapShotJSONSerializer);
-    bool Serialize(HeapSnapShot *snapShot, const CString &fileName);
+    bool Serialize(HeapSnapShot *snapShot, Stream* stream);
 
 private:
     void SerializeSnapShotHeader();
@@ -46,11 +47,11 @@ private:
     void SerializeLocations();
     void SerializeStringTable();
     void SerializerSnapShotClosure();
+    void WriteChunk();
 
-    void WriteJSON(const CString &fileName);
-    fstream outputStream_;
     HeapSnapShot *snapShot_ {nullptr};
     stringstream stringBuffer_;
+    Stream* stream_ {nullptr};
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_HPROF_HEAP_SNAPSHOT_SERIALIZER_H

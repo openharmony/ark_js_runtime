@@ -19,13 +19,15 @@
 #include "ecmascript/mem/c_containers.h"
 
 namespace panda::ecmascript {
-bool HeapSnapShotJSONSerializer::Serialize(HeapSnapShot *snapShot, const CString &fileName)
+bool HeapSnapShotJSONSerializer::Serialize(HeapSnapShot *snapShot, Stream *stream)
 {
     // Serialize Node/Edge/String-Table
     LOG(ERROR, RUNTIME) << "HeapSnapShotJSONSerializer::Serialize begin";
     snapShot_ = snapShot;
     ASSERT(snapShot_->GetNodes() != nullptr && snapShot_->GetEdges() != nullptr &&
            snapShot_->GetEcmaStringTable() != nullptr);
+    stream_ = stream;
+    ASSERT(stream_ != nullptr);
     stringBuffer_.str("");  // Clear Buffer
 
     SerializeSnapShotHeader();     // 1.
@@ -38,7 +40,7 @@ bool HeapSnapShotJSONSerializer::Serialize(HeapSnapShot *snapShot, const CString
     SerializeStringTable();        // 8.
     SerializerSnapShotClosure();   // 9.
 
-    WriteJSON(fileName);           // 10.
+    WriteChunk();
     LOG(ERROR, RUNTIME) << "HeapSnapShotJSONSerializer::Serialize exit";
     return true;
 }
@@ -190,17 +192,26 @@ void HeapSnapShotJSONSerializer::SerializerSnapShotClosure()
     stringBuffer_ << "}\n";
 }
 
-void HeapSnapShotJSONSerializer::WriteJSON(const CString &fileName)
+void HeapSnapShotJSONSerializer::WriteChunk()
 {
-    std::string fName(fileName);
-    LOG(ERROR, RUNTIME) << "HeapSnapShotJSONSerializer::WriteJSON" << fName;
-    outputStream_.open(fName, std::ios::out);
-    if (!outputStream_.good()) {
-        LOG_ECMA(ERROR) << "open file failed";
-        return;
+    int chunkLen = stream_->GetSize();
+
+    std::string subStr = stringBuffer_.str();
+    int strLen = static_cast<int>(subStr.length());
+    char *subCStr = const_cast<char *>(subStr.c_str());
+    while (strLen >= chunkLen) {
+        if (!stream_->WriteChunk(subCStr, chunkLen)) {
+            LOG_ECMA(ERROR) << "WriteChunk failed";
+            return;
+        }
+        subCStr += chunkLen;
+        strLen -= chunkLen;
     }
-    outputStream_ << stringBuffer_.str();
-    outputStream_.close();
-    outputStream_.clear();  // Make sure the next open operation success
+
+    if (strLen != 0) {
+        if (!stream_->WriteChunk(subCStr, strLen)) {
+            LOG_ECMA(ERROR) << "WriteChunk failed";
+        }
+    }
 }
 }  // namespace panda::ecmascript

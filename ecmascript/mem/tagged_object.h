@@ -41,7 +41,7 @@ public:
     JSHClass *GetClass() const;
 
     // Size of object header
-    static constexpr int TaggedObjectSize()
+    static constexpr size_t TaggedObjectSize()
     {
         return sizeof(TaggedObject);
     }

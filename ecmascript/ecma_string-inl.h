@@ -18,9 +18,9 @@
 
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"
-#include "ecmascript/object_factory-inl.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_tagged_value-inl.h"
+#include "ecmascript/object_factory-inl.h"
 
 namespace panda::ecmascript {
 /* static */

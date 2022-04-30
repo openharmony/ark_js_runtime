@@ -78,7 +78,7 @@ public:
 
     virtual void Exception(const JSPtLocation &location) = 0;
 
-    virtual void SingleStep(const JSPtLocation &location) = 0;
+    virtual bool SingleStep(const JSPtLocation &location) = 0;
 
     virtual ~PtHooks() = default;
 

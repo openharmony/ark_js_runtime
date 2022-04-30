@@ -74,7 +74,7 @@ public:
                 return JSTaggedValue::Undefined();
             }
             JSArray *jsArray = JSArray::Cast(GetThis(argv)->GetTaggedObject());
-            int length = jsArray->GetArrayLength() + 1;
+            uint32_t length = jsArray->GetArrayLength() + 1U;
             jsArray->SetArrayLength(argv->GetThread(), length);
             return JSTaggedValue::Undefined();
         }

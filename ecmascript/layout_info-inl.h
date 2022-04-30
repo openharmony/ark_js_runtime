@@ -136,7 +136,7 @@ inline int LayoutInfo::BinarySearch(JSTaggedValue key, int propertiesNumber)
         } else if (midHash < keyHash) {
             low = mid + 1;
         } else {
-            int sortIndex = GetSortedIndex(mid);
+            int sortIndex = static_cast<int>(GetSortedIndex(mid));
             JSTaggedValue currentKey = GetKey(sortIndex);
             if (currentKey == key) {
                 return sortIndex < propertiesNumber ? sortIndex : -1;
@@ -144,7 +144,7 @@ inline int LayoutInfo::BinarySearch(JSTaggedValue key, int propertiesNumber)
             int midLeft = mid;
             int midRight = mid;
             while (midLeft - 1 >= 0) {
-                sortIndex = GetSortedIndex(--midLeft);
+                sortIndex = static_cast<int>(GetSortedIndex(--midLeft));
                 currentKey = GetKey(sortIndex);
                 if (currentKey.GetKeyHashCode() == keyHash) {
                     if (currentKey == key) {
@@ -155,7 +155,7 @@ inline int LayoutInfo::BinarySearch(JSTaggedValue key, int propertiesNumber)
                 }
             }
             while (midRight + 1 < elements) {
-                sortIndex = GetSortedIndex(++midRight);
+                sortIndex = static_cast<int>(GetSortedIndex(++midRight));
                 currentKey = GetKey(sortIndex);
                 if (currentKey.GetKeyHashCode() == keyHash) {
                     if (currentKey == key) {

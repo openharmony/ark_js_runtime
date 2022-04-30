@@ -150,9 +150,9 @@ void ObjectFactory::InitObjectFields(const TaggedObject *object)
     auto *klass = object->GetClass();
     auto objBodySize = klass->GetObjectSize() - TaggedObject::TaggedObjectSize();
     ASSERT(objBodySize % JSTaggedValue::TaggedTypeSize() == 0);
-    int numOfFields = static_cast<int>(objBodySize / JSTaggedValue::TaggedTypeSize());
+    uint32_t numOfFields = objBodySize / JSTaggedValue::TaggedTypeSize();
     size_t addr = reinterpret_cast<uintptr_t>(object) + TaggedObject::TaggedObjectSize();
-    for (int i = 0; i < numOfFields; i++) {
+    for (uint32_t i = 0; i < numOfFields; i++) {
         auto *fieldAddr = reinterpret_cast<JSTaggedType *>(addr + i * JSTaggedValue::TaggedTypeSize());
         *fieldAddr = JSTaggedValue::Undefined().GetRawData();
     }

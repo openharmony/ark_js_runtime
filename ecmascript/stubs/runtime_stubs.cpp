@@ -172,11 +172,11 @@ DEF_RUNTIME_STUBS(CallInternalGetter)
     return accessor->CallInternalGet(thread, objHandle).GetRawData();
 }
 
-DEF_RUNTIME_STUBS(StringGetHashCode)
+DEF_RUNTIME_STUBS(ComputeHashcode)
 {
     CONVERT_ARG_TAGGED_TYPE_CHECKED(ecmaString, 0);
     auto string = reinterpret_cast<EcmaString *>(ecmaString);
-    uint32_t result = string->GetHashcode();
+    uint32_t result = string->ComputeHashcode(0);
     return JSTaggedValue(static_cast<uint64_t>(result)).GetRawData();
 }
 
@@ -1452,7 +1452,7 @@ DEF_RUNTIME_STUBS(DefinefuncDyn)
 
 DEF_RUNTIME_STUBS(DefinefuncDynWithMethodId)
 {
-    RUNTIME_STUBS_HEADER(DefinefuncDynWithMethod);
+    RUNTIME_STUBS_HEADER(DefinefuncDynWithMethodId);
     CONVERT_ARG_TAGGED_CHECKED(methodId, 0);
     return RuntimeDefinefuncDynWithMethodId(thread, methodId).GetRawData();
 }
@@ -1506,6 +1506,19 @@ DEF_RUNTIME_STUBS(DefineGeneratorFunc)
     RUNTIME_STUBS_HEADER(DefineGeneratorFunc);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(func, 0);
     return RuntimeDefineGeneratorFunc(thread, reinterpret_cast<JSFunction*>(func)).GetRawData();
+}
+
+DEF_RUNTIME_STUBS(DefineGeneratorFuncWithMethodId)
+{
+    RUNTIME_STUBS_HEADER(DefineGeneratorFuncWithMethodId);
+    CONVERT_ARG_TAGGED_TYPE_CHECKED(id, 0);
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    auto methodId = JSTaggedValue(id);
+
+    auto aotCodeInfo  = thread->GetEcmaVM()->GetAotCodeInfo();
+    auto entry = aotCodeInfo->GetAOTFuncEntry(methodId.GetInt());
+    JSHandle<JSFunction> func = factory->NewAotFunction(1, entry);
+    return RuntimeDefineGeneratorFunc(thread, reinterpret_cast<JSFunction*>(*func)).GetRawData();
 }
 
 DEF_RUNTIME_STUBS(DefineAsyncFunc)
@@ -1597,10 +1610,17 @@ DEF_RUNTIME_STUBS(CallNative)
 
     auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     auto state = reinterpret_cast<AsmInterpretedFrame *>(sp) - 1;
+    // leave frame prev is prevSp now, change it to current sp
+    auto leaveFrame = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
+    OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(leaveFrame);
+    auto cachedFpValue = frame->callsiteFp;
+    frame->callsiteFp = reinterpret_cast<uintptr_t>(sp);
+
     JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
     EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, numArgs.GetInt(), sp);
     JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
         const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);
+    frame->callsiteFp = cachedFpValue;
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception().GetRawData());
     return retValue.GetRawData();
 }
@@ -1690,6 +1710,16 @@ void RuntimeStubs::MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintptr_t s
         return;
     }
     Barriers::Update(slotAddr, objectRegion, value, valueRegion);
+}
+
+bool RuntimeStubs::StringsAreEquals(EcmaString *str1, EcmaString *str2)
+{
+    return EcmaString::StringsAreEqualSameUtfEncoding(str1, str2);
+}
+
+bool RuntimeStubs::BigIntEquals(JSTaggedType left, JSTaggedType right)
+{
+    return BigInt::Equal(JSTaggedValue(left), JSTaggedValue(right));
 }
 
 void RuntimeStubs::Initialize(JSThread *thread)

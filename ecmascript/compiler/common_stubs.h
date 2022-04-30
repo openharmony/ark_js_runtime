@@ -20,12 +20,6 @@
 #include "ecmascript/compiler/test_stubs.h"
 
 namespace panda::ecmascript::kungfu {
-#define INTERPRETER_STUB_HELPER_LIST(V)  \
-    V(SingleStepDebugging, 7)            \
-    V(HandleOverflow, 7)                 \
-    V(BCDebuggerEntry, 7)                \
-    V(BCDebuggerExceptionEntry, 7)
-
 #define COMMON_STUB_LIST(V)              \
     V(Add, 3)                            \
     V(Sub, 3)                            \
@@ -52,7 +46,6 @@ namespace panda::ecmascript::kungfu {
 
 #define COMMON_STUB_ID_LIST(V)          \
     COMMON_STUB_LIST(V)                 \
-    INTERPRETER_STUB_HELPER_LIST(V)     \
     TEST_STUB_LIST(V)
 
 class MulGCTestStub : public Stub {

@@ -34,7 +34,8 @@ Area *NativeAreaAllocator::AllocateArea(size_t capacity)
     // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     void *mem = malloc(capacity);
     if (mem == nullptr) {
-        LOG_ECMA_MEM(FATAL) << "malloc failed";
+        LOG_ECMA_MEM(FATAL) << "malloc failed,  current alloc size = " << capacity 
+                            << ", total allocated size = " << nativeMemoryUsage_.load(std::memory_order_relaxed);
         UNREACHABLE();
     }
 #if ECMASCRIPT_ENABLE_ZAP_MEM
@@ -96,7 +97,8 @@ void *NativeAreaAllocator::AllocateBuffer(size_t size)
     // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     void *ptr = malloc(size);
     if (ptr == nullptr) {
-        LOG_ECMA_MEM(FATAL) << "malloc failed";
+        LOG_ECMA_MEM(FATAL) << "malloc failed, current alloc size = " << size 
+                            << ", total allocated size = " << nativeMemoryUsage_.load(std::memory_order_relaxed);
         UNREACHABLE();
     }
 #if ECMASCRIPT_ENABLE_ZAP_MEM

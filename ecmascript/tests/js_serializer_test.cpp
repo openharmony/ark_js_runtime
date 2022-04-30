@@ -94,10 +94,10 @@ public:
         EXPECT_FALSE(retObj2.IsEmpty());
 
         JSHandle<TaggedArray> array1 = JSObject::GetOwnPropertyKeys(thread, retObj1);
-        int length1 = array1->GetLength();
-        EXPECT_EQ(length1, 4); // 4 : test case
+        uint32_t length1 = array1->GetLength();
+        EXPECT_EQ(length1, 4U); // 4 : test case
         double sum1 = 0.0;
-        for (int i = 0; i < length1; i++) {
+        for (uint32_t i = 0; i < length1; i++) {
             JSHandle<JSTaggedValue> key(thread, array1->Get(i));
             double a = JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(retObj1), key).GetValue()->GetNumber();
             sum1 += a;
@@ -105,10 +105,10 @@ public:
         EXPECT_EQ(sum1, 10); // 10 : test case
 
         JSHandle<TaggedArray> array2 = JSObject::GetOwnPropertyKeys(thread, retObj2);
-        int length2 = array2->GetLength();
-        EXPECT_EQ(length2, 4); // 4 : test case
+        uint32_t length2 = array2->GetLength();
+        EXPECT_EQ(length2, 4U); // 4 : test case
         double sum2 = 0.0;
-        for (int i = 0; i < length2; i++) {
+        for (uint32_t i = 0; i < length2; i++) {
             JSHandle<JSTaggedValue> key(thread, array2->Get(i));
             double a = JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(retObj2), key).GetValue()->GetNumber();
             sum2 += a;
@@ -189,10 +189,10 @@ public:
         EXPECT_TRUE(!setValue.IsEmpty());
         JSHandle<JSSet> retSet = JSHandle<JSSet>::Cast(setValue);
         JSHandle<TaggedArray> array = JSObject::GetOwnPropertyKeys(thread, JSHandle<JSObject>::Cast(retSet));
-        int propertyLength = array->GetLength();
-        EXPECT_EQ(propertyLength, 2); // 2 : test case
+        uint32_t propertyLength = array->GetLength();
+        EXPECT_EQ(propertyLength, 2U); // 2 : test case
         int sum = 0;
-        for (int i = 0; i < propertyLength; i++) {
+        for (uint32_t i = 0; i < propertyLength; i++) {
             JSHandle<JSTaggedValue> key(thread, array->Get(i));
             double a = JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(retSet), key).GetValue()->GetNumber();
             sum += a;
@@ -217,10 +217,10 @@ public:
         JSHandle<JSArray> retArray = JSHandle<JSArray>::Cast(arrayValue);
 
         JSHandle<TaggedArray> keyArray = JSObject::GetOwnPropertyKeys(thread, JSHandle<JSObject>(retArray));
-        int propertyLength = keyArray->GetLength();
-        EXPECT_EQ(propertyLength, 23);  // 23 : test case
+        uint32_t propertyLength = keyArray->GetLength();
+        EXPECT_EQ(propertyLength, 23U);  // 23 : test case
         int sum = 0;
-        for (int i = 0; i < propertyLength; i++) {
+        for (uint32_t i = 0; i < propertyLength; i++) {
             JSHandle<JSTaggedValue> key(thread, keyArray->Get(i));
             double a = JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(retArray), key).GetValue()->GetNumber();
             sum += a;
@@ -368,7 +368,7 @@ public:
         EXPECT_TRUE(res->IsJSMap()) << "[NotJSMap] Deserialize JSMap fail";
         JSHandle<JSMap> resMap = JSHandle<JSMap>::Cast(res);
         EXPECT_TRUE(originMap->GetSize() == resMap->GetSize()) << "the map size Not equal";
-        uint32_t resSize = resMap->GetSize();
+        uint32_t resSize = static_cast<uint32_t>(resMap->GetSize());
         for (uint32_t i = 0; i < resSize; i++) {
             JSHandle<JSTaggedValue> resKey(thread, resMap->GetKey(i));
             JSHandle<JSTaggedValue> resValue(thread, resMap->GetValue(i));
@@ -393,7 +393,7 @@ public:
         EXPECT_TRUE(!res.IsEmpty()) << "[Empty] Deserialize JSArrayBuffer fail";
         EXPECT_TRUE(res->IsArrayBuffer()) << "[NotJSArrayBuffer] Deserialize JSArrayBuffer fail";
         JSHandle<JSArrayBuffer> resJSArrayBuffer = JSHandle<JSArrayBuffer>::Cast(res);
-        int32_t resByteLength = resJSArrayBuffer->GetArrayBufferByteLength();
+        int32_t resByteLength = static_cast<int32_t>(resJSArrayBuffer->GetArrayBufferByteLength());
         EXPECT_TRUE(resByteLength == byteLength) << "Not Same ByteLength"; // 10 : test case
 
         JSHandle<JSTaggedValue> bufferData(thread, originArrayBuffer->GetArrayBufferData());
@@ -426,7 +426,7 @@ public:
         EXPECT_TRUE(!res.IsEmpty()) << "[Empty] Deserialize JSArrayBuffer fail";
         EXPECT_TRUE(res->IsSharedArrayBuffer()) << "[NotJSArrayBuffer] Deserialize JSArrayBuffer fail";
         JSHandle<JSArrayBuffer> resJSArrayBuffer = JSHandle<JSArrayBuffer>::Cast(res);
-        int32_t resByteLength = resJSArrayBuffer->GetArrayBufferByteLength();
+        int32_t resByteLength = static_cast<int32_t>(resJSArrayBuffer->GetArrayBufferByteLength());
         EXPECT_TRUE(resByteLength == byteLength) << "Not Same ByteLength";
         JSHandle<JSTaggedValue> bufferData(thread, originArrayBuffer->GetArrayBufferData());
         auto np = JSHandle<JSNativePointer>::Cast(bufferData);
@@ -1020,7 +1020,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSArrayBufferShared)
 HWTEST_F_L0(JSSerializerTest, SerializeJSArrayBufferShared2)
 {
     std::string msg = "hello world";
-    int msgBufferLen = msg.length() + 1;
+    int msgBufferLen = static_cast<int>(msg.length()) + 1;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSArrayBuffer> jsArrayBuffer = factory->NewJSSharedArrayBuffer(msgBufferLen);
     JSHandle<JSTaggedValue> BufferData(thread, jsArrayBuffer->GetArrayBufferData());

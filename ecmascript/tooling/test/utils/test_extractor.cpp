@@ -42,13 +42,16 @@ std::pair<EntityId, uint32_t> TestExtractor::GetBreakpointAddress(const SourceLo
 SourceLocation TestExtractor::GetSourceLocation(EntityId methodId, uint32_t bytecodeOffset)
 {
     SourceLocation location {GetSourceFile(methodId), 0, 0};
-    auto callbackFunc = [&location](int32_t line, int32_t column) -> bool {
+    auto callbackLineFunc = [&location](int32_t line) -> bool {
         location.line = line;
+        return true;
+    };
+    auto callbackColumnFunc = [&location](int32_t column) -> bool {
         location.column = column;
         return true;
     };
-    MatchWithOffset(callbackFunc, methodId, bytecodeOffset);
-
+    MatchLineWithOffset(callbackLineFunc, methodId, bytecodeOffset);
+    MatchColumnWithOffset(callbackColumnFunc, methodId, bytecodeOffset);
     return location;
 }
 }  // namespace  panda::ecmascript::tooling::test

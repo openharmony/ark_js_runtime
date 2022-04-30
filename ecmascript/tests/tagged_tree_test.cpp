@@ -277,7 +277,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapGrowCapacity)
     JSHandle<JSFunction> objFun(GetGlobalEnv()->GetObjectFunction());
     char keyArray[7] = "mykey"; // 7 means array length
     for (int i = 0; i < NODE_NUMBERS; i++) {
-        keyArray[5] = '1' + i; // 5 means index of keyArray
+        keyArray[5] = '1' + static_cast<uint32_t>(i); // 5 means index of keyArray
         keyArray[6] = 0;       // 6 means index of keyArray
         JSHandle<JSTaggedValue> key(factory->NewFromStdString(keyArray));
         JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));
@@ -287,7 +287,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeMapGrowCapacity)
     }
 
     for (int i = 0; i < NODE_NUMBERS; i++) {
-        keyArray[5] = '1' + i; // 5 means index of keyArray
+        keyArray[5] = '1' + static_cast<uint32_t>(i); // 5 means index of keyArray
         keyArray[6] = 0;       // 6 means index of keyArray
         JSHandle<JSTaggedValue> stringKey(factory->NewFromStdString(keyArray));
         // test get()
@@ -306,7 +306,7 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeSetGrowCapacity)
     // create key
     char keyArray[7] = "mykey"; // 7 means array length
     for (int i = 0; i < NODE_NUMBERS; i++) {
-        keyArray[5] = '1' + i; // 5 means index of keyArray
+        keyArray[5] = '1' + static_cast<uint32_t>(i); // 5 means index of keyArray
         keyArray[6] = 0;       // 6 means index of keyArray
         JSHandle<EcmaString> stringKey = factory->NewFromStdString(keyArray);
         JSHandle<JSTaggedValue> key(stringKey);
@@ -317,10 +317,10 @@ HWTEST_F_L0(TaggedTreeTest, TestTreeSetGrowCapacity)
     }
 
     for (int i = 0; i < NODE_NUMBERS; i++) {
-        keyArray[5] = '1' + i; // 5 means index of keyArray
+        keyArray[5] = '1' + static_cast<uint32_t>(i); // 5 means index of keyArray
         keyArray[6] = 0;       // 6 means index of keyArray
         JSHandle<JSTaggedValue> stringKey(factory->NewFromStdString(keyArray));
-        // test get()
+        // test get()#
         EXPECT_TRUE(TaggedTreeSet::FindEntry(thread, tset, stringKey) >= 0);
     }
     EXPECT_EQ(tset->NumberOfElements(), NODE_NUMBERS);

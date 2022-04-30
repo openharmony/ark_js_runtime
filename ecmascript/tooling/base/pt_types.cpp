@@ -376,7 +376,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            remoteObject->objectId_ = DebuggerApi::StringToInt(result);
+            remoteObject->objectId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
         } else {
             error += "'objectId' should be a String;";
         }
@@ -461,7 +461,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            exceptionDetails->line_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            exceptionDetails->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'lineNumber' should be a Number;";
         }
@@ -471,7 +471,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            exceptionDetails->column_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            exceptionDetails->column_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'columnNumber' should be a Number;";
         }
@@ -481,7 +481,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            exceptionDetails->scriptId_ = DebuggerApi::StringToInt(result);
+            exceptionDetails->scriptId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
         } else {
             error += "'scriptId' should be a String;";
         }
@@ -960,7 +960,7 @@ std::unique_ptr<CallArgument> CallArgument::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            callArgument->objectId_ = DebuggerApi::StringToInt(result);
+            callArgument->objectId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
         } else {
             error += "'objectId' should be a String;";
         }
@@ -1007,7 +1007,7 @@ std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSV
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            location->scriptId_ = DebuggerApi::StringToInt(result);
+            location->scriptId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
         } else {
             error += "'scriptId' should be a String;";
         }
@@ -1017,7 +1017,7 @@ std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSV
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            location->line_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            location->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'lineNumber' should be a Number;";
         }
@@ -1071,7 +1071,7 @@ std::unique_ptr<ScriptPosition> ScriptPosition::Create(const EcmaVM *ecmaVm, con
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            scriptPosition->line_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            scriptPosition->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'lineNumber' should be a Number;";
         }
@@ -1081,7 +1081,7 @@ std::unique_ptr<ScriptPosition> ScriptPosition::Create(const EcmaVM *ecmaVm, con
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            scriptPosition->column_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            scriptPosition->column_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'columnNumber' should be a Number;";
         }
@@ -1121,7 +1121,7 @@ std::unique_ptr<SearchMatch> SearchMatch::Create(const EcmaVM *ecmaVm, const Loc
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            locationSearch->lineNumber_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            locationSearch->lineNumber_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'lineNumber' should be a Number;";
         }
@@ -1173,7 +1173,7 @@ std::unique_ptr<LocationRange> LocationRange::Create(const EcmaVM *ecmaVm, const
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            locationRange->scriptId_ = DebuggerApi::StringToInt(result);
+            locationRange->scriptId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
         } else {
             error += "'scriptId' should be a String;";
         }
@@ -1249,7 +1249,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            breakLocation->scriptId_ = DebuggerApi::StringToInt(result);
+            breakLocation->scriptId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
         } else {
             error += "'scriptId' should be a String;";
         }
@@ -1259,7 +1259,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            breakLocation->line_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            breakLocation->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'lineNumber' should be a Number;";
         }
@@ -1445,7 +1445,7 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrameId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            callFrame->callFrameId_ = DebuggerApi::StringToInt(result);
+            callFrame->callFrameId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
         } else {
             error += "'callFrameId' should be a String;";
         }
@@ -1505,9 +1505,9 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             auto array = Local<ArrayRef>(result);
-            uint32_t len = array->Length(ecmaVm);
+            int32_t len = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (uint32_t i = 0; i < len; ++i) {
+            for (int32_t i = 0; i < len; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 std::unique_ptr<Scope> scope = Scope::Create(ecmaVm, resultValue);
@@ -1816,9 +1816,9 @@ std::unique_ptr<SamplingHeapProfileNode> SamplingHeapProfileNode::Create(const E
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             auto array = Local<ArrayRef>(result);
-            uint32_t len = array->Length(ecmaVm);
+            int32_t len = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (uint32_t i = 0; i < len; ++i) {
+            for (int32_t i = 0; i < len; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 std::unique_ptr<SamplingHeapProfileNode> node = SamplingHeapProfileNode::Create(ecmaVm, resultValue);
@@ -1900,9 +1900,9 @@ std::unique_ptr<SamplingHeapProfile> SamplingHeapProfile::Create(const EcmaVM *e
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             auto array = Local<ArrayRef>(result);
-            uint32_t len = array->Length(ecmaVm);
+            int32_t len = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (uint32_t i = 0; i < len; ++i) {
+            for (int32_t i = 0; i < len; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 std::unique_ptr<SamplingHeapProfileSample> node = SamplingHeapProfileSample::Create(ecmaVm,
@@ -2049,9 +2049,9 @@ std::unique_ptr<ProfileNode> ProfileNode::Create(const EcmaVM *ecmaVm, const Loc
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             auto array = Local<ArrayRef>(result);
-            uint32_t childrenLen = array->Length(ecmaVm);
+            int32_t childrenLen = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (uint32_t i = 0; i < childrenLen; ++i) {
+            for (int32_t i = 0; i < childrenLen; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
                 std::unique_ptr<int32_t> pChildren;
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
@@ -2068,9 +2068,9 @@ std::unique_ptr<ProfileNode> ProfileNode::Create(const EcmaVM *ecmaVm, const Loc
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             auto array = Local<ArrayRef>(result);
-            uint32_t positionTickLen = array->Length(ecmaVm);
+            int32_t positionTickLen = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (uint32_t i = 0; i < positionTickLen; ++i) {
+            for (int32_t i = 0; i < positionTickLen; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 std::unique_ptr<PositionTickInfo> positionTick = PositionTickInfo::Create(ecmaVm, resultValue);
@@ -2178,9 +2178,9 @@ std::unique_ptr<Profile> Profile::Create(const EcmaVM *ecmaVm, const Local<JSVal
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             auto array = Local<ArrayRef>(result);
-            uint32_t nodesLen = array->Length(ecmaVm);
+            int32_t nodesLen = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (uint32_t i = 0; i < nodesLen; ++i) {
+            for (int32_t i = 0; i < nodesLen; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 std::unique_ptr<ProfileNode> node = ProfileNode::Create(ecmaVm, resultValue);
@@ -2196,9 +2196,9 @@ std::unique_ptr<Profile> Profile::Create(const EcmaVM *ecmaVm, const Local<JSVal
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             auto array = Local<ArrayRef>(result);
-            uint32_t samplesLen = array->Length(ecmaVm);
+            int32_t samplesLen = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (uint32_t i = 0; i < samplesLen; ++i) {
+            for (int32_t i = 0; i < samplesLen; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
                 std::unique_ptr<int32_t> pSamples;
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
@@ -2215,9 +2215,9 @@ std::unique_ptr<Profile> Profile::Create(const EcmaVM *ecmaVm, const Local<JSVal
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             auto array = Local<ArrayRef>(result);
-            uint32_t timeDeltasLen = array->Length(ecmaVm);
+            int32_t timeDeltasLen = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (uint32_t i = 0; i < timeDeltasLen; ++i) {
+            for (int32_t i = 0; i < timeDeltasLen; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
                 std::unique_ptr<int32_t> pTime;
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
@@ -2361,9 +2361,9 @@ std::unique_ptr<FunctionCoverage> FunctionCoverage::Create(const EcmaVM *ecmaVm,
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             auto array = Local<ArrayRef>(result);
-            uint32_t rangesLen = array->Length(ecmaVm);
+            int32_t rangesLen = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (uint32_t i = 0; i < rangesLen; ++i) {
+            for (int32_t i = 0; i < rangesLen; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 std::unique_ptr<Coverage> range = Coverage::Create(ecmaVm, resultValue);
@@ -2448,9 +2448,9 @@ std::unique_ptr<ScriptCoverage> ScriptCoverage::Create(const EcmaVM *ecmaVm, con
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             auto array = Local<ArrayRef>(result);
-            uint32_t functionsLen = array->Length(ecmaVm);
+            int32_t functionsLen = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (uint32_t i = 0; i < functionsLen; ++i) {
+            for (int32_t i = 0; i < functionsLen; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 std::unique_ptr<FunctionCoverage> function = FunctionCoverage::Create(ecmaVm, resultValue);
@@ -2547,9 +2547,9 @@ std::unique_ptr<TypeProfileEntry> TypeProfileEntry::Create(const EcmaVM *ecmaVm,
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             auto array = Local<ArrayRef>(result);
-            uint32_t typesLen = array->Length(ecmaVm);
+            int32_t typesLen = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (uint32_t i = 0; i < typesLen; ++i) {
+            for (int32_t i = 0; i < typesLen; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 std::unique_ptr<TypeObject> type = TypeObject::Create(ecmaVm, resultValue);
@@ -2619,9 +2619,9 @@ std::unique_ptr<ScriptTypeProfile> ScriptTypeProfile::Create(const EcmaVM *ecmaV
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             auto array = Local<ArrayRef>(result);
-            uint32_t entriesLen = array->Length(ecmaVm);
+            int32_t entriesLen = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (uint32_t i = 0; i < entriesLen; ++i) {
+            for (int32_t i = 0; i < entriesLen; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> entriesValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 std::unique_ptr<TypeProfileEntry> entries = TypeProfileEntry::Create(ecmaVm, entriesValue);

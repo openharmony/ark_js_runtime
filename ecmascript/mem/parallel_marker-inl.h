@@ -27,7 +27,7 @@
 #include "ecmascript/mem/work_manager.h"
 
 namespace panda::ecmascript {
-constexpr int HEAD_SIZE = TaggedObject::TaggedObjectSize();
+constexpr size_t HEAD_SIZE = TaggedObject::TaggedObjectSize();
 
 inline void NonMovableMarker::MarkObject(uint32_t threadId, TaggedObject *object)
 {

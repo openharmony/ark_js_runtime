@@ -243,9 +243,9 @@ JSTaggedValue SlowRuntimeStub::Add2Dyn(JSThread *thread, JSTaggedValue left, JST
         }
         return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
     }
-    double a0Double = valLeft->GetNumber();
-    double a1Double = valRight->GetNumber();
-    return JSTaggedValue(a0Double + a1Double);
+    double doubleA0 = valLeft->GetNumber();
+    double doubleA1 = valRight->GetNumber();
+    return JSTaggedValue(doubleA0 + doubleA1);
 }
 
 JSTaggedValue SlowRuntimeStub::Sub2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right)

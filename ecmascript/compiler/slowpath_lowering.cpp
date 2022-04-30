@@ -253,7 +253,7 @@ void SlowPathLowering::Lower(GateRef gate)
             LowerCallArgs3Dyn(gate, glue);
             break;
         case CALLITHISRANGEDYN_PREF_IMM16_V8:
-            LowerCallIThisRangeDyn(gate, glue, thisObj);
+            LowerCallIThisRangeDyn(gate, glue);
             break;
         case CALLSPREADDYN_PREF_V8_V8_V8:
             LowerCallSpreadDyn(gate, glue);
@@ -800,20 +800,24 @@ void SlowPathLowering::LowerCallArgs3Dyn(GateRef gate, GateRef glue)
         acc_.GetValueIn(gate, 2), acc_.GetValueIn(gate, 3)});
 }
 
-void SlowPathLowering::LowerCallIThisRangeDyn(GateRef gate, GateRef glue, GateRef thisObj)
+void SlowPathLowering::LowerCallIThisRangeDyn(GateRef gate, GateRef glue)
 {
     std::vector<GateRef> vec;
-    size_t numArgs = acc_.GetNumValueIn(gate) - 1;
+    // The first register input is callTarget, second is thisObj and other inputs are common args.
+    size_t fixedInputsNum = 2;
+    size_t numArgs = acc_.GetNumValueIn(gate) - fixedInputsNum;
+    ASSERT(numArgs >= 0);
     GateRef actualArgc = builder_.Int32(numArgs + NUM_MANDATORY_JSFUNC_ARGS);
-    GateRef callTarget = builder_.TaggedNGC(acc_.GetValueIn(gate, 0));
+    GateRef callTarget = acc_.GetValueIn(gate, 0);
+    GateRef thisObj = acc_.GetValueIn(gate, 1);
     GateRef newTarget = builder_.Undefined();
     vec.emplace_back(glue);
     vec.emplace_back(actualArgc);
     vec.emplace_back(callTarget);
     vec.emplace_back(newTarget);
     vec.emplace_back(thisObj);
-
-    for (size_t i = 1; i < numArgs; i++) { // skip imm
+    // add common args
+    for (size_t i = fixedInputsNum; i < acc_.GetNumValueIn(gate); i++) {
         vec.emplace_back(acc_.GetValueIn(gate, i));
     }
     LowerToJSCall(gate, glue, vec);
@@ -1726,7 +1730,9 @@ void SlowPathLowering::LowerDefineGeneratorFunc(GateRef gate, GateRef glue, Gate
     builder_.Branch(builder_.FunctionIsResolved(*method), &isResolved, &notResolved);
     builder_.Bind(&isResolved);
     {
-        method = builder_.CallRuntime(glue, RTSTUB_ID(DefineGeneratorFunc), { *method }, true);
+        auto methodIdTagged = builder_.TaggedNGC(builder_.ZExtInt16ToInt64(methodId));
+        method = builder_.CallRuntime(glue,
+            RTSTUB_ID(DefineGeneratorFuncWithMethodId), {methodIdTagged});
         Label notException(&builder_);
         builder_.Branch(builder_.IsSpecial(*method, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &notException);
@@ -2079,7 +2085,8 @@ void SlowPathLowering::LowerLdGlobalVar(GateRef gate, GateRef glue)
     GateRef ret;
     DEFVAlUE(result, (&builder_), VariableType::JS_ANY(), builder_.Undefined());
     ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef propKey = GetValueFromConstStringTable(glue, gate, 0);
+    GateRef stringId = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0)));
+    GateRef propKey = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), { stringId }, true);
     GateRef globalObject = builder_.GetGlobalObject(glue);
     result = builder_.CallRuntime(glue, RTSTUB_ID(GetGlobalOwnProperty), { propKey }, true);
     builder_.Branch(builder_.IsSpecial(*result, JSTaggedValue::VALUE_HOLE),
@@ -2118,11 +2125,11 @@ void SlowPathLowering::LowerLdObjByName(GateRef gate, GateRef glue)
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef receiver = acc_.GetValueIn(gate, 1);
+    GateRef stringId = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0)));
+    GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), {stringId}, true);
     builder_.Branch(builder_.TaggedIsHeapObject(receiver), &receiverIsHeapObject, &slowPath);
     builder_.Bind(&receiverIsHeapObject);
     {
-        GateRef stringId = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0)));
-        GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), {stringId}, true);
         varAcc = builder_.CallStub(glue, CommonStubCSigns::GetPropertyByName,
             {glue, receiver, prop});
         Label notHole(&builder_);
@@ -2133,11 +2140,9 @@ void SlowPathLowering::LowerLdObjByName(GateRef gate, GateRef glue)
     }
     builder_.Bind(&slowPath);
     {
-        GateRef stringId = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0)));
-        GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), {stringId}, true);
         GateRef undefined = builder_.UndefineConstant();
         varAcc = builder_.CallRuntime(glue, RTSTUB_ID(LoadICByName), {undefined,
-            receiver, prop, builder_.TaggedTypeNGC(undefined)}, true);
+            receiver, prop, undefined}, true);
         builder_.Branch(builder_.IsSpecial(*varAcc, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
@@ -2163,13 +2168,13 @@ void SlowPathLowering::LowerStObjByName(GateRef gate, GateRef glue)
     Label exceptionExit(&builder_);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
+    GateRef stringId = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0)));
+    GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), {stringId}, true);
     GateRef receiver = acc_.GetValueIn(gate, 1);
     GateRef result;
     builder_.Branch(builder_.TaggedIsHeapObject(receiver), &receiverIsHeapObject, &slowPath);
     builder_.Bind(&receiverIsHeapObject);
     {
-        GateRef stringId = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0)));
-        GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), {stringId}, true);
         result = builder_.CallStub(glue, CommonStubCSigns::SetPropertyByName,
             {glue, receiver, prop, acc_.GetValueIn(gate, 2)});
         Label notHole(&builder_);
@@ -2180,11 +2185,9 @@ void SlowPathLowering::LowerStObjByName(GateRef gate, GateRef glue)
     }
     builder_.Bind(&slowPath);
     {
-        GateRef stringId = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0)));
-        GateRef prop = builder_.CallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), {stringId}, true);
         GateRef undefined = builder_.UndefineConstant();
         result = builder_.CallRuntime(glue, RTSTUB_ID(StoreICByName), {undefined,
-            receiver, prop, acc_.GetValueIn(gate, 2), builder_.TaggedTypeNGC(undefined)}, true);
+            receiver, prop, acc_.GetValueIn(gate, 2), undefined}, true);
         builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
@@ -2262,7 +2265,6 @@ void SlowPathLowering::LowerStObjByIndex(GateRef gate, GateRef glue)
     Label exceptionExit(&builder_);
     Label fastPath(&builder_);
     Label slowPath(&builder_);
-    Label isHeapObj(&builder_);
     GateRef receiver = acc_.GetValueIn(gate, 0);
     GateRef index = acc_.GetValueIn(gate, 1);
     GateRef accValue = acc_.GetValueIn(gate, 2);
@@ -2281,7 +2283,7 @@ void SlowPathLowering::LowerStObjByIndex(GateRef gate, GateRef glue)
     builder_.Bind(&slowPath);
     {
         result = builder_.CallRuntime(glue, RTSTUB_ID(StObjByIndex),
-            {receiver, builder_.TaggedTypeNGC(index), accValue});
+            {receiver, builder_.TaggedTypeNGC(index), accValue}, true);
         builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
@@ -2793,10 +2795,12 @@ void SlowPathLowering::LowerGetResumeMode(GateRef gate)
     GateRef obj = acc_.GetValueIn(gate, 0);
     GateRef bitFieldOffset = builder_.IntPtr(JSGeneratorObject::BIT_FIELD_OFFSET);
     GateRef bitField = builder_.Load(VariableType::INT64(), obj, bitFieldOffset);
-    GateRef resumeMode = builder_.Int32And(
-        builder_.Int32LSR(builder_.TruncInt64ToInt32(bitField),
-                          builder_.Int32(JSGeneratorObject::ResumeModeBits::START_BIT)),
+    auto bitfieldlsr = builder_.Int32LSR(builder_.TruncInt64ToInt32(bitField),
+        builder_.Int32(JSGeneratorObject::ResumeModeBits::START_BIT));
+    GateRef resumeModeBits = builder_.Int32And(
+        bitfieldlsr,
         builder_.Int32((1LU << JSGeneratorObject::ResumeModeBits::SIZE) - 1));
+    auto resumeMode = builder_.ZExtInt32ToInt64(resumeModeBits);
     GateRef result = builder_.TaggedTypeNGC(resumeMode);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());

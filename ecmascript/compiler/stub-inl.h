@@ -31,8 +31,8 @@
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/layout_info.h"
 #include "ecmascript/message_string.h"
-#include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/slots.h"
+#include "ecmascript/mem/visitor.h"
 #include "mem/region_space.h"
 
 namespace panda::ecmascript::kungfu {
