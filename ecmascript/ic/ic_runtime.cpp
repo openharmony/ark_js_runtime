@@ -156,7 +156,7 @@ JSTaggedValue LoadICRuntime::LoadMiss(JSHandle<JSTaggedValue> receiver, JSHandle
     }
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(GetThread());
     // ic-switch
-    if (!GetThread()->GetEcmaVM()->ICEnable()) {
+    if (!GetThread()->GetEcmaVM()->ICEnabled()) {
         icAccessor_.SetAsMega();
         return result.GetTaggedValue();
     }
@@ -198,7 +198,7 @@ JSTaggedValue StoreICRuntime::StoreMiss(JSHandle<JSTaggedValue> receiver, JSHand
         return SlowRuntimeStub::ThrowReferenceError(GetThread(), key.GetTaggedValue(), " is not defined");
     }
     // ic-switch
-    if (!GetThread()->GetEcmaVM()->ICEnable()) {
+    if (!GetThread()->GetEcmaVM()->ICEnabled()) {
         icAccessor_.SetAsMega();
         return success ? JSTaggedValue::Undefined() : JSTaggedValue::Exception();
     }

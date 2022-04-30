@@ -74,13 +74,13 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMInTwoWays)
 
     EXPECT_TRUE(&options1Out != &options2Out);
 
-    EXPECT_TRUE(options1Out.IsEnableArkTools() != options2Out.IsEnableArkTools());
-    EXPECT_TRUE(options1Out.IsEnableStubAot() != options2Out.IsEnableStubAot());
+    EXPECT_TRUE(options1Out.EnableArkTools() != options2Out.EnableArkTools());
+    EXPECT_TRUE(options1Out.EnableStubAot() != options2Out.EnableStubAot());
     EXPECT_TRUE(options1Out.GetComStubFile() != options2Out.GetComStubFile());
     EXPECT_TRUE(options1Out.GetBcStubFile() != options2Out.GetBcStubFile());
-    EXPECT_TRUE(options1Out.IsEnableForceGC() != options2Out.IsEnableForceGC());
-    EXPECT_TRUE(options1Out.IsForceFullGC() != options2Out.IsForceFullGC());
-    EXPECT_TRUE(options1Out.IsEnableCpuProfiler() != options2Out.IsEnableCpuProfiler());
+    EXPECT_TRUE(options1Out.EnableForceGC() != options2Out.EnableForceGC());
+    EXPECT_TRUE(options1Out.ForceFullGC() != options2Out.ForceFullGC());
+    EXPECT_TRUE(options1Out.EnableCpuProfiler() != options2Out.EnableCpuProfiler());
     EXPECT_TRUE(options1Out.EnableTSAot() != options2Out.EnableTSAot());
     EXPECT_TRUE(options1Out.GetArkProperties() != options2Out.GetArkProperties());
 

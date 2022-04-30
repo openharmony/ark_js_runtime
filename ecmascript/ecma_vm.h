@@ -146,7 +146,7 @@ public:
     {
 #if defined(ECMASCRIPT_ENABLE_THREAD_CHECK) && ECMASCRIPT_ENABLE_THREAD_CHECK
         // Exclude GC thread
-        if (options_.IsEnableThreadCheck()) {
+        if (options_.EnableThreadCheck()) {
             if (!Taskpool::GetCurrentTaskpool()->IsInThreadPool(std::this_thread::get_id()) &&
                 thread_->GetThreadId() != JSThread::GetCurrentThreadId()) {
                     LOG(FATAL, RUNTIME) << "Fatal: ecma_vm cannot run in multi-thread!"
@@ -163,9 +163,9 @@ public:
         return thread_;
     }
 
-    bool ICEnable() const
+    bool ICEnabled() const
     {
-        return icEnable_;
+        return icEnabled_;
     }
 
     void PushToNativePointerList(JSNativePointer *array);
@@ -338,7 +338,7 @@ private:
 
     // VM startup states.
     JSRuntimeOptions options_;
-    bool icEnable_ {true};
+    bool icEnabled_ {true};
     bool vmInitialized_ {false};
     GCStats *gcStats_ {nullptr};
     bool snapshotSerializeEnable_ {false};

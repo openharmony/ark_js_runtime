@@ -57,8 +57,8 @@ private:
     size_t hugeSpaceFreeSize_ = 0;
     size_t oldSpaceCommitSize_ = 0;
     size_t nonMoveSpaceCommitSize_ = 0;
-    bool concurrentMark_ {false};
-    // obtain from heap
+    bool markingInProgress_ {false};
+    // Obtained from the shared heap instance.
     WorkManager *workManager_ {nullptr};
 
     friend class WorkManager;

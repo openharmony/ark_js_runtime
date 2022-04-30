@@ -92,12 +92,12 @@ void ConcurrentMarker::WaitMarkingFinished()  // call in EcmaVm thread, wait for
     }
 }
 
-void ConcurrentMarker::Reset(bool isRevertCSet)
+void ConcurrentMarker::Reset(bool revertCSet)
 {
     Finish();
     thread_->SetMarkStatus(MarkStatus::READY_TO_MARK);
     notifyMarkingFinished_ = false;
-    if (isRevertCSet) {
+    if (revertCSet) {
         // Partial gc clear cset when evacuation allocator finalize
         heap_->GetOldSpace()->RevertCSet();
         auto callback = [](Region *region) {
