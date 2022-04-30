@@ -20,7 +20,7 @@ void TSObjLayoutInfo::SetKey(const JSThread *thread, [[maybe_unused]] int index,
                              const JSTaggedValue &typeIdVal)
 {
     DISALLOW_GARBAGE_COLLECTION;
-    int number = NumberOfElements();
+    int number = static_cast<int>(NumberOfElements());
     ASSERT(number == index);
     SetNumberOfElements(thread, number + 1);
     SetPropertyInit(thread, number, key, typeIdVal);

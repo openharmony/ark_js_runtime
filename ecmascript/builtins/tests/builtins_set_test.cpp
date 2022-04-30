@@ -72,7 +72,7 @@ public:
                 return JSTaggedValue::Undefined();
             }
             JSArray *jsArray = JSArray::Cast(GetThis(argv)->GetTaggedObject());
-            int length = jsArray->GetArrayLength() + 1;
+            uint32_t length = jsArray->GetArrayLength() + 1U;
             jsArray->SetArrayLength(argv->GetThread(), length);
             return JSTaggedValue::Undefined();
         }
@@ -197,7 +197,7 @@ HWTEST_F_L0(BuiltinsSetTest, ForEach)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSSet> set(thread, CreateBuiltinsSet(thread));
     char keyArray[] = "key0";
-    for (int i = 0; i < 5; i++) {
+    for (uint32_t i = 0U; i < 5U; i++) {
         keyArray[3] = '1' + i;
         JSHandle<JSTaggedValue> key(factory->NewFromASCII(keyArray));
         auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
@@ -238,7 +238,7 @@ HWTEST_F_L0(BuiltinsSetTest, DeleteAndRemove)
 
     // add 40 keys
     char keyArray[] = "key0";
-    for (int i = 0; i < 40; i++) {
+    for (uint32_t i = 0; i < 40; i++) {
         keyArray[3] = '1' + i;
         JSHandle<JSTaggedValue> key(factory->NewFromASCII(keyArray));
 

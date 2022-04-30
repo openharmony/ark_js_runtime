@@ -94,10 +94,10 @@ HWTEST_F_L0(HeapTrackerTest, HeapTracker)
     std::string line;
     std::string emptySample = "\"samples\":";
     std::string firstSample = "\"samples\":[0, ";
-    int emptySize = emptySample.size();
+    uint32_t emptySize = emptySample.size();
     bool isFind = false;
     while (getline(inputStream, line)) {
-        if (line.substr(0, emptySize) == emptySample) {
+        if (line.substr(0U, emptySize) == emptySample) {
             ASSERT_TRUE(line.substr(0, firstSample.size()) == firstSample);
             isFind = true;
         }
