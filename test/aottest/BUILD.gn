@@ -43,6 +43,7 @@ group("ark_aot_test") {
     "strictequal:strictequalAction",
     "strictnotequal:strictnotequalAction",
     "sub:subAction",
+    "throw:throwAction",
     "tonumber:tonumberAction",
     "trystglobalbynameprefid32:trystglobalbynameprefid32Action",
     "typeof:typeofAction",
