@@ -1824,6 +1824,15 @@ JSTaggedValue SlowRuntimeStub::DefinefuncDyn(JSThread *thread, JSFunction *func)
     return jsFunc.GetTaggedValue();
 }
 
+JSTaggedValue SlowRuntimeStub::GetSuperConstructor(JSThread *thread, JSTaggedValue ctor)
+{
+    INTERPRETER_TRACE(thread, GetSuperConstructor);
+    JSHandle<JSTaggedValue> ctorHandle(thread, ctor);
+    JSHandle<JSTaggedValue> superConstructor(thread, JSTaggedValue::GetPrototype(thread, ctorHandle));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    return superConstructor.GetTaggedValue();
+}
+
 JSTaggedValue SlowRuntimeStub::SuperCall(JSThread *thread, JSTaggedValue func, JSTaggedValue newTarget,
                                          uint16_t firstVRegIdx, uint16_t length)
 {
