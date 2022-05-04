@@ -847,7 +847,7 @@ void JSTaggedValue::DV(JSTaggedType val)
 
 void JSThread::DumpStack()
 {
-    InterpretedFrameHandler handler(this);
+    FrameHandler handler(this);
     handler.DumpStack(std::cout);
 }
 

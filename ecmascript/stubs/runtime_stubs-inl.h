@@ -175,8 +175,6 @@ JSTaggedValue RuntimeStubs::RuntimeSuperCallSpread(JSThread *thread, const JSHan
                                                    const JSHandle<JSTaggedValue> &newTarget,
                                                    const JSHandle<JSTaggedValue> &array)
 {
-    InterpretedFrameHandler frameHandler(thread);
-
     JSHandle<JSTaggedValue> superFunc(thread, JSTaggedValue::GetPrototype(thread, func));
     ASSERT(superFunc->IsJSFunction());
 
@@ -580,7 +578,7 @@ JSTaggedValue RuntimeStubs::RuntimeResolveClass(JSThread *thread, const JSHandle
 {
     ASSERT(ctor.GetTaggedValue().IsClassConstructor());
 
-    InterpretedFrameHandler frameHandler(thread);
+    FrameHandler frameHandler(thread);
     JSTaggedValue currentFunc = frameHandler.GetFunction();
     JSHandle<JSTaggedValue> ecmaModule(thread, JSFunction::Cast(currentFunc.GetTaggedObject())->GetModule());
 
@@ -1361,7 +1359,7 @@ JSTaggedValue RuntimeStubs::RuntimeCreateObjectWithExcludedKeys(JSThread *thread
     JSHandle<JSObject> obj(objVal);
     uint32_t numExcludedKeys = 0;
     JSHandle<TaggedArray> excludedKeys = factory->NewTaggedArray(numKeys + 1);
-    InterpretedFrameHandler frameHandler(thread);
+    FrameHandler frameHandler(thread);
     JSTaggedValue excludedKey = frameHandler.GetVRegValue(firstArgRegIdx);
     if (!excludedKey.IsUndefined()) {
         numExcludedKeys = numKeys + 1;
@@ -1535,16 +1533,16 @@ JSTaggedValue RuntimeStubs::RuntimeSuperCall(JSThread *thread, const JSHandle<JS
                                              const JSHandle<JSTaggedValue> &newTarget, uint16_t firstVRegIdx,
                                              uint16_t length)
 {
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    InterpretedFrameHandler frameHandler(thread);
-
     JSHandle<JSTaggedValue> superFunc(thread, JSTaggedValue::GetPrototype(thread, func));
     ASSERT(superFunc->IsJSFunction());
 
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TaggedArray> argv = factory->NewTaggedArray(length);
+    FrameHandler frameHandler(thread);
     for (size_t i = 0; i < length; ++i) {
         argv->Set(thread, i, frameHandler.GetVRegValue(firstVRegIdx + i));
     }
+
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, superFunc, undefined, newTarget, length);
     info.SetCallArg(length, argv);
@@ -1562,10 +1560,10 @@ JSTaggedValue RuntimeStubs::RuntimeThrowTypeError(JSThread *thread, const char *
 
 JSTaggedValue RuntimeStubs::RuntimeGetCallSpreadArgs(JSThread *thread, JSTaggedValue array)
 {
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-
     JSHandle<JSTaggedValue> jsArray(thread, array);
     uint32_t argvMayMaxLength = JSHandle<JSArray>::Cast(jsArray)->GetArrayLength();
+
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TaggedArray> argv = factory->NewTaggedArray(argvMayMaxLength);
     JSHandle<JSTaggedValue> itor = JSIterator::GetIterator(thread, jsArray);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
