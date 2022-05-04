@@ -107,8 +107,7 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t 
     uintptr_t derived = 0;
 
     uintptr_t callsiteFp = *fp;
-    auto frameHandler = FrameHandler(reinterpret_cast<JSTaggedType *>(fp));
-    uintptr_t callSiteSp = frameHandler.GetPrevFrameCallSiteSp();
+    uintptr_t callSiteSp = FrameHandler::GetPrevFrameCallSiteSp(reinterpret_cast<JSTaggedType *>(fp));
 
     for (auto &info: *infos) {
         if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
@@ -158,8 +157,7 @@ bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t 
     }
 
     uintptr_t callsiteFp = *fp;
-    auto frameHandler = FrameHandler(reinterpret_cast<JSTaggedType *>(frameFp));
-    uintptr_t callSiteSp = frameHandler.GetPrevFrameCallSiteSp();
+    uintptr_t callSiteSp = FrameHandler::GetPrevFrameCallSiteSp(reinterpret_cast<JSTaggedType *>(frameFp));
     for (auto &info: *infos) {
         if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
             address = callSiteSp + info.second;

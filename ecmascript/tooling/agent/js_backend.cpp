@@ -531,7 +531,7 @@ JSPtExtractor *JSBackend::GetExtractor(const CString &url)
 bool JSBackend::GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames)
 {
     CallFrameId callFrameId = 0;
-    auto walkerFunc = [this, &callFrameId, &callFrames](const InterpretedFrameHandler *frameHandler) -> StackState {
+    auto walkerFunc = [this, &callFrameId, &callFrames](const FrameHandler *frameHandler) -> StackState {
         JSMethod *method = DebuggerApi::GetMethod(frameHandler);
         if (method->IsNativeWithCallField()) {
             LOG(INFO, DEBUGGER) << "GenerateCallFrames: Skip CFrame and Native method";
@@ -552,7 +552,7 @@ bool JSBackend::GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFram
 }
 
 bool JSBackend::GenerateCallFrame(CallFrame *callFrame,
-    const InterpretedFrameHandler *frameHandler, CallFrameId callFrameId)
+    const FrameHandler *frameHandler, CallFrameId callFrameId)
 {
     JSMethod *method = DebuggerApi::GetMethod(frameHandler);
     JSPtExtractor *extractor = GetExtractor(method->GetJSPandaFile());
@@ -607,7 +607,7 @@ bool JSBackend::GenerateCallFrame(CallFrame *callFrame,
     return true;
 }
 
-std::unique_ptr<Scope> JSBackend::GetLocalScopeChain(const InterpretedFrameHandler *frameHandler,
+std::unique_ptr<Scope> JSBackend::GetLocalScopeChain(const FrameHandler *frameHandler,
     std::unique_ptr<RemoteObject> *thisObj)
 {
     auto localScope = std::make_unique<Scope>();

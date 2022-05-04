@@ -358,11 +358,11 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
         LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call.";                                         \
         JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(                                 \
             const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);                 \
+        thread->SetCurrentSPFrame(sp);                                                             \
         if (UNLIKELY(thread->HasPendingException())) {                                             \
             INTERPRETER_GOTO_EXCEPTION_HANDLER();                                                  \
         }                                                                                          \
         LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call.";                                          \
-        thread->SetCurrentSPFrame(sp);                                                             \
         SET_ACC(retValue);                                                                         \
         size_t jumpSize = GetJumpSizeAfterCall(pc);                                                \
         DISPATCH_OFFSET(jumpSize);                                                                 \
@@ -456,7 +456,8 @@ JSTaggedValue InterpreterAssembly::ExecuteNative(EcmaRuntimeCallInfo *info)
     ASSERT(method->GetNumVregsWithCallField() == 0);
 
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    JSTaggedType *prevSp = InterpretedEntryFrameHandler::GetPrevInterpretedFrame(sp);
+    FrameHandler frameHandler(thread);
+    JSTaggedType *prevSp = frameHandler.GetPrevInterpretedFrame();
 
     int32_t actualNumArgs = static_cast<int32_t>(info->GetArgsNumber());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -509,7 +510,8 @@ JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
 
     // current sp is entry frame.
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    JSTaggedType *prevSp = InterpretedEntryFrameHandler::GetPrevInterpretedFrame(sp);
+    FrameHandler frameHandler(thread);
+    JSTaggedType *prevSp = frameHandler.GetPrevInterpretedFrame();
 
     int32_t actualNumArgs = static_cast<int32_t>(info->GetArgsNumber());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -2251,15 +2253,16 @@ void InterpreterAssembly::HandleNewObjDynRangePrefImm16V8(
             state->pc = nullptr;
             state->function = ctor;
             thread->SetCurrentSPFrame(newSp);
+
             LOG(DEBUG, INTERPRETER) << "Entry: Runtime New.";
             JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
                 const_cast<void *>(ctorMethod->GetNativePointer()))(&ecmaRuntimeCallInfo);
-
+            thread->SetCurrentSPFrame(sp);
             if (UNLIKELY(thread->HasPendingException())) {
                 INTERPRETER_GOTO_EXCEPTION_HANDLER();
             }
             LOG(DEBUG, INTERPRETER) << "Exit: Runtime New.";
-            thread->SetCurrentSPFrame(sp);
+
             SET_ACC(retValue);
             DISPATCH(BytecodeInstruction::Format::PREF_IMM16_V8);
         }
@@ -4115,9 +4118,7 @@ void InterpreterAssembly::ExceptionHandler(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {
-    auto exception = thread->GetException();
-
-    InterpretedFrameHandler frameHandler(sp);
+    FrameHandler frameHandler(thread);
     uint32_t pcOffset = panda_file::INVALID_OFFSET;
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
         if (frameHandler.IsEntryFrame()) {
@@ -4138,6 +4139,7 @@ void InterpreterAssembly::ExceptionHandler(
         return;
     }
 
+    auto exception = thread->GetException();
     SET_ACC(exception);
     thread->ClearException();
     thread->SetCurrentSPFrame(sp);
@@ -4213,20 +4215,22 @@ uint32_t InterpreterAssembly::GetNumArgs(JSTaggedType *sp, uint32_t restIdx, uin
     JSMethod *method = JSFunction::Cast(state->function.GetTaggedObject())->GetMethod();
     uint64_t callField = method->GetCallField();
     ASSERT(JSMethod::HaveExtraBit::Decode(callField));
+
     uint32_t numVregs = JSMethod::NumVregsBits::Decode(callField);
     bool haveFunc = JSMethod::HaveFuncBit::Decode(callField);
     bool haveNewTarget = JSMethod::HaveNewTargetBit::Decode(callField);
     bool haveThis = JSMethod::HaveThisBit::Decode(callField);
     uint32_t copyArgs = haveFunc + haveNewTarget + haveThis;
     uint32_t numArgs = JSMethod::NumArgsBits::Decode(callField);
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
     JSTaggedType *lastFrame = state->base.prev;
-    if (FrameHandler(state->base.prev).GetFrameType() == FrameType::INTERPRETER_ENTRY_FRAME) {
-        int32_t argc = InterpretedEntryFrameHandler(state->base.prev).GetArgsNumber();
-        lastFrame = lastFrame - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - argc - RESERVED_CALL_ARGCOUNT;
+    // The prev frame of InterpretedFrame may entry frame or interpreter frame.
+    if (FrameHandler::GetFrameType(state->base.prev) == FrameType::INTERPRETER_ENTRY_FRAME) {
+        lastFrame = FrameHandler::GetInterpretedEntryFrameStart(state->base.prev);
     } else {
         lastFrame = lastFrame - INTERPRETER_FRAME_STATE_SIZE;
     }
+
     if (static_cast<uint32_t>(lastFrame - sp) > numVregs + copyArgs + numArgs) {
         // In this case, actualNumArgs is in the end
         // If not, then actualNumArgs == declaredNumArgs, therefore do nothing

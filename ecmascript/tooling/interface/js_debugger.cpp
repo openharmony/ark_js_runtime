@@ -192,8 +192,7 @@ JSTaggedValue JSDebugger::DebuggerSetValue(EcmaRuntimeCallInfo *argv)
     CString varName = ConvertToString(var.GetTaggedValue());
     LOG(INFO, DEBUGGER) << "DebuggerSetValue: name = " << varName;
 
-    const JSTaggedType *sp = ecmaVm->GetJsDebuggerManager()->GetEvaluateCtxFrameSp();
-    InterpretedFrameHandler frameHandler(const_cast<JSTaggedType *>(sp));
+    FrameHandler frameHandler(thread);
     JSMethod *method = frameHandler.GetMethod();
     int32_t regIndex = -1;
     bool found = EvaluateLocalValue(method, thread, varName, regIndex);
@@ -234,8 +233,7 @@ JSTaggedValue JSDebugger::DebuggerGetValue(EcmaRuntimeCallInfo *argv)
     CString varName = ConvertToString(var.GetTaggedValue());
     LOG(INFO, DEBUGGER) << "DebuggerGetValue: name = " << varName;
 
-    const JSTaggedType *sp = ecmaVm->GetJsDebuggerManager()->GetEvaluateCtxFrameSp();
-    InterpretedFrameHandler frameHandler(const_cast<JSTaggedType *>(sp));
+    FrameHandler frameHandler(thread);
     JSMethod *method = frameHandler.GetMethod();
     int32_t regIndex = -1;
     bool found = EvaluateLocalValue(method, thread, varName, regIndex);
