@@ -477,44 +477,6 @@ HWTEST_F_L0(ICRuntimeStubTest, StoreWithTransition_In_Filed)
     EXPECT_EQ(resultArray->Get(bitOffset).GetInt(), 2);
 }
 
-HWTEST_F_L0(ICRuntimeStubTest, StoreWithTransition)
-{
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
-    JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
-    JSHandle<JSTaggedValue> arrFun = env->GetArrayFunction();
-    JSHandle<JSObject> handleObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
-    JSHandle<JSObject> handleArrObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(arrFun), arrFun);
-    auto hclass = handleArrObj->GetJSHClass();
-
-    uint32_t handler = 0U;
-    uint32_t bitOffset = 1U;
-    OffsetBit::Set<uint32_t>(bitOffset, &handler);
-    KindBit::Set<uint32_t>(HandlerKind::FIELD, &handler);
-
-    array_size_t arrayLength = bitOffset + 2U;
-    JSHandle<TaggedArray> handleTaggedArr = factory->NewTaggedArray(arrayLength);
-    handleObj->SetProperties(thread, handleTaggedArr.GetTaggedValue());
-
-    JSHandle<TransitionHandler> handleTransitionHandler = factory->NewTransitionHandler();
-    handleTransitionHandler->SetTransitionHClass(thread, JSTaggedValue(hclass));
-    handleTransitionHandler->SetHandlerInfo(thread, JSTaggedValue(handler));
-
-    // test handler is not InlinedProps and length more than the handler offset
-    ICRuntimeStub::StoreWithTransition(thread, *handleObj, JSTaggedValue(2), handleTransitionHandler.GetTaggedValue());
-    EXPECT_EQ(handleTaggedArr->Get(bitOffset).GetInt(), 2);
-
-    // test handler offset more than the length and length is zero
-    arrayLength = 0U;
-    JSHandle<TaggedArray> handleEmptyTaggedArr = factory->NewTaggedArray(arrayLength);
-    handleObj->SetProperties(thread, handleEmptyTaggedArr.GetTaggedValue());
-
-    ICRuntimeStub::StoreWithTransition(thread, *handleObj, JSTaggedValue(3), handleTransitionHandler.GetTaggedValue());
-    auto resultProperties = TaggedArray::Cast(handleObj->GetProperties().GetTaggedObject());
-    EXPECT_EQ(static_cast<int>(resultProperties->GetLength()), JSObject::MIN_PROPERTIES_LENGTH);
-    EXPECT_EQ(resultProperties->Get(bitOffset).GetInt(), 3);
-}
-
 HWTEST_F_L0(ICRuntimeStubTest, Field_StoreAndLoad)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
