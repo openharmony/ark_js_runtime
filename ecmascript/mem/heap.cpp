@@ -68,7 +68,7 @@ void Heap::Initialize()
     size_t maxMachineCodeSpaceCapacity = ecmaVm_->GetJSOptions().MaxMachineCodeSpaceCapacity();
     machineCodeSpace_ = new MachineCodeSpace(this, maxMachineCodeSpaceCapacity, maxMachineCodeSpaceCapacity);
     machineCodeSpace_->Initialize();
-    hugeObjectSpace_ = new HugeObjectSpace(this);
+    hugeObjectSpace_ = new HugeObjectSpace(heapRegionAllocator_);
     parallelGC_ = ecmaVm_->GetJSOptions().EnableParallelGC();
     concurrentMarkingEnabled_ = ecmaVm_->GetJSOptions().EnableConcurrentMark();
     markType_ = MarkType::MARK_YOUNG;

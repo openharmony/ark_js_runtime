@@ -211,7 +211,7 @@ public:
         return nativeAreaAllocator_;
     }
 
-    const HeapRegionAllocator *GetHeapRegionAllocator() const
+    HeapRegionAllocator *GetHeapRegionAllocator() const
     {
         return heapRegionAllocator_;
     }

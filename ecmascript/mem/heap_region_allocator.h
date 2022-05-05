@@ -22,6 +22,7 @@
 #include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript {
+class JSThread;
 class Region;
 class Space;
 
@@ -30,7 +31,7 @@ public:
     HeapRegionAllocator() = default;
     virtual ~HeapRegionAllocator() = default;
 
-    Region *AllocateAlignedRegion(Space *space, size_t capacity);
+    Region *AllocateAlignedRegion(Space *space, size_t capacity, JSThread* thread);
     void FreeRegion(Region *region);
 
     void IncreaseAnnoMemoryUsage(size_t bytes)

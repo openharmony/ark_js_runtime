@@ -24,10 +24,8 @@
 
 namespace panda {
 namespace ecmascript {
+class JSThread;
 class Space;
-class Heap;
-class RememberedSet;
-class WorkManager;
 
 enum RegionFlags {
     NEVER_EVACUATE = 1,
@@ -58,13 +56,14 @@ enum RegionFlags {
 
 class Region {
 public:
-    Region(Space *space, Heap *heap, uintptr_t allocateBase, uintptr_t begin, uintptr_t end, RegionFlags flags)
-        : space_(space), heap_(heap),
-        allocateBase_(allocateBase),
-        end_(end),
-        highWaterMark_(end),
-        aliveObject_(0),
-        wasted_(0)
+    Region(Space *space, JSThread *thread, uintptr_t allocateBase, uintptr_t begin, uintptr_t end, RegionFlags flags)
+        : space_(space),
+          thread_(thread),
+          allocateBase_(allocateBase),
+          end_(end),
+          highWaterMark_(end),
+          aliveObject_(0),
+          wasted_(0)
     {
         SetFlag(flags);
         bitsetSize_ = IsFlagSet(RegionFlags::IS_HUGE_OBJECT) ?
@@ -73,6 +72,7 @@ public:
         markGCBitset_->Clear(bitsetSize_);
         begin_ = AlignUp(begin + bitsetSize_, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
     }
+
     ~Region() = default;
     NO_COPY_SEMANTIC(Region);
     NO_MOVE_SEMANTIC(Region);
@@ -127,14 +127,14 @@ public:
         space_ = space;
     }
 
-    Heap *GetHeap() const
-    {
-        return heap_;
-    }
-
     Space *GetSpace() const
     {
         return space_;
+    }
+
+    JSThread *GetJSThread() const
+    {
+        return thread_;
     }
 
     void ResetFlag()
@@ -317,8 +317,6 @@ public:
 
     inline bool IsMarking() const;
 
-    inline WorkManager *GetWorkManager() const;
-
     void IncreaseAliveObjectSafe(size_t size)
     {
         ASSERT(aliveObject_ + size <= GetSize());
@@ -418,7 +416,15 @@ private:
     RememberedSet *oldToNewSet_ {nullptr};
     uintptr_t begin_;
     Space *space_;
-    Heap *heap_;
+    /*
+     * The thread instance here is used by the GC barriers to get marking related information
+     * and perform marking related operations. The barriers will indirectly access such information
+     * via. the objects' associated regions.
+     * fixme: Figure out a more elegant solution to bridging the barrier
+     * and the information / operations it depends on. Then we can get rid of this from the region,
+     * and consequently, the region allocator, the spaces using the region allocator, etc.
+     */
+    JSThread *thread_;
 
     uintptr_t allocateBase_;
     uintptr_t end_;
