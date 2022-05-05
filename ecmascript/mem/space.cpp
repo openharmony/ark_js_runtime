@@ -16,7 +16,6 @@
 #include "ecmascript/mem/space-inl.h"
 
 #include "ecmascript/ecma_vm.h"
-//#include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/heap_region_allocator.h"
 #include "ecmascript/mem/mem_controller.h"
 #include "ecmascript/mem/region-inl.h"
