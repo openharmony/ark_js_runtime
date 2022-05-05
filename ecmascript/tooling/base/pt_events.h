@@ -939,5 +939,131 @@ private:
     CString occasion_ {};
     CVector<std::unique_ptr<ScriptCoverage>> result_ {};
 };
+
+class HeapStatsUpdate final : public PtBaseEvents {
+public:
+    HeapStatsUpdate() = default;
+    ~HeapStatsUpdate() override = default;
+    static std::unique_ptr<HeapStatsUpdate> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    CString GetName() override
+    {
+        return "HeapProfiler.heapStatsUpdate";
+    }
+
+    const CVector<int32_t> *GetStatsUpdate() const
+    {
+        return &statsUpdate_;
+    }
+
+    HeapStatsUpdate &SetStatsUpdate(CVector<int32_t> statsUpdate)
+    {
+        statsUpdate_ = std::move(statsUpdate);
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(HeapStatsUpdate);
+    NO_MOVE_SEMANTIC(HeapStatsUpdate);
+
+    CVector<int32_t> statsUpdate_ {};
+};
+
+class LastSeenObjectId final : public PtBaseEvents {
+public:
+    LastSeenObjectId() = default;
+    ~LastSeenObjectId() override = default;
+    static std::unique_ptr<LastSeenObjectId> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    CString GetName() override
+    {
+        return "HeapProfiler.lastSeenObjectId";
+    }
+
+    int32_t GetLastSeenObjectId() const
+    {
+        return lastSeenObjectId_;
+    }
+
+    LastSeenObjectId &SetLastSeenObjectId(int32_t lastSeenObjectId)
+    {
+        lastSeenObjectId_ = lastSeenObjectId;
+        return *this;
+    }
+
+    size_t GetTimestamp() const
+    {
+        return timestamp_;
+    }
+
+    LastSeenObjectId &SetTimestamp(size_t timestamp)
+    {
+        timestamp_ = timestamp;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(LastSeenObjectId);
+    NO_MOVE_SEMANTIC(LastSeenObjectId);
+
+    int32_t lastSeenObjectId_ {};
+    size_t timestamp_ {};
+};
+
+class ReportHeapSnapshotProgress final : public PtBaseEvents {
+public:
+    ReportHeapSnapshotProgress() = default;
+    ~ReportHeapSnapshotProgress() override = default;
+    static std::unique_ptr<ReportHeapSnapshotProgress> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+
+    CString GetName() override
+    {
+        return "HeapProfiler.reportHeapSnapshotProgress";
+    }
+
+    int32_t GetDone() const
+    {
+        return done_;
+    }
+
+    ReportHeapSnapshotProgress &SetDone(int32_t done)
+    {
+        done_ = done;
+        return *this;
+    }
+
+    int32_t GetTotal() const
+    {
+        return total_;
+    }
+
+    ReportHeapSnapshotProgress &SetTotal(int32_t total)
+    {
+        total_ = total;
+        return *this;
+    }
+
+    bool GetFinished() const
+    {
+        return finished_.value_or(false);
+    }
+
+    ReportHeapSnapshotProgress &SetFinished(bool finished)
+    {
+        finished_ = finished;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(ReportHeapSnapshotProgress);
+    NO_MOVE_SEMANTIC(ReportHeapSnapshotProgress);
+
+    int32_t done_ {};
+    int32_t total_ {};
+    std::optional<bool> finished_ {};
+};
 }  // namespace panda::ecmascript::tooling
 #endif

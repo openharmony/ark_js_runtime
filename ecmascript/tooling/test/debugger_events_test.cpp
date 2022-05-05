@@ -1124,4 +1124,170 @@ HWTEST_F_L0(DebuggerEventsTest, PreciseCoverageDeltaUpdateToObjectTest)
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
     ASSERT_TRUE(result->IsArray(ecmaVm));
 }
+
+HWTEST_F_L0(DebuggerEventsTest, HeapStatsUpdateCreateTest)
+{
+    CString msg;
+    std::unique_ptr<HeapStatsUpdate> heapStatsUpdate;
+
+    //  abnormal params of null msg
+    msg = CString() + R"({})";
+    heapStatsUpdate = HeapStatsUpdate::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(heapStatsUpdate, nullptr);
+
+    // abnormal params of unexist key params
+    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
+    heapStatsUpdate = HeapStatsUpdate::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(heapStatsUpdate, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    heapStatsUpdate = HeapStatsUpdate::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(heapStatsUpdate, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    heapStatsUpdate = HeapStatsUpdate::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(heapStatsUpdate, nullptr);
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"statsUpdate":[]}})";
+    heapStatsUpdate = HeapStatsUpdate::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(heapStatsUpdate, nullptr);
+}
+
+HWTEST_F_L0(DebuggerEventsTest, HeapStatsUpdateToObjectTest)
+{
+    CString msg;
+    std::unique_ptr<HeapStatsUpdate> heapStatsUpdate;
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"statsUpdate":[]}})";
+    heapStatsUpdate = HeapStatsUpdate::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(heapStatsUpdate, nullptr);
+    Local<ObjectRef> object1 = heapStatsUpdate->ToObject(ecmaVm);
+    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsObject());
+    Local<ObjectRef> object = Local<ObjectRef>(result);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "statsUpdate");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsArray(ecmaVm));
+}
+
+HWTEST_F_L0(DebuggerEventsTest, LastSeenObjectIdCreateTest)
+{
+    CString msg;
+    std::unique_ptr<LastSeenObjectId> lastSeenObjectId;
+
+    //  abnormal params of null msg
+    msg = CString() + R"({})";
+    lastSeenObjectId = LastSeenObjectId::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(lastSeenObjectId, nullptr);
+
+    // abnormal params of unexist key params
+    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
+    lastSeenObjectId = LastSeenObjectId::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(lastSeenObjectId, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    lastSeenObjectId = LastSeenObjectId::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(lastSeenObjectId, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    lastSeenObjectId = LastSeenObjectId::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(lastSeenObjectId, nullptr);
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"lastSeenObjectId":10,"timestamp":77}})";
+    lastSeenObjectId = LastSeenObjectId::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(lastSeenObjectId, nullptr);
+}
+
+HWTEST_F_L0(DebuggerEventsTest, LastSeenObjectIdToObjectTest)
+{
+    CString msg;
+    std::unique_ptr<LastSeenObjectId> lastSeenObjectId;
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"lastSeenObjectId":10,"timestamp":77}})";
+    lastSeenObjectId = LastSeenObjectId::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(lastSeenObjectId, nullptr);
+    Local<ObjectRef> object1 = lastSeenObjectId->ToObject(ecmaVm);
+    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsObject());
+    Local<ObjectRef> object = Local<ObjectRef>(result);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "lastSeenObjectId");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 10);
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "timestamp");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 77);
+}
+
+HWTEST_F_L0(DebuggerEventsTest, ReportHeapSnapshotProgressCreateTest)
+{
+    CString msg;
+    std::unique_ptr<ReportHeapSnapshotProgress> reportHeapSnapshotProgress;
+
+    //  abnormal params of null msg
+    msg = CString() + R"({})";
+    reportHeapSnapshotProgress = ReportHeapSnapshotProgress::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(reportHeapSnapshotProgress, nullptr);
+
+    // abnormal params of unexist key params
+    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
+    reportHeapSnapshotProgress = ReportHeapSnapshotProgress::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(reportHeapSnapshotProgress, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    reportHeapSnapshotProgress = ReportHeapSnapshotProgress::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(reportHeapSnapshotProgress, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    reportHeapSnapshotProgress = ReportHeapSnapshotProgress::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(reportHeapSnapshotProgress, nullptr);
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"done":10,"total":100}})";
+    reportHeapSnapshotProgress = ReportHeapSnapshotProgress::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(reportHeapSnapshotProgress, nullptr);
+}
+
+HWTEST_F_L0(DebuggerEventsTest, ReportHeapSnapshotProgressToObjectTest)
+{
+    CString msg;
+    std::unique_ptr<ReportHeapSnapshotProgress> reportHeapSnapshotProgress;
+    Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"done":10,"total":100}})";
+    reportHeapSnapshotProgress = ReportHeapSnapshotProgress::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(reportHeapSnapshotProgress, nullptr);
+    Local<ObjectRef> object1 = reportHeapSnapshotProgress->ToObject(ecmaVm);
+    Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    ASSERT_TRUE(result->IsObject());
+    Local<ObjectRef> object = Local<ObjectRef>(result);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "done");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 10);
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "total");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 100);
+}
 }  // namespace panda::test
