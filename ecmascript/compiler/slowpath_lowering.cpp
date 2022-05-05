@@ -741,11 +741,11 @@ void SlowPathLowering::LowerGetIterator(GateRef gate, GateRef glue)
     GateRef isGeneratorObject = builder_.TaggedIsGeneratorObject(acc_.GetValueIn(gate, 0));
     GateRef isNotGeneratorObject = builder_.BoolNot(isGeneratorObject);
     builder_.Branch(isNotGeneratorObject, &condTrue, &condFalse);
-    CREATE_DOUBLE_EXIT(condTrue, condTrue)
     // 1: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 1);
     int id = RTSTUB_ID(GetIterator);
     GateRef result = builder_.CallRuntime(glue, id, {glue, acc_.GetValueIn(gate, 0)}, true);
+    CREATE_DOUBLE_EXIT(condTrue, condTrue)
     ReplaceHirToSubCfg(gate, result, successControl, failControl);
 }
 
@@ -902,10 +902,7 @@ void SlowPathLowering::LowerThrowIfNotObject(GateRef gate, GateRef glue)
 {
     int id = RTSTUB_ID(ThrowIfNotObject);
     GateRef newGate = builder_.CallRuntime(glue, id, {glue});
-    GateRef value = builder_.ZExtInt8ToPtr(acc_.GetValueIn(gate, 0));
-    GateRef isEcmaObject = builder_.IsEcmaObject(value);
-    GateRef isNotEcmaObject = builder_.BoolNot(isEcmaObject);
-    ReplaceHirToThrowCall(gate, isNotEcmaObject, newGate);
+    ReplaceHirToThrowCall(gate, builder_.Boolean(true), newGate);
 }
 
 void SlowPathLowering::LowerThrowUndefinedIfHole(GateRef gate, GateRef glue)
