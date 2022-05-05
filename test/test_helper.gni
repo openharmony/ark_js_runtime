@@ -194,8 +194,9 @@ template("host_aot_test_action") {
 
     script = "//ark/js_runtime/test/run_ark_executable.py"
 
-    _stub_compile_options_ =
-        " --com-stub-out=com_stub.m --bc-stub-out=bc_stub.m"
+    _stub_compile_options_ = " --com-stub-out=" + rebase_path(target_out_dir) +
+                             "/com_stub.m --bc-stub-out=" +
+                             rebase_path(target_out_dir) + "/bc_stub.m"
 
     args = [
       "--script-file",
