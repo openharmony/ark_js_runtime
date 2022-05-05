@@ -25,7 +25,6 @@
 #include "ecmascript/frames.h"
 
 namespace panda::ecmascript {
-using TaggedType = coretypes::TaggedType;
 using DispatchEntryPoint =
     void (*)(JSThread *, const uint8_t *, JSTaggedType *, JSTaggedValue, JSTaggedValue, JSTaggedValue, int32_t);
 class ConstantPool;
@@ -47,7 +46,7 @@ public:
     static uint32_t FindCatchBlock(JSMethod *caller, uint32_t pc);
     static inline size_t GetJumpSizeAfterCall(const uint8_t *prevPc);
 
-    static inline JSTaggedValue UpdateHotnessCounter(JSThread* thread, TaggedType *sp);
+    static inline JSTaggedValue UpdateHotnessCounter(JSThread* thread, JSTaggedType *sp);
     static inline void InterpreterFrameCopyArgs(JSTaggedType *newSp, uint32_t numVregs, uint32_t numActualArgs,
                                                 uint32_t numDeclaredArgs, bool haveExtraArgs = true);
     static JSTaggedValue GetThisFunction(JSTaggedType *sp);
