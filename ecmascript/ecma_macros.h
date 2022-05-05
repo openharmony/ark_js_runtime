@@ -20,7 +20,7 @@
 #include "libpandabase/trace/trace.h"
 
 #if !defined(PANDA_TARGET_LINUX) && defined(IS_PUBLIC_VERSION) && defined(ENABLE_BYTRACE)
-    #include "bytrace.h"
+    #include "hitrace_meter.h"
 #endif
 
 #if defined(__cplusplus)

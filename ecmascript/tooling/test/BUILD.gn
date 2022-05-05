@@ -109,7 +109,7 @@ ohos_shared_library("jsdebugtest") {
 
   if (!is_linux && !is_mingw && !is_mac) {
     if (build_public_version) {
-      external_deps = [ "bytrace_standard:bytrace_core" ]
+      external_deps = [ "hitrace_native:hitrace_meter" ]
     }
   }
   output_extension = "so"

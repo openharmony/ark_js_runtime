@@ -286,9 +286,7 @@ config("ark_jsruntime_common_config") {
   if (!is_linux) {
     if (build_public_version && enable_bytrace) {
       defines += [ "ENABLE_BYTRACE" ]
-      include_dirs = [
-        "//developtools/bytrace_standard/interfaces/innerkits/native/include",
-      ]
+      include_dirs = [ "//base/hiviewdfx/hitrace/interfaces/native/innerkits/include/hitrace_meter" ]
     }
     cflags_cc += [ "-Wno-gnu-zero-variadic-macro-arguments" ]
   }
@@ -581,7 +579,7 @@ ohos_shared_library("libark_jsruntime") {
   if (!is_linux && !is_mingw && !is_mac) {
     if (build_public_version && enable_bytrace) {
       defines += [ "ENABLE_BYTRACE" ]
-      external_deps = [ "bytrace_standard:bytrace_core" ]
+      external_deps = [ "hitrace_native:hitrace_meter" ]
     }
   }
 
@@ -638,7 +636,7 @@ ohos_shared_library("libark_jsruntime_test") {
   if (!is_linux && !is_mingw && !is_mac) {
     if (build_public_version && enable_bytrace) {
       defines += [ "ENABLE_BYTRACE" ]
-      external_deps = [ "bytrace_standard:bytrace_core" ]
+      external_deps = [ "hitrace_native:hitrace_meter" ]
     }
   }
 
