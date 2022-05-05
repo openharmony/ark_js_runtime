@@ -290,8 +290,11 @@ void DebuggerApi::HandleUncaughtException(const EcmaVM *ecmaVm, CString &message
 
 JSTaggedValue DebuggerApi::GetCurrentEvaluateEnv(const EcmaVM *ecmaVm)
 {
-    FrameHandler frameHandler(ecmaVm->GetJSThread());
-    return frameHandler.GetEnv();
+    auto &frameHandler = ecmaVm->GetJsDebuggerManager()->GetEvalFrameHandler();
+    if (frameHandler != nullptr) {
+        return frameHandler->GetEnv();
+    }
+    return ecmaVm->GetJSThread()->GetCurrentLexenv();
 }
 
 Local<FunctionRef> DebuggerApi::GenerateFuncFromBuffer(const EcmaVM *ecmaVm, const void *buffer,
@@ -314,13 +317,13 @@ Local<JSValueRef> DebuggerApi::EvaluateViaFuncCall(EcmaVM *ecmaVm, const Local<F
 
     JsDebuggerManager *mgr = ecmaVm->GetJsDebuggerManager();
     bool prevDebugMode = mgr->IsDebugMode();
-    mgr->SetEvaluateCtxFrameSp(const_cast<JSTaggedType *>(ecmaVm->GetJSThread()->GetCurrentSPFrame()));
+    mgr->SetEvalFrameHandler(ecmaVm->GetJSThread());
     // in order to catch exception
     mgr->SetDebugMode(false);
     std::vector<Local<JSValueRef>> args;
     auto result = funcRef->Call(ecmaVm, JSValueRef::Undefined(ecmaVm), args.data(), args.size());
     mgr->SetDebugMode(prevDebugMode);
-    mgr->SetEvaluateCtxFrameSp(nullptr);
+    mgr->SetEvalFrameHandler(nullptr);
 
     return result;
 }

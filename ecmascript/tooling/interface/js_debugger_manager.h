@@ -20,6 +20,8 @@
 
 #include "ecmascript/tooling/interface/notification_manager.h"
 
+#include "ecmascript/interpreter/frame_handler.h"
+
 namespace panda::ecmascript::tooling {
 class JsDebuggerManager {
 public:
@@ -64,21 +66,26 @@ public:
         return debuggerLibraryHandle_;
     }
 
-    const JSTaggedType *GetEvaluateCtxFrameSp() const
+    void SetEvalFrameHandler(const JSThread *thread)
     {
-        return evaluateCtxFrameSp_;
+        if (thread != nullptr) {
+            frameHandler_ = std::make_unique<FrameHandler>(thread);
+        } else {
+            frameHandler_ = nullptr;
+        }
     }
 
-    void SetEvaluateCtxFrameSp(JSTaggedType *sp)
+    const std::unique_ptr<FrameHandler> &GetEvalFrameHandler() const
     {
-        evaluateCtxFrameSp_ = sp;
+        return frameHandler_;
     }
 
 private:
     bool isDebugMode_ {false};
     LibraryHandle debuggerLibraryHandle_ {nullptr};
-    JSTaggedType *evaluateCtxFrameSp_ {nullptr};
     NotificationManager *notificationManager_ {nullptr};
+
+    std::unique_ptr<FrameHandler> frameHandler_;
 };
 }  // panda::ecmascript::tooling
 
