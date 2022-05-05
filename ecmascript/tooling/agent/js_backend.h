@@ -121,15 +121,19 @@ private:
     bool GenerateCallFrame(CallFrame *callFrame, const FrameHandler *frameHandler, CallFrameId frameId);
     std::unique_ptr<Scope> GetLocalScopeChain(const FrameHandler *frameHandler,
         std::unique_ptr<RemoteObject> *thisObj);
+    void GetLocalVariables(const FrameHandler *frameHandler, const JSMethod *method,
+        Local<JSValueRef> &thisVal, Local<ObjectRef> &localObj);
+    void CacheObjectIfNeeded(const Local<JSValueRef> &valRef, std::unique_ptr<RemoteObject> *remoteObj);
+    void CleanUpOnPaused();
     std::unique_ptr<Scope> GetGlobalScopeChain();
     std::optional<CString> ConvertToLocal(Local<JSValueRef> &taggedValue, std::unique_ptr<RemoteObject> *result,
         const CString &varValue);
-    std::optional<CString> SetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result,
-                                      const CString &varValue);
-    std::optional<CString> SetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result,
-        const CString &varValue, uint32_t slot);
+    std::optional<CString> SetVregValue(int32_t regIndex, const CString &varValue,
+        std::unique_ptr<RemoteObject> *result);
+    std::optional<CString> SetLexicalValue(int32_t level, uint32_t slot, const CString &varValue,
+        std::unique_ptr<RemoteObject> *result);
     std::optional<CString> GetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result);
-    std::optional<CString> GetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result, uint32_t slot);
+    std::optional<CString> GetLexicalValue(int32_t level, uint32_t slot, std::unique_ptr<RemoteObject> *result);
     void GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn, bool isAccessorOnly,
                              CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
     bool DecodeAndCheckBase64(const CString &src, CString &dest);
