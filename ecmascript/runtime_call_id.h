@@ -228,7 +228,8 @@ namespace panda::ecmascript {
     V(SetPropertyByName)            \
     V(GreaterEqDynWithIC)           \
     V(LdBigInt)                     \
-    V(DefineGeneratorFuncWithMethodId)
+    V(DefineGeneratorFuncWithMethodId) \
+    V(GetSuperConstructor)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define BUILTINS_API_LIST(V)                   \
     V(Array, Constructor)                     \

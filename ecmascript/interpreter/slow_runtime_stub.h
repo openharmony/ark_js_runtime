@@ -141,6 +141,7 @@ public:
     static JSTaggedValue DefineNCFuncDyn(JSThread *thread, JSFunction *func);
     static JSTaggedValue DefinefuncDyn(JSThread *thread, JSFunction *func);
 
+    static JSTaggedValue GetSuperConstructor(JSThread *thread, JSTaggedValue ctor);
     static JSTaggedValue SuperCall(JSThread *thread, JSTaggedValue func, JSTaggedValue newTarget, uint16_t firstVRegIdx,
                                    uint16_t length);
     static JSTaggedValue SuperCallSpread(JSThread *thread, JSTaggedValue func, JSTaggedValue newTarget,
