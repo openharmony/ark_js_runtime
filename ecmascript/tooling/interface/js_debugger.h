@@ -119,6 +119,13 @@ public:
     }
 
 private:
+    using LocalEvalFunc =
+        std::function<JSTaggedValue(FrameHandler *, int32_t, JSTaggedValue)>;
+    using LexEvalFunc =
+        std::function<JSTaggedValue(const EcmaVM *, int32_t, uint32_t, Local<JSValueRef>)>;
+    using GlobalEvalFunc =
+        std::function<JSTaggedValue(const EcmaVM *, JSTaggedValue, JSTaggedValue, const CString &)>;
+
     JSMethod *FindMethod(const JSPtLocation &location) const;
     std::optional<JSBreakpoint> FindBreakpoint(const JSMethod *method, uint32_t bcOffset) const;
     bool RemoveBreakpoint(const JSMethod *method, uint32_t bcOffset);
@@ -127,6 +134,8 @@ private:
     bool HandleBreakpoint(const JSMethod *method, uint32_t bcOffset);
     void SetGlobalFunction(const JSHandle<JSTaggedValue> &funcName, EcmaEntrypoint nativeFunc, int32_t numArgs) const;
 
+    static JSTaggedValue Evaluate(EcmaRuntimeCallInfo *argv, LocalEvalFunc localEvalFunc,
+        LexEvalFunc lexEvalFunc, GlobalEvalFunc globalEvalFunc);
     static JSTaggedValue DebuggerSetValue(EcmaRuntimeCallInfo *argv);
     static JSTaggedValue DebuggerGetValue(EcmaRuntimeCallInfo *argv);
     static JSTaggedValue GetGlobalValue(const EcmaVM *ecmaVm, JSTaggedValue key);
