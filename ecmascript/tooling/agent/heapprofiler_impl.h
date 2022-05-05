@@ -103,6 +103,10 @@ public:
         frontend_->SendNotification(ecmaVm, std::make_unique<AddHeapSnapshotChunk>());
         return true;
     }
+    bool Good() override
+    {
+        return frontend_ != nullptr;
+    }
 
 private:
     NO_COPY_SEMANTIC(HeapProfilerStream);

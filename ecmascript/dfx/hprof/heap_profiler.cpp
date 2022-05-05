@@ -15,10 +15,6 @@
 
 #include "ecmascript/dfx/hprof/heap_profiler.h"
 
-#include <cerrno>
-#include <ctime>
-#include <unistd.h>
-
 #include "ecmascript/dfx/hprof/heap_snapshot.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_thread.h"
@@ -36,7 +32,7 @@ HeapProfiler::~HeapProfiler()
 }
 
 bool HeapProfiler::DumpHeapSnapShot(JSThread *thread,
-                                    [[maybe_unused]]DumpFormat dumpFormat, Stream *stream, bool isVmMode)
+                                    DumpFormat dumpFormat, Stream *stream, bool isVmMode)
 {
     [[maybe_unused]] bool heapClean = ForceFullGC(thread);
     ASSERT(heapClean);
@@ -44,7 +40,10 @@ bool HeapProfiler::DumpHeapSnapShot(JSThread *thread,
     LOG(ERROR, RUNTIME) << "HeapProfiler DumpSnapshot heap size " << heapSize;
     HeapSnapShot *snapShot = MakeHeapSnapShot(thread, SampleType::ONE_SHOT, isVmMode);
     ASSERT(snapShot != nullptr);
-
+    if (!stream->Good()) {
+        FileStream newStream(GenDumpFileName(dumpFormat));
+        return jsonSerializer_->Serialize(snapShot, &newStream);
+    }
     return jsonSerializer_->Serialize(snapShot, stream);
 }
 
@@ -74,19 +73,6 @@ bool HeapProfiler::StopHeapTracking(JSThread *thread, Stream *stream)
     }
     snapShot->FinishSnapShot();
     return jsonSerializer_->Serialize(snapShot, stream);
-}
-
-std::pair<bool, CString> HeapProfiler::FilePathValid(const std::string &filePath)
-{
-    if (filePath.size() > PATH_MAX) {
-        return std::make_pair(false, "");
-    }
-    CVector<char> resolvedPath(PATH_MAX);
-    auto result = realpath(filePath.c_str(), resolvedPath.data());
-    if (result == resolvedPath.data() || errno == ENOENT) {
-        return std::make_pair(true, CString(resolvedPath.data()));
-    }
-    return std::make_pair(false, "");
 }
 
 std::string HeapProfiler::GenDumpFileName(DumpFormat dumpFormat)

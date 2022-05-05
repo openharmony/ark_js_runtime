@@ -23,6 +23,7 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/heap.h"
+#include "ecmascript/tooling/interface/file_stream.h"
 #include "os/mem.h"
 
 namespace panda::ecmascript {
@@ -62,7 +63,6 @@ private:
      * make a new heap snapshot and put it into a container eg, vector
      */
     HeapSnapShot *MakeHeapSnapShot(JSThread *thread, SampleType sampleType, bool isVmMode = true);
-    std::pair<bool, CString> FilePathValid(const std::string &filePath);
     std::string GenDumpFileName(DumpFormat dumpFormat);
     CString GetTimeStamp();
     void ClearSnapShot();
