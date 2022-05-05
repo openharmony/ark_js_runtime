@@ -44,7 +44,7 @@ debugger_sources = [
   "protocol_handler.cpp",
 ]
 
-source_set("libark_ecma_debugger_static") {
+source_set("libark_ecma_debugger_set") {
   sources = debugger_sources
 
   public_configs = [ ":ark_ecma_debugger_config" ]
@@ -59,21 +59,21 @@ source_set("libark_ecma_debugger_static") {
 
 ohos_shared_library("libark_ecma_debugger") {
   deps = [
-    ":libark_ecma_debugger_static",
+    ":libark_ecma_debugger_set",
     "//ark/js_runtime:libark_jsruntime",
   ]
 
   install_enable = true
-  part_name = "ark_js_runtime"
 
   output_extension = "so"
   if (!is_standard_system) {
     relative_install_dir = "ark"
   }
+  part_name = "ark_js_runtime"
   subsystem_name = "ark"
 }
 
-source_set("libark_ecma_debugger_test_static") {
+source_set("libark_ecma_debugger_test_set") {
   sources = debugger_sources
 
   public_configs = [ ":ark_ecma_debugger_config" ]
@@ -88,8 +88,8 @@ source_set("libark_ecma_debugger_test_static") {
 
 ohos_shared_library("libark_ecma_debugger_test") {
   deps = [
-    ":libark_ecma_debugger_test_static",
-    "//ark/js_runtime:libark_jsruntime_test_static",
+    ":libark_ecma_debugger_test_set",
+    "//ark/js_runtime:libark_jsruntime_test_set",
   ]
 
   if (!is_linux && !is_mingw && !is_mac) {
@@ -99,6 +99,8 @@ ohos_shared_library("libark_ecma_debugger_test") {
   }
 
   public_configs = [ ":ark_ecma_debugger_config" ]
+
+  install_enable = false
 
   output_extension = "so"
   subsystem_name = "test"

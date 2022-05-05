@@ -34,7 +34,7 @@ config("include_llvm") {
   }
 }
 
-source_set("libark_jsoptimizer_static") {
+source_set("libark_jsoptimizer_set") {
   sources = [
     "aot_file_manager.cpp",
     "assembler/assembler_x64.cpp",
@@ -142,13 +142,6 @@ source_set("libark_jsoptimizer_static") {
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
   ]
-}
-
-source_set("libark_jsoptimizer_set_static") {
-  deps = [
-    ":libark_jsoptimizer_static",
-    "//ark/js_runtime:libark_jsruntime",
-  ]
 
   if (compile_llvm_online) {
     deps += [ ":build_llvm_libs" ]
@@ -156,37 +149,31 @@ source_set("libark_jsoptimizer_set_static") {
 }
 
 ohos_shared_library("libark_jsoptimizer") {
-  deps = [ ":libark_jsoptimizer_set_static" ]
+  deps = [
+    ":libark_jsoptimizer_set",
+    "//ark/js_runtime:libark_jsruntime",
+  ]
 
-  install_enable = true
-  part_name = "ark_js_runtime"
+  install_enable = false
 
   output_extension = "so"
-  if (!is_standard_system) {
-    relative_install_dir = "ark"
-  }
+  part_name = "ark_js_runtime"
   subsystem_name = "ark"
 }
 
-source_set("libark_jsoptimizer_test_static") {
+ohos_shared_library("libark_jsoptimizer_test") {
   deps = [
-    ":libark_jsoptimizer_static",
-    "//ark/js_runtime:libark_jsruntime_test_static",
+    ":libark_jsoptimizer_set",
+    "//ark/js_runtime:libark_jsruntime_test_set",
   ]
 
-  if (compile_llvm_online) {
-    deps += [ ":build_llvm_libs" ]
-  }
-}
-
-ohos_shared_library("libark_jsoptimizer_test") {
-  deps = [ ":libark_jsoptimizer_test_static" ]
+  install_enable = false
 
   output_extension = "so"
   subsystem_name = "test"
 }
 
-source_set("ark_stub_compiler_static") {
+source_set("ark_stub_compiler_set") {
   sources = [ "stub_compiler.cpp" ]
   include_dirs = [ "$target_gen_dir" ]
 
@@ -204,16 +191,15 @@ source_set("ark_stub_compiler_static") {
 }
 
 ohos_executable("ark_stub_compiler") {
-  deps = [ ":ark_stub_compiler_static" ]
+  deps = [ ":ark_stub_compiler_set" ]
 
-  part_name = "ark_js_runtime"
   install_enable = false
 
-  output_name = "ark_stub_compiler"
+  part_name = "ark_js_runtime"
   subsystem_name = "ark"
 }
 
-source_set("ark_aot_compiler_static") {
+source_set("ark_aot_compiler_set") {
   sources = [
     "aot_compiler.cpp",
     "pass_manager.cpp",
@@ -234,11 +220,10 @@ source_set("ark_aot_compiler_static") {
 }
 
 ohos_executable("ark_aot_compiler") {
-  deps = [ ":ark_aot_compiler_static" ]
+  deps = [ ":ark_aot_compiler_set" ]
 
-  part_name = "ark_js_runtime"
   install_enable = false
 
-  output_name = "ark_aot_compiler"
+  part_name = "ark_js_runtime"
   subsystem_name = "ark"
 }

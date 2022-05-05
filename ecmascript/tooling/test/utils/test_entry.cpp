@@ -26,7 +26,7 @@ static std::unique_ptr<TestHooks> g_hooks = nullptr;
 
 bool StartDebuggerImpl([[maybe_unused]] const std::string &name, EcmaVM *vm, [[maybe_unused]] bool isDebugMode)
 {
-    const char *testName = GetCurrentTestName();
+    CString testName = GetCurrentTestName();
     g_hooks = std::make_unique<TestHooks>(testName, vm);
     g_debuggerThread = std::thread([] {
         TestUtil::WaitForInit();

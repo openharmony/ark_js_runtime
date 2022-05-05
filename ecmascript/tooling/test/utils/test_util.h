@@ -25,30 +25,22 @@
 namespace panda::ecmascript::tooling::test {
 template<class Key, class T, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
 using CUnorderedMap = panda::ecmascript::CUnorderedMap<Key, T, Hash, KeyEqual>;
-using TestMap = CUnorderedMap<panda_file::SourceLang, CUnorderedMap<const char *, std::unique_ptr<TestEvents>>>;
+using TestMap = CUnorderedMap<CString, std::unique_ptr<TestEvents>>;
 
 class TestUtil {
 public:
-    static void RegisterTest(panda_file::SourceLang language, const char *testName, std::unique_ptr<TestEvents> test)
+    static void RegisterTest(const CString &testName, std::unique_ptr<TestEvents> test)
     {
-        auto it = testMap_.find(language);
-        if (it == testMap_.end()) {
-            CUnorderedMap<const char *, std::unique_ptr<TestEvents>> entry;
-            auto res = testMap_.emplace(language, std::move(entry));
-            it = res.first;
-        }
-        it->second.insert({testName, std::move(test)});
+        testMap_.insert({testName, std::move(test)});
     }
 
-    static TestEvents *GetTest(const char *name)
+    static TestEvents *GetTest(const CString &name)
     {
-        for (auto it = testMap_.begin(); it != testMap_.end(); ++it) {
-            auto &internalMap = it->second;
-            auto internalIt = std::find_if(internalMap.begin(), internalMap.end(),
-                                           [name](auto &it) { return !::strcmp(it.first, name); });
-            if (internalIt != internalMap.end()) {
-                return internalIt->second.get();
-            }
+        auto iter = std::find_if(testMap_.begin(), testMap_.end(), [&name](auto &it) {
+            return it.first == name;
+        });
+        if (iter != testMap_.end()) {
+            return iter->second.get();
         }
         LOG(FATAL, DEBUGGER) << "Test " << name << " not found";
         return nullptr;
