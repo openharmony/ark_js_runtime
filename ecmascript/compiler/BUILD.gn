@@ -28,8 +28,8 @@ config("include_llvm") {
     ]
   } else {
     include_dirs = [
-      "//prebuilts/ark_js_prebuilts/llvm_prebuilts/llvm/include",
-      "//prebuilts/ark_js_prebuilts/llvm_prebuilts/build/include",
+      "//prebuilts/ark_tools/ark_js_prebuilts/llvm_prebuilts/llvm/include",
+      "//prebuilts/ark_tools/ark_js_prebuilts/llvm_prebuilts/build/include",
     ]
   }
 }
@@ -74,7 +74,8 @@ source_set("libark_jsoptimizer_static") {
   if (compile_llvm_online) {
     lib_dirs = [ "//third_party/llvm-project/build/lib" ]
   } else {
-    lib_dirs = [ "//prebuilts/ark_js_prebuilts/llvm_prebuilts/build/lib" ]
+    lib_dirs =
+        [ "//prebuilts/ark_tools/ark_js_prebuilts/llvm_prebuilts/build/lib" ]
   }
 
   libs = [
