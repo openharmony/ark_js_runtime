@@ -103,8 +103,8 @@ bool JSDebugger::HandleBreakpoint(const JSMethod *method, uint32_t bcOffset)
         }
     }
 
-    auto *pf = method->GetPandaFile();
-    JSPtLocation location {pf->GetFilename().c_str(), method->GetMethodId(), bcOffset};
+    auto *pf = method->GetJSPandaFile();
+    JSPtLocation location {pf->GetJSPandaFileDesc().c_str(), method->GetMethodId(), bcOffset};
 
     hooks_->Breakpoint(location);
     return true;
@@ -116,8 +116,8 @@ void JSDebugger::HandleExceptionThrowEvent(const JSThread *thread, const JSMetho
         return;
     }
 
-    auto *pf = method->GetPandaFile();
-    JSPtLocation throwLocation {pf->GetFilename().c_str(), method->GetMethodId(), bcOffset};
+    auto *pf = method->GetJSPandaFile();
+    JSPtLocation throwLocation {pf->GetJSPandaFileDesc().c_str(), method->GetMethodId(), bcOffset};
 
     hooks_->Exception(throwLocation);
 }
@@ -128,8 +128,8 @@ bool JSDebugger::HandleStep(const JSMethod *method, uint32_t bcOffset)
         return false;
     }
 
-    auto *pf = method->GetPandaFile();
-    JSPtLocation location {pf->GetFilename().c_str(), method->GetMethodId(), bcOffset};
+    auto *pf = method->GetJSPandaFile();
+    JSPtLocation location {pf->GetJSPandaFileDesc().c_str(), method->GetMethodId(), bcOffset};
 
     return hooks_->SingleStep(location);
 }
@@ -138,7 +138,7 @@ std::optional<JSBreakpoint> JSDebugger::FindBreakpoint(const JSMethod *method, u
 {
     for (const auto &bp : breakpoints_) {
         if (bp.GetBytecodeOffset() == bcOffset &&
-            bp.GetMethod()->GetPandaFile()->GetFilename() == method->GetPandaFile()->GetFilename() &&
+            bp.GetMethod()->GetJSPandaFile()->GetJSPandaFileDesc() == method->GetJSPandaFile()->GetJSPandaFileDesc() &&
             bp.GetMethod()->GetMethodId() == method->GetMethodId()) {
             return bp;
         }

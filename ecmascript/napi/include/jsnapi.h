@@ -935,7 +935,7 @@ public:
     static Local<ObjectRef> GetUncaughtException(const EcmaVM *vm);
     static void EnableUserUncaughtErrorHandler(EcmaVM *vm);
 
-    static bool StartDebugger(const char *libraryPath, EcmaVM *vm, bool isDebugMode);
+    static bool StartDebugger(const char *libraryPath, EcmaVM *vm, bool isDebugMode, int32_t instanceId = 0);
     static bool StopDebugger(EcmaVM *vm);
     // Serialize & Deserialize.
     static void* SerializeValue(const EcmaVM *vm, Local<JSValueRef> data, Local<JSValueRef> transfer);
