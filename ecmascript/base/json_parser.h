@@ -610,9 +610,7 @@ private:
                 end_ = current;
                 return true;
             } else if (UNLIKELY(c == '\\')) {
-                if (*(current + 1) == '"') {
-                    current++;
-                }
+                current++;
                 isFast = false;
             }
             if (!IsLegalAsciiCharacter(c, isAscii)) {
@@ -634,9 +632,7 @@ private:
                 end_ = current;
                 return true;
             } else if (UNLIKELY(c == '\\')) {
-                if (*(current + 1) == '"') {
-                    current++;
-                }
+                current++;
                 isFast = false;
             } else if (UNLIKELY(c < CODE_SPACE)) {
                 return false;

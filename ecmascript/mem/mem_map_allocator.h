@@ -61,6 +61,7 @@ public:
 
     void Finalize()
     {
+        os::memory::LockHolder lock(lock_);
         memMapCache_.clear();
     }
 
