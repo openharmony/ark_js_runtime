@@ -56,7 +56,7 @@ ts2abc_gen_abc("ark_exception_abc") {
   out_puts = [ test_abc_path ]
 }
 
-source_set("debugger_entry_static") {
+source_set("debugger_entry_set") {
   sources = [ "entry/test_debugger_entry.cpp" ]
 
   public_configs = [ ":debug_api_test" ]
@@ -71,13 +71,15 @@ source_set("debugger_entry_static") {
 }
 
 ohos_shared_library("debugger_entry") {
-  deps = [ ":debugger_entry_static" ]
+  deps = [ ":debugger_entry_set" ]
+
+  install_enable = false
 
   output_extension = "so"
   subsystem_name = "test"
 }
 
-source_set("jsdebugtest_static") {
+source_set("jsdebugtest_set") {
   sources = [
     "utils/test_entry.cpp",
     "utils/test_extractor.cpp",
@@ -99,154 +101,59 @@ source_set("jsdebugtest_static") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
-    "//ark/js_runtime:libark_jsruntime_test_static",
-    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test_static",
+    "//ark/js_runtime:libark_jsruntime_test_set",
+    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test_set",
   ]
 }
 
 ohos_shared_library("jsdebugtest") {
-  deps = [ ":jsdebugtest_static" ]
+  deps = [ ":jsdebugtest_set" ]
 
   if (!is_linux && !is_mingw && !is_mac) {
     if (build_public_version) {
       external_deps = [ "hitrace_native:hitrace_meter" ]
     }
   }
+
+  install_enable = false
+
   output_extension = "so"
   subsystem_name = "test"
 }
 
-host_unittest_action("EcmaDebugApiTest") {
+host_unittest_action("DebuggerEntryTest") {
   module_out_path = module_output_path
 
   sources = [
     # test file
-    "debugger_api_test.cpp",
+    "debugger_entry_test.cpp",
   ]
 
   cflags_cc = [ "-Wno-gnu-zero-variadic-macro-arguments" ]
 
-  resource_config_file =
-      "//ark/js_runtime/test/resource/js_runtime/ohos_test.xml"
   defines = [ "DEBUGGER_TEST_LIBRARY=\"libdebugger_entry.so\"" ]
 
   configs = [ ":debug_api_test" ]
 
   deps = [
-    ":debugger_api_resource",
+    ":debugger_entry_resource",
     ":jsdebugtest",
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
   ]
 }
 
-host_unittest_action("DebuggerCommandsTest") {
+host_unittest_action("DebuggerTest") {
   module_out_path = module_output_path
 
   sources = [
     # test file
     "debugger_commands_test.cpp",
-  ]
-
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
-    sdk_libc_secshared_dep,
-  ]
-}
-
-host_unittest_action("DebuggerScriptTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
-    "debugger_script_test.cpp",
-  ]
-
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
-    sdk_libc_secshared_dep,
-  ]
-}
-
-host_unittest_action("DebuggerEventsTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
     "debugger_events_test.cpp",
-  ]
-
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
-    sdk_libc_secshared_dep,
-  ]
-}
-
-host_unittest_action("DebuggerReturnsTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
-    "debugger_returns_test.cpp",
-  ]
-
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
-    sdk_libc_secshared_dep,
-  ]
-}
-
-host_unittest_action("DebuggerTypesTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
-    "debugger_types_test.cpp",
-  ]
-
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
-    sdk_libc_secshared_dep,
-  ]
-}
-
-host_unittest_action("DebuggerParamsTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
     "debugger_params_test.cpp",
-  ]
-
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
-    sdk_libc_secshared_dep,
-  ]
-}
-
-host_unittest_action("JSPtHooksTest") {
-  module_out_path = module_output_path
-
-  sources = [
-    # test file
+    "debugger_returns_test.cpp",
+    "debugger_script_test.cpp",
+    "debugger_types_test.cpp",
     "js_pt_hooks_test.cpp",
   ]
 
@@ -259,7 +166,7 @@ host_unittest_action("JSPtHooksTest") {
   ]
 }
 
-group("debugger_api_resource") {
+group("debugger_entry_resource") {
   testonly = true
 
   deps = [ ":debugger_entry" ]
@@ -270,14 +177,8 @@ group("unittest") {
 
   # deps file
   deps = [
-    ":DebuggerCommandsTest",
-    ":DebuggerEventsTest",
-    ":DebuggerParamsTest",
-    ":DebuggerReturnsTest",
-    ":DebuggerScriptTest",
-    ":DebuggerTypesTest",
-    ":EcmaDebugApiTest",
-    ":JSPtHooksTest",
+    ":DebuggerEntryTest",
+    ":DebuggerTest",
   ]
 }
 
@@ -286,13 +187,7 @@ group("host_unittest") {
 
   # deps file
   deps = [
-    ":DebuggerCommandsTestAction",
-    ":DebuggerEventsTestAction",
-    ":DebuggerParamsTestAction",
-    ":DebuggerReturnsTestAction",
-    ":DebuggerScriptTestAction",
-    ":DebuggerTypesTestAction",
-    ":EcmaDebugApiTestAction",
-    ":JSPtHooksTestAction",
+    ":DebuggerEntryTestAction",
+    ":DebuggerTestAction",
   ]
 }
