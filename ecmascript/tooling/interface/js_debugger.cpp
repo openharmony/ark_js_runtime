@@ -181,90 +181,100 @@ JSMethod *JSDebugger::FindMethod(const JSPtLocation &location) const
 
 JSTaggedValue JSDebugger::DebuggerSetValue(EcmaRuntimeCallInfo *argv)
 {
-    LOG(INFO, DEBUGGER) << "DebuggerSetValue: called";
-    ASSERT(argv);
-    JSThread *thread = argv->GetThread();
-    const EcmaVM *ecmaVm = thread->GetEcmaVM();
-    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    auto localEvalFunc = [](FrameHandler *frameHandler, int32_t regIndex,
+        JSTaggedValue value) {
+        frameHandler->SetVRegValue(regIndex, value);
+        return value;
+    };
 
-    JSHandle<JSTaggedValue> var = BuiltinsBase::GetCallArg(argv, 0);
-    JSHandle<JSTaggedValue> newVal = BuiltinsBase::GetCallArg(argv, 1);
-    CString varName = ConvertToString(var.GetTaggedValue());
-    LOG(INFO, DEBUGGER) << "DebuggerSetValue: name = " << varName;
+    auto lexEvalFunc = [](const EcmaVM *ecmaVm, int32_t level, uint32_t slot,
+        Local<JSValueRef> value) {
+        DebuggerApi::SetProperties(ecmaVm, level, slot, value);
+        return JSNApiHelper::ToJSTaggedValue(*value);
+    };
 
-    FrameHandler frameHandler(thread);
-    JSMethod *method = frameHandler.GetMethod();
-    int32_t regIndex = -1;
-    bool found = EvaluateLocalValue(method, thread, varName, regIndex);
-    if (regIndex != -1) {
-        LOG(INFO, DEBUGGER) << "DebuggerSetValue: found regIndex = " << regIndex;
-        frameHandler.SetVRegValue(regIndex, newVal.GetTaggedValue());
-        return newVal.GetTaggedValue();
-    }
+    auto globalEvalFunc = [](const EcmaVM *ecmaVm, JSTaggedValue key, JSTaggedValue value,
+        const CString &varName) {
+        JSTaggedValue result = SetGlobalValue(ecmaVm, key, value);
+        if (!result.IsException()) {
+            return value;
+        }
 
-    int32_t level = 0;
-    uint32_t slot = 0;
-    found = DebuggerApi::EvaluateLexicalValue(ecmaVm, varName, level, slot);
-    if (found) {
-        LOG(INFO, DEBUGGER) << "DebuggerSetValue: found level = " << level;
-        DebuggerApi::SetProperties(ecmaVm, level, slot, JSNApiHelper::ToLocal<JSValueRef>(newVal));
-        return newVal.GetTaggedValue();
-    }
+        JSThread *thread = ecmaVm->GetJSThread();
+        CString msg = varName + " is not defined";
+        THROW_REFERENCE_ERROR_AND_RETURN(thread, msg.data(), JSTaggedValue::Exception());
+    };
 
-    JSTaggedValue result = SetGlobalValue(ecmaVm, var.GetTaggedValue(), newVal.GetTaggedValue());
-    if (!result.IsException()) {
-        return newVal.GetTaggedValue();
-    }
-
-    CString msg = varName + " is not defined";
-    THROW_REFERENCE_ERROR_AND_RETURN(thread, msg.data(), JSTaggedValue::Exception());
+    return Evaluate(argv, localEvalFunc, lexEvalFunc, globalEvalFunc);
 }
 
 JSTaggedValue JSDebugger::DebuggerGetValue(EcmaRuntimeCallInfo *argv)
 {
-    LOG(INFO, DEBUGGER) << "DebuggerGetValue: called";
+    auto localEvalFunc = [](FrameHandler *frameHandler, int32_t regIndex,
+        [[maybe_unused]] JSTaggedValue) {
+        return frameHandler->GetVRegValue(regIndex);
+    };
+
+    auto lexEvalFunc = [](const EcmaVM *ecmaVm, int32_t level, uint32_t slot,
+        [[maybe_unused]] Local<JSValueRef>) {
+        Local<JSValueRef> valRef = DebuggerApi::GetProperties(ecmaVm, level, slot);
+        return JSNApiHelper::ToJSTaggedValue(*valRef);
+    };
+
+    auto globalEvalFunc = [](const EcmaVM *ecmaVm, JSTaggedValue key,
+        JSTaggedValue isThrow, const CString &varName) {
+        JSTaggedValue globalVal = GetGlobalValue(ecmaVm, key);
+        if (!globalVal.IsException()) {
+            return globalVal;
+        }
+
+        JSThread *thread = ecmaVm->GetJSThread();
+        if (isThrow.ToBoolean()) {
+            CString msg = varName + " is not defined";
+            THROW_REFERENCE_ERROR_AND_RETURN(thread, msg.data(), JSTaggedValue::Exception());
+        }
+        // in case of `typeof`, return undefined instead of exception
+        thread->ClearException();
+        return JSTaggedValue::Undefined();
+    };
+
+    return Evaluate(argv, localEvalFunc, lexEvalFunc, globalEvalFunc);
+}
+
+JSTaggedValue JSDebugger::Evaluate(EcmaRuntimeCallInfo *argv, LocalEvalFunc localEvalFunc,
+    LexEvalFunc lexEvalFunc, GlobalEvalFunc globalEvalFunc)
+{
+    LOG(INFO, DEBUGGER) << "Evaluate: called";
     ASSERT(argv);
     JSThread *thread = argv->GetThread();
     const EcmaVM *ecmaVm = thread->GetEcmaVM();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> var = BuiltinsBase::GetCallArg(argv, 0);
-    JSHandle<JSTaggedValue> isThrow = BuiltinsBase::GetCallArg(argv, 1);
-    CString varName = ConvertToString(var.GetTaggedValue());
-    LOG(INFO, DEBUGGER) << "DebuggerGetValue: name = " << varName;
+    // The arg2 is the new value for setter and throw flag for getter
+    JSHandle<JSTaggedValue> arg1 = BuiltinsBase::GetCallArg(argv, 0);
+    JSHandle<JSTaggedValue> arg2 = BuiltinsBase::GetCallArg(argv, 1);
+    CString varName = ConvertToString(arg1.GetTaggedValue());
+    LOG(INFO, DEBUGGER) << "Evaluate: varName = " << varName;
 
-    FrameHandler frameHandler(thread);
-    JSMethod *method = frameHandler.GetMethod();
+    auto &frameHandler = ecmaVm->GetJsDebuggerManager()->GetEvalFrameHandler();
+    ASSERT(frameHandler);
+    JSMethod *method = frameHandler->GetMethod();
     int32_t regIndex = -1;
     bool found = EvaluateLocalValue(method, thread, varName, regIndex);
-    if (regIndex != -1) {
-        LOG(INFO, DEBUGGER) << "DebuggerGetValue: found regIndex = " << regIndex;
-        return frameHandler.GetVRegValue(regIndex);
+    if (found) {
+        LOG(INFO, DEBUGGER) << "Evaluate: found regIndex = " << regIndex;
+        return localEvalFunc(frameHandler.get(), regIndex, arg2.GetTaggedValue());
     }
 
     int32_t level = 0;
     uint32_t slot = 0;
     found = DebuggerApi::EvaluateLexicalValue(ecmaVm, varName, level, slot);
     if (found) {
-        LOG(INFO, DEBUGGER) << "DebuggerGetValue: found level = " << level;
-        Local<JSValueRef> valRef = DebuggerApi::GetProperties(ecmaVm, level, slot);
-        return JSNApiHelper::ToJSTaggedValue(*valRef);
+        LOG(INFO, DEBUGGER) << "Evaluate: found level = " << level;
+        return lexEvalFunc(ecmaVm, level, slot, JSNApiHelper::ToLocal<JSValueRef>(arg2));
     }
 
-    JSTaggedValue globalVal = GetGlobalValue(ecmaVm, var.GetTaggedValue());
-    if (!globalVal.IsException()) {
-        return globalVal;
-    }
-
-    if (isThrow->ToBoolean()) {
-        LOG(ERROR, DEBUGGER) << "DebuggerGetValue: not found and throw exception";
-        CString msg = varName + " is not defined";
-        THROW_REFERENCE_ERROR_AND_RETURN(thread, msg.data(), JSTaggedValue::Exception());
-    }
-
-    // in case of `typeof`, no exception instead of an undefined
-    thread->ClearException();
-    return JSTaggedValue::Undefined();
+    return globalEvalFunc(ecmaVm, arg1.GetTaggedValue(), arg2.GetTaggedValue(), varName);
 }
 
 JSTaggedValue JSDebugger::GetGlobalValue(const EcmaVM *ecmaVm, JSTaggedValue key)
