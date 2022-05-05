@@ -26,7 +26,6 @@
 #include "securec.h"
 
 namespace panda::ecmascript {
-
 enum MemSpaceType {
     OLD_SPACE = 0,
     NON_MOVABLE,
