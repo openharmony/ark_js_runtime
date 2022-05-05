@@ -26,6 +26,7 @@
 #include "os/mutex.h"
 
 namespace panda::ecmascript {
+class EcmaVM;
 class Heap;
 
 class ConcurrentMarker {

@@ -120,8 +120,8 @@ void GCStats::PrintCompressStatisticResult(bool force)
 void GCStats::PrintHeapStatisticResult(bool force)
 {
     if (force && heap_ != nullptr) {
-        NativeAreaAllocator *nativeAreaAllocator = const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator());
-        HeapRegionAllocator *heapRegionAllocator = const_cast<HeapRegionAllocator *>(heap_->GetHeapRegionAllocator());
+        NativeAreaAllocator *nativeAreaAllocator = heap_->GetNativeAreaAllocator();
+        HeapRegionAllocator *heapRegionAllocator = heap_->GetHeapRegionAllocator();
         LOG(INFO, RUNTIME) << "/******************* Memory statistic: *******************/";
         LOG(INFO, RUNTIME) << " Anno memory usage size:" << sizeToMB(heapRegionAllocator->GetAnnoMemoryUsage())
                             << "MB"

@@ -31,6 +31,8 @@ public:
         survivalObjectSize_ -= objSize;
     }
 protected:
+    Heap *heap_ {nullptr};
+
     BumpPointerAllocator *allocator_ {nullptr};
     size_t overShootSize_ {0};
     size_t allocateAfterLastGC_ {0};

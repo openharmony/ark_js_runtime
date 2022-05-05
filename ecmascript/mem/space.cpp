@@ -16,17 +16,16 @@
 #include "ecmascript/mem/space-inl.h"
 
 #include "ecmascript/ecma_vm.h"
-#include "ecmascript/mem/heap.h"
+//#include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/heap_region_allocator.h"
 #include "ecmascript/mem/mem_controller.h"
 #include "ecmascript/mem/region-inl.h"
 
 namespace panda::ecmascript {
-Space::Space(Heap *heap, MemSpaceType spaceType, size_t initialCapacity, size_t maximumCapacity)
-    : heap_(heap),
-      vm_(heap_->GetEcmaVM()),
-      thread_(vm_->GetJSThread()),
-      heapRegionAllocator_(vm_->GetHeapRegionAllocator()),
+Space::Space(HeapRegionAllocator *heapRegionAllocator,
+             MemSpaceType spaceType, size_t initialCapacity,
+             size_t maximumCapacity)
+    : heapRegionAllocator_(heapRegionAllocator),
       spaceType_(spaceType),
       initialCapacity_(initialCapacity),
       maximumCapacity_(maximumCapacity),
@@ -67,27 +66,28 @@ bool Space::ContainObject(TaggedObject *object) const
     return region->GetSpace() == this;
 }
 
-HugeObjectSpace::HugeObjectSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
-    : Space(heap, MemSpaceType::HUGE_OBJECT_SPACE, initialCapacity, maximumCapacity)
+HugeObjectSpace::HugeObjectSpace(HeapRegionAllocator *heapRegionAllocator,
+                                 size_t initialCapacity, size_t maximumCapacity)
+    : Space(heapRegionAllocator,
+            MemSpaceType::HUGE_OBJECT_SPACE,
+            initialCapacity,
+            maximumCapacity)
 {
 }
 
-uintptr_t HugeObjectSpace::Allocate(size_t objectSize)
+uintptr_t HugeObjectSpace::Allocate(size_t objectSize, JSThread *thread)
 {
     if (committedSize_ >= maximumCapacity_) {
         LOG_ECMA_MEM(INFO) << "Committed size " << committedSize_ << " of huge object space is too big.";
         return 0;
     }
 
-    // Check whether it is necessary to trigger Old GC before expanding or OOM risk.
-    heap_->CheckAndTriggerOldGC();
-
     size_t alignedSize = AlignUp(objectSize + sizeof(Region), PANDA_POOL_ALIGNMENT_IN_BYTES);
     if (UNLIKELY(alignedSize > MAX_HUGE_OBJECT_SIZE)) {
         LOG_ECMA_MEM(FATAL) << "The size is too big for this allocator. Return nullptr.";
         return 0;
     }
-    Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, alignedSize);
+    Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, alignedSize, thread);
     AddRegion(region);
     return region->GetBegin();
 }

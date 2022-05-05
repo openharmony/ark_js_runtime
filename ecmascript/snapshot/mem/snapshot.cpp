@@ -137,8 +137,8 @@ const JSPandaFile *SnapShot::Deserialize(SnapShotType type, const CString &snaps
         regionSize = (hdr.snapshotSize - 1) / defaultSnapshotSpaceCapacity + 1; // round up
     }
     for (size_t i = 0; i < regionSize; i++) {
-        Region *region = const_cast<HeapRegionAllocator *>(vm_->GetHeap()->GetHeapRegionAllocator())
-                            ->AllocateAlignedRegion(space, defaultSnapshotSpaceCapacity);
+        Region *region = vm_->GetHeapRegionAllocator()->AllocateAlignedRegion(
+            space, defaultSnapshotSpaceCapacity, vm_->GetAssociatedJSThread());
         auto fileRegion = ToNativePtr<Region>(snapshotBegin + i * defaultSnapshotSpaceCapacity);
 
         uint64_t base = region->allocateBase_;
@@ -172,11 +172,10 @@ const JSPandaFile *SnapShot::Deserialize(SnapShotType type, const CString &snaps
         region->oldToNewSet_ = nullptr;
         // space_
         region->space_ = space;
-        // heap_
-        auto heap = const_cast<Heap *>(vm_->GetHeap());
-        region->heap_ = heap;
+        // thread_
+        region->thread_ = vm_->GetAssociatedJSThread();
         // nativePoniterAllocator_
-        region->nativeAreaAllocator_ = heap->GetNativeAreaAllocator();
+        region->nativeAreaAllocator_ = region->thread_->GetNativeAreaAllocator();
 
         space->AddRegion(region);
     }

@@ -34,7 +34,7 @@ WorkManager::WorkManager(Heap *heap, uint32_t threadNum)
         continuousQueue_[i] = new ProcessQueue(heap);
     }
     markSpace_ =
-        ToUintPtr(const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->AllocateBuffer(SPACE_SIZE));
+        ToUintPtr(heap_->GetNativeAreaAllocator()->AllocateBuffer(SPACE_SIZE));
 }
 
 WorkManager::~WorkManager()
@@ -44,7 +44,7 @@ WorkManager::~WorkManager()
         delete continuousQueue_[i];
         continuousQueue_[i] = nullptr;
     }
-    const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->FreeBuffer(
+    heap_->GetNativeAreaAllocator()->FreeBuffer(
         reinterpret_cast<void *>(markSpace_));
 }
 
@@ -120,7 +120,7 @@ void WorkManager::Finish(size_t &aliveSize)
     }
 
     while (!unuseSpace_.empty()) {
-        const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->FreeBuffer(reinterpret_cast<void *>(
+        heap_->GetNativeAreaAllocator()->FreeBuffer(reinterpret_cast<void *>(
             unuseSpace_.back()));
         unuseSpace_.pop_back();
     }
@@ -168,8 +168,8 @@ WorkNode *WorkManager::AllocateWorkNode()
             begin = atomicField->load(std::memory_order_acquire);
             if (begin + totalSize >= markSpaceEnd_) {
                 unuseSpace_.emplace_back(markSpace_);
-                markSpace_ = ToUintPtr(const_cast<NativeAreaAllocator *>(
-                    heap_->GetNativeAreaAllocator())->AllocateBuffer(SPACE_SIZE));
+                markSpace_ = ToUintPtr(
+                    heap_->GetNativeAreaAllocator()->AllocateBuffer(SPACE_SIZE));
                 spaceTop_ = markSpace_;
                 markSpaceEnd_ = markSpace_ + SPACE_SIZE;
                 begin = spaceTop_;
