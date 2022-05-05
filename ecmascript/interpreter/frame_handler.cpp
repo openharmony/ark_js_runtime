@@ -324,7 +324,7 @@ ARK_INLINE JSTaggedType *FrameHandler::GetInterpretedEntryFrameStart(const JSTag
 {
     ASSERT(FrameHandler::GetFrameType(sp) == FrameType::INTERPRETER_ENTRY_FRAME);
     JSTaggedType *argcSp = const_cast<JSTaggedType *>(sp) - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1;
-    int32_t argc = argcSp[0];
+    uint32_t argc = argcSp[0];
     return argcSp - argc - RESERVED_CALL_ARGCOUNT;
 }
 
