@@ -29,6 +29,11 @@ JSPandaFileManager *JSPandaFileManager::GetInstance()
 JSPandaFileManager::~JSPandaFileManager()
 {
     os::memory::LockHolder lock(jsPandaFileLock_);
+    auto pos = extractors_.begin();
+    while (pos != extractors_.end()) {
+        pos = extractors_.erase(pos);
+    }
+
     auto iter = loadedJSPandaFiles_.begin();
     while (iter != loadedJSPandaFiles_.end()) {
         const JSPandaFile *jsPandaFile = iter->first;
@@ -174,6 +179,7 @@ void JSPandaFileManager::DecreaseRefJSPandaFile(const JSPandaFile *jsPandaFile)
         }
         loadedJSPandaFiles_.erase(iter);
     }
+    extractors_.erase(jsPandaFile);
     ReleaseJSPandaFile(jsPandaFile);
 }
 
