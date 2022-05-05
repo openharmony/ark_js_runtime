@@ -671,7 +671,7 @@ int32_t StringRef::Utf8Length()
 int StringRef::WriteUtf8(char *buffer, int length)
 {
     return EcmaString::Cast(JSNApiHelper::ToJSTaggedValue(this).GetTaggedObject())
-        ->CopyDataUtf8(reinterpret_cast<uint8_t *>(buffer), length);
+        ->WriteUtf8(reinterpret_cast<uint8_t *>(buffer), length);
 }
 
 // ----------------------------------- SymbolRef -----------------------------------------
