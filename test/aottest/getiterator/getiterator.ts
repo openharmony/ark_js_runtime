@@ -16,6 +16,6 @@
 declare function print(str:any):string;
 var someArray = [1, 5, 7];
 for (var tmp of someArray) {
-    var tmpNumber = tmp
-    print(tmpNumber)
+    var tmpNumber = tmp;
+    print(tmpNumber);
 }
