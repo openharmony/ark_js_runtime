@@ -88,7 +88,7 @@ public:
     static Local<FunctionRef> GenerateFuncFromBuffer(const EcmaVM *ecmaVm, const void *buffer, size_t size,
         std::string_view entryPoint);
 
-    // JSMehthod
+    // JSMethod
     static CString ParseFunctionName(const JSMethod *method);
 
     // ScopeInfo
