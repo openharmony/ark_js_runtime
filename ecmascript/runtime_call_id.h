@@ -394,10 +394,12 @@ namespace panda::ecmascript {
     V(Object, Constructor)                    \
     V(Object, Assign)                         \
     V(Object, Create)                         \
+    V(Object, CreateDataPropertyOnObjectFunctions) \
     V(Object, DefineProperties)               \
     V(Object, DefineProperty)                 \
     V(Object, Freeze)                         \
-    V(Object, GetOwnPropertyDescriptor)        \
+    V(Object, FromEntries)                    \
+    V(Object, GetOwnPropertyDescriptor)       \
     V(Object, GetOwnPropertyKeys)             \
     V(Object, GetOwnPropertyNames)            \
     V(Object, GetOwnPropertySymbols)          \

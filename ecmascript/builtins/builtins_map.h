@@ -46,6 +46,11 @@ public:
     static JSTaggedValue GetSize(EcmaRuntimeCallInfo *argv);
     // 23.1.3.11
     static JSTaggedValue Values(EcmaRuntimeCallInfo *argv);
+
+    // es12 24.1.1.2 AddEntriesFromIterable ( target, iterable, adder )
+    static JSTaggedValue AddEntriesFromIterable(JSThread *thread, const JSHandle<JSObject> &target,
+                                                const JSHandle<JSTaggedValue> &iterable,
+                                                const JSHandle<JSTaggedValue> &adder, ObjectFactory *factory);
 };
 }  // namespace panda::ecmascript::builtins
 #endif  // ECMASCRIPT_BUILTINS_BUILTINS_MAP_H

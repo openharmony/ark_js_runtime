@@ -14,6 +14,7 @@
  */
 
 #include "ecmascript/builtins/builtins_weak_map.h"
+#include "ecmascript/builtins/builtins_map.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/interpreter/interpreter.h"
@@ -67,62 +68,7 @@ JSTaggedValue BuiltinsWeakMap::WeakMapConstructor(EcmaRuntimeCallInfo *argv)
     if (!adder->IsCallable()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "adder is not callable", adder.GetTaggedValue());
     }
-    // Let iter be GetIterator(iterable).
-    JSHandle<JSTaggedValue> iter(JSIterator::GetIterator(thread, iterable));
-    // ReturnIfAbrupt(iter).
-    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, iter.GetTaggedValue());
-    JSHandle<JSTaggedValue> keyIndex(thread, JSTaggedValue(0));
-    JSHandle<JSTaggedValue> valueIndex(thread, JSTaggedValue(1));
-    JSHandle<JSTaggedValue> next = JSIterator::IteratorStep(thread, iter);
-    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, next.GetTaggedValue());
-    JSMutableHandle<JSTaggedValue> status(thread, JSTaggedValue::Undefined());
-    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    while (!next->IsFalse()) {
-        // ReturnIfAbrupt(next).
-        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, next.GetTaggedValue());
-        // Let nextValue be IteratorValue(next).
-        JSHandle<JSTaggedValue> nextValue(JSIterator::IteratorValue(thread, next));
-        // ReturnIfAbrupt(nextValue).
-        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, next.GetTaggedValue());
-        // If Type(nextItem) is not Object
-        if (!nextValue->IsECMAObject()) {
-            JSHandle<JSObject> typeError = factory->GetJSError(ErrorType::TYPE_ERROR, "nextItem is not Object");
-            JSHandle<JSTaggedValue> record(
-                factory->NewCompletionRecord(CompletionRecordType::THROW, JSHandle<JSTaggedValue>(typeError)));
-            JSTaggedValue ret = JSIterator::IteratorClose(thread, iter, record).GetTaggedValue();
-            if (!thread->HasPendingException()) {
-                THROW_NEW_ERROR_AND_RETURN_VALUE(thread, typeError.GetTaggedValue(), ret);
-            }
-            return ret;
-        }
-        // Let k be Get(nextItem, "0").
-        JSHandle<JSTaggedValue> key = JSObject::GetProperty(thread, nextValue, keyIndex).GetValue();
-        // If k is an abrupt completion, return IteratorClose(iter, k).
-        if (thread->HasPendingException()) {
-            return JSIterator::IteratorCloseAndReturn(thread, iter);
-        }
-
-        // Let v be Get(nextItem, "1").
-        JSHandle<JSTaggedValue> value = JSObject::GetProperty(thread, nextValue, valueIndex).GetValue();
-        // If v is an abrupt completion, return IteratorClose(iter, v).
-        if (thread->HasPendingException()) {
-            return JSIterator::IteratorCloseAndReturn(thread, iter);
-        }
-
-        // Let status be Call(adder, weakMap, «nextValue.[[value]]»).
-        const size_t argsLength = 2;  // 2: key and value pair
-        EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, adder, JSHandle<JSTaggedValue>(weakMap),
-            undefined, argsLength);
-        info.SetCallArg(key.GetTaggedValue(), value.GetTaggedValue());
-        JSFunction::Call(&info);
-        // If status is an abrupt completion, return IteratorClose(iter, status).
-        if (thread->HasPendingException()) {
-            return JSIterator::IteratorCloseAndReturn(thread, iter);
-        }
-        // Let next be IteratorStep(iter).
-        next = JSIterator::IteratorStep(thread, iter);
-    }
-    return weakMap.GetTaggedValue();
+    return BuiltinsMap::AddEntriesFromIterable(thread, obj, iterable, adder, factory);
 }
 
 JSTaggedValue BuiltinsWeakMap::Delete(EcmaRuntimeCallInfo *argv)
