@@ -73,6 +73,16 @@ GateRef GateAccessor::GetDep(GateRef gate, size_t idx) const
     return circuit_->GetIn(gate, dependIndex + idx);
 }
 
+size_t GateAccessor::GetImmediateId(GateRef gate) const
+{
+    Gate *gatePtr = circuit_->LoadGatePtr(gate);
+    ASSERT(gatePtr->GetGateType() == GateType::NJS_VALUE);
+    ASSERT(gatePtr->GetOpCode() == OpCode::CONSTANT);
+    ASSERT(gatePtr->GetMachineType() == MachineType::I64);
+    size_t imm = gatePtr->GetBitField();
+    return imm;
+}
+
 void GateAccessor::SetDep(GateRef gate, GateRef depGate, size_t idx)
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);

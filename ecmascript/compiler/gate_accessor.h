@@ -321,6 +321,7 @@ public:
     [[nodiscard]] GateRef GetIn(GateRef gate, size_t idx) const;
     [[nodiscard]] GateRef GetState(GateRef gate, size_t idx = 0) const;
     [[nodiscard]] GateRef GetDep(GateRef gate, size_t idx = 0) const;
+    [[nodiscard]] size_t GetImmediateId(GateRef gate) const;
     void SetDep(GateRef gate, GateRef depGate, size_t idx = 0);
     void ReplaceIn(UsesIterator &useIt, GateRef replaceGate);
     // Add for lowering
