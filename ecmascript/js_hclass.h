@@ -1120,7 +1120,7 @@ public:
     }
     inline void SetHasConstructor(bool value)
     {
-        coretypes::TaggedType newVal = HasConstructorBits::Update(GetBitField(), value);
+        JSTaggedType newVal = HasConstructorBits::Update(GetBitField(), value);
         SetBitField(newVal);
     }
     inline bool HasConstructor() const

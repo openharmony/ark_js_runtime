@@ -325,7 +325,7 @@ JSTaggedValue JsonStringifier::SerializeJSONProperty(const JSHandle<JSTaggedValu
 {
     JSTaggedValue tagValue = value.GetTaggedValue();
     if (!tagValue.IsHeapObject()) {
-        TaggedType type = tagValue.GetRawData();
+        JSTaggedType type = tagValue.GetRawData();
         switch (type) {
             // If value is false, return "false".
             case JSTaggedValue::VALUE_FALSE:
