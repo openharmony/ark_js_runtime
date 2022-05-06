@@ -84,9 +84,13 @@ public:
     void Movq(Immediate src, Operand dst);
     void Movq(Immediate src, Register dst);
     void Mov(Operand src, Register dst);
+    void Mov(Register src, Register dst);
     void Addq(Immediate src, Register dst);
+    void Addq(Register src, Register dst);
+    void Addl(Immediate src, Register dst);
     void Subq(Immediate src, Register dst);
     void Subq(Register src, Register dst);
+    void Subl(Immediate src, Register dst);
     void Cmpq(Immediate src, Register dst);
     void Cmpq(Register src, Register dst);
     void Cmpl(Immediate src, Register dst);
@@ -95,7 +99,7 @@ public:
     void Callq(Label *target);
     void Ret();
     void Jmp(Label *target, Distance distance = Distance::FAR);
-    void Jmpq(Register dst);
+    void Jmp(Register dst);
     void Jmp(Immediate offset);
     void Bind(Label* target);
     void Align16();
@@ -117,6 +121,7 @@ public:
     void Jnz(Label *target, Distance distance = Distance::FAR);
     void Jle(Label *target, Distance distance = Distance::FAR);
     void Jae(Label *target, Distance distance = Distance::FAR);
+    void Jnb(Label *target, Distance distance = Distance::FAR);
     void Leaq(Operand src, Register dst);
     void Leal(Operand src, Register dst);
     void Movl(Register src, Register dst);
@@ -129,6 +134,7 @@ public:
     void Testq(Immediate src, Register dst);
     void Testb(Immediate src, Register dst);
     void Int3();
+    void Movzwq(Operand src, Register dst);
 
 private:
     void EmitRexPrefix(Register x)
@@ -211,6 +217,7 @@ private:
     void EmitJg(int32_t offset);
     void EmitJe(int32_t offset);
     void EmitCall(int32_t offset);
+    void EmitJnb(int32_t offset);
     // +---+---+---+---+---+---+---+---+
     // | 0   1   0   0 | W | R | X | B |
     // +---+---+---+---+---+---+---+---+

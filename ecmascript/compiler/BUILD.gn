@@ -38,6 +38,7 @@ source_set("libark_jsoptimizer_set") {
   sources = [
     "aot_file_manager.cpp",
     "assembler/assembler_x64.cpp",
+    "assembler/extended_assembler_x64.cpp",
     "assembler_module.cpp",
     "bc_call_signature.cpp",
     "bytecode_circuit_builder.cpp",
@@ -53,7 +54,7 @@ source_set("libark_jsoptimizer_set") {
     "rt_call_signature.cpp",
     "scheduler.cpp",
     "stub.cpp",
-    "trampoline/x64/assembler_module_x64.cpp",
+    "trampoline/x64/assembler_stubs_x64.cpp",
     "type.cpp",
     "verifier.cpp",
   ]
