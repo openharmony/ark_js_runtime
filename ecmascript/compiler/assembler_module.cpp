@@ -70,10 +70,13 @@ void AssemblerModule::SetUpForAsmStubs()
     callSigns.clear();
 }
 
-void CallRuntimeStub::Generate(Assembler *assembler)
-{
-    x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<x64::ExtendedAssemblerX64*>(assembler);
-    x64::AssemblerStubsX64::CallRuntime(assemblerX64);
-    assemblerX64->Align16();
+#define DECLARE_ASM_STUB_GENERATE(name)                                                           \
+void name##Stub::Generate(Assembler *assembler)                                                   \
+{                                                                                                 \
+    x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<x64::ExtendedAssemblerX64*>(assembler); \
+    x64::AssemblerStubsX64::name(assemblerX64);                                                   \
+    assemblerX64->Align16();                                                                      \
 }
+RUNTIME_ASM_STUB_LIST(DECLARE_ASM_STUB_GENERATE)
+#undef DECLARE_ASM_STUB_GENERATE
 }  // namespace panda::ecmascript::kunfu

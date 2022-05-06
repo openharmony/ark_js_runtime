@@ -105,6 +105,22 @@ uintptr_t FrameHandler::GetPrevFrameCallSiteSp(const JSTaggedType *sp)
     return frame->GetCallSiteSp();
 }
 
+void FrameHandler::CurrentAsmInterpretedFrame()
+{
+    if (sp_ == nullptr) {
+        return;
+    }
+    if (IsInterpretedFrame()) {
+        return;
+    }
+    if (IsLeaveFrame()) {
+        FrameHandler::PrevFrame();
+        for (; HasFrame() && !IsInterpretedFrame(); FrameHandler::PrevFrame());
+        return;
+    }
+    LOG_ECMA(FATAL) << "unsupported frame type of asm interpreter";
+}
+
 void FrameHandler::PrevInterpretedFrame()
 {
     PrevFrame();
@@ -271,6 +287,17 @@ ARK_INLINE void FrameHandler::InterpretedFrameIterate(const JSTaggedType *sp,
                                                       const RootVisitor &v0,
                                                       const RootRangeVisitor &v1) const
 {
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp);
+    uintptr_t start = ToUintPtr(sp);
+    uintptr_t end = ToUintPtr(frame->GetCurrentFramePointer());
+    v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
+    v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->function)));
+    if (frame->pc != nullptr) {
+        v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->acc)));
+        v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->env)));
+    }
+#else
     if (sp == nullptr) {
         return;
     }
@@ -318,6 +345,7 @@ ARK_INLINE void FrameHandler::InterpretedFrameIterate(const JSTaggedType *sp,
         v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->profileTypeInfo)));
 #endif
     }
+#endif  // ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
 }
 
 ARK_INLINE JSTaggedType *FrameHandler::GetInterpretedEntryFrameStart(const JSTaggedType *sp)
@@ -450,13 +478,33 @@ ARK_INLINE void FrameHandler::OptimizedWithArgvLeaveFrameIterate(const JSTaggedT
     }
 }
 
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+void FrameHandler::IterateRsp(const RootVisitor &v0, const RootRangeVisitor &v1) const
+{
+    JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
+    IterateFrameChain(current, v0, v1);
+}
+
+void FrameHandler::IterateSp(const RootVisitor &v0, const RootRangeVisitor &v1) const
+{
+    JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
+    while (current) {
+        // only interpreter entry frame is on thread sp when rsp is enable
+        ASSERT(FrameHandler::GetFrameType(current) == FrameType::INTERPRETER_ENTRY_FRAME);
+        InterpretedEntryFrame *frame = InterpretedEntryFrame::GetFrameFromSp(current);
+        InterpretedEntryFrameIterate(current, v0, v1);
+        current = frame->GetPrevFrameFp();
+    }
+}
+
 void FrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
 {
-    bool isVerifying = false;
-#if ECMASCRIPT_ENABLE_HEAP_VERIFY
-    isVerifying = thread_->GetEcmaVM()->GetHeap()->IsVerifying();
-#endif
-
+    IterateSp(v0, v1);
+    IterateRsp(v0, v1);
+}
+#else
+void FrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
+{
     FrameType frameType = FrameHandler(thread_).GetFrameType();
     JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
     if (frameType != FrameType::INTERPRETER_ENTRY_FRAME) {
@@ -465,8 +513,19 @@ void FrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) co
             current = leaveFrame;
         }
     }
+    IterateFrameChain(current, v0, v1);
+}
+#endif  // ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
 
+void FrameHandler::IterateFrameChain(JSTaggedType *start, const RootVisitor &v0, const RootRangeVisitor &v1) const
+{
     ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers = thread_->GetEcmaVM()->GetHeap()->GetDerivedPointers();
+    bool isVerifying = false;
+
+#if ECMASCRIPT_ENABLE_HEAP_VERIFY
+    isVerifying = thread_->GetEcmaVM()->GetHeap()->IsVerifying();
+#endif
+    JSTaggedType *current = start;
     while (current) {
         FrameType type = FrameHandler::GetFrameType(current);
         if (type == FrameType::INTERPRETER_FRAME || type == FrameType::INTERPRETER_FAST_NEW_FRAME) {

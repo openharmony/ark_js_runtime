@@ -4169,6 +4169,9 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
     }
 
     Bind(&tryContinue);
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+    GateRef prevSp = *varSp;
+#endif
     varSp = Load(VariableType::NATIVE_POINTER(), frame,
         IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
     GateRef prevState = GetFrame(*varSp);
@@ -4177,19 +4180,17 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
     Bind(&pcEqualNullptr);
     {
         SetAccToFrame(glue, frame, acc);
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-        DispatchCommonCall<RTSTUB_ID(ResumeRspAndReturn)>(glue, *varSp);
-#else
         if (env->IsAArch64()) {
             DispatchCommonCall<RTSTUB_ID(ResumeRspAndReturn)>(glue, *varSp);
         } else {
             Return();
         }
-#endif
     }
     Bind(&pcNotEqualNullptr);
     {
+#if !ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
         SetCurrentSpFrame(glue, *varSp);
+#endif
         GateRef function = GetFunctionFromFrame(prevState);
         varConstpool = GetConstpoolFromFunction(function);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
@@ -4198,7 +4199,7 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
         varHotnessCounter = GetHotnessCounterFromMethod(method);
         GateRef jumpSize = GetCallSizeFromFrame(prevState);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-        DispatchCommonCall<RTSTUB_ID(ResumeRspAndDispatch)>(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo,
+        DispatchCommonCall<RTSTUB_ID(ResumeRspAndDispatch)>(glue, prevSp, *varPc, *varConstpool, *varProfileTypeInfo,
             acc, *varHotnessCounter, jumpSize);
 #else
         Dispatch(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo, acc,
@@ -4240,6 +4241,9 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
     }
 
     Bind(&tryContinue);
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+    GateRef prevSp = *varSp;
+#endif
     varSp = Load(VariableType::NATIVE_POINTER(), frame,
         IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
     GateRef prevState = GetFrame(*varSp);
@@ -4249,19 +4253,17 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
     Bind(&pcEqualNullptr);
     {
         SetAccToFrame(glue, frame, *varAcc);
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-        DispatchCommonCall<RTSTUB_ID(ResumeRspAndReturn)>(glue, *varSp);
-#else
         if (env->IsAArch64()) {
             DispatchCommonCall<RTSTUB_ID(ResumeRspAndReturn)>(glue, *varSp);
         } else {
             Return();
         }
-#endif
     }
     Bind(&pcNotEqualNullptr);
     {
+#if !ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
         SetCurrentSpFrame(glue, *varSp);
+#endif
         GateRef function = GetFunctionFromFrame(prevState);
         varConstpool = GetConstpoolFromFunction(function);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
@@ -4270,7 +4272,7 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
         varHotnessCounter = GetHotnessCounterFromMethod(method);
         GateRef jumpSize = GetCallSizeFromFrame(prevState);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-        DispatchCommonCall<RTSTUB_ID(ResumeRspAndDispatch)>(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo,
+        DispatchCommonCall<RTSTUB_ID(ResumeRspAndDispatch)>(glue, prevSp, *varPc, *varConstpool, *varProfileTypeInfo,
             *varAcc, *varHotnessCounter, jumpSize);
 #else
         Dispatch(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo, *varAcc,
@@ -5285,7 +5287,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Branch(IsCallable(func), &funcIsCallable, &funcNotCallable);                                                      \
     Bind(&funcNotCallable);                                                                                           \
     {                                                                                                                 \
-        CallRuntime(glue, Int64(RTSTUB_ID(ThrowCallConstructorException)), {});                                       \
+        CallRuntime(glue, RTSTUB_ID(ThrowCallConstructorException), {});                                              \
         DISPATCH_LAST();                                                                                              \
     }                                                                                                                 \
     Bind(&funcIsCallable);                                                                                            \
@@ -5298,17 +5300,17 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Bind(&methodIsNative);                                                                                            \
     {                                                                                                                 \
         GateRef retValue = CommonCallNative<RTSTUB_ID(type##Native)>(                                                 \
-            glue, func, sp, method, __VA_ARGS__);                                                                     \
+            glue, sp, func, method, __VA_ARGS__);                                                                     \
         Label hasPendingException(env);                                                                               \
         Label noPendingException(env);                                                                                \
         Branch(TaggedIsException(retValue), &hasPendingException, &noPendingException);                               \
         Bind(&hasPendingException);                                                                                   \
         {                                                                                                             \
-            SetCurrentSpFrame(glue, sp);  /* currentSp will be used in UpFrame, therefore use sp. */                  \
+            SetLastLeaveFrame(glue, sp);  /* currentSp will be used in UpFrame, therefore use sp. */                  \
             DISPATCH_LAST();                                                                                          \
         }                                                                                                             \
         Bind(&noPendingException);                                                                                    \
-        SetCurrentSpFrame(glue, sp);                                                                                  \
+        SetLastLeaveFrame(glue, sp);                                                                                  \
         DEFVARIABLE(varAcc, VariableType::JS_ANY(), retValue);                                                        \
         DISPATCH_WITH_ACC(format);                                                                                    \
     }                                                                                                                 \
@@ -5324,22 +5326,22 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Bind(&fastPath);                                                                                                 \
     {                                                                                                                \
         DispatchCommonCall<RTSTUB_ID(type)>(                                                                         \
-            glue, func, sp, method, __VA_ARGS__);                                                                    \
+            glue, sp, func, method, __VA_ARGS__);                                                                    \
     }                                                                                                                \
     Bind(&slowPath);                                                                                                 \
     DispatchCommonCall<RTSTUB_ID(type##SlowPath)>(                                                                   \
-        glue, func, sp, method, __VA_ARGS__);
+        glue, sp, func, method, __VA_ARGS__);
 
 #define DISPATCH_COMMON_CALL_RANGE_JS_PART(type, ...)                                                                \
     Branch(Int32Equal(actualNumArgs, declaredNumArgs), &fastPath, &slowPath);                                        \
     Bind(&fastPath);                                                                                                 \
     {                                                                                                                \
         DispatchCommonCall<RTSTUB_ID(type)>(                                                                         \
-            glue, func, sp, method, callField, ZExtInt32ToInt64(actualNumArgs), __VA_ARGS__);                        \
+            glue, sp, func, method, callField, ZExtInt32ToInt64(actualNumArgs), __VA_ARGS__);                        \
     }                                                                                                                \
     Bind(&slowPath);                                                                                                 \
     DispatchCommonCall<RTSTUB_ID(type##SlowPath)>(                                                                   \
-        glue, func, sp, method, callField, ZExtInt32ToInt64(actualNumArgs), __VA_ARGS__);
+        glue, sp, func, method, callField, ZExtInt32ToInt64(actualNumArgs), __VA_ARGS__);
 
 DECLARE_ASM_HANDLER(HandleCallArg0DynPrefV8)
 {

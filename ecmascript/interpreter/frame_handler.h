@@ -31,7 +31,12 @@ class ConstantPool;
 class FrameHandler {
 public:
     explicit FrameHandler(const JSThread *thread)
-        : sp_(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame())), thread_(thread) {}
+        : sp_(const_cast<JSTaggedType *>(thread->GetCurrentFrame())), thread_(thread)
+    {
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+        CurrentAsmInterpretedFrame();
+#endif
+    }
     ~FrameHandler() = default;
 
     DEFAULT_COPY_SEMANTIC(FrameHandler);
@@ -56,6 +61,12 @@ public:
 
     bool IsEntryFrame() const
     {
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+        FrameType type = GetFrameType();
+        if (type == FrameType::OPTIMIZED_ENTRY_FRAME) {
+            return true;
+        }
+#endif
         ASSERT(HasFrame());
         // The structure of InterpretedFrame, AsmInterpretedFrame, InterpretedEntryFrame is the same, order is pc, base.
         InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
@@ -83,6 +94,8 @@ public:
     {
         return sp_;
     }
+
+    void CurrentAsmInterpretedFrame();
 
     void PrevInterpretedFrame();
     JSTaggedType *GetPrevInterpretedFrame();
@@ -122,6 +135,11 @@ public:
 
     // for Frame GC.
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
+    void IterateFrameChain(JSTaggedType *start, const RootVisitor &v0, const RootRangeVisitor &v1) const;
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+    void IterateRsp(const RootVisitor &v0, const RootRangeVisitor &v1) const;
+    void IterateSp(const RootVisitor &v0, const RootRangeVisitor &v1) const;
+#endif
 
 private:
     FrameType GetFrameType() const

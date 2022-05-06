@@ -24,6 +24,12 @@
 .global CallRuntimeWithArgv
 .type CallRuntimeWithArgv, %function
 
+.global AsmInterpreterEntry
+.type AsmInterpreterEntry, %function
+
+.global JSCallDispatch
+.type JSCallDispatch, %function
+
  .global OptimizedCallOptimized
 .type OptimizedCallOptimized, %function
 
@@ -652,36 +658,42 @@ JSCall:
 //     uintptr_t sp, uintptr_t method, uint64_t callField, uint32_t actualArgc, uintptr_t argv);
 PushCallIThisRangeAndDispatch:
     movq    $JUMP_SIZE_PREF_IMM16_V8, %rdx
+    movq    %rsp, %r10  // fp
     jmp     .CallIThisRangeEntry
 
 // void PushCallIRangeAndDispatch(uintptr_t glue, uint64_t function,
 //     uintptr_t sp, uintptr_t method, uint64_t callField, uint32_t actualArgc, uintptr_t argv);
 PushCallIRangeAndDispatch:
     movq    $JUMP_SIZE_PREF_IMM16_V8, %rdx
+    movq    %rsp, %r10  // fp
     jmp     .CallIRangeEntry
 
 // void PushCallArgs3AndDispatch(uintptr_t glue, uint64_t function,
 //     uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0, uint64_t arg1, uint64_t arg2);
 PushCallArgs3AndDispatch:
     movq    $JUMP_SIZE_PREF_V8_V8_V8_V8, %rdx
+    movq    %rsp, %r10  // fp
     jmp     .Callargs3Entry
 
 // void PushCallArgs2AndDispatch(uintptr_t glue, uint64_t function,
 //     uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0, uint64_t arg1);
 PushCallArgs2AndDispatch:
     movq    $JUMP_SIZE_PREF_V8_V8_V8, %rdx
+    movq    %rsp, %r10  // fp
     jmp     .Callargs2Entry
 
 // void PushCallArgs1AndDispatch(uintptr_t glue, uint64_t function,
 //     uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0);
 PushCallArgs1AndDispatch:
     movq    $JUMP_SIZE_PREF_V8_V8, %rdx
+    movq    %rsp, %r10  // fp
     jmp     .Callarg1Entry
 
 // void PushCallArgs0AndDispatch(uintptr_t glue, uint64_t function,
 //     uintptr_t sp, uintptr_t method, uint64_t callField);
 PushCallArgs0AndDispatch:
     movq    $JUMP_SIZE_PREF_V8, %rdx
+    movq    %rsp, %r10  // fp
     jmp     .PushCallThisUndefined   // Callargs0Entry
 
 // ==============================================================================
@@ -699,6 +711,7 @@ PushCallArgs0AndDispatch:
 // %r8  - arg2
 // ---------------------------------------------------------------------------------
 .macro DISPATCH_SLOW_PATH EXTRA_ENTRY, PUSH_ARGS_NO_EXTRA_ENTRY, PUSH_ARGS_ENTRY, UNDEFINED1, UNDEFINED2
+    movq    %rsp, %r10  // fp
     movq    %r14, %r11
     shrq    $ASM_JS_METHOD_NUM_ARGS_START_BIT, %r11
     andq    $ASM_JS_METHOD_NUM_ARGS_MASK, %r11  // declaredNumArgs
@@ -906,13 +919,13 @@ PushCallArgs0AndDispatchSlowPath:
     movq    %rdx, ASM_INTERPRETED_FRAME_CALL_SIZE_OFFSET(%r11) // lazy storage of jumpSizeAfterCall
     pushq   $ASM_INTERPRETER_FRAME  // frame type
     pushq   %r12                    // prev_sp
-    movq    ASM_JS_FUNCTION_LEXICAL_ENV_OFFSET(%rbp), %r11
-    pushq   %r11                    // env
-    pushq   $0                      // acc
-    pushq   %rbp                    // function
-    pushq   $0                      // reserved for jumpSizeAfterCall
     movq    ASM_JS_METHOD_BYTECODEARRAY_OFFSET(%rbx), %rcx
     pushq   %rcx                    // pc
+    pushq   %r10                    // fp
+    pushq   $0                      // reserved for jumpSizeAfterCall
+    pushq   %r11                    // env
+    pushq   $JSHOLE                 // acc
+    pushq   %rbp                    // function
 
 .Align:
     testq   $15, %rsp  // low 4 bits must be 0b0000
@@ -927,7 +940,6 @@ PushCallArgs0AndDispatchSlowPath:
     movq    %r15, %rbp                                            // sp: arg1 of dispatch
     movq    %rcx, %r12                                            // pc: arg2 of dispatch
                                                                   // glue: arg0 of dispatch
-    movq    %r15, ASM_GLUE_CURRENT_FRAME_OFFSET(%r13)  // save newSp to thread->current_sp
 
 .Dispatch:
     movzbq  (%rcx), %rax
@@ -949,6 +961,8 @@ PushCallArgs0AndDispatchSlowPath:
 // sp   - arg1
 // ---------------------------------------------------------------------------------
 .macro PUSH_GHC_CALLEE_SAVED_REGISTERS
+    pushq   %r10
+    pushq   %r11
     pushq   %r12
     pushq   %r13
     pushq   %r15
@@ -958,6 +972,8 @@ PushCallArgs0AndDispatchSlowPath:
     popq    %r15
     popq    %r13
     popq    %r12
+    popq    %r11
+    popq    %r10
 .endm
 
 // void PushCallIThisRangeAndDispatchNative(uintptr_t glue, uint64_t function,
@@ -970,6 +986,7 @@ PushCallIThisRangeAndDispatchNative:
     jnz     .AlignedCallIThisRangeNative
     pushq   $0
 .AlignedCallIThisRangeNative:
+    movq    %rsp, %r10  //  fp of new frame
     jmp     .CallIThisRangeNativeEntry
 
 // void PushCallIRangeAndDispatchNative(uintptr_t glue, uint64_t function,
@@ -982,6 +999,7 @@ PushCallIRangeAndDispatchNative:
     jnz     .AlignedCallIRangeNative
     pushq   $0
 .AlignedCallIRangeNative:
+    movq    %rsp, %r10  //  fp of new frame
     jmp     .CallIRangeNativeEntry
 
 // void PushCallArgs3AndDispatchNative(uintptr_t glue, uint64_t function,
@@ -991,6 +1009,7 @@ PushCallArgs3AndDispatchNative:
     movq    %rsp, %rbp              // set frame pointer
     PUSH_GHC_CALLEE_SAVED_REGISTERS
     // aligned alreay
+    movq    %rsp, %r10  //  fp of new frame
     jmp     .Callargs3NativeEntry
 
 // void PushCallArgs2AndDispatchNative(uintptr_t glue, uint64_t function,
@@ -999,7 +1018,8 @@ PushCallArgs2AndDispatchNative:
     pushq   %rbp
     movq    %rsp, %rbp              // set frame pointer
     PUSH_GHC_CALLEE_SAVED_REGISTERS
-    // aligned alreay
+    pushq   $0   // align 16 bytes
+    movq    %rsp, %r10  //  fp of new frame
     jmp     .Callargs2NativeEntry
 
 // void PushCallArgs1AndDispatchNative(uintptr_t glue, uint64_t function,
@@ -1009,6 +1029,7 @@ PushCallArgs1AndDispatchNative:
     movq    %rsp, %rbp              // set frame pointer
     PUSH_GHC_CALLEE_SAVED_REGISTERS
     // aligned alreay
+    movq    %rsp, %r10  //  fp of new frame
     jmp     .Callarg1NativeEntry
 
 // void PushCallArgs0AndDispatchNative(uintptr_t glue, uint64_t function,
@@ -1018,6 +1039,7 @@ PushCallArgs0AndDispatchNative:
     movq    %rsp, %rbp              // set frame pointer
     PUSH_GHC_CALLEE_SAVED_REGISTERS
     pushq   $0  // 16 bytes align
+    movq    %rsp, %r10  //  fp of new frame
     jmp     .PushCallThisUndefinedNative
 // ----------------------------------------------------------------------------
 .CallIThisRangeNativeEntry:
@@ -1026,8 +1048,8 @@ PushCallArgs0AndDispatchNative:
     jbe     .PushCallThisNative   // actualArgc is 0, skip push args
 
 .PushLoopNative1:
-    movq    -8(%rdx, %r11, 8), %r10
-    pushq   %r10
+    movq    -8(%r9, %r11, 8), %r13
+    pushq   %r13
     subq    $1, %r11
     cmpq    $0, %r11
     ja      .PushLoopNative1
@@ -1043,20 +1065,20 @@ PushCallArgs0AndDispatchNative:
     jbe     .PushCallThisUndefinedNative   // actualArgc is 0, skip push args
 
 .PushLoopNative2:
-    movq    -8(%rdx, %r11, 8), %r10
-    pushq   %r10
+    movq    -8(%r9, %r11, 8), %r13
+    pushq   %r13
     subq    $1, %r11
     cmpq    $0, %r11
     ja      .PushLoopNative2
     jmp     .PushCallThisUndefinedNative
 
 .Callargs3NativeEntry:
-    movq    24(%rbp), %r10
-    pushq   %r10   // arg2
+    movq    24(%rbp), %r13
+    pushq   %r13   // arg2
 
 .Callargs2NativeEntry:
-    movq    16(%rbp), %r10
-    pushq   %r10  // arg1
+    movq    16(%rbp), %r13
+    pushq   %r13  // arg1
 
 .Callarg1NativeEntry:
     pushq   %r9   // arg0
@@ -1072,19 +1094,19 @@ PushCallArgs0AndDispatchNative:
     movq    %rsp, %r15  // newSp
     // skip stack overflow check now
     pushq   $ASM_INTERPRETER_FRAME  // frame type
-    pushq   %rdx                    // prev_sp
+    pushq   %rdx                    // prevSp
+    pushq   $0                      // pc
+    pushq   %r10                    // fp
+    pushq   $0                      // jumpSizeAfterCall
     movq    ASM_JS_FUNCTION_LEXICAL_ENV_OFFSET(%rsi), %r11
     pushq   %r11                    // env
-    pushq   $0                      // acc
+    pushq   $JSHOLE                 // acc
     pushq   %rsi                    // function
-    pushq   $0                      // jumpSizeAfterCall
-    pushq   $0                      // pc
-    movq    %r15, ASM_GLUE_CURRENT_FRAME_OFFSET(%rdi)  // save newSp to thread->current_sp
+    movq    %r15, ASM_GLUE_LEAVE_FRAME_OFFSET(%rdi)  // save newSp to thread->leaveFrame_
 
 .CallNative:
     // load native pointer address
-    movq    ASM_JS_METHOD_NATIVE_POINTER_OFFSET(%rcx), %r10
-    subq    $8, %rsp                                               // align 16bytes
+    movq    ASM_JS_METHOD_NATIVE_POINTER_OFFSET(%rcx), %r13
     subq    $ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE, %rsp
 
     // construct ecma_runtime_call_info
@@ -1094,42 +1116,43 @@ PushCallArgs0AndDispatchNative:
     movq    %r8, ECMA_RUNTIME_CALLINFO_NUMARGS_OFFSET(%rsp)        // numArgs
     movq    %r15, ECMA_RUNTIME_CALLINFO_STACKARGS_OFFSET(%rsp)     // stackArgs_
     movq    $0, ECMA_RUNTIME_CALLINFO_DATA_OFFSET(%rsp)            // data_
-    movq    $0, ECMA_RUNTIME_CALLINFO_PPREV_SP_OFFSET(%rsp)        // prevsp_
 
-    leaq    (, %r8, 8), %r12  // store argc * 8 into callee-saved register
     movq    %rsp, %rdi  // &ecma_runtime_call_info
-    call    *%r10
+    call    *%r13
     // ingore exception check now
-    // optimize these three add operations
     addq    $ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE, %rsp
-    addq    $8, %rsp                                                // align 16bytes
-    addq    $ASM_INTERPRETED_FRAME_STATE_SIZE, %rsp
-    addq    %r12, %rsp  // add NUM_MANDATORY_JSFUNC_ARGS + argc * 8
+    movq    ASM_INTERPRETED_FRAME_FP_OFFSET(%rsp), %r11
+    movq    %r11, %rsp
 
-    testq   $1, %rsp
-    jz      .NO_NEED_TO_POP_ALIGNED
-    subq    $8, %rsp
+    testq   $15, %rsp
+    jnz     .NO_NEED_TO_POP_ALIGNED
+    addq    $8, %rsp
 
 .NO_NEED_TO_POP_ALIGNED:
     POP_GHC_CALLEE_SAVED_REGISTERS
     popq    %rbp
     ret
 
-// ResumeRspAndDispatch(uintptr_t glue, uintptr_t pc, uintptr_t sp, uintptr_t constantPool,
+// ResumeRspAndDispatch(uintptr_t glue, uintptr_t sp, uintptr_t pc, uintptr_t constantPool,
 //     uint64_t profileTypeInfo, uint64_t acc, uint32_t hotnessCounter, size_t jumpSize)
 // GHC calling convention
 // %r13 - glue
-// %rbp - pc
-// %r12 - sp
+// %rbp - sp
+// %r12 - pc
 // %rbx - constantPool
 // %r14 - profileTypeInfo
 // %rsi - acc
 // %rdi - hotnessCounter
 // %r8  - jumpSizeAfterCall
 ResumeRspAndDispatch:
-    movq    %r12, %rsp    // resume rsp
-    addq    %r8, %rbp     // newPc
-    movzbq  (%rbp), %rax  // opcode
+    movq    %rbp, %r11
+    subq    $ASM_INTERPRETED_FRAME_STATE_SIZE, %r11
+    movq    ASM_INTERPRETED_FRAME_FP_OFFSET(%r11), %r10
+    movq    %r10, %rsp                                    // resume rsp as the value before call or execute
+    movq    ASM_INTERPRETED_FRAME_PREV_SP_OFFSET(%r11), %rbp
+
+    addq    %r8, %r12     // newPc
+    movzbq  (%r12), %rax  // opcode
     movq    ASM_GLUE_BC_HANDLERS_OFFSET(%r13, %rax, 8), %r11
     jmp     *%r11
 
@@ -1138,7 +1161,6 @@ ResumeRspAndDispatch:
 // %r13 - glue
 // %rbp - sp
 ResumeRspAndReturn:
-    movq    %rbp, %rsp
     retq
 
 
@@ -1239,3 +1261,9 @@ JSCallEntry:
     addq    $8, %rsp // skip type
     popq	%rbp
     retq
+
+AsmInterpreterEntry:
+    ret
+
+JSCallDispatch:
+    ret
