@@ -1727,5 +1727,21 @@ JSTaggedValue RuntimeStubs::RuntimeNewAotLexicalEnvWithNameDyn(JSThread *thread,
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return newEnv.GetTaggedValue();
 }
+
+JSTaggedValue RuntimeStubs::RuntimeCopyAotRestArgs(JSThread *thread, uint32_t restNumArgs, uintptr_t argv)
+{
+    uint32_t actualRestNum = restNumArgs - FIXED_NUM_ARGS;
+    JSHandle<JSTaggedValue> restArray = JSArray::ArrayCreate(thread, JSTaggedNumber(actualRestNum));
+
+    JSMutableHandle<JSTaggedValue> element(thread, JSTaggedValue::Undefined());
+    for (uint32_t i = 0; i < actualRestNum; ++i) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        JSTaggedType arg = reinterpret_cast<JSTaggedType *>(argv)[i + 1]; // skip restNumArgs
+        element.Update(JSTaggedValue(arg));
+        JSObject::SetProperty(thread, restArray, i, element, true);
+    }
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    return restArray.GetTaggedValue();
+}
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_RUNTIME_TRAMPOLINES_INL_H

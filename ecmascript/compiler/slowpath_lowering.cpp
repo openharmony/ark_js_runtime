@@ -612,6 +612,9 @@ void SlowPathLowering::Lower(GateRef gate)
         case DEFINEFUNCDYN_PREF_ID16_IMM16_V8:
             LowerDefineFuncDyn(gate, glue, jsFunc);
             break;
+        case COPYRESTARGS_PREF_IMM16:
+            LowerCopyRestArgs(gate, glue);
+            break;
         default:
             break;
     }
@@ -2918,6 +2921,26 @@ void SlowPathLowering::LowerGetUnmappedArgs(GateRef gate, GateRef glue)
     std::vector<GateRef> args({vec.rbegin() + CommonArgIdx::NUM_OF_ARGS, vec.rend()});
     args.insert(args.begin(), taggedArgc);
     int id = RTSTUB_ID(GetAotUnmapedArgs);
+    GateRef newGate = builder_.CallRuntime(glue, id, args);
+    ReplaceHirToCall(gate, newGate);
+}
+
+void SlowPathLowering::LowerCopyRestArgs(GateRef gate, GateRef glue)
+{
+    GateRef actualArgc = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::ACTUAL_ARGC);
+    GateRef restIdx = acc_.GetValueIn(gate, 0);
+    size_t restId = acc_.GetImmediateId(restIdx);
+    GateRef restNum = builder_.Int64Sub(builder_.ZExtInt32ToInt64(actualArgc), restIdx);
+    GateRef taggedRestNum = builder_.TaggedTypeNGC(restNum);
+    std::vector<GateRef> vec;
+    GateRef argList = Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST));
+    auto uses = acc_.ConstUses(argList);
+    for (auto useIt = uses.begin(); useIt != uses.end(); useIt++) {
+        vec.emplace_back(*useIt);
+    }
+    std::vector<GateRef> args({vec.rbegin() + CommonArgIdx::NUM_OF_ARGS + restId, vec.rend()});
+    args.insert(args.begin(), taggedRestNum);
+    int id = RTSTUB_ID(CopyAotRestArgs);
     GateRef newGate = builder_.CallRuntime(glue, id, args);
     ReplaceHirToCall(gate, newGate);
 }
