@@ -85,7 +85,7 @@ public:
     }
 private:
     explicit LogicalImmediate(int value)
-    : imm_(value)
+        : imm_(value)
     {
     }
     static const int InvalidLogicalImmediate = -1;
