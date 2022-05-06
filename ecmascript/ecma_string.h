@@ -124,7 +124,25 @@ public:
 
     inline size_t CopyDataUtf8(uint8_t *buf, size_t maxLength) const
     {
-        ASSERT(maxLength > 0);
+        if (maxLength == 0) {
+            return 0;
+        }
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        buf[maxLength - 1] = '\0';
+        // Put comparison here so that internal usage and napi can use the same CopyDataRegionUtf8
+        size_t length = GetLength();
+        if (length > maxLength) {
+            return 0;
+        }
+        return CopyDataRegionUtf8(buf, 0, length, maxLength) + 1;  // add place for zero in the end
+    }
+
+    // It allows user to copy into buffer even if maxLength < length
+    inline size_t WriteUtf8(uint8_t *buf, size_t maxLength) const
+    {
+        if (maxLength == 0) {
+            return 0;
+        }
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         buf[maxLength - 1] = '\0';
         return CopyDataRegionUtf8(buf, 0, GetLength(), maxLength) + 1;  // add place for zero in the end
@@ -132,9 +150,6 @@ public:
 
     size_t CopyDataRegionUtf8(uint8_t *buf, size_t start, size_t length, size_t maxLength) const
     {
-        if (length > maxLength) {
-            return 0;
-        }
         uint32_t len = GetLength();
         if (start + length > len) {
             return 0;
@@ -145,11 +160,22 @@ public:
                 UNREACHABLE();
             }
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            // Only memcpy_s maxLength number of chars into buffer if length > maxLength
+            if (length > maxLength) {
+                if (memcpy_s(buf, maxLength, GetDataUtf8() + start, maxLength) != EOK) {
+                    LOG(FATAL, RUNTIME) << "memcpy_s failed when length > maxlength";
+                    UNREACHABLE();
+                }
+                return maxLength;
+            }
             if (memcpy_s(buf, maxLength, GetDataUtf8() + start, length) != EOK) {
-                LOG(FATAL, RUNTIME) << "memcpy_s failed";
+                LOG(FATAL, RUNTIME) << "memcpy_s failed when length <= maxlength";
                 UNREACHABLE();
             }
             return length;
+        }
+        if (length > maxLength) {
+            return base::utf_helper::ConvertRegionUtf16ToUtf8(GetDataUtf16(), buf, maxLength, maxLength - 1, start);
         }
         return base::utf_helper::ConvertRegionUtf16ToUtf8(GetDataUtf16(), buf, length, maxLength - 1, start);
     }

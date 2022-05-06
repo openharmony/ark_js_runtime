@@ -21,7 +21,7 @@
 namespace panda::ecmascript::tooling::test {
 using panda::test::TestHelper;
 
-class DebuggerApiTest : public testing::TestWithParam<const char *> {
+class DebuggerEntryTest : public testing::TestWithParam<const char *> {
 public:
     static void SetUpTestCase()
     {
@@ -51,9 +51,9 @@ public:
     JSThread *thread {nullptr};
 };
 
-HWTEST_P_L0(DebuggerApiTest, EcmaScriptSuite)
+HWTEST_P_L0(DebuggerEntryTest, DebuggerSuite)
 {
-    const char *testName = GetCurrentTestName();
+    CString testName = GetCurrentTestName();
     std::cout << "Running " << testName << std::endl;
     ASSERT_NE(instance, nullptr);
     auto [pandaFile, entryPoint] = GetTestEntryPoint(testName);
@@ -61,6 +61,5 @@ HWTEST_P_L0(DebuggerApiTest, EcmaScriptSuite)
     ASSERT_TRUE(res);
 }
 
-INSTANTIATE_TEST_CASE_P(EcmaDebugApiTest, DebuggerApiTest,
-                        testing::ValuesIn(GetTestList(panda::panda_file::SourceLang::ECMASCRIPT)));
+INSTANTIATE_TEST_CASE_P(DebugAbcTest, DebuggerEntryTest, testing::ValuesIn(GetTestList()));
 }  // namespace panda::ecmascript::tooling::test

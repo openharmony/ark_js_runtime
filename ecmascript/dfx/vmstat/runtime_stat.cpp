@@ -53,7 +53,7 @@ void EcmaRuntimeStat::Print() const
     if (currentTimer_ != nullptr) {
         currentTimer_->Snapshot();
     }
-    LOG_ECMA(ERROR) << GetAllStats();
+    PrintAllStats();
 }
 
 void EcmaRuntimeStat::ResetAllCount()
@@ -66,30 +66,44 @@ void EcmaRuntimeStat::ResetAllCount()
     }
 }
 
-CString EcmaRuntimeStat::GetAllStats() const
+void EcmaRuntimeStat::PrintAllStats() const
 {
-    CStringStream statistic;
-    statistic << "panda runtime stat:" << std::endl;
-    static constexpr int nameRightAdjustment = 50;
-    static constexpr int numberRightAdjustment = 20;
-    statistic << std::right << std::setw(nameRightAdjustment) << "InterPreter && GC && C++ Builtin Function"
-              << std::setw(numberRightAdjustment) << "Time(ns)" << std::setw(numberRightAdjustment) << "Count"
-              << std::setw(numberRightAdjustment) << "MaxTime(ns)"
-              << std::setw(numberRightAdjustment) << "AverageTime(ns)" << std::endl;
+    LOG(INFO, RUNTIME) << "panda runtime stat:";
+    static constexpr int nameRightAdjustment = 45;
+    static constexpr int numberRightAdjustment = 12;
+    LOG(INFO, RUNTIME) << std::right << std::setw(nameRightAdjustment) << "InterPreter && GC && C++ Builtin Function"
+                       << std::setw(numberRightAdjustment) << "Time(ns)" << std::setw(numberRightAdjustment) << "Count"
+                       << std::setw(numberRightAdjustment) << "MaxTime(ns)"
+                       << std::setw(numberRightAdjustment) << "AvgTime(ns)";
+    LOG(INFO, RUNTIME) << "============================================================"
+                       << "=========================================================";
 
-    statistic << "==========================================================================================="
-              << "=======================================" << std::endl;
+    CVector<PandaRuntimeCallerStat> callerStat;
     for (auto &runCallerStat : callerStat_) {
+        callerStat.push_back(runCallerStat);
+    }
+    // Sort by TotalTime
+    std::sort(callerStat.begin(), callerStat.end(),
+        [](const PandaRuntimeCallerStat &a, const PandaRuntimeCallerStat &b) -> bool {
+            return a.TotalTime() > b.TotalTime();
+    });
+
+    uint64_t totalTime = 0;
+    for (auto &runCallerStat : callerStat) {
         if (runCallerStat.TotalCount() != 0) {
-            statistic << std::right << std::setw(nameRightAdjustment) << runCallerStat.Name()
-                      << std::setw(numberRightAdjustment) << runCallerStat.TotalTime()
-                      << std::setw(numberRightAdjustment) << runCallerStat.TotalCount()
-                      << std::setw(numberRightAdjustment) << runCallerStat.MaxTime()
-                      << std::setw(numberRightAdjustment) << runCallerStat.TotalTime() / runCallerStat.TotalCount()
-                      << std::endl;
+            totalTime += runCallerStat.TotalTime();
+            LOG(INFO, RUNTIME) << std::right << std::setw(nameRightAdjustment) << runCallerStat.Name()
+                               << std::setw(numberRightAdjustment) << runCallerStat.TotalTime()
+                               << std::setw(numberRightAdjustment) << runCallerStat.TotalCount()
+                               << std::setw(numberRightAdjustment) << runCallerStat.MaxTime()
+                               << std::setw(numberRightAdjustment)
+                               << runCallerStat.TotalTime() / runCallerStat.TotalCount();
         }
     }
-    return statistic.str();
+    LOG(INFO, RUNTIME) << "------------------------------------------------------------"
+                       << "---------------------------------------------------------";
+    LOG(INFO, RUNTIME) << std::right << std::setw(nameRightAdjustment) << "Total Time(ns)"
+                       << std::setw(numberRightAdjustment) << totalTime;
 }
 
 EcmaRuntimeStatScope::EcmaRuntimeStatScope(EcmaVM *vm) : vm_(vm)

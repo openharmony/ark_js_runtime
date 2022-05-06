@@ -26,7 +26,7 @@ static std::unique_ptr<TestHooks> g_hooks = nullptr;
 
 bool StartDebuggerImpl([[maybe_unused]] const std::string &name, EcmaVM *vm, [[maybe_unused]] bool isDebugMode)
 {
-    const char *testName = GetCurrentTestName();
+    CString testName = GetCurrentTestName();
     g_hooks = std::make_unique<TestHooks>(testName, vm);
     g_debuggerThread = std::thread([] {
         TestUtil::WaitForInit();
@@ -38,8 +38,8 @@ bool StartDebuggerImpl([[maybe_unused]] const std::string &name, EcmaVM *vm, [[m
 bool StopDebuggerImpl([[maybe_unused]] const std::string &name)
 {
     g_hooks->TerminateTest();
-    g_hooks.reset();
     g_debuggerThread.join();
+    g_hooks.reset();
     return true;
 }
 }  // namespace panda::ecmascript::tooling::test

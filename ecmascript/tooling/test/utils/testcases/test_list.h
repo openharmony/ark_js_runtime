@@ -24,12 +24,12 @@
 #include "libpandafile/file_items.h"
 
 namespace panda::ecmascript::tooling::test {
-CVector<const char *> GetTestList(panda_file::SourceLang language);
+CVector<const char *> GetTestList();
 
-void SetCurrentTestName(const char *testName);
-const char *GetCurrentTestName();
+void SetCurrentTestName(const CString &testName);
+CString GetCurrentTestName();
 
-std::pair<CString, CString> GetTestEntryPoint(const char *testName);
+std::pair<CString, CString> GetTestEntryPoint(const CString &testName);
 }  // namespace panda::ecmascript::tooling::test
 
 #endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TESTCASES_TEST_LIST_H

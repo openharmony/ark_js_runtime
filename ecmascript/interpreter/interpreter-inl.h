@@ -67,17 +67,17 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
 #define GOTO_NEXT()  // NOLINT(clang-diagnostic-gnu-label-as-value, cppcoreguidelines-macro-usage)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DISPATCH(format)                                       \
-    do {                                                       \
-        ADVANCE_PC(BytecodeInstruction::Size(format))          \
-        opcode = READ_INST_OP(); goto * dispatchTable[opcode]; \
+#define DISPATCH(format)                                          \
+    do {                                                          \
+        ADVANCE_PC(BytecodeInstruction::Size(format))             \
+        opcode = READ_INST_OP(); goto * (*dispatchTable)[opcode]; \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DISPATCH_OFFSET(offset)                                \
-    do {                                                       \
-        ADVANCE_PC(offset)                                     \
-        opcode = READ_INST_OP(); goto * dispatchTable[opcode]; \
+#define DISPATCH_OFFSET(offset)                                   \
+    do {                                                          \
+        ADVANCE_PC(offset)                                        \
+        opcode = READ_INST_OP(); goto * (*dispatchTable)[opcode]; \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -108,7 +108,7 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
 #define INTERPRETER_GOTO_EXCEPTION_HANDLER()          \
     do {                                              \
         SAVE_PC();                                    \
-        goto *dispatchTable[EcmaOpcode::LAST_OPCODE]; \
+        goto *(*dispatchTable)[EcmaOpcode::LAST_OPCODE]; \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -121,7 +121,7 @@ using CommonStubCSigns = kungfu::CommonStubCSigns;
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CHECK_SWITCH_TO_DEBUGGER_TABLE()    \
     if (ecmaVm->GetJsDebuggerManager()->IsDebugMode()) { \
-        dispatchTable = debugDispatchTable; \
+        dispatchTable = &debugDispatchTable; \
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -726,7 +726,7 @@ void EcmaInterpreter::ResumeContext(JSThread *thread)
 
 void EcmaInterpreter::NotifyBytecodePcChanged(JSThread *thread)
 {
-    InterpretedFrameHandler frameHandler(thread);
+    FrameHandler frameHandler(thread);
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
         if (frameHandler.IsEntryFrame()) {
             continue;
@@ -756,17 +756,17 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     ObjectFactory *factory = ecmaVm->GetFactory();
 
     constexpr size_t numOps = 0x100;
-    static std::array<const void *, numOps> instDispatchTable {
+    static thread_local std::array<const void *, numOps> instDispatchTable {
 #include "templates/instruction_dispatch.inl"
     };
 
-    static std::array<const void *, numOps> debugDispatchTable {
+    static thread_local std::array<const void *, numOps> debugDispatchTable {
 #include "templates/debugger_instruction_dispatch.inl"
     };
 
-    std::array<const void *, numOps> dispatchTable = instDispatchTable;
+    std::array<const void *, numOps> *dispatchTable = &instDispatchTable;
     CHECK_SWITCH_TO_DEBUGGER_TABLE();
-    goto *dispatchTable[opcode];
+    goto *(*dispatchTable)[opcode];
 
     HANDLE_OPCODE(HANDLE_MOV_V4_V4) {
         uint16_t vdst = READ_INST_4_0();
@@ -993,11 +993,11 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call.";
             JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
                 const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);
+            thread->SetCurrentSPFrame(sp);
             if (UNLIKELY(thread->HasPendingException())) {
                 INTERPRETER_GOTO_EXCEPTION_HANDLER();
             }
             LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call.";
-            thread->SetCurrentSPFrame(sp);
             SET_ACC(retValue);
             INTERPRETER_HANDLE_RETURN();
         }
@@ -2020,8 +2020,6 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue ctor = GET_VREG_VALUE(firstArgRegIdx);
 
         if (ctor.IsJSFunction() && ctor.IsConstructor()) {
-            thread->CheckSafepoint();
-            ctor = GET_VREG_VALUE(firstArgRegIdx);  // may be moved by GC
             JSFunction *ctorFunc = JSFunction::Cast(ctor.GetTaggedObject());
             JSMethod *ctorMethod = ctorFunc->GetMethod();
             if (ctorFunc->IsBuiltinsConstructor()) {
@@ -2056,15 +2054,15 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 state->sp = newSp;
                 state->function = ctor;
                 thread->SetCurrentSPFrame(newSp);
+
                 LOG(DEBUG, INTERPRETER) << "Entry: Runtime New.";
                 JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
                     const_cast<void *>(ctorMethod->GetNativePointer()))(&ecmaRuntimeCallInfo);
-
+                thread->SetCurrentSPFrame(sp);
                 if (UNLIKELY(thread->HasPendingException())) {
                     INTERPRETER_GOTO_EXCEPTION_HANDLER();
                 }
                 LOG(DEBUG, INTERPRETER) << "Exit: Runtime New.";
-                thread->SetCurrentSPFrame(sp);
                 SET_ACC(retValue);
                 DISPATCH(BytecodeInstruction::Format::PREF_IMM16_V8);
             }
@@ -3558,6 +3556,128 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue thisFunc = GET_ACC();
         JSTaggedValue newTarget = GetNewTarget(sp);
 
+        JSTaggedValue superCtor = SlowRuntimeStub::GetSuperConstructor(thread, thisFunc);
+        INTERPRETER_RETURN_IF_ABRUPT(superCtor);
+
+        if (superCtor.IsJSFunction() && superCtor.IsConstructor() && !newTarget.IsUndefined()) {
+            JSFunction *superCtorFunc = JSFunction::Cast(superCtor.GetTaggedObject());
+            JSMethod *superCtorMethod = superCtorFunc->GetMethod();
+            if (superCtorFunc->IsBuiltinsConstructor()) {
+                ASSERT(superCtorMethod->GetNumVregsWithCallField() == 0);
+                size_t frameSize = INTERPRETER_FRAME_STATE_SIZE + range + NUM_MANDATORY_JSFUNC_ARGS;
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                JSTaggedType *newSp = sp - frameSize;
+                if (UNLIKELY(thread->DoStackOverflowCheck(newSp))) {
+                    INTERPRETER_GOTO_EXCEPTION_HANDLER();
+                }
+                EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, range, newSp);
+                // copy args
+                uint32_t index = 0;
+                // func
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                newSp[index++] = superCtor.GetRawData();
+                // newTarget
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                newSp[index++] = newTarget.GetRawData();
+                // this
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                newSp[index++] = JSTaggedValue::VALUE_UNDEFINED;
+                for (size_t i = 0; i < range; ++i) {
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                    newSp[index++] = GET_VREG(v0 + i);
+                }
+
+                InterpretedFrame *state = GET_FRAME(newSp);
+                state->base.prev = sp;
+                state->base.type = FrameType::INTERPRETER_FRAME;
+                state->pc = nullptr;
+                state->sp = newSp;
+                state->function = superCtor;
+                thread->SetCurrentSPFrame(newSp);
+                LOG(DEBUG, INTERPRETER) << "Entry: Runtime SuperCall ";
+                JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
+                    const_cast<void *>(superCtorMethod->GetNativePointer()))(&ecmaRuntimeCallInfo);
+                thread->SetCurrentSPFrame(sp);
+
+                if (UNLIKELY(thread->HasPendingException())) {
+                    INTERPRETER_GOTO_EXCEPTION_HANDLER();
+                }
+                LOG(DEBUG, INTERPRETER) << "Exit: Runtime SuperCall ";
+                SET_ACC(retValue);
+                DISPATCH(BytecodeInstruction::Format::PREF_IMM16_V8);
+            }
+
+            if (IsFastNewFrameEnter(superCtorFunc, superCtorMethod)) {
+                SAVE_PC();
+                uint32_t numVregs = superCtorMethod->GetNumVregsWithCallField();
+                uint32_t numDeclaredArgs = superCtorFunc->IsBase() ?
+                    superCtorMethod->GetNumArgsWithCallField() + 1 :  // +1 for this
+                    superCtorMethod->GetNumArgsWithCallField() + 2;   // +2 for newTarget and this
+                // +1 for hidden this, explicit this may be overwritten after bc optimizer
+                size_t frameSize = INTERPRETER_FRAME_STATE_SIZE + numVregs + numDeclaredArgs + 1;
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                JSTaggedType *newSp = sp - frameSize;
+                InterpretedFrame *state = GET_FRAME(newSp);
+
+                if (UNLIKELY(thread->DoStackOverflowCheck(newSp))) {
+                    INTERPRETER_GOTO_EXCEPTION_HANDLER();
+                }
+
+                uint32_t index = 0;
+                // initialize vregs value
+                for (size_t i = 0; i < numVregs; ++i) {
+                    newSp[index++] = JSTaggedValue::VALUE_UNDEFINED;
+                }
+
+                // this
+                JSTaggedValue thisObj;
+                if (superCtorFunc->IsBase()) {
+                    thisObj = FastRuntimeStub::NewThisObject(thread, superCtor, newTarget, state);
+                    INTERPRETER_RETURN_IF_ABRUPT(thisObj);
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                    newSp[index++] = thisObj.GetRawData();
+                } else {
+                    ASSERT(superCtorFunc->IsDerivedConstructor());
+                    newSp[index++] = newTarget.GetRawData();
+                    thisObj = JSTaggedValue::Undefined();
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                    newSp[index++] = thisObj.GetRawData();
+
+                    state->function = superCtor;
+                    state->constpool = superCtorFunc->GetConstantPool();
+                    state->profileTypeInfo = superCtorFunc->GetProfileTypeInfo();
+                    state->env = superCtorFunc->GetLexicalEnv();
+                }
+
+                // the second condition ensure not push extra args
+                for (size_t i = 0; i < range && index < numVregs + numDeclaredArgs; ++i) {
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                    newSp[index++] = GET_VREG(v0 + i);
+                }
+
+                // set undefined to the extra prats of declare
+                for (size_t i = index; i < numVregs + numDeclaredArgs; ++i) {
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                    newSp[index++] = JSTaggedValue::VALUE_UNDEFINED;
+                }
+
+                // hidden this object
+                newSp[index] = thisObj.GetRawData();
+
+                state->base.prev = sp;
+                state->base.type = FrameType::INTERPRETER_FAST_NEW_FRAME;
+                state->pc = pc = superCtorMethod->GetBytecodeArray();
+                state->sp = sp = newSp;
+                state->acc = JSTaggedValue::Hole();
+                constpool = ConstantPool::Cast(state->constpool.GetTaggedObject());
+
+                thread->SetCurrentSPFrame(newSp);
+                LOG(DEBUG, INTERPRETER) << "Entry: Runtime SuperCall " << std::hex << reinterpret_cast<uintptr_t>(sp)
+                                        << " " << std::hex << reinterpret_cast<uintptr_t>(pc);
+                DISPATCH_OFFSET(0);
+            }
+        }
+
         SAVE_PC();
         JSTaggedValue res = SlowRuntimeStub::SuperCall(thread, thisFunc, newTarget, v0, range);
         INTERPRETER_RETURN_IF_ABRUPT(res);
@@ -3641,8 +3761,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         DISPATCH(BytecodeInstruction::Format::PREF_NONE);
     }
     HANDLE_OPCODE(EXCEPTION_HANDLER) {
-        auto exception = thread->GetException();
-        InterpretedFrameHandler frameHandler(sp);
+        FrameHandler frameHandler(thread);
         uint32_t pcOffset = panda_file::INVALID_OFFSET;
         for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
             if (frameHandler.IsEntryFrame()) {
@@ -3662,6 +3781,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             return;
         }
 
+        auto exception = thread->GetException();
         SET_ACC(exception);
         thread->ClearException();
         thread->SetCurrentSPFrame(sp);
@@ -3736,21 +3856,22 @@ uint32_t EcmaInterpreter::GetNumArgs(JSTaggedType *sp, uint32_t restIdx, uint32_
     InterpretedFrame *state = reinterpret_cast<InterpretedFrame *>(sp) - 1;
     JSMethod *method = JSFunction::Cast(state->function.GetTaggedObject())->GetMethod();
     ASSERT(method->HaveExtraWithCallField());
+
     uint32_t numVregs = method->GetNumVregsWithCallField();
     bool haveFunc = method->HaveFuncWithCallField();
     bool haveNewTarget = method->HaveNewTargetWithCallField();
     bool haveThis = method->HaveThisWithCallField();
     uint32_t copyArgs = haveFunc + haveNewTarget + haveThis;
     uint32_t numArgs = method->GetNumArgsWithCallField();
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
     JSTaggedType *lastFrame = state->base.prev;
     // The prev frame of InterpretedFrame may entry frame or interpreter frame.
-    if (FrameHandler(state->base.prev).GetFrameType() == FrameType::INTERPRETER_ENTRY_FRAME) {
-        int32_t argc = InterpretedEntryFrameHandler(state->base.prev).GetArgsNumber();
-        lastFrame = lastFrame - INTERPRETER_ENTRY_FRAME_STATE_SIZE - 1 - argc - RESERVED_CALL_ARGCOUNT;
+    if (FrameHandler::GetFrameType(state->base.prev) == FrameType::INTERPRETER_ENTRY_FRAME) {
+        lastFrame = FrameHandler::GetInterpretedEntryFrameStart(state->base.prev);
     } else {
         lastFrame = lastFrame - INTERPRETER_FRAME_STATE_SIZE;
     }
+
     if (static_cast<uint32_t>(lastFrame - sp) > numVregs + copyArgs + numArgs) {
         // In this case, actualNumArgs is in the end
         // If not, then actualNumArgs == declaredNumArgs, therefore do nothing
@@ -3783,6 +3904,7 @@ size_t EcmaInterpreter::GetJumpSizeAfterCall(const uint8_t *prevPc)
             break;
         case (EcmaOpcode::CALLITHISRANGEDYN_PREF_IMM16_V8):
         case (EcmaOpcode::NEWOBJDYNRANGE_PREF_IMM16_V8):
+        case (EcmaOpcode::SUPERCALL_PREF_IMM16_V8):
             jumpSize = BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_IMM16_V8);
             break;
         default:

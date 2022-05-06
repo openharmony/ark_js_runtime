@@ -11,12 +11,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-debug=no
+debug:=no
+log:=no
+args:=
 root_dir=$(shell pwd)
 ifeq ($(test), )
 	test_name=helloaot
 else
 	test_name=$(test)
+endif
+
+ifeq ($(log), yes)
+	args+= --log-compiled-methods=all
 endif
 
 ifeq ($(debug), no)
@@ -29,37 +35,41 @@ endif
 
 ts2abc=$(root_dir)/out/hi3516dv300/clang_x64/obj/ark/ts2abc/ts2panda/build/src/index.js
 test_dir=$(root_dir)/ark/js_runtime/test/aottest
-out_dir=out/hi3516dv300/clang_x64/aottest
-case_dir=$(root_dir)/$(out_dir)/$(test_name)
+out_dir=$(root_dir)/out/hi3516dv300/clang_x64/aottest
+case_dir=$(out_dir)/$(test_name)
+com_stub_args=--enable-stub-aot=1 --asmInter=1 --bc-stub-out=$(out_dir)/bc_stub.m --com-stub-out=$(out_dir)/com_stub.m
 
 abc:
 	mkdir -p $(case_dir)
-	cp $(test_dir)/$(test_name)/$(test_name).ts $(case_dir)
-	node --expose-gc $(ts2abc) $(case_dir)/$(test_name).ts
+	node --expose-gc $(ts2abc) $(test_dir)/$(test_name)/$(test_name).ts -o $(case_dir)/$(test_name).abc
+
+stub:
+	mkdir -p $(out_dir)
+	cd $(out_dir) && $(bin_dir)/ark_stub_compiler $(args) --com-stub-out=com_stub.m --bc-stub-out=bc_stub.m
 
 aot:
-	cd $(case_dir) && $(bin_dir)/ark_aot_compiler $(test_name).abc
+	cd $(case_dir) && $(bin_dir)/ark_aot_compiler $(args) $(test_name).abc
 
 aotd:
-	cd $(case_dir) && gdb --args $(bin_dir)/ark_aot_compiler $(test_name).abc
+	cd $(case_dir) && gdb --args $(bin_dir)/ark_aot_compiler $(args) $(test_name).abc
 
 run:
-	cd $(case_dir) && $(bin_dir)/ark_js_vm --enable-ts-aot=1 $(test_name).abc
+	cd $(case_dir) && $(bin_dir)/ark_js_vm $(args) --enable-ts-aot=1 $(com_stub_args) $(test_name).abc
 
 rund:
-	cd $(case_dir) && gdb --args $(bin_dir)/ark_js_vm --enable-ts-aot=1 $(test_name).abc
+	cd $(case_dir) && gdb --args $(bin_dir)/ark_js_vm $(args) --enable-ts-aot=1 $(com_stub_args) $(test_name).abc
 	
 int:
-	cd $(case_dir) && $(bin_dir)/ark_js_vm $(test_name).abc
+	cd $(case_dir) && $(bin_dir)/ark_js_vm $(args) $(test_name).abc
 
 intd:
-	cd $(case_dir) && gdb --args $(bin_dir)/ark_js_vm $(test_name).abc
+	cd $(case_dir) && gdb --args $(bin_dir)/ark_js_vm $(args) $(test_name).abc
 	
 asmint:
-	cd $(case_dir) && $(bin_dir)/ark_js_vm --enable-stub-aot=1 --asmInter=1 $(test_name).abc
+	cd $(case_dir) && $(bin_dir)/ark_js_vm $(args) $(com_stub_args) $(test_name).abc
 
 asmintd:
-	cd $(case_dir) && gdb --args $(bin_dir)/ark_js_vm --enable-stub-aot=1 --asmInter=1 $(test_name).abc
+	cd $(case_dir) && gdb --args $(bin_dir)/ark_js_vm $(args) $(com_stub_args) $(test_name).abc
 
 env:
 	@echo "root_dir=$(root_dir)"

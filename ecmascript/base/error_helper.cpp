@@ -191,8 +191,7 @@ JSHandle<EcmaString> ErrorHelper::BuildEcmaStackTrace(JSThread *thread)
 CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
 {
     CString data;
-    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    InterpretedFrameHandler frameHandler(sp);
+    FrameHandler frameHandler(thread);
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
         if (frameHandler.IsEntryFrame()) {
             continue;

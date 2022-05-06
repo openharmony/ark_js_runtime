@@ -27,7 +27,7 @@
 
 namespace panda {
 namespace ecmascript {
-class InterpretedFrameHandler;
+class FrameHandler;
 class EcmaVM;
 struct JSMethod;
 class JSThread;
@@ -50,17 +50,18 @@ public:
     static Local<JSValueRef> Execute(const EcmaVM *ecmaVm, const void *buffer, size_t size,
                               std::string_view entryPoint);
 
-    // InterpretedFrameHandler
+    // FrameHandler
     static uint32_t GetStackDepth(const EcmaVM *ecmaVm);
-    static bool StackWalker(const EcmaVM *ecmaVm, std::function<StackState(const InterpretedFrameHandler *)> func);
+    static bool StackWalker(const EcmaVM *ecmaVm, std::function<StackState(const FrameHandler *)> func);
     static uint32_t GetBytecodeOffset(const EcmaVM *ecmaVm);
     static JSMethod *GetMethod(const EcmaVM *ecmaVm);
     static Local<JSValueRef> GetVRegValue(const EcmaVM *ecmaVm, size_t index);
     static void SetVRegValue(const EcmaVM *ecmaVm, size_t index, Local<JSValueRef> value);
-    static uint32_t GetBytecodeOffset(const InterpretedFrameHandler *frameHandler);
-    static JSMethod *GetMethod(const InterpretedFrameHandler *frameHandler);
+    static uint32_t GetBytecodeOffset(const FrameHandler *frameHandler);
+    static JSMethod *GetMethod(const FrameHandler *frameHandler);
+    static JSTaggedValue GetEnv(const FrameHandler *frameHandler);
     static Local<JSValueRef> GetVRegValue(const EcmaVM *ecmaVm,
-        const InterpretedFrameHandler *frameHandler, size_t index);
+        const FrameHandler *frameHandler, size_t index);
 
     // String
     static int32_t CStringToInt(const CString &str);
@@ -88,7 +89,7 @@ public:
     static Local<FunctionRef> GenerateFuncFromBuffer(const EcmaVM *ecmaVm, const void *buffer, size_t size,
         std::string_view entryPoint);
 
-    // JSMehthod
+    // JSMethod
     static CString ParseFunctionName(const JSMethod *method);
 
     // ScopeInfo

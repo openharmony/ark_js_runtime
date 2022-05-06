@@ -14,6 +14,7 @@
  */
 
 #include "ecmascript/builtins/builtins_object.h"
+#include "ecmascript/builtins/builtins_map.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
@@ -935,5 +936,68 @@ JSTaggedValue BuiltinsObject::Entries(EcmaRuntimeCallInfo *argv)
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 3. Return CreateArrayFromList(nameList).
     return JSArray::CreateArrayFromList(thread, nameList).GetTaggedValue();
+}
+
+JSTaggedValue BuiltinsObject::FromEntries(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    JSThread *thread = argv->GetThread();
+    BUILTINS_API_TRACE(thread, Object, FromEntries);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    JSHandle<JSTaggedValue> iterable = GetCallArg(argv, 0);
+    // 1. Perform ? RequireObjectCoercible(iterable).
+    if (iterable->IsUndefined() || iterable->IsNull()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "iterable is undefined or null", JSTaggedValue::Exception());
+    }
+
+    // 2. Let obj be ! OrdinaryObjectCreate(%Object.prototype%).
+    // 3. Assert: obj is an extensible ordinary object with no own properties.
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<JSTaggedValue> constructor = env->GetObjectFunction();
+    JSHandle<JSObject> obj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(constructor), constructor);
+
+    // 4. Let stepsDefine be the algorithm steps defined in CreateDataPropertyOnObject Functions.
+    // 5. Let lengthDefine be the number of non-optional parameters of the function definition in
+    //    CreateDataPropertyOnObject Functions.
+    // 6. Let adder be ! CreateBuiltinFunction(stepsDefine, lengthDefine, "", « »).
+    JSHandle<JSFunction> addrFunc =
+        factory->NewJSFunction(env, reinterpret_cast<void *>(CreateDataPropertyOnObjectFunctions),
+                               FunctionKind::NORMAL_FUNCTION);
+
+    JSHandle<JSTaggedValue> adder(thread, addrFunc.GetTaggedValue());
+
+    // 7. Return ? AddEntriesFromIterable(obj, iterable, adder).
+    return BuiltinsMap::AddEntriesFromIterable(thread, obj, iterable, adder, factory);
+}
+
+JSTaggedValue BuiltinsObject::CreateDataPropertyOnObjectFunctions(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    JSThread *thread = argv->GetThread();
+    BUILTINS_API_TRACE(thread, Object, CreateDataPropertyOnObjectFunctions);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    // 1. Let O be the this value.
+    JSHandle<JSTaggedValue> thisHandle = GetThis(argv);
+    JSHandle<JSObject> thisObjHandle = JSHandle<JSObject>::Cast(thisHandle);
+
+    // 2. Assert: Type(O) is Object.
+    // 3. Assert: O is an extensible ordinary object.
+    ASSERT(thisHandle->IsObject());
+
+    JSHandle<JSTaggedValue> key = GetCallArg(argv, 0);
+    JSHandle<JSTaggedValue> value = GetCallArg(argv, 1);
+
+    // 4. Let propertyKey be ? ToPropertyKey(key).
+    JSHandle<JSTaggedValue> propertyKey = JSTaggedValue::ToPropertyKey(thread, key);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    // 5. Perform ! CreateDataPropertyOrThrow(O, propertyKey, value).
+    JSObject::CreateDataPropertyOrThrow(thread, thisObjHandle, propertyKey, value);
+
+    // 6. Return undefined.
+    return JSTaggedValue::Undefined();
 }
 }  // namespace panda::ecmascript::builtins

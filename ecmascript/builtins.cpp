@@ -511,6 +511,8 @@ void Builtins::InitializeObject(const JSHandle<GlobalEnv> &env, const JSHandle<J
     SetFunction(env, objFuncPrototype, "propertyIsEnumerable", Object::PropertyIsEnumerable, FunctionLength::ONE);
     // 19.1.3.5 Object.prototype.toLocaleString([reserved1[, reserved2]])
     SetFunction(env, objFuncPrototype, "toLocaleString", Object::ToLocaleString, FunctionLength::ZERO);
+    // 20.1.2.7 Object.fromEntries ( iterable )
+    SetFunction(env, objFuncPrototype, "fromEntries", Object::FromEntries, FunctionLength::ONE);
     // 19.1.3.6 Object.prototype.toString()
     SetFunction(env, objFuncPrototype, thread_->GlobalConstants()->GetHandledToStringString(), Object::ToString,
                 FunctionLength::ZERO);

@@ -1686,6 +1686,13 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
             info.offset = BytecodeOffset::TWO;
             break;
         }
+        case EcmaOpcode::LDBIGINT_PREF_ID32: {
+            uint32_t stringId = READ_INST_32_1();
+            info.accOut = true;
+            info.offset = BytecodeOffset::SIX;
+            info.inputs.emplace_back(StringId(stringId));
+            break;
+        }
         case EcmaOpcode::SUPERCALL_PREF_IMM16_V8: {
             uint16_t range = READ_INST_16_1();
             uint16_t v0 = READ_INST_8_3();
@@ -2266,7 +2273,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                 // handle returnundefined bytecode
                 ASSERT(bb.succs.empty());
                 auto constant = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
-                                                 coretypes::TaggedValue::VALUE_UNDEFINED,
+                                                 JSTaggedValue::VALUE_UNDEFINED,
                                                  { Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST)) },
                                                  GateType::JS_ANY);
                 auto gate = circuit_.NewGate(OpCode(OpCode::RETURN), 0,

@@ -23,7 +23,7 @@
 namespace panda::ecmascript::tooling::test {
 class TestHooks : public PtHooks {
 public:
-    TestHooks(const char *testName, const EcmaVM *vm)
+    TestHooks(const CString &testName, const EcmaVM *vm)
     {
         backend_ = std::make_unique<JSBackend>(vm);
         testName_ = testName;
@@ -114,7 +114,7 @@ public:
 private:
     std::unique_ptr<JSBackend> backend_ {nullptr};
     JSDebugger *debugInterface_;
-    const char *testName_;
+    CString testName_;
     TestEvents *test_;
 };
 }  // namespace panda::ecmascript::tooling::test
