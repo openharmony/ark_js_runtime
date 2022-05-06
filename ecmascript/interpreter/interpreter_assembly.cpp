@@ -419,7 +419,7 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
         DISPATCH_OFFSET(0);                                                                        \
     } while (false)
 
-extern "C" void JSCallEntry(uintptr_t glue, JSTaggedType *sp, const uint8_t *pc, JSTaggedValue constpool, 
+extern "C" void JSCallEntry(uintptr_t glue, JSTaggedType *sp, const uint8_t *pc, JSTaggedValue constpool,
     JSTaggedValue profileTypeInfo, JSTaggedValue acc, uint32_t hotnessCounter);
 
 // NOLINTNEXTLINE(readability-function-size)
@@ -4274,7 +4274,7 @@ inline size_t InterpreterAssembly::GetJumpSizeAfterCall(const uint8_t *prevPc)
     return jumpSize;
 }
 
-inline JSTaggedValue InterpreterAssembly::UpdateHotnessCounter(JSThread* thread, TaggedType *sp)
+inline JSTaggedValue InterpreterAssembly::UpdateHotnessCounter(JSThread* thread, JSTaggedType *sp)
 {
     AsmInterpretedFrame *state = GET_ASM_FRAME(sp);
     thread->CheckSafepoint();

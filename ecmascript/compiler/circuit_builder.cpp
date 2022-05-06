@@ -19,11 +19,9 @@
 #include "ecmascript/js_function.h"
 #include "ecmascript/compiler/common_stubs.h"
 #include "ecmascript/compiler/rt_call_signature.h"
-#include "include/coretypes/tagged_value.h"
 #include "utils/bit_utils.h"
 
 namespace panda::ecmascript::kungfu {
-using TaggedValue = panda::coretypes::TaggedValue;
 #define DEF_CALL_GATE(OpName, CallSignature)                                      \
     std::vector<GateRef> inputs;                                                  \
     inputs.push_back(depend);                                                     \
@@ -78,7 +76,7 @@ GateRef CircuitBuilder::Selector(OpCode opcode, GateRef control,
 
 GateRef CircuitBuilder::UndefineConstant(GateType type)
 {
-    return circuit_->GetConstantGate(MachineType::I64, TaggedValue::VALUE_UNDEFINED, type);
+    return circuit_->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_UNDEFINED, type);
 }
 
 GateRef CircuitBuilder::Branch(GateRef state, GateRef condition)
@@ -202,17 +200,17 @@ GateRef CircuitBuilder::Double(double val)
 
 GateRef CircuitBuilder::HoleConstant(GateType type)
 {
-    return GetCircuit()->GetConstantGate(MachineType::I64, TaggedValue::VALUE_HOLE, type);
+    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_HOLE, type);
 }
 
 GateRef CircuitBuilder::NullConstant(GateType type)
 {
-    return GetCircuit()->GetConstantGate(MachineType::I64, TaggedValue::VALUE_NULL, type);
+    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_NULL, type);
 }
 
 GateRef CircuitBuilder::ExceptionConstant(GateType type)
 {
-    return GetCircuit()->GetConstantGate(MachineType::I64, TaggedValue::VALUE_EXCEPTION, type);
+    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_EXCEPTION, type);
 }
 
 MachineType CircuitBuilder::GetMachineTypeFromVariableType(VariableType type)
