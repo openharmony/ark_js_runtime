@@ -1686,6 +1686,13 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
             info.offset = BytecodeOffset::TWO;
             break;
         }
+        case EcmaOpcode::LDBIGINT_PREF_ID32: {
+            uint32_t stringId = READ_INST_32_1();
+            info.accOut = true;
+            info.offset = BytecodeOffset::SIX;
+            info.inputs.emplace_back(StringId(stringId));
+            break;
+        }
         case EcmaOpcode::SUPERCALL_PREF_IMM16_V8: {
             uint16_t range = READ_INST_16_1();
             uint16_t v0 = READ_INST_8_3();
