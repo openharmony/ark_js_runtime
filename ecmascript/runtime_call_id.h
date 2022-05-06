@@ -701,12 +701,12 @@ enum EcmaRuntimeCallerId {
 #define INTERPRETER_TRACE(thread, name)                                                        \
     [[maybe_unused]] JSThread *_js_thread_ = thread;                                           \
     [[maybe_unused]] EcmaRuntimeStat *_run_stat_ = _js_thread_->GetEcmaVM()->GetRuntimeStat(); \
-    RuntimeTimerScope interpret_##name##_scope_(thread, INTERPRETER_CALLER_ID(name) _run_stat_)
+    RuntimeTimerScope interpret_##name##_scope_(INTERPRETER_CALLER_ID(name) _run_stat_)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define RUNTIME_TRACE(thread, name)                                                            \
     [[maybe_unused]] JSThread *_js_thread_ = thread;                                           \
     [[maybe_unused]] EcmaRuntimeStat *_run_stat_ = _js_thread_->GetEcmaVM()->GetRuntimeStat(); \
-    RuntimeTimerScope interpret_##name##_scope_(thread, RUNTIME_CALLER_ID(name) _run_stat_)
+    RuntimeTimerScope interpret_##name##_scope_(RUNTIME_CALLER_ID(name) _run_stat_)
 #else
 #define INTERPRETER_TRACE(thread, name) static_cast<void>(0) // NOLINT(cppcoreguidelines-macro-usage)
 #define RUNTIME_TRACE(thread, name) static_cast<void>(0) // NOLINT(cppcoreguidelines-macro-usage)
@@ -717,23 +717,23 @@ enum EcmaRuntimeCallerId {
 #define BUILTINS_API_TRACE(thread, class, name)                                                \
     [[maybe_unused]] JSThread *_js_thread_ = thread;                                           \
     [[maybe_unused]] EcmaRuntimeStat *_run_stat_ = _js_thread_->GetEcmaVM()->GetRuntimeStat(); \
-    RuntimeTimerScope builtins_##class##name##_scope_(thread, BUILTINS_API_ID(class, name) _run_stat_)
+    RuntimeTimerScope builtins_##class##name##_scope_(BUILTINS_API_ID(class, name) _run_stat_)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define ABSTRACT_OPERATION_TRACE(thread, class, name)                                          \
     [[maybe_unused]] JSThread *_js_thread_ = thread;                                           \
     [[maybe_unused]] EcmaRuntimeStat *_run_stat_ = _js_thread_->GetEcmaVM()->GetRuntimeStat(); \
-    RuntimeTimerScope abstract_##class##name##_scope_(thread, ABSTRACT_OPERATION_ID(class, name) _run_stat_)
+    RuntimeTimerScope abstract_##class##name##_scope_(ABSTRACT_OPERATION_ID(class, name) _run_stat_)
 #else
 #define BUILTINS_API_TRACE(thread, class, name) static_cast<void>(0) // NOLINT(cppcoreguidelines-macro-usage)
-#define ABSTRACT_OPERATION_TRACE(thread, class, name) static_cast<void>(0) // NOLINT(cppcoreguidelines-macro-usage)
+#define ABSTRACT_OPERATION_TRACE(class, name) static_cast<void>(0) // NOLINT(cppcoreguidelines-macro-usage)
 #endif // ECMASCRIPT_ENABLE_BUILTINS_RUNTIME_STAT
 
 #if ECMASCRIPT_ENABLE_ALLOCATE_AND_GC_RUNTIME_STAT
 #define MEM_ALLOCATE_AND_GC_TRACE(vm, name)             \
     CHECK_JS_THREAD(vm);                                \
     EcmaRuntimeStat *_run_stat_ = vm->GetRuntimeStat(); \
-    RuntimeTimerScope mem_##name##_scope_(vm, MEM_ALLOCATE_AND_GC_ID(name) _run_stat_)
+    RuntimeTimerScope mem_##name##_scope_(MEM_ALLOCATE_AND_GC_ID(name) _run_stat_)
 #else
 #define MEM_ALLOCATE_AND_GC_TRACE(vm, name) static_cast<void>(0) // NOLINT(cppcoreguidelines-macro-usage)
 #endif // ECMASCRIPT_ENABLE_ALLOCATE_AND_GC_RUNTIME_STAT
