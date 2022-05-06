@@ -63,8 +63,7 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMInTwoWays)
     options2.SetEnableTsAot(true);
     options2.SetArkProperties(ArkProperties::GC_STATS_PRINT);
 
-    // // GC
-    // options2.SetGcTriggerType("no-gc-for-start-up");  // A non-production gc strategy. Prohibit stw-gc 10 times.
+    // A non-production gc strategy. Prohibit stw-gc 10 times.
     EcmaVM *ecmaVm2 = EcmaVM::Create(options2);
 
     EXPECT_TRUE(ecmaVm1 != ecmaVm2);
