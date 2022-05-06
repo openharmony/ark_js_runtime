@@ -1648,6 +1648,31 @@ DEF_RUNTIME_STUBS(GetAotUnmapedArgs)
     return RuntimeGetAotUnmapedArgs(thread, actualNumArgs.GetInt(), argv).GetRawData();
 }
 
+DEF_RUNTIME_STUBS(GetAotLexicalEnv)
+{
+    RUNTIME_STUBS_HEADER(GetAotLexicalEnv);
+    CONVERT_ARG_PTR_CHECKED(JSFunction *, jsFunc, 0);
+    return jsFunc->GetLexicalEnv().GetRawData();
+}
+
+DEF_RUNTIME_STUBS(NewAotLexicalEnvDyn)
+{
+    RUNTIME_STUBS_HEADER(NewAotLexicalEnvDyn);
+    CONVERT_ARG_TAGGED_CHECKED(numVars, 0);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, currentLexEnv, 1);
+    return RuntimeNewAotLexicalEnvDyn(thread, static_cast<uint16_t>(numVars.GetInt()), currentLexEnv).GetRawData();
+}
+
+DEF_RUNTIME_STUBS(NewAotLexicalEnvWithNameDyn)
+{
+    RUNTIME_STUBS_HEADER(NewAotLexicalEnvWithNameDyn);
+    CONVERT_ARG_TAGGED_CHECKED(numVars, 0);
+    CONVERT_ARG_TAGGED_CHECKED(scopeId, 1);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, currentLexEnv, 2);
+    return RuntimeNewAotLexicalEnvWithNameDyn(thread, static_cast<uint16_t>(numVars.GetInt()),
+                                              static_cast<uint16_t>(scopeId.GetInt()), currentLexEnv).GetRawData();
+}
+
 JSTaggedType RuntimeStubs::CreateArrayFromList([[maybe_unused]]uintptr_t argGlue, int32_t argc, JSTaggedValue *argvPtr)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);

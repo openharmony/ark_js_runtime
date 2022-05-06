@@ -274,7 +274,10 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(NewLexicalEnvWithNameDyn)           \
     V(GetAotUnmapedArgs)                  \
     V(NotifyBytecodePcChanged)            \
-    V(DefineGeneratorFuncWithMethodId)
+    V(DefineGeneratorFuncWithMethodId)    \
+    V(GetAotLexicalEnv)                   \
+    V(NewAotLexicalEnvDyn)                \
+    V(NewAotLexicalEnvWithNameDyn)
 
 #define RUNTIME_STUB_LIST(V)                 \
     RUNTIME_STUB_WITHOUT_GC_LIST(V)          \
@@ -494,6 +497,10 @@ private:
     static inline JSTaggedValue RuntimeLdBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &numberBigInt);
     static inline JSTaggedValue RuntimeNewLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId);
     static inline JSTaggedValue RuntimeGetAotUnmapedArgs(JSThread *thread, uint32_t actualNumArgs, uintptr_t argv);
+    static inline JSTaggedValue RuntimeNewAotLexicalEnvDyn(JSThread *thread, uint16_t numVars,
+                                                           JSHandle<JSTaggedValue> &currentLexEnv);
+    static inline JSTaggedValue RuntimeNewAotLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId,
+                                                                   JSHandle<JSTaggedValue> &currentLexEnv);
 };
 }  // namespace panda::ecmascript
 #endif
