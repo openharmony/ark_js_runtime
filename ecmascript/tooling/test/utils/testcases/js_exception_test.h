@@ -79,7 +79,8 @@ public:
             TestUtil::Continue();
             TestUtil::WaitForException();
             TestUtil::Continue();
-            ASSERT_TRUE(debugInterface_->RemoveBreakpoint(location_));
+            auto ret = debugInterface_->RemoveBreakpoint(location_);
+            ASSERT_TRUE(ret);
             ASSERT_EXITED();
             return true;
         };
