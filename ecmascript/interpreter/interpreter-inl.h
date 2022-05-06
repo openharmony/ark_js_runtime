@@ -3597,12 +3597,12 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 LOG(DEBUG, INTERPRETER) << "Entry: Runtime SuperCall ";
                 JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
                     const_cast<void *>(superCtorMethod->GetNativePointer()))(&ecmaRuntimeCallInfo);
+                thread->SetCurrentSPFrame(sp);
 
                 if (UNLIKELY(thread->HasPendingException())) {
                     INTERPRETER_GOTO_EXCEPTION_HANDLER();
                 }
                 LOG(DEBUG, INTERPRETER) << "Exit: Runtime SuperCall ";
-                thread->SetCurrentSPFrame(sp);
                 SET_ACC(retValue);
                 DISPATCH(BytecodeInstruction::Format::PREF_IMM16_V8);
             }
