@@ -22,6 +22,11 @@ void ExtendedAssemblerX64::PushAlignBytes()
     Pushq(0);
 }
 
+void ExtendedAssemblerX64::PopAlignBytes()
+{
+    Addq(8, rsp);  // 8: 8 bytes
+}
+
 // c++ calling convention
 void ExtendedAssemblerX64::PushCppCalleeSaveRegisters()
 {
@@ -39,5 +44,33 @@ void ExtendedAssemblerX64::PopCppCalleeSaveRegisters()
     Popq(r14);
     Popq(r13);
     Popq(r12);
+}
+
+void ExtendedAssemblerX64::PushGhcCalleeSaveRegisters()
+{
+    Pushq(r10);
+    Pushq(r11);
+    Pushq(r12);
+    Pushq(r13);
+    Pushq(r15);
+}
+
+void ExtendedAssemblerX64::PopGhcCalleeSaveRegisters()
+{
+    Popq(r15);
+    Popq(r13);
+    Popq(r12);
+    Popq(r11);
+    Popq(r10);
+}
+
+void ExtendedAssemblerX64::PushArgsWithArgv(Register argc, Register argv, Register operatorRegister)
+{
+    Label loopBeginning;
+    Bind(&loopBeginning);
+    Movq(Operand(argv, argc, Times8, -8), operatorRegister);  // 8: 8 bytes
+    Pushq(operatorRegister);
+    Subq(1, argc);
+    Ja(&loopBeginning);
 }
 }  // panda::ecmascript::x64

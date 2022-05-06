@@ -396,18 +396,25 @@ struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTyp
                                                         JSTaggedValue,
                                                         base::AlignedPointer,
                                                         base::AlignedPointer,
+                                                        base::AlignedPointer,
                                                         InterpretedFrameBase> {
     enum class Index : size_t {
         FunctionIndex = 0,
         AccIndex,
         EnvIndex,
         CallSizeOrCallSiteSpIndex,
+        FpIndex,
         PcIndex,
         BaseIndex,
         NumOfMembers
     };
 
     static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
+
+    inline const JSTaggedType* GetCurrentFramePointer() const
+    {
+        return fp;
+    }
 
     inline JSTaggedType* GetPrevFrameFp()
     {
@@ -417,6 +424,11 @@ struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTyp
     static AsmInterpretedFrame* GetFrameFromSp(const JSTaggedType *sp)
     {
         return reinterpret_cast<AsmInterpretedFrame *>(const_cast<JSTaggedType *>(sp)) - 1;
+    }
+
+    static size_t GetFpOffset(bool isArch32)
+    {
+        return GetOffset<static_cast<size_t>(Index::FpIndex)>(isArch32);
     }
 
     static size_t GetCallSizeOffset(bool isArch32)
@@ -470,6 +482,7 @@ struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTyp
     alignas(EAS) JSTaggedValue acc {JSTaggedValue::Hole()};
     alignas(EAS) JSTaggedValue env {JSTaggedValue::Hole()};
     alignas(EAS) uintptr_t callSizeOrCallSiteSp {0};
+    alignas(EAS) JSTaggedType *fp {nullptr};
     alignas(EAS) const uint8_t *pc {nullptr};
     alignas(EAS) InterpretedFrameBase base;
 };

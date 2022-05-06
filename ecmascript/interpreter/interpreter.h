@@ -49,6 +49,7 @@ public:
 
     static inline JSTaggedValue Execute(EcmaRuntimeCallInfo *info);
     static inline JSTaggedValue ExecuteNative(EcmaRuntimeCallInfo *info);
+    static inline JSTaggedType *GetNextInterpreterEntryFrameSp(JSTaggedType *sp);
     static EcmaRuntimeCallInfo NewRuntimeCallInfo(
         JSThread *thread, JSHandle<JSTaggedValue> func, JSHandle<JSTaggedValue> thisObj,
         JSHandle<JSTaggedValue> newTarget, size_t numArgs);

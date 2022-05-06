@@ -34,6 +34,9 @@ class ObjectFactory;
 extern "C" JSTaggedType CallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
 extern "C" JSTaggedType CallRuntimeWithArgv(uintptr_t glue, uint64_t runtime_id,
     uint64_t argc, uintptr_t argv);
+// for platforms not x64
+extern "C" JSTaggedType AsmInterpreterEntry(uintptr_t glue, uint32_t argc, uintptr_t argv);
+extern "C" JSTaggedType JSCallDispatch(uintptr_t glue, uint32_t argc, uintptr_t argv);
 extern "C" void JSCall(uintptr_t glue, uint32_t argc, JSTaggedType callTarget,
                        JSTaggedType newTarget, JSTaggedType thisObj, ...);
 extern "C" void JSCallWithArgV(uintptr_t glue, uint32_t argc, JSTaggedType callTarget, JSTaggedType argV[]);
@@ -86,8 +89,30 @@ extern "C" void PushCallIThisRangeAndDispatchSlowPath(uintptr_t glue, uintptr_t 
 extern "C" void ResumeRspAndDispatch(uintptr_t glue, uintptr_t pc, uintptr_t sp, uintptr_t constantPool,
     uint64_t profileTypeInfo, uint64_t acc, uint32_t hotnessCounter, size_t jumpSize);
 extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
-#define RUNTIME_ASM_STUB_LIST(V)       \
-    V(CallRuntime)
+#define RUNTIME_ASM_STUB_LIST(V)             \
+    V(CallRuntime)                           \
+    V(AsmInterpreterEntry)                   \
+    V(JSCallDispatch)                        \
+    V(PushCallArgs0AndDispatch)              \
+    V(PushCallArgs0AndDispatchNative)        \
+    V(PushCallArgs0AndDispatchSlowPath)      \
+    V(PushCallArgs1AndDispatch)              \
+    V(PushCallArgs1AndDispatchNative)        \
+    V(PushCallArgs1AndDispatchSlowPath)      \
+    V(PushCallArgs2AndDispatch)              \
+    V(PushCallArgs2AndDispatchNative)        \
+    V(PushCallArgs2AndDispatchSlowPath)      \
+    V(PushCallArgs3AndDispatch)              \
+    V(PushCallArgs3AndDispatchNative)        \
+    V(PushCallArgs3AndDispatchSlowPath)      \
+    V(PushCallIRangeAndDispatch)             \
+    V(PushCallIRangeAndDispatchNative)       \
+    V(PushCallIRangeAndDispatchSlowPath)     \
+    V(PushCallIThisRangeAndDispatch)         \
+    V(PushCallIThisRangeAndDispatchNative)   \
+    V(PushCallIThisRangeAndDispatchSlowPath) \
+    V(ResumeRspAndDispatch)                  \
+    V(ResumeRspAndReturn)
 
 #define RUNTIME_STUB_WITHOUT_GC_LIST(V)        \
     V(DebugPrint)                              \
@@ -102,26 +127,6 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(JSCallWithArgV)                          \
     V(JSObjectGetMethod)                       \
     V(CreateArrayFromList)                     \
-    V(PushCallArgs0AndDispatch)                \
-    V(PushCallArgs0AndDispatchNative)          \
-    V(PushCallArgs0AndDispatchSlowPath)        \
-    V(PushCallArgs1AndDispatch)                \
-    V(PushCallArgs1AndDispatchNative)          \
-    V(PushCallArgs1AndDispatchSlowPath)        \
-    V(PushCallArgs2AndDispatch)                \
-    V(PushCallArgs2AndDispatchNative)          \
-    V(PushCallArgs2AndDispatchSlowPath)        \
-    V(PushCallArgs3AndDispatch)                \
-    V(PushCallArgs3AndDispatchNative)          \
-    V(PushCallArgs3AndDispatchSlowPath)        \
-    V(PushCallIRangeAndDispatch)               \
-    V(PushCallIRangeAndDispatchNative)         \
-    V(PushCallIRangeAndDispatchSlowPath)       \
-    V(PushCallIThisRangeAndDispatch)           \
-    V(PushCallIThisRangeAndDispatchNative)     \
-    V(PushCallIThisRangeAndDispatchSlowPath)   \
-    V(ResumeRspAndDispatch)                    \
-    V(ResumeRspAndReturn)                      \
     V(StringsAreEquals)                        \
     V(BigIntEquals)                            \
     RUNTIME_ASM_STUB_LIST(V)

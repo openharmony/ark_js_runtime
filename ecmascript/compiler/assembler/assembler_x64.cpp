@@ -179,6 +179,24 @@ void AssemblerX64::Cmpq(Immediate src, Register dst)
     }
 }
 
+void AssemblerX64::Cmpb(Immediate src, Register dst)
+{
+    EmitRexPrefix(dst);
+    if (InRange8(src.Value())) {
+        // 80: cmp r/m8, imm8
+        EmitU8(0x80);
+        // 7: /7 ib
+        EmitModrm(7, dst);
+        EmitI8(static_cast<int8_t>(src.Value()));
+    } else if (dst == rax) {
+        // 0x3C: cmp al, imm8
+        EmitU8(0x3C);
+        EmitI8(src.Value());
+    } else {
+        std::abort();
+    }
+}
+
 void AssemblerX64::Cmpq(Register src, Register dst)
 {
     EmitRexPrefix(src, dst);

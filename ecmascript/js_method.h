@@ -242,6 +242,11 @@ struct PUBLIC_API JSMethod : public base::AlignedStruct<sizeof(uint64_t),
         nativePointerOrBytecodeArray_ = nativePointer;
     }
 
+    static constexpr size_t GetNativePointerOffset()
+    {
+        return MEMBER_OFFSET(JSMethod, nativePointerOrBytecodeArray_);
+    }
+
     const panda_file::File *GetPandaFile() const;
 
     uint64_t GetLiteralInfo() const

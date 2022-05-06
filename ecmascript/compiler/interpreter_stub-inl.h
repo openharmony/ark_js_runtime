@@ -306,6 +306,19 @@ void InterpreterStub::SetCurrentSpFrame(GateRef glue, GateRef value)
     Store(VariableType::NATIVE_POINTER(), glue, glue, spOffset, value);
 }
 
+GateRef InterpreterStub::GetLastLeaveFrame(GateRef glue)
+{
+    bool isArch32 = GetEnvironment()->Is32Bit();
+    GateRef spOffset = IntPtr(JSThread::GlueData::GetLeaveFrameOffset(isArch32));
+    return Load(VariableType::NATIVE_POINTER(), glue, spOffset);
+}
+
+void InterpreterStub::SetLastLeaveFrame(GateRef glue, GateRef value)
+{
+    GateRef spOffset = IntPtr(JSThread::GlueData::GetLeaveFrameOffset(GetEnvironment()->Is32Bit()));
+    Store(VariableType::NATIVE_POINTER(), glue, glue, spOffset, value);
+}
+
 GateRef InterpreterStub::ReadInst32_0(GateRef pc)
 {
     GateRef currentInst = ZExtInt8ToInt32(ReadInst8_3(pc));
@@ -417,25 +430,25 @@ void InterpreterStub::DispatchDebuggerLast(GateRef glue, GateRef sp, GateRef pc,
 }
 
 template<RuntimeStubCSigns::ID id, typename... Args>
-void InterpreterStub::DispatchCommonCall(GateRef glue, GateRef function, Args... args)
+void InterpreterStub::DispatchCommonCall(GateRef glue, GateRef sp, Args... args)
 {
     GateRef index = IntPtr(id);
     const CallSignature *signature = RuntimeStubCSigns::Get(id);
     auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
     GateRef result = GetEnvironment()->GetBuilder().NoGcRuntimeCall(
-        signature, glue, index, depend, {glue, function, args...});
+        signature, glue, index, depend, {glue, sp, args...});
     GetEnvironment()->GetCurrentLabel()->SetDepend(result);
     Return();
 }
 
 template<RuntimeStubCSigns::ID id, typename... Args>
-GateRef InterpreterStub::CommonCallNative(GateRef glue, GateRef function, Args... args)
+GateRef InterpreterStub::CommonCallNative(GateRef glue, GateRef sp, Args... args)
 {
     GateRef index = IntPtr(id);
     const CallSignature *signature = RuntimeStubCSigns::Get(id);
     auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
     GateRef result = GetEnvironment()->GetBuilder().NoGcRuntimeCall(
-        signature, glue, index, depend, {glue, function, args...});
+        signature, glue, index, depend, {glue, sp, args...});
     GetEnvironment()->GetCurrentLabel()->SetDepend(result);
     return result;
 }
