@@ -261,6 +261,7 @@ private:
     void LowerDefineNCFuncDyn(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerDefineMethod(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerGetUnmappedArgs(GateRef gate, GateRef glue);
+    void LowerCopyRestArgs(GateRef gate, GateRef glue);
 
     BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;
