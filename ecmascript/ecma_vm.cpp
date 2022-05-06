@@ -586,8 +586,11 @@ void EcmaVM::ClearBufferData()
 
 bool EcmaVM::ExecutePromisePendingJob() const
 {
-    if (!thread_->HasPendingException()) {
+    thread_local bool isProcessing = false;
+    if (!isProcessing && !thread_->HasPendingException()) {
+        isProcessing = true;
         job::MicroJobQueue::ExecutePendingJob(thread_, GetMicroJobQueue());
+        isProcessing = false;
         return true;
     }
     return false;
