@@ -387,14 +387,13 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
         func->SetModule(thread_, module);
     }
 
-    JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info =
-        EcmaInterpreter::NewRuntimeCallInfo(thread_, JSHandle<JSTaggedValue>(func), global, undefined, 0);
-
     auto options = GetJSOptions();
     if (options.EnableTSAot()) {
         result = InvokeEcmaAotEntrypoint();
     } else {
+        JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread_, JSHandle<JSTaggedValue>(func), global, undefined, 0);
         CpuProfilingScope profilingScope(this);
         EcmaRuntimeStatScope runtimeStatScope(this);
         result = EcmaInterpreter::Execute(&info);
