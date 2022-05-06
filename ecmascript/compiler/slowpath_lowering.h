@@ -147,7 +147,7 @@ private:
     void LowerAsyncFunctionResolve(GateRef gate, GateRef glue);
     void LowerAsyncFunctionReject(GateRef gate, GateRef glue);
     void LowerLoadStr(GateRef gate, GateRef glue);
-    void LowerLexicalEnv(GateRef gate, GateRef glue);
+    void LowerLexicalEnv(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerStGlobalVar(GateRef gate, GateRef glue);
     void LowerTryLdGlobalByName(GateRef gate, GateRef glue);
     void LowerGetIterator(GateRef gate, GateRef glue);
@@ -226,9 +226,9 @@ private:
     void LowerDefineFuncDyn(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerDefineGeneratorFunc(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerDefineAsyncFunc(GateRef gate, GateRef glue, GateRef jsFunc);
-    void LowerNewLexicalEnvDyn(GateRef gate, GateRef glue);
-    void LowerNewLexicalEnvWithNameDyn(GateRef gate, GateRef glue);
-    void LowerPopLexicalEnv(GateRef gate, GateRef glue);
+    void LowerNewLexicalEnvDyn(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerNewLexicalEnvWithNameDyn(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerPopLexicalEnv(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerLdSuperByValue(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerStSuperByValue(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerTryStGlobalByName(GateRef gate, GateRef glue);
