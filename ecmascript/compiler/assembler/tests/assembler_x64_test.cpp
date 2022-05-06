@@ -12,21 +12,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include <ostream>
 #include "ecmascript/tests/test_helper.h"
-
 #include "ecmascript/compiler/assembler/assembler_x64.h"
+#include "ecmascript/compiler/assembler/assembler_aarch64.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/dyn_chunk.h"
 #include "ecmascript/compiler/llvm_codegen.h"
 #include "ecmascript/compiler/trampoline/x64/assembler_stubs_x64.h"
 #include "ecmascript/compiler/assembler/extended_assembler_x64.h"
+#include "llvm-c/Analysis.h"
+#include "llvm-c/Core.h"
+#include "llvm-c/ExecutionEngine.h"
+#include "llvm-c/Target.h"
+#include "llvm-c/Disassembler.h"
 
 namespace panda::test {
 using namespace panda::ecmascript;
 using namespace panda::ecmascript::x64;
 
-class AssemblerTest : public testing::Test {
+class AssemblerX64Test : public testing::Test {
 public:
     static void SetUpTestCase()
     {
@@ -40,6 +45,7 @@ public:
 
     void SetUp() override
     {
+        InitializeLLVM("x86_64-unknown-linux-gnu");
         TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
         chunk_ = thread->GetEcmaVM()->GetChunk();
     }
@@ -49,6 +55,71 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
+    static const char *SymbolLookupCallback([[maybe_unused]] void *disInfo, [[maybe_unused]] uint64_t referenceValue,
+                                            uint64_t *referenceType, [[maybe_unused]]uint64_t referencePC,
+                                            [[maybe_unused]] const char **referenceName)
+    {
+        *referenceType = LLVMDisassembler_ReferenceType_InOut_None;
+        return nullptr;
+    }
+
+    void InitializeLLVM(std::string triple)
+    {
+        if (triple.compare("x86_64-unknown-linux-gnu") == 0) {
+            LLVMInitializeX86TargetInfo();
+            LLVMInitializeX86TargetMC();
+            LLVMInitializeX86Disassembler();
+            /* this method must be called, ohterwise "Target does not support MC emission" */
+            LLVMInitializeX86AsmPrinter();
+            LLVMInitializeX86AsmParser();
+            LLVMInitializeX86Target();
+        } else if (triple.compare("aarch64-unknown-linux-gnu") == 0) {
+            LLVMInitializeAArch64TargetInfo();
+            LLVMInitializeAArch64TargetMC();
+            LLVMInitializeAArch64Disassembler();
+            LLVMInitializeAArch64AsmPrinter();
+            LLVMInitializeAArch64AsmParser();
+            LLVMInitializeAArch64Target();
+        } else if (triple.compare("arm-unknown-linux-gnu") == 0) {
+            LLVMInitializeARMTargetInfo();
+            LLVMInitializeARMTargetMC();
+            LLVMInitializeARMDisassembler();
+            LLVMInitializeARMAsmPrinter();
+            LLVMInitializeARMAsmParser();
+            LLVMInitializeARMTarget();
+        } else {
+            UNREACHABLE();
+        }
+    }
+
+    void DisassembleChunk(const char *triple, Assembler *assemlber, std::ostream &os)
+    {
+        LLVMDisasmContextRef dcr = LLVMCreateDisasm(triple, nullptr, 0, nullptr, SymbolLookupCallback);
+        uint8_t *byteSp = assemlber->GetBegin();
+        size_t numBytes = assemlber->GetCurrentPosition();
+        unsigned pc = 0;
+        const char outStringSize = 100;
+        char outString[outStringSize];
+        while (numBytes > 0) {
+            size_t InstSize = LLVMDisasmInstruction(dcr, byteSp, numBytes, pc, outString, outStringSize);
+            if (InstSize == 0) {
+                // 8 : 8 means width of the pc offset and instruction code
+                os << std::setw(8) << std::setfill('0') << std::hex << pc << ":" << std::setw(8)
+                   << *reinterpret_cast<uint32_t *>(byteSp) << "maybe constant" << std::endl;
+                pc += 4; // 4 pc length
+                byteSp += 4; // 4 sp offset
+                numBytes -= 4; // 4 num bytes
+            }
+            // 8 : 8 means width of the pc offset and instruction code
+            os << std::setw(8) << std::setfill('0') << std::hex << pc << ":" << std::setw(8)
+               << *reinterpret_cast<uint32_t *>(byteSp) << " " << outString << std::endl;
+            pc += InstSize;
+            byteSp += InstSize;
+            numBytes -= InstSize;
+        }
+        LLVMDisasmDispose(dcr);
+    }
+
     EcmaVM *instance {nullptr};
     JSThread *thread {nullptr};
     EcmaHandleScope *scope {nullptr};
@@ -56,7 +127,7 @@ public:
 };
 
 #define __ masm.
-HWTEST_F_L0(AssemblerTest, Emit)
+HWTEST_F_L0(AssemblerX64Test, Emit)
 {
     x64::AssemblerX64 masm(chunk_);
     Label lable1;
@@ -104,7 +175,7 @@ HWTEST_F_L0(AssemblerTest, Emit)
     ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
 
-HWTEST_F_L0(AssemblerTest, Emit1)
+HWTEST_F_L0(AssemblerX64Test, Emit1)
 {
     x64::AssemblerX64 masm(chunk_);
 
@@ -185,7 +256,7 @@ HWTEST_F_L0(AssemblerTest, Emit1)
     ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
 
-HWTEST_F_L0(AssemblerTest, Emit2)
+HWTEST_F_L0(AssemblerX64Test, Emit2)
 {
     x64::AssemblerX64 masm(chunk_);
 
@@ -246,7 +317,7 @@ HWTEST_F_L0(AssemblerTest, Emit2)
     ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
 
-HWTEST_F_L0(AssemblerTest, Emit3)
+HWTEST_F_L0(AssemblerX64Test, Emit3)
 {
     x64::AssemblerX64 masm(chunk_);
     size_t current = 0;
@@ -324,7 +395,7 @@ HWTEST_F_L0(AssemblerTest, Emit3)
     ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
 
-HWTEST_F_L0(AssemblerTest, Emit4)
+HWTEST_F_L0(AssemblerX64Test, Emit4)
 {
     x64::AssemblerX64 masm(chunk_);
     size_t current = 0;
@@ -390,7 +461,7 @@ HWTEST_F_L0(AssemblerTest, Emit4)
     ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
 
-HWTEST_F_L0(AssemblerTest, JSFunctionEntry)
+HWTEST_F_L0(AssemblerX64Test, JSFunctionEntry)
 {
     x64::AssemblerX64 masm(chunk_);
     x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
@@ -398,7 +469,7 @@ HWTEST_F_L0(AssemblerTest, JSFunctionEntry)
     ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
 
-HWTEST_F_L0(AssemblerTest, OptimizedCallOptimized)
+HWTEST_F_L0(AssemblerX64Test, OptimizedCallOptimized)
 {
     x64::AssemblerX64 masm(chunk_);
     x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
@@ -406,7 +477,7 @@ HWTEST_F_L0(AssemblerTest, OptimizedCallOptimized)
     ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
 
-HWTEST_F_L0(AssemblerTest, CallNativeTrampoline)
+HWTEST_F_L0(AssemblerX64Test, CallNativeTrampoline)
 {
     x64::AssemblerX64 masm(chunk_);
     x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
@@ -414,7 +485,7 @@ HWTEST_F_L0(AssemblerTest, CallNativeTrampoline)
     ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
 
-HWTEST_F_L0(AssemblerTest, JSCallWithArgv)
+HWTEST_F_L0(AssemblerX64Test, JSCallWithArgv)
 {
     x64::AssemblerX64 masm(chunk_);
     x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
@@ -422,7 +493,7 @@ HWTEST_F_L0(AssemblerTest, JSCallWithArgv)
     ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
 
-HWTEST_F_L0(AssemblerTest, JSCall)
+HWTEST_F_L0(AssemblerX64Test, JSCall)
 {
     x64::AssemblerX64 masm(chunk_);
     x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
@@ -430,7 +501,7 @@ HWTEST_F_L0(AssemblerTest, JSCall)
     ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
 
-HWTEST_F_L0(AssemblerTest, CallRuntimeWithArgv)
+HWTEST_F_L0(AssemblerX64Test, CallRuntimeWithArgv)
 {
     x64::AssemblerX64 masm(chunk_);
     x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);

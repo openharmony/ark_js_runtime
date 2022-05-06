@@ -122,6 +122,7 @@ host_unittest_action("AssemblerTest") {
 
   sources = [
     # test file
+    "../assembler/tests/assembler_aarch64_test.cpp",
     "../assembler/tests/assembler_x64_test.cpp",
   ]
   configs = [
