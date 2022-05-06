@@ -295,4 +295,46 @@ void LLVMAssembler::Disassemble(const std::map<uint64_t, std::string> &addr2name
     }
     LLVMDisasmDispose(dcr);
 }
+
+void LLVMAssembler::Disassemble(uint8_t *buf, size_t size)
+{
+
+    std::string triple = "x86_64-unknown-linux-gnu";
+    LLVMModuleRef module = LLVMModuleCreateWithName("Emit");
+    LLVMSetTarget(module, triple.c_str());
+    LLVMInitializeX86TargetInfo();
+    LLVMInitializeX86TargetMC();
+    LLVMInitializeX86Disassembler();
+    LLVMInitializeX86AsmPrinter();
+    LLVMInitializeX86AsmParser();
+    LLVMInitializeX86Target();
+    LLVMDisasmContextRef dcr = LLVMCreateDisasm(LLVMGetTarget(module), nullptr, 0, nullptr, SymbolLookupCallback);
+    if (!dcr) {
+        COMPILER_LOG(ERROR) << "ERROR: Couldn't create disassembler for triple!";
+        return;
+    }
+    uint8_t *byteSp;
+    uintptr_t numBytes;
+    byteSp = buf;
+    numBytes = size;
+    unsigned pc = 0;
+    const char outStringSize = 100;
+    char outString[outStringSize];
+    while (numBytes > 0) {
+        size_t InstSize = LLVMDisasmInstruction(dcr, byteSp, numBytes, pc, outString, outStringSize);
+        if (InstSize == 0) {
+            COMPILER_LOG(ERROR) << std::setw(8) << std::setfill('0') << std::hex << pc << ":" << std::setw(8)
+                               << *reinterpret_cast<uint32_t *>(byteSp) << "maybe constant";
+            pc += 4; // 4 pc length
+            byteSp += 4; // 4 sp offset
+            numBytes -= 4; // 4 num bytes
+        }
+        COMPILER_LOG(ERROR) << std::setw(8) << std::setfill('0') << std::hex << pc << ":" << std::setw(8)
+                               << *reinterpret_cast<uint32_t *>(byteSp) << " " << outString;
+        pc += InstSize;
+        byteSp += InstSize;
+        numBytes -= InstSize;
+    }
+    LLVMDisasmDispose(dcr);
+}
 }  // namespace panda::ecmascript::kungfu

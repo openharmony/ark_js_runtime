@@ -15,7 +15,7 @@
 #include "assembler/assembler_x64.h"
 #include "call_signature.h"
 #include "rt_call_signature.h"
-#include "trampoline/x64/assembler_module_x64.h"
+#include "trampoline/x64/assembler_stubs_x64.h"
 #include "assembler_module.h"
 
 namespace panda::ecmascript::kungfu {
@@ -72,8 +72,8 @@ void AssemblerModule::SetUpForAsmStubs()
 
 void CallRuntimeStub::Generate(Assembler *assembler)
 {
-    x64::AssemblerX64 *assemblerX64 = static_cast<x64::AssemblerX64*>(assembler);
-    x64::AssemblerModuleX64::CallRuntime(assemblerX64);
+    x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<x64::ExtendedAssemblerX64*>(assembler);
+    x64::AssemblerStubsX64::CallRuntime(assemblerX64);
     assemblerX64->Align16();
 }
 }  // namespace panda::ecmascript::kunfu

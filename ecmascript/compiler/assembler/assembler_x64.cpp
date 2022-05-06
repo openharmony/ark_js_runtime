@@ -75,6 +75,36 @@ void AssemblerX64::Addq(Immediate src, Register dst)
     }
 }
 
+void AssemblerX64::Addq(Register src, Register dst)
+{
+    EmitRexPrefix(dst, src);
+    // 03 : add r64, r/m64
+    EmitU8(0x03);
+    EmitModrm(dst, src);
+}
+
+void AssemblerX64::Addl(Immediate src, Register dst)
+{
+    EmitRexPrefix(dst);
+    if (InRange8(src)) {
+        // 83: Add r/m16, imm8
+        EmitU8(0x83);
+        // 0: 83 /0 ib
+        EmitModrm(0, dst);
+        EmitI8(static_cast<int8_t>(src));
+    } else if (dst == rax) {
+        // 0x5: Add rax, imm32
+        EmitU8(0x5);
+        EmitI32(src);
+    } else {
+        // 81: Add r/m32, imm32
+        EmitU8(0x81);
+        // 0: 81 /0 id
+        EmitModrm(0, dst);
+        EmitI32(src);
+    }
+}
+
 void AssemblerX64::Subq(Immediate src, Register dst)
 {
     EmitRexPrefixW(dst);
@@ -103,6 +133,28 @@ void AssemblerX64::Subq(Register src, Register dst)
     // 29: sub r/m64, r64
     EmitU8(0x29);
     EmitModrm(src, dst);
+}
+
+void AssemblerX64::Subl(Immediate src, Register dst)
+{
+    EmitRexPrefix(dst);
+    if (InRange8(src)) {
+        // 83: Sub r/m16, imm8
+        EmitU8(0x83);
+        // 5: 83 /5 ib
+        EmitModrm(5, dst);
+        EmitI8(static_cast<int8_t>(src));
+    } else if (dst == rax) {
+        // 0x2D: Sub eax, imm32
+        EmitU8(0x2D);
+        EmitI32(src);
+    } else {
+        // 81: sub r/m32, imm32
+        EmitU8(0x81);
+        // 5: 81 /5 id
+        EmitModrm(5, dst);
+        EmitI32(src);
+    }
 }
 
 void AssemblerX64::Cmpq(Immediate src, Register dst)
@@ -168,6 +220,14 @@ void AssemblerX64::Movq(Register src, Register dst)
     // 0x89: Move r16 to r/m16
     EmitU8(0x89);
     EmitModrm(src, dst);
+}
+
+void AssemblerX64::Mov(Register src, Register dst)
+{
+    EmitRexPrefixl(dst, src);
+    // 0x89: Move r16 to r/m16
+    EmitU8(0x8B);
+    EmitModrm(dst, src);
 }
 
 void AssemblerX64::Align16()
@@ -393,6 +453,21 @@ void AssemblerX64::EmitCall(int32_t offset)
     EmitI32(offset - sizeof(int32_t));
 }
 
+void AssemblerX64::EmitJnb(int32_t offset)
+{
+    offset--;
+    if (InRange8(offset)) {
+        // 73 : Jnb rel8
+        EmitU8(0x73);
+        EmitI8(offset - sizeof(int8_t));
+    } else {
+        // 0F 83: Jnb rel32
+        EmitU8(0x0F);
+        EmitU8(0x83);
+        EmitI32(offset - sizeof(int32_t));
+    }
+}
+
 void AssemblerX64::Callq(Register addr)
 {
     // C3: RET Near return to calling procedure
@@ -460,7 +535,7 @@ void AssemblerX64::Jmp(Label *target, Distance distance)
     }
 }
 
-void AssemblerX64::Jmpq(Register dst)
+void AssemblerX64::Jmp(Register dst)
 {
     EmitRexPrefix(dst);
     // opcode FF/4 : jmp r/m64
@@ -503,8 +578,8 @@ void AssemblerX64::Ja(Label *target, Distance distance)
         if (target->IsLinked()) {
             emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
-        // +1: skip opcode
-        target->LinkTo(pos + 1);
+        // 2: skip opcode
+        target->LinkTo(pos + 2);
         // 0F 87: ja rel32
         EmitU8(0X0F);
         EmitU8(0x87);
@@ -534,8 +609,8 @@ void AssemblerX64::Jb(Label *target, Distance distance)
         if (target->IsLinked()) {
             emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
-        // +1: skip opcode
-        target->LinkTo(pos + 1);
+        // 2: skip opcode
+        target->LinkTo(pos + 2);
         // 0F 82: jb rel32
         EmitU8(0X0F);
         EmitU8(0x82);
@@ -564,8 +639,8 @@ void AssemblerX64::Jz(Label *target, Distance distance)
         if (target->IsLinked()) {
             emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
-        // +1: skip opcode
-        target->LinkTo(pos + 1);
+        // 2: skip opcode
+        target->LinkTo(pos + 2);
         // 0F 84: Jz rel32
         EmitU8(0X0F);
         EmitU8(0x84);
@@ -595,8 +670,8 @@ void AssemblerX64::Je(Label *target, Distance distance)
         if (target->IsLinked()) {
             emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
-        // +1: skip opcode
-        target->LinkTo(pos + 1);
+        // 2: skip opcode
+        target->LinkTo(pos + 2);
         // 0F 84: Je rel32
         EmitU8(0X0F);
         EmitU8(0x84);
@@ -612,12 +687,10 @@ void AssemblerX64::Bind(Label *target)
     if (target->IsLinked()) {
         uint32_t linkPos = target->GetLinkedPos();
         while (linkPos != 0) {
-            linkPos = GetU32(linkPos);
-            if (linkPos == 0) {
-                break;
-            }
+            uint32_t preLinkPos = GetU32(linkPos);
             int32_t disp = static_cast<int32_t>(pos - linkPos - sizeof(int32_t));
             PutI32(linkPos, disp);
+            linkPos = preLinkPos;
         }
     }
 
@@ -625,13 +698,13 @@ void AssemblerX64::Bind(Label *target)
         uint32_t linkPos = target->GetLinkedNearPos();
         while (linkPos != 0) {
             int8_t offsetToNext = GetI8(static_cast<size_t>(linkPos));
+            int32_t disp = static_cast<int32_t>(pos - linkPos - sizeof(int8_t));
+            ASSERT(InRange8(disp));
+            PutI8(linkPos, static_cast<int8_t>(disp));
             if (offsetToNext == 0) {
                 break;
             }
             linkPos += static_cast<uint32_t>(offsetToNext);
-            int32_t disp = static_cast<int32_t>(pos - linkPos - sizeof(int8_t));
-            ASSERT(InRange8(disp));
-            PutI8(linkPos, static_cast<int8_t>(disp));
         }
         target->UnlinkNearPos();
     }
@@ -753,7 +826,7 @@ void AssemblerX64::Testq(Immediate src, Register dst) {
         EmitU8(0xA9);
         EmitI32(src);
     } else {
-        // F7: Test r/m32, imm32
+        // F7: Test r/m64, imm32
         EmitU8(0xF7);
         // 0: F7 0 id
         EmitModrm(0, dst);
@@ -805,8 +878,8 @@ void AssemblerX64::Jne(Label *target, Distance distance)
         if (target->IsLinked()) {
             emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
-        // +1: skip opcode
-        target->LinkTo(pos + 1);
+        // 2: skip opcode
+        target->LinkTo(pos + 2);
         // 0F 85 : Jne rel32
         EmitU8(0x0F);
         EmitU8(0x85);
@@ -844,8 +917,8 @@ void AssemblerX64::Jbe(Label *target, Distance distance)
         if (target->IsLinked()) {
             emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
-        // +1: skip opcode
-        target->LinkTo(pos + 1);
+        // 2: skip opcode
+        target->LinkTo(pos + 2);
         // 0F 86 : Jbe rel32
         EmitU8(0x0F);
         EmitU8(0x86);
@@ -967,8 +1040,8 @@ void AssemblerX64::Jnz(Label *target, Distance distance)
         if (target->IsLinked()) {
             emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
-        // +1: skip opcode
-        target->LinkTo(pos + 1);
+        // 2: skip opcode
+        target->LinkTo(pos + 2);
         // 0F 85 : Jnz rel32
         EmitU8(0x0F);
         EmitU8(0x85);
@@ -998,8 +1071,8 @@ void AssemblerX64::Jle(Label *target, Distance distance)
         if (target->IsLinked()) {
             emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
-        // +1: skip opcode
-        target->LinkTo(pos + 1);
+        // 2: skip opcode
+        target->LinkTo(pos + 2);
         // 0F 8E: Jle rel32
         EmitU8(0x0F);
         EmitU8(0x8E);
@@ -1029,8 +1102,8 @@ void AssemblerX64::Jae(Label *target, Distance distance)
         if (target->IsLinked()) {
             emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
-        // +1: skip opcode
-        target->LinkTo(pos + 1);
+        // 2: skip opcode
+        target->LinkTo(pos + 2);
         // 0F 83: Jae rel32
         EmitU8(0x0F);
         EmitU8(0x83);
@@ -1060,8 +1133,8 @@ void AssemblerX64::Jg(Label *target, Distance distance)
         if (target->IsLinked()) {
             emitPos = static_cast<int32_t>(target->GetLinkedPos());
         }
-        // +1: skip opcode
-        target->LinkTo(pos + 1);
+        // 2: skip opcode
+        target->LinkTo(pos + 2);
         // 0F 8F: Jae rel32
         EmitU8(0x0F);
         EmitU8(0x8F);
@@ -1122,5 +1195,44 @@ void AssemblerX64::Int3()
 {
     // CC :: INT3
     EmitU8(0xCC);
+}
+
+void AssemblerX64::Movzwq(Operand src, Register dst)
+{
+    EmitRexPrefixW(dst);
+    EmitU8(0x0F);
+    EmitU8(0xB7);
+    EmitOperand(dst, src);
+}
+
+void AssemblerX64::Jnb(Label *target, Distance distance)
+{
+    if (target->IsBound()) {
+        int32_t offset = static_cast<int32_t>(target->GetPos() - GetCurrentPosition());
+        EmitJnb(offset);
+        return;
+    }
+    auto pos = GetCurrentPosition();
+    int32_t emitPos = 0;
+    if (distance == Distance::NEAR) {
+        // 73 : Jnb rel8
+        EmitU8(0x73);
+        if (target->IsLinkedNear()) {
+            emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
+        }
+        target->LinkNearPos(pos);
+        ASSERT(InRange8(emitPos));
+        EmitI8(static_cast<int8_t>(emitPos));
+    } else {
+        if (target->IsLinked()) {
+            emitPos = static_cast<int32_t>(target->GetLinkedPos());
+        }
+        // 2: skip opcode
+        target->LinkTo(pos + 2);
+        // 0F 83: Jnb rel32
+        EmitU8(0x0F);
+        EmitU8(0x83);
+        EmitI32(emitPos);
+    }
 }
 }  // panda::ecmascript::x64
