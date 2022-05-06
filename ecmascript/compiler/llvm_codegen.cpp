@@ -236,7 +236,7 @@ void LLVMAssembler::Initialize(LOptions option)
     LLVMInitializeMCJITCompilerOptions(&options_, sizeof(options_));
     options_.OptLevel = option.optLevel;
     // NOTE: Just ensure that this field still exists for PIC option
-    options_.NoFramePointerElim = option.genFp;
+    options_.NoFramePointerElim = static_cast<int32_t>(option.genFp);
     options_.CodeModel = LLVMCodeModelSmall;
 }
 

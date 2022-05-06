@@ -997,7 +997,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSArrayBuffer)
 HWTEST_F_L0(JSSerializerTest, SerializeJSArrayBufferShared)
 {
     std::string msg = "hello world";
-    int msgBufferLen = msg.length() + 1;
+    uint32_t msgBufferLen = msg.length() + 1U;
     char* msgBuffer = new char[msgBufferLen] { 0 };
     if (memcpy_s(msgBuffer, msgBufferLen, msg.c_str(), msgBufferLen) != EOK) {
         delete[] msgBuffer;

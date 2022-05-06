@@ -956,7 +956,7 @@ std::string BigIntHelper::MultiplyImpl(std::string &a, std::string &b)
             str[i + j + 1] = static_cast<int8_t>(temp2 % 10 + 48); // 2 and 10 and 48 is number
             addflag = temp2 / 10;
         }
-        str[i] += static_cast<uint32_t>(mulflag + addflag);
+        str[i] += static_cast<int8_t>(mulflag + addflag);
     }
     if (str[0] == '0') {
         str = str.substr(1, str.size());
