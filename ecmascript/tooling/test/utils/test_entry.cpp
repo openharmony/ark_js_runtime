@@ -38,8 +38,8 @@ bool StartDebuggerImpl([[maybe_unused]] const std::string &name, EcmaVM *vm, [[m
 bool StopDebuggerImpl([[maybe_unused]] const std::string &name)
 {
     g_hooks->TerminateTest();
-    g_hooks.reset();
     g_debuggerThread.join();
+    g_hooks.reset();
     return true;
 }
 }  // namespace panda::ecmascript::tooling::test
