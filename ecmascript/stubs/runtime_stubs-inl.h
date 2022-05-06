@@ -1703,5 +1703,29 @@ JSTaggedValue RuntimeStubs::RuntimeGetAotUnmapedArgs(JSThread *thread, uint32_t 
     // 11. Return obj
     return obj.GetTaggedValue();
 }
+
+JSTaggedValue RuntimeStubs::RuntimeNewAotLexicalEnvDyn(JSThread *thread, uint16_t numVars,
+                                                       JSHandle<JSTaggedValue> &currentLexEnv)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<LexicalEnv> newEnv = factory->NewLexicalEnv(numVars);
+    newEnv->SetParentEnv(thread, currentLexEnv.GetTaggedValue());
+    newEnv->SetScopeInfo(thread, JSTaggedValue::Hole());
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    return newEnv.GetTaggedValue();
+}
+
+JSTaggedValue RuntimeStubs::RuntimeNewAotLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId,
+                                                               JSHandle<JSTaggedValue> &currentLexEnv)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<LexicalEnv> newEnv = factory->NewLexicalEnv(numVars);
+
+    newEnv->SetParentEnv(thread, currentLexEnv.GetTaggedValue());
+    JSTaggedValue scopeInfo = ScopeInfoExtractor::GenerateScopeInfo(thread, scopeId);
+    newEnv->SetScopeInfo(thread, scopeInfo);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    return newEnv.GetTaggedValue();
+}
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_RUNTIME_TRAMPOLINES_INL_H
