@@ -58,7 +58,7 @@ std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(con
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrameId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->callFrameId_ = DebuggerApi::StringToInt(result);
+            paramsObject->callFrameId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
         } else {
             error += "'callframeid' should be a String;";
         }
@@ -543,7 +543,7 @@ std::unique_ptr<GetPropertiesParams> GetPropertiesParams::Create(const EcmaVM *e
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->objectId_ = DebuggerApi::StringToInt(result);
+            paramsObject->objectId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
         } else {
             error += "'objectId' should be a String;";
         }
@@ -611,7 +611,7 @@ std::unique_ptr<CallFunctionOnParams> CallFunctionOnParams::Create(const EcmaVM 
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->objectId_ = DebuggerApi::StringToInt(result);
+            paramsObject->objectId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
         } else {
             error += "'objectId' should be a String;";
         }
@@ -877,7 +877,7 @@ std::unique_ptr<AddInspectedHeapObjectParams> AddInspectedHeapObjectParams::Crea
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "heapObjectId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->heapObjectId_ = DebuggerApi::StringToInt(result);
+            paramsObject->heapObjectId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
         } else {
             error += "'heapObjectId' should be a String;";
         }
@@ -918,7 +918,7 @@ std::unique_ptr<GetHeapObjectIdParams> GetHeapObjectIdParams::Create(const EcmaV
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->objectId_ = DebuggerApi::StringToInt(result);
+            paramsObject->objectId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
         } else {
             error += "'objectId' should be a String;";
         }
@@ -958,7 +958,7 @@ std::unique_ptr<GetObjectByHeapObjectIdParams> GetObjectByHeapObjectIdParams::Cr
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->objectId_ = DebuggerApi::StringToInt(result);
+            paramsObject->objectId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
         } else {
             error += "'objectId' should be a String;";
         }

@@ -482,7 +482,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptEvent->scriptId_ = DebuggerApi::StringToInt(result);
+            scriptEvent->scriptId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
         } else {
             error += "'scriptId' should a String;";
         }
@@ -1053,9 +1053,9 @@ std::unique_ptr<HeapStatsUpdate> HeapStatsUpdate::Create(const EcmaVM *ecmaVm, c
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             auto array = Local<ArrayRef>(result);
-            uint32_t resultLen = array->Length(ecmaVm);
+            int32_t resultLen = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (uint32_t i = 0; i < resultLen; ++i) {
+            for (int32_t i = 0; i < resultLen; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
                 int32_t statsUpdate;
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
