@@ -32,13 +32,22 @@ public:
     DEFAULT_NOEXCEPT_MOVE_SEMANTIC(EcmaRuntimeStat);
     DEFAULT_COPY_SEMANTIC(EcmaRuntimeStat);
 
+    void SetRuntimeStatEnabled(bool enable)
+    {
+        runtimeStatEnabled_ = enable;
+    }
+    bool IsRuntimeStatEnabled()
+    {
+        return runtimeStatEnabled_;
+    }
     void StartCount(PandaRuntimeTimer *timer, int callerId);
     void StopCount(const PandaRuntimeTimer *timer);
-    CString GetAllStats() const;
+    void PrintAllStats() const;
     void ResetAllCount();
     void Print() const;
 
 private:
+    bool runtimeStatEnabled_ {false};
     PandaRuntimeTimer *currentTimer_ = nullptr;
     CVector<PandaRuntimeCallerStat> callerStat_ {};
 };
@@ -54,19 +63,9 @@ private:
 
 class RuntimeTimerScope {
 public:
-    RuntimeTimerScope(JSThread *thread, int callerId, EcmaRuntimeStat *stat)
+    RuntimeTimerScope(int callerId, EcmaRuntimeStat *stat)
     {
-        bool statEnabled = thread->GetEcmaVM()->IsRuntimeStatEnabled();
-        if (!statEnabled || stat == nullptr) {
-            return;
-        }
-        stats_ = stat;
-        stats_->StartCount(&timer_, callerId);
-    }
-    RuntimeTimerScope(const EcmaVM *vm, int callerId, EcmaRuntimeStat *stat)
-    {
-        bool statEnabled = vm->IsRuntimeStatEnabled();
-        if (!statEnabled || stat == nullptr) {
+        if (stat == nullptr || !stat->IsRuntimeStatEnabled()) {
             return;
         }
         stats_ = stat;
