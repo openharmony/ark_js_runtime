@@ -756,11 +756,11 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     ObjectFactory *factory = ecmaVm->GetFactory();
 
     constexpr size_t numOps = 0x100;
-    static std::array<const void *, numOps> instDispatchTable {
+    static thread_local std::array<const void *, numOps> instDispatchTable {
 #include "templates/instruction_dispatch.inl"
     };
 
-    static std::array<const void *, numOps> debugDispatchTable {
+    static thread_local std::array<const void *, numOps> debugDispatchTable {
 #include "templates/debugger_instruction_dispatch.inl"
     };
 
