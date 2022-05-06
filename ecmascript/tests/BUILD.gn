@@ -33,6 +33,7 @@ host_unittest_action("EcmaVmTest") {
     "ecma_string_test.cpp",
     "ecma_vm_test.cpp",
     "gc_test.cpp",
+    "global_dictionary_test.cpp",
     "glue_regs_test.cpp",
     "huge_object_test.cpp",
     "js_api_deque_test.cpp",
