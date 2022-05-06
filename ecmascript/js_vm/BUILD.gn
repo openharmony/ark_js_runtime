@@ -14,7 +14,7 @@
 import("//ark/js_runtime/js_runtime_config.gni")
 import("//build/ohos.gni")
 
-source_set("ark_js_vm_static") {
+source_set("ark_js_vm_set") {
   sources = [ "main.cpp" ]
 
   public_configs = [
@@ -29,11 +29,10 @@ source_set("ark_js_vm_static") {
 }
 
 ohos_executable("ark_js_vm") {
-  deps = [ ":ark_js_vm_static" ]
+  deps = [ ":ark_js_vm_set" ]
 
-  part_name = "ark_js_runtime"
   install_enable = false
 
-  output_name = "ark_js_vm"
+  part_name = "ark_js_runtime"
   subsystem_name = "ark"
 }

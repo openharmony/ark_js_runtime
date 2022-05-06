@@ -145,23 +145,6 @@ intl_sources = [
   "ecmascript/js_relative_time_format.cpp",
 ]
 
-source_set("libark_js_intl_static") {
-  sources = intl_sources
-
-  public_configs = [
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",
-  ]
-
-  deps = [
-    "$ark_root/libpandabase:libarkbase",
-    "$ark_root/libpandafile:libarkfile",
-    "//third_party/icu/icu4c:shared_icui18n",
-    "//third_party/icu/icu4c:shared_icuuc",
-    sdk_libc_secshared_dep,
-  ]
-}
-
 config("ark_jsruntime_compiler_config") {
   configs = [ "//ark/js_runtime:ark_jsruntime_common_config" ]
 }
@@ -536,7 +519,7 @@ if (current_cpu == "arm") {
   }
 }
 
-source_set("libark_jsruntime_static") {
+source_set("libark_jsruntime_set") {
   sources = ecma_source
   sources += ecma_profiler_source
   sources += ecma_debugger_source
@@ -545,6 +528,10 @@ source_set("libark_jsruntime_static") {
     "//ark/js_runtime:ark_jsruntime_common_config",
     "//ark/js_runtime:ark_jsruntime_public_config",
   ]
+
+  if (is_mingw) {
+    public_configs += [ ":ark_jsruntime_windows_config" ]
+  }
 
   if (is_standard_system) {
     cflags_cc = [ "-fvisibility=hidden" ]
@@ -562,18 +549,28 @@ source_set("libark_jsruntime_static") {
   }
 }
 
-source_set("libark_jsruntime_set_static") {
-  if (is_mingw) {
-    public_configs = [ ":ark_jsruntime_windows_config" ]
-  }
+source_set("libark_js_intl_set") {
+  sources = intl_sources
+
+  public_configs = [
+    "//ark/js_runtime:ark_jsruntime_common_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",
+  ]
+
   deps = [
-    ":libark_js_intl_static",
-    ":libark_jsruntime_static",
+    "$ark_root/libpandabase:libarkbase",
+    "$ark_root/libpandafile:libarkfile",
+    "//third_party/icu/icu4c:shared_icui18n",
+    "//third_party/icu/icu4c:shared_icuuc",
+    sdk_libc_secshared_dep,
   ]
 }
 
 ohos_shared_library("libark_jsruntime") {
-  deps = [ ":libark_jsruntime_set_static" ]
+  deps = [
+    ":libark_js_intl_set",
+    ":libark_jsruntime_set",
+  ]
 
   defines = []
   if (!is_linux && !is_mingw && !is_mac) {
@@ -584,7 +581,6 @@ ohos_shared_library("libark_jsruntime") {
   }
 
   install_enable = true
-  part_name = "ark_js_runtime"
 
   if (!is_mingw) {
     output_extension = "so"
@@ -592,10 +588,11 @@ ohos_shared_library("libark_jsruntime") {
   if (!is_standard_system) {
     relative_install_dir = "ark"
   }
+  part_name = "ark_js_runtime"
   subsystem_name = "ark"
 }
 
-source_set("libark_jsruntime_test_static") {
+source_set("libark_jsruntime_test_set") {
   sources = ecma_source
   sources += intl_sources
   sources += ecma_profiler_source
@@ -620,17 +617,8 @@ source_set("libark_jsruntime_test_static") {
   ]
 }
 
-source_set("libark_jsruntime_test_set_static") {
-  public_configs = [
-    "//ark/js_runtime:ark_jsruntime_common_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",
-  ]
-
-  deps = [ ":libark_jsruntime_test_static" ]
-}
-
 ohos_shared_library("libark_jsruntime_test") {
-  deps = [ ":libark_jsruntime_test_set_static" ]
+  deps = [ ":libark_jsruntime_test_set" ]
 
   defines = []
   if (!is_linux && !is_mingw && !is_mac) {
@@ -639,6 +627,8 @@ ohos_shared_library("libark_jsruntime_test") {
       external_deps = [ "hitrace_native:hitrace_meter" ]
     }
   }
+
+  install_enable = false
 
   output_extension = "so"
   subsystem_name = "test"
