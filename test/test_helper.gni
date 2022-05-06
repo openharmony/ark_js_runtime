@@ -182,7 +182,11 @@ template("host_aot_test_action") {
 
   _script_args_ = rebase_path(_test_abc_path_)
 
-  action("genStubAction") {
+  _stub_out_path_options_ =
+      " --com-stub-out=" + rebase_path(target_out_dir) +
+      "/com_stub.m --bc-stub-out=" + rebase_path(target_out_dir) + "/bc_stub.m"
+
+  action("gen${_target_name_}StubAction") {
     testonly = true
 
     _host_stub_target_ = "//ark/js_runtime/ecmascript/compiler:ark_stub_compiler(${host_toolchain})"
@@ -192,15 +196,11 @@ template("host_aot_test_action") {
 
     script = "//ark/js_runtime/test/run_ark_executable.py"
 
-    _stub_compile_options_ = " --com-stub-out=" + rebase_path(target_out_dir) +
-                             "/com_stub.m --bc-stub-out=" +
-                             rebase_path(target_out_dir) + "/bc_stub.m"
-
     args = [
       "--script-file",
       rebase_path(_root_out_dir_) + "/ark/ark_js_runtime/ark_stub_compiler",
       "--script-options",
-      _stub_compile_options_,
+      _stub_out_path_options_,
       "--expect-sub-output",
       "stub compiler run finish, result condition(T/F):true",
       "--env-path",
@@ -251,7 +251,7 @@ template("host_aot_test_action") {
     outputs = [ "$target_out_dir/${_target_name_}/compile_${_target_name_}/" ]
   }
 
-  action("${_target_name_}Action") {
+  action("${_target_name_}AotAction") {
     testonly = true
 
     _host_jsvm_target_ =
@@ -259,7 +259,7 @@ template("host_aot_test_action") {
     _root_out_dir_ = get_label_info(_host_jsvm_target_, "root_out_dir")
     deps = [
       ":${_target_name_}AotCompileAction",
-      ":genStubAction",
+      ":gen${_target_name_}StubAction",
       ":gen_${_target_name_}_abc",
       _host_jsvm_target_,
     ]
@@ -270,7 +270,8 @@ template("host_aot_test_action") {
     _aot_run_options_ =
         " --aot-output-file=" + rebase_path(_test_m_path_) +
         " --snapshot-output-file=" + rebase_path(_test_snapshot_path_) +
-        " --enable-ts-aot=true" + " --enable-stub-aot=true" + " --asmInter=1"
+        " --enable-ts-aot=true" + " --enable-stub-aot=true" + " --asmInter=1" +
+        _stub_out_path_options_
 
     args = [
       "--script-file",
