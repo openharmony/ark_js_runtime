@@ -202,6 +202,21 @@ public:
         return data_;
     }
 
+    static constexpr size_t GetNumArgsOffset()
+    {
+        return MEMBER_OFFSET(EcmaRuntimeCallInfo, numArgs_);
+    }
+
+    static constexpr size_t GetStackArgsOffset()
+    {
+        return MEMBER_OFFSET(EcmaRuntimeCallInfo, stackArgs_);
+    }
+
+    static constexpr size_t GetDataOffset()
+    {
+        return MEMBER_OFFSET(EcmaRuntimeCallInfo, data_);
+    }
+
 private:
     enum ArgsIndex : uint8_t { FUNC_INDEX = 0, NEW_TARGET_INDEX, THIS_INDEX, FIRST_ARGS_INDEX };
 

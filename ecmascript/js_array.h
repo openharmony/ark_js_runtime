@@ -45,7 +45,7 @@ public:
     // ecma6 7.3 Operations on Objects
     static JSHandle<JSArray> CreateArrayFromList(JSThread *thread, const JSHandle<TaggedArray> &elements);
     // use first inlined property slot for array length
-    inline uint32_t GetArrayLength() const
+    inline size_t GetArrayLength() const
     {
         return GetLength().GetArrayLength();
     }

@@ -38,8 +38,14 @@ constexpr uint32_t PANDA_FILE_ALIGNMENT = 4096;
 
 void SnapShot::Serialize(TaggedObject *objectHeader, const panda_file::File *pf, const CString &fileName)
 {
+    std::pair<bool, CString> filePath = VerifyFilePath(fileName);
+    if (!filePath.first) {
+        LOG(ERROR, RUNTIME) << "snapshot file path error";
+        return;
+    }
     std::fstream write(fileName.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
-    if (!VerifySnapShotFile(write, fileName)) {
+    if (!write.good()) {
+        LOG(DEBUG, RUNTIME) << "snapshot open file failed";
         return;
     }
 
@@ -74,8 +80,14 @@ void SnapShot::Serialize(TaggedObject *objectHeader, const panda_file::File *pf,
 
 void SnapShot::Serialize(uintptr_t startAddr, size_t size, const CString &fileName)
 {
+    std::pair<bool, CString> filePath = VerifyFilePath(fileName);
+    if (!filePath.first) {
+        LOG(ERROR, RUNTIME) << "snapshot file path error";
+        return;
+    }
     std::fstream write(fileName.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
-    if (!VerifySnapShotFile(write, fileName)) {
+    if (!write.good()) {
+        LOG(DEBUG, RUNTIME) << "snapshot open file failed";
         return;
     }
 
@@ -224,20 +236,6 @@ std::pair<bool, CString> SnapShot::VerifyFilePath(const CString &filePath)
         return std::make_pair(true, CString(resolvedPath.data()));
     }
     return std::make_pair(false, "");
-}
-
-bool SnapShot::VerifySnapShotFile(std::fstream &write, const CString &fileName)
-{
-    std::pair<bool, CString> filePath = VerifyFilePath(fileName);
-    if (!filePath.first) {
-        LOG(ERROR, RUNTIME) << "snapshot file path error";
-        return false;
-    }
-    if (!write.good()) {
-        LOG(DEBUG, RUNTIME) << "snapshot open file failed";
-        return false;
-    }
-    return true;
 }
 
 void SnapShot::WriteToFile(std::fstream &write, const panda_file::File *pf,

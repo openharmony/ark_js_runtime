@@ -50,5 +50,6 @@ ohos_prebuilt_etc("gen_ark_snapshot_bin") {
   source = snapshot_bin_output_path
 
   install_enable = true
+  part_name = "ark_js_runtime"
   subsystem_name = "ark"
 }

@@ -74,7 +74,6 @@ JSHandle<JSObject> JSIterator::IteratorNext(JSThread *thread, const JSHandle<JST
     // 1.If value was not passed, then Let result be Invoke(iterator, "next", «‍ »).
     JSHandle<JSTaggedValue> key(thread->GlobalConstants()->GetHandledNextString());
     JSHandle<JSTaggedValue> next(JSObject::GetMethod(thread, iter, key));
-    ASSERT(next->IsCallable());
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, next, iter, undefined, 0);
     JSTaggedValue ret = JSFunction::Call(&info);
@@ -82,7 +81,7 @@ JSHandle<JSObject> JSIterator::IteratorNext(JSThread *thread, const JSHandle<JST
     // 3.ReturnIfAbrupt(result)
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, result);
     // 4.If Type(result) is not Object, throw a TypeError exception.
-    if (!result->IsECMAObject()) {
+    if (!result.GetTaggedValue().IsECMAObject()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "", result);
     }
     return result;
@@ -94,7 +93,6 @@ JSHandle<JSObject> JSIterator::IteratorNext(JSThread *thread, const JSHandle<JST
     // 2.Let result be Invoke(iterator, "next", «‍value»).
     JSHandle<JSTaggedValue> key(thread->GlobalConstants()->GetHandledNextString());
     JSHandle<JSTaggedValue> next(JSObject::GetMethod(thread, iter, key));
-    ASSERT(next->IsCallable());
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, next, iter, undefined, 1);
     info.SetCallArg(value.GetTaggedValue());
@@ -103,7 +101,7 @@ JSHandle<JSObject> JSIterator::IteratorNext(JSThread *thread, const JSHandle<JST
     // 3.ReturnIfAbrupt(result)
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, result);
     // 4.If Type(result) is not Object, throw a TypeError exception.
-    if (!result->IsECMAObject()) {
+    if (!result.GetTaggedValue().IsECMAObject()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "", result);
     }
     return result;
@@ -115,6 +113,7 @@ bool JSIterator::IteratorComplete(JSThread *thread, const JSHandle<JSTaggedValue
     // Return ToBoolean(Get(iterResult, "done")).
     JSHandle<JSTaggedValue> doneStr = thread->GlobalConstants()->GetHandledDoneString();
     JSHandle<JSTaggedValue> done = JSTaggedValue::GetProperty(thread, iterResult, doneStr).GetValue();
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
     return done->ToBoolean();
 }
 // 7.4.4

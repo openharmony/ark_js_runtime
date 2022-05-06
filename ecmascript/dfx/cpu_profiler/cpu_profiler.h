@@ -49,7 +49,7 @@ private:
 class CpuProfiler {
 public:
     static CpuProfiler *GetInstance();
-    static void ParseMethodInfo(JSMethod *method, InterpretedFrameHandler frameHandler);
+    static void ParseMethodInfo(JSMethod *method, FrameHandler frameHandler);
     static void GetFrameStack(JSThread *thread);
     static void IsNeedAndGetStack(JSThread *thread);
     static void GetStackSignalHandler(int signal);

@@ -107,7 +107,7 @@ JSHandle<JSTypedArray> CreateNumberTypedArray(JSThread *thread, JSType jsType)
  * Feature: JSTypedArray
  * Function: ToPropKey
  * SubFunction: EcmaString::GetCString
- * FunctionPoints: TaggedType Signs To EcmaString Signs
+ * FunctionPoints: JSTaggedType Signs To EcmaString Signs
  * CaseDescription: Check whether the EcmaStrings transformed through calling ToPropKey function from TaggedTypes are
  *                  within expectations.
  */

@@ -183,11 +183,6 @@ public:
 
     void SetRuntimeStatEnable(bool flag);
 
-    bool IsRuntimeStatEnabled() const
-    {
-        return runtimeStatEnabled_;
-    }
-
     bool IsOptionalLogEnabled() const
     {
         return optionalLogEnabled_;
@@ -361,7 +356,6 @@ private:
     JSTaggedValue globalEnv_ {JSTaggedValue::Hole()};
     JSTaggedValue regexpCache_ {JSTaggedValue::Hole()};
     JSTaggedValue microJobQueue_ {JSTaggedValue::Hole()};
-    bool runtimeStatEnabled_ {false};
     EcmaRuntimeStat *runtimeStat_ {nullptr};
 
     // For framewrok file snapshot.

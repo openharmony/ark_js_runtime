@@ -19,6 +19,7 @@
 #include <iomanip>
 
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
+#include "ecmascript/napi/jsnapi_helper.h"
 #include "ecmascript/tooling/base/pt_events.h"
 #include "ecmascript/tooling/front_end.h"
 #include "ecmascript/tooling/protocol_handler.h"
@@ -97,6 +98,9 @@ void JSBackend::NotifyPaused(std::optional<JSPtLocation> location, PauseReason r
         }
         hitBreakpoints.emplace_back(BreakpointDetails::ToString(detail));
     }
+
+    // Do something cleaning on paused
+    CleanUpOnPaused();
 
     // Notify paused event
     CVector<std::unique_ptr<CallFrame>> callFrames;
@@ -458,7 +462,7 @@ std::optional<CString> JSBackend::CmptEvaluateValue(CallFrameId callFrameId, con
         if (varValue.empty()) {
             return GetVregValue(regIndex, result);
         }
-        return SetVregValue(regIndex, result, varValue);
+        return SetVregValue(regIndex, varValue, result);
     }
     int32_t level = 0;
     uint32_t slot = 0;
@@ -468,9 +472,9 @@ std::optional<CString> JSBackend::CmptEvaluateValue(CallFrameId callFrameId, con
         return "Unsupported expression.";
     }
     if (varValue.empty()) {
-        return GetLexicalValue(level, result, slot);
+        return GetLexicalValue(level, slot, result);
     }
-    return SetLexicalValue(level, result, varValue, slot);
+    return SetLexicalValue(level, slot, varValue, result);
 }
 
 std::optional<CString> JSBackend::EvaluateValue(CallFrameId callFrameId, const CString &expression,
@@ -494,12 +498,7 @@ std::optional<CString> JSBackend::EvaluateValue(CallFrameId callFrameId, const C
         return msg;
     }
 
-    // make sure the result of object type can show normally in the front-end watch/evaluate window
-    *result = RemoteObject::FromTagged(ecmaVm_, res);
-    if (res->IsObject() && !res->IsProxy()) {
-        (*result)->SetObjectId(curObjectId_);
-        propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, res);
-    }
+    CacheObjectIfNeeded(res, result);
     return {};
 }
 
@@ -531,7 +530,7 @@ JSPtExtractor *JSBackend::GetExtractor(const CString &url)
 bool JSBackend::GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames)
 {
     CallFrameId callFrameId = 0;
-    auto walkerFunc = [this, &callFrameId, &callFrames](const InterpretedFrameHandler *frameHandler) -> StackState {
+    auto walkerFunc = [this, &callFrameId, &callFrames](const FrameHandler *frameHandler) -> StackState {
         JSMethod *method = DebuggerApi::GetMethod(frameHandler);
         if (method->IsNativeWithCallField()) {
             LOG(INFO, DEBUGGER) << "GenerateCallFrames: Skip CFrame and Native method";
@@ -552,7 +551,7 @@ bool JSBackend::GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFram
 }
 
 bool JSBackend::GenerateCallFrame(CallFrame *callFrame,
-    const InterpretedFrameHandler *frameHandler, CallFrameId callFrameId)
+    const FrameHandler *frameHandler, CallFrameId callFrameId)
 {
     JSMethod *method = DebuggerApi::GetMethod(frameHandler);
     JSPtExtractor *extractor = GetExtractor(method->GetJSPandaFile());
@@ -607,51 +606,31 @@ bool JSBackend::GenerateCallFrame(CallFrame *callFrame,
     return true;
 }
 
-std::unique_ptr<Scope> JSBackend::GetLocalScopeChain(const InterpretedFrameHandler *frameHandler,
+std::unique_ptr<Scope> JSBackend::GetLocalScopeChain(const FrameHandler *frameHandler,
     std::unique_ptr<RemoteObject> *thisObj)
 {
     auto localScope = std::make_unique<Scope>();
 
-    std::unique_ptr<RemoteObject> local = std::make_unique<RemoteObject>();
-    Local<ObjectRef> localObject(local->NewObject(ecmaVm_));
-    local->SetType(ObjectType::Object)
-        .SetObjectId(curObjectId_)
-        .SetClassName(ObjectClassName::Object)
-        .SetDescription(RemoteObject::ObjectDescription);
-    propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, localObject);
-
-    JSPtExtractor *extractor = GetExtractor(DebuggerApi::GetMethod(frameHandler)->GetJSPandaFile());
+    JSMethod *method = DebuggerApi::GetMethod(frameHandler);
+    JSPtExtractor *extractor = GetExtractor(method->GetJSPandaFile());
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "GetScopeChain: extractor is null";
         return localScope;
     }
-    panda_file::File::EntityId methodId = DebuggerApi::GetMethod(frameHandler)->GetMethodId();
-    Local<JSValueRef> name = JSValueRef::Undefined(ecmaVm_);
-    Local<JSValueRef> value = JSValueRef::Undefined(ecmaVm_);
-    for (const auto &var : extractor->GetLocalVariableTable(methodId)) {
-        value = DebuggerApi::GetVRegValue(ecmaVm_, frameHandler, var.second);
-        if (var.first == "this") {
-            *thisObj = RemoteObject::FromTagged(ecmaVm_, value);
-            if (value->IsObject() && !value->IsProxy()) {
-                (*thisObj)->SetObjectId(curObjectId_);
-                propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, value);
-            }
-        } else {
-            name = StringRef::NewFromUtf8(ecmaVm_, var.first.c_str());
-            PropertyAttribute descriptor(value, true, true, true);
-            localObject->DefineProperty(ecmaVm_, name, descriptor);
-        }
-    }
 
-    if ((*thisObj)->GetType() == ObjectType::Undefined) {
-        value = DebuggerApi::GetLexicalValueInfo(ecmaVm_, "this");
-        *thisObj = RemoteObject::FromTagged(ecmaVm_, value);
-        if (value->IsObject() && !value->IsProxy()) {
-            (*thisObj)->SetObjectId(curObjectId_);
-            propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, value);
-        }
-    }
+    std::unique_ptr<RemoteObject> local = std::make_unique<RemoteObject>();
+    Local<ObjectRef> localObj(local->NewObject(ecmaVm_));
+    local->SetType(ObjectType::Object)
+        .SetObjectId(curObjectId_)
+        .SetClassName(ObjectClassName::Object)
+        .SetDescription(RemoteObject::ObjectDescription);
+    propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, localObj);
 
+    Local<JSValueRef> thisVal = JSValueRef::Undefined(ecmaVm_);
+    GetLocalVariables(frameHandler, method, thisVal, localObj);
+    CacheObjectIfNeeded(thisVal, thisObj);
+
+    auto methodId = method->GetMethodId();
     auto lines = extractor->GetLineNumberTable(methodId);
     std::unique_ptr<Location> startLoc = std::make_unique<Location>();
     std::unique_ptr<Location> endLoc = std::make_unique<Location>();
@@ -672,6 +651,46 @@ std::unique_ptr<Scope> JSBackend::GetLocalScopeChain(const InterpretedFrameHandl
     }
 
     return localScope;
+}
+
+void JSBackend::GetLocalVariables(const FrameHandler *frameHandler, const JSMethod *method,
+    Local<JSValueRef> &thisVal, Local<ObjectRef> &localObj)
+{
+    auto methodId = method->GetMethodId();
+    auto *extractor = GetExtractor(method->GetJSPandaFile());
+    Local<JSValueRef> value = JSValueRef::Undefined(ecmaVm_);
+    for (const auto &[varName, slot] : extractor->GetLocalVariableTable(methodId)) {
+        value = DebuggerApi::GetVRegValue(ecmaVm_, frameHandler, slot);
+        if (varName == "this") {
+            thisVal = value;
+        } else {
+            Local<JSValueRef> name = StringRef::NewFromUtf8(ecmaVm_, varName.c_str());
+            PropertyAttribute descriptor(value, true, true, true);
+            localObj->DefineProperty(ecmaVm_, name, descriptor);
+        }
+    }
+    if (thisVal->IsUndefined()) {
+        thisVal = DebuggerApi::GetLexicalValueInfo(ecmaVm_, "this");
+    }
+
+    // closure variables are stored in env
+    JSTaggedValue env = DebuggerApi::GetEnv(frameHandler);
+    if (env.IsTaggedArray() && DebuggerApi::GetBytecodeOffset(frameHandler) != 0) {
+        LexicalEnv *lexEnv = LexicalEnv::Cast(env.GetTaggedObject());
+        if (lexEnv->GetScopeInfo().IsHole()) {
+            return;
+        }
+        auto ptr = JSNativePointer::Cast(lexEnv->GetScopeInfo().GetTaggedObject())->GetExternalPointer();
+        auto *scopeDebugInfo = reinterpret_cast<ScopeDebugInfo *>(ptr);
+        JSThread *thread = ecmaVm_->GetJSThread();
+        for (const auto &[varName, slot] : scopeDebugInfo->scopeInfo) {
+            Local<JSValueRef> name = StringRef::NewFromUtf8(ecmaVm_, varName.c_str());
+            value = JSNApiHelper::ToLocal<JSValueRef>(
+                JSHandle<JSTaggedValue>(thread, lexEnv->GetProperties(slot)));
+            PropertyAttribute descriptor(value, true, true, true);
+            localObj->DefineProperty(ecmaVm_, name, descriptor);
+        }
+    }
 }
 
 std::unique_ptr<Scope> JSBackend::GetGlobalScopeChain()
@@ -731,8 +750,8 @@ std::optional<CString> JSBackend::ConvertToLocal(Local<JSValueRef> &taggedValue,
     return {};
 }
 
-std::optional<CString> JSBackend::SetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result,
-    const CString &varValue)
+std::optional<CString> JSBackend::SetVregValue(int32_t regIndex, const CString &varValue,
+    std::unique_ptr<RemoteObject> *result)
 {
     Local<JSValueRef> taggedValue;
     std::optional<CString> ret = ConvertToLocal(taggedValue, result, varValue);
@@ -744,8 +763,8 @@ std::optional<CString> JSBackend::SetVregValue(int32_t regIndex, std::unique_ptr
     return {};
 }
 
-std::optional<CString> JSBackend::SetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result,
-    const CString &varValue, uint32_t slot)
+std::optional<CString> JSBackend::SetLexicalValue(int32_t level, uint32_t slot, const CString &varValue,
+    std::unique_ptr<RemoteObject> *result)
 {
     Local<JSValueRef> taggedValue;
     std::optional<CString> ret = ConvertToLocal(taggedValue, result, varValue);
@@ -759,23 +778,13 @@ std::optional<CString> JSBackend::SetLexicalValue(int32_t level, std::unique_ptr
 
 std::optional<CString> JSBackend::GetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result)
 {
-    Local<JSValueRef> vValue = DebuggerApi::GetVRegValue(ecmaVm_, regIndex);
-    *result = RemoteObject::FromTagged(ecmaVm_, vValue);
-    if (vValue->IsObject() && !vValue->IsProxy()) {
-        (*result)->SetObjectId(curObjectId_);
-        propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, vValue);
-    }
+    CacheObjectIfNeeded(DebuggerApi::GetVRegValue(ecmaVm_, regIndex), result);
     return {};
 }
 
-std::optional<CString> JSBackend::GetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result, uint32_t slot)
+std::optional<CString> JSBackend::GetLexicalValue(int32_t level, uint32_t slot, std::unique_ptr<RemoteObject> *result)
 {
-    Local<JSValueRef> vValue = DebuggerApi::GetProperties(ecmaVm_, level, slot);
-    *result = RemoteObject::FromTagged(ecmaVm_, vValue);
-    if (vValue->IsObject() && !vValue->IsProxy()) {
-        (*result)->SetObjectId(curObjectId_);
-        propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, vValue);
-    }
+    CacheObjectIfNeeded(DebuggerApi::GetProperties(ecmaVm_, level, slot), result);
     return {};
 }
 
@@ -788,11 +797,8 @@ void JSBackend::GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn, 
     // Get Function ProtoOrDynClass
     if (value->IsConstructor()) {
         Local<JSValueRef> prototype = Local<FunctionRef>(value)->GetFunctionPrototype(ecmaVm_);
-        std::unique_ptr<RemoteObject> protoObj = RemoteObject::FromTagged(ecmaVm_, prototype);
-        if (prototype->IsObject() && !prototype->IsProxy()) {
-            protoObj->SetObjectId(curObjectId_);
-            propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, prototype);
-        }
+        std::unique_ptr<RemoteObject> protoObj = std::make_unique<RemoteObject>();
+        CacheObjectIfNeeded(prototype, &protoObj);
         std::unique_ptr<PropertyDescriptor> debuggerProperty = std::make_unique<PropertyDescriptor>();
         debuggerProperty->SetName("prototype")
             .SetWritable(false)
@@ -804,11 +810,8 @@ void JSBackend::GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn, 
     }
     // Get __proto__
     Local<JSValueRef> proto = Local<ObjectRef>(value)->GetPrototype(ecmaVm_);
-    std::unique_ptr<RemoteObject> protoObj = RemoteObject::FromTagged(ecmaVm_, proto);
-    if (proto->IsObject() && !proto->IsProxy()) {
-        protoObj->SetObjectId(curObjectId_);
-        propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, proto);
-    }
+    std::unique_ptr<RemoteObject> protoObj = std::make_unique<RemoteObject>();
+    CacheObjectIfNeeded(proto, &protoObj);
     std::unique_ptr<PropertyDescriptor> debuggerProperty = std::make_unique<PropertyDescriptor>();
     debuggerProperty->SetName("__proto__")
         .SetWritable(true)
@@ -837,9 +840,9 @@ void JSBackend::GetProperties(RemoteObjectId objectId, bool isOwn, bool isAccess
         AddTypedArrayRefs(arrayBufferRef, outPropertyDesc);
     }
     Local<ArrayRef> keys = Local<ObjectRef>(value)->GetOwnPropertyNames(ecmaVm_);
-    uint32_t length = keys->Length(ecmaVm_);
+    int32_t length = keys->Length(ecmaVm_);
     Local<JSValueRef> name = JSValueRef::Undefined(ecmaVm_);
-    for (uint32_t i = 0; i < length; ++i) {
+    for (int32_t i = 0; i < length; ++i) {
         name = keys->Get(ecmaVm_, i);
         PropertyAttribute jsProperty = PropertyAttribute::Default();
         if (!Local<ObjectRef>(value)->GetOwnProperty(ecmaVm_, name, jsProperty)) {
@@ -980,6 +983,21 @@ void JSBackend::GetHeapUsage(double *usedSize, double *totalSize)
     auto ecmaVm = const_cast<EcmaVM *>(static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM());
     *totalSize = static_cast<double>(DFXJSNApi::GetHeapTotalSize(ecmaVm));
     *usedSize = static_cast<double>(DFXJSNApi::GetHeapUsedSize(ecmaVm));
+}
+
+void JSBackend::CacheObjectIfNeeded(const Local<JSValueRef> &valRef, std::unique_ptr<RemoteObject> *remoteObj)
+{
+    *remoteObj = RemoteObject::FromTagged(ecmaVm_, valRef);
+    if (valRef->IsObject() && !valRef->IsProxy()) {
+        (*remoteObj)->SetObjectId(curObjectId_);
+        propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, valRef);
+    }
+}
+
+void JSBackend::CleanUpOnPaused()
+{
+    curObjectId_ = 0;
+    propertiesPair_.clear();
 }
 
 bool JSBackend::DecodeAndCheckBase64(const CString &src, CString &dest)

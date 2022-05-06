@@ -56,7 +56,8 @@ public:
             TestUtil::Continue();
             ASSERT_BREAKPOINT_SUCCESS(location_);
             TestUtil::Continue();
-            ASSERT_TRUE(debugInterface_->RemoveBreakpoint(location_));
+            auto ret = debugInterface_->RemoveBreakpoint(location_);
+            ASSERT_TRUE(ret);
             ASSERT_EXITED();
             return true;
         };

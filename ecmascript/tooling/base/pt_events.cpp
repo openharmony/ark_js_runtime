@@ -482,7 +482,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptEvent->scriptId_ = DebuggerApi::StringToInt(result);
+            scriptEvent->scriptId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
         } else {
             error += "'scriptId' should a String;";
         }
@@ -771,7 +771,13 @@ Local<ObjectRef> AddHeapSnapshotChunk::ToObject(const EcmaVM *ecmaVm)
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "chunk")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, chunk_.c_str())));
 
-    return params;
+    Local<ObjectRef> object = NewObject(ecmaVm);
+    object->Set(ecmaVm,
+        StringRef::NewFromUtf8(ecmaVm, "method"),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, GetName().c_str())));
+    object->Set(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "params"), Local<JSValueRef>(params));
+
+    return object;
 }
 
 std::unique_ptr<ConsoleProfileFinished> ConsoleProfileFinished::Create(const EcmaVM *ecmaVm,
@@ -1024,6 +1030,197 @@ Local<ObjectRef> PreciseCoverageDeltaUpdate::ToObject(const EcmaVM *ecmaVm)
     }
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "result")), values);
     
+    Local<ObjectRef> object = NewObject(ecmaVm);
+    object->Set(ecmaVm,
+        StringRef::NewFromUtf8(ecmaVm, "method"),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, GetName().c_str())));
+    object->Set(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "params"), Local<JSValueRef>(params));
+
+    return object;
+}
+
+std::unique_ptr<HeapStatsUpdate> HeapStatsUpdate::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+{
+    if (params.IsEmpty()) {
+        LOG(ERROR, DEBUGGER) << "HeapStatsUpdate::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto heapStatsUpdate = std::make_unique<HeapStatsUpdate>();
+
+    Local<JSValueRef> result =
+        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "statsUpdate")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsArray(ecmaVm)) {
+            auto array = Local<ArrayRef>(result);
+            int32_t resultLen = array->Length(ecmaVm);
+            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
+            for (int32_t i = 0; i < resultLen; ++i) {
+                key = IntegerRef::New(ecmaVm, i);
+                int32_t statsUpdate;
+                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
+                statsUpdate = resultValue->Int32Value(ecmaVm);
+                heapStatsUpdate ->statsUpdate_[i] = statsUpdate;
+            }
+        } else {
+            error += "'statsUpdate' should be an Array;";
+        }
+    } else {
+        error += "should contain 'statsUpdate';";
+    }
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "HeapStatsUpdate::Create " << error;
+        return nullptr;
+    }
+
+    return heapStatsUpdate;
+}
+
+Local<ObjectRef> HeapStatsUpdate::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+
+    size_t len = statsUpdate_.size();
+    Local<ArrayRef> values = ArrayRef::New(ecmaVm, len);
+    for (size_t i = 0; i < len; i++) {
+        Local<IntegerRef> elem = IntegerRef::New(ecmaVm, statsUpdate_[i]);
+        values->Set(ecmaVm, i, elem);
+    }
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "statsUpdate")), values);
+    
+    Local<ObjectRef> object = NewObject(ecmaVm);
+    object->Set(ecmaVm,
+        StringRef::NewFromUtf8(ecmaVm, "method"),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, GetName().c_str())));
+    object->Set(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "params"), Local<JSValueRef>(params));
+
+    return object;
+}
+
+std::unique_ptr<LastSeenObjectId> LastSeenObjectId::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+{
+    if (params.IsEmpty()) {
+        LOG(ERROR, DEBUGGER) << "LastSeenObjectId::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto lastSeenObjectId = std::make_unique<LastSeenObjectId>();
+
+    Local<JSValueRef> result =
+        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timestamp")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            lastSeenObjectId->timestamp_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+        } else {
+            error += "'timestamp' should a Number;";
+        }
+    } else {
+        error += "should contain 'timestamp';";
+    }
+
+    result =
+        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lastSeenObjectId")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            lastSeenObjectId->lastSeenObjectId_ = Local<NumberRef>(result)->Value();
+        } else {
+            error += "'lastSeenObjectId' should a Number;";
+        }
+    } else {
+        error += "should contain 'lastSeenObjectId';";
+    }
+   
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "LastSeenObjectId::Create " << error;
+        return nullptr;
+    }
+
+    return lastSeenObjectId;
+}
+
+Local<ObjectRef> LastSeenObjectId::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timestamp")),
+        IntegerRef::New(ecmaVm, timestamp_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lastSeenObjectId")),
+        IntegerRef::New(ecmaVm, lastSeenObjectId_));
+
+    Local<ObjectRef> object = NewObject(ecmaVm);
+    object->Set(ecmaVm,
+        StringRef::NewFromUtf8(ecmaVm, "method"),
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, GetName().c_str())));
+    object->Set(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "params"), Local<JSValueRef>(params));
+
+    return object;
+}
+
+std::unique_ptr<ReportHeapSnapshotProgress> ReportHeapSnapshotProgress::Create(const EcmaVM *ecmaVm,
+                                                                               const Local<JSValueRef> &params)
+{
+    if (params.IsEmpty()) {
+        LOG(ERROR, DEBUGGER) << "ReportHeapSnapshotProgress::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto reportHeapSnapshotProgress = std::make_unique<ReportHeapSnapshotProgress>();
+
+    Local<JSValueRef> result =
+        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "done")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            reportHeapSnapshotProgress->done_ = Local<NumberRef>(result)->Value();
+        } else {
+            error += "'done' should a Number;";
+        }
+    } else {
+        error += "should contain 'done';";
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "total")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            reportHeapSnapshotProgress->total_ = Local<NumberRef>(result)->Value();
+        } else {
+            error += "'total' should a Number;";
+        }
+    } else {
+        error += "should contain 'total';";
+    }
+
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "finished")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsBoolean()) {
+            reportHeapSnapshotProgress->finished_ = result->IsTrue();
+        } else {
+            error += "'finished' should a Boolean;";
+        }
+    }
+   
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "ReportHeapSnapshotProgress::Create " << error;
+        return nullptr;
+    }
+
+    return reportHeapSnapshotProgress;
+}
+
+Local<ObjectRef> ReportHeapSnapshotProgress::ToObject(const EcmaVM *ecmaVm)
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "done")),
+        IntegerRef::New(ecmaVm, done_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "total")),
+        IntegerRef::New(ecmaVm, total_));
+
+    if (finished_) {
+        params->Set(ecmaVm,
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "finished")),
+            BooleanRef::New(ecmaVm, finished_.value()));
+    }
+
     Local<ObjectRef> object = NewObject(ecmaVm);
     object->Set(ecmaVm,
         StringRef::NewFromUtf8(ecmaVm, "method"),

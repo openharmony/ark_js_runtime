@@ -16,31 +16,37 @@
 #ifndef ECMASCRIPT_INTERPRETER_FRAME_HANDLER_H
 #define ECMASCRIPT_INTERPRETER_FRAME_HANDLER_H
 
+#include "ecmascript/frames.h"
 #include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/visitor.h"
-#include "ecmascript/frames.h"
 
 namespace panda {
 namespace ecmascript {
 class JSThread;
-class JSFunction;
 class ConstantPool;
 
 class FrameHandler {
 public:
-    explicit FrameHandler(JSTaggedType *sp) : sp_(sp) {}
+    explicit FrameHandler(const JSThread *thread)
+        : sp_(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame())), thread_(thread) {}
     ~FrameHandler() = default;
+
     DEFAULT_COPY_SEMANTIC(FrameHandler);
     DEFAULT_MOVE_SEMANTIC(FrameHandler);
-    static constexpr uintptr_t kFrameTypeOffset = -sizeof(FrameType);
 
     bool HasFrame() const
     {
-        // Breakframe also is a frame
         return sp_ != nullptr;
+    }
+
+    inline static FrameType GetFrameType(const JSTaggedType *sp)
+    {
+        ASSERT(sp != nullptr);
+        FrameType *typeAddr = reinterpret_cast<FrameType *>(reinterpret_cast<uintptr_t>(sp) - sizeof(FrameType));
+        return *typeAddr;
     }
 
     inline static bool IsEntryFrame(const uint8_t *pc)
@@ -56,32 +62,21 @@ public:
         return state->pc == nullptr;
     }
 
-    void PrevFrame();
-
-    FrameType GetFrameType() const
-    {
-        ASSERT(HasFrame());
-        FrameType* typeAddr = reinterpret_cast<FrameType*>(reinterpret_cast<uintptr_t>(sp_) + kFrameTypeOffset);
-        return *typeAddr;
-    }
-
     bool IsInterpretedFrame() const
     {
         FrameType type = GetFrameType();
-        return (type == FrameType::INTERPRETER_FRAME)
-                || (type == FrameType::INTERPRETER_FAST_NEW_FRAME);
+        return (type == FrameType::INTERPRETER_FRAME) || (type == FrameType::INTERPRETER_FAST_NEW_FRAME);
     }
 
     bool IsInterpretedEntryFrame() const
     {
-        FrameType type = GetFrameType();
-        return (type == FrameType::INTERPRETER_ENTRY_FRAME);
+        return (GetFrameType() == FrameType::INTERPRETER_ENTRY_FRAME);
     }
 
     bool IsLeaveFrame() const
     {
-        return (GetFrameType() == FrameType::LEAVE_FRAME) ||
-            (GetFrameType() == FrameType::LEAVE_FRAME_WITH_ARGV);
+        FrameType type = GetFrameType();
+        return (type == FrameType::LEAVE_FRAME) || (type == FrameType::LEAVE_FRAME_WITH_ARGV);
     }
 
     JSTaggedType *GetSp() const
@@ -89,25 +84,18 @@ public:
         return sp_;
     }
 
-    uintptr_t GetPrevFrameCallSiteSp();
     void PrevInterpretedFrame();
+    JSTaggedType *GetPrevInterpretedFrame();
 
-protected:
-    JSTaggedType *sp_ {nullptr};
-};
+    // for llvm.
+    static uintptr_t GetPrevFrameCallSiteSp(const JSTaggedType *sp);
 
-class InterpretedFrameHandler : public FrameHandler {
-public:
-    explicit InterpretedFrameHandler(JSThread *thread);
-    explicit InterpretedFrameHandler(JSTaggedType *sp) : FrameHandler(sp) {}
-    DEFAULT_COPY_SEMANTIC(InterpretedFrameHandler);
-    DEFAULT_MOVE_SEMANTIC(InterpretedFrameHandler);
-
-    void PrevFrame();
-    InterpretedFrameHandler GetPrevFrame() const;
-
+    // for InterpretedFrame.
     JSTaggedValue GetVRegValue(size_t index) const;
     void SetVRegValue(size_t index, JSTaggedValue value);
+
+    JSTaggedValue GetEnv() const;
+    void SetEnv(JSTaggedValue env);
 
     JSTaggedValue GetAcc() const;
     uint32_t GetSize() const;
@@ -116,102 +104,51 @@ public:
     JSTaggedValue GetFunction() const;
     const uint8_t *GetPc() const;
     ConstantPool *GetConstpool() const;
-    JSTaggedValue GetEnv() const;
-    void SetEnv(JSTaggedValue env);
-
-    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1);
 
     void DumpStack(std::ostream &os) const;
     void DumpStack() const
     {
         DumpStack(std::cout);
     }
+
     void DumpPC(std::ostream &os, const uint8_t *pc) const;
     void DumpPC(const uint8_t *pc) const
     {
         DumpPC(std::cout, pc);
     }
-};
 
-class InterpretedEntryFrameHandler : public FrameHandler {
-public:
-    explicit InterpretedEntryFrameHandler(JSThread *thread);
-    explicit InterpretedEntryFrameHandler(JSTaggedType *sp) : FrameHandler(sp) {}
-    DEFAULT_COPY_SEMANTIC(InterpretedEntryFrameHandler);
-    DEFAULT_MOVE_SEMANTIC(InterpretedEntryFrameHandler);
+    // for InterpretedEntryFrame.
+    static JSTaggedType* GetInterpretedEntryFrameStart(const JSTaggedType *sp);
 
-    void PrevFrame();
-    int32_t GetArgsNumber();
-    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1);
-    static JSTaggedType *GetPrevInterpretedFrame(JSTaggedType *sp);
-};
-
-class OptimizedFrameHandler : public FrameHandler {
-public:
-    explicit OptimizedFrameHandler(const JSThread *thread, uintptr_t *sp)
-        : FrameHandler(reinterpret_cast<JSTaggedType *>(sp)), thread_(thread) {}
-    explicit OptimizedFrameHandler(const JSThread *thread);
-    ~OptimizedFrameHandler() = default;
-    void PrevFrame();
-    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
-                ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
-                 bool isVerifying) const;
-
-private:
-    const JSThread *thread_ {nullptr};
-};
-
-class OptimizedEntryFrameHandler : public FrameHandler {
-public:
-    explicit OptimizedEntryFrameHandler(const JSThread *thread, uintptr_t *sp)
-        : FrameHandler(reinterpret_cast<JSTaggedType *>(sp)), thread_(thread) {}
-    explicit OptimizedEntryFrameHandler(const JSThread *thread);
-    ~OptimizedEntryFrameHandler() = default;
-    void PrevFrame();
-    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
-                ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
-                bool isVerifying) const;
-    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1);
-
-private:
-    const JSThread *thread_ {nullptr};
-};
-
-class OptimizedLeaveFrameHandler : public FrameHandler {
-public:
-    explicit OptimizedLeaveFrameHandler(const JSThread *thread, uintptr_t *sp)
-        : FrameHandler(reinterpret_cast<JSTaggedType *>(sp)), thread_(thread) {}
-    explicit OptimizedLeaveFrameHandler(const JSThread *thread);
-    ~OptimizedLeaveFrameHandler() = default;
-    void PrevFrame();
-    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
-                ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
-                bool isVerifying) const;
-private:
-    const JSThread *thread_ {nullptr};
-};
-
-class OptimizedWithArgvLeaveFrameHandler : public FrameHandler {
-public:
-    explicit OptimizedWithArgvLeaveFrameHandler(uintptr_t *sp)
-        : FrameHandler(reinterpret_cast<JSTaggedType *>(sp)) {}
-    explicit OptimizedWithArgvLeaveFrameHandler(const JSThread *thread);
-    ~OptimizedWithArgvLeaveFrameHandler() = default;
-    void PrevFrame();
-    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
-                ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
-                bool isVerifying) const;
-
-private:
-    const JSThread *thread_ {nullptr};
-};
-
-class FrameIterator {
-public:
-    explicit FrameIterator(JSTaggedType *sp, const JSThread *thread) : sp_(sp), thread_(thread) {}
-    ~FrameIterator() = default;
+    // for Frame GC.
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
-    void IterateStackMapAfterGC() const;
+
+private:
+    FrameType GetFrameType() const
+    {
+        ASSERT(HasFrame());
+        FrameType *typeAddr = reinterpret_cast<FrameType *>(reinterpret_cast<uintptr_t>(sp_) - sizeof(FrameType));
+        return *typeAddr;
+    }
+
+    void PrevFrame();
+
+    // for Frame GC.
+    void InterpretedFrameIterate(const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1) const;
+    void InterpretedEntryFrameIterate(const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1) const;
+    void OptimizedFrameIterate(
+        const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
+        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
+    void OptimizedEntryFrameIterate(
+        const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
+        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
+    void OptimizedLeaveFrameIterate(
+        const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
+        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
+    void OptimizedWithArgvLeaveFrameIterate(
+        const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
+        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
+
 private:
     JSTaggedType *sp_ {nullptr};
     const JSThread *thread_ {nullptr};

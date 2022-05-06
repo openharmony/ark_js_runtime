@@ -37,6 +37,7 @@ public:
 
     // Writes the chunk of data into the stream
     bool WriteChunk(char* data, int size) override;
+    bool Good() override;
 
 private:
     void Initialize(const std::string &fileName);

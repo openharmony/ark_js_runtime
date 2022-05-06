@@ -913,8 +913,7 @@ DEF_RUNTIME_STUBS(SuspendGenerator)
 DEF_RUNTIME_STUBS(UpFrame)
 {
     RUNTIME_STUBS_HEADER(UpFrame);
-    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    InterpretedFrameHandler frameHandler(sp);
+    FrameHandler frameHandler(thread);
     uint32_t pcOffset = panda_file::INVALID_OFFSET;
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
         if (frameHandler.IsEntryFrame()) {
@@ -1344,7 +1343,7 @@ DEF_RUNTIME_STUBS(JumpToCInterpreter)
 DEF_RUNTIME_STUBS(NotifyBytecodePcChanged)
 {
     RUNTIME_STUBS_HEADER(NotifyBytecodePcChanged);
-    InterpretedFrameHandler frameHandler(thread);
+    FrameHandler frameHandler(thread);
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
         if (frameHandler.IsEntryFrame()) {
             continue;
@@ -1647,6 +1646,31 @@ DEF_RUNTIME_STUBS(GetAotUnmapedArgs)
     RUNTIME_STUBS_HEADER(GetAotUnmapedArgs);
     CONVERT_ARG_TAGGED_CHECKED(actualNumArgs, 0);
     return RuntimeGetAotUnmapedArgs(thread, actualNumArgs.GetInt(), argv).GetRawData();
+}
+
+DEF_RUNTIME_STUBS(GetAotLexicalEnv)
+{
+    RUNTIME_STUBS_HEADER(GetAotLexicalEnv);
+    CONVERT_ARG_PTR_CHECKED(JSFunction *, jsFunc, 0);
+    return jsFunc->GetLexicalEnv().GetRawData();
+}
+
+DEF_RUNTIME_STUBS(NewAotLexicalEnvDyn)
+{
+    RUNTIME_STUBS_HEADER(NewAotLexicalEnvDyn);
+    CONVERT_ARG_TAGGED_CHECKED(numVars, 0);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, currentLexEnv, 1);
+    return RuntimeNewAotLexicalEnvDyn(thread, static_cast<uint16_t>(numVars.GetInt()), currentLexEnv).GetRawData();
+}
+
+DEF_RUNTIME_STUBS(NewAotLexicalEnvWithNameDyn)
+{
+    RUNTIME_STUBS_HEADER(NewAotLexicalEnvWithNameDyn);
+    CONVERT_ARG_TAGGED_CHECKED(numVars, 0);
+    CONVERT_ARG_TAGGED_CHECKED(scopeId, 1);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, currentLexEnv, 2);
+    return RuntimeNewAotLexicalEnvWithNameDyn(thread, static_cast<uint16_t>(numVars.GetInt()),
+                                              static_cast<uint16_t>(scopeId.GetInt()), currentLexEnv).GetRawData();
 }
 
 JSTaggedType RuntimeStubs::CreateArrayFromList([[maybe_unused]]uintptr_t argGlue, int32_t argc, JSTaggedValue *argvPtr)
