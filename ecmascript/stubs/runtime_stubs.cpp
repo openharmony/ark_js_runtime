@@ -910,6 +910,14 @@ DEF_RUNTIME_STUBS(SuspendGenerator)
     return RuntimeSuspendGenerator(thread, obj, value).GetRawData();
 }
 
+DEF_RUNTIME_STUBS(SuspendAotGenerator)
+{
+    RUNTIME_STUBS_HEADER(SuspendAotGenerator);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 0);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 1);
+    return RuntimeSuspendAotGenerator(thread, obj, value).GetRawData();
+}
+
 DEF_RUNTIME_STUBS(UpFrame)
 {
     RUNTIME_STUBS_HEADER(UpFrame);
@@ -1510,14 +1518,8 @@ DEF_RUNTIME_STUBS(DefineGeneratorFunc)
 DEF_RUNTIME_STUBS(DefineGeneratorFuncWithMethodId)
 {
     RUNTIME_STUBS_HEADER(DefineGeneratorFuncWithMethodId);
-    CONVERT_ARG_TAGGED_TYPE_CHECKED(id, 0);
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    auto methodId = JSTaggedValue(id);
-
-    auto aotCodeInfo  = thread->GetEcmaVM()->GetAotCodeInfo();
-    auto entry = aotCodeInfo->GetAOTFuncEntry(methodId.GetInt());
-    JSHandle<JSFunction> func = factory->NewAotFunction(1, entry);
-    return RuntimeDefineGeneratorFunc(thread, reinterpret_cast<JSFunction*>(*func)).GetRawData();
+    CONVERT_ARG_TAGGED_CHECKED(id, 0);
+    return RuntimeDefineGeneratorFuncWithMethodId(thread, id).GetRawData();
 }
 
 DEF_RUNTIME_STUBS(DefineAsyncFunc)
