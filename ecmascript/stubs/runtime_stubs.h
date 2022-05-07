@@ -240,8 +240,6 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(Mul2Dyn)                            \
     V(Div2Dyn)                            \
     V(Mod2Dyn)                            \
-    V(GetLexicalEnv)                      \
-    V(SetLexicalEnv)                      \
     V(LoadValueFromConstantStringTable)   \
     V(CreateEmptyObject)                  \
     V(CreateEmptyArray)                   \

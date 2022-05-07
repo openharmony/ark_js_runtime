@@ -86,12 +86,6 @@ JSTaggedValue JSThread::GetCurrentLexenv() const
     return frameHandler.GetEnv();
 }
 
-void JSThread::SetCurrentLexenv(JSTaggedValue env)
-{
-    FrameHandler frameHandler(this);
-    frameHandler.SetEnv(env);
-}
-
 const JSTaggedType *JSThread::GetCurrentFrame() const
 {
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
@@ -301,6 +295,9 @@ void JSThread::LoadStubsFromFile(std::string &fileName)
         }
     }
     AsmInterParsedOption asmInterOpt = GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
+    if (asmInterOpt.enableAsm) {
+        EnableAsmInterpreter();
+    }
     AdjustBCStubAndDebuggerStubEntries(glueData_.bcStubEntries_, glueData_.bcDebuggerStubEntries_, stubs, asmInterOpt);
 #ifdef NDEBUG
     bool enableCompilerLog = GetEcmaVM()->GetJSOptions().WasSetlogCompiledMethods();

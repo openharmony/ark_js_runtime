@@ -5026,7 +5026,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Store(VariableType::NATIVE_POINTER(), glue, state, prevOffset, sp);                           \
     GateRef frameTypeOffset = PtrAdd(prevOffset, IntPtrSize());                                   \
     Store(VariableType::INT64(), glue, state, frameTypeOffset,                                    \
-          Int64(static_cast<uint64_t>(FrameType::INTERPRETER_FRAME)));                            \
+          Int64(static_cast<uint64_t>(FrameType::ASM_INTERPRETER_FRAME)));                        \
     SetPcToFrame(glue, state, IntPtr(0));                                                         \
     SetFunctionToFrame(glue, state, func);                                                        \
     SetCurrentSpFrame(glue, *newSp);                                                              \
@@ -5141,7 +5141,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
         GateRef frameTypeOffset = PtrAdd(prevOffset, IntPtr(                                                    \
             env->IsArch32Bit() ? InterpretedFrameBase::TYPE_OFFSET_32 : InterpretedFrameBase::TYPE_OFFSET_64)); \
         Store(VariableType::INT64(), glue, state, frameTypeOffset,                                              \
-              Int64(static_cast<uint64_t>(FrameType::INTERPRETER_FRAME)));                                      \
+              Int64(static_cast<uint64_t>(FrameType::ASM_INTERPRETER_FRAME)));                                  \
         GateRef bytecodeArrayOffset = IntPtr(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit()));             \
         GateRef bytecodeArray = Load(VariableType::NATIVE_POINTER(), method, bytecodeArrayOffset);              \
         SetPcToFrame(glue, state, bytecodeArray);                                                               \
