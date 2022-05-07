@@ -640,7 +640,7 @@ void SlowPathLowering::LowerCreateIterResultObj(GateRef gate, GateRef glue)
 
 void SlowPathLowering::LowerSuspendGenerator(GateRef gate, GateRef glue)
 {
-    int id = RTSTUB_ID(SuspendGenerator);
+    int id = RTSTUB_ID(SuspendAotGenerator);
     // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 0), acc_.GetValueIn(gate, 1)});

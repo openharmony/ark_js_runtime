@@ -278,7 +278,8 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(DefineGeneratorFuncWithMethodId)    \
     V(GetAotLexicalEnv)                   \
     V(NewAotLexicalEnvDyn)                \
-    V(NewAotLexicalEnvWithNameDyn)
+    V(NewAotLexicalEnvWithNameDyn)        \
+    V(SuspendAotGenerator)
 
 #define RUNTIME_STUB_LIST(V)                 \
     RUNTIME_STUB_WITHOUT_GC_LIST(V)          \
@@ -503,6 +504,9 @@ private:
     static inline JSTaggedValue RuntimeNewAotLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId,
                                                                    JSHandle<JSTaggedValue> &currentLexEnv);
     static inline JSTaggedValue RuntimeCopyAotRestArgs(JSThread *thread, uint32_t restNumArgs, uintptr_t argv);
+    static inline JSTaggedValue RuntimeDefineGeneratorFuncWithMethodId(JSThread *thread, JSTaggedValue methodId);
+    static inline JSTaggedValue RuntimeSuspendAotGenerator(JSThread *thread, const JSHandle<JSTaggedValue> &genObj,
+                                                           const JSHandle<JSTaggedValue> &value);
 };
 }  // namespace panda::ecmascript
 #endif
