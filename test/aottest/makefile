@@ -26,10 +26,10 @@ ifeq ($(log), yes)
 endif
 
 ifeq ($(debug), no)
-	export LD_LIBRARY_PATH=$(root_dir)/out/hi3516dv300/clang_x64/ark/ark:$(root_dir)/out/hi3516dv300/clang_x64/ark/ark_js_runtime:$(root_dir)/out/hi3516dv300/clang_x64/common/common:$(root_dir)/prebuilts/clang/ohos/linux-x86_64/llvm/lib
+	export LD_LIBRARY_PATH=$(root_dir)/out/hi3516dv300/clang_x64/ark/ark:$(root_dir)/out/hi3516dv300/clang_x64/ark/ark_js_runtime:$(root_dir)/out/hi3516dv300/clang_x64/thirdparty/icu:$(root_dir)/prebuilts/clang/ohos/linux-x86_64/llvm/lib
 	bin_dir=$(root_dir)/out/hi3516dv300/clang_x64/ark/ark_js_runtime
 else
-	export LD_LIBRARY_PATH=$(root_dir)/out/hi3516dv300/clang_x64/exe.unstripped/clang_x64/ark/ark:$(root_dir)/out/hi3516dv300/clang_x64/exe.unstripped/clang_x64/ark/ark_js_runtime:$(root_dir)/out/hi3516dv300/clang_x64/lib.unstripped/clang_x64/ark/ark:$(root_dir)/out/hi3516dv300/clang_x64/lib.unstripped/clang_x64/ark/ark_js_runtime:$(root_dir)/out/hi3516dv300/clang_x64/lib.unstripped/clang_x64/test/test:$(root_dir)/out/hi3516dv300/clang_x64/lib.unstripped/clang_x64/common/common:$(root_dir)/prebuilts/clang/ohos/linux-x86_64/llvm/lib
+	export LD_LIBRARY_PATH=$(root_dir)/out/hi3516dv300/clang_x64/exe.unstripped/clang_x64/ark/ark:$(root_dir)/out/hi3516dv300/clang_x64/exe.unstripped/clang_x64/ark/ark_js_runtime:$(root_dir)/out/hi3516dv300/clang_x64/lib.unstripped/clang_x64/ark/ark:$(root_dir)/out/hi3516dv300/clang_x64/lib.unstripped/clang_x64/ark/ark_js_runtime:$(root_dir)/out/hi3516dv300/clang_x64/lib.unstripped/clang_x64/test/test:$(root_dir)/out/hi3516dv300/clang_x64/lib.unstripped/clang_x64/thirdparty/icu:$(root_dir)/prebuilts/clang/ohos/linux-x86_64/llvm/lib
 	bin_dir=$(root_dir)/out/hi3516dv300/clang_x64/exe.unstripped/clang_x64/ark/ark_js_runtime
 endif
 

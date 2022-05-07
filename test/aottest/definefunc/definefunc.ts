@@ -15,8 +15,16 @@
 
 declare function print(str:string):string;
 
-function getHelloWorld():string {
+function getHelloWorld():string
+{
     return "hello world";
 }
 
+function printArg(a:any, b:any)
+{
+    print(a);
+    print(b);
+}
+
 print(getHelloWorld());
+//printArg(33333, 44444);

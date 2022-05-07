@@ -121,7 +121,9 @@ void GateAccessor::DeleteExceptionDep(UsesIterator &useIt)
         auto merge = GetState(*useIt, 0);
         circuit_->DecreaseIn(merge, idx - 1);
         auto valueSelector = *(Uses(merge).begin());
-        circuit_->DecreaseIn(valueSelector, idx);
+        if (circuit_->GetOpCode(valueSelector) == OpCode::VALUE_SELECTOR) {
+            circuit_->DecreaseIn(valueSelector, idx);
+        }
         DecreaseIn(useIt);
     }
 }
