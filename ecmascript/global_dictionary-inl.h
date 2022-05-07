@@ -170,13 +170,13 @@ void GlobalDictionary::InvalidateAndReplaceEntry(JSThread *thread, const JSHandl
                                                  int entry, const JSHandle<JSTaggedValue> &oldValue)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    // Swap with a copy.
+    JSHandle<PropertyBox> newBox = factory->NewPropertyBox(oldValue);
     PropertyBox *box = dictHandle->GetBox(entry);
     PropertyAttributes attr = dictHandle->GetAttributes(entry);
     ASSERT_PRINT(attr.IsConfigurable(), "property must be configurable");
     ASSERT_PRINT(!box->GetValue().IsHole(), "value must not be hole");
 
-    // Swap with a copy.
-    JSHandle<PropertyBox> newBox = factory->NewPropertyBox(oldValue);
     // Cell is officially mutable henceforth.
     attr.SetBoxType(PropertyBoxType::MUTABLE);
     dictHandle->SetAttributes(thread, entry, attr);
