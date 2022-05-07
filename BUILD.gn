@@ -502,7 +502,7 @@ if (!is_mingw) {
     "ecmascript/dfx/hprof/string_hashmap.cpp",
     "ecmascript/snapshot/mem/snapshot.cpp",
     "ecmascript/snapshot/mem/snapshot_env.cpp",
-    "ecmascript/snapshot/mem/snapshot_serialize.cpp",
+    "ecmascript/snapshot/mem/snapshot_processor.cpp",
   ]
 }
 

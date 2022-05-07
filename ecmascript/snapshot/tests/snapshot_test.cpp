@@ -23,13 +23,13 @@
 #include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/snapshot/mem/snapshot.h"
-#include "ecmascript/snapshot/mem/snapshot_serialize.h"
+#include "ecmascript/snapshot/mem/snapshot_processor.h"
 #include "ecmascript/ts_types/ts_loader.h"
 
 using namespace panda::ecmascript;
 
 namespace panda::test {
-class SnapShotTest : public testing::Test {
+class SnapshotTest : public testing::Test {
 public:
     static void SetUpTestCase()
     {
@@ -64,7 +64,7 @@ public:
     JSThread *thread {nullptr};
 };
 
-HWTEST_F_L0(SnapShotTest, SerializeConstStringTable)
+HWTEST_F_L0(SnapshotTest, SerializeConstStringTable)
 {
     auto factory = ecmaVm->GetFactory();
     auto tsLoader = ecmaVm->GetTSLoader();
@@ -77,15 +77,15 @@ HWTEST_F_L0(SnapShotTest, SerializeConstStringTable)
     tsLoader->AddConstString(str3.GetTaggedValue());
     tsLoader->AddConstString(str4.GetTaggedValue());
     CString fileName = "snapshot";
-    SnapShot snapshotSerialize(ecmaVm);
+    Snapshot snapshotSerialize(ecmaVm);
     // serialize
     CVector<JSTaggedType> constStringTable = tsLoader->GetConstStringTable();
     snapshotSerialize.Serialize(reinterpret_cast<uintptr_t>(constStringTable.data()),
                                 constStringTable.size(), fileName);
     tsLoader->ClearConstStringTable();
-    SnapShot snapshotDeserialize(ecmaVm);
+    Snapshot snapshotDeserialize(ecmaVm);
     // deserialize
-    snapshotDeserialize.Deserialize(SnapShotType::TS_LOADER, fileName);
+    snapshotDeserialize.Deserialize(SnapshotType::TS_LOADER, fileName);
     CVector<JSTaggedType> constStringTable1 = tsLoader->GetConstStringTable();
     ASSERT_EQ(constStringTable1.size(), 4U);
     EcmaString *str11 = reinterpret_cast<EcmaString *>(constStringTable1[0]);
@@ -96,11 +96,11 @@ HWTEST_F_L0(SnapShotTest, SerializeConstStringTable)
     ASSERT_EQ(std::strcmp(str22->GetCString().get(), "str2"), 0);
     ASSERT_EQ(std::strcmp(str33->GetCString().get(), "str3"), 0);
     ASSERT_EQ(std::strcmp(str44->GetCString().get(), "str4"), 0);
-    ecmaVm->GetHeap()->GetSnapShotSpace()->ReclaimRegions();
+    ecmaVm->GetHeap()->GetSnapshotSpace()->ReclaimRegions();
     std::remove(fileName.c_str());
 }
 
-HWTEST_F_L0(SnapShotTest, SerializeConstPool)
+HWTEST_F_L0(SnapshotTest, SerializeConstPool)
 {
     auto factory = ecmaVm->GetFactory();
     auto env = ecmaVm->GetGlobalEnv();
@@ -119,14 +119,14 @@ HWTEST_F_L0(SnapShotTest, SerializeConstPool)
     constpool->Set(thread, 5, str1.GetTaggedValue());
 
     CString fileName = "snapshot";
-    SnapShot snapshotSerialize(ecmaVm);
+    Snapshot snapshotSerialize(ecmaVm);
     // serialize
     snapshotSerialize.Serialize(*constpool, nullptr, fileName);
     // deserialize
-    SnapShot snapshotDeserialize(ecmaVm);
-    snapshotDeserialize.Deserialize(SnapShotType::VM_ROOT, fileName);
+    Snapshot snapshotDeserialize(ecmaVm);
+    snapshotDeserialize.Deserialize(SnapshotType::VM_ROOT, fileName);
 
-    auto beginRegion = const_cast<Heap *>(ecmaVm->GetHeap())->GetSnapShotSpace()->GetFirstRegion();
+    auto beginRegion = const_cast<Heap *>(ecmaVm->GetHeap())->GetSnapshotSpace()->GetFirstRegion();
     auto constpool1 = reinterpret_cast<ConstantPool *>(beginRegion->GetBegin());
     EXPECT_EQ(constpool->GetClass()->SizeFromJSHClass(*constpool),
               constpool1->GetClass()->SizeFromJSHClass(constpool1));

@@ -19,18 +19,18 @@
 #include "ecmascript/global_env.h"
 
 namespace panda::ecmascript {
-void SnapShotEnv::Initialize()
+void SnapshotEnv::Initialize()
 {
     auto globalConst = const_cast<GlobalEnvConstants *>(vm_->GetJSThread()->GlobalConstants());
-    size_t begin = static_cast<size_t>(ConstantIndex::HCLASS_CLASS_INDEX);
-    size_t end = static_cast<size_t>(ConstantIndex::JS_API_TREE_SET_ITERATOR_CLASS_INDEX);
-    for (size_t index = begin; index <= end; index++) {
+    size_t endIndex = globalConst->GetHClassEndIndex();
+    for (size_t index = 0; index <= endIndex; index++) {
         JSTaggedValue objectValue = globalConst->GetGlobalConstantObject(index);
         envMap_.emplace(ToUintPtr(objectValue.GetTaggedObject()), index);
     }
 
     auto globalEnv = vm_->GetGlobalEnv();
-    for (size_t i = 0; i < GlobalEnv::FINAL_INDEX; i++) {
+    size_t globalEnvFieldSize = globalEnv->GetGlobalEnvFieldSize();
+    for (size_t i = 0; i < globalEnvFieldSize; i++) {
         uintptr_t address = globalEnv->ComputeObjectAddress(i);
         JSHandle<JSTaggedValue> result(address);
         if (result->IsHeapObject()) {
@@ -39,7 +39,7 @@ void SnapShotEnv::Initialize()
     }
 }
 
-void SnapShotEnv::Iterate(const RootVisitor &v)
+void SnapshotEnv::Iterate(const RootVisitor &v)
 {
     for (const auto &it : envMap_) {
         v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&(it.first))));

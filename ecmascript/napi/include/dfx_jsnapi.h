@@ -36,8 +36,8 @@ using Stream = ecmascript::Stream;
 
 class PUBLIC_API DFXJSNApi {
 public:
-    static void DumpHeapSnapShot(EcmaVM *vm, int dumpFormat, const std::string &path, bool isVmMode = true);
-    static void DumpHeapSnapShot(EcmaVM *vm, int dumpFormat, Stream *stream, bool isVmMode = true);
+    static void DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, const std::string &path, bool isVmMode = true);
+    static void DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, Stream *stream, bool isVmMode = true);
     static bool BuildNativeAndJsBackStackTrace(EcmaVM *vm, std::string &stackTraceStr);
     static bool StartHeapTracking(EcmaVM *vm, double timeInterval, bool isVmMode = true);
     static bool StopHeapTracking(EcmaVM *vm, const std::string &filePath);

@@ -35,7 +35,7 @@
 #include "ecmascript/tagged_dictionary.h"
 
 namespace panda::ecmascript {
-CString *HeapSnapShot::GetString(const CString &as)
+CString *HeapSnapshot::GetString(const CString &as)
 {
     return stringTable_.GetString(as);
 }
@@ -62,7 +62,7 @@ Edge *Edge::NewEdge(const Heap *heap, uint64_t id, EdgeType type, Node *from, No
     return edge;
 }
 
-HeapSnapShot::~HeapSnapShot()
+HeapSnapshot::~HeapSnapshot()
 {
     const Heap *heap = thread_->GetEcmaVM()->GetHeap();
     for (Node *node : nodes_) {
@@ -75,7 +75,7 @@ HeapSnapShot::~HeapSnapShot()
     edges_.clear();
 }
 
-bool HeapSnapShot::BuildUp(JSThread *thread)
+bool HeapSnapshot::BuildUp(JSThread *thread)
 {
     FillNodes();
     FillEdges();
@@ -83,18 +83,18 @@ bool HeapSnapShot::BuildUp(JSThread *thread)
     return Verify();
 }
 
-bool HeapSnapShot::Verify()
+bool HeapSnapshot::Verify()
 {
     GetString(CString("HeapVerify:").append(ToCString(totalNodesSize_)));
     return (edgeCount_ > nodeCount_) && (totalNodesSize_ > 0);
 }
 
-void HeapSnapShot::PrepareSnapShot()
+void HeapSnapshot::PrepareSnapshot()
 {
     FillNodes();
 }
 
-void HeapSnapShot::UpdateNode()
+void HeapSnapshot::UpdateNode()
 {
     for (Node *node : nodes_) {
         node->SetLive(false);
@@ -110,7 +110,7 @@ void HeapSnapShot::UpdateNode()
     }
 }
 
-bool HeapSnapShot::FinishSnapShot()
+bool HeapSnapshot::FinishSnapshot()
 {
     UpdateNode();
     FillEdges();
@@ -118,17 +118,17 @@ bool HeapSnapShot::FinishSnapShot()
     return Verify();
 }
 
-void HeapSnapShot::RecordSampleTime()
+void HeapSnapshot::RecordSampleTime()
 {
     timeStamps_.emplace_back(sequenceId_);
 }
 
-void HeapSnapShot::AddNode(uintptr_t address)
+void HeapSnapshot::AddNode(uintptr_t address)
 {
     GenerateNode(JSTaggedValue(address));
 }
 
-void HeapSnapShot::MoveNode(uintptr_t address, uintptr_t forward_address)
+void HeapSnapshot::MoveNode(uintptr_t address, uintptr_t forward_address)
 {
     int sequenceId = -1;
     Node *node = entryMap_.FindAndEraseNode(address);
@@ -140,7 +140,7 @@ void HeapSnapShot::MoveNode(uintptr_t address, uintptr_t forward_address)
 }
 
 // NOLINTNEXTLINE(readability-function-size)
-CString *HeapSnapShot::GenerateNodeName(TaggedObject *entry)
+CString *HeapSnapshot::GenerateNodeName(TaggedObject *entry)
 {
     auto *hCls = entry->GetClass();
     JSType type = hCls->GetObjectType();
@@ -420,7 +420,7 @@ CString *HeapSnapShot::GenerateNodeName(TaggedObject *entry)
     return GetString("UnKnownType");
 }
 
-NodeType HeapSnapShot::GenerateNodeType(TaggedObject *entry)
+NodeType HeapSnapshot::GenerateNodeType(TaggedObject *entry)
 {
     NodeType nodeType = NodeType::INVALID;
     auto *hCls = entry->GetClass();
@@ -434,7 +434,7 @@ NodeType HeapSnapShot::GenerateNodeType(TaggedObject *entry)
     return nodeType;
 }
 
-void HeapSnapShot::FillNodes()
+void HeapSnapshot::FillNodes()
 {
     // Iterate Heap Object
     auto heap = thread_->GetEcmaVM()->GetHeap();
@@ -445,7 +445,7 @@ void HeapSnapShot::FillNodes()
     }
 }
 
-Node *HeapSnapShot::GenerateNode(JSTaggedValue entry, int sequenceId)
+Node *HeapSnapshot::GenerateNode(JSTaggedValue entry, int sequenceId)
 {
     Node *node = nullptr;
     if (sequenceId == -1) {
@@ -515,7 +515,7 @@ Node *HeapSnapShot::GenerateNode(JSTaggedValue entry, int sequenceId)
     return node;
 }
 
-Node *HeapSnapShot::GenerateStringNode(JSTaggedValue entry, int sequenceId)
+Node *HeapSnapshot::GenerateStringNode(JSTaggedValue entry, int sequenceId)
 {
     Node *node = nullptr;
     auto originStr = static_cast<EcmaString *>(entry.GetTaggedObject());
@@ -541,7 +541,7 @@ Node *HeapSnapShot::GenerateStringNode(JSTaggedValue entry, int sequenceId)
     return node;
 }
 
-void HeapSnapShot::FillEdges()
+void HeapSnapshot::FillEdges()
 {
     size_t length = nodes_.size();
     auto iter = nodes_.begin();
@@ -595,7 +595,7 @@ void HeapSnapShot::FillEdges()
     }
 }
 
-void HeapSnapShot::BridgeAllReferences()
+void HeapSnapshot::BridgeAllReferences()
 {
     // This Function is Unused
     for (Edge *edge : edges_) {
@@ -608,14 +608,14 @@ void HeapSnapShot::BridgeAllReferences()
     }
 }
 
-CString *HeapSnapShot::GenerateEdgeName([[maybe_unused]] TaggedObject *from, [[maybe_unused]] TaggedObject *to)
+CString *HeapSnapshot::GenerateEdgeName([[maybe_unused]] TaggedObject *from, [[maybe_unused]] TaggedObject *to)
 {
     // This Function is Unused
     ASSERT(from != nullptr && from != to);
     return GetString("[]");  // unAnalysed
 }
 
-Node *HeapSnapShot::InsertNodeUnique(Node *node)
+Node *HeapSnapshot::InsertNodeUnique(Node *node)
 {
     AccumulateNodeSize(node->GetSelfSize());
     nodes_.emplace_back(node);
@@ -623,7 +623,7 @@ Node *HeapSnapShot::InsertNodeUnique(Node *node)
     return node;
 }
 
-void HeapSnapShot::EraseNodeUnique(Node *node)
+void HeapSnapshot::EraseNodeUnique(Node *node)
 {
     auto iter = std::find(nodes_.begin(), nodes_.end(), node);
     if (iter != nodes_.end()) {
@@ -633,14 +633,14 @@ void HeapSnapShot::EraseNodeUnique(Node *node)
     }
 }
 
-Edge *HeapSnapShot::InsertEdgeUnique(Edge *edge)
+Edge *HeapSnapshot::InsertEdgeUnique(Edge *edge)
 {
     edges_.emplace_back(edge);
     edgeCount_++;
     return edge;
 }
 
-void HeapSnapShot::AddSyntheticRoot(JSThread *thread)
+void HeapSnapshot::AddSyntheticRoot(JSThread *thread)
 {
     Node *syntheticRoot = Node::NewNode(heap_, 1, nodeCount_, GetString("SyntheticRoot"),
                                         NodeType::SYNTHETIC, 0, nullptr);
@@ -684,7 +684,7 @@ void HeapSnapShot::AddSyntheticRoot(JSThread *thread)
     }
 }
 
-Node *HeapSnapShot::InsertNodeAt(size_t pos, Node *node)
+Node *HeapSnapshot::InsertNodeAt(size_t pos, Node *node)
 {
     ASSERT(node != nullptr);
     auto iter = nodes_.begin();
@@ -694,7 +694,7 @@ Node *HeapSnapShot::InsertNodeAt(size_t pos, Node *node)
     return node;
 }
 
-Edge *HeapSnapShot::InsertEdgeAt(size_t pos, Edge *edge)
+Edge *HeapSnapshot::InsertEdgeAt(size_t pos, Edge *edge)
 {
     ASSERT(edge != nullptr);
     edges_.insert(edges_.begin() + pos, edge);

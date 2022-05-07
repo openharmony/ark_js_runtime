@@ -414,6 +414,11 @@ public:
         return constants_[index];
     }
 
+    size_t GetHClassEndIndex() const
+    {
+        return static_cast<size_t>(ConstantIndex::JS_API_TREE_SET_ITERATOR_CLASS_INDEX);
+    }
+
     static constexpr size_t SizeArch32 =
         JSTaggedValue::TaggedTypeSize() * static_cast<size_t>(ConstantIndex::CONSTATNT_COUNT);
     static constexpr size_t SizeArch64 =
