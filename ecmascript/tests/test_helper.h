@@ -83,7 +83,6 @@ public:
     {
         JSRuntimeOptions options;
         options.SetEnableForceGC(true);
-        options.SetEnableStubAot(true);
         instance = JSNApi::CreateEcmaVM(options);
         instance->SetEnableForceGC(true);
         ASSERT_TRUE(instance != nullptr) << "Cannot create EcmaVM";
