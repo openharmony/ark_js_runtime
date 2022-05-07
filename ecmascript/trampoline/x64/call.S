@@ -917,7 +917,7 @@ PushCallArgs0AndDispatchSlowPath:
     // skip stack overflow check now
     leaq    -ASM_INTERPRETED_FRAME_STATE_SIZE(%r12), %r11
     movq    %rdx, ASM_INTERPRETED_FRAME_CALL_SIZE_OFFSET(%r11) // lazy storage of jumpSizeAfterCall
-    pushq   $ASM_INTERPRETER_FRAME  // frame type
+    pushq   $ASM_INTERPRETER_FRAME_TYPE  // frame type
     pushq   %r12                    // prev_sp
     movq    ASM_JS_METHOD_BYTECODEARRAY_OFFSET(%rbx), %rcx
     pushq   %rcx                    // pc
@@ -1093,7 +1093,7 @@ PushCallArgs0AndDispatchNative:
 .PushFrameStateNative:
     movq    %rsp, %r15  // newSp
     // skip stack overflow check now
-    pushq   $ASM_INTERPRETER_FRAME  // frame type
+    pushq   $ASM_INTERPRETER_FRAME_TYPE  // frame type
     pushq   %rdx                    // prevSp
     pushq   $0                      // pc
     pushq   %r10                    // fp

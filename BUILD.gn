@@ -167,9 +167,6 @@ config("ark_jsruntime_common_config") {
     "-Wdate-time",
     "-Wformat=2",
   ]
-  if (enable_asm_interp) {
-    defines += [ "ECMASCRIPT_COMPILE_ASM_INTERPRETER" ]
-  }
   if (enable_test_stub) {
     defines += [ "ECMASCRIPT_ENABLE_TEST_STUB" ]
   }

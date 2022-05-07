@@ -1207,7 +1207,7 @@ void AssemblerStubsX64::CallNativeEntry(ExtendedAssemblerX64 *assembler, Registe
 void AssemblerStubsX64::PushFrameState(ExtendedAssemblerX64 *assembler, Register prevSpRegister, Register fpRegister,
     Register callTargetRegister, Register methodRegister, Register pcRegister, Register operatorRegister, bool isNative)
 {
-    __ Pushq(static_cast<int32_t>(FrameType::INTERPRETER_FRAME));  // frame type
+    __ Pushq(static_cast<int32_t>(FrameType::ASM_INTERPRETER_FRAME));  // frame type
     __ Pushq(prevSpRegister);                                      // prevSp
     if (isNative) {
         __ Pushq(0);                                               // pc

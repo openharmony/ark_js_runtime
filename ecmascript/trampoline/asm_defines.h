@@ -94,9 +94,9 @@
 
 #define OPTIMIZE_FRAME_TYPE                   (0)
 #define JS_ENTRY_FRAME_TYPE                   (1)
-#define ASM_INTERPRETER_FRAME                 (2)
-#define LEAVE_FRAME_TYPE                      (3)
-#define ASM_LEAVE_FRAME_WITH_ARGV             (6)
+#define ASM_INTERPRETER_FRAME_TYPE            (5)
+#define LEAVE_FRAME_TYPE                      (2)
+#define ASM_LEAVE_FRAME_WITH_ARGV             (3)
 #define JSUNDEFINED                           (0xa)
 #define JSHOLE                                (0x0)
 #define ASM_JS_METHOD_NUM_VREGS_START_BIT     (4)
