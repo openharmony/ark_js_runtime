@@ -41,7 +41,7 @@ EcmaRuntimeCallInfo EcmaInterpreter::NewRuntimeCallInfo(
     size_t numArgs)
 {
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    JSTaggedType *newSp = sp - INTERPRETER_FRAME_STATE_SIZE;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    JSTaggedType *newSp = GetNextInterpreterEntryFrameSp(sp);
     if (UNLIKELY(thread->DoStackOverflowCheck(newSp - numArgs - RESERVED_CALL_ARGCOUNT))) {
         EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, INVALID_ARGS_NUMBER, nullptr);
         return ecmaRuntimeCallInfo;
@@ -51,12 +51,16 @@ EcmaRuntimeCallInfo EcmaInterpreter::NewRuntimeCallInfo(
     // create entry frame.
     InterpretedEntryFrame *entryState = InterpretedEntryFrame::GetFrameFromSp(newSp);
     entryState->base.type = FrameType::INTERPRETER_ENTRY_FRAME;
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+    entryState->base.prev = sp;
+#else
     auto leaveFrame = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
     if (leaveFrame != nullptr) {
         entryState->base.prev = leaveFrame;
     } else {
         entryState->base.prev = sp;
     }
+#endif
     entryState->pc = nullptr;
 
     newSp -= INTERPRETER_ENTRY_FRAME_STATE_SIZE;   // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -67,5 +71,15 @@ EcmaRuntimeCallInfo EcmaInterpreter::NewRuntimeCallInfo(
     *(--newSp) = func.GetTaggedType();
     EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, numArgs, newSp);
     return ecmaRuntimeCallInfo;
+}
+
+JSTaggedType *EcmaInterpreter::GetNextInterpreterEntryFrameSp(JSTaggedType *sp)
+{
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+    JSTaggedType *newSp = FrameHandler::GetInterpretedEntryFrameStart(sp);
+#else
+    JSTaggedType *newSp = sp - INTERPRETER_FRAME_STATE_SIZE;
+#endif
+    return newSp;
 }
 }  // namespace panda::ecmascript

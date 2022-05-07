@@ -531,7 +531,7 @@ DEF_RUNTIME_STUBS(SuperCallSpread)
     RUNTIME_STUBS_HEADER(SuperCallSpread);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, func, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, array, 1);
-    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentInterpretedFrame());
     JSTaggedValue function = InterpreterAssembly::GetNewTarget(sp);
     return RuntimeSuperCallSpread(thread, func, JSHandle<JSTaggedValue>(thread, function), array).GetRawData();
 }
@@ -658,7 +658,7 @@ DEF_RUNTIME_STUBS(LdSuperByValue)
     RUNTIME_STUBS_HEADER(LdSuperByValue);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, key, 1);
-    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentInterpretedFrame());
     JSTaggedValue thisFunc = InterpreterAssembly::GetThisFunction(sp);
     return RuntimeLdSuperByValue(thread, obj, key, thisFunc).GetRawData();
 }
@@ -669,7 +669,7 @@ DEF_RUNTIME_STUBS(StSuperByValue)
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, key, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 2);
-    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentInterpretedFrame());
     JSTaggedValue thisFunc = InterpreterAssembly::GetThisFunction(sp);
     return RuntimeStSuperByValue(thread, obj, key, value, thisFunc).GetRawData();
 }
@@ -818,7 +818,8 @@ DEF_RUNTIME_STUBS(SetClassConstructorLength)
 DEF_RUNTIME_STUBS(UpdateHotnessCounter)
 {
     RUNTIME_STUBS_HEADER(UpdateHotnessCounter);
-    AsmInterpretedFrame *state = GET_ASM_FRAME(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame()));
+    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentInterpretedFrame());
+    AsmInterpretedFrame *state = GET_ASM_FRAME(sp);
     thread->CheckSafepoint();
     auto thisFunc = JSFunction::Cast(state->function.GetTaggedObject());
     if (thisFunc->GetProfileTypeInfo() == JSTaggedValue::Undefined()) {
@@ -1329,12 +1330,12 @@ DEF_RUNTIME_STUBS(JumpToCInterpreter)
     CONVERT_ARG_TAGGED_CHECKED(acc, 2);
     CONVERT_ARG_TAGGED_CHECKED(hotnessCounter, 3);
 
-    auto sp = const_cast<JSTaggedType*>(thread->GetCurrentSPFrame());
-    const uint8_t* currentPc = reinterpret_cast<const uint8_t*>(GET_ASM_FRAME(sp)->pc);
+    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentInterpretedFrame());
+    const uint8_t *currentPc = reinterpret_cast<const uint8_t*>(GET_ASM_FRAME(sp)->pc);
 
     uint8_t opcode = currentPc[0];
     asmDispatchTable[opcode](thread, currentPc, sp, constpool, profileTypeInfo, acc, hotnessCounter.GetInt());
-    sp = const_cast<JSTaggedType*>(thread->GetCurrentSPFrame());
+    sp = const_cast<JSTaggedType *>(thread->GetCurrentInterpretedFrame());
     AsmInterpretedFrame *frame = GET_ASM_FRAME(sp);
     uintptr_t framePc = reinterpret_cast<uintptr_t>(frame->pc);
     return JSTaggedValue(static_cast<uint64_t>(framePc)).GetRawData();
@@ -1390,7 +1391,7 @@ DEF_RUNTIME_STUBS(GetSymbolFunction)
 DEF_RUNTIME_STUBS(GetUnmapedArgs)
 {
     RUNTIME_STUBS_HEADER(GetUnmapedArgs);
-    auto sp = const_cast<JSTaggedType*>(thread->GetCurrentSPFrame());
+    auto sp = const_cast<JSTaggedType*>(thread->GetCurrentInterpretedFrame());
     uint32_t startIdx = 0;
     uint32_t actualNumArgs = InterpreterAssembly::GetNumArgs(sp, 0, startIdx);
     return RuntimeGetUnmapedArgs(thread, sp, actualNumArgs, startIdx).GetRawData();
@@ -1400,7 +1401,7 @@ DEF_RUNTIME_STUBS(CopyRestArgs)
 {
     RUNTIME_STUBS_HEADER(CopyRestArgs);
     CONVERT_ARG_TAGGED_CHECKED(restIdx, 0);
-    auto sp = const_cast<JSTaggedType*>(thread->GetCurrentSPFrame());
+    auto sp = const_cast<JSTaggedType*>(thread->GetCurrentInterpretedFrame());
     uint32_t startIdx = 0;
     uint32_t restNumArgs = InterpreterAssembly::GetNumArgs(sp, restIdx.GetInt(), startIdx);
     return RuntimeCopyRestArgs(thread, sp, restNumArgs, startIdx).GetRawData();
@@ -1562,7 +1563,7 @@ DEF_RUNTIME_STUBS(SuperCall)
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, func, 0);
     CONVERT_ARG_TAGGED_CHECKED(firstVRegIdx, 1);
     CONVERT_ARG_TAGGED_CHECKED(length, 2);
-    auto sp = const_cast<JSTaggedType*>(thread->GetCurrentSPFrame());
+    auto sp = const_cast<JSTaggedType*>(thread->GetCurrentInterpretedFrame());
     JSTaggedValue newTarget = InterpreterAssembly::GetNewTarget(sp);
     return RuntimeSuperCall(thread, func, JSHandle<JSTaggedValue>(thread, newTarget),
         static_cast<uint16_t>(firstVRegIdx.GetInt()),
@@ -1607,7 +1608,7 @@ DEF_RUNTIME_STUBS(CallNative)
     RUNTIME_STUBS_HEADER(CallNative);
     CONVERT_ARG_TAGGED_CHECKED(numArgs, 0);
 
-    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentInterpretedFrame());
     auto state = reinterpret_cast<AsmInterpretedFrame *>(sp) - 1;
     // leave frame prev is prevSp now, change it to current sp
     auto leaveFrame = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());

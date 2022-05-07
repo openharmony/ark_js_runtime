@@ -106,6 +106,7 @@ public:
     void Cmpq(Immediate src, Register dst);
     void Cmpq(Register src, Register dst);
     void Cmpl(Immediate src, Register dst);
+    void Cmpb(Immediate src, Register dst);
     void Cmp(Immediate src, Register dst);
     void Callq(Register addr);
     void Callq(Label *target);
