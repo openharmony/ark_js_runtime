@@ -27,8 +27,12 @@ public:
     }
 
     void PushAlignBytes();
+    void PopAlignBytes();
     void PushCppCalleeSaveRegisters();
     void PopCppCalleeSaveRegisters();
+    void PushGhcCalleeSaveRegisters();
+    void PopGhcCalleeSaveRegisters();
+    void PushArgsWithArgv(Register argc, Register argv, Register operatorRegister);
 };
 }  // panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_EXTENDED_ASSEMBLER_X64_H

@@ -106,3 +106,9 @@ CallRuntimeWithArgv:
 
 .global CallRuntime
 CallRuntime:
+
+.global AsmInterpreterEntry
+AsmInterpreterEntry:
+
+.global JSCallDispatch
+JSCallDispatch:
