@@ -26,6 +26,7 @@ public:
     bool Expand(bool isPromoted);
     void Stop();
     void ResetAllocator();
+    void IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const;
     void DecreaseSurvivalObjectSize(size_t objSize)
     {
         survivalObjectSize_ -= objSize;
@@ -68,8 +69,6 @@ public:
     size_t GetAllocatedSizeSinceGC(uintptr_t top = 0) const;
 
     bool SwapRegion(Region *region, SemiSpace *fromSpace);
-
-    void IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const;
 
 private:
     os::memory::Mutex lock_;

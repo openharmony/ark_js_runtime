@@ -223,7 +223,8 @@ host_unittest_action("AssemblerStubsTest") {
   if (compile_llvm_online) {
     lib_dirs = [ "//third_party/llvm-project/build/lib" ]
   } else {
-    lib_dirs = [ "//prebuilts/ark_js_prebuilts/llvm_prebuilts/build/lib" ]
+    lib_dirs =
+        [ "//prebuilts/ark_tools/ark_js_prebuilts/llvm_prebuilts/build/lib" ]
   }
 
   libs = [
