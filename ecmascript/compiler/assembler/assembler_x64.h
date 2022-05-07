@@ -18,8 +18,6 @@
 #include "assembler.h"
 
 namespace panda::ecmascript::x64 {
-using Immediate = int32_t;
-
 enum Register : uint8_t {
     rax = 0,
     rcx,
@@ -44,6 +42,20 @@ enum Scale : uint8_t {
     Times2,
     Times4,
     Times8
+};
+
+class Immediate {
+public:
+    Immediate(int32_t value) : value_(value)
+    {
+    }
+
+    int32_t Value() const
+    {
+        return value_;
+    }
+private:
+    int32_t value_;
 };
 
 class Operand {
