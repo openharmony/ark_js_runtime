@@ -539,9 +539,6 @@ void EcmaVM::ProcessReferences(const WeakRootVisitor &v0)
 
 void EcmaVM::PushToNativePointerList(JSNativePointer *array)
 {
-    if (std::find(nativePointerList_.begin(), nativePointerList_.end(), array) != nativePointerList_.end()) {
-        return;
-    }
     nativePointerList_.emplace_back(array);
 }
 
@@ -549,6 +546,8 @@ void EcmaVM::RemoveFromNativePointerList(JSNativePointer *array)
 {
     auto iter = std::find(nativePointerList_.begin(), nativePointerList_.end(), array);
     if (iter != nativePointerList_.end()) {
+        JSNativePointer *object = *iter;
+        object->Destroy();
         nativePointerList_.erase(iter);
     }
 }
