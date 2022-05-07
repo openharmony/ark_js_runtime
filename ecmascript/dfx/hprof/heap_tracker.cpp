@@ -23,22 +23,22 @@ static constexpr int32_t MILLI_TO_MICRO = 1000;
 void HeapTrackerSample::Run()
 {
     while (!isInterrupt_) {
-        snapShot_->RecordSampleTime();
+        snapshot_->RecordSampleTime();
         usleep(timeInterval_ * MILLI_TO_MICRO);
     }
 }
 
 void HeapTracker::AllocationEvent(uintptr_t address)
 {
-    if (snapShot_ != nullptr) {
-        snapShot_->AddNode(address);
+    if (snapshot_ != nullptr) {
+        snapshot_->AddNode(address);
     }
 }
 
 void HeapTracker::MoveEvent(uintptr_t address, uintptr_t forward_address)
 {
-    if (snapShot_ != nullptr) {
-        snapShot_->MoveNode(address, forward_address);
+    if (snapshot_ != nullptr) {
+        snapshot_->MoveNode(address, forward_address);
     }
 }
 }  // namespace panda::ecmascript

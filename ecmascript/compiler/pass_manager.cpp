@@ -64,10 +64,10 @@ bool PassManager::Compile(const std::string &fileName, const std::string &triple
     AotFileManager manager(&aotModule, &log, LOptions(optLevel, true));
     manager.SaveAOTFile(outputFileName);
     TSLoader *tsLoader = vm_->GetTSLoader();
-    SnapShot snapShot(vm_);
+    Snapshot snapshot(vm_);
     CVector<JSTaggedType> constStringTable = tsLoader->GetConstStringTable();
     const CString snapshotPath(vm_->GetJSOptions().GetSnapshotOutputFile().c_str());
-    snapShot.Serialize(reinterpret_cast<uintptr_t>(constStringTable.data()), constStringTable.size(), snapshotPath);
+    snapshot.Serialize(reinterpret_cast<uintptr_t>(constStringTable.data()), constStringTable.size(), snapshotPath);
     return true;
 }
 

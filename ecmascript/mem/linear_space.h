@@ -75,12 +75,12 @@ private:
     os::memory::Mutex lock_;
 };
 
-class SnapShotSpace : public LinearSpace {
+class SnapshotSpace : public LinearSpace {
 public:
-    explicit SnapShotSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity);
-    ~SnapShotSpace() override = default;
-    NO_COPY_SEMANTIC(SnapShotSpace);
-    NO_MOVE_SEMANTIC(SnapShotSpace);
+    explicit SnapshotSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity);
+    ~SnapshotSpace() override = default;
+    NO_COPY_SEMANTIC(SnapshotSpace);
+    NO_MOVE_SEMANTIC(SnapshotSpace);
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_LINEAR_SPACE_H

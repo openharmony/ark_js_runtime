@@ -192,7 +192,7 @@ void ParallelEvacuator::UpdateReference()
         AddWorkload(std::make_unique<UpdateRSetWorkload>(this, current));
         oldRegionCount++;
     });
-    heap_->EnumerateSnapShotSpaceRegions([this] (Region *current) {
+    heap_->EnumerateSnapshotSpaceRegions([this] (Region *current) {
         AddWorkload(std::make_unique<UpdateRSetWorkload>(this, current));
     });
     LOG(DEBUG, RUNTIME) << "UpdatePointers statistic: younge space region compact moving count:"

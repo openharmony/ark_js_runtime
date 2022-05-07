@@ -64,7 +64,7 @@ void Heap::Initialize()
     nonMovableSpace_->Initialize();
     size_t defaultSnapshotSpaceCapacity = ecmaVm_->GetJSOptions().DefaultSnapshotSpaceCapacity();
     size_t maxSnapshotSpaceCapacity = ecmaVm_->GetJSOptions().MaxSnapshotSpaceCapacity();
-    snapshotSpace_ = new SnapShotSpace(this, defaultSnapshotSpaceCapacity, maxSnapshotSpaceCapacity);
+    snapshotSpace_ = new SnapshotSpace(this, defaultSnapshotSpaceCapacity, maxSnapshotSpaceCapacity);
     size_t maxMachineCodeSpaceCapacity = ecmaVm_->GetJSOptions().MaxMachineCodeSpaceCapacity();
     machineCodeSpace_ = new MachineCodeSpace(this, maxMachineCodeSpaceCapacity, maxMachineCodeSpaceCapacity);
     machineCodeSpace_->Initialize();
