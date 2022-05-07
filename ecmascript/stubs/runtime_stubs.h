@@ -273,6 +273,7 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(LdBigInt)                           \
     V(NewLexicalEnvWithNameDyn)           \
     V(GetAotUnmapedArgs)                  \
+    V(CopyAotRestArgs)                    \
     V(NotifyBytecodePcChanged)            \
     V(DefineGeneratorFuncWithMethodId)    \
     V(GetAotLexicalEnv)                   \
@@ -501,6 +502,7 @@ private:
                                                            JSHandle<JSTaggedValue> &currentLexEnv);
     static inline JSTaggedValue RuntimeNewAotLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId,
                                                                    JSHandle<JSTaggedValue> &currentLexEnv);
+    static inline JSTaggedValue RuntimeCopyAotRestArgs(JSThread *thread, uint32_t restNumArgs, uintptr_t argv);
 };
 }  // namespace panda::ecmascript
 #endif

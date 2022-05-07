@@ -1673,6 +1673,13 @@ DEF_RUNTIME_STUBS(NewAotLexicalEnvWithNameDyn)
                                               static_cast<uint16_t>(scopeId.GetInt()), currentLexEnv).GetRawData();
 }
 
+DEF_RUNTIME_STUBS(CopyAotRestArgs)
+{
+    RUNTIME_STUBS_HEADER(CopyAotRestArgs);
+    CONVERT_ARG_TAGGED_CHECKED(restNumArgs, 0);
+    return RuntimeCopyAotRestArgs(thread, restNumArgs.GetInt(), argv).GetRawData();
+}
+
 JSTaggedType RuntimeStubs::CreateArrayFromList([[maybe_unused]]uintptr_t argGlue, int32_t argc, JSTaggedValue *argvPtr)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
