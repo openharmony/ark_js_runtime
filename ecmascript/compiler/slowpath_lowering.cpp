@@ -911,7 +911,9 @@ void SlowPathLowering::LowerThrowIfNotObject(GateRef gate, GateRef glue)
 void SlowPathLowering::LowerThrowUndefinedIfHole(GateRef gate, GateRef glue)
 {
     int id = RTSTUB_ID(ThrowUndefinedIfHole);
-    GateRef newGate = builder_.CallRuntime(glue, id, {});
+    // 2: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+    GateRef newGate = builder_.CallRuntime(glue, id, {acc_.GetValueIn(gate, 1)});
     GateRef hole = acc_.GetValueIn(gate, 0);
     GateRef isHole = builder_.TaggedIsHole(hole);
     ReplaceHirToThrowCall(gate, isHole, newGate);
@@ -1854,7 +1856,7 @@ void SlowPathLowering::LowerPopLexicalEnv(GateRef gate, GateRef glue, GateRef js
     successControl.emplace_back(builder_.GetDepend());
     failControl.emplace_back(Circuit::NullGate());
     failControl.emplace_back(Circuit::NullGate());
-    ReplaceHirToSubCfg(gate, parentLexEnv, successControl, failControl);
+    ReplaceHirToSubCfg(gate, parentLexEnv, successControl, failControl, true);
 }
 
 void SlowPathLowering::LowerLdSuperByValue(GateRef gate, GateRef glue, GateRef jsFunc)
