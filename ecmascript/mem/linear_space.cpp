@@ -91,6 +91,36 @@ void LinearSpace::ResetAllocator()
     }
 }
 
+void LinearSpace::IterateOverObjects(const std::function<void(TaggedObject *object)> &visitor) const
+{
+    auto current = GetCurrentRegion();
+    EnumerateRegions([&](Region *region) {
+        auto curPtr = region->GetBegin();
+        uintptr_t endPtr;
+        if (region == current) {
+            auto top = allocator_->GetTop();
+            endPtr = curPtr + region->GetAllocatedBytes(top);
+        } else {
+            endPtr = curPtr + region->GetAllocatedBytes();
+        }
+
+        size_t objSize;
+        while (curPtr < endPtr) {
+            auto freeObject = FreeObject::Cast(curPtr);
+            if (!freeObject->IsFreeObject()) {
+                auto obj = reinterpret_cast<TaggedObject *>(curPtr);
+                visitor(obj);
+                objSize = obj->GetClass()->SizeFromJSHClass(obj);
+            } else {
+                objSize = freeObject->Available();
+            }
+            curPtr += objSize;
+            CHECK_OBJECT_SIZE(objSize);
+        }
+        CHECK_REGION_END(curPtr, endPtr);
+    });
+}
+
 SemiSpace::SemiSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
     : LinearSpace(heap, MemSpaceType::SEMI_SPACE, initialCapacity, maximumCapacity) {}
 
@@ -191,36 +221,6 @@ bool SemiSpace::AdjustCapacity(size_t allocatedSizeSinceGC)
         return true;
     }
     return false;
-}
-
-void SemiSpace::IterateOverObjects(const std::function<void(TaggedObject *object)> &visitor) const
-{
-    auto current = GetCurrentRegion();
-    EnumerateRegions([&](Region *region) {
-        auto curPtr = region->GetBegin();
-        uintptr_t endPtr;
-        if (region == current) {
-            auto top = allocator_->GetTop();
-            endPtr = curPtr + region->GetAllocatedBytes(top);
-        } else {
-            endPtr = curPtr + region->GetAllocatedBytes();
-        }
-
-        size_t objSize;
-        while (curPtr < endPtr) {
-            auto freeObject = FreeObject::Cast(curPtr);
-            if (!freeObject->IsFreeObject()) {
-                auto obj = reinterpret_cast<TaggedObject *>(curPtr);
-                visitor(obj);
-                objSize = obj->GetClass()->SizeFromJSHClass(obj);
-            } else {
-                objSize = freeObject->Available();
-            }
-            curPtr += objSize;
-            CHECK_OBJECT_SIZE(objSize);
-        }
-        CHECK_REGION_END(curPtr, endPtr);
-    });
 }
 
 size_t SemiSpace::GetAllocatedSizeSinceGC(uintptr_t top) const
