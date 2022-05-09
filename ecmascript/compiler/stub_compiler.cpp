@@ -199,5 +199,5 @@ int main(const int argc, const char **argv)
     bool res = compiler.BuildStubModuleAndSave(tripleString, commonStubFile, bcHandlerFile, optLevel);
     COMPILER_LOG(INFO) << "stub compiler run finish, result condition(T/F):" << std::boolalpha << res;
     panda::JSNApi::DestroyJSVM(vm);
-    return 0;
+    return res ? 0 : -1;
 }
