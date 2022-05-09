@@ -739,7 +739,7 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList, 
         GateRef gateTmp = inList[paraIdx];
         params.push_back(gateToLLVMMaps_[gateTmp]);
     }
-    if (compCfg_->Is32Bit() || compCfg_->Is64Bit()) {
+    if (op == OpCode::CALL) {
         SaveCurrentSP();
     }
     LLVMValueRef call = LLVMBuildCall(builder_, callee, params.data(),

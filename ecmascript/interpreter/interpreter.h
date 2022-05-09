@@ -29,11 +29,7 @@ class ECMAObject;
 class GeneratorContext;
 
 // NOLINTNEXTLINE(bugprone-sizeof-expression)
-#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
-static const uint32_t INTERPRETER_FRAME_STATE_SIZE = sizeof(AsmInterpretedFrame) / sizeof(uint64_t);
-#else
 static const uint32_t INTERPRETER_FRAME_STATE_SIZE = sizeof(InterpretedFrame) / sizeof(uint64_t);
-#endif
 static const uint32_t INTERPRETER_ENTRY_FRAME_STATE_SIZE = sizeof(InterpretedEntryFrame) / sizeof(uint64_t);
 
 static constexpr uint32_t RESERVED_CALL_ARGCOUNT = 3;
@@ -49,7 +45,6 @@ public:
 
     static inline JSTaggedValue Execute(EcmaRuntimeCallInfo *info);
     static inline JSTaggedValue ExecuteNative(EcmaRuntimeCallInfo *info);
-    static inline JSTaggedType *GetNextInterpreterEntryFrameSp(JSTaggedType *sp);
     static EcmaRuntimeCallInfo NewRuntimeCallInfo(
         JSThread *thread, JSHandle<JSTaggedValue> func, JSHandle<JSTaggedValue> thisObj,
         JSHandle<JSTaggedValue> newTarget, size_t numArgs);
