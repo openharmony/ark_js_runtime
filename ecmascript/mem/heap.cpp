@@ -351,6 +351,14 @@ size_t Heap::VerifyHeapObjects() const
         VerifyObjectVisitor verifier(this, &failCount);
         hugeObjectSpace_->IterateOverObjects(verifier);
     }
+    {
+        VerifyObjectVisitor verifier(this, &failCount);
+        machineCodeSpace_->IterateOverObjects(verifier);
+    }
+    {
+        VerifyObjectVisitor verifier(this, &failCount);
+        snapshotSpace_->IterateOverObjects(verifier);
+    }
     return failCount;
 }
 
@@ -665,6 +673,14 @@ bool Heap::ContainObject(TaggedObject *object) const
     }
     // huge object space
     if (hugeObjectSpace_->ContainObject(object)) {
+        return true;
+    }
+    // machine code space
+    if (machineCodeSpace_->ContainObject(object)) {
+        return true;
+    }
+    // snapshot space
+    if (snapshotSpace_->ContainObject(object)) {
         return true;
     }
     return false;
