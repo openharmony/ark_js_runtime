@@ -32,6 +32,13 @@ group("ark_js_host_windows_tools_packages") {
   }
 }
 
+group("ark_js_host_mac_tools_packages") {
+  deps = []
+  if (host_os == "mac") {
+    deps += [ "//ark/js_runtime/ecmascript/js_vm:ark_js_vm(//build/toolchain/mac:clang_x64)" ]
+  }
+}
+
 group("ark_js_host_linux_tools_packages") {
   deps = []
   if (host_os != "mac") {
@@ -108,7 +115,7 @@ config("ark_jsruntime_public_config") {
   ]
 
   defines = []
-  if (!is_mingw) {
+  if (!is_mingw && !is_mac) {
     defines += [
       "ECMASCRIPT_SUPPORT_CPUPROFILER",
       "ECMASCRIPT_SUPPORT_SNAPSHOT",
@@ -470,7 +477,7 @@ ecma_source = [
   "ecmascript/ts_types/ts_obj_layout_info.cpp",
 ]
 
-if (!is_mingw) {
+if (!is_mingw && !is_mac) {
   ecma_source += [ "ecmascript/napi/dfx_jsnapi.cpp" ]
   ecma_source += [ "ecmascript/tooling/interface/file_stream.cpp" ]
 }
@@ -480,7 +487,7 @@ if (enable_test_stub) {
 }
 
 ecma_debugger_source = []
-if (!is_mingw) {
+if (!is_mingw && !is_mac) {
   ecma_debugger_source += [
     "ecmascript/tooling/interface/debugger_api.cpp",
     "ecmascript/tooling/interface/js_debugger.cpp",
@@ -488,7 +495,7 @@ if (!is_mingw) {
 }
 
 ecma_profiler_source = []
-if (!is_mingw) {
+if (!is_mingw && !is_mac) {
   ecma_profiler_source += [
     "ecmascript/dfx/cpu_profiler/cpu_profiler.cpp",
     "ecmascript/dfx/cpu_profiler/profile_processor.cpp",
@@ -516,6 +523,8 @@ if (current_cpu == "arm") {
     ecma_source += [ "ecmascript/trampoline/x64/call.S" ]
   } else if (is_mingw) {
     ecma_source += [ "ecmascript/trampoline/win_x64/call.S" ]
+  } else if (is_mac) {
+    ecma_source += [ "ecmascript/trampoline/mac_x64/call.S" ]
   }
 }
 
@@ -582,7 +591,7 @@ ohos_shared_library("libark_jsruntime") {
 
   install_enable = true
 
-  if (!is_mingw) {
+  if (!is_mingw && !is_mac) {
     output_extension = "so"
   }
   if (!is_standard_system) {
@@ -629,8 +638,9 @@ ohos_shared_library("libark_jsruntime_test") {
   }
 
   install_enable = false
-
-  output_extension = "so"
+  if (!is_mingw && !is_mac) {
+    output_extension = "so"
+  }
   subsystem_name = "test"
 }
 

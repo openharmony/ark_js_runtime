@@ -122,7 +122,7 @@ void EcmaVM::TryLoadSnapshotFile()
 {
     const CString snapshotPath(options_.GetSnapshotOutputFile().c_str());
     Snapshot snapshot(this);
-#if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MAC)
+#if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MACOS)
     snapshot.Deserialize(SnapshotType::TS_LOADER, snapshotPath);
 #endif
 }
@@ -597,7 +597,7 @@ void EcmaVM::Iterate(const RootVisitor &v)
     moduleManager_->Iterate(v);
     tsLoader_->Iterate(v);
     aotInfo_->Iterate(v);
-#if !defined(PANDA_TARGET_WINDOWS)
+#if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MACOS)
     snapshotEnv_->Iterate(v);
 #endif
 }

@@ -16,7 +16,7 @@
 #include "ecmascript/free_object.h"
 #include "ecmascript/mem/heap-inl.h"
 
-#ifndef PANDA_TARGET_WINDOWS
+#if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MACOS)
 #include <sys/sysinfo.h>
 #endif
 
