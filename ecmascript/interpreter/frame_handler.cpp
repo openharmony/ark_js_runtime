@@ -545,8 +545,8 @@ void FrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) co
 #else
 void FrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
 {
-    FrameType frameType = FrameHandler(thread_).GetFrameType();
     JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
+    FrameType frameType = FrameHandler::GetFrameType(current);
     if (frameType != FrameType::INTERPRETER_ENTRY_FRAME) {
         auto leaveFrame = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
         if (leaveFrame != nullptr) {
