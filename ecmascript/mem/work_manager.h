@@ -208,10 +208,10 @@ private:
     WorkNodeHolder works_[MAX_TASKPOOL_THREAD_NUM + 1];
     ContinuousStack<JSTaggedType> *continuousQueue_[MAX_TASKPOOL_THREAD_NUM + 1];
     GlobalWorkStack workStack_;
-    uintptr_t markSpace_;
-    uintptr_t spaceTop_;
-    uintptr_t markSpaceEnd_;
-    std::vector<uintptr_t> unuseSpace_;
+    uintptr_t workSpace_;
+    uintptr_t spaceStart_;
+    uintptr_t spaceEnd_;
+    std::vector<uintptr_t> agedSpaces_;
     os::memory::Mutex mtx_;
     ParallelGCTaskPhase parallelGCTaskPhase_;
 };
