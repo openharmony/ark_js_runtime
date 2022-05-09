@@ -1298,21 +1298,7 @@ JSTaggedValue RuntimeStubs::RuntimeDefinefuncDyn(JSThread *thread, JSFunction *f
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithProto());
     JSHandle<JSFunction> jsFunc = factory->NewJSFunctionByDynClass(method, dynclass, FunctionKind::BASE_CONSTRUCTOR);
-    ASSERT_NO_ABRUPT_COMPLETION(thread);
-    return jsFunc.GetTaggedValue();
-}
-
-JSTaggedValue RuntimeStubs::RuntimeDefinefuncDynWithMethodId(JSThread *thread, JSTaggedValue methodId)
-{
-    auto aotCodeInfo  = thread->GetEcmaVM()->GetAotCodeInfo();
-    auto entry = aotCodeInfo->GetAOTFuncEntry(methodId.GetInt());
-    auto method = thread->GetEcmaVM()->GetMethodForNativeFunction(reinterpret_cast<void *>(entry));
-    method->SetAotCodeBit(true);
-    method->SetNativeBit(false);
-    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSFunction> jsFunc = factory->NewJSFunction(env, method, FunctionKind::NORMAL_FUNCTION);
-    jsFunc->SetCodeEntry(entry);
+    jsFunc->SetCodeEntry(func->GetCodeEntry());
     ASSERT_NO_ABRUPT_COMPLETION(thread);
     return jsFunc.GetTaggedValue();
 }
