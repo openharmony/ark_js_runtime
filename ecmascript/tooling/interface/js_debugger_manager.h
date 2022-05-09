@@ -77,16 +77,12 @@ public:
         return debuggerLibraryHandle_;
     }
 
-    void SetEvalFrameHandler(const JSThread *thread)
+    void SetEvalFrameHandler(std::shared_ptr<FrameHandler> frameHandler)
     {
-        if (thread != nullptr) {
-            frameHandler_ = std::make_unique<FrameHandler>(thread);
-        } else {
-            frameHandler_ = nullptr;
-        }
+        frameHandler_ = frameHandler;
     }
 
-    const std::unique_ptr<FrameHandler> &GetEvalFrameHandler() const
+    const std::shared_ptr<FrameHandler> &GetEvalFrameHandler() const
     {
         return frameHandler_;
     }
@@ -97,7 +93,7 @@ private:
     LibraryHandle debuggerLibraryHandle_ {nullptr};
     NotificationManager *notificationManager_ {nullptr};
 
-    std::unique_ptr<FrameHandler> frameHandler_;
+    std::shared_ptr<FrameHandler> frameHandler_;
 };
 }  // panda::ecmascript::tooling
 

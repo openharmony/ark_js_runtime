@@ -480,6 +480,10 @@ std::optional<CString> JSBackend::CmptEvaluateValue(CallFrameId callFrameId, con
 std::optional<CString> JSBackend::EvaluateValue(CallFrameId callFrameId, const CString &expression,
     std::unique_ptr<RemoteObject> *result)
 {
+    if (callFrameId < 0 || callFrameId >= callFrameHandlers_.size()) {
+        return "Invalid callFrameId.";
+    }
+
     CString dest;
     if (!DecodeAndCheckBase64(expression, dest)) {
         LOG(ERROR, DEBUGGER) << "EvaluateValue: base64 decode failed";
@@ -488,7 +492,8 @@ std::optional<CString> JSBackend::EvaluateValue(CallFrameId callFrameId, const C
 
     auto funcRef = DebuggerApi::GenerateFuncFromBuffer(ecmaVm_, dest.data(), dest.size(),
         JSPandaFile::ENTRY_MAIN_FUNCTION);
-    auto res = DebuggerApi::EvaluateViaFuncCall(const_cast<EcmaVM *>(ecmaVm_), funcRef);
+    auto res = DebuggerApi::EvaluateViaFuncCall(const_cast<EcmaVM *>(ecmaVm_), funcRef,
+        callFrameHandlers_[callFrameId]);
     if (ecmaVm_->GetJSThread()->HasPendingException()) {
         LOG(ERROR, DEBUGGER) << "EvaluateValue: has pending exception";
         CString msg;
@@ -542,12 +547,20 @@ bool JSBackend::GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFram
                 return StackState::FAILED;
             }
         } else {
+            SaveCallFrameHandler(frameHandler);
             callFrames->emplace_back(std::move(callFrame));
             callFrameId++;
         }
         return StackState::CONTINUE;
     };
     return DebuggerApi::StackWalker(ecmaVm_, walkerFunc);
+}
+
+void JSBackend::SaveCallFrameHandler(const FrameHandler *frameHandler)
+{
+    auto handlerPtr = DebuggerApi::NewFrameHandler(ecmaVm_);
+    *handlerPtr = *frameHandler;
+    callFrameHandlers_.emplace_back(handlerPtr);
 }
 
 bool JSBackend::GenerateCallFrame(CallFrame *callFrame,
@@ -998,6 +1011,8 @@ void JSBackend::CleanUpOnPaused()
 {
     curObjectId_ = 0;
     propertiesPair_.clear();
+
+    callFrameHandlers_.clear();
 }
 
 bool JSBackend::DecodeAndCheckBase64(const CString &src, CString &dest)
