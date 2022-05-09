@@ -583,30 +583,30 @@ private:
         R"(target triple for aot compiler or stub compiler.
         Possible values: ["x86_64-unknown-linux-gnu", "arm-unknown-linux-gnu", "aarch64-unknown-linux-gnu"].
         Default: "x86_64-unknown-linux-gnu")"};
-    PandArg<size_t> asmOptLevel_ {"opt-level", 3,
+    PandArg<uint32_t> asmOptLevel_ {"opt-level", 3,
         R"(Optimization level configuration on llvm back end. Default: "3")"};
-    PandArg<size_t> totalSpaceCapacity_ {"totalSpaceCapacity",
+    PandArg<uint32_t> totalSpaceCapacity_ {"totalSpaceCapacity",
         512 * 1024 * 1024,
         R"(set total space capacity)"};
-    PandArg<size_t> maxSemiSpaceCapacity_ {"maxSemiSpaceCapacity",
+    PandArg<uint32_t> maxSemiSpaceCapacity_ {"maxSemiSpaceCapacity",
         16 * 1024 * 1024,
         R"(set max semi space capacity)"};
-    PandArg<size_t> maxOldSpaceCapacity_ {"maxOldSpaceCapacity",
+    PandArg<uint32_t> maxOldSpaceCapacity_ {"maxOldSpaceCapacity",
         256 * 1024 * 1024,
         R"(set max old space capacity)"};
-    PandArg<size_t> maxNonmovableSpaceCapacity_ {"maxNonmovableSpaceCapacity",
+    PandArg<uint32_t> maxNonmovableSpaceCapacity_ {"maxNonmovableSpaceCapacity",
         4 * 1024 * 1024,
         R"(set max nonmovable space capacity)"};
-    PandArg<size_t> maxMachineCodeSpaceCapacity_ {"maxMachineCodeSpaceCapacity",
+    PandArg<uint32_t> maxMachineCodeSpaceCapacity_ {"maxMachineCodeSpaceCapacity",
         8 * 1024 * 1024,
         R"(set max machine code space capacity)"};
-    PandArg<size_t> maxSnapshotSpaceCapacity_ {"maxSnapshotSpaceCapacity",
+    PandArg<uint32_t> maxSnapshotSpaceCapacity_ {"maxSnapshotSpaceCapacity",
         8 * 1024 * 1024,
         R"(set max snapshot space capacity)"};
-    PandArg<size_t> defaultSemiSpaceCapacity_ {"defaultSemiSpaceCapacity",
+    PandArg<uint32_t> defaultSemiSpaceCapacity_ {"defaultSemiSpaceCapacity",
         2 * 1024 * 1024,
         R"(set default semi space capacity)"};
-    PandArg<size_t> defaultSnapshotSpaceCapacity_ {"defaultSnapshotSpaceCapacity",
+    PandArg<uint32_t> defaultSnapshotSpaceCapacity_ {"defaultSnapshotSpaceCapacity",
         256 * 1024,
         R"(set default snapshot space capacity)"};
     PandArg<std::string> asmInter_ {"asmInter",

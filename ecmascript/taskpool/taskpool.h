@@ -23,6 +23,9 @@
 #include "os/mutex.h"
 
 namespace panda::ecmascript {
+#ifdef PANDA_TARGET_MACOS
+static constexpr uint32_t MAC_MAX_THREADS_NUM = 5;
+#endif
 class Taskpool {
 public:
     static Taskpool *GetCurrentTaskpool()
