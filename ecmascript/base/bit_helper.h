@@ -19,7 +19,7 @@
 #include <type_traits>
 namespace panda::ecmascript::base {
 template <typename T>
-inline constexpr int CountLeadingZeros(T value)
+inline constexpr uint32_t CountLeadingZeros(T value)
 {
     constexpr size_t RADIX = 2;
     static_assert(std::is_integral<T>::value, "T must be integral");
@@ -36,28 +36,28 @@ inline constexpr int CountLeadingZeros(T value)
     return __builtin_clz(static_cast<uint32_t>(value)) - (32 - std::numeric_limits<T>::digits);
 }
 
-inline constexpr int CountLeadingZeros32(uint32_t value)
+inline constexpr uint32_t CountLeadingZeros32(uint32_t value)
 {
     return CountLeadingZeros(value);
 }
 
-inline constexpr int CountLeadingZeros64(uint64_t value)
+inline constexpr uint32_t CountLeadingZeros64(uint64_t value)
 {
     return CountLeadingZeros(value);
 }
 
-inline constexpr int CountLeadingOnes32(uint32_t value)
+inline constexpr uint32_t CountLeadingOnes32(uint32_t value)
 {
     return CountLeadingZeros(~value);
 }
 
-inline constexpr int CountLeadingOnes64(uint64_t value)
+inline constexpr uint32_t CountLeadingOnes64(uint64_t value)
 {
     return CountLeadingZeros(~value);
 }
 
 template <typename T>
-inline constexpr int CountTrailingZeros(T value)
+inline constexpr uint32_t CountTrailingZeros(T value)
 {
     constexpr size_t RADIX = 2;
     static_assert(std::is_integral<T>::value, "T must be integral");
