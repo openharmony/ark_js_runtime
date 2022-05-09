@@ -346,7 +346,6 @@ ecma_source = [
   "ecmascript/dfx/vmstat/runtime_stat.cpp",
   "ecmascript/dfx/vm_thread_control.cpp",
   "ecmascript/dump.cpp",
-  "ecmascript/ecma_exceptions.cpp",
   "ecmascript/ecma_string.cpp",
   "ecmascript/ecma_string_table.cpp",
   "ecmascript/ecma_vm.cpp",

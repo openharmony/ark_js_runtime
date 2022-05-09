@@ -283,7 +283,7 @@ HWTEST_F_L0(AssemblerX64Test, Emit2)
     value = masm.GetU8(current++);
     ASSERT_EQ(value, 0xCBU);
 
-    //48 83 fa 00     cmp    $0x0,%rdx
+    // 48 83 fa 00     cmp    $0x0,%rdx
     __ Cmp(0x0, rdx);
     value = masm.GetU8(current++);
     ASSERT_EQ(value, 0x48U);
