@@ -271,10 +271,10 @@ enum RetOpCode {
     V(BRK, Imm16, 20, 5)
 
 #define DECL_FIELDS_IN_INSTRUCTION(INSTNAME, FIELD_NAME, HIGHBITS, LOWBITS) \
-static const int INSTNAME##_##FIELD_NAME##_HIGHBITS = HIGHBITS;  \
-static const int INSTNAME##_##FIELD_NAME##_LOWBITS = LOWBITS;    \
-static const int INSTNAME##_##FIELD_NAME##_WIDTH = ((HIGHBITS - LOWBITS) + 1); \
-static const int INSTNAME##_##FIELD_NAME##_MASK = (((1 << INSTNAME##_##FIELD_NAME##_WIDTH) - 1) << LOWBITS);
+static const uint32_t INSTNAME##_##FIELD_NAME##_HIGHBITS = HIGHBITS;  \
+static const uint32_t INSTNAME##_##FIELD_NAME##_LOWBITS = LOWBITS;    \
+static const uint32_t INSTNAME##_##FIELD_NAME##_WIDTH = ((HIGHBITS - LOWBITS) + 1); \
+static const uint32_t INSTNAME##_##FIELD_NAME##_MASK = (((1 << INSTNAME##_##FIELD_NAME##_WIDTH) - 1) << LOWBITS);
 
 #define DECL_INSTRUCTION_FIELDS(V)  \
     COMMON_REGISTER_FIELD_LIST(V)   \

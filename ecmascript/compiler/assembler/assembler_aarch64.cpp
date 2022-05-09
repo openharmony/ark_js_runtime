@@ -39,7 +39,7 @@ LogicalImmediate LogicalImmediate::Create(uint64_t imm, int width)
     }
 
     // First, determine the element size.
-    unsigned int size = width;
+    unsigned int size = static_cast<uint32_t>(width);
     do {
         size /= 2;
         uint64_t mask = (1ULL << size) - 1;
@@ -56,7 +56,7 @@ LogicalImmediate LogicalImmediate::Create(uint64_t imm, int width)
     imm &= mask;
 
     if (IsShiftedMask_64(imm)) {
-        i = CountTrailingZeros64(imm);
+        i = static_cast<int>(CountTrailingZeros64(imm));
         ASSERT_PRINT(i < RegXSize, "undefined behavior");
         cto = CountTrailingOnes64(imm >> i);
     } else {
@@ -65,9 +65,9 @@ LogicalImmediate LogicalImmediate::Create(uint64_t imm, int width)
             return LogicalImmediate(InvalidLogicalImmediate);
         }
 
-        int clo = CountLeadingOnes64(imm);
-        i = RegXSize - clo;
-        cto = clo + CountTrailingOnes64(imm) - (RegXSize - size);
+        uint32_t clo = CountLeadingOnes64(imm);
+        i = static_cast<uint32_t>(RegXSize) - clo;
+        cto = clo + CountTrailingOnes64(imm) - (static_cast<uint32_t>(RegXSize) - size);
     }
 
     // Encode in Immr the number of RORs it would take to get *from* 0^m 1^n
@@ -110,7 +110,7 @@ void AssemblerAarch64::Ldp(const Register &rt, const Register &rt2, const Memory
                 UNREACHABLE();
         }
         bool sf = !rt.IsW();
-        uint64_t imm = operand.GetImmediate().Value();
+        uint64_t imm = static_cast<uint64_t>(operand.GetImmediate().Value());
         if (sf) {
             imm >>= 3;  // 3: 64 RegSise, imm/8 to remove trailing zeros
         } else {
@@ -142,7 +142,7 @@ void AssemblerAarch64::Stp(const Register &rt, const Register &rt2, const Memory
                 UNREACHABLE();
         }
         bool sf = !rt.IsW();
-        uint64_t imm = operand.GetImmediate().Value();
+        uint64_t imm = static_cast<uint64_t>(operand.GetImmediate().Value());
         if (sf) {
             imm >>= 3;  // 3: 64 RegSise, imm/8 to remove trailing zeros
         } else {
@@ -163,7 +163,7 @@ void AssemblerAarch64::Stp(const Register &rt, const Register &rt2, const Memory
 void AssemblerAarch64::Ldr(const Register &rt, const MemoryOperand &operand)
 {
     uint32_t op;
-    uint32_t imm = operand.GetImmediate().Value();
+    uint32_t imm = static_cast<uint32_t>(operand.GetImmediate().Value());
     bool regX = !rt.IsW();
     if (operand.IsImmediateOffset()) {
         switch (operand.GetAddrMode()) {
@@ -200,7 +200,7 @@ void AssemblerAarch64::Str(const Register &rt, const MemoryOperand &operand)
 {
     uint32_t op;
     bool regX = !rt.IsW();
-    uint32_t imm = operand.GetImmediate().Value();
+    uint32_t imm = static_cast<uint32_t>(operand.GetImmediate().Value());
     if (operand.IsImmediateOffset()) {
         switch (operand.GetAddrMode()) {
             case MemoryOperand::AddrMode::OFFSET:
@@ -238,7 +238,7 @@ void AssemblerAarch64::Mov(const Register &rd, const Immediate &imm)
 {
     ASSERT_PRINT(!rd.IsSp(), "sp can't load immediate, please use add instruction");
     const unsigned int HWORDSIZE = 16;
-    uint64_t immValue = imm.Value();
+    uint64_t immValue = static_cast<uint64_t>(imm.Value());
     unsigned int allOneHalfWords = 0;
     unsigned int allZeroHalfWords = 0;
     unsigned int regSize = rd.IsW() ? RegWSize : RegXSize;
@@ -484,8 +484,8 @@ void AssemblerAarch64::EmitMovInstruct(const Register &rd, uint64_t imm,
     int firstshift = 0;     // LSL amount for high bits with MOVZ/MOVN
     int lastshift = 0; // LSL amount for last MOVK
     if (imm != 0) {
-        int lz = CountLeadingZeros64(imm);
-        int tz = CountTrailingZeros64(imm);
+        int lz = static_cast<int>(CountLeadingZeros64(imm));
+        int tz = static_cast<int>(CountTrailingZeros64(imm));
         firstshift = (tz / 16) * 16;         // 16 : 16  means the operand of MOVK/N/Z is 16 bits Immediate
         // 63 : 63  means the topmost bits of RegXSize
         lastshift = ((63 - lz) / 16) * 16;   // 16 : 16  means the operand of MOVK/N/Z is 16 bits Immediate
@@ -819,7 +819,7 @@ int32_t AssemblerAarch64::LinkAndGetInstOffsetToLabel(Label *label)
         offset = label->GetPos() - GetCurrentPosition();
     } else {
         if (label->IsLinked()) {
-            offset = label->GetLinkedPos() - GetCurrentPosition();
+            offset = static_cast<int32_t>(label->GetLinkedPos() - GetCurrentPosition());
         } else {
             offset = 0;
         }
