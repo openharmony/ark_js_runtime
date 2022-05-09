@@ -178,8 +178,8 @@ private:
     void EmitRexPrefixl(Register reg, Register rm)
     {
         // 0: Extension to the MODRM.rm field B
-        // 2: Extension to the MODRM.reg field R
         if (HighBit(reg) != 0 || HighBit(rm) != 0) {
+            // 2: Extension to the MODRM.reg field R
             EmitU8(REX_PREFIX_FIXED_BITS | (HighBit(reg) << 2) | HighBit(rm));
         }
     }
@@ -194,8 +194,8 @@ private:
     void EmitRexPrefixl(Register reg, Operand rm)
     {
         // 0: Extension to the MODRM.rm field B
-        // 2: Extension to the MODRM.reg field R
         if (HighBit(reg) != 0 || rm.rex_ != 0) {
+            // 2: Extension to the MODRM.reg field R
             EmitU8(REX_PREFIX_FIXED_BITS | (HighBit(reg) << 2) | rm.rex_);
         }
     }
