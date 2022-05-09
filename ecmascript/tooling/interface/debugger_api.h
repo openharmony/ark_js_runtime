@@ -61,6 +61,7 @@ public:
     static uint32_t GetBytecodeOffset(const FrameHandler *frameHandler);
     static JSMethod *GetMethod(const FrameHandler *frameHandler);
     static JSTaggedValue GetEnv(const FrameHandler *frameHandler);
+    static JSTaggedType *GetSp(const FrameHandler *frameHandler);
     static Local<JSValueRef> GetVRegValue(const EcmaVM *ecmaVm,
         const FrameHandler *frameHandler, size_t index);
 

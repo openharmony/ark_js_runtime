@@ -120,11 +120,11 @@ public:
 
 private:
     using LocalEvalFunc =
-        std::function<JSTaggedValue(FrameHandler *, int32_t, JSTaggedValue)>;
+        std::function<JSTaggedValue(const EcmaVM *, FrameHandler *, int32_t, const CString &, Local<JSValueRef>)>;
     using LexEvalFunc =
-        std::function<JSTaggedValue(const EcmaVM *, int32_t, uint32_t, Local<JSValueRef>)>;
+        std::function<JSTaggedValue(const EcmaVM *, int32_t, uint32_t, const CString &, Local<JSValueRef>)>;
     using GlobalEvalFunc =
-        std::function<JSTaggedValue(const EcmaVM *, JSTaggedValue, JSTaggedValue, const CString &)>;
+        std::function<JSTaggedValue(const EcmaVM *, JSTaggedValue, const CString &, JSTaggedValue)>;
 
     JSMethod *FindMethod(const JSPtLocation &location) const;
     std::optional<JSBreakpoint> FindBreakpoint(const JSMethod *method, uint32_t bcOffset) const;

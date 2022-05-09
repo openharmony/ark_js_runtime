@@ -120,6 +120,11 @@ JSTaggedValue DebuggerApi::GetEnv(const FrameHandler *frameHandler)
     return frameHandler->GetEnv();
 }
 
+JSTaggedType *DebuggerApi::GetSp(const FrameHandler *frameHandler)
+{
+    return frameHandler->GetSp();
+}
+
 Local<JSValueRef> DebuggerApi::GetVRegValue(const EcmaVM *ecmaVm,
     const FrameHandler *frameHandler, size_t index)
 {
