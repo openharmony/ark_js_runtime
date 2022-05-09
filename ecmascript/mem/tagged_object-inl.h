@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,8 +20,8 @@
 
 #include <atomic>
 #include "ecmascript/ecma_vm.h"
-#include "ecmascript/js_hclass.h"
 #include "ecmascript/js_handle.h"
+#include "ecmascript/js_hclass.h"
 #include "heap.h"
 
 namespace panda::ecmascript {
@@ -59,7 +59,7 @@ inline JSHClass *TaggedObject::SynchronizedGetClass() const
 
 inline JSThread *TaggedObject::GetJSThread() const
 {
-    Region *region = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(ToUintPtr(this)));
+    Region *region = Region::ObjectAddressToRange(const_cast<TaggedObject *>(this));
     ASSERT(region != nullptr);
     return region->GetJSThread();
 }

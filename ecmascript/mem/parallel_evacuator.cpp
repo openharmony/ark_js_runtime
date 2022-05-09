@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,10 +18,10 @@
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/mem/barriers-inl.h"
 #include "ecmascript/mem/clock_scope.h"
-#include "ecmascript/mem/heap.h"
-#include "ecmascript/mem/space-inl.h"
 #include "ecmascript/mem/gc_bitset.h"
+#include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/mem.h"
+#include "ecmascript/mem/space-inl.h"
 #include "ecmascript/mem/tlab_allocator-inl.h"
 #include "ecmascript/mem/utils.h"
 #include "ecmascript/mem/visitor.h"

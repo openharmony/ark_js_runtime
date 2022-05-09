@@ -63,13 +63,13 @@ void ConcurrentMarker::ReMark()
     ECMA_GC_LOG() << "ConcurrentMarker: Remarking Begin";
     MEM_ALLOCATE_AND_GC_TRACE(vm_, ReMarking);
     ClockScope scope;
-    Marker *nonMoveMarker = heap_->GetNonMovableMarker();
-    nonMoveMarker->MarkRoots(MAIN_THREAD_INDEX);
+    Marker *nonMovableMarker = heap_->GetNonMovableMarker();
+    nonMovableMarker->MarkRoots(MAIN_THREAD_INDEX);
     if (!heap_->IsFullMark() && !heap_->IsParallelGCEnabled()) {
-        heap_->GetNonMovableMarker()->ProcessOldToNew(MAIN_THREAD_INDEX);
-        heap_->GetNonMovableMarker()->ProcessSnapshotRSet(MAIN_THREAD_INDEX);
+        nonMovableMarker->ProcessOldToNew(MAIN_THREAD_INDEX);
+        nonMovableMarker->ProcessSnapshotRSet(MAIN_THREAD_INDEX);
     } else {
-        nonMoveMarker->ProcessMarkStack(MAIN_THREAD_INDEX);
+        nonMovableMarker->ProcessMarkStack(MAIN_THREAD_INDEX);
     }
     heap_->WaitRunningTaskFinished();
     heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticConcurrentRemark(scope.GetPauseTime());
