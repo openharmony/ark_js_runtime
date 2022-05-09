@@ -220,7 +220,7 @@ OptimizedCallOptimized:
     pushq   %r14
     pushq   %rbx
     pushq   %rax
-    
+
     // 16 bytes align check
     movl    %esi, %r14d
     testb   $1, %r14b
@@ -321,10 +321,9 @@ CallNativeTrampoline:
 
     // load native pointer address
     movq    (%rdx), %r10
-    subq    $8, %rsp         // align 16bytes
     subq    $ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE, %rsp
 
-    // construct ecma_runtime_call_info    
+    // construct ecma_runtime_call_info
     // get thread
     subq    $ASM_GLUE_TO_THREAD_OFFSET, %rax
     movq    %rax, (%rsp)                                         // thread_
@@ -338,12 +337,10 @@ CallNativeTrampoline:
     addq    $16, %rbx
     movq    %rbx, ECMA_RUNTIME_CALLINFO_STACKARGS_OFFSET(%rsp)
     movq    $0,  ECMA_RUNTIME_CALLINFO_DATA_OFFSET(%rsp)
-    movq    $0,  ECMA_RUNTIME_CALLINFO_PPREV_SP_OFFSET(%rsp)
 
     movq   %rsp, %rdi
     call   *%r10
     addq   $ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE, %rsp
-    addq   $8, %rsp         // align 16bytes
     popq   %rbx
     popq   %r10
     addq   $8, %rsp
@@ -351,7 +348,7 @@ CallNativeTrampoline:
     popq   %rdx        // load pc
     addq   $8, %rsp    // skip code address
     pushq   %rdx        // save pc
-    ret 
+    ret
 
 // uint64_t CallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
@@ -499,7 +496,7 @@ JSCall:
 .LNotJSFunction:
     cmpl    $0xd000000, %eax        // IsJsBoundFunction
     je      .LJSBoundFunction
-    cmpl    $0x4f000000, %eax       // IsJsProxy
+    cmpl    $0x50000000, %eax       // IsJsProxy
     je      .LJSProxy
 
 .LNonCallable:
@@ -563,10 +560,10 @@ JSCall:
     pushq   %rbp
     movq    %rsp, %rbp     // set frame pointer
     pushq   $OPTIMIZE_FRAME_TYPE                // set frame type
-    
+
     // callee save
     pushq   %r10
-    
+
     mov     %rsp, %rdx
     addq    $32,  %rdx
     mov     (%rdx), %rax        // get origin argc
@@ -581,7 +578,7 @@ JSCall:
      // 16 bytes align check
     testb   $1, %r10b
     jne      .LAlign16Bytes2
-    pushq   $0                  // push zero to align 16 bytes stack   
+    pushq   $0                  // push zero to align 16 bytes stack
 
 .LAlign16Bytes2:
     subq    $ASM_NUM_MANDATORY_JSFUNC_ARGS, %rax
@@ -933,7 +930,7 @@ PushCallArgs0AndDispatchSlowPath:
     pushq   $0
 
 .PrepareDispatch:
-    movq    ASM_JS_METHOD_HOTNESS_COUNTER_OFFSET(%rbx), %rdi      // hotness_counter:arg6 of dispatch   
+    movq    ASM_JS_METHOD_HOTNESS_COUNTER_OFFSET(%rbx), %rdi      // hotness_counter:arg6 of dispatch
     movq    $JSHOLE, %rsi                                         // acc: arg5 of dispatch
     movq    ASM_JF_FUNCTION_PROFILE_TYPE_INFO_OFFSET(%rbp), %r14  // profile_type_info:arg4 of dispatch
     movq    ASM_JS_FUNCTION_CONSTANT_POOL_OFFSET(%rbp), %rbx      // constant_pool: arg3 of dispatch

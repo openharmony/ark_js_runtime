@@ -309,7 +309,8 @@ public:
         return glueData_.bcStubEntries_.GetAddr();
     }
 
-    void LoadStubsFromFile(std::string &fileName, bool isBCStub = false);
+    void LoadCommonStubsFromFile(std::string &fileName);
+    void LoadBytecodeHandlerStubsFromFile(std::string &fileName);
 
     void CheckSwitchDebuggerBCStub();
 
@@ -531,7 +532,8 @@ private:
     std::vector<std::array<JSTaggedType, NODE_BLOCK_SIZE> *> handleStorageNodes_ {};
     int32_t currentHandleStorageIndex_ {-1};
     int32_t handleScopeCount_ {0};
-    JSTaggedValue stubCode_ {JSTaggedValue::Hole()};
+    JSTaggedValue coStubCode_ {JSTaggedValue::Hole()};
+    JSTaggedValue bcStubCode_ {JSTaggedValue::Hole()};
 
     PropertiesCache *propertiesCache_ {nullptr};
     EcmaGlobalStorage *globalStorage_ {nullptr};

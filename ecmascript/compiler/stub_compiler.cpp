@@ -103,9 +103,7 @@ void StubCompiler::RunPipeline(LLVMModule &module)
 
     for (size_t i = 0; i < callSigns.size(); i++) {
         Circuit circuit;
-        if (!callSigns[i]->HasConstructor() || callSigns[i]->IsAsmStub()) {
-            continue;
-        }
+        ASSERT(callSigns[i]->HasConstructor());
         Stub* stub = static_cast<Stub*>(callSigns[i]->GetConstructor()(reinterpret_cast<void*>(&circuit)));
 
         if (!log->IsAlwaysEnabled() && !log->IsAlwaysDisabled()) {  // neither "all" nor "none"

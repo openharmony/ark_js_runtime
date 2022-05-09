@@ -31,12 +31,12 @@
 #define ASM_JS_METHOD_HOTNESS_COUNTER_OFFSET     (24)
 #define ASM_JS_METHOD_NATIVE_POINTER_OFFSET      (8)
 #if defined(PANDA_TARGET_ARM64) || defined(PANDA_TARGET_WINDOWS)
-#define ASM_GLUE_TO_THREAD_OFFSET                (136)
+#define ASM_GLUE_TO_THREAD_OFFSET                (144)
 #else
 #ifdef  PANDA_USE_MUSL
-#define ASM_GLUE_TO_THREAD_OFFSET                (136)
+#define ASM_GLUE_TO_THREAD_OFFSET                (144)
 #else
-#define ASM_GLUE_TO_THREAD_OFFSET                (136)
+#define ASM_GLUE_TO_THREAD_OFFSET                (144)
 #endif
 #endif
 // ecma_runtime_callinfo struct in stack
@@ -48,7 +48,7 @@
 // | size_t     numArgs        |
 // | JSThread*  thread         |
 // -----------------------------
-#define ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE         (40)
+#define ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE         (32)
 #define ECMA_RUNTIME_CALLINFO_NUMARGS_OFFSET        (8)
 #define ECMA_RUNTIME_CALLINFO_STACKARGS_OFFSET      (16)
 #define ECMA_RUNTIME_CALLINFO_DATA_OFFSET           (24)
@@ -72,7 +72,7 @@
 // hotness counter is encoded in a js method field, the first uint16_t in a uint64_t.
 #define ASM_JS_METHOD_HOTNESS_COUNTER_OFFSET     (24)
 #define ASM_JS_METHOD_NATIVE_POINTER_OFFSET      (8)
-#define ASM_GLUE_TO_THREAD_OFFSET                (80)
+#define ASM_GLUE_TO_THREAD_OFFSET                (88)
 // ecma_runtime_callinfo struct in stack
 // -----------------------------
 // | JSTaggedType *prevSp_     |
@@ -82,7 +82,7 @@
 // | size_t     numArgs        |
 // | JSThread*  thread         |
 // -----------------------------
-#define ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE         (20)
+#define ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE         (16)
 #define ECMA_RUNTIME_CALLINFO_NUMARGS_OFFSET        (4)
 #define ECMA_RUNTIME_CALLINFO_STACKARGS_OFFSET      (8)
 #define ECMA_RUNTIME_CALLINFO_DATA_OFFSET           (12)
