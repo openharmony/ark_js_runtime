@@ -281,7 +281,6 @@ public:
     void ResetGuardians();
 
     JSTaggedValue GetCurrentLexenv() const;
-    void SetCurrentLexenv(JSTaggedValue env);
 
     void RegisterRTInterface(size_t id, Address addr)
     {
@@ -374,6 +373,16 @@ public:
     bool GetGcState() const
     {
         return gcState_;
+    }
+
+    void EnableAsmInterpreter()
+    {
+        isAsmInterpreter_ = true;
+    }
+
+    bool IsAsmInterpreter() const
+    {
+        return isAsmInterpreter_;
     }
 
     VmThreadControl *GetVmThreadControl() const
@@ -530,6 +539,7 @@ private:
     // Run-time state
     bool getStackSignal_ {false};
     bool gcState_ {false};
+    bool isAsmInterpreter_ {false};
     VmThreadControl *vmThreadControl_ {nullptr};
 
     bool stableArrayElementsGuardians_ {true};

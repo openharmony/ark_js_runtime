@@ -1232,20 +1232,6 @@ DEF_RUNTIME_STUBS(Mod2Dyn)
     return RuntimeMod2Dyn(thread, left, right).GetRawData();
 }
 
-DEF_RUNTIME_STUBS(GetLexicalEnv)
-{
-    RUNTIME_STUBS_HEADER(GetLexicalEnv);
-    return thread->GetCurrentLexenv().GetRawData();
-}
-
-DEF_RUNTIME_STUBS(SetLexicalEnv)
-{
-    RUNTIME_STUBS_HEADER(SetLexicalEnv);
-    CONVERT_ARG_TAGGED_CHECKED(env, 0);
-    thread->SetCurrentLexenv(env);
-    return JSTaggedType(0);
-}
-
 DEF_RUNTIME_STUBS(LoadValueFromConstantStringTable)
 {
     RUNTIME_STUBS_HEADER(LoadValueFromConstantStringTable);

@@ -501,9 +501,10 @@ bool ObjectOperator::WriteDataProperty(const JSHandle<JSObject> &receiver, const
             }
         }
 
-        JSHandle<AccessorData> accessor = IsAccessorDescriptor()
-                                              ? JSHandle<AccessorData>::Cast(value_)
-                                              : thread_->GetEcmaVM()->GetFactory()->NewAccessorData();
+        JSHandle<AccessorData> accessor =
+            (IsAccessorDescriptor() && !JSHandle<AccessorData>::Cast(value_)->IsInternal()) ?
+            JSHandle<AccessorData>::Cast(value_) :
+            thread_->GetEcmaVM()->GetFactory()->NewAccessorData();
         if (desc.HasGetter()) {
             accessor->SetGetter(thread_, desc.GetGetter().GetTaggedValue());
         }
