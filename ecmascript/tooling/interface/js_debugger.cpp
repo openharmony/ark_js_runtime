@@ -90,7 +90,9 @@ bool JSDebugger::HandleBreakpoint(const JSMethod *method, uint32_t bcOffset)
     auto condFuncRef = breakpoint.value().GetConditionFunction();
     if (condFuncRef->IsFunction()) {
         LOG(INFO, DEBUGGER) << "HandleBreakpoint: begin evaluate condition";
-        auto res = DebuggerApi::EvaluateViaFuncCall(const_cast<EcmaVM *>(ecmaVm_), condFuncRef.ToLocal(ecmaVm_));
+        auto handlerPtr = std::make_shared<FrameHandler>(ecmaVm_->GetJSThread());
+        auto res = DebuggerApi::EvaluateViaFuncCall(const_cast<EcmaVM *>(ecmaVm_),
+            condFuncRef.ToLocal(ecmaVm_), handlerPtr);
         if (thread->HasPendingException()) {
             LOG(ERROR, DEBUGGER) << "HandleBreakpoint: has pending exception";
             thread->ClearException();

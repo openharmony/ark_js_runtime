@@ -119,6 +119,7 @@ private:
     JSPtExtractor *GetExtractor(const JSPandaFile *jsPandaFile);
     JSPtExtractor *GetExtractor(const CString &url);
     bool GenerateCallFrame(CallFrame *callFrame, const FrameHandler *frameHandler, CallFrameId frameId);
+    void SaveCallFrameHandler(const FrameHandler *frameHandler);
     std::unique_ptr<Scope> GetLocalScopeChain(const FrameHandler *frameHandler,
         std::unique_ptr<RemoteObject> *thisObj);
     void GetLocalVariables(const FrameHandler *frameHandler, const JSMethod *method,
@@ -155,6 +156,7 @@ private:
     CUnorderedMap<CString, JSPtExtractor *> extractors_ {};
     CUnorderedMap<ScriptId, std::unique_ptr<PtScript>> scripts_ {};
     CUnorderedMap<RemoteObjectId, Global<JSValueRef>> propertiesPair_ {};
+    CVector<std::shared_ptr<FrameHandler>> callFrameHandlers_;
     RemoteObjectId curObjectId_ {0};
     bool pauseOnException_ {false};
     bool pauseOnNextByteCode_ {false};
