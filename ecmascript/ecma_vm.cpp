@@ -32,6 +32,7 @@
 #include "ecmascript/global_env_constants.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/jobs/micro_job_queue.h"
+#include "ecmascript/jspandafile/constpool_value.h"
 #include "ecmascript/jspandafile/js_pandafile.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/jspandafile/module_data_extractor.h"
@@ -347,11 +348,47 @@ JSMethod *EcmaVM::GetMethodForNativeFunction(const void *func)
     return nativeMethods_.back();
 }
 
-JSTaggedValue EcmaVM::InvokeEcmaAotEntrypoint()
+JSMethod *EcmaVM::GenerateMethodForAOTFunction(const void *func, size_t numArgs)
+{
+    auto method = chunk_.New<JSMethod>(nullptr, panda_file::File::EntityId(0)); // 0 : temporary file id
+    method->SetNativePointer(const_cast<void *>(func));
+    method->SetAotCodeBit(true);
+    method->SetNativeBit(false);
+    method->SetNumArgsWithCallField(numArgs);
+    nativeMethods_.push_back(method);
+    return nativeMethods_.back();
+}
+
+void EcmaVM::UpdateMethodInFunc(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile)
 {
     const std::string funcName = "func_main_0";
-    auto ptr = static_cast<uintptr_t>(aotInfo_->GetAOTFuncEntry(funcName));
-    JSHandle<JSFunction> mainFunc = factory_->NewAotFunction(0, ptr);
+    auto mainEntry = static_cast<uintptr_t>(aotInfo_->GetAOTFuncEntry(funcName));
+    JSMethod *mainMethod = GenerateMethodForAOTFunction(reinterpret_cast<void *>(mainEntry), 1); // 1 : default paras
+    mainFunc->SetCallTarget(thread_, mainMethod);
+    mainFunc->SetCodeEntry(reinterpret_cast<uintptr_t>(mainEntry));
+    JSHandle<JSTaggedValue> constPool(thread_, mainFunc->GetConstantPool());
+    ConstantPool *curPool = ConstantPool::Cast(constPool->GetTaggedObject());
+    const CUnorderedMap<uint32_t, uint64_t> &constpoolMap = jsPandaFile->GetConstpoolMap();
+    for (const auto &it : constpoolMap) {
+        ConstPoolValue value(it.second);
+        if (value.GetConstpoolType() == ConstPoolType::BASE_FUNCTION ||
+            value.GetConstpoolType() == ConstPoolType::NC_FUNCTION ||
+            value.GetConstpoolType() == ConstPoolType::GENERATOR_FUNCTION ||
+            value.GetConstpoolType() == ConstPoolType::ASYNC_FUNCTION ||
+            value.GetConstpoolType() == ConstPoolType::METHOD) {
+                auto id = value.GetConstpoolIndex();
+                auto codeEntry = static_cast<uintptr_t>(aotInfo_->GetAOTFuncEntry(id));
+                JSMethod *curMethod = GenerateMethodForAOTFunction(reinterpret_cast<void *>(codeEntry), 1);
+                auto curFunction = JSFunction::Cast(curPool->GetObjectFromCache(id).GetTaggedObject());
+                curFunction->SetCallTarget(thread_, curMethod);
+                curFunction->SetCodeEntry(reinterpret_cast<uintptr_t>(codeEntry));
+        }
+    }
+}
+
+JSTaggedValue EcmaVM::InvokeEcmaAotEntrypoint(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile)
+{
+    UpdateMethodInFunc(mainFunc, jsPandaFile);
     std::vector<JSTaggedType> args(6, JSTaggedValue::Undefined().GetRawData()); // 6: number of para
     args[0] = mainFunc.GetTaggedValue().GetRawData();
     auto res = JSFunctionEntry(thread_->GetGlueAddr(),
@@ -359,7 +396,7 @@ JSTaggedValue EcmaVM::InvokeEcmaAotEntrypoint()
                                static_cast<uint32_t>(args.size()),
                                static_cast<uint32_t>(args.size()),
                                args.data(),
-                               ptr);
+                               mainFunc->GetCodeEntry());
     return JSTaggedValue(res);
 }
 
@@ -391,7 +428,7 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
 
     auto options = GetJSOptions();
     if (options.EnableTSAot()) {
-        result = InvokeEcmaAotEntrypoint();
+        result = InvokeEcmaAotEntrypoint(func, jsPandaFile);
     } else {
         JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
         EcmaRuntimeCallInfo info =

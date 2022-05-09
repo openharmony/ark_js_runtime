@@ -136,6 +136,8 @@ public:
     }
 
     JSMethod *GetMethodForNativeFunction(const void *func);
+    JSMethod *GenerateMethodForAOTFunction(const void *func, size_t numArgs);
+    void UpdateMethodInFunc(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile);
 
     EcmaStringTable *GetEcmaStringTable() const
     {
@@ -317,7 +319,7 @@ private:
 
     Expected<JSTaggedValue, bool> InvokeEcmaEntrypoint(const JSPandaFile *jsPandaFile);
 
-    JSTaggedValue InvokeEcmaAotEntrypoint();
+    JSTaggedValue InvokeEcmaAotEntrypoint(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile);
 
     void InitializeEcmaScriptRunStat();
 
