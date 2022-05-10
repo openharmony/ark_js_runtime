@@ -51,7 +51,7 @@ bool JSPtHooks::SingleStep(const JSPtLocation &location)
         firstTime_ = false;
 
         backend_->NotifyPaused({}, BREAK_ON_START);
-        return true;
+        return false;
     }
 
     // pause or step complete
