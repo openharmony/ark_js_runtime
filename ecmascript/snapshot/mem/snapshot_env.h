@@ -22,10 +22,10 @@
 namespace panda::ecmascript {
 class EcmaVM;
 
-class SnapShotEnv final {
+class SnapshotEnv final {
 public:
-    explicit SnapShotEnv(EcmaVM *vm) : vm_(vm) {}
-    ~SnapShotEnv() = default;
+    explicit SnapshotEnv(EcmaVM *vm) : vm_(vm) {}
+    ~SnapshotEnv() = default;
 
     void Initialize();
     void Iterate(const RootVisitor &v);
@@ -46,8 +46,8 @@ public:
     static constexpr size_t MAX_UINT_32 = 0xFFFFFFFF;
     
 private:
-    NO_MOVE_SEMANTIC(SnapShotEnv);
-    NO_COPY_SEMANTIC(SnapShotEnv);
+    NO_MOVE_SEMANTIC(SnapshotEnv);
+    NO_COPY_SEMANTIC(SnapshotEnv);
 
     EcmaVM *vm_;
     std::unordered_map<uintptr_t, size_t> envMap_;  // Cache global object which can reuse when serialize

@@ -327,7 +327,7 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     JSRuntimeOptions options = vm_->GetJSOptions();
     std::string icuPath = options.GetIcuDataPath();
     if (icuPath == "default") {
-#ifndef PANDA_TARGET_WINDOWS
+#if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MACOS)
         SetHwIcuDirectory();
 #endif
     } else {

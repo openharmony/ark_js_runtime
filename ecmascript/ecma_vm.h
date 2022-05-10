@@ -57,7 +57,7 @@ class JSPromise;
 enum class PromiseRejectionEvent : uint8_t;
 class JSPandaFileManager;
 class JSPandaFile;
-class SnapShotSerialize;
+class SnapshotProcessor;
 namespace job {
 class MicroJobQueue;
 }  // namespace job
@@ -136,6 +136,8 @@ public:
     }
 
     JSMethod *GetMethodForNativeFunction(const void *func);
+    JSMethod *GenerateMethodForAOTFunction(const void *func, size_t numArgs);
+    void UpdateMethodInFunc(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile);
 
     EcmaStringTable *GetEcmaStringTable() const
     {
@@ -228,7 +230,7 @@ public:
         return tsLoader_;
     }
 
-    SnapShotEnv *GetSnapShotEnv() const
+    SnapshotEnv *GetSnapshotEnv() const
     {
         return snapshotEnv_;
     }
@@ -317,11 +319,9 @@ private:
 
     Expected<JSTaggedValue, bool> InvokeEcmaEntrypoint(const JSPandaFile *jsPandaFile);
 
-    JSTaggedValue InvokeEcmaAotEntrypoint();
+    JSTaggedValue InvokeEcmaAotEntrypoint(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile);
 
     void InitializeEcmaScriptRunStat();
-
-    bool VerifyFilePath(const CString &filePath) const;
 
     void ClearBufferData();
 
@@ -369,7 +369,7 @@ private:
     ChunkVector<JSMethod *> nativeMethods_;
     ModuleManager *moduleManager_ {nullptr};
     TSLoader *tsLoader_ {nullptr};
-    SnapShotEnv *snapshotEnv_ {nullptr};
+    SnapshotEnv *snapshotEnv_ {nullptr};
     bool optionalLogEnabled_ {false};
     AotCodeInfo *aotInfo_ {nullptr};
 
@@ -381,7 +381,8 @@ private:
     HostPromiseRejectionTracker hostPromiseRejectionTracker_ {nullptr};
     void* data_ {nullptr};
 
-    friend class SnapShotSerialize;
+    friend class Snapshot;
+    friend class SnapshotProcessor;
     friend class ObjectFactory;
     friend class ValueSerializer;
     friend class panda::JSNApi;

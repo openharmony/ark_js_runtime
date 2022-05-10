@@ -20,6 +20,12 @@
 .global CallRuntime
 .type CallRuntime, %function
 
+.global AsmInterpreterEntry
+.type AsmInterpreterEntry, %function
+
+.global JSCallDispatch
+.type JSCallDispatch, %function
+
  .global OptimizedCallOptimized
 .type OptimizedCallOptimized, %function
 
@@ -659,6 +665,12 @@ ResumeRspAndDispatch:
 
 ResumeRspAndReturn:
     ldr    x30, [sp], #16 // 16 byte align
+    ret
+
+AsmInterpreterEntry:
+    ret
+
+JSCallDispatch:
     ret
 
 CallRuntimeWithArgv:

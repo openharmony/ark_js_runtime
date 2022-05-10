@@ -22,7 +22,7 @@
 #include "ecmascript/mem/mem.h"
 #include "os/mutex.h"
 
-#ifdef PANDA_TARGET_UNIX
+#ifdef PANDA_TARGET_LINUX
 #include <sys/prctl.h>
 #ifndef PR_SET_VMA
 #define PR_SET_VMA 0x53564d41
@@ -204,7 +204,7 @@ private:
 
     void PageTag([[maybe_unused]]void *mem, [[maybe_unused]]size_t size, [[maybe_unused]]bool remove = false)
     {
-#ifdef PANDA_TARGET_UNIX
+#ifdef PANDA_TARGET_LINUX
         if (remove) {
             prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, mem, size, nullptr);
         } else {

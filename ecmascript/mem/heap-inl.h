@@ -40,7 +40,7 @@ void Heap::EnumerateOldSpaceRegions(const Callback &cb, Region *region) const
 }
 
 template<class Callback>
-void Heap::EnumerateSnapShotSpaceRegions(const Callback &cb) const
+void Heap::EnumerateSnapshotSpaceRegions(const Callback &cb) const
 {
     snapshotSpace_->EnumerateRegions(cb);
 }
@@ -239,7 +239,7 @@ TaggedObject *Heap::AllocateMachineCodeObject(JSHClass *hclass, size_t size)
     return object;
 }
 
-uintptr_t Heap::AllocateSnapShotSpace(size_t size)
+uintptr_t Heap::AllocateSnapshotSpace(size_t size)
 {
     size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
     uintptr_t object = snapshotSpace_->Allocate(size);

@@ -604,7 +604,7 @@ void CircuitBuilder::LoopBegin(Label *loopHead)
     loopHead->SetControl(loopControl);
     loopHead->SetPreControl(loopControl);
     loopHead->Bind();
-    env_->GetCurrentLabel();
+    env_->SetCurrentLabel(loopHead);
 }
 
 void CircuitBuilder::LoopEnd(Label *loopHead)
@@ -619,7 +619,7 @@ void CircuitBuilder::LoopEnd(Label *loopHead)
     loopHead->Seal();
     loopHead->MergeAllControl();
     loopHead->MergeAllDepend();
-    env_->GetCurrentLabel();
+    env_->SetCurrentLabel(nullptr);
 }
 
 Label::Label(Environment *env)

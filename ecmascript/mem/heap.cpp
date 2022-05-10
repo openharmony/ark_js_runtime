@@ -16,7 +16,7 @@
 #include "ecmascript/free_object.h"
 #include "ecmascript/mem/heap-inl.h"
 
-#ifndef PANDA_TARGET_WINDOWS
+#if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MACOS)
 #include <sys/sysinfo.h>
 #endif
 
@@ -64,7 +64,7 @@ void Heap::Initialize()
     nonMovableSpace_->Initialize();
     size_t defaultSnapshotSpaceCapacity = ecmaVm_->GetJSOptions().DefaultSnapshotSpaceCapacity();
     size_t maxSnapshotSpaceCapacity = ecmaVm_->GetJSOptions().MaxSnapshotSpaceCapacity();
-    snapshotSpace_ = new SnapShotSpace(this, defaultSnapshotSpaceCapacity, maxSnapshotSpaceCapacity);
+    snapshotSpace_ = new SnapshotSpace(this, defaultSnapshotSpaceCapacity, maxSnapshotSpaceCapacity);
     size_t maxMachineCodeSpaceCapacity = ecmaVm_->GetJSOptions().MaxMachineCodeSpaceCapacity();
     machineCodeSpace_ = new MachineCodeSpace(this, maxMachineCodeSpaceCapacity, maxMachineCodeSpaceCapacity);
     machineCodeSpace_->Initialize();
@@ -350,6 +350,14 @@ size_t Heap::VerifyHeapObjects() const
     {
         VerifyObjectVisitor verifier(this, &failCount);
         hugeObjectSpace_->IterateOverObjects(verifier);
+    }
+    {
+        VerifyObjectVisitor verifier(this, &failCount);
+        machineCodeSpace_->IterateOverObjects(verifier);
+    }
+    {
+        VerifyObjectVisitor verifier(this, &failCount);
+        snapshotSpace_->IterateOverObjects(verifier);
     }
     return failCount;
 }
@@ -665,6 +673,14 @@ bool Heap::ContainObject(TaggedObject *object) const
     }
     // huge object space
     if (hugeObjectSpace_->ContainObject(object)) {
+        return true;
+    }
+    // machine code space
+    if (machineCodeSpace_->ContainObject(object)) {
+        return true;
+    }
+    // snapshot space
+    if (snapshotSpace_->ContainObject(object)) {
         return true;
     }
     return false;

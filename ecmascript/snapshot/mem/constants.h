@@ -16,6 +16,8 @@
 #ifndef ECMASCRIPT_SNAPSHOT_MEM_CONSTANTS_H
 #define ECMASCRIPT_SNAPSHOT_MEM_CONSTANTS_H
 
+#include "libpandabase/mem/mem.h"
+
 namespace panda::ecmascript {
 class Constants final {
 public:
@@ -24,14 +26,18 @@ public:
     NO_COPY_SEMANTIC(Constants);
     NO_MOVE_SEMANTIC(Constants);
 
-    static constexpr int MAX_C_POINTER_INDEX = 1024 - 1;
-    static constexpr int MAX_REGION_INDEX = 1024 - 1;
-    static constexpr int MAX_OBJECT_OFFSET = 1024 * 256 - 1;
+    static constexpr int MAX_C_POINTER_BITS_COUNT = 10;
+    static constexpr int MAX_REGION_INDEX_BITS_COUNT = 10;
+    static constexpr int MAX_OBJECT_OFFSET_BITS_COUNT = 18;
+    static constexpr int MAX_C_POINTER_INDEX = (1U << MAX_C_POINTER_BITS_COUNT) - 1;
+    static constexpr int MAX_REGION_INDEX = (1U << MAX_REGION_INDEX_BITS_COUNT) - 1;
+    static constexpr int MAX_OBJECT_OFFSET = (1U << MAX_OBJECT_OFFSET_BITS_COUNT) - 1;
 
     // object or space align up
-    static constexpr size_t PAGE_SIZE_ALIGN_UP = 4096;
+    static constexpr size_t PAGE_SIZE_ALIGN_UP = 4_KB;
     static constexpr size_t MAX_UINT_16 = 0xFFFF;
     static constexpr size_t MAX_STRING_SIZE = 0x0FFFFFFF;
+    static constexpr int UINT_64_BITS_COUNT = 64;
 
     // builtins native method encode
     // builtins deserialize: nativeMehtods_ + getter/setter; program deserialize: getter/setter + programFunctionMethods

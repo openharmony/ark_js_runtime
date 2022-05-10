@@ -93,7 +93,7 @@ void SlowRuntimeHelper::SaveFrameToContext(JSThread *thread, JSHandle<GeneratorC
 {
     FrameHandler frameHandler(thread);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    uint32_t nregs = frameHandler.GetSize();
+    uint32_t nregs = frameHandler.GetNumberArgs();
     JSHandle<TaggedArray> regsArray = factory->NewTaggedArray(nregs);
     for (uint32_t i = 0; i < nregs; i++) {
         JSTaggedValue value = frameHandler.GetVRegValue(i);

@@ -1298,21 +1298,7 @@ JSTaggedValue RuntimeStubs::RuntimeDefinefuncDyn(JSThread *thread, JSFunction *f
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithProto());
     JSHandle<JSFunction> jsFunc = factory->NewJSFunctionByDynClass(method, dynclass, FunctionKind::BASE_CONSTRUCTOR);
-    ASSERT_NO_ABRUPT_COMPLETION(thread);
-    return jsFunc.GetTaggedValue();
-}
-
-JSTaggedValue RuntimeStubs::RuntimeDefinefuncDynWithMethodId(JSThread *thread, JSTaggedValue methodId)
-{
-    auto aotCodeInfo  = thread->GetEcmaVM()->GetAotCodeInfo();
-    auto entry = aotCodeInfo->GetAOTFuncEntry(methodId.GetInt());
-    auto method = thread->GetEcmaVM()->GetMethodForNativeFunction(reinterpret_cast<void *>(entry));
-    method->SetAotCodeBit(true);
-    method->SetNativeBit(false);
-    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSFunction> jsFunc = factory->NewJSFunction(env, method, FunctionKind::NORMAL_FUNCTION);
-    jsFunc->SetCodeEntry(entry);
+    jsFunc->SetCodeEntry(func->GetCodeEntry());
     ASSERT_NO_ABRUPT_COMPLETION(thread);
     return jsFunc.GetTaggedValue();
 }
@@ -1430,6 +1416,34 @@ JSTaggedValue RuntimeStubs::RuntimeDefineGeneratorFunc(JSThread *thread, JSFunct
     JSObject::SetPrototype(thread, initialGeneratorFuncPrototype, env->GetGeneratorPrototype());
     ASSERT_NO_ABRUPT_COMPLETION(thread);
     jsFunc->SetProtoOrDynClass(thread, initialGeneratorFuncPrototype);
+
+    return jsFunc.GetTaggedValue();
+}
+
+JSTaggedValue RuntimeStubs::RuntimeDefineGeneratorFuncWithMethodId(JSThread *thread, JSTaggedValue methodId)
+{
+    auto aotCodeInfo  = thread->GetEcmaVM()->GetAotCodeInfo();
+    auto codeEntry = aotCodeInfo->GetAOTFuncEntry(methodId.GetInt());
+    JSMethod *method = thread->GetEcmaVM()->GetMethodForNativeFunction(reinterpret_cast<void *>(codeEntry));
+    method->SetAotCodeBit(true);
+    method->SetNativeBit(false);
+    method->SetNumArgsWithCallField(1);
+
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSFunction> jsFunc = factory->NewJSGeneratorFunction(method);
+    ASSERT_NO_ABRUPT_COMPLETION(thread);
+
+    // 26.3.4.3 prototype
+    // Whenever a GeneratorFunction instance is created another ordinary object is also created and
+    // is the initial value of the generator function's "prototype" property.
+    JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
+    JSHandle<JSObject> initialGeneratorFuncPrototype =
+        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    JSObject::SetPrototype(thread, initialGeneratorFuncPrototype, env->GetGeneratorPrototype());
+    ASSERT_NO_ABRUPT_COMPLETION(thread);
+    jsFunc->SetProtoOrDynClass(thread, initialGeneratorFuncPrototype);
+    jsFunc->SetCodeEntry(codeEntry);
 
     return jsFunc.GetTaggedValue();
 }
@@ -1742,6 +1756,22 @@ JSTaggedValue RuntimeStubs::RuntimeCopyAotRestArgs(JSThread *thread, uint32_t re
     }
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return restArray.GetTaggedValue();
+}
+
+JSTaggedValue RuntimeStubs::RuntimeSuspendAotGenerator(JSThread *thread, const JSHandle<JSTaggedValue> &genObj,
+                                                       const JSHandle<JSTaggedValue> &value)
+{
+    JSHandle<JSGeneratorObject> generatorObjectHandle(genObj);
+    JSHandle<GeneratorContext> genContextHandle(thread, generatorObjectHandle->GetGeneratorContext());
+
+    // change state to SuspendedYield
+    if (generatorObjectHandle->IsExecuting()) {
+        generatorObjectHandle->SetGeneratorState(JSGeneratorState::SUSPENDED_YIELD);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        return value.GetTaggedValue();
+    }
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    return generatorObjectHandle.GetTaggedValue();
 }
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_RUNTIME_TRAMPOLINES_INL_H

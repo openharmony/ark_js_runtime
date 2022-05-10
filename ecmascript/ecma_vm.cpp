@@ -32,6 +32,7 @@
 #include "ecmascript/global_env_constants.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/jobs/micro_job_queue.h"
+#include "ecmascript/jspandafile/constpool_value.h"
 #include "ecmascript/jspandafile/js_pandafile.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/jspandafile/module_data_extractor.h"
@@ -54,7 +55,7 @@
 #endif
 #include "ecmascript/snapshot/mem/encode_bit.h"
 #include "ecmascript/snapshot/mem/snapshot.h"
-#include "ecmascript/snapshot/mem/snapshot_serialize.h"
+#include "ecmascript/snapshot/mem/snapshot_processor.h"
 #include "ecmascript/tagged_array-inl.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/tagged_queue.h"
@@ -121,12 +122,10 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
 void EcmaVM::TryLoadSnapshotFile()
 {
     const CString snapshotPath(options_.GetSnapshotOutputFile().c_str());
-    if (VerifyFilePath(snapshotPath)) {
-        SnapShot snapShot(this);
-#if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MAC)
-        snapShot.Deserialize(SnapShotType::TS_LOADER, snapshotPath);
+    Snapshot snapshot(this);
+#if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MACOS)
+    snapshot.Deserialize(SnapshotType::TS_LOADER, snapshotPath);
 #endif
-    }
 }
 
 bool EcmaVM::Initialize()
@@ -156,7 +155,7 @@ bool EcmaVM::Initialize()
                                                                   JSType::GLOBAL_ENV);
     globalConst->InitRootsClass(thread_, *dynClassClassHandle);
     tsLoader_ = new TSLoader(this);
-    snapshotEnv_ = new SnapShotEnv(this);
+    snapshotEnv_ = new SnapshotEnv(this);
     aotInfo_ = new AotCodeInfo();
     if (options_.EnableStubAot()) {
         LoadStubs();
@@ -349,11 +348,47 @@ JSMethod *EcmaVM::GetMethodForNativeFunction(const void *func)
     return nativeMethods_.back();
 }
 
-JSTaggedValue EcmaVM::InvokeEcmaAotEntrypoint()
+JSMethod *EcmaVM::GenerateMethodForAOTFunction(const void *func, size_t numArgs)
+{
+    auto method = chunk_.New<JSMethod>(nullptr, panda_file::File::EntityId(0)); // 0 : temporary file id
+    method->SetNativePointer(const_cast<void *>(func));
+    method->SetAotCodeBit(true);
+    method->SetNativeBit(false);
+    method->SetNumArgsWithCallField(numArgs);
+    nativeMethods_.push_back(method);
+    return nativeMethods_.back();
+}
+
+void EcmaVM::UpdateMethodInFunc(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile)
 {
     const std::string funcName = "func_main_0";
-    auto ptr = static_cast<uintptr_t>(aotInfo_->GetAOTFuncEntry(funcName));
-    JSHandle<JSFunction> mainFunc = factory_->NewAotFunction(0, ptr);
+    auto mainEntry = static_cast<uintptr_t>(aotInfo_->GetAOTFuncEntry(funcName));
+    JSMethod *mainMethod = GenerateMethodForAOTFunction(reinterpret_cast<void *>(mainEntry), 1); // 1 : default paras
+    mainFunc->SetCallTarget(thread_, mainMethod);
+    mainFunc->SetCodeEntry(reinterpret_cast<uintptr_t>(mainEntry));
+    JSHandle<JSTaggedValue> constPool(thread_, mainFunc->GetConstantPool());
+    ConstantPool *curPool = ConstantPool::Cast(constPool->GetTaggedObject());
+    const CUnorderedMap<uint32_t, uint64_t> &constpoolMap = jsPandaFile->GetConstpoolMap();
+    for (const auto &it : constpoolMap) {
+        ConstPoolValue value(it.second);
+        if (value.GetConstpoolType() == ConstPoolType::BASE_FUNCTION ||
+            value.GetConstpoolType() == ConstPoolType::NC_FUNCTION ||
+            value.GetConstpoolType() == ConstPoolType::GENERATOR_FUNCTION ||
+            value.GetConstpoolType() == ConstPoolType::ASYNC_FUNCTION ||
+            value.GetConstpoolType() == ConstPoolType::METHOD) {
+                auto id = value.GetConstpoolIndex();
+                auto codeEntry = static_cast<uintptr_t>(aotInfo_->GetAOTFuncEntry(id));
+                JSMethod *curMethod = GenerateMethodForAOTFunction(reinterpret_cast<void *>(codeEntry), 1);
+                auto curFunction = JSFunction::Cast(curPool->GetObjectFromCache(id).GetTaggedObject());
+                curFunction->SetCallTarget(thread_, curMethod);
+                curFunction->SetCodeEntry(reinterpret_cast<uintptr_t>(codeEntry));
+        }
+    }
+}
+
+JSTaggedValue EcmaVM::InvokeEcmaAotEntrypoint(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile)
+{
+    UpdateMethodInFunc(mainFunc, jsPandaFile);
     std::vector<JSTaggedType> args(6, JSTaggedValue::Undefined().GetRawData()); // 6: number of para
     args[0] = mainFunc.GetTaggedValue().GetRawData();
     auto res = JSFunctionEntry(thread_->GetGlueAddr(),
@@ -361,7 +396,7 @@ JSTaggedValue EcmaVM::InvokeEcmaAotEntrypoint()
                                static_cast<uint32_t>(args.size()),
                                static_cast<uint32_t>(args.size()),
                                args.data(),
-                               ptr);
+                               mainFunc->GetCodeEntry());
     return JSTaggedValue(res);
 }
 
@@ -393,7 +428,7 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
 
     auto options = GetJSOptions();
     if (options.EnableTSAot()) {
-        result = InvokeEcmaAotEntrypoint();
+        result = InvokeEcmaAotEntrypoint(func, jsPandaFile);
     } else {
         JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
         EcmaRuntimeCallInfo info =
@@ -539,9 +574,6 @@ void EcmaVM::ProcessReferences(const WeakRootVisitor &v0)
 
 void EcmaVM::PushToNativePointerList(JSNativePointer *array)
 {
-    if (std::find(nativePointerList_.begin(), nativePointerList_.end(), array) != nativePointerList_.end()) {
-        return;
-    }
     nativePointerList_.emplace_back(array);
 }
 
@@ -549,32 +581,10 @@ void EcmaVM::RemoveFromNativePointerList(JSNativePointer *array)
 {
     auto iter = std::find(nativePointerList_.begin(), nativePointerList_.end(), array);
     if (iter != nativePointerList_.end()) {
+        JSNativePointer *object = *iter;
+        object->Destroy();
         nativePointerList_.erase(iter);
     }
-}
-
-// Do not support snapshot on windows
-bool EcmaVM::VerifyFilePath([[maybe_unused]] const CString &filePath) const
-{
-#ifndef PANDA_TARGET_WINDOWS
-    if (filePath.size() > PATH_MAX) {
-        return false;
-    }
-
-    CVector<char> resolvedPath(PATH_MAX);
-    auto result = realpath(filePath.c_str(), resolvedPath.data());
-    if (result == nullptr) {
-        return false;
-    }
-    std::ifstream file(resolvedPath.data());
-    if (!file.good()) {
-        return false;
-    }
-    file.close();
-    return true;
-#else
-    return false;
-#endif
 }
 
 void EcmaVM::ClearBufferData()
@@ -589,8 +599,11 @@ void EcmaVM::ClearBufferData()
 
 bool EcmaVM::ExecutePromisePendingJob() const
 {
-    if (!thread_->HasPendingException()) {
+    thread_local bool isProcessing = false;
+    if (!isProcessing && !thread_->HasPendingException()) {
+        isProcessing = true;
         job::MicroJobQueue::ExecutePendingJob(thread_, GetMicroJobQueue());
+        isProcessing = false;
         return true;
     }
     return false;
@@ -620,7 +633,7 @@ void EcmaVM::Iterate(const RootVisitor &v)
     moduleManager_->Iterate(v);
     tsLoader_->Iterate(v);
     aotInfo_->Iterate(v);
-#if !defined(PANDA_TARGET_WINDOWS)
+#if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MACOS)
     snapshotEnv_->Iterate(v);
 #endif
 }

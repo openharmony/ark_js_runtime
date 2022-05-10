@@ -359,7 +359,7 @@ public:
     JSHandle<JSObject> NewJSObjectByConstructor(const JSHandle<JSFunction> &constructor,
                                                 const JSHandle<JSTaggedValue> &newTarget);
 
-    uintptr_t NewSpaceBySnapShotAllocator(size_t size);
+    uintptr_t NewSpaceBySnapshotAllocator(size_t size);
     JSHandle<MachineCode> NewMachineCodeObject(size_t length, const uint8_t *data);
     JSHandle<ClassInfoExtractor> NewClassInfoExtractor(JSMethod *ctorMethod);
 

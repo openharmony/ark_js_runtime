@@ -278,6 +278,8 @@ private:
     V(GetTaggedArrayPtrTest)                \
     V(BytecodeHandler)                      \
     V(CallRuntime)                          \
+    V(AsmInterpreterEntry)                  \
+    V(JSCallDispatch)                       \
     V(CallRuntimeWithArgv)                  \
     V(OptimizedCallOptimized)               \
     V(PushCallArgs0AndDispatch)             \

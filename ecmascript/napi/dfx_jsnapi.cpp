@@ -34,22 +34,22 @@ template<typename T>
 using JSHandle = ecmascript::JSHandle<T>;
 using ecmascript::FileStream;
 
-void DFXJSNApi::DumpHeapSnapShot(EcmaVM *vm, int dumpFormat, const std::string &path, bool isVmMode)
+void DFXJSNApi::DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, const std::string &path, bool isVmMode)
 {
     FileStream stream(path);
-    DumpHeapSnapShot(vm, dumpFormat, &stream, isVmMode);
+    DumpHeapSnapshot(vm, dumpFormat, &stream, isVmMode);
 }
 
-void DFXJSNApi::DumpHeapSnapShot(EcmaVM *vm, int dumpFormat, Stream *stream, bool isVmMode)
+void DFXJSNApi::DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, Stream *stream, bool isVmMode)
 {
     if (dumpFormat == 0) {
-        ecmascript::HeapProfilerInterface::DumpHeapSnapShot(vm->GetJSThread(), ecmascript::DumpFormat::JSON,
+        ecmascript::HeapProfilerInterface::DumpHeapSnapshot(vm->GetJSThread(), ecmascript::DumpFormat::JSON,
                                                             stream, isVmMode);
     } else if (dumpFormat == 1) {
-        ecmascript::HeapProfilerInterface::DumpHeapSnapShot(vm->GetJSThread(), ecmascript::DumpFormat::BINARY,
+        ecmascript::HeapProfilerInterface::DumpHeapSnapshot(vm->GetJSThread(), ecmascript::DumpFormat::BINARY,
                                                             stream, isVmMode);
     } else if (dumpFormat == 2) { // 2: enum is 2
-        ecmascript::HeapProfilerInterface::DumpHeapSnapShot(vm->GetJSThread(), ecmascript::DumpFormat::OTHER,
+        ecmascript::HeapProfilerInterface::DumpHeapSnapshot(vm->GetJSThread(), ecmascript::DumpFormat::OTHER,
                                                             stream, isVmMode);
     }
 }

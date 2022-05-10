@@ -41,7 +41,21 @@ EcmaRuntimeCallInfo EcmaInterpreter::NewRuntimeCallInfo(
     size_t numArgs)
 {
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    JSTaggedType *newSp = sp - INTERPRETER_FRAME_STATE_SIZE;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    JSTaggedType *newSp;
+    JSTaggedType *prevSp = sp;
+    if (thread->IsAsmInterpreter()) {
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+        newSp = FrameHandler::GetInterpretedEntryFrameStart(sp);
+#else
+        newSp = sp - AsmInterpretedFrame::NumOfMembers();  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        auto leaveFrame = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
+        if (leaveFrame != nullptr) {
+            prevSp = leaveFrame;
+        }
+#endif
+    } else {
+        newSp = sp - InterpretedFrame::NumOfMembers();  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    }
     if (UNLIKELY(thread->DoStackOverflowCheck(newSp - numArgs - RESERVED_CALL_ARGCOUNT))) {
         EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, INVALID_ARGS_NUMBER, nullptr);
         return ecmaRuntimeCallInfo;
@@ -51,12 +65,7 @@ EcmaRuntimeCallInfo EcmaInterpreter::NewRuntimeCallInfo(
     // create entry frame.
     InterpretedEntryFrame *entryState = InterpretedEntryFrame::GetFrameFromSp(newSp);
     entryState->base.type = FrameType::INTERPRETER_ENTRY_FRAME;
-    auto leaveFrame = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
-    if (leaveFrame != nullptr) {
-        entryState->base.prev = leaveFrame;
-    } else {
-        entryState->base.prev = sp;
-    }
+    entryState->base.prev = prevSp;
     entryState->pc = nullptr;
 
     newSp -= INTERPRETER_ENTRY_FRAME_STATE_SIZE;   // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)

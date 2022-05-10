@@ -29,34 +29,45 @@ void FrameHandler::PrevFrame()
     auto type = GetFrameType();
     switch (type) {
         case FrameType::OPTIMIZED_FRAME: {
-            OptimizedFrame *frame = OptimizedFrame::GetFrameFromSp(sp_);
-            sp_ = reinterpret_cast<JSTaggedType *>(frame->prevFp);
+            auto frame = OptimizedFrame::GetFrameFromSp(sp_);
+            sp_ = frame->GetPrevFrameFp();
             break;
         }
         case FrameType::OPTIMIZED_ENTRY_FRAME: {
-            OptimizedEntryFrame *frame = OptimizedEntryFrame::GetFrameFromSp(sp_);
-            sp_ = reinterpret_cast<JSTaggedType *>(frame->preLeaveFrameFp);
+            auto frame = OptimizedEntryFrame::GetFrameFromSp(sp_);
+            sp_ = frame->GetPrevFrameFp();
+            break;
+        }
+        case FrameType::ASM_INTERPRETER_FRAME:
+        case FrameType::INTERPRETER_CONSTRUCTOR_FRAME: {
+            auto frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+            sp_ = frame->GetPrevFrameFp();
             break;
         }
         case FrameType::INTERPRETER_FRAME:
         case FrameType::INTERPRETER_FAST_NEW_FRAME: {
-#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
-            AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
-#else
-            InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
-#endif
-            sp_ = frame->base.prev;
+            auto frame = InterpretedFrame::GetFrameFromSp(sp_);
+            sp_ = frame->GetPrevFrameFp();
             break;
         }
-        case FrameType::LEAVE_FRAME:
+        case FrameType::LEAVE_FRAME: {
+            auto frame = OptimizedWithArgvLeaveFrame::GetFrameFromSp(sp_);
+            sp_ = frame->GetPrevFrameFp();
+            break;
+        }
         case FrameType::LEAVE_FRAME_WITH_ARGV: {
-            OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(sp_);
-            sp_ = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
+            auto frame = OptimizedLeaveFrame::GetFrameFromSp(sp_);
+            sp_ = frame->GetPrevFrameFp();
+            break;
+        }
+        case FrameType::BUILTIN_FRAME: {
+            auto frame = BuiltinFrame::GetFrameFromSp(sp_);
+            sp_ = frame->GetPrevFrameFp();
             break;
         }
         case FrameType::INTERPRETER_ENTRY_FRAME: {
-            InterpretedEntryFrame *frame = InterpretedEntryFrame::GetFrameFromSp(sp_);
-            sp_ = frame->base.prev;
+            auto frame = InterpretedEntryFrame::GetFrameFromSp(sp_);
+            sp_ = frame->GetPrevFrameFp();
             break;
         }
         default:
@@ -80,12 +91,18 @@ uintptr_t FrameHandler::GetPrevFrameCallSiteSp(const JSTaggedType *sp)
             auto frame = OptimizedWithArgvLeaveFrame::GetFrameFromSp(sp);
             return frame->GetCallSiteSp();
         }
+        case FrameType::BUILTIN_FRAME: {
+            auto frame = BuiltinFrame::GetFrameFromSp(sp);
+            return frame->GetCallSiteSp();
+        }
         case FrameType::OPTIMIZED_FRAME: {
             auto frame = OptimizedFrame::GetFrameFromSp(sp);
             sp = frame->GetPrevFrameFp();
             type = GetFrameType(sp);
             break;
         }
+        case FrameType::ASM_INTERPRETER_FRAME:
+        case FrameType::INTERPRETER_CONSTRUCTOR_FRAME:
         case FrameType::INTERPRETER_FRAME:
         case FrameType::INTERPRETER_FAST_NEW_FRAME:
         case FrameType::OPTIMIZED_ENTRY_FRAME:
@@ -99,23 +116,74 @@ uintptr_t FrameHandler::GetPrevFrameCallSiteSp(const JSTaggedType *sp)
         return frame->GetCallSiteSp();
     }
 
-    ASSERT((GetFrameType(sp) == FrameType::INTERPRETER_FRAME) ||
-           (GetFrameType(sp) == FrameType::INTERPRETER_FAST_NEW_FRAME));
     auto frame = AsmInterpretedFrame::GetFrameFromSp(sp);
     return frame->GetCallSiteSp();
 }
 
-void FrameHandler::PrevInterpretedFrame()
+ARK_INLINE void FrameHandler::AdvanceToInterpretedFrame()
+{
+    for (; HasFrame() && !(IsInterpretedFrame() || IsInterpretedEntryFrame()); PrevFrame());
+    if (!HasFrame()) {
+        return;
+    }
+    auto type = GetFrameType(sp_);
+    switch (type) {
+        case FrameType::BUILTIN_FRAME: {
+            auto frame = BuiltinFrame::GetFrameFromSp(sp_);
+            function_ = frame->function;
+            pc_ = nullptr;
+            break;
+        }
+        case FrameType::ASM_INTERPRETER_FRAME:
+        case FrameType::INTERPRETER_CONSTRUCTOR_FRAME: {
+            auto frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+            function_ = frame->function;
+            pc_ = const_cast<uint8_t*>(frame->pc);
+            break;
+        }
+        case FrameType::INTERPRETER_FRAME:
+        case FrameType::INTERPRETER_FAST_NEW_FRAME: {
+            auto frame = InterpretedFrame::GetFrameFromSp(sp_);
+            function_ = frame->function;
+            pc_ = const_cast<uint8_t*>(frame->pc);
+            break;
+        }
+        case FrameType::INTERPRETER_ENTRY_FRAME:
+            break;
+        case FrameType::OPTIMIZED_FRAME:
+        case FrameType::LEAVE_FRAME:
+        case FrameType::LEAVE_FRAME_WITH_ARGV:
+        case FrameType::OPTIMIZED_ENTRY_FRAME:
+        default:
+            UNREACHABLE();
+    }
+}
+
+ARK_INLINE void FrameHandler::PrevInterpretedFrame()
 {
     PrevFrame();
-    for (; HasFrame() && !(IsInterpretedFrame() || IsInterpretedEntryFrame());
-        FrameHandler::PrevFrame());
+    AdvanceToInterpretedFrame();
 }
 
 JSTaggedType* FrameHandler::GetPrevInterpretedFrame()
 {
     PrevInterpretedFrame();
     return GetSp();
+}
+
+uint32_t FrameHandler::GetNumberArgs()
+{
+    ASSERT(IsInterpretedFrame());
+    JSTaggedType *prevSp;
+    if (IsAsmInterpretedFrame()) {
+        auto *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+        prevSp = frame->GetPrevFrameFp();
+    } else {
+        auto *frame = InterpretedFrame::GetFrameFromSp(sp_);
+        prevSp = frame->GetPrevFrameFp();
+    }
+    auto prevSpEnd = reinterpret_cast<JSTaggedType*>(GetInterpretedFrameEnd(prevSp));
+    return static_cast<uint32_t>(prevSpEnd - sp_);
 }
 
 JSTaggedValue FrameHandler::GetVRegValue(size_t index) const
@@ -135,122 +203,67 @@ void FrameHandler::SetVRegValue(size_t index, JSTaggedValue value)
 JSTaggedValue FrameHandler::GetAcc() const
 {
     ASSERT(IsInterpretedFrame());
-#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
-    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
-#else
-    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
-#endif
-    return frame->acc;
-}
-
-uint32_t FrameHandler::GetSize() const
-{
-    ASSERT(IsInterpretedFrame());
-#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
-    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
-#else
-    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
-#endif
-    JSTaggedType *prevSp = frame->base.prev;
-
-    // The prev frame of InterpretedFrame may entry frame or interpreter frame.
-    if (FrameHandler::GetFrameType(prevSp) == FrameType::INTERPRETER_ENTRY_FRAME) {
-        return static_cast<uint32_t>((prevSp - sp_) - INTERPRETER_ENTRY_FRAME_STATE_SIZE);
+    if (IsAsmInterpretedFrame()) {
+        auto *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+        return frame->acc;
     } else {
-        return static_cast<uint32_t>((prevSp - sp_) - INTERPRETER_FRAME_STATE_SIZE);
+        auto *frame = InterpretedFrame::GetFrameFromSp(sp_);
+        return frame->acc;
     }
 }
 
 uint32_t FrameHandler::GetBytecodeOffset() const
 {
     ASSERT(IsInterpretedFrame());
-#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
-    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
-#else
-    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
-#endif
-    JSMethod *method = ECMAObject::Cast(frame->function.GetTaggedObject())->GetCallTarget();
-    auto offset = frame->pc - method->GetBytecodeArray();
+    JSMethod *method = GetMethod();
+    auto offset = GetPc() - method->GetBytecodeArray();
     return static_cast<uint32_t>(offset);
 }
 
 JSMethod *FrameHandler::GetMethod() const
 {
     ASSERT(IsInterpretedFrame());
-#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
-    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
-#else
-    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
-#endif
-    return ECMAObject::Cast(frame->function.GetTaggedObject())->GetCallTarget();
+    auto function = GetFunction();
+    return ECMAObject::Cast(function.GetTaggedObject())->GetCallTarget();
 }
 
 JSTaggedValue FrameHandler::GetFunction() const
 {
     ASSERT(IsInterpretedFrame());
-#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
-    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
-#else
-    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
-#endif
-    return frame->function;
+    return function_;
 }
 
 const uint8_t *FrameHandler::GetPc() const
 {
     ASSERT(IsInterpretedFrame());
-#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
-    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
-#else
-    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
-#endif
-    return frame->pc;
+    return pc_;
 }
 
 ConstantPool *FrameHandler::GetConstpool() const
 {
     ASSERT(IsInterpretedFrame());
-#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
-    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
-    JSTaggedValue function = frame->function;
-    if (!function.IsJSFunction()) {
-        return nullptr;
-    }
+    auto function = GetFunction();
     JSTaggedValue constpool = JSFunction::Cast(function.GetTaggedObject())->GetConstantPool();
     return ConstantPool::Cast(constpool.GetTaggedObject());
-#else
-    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
-    return ConstantPool::Cast(frame->constpool.GetTaggedObject());
-#endif
 }
 
 JSTaggedValue FrameHandler::GetEnv() const
 {
     ASSERT(IsInterpretedFrame());
-#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
-    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
-#else
-    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
-#endif
-    return frame->env;
-}
-
-void FrameHandler::SetEnv(JSTaggedValue env)
-{
-    ASSERT(IsInterpretedFrame());
-#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
-    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
-#else
-    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
-#endif
-    frame->env = env;
+    if (IsAsmInterpretedFrame()) {
+        auto *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+        return frame->env;
+    } else {
+        auto *frame = InterpretedFrame::GetFrameFromSp(sp_);
+        return frame->env;
+    }
 }
 
 void FrameHandler::DumpStack(std::ostream &os) const
 {
     size_t i = 0;
     FrameHandler frameHandler(thread_);
-    for (; frameHandler.HasFrame(); frameHandler.PrevFrame()) {
+    for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
         os << "[" << i++
         << "]:" << frameHandler.GetMethod()->ParseFunctionName()
         << "\n";
@@ -261,42 +274,57 @@ void FrameHandler::DumpPC(std::ostream &os, const uint8_t *pc) const
 {
     FrameHandler frameHandler(thread_);
     ASSERT(frameHandler.HasFrame());
-
     // NOLINTNEXTLINE(cppcoreguidelines-narrowing-conversions, bugprone-narrowing-conversions)
     int offset = pc - frameHandler.GetMethod()->GetBytecodeArray();
     os << "offset: " << offset << "\n";
+}
+
+ARK_INLINE uintptr_t FrameHandler::GetInterpretedFrameEnd(JSTaggedType *prevSp) const
+{
+    uintptr_t end = 0U;
+    FrameType type = FrameHandler::GetFrameType(prevSp);
+    switch (type) {
+        case FrameType::ASM_INTERPRETER_FRAME:
+        case FrameType::INTERPRETER_CONSTRUCTOR_FRAME: {
+            auto frame = AsmInterpretedFrame::GetFrameFromSp(prevSp);
+            end = ToUintPtr(frame);
+            break;
+        }
+        case FrameType::INTERPRETER_FRAME:
+        case FrameType::INTERPRETER_FAST_NEW_FRAME: {
+            auto frame = InterpretedFrame::GetFrameFromSp(prevSp);
+            end = ToUintPtr(frame);
+            break;
+        }
+        case FrameType::INTERPRETER_ENTRY_FRAME:
+            end = ToUintPtr(GetInterpretedEntryFrameStart(prevSp));
+            break;
+        case FrameType::BUILTIN_FRAME:
+        case FrameType::OPTIMIZED_FRAME:
+        case FrameType::LEAVE_FRAME:
+        case FrameType::LEAVE_FRAME_WITH_ARGV:
+        case FrameType::OPTIMIZED_ENTRY_FRAME:
+        default:
+            LOG_ECMA(FATAL) << "frame type error!";
+            UNREACHABLE();
+    }
+    return end;
 }
 
 ARK_INLINE void FrameHandler::InterpretedFrameIterate(const JSTaggedType *sp,
                                                       const RootVisitor &v0,
                                                       const RootRangeVisitor &v1) const
 {
-    if (sp == nullptr) {
-        return;
-    }
-
-#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
-    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp);
-    if (frame->function == JSTaggedValue::Hole()) {
-        return;
-    }
-#else
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp);
     if (frame->sp == nullptr) {
         return;
     }
-#endif
-
+    JSTaggedType *prevSp = frame->GetPrevFrameFp();
     uintptr_t start = ToUintPtr(sp);
     uintptr_t end = 0U;
-    JSTaggedType *prevSp = frame->base.prev;
     FrameType type = FrameHandler::GetFrameType(prevSp);
     if (type == FrameType::INTERPRETER_FRAME || type == FrameType::INTERPRETER_FAST_NEW_FRAME) {
-#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
-        AsmInterpretedFrame *prevFrame = AsmInterpretedFrame::GetFrameFromSp(prevSp);
-#else
-        InterpretedFrame *prevFrame = InterpretedFrame::GetFrameFromSp(prevSp);
-#endif
+        auto prevFrame = InterpretedFrame::GetFrameFromSp(prevSp);
         end = ToUintPtr(prevFrame);
     } else if (type == FrameType::INTERPRETER_ENTRY_FRAME) {
         end = ToUintPtr(GetInterpretedEntryFrameStart(prevSp));
@@ -304,19 +332,71 @@ ARK_INLINE void FrameHandler::InterpretedFrameIterate(const JSTaggedType *sp,
         LOG_ECMA(FATAL) << "frame type error!";
         UNREACHABLE();
     }
-
     v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
     v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->function)));
     if (frame->pc != nullptr) {
-#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
-        v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->acc)));
-        v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->env)));
-#else
         v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->acc)));
         v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->constpool)));
         v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->env)));
         v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->profileTypeInfo)));
+    }
+}
+
+ARK_INLINE void FrameHandler::AsmInterpretedFrameIterate(const JSTaggedType *sp,
+                                                         const RootVisitor &v0,
+                                                         const RootRangeVisitor &v1) const
+{
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp);
+    uintptr_t start = ToUintPtr(sp);
+    uintptr_t end = ToUintPtr(frame->GetCurrentFramePointer());
+    v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
+    v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->function)));
+    if (frame->pc != nullptr) {
+        v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->acc)));
+        v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->env)));
+    }
+#else
+    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp);
+    if (frame->function == JSTaggedValue::Hole()) {
+        return;
+    }
+
+    JSTaggedType *prevSp = frame->GetPrevFrameFp();
+    uintptr_t start = ToUintPtr(sp);
+    uintptr_t end = GetInterpretedFrameEnd(prevSp);
+    v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
+    v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->function)));
+    if (frame->pc != nullptr) {
+        v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->acc)));
+        v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->env)));
+    }
+#endif  // ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+}
+
+ARK_INLINE void FrameHandler::BuiltinFrameIterate(const JSTaggedType *sp,
+                                                  const RootVisitor &v0,
+                                                  [[maybe_unused]] const RootRangeVisitor &v1,
+                                                  ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
+                                                  bool isVerifying) const
+{
+    auto frame = BuiltinFrame::GetFrameFromSp(sp);
+    uintptr_t start = ToUintPtr(&frame->argc + 1); // argv
+    uintptr_t end = ToUintPtr(&frame->argc + 1 + frame->argc);
+    v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
+
+    std::set<uintptr_t> slotAddrs;
+    bool ret = kungfu::LLVMStackMapParser::GetInstance().CollectStackMapSlots(
+        frame->returnAddr, reinterpret_cast<uintptr_t>(sp), slotAddrs, derivedPointers, isVerifying);
+    if (!ret) {
+#ifndef NDEBUG
+        LOG_ECMA(DEBUG) << " stackmap don't found returnAddr " << frame->returnAddr;
 #endif
+        return;
+    }
+
+    for (auto slot : slotAddrs) {
+        v0(Root::ROOT_FRAME, ObjectSlot(slot));
     }
 }
 
@@ -332,10 +412,6 @@ ARK_INLINE void FrameHandler::InterpretedEntryFrameIterate(const JSTaggedType *s
                                                            [[maybe_unused]] const RootVisitor &v0,
                                                            const RootRangeVisitor &v1) const
 {
-    if (sp == nullptr) {
-        return;
-    }
-
     uintptr_t start = ToUintPtr(GetInterpretedEntryFrameStart(sp));
     uintptr_t end = ToUintPtr(sp - INTERPRETER_ENTRY_FRAME_STATE_SIZE);
     v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
@@ -347,10 +423,6 @@ ARK_INLINE void FrameHandler::OptimizedFrameIterate(const JSTaggedType *sp,
                                                     ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
                                                     bool isVerifying) const
 {
-    if (sp == nullptr) {
-        return;
-    }
-
     std::set<uintptr_t> slotAddrs;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     auto returnAddr =
@@ -376,10 +448,6 @@ ARK_INLINE void FrameHandler::OptimizedEntryFrameIterate(const JSTaggedType *sp,
                                                          ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
                                                          bool isVerifying) const
 {
-    if (sp == nullptr) {
-        return;
-    }
-
     std::set<uintptr_t> slotAddrs;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     auto returnAddr = reinterpret_cast<uintptr_t>(*(reinterpret_cast<uintptr_t*>(const_cast<JSTaggedType *>(sp)) + 1));
@@ -450,60 +518,106 @@ ARK_INLINE void FrameHandler::OptimizedWithArgvLeaveFrameIterate(const JSTaggedT
     }
 }
 
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+void FrameHandler::IterateRsp(const RootVisitor &v0, const RootRangeVisitor &v1) const
+{
+    JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
+    IterateFrameChain(current, v0, v1);
+}
+
+void FrameHandler::IterateSp(const RootVisitor &v0, const RootRangeVisitor &v1) const
+{
+    JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
+    while (current) {
+        // only interpreter entry frame is on thread sp when rsp is enable
+        ASSERT(FrameHandler::GetFrameType(current) == FrameType::INTERPRETER_ENTRY_FRAME);
+        InterpretedEntryFrame *frame = InterpretedEntryFrame::GetFrameFromSp(current);
+        InterpretedEntryFrameIterate(current, v0, v1);
+        current = frame->GetPrevFrameFp();
+    }
+}
+
 void FrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
 {
-    bool isVerifying = false;
-#if ECMASCRIPT_ENABLE_HEAP_VERIFY
-    isVerifying = thread_->GetEcmaVM()->GetHeap()->IsVerifying();
-#endif
-
-    FrameType frameType = FrameHandler(thread_).GetFrameType();
+    IterateSp(v0, v1);
+    IterateRsp(v0, v1);
+}
+#else
+void FrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
+{
     JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
+    FrameType frameType = FrameHandler::GetFrameType(current);
     if (frameType != FrameType::INTERPRETER_ENTRY_FRAME) {
         auto leaveFrame = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
         if (leaveFrame != nullptr) {
             current = leaveFrame;
         }
     }
+    IterateFrameChain(current, v0, v1);
+}
+#endif  // ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
 
+void FrameHandler::IterateFrameChain(JSTaggedType *start, const RootVisitor &v0, const RootRangeVisitor &v1) const
+{
     ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers = thread_->GetEcmaVM()->GetHeap()->GetDerivedPointers();
+    bool isVerifying = false;
+
+#if ECMASCRIPT_ENABLE_HEAP_VERIFY
+    isVerifying = thread_->GetEcmaVM()->GetHeap()->IsVerifying();
+#endif
+    JSTaggedType *current = start;
     while (current) {
         FrameType type = FrameHandler::GetFrameType(current);
-        if (type == FrameType::INTERPRETER_FRAME || type == FrameType::INTERPRETER_FAST_NEW_FRAME) {
-#ifdef ECMASCRIPT_COMPILE_ASM_INTERPRETER
-            AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(current);
-#else
-            InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(current);
-#endif
-            InterpretedFrameIterate(current, v0, v1);
-            current = frame->GetPrevFrameFp();
-        } else if (type == FrameType::INTERPRETER_ENTRY_FRAME) {
-            InterpretedEntryFrame *frame = InterpretedEntryFrame::GetFrameFromSp(current);
-            InterpretedEntryFrameIterate(current, v0, v1);
-            current = frame->GetPrevFrameFp();
-        } else if (type == FrameType::OPTIMIZED_FRAME) {
-            OptimizedFrame *frame = OptimizedFrame::GetFrameFromSp(current);
-            OptimizedFrameIterate(current, v0, v1, derivedPointers, isVerifying);
-            current = frame->GetPrevFrameFp();
-        } else if (type == FrameType::OPTIMIZED_ENTRY_FRAME) {
-            OptimizedEntryFrame *frame = OptimizedEntryFrame::GetFrameFromSp(current);
-            current = frame->GetPrevFrameFp();
-            // NOTE: due to "AotInfo" iteration, current frame might not be interpreted frame
-        } else if (type == FrameType::LEAVE_FRAME_WITH_ARGV) {
-            OptimizedWithArgvLeaveFrame *frame = OptimizedWithArgvLeaveFrame::GetFrameFromSp(current);
-            OptimizedWithArgvLeaveFrameIterate(current, v0, v1, derivedPointers, isVerifying);
-            current = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
-        } else {
-            ASSERT(type == FrameType::LEAVE_FRAME);
-            OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(current);
-            OptimizedLeaveFrameIterate(current, v0, v1, derivedPointers, isVerifying);
-            // arm32, arm64 and x86_64 support stub and aot, when aot/stub call runtime, generate Optimized
-            // Leave Frame.
-            current = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
-            ASSERT(GetFrameType(current) == FrameType::OPTIMIZED_ENTRY_FRAME ||
-                   GetFrameType(current) == FrameType::OPTIMIZED_FRAME ||
-                   GetFrameType(current) == FrameType::INTERPRETER_FRAME ||
-                   GetFrameType(current) == FrameType::INTERPRETER_ENTRY_FRAME);
+        switch (type) {
+            case FrameType::OPTIMIZED_FRAME: {
+                auto frame = OptimizedFrame::GetFrameFromSp(current);
+                OptimizedFrameIterate(current, v0, v1, derivedPointers, isVerifying);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::OPTIMIZED_ENTRY_FRAME: {
+                auto frame = OptimizedEntryFrame::GetFrameFromSp(current);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::ASM_INTERPRETER_FRAME:
+            case FrameType::INTERPRETER_CONSTRUCTOR_FRAME: {
+                auto frame = AsmInterpretedFrame::GetFrameFromSp(current);
+                AsmInterpretedFrameIterate(current, v0, v1);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::INTERPRETER_FRAME:
+            case FrameType::INTERPRETER_FAST_NEW_FRAME: {
+                auto frame = InterpretedFrame::GetFrameFromSp(current);
+                InterpretedFrameIterate(current, v0, v1);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::LEAVE_FRAME: {
+                auto frame = OptimizedLeaveFrame::GetFrameFromSp(current);
+                OptimizedLeaveFrameIterate(current, v0, v1, derivedPointers, isVerifying);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::LEAVE_FRAME_WITH_ARGV: {
+                auto frame = OptimizedLeaveFrame::GetFrameFromSp(current);
+                OptimizedWithArgvLeaveFrameIterate(current, v0, v1, derivedPointers, isVerifying);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::BUILTIN_FRAME: {
+                auto frame = BuiltinFrame::GetFrameFromSp(current);
+                BuiltinFrameIterate(current, v0, v1, derivedPointers, isVerifying);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::INTERPRETER_ENTRY_FRAME: {
+                auto frame = InterpretedEntryFrame::GetFrameFromSp(current);
+                InterpretedEntryFrameIterate(current, v0, v1);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
         }
     }
 }

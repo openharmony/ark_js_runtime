@@ -40,8 +40,6 @@ void JSArrayBuffer::Attach(JSThread *thread, uint32_t arrayBufferByteLength, JST
     ASSERT(arrayBufferData.IsNativePointer());
     SetArrayBufferByteLength(arrayBufferByteLength);
     SetArrayBufferData(thread, arrayBufferData);
-    EcmaVM *vm = thread->GetEcmaVM();
-    vm->PushToNativePointerList(JSNativePointer::Cast(arrayBufferData.GetHeapObject()));
 }
 
 void JSArrayBuffer::Detach(JSThread *thread)
@@ -51,12 +49,6 @@ void JSArrayBuffer::Detach(JSThread *thread)
     if (arrayBufferData.IsNull()) {
         return;
     }
-
-    EcmaVM *vm = thread->GetEcmaVM();
-    // remove vm's control over arrayBufferData.
-    JSNativePointer *jsNativePointer = JSNativePointer::Cast(arrayBufferData.GetHeapObject());
-    vm->RemoveFromNativePointerList(jsNativePointer);
-    jsNativePointer->Destroy();
 
     SetArrayBufferData(thread, JSTaggedValue::Null());
     SetArrayBufferByteLength(0);

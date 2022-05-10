@@ -15,7 +15,11 @@
 
 #include "ecmascript/js_serializer.h"
 
+#ifndef PANDA_TARGET_MACOS
 #include <malloc.h>
+#else
+#include <sys/malloc.h>
+#endif
 #include <vector>
 
 #include "ecmascript/base/array_helper.h"
