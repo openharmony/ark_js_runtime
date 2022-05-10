@@ -443,7 +443,7 @@ JSHandle<JSObject> TypedArrayHelper::AllocateTypedArrayBuffer(JSThread *thread, 
 
 // es11 22.2.4.7 TypedArraySpeciesCreate ( exemplar, argumentList )
 JSHandle<JSObject> TypedArrayHelper::TypedArraySpeciesCreate(JSThread *thread, const JSHandle<JSObject> &obj,
-                                                             uint32_t argc, const JSTaggedType argv[])
+                                                             uint32_t argc, JSTaggedType argv[])
 {
     // 1. Assert: exemplar is an Object that has [[TypedArrayName]] and [[ContentType]] internal slots.
     // 2. Let defaultConstructor be the intrinsic object listed in column one of Table 61 for
@@ -453,6 +453,7 @@ JSHandle<JSObject> TypedArrayHelper::TypedArraySpeciesCreate(JSThread *thread, c
     JSHandle<JSTaggedValue> thisConstructor = JSObject::SpeciesConstructor(thread, obj, defaultConstructor);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSHandle<JSObject>(thread, JSTaggedValue::Exception()));
     // 4. Let result be ? TypedArrayCreate(constructor, argumentList).
+    argv[0] = JSTypedArray::Cast(*obj)->GetViewedArrayBuffer().GetRawData();
     JSHandle<JSObject> result = TypedArrayHelper::TypedArrayCreate(thread, thisConstructor, argc, argv);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSHandle<JSObject>(thread, JSTaggedValue::Exception()));
     // 5. If result.[[ContentType]] ≠ exemplar.[[ContentType]], throw a TypeError exception.

@@ -59,7 +59,7 @@ enum RegionFlags {
 class Region {
 public:
     Region(Space *space, Heap *heap, uintptr_t allocateBase, uintptr_t begin, uintptr_t end, RegionFlags flags)
-        : space_(space), heap_(heap),
+        : flags_(0), space_(space), heap_(heap),
         allocateBase_(allocateBase),
         end_(end),
         highWaterMark_(end),
