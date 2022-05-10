@@ -196,8 +196,8 @@ JSTypedArray *CreateTypedArrayFromList(JSThread *thread, const JSHandle<TaggedAr
     JSHandle<JSFunction> int8_array(env->GetInt8ArrayFunction());
     JSHandle<JSObject> globalObject(thread, env->GetGlobalObject());
     //  6 : test case
-    auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
-    ecmaRuntimeCallInfo1->SetNewTarget(JSTaggedValue(*int8_array));
+    auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue(*int8_array), 6);
+    ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue(*int8_array));
     ecmaRuntimeCallInfo1->SetThis(JSTaggedValue(*globalObject));
     ecmaRuntimeCallInfo1->SetCallArg(0, jsarray.GetTaggedValue());
 
