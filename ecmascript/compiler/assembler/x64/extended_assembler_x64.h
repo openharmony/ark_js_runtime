@@ -19,9 +19,9 @@
 
 namespace panda::ecmascript::x64 {
 // ExtendedAssembler implements frequently-used assembler macros with some extended usages.
-class ExtendedAssemblerX64 : public AssemblerX64 {
+class ExtendedAssembler : public AssemblerX64 {
 public:
-    explicit ExtendedAssemblerX64(Chunk *chunk)
+    explicit ExtendedAssembler(Chunk *chunk)
         : AssemblerX64(chunk)
     {
     }

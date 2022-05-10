@@ -155,6 +155,112 @@ void AssemblerAarch64::Stp(const Register &rt, const Register &rt2, const Memory
     }
     UNREACHABLE();
 }
+
+#define Opc(x)  (((x) << LDP_STP_Opc_LOWBITS) & LDP_STP_Opc_MASK)
+void AssemblerAarch64::Ldp(const VectorRegister &vt, const VectorRegister &vt2, const MemoryOperand &operand)
+{
+    uint32_t op;
+    if (operand.IsImmediateOffset()) {
+        switch (operand.GetAddrMode()) {
+            case MemoryOperand::AddrMode::OFFSET:
+                op = LoadStorePairOpCode::LDP_V_Offset;
+                break;
+            case MemoryOperand::AddrMode::PREINDEX:
+                op = LoadStorePairOpCode::LDP_V_Pre;
+                break;
+            case MemoryOperand::AddrMode::POSTINDEX:
+                op = LoadStorePairOpCode::LDP_V_Post;
+                break;
+            default:
+                UNREACHABLE();
+        }
+        uint64_t imm = operand.GetImmediate().Value();
+        switch (vt.GetScale()) {
+            case S:
+                imm >>= 2;
+                break;
+            case D:
+                imm >>= 3;
+                break;
+            case Q:
+                imm >>= 4;
+                break;
+            default:
+                UNREACHABLE();
+        }
+        int opc = GetOpcFromScale(vt.GetScale(), true);
+        uint32_t instructionCode = Opc(opc) | op | Imm7(imm) | Rt2(vt2.GetId()) |
+                                   Rn(operand.GetRegBase().GetId()) | Rt(vt.GetId());
+        EmitU32(instructionCode);
+        return;
+    }
+    UNREACHABLE();
+}
+
+void AssemblerAarch64::Stp(const VectorRegister &vt, const VectorRegister &vt2, const MemoryOperand &operand)
+{
+    uint32_t op;
+    if (operand.IsImmediateOffset()) {
+        switch (operand.GetAddrMode()) {
+            case MemoryOperand::AddrMode::OFFSET:
+                op = LoadStorePairOpCode::STP_V_Offset;
+                break;
+            case MemoryOperand::AddrMode::PREINDEX:
+                op = LoadStorePairOpCode::STP_V_Pre;
+                break;
+            case MemoryOperand::AddrMode::POSTINDEX:
+                op = LoadStorePairOpCode::STP_V_Post;
+                break;
+            default:
+                UNREACHABLE();
+        }
+        uint64_t imm = operand.GetImmediate().Value();
+        switch (vt.GetScale()) {
+            case S:
+                imm >>= 2;
+                break;
+            case D:
+                imm >>= 3;
+                break;
+            case Q:
+                imm >>= 4;
+                break;
+            default:
+                UNREACHABLE();
+        }
+        int opc = GetOpcFromScale(vt.GetScale(), true);
+        uint32_t instructionCode = Opc(opc) | op | Imm7(imm) | Rt2(vt2.GetId()) |
+                                   Rn(operand.GetRegBase().GetId()) | Rt(vt.GetId());
+        EmitU32(instructionCode);
+        return;
+    }
+    UNREACHABLE();
+}
+
+void int AssemblerAarch64::GetOpcFromScale(Scale scale, bool ispair)
+{
+    int opc = 0;
+    switch(scale) {
+        case B:
+        case H:
+            ASSERT(!ispair);
+            opc = 1;
+            break;
+        case S:
+            opc = ispair ? 0 : 1;
+            break;
+        case D:
+            opc = ispair ? 1 : 1;
+            break;
+        case Q:
+            opc = ispair ? 1 : 3;
+            break;
+        default:
+            UNREACHABLE();
+    }
+    return opc;
+}
+#undef Opc
 #undef Imm7
 
 

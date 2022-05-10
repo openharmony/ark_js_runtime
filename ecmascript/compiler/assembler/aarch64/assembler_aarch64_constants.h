@@ -25,6 +25,13 @@ enum RegisterId : uint8_t {
     INVALID_REG = 0xFF,
 };
 
+enum VectorRegisterId : uint8_t {
+    v0, v1, v2, v3, v4, v5, v6, v7,
+    v8, v9, v10, v11, v12, v13, v14, v15,
+    v16, v17, v18, v19, v20, v21, v22, v23,
+    v24, v25, v26, v27, v28, v29, v30, v31,
+};
+
 enum Extend : uint8_t {
     NO_EXTEND = 0xFF,
     UXTB = 0,
@@ -49,8 +56,9 @@ enum Shift : uint8_t {
 enum Scale {
     B = 0,
     H = 1,
-    W = 2,
-    Q = 3,
+    S = 2,
+    D = 3,
+    Q = 4,
 };
 
 enum Condition {
@@ -139,9 +147,15 @@ enum LoadStorePairOpCode {
     LDP_Post    = 0x28c00000,
     LDP_Pre     = 0x29c00000,
     LDP_Offset  = 0x29400000,
+    LDP_V_Post  = 0x2cc00000,
+    LDP_V_Pre   = 0x2dc00000,
+    LDP_V_Offset  = 0x2d40000,
     STP_Post    = 0x28800000,
     STP_Pre     = 0x29800000,
     STP_Offset  = 0x29000000,
+    STP_V_Post  = 0x2c800000,
+    STP_V_Pre   = 0x2d800000,
+    STP_V_Offset  = 0x2d00000,
 };
 
 enum LoadStoreOpCode {
@@ -239,6 +253,8 @@ enum RetOpCode {
     |1  x | 1  0 1 |0 |0  0 | 0 1 | 0|          imm9        | 0 1  |    Rn    |     Rt   |
 */
 #define LDR_AND_STR_FIELD_LIST(V)   \
+    V(LDR_STR, Size, 31, 30)        \
+    V(LDR_STR, Opc, 23, 22)         \
     V(LDR_STR, Imm9, 20, 12)        \
     V(LDR_STR, Imm12, 21, 10)
 
@@ -248,6 +264,7 @@ enum RetOpCode {
     |x  0 | 1  0 1 |0 |0  0  1| 1|      imm7        |    Rt2      |    Rn     |     Rt   |
 */
 #define LDP_AND_STP_FIELD_LIST(V)   \
+    V(LDP_STP, Opc, 31, 30)         \
     V(LDP_STP, Imm7, 21, 15)
 
 
