@@ -48,11 +48,11 @@ EcmaRuntimeCallInfo EcmaInterpreter::NewRuntimeCallInfo(
         newSp = FrameHandler::GetInterpretedEntryFrameStart(sp);
 #else
         newSp = sp - AsmInterpretedFrame::NumOfMembers();  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-#endif
         auto leaveFrame = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
         if (leaveFrame != nullptr) {
             prevSp = leaveFrame;
         }
+#endif
     } else {
         newSp = sp - InterpretedFrame::NumOfMembers();  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     }

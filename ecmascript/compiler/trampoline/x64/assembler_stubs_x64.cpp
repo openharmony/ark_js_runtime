@@ -969,9 +969,8 @@ void AssemblerStubsX64::JSCallDispatch(ExtendedAssemblerX64 *assembler)
         __ Movq(Operand(callTargetRegister, JSFunctionBase::METHOD_OFFSET), methodRegister);
         Register callFieldRegister = r14;
         __ Movq(Operand(methodRegister, JSMethod::GetCallFieldOffset(false)), callFieldRegister);
-        __ Movabs((1ULL << JSMethod::IsNativeBit::START_BIT), tempRegister);
-        __ Testq(tempRegister, callFieldRegister);
-        __ Jnz(&callNativeEntry);
+        __ Btq(JSMethod::IsNativeBit::START_BIT, callFieldRegister);
+        __ Jb(&callNativeEntry);
         Register declaredNumArgsRegister = r11;
         GetDeclaredNumArgsFromCallField(assembler, callFieldRegister, declaredNumArgsRegister);
         __ Cmpq(declaredNumArgsRegister, argcRegister);
@@ -1251,8 +1250,8 @@ void AssemblerStubsX64::GetNumVregsFromCallField(ExtendedAssemblerX64 *assembler
     Register numVregsRegister)
 {
     __ Movq(callFieldRegister, numVregsRegister);
-    __ Andq(JSMethod::NumVregsBits::Mask(), numVregsRegister);
     __ Shrq(JSMethod::NumVregsBits::START_BIT, numVregsRegister);
+    __ Andq(JSMethod::NumVregsBits::Mask() >> JSMethod::NumVregsBits::START_BIT, numVregsRegister);
 }
 
 // void PushCallArgsxAndDispatch(uintptr_t glue, uintptr_t sp, uint64_t callTarget, uintptr_t method,
@@ -2187,7 +2186,7 @@ void AssemblerStubsX64::ResumeRspAndDispatch(ExtendedAssemblerX64 *assembler)
 
     Register frameStateBaseRegister = r11;
     __ Movq(spRegister, frameStateBaseRegister);
-    __ Subq(sizeof(EcmaRuntimeCallInfo), frameStateBaseRegister);
+    __ Subq(sizeof(AsmInterpretedFrame), frameStateBaseRegister);
     __ Movq(Operand(frameStateBaseRegister, AsmInterpretedFrame::GetFpOffset(false)), rsp);   // resume rsp
     __ Movq(Operand(frameStateBaseRegister, AsmInterpretedFrame::GetBaseOffset(false)), spRegister);  // update sp
 

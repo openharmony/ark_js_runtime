@@ -26,6 +26,10 @@ using BytecodeStubCSigns = panda::ecmascript::kungfu::BytecodeStubCSigns;
 JSThread *JSThread::Create(EcmaVM *vm)
 {
     auto jsThread = new JSThread(vm);
+    AsmInterParsedOption asmInterOpt = vm->GetJSOptions().GetAsmInterParsedOption();
+    if (asmInterOpt.enableAsm) {
+        jsThread->EnableAsmInterpreter();
+    }
 
     jsThread->nativeAreaAllocator_ = vm->GetNativeAreaAllocator();
     jsThread->heapRegionAllocator_ = vm->GetHeapRegionAllocator();
@@ -295,9 +299,6 @@ void JSThread::LoadStubsFromFile(std::string &fileName)
         }
     }
     AsmInterParsedOption asmInterOpt = GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
-    if (asmInterOpt.enableAsm) {
-        EnableAsmInterpreter();
-    }
     AdjustBCStubAndDebuggerStubEntries(glueData_.bcStubEntries_, glueData_.bcDebuggerStubEntries_, stubs, asmInterOpt);
 #ifdef NDEBUG
     bool enableCompilerLog = GetEcmaVM()->GetJSOptions().WasSetlogCompiledMethods();
