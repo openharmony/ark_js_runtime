@@ -837,12 +837,9 @@ HWTEST_F_L0(JSTaggedValueTest, CanonicalNumericIndexString)
     result = JSTaggedValue::CanonicalNumericIndexString(thread, JSHandle<JSTaggedValue>(thread, tmpStr));
     EXPECT_EQ(result.GetDouble(), -0.0);
 
-    JSTaggedValue tmpInt(1);
-    result = JSTaggedValue::CanonicalNumericIndexString(thread, JSHandle<JSTaggedValue>(thread, tmpInt));
-    EXPECT_TRUE(result.IsUndefined());
-
-    JSTaggedValue tmpDouble((double)100.0);
-    result = JSTaggedValue::CanonicalNumericIndexString(thread, JSHandle<JSTaggedValue>(thread, tmpDouble));
+    JSHandle<JSTaggedValue> undefinedHandle(thread, JSTaggedValue::Undefined());
+    JSHandle<JSTaggedValue> key1 = JSTaggedValue::ToPropertyKey(thread, undefinedHandle);
+    result = JSTaggedValue::CanonicalNumericIndexString(thread, key1);
     EXPECT_TRUE(result.IsUndefined());
 }
 

@@ -45,7 +45,7 @@ bool JSTypedArray::GetOwnProperty(JSThread *thread, const JSHandle<JSTaggedValue
     //     iii. If value is undefined, return undefined.
     //     iv. Return a PropertyDescriptor{ [[Value]]: value, [[Enumerable]]: true, [[Writable]]: true,
     //         [[Configurable]]: false }.
-    if (key->IsString()) {
+    if (key->IsString() || key->IsNumber()) {
         JSTaggedValue numericIndex = JSTaggedValue::CanonicalNumericIndexString(thread, key);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
         if (!numericIndex.IsUndefined()) {
@@ -84,12 +84,12 @@ bool JSTypedArray::HasProperty(JSThread *thread, const JSHandle<JSTaggedValue> &
     //     v. If numericIndex < 0, return false.
     //     vi. If numericIndex ≥ the value of O’s [[ArrayLength]] internal slot, return false.
     //     vii. Return true.
-    JSHandle<JSObject> typedarrayObj(typedarray);
-    if (key->IsString()) {
+    JSHandle<JSTypedArray> typedarrayObj(typedarray);
+    if (key->IsString() || key->IsNumber()) {
         JSTaggedValue numericIndex = JSTaggedValue::CanonicalNumericIndexString(thread, key);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
         if (!numericIndex.IsUndefined()) {
-            JSTaggedValue buffer = JSTypedArray::Cast(*typedarrayObj)->GetViewedArrayBuffer();
+            JSTaggedValue buffer = typedarrayObj->GetViewedArrayBuffer();
             if (BuiltinsArrayBuffer::IsDetachedBuffer(buffer)) {
                 THROW_TYPE_ERROR_AND_RETURN(thread, "Is Detached Buffer", false);
             }
@@ -108,17 +108,17 @@ bool JSTypedArray::HasProperty(JSThread *thread, const JSHandle<JSTaggedValue> &
             if (JSTaggedValue::Less(thread, numericIndexHandle, zero)) {
                 return false;
             }
-            int32_t arrLen = TypedArrayHelper::GetArrayLength(thread, typedarrayObj);
+            uint32_t arrLen = typedarrayObj->GetArrayLength();
             JSHandle<JSTaggedValue> arrLenHandle(thread, JSTaggedValue(arrLen));
             return JSTaggedValue::Less(thread, numericIndexHandle, arrLenHandle);
         }
     }
     // 4. Return OrdinaryHasProperty(O, P).
     PropertyDescriptor desc(thread);
-    if (JSObject::OrdinaryGetOwnProperty(thread, typedarrayObj, key, desc)) {
+    if (JSObject::OrdinaryGetOwnProperty(thread, JSHandle<JSObject>::Cast(typedarrayObj), key, desc)) {
         return true;
     }
-    JSTaggedValue parent = JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>(typedarrayObj));
+    JSTaggedValue parent = JSTaggedValue::GetPrototype(thread, JSHandle<JSTaggedValue>::Cast(typedarrayObj));
     if (!parent.IsNull()) {
         return JSTaggedValue::HasProperty(thread, JSHandle<JSTaggedValue>(thread, parent), key);
     }
@@ -136,8 +136,8 @@ bool JSTypedArray::DefineOwnProperty(JSThread *thread, const JSHandle<JSTaggedVa
     //   a. Let numericIndex be CanonicalNumericIndexString (P).
     //   b. Assert: numericIndex is not an abrupt completion.
     //   c. If numericIndex is not undefined, then
-    JSHandle<JSObject> typedarrayObj(typedarray);
-    if (key->IsString()) {
+    JSHandle<JSTypedArray> typedarrayObj(typedarray);
+    if (key->IsString() || key->IsNumber()) {
         JSTaggedValue numericIndex = JSTaggedValue::CanonicalNumericIndexString(thread, key);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
         if (!numericIndex.IsUndefined()) {
@@ -169,7 +169,7 @@ bool JSTypedArray::DefineOwnProperty(JSThread *thread, const JSHandle<JSTaggedVa
             if (JSTaggedValue::Less(thread, numericIndexHandle, zero)) {
                 return false;
             }
-            int32_t arrLen = TypedArrayHelper::GetArrayLength(thread, typedarrayObj);
+            uint32_t arrLen = typedarrayObj->GetArrayLength();
             JSHandle<JSTaggedValue> arrLenHandle(thread, JSTaggedValue(arrLen));
             if (!JSTaggedValue::Less(thread, numericIndexHandle, arrLenHandle)) {
                 return false;
@@ -194,7 +194,7 @@ bool JSTypedArray::DefineOwnProperty(JSThread *thread, const JSHandle<JSTaggedVa
         }
     }
     // 4. Return OrdinaryDefineOwnProperty(O, P, Desc).
-    return JSObject::OrdinaryDefineOwnProperty(thread, typedarrayObj, key, desc);
+    return JSObject::OrdinaryDefineOwnProperty(thread, JSHandle<JSObject>::Cast(typedarrayObj), key, desc);
 }
 
 // 9.4.5.4 [[Get]] ( P, Receiver )
@@ -204,7 +204,7 @@ OperationResult JSTypedArray::GetProperty(JSThread *thread, const JSHandle<JSTag
     // 1. Assert : IsPropertyKey(P) is true.
     ASSERT(JSTaggedValue::IsPropertyKey(key));
     // 2. If Type(P) is String and if SameValue(O, Receiver) is true, then
-    if (key->IsString() && JSTaggedValue::SameValue(typedarray, receiver)) {
+    if ((key->IsString() || key->IsNumber()) && JSTaggedValue::SameValue(typedarray, receiver)) {
         //   a. Let numericIndex be CanonicalNumericIndexString (P).
         //   b. Assert: numericIndex is not an abrupt completion.
         //   c. If numericIndex is not undefined, then
@@ -230,7 +230,7 @@ bool JSTypedArray::SetProperty(JSThread *thread, const JSHandle<JSTaggedValue> &
     // 1. Assert : IsPropertyKey(P) is true.
     ASSERT(JSTaggedValue::IsPropertyKey(key));
     // 2. If Type(P) is String and if SameValue(O, Receiver) is true, then
-    if (key->IsString() && JSTaggedValue::SameValue(typedarray, receiver)) {
+    if ((key->IsString() || key->IsNumber()) && JSTaggedValue::SameValue(typedarray, receiver)) {
         //   a. Let numericIndex be CanonicalNumericIndexString (P).
         //   b. Assert: numericIndex is not an abrupt completion.
         //   c. If numericIndex is not undefined, then
@@ -257,10 +257,10 @@ bool JSTypedArray::DeleteProperty(JSThread *thread, const JSHandle<JSTaggedValue
         // a. Let numericIndex be CanonicalNumericIndexString(P).
         // b. If numericIndex is not undefined, then
            // i. If IsValidIntegerIndex(O, numericIndex) is false, return true; else return false.
-    if (key->IsString()) {
+    if (key->IsString() || key->IsNumber()) {
         JSTaggedValue numericIndex = JSTaggedValue::CanonicalNumericIndexString(thread, key);
         if (!numericIndex.IsUndefined()) {
-            if (!IsValidIntegerIndex(thread, typedarray, numericIndex)) {
+            if (!IsValidIntegerIndex(typedarray, numericIndex)) {
                 return true;
             }
             return false;
@@ -278,10 +278,10 @@ JSHandle<TaggedArray> JSTypedArray::OwnPropertyKeys(JSThread *thread, const JSHa
     // 2. Assert: O is an Object that has [[ViewedArrayBuffer]], [[ArrayLength]], [[ByteOffset]], and
     // [[TypedArrayName]] internal slots.
     // 3. Let len be the value of O’s [[ArrayLength]] internal slot.
-    JSHandle<JSObject> arrayObj(typedarray);
-    JSHandle<TaggedArray> objKeys = JSObject::GetOwnPropertyKeys(thread, arrayObj);
+    JSHandle<JSTypedArray> arrayObj(typedarray);
+    JSHandle<TaggedArray> objKeys = JSObject::GetOwnPropertyKeys(thread, JSHandle<JSObject>::Cast(arrayObj));
     uint32_t objKeysLen = objKeys->GetLength();
-    uint32_t bufferKeysLen = static_cast<uint32_t>(TypedArrayHelper::GetArrayLength(thread, arrayObj));
+    uint32_t bufferKeysLen = arrayObj->GetArrayLength();
     uint32_t length = objKeysLen + bufferKeysLen;
     JSHandle<TaggedArray> nameList = factory->NewTaggedArray(length);
 
@@ -333,8 +333,8 @@ OperationResult JSTypedArray::IntegerIndexedElementGet(JSThread *thread, const J
     // [[TypedArrayName]] internal slots.
     ASSERT(typedarray->IsTypedArray());
     // 3. Let buffer be the value of O’s [[ViewedArrayBuffer]] internal slot.
-    JSHandle<JSObject> typedarrayObj(typedarray);
-    JSTaggedValue buffer = JSTypedArray::Cast(*typedarrayObj)->GetViewedArrayBuffer();
+    JSHandle<JSTypedArray> typedarrayObj(typedarray);
+    JSTaggedValue buffer = typedarrayObj->GetViewedArrayBuffer();
     // 4. If IsDetachedBuffer(buffer) is true, throw a TypeError exception.
     if (BuiltinsArrayBuffer::IsDetachedBuffer(buffer)) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Is Detached Buffer",
@@ -356,20 +356,20 @@ OperationResult JSTypedArray::IntegerIndexedElementGet(JSThread *thread, const J
     if (JSTaggedNumber::SameValue(indexNumber, eZero)) {
         return OperationResult(thread, JSTaggedValue::Undefined(), PropertyMetaData(true));
     }
-    int32_t arrLen = TypedArrayHelper::GetArrayLength(thread, typedarrayObj);
+    uint32_t arrLen = typedarrayObj->GetArrayLength();
     JSHandle<JSTaggedValue> arrLenHandle(thread, JSTaggedValue(arrLen));
     if (JSTaggedValue::Less(thread, indexHandle, zero) || !JSTaggedValue::Less(thread, indexHandle, arrLenHandle)) {
         return OperationResult(thread, JSTaggedValue::Undefined(), PropertyMetaData(true));
     }
     // 9. Let offset be the value of O’s [[ByteOffset]] internal slot.
-    int32_t offset = TypedArrayHelper::GetByteOffset(thread, typedarrayObj);
+    uint32_t offset = typedarrayObj->GetByteOffset();
     // 10. Let arrayTypeName be the String value of O’s [[TypedArrayName]] internal slot.
     // 11. Let elementSize be the Number value of the Element Size value specified in Table 49 for
     // arrayTypeName.
-    int32_t elementSize = TypedArrayHelper::GetElementSize(typedarrayObj);
+    uint32_t elementSize = TypedArrayHelper::GetElementSize(typedarrayObj);
     // 12. Let indexedPosition = (index × elementSize) + offset.
-    int32_t k = JSTaggedValue::ToInteger(thread, indexHandle).ToInt32();
-    int32_t byteIndex = k * elementSize + offset;
+    uint32_t k = JSTaggedValue::ToInteger(thread, indexHandle).ToInt32();
+    uint32_t byteIndex = k * elementSize + offset;
     // 13. Let elementType be the String value of the Element Type value in Table 49 for arrayTypeName.
     DataViewType elementType = TypedArrayHelper::GetType(typedarrayObj);
     // 14. Return GetValueFromBuffer(buffer, indexedPosition, elementType).
@@ -378,13 +378,12 @@ OperationResult JSTypedArray::IntegerIndexedElementGet(JSThread *thread, const J
 }
 
 // s12 10.4.5.9 IsValidIntegerIndex ( O, index )
-bool JSTypedArray::IsValidIntegerIndex(JSThread *thread, const JSHandle<JSTaggedValue> &typedArray,
-                                       JSTaggedValue index)
+bool JSTypedArray::IsValidIntegerIndex(const JSHandle<JSTaggedValue> &typedArray, JSTaggedValue index)
 {
     // 1. Assert: O is an Integer-Indexed exotic object.
     // 2. If IsDetachedBuffer(O.[[ViewedArrayBuffer]]) is true, return false.
-    JSHandle<JSObject> typedarrayObj(typedArray);
-    JSTaggedValue buffer = JSTypedArray::Cast(*typedarrayObj)->GetViewedArrayBuffer();
+    JSHandle<JSTypedArray> typedarrayObj(typedArray);
+    JSTaggedValue buffer = typedarrayObj->GetViewedArrayBuffer();
     if (BuiltinsArrayBuffer::IsDetachedBuffer(buffer)) {
         return false;
     }
@@ -398,7 +397,7 @@ bool JSTypedArray::IsValidIntegerIndex(JSThread *thread, const JSHandle<JSTagged
         return false;
     }
 
-    int32_t arrLen = TypedArrayHelper::GetArrayLength(thread, typedarrayObj);
+    uint32_t arrLen = typedarrayObj->GetArrayLength();
     // 5. If ℝ(index) < 0 or ℝ(index) ≥ O.[[ArrayLength]], return false.
     if (val < 0 || val >= arrLen) {
         return false;
@@ -415,8 +414,8 @@ bool JSTypedArray::FastCopyElementToArray(JSThread *thread, const JSHandle<JSTag
     // [[TypedArrayName]] internal slots.
     ASSERT(typedArray->IsTypedArray());
     // 3. Let buffer be the value of O’s [[ViewedArrayBuffer]] internal slot.
-    JSHandle<JSObject> typedarrayObj(typedArray);
-    JSTaggedValue buffer = JSTypedArray::Cast(*typedarrayObj)->GetViewedArrayBuffer();
+    JSHandle<JSTypedArray> typedarrayObj(typedArray);
+    JSTaggedValue buffer = typedarrayObj->GetViewedArrayBuffer();
     // 4. If IsDetachedBuffer(buffer) is true, throw a TypeError exception.
     if (BuiltinsArrayBuffer::IsDetachedBuffer(buffer)) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Is Detached Buffer", false);
@@ -424,20 +423,17 @@ bool JSTypedArray::FastCopyElementToArray(JSThread *thread, const JSHandle<JSTag
 
     // 7. Let length be the value of O’s [[ArrayLength]] internal slot.
     // 8. If index < 0 or index ≥ length, return undefined.
-    int32_t arrLen = TypedArrayHelper::GetArrayLength(thread, typedarrayObj);
-    if (arrLen < 0) {
-        return false;
-    }
+    uint32_t arrLen = typedarrayObj->GetArrayLength();
 
     // 9. Let offset be the value of O’s [[ByteOffset]] internal slot.
-    int32_t offset = TypedArrayHelper::GetByteOffset(thread, typedarrayObj);
+    uint32_t offset = typedarrayObj->GetByteOffset();
     // 11. Let elementSize be the Number value of the Element Size value specified in Table 49 for arrayTypeName.
-    int32_t elementSize = TypedArrayHelper::GetElementSize(typedarrayObj);
+    uint32_t elementSize = TypedArrayHelper::GetElementSize(typedarrayObj);
     // 13. Let elementType be the String value of the Element Type value in Table 49 for arrayTypeName.
     DataViewType elementType = TypedArrayHelper::GetType(typedarrayObj);
-    for (int index = 0; index < arrLen; index++) {
+    for (uint32_t index = 0; index < arrLen; index++) {
         // 12. Let indexedPosition = (index × elementSize) + offset.
-        int32_t byteIndex = index * elementSize + offset;
+        uint32_t byteIndex = index * elementSize + offset;
         // 14. Return GetValueFromBuffer(buffer, indexedPosition, elementType).
         JSTaggedValue result = BuiltinsArrayBuffer::GetValueFromBuffer(thread, buffer, byteIndex, elementType, true);
         array->Set(thread, index, result);
@@ -453,8 +449,8 @@ OperationResult JSTypedArray::FastElementGet(JSThread *thread, const JSHandle<JS
     // [[TypedArrayName]] internal slots.
     ASSERT(typedarray->IsTypedArray());
     // 3. Let buffer be the value of O’s [[ViewedArrayBuffer]] internal slot.
-    JSHandle<JSObject> typedarrayObj(typedarray);
-    JSTaggedValue buffer = JSTypedArray::Cast(*typedarrayObj)->GetViewedArrayBuffer();
+    JSHandle<JSTypedArray> typedarrayObj(typedarray);
+    JSTaggedValue buffer = typedarrayObj->GetViewedArrayBuffer();
     // 4. If IsDetachedBuffer(buffer) is true, throw a TypeError exception.
     if (BuiltinsArrayBuffer::IsDetachedBuffer(buffer)) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Is Detached Buffer",
@@ -463,16 +459,16 @@ OperationResult JSTypedArray::FastElementGet(JSThread *thread, const JSHandle<JS
 
     // 7. Let length be the value of O’s [[ArrayLength]] internal slot.
     // 8. If index < 0 or index ≥ length, return undefined.
-    int32_t arrLen = TypedArrayHelper::GetArrayLength(thread, typedarrayObj);
-    if (arrLen < 0 || index >= static_cast<uint32_t>(arrLen)) {
+    uint32_t arrLen = typedarrayObj->GetArrayLength();
+    if (index >= arrLen) {
         return OperationResult(thread, JSTaggedValue::Undefined(), PropertyMetaData(true));
     }
     // 9. Let offset be the value of O’s [[ByteOffset]] internal slot.
-    int32_t offset = TypedArrayHelper::GetByteOffset(thread, typedarrayObj);
+    uint32_t offset = typedarrayObj->GetByteOffset();
     // 11. Let elementSize be the Number value of the Element Size value specified in Table 49 for arrayTypeName.
-    int32_t elementSize = TypedArrayHelper::GetElementSize(typedarrayObj);
+    uint32_t elementSize = TypedArrayHelper::GetElementSize(typedarrayObj);
     // 12. Let indexedPosition = (index × elementSize) + offset.
-    int32_t byteIndex = index * elementSize + offset;
+    uint32_t byteIndex = index * elementSize + offset;
     // 13. Let elementType be the String value of the Element Type value in Table 49 for arrayTypeName.
     DataViewType elementType = TypedArrayHelper::GetType(typedarrayObj);
     // 14. Return GetValueFromBuffer(buffer, indexedPosition, elementType).
@@ -492,7 +488,7 @@ bool JSTypedArray::IntegerIndexedElementSet(JSThread *thread, const JSHandle<JST
     // 3. If O.[[ContentType]] is BigInt, let numValue be ? ToBigInt(value).
     JSHandle<JSTaggedValue> numValueHandle;
     ContentType contentType = JSHandle<JSTypedArray>::Cast(typedarray)->GetContentType();
-    if (contentType == ContentType::BigInt) {
+    if (UNLIKELY(contentType == ContentType::BigInt)) {
         numValueHandle = JSHandle<JSTaggedValue>(thread, JSTaggedValue::ToBigInt(thread, value));
     } else {
         numValueHandle = JSHandle<JSTaggedValue>(thread, JSTaggedValue::ToNumber(thread, value));
@@ -500,20 +496,20 @@ bool JSTypedArray::IntegerIndexedElementSet(JSThread *thread, const JSHandle<JST
     // 4. ReturnIfAbrupt(numValue).
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
 
-    JSHandle<JSObject> typedarrayObj(typedarray);
-    JSTaggedValue buffer = JSTypedArray::Cast(*typedarrayObj)->GetViewedArrayBuffer();
+    JSHandle<JSTypedArray> typedarrayObj(typedarray);
+    JSTaggedValue buffer = typedarrayObj->GetViewedArrayBuffer();
     JSHandle<JSTaggedValue> indexHandle(thread, index);
     // 5. If ! IsValidIntegerIndex(O, index) is true, then
-    if (IsValidIntegerIndex(thread, typedarray, index)) {
+    if (IsValidIntegerIndex(typedarray, index)) {
         // 6. Let offset be the value of O’s [[ByteOffset]] internal slot.
-        int32_t offset = TypedArrayHelper::GetByteOffset(thread, typedarrayObj);
+        uint32_t offset = typedarrayObj->GetByteOffset();
         // 7. Let arrayTypeName be the String value of O’s [[TypedArrayName]] internal slot.
         // 8. Let elementSize be the Number value of the Element Size value specified in Table 49 for
         // arrayTypeName.
-        int32_t elementSize = TypedArrayHelper::GetElementSize(typedarrayObj);
+        uint32_t elementSize = TypedArrayHelper::GetElementSize(typedarrayObj);
         // 9. Let indexedPosition = (index × elementSize) + offset.
-        int32_t k = JSTaggedValue::ToInteger(thread, indexHandle).ToInt32();
-        int32_t byteIndex = k * elementSize + offset;
+        uint32_t k = JSTaggedValue::ToInteger(thread, indexHandle).ToUint32();
+        uint32_t byteIndex = k * elementSize + offset;
         // 10. Let elementType be the String value of the Element Type value in Table 49 for arrayTypeName.
         DataViewType elementType = TypedArrayHelper::GetType(typedarrayObj);
         // 11. Perform SetValueInBuffer(buffer, indexedPosition, elementType, numValue).
@@ -521,5 +517,110 @@ bool JSTypedArray::IntegerIndexedElementSet(JSThread *thread, const JSHandle<JST
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
     }
     return true;
+}
+
+// only use in TypeArray fast set property
+JSTaggedNumber JSTypedArray::NonEcmaObjectToNumber(JSThread *thread, const JSTaggedValue tagged)
+{
+    ASSERT_PRINT(!tagged.IsECMAObject(), "tagged must not be EcmaObject");
+    if (tagged.IsInt() || tagged.IsDouble()) {
+        return JSTaggedNumber(tagged);
+    }
+    if (tagged.IsString()) {
+        return JSTaggedValue::StringToDouble(tagged);
+    }
+    switch (tagged.GetRawData()) {
+        case JSTaggedValue::VALUE_UNDEFINED:
+        case JSTaggedValue::VALUE_HOLE: {
+            return JSTaggedNumber(base::NAN_VALUE);
+        }
+        case JSTaggedValue::VALUE_TRUE: {
+            return JSTaggedNumber(1);
+        }
+        case JSTaggedValue::VALUE_FALSE:
+        case JSTaggedValue::VALUE_NULL: {
+            return JSTaggedNumber(0);
+        }
+        default: {
+            break;
+        }
+    }
+    if (tagged.IsSymbol()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot convert a Symbol value to a number", JSTaggedNumber::Exception());
+    }
+    if (tagged.IsBigInt()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot convert a BigInt value to a number", JSTaggedNumber::Exception());
+    }
+    THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot convert a Unknown value to a number", JSTaggedNumber::Exception());
+}
+
+JSTaggedValue JSTypedArray::FastGetPropertyByIndex(JSThread *thread, const JSTaggedValue typedarray, uint32_t index,
+                                                   JSType jsType)
+{
+    // Assert: O is an Object that has [[ViewedArrayBuffer]], [[ArrayLength]], [[ByteOffset]], and
+    // [[TypedArrayName]] internal slots.
+    ASSERT(typedarray.IsTypedArray());
+    // Let buffer be the value of O’s [[ViewedArrayBuffer]] internal slot.
+    JSTypedArray *typedarrayObj = JSTypedArray::Cast(typedarray.GetTaggedObject());
+    JSTaggedValue buffer = typedarrayObj->GetViewedArrayBuffer();
+    // If IsDetachedBuffer(buffer) is true, throw a TypeError exception.
+    if (BuiltinsArrayBuffer::IsDetachedBuffer(buffer)) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Is Detached Buffer", JSTaggedValue::Exception());
+    }
+
+    DISALLOW_GARBAGE_COLLECTION;
+    // Let length be the value of O’s [[ArrayLength]] internal slot.
+    // If arrLen < 0 or index ≥ length, return undefined.
+    uint32_t arrLen = typedarrayObj->GetArrayLength();
+    if (index >= arrLen) {
+        return JSTaggedValue::Undefined();
+    }
+    // Let offset be the value of O’s [[ByteOffset]] internal slot.
+    uint32_t offset = typedarrayObj->GetByteOffset();
+    // Let elementSize be the Number value of the Element Size value specified in Table 49 for arrayTypeName.
+    uint32_t elementSize = TypedArrayHelper::GetElementSize(jsType);
+    // Let indexedPosition = (index × elementSize) + offset.
+    uint32_t byteIndex = index * elementSize + offset;
+    // Let elementType be the String value of the Element Type value in Table 49 for arrayTypeName.
+    DataViewType elementType = TypedArrayHelper::GetType(jsType);
+    // Return GetValueFromBuffer(buffer, indexedPosition, elementType).
+    return BuiltinsArrayBuffer::GetValueFromBuffer(thread, buffer, byteIndex, elementType, true);
+}
+
+JSTaggedValue JSTypedArray::FastSetPropertyByIndex(JSThread *thread, const JSTaggedValue typedarray, uint32_t index,
+                                                   JSTaggedValue value, JSType jsType)
+{
+    // Assert: O is an Object that has [[ViewedArrayBuffer]], [[ArrayLength]], [[ByteOffset]], and
+    // [[TypedArrayName]] internal slots.
+    ASSERT(typedarray.IsTypedArray());
+    // If O.[[ContentType]] is BigInt, let numValue be ? ToBigInt(value).
+    JSTypedArray *typedarrayObj = JSTypedArray::Cast(typedarray.GetTaggedObject());
+    if (UNLIKELY(typedarrayObj->GetContentType() == ContentType::BigInt || value.IsECMAObject())) {
+        return JSTaggedValue::Hole();
+    }
+    JSTaggedNumber numValue = JSTypedArray::NonEcmaObjectToNumber(thread, value);
+    // ReturnIfAbrupt(numValue).
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
+
+    DISALLOW_GARBAGE_COLLECTION;
+    JSTaggedValue buffer = typedarrayObj->GetViewedArrayBuffer();
+
+    // If ℝ(index) < 0 or ℝ(index) ≥ O.[[ArrayLength]], return false.
+    uint32_t arrLen = typedarrayObj->GetArrayLength();
+    if (index >= arrLen) {
+        return JSTaggedValue::Undefined();
+    }
+    // Let offset be the value of O’s [[ByteOffset]] internal slot.
+    uint32_t offset = typedarrayObj->GetByteOffset();
+    // Let arrayTypeName be the String value of O’s [[TypedArrayName]]
+    // Let elementSize be the Number value of the Element Size value specified in Table 49 for
+    // arrayTypeName.
+    uint32_t elementSize = TypedArrayHelper::GetElementSize(jsType);
+    // Let indexedPosition = (index × elementSize) + offset.
+    uint32_t byteIndex = index * elementSize + offset;
+    // Let elementType be the String value of the Element Type value in Table 49 for arrayTypeName.
+    DataViewType elementType = TypedArrayHelper::GetType(jsType);
+    // Perform SetValueInBuffer(buffer, indexedPosition, elementType, numValue).
+    return BuiltinsArrayBuffer::FastSetValueInBuffer(buffer, byteIndex, elementType, numValue.GetNumber(), true);
 }
 }  // namespace panda::ecmascript

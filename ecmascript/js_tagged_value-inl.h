@@ -109,24 +109,7 @@ inline JSTaggedNumber JSTaggedValue::ToNumber(JSThread *thread, const JSHandle<J
     }
 
     if (tagged->IsString()) {
-        Span<const uint8_t> str;
-        auto strObj = static_cast<EcmaString *>(tagged->GetTaggedObject());
-        size_t strLen = strObj->GetLength();
-        if (strLen == 0) {
-            return JSTaggedNumber(0);
-        }
-        [[maybe_unused]] CVector<uint8_t> buf;  // Span will use buf.data(), shouldn't define inside 'if'
-        if (UNLIKELY(strObj->IsUtf16())) {
-            size_t len = base::utf_helper::Utf16ToUtf8Size(strObj->GetDataUtf16(), strLen) - 1;
-            buf.reserve(len);
-            len = base::utf_helper::ConvertRegionUtf16ToUtf8(strObj->GetDataUtf16(), buf.data(), strLen, len, 0);
-            str = Span<const uint8_t>(buf.data(), len);
-        } else {
-            str = Span<const uint8_t>(strObj->GetDataUtf8(), strLen);
-        }
-        double d = base::NumberHelper::StringToDouble(str.begin(), str.end(), 0,
-                                                      base::ALLOW_BINARY + base::ALLOW_OCTAL + base::ALLOW_HEX);
-        return JSTaggedNumber(d);
+        return StringToDouble(tagged.GetTaggedValue());
     }
     if (tagged->IsECMAObject()) {
         JSHandle<JSTaggedValue> primValue(thread, ToPrimitive(thread, tagged, PREFER_NUMBER));
@@ -1211,6 +1194,28 @@ inline uint32_t JSTaggedValue::GetKeyHashCode() const
     }
 
     return JSSymbol::Cast(GetTaggedObject())->GetHashField();
+}
+
+inline JSTaggedNumber JSTaggedValue::StringToDouble(JSTaggedValue tagged)
+{
+    Span<const uint8_t> str;
+    auto strObj = static_cast<EcmaString *>(tagged.GetTaggedObject());
+    size_t strLen = strObj->GetLength();
+    if (strLen == 0) {
+        return JSTaggedNumber(0);
+    }
+    [[maybe_unused]] CVector<uint8_t> buf;  // Span will use buf.data(), shouldn't define inside 'if'
+    if (UNLIKELY(strObj->IsUtf16())) {
+        size_t len = base::utf_helper::Utf16ToUtf8Size(strObj->GetDataUtf16(), strLen) - 1;
+        buf.reserve(len);
+        len = base::utf_helper::ConvertRegionUtf16ToUtf8(strObj->GetDataUtf16(), buf.data(), strLen, len, 0);
+        str = Span<const uint8_t>(buf.data(), len);
+    } else {
+        str = Span<const uint8_t>(strObj->GetDataUtf8(), strLen);
+    }
+    double d = base::NumberHelper::StringToDouble(str.begin(), str.end(), 0,
+                                                  base::ALLOW_BINARY + base::ALLOW_OCTAL + base::ALLOW_HEX);
+    return JSTaggedNumber(d);
 }
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_TAGGED_VALUE__INL_H
