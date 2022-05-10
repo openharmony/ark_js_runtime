@@ -253,7 +253,7 @@ bool LLVMStackMapParser::CalculateStackMap(std::unique_ptr<uint8_t []> stackMapA
             auto location = dataInfo_->Read<struct LocationTy>();
             stkSizeRecord.Locations.push_back(location);
         }
-        uint16_t padding;
+        [[maybe_unused]] uint16_t padding;
         while (dataInfo_->GetOffset() & 7) { // 7: 8 byte align
             padding = dataInfo_->Read<uint16_t>();
         }

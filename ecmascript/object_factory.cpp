@@ -2222,10 +2222,10 @@ JSHandle<JSObject> ObjectFactory::NewEmptyJSObject()
     return NewJSObjectByConstructor(JSHandle<JSFunction>(builtinObj), builtinObj);
 }
 
-uintptr_t ObjectFactory::NewSpaceBySnapShotAllocator(size_t size)
+uintptr_t ObjectFactory::NewSpaceBySnapshotAllocator(size_t size)
 {
     NewObjectHook();
-    return heap_->AllocateSnapShotSpace(size);
+    return heap_->AllocateSnapshotSpace(size);
 }
 
 JSHandle<MachineCode> ObjectFactory::NewMachineCodeObject(size_t length, const uint8_t *data)

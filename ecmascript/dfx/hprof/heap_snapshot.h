@@ -233,25 +233,25 @@ private:
     CUnorderedMap<Address, Node *> nodesMap_ {};
 };
 
-class HeapSnapShot {
+class HeapSnapshot {
 public:
     static constexpr int SEQ_STEP = 2;
-    NO_MOVE_SEMANTIC(HeapSnapShot);
-    NO_COPY_SEMANTIC(HeapSnapShot);
-    explicit HeapSnapShot(JSThread *thread, const Heap *heap, const bool isVmMode)
+    NO_MOVE_SEMANTIC(HeapSnapshot);
+    NO_COPY_SEMANTIC(HeapSnapshot);
+    explicit HeapSnapshot(JSThread *thread, const Heap *heap, const bool isVmMode)
         : stringTable_(heap), thread_(thread), heap_(heap), isVmMode_(isVmMode)
     {
     }
-    ~HeapSnapShot();
+    ~HeapSnapshot();
     bool BuildUp(JSThread *thread);
     bool Verify();
 
-    void PrepareSnapShot();
+    void PrepareSnapshot();
     void UpdateNode();
     void AddNode(uintptr_t address);
     void MoveNode(uintptr_t address, uintptr_t forward_address);
     void RecordSampleTime();
-    bool FinishSnapShot();
+    bool FinishSnapshot();
 
     const CVector<TimeStamp> &GetTimeStamps() const
     {

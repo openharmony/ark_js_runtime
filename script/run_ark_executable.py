@@ -2,7 +2,7 @@
 #coding: utf-8
 
 """
-Copyright (c) 2021 Huawei Device Co., Ltd.
+Copyright (c) 2021-2022 Huawei Device Co., Ltd.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -36,6 +36,7 @@ def parse_args():
     parser.add_argument('--expect-sub-output', help='expect sub output')
     parser.add_argument('--expect-file', help='expect file')
     parser.add_argument('--env-path', help='LD_LIBRARY_PATH env')
+    parser.add_argument('--timeout-limit', help='timeout limit')
     args = parser.parse_args()
     return args
 
@@ -48,10 +49,15 @@ def judge_output(args):
         cmd += input_args.script_options
     if input_args.script_args:
         cmd += " " + input_args.script_args
+    if input_args.timeout_limit:
+        timeout_limit = int(input_args.timeout_limit)
+    else:
+        timeout_limit = 60  # units: s
+    print("timeout limit: ", timeout_limit)
     subp = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         env={'LD_LIBRARY_PATH': str(input_args.env_path)})
     try:
-        out, err = subp.communicate(timeout=1200) # units: s
+        out, err = subp.communicate(timeout=timeout_limit)
     except subprocess.TimeoutExpired:
         subp.kill()
         out, err = subp.communicate()

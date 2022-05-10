@@ -19,18 +19,18 @@
 #include "ecmascript/mem/c_containers.h"
 
 namespace panda::ecmascript {
-bool HeapSnapShotJSONSerializer::Serialize(HeapSnapShot *snapShot, Stream *stream)
+bool HeapSnapshotJSONSerializer::Serialize(HeapSnapshot *snapshot, Stream *stream)
 {
     // Serialize Node/Edge/String-Table
-    LOG(ERROR, RUNTIME) << "HeapSnapShotJSONSerializer::Serialize begin";
-    snapShot_ = snapShot;
-    ASSERT(snapShot_->GetNodes() != nullptr && snapShot_->GetEdges() != nullptr &&
-           snapShot_->GetEcmaStringTable() != nullptr);
+    LOG(ERROR, RUNTIME) << "HeapSnapshotJSONSerializer::Serialize begin";
+    snapshot_ = snapshot;
+    ASSERT(snapshot_->GetNodes() != nullptr && snapshot_->GetEdges() != nullptr &&
+           snapshot_->GetEcmaStringTable() != nullptr);
     stream_ = stream;
     ASSERT(stream_ != nullptr);
     stringBuffer_.str("");  // Clear Buffer
 
-    SerializeSnapShotHeader();     // 1.
+    SerializeSnapshotHeader();     // 1.
     SerializeNodes();              // 2.
     SerializeEdges();              // 3.
     SerializeTraceFunctionInfo();  // 4.
@@ -38,14 +38,14 @@ bool HeapSnapShotJSONSerializer::Serialize(HeapSnapShot *snapShot, Stream *strea
     SerializeSamples();            // 6.
     SerializeLocations();          // 7.
     SerializeStringTable();        // 8.
-    SerializerSnapShotClosure();   // 9.
+    SerializerSnapshotClosure();   // 9.
 
     WriteChunk();
-    LOG(ERROR, RUNTIME) << "HeapSnapShotJSONSerializer::Serialize exit";
+    LOG(ERROR, RUNTIME) << "HeapSnapshotJSONSerializer::Serialize exit";
     return true;
 }
 
-void HeapSnapShotJSONSerializer::SerializeSnapShotHeader()
+void HeapSnapshotJSONSerializer::SerializeSnapshotHeader()
 {
     stringBuffer_ << "{\"snapshot\":\n";  // 1.
     stringBuffer_ << "{\"meta\":\n";      // 2.
@@ -74,17 +74,17 @@ void HeapSnapShotJSONSerializer::SerializeSnapShotHeader()
     stringBuffer_ << "\"sample_fields\":[\"timestamp_us\",\"last_assigned_id\"],\n";  // 9.
     // NOLINTNEXTLINE(modernize-raw-string-literal)
     stringBuffer_ << "\"location_fields\":[\"object_index\",\"script_id\",\"line\",\"column\"]},\n";  // 10.
-    stringBuffer_ << "\"node_count\":" << snapShot_->GetNodeCount() << ",\n";                         // 11.
-    stringBuffer_ << "\"edge_count\":" << snapShot_->GetEdgeCount() << ",\n";                         // 12.
+    stringBuffer_ << "\"node_count\":" << snapshot_->GetNodeCount() << ",\n";                         // 11.
+    stringBuffer_ << "\"edge_count\":" << snapshot_->GetEdgeCount() << ",\n";                         // 12.
     stringBuffer_ << "\"trace_function_count\":"
                   << "0\n";   // 13.
     stringBuffer_ << "},\n";  // 14.
 }
 
-void HeapSnapShotJSONSerializer::SerializeNodes()
+void HeapSnapshotJSONSerializer::SerializeNodes()
 {
-    const CList<Node *> *nodes = snapShot_->GetNodes();
-    const StringHashMap *stringTable = snapShot_->GetEcmaStringTable();
+    const CList<Node *> *nodes = snapshot_->GetNodes();
+    const StringHashMap *stringTable = snapshot_->GetEcmaStringTable();
     ASSERT(nodes != nullptr);
     stringBuffer_ << "\"nodes\":[";  // Section Header
     size_t i = 0;
@@ -108,10 +108,10 @@ void HeapSnapShotJSONSerializer::SerializeNodes()
     }
 }
 
-void HeapSnapShotJSONSerializer::SerializeEdges()
+void HeapSnapshotJSONSerializer::SerializeEdges()
 {
-    const CVector<Edge *> *edges = snapShot_->GetEdges();
-    const StringHashMap *stringTable = snapShot_->GetEcmaStringTable();
+    const CVector<Edge *> *edges = snapshot_->GetEdges();
+    const StringHashMap *stringTable = snapshot_->GetEcmaStringTable();
     ASSERT(edges != nullptr);
     stringBuffer_ << "\"edges\":[";
     size_t i = 0;
@@ -131,20 +131,20 @@ void HeapSnapShotJSONSerializer::SerializeEdges()
     }
 }
 
-void HeapSnapShotJSONSerializer::SerializeTraceFunctionInfo()
+void HeapSnapshotJSONSerializer::SerializeTraceFunctionInfo()
 {
     stringBuffer_ << "\"trace_function_infos\":[],\n";  // Empty
 }
 
-void HeapSnapShotJSONSerializer::SerializeTraceTree()
+void HeapSnapshotJSONSerializer::SerializeTraceTree()
 {
     stringBuffer_ << "\"trace_tree\":[],\n";  // Empty
 }
 
-void HeapSnapShotJSONSerializer::SerializeSamples()
+void HeapSnapshotJSONSerializer::SerializeSamples()
 {
     stringBuffer_ << "\"samples\":[";
-    const CVector<TimeStamp> &timeStamps = snapShot_->GetTimeStamps();
+    const CVector<TimeStamp> &timeStamps = snapshot_->GetTimeStamps();
     if (!timeStamps.empty()) {
         auto firstTimeStamp = timeStamps[0];
         bool isFirst = true;
@@ -161,14 +161,14 @@ void HeapSnapShotJSONSerializer::SerializeSamples()
     stringBuffer_ << "],\n";
 }
 
-void HeapSnapShotJSONSerializer::SerializeLocations()
+void HeapSnapshotJSONSerializer::SerializeLocations()
 {
     stringBuffer_ << "\"locations\":[],\n";
 }
 
-void HeapSnapShotJSONSerializer::SerializeStringTable()
+void HeapSnapshotJSONSerializer::SerializeStringTable()
 {
-    const StringHashMap *stringTable = snapShot_->GetEcmaStringTable();
+    const StringHashMap *stringTable = snapshot_->GetEcmaStringTable();
     ASSERT(stringTable != nullptr);
     stringBuffer_ << "\"strings\":[\"<dummy>\",\n";
     stringBuffer_ << "\"\",\n";
@@ -187,12 +187,12 @@ void HeapSnapShotJSONSerializer::SerializeStringTable()
     stringBuffer_ << "]\n";
 }
 
-void HeapSnapShotJSONSerializer::SerializerSnapShotClosure()
+void HeapSnapshotJSONSerializer::SerializerSnapshotClosure()
 {
     stringBuffer_ << "}\n";
 }
 
-void HeapSnapShotJSONSerializer::WriteChunk()
+void HeapSnapshotJSONSerializer::WriteChunk()
 {
     int chunkLen = stream_->GetSize();
 

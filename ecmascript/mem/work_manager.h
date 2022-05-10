@@ -205,7 +205,7 @@ private:
 
     Heap *heap_;
     uint32_t threadNum_;
-    WorkNodeHolder works_[MAX_TASKPOOL_THREAD_NUM + 1];
+    WorkNodeHolder works_[MAX_TASKPOOL_THREAD_NUM + 1] {};
     ContinuousStack<JSTaggedType> *continuousQueue_[MAX_TASKPOOL_THREAD_NUM + 1];
     GlobalWorkStack workStack_;
     uintptr_t workSpace_;

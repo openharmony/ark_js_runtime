@@ -175,9 +175,9 @@ public:
             return length;
         }
         if (length > maxLength) {
-            return base::utf_helper::ConvertRegionUtf16ToUtf8(GetDataUtf16(), buf, maxLength, maxLength - 1, start);
+            return base::utf_helper::ConvertRegionUtf16ToUtf8(GetDataUtf16(), buf, maxLength, maxLength, start);
         }
-        return base::utf_helper::ConvertRegionUtf16ToUtf8(GetDataUtf16(), buf, length, maxLength - 1, start);
+        return base::utf_helper::ConvertRegionUtf16ToUtf8(GetDataUtf16(), buf, length, maxLength, start);
     }
 
     inline uint32_t CopyDataUtf16(uint16_t *buf, uint32_t maxLength) const

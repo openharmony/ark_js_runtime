@@ -202,6 +202,11 @@ public:
         return data_;
     }
 
+    static constexpr size_t GetThreadOffset()
+    {
+        return MEMBER_OFFSET(EcmaRuntimeCallInfo, thread_);
+    }
+
     static constexpr size_t GetNumArgsOffset()
     {
         return MEMBER_OFFSET(EcmaRuntimeCallInfo, numArgs_);

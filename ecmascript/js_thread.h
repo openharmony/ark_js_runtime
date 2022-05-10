@@ -108,6 +108,12 @@ struct RTStubEntries {
         assert(index < COUNT);
         stubEntries_[index] = addr;
     }
+
+    Address Get(size_t index)
+    {
+        assert(index < COUNT);
+        return stubEntries_[index];
+    }
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(RTStubEntries), RTStubEntries::SizeArch32, RTStubEntries::SizeArch64);
 
@@ -179,6 +185,10 @@ public:
     {
         glueData_.leaveFrame_ = sp;
     }
+
+    const JSTaggedType *GetCurrentFrame() const;
+
+    const JSTaggedType *GetCurrentInterpretedFrame() const;
 
     bool DoStackOverflowCheck(const JSTaggedType *sp);
 
@@ -271,12 +281,17 @@ public:
     void ResetGuardians();
 
     JSTaggedValue GetCurrentLexenv() const;
-    void SetCurrentLexenv(JSTaggedValue env);
 
     void RegisterRTInterface(size_t id, Address addr)
     {
         ASSERT(id < kungfu::RuntimeStubCSigns::NUM_OF_STUBS);
         glueData_.rtStubEntries_.Set(id, addr);
+    }
+
+    Address GetRTInterface(size_t id)
+    {
+        ASSERT(id < kungfu::RuntimeStubCSigns::NUM_OF_STUBS);
+        return glueData_.rtStubEntries_.Get(id);
     }
 
     Address GetFastStubEntry(uint32_t id)
@@ -358,6 +373,16 @@ public:
     bool GetGcState() const
     {
         return gcState_;
+    }
+
+    void EnableAsmInterpreter()
+    {
+        isAsmInterpreter_ = true;
+    }
+
+    bool IsAsmInterpreter() const
+    {
+        return isAsmInterpreter_;
     }
 
     VmThreadControl *GetVmThreadControl() const
@@ -514,6 +539,7 @@ private:
     // Run-time state
     bool getStackSignal_ {false};
     bool gcState_ {false};
+    bool isAsmInterpreter_ {false};
     VmThreadControl *vmThreadControl_ {nullptr};
 
     bool stableArrayElementsGuardians_ {true};

@@ -34,32 +34,31 @@
 #include "libpandabase/mem/mem.h"
 
 namespace panda::ecmascript {
-constexpr uint32_t PANDA_FILE_ALIGNMENT = 4096;
-
-void SnapShot::Serialize(TaggedObject *objectHeader, const panda_file::File *pf, const CString &fileName)
+void Snapshot::Serialize(TaggedObject *objectHeader, const panda_file::File *pf, const CString &fileName)
 {
-    std::pair<bool, CString> filePath = VerifyFilePath(fileName);
+    std::pair<bool, CString> filePath = VerifyFilePath(fileName, true);
     if (!filePath.first) {
         LOG(ERROR, RUNTIME) << "snapshot file path error";
         return;
     }
     std::fstream write(fileName.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
     if (!write.good()) {
+        write.close();
         LOG(DEBUG, RUNTIME) << "snapshot open file failed";
         return;
     }
 
-    SnapShotSerialize serialize(vm_);
-    vm_->GetSnapShotEnv()->Initialize();
+    SnapshotProcessor processor(vm_);
+    vm_->GetSnapshotEnv()->Initialize();
 
     std::unordered_map<uint64_t, std::pair<uint64_t, EncodeBit>> data;
     CQueue<TaggedObject *> objectQueue;
 
     if (objectHeader->GetClass()->GetObjectType() == JSType::PROGRAM) {
-        serialize.SetProgramSerializeStart();
+        processor.SetProgramSerializeStart();
     }
 
-    serialize.EncodeTaggedObject(objectHeader, &objectQueue, &data);
+    processor.EncodeTaggedObject(objectHeader, &objectQueue, &data);
 
     size_t rootObjSize = objectQueue.size();
 
@@ -70,29 +69,30 @@ void SnapShot::Serialize(TaggedObject *objectHeader, const panda_file::File *pf,
         }
         objectQueue.pop();
 
-        serialize.SerializeObject(taggedObject, &objectQueue, &data);
+        processor.SerializeObject(taggedObject, &objectQueue, &data);
     }
-    vm_->GetHeap()->GetSnapShotSpace()->Stop();
+    vm_->GetHeap()->GetSnapshotSpace()->Stop();
 
-    WriteToFile(write, pf, rootObjSize, serialize.GetStringVector());
-    vm_->GetSnapShotEnv()->ClearEnvMap();
+    WriteToFile(write, pf, rootObjSize, processor.GetStringVector());
+    vm_->GetSnapshotEnv()->ClearEnvMap();
 }
 
-void SnapShot::Serialize(uintptr_t startAddr, size_t size, const CString &fileName)
+void Snapshot::Serialize(uintptr_t startAddr, size_t size, const CString &fileName)
 {
-    std::pair<bool, CString> filePath = VerifyFilePath(fileName);
+    std::pair<bool, CString> filePath = VerifyFilePath(fileName, true);
     if (!filePath.first) {
         LOG(ERROR, RUNTIME) << "snapshot file path error";
         return;
     }
     std::fstream write(fileName.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
     if (!write.good()) {
+        write.close();
         LOG(DEBUG, RUNTIME) << "snapshot open file failed";
         return;
     }
 
-    SnapShotSerialize serialize(vm_);
-    vm_->GetSnapShotEnv()->Initialize();
+    SnapshotProcessor processor(vm_);
+    vm_->GetSnapshotEnv()->Initialize();
 
     std::unordered_map<uint64_t, std::pair<uint64_t, EncodeBit>> data;
     CQueue<TaggedObject *> objectQueue;
@@ -100,26 +100,26 @@ void SnapShot::Serialize(uintptr_t startAddr, size_t size, const CString &fileNa
     ObjectSlot start(startAddr);
     ObjectSlot end(startAddr + size * sizeof(JSTaggedType));
 
-    serialize.EncodeTaggedObjectRange(start, end, &objectQueue, &data);
+    processor.EncodeTaggedObjectRange(start, end, &objectQueue, &data);
     while (!objectQueue.empty()) {
         auto taggedObject = objectQueue.front();
         if (taggedObject == nullptr) {
             break;
         }
         objectQueue.pop();
-        serialize.SerializeObject(taggedObject, &objectQueue, &data);
+        processor.SerializeObject(taggedObject, &objectQueue, &data);
     }
 
-    vm_->GetHeap()->GetSnapShotSpace()->Stop();
+    vm_->GetHeap()->GetSnapshotSpace()->Stop();
 
-    WriteToFile(write, nullptr, size, serialize.GetStringVector());
-    vm_->GetSnapShotEnv()->ClearEnvMap();
+    WriteToFile(write, nullptr, size, processor.GetStringVector());
+    vm_->GetSnapshotEnv()->ClearEnvMap();
 }
 
-const JSPandaFile *SnapShot::Deserialize(SnapShotType type, const CString &snapshotFile)
+const JSPandaFile *Snapshot::Deserialize(SnapshotType type, const CString &snapshotFile)
 {
-    SnapShotSerialize serialize(vm_);
-    std::pair<bool, CString> filePath = VerifyFilePath(snapshotFile);
+    SnapshotProcessor processor(vm_);
+    std::pair<bool, CString> filePath = VerifyFilePath(snapshotFile, false);
     if (!filePath.first) {
         LOG(ERROR, RUNTIME) << "snapshot file path error";
         return nullptr;
@@ -142,7 +142,7 @@ const JSPandaFile *SnapShot::Deserialize(SnapShotType type, const CString &snaps
         LOG_ECMA_MEM(FATAL) << "defaultSnapshotSpaceCapacity must have a size bigger than 0";
         UNREACHABLE();
     }
-    SnapShotSpace *space = vm_->GetHeap()->GetSnapShotSpace();
+    SnapshotSpace *space = vm_->GetHeap()->GetSnapshotSpace();
     uintptr_t snapshotBegin = readFile + sizeof(Header);
     size_t regionSize = 0U;
     if (hdr.snapshotSize != 0) {
@@ -194,10 +194,10 @@ const JSPandaFile *SnapShot::Deserialize(SnapShotType type, const CString &snaps
     space->ResetAllocator();
     uintptr_t stringBegin = snapshotBegin + hdr.snapshotSize;
     uintptr_t stringEnd = stringBegin + hdr.stringSize;
-    serialize.DeserializeString(stringBegin, stringEnd);
-    vm_->GetHeap()->GetSnapShotSpace()->Stop();
-    if (type == SnapShotType::TS_LOADER) {
-        auto stringVector = serialize.GetStringVector();
+    processor.DeserializeString(stringBegin, stringEnd);
+    vm_->GetHeap()->GetSnapshotSpace()->Stop();
+    if (type == SnapshotType::TS_LOADER) {
+        auto stringVector = processor.GetStringVector();
         for (uint32_t i = 0; i < hdr.rootObjectSize; ++i) {
             JSTaggedValue result(reinterpret_cast<EcmaString *>(stringVector[i]));
             vm_->GetTSLoader()->AddConstString(result);
@@ -213,11 +213,11 @@ const JSPandaFile *SnapShot::Deserialize(SnapShotType type, const CString &snaps
     }
     close(fd);
     // relocate object field
-    serialize.Relocate(type, jsPandaFile, hdr.rootObjectSize);
+    processor.Relocate(type, jsPandaFile, hdr.rootObjectSize);
     return jsPandaFile;
 }
 
-size_t SnapShot::AlignUpPageSize(size_t spaceSize)
+size_t Snapshot::AlignUpPageSize(size_t spaceSize)
 {
     if (spaceSize % Constants::PAGE_SIZE_ALIGN_UP == 0) {
         return spaceSize;
@@ -225,20 +225,23 @@ size_t SnapShot::AlignUpPageSize(size_t spaceSize)
     return Constants::PAGE_SIZE_ALIGN_UP * (spaceSize / Constants::PAGE_SIZE_ALIGN_UP + 1);
 }
 
-std::pair<bool, CString> SnapShot::VerifyFilePath(const CString &filePath)
+std::pair<bool, CString> Snapshot::VerifyFilePath(const CString &filePath, bool toGenerate)
 {
     if (filePath.size() > PATH_MAX) {
         return std::make_pair(false, "");
     }
     CVector<char> resolvedPath(PATH_MAX);
     auto result = realpath(filePath.c_str(), resolvedPath.data());
-    if (result == resolvedPath.data() || errno == ENOENT) {
+    if (toGenerate && errno == ENOENT) {
         return std::make_pair(true, CString(resolvedPath.data()));
     }
-    return std::make_pair(false, "");
+    if (!result) {
+        return std::make_pair(false, "");
+    }
+    return std::make_pair(true, CString(resolvedPath.data()));
 }
 
-void SnapShot::WriteToFile(std::fstream &write, const panda_file::File *pf,
+void Snapshot::WriteToFile(std::fstream &write, const panda_file::File *pf,
                            size_t size, const CVector<uintptr_t> &stringVector)
 {
     uint32_t totalStringSize = 0U;
@@ -247,7 +250,7 @@ void SnapShot::WriteToFile(std::fstream &write, const panda_file::File *pf,
         size_t objectSize = AlignUp(str->ObjectSize(), static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
         totalStringSize += objectSize;
     }
-    SnapShotSpace *space = vm_->GetHeap()->GetSnapShotSpace();
+    SnapshotSpace *space = vm_->GetHeap()->GetSnapshotSpace();
     size_t defaultSnapshotSpaceCapacity = vm_->GetJSOptions().DefaultSnapshotSpaceCapacity();
     auto lastRegion = space->GetCurrentRegion();
     size_t regionCount = space->GetRegionCount();
@@ -259,7 +262,7 @@ void SnapShot::WriteToFile(std::fstream &write, const panda_file::File *pf,
     } else {
         snapshotSize = (regionCount - 1) * defaultSnapshotSpaceCapacity + lastRegion->GetHighWaterMarkSize();
     }
-    uint32_t pandaFileBegin = RoundUp(snapshotSize + totalStringSize + sizeof(Header), PANDA_FILE_ALIGNMENT);
+    uint32_t pandaFileBegin = RoundUp(snapshotSize + totalStringSize + sizeof(Header), Constants::PAGE_SIZE_ALIGN_UP);
     Header hdr {snapshotSize, totalStringSize, pandaFileBegin, size};
     write.write(reinterpret_cast<char *>(&hdr), sizeof(hdr));
     if (regionCount > 0) {

@@ -26,6 +26,10 @@ using BytecodeStubCSigns = panda::ecmascript::kungfu::BytecodeStubCSigns;
 JSThread *JSThread::Create(EcmaVM *vm)
 {
     auto jsThread = new JSThread(vm);
+    AsmInterParsedOption asmInterOpt = vm->GetJSOptions().GetAsmInterParsedOption();
+    if (asmInterOpt.enableAsm) {
+        jsThread->EnableAsmInterpreter();
+    }
 
     jsThread->nativeAreaAllocator_ = vm->GetNativeAreaAllocator();
     jsThread->heapRegionAllocator_ = vm->GetHeapRegionAllocator();
@@ -86,10 +90,23 @@ JSTaggedValue JSThread::GetCurrentLexenv() const
     return frameHandler.GetEnv();
 }
 
-void JSThread::SetCurrentLexenv(JSTaggedValue env)
+const JSTaggedType *JSThread::GetCurrentFrame() const
 {
-    FrameHandler frameHandler(this);
-    frameHandler.SetEnv(env);
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+    return GetLastLeaveFrame();
+#else
+    return GetCurrentSPFrame();
+#endif
+}
+
+const JSTaggedType *JSThread::GetCurrentInterpretedFrame() const
+{
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+    auto frameHandler = FrameHandler(this);
+    return frameHandler.GetSp();
+#else
+    return GetCurrentSPFrame();
+#endif
 }
 
 void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
@@ -273,6 +290,9 @@ void JSThread::LoadStubsFromFile(std::string &fileName)
             // bc helper handler use to adjust bc stub, not init bc stub
             if (des.IsBCNormalHandler()) {
                 glueData_.bcStubEntries_.Set(des.indexInKind_, des.codeAddr_);
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_LOG
+                std::cout << "bytecode index: " << des.indexInKind_ << " addr:" << des.codeAddr_ << std::endl;
+#endif
             }
         } else {
             glueData_.rtStubEntries_.Set(des.indexInKind_, des.codeAddr_);

@@ -37,6 +37,7 @@ config("include_llvm") {
 source_set("libark_jsoptimizer_set") {
   sources = [
     "aot_file_manager.cpp",
+    "assembler/assembler_aarch64.cpp",
     "assembler/assembler_x64.cpp",
     "assembler/extended_assembler_x64.cpp",
     "assembler_module.cpp",
@@ -228,4 +229,42 @@ ohos_executable("ark_aot_compiler") {
 
   part_name = "ark_js_runtime"
   subsystem_name = "ark"
+}
+
+config("gen_stub_file_dir_config") {
+  stub_file_gen_dir = rebase_path(root_gen_dir) + "/ark/js_runtime"
+  defines = [ "STUB_FILE_GEN_DIR=\"${stub_file_gen_dir}/\"" ]
+}
+
+action("gen_stub_file") {
+  script = "//ark/js_runtime/script/run_ark_executable.py"
+
+  deps = [
+    "//ark/js_runtime/ecmascript/compiler:ark_stub_compiler(${host_toolchain})",
+  ]
+
+  stub_file_gen_dir = "$root_gen_dir/ark/js_runtime"
+
+  stub_option = " --com-stub-out=" + rebase_path(stub_file_gen_dir) +
+                "/com_stub.m --bc-stub-out=" + rebase_path(stub_file_gen_dir) +
+                "/bc_stub.m"
+
+  args = [
+    "--script-file",
+    rebase_path(root_out_dir) + "/ark/ark_js_runtime/ark_stub_compiler",
+    "--script-options",
+    stub_option,
+    "--expect-output",
+    "0",
+    "--env-path",
+    rebase_path(root_out_dir) + "/ark/ark:" + rebase_path(root_out_dir) +
+        "/ark/ark_js_runtime:" + rebase_path(root_out_dir) +
+        "/thirdparty/icu:" +
+        rebase_path("//prebuilts/clang/ohos/linux-x86_64/llvm/lib/"),
+  ]
+
+  outputs = [
+    "$stub_file_gen_dir/com_stub.m",
+    "$stub_file_gen_dir/bc_stub.m",
+  ]
 }

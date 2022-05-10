@@ -242,11 +242,17 @@ namespace panda::ecmascript {
 enum class FrameType: uintptr_t {
     OPTIMIZED_FRAME = 0,
     OPTIMIZED_ENTRY_FRAME = 1,
-    INTERPRETER_FRAME = 2,
-    LEAVE_FRAME = 3,
-    INTERPRETER_FAST_NEW_FRAME = 4,
-    INTERPRETER_ENTRY_FRAME = 5,
-    LEAVE_FRAME_WITH_ARGV = 6,
+    LEAVE_FRAME = 2,
+    LEAVE_FRAME_WITH_ARGV = 3,
+    INTERPRETER_FRAME = 4,
+    ASM_INTERPRETER_FRAME = 5,
+    INTERPRETER_CONSTRUCTOR_FRAME = 6,
+    BUILTIN_FRAME = 7,
+    INTERPRETER_FAST_NEW_FRAME = 8,
+    INTERPRETER_ENTRY_FRAME = 9,
+
+    INTERPRETER_BEGIN = INTERPRETER_FRAME,
+    INTERPRETER_END = INTERPRETER_FAST_NEW_FRAME,
 };
 
 class FrameConstants {
@@ -377,6 +383,10 @@ struct InterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSi
     {
         return reinterpret_cast<InterpretedFrame *>(const_cast<JSTaggedType *>(sp)) - 1;
     }
+    static uint32_t NumOfMembers()
+    {
+        return sizeof(InterpretedFrame) / JSTaggedValue::TaggedTypeSize();
+    }
 
     alignas(EAS) JSTaggedValue constpool {JSTaggedValue::Hole()};
     alignas(EAS) JSTaggedValue function {JSTaggedValue::Hole()};
@@ -396,18 +406,25 @@ struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTyp
                                                         JSTaggedValue,
                                                         base::AlignedPointer,
                                                         base::AlignedPointer,
+                                                        base::AlignedPointer,
                                                         InterpretedFrameBase> {
     enum class Index : size_t {
         FunctionIndex = 0,
         AccIndex,
         EnvIndex,
         CallSizeOrCallSiteSpIndex,
+        FpIndex,
         PcIndex,
         BaseIndex,
         NumOfMembers
     };
 
     static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
+
+    inline const JSTaggedType* GetCurrentFramePointer() const
+    {
+        return fp;
+    }
 
     inline JSTaggedType* GetPrevFrameFp()
     {
@@ -417,6 +434,11 @@ struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTyp
     static AsmInterpretedFrame* GetFrameFromSp(const JSTaggedType *sp)
     {
         return reinterpret_cast<AsmInterpretedFrame *>(const_cast<JSTaggedType *>(sp)) - 1;
+    }
+
+    static size_t GetFpOffset(bool isArch32)
+    {
+        return GetOffset<static_cast<size_t>(Index::FpIndex)>(isArch32);
     }
 
     static size_t GetCallSizeOffset(bool isArch32)
@@ -466,10 +488,16 @@ struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTyp
         return fpOffset - callSiteSpOffset;
     }
 
+    static uint32_t NumOfMembers()
+    {
+        return sizeof(AsmInterpretedFrame) / JSTaggedValue::TaggedTypeSize();
+    }
+
     alignas(EAS) JSTaggedValue function {JSTaggedValue::Hole()};
     alignas(EAS) JSTaggedValue acc {JSTaggedValue::Hole()};
     alignas(EAS) JSTaggedValue env {JSTaggedValue::Hole()};
     alignas(EAS) uintptr_t callSizeOrCallSiteSp {0};
+    alignas(EAS) JSTaggedType *fp {nullptr};
     alignas(EAS) const uint8_t *pc {nullptr};
     alignas(EAS) InterpretedFrameBase base;
 };
@@ -526,6 +554,10 @@ struct OptimizedLeaveFrame {
         return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argc) + argc * sizeof(JSTaggedType);
 #endif
     }
+    inline JSTaggedType* GetPrevFrameFp()
+    {
+        return reinterpret_cast<JSTaggedType*>(callsiteFp);
+    }
 };
 
 struct OptimizedWithArgvLeaveFrame {
@@ -549,6 +581,32 @@ struct OptimizedWithArgvLeaveFrame {
 #else
         return ToUintPtr(this) + MEMBER_OFFSET(OptimizedWithArgvLeaveFrame, argc) + argc * sizeof(JSTaggedType);
 #endif
+    }
+    inline JSTaggedType* GetPrevFrameFp()
+    {
+        return reinterpret_cast<JSTaggedType*>(callsiteFp);
+    }
+};
+
+struct BuiltinFrame {
+    FrameType type;
+    JSTaggedType *prevFp;
+    uintptr_t returnAddr;
+    uintptr_t argc;
+    JSTaggedValue function;
+
+    static BuiltinFrame* GetFrameFromSp(const JSTaggedType *sp)
+    {
+        return reinterpret_cast<BuiltinFrame *>(reinterpret_cast<uintptr_t>(sp) -
+            MEMBER_OFFSET(BuiltinFrame, prevFp));
+    }
+    inline JSTaggedType* GetPrevFrameFp()
+    {
+        return prevFp;
+    }
+    uintptr_t GetCallSiteSp()
+    {
+        return ToUintPtr(this) + MEMBER_OFFSET(OptimizedWithArgvLeaveFrame, argc);
     }
 };
 

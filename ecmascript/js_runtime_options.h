@@ -566,11 +566,13 @@ private:
         R"(enable aot of common stub and bc handler stub. Default: false)"};
     PandArg<bool> enableTSAot_ {"enable-ts-aot", false, R"(enable aot. Default: false)"};
     PandArg<std::string> comStubFile_ {"com-stub-out",
-        R"(com_stub.m)",
-        R"(Path of file includes common stubs module compiled by stub compiler. Default: "com_stub.m")"};
+        STUB_FILE_GEN_DIR R"(com_stub.m)",
+        R"(Path of file includes common stubs module compiled by stub compiler. Default: )"
+            STUB_FILE_GEN_DIR R"(com_stub.m)"};
     PandArg<std::string> bcStubFile_ {"bc-stub-out",
-        R"(bc_stub.m)",
-        R"(Path of file includes bytecode handler stubs module compiled by stub compiler. Default: "bc_stub.m")"};
+        STUB_FILE_GEN_DIR R"(bc_stub.m)",
+        R"(Path of file includes bytecode handler stubs module compiled by stub compiler. Default: )"
+            STUB_FILE_GEN_DIR R"(bc_stub.m)"};
     PandArg<bool> enableForceGc_ {"enable-force-gc", true, R"(enable force gc when allocating object)"};
     PandArg<bool> forceFullGc_ {"force-full-gc",
         true,
@@ -583,30 +585,30 @@ private:
         R"(target triple for aot compiler or stub compiler.
         Possible values: ["x86_64-unknown-linux-gnu", "arm-unknown-linux-gnu", "aarch64-unknown-linux-gnu"].
         Default: "x86_64-unknown-linux-gnu")"};
-    PandArg<size_t> asmOptLevel_ {"opt-level", 3,
+    PandArg<uint32_t> asmOptLevel_ {"opt-level", 3,
         R"(Optimization level configuration on llvm back end. Default: "3")"};
-    PandArg<size_t> totalSpaceCapacity_ {"totalSpaceCapacity",
+    PandArg<uint32_t> totalSpaceCapacity_ {"totalSpaceCapacity",
         512 * 1024 * 1024,
         R"(set total space capacity)"};
-    PandArg<size_t> maxSemiSpaceCapacity_ {"maxSemiSpaceCapacity",
+    PandArg<uint32_t> maxSemiSpaceCapacity_ {"maxSemiSpaceCapacity",
         16 * 1024 * 1024,
         R"(set max semi space capacity)"};
-    PandArg<size_t> maxOldSpaceCapacity_ {"maxOldSpaceCapacity",
+    PandArg<uint32_t> maxOldSpaceCapacity_ {"maxOldSpaceCapacity",
         256 * 1024 * 1024,
         R"(set max old space capacity)"};
-    PandArg<size_t> maxNonmovableSpaceCapacity_ {"maxNonmovableSpaceCapacity",
+    PandArg<uint32_t> maxNonmovableSpaceCapacity_ {"maxNonmovableSpaceCapacity",
         4 * 1024 * 1024,
         R"(set max nonmovable space capacity)"};
-    PandArg<size_t> maxMachineCodeSpaceCapacity_ {"maxMachineCodeSpaceCapacity",
+    PandArg<uint32_t> maxMachineCodeSpaceCapacity_ {"maxMachineCodeSpaceCapacity",
         8 * 1024 * 1024,
         R"(set max machine code space capacity)"};
-    PandArg<size_t> maxSnapshotSpaceCapacity_ {"maxSnapshotSpaceCapacity",
+    PandArg<uint32_t> maxSnapshotSpaceCapacity_ {"maxSnapshotSpaceCapacity",
         8 * 1024 * 1024,
         R"(set max snapshot space capacity)"};
-    PandArg<size_t> defaultSemiSpaceCapacity_ {"defaultSemiSpaceCapacity",
+    PandArg<uint32_t> defaultSemiSpaceCapacity_ {"defaultSemiSpaceCapacity",
         2 * 1024 * 1024,
         R"(set default semi space capacity)"};
-    PandArg<size_t> defaultSnapshotSpaceCapacity_ {"defaultSnapshotSpaceCapacity",
+    PandArg<uint32_t> defaultSnapshotSpaceCapacity_ {"defaultSnapshotSpaceCapacity",
         256 * 1024,
         R"(set default snapshot space capacity)"};
     PandArg<std::string> asmInter_ {"asmInter",

@@ -24,14 +24,14 @@ void AssemblerX64::Pushq(Register x)
 
 void AssemblerX64::Pushq(Immediate x)
 {
-    if (InRange8(x)) {
+    if (InRange8(x.Value())) {
         // 6A: Push imm8
         EmitU8(0x6A);
-        EmitI8(static_cast<int8_t>(x));
+        EmitI8(static_cast<int8_t>(x.Value()));
     } else {
         // 68: Push imm32
         EmitU8(0x68);
-        EmitI32(x);
+        EmitI32(x.Value());
     }
 }
 
@@ -56,22 +56,22 @@ void AssemblerX64::Pop(Register x)
 void AssemblerX64::Addq(Immediate src, Register dst)
 {
     EmitRexPrefixW(dst);
-    if (InRange8(src)) {
+    if (InRange8(src.Value())) {
         // 83: Add r/m16, imm8
         EmitU8(0x83);
         // 0: 83 /0 ib
         EmitModrm(0, dst);
-        EmitI8(static_cast<int8_t>(src));
+        EmitI8(static_cast<int8_t>(src.Value()));
     } else if (dst == rax) {
         // 0x5: Add rax, imm32
         EmitU8(0x5);
-        EmitI32(src);
+        EmitI32(src.Value());
     } else {
         // 81: Add r/m32, imm32
         EmitU8(0x81);
         // 0: 81 /0 id
         EmitModrm(0, dst);
-        EmitI32(src);
+        EmitI32(src.Value());
     }
 }
 
@@ -86,44 +86,44 @@ void AssemblerX64::Addq(Register src, Register dst)
 void AssemblerX64::Addl(Immediate src, Register dst)
 {
     EmitRexPrefix(dst);
-    if (InRange8(src)) {
+    if (InRange8(src.Value())) {
         // 83: Add r/m16, imm8
         EmitU8(0x83);
         // 0: 83 /0 ib
         EmitModrm(0, dst);
-        EmitI8(static_cast<int8_t>(src));
+        EmitI8(static_cast<int8_t>(src.Value()));
     } else if (dst == rax) {
         // 0x5: Add rax, imm32
         EmitU8(0x5);
-        EmitI32(src);
+        EmitI32(src.Value());
     } else {
         // 81: Add r/m32, imm32
         EmitU8(0x81);
         // 0: 81 /0 id
         EmitModrm(0, dst);
-        EmitI32(src);
+        EmitI32(src.Value());
     }
 }
 
 void AssemblerX64::Subq(Immediate src, Register dst)
 {
     EmitRexPrefixW(dst);
-    if (InRange8(src)) {
+    if (InRange8(src.Value())) {
         // 83: Sub r/m16, imm8
         EmitU8(0x83);
         // 5: 83 /5 ib
         EmitModrm(5, dst);
-        EmitI8(static_cast<int8_t>(src));
+        EmitI8(static_cast<int8_t>(src.Value()));
     } else if (dst == rax) {
         // 0x2D: Sub rax, imm32
         EmitU8(0x2D);
-        EmitI32(src);
+        EmitI32(src.Value());
     } else {
         // 81: sub r/m32, imm32
         EmitU8(0x81);
         // 5: 81 /5 id
         EmitModrm(5, dst);
-        EmitI32(src);
+        EmitI32(src.Value());
     }
 }
 
@@ -138,44 +138,62 @@ void AssemblerX64::Subq(Register src, Register dst)
 void AssemblerX64::Subl(Immediate src, Register dst)
 {
     EmitRexPrefix(dst);
-    if (InRange8(src)) {
+    if (InRange8(src.Value())) {
         // 83: Sub r/m16, imm8
         EmitU8(0x83);
         // 5: 83 /5 ib
         EmitModrm(5, dst);
-        EmitI8(static_cast<int8_t>(src));
+        EmitI8(static_cast<int8_t>(src.Value()));
     } else if (dst == rax) {
         // 0x2D: Sub eax, imm32
         EmitU8(0x2D);
-        EmitI32(src);
+        EmitI32(src.Value());
     } else {
         // 81: sub r/m32, imm32
         EmitU8(0x81);
         // 5: 81 /5 id
         EmitModrm(5, dst);
-        EmitI32(src);
+        EmitI32(src.Value());
     }
 }
 
 void AssemblerX64::Cmpq(Immediate src, Register dst)
 {
     EmitRexPrefixW(dst);
-    if (InRange8(src)) {
+    if (InRange8(src.Value())) {
         // 83: cmp r/m64, imm8
         EmitU8(0x83);
         // 7: 83 /7 ib
         EmitModrm(7, dst);
-        EmitI8(static_cast<int8_t>(src));
+        EmitI8(static_cast<int8_t>(src.Value()));
     } else if (dst == rax) {
         // 0x3D: cmp rax, imm32
         EmitU8(0x3D);
-        EmitI32(src);
+        EmitI32(src.Value());
     } else {
         // 81: cmp r/m32, imm32
         EmitU8(0x81);
         // 7: 81 /7 id
         EmitModrm(7, dst);
-        EmitI32(src);
+        EmitI32(src.Value());
+    }
+}
+
+void AssemblerX64::Cmpb(Immediate src, Register dst)
+{
+    EmitRexPrefix(dst);
+    if (InRange8(src.Value())) {
+        // 80: cmp r/m8, imm8
+        EmitU8(0x80);
+        // 7: /7 ib
+        EmitModrm(7, dst);
+        EmitI8(static_cast<int8_t>(src.Value()));
+    } else if (dst == rax) {
+        // 0x3C: cmp al, imm8
+        EmitU8(0x3C);
+        EmitI8(src.Value());
+    } else {
+        UNREACHABLE();
     }
 }
 
@@ -190,22 +208,22 @@ void AssemblerX64::Cmpq(Register src, Register dst)
 void AssemblerX64::Cmpl(Immediate src, Register dst)
 {
     EmitRexPrefix(dst);
-    if (InRange8(src)) {
+    if (InRange8(src.Value())) {
         // 83: cmp r/m32, imm8
         EmitU8(0x83);
         // 7: 83 /7 ib
         EmitModrm(7, dst);
-        EmitI8(static_cast<int8_t>(src));
+        EmitI8(static_cast<int8_t>(src.Value()));
     } else if (dst == rax) {
         // 0x3D: cmp rax, imm32
         EmitU8(0x3D);
-        EmitI32(src);
+        EmitI32(src.Value());
     } else {
         // 81: cmp r/m32, imm32
         EmitU8(0x81);
         // 7: 81 /7 id
         EmitModrm(7, dst);
-        EmitI32(src);
+        EmitI32(src.Value());
     }
 }
 
@@ -265,7 +283,7 @@ void AssemblerX64::Movq(Immediate src, Operand dst)
     EmitU8(0xC7);
     // 0: C7 /0 id
     EmitOperand(0, dst);
-    EmitI32(src);
+    EmitI32(src.Value());
 }
 
 void AssemblerX64::Movq(Immediate src, Register dst)
@@ -273,7 +291,7 @@ void AssemblerX64::Movq(Immediate src, Register dst)
     EmitRexPrefix(dst);
     // B8 : mov r32, imm32
     EmitU8(0xB8 | LowBits(dst));
-    EmitI32(src);
+    EmitI32(src.Value());
 }
 
 void AssemblerX64::Mov(Operand src, Register dst)
@@ -545,14 +563,14 @@ void AssemblerX64::Jmp(Register dst)
 
 void AssemblerX64::Jmp(Immediate offset)
 {
-    if (InRange8(offset)) {
+    if (InRange8(offset.Value())) {
         // opcode EB : jmp rel8
         EmitU8(0xEB);
-        EmitI8(static_cast<int8_t>(offset));
+        EmitI8(static_cast<int8_t>(offset.Value()));
     } else {
         // opcode E9 : jmp rel32
         EmitU8(0xE9);
-        EmitI32(offset);
+        EmitI32(offset.Value());
     }
 }
 
@@ -815,44 +833,44 @@ void AssemblerX64::Movl(Operand src, Register dst)
 
 void AssemblerX64::Testq(Immediate src, Register dst) {
     EmitRexPrefixW(dst);
-    if (InRange8(src)) {
+    if (InRange8(src.Value())) {
         // F6: Test r/m8, imm8
         EmitU8(0xF6);
         // 0: F6 /0 ib
         EmitModrm(0, dst);
-        EmitI8(static_cast<int8_t>(src));
+        EmitI8(static_cast<int8_t>(src.Value()));
     } else if (dst == rax) {
         // A9: Test rax, imm32
         EmitU8(0xA9);
-        EmitI32(src);
+        EmitI32(src.Value());
     } else {
         // F7: Test r/m64, imm32
         EmitU8(0xF7);
         // 0: F7 0 id
         EmitModrm(0, dst);
-        EmitI32(src);
+        EmitI32(src.Value());
     }
 }
 
 void AssemblerX64::Testb(Immediate src, Register dst)
 {
     EmitRexPrefix(dst);
-    if (InRange8(src)) {
+    if (InRange8(src.Value())) {
         // F6: Test r/m8, imm8
         EmitU8(0xF6);
         // 0: F6 /0 ib
         EmitModrm(0, dst);
-        EmitI8(static_cast<int8_t>(src));
+        EmitI8(static_cast<int8_t>(src.Value()));
     } else if (dst == rax) {
         // A9: Test rax, imm32
         EmitU8(0xA9);
-        EmitI32(src);
+        EmitI32(src.Value());
     } else {
         // F7: Test r/m32, imm32
         EmitU8(0xF7);
         // 0: F7 0 id
         EmitModrm(0, dst);
-        EmitI32(src);
+        EmitI32(src.Value());
     }
 }
 
@@ -958,7 +976,7 @@ void AssemblerX64::Shrq(Immediate src, Register dst)
     EmitU8(0xc1);
     // 5: C1 /5 id
     EmitModrm(5, dst);
-    EmitI8(static_cast<int8_t>(src));
+    EmitI8(static_cast<int8_t>(src.Value()));
 }
 
 void AssemblerX64::Shr(Immediate src, Register dst)
@@ -969,44 +987,44 @@ void AssemblerX64::Shr(Immediate src, Register dst)
 void AssemblerX64::Andq(Immediate src, Register dst)
 {
     EmitRexPrefixW(dst);
-    if (InRange8(src)) {
+    if (InRange8(src.Value())) {
         // 83: and r/m64, imm8
         EmitU8(0x83);
         // 4: 83 /4 ib
         EmitModrm(4, dst);
-        EmitI8(static_cast<int8_t>(src));
+        EmitI8(static_cast<int8_t>(src.Value()));
     } else if (dst == rax) {
         // 0x25: and rax, imm32
         EmitU8(0x25);
-        EmitI32(src);
+        EmitI32(src.Value());
     } else {
         // 81: and r/m64, imm32
         EmitU8(0x81);
         // 4: 81 /4 id
         EmitModrm(4, dst);
-        EmitI32(src);
+        EmitI32(src.Value());
     }
 }
 
 void AssemblerX64::Andl(Immediate src, Register dst)
 {
     EmitRexPrefix(dst);
-    if (InRange8(src)) {
+    if (InRange8(src.Value())) {
         // 83: and r/m64, imm8
         EmitU8(0x83);
         // 4: 83 /4 ib
         EmitModrm(4, dst);
-        EmitI8(static_cast<int8_t>(src));
+        EmitI8(static_cast<int8_t>(src.Value()));
     } else if (dst == rax) {
         // 0x25: and rax, imm32
         EmitU8(0x25);
-        EmitI32(src);
+        EmitI32(src.Value());
     } else {
         // 81: and r/m64, imm32
         EmitU8(0x81);
         // 4: 81 /4 id
         EmitModrm(4, dst);
-        EmitI32(src);
+        EmitI32(src.Value());
     }
 }
 
@@ -1160,7 +1178,7 @@ void AssemblerX64::Btq(Immediate src, Register dst)
     EmitU8(0xBA);
     // /4: 0F BA bt r/m32, imm8
     EmitModrm(4, dst);
-    EmitI8(static_cast<int8_t>(src));
+    EmitI8(static_cast<int8_t>(src.Value()));
 }
 void AssemblerX64::Btl(Immediate src, Register dst)
 {
@@ -1170,7 +1188,7 @@ void AssemblerX64::Btl(Immediate src, Register dst)
     EmitU8(0xBA);
     // /4: 0F BA bt r/m32, imm8
     EmitModrm(4, dst);
-    EmitI8(static_cast<int8_t>(src));
+    EmitI8(static_cast<int8_t>(src.Value()));
 }
 
 void AssemblerX64::Movabs(uint64_t src, Register dst)
@@ -1188,7 +1206,7 @@ void AssemblerX64::Shll(Immediate src, Register dst)
     EmitU8(0xC1);
     // C1 /4
     EmitModrm(4, dst);
-    EmitI8(static_cast<int8_t>(src));
+    EmitI8(static_cast<int8_t>(src.Value()));
 }
 
 void AssemblerX64::Int3()

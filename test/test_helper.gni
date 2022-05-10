@@ -43,7 +43,7 @@ template("host_unittest_action") {
 
     deps = [ _host_test_target_ ]
 
-    script = "//ark/js_runtime/test/run_ark_executable.py"
+    script = "//ark/js_runtime/script/run_ark_executable.py"
 
     args = [
       "--script-file",
@@ -56,6 +56,8 @@ template("host_unittest_action") {
           "/ark/ark_js_runtime:" + rebase_path(_root_out_dir_) + "/test/test:" +
           rebase_path(_root_out_dir_) + "/${_icu_path_}:" +
           rebase_path("//prebuilts/clang/ohos/linux-x86_64/llvm/lib/"),
+      "--timeout-limit",
+      "1200",
     ]
 
     inputs = [
@@ -120,7 +122,7 @@ template("host_moduletest_action") {
     ]
     deps += _deps_
 
-    script = "//ark/js_runtime/test/run_ark_executable.py"
+    script = "//ark/js_runtime/script/run_ark_executable.py"
 
     js_vm_options = " "
     if (defined(invoker.is_set_maxNonmovableSpaceCapacity) &&
@@ -182,37 +184,6 @@ template("host_aot_test_action") {
 
   _script_args_ = rebase_path(_test_abc_path_)
 
-  _stub_out_path_options_ =
-      " --com-stub-out=" + rebase_path(target_out_dir) +
-      "/com_stub.m --bc-stub-out=" + rebase_path(target_out_dir) + "/bc_stub.m"
-
-  action("gen${_target_name_}StubAction") {
-    testonly = true
-
-    _host_stub_target_ = "//ark/js_runtime/ecmascript/compiler:ark_stub_compiler(${host_toolchain})"
-    _root_out_dir_ = get_label_info(_host_stub_target_, "root_out_dir")
-    deps = [ _host_stub_target_ ]
-    deps += _deps_
-
-    script = "//ark/js_runtime/test/run_ark_executable.py"
-
-    args = [
-      "--script-file",
-      rebase_path(_root_out_dir_) + "/ark/ark_js_runtime/ark_stub_compiler",
-      "--script-options",
-      _stub_out_path_options_,
-      "--expect-sub-output",
-      "stub compiler run finish, result condition(T/F):true",
-      "--env-path",
-      rebase_path(_root_out_dir_) + "/ark/ark:" + rebase_path(_root_out_dir_) +
-          "/ark/ark_js_runtime:" + rebase_path(_root_out_dir_) +
-          "/${_icu_path_}:" +
-          rebase_path("//prebuilts/clang/ohos/linux-x86_64/llvm/lib/"),
-    ]
-
-    outputs = [ "$target_out_dir/" ]
-  }
-
   action("${_target_name_}AotCompileAction") {
     testonly = true
 
@@ -224,11 +195,11 @@ template("host_aot_test_action") {
     ]
     deps += _deps_
 
-    script = "//ark/js_runtime/test/run_ark_executable.py"
+    script = "//ark/js_runtime/script/run_ark_executable.py"
 
-    _aot_compile_options_ =
-        " --aot-output-file=" + rebase_path(_test_m_path_) +
-        " --snapshot-output-file=" + rebase_path(_test_snapshot_path_)
+    _aot_compile_options_ = " --aot-output-file=" + rebase_path(_test_m_path_) +
+                            " --snapshot-output-file=" +
+                            rebase_path(_test_snapshot_path_) + " --asmInter=1"
 
     args = [
       "--script-file",
@@ -248,7 +219,10 @@ template("host_aot_test_action") {
 
     inputs = [ _test_abc_path_ ]
 
-    outputs = [ "$target_out_dir/${_target_name_}/compile_${_target_name_}/" ]
+    outputs = [
+      _test_m_path_,
+      _test_snapshot_path_,
+    ]
   }
 
   action("${_target_name_}AotAction") {
@@ -257,21 +231,21 @@ template("host_aot_test_action") {
     _host_jsvm_target_ =
         "//ark/js_runtime/ecmascript/js_vm:ark_js_vm(${host_toolchain})"
     _root_out_dir_ = get_label_info(_host_jsvm_target_, "root_out_dir")
+
     deps = [
       ":${_target_name_}AotCompileAction",
-      ":gen${_target_name_}StubAction",
       ":gen_${_target_name_}_abc",
+      "//ark/js_runtime/ecmascript/compiler:gen_stub_file(${host_toolchain})",
       _host_jsvm_target_,
     ]
     deps += _deps_
 
-    script = "//ark/js_runtime/test/run_ark_executable.py"
+    script = "//ark/js_runtime/script/run_ark_executable.py"
 
     _aot_run_options_ =
         " --aot-output-file=" + rebase_path(_test_m_path_) +
         " --snapshot-output-file=" + rebase_path(_test_snapshot_path_) +
-        " --enable-ts-aot=true" + " --enable-stub-aot=true" + " --asmInter=1" +
-        _stub_out_path_options_
+        " --enable-ts-aot=true" + " --enable-stub-aot=true" + " --asmInter=1"
 
     args = [
       "--script-file",

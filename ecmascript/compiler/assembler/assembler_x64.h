@@ -18,8 +18,6 @@
 #include "assembler.h"
 
 namespace panda::ecmascript::x64 {
-using Immediate = int32_t;
-
 enum Register : uint8_t {
     rax = 0,
     rcx,
@@ -44,6 +42,20 @@ enum Scale : uint8_t {
     Times2,
     Times4,
     Times8
+};
+
+class Immediate {
+public:
+    Immediate(int32_t value) : value_(value)
+    {
+    }
+
+    int32_t Value() const
+    {
+        return value_;
+    }
+private:
+    int32_t value_;
 };
 
 class Operand {
@@ -94,6 +106,7 @@ public:
     void Cmpq(Immediate src, Register dst);
     void Cmpq(Register src, Register dst);
     void Cmpl(Immediate src, Register dst);
+    void Cmpb(Immediate src, Register dst);
     void Cmp(Immediate src, Register dst);
     void Callq(Register addr);
     void Callq(Label *target);
@@ -165,8 +178,8 @@ private:
     void EmitRexPrefixl(Register reg, Register rm)
     {
         // 0: Extension to the MODRM.rm field B
-        // 2: Extension to the MODRM.reg field R
         if (HighBit(reg) != 0 || HighBit(rm) != 0) {
+            // 2: Extension to the MODRM.reg field R
             EmitU8(REX_PREFIX_FIXED_BITS | (HighBit(reg) << 2) | HighBit(rm));
         }
     }
@@ -181,8 +194,8 @@ private:
     void EmitRexPrefixl(Register reg, Operand rm)
     {
         // 0: Extension to the MODRM.rm field B
-        // 2: Extension to the MODRM.reg field R
         if (HighBit(reg) != 0 || rm.rex_ != 0) {
+            // 2: Extension to the MODRM.reg field R
             EmitU8(REX_PREFIX_FIXED_BITS | (HighBit(reg) << 2) | rm.rex_);
         }
     }

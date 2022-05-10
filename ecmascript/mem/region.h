@@ -439,7 +439,7 @@ private:
     size_t wasted_;
     os::memory::Mutex lock_;
     NativeAreaAllocator* nativeAreaAllocator_ {nullptr};
-    friend class SnapShot;
+    friend class Snapshot;
 };
 
 static_assert(Region::CheckLayout());

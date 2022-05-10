@@ -31,7 +31,10 @@ class ConstantPool;
 class FrameHandler {
 public:
     explicit FrameHandler(const JSThread *thread)
-        : sp_(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame())), thread_(thread) {}
+        : sp_(const_cast<JSTaggedType *>(thread->GetCurrentFrame())), thread_(thread)
+    {
+        AdvanceToInterpretedFrame();
+    }
     ~FrameHandler() = default;
 
     DEFAULT_COPY_SEMANTIC(FrameHandler);
@@ -56,6 +59,12 @@ public:
 
     bool IsEntryFrame() const
     {
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+        FrameType type = GetFrameType();
+        if (type == FrameType::OPTIMIZED_ENTRY_FRAME) {
+            return true;
+        }
+#endif
         ASSERT(HasFrame());
         // The structure of InterpretedFrame, AsmInterpretedFrame, InterpretedEntryFrame is the same, order is pc, base.
         InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
@@ -65,7 +74,18 @@ public:
     bool IsInterpretedFrame() const
     {
         FrameType type = GetFrameType();
-        return (type == FrameType::INTERPRETER_FRAME) || (type == FrameType::INTERPRETER_FAST_NEW_FRAME);
+        return (type >= FrameType::INTERPRETER_BEGIN) && (type <= FrameType::INTERPRETER_END);
+    }
+
+    bool IsAsmInterpretedFrame() const
+    {
+        FrameType type = GetFrameType();
+        return (type == FrameType::ASM_INTERPRETER_FRAME) ||
+            (type == FrameType::INTERPRETER_CONSTRUCTOR_FRAME);
+    }
+    bool IsBuiltinFrame() const
+    {
+        return (GetFrameType() == FrameType::BUILTIN_FRAME);
     }
 
     bool IsInterpretedEntryFrame() const
@@ -95,10 +115,8 @@ public:
     void SetVRegValue(size_t index, JSTaggedValue value);
 
     JSTaggedValue GetEnv() const;
-    void SetEnv(JSTaggedValue env);
-
     JSTaggedValue GetAcc() const;
-    uint32_t GetSize() const;
+    uint32_t GetNumberArgs();
     uint32_t GetBytecodeOffset() const;
     JSMethod *GetMethod() const;
     JSTaggedValue GetFunction() const;
@@ -122,6 +140,11 @@ public:
 
     // for Frame GC.
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
+    void IterateFrameChain(JSTaggedType *start, const RootVisitor &v0, const RootRangeVisitor &v1) const;
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+    void IterateRsp(const RootVisitor &v0, const RootRangeVisitor &v1) const;
+    void IterateSp(const RootVisitor &v0, const RootRangeVisitor &v1) const;
+#endif
 
 private:
     FrameType GetFrameType() const
@@ -132,10 +155,16 @@ private:
     }
 
     void PrevFrame();
+    void AdvanceToInterpretedFrame();
+    uintptr_t GetInterpretedFrameEnd(JSTaggedType *prevSp) const;
 
     // for Frame GC.
     void InterpretedFrameIterate(const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1) const;
+    void AsmInterpretedFrameIterate(const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1) const;
     void InterpretedEntryFrameIterate(const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1) const;
+    void BuiltinFrameIterate(
+        const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
+        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
     void OptimizedFrameIterate(
         const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
         ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
@@ -151,6 +180,8 @@ private:
 
 private:
     JSTaggedType *sp_ {nullptr};
+    uint8_t *pc_ {nullptr};
+    JSTaggedValue function_ {JSTaggedValue::Hole()};
     const JSThread *thread_ {nullptr};
 };
 } // namespace ecmascript

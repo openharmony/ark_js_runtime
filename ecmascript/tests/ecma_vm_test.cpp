@@ -54,13 +54,9 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMInTwoWays)
 
     JSRuntimeOptions options2;
     options2.SetEnableArkTools(true);
-    options2.SetEnableStubAot(true);
-    options2.SetComStubFile("file1");
-    options2.SetBcStubFile("file2");
     options2.SetEnableForceGC(false);
     options2.SetForceFullGC(false);
     options2.SetEnableCpuprofiler(true);
-    options2.SetEnableTsAot(true);
     options2.SetArkProperties(ArkProperties::GC_STATS_PRINT);
 
     // A non-production gc strategy. Prohibit stw-gc 10 times.
@@ -74,13 +70,9 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMInTwoWays)
     EXPECT_TRUE(&options1Out != &options2Out);
 
     EXPECT_TRUE(options1Out.EnableArkTools() != options2Out.EnableArkTools());
-    EXPECT_TRUE(options1Out.EnableStubAot() != options2Out.EnableStubAot());
-    EXPECT_TRUE(options1Out.GetComStubFile() != options2Out.GetComStubFile());
-    EXPECT_TRUE(options1Out.GetBcStubFile() != options2Out.GetBcStubFile());
     EXPECT_TRUE(options1Out.EnableForceGC() != options2Out.EnableForceGC());
     EXPECT_TRUE(options1Out.ForceFullGC() != options2Out.ForceFullGC());
     EXPECT_TRUE(options1Out.EnableCpuProfiler() != options2Out.EnableCpuProfiler());
-    EXPECT_TRUE(options1Out.EnableTSAot() != options2Out.EnableTSAot());
     EXPECT_TRUE(options1Out.GetArkProperties() != options2Out.GetArkProperties());
 
     EcmaVM::Destroy(ecmaVm2);
