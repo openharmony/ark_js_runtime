@@ -13,36 +13,37 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_CPU_PROCESSOR_H
-#define ECMASCRIPT_CPU_PROCESSOR_H
+#ifndef ECMASCRIPT_SAMPLING_PROCESSOR_H
+#define ECMASCRIPT_SAMPLING_PROCESSOR_H
 #include <pthread.h>
 
-#include "ecmascript/dfx/cpu_profiler/profile_generator.h"
+#include "ecmascript/dfx/cpu_profiler/samples_record.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/taskpool/task.h"
 
 namespace panda::ecmascript {
-class ProfileProcessor : public Task {
+class SamplingProcessor : public Task {
 public:
     static uint64_t GetMicrosecondsTimeStamp();
     static JSThread *GetJSThread();
     static void SetIsStart(bool isStart);
 
-    explicit ProfileProcessor(ProfileGenerator *generator, const EcmaVM *vm, int interval);
-    virtual ~ProfileProcessor();
+    explicit SamplingProcessor(SamplesRecord *generator, const EcmaVM *vm, int interval, bool outToFile);
+    virtual ~SamplingProcessor();
 
     bool Run(uint32_t threadIndex) override;
     void WriteSampleDataToFile();
 
-    NO_COPY_SEMANTIC(ProfileProcessor);
-    NO_MOVE_SEMANTIC(ProfileProcessor);
+    NO_COPY_SEMANTIC(SamplingProcessor);
+    NO_MOVE_SEMANTIC(SamplingProcessor);
 private:
     static JSThread *thread_;
     static bool isStart_;
-    ProfileGenerator *generator_ = nullptr;
+    SamplesRecord *generator_ = nullptr;
     int interval_ = 0;
     pthread_t pid_ = 0;
+    bool outToFile_ = false;
 };
 } // namespace panda::ecmascript
-#endif // ECMASCRIPT_CPU_PROCESSOR_H
+#endif // ECMASCRIPT_SAMPLING_PROCESSOR_H

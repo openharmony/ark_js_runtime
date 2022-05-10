@@ -118,16 +118,16 @@ size_t DFXJSNApi::GetHeapUsedSize(EcmaVM *vm)
 }
 
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
-void DFXJSNApi::StartCpuProfiler(const EcmaVM *vm, const std::string &fileName)
+void DFXJSNApi::StartCpuProfilerForFile(const EcmaVM *vm, const std::string &fileName)
 {
     panda::ecmascript::CpuProfiler* singleton = panda::ecmascript::CpuProfiler::GetInstance();
-    singleton->StartCpuProfiler(vm, fileName);
+    singleton->StartCpuProfilerForFile(vm, fileName);
 }
 
-void DFXJSNApi::StopCpuProfiler()
+void DFXJSNApi::StopCpuProfilerForFile()
 {
     panda::ecmascript::CpuProfiler* singleton = panda::ecmascript::CpuProfiler::GetInstance();
-    singleton->StopCpuProfiler();
+    singleton->StopCpuProfilerForFile();
 }
 #endif
 
