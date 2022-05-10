@@ -33,6 +33,23 @@
 #endif
 #endif // PANDA_TARGET_UNIX
 
+#ifdef PANDA_TARGET_WINDOWS
+#include <windows.h>
+
+#ifdef ERROR
+#undef ERROR
+#endif
+
+#ifdef GetObject
+#undef GetObject
+#endif
+
+#ifdef STRICT
+#undef STRICT
+#endif
+
+#endif
+
 namespace panda::ecmascript {
 class MemMap {
 public:
@@ -62,6 +79,13 @@ public:
     void Finalize()
     {
         os::memory::LockHolder lock(lock_);
+        for (MemMap &memMap : memMapCache_) {
+#ifdef PANDA_TARGET_UNIX
+            munmap(memMap.GetMem(), memMap.GetSize());
+#else
+            UnmapViewOfFile(memMap.GetMem());
+#endif
+        }
         memMapCache_.clear();
     }
 
@@ -119,6 +143,14 @@ public:
 
     void Finalize()
     {
+        for (const auto &it : freeList_) {
+            auto memMap = it.second;
+#ifdef PANDA_TARGET_UNIX
+            munmap(memMap.GetMem(), memMap.GetSize());
+#else
+            UnmapViewOfFile(memMap.GetMem());
+#endif
+        }
         freeList_.clear();
     }
 
