@@ -15,12 +15,6 @@
 
 #include "ecmascript/mem/mem_map_allocator.h"
 #ifdef PANDA_TARGET_WINDOWS
-#include <windows.h>
-
-#ifdef ERROR
-#undef ERROR
-#endif
-
 void *mmap(size_t size, int fd, off_t offset)
 {
     HANDLE handle = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
