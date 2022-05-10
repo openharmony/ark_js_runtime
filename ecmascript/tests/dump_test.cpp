@@ -292,7 +292,11 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::JS_FUNCTION_BASE: {
+#ifdef PANDA_TARGET_64
                 CHECK_DUMP_FIELDS(JSObject::SIZE, JSFunctionBase::SIZE, 2U)
+#else
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSFunctionBase::SIZE, 1U)
+#endif
                 break;
             }
             case JSType::JS_FUNCTION: {
