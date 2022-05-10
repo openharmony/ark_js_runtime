@@ -20,6 +20,7 @@
 #include <codecvt>
 #include <locale>
 #include <regex>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -191,6 +192,22 @@ public:
         std::string res;
         uString.toUTF8String(res);
         return res;
+    }
+
+    static inline CString GetSpecifiedLine(const CString &srcStr, int lineNumber)
+    {
+        std::stringstream ss(CstringConvertToStdString(srcStr));
+        int count = 0;
+        CString lineStr = "";
+        std::string tempLine;
+        while (getline(ss, tempLine, '\n')) {
+            count++;
+            if (count == lineNumber) {
+                lineStr = ConvertToString(tempLine);
+                break;
+            }
+        }
+        return lineStr;
     }
 };
 }  // namespace panda::ecmascript::base
