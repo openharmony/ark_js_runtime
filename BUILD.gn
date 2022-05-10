@@ -496,8 +496,8 @@ ecma_profiler_source = []
 if (!is_mingw && !is_mac) {
   ecma_profiler_source += [
     "ecmascript/dfx/cpu_profiler/cpu_profiler.cpp",
-    "ecmascript/dfx/cpu_profiler/profile_processor.cpp",
-    "ecmascript/dfx/cpu_profiler/profile_generator.cpp",
+    "ecmascript/dfx/cpu_profiler/sampling_processor.cpp",
+    "ecmascript/dfx/cpu_profiler/samples_record.cpp",
     "ecmascript/dfx/hprof/heap_profiler.cpp",
     "ecmascript/dfx/hprof/heap_profiler_interface.cpp",
     "ecmascript/dfx/hprof/heap_root_visitor.cpp",

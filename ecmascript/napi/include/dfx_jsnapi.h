@@ -51,8 +51,8 @@ public:
 
     // profile generator
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
-    static void StartCpuProfiler(const EcmaVM *vm, const std::string &fileName);
-    static void StopCpuProfiler();
+    static void StartCpuProfilerForFile(const EcmaVM *vm, const std::string &fileName);
+    static void StopCpuProfilerForFile();
 #endif
 
     static void ResumeVM(const EcmaVM *vm);
