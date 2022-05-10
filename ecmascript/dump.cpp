@@ -1577,12 +1577,9 @@ void JSTypedArray::Dump(std::ostream &os) const
     GetViewedArrayBuffer().Dump(os);
     os << " - typed-array-name: ";
     GetTypedArrayName().Dump(os);
-    os << " - byte-length: ";
-    GetByteLength().Dump(os);
-    os << " - byte-offset: ";
-    GetByteOffset().Dump(os);
-    os << " - array-length: ";
-    GetArrayLength().Dump(os);
+    os << " - byte-length: " << GetByteLength();
+    os << " - byte-offset: " << GetByteOffset();
+    os << " - array-length: " << GetArrayLength();
     JSObject::Dump(os);
 }
 
@@ -3462,9 +3459,9 @@ void JSTypedArray::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>
 {
     vec.push_back(std::make_pair(CString("viewed-array-buffer"), GetViewedArrayBuffer()));
     vec.push_back(std::make_pair(CString("typed-array-name"), GetTypedArrayName()));
-    vec.push_back(std::make_pair(CString("byte-length"), GetByteLength()));
-    vec.push_back(std::make_pair(CString("byte-offset"), GetByteOffset()));
-    vec.push_back(std::make_pair(CString("array-length"), GetArrayLength()));
+    vec.push_back(std::make_pair(CString("byte-length"), JSTaggedValue(GetByteLength())));
+    vec.push_back(std::make_pair(CString("byte-offset"), JSTaggedValue(GetByteOffset())));
+    vec.push_back(std::make_pair(CString("array-length"), JSTaggedValue(GetArrayLength())));
 }
 
 void JSRegExp::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const

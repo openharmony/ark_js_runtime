@@ -42,6 +42,7 @@ group("ark_js_moduletest") {
     "stackoverflow:stackoverflowAction",
     "throwdyn:throwdynAction",
     "trycatch:trycatchAction",
+    "typearray:typearrayAction",
     "watch:watchAction",
     "yieldstar:yieldstarAction",
   ]

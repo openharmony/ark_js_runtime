@@ -403,6 +403,7 @@ public:
     static JSTaggedNumber ToLength(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
     static JSTaggedValue CanonicalNumericIndexString(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
     static JSTaggedNumber ToIndex(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
+    static JSTaggedNumber StringToDouble(JSTaggedValue tagged);
 
     static bool ToArrayLength(JSThread *thread, const JSHandle<JSTaggedValue> &tagged, uint32_t *output);
     static bool ToElementIndex(JSTaggedValue key, uint32_t *output);

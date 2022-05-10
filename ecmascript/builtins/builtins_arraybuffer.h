@@ -69,6 +69,8 @@ public:
     // es12 25.1.2.7 IsBigIntElementType ( type )
     static bool IsBigIntElementType(DataViewType type);
 
+    static JSTaggedValue FastSetValueInBuffer(JSTaggedValue arrBuf, uint32_t byteIndex, DataViewType type, double val,
+                                              bool littleEndian);
 private:
     template <typename T>
     static T LittleEndianToBigEndian(T liValue);
@@ -100,7 +102,9 @@ private:
 
     template<typename T>
     static void SetValueInBufferForBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &val, uint8_t *block,
-                                                   uint32_t byteIndex, bool littleEndian);
+                                          uint32_t byteIndex, bool littleEndian);
+    static JSTaggedValue SetValueInBuffer(uint32_t byteIndex, uint8_t *block, DataViewType type, double val,
+                                          bool littleEndian);
 };
 }  // namespace panda::ecmascript::builtins
 
