@@ -17,7 +17,7 @@
 #include "ecmascript/frames.h"
 
 namespace panda::ecmascript::x64 {
-void ExtendedAssemblerX64::PushAlignBytes()
+void ExtendedAssembler::PushAlignBytes()
 {
     Pushq(0);
 }
@@ -28,7 +28,7 @@ void ExtendedAssemblerX64::PopAlignBytes()
 }
 
 // c++ calling convention
-void ExtendedAssemblerX64::PushCppCalleeSaveRegisters()
+void ExtendedAssembler::PushCppCalleeSaveRegisters()
 {
     Pushq(r12);
     Pushq(r13);
@@ -37,7 +37,7 @@ void ExtendedAssemblerX64::PushCppCalleeSaveRegisters()
     Pushq(rbx);
 }
 
-void ExtendedAssemblerX64::PopCppCalleeSaveRegisters()
+void ExtendedAssembler::PopCppCalleeSaveRegisters()
 {
     Popq(rbx);
     Popq(r15);

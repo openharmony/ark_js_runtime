@@ -177,7 +177,7 @@ public:
           extend_(Extend::NO_EXTEND), shift_(shift), shiftAmount_(shiftAmount)
     {
     }
-    MemoryOperand(Register base, Immediate offset, AddrMode addrmod)
+    MemoryOperand(Register base, int64_t offset, AddrMode addrmod = OFFSET)
         : base_(base), offsetReg_(RegisterId::INVALID_REG, false), offsetImm_(offset), addrmod_(addrmod),
           extend_(Extend::NO_EXTEND), shift_(Shift::NO_SHIFT), shiftAmount_(0)
     {
