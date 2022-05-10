@@ -101,14 +101,14 @@ GateRef InterpreterStub::ReadInst4_3(GateRef pc)
 GateRef InterpreterStub::ReadInstSigned8_0(GateRef pc)
 {
     GateRef x = Load(VariableType::INT8(), pc, IntPtr(1));
-    return GetEnvironment()->GetBuilder().UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT32), x);
+    return GetEnvironment()->GetBulder()->UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT32), x);
 }
 
 GateRef InterpreterStub::ReadInstSigned16_0(GateRef pc)
 {
     /* 2 : skip 8 bits of opcode and 8 bits of low bits */
     GateRef currentInst = Load(VariableType::INT8(), pc, IntPtr(2));
-    GateRef currentInst1 = GetEnvironment()->GetBuilder().UnaryArithmetic(
+    GateRef currentInst1 = GetEnvironment()->GetBulder()->UnaryArithmetic(
         OpCode(OpCode::SEXT_TO_INT32), currentInst);
     GateRef currentInst2 = Int32LSL(currentInst1, Int32(8));  // 8 : set as high 8 bits
     return Int32Add(currentInst2, ZExtInt8ToInt32(ReadInst8_0(pc)));
@@ -118,7 +118,7 @@ GateRef InterpreterStub::ReadInstSigned32_0(GateRef pc)
 {
     /* 4 : skip 8 bits of opcode and 24 bits of low bits */
     GateRef x = Load(VariableType::INT8(), pc, IntPtr(4));
-    GateRef currentInst = GetEnvironment()->GetBuilder().UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT32), x);
+    GateRef currentInst = GetEnvironment()->GetBulder()->UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT32), x);
     GateRef currentInst1 = Int32LSL(currentInst, Int32(8));
     GateRef currentInst2 = Int32Add(currentInst1, ZExtInt8ToInt32(ReadInst8_2(pc)));
     GateRef currentInst3 = Int32LSL(currentInst2, Int32(8));
@@ -376,7 +376,7 @@ void InterpreterStub::DispatchBase(GateRef bcOffset, const CallSignature *signat
 {
     auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
     GateRef result =
-        GetEnvironment()->GetBuilder().BytecodeCall(signature, glue, bcOffset, depend, {glue, args...});
+        GetEnvironment()->GetBulder()->BytecodeCall(signature, glue, bcOffset, depend, {glue, args...});
     GetEnvironment()->GetCurrentLabel()->SetDepend(result);
 }
 
@@ -409,7 +409,7 @@ void InterpreterStub::DispatchDebugger(GateRef glue, GateRef sp, GateRef pc, Gat
     const CallSignature *bytecodeHandler = BytecodeStubCSigns::Get(BYTECODE_STUB_BEGIN_ID);
     auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
     GateRef result =
-        GetEnvironment()->GetBuilder().DebuggerBytecodeCall(bytecodeHandler, glue, opcodeOffset, depend,
+        GetEnvironment()->GetBulder()->DebuggerBytecodeCall(bytecodeHandler, glue, opcodeOffset, depend,
         {glue, sp, pc, constpool, profileTypeInfo, acc, hotnessCounter});
     GetEnvironment()->GetCurrentLabel()->SetDepend(result);
     Return();
@@ -423,7 +423,7 @@ void InterpreterStub::DispatchDebuggerLast(GateRef glue, GateRef sp, GateRef pc,
     const CallSignature *bytecodeHandler = BytecodeStubCSigns::Get(BYTECODE_STUB_BEGIN_ID);
     auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
     GateRef result =
-        GetEnvironment()->GetBuilder().DebuggerBytecodeCall(bytecodeHandler, glue, opcodeOffset, depend,
+        GetEnvironment()->GetBulder()->DebuggerBytecodeCall(bytecodeHandler, glue, opcodeOffset, depend,
         {glue, sp, pc, constpool, profileTypeInfo, acc, hotnessCounter});
     GetEnvironment()->GetCurrentLabel()->SetDepend(result);
     Return();
@@ -435,7 +435,7 @@ void InterpreterStub::DispatchCommonCall(GateRef glue, GateRef sp, Args... args)
     GateRef index = IntPtr(id);
     const CallSignature *signature = RuntimeStubCSigns::Get(id);
     auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
-    GateRef result = GetEnvironment()->GetBuilder().NoGcRuntimeCall(
+    GateRef result = GetEnvironment()->GetBulder()->NoGcRuntimeCall(
         signature, glue, index, depend, {glue, sp, args...});
     GetEnvironment()->GetCurrentLabel()->SetDepend(result);
     Return();
@@ -447,7 +447,7 @@ GateRef InterpreterStub::CommonCallNative(GateRef glue, GateRef sp, Args... args
     GateRef index = IntPtr(id);
     const CallSignature *signature = RuntimeStubCSigns::Get(id);
     auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
-    GateRef result = GetEnvironment()->GetBuilder().NoGcRuntimeCall(
+    GateRef result = GetEnvironment()->GetBulder()->NoGcRuntimeCall(
         signature, glue, index, depend, {glue, sp, args...});
     GetEnvironment()->GetCurrentLabel()->SetDepend(result);
     return result;
@@ -474,13 +474,13 @@ GateRef InterpreterStub::GetHotnessCounterFromMethod(GateRef method)
     auto env = GetEnvironment();
     GateRef x = Load(VariableType::INT16(), method,
                      IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())));
-    return GetEnvironment()->GetBuilder().UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT32), x);
+    return GetEnvironment()->GetBulder()->UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT32), x);
 }
 
 void InterpreterStub::SetHotnessCounter(GateRef glue, GateRef method, GateRef value)
 {
     auto env = GetEnvironment();
-    GateRef newValue = env->GetBuilder().UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT16), value);
+    GateRef newValue = env->GetBulder()->UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT16), value);
     Store(VariableType::INT16(), glue, method,
           IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())), newValue);
 }
