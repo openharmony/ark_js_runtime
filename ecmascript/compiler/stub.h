@@ -27,281 +27,12 @@
 namespace panda::ecmascript::kungfu {
 using namespace panda::ecmascript;
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DEFVARIABLE(varname, type, val) Stub::Variable varname(GetEnvironment(), type, NextVariableId(), val)
+#define DEFVARIABLE(varname, type, val) Variable varname(GetEnvironment(), type, NextVariableId(), val)
 #define NOGC_RTSTUB_CSIGNS_BEGIN (CommonStubCSigns::NUM_OF_STUBS + BytecodeStubCSigns::NUM_OF_VALID_STUBS)
 class Stub {
 public:
-    class Environment;
-    class Label;
-    class Variable;
-
-    class Label {
-    public:
-        class LabelImpl {
-        public:
-            LabelImpl(Environment *env, GateRef control)
-                : env_(env), control_(control), predeControl_(-1), isSealed_(false)
-            {
-            }
-            ~LabelImpl() = default;
-            NO_MOVE_SEMANTIC(LabelImpl);
-            NO_COPY_SEMANTIC(LabelImpl);
-            void Seal();
-            void WriteVariable(Variable *var, GateRef value);
-            GateRef ReadVariable(Variable *var);
-            void Bind();
-            void MergeAllControl();
-            void MergeAllDepend();
-            void AppendPredecessor(LabelImpl *predecessor);
-            std::vector<LabelImpl *> GetPredecessors() const
-            {
-                return localPreds_;
-            }
-            void SetControl(GateRef control)
-            {
-                control_ = control;
-            }
-            void SetPreControl(GateRef control)
-            {
-                predeControl_ = control;
-            }
-            void MergeControl(GateRef control)
-            {
-                if (predeControl_ == -1) {
-                    predeControl_ = control;
-                    control_ = predeControl_;
-                } else {
-                    otherPredeControls_.push_back(control);
-                }
-            }
-            GateRef GetControl() const
-            {
-                return control_;
-            }
-            void SetDepend(GateRef depend)
-            {
-                depend_ = depend;
-            }
-            GateRef GetDepend() const
-            {
-                return depend_;
-            }
-
-        private:
-            bool IsNeedSeal() const;
-            bool IsSealed() const
-            {
-                return isSealed_;
-            }
-            bool IsLoopHead() const;
-            bool IsControlCase() const;
-            GateRef ReadVariableRecursive(Variable *var);
-            Environment *env_;
-            GateRef control_;
-            GateRef predeControl_ {-1};
-            GateRef dependRelay_ {-1};
-            GateRef depend_ {-1};
-            GateRef loopDepend_ {-1};
-            std::vector<GateRef> otherPredeControls_;
-            bool isSealed_ {false};
-            std::map<Variable *, GateRef> valueMap_;
-            std::vector<GateRef> phies_;
-            std::vector<LabelImpl *> localPreds_;
-            std::map<Variable *, GateRef> incompletePhis_;
-        };
-        explicit Label() = default;
-        explicit Label(Environment *env);
-        explicit Label(LabelImpl *impl) : impl_(impl) {}
-        ~Label() = default;
-        Label(Label const &label) = default;
-        Label &operator=(Label const &label) = default;
-        Label(Label &&label) = default;
-        Label &operator=(Label &&label) = default;
-        void Seal();
-        void WriteVariable(Variable *var, GateRef value);
-        GateRef ReadVariable(Variable *var);
-        void Bind();
-        void MergeAllControl();
-        void MergeAllDepend();
-        void AppendPredecessor(const Label *predecessor);
-        std::vector<Label> GetPredecessors() const;
-        void SetControl(GateRef control);
-        void SetPreControl(GateRef control);
-        void MergeControl(GateRef control);
-        GateRef GetControl() const;
-        GateRef GetDepend() const;
-        void SetDepend(GateRef depend);
-
-    private:
-        friend class Environment;
-        LabelImpl *GetRawLabel() const
-        {
-            return impl_;
-        }
-        LabelImpl *impl_ {nullptr};
-    };
-
-    class Environment {
-    public:
-        using LabelImpl = Label::LabelImpl;
-        explicit Environment(size_t arguments, Circuit *circuit);
-        ~Environment();
-        NO_COPY_SEMANTIC(Environment);
-        NO_MOVE_SEMANTIC(Environment);
-        Label *GetCurrentLabel() const
-        {
-            return currentLabel_;
-        }
-        void SetCurrentLabel(Label *label)
-        {
-            currentLabel_ = label;
-        }
-        CircuitBuilder &GetBuilder()
-        {
-            return builder_;
-        }
-        Circuit *GetCircuit()
-        {
-            return circuit_;
-        }
-        void SetCompilationConfig(const CompilationConfig *cfg)
-        {
-            compCfg_ = cfg;
-        }
-
-        const CompilationConfig *GetCompilationConfig() const
-        {
-            return compCfg_;
-        }
-
-        inline bool Is32Bit() const
-        {
-            return compCfg_->Is32Bit();
-        }
-
-        inline bool IsAArch64() const
-        {
-            return compCfg_->IsAArch64();
-        }
-
-        inline bool IsAmd64() const
-        {
-            return compCfg_->IsAmd64();
-        }
-
-        inline bool IsArch64Bit() const
-        {
-            return compCfg_->IsAmd64() ||  compCfg_->IsAArch64();
-        }
-
-        inline bool IsAsmInterp() const
-        {
-            return circuit_->GetFrameType() == FrameType::INTERPRETER_FRAME;
-        }
-
-        inline bool IsArch32Bit() const
-        {
-            return compCfg_->Is32Bit();
-        }
-
-        GateType GetGateType(GateRef gate) const;
-        Label GetLabelFromSelector(GateRef sel);
-        void AddSelectorToLabel(GateRef sel, Label label);
-        LabelImpl *NewLabel(Environment *env, GateRef control = -1);
-        void SubCfgEntry(Label *entry);
-        void SubCfgExit();
-        void SetFrameType(FrameType type);
-        GateRef GetArgument(size_t index) const;
-
-    private:
-        const CompilationConfig *compCfg_;
-        Label *currentLabel_ {nullptr};
-        Circuit *circuit_;
-        CircuitBuilder builder_;
-        std::unordered_map<GateRef, LabelImpl *> phiToLabels_;
-        std::vector<GateRef> arguments_;
-        Label entry_;
-        std::vector<LabelImpl *> rawLabels_;
-        std::stack<Label *> stack_;
-    };
-
-    class Variable {
-    public:
-        Variable(Environment *env, VariableType type, uint32_t id, GateRef value) : id_(id), type_(type), env_(env)
-        {
-            Bind(value);
-            env_->GetCurrentLabel()->WriteVariable(this, value);
-        }
-        ~Variable() = default;
-        NO_MOVE_SEMANTIC(Variable);
-        NO_COPY_SEMANTIC(Variable);
-        void Bind(GateRef value)
-        {
-            currentValue_ = value;
-        }
-        GateRef Value() const
-        {
-            return currentValue_;
-        }
-        VariableType Type() const
-        {
-            return type_;
-        }
-        bool IsBound() const
-        {
-            return currentValue_ != 0;
-        }
-        Variable &operator=(const GateRef value)
-        {
-            env_->GetCurrentLabel()->WriteVariable(this, value);
-            Bind(value);
-            return *this;
-        }
-        GateRef operator*()
-        {
-            return env_->GetCurrentLabel()->ReadVariable(this);
-        }
-        GateRef AddPhiOperand(GateRef val);
-        GateRef AddOperandToSelector(GateRef val, size_t idx, GateRef in);
-        GateRef TryRemoveTrivialPhi(GateRef phi);
-        void RerouteOuts(const std::vector<Out *> &outs, Gate *newGate);
-        bool IsSelector(GateRef gate) const
-        {
-            return env_->GetCircuit()->IsSelector(gate);
-        }
-        bool IsSelector(const Gate *gate) const
-        {
-            return gate->GetOpCode() == OpCode::VALUE_SELECTOR;
-        }
-        uint32_t GetId() const
-        {
-            return id_;
-        }
-
-    private:
-        uint32_t id_;
-        VariableType type_;
-        GateRef currentValue_ {0};
-        Environment *env_;
-    };
-
-    class SubCircuitScope {
-    public:
-        explicit SubCircuitScope(Environment *env, Label *entry) : env_(env)
-        {
-            env_->SubCfgEntry(entry);
-        }
-        ~SubCircuitScope()
-        {
-            env_->SubCfgExit();
-        }
-
-    private:
-        Environment *env_;
-    };
-
     explicit Stub(const char *name, int argCount, Circuit *circuit)
-        : env_(argCount, circuit), methodName_(name)
+        : builder_(circuit), env_(argCount, &builder_), methodName_(name)
     {
     }
     virtual ~Stub() = default;
@@ -317,7 +48,7 @@ public:
     }
     int NextVariableId()
     {
-        return nextVariableId_++;
+        return env_.NextVariableId();
     }
     std::string GetMethodName() const
     {
@@ -714,9 +445,9 @@ private:
     GateRef FastAddSubAndMul(GateRef left, GateRef right);
     GateRef FastBinaryOp(GateRef left, GateRef right,
                          const BinaryOperation& intOp, const BinaryOperation& floatOp);
+    CircuitBuilder builder_;
     Environment env_;
     std::string methodName_;
-    int nextVariableId_ {0};
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_STUB_H
