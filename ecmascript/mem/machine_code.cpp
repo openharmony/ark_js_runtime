@@ -47,7 +47,7 @@ bool AotCodeInfo::DeserializeForStub(JSThread *thread, const std::string &filena
     //  then MachineCode will support movable, code is saved to MachineCode and stackmap is saved
     // to different heap which will be freed when stackmap is parsed by EcmaVM is started.
     if (!VerifyFilePath(filename)) {
-        COMPILER_LOG(FATAL) << "Can not load stub file from default path [ "  << filename << " ], "
+        COMPILER_LOG(ERROR) << "Can not load stub file from default path [ "  << filename << " ], "
             << "please execute ark_stub_compiler with options --com-stub-out and --bc-stub-out manually.";
         return false;
     }
