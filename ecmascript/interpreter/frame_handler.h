@@ -180,8 +180,6 @@ private:
 
 private:
     JSTaggedType *sp_ {nullptr};
-    uint8_t *pc_ {nullptr};
-    JSTaggedValue function_ {JSTaggedValue::Hole()};
     const JSThread *thread_ {nullptr};
 };
 } // namespace ecmascript

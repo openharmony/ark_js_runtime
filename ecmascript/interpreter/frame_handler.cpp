@@ -122,47 +122,16 @@ uintptr_t FrameHandler::GetPrevFrameCallSiteSp(const JSTaggedType *sp)
 
 ARK_INLINE void FrameHandler::AdvanceToInterpretedFrame()
 {
-    for (; HasFrame() && !(IsInterpretedFrame() || IsInterpretedEntryFrame()); PrevFrame());
-    if (!HasFrame()) {
+    if (!thread_->IsAsmInterpreter()) {
         return;
     }
-    auto type = GetFrameType(sp_);
-    switch (type) {
-        case FrameType::BUILTIN_FRAME: {
-            auto frame = BuiltinFrame::GetFrameFromSp(sp_);
-            function_ = frame->function;
-            pc_ = nullptr;
-            break;
-        }
-        case FrameType::ASM_INTERPRETER_FRAME:
-        case FrameType::INTERPRETER_CONSTRUCTOR_FRAME: {
-            auto frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
-            function_ = frame->function;
-            pc_ = const_cast<uint8_t*>(frame->pc);
-            break;
-        }
-        case FrameType::INTERPRETER_FRAME:
-        case FrameType::INTERPRETER_FAST_NEW_FRAME: {
-            auto frame = InterpretedFrame::GetFrameFromSp(sp_);
-            function_ = frame->function;
-            pc_ = const_cast<uint8_t*>(frame->pc);
-            break;
-        }
-        case FrameType::INTERPRETER_ENTRY_FRAME:
-            break;
-        case FrameType::OPTIMIZED_FRAME:
-        case FrameType::LEAVE_FRAME:
-        case FrameType::LEAVE_FRAME_WITH_ARGV:
-        case FrameType::OPTIMIZED_ENTRY_FRAME:
-        default:
-            UNREACHABLE();
-    }
+    for (; HasFrame() && !(IsInterpretedFrame() || IsInterpretedEntryFrame()); PrevFrame());
 }
 
 ARK_INLINE void FrameHandler::PrevInterpretedFrame()
 {
     PrevFrame();
-    AdvanceToInterpretedFrame();
+    for (; HasFrame() && !(IsInterpretedFrame() || IsInterpretedEntryFrame()); PrevFrame());
 }
 
 JSTaggedType* FrameHandler::GetPrevInterpretedFrame()
@@ -230,13 +199,30 @@ JSMethod *FrameHandler::GetMethod() const
 JSTaggedValue FrameHandler::GetFunction() const
 {
     ASSERT(IsInterpretedFrame());
-    return function_;
+    if (thread_->IsAsmInterpreter()) {
+        if (IsAsmInterpretedFrame()) {
+            auto *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+            return frame->function;
+         } else {
+            auto *frame = BuiltinFrame::GetFrameFromSp(sp_);
+            return frame->function;
+        }
+    } else {
+        auto *frame = InterpretedFrame::GetFrameFromSp(sp_);
+        return frame->function;
+    }
 }
 
 const uint8_t *FrameHandler::GetPc() const
 {
     ASSERT(IsInterpretedFrame());
-    return pc_;
+    if (IsAsmInterpretedFrame()) {
+        auto *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+        return frame->pc;
+    } else {
+        auto *frame = InterpretedFrame::GetFrameFromSp(sp_);
+        return frame->pc;
+    }
 }
 
 ConstantPool *FrameHandler::GetConstpool() const
