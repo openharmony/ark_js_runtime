@@ -26,282 +26,12 @@
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript::kungfu {
-Stub::Label::Label(Environment *env)
-{
-    impl_ = env->NewLabel(env);
-}
-
-GateRef Stub::Variable::AddPhiOperand(GateRef val)
-{
-    ASSERT(IsSelector(val));
-    Label label = env_->GetLabelFromSelector(val);
-    size_t idx = 0;
-    for (auto pred : label.GetPredecessors()) {
-        auto preVal = pred.ReadVariable(this);
-        ASSERT(!env_->GetCircuit()->GetOpCode(preVal).IsNop());
-        idx++;
-        val = AddOperandToSelector(val, idx, preVal);
-    }
-    return TryRemoveTrivialPhi(val);
-}
-
-GateRef Stub::Variable::AddOperandToSelector(GateRef val, size_t idx, GateRef in)
-{
-    env_->GetCircuit()->NewIn(val, idx, in);
-    return val;
-}
-
-GateRef Stub::Variable::TryRemoveTrivialPhi(GateRef phiVal)
-{
-    Gate *phi = env_->GetCircuit()->LoadGatePtr(phiVal);
-    Gate *same = nullptr;
-    for (size_t i = 1; i < phi->GetNumIns(); ++i) {
-        In *phiIn = phi->GetIn(i);
-        Gate *op = (!phiIn->IsGateNull()) ? phiIn->GetGate() : nullptr;
-        if (op == same || op == phi) {
-            continue;  // unique value or self-reference
-        }
-        if (same != nullptr) {
-            return phiVal;  // the phi merges at least two valusses: not trivial
-        }
-        same = op;
-    }
-    if (same == nullptr) {
-        // the phi is unreachable or in the start block
-        GateType type = env_->GetCircuit()->GetGateType(phiVal);
-        same = env_->GetCircuit()->LoadGatePtr(env_->GetBuilder().UndefineConstant(type));
-    }
-    auto same_addr_shift = env_->GetCircuit()->SaveGatePtr(same);
-
-    // remove the trivial phi
-    // get all users of phi except self
-    std::vector<Out *> outs;
-    if (!phi->IsFirstOutNull()) {
-        Out *phiOut = phi->GetFirstOut();
-        while (!phiOut->IsNextOutNull()) {
-            if (phiOut->GetGate() != phi) {
-                // remove phi
-                outs.push_back(phiOut);
-            }
-            phiOut = phiOut->GetNextOut();
-        }
-        // save last phi out
-        if (phiOut->GetGate() != phi) {
-            outs.push_back(phiOut);
-        }
-    }
-    // reroute all outs of phi to same and remove phi
-    RerouteOuts(outs, same);
-    phi->DeleteGate();
-
-    // try to recursiveby remove all phi users, which might have vecome trivial
-    for (auto out : outs) {
-        if (IsSelector(out->GetGate())) {
-            auto out_addr_shift = env_->GetCircuit()->SaveGatePtr(out->GetGate());
-            auto result = TryRemoveTrivialPhi(out_addr_shift);
-            if (same_addr_shift == out_addr_shift) {
-                same_addr_shift = result;
-            }
-        }
-    }
-    return same_addr_shift;
-}
-
-void Stub::Variable::RerouteOuts(const std::vector<Out *> &outs, Gate *newGate)
-{
-    // reroute all outs to new node
-    for (auto out : outs) {
-        size_t idx = out->GetIndex();
-        out->GetGate()->ModifyIn(idx, newGate);
-    }
-}
-
-void LabelImpl::Seal()
-{
-    for (auto &[variable, gate] : incompletePhis_) {
-        variable->AddPhiOperand(gate);
-    }
-    isSealed_ = true;
-}
-
-void LabelImpl::WriteVariable(Variable *var, GateRef value)
-{
-    valueMap_[var] = value;
-}
-
-GateRef LabelImpl::ReadVariable(Variable *var)
-{
-    if (valueMap_.find(var) != valueMap_.end()) {
-        auto result = valueMap_.at(var);
-        if (!env_->GetCircuit()->GetOpCode(result).IsNop()) {
-            return result;
-        }
-    }
-    return ReadVariableRecursive(var);
-}
-
-GateRef LabelImpl::ReadVariableRecursive(Variable *var)
-{
-    GateRef val;
-    MachineType machineType = CircuitBuilder::GetMachineTypeFromVariableType(var->Type());
-    if (!IsSealed()) {
-        // only loopheader gate will be not sealed
-        int valueCounts = static_cast<int>(localPreds_.size()) + 1;
-        if (machineType == MachineType::NOVALUE) {
-            val = env_->GetBuilder().Selector(
-                OpCode(OpCode::DEPEND_SELECTOR), predeControl_, {}, valueCounts, var->Type());
-        } else {
-            val = env_->GetBuilder().Selector(
-                OpCode(OpCode::VALUE_SELECTOR), machineType, predeControl_, {}, valueCounts, var->Type());
-        }
-        env_->AddSelectorToLabel(val, Label(this));
-        incompletePhis_[var] = val;
-    } else if (localPreds_.size() == 1) {
-        val = localPreds_[0]->ReadVariable(var);
-    } else {
-        if (machineType == MachineType::NOVALUE) {
-            val = env_->GetBuilder().Selector(OpCode(OpCode::DEPEND_SELECTOR),
-                                              predeControl_, {}, localPreds_.size(), var->Type());
-        } else {
-            val = env_->GetBuilder().Selector(
-                OpCode(OpCode::VALUE_SELECTOR), machineType, predeControl_, {}, localPreds_.size(), var->Type());
-        }
-        env_->AddSelectorToLabel(val, Label(this));
-        WriteVariable(var, val);
-        val = var->AddPhiOperand(val);
-    }
-    WriteVariable(var, val);
-    return val;
-}
-
-void LabelImpl::Bind()
-{
-    ASSERT(!localPreds_.empty());
-    if (IsLoopHead()) {
-        // 2 means input number of depend selector gate
-        loopDepend_ = env_->GetBuilder().Selector(OpCode(OpCode::DEPEND_SELECTOR), predeControl_, {}, 2);
-        env_->GetCircuit()->NewIn(loopDepend_, 1, localPreds_[0]->GetDepend());
-        depend_ = loopDepend_;
-    }
-    if (IsNeedSeal()) {
-        Seal();
-        MergeAllControl();
-        MergeAllDepend();
-    }
-}
-
-void LabelImpl::MergeAllControl()
-{
-    if (localPreds_.size() < 2) {  // 2 : Loop Head only support two localPreds_
-        return;
-    }
-
-    if (IsLoopHead()) {
-        ASSERT(localPreds_.size() == 2);  // 2 : Loop Head only support two localPreds_
-        ASSERT(otherPredeControls_.size() == 1);
-        env_->GetCircuit()->NewIn(predeControl_, 1, otherPredeControls_[0]);
-        return;
-    }
-
-    // merge all control of localPreds_
-    std::vector<GateRef> inGates(localPreds_.size());
-    size_t i = 0;
-    ASSERT(predeControl_ != -1);
-    ASSERT((otherPredeControls_.size() + 1) == localPreds_.size());
-    inGates[i++] = predeControl_;
-    for (auto in : otherPredeControls_) {
-        inGates[i++] = in;
-    }
-
-    GateRef merge = env_->GetBuilder().Merge(inGates.data(), inGates.size());
-    predeControl_ = merge;
-    control_ = merge;
-}
-
-void LabelImpl::MergeAllDepend()
-{
-    if (IsControlCase()) {
-        // Add depend_relay to current label
-        auto denpendEntry = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY));
-        dependRelay_ = env_->GetBuilder().DependRelay(predeControl_, denpendEntry);
-    }
-
-    if (localPreds_.size() < 2) {  // 2 : Loop Head only support two localPreds_
-        depend_ = localPreds_[0]->GetDepend();
-        if (dependRelay_ != -1) {
-            depend_ = env_->GetBuilder().DependAnd({ depend_, dependRelay_ });
-        }
-        return;
-    }
-    if (IsLoopHead()) {
-        ASSERT(localPreds_.size() == 2);  // 2 : Loop Head only support two localPreds_
-        // Add loop depend to in of depend_seclector
-        ASSERT(loopDepend_ != -1);
-        // 2 mean 3rd input gate for loopDepend_(depend_selector)
-        env_->GetCircuit()->NewIn(loopDepend_, 2, localPreds_[1]->GetDepend());
-        return;
-    }
-
-    //  Merge all depends to depend_seclector
-    std::vector<GateRef> dependsList;
-    for (auto prede : GetPredecessors()) {
-        dependsList.push_back(prede->GetDepend());
-    }
-    depend_ = env_->GetBuilder().Selector(OpCode(OpCode::DEPEND_SELECTOR),
-        predeControl_, dependsList, dependsList.size());
-}
-
-void LabelImpl::AppendPredecessor(LabelImpl *predecessor)
-{
-    if (predecessor != nullptr) {
-        localPreds_.push_back(predecessor);
-    }
-}
-
-bool LabelImpl::IsNeedSeal() const
-{
-    auto control = env_->GetCircuit()->LoadGatePtr(predeControl_);
-    auto stateCount = control->GetOpCode().GetStateCount(control->GetBitField());
-    return localPreds_.size() >= stateCount;
-}
-
-bool LabelImpl::IsLoopHead() const
-{
-    return env_->GetCircuit()->IsLoopHead(predeControl_);
-}
-
-bool LabelImpl::IsControlCase() const
-{
-    return env_->GetCircuit()->IsControlCase(predeControl_);
-}
-
-Stub::Environment::Environment(size_t arguments, Circuit *circuit)
-    : circuit_(circuit), builder_(circuit), arguments_(arguments)
-{
-    for (size_t i = 0; i < arguments; i++) {
-        arguments_[i] = builder_.Arguments(i);
-    }
-    entry_ = Label(NewLabel(this, Circuit::GetCircuitRoot(OpCode(OpCode::STATE_ENTRY))));
-    currentLabel_ = &entry_;
-    currentLabel_->Seal();
-    auto depend_entry = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY));
-    currentLabel_->SetDepend(depend_entry);
-    compCfg_ = nullptr;
-}
-
-Stub::Environment::~Environment()
-{
-    for (auto label : rawLabels_) {
-        delete label;
-    }
-}
-
 void Stub::Jump(Label *label)
 {
     ASSERT(label);
     auto currentLabel = env_.GetCurrentLabel();
     auto currentControl = currentLabel->GetControl();
-    auto jump = env_.GetBuilder().Goto(currentControl);
+    auto jump = env_.GetBulder()->Goto(currentControl);
     currentLabel->SetControl(jump);
     label->AppendPredecessor(currentLabel);
     label->MergeControl(currentLabel->GetControl());
@@ -312,12 +42,12 @@ void Stub::Branch(GateRef condition, Label *trueLabel, Label *falseLabel)
 {
     auto currentLabel = env_.GetCurrentLabel();
     auto currentControl = currentLabel->GetControl();
-    GateRef ifBranch = env_.GetBuilder().Branch(currentControl, condition);
+    GateRef ifBranch = env_.GetBulder()->Branch(currentControl, condition);
     currentLabel->SetControl(ifBranch);
-    GateRef ifTrue = env_.GetBuilder().IfTrue(ifBranch);
+    GateRef ifTrue = env_.GetBulder()->IfTrue(ifBranch);
     trueLabel->AppendPredecessor(env_.GetCurrentLabel());
     trueLabel->MergeControl(ifTrue);
-    GateRef ifFalse = env_.GetBuilder().IfFalse(ifBranch);
+    GateRef ifFalse = env_.GetBulder()->IfFalse(ifBranch);
     falseLabel->AppendPredecessor(env_.GetCurrentLabel());
     falseLabel->MergeControl(ifFalse);
     env_.SetCurrentLabel(nullptr);
@@ -327,18 +57,18 @@ void Stub::Switch(GateRef index, Label *defaultLabel, int64_t *keysValue, Label 
 {
     auto currentLabel = env_.GetCurrentLabel();
     auto currentControl = currentLabel->GetControl();
-    GateRef switchBranch = env_.GetBuilder().SwitchBranch(currentControl, index, numberOfKeys);
+    GateRef switchBranch = env_.GetBulder()->SwitchBranch(currentControl, index, numberOfKeys);
     currentLabel->SetControl(switchBranch);
     for (int i = 0; i < numberOfKeys; i++) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        GateRef switchCase = env_.GetBuilder().SwitchCase(switchBranch, keysValue[i]);
+        GateRef switchCase = env_.GetBulder()->SwitchCase(switchBranch, keysValue[i]);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         keysLabel[i].AppendPredecessor(currentLabel);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         keysLabel[i].MergeControl(switchCase);
     }
 
-    GateRef defaultCase = env_.GetBuilder().DefaultCase(switchBranch);
+    GateRef defaultCase = env_.GetBulder()->DefaultCase(switchBranch);
     defaultLabel->AppendPredecessor(currentLabel);
     defaultLabel->MergeControl(defaultCase);
     env_.SetCurrentLabel(nullptr);
@@ -347,7 +77,7 @@ void Stub::Switch(GateRef index, Label *defaultLabel, int64_t *keysValue, Label 
 void Stub::LoopBegin(Label *loopHead)
 {
     ASSERT(loopHead);
-    auto loopControl = env_.GetBuilder().LoopBegin(loopHead->GetControl());
+    auto loopControl = env_.GetBulder()->LoopBegin(loopHead->GetControl());
     loopHead->SetControl(loopControl);
     loopHead->SetPreControl(loopControl);
     loopHead->Bind();
@@ -359,7 +89,7 @@ void Stub::LoopEnd(Label *loopHead)
     ASSERT(loopHead);
     auto currentLabel = env_.GetCurrentLabel();
     auto currentControl = currentLabel->GetControl();
-    auto loopend = env_.GetBuilder().LoopEnd(currentControl);
+    auto loopend = env_.GetBulder()->LoopEnd(currentControl);
     currentLabel->SetControl(loopend);
     loopHead->AppendPredecessor(currentLabel);
     loopHead->MergeControl(loopend);
