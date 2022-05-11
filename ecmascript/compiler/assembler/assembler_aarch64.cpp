@@ -56,7 +56,7 @@ LogicalImmediate LogicalImmediate::Create(uint64_t imm, int width)
     imm &= mask;
 
     if (IsShiftedMask_64(imm)) {
-        i = static_cast<int>(CountTrailingZeros64(imm));
+        i = CountTrailingZeros64(imm);
         ASSERT_PRINT(i < RegXSize, "undefined behavior");
         cto = CountTrailingOnes64(imm >> i);
     } else {
@@ -816,7 +816,7 @@ int32_t AssemblerAarch64::LinkAndGetInstOffsetToLabel(Label *label)
 {
     int32_t offset = 0;
     if (label->IsBound()) {
-        offset = label->GetPos() - GetCurrentPosition();
+        offset = static_cast<int32_t>(label->GetPos() - GetCurrentPosition());
     } else {
         if (label->IsLinked()) {
             offset = static_cast<int32_t>(label->GetLinkedPos() - GetCurrentPosition());
@@ -855,7 +855,7 @@ int32_t AssemblerAarch64::GetLinkOffsetFromBranchInst(int32_t pos)
     return immOffSet;
 }
 
-uint32_t AssemblerAarch64::ImmBranch(uint32_t branchCode)
+int32_t AssemblerAarch64::ImmBranch(uint32_t branchCode)
 {
     int32_t immOffset = 0;
     if ((branchCode & BranchFMask) == BranchOpCode::Branch) {
