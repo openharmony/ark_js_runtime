@@ -22,6 +22,21 @@ namespace panda {
 namespace ecmascript {
 enum BarrierMode { SKIP_BARRIER, WRITE_BARRIER, READ_BARRIER };
 
+/*
+ * TriggerGCType is categorized according to the scope the GC expects to cover.
+ * Different GC algorithms may be applied to different GC types.
+ * For example, SemiSpace GC for young generation GC, Mark-Sweep-Compact for full GC, etc.
+ */
+enum TriggerGCType {
+    // GC is expected to cover young space only;
+    YOUNG_GC,
+    // GC is expected to cover young space and necessary old spaces;
+    OLD_GC,
+    // GC is expected to cover all valid heap spaces;
+    FULL_GC,
+    GC_TYPE_LAST
+};
+
 constexpr size_t NUM_MANDATORY_JSFUNC_ARGS = 3;
 
 using Address = uintptr_t;

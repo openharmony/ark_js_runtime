@@ -354,7 +354,7 @@ public:
 
     static void Initialize();
 
-    static void GetCSigns(std::vector<CallSignature*>& callSigns);
+    static void GetCSigns(std::vector<const CallSignature*>& callSigns);
 
     static const CallSignature *Get(size_t index)
     {

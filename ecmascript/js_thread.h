@@ -309,7 +309,7 @@ public:
         return glueData_.bcStubEntries_.GetAddr();
     }
 
-    void LoadStubsFromFile(std::string &fileName);
+    void LoadStubsFromFile(std::string &fileName, bool isBCStub = false);
 
     void CheckSwitchDebuggerBCStub();
 

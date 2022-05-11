@@ -21,7 +21,6 @@
 
 #include "assembler/assembler.h"
 #include "ecmascript/compiler/call_signature.h"
-#include "ecmascript/stubs/runtime_stubs.h"
 
 namespace panda::ecmascript::kungfu {
 class AssemblerModule {
@@ -50,7 +49,7 @@ public:
 
     void SetUpForAsmStubs();
 
-    const std::vector<CallSignature*> &GetCSigns() const
+    const std::vector<const CallSignature*> &GetCSigns() const
     {
         return asmCallSigns_;
     }
@@ -66,7 +65,7 @@ public:
     }
     void GenerateStubsX64(Chunk* chunk);
 private:
-    std::vector<CallSignature *> asmCallSigns_;
+    std::vector<const CallSignature *> asmCallSigns_;
     std::vector<size_t> offsetTable_;
     size_t codeBufferOffset_ {0};
     uint8_t* buffer_ {nullptr};

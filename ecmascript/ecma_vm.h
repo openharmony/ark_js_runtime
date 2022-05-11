@@ -16,25 +16,14 @@
 #ifndef ECMASCRIPT_ECMA_VM_H
 #define ECMASCRIPT_ECMA_VM_H
 
-#include <tuple>
-
 #include "ecmascript/base/config.h"
-#include "ecmascript/ecma_string_table.h"
 #include "ecmascript/js_handle.h"
-#include "ecmascript/js_method.h"
 #include "ecmascript/js_runtime_options.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/mem/chunk_containers.h"
-#include "ecmascript/mem/gc_stats.h"
-#include "ecmascript/mem/heap.h"
-#include "ecmascript/mem/mem.h"
-#include "ecmascript/mem/space.h"
-#include "ecmascript/mem/visitor.h"
-#include "ecmascript/taskpool/task.h"
-#include "ecmascript/tooling/interface/js_debugger_manager.h"
-#include "ecmascript/snapshot/mem/snapshot_env.h"
-#include "libpandabase/macros.h"
+#include "ecmascript/taskpool/taskpool.h"
+#include "ecmascript/js_thread.h"
 
 namespace panda {
 class JSNApi;
@@ -51,12 +40,16 @@ class Heap;
 class HeapTracker;
 class JSNativePointer;
 class Program;
+class GCStats;
 class CpuProfiler;
 class RegExpExecResultCache;
 class JSPromise;
 enum class PromiseRejectionEvent : uint8_t;
 class JSPandaFileManager;
 class JSPandaFile;
+class EcmaStringTable;
+class SnapshotEnv;
+class SnapshotSerialize;
 class SnapshotProcessor;
 namespace job {
 class MicroJobQueue;

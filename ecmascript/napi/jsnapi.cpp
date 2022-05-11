@@ -56,6 +56,7 @@
 #include "ecmascript/module/js_module_source_text.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
+#include "ecmascript/tooling/interface/js_debugger_manager.h"
 #include "generated/base_options.h"
 
 #include "utils/pandargs.h"
