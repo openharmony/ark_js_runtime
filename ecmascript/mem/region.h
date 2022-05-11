@@ -57,7 +57,8 @@ enum RegionFlags {
 class Region {
 public:
     Region(Space *space, JSThread *thread, uintptr_t allocateBase, uintptr_t begin, uintptr_t end, RegionFlags flags)
-        : space_(space),
+        : flags_(0),
+          space_(space),
           thread_(thread),
           allocateBase_(allocateBase),
           end_(end),
