@@ -52,6 +52,7 @@ public:
 
     // FrameHandler
     static uint32_t GetStackDepth(const EcmaVM *ecmaVm);
+    static std::shared_ptr<FrameHandler> NewFrameHandler(const EcmaVM *ecmaVm);
     static bool StackWalker(const EcmaVM *ecmaVm, std::function<StackState(const FrameHandler *)> func);
     static uint32_t GetBytecodeOffset(const EcmaVM *ecmaVm);
     static JSMethod *GetMethod(const EcmaVM *ecmaVm);
@@ -60,6 +61,7 @@ public:
     static uint32_t GetBytecodeOffset(const FrameHandler *frameHandler);
     static JSMethod *GetMethod(const FrameHandler *frameHandler);
     static JSTaggedValue GetEnv(const FrameHandler *frameHandler);
+    static JSTaggedType *GetSp(const FrameHandler *frameHandler);
     static Local<JSValueRef> GetVRegValue(const EcmaVM *ecmaVm,
         const FrameHandler *frameHandler, size_t index);
 
@@ -85,7 +87,8 @@ public:
     static bool RemoveBreakpoint(JSDebugger *debugger, const JSPtLocation &location);
     static void InitJSDebugger(JSDebugger *debugger);
     static void HandleUncaughtException(const EcmaVM *ecmaVm, CString &message);
-    static Local<JSValueRef> EvaluateViaFuncCall(EcmaVM *ecmaVm, const Local<FunctionRef> &funcRef);
+    static Local<JSValueRef> EvaluateViaFuncCall(EcmaVM *ecmaVm, const Local<FunctionRef> &funcRef,
+        std::shared_ptr<FrameHandler> &frameHandler);
     static Local<FunctionRef> GenerateFuncFromBuffer(const EcmaVM *ecmaVm, const void *buffer, size_t size,
         std::string_view entryPoint);
 

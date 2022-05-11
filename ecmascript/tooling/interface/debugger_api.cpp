@@ -59,6 +59,11 @@ uint32_t DebuggerApi::GetStackDepth(const EcmaVM *ecmaVm)
     return count;
 }
 
+std::shared_ptr<FrameHandler> DebuggerApi::NewFrameHandler(const EcmaVM *ecmaVm)
+{
+    return std::make_shared<FrameHandler>(ecmaVm->GetJSThread());
+}
+
 bool DebuggerApi::StackWalker(const EcmaVM *ecmaVm, std::function<StackState(const FrameHandler *)> func)
 {
     FrameHandler frameHandler(ecmaVm->GetJSThread());
@@ -113,6 +118,11 @@ JSMethod *DebuggerApi::GetMethod(const FrameHandler *frameHandler)
 JSTaggedValue DebuggerApi::GetEnv(const FrameHandler *frameHandler)
 {
     return frameHandler->GetEnv();
+}
+
+JSTaggedType *DebuggerApi::GetSp(const FrameHandler *frameHandler)
+{
+    return frameHandler->GetSp();
 }
 
 Local<JSValueRef> DebuggerApi::GetVRegValue(const EcmaVM *ecmaVm,
@@ -316,15 +326,15 @@ Local<FunctionRef> DebuggerApi::GenerateFuncFromBuffer(const EcmaVM *ecmaVm, con
     return JSNApiHelper::ToLocal<FunctionRef>(JSHandle<JSTaggedValue>(ecmaVm->GetJSThread(), func));
 }
 
-Local<JSValueRef> DebuggerApi::EvaluateViaFuncCall(EcmaVM *ecmaVm, const Local<FunctionRef> &funcRef)
+Local<JSValueRef> DebuggerApi::EvaluateViaFuncCall(EcmaVM *ecmaVm, const Local<FunctionRef> &funcRef,
+    std::shared_ptr<FrameHandler> &frameHandler)
 {
     JSNApi::EnableUserUncaughtErrorHandler(ecmaVm);
 
     JsDebuggerManager *mgr = ecmaVm->GetJsDebuggerManager();
     bool prevDebugMode = mgr->IsDebugMode();
-    mgr->SetEvalFrameHandler(ecmaVm->GetJSThread());
-    // in order to catch exception
-    mgr->SetDebugMode(false);
+    mgr->SetEvalFrameHandler(frameHandler);
+    mgr->SetDebugMode(false); // in order to catch exception
     std::vector<Local<JSValueRef>> args;
     auto result = funcRef->Call(ecmaVm, JSValueRef::Undefined(ecmaVm), args.data(), args.size());
     mgr->SetDebugMode(prevDebugMode);

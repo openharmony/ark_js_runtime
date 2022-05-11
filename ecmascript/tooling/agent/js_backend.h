@@ -119,6 +119,7 @@ private:
     JSPtExtractor *GetExtractor(const JSPandaFile *jsPandaFile);
     JSPtExtractor *GetExtractor(const CString &url);
     bool GenerateCallFrame(CallFrame *callFrame, const FrameHandler *frameHandler, CallFrameId frameId);
+    void SaveCallFrameHandler(const FrameHandler *frameHandler);
     std::unique_ptr<Scope> GetLocalScopeChain(const FrameHandler *frameHandler,
         std::unique_ptr<RemoteObject> *thisObj);
     void GetLocalVariables(const FrameHandler *frameHandler, const JSMethod *method,
@@ -126,6 +127,7 @@ private:
     void CacheObjectIfNeeded(const Local<JSValueRef> &valRef, std::unique_ptr<RemoteObject> *remoteObj);
     void CleanUpOnPaused();
     std::unique_ptr<Scope> GetGlobalScopeChain();
+    void UpdateScopeObject(const FrameHandler *frameHandler, const CString &varName, const Local<JSValueRef> &newVal);
     std::optional<CString> ConvertToLocal(Local<JSValueRef> &taggedValue, std::unique_ptr<RemoteObject> *result,
         const CString &varValue);
     std::optional<CString> SetVregValue(int32_t regIndex, const CString &varValue,
@@ -155,6 +157,8 @@ private:
     CUnorderedMap<CString, JSPtExtractor *> extractors_ {};
     CUnorderedMap<ScriptId, std::unique_ptr<PtScript>> scripts_ {};
     CUnorderedMap<RemoteObjectId, Global<JSValueRef>> propertiesPair_ {};
+    CUnorderedMap<JSTaggedType *, RemoteObjectId> scopeObjects_ {};
+    CVector<std::shared_ptr<FrameHandler>> callFrameHandlers_;
     RemoteObjectId curObjectId_ {0};
     bool pauseOnException_ {false};
     bool pauseOnNextByteCode_ {false};
