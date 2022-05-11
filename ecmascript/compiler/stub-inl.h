@@ -36,147 +36,27 @@
 #include "mem/region_space.h"
 
 namespace panda::ecmascript::kungfu {
-using LabelImpl = Stub::Label::LabelImpl;
 using JSFunction = panda::ecmascript::JSFunction;
 using PropertyBox = panda::ecmascript::PropertyBox;
 
-inline void Stub::Label::Seal()
-{
-    return impl_->Seal();
-}
-inline void Stub::Label::WriteVariable(Stub::Variable *var, GateRef value)
-{
-    impl_->WriteVariable(var, value);
-}
-inline GateRef Stub::Label::ReadVariable(Stub::Variable *var)
-{
-    return impl_->ReadVariable(var);
-}
-inline void Stub::Label::Bind()
-{
-    impl_->Bind();
-}
-inline void Stub::Label::MergeAllControl()
-{
-    impl_->MergeAllControl();
-}
-inline void Stub::Label::MergeAllDepend()
-{
-    impl_->MergeAllDepend();
-}
-inline void Stub::Label::AppendPredecessor(const Stub::Label *predecessor)
-{
-    impl_->AppendPredecessor(predecessor->GetRawLabel());
-}
-inline std::vector<Stub::Label> Stub::Label::GetPredecessors() const
-{
-    std::vector<Label> labels;
-    for (auto rawlabel : impl_->GetPredecessors()) {
-        labels.emplace_back(Label(rawlabel));
-    }
-    return labels;
-}
-inline void Stub::Label::SetControl(GateRef control)
-{
-    impl_->SetControl(control);
-}
-inline void Stub::Label::SetPreControl(GateRef control)
-{
-    impl_->SetPreControl(control);
-}
-inline void Stub::Label::MergeControl(GateRef control)
-{
-    impl_->MergeControl(control);
-}
-inline GateRef Stub::Label::GetControl() const
-{
-    return impl_->GetControl();
-}
-inline GateRef Stub::Label::GetDepend() const
-{
-    return impl_->GetDepend();
-}
-inline void Stub::Label::SetDepend(GateRef depend)
-{
-    return impl_->SetDepend(depend);
-}
-
-inline GateType Stub::Environment::GetGateType(GateRef gate) const
-{
-    return circuit_->LoadGatePtr(gate)->GetGateType();
-}
-
-inline Stub::Label Stub::Environment::GetLabelFromSelector(GateRef sel)
-{
-    LabelImpl *rawlabel = phiToLabels_[sel];
-    return Stub::Label(rawlabel);
-}
-
-inline void Stub::Environment::AddSelectorToLabel(GateRef sel, Label label)
-{
-    phiToLabels_[sel] = label.GetRawLabel();
-}
-
-inline LabelImpl *Stub::Environment::NewLabel(Stub::Environment *env, GateRef control)
-{
-    auto impl = new LabelImpl(env, control);
-    rawLabels_.emplace_back(impl);
-    return impl;
-}
-
-inline void Stub::Environment::SubCfgEntry(Stub::Label *entry)
-{
-    if (currentLabel_ != nullptr) {
-        GateRef control = currentLabel_->GetControl();
-        GateRef depend = currentLabel_->GetDepend();
-        stack_.push(currentLabel_);
-        currentLabel_ = entry;
-        currentLabel_->SetControl(control);
-        currentLabel_->SetDepend(depend);
-    }
-}
-
-inline void Stub::Environment::SubCfgExit()
-{
-    GateRef control = currentLabel_->GetControl();
-    GateRef depend = currentLabel_->GetDepend();
-    if (!stack_.empty()) {
-        currentLabel_ = stack_.top();
-        currentLabel_->SetControl(control);
-        currentLabel_->SetDepend(depend);
-        stack_.pop();
-    }
-}
-
-inline void Stub::Environment::SetFrameType(FrameType type)
-{
-    circuit_->SetFrameType(type);
-}
-
-inline GateRef Stub::Environment::GetArgument(size_t index) const
-{
-    return arguments_.at(index);
-}
-
-// constant
 inline GateRef Stub::Int8(int8_t value)
 {
-    return env_.GetBuilder().Int8(value);
+    return env_.GetBulder()->Int8(value);
 }
 
 inline GateRef Stub::Int16(int16_t value)
 {
-    return env_.GetBuilder().Int16(value);
+    return env_.GetBulder()->Int16(value);
 }
 
 inline GateRef Stub::Int32(int32_t value)
 {
-    return env_.GetBuilder().Int32(value);
+    return env_.GetBulder()->Int32(value);
 };
 
 inline GateRef Stub::Int64(int64_t value)
 {
-    return env_.GetBuilder().Int64(value);
+    return env_.GetBulder()->Int64(value);
 }
 
 inline GateRef Stub::IntPtr(int64_t value)
@@ -201,32 +81,32 @@ inline GateRef Stub::False()
 
 inline GateRef Stub::Boolean(bool value)
 {
-    return env_.GetBuilder().Boolean(value);
+    return env_.GetBulder()->Boolean(value);
 }
 
 inline GateRef Stub::Double(double value)
 {
-    return env_.GetBuilder().Double(value);
+    return env_.GetBulder()->Double(value);
 }
 
 inline GateRef Stub::Undefined(VariableType type)
 {
-    return env_.GetBuilder().UndefineConstant(type.GetGateType());
+    return env_.GetBulder()->UndefineConstant(type.GetGateType());
 }
 
 inline GateRef Stub::Hole(VariableType type)
 {
-    return env_.GetBuilder().HoleConstant(type.GetGateType());
+    return env_.GetBulder()->HoleConstant(type.GetGateType());
 }
 
 inline GateRef Stub::Null(VariableType type)
 {
-    return env_.GetBuilder().NullConstant(type.GetGateType());
+    return env_.GetBulder()->NullConstant(type.GetGateType());
 }
 
 inline GateRef Stub::Exception(VariableType type)
 {
-    return env_.GetBuilder().ExceptionConstant(type.GetGateType());
+    return env_.GetBulder()->ExceptionConstant(type.GetGateType());
 }
 
 inline GateRef Stub::PtrMul(GateRef x, GateRef y)
@@ -240,7 +120,7 @@ inline GateRef Stub::PtrMul(GateRef x, GateRef y)
 
 inline GateRef Stub::RelocatableData(uint64_t value)
 {
-    return env_.GetBuilder().RelocatableData(value);
+    return env_.GetBulder()->RelocatableData(value);
 }
 
 // parameter
@@ -325,21 +205,21 @@ inline GateRef Stub::Float64Argument(size_t index)
 
 inline GateRef Stub::Alloca(int size)
 {
-    return env_.GetBuilder().Alloca(size);
+    return env_.GetBulder()->Alloca(size);
 }
 
 inline GateRef Stub::Return(GateRef value)
 {
     auto control = env_.GetCurrentLabel()->GetControl();
     auto depend = env_.GetCurrentLabel()->GetDepend();
-    return env_.GetBuilder().Return(control, depend, value);
+    return env_.GetBulder()->Return(control, depend, value);
 }
 
 inline GateRef Stub::Return()
 {
     auto control = env_.GetCurrentLabel()->GetControl();
     auto depend = env_.GetCurrentLabel()->GetDepend();
-    return env_.GetBuilder().ReturnVoid(control, depend);
+    return env_.GetBulder()->ReturnVoid(control, depend);
 }
 
 inline void Stub::Bind(Label *label)
@@ -354,7 +234,7 @@ inline GateRef Stub::CallNGCRuntime(GateRef glue, size_t index,
     const CallSignature *descriptor = RuntimeStubCSigns::Get(index);
     GateRef target = IntPtr(index);
     auto depend = env_.GetCurrentLabel()->GetDepend();
-    GateRef result = env_.GetBuilder().NoGcRuntimeCall(descriptor, glue, target, depend, args);
+    GateRef result = env_.GetBulder()->NoGcRuntimeCall(descriptor, glue, target, depend, args);
     env_.GetCurrentLabel()->SetDepend(result);
     return result;
 }
@@ -366,7 +246,7 @@ inline GateRef Stub::CallStub(GateRef glue, size_t index,
     const CallSignature *descriptor = CommonStubCSigns::Get(index);
     GateRef target = IntPtr(index);
     auto depend = env_.GetCurrentLabel()->GetDepend();
-    GateRef result = env_.GetBuilder().Call(descriptor, glue, target, args, depend);
+    GateRef result = env_.GetBulder()->Call(descriptor, glue, target, args, depend);
     env_.GetCurrentLabel()->SetDepend(result);
     return result;
 }
@@ -397,7 +277,7 @@ inline GateRef Stub::CallRuntime(GateRef glue, int index, std::initializer_list<
 {
     SavePcIfNeeded(glue);
     auto depend = env_.GetCurrentLabel()->GetDepend();
-    GateRef result = env_.GetBuilder().CallRuntimeWithDepend(glue, index, depend, args);
+    GateRef result = env_.GetBulder()->CallRuntimeWithDepend(glue, index, depend, args);
     env_.GetCurrentLabel()->SetDepend(result);
     return result;
 }
@@ -406,8 +286,8 @@ inline GateRef Stub::CallRuntime(GateRef glue, int index, GateRef argc, GateRef 
 {
     SavePcIfNeeded(glue);
     auto depend = env_.GetCurrentLabel()->GetDepend();
-    GateRef target = env_.GetBuilder().Int64(index);
-    GateRef result = env_.GetBuilder().CallRuntimeWithDepend(glue, target, depend, argc, argv);
+    GateRef target = env_.GetBulder()->Int64(index);
+    GateRef result = env_.GetBulder()->CallRuntimeWithDepend(glue, target, depend, argc, argv);
     env_.GetCurrentLabel()->SetDepend(result);
     return result;
 }
@@ -458,22 +338,22 @@ inline GateRef Stub::Load(VariableType type, GateRef base)
 // arithmetic
 inline GateRef Stub::Int16Add(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::ADD), MachineType::I16, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::ADD), MachineType::I16, x, y);
 }
 
 inline GateRef Stub::Int32Add(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::ADD), MachineType::I32, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::ADD), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::Int64Add(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::ADD), MachineType::I64, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::ADD), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::DoubleAdd(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::ADD), MachineType::F64, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::ADD), MachineType::F64, x, y);
 }
 
 inline GateRef Stub::PtrAdd(GateRef x, GateRef y)
@@ -507,57 +387,57 @@ inline GateRef Stub::PtrSub(GateRef x, GateRef y)
 
 inline GateRef Stub::PointerSub(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::SUB), MachineType::ARCH, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::SUB), MachineType::ARCH, x, y);
 }
 
 inline GateRef Stub::Int16Sub(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::SUB), MachineType::I16, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::SUB), MachineType::I16, x, y);
 }
 
 inline GateRef Stub::Int32Sub(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::SUB), MachineType::I32, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::SUB), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::Int64Sub(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::SUB), MachineType::I64, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::SUB), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::DoubleSub(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::SUB), MachineType::F64, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::SUB), MachineType::F64, x, y);
 }
 
 inline GateRef Stub::Int32Mul(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::MUL), MachineType::I32, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::MUL), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::Int64Mul(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::MUL), MachineType::I64, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::MUL), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::DoubleMul(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::MUL), MachineType::F64, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::MUL), MachineType::F64, x, y);
 }
 
 inline GateRef Stub::DoubleDiv(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::FDIV), MachineType::F64, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::FDIV), MachineType::F64, x, y);
 }
 
 inline GateRef Stub::Int32Div(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::SDIV), MachineType::I32, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::SDIV), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::Int64Div(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::SDIV), MachineType::I64, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::SDIV), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::IntPtrDiv(GateRef x, GateRef y)
@@ -567,132 +447,132 @@ inline GateRef Stub::IntPtrDiv(GateRef x, GateRef y)
 
 inline GateRef Stub::Int32Mod(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::SMOD), MachineType::I32, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::SMOD), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::DoubleMod(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::SMOD), MachineType::F64, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::SMOD), MachineType::F64, x, y);
 }
 
 // bit operation
 inline GateRef Stub::Int32Or(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::OR), MachineType::I32, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::OR), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::Int8And(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::AND), MachineType::I8, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::AND), MachineType::I8, x, y);
 }
 
 inline GateRef Stub::Int32And(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::AND), MachineType::I32, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::AND), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::BoolAnd(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::AND), MachineType::I1, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::AND), MachineType::I1, x, y);
 }
 
 inline GateRef Stub::BoolOr(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::OR), MachineType::I1, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::OR), MachineType::I1, x, y);
 }
 
 inline GateRef Stub::Int32Not(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::REV), MachineType::I32, x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::REV), MachineType::I32, x);
 }
 
 inline GateRef Stub::BoolNot(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::REV), MachineType::I1, x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::REV), MachineType::I1, x);
 }
 
 inline GateRef Stub::Int64Or(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::OR), MachineType::I64, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::OR), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::IntPtrOr(GateRef x, GateRef y)
 {
     auto ptrsize = env_.Is32Bit() ? MachineType::I32 : MachineType::I64;
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::OR), ptrsize, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::OR), ptrsize, x, y);
 }
 
 inline GateRef Stub::Int64And(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::AND), MachineType::I64, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::AND), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::Int16LSL(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::LSL), MachineType::I16, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::LSL), MachineType::I16, x, y);
 }
 
 inline GateRef Stub::Int64Xor(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::XOR), MachineType::I64, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::XOR), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::Int32Xor(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::XOR), MachineType::I32, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::XOR), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::Int8LSR(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::LSR), MachineType::I8, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::LSR), MachineType::I8, x, y);
 }
 
 inline GateRef Stub::Int64Not(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::REV), MachineType::I64, x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::REV), MachineType::I64, x);
 }
 
 inline GateRef Stub::Int32LSL(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::LSL), MachineType::I32, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::LSL), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::Int64LSL(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::LSL), MachineType::I64, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::LSL), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::IntPtrLSL(GateRef x, GateRef y)
 {
     auto ptrSize = env_.Is32Bit() ? MachineType::I32 : MachineType::I64;
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::LSL), ptrSize, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::LSL), ptrSize, x, y);
 }
 
 inline GateRef Stub::Int32ASR(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::ASR), MachineType::I32, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::ASR), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::Int32LSR(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::LSR), MachineType::I32, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::LSR), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::Int64LSR(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::LSR), MachineType::I64, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::LSR), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::IntPtrLSR(GateRef x, GateRef y)
 {
     auto ptrSize = env_.Is32Bit() ? MachineType::I32 : MachineType::I64;
-    return env_.GetBuilder().BinaryArithmetic(OpCode(OpCode::LSR), ptrSize, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(OpCode::LSR), ptrSize, x, y);
 }
 
 template<OpCode::Op Op, MachineType Type>
 inline GateRef Stub::BinaryOp(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryArithmetic(OpCode(Op), Type, x, y);
+    return env_.GetBulder()->BinaryArithmetic(OpCode(Op), Type, x, y);
 }
 
 inline GateRef Stub::TaggedIsInt(GateRef x)
@@ -888,7 +768,7 @@ inline GateRef Stub::DoubleBuildTaggedTypeWithNoGC(GateRef x)
 
 inline GateRef Stub::CastDoubleToInt64(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::BITCAST), MachineType::I64, x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::BITCAST), MachineType::I64, x);
 }
 
 inline GateRef Stub::TaggedTrue()
@@ -904,124 +784,124 @@ inline GateRef Stub::TaggedFalse()
 // compare operation
 inline GateRef Stub::Int8Equal(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::EQ), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::EQ), x, y);
 }
 
 inline GateRef Stub::Int32Equal(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::EQ), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::EQ), x, y);
 }
 
 inline GateRef Stub::Int32NotEqual(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::NE), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::NE), x, y);
 }
 
 inline GateRef Stub::Int64Equal(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::EQ), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::EQ), x, y);
 }
 
 inline GateRef Stub::DoubleEqual(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::EQ), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::EQ), x, y);
 }
 
 inline GateRef Stub::DoubleLessThan(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::SLT), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::SLT), x, y);
 }
 
 inline GateRef Stub::DoubleLessThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::SLE), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::SLE), x, y);
 }
 
 inline GateRef Stub::DoubleGreaterThan(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::SGT), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::SGT), x, y);
 }
 
 inline GateRef Stub::DoubleGreaterThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::SGE), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::SGE), x, y);
 }
 
 inline GateRef Stub::Int64NotEqual(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::NE), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::NE), x, y);
 }
 
 inline GateRef Stub::Int32GreaterThan(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::SGT), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::SGT), x, y);
 }
 
 inline GateRef Stub::Int32LessThan(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::SLT), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::SLT), x, y);
 }
 
 inline GateRef Stub::Int32GreaterThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::SGE), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::SGE), x, y);
 }
 
 inline GateRef Stub::Int32LessThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::SLE), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::SLE), x, y);
 }
 
 inline GateRef Stub::Int32UnsignedGreaterThan(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::UGT), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::UGT), x, y);
 }
 
 inline GateRef Stub::Int32UnsignedLessThan(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::ULT), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::ULT), x, y);
 }
 
 inline GateRef Stub::Int32UnsignedGreaterThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::UGE), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::UGE), x, y);
 }
 
 inline GateRef Stub::Int64GreaterThan(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::SGT), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::SGT), x, y);
 }
 
 inline GateRef Stub::Int64LessThan(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::SLT), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::SLT), x, y);
 }
 
 inline GateRef Stub::Int64LessThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::SLE), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::SLE), x, y);
 }
 
 inline GateRef Stub::Int64GreaterThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::SGE), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::SGE), x, y);
 }
 
 inline GateRef Stub::Int64UnsignedLessThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetBuilder().BinaryLogic(OpCode(OpCode::ULE), x, y);
+    return env_.GetBulder()->BinaryLogic(OpCode(OpCode::ULE), x, y);
 }
 
 // cast operation
 inline GateRef Stub::ChangeInt64ToInt32(GateRef val)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT32), val);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT32), val);
 }
 
 inline GateRef Stub::ChangeInt64ToIntPtr(GateRef val)
 {
     if (env_.IsArch32Bit()) {
-        return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT32), val);
+        return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT32), val);
     }
     return val;
 }
@@ -1712,93 +1592,93 @@ inline GateRef Stub::TaggedCastToWeakReferentUnChecked(GateRef x)
 
 inline GateRef Stub::ChangeInt32ToFloat64(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::SIGNED_INT_TO_FLOAT), MachineType::F64, x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::SIGNED_INT_TO_FLOAT), MachineType::F64, x);
 }
 
 inline GateRef Stub::ChangeUInt32ToFloat64(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::UNSIGNED_INT_TO_FLOAT), MachineType::F64, x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::UNSIGNED_INT_TO_FLOAT), MachineType::F64, x);
 }
 
 inline GateRef Stub::ChangeFloat64ToInt32(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::FLOAT_TO_SIGNED_INT), MachineType::I32, x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::FLOAT_TO_SIGNED_INT), MachineType::I32, x);
 }
 
 inline GateRef Stub::ChangeTaggedPointerToInt64(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::TAGGED_TO_INT64), x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::TAGGED_TO_INT64), x);
 }
 
 inline GateRef Stub::ChangeInt64ToTagged(GateRef x)
 {
-    return env_.GetBuilder().TaggedNumber(OpCode(OpCode::INT64_TO_TAGGED), x);
+    return env_.GetBulder()->TaggedNumber(OpCode(OpCode::INT64_TO_TAGGED), x);
 }
 
 inline GateRef Stub::CastInt64ToFloat64(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::BITCAST), MachineType::F64, x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::BITCAST), MachineType::F64, x);
 }
 
 inline GateRef Stub::SExtInt32ToInt64(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT64), x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT64), x);
 }
 
 inline GateRef Stub::SExtInt1ToInt64(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT64), x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT64), x);
 }
 
 inline GateRef Stub::SExtInt1ToInt32(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT32), x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT32), x);
 }
 
 inline GateRef Stub::ZExtInt8ToInt16(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT16), x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT16), x);
 }
 
 inline GateRef Stub::ZExtInt32ToInt64(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT64), x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT64), x);
 }
 
 inline GateRef Stub::ZExtInt1ToInt64(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT64), x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT64), x);
 }
 
 inline GateRef Stub::ZExtInt1ToInt32(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT32), x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT32), x);
 }
 
 inline GateRef Stub::ZExtInt8ToInt32(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT32), x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT32), x);
 }
 
 inline GateRef Stub::ZExtInt8ToInt64(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT64), x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT64), x);
 }
 
 inline GateRef Stub::ZExtInt8ToPtr(GateRef x)
 {
     if (env_.IsArch32Bit()) {
-        return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT32), x);
+        return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT32), x);
     }
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT64), x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT64), x);
 }
 
 inline GateRef Stub::ZExtInt16ToPtr(GateRef x)
 {
     if (env_.IsArch32Bit()) {
-        return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT32), x);
+        return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT32), x);
     }
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT64), x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT64), x);
 }
 
 inline GateRef Stub::SExtInt32ToPtr(GateRef x)
@@ -1806,22 +1686,22 @@ inline GateRef Stub::SExtInt32ToPtr(GateRef x)
     if (env_.IsArch32Bit()) {
         return x;
     }
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT64), x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT64), x);
 }
 
 inline GateRef Stub::ZExtInt16ToInt32(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT32), x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT32), x);
 }
 
 inline GateRef Stub::ZExtInt16ToInt64(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT64), x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT64), x);
 }
 
 inline GateRef Stub::TruncInt64ToInt32(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT32), x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT32), x);
 }
 
 inline GateRef Stub::TruncPtrToInt32(GateRef x)
@@ -1834,12 +1714,12 @@ inline GateRef Stub::TruncPtrToInt32(GateRef x)
 
 inline GateRef Stub::TruncInt64ToInt1(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT1), x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT1), x);
 }
 
 inline GateRef Stub::TruncInt32ToInt1(GateRef x)
 {
-    return env_.GetBuilder().UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT1), x);
+    return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT1), x);
 }
 
 inline GateRef Stub::GetGlobalConstantAddr(GateRef index)

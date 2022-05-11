@@ -265,6 +265,7 @@ public:
     {                                                                                     \
         return BinaryArithmetic(OpCode(OPCODEID), MACHINETYPEID, x, y);                   \
     }
+
     BINARY_ARITHMETIC_METHOD_LIST_WITH_BITWIDTH(ARITHMETIC_BINARY_OP_WITH_BITWIDTH)
 #undef ARITHMETIC_BINARY_OP_WITH_BITWIDTH
 
@@ -273,6 +274,7 @@ public:
     {                                                                                     \
         return UnaryArithmetic(OpCode(OPCODEID), MACHINETYPEID, x);                       \
     }
+
     UNARY_ARITHMETIC_METHOD_LIST_WITH_BITWIDTH(ARITHMETIC_UNARY_OP_WITH_BITWIDTH)
 #undef ARITHMETIC_UNARY_OP_WITH_BITWIDTH
 
@@ -281,6 +283,7 @@ public:
     {                                                                                     \
         return UnaryArithmetic(OpCode(OPCODEID), x);                                      \
     }
+
     UNARY_ARITHMETIC_METHOD_LIST_WITHOUT_BITWIDTH(ARITHMETIC_UNARY_OP_WITHOUT_BITWIDTH)
 #undef ARITHMETIC_UNARY_OP_WITHOUT_BITWIDTH
 
@@ -289,6 +292,7 @@ public:
     {                                                                                     \
         return BinaryLogic(OpCode(OPCODEID), x, y);                                       \
     }
+
     BINARY_LOGIC_METHOD_LIST_WITHOUT_BITWIDTH(LOGIC_BINARY_OP_WITHOUT_BITWIDTH)
 #undef LOGIC_BINARY_OP_WITHOUT_BITWIDTH
 
@@ -512,7 +516,8 @@ public:
     using LabelImpl = Label::LabelImpl;
     Environment(GateRef hir, Circuit *circuit, CircuitBuilder *builder);
     Environment(GateRef stateEntry, GateRef dependEntry, std::vector<GateRef>& inlist,
-        Circuit *circuit, CircuitBuilder *builder);
+                Circuit *circuit, CircuitBuilder *builder);
+    Environment(size_t arguments, CircuitBuilder *builder);
     ~Environment();
     Label *GetCurrentLabel() const
     {
@@ -522,7 +527,7 @@ public:
     {
         currentLabel_ = label;
     }
-    CircuitBuilder *GetCircuitBuilder()
+    CircuitBuilder *GetBulder()
     {
         return circuitBuilder_;
     }
@@ -534,6 +539,43 @@ public:
     {
         return nextVariableId_++;
     }
+    void SetCompilationConfig(const CompilationConfig *cfg)
+    {
+        ccfg_ = cfg;
+    }
+    const CompilationConfig *GetCompilationConfig() const
+    {
+        return ccfg_;
+    }
+    inline bool Is32Bit() const
+    {
+        return ccfg_->Is32Bit();
+    }
+    inline bool IsAArch64() const
+    {
+        return ccfg_->IsAArch64();
+    }
+    inline bool IsAmd64() const
+    {
+        return ccfg_->IsAmd64();
+    }
+    inline bool IsArch64Bit() const
+    {
+        return ccfg_->IsAmd64() ||  ccfg_->IsAArch64();
+    }
+    inline bool IsAsmInterp() const
+    {
+        return circuit_->GetFrameType() == FrameType::INTERPRETER_FRAME;
+    }
+    inline bool IsArch32Bit() const
+    {
+        return ccfg_->Is32Bit();
+    }
+    inline GateRef GetArgument(size_t index) const
+    {
+        return arguments_.at(index);
+    }
+
     inline GateType GetGateType(GateRef gate) const;
     inline Label GetLabelFromSelector(GateRef sel);
     inline void AddSelectorToLabel(GateRef sel, Label label);
@@ -551,6 +593,8 @@ private:
     std::vector<LabelImpl *> rawLabels_;
     std::stack<Label *> stack_;
     int nextVariableId_ {0};
+    std::vector<GateRef> arguments_;
+    const CompilationConfig *ccfg_ { nullptr };
 };
 
 class Variable {
