@@ -1426,6 +1426,18 @@ DEF_RUNTIME_STUBS(NewLexicalEnvDyn)
     return RuntimeNewLexicalEnvDyn(thread, static_cast<uint16_t>(numVars.GetInt())).GetRawData();
 }
 
+DEF_RUNTIME_STUBS(NewThisObject)
+{
+    RUNTIME_STUBS_HEADER(NewThisObject);
+    CONVERT_ARG_HANDLE_CHECKED(JSFunction, ctor, 0);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, newTarget, 1);
+
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSObject> obj = factory->NewJSObjectByConstructor(ctor, newTarget);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception().GetRawData());
+    return obj.GetTaggedType();  // state is not set here
+}
+
 DEF_RUNTIME_STUBS(NewObjDynRange)
 {
     RUNTIME_STUBS_HEADER(NewObjDynRange);
@@ -1581,6 +1593,17 @@ DEF_RUNTIME_STUBS(ThrowStackOverflowException)
     if (LIKELY(!thread->HasPendingException())) {
         thread->SetException(error.GetTaggedValue());
     }
+    return JSTaggedValue::Exception().GetRawData();
+}
+
+DEF_RUNTIME_STUBS(ThrowDerivedMustReturnException)
+{
+    RUNTIME_STUBS_HEADER(ThrowDerivedMustReturnException);
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR,
+                                                   "Derived constructor must return object or undefined");
+    thread->SetException(error.GetTaggedValue());
     return JSTaggedValue::Exception().GetRawData();
 }
 

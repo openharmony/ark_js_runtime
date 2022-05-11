@@ -244,6 +244,9 @@ public:
     GateRef IsBigInt(GateRef obj);
     GateRef IsJsProxy(GateRef obj);
     GateRef IsJSFunctionBase(GateRef obj);
+    GateRef IsConstructor(GateRef object);
+    GateRef IsBuiltinsConstructor(GateRef object);
+    GateRef IsBase(GateRef func);
     GateRef IsJsArray(GateRef obj);
     GateRef IsJSObject(GateRef obj);
     GateRef IsWritable(GateRef attr);
