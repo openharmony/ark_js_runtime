@@ -210,7 +210,7 @@ public:
         CallConvBit::Set<uint64_t>(cc, &kind_);
     }
 
-    const std::string &GetName()
+    const std::string &GetName() const
     {
         return name_;
     }

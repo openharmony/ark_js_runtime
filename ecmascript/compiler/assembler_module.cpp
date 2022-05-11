@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 #include "assembler/assembler_x64.h"
-#include "call_signature.h"
 #include "rt_call_signature.h"
 #include "trampoline/x64/assembler_stubs_x64.h"
 #include "assembler_module.h"
@@ -48,26 +47,7 @@ void AssemblerModule::GenerateStubsX64(Chunk* chunk)
 
 void AssemblerModule::SetUpForAsmStubs()
 {
-    std::vector<CallSignature *> callSigns;
-    RuntimeStubCSigns::GetCSigns(callSigns);
-
-#define INIT_SIGNATURES(name)                                    \
-    callSigns[RuntimeStubCSigns::ID_##name]->SetConstructor(     \
-        []([[maybe_unused]]void* arg) {                          \
-            return static_cast<void*>(                           \
-                new name##Stub());                               \
-    });
-    RUNTIME_ASM_STUB_LIST(INIT_SIGNATURES)
-#undef INIT_SIGNATURES
-
-    for (size_t i = 0; i < callSigns.size(); i++) {
-        CallSignature* cs = callSigns[i];
-        ASSERT(!cs->GetName().empty());
-        if (cs->IsAsmStub()) {
-            asmCallSigns_.push_back(cs);
-        }
-    }
-    callSigns.clear();
+    RuntimeStubCSigns::GetASMCSigns(asmCallSigns_);
 }
 
 #define DECLARE_ASM_STUB_GENERATE(name)                                                           \

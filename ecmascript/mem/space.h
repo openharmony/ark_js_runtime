@@ -40,22 +40,6 @@ enum MemSpaceType {
     FREE_LIST_NUM = MACHINE_CODE_SPACE - OLD_SPACE + 1,
 };
 
-/*
- * TriggerGCType is categorized according to the scope the GC expects to cover.
- * Different GC algorithms may be applied to different GC types.
- * For example, SemiSpace GC for young generation GC, Mark-Sweep-Compact for full GC, etc.
- */
-enum TriggerGCType {
-    // GC is expected to cover young space only;
-    YOUNG_GC,
-    // GC is expected to cover young space and necessary old spaces;
-    OLD_GC,
-    // GC is expected to cover all valid heap spaces;
-    FULL_GC,
-
-    GC_TYPE_LAST
-};
-
 static inline std::string ToSpaceTypeName(MemSpaceType type)
 {
     switch (type) {

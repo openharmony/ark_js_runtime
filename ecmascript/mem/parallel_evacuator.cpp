@@ -25,6 +25,8 @@
 #include "ecmascript/mem/tlab_allocator-inl.h"
 #include "ecmascript/mem/utils.h"
 #include "ecmascript/mem/visitor.h"
+#include "ecmascript/mem/gc_stats.h"
+#include "ecmascript/ecma_string_table.h"
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
