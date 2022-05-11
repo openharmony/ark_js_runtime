@@ -47,7 +47,7 @@ void BytecodeStubCSigns::Initialize()
 #undef INIT_HELPER_SIGNATURES
 }
 
-void BytecodeStubCSigns::GetCSigns(std::vector<CallSignature*>& outCSigns)
+void BytecodeStubCSigns::GetCSigns(std::vector<const CallSignature*>& outCSigns)
 {
     for (size_t i = 0; i < NUM_OF_VALID_STUBS; i++) {
         outCSigns.push_back(&callSigns_[i]);

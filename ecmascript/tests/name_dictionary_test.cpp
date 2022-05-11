@@ -16,6 +16,7 @@
 #include <memory>
 
 #include "ecmascript/ecma_vm.h"
+#include "ecmascript/ecma_string_table.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_object-inl.h"

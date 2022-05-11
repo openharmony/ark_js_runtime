@@ -576,7 +576,7 @@ void CommonStubCSigns::Initialize()
 #undef INIT_SIGNATURES
 }
 
-void CommonStubCSigns::GetCSigns(std::vector<CallSignature*>& outCSigns)
+void CommonStubCSigns::GetCSigns(std::vector<const CallSignature*>& outCSigns)
 {
     for (size_t i = 0; i < NUM_OF_STUBS; i++) {
         outCSigns.push_back(&callSigns_[i]);

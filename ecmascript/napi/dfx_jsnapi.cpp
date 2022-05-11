@@ -20,6 +20,7 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/mem/heap-inl.h"
+#include "ecmascript/mem/gc_stats.h"
 #include "ecmascript/tooling/interface/file_stream.h"
 
 namespace panda {

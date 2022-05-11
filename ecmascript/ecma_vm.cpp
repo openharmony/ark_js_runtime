@@ -45,23 +45,28 @@
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/machine_code.h"
+#include "ecmascript/mem/gc_stats.h"
+#include "ecmascript/mem/mem.h"
+#include "ecmascript/mem/space.h"
+#include "ecmascript/mem/visitor.h"
+#include "ecmascript/snapshot/mem/snapshot_env.h"
+#include "ecmascript/taskpool/task.h"
 #include "ecmascript/module/js_module_manager.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/taskpool/taskpool.h"
 #include "ecmascript/regexp/regexp_parser_cache.h"
 #include "ecmascript/runtime_call_id.h"
+#include "ecmascript/snapshot/mem/snapshot_env.h"
+#include "ecmascript/snapshot/mem/snapshot.h"
 #ifndef PANDA_TARGET_WINDOWS
 #include "ecmascript/stubs/runtime_stubs.h"
 #endif
-#include "ecmascript/snapshot/mem/encode_bit.h"
-#include "ecmascript/snapshot/mem/snapshot.h"
-#include "ecmascript/snapshot/mem/snapshot_processor.h"
 #include "ecmascript/tagged_array-inl.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/tagged_queue.h"
 #include "ecmascript/tagged_queue.h"
 #include "ecmascript/ts_types/ts_loader.h"
-#include "libpandafile/file.h"
+#include "ecmascript/tooling/interface/js_debugger_manager.h"
 #ifdef PANDA_TARGET_WINDOWS
 #ifdef ERROR
 #undef ERROR
@@ -663,7 +668,7 @@ void EcmaVM::LoadStubs()
     std::string comStubFile = options_.GetComStubFile();
     thread_->LoadStubsFromFile(comStubFile);
     std::string bcStubFile = options_.GetBcStubFile();
-    thread_->LoadStubsFromFile(bcStubFile);
+    thread_->LoadStubsFromFile(bcStubFile, true);
 }
 
 void EcmaVM::SetupRegExpResultCache()
