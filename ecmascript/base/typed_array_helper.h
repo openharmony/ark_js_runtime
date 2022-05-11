@@ -34,7 +34,7 @@ public:
                                                  const JSHandle<JSTaggedValue> &constructorName,
                                                  const JSHandle<JSTaggedValue> &newTarget, int32_t length);
     static JSHandle<JSObject> TypedArraySpeciesCreate(JSThread *thread, const JSHandle<JSObject> &obj,
-                                                      uint32_t argc, const JSTaggedType argv[]);
+                                                      uint32_t argc, JSTaggedType argv[]);
     static JSHandle<JSObject> TypedArrayCreate(JSThread *thread, const JSHandle<JSTaggedValue> &constructor,
                                                uint32_t argc, const JSTaggedType argv[]);
     static JSTaggedValue ValidateTypedArray(JSThread *thread, const JSHandle<JSTaggedValue> &value);

@@ -191,6 +191,8 @@ JSHandle<EcmaString> ErrorHelper::BuildEcmaStackTrace(JSThread *thread)
 CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
 {
     CString data;
+    CString fristLineSrcCode;
+    bool isFirstLine = true;
     FrameHandler frameHandler(thread);
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
         if (frameHandler.IsEntryFrame()) {
@@ -212,8 +214,10 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
             }
             data.push_back(':');
             // line number and column number
-            auto callbackLineFunc = [&data](int32_t line) -> bool {
-                data += ToCString(line + 1);
+            int lineNumber = 0;
+            auto callbackLineFunc = [&data, &lineNumber](int32_t line) -> bool {
+                lineNumber = line + 1;
+                data += ToCString(lineNumber);
                 data.push_back(':');
                 return true;
             };
@@ -228,10 +232,25 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
                 data.push_back('?');
             }
             data.push_back(')');
+            data.push_back('\n');
+            if (isFirstLine) {
+                const CString &sourceCode = debugExtractor->GetSourceCode(
+                    panda_file::File::EntityId(method->GetJSPandaFile()->GetMainMethodIndex()));
+                fristLineSrcCode = StringHelper::GetSpecifiedLine(sourceCode, lineNumber);
+                isFirstLine = false;
+            }
         }
-        data.push_back('\n');
     }
-
+    if (!fristLineSrcCode.empty()) {
+        uint32_t codeLen = fristLineSrcCode.length();
+        if (fristLineSrcCode[codeLen - 1] == '\r') {
+            fristLineSrcCode = fristLineSrcCode.substr(0, codeLen - 1);
+        }
+        fristLineSrcCode = "SourceCode (" + fristLineSrcCode;
+        fristLineSrcCode.push_back(')');
+        fristLineSrcCode.push_back('\n');
+        data = fristLineSrcCode + data;
+    }
     return data;
 }
 
