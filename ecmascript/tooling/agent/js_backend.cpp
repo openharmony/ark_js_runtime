@@ -27,6 +27,7 @@
 
 namespace panda::ecmascript::tooling {
 using namespace boost::beast::detail;
+using namespace std::placeholders;
 
 using ObjectType = RemoteObject::TypeName;
 using ObjectSubType = RemoteObject::SubTypeName;
@@ -46,6 +47,9 @@ JSBackend::JSBackend(FrontEnd *frontend) : frontend_(frontend)
     debugger_ = DebuggerApi::CreateJSDebugger(ecmaVm_);
     DebuggerApi::InitJSDebugger(debugger_);
     DebuggerApi::RegisterHooks(debugger_, hooks_.get());
+
+    ecmaVm_->GetJsDebuggerManager()->SetLocalScopeUpdater(
+        std::bind(&JSBackend::UpdateScopeObject, this, _1, _2, _3));
 }
 
 JSBackend::JSBackend(const EcmaVM *vm) : ecmaVm_(vm)
@@ -480,6 +484,10 @@ std::optional<CString> JSBackend::CmptEvaluateValue(CallFrameId callFrameId, con
 std::optional<CString> JSBackend::EvaluateValue(CallFrameId callFrameId, const CString &expression,
     std::unique_ptr<RemoteObject> *result)
 {
+    if (callFrameId < 0 || callFrameId >= callFrameHandlers_.size()) {
+        return "Invalid callFrameId.";
+    }
+
     CString dest;
     if (!DecodeAndCheckBase64(expression, dest)) {
         LOG(ERROR, DEBUGGER) << "EvaluateValue: base64 decode failed";
@@ -488,7 +496,8 @@ std::optional<CString> JSBackend::EvaluateValue(CallFrameId callFrameId, const C
 
     auto funcRef = DebuggerApi::GenerateFuncFromBuffer(ecmaVm_, dest.data(), dest.size(),
         JSPandaFile::ENTRY_MAIN_FUNCTION);
-    auto res = DebuggerApi::EvaluateViaFuncCall(const_cast<EcmaVM *>(ecmaVm_), funcRef);
+    auto res = DebuggerApi::EvaluateViaFuncCall(const_cast<EcmaVM *>(ecmaVm_), funcRef,
+        callFrameHandlers_[callFrameId]);
     if (ecmaVm_->GetJSThread()->HasPendingException()) {
         LOG(ERROR, DEBUGGER) << "EvaluateValue: has pending exception";
         CString msg;
@@ -542,12 +551,20 @@ bool JSBackend::GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFram
                 return StackState::FAILED;
             }
         } else {
+            SaveCallFrameHandler(frameHandler);
             callFrames->emplace_back(std::move(callFrame));
             callFrameId++;
         }
         return StackState::CONTINUE;
     };
     return DebuggerApi::StackWalker(ecmaVm_, walkerFunc);
+}
+
+void JSBackend::SaveCallFrameHandler(const FrameHandler *frameHandler)
+{
+    auto handlerPtr = DebuggerApi::NewFrameHandler(ecmaVm_);
+    *handlerPtr = *frameHandler;
+    callFrameHandlers_.emplace_back(handlerPtr);
 }
 
 bool JSBackend::GenerateCallFrame(CallFrame *callFrame,
@@ -624,6 +641,8 @@ std::unique_ptr<Scope> JSBackend::GetLocalScopeChain(const FrameHandler *frameHa
         .SetObjectId(curObjectId_)
         .SetClassName(ObjectClassName::Object)
         .SetDescription(RemoteObject::ObjectDescription);
+    auto *sp = DebuggerApi::GetSp(frameHandler);
+    scopeObjects_[sp] = curObjectId_;
     propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, localObj);
 
     Local<JSValueRef> thisVal = JSValueRef::Undefined(ecmaVm_);
@@ -659,8 +678,8 @@ void JSBackend::GetLocalVariables(const FrameHandler *frameHandler, const JSMeth
     auto methodId = method->GetMethodId();
     auto *extractor = GetExtractor(method->GetJSPandaFile());
     Local<JSValueRef> value = JSValueRef::Undefined(ecmaVm_);
-    for (const auto &[varName, slot] : extractor->GetLocalVariableTable(methodId)) {
-        value = DebuggerApi::GetVRegValue(ecmaVm_, frameHandler, slot);
+    for (const auto &[varName, regIndex] : extractor->GetLocalVariableTable(methodId)) {
+        value = DebuggerApi::GetVRegValue(ecmaVm_, frameHandler, regIndex);
         if (varName == "this") {
             thisVal = value;
         } else {
@@ -690,6 +709,28 @@ void JSBackend::GetLocalVariables(const FrameHandler *frameHandler, const JSMeth
             PropertyAttribute descriptor(value, true, true, true);
             localObj->DefineProperty(ecmaVm_, name, descriptor);
         }
+    }
+}
+
+void JSBackend::UpdateScopeObject(const FrameHandler *frameHandler,
+    const CString &varName, const Local<JSValueRef> &newVal)
+{
+    auto *sp = DebuggerApi::GetSp(frameHandler);
+    auto iter = scopeObjects_.find(sp);
+    if (iter == scopeObjects_.end()) {
+        LOG(ERROR, DEBUGGER) << "UpdateScopeObject: object not found";
+        return;
+    }
+
+    auto objectId = iter->second;
+    Local<ObjectRef> localObj = propertiesPair_[objectId].ToLocal(ecmaVm_);
+    Local<JSValueRef> name = StringRef::NewFromUtf8(ecmaVm_, varName.c_str());
+    if (localObj->Has(ecmaVm_, name)) {
+        LOG(DEBUG, DEBUGGER) << "UpdateScopeObject: set new value";
+        PropertyAttribute descriptor(newVal, true, true, true);
+        localObj->DefineProperty(ecmaVm_, name, descriptor);
+    } else {
+        LOG(ERROR, DEBUGGER) << "UpdateScopeObject: not found " << varName;
     }
 }
 
@@ -998,6 +1039,9 @@ void JSBackend::CleanUpOnPaused()
 {
     curObjectId_ = 0;
     propertiesPair_.clear();
+
+    callFrameHandlers_.clear();
+    scopeObjects_.clear();
 }
 
 bool JSBackend::DecodeAndCheckBase64(const CString &src, CString &dest)

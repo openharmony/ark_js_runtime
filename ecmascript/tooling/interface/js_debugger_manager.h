@@ -18,15 +18,17 @@
 
 #include "libpandabase/os/library_loader.h"
 
-#include "ecmascript/tooling/interface/notification_manager.h"
-
 #include "ecmascript/interpreter/frame_handler.h"
+#include "ecmascript/napi/include/jsnapi.h"
+#include "ecmascript/tooling/interface/notification_manager.h"
 
 namespace panda::ecmascript::tooling {
 class ProtocolHandler;
 class JsDebuggerManager {
 public:
     using LibraryHandle = os::library_loader::LibraryHandle;
+    using ObjectUpdaterFunc =
+        std::function<void(const FrameHandler *, const CString &, const Local<JSValueRef> &)>;
 
     JsDebuggerManager() = default;
     ~JsDebuggerManager()
@@ -77,18 +79,26 @@ public:
         return debuggerLibraryHandle_;
     }
 
-    void SetEvalFrameHandler(const JSThread *thread)
+    void SetEvalFrameHandler(std::shared_ptr<FrameHandler> frameHandler)
     {
-        if (thread != nullptr) {
-            frameHandler_ = std::make_unique<FrameHandler>(thread);
-        } else {
-            frameHandler_ = nullptr;
-        }
+        frameHandler_ = frameHandler;
     }
 
-    const std::unique_ptr<FrameHandler> &GetEvalFrameHandler() const
+    const std::shared_ptr<FrameHandler> &GetEvalFrameHandler() const
     {
         return frameHandler_;
+    }
+
+    void SetLocalScopeUpdater(const ObjectUpdaterFunc &updaterFunc)
+    {
+        updaterFunc_ = updaterFunc;
+    }
+
+    void NotifyLocalScopeUpdated(const CString &varName, const Local<JSValueRef> &value)
+    {
+        if (updaterFunc_ != nullptr) {
+            updaterFunc_(frameHandler_.get(), varName, value);
+        }
     }
 
 private:
@@ -97,7 +107,8 @@ private:
     LibraryHandle debuggerLibraryHandle_ {nullptr};
     NotificationManager *notificationManager_ {nullptr};
 
-    std::unique_ptr<FrameHandler> frameHandler_;
+    std::shared_ptr<FrameHandler> frameHandler_;
+    ObjectUpdaterFunc updaterFunc_;
 };
 }  // panda::ecmascript::tooling
 
