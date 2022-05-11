@@ -30,7 +30,7 @@ FullGC::FullGC(Heap *heap) : heap_(heap), workManager_(heap->GetWorkManager()) {
 
 void FullGC::RunPhases()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::RunPhases");
+    ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "FullGC::RunPhases");
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), FullGC_RunPhases);
     ClockScope clockScope;
 
@@ -50,7 +50,7 @@ void FullGC::RunPhases()
 
 void FullGC::Initialize()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::Initialize");
+    ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "FullGC::Initialize");
     heap_->Prepare();
     auto callback = [](Region *current) {
         current->ClearOldToNewRSet();
@@ -73,7 +73,7 @@ void FullGC::Initialize()
 
 void FullGC::Mark()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::Mark");
+    ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "FullGC::Mark");
     heap_->GetCompressGCMarker()->MarkRoots(MAIN_THREAD_INDEX);
     heap_->GetCompressGCMarker()->ProcessMarkStack(MAIN_THREAD_INDEX);
     heap_->WaitRunningTaskFinished();
@@ -81,7 +81,7 @@ void FullGC::Mark()
 
 void FullGC::Sweep()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::Sweep");
+    ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "FullGC::Sweep");
     // process weak reference
     auto totalThreadCount = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1; // gc thread and main thread
     for (uint32_t i = 0; i < totalThreadCount; i++) {
@@ -140,7 +140,7 @@ void FullGC::Sweep()
 
 void FullGC::Finish()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::Finish");
+    ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "FullGC::Finish");
     heap_->GetSweeper()->PostConcurrentSweepTasks(true);
     heap_->Resume(FULL_GC);
     workManager_->Finish(youngAndOldAliveSize_);
