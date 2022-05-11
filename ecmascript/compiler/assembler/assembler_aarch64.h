@@ -283,7 +283,7 @@ private:
                          unsigned int allOneHWords, unsigned int allZeroHWords);
     int32_t GetLinkOffsetFromBranchInst(int32_t pos);
     int32_t LinkAndGetInstOffsetToLabel(Label *label);
-    uint32_t ImmBranch(uint32_t branchCode);
+    int32_t ImmBranch(uint32_t branchCode);
     void SetRealOffsetToBranchInst(uint32_t linkPos, int32_t disp);
 };
 }  // namespace panda::ecmascript::aarch64

@@ -237,7 +237,7 @@ HWTEST_F_L0(GlobalDictionaryTest, GetAllKeys)
     }
     uint32_t offset = 7;
     // keyArray capacity must be enough for dictionary
-    int arraySize = static_cast<uint32_t>(numberofElements) + offset;
+    int arraySize = numberofElements + static_cast<int>(offset);
     JSHandle<TaggedArray> keyArray = factory->NewTaggedArray(arraySize);
     dictHandle->GetAllKeys(thread, offset, *keyArray);
     // Skip the first seven positions
