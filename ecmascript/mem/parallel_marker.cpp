@@ -17,7 +17,7 @@
 #include "ecmascript/mem/visitor.h"
 
 namespace panda::ecmascript {
-Marker::Marker(Heap *heap) : heap_(heap), objXRay_(heap_->GetEcmaVM()) {}
+Marker::Marker(Heap *heap) : heap_(heap), objXRay_(heap->GetEcmaVM()), workManager_(heap->GetWorkManager()) {}
 
 void Marker::MarkRoots(uint32_t threadId)
 {
@@ -25,7 +25,7 @@ void Marker::MarkRoots(uint32_t threadId)
         std::bind(&Marker::HandleRoots, this, threadId, std::placeholders::_1, std::placeholders::_2),
         std::bind(&Marker::HandleRangeRoots, this, threadId, std::placeholders::_1, std::placeholders::_2,
                   std::placeholders::_3));
-    heap_->GetWorkManager()->PushWorkNodeToGlobal(threadId, false);
+    workManager_->PushWorkNodeToGlobal(threadId, false);
 }
 
 void Marker::ProcessOldToNew(uint32_t threadId)
@@ -74,11 +74,10 @@ void NonMovableMarker::ProcessMarkStack(uint32_t threadId)
             }
         }
     };
-    WorkManager *workManager = heap_->GetWorkManager();
     TaggedObject *obj = nullptr;
     while (true) {
         obj = nullptr;
-        if (!workManager->Pop(threadId, &obj)) {
+        if (!workManager_->Pop(threadId, &obj)) {
             break;
         }
 
@@ -108,16 +107,15 @@ void SemiGCMarker::ProcessMarkStack(uint32_t threadId)
                 auto slotStatus = MarkObject(threadId, value.GetTaggedObject(), slot);
                 if (!rootRegion->InYoungGeneration() && slotStatus == SlotStatus::KEEP_SLOT) {
                     SlotNeedUpdate waitUpdate(reinterpret_cast<TaggedObject *>(root), slot);
-                    heap_->GetWorkManager()->PushSlotNeedUpdate(threadId, waitUpdate);
+                    workManager_->PushSlotNeedUpdate(threadId, waitUpdate);
                 }
             }
         }
     };
-    WorkManager *workManager = heap_->GetWorkManager();
     TaggedObject *obj = nullptr;
     while (true) {
         obj = nullptr;
-        if (!workManager->Pop(threadId, &obj)) {
+        if (!workManager_->Pop(threadId, &obj)) {
             break;
         }
 
@@ -141,11 +139,10 @@ void CompressGCMarker::ProcessMarkStack(uint32_t threadId)
             }
         }
     };
-    WorkManager *workManager = heap_->GetWorkManager();
     TaggedObject *obj = nullptr;
     while (true) {
         obj = nullptr;
-        if (!workManager->Pop(threadId, &obj)) {
+        if (!workManager_->Pop(threadId, &obj)) {
             break;
         }
 

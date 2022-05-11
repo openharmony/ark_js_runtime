@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_MEM_HEAP_ROOTS_H
-#define ECMASCRIPT_MEM_HEAP_ROOTS_H
+#ifndef ECMASCRIPT_MEM_OBJECT_XRAY_H
+#define ECMASCRIPT_MEM_OBJECT_XRAY_H
 
 #include <cstdint>
 
@@ -32,8 +32,6 @@
 #include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_stack.h"
 #include "ecmascript/js_api_stack_iterator.h"
-#include "ecmascript/jspandafile/class_info_extractor.h"
-#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_api_tree_map.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set.h"
@@ -73,18 +71,17 @@
 #include "ecmascript/js_string_iterator.h"
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/js_weak_container.h"
+#include "ecmascript/jspandafile/class_info_extractor.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/mem/machine_code.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/slots.h"
+#include "ecmascript/module/js_module_namespace.h"
+#include "ecmascript/module/js_module_source_text.h"
 #include "ecmascript/ts_types/ts_type.h"
 #include "ecmascript/ts_types/ts_type_table.h"
-#include "ecmascript/module/js_module_source_text.h"
-#include "ecmascript/module/js_module_namespace.h"
 
 namespace panda::ecmascript {
-class EcmaVM;
-class JSHClass;
-
 class ObjectXRay {
 public:
     explicit ObjectXRay(EcmaVM *ecmaVm) : ecmaVm_(ecmaVm) {}
@@ -490,4 +487,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // ECMASCRIPT_MEM_HEAP_ROOTS_H
+#endif  // ECMASCRIPT_MEM_OBJECT_XRAY_H

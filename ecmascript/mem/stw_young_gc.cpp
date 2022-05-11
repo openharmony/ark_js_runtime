@@ -39,8 +39,7 @@ void STWYoungGC::RunPhases()
     [[maybe_unused]] ClockScope clockScope;
 
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::RunPhases");
-    bool concurrentMark = heap_->CheckConcurrentMark();
-    if (concurrentMark) {
+    if (heap_->CheckOngoingConcurrentMarking()) {
         ECMA_GC_LOG() << "STWYoungGC after ConcurrentMarking";
         heap_->GetConcurrentMarker()->Reset();  // HPPGC use mark result to move TaggedObject.
     }

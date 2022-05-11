@@ -210,10 +210,13 @@ TaggedObject *Heap::AllocateDynClassClass(JSHClass *hclass, size_t size)
 
 TaggedObject *Heap::AllocateHugeObject(JSHClass *hclass, size_t size)
 {
-    auto *object = reinterpret_cast<TaggedObject *>(hugeObjectSpace_->Allocate(size));
+    // Check whether it is necessary to trigger Old GC before expanding to avoid OOM risk.
+    CheckAndTriggerOldGC();
+
+    auto *object = reinterpret_cast<TaggedObject *>(hugeObjectSpace_->Allocate(size, thread_));
     if (UNLIKELY(object == nullptr)) {
         CollectGarbage(TriggerGCType::OLD_GC);
-        object = reinterpret_cast<TaggedObject *>(hugeObjectSpace_->Allocate(size));
+        object = reinterpret_cast<TaggedObject *>(hugeObjectSpace_->Allocate(size, thread_));
         if (UNLIKELY(object == nullptr)) {
             ThrowOutOfMemoryError(size, "Heap::AllocateHugeObject");
         }

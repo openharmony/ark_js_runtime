@@ -13,19 +13,22 @@
  * limitations under the License.
  */
 
+#include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/barriers-inl.h"
+#include "ecmascript/mem/heap.h"
 
 namespace panda::ecmascript {
 void Barriers::Update(uintptr_t slotAddr, Region *objectRegion, TaggedObject *value, Region *valueRegion)
 {
-    auto heap = valueRegion->GetHeap();
+    JSThread* thread = valueRegion->GetJSThread();
+    auto heap = thread->GetEcmaVM()->GetHeap();
     bool isFullMark = heap->IsFullMark();
     if (!JSTaggedValue(value).IsWeakForHeapObject()) {
         if (!isFullMark && !valueRegion->InYoungGeneration()) {
             return;
         }
         if (valueRegion->AtomicMark(value)) {
-            valueRegion->GetWorkManager()->Push(0, value, valueRegion);
+            heap->GetWorkManager()->Push(0, value, valueRegion);
         }
     }
     if (isFullMark && valueRegion->InCollectSet() && !objectRegion->InYoungOrCSetGeneration()) {
