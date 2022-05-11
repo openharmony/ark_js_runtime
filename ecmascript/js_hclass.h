@@ -230,8 +230,8 @@ public:
     static constexpr int TYPE_BITFIELD_NUM = 8;
     using ObjectTypeBits = BitField<JSType, 0, TYPE_BITFIELD_NUM>;  // 7
     using CallableBit = ObjectTypeBits::NextFlag;
-    using ConstrutorBit = CallableBit::NextFlag;      // 9
-    using BuiltinsCtorBit = ConstrutorBit::NextFlag;  // 10
+    using ConstructorBit = CallableBit::NextFlag;      // 9
+    using BuiltinsCtorBit = ConstructorBit::NextFlag;  // 10
     using ExtensibleBit = BuiltinsCtorBit::NextFlag;
     using IsPrototypeBit = ExtensibleBit::NextFlag;
     using ElementRepresentationBits = IsPrototypeBit::NextField<Representation, 3>;        // 3 means next 3 bit
@@ -329,7 +329,7 @@ public:
 
     inline void SetConstructor(bool flag) const
     {
-        ConstrutorBit::Set<uint32_t>(flag, GetBitFieldAddr());
+        ConstructorBit::Set<uint32_t>(flag, GetBitFieldAddr());
     }
 
     inline void SetBuiltinsCtor(bool flag) const
@@ -838,7 +838,7 @@ public:
     inline bool IsConstructor() const
     {
         uint32_t bits = GetBitField();
-        return ConstrutorBit::Decode(bits);
+        return ConstructorBit::Decode(bits);
     }
 
     inline bool IsBuiltinsCtor() const

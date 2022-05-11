@@ -249,6 +249,7 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(CreateArrayWithBuffer)              \
     V(CreateObjectWithBuffer)             \
     V(NewLexicalEnvDyn)                   \
+    V(NewThisObject)                      \
     V(NewObjDynRange)                     \
     V(DefinefuncDyn)                      \
     V(CreateRegExpWithLiteral)            \
@@ -262,6 +263,7 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(ThrowNotCallableException)          \
     V(ThrowCallConstructorException)      \
     V(ThrowStackOverflowException)        \
+    V(ThrowDerivedMustReturnException)    \
     V(CallNative)                         \
     V(CallSpreadDyn)                      \
     V(DefineGetterSetterByValue)          \

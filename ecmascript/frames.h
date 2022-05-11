@@ -339,17 +339,33 @@ public:
     }
 };
 
-class InterpretedFrameBase {
-public:
-    InterpretedFrameBase() = default;
-    ~InterpretedFrameBase() = default;
-    JSTaggedType  *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
-    FrameType type;
-    static constexpr size_t TYPE_OFFSET_32 = sizeof(uint32_t);
-    static constexpr size_t TYPE_OFFSET_64 = sizeof(uint64_t);
-    static constexpr size_t SizeArch32 = TYPE_OFFSET_32 + sizeof(FrameType);
-    static constexpr size_t SizeArch64 = TYPE_OFFSET_64 + sizeof(FrameType);
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+struct InterpretedFrameBase : public base::AlignedStruct<base::AlignedPointer::Size(),
+                                                         base::AlignedPointer,
+                                                         base::AlignedSize> {
+    enum class Index : size_t {
+        PrevIndex = 0,
+        TypeIndex,
+        NumOfMembers
+    };
+    static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
+
+    static size_t GetPrevOffset(bool isArch32)
+    {
+        return GetOffset<static_cast<size_t>(Index::PrevIndex)>(isArch32);
+    }
+
+    static size_t GetTypeOffset(bool isArch32)
+    {
+        return GetOffset<static_cast<size_t>(Index::TypeIndex)>(isArch32);
+    }
+
+    alignas(EAS) JSTaggedType *prev {nullptr}; // for llvm :c-fp ; for interrupt: thread-fp for gc
+    alignas(EAS) FrameType type {FrameType::OPTIMIZED_FRAME}; // 0
 };
+STATIC_ASSERT_EQ_ARCH(sizeof(InterpretedFrameBase),
+                      InterpretedFrameBase::SizeArch32,
+                      InterpretedFrameBase::SizeArch64);
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct InterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
@@ -500,9 +516,13 @@ struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTyp
     alignas(EAS) JSTaggedType *fp {nullptr};
     alignas(EAS) const uint8_t *pc {nullptr};
     alignas(EAS) InterpretedFrameBase base;
+    // vregs, not exist in native
+    // args, may be truncated if not extra
+    // thisObject, used in asm constructor frame
+    // numArgs, used if extra or asm constructor frame
+    enum ReverseIndex : size_t { NUM_ARGS_REVERSE_INDEX = -1, THIS_OBJECT_REVERSE_INDEX = -2 };
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(AsmInterpretedFrame), AsmInterpretedFrame::SizeArch32, AsmInterpretedFrame::SizeArch64);
-
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct InterpretedEntryFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),

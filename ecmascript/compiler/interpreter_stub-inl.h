@@ -226,6 +226,13 @@ GateRef InterpreterStub::GetConstpoolFromFunction(GateRef function)
     return Load(VariableType::JS_POINTER(), function, IntPtr(JSFunction::CONSTANT_POOL_OFFSET));
 }
 
+// only use for fast new, not universal API
+GateRef InterpreterStub::GetThisObjectFromFastNewFrame(GateRef prevSp)
+{
+    GateRef currentSpEnd = PointerSub(prevSp, IntPtr(AsmInterpretedFrame::GetSize(GetEnvironment()->IsArch32Bit())));
+    return GetVregValue(currentSpEnd, IntPtr(AsmInterpretedFrame::ReverseIndex::THIS_OBJECT_REVERSE_INDEX));
+}
+
 GateRef InterpreterStub::GetResumeModeFromGeneratorObject(GateRef obj)
 {
     GateRef bitfieldOffset = IntPtr(JSGeneratorObject::BIT_FIELD_OFFSET);
@@ -293,6 +300,21 @@ void InterpreterStub::SetModuleToFunction(GateRef glue, GateRef function, GateRe
     Store(VariableType::JS_POINTER(), glue, function, offset, value);
 }
 
+void InterpreterStub::SetFrameState(GateRef glue, GateRef sp, GateRef function, GateRef acc,
+                                    GateRef env, GateRef pc, GateRef prev, GateRef type)
+{
+    GateRef state = GetFrame(sp);
+    SetFunctionToFrame(glue, state, function);
+    SetAccToFrame(glue, state, acc);
+    SetEnvToFrame(glue, state, env);
+    SetPcToFrame(glue, state, pc);
+    GateRef prevOffset = IntPtr(AsmInterpretedFrame::GetBaseOffset(GetEnvironment()->IsArch32Bit()));
+    Store(VariableType::NATIVE_POINTER(), glue, state, prevOffset, prev);
+    GateRef frameTypeOffset = PtrAdd(prevOffset, IntPtr(
+        InterpretedFrameBase::GetTypeOffset(GetEnvironment()->IsArch32Bit())));
+    Store(VariableType::INT64(), glue, state, frameTypeOffset, type);
+}
+
 GateRef InterpreterStub::GetCurrentSpFrame(GateRef glue)
 {
     bool isArch32 = GetEnvironment()->Is32Bit();
@@ -317,6 +339,68 @@ void InterpreterStub::SetLastLeaveFrame(GateRef glue, GateRef value)
 {
     GateRef spOffset = IntPtr(JSThread::GlueData::GetLeaveFrameOffset(GetEnvironment()->Is32Bit()));
     Store(VariableType::NATIVE_POINTER(), glue, glue, spOffset, value);
+}
+
+GateRef InterpreterStub::CheckStackOverflow(GateRef glue, GateRef sp)
+{
+    GateRef frameBaseOffset = IntPtr(JSThread::GlueData::GetFrameBaseOffset(GetEnvironment()->IsArch32Bit()));
+    GateRef frameBase = Load(VariableType::NATIVE_POINTER(), glue, frameBaseOffset);
+    return Int64UnsignedLessThanOrEqual(sp,
+        PtrAdd(frameBase, IntPtr(JSThread::RESERVE_STACK_SIZE * sizeof(JSTaggedType))));
+}
+
+GateRef InterpreterStub::PushArg(GateRef glue, GateRef sp, GateRef value)
+{
+    GateRef newSp = PointerSub(sp, IntPtr(sizeof(JSTaggedType)));
+    Store(VariableType::INT64(), glue, newSp, IntPtr(0), value);
+    return newSp;
+}
+
+GateRef InterpreterStub::PushUndefined(GateRef glue, GateRef sp, GateRef num)
+{
+    auto env = GetEnvironment();
+    Label subEntry(env);
+    env->SubCfgEntry(&subEntry);
+    DEFVARIABLE(newSp, VariableType::NATIVE_POINTER(), sp);
+    DEFVARIABLE(i, VariableType::INT32(), Int32(0));
+    Label pushUndefinedBegin(env);
+    Label pushUndefinedAgain(env);
+    Label pushUndefinedEnd(env);
+    Branch(Int32LessThan(*i, num), &pushUndefinedBegin, &pushUndefinedEnd);
+    LoopBegin(&pushUndefinedBegin);
+    newSp = PushArg(glue, *newSp, Int64(JSTaggedValue::VALUE_UNDEFINED));
+    i = Int32Add(*i, Int32(1));
+    Branch(Int32LessThan(*i, num), &pushUndefinedAgain, &pushUndefinedEnd);
+    Bind(&pushUndefinedAgain);
+    LoopEnd(&pushUndefinedBegin);
+    Bind(&pushUndefinedEnd);
+    auto ret = *newSp;
+    env->SubCfgExit();
+    return ret;
+}
+
+GateRef InterpreterStub::PushRange(GateRef glue, GateRef sp, GateRef array, GateRef startIndex, GateRef endIndex)
+{
+    auto env = GetEnvironment();
+    Label subEntry(env);
+    env->SubCfgEntry(&subEntry);
+    DEFVARIABLE(newSp, VariableType::NATIVE_POINTER(), sp);
+    DEFVARIABLE(i, VariableType::INT32(), endIndex);
+    Label pushArgsBegin(env);
+    Label pushArgsAgain(env);
+    Label pushArgsEnd(env);
+    Branch(Int32GreaterThanOrEqual(*i, startIndex), &pushArgsBegin, &pushArgsEnd);
+    LoopBegin(&pushArgsBegin);
+    GateRef arg = GetVregValue(array, ChangeInt32ToIntPtr(*i));
+    newSp = PushArg(glue, *newSp, arg);
+    i = Int32Sub(*i, Int32(1));
+    Branch(Int32GreaterThanOrEqual(*i, startIndex), &pushArgsAgain, &pushArgsEnd);
+    Bind(&pushArgsAgain);
+    LoopEnd(&pushArgsBegin);
+    Bind(&pushArgsEnd);
+    auto ret = *newSp;
+    env->SubCfgExit();
+    return ret;
 }
 
 GateRef InterpreterStub::ReadInst32_0(GateRef pc)
