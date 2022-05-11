@@ -368,7 +368,7 @@ void Builtins::InitializeGlobalObject(const JSHandle<GlobalEnv> &env, const JSHa
 #endif
 
     JSRuntimeOptions options = vm_->GetJSOptions();
-    if (options.IsEnableArkTools()) {
+    if (options.EnableArkTools()) {
         JSHandle<JSTaggedValue> arkTools(InitializeArkTools(env));
         SetConstantObject(globalObject, "ArkTools", arkTools);
     }

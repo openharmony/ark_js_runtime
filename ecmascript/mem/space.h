@@ -26,9 +26,6 @@
 #include "securec.h"
 
 namespace panda::ecmascript {
-class EcmaVM;
-class Heap;
-
 enum MemSpaceType {
     OLD_SPACE = 0,
     NON_MOVABLE,
@@ -83,15 +80,10 @@ static inline std::string ToSpaceTypeName(MemSpaceType type)
 
 class Space {
 public:
-    Space(Heap *heap, MemSpaceType spaceType, size_t initialCapacity, size_t maximumCapacity);
+    Space(HeapRegionAllocator *regionAllocator, MemSpaceType spaceType, size_t initialCapacity, size_t maximumCapacity);
     virtual ~Space() = default;
     NO_COPY_SEMANTIC(Space);
     NO_MOVE_SEMANTIC(Space);
-
-    Heap *GetHeap() const
-    {
-        return heap_;
-    }
 
     size_t GetMaximumCapacity() const
     {
@@ -196,9 +188,6 @@ public:
 protected:
     void ClearAndFreeRegion(Region *region);
 
-    Heap *heap_ {nullptr};
-    EcmaVM *vm_ {nullptr};
-    JSThread *thread_ {nullptr};
     HeapRegionAllocator *heapRegionAllocator_ {nullptr};
     EcmaList<Region> regionList_ {};
     MemSpaceType spaceType_ {};
@@ -210,12 +199,12 @@ protected:
 
 class HugeObjectSpace : public Space {
 public:
-    explicit HugeObjectSpace(Heap *heap, size_t initialCapacity = MAX_HUGE_OBJECT_SPACE_SIZE,
+    explicit HugeObjectSpace(HeapRegionAllocator *regionAllocator, size_t initialCapacity = MAX_HUGE_OBJECT_SPACE_SIZE,
                              size_t maximumCapacity = MAX_HUGE_OBJECT_SPACE_SIZE);
     ~HugeObjectSpace() override = default;
     NO_COPY_SEMANTIC(HugeObjectSpace);
     NO_MOVE_SEMANTIC(HugeObjectSpace);
-    uintptr_t Allocate(size_t objectSize);
+    uintptr_t Allocate(size_t objectSize, JSThread *thread);
     void Sweep();
     size_t GetHeapObjectSize() const;
     void IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const;

@@ -20,7 +20,7 @@
 #include "ecmascript/mem/mem_map_allocator.h"
 
 namespace panda::ecmascript {
-Region *HeapRegionAllocator::AllocateAlignedRegion(Space *space, size_t capacity)
+Region *HeapRegionAllocator::AllocateAlignedRegion(Space *space, size_t capacity, JSThread* thread)
 {
     if (capacity == 0) {
         LOG_ECMA_MEM(FATAL) << "capacity must have a size bigger than 0";
@@ -50,7 +50,7 @@ Region *HeapRegionAllocator::AllocateAlignedRegion(Space *space, size_t capacity
     uintptr_t begin = AlignUp(mem + sizeof(Region), static_cast<size_t>(MemAlignment::MEM_ALIGN_REGION));
     uintptr_t end = mem + capacity;
 
-    return new (ToVoidPtr(mem)) Region(space, space->GetHeap(), mem, begin, end, flags);
+    return new (ToVoidPtr(mem)) Region(space, thread, mem, begin, end, flags);
 }
 
 void HeapRegionAllocator::FreeRegion(Region *region)

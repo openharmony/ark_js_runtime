@@ -22,7 +22,10 @@
 
 namespace panda::ecmascript {
 LinearSpace::LinearSpace(Heap *heap, MemSpaceType type, size_t initialCapacity, size_t maximumCapacity)
-    : Space(heap, type, initialCapacity, maximumCapacity), allocator_(new BumpPointerAllocator()), waterLine_(0)
+    : Space(heap->GetHeapRegionAllocator(), type, initialCapacity, maximumCapacity),
+      heap_(heap),
+      allocator_(new BumpPointerAllocator()),
+      waterLine_(0)
 {
 }
 
@@ -69,7 +72,7 @@ bool LinearSpace::Expand(bool isPromoted)
         }
         currentRegion->SetHighWaterMark(top);
     }
-    Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
+    Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE, heap_->GetJSThread());
     allocator_->Reset(region->GetBegin(), region->GetEnd());
 
     AddRegion(region);
@@ -126,7 +129,7 @@ SemiSpace::SemiSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
 
 void SemiSpace::Initialize()
 {
-    Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
+    Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE, heap_->GetJSThread());
     AddRegion(region);
     allocator_->Reset(region->GetBegin(), region->GetEnd());
 }

@@ -34,8 +34,7 @@ void FullGC::RunPhases()
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), FullGC_RunPhases);
     ClockScope clockScope;
 
-    bool concurrentMark = heap_->CheckConcurrentMark();
-    if (concurrentMark) {
+    if (heap_->CheckOngoingConcurrentMarking()) {
         ECMA_GC_LOG() << "FullGC after ConcurrentMarking";
         heap_->GetConcurrentMarker()->Reset();  // HPPGC use mark result to move TaggedObject.
     }

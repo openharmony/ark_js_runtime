@@ -26,6 +26,7 @@
 #include "os/mutex.h"
 
 namespace panda::ecmascript {
+class EcmaVM;
 class Heap;
 
 class ConcurrentMarker {
@@ -39,7 +40,7 @@ public:
 
     void HandleMarkingFinished();  // call in vm thread.
     void WaitMarkingFinished();  // call in main thread
-    void Reset(bool isRevertCSet = true);
+    void Reset(bool revertCSet = true);
 
     double GetDuration() const
     {

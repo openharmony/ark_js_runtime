@@ -18,8 +18,8 @@
 
 #include <cstdint>
 
-#include "libpandabase/mem/mem.h"
 #include "ecmascript/mem/tagged_object.h"
+#include "libpandabase/mem/mem.h"
 #include "libpandabase/utils/logger.h"
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage, bugprone-lambda-function-name)

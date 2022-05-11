@@ -27,14 +27,14 @@
 
 namespace panda::ecmascript {
 WorkManager::WorkManager(Heap *heap, uint32_t threadNum)
-    : heap_(heap), threadNum_(threadNum), continuousQueue_ { nullptr }, markSpace_(0), spaceTop_(0), markSpaceEnd_(0),
+    : heap_(heap), threadNum_(threadNum), continuousQueue_ { nullptr }, workSpace_(0), spaceStart_(0), spaceEnd_(0),
       parallelGCTaskPhase_(UNDEFINED_TASK)
 {
     for (uint32_t i = 0; i < threadNum_; i++) {
         continuousQueue_[i] = new ProcessQueue(heap);
     }
-    markSpace_ =
-        ToUintPtr(const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->AllocateBuffer(SPACE_SIZE));
+    workSpace_ =
+        ToUintPtr(heap_->GetNativeAreaAllocator()->AllocateBuffer(SPACE_SIZE));
 }
 
 WorkManager::~WorkManager()
@@ -44,8 +44,8 @@ WorkManager::~WorkManager()
         delete continuousQueue_[i];
         continuousQueue_[i] = nullptr;
     }
-    const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->FreeBuffer(
-        reinterpret_cast<void *>(markSpace_));
+    heap_->GetNativeAreaAllocator()->FreeBuffer(
+        reinterpret_cast<void *>(workSpace_));
 }
 
 bool WorkManager::Push(uint32_t threadId, TaggedObject *object)
@@ -119,10 +119,10 @@ void WorkManager::Finish(size_t &aliveSize)
         aliveSize += holder.aliveSize_;
     }
 
-    while (!unuseSpace_.empty()) {
-        const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->FreeBuffer(reinterpret_cast<void *>(
-            unuseSpace_.back()));
-        unuseSpace_.pop_back();
+    while (!agedSpaces_.empty()) {
+        heap_->GetNativeAreaAllocator()->FreeBuffer(reinterpret_cast<void *>(
+            agedSpaces_.back()));
+        agedSpaces_.pop_back();
     }
 }
 
@@ -131,15 +131,15 @@ void WorkManager::Finish(size_t &aliveSize, size_t &promotedSize)
     Finish(aliveSize);
     for (uint32_t i = 0; i < threadNum_; i++) {
         WorkNodeHolder &holder = works_[i];
-        promotedSize += holder.aliveSize_;
+        promotedSize += holder.promotedSize_;
     }
 }
 
 void WorkManager::Initialize(TriggerGCType gcType, ParallelGCTaskPhase taskPhase)
 {
     parallelGCTaskPhase_ = taskPhase;
-    spaceTop_ = markSpace_;
-    markSpaceEnd_ = markSpace_ + SPACE_SIZE;
+    spaceStart_ = workSpace_;
+    spaceEnd_ = workSpace_ + SPACE_SIZE;
     for (uint32_t i = 0; i < threadNum_; i++) {
         WorkNodeHolder &holder = works_[i];
         holder.inNode_ = AllocateWorkNode();
@@ -157,22 +157,24 @@ void WorkManager::Initialize(TriggerGCType gcType, ParallelGCTaskPhase taskPhase
 WorkNode *WorkManager::AllocateWorkNode()
 {
     size_t totalSize = sizeof(WorkNode) + sizeof(Stack) + STACK_AREA_SIZE;
+    ASSERT(totalSize < SPACE_SIZE);
+
     // CAS
-    volatile auto atomicField = reinterpret_cast<volatile std::atomic<uintptr_t> *>(&spaceTop_);
+    volatile auto atomicField = reinterpret_cast<volatile std::atomic<uintptr_t> *>(&spaceStart_);
     bool result = false;
     uintptr_t begin = 0;
     do {
         begin = atomicField->load(std::memory_order_acquire);
-        if (begin + totalSize >= markSpaceEnd_) {
+        if (begin + totalSize >= spaceEnd_) {
             os::memory::LockHolder lock(mtx_);
             begin = atomicField->load(std::memory_order_acquire);
-            if (begin + totalSize >= markSpaceEnd_) {
-                unuseSpace_.emplace_back(markSpace_);
-                markSpace_ = ToUintPtr(const_cast<NativeAreaAllocator *>(
-                    heap_->GetNativeAreaAllocator())->AllocateBuffer(SPACE_SIZE));
-                spaceTop_ = markSpace_;
-                markSpaceEnd_ = markSpace_ + SPACE_SIZE;
-                begin = spaceTop_;
+            if (begin + totalSize >= spaceEnd_) {
+                agedSpaces_.emplace_back(workSpace_);
+                workSpace_ = ToUintPtr(
+                    heap_->GetNativeAreaAllocator()->AllocateBuffer(SPACE_SIZE));
+                spaceStart_ = workSpace_;
+                spaceEnd_ = workSpace_ + SPACE_SIZE;
+                begin = spaceStart_;
             }
         }
         result = std::atomic_compare_exchange_strong_explicit(atomicField, &begin, begin + totalSize,

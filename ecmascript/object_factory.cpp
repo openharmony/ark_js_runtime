@@ -1945,8 +1945,8 @@ JSHandle<BigInt> ObjectFactory::NewBigInt()
 void ObjectFactory::NewObjectHook() const
 {
 #ifndef NDEBUG
-    if (vm_->GetJSOptions().IsEnableForceGC() && vm_->IsInitialized()) {
-        if (vm_->GetJSOptions().IsForceFullGC()) {
+    if (vm_->GetJSOptions().EnableForceGC() && vm_->IsInitialized()) {
+        if (vm_->GetJSOptions().ForceFullGC()) {
             vm_->CollectGarbage(TriggerGCType::YOUNG_GC);
             vm_->CollectGarbage(TriggerGCType::OLD_GC);
             vm_->CollectGarbage(TriggerGCType::FULL_GC);

@@ -61,6 +61,12 @@ namespace panda::ecmascript {
     #define ECMASCRIPT_ENABLE_THREAD_CHECK 1
     #define ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER 0
 #endif
+
+#if defined(PANDA_TARGET_32)
+    #define ECMASCRIPT_DISABLE_CONCURRENT_MARKING 1
+#else
+    #define ECMASCRIPT_DISABLE_CONCURRENT_MARKING 0
+#endif
 }  // namespace panda::ecmascript
 
 #endif  // ECMASCRIPT_BASE_CONFIG_H

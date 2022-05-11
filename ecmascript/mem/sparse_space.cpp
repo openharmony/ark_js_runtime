@@ -24,14 +24,18 @@
 
 namespace panda::ecmascript {
 SparseSpace::SparseSpace(Heap *heap, MemSpaceType type, size_t initialCapacity, size_t maximumCapacity)
-    : Space(heap, type, initialCapacity, maximumCapacity), sweepState_(SweepState::NO_SWEEP), liveObjectSize_(0)
+    : Space(heap->GetHeapRegionAllocator(), type, initialCapacity, maximumCapacity),
+      sweepState_(SweepState::NO_SWEEP),
+      heap_(heap),
+      liveObjectSize_(0)
 {
     allocator_ = new FreeListAllocator(heap);
 }
 
 void SparseSpace::Initialize()
 {
-    Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
+    Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE,
+                                                                 heap_->GetJSThread());
     region->InitializeSet();
     if (spaceType_ == MemSpaceType::MACHINE_CODE_SPACE) {
         int res = region->SetCodeExecutableAndReadable();
@@ -48,7 +52,7 @@ void SparseSpace::Reset()
     ReclaimRegions();
 }
 
-uintptr_t SparseSpace::Allocate(size_t size, bool isAllowGC)
+uintptr_t SparseSpace::Allocate(size_t size, bool allowGC)
 {
     auto object = allocator_->Allocate(size);
     CHECK_OBJECT_AND_INC_OBJ_SIZE(size);
@@ -58,8 +62,8 @@ uintptr_t SparseSpace::Allocate(size_t size, bool isAllowGC)
         CHECK_OBJECT_AND_INC_OBJ_SIZE(size);
     }
 
-    if (isAllowGC) {
-        // Check whether it is necessary to trigger Old GC before expanding or OOM risk.
+    if (allowGC) {
+        // Check whether it is necessary to trigger Old GC before expanding to avoid OOM risk.
         heap_->CheckAndTriggerOldGC();
     }
 
@@ -69,7 +73,7 @@ uintptr_t SparseSpace::Allocate(size_t size, bool isAllowGC)
         return object;
     }
 
-    if (isAllowGC) {
+    if (allowGC) {
         heap_->CollectGarbage(TriggerGCType::OLD_GC);
         object = Allocate(size, false);
         // Size is already increment
@@ -84,7 +88,7 @@ bool SparseSpace::Expand()
         return false;
     }
 
-    Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
+    Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE, heap_->GetJSThread());
     if (spaceType_ == MemSpaceType::MACHINE_CODE_SPACE) {
         int res = region->SetCodeExecutableAndReadable();
         LOG_ECMA_MEM(DEBUG) << "MachineCodeSpace::Expand() SetCodeExecutableAndReadable" << res;

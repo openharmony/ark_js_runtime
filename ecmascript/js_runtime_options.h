@@ -63,7 +63,7 @@ public:
         parser->Add(&logCompiledMethods);
         parser->Add(&internal_memory_size_limit_);
         parser->Add(&heap_size_limit_);
-        parser->Add(&ic_enable_);
+        parser->Add(&enableIC_);
         parser->Add(&snapshot_serialize_enabled_);
         parser->Add(&snapshot_file_);
         parser->Add(&framework_abc_file_);
@@ -76,7 +76,7 @@ public:
         parser->Add(&enableRuntimeStat_);
     }
 
-    bool IsEnableArkTools() const
+    bool EnableArkTools() const
     {
         return (enableArkTools_.GetValue()) ||
             ((static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::ENABLE_ARKTOOLS) != 0);
@@ -92,7 +92,7 @@ public:
         return enableArkTools_.WasSet();
     }
 
-    bool IsEnableStubAot() const
+    bool EnableStubAot() const
     {
         return enableStubAot_.GetValue();
     }
@@ -182,7 +182,7 @@ public:
         asmOptLevel_.SetValue(value);
     }
 
-    bool IsEnableForceGC() const
+    bool EnableForceGC() const
     {
         return enableForceGc_.GetValue();
     }
@@ -192,7 +192,7 @@ public:
         enableForceGc_.SetValue(value);
     }
 
-    bool IsForceFullGC() const
+    bool ForceFullGC() const
     {
         return forceFullGc_.GetValue();
     }
@@ -202,7 +202,7 @@ public:
         forceFullGc_.SetValue(value);
     }
 
-    bool IsEnableCpuProfiler() const
+    bool EnableCpuProfiler() const
     {
         return enableCpuprofiler_.GetValue();
     }
@@ -239,32 +239,32 @@ public:
         return arkProperties_.GetValue();
     }
 
-    bool IsEnableOptionalLog() const
+    bool EnableOptionalLog() const
     {
         return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::OPTIONAL_LOG) != 0;
     }
 
-    bool IsEnableGCStatsPrint() const
+    bool EnableGCStatsPrint() const
     {
         return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::GC_STATS_PRINT) != 0;
     }
 
-    bool IsEnableParallelGC() const
+    bool EnableParallelGC() const
     {
         return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::PARALLEL_GC) != 0;
     }
 
-    bool IsEnableConcurrentMark() const
+    bool EnableConcurrentMark() const
     {
         return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::CONCURRENT_MARK) != 0;
     }
 
-    bool IsEnableConcurrentSweep() const
+    bool EnableConcurrentSweep() const
     {
         return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::CONCURRENT_SWEEP) != 0;
     }
 
-    bool IsEnableThreadCheck() const
+    bool EnableThreadCheck() const
     {
         return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::THREAD_CHECK) != 0;
     }
@@ -408,19 +408,19 @@ public:
         return heap_size_limit_.WasSet();
     }
 
-    bool IsIcEnable() const
+    bool EnableIC() const
     {
-        return ic_enable_.GetValue();
+        return enableIC_.GetValue();
     }
 
-    void SetIcEnable(bool value)
+    void SetEnableIC(bool value)
     {
-        ic_enable_.SetValue(value);
+        enableIC_.SetValue(value);
     }
 
-    bool WasSetIcEnable() const
+    bool WasSetEnableIC() const
     {
-        return ic_enable_.WasSet();
+        return enableIC_.WasSet();
     }
 
     bool IsSnapshotSerializeEnabled() const
@@ -618,7 +618,7 @@ private:
         R"(Max internal memory used by the VM. Default: 2147483648)"};
     PandArg<uint32_t> heap_size_limit_ {"heap-size-limit", HEAP_SIZE_LIMIT_DEFAULT,
         R"(Max heap size. Default: 536870912)"};
-    PandArg<bool> ic_enable_ {"ic-enable", true, R"(switch of inline cache. Default: true)"};
+    PandArg<bool> enableIC_ {"enable-ic", true, R"(switch of inline cache. Default: true)"};
     PandArg<bool> snapshot_serialize_enabled_ {"snapshot-serialize-enabled", false,
         R"(whether snapshot serialize is enabled. Default: false)"};
     PandArg<std::string> snapshot_file_ {"snapshot-file", R"(/system/etc/snapshot)",

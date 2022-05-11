@@ -46,7 +46,7 @@ public:
     void Initialize() override;
     void Reset();
 
-    uintptr_t Allocate(size_t size, bool isAllowGC = true);
+    uintptr_t Allocate(size_t size, bool allowGC = true);
     bool Expand();
 
     // For sweeping
@@ -85,6 +85,7 @@ public:
 protected:
     FreeListAllocator *allocator_;
     SweepState sweepState_ = SweepState::NO_SWEEP;
+    Heap *heap_ {nullptr};
 
 private:
     // For sweeping

@@ -20,12 +20,13 @@
 #include "ecmascript/mem/gc_bitset.h"
 #include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/slots.h"
+#include "ecmascript/mem/work_manager.h"
 #include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript {
 class Heap;
-class TaggedObject;
 class Region;
+class TaggedObject;
 
 static constexpr uint32_t MAIN_THREAD_INDEX = 0;
 
@@ -72,8 +73,9 @@ protected:
         LOG(FATAL, ECMASCRIPT) << "can not call this method";
     }
 
-    Heap *heap_;
-    ObjectXRay objXRay_;
+    Heap *heap_ {nullptr};
+    ObjectXRay objXRay_ {nullptr};
+    WorkManager *workManager_ {nullptr};
 };
 
 class NonMovableMarker : public Marker {
@@ -107,7 +109,7 @@ protected:
     inline uintptr_t AllocateDstSpace(uint32_t threadId, size_t size, bool &shouldPromote);
     inline void UpdateForwardAddressIfSuccess(uint32_t threadId, TaggedObject *object, JSHClass *klass,
                                               uintptr_t toAddress, size_t size, const MarkWord &markWord,
-                                              ObjectSlot slot);
+                                              ObjectSlot slot, bool isPromoted = false);
     inline bool UpdateForwardAddressIfFailed(TaggedObject *object, uintptr_t toAddress, size_t size, ObjectSlot slot);
 };
 

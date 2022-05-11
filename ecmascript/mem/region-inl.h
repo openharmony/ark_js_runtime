@@ -18,7 +18,7 @@
 
 #include "ecmascript/mem/region.h"
 
-#include "ecmascript/mem/heap.h"
+#include "ecmascript/js_thread.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/space.h"
 
@@ -26,8 +26,7 @@ namespace panda::ecmascript {
 inline RememberedSet *Region::CreateRememberedSet()
 {
     auto bitSize = GCBitset::SizeOfGCBitset(GetCapacity());
-    auto setAddr = const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->
-        Allocate(bitSize + RememberedSet::GCBITSET_DATA_OFFSET);
+    auto setAddr = thread_->GetNativeAreaAllocator()->Allocate(bitSize + RememberedSet::GCBITSET_DATA_OFFSET);
     auto ret = new (setAddr) RememberedSet(bitSize);
     ret->ClearAll();
     return ret;
@@ -53,11 +52,6 @@ inline RememberedSet *Region::GetOrCreateOldToNewRememberedSet()
         }
     }
     return oldToNewSet_;
-}
-
-inline WorkManager *Region::GetWorkManager() const
-{
-    return heap_->GetWorkManager();
 }
 
 inline GCBitset *Region::GetMarkGCBitset() const
@@ -136,8 +130,7 @@ inline void Region::ClearCrossRegionRSetInRange(uintptr_t start, uintptr_t end)
 inline void Region::DeleteCrossRegionRSet()
 {
     if (crossRegionSet_ != nullptr) {
-        const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->Free(
-            crossRegionSet_, crossRegionSet_->Size());
+        thread_->GetNativeAreaAllocator()->Free(crossRegionSet_, crossRegionSet_->Size());
         crossRegionSet_ = nullptr;
     }
 }
@@ -173,15 +166,14 @@ inline void Region::ClearOldToNewRSetInRange(uintptr_t start, uintptr_t end)
 inline void Region::DeleteOldToNewRSet()
 {
     if (oldToNewSet_ != nullptr) {
-        const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->Free(
-            oldToNewSet_, oldToNewSet_->Size());
+        thread_->GetNativeAreaAllocator()->Free(oldToNewSet_, oldToNewSet_->Size());
         oldToNewSet_ = nullptr;
     }
 }
 
 inline bool Region::IsMarking() const
 {
-    return !heap_->GetJSThread()->IsReadyToMark();
+    return !thread_->IsReadyToMark();
 }
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_REGION_INL_H
