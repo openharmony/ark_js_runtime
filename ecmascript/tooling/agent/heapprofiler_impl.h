@@ -99,8 +99,7 @@ public:
     bool WriteChunk(char* data, int size) override
     {
         auto ecmaVm = static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM();
-        AddHeapSnapshotChunk::Create(data, size);
-        frontend_->SendNotification(ecmaVm, std::make_unique<AddHeapSnapshotChunk>());
+        frontend_->SendNotification(ecmaVm, AddHeapSnapshotChunk::Create(data, size));
         return true;
     }
     bool Good() override
