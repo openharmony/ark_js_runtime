@@ -41,7 +41,7 @@ ConcurrentMarker::ConcurrentMarker(Heap *heap)
 void ConcurrentMarker::Mark()
 {
     ECMA_GC_LOG() << "ConcurrentMarker: Concurrent Marking Begin";
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "ConcurrentMarker::Mark");
+    ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "ConcurrentMarker::Mark");
     MEM_ALLOCATE_AND_GC_TRACE(vm_, ConcurrentMarking);
     ClockScope scope;
     InitializeMarking();

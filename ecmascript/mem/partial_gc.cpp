@@ -33,7 +33,7 @@ PartialGC::PartialGC(Heap *heap) : heap_(heap), workManager_(heap->GetWorkManage
 
 void PartialGC::RunPhases()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "PartialGC::RunPhases");
+    ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "PartialGC::RunPhases");
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), PartialGC_RunPhases);
     ClockScope clockScope;
 
@@ -51,7 +51,7 @@ void PartialGC::RunPhases()
 
 void PartialGC::Initialize()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "PartialGC::Initialize");
+    ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "PartialGC::Initialize");
     if (!markingInProgress_) {
         LOG(INFO, RUNTIME) << "No ongoing Concurrent marking. Initializing...";
         heap_->Prepare();
@@ -74,7 +74,7 @@ void PartialGC::Initialize()
 
 void PartialGC::Finish()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "PartialGC::Finish");
+    ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "PartialGC::Finish");
     if (markingInProgress_) {
         auto marker = heap_->GetConcurrentMarker();
         marker->Reset(false);
@@ -86,7 +86,7 @@ void PartialGC::Finish()
 
 void PartialGC::Mark()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "PartialGC::Mark");
+    ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "PartialGC::Mark");
     if (markingInProgress_) {
         heap_->GetConcurrentMarker()->ReMark();
         return;
@@ -103,7 +103,7 @@ void PartialGC::Mark()
 
 void PartialGC::Sweep()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "PartialGC::Sweep");
+    ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "PartialGC::Sweep");
     if (heap_->IsFullMark()) {
         ProcessNativeDelete();
         heap_->GetSweeper()->Sweep();
@@ -127,7 +127,7 @@ void PartialGC::ProcessNativeDelete()
 
 void PartialGC::Evacuate()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "PartialGC::Evacuate");
+    ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "PartialGC::Evacuate");
     heap_->GetEvacuator()->Evacuate();
 }
 }  // namespace panda::ecmascript
