@@ -26,7 +26,7 @@ enum RegisterId : uint8_t {
 };
 
 enum Extend : uint8_t {
-    NO_EXTEND = -1,
+    NO_EXTEND = 0xFF,
     UXTB = 0,
     UXTH = 1,
     UXTW = 2,
@@ -37,8 +37,8 @@ enum Extend : uint8_t {
     SXTX = 7,
 };
 
-enum Shift {
-    NO_SHIFT = -1,
+enum Shift : uint8_t {
+    NO_SHIFT = 0xFF,
     LSL = 0x0,
     LSR = 0x1,
     ASR = 0x2,
