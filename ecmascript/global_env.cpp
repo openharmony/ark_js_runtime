@@ -26,9 +26,10 @@
 #include "ecmascript/js_promise.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/symbol_table.h"
+#include "ecmascript/ecma_string_table.h"
 #include "ecmascript/template_map.h"
-#include "js_array.h"
-#include "js_realm.h"
+#include "ecmascript/js_array.h"
+#include "ecmascript/js_realm.h"
 
 namespace panda::ecmascript {
 void GlobalEnv::Init(JSThread *thread)

@@ -14,9 +14,9 @@
  */
 
 #include "ecmascript/tooling/debugger_service.h"
-
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/tooling/protocol_handler.h"
+#include "ecmascript/tooling/interface/js_debugger_manager.h"
 
 namespace panda::ecmascript::tooling {
 void InitializeDebugger(const std::function<void(const std::string &)> &onResponse, ::panda::ecmascript::EcmaVM *vm)

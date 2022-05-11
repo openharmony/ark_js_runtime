@@ -37,6 +37,8 @@
 #include "ecmascript/mem/stw_young_gc.h"
 #include "ecmascript/mem/verification.h"
 #include "ecmascript/mem/work_manager.h"
+#include "ecmascript/mem/gc_stats.h"
+#include "ecmascript/ecma_string_table.h"
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {

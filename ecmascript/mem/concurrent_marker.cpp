@@ -14,7 +14,6 @@
  */
 
 #include "ecmascript/mem/concurrent_marker.h"
-
 #include "ecmascript/mem/allocator-inl.h"
 #include "ecmascript/mem/clock_scope.h"
 #include "ecmascript/mem/heap-inl.h"
@@ -24,6 +23,8 @@
 #include "ecmascript/mem/space-inl.h"
 #include "ecmascript/mem/verification.h"
 #include "ecmascript/mem/visitor.h"
+#include "ecmascript/mem/gc_stats.h"
+#include "ecmascript/ecma_string_table.h"
 #include "ecmascript/taskpool/taskpool.h"
 #include "ecmascript/runtime_call_id.h"
 #include "os/mutex.h"

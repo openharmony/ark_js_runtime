@@ -15,13 +15,15 @@
 
 #ifndef ECMASCRIPT_RUNTIME_TRAMPOLINES_INL_H
 #define ECMASCRIPT_RUNTIME_TRAMPOLINES_INL_H
+
 #include "runtime_stubs.h"
 #include "ecmascript/builtins/builtins_regexp.h"
+#include "ecmascript/ecma_string_table.h"
+#include "ecmascript/global_dictionary-inl.h"
+#include "ecmascript/global_env.h"
 #include "ecmascript/ic/profile_type_info.h"
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/interpreter/slow_runtime_helper.h"
-#include "ecmascript/global_dictionary-inl.h"
-#include "ecmascript/global_env.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_async_function.h"
 #include "ecmascript/js_for_in_iterator.h"

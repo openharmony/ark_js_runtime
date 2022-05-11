@@ -20,6 +20,7 @@
 #include "ecmascript/js_method.h"
 #include "ecmascript/tooling/interface/debugger_api.h"
 #include "ecmascript/tooling/interface/notification_manager.h"
+#include "ecmascript/tooling/interface/js_debugger_manager.h"
 
 namespace panda::ecmascript::tooling {
 class JSBreakpoint {

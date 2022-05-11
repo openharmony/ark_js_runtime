@@ -275,7 +275,7 @@ void AdjustBCStubAndDebuggerStubEntries(BCStubEntries &bcStubEntries, BCStubEntr
     }
 }
 
-void JSThread::LoadStubsFromFile(std::string &fileName)
+void JSThread::LoadStubsFromFile(std::string &fileName, bool isBCStub)
 {
     AotCodeInfo aotInfo;
     if (!aotInfo.DeserializeForStub(this, fileName)) {
@@ -298,8 +298,11 @@ void JSThread::LoadStubsFromFile(std::string &fileName)
             glueData_.rtStubEntries_.Set(des.indexInKind_, des.codeAddr_);
         }
     }
-    AsmInterParsedOption asmInterOpt = GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
-    AdjustBCStubAndDebuggerStubEntries(glueData_.bcStubEntries_, glueData_.bcDebuggerStubEntries_, stubs, asmInterOpt);
+    if (isBCStub) {
+        AsmInterParsedOption asmInterOpt = GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
+        AdjustBCStubAndDebuggerStubEntries(glueData_.bcStubEntries_, glueData_.bcDebuggerStubEntries_, stubs,
+                                           asmInterOpt);
+    }
 #ifdef NDEBUG
     bool enableCompilerLog = GetEcmaVM()->GetJSOptions().WasSetlogCompiledMethods();
     kungfu::LLVMStackMapParser::GetInstance(enableCompilerLog).Print();
