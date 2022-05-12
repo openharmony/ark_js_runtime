@@ -159,17 +159,6 @@ bool EcmaVM::Initialize()
                                                                   GlobalEnv::SIZE,
                                                                   JSType::GLOBAL_ENV);
     globalConst->InitRootsClass(thread_, *dynClassClassHandle);
-    tsLoader_ = new TSLoader(this);
-    snapshotEnv_ = new SnapshotEnv(this);
-    aotInfo_ = new AotCodeInfo();
-    if (options_.EnableStubAot()) {
-        LoadStubs();
-    }
-    if (options_.EnableTSAot()) {
-        TryLoadSnapshotFile();
-        std::string file = options_.GetAOTOutputFile();
-        LoadAOTFile(file);
-    }
     globalConst->InitGlobalConstant(thread_);
     JSHandle<GlobalEnv> globalEnv = factory_->NewGlobalEnv(*globalEnvClass);
     globalEnv->Init(thread_);
@@ -181,6 +170,17 @@ bool EcmaVM::Initialize()
     thread_->SetGlobalObject(GetGlobalEnv()->GetGlobalObject());
     moduleManager_ = new ModuleManager(this);
     debuggerManager_->Initialize();
+    tsLoader_ = new TSLoader(this);
+    snapshotEnv_ = new SnapshotEnv(this);
+    aotInfo_ = new AotCodeInfo();
+    if (options_.EnableStubAot()) {
+        LoadStubs();
+    }
+    if (options_.EnableTSAot()) {
+        TryLoadSnapshotFile();
+        std::string file = options_.GetAOTOutputFile();
+        LoadAOTFile(file);
+    }
     InitializeFinish();
     return true;
 }
