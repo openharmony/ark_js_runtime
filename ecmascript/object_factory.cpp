@@ -704,7 +704,8 @@ JSHandle<JSObject> ObjectFactory::NewJSError(const ErrorType &errorType, const J
         return obj;
     }
 
-    // current frame may be entry frame, in this case sp = the prev frame (interpreter frame).
+    // current frame may be entry frame, exception happened in JSFunction::Call and JSFunction::Construct,
+    // in this case sp = the prev frame (interpreter frame).
     FrameHandler frameHandler(thread_);
     if (frameHandler.IsInterpretedEntryFrame()) {
         thread_->SetCurrentSPFrame(frameHandler.GetPrevInterpretedFrame());
