@@ -518,7 +518,7 @@ Environment::Environment(size_t arguments, CircuitBuilder *builder)
 {
     circuitBuilder_->SetEnvironment(this);
     for (size_t i = 0; i < arguments; i++) {
-         arguments_[i] = circuitBuilder_->Arguments(i);
+        arguments_[i] = circuitBuilder_->Arguments(i);
     }
     entry_ = Label(NewLabel(this, Circuit::GetCircuitRoot(OpCode(OpCode::STATE_ENTRY))));
     currentLabel_ = &entry_;
