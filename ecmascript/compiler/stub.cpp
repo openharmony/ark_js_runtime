@@ -154,8 +154,7 @@ GateRef Stub::FindElementWithCache(GateRef glue, GateRef layoutInfo, GateRef hCl
         Jump(&afterExceedCon);
     }
     Bind(&afterExceedCon);
-    result = CallNGCRuntime(glue, RTSTUB_ID(FindElementWithCache),
-                                           { glue, hClass, key, propsNum });
+    result = CallNGCRuntime(glue, RTSTUB_ID(FindElementWithCache), { glue, hClass, key, propsNum });
     Jump(&exit);
     Bind(&exit);
     auto ret = *result;
@@ -3430,7 +3429,7 @@ GateRef Stub::FastMod(GateRef glue, GateRef left, GateRef right)
                     Branch(DoubleIsINF(*doubleRight), &leftIsZeroOrRightIsInf, &rightNotInf);
                     Bind(&rightNotInf);
                     {
-                        result = CallNGCRuntime(glue, RTSTUB_ID(FloatMod),{ *doubleLeft, *doubleRight });
+                        result = CallNGCRuntime(glue, RTSTUB_ID(FloatMod), { *doubleLeft, *doubleRight });
                         Jump(&exit);
                     }
                 }
