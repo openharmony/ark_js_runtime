@@ -54,8 +54,10 @@
 #include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_async_function.h"
 #include "ecmascript/js_bigint.h"
+#include "ecmascript/js_collator.h"
 #include "ecmascript/js_dataview.h"
 #include "ecmascript/js_date.h"
+#include "ecmascript/js_date_time_format.h"
 #include "ecmascript/js_displaynames.h"
 #include "ecmascript/js_list_format.h"
 #include "ecmascript/js_for_in_iterator.h"
@@ -65,12 +67,15 @@
 #include "ecmascript/js_iterator.h"
 #include "ecmascript/js_map.h"
 #include "ecmascript/js_map_iterator.h"
+#include "ecmascript/js_number_format.h"
 #include "ecmascript/js_object-inl.h"
+#include "ecmascript/js_plural_rules.h"
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_proxy.h"
 #include "ecmascript/js_realm.h"
 #include "ecmascript/js_regexp.h"
+#include "ecmascript/js_relative_time_format.h"
 #include "ecmascript/js_set.h"
 #include "ecmascript/js_set_iterator.h"
 #include "ecmascript/js_string_iterator.h"
@@ -775,14 +780,88 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
             case JSType::JS_TYPE_ERROR:
             case JSType::JS_URI_ERROR:
             case JSType::JS_SYNTAX_ERROR:
-            case JSType::JS_ITERATOR:
-            case JSType::JS_INTL:
-            case JSType::JS_LOCALE:
-            case JSType::JS_DATE_TIME_FORMAT:
-            case JSType::JS_NUMBER_FORMAT:
-            case JSType::JS_RELATIVE_TIME_FORMAT:
-            case JSType::JS_COLLATOR:
+            case JSType::JS_ITERATOR: {
+                break;
+            }
+            case JSType::JS_INTL: {
+                JSIntl::Cast(*obj)->SetFallbackSymbol(thread_, JSTaggedValue::Undefined());
+                break;
+            }
+            case JSType::JS_LOCALE: {
+                JSLocale::Cast(*obj)->SetIcuField(thread_, JSTaggedValue::Undefined());
+                break;
+            }
+            case JSType::JS_DATE_TIME_FORMAT: {
+                JSDateTimeFormat::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
+                JSDateTimeFormat::Cast(*obj)->SetCalendar(thread_, JSTaggedValue::Undefined());
+                JSDateTimeFormat::Cast(*obj)->SetNumberingSystem(thread_, JSTaggedValue::Undefined());
+                JSDateTimeFormat::Cast(*obj)->SetTimeZone(thread_, JSTaggedValue::Undefined());
+                JSDateTimeFormat::Cast(*obj)->SetLocaleIcu(thread_, JSTaggedValue::Undefined());
+                JSDateTimeFormat::Cast(*obj)->SetSimpleDateTimeFormatIcu(thread_, JSTaggedValue::Undefined());
+                JSDateTimeFormat::Cast(*obj)->SetIso8601(thread_, JSTaggedValue::Undefined());
+                JSDateTimeFormat::Cast(*obj)->SetBoundFormat(thread_, JSTaggedValue::Undefined());
+                JSDateTimeFormat::Cast(*obj)->SetHourCycle(HourCycleOption::EXCEPTION);
+                JSDateTimeFormat::Cast(*obj)->SetDateStyle(DateTimeStyleOption::EXCEPTION);
+                JSDateTimeFormat::Cast(*obj)->SetTimeStyle(DateTimeStyleOption::EXCEPTION);
+                break;
+            }
+            case JSType::JS_NUMBER_FORMAT: {
+                JSNumberFormat::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
+                JSNumberFormat::Cast(*obj)->SetNumberingSystem(thread_, JSTaggedValue::Undefined());
+                JSNumberFormat::Cast(*obj)->SetCurrency(thread_, JSTaggedValue::Undefined());
+                JSNumberFormat::Cast(*obj)->SetUnit(thread_, JSTaggedValue::Undefined());
+                JSNumberFormat::Cast(*obj)->SetMinimumIntegerDigits(thread_, JSTaggedValue::Undefined());
+                JSNumberFormat::Cast(*obj)->SetMinimumFractionDigits(thread_, JSTaggedValue::Undefined());
+                JSNumberFormat::Cast(*obj)->SetMaximumFractionDigits(thread_, JSTaggedValue::Undefined());
+                JSNumberFormat::Cast(*obj)->SetMinimumSignificantDigits(thread_, JSTaggedValue::Undefined());
+                JSNumberFormat::Cast(*obj)->SetMaximumSignificantDigits(thread_, JSTaggedValue::Undefined());
+                JSNumberFormat::Cast(*obj)->SetUseGrouping(thread_, JSTaggedValue::Undefined());
+                JSNumberFormat::Cast(*obj)->SetBoundFormat(thread_, JSTaggedValue::Undefined());
+                JSNumberFormat::Cast(*obj)->SetIcuField(thread_, JSTaggedValue::Undefined());
+                JSNumberFormat::Cast(*obj)->SetStyle(StyleOption::EXCEPTION);
+                JSNumberFormat::Cast(*obj)->SetCurrencySign(CurrencySignOption::EXCEPTION);
+                JSNumberFormat::Cast(*obj)->SetCurrencyDisplay(CurrencyDisplayOption::EXCEPTION);
+                JSNumberFormat::Cast(*obj)->SetUnitDisplay(UnitDisplayOption::EXCEPTION);
+                JSNumberFormat::Cast(*obj)->SetSignDisplay(SignDisplayOption::EXCEPTION);
+                JSNumberFormat::Cast(*obj)->SetCompactDisplay(CompactDisplayOption::EXCEPTION);
+                JSNumberFormat::Cast(*obj)->SetNotation(NotationOption::EXCEPTION);
+                JSNumberFormat::Cast(*obj)->SetRoundingType(RoundingType::EXCEPTION);
+                break;
+            }
+            case JSType::JS_RELATIVE_TIME_FORMAT: {
+                JSRelativeTimeFormat::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
+                JSRelativeTimeFormat::Cast(*obj)->SetInitializedRelativeTimeFormat(thread_, JSTaggedValue::Undefined());
+                JSRelativeTimeFormat::Cast(*obj)->SetNumberingSystem(thread_, JSTaggedValue::Undefined());
+                JSRelativeTimeFormat::Cast(*obj)->SetAvailableLocales(thread_, JSTaggedValue::Undefined());
+                JSRelativeTimeFormat::Cast(*obj)->SetIcuField(thread_, JSTaggedValue::Undefined());
+                JSRelativeTimeFormat::Cast(*obj)->SetStyle(RelativeStyleOption::EXCEPTION);
+                JSRelativeTimeFormat::Cast(*obj)->SetNumeric(NumericOption::EXCEPTION);
+                break;
+            }
+            case JSType::JS_COLLATOR: {
+                JSCollator::Cast(*obj)->SetIcuField(thread_, JSTaggedValue::Undefined());
+                JSCollator::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
+                JSCollator::Cast(*obj)->SetCollation(thread_, JSTaggedValue::Undefined());
+                JSCollator::Cast(*obj)->SetBoundCompare(thread_, JSTaggedValue::Undefined());
+                JSCollator::Cast(*obj)->SetUsage(UsageOption::EXCEPTION);
+                JSCollator::Cast(*obj)->SetCaseFirst(CaseFirstOption::EXCEPTION);
+                JSCollator::Cast(*obj)->SetSensitivity(SensitivityOption::EXCEPTION);
+                JSCollator::Cast(*obj)->SetIgnorePunctuation(false);
+                JSCollator::Cast(*obj)->SetNumeric(false);
+                break;
+            }
             case JSType::JS_PLURAL_RULES: {
+                JSPluralRules::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
+                JSPluralRules::Cast(*obj)->SetInitializedPluralRules(thread_, JSTaggedValue::Undefined());
+                JSPluralRules::Cast(*obj)->SetMinimumIntegerDigits(thread_, JSTaggedValue::Undefined());
+                JSPluralRules::Cast(*obj)->SetMinimumFractionDigits(thread_, JSTaggedValue::Undefined());
+                JSPluralRules::Cast(*obj)->SetMaximumFractionDigits(thread_, JSTaggedValue::Undefined());
+                JSPluralRules::Cast(*obj)->SetMinimumSignificantDigits(thread_, JSTaggedValue::Undefined());
+                JSPluralRules::Cast(*obj)->SetMaximumSignificantDigits(thread_, JSTaggedValue::Undefined());
+                JSPluralRules::Cast(*obj)->SetIcuPR(thread_, JSTaggedValue::Undefined());
+                JSPluralRules::Cast(*obj)->SetIcuNF(thread_, JSTaggedValue::Undefined());
+                JSPluralRules::Cast(*obj)->SetRoundingType(RoundingType::EXCEPTION);
+                JSPluralRules::Cast(*obj)->SetType(TypeOption::EXCEPTION);
                 break;
             }
             case JSType::JS_DISPLAYNAMES: {
