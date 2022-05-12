@@ -57,6 +57,16 @@ void Heap::EnumerateNonNewSpaceRegions(const Callback &cb) const
 }
 
 template<class Callback>
+void Heap::EnumerateNonNewSpaceRegionsWithRecord(const Callback &cb) const
+{
+    oldSpace_->EnumerateRegionsWithRecord(cb);
+    snapshotSpace_->EnumerateRegionsWithRecord(cb);
+    nonMovableSpace_->EnumerateRegionsWithRecord(cb);
+    hugeObjectSpace_->EnumerateRegionsWithRecord(cb);
+    machineCodeSpace_->EnumerateRegionsWithRecord(cb);
+}
+
+template<class Callback>
 void Heap::EnumerateNewSpaceRegions(const Callback &cb) const
 {
     activeSpace_->EnumerateRegions(cb);
@@ -278,14 +288,14 @@ void Heap::SwapNewSpace()
     activeSpace_ = newSpace;
 }
 
-void Heap::ReclaimRegions(TriggerGCType gcType, Region *lastRegionOfToSpace)
+void Heap::ReclaimRegions(TriggerGCType gcType)
 {
-    activeSpace_->EnumerateRegions([] (Region *region) {
+    activeSpace_->EnumerateRegionsWithRecord([] (Region *region) {
         region->ClearMarkGCBitset();
         region->ClearCrossRegionRSet();
         region->ResetAliveObject();
         region->ClearFlag(RegionFlags::IS_IN_NEW_TO_NEW_SET);
-    }, lastRegionOfToSpace);
+    });
     if (gcType == TriggerGCType::FULL_GC) {
         compressSpace_->Reset();
     } else if (gcType == TriggerGCType::OLD_GC) {
@@ -293,6 +303,11 @@ void Heap::ReclaimRegions(TriggerGCType gcType, Region *lastRegionOfToSpace)
     }
     inactiveSpace_->ReclaimRegions();
 
+    sweeper_->WaitAllTaskFinished();
+    EnumerateNonNewSpaceRegionsWithRecord([] (Region *region) {
+        region->ClearMarkGCBitset();
+        region->ClearCrossRegionRSet();
+    });
     if (!clearTaskFinished_) {
         os::memory::LockHolder holder(waitClearTaskFinishedMutex_);
         clearTaskFinished_ = true;
@@ -300,10 +315,12 @@ void Heap::ReclaimRegions(TriggerGCType gcType, Region *lastRegionOfToSpace)
     }
 }
 
+// only call in js-thread
 void Heap::ClearSlotsRange(Region *current, uintptr_t freeStart, uintptr_t freeEnd)
 {
+    current->AtomicClearSweepingRSetInRange(freeStart, freeEnd);
     current->ClearOldToNewRSetInRange(freeStart, freeEnd);
-    current->ClearCrossRegionRSetInRange(freeStart, freeEnd);
+    current->AtomicClearCrossRegionRSetInRange(freeStart, freeEnd);
 }
 
 size_t Heap::GetCommittedSize() const

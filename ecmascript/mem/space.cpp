@@ -50,6 +50,7 @@ void Space::ClearAndFreeRegion(Region *region)
     region->SetSpace(nullptr);
     region->DeleteCrossRegionRSet();
     region->DeleteOldToNewRSet();
+    region->DeleteSweepingRSet();
     DecreaseCommitted(region->GetCapacity());
     DecreaseObjectSize(region->GetSize());
     if (spaceType_ == MemSpaceType::OLD_SPACE || spaceType_ == MemSpaceType::NON_MOVABLE ||
@@ -91,10 +92,13 @@ uintptr_t HugeObjectSpace::Allocate(size_t objectSize, JSThread *thread)
     return region->GetBegin();
 }
 
-void HugeObjectSpace::Sweep()
+void HugeObjectSpace::Sweep(bool isConcurrentSweep)
 {
     Region *currentRegion = GetRegionList().GetFirst();
     while (currentRegion != nullptr) {
+        if (isConcurrentSweep) {
+            currentRegion->SwapRSetForConcurrentSweeping();
+        }
         Region *next = currentRegion->GetNext();
         bool isMarked = false;
         currentRegion->IterateAllMarkedBits([&isMarked]([[maybe_unused]] void *mem) { isMarked = true; });
@@ -103,6 +107,15 @@ void HugeObjectSpace::Sweep()
             ClearAndFreeRegion(currentRegion);
         }
         currentRegion = next;
+    }
+}
+
+void HugeObjectSpace::FinishConcurrentSweep()
+{
+    Region *currentRegion = GetRegionList().GetFirst();
+    while (currentRegion != nullptr) {
+        currentRegion->MergeRSetForConcurrentSweeping();
+        currentRegion = currentRegion->GetNext();
     }
 }
 

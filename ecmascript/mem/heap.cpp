@@ -208,6 +208,7 @@ void Heap::Resume(TriggerGCType gcType)
     }
 
     activeSpace_->SetWaterLine();
+    PrepareRecordRegionsForReclaim();
     if (parallelGC_) {
         clearTaskFinished_ = false;
         Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<AsyncClearTask>(this, gcType));
@@ -625,7 +626,7 @@ bool Heap::ParallelGCTask::Run(uint32_t threadIndex)
 
 bool Heap::AsyncClearTask::Run([[maybe_unused]] uint32_t threadIndex)
 {
-    heap_->ReclaimRegions(gcType_, lastRegionOfToSpace_);
+    heap_->ReclaimRegions(gcType_);
     return true;
 }
 
