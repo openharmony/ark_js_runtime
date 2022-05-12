@@ -69,6 +69,8 @@ def judge_output(args):
             err_str = err.decode('UTF-8')
             print(out_str)
             print(err_str)
+            print(">>>>> Expect return: [" + args.expect_output \
+                + "]\n>>>>> But got: [" + returncode + "]")
             raise RuntimeError("Run [" + cmd + "] failed!")
     elif args.expect_sub_output:
         err_str = err.decode('UTF-8')  # log system use std::cerr
