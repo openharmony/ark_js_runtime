@@ -57,5 +57,14 @@ print(result2);
 
 const result3 = addThirtySeven(5, 10); // 37 + 5 = 42, (the second argument is ignored)
 print(result3);
-  
-  
+
+// TestCase: builtins bind function.
+function foo(a, b) {
+    return a + b;
+}
+
+var bfoo = foo.bind(undefined, 1);
+bfoo(2);
+
+var array = [1];
+array.forEach(bfoo);

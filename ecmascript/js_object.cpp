@@ -712,7 +712,6 @@ JSTaggedValue JSObject::GetProperty(JSThread *thread, ObjectOperator *op)
     JSHandle<JSTaggedValue> holder = op->GetHolder();
     if (holder->IsJSProxy()) {
         if (op->IsElement()) {
-            JSHandle<JSTaggedValue> key(thread, JSTaggedValue(op->GetElementIndex()));
             return JSProxy::GetProperty(thread, JSHandle<JSProxy>::Cast(holder), op->GetKey(), receiver)
                 .GetValue()
                 .GetTaggedValue();
