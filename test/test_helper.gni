@@ -268,3 +268,67 @@ template("host_aot_test_action") {
     outputs = [ "$target_out_dir/${_target_name_}/" ]
   }
 }
+
+template("host_asm_test_action") {
+  _target_name_ = "${target_name}"
+  _deps_ = invoker.deps
+
+  _test_js_path_ = "./${_target_name_}.js"
+  _test_abc_path_ = "$target_out_dir/${_target_name_}.abc"
+  _test_expect_path_ = "./expect_output.txt"
+
+  ts2abc_gen_abc("gen_${_target_name_}_abc") {
+    extra_visibility = [ ":*" ]  # Only targets in this file can depend on this.
+    extra_dependencies = _deps_
+    src_js = rebase_path(_test_js_path_)
+    dst_file = rebase_path(_test_abc_path_)
+    extra_args = [ "--debug" ]
+
+    in_puts = [
+      _test_js_path_,
+      _test_expect_path_,
+    ]
+    out_puts = [ _test_abc_path_ ]
+  }
+
+  _script_args_ = rebase_path(_test_abc_path_)
+
+  action("${_target_name_}AsmAction") {
+    testonly = true
+
+    _host_jsvm_target_ =
+        "//ark/js_runtime/ecmascript/js_vm:ark_js_vm(${host_toolchain})"
+    _root_out_dir_ = get_label_info(_host_jsvm_target_, "root_out_dir")
+
+    deps = [
+      ":gen_${_target_name_}_abc",
+      "//ark/js_runtime/ecmascript/compiler:gen_stub_file(${host_toolchain})",
+      _host_jsvm_target_,
+    ]
+    deps += _deps_
+
+    script = "//ark/js_runtime/script/run_ark_executable.py"
+
+    _asm_run_options_ = " --enable-stub-aot=true" + " --asmInter=1"
+
+    args = [
+      "--script-file",
+      rebase_path(_root_out_dir_) + "/ark/ark_js_runtime/ark_js_vm",
+      "--script-options",
+      _asm_run_options_,
+      "--script-args",
+      _script_args_,
+      "--expect-file",
+      rebase_path(_test_expect_path_),
+      "--env-path",
+      rebase_path(_root_out_dir_) + "/ark/ark:" + rebase_path(_root_out_dir_) +
+          "/ark/ark_js_runtime:" + rebase_path(_root_out_dir_) +
+          "/${_icu_path_}:" +
+          rebase_path("//prebuilts/clang/ohos/linux-x86_64/llvm/lib/"),
+    ]
+
+    inputs = [ _test_abc_path_ ]
+
+    outputs = [ "$target_out_dir/${_target_name_}/" ]
+  }
+}
