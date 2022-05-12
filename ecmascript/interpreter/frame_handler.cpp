@@ -203,7 +203,7 @@ JSTaggedValue FrameHandler::GetFunction() const
         if (IsAsmInterpretedFrame()) {
             auto *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
             return frame->function;
-         } else {
+        } else {
             auto *frame = BuiltinFrame::GetFrameFromSp(sp_);
             return frame->function;
         }
@@ -316,10 +316,11 @@ ARK_INLINE void FrameHandler::InterpretedFrameIterate(const JSTaggedType *sp,
         end = ToUintPtr(GetInterpretedEntryFrameStart(prevSp));
     } else {
         LOG_ECMA(FATAL) << "frame type error!";
-        UNREACHABLE();
     }
     v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
     v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->function)));
+
+    // pc == nullptr, init InterpretedFrame & native InterpretedFrame.
     if (frame->pc != nullptr) {
         v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->acc)));
         v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->constpool)));

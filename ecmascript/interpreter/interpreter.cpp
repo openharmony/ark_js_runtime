@@ -54,6 +54,8 @@ EcmaRuntimeCallInfo EcmaInterpreter::NewRuntimeCallInfo(
         }
 #endif
     } else {
+        ASSERT(FrameHandler::GetFrameType(sp) == FrameType::INTERPRETER_FRAME ||
+               FrameHandler::GetFrameType(sp) == FrameType::INTERPRETER_FAST_NEW_FRAME);
         newSp = sp - InterpretedFrame::NumOfMembers();  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     }
     if (UNLIKELY(thread->DoStackOverflowCheck(newSp - numArgs - RESERVED_CALL_ARGCOUNT))) {

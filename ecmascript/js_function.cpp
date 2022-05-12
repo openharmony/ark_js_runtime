@@ -256,15 +256,15 @@ JSTaggedValue JSFunction::Call(EcmaRuntimeCallInfo *info)
     JSThread *thread = info->GetThread();
     // 1. ReturnIfAbrupt(F).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> funcValue = info->GetFunction();
+    JSHandle<JSTaggedValue> func = info->GetFunction();
     // 2. If argumentsList was not passed, let argumentsList be a new empty List.
     // 3. If IsCallable(F) is false, throw a TypeError exception.
-    if (!funcValue->IsCallable()) {
+    if (!func->IsCallable()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Callable is false", JSTaggedValue::Exception());
     }
 
-    JSHandle<JSFunction> func = JSHandle<JSFunction>::Cast(funcValue);
-    if (!func->IsBuiltinsConstructor() && func->IsClassConstructor()) {
+    auto *hclass = func->GetTaggedObject()->GetClass();
+    if (!hclass->IsBuiltinsCtor() && hclass->IsClassConstructor()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "class constructor cannot call", JSTaggedValue::Exception());
     }
     return EcmaInterpreter::Execute(info);
