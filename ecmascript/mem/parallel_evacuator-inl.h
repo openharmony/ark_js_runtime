@@ -85,13 +85,14 @@ void ParallelEvacuator::SetObjectFieldRSet(TaggedObject *object, JSHClass *cls)
                                      [[maybe_unused]] bool isNative) {
         for (ObjectSlot slot = start; slot < end; slot++) {
             JSTaggedType value = slot.GetTaggedType();
-            if (JSTaggedValue(value).IsHeapObject()) {
-                Region *valueRegion = Region::ObjectAddressToRange(value);
-                if (valueRegion->InYoungGeneration()) {
-                    region->InsertOldToNewRSet(slot.SlotAddress());
-                } else if (valueRegion->InCollectSet() || JSTaggedValue(value).IsWeakForHeapObject()) {
-                    region->InsertCrossRegionRSet(slot.SlotAddress());
-                }
+            if (!JSTaggedValue(value).IsHeapObject()) {
+                continue;
+            }
+            Region *valueRegion = Region::ObjectAddressToRange(value);
+            if (valueRegion->InYoungGeneration()) {
+                region->InsertOldToNewRSet(slot.SlotAddress());
+            } else if (valueRegion->InCollectSet() || JSTaggedValue(value).IsWeakForHeapObject()) {
+                region->InsertCrossRegionRSet(slot.SlotAddress());
             }
         }
     };
