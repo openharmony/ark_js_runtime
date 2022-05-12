@@ -59,12 +59,6 @@ public:
 
     bool IsEntryFrame() const
     {
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-        FrameType type = GetFrameType();
-        if (type == FrameType::OPTIMIZED_ENTRY_FRAME) {
-            return true;
-        }
-#endif
         ASSERT(HasFrame());
         // The structure of InterpretedFrame, AsmInterpretedFrame, InterpretedEntryFrame is the same, order is pc, base.
         InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
@@ -102,6 +96,11 @@ public:
     JSTaggedType *GetSp() const
     {
         return sp_;
+    }
+
+    JSTaggedType *GetFp() const
+    {
+        return fp_;
     }
 
     void PrevInterpretedFrame();
@@ -180,6 +179,7 @@ private:
 
 private:
     JSTaggedType *sp_ {nullptr};
+    JSTaggedType *fp_ {nullptr};
     const JSThread *thread_ {nullptr};
 };
 } // namespace ecmascript

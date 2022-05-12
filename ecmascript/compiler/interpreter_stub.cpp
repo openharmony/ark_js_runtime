@@ -4344,8 +4344,7 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
 
     Bind(&tryContinue);
     GateRef currentSp = *varSp;
-    varSp = Load(VariableType::NATIVE_POINTER(), frame,
-        IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
+    varSp = Load(VariableType::NATIVE_POINTER(), frame, IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
     GateRef prevState = GetFrame(*varSp);
     varPc = GetPcFromFrame(prevState);
     Branch(IntPtrEqual(*varPc, IntPtr(0)), &pcEqualNullptr, &pcNotEqualNullptr);
@@ -4624,7 +4623,7 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
     }
     Bind(&pcNotInvalid);
     {
-        varSp = GetCurrentSpFrame(glue);
+        varSp = GetCurrentFrame(glue);
         varAcc = exception;
         // clear exception
         Store(VariableType::INT64(), glue, glue, IntPtr(0), Hole());
@@ -4634,8 +4633,13 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
         GateRef method = Load(VariableType::NATIVE_POINTER(), function,
             IntPtr(JSFunctionBase::METHOD_OFFSET));
         varHotnessCounter = GetHotnessCounterFromMethod(method);
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+        DispatchCommonCall<RTSTUB_ID(ResumeCaughtFrameAndDispatch)>(glue, *varSp, *varPc, *varConstpool,
+            *varProfileTypeInfo, *varAcc, *varHotnessCounter);
+#else
         Dispatch(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo, *varAcc,
-                 *varHotnessCounter, IntPtr(0));
+            *varHotnessCounter, IntPtr(0));
+#endif
     }
 }
 

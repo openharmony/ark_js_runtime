@@ -602,6 +602,26 @@ DEF_CALL_SIGNATURE(ResumeRspAndReturn)
     callSign->SetCallConv(CallSignature::CallConv::GHCCallConv);
 }
 
+DEF_CALL_SIGNATURE(ResumeCaughtFrameAndDispatch)
+{
+    // 7 : 7 input parameters
+    CallSignature resumeCaughtFrameAndDispatch("ResumeCaughtFrameAndDispatch", 0, 7,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = resumeCaughtFrameAndDispatch;
+    std::array<VariableType, 7> params = { // 7 : 7 input parameters
+        VariableType::NATIVE_POINTER(),
+        VariableType::NATIVE_POINTER(),
+        VariableType::NATIVE_POINTER(),
+        VariableType::JS_POINTER(),
+        VariableType::JS_POINTER(),
+        VariableType::JS_ANY(),
+        VariableType::INT32(),
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::ASM_STUB);
+    callSign->SetCallConv(CallSignature::CallConv::GHCCallConv);
+}
+
 DEF_CALL_SIGNATURE(StringsAreEquals)
 {
     // 2 : 2 input parameters

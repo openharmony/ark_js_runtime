@@ -302,6 +302,7 @@ private:
     V(PushCallIThisRangeAndDispatchSlowPath)\
     V(ResumeRspAndDispatch)                 \
     V(ResumeRspAndReturn)                   \
+    V(ResumeCaughtFrameAndDispatch)         \
     V(StringsAreEquals)                     \
     V(BigIntEquals)                         \
     V(DebugPrint)                           \
