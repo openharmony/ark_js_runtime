@@ -39,7 +39,7 @@ static constexpr size_t FIXED_NUM_ARGS = 3;
 
 JSTaggedValue RuntimeStubs::RuntimeIncDyn(JSThread *thread, const JSHandle<JSTaggedValue> &value)
 {
-    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, value.GetTaggedValue());
+    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, value);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (inputVal->IsBigInt()) {
         JSHandle<BigInt> bigValue(inputVal);
@@ -51,7 +51,7 @@ JSTaggedValue RuntimeStubs::RuntimeIncDyn(JSThread *thread, const JSHandle<JSTag
 
 JSTaggedValue RuntimeStubs::RuntimeDecDyn(JSThread *thread, const JSHandle<JSTaggedValue> &value)
 {
-    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, value.GetTaggedValue());
+    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, value);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (inputVal->IsBigInt()) {
         JSHandle<BigInt> bigValue(inputVal);
@@ -63,9 +63,11 @@ JSTaggedValue RuntimeStubs::RuntimeDecDyn(JSThread *thread, const JSHandle<JSTag
 
 JSTaggedValue RuntimeStubs::RuntimeExpDyn(JSThread *thread, JSTaggedValue base, JSTaggedValue exponent)
 {
-    JSHandle<JSTaggedValue> valBase = JSTaggedValue::ToNumeric(thread, base);
+    JSHandle<JSTaggedValue> baseTag(thread, base);
+    JSHandle<JSTaggedValue> exponentTag(thread, exponent);
+    JSHandle<JSTaggedValue> valBase = JSTaggedValue::ToNumeric(thread, baseTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valExponent = JSTaggedValue::ToNumeric(thread, exponent);
+    JSHandle<JSTaggedValue> valExponent = JSTaggedValue::ToNumeric(thread, exponentTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (valBase->IsBigInt() || valExponent->IsBigInt()) {
         if (valBase->IsBigInt() && valExponent->IsBigInt()) {
@@ -540,7 +542,7 @@ JSTaggedValue RuntimeStubs::RuntimeStGlobalRecord(JSThread *thread, const JSHand
 
 JSTaggedValue RuntimeStubs::RuntimeNegDyn(JSThread *thread, const JSHandle<JSTaggedValue> &value)
 {
-    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, value.GetTaggedValue());
+    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, value);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (inputVal->IsBigInt()) {
         JSHandle<BigInt> bigValue(inputVal);
@@ -562,7 +564,7 @@ JSTaggedValue RuntimeStubs::RuntimeNegDyn(JSThread *thread, const JSHandle<JSTag
 
 JSTaggedValue RuntimeStubs::RuntimeNotDyn(JSThread *thread, const JSHandle<JSTaggedValue> &value)
 {
-    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, value.GetTaggedValue());
+    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, value);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (inputVal->IsBigInt()) {
         JSHandle<BigInt> bigValue(inputVal);
@@ -983,7 +985,7 @@ JSTaggedValue RuntimeStubs::RuntimeStGlobalVar(JSThread *thread, const JSHandle<
 
 JSTaggedValue RuntimeStubs::RuntimeToNumber(JSThread *thread, const JSHandle<JSTaggedValue> &value)
 {
-    return JSTaggedValue::ToNumeric(thread, value.GetTaggedValue()).GetTaggedValue();
+    return JSTaggedValue::ToNumeric(thread, value).GetTaggedValue();
 }
 
 JSTaggedValue RuntimeStubs::RuntimeEqDyn(JSThread *thread, const JSHandle<JSTaggedValue> &left,
@@ -1058,9 +1060,9 @@ JSTaggedValue RuntimeStubs::RuntimeAdd2Dyn(JSThread *thread, const JSHandle<JSTa
         JSHandle<EcmaString> newString = factory->ConcatFromString(stringA0, stringA1);
         return newString.GetTaggedValue();
     }
-    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, primitiveA0.GetTaggedValue());
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, primitiveA0);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, primitiveA1.GetTaggedValue());
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, primitiveA1);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
         if (valLeft->IsBigInt() && valRight->IsBigInt()) {
@@ -1078,9 +1080,9 @@ JSTaggedValue RuntimeStubs::RuntimeAdd2Dyn(JSThread *thread, const JSHandle<JSTa
 JSTaggedValue RuntimeStubs::RuntimeSub2Dyn(JSThread *thread, const JSHandle<JSTaggedValue> &left,
                                            const JSHandle<JSTaggedValue> &right)
 {
-    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left.GetTaggedValue());
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right.GetTaggedValue());
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
         if (valLeft->IsBigInt() && valRight->IsBigInt()) {
@@ -1098,9 +1100,9 @@ JSTaggedValue RuntimeStubs::RuntimeSub2Dyn(JSThread *thread, const JSHandle<JSTa
 JSTaggedValue RuntimeStubs::RuntimeMul2Dyn(JSThread *thread, const JSHandle<JSTaggedValue> &left,
                                            const JSHandle<JSTaggedValue> &right)
 {
-    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left.GetTaggedValue());
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right.GetTaggedValue());
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 9. ReturnIfAbrupt(rnum).
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
@@ -1120,9 +1122,9 @@ JSTaggedValue RuntimeStubs::RuntimeMul2Dyn(JSThread *thread, const JSHandle<JSTa
 JSTaggedValue RuntimeStubs::RuntimeDiv2Dyn(JSThread *thread, const JSHandle<JSTaggedValue> &left,
                                            const JSHandle<JSTaggedValue> &right)
 {
-    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left.GetTaggedValue());
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right.GetTaggedValue());
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
         if (valLeft->IsBigInt() && valRight->IsBigInt()) {
@@ -1148,9 +1150,9 @@ JSTaggedValue RuntimeStubs::RuntimeDiv2Dyn(JSThread *thread, const JSHandle<JSTa
 JSTaggedValue RuntimeStubs::RuntimeMod2Dyn(JSThread *thread, const JSHandle<JSTaggedValue> &left,
                                            const JSHandle<JSTaggedValue> &right)
 {
-    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left.GetTaggedValue());
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right.GetTaggedValue());
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     // 12.6.3.3 Applying the % Operator

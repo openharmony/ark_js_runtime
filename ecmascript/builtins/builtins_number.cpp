@@ -44,7 +44,7 @@ JSTaggedValue BuiltinsNumber::NumberConstructor(EcmaRuntimeCallInfo *argv)
     if (argv->GetArgsNumber() > 0) {
         JSHandle<JSTaggedValue> value = GetCallArg(argv, 0);
         // a. Let prim be ? ToNumeric(value).
-        JSHandle<JSTaggedValue> numericVal = JSTaggedValue::ToNumeric(thread, value.GetTaggedValue());
+        JSHandle<JSTaggedValue> numericVal = JSTaggedValue::ToNumeric(thread, value);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         // b. If Type(prim) is BigInt, let n be 𝔽(ℝ(prim)).
         if (numericVal->IsBigInt()) {

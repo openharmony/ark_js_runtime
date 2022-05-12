@@ -552,9 +552,9 @@ JSTaggedValue BuiltinsMath::Pow(EcmaRuntimeCallInfo *argv)
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSTaggedValue> msgX = GetCallArg(argv, 0);
     JSHandle<JSTaggedValue> msgY = GetCallArg(argv, 1);
-    JSHandle<JSTaggedValue> baseVale = JSTaggedValue::ToNumeric(thread, msgX.GetTaggedValue());
+    JSHandle<JSTaggedValue> baseVale = JSTaggedValue::ToNumeric(thread, msgX);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> exponentValue = JSTaggedValue::ToNumeric(thread, msgY.GetTaggedValue());
+    JSHandle<JSTaggedValue> exponentValue = JSTaggedValue::ToNumeric(thread, msgY);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (baseVale->IsBigInt() || exponentValue->IsBigInt()) {
         if (baseVale->IsBigInt() && exponentValue->IsBigInt()) {
