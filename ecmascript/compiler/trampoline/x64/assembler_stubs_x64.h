@@ -80,6 +80,8 @@ public:
 
     static void ResumeRspAndReturn([[maybe_unused]] ExtendedAssemblerX64 *assembler);
 
+    static void ResumeCaughtFrameAndDispatch(ExtendedAssemblerX64 *assembler);
+
 private:
     static void PushArgsFastPath(ExtendedAssemblerX64 *assembler, Register glueRegister, Register argcRegister,
         Register argvRegister, Register callTargetRegister, Register methodRegister, Register prevSpRegister,

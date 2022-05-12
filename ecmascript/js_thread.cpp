@@ -99,6 +99,15 @@ const JSTaggedType *JSThread::GetCurrentFrame() const
 #endif
 }
 
+void JSThread::SetCurrentFrame(JSTaggedType *sp)
+{
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+    return SetLastLeaveFrame(sp);
+#else
+    return SetCurrentSPFrame(sp);
+#endif
+}
+
 const JSTaggedType *JSThread::GetCurrentInterpretedFrame() const
 {
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK

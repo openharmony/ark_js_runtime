@@ -38,7 +38,12 @@ void FrameHandler::PrevFrame()
             sp_ = frame->GetPrevFrameFp();
             break;
         }
-        case FrameType::ASM_INTERPRETER_FRAME:
+        case FrameType::ASM_INTERPRETER_FRAME: {
+            auto frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+            fp_ = frame->GetCurrentFramePointer();
+            sp_ = frame->GetPrevFrameFp();
+            break;
+        }
         case FrameType::INTERPRETER_CONSTRUCTOR_FRAME: {
             auto frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
             sp_ = frame->GetPrevFrameFp();
@@ -67,6 +72,11 @@ void FrameHandler::PrevFrame()
         }
         case FrameType::INTERPRETER_ENTRY_FRAME: {
             auto frame = InterpretedEntryFrame::GetFrameFromSp(sp_);
+            sp_ = frame->GetPrevFrameFp();
+            break;
+        }
+        case FrameType::ASM_INTERPRETER_ENTRY_FRAME: {
+            auto frame = AsmInterpretedEntryFrame::GetFrameFromSp(sp_);
             sp_ = frame->GetPrevFrameFp();
             break;
         }
@@ -107,6 +117,7 @@ uintptr_t FrameHandler::GetPrevFrameCallSiteSp(const JSTaggedType *sp)
         case FrameType::INTERPRETER_FAST_NEW_FRAME:
         case FrameType::OPTIMIZED_ENTRY_FRAME:
         case FrameType::INTERPRETER_ENTRY_FRAME:
+        case FrameType::ASM_INTERPRETER_ENTRY_FRAME:
         default:
             UNREACHABLE();
     }
@@ -290,6 +301,7 @@ ARK_INLINE uintptr_t FrameHandler::GetInterpretedFrameEnd(JSTaggedType *prevSp) 
         case FrameType::LEAVE_FRAME:
         case FrameType::LEAVE_FRAME_WITH_ARGV:
         case FrameType::OPTIMIZED_ENTRY_FRAME:
+        case FrameType::ASM_INTERPRETER_ENTRY_FRAME:
         default:
             LOG_ECMA(FATAL) << "frame type error!";
             UNREACHABLE();
@@ -564,6 +576,11 @@ void FrameHandler::IterateFrameChain(JSTaggedType *start, const RootVisitor &v0,
             }
             case FrameType::OPTIMIZED_ENTRY_FRAME: {
                 auto frame = OptimizedEntryFrame::GetFrameFromSp(current);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::ASM_INTERPRETER_ENTRY_FRAME: {
+                auto frame = AsmInterpretedEntryFrame::GetFrameFromSp(current);
                 current = frame->GetPrevFrameFp();
                 break;
             }

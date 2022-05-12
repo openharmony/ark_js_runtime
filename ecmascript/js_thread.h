@@ -186,7 +186,19 @@ public:
         glueData_.leaveFrame_ = sp;
     }
 
+    const JSTaggedType *GetLastFp() const
+    {
+        return glueData_.lastFp_;
+    }
+
+    void SetLastFp(JSTaggedType *fp)
+    {
+        glueData_.lastFp_ = fp;
+    }
+
     const JSTaggedType *GetCurrentFrame() const;
+
+    void SetCurrentFrame(JSTaggedType *sp);
 
     const JSTaggedType *GetCurrentInterpretedFrame() const;
 
@@ -411,6 +423,7 @@ public:
                                                  JSTaggedValue,
                                                  base::AlignedPointer,
                                                  base::AlignedPointer,
+                                                 base::AlignedPointer,
                                                  BCStubEntries,
                                                  RTStubEntries,
                                                  COStubEntries,
@@ -423,6 +436,7 @@ public:
             GlobalObjIndex,
             CurrentFrameIndex,
             LeaveFrameIndex,
+            LastFpIndex,
             BCStubEntriesIndex,
             RTStubEntriesIndex,
             COStubEntriesIndex,
@@ -464,6 +478,11 @@ public:
             return GetOffset<static_cast<size_t>(Index::LeaveFrameIndex)>(isArch32);
         }
 
+        static size_t GetLastFpOffset(bool isArch32)
+        {
+            return GetOffset<static_cast<size_t>(Index::LastFpIndex)>(isArch32);
+        }
+
         static size_t GetBCStubEntriesOffset(bool isArch32)
         {
             return GetOffset<static_cast<size_t>(Index::BCStubEntriesIndex)>(isArch32);
@@ -493,6 +512,7 @@ public:
         alignas(EAS) JSTaggedValue globalObject_ {JSTaggedValue::Hole()};
         alignas(EAS) JSTaggedType *currentFrame_ {nullptr};
         alignas(EAS) JSTaggedType *leaveFrame_ {nullptr};
+        alignas(EAS) JSTaggedType *lastFp_ {nullptr};
         alignas(EAS) BCStubEntries bcStubEntries_;
         alignas(EAS) RTStubEntries rtStubEntries_;
         alignas(EAS) COStubEntries coStubEntries_;
@@ -501,6 +521,7 @@ public:
         alignas(EAS) JSTaggedType *frameBase_ {nullptr};
         alignas(EAS) GlobalEnvConstants globalConst_;
     };
+    static_assert(MEMBER_OFFSET(GlueData, bcStubEntries_) == ASM_GLUE_BC_HANDLERS_OFFSET);
     static_assert(MEMBER_OFFSET(GlueData, rtStubEntries_) == ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET);
     static_assert(MEMBER_OFFSET(GlueData, currentFrame_) == ASM_GLUE_CURRENT_FRAME_OFFSET);
     static_assert(MEMBER_OFFSET(GlueData, leaveFrame_) == ASM_GLUE_LEAVE_FRAME_OFFSET);
