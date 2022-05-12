@@ -666,9 +666,9 @@ void EcmaVM::ClearNativeMethodsData()
 void EcmaVM::LoadStubs()
 {
     std::string comStubFile = options_.GetComStubFile();
-    thread_->LoadStubsFromFile(comStubFile);
+    thread_->LoadCommonStubsFromFile(comStubFile);
     std::string bcStubFile = options_.GetBcStubFile();
-    thread_->LoadStubsFromFile(bcStubFile, true);
+    thread_->LoadBytecodeHandlerStubsFromFile(bcStubFile);
 }
 
 void EcmaVM::SetupRegExpResultCache()
