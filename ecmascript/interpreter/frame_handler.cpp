@@ -203,7 +203,7 @@ JSTaggedValue FrameHandler::GetFunction() const
         if (IsAsmInterpretedFrame()) {
             auto *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
             return frame->function;
-         } else {
+        } else {
             auto *frame = BuiltinFrame::GetFrameFromSp(sp_);
             return frame->function;
         }
