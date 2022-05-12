@@ -1011,12 +1011,11 @@ bool JSTaggedValue::GetContainerProperty(JSThread *thread, const JSHandle<JSTagg
     }
     return false;
 }
-JSHandle<JSTaggedValue> JSTaggedValue::ToNumeric(JSThread *thread, JSTaggedValue tagged)
+JSHandle<JSTaggedValue> JSTaggedValue::ToNumeric(JSThread *thread, JSHandle<JSTaggedValue> tagged)
 {
     // 1. Let primValue be ? ToPrimitive(value, number)
-    JSHandle<JSTaggedValue> taggedValue(thread, tagged);
-
-    JSHandle<JSTaggedValue> primValue(thread, ToPrimitive(thread, taggedValue, PREFER_NUMBER));
+    
+    JSHandle<JSTaggedValue> primValue(thread, ToPrimitive(thread, tagged, PREFER_NUMBER));
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSTaggedValue, thread);
     // 2. If Type(primValue) is BigInt, return primValue.
     if (primValue->IsBigInt()) {

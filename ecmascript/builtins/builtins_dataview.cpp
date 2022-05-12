@@ -401,7 +401,7 @@ JSTaggedValue BuiltinsDataView::SetViewValue(JSThread *thread, const JSHandle<JS
     if (index < 0) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "getIndex < 0", JSTaggedValue::Exception());
     }
-    JSHandle<JSTaggedValue> numValueHandle = JSTaggedValue::ToNumeric(thread, value.GetTaggedValue());
+    JSHandle<JSTaggedValue> numValueHandle = JSTaggedValue::ToNumeric(thread, value);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 7. Let isLittleEndian be ToBoolean(isLittleEndian).
     bool isLittleEndian = false;
