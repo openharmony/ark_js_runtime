@@ -263,7 +263,7 @@ JSTaggedValue BuiltinsTypedArray::From(EcmaRuntimeCallInfo *argv)
         if (mapping) {
             EcmaRuntimeCallInfo info =
                 EcmaInterpreter::NewRuntimeCallInfo(thread, mapfn, thisArgHandle, undefined, argsLength);
-            info.SetCallArg(kValue.GetTaggedValue()), tKey.GetTaggedValue();
+            info.SetCallArg(kValue.GetTaggedValue(), tKey.GetTaggedValue());
             JSTaggedValue callResult = JSFunction::Call(&info);
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
             mapValue = JSHandle<JSTaggedValue>(thread, callResult);
