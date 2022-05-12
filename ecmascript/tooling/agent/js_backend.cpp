@@ -306,7 +306,7 @@ std::optional<CString> JSBackend::SetBreakpointByUrl(const CString &url, int32_t
     auto callbackFunc = [this, fileName, &condition](File::EntityId id, uint32_t offset) -> bool {
         JSPtLocation location {fileName.c_str(), id, offset};
         Local<FunctionRef> condFuncRef = FunctionRef::Undefined(ecmaVm_);
-        if (condition.has_value()) {
+        if (condition.has_value() && !condition.value().empty()) {
             CString dest;
             if (!DecodeAndCheckBase64(condition.value(), dest)) {
                 LOG(ERROR, DEBUGGER) << "SetBreakpointByUrl: base64 decode failed";
