@@ -55,7 +55,7 @@ public:
 
     void ProcessBegin()
     {
-        lnt_.push_back({state_->GetAddress(), state_->GetLine()});
+        lnt_.push_back({state_->GetAddress(), static_cast<int32_t>(state_->GetLine())});
     }
 
     void ProcessEnd()
@@ -119,7 +119,7 @@ public:
     bool HandleSetColumn(int32_t columnNumber)
     {
         state_->SetColumn(columnNumber);
-        cnt_.push_back({state_->GetAddress(), state_->GetColumn()});
+        cnt_.push_back({state_->GetAddress(), static_cast<int32_t>(state_->GetColumn())});
         return true;
     }
 
@@ -127,7 +127,7 @@ public:
     {
         state_->AdvancePc(pcOffset);
         state_->AdvanceLine(lineOffset);
-        lnt_.push_back({state_->GetAddress(), state_->GetLine()});
+        lnt_.push_back({state_->GetAddress(), static_cast<int32_t>(state_->GetLine())});
         return true;
     }
 
