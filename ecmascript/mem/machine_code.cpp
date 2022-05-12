@@ -24,6 +24,7 @@ void AotCodeInfo::SerializeForStub(const std::string &filename)
     if (!VerifyFilePath(filename, true)) {
         return;
     }
+
     std::ofstream modulefile(filename.c_str(), std::ofstream::binary);
     SetStubNum(stubEntries_.size());
     /* write stub entries offset  */

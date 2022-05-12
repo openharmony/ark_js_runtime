@@ -17,8 +17,7 @@ group("ark_aot_test") {
     "add:addAotAction",
     "and:andAotAction",
     "ashr:ashrAotAction",
-
-    # "createemptyarray:createemptyarrayAotAction",
+    "createemptyarray:createemptyarrayAotAction",
     "createemptyobject:createemptyobjectAotAction",
     "dec:decAotAction",
 
