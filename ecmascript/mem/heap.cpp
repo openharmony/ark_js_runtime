@@ -418,7 +418,7 @@ bool Heap::CheckOngoingConcurrentMarking()
     if (concurrentMarkingEnabled_ && !thread_->IsReadyToMark()) {
         if (thread_->IsMarking()) {
             [[maybe_unused]] ClockScope clockScope;
-            ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "Heap::CheckOngoingConcurrentMarking");
+            ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "Heap::CheckOngoingConcurrentMarking");
             MEM_ALLOCATE_AND_GC_TRACE(GetEcmaVM(), WaitConcurrentMarkingFinished);
             GetNonMovableMarker()->ProcessMarkStack(MAIN_THREAD_INDEX);
             WaitConcurrentMarkingFinished();
