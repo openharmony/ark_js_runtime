@@ -104,6 +104,11 @@ group("ark_js_host_unittest") {
     if (is_standard_system) {
       deps += [ "//ark/js_runtime/test/aottest:ark_aot_test" ]
     }
+
+    # asm test
+    if (is_standard_system) {
+      deps += [ "//ark/js_runtime/test/asmtest:ark_asm_test" ]
+    }
   }
 }
 
