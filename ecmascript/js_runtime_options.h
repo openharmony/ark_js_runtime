@@ -67,8 +67,6 @@ public:
         parser->Add(&snapshot_serialize_enabled_);
         parser->Add(&snapshot_file_);
         parser->Add(&framework_abc_file_);
-        parser->Add(&compiler_memory_size_limit_);
-        parser->Add(&code_cache_size_limit_);
         parser->Add(&snapshot_deserialize_enabled_);
         parser->Add(&icu_data_path_);
         parser->Add(&startup_time_);
@@ -269,11 +267,6 @@ public:
         return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::THREAD_CHECK) != 0;
     }
 
-    size_t TotalSpaceCapacity() const
-    {
-        return totalSpaceCapacity_.GetValue();
-    }
-
     size_t MaxSemiSpaceCapacity() const
     {
         return maxSemiSpaceCapacity_.GetValue();
@@ -383,16 +376,6 @@ public:
         return internal_memory_size_limit_.GetValue();
     }
 
-    void SetInternalMemorySizeLimit(uint64_t value)
-    {
-        internal_memory_size_limit_.SetValue(value);
-    }
-
-    bool WasSetInternalMemorySizeLimit() const
-    {
-        return internal_memory_size_limit_.WasSet();
-    }
-
     uint32_t GetHeapSizeLimit() const
     {
         return heap_size_limit_.GetValue();
@@ -468,36 +451,6 @@ public:
         return framework_abc_file_.WasSet();
     }
 
-    uint64_t GetCompilerMemorySizeLimit() const
-    {
-        return compiler_memory_size_limit_.GetValue();
-    }
-
-    void SetCompilerMemorySizeLimit(uint64_t value)
-    {
-        compiler_memory_size_limit_.SetValue(value);
-    }
-
-    bool WasSetCompilerMemorySizeLimit() const
-    {
-        return compiler_memory_size_limit_.WasSet();
-    }
-
-    uint64_t GetCodeCacheSizeLimit() const
-    {
-        return code_cache_size_limit_.GetValue();
-    }
-
-    void SetCodeCacheSizeLimit(uint64_t value)
-    {
-        code_cache_size_limit_.SetValue(value);
-    }
-
-    bool WasSetCodeCacheSizeLimit() const
-    {
-        return code_cache_size_limit_.WasSet();
-    }
-
     bool IsSnapshotDeserializeEnabled() const
     {
         return snapshot_deserialize_enabled_.GetValue();
@@ -555,7 +508,6 @@ public:
 
 private:
     static constexpr uint64_t INTERNAL_MEMORY_SIZE_LIMIT_DEFAULT = 2147483648;
-    static constexpr uint32_t HEAP_SIZE_LIMIT_DEFAULT = 536870912;
     static constexpr uint64_t COMPILER_MEMORY_SIZE_LIMIT_DEFAULT = 268435456;
     static constexpr uint64_t CODE_CACHE_SIZE_LIMIT_DEFAULT = 33554432;
 
@@ -587,9 +539,6 @@ private:
         Default: "x86_64-unknown-linux-gnu")"};
     PandArg<uint32_t> asmOptLevel_ {"opt-level", 3,
         R"(Optimization level configuration on llvm back end. Default: "3")"};
-    PandArg<uint32_t> totalSpaceCapacity_ {"totalSpaceCapacity",
-        512 * 1024 * 1024,
-        R"(set total space capacity)"};
     PandArg<uint32_t> maxSemiSpaceCapacity_ {"maxSemiSpaceCapacity",
         16 * 1024 * 1024,
         R"(set max semi space capacity)"};
@@ -616,8 +565,8 @@ private:
         R"(set asm interpreter control properties)"};
     PandArg<uint64_t> internal_memory_size_limit_ {"internal-memory-size-limit", INTERNAL_MEMORY_SIZE_LIMIT_DEFAULT,
         R"(Max internal memory used by the VM. Default: 2147483648)"};
-    PandArg<uint32_t> heap_size_limit_ {"heap-size-limit", HEAP_SIZE_LIMIT_DEFAULT,
-        R"(Max heap size. Default: 536870912)"};
+    PandArg<uint32_t> heap_size_limit_ {"heap-size-limit", 512 * 1024 * 1024,
+        R"(Max heap size. Default: 512M)"};
     PandArg<bool> enableIC_ {"enable-ic", true, R"(switch of inline cache. Default: true)"};
     PandArg<bool> snapshot_serialize_enabled_ {"snapshot-serialize-enabled", false,
         R"(whether snapshot serialize is enabled. Default: false)"};
@@ -625,10 +574,6 @@ private:
         R"(snapshot file. Default: "/system/etc/snapshot")"};
     PandArg<std::string> framework_abc_file_ {"framework-abc-file", R"(strip.native.min.abc)",
         R"(snapshot file. Default: "strip.native.min.abc")"};
-    PandArg<uint64_t> compiler_memory_size_limit_ {"compiler-memory-size-limit", COMPILER_MEMORY_SIZE_LIMIT_DEFAULT,
-        R"(Max memory used by the compiler. Default: 268435456)"};
-    PandArg<uint64_t> code_cache_size_limit_ {"code-cache-size-limit", CODE_CACHE_SIZE_LIMIT_DEFAULT,
-        R"(The limit for compiled code size.. Default: 33554432)"};
     PandArg<bool> snapshot_deserialize_enabled_ {"snapshot-deserialize-enabled", true,
         R"(whether snapshot deserialize is enabled. Default: true)"};
     PandArg<std::string> icu_data_path_ {"icu-data-path", R"(default)",
