@@ -90,6 +90,9 @@
 .global ResumeRspAndReturn
 .type ResumeRspAndReturn, %function
 
+.global ResumeCaughtFrameAndDispatch
+.type ResumeCaughtFrameAndDispatch, %function
+
 .global CallRuntimeWithArgv
 .type CallRuntimeWithArgv, %function
 
@@ -462,6 +465,9 @@ ResumeRspAndDispatch:
     bx  lr
 
 ResumeRspAndReturn:
+    bx  lr
+
+ResumeCaughtFrameAndDispatch:
     bx  lr
 
 AsmInterpreterEntry:

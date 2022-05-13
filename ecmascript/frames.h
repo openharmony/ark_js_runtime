@@ -246,6 +246,7 @@ enum class FrameType: uintptr_t {
     BUILTIN_FRAME = 7,
     INTERPRETER_FAST_NEW_FRAME = 8,
     INTERPRETER_ENTRY_FRAME = 9,
+    ASM_INTERPRETER_ENTRY_FRAME = 10,
 
     INTERPRETER_BEGIN = INTERPRETER_FRAME,
     INTERPRETER_END = INTERPRETER_FAST_NEW_FRAME,
@@ -433,7 +434,7 @@ struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTyp
 
     static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
 
-    inline const JSTaggedType* GetCurrentFramePointer() const
+    inline JSTaggedType* GetCurrentFramePointer()
     {
         return fp;
     }
@@ -544,6 +545,32 @@ struct InterpretedEntryFrame : public base::AlignedStruct<JSTaggedValue::TaggedT
     alignas(EAS) const uint8_t *pc {nullptr};
     alignas(EAS) InterpretedFrameBase base;
 };
+
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+struct AsmInterpretedEntryFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
+                                                             base::AlignedPointer,
+                                                             InterpretedFrameBase> {
+    enum class Index : size_t {
+        PcIndex = 0,
+        BaseIndex,
+        NumOfMembers
+    };
+    static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
+
+    inline JSTaggedType* GetPrevFrameFp()
+    {
+        return base.prev;
+    }
+
+    static InterpretedEntryFrame* GetFrameFromSp(const JSTaggedType *sp)
+    {
+        return reinterpret_cast<InterpretedEntryFrame *>(const_cast<JSTaggedType *>(sp)) - 1;
+    }
+
+    alignas(EAS) const uint8_t *pc {nullptr};
+    alignas(EAS) InterpretedFrameBase base;
+};
+
 STATIC_ASSERT_EQ_ARCH(sizeof(InterpretedEntryFrame),
                       InterpretedEntryFrame::SizeArch32,
                       InterpretedEntryFrame::SizeArch64);
