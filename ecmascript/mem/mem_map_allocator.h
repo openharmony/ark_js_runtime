@@ -197,7 +197,7 @@ public:
     {
         memMapTotalSize_ = 0;
         capacity_ = capacity;
-        MemMap memMap = PageMap(NON_REGULAR_MMAP_SIZE, alignment);
+        MemMap memMap = PageMap(capacity, alignment);
         PageRelease(memMap.GetMem(), memMap.GetSize());
         memMapFreeList_.Initialize(memMap);
     }
@@ -221,9 +221,7 @@ public:
     void Free(void *mem, size_t size, bool isRegular);
 
 private:
-    static constexpr uintptr_t HEAP_START_ADDRESS = 256_KB;
     static constexpr size_t REGULAR_REGION_MMAP_SIZE = 4_MB;
-    static constexpr size_t NON_REGULAR_MMAP_SIZE = 512_MB;
 
     MemMap PageMap(size_t size, size_t alignment);
 
