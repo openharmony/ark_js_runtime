@@ -277,8 +277,8 @@ private:
     void MovWide(uint32_t op, const Register &rd, uint64_t imm, int shift);
     void BitWiseOpImm(BitwiseOpCode op, const Register &rd, const Register &rn, uint64_t imm);
     void BitWiseOpShift(BitwiseOpCode op, const Register &rd, const Register &rn, const Operand &operand);
-    bool trySequenceOfOnes(const Register &rd, uint64_t imm);
-    bool tryReplicateHWords(const Register &rd, uint64_t imm);
+    bool TrySequenceOfOnes(const Register &rd, uint64_t imm);
+    bool TryReplicateHWords(const Register &rd, uint64_t imm);
     void EmitMovInstruct(const Register &rd, uint64_t imm,
                          unsigned int allOneHWords, unsigned int allZeroHWords);
     int32_t GetLinkOffsetFromBranchInst(int32_t pos);

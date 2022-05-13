@@ -301,11 +301,11 @@ void AssemblerAarch64::Mov(const Register &rd, const Immediate &imm)
         return;
     }
 
-    if (regSize == RegXSize && tryReplicateHWords(rd, realImm)) {
+    if (regSize == RegXSize && TryReplicateHWords(rd, realImm)) {
         return;
     }
 
-    if (regSize == RegXSize && trySequenceOfOnes(rd, realImm)) {
+    if (regSize == RegXSize && TrySequenceOfOnes(rd, realImm)) {
         return;
     }
     EmitMovInstruct(rd, immValue, allOneHalfWords, allZeroHalfWords);
@@ -356,7 +356,7 @@ static uint64_t UpdateImm(uint64_t imm, unsigned idx, bool clear)
     return imm;
 }
 
-bool AssemblerAarch64::trySequenceOfOnes(const Register &rd, uint64_t imm)
+bool AssemblerAarch64::TrySequenceOfOnes(const Register &rd, uint64_t imm)
 {
     const int HWORDSIZE = 16;
     int startIdx = -1;
@@ -423,7 +423,7 @@ bool AssemblerAarch64::trySequenceOfOnes(const Register &rd, uint64_t imm)
     return true;
 }
 
-bool AssemblerAarch64::tryReplicateHWords(const Register &rd, uint64_t imm)
+bool AssemblerAarch64::TryReplicateHWords(const Register &rd, uint64_t imm)
 {
     const int HWORDSIZE = 16;
     std::map<uint64_t, int> repeatMaps;
