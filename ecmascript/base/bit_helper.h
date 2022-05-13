@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,7 +27,7 @@ inline constexpr uint32_t CountLeadingZeros(T value)
     static_assert(std::numeric_limits<T>::radix == RADIX, "Unexpected radix!");
     static_assert(sizeof(T) == sizeof(uint64_t) || sizeof(T) <= sizeof(uint32_t), "Unsupported sizeof(T)");
     if (value == 0) {
-        return sizeof(T);
+        return sizeof(T) * 8;
     }
     if (sizeof(T) == sizeof(uint64_t)) {
         return __builtin_clzll(static_cast<uint64_t>(value));
@@ -65,7 +65,7 @@ inline constexpr uint32_t CountTrailingZeros(T value)
     static_assert(std::numeric_limits<T>::radix == RADIX, "Unexpected radix!");
     static_assert(sizeof(T) == sizeof(uint64_t) || sizeof(T) <= sizeof(uint32_t), "Unsupported sizeof(T)");
     if (value == 0) {
-        return sizeof(T);
+        return sizeof(T) * 8;
     }
     if (sizeof(T) == sizeof(uint64_t)) {
         return __builtin_ctzll(static_cast<uint64_t>(value));
