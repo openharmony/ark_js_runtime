@@ -575,7 +575,6 @@ JSHandle<BigInt> BigInt::Uint64ToBigInt(JSThread *thread, const uint64_t &number
 
 void BigInt::BigIntToInt64(JSThread *thread, JSHandle<JSTaggedValue> bigint, int64_t *cValue, bool *lossless)
 {
-    ASSERT(bigint->IsBigInt());
     ASSERT(cValue != nullptr);
     ASSERT(lossless != nullptr);
     JSHandle<BigInt> bigInt64(thread, JSTaggedValue::ToBigInt64(thread, bigint));
@@ -595,7 +594,6 @@ void BigInt::BigIntToInt64(JSThread *thread, JSHandle<JSTaggedValue> bigint, int
 
 void BigInt::BigIntToUint64(JSThread *thread, JSHandle<JSTaggedValue> bigint, uint64_t *cValue, bool *lossless)
 {
-    ASSERT(bigint->IsBigInt());
     ASSERT(cValue != nullptr);
     ASSERT(lossless != nullptr);
     JSHandle<BigInt> bigUint64(thread, JSTaggedValue::ToBigUint64(thread, bigint));
