@@ -1408,12 +1408,13 @@ JSTaggedValue BuiltinsTypedArray::Subarray(EcmaRuntimeCallInfo *argv)
     int32_t elementSize = TypedArrayHelper::GetSizeFromName(thread, constructorName);
     int32_t srcByteOffset = TypedArrayHelper::GetByteOffset(thread, thisObj);
     int32_t beginByteOffset = srcByteOffset + beginIndex * elementSize;
+    JSTaggedValue buffer = JSTypedArray::Cast(*thisObj)->GetViewedArrayBuffer();
     // 21. Let argumentsList be «buffer, beginByteOffset, newLength».
     // 5. Let buffer be the value of O’s [[ViewedArrayBuffer]] internal slot.
     // 22. Return Construct(constructor, argumentsList).
     const size_t argsLength = 3;
     JSTaggedType args[argsLength] = {
-        JSTaggedValue::Undefined().GetRawData(),
+        buffer.GetRawData(),
         JSTaggedValue(beginByteOffset).GetRawData(),
         JSTaggedValue(newLength).GetRawData()
     };
