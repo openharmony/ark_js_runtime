@@ -128,7 +128,7 @@ bool JSAPIQueue::Has(JSTaggedValue value) const
     uint32_t capacity = elements->GetLength();
 
     uint32_t index = begin;
-    while (index == end) {
+    while (index != end) {
         if (JSTaggedValue::SameValue(elements->Get(index), value)) {
             return true;
         }
@@ -156,7 +156,7 @@ bool JSAPIQueue::GetOwnProperty(JSThread *thread, const JSHandle<JSAPIQueue> &ob
                                 const JSHandle<JSTaggedValue> &key, PropertyDescriptor &desc)
 {
     uint32_t index = 0;
-    if (UNLIKELY(JSTaggedValue::ToElementIndex(key.GetTaggedValue(), &index))) {
+    if (!UNLIKELY(JSTaggedValue::ToElementIndex(key.GetTaggedValue(), &index))) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Can not obtain attributes of no-number type", false);
     }
 
