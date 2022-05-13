@@ -15,7 +15,7 @@
 #ifndef ECMASCRIPT_COMPILER_ASSEMBLER_AARCH64_H
 #define ECMASCRIPT_COMPILER_ASSEMBLER_AARCH64_H
 
-#include "assembler.h"
+#include "ecmascript/compiler/assembler/assembler.h"
 #include "assembler_aarch64_constants.h"
 
 namespace panda::ecmascript::aarch64 {
@@ -49,6 +49,42 @@ public:
 private:
     RegisterId reg_;
     bool isWReg_;
+};
+
+class VectorRegister {
+public:
+    VectorRegister(VectorRegisterId reg, Scale scale = D) : reg_(reg), scale_(scale) {};
+    
+    inline VectorRegisterId GetId() const
+    {
+        return reg_;
+    }
+    inline bool IsValid() const
+    {
+        return reg_ != VectorRegisterId::INVALID_VREG;
+    }
+    inline Scale GetScale() const
+    {
+        return scale_;
+    }
+    inline int GetRegSize() const
+    {
+        if (scale_ == B) {
+            return 8;
+        } else if (scale_ == H) {
+            return 16;
+        } else if (scale_ == S) {
+            return 32;
+        } else if (scale_ == D) {
+            return 64;
+        } else if (scale_ == Q) {
+            return 128;
+        }
+        UNREACHABLE();
+    }
+private:
+    VectorRegisterId reg_;
+    Scale scale_; 
 };
 
 class Immediate {
@@ -177,7 +213,7 @@ public:
           extend_(Extend::NO_EXTEND), shift_(shift), shiftAmount_(shiftAmount)
     {
     }
-    MemoryOperand(Register base, int64_t offset, AddrMode addrmod = OFFSET)
+    MemoryOperand(Register base, int64_t offset, AddrMode addrmod = AddrMode::OFFSET)
         : base_(base), offsetReg_(RegisterId::INVALID_REG, false), offsetImm_(offset), addrmod_(addrmod),
           extend_(Extend::NO_EXTEND), shift_(Shift::NO_SHIFT), shiftAmount_(0)
     {
@@ -235,6 +271,8 @@ public:
     }
     void Ldp(const Register &rt, const Register &rt2, const MemoryOperand &operand);
     void Stp(const Register &rt, const Register &rt2, const MemoryOperand &operand);
+    void Ldp(const VectorRegister &vt, const VectorRegister &vt2, const MemoryOperand &operand);
+    void Stp(const VectorRegister &vt, const VectorRegister &vt2, const MemoryOperand &operand);
     void Ldr(const Register &rt, const MemoryOperand &operand);
     void Str(const Register &rt, const MemoryOperand &operand);
     void Mov(const Register &rd, const Immediate &imm);
@@ -244,6 +282,13 @@ public:
     void Movn(const Register &rd, uint64_t imm, int shift);
     void Orr(const Register &rd, const Register &rn, const LogicalImmediate &imm);
     void Orr(const Register &rd, const Register &rn, const Operand &operand);
+    void And(const Register &rd, const Register &rn, const Operand &operand);
+    void And(const Register &rd, const Register &rn, const LogicalImmediate &imm);
+    void Lsr(const Register &rd, const Register &rn, unsigned shift);
+    void Lsl(const Register &rd, const Register &rn, unsigned shift);
+    void Lsl(const Register &rd, const Register &rn, const Register &rm);
+    void Lsr(const Register &rd, const Register &rn, const Register &rm);
+    void Ubfm(const Register &rd, const Register &rn, unsigned immr, unsigned imms);
 
     void Add(const Register &rd, const Register &rn, const Operand &operand);
     void Adds(const Register &rd, const Register &rn, const Operand &operand);
@@ -255,6 +300,7 @@ public:
     void B(int32_t imm);
     void B(Condition cond, Label *label);
     void B(Condition cond, int32_t imm);
+    void Br(const Register &rn);
     void Blr(const Register &rn);
     void Bl(Label *label);
     void Bl(int32_t imm);
@@ -271,6 +317,7 @@ public:
     void Brk(const Immediate &imm);
     void Bind(Label *target);
 private:
+    uint32_t GetOpcFromScale(Scale scale, bool ispair);
     bool IsAddSubImm(uint64_t imm);
     void AddSubImm(AddSubOpCode op, const Register &rd, const Register &rn, bool setFlags, uint64_t imm);
     void AddSubReg(AddSubOpCode op, const Register &rd, const Register &rn, bool setFlags, const Operand &operand);

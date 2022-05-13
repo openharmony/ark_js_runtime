@@ -16,7 +16,7 @@
 #include "ecmascript/frames.h"
 
 namespace panda::ecmascript::aarch64 {
-void ExtendAssembler::CalleeSave()
+void ExtendedAssembler::CalleeSave()
 {
     const MemoryOperand::AddrMode preIndex = MemoryOperand::AddrMode::PREINDEX;
     Register sp(SP);
@@ -32,7 +32,7 @@ void ExtendAssembler::CalleeSave()
     Stp(VectorRegister(v8), VectorRegister(v9), MemoryOperand(sp, -16, preIndex));
 }
 
-void ExtendAssembler::CalleeRestore()
+void ExtendedAssembler::CalleeRestore()
 {
     const MemoryOperand::AddrMode postIndex = MemoryOperand::AddrMode::POSTNDEX;
     Register sp(SP);
@@ -47,28 +47,28 @@ void ExtendAssembler::CalleeRestore()
     Ldp(Register(X27), Register(X28), MemoryOperand(sp, 16, postIndex));
 }
 
-void ExtendAssembler::CallAssemblerStub(int id)
+void ExtendedAssembler::CallAssemblerStub(int id, bool isTail)
 {
     Label *target = module_->GetFunctionLabel(id);
-    Bl(target);
+    isTail ? B(target) : Bl(target);
 }
 
-void ExtendAssembler::BindAssemblerStub(int id)
+void ExtendedAssembler::BindAssemblerStub(int id)
 {
     Label *target = module_->GetFunctionLabel(id);
     Bind(target);    
 }
 
-void ExtendAssembler::SaveFpAndLr()
+void ExtendedAssembler::SaveFpAndLr()
 {
     const MemoryOperand::AddrMode preIndex = MemoryOperand::AddrMode::PREINDEX;
     Stp(Register(X29), Register(X30), MemoryOperand(sp, -16, preIndex));
     Mov(Register(X29), Register(SP));
 }
 
-void ExtendAssembler::RestoreFpAndLr()
+void ExtendedAssembler::RestoreFpAndLr()
 {
-    const MemoryOperand::AddrMode preIndex = MemoryOperand::AddrMode::POSTNDEX;
-    Ldp(Register(X29), Register(X30), MemoryOperand(sp, 16, POSTNDEX))
+    const MemoryOperand::AddrMode postIndex = MemoryOperand::AddrMode::POSTNDEX;
+    Ldp(Register(X29), Register(X30), MemoryOperand(sp, 16, postIndex))
 }
 }  // namespace panda::ecmascript::aarch64

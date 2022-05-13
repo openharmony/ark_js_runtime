@@ -12,11 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "assembler/assembler_x64.h"
-#include "assembler/assembler_aarch64.h"
+#include "assembler/x64/assembler_x64.h"
+#include "assembler/aarch64/assembler_aarch64.h"
 #include "call_signature.h"
 #include "rt_call_signature.h"
 #include "trampoline/x64/assembler_stubs_x64.h"
+#include "trampoline/aarch64/assembler_stubs.h"
 #include "assembler_module.h"
 
 namespace panda::ecmascript::kungfu {
@@ -32,7 +33,7 @@ void AssemblerModule::Run(const std::string &triple, Chunk* chunk)
 
 void AssemblerModule::GenerateStubsX64(Chunk* chunk)
 {
-    x64::ExtendedAssemblerX64 assembler(chunk);
+    x64::ExtendedAssembler assembler(chunk);
     COMPILER_LOG(INFO) << "compiling asm stubs";
     for (size_t i = 0; i < asmCallSigns_.size(); i++) {
         auto cs = asmCallSigns_[i];
@@ -72,19 +73,21 @@ void AssemblerModule::SetUpForAsmStubs()
     }
 }
 
-#define DECLARE_ASM_STUB_GENERATE(name)                                                           \
-void name##Stub::GenerateX64(Assembler *assembler)                                                   \
+#define DECLARE_ASM_STUB_X64_GENERATE(name)                                                       \
+void name##Stub::GenerateX64(Assembler *assembler)                                                \
 {                                                                                                 \
-    x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<x64::ExtendedAssemblerX64*>(assembler); \
+    x64::ExtendedAssembler *assemblerX64 = static_cast<x64::ExtendedAssembler*>(assembler);       \
     x64::AssemblerStubsX64::name(assemblerX64);                                                   \
     assemblerX64->Align16();                                                                      \
 }
 
-void name##Stub::GenerateAarch64(Assembler *assembler)                                                   \
+#define DECLARE_ASM_STUB_AARCH64_GENERATE(name)                                                   \
+void name##Stub::GenerateAarch64(Assembler *assembler)                                            \
 {                                                                                                 \
     aarch64::ExtendedAssembler *assemblerAarch64 = static_cast<aarch64::ExtendedAssembler*>(assembler); \
-    aarch64::AssemblerStubs::name(assemblerAarch64);                                                   \                                                                    \
+    aarch64::AssemblerStubs::name(assemblerAarch64);                                                    \
 }
-RUNTIME_ASM_STUB_LIST(DECLARE_ASM_STUB_GENERATE)
+RUNTIME_ASM_STUB_LIST(DECLARE_ASM_STUB_X64_GENERATE)
+RUNTIME_ASM_STUB_LIST(DECLARE_ASM_STUB_AARCH64_GENERATE)
 #undef DECLARE_ASM_STUB_GENERATE
 }  // namespace panda::ecmascript::kunfu

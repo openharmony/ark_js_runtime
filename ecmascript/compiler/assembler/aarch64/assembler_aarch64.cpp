@@ -237,22 +237,22 @@ void AssemblerAarch64::Stp(const VectorRegister &vt, const VectorRegister &vt2, 
     UNREACHABLE();
 }
 
-void int AssemblerAarch64::GetOpcFromScale(Scale scale, bool ispair)
+uint32_t AssemblerAarch64::GetOpcFromScale(Scale scale, bool ispair)
 {
-    int opc = 0;
+    uint32_t opc = 0;
     switch(scale) {
-        case B:
-        case H:
+        case Scale::B:
+        case Scale::H:
             ASSERT(!ispair);
             opc = 1;
             break;
-        case S:
+        case Scale::S:
             opc = ispair ? 0 : 1;
             break;
-        case D:
+        case Scale::D:
             opc = ispair ? 1 : 1;
             break;
-        case Q:
+        case Scale::Q:
             opc = ispair ? 1 : 3;
             break;
         default:
@@ -648,10 +648,21 @@ void AssemblerAarch64::Orr(const Register &rd, const Register &rn, const Logical
     BitWiseOpImm(ORR_Imm, rd, rn, imm.Value());
 }
 
+void AssemblerAarch64::And(const Register &rd, const Register &rn, const LogicalImmediate &imm)
+{
+    BitWiseOpImm(AND_Imm, rd, rn, imm.Value());
+}
+
 void AssemblerAarch64::Orr(const Register &rd, const Register &rn, const Operand &operand)
 {
     ASSERT(operand.IsShifted());
     BitWiseOpShift(ORR_Shift, rd, rn, operand);
+}
+
+void AssemblerAarch64::And(const Register &rd, const Register &rn, const Operand &operand)
+{
+    ASSERT(operand.IsShifted());
+    BitWiseOpShift(AND_Shift, rd, rn, operand);
 }
 
 void AssemblerAarch64::BitWiseOpImm(BitwiseOpCode op, const Register &rd, const Register &rn, uint64_t imm)
@@ -670,6 +681,56 @@ void AssemblerAarch64::BitWiseOpShift(BitwiseOpCode op, const Register &rd, cons
 #undef ShiftAmount
 #undef Shift
 }
+
+void AssemblerAarch64::Lsl(const Register &rd, const Register &rn, const Register &rm)
+{
+    uint32_t code = SF(!rd.IsW()) | LSL_Reg | Rm(rm.GetId()) | Rn(rn.GetId()) | Rd(rd.GetId());
+    EmitU32(code);
+}
+
+void AssemblerAarch64::Lsr(const Register &rd, const Register &rn, const Register &rm)
+{
+    uint32_t code = SF(!rd.IsW()) | LSR_Reg | Rm(rm.GetId()) | Rn(rn.GetId()) | Rd(rd.GetId());
+    EmitU32(code); 
+}
+
+#define N(x) (((x) << BITWISE_OP_N_LOWBITS) & BITWISE_OP_N_MASK)
+#define Immr(x)  (((x) << BITWISE_OP_Immr_LOWBITS) & BITWISE_OP_Immr_MASK)
+#define Imms(x)  (((x) << BITWISE_OP_Imms_LOWBITS) & BITWISE_OP_Imms_MASK)
+void AssemblerAarch64::Ubfm(const Register &rd, const Register &rn, unsigned immr, unsigned imms)
+{
+    bool sf = !rd.IsW();
+    uint32_t code = SF(sf) | UBFM | N(sf) | Immr(immr) | Imms(imms) | Rn(rn.GetId()) | Rd(rd.GetId());
+    EmitU32(code);    
+}
+
+void AssemblerAarch64::Lsr(const Register &rd, const Register &rn, unsigned shift)
+{
+    unsigned imms = 0;
+    if (rd.IsW()) {
+        imms = 31;
+    } else {
+        imms = 63;
+    }
+    Ubfm(rd, rn, shift, imms);
+}
+
+void AssemblerAarch64::Lsl(const Register &rd, const Register &rn, unsigned shift)
+{
+    unsigned immr = 0;
+    unsigned imms = 0;
+    if (rd.IsW()) {
+        immr = (32 - shift) % 32;
+        imms = (31 - shift);
+    } else {
+        immr = (64 - shift) % 64;
+        imms = (63 - shift);        
+    }
+    Ubfm(rd, rn, immr, 63 - shift);
+}
+#undef Immr
+#undef Imms
+#undef N
 
 void AssemblerAarch64::Add(const Register &rd, const Register &rn, const Operand &operand)
 {
@@ -816,6 +877,12 @@ void AssemblerAarch64::B(Label *label)
 void AssemblerAarch64::B(int32_t imm)
 {
     uint32_t code = BranchOpCode::Branch | ((imm << BRANCH_Imm26_LOWBITS) & BRANCH_Imm26_MASK);
+    EmitU32(code);
+}
+
+void AssemblerAarch64::Br(const Register &rn)
+{
+    uint32_t code = BranchOpCode::BR | Rn(rn.GetId());
     EmitU32(code);
 }
 

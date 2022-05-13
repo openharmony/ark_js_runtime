@@ -16,15 +16,15 @@
 #define ECMASCRIPT_COMPILER_AARCH64_EXTEND_ASSEMBLER_H
 
 #include "assembler_aarch64.h"
-#include "ecmascript/compiler/assembler_moduler.h"
+#include "ecmascript/compiler/assembler_module.h"
 
 namespace panda::ecmascript::aarch64 {
 using namespace panda::ecmascript::kungfu;
 // ExtendAssembler implements frequently-used assembler macros.
-class ExtendAssembler : public AssemblerArach64 {
+class ExtendedAssembler : public AssemblerAarch64 {
 public:
-    explicit ExtendAssembler(Chunk *chunk, AssemblerModule *module)
-        : AssemblerArach64(chunk), module_(module);
+    explicit ExtendedAssembler(Chunk *chunk, AssemblerModule *module)
+        : AssemblerAarch64(chunk), module_(module)
     {
     }
     void BindAssemblerStub(int id);
