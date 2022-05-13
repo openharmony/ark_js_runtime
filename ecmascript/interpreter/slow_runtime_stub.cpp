@@ -70,7 +70,8 @@ JSTaggedValue SlowRuntimeStub::NegDyn(JSThread *thread, JSTaggedValue value)
     INTERPRETER_TRACE(thread, NegDyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, value);
+    JSHandle<JSTaggedValue> inputTag(thread, value);
+    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, inputTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (inputVal->IsBigInt()) {
         JSHandle<BigInt> bigValue(inputVal);
@@ -125,7 +126,7 @@ JSTaggedValue SlowRuntimeStub::ToNumber(JSThread *thread, JSTaggedValue value)
 
     JSHandle<JSTaggedValue> number(thread, value);
     // may return exception
-    return JSTaggedValue::ToNumeric(thread, number.GetTaggedValue()).GetTaggedValue();
+    return JSTaggedValue::ToNumeric(thread, number).GetTaggedValue();
 }
 
 JSTaggedValue SlowRuntimeStub::NotDyn(JSThread *thread, JSTaggedValue value)
@@ -133,7 +134,8 @@ JSTaggedValue SlowRuntimeStub::NotDyn(JSThread *thread, JSTaggedValue value)
     INTERPRETER_TRACE(thread, NotDyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, value);
+    JSHandle<JSTaggedValue> inputTag(thread, value);
+    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, inputTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (inputVal->IsBigInt()) {
         JSHandle<BigInt> bigValue(inputVal);
@@ -147,8 +149,9 @@ JSTaggedValue SlowRuntimeStub::IncDyn(JSThread *thread, JSTaggedValue value)
 {
     INTERPRETER_TRACE(thread, IncDyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-
-    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, value);
+    
+    JSHandle<JSTaggedValue> inputTag(thread, value);
+    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, inputTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (inputVal->IsBigInt()) {
         JSHandle<BigInt> bigValue(inputVal);
@@ -163,7 +166,8 @@ JSTaggedValue SlowRuntimeStub::DecDyn(JSThread *thread, JSTaggedValue value)
     INTERPRETER_TRACE(thread, DecDyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, value);
+    JSHandle<JSTaggedValue> inputTag(thread, value);
+    JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, inputTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (inputVal->IsBigInt()) {
         JSHandle<BigInt> bigValue(inputVal);
@@ -231,9 +235,9 @@ JSTaggedValue SlowRuntimeStub::Add2Dyn(JSThread *thread, JSTaggedValue left, JST
         JSHandle<EcmaString> newString = factory->ConcatFromString(stringA0, stringA1);
         return newString.GetTaggedValue();
     }
-    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, primitiveA0.GetTaggedValue());
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, primitiveA0);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, primitiveA1.GetTaggedValue());
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, primitiveA1);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
         if (valLeft->IsBigInt() && valRight->IsBigInt()) {
@@ -253,9 +257,11 @@ JSTaggedValue SlowRuntimeStub::Sub2Dyn(JSThread *thread, JSTaggedValue left, JST
     INTERPRETER_TRACE(thread, Sub2Dyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left);
+    JSHandle<JSTaggedValue> leftTag(thread, left);
+    JSHandle<JSTaggedValue> rightTag(thread, right);
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, leftTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right);
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, rightTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
         if (valLeft->IsBigInt() && valRight->IsBigInt()) {
@@ -275,9 +281,11 @@ JSTaggedValue SlowRuntimeStub::Mul2Dyn(JSThread *thread, JSTaggedValue left, JST
     INTERPRETER_TRACE(thread, Mul2Dyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left);
+    JSHandle<JSTaggedValue> leftTag(thread, left);
+    JSHandle<JSTaggedValue> rightTag(thread, right);
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, leftTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right);
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, rightTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 9. ReturnIfAbrupt(rnum).
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
@@ -299,9 +307,11 @@ JSTaggedValue SlowRuntimeStub::Div2Dyn(JSThread *thread, JSTaggedValue left, JST
     INTERPRETER_TRACE(thread, Div2Dyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left);
+    JSHandle<JSTaggedValue> leftTag(thread, left);
+    JSHandle<JSTaggedValue> rightTag(thread, right);
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, leftTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right);
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, rightTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
         if (valLeft->IsBigInt() && valRight->IsBigInt()) {
@@ -329,11 +339,12 @@ JSTaggedValue SlowRuntimeStub::Mod2Dyn(JSThread *thread, JSTaggedValue left, JST
     INTERPRETER_TRACE(thread, Mod2Dyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left);
+    JSHandle<JSTaggedValue> leftTag(thread, left);
+    JSHandle<JSTaggedValue> rightTag(thread, right);
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, leftTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right);
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, rightTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-
     // 12.6.3.3 Applying the % Operator
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
         if (valLeft->IsBigInt() && valRight->IsBigInt()) {
@@ -433,9 +444,11 @@ JSTaggedValue SlowRuntimeStub::Shl2Dyn(JSThread *thread, JSTaggedValue left, JST
     INTERPRETER_TRACE(thread, Shl2Dyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> leftValue = JSTaggedValue::ToNumeric(thread, left);
+    JSHandle<JSTaggedValue> leftTag(thread, left);
+    JSHandle<JSTaggedValue> rightTag(thread, right);
+    JSHandle<JSTaggedValue> leftValue = JSTaggedValue::ToNumeric(thread, leftTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> rightValue = JSTaggedValue::ToNumeric(thread, right);
+    JSHandle<JSTaggedValue> rightValue = JSTaggedValue::ToNumeric(thread, rightTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (leftValue->IsBigInt() || rightValue->IsBigInt()) {
         if (leftValue->IsBigInt() && rightValue->IsBigInt()) {
@@ -464,9 +477,11 @@ JSTaggedValue SlowRuntimeStub::Shr2Dyn(JSThread *thread, JSTaggedValue left, JST
     INTERPRETER_TRACE(thread, Shr2Dyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left);
+    JSHandle<JSTaggedValue> leftTag(thread, left);
+    JSHandle<JSTaggedValue> rightTag(thread, right);
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, leftTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right);
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, rightTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
         if (valLeft->IsBigInt() && valRight->IsBigInt()) {
@@ -492,9 +507,11 @@ JSTaggedValue SlowRuntimeStub::Ashr2Dyn(JSThread *thread, JSTaggedValue left, JS
     INTERPRETER_TRACE(thread, Ashr2Dyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left);
+    JSHandle<JSTaggedValue> leftTag(thread, left);
+    JSHandle<JSTaggedValue> rightTag(thread, right);
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, leftTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right);
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, rightTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
         if (valLeft->IsBigInt() && valRight->IsBigInt()) {
@@ -519,9 +536,11 @@ JSTaggedValue SlowRuntimeStub::And2Dyn(JSThread *thread, JSTaggedValue left, JST
 {
     INTERPRETER_TRACE(thread, And2Dyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left);
+    JSHandle<JSTaggedValue> leftTag(thread, left);
+    JSHandle<JSTaggedValue> rightTag(thread, right);
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, leftTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right);
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, rightTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
         if (valLeft->IsBigInt() && valRight->IsBigInt()) {
@@ -547,9 +566,11 @@ JSTaggedValue SlowRuntimeStub::Or2Dyn(JSThread *thread, JSTaggedValue left, JSTa
     INTERPRETER_TRACE(thread, Or2Dyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left);
+    JSHandle<JSTaggedValue> leftTag(thread, left);
+    JSHandle<JSTaggedValue> rightTag(thread, right);
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, leftTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right);
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, rightTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
         if (valLeft->IsBigInt() && valRight->IsBigInt()) {
@@ -575,9 +596,11 @@ JSTaggedValue SlowRuntimeStub::Xor2Dyn(JSThread *thread, JSTaggedValue left, JST
     INTERPRETER_TRACE(thread, Xor2Dyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, left);
+    JSHandle<JSTaggedValue> leftTag(thread, left);
+    JSHandle<JSTaggedValue> rightTag(thread, right);
+    JSHandle<JSTaggedValue> valLeft = JSTaggedValue::ToNumeric(thread, leftTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, right);
+    JSHandle<JSTaggedValue> valRight = JSTaggedValue::ToNumeric(thread, rightTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (valLeft->IsBigInt() || valRight->IsBigInt()) {
         if (valLeft->IsBigInt() && valRight->IsBigInt()) {
@@ -706,9 +729,11 @@ JSTaggedValue SlowRuntimeStub::ExpDyn(JSThread *thread, JSTaggedValue base, JSTa
     INTERPRETER_TRACE(thread, ExpDyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> valBase = JSTaggedValue::ToNumeric(thread, base);
+    JSHandle<JSTaggedValue> baseTag(thread, base);
+    JSHandle<JSTaggedValue> exponentTag(thread, exponent);
+    JSHandle<JSTaggedValue> valBase = JSTaggedValue::ToNumeric(thread, baseTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> valExponent = JSTaggedValue::ToNumeric(thread, exponent);
+    JSHandle<JSTaggedValue> valExponent = JSTaggedValue::ToNumeric(thread, exponentTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (valBase->IsBigInt() || valExponent->IsBigInt()) {
         if (valBase->IsBigInt() && valExponent->IsBigInt()) {
