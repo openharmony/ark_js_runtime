@@ -136,7 +136,7 @@ void EcmaVM::TryLoadSnapshotFile()
 bool EcmaVM::Initialize()
 {
     LOG(INFO, RUNTIME) << "EcmaVM Initialize";
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "EcmaVM::Initialize");
+    ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "EcmaVM::Initialize");
     Taskpool::GetCurrentTaskpool()->Initialize();
 #ifndef PANDA_TARGET_WINDOWS
     RuntimeStubs::Initialize(thread_);

@@ -40,7 +40,7 @@ void STWYoungGC::RunPhases()
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), STWYoungGC_RunPhases);
     [[maybe_unused]] ClockScope clockScope;
 
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::RunPhases");
+    ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "STWYoungGC::RunPhases");
     if (heap_->CheckOngoingConcurrentMarking()) {
         ECMA_GC_LOG() << "STWYoungGC after ConcurrentMarking";
         heap_->GetConcurrentMarker()->Reset();  // HPPGC use mark result to move TaggedObject.
@@ -56,7 +56,7 @@ void STWYoungGC::RunPhases()
 
 void STWYoungGC::Initialize()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Initialize");
+    ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "STWYoungGC::Initialize");
     heap_->Prepare();
     commitSize_ = heap_->GetNewSpace()->GetCommittedSize();
     heap_->SwapNewSpace();
@@ -68,7 +68,7 @@ void STWYoungGC::Initialize()
 
 void STWYoungGC::Mark()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Mark");
+    ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "STWYoungGC::Mark");
     auto region = heap_->GetOldSpace()->GetCurrentRegion();
 
     if (parallelGC_) {
@@ -94,7 +94,7 @@ void STWYoungGC::Mark()
 
 void STWYoungGC::Sweep()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Sweep");
+    ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "STWYoungGC::Sweep");
     auto totalThreadCount = static_cast<uint32_t>(
         Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1);  // gc thread and main thread
     for (uint32_t i = 0; i < totalThreadCount; i++) {
@@ -140,7 +140,7 @@ void STWYoungGC::Sweep()
 
 void STWYoungGC::Finish()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::Finish");
+    ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "STWYoungGC::Finish");
     workManager_->Finish(semiCopiedSize_, promotedSize_);
     heap_->Resume(YOUNG_GC);
 }
