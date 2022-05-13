@@ -263,7 +263,7 @@ void Snapshot::WriteToFile(std::fstream &write, const panda_file::File *pf,
         snapshotSize = (regionCount - 1) * defaultSnapshotSpaceCapacity + lastRegion->GetHighWaterMarkSize();
     }
     uint32_t pandaFileBegin = RoundUp(snapshotSize + totalStringSize + sizeof(Header), Constants::PAGE_SIZE_ALIGN_UP);
-    Header hdr {snapshotSize, totalStringSize, pandaFileBegin, size};
+    Header hdr {snapshotSize, totalStringSize, pandaFileBegin, static_cast<uint32_t>(size)};
     write.write(reinterpret_cast<char *>(&hdr), sizeof(hdr));
     if (regionCount > 0) {
         space->EnumerateRegions([&write, &defaultSnapshotSpaceCapacity, lastRegion](Region *current) {

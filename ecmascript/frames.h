@@ -517,7 +517,7 @@ struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTyp
     // args, may be truncated if not extra
     // thisObject, used in asm constructor frame
     // numArgs, used if extra or asm constructor frame
-    enum ReverseIndex : size_t { NUM_ARGS_REVERSE_INDEX = -1, THIS_OBJECT_REVERSE_INDEX = -2 };
+    enum ReverseIndex : int32_t { NUM_ARGS_REVERSE_INDEX = -1, THIS_OBJECT_REVERSE_INDEX = -2 };
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(AsmInterpretedFrame), AsmInterpretedFrame::SizeArch32, AsmInterpretedFrame::SizeArch64);
 

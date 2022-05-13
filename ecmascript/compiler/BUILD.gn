@@ -11,20 +11,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//ark/js_runtime/js_runtime_config.gni")
-import("//build/ohos.gni")
+if (defined(ark_independent_build)) {
+  import("//js_runtime/js_runtime_config.gni")
+  import("$build_root/ark.gni")
+} else {
+  import("//ark/js_runtime/js_runtime_config.gni")
+  import("//build/ohos.gni")
 
-action("build_llvm_libs") {
-  script = "compile_llvm_lib.sh"
-  sources = [ "//ark/js_runtime/ecmascript/compiler/compile_llvm_lib.sh" ]
-  outputs = [ "${root_out_dir}/llvm" ]
+  action("build_llvm_libs") {
+    script = "compile_llvm_lib.sh"
+    sources = [ "$js_root/ecmascript/compiler/compile_llvm_lib.sh" ]
+    outputs = [ "${root_out_dir}/llvm" ]
+  }
 }
 
 config("include_llvm") {
   if (compile_llvm_online) {
     include_dirs = [
-      "//third_party/llvm-project/build/include",
-      "//third_party/llvm-project/llvm/include/",
+      "$ark_third_party_path/llvm-project/build/include",
+      "$ark_third_party_path/llvm-project/llvm/include/",
     ]
   } else {
     include_dirs = [
@@ -69,12 +74,12 @@ source_set("libark_jsoptimizer_set") {
 
   public_configs = [
     ":include_llvm",
-    "//ark/js_runtime:ark_jsruntime_compiler_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",
+    "$js_root:ark_jsruntime_compiler_config",
+    "$js_root:ark_jsruntime_public_config",
   ]
 
   if (compile_llvm_online) {
-    lib_dirs = [ "//third_party/llvm-project/build/lib" ]
+    lib_dirs = [ "$ark_third_party_path/llvm-project/build/lib" ]
   } else {
     lib_dirs =
         [ "//prebuilts/ark_tools/ark_js_prebuilts/llvm_prebuilts/build/lib" ]
@@ -151,55 +156,21 @@ source_set("libark_jsoptimizer_set") {
   }
 }
 
-ohos_shared_library("libark_jsoptimizer") {
-  deps = [
-    ":libark_jsoptimizer_set",
-    "//ark/js_runtime:libark_jsruntime",
-  ]
-
-  install_enable = false
-
-  output_extension = "so"
-  part_name = "ark_js_runtime"
-  subsystem_name = "ark"
-}
-
-ohos_shared_library("libark_jsoptimizer_test") {
-  deps = [
-    ":libark_jsoptimizer_set",
-    "//ark/js_runtime:libark_jsruntime_test_set",
-  ]
-
-  install_enable = false
-
-  output_extension = "so"
-  subsystem_name = "test"
-}
-
 source_set("ark_stub_compiler_set") {
   sources = [ "stub_compiler.cpp" ]
   include_dirs = [ "$target_gen_dir" ]
 
   public_configs = [
     ":include_llvm",
-    "//ark/js_runtime:ark_jsruntime_compiler_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",
+    "$js_root:ark_jsruntime_compiler_config",
+    "$js_root:ark_jsruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_jsruntime",
-    "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer",
+    "$js_root:libark_jsruntime",
+    "$js_root/ecmascript/compiler:libark_jsoptimizer",
   ]
-}
-
-ohos_executable("ark_stub_compiler") {
-  deps = [ ":ark_stub_compiler_set" ]
-
-  install_enable = false
-
-  part_name = "ark_js_runtime"
-  subsystem_name = "ark"
 }
 
 source_set("ark_aot_compiler_set") {
@@ -211,60 +182,102 @@ source_set("ark_aot_compiler_set") {
 
   public_configs = [
     ":include_llvm",
-    "//ark/js_runtime:ark_jsruntime_compiler_config",
-    "//ark/js_runtime:ark_jsruntime_public_config",
+    "$js_root:ark_jsruntime_compiler_config",
+    "$js_root:ark_jsruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_jsruntime",
-    "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer",
+    "$js_root:libark_jsruntime",
+    "$js_root/ecmascript/compiler:libark_jsoptimizer",
   ]
 }
 
-ohos_executable("ark_aot_compiler") {
-  deps = [ ":ark_aot_compiler_set" ]
+if (!defined(ark_independent_build)) {
+  ohos_shared_library("libark_jsoptimizer") {
+    deps = [
+      ":libark_jsoptimizer_set",
+      "$js_root:libark_jsruntime",
+    ]
 
-  install_enable = false
+    install_enable = false
 
-  part_name = "ark_js_runtime"
-  subsystem_name = "ark"
+    output_extension = "so"
+    part_name = "ark_js_runtime"
+    subsystem_name = "ark"
+  }
+
+  ohos_shared_library("libark_jsoptimizer_test") {
+    deps = [
+      ":libark_jsoptimizer_set",
+      "$js_root:libark_jsruntime_test_set",
+    ]
+
+    install_enable = false
+
+    output_extension = "so"
+    subsystem_name = "test"
+  }
+
+  ohos_executable("ark_stub_compiler") {
+    deps = [ ":ark_stub_compiler_set" ]
+
+    install_enable = false
+
+    part_name = "ark_js_runtime"
+    subsystem_name = "ark"
+  }
+
+  ohos_executable("ark_aot_compiler") {
+    deps = [ ":ark_aot_compiler_set" ]
+
+    install_enable = false
+
+    part_name = "ark_js_runtime"
+    subsystem_name = "ark"
+  }
+  action("gen_stub_file") {
+    script = "$js_root/script/run_ark_executable.py"
+
+    deps =
+        [ "$js_root/ecmascript/compiler:ark_stub_compiler(${host_toolchain})" ]
+
+    stub_file_gen_dir = "$root_gen_dir/ark/js_runtime"
+
+    stub_option = " --com-stub-out=" + rebase_path(stub_file_gen_dir) +
+                  "/com_stub.m --bc-stub-out=" +
+                  rebase_path(stub_file_gen_dir) + "/bc_stub.m"
+
+    args = [
+      "--script-file",
+      rebase_path(root_out_dir) + "/ark/ark_js_runtime/ark_stub_compiler",
+      "--script-options",
+      stub_option,
+      "--expect-output",
+      "0",
+      "--env-path",
+      rebase_path(root_out_dir) + "/ark/ark:" + rebase_path(root_out_dir) +
+          "/ark/ark_js_runtime:" + rebase_path(root_out_dir) +
+          "/thirdparty/icu:" +
+          rebase_path("//prebuilts/clang/ohos/linux-x86_64/llvm/lib/"),
+    ]
+
+    outputs = [
+      "$stub_file_gen_dir/com_stub.m",
+      "$stub_file_gen_dir/bc_stub.m",
+    ]
+  }
+} else {
+  ark_shared_library("libark_jsoptimizer") {
+    deps = [
+      ":libark_jsoptimizer_set",
+      "$js_root:libark_jsruntime",
+    ]
+    output_extension = "so"
+  }
 }
 
 config("gen_stub_file_dir_config") {
   stub_file_gen_dir = rebase_path(root_gen_dir) + "/ark/js_runtime"
   defines = [ "STUB_FILE_GEN_DIR=\"${stub_file_gen_dir}/\"" ]
-}
-
-action("gen_stub_file") {
-  script = "//ark/js_runtime/script/run_ark_executable.py"
-
-  deps = [
-    "//ark/js_runtime/ecmascript/compiler:ark_stub_compiler(${host_toolchain})",
-  ]
-
-  stub_file_gen_dir = "$root_gen_dir/ark/js_runtime"
-
-  stub_option = " --com-stub-out=" + rebase_path(stub_file_gen_dir) +
-                "/com_stub.m --bc-stub-out=" + rebase_path(stub_file_gen_dir) +
-                "/bc_stub.m"
-
-  args = [
-    "--script-file",
-    rebase_path(root_out_dir) + "/ark/ark_js_runtime/ark_stub_compiler",
-    "--script-options",
-    stub_option,
-    "--expect-output",
-    "0",
-    "--env-path",
-    rebase_path(root_out_dir) + "/ark/ark:" + rebase_path(root_out_dir) +
-        "/ark/ark_js_runtime:" + rebase_path(root_out_dir) +
-        "/thirdparty/icu:" +
-        rebase_path("//prebuilts/clang/ohos/linux-x86_64/llvm/lib/"),
-  ]
-
-  outputs = [
-    "$stub_file_gen_dir/com_stub.m",
-    "$stub_file_gen_dir/bc_stub.m",
-  ]
 }
