@@ -283,22 +283,18 @@ private:
     V(CallRuntimeWithArgv)                  \
     V(OptimizedCallOptimized)               \
     V(PushCallArgs0AndDispatch)             \
-    V(PushCallArgs0AndDispatchNative)       \
+    V(PushCallArgsAndDispatchNative)       \
     V(PushCallArgs0AndDispatchSlowPath)     \
     V(PushCallArgs1AndDispatch)             \
-    V(PushCallArgs1AndDispatchNative)       \
     V(PushCallArgs1AndDispatchSlowPath)     \
     V(PushCallArgs2AndDispatch)             \
-    V(PushCallArgs2AndDispatchNative)       \
     V(PushCallArgs2AndDispatchSlowPath)     \
     V(PushCallArgs3AndDispatch)             \
-    V(PushCallArgs3AndDispatchNative)       \
     V(PushCallArgs3AndDispatchSlowPath)     \
     V(PushCallIRangeAndDispatch)            \
     V(PushCallIRangeAndDispatchNative)      \
     V(PushCallIRangeAndDispatchSlowPath)    \
     V(PushCallIThisRangeAndDispatch)        \
-    V(PushCallIThisRangeAndDispatchNative)  \
     V(PushCallIThisRangeAndDispatchSlowPath)\
     V(ResumeRspAndDispatch)                 \
     V(ResumeRspAndReturn)                   \
