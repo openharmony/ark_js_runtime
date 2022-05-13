@@ -385,7 +385,7 @@ public:
     static JSTaggedValue ToBigInt64(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
     static JSTaggedValue ToBigUint64(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
     static JSTaggedNumber ToInteger(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
-    static JSHandle<JSTaggedValue> ToNumeric(JSThread *thread, JSTaggedValue tagged);
+    static JSHandle<JSTaggedValue> ToNumeric(JSThread *thread, JSHandle<JSTaggedValue> tagged);
     static int32_t ToInt32(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
     static uint32_t ToUint32(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
     static int16_t ToInt16(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);

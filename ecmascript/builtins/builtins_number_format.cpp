@@ -145,7 +145,7 @@ JSTaggedValue BuiltinsNumberFormat::FormatToParts(EcmaRuntimeCallInfo *argv)
     }
     // 3. Let x be ? ToNumeric(value).
     JSHandle<JSTaggedValue> value = GetCallArg(argv, 0);
-    JSHandle<JSTaggedValue> x = JSTaggedValue::ToNumeric(thread, value.GetTaggedValue());
+    JSHandle<JSTaggedValue> x = JSTaggedValue::ToNumeric(thread, value);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     JSHandle<JSArray> result =
         JSNumberFormat::FormatNumericToParts(thread, JSHandle<JSNumberFormat>::Cast(nf), x.GetTaggedValue());
@@ -195,7 +195,7 @@ JSTaggedValue BuiltinsNumberFormat::NumberFormatInternalFormatNumber(EcmaRuntime
     // 3. If value is not provided, let value be undefined.
     JSHandle<JSTaggedValue> value = GetCallArg(argv, 0);
     // 4 Let x be ? ToNumeric(value).
-    JSHandle<JSTaggedValue> x = JSTaggedValue::ToNumeric(thread, value.GetTaggedValue());
+    JSHandle<JSTaggedValue> x = JSTaggedValue::ToNumeric(thread, value);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 5 Return ? FormatNumeric(nf, x).
     JSHandle<JSTaggedValue> result =
