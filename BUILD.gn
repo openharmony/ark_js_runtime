@@ -661,7 +661,10 @@ if (!defined(ark_independent_build)) {
   }
 } else {
   ark_shared_library("libark_jsruntime") {
-    deps = [ ":libark_jsruntime_set" ]
+    deps = [
+      ":libark_js_intl_set",
+      ":libark_jsruntime_set",
+    ]
     if (!is_mingw && !is_mac) {
       output_extension = "so"
     }
