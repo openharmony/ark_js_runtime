@@ -522,30 +522,6 @@ void InterpreterStub::DispatchDebuggerLast(GateRef glue, GateRef sp, GateRef pc,
     Return();
 }
 
-template<RuntimeStubCSigns::ID id, typename... Args>
-void InterpreterStub::DispatchCommonCall(GateRef glue, GateRef sp, Args... args)
-{
-    GateRef index = IntPtr(id);
-    const CallSignature *signature = RuntimeStubCSigns::Get(id);
-    auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
-    GateRef result = GetEnvironment()->GetBulder()->NoGcRuntimeCall(
-        signature, glue, index, depend, {glue, sp, args...});
-    GetEnvironment()->GetCurrentLabel()->SetDepend(result);
-    Return();
-}
-
-template<RuntimeStubCSigns::ID id, typename... Args>
-GateRef InterpreterStub::CommonCallNative(GateRef glue, GateRef sp, Args... args)
-{
-    GateRef index = IntPtr(id);
-    const CallSignature *signature = RuntimeStubCSigns::Get(id);
-    auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
-    GateRef result = GetEnvironment()->GetBulder()->NoGcRuntimeCall(
-        signature, glue, index, depend, {glue, sp, args...});
-    GetEnvironment()->GetCurrentLabel()->SetDepend(result);
-    return result;
-}
-
 GateRef InterpreterStub::GetObjectFromConstPool(GateRef constpool, GateRef index)
 {
     return GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, index);

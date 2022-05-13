@@ -65,6 +65,12 @@ void FrameHandler::PrevFrame()
             sp_ = frame->GetPrevFrameFp();
             break;
         }
+        case FrameType::BUILTIN_FRAME_WITH_ARGV: {
+            auto frame = BuiltinWithArgvFrame::GetFrameFromSp(sp_);
+            sp_ = frame->GetPrevFrameFp();
+            break;
+        }
+        case FrameType::BUILTIN_ENTRY_FRAME:
         case FrameType::BUILTIN_FRAME: {
             auto frame = BuiltinFrame::GetFrameFromSp(sp_);
             sp_ = frame->GetPrevFrameFp();
@@ -101,6 +107,10 @@ uintptr_t FrameHandler::GetPrevFrameCallSiteSp(const JSTaggedType *sp)
             auto frame = OptimizedWithArgvLeaveFrame::GetFrameFromSp(sp);
             return frame->GetCallSiteSp();
         }
+        case FrameType::BUILTIN_FRAME_WITH_ARGV: {
+            auto frame = BuiltinWithArgvFrame::GetFrameFromSp(sp);
+            return frame->GetCallSiteSp();
+        }
         case FrameType::BUILTIN_FRAME: {
             auto frame = BuiltinFrame::GetFrameFromSp(sp);
             return frame->GetCallSiteSp();
@@ -111,6 +121,7 @@ uintptr_t FrameHandler::GetPrevFrameCallSiteSp(const JSTaggedType *sp)
             type = GetFrameType(sp);
             break;
         }
+        case FrameType::BUILTIN_ENTRY_FRAME:
         case FrameType::ASM_INTERPRETER_FRAME:
         case FrameType::INTERPRETER_CONSTRUCTOR_FRAME:
         case FrameType::INTERPRETER_FRAME:
@@ -211,13 +222,33 @@ JSTaggedValue FrameHandler::GetFunction() const
 {
     ASSERT(IsInterpretedFrame());
     if (thread_->IsAsmInterpreter()) {
-        if (IsAsmInterpretedFrame()) {
-            auto *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
-            return frame->function;
-        } else {
-            auto *frame = BuiltinFrame::GetFrameFromSp(sp_);
-            return frame->function;
-        }
+        FrameType type = GetFrameType();
+        switch (type) {
+            case FrameType::ASM_INTERPRETER_FRAME:
+            case FrameType::INTERPRETER_CONSTRUCTOR_FRAME: {
+                auto frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+                return frame->function;
+            }
+            case FrameType::BUILTIN_FRAME_WITH_ARGV: {
+                auto *frame = BuiltinWithArgvFrame::GetFrameFromSp(sp_);
+                return frame->GetFunction();
+            }
+            case FrameType::BUILTIN_ENTRY_FRAME:
+            case FrameType::BUILTIN_FRAME: {
+                auto *frame = BuiltinFrame::GetFrameFromSp(sp_);
+                return frame->GetFunction();
+            }
+            case FrameType::INTERPRETER_FRAME:
+            case FrameType::INTERPRETER_FAST_NEW_FRAME:
+            case FrameType::INTERPRETER_ENTRY_FRAME:
+            case FrameType::OPTIMIZED_FRAME:
+            case FrameType::LEAVE_FRAME:
+            case FrameType::LEAVE_FRAME_WITH_ARGV:
+            case FrameType::OPTIMIZED_ENTRY_FRAME:
+            default:
+                LOG_ECMA(FATAL) << "frame type error!";
+                UNREACHABLE();
+         }
     } else {
         auto *frame = InterpretedFrame::GetFrameFromSp(sp_);
         return frame->function;
@@ -296,6 +327,8 @@ ARK_INLINE uintptr_t FrameHandler::GetInterpretedFrameEnd(JSTaggedType *prevSp) 
         case FrameType::INTERPRETER_ENTRY_FRAME:
             end = ToUintPtr(GetInterpretedEntryFrameStart(prevSp));
             break;
+        case FrameType::BUILTIN_FRAME_WITH_ARGV:
+        case FrameType::BUILTIN_ENTRY_FRAME:
         case FrameType::BUILTIN_FRAME:
         case FrameType::OPTIMIZED_FRAME:
         case FrameType::LEAVE_FRAME:
@@ -375,13 +408,49 @@ ARK_INLINE void FrameHandler::AsmInterpretedFrameIterate(const JSTaggedType *sp,
 
 ARK_INLINE void FrameHandler::BuiltinFrameIterate(const JSTaggedType *sp,
                                                   const RootVisitor &v0,
-                                                  [[maybe_unused]] const RootRangeVisitor &v1,
+                                                  const RootRangeVisitor &v1,
                                                   ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
                                                   bool isVerifying) const
 {
     auto frame = BuiltinFrame::GetFrameFromSp(sp);
-    uintptr_t start = ToUintPtr(&frame->argc + 1); // argv
-    uintptr_t end = ToUintPtr(&frame->argc + 1 + frame->argc);
+    // no need to visit stack map for entry frame
+    if (frame->type == FrameType::BUILTIN_ENTRY_FRAME) {
+        // only visit function
+        v0(Root::ROOT_FRAME, ObjectSlot(frame->GetStackArgsAddress()));
+        return;
+    }
+    JSTaggedType *argv = reinterpret_cast<JSTaggedType *>(frame->GetStackArgsAddress());
+    auto argc = frame->GetNumArgs() + BuiltinFrame::RESERVED_CALL_ARGCOUNT;
+    uintptr_t start = ToUintPtr(argv);
+    uintptr_t end = ToUintPtr(argv + argc);
+    v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
+
+    std::set<uintptr_t> slotAddrs;
+    bool ret = kungfu::LLVMStackMapParser::GetInstance().CollectStackMapSlots(
+        frame->returnAddr, reinterpret_cast<uintptr_t>(sp), slotAddrs, derivedPointers, isVerifying);
+    if (!ret) {
+#ifndef NDEBUG
+        LOG_ECMA(DEBUG) << " stackmap don't found returnAddr " << frame->returnAddr;
+#endif
+        return;
+    }
+
+    for (auto slot : slotAddrs) {
+        v0(Root::ROOT_FRAME, ObjectSlot(slot));
+    }
+}
+
+ARK_INLINE void FrameHandler::BuiltinWithArgvFrameIterate(const JSTaggedType *sp,
+                                                          const RootVisitor &v0,
+                                                          const RootRangeVisitor &v1,
+                                                          ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
+                                                          bool isVerifying) const
+{
+    auto frame = BuiltinWithArgvFrame::GetFrameFromSp(sp);
+    auto argc = frame->GetNumArgs() + BuiltinFrame::RESERVED_CALL_ARGCOUNT;
+    JSTaggedType *argv = reinterpret_cast<JSTaggedType *>(frame->GetStackArgsAddress());
+    uintptr_t start = ToUintPtr(argv);
+    uintptr_t end = ToUintPtr(argv + argc);
     v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
 
     std::set<uintptr_t> slotAddrs;
@@ -473,8 +542,9 @@ ARK_INLINE void FrameHandler::OptimizedLeaveFrameIterate(const JSTaggedType *sp,
 {
     OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(sp);
     if (frame->argc > 0) {
-        uintptr_t start = ToUintPtr(&frame->argc + 1); // argv
-        uintptr_t end = ToUintPtr(&frame->argc + 1 + frame->argc);
+        JSTaggedType *argv = reinterpret_cast<JSTaggedType *>(&frame->argc + 1);
+        uintptr_t start = ToUintPtr(argv); // argv
+        uintptr_t end = ToUintPtr(argv + frame->argc);
         v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
     }
 
@@ -610,6 +680,13 @@ void FrameHandler::IterateFrameChain(JSTaggedType *start, const RootVisitor &v0,
                 current = frame->GetPrevFrameFp();
                 break;
             }
+            case FrameType::BUILTIN_FRAME_WITH_ARGV: {
+                auto frame = BuiltinWithArgvFrame::GetFrameFromSp(current);
+                BuiltinWithArgvFrameIterate(current, v0, v1, derivedPointers, isVerifying);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::BUILTIN_ENTRY_FRAME:
             case FrameType::BUILTIN_FRAME: {
                 auto frame = BuiltinFrame::GetFrameFromSp(current);
                 BuiltinFrameIterate(current, v0, v1, derivedPointers, isVerifying);

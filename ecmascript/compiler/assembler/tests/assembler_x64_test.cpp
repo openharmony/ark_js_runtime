@@ -346,7 +346,7 @@ HWTEST_F_L0(AssemblerX64Test, Emit3)
     // 48 f6 c4 0f testq   $15, %rsp
     __ Testq(15, rsp);
     value = masm.GetU8(current++);
-    ASSERT_EQ(value, 0x48U);
+    ASSERT_EQ(value, 0x40U);
     value = masm.GetU8(current++);
     ASSERT_EQ(value, 0xF6U);
     value = masm.GetU8(current++);
