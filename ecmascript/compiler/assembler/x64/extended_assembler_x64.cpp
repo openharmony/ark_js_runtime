@@ -22,7 +22,7 @@ void ExtendedAssembler::PushAlignBytes()
     Pushq(0);
 }
 
-void ExtendedAssemblerX64::PopAlignBytes()
+void ExtendedAssembler::PopAlignBytes()
 {
     Addq(8, rsp);  // 8: 8 bytes
 }
@@ -46,7 +46,7 @@ void ExtendedAssembler::PopCppCalleeSaveRegisters()
     Popq(r12);
 }
 
-void ExtendedAssemblerX64::PushGhcCalleeSaveRegisters()
+void ExtendedAssembler::PushGhcCalleeSaveRegisters()
 {
     Pushq(r10);
     Pushq(r11);
@@ -55,7 +55,7 @@ void ExtendedAssemblerX64::PushGhcCalleeSaveRegisters()
     Pushq(r15);
 }
 
-void ExtendedAssemblerX64::PopGhcCalleeSaveRegisters()
+void ExtendedAssembler::PopGhcCalleeSaveRegisters()
 {
     Popq(r15);
     Popq(r13);
@@ -64,7 +64,7 @@ void ExtendedAssemblerX64::PopGhcCalleeSaveRegisters()
     Popq(r10);
 }
 
-void ExtendedAssemblerX64::PushArgsWithArgv(Register argc, Register argv, Register operatorRegister)
+void ExtendedAssembler::PushArgsWithArgv(Register argc, Register argv, Register operatorRegister)
 {
     Label loopBeginning;
     Bind(&loopBeginning);

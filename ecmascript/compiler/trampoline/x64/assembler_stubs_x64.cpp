@@ -29,7 +29,7 @@
 
 namespace panda::ecmascript::x64 {
 #define __ assembler->
-void AssemblerStubsX64::CallRuntime(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::CallRuntime(ExtendedAssembler *assembler)
 {
     __ Pushq(rbp);
     __ Movq(rsp, rbp);
@@ -73,7 +73,7 @@ void AssemblerStubsX64::CallRuntime(ExtendedAssemblerX64 *assembler)
 // %ecx - actualNumArgs
 // %r8  - argV
 // %r9  - codeAddr
-void AssemblerStubsX64::JSFunctionEntry(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::JSFunctionEntry(ExtendedAssembler *assembler)
 {
     Register glueReg = rdi;
     Register prevFpReg = rsi;
@@ -167,7 +167,7 @@ void AssemblerStubsX64::JSFunctionEntry(ExtendedAssemblerX64 *assembler)
 // sp[-8]    -      argv[N -2]
 // ...........................
 // sp[- 8(N - 1)] - arg[0]
-void AssemblerStubsX64::OptimizedCallOptimized(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::OptimizedCallOptimized(ExtendedAssembler *assembler)
 {
     Register glueReg = rdi;
     Register expectedNumArgsReg = rsi;
@@ -267,7 +267,7 @@ void AssemblerStubsX64::OptimizedCallOptimized(ExtendedAssemblerX64 *assembler)
 //  sp - 8 : pc
 //  sp - 16: rbp <---------current rbp & current sp
 //  current sp - 8:  type
-void AssemblerStubsX64::CallNativeTrampoline(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::CallNativeTrampoline(ExtendedAssembler *assembler)
 {
     Register glueReg = rax;
     __ Pushq(rbp);
@@ -324,7 +324,7 @@ void AssemblerStubsX64::CallNativeTrampoline(ExtendedAssemblerX64 *assembler)
 // %rsi - argc
 // %rdx - calltarget
 // %rcx - argV (calltarget, newtarget, thisObj, ...)
-void AssemblerStubsX64::JSCallWithArgv(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::JSCallWithArgv(ExtendedAssembler *assembler)
 {
     Label jsCall;
     Label lJSCallStart;
@@ -588,7 +588,7 @@ void AssemblerStubsX64::JSCallWithArgv(ExtendedAssemblerX64 *assembler)
 //   |--------------------------|   |
 //   |       frameType          |   v
 //   +--------------------------+ ---
-void AssemblerStubsX64::JSCall(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
 {
     Label jsCall;
     Label lJSCallStart;
@@ -851,7 +851,7 @@ void AssemblerStubsX64::JSCall(ExtendedAssemblerX64 *assembler)
 //   |--------------------------|   |
 //   |       frameType          |   v
 //   +--------------------------+ ---
-void AssemblerStubsX64::CallRuntimeWithArgv(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::CallRuntimeWithArgv(ExtendedAssembler *assembler)
 {
     Register glueReg = rdi;
     Register runtimeIdReg = rsi;
@@ -890,7 +890,7 @@ void AssemblerStubsX64::CallRuntimeWithArgv(ExtendedAssemblerX64 *assembler)
 // %rdi - glue
 // %rsi - argc
 // %rdx - argv(<callTarget, newTarget, this> are at the beginning of argv)
-void AssemblerStubsX64::AsmInterpreterEntry(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::AsmInterpreterEntry(ExtendedAssembler *assembler)
 {
     __ PushCppCalleeSaveRegisters();
     __ Pushq(rdi);  // caller save register
@@ -922,7 +922,7 @@ void AssemblerStubsX64::AsmInterpreterEntry(ExtendedAssemblerX64 *assembler)
 // argcRegister   - %rsi
 // argvRegister   - %rdx(<callTarget, newTarget, this> are at the beginning of argv)
 // prevSpRegister - %rbp
-void AssemblerStubsX64::JSCallDispatch(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::JSCallDispatch(ExtendedAssembler *assembler)
 {
     Label notJSFunction;
     Label callNativeEntry;
@@ -1011,7 +1011,7 @@ void AssemblerStubsX64::JSCallDispatch(ExtendedAssemblerX64 *assembler)
 // prevSpRegister     - %rbp
 // fpRegister         - %r10
 // callFieldRegister  - %r14
-void AssemblerStubsX64::PushArgsFastPath(ExtendedAssemblerX64 *assembler, Register glueRegister,
+void AssemblerStubsX64::PushArgsFastPath(ExtendedAssembler *assembler, Register glueRegister,
     Register argcRegister, Register argvRegister, Register callTargetRegister, Register methodRegister,
     Register prevSpRegister, Register fpRegister, Register callFieldRegister)
 {
@@ -1111,7 +1111,7 @@ void AssemblerStubsX64::PushArgsFastPath(ExtendedAssemblerX64 *assembler, Regist
 // methodRegister     - %rcx
 // prevSpRegister     - %rbp
 // callFieldRegister  - %r14
-void AssemblerStubsX64::PushArgsSlowPath(ExtendedAssemblerX64 *assembler, Register glueRegister,
+void AssemblerStubsX64::PushArgsSlowPath(ExtendedAssembler *assembler, Register glueRegister,
     Register declaredNumArgsRegister, Register argcRegister, Register argvRegister, Register callTargetRegister,
     Register methodRegister, Register prevSpRegister, Register callFieldRegister)
 {
@@ -1155,7 +1155,7 @@ void AssemblerStubsX64::PushArgsSlowPath(ExtendedAssemblerX64 *assembler, Regist
 // callTargetRegister - %r9
 // methodRegister     - %rcx
 // prevSpRegister     - %rbp
-void AssemblerStubsX64::CallNativeEntry(ExtendedAssemblerX64 *assembler, Register glueRegister,
+void AssemblerStubsX64::CallNativeEntry(ExtendedAssembler *assembler, Register glueRegister,
     Register argcRegister, Register argvRegister, Register callTargetRegister, Register methodRegister,
     Register prevSpRegister)
 {
@@ -1208,7 +1208,7 @@ void AssemblerStubsX64::CallNativeEntry(ExtendedAssemblerX64 *assembler, Registe
     __ Ret();
 }
 
-void AssemblerStubsX64::PushFrameState(ExtendedAssemblerX64 *assembler, Register prevSpRegister, Register fpRegister,
+void AssemblerStubsX64::PushFrameState(ExtendedAssembler *assembler, Register prevSpRegister, Register fpRegister,
     Register callTargetRegister, Register methodRegister, Register pcRegister, Register operatorRegister, bool isNative)
 {
     __ Pushq(static_cast<int32_t>(FrameType::ASM_INTERPRETER_FRAME));  // frame type
@@ -1227,13 +1227,13 @@ void AssemblerStubsX64::PushFrameState(ExtendedAssemblerX64 *assembler, Register
     __ Pushq(callTargetRegister);                                  // callTarget
 }
 
-void AssemblerStubsX64::GlueToThread(ExtendedAssemblerX64 *assembler, Register glueRegister, Register threadRegister)
+void AssemblerStubsX64::GlueToThread(ExtendedAssembler *assembler, Register glueRegister, Register threadRegister)
 {
     __ Movq(glueRegister, threadRegister);
     __ Subq(JSThread::GetGlueDataOffset(), threadRegister);
 }
 
-void AssemblerStubsX64::ConstructEcmaRuntimeCallInfo(ExtendedAssemblerX64 *assembler, Register threadRegister,
+void AssemblerStubsX64::ConstructEcmaRuntimeCallInfo(ExtendedAssembler *assembler, Register threadRegister,
     Register numArgsRegister, Register stackArgsRegister)
 {
     __ Subq(sizeof(EcmaRuntimeCallInfo), rsp);
@@ -1243,7 +1243,7 @@ void AssemblerStubsX64::ConstructEcmaRuntimeCallInfo(ExtendedAssemblerX64 *assem
     __ Movq(0, Operand(rsp, EcmaRuntimeCallInfo::GetDataOffset()));
 }
 
-void AssemblerStubsX64::GetDeclaredNumArgsFromCallField(ExtendedAssemblerX64 *assembler, Register callFieldRegister,
+void AssemblerStubsX64::GetDeclaredNumArgsFromCallField(ExtendedAssembler *assembler, Register callFieldRegister,
     Register declaredNumArgsRegister)
 {
     __ Movq(callFieldRegister, declaredNumArgsRegister);
@@ -1251,7 +1251,7 @@ void AssemblerStubsX64::GetDeclaredNumArgsFromCallField(ExtendedAssemblerX64 *as
     __ Andq(JSMethod::NumArgsBits::Mask() >> JSMethod::NumArgsBits::START_BIT, declaredNumArgsRegister);
 }
 
-void AssemblerStubsX64::GetNumVregsFromCallField(ExtendedAssemblerX64 *assembler, Register callFieldRegister,
+void AssemblerStubsX64::GetNumVregsFromCallField(ExtendedAssembler *assembler, Register callFieldRegister,
     Register numVregsRegister)
 {
     __ Movq(callFieldRegister, numVregsRegister);
@@ -1271,7 +1271,7 @@ void AssemblerStubsX64::GetNumVregsFromCallField(ExtendedAssemblerX64 *assembler
 // %rsi - arg0                        // %rsi - actualArgc
 // %rdi - arg1                        // %rdi - argv
 // %r8  - arg2
-void AssemblerStubsX64::PushCallIThisRangeAndDispatch(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallIThisRangeAndDispatch(ExtendedAssembler *assembler)
 {
     Register jumpSizeRegister = rdx;
     Register fpRegister = r10;
@@ -1280,7 +1280,7 @@ void AssemblerStubsX64::PushCallIThisRangeAndDispatch(ExtendedAssemblerX64 *asse
     CallIThisRangeEntry(assembler);
 }
 
-void AssemblerStubsX64::PushCallIRangeAndDispatch(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallIRangeAndDispatch(ExtendedAssembler *assembler)
 {
     Register jumpSizeRegister = rdx;
     Register fpRegister = r10;
@@ -1289,7 +1289,7 @@ void AssemblerStubsX64::PushCallIRangeAndDispatch(ExtendedAssemblerX64 *assemble
     CallIRangeEntry(assembler);
 }
 
-void AssemblerStubsX64::PushCallArgs3AndDispatch(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallArgs3AndDispatch(ExtendedAssembler *assembler)
 {
     Register jumpSizeRegister = rdx;
     Register fpRegister = r10;
@@ -1298,7 +1298,7 @@ void AssemblerStubsX64::PushCallArgs3AndDispatch(ExtendedAssemblerX64 *assembler
     Callargs3Entry(assembler);
 }
 
-void AssemblerStubsX64::PushCallArgs2AndDispatch(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallArgs2AndDispatch(ExtendedAssembler *assembler)
 {
     Register jumpSizeRegister = rdx;
     Register fpRegister = r10;
@@ -1307,7 +1307,7 @@ void AssemblerStubsX64::PushCallArgs2AndDispatch(ExtendedAssemblerX64 *assembler
     Callargs2Entry(assembler);
 }
 
-void AssemblerStubsX64::PushCallArgs1AndDispatch(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallArgs1AndDispatch(ExtendedAssembler *assembler)
 {
     Register jumpSizeRegister = rdx;
     Register fpRegister = r10;
@@ -1316,7 +1316,7 @@ void AssemblerStubsX64::PushCallArgs1AndDispatch(ExtendedAssemblerX64 *assembler
     Callarg1Entry(assembler);
 }
 
-void AssemblerStubsX64::PushCallArgs0AndDispatch(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallArgs0AndDispatch(ExtendedAssembler *assembler)
 {
     Register jumpSizeRegister = rdx;
     Register fpRegister = r10;
@@ -1337,7 +1337,7 @@ void AssemblerStubsX64::PushCallArgs0AndDispatch(ExtendedAssemblerX64 *assembler
 // %rsi - arg0                        // %rsi - actualArgc
 // %rdi - arg1                        // %rdi - argv
 // %r8  - arg2
-void AssemblerStubsX64::PushCallIThisRangeAndDispatchSlowPath(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallIThisRangeAndDispatchSlowPath(ExtendedAssembler *assembler)
 {
     Register callFieldRegister = r14;
     Register argcRegister = rsi;
@@ -1382,7 +1382,7 @@ void AssemblerStubsX64::PushCallIThisRangeAndDispatchSlowPath(ExtendedAssemblerX
     }
 }
 
-void AssemblerStubsX64::PushCallIRangeAndDispatchSlowPath(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallIRangeAndDispatchSlowPath(ExtendedAssembler *assembler)
 {
     Register callFieldRegister = r14;
     Register argcRegister = rsi;
@@ -1427,7 +1427,7 @@ void AssemblerStubsX64::PushCallIRangeAndDispatchSlowPath(ExtendedAssemblerX64 *
     }
 }
 
-void AssemblerStubsX64::PushCallArgs3AndDispatchSlowPath(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallArgs3AndDispatchSlowPath(ExtendedAssembler *assembler)
 {
     Register callFieldRegister = r14;
     constexpr int32_t argc = 3;
@@ -1472,7 +1472,7 @@ void AssemblerStubsX64::PushCallArgs3AndDispatchSlowPath(ExtendedAssemblerX64 *a
     }
 }
 
-void AssemblerStubsX64::PushCallArgs2AndDispatchSlowPath(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallArgs2AndDispatchSlowPath(ExtendedAssembler *assembler)
 {
     Register callFieldRegister = r14;
     constexpr int32_t argc = 2;
@@ -1517,7 +1517,7 @@ void AssemblerStubsX64::PushCallArgs2AndDispatchSlowPath(ExtendedAssemblerX64 *a
     }
 }
 
-void AssemblerStubsX64::PushCallArgs1AndDispatchSlowPath(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallArgs1AndDispatchSlowPath(ExtendedAssembler *assembler)
 {
     Register callFieldRegister = r14;
     constexpr int32_t argc = 1;
@@ -1562,7 +1562,7 @@ void AssemblerStubsX64::PushCallArgs1AndDispatchSlowPath(ExtendedAssemblerX64 *a
     }
 }
 
-void AssemblerStubsX64::PushCallArgs0AndDispatchSlowPath(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallArgs0AndDispatchSlowPath(ExtendedAssembler *assembler)
 {
     Register callFieldRegister = r14;
     constexpr int32_t argc = 0;
@@ -1610,7 +1610,7 @@ void AssemblerStubsX64::PushCallArgs0AndDispatchSlowPath(ExtendedAssemblerX64 *a
 // Input:
 // %rsi - actualArgc
 // %rdi - argv
-void AssemblerStubsX64::CallIThisRangeNoExtraEntry(ExtendedAssemblerX64 *assembler, Register declaredNumArgsRegister)
+void AssemblerStubsX64::CallIThisRangeNoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgsRegister)
 {
     Register argcRegister = rsi;
     Register argvRegister = rdi;
@@ -1638,7 +1638,7 @@ void AssemblerStubsX64::CallIThisRangeNoExtraEntry(ExtendedAssemblerX64 *assembl
 // Input:
 // %rsi - actualArgc
 // %rdi - argv
-void AssemblerStubsX64::CallIRangeNoExtraEntry(ExtendedAssemblerX64 *assembler, Register declaredNumArgsRegister)
+void AssemblerStubsX64::CallIRangeNoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgsRegister)
 {
     Register argcRegister = rsi;
     Register argvRegister = rdi;
@@ -1667,7 +1667,7 @@ void AssemblerStubsX64::CallIRangeNoExtraEntry(ExtendedAssemblerX64 *assembler, 
 // %rsi - arg0
 // %rdi - arg1
 // %r8  - arg2
-void AssemblerStubsX64::Callargs3NoExtraEntry(ExtendedAssemblerX64 *assembler, Register declaredNumArgsRegister)
+void AssemblerStubsX64::Callargs3NoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgsRegister)
 {
     constexpr int32_t argc = 3;
     Label callargs2NoExtraEntry;
@@ -1682,7 +1682,7 @@ void AssemblerStubsX64::Callargs3NoExtraEntry(ExtendedAssemblerX64 *assembler, R
 // Input:
 // %rsi - arg0
 // %rdi - arg1
-void AssemblerStubsX64::Callargs2NoExtraEntry(ExtendedAssemblerX64 *assembler, Register declaredNumArgsRegister)
+void AssemblerStubsX64::Callargs2NoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgsRegister)
 {
     constexpr int32_t argc = 2;
     Label callargs1NoExtraEntry;
@@ -1696,7 +1696,7 @@ void AssemblerStubsX64::Callargs2NoExtraEntry(ExtendedAssemblerX64 *assembler, R
 
 // Input:
 // %rsi - arg0
-void AssemblerStubsX64::Callargs1NoExtraEntry(ExtendedAssemblerX64 *assembler, Register declaredNumArgsRegister)
+void AssemblerStubsX64::Callargs1NoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgsRegister)
 {
     constexpr int32_t argc = 1;
     Label callargs0NoExtraEntry;
@@ -1708,7 +1708,7 @@ void AssemblerStubsX64::Callargs1NoExtraEntry(ExtendedAssemblerX64 *assembler, R
     Callargs0NoExtraEntry(assembler);
 }
 
-void AssemblerStubsX64::Callargs0NoExtraEntry(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::Callargs0NoExtraEntry(ExtendedAssembler *assembler)
 {
     PushCallThisUndefined(assembler);
 }
@@ -1716,7 +1716,7 @@ void AssemblerStubsX64::Callargs0NoExtraEntry(ExtendedAssemblerX64 *assembler)
 // Input:
 // %rsi - actualArgc
 // %rdi - argv
-void AssemblerStubsX64::CallIThisRangeEntry(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::CallIThisRangeEntry(ExtendedAssembler *assembler)
 {
     Register argcRegister = rsi;
     Register argvRegister = rdi;
@@ -1737,7 +1737,7 @@ void AssemblerStubsX64::CallIThisRangeEntry(ExtendedAssemblerX64 *assembler)
 // Input:
 // %r14 - callField
 // %rdi - argv
-void AssemblerStubsX64::PushCallThis(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallThis(ExtendedAssembler *assembler)
 {
     Register callFieldRegister = r14;
     Register argvRegister = rdi;
@@ -1767,7 +1767,7 @@ void AssemblerStubsX64::PushCallThis(ExtendedAssemblerX64 *assembler)
 // Input:
 // %rsi - actualArgc
 // %rdi - argv
-void AssemblerStubsX64::CallIRangeEntry(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::CallIRangeEntry(ExtendedAssembler *assembler)
 {
     Register argcRegister = rsi;
     Register argvRegister = rdi;
@@ -1789,7 +1789,7 @@ void AssemblerStubsX64::CallIRangeEntry(ExtendedAssemblerX64 *assembler)
 // %rsi - arg0
 // %rdi - arg1
 // %r8  - arg2
-void AssemblerStubsX64::Callargs3Entry(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::Callargs3Entry(ExtendedAssembler *assembler)
 {
     __ Pushq(r8);  // arg2
     Callargs2Entry(assembler);
@@ -1798,7 +1798,7 @@ void AssemblerStubsX64::Callargs3Entry(ExtendedAssemblerX64 *assembler)
 // Input:
 // %rsi - arg0
 // %rdi - arg1
-void AssemblerStubsX64::Callargs2Entry(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::Callargs2Entry(ExtendedAssembler *assembler)
 {
     __ Pushq(rdi);  // arg1
     Callarg1Entry(assembler);
@@ -1806,7 +1806,7 @@ void AssemblerStubsX64::Callargs2Entry(ExtendedAssemblerX64 *assembler)
 
 // Input:
 // %rsi - arg0
-void AssemblerStubsX64::Callarg1Entry(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::Callarg1Entry(ExtendedAssembler *assembler)
 {
     __ Pushq(rsi);  // arg0
     PushCallThisUndefined(assembler);
@@ -1814,7 +1814,7 @@ void AssemblerStubsX64::Callarg1Entry(ExtendedAssemblerX64 *assembler)
 
 // Input:
 // %r14 - callField
-void AssemblerStubsX64::PushCallThisUndefined(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallThisUndefined(ExtendedAssembler *assembler)
 {
     Register callFieldRegister = r14;
 
@@ -1840,7 +1840,7 @@ void AssemblerStubsX64::PushCallThisUndefined(ExtendedAssemblerX64 *assembler)
 
 // Input:
 // %r14 - callField
-void AssemblerStubsX64::PushNewTarget(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushNewTarget(ExtendedAssembler *assembler)
 {
     Register callFieldRegister = r14;
 
@@ -1856,7 +1856,7 @@ void AssemblerStubsX64::PushNewTarget(ExtendedAssemblerX64 *assembler)
 // Input:
 // %r12 - callTarget
 // %r14 - callField
-void AssemblerStubsX64::PushCallTarget(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallTarget(ExtendedAssembler *assembler)
 {
     Register callTargetRegister = r12;
     Register callFieldRegister = r14;
@@ -1878,7 +1878,7 @@ void AssemblerStubsX64::PushCallTarget(ExtendedAssemblerX64 *assembler)
 // %r14 - callField
 // %rdx - jumpSizeAfterCall
 // %r10 - fp
-void AssemblerStubsX64::PushVregs(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushVregs(ExtendedAssembler *assembler)
 {
     Register prevSpRegister = rbp;
     Register callTargetRegister = r12;
@@ -1926,7 +1926,7 @@ void AssemblerStubsX64::PushVregs(ExtendedAssemblerX64 *assembler)
 // %rbp - sp
 // %r12 - callTarget
 // %rbx - method
-void AssemblerStubsX64::DispatchCall(ExtendedAssemblerX64 *assembler, Register pcRegister, Register newSpRegister)
+void AssemblerStubsX64::DispatchCall(ExtendedAssembler *assembler, Register pcRegister, Register newSpRegister)
 {
     Register glueRegister = r13;
     Register callTargetRegister = r12;
@@ -1959,7 +1959,7 @@ void AssemblerStubsX64::DispatchCall(ExtendedAssemblerX64 *assembler, Register p
 // sp+16 - arg2
 // sp+8  - arg1
 // sp    - returnAddr
-void AssemblerStubsX64::PushCallIThisRangeAndDispatchNative(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallIThisRangeAndDispatchNative(ExtendedAssembler *assembler)
 {
     __ Pushq(rbp);
     __ Movq(rsp, rbp);  // set frame pointer
@@ -1969,7 +1969,7 @@ void AssemblerStubsX64::PushCallIThisRangeAndDispatchNative(ExtendedAssemblerX64
     CallIThisRangeNativeEntry(assembler);
 }
 
-void AssemblerStubsX64::PushCallIRangeAndDispatchNative(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallIRangeAndDispatchNative(ExtendedAssembler *assembler)
 {
     __ Pushq(rbp);
     __ Movq(rsp, rbp);  // set frame pointer
@@ -1979,7 +1979,7 @@ void AssemblerStubsX64::PushCallIRangeAndDispatchNative(ExtendedAssemblerX64 *as
     CallIRangeNativeEntry(assembler);
 }
 
-void AssemblerStubsX64::PushCallArgs3AndDispatchNative(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallArgs3AndDispatchNative(ExtendedAssembler *assembler)
 {
     __ Pushq(rbp);
     __ Movq(rsp, rbp);  // set frame pointer
@@ -1990,7 +1990,7 @@ void AssemblerStubsX64::PushCallArgs3AndDispatchNative(ExtendedAssemblerX64 *ass
     Callargs3NativeEntry(assembler, opRegister);
 }
 
-void AssemblerStubsX64::PushCallArgs2AndDispatchNative(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallArgs2AndDispatchNative(ExtendedAssembler *assembler)
 {
     __ Pushq(rbp);
     __ Movq(rsp, rbp);  // set frame pointer
@@ -2001,7 +2001,7 @@ void AssemblerStubsX64::PushCallArgs2AndDispatchNative(ExtendedAssemblerX64 *ass
     Callargs2NativeEntry(assembler, opRegister);
 }
 
-void AssemblerStubsX64::PushCallArgs1AndDispatchNative(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallArgs1AndDispatchNative(ExtendedAssembler *assembler)
 {
     __ Pushq(rbp);
     __ Movq(rsp, rbp);  // set frame pointer
@@ -2011,7 +2011,7 @@ void AssemblerStubsX64::PushCallArgs1AndDispatchNative(ExtendedAssemblerX64 *ass
     Callarg1NativeEntry(assembler);
 }
 
-void AssemblerStubsX64::PushCallArgs0AndDispatchNative(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallArgs0AndDispatchNative(ExtendedAssembler *assembler)
 {
     __ Pushq(rbp);
     __ Movq(rsp, rbp);  // set frame pointer
@@ -2024,7 +2024,7 @@ void AssemblerStubsX64::PushCallArgs0AndDispatchNative(ExtendedAssemblerX64 *ass
 // Input:
 // %r8  - actualArgc
 // %r9  - argv
-void AssemblerStubsX64::CallIThisRangeNativeEntry(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::CallIThisRangeNativeEntry(ExtendedAssembler *assembler)
 {
     Register argcRegister = r8;
     Register argvRegister = r9;
@@ -2048,7 +2048,7 @@ void AssemblerStubsX64::CallIThisRangeNativeEntry(ExtendedAssemblerX64 *assemble
 // Input:
 // %r8  - actualArgc
 // %r9  - argv
-void AssemblerStubsX64::CallIRangeNativeEntry(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::CallIRangeNativeEntry(ExtendedAssembler *assembler)
 {
     Register argcRegister = r8;
     Register argvRegister = r9;
@@ -2070,7 +2070,7 @@ void AssemblerStubsX64::CallIRangeNativeEntry(ExtendedAssemblerX64 *assembler)
 // %r9    - arg0
 // rbp+24 - arg2
 // rbp+16 - arg1
-void AssemblerStubsX64::Callargs3NativeEntry(ExtendedAssemblerX64 *assembler, Register opRegister)
+void AssemblerStubsX64::Callargs3NativeEntry(ExtendedAssembler *assembler, Register opRegister)
 {
     __ Movq(Operand(rbp, 24), opRegister);  // 24: skip rbp, return addr, and arg1
     __ Pushq(opRegister);  // arg2
@@ -2080,7 +2080,7 @@ void AssemblerStubsX64::Callargs3NativeEntry(ExtendedAssemblerX64 *assembler, Re
 // Input:
 // %r9    - arg0
 // rbp+16 - arg1
-void AssemblerStubsX64::Callargs2NativeEntry(ExtendedAssemblerX64 *assembler, Register opRegister)
+void AssemblerStubsX64::Callargs2NativeEntry(ExtendedAssembler *assembler, Register opRegister)
 {
     __ Movq(Operand(rbp, 16), opRegister);  // 16: skip rbp, return addr
     __ Pushq(opRegister);  // arg1
@@ -2089,13 +2089,13 @@ void AssemblerStubsX64::Callargs2NativeEntry(ExtendedAssemblerX64 *assembler, Re
 
 // Input:
 // %r9    - arg0
-void AssemblerStubsX64::Callarg1NativeEntry(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::Callarg1NativeEntry(ExtendedAssembler *assembler)
 {
     __ Pushq(r9);  // arg1
     PushCallThisUndefinedNative(assembler);
 }
 
-void AssemblerStubsX64::PushCallThisUndefinedNative(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushCallThisUndefinedNative(ExtendedAssembler *assembler)
 {
     __ Pushq(JSTaggedValue::Undefined().GetRawData());  // this
     PushLeftFrameNative(assembler);
@@ -2103,7 +2103,7 @@ void AssemblerStubsX64::PushCallThisUndefinedNative(ExtendedAssemblerX64 *assemb
 
 // Input:
 // %rdx  - callTarget
-void AssemblerStubsX64::PushLeftFrameNative(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushLeftFrameNative(ExtendedAssembler *assembler)
 {
     __ Pushq(JSTaggedValue::Undefined().GetRawData());  // newTarget
     __ Pushq(rdx);                                      // callTarget
@@ -2117,7 +2117,7 @@ void AssemblerStubsX64::PushLeftFrameNative(ExtendedAssemblerX64 *assembler)
 // %rcx - method
 // %r8  - actualArgc
 // %r10 - fp
-void AssemblerStubsX64::PushFrameStateNativeAndCall(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::PushFrameStateNativeAndCall(ExtendedAssembler *assembler)
 {
     Register glueRegister = rdi;
     Register prevSpRegister = rsi;
@@ -2182,7 +2182,7 @@ void AssemblerStubsX64::PushFrameStateNativeAndCall(ExtendedAssemblerX64 *assemb
 // %rsi - acc
 // %rdi - hotnessCounter
 // %r8  - jumpSizeAfterCall
-void AssemblerStubsX64::ResumeRspAndDispatch(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::ResumeRspAndDispatch(ExtendedAssembler *assembler)
 {
     Register glueRegister = r13;
     Register spRegister = rbp;
@@ -2208,7 +2208,7 @@ void AssemblerStubsX64::ResumeRspAndDispatch(ExtendedAssemblerX64 *assembler)
 // GHC calling convention
 // %r13 - glue
 // %rbp - sp
-void AssemblerStubsX64::ResumeRspAndReturn([[maybe_unused]] ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *assembler)
 {
     __ Ret();
 }
@@ -2223,7 +2223,7 @@ void AssemblerStubsX64::ResumeRspAndReturn([[maybe_unused]] ExtendedAssemblerX64
 // %r14 - profileTypeInfo
 // %rsi - acc
 // %rdi - hotnessCounter
-void AssemblerStubsX64::ResumeCaughtFrameAndDispatch(ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::ResumeCaughtFrameAndDispatch(ExtendedAssembler *assembler)
 {
     Register glueRegister = r13;
     Register pcRegister = r12;
@@ -2245,7 +2245,7 @@ void AssemblerStubsX64::ResumeCaughtFrameAndDispatch(ExtendedAssemblerX64 *assem
     }
 }
 
-void AssemblerStubsX64::PushUndefinedWithArgc(ExtendedAssemblerX64 *assembler, Register argc)
+void AssemblerStubsX64::PushUndefinedWithArgc(ExtendedAssembler *assembler, Register argc)
 {
     Label loopBeginning;
     __ Bind(&loopBeginning);
@@ -2254,12 +2254,12 @@ void AssemblerStubsX64::PushUndefinedWithArgc(ExtendedAssemblerX64 *assembler, R
     __ Ja(&loopBeginning);
 }
 
-void AssemblerStubsX64::HasPendingException([[maybe_unused]] ExtendedAssemblerX64 *assembler,
+void AssemblerStubsX64::HasPendingException([[maybe_unused]] ExtendedAssembler *assembler,
     [[maybe_unused]] Register threadRegister)
 {
 }
 
-void AssemblerStubsX64::StackOverflowCheck([[maybe_unused]] ExtendedAssemblerX64 *assembler)
+void AssemblerStubsX64::StackOverflowCheck([[maybe_unused]] ExtendedAssembler *assembler)
 {
 }
 #undef __
