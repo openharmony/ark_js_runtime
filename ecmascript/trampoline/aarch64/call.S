@@ -89,6 +89,9 @@
 .global ResumeRspAndReturn
 .type ResumeRspAndReturn, %function
 
+.global ResumeCaughtFrameAndDispatch
+.type ResumeCaughtFrameAndDispatch, %function
+
 .global CallRuntimeWithArgv
 .type CallRuntimeWithArgv, %function
 
@@ -665,6 +668,9 @@ ResumeRspAndDispatch:
 
 ResumeRspAndReturn:
     ldr    x30, [sp], #16 // 16 byte align
+    ret
+
+ResumeCaughtFrameAndDispatch:
     ret
 
 AsmInterpreterEntry:

@@ -895,19 +895,19 @@ void AssemblerStubsX64::AsmInterpreterEntry(ExtendedAssemblerX64 *assembler)
     __ PushCppCalleeSaveRegisters();
     __ Pushq(rdi);  // caller save register
 
-    // construct optimized entry frame
     __ Pushq(rbp);
+    // construct asm interpreter entry frame
     __ Movq(rsp, rbp);
-    __ Pushq(static_cast<int64_t>(FrameType::OPTIMIZED_ENTRY_FRAME));
+    __ Pushq(static_cast<int64_t>(FrameType::ASM_INTERPRETER_ENTRY_FRAME));
     __ Movq(Operand(rdi, JSThread::GlueData::GetLeaveFrameOffset(false)), rbx);
     __ Pushq(rbx);  // prev managed fp is leave frame or nullptr(the first frame)
-    __ PushAlignBytes();  // align 16 bytes
+    __ Pushq(0);    // pc
 
     __ Movq(kungfu::RuntimeStubCSigns::ID_JSCallDispatch, r12);
     __ Movq(Operand(rdi, r12, Scale::Times8, JSThread::GlueData::GetRTStubEntriesOffset(false)), r11);
     __ Callq(r11);
 
-    __ PopAlignBytes();
+    __ Addq(8, rsp);  // 8: skip pc
     __ Popq(rbx);
     __ Addq(8, rsp);  // 8: skip frame type
     __ Popq(rbp);
@@ -988,10 +988,15 @@ void AssemblerStubsX64::JSCallDispatch(ExtendedAssemblerX64 *assembler)
     {
         __ Movq(glueRegister, rax);  // glue
         __ Pushq(0);                 // argc
-        __ Movq(kungfu::RuntimeStubCSigns::ID_ThrowNotCallableException, r12);
-        __ Pushq(r12);
-        __ Movq(Operand(rax, r12, Times8, JSThread::GlueData::GetRTStubEntriesOffset(false)), r10);
-        __ Callq(r10);
+        Register runtimeIdRegister = r12;
+        __ Movq(kungfu::RuntimeStubCSigns::ID_ThrowNotCallableException, runtimeIdRegister);
+        __ Pushq(runtimeIdRegister);  // runtimeId
+        Register trampolineIdRegister = r12;
+        Register trampolineRegister = r10;
+        __ Movq(kungfu::RuntimeStubCSigns::ID_CallRuntime, trampolineIdRegister);
+        __ Movq(Operand(rax, trampolineIdRegister, Times8, JSThread::GlueData::GetRTStubEntriesOffset(false)),
+            trampolineRegister);
+        __ Callq(trampolineRegister);
         __ Addq(16, rsp);  // 16: skip argc and runtime_id
         __ Ret();
     }
@@ -2206,6 +2211,38 @@ void AssemblerStubsX64::ResumeRspAndDispatch(ExtendedAssemblerX64 *assembler)
 void AssemblerStubsX64::ResumeRspAndReturn([[maybe_unused]] ExtendedAssemblerX64 *assembler)
 {
     __ Ret();
+}
+
+// ResumeCaughtFrameAndDispatch(uintptr_t glue, uintptr_t sp, uintptr_t pc, uintptr_t constantPool,
+//     uint64_t profileTypeInfo, uint64_t acc, uint32_t hotnessCounter)
+// GHC calling convention
+// %r13 - glue
+// %rbp - sp
+// %r12 - pc
+// %rbx - constantPool
+// %r14 - profileTypeInfo
+// %rsi - acc
+// %rdi - hotnessCounter
+void AssemblerStubsX64::ResumeCaughtFrameAndDispatch(ExtendedAssemblerX64 *assembler)
+{
+    Register glueRegister = r13;
+    Register pcRegister = r12;
+
+    Label dispatch;
+    Register fpRegister = r11;
+    __ Movq(Operand(glueRegister, JSThread::GlueData::GetLastFpOffset(false)), fpRegister);
+    __ Cmpq(0, fpRegister);
+    __ Jz(&dispatch);
+    __ Movq(fpRegister, rsp);  // resume rsp
+    __ Bind(&dispatch);
+    {
+        Register opcodeRegister = rax;
+        __ Movzbq(Operand(pcRegister, 0), opcodeRegister);
+        Register bcStubRegister = r11;
+        __ Movq(Operand(glueRegister, opcodeRegister, Times8, JSThread::GlueData::GetBCStubEntriesOffset(false)),
+            bcStubRegister);
+        __ Jmp(bcStubRegister);
+    }
 }
 
 void AssemblerStubsX64::PushUndefinedWithArgc(ExtendedAssemblerX64 *assembler, Register argc)

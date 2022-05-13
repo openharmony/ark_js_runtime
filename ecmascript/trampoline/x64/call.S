@@ -93,6 +93,9 @@
 .global ResumeRspAndReturn
 .type ResumeRspAndReturn, %function
 
+.global ResumeCaughtFrameAndDispatch
+.type ResumeCaughtFrameAndDispatch, %function
+
  /* JSFunctionEntry Callee Register Save Macro */
  .macro PUSH_GENERAL_REGS
     pushq %r12
@@ -1160,6 +1163,8 @@ ResumeRspAndDispatch:
 ResumeRspAndReturn:
     retq
 
+ResumeCaughtFrameAndDispatch:
+    retq
 
 // uint64_t CallRuntimeWithArgv(uintptr_t glue, uint64_t runtime_id, uint64_t argc, uintptr_t argv);
 // cc calling convention call runtime_id's runtion function(c-abi)

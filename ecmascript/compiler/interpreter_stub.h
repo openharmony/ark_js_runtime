@@ -62,6 +62,7 @@ public:
     inline GateRef GetFrame(GateRef frame);
     inline GateRef GetCurrentSpFrame(GateRef glue);
     inline GateRef GetLastLeaveFrame(GateRef glue);
+    inline GateRef GetCurrentFrame(GateRef glue);
     inline GateRef GetPcFromFrame(GateRef frame);
     inline GateRef GetCallSizeFromFrame(GateRef frame);
     inline GateRef GetFunctionFromFrame(GateRef frame);

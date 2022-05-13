@@ -89,6 +89,8 @@ extern "C" void PushCallIThisRangeAndDispatchSlowPath(uintptr_t glue, uintptr_t 
 extern "C" void ResumeRspAndDispatch(uintptr_t glue, uintptr_t pc, uintptr_t sp, uintptr_t constantPool,
     uint64_t profileTypeInfo, uint64_t acc, uint32_t hotnessCounter, size_t jumpSize);
 extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
+extern "C" void ResumeCaughtFrameAndDispatch(uintptr_t glue, uintptr_t pc, uintptr_t sp, uintptr_t constantPool,
+    uint64_t profileTypeInfo, uint64_t acc, uint32_t hotnessCounter);
 #define RUNTIME_ASM_STUB_LIST(V)             \
     V(CallRuntime)                           \
     V(AsmInterpreterEntry)                   \
@@ -112,7 +114,8 @@ extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
     V(PushCallIThisRangeAndDispatchNative)   \
     V(PushCallIThisRangeAndDispatchSlowPath) \
     V(ResumeRspAndDispatch)                  \
-    V(ResumeRspAndReturn)
+    V(ResumeRspAndReturn)                    \
+    V(ResumeCaughtFrameAndDispatch)
 
 #define RUNTIME_STUB_WITHOUT_GC_LIST(V)        \
     V(DebugPrint)                              \
