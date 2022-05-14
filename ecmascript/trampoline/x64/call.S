@@ -69,23 +69,11 @@
 .global PushCallArgs0AndDispatchSlowPath
 .type PushCallArgs0AndDispatchSlowPath, %function
 
-.global PushCallIThisRangeAndDispatchNative
-.type PushCallIThisRangeAndDispatchNative, %function
-
 .global PushCallIRangeAndDispatchNative
 .type PushCallIRangeAndDispatchNative, %function
 
-.global PushCallArgs3AndDispatchNative
-.type PushCallArgs3AndDispatchNative, %function
-
-.global PushCallArgs2AndDispatchNative
-.type PushCallArgs2AndDispatchNative, %function
-
-.global PushCallArgs1AndDispatchNative
-.type PushCallArgs1AndDispatchNative, %function
-
-.global PushCallArgs0AndDispatchNative
-.type PushCallArgs0AndDispatchNative, %function
+.global PushCallArgsAndDispatchNative
+.type PushCallArgsAndDispatchNative, %function
 
 .global ResumeRspAndDispatch
 .type ResumeRspAndDispatch, %function
@@ -976,161 +964,10 @@ PushCallArgs0AndDispatchSlowPath:
     popq    %r10
 .endm
 
-// void PushCallIThisRangeAndDispatchNative(uintptr_t glue, uint64_t function,
-//     uintptr_t sp, uintptr_t method, uint64_t actualArgc, uintptr_t argv);
-PushCallIThisRangeAndDispatchNative:
-    pushq   %rbp
-    movq    %rsp, %rbp              // set frame pointer
-    PUSH_GHC_CALLEE_SAVED_REGISTERS
-    testb   $1, %r8b
-    jnz     .AlignedCallIThisRangeNative
-    pushq   $0
-.AlignedCallIThisRangeNative:
-    movq    %rsp, %r10  //  fp of new frame
-    jmp     .CallIThisRangeNativeEntry
-
-// void PushCallIRangeAndDispatchNative(uintptr_t glue, uint64_t function,
-//     uintptr_t sp, uintptr_t method, uint64_t actualArgc, uintptr_t argv);
 PushCallIRangeAndDispatchNative:
-    pushq   %rbp
-    movq    %rsp, %rbp              // set frame pointer
-    PUSH_GHC_CALLEE_SAVED_REGISTERS
-    testb   $1, %r8b
-    jnz     .AlignedCallIRangeNative
-    pushq   $0
-.AlignedCallIRangeNative:
-    movq    %rsp, %r10  //  fp of new frame
-    jmp     .CallIRangeNativeEntry
+    ret
 
-// void PushCallArgs3AndDispatchNative(uintptr_t glue, uint64_t function,
-//     uintptr_t sp, uintptr_t method, uint64_t actualArgc, uint64_t arg0, uint64_t arg1, uint64_t arg2);
-PushCallArgs3AndDispatchNative:
-    pushq   %rbp
-    movq    %rsp, %rbp              // set frame pointer
-    PUSH_GHC_CALLEE_SAVED_REGISTERS
-    // aligned alreay
-    movq    %rsp, %r10  //  fp of new frame
-    jmp     .Callargs3NativeEntry
-
-// void PushCallArgs2AndDispatchNative(uintptr_t glue, uint64_t function,
-//     uintptr_t sp, uintptr_t method, uint64_t actualArgc, uint64_t arg0, uint64_t arg1);
-PushCallArgs2AndDispatchNative:
-    pushq   %rbp
-    movq    %rsp, %rbp              // set frame pointer
-    PUSH_GHC_CALLEE_SAVED_REGISTERS
-    pushq   $0   // align 16 bytes
-    movq    %rsp, %r10  //  fp of new frame
-    jmp     .Callargs2NativeEntry
-
-// void PushCallArgs1AndDispatchNative(uintptr_t glue, uint64_t function,
-//     uintptr_t sp, uintptr_t method, uint64_t actualArgc, uint64_t arg0);
-PushCallArgs1AndDispatchNative:
-    pushq   %rbp
-    movq    %rsp, %rbp              // set frame pointer
-    PUSH_GHC_CALLEE_SAVED_REGISTERS
-    // aligned alreay
-    movq    %rsp, %r10  //  fp of new frame
-    jmp     .Callarg1NativeEntry
-
-// void PushCallArgs0AndDispatchNative(uintptr_t glue, uint64_t function,
-//     uintptr_t sp, uintptr_t method, uint64_t actualArgc);
-PushCallArgs0AndDispatchNative:
-    pushq   %rbp
-    movq    %rsp, %rbp              // set frame pointer
-    PUSH_GHC_CALLEE_SAVED_REGISTERS
-    pushq   $0  // 16 bytes align
-    movq    %rsp, %r10  //  fp of new frame
-    jmp     .PushCallThisUndefinedNative
-// ----------------------------------------------------------------------------
-.CallIThisRangeNativeEntry:
-    movq    %r8, %r11
-    cmpq    $0, %r11
-    jbe     .PushCallThisNative   // actualArgc is 0, skip push args
-
-.PushLoopNative1:
-    movq    -8(%r9, %r11, 8), %r13
-    pushq   %r13
-    subq    $1, %r11
-    cmpq    $0, %r11
-    ja      .PushLoopNative1
-
-.PushCallThisNative:
-    movq    -8(%r9), %r11
-    pushq   %r11     // this: this is before the argv list
-    jmp     .PushLeftFrameNative
-
-.CallIRangeNativeEntry:
-    movq    %r8, %r11
-    cmpq    $0, %r11
-    jbe     .PushCallThisUndefinedNative   // actualArgc is 0, skip push args
-
-.PushLoopNative2:
-    movq    -8(%r9, %r11, 8), %r13
-    pushq   %r13
-    subq    $1, %r11
-    cmpq    $0, %r11
-    ja      .PushLoopNative2
-    jmp     .PushCallThisUndefinedNative
-
-.Callargs3NativeEntry:
-    movq    24(%rbp), %r13
-    pushq   %r13   // arg2
-
-.Callargs2NativeEntry:
-    movq    16(%rbp), %r13
-    pushq   %r13  // arg1
-
-.Callarg1NativeEntry:
-    pushq   %r9   // arg0
-
-.PushCallThisUndefinedNative:
-    pushq   $JSUNDEFINED  // this
-
-.PushLeftFrameNative:
-    pushq   $JSUNDEFINED  // new_target
-    pushq   %rsi          // function
-
-.PushFrameStateNative:
-    movq    %rsp, %r15  // newSp
-    // skip stack overflow check now
-    pushq   $ASM_INTERPRETER_FRAME_TYPE  // frame type
-    pushq   %rdx                    // prevSp
-    pushq   $0                      // pc
-    pushq   %r10                    // fp
-    pushq   $0                      // jumpSizeAfterCall
-    movq    ASM_JS_FUNCTION_LEXICAL_ENV_OFFSET(%rsi), %r11
-    pushq   %r11                    // env
-    pushq   $JSHOLE                 // acc
-    pushq   %rsi                    // function
-    movq    %r15, ASM_GLUE_LEAVE_FRAME_OFFSET(%rdi)  // save newSp to thread->leaveFrame_
-
-.CallNative:
-    // load native pointer address
-    movq    ASM_JS_METHOD_NATIVE_POINTER_OFFSET(%rcx), %r13
-    subq    $ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE, %rsp
-
-    // construct ecma_runtime_call_info
-    movq    %rdi, %rax
-    subq    $ASM_GLUE_TO_THREAD_OFFSET, %rax
-    movq    %rax, (%rsp)                                           // thread_
-    movq    %r8, ECMA_RUNTIME_CALLINFO_NUMARGS_OFFSET(%rsp)        // numArgs
-    movq    %r15, ECMA_RUNTIME_CALLINFO_STACKARGS_OFFSET(%rsp)     // stackArgs_
-    movq    $0, ECMA_RUNTIME_CALLINFO_DATA_OFFSET(%rsp)            // data_
-
-    movq    %rsp, %rdi  // &ecma_runtime_call_info
-    call    *%r13
-    // ingore exception check now
-    addq    $ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE, %rsp
-    movq    ASM_INTERPRETED_FRAME_FP_OFFSET(%rsp), %r11
-    movq    %r11, %rsp
-
-    testq   $15, %rsp
-    jnz     .NO_NEED_TO_POP_ALIGNED
-    addq    $8, %rsp
-
-.NO_NEED_TO_POP_ALIGNED:
-    POP_GHC_CALLEE_SAVED_REGISTERS
-    popq    %rbp
+PushCallArgsAndDispatchNative:
     ret
 
 // ResumeRspAndDispatch(uintptr_t glue, uintptr_t sp, uintptr_t pc, uintptr_t constantPool,

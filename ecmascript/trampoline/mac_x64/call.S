@@ -65,23 +65,11 @@ _PushCallArgs1AndDispatchSlowPath:
 .global _PushCallArgs0AndDispatchSlowPath
 _PushCallArgs0AndDispatchSlowPath:
 
-.global _PushCallIThisRangeAndDispatchNative
-_PushCallIThisRangeAndDispatchNative:
-
 .global _PushCallIRangeAndDispatchNative
 _PushCallIRangeAndDispatchNative:
 
-.global _PushCallArgs3AndDispatchNative
-_PushCallArgs3AndDispatchNative:
-
-.global _PushCallArgs2AndDispatchNative
-_PushCallArgs2AndDispatchNative:
-
-.global _PushCallArgs1AndDispatchNative
-_PushCallArgs1AndDispatchNative:
-
-.global _PushCallArgs0AndDispatchNative
-_PushCallArgs0AndDispatchNative:
+.global _PushCallArgsAndDispatchNative
+_PushCallArgsAndDispatchNative:
 
 .global _ResumeRspAndDispatch
 _ResumeRspAndDispatch:
