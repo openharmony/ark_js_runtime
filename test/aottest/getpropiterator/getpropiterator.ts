@@ -12,13 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 declare function print(str:any):string;
-function* foo(i:number){
-    yield i;
-    yield i + 7;
-}
-let gen = foo(10);
 
-print(gen.next().value);
-print(gen.next().value);
+var someArray = [1, 5, 7];
+for (var tmp  in someArray) {
+    var tmpNumber = tmp;
+    print(tmpNumber);
+}

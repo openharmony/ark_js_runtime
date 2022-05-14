@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-declare function print(str:any):string;
-function* foo(i:number){
-    yield i;
-    yield i + 7;
-}
-let gen = foo(10);
+declare function print(str:string):string;
 
-print(gen.next().value);
-print(gen.next().value);
+function printArgs(...rest:any)
+{
+    print(arguments[0]);
+    print(arguments[1]);
+}
+
+printArgs("aaa", 55555);
