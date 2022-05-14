@@ -61,10 +61,14 @@ public:
     template<class Callback>
     bool MatchWithLocation(const Callback &cb, int32_t line, int32_t column)
     {
+        if (line == SPECIAL_LINE_MARK) {
+            return false;
+        }
+
         auto methods = GetMethodIdList();
         for (const auto &method : methods) {
-            auto lineTable = GetLineNumberTable(method);
-            auto columnTable = GetColumnNumberTable(method);
+            const LineNumberTable &lineTable = GetLineNumberTable(method);
+            const ColumnNumberTable &columnTable = GetColumnNumberTable(method);
             for (uint32_t i = 0; i < lineTable.size(); i++) {
                 if (lineTable[i].line != line) {
                     continue;
@@ -85,16 +89,11 @@ public:
     template<class Callback>
     bool MatchLineWithOffset(const Callback &cb, File::EntityId methodId, uint32_t offset)
     {
-        auto lineTable = GetLineNumberTable(methodId);
         int32_t line = 0;
-        for (const auto &pair : lineTable) {
-            if (offset < pair.offset) {
-                break;
-            } else if (offset == pair.offset) {
-                line = pair.line;
-                break;
-            }
-            line = pair.line;
+        const LineNumberTable &lineTable = GetLineNumberTable(methodId);
+        auto iter = std::upper_bound(lineTable.begin(), lineTable.end(), LineTableEntry {offset, 0});
+        if (iter != lineTable.begin()) {
+            line = (iter - 1)->line;
         }
         return cb(line);
     }
@@ -102,23 +101,19 @@ public:
     template<class Callback>
     bool MatchColumnWithOffset(const Callback &cb, File::EntityId methodId, uint32_t offset)
     {
-        auto columnTable = GetColumnNumberTable(methodId);
         int32_t column = 0;
-
-        for (const auto &pair : columnTable) {
-            if (offset < pair.offset) {
-                break;
-            } else if (offset == pair.offset) {
-                column = pair.column;
-                break;
-            }
-            column = pair.column;
+        const ColumnNumberTable &columnTable = GetColumnNumberTable(methodId);
+        auto iter = std::upper_bound(columnTable.begin(), columnTable.end(), ColumnTableEntry {offset, 0});
+        if (iter != columnTable.begin()) {
+            column = (iter - 1)->column;
         }
         return cb(column);
     }
     std::unique_ptr<SingleStepper> GetStepIntoStepper(const EcmaVM *ecmaVm);
     std::unique_ptr<SingleStepper> GetStepOverStepper(const EcmaVM *ecmaVm);
     std::unique_ptr<SingleStepper> GetStepOutStepper(const EcmaVM *ecmaVm);
+
+    constexpr static int32_t SPECIAL_LINE_MARK = -1;
 
 private:
     NO_COPY_SEMANTIC(JSPtExtractor);
