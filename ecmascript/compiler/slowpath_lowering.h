@@ -128,7 +128,7 @@ private:
                        const std::vector<GateRef> &exceptionControl,
                        bool noThrow = false);
     void ReplaceHirToCall(GateRef hirGate, GateRef callGate, bool noThrow = false);
-    void ReplaceHirToThrowCall(GateRef hirGate, GateRef condGate, GateRef callGate);
+    void ReplaceHirToThrowCall(GateRef hirGate, GateRef callGate);
     void LowerExceptionHandler(GateRef hirGate);
     // environment must be initialized
     GateRef GetConstPool(GateRef jsFunc);
