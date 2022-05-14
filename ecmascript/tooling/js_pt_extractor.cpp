@@ -85,7 +85,7 @@ std::unique_ptr<JSPtExtractor::SingleStepper> JSPtExtractor::GetStepOutStepper(c
 CList<JSPtStepRange> JSPtExtractor::GetStepRanges(File::EntityId methodId, uint32_t offset)
 {
     CList<JSPtStepRange> ranges {};
-    auto table = GetLineNumberTable(methodId);
+    const LineNumberTable &table = GetLineNumberTable(methodId);
     auto callbackFunc = [table, &ranges](int32_t line) -> bool {
         for (auto it = table.begin(); it != table.end(); ++it) {
             auto next = it + 1;

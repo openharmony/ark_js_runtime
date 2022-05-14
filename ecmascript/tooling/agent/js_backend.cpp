@@ -242,7 +242,7 @@ bool JSBackend::IsSkipLine(const JSPtLocation &location)
     }
 
     auto callbackFunc = [](int32_t line) -> bool {
-        return line == SPECIAL_LINE_MARK;
+        return line == JSPtExtractor::SPECIAL_LINE_MARK;
     };
     File::EntityId methodId = location.GetMethodId();
     uint32_t offset = location.GetBytecodeOffset();
@@ -650,7 +650,7 @@ std::unique_ptr<Scope> JSBackend::GetLocalScopeChain(const FrameHandler *frameHa
     CacheObjectIfNeeded(thisVal, thisObj);
 
     auto methodId = method->GetMethodId();
-    auto lines = extractor->GetLineNumberTable(methodId);
+    const LineNumberTable &lines = extractor->GetLineNumberTable(methodId);
     std::unique_ptr<Location> startLoc = std::make_unique<Location>();
     std::unique_ptr<Location> endLoc = std::make_unique<Location>();
     auto scriptFunc = [&startLoc, &endLoc, lines](PtScript *script) -> bool {
