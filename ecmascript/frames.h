@@ -244,12 +244,27 @@ enum class FrameType: uintptr_t {
     ASM_INTERPRETER_FRAME = 5,
     INTERPRETER_CONSTRUCTOR_FRAME = 6,
     BUILTIN_FRAME = 7,
-    INTERPRETER_FAST_NEW_FRAME = 8,
-    INTERPRETER_ENTRY_FRAME = 9,
-    ASM_INTERPRETER_ENTRY_FRAME = 10,
+    BUILTIN_FRAME_WITH_ARGV = 8,
+    BUILTIN_ENTRY_FRAME = 9,
+    INTERPRETER_FAST_NEW_FRAME = 10,
+    INTERPRETER_ENTRY_FRAME = 11,
+    ASM_INTERPRETER_ENTRY_FRAME = 12,
 
     INTERPRETER_BEGIN = INTERPRETER_FRAME,
     INTERPRETER_END = INTERPRETER_FAST_NEW_FRAME,
+    BUILTIN_BEGIN = BUILTIN_FRAME,
+    BUILTIN_END = BUILTIN_ENTRY_FRAME,
+};
+
+enum class JSCallMode : uintptr_t {
+    CALL_ARG0,
+    CALL_ARG1,
+    CALL_ARG2,
+    CALL_ARG3,
+    CALL_WITH_ARGV,
+    CALL_THIS_WITH_ARGV,
+    CALL_CONSTRUCTOR_WITH_ARGV,
+    CALL_FROM_AOT,
 };
 
 class FrameConstants {
@@ -631,12 +646,25 @@ struct OptimizedWithArgvLeaveFrame {
     }
 };
 
-struct BuiltinFrame {
-    FrameType type;
-    JSTaggedType *prevFp;
-    uintptr_t returnAddr;
-    uintptr_t argc;
-    JSTaggedValue function;
+struct BuiltinFrame : public base::AlignedStruct<base::AlignedPointer::Size(),
+                                                 base::AlignedSize,
+                                                 base::AlignedPointer,
+                                                 base::AlignedPointer,
+                                                 base::AlignedPointer,
+                                                 base::AlignedPointer,
+                                                 base::AlignedPointer> {
+    enum class Index : size_t {
+        TypeIndex = 0,
+        PrevFpIndex,
+        ReturnAddrIndex,
+        NativeCodeIndex,
+        NumArgsIndex,
+        StackArgsIndex,
+        NumOfMembers
+    };
+    static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
+
+    static constexpr uint32_t RESERVED_CALL_ARGCOUNT = 3;
 
     static BuiltinFrame* GetFrameFromSp(const JSTaggedType *sp)
     {
@@ -649,8 +677,100 @@ struct BuiltinFrame {
     }
     uintptr_t GetCallSiteSp()
     {
-        return ToUintPtr(this) + MEMBER_OFFSET(OptimizedWithArgvLeaveFrame, argc);
+        return ToUintPtr(this) + MEMBER_OFFSET(BuiltinFrame, nativeCode);
     }
+    static size_t GetPreFpOffset(bool isArch32)
+    {
+        return GetOffset<static_cast<size_t>(Index::PrevFpIndex)>(isArch32);
+    }
+    static size_t GetNumArgsToFpDelta(bool isArch32)
+    {
+        auto offset = GetOffset<static_cast<size_t>(Index::NumArgsIndex)>(isArch32);
+        return offset - GetPreFpOffset(isArch32);
+    }
+
+    static size_t GetNativeCodeToFpDelta(bool isArch32)
+    {
+        auto offset = GetOffset<static_cast<size_t>(Index::NativeCodeIndex)>(isArch32);
+        return offset - GetPreFpOffset(isArch32);
+    }
+    static size_t GetStackArgsToFpDelta(bool isArch32)
+    {
+        auto offset = GetOffset<static_cast<size_t>(Index::StackArgsIndex)>(isArch32);
+        return offset - GetPreFpOffset(isArch32);
+    }
+    uintptr_t GetStackArgsAddress()
+    {
+        return reinterpret_cast<uintptr_t>(&stackArgs);
+    }
+    JSTaggedValue GetFunction()
+    {
+        auto functionAddress = reinterpret_cast<JSTaggedType *>(GetStackArgsAddress());
+        return JSTaggedValue(*functionAddress);
+    }
+    size_t GetNumArgs()
+    {
+        return numArgs;
+    }
+
+    alignas(EAS) FrameType type;
+    alignas(EAS) JSTaggedType *prevFp;
+    alignas(EAS) uintptr_t returnAddr;
+    alignas(EAS) uintptr_t nativeCode;
+    alignas(EAS) uintptr_t numArgs;
+    alignas(EAS) uintptr_t stackArgs;
+};
+
+struct BuiltinWithArgvFrame : public base::AlignedStruct<base::AlignedPointer::Size(),
+                                                         base::AlignedSize,
+                                                         base::AlignedPointer,
+                                                         base::AlignedPointer> {
+    enum class Index : size_t {
+        StackArgsTopIndex = -1,
+        NumArgsIndex = -1,
+        TypeIndex = 0,
+        PrevFpIndex,
+        ReturnAddrIndex,
+        NumOfMembers
+    };
+    static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
+
+    static BuiltinWithArgvFrame* GetFrameFromSp(const JSTaggedType *sp)
+    {
+        return reinterpret_cast<BuiltinWithArgvFrame *>(reinterpret_cast<uintptr_t>(sp) -
+            MEMBER_OFFSET(BuiltinFrame, prevFp));
+    }
+    inline JSTaggedType* GetPrevFrameFp()
+    {
+        return prevFp;
+    }
+    uintptr_t GetCallSiteSp()
+    {
+        return ToUintPtr(this) + sizeof(BuiltinWithArgvFrame);
+    }
+    uintptr_t GetStackArgsAddress()
+    {
+        auto topAddress = ToUintPtr(this) +
+            (static_cast<size_t>(Index::StackArgsTopIndex) * sizeof(uintptr_t));
+        auto numberArgs = GetNumArgs() + BuiltinFrame::RESERVED_CALL_ARGCOUNT;
+        return topAddress - numberArgs * sizeof(uintptr_t);
+    }
+    JSTaggedValue GetFunction()
+    {
+        auto functionAddress = reinterpret_cast<JSTaggedType *>(GetStackArgsAddress());
+        return JSTaggedValue(*functionAddress);
+    }
+    size_t GetNumArgs()
+    {
+        auto argcAddress = reinterpret_cast<size_t *>(
+            ToUintPtr(this) + (static_cast<size_t>(Index::NumArgsIndex) * sizeof(uintptr_t)));
+        return *argcAddress;
+    }
+    // argv(... this, new.target, function)
+    // numargs
+    alignas(EAS) FrameType type;
+    alignas(EAS) JSTaggedType *prevFp;
+    alignas(EAS) uintptr_t returnAddr;
 };
 
 static_assert(static_cast<uint64_t>(FrameType::OPTIMIZED_FRAME) == OPTIMIZE_FRAME_TYPE);

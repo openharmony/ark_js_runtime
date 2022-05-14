@@ -79,7 +79,12 @@ public:
     }
     bool IsBuiltinFrame() const
     {
-        return (GetFrameType() == FrameType::BUILTIN_FRAME);
+        FrameType type = GetFrameType();
+        return (type >= FrameType::BUILTIN_BEGIN) && (type <= FrameType::BUILTIN_END);
+    }
+    bool IsBuiltinEntryFrame() const
+    {
+        return (GetFrameType() == FrameType::BUILTIN_ENTRY_FRAME);
     }
 
     bool IsInterpretedEntryFrame() const
@@ -162,6 +167,9 @@ private:
     void AsmInterpretedFrameIterate(const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1) const;
     void InterpretedEntryFrameIterate(const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1) const;
     void BuiltinFrameIterate(
+        const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
+        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
+    void BuiltinWithArgvFrameIterate(
         const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
         ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
     void OptimizedFrameIterate(

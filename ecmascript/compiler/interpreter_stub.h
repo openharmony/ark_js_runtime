@@ -104,12 +104,10 @@ public:
                                  GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter);
     inline void DispatchDebuggerLast(GateRef glue, GateRef sp, GateRef pc, GateRef constpool,
                                      GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter);
-    template<RuntimeStubCSigns::ID id, typename... Args>
-    void DispatchCommonCall(GateRef glue, GateRef function, Args... args);
-    template<RuntimeStubCSigns::ID id, typename... Args>
-    GateRef CommonCallNative(GateRef glue, GateRef function, Args... args);
     inline GateRef FunctionIsResolved(GateRef object);
     inline GateRef GetObjectFromConstPool(GateRef constpool, GateRef index);
+    void JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs, GateRef jumpSize,
+                        JSCallMode mode, std::initializer_list<GateRef> args);
 private:
     template<typename... Args>
     void DispatchBase(GateRef bcOffset, const CallSignature *signature, GateRef glue, Args... args);

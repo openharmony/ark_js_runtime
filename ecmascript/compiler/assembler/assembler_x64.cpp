@@ -533,13 +533,14 @@ void AssemblerX64::Jmp(Label *target, Distance distance)
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
     if (distance == Distance::NEAR) {
-        // EB: Jmp rel8
-        EmitU8(0xEB);
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
-        target->LinkNearPos(pos);
+        // +1: skip opcode
+        target->LinkNearPos(pos + 1);
         ASSERT(InRange8(emitPos));
+        // EB: Jmp rel8
+        EmitU8(0xEB);
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
@@ -584,13 +585,14 @@ void AssemblerX64::Ja(Label *target, Distance distance)
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
     if (distance == Distance::NEAR) {
-        // 77: ja rel8
-        EmitU8(0x77);
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
-        target->LinkNearPos(pos);
+        // +1: skip opcode
+        target->LinkNearPos(pos + 1);
         ASSERT(InRange8(emitPos));
+        // 77: ja rel8
+        EmitU8(0x77);
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
@@ -615,13 +617,14 @@ void AssemblerX64::Jb(Label *target, Distance distance)
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
     if (distance == Distance::NEAR) {
-        // 72 : Jb rel8
-        EmitU8(0x72);
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
-        target->LinkNearPos(pos);
+        // +1: skip opcode
+        target->LinkNearPos(pos + 1);
         ASSERT(InRange8(emitPos));
+        // 72 : Jb rel8
+        EmitU8(0x72);
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
@@ -645,13 +648,14 @@ void AssemblerX64::Jz(Label *target, Distance distance)
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
     if (distance == Distance::NEAR) {
-        // 74 : Jz rel8
-        EmitU8(0x74);
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
-        target->LinkNearPos(pos);
+        // +1: skip opcode
+        target->LinkNearPos(pos + 1);
         ASSERT(InRange8(emitPos));
+        // 74 : Jz rel8
+        EmitU8(0x74);
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
@@ -676,13 +680,14 @@ void AssemblerX64::Je(Label *target, Distance distance)
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
     if (distance == Distance::NEAR) {
-        // 74 : Je rel8
-        EmitU8(0x74);
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
-        target->LinkNearPos(pos);
+        // +1: skip opcode
+        target->LinkNearPos(pos + 1);
         ASSERT(InRange8(emitPos));
+        // 74 : Je rel8
+        EmitU8(0x74);
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
@@ -832,18 +837,14 @@ void AssemblerX64::Movl(Operand src, Register dst)
 }
 
 void AssemblerX64::Testq(Immediate src, Register dst) {
-    EmitRexPrefixW(dst);
     if (InRange8(src.Value())) {
-        // F6: Test r/m8, imm8
-        EmitU8(0xF6);
-        // 0: F6 /0 ib
-        EmitModrm(0, dst);
-        EmitI8(static_cast<int8_t>(src.Value()));
+        Testb(src, dst);
     } else if (dst == rax) {
         // A9: Test rax, imm32
         EmitU8(0xA9);
         EmitI32(src.Value());
     } else {
+        EmitRexPrefixW(dst);
         // F7: Test r/m64, imm32
         EmitU8(0xF7);
         // 0: F7 0 id
@@ -854,24 +855,22 @@ void AssemblerX64::Testq(Immediate src, Register dst) {
 
 void AssemblerX64::Testb(Immediate src, Register dst)
 {
-    EmitRexPrefix(dst);
-    if (InRange8(src.Value())) {
+    ASSERT(InRange8(src.Value()));
+    if (dst == rax) {
+        // A8: Test al, imm8
+        EmitU8(0xA8);
+    } else {
+        // AH BH CG DH can not be encoded to access if REX prefix used.
+        if (dst >= rsp) {
+            EmitRexPrefixL(dst);
+        }
         // F6: Test r/m8, imm8
+        // REX F6: Test r/m8*, imm8
         EmitU8(0xF6);
         // 0: F6 /0 ib
         EmitModrm(0, dst);
-        EmitI8(static_cast<int8_t>(src.Value()));
-    } else if (dst == rax) {
-        // A9: Test rax, imm32
-        EmitU8(0xA9);
-        EmitI32(src.Value());
-    } else {
-        // F7: Test r/m32, imm32
-        EmitU8(0xF7);
-        // 0: F7 0 id
-        EmitModrm(0, dst);
-        EmitI32(src.Value());
     }
+    EmitI8(static_cast<int8_t>(src.Value()));
 }
 
 void AssemblerX64::Jne(Label *target, Distance distance)
@@ -884,13 +883,14 @@ void AssemblerX64::Jne(Label *target, Distance distance)
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
     if (distance == Distance::NEAR) {
-        // 75 : Jne rel8;
-        EmitU8(0x75);
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
-        target->LinkNearPos(pos);
+        // +1: skip opcode
+        target->LinkNearPos(pos + 1);
         ASSERT(InRange8(emitPos));
+        // 75 : Jne rel8;
+        EmitU8(0x75);
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
@@ -923,13 +923,14 @@ void AssemblerX64::Jbe(Label *target, Distance distance)
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
     if (distance == Distance::NEAR) {
-        // 76 : Jbe rel8;
-        EmitU8(0x76);
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
-        target->LinkNearPos(pos);
+        // +1: skip opcode
+        target->LinkNearPos(pos + 1);
         ASSERT(InRange8(emitPos));
+        // 76 : Jbe rel8;
+        EmitU8(0x76);
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
@@ -1046,13 +1047,14 @@ void AssemblerX64::Jnz(Label *target, Distance distance)
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
     if (distance == Distance::NEAR) {
-        // 75 : Jnz rel8;
-        EmitU8(0x75);
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
-        target->LinkNearPos(pos);
+        // +1: skip opcode
+        target->LinkNearPos(pos + 1);
         ASSERT(InRange8(emitPos));
+        // 75 : Jnz rel8;
+        EmitU8(0x75);
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
@@ -1077,13 +1079,14 @@ void AssemblerX64::Jle(Label *target, Distance distance)
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
     if (distance == Distance::NEAR) {
-        // 7E : Jle rel8;
-        EmitU8(0x7E);
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
-        target->LinkNearPos(pos);
+        // +1: skip opcode
+        target->LinkNearPos(pos + 1);
         ASSERT(InRange8(emitPos));
+        // 7E : Jle rel8;
+        EmitU8(0x7E);
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
@@ -1108,13 +1111,14 @@ void AssemblerX64::Jae(Label *target, Distance distance)
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
     if (distance == Distance::NEAR) {
-        // 73 : Jae rel8
-        EmitU8(0x73);
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
-        target->LinkNearPos(pos);
+        // +1: skip opcode
+        target->LinkNearPos(pos + 1);
         ASSERT(InRange8(emitPos));
+        // 73 : Jae rel8
+        EmitU8(0x73);
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
@@ -1139,13 +1143,14 @@ void AssemblerX64::Jg(Label *target, Distance distance)
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
     if (distance == Distance::NEAR) {
-        // 7F : Jg rel8
-        EmitU8(0x7F);
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
-        target->LinkNearPos(pos);
+        // +1: skip opcode
+        target->LinkNearPos(pos + 1);
         ASSERT(InRange8(emitPos));
+        // 7F : Jg rel8
+        EmitU8(0x7F);
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {
@@ -1233,13 +1238,14 @@ void AssemblerX64::Jnb(Label *target, Distance distance)
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
     if (distance == Distance::NEAR) {
-        // 73 : Jnb rel8
-        EmitU8(0x73);
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
-        target->LinkNearPos(pos);
+        // +1: skip opcode
+        target->LinkNearPos(pos + 1);
         ASSERT(InRange8(emitPos));
+        // 73 : Jnb rel8
+        EmitU8(0x73);
         EmitI8(static_cast<int8_t>(emitPos));
     } else {
         if (target->IsLinked()) {

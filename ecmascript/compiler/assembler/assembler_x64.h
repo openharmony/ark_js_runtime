@@ -162,6 +162,11 @@ private:
         EmitU8(REX_PREFIX_W | HighBit(rm));
     }
 
+    void EmitRexPrefixL(Register rm)
+    {
+        EmitU8(REX_PREFIX_FIXED_BITS | HighBit(rm));
+    }
+
     void EmitRexPrefix(Operand rm)
     {
         // 0: Extension to the MODRM.rm field B

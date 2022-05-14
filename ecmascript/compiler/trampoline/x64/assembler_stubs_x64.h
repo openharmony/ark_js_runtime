@@ -18,6 +18,7 @@
 
 #include "ecmascript/compiler/assembler/assembler_x64.h"
 #include "ecmascript/compiler/assembler/extended_assembler_x64.h"
+#include "ecmascript/frames.h"
 
 namespace panda::ecmascript::x64 {
 class AssemblerStubsX64 {
@@ -64,17 +65,9 @@ public:
 
     static void PushCallArgs0AndDispatchSlowPath(ExtendedAssemblerX64 *assembler);
 
-    static void PushCallIThisRangeAndDispatchNative(ExtendedAssemblerX64 *assembler);
-
     static void PushCallIRangeAndDispatchNative(ExtendedAssemblerX64 *assembler);
 
-    static void PushCallArgs3AndDispatchNative(ExtendedAssemblerX64 *assembler);
-
-    static void PushCallArgs2AndDispatchNative(ExtendedAssemblerX64 *assembler);
-
-    static void PushCallArgs1AndDispatchNative(ExtendedAssemblerX64 *assembler);
-
-    static void PushCallArgs0AndDispatchNative(ExtendedAssemblerX64 *assembler);
+    static void PushCallArgsAndDispatchNative(ExtendedAssemblerX64 *assembler);
 
     static void ResumeRspAndDispatch(ExtendedAssemblerX64 *assembler);
 
@@ -89,11 +82,8 @@ private:
     static void PushArgsSlowPath(ExtendedAssemblerX64 *assembler, Register glueRegister,
         Register declaredNumArgsRegister, Register argcRegister, Register argvRegister, Register callTargetRegister,
         Register methodRegister, Register prevSpRegister, Register callFieldRegister);
-    static void CallNativeEntry(ExtendedAssemblerX64 *assembler, Register glueRegister, Register argcRegister,
-        Register argvRegister, Register callTargetRegister, Register methodRegister, Register prevSpRegister);
     static void PushFrameState(ExtendedAssemblerX64 *assembler, Register prevSpRegister, Register fpRegister,
-        Register callTargetRegister, Register methodRegister, Register pcRegister, Register operatorRegister,
-        bool isNative);
+        Register callTargetRegister, Register methodRegister, Register pcRegister, Register operatorRegister);
     static void GlueToThread(ExtendedAssemblerX64 *assembler, Register glueRegister, Register threadRegister);
     static void ConstructEcmaRuntimeCallInfo(ExtendedAssemblerX64 *assembler, Register threadRegister,
         Register numArgsRegister, Register stackArgsRegister);
@@ -121,14 +111,10 @@ private:
     static void PushCallTarget(ExtendedAssemblerX64 *assembler);
     static void PushVregs(ExtendedAssemblerX64 *assembler);
     static void DispatchCall(ExtendedAssemblerX64 *assembler, Register pcRegister, Register newSpRegister);
-    static void CallIThisRangeNativeEntry(ExtendedAssemblerX64 *assembler);
-    static void CallIRangeNativeEntry(ExtendedAssemblerX64 *assembler);
-    static void Callargs3NativeEntry(ExtendedAssemblerX64 *assembler, Register opRegister);
-    static void Callargs2NativeEntry(ExtendedAssemblerX64 *assembler, Register opRegister);
-    static void Callarg1NativeEntry(ExtendedAssemblerX64 *assembler);
-    static void PushCallThisUndefinedNative(ExtendedAssemblerX64 *assembler);
-    static void PushLeftFrameNative(ExtendedAssemblerX64 *assembler);
-    static void PushFrameStateNativeAndCall(ExtendedAssemblerX64 *assembler);
+    static void CallNativeEntry(ExtendedAssemblerX64 *assembler);
+    static void CallNativeInternal(ExtendedAssemblerX64 *assembler,
+        Register glue, Register numArgs, Register stackArgs, Register nativeCode);
+    static void PushBuiltinFrame(ExtendedAssemblerX64 *assembler, Register glue, FrameType type);
 };
 }  // namespace panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H
