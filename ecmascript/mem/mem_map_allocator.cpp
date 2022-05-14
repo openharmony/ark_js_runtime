@@ -51,6 +51,7 @@ MemMap MemMapAllocator::Allocate(size_t size, size_t alignment, bool isRegular)
             return mem;
         }
         mem = PageMap(REGULAR_REGION_MMAP_SIZE, alignment);
+        memMapPool_.InsertMemMap(mem);
         mem = memMapPool_.SplitMemToCache(mem);
     } else {
         mem = memMapFreeList_.GetMemFromList(size);
