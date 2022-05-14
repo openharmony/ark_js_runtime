@@ -468,7 +468,7 @@ Local<ObjectRef> JSNApi::GetExportObject(EcmaVM *vm, const std::string &file, co
 
 void JSNApi::InitializeMemMapAllocator(const ecmascript::JSRuntimeOptions &options)
 {
-    MemMapAllocator::GetInstance()->Initialize(options.TotalSpaceCapacity(), ecmascript::DEFAULT_REGION_SIZE);
+    MemMapAllocator::GetInstance()->Initialize(options.GetHeapSizeLimit(), ecmascript::DEFAULT_REGION_SIZE);
 }
 
 void JSNApi::DestroyMemMapAllocator()
