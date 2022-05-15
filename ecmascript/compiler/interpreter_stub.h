@@ -110,7 +110,7 @@ public:
                         JSCallMode mode, std::initializer_list<GateRef> args);
 private:
     template<typename... Args>
-    void DispatchBase(GateRef bcOffset, const CallSignature *signature, GateRef glue, Args... args);
+    void DispatchBase(GateRef target, GateRef glue, Args... args);
 };
 
 #define DECLARE_HANDLE_STUB_CLASS(name)                                                         \

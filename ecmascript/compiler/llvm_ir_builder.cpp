@@ -516,7 +516,7 @@ LLVMValueRef LLVMIRBuilder::GetFunction(LLVMValueRef glue, StubIdType id, bool i
         signature = CommonStubCSigns::Get(std::get<CommonStubCSigns::ID>(id));
         index = static_cast<int>(std::get<CommonStubCSigns::ID>(id));
     } else if (std::holds_alternative<LLVMValueRef>(id)) {
-        signature = BytecodeStubCSigns::Get(BYTECODE_STUB_BEGIN_ID);
+        signature = BytecodeStubCSigns::BCHandler();
     } else {
         UNREACHABLE();
     }

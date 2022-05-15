@@ -79,6 +79,7 @@ public:
 
 class PUBLIC_API AotCodeInfo {
 public:
+    using CallSignature = kungfu::CallSignature;
     AotCodeInfo() {};
     ~AotCodeInfo() = default;
 
@@ -95,29 +96,23 @@ public:
         uint32_t indexInKind_;
         bool IsStub() const
         {
-            return kungfu::CallSignature::TargetKind::STUB_BEGIN <= kind_ &&
-                kind_ < kungfu::CallSignature::TargetKind::STUB_END;
+            return CallSignature::TargetKind::STUB_BEGIN <= kind_ && kind_ < CallSignature::TargetKind::STUB_END;
         }
 
-        bool IsBCHandler() const
+        bool IsBCStub() const
         {
-            return kungfu::CallSignature::TargetKind::BCHANDLER_BEGIN <= kind_ &&
-                kind_ < kungfu::CallSignature::TargetKind::BCHANDLER_END;
+            return CallSignature::TargetKind::BCHANDLER_BEGIN <= kind_ &&
+                   kind_ < CallSignature::TargetKind::BCHANDLER_END;
         }
 
-        bool IsBCNormalHandler() const
+        bool IsBCHandlerStub() const
         {
-            return (kind_ == kungfu::CallSignature::TargetKind::BYTECODE_HANDLER);
+            return (kind_ == CallSignature::TargetKind::BYTECODE_HANDLER);
         }
 
         bool IsCommonStub() const
         {
-            return (kind_ == kungfu::CallSignature::TargetKind::COMMON_STUB);
-        }
-
-        bool IsAsmStub() const
-        {
-            return (kind_ == kungfu::CallSignature::TargetKind::ASM_STUB);
+            return (kind_ == CallSignature::TargetKind::COMMON_STUB);
         }
     };
 
