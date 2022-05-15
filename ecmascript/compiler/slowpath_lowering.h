@@ -262,6 +262,7 @@ private:
     void LowerDefineMethod(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerGetUnmappedArgs(GateRef gate, GateRef glue);
     void LowerCopyRestArgs(GateRef gate, GateRef glue);
+    GateRef LowerCallRuntime(GateRef glue, int index, const std::vector<GateRef> &args, bool useLabel = false);
 
     BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;

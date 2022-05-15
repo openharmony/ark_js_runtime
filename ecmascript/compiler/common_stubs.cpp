@@ -563,13 +563,12 @@ CallSignature CommonStubCSigns::callSigns_[CommonStubCSigns::NUM_OF_STUBS];
 
 void CommonStubCSigns::Initialize()
 {
-#define INIT_SIGNATURES(name, counter)                           \
-    name##CallSignature::Initialize(&callSigns_[name]);          \
-    callSigns_[name].SetID(name);                                \
-    callSigns_[name].SetConstructor(                             \
-        [](void* ciruit) {                                       \
-            return static_cast<void*>(                           \
-                new name##Stub(static_cast<Circuit*>(ciruit)));  \
+#define INIT_SIGNATURES(name, counter)                                                 \
+    name##CallSignature::Initialize(&callSigns_[name]);                                \
+    callSigns_[name].SetID(name);                                                      \
+    callSigns_[name].SetConstructor(                                                   \
+        [](void* ciruit) {                                                             \
+            return static_cast<void*>(new name##Stub(static_cast<Circuit*>(ciruit)));  \
         });
 
     COMMON_STUB_ID_LIST(INIT_SIGNATURES)
