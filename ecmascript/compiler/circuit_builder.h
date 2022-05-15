@@ -229,17 +229,6 @@ public:
     GateRef UnaryArithmetic(OpCode opcode, MachineType machineType, GateRef value);
     GateRef UnaryArithmetic(OpCode opcode, GateRef value);
     GateRef BinaryLogic(OpCode opcode, GateRef left, GateRef right);
-
-    // call related
-    GateRef Call(const CallSignature *signature, GateRef glue, GateRef target, const std::vector<GateRef> &args,
-        GateRef depend = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)));
-    GateRef NoGcRuntimeCall(const CallSignature *signature, GateRef glue, GateRef target,
-                            GateRef depend, const std::vector<GateRef> &args);
-    GateRef VariadicRuntimeCall(GateRef glue, GateRef target, GateRef depend, const std::vector<GateRef> &args);
-    GateRef BytecodeCall(const CallSignature *signature, GateRef glue, GateRef target,
-                         GateRef depend, const std::vector<GateRef> &args);
-    GateRef DebuggerBytecodeCall(const CallSignature *signature, GateRef glue, GateRef target,
-                                 GateRef depend, const std::vector<GateRef> &args);
     static MachineType GetMachineTypeFromVariableType(VariableType type);
     Circuit *GetCircuit() const
     {
@@ -251,11 +240,15 @@ public:
     inline GateRef Undefined(VariableType type = VariableType::JS_ANY());
 
     // call operation
-    GateRef CallRuntimeWithDepend(GateRef glue, int index, GateRef depend, const std::vector<GateRef> &args);
-    GateRef CallRuntimeWithDepend(GateRef glue, GateRef target, GateRef depend, GateRef argc, GateRef argv);
-    GateRef CallRuntime(GateRef glue, int index, const std::vector<GateRef> &args, bool useLabel = false);
-    GateRef CallNGCRuntime(GateRef glue, size_t index, const std::vector<GateRef> &args);
-    GateRef CallStub(GateRef glue, size_t index, const std::vector<GateRef> &args);
+    GateRef CallBCHandler(GateRef glue, GateRef target, const std::vector<GateRef> &args);
+    GateRef CallBCDebugger(GateRef glue, GateRef target, const std::vector<GateRef> &args);
+    GateRef CallRuntimeVarargs(GateRef glue, int index, GateRef argc, GateRef argv);
+    GateRef CallRuntime(GateRef glue, int index, GateRef depend, const std::vector<GateRef> &args);
+    GateRef CallNGCRuntime(GateRef glue, int index, GateRef depend, const std::vector<GateRef> &args);
+    GateRef CallStub(GateRef glue, int index, const std::vector<GateRef> &args);
+    GateRef Call(const CallSignature* cs, GateRef glue, GateRef target, GateRef depend,
+                 const std::vector<GateRef> &args);
+
     // memory
     inline GateRef Load(VariableType type, GateRef base, GateRef offset);
     void Store(VariableType type, GateRef glue, GateRef base, GateRef offset, GateRef value);
@@ -400,6 +393,7 @@ public:
     inline Label *GetCurrentLabel() const;
     inline GateRef GetState() const;
     inline GateRef GetDepend() const;
+
 private:
     Circuit *circuit_ {nullptr};
     Environment *env_ {nullptr};

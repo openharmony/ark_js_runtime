@@ -445,6 +445,23 @@ DEF_CALL_SIGNATURE(BytecodeHandler)
     callSign->SetTargetKind(CallSignature::TargetKind::BYTECODE_HANDLER);
 }
 
+DEF_CALL_SIGNATURE(BytecodeDebuggerHandler)
+{
+    // 7 : 7 input parameters
+    CallSignature bytecodeHandler("BytecodeDebuggerHandler", 0, 7,
+                                  ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = bytecodeHandler;
+    std::array<VariableType, 7> params = { VariableType::NATIVE_POINTER(),
+                                           VariableType::NATIVE_POINTER(),
+                                           VariableType::NATIVE_POINTER(),
+                                           VariableType::JS_POINTER(),
+                                           VariableType::JS_POINTER(),
+                                           VariableType::JS_ANY(),
+                                           VariableType::INT32() };
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::BYTECODE_DEBUGGER_HANDLER);
+}
+
 DEF_CALL_SIGNATURE(CallRuntime)
 {
     /* 3 : 3 input parameters */
@@ -458,7 +475,7 @@ DEF_CALL_SIGNATURE(CallRuntime)
     };
     callSign->SetVariadicArgs(true);
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::ASM_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
@@ -474,7 +491,7 @@ DEF_CALL_SIGNATURE(AsmInterpreterEntry)
         VariableType::NATIVE_POINTER(),  // argv
     };
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::ASM_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
@@ -490,7 +507,7 @@ DEF_CALL_SIGNATURE(JSCallDispatch)
         VariableType::NATIVE_POINTER(),  // argv
     };
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::ASM_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
@@ -508,7 +525,7 @@ DEF_CALL_SIGNATURE(CallRuntimeWithArgv)
     };
     callSign->SetVariadicArgs(false);
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_VARARGS);
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
@@ -546,7 +563,7 @@ DEF_CALL_SIGNATURE(JSCall)
     callSign->SetVariadicArgs(true);
     callSign->SetParameters(params.data());
     callSign->SetCallConv(CallSignature::CallConv::WebKitJSCallConv);
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
 DEF_CALL_SIGNATURE(JSCallWithArgV)
@@ -562,7 +579,7 @@ DEF_CALL_SIGNATURE(JSCallWithArgV)
         VariableType::NATIVE_POINTER(),    // argv
     };
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
     callSign->SetTailCall(true);
 }
 
@@ -583,7 +600,7 @@ DEF_CALL_SIGNATURE(ResumeRspAndDispatch)
         VariableType::NATIVE_POINTER(),
     };
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::ASM_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
     callSign->SetCallConv(CallSignature::CallConv::GHCCallConv);
 }
 
@@ -594,7 +611,7 @@ DEF_CALL_SIGNATURE(ResumeRspAndReturn)
         ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
     *callSign = resumeRspAndReturn;
     callSign->SetParameters(nullptr);
-    callSign->SetTargetKind(CallSignature::TargetKind::ASM_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
     callSign->SetCallConv(CallSignature::CallConv::GHCCallConv);
 }
 
@@ -614,7 +631,7 @@ DEF_CALL_SIGNATURE(ResumeCaughtFrameAndDispatch)
         VariableType::INT32(),
     };
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::ASM_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
     callSign->SetCallConv(CallSignature::CallConv::GHCCallConv);
 }
 
@@ -629,7 +646,7 @@ DEF_CALL_SIGNATURE(StringsAreEquals)
         VariableType::JS_POINTER(),
     };
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
 DEF_CALL_SIGNATURE(BigIntEquals)
@@ -643,21 +660,20 @@ DEF_CALL_SIGNATURE(BigIntEquals)
         VariableType::JS_POINTER(),
     };
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
-
-#define PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE_COMMON(name)             \
-    /* 1 : 1 input parameters */                                       \
-    CallSignature signature(#name, 0, 1,                               \
-        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());        \
-    *callSign = signature;                                             \
-    std::array<VariableType, 1> params = { /* 1: 1 input parameters */ \
-        VariableType::NATIVE_POINTER(),                                \
-    };                                                                 \
-    callSign->SetVariadicArgs(true);                                   \
-    callSign->SetParameters(params.data());                            \
-    callSign->SetTargetKind(CallSignature::TargetKind::ASM_STUB);
+#define PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE_COMMON(name)                  \
+    /* 1 : 1 input parameters */                                            \
+    CallSignature signature(#name, 0, 1,                                    \
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());             \
+    *callSign = signature;                                                  \
+    std::array<VariableType, 1> params = { /* 1: 1 input parameters */      \
+        VariableType::NATIVE_POINTER(),                                     \
+    };                                                                      \
+    callSign->SetVariadicArgs(true);                                        \
+    callSign->SetParameters(params.data());                                 \
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 
 #define PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE(name)                      \
     PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE_COMMON(name)                   \
@@ -753,7 +769,7 @@ DEF_CALL_SIGNATURE(DebugPrint)
     };
     callSign->SetVariadicArgs(true);
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
 DEF_CALL_SIGNATURE(FatalPrint)
@@ -768,7 +784,7 @@ DEF_CALL_SIGNATURE(FatalPrint)
     };
     callSign->SetVariadicArgs(true);
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
 DEF_CALL_SIGNATURE(InsertOldToNewRSet)
@@ -783,7 +799,7 @@ DEF_CALL_SIGNATURE(InsertOldToNewRSet)
         VariableType::NATIVE_POINTER(),
     };
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
 DEF_CALL_SIGNATURE(FloatMod)
@@ -797,7 +813,7 @@ DEF_CALL_SIGNATURE(FloatMod)
         VariableType::FLOAT64(),
     };
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
 DEF_CALL_SIGNATURE(FindElementWithCache)
@@ -813,7 +829,7 @@ DEF_CALL_SIGNATURE(FindElementWithCache)
         VariableType::INT32(),
     };
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
 DEF_CALL_SIGNATURE(DoubleToInt)
@@ -826,7 +842,7 @@ DEF_CALL_SIGNATURE(DoubleToInt)
         VariableType::FLOAT64(),
     };
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
 DEF_CALL_SIGNATURE(MarkingBarrier)
@@ -843,7 +859,7 @@ DEF_CALL_SIGNATURE(MarkingBarrier)
         VariableType::NATIVE_POINTER(),
     };
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
 DEF_CALL_SIGNATURE(CallArg0Dyn)
@@ -971,7 +987,7 @@ DEF_CALL_SIGNATURE(CreateArrayFromList)
         VariableType::NATIVE_POINTER(),
     };
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
 DEF_CALL_SIGNATURE(JSObjectGetMethod)
@@ -988,6 +1004,6 @@ DEF_CALL_SIGNATURE(JSObjectGetMethod)
     };
     callSign->SetParameters(params.data());
     callSign->SetTailCall(false);
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 }  // namespace panda::ecmascript::kungfu

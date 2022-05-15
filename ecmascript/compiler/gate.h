@@ -305,6 +305,7 @@ public:
     void ModifyIn(size_t idx, Gate *in);
     void DeleteIn(size_t idx);
     void DeleteGate();
+    static constexpr GateRef InvalidGateRef = -1;
     [[nodiscard]] Out *GetOut(size_t idx);
     [[nodiscard]] Out *GetFirstOut();
     [[nodiscard]] const Out *GetFirstOutConst() const;
