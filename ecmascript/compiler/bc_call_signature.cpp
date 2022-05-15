@@ -19,6 +19,8 @@
 
 namespace panda::ecmascript::kungfu {
 CallSignature BytecodeStubCSigns::callSigns_[BytecodeStubCSigns::NUM_OF_VALID_STUBS];
+CallSignature BytecodeStubCSigns::bcHandlerCSign_;
+CallSignature BytecodeStubCSigns::bcDebuggerHandlerCSign_;
 
 void BytecodeStubCSigns::Initialize()
 {
@@ -33,6 +35,7 @@ void BytecodeStubCSigns::Initialize()
     });
     INTERPRETER_BC_STUB_LIST(INIT_SIGNATURES)
 #undef INIT_SIGNATURES
+
 #define INIT_HELPER_SIGNATURES(name)                                                        \
     BytecodeHandlerCallSignature::Initialize(&callSigns_[name]);                            \
     callSigns_[name].SetID(HELPER_ID_##name);                                               \
@@ -45,6 +48,9 @@ void BytecodeStubCSigns::Initialize()
     });
     ASM_INTERPRETER_BC_HELPER_STUB_LIST(INIT_HELPER_SIGNATURES)
 #undef INIT_HELPER_SIGNATURES
+
+    BytecodeHandlerCallSignature::Initialize(&bcHandlerCSign_);
+    BytecodeDebuggerHandlerCallSignature::Initialize(&bcDebuggerHandlerCSign_);
 }
 
 void BytecodeStubCSigns::GetCSigns(std::vector<const CallSignature*>& outCSigns)

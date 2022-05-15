@@ -311,9 +311,9 @@ void JSThread::LoadBytecodeHandlerStubsFromFile(std::string &fileName)
     auto stubs = aotInfo.GetStubs();
     for (size_t i = 0; i < stubs.size(); i++) {
         auto des = stubs[i];
-        if (des.IsBCHandler()) {
+        if (des.IsBCStub()) {
             // bc helper handler use to adjust bc stub, not init bc stub
-            if (des.IsBCNormalHandler()) {
+            if (des.IsBCHandlerStub()) {
                 glueData_.bcStubEntries_.Set(des.indexInKind_, des.codeAddr_);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_LOG
                 std::cout << "bytecode index: " << des.indexInKind_ << " addr:" << des.codeAddr_ << std::endl;
