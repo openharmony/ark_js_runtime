@@ -27,6 +27,7 @@
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript::aarch64 {
+using Label = panda::ecmascript::Label;
 #define __ assembler->
 
 // uint64_t CallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
@@ -78,23 +79,26 @@ void AssemblerStubs::CallRuntime(ExtendedAssembler *assembler)
     __ Str(tmp, MemoryOperand(sp, -16, MemoryOperand::AddrMode::PREINDEX));
     
     // construct Leave Frame
-    __ Mov(tmp, FrameType::LEAVE_FRAME);  
+    __ Mov(tmp, Immediate(static_cast<int64_t>(FrameType::LEAVE_FRAME)));  
     __ Str(tmp, MemoryOperand(sp, -8));
     __ Add(sp, sp, Immediate(-16));
 
     // load runtime trampoline address
     Register rtfunc(X19);
-    __ Ldr(tmp, MemeoryOperand(fp, 16));
+    __ Ldr(tmp, MemoryOperand(fp, 16));
     __ Add(tmp, glue, Operand(tmp, LSL, 3));
-    __ Ldr(rtfunc, MemeoryOperand(tmp, JSThread::GlueData::GetRTStubEntriesOffset(false)));
-    __ Ldr(argC, MemeoryOperand(fp, 24));
-    __ Add(x2, fp, Immediate(32));
+    __ Ldr(rtfunc, MemoryOperand(tmp, JSThread::GlueData::GetRTStubEntriesOffset(false)));
+    __ Ldr(argC, MemoryOperand(fp, 24));
+    __ Add(argV, fp, Immediate(32));
     __ Blr(rtfunc);
 
     // callee restore
-    __ Ldr(tmp, MemeoryOperand(sp, 0));
+    __ Ldr(tmp, MemoryOperand(sp, 0));
+
+
+
     // descontruct frame
-    __ Add(sp, sp, 16);
+    __ Add(sp, sp, Immediate(16));
     __ RestoreFpAndLr();
     __ Ret();
 }
@@ -140,7 +144,7 @@ void AssemblerStubs::JSFunctionEntry(ExtendedAssembler *assembler)
     
     Register frameType(X19);
     // construct frame
-    __ Mov(frameType, FrameType::OPTIMIZED_ENTRY_FRAME);
+    __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_ENTRY_FRAME)));
     __ Stp(prevFp, frameType, MemoryOperand(sp, -16, MemoryOperand::AddrMode::PREINDEX));
 
     Label copyUndefined;
@@ -151,9 +155,9 @@ void AssemblerStubs::JSFunctionEntry(ExtendedAssembler *assembler)
     __ Cmp(tmp, actualNumArgs.W());
     __ B(Condition::LS, &copyUndefined);
     Register count(X9, true);
-    Register undefValue(x8)
+    Register undefValue(X8);
     __ Mov(count, tmp.W());
-    __ Mov(x9, JSTaggedValue::Undefined());
+    __ Mov(undefValue, Immediate(JSTaggedValue::VALUE_UNDEFINED));
     
     __ Bind(&copyUndefined);
     __ Sub(count, count, Immediate(1));
@@ -172,13 +176,13 @@ void AssemblerStubs::JSFunctionEntry(ExtendedAssembler *assembler)
         // expectedNumArgs <= actualNumArgs
         __ Cmp(tmp.W(),  actualNumArgs.W());
         __ CMov(argC, tmp.W(), actualNumArgs.W(), Condition::LO);
-        __ Cbz(argC, invokeCompiledJSFunction);
+        __ Cbz(argC, &invokeCompiledJSFunction);
         __ Sub(argVEnd.W(), argC, Immediate(-1));
         __ Add(argVEnd, argV, Operand(argVEnd.W(), UXTW, 3));
         
         __ Bind(&copyArgLoop);
         __ Ldr(argValue, MemoryOperand(argVEnd, -8, MemoryOperand::AddrMode::POSTINDEX));
-        __ Subs(argC, argC, 1);
+        __ Subs(argC, argC, Immediate(1));
         __ Str(argValue, MemoryOperand(sp, -8, MemoryOperand::AddrMode::PREINDEX));
         __ B(Condition::NE, &copyArgLoop);
     }
@@ -200,10 +204,10 @@ void AssemblerStubs::JSFunctionEntry(ExtendedAssembler *assembler)
     __ Add(sp, sp, Immediate(8));
     __ Ldr(fp, MemoryOperand(sp, 8, MemoryOperand::AddrMode::POSTINDEX));
 
-    CalleRestore();
+    __ CalleeRestore();
     // restore return address
     __ Ldr(Register(X30), MemoryOperand(sp, 8, MemoryOperand::AddrMode::POSTINDEX));
-    Ret();
+    __ Ret();
 }
 
 // extern "C" JSTaggedType OptimizedCallOptimized(uintptr_t glue, uint32_t expectedNumArgs,
@@ -227,7 +231,7 @@ void AssemblerStubs::JSFunctionEntry(ExtendedAssembler *assembler)
 // ...........................
 // sp[- 8(N - 1)] - arg[0]
 // sp[- 8(N)]     - argc
-static void AssemblerStubs::OptimizedCallOptimized(ExtendedAssembler *assembler)
+void AssemblerStubs::OptimizedCallOptimized(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(OptimizedCallOptimized));
     Register expectedNumArgs(X1);
@@ -235,7 +239,7 @@ static void AssemblerStubs::OptimizedCallOptimized(ExtendedAssembler *assembler)
     __ SaveFpAndLr();
     // Construct frame
     Register frameType(X5);
-    __ Mov(frameType, FrameType::OPTIMIZED_FRAME);
+    __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_FRAME)));
     __ Str(frameType, MemoryOperand(sp, -8, MemoryOperand::AddrMode::PREINDEX));
 
     // callee save
@@ -250,9 +254,9 @@ static void AssemblerStubs::OptimizedCallOptimized(ExtendedAssembler *assembler)
     __ B(Condition::LS, &copyArguments);
 
     Register undefValue(X8);
-    __ Mov(undefValue, JSTaggedValue::Undefined());
+    __ Mov(undefValue, Immediate(JSTaggedValue::VALUE_UNDEFINED));
     Label copyUndefined;
-    __ Sub(count, count, 1);
+    __ Sub(count, count, Immediate(1));
     __ Cmp(count, actualNumArgs);
     __ B(Condition::HI, &copyUndefined);
 
@@ -338,7 +342,7 @@ void AssemblerStubs::CallNativeTrampoline(ExtendedAssembler *assembler)
 
     // construct leave frame
     Register frameType(X19);
-    __ Mov(frameType, FrameType::LEAVE_FRAME);
+    __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::LEAVE_FRAME)));
     __ Str(frameType, MemoryOperand(sp, -8));
     __ Add(sp, sp, Immediate(-16));
     // load runtime trampoline address
@@ -374,18 +378,6 @@ void AssemblerStubs::CallNativeTrampoline(ExtendedAssembler *assembler)
     __ Add(sp, sp, Immediate(16));
     __ RestoreFpAndLr();
     __ Add(sp, sp, Immediate(8));
-    __ Ret();
-}
-
-// uint64_t JSCallWithArgV(uintptr_t glue, uint32_t argc, JSTaggedType callTarget, JSTaggedType argV[]);
-// c++ calling convention call js function
-// Input:
-// %x0 - glue
-// %x1 - argc
-// %x2 - argV (calltarget, newtarget, thisObj, )
-void AssemblerStubs::JSCallWithArgV(ExtendedAssembler *assembler)
-{
-    __ BindAssemblerStub(RTSTUB_ID(JSCallWithArgV));
     __ Ret();
 }
 
@@ -429,7 +421,7 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
     Label notJSFunction;
     __ Ldr(jsfunc, MemoryOperand(sp, 8));
     __ Mov(taggedValue, JSTaggedValue::TAG_MASK);
-    __ Cmp(jsfunc, taggedMask);
+    __ Cmp(jsfunc, taggedValue);
     __ B(Condition::HS, &nonCallable);
     __ Cbz(jsfunc, &nonCallable);
     __ Mov(taggedValue, JSTaggedValue::TAG_SPECIAL_VALUE);
@@ -443,9 +435,9 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
     __ Tbz(bitfield, JSHClass::CallableBit::START_BIT, &nonCallable);
 
     Register jstype(X3, true);
-    __ And(jstype, bitfield, LogicalImmediate::Create(0xFF));
-    __ Sub(jstype, jstype, 4);
-    __ Cmp(jstype, Immeidate(9));
+    __ And(jstype, bitfield, LogicalImmediate::Create(0xFF, 32));
+    __ Sub(jstype, jstype, Immediate(4));
+    __ Cmp(jstype, Immediate(9));
     __ B(Condition::HS, &notJSFunction);
 
     Register method(X2);
@@ -455,9 +447,9 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
     Label callOptimizedMethod;
     __ Ldr(method, MemoryOperand(jsfunc, JSFunction::METHOD_OFFSET));
     __ Ldr(actualArgC, MemoryOperand(sp, 8));
-    __ Ldr(callfield, MemoryOperand(method, JSMethod::GetCallFieldOffset(false)));
-    __ Tbnz(callfield, JSMethod::IsNativeBit::START_BIT, &callNativeMethod);
-    __ Tbnz(callfield, JSMethod::IsAotCodeBit::START_BIT, &callOptimizedMethod);
+    __ Ldr(callField, MemoryOperand(method, JSMethod::GetCallFieldOffset(false)));
+    __ Tbnz(callField, JSMethod::IsNativeBit::START_BIT, &callNativeMethod);
+    __ Tbnz(callField, JSMethod::IsAotCodeBit::START_BIT, &callOptimizedMethod);
     __ Brk(0);
 
     __ Bind(&callNativeMethod);
@@ -492,11 +484,11 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
     __ Bind(&notJSFunction);
     {
         Register jstype2(X5, true);
-        __ And(jstype2, bitfield.W(), LogicalImmediate::Create(0xff));
-        __ Cmp(jstype2, Immediate(JSType::JS_BOUND_FUNCTION));
-        __ B(Condtion::EQ, &jsBoundFunction);
-        __ Cmp(jstype2, Immediate(JSType::JS_PROXY));
-        __ B(Condtion::EQ, &jsProxy);
+        __ And(jstype2, bitfield.W(), LogicalImmediate::Create(0xff, 32));
+        __ Cmp(jstype2, Immediate(static_cast<int64_t>(JSType::JS_BOUND_FUNCTION)));
+        __ B(Condition::EQ, &jsBoundFunction);
+        __ Cmp(jstype2, Immediate(static_cast<int64_t>(JSType::JS_PROXY)));
+        __ B(Condition::EQ, &jsProxy);
         __ Ret();
     }
 
@@ -506,7 +498,7 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
         // construct frame
         Register frameType(X5);
         Register fp(X29);
-        __ Mov(frameType, FrameType::OPTIMIZED_FRAME);
+        __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_FRAME)));
         __ Str(frameType, MemoryOperand(sp, -8, MemoryOperand::AddrMode::PREINDEX));
         Register argVEnd(X4);
         __ Add (argVEnd, fp, Immediate(16));
@@ -562,7 +554,7 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
             Register newTarget(X6);
             Register boundTarget(X7);
             __ Ldr(thisObj, MemoryOperand(jsfunc, JSBoundFunction::BOUND_THIS_OFFSET));
-            __ Mov(newTarget, Immediate(JSTaggedValue::VALUE_UNDEFINED);
+            __ Mov(newTarget, Immediate(JSTaggedValue::VALUE_UNDEFINED));
             __ Stp(newTarget, thisObj, MemoryOperand(sp, -16, MemoryOperand::AddrMode::PREINDEX));
             __ Ldr(boundTarget, MemoryOperand(jsfunc, JSBoundFunction::BOUND_TARGET_OFFSET));
             __ Stp(realArgC.X(), boundTarget, MemoryOperand(sp, -16, MemoryOperand::AddrMode::PREINDEX));
@@ -585,7 +577,7 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
         Register frameType(X6);
         Register taggedMessageId(X5);
         __ SaveFpAndLr();
-        __ Mov(frameType, FrameType::OPTIMIZED_FRAME);
+        __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_FRAME)));
         __ Mov(taggedMessageId, 
             Immediate(JSTaggedValue(GET_MESSAGE_STRING_ID(NonCallable)).GetRawData()));
         __ Stp(taggedMessageId, frameType, MemoryOperand(sp, -16, MemoryOperand::AddrMode::PREINDEX));
@@ -595,7 +587,7 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
         __ Mov(runtimeId, RTSTUB_ID(ThrowTypeError));
         __ Stp(argC, runtimeId, MemoryOperand(sp, -16, MemoryOperand::AddrMode::PREINDEX));
         __ CallAssemblerStub(RTSTUB_ID(CallRuntime), false);
-        __ Mov(Regsister(X0), JSTaggedValue::VALUE_EXCEPTION);
+        __ Mov(Register(X0), Immediate(JSTaggedValue::VALUE_EXCEPTION));
         __ Add(sp, sp, Immediate(32));
         __ RestoreFpAndLr();
         __ Ret();
@@ -604,128 +596,151 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
 
 void AssemblerStubs::JSCallWithArgV(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(JSCallWithArgV));
     __ Ret();
 }
 
-void CallRuntimeWithArgv(ExtendedAssembler *assembler)
+void AssemblerStubs::CallRuntimeWithArgv(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(CallRuntimeWithArgv));
     __ Ret();
 }
 
-void AsmInterpreterEntry(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::AsmInterpreterEntry(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(AsmInterpreterEntry));
     __ Ret();
 }
 
-void JSCallDispatch(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::JSCallDispatch(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(JSCallDispatch));
     __ Ret();
 }
 
-void PushCallIThisRangeAndDispatch(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::PushCallIThisRangeAndDispatch(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(PushCallIThisRangeAndDispatch));
     __ Ret();
 }
 
-void PushCallIRangeAndDispatch(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::PushCallIRangeAndDispatch(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(PushCallIRangeAndDispatch));
     __ Ret();
 }
 
-void PushCallArgs3AndDispatch(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::PushCallArgs3AndDispatch(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs3AndDispatch));
     __ Ret();
 }
 
-void PushCallArgs2AndDispatch(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::PushCallArgs2AndDispatch(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs2AndDispatch));
     __ Ret();
 }
 
-void PushCallArgs1AndDispatch(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::PushCallArgs1AndDispatch(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs1AndDispatch));
     __ Ret();
 }
 
-void PushCallArgs0AndDispatch(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::PushCallArgs0AndDispatch(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs0AndDispatch));
     __ Ret();
 }
 
-void PushCallIThisRangeAndDispatchSlowPath(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::PushCallIThisRangeAndDispatchSlowPath(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(PushCallIThisRangeAndDispatchSlowPath));
     __ Ret();
 }
 
-void PushCallIRangeAndDispatchSlowPath(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::PushCallIRangeAndDispatchSlowPath(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(PushCallIRangeAndDispatchSlowPath));
     __ Ret();
 }
 
-void PushCallArgs3AndDispatchSlowPath(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::PushCallArgs3AndDispatchSlowPath(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs3AndDispatchSlowPath));
     __ Ret();
 }
 
-void PushCallArgs2AndDispatchSlowPath(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::PushCallArgs2AndDispatchSlowPath(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs2AndDispatchSlowPath));
     __ Ret();
 }
 
-void PushCallArgs1AndDispatchSlowPath(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::PushCallArgs1AndDispatchSlowPath(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs1AndDispatchSlowPath));
     __ Ret();
 }
 
-void PushCallArgs0AndDispatchSlowPath(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::PushCallArgs0AndDispatchSlowPath(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs0AndDispatchSlowPath));
     __ Ret();
 }
 
-void PushCallIThisRangeAndDispatchNative(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::PushCallIThisRangeAndDispatchNative(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(PushCallIThisRangeAndDispatchNative));
     __ Ret();
 }
 
-void PushCallIRangeAndDispatchNative(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::PushCallIRangeAndDispatchNative(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(PushCallIRangeAndDispatchNative));
     __ Ret();
 }
 
-void PushCallArgs3AndDispatchNative(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::PushCallArgs3AndDispatchNative(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs3AndDispatchNative));
     __ Ret();
 }
 
-void PushCallArgs2AndDispatchNative(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::PushCallArgs2AndDispatchNative(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs2AndDispatchNative));
     __ Ret();
 }
 
-void PushCallArgs1AndDispatchNative(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::PushCallArgs1AndDispatchNative(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs1AndDispatchNative));
     __ Ret();
 }
 
-void PushCallArgs0AndDispatchNative(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::PushCallArgs0AndDispatchNative(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs0AndDispatchNative));
     __ Ret();
 }
 
-void ResumeRspAndDispatch(ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::ResumeRspAndDispatch(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(ResumeRspAndDispatch));
     __ Ret();
 }
 
-void ResumeRspAndReturn([[maybe_unused]] ExtendedAssemblerX64 *assembler)
+void AssemblerStubs::ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(ResumeRspAndReturn));
     __ Ret();
 }
 
-void ResumeCaughtFrameAndDispatch(ExtendedAssembler *assembler)
+void AssemblerStubs::ResumeCaughtFrameAndDispatch(ExtendedAssembler *assembler)
 {
+    __ BindAssemblerStub(RTSTUB_ID(ResumeCaughtFrameAndDispatch));
     __ Ret();
 }
-};
-
 }  // panda::ecmascript::aarch64

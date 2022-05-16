@@ -73,4 +73,16 @@ void ExtendedAssembler::PushArgsWithArgv(Register argc, Register argv, Register 
     Subq(1, argc);
     Ja(&loopBeginning);
 }
+
+void ExtendedAssembler::CallAssemblerStub(int id, bool isTail)
+{
+    Label *target = module_->GetFunctionLabel(id);
+    isTail ? Jmp(target) : Callq(target);
+}
+
+void ExtendedAssembler::BindAssemblerStub(int id)
+{
+    Label *target = module_->GetFunctionLabel(id);
+    Bind(target);    
+}
 }  // panda::ecmascript::x64
