@@ -71,15 +71,12 @@ JSHandle<JSObject> JSGeneratorObject::GeneratorResume(JSThread *thread, const JS
     generator->SetGeneratorState(JSGeneratorState::EXECUTING);
 
     // 8.Push genContext onto the execution context stack; genContext is now the running execution context.
-    GeneratorHelper::ChangeGenContext(thread, genContext);
-
     // 9.Resume the suspended evaluation of genContext using NormalCompletion(value) as the result of the operation
     //   that suspended it. Let result be the value returned by the resumed computation.
     // 10.Assert: When we return here, genContext has already been removed from the execution context stack and
     //    methodContext is the currently running execution context.
     // 11.Return Completion(result).
     JSHandle<JSObject> result = GeneratorHelper::Next(thread, genContext, value);
-    GeneratorHelper::ResumeContext(thread);
     return result;
 }
 
@@ -128,8 +125,6 @@ JSHandle<JSObject> JSGeneratorObject::GeneratorResumeAbrupt(JSThread *thread,
     generator->SetGeneratorState(JSGeneratorState::EXECUTING);
 
     // 9.Push genContext onto the execution context stack; genContext is now the running execution context.
-    GeneratorHelper::ChangeGenContext(thread, genContext);
-
     // 10.Resume the suspended evaluation of genContext using abruptCompletion as the result of the operation that
     //    suspended it. Let result be the completion record returned by the resumed computation.
     // 11.Assert: When we return here, genContext has already been removed from the execution context stack and
@@ -141,7 +136,6 @@ JSHandle<JSObject> JSGeneratorObject::GeneratorResumeAbrupt(JSThread *thread,
     } else {
         result = GeneratorHelper::Throw(thread, genContext, abruptCompletion->GetValue());
     }
-    GeneratorHelper::ResumeContext(thread);
     return result;
 }
 }  // namespace panda::ecmascript
