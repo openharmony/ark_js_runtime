@@ -25,20 +25,19 @@ enum class DumpFormat { JSON, BINARY, OTHER };
 
 class HeapProfilerInterface {
 public:
-    static HeapProfilerInterface *GetInstance(JSThread *thread);
-    static void DumpHeapSnapshot(JSThread *thread, DumpFormat dumpFormat, Stream *stream, bool isVmMode = true);
-
-    static HeapProfilerInterface *CreateHeapProfiler(JSThread *thread);
-    static void Destroy(JSThread *thread);
+    static HeapProfilerInterface *GetInstance(const EcmaVM *vm);
+    static void Destroy(const EcmaVM *vm);
 
     HeapProfilerInterface() = default;
     virtual ~HeapProfilerInterface() = default;
 
-    virtual bool StartHeapTracking(JSThread *thread, double timeInterval, bool isVmMode = true) = 0;
-    virtual bool StopHeapTracking(JSThread *thread, Stream *stream) = 0;
+    virtual bool DumpHeapSnapshot(DumpFormat dumpFormat, Stream *stream, bool isVmMode = true) = 0;
+    virtual bool StartHeapTracking(double timeInterval, bool isVmMode = true) = 0;
+    virtual bool StopHeapTracking(Stream *stream) = 0;
 
     NO_MOVE_SEMANTIC(HeapProfilerInterface);
     NO_COPY_SEMANTIC(HeapProfilerInterface);
+
 private:
     static HeapProfilerInterface *heapProfile_;
 };
