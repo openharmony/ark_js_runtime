@@ -790,9 +790,14 @@ public:
         arkProperties_ = prop;
     }
 
-    void SetAsmInterOption(const std::string &value)
+    void SetEnableAsmInterpreter(bool value)
     {
-        asmInterOption_ = value;
+        enableAsmInterpreter_ = value;
+    }
+
+    void SetAsmOpcodeDisableRange(const std::string &value)
+    {
+        asmOpcodeDisableRange_ = value;
     }
 
 private:
@@ -870,9 +875,14 @@ private:
         return arkProperties_;
     }
 
-    std::string GetAsmInterOption() const
+    bool GetEnableAsmInterpreter() const
     {
-        return asmInterOption_;
+        return enableAsmInterpreter_;
+    }
+
+    std::string GetAsmOpcodeDisableRange() const
+    {
+        return asmOpcodeDisableRange_;
     }
 
     GC_TYPE gcType_ = GC_TYPE::EPSILON;
@@ -885,7 +895,8 @@ private:
     bool enableCpuprofiler_ {false};
 #endif
     int arkProperties_ {-1};
-    std::string asmInterOption_ {""};
+    bool enableAsmInterpreter_ {false};
+    std::string asmOpcodeDisableRange_ {""};
     friend JSNApi;
 };
 
