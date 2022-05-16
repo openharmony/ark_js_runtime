@@ -88,7 +88,7 @@ HWTEST_F_L0(JSAPIDequeIteratorTest, Next)
         JSAPIDeque::InsertFront(thread, jsDeque, value);
     }
     JSHandle<JSAPIDequeIterator> dequeIterator = factory->NewJSAPIDequeIterator(jsDeque);
-    for (uint32_t i = 0; i < DEFAULT_LENGTH; i++) {
+    for (uint32_t i = 0; i <= DEFAULT_LENGTH; i++) {
         auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
         ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
         ecmaRuntimeCallInfo->SetThis(dequeIterator.GetTaggedValue());
@@ -112,7 +112,7 @@ HWTEST_F_L0(JSAPIDequeIteratorTest, Next)
 /**
  * @tc.name: SetIteratedQueue
  * @tc.desc: Call the "SetIteratedQueue" function, check whether the result returned through "GetIteratedQueue"
- *           function from the JSArrayIterator is within expectations.
+ *           function from the JSAPIDequeIterator is within expectations.
  * @tc.type: FUNC
  * @tc.require:
  */
@@ -134,7 +134,7 @@ HWTEST_F_L0(JSAPIDequeIteratorTest, SetIteratedDeque)
     }
 
     for (uint32_t i = 0; i < DEFAULT_LENGTH; i++) {
-        std::string ivalue = dequeValue + std::to_string(i+1U);
+        std::string ivalue = dequeValue + std::to_string(i + 1U);
         value.Update(factory->NewFromStdString(ivalue).GetTaggedValue());
         JSAPIDeque::InsertFront(thread, jsDeque2, value);
     }
@@ -148,7 +148,7 @@ HWTEST_F_L0(JSAPIDequeIteratorTest, SetIteratedDeque)
 /**
  * @tc.name: SetNextIndex
  * @tc.desc: Call the "SetNextIndex" function, check whether the result returned through "GetNextIndex"
- *           function from the JSArrayIterator is within expectations.
+ *           function from the JSAPIDequeIterator is within expectations.
  * @tc.type: FUNC
  * @tc.require:
  */

@@ -40,6 +40,7 @@ host_unittest_action("EcmaVmTest") {
     "js_api_deque_test.cpp",
     "js_api_plain_array_test.cpp",
     "js_api_queue_test.cpp",
+    "js_api_stack_iterator_test.cpp",
     "js_api_stack_test.cpp",
     "js_api_tree_map_test.cpp",
     "js_api_tree_set_test.cpp",
