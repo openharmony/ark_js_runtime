@@ -20,7 +20,7 @@
 #include "ecmascript/tooling/agent/js_backend.h"
 #include "ecmascript/tooling/test/utils/test_util.h"
 
-namespace panda::tooling::ecmascript::test {
+namespace panda::ecmascript::tooling::test {
 class TestHooks : public PtHooks {
 public:
     TestHooks(const char *testName, const EcmaVM *vm)
@@ -42,10 +42,10 @@ public:
         }
     }
 
-    void Breakpoint(PtThread thread, const PtLocation &location) override
+    void Breakpoint(const JSPtLocation &location) override
     {
         if (test_->breakpoint) {
-            test_->breakpoint(thread, location);
+            test_->breakpoint(location);
         }
     }
 
@@ -63,14 +63,11 @@ public:
         }
     };
 
-    void Exception(PtThread thread, const PtLocation &location, [[maybe_unused]] PtObject exceptionObject,
-                   [[maybe_unused]] const PtLocation &catchLocation) override
+    void Exception(const JSPtLocation &location) override
     {
         if (test_->exception) {
-            Local<JSValueRef> exception = DebuggerApi::GetException(backend_->GetEcmaVm());
-            DebuggerApi::ClearException(backend_->GetEcmaVm());
-
-            test_->exception(thread, location);
+            Local<JSValueRef> exception = DebuggerApi::GetAndClearException(backend_->GetEcmaVm());
+            test_->exception(location);
 
             if (!exception->IsHole()) {
                 DebuggerApi::SetException(backend_->GetEcmaVm(), exception);
@@ -78,18 +75,12 @@ public:
         }
     }
 
-    void MethodEntry(PtThread thread, PtMethod method) override
-    {
-        if (test_->methodEntry) {
-            test_->methodEntry(thread, method);
-        }
-    }
-
-    void SingleStep(PtThread thread, const PtLocation &location) override
+    bool SingleStep(const JSPtLocation  &location) override
     {
         if (test_->singleStep) {
-            test_->singleStep(thread, location);
+            return test_->singleStep(location);
         }
+        return false;
     }
 
     void VmDeath() override
@@ -98,14 +89,6 @@ public:
             test_->vmDeath();
         }
         TestUtil::Event(DebugEvent::VM_DEATH);
-    }
-
-    void VmInitialization([[maybe_unused]] PtThread thread) override
-    {
-        if (test_->vmInit) {
-            test_->vmInit();
-        }
-        TestUtil::Event(DebugEvent::VM_INITIALIZATION);
     }
 
     void VmStart() override
@@ -124,28 +107,6 @@ public:
         LOG(FATAL, DEBUGGER) << "Test " << testName_ << " failed";
     }
 
-    void ThreadStart(PtThread) override {}
-    void ThreadEnd(PtThread) override {}
-    void ClassLoad(PtThread, PtClass) override {}
-    void ClassPrepare(PtThread, PtClass) override {}
-    void MonitorWait(PtThread, PtObject, int64_t) override {}
-    void MonitorWaited(PtThread, PtObject, bool) override {}
-    void MonitorContendedEnter(PtThread, PtObject) override {}
-    void MonitorContendedEntered(PtThread, PtObject) override {}
-    void ExceptionCatch(PtThread, const PtLocation &, PtObject) override {}
-    void PropertyAccess(PtThread, const PtLocation &, PtObject, PtProperty) override {}
-    void PropertyModification(PtThread, const PtLocation &, PtObject, PtProperty, PtValue) override {}
-    void FramePop(PtThread, PtMethod, bool) override {}
-    void GarbageCollectionFinish() override {}
-    void GarbageCollectionStart() override {}
-    void ObjectAlloc(PtClass, PtObject, PtThread, size_t) override {}
-    void MethodExit(PtThread, PtMethod, bool, PtValue) override {}
-    void ExceptionRevoked(ExceptionWrapper, ExceptionID) override {}
-    void ExecutionContextCreated(ExecutionContextWrapper) override {}
-    void ExecutionContextDestroyed(ExecutionContextWrapper) override {}
-    void ExecutionContextsCleared() override {}
-    void InspectRequested(PtObject, PtObject) override {}
-
     ~TestHooks() = default;
 
 private:
@@ -154,6 +115,6 @@ private:
     const char *testName_;
     TestEvents *test_;
 };
-}  // namespace panda::tooling::ecmascript::test
+}  // namespace panda::ecmascript::tooling::test
 
 #endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TEST_HOOKS_H

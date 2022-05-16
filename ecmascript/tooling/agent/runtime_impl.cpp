@@ -18,7 +18,7 @@
 #include "ecmascript/tooling/base/pt_returns.h"
 #include "libpandabase/utils/logger.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 RuntimeImpl::DispatcherImpl::DispatcherImpl(FrontEnd *frontend, std::unique_ptr<RuntimeImpl> runtime)
     : DispatcherBase(frontend), runtime_(std::move(runtime))
 {
@@ -79,7 +79,8 @@ void RuntimeImpl::DispatcherImpl::GetProperties(const DispatchRequest &request)
 
 DispatchResponse RuntimeImpl::Enable()
 {
-    Runtime::GetCurrent()->SetDebugMode(true);
+    auto ecmaVm = const_cast<EcmaVM *>(backend_->GetEcmaVm());
+    ecmaVm->GetJsDebuggerManager()->SetDebugMode(true);
     backend_->NotifyAllScriptParsed();
     return DispatchResponse::Ok();
 }
@@ -101,4 +102,4 @@ DispatchResponse RuntimeImpl::GetProperties(std::unique_ptr<GetPropertiesParams>
         outPropertyDesc);
     return DispatchResponse::Ok();
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling

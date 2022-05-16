@@ -269,7 +269,6 @@ JSTaggedValue JSFunction::Call(JSThread *thread, const JSHandle<JSTaggedValue> &
     if (func->IsJSProxy()) {
         return JSProxy::CallInternal(thread, JSHandle<JSProxy>(func), thisArg, argc, argv);
     }
-
     THROW_TYPE_ERROR_AND_RETURN(thread, "Call NonCallable", JSTaggedValue::Exception());
 }
 

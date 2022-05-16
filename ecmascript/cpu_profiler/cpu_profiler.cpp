@@ -203,7 +203,7 @@ void CpuProfiler::ParseMethodInfo(JSMethod *method, JSThread *thread, Interprete
             codeEntry.functionName = functionName.c_str();
         }
         // source file
-        tooling::ecmascript::PtJSExtractor *debugExtractor = ecmaVm->GetDebugInfoExtractor(method->GetPandaFile());
+        tooling::PtJSExtractor *debugExtractor = ecmaVm->GetDebugInfoExtractor(method->GetPandaFile());
         if (method == nullptr) {
             return;
         }

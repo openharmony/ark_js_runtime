@@ -19,10 +19,11 @@
 #include "ecmascript/tooling/agent/js_pt_hooks.h"
 #include "ecmascript/tooling/base/pt_types.h"
 #include "ecmascript/tooling/dispatcher.h"
+#include "ecmascript/tooling/interface/js_debugger_manager.h"
 #include "ecmascript/tooling/pt_js_extractor.h"
 #include "libpandabase/macros.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 using panda::ecmascript::CString;
 
 class JSBackend {
@@ -34,30 +35,32 @@ public:
     // add for hooks
     void ProcessCommand();
     void WaitForDebugger();
-    void NotifyPaused(std::optional<PtLocation> location, PauseReason reason);
+    void NotifyPaused(std::optional<JSPtLocation> location, PauseReason reason);
     void NotifyResume();
     void NotifyAllScriptParsed();
     bool NotifyScriptParsed(int32_t scriptId, const CString &fileName);
-    bool StepComplete(const PtLocation &location);
+    bool StepComplete(const JSPtLocation &location);
 
-    std::optional<Error> GetPossibleBreakpoints(Location *start, Location *end,
+    std::optional<CString> GetPossibleBreakpoints(Location *start, Location *end,
                                                 CVector<std::unique_ptr<BreakLocation>> *locations);
     JSDebugger *GetDebugger() const
     {
         return debugger_;
     }
 
-    std::optional<Error> SetBreakpointByUrl(const CString &url, size_t lineNumber, size_t columnNumber,
+    std::optional<CString> SetBreakpointByUrl(const CString &url, size_t lineNumber, size_t columnNumber,
                                             CString *outId,
                                             CVector<std::unique_ptr<Location>> *outLocations);
-    std::optional<Error> RemoveBreakpoint(const BreakpointDetails &metaData);
+    std::optional<CString> RemoveBreakpoint(const BreakpointDetails &metaData);
 
-    std::optional<Error> Pause();
-    std::optional<Error> Resume();
-    std::optional<Error> StepInto();
-    std::optional<Error> StepOver();
-    std::optional<Error> StepOut();
-    std::optional<Error> EvaluateValue(const CString &callFrameId, const CString &expression,
+    std::optional<CString> Pause();
+    std::optional<CString> Resume();
+    std::optional<CString> StepInto();
+    std::optional<CString> StepOver();
+    std::optional<CString> StepOut();
+    std::optional<CString> EvaluateValue(const CString &callFrameId, const CString &expression,
+                                       std::unique_ptr<RemoteObject> *result);
+    std::optional<CString> CmptEvaluateValue(const CString &callFrameId, const CString &expression,
                                        std::unique_ptr<RemoteObject> *result);
 
     /**
@@ -116,18 +119,28 @@ private:
     PtJSExtractor *GetExtractor(const panda_file::File *file);
     PtJSExtractor *GetExtractor(const CString &url);
     bool GenerateCallFrame(CallFrame *callFrame, const InterpretedFrameHandler *frameHandler, int32_t frameId);
+    void SaveCallFrameHandler(const InterpretedFrameHandler *frameHandler);
+    void GetLocalVariables(const InterpretedFrameHandler *frameHandler, const JSMethod *method,
+        Local<JSValueRef> &thisVal, Local<ObjectRef> &localObj);
+    void CacheObjectIfNeeded(const Local<JSValueRef> &valRef, std::unique_ptr<RemoteObject> *remoteObj);
+    void CleanUpOnPaused();
     std::unique_ptr<Scope> GetLocalScopeChain(const InterpretedFrameHandler *frameHandler,
         std::unique_ptr<RemoteObject> *thisObj);
+    void UpdateScopeObject(const InterpretedFrameHandler *frameHandler, const CString &varName,
+        const Local<JSValueRef> &newVal);
     std::unique_ptr<Scope> GetGlobalScopeChain();
-    std::optional<Error> ConvertToLocal(Local<JSValueRef> &taggedValue, std::unique_ptr<RemoteObject> *result,
+    std::optional<CString> ConvertToLocal(Local<JSValueRef> &taggedValue, std::unique_ptr<RemoteObject> *result,
         const CString &varValue);
-    std::optional<Error> SetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result, const CString &varValue);
-    std::optional<Error> SetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result,
-        const CString &varValue, uint32_t slot);
-    std::optional<Error> GetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result);
-    std::optional<Error> GetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result, uint32_t slot);
+    std::optional<CString> SetVregValue(int32_t regIndex, const CString &varValue,
+        std::unique_ptr<RemoteObject> *result);
+    std::optional<CString> SetLexicalValue(int32_t level, uint32_t slot, const CString &varValue,
+        std::unique_ptr<RemoteObject> *result);
+    std::optional<CString> GetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result);
+    std::optional<CString> GetLexicalValue(int32_t level, uint32_t slot, std::unique_ptr<RemoteObject> *result);
     void GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn, bool isAccessorOnly,
                              CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
+    bool DecodeAndCheckBase64(const CString &src, CString &dest);
+
     constexpr static int32_t SPECIAL_LINE_MARK = -1;
 
     FrontEnd *frontend_ {nullptr};
@@ -137,12 +150,15 @@ private:
     CMap<const std::string, std::unique_ptr<PtJSExtractor>> extractors_ {};
     CMap<CString, std::unique_ptr<PtScript>> scripts_ {};
     CMap<uint32_t, Global<JSValueRef>> propertiesPair_ {};
+    CUnorderedMap<JSTaggedType *, uint32_t> scopeObjects_ {};
+    CVector<std::shared_ptr<InterpretedFrameHandler>> callFrameHandlers_;
     uint32_t curObjectId_ {0};
     bool pauseOnException_ {false};
     bool pauseOnNextByteCode_ {false};
     std::unique_ptr<PtJSExtractor::SingleStepper> singleStepper_ {nullptr};
+    JsDebuggerManager::ObjectUpdaterFunc updaterFunc_ {nullptr};
 
     friend class JSPtHooks;
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif

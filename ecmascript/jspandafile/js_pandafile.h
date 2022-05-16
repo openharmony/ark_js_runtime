@@ -36,7 +36,7 @@ public:
     JSPandaFile(const panda_file::File *pf, const CString &descriptor);
     ~JSPandaFile();
 
-    tooling::ecmascript::PtJSExtractor *GetOrCreatePtJSExtractor();
+    tooling::PtJSExtractor *GetOrCreatePtJSExtractor();
 
     CString GetJSPandaFileDesc() const
     {
@@ -104,7 +104,7 @@ private:
     JSMethod *methods_ {nullptr};
     CUnorderedMap<uint32_t, JSMethod *> methodMap_;
     const panda_file::File *pf_ {nullptr};
-    std::unique_ptr<tooling::ecmascript::PtJSExtractor> ptJSExtractor_;
+    std::unique_ptr<tooling::PtJSExtractor> ptJSExtractor_;
     CString desc_;
 };
 }  // namespace ecmascript

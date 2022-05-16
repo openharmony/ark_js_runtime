@@ -21,7 +21,7 @@
 #include "ecmascript/tooling/base/pt_params.h"
 #include "ecmascript/tooling/dispatcher.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 using panda::ecmascript::CString;
 
 class RuntimeImpl final {
@@ -63,5 +63,5 @@ private:
 
     JSBackend *backend_{nullptr};
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif

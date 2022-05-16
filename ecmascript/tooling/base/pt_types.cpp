@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +15,7 @@
 
 #include "pt_types.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 using ObjectType = RemoteObject::TypeName;
 using ObjectSubType = RemoteObject::SubTypeName;
 using ObjectClassName = RemoteObject::ClassName;
@@ -97,7 +97,9 @@ Local<ObjectRef> PtBaseTypes::NewObject(const EcmaVM *ecmaVm)
 
 std::unique_ptr<RemoteObject> RemoteObject::FromTagged(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
 {
-    if (tagged->IsNull() || tagged->IsUndefined() || tagged->IsBoolean() || tagged->IsNumber()) {
+    if (tagged->IsNull() || tagged->IsUndefined() ||
+        tagged->IsBoolean() || tagged->IsNumber() ||
+        tagged->IsBigInt()) {
         return std::make_unique<PrimitiveRemoteObject>(ecmaVm, tagged);
     }
     if (tagged->IsString()) {
@@ -182,6 +184,9 @@ PrimitiveRemoteObject::PrimitiveRemoteObject(const EcmaVM *ecmaVm, const Local<J
         } else {
             this->SetValue(tagged);
         }
+    } else if (tagged->IsBigInt()) {
+        std::string literal = tagged->ToString(ecmaVm)->ToString() + "n"; // n : BigInt literal postfix
+        this->SetType(ObjectType::Bigint).SetValue(StringRef::NewFromUtf8(ecmaVm, literal.data()));
     }
 }
 
@@ -268,7 +273,8 @@ CString ObjectRemoteObject::DescriptionForSet(const Local<SetRef> &tagged)
 
 CString ObjectRemoteObject::DescriptionForError(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
 {
-    Local<JSValueRef> stack = StringRef::NewFromUtf8(ecmaVm, "stack");
+    // add message
+    Local<JSValueRef> stack = StringRef::NewFromUtf8(ecmaVm, "message");
     Local<JSValueRef> result = Local<ObjectRef>(tagged)->Get(ecmaVm, stack);
     return DebuggerApi::ConvertToString(result->ToString(ecmaVm)->ToString());
 }
@@ -1534,4 +1540,4 @@ Local<ObjectRef> CallFrame::ToObject(const EcmaVM *ecmaVm)
 
     return params;
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling

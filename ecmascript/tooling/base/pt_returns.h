@@ -18,7 +18,7 @@
 
 #include "ecmascript/tooling/base/pt_types.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 using panda::ecmascript::CString;
 
 class PtBaseReturns : public PtBaseTypes {
@@ -229,5 +229,5 @@ private:
     std::optional<CVector<std::unique_ptr<PrivatePropertyDescriptor>>> privateProperties_ {};
     std::optional<std::unique_ptr<ExceptionDetails>> exceptionDetails_ {};
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif

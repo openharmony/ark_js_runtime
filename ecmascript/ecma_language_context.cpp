@@ -23,38 +23,12 @@
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/object_factory.h"
-#include "ecmascript/tooling/js_pt_lang_ext.h"
-#include "include/tooling/pt_lang_extension.h"
 
 namespace panda {
 using ecmascript::JSTaggedType;
 using ecmascript::InterpretedFrameHandler;
 using ecmascript::EcmaVM;
 using ecmascript::JSThread;
-
-std::pair<Method *, uint32_t> EcmaLanguageContext::GetCatchMethodAndOffset(Method *method, ManagedThread *thread) const
-{
-    Method *catchMethod = method;
-    uint32_t catchOffset = 0;
-    auto jsThread = static_cast<JSThread *>(thread);
-    InterpretedFrameHandler frameHandler(jsThread);
-    for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
-        if (frameHandler.IsBreakFrame()) {
-            continue;
-        }
-        catchMethod = frameHandler.GetMethod();
-        if (catchMethod->IsNative()) {
-            continue;
-        }
-        catchOffset = catchMethod->FindCatchBlock(jsThread->GetException().GetTaggedObject()->ClassAddr<Class>(),
-                                                  frameHandler.GetBytecodeOffset());
-        if (catchOffset != panda_file::INVALID_OFFSET) {
-            break;
-        }
-    }
-
-    return std::make_pair(catchMethod, catchOffset);
-}
 
 PandaVM *EcmaLanguageContext::CreateVM(Runtime *runtime, [[maybe_unused]] const RuntimeOptions &options) const
 {
@@ -68,11 +42,6 @@ PandaVM *EcmaLanguageContext::CreateVM(Runtime *runtime, [[maybe_unused]] const 
 std::unique_ptr<ClassLinkerExtension> EcmaLanguageContext::CreateClassLinkerExtension() const
 {
     return std::make_unique<ecmascript::EcmaClassLinkerExtension>();
-}
-
-PandaUniquePtr<tooling::PtLangExt> EcmaLanguageContext::CreatePtLangExt() const
-{
-    return MakePandaUnique<tooling::ecmascript::JSPtLangExt>();
 }
 
 void EcmaLanguageContext::ThrowException(ManagedThread *thread, const uint8_t *mutf8_name,

@@ -19,7 +19,7 @@
 #include "ecmascript/tooling/agent/debugger_impl.h"
 #include "utils/logger.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 ProtocolHandler::ProtocolHandler(std::function<void(std::string)> callback, const EcmaVM *vm)
     : callback_(std::move(callback)), vm_(vm)
 {
@@ -48,10 +48,7 @@ void ProtocolHandler::ProcessCommand(const EcmaVM *ecmaVm)
 void ProtocolHandler::SendCommand(const CString &msg)
 {
     LOG(DEBUG, DEBUGGER) << "ProtocolHandler::SendCommand: " << msg;
-    Local<JSValueRef> exception = DebuggerApi::GetException(vm_);
-    if (!exception->IsHole()) {
-        DebuggerApi::ClearException(vm_);
-    }
+    Local<JSValueRef> exception = DebuggerApi::GetAndClearException(vm_);
     dispatcher_->Dispatch(DispatchRequest(vm_, msg));
     DebuggerApi::ClearException(vm_);
     if (!exception->IsHole()) {
@@ -84,7 +81,7 @@ void ProtocolHandler::SendResponse(const DispatchRequest &request, const Dispatc
 
 void ProtocolHandler::SendNotification(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events)
 {
-    if (!Runtime::GetCurrent()->IsDebugMode() || events == nullptr) {
+    if (!ecmaVm->GetJsDebuggerManager()->IsDebugMode() || events == nullptr) {
         return;
     }
     LOG(DEBUG, DEBUGGER) << "ProtocolHandler::SendNotification: " << events->GetName();
@@ -122,4 +119,4 @@ Local<ObjectRef> ProtocolHandler::CreateErrorReply(const EcmaVM *ecmaVm, const D
 
     return result;
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling

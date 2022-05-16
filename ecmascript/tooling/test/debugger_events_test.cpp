@@ -22,7 +22,7 @@
 #include "ecmascript/tooling/dispatcher.h"
 
 using namespace panda::ecmascript;
-using namespace panda::tooling::ecmascript;
+using namespace panda::ecmascript::tooling;
 using ObjectType = RemoteObject::TypeName;
 using ObjectSubType = RemoteObject::SubTypeName;
 using ObjectClassName = RemoteObject::ClassName;

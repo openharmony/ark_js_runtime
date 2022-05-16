@@ -36,12 +36,12 @@ JSPandaFile::~JSPandaFile()
     }
 }
 
-tooling::ecmascript::PtJSExtractor *JSPandaFile::GetOrCreatePtJSExtractor()
+tooling::PtJSExtractor *JSPandaFile::GetOrCreatePtJSExtractor()
 {
     if (ptJSExtractor_) {
         return ptJSExtractor_.get();
     }
-    ptJSExtractor_ = std::make_unique<tooling::ecmascript::PtJSExtractor>(pf_);
+    ptJSExtractor_ = std::make_unique<tooling::PtJSExtractor>(pf_);
     return ptJSExtractor_.get();
 }
 

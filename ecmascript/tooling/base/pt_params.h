@@ -18,7 +18,7 @@
 
 #include "ecmascript/tooling/base/pt_types.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 class PtBaseParams : public PtBaseTypes {
 public:
     PtBaseParams() = default;
@@ -508,5 +508,5 @@ private:
     std::optional<bool> accessorPropertiesOnly_ {};
     std::optional<bool> generatePreview_ {};
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif
