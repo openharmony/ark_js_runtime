@@ -92,13 +92,11 @@ JSHandle<JSTaggedValue> JSAsyncAwaitStatusFunction::AsyncFunctionAwaitFulfilled(
     JSHandle<GeneratorContext> asyncCtxt(thread, func->GetAsyncContext());
 
     // 2.Let prevContext be the running execution context.
-    GeneratorHelper::ChangeGenContext(thread, asyncCtxt);
     // 3.Suspend prevContext.
     // 4.Push asyncContext onto the execution context stack; asyncContext is now the running execution context.
     // 5.Resume the suspended evaluation of asyncContext using NormalCompletion(value) as the result of the
     //   operation that suspended it. Let result be the value returned by the resumed computation.
     JSHandle<JSObject> result = GeneratorHelper::Next(thread, asyncCtxt, value.GetTaggedValue());
-    GeneratorHelper::ResumeContext(thread);
     // 6.Assert: When we reach this step, asyncContext has already been removed from the execution context stack
     //   and prevContext is the currently running execution context.
 
@@ -113,14 +111,12 @@ JSHandle<JSTaggedValue> JSAsyncAwaitStatusFunction::AsyncFunctionAwaitRejected(
     JSHandle<GeneratorContext> asyncCtxt(thread, func->GetAsyncContext());
 
     // 2.Let prevContext be the running execution context.
-    GeneratorHelper::ChangeGenContext(thread, asyncCtxt);
     // 3.Suspend prevContext.
     // 4.Push asyncContext onto the execution context stack; asyncContext is now the running execution context.
     // 5.Resume the suspended evaluation of asyncContext using Completion{[[Type]]: throw,
     //   [[Value]]: reason, [[Target]]: empty} as the result of the operation that suspended it.
     //   Let result be the value returned by the resumed computation.
     JSHandle<JSObject> result = GeneratorHelper::Throw(thread, asyncCtxt, reason.GetTaggedValue());
-    GeneratorHelper::ResumeContext(thread);
     // 6.Assert: When we reach this step, asyncContext has already been removed from the execution context stack
     //   and prevContext is the currently running execution context.
 
