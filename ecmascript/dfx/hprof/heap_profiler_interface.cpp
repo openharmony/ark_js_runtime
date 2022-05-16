@@ -48,9 +48,10 @@ HeapProfilerInterface *HeapProfilerInterface::CreateHeapProfiler(JSThread *threa
     return hprof;
 }
 
-void HeapProfilerInterface::Destroy(JSThread *thread, HeapProfilerInterface *heapProfiler)
+void HeapProfilerInterface::Destroy(JSThread *thread)
 {
     const Heap *heap = thread->GetEcmaVM()->GetHeap();
-    const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->Delete(heapProfiler);
+    const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->Delete(heapProfile_);
+    heapProfile_ = nullptr;
 }
 }  // namespace panda::ecmascript

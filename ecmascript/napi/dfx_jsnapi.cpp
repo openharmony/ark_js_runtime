@@ -82,8 +82,7 @@ bool DFXJSNApi::StopHeapTracking(EcmaVM *vm, Stream* stream)
     bool result = false;
     ecmascript::HeapProfilerInterface *heapProfile = ecmascript::HeapProfilerInterface::GetInstance(vm->GetJSThread());
     result = heapProfile->StopHeapTracking(vm->GetJSThread(), stream);
-    const ecmascript::Heap *heap = vm->GetJSThread()->GetEcmaVM()->GetHeap();
-    const_cast<ecmascript::NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->Delete(heapProfile);
+    heapProfile->Destroy(vm->GetJSThread());
     return result;
 }
 
