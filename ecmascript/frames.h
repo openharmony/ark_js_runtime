@@ -362,6 +362,16 @@ struct InterpretedFrameBase : public base::AlignedStruct<base::AlignedPointer::S
     };
     static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
 
+    inline JSTaggedType* GetPrevFrameFp()
+    {
+        return prev;
+    }
+
+    static InterpretedFrameBase* GetFrameFromSp(const JSTaggedType *sp)
+    {
+        return reinterpret_cast<InterpretedFrameBase *>(const_cast<JSTaggedType *>(sp)) - 1;
+    }
+
     static size_t GetPrevOffset(bool isArch32)
     {
         return GetOffset<static_cast<size_t>(Index::PrevIndex)>(isArch32);
