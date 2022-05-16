@@ -152,8 +152,14 @@ ARK_INLINE void FrameHandler::AdvanceToInterpretedFrame()
 
 ARK_INLINE void FrameHandler::PrevInterpretedFrame()
 {
+    if (!thread_->IsAsmInterpreter()) {
+        auto frame = InterpretedFrameBase::GetFrameFromSp(sp_);
+        sp_ = frame->GetPrevFrameFp();
+        return;
+    }
+    AdvanceToInterpretedFrame();
     PrevFrame();
-    for (; HasFrame() && !(IsInterpretedFrame() || IsInterpretedEntryFrame()); PrevFrame());
+    AdvanceToInterpretedFrame();
 }
 
 JSTaggedType* FrameHandler::GetPrevInterpretedFrame()
