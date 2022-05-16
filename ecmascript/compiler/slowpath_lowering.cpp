@@ -2548,11 +2548,9 @@ void SlowPathLowering::LowerDefineClassWithBuffer(GateRef gate, GateRef glue, Ga
     // 5: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 5);
     GateRef methodId = builder_.ZExtInt16ToInt32(acc_.GetValueIn(gate, 0));
-    GateRef literalId = builder_.TruncInt64ToInt32(acc_.GetValueIn(gate, 1));
     GateRef length = acc_.GetValueIn(gate, 2);
 
     GateRef classTemplate = GetObjectFromConstPool(jsFunc, methodId);
-    GateRef literalBuffer = GetObjectFromConstPool(jsFunc, literalId);
     GateRef lexicalEnv = acc_.GetValueIn(gate, 3);
     GateRef proto = acc_.GetValueIn(gate, 4);
     GateRef constpool = GetConstPool(jsFunc);
@@ -2561,21 +2559,8 @@ void SlowPathLowering::LowerDefineClassWithBuffer(GateRef gate, GateRef glue, Ga
 
     Label isResolved(&builder_);
     Label isNotResolved(&builder_);
-    Label afterCheckResolved(&builder_);
-    builder_.Branch(builder_.FunctionIsResolved(classTemplate), &isResolved, &isNotResolved);
-    builder_.Bind(&isResolved);
-    {
-        auto args = { classTemplate, proto, lexicalEnv, constpool };
-        res = LowerCallRuntime(glue, RTSTUB_ID(CloneClassFromTemplate), args, true);
-        builder_.Jump(&afterCheckResolved);
-    }
-    builder_.Bind(&isNotResolved);
-    {
-        auto args = { classTemplate, literalBuffer, proto, lexicalEnv, constpool };
-        res = LowerCallRuntime(glue, RTSTUB_ID(ResolveClass), args, true);
-        builder_.Jump(&afterCheckResolved);
-    }
-    builder_.Bind(&afterCheckResolved);
+    auto argsCloneClass = { classTemplate, proto, lexicalEnv, constpool };
+    res = LowerCallRuntime(glue, RTSTUB_ID(CloneClassFromTemplate), argsCloneClass, true);
     Label isException(&builder_);
     Label isNotException(&builder_);
     builder_.Branch(builder_.IsSpecial(*res, JSTaggedValue::VALUE_EXCEPTION),
