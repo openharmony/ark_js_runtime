@@ -4575,6 +4575,9 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
     }
 
     Bind(&tryContinue);
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+    GateRef currentSp = *varSp;
+#endif
     varSp = Load(VariableType::NATIVE_POINTER(), frame,
         IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
     GateRef prevState = GetFrame(*varSp);
@@ -4590,7 +4593,9 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
     }
     Bind(&pcNotEqualNullptr);
     {
+#if !ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
         SetCurrentSpFrame(glue, *varSp);
+#endif
         GateRef function = GetFunctionFromFrame(prevState);
         varConstpool = GetConstpoolFromFunction(function);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
@@ -4598,8 +4603,15 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
             IntPtr(JSFunctionBase::METHOD_OFFSET));
         varHotnessCounter = GetHotnessCounterFromMethod(method);
         GateRef jumpSize = GetCallSizeFromFrame(prevState);
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+        CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndDispatch),
+                    { glue, currentSp, *varPc, *varConstpool, *varProfileTypeInfo,
+                      *varAcc, *varHotnessCounter, jumpSize });
+        Return();
+#else
         Dispatch(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo, *varAcc,
                  *varHotnessCounter, jumpSize);
+#endif
     }
 }
 
