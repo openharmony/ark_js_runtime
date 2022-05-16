@@ -47,29 +47,23 @@ extern "C" JSTaggedType OptimizedCallOptimized(uintptr_t glue, uint32_t expected
 
 extern "C" void PushCallArgs0AndDispatch(uintptr_t glue, uintptr_t function,
     uintptr_t sp, uintptr_t method, uint64_t callField);
-extern "C" void PushCallArgs0AndDispatchNative(uintptr_t glue, uintptr_t function,
+extern "C" void PushCallArgsAndDispatchNative(uintptr_t glue, uintptr_t function,
     uintptr_t sp, uintptr_t method, uint64_t actualArgc);
 extern "C" void PushCallArgs0AndDispatchSlowPath(uintptr_t glue, uintptr_t function,
     uintptr_t sp, uintptr_t method, uint64_t callField);
 
 extern "C" void PushCallArgs1AndDispatch(uintptr_t glue, uintptr_t function,
     uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0);
-extern "C" void PushCallArgs1AndDispatchNative(uintptr_t glue, uintptr_t function,
-    uintptr_t sp, uintptr_t method, uint64_t actualArgc, uint64_t arg0);
 extern "C" void PushCallArgs1AndDispatchSlowPath(uintptr_t glue, uintptr_t function,
     uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0);
 
 extern "C" void PushCallArgs2AndDispatch(uintptr_t glue, uintptr_t function,
     uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0, uint64_t arg1);
-extern "C" void PushCallArgs2AndDispatchNative(uintptr_t glue, uintptr_t function,
-    uintptr_t sp, uintptr_t method, uint64_t actualArgc, uint64_t arg0, uint64_t arg1);
 extern "C" void PushCallArgs2AndDispatchSlowPath(uintptr_t glue, uintptr_t function,
     uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0, uint64_t arg1);
 
 extern "C" void PushCallArgs3AndDispatch(uintptr_t glue, uintptr_t function,
     uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0, uint64_t arg1, uint64_t arg2);
-extern "C" void PushCallArgs3AndDispatchNative(uintptr_t glue, uintptr_t function,
-    uintptr_t sp, uintptr_t method, uint64_t actualArgc, uint64_t arg0, uint64_t arg1, uint64_t arg2);
 extern "C" void PushCallArgs3AndDispatchSlowPath(uintptr_t glue, uintptr_t function,
     uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0, uint64_t arg1, uint64_t arg2);
 
@@ -82,14 +76,12 @@ extern "C" void PushCallIRangeAndDispatchSlowPath(uintptr_t glue, uintptr_t func
 
 extern "C" void PushCallIThisRangeAndDispatch(uintptr_t glue, uintptr_t function,
     uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t actualArgc, uintptr_t argv);
-extern "C" void PushCallIThisRangeAndDispatchNative(uintptr_t glue, uintptr_t function,
-    uintptr_t sp, uintptr_t method, uint64_t actualArgc, uintptr_t argv);
 extern "C" void PushCallIThisRangeAndDispatchSlowPath(uintptr_t glue, uintptr_t function,
     uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t actualArgc, uintptr_t argv);
 
 extern "C" void ResumeRspAndDispatch(uintptr_t glue, uintptr_t pc, uintptr_t sp, uintptr_t constantPool,
     uint64_t profileTypeInfo, uint64_t acc, uint32_t hotnessCounter, size_t jumpSize);
-extern "C" void ResumeRspAndReturn(uintptr_t glue, uintptr_t sp);
+extern "C" void ResumeRspAndReturn();
 extern "C" void ResumeCaughtFrameAndDispatch(uintptr_t glue, uintptr_t pc, uintptr_t sp, uintptr_t constantPool,
     uint64_t profileTypeInfo, uint64_t acc, uint32_t hotnessCounter);
 #define RUNTIME_ASM_STUB_LIST(V)             \
@@ -97,22 +89,18 @@ extern "C" void ResumeCaughtFrameAndDispatch(uintptr_t glue, uintptr_t pc, uintp
     V(AsmInterpreterEntry)                   \
     V(JSCallDispatch)                        \
     V(PushCallArgs0AndDispatch)              \
-    V(PushCallArgs0AndDispatchNative)        \
+    V(PushCallArgsAndDispatchNative)        \
     V(PushCallArgs0AndDispatchSlowPath)      \
     V(PushCallArgs1AndDispatch)              \
-    V(PushCallArgs1AndDispatchNative)        \
     V(PushCallArgs1AndDispatchSlowPath)      \
     V(PushCallArgs2AndDispatch)              \
-    V(PushCallArgs2AndDispatchNative)        \
     V(PushCallArgs2AndDispatchSlowPath)      \
     V(PushCallArgs3AndDispatch)              \
-    V(PushCallArgs3AndDispatchNative)        \
     V(PushCallArgs3AndDispatchSlowPath)      \
     V(PushCallIRangeAndDispatch)             \
     V(PushCallIRangeAndDispatchNative)       \
     V(PushCallIRangeAndDispatchSlowPath)     \
     V(PushCallIThisRangeAndDispatch)         \
-    V(PushCallIThisRangeAndDispatchNative)   \
     V(PushCallIThisRangeAndDispatchSlowPath) \
     V(ResumeRspAndDispatch)                  \
     V(ResumeRspAndReturn)                    \

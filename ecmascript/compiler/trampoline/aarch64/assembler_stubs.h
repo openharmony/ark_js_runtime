@@ -68,14 +68,8 @@ public:
 
     static void PushCallIRangeAndDispatchNative(ExtendedAssembler *assembler);
 
-    static void PushCallArgs3AndDispatchNative(ExtendedAssembler *assembler);
-
-    static void PushCallArgs2AndDispatchNative(ExtendedAssembler *assembler);
-
-    static void PushCallArgs1AndDispatchNative(ExtendedAssembler *assembler);
-
-    static void PushCallArgs0AndDispatchNative(ExtendedAssembler *assembler);
-
+    static void PushCallArgsAndDispatchNative(ExtendedAssembler *assembler);
+    
     static void ResumeRspAndDispatch(ExtendedAssembler *assembler);
 
     static void ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *assembler);

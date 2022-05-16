@@ -27,11 +27,21 @@ class JSPandaFile;
 struct LineTableEntry {
     uint32_t offset;
     int32_t line;
+
+    bool operator<(const LineTableEntry &other) const
+    {
+        return offset < other.offset;
+    }
 };
 
 struct ColumnTableEntry {
     uint32_t offset;
     int32_t column;
+
+    bool operator<(const ColumnTableEntry &other) const
+    {
+        return offset < other.offset;
+    }
 };
 
 using LineNumberTable = CVector<LineTableEntry>;

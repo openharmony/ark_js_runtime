@@ -65,23 +65,11 @@
 .global PushCallArgs0AndDispatchSlowPath
 .type PushCallArgs0AndDispatchSlowPath, %function
 
-.global PushCallIThisRangeAndDispatchNative
-.type PushCallIThisRangeAndDispatchNative, %function
-
 .global PushCallIRangeAndDispatchNative
 .type PushCallIRangeAndDispatchNative, %function
 
-.global PushCallArgs3AndDispatchNative
-.type PushCallArgs3AndDispatchNative, %function
-
-.global PushCallArgs2AndDispatchNative
-.type PushCallArgs2AndDispatchNative, %function
-
-.global PushCallArgs1AndDispatchNative
-.type PushCallArgs1AndDispatchNative, %function
-
-.global PushCallArgs0AndDispatchNative
-.type PushCallArgs0AndDispatchNative, %function
+.global PushCallArgsAndDispatchNative
+.type PushCallArgsAndDispatchNative, %function
 
 .global ResumeRspAndDispatch
 .type ResumeRspAndDispatch, %function
@@ -645,22 +633,10 @@ PushCallArgs1AndDispatchSlowPath:
 PushCallArgs0AndDispatchSlowPath:
     ret
 
-PushCallIThisRangeAndDispatchNative:
-    ret
-
 PushCallIRangeAndDispatchNative:
     ret
 
-PushCallArgs3AndDispatchNative:
-    ret
-
-PushCallArgs2AndDispatchNative:
-    ret
-
-PushCallArgs1AndDispatchNative:
-    ret
-
-PushCallArgs0AndDispatchNative:
+PushCallArgsAndDispatchNative:
     ret
 
 ResumeRspAndDispatch:

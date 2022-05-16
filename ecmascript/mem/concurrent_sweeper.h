@@ -32,8 +32,6 @@ public:
     NO_COPY_SEMANTIC(ConcurrentSweeper);
     NO_MOVE_SEMANTIC(ConcurrentSweeper);
 
-    void PostConcurrentSweepTasks(bool fullGC = false);
-
     void Sweep(bool fullGC = false);
 
     void WaitAllTaskFinished();
@@ -42,6 +40,13 @@ public:
     // Ensure task finish
     void EnsureTaskFinished(MemSpaceType type);
 
+    void TryFillSweptRegion();
+    void ClearRSetInRange(Region *current, uintptr_t freeStart, uintptr_t freeEnd);
+
+    bool isSweeping()
+    {
+        return isSweeping_;
+    }
 private:
     class SweeperTask : public Task {
     public:

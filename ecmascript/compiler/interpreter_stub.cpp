@@ -99,6 +99,12 @@ void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef sp, GateRef pc,      
     }                                                                                     \
     Bind(&dispatch);
 
+#define USE_PARAMS()           \
+    (void)constpool;           \
+    (void)profileTypeInfo;     \
+    (void)acc;                 \
+    (void)hotnessCounter;
+
 DECLARE_ASM_HANDLER(HandleLdNanPref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
@@ -1659,10 +1665,9 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
     Bind(&shouldReturn);
     {
         if (env->IsAArch64()) {
-            DispatchCommonCall<RTSTUB_ID(ResumeRspAndReturn)>(glue, *varSp);
-        } else {
-            Return();
+            CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndReturn), {});
         }
+        Return();
     }
     Bind(&shouldContinue);
     {
@@ -4352,10 +4357,9 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
     {
         SetAccToFrame(glue, frame, *varAcc);
         if (env->IsAArch64()) {
-            DispatchCommonCall<RTSTUB_ID(ResumeRspAndReturn)>(glue, *varSp);
-        } else {
-            Return();
+            CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndReturn), {});
         }
+        Return();
     }
     Bind(&pcNotEqualNullptr);
     {
@@ -4408,8 +4412,10 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
         varHotnessCounter = GetHotnessCounterFromMethod(method);
         GateRef jumpSize = GetCallSizeFromFrame(prevState);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-        DispatchCommonCall<RTSTUB_ID(ResumeRspAndDispatch)>(glue, currentSp, *varPc, *varConstpool, *varProfileTypeInfo,
-            *varAcc, *varHotnessCounter, jumpSize);
+        CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndDispatch),
+                    { glue, currentSp, *varPc, *varConstpool, *varProfileTypeInfo,
+                      *varAcc, *varHotnessCounter, jumpSize });
+        Return();
 #else
         Dispatch(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo, *varAcc,
                  *varHotnessCounter, jumpSize);
@@ -4461,10 +4467,9 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
     {
         SetAccToFrame(glue, frame, *varAcc);
         if (env->IsAArch64()) {
-            DispatchCommonCall<RTSTUB_ID(ResumeRspAndReturn)>(glue, *varSp);
-        } else {
-            Return();
+            CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndReturn), {});
         }
+        Return();
     }
     Bind(&pcNotEqualNullptr);
     {
@@ -4514,8 +4519,10 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
         varHotnessCounter = GetHotnessCounterFromMethod(method);
         GateRef jumpSize = GetCallSizeFromFrame(prevState);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-        DispatchCommonCall<RTSTUB_ID(ResumeRspAndDispatch)>(glue, currentSp, *varPc, *varConstpool, *varProfileTypeInfo,
-            *varAcc, *varHotnessCounter, jumpSize);
+        CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndDispatch),
+                    { glue, currentSp, *varPc, *varConstpool, *varProfileTypeInfo,
+                      *varAcc, *varHotnessCounter, jumpSize });
+        Return();
 #else
         Dispatch(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo, *varAcc,
                  *varHotnessCounter, jumpSize);
@@ -4568,6 +4575,9 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
     }
 
     Bind(&tryContinue);
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+    GateRef currentSp = *varSp;
+#endif
     varSp = Load(VariableType::NATIVE_POINTER(), frame,
         IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
     GateRef prevState = GetFrame(*varSp);
@@ -4577,14 +4587,15 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
     {
         SetAccToFrame(glue, frame, *varAcc);
         if (env->IsAArch64()) {
-            DispatchCommonCall<RTSTUB_ID(ResumeRspAndReturn)>(glue, *varSp);
-        } else {
-            Return();
+            CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndReturn), {});
         }
+        Return();
     }
     Bind(&pcNotEqualNullptr);
     {
+#if !ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
         SetCurrentSpFrame(glue, *varSp);
+#endif
         GateRef function = GetFunctionFromFrame(prevState);
         varConstpool = GetConstpoolFromFunction(function);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
@@ -4592,8 +4603,15 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
             IntPtr(JSFunctionBase::METHOD_OFFSET));
         varHotnessCounter = GetHotnessCounterFromMethod(method);
         GateRef jumpSize = GetCallSizeFromFrame(prevState);
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+        CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndDispatch),
+                    { glue, currentSp, *varPc, *varConstpool, *varProfileTypeInfo,
+                      *varAcc, *varHotnessCounter, jumpSize });
+        Return();
+#else
         Dispatch(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo, *varAcc,
                  *varHotnessCounter, jumpSize);
+#endif
     }
 }
 
@@ -4616,10 +4634,9 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
     Bind(&pcIsInvalid);
     {
         if (env->IsAArch64()) {
-            DispatchCommonCall<RTSTUB_ID(ResumeRspAndReturn)>(glue, *varSp);
-        } else {
-            Return();
+            CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndReturn), {});
         }
+        Return();
     }
     Bind(&pcNotInvalid);
     {
@@ -4634,8 +4651,10 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
             IntPtr(JSFunctionBase::METHOD_OFFSET));
         varHotnessCounter = GetHotnessCounterFromMethod(method);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-        DispatchCommonCall<RTSTUB_ID(ResumeCaughtFrameAndDispatch)>(glue, *varSp, *varPc, *varConstpool,
-            *varProfileTypeInfo, *varAcc, *varHotnessCounter);
+        CallNGCRuntime(glue, RTSTUB_ID(ResumeCaughtFrameAndDispatch), {
+            glue, *varSp, *varPc, *varConstpool,
+            *varProfileTypeInfo, *varAcc, *varHotnessCounter});
+        Return();
 #else
         Dispatch(glue, *varSp, *varPc, *varConstpool, *varProfileTypeInfo, *varAcc,
             *varHotnessCounter, IntPtr(0));
@@ -5431,84 +5450,17 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     }                                                                                                  \
     Bind(&pushArgsEnd)
 
-#define DISPATCH_COMMON_CALL_NATIVE_PART(type, format, ...)                                                           \
-    SetPcToFrame(glue, GetFrame(sp), pc);                                                                             \
-    GateRef func = GetVregValue(sp, ZExtInt8ToPtr(funcReg));                                                          \
-    Label funcIsHeapObject(env);                                                                                      \
-    Label funcIsCallable(env);                                                                                        \
-    Label funcNotCallable(env);                                                                                       \
-    Branch(TaggedIsHeapObject(func), &funcIsHeapObject, &funcNotCallable);                                            \
-    Bind(&funcIsHeapObject);                                                                                          \
-    Branch(IsCallable(func), &funcIsCallable, &funcNotCallable);                                                      \
-    Bind(&funcNotCallable);                                                                                           \
-    {                                                                                                                 \
-        CallRuntime(glue, RTSTUB_ID(ThrowCallConstructorException), {});                                              \
-        DISPATCH_LAST();                                                                                              \
-    }                                                                                                                 \
-    Bind(&funcIsCallable);                                                                                            \
-    GateRef method = GetMethodFromJSFunction(func);                                                                   \
-    GateRef callField = GetCallFieldFromMethod(method);                                                               \
-    GateRef isNativeMask = Int64(static_cast<uint64_t>(1) << JSMethod::IsNativeBit::START_BIT);                       \
-    Label methodIsNative(env);                                                                                        \
-    Label methodNotNative(env);                                                                                       \
-    Branch(Int64NotEqual(Int64And(callField, isNativeMask), Int64(0)), &methodIsNative, &methodNotNative);            \
-    Bind(&methodIsNative);                                                                                            \
-    {                                                                                                                 \
-        GateRef retValue = CommonCallNative<RTSTUB_ID(type##Native)>(                                                 \
-            glue, sp, func, method, __VA_ARGS__);                                                                     \
-        Label hasPendingException(env);                                                                               \
-        Label noPendingException(env);                                                                                \
-        Branch(TaggedIsException(retValue), &hasPendingException, &noPendingException);                               \
-        Bind(&hasPendingException);                                                                                   \
-        {                                                                                                             \
-            SetLastLeaveFrame(glue, sp);  /* currentSp will be used in UpFrame, therefore use sp. */                  \
-            DISPATCH_LAST();                                                                                          \
-        }                                                                                                             \
-        Bind(&noPendingException);                                                                                    \
-        SetLastLeaveFrame(glue, sp);                                                                                  \
-        DEFVARIABLE(varAcc, VariableType::JS_ANY(), retValue);                                                        \
-        DISPATCH_WITH_ACC(format);                                                                                    \
-    }                                                                                                                 \
-    Bind(&methodNotNative);                                                                                           \
-    GateRef numArgsOffset = Int64(JSMethod::NumArgsBits::START_BIT);                                                  \
-    GateRef numArgsMask = Int64((static_cast<uint64_t>(1) << JSMethod::NumArgsBits::SIZE) - 1);                       \
-    GateRef declaredNumArgs = ChangeInt64ToInt32(Int64And(Int64LSR(callField, numArgsOffset), numArgsMask));          \
-    Label fastPath(env);                                                                                              \
-    Label slowPath(env);
-
-#define DISPATCH_COMMON_CALL_ARGS_JS_PART(type, ...)                                                                 \
-    Branch(Int32Equal(actualNumArgs, declaredNumArgs), &fastPath, &slowPath);                                        \
-    Bind(&fastPath);                                                                                                 \
-    {                                                                                                                \
-        DispatchCommonCall<RTSTUB_ID(type)>(                                                                         \
-            glue, sp, func, method, __VA_ARGS__);                                                                    \
-    }                                                                                                                \
-    Bind(&slowPath);                                                                                                 \
-    DispatchCommonCall<RTSTUB_ID(type##SlowPath)>(                                                                   \
-        glue, sp, func, method, __VA_ARGS__);
-
-#define DISPATCH_COMMON_CALL_RANGE_JS_PART(type, ...)                                                                \
-    Branch(Int32Equal(actualNumArgs, declaredNumArgs), &fastPath, &slowPath);                                        \
-    Bind(&fastPath);                                                                                                 \
-    {                                                                                                                \
-        DispatchCommonCall<RTSTUB_ID(type)>(                                                                         \
-            glue, sp, func, method, callField, ZExtInt32ToInt64(actualNumArgs), __VA_ARGS__);                        \
-    }                                                                                                                \
-    Bind(&slowPath);                                                                                                 \
-    DispatchCommonCall<RTSTUB_ID(type##SlowPath)>(                                                                   \
-        glue, sp, func, method, callField, ZExtInt32ToInt64(actualNumArgs), __VA_ARGS__);
-
 DECLARE_ASM_HANDLER(HandleCallArg0DynPrefV8)
 {
-    auto env = GetEnvironment();
-
     GateRef actualNumArgs = Int32(InterpreterAssembly::ActualNumArgsOfCall::CALLARG0);
     GateRef funcReg = ReadInst8_1(pc);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-    GateRef numArgs = ZExtInt32ToInt64(actualNumArgs);
-    DISPATCH_COMMON_CALL_NATIVE_PART(PushCallArgs0AndDispatch, PREF_V8, numArgs);
-    DISPATCH_COMMON_CALL_ARGS_JS_PART(PushCallArgs0AndDispatch, callField);
+    USE_PARAMS()
+    GateRef func = GetVregValue(sp, ZExtInt8ToPtr(funcReg));
+    GateRef jumpSize = IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8));
+    JSCallDispatch(glue, func, actualNumArgs, jumpSize, JSCallMode::CALL_ARG0, {});
 #else
+    auto env = GetEnvironment();
     CALL_INITIALIZE();
     GateRef callThis = False();
     CALL_PUSH_ARGS(PREF_V8);
@@ -5517,17 +5469,17 @@ DECLARE_ASM_HANDLER(HandleCallArg0DynPrefV8)
 
 DECLARE_ASM_HANDLER(HandleCallArg1DynPrefV8V8)
 {
-    auto env = GetEnvironment();
-
     GateRef actualNumArgs = Int32(InterpreterAssembly::ActualNumArgsOfCall::CALLARG1);
     GateRef funcReg = ReadInst8_1(pc);
     GateRef a0 = ReadInst8_2(pc);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-    GateRef numArgs = ZExtInt32ToInt64(actualNumArgs);
+    USE_PARAMS()
+    GateRef func = GetVregValue(sp, ZExtInt8ToPtr(funcReg));
     GateRef a0Value = GetVregValue(sp, ZExtInt8ToPtr(a0));
-    DISPATCH_COMMON_CALL_NATIVE_PART(PushCallArgs1AndDispatch, PREF_V8_V8, numArgs, a0Value);
-    DISPATCH_COMMON_CALL_ARGS_JS_PART(PushCallArgs1AndDispatch, callField, a0Value);
+    GateRef jumpSize = IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8));
+    JSCallDispatch(glue, func, actualNumArgs, jumpSize, JSCallMode::CALL_ARG1, { a0Value });
 #else
+    auto env = GetEnvironment();
     CALL_INITIALIZE();
     GateRef callThis = False();
     CALL_PUSH_ARGS(PREF_V8_V8);
@@ -5536,19 +5488,20 @@ DECLARE_ASM_HANDLER(HandleCallArg1DynPrefV8V8)
 
 DECLARE_ASM_HANDLER(HandleCallArgs2DynPrefV8V8V8)
 {
-    auto env = GetEnvironment();
-
     GateRef actualNumArgs = Int32(InterpreterAssembly::ActualNumArgsOfCall::CALLARGS2);
     GateRef funcReg = ReadInst8_1(pc);
     GateRef a0 = ReadInst8_2(pc);
     GateRef a1 = ReadInst8_3(pc);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-    GateRef numArgs = ZExtInt32ToInt64(actualNumArgs);
+    USE_PARAMS()
+    GateRef func = GetVregValue(sp, ZExtInt8ToPtr(funcReg));
     GateRef a0Value = GetVregValue(sp, ZExtInt8ToPtr(a0));
     GateRef a1Value = GetVregValue(sp, ZExtInt8ToPtr(a1));
-    DISPATCH_COMMON_CALL_NATIVE_PART(PushCallArgs2AndDispatch, PREF_V8_V8_V8, numArgs, a0Value, a1Value);
-    DISPATCH_COMMON_CALL_ARGS_JS_PART(PushCallArgs2AndDispatch, callField, a0Value, a1Value);
+    GateRef jumpSize = IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8_V8));
+    JSCallDispatch(glue, func, actualNumArgs, jumpSize,
+                   JSCallMode::CALL_ARG2, { a0Value, a1Value });
 #else
+    auto env = GetEnvironment();
     CALL_INITIALIZE();
     GateRef callThis = False();
     CALL_PUSH_ARGS(PREF_V8_V8_V8);
@@ -5557,21 +5510,22 @@ DECLARE_ASM_HANDLER(HandleCallArgs2DynPrefV8V8V8)
 
 DECLARE_ASM_HANDLER(HandleCallArgs3DynPrefV8V8V8V8)
 {
-    auto env = GetEnvironment();
-
     GateRef actualNumArgs = Int32(InterpreterAssembly::ActualNumArgsOfCall::CALLARGS3);
     GateRef funcReg = ReadInst8_1(pc);
     GateRef a0 = ReadInst8_2(pc);
     GateRef a1 = ReadInst8_3(pc);
     GateRef a2 = ReadInst8_4(pc);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-    GateRef numArgs = ZExtInt32ToInt64(actualNumArgs);
+    USE_PARAMS()
+    GateRef func = GetVregValue(sp, ZExtInt8ToPtr(funcReg));
     GateRef a0Value = GetVregValue(sp, ZExtInt8ToPtr(a0));
     GateRef a1Value = GetVregValue(sp, ZExtInt8ToPtr(a1));
     GateRef a2Value = GetVregValue(sp, ZExtInt8ToPtr(a2));
-    DISPATCH_COMMON_CALL_NATIVE_PART(PushCallArgs3AndDispatch, PREF_V8_V8_V8_V8, numArgs, a0Value, a1Value, a2Value);
-    DISPATCH_COMMON_CALL_ARGS_JS_PART(PushCallArgs3AndDispatch, callField, a0Value, a1Value, a2Value);
+    GateRef jumpSize = IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8_V8_V8));
+    JSCallDispatch(glue, func, actualNumArgs, jumpSize,
+                   JSCallMode::CALL_ARG3, { a0Value, a1Value, a2Value });
 #else
+    auto env = GetEnvironment();
     CALL_INITIALIZE();
     GateRef callThis = False();
     CALL_PUSH_ARGS(PREF_V8_V8_V8_V8);
@@ -5580,17 +5534,19 @@ DECLARE_ASM_HANDLER(HandleCallArgs3DynPrefV8V8V8V8)
 
 DECLARE_ASM_HANDLER(HandleCallIRangeDynPrefImm16V8)
 {
-    auto env = GetEnvironment();
-
     GateRef actualNumArgs = ZExtInt16ToInt32(ReadInst16_1(pc));
     GateRef funcReg = ReadInst8_3(pc);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-    GateRef numArgs = ZExtInt32ToInt64(actualNumArgs);
+    USE_PARAMS()
+    GateRef func = GetVregValue(sp, ZExtInt8ToPtr(funcReg));
     GateRef argv = PtrAdd(sp, PtrMul(
-        PtrAdd(ZExtInt8ToPtr(funcReg), IntPtr(1)), IntPtr(8)));
-    DISPATCH_COMMON_CALL_NATIVE_PART(PushCallIRangeAndDispatch, PREF_IMM16_V8, numArgs, argv);
-    DISPATCH_COMMON_CALL_RANGE_JS_PART(PushCallIRangeAndDispatch, argv);
+        PtrAdd(ZExtInt8ToPtr(funcReg), IntPtr(1)), IntPtr(8))); // 1: skip this
+    GateRef jumpSize = IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_IMM16_V8));
+    GateRef numArgs = ChangeInt32ToIntPtr(actualNumArgs);
+    JSCallDispatch(glue, func, actualNumArgs, jumpSize,
+                   JSCallMode::CALL_WITH_ARGV, { numArgs, argv });
 #else
+    auto env = GetEnvironment();
     CALL_INITIALIZE();
     GateRef callThis = False();
     CALL_PUSH_ARGS(PREF_IMM16_V8);
@@ -5599,17 +5555,19 @@ DECLARE_ASM_HANDLER(HandleCallIRangeDynPrefImm16V8)
 
 DECLARE_ASM_HANDLER(HandleCallIThisRangeDynPrefImm16V8)
 {
-    auto env = GetEnvironment();
-
     GateRef actualNumArgs = Int32Sub(ZExtInt16ToInt32(ReadInst16_1(pc)), Int32(1));  // 1: exclude this
     GateRef funcReg = ReadInst8_3(pc);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-    GateRef numArgs = ZExtInt32ToInt64(actualNumArgs);
+    USE_PARAMS()
+    GateRef func = GetVregValue(sp, ZExtInt8ToPtr(funcReg));
     GateRef argv = PtrAdd(sp, PtrMul(
-        PtrAdd(ZExtInt8ToPtr(funcReg), IntPtr(2)), IntPtr(8)));  // 2: skip function and this
-    DISPATCH_COMMON_CALL_NATIVE_PART(PushCallIThisRangeAndDispatch, PREF_IMM16_V8, numArgs, argv);
-    DISPATCH_COMMON_CALL_RANGE_JS_PART(PushCallIThisRangeAndDispatch, argv);
+        PtrAdd(ZExtInt8ToPtr(funcReg), IntPtr(2)), IntPtr(8))); // 2: skip function&this
+    GateRef jumpSize = IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_IMM16_V8));
+    GateRef numArgs = ChangeInt32ToIntPtr(actualNumArgs);
+    JSCallDispatch(glue, func, actualNumArgs, jumpSize,
+                   JSCallMode::CALL_THIS_WITH_ARGV, { numArgs, argv });
 #else
+    auto env = GetEnvironment();
     CALL_INITIALIZE();
     GateRef callThis = True();
     CALL_PUSH_ARGS(PREF_IMM16_V8);
@@ -5656,9 +5614,181 @@ DECLARE_ASM_HANDLER(HandleNewLexEnvWithNameDynPrefImm16Imm16)
     SetEnvToFrame(glue, state, res);
     DISPATCH_WITH_ACC(PREF_IMM16_IMM16);
 }
+
+void InterpreterStub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
+                                     GateRef jumpSize, JSCallMode mode,
+                                     std::initializer_list<GateRef> args)
+{
+    auto env = GetEnvironment();
+    GateRef sp = PtrArgument(static_cast<size_t>(InterpreterHandlerInputs::SP));
+    GateRef pc = PtrArgument(static_cast<size_t>(InterpreterHandlerInputs::PC));
+    GateRef constpool = TaggedPointerArgument(
+        static_cast<size_t>(InterpreterHandlerInputs::CONSTPOOL));
+    GateRef profileTypeInfo = TaggedPointerArgument(
+        static_cast<size_t>(InterpreterHandlerInputs::PROFILE_TYPE_INFO));
+    GateRef acc = TaggedArgument(static_cast<size_t>(InterpreterHandlerInputs::ACC));
+    GateRef hotnessCounter = Int32Argument(
+        static_cast<size_t>(InterpreterHandlerInputs::HOTNESS_COUNTER));
+    
+    // 1. call initialize
+    Label funcIsHeapObject(env);
+    Label funcIsCallable(env);
+    Label funcNotCallable(env);
+
+    // save pc
+    SetPcToFrame(glue, GetFrame(sp), pc);
+    Branch(TaggedIsHeapObject(func), &funcIsHeapObject, &funcNotCallable);
+    Bind(&funcIsHeapObject);
+    Branch(IsCallable(func), &funcIsCallable, &funcNotCallable);
+    Bind(&funcNotCallable);
+    {
+        CallRuntime(glue, RTSTUB_ID(ThrowNotCallableException), {});
+        DISPATCH_LAST();
+    }
+    Bind(&funcIsCallable);
+    GateRef method = GetMethodFromJSFunction(func);
+    GateRef callField = GetCallFieldFromMethod(method);
+    GateRef isNativeMask = Int64(static_cast<uint64_t>(1) << JSMethod::IsNativeBit::START_BIT);
+
+    // 2. call dispatch
+    Label methodIsNative(env);
+    Label methodNotNative(env);
+    Branch(Int64NotEqual(Int64And(callField, isNativeMask), Int64(0)), &methodIsNative, &methodNotNative);
+    auto data = std::begin(args);
+    // 3. call native
+    Bind(&methodIsNative);
+    {
+        GateRef nativeCode = Load(VariableType::NATIVE_POINTER(), method,
+            IntPtr(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
+        GateRef retValue = 0;
+        GateRef newTarget = Undefined();
+        GateRef thisValue = Undefined();
+        switch (mode) {
+            case JSCallMode::CALL_ARG0:
+                retValue = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
+                    { glue, nativeCode, actualNumArgs, func, newTarget, thisValue });
+                break;
+            case JSCallMode::CALL_ARG1:
+                retValue = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
+                    { glue, nativeCode, actualNumArgs, func, newTarget, thisValue, data[0]});
+                break;
+            case JSCallMode::CALL_ARG2:
+                retValue = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
+                    { glue, nativeCode, actualNumArgs, func, newTarget, thisValue, data[0], data[1] });
+                break;
+            case JSCallMode::CALL_ARG3:
+                retValue = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
+                    { glue, nativeCode, actualNumArgs, func,
+                      newTarget, thisValue, data[0], data[1], data[2] });
+                break;
+            case JSCallMode::CALL_WITH_ARGV: {
+                auto argv = data[1];
+                thisValue = GetVregValue(sp, PtrAdd(argv, IntPtr(1)));
+                [[fallthrough]];
+            }
+            case JSCallMode::CALL_THIS_WITH_ARGV:
+                retValue = CallNGCRuntime(glue, RTSTUB_ID(PushCallIRangeAndDispatchNative),
+                    { glue, nativeCode, func, thisValue, data[0], data[1] });
+                break;
+            case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
+                break;
+            default:
+                UNREACHABLE();
+        }
+        Label hasPendingException(env);
+        Label noPendingException(env);
+        Branch(TaggedIsException(retValue), &hasPendingException, &noPendingException);
+        Bind(&hasPendingException);
+        {
+            DISPATCH_LAST();
+        }
+        Bind(&noPendingException);
+        Dispatch(glue, sp, pc, constpool, profileTypeInfo, retValue, hotnessCounter, jumpSize);
+    }
+    // 4. call nonNative
+    Bind(&methodNotNative);
+    GateRef numArgsOffset = Int64(JSMethod::NumArgsBits::START_BIT);
+    GateRef numArgsMask = Int64((static_cast<uint64_t>(1) << JSMethod::NumArgsBits::SIZE) - 1);
+    GateRef declaredNumArgs = ChangeInt64ToInt32(Int64And(Int64LSR(callField, numArgsOffset), numArgsMask));
+    Label fastPath(env);
+    Label slowPath(env);
+
+    // 5. fast call
+    Branch(Int32Equal(actualNumArgs, declaredNumArgs), &fastPath, &slowPath);
+    Bind(&fastPath);
+    {
+        switch (mode) {
+            case JSCallMode::CALL_ARG0:
+                CallNGCRuntime(glue, RTSTUB_ID(PushCallArgs0AndDispatch),
+                    { glue, sp, func, method, callField });
+                break;
+            case JSCallMode::CALL_ARG1:
+                CallNGCRuntime(glue, RTSTUB_ID(PushCallArgs1AndDispatch),
+                    { glue, sp, func, method, callField, data[0] });
+                break;
+            case JSCallMode::CALL_ARG2:
+                CallNGCRuntime(glue, RTSTUB_ID(PushCallArgs2AndDispatch),
+                    { glue, sp, func, method, callField, data[0], data[1] });
+                break;
+            case JSCallMode::CALL_ARG3:
+                CallNGCRuntime(glue, RTSTUB_ID(PushCallArgs3AndDispatch),
+                    { glue, sp, func, method, callField, data[0], data[1], data[2] });
+                break;
+            case JSCallMode::CALL_WITH_ARGV:
+                CallNGCRuntime(glue, RTSTUB_ID(PushCallIRangeAndDispatch),
+                    { glue, sp, func, method, callField, data[0], data[1] });
+                break;
+            case JSCallMode::CALL_THIS_WITH_ARGV:
+                CallNGCRuntime(glue, RTSTUB_ID(PushCallIThisRangeAndDispatch),
+                    { glue, sp, func, method, callField, data[0], data[1] });
+                break;
+            case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
+                break;
+            default:
+                UNREACHABLE();
+        }
+        Return();
+    }
+    // 6. slow call
+    Bind(&slowPath);
+    {
+        switch (mode) {
+            case JSCallMode::CALL_ARG0:
+                CallNGCRuntime(glue, RTSTUB_ID(PushCallArgs0AndDispatchSlowPath),
+                    { glue, sp, func, method, callField });
+                break;
+            case JSCallMode::CALL_ARG1:
+                CallNGCRuntime(glue, RTSTUB_ID(PushCallArgs1AndDispatchSlowPath),
+                    { glue, sp, func, method, callField, data[0] });
+                break;
+            case JSCallMode::CALL_ARG2:
+                CallNGCRuntime(glue, RTSTUB_ID(PushCallArgs2AndDispatchSlowPath),
+                    { glue, sp, func, method, callField, data[0], data[1] });
+                break;
+            case JSCallMode::CALL_ARG3:
+                CallNGCRuntime(glue, RTSTUB_ID(PushCallArgs3AndDispatchSlowPath),
+                    { glue, sp, func, method, callField, data[0], data[1], data[2] });
+                break;
+            case JSCallMode::CALL_WITH_ARGV:
+                CallNGCRuntime(glue, RTSTUB_ID(PushCallIRangeAndDispatchSlowPath),
+                    { glue, sp, func, method, callField, data[0], data[1] });
+                break;
+            case JSCallMode::CALL_THIS_WITH_ARGV:
+                CallNGCRuntime(glue, RTSTUB_ID(PushCallIThisRangeAndDispatchSlowPath),
+                    { glue, sp, func, method, callField, data[0], data[1] });
+                break;
+            case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
+                break;
+            default:
+                UNREACHABLE();
+        }
+        Return();
+    }
+}
 #undef DECLARE_ASM_HANDLER
 #undef DISPATCH
 #undef DISPATCH_WITH_ACC
 #undef DISPATCH_LAST
 #undef DISPATCH_LAST_WITH_ACC
+#undef USE_PARAMS
 }  // namespace panda::ecmascript::kungfu

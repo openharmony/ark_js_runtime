@@ -703,61 +703,6 @@ JSTaggedValue InterpreterAssembly::GeneratorReEnterInterpreter(JSThread *thread,
     return res;
 }
 
-void InterpreterAssembly::ChangeGenContext(JSThread *thread, JSHandle<GeneratorContext> context)
-{
-    JSHandle<JSFunction> func = JSHandle<JSFunction>::Cast(JSHandle<JSTaggedValue>(thread, context->GetMethod()));
-    JSMethod *method = func->GetCallTarget();
-
-    JSTaggedType *currentSp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-
-    // push break frame
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    JSTaggedType *breakSp = currentSp - AsmInterpretedFrame::NumOfMembers();
-    if (thread->DoStackOverflowCheck(breakSp) || thread->HasPendingException()) {
-        return;
-    }
-    AsmInterpretedFrame *breakState = GET_ASM_FRAME(breakSp);
-    breakState->pc = nullptr;
-    breakState->function = JSTaggedValue::Hole();
-    breakState->base.prev = currentSp;
-    breakState->base.type = FrameType::ASM_INTERPRETER_FRAME;
-
-    // create new frame and resume sp and pc
-    uint32_t nregs = context->GetNRegs();
-    size_t newFrameSize = AsmInterpretedFrame::NumOfMembers() + nregs;
-
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic
-    JSTaggedType *newSp = breakSp - newFrameSize;
-    if (thread->DoStackOverflowCheck(newSp) || thread->HasPendingException()) {
-        return;
-    }
-    JSHandle<TaggedArray> regsArray(thread, context->GetRegsArray());
-    for (size_t i = 0; i < nregs; i++) {
-        newSp[i] = regsArray->Get(i).GetRawData();  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    }
-    uint32_t pcOffset = context->GetBCOffset();
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    const uint8_t *pc = method->GetBytecodeArray() + pcOffset;
-
-    AsmInterpretedFrame *state = GET_ASM_FRAME(newSp);
-    state->pc = pc;
-    state->function = func.GetTaggedValue();
-    state->acc = context->GetAcc();
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    state->base.prev = breakSp;
-    state->base.type = FrameType::ASM_INTERPRETER_FRAME;
-    state->env = context->GetLexicalEnv();
-
-    thread->SetCurrentSPFrame(newSp);
-}
-
-void InterpreterAssembly::ResumeContext(JSThread *thread)
-{
-    JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    AsmInterpretedFrame *state = GET_ASM_FRAME(sp);
-    thread->SetCurrentSPFrame(state->base.prev);
-}
-
 void InterpreterAssembly::HandleMovV4V4(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)

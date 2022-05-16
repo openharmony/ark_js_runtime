@@ -43,7 +43,6 @@ void ParallelEvacuator::Finalize()
 {
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelEvacuatorFinalize);
     delete allocator_;
-    heap_->GetSweeper()->PostConcurrentSweepTasks();
     heap_->Resume(OLD_GC);
 }
 
@@ -288,7 +287,7 @@ void ParallelEvacuator::UpdateWeakReference()
 
 void ParallelEvacuator::UpdateRSet(Region *region)
 {
-    region->IterateAllOldToNewBits([this](void *mem) -> bool {
+    auto cb = [this](void *mem) -> bool {
         ObjectSlot slot(ToUintPtr(mem));
         if (UpdateObjectSlot(slot)) {
             Region *valueRegion = Region::ObjectAddressToRange(slot.GetTaggedObjectHeader());
@@ -297,7 +296,11 @@ void ParallelEvacuator::UpdateRSet(Region *region)
             }
         }
         return true;
-    });
+    };
+    if (heap_->GetSweeper()->isSweeping()) {
+        region->AtomicIterateAllSweepingRSetBits(cb);
+    }
+    region->IterateAllOldToNewBits(cb);
     region->IterateAllCrossRegionBits([this](void *mem) {
         ObjectSlot slot(ToUintPtr(mem));
         UpdateObjectSlot(slot);

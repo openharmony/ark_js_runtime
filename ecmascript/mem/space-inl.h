@@ -53,6 +53,12 @@ void Space::EnumerateRegions(const Callback &cb, Region *end) const
     }
 }
 
+template<class Callback>
+void Space::EnumerateRegionsWithRecord(const Callback &cb) const
+{
+    EnumerateRegions(cb, recordRegion_);
+}
+
 RegionFlags Space::GetRegionFlag() const
 {
     RegionFlags flags = RegionFlags::IS_INVALID;

@@ -31,8 +31,6 @@ public:
 
     static JSHandle<JSObject> Throw(JSThread *thread, const JSHandle<GeneratorContext> &genContext,
                                     JSTaggedValue value);
-    static void ChangeGenContext(JSThread *thread, const JSHandle<GeneratorContext> &genContext);
-    static void ResumeContext(JSThread *thread);
 };
 }  // namespace panda::ecmascript
 

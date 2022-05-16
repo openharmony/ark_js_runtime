@@ -690,11 +690,6 @@ void AssemblerStubs::PushCallArgs0AndDispatchSlowPath(ExtendedAssembler *assembl
     __ Ret();
 }
 
-void AssemblerStubs::PushCallIThisRangeAndDispatchNative(ExtendedAssembler *assembler)
-{
-    __ BindAssemblerStub(RTSTUB_ID(PushCallIThisRangeAndDispatchNative));
-    __ Ret();
-}
 
 void AssemblerStubs::PushCallIRangeAndDispatchNative(ExtendedAssembler *assembler)
 {
@@ -702,28 +697,10 @@ void AssemblerStubs::PushCallIRangeAndDispatchNative(ExtendedAssembler *assemble
     __ Ret();
 }
 
-void AssemblerStubs::PushCallArgs3AndDispatchNative(ExtendedAssembler *assembler)
+void AssemblerStubs::PushCallArgsAndDispatchNative(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs3AndDispatchNative));
-    __ Ret();
-}
-
-void AssemblerStubs::PushCallArgs2AndDispatchNative(ExtendedAssembler *assembler)
-{
-    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs2AndDispatchNative));
-    __ Ret();
-}
-
-void AssemblerStubs::PushCallArgs1AndDispatchNative(ExtendedAssembler *assembler)
-{
-    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs1AndDispatchNative));
-    __ Ret();
-}
-
-void AssemblerStubs::PushCallArgs0AndDispatchNative(ExtendedAssembler *assembler)
-{
-    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs0AndDispatchNative));
-    __ Ret();
+    __ BindAssemblerStub(RTSTUB_ID(PushCallArgsAndDispatchNative));
+    __ Ret();    
 }
 
 void AssemblerStubs::ResumeRspAndDispatch(ExtendedAssembler *assembler)

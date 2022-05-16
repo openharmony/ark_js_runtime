@@ -24,7 +24,10 @@ void RuntimeStubCSigns::Initialize()
 {
 #define INIT_SIGNATURES(name)                                 \
     name##CallSignature::Initialize(&callSigns_[ID_##name]);  \
-    callSigns_[ID_##name].SetID(ID_##name);
+    callSigns_[ID_##name].SetID(ID_##name);                   \
+    assert(callSigns_[ID_##name].IsRuntimeNGCStub() ||        \
+           callSigns_[ID_##name].IsRuntimeStub() ||           \
+           callSigns_[ID_##name].IsRuntimeVAStub());
     RUNTIME_STUB_WITHOUT_GC_LIST(INIT_SIGNATURES)
 #undef INIT_SIGNATURES
 
@@ -39,12 +42,10 @@ void RuntimeStubCSigns::Initialize()
 
 void RuntimeStubCSigns::GetASMCSigns(std::vector<const CallSignature*>& outputCallSigns)
 {
-    for (size_t i = 0; i < NUM_OF_RTSTUBS_WITHOUT_GC; i++) {
-        const CallSignature* cs = &callSigns_[i];
-        if (cs->IsAsmStub()) {
-            ASSERT(!cs->GetName().empty());
-            outputCallSigns.push_back(&callSigns_[i]);
-        }
-    }
+#define INIT_ASM_SIGNATURES(name) \
+    outputCallSigns.push_back(&callSigns_[RuntimeStubCSigns::ID_##name]);
+
+    RUNTIME_ASM_STUB_LIST(INIT_ASM_SIGNATURES)
+#undef INIT_ASM_SIGNATURES
 }
 } // namespace panda::ecmascript::kungfu
