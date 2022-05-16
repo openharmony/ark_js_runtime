@@ -14,44 +14,26 @@
  */
 
 #include "ecmascript/dfx/hprof/heap_profiler.h"
-#include "ecmascript/js_thread.h"
-#include "ecmascript/mem/heap.h"
+#include "ecmascript/ecma_vm.h"
 
 namespace panda::ecmascript {
 HeapProfilerInterface *HeapProfilerInterface::heapProfile_ = nullptr;
-HeapProfilerInterface *HeapProfilerInterface::GetInstance(JSThread *thread)
+HeapProfilerInterface *HeapProfilerInterface::GetInstance(const EcmaVM *vm)
 {
-    if (HeapProfilerInterface::heapProfile_ == nullptr) {
-        heapProfile_ = HeapProfilerInterface::CreateHeapProfiler(thread);
+    if (heapProfile_ == nullptr) {
+        heapProfile_ = const_cast<NativeAreaAllocator *>(vm->GetNativeAreaAllocator())->New<HeapProfiler>(vm);
     }
-    return HeapProfilerInterface::heapProfile_;
+    ASSERT(heapProfile_ != nullptr);
+    return heapProfile_;
 }
 
-void HeapProfilerInterface::DumpHeapSnapshot(JSThread *thread, DumpFormat dumpFormat, Stream *stream, bool isVmMode)
+void HeapProfilerInterface::Destroy(const EcmaVM *vm)
 {
-    LOG(ERROR, RUNTIME) << "HeapProfilerInterface::DumpHeapSnapshot";
-    const Heap *heap = thread->GetEcmaVM()->GetHeap();
-    auto *hprof = const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->New<HeapProfiler>(heap);
-    if (UNLIKELY(hprof == nullptr)) {
-        LOG_ECMA(FATAL) << "alloc hprof failed";
-        UNREACHABLE();
+    if (heapProfile_ == nullptr) {
+        return;
     }
-    hprof->DumpHeapSnapshot(thread, dumpFormat, stream, isVmMode);
-    const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->Delete(hprof);
-}
 
-HeapProfilerInterface *HeapProfilerInterface::CreateHeapProfiler(JSThread *thread)
-{
-    const Heap *heap = thread->GetEcmaVM()->GetHeap();
-    auto *hprof = const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->New<HeapProfiler>(heap);
-    ASSERT(hprof != nullptr);
-    return hprof;
-}
-
-void HeapProfilerInterface::Destroy(JSThread *thread)
-{
-    const Heap *heap = thread->GetEcmaVM()->GetHeap();
-    const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->Delete(heapProfile_);
+    const_cast<NativeAreaAllocator *>(vm->GetNativeAreaAllocator())->Delete(heapProfile_);
     heapProfile_ = nullptr;
 }
 }  // namespace panda::ecmascript

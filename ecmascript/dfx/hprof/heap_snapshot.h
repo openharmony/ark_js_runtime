@@ -106,7 +106,7 @@ public:
     {
         isLive_ = isLive;
     }
-    static Node *NewNode(const Heap *heap, size_t id, size_t index, CString *name, NodeType type, size_t size,
+    static Node *NewNode(const EcmaVM *vm, size_t id, size_t index, CString *name, NodeType type, size_t size,
                          TaggedObject *entry, bool isLive = true);
     template<typename T>
     static Address NewAddress(T *addr)
@@ -166,7 +166,7 @@ public:
     {
         to_ = node;
     }
-    static Edge *NewEdge(const Heap *heap, uint64_t id, EdgeType type, Node *from, Node *to, CString *name);
+    static Edge *NewEdge(const EcmaVM *vm, uint64_t id, EdgeType type, Node *from, Node *to, CString *name);
     static constexpr int EDGE_FIELD_COUNT = 3;
     ~Edge() = default;
 
@@ -238,12 +238,12 @@ public:
     static constexpr int SEQ_STEP = 2;
     NO_MOVE_SEMANTIC(HeapSnapshot);
     NO_COPY_SEMANTIC(HeapSnapshot);
-    explicit HeapSnapshot(JSThread *thread, const Heap *heap, const bool isVmMode)
-        : stringTable_(heap), thread_(thread), heap_(heap), isVmMode_(isVmMode)
+    explicit HeapSnapshot(const EcmaVM *vm, const bool isVmMode)
+        : stringTable_(vm), vm_(vm), isVmMode_(isVmMode)
     {
     }
     ~HeapSnapshot();
-    bool BuildUp(JSThread *thread);
+    bool BuildUp();
     bool Verify();
 
     void PrepareSnapshot();
@@ -311,7 +311,7 @@ private:
     Node *InsertNodeUnique(Node *node);
     void EraseNodeUnique(Node *node);
     Edge *InsertEdgeUnique(Edge *edge);
-    void AddSyntheticRoot(JSThread *thread);
+    void AddSyntheticRoot();
     Node *InsertNodeAt(size_t pos, Node *node);
     Edge *InsertEdgeAt(size_t pos, Edge *edge);
 
@@ -325,8 +325,7 @@ private:
     int totalNodesSize_ {0};
     HeapEntryMap entryMap_;
     panda::ecmascript::HeapRootVisitor rootVisitor_;
-    JSThread *thread_;
-    const Heap *heap_;
+    const EcmaVM *vm_;
     bool isVmMode_ {true};
 };
 

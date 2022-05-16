@@ -60,23 +60,23 @@ public:
 HWTEST_F_L0(HeapTrackerTest, HeapTracker)
 {
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    HeapProfilerInterface *heapProfile = HeapProfilerInterface::CreateHeapProfiler(thread);
-    heapProfile->StartHeapTracking(thread, 50);
+    HeapProfilerInterface *heapProfile = HeapProfilerInterface::GetInstance(instance);
+    heapProfile->StartHeapTracking(50);
     sleep(1);
     int count = 100;
     while (count-- > 0) {
-        thread->GetEcmaVM()->GetFactory()->NewJSAsyncFuncObject();
+        instance->GetFactory()->NewJSAsyncFuncObject();
     }
     sleep(1);
     count = 100;
     while (count-- > 0) {
-        thread->GetEcmaVM()->GetFactory()->NewJSSymbol();
+        instance->GetFactory()->NewJSSymbol();
     }
     sleep(1);
     count = 100;
     while (count-- > 0) {
-        JSHandle<EcmaString> string = thread->GetEcmaVM()->GetFactory()->NewFromASCII("Hello World");
-        thread->GetEcmaVM()->GetFactory()->NewJSString(JSHandle<JSTaggedValue>(string));
+        JSHandle<EcmaString> string = instance->GetFactory()->NewFromASCII("Hello World");
+        instance->GetFactory()->NewJSString(JSHandle<JSTaggedValue>(string));
     }
 
     // Create file test.heaptimeline
@@ -86,8 +86,8 @@ HWTEST_F_L0(HeapTrackerTest, HeapTracker)
     outputString.clear();
 
     FileStream stream(fileName.c_str());
-    heapProfile->StopHeapTracking(thread, &stream);
-    HeapProfilerInterface::Destroy(thread);
+    heapProfile->StopHeapTracking(&stream);
+    HeapProfilerInterface::Destroy(instance);
 
     // Check
     fstream inputStream(fileName, std::ios::in);
