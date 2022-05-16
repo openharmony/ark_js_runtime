@@ -252,7 +252,7 @@ private:
     void LowerLdLexVarDyn(GateRef gate, GateRef jsFunc);
     void LowerStLexVarDyn(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerCreateObjectHavingMethod(GateRef gate, GateRef glue, GateRef jsFunc);
-    void LowerLdHomeObject(GateRef gate, GateRef thisFunc);
+    void LowerLdHomeObject(GateRef gate, GateRef jsFunc);
     void LowerDefineClassWithBuffer(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerAsyncFunctionEnter(GateRef gate, GateRef glue);
     void LowerTypeOfDyn(GateRef gate, GateRef glue);

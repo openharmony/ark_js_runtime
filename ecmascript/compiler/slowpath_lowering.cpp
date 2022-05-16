@@ -229,7 +229,6 @@ void SlowPathLowering::Lower(GateRef gate)
     GateRef glue = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::GLUE);
     GateRef newTarget = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::NEW_TARGET);
     GateRef jsFunc = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::FUNC);
-    GateRef thisObj = bcBuilder_->GetCommonArgByIndex(CommonArgIdx::THIS);
 
     auto pc = bcBuilder_->GetJSBytecode(gate);
     EcmaOpcode op = static_cast<EcmaOpcode>(*pc);
@@ -603,7 +602,7 @@ void SlowPathLowering::Lower(GateRef gate)
             LowerCreateObjectHavingMethod(gate, glue, jsFunc);
             break;
         case LDHOMEOBJECT_PREF:
-            LowerLdHomeObject(gate, thisObj);
+            LowerLdHomeObject(gate, jsFunc);
             break;
         case DEFINECLASSWITHBUFFER_PREF_ID16_IMM16_IMM16_V8_V8:
             LowerDefineClassWithBuffer(gate, glue, jsFunc);
@@ -2523,13 +2522,18 @@ void SlowPathLowering::LowerCreateObjectHavingMethod(GateRef gate, GateRef glue,
     GateRef literal = GetObjectFromConstPool(jsFunc, imm);
     GateRef env = acc_.GetValueIn(gate, 1);
     GateRef constpool = GetConstPool(jsFunc);
-    GateRef newGate = LowerCallRuntime(glue, id, { literal, env, constpool });
-    ReplaceHirToCall(gate, newGate);
+    GateRef result = LowerCallRuntime(glue, id, { literal, env, constpool });
+    Label successExit(&builder_);
+    Label exceptionExit(&builder_);
+    builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
+        &exceptionExit, &successExit);
+    CREATE_DOUBLE_EXIT(successExit, exceptionExit)
+    ReplaceHirToSubCfg(gate,  result, successControl, failControl);
 }
 
-void SlowPathLowering::LowerLdHomeObject(GateRef gate, GateRef thisFunc)
+void SlowPathLowering::LowerLdHomeObject(GateRef gate, GateRef jsFunc)
 {
-    GateRef homeObj = GetHomeObjectFromJSFunction(thisFunc);
+    GateRef homeObj = GetHomeObjectFromJSFunction(jsFunc);
     std::vector<GateRef> successControl;
     std::vector<GateRef> exceptionControl;
     successControl.emplace_back(builder_.GetState());
