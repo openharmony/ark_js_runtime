@@ -371,7 +371,7 @@ bool JSAPIArrayList::GetOwnProperty(JSThread *thread, const JSHandle<JSAPIArrayL
                                     const JSHandle<JSTaggedValue> &key, PropertyDescriptor &desc)
 {
     uint32_t index = 0;
-    if (UNLIKELY(JSTaggedValue::ToElementIndex(key.GetTaggedValue(), &index))) {
+    if (!UNLIKELY(JSTaggedValue::ToElementIndex(key.GetTaggedValue(), &index))) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Can not obtain attributes of no-number type", false);
     }
 
