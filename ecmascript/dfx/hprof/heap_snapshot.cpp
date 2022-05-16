@@ -256,6 +256,8 @@ CString *HeapSnapshot::GenerateNodeName(TaggedObject *entry)
             return GetString("MapIterator");
         case JSType::JS_SET_ITERATOR:
             return GetString("SetIterator");
+        case JSType::JS_REG_EXP_ITERATOR:
+            return GetString("RegExpIterator");
         case JSType::JS_ARRAY_ITERATOR:
             return GetString("ArrayIterator");
         case JSType::JS_STRING_ITERATOR:

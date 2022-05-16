@@ -90,6 +90,7 @@
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_regexp.h"
+#include "ecmascript/js_regexp_iterator.h"
 #include "ecmascript/js_relative_time_format.h"
 #include "ecmascript/js_runtime_options.h"
 #include "ecmascript/js_set.h"
@@ -565,6 +566,8 @@ void Builtins::InitializeSymbol(const JSHandle<GlobalEnv> &env, const JSHandle<J
     SetNoneAttributeProperty(symbolFunction, "iterator", iteratorSymbol);
     JSHandle<JSTaggedValue> matchSymbol(factory_->NewPublicSymbolWithChar("Symbol.match"));
     SetNoneAttributeProperty(symbolFunction, "match", matchSymbol);
+    JSHandle<JSTaggedValue> matchAllSymbol(factory_->NewPublicSymbolWithChar("Symbol.matchAll"));
+    SetNoneAttributeProperty(symbolFunction, "matchAll", matchAllSymbol);
     JSHandle<JSTaggedValue> replaceSymbol(factory_->NewPublicSymbolWithChar("Symbol.replace"));
     SetNoneAttributeProperty(symbolFunction, "replace", replaceSymbol);
     JSHandle<JSTaggedValue> searchSymbol(factory_->NewPublicSymbolWithChar("Symbol.search"));
@@ -599,6 +602,7 @@ void Builtins::InitializeSymbol(const JSHandle<GlobalEnv> &env, const JSHandle<J
     env->SetToStringTagSymbol(thread_, toStringTagSymbol);
     env->SetIteratorSymbol(thread_, iteratorSymbol);
     env->SetMatchSymbol(thread_, matchSymbol);
+    env->SetMatchAllSymbol(thread_, matchAllSymbol);
     env->SetReplaceSymbol(thread_, replaceSymbol);
     env->SetSearchSymbol(thread_, searchSymbol);
     env->SetSpeciesSymbol(thread_, speciesSymbol);
@@ -653,6 +657,7 @@ void Builtins::InitializeSymbolWithRealm(const JSHandle<GlobalEnv> &realm,
     SetNoneAttributeProperty(symbolFunction, "toStringTag", env->GetToStringTagSymbol());
     SetNoneAttributeProperty(symbolFunction, "iterator", env->GetIteratorSymbol());
     SetNoneAttributeProperty(symbolFunction, "match", env->GetMatchSymbol());
+    SetNoneAttributeProperty(symbolFunction, "matchAll", env->GetMatchAllSymbol());
     SetNoneAttributeProperty(symbolFunction, "replace", env->GetReplaceSymbol());
     SetNoneAttributeProperty(symbolFunction, "search", env->GetSearchSymbol());
     SetNoneAttributeProperty(symbolFunction, "species", env->GetSpeciesSymbol());
@@ -682,6 +687,7 @@ void Builtins::InitializeSymbolWithRealm(const JSHandle<GlobalEnv> &realm,
     realm->SetToStringTagSymbol(thread_, env->GetToStringTagSymbol());
     realm->SetIteratorSymbol(thread_, env->GetIteratorSymbol());
     realm->SetMatchSymbol(thread_, env->GetMatchSymbol());
+    realm->SetMatchAllSymbol(thread_, env->GetMatchAllSymbol());
     realm->SetReplaceSymbol(thread_, env->GetReplaceSymbol());
     realm->SetSearchSymbol(thread_, env->GetSearchSymbol());
     realm->SetSpeciesSymbol(thread_, env->GetSpeciesSymbol());
@@ -1540,6 +1546,7 @@ void Builtins::InitializeIterator(const JSHandle<GlobalEnv> &env, const JSHandle
     InitializeMapIterator(env, iteratorFuncDynclass);
     InitializeArrayIterator(env, iteratorFuncDynclass);
     InitializeStringIterator(env, iteratorFuncDynclass);
+    InitializeRegexpIterator(env, iteratorFuncDynclass);
 }
 
 void Builtins::InitializeForinIterator(const JSHandle<GlobalEnv> &env,
@@ -1589,6 +1596,17 @@ void Builtins::InitializeArrayIterator(const JSHandle<GlobalEnv> &env,
     env->SetArrayIteratorPrototype(thread_, arrayIteratorPrototype);
 }
 
+void Builtins::InitializeRegexpIterator(const JSHandle<GlobalEnv> &env,
+                                        const JSHandle<JSHClass> &iteratorFuncDynclass) const
+{
+    // RegExpIterator.prototype
+    JSHandle<JSObject> regExpIteratorPrototype(factory_->NewJSObject(iteratorFuncDynclass));
+    // Iterator.prototype.next()
+    SetFunction(env, regExpIteratorPrototype, "next", JSRegExpIterator::Next, FunctionLength::ZERO);
+    SetStringTagSymbol(env, regExpIteratorPrototype, "RegExp String Iterator");
+    env->SetRegExpIteratorPrototype(thread_, regExpIteratorPrototype);
+}
+
 void Builtins::InitializeRegExp(const JSHandle<GlobalEnv> &env)
 {
     [[maybe_unused]] EcmaHandleScope scope(thread_);
@@ -1606,22 +1624,23 @@ void Builtins::InitializeRegExp(const JSHandle<GlobalEnv> &env)
 
     JSHandle<JSFunction>(regexpFunction)->SetFunctionPrototype(thread_, regexpFuncInstanceDynclass.GetTaggedValue());
 
+    const GlobalEnvConstants *globalConstants = thread_->GlobalConstants();
     // RegExp.prototype method
     SetFunction(env, regPrototype, "exec", RegExp::Exec, FunctionLength::ONE);
     SetFunction(env, regPrototype, "test", RegExp::Test, FunctionLength::ONE);
-    SetFunction(env, regPrototype, thread_->GlobalConstants()->GetHandledToStringString(), RegExp::ToString,
+    SetFunction(env, regPrototype, globalConstants->GetHandledToStringString(), RegExp::ToString,
                 FunctionLength::ZERO);
 
     JSHandle<JSTaggedValue> flagsGetter = CreateGetter(env, RegExp::GetFlags, "flags", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> flagsKey(factory_->NewFromASCII("flags"));
+    JSHandle<JSTaggedValue> flagsKey(globalConstants->GetHandledFlagsString());
     SetGetter(regPrototype, flagsKey, flagsGetter);
 
     JSHandle<JSTaggedValue> sourceGetter = CreateGetter(env, RegExp::GetSource, "source", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> sourceKey(factory_->NewFromASCII("source"));
+    JSHandle<JSTaggedValue> sourceKey(globalConstants->GetHandledSourceString());
     SetGetter(regPrototype, sourceKey, sourceGetter);
 
     JSHandle<JSTaggedValue> globalGetter = CreateGetter(env, RegExp::GetGlobal, "global", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> globalKey(factory_->NewFromASCII("global"));
+    JSHandle<JSTaggedValue> globalKey(globalConstants->GetHandledGlobalString());
     SetGetter(regPrototype, globalKey, globalGetter);
 
     JSHandle<JSTaggedValue> ignoreCaseGetter =
@@ -1639,11 +1658,11 @@ void Builtins::InitializeRegExp(const JSHandle<GlobalEnv> &env)
     SetGetter(regPrototype, dotAllKey, dotAllGetter);
 
     JSHandle<JSTaggedValue> stickyGetter = CreateGetter(env, RegExp::GetSticky, "sticky", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> stickyKey(factory_->NewFromASCII("sticky"));
+    JSHandle<JSTaggedValue> stickyKey(globalConstants->GetHandledStickyString());
     SetGetter(regPrototype, stickyKey, stickyGetter);
 
     JSHandle<JSTaggedValue> unicodeGetter = CreateGetter(env, RegExp::GetUnicode, "unicode", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> unicodeKey(factory_->NewFromASCII("unicode"));
+    JSHandle<JSTaggedValue> unicodeKey(globalConstants->GetHandledUnicodeString());
     SetGetter(regPrototype, unicodeKey, unicodeGetter);
 
     // Set RegExp [ @@species ]
@@ -1659,6 +1678,9 @@ void Builtins::InitializeRegExp(const JSHandle<GlobalEnv> &env)
                         FunctionLength::ONE);
     // Set RegExp.prototype[@@match]
     SetFunctionAtSymbol(env, regPrototype, env->GetMatchSymbol(), "[Symbol.match]", RegExp::Match, FunctionLength::ONE);
+    // Set RegExp.prototype[@@matchAll]
+    SetFunctionAtSymbol(env, regPrototype, env->GetMatchAllSymbol(), "[Symbol.matchAll]", RegExp::MatchAll,
+                        FunctionLength::ONE);
     // Set RegExp.prototype[@@replace]
     SetFunctionAtSymbol(env, regPrototype, env->GetReplaceSymbol(), "[Symbol.replace]", RegExp::Replace,
                         FunctionLength::TWO);

@@ -426,6 +426,7 @@ ecma_source = [
   "ecmascript/js_primitive_ref.cpp",
   "ecmascript/js_promise.cpp",
   "ecmascript/js_proxy.cpp",
+  "ecmascript/js_regexp_iterator.cpp",
   "ecmascript/js_serializer.cpp",
   "ecmascript/js_set.cpp",
   "ecmascript/js_set_iterator.cpp",

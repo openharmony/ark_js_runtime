@@ -536,6 +536,7 @@ public:
     bool IsGeneratorObject() const;
     bool IsForinIterator() const;
     bool IsJSSetIterator() const;
+    bool IsJSRegExpIterator() const;
     bool IsJSMapIterator() const;
     bool IsJSArrayIterator() const;
     bool IsJSAPIArrayListIterator() const;

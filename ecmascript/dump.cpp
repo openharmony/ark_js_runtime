@@ -69,6 +69,7 @@
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_realm.h"
 #include "ecmascript/js_regexp.h"
+#include "ecmascript/js_regexp_iterator.h"
 #include "ecmascript/js_relative_time_format.h"
 #include "ecmascript/js_set.h"
 #include "ecmascript/js_set_iterator.h"
@@ -198,6 +199,8 @@ CString JSHClass::DumpJSType(JSType type)
             return "ArrayIterator";
         case JSType::JS_STRING_ITERATOR:
             return "StringIterator";
+        case JSType::JS_REG_EXP_ITERATOR:
+            return "RegExpIterator";
         case JSType::JS_ARRAY_BUFFER:
             return "ArrayBuffer";
         case JSType::JS_SHARED_ARRAY_BUFFER:
@@ -599,6 +602,9 @@ static void DumpObject(TaggedObject *obj, std::ostream &os)
             break;
         case JSType::JS_SET_ITERATOR:
             JSSetIterator::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_REG_EXP_ITERATOR:
+            JSRegExpIterator::Cast(obj)->Dump(os);
             break;
         case JSType::JS_ARRAY_ITERATOR:
             JSArrayIterator::Cast(obj)->Dump(os);
@@ -1470,6 +1476,20 @@ void JSSetIterator::Dump(std::ostream &os) const
     set->Dump(os);
 }
 
+void JSRegExpIterator::Dump(std::ostream &os) const
+{
+    os << " - IteratingRegExp: ";
+    GetIteratingRegExp().D();
+    os << "\n";
+    os << " - IteratedString: ";
+    GetIteratedString().D();
+    os << "\n";
+    os << " - Global: " << std::dec << GetGlobal() << "\n";
+    os << " - Unicode: " << std::dec << GetUnicode() << "\n";
+    os << " - Done: " << std::dec << GetDone() << "\n";
+    JSObject::Dump(os);
+}
+
 void JSArray::Dump(std::ostream &os) const
 {
     os << " - length: " << std::dec << GetArrayLength() << "\n";
@@ -1700,6 +1720,8 @@ void GlobalEnv::Dump(std::ostream &os) const
     GetIteratorSymbol().GetTaggedValue().Dump(os);
     os << " - MatchSymbol: ";
     GetMatchSymbol().GetTaggedValue().Dump(os);
+    os << " - MatchAllSymbol: ";
+    GetMatchAllSymbol().GetTaggedValue().Dump(os);
     os << " - ReplaceSymbol: ";
     GetReplaceSymbol().GetTaggedValue().Dump(os);
     os << " - SearchSymbol: ";
@@ -1726,6 +1748,8 @@ void GlobalEnv::Dump(std::ostream &os) const
     GetMapIteratorPrototype().GetTaggedValue().Dump(os);
     os << " - SetIteratorPrototype: ";
     GetSetIteratorPrototype().GetTaggedValue().Dump(os);
+    os << " - RegExpIteratorPrototype: ";
+    GetRegExpIteratorPrototype().GetTaggedValue().Dump(os);
     os << " - ArrayIteratorPrototype: ";
     GetArrayIteratorPrototype().GetTaggedValue().Dump(os);
     os << " - StringIteratorPrototype: ";
@@ -2868,6 +2892,7 @@ static void DumpObject(TaggedObject *obj,
         case JSType::JS_SET_ITERATOR:
         case JSType::JS_ARRAY_ITERATOR:
         case JSType::JS_STRING_ITERATOR:
+        case JSType::JS_REG_EXP_ITERATOR:
         case JSType::JS_ARRAY_BUFFER:
             JSArrayBuffer::Cast(obj)->DumpForSnapshot(vec);
             return;
@@ -3450,6 +3475,16 @@ void JSRegExp::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &v
     JSObject::DumpForSnapshot(vec);
 }
 
+void JSRegExpIterator::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("IteratingRegExp"), GetIteratingRegExp()));
+    vec.push_back(std::make_pair(CString("IteratedString"), GetIteratedString()));
+    vec.push_back(std::make_pair(CString("Global"), JSTaggedValue(GetGlobal())));
+    vec.push_back(std::make_pair(CString("Unicode"), JSTaggedValue(GetUnicode())));
+    vec.push_back(std::make_pair(CString("Done"), JSTaggedValue(GetDone())));
+    JSObject::DumpForSnapshot(vec);
+}
+
 void JSProxy::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     vec.push_back(std::make_pair(CString("target"), GetTarget()));
@@ -3528,6 +3563,7 @@ void GlobalEnv::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &
     vec.push_back(std::make_pair(CString("ToStringTagSymbol"), GetToStringTagSymbol().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("IteratorSymbol"), GetIteratorSymbol().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("MatchSymbol"), GetMatchSymbol().GetTaggedValue()));
+    vec.push_back(std::make_pair(CString("MatchAllSymbol"), GetMatchAllSymbol().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("ReplaceSymbol"), GetReplaceSymbol().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("SearchSymbol"), GetSearchSymbol().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("SpeciesSymbol"), GetSpeciesSymbol().GetTaggedValue()));
@@ -3541,6 +3577,7 @@ void GlobalEnv::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &
     vec.push_back(std::make_pair(CString("StringIterator"), GetStringIterator().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("MapIteratorPrototype"), GetMapIteratorPrototype().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("SetIteratorPrototype"), GetSetIteratorPrototype().GetTaggedValue()));
+    vec.push_back(std::make_pair(CString("RegExpIteratorPrototype"), GetRegExpIteratorPrototype().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("ArrayIteratorPrototype"), GetArrayIteratorPrototype().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("StringIteratorPrototype"), GetStringIteratorPrototype().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("LengthString"), globalConst->GetLengthString()));

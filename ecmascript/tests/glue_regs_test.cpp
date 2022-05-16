@@ -62,7 +62,7 @@ HWTEST_F_L0(GlueRegsTest, ConstantClassTest)
     const JSTaggedValue *address = globalConst->BeginSlot();
     while (address < globalConst->EndSlot()) {
         EXPECT_TRUE(!(*address).IsHole());  // Visit barely
-        address += sizeof(JSTaggedValue);
+        address += 1;
     }
 }
 
