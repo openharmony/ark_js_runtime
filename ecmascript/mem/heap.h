@@ -282,11 +282,25 @@ public:
     inline bool MoveYoungRegionSync(Region *region);
     inline void MergeToOldSpaceSync(LocalSpace *localSpace);
 
+    // record lastRegion for each space, which will be used in ReclaimRegions()
+    void PrepareRecordRegionsForReclaim()
+    {
+        activeSpace_->SetRecordRegion();
+        oldSpace_->SetRecordRegion();
+        snapshotSpace_->SetRecordRegion();
+        nonMovableSpace_->SetRecordRegion();
+        hugeObjectSpace_->SetRecordRegion();
+        machineCodeSpace_->SetRecordRegion();
+    }
+
     template<class Callback>
     void EnumerateOldSpaceRegions(const Callback &cb, Region *region = nullptr) const;
 
     template<class Callback>
     void EnumerateNonNewSpaceRegions(const Callback &cb) const;
+
+    template<class Callback>
+    void EnumerateNonNewSpaceRegionsWithRecord(const Callback &cb) const;
 
     template<class Callback>
     void EnumerateNewSpaceRegions(const Callback &cb) const;
@@ -365,7 +379,7 @@ private:
     void IncreaseTaskCount();
     void ReduceTaskCount();
     void WaitClearTaskFinished();
-    inline void ReclaimRegions(TriggerGCType gcType, Region *lastRegionOfToSpace = nullptr);
+    inline void ReclaimRegions(TriggerGCType gcType);
 
     class ParallelGCTask : public Task {
     public:
@@ -383,10 +397,7 @@ private:
 
     class AsyncClearTask : public Task {
     public:
-        AsyncClearTask(Heap *heap, TriggerGCType type) : heap_(heap), gcType_(type)
-        {
-            lastRegionOfToSpace_ = heap->GetNewSpace()->GetCurrentRegion();
-        }
+        AsyncClearTask(Heap *heap, TriggerGCType type) : heap_(heap), gcType_(type) {}
         ~AsyncClearTask() override = default;
         bool Run(uint32_t threadIndex) override;
 
@@ -394,7 +405,6 @@ private:
         NO_MOVE_SEMANTIC(AsyncClearTask);
     private:
         Heap *heap_;
-        Region *lastRegionOfToSpace_;
         TriggerGCType gcType_;
     };
 

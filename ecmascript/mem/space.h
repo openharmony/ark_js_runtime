@@ -156,8 +156,15 @@ public:
         return regionList_;
     }
 
+    void SetRecordRegion()
+    {
+        recordRegion_ = GetCurrentRegion();
+    }
+
     template <class Callback>
     inline void EnumerateRegions(const Callback &cb, Region *region = nullptr) const;
+    template <class Callback>
+    inline void EnumerateRegionsWithRecord(const Callback &cb) const;
 
     inline void AddRegion(Region *region);
     inline void RemoveRegion(Region *region);
@@ -179,6 +186,7 @@ protected:
     size_t maximumCapacity_ {0};
     size_t committedSize_ {0};
     size_t objectSize_ {0};
+    Region *recordRegion_ {nullptr};
 };
 
 class HugeObjectSpace : public Space {
@@ -189,7 +197,8 @@ public:
     NO_COPY_SEMANTIC(HugeObjectSpace);
     NO_MOVE_SEMANTIC(HugeObjectSpace);
     uintptr_t Allocate(size_t objectSize, JSThread *thread);
-    void Sweep();
+    void Sweep(bool isConcurrentSweep);
+    void FinishConcurrentSweep();
     size_t GetHeapObjectSize() const;
     void IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const;
 };

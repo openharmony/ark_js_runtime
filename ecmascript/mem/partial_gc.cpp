@@ -60,8 +60,6 @@ void PartialGC::Initialize()
         if (heap_->IsFullMark()) {
             heap_->GetOldSpace()->SelectCSet();
             heap_->EnumerateNonNewSpaceRegions([](Region *current) {
-                current->ClearMarkGCBitset();
-                current->ClearCrossRegionRSet();
                 current->ResetAliveObject();
             });
         }
@@ -83,6 +81,9 @@ void PartialGC::Finish()
     } else {
         size_t aliveSize = 0;
         workManager_->Finish(aliveSize);
+    }
+    if (heap_->IsFullMark()) {
+        heap_->GetSweeper()->TryFillSweptRegion();
     }
 }
 

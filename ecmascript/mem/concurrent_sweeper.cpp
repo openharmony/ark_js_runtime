@@ -17,6 +17,7 @@
 
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/mem/heap.h"
+#include "ecmascript/mem/region-inl.h"
 #include "ecmascript/mem/space-inl.h"
 #include "ecmascript/taskpool/taskpool.h"
 #include "ecmascript/runtime_call_id.h"
@@ -25,17 +26,6 @@ namespace panda::ecmascript {
 ConcurrentSweeper::ConcurrentSweeper(Heap *heap, bool concurrentSweep)
     : heap_(heap), concurrentSweep_(concurrentSweep)
 {
-}
-
-void ConcurrentSweeper::PostConcurrentSweepTasks(bool fullGC)
-{
-    if (concurrentSweep_) {
-        if (!fullGC) {
-            Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<SweeperTask>(this, OLD_SPACE));
-        }
-        Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<SweeperTask>(this, NON_MOVABLE));
-        Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<SweeperTask>(this, MACHINE_CODE_SPACE));
-    }
 }
 
 void ConcurrentSweeper::Sweep(bool fullGC)
@@ -48,13 +38,17 @@ void ConcurrentSweeper::Sweep(bool fullGC)
         }
         heap_->GetNonMovableSpace()->PrepareSweeping();
         heap_->GetMachineCodeSpace()->PrepareSweeping();
-
         // Prepare
         isSweeping_ = true;
         startSpaceType_ = fullGC ? NON_MOVABLE : OLD_SPACE;
         for (int type = startSpaceType_; type < FREE_LIST_NUM; type++) {
             remainingTaskNum_[type] = FREE_LIST_NUM - startSpaceType_;
         }
+        if (!fullGC) {
+            Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<SweeperTask>(this, OLD_SPACE));
+        }
+        Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<SweeperTask>(this, NON_MOVABLE));
+        Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<SweeperTask>(this, MACHINE_CODE_SPACE));
     } else {
         if (!fullGC) {
             heap_->GetOldSpace()->Sweep();
@@ -62,7 +56,7 @@ void ConcurrentSweeper::Sweep(bool fullGC)
         heap_->GetNonMovableSpace()->Sweep();
         heap_->GetMachineCodeSpace()->Sweep();
     }
-    heap_->GetHugeObjectSpace()->Sweep();
+    heap_->GetHugeObjectSpace()->Sweep(concurrentSweep_);
 }
 
 void ConcurrentSweeper::AsyncSweepSpace(MemSpaceType type, bool isMain)
@@ -132,6 +126,27 @@ void ConcurrentSweeper::FinishSweeping(MemSpaceType type)
 {
     SparseSpace *space = heap_->GetSpaceWithType(type);
     space->FillSweptRegion();
+}
+
+void ConcurrentSweeper::TryFillSweptRegion()
+{
+    for (int i = startSpaceType_; i < FREE_LIST_NUM; i++) {
+        FinishSweeping(static_cast<MemSpaceType>(i));
+    }
+    if (concurrentSweep_) {
+        heap_->GetHugeObjectSpace()->FinishConcurrentSweep();
+    }
+}
+
+void ConcurrentSweeper::ClearRSetInRange(Region *current, uintptr_t freeStart, uintptr_t freeEnd)
+{
+    if (concurrentSweep_) {
+        current->AtomicClearSweepingRSetInRange(freeStart, freeEnd);
+        current->AtomicClearCrossRegionRSetInRange(freeStart, freeEnd);
+    } else {
+        current->ClearOldToNewRSetInRange(freeStart, freeEnd);
+        current->ClearCrossRegionRSetInRange(freeStart, freeEnd);
+    }
 }
 
 bool ConcurrentSweeper::SweeperTask::Run([[maybe_unused]] uint32_t threadIndex)
