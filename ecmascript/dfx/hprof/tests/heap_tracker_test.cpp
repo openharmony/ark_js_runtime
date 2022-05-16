@@ -87,7 +87,7 @@ HWTEST_F_L0(HeapTrackerTest, HeapTracker)
 
     FileStream stream(fileName.c_str());
     heapProfile->StopHeapTracking(thread, &stream);
-    HeapProfilerInterface::Destroy(thread, heapProfile);
+    HeapProfilerInterface::Destroy(thread);
 
     // Check
     fstream inputStream(fileName, std::ios::in);
