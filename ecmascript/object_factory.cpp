@@ -2616,7 +2616,8 @@ JSHandle<JSAPIArrayList> ObjectFactory::NewJSAPIArrayList(uint32_t capacity)
     JSHandle<JSAPIArrayList> obj =
         JSHandle<JSAPIArrayList>(NewJSObjectByConstructor(JSHandle<JSFunction>(builtinObj), builtinObj));
     ObjectFactory *factory = thread_->GetEcmaVM()->GetFactory();
-    obj->SetElements(thread_, factory->NewTaggedArray(capacity));
+    JSHandle<TaggedArray> elements = factory->NewTaggedArray(capacity);
+    obj->SetElements(thread_, elements);
 
     return obj;
 }

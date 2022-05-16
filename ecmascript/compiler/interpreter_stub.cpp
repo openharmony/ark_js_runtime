@@ -403,7 +403,7 @@ DECLARE_ASM_HANDLER(HandleNewObjDynRangePrefImm16V8)
                           IntPtr(0), sp, Int64(static_cast<uint64_t>(FrameType::ASM_INTERPRETER_FRAME)));
             SetCurrentSpFrame(glue, *newSp);
             GateRef numArgsWithThis = Int16Add(numArgs,
-                                               Int16(static_cast<int16_t>(1 - NUM_MANDATORY_JSFUNC_ARGS)));  // 1: this
+                                               Int16(1 - static_cast<int16_t>(NUM_MANDATORY_JSFUNC_ARGS)));  // 1: this
             GateRef retValue = CallRuntime(glue, RTSTUB_ID(CallNative),
                                            {Int16BuildTaggedTypeWithNoGC(numArgsWithThis)});
             SetCurrentSpFrame(glue, sp);

@@ -1212,7 +1212,7 @@ RegExpExecutor::MatchResult BuiltinsRegExp::Matcher(JSThread *thread, const JSHa
     if (lastIndex < 0) {
         lastIndex = 0;
     }
-    bool ret = executor.Execute(buffer, lastIndex, length, bytecodeBuffer, isUtf16);
+    bool ret = executor.Execute(buffer, lastIndex, static_cast<uint32_t>(length), bytecodeBuffer, isUtf16);
     RegExpExecutor::MatchResult result = executor.GetResult(thread, ret);
     return result;
 }
