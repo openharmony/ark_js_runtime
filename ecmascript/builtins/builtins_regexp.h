@@ -55,6 +55,8 @@ public:
     static JSTaggedValue GetSpecies(EcmaRuntimeCallInfo *argv);
     // 21.2.5.6 RegExp.prototype [ @@match ] ( string )
     static JSTaggedValue Match(EcmaRuntimeCallInfo *argv);
+    // 22.2.5.8 RegExp.prototype [ @@matchAll ] ( string )
+    static JSTaggedValue MatchAll(EcmaRuntimeCallInfo *argv);
     // 21.2.5.8 RegExp.prototype [ @@replace ] ( string, replaceValue )
     static JSTaggedValue Replace(EcmaRuntimeCallInfo *argv);
     // 21.2.5.9 RegExp.prototype [ @@search ] ( string )
@@ -65,6 +67,12 @@ public:
     static JSTaggedValue RegExpCreate(JSThread *thread, const JSHandle<JSTaggedValue> &pattern,
                                       const JSHandle<JSTaggedValue> &flags);
     static JSTaggedValue FlagsBitsToString(JSThread *thread, uint8_t flags);
+    // 21.2.5.2.1 Runtime Semantics: RegExpExec ( R, S )
+    static JSTaggedValue RegExpExec(JSThread *thread, const JSHandle<JSTaggedValue> &regexp,
+                                    const JSHandle<JSTaggedValue> &inputString, bool useCache);
+    // 21.2.5.2.3 AdvanceStringIndex ( S, index, unicode )
+    static uint32_t AdvanceStringIndex(const JSHandle<JSTaggedValue> &inputStr, uint32_t index,
+                                       bool unicode);
 
 private:
     static constexpr uint32_t MIN_REPLACE_STRING_LENGTH = 1000;
@@ -72,18 +80,13 @@ private:
 
     static RegExpExecutor::MatchResult Matcher(JSThread *thread, const JSHandle<JSTaggedValue> &regexp,
                                                const uint8_t *buffer, size_t length, int32_t lastindex, bool isUtf16);
-    // 21.2.5.2.3 AdvanceStringIndex ( S, index, unicode )
-    static uint32_t AdvanceStringIndex(const JSHandle<JSTaggedValue> &inputStr, uint32_t index,
-                                       bool unicode);
 
     static bool GetFlagsInternal(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
                                  const uint8_t mask);
     // 21.2.5.2.2 Runtime Semantics: RegExpBuiltinExec ( R, S )
     static JSTaggedValue RegExpBuiltinExec(JSThread *thread, const JSHandle<JSTaggedValue> &regexp,
                                            const JSHandle<JSTaggedValue> &inputStr, bool useCache);
-    // 21.2.5.2.1 Runtime Semantics: RegExpExec ( R, S )
-    static JSTaggedValue RegExpExec(JSThread *thread, const JSHandle<JSTaggedValue> &regexp,
-                                    const JSHandle<JSTaggedValue> &inputString, bool useCache);
+
     // 21.2.3.2.1 Runtime Semantics: RegExpAlloc ( newTarget )
     static JSTaggedValue RegExpAlloc(JSThread *thread, const JSHandle<JSTaggedValue> &newTarget);
 

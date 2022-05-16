@@ -455,6 +455,7 @@ namespace panda::ecmascript {
     V(RegExp, GetFlags)                       \
     V(RegExp, GetSpecies)                     \
     V(RegExp, Match)                          \
+    V(RegExp, MatchAll)                       \
     V(RegExp, Replace)                        \
     V(RegExp, Search)                         \
     V(RegExp, Split)                          \
