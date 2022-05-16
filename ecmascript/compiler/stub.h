@@ -29,6 +29,7 @@ using namespace panda::ecmascript;
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DEFVARIABLE(varname, type, val) Variable varname(GetEnvironment(), type, NextVariableId(), val)
 #define NOGC_RTSTUB_CSIGNS_BEGIN (CommonStubCSigns::NUM_OF_STUBS + BytecodeStubCSigns::NUM_OF_VALID_STUBS)
+
 class Stub {
 public:
     explicit Stub(const char *name, int argCount, Circuit *circuit)
@@ -41,6 +42,10 @@ public:
     virtual void GenerateCircuit(const CompilationConfig *cfg)
     {
         env_.SetCompilationConfig(cfg);
+    }
+    CircuitBuilder* GetBuilder()
+    {
+        return &builder_;
     }
     Environment *GetEnvironment()
     {
@@ -92,10 +97,10 @@ public:
     void LoopBegin(Label *loopHead);
     void LoopEnd(Label *loopHead);
     // call operation
-    GateRef CallRuntime(GateRef glue, int index, std::initializer_list<GateRef> args);
+    GateRef CallRuntime(GateRef glue, int index, const std::initializer_list<GateRef>& args);
     GateRef CallRuntime(GateRef glue, int index, GateRef argc, GateRef argv);
-    GateRef CallNGCRuntime(GateRef glue, size_t index, std::initializer_list<GateRef> args);
-    GateRef CallStub(GateRef glue, size_t index, std::initializer_list<GateRef> args);
+    GateRef CallNGCRuntime(GateRef glue, int index, const std::initializer_list<GateRef>& args);
+    GateRef CallStub(GateRef glue, int index, const std::initializer_list<GateRef>& args);
     void DebugPrint(GateRef thread, std::initializer_list<GateRef> args);
     void FatalPrint(GateRef thread, std::initializer_list<GateRef> args);
     // memory

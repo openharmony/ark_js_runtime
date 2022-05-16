@@ -125,7 +125,7 @@ public:
     inline size_t CopyDataUtf8(uint8_t *buf, size_t maxLength) const
     {
         if (maxLength == 0) {
-            return 0;
+            return 1; // maxLength was -1 at napi
         }
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         buf[maxLength - 1] = '\0';
@@ -141,7 +141,7 @@ public:
     inline size_t WriteUtf8(uint8_t *buf, size_t maxLength) const
     {
         if (maxLength == 0) {
-            return 0;
+            return 1; // maxLength was -1 at napi
         }
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         buf[maxLength - 1] = '\0';

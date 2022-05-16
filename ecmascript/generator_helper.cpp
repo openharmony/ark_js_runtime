@@ -75,17 +75,4 @@ JSHandle<JSObject> GeneratorHelper::Throw(JSThread *thread, const JSHandle<Gener
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSObject, thread);
     return JSIterator::CreateIterResultObject(thread, throwValue, true);
 }
-
-// main->foo
-void GeneratorHelper::ChangeGenContext(JSThread *thread, const JSHandle<GeneratorContext> &genContext)
-{
-    JSThread *jsThread = thread;
-    EcmaInterpreter::ChangeGenContext(jsThread, genContext);
-}
-
-// foo->main
-void GeneratorHelper::ResumeContext(JSThread *thread)
-{
-    EcmaInterpreter::ResumeContext(thread);
-}
 }  // namespace panda::ecmascript

@@ -228,26 +228,30 @@ inline void Stub::Bind(Label *label)
     env_.SetCurrentLabel(label);
 }
 
-inline GateRef Stub::CallNGCRuntime(GateRef glue, size_t index,
-    std::initializer_list<GateRef> args)
+inline GateRef Stub::CallRuntime(GateRef glue, int index, const std::initializer_list<GateRef>& args)
 {
-    const CallSignature *descriptor = RuntimeStubCSigns::Get(index);
-    GateRef target = IntPtr(index);
-    auto depend = env_.GetCurrentLabel()->GetDepend();
-    GateRef result = env_.GetBulder()->NoGcRuntimeCall(descriptor, glue, target, depend, args);
-    env_.GetCurrentLabel()->SetDepend(result);
+    SavePcIfNeeded(glue);
+    GateRef result = env_.GetBulder()->CallRuntime(glue, index, Gate::InvalidGateRef, args);
     return result;
 }
 
-inline GateRef Stub::CallStub(GateRef glue, size_t index,
-    std::initializer_list<GateRef> args)
+inline GateRef Stub::CallRuntime(GateRef glue, int index, GateRef argc, GateRef argv)
 {
     SavePcIfNeeded(glue);
-    const CallSignature *descriptor = CommonStubCSigns::Get(index);
-    GateRef target = IntPtr(index);
-    auto depend = env_.GetCurrentLabel()->GetDepend();
-    GateRef result = env_.GetBulder()->Call(descriptor, glue, target, args, depend);
-    env_.GetCurrentLabel()->SetDepend(result);
+    GateRef result = env_.GetBulder()->CallRuntimeVarargs(glue, index, argc, argv);
+    return result;
+}
+
+inline GateRef Stub::CallNGCRuntime(GateRef glue, int index, const std::initializer_list<GateRef>& args)
+{
+    GateRef result = env_.GetBulder()->CallNGCRuntime(glue, index, Gate::InvalidGateRef, args);
+    return result;
+}
+
+inline GateRef Stub::CallStub(GateRef glue, int index, const std::initializer_list<GateRef>& args)
+{
+    SavePcIfNeeded(glue);
+    GateRef result = GetBuilder()->CallStub(glue, index, args);
     return result;
 }
 
@@ -271,25 +275,6 @@ void Stub::SavePcIfNeeded(GateRef glue)
         Store(VariableType::INT64(), glue, frame,
             IntPtr(AsmInterpretedFrame::GetPcOffset(GetEnvironment()->IsArch32Bit())), pc);
     }
-}
-
-inline GateRef Stub::CallRuntime(GateRef glue, int index, std::initializer_list<GateRef> args)
-{
-    SavePcIfNeeded(glue);
-    auto depend = env_.GetCurrentLabel()->GetDepend();
-    GateRef result = env_.GetBulder()->CallRuntimeWithDepend(glue, index, depend, args);
-    env_.GetCurrentLabel()->SetDepend(result);
-    return result;
-}
-
-inline GateRef Stub::CallRuntime(GateRef glue, int index, GateRef argc, GateRef argv)
-{
-    SavePcIfNeeded(glue);
-    auto depend = env_.GetCurrentLabel()->GetDepend();
-    GateRef target = env_.GetBulder()->Int64(index);
-    GateRef result = env_.GetBulder()->CallRuntimeWithDepend(glue, target, depend, argc, argv);
-    env_.GetCurrentLabel()->SetDepend(result);
-    return result;
 }
 
 // memory

@@ -148,8 +148,6 @@ private:
         CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
     bool IsSkipLine(const JSPtLocation &location);
 
-    constexpr static int32_t SPECIAL_LINE_MARK = -1;
-
     FrontEnd *frontend_ {nullptr};
     const EcmaVM *ecmaVm_ {nullptr};
     std::unique_ptr<JSPtHooks> hooks_ {nullptr};

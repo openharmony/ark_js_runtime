@@ -128,7 +128,7 @@ private:
                        const std::vector<GateRef> &exceptionControl,
                        bool noThrow = false);
     void ReplaceHirToCall(GateRef hirGate, GateRef callGate, bool noThrow = false);
-    void ReplaceHirToThrowCall(GateRef hirGate, GateRef condGate, GateRef callGate);
+    void ReplaceHirToThrowCall(GateRef hirGate, GateRef callGate);
     void LowerExceptionHandler(GateRef hirGate);
     // environment must be initialized
     GateRef GetConstPool(GateRef jsFunc);
@@ -252,7 +252,7 @@ private:
     void LowerLdLexVarDyn(GateRef gate, GateRef jsFunc);
     void LowerStLexVarDyn(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerCreateObjectHavingMethod(GateRef gate, GateRef glue, GateRef jsFunc);
-    void LowerLdHomeObject(GateRef gate, GateRef thisFunc);
+    void LowerLdHomeObject(GateRef gate, GateRef jsFunc);
     void LowerDefineClassWithBuffer(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerAsyncFunctionEnter(GateRef gate, GateRef glue);
     void LowerTypeOfDyn(GateRef gate, GateRef glue);
@@ -262,6 +262,7 @@ private:
     void LowerDefineMethod(GateRef gate, GateRef glue, GateRef jsFunc);
     void LowerGetUnmappedArgs(GateRef gate, GateRef glue);
     void LowerCopyRestArgs(GateRef gate, GateRef glue);
+    GateRef LowerCallRuntime(GateRef glue, int index, const std::vector<GateRef> &args, bool useLabel = false);
 
     BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;

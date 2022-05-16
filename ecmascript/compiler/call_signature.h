@@ -38,9 +38,10 @@ public:
     enum class TargetKind : uint8_t {
         COMMON_STUB = 0,
         RUNTIME_STUB,
+        RUNTIME_STUB_VARARGS,
         RUNTIME_STUB_NO_GC,
-        ASM_STUB,
         BYTECODE_HANDLER,
+        BYTECODE_DEBUGGER_HANDLER,
         BYTECODE_HELPER_HANDLER,
         JSFUNCTION,
 
@@ -114,9 +115,24 @@ public:
         return (GetTargetKind() == TargetKind::COMMON_STUB);
     }
 
-    bool IsAsmStub() const
+    bool IsRuntimeVAStub() const
     {
-        return (GetTargetKind() == TargetKind::ASM_STUB);
+        return (GetTargetKind() == TargetKind::RUNTIME_STUB_VARARGS);
+    }
+
+    bool IsRuntimeStub() const
+    {
+        return (GetTargetKind() == TargetKind::RUNTIME_STUB);
+    }
+
+    bool IsRuntimeNGCStub() const
+    {
+        return (GetTargetKind() == TargetKind::RUNTIME_STUB_NO_GC);
+    }
+
+    bool IsBCDebuggerStub() const
+    {
+        return (GetTargetKind() == TargetKind::BYTECODE_DEBUGGER_HANDLER);
     }
 
     bool IsStub() const
@@ -125,13 +141,13 @@ public:
         return TargetKind::STUB_BEGIN <= targetKind && targetKind < TargetKind::STUB_END;
     }
 
-    bool IsBCHandler() const
+    bool IsBCStub() const
     {
         TargetKind targetKind = GetTargetKind();
         return TargetKind::BCHANDLER_BEGIN <= targetKind && targetKind < TargetKind::BCHANDLER_END;
     }
 
-    bool IsBCNormalHandler() const
+    bool IsBCHandlerStub() const
     {
         return (GetTargetKind() == TargetKind::BYTECODE_HANDLER);
     }
@@ -277,28 +293,25 @@ private:
     V(TestAbsoluteAddressRelocation)        \
     V(GetTaggedArrayPtrTest)                \
     V(BytecodeHandler)                      \
+    V(BytecodeDebuggerHandler)              \
     V(CallRuntime)                          \
     V(AsmInterpreterEntry)                  \
     V(JSCallDispatch)                       \
     V(CallRuntimeWithArgv)                  \
     V(OptimizedCallOptimized)               \
     V(PushCallArgs0AndDispatch)             \
-    V(PushCallArgs0AndDispatchNative)       \
+    V(PushCallArgsAndDispatchNative)       \
     V(PushCallArgs0AndDispatchSlowPath)     \
     V(PushCallArgs1AndDispatch)             \
-    V(PushCallArgs1AndDispatchNative)       \
     V(PushCallArgs1AndDispatchSlowPath)     \
     V(PushCallArgs2AndDispatch)             \
-    V(PushCallArgs2AndDispatchNative)       \
     V(PushCallArgs2AndDispatchSlowPath)     \
     V(PushCallArgs3AndDispatch)             \
-    V(PushCallArgs3AndDispatchNative)       \
     V(PushCallArgs3AndDispatchSlowPath)     \
     V(PushCallIRangeAndDispatch)            \
     V(PushCallIRangeAndDispatchNative)      \
     V(PushCallIRangeAndDispatchSlowPath)    \
     V(PushCallIThisRangeAndDispatch)        \
-    V(PushCallIThisRangeAndDispatchNative)  \
     V(PushCallIThisRangeAndDispatchSlowPath)\
     V(ResumeRspAndDispatch)                 \
     V(ResumeRspAndReturn)                   \

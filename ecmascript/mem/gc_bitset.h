@@ -76,6 +76,7 @@ public:
         Words()[Index(offset)] &= ~Mask(IndexInWord(offset));
     }
 
+    template <AccessType mode = AccessType::NON_ATOMIC>
     void ClearBitRange(uintptr_t offsetBegin, uintptr_t offsetEnd)
     {
         GCBitsetWord *words = Words();
@@ -85,13 +86,13 @@ public:
         uint32_t endIndexMask = Mask(IndexInWord(offsetEnd - 1));
         ASSERT(startIndex <= endIndex);
         if (startIndex != endIndex) {
-            words[startIndex] &= (startIndexMask - 1);
-            words[endIndex] &= ~(endIndexMask | (endIndexMask - 1));
+            ClearWord<mode>(startIndex, ~(startIndexMask - 1));
+            ClearWord<mode>(endIndex, endIndexMask | (endIndexMask - 1));
             while (++startIndex < endIndex) {
                 words[startIndex] = 0;
             }
         } else {
-            words[startIndex] &= ~(endIndexMask | (endIndexMask - startIndexMask));
+            ClearWord<mode>(endIndex, endIndexMask | (endIndexMask - startIndexMask));
         }
     }
 
@@ -100,7 +101,7 @@ public:
         return Words()[Index(offset)] & Mask(IndexInWord(offset));
     }
 
-    template <typename Visitor>
+    template <typename Visitor, AccessType mode = AccessType::NON_ATOMIC>
     void IterateMarkedBits(uintptr_t begin, size_t bitSize, Visitor visitor)
     {
         auto words = Words();
@@ -112,7 +113,7 @@ public:
                 index = static_cast<uint32_t>(__builtin_ctz(word));
                 ASSERT(index < BIT_PER_WORD);
                 if (!visitor(reinterpret_cast<void *>(begin + (index << TAGGED_TYPE_SIZE_LOG)))) {
-                    Words()[i] &= ~Mask(index);
+                    ClearWord<mode>(i, Mask(index));
                 }
                 word &= ~(1u << index);
             }
@@ -138,6 +139,15 @@ public:
         }
     }
 
+    void Merge(GCBitset *bitset, size_t bitSize)
+    {
+        auto words = Words();
+        uint32_t wordCount = WordCount(bitSize);
+        for (uint32_t i = 0; i < wordCount; i++) {
+            words[i] |= bitset->Words()[i];
+        }
+    }
+
 private:
     GCBitsetWord Mask(size_t index) const
     {
@@ -157,6 +167,32 @@ private:
     size_t WordCount(size_t size) const
     {
         return size >> BYTE_PER_WORD_LOG2;
+    }
+
+    template <AccessType mode = AccessType::NON_ATOMIC>
+    bool ClearWord(uint32_t index, uint32_t mask);
+
+    template <>
+    bool ClearWord<AccessType::NON_ATOMIC>(uint32_t index, uint32_t mask)
+    {
+        if ((Words()[index] & mask) == 0) {
+            return false;
+        }
+        Words()[index] &= ~mask;
+        return true;
+    }
+
+    template <>
+    bool ClearWord<AccessType::ATOMIC>(uint32_t index, uint32_t mask)
+    {
+        auto word = reinterpret_cast<std::atomic<GCBitsetWord> *>(&Words()[index]);
+        auto oldValue = word->load(std::memory_order_relaxed);
+        do {
+            if ((oldValue & mask) == 0) {
+                return false;
+            }
+        } while (!word->compare_exchange_weak(oldValue, oldValue & (~mask), std::memory_order_seq_cst));
+        return true;
     }
 };
 

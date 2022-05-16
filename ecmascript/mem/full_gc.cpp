@@ -55,13 +55,10 @@ void FullGC::Initialize()
     ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "FullGC::Initialize");
     heap_->Prepare();
     auto callback = [](Region *current) {
+        current->ResetAliveObject();
         current->ClearOldToNewRSet();
     };
     heap_->EnumerateNonMovableRegions(callback);
-    heap_->EnumerateNonNewSpaceRegions([](Region *current) {
-        current->ClearMarkGCBitset();
-        current->ClearCrossRegionRSet();
-    });
     youngSpaceCommitSize_ = heap_->GetNewSpace()->GetCommittedSize();
     heap_->SwapNewSpace();
     workManager_->Initialize(TriggerGCType::FULL_GC, ParallelGCTaskPhase::COMPRESS_HANDLE_GLOBAL_POOL_TASK);
@@ -143,8 +140,8 @@ void FullGC::Sweep()
 void FullGC::Finish()
 {
     ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "FullGC::Finish");
-    heap_->GetSweeper()->PostConcurrentSweepTasks(true);
     heap_->Resume(FULL_GC);
     workManager_->Finish(youngAndOldAliveSize_);
+    heap_->GetSweeper()->TryFillSweptRegion();
 }
 }  // namespace panda::ecmascript

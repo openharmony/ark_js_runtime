@@ -65,23 +65,11 @@ PushCallArgs1AndDispatchSlowPath:
 .global PushCallArgs0AndDispatchSlowPath
 PushCallArgs0AndDispatchSlowPath:
 
-.global PushCallIThisRangeAndDispatchNative
-PushCallIThisRangeAndDispatchNative:
-
 .global PushCallIRangeAndDispatchNative
 PushCallIRangeAndDispatchNative:
 
-.global PushCallArgs3AndDispatchNative
-PushCallArgs3AndDispatchNative:
-
-.global PushCallArgs2AndDispatchNative
-PushCallArgs2AndDispatchNative:
-
-.global PushCallArgs1AndDispatchNative
-PushCallArgs1AndDispatchNative:
-
-.global PushCallArgs0AndDispatchNative
-PushCallArgs0AndDispatchNative:
+.global PushCallArgsAndDispatchNative
+PushCallArgsAndDispatchNative:
 
 .global ResumeRspAndDispatch
 ResumeRspAndDispatch:

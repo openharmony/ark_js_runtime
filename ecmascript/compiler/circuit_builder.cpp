@@ -22,19 +22,6 @@
 #include "utils/bit_utils.h"
 
 namespace panda::ecmascript::kungfu {
-#define DEF_CALL_GATE(OpName, CallSignature)                                      \
-    std::vector<GateRef> inputs;                                                  \
-    inputs.push_back(depend);                                                     \
-    inputs.push_back(target);                                                     \
-    inputs.push_back(glue);                                                       \
-    for (auto arg : args) {                                                       \
-        inputs.push_back(arg);                                                    \
-    }                                                                             \
-    OpCode opcode(OpName);                                                        \
-    MachineType machineType = CallSignature->GetReturnType().GetMachineType();    \
-    GateType type = CallSignature->GetReturnType().GetGateType();                 \
-    GateRef result = GetCircuit()->NewGate(opcode, machineType, args.size() + 2, inputs, type)
-
 GateRef CircuitBuilder::Merge(GateRef *inList, size_t controlCount)
 {
     return circuit_->NewGate(OpCode(OpCode::MERGE), controlCount, controlCount, inList, GateType::EMPTY);
@@ -245,113 +232,105 @@ GateRef CircuitBuilder::BinaryLogic(OpCode opcode, GateRef left, GateRef right)
     return GetCircuit()->NewGate(opcode, 0, { left, right }, GateType::NJS_VALUE);
 }
 
-GateRef CircuitBuilder::Call(const CallSignature *signature, GateRef glue, GateRef target,
-                             const std::vector<GateRef> &args, GateRef depend)
+GateRef CircuitBuilder::CallBCHandler(GateRef glue, GateRef target, const std::vector<GateRef> &args)
 {
-    DEF_CALL_GATE(OpCode::CALL, signature);
+    const CallSignature *cs = BytecodeStubCSigns::BCHandler();
+    assert(cs->IsBCStub());
+    auto label = GetCurrentLabel();
+    auto depend = label->GetDepend();
+    GateRef result = Call(cs, glue, target, depend, args);
+    label->SetDepend(result);
     return result;
 }
 
-GateRef CircuitBuilder::NoGcRuntimeCall(const CallSignature *signature, GateRef glue, GateRef target,
-                                        GateRef depend, const std::vector<GateRef> &args)
+GateRef CircuitBuilder::CallBCDebugger(GateRef glue, GateRef target, const std::vector<GateRef> &args)
 {
-    DEF_CALL_GATE(OpCode::NOGC_RUNTIME_CALL, signature);
+    const CallSignature *cs = BytecodeStubCSigns::BCDebuggerHandler();
+    assert(cs->IsBCDebuggerStub());
+    auto label = GetCurrentLabel();
+    auto depend = label->GetDepend();
+    GateRef result = Call(cs, glue, target, depend, args);
+    label->SetDepend(result);
     return result;
 }
 
-GateRef CircuitBuilder::BytecodeCall(const CallSignature *signature, GateRef glue, GateRef target,
-                                     GateRef depend, const std::vector<GateRef> &args)
+GateRef CircuitBuilder::CallRuntime(GateRef glue, int index, GateRef depend, const std::vector<GateRef> &args)
 {
-    DEF_CALL_GATE(OpCode::BYTECODE_CALL, signature);
+    GateRef target = IntPtr(index);
+    const CallSignature *cs = RuntimeStubCSigns::Get(RTSTUB_ID(CallRuntime));
+    assert(cs->IsRuntimeStub());
+    auto label = GetCurrentLabel();
+    if (depend == Gate::InvalidGateRef) {
+        depend = label->GetDepend();
+    }
+    GateRef result = Call(cs, glue, target, depend, args);
+    label->SetDepend(result);
     return result;
 }
 
-GateRef CircuitBuilder::DebuggerBytecodeCall(const CallSignature *signature, GateRef glue, GateRef target,
-                                             GateRef depend, const std::vector<GateRef> &args)
+GateRef CircuitBuilder::CallRuntimeVarargs(GateRef glue, int index, GateRef argc, GateRef argv)
 {
-    DEF_CALL_GATE(OpCode::DEBUGGER_BYTECODE_CALL, signature);
+    const CallSignature *cs = RuntimeStubCSigns::Get(RTSTUB_ID(CallRuntimeWithArgv));
+    GateRef target = IntPtr(index);
+    auto label = GetCurrentLabel();
+    auto depend = label->GetDepend();
+    assert(cs->IsRuntimeVAStub());  
+    GateRef result = Call(cs, glue, target, depend, {argc, argv});
+    label->SetDepend(result);
     return result;
-}
-
-GateRef CircuitBuilder::VariadicRuntimeCall(GateRef glue, GateRef target, GateRef depend,
-                                            const std::vector<GateRef> &args)
-{
-    std::vector<GateRef> inputs {depend, target, glue};
-    inputs.insert(inputs.end(), args.begin(), args.end());
-    OpCode opcode(OpCode::RUNTIME_CALL);
-    const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(CallRuntime));
-    MachineType machineType = signature->GetReturnType().GetMachineType();
-    GateType type = signature->GetReturnType().GetGateType();
-    // 2 : 2 means extra two input gates (target glue)
-    constexpr size_t extraparamCnt = 2;
-    return GetCircuit()->NewGate(opcode, machineType, args.size() + extraparamCnt, inputs, type);
-}
-
-GateRef CircuitBuilder::CallRuntimeWithDepend(GateRef glue, int index,
-    GateRef depend, const std::vector<GateRef> &args)
-{
-    GateRef target = Int64(index);
-    const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(CallRuntime));
-    DEF_CALL_GATE(OpCode::RUNTIME_CALL, signature);
-    return result;
-}
-
-GateRef CircuitBuilder::CallRuntimeWithDepend(GateRef glue, GateRef target,
-    GateRef depend, GateRef argc, GateRef argv)
-{
-    std::vector<GateRef> inputs {depend, target, glue};
-    inputs.emplace(inputs.end(), argc);
-    inputs.emplace(inputs.end(), argv);
-    OpCode opcode(OpCode::RUNTIME_CALL_WITH_ARGV);
-    const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(CallRuntimeWithArgv));
-    MachineType machineType = signature->GetReturnType().GetMachineType();
-    GateType type = signature->GetReturnType().GetGateType();
-    // 2 : 2 means extra two input gates (target glue)
-    constexpr size_t extraparamCnt = 2;
-    // 2: argc and argv
-    return GetCircuit()->NewGate(opcode, machineType, 2 + extraparamCnt, inputs, type);
 }
 
 // call operation
-GateRef CircuitBuilder::CallRuntime(GateRef glue, int index, const std::vector<GateRef> &args, bool useLabel)
+GateRef CircuitBuilder::CallNGCRuntime(GateRef glue, int index, GateRef depend, const std::vector<GateRef> &args)
 {
-    GateRef target = Int64(index);
-    const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(CallRuntime));
-
-    if (!useLabel) {
-        GateRef depend = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY));
-        DEF_CALL_GATE(OpCode::RUNTIME_CALL, signature);
-        return result;
-    } else {
-        Label* label = GetCurrentLabel();
-        GateRef depend = label->GetDepend();
-        DEF_CALL_GATE(OpCode::RUNTIME_CALL, signature);
-        label->SetDepend(result);
-        return result;
-    }
-}
-
-GateRef CircuitBuilder::CallNGCRuntime(GateRef glue, size_t index,
-    const std::vector<GateRef> &args)
-{
-    const CallSignature *signature = RuntimeStubCSigns::Get(index);
+    const CallSignature *cs = RuntimeStubCSigns::Get(index);
+    assert(cs->IsRuntimeNGCStub());
     GateRef target = IntPtr(index);
     auto label = GetCurrentLabel();
-    auto depend = label->GetDepend();
-    GateRef result = NoGcRuntimeCall(signature, glue, target, depend, args);
+    if (depend == Gate::InvalidGateRef) {
+        depend = label->GetDepend();
+    }
+    GateRef result = Call(cs, glue, target, depend, args);
     label->SetDepend(result);
     return result;
 }
 
-GateRef CircuitBuilder::CallStub(GateRef glue, size_t index,
-    const std::vector<GateRef> &args)
+GateRef CircuitBuilder::CallStub(GateRef glue, int index, const std::vector<GateRef> &args)
 {
-    const CallSignature *signature = CommonStubCSigns::Get(index);
+    const CallSignature *cs = CommonStubCSigns::Get(index);
+    assert(cs->IsCommonStub());
     GateRef target = IntPtr(index);
     auto label = GetCurrentLabel();
     auto depend = label->GetDepend();
-    GateRef result = Call(signature, glue, target, args, depend);
+    GateRef result = Call(cs, glue, target, depend, args);
     label->SetDepend(result);
+    return result;
+}
+
+GateRef CircuitBuilder::Call(const CallSignature* cs, GateRef glue, GateRef target, GateRef depend,
+                             const std::vector<GateRef> &args)
+{
+    std::vector<GateRef> inputs { depend, target, glue };
+    inputs.insert(inputs.end(), args.begin(), args.end());
+    OpCode op(OpCode::NOP);
+    if (cs->IsCommonStub()) {
+        op = OpCode(OpCode::CALL);
+    } else if (cs->IsRuntimeVAStub()) {
+        op = OpCode(OpCode::RUNTIME_CALL_WITH_ARGV);
+    } else if (cs->IsRuntimeStub()) {
+        op = OpCode(OpCode::RUNTIME_CALL);
+    } else if (cs->IsBCDebuggerStub()) {
+        op = OpCode(OpCode::DEBUGGER_BYTECODE_CALL);
+    } else if (cs->IsBCHandlerStub()) {
+        op = OpCode(OpCode::BYTECODE_CALL);
+    } else if (cs->IsRuntimeNGCStub()) {
+        op = OpCode(OpCode::NOGC_RUNTIME_CALL);
+    } else {
+        UNREACHABLE();
+    }
+    MachineType machineType = cs->GetReturnType().GetMachineType();
+    GateType type = cs->GetReturnType().GetGateType();
+    GateRef result = GetCircuit()->NewGate(op, machineType, args.size() + 2, inputs, type);
     return result;
 }
 

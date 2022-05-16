@@ -225,8 +225,21 @@ public:
         ASSERT(index < NUM_OF_VALID_STUBS);
         return &callSigns_[index];
     }
+
+    static const CallSignature* BCDebuggerHandler()
+    {
+        return &bcDebuggerHandlerCSign_;
+    }
+
+    static const CallSignature* BCHandler()
+    {
+        return &bcHandlerCSign_;
+    }
+
 private:
     static CallSignature callSigns_[NUM_OF_VALID_STUBS];
+    static CallSignature bcHandlerCSign_;
+    static CallSignature bcDebuggerHandlerCSign_;
 };
 
 enum class InterpreterHandlerInputs : size_t {
@@ -240,7 +253,6 @@ enum class InterpreterHandlerInputs : size_t {
     NUM_OF_INPUTS
 };
 
-#define BYTECODE_STUB_BEGIN_ID BytecodeStubCSigns::ID_HandleLdNanPref
 #define BYTECODE_STUB_END_ID BytecodeStubCSigns::ID_ExceptionHandler
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_BC_CALL_SIGNATURE_H
