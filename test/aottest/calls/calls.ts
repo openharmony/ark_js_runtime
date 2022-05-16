@@ -12,13 +12,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 declare function print(str:any):string;
-function* foo(i:number){
-    yield i;
-    yield i + 7;
-}
-let gen = foo(10);
 
-print(gen.next().value);
-print(gen.next().value);
+function foo()
+{
+    return "pass";
+}
+
+function foo1(a:any)
+{
+    return "pass";
+}
+
+function foo2(a:any, b:any)
+{
+    return "pass";
+}
+
+function foo3(a:any, b:any, c:any)
+{
+    return "pass";
+}
+
+function foo4(a:any, b:any, c:any, d:any)
+{
+    return "pass";
+}
+
+print(foo());
+print(foo1(1));
+print(foo2(1, 2));
+print(foo3(1, 2, 3));
+print(foo4(1, 2, 3, 4));
