@@ -72,6 +72,7 @@ host_unittest_action("BuiltinsNaturalTest") {
     "builtins_reflect_test.cpp",
     "builtins_regexp_test.cpp",
     "builtins_set_test.cpp",
+    "builtins_sharedarraybuffer_test.cpp",
     "builtins_string_iterator_test.cpp",
     "builtins_string_test.cpp",
     "builtins_symbol_test.cpp",
