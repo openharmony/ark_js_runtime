@@ -405,7 +405,7 @@ DECLARE_ASM_HANDLER(HandleNewObjDynRangePrefImm16V8)
             GateRef numArgsWithThis = Int16Add(numArgs,
                                                Int16(static_cast<int16_t>(1 - NUM_MANDATORY_JSFUNC_ARGS)));  // 1: this
             GateRef retValue = CallRuntime(glue, RTSTUB_ID(CallNative),
-                                           {Int16BuildTaggedTypeWithNoGC(numArgsWithThis), *newSp, ctorMethod});
+                                           {Int16BuildTaggedTypeWithNoGC(numArgsWithThis)});
             SetCurrentSpFrame(glue, sp);
             Label hasPendingException(env);
             Label noPendingException(env);
