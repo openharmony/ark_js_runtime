@@ -241,7 +241,7 @@ HWTEST_F_L0(SymbolTableTest, GetSymbol)
  * CaseDescription: This function compares the key value in the symboltable pointer variable created by the create
  *                  function with the description value in the jssymbol type variable. If they are equal, it indicates
  *                  that the find symbol is successful, and the return value is the key value. Before creating the
- *                  symboltable pointer, perform the newfromcanbecompressstring operation to obtain the array length.
+ *                  symboltable pointer, perform the NewFromASCII operation to obtain the array length.
  */
 HWTEST_F_L0(SymbolTableTest, FindSymbol)
 {
