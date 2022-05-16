@@ -20,6 +20,7 @@
 #include "ecmascript/tooling/base/pt_types.h"
 #include "ecmascript/tooling/dispatcher.h"
 #include "ecmascript/tooling/interface/js_debugger.h"
+#include "ecmascript/tooling/interface/js_debugger_manager.h"
 #include "ecmascript/tooling/js_pt_extractor.h"
 #include "libpandabase/macros.h"
 #include "ecmascript/napi/include/dfx_jsnapi.h"
@@ -163,6 +164,7 @@ private:
     bool pauseOnException_ {false};
     bool pauseOnNextByteCode_ {false};
     std::unique_ptr<JSPtExtractor::SingleStepper> singleStepper_ {nullptr};
+    JsDebuggerManager::ObjectUpdaterFunc updaterFunc_ {nullptr};
 
     friend class JSPtHooks;
 };
