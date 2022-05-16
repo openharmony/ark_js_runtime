@@ -36,6 +36,7 @@ host_unittest_action("EcmaVmTest") {
     "global_dictionary_test.cpp",
     "glue_regs_test.cpp",
     "huge_object_test.cpp",
+    "js_api_arraylist_test.cpp",
     "js_api_deque_iterator_test.cpp",
     "js_api_deque_test.cpp",
     "js_api_plain_array_test.cpp",
