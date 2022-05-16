@@ -29,7 +29,7 @@ public:
     static void DumpHeapSnapshot(JSThread *thread, DumpFormat dumpFormat, Stream *stream, bool isVmMode = true);
 
     static HeapProfilerInterface *CreateHeapProfiler(JSThread *thread);
-    static void Destroy(JSThread *thread, HeapProfilerInterface *heapProfiler);
+    static void Destroy(JSThread *thread);
 
     HeapProfilerInterface() = default;
     virtual ~HeapProfilerInterface() = default;
