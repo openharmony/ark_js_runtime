@@ -30,6 +30,8 @@ group("ark_aot_test") {
     "exp:expAotAction",
     "helloaot:helloaotAotAction",
     "inc:incAotAction",
+    "instanceof:instanceofAotAction",
+    "isin:isinAotAction",
     "ldfunctionpref:ldfunctionprefAotAction",
     "ldglobalvar:ldglobalvarAotAction",
     "ldobjbyname:ldobjbynameAotAction",
