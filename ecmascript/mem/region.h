@@ -39,6 +39,7 @@ enum RegionFlags {
     IS_IN_YOUNG_OR_OLD_GENERATION = IS_IN_YOUNG_GENERATION | IS_IN_OLD_GENERATION,
     IS_IN_COLLECT_SET = 1 << 8,
     IS_IN_NEW_TO_NEW_SET = 1 << 9,
+    HAS_SWEPT = 1 << 10,
     IS_IN_YOUNG_OR_CSET_GENERATION = IS_IN_YOUNG_GENERATION | IS_IN_COLLECT_SET,
     IS_INVALID = 1 << 10,
 };
@@ -174,6 +175,7 @@ public:
     void IterateAllCrossRegionBits(Visitor visitor) const;
     void ClearCrossRegionRSet();
     void ClearCrossRegionRSetInRange(uintptr_t start, uintptr_t end);
+    void AtomicClearCrossRegionRSetInRange(uintptr_t start, uintptr_t end);
     void DeleteCrossRegionRSet();
     // Old to new remembered set
     void InsertOldToNewRSet(uintptr_t addr);
@@ -182,6 +184,11 @@ public:
     void ClearOldToNewRSet();
     void ClearOldToNewRSetInRange(uintptr_t start, uintptr_t end);
     void DeleteOldToNewRSet();
+
+    void AtomicClearSweepingRSetInRange(uintptr_t start, uintptr_t end);
+    void DeleteSweepingRSet();
+    template <typename Visitor>
+    void AtomicIterateAllSweepingRSetBits(Visitor visitor);
 
     static Region *ObjectAddressToRange(TaggedObject *obj)
     {
@@ -236,6 +243,21 @@ public:
     bool BelowAgeMark() const
     {
         return IsFlagSet(RegionFlags::BELOW_AGE_MARK);
+    }
+
+    void SetSwept()
+    {
+        SetFlag(RegionFlags::HAS_SWEPT);
+    }
+
+    void ResetSwept()
+    {
+        ClearFlag(RegionFlags::HAS_SWEPT);
+    }
+
+    bool HasSwept() const
+    {
+        return IsFlagSet(RegionFlags::HAS_SWEPT);
     }
 
     bool InRange(uintptr_t address) const
@@ -358,6 +380,15 @@ public:
         return wasted_;
     }
 
+    void SwapRSetForConcurrentSweeping()
+    {
+        sweepingRSet_ = oldToNewSet_;
+        oldToNewSet_ = nullptr;
+    }
+
+    // should call in js-thread
+    void MergeRSetForConcurrentSweeping();
+
     static constexpr uint32_t GetOldToNewSetOffset(bool is32Bit = false)
     {
         return is32Bit ? REGION_OLDTONEWSET_OFFSET_32 : REGION_OLDTONEWSET_OFFSET_64;
@@ -436,6 +467,7 @@ private:
     Region *prev_ {nullptr};
 
     RememberedSet *crossRegionSet_ {nullptr};
+    RememberedSet *sweepingRSet_ {nullptr};
     Span<FreeObjectSet *> sets_;
     size_t wasted_;
     os::memory::Mutex lock_;

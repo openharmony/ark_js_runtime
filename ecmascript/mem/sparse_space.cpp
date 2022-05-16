@@ -122,6 +122,7 @@ void SparseSpace::PrepareSweeping()
         if (!current->InCollectSet()) {
             IncreaseLiveObjectSize(current->AliveObject());
             current->ResetWasted();
+            current->SwapRSetForConcurrentSweeping();
             AddSweepingRegion(current);
         }
     });
@@ -139,6 +140,7 @@ void SparseSpace::AsyncSweep(bool isMain)
         if (!isMain) {
             AddSweptRegionSafe(current);
         }
+        current->SetSwept();
         current = GetSweepingRegionSafe();
     }
 }
@@ -165,6 +167,8 @@ bool SparseSpace::FillSweptRegion()
     Region *region = nullptr;
     while ((region = GetSweptRegionSafe()) != nullptr) {
         allocator_->CollectFreeObjectSet(region);
+        region->ResetSwept();
+        region->MergeRSetForConcurrentSweeping();
     }
     sweepState_ = SweepState::SWEPT;
     return true;
@@ -234,7 +238,7 @@ void SparseSpace::FreeRegion(Region *current, bool isMain)
 
 void SparseSpace::FreeLiveRange(Region *current, uintptr_t freeStart, uintptr_t freeEnd, bool isMain)
 {
-    heap_->ClearSlotsRange(current, freeStart, freeEnd);
+    heap_->GetSweeper()->ClearRSetInRange(current, freeStart, freeEnd);
     allocator_->Free(freeStart, freeEnd - freeStart, isMain);
 }
 
@@ -307,6 +311,7 @@ void OldSpace::Merge(LocalSpace *localSpace)
         localSpace->DecreaseLiveObjectSize(region->AliveObject());
         region->SetSpace(this);
         AddRegion(region);
+        region->MergeRSetForConcurrentSweeping();
         IncreaseLiveObjectSize(region->AliveObject());
         allocator_->CollectFreeObjectSet(region);
     });
@@ -389,6 +394,7 @@ void OldSpace::ReclaimCSet()
         region->SetSpace(nullptr);
         region->DeleteCrossRegionRSet();
         region->DeleteOldToNewRSet();
+        region->DeleteSweepingRSet();
         region->DestroySet();
         heapRegionAllocator_->FreeRegion(region);
     });

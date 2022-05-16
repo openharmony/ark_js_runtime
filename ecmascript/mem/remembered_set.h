@@ -54,19 +54,38 @@ public:
 
     void ClearRange(uintptr_t begin, uintptr_t start, uintptr_t end)
     {
-        GCBitsetData()->ClearBitRange((start - begin) >> TAGGED_TYPE_SIZE_LOG, (end - begin) >> TAGGED_TYPE_SIZE_LOG);
+        GCBitsetData()->ClearBitRange<AccessType::NON_ATOMIC>(
+            (start - begin) >> TAGGED_TYPE_SIZE_LOG, (end - begin) >> TAGGED_TYPE_SIZE_LOG);
+    }
+
+    void AtomicClearRange(uintptr_t begin, uintptr_t start, uintptr_t end)
+    {
+        GCBitsetData()->ClearBitRange<AccessType::ATOMIC>(
+            (start - begin) >> TAGGED_TYPE_SIZE_LOG, (end - begin) >> TAGGED_TYPE_SIZE_LOG);
     }
 
     template <typename Visitor>
     void IterateAllMarkedBits(uintptr_t begin, Visitor visitor)
     {
-        GCBitsetData()->IterateMarkedBits(begin, size_, visitor);
+        GCBitsetData()->IterateMarkedBits<Visitor, AccessType::NON_ATOMIC>(begin, size_, visitor);
+    }
+
+    template <typename Visitor>
+    void AtomicIterateAllMarkedBits(uintptr_t begin, Visitor visitor)
+    {
+        GCBitsetData()->IterateMarkedBits<Visitor, AccessType::ATOMIC>(begin, size_, visitor);
     }
 
     template <typename Visitor>
     void IterateAllMarkedBitsConst(uintptr_t begin, Visitor visitor) const
     {
         GCBitsetData()->IterateMarkedBitsConst(begin, size_, visitor);
+    }
+
+    void Merge(RememberedSet *rset)
+    {
+        GCBitset *bitset = rset->GCBitsetData();
+        GCBitsetData()->Merge(bitset, size_);
     }
 
     size_t Size() const

@@ -48,10 +48,30 @@ inline RememberedSet *Region::GetOrCreateOldToNewRememberedSet()
     if (UNLIKELY(oldToNewSet_ == nullptr)) {
         os::memory::LockHolder lock(lock_);
         if (oldToNewSet_ == nullptr) {
-            oldToNewSet_ = CreateRememberedSet();
+            if (sweepingRSet_ != nullptr && HasSwept()) {
+                oldToNewSet_ = sweepingRSet_;
+                sweepingRSet_ = nullptr;
+            } else {
+                oldToNewSet_ = CreateRememberedSet();
+            }
         }
     }
     return oldToNewSet_;
+}
+
+inline void Region::MergeRSetForConcurrentSweeping()
+{
+    if (sweepingRSet_ == nullptr) {
+        return;
+    }
+    if (oldToNewSet_ == nullptr) {
+        oldToNewSet_ = sweepingRSet_;
+        sweepingRSet_ = nullptr;
+    } else {
+        oldToNewSet_->Merge(sweepingRSet_);
+        DeleteSweepingRSet();
+        sweepingRSet_ = nullptr;
+    }
 }
 
 inline GCBitset *Region::GetMarkGCBitset() const
@@ -127,6 +147,13 @@ inline void Region::ClearCrossRegionRSetInRange(uintptr_t start, uintptr_t end)
     }
 }
 
+inline void Region::AtomicClearCrossRegionRSetInRange(uintptr_t start, uintptr_t end)
+{
+    if (crossRegionSet_ != nullptr) {
+        crossRegionSet_->AtomicClearRange(ToUintPtr(this), start, end);
+    }
+}
+
 inline void Region::DeleteCrossRegionRSet()
 {
     if (crossRegionSet_ != nullptr) {
@@ -149,6 +176,14 @@ inline void Region::IterateAllOldToNewBits(Visitor visitor)
     }
 }
 
+template <typename Visitor>
+inline void Region::AtomicIterateAllSweepingRSetBits(Visitor visitor)
+{
+    if (sweepingRSet_ != nullptr) {
+        sweepingRSet_->AtomicIterateAllMarkedBits(ToUintPtr(this), visitor);
+    }
+}
+
 inline void Region::ClearOldToNewRSet()
 {
     if (oldToNewSet_ != nullptr) {
@@ -168,6 +203,21 @@ inline void Region::DeleteOldToNewRSet()
     if (oldToNewSet_ != nullptr) {
         thread_->GetNativeAreaAllocator()->Free(oldToNewSet_, oldToNewSet_->Size());
         oldToNewSet_ = nullptr;
+    }
+}
+
+inline void Region::AtomicClearSweepingRSetInRange(uintptr_t start, uintptr_t end)
+{
+    if (sweepingRSet_ != nullptr) {
+        sweepingRSet_->AtomicClearRange(ToUintPtr(this), start, end);
+    }
+}
+
+inline void Region::DeleteSweepingRSet()
+{
+    if (sweepingRSet_ != nullptr) {
+        thread_->GetNativeAreaAllocator()->Free(sweepingRSet_, sweepingRSet_->Size());
+        sweepingRSet_ = nullptr;
     }
 }
 
