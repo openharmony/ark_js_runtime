@@ -47,6 +47,6 @@ public:
 private:
     static CallSignature callSigns_[NUM_OF_RTSTUBS_WITHOUT_GC];
 };
-#define RTSTUB_ID(name) RuntimeStubCSigns::ID_##name
+#define RTSTUB_ID(name) kungfu::RuntimeStubCSigns::ID_##name
 } // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_RT_CALL_SIGNATURE_H

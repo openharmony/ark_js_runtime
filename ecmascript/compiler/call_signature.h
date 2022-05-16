@@ -319,6 +319,8 @@ private:
     V(CallIThisRangeDyn)                    \
     V(CallIRangeDyn)                        \
     V(JSCall)                               \
+    V(JSFunctionEntry)                      \
+    V(CallNativeTrampoline)                 \
     V(JSCallWithArgV)                       \
     V(CreateArrayFromList)                  \
     V(JSObjectGetMethod)                    \

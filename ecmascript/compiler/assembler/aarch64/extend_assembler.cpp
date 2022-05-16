@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "extended_assembler.h"
+#include "extend_assembler.h"
 #include "ecmascript/frames.h"
 
 namespace panda::ecmascript::aarch64 {
@@ -34,7 +34,7 @@ void ExtendedAssembler::CalleeSave()
 
 void ExtendedAssembler::CalleeRestore()
 {
-    const MemoryOperand::AddrMode postIndex = MemoryOperand::AddrMode::POSTNDEX;
+    const MemoryOperand::AddrMode postIndex = MemoryOperand::AddrMode::POSTINDEX;
     Register sp(SP);
     Ldp(VectorRegister(v8), VectorRegister(v9), MemoryOperand(sp, 16, postIndex));
     Ldp(VectorRegister(v10), VectorRegister(v11), MemoryOperand(sp, 16, postIndex));
@@ -61,6 +61,7 @@ void ExtendedAssembler::BindAssemblerStub(int id)
 
 void ExtendedAssembler::SaveFpAndLr()
 {
+    Register sp(SP);
     const MemoryOperand::AddrMode preIndex = MemoryOperand::AddrMode::PREINDEX;
     Stp(Register(X29), Register(X30), MemoryOperand(sp, -16, preIndex));
     Mov(Register(X29), Register(SP));
@@ -68,7 +69,8 @@ void ExtendedAssembler::SaveFpAndLr()
 
 void ExtendedAssembler::RestoreFpAndLr()
 {
-    const MemoryOperand::AddrMode postIndex = MemoryOperand::AddrMode::POSTNDEX;
-    Ldp(Register(X29), Register(X30), MemoryOperand(sp, 16, postIndex))
+    Register sp(SP);
+    const MemoryOperand::AddrMode postIndex = MemoryOperand::AddrMode::POSTINDEX;
+    Ldp(Register(X29), Register(X30), MemoryOperand(sp, 16, postIndex));
 }
 }  // namespace panda::ecmascript::aarch64

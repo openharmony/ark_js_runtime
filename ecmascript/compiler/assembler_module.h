@@ -21,6 +21,8 @@
 
 #include "assembler/assembler.h"
 #include "ecmascript/compiler/call_signature.h"
+#include "ecmascript/compiler/rt_call_signature.h"
+#include "ecmascript/stubs/runtime_stubs.h"
 
 namespace panda::ecmascript::kungfu {
 class AssemblerModule {

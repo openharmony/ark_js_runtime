@@ -30,7 +30,7 @@ public:
     void BindAssemblerStub(int id);
     void CalleeSave();
     void CalleeRestore();
-    void CallAssemblerStub(int id);
+    void CallAssemblerStub(int id, bool isTail = false);
     void SaveFpAndLr();
     void RestoreFpAndLr();
 private:

@@ -33,7 +33,7 @@ void AssemblerModule::Run(const std::string &triple, Chunk* chunk)
 
 void AssemblerModule::GenerateStubsX64(Chunk* chunk)
 {
-    x64::ExtendedAssembler assembler(chunk);
+    x64::ExtendedAssembler assembler(chunk, this);
     COMPILER_LOG(INFO) << "compiling asm stubs";
     for (size_t i = 0; i < asmCallSigns_.size(); i++) {
         auto cs = asmCallSigns_[i];

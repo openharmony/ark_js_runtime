@@ -30,7 +30,7 @@ public:
 
     static void CallNativeTrampoline(ExtendedAssembler *assembler);
 
-    static void JSCallWithArgv(ExtendedAssembler *assembler);
+    static void JSCallWithArgV(ExtendedAssembler *assembler);
 
     static void JSCall(ExtendedAssembler *assembler);
 

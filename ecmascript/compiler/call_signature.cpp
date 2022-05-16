@@ -508,7 +508,7 @@ DEF_CALL_SIGNATURE(CallRuntimeWithArgv)
     };
     callSign->SetVariadicArgs(false);
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::ASM_STUB);
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
@@ -526,7 +526,7 @@ DEF_CALL_SIGNATURE(OptimizedCallOptimized)
     };
     callSign->SetVariadicArgs(true);
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::ASM_STUB);
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
@@ -546,7 +546,7 @@ DEF_CALL_SIGNATURE(JSCall)
     callSign->SetVariadicArgs(true);
     callSign->SetParameters(params.data());
     callSign->SetCallConv(CallSignature::CallConv::WebKitJSCallConv);
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+    callSign->SetTargetKind(CallSignature::TargetKind::ASM_STUB);
 }
 
 DEF_CALL_SIGNATURE(JSCallWithArgV)
@@ -562,8 +562,43 @@ DEF_CALL_SIGNATURE(JSCallWithArgV)
         VariableType::NATIVE_POINTER(),    // argv
     };
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
-    callSign->SetTailCall(true);
+    callSign->SetCallConv(CallSignature::CallConv::WebKitJSCallConv);
+    callSign->SetTargetKind(CallSignature::TargetKind::ASM_STUB);
+}
+
+DEF_CALL_SIGNATURE(JSFunctionEntry)
+{
+    // 4 : 4 input parameters
+    CallSignature jsCallFunctionEntry("JSFunctionEntry", 0, 4,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *callSign = jsCallFunctionEntry;
+    std::array<VariableType, 4> params = { // 4 : 4 input parameters
+        VariableType::NATIVE_POINTER(),     // glue
+        VariableType::INT32(),       // actual argC
+        VariableType::JS_ANY(),      // call target
+        VariableType::NATIVE_POINTER(),    // argv
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::ASM_STUB);
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
+}
+
+DEF_CALL_SIGNATURE(CallNativeTrampoline)
+{
+    /* 4 : 4 input parameters */
+    CallSignature callNativeTrampoline("CallNativeTrampoline", 0, 4,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *callSign = callNativeTrampoline;
+    std::array<VariableType, 4> params = { /* 4 : 4 input parameters */
+        VariableType::NATIVE_POINTER(),
+        VariableType::INT32(),
+        VariableType::INT32(),
+        VariableType::NATIVE_POINTER(),
+    };
+    callSign->SetVariadicArgs(true);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::ASM_STUB);
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
 DEF_CALL_SIGNATURE(ResumeRspAndDispatch)
