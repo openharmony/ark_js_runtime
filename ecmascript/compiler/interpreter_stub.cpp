@@ -5540,7 +5540,7 @@ DECLARE_ASM_HANDLER(HandleCallIRangeDynPrefImm16V8)
     USE_PARAMS()
     GateRef func = GetVregValue(sp, ZExtInt8ToPtr(funcReg));
     GateRef argv = PtrAdd(sp, PtrMul(
-        PtrAdd(ZExtInt8ToPtr(funcReg), IntPtr(1)), IntPtr(8))); // 1: skip this
+        PtrAdd(ZExtInt8ToPtr(funcReg), IntPtr(1)), IntPtr(8))); // 1: skip function
     GateRef jumpSize = IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_IMM16_V8));
     GateRef numArgs = ChangeInt32ToIntPtr(actualNumArgs);
     JSCallDispatch(glue, func, actualNumArgs, jumpSize,
@@ -5681,12 +5681,12 @@ void InterpreterStub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualN
                     { glue, nativeCode, actualNumArgs, func,
                       newTarget, thisValue, data[0], data[1], data[2] });
                 break;
-            case JSCallMode::CALL_WITH_ARGV: {
+            case JSCallMode::CALL_THIS_WITH_ARGV: {
                 auto argv = data[1];
-                thisValue = GetVregValue(sp, PtrAdd(argv, IntPtr(1)));
+                thisValue = GetVregValue(argv, IntPtr(-1));  // -1: this is just before argv
                 [[fallthrough]];
             }
-            case JSCallMode::CALL_THIS_WITH_ARGV:
+            case JSCallMode::CALL_WITH_ARGV:
                 retValue = CallNGCRuntime(glue, RTSTUB_ID(PushCallIRangeAndDispatchNative),
                     { glue, nativeCode, func, thisValue, data[0], data[1] });
                 break;

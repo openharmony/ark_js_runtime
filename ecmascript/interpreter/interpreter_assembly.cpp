@@ -4200,7 +4200,7 @@ JSTaggedType *InterpreterAssembly::GetAsmInterpreterFramePointer(AsmInterpretedF
 {
     JSTaggedType *fp = nullptr;
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-    fp = state->fp;
+    fp = state->GetCurrentFramePointer();
 #else
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     JSTaggedType *lastFrame = state->base.prev;
