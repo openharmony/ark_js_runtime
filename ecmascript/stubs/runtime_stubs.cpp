@@ -1433,13 +1433,6 @@ DEF_RUNTIME_STUBS(DefineGeneratorFunc)
     return RuntimeDefineGeneratorFunc(thread, reinterpret_cast<JSFunction*>(func)).GetRawData();
 }
 
-DEF_RUNTIME_STUBS(DefineGeneratorFuncWithMethodId)
-{
-    RUNTIME_STUBS_HEADER(DefineGeneratorFuncWithMethodId);
-    JSTaggedValue id = GetArg(argv, argc, 0);
-    return RuntimeDefineGeneratorFuncWithMethodId(thread, id).GetRawData();
-}
-
 DEF_RUNTIME_STUBS(DefineAsyncFunc)
 {
     RUNTIME_STUBS_HEADER(DefineAsyncFunc);

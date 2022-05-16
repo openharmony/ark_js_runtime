@@ -825,7 +825,7 @@ HWTEST_F_L0(StubTest, LoadGCIRTest)
     LLVMValueRef function = LLVMGetNamedFunction(module, "main");
 
     auto *mainPtr = reinterpret_cast<int (*)()>(LLVMGetPointerToGlobal(engine, function));
-    uint8_t *ptr = assembler.GetStackMapsSection();
+    uint8_t *ptr = reinterpret_cast<uint8_t *>(assembler.GetStackMapsSection());
     LLVMStackMapParser::GetInstance().CalculateStackMap(ptr);
 
     int value = reinterpret_cast<int (*)()>(mainPtr)();
