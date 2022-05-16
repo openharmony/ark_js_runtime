@@ -745,10 +745,13 @@ struct OptimizedLeaveFrame {
         return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argc) + argc * sizeof(JSTaggedType);
 #endif
     }
-    inline JSTaggedType* GetPrevFrameFp()
+    inline JSTaggedType* GetPrevFrameFp() const
     {
         return reinterpret_cast<JSTaggedType*>(callsiteFp);
     }
+
+    JSTaggedType *GetJsFuncFrameArgv(JSThread *thread) const;
+
     uintptr_t GetReturnAddr() const
     {
         return returnAddr;

@@ -1205,48 +1205,12 @@ JSTaggedValue RuntimeStubs::RuntimeGetUnmapedArgs(JSThread *thread, JSTaggedType
                                                   uint32_t startIdx)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<GlobalEnv> globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<TaggedArray> argumentsList = factory->NewTaggedArray(actualNumArgs);
     for (uint32_t i = 0; i < actualNumArgs; ++i) {
         argumentsList->Set(thread, i,
                            JSTaggedValue(sp[startIdx + i]));  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     }
-    // 1. Let len be the number of elements in argumentsList
-    uint32_t len = argumentsList->GetLength();
-    // 2. Let obj be ObjectCreate(%ObjectPrototype%, «[[ParameterMap]]»).
-    // 3. Set obj’s [[ParameterMap]] internal slot to undefined.
-    // [[ParameterMap]] setted as undifined.
-    JSHandle<JSArguments> obj = factory->NewJSArguments();
-    // 4. Perform DefinePropertyOrThrow(obj, "length", PropertyDescriptor{[[Value]]: len, [[Writable]]: true,
-    // [[Enumerable]]: false, [[Configurable]]: true}).
-    obj->SetPropertyInlinedProps(thread, JSArguments::LENGTH_INLINE_PROPERTY_INDEX, JSTaggedValue(len));
-    // 5. Let index be 0.
-    // 6. Repeat while index < len,
-    //    a. Let val be argumentsList[index].
-    //    b. Perform CreateDataProperty(obj, ToString(index), val).
-    //    c. Let index be index + 1
-    obj->SetElements(thread, argumentsList.GetTaggedValue());
-    // 7. Perform DefinePropertyOrThrow(obj, @@iterator, PropertyDescriptor
-    // {[[Value]]:%ArrayProto_values%,
-    // [[Writable]]: true, [[Enumerable]]: false, [[Configurable]]: true}).
-    obj->SetPropertyInlinedProps(thread, JSArguments::ITERATOR_INLINE_PROPERTY_INDEX,
-                                 globalEnv->GetArrayProtoValuesFunction().GetTaggedValue());
-    // 8. Perform DefinePropertyOrThrow(obj, "caller", PropertyDescriptor {[[Get]]: %ThrowTypeError%,
-    // [[Set]]: %ThrowTypeError%, [[Enumerable]]: false, [[Configurable]]: false}).
-    JSHandle<JSTaggedValue> throwFunction = globalEnv->GetThrowTypeError();
-    JSHandle<AccessorData> accessor = factory->NewAccessorData();
-    accessor->SetGetter(thread, throwFunction);
-    accessor->SetSetter(thread, throwFunction);
-    obj->SetPropertyInlinedProps(thread, JSArguments::CALLER_INLINE_PROPERTY_INDEX, accessor.GetTaggedValue());
-    // 9. Perform DefinePropertyOrThrow(obj, "callee", PropertyDescriptor {[[Get]]: %ThrowTypeError%,
-    // [[Set]]: %ThrowTypeError%, [[Enumerable]]: false, [[Configurable]]: false}).
-    accessor = factory->NewAccessorData();
-    accessor->SetGetter(thread, throwFunction);
-    accessor->SetSetter(thread, throwFunction);
-    obj->SetPropertyInlinedProps(thread, JSArguments::CALLEE_INLINE_PROPERTY_INDEX, accessor.GetTaggedValue());
-    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    // 11. Return obj
-    return obj.GetTaggedValue();
+    return RuntimeGetUnmapedJSArgumentObj(thread, argumentsList);
 }
 
 JSTaggedValue RuntimeStubs::RuntimeCopyRestArgs(JSThread *thread, JSTaggedType *sp, uint32_t restNumArgs,
@@ -1612,17 +1576,39 @@ JSTaggedValue RuntimeStubs::RuntimeNewLexicalEnvWithNameDyn(JSThread *thread, ui
 JSTaggedValue RuntimeStubs::RuntimeGetAotUnmapedArgs(JSThread *thread, uint32_t actualNumArgs, uintptr_t argv)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<GlobalEnv> globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<TaggedArray> argumentsList = factory->NewTaggedArray(actualNumArgs - FIXED_NUM_ARGS);
     for (uint32_t i = 0; i < actualNumArgs - FIXED_NUM_ARGS; ++i) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         JSTaggedType arg = reinterpret_cast<JSTaggedType *>(argv)[i + 1]; // skip actualNumArgs
         argumentsList->Set(thread, i, JSTaggedValue(arg));
     }
+    return RuntimeGetUnmapedJSArgumentObj(thread, argumentsList);
+}
+
+JSTaggedValue RuntimeStubs::RuntimeGetAotUnmapedArgsWithRestArgs(JSThread *thread, uint32_t actualNumArgs)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<TaggedArray> argumentsList = factory->NewTaggedArray(actualNumArgs - FIXED_NUM_ARGS);
+    auto leaveFrame = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
+    auto frame = OptimizedLeaveFrame::GetFrameFromSp(leaveFrame);
+    JSTaggedType *argv = frame->GetJsFuncFrameArgv(thread);
+    for (uint32_t i = 0; i < actualNumArgs - FIXED_NUM_ARGS; ++i) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        JSTaggedType arg = reinterpret_cast<JSTaggedType *>(argv)[i + FIXED_NUM_ARGS]; // skip actualNumArgs
+        argumentsList->Set(thread, i, JSTaggedValue(arg));
+    }
+    return RuntimeGetUnmapedJSArgumentObj(thread, argumentsList);
+}
+
+JSTaggedValue RuntimeStubs::RuntimeGetUnmapedJSArgumentObj(JSThread *thread, const JSHandle<TaggedArray> &argumentsList)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<GlobalEnv> globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
     // 1. Let len be the number of elements in argumentsList
     uint32_t len = argumentsList->GetLength();
     // 2. Let obj be ObjectCreate(%ObjectPrototype%, «[[ParameterMap]]»).
     // 3. Set obj’s [[ParameterMap]] internal slot to undefined.
+    // [[ParameterMap]] setted as undifined.
     JSHandle<JSArguments> obj = factory->NewJSArguments();
     // 4. Perform DefinePropertyOrThrow(obj, "length", PropertyDescriptor{[[Value]]: len, [[Writable]]: true,
     // [[Enumerable]]: false, [[Configurable]]: true}).
@@ -1680,15 +1666,18 @@ JSTaggedValue RuntimeStubs::RuntimeNewAotLexicalEnvWithNameDyn(JSThread *thread,
     return newEnv.GetTaggedValue();
 }
 
-JSTaggedValue RuntimeStubs::RuntimeCopyAotRestArgs(JSThread *thread, uint32_t restNumArgs, uintptr_t argv)
+JSTaggedValue RuntimeStubs::RuntimeCopyAotRestArgs(JSThread *thread, uint32_t autualArgc, uint32_t restId)
 {
-    uint32_t actualRestNum = restNumArgs - FIXED_NUM_ARGS;
+    auto leaveFrame = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
+    auto frame = OptimizedLeaveFrame::GetFrameFromSp(leaveFrame);
+    uint32_t actualRestNum = autualArgc - restId - FIXED_NUM_ARGS;
     JSHandle<JSTaggedValue> restArray = JSArray::ArrayCreate(thread, JSTaggedNumber(actualRestNum));
-
+    JSTaggedType *argv = frame->GetJsFuncFrameArgv(thread);
     JSMutableHandle<JSTaggedValue> element(thread, JSTaggedValue::Undefined());
     for (uint32_t i = 0; i < actualRestNum; ++i) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        JSTaggedType arg = reinterpret_cast<JSTaggedType *>(argv)[i + 1]; // skip restNumArgs
+        JSTaggedType arg = argv[i + FIXED_NUM_ARGS + restId];
+        [[maybe_unused]]auto a = JSTaggedValue(arg);
         element.Update(JSTaggedValue(arg));
         JSObject::SetProperty(thread, restArray, i, element, true);
     }
