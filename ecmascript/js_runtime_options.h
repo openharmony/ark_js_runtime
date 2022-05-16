@@ -56,7 +56,8 @@ public:
         parser->Add(&arkProperties_);
         parser->Add(&enableTSAot_);
         parser->Add(&maxNonmovableSpaceCapacity_);
-        parser->Add(&asmInter_);
+        parser->Add(&enableAsmInterpreter_);
+        parser->Add(&asmOpcodeDisableRange_);
         parser->Add(&aotOutputFile_);
         parser->Add(&targetTriple_);
         parser->Add(&asmOptLevel_);
@@ -302,51 +303,36 @@ public:
         return defaultSnapshotSpaceCapacity_.GetValue();
     }
 
-    void SetAsmInterOption(std::string value)
+    void SetEnableAsmInterpreter(bool value)
     {
-        asmInter_.SetValue(std::move(value));
+        enableAsmInterpreter_.SetValue(value);
+    }
+
+    void SetAsmOpcodeDisableRange(std::string value)
+    {
+        asmOpcodeDisableRange_.SetValue(std::move(value));
     }
 
     void ParseAsmInterOption()
     {
-        std::string strAsmInterOption = asmInter_.GetValue();
-        if (strAsmInterOption.empty()) {
+        asmInterParsedOption_.enableAsm = enableAsmInterpreter_.GetValue();
+        std::string strAsmOpcodeDisableRange = asmOpcodeDisableRange_.GetValue();
+        if (strAsmOpcodeDisableRange.empty()) {
             return;
-        }
-        std::vector<std::string> vec;
-        size_t pos = 0;
-        size_t len = strAsmInterOption.length();
-        while (pos < len) {
-            size_t delimPos = strAsmInterOption.find("#", pos);
-            if (delimPos == std::string::npos) {
-                vec.emplace_back(strAsmInterOption.substr(pos));
-                break;
-            }
-            vec.emplace_back(strAsmInterOption.substr(pos, delimPos - pos));
-            pos = delimPos + 1;
-        }
-
-        // enable or not asm interpreter
-        if (vec.size() > 0) {
-            std::string enableAsm = vec[0];
-            asmInterParsedOption_.enableAsm = (enableAsm == "1") ? true : false;
         }
 
         // asm interpreter handle disable range
-        if (vec.size() > 1) {
-            std::string handleDisableRange = vec[1];
-            pos = handleDisableRange.find(",");
-            if (pos != std::string::npos) {
-                std::string strStart = handleDisableRange.substr(0, pos);
-                std::string strEnd = handleDisableRange.substr(pos + 1);
-                int start =  strStart.empty() ? 0 : std::stoi(strStart);
-                int end = strEnd.empty() ? kungfu::BYTECODE_STUB_END_ID : std::stoi(strEnd);
-                if (start >= 0 && start < kungfu::BytecodeStubCSigns::NUM_OF_ALL_NORMAL_STUBS
-                    && end >= 0 && end < kungfu::BytecodeStubCSigns::NUM_OF_ALL_NORMAL_STUBS
-                    && start <= end) {
-                    asmInterParsedOption_.handleStart = start;
-                    asmInterParsedOption_.handleEnd = end;
-                }
+        size_t pos = strAsmOpcodeDisableRange.find(",");
+        if (pos != std::string::npos) {
+            std::string strStart = strAsmOpcodeDisableRange.substr(0, pos);
+            std::string strEnd = strAsmOpcodeDisableRange.substr(pos + 1);
+            int start =  strStart.empty() ? 0 : std::stoi(strStart);
+            int end = strEnd.empty() ? kungfu::BYTECODE_STUB_END_ID : std::stoi(strEnd);
+            if (start >= 0 && start < kungfu::BytecodeStubCSigns::NUM_OF_ALL_NORMAL_STUBS
+                && end >= 0 && end < kungfu::BytecodeStubCSigns::NUM_OF_ALL_NORMAL_STUBS
+                && start <= end) {
+                asmInterParsedOption_.handleStart = start;
+                asmInterParsedOption_.handleEnd = end;
             }
         }
     }
@@ -560,9 +546,12 @@ private:
     PandArg<uint32_t> defaultSnapshotSpaceCapacity_ {"defaultSnapshotSpaceCapacity",
         256 * 1024,
         R"(set default snapshot space capacity)"};
-    PandArg<std::string> asmInter_ {"asmInter",
+    PandArg<bool> enableAsmInterpreter_ {"asm-interpreter", false,
+        R"(Enable asm interpreter. Default: false)"};
+    PandArg<std::string> asmOpcodeDisableRange_ {"asm-opcode-disable-range",
         "",
-        R"(set asm interpreter control properties)"};
+        R"(Opcode range when asm interpreter is enabled.)"};
+    AsmInterParsedOption asmInterParsedOption_;
     PandArg<uint64_t> internal_memory_size_limit_ {"internal-memory-size-limit", INTERNAL_MEMORY_SIZE_LIMIT_DEFAULT,
         R"(Max internal memory used by the VM. Default: 2147483648)"};
     PandArg<uint32_t> heap_size_limit_ {"heap-size-limit", 512 * 1024 * 1024,
@@ -579,7 +568,6 @@ private:
     PandArg<std::string> icu_data_path_ {"icu-data-path", R"(default)",
         R"(Path to generated icu data file. Default: "default")"};
     PandArg<bool> startup_time_ {"startup-time", false, R"(Print the start time of command execution. Default: false)"};
-    AsmInterParsedOption asmInterParsedOption_;
     PandArg<std::string> logCompiledMethods {"log-compiled-methods",
         R"(none)",
         R"(print stub or aot logs in units of method, "none": no log, "all": every method)"};

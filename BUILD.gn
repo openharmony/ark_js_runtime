@@ -105,15 +105,11 @@ if (defined(ark_independent_build)) {
       # js bytecode test
       deps += [ "//ark/js_runtime/test/moduletest:ark_js_moduletest" ]
 
-      # ts aot test
+      # ts aot test and asm test
       if (is_standard_system) {
         deps += [ "//ark/js_runtime/test/aottest:ark_aot_test" ]
+        deps += [ "//ark/js_runtime/test/moduletest:ark_asm_test" ]
       }
-    }
-
-    # asm test
-    if (is_standard_system) {
-      deps += [ "//ark/js_runtime/test/asmtest:ark_asm_test" ]
     }
   }
 }
