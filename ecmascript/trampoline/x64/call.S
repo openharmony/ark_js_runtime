@@ -27,6 +27,9 @@
 .global AsmInterpreterEntry
 .type AsmInterpreterEntry, %function
 
+.global GeneratorReEnterAsmInterp
+.type GeneratorReEnterAsmInterp, %function
+
 .global JSCallDispatch
 .type JSCallDispatch, %function
 
@@ -1102,6 +1105,9 @@ JSCallEntry:
     retq
 
 AsmInterpreterEntry:
+    ret
+
+GeneratorReEnterAsmInterp:
     ret
 
 JSCallDispatch:
