@@ -41,8 +41,6 @@ public:
     static JSTaggedValue Execute(EcmaRuntimeCallInfo *info);
     static JSTaggedValue ExecuteNative(EcmaRuntimeCallInfo *info);
     static JSTaggedValue GeneratorReEnterInterpreter(JSThread *thread, JSHandle<GeneratorContext> context);
-    static void ChangeGenContext(JSThread *thread, JSHandle<GeneratorContext> context);
-    static void ResumeContext(JSThread *thread);
     static uint32_t FindCatchBlock(JSMethod *caller, uint32_t pc);
     static inline size_t GetJumpSizeAfterCall(const uint8_t *prevPc);
 

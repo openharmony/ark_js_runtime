@@ -49,8 +49,6 @@ public:
         JSThread *thread, JSHandle<JSTaggedValue> func, JSHandle<JSTaggedValue> thisObj,
         JSHandle<JSTaggedValue> newTarget, size_t numArgs);
     static inline JSTaggedValue GeneratorReEnterInterpreter(JSThread *thread, JSHandle<GeneratorContext> context);
-    static inline void ChangeGenContext(JSThread *thread, JSHandle<GeneratorContext> context);
-    static inline void ResumeContext(JSThread *thread);
     static inline void RunInternal(JSThread *thread, ConstantPool *constpool, const uint8_t *pc, JSTaggedType *sp);
     static inline uint8_t ReadU8(const uint8_t *pc, uint32_t offset);
     static inline void InitStackFrame(JSThread *thread);
