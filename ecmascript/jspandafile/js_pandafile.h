@@ -85,8 +85,6 @@ public:
 
     uint32_t GetOrInsertConstantPool(ConstPoolType type, uint32_t offset);
 
-    uint32_t PUBLIC_API GetIdInConstantPool(uint32_t offset) const;
-
     void UpdateMainMethodIndex(uint32_t mainMethodIndex)
     {
         mainMethodIndex_ = mainMethodIndex;

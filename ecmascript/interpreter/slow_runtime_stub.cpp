@@ -149,7 +149,7 @@ JSTaggedValue SlowRuntimeStub::IncDyn(JSThread *thread, JSTaggedValue value)
 {
     INTERPRETER_TRACE(thread, IncDyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    
+
     JSHandle<JSTaggedValue> inputTag(thread, value);
     JSHandle<JSTaggedValue> inputVal = JSTaggedValue::ToNumeric(thread, inputTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
