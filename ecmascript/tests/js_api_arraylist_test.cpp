@@ -13,13 +13,14 @@
  * limitations under the License.
  */
 
-#include "ecmascript/ecma_vm.h"
-#include "ecmascript/js_tagged_value.h"
-#include "ecmascript/object_factory.h"
-#include "ecmascript/js_api_arraylist.h"
-#include "ecmascript/tests/test_helper.h"
-#include "ecmascript/global_env.h"
 #include "ecmascript/containers/containers_private.h"
+#include "ecmascript/ecma_vm.h"
+#include "ecmascript/ecma_runtime_call_info.h"
+#include "ecmascript/js_tagged_value.h"
+#include "ecmascript/js_api_arraylist.h"
+#include "ecmascript/global_env.h"
+#include "ecmascript/object_factory.h"
+#include "ecmascript/tests/test_helper.h"
 
 using namespace panda;
 using namespace panda::ecmascript;
@@ -51,6 +52,25 @@ public:
     EcmaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
+
+    class TestClass : public base::BuiltinsBase {
+    public:
+        static JSTaggedValue TestForEachAndReplaceAllFunc(EcmaRuntimeCallInfo *argv)
+        {
+            JSHandle<JSTaggedValue> value = GetCallArg(argv, 0);
+            JSHandle<JSTaggedValue> key = GetCallArg(argv, 1);
+            JSHandle<JSTaggedValue> arrayList = GetCallArg(argv, 2); // 2 means the secode arg
+            if (!arrayList->IsUndefined()) {
+                if (value->IsNumber()) {
+                    TaggedArray *elements = TaggedArray::Cast(JSAPIArrayList::Cast(arrayList.GetTaggedValue().
+                                            GetTaggedObject())->GetElements().GetTaggedObject());
+                    JSTaggedValue result = elements->Get(key->GetInt());
+                    EXPECT_EQ(result, value.GetTaggedValue());
+                }
+            }
+            return JSTaggedValue::True();
+        }
+    };
 protected:
     JSAPIArrayList *CreateArrayList()
     {
@@ -75,7 +95,8 @@ protected:
         JSHandle<JSTaggedValue> constructor(thread, result);
         JSHandle<JSAPIArrayList> arrayList(
             factory->NewJSObjectByConstructor(JSHandle<JSFunction>(constructor), constructor));
-        arrayList->SetElements(thread, factory->NewTaggedArray(JSAPIArrayList::DEFAULT_CAPACITY_LENGTH));
+        JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(JSAPIArrayList::DEFAULT_CAPACITY_LENGTH);
+        arrayList->SetElements(thread, taggedArray);
         return *arrayList;
     }
 };
@@ -193,7 +214,7 @@ HWTEST_F_L0(JSAPIArrayListTest, GetCapacity_IncreaseCapacityTo)
 {
     JSHandle<JSAPIArrayList> arrayList(thread, CreateArrayList());
     uint32_t oldCapacity = JSAPIArrayList::GetCapacity(thread, arrayList);
-    EXPECT_EQ(oldCapacity, static_cast<uint32_t>(JSAPIArrayList::DEFAULT_CAPACITY_LENGTH));
+    EXPECT_EQ(oldCapacity, JSAPIArrayList::DEFAULT_CAPACITY_LENGTH);
 
     uint32_t addElementNums = 256;
     uint32_t growCapacityTimes = 0;
@@ -359,4 +380,166 @@ HWTEST_F_L0(JSAPIArrayListTest, RemoveByIndex_Remove_RemoveByRange)
     }
 }
 
+/**
+ * @tc.name: ReplaceAllElements
+ * @tc.desc:
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F_L0(JSAPIArrayListTest, ReplaceAllElements)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSAPIArrayList> arrayList(thread, CreateArrayList());
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<JSFunction> func =
+        factory->NewJSFunction(env, reinterpret_cast<void *>(TestClass::TestForEachAndReplaceAllFunc));
+    auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
+    callInfo->SetFunction(JSTaggedValue::Undefined());
+    callInfo->SetThis(arrayList.GetTaggedValue());
+    callInfo->SetCallArg(0, func.GetTaggedValue());
+
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
+    JSHandle<JSTaggedValue> result(thread, JSAPIArrayList::ReplaceAllElements(thread,
+        callInfo->GetThis(), callInfo->GetFunction(), callInfo->GetArg(0)));
+    EXPECT_EQ(result.GetTaggedValue(), JSTaggedValue::Undefined());
+    TestHelper::TearDownFrame(thread, prev);
+
+    // Recheck the results after replace.
+    uint32_t length = arrayList->GetLength().GetArrayLength();
+    JSHandle<TaggedArray> elements(thread, arrayList->GetElements());
+    for (uint32_t i = 0; i < length; i++) {
+        EXPECT_EQ(elements->Get(i), JSTaggedValue(i));
+    }
+}
+
+/**
+ * @tc.name: SubArrayList
+ * @tc.desc:
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F_L0(JSAPIArrayListTest, SubArrayList)
+{
+    JSHandle<JSAPIArrayList> arrayList(thread, CreateArrayList());
+    uint32_t addElementNums = 256;
+    for (uint32_t i = 0; i < addElementNums; i++) {
+        JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));
+        JSAPIArrayList::Add(thread, arrayList, value);
+    }
+    uint32_t formIndex = 50;
+    uint32_t toIndex = 100;
+    JSHandle<JSTaggedValue> fromIndexValue(thread, JSTaggedValue(formIndex));
+    JSHandle<JSTaggedValue> toIndexValue(thread, JSTaggedValue(toIndex));
+    JSHandle<JSAPIArrayList> subArrayList =
+        JSAPIArrayList::SubArrayList(thread, arrayList, fromIndexValue, toIndexValue);
+    JSHandle<TaggedArray> subElements(thread, subArrayList->GetElements());
+    for (uint32_t i = 0; i < subArrayList->GetLength().GetArrayLength(); i++) {
+        // The element value interval of substring is [50, 100]
+        EXPECT_EQ(subElements->Get(i), JSTaggedValue(i + formIndex));
+    }
+}
+
+/**
+ * @tc.name: ForEach
+ * @tc.desc:
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F_L0(JSAPIArrayListTest, ForEach)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSAPIArrayList> arrayList(thread, CreateArrayList());
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<JSFunction> func =
+        factory->NewJSFunction(env, reinterpret_cast<void *>(TestClass::TestForEachAndReplaceAllFunc));
+    auto callInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
+    callInfo->SetFunction(JSTaggedValue::Undefined());
+    callInfo->SetThis(arrayList.GetTaggedValue());
+    callInfo->SetCallArg(0, func.GetTaggedValue());
+
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
+    JSHandle<JSTaggedValue> result(thread,
+        JSAPIArrayList::ForEach(thread, callInfo->GetThis(), callInfo->GetFunction(), callInfo->GetArg(0)));
+    EXPECT_EQ(result.GetTaggedValue(), JSTaggedValue::Undefined());
+    TestHelper::TearDownFrame(thread, prev);
+}
+
+/**
+ * @tc.name: GetIteratorObj
+ * @tc.desc:
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F_L0(JSAPIArrayListTest, GetIteratorObj)
+{
+    JSHandle<JSAPIArrayList> arrayList(thread, CreateArrayList());
+    JSHandle<JSTaggedValue> iteratorObj(thread, JSAPIArrayList::GetIteratorObj(thread, arrayList));
+    EXPECT_TRUE(iteratorObj->IsJSAPIArrayListIterator());
+}
+
+/**
+ * @tc.name: Get & Set & Has
+ * @tc.desc:
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F_L0(JSAPIArrayListTest, Get_Set_Has)
+{
+    JSHandle<JSAPIArrayList> arrayList(thread, CreateArrayList());
+    uint32_t elementsNum = 256;
+    for (uint32_t i = 0; i < elementsNum; i++) {
+        JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));
+        JSAPIArrayList::Add(thread, arrayList, value);
+        arrayList->Set(thread, i, JSTaggedValue(i * 10));
+
+        JSHandle<JSTaggedValue> getValue(thread, arrayList->Get(thread, i));
+        EXPECT_EQ(getValue.GetTaggedValue(), JSTaggedValue(i * 10));
+
+        bool isHas = arrayList->Has(JSTaggedValue(i * 10));
+        EXPECT_EQ(isHas, true);
+    }
+}
+
+/**
+ * @tc.name: OwnKeys
+ * @tc.desc:
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F_L0(JSAPIArrayListTest, OwnKeys)
+{
+    JSHandle<JSAPIArrayList> arrayList(thread, CreateArrayList());
+    uint32_t elementsNum = 256;
+    for (uint32_t i = 0; i < elementsNum; i++) {
+        JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));
+        JSAPIArrayList::Add(thread, arrayList, value);
+    }
+    JSHandle<TaggedArray> keys = JSAPIArrayList::OwnKeys(thread, arrayList);
+    uint32_t length = arrayList->GetLength().GetArrayLength();
+    for (uint32_t i = 0; i < length; i++) {
+        EXPECT_EQ(keys->Get(i), JSTaggedValue(i));
+    }
+}
+
+/**
+ * @tc.name: GetOwnProperty
+ * @tc.desc:
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F_L0(JSAPIArrayListTest, GetOwnProperty)
+{
+    JSHandle<JSAPIArrayList> arrayList(thread, CreateArrayList());
+    uint32_t elementsNums = 256;
+    for (uint32_t i = 0; i < elementsNums; i++) {
+        JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));
+        JSAPIArrayList::Add(thread, arrayList, value);
+    }
+    PropertyDescriptor descRes(thread);
+    for (uint32_t i = 0; i < elementsNums; i++) {
+        JSHandle<JSTaggedValue> key(thread, JSTaggedValue(i));
+        bool getOwnPropertyRes = JSAPIArrayList::GetOwnProperty(thread, arrayList, key, descRes);
+        EXPECT_EQ(getOwnPropertyRes, true);
+    }
+}
 } // namespace panda::test
