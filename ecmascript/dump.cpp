@@ -1057,7 +1057,7 @@ void AccessorData::Dump(std::ostream &os) const
 void Program::Dump(std::ostream &os) const
 {
     os << " - MainFunction: ";
-    GetMainFunction().D();
+    GetMainFunction().Dump(os);
     os << "\n";
 }
 
@@ -1069,13 +1069,13 @@ void ConstantPool::Dump(std::ostream &os) const
 void JSFunction::Dump(std::ostream &os) const
 {
     os << " - ProtoOrDynClass: ";
-    GetProtoOrDynClass().D();
+    GetProtoOrDynClass().Dump(os);
     os << "\n";
     os << " - LexicalEnv: ";
-    GetLexicalEnv().D();
+    GetLexicalEnv().Dump(os);
     os << "\n";
     os << " - HomeObject: ";
-    GetHomeObject().D();
+    GetHomeObject().Dump(os);
     os << "\n";
     os << " - FunctionKind: " << static_cast<int>(GetFunctionKind());
     os << "\n";
@@ -1086,16 +1086,16 @@ void JSFunction::Dump(std::ostream &os) const
     os << " - ThisMode: " << static_cast<int>(GetThisMode());
     os << "\n";
     os << " - FunctionExtraInfo: ";
-    GetFunctionExtraInfo().D();
+    GetFunctionExtraInfo().Dump(os);
     os << "\n";
     os << " - ConstantPool: ";
-    GetConstantPool().D();
+    GetConstantPool().Dump(os);
     os << "\n";
     os << " - ProfileTypeInfo: ";
-    GetProfileTypeInfo().D();
+    GetProfileTypeInfo().Dump(os);
     os << "\n";
     os << " - Module: ";
-    GetModule().D();
+    GetModule().Dump(os);
     os << "\n";
     JSObject::Dump(os);
 }
@@ -1554,15 +1554,15 @@ void JSStringIterator::Dump(std::ostream &os) const
 void JSTypedArray::Dump(std::ostream &os) const
 {
     os << " - viewed-array-buffer: ";
-    GetViewedArrayBuffer().D();
+    GetViewedArrayBuffer().Dump(os);
     os << " - typed-array-name: ";
-    GetTypedArrayName().D();
+    GetTypedArrayName().Dump(os);
     os << " - byte-length: ";
-    GetByteLength().D();
+    GetByteLength().Dump(os);
     os << " - byte-offset: ";
-    GetByteOffset().D();
+    GetByteOffset().Dump(os);
     os << " - array-length: ";
-    GetArrayLength().D();
+    GetArrayLength().Dump(os);
     JSObject::Dump(os);
 }
 
@@ -1570,13 +1570,13 @@ void JSRegExp::Dump(std::ostream &os) const
 {
     os << "\n";
     os << " - ByteCodeBuffer: ";
-    GetByteCodeBuffer().D();
+    GetByteCodeBuffer().Dump(os);
     os << "\n";
     os << " - OriginalSource: ";
-    GetOriginalSource().D();
+    GetOriginalSource().Dump(os);
     os << "\n";
     os << " - OriginalFlags: ";
-    GetOriginalFlags().D();
+    GetOriginalFlags().Dump(os);
     os << "\n";
     os << " - Length: " << GetLength();
     os << "\n";
@@ -1600,7 +1600,7 @@ void JSSymbol::Dump(std::ostream &os) const
     os << "\n - flags: " << GetFlags();
     os << "\n - description: ";
     JSTaggedValue description = GetDescription();
-    description.D();
+    description.Dump(os);
 }
 
 void LexicalEnv::Dump(std::ostream &os) const
@@ -1825,9 +1825,9 @@ void GlobalEnv::Dump(std::ostream &os) const
 void JSDataView::Dump(std::ostream &os) const
 {
     os << " - data-view: ";
-    GetDataView().D();
+    GetDataView().Dump(os);
     os << " - buffer: ";
-    GetViewedArrayBuffer().D();
+    GetViewedArrayBuffer().Dump(os);
     os << "- byte-length: " << GetByteLength();
     os << "\n - byte-offset: " << GetByteOffset();
 }
@@ -1836,59 +1836,59 @@ void JSArrayBuffer::Dump(std::ostream &os) const
 {
     os << " - byte-length: " << GetArrayBufferByteLength();
     os << " - buffer-data: ";
-    GetArrayBufferData().D();
+    GetArrayBufferData().Dump(os);
     os << " - Shared: " << GetShared();
 }
 
 void PromiseReaction::Dump(std::ostream &os) const
 {
     os << " - promise-capability: ";
-    GetPromiseCapability().D();
+    GetPromiseCapability().Dump(os);
     os << " - type: " << static_cast<int>(GetType());
     os << " - handler: ";
-    GetHandler().D();
+    GetHandler().Dump(os);
 }
 
 void PromiseCapability::Dump(std::ostream &os) const
 {
     os << " - promise: ";
-    GetPromise().D();
+    GetPromise().Dump(os);
     os << " - resolve: ";
-    GetResolve().D();
+    GetResolve().Dump(os);
     os << " - reject: ";
-    GetReject().D();
+    GetReject().Dump(os);
 }
 
 void PromiseIteratorRecord::Dump(std::ostream &os) const
 {
     os << " - iterator: ";
-    GetIterator().D();
+    GetIterator().Dump(os);
     os << " - done: " << GetDone();
 }
 
 void PromiseRecord::Dump(std::ostream &os) const
 {
     os << " - value: ";
-    GetValue().D();
+    GetValue().Dump(os);
 }
 
 void ResolvingFunctionsRecord::Dump(std::ostream &os) const
 {
     os << " - resolve-function: ";
-    GetResolveFunction().D();
+    GetResolveFunction().Dump(os);
     os << " - reject-function: ";
-    GetRejectFunction().D();
+    GetRejectFunction().Dump(os);
 }
 
 void JSPromise::Dump(std::ostream &os) const
 {
     os << " - promise-state: " << static_cast<int>(GetPromiseState());
     os << "\n - promise-result: ";
-    GetPromiseResult().D();
+    GetPromiseResult().Dump(os);
     os << " - promise-fulfill-reactions: ";
-    GetPromiseFulfillReactions().D();
+    GetPromiseFulfillReactions().Dump(os);
     os << " - promise-reject-reactions: ";
-    GetPromiseRejectReactions().D();
+    GetPromiseRejectReactions().Dump(os);
     os << " - promise-is-handled: " << GetPromiseIsHandled();
     JSObject::Dump(os);
 }
@@ -1896,62 +1896,62 @@ void JSPromise::Dump(std::ostream &os) const
 void JSPromiseReactionsFunction::Dump(std::ostream &os) const
 {
     os << " - promise: ";
-    GetPromise().D();
+    GetPromise().Dump(os);
     os << " - already-resolved: ";
-    GetAlreadyResolved().D();
+    GetAlreadyResolved().Dump(os);
     JSObject::Dump(os);
 }
 
 void JSPromiseExecutorFunction::Dump(std::ostream &os) const
 {
     os << " - capability: ";
-    GetCapability().D();
+    GetCapability().Dump(os);
     JSObject::Dump(os);
 }
 
 void JSPromiseAllResolveElementFunction::Dump(std::ostream &os) const
 {
     os << " - index: ";
-    GetIndex().D();
+    GetIndex().Dump(os);
     os << " - values: ";
-    GetValues().D();
+    GetValues().Dump(os);
     os << " - capability: ";
-    GetCapabilities().D();
+    GetCapabilities().Dump(os);
     os << " - remaining-elements: ";
-    GetRemainingElements().D();
+    GetRemainingElements().Dump(os);
     os << " - already-called: ";
-    GetAlreadyCalled().D();
+    GetAlreadyCalled().Dump(os);
     JSObject::Dump(os);
 }
 
 void MicroJobQueue::Dump(std::ostream &os) const
 {
     os << " - promise-job-queue: ";
-    GetPromiseJobQueue().D();
+    GetPromiseJobQueue().Dump(os);
     os << " - script-job-queue: ";
-    GetScriptJobQueue().D();
+    GetScriptJobQueue().Dump(os);
 }
 
 void PendingJob::Dump(std::ostream &os) const
 {
     os << " - job: ";
-    GetJob().D();
+    GetJob().Dump(os);
     os << " - arguments: ";
-    GetArguments().D();
+    GetArguments().Dump(os);
 }
 
 void CompletionRecord::Dump(std::ostream &os) const
 {
     os << " - type: " << static_cast<int>(GetType());
     os << " - value: ";
-    GetValue().D();
+    GetValue().Dump(os);
 }
 
 void JSProxyRevocFunction::Dump(std::ostream &os) const
 {
     os << " - RevocableProxy: ";
     os << "\n";
-    GetRevocableProxy().D();
+    GetRevocableProxy().Dump(os);
     os << "\n";
 }
 
@@ -1964,7 +1964,7 @@ void JSAsyncAwaitStatusFunction::Dump(std::ostream &os) const
 {
     os << " - AsyncContext: ";
     os << "\n";
-    GetAsyncContext().D();
+    GetAsyncContext().Dump(os);
     os << "\n";
 }
 
@@ -1976,13 +1976,13 @@ void JSGeneratorFunction::Dump(std::ostream &os) const
 void JSIntlBoundFunction::Dump(std::ostream &os) const
 {
     os << " - NumberFormat: ";
-    GetNumberFormat().D();
+    GetNumberFormat().Dump(os);
     os << "\n";
     os << " - DateTimeFormat: ";
-    GetDateTimeFormat().D();
+    GetDateTimeFormat().Dump(os);
     os << "\n";
     os << " - Collator: ";
-    GetCollator().D();
+    GetCollator().Dump(os);
     os << "\n";
     JSObject::Dump(os);
 }
@@ -1990,40 +1990,40 @@ void JSIntlBoundFunction::Dump(std::ostream &os) const
 void PropertyBox::Dump(std::ostream &os) const
 {
     os << " - Value: ";
-    GetValue().D();
+    GetValue().Dump(os);
     os << "\n";
 }
 
 void PrototypeHandler::Dump(std::ostream &os) const
 {
     os << " - HandlerInfo: ";
-    GetHandlerInfo().D();
+    GetHandlerInfo().Dump(os);
     os << "\n";
     os << " - ProtoCell: ";
-    GetHandlerInfo().D();
+    GetHandlerInfo().Dump(os);
     os << "\n";
     os << " - Holder: ";
-    GetHandlerInfo().D();
+    GetHandlerInfo().Dump(os);
     os << "\n";
 }
 
 void TransitionHandler::Dump(std::ostream &os) const
 {
     os << " - HandlerInfo: ";
-    GetHandlerInfo().D();
+    GetHandlerInfo().Dump(os);
     os << "\n";
     os << " - TransitionHClass: ";
-    GetTransitionHClass().D();
+    GetTransitionHClass().Dump(os);
     os << "\n";
 }
 
 void JSRealm::Dump(std::ostream &os) const
 {
     os << " - Value: ";
-    GetValue().D();
+    GetValue().Dump(os);
     os << "\n";
     os << " - GlobalEnv: ";
-    GetGlobalEnv().D();
+    GetGlobalEnv().Dump(os);
     os << "\n";
     JSObject::Dump(os);
 }
@@ -2031,7 +2031,7 @@ void JSRealm::Dump(std::ostream &os) const
 void JSIntl::Dump(std::ostream &os) const
 {
     os << " - FallbackSymbol: ";
-    GetFallbackSymbol().D();
+    GetFallbackSymbol().Dump(os);
     os << "\n";
     JSObject::Dump(os);
 }
@@ -2039,7 +2039,7 @@ void JSIntl::Dump(std::ostream &os) const
 void JSLocale::Dump(std::ostream &os) const
 {
     os << " - IcuField: ";
-    GetIcuField().D();
+    GetIcuField().Dump(os);
     os << "\n";
     JSObject::Dump(os);
 }
@@ -2047,34 +2047,34 @@ void JSLocale::Dump(std::ostream &os) const
 void JSDateTimeFormat::Dump(std::ostream &os) const
 {
     os << " - Locale: ";
-    GetLocale().D();
+    GetLocale().Dump(os);
     os << "\n";
     os << " - Calendar: ";
-    GetCalendar().D();
+    GetCalendar().Dump(os);
     os << "\n";
     os << " - NumberingSystem: ";
-    GetNumberingSystem().D();
+    GetNumberingSystem().Dump(os);
     os << "\n";
     os << " - TimeZone: ";
-    GetTimeZone().D();
+    GetTimeZone().Dump(os);
     os << "\n";
     os << " - HourCycle: " << static_cast<int>(GetHourCycle());
     os << "\n";
     os << " - LocaleIcu: ";
-    GetLocaleIcu().D();
+    GetLocaleIcu().Dump(os);
     os << "\n";
     os << " - SimpleDateTimeFormatIcu: ";
-    GetSimpleDateTimeFormatIcu().D();
+    GetSimpleDateTimeFormatIcu().Dump(os);
     os << "\n";
     os << " - Iso8601: ";
-    GetIso8601().D();
+    GetIso8601().Dump(os);
     os << "\n";
     os << " - DateStyle: " << static_cast<int>(GetDateStyle());
     os << "\n";
     os << " - TimeStyle: " << static_cast<int>(GetTimeStyle());
     os << "\n";
     os << " - BoundFormat: ";
-    GetBoundFormat().D();
+    GetBoundFormat().Dump(os);
     os << "\n";
     JSObject::Dump(os);
 }
@@ -2082,23 +2082,23 @@ void JSDateTimeFormat::Dump(std::ostream &os) const
 void JSRelativeTimeFormat::Dump(std::ostream &os) const
 {
     os << " - Locale: ";
-    GetLocale().D();
+    GetLocale().Dump(os);
     os << "\n";
     os << " - InitializedRelativeTimeFormat: ";
-    GetInitializedRelativeTimeFormat().D();
+    GetInitializedRelativeTimeFormat().Dump(os);
     os << "\n";
     os << " - NumberingSystem: ";
-    GetNumberingSystem().D();
+    GetNumberingSystem().Dump(os);
     os << "\n";
     os << " - Style: " << static_cast<int>(GetStyle());
     os << "\n";
     os << " - Numeric: " << static_cast<int>(GetNumeric());
     os << "\n";
     os << " - AvailableLocales: ";
-    GetAvailableLocales().D();
+    GetAvailableLocales().Dump(os);
     os << "\n";
     os << " - IcuField: ";
-    GetIcuField().D();
+    GetIcuField().Dump(os);
     os << "\n";
     JSObject::Dump(os);
 }
@@ -2106,37 +2106,37 @@ void JSRelativeTimeFormat::Dump(std::ostream &os) const
 void JSNumberFormat::Dump(std::ostream &os) const
 {
     os << " - Locale: ";
-    GetLocale().D();
+    GetLocale().Dump(os);
     os << "\n" << " - NumberingSystem: ";
-    GetNumberingSystem().D();
+    GetNumberingSystem().Dump(os);
     os << "\n" << " - Style: " << static_cast<int>(GetStyle());
     os << "\n" << " - Currency: ";
-    GetCurrency().D();
+    GetCurrency().Dump(os);
     os << "\n" << " - CurrencyDisplay: " << static_cast<int>(GetCurrencyDisplay());
     os << "\n" << " - CurrencySign: " << static_cast<int>(GetCurrencySign());
     os << "\n" << " - Unit: ";
-    GetUnit().D();
+    GetUnit().Dump(os);
     os << "\n" << " - UnitDisplay: " << static_cast<int>(GetUnitDisplay());
     os << "\n" << " - MinimumIntegerDigits: ";
-    GetMinimumIntegerDigits().D();
+    GetMinimumIntegerDigits().Dump(os);
     os << "\n" << " - MinimumFractionDigits: ";
-    GetMinimumFractionDigits().D();
+    GetMinimumFractionDigits().Dump(os);
     os << "\n" << " - MaximumFractionDigits: ";
-    GetMaximumFractionDigits().D();
+    GetMaximumFractionDigits().Dump(os);
     os << "\n" << " - MinimumSignificantDigits: ";
-    GetMinimumSignificantDigits().D();
+    GetMinimumSignificantDigits().Dump(os);
     os << "\n" << " - MaximumSignificantDigits: ";
-    GetMaximumSignificantDigits().D();
+    GetMaximumSignificantDigits().Dump(os);
     os << "\n" << " - UseGrouping: ";
-    GetUseGrouping().D();
+    GetUseGrouping().Dump(os);
     os << "\n" << " - RoundingType: " << static_cast<int>(GetRoundingType());
     os << "\n" << " - Notation: " << static_cast<int>(GetNotation());
     os << "\n" << " - CompactDisplay: " << static_cast<int>(GetCompactDisplay());
     os << "\n" << " - SignDisplay: " << static_cast<int>(GetSignDisplay());
     os << "\n" << " - BoundFormat: ";
-    GetBoundFormat().D();
+    GetBoundFormat().Dump(os);
     os << "\n" << " - IcuField: ";
-    GetIcuField().D();
+    GetIcuField().Dump(os);
     os << "\n";
     JSObject::Dump(os);
 }
@@ -2144,18 +2144,18 @@ void JSNumberFormat::Dump(std::ostream &os) const
 void JSCollator::Dump(std::ostream &os) const
 {
     os << " - IcuField: ";
-    GetIcuField().D();
+    GetIcuField().Dump(os);
     os << "\n - Locale: ";
-    GetLocale().D();
+    GetLocale().Dump(os);
     os << "\n - Usage: " << static_cast<int>(GetUsage());
     os << "\n - Sensitivity: " << static_cast<int>(GetSensitivity());
     os << "\n - IgnorePunctuation: " << GetIgnorePunctuation();
     os << "\n - Collation: ";
-    GetCollation().D();
+    GetCollation().Dump(os);
     os << "\n - Numeric: " << GetNumeric();
     os << "\n - CaseFirst: " << static_cast<int>(GetCaseFirst());
     os << "\n - BoundCompare: ";
-    GetBoundCompare().D();
+    GetBoundCompare().Dump(os);
     os << "\n";
     JSObject::Dump(os);
 }
@@ -2163,35 +2163,35 @@ void JSCollator::Dump(std::ostream &os) const
 void JSPluralRules::Dump(std::ostream &os) const
 {
     os << " - Locale: ";
-    GetLocale().D();
+    GetLocale().Dump(os);
     os << "\n";
     os << " - InitializedPluralRules: ";
-    GetInitializedPluralRules().D();
+    GetInitializedPluralRules().Dump(os);
     os << "\n";
     os << " - Type: " << static_cast<int>(GetType());
     os << "\n";
     os << " - MinimumIntegerDigits: ";
-    GetMinimumIntegerDigits().D();
+    GetMinimumIntegerDigits().Dump(os);
     os << "\n";
     os << " - MinimumFractionDigits: ";
-    GetMinimumFractionDigits().D();
+    GetMinimumFractionDigits().Dump(os);
     os << "\n";
     os << " - MaximumFractionDigits: ";
-    GetMaximumFractionDigits().D();
+    GetMaximumFractionDigits().Dump(os);
     os << "\n";
     os << " - MinimumSignificantDigits: ";
-    GetMinimumSignificantDigits().D();
+    GetMinimumSignificantDigits().Dump(os);
     os << "\n";
     os << " - MaximumSignificantDigits: ";
-    GetMaximumSignificantDigits().D();
+    GetMaximumSignificantDigits().Dump(os);
     os << "\n";
     os << " - RoundingType: " << static_cast<int>(GetRoundingType());
     os << "\n";
     os << " - IcuPR: ";
-    GetIcuPR().D();
+    GetIcuPR().Dump(os);
     os << "\n";
     os << " - IcuNF: ";
-    GetIcuNF().D();
+    GetIcuNF().Dump(os);
     os << "\n";
     JSObject::Dump(os);
 }
@@ -2199,7 +2199,7 @@ void JSPluralRules::Dump(std::ostream &os) const
 void JSDisplayNames::Dump(std::ostream &os) const
 {
     os << " - Locale: ";
-    GetLocale().D();
+    GetLocale().Dump(os);
     os << "\n";
     os << " - Type: "<< static_cast<int>(GetType());
     os << "\n";
@@ -2208,7 +2208,7 @@ void JSDisplayNames::Dump(std::ostream &os) const
     os << " - Fallback: "<< static_cast<int>(GetFallback());
     os << "\n";
     os << " - IcuLDN: ";
-    GetIcuLDN().D();
+    GetIcuLDN().Dump(os);
     os << "\n";
     JSObject::Dump(os);
 }
@@ -2216,14 +2216,14 @@ void JSDisplayNames::Dump(std::ostream &os) const
 void JSListFormat::Dump(std::ostream &os) const
 {
     os << " - Locale: ";
-    GetLocale().D();
+    GetLocale().Dump(os);
     os << "\n";
     os << " - Type: "<< static_cast<int>(GetType());
     os << "\n";
     os << " - Style: "<< static_cast<int>(GetStyle());
     os << "\n";
     os << " - IcuLF: ";
-    GetIcuLF().D();
+    GetIcuLF().Dump(os);
     os << "\n";
     JSObject::Dump(os);
 }
@@ -2231,10 +2231,10 @@ void JSListFormat::Dump(std::ostream &os) const
 void JSGeneratorObject::Dump(std::ostream &os) const
 {
     os << " - GeneratorContext: ";
-    GetGeneratorContext().D();
+    GetGeneratorContext().Dump(os);
     os << "\n";
     os << " - ResumeResult: ";
-    GetResumeResult().D();
+    GetResumeResult().Dump(os);
     os << "\n";
     os << " - GeneratorState: " << static_cast<uint8_t>(GetGeneratorState());
     os << "\n";
@@ -2246,26 +2246,26 @@ void JSGeneratorObject::Dump(std::ostream &os) const
 void JSAsyncFuncObject::Dump(std::ostream &os) const
 {
     os << " - Promise: ";
-    GetPromise().D();
+    GetPromise().Dump(os);
     os << "\n";
 }
 
 void GeneratorContext::Dump(std::ostream &os) const
 {
     os << " - RegsArray: ";
-    GetRegsArray().D();
+    GetRegsArray().Dump(os);
     os << "\n";
     os << " - Method: ";
-    GetMethod().D();
+    GetMethod().Dump(os);
     os << "\n";
     os << " - Acc: ";
-    GetAcc().D();
+    GetAcc().Dump(os);
     os << "\n";
     os << " - GeneratorObject: ";
-    GetGeneratorObject().D();
+    GetGeneratorObject().Dump(os);
     os << "\n";
     os << " - LexicalEnv: ";
-    GetLexicalEnv().D();
+    GetLexicalEnv().Dump(os);
     os << "\n";
     os << " - NRegs: " << GetNRegs();
     os << "\n";
@@ -2281,7 +2281,7 @@ void ProtoChangeMarker::Dump(std::ostream &os) const
 void ProtoChangeDetails::Dump(std::ostream &os) const
 {
     os << " - ChangeListener: ";
-    GetChangeListener().D();
+    GetChangeListener().Dump(os);
     os << "\n";
     os << " - RegisterIndex: " << GetRegisterIndex();
     os << "\n";
@@ -2296,28 +2296,28 @@ void MachineCode::Dump(std::ostream &os) const
 void ClassInfoExtractor::Dump(std::ostream &os) const
 {
     os << " - PrototypeHClass: ";
-    GetPrototypeHClass().D();
+    GetPrototypeHClass().Dump(os);
     os << "\n";
     os << " - NonStaticKeys: ";
-    GetNonStaticKeys().D();
+    GetNonStaticKeys().Dump(os);
     os << "\n";
     os << " - NonStaticProperties: ";
-    GetNonStaticProperties().D();
+    GetNonStaticProperties().Dump(os);
     os << "\n";
     os << " - NonStaticElements: ";
-    GetNonStaticElements().D();
+    GetNonStaticElements().Dump(os);
     os << "\n";
     os << " - ConstructorHClass: ";
-    GetConstructorHClass().D();
+    GetConstructorHClass().Dump(os);
     os << "\n";
     os << " - StaticKeys: ";
-    GetStaticKeys().D();
+    GetStaticKeys().Dump(os);
     os << "\n";
     os << " - StaticProperties: ";
-    GetStaticProperties().D();
+    GetStaticProperties().Dump(os);
     os << "\n";
     os << " - StaticElements: ";
-    GetStaticElements().D();
+    GetStaticElements().Dump(os);
     os << "\n";
 }
 
@@ -2343,7 +2343,7 @@ void TSObjectType::Dump(std::ostream &os) const
     os << "  - ObjLayoutInfo: ";
     DumpArrayClass(TaggedArray::Cast(GetObjLayoutInfo().GetTaggedObject()), os);
     os << "  - HClass: ";
-    GetHClass().D();
+    GetHClass().Dump(os);
 }
 
 void TSClassType::Dump(std::ostream &os) const
@@ -2616,28 +2616,28 @@ void TSArrayType::Dump(std::ostream &os) const
 void SourceTextModule::Dump(std::ostream &os) const
 {
     os << " - Environment: ";
-    GetEnvironment().D();
+    GetEnvironment().Dump(os);
     os << "\n";
     os << " - Namespace: ";
-    GetNamespace().D();
+    GetNamespace().Dump(os);
     os << "\n";
     os << " - EcmaModuleFilename: ";
-    GetEcmaModuleFilename().D();
+    GetEcmaModuleFilename().Dump(os);
     os << "\n";
     os << " - RequestedModules: ";
-    GetRequestedModules().D();
+    GetRequestedModules().Dump(os);
     os << "\n";
     os << " - ImportEntries: ";
-    GetImportEntries().D();
+    GetImportEntries().Dump(os);
     os << "\n";
     os << " - LocalExportEntries: ";
-    GetLocalExportEntries().D();
+    GetLocalExportEntries().Dump(os);
     os << "\n";
     os << " - IndirectExportEntries: ";
-    GetIndirectExportEntries().D();
+    GetIndirectExportEntries().Dump(os);
     os << "\n";
     os << " - StarExportEntries: ";
-    GetStarExportEntries().D();
+    GetStarExportEntries().Dump(os);
     os << "\n";
     os << " - Status: ";
     os << static_cast<int32_t>(GetStatus());
@@ -2652,56 +2652,56 @@ void SourceTextModule::Dump(std::ostream &os) const
     os << GetDFSAncestorIndex();
     os << "\n";
     os << " - NameDictionary: ";
-    GetNameDictionary().D();
+    GetNameDictionary().Dump(os);
     os << "\n";
 }
 
 void ImportEntry::Dump(std::ostream &os) const
 {
     os << " - ModuleRequest: ";
-    GetModuleRequest().D();
+    GetModuleRequest().Dump(os);
     os << "\n";
     os << " - ImportName: ";
-    GetImportName().D();
+    GetImportName().Dump(os);
     os << "\n";
     os << " - LocalName: ";
-    GetLocalName().D();
+    GetLocalName().Dump(os);
     os << "\n";
 }
 
 void ExportEntry::Dump(std::ostream &os) const
 {
     os << " - ExportName: ";
-    GetExportName().D();
+    GetExportName().Dump(os);
     os << "\n";
     os << " - ModuleRequest: ";
-    GetModuleRequest().D();
+    GetModuleRequest().Dump(os);
     os << "\n";
     os << " - ImportName: ";
-    GetImportName().D();
+    GetImportName().Dump(os);
     os << "\n";
     os << " - LocalName: ";
-    GetLocalName().D();
+    GetLocalName().Dump(os);
     os << "\n";
 }
 
 void ResolvedBinding::Dump(std::ostream &os) const
 {
     os << " - Module: ";
-    GetModule().D();
+    GetModule().Dump(os);
     os << "\n";
     os << " - BindingName: ";
-    GetBindingName().D();
+    GetBindingName().Dump(os);
     os << "\n";
 }
 
 void ModuleNamespace::Dump(std::ostream &os) const
 {
     os << " - Module: ";
-    GetModule().D();
+    GetModule().Dump(os);
     os << "\n";
     os << " - Exports: ";
-    GetExports().D();
+    GetExports().Dump(os);
     os << "\n";
 }
 

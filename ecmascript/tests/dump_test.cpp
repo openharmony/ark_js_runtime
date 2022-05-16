@@ -130,18 +130,20 @@ public:
 #ifndef NDEBUG
 HWTEST_F_L0(EcmaDumpTest, Dump)
 {
+    std::ostringstream os;
+
     JSTaggedValue value1(100);
-    value1.D();
+    value1.Dump(os);
 
     JSTaggedValue value2(100.0);
-    JSTaggedValue::DV(value2.GetRawData());
+    JSTaggedValue(value2.GetRawData()).Dump(os);
 
-    JSTaggedValue::Undefined().D();
+    JSTaggedValue::Undefined().Dump(os);
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
-    env.Dump();
+    env.GetTaggedValue().Dump(os);
 
     JSHandle<JSFunction> objFunc(env->GetObjectFunction());
-    objFunc.Dump();
+    objFunc.GetTaggedValue().Dump(os);
 }
 #endif  // #ifndef NDEBUG
 
@@ -258,16 +260,17 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
     auto globalConst = const_cast<GlobalEnvConstants *>(thread->GlobalConstants());
     JSHandle<JSTaggedValue> proto = globalEnv->GetFunctionPrototype();
     std::vector<std::pair<CString, JSTaggedValue>> snapshotVector;
+    std::ostringstream os;
 
 #define DUMP_FOR_HANDLE(dumpHandle)                                        \
-    dumpHandle.GetTaggedValue().D();                                       \
+    dumpHandle.GetTaggedValue().Dump(os);                                       \
     dumpHandle.GetTaggedValue().DumpForSnapshot(snapshotVector);
 
 #define NEW_OBJECT_AND_DUMP(ClassName, TypeName)                                       \
     JSHandle<JSHClass> class##ClassName =                                              \
         factory->NewEcmaDynClass(ClassName::SIZE, JSType::TypeName, proto);            \
         JSHandle<JSObject> object##ClassName = factory->NewJSObject(class##ClassName); \
-        object##ClassName.GetTaggedValue().D();                                        \
+        object##ClassName.GetTaggedValue().Dump(os);                                        \
         object##ClassName.GetTaggedValue().DumpForSnapshot(snapshotVector);
 
     for (JSType type = JSType::JS_OBJECT; type <= JSType::TYPE_LAST; type = JSType(static_cast<int>(type) + 1)) {
