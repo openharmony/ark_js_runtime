@@ -170,6 +170,10 @@ JSTaggedType* FrameHandler::GetPrevInterpretedFrame()
 
 uint32_t FrameHandler::GetNumberArgs()
 {
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+    auto *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+    return static_cast<uint32_t>(frame->GetCurrentFramePointer() - sp_);
+#else
     ASSERT(IsInterpretedFrame());
     JSTaggedType *prevSp;
     if (IsAsmInterpretedFrame()) {
@@ -181,6 +185,7 @@ uint32_t FrameHandler::GetNumberArgs()
     }
     auto prevSpEnd = reinterpret_cast<JSTaggedType*>(GetInterpretedFrameEnd(prevSp));
     return static_cast<uint32_t>(prevSpEnd - sp_);
+#endif
 }
 
 JSTaggedValue FrameHandler::GetVRegValue(size_t index) const
