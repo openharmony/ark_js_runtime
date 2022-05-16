@@ -341,8 +341,6 @@ void AssemblerStubsX64::JSCallWithArgV(ExtendedAssembler *assembler)
     Label lCallOptimziedMethod;
     Label lDirectCallCodeEntry;
     Label lCallNativeMethod;
-    Label optimizedCallOptimized;
-    Label callNativeTrampoline;
     Label lAlign16Bytes2;
     Label lCopyBoundArgument;
     Label lCopyArgument2;
@@ -447,10 +445,8 @@ void AssemblerStubsX64::JSCallWithArgV(ExtendedAssembler *assembler)
         __ Addq(16, argvReg); // 16: sp + 8 argv
         __ Cmpl(expectedNumArgsReg, argc); // expectedNumArgs <= actualNumArgs
         __ Jg(&lDirectCallCodeEntry);
-        __ Jmp(&optimizedCallOptimized);
+        __ CallAssemblerStub(RTSTUB_ID(OptimizedCallOptimized), true);
     }
-    __ Bind(&optimizedCallOptimized);
-    OptimizedCallOptimized(assembler);
 
     __ Bind(&lDirectCallCodeEntry);
     {
@@ -467,11 +463,8 @@ void AssemblerStubsX64::JSCallWithArgV(ExtendedAssembler *assembler)
         __ Push(nativePointer); // native code address
         __ Push(rax); // pc
         __ Movq(glueReg, rax);
-        __ Jmp(&callNativeTrampoline);
+        __ CallAssemblerStub(RTSTUB_ID(CallNativeTrampoline), true);
     }
-
-    __ Bind(&callNativeTrampoline);
-    CallNativeTrampoline(assembler);
 
     __ Bind(&lJSBoundFunction);
     {
@@ -606,8 +599,6 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
     Label lCallOptimziedMethod;
     Label lDirectCallCodeEntry;
     Label lCallNativeMethod;
-    Label optimizedCallOptimized;
-    Label callNativeTrampoline;
     Label lAlign16Bytes2;
     Label lCopyBoundArgument;
     Label lCopyArgument2;
@@ -707,10 +698,8 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
         __ Addq(16, argvReg); // 16: sp + 16 argv
         __ Cmpl(expectedNumArgsReg, argc); // expectedNumArgs <= actualNumArgs
         __ Jg(&lDirectCallCodeEntry);
-        __ Jmp(&optimizedCallOptimized);
+        __ CallAssemblerStub(RTSTUB_ID(OptimizedCallOptimized), true);
     }
-    __ Bind(&optimizedCallOptimized);
-    OptimizedCallOptimized(assembler);
 
     __ Bind(&lDirectCallCodeEntry);
     {
@@ -727,11 +716,8 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
         __ Push(nativePointer); // native code address
         __ Push(rax); // pc
         __ Movq(glueReg, rax);
-        __ Jmp(&callNativeTrampoline);
+        __ CallAssemblerStub(RTSTUB_ID(CallNativeTrampoline), true);
     }
-
-    __ Bind(&callNativeTrampoline);
-    CallNativeTrampoline(assembler);
 
     __ Bind(&lJSBoundFunction);
     {
