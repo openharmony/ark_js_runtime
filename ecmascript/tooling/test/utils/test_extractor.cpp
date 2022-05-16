@@ -25,7 +25,7 @@
 #include "libpandafile/method_data_accessor-inl.h"
 #include "libpandafile/proto_data_accessor-inl.h"
 
-namespace panda::tooling::ecmascript::test {
+namespace panda::ecmascript::tooling::test {
 std::pair<EntityId, uint32_t> TestExtractor::GetBreakpointAddress(const SourceLocation &sourceLocation)
 {
     EntityId retId = EntityId();
@@ -64,4 +64,4 @@ SourceLocation TestExtractor::GetSourceLocation(EntityId methodId, uint32_t byte
 
     return location;
 }
-}  // namespace  panda::tooling::ecmascript::test
+}  // namespace  panda::ecmascript::tooling::test

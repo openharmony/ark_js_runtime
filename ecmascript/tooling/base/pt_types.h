@@ -24,7 +24,7 @@
 #include "ecmascript/tooling/interface/debugger_api.h"
 #include "libpandabase/macros.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 using panda::ecmascript::CList;
 using panda::ecmascript::CMap;
 using panda::ecmascript::CQueue;
@@ -1419,5 +1419,5 @@ private:
     std::unique_ptr<RemoteObject> this_ {nullptr};
     std::optional<std::unique_ptr<RemoteObject>> returnValue_ {};
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif

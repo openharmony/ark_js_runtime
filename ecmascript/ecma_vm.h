@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -33,13 +33,12 @@
 #include "ecmascript/mem/space.h"
 #include "ecmascript/platform/task.h"
 #include "ecmascript/snapshot/mem/snapshot_serialize.h"
+#include "ecmascript/tooling/interface/js_debugger_manager.h"
 #include "ecmascript/tooling/pt_js_extractor.h"
 #include "include/panda_vm.h"
 #include "libpandabase/macros.h"
-#include "libpandabase/os/library_loader.h"
 
 namespace panda {
-class RuntimeNotificationManager;
 namespace panda_file {
 class File;
 }  // namespace panda_file
@@ -62,6 +61,10 @@ namespace job {
 class MicroJobQueue;
 }  // namespace job
 
+namespace tooling {
+class JsDebuggerManager;
+}  // namespace tooling
+
 template<typename T>
 class JSHandle;
 class JSArrayBuffer;
@@ -79,7 +82,7 @@ using HostPromiseRejectionTracker = void (*)(const EcmaVM* vm,
 using PromiseRejectCallback = void (*)(void* info);
 
 class EcmaVM : public PandaVM {
-    using PtJSExtractor = tooling::ecmascript::PtJSExtractor;
+    using PtJSExtractor = tooling::PtJSExtractor;
 
 public:
     static EcmaVM *Cast(PandaVM *object)
@@ -212,7 +215,7 @@ public:
 
     Rendezvous *GetRendezvous() const override
     {
-        return rendezvous_;
+        return nullptr;
     }
 
     ObjectHeader *GetOOMErrorObject() override
@@ -360,9 +363,9 @@ public:
         regexpCache_ = newCache;
     }
 
-    RuntimeNotificationManager *GetNotificationManager() const
+    tooling::JsDebuggerManager *GetJsDebuggerManager() const
     {
-        return notificationManager_;
+        return debuggerManager_;
     }
 
     void SetEnableForceGC(bool enable)
@@ -443,7 +446,6 @@ private:
     NO_COPY_SEMANTIC(EcmaVM);
 
     // Useless/deprecated fields in the future:
-    Rendezvous *rendezvous_{nullptr};
     bool isTestMode_ {false};
 
     // VM startup states.
@@ -488,7 +490,7 @@ private:
     bool optionalLogEnabled_ {false};
 
     // Debugger
-    RuntimeNotificationManager *notificationManager_ {nullptr};
+    tooling::JsDebuggerManager *debuggerManager_ {nullptr};
 
     // Registered Callbacks
     PromiseRejectCallback promiseRejectCallback_ {nullptr};

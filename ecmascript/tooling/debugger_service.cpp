@@ -17,10 +17,10 @@
 
 #include "ecmascript/tooling/protocol_handler.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 static std::unique_ptr<ProtocolHandler> g_handler = nullptr;  // NOLINT(fuchsia-statically-constructed-objects)
 
-void InitializeDebugger(const std::function<void(std::string)> &onResponse, const EcmaVM *vm)
+void InitializeDebugger(const std::function<void(const std::string)> &onResponse, const EcmaVM *vm)
 {
     g_handler = std::make_unique<ProtocolHandler>(onResponse, vm);
 }
@@ -36,4 +36,4 @@ void DispatchProtocolMessage(const std::string &message)
         g_handler->SendCommand(DebuggerApi::ConvertToString(message));
     }
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling

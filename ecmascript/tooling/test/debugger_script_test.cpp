@@ -25,7 +25,7 @@
 #include "ecmascript/tooling/base/pt_script.h"
 
 using namespace panda::ecmascript;
-using namespace panda::tooling::ecmascript;
+using namespace panda::ecmascript::tooling;
 using namespace panda::tooling;
 
 namespace panda::test {

@@ -14,13 +14,20 @@
  */
 
 #include "js_backend.h"
+
+#include <boost/beast/core/detail/base64.hpp>
 #include <regex>
+
 #include "ecmascript/tooling/base/pt_events.h"
 #include "ecmascript/tooling/front_end.h"
 #include "ecmascript/tooling/protocol_handler.h"
+#include "ecmascript/napi/jsnapi_helper-inl.h"
 #include "libpandafile/class_data_accessor-inl.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
+using namespace boost::beast::detail;
+using namespace std::placeholders;
+
 using ObjectType = RemoteObject::TypeName;
 using ObjectSubType = RemoteObject::SubTypeName;
 using ObjectClassName = RemoteObject::ClassName;
@@ -33,7 +40,11 @@ JSBackend::JSBackend(FrontEnd *frontend) : frontend_(frontend)
     hooks_ = std::make_unique<JSPtHooks>(this);
 
     debugger_ = DebuggerApi::CreateJSDebugger(ecmaVm_);
+    DebuggerApi::InitJSDebugger(debugger_);
     DebuggerApi::RegisterHooks(debugger_, hooks_.get());
+
+    updaterFunc_ = std::bind(&JSBackend::UpdateScopeObject, this, _1, _2, _3);
+    ecmaVm_->GetJsDebuggerManager()->SetLocalScopeUpdater(&updaterFunc_);
 }
 
 JSBackend::JSBackend(const EcmaVM *vm) : ecmaVm_(vm)
@@ -57,11 +68,14 @@ void JSBackend::WaitForDebugger()
     frontend_->WaitForDebugger(ecmaVm_);
 }
 
-void JSBackend::NotifyPaused(std::optional<PtLocation> location, PauseReason reason)
+void JSBackend::NotifyPaused(std::optional<JSPtLocation> location, PauseReason reason)
 {
     if (!pauseOnException_ && reason == EXCEPTION) {
         return;
     }
+
+    Local<JSValueRef> exception = DebuggerApi::GetAndClearException(ecmaVm_);
+
     CVector<CString> hitBreakpoints;
     if (location.has_value()) {
         BreakpointDetails detail;
@@ -84,6 +98,9 @@ void JSBackend::NotifyPaused(std::optional<PtLocation> location, PauseReason rea
         hitBreakpoints.emplace_back(BreakpointDetails::ToString(detail));
     }
 
+    // Do something cleaning on paused
+    CleanUpOnPaused();
+
     // Notify paused event
     CVector<std::unique_ptr<CallFrame>> callFrames;
     if (!GenerateCallFrames(&callFrames)) {
@@ -92,10 +109,17 @@ void JSBackend::NotifyPaused(std::optional<PtLocation> location, PauseReason rea
     }
     std::unique_ptr<Paused> paused = std::make_unique<Paused>();
     paused->SetCallFrames(std::move(callFrames)).SetReason(reason).SetHitBreakpoints(std::move(hitBreakpoints));
+    if (reason == EXCEPTION && exception->IsError()) {
+        std::unique_ptr<RemoteObject> tmpException = RemoteObject::FromTagged(ecmaVm_, exception);
+        paused->SetData(std::move(tmpException));
+    }
     frontend_->SendNotification(ecmaVm_, std::move(paused));
 
     // Waiting for Debugger
     frontend_->WaitForDebugger(ecmaVm_);
+    if (!exception->IsHole()) {
+        DebuggerApi::SetException(ecmaVm_, exception);
+    }
 }
 
 void JSBackend::NotifyResume()
@@ -177,7 +201,7 @@ bool JSBackend::NotifyScriptParsed(int32_t scriptId, const CString &fileName)
     return true;
 }
 
-bool JSBackend::StepComplete(const PtLocation &location)
+bool JSBackend::StepComplete(const JSPtLocation &location)
 {
     PtJSExtractor *extractor = nullptr;
     auto scriptFunc = [this, &extractor](PtScript *script) -> bool {
@@ -203,7 +227,7 @@ bool JSBackend::StepComplete(const PtLocation &location)
     return false;
 }
 
-std::optional<Error> JSBackend::GetPossibleBreakpoints(Location *start, [[maybe_unused]] Location *end,
+std::optional<CString> JSBackend::GetPossibleBreakpoints(Location *start, [[maybe_unused]] Location *end,
     CVector<std::unique_ptr<BreakLocation>> *locations)
 {
     PtJSExtractor *extractor = nullptr;
@@ -212,7 +236,7 @@ std::optional<Error> JSBackend::GetPossibleBreakpoints(Location *start, [[maybe_
         return true;
     };
     if (!MatchScripts(scriptFunc, start->GetScriptId(), ScriptMatchType::SCRIPT_ID) || extractor == nullptr) {
-        return Error(Error::Type::INVALID_BREAKPOINT, "extractor not found");
+        return "Unknown file name.";
     }
 
     size_t line = start->GetLine();
@@ -229,13 +253,13 @@ std::optional<Error> JSBackend::GetPossibleBreakpoints(Location *start, [[maybe_
     return {};
 }
 
-std::optional<Error> JSBackend::SetBreakpointByUrl(const CString &url, size_t lineNumber,
+std::optional<CString> JSBackend::SetBreakpointByUrl(const CString &url, size_t lineNumber,
     size_t columnNumber, CString *out_id, CVector<std::unique_ptr<Location>> *outLocations)
 {
     PtJSExtractor *extractor = GetExtractor(url);
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "SetBreakpointByUrl: extractor is null";
-        return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
+        return "Unknown file name.";
     }
 
     CString scriptId;
@@ -247,38 +271,33 @@ std::optional<Error> JSBackend::SetBreakpointByUrl(const CString &url, size_t li
     };
     if (!MatchScripts(scriptFunc, url, ScriptMatchType::URL)) {
         LOG(ERROR, DEBUGGER) << "SetBreakpointByUrl: Unknown url: " << url;
-        return Error(Error::Type::INVALID_BREAKPOINT, "Url not found");
+        return "Unknown file name.";
     }
 
-    std::optional<Error> ret = std::nullopt;
-    auto callbackFunc = [this, fileName, &ret](File::EntityId id, uint32_t offset) -> bool {
-        PtLocation location {fileName.c_str(), id, offset};
-        ret = DebuggerApi::SetBreakpoint(debugger_, location);
-        return true;
+    auto callbackFunc = [this, fileName](File::EntityId id, uint32_t offset) -> bool {
+        JSPtLocation location {fileName.c_str(), id, offset};
+        return DebuggerApi::SetBreakpoint(debugger_, location);
     };
     if (!extractor->MatchWithLocation(callbackFunc, lineNumber, columnNumber)) {
         LOG(ERROR, DEBUGGER) << "failed to set breakpoint location number: " << lineNumber << ":" << columnNumber;
-        return Error(Error::Type::INVALID_BREAKPOINT, "Breakpoint not found");
+        return "Breakpoint not found.";
     }
 
-    if (!ret.has_value()) {
-        BreakpointDetails metaData{lineNumber, 0, url};
-        *out_id = BreakpointDetails::ToString(metaData);
-        *outLocations = CVector<std::unique_ptr<Location>>();
-        std::unique_ptr<Location> location = std::make_unique<Location>();
-        location->SetScriptId(scriptId).SetLine(lineNumber).SetColumn(0);
-        outLocations->emplace_back(std::move(location));
-    }
-
-    return ret;
+    BreakpointDetails metaData{lineNumber, 0, url};
+    *out_id = BreakpointDetails::ToString(metaData);
+    *outLocations = CVector<std::unique_ptr<Location>>();
+    std::unique_ptr<Location> location = std::make_unique<Location>();
+    location->SetScriptId(scriptId).SetLine(lineNumber).SetColumn(0);
+    outLocations->emplace_back(std::move(location));
+    return {};
 }
 
-std::optional<Error> JSBackend::RemoveBreakpoint(const BreakpointDetails &metaData)
+std::optional<CString> JSBackend::RemoveBreakpoint(const BreakpointDetails &metaData)
 {
     PtJSExtractor *extractor = GetExtractor(metaData.url_);
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "RemoveBreakpoint: extractor is null";
-        return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
+        return "Unknown file name.";
     }
 
     CString fileName;
@@ -288,32 +307,30 @@ std::optional<Error> JSBackend::RemoveBreakpoint(const BreakpointDetails &metaDa
     };
     if (!MatchScripts(scriptFunc, metaData.url_, ScriptMatchType::URL)) {
         LOG(ERROR, DEBUGGER) << "RemoveBreakpoint: Unknown url: " << metaData.url_;
-        return Error(Error::Type::INVALID_BREAKPOINT, "Url not found");
+        return "Unknown file name.";
     }
 
-    std::optional<Error> ret = std::nullopt;
-    auto callbackFunc = [this, fileName, &ret](File::EntityId id, uint32_t offset) -> bool {
-        PtLocation location {fileName.c_str(), id, offset};
-        ret = DebuggerApi::RemoveBreakpoint(debugger_, location);
-        return true;
+    auto callbackFunc = [this, fileName](File::EntityId id, uint32_t offset) -> bool {
+        JSPtLocation location {fileName.c_str(), id, offset};
+        return DebuggerApi::RemoveBreakpoint(debugger_, location);
     };
     if (!extractor->MatchWithLocation(callbackFunc, metaData.line_, metaData.column_)) {
         LOG(ERROR, DEBUGGER) << "failed to set breakpoint location number: "
             << metaData.line_ << ":" << metaData.column_;
-        return Error(Error::Type::INVALID_BREAKPOINT, "Breakpoint not found");
+        return "Breakpoint not found.";
     }
 
     LOG(INFO, DEBUGGER) << "remove breakpoint line number:" << metaData.line_;
-    return ret;
+    return {};
 }
 
-std::optional<Error> JSBackend::Pause()
+std::optional<CString> JSBackend::Pause()
 {
     pauseOnNextByteCode_ = true;
     return {};
 }
 
-std::optional<Error> JSBackend::Resume()
+std::optional<CString> JSBackend::Resume()
 {
     singleStepper_.reset();
 
@@ -321,13 +338,13 @@ std::optional<Error> JSBackend::Resume()
     return {};
 }
 
-std::optional<Error> JSBackend::StepInto()
+std::optional<CString> JSBackend::StepInto()
 {
     JSMethod *method = DebuggerApi::GetMethod(ecmaVm_);
     PtJSExtractor *extractor = GetExtractor(method->GetPandaFile());
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "StepInto: extractor is null";
-        return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
+        return "Unknown file name.";
     }
 
     singleStepper_ = extractor->GetStepIntoStepper(ecmaVm_);
@@ -336,13 +353,13 @@ std::optional<Error> JSBackend::StepInto()
     return {};
 }
 
-std::optional<Error> JSBackend::StepOver()
+std::optional<CString> JSBackend::StepOver()
 {
     JSMethod *method = DebuggerApi::GetMethod(ecmaVm_);
     PtJSExtractor *extractor = GetExtractor(method->GetPandaFile());
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "StepOver: extractor is null";
-        return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
+        return "Unknown file name.";
     }
 
     singleStepper_ = extractor->GetStepOverStepper(ecmaVm_);
@@ -351,13 +368,13 @@ std::optional<Error> JSBackend::StepOver()
     return {};
 }
 
-std::optional<Error> JSBackend::StepOut()
+std::optional<CString> JSBackend::StepOut()
 {
     JSMethod *method = DebuggerApi::GetMethod(ecmaVm_);
     PtJSExtractor *extractor = GetExtractor(method->GetPandaFile());
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "StepOut: extractor is null";
-        return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
+        return "Unknown file name.";
     }
 
     singleStepper_ = extractor->GetStepOutStepper(ecmaVm_);
@@ -366,22 +383,20 @@ std::optional<Error> JSBackend::StepOut()
     return {};
 }
 
-std::optional<Error> JSBackend::EvaluateValue(const CString &callFrameId, const CString &expression,
+std::optional<CString> JSBackend::CmptEvaluateValue(const CString &callFrameId, const CString &expression,
     std::unique_ptr<RemoteObject> *result)
 {
     JSMethod *method = DebuggerApi::GetMethod(ecmaVm_);
     if (method->IsNative()) {
-        LOG(ERROR, DEBUGGER) << "EvaluateValue: Native Frame not support";
         *result = RemoteObject::FromTagged(ecmaVm_,
             Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Runtime internal error")));
-        return Error(Error::Type::METHOD_NOT_FOUND, "Native Frame not support");
+        return "Native Frame not support.";
     }
     DebugInfoExtractor *extractor = GetExtractor(method->GetPandaFile());
     if (extractor == nullptr) {
-        LOG(ERROR, DEBUGGER) << "EvaluateValue: extractor is null";
         *result = RemoteObject::FromTagged(ecmaVm_,
             Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Runtime internal error")));
-        return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
+        return "Internal error.";
     }
     CString varName = expression;
     CString varValue;
@@ -393,8 +408,8 @@ std::optional<Error> JSBackend::EvaluateValue(const CString &callFrameId, const 
 
     if (!varValue.empty() && callFrameId != "0") {
         *result = RemoteObject::FromTagged(ecmaVm_,
-            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Only allow set value in current frame")));
-        return Error(Error::Type::METHOD_NOT_FOUND, "Unsupport parent frame set value");
+            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Native Frame not support.")));
+        return "Native Frame not support.";
     }
 
     int32_t regIndex = -1;
@@ -408,19 +423,49 @@ std::optional<Error> JSBackend::EvaluateValue(const CString &callFrameId, const 
         if (varValue.empty()) {
             return GetVregValue(regIndex, result);
         }
-        return SetVregValue(regIndex, result, varValue);
+        return SetVregValue(regIndex, varValue, result);
     }
     int32_t level = 0;
     uint32_t slot = 0;
     if (!DebuggerApi::EvaluateLexicalValue(ecmaVm_, varName, level, slot)) {
         *result = RemoteObject::FromTagged(ecmaVm_,
             Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unknow input params")));
-        return Error(Error::Type::METHOD_NOT_FOUND, "Unsupport expression");
+        return "Unsupported expression.";
     }
     if (varValue.empty()) {
-        return GetLexicalValue(level, result, slot);
+        return GetLexicalValue(level, slot, result);
     }
-    return SetLexicalValue(level, result, varValue, slot);
+    return SetLexicalValue(level, slot, varValue, result);
+}
+
+std::optional<CString> JSBackend::EvaluateValue(const CString &callFrameId, const CString &expression,
+    std::unique_ptr<RemoteObject> *result)
+{
+    size_t frameId = static_cast<size_t>(DebuggerApi::CStringToULL(callFrameId));
+    if (frameId < 0 || frameId >= callFrameHandlers_.size()) {
+        return "Invalid callFrameId.";
+    }
+
+    CString dest;
+    if (!DecodeAndCheckBase64(expression, dest)) {
+        LOG(ERROR, DEBUGGER) << "EvaluateValue: base64 decode failed";
+        return CmptEvaluateValue(callFrameId, expression, result);
+    }
+
+    auto funcRef = DebuggerApi::GenerateFuncFromBuffer(ecmaVm_, dest.data(), dest.size());
+    auto res = DebuggerApi::EvaluateViaFuncCall(const_cast<EcmaVM *>(ecmaVm_), funcRef,
+        callFrameHandlers_[frameId]);
+
+    CString msg;
+    if (DebuggerApi::HandleUncaughtException(ecmaVm_, msg)) {
+        LOG(ERROR, DEBUGGER) << "EvaluateValue: has pending exception";
+        *result = RemoteObject::FromTagged(ecmaVm_,
+            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, msg.data())));
+        return msg;
+    }
+
+    CacheObjectIfNeeded(res, result);
+    return {};
 }
 
 CString JSBackend::Trim(const CString &str)
@@ -483,12 +528,20 @@ bool JSBackend::GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFram
                 return StackState::FAILED;
             }
         } else {
+            SaveCallFrameHandler(frameHandler);
             callFrames->emplace_back(std::move(callFrame));
             callFrameId++;
         }
         return StackState::CONTINUE;
     };
     return DebuggerApi::StackWalker(ecmaVm_, walkerFunc);
+}
+
+void JSBackend::SaveCallFrameHandler(const InterpretedFrameHandler *frameHandler)
+{
+    auto handlerPtr = DebuggerApi::NewFrameHandler(ecmaVm_);
+    *handlerPtr = *frameHandler;
+    callFrameHandlers_.emplace_back(handlerPtr);
 }
 
 bool JSBackend::GenerateCallFrame(CallFrame *callFrame,
@@ -548,47 +601,28 @@ std::unique_ptr<Scope> JSBackend::GetLocalScopeChain(const InterpretedFrameHandl
 {
     auto localScope = std::make_unique<Scope>();
 
-    std::unique_ptr<RemoteObject> local = std::make_unique<RemoteObject>();
-    Local<ObjectRef> localObject(local->NewObject(ecmaVm_));
-    local->SetType(ObjectType::Object)
-        .SetObjectId(curObjectId_)
-        .SetClassName(ObjectClassName::Object)
-        .SetDescription(RemoteObject::ObjectDescription);
-    propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, localObject);
-
-    PtJSExtractor *extractor = GetExtractor(DebuggerApi::GetMethod(frameHandler)->GetPandaFile());
+    JSMethod *method = DebuggerApi::GetMethod(frameHandler);
+    PtJSExtractor *extractor = GetExtractor(method->GetPandaFile());
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "GetScopeChain: extractor is null";
         return localScope;
     }
-    panda_file::File::EntityId methodId = DebuggerApi::GetMethod(frameHandler)->GetFileId();
-    Local<JSValueRef> name = JSValueRef::Undefined(ecmaVm_);
-    Local<JSValueRef> value = JSValueRef::Undefined(ecmaVm_);
-    for (const auto &var : extractor->GetLocalVariableTable(methodId)) {
-        value = DebuggerApi::GetVRegValue(ecmaVm_, frameHandler, var.reg_number);
-        if (var.name == "this") {
-            *thisObj = RemoteObject::FromTagged(ecmaVm_, value);
-            if (value->IsObject() && !value->IsProxy()) {
-                (*thisObj)->SetObjectId(curObjectId_);
-                propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, value);
-            }
-        } else {
-            name = StringRef::NewFromUtf8(ecmaVm_, var.name.c_str());
-            PropertyAttribute descriptor(value, true, true, true);
-            localObject->DefineProperty(ecmaVm_, name, descriptor);
-        }
-    }
 
-    if ((*thisObj)->GetType() == ObjectType::Undefined) {
-        const CString targetName = "this";
-        value = DebuggerApi::GetLexicalValueInfo(ecmaVm_, targetName);
-        *thisObj = RemoteObject::FromTagged(ecmaVm_, value);
-        if (value->IsObject() && !value->IsProxy()) {
-            (*thisObj)->SetObjectId(curObjectId_);
-            propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, value);
-        }
-    }
+    std::unique_ptr<RemoteObject> local = std::make_unique<RemoteObject>();
+    Local<ObjectRef> localObj(local->NewObject(ecmaVm_));
+    local->SetType(ObjectType::Object)
+        .SetObjectId(curObjectId_)
+        .SetClassName(ObjectClassName::Object)
+        .SetDescription(RemoteObject::ObjectDescription);
+    auto *sp = DebuggerApi::GetSp(frameHandler);
+    scopeObjects_[sp] = curObjectId_;
+    propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, localObj);
 
+    Local<JSValueRef> thisVal = JSValueRef::Undefined(ecmaVm_);
+    GetLocalVariables(frameHandler, method, thisVal, localObj);
+    CacheObjectIfNeeded(thisVal, thisObj);
+
+    panda_file::File::EntityId methodId = method->GetFileId();
     const panda_file::LineNumberTable &lines = extractor->GetLineNumberTable(methodId);
     std::unique_ptr<Location> startLoc = std::make_unique<Location>();
     std::unique_ptr<Location> endLoc = std::make_unique<Location>();
@@ -611,6 +645,51 @@ std::unique_ptr<Scope> JSBackend::GetLocalScopeChain(const InterpretedFrameHandl
     return localScope;
 }
 
+void JSBackend::GetLocalVariables(const InterpretedFrameHandler *frameHandler, const JSMethod *method,
+    Local<JSValueRef> &thisVal, Local<ObjectRef> &localObj)
+{
+    auto methodId = method->GetFileId();
+    auto *extractor = GetExtractor(method->GetPandaFile());
+    Local<JSValueRef> value = JSValueRef::Undefined(ecmaVm_);
+    for (const auto &var: extractor->GetLocalVariableTable(methodId)) {
+        value = DebuggerApi::GetVRegValue(ecmaVm_, frameHandler, var.reg_number);
+        if (var.name == "this") {
+            thisVal = value;
+        } else {
+            Local<JSValueRef> name = StringRef::NewFromUtf8(ecmaVm_, var.name.c_str());
+            PropertyAttribute descriptor(value, true, true, true);
+            localObj->DefineProperty(ecmaVm_, name, descriptor);
+        }
+    }
+    if (thisVal->IsUndefined()) {
+        thisVal = DebuggerApi::GetLexicalValueInfo(ecmaVm_, "this");
+    }
+
+    // closure variables are stored in env
+    DebuggerApi::SetClosureVariables(ecmaVm_, frameHandler, localObj);
+}
+
+void JSBackend::UpdateScopeObject(const InterpretedFrameHandler *frameHandler,
+    const CString &varName, const Local<JSValueRef> &newVal)
+{
+    auto *sp = DebuggerApi::GetSp(frameHandler);
+    auto iter = scopeObjects_.find(sp);
+    if (iter == scopeObjects_.end()) {
+        LOG(ERROR, DEBUGGER) << "UpdateScopeObject: object not found";
+        return;
+    }
+
+    auto objectId = iter->second;
+    Local<ObjectRef> localObj = propertiesPair_[objectId].ToLocal(ecmaVm_);
+    Local<JSValueRef> name = StringRef::NewFromUtf8(ecmaVm_, varName.c_str());
+    if (localObj->Has(ecmaVm_, name)) {
+        LOG(DEBUG, DEBUGGER) << "UpdateScopeObject: set new value";
+        PropertyAttribute descriptor(newVal, true, true, true);
+        localObj->DefineProperty(ecmaVm_, name, descriptor);
+    } else {
+        LOG(ERROR, DEBUGGER) << "UpdateScopeObject: not found " << varName;
+    }
+}
 std::unique_ptr<Scope> JSBackend::GetGlobalScopeChain()
 {
     auto globalScope = std::make_unique<Scope>();
@@ -630,7 +709,7 @@ void JSBackend::SetPauseOnException(bool flag)
     pauseOnException_ = flag;
 }
 
-std::optional<Error> JSBackend::ConvertToLocal(Local<JSValueRef> &taggedValue, std::unique_ptr<RemoteObject> *result,
+std::optional<CString> JSBackend::ConvertToLocal(Local<JSValueRef> &taggedValue, std::unique_ptr<RemoteObject> *result,
     const CString &varValue)
 {
     if (varValue == "false") {
@@ -648,19 +727,19 @@ std::optional<Error> JSBackend::ConvertToLocal(Local<JSValueRef> &taggedValue, s
         double d = DebuggerApi::StringToDouble(begin, end, 0);
         if (std::isnan(d)) {
             *result = RemoteObject::FromTagged(ecmaVm_,
-                Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unsupport value")));
-            return Error(Error::Type::METHOD_NOT_FOUND, "Unsupport value");
+                Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unsupport expression")));
+            return "Unsupported expression.";
         }
         taggedValue = NumberRef::New(ecmaVm_, d);
     }
     return {};
 }
 
-std::optional<Error> JSBackend::SetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result,
-    const CString &varValue)
+std::optional<CString> JSBackend::SetVregValue(int32_t regIndex, const CString &varValue,
+    std::unique_ptr<RemoteObject> *result)
 {
     Local<JSValueRef> taggedValue;
-    std::optional<Error> ret = ConvertToLocal(taggedValue, result, varValue);
+    std::optional<CString> ret = ConvertToLocal(taggedValue, result, varValue);
     if (ret.has_value()) {
         return ret;
     }
@@ -669,11 +748,11 @@ std::optional<Error> JSBackend::SetVregValue(int32_t regIndex, std::unique_ptr<R
     return {};
 }
 
-std::optional<Error> JSBackend::SetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result,
-    const CString &varValue, uint32_t slot)
+std::optional<CString> JSBackend::SetLexicalValue(int32_t level, uint32_t slot, const CString &varValue,
+    std::unique_ptr<RemoteObject> *result)
 {
     Local<JSValueRef> taggedValue;
-    std::optional<Error> ret = ConvertToLocal(taggedValue, result, varValue);
+    std::optional<CString> ret = ConvertToLocal(taggedValue, result, varValue);
     if (ret.has_value()) {
         return ret;
     }
@@ -682,25 +761,15 @@ std::optional<Error> JSBackend::SetLexicalValue(int32_t level, std::unique_ptr<R
     return {};
 }
 
-std::optional<Error> JSBackend::GetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result)
+std::optional<CString> JSBackend::GetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result)
 {
-    Local<JSValueRef> vValue = DebuggerApi::GetVRegValue(ecmaVm_, regIndex);
-    *result = RemoteObject::FromTagged(ecmaVm_, vValue);
-    if (vValue->IsObject() && !vValue->IsProxy()) {
-        (*result)->SetObjectId(curObjectId_);
-        propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, vValue);
-    }
+    CacheObjectIfNeeded(DebuggerApi::GetVRegValue(ecmaVm_, regIndex), result);
     return {};
 }
 
-std::optional<Error> JSBackend::GetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result, uint32_t slot)
+std::optional<CString> JSBackend::GetLexicalValue(int32_t level, uint32_t slot, std::unique_ptr<RemoteObject> *result)
 {
-    Local<JSValueRef> vValue = DebuggerApi::GetProperties(ecmaVm_, level, slot);
-    *result = RemoteObject::FromTagged(ecmaVm_, vValue);
-    if (vValue->IsObject() && !vValue->IsProxy()) {
-        (*result)->SetObjectId(curObjectId_);
-        propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, vValue);
-    }
+    CacheObjectIfNeeded(DebuggerApi::GetProperties(ecmaVm_, level, slot), result);
     return {};
 }
 
@@ -713,11 +782,8 @@ void JSBackend::GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn, 
     // Get Function ProtoOrDynClass
     if (value->IsConstructor()) {
         Local<JSValueRef> prototype = Local<FunctionRef>(value)->GetFunctionPrototype(ecmaVm_);
-        std::unique_ptr<RemoteObject> protoObj = RemoteObject::FromTagged(ecmaVm_, prototype);
-        if (prototype->IsObject() && !prototype->IsProxy()) {
-            protoObj->SetObjectId(curObjectId_);
-            propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, prototype);
-        }
+        std::unique_ptr<RemoteObject> protoObj = std::make_unique<RemoteObject>();
+        CacheObjectIfNeeded(prototype, &protoObj);
         std::unique_ptr<PropertyDescriptor> debuggerProperty = std::make_unique<PropertyDescriptor>();
         debuggerProperty->SetName("prototype")
             .SetWritable(false)
@@ -729,11 +795,8 @@ void JSBackend::GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn, 
     }
     // Get __proto__
     Local<JSValueRef> proto = Local<ObjectRef>(value)->GetPrototype(ecmaVm_);
-    std::unique_ptr<RemoteObject> protoObj = RemoteObject::FromTagged(ecmaVm_, proto);
-    if (proto->IsObject() && !proto->IsProxy()) {
-        protoObj->SetObjectId(curObjectId_);
-        propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, proto);
-    }
+    std::unique_ptr<RemoteObject> protoObj = std::make_unique<RemoteObject>();
+    CacheObjectIfNeeded(proto, &protoObj);
     std::unique_ptr<PropertyDescriptor> debuggerProperty = std::make_unique<PropertyDescriptor>();
     debuggerProperty->SetName("__proto__")
         .SetWritable(true)
@@ -794,4 +857,35 @@ void JSBackend::GetProperties(uint32_t objectId, bool isOwn, bool isAccessorOnly
     }
     GetProtoOrProtoType(value, isOwn, isAccessorOnly, outPropertyDesc);
 }
-}  // namespace panda::tooling::ecmascript
+
+void JSBackend::CacheObjectIfNeeded(const Local<JSValueRef> &valRef, std::unique_ptr<RemoteObject> *remoteObj)
+{
+    *remoteObj = RemoteObject::FromTagged(ecmaVm_, valRef);
+    if (valRef->IsObject() && !valRef->IsProxy()) {
+        (*remoteObj)->SetObjectId(curObjectId_);
+        propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, valRef);
+    }
+}
+
+void JSBackend::CleanUpOnPaused()
+{
+    curObjectId_ = 0;
+    propertiesPair_.clear();
+
+    callFrameHandlers_.clear();
+    scopeObjects_.clear();
+}
+
+bool JSBackend::DecodeAndCheckBase64(const CString &src, CString &dest)
+{
+    dest.resize(base64::decoded_size(src.size()));
+    auto [numOctets, _] = base64::decode(dest.data(), src.data(), src.size());
+    dest.resize(numOctets);
+
+    if (numOctets > File::MAGIC_SIZE &&
+        memcmp(dest.data(), File::MAGIC.data(), File::MAGIC_SIZE) == 0) {
+        return true;
+    }
+    return false;
+}
+}  // namespace panda::ecmascript::tooling

@@ -15,7 +15,7 @@
 
 #include "ecmascript/tooling/base/pt_params.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 std::unique_ptr<EnableParams> EnableParams::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
 {
     ASSERT(ecmaVm);
@@ -583,4 +583,4 @@ std::unique_ptr<GetPropertiesParams> GetPropertiesParams::Create(const EcmaVM *e
 
     return paramsObject;
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling

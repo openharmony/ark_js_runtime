@@ -224,6 +224,18 @@
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define THROW_ERROR(thread, type, message)                               \
+    do {                                                                 \
+        if ((thread)->HasPendingException()) {                           \
+            return;                                                      \
+        }                                                                \
+        ObjectFactory *_factory = (thread)->GetEcmaVM()->GetFactory();   \
+        JSHandle<JSObject> _error = _factory->GetJSError(type, message); \
+        (thread)->SetException(_error.GetTaggedValue());                 \
+        return;                                                          \
+    } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define THROW_NEW_ERROR_AND_RETURN_EXCEPTION(thread, error) \
     THROW_NEW_ERROR_AND_RETURN_VALUE(thread, error, JSTaggedValue::Exception());
 
@@ -301,51 +313,44 @@
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define THROW_TYPE_ERROR_AND_RETURN(thread, message, exception)                               \
-    do {                                                                                      \
-        ObjectFactory *objectFactory = (thread)->GetEcmaVM()->GetFactory();                   \
-        JSHandle<JSObject> error = objectFactory->GetJSError(ErrorType::TYPE_ERROR, message); \
-        THROW_NEW_ERROR_AND_RETURN_VALUE(thread, error.GetTaggedValue(), exception);          \
+#define THROW_NEW_ERROR_WITH_MSG_AND_RETURN_VALUE(thread, errorType, message, value) \
+    do {                                                                             \
+        if ((thread)->HasPendingException()) {                                       \
+            return (value);                                                          \
+        }                                                                            \
+        ObjectFactory *_factory = (thread)->GetEcmaVM()->GetFactory();               \
+        JSHandle<JSObject> _error = _factory->GetJSError(errorType, message);        \
+        (thread)->SetException(_error.GetTaggedValue());                             \
+        return (value);                                                              \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define THROW_TYPE_ERROR(thread, message)                                               \
-    do {                                                                                \
-        ObjectFactory *factory = (thread)->GetEcmaVM()->GetFactory();                   \
-        JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR, message); \
-        THROW_NEW_ERROR_AND_RETURN(thread, error.GetTaggedValue());                     \
-    } while (false)
+#define THROW_TYPE_ERROR_AND_RETURN(thread, message, value)                                      \
+    THROW_NEW_ERROR_WITH_MSG_AND_RETURN_VALUE(thread, ErrorType::TYPE_ERROR, message, value)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define THROW_RANGE_ERROR_AND_RETURN(thread, message, exception)                               \
-    do {                                                                                       \
-        ObjectFactory *objectFactory = (thread)->GetEcmaVM()->GetFactory();                    \
-        JSHandle<JSObject> error = objectFactory->GetJSError(ErrorType::RANGE_ERROR, message); \
-        THROW_NEW_ERROR_AND_RETURN_VALUE(thread, error.GetTaggedValue(), exception);           \
-    } while (false)
+#define THROW_RANGE_ERROR_AND_RETURN(thread, message, value)                                     \
+    THROW_NEW_ERROR_WITH_MSG_AND_RETURN_VALUE(thread, ErrorType::RANGE_ERROR, message, value)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define THROW_RANGE_ERROR(thread, message)                                               \
-    do {                                                                                 \
-        ObjectFactory *factory = (thread)->GetEcmaVM()->GetFactory();                    \
-        JSHandle<JSObject> error = factory->GetJSError(ErrorType::RANGE_ERROR, message); \
-        THROW_NEW_ERROR_AND_RETURN(thread, error.GetTaggedValue());                      \
-    } while (false)
+#define THROW_URI_ERROR_AND_RETURN(thread, message, value)                                       \
+    THROW_NEW_ERROR_WITH_MSG_AND_RETURN_VALUE(thread, ErrorType::URI_ERROR, message, value)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define THROW_URI_ERROR_AND_RETURN(thread, message, exception)                               \
-    do {                                                                                     \
-        ObjectFactory *objectFactory = (thread)->GetEcmaVM()->GetFactory();                  \
-        JSHandle<JSObject> error = objectFactory->GetJSError(ErrorType::URI_ERROR, message); \
-        THROW_NEW_ERROR_AND_RETURN_VALUE(thread, error.GetTaggedValue(), exception);         \
-    } while (false)
+#define THROW_SYNTAX_ERROR_AND_RETURN(thread, message, value)                                    \
+    THROW_NEW_ERROR_WITH_MSG_AND_RETURN_VALUE(thread, ErrorType::SYNTAX_ERROR, message, value)
 
-#define THROW_SYNTAX_ERROR_AND_RETURN(thread, message, exception)                         \
-    do {                                                                                  \
-        ObjectFactory *factory = (thread)->GetEcmaVM()->GetFactory();                     \
-        JSHandle<JSObject> error = factory->GetJSError(ErrorType::SYNTAX_ERROR, message); \
-        THROW_NEW_ERROR_AND_RETURN_VALUE(thread, error.GetTaggedValue(), exception);      \
-    } while (false)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define THROW_REFERENCE_ERROR_AND_RETURN(thread, message, value)                                 \
+    THROW_NEW_ERROR_WITH_MSG_AND_RETURN_VALUE(thread, ErrorType::REFERENCE_ERROR, message, value)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define THROW_TYPE_ERROR(thread, message)               \
+    THROW_ERROR(thread, ErrorType::TYPE_ERROR, message)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define THROW_RANGE_ERROR(thread, message)               \
+    THROW_ERROR(thread, ErrorType::RANGE_ERROR, message)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define RETURN_REJECT_PROMISE_IF_ABRUPT(thread, value, capability)                                 \

@@ -343,7 +343,6 @@ namespace panda::ecmascript {
         state->function = funcValue;                                                               \
         thread->SetCurrentSPFrame(newSp);                                                          \
         LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call.";                                         \
-        thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);           \
         JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(                                 \
             const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);                 \
         if (UNLIKELY(thread->HasPendingException())) {                                             \
@@ -408,7 +407,6 @@ namespace panda::ecmascript {
         LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call "                                          \
                                 << std::hex << reinterpret_cast<uintptr_t>(sp) << " "              \
                                 << std::hex << reinterpret_cast<uintptr_t>(pc);                    \
-        thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);           \
         DISPATCH_OFFSET(0);                                                                        \
     } while (false)
 

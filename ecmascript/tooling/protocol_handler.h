@@ -22,7 +22,7 @@
 
 #include "ecmascript/tooling/front_end.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 class ProtocolHandler final : public FrontEnd {
 public:
     explicit ProtocolHandler(std::function<void(std::string)> callback, const EcmaVM *vm);
@@ -55,6 +55,6 @@ private:
     os::memory::ConditionVariable queueCond_ GUARDED_BY(queueLock_);
     const EcmaVM *vm_ {nullptr};
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 
 #endif

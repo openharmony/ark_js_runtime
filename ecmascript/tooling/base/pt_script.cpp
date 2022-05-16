@@ -16,7 +16,7 @@
 #include "ecmascript/tooling/base/pt_script.h"
 #include "ecmascript/tooling/interface/debugger_api.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 PtScript::PtScript(int32_t scriptId, CString fileName, CString url, CString source)
     : scriptId_(DebuggerApi::ToCString(scriptId)),
       fileName_(std::move(fileName)),
@@ -25,4 +25,4 @@ PtScript::PtScript(int32_t scriptId, CString fileName, CString url, CString sour
 {
     endLine_ = std::count(scriptSource_.begin(), scriptSource_.end(), '\n');
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling

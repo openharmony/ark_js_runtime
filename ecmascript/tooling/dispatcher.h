@@ -25,7 +25,7 @@
 #include "ecmascript/mem/c_string.h"
 #include "include/tooling/debug_interface.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 using panda::ecmascript::CMap;
 using panda::ecmascript::CString;
 class FrontEnd;
@@ -107,7 +107,7 @@ public:
     }
 
     static DispatchResponse Create(ResponseCode code, const CString &msg = "");
-    static DispatchResponse Create(std::optional<Error> error);
+    static DispatchResponse Create(std::optional<CString> error);
     static DispatchResponse Ok();
     static DispatchResponse Fail(const CString &message);
 
@@ -152,5 +152,5 @@ private:
     NO_COPY_SEMANTIC(Dispatcher);
     NO_MOVE_SEMANTIC(Dispatcher);
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif
