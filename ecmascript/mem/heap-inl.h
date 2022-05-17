@@ -342,6 +342,15 @@ size_t Heap::GetHeapObjectSize() const
                     + machineCodeSpace_->GetCommittedSize();
     return result;
 }
+
+int32_t Heap::GetHeapObjectCount() const
+{
+    int32_t count = 0;
+    this->IterateOverObjects([&count]([[maybe_unused]]TaggedObject *obj) {
+        ++count;
+    });
+    return count;
+}
 }  // namespace panda::ecmascript
 
 #endif  // ECMASCRIPT_MEM_HEAP_INL_H
