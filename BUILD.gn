@@ -118,7 +118,7 @@ config("ark_jsruntime_public_config") {
   configs = [
     "$ark_root/libpandabase:arkbase_public_config",
     "$ark_root/libpandafile:arkfile_public_config",
-    "$ark_third_party_path/icu/icu4c:icu_config",
+    "$third_party_gn_path/icu/icu4c:icu_config",
     sdk_libc_secshared_config,
     "$js_root/ecmascript/compiler:gen_stub_file_dir_config",
   ]
@@ -578,8 +578,8 @@ source_set("libark_js_intl_set") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
-    "$ark_third_party_path/icu/icu4c:shared_icui18n",
-    "$ark_third_party_path/icu/icu4c:shared_icuuc",
+    "$third_party_gn_path/icu/icu4c:shared_icui18n",
+    "$third_party_gn_path/icu/icu4c:shared_icuuc",
     sdk_libc_secshared_dep,
   ]
 }
@@ -593,8 +593,8 @@ source_set("libark_jsruntime_test_set") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
-    "$ark_third_party_path/icu/icu4c:shared_icui18n",
-    "$ark_third_party_path/icu/icu4c:shared_icuuc",
+    "$third_party_gn_path/icu/icu4c:shared_icui18n",
+    "$third_party_gn_path/icu/icu4c:shared_icuuc",
     sdk_libc_secshared_dep,
   ]
 
@@ -662,7 +662,10 @@ if (!defined(ark_independent_build)) {
   }
 } else {
   ark_shared_library("libark_jsruntime") {
-    deps = [ ":libark_jsruntime_set" ]
+    deps = [
+      ":libark_js_intl_set",
+      ":libark_jsruntime_set",
+    ]
     if (!is_mingw && !is_mac) {
       output_extension = "so"
     }
