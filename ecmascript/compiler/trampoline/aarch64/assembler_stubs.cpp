@@ -149,7 +149,7 @@ void AssemblerStubs::JSFunctionEntry(ExtendedAssembler *assembler)
     __ Mov(glue, Register(X0));
     __ Mov(tmp, expectedNumArgs.W());
     __ Cmp(tmp, actualNumArgs.W());
-    __ B(Condition::LS, &copyUndefined);
+    __ B(Condition::LS, &copyArguments);
     Register count(X9, true);
     Register undefValue(X8);
     __ Mov(count, tmp.W());
@@ -158,7 +158,7 @@ void AssemblerStubs::JSFunctionEntry(ExtendedAssembler *assembler)
     __ Bind(&copyUndefined);
     __ Sub(count, count, Immediate(1));
     __ Cmp(count, actualNumArgs.W());
-    __ Str(undefValue, MemoryOperand(sp, -8));
+    __ Str(undefValue, MemoryOperand(sp, -8, MemoryOperand::AddrMode::PREINDEX));
     __ B(Condition::HI, &copyUndefined);
     
     Label invokeCompiledJSFunction;
@@ -173,7 +173,7 @@ void AssemblerStubs::JSFunctionEntry(ExtendedAssembler *assembler)
         __ Cmp(tmp.W(),  actualNumArgs.W());
         __ CMov(argC, tmp.W(), actualNumArgs.W(), Condition::LO);
         __ Cbz(argC, &invokeCompiledJSFunction);
-        __ Sub(argVEnd.W(), argC, Immediate(-1));
+        __ Sub(argVEnd.W(), argC, Immediate(1));
         __ Add(argVEnd, argV, Operand(argVEnd.W(), UXTW, 3));
         
         __ Bind(&copyArgLoop);
@@ -339,8 +339,8 @@ void AssemblerStubs::CallNativeTrampoline(ExtendedAssembler *assembler)
     // construct leave frame
     Register frameType(X19);
     __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::LEAVE_FRAME)));
-    __ Str(frameType, MemoryOperand(sp, -8));
-    __ Add(sp, sp, Immediate(-16));
+    __ Str(frameType, MemoryOperand(sp, -8, MemoryOperand::AddrMode::PREINDEX));
+    __ Add(sp, sp, Immediate(-8));
     // load runtime trampoline address
     Register nativeFuncAddr(X19);
     __ Ldr(nativeFuncAddr, MemoryOperand(fp, 16));
