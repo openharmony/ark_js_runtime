@@ -33,6 +33,8 @@ public:
     void PushGhcCalleeSaveRegisters();
     void PopGhcCalleeSaveRegisters();
     void PushArgsWithArgv(Register argc, Register argv, Register operatorRegister);
+    void PushArgc(int32_t argc, Register tempArgcRegister);
+    void PushArgc(Register argcRegister, Register tempArgcRegister);
 };
 }  // panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_EXTENDED_ASSEMBLER_X64_H
