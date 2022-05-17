@@ -73,4 +73,17 @@ void ExtendedAssemblerX64::PushArgsWithArgv(Register argc, Register argv, Regist
     Subq(1, argc);
     Ja(&loopBeginning);
 }
+
+void ExtendedAssemblerX64::PushArgc(int32_t argc, Register tempArgcRegister)
+{
+    Movabs(JSTaggedValue(argc).GetRawData(), tempArgcRegister);
+    Pushq(tempArgcRegister);
+}
+
+void ExtendedAssemblerX64::PushArgc(Register argcRegister, Register tempArgcRegister)
+{
+    Movabs(JSTaggedValue::TAG_INT, tempArgcRegister);
+    Orq(argcRegister, tempArgcRegister);
+    Pushq(tempArgcRegister);
+}
 }  // panda::ecmascript::x64
