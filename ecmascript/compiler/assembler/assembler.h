@@ -18,9 +18,26 @@
 #include "ecmascript/mem/dyn_chunk.h"
 
 namespace panda::ecmascript {
+class GCStackMapRegisters {
+public:
+#if defined(PANDA_TARGET_AMD64)
+    static constexpr int SP = 7;
+    static constexpr int FP = 6;
+#elif defined(PANDA_TARGET_ARM64)
+    static constexpr int SP = 31;  /* x31 */
+    static constexpr int FP = 29;  /* x29 */
+#elif defined(PANDA_TARGET_ARM32)
+    static constexpr int SP = 13;
+    static constexpr int FP = 11;
+#else
+    static constexpr int SP = -1;
+    static constexpr int FP = -1;
+#endif
+};
+
 enum Distance {
-    NEAR,
-    FAR
+    Near,
+    Far
 };
 
 class Label {

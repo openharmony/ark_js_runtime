@@ -13,9 +13,8 @@
  * limitations under the License.
  */
 
-#include "llvm_stackmap_parser.h"
-
-#include <iostream>
+#include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
+#include "ecmascript/compiler/assembler/assembler.h"
 #include "ecmascript/frames.h"
 #include "ecmascript/mem/slots.h"
 #include "ecmascript/mem/visitor.h"
@@ -63,12 +62,12 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptimizedL
     uintptr_t base = 0;
     uintptr_t derived = 0;
     for (auto &info: *infos) {
-        if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
+        if (info.first == GCStackMapRegisters::SP) {
             uintptr_t rsp = frame->GetCallSiteSp();
             address = rsp + info.second;
             COMPILER_LOG(DEBUG) << std::dec << "SP_DWARF_REG_NUM:  info.second:" << info.second
                                 << std::hex << "rsp :" << rsp;
-        } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
+        } else if (info.first == GCStackMapRegisters::FP) {
             uintptr_t fp = frame->callsiteFp;
             address = fp + info.second;
             COMPILER_LOG(DEBUG) << std::dec << "FP_DWARF_REG_NUM:  info.second:" << info.second
@@ -110,9 +109,9 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t 
     uintptr_t callSiteSp = FrameHandler::GetPrevFrameCallSiteSp(reinterpret_cast<JSTaggedType *>(fp));
 
     for (auto &info: *infos) {
-        if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
+        if (info.first == GCStackMapRegisters::SP) {
             address = callSiteSp + info.second;
-        } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
+        } else if (info.first == GCStackMapRegisters::FP) {
             address = callsiteFp + info.second;
         } else {
             UNREACHABLE();
@@ -159,9 +158,9 @@ bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t 
     uintptr_t callsiteFp = *fp;
     uintptr_t callSiteSp = FrameHandler::GetPrevFrameCallSiteSp(reinterpret_cast<JSTaggedType *>(frameFp));
     for (auto &info: *infos) {
-        if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
+        if (info.first == GCStackMapRegisters::SP) {
             address = callSiteSp + info.second;
-        } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
+        } else if (info.first == GCStackMapRegisters::FP) {
             address = callsiteFp + info.second;
         } else {
             UNREACHABLE();
