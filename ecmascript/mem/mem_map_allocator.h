@@ -79,13 +79,14 @@ public:
     void Finalize()
     {
         os::memory::LockHolder lock(lock_);
-        for (MemMap &memMap : memMapCache_) {
+        for (auto &it : memMapVector_) {
 #ifdef PANDA_TARGET_UNIX
-            munmap(memMap.GetMem(), memMap.GetSize());
+            munmap(it.GetMem(), it.GetSize());
 #else
-            UnmapViewOfFile(memMap.GetMem());
+            UnmapViewOfFile(it.GetMem());
 #endif
         }
+        memMapVector_.clear();
         memMapCache_.clear();
     }
 
@@ -124,10 +125,16 @@ public:
         return MemMap(memMap.GetMem(), REGULAR_MMAP_SIZE);
     }
 
+    void InsertMemMap(MemMap memMap)
+    {
+        memMapVector_.emplace_back(memMap);
+    }
+
 private:
     static constexpr size_t REGULAR_MMAP_SIZE = 256_KB;
     os::memory::Mutex lock_;
     std::deque<MemMap> memMapCache_;
+    std::vector<MemMap> memMapVector_;
 };
 
 // Non regular region with length of DEFAULT_REGION_SIZE(256kb) multiple
@@ -138,19 +145,17 @@ public:
 
     void Initialize(MemMap memMap)
     {
+        memMap_ = memMap;
         freeList_.insert(std::pair<size_t, MemMap>(memMap.GetSize(), memMap));
     }
 
     void Finalize()
     {
-        for (const auto &it : freeList_) {
-            auto memMap = it.second;
 #ifdef PANDA_TARGET_UNIX
-            munmap(memMap.GetMem(), memMap.GetSize());
+        munmap(memMap_.GetMem(), memMap_.GetSize());
 #else
-            UnmapViewOfFile(memMap.GetMem());
+        UnmapViewOfFile(memMap_.GetMem());
 #endif
-        }
         freeList_.clear();
     }
 
@@ -182,6 +187,7 @@ public:
 
 private:
     os::memory::Mutex lock_;
+    MemMap memMap_;
     std::multimap<size_t, MemMap> freeList_;
 };
 
