@@ -376,12 +376,10 @@ CallNativeTrampoline:
     stp     x29, x30, [sp, #-16]!  // save register for fp, rip
     mov     x29, sp                // set frame pointer = callsiteFp
     str     x29, [x0, #ASM_GLUE_CURRENT_FRAME_OFFSET]       // save to thread->currentFrame_
-    str     x19, [sp, #-16]        // callee save register
 
-    // construct leave frame
-    mov     x19, #LEAVE_FRAME_TYPE
-    str     x19, [sp, #-8]!
-    add     sp, sp, #-8
+    // construct leave frame and callee save
+    mov     x1, #LEAVE_FRAME_TYPE
+    stp     x19, x1, [sp, #-16]!
 
     // load runtime trampoline address
     ldr     x19, [x29, #16]  // codeaddress
@@ -405,8 +403,7 @@ CallNativeTrampoline:
 
     add     sp, sp, #ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE
     // descontruct leave frame and callee save register
-    ldr     x19, [sp]
-    add     sp, sp, #16
+    ldp     x19, x1, [sp], #16
     // restore register
     ldp     x29, x30, [sp], #16
     add     sp, sp, #8          // revert native pointer

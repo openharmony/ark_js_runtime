@@ -332,17 +332,15 @@ void AssemblerStubs::CallNativeTrampoline(ExtendedAssembler *assembler)
     Register glue(X0);
     Register sp(SP);
     __ Str(fp, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
-    // callee save 
-    Register tmp(X19);
-    __ Str(tmp, MemoryOperand(sp, -8, MemoryOperand::AddrMode::PREINDEX));
 
-    // construct leave frame
-    Register frameType(X19);
-    __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::LEAVE_FRAME)));
-    __ Str(frameType, MemoryOperand(sp, -8, MemoryOperand::AddrMode::PREINDEX));
-    __ Add(sp, sp, Immediate(-8));
-    // load runtime trampoline address
     Register nativeFuncAddr(X19);
+
+    // construct leave frame and callee save
+    Register frameType(X1);
+    __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::LEAVE_FRAME)));
+    __ Stp(nativeFuncAddr, frameType, MemoryOperand(sp, -16, MemoryOperand::AddrMode::PREINDEX));
+    
+    // load runtime trampoline address
     __ Ldr(nativeFuncAddr, MemoryOperand(fp, 16));
 
     // construct ecma_runtime_call_info
@@ -370,8 +368,7 @@ void AssemblerStubs::CallNativeTrampoline(ExtendedAssembler *assembler)
     __ Add(sp, sp, Immediate(sizeof(EcmaRuntimeCallInfo)));
 
     // descontruct leave frame and callee save register
-    __ Ldr(nativeFuncAddr, MemoryOperand(sp, 0));
-    __ Add(sp, sp, Immediate(16));
+    __ Ldp(nativeFuncAddr, frameType, MemoryOperand(sp, 16, MemoryOperand::AddrMode::POSTINDEX));
     __ RestoreFpAndLr();
     __ Add(sp, sp, Immediate(8));
     __ Ret();
