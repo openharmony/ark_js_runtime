@@ -28,8 +28,8 @@ if (defined(ark_independent_build)) {
 config("include_llvm") {
   if (compile_llvm_online) {
     include_dirs = [
-      "$ark_third_party_path/llvm-project/build/include",
-      "$ark_third_party_path/llvm-project/llvm/include/",
+      "//third_party/llvm-project/build/include",
+      "//third_party/llvm-project/llvm/include/",
     ]
   } else {
     include_dirs = [
@@ -79,7 +79,7 @@ source_set("libark_jsoptimizer_set") {
   ]
 
   if (compile_llvm_online) {
-    lib_dirs = [ "$ark_third_party_path/llvm-project/build/lib" ]
+    lib_dirs = [ "//third_party/llvm-project/build/lib" ]
   } else {
     lib_dirs =
         [ "//prebuilts/ark_tools/ark_js_prebuilts/llvm_prebuilts/build/lib" ]

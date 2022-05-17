@@ -15,7 +15,3 @@ declare_args() {
   # build version
   build_public_version = true
 }
-
-declare_args() {
-  ark_third_party_root = "$build_root/core/third_party"
-}
