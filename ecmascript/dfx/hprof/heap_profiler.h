@@ -24,6 +24,7 @@
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/tooling/interface/file_stream.h"
+#include "ecmascript/tooling/interface/progress.h"
 #include "os/mem.h"
 
 namespace panda::ecmascript {
@@ -47,11 +48,11 @@ public:
     /**
      * dump the specific snapshot in target format
      */
-    bool DumpHeapSnapshot(DumpFormat dumpFormat, Stream *stream, bool isVmMode = true) override;
+    bool DumpHeapSnapshot(DumpFormat dumpFormat, Stream *stream, Progress *progress, bool isVmMode = true) override;
     void AddSnapshot(HeapSnapshot *snapshot);
 
     bool StartHeapTracking(double timeInterval, bool isVmMode = true) override;
-    bool StopHeapTracking(Stream *stream) override;
+    bool StopHeapTracking(Stream *stream, Progress *progress) override;
 
 private:
     /**

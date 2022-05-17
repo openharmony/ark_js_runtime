@@ -23,6 +23,7 @@
 #include "ecmascript/tooling/base/pt_returns.h"
 #include "ecmascript/tooling/dispatcher.h"
 #include "ecmascript/tooling/interface/stream.h"
+#include "ecmascript/tooling/interface/progress.h"
 #include "ecmascript/tooling/protocol_handler.h"
 #include "ecmascript/tooling/front_end.h"
 #include "ecmascript/napi/include/dfx_jsnapi.h"
@@ -110,6 +111,30 @@ public:
 private:
     NO_COPY_SEMANTIC(HeapProfilerStream);
     NO_MOVE_SEMANTIC(HeapProfilerStream);
+
+    FrontEnd* frontend_ {nullptr};
+};
+
+class HeapProfilerProgress final : public Progress {
+public:
+    explicit HeapProfilerProgress(FrontEnd* frontend)
+        : frontend_(frontend) {}
+    
+    void ReportProgress(int32_t done, int32_t total) override
+    {
+        auto ecmaVm = static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM();
+        auto reportHeapSnapshotProgress = std::make_unique<ReportHeapSnapshotProgress>();
+        reportHeapSnapshotProgress->SetDone(done);
+        reportHeapSnapshotProgress->SetTotal(total);
+        if (done == total) {
+            reportHeapSnapshotProgress->SetFinished(true);
+        }
+        frontend_->SendNotification(ecmaVm, std::move(reportHeapSnapshotProgress));
+    }
+
+private:
+    NO_COPY_SEMANTIC(HeapProfilerProgress);
+    NO_MOVE_SEMANTIC(HeapProfilerProgress);
 
     FrontEnd* frontend_ {nullptr};
 };

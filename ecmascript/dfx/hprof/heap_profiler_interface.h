@@ -19,6 +19,7 @@
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/tooling/interface/stream.h"
+#include "ecmascript/tooling/interface/progress.h"
 
 namespace panda::ecmascript {
 enum class DumpFormat { JSON, BINARY, OTHER };
@@ -31,9 +32,9 @@ public:
     HeapProfilerInterface() = default;
     virtual ~HeapProfilerInterface() = default;
 
-    virtual bool DumpHeapSnapshot(DumpFormat dumpFormat, Stream *stream, bool isVmMode = true) = 0;
+    virtual bool DumpHeapSnapshot(DumpFormat dumpFormat, Stream *stream, Progress *progress, bool isVmMode = true) = 0;
     virtual bool StartHeapTracking(double timeInterval, bool isVmMode = true) = 0;
-    virtual bool StopHeapTracking(Stream *stream) = 0;
+    virtual bool StopHeapTracking(Stream *stream, Progress *progress) = 0;
 
     NO_MOVE_SEMANTIC(HeapProfilerInterface);
     NO_COPY_SEMANTIC(HeapProfilerInterface);

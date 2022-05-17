@@ -251,12 +251,17 @@ DispatchResponse HeapProfilerImpl::StopSampling([[maybe_unused]]std::unique_ptr<
     return DispatchResponse::Ok();
 }
 
-DispatchResponse HeapProfilerImpl::StopTrackingHeapObjects(
-    [[maybe_unused]] std::unique_ptr<StopTrackingHeapObjectsParams> params)
+DispatchResponse HeapProfilerImpl::StopTrackingHeapObjects(std::unique_ptr<StopTrackingHeapObjectsParams> params)
 {
     HeapProfilerStream stream(frontend_);
     auto ecmaVm = (panda::EcmaVM *)static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM();
-    bool result = panda::DFXJSNApi::StopHeapTracking(ecmaVm, &stream);
+    bool result = false;
+    if (params->GetReportProgress()) {
+        HeapProfilerProgress progress(frontend_);
+        result = panda::DFXJSNApi::StopHeapTracking(ecmaVm, &stream, &progress);
+    } else {
+        result = panda::DFXJSNApi::StopHeapTracking(ecmaVm, &stream, nullptr);
+    }
     if (result) {
         return DispatchResponse::Ok();
     } else {
@@ -264,12 +269,16 @@ DispatchResponse HeapProfilerImpl::StopTrackingHeapObjects(
     }
 }
 
-DispatchResponse HeapProfilerImpl::TakeHeapSnapshot(
-    [[maybe_unused]] std::unique_ptr<StopTrackingHeapObjectsParams> params)
+DispatchResponse HeapProfilerImpl::TakeHeapSnapshot(std::unique_ptr<StopTrackingHeapObjectsParams> params)
 {
     HeapProfilerStream stream(frontend_);
     auto ecmaVm = (panda::EcmaVM *)static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM();
-    panda::DFXJSNApi::DumpHeapSnapshot(ecmaVm, 0, &stream, true);
+    if (params->GetReportProgress()) {
+        HeapProfilerProgress progress(frontend_);
+        panda::DFXJSNApi::DumpHeapSnapshot(ecmaVm, 0, &stream, &progress, true);
+    } else {
+        panda::DFXJSNApi::DumpHeapSnapshot(ecmaVm, 0, &stream, nullptr, true);
+    }
     return DispatchResponse::Ok();
 }
 }  // namespace panda::ecmascript::tooling
