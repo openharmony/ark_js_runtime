@@ -74,14 +74,12 @@ void AssemblerStubs::CallRuntime(ExtendedAssembler *assembler)
     __ BindAssemblerStub(RTSTUB_ID(CallRuntime));
     __ SaveFpAndLr();
 
+    Register frameType(X2);
     __ Str(fp, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
-    // callee save
-    __ Str(tmp, MemoryOperand(sp, -16, MemoryOperand::AddrMode::PREINDEX));
-    
-    // construct Leave Frame
-    __ Mov(tmp, Immediate(static_cast<int64_t>(FrameType::LEAVE_FRAME)));  
-    __ Str(tmp, MemoryOperand(sp, -8));
-    __ Add(sp, sp, Immediate(-16));
+
+    // construct Leave Frame and callee save
+    __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::LEAVE_FRAME)));  
+    __ Stp(tmp, frameType, MemoryOperand(sp, -16, MemoryOperand::AddrMode::PREINDEX));
 
     // load runtime trampoline address
     Register rtfunc(X19);
@@ -94,8 +92,6 @@ void AssemblerStubs::CallRuntime(ExtendedAssembler *assembler)
 
     // callee restore
     __ Ldr(tmp, MemoryOperand(sp, 0));
-
-
 
     // descontruct frame
     __ Add(sp, sp, Immediate(16));
@@ -470,7 +466,8 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
         __ Mov(arg2, actualArgC);
         __ Ldr(codeAddress, MemoryOperand(jsfunc, JSFunctionBase::CODE_ENTRY_OFFSET));
         __ Lsr(callField, callField, JSMethod::NumArgsBits::START_BIT);
-        __ And(callField.W(), callField.W(), Immediate(JSMethod::NumArgsBits::Mask()));
+        __ And(callField.W(), callField.W(),
+            LogicalImmediate::Create(JSMethod::NumArgsBits::Mask() >> JSMethod::NumArgsBits::START_BIT, 32));
         __ Add(expectedNumArgs, callField.W(), Immediate(NUM_MANDATORY_JSFUNC_ARGS));
         __ Cmp(arg2.W(), expectedNumArgs);
         __ Add(argV, sp, Immediate(8));

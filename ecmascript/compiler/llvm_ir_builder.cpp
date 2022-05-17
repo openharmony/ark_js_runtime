@@ -1865,8 +1865,7 @@ LLVMTypeRef LLVMModule::GetFuncType(const CallSignature *stubDescriptor)
     int extraParameterCnt = 0;
 
     auto paramsType = stubDescriptor->GetParametersType();
-    ASSERT(paramCount > 0);
-    // first argument is glue
+
     if (paramsType != nullptr) {
         LLVMTypeRef glueType = ConvertLLVMTypeFromVariableType(paramsType[0]);
         paramTys.push_back(glueType);
@@ -1882,8 +1881,6 @@ LLVMTypeRef LLVMModule::GetFuncType(const CallSignature *stubDescriptor)
         for (int i = 1; i < paramCount; i++) {
             paramTys.push_back(ConvertLLVMTypeFromVariableType(paramsType[i]));
         }
-    } else {
-        UNREACHABLE();
     }
     auto functype = LLVMFunctionType(returnType, paramTys.data(), paramCount + extraParameterCnt,
         stubDescriptor->IsVariadicArgs());

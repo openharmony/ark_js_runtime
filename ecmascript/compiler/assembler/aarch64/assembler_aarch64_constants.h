@@ -100,9 +100,9 @@ enum AddSubOpCode {
 
 enum BitwiseOpCode {
     AND_Imm      = 0x12000000,
-    AND_Shift    = 0x0c000000,
+    AND_Shift    = 0x0a000000,
     ANDS_Imm     = 0x72000000,
-    ANDS_Shift   = 0x6c000000,
+    ANDS_Shift   = 0x6a000000,
     ORR_Imm      = 0x32000000,
     ORR_Shift    = 0x2a000000,
 };

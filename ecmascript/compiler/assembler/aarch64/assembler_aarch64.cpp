@@ -269,7 +269,7 @@ uint32_t AssemblerAarch64::GetOpcFromScale(Scale scale, bool ispair)
 void AssemblerAarch64::Ldr(const Register &rt, const MemoryOperand &operand)
 {
     uint32_t op;
-    uint32_t imm = static_cast<uint32_t>(operand.GetImmediate().Value());
+    uint64_t imm = operand.GetImmediate().Value();
     bool regX = !rt.IsW();
     if (operand.IsImmediateOffset()) {
         switch (operand.GetAddrMode()) {
@@ -306,7 +306,7 @@ void AssemblerAarch64::Str(const Register &rt, const MemoryOperand &operand)
 {
     uint32_t op;
     bool regX = !rt.IsW();
-    uint32_t imm = static_cast<uint32_t>(operand.GetImmediate().Value());
+    uint64_t imm = operand.GetImmediate().Value();
     if (operand.IsImmediateOffset()) {
         switch (operand.GetAddrMode()) {
             case MemoryOperand::AddrMode::OFFSET:
