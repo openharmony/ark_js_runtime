@@ -14,11 +14,11 @@
 if (!defined(ark_independent_build)) {
   ark_root = "//ark/runtime_core"
   js_root = "//ark/js_runtime"
-  ark_third_party_path = "//third_party"
+  third_party_gn_path = "//third_party"
 } else {
   ark_root = "//runtime_core"
   js_root = "//js_runtime"
-  ark_third_party_path = "$build_root/core/third_party"
+  third_party_gn_path = "$build_root/third_party_gn"
 }
 compile_llvm_online = false
 run_with_asan = false
@@ -28,9 +28,9 @@ asan_lib_path = "/usr/lib/llvm-10/lib/clang/10.0.0/lib/linux"
 
 # For OpenHarmony build, always link with the static lib:
 sdk_libc_secshared_dep =
-    "$ark_third_party_path/bounds_checking_function:libsec_static"
+    "$third_party_gn_path/bounds_checking_function:libsec_static"
 sdk_libc_secshared_config =
-    "$ark_third_party_path/bounds_checking_function:libsec_public_config"
+    "$third_party_gn_path/bounds_checking_function:libsec_public_config"
 
 # Generate file for a template and YAML data provided.
 #
