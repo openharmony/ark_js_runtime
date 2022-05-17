@@ -259,12 +259,6 @@ extern "C" void ResumeCaughtFrameAndDispatch(uintptr_t glue, uintptr_t pc, uintp
     V(CallSpreadDyn)                      \
     V(DefineGetterSetterByValue)          \
     V(SuperCall)                          \
-    V(CallArg0Dyn)                        \
-    V(CallArg1Dyn)                        \
-    V(CallArgs2Dyn)                       \
-    V(CallArgs3Dyn)                       \
-    V(CallIThisRangeDyn)                  \
-    V(CallIRangeDyn)                      \
     V(LdBigInt)                           \
     V(NewLexicalEnvWithNameDyn)           \
     V(GetAotUnmapedArgs)                  \
@@ -274,7 +268,8 @@ extern "C" void ResumeCaughtFrameAndDispatch(uintptr_t glue, uintptr_t pc, uintp
     V(GetAotLexicalEnv)                   \
     V(NewAotLexicalEnvDyn)                \
     V(NewAotLexicalEnvWithNameDyn)        \
-    V(SuspendAotGenerator)
+    V(SuspendAotGenerator)                \
+    V(NewAotObjDynRange)
 
 #define RUNTIME_STUB_LIST(V)                 \
     RUNTIME_STUB_WITHOUT_GC_LIST(V)          \
@@ -290,6 +285,32 @@ public:
     RUNTIME_STUB_WITH_GC_LIST(DECLARE_RUNTIME_STUBS)
     TEST_RUNTIME_STUB_GC_LIST(DECLARE_RUNTIME_STUBS)
 #undef DECLARE_RUNTIME_STUBS
+
+    inline static JSTaggedType GetTArg(uintptr_t argv, [[maybe_unused]] uint32_t argc, uint32_t index)
+    {
+        ASSERT(index < argc);
+        return *(reinterpret_cast<JSTaggedType *>(argv) + (index));
+    }
+
+    inline static JSTaggedValue GetArg(uintptr_t argv, [[maybe_unused]] uint32_t argc, uint32_t index)
+    {
+        ASSERT(index < argc);
+        return JSTaggedValue(*(reinterpret_cast<JSTaggedType *>(argv) + (index)));
+    }
+
+    template<typename T>
+    inline static JSHandle<T> GetHArg(uintptr_t argv, [[maybe_unused]] uint32_t argc, uint32_t index)
+    {
+        ASSERT(index < argc);
+        return JSHandle<T>(&(reinterpret_cast<JSTaggedType *>(argv)[index]));
+    }
+
+    template<typename T>
+    inline static T GetPtrArg(uintptr_t argv, [[maybe_unused]] uint32_t argc, uint32_t index)
+    {
+        ASSERT(index < argc);
+        return reinterpret_cast<T>(*(reinterpret_cast<JSTaggedType *>(argv) + (index)));
+    }
 
     static void DebugPrint(int fmtMessageId, ...);
     static void FatalPrint(int fmtMessageId, ...);
@@ -486,10 +507,6 @@ private:
     static inline JSTaggedValue RuntimeGetCallSpreadArgs(JSThread *thread, JSTaggedValue array);
     static inline JSTaggedValue RuntimeThrowReferenceError(JSThread *thread, JSTaggedValue prop, const char *desc);
     static inline JSTaggedValue RuntimeThrowSyntaxError(JSThread *thread, const char *message);
-    static inline JSTaggedType RuntimeNativeCall(JSThread *thread, JSHandle<JSTaggedValue> func, bool callThis,
-                                                 uint32_t actualNumArgs, std::vector<JSTaggedType> &actualArgs);
-    static inline JSTaggedType RuntimeCall1(JSThread *thread, JSHandle<JSTaggedValue> func,
-                                            JSHandle<JSTaggedValue> arg);
     static inline JSTaggedValue RuntimeLdBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &numberBigInt);
     static inline JSTaggedValue RuntimeNewLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId);
     static inline JSTaggedValue RuntimeGetAotUnmapedArgs(JSThread *thread, uint32_t actualNumArgs, uintptr_t argv);
@@ -501,6 +518,7 @@ private:
     static inline JSTaggedValue RuntimeDefineGeneratorFuncWithMethodId(JSThread *thread, JSTaggedValue methodId);
     static inline JSTaggedValue RuntimeSuspendAotGenerator(JSThread *thread, const JSHandle<JSTaggedValue> &genObj,
                                                            const JSHandle<JSTaggedValue> &value);
+    static inline JSTaggedValue RuntimeNewAotObjDynRange(JSThread *thread, uintptr_t argv, uint32_t argc);
 };
 }  // namespace panda::ecmascript
 #endif
