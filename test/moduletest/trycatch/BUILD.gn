@@ -13,6 +13,6 @@
 
 import("//ark/js_runtime/test/test_helper.gni")
 
-host_asm_test_action("trycatch") {
+host_moduletest_action("trycatch") {
   deps = []
 }

@@ -476,7 +476,7 @@ bool AssemblerAarch64::TrySequenceOfOnes(const Register &rd, uint64_t imm)
 
         if (IsStartHWord(himm)) {
             startIdx = shift;
-        } else if (IsEndHWord(himm)) {
+        } else if (IsEndHWord(static_cast<uint64_t>(himm))) {
             endIdx = shift;
         }
     }
