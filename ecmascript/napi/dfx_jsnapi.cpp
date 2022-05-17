@@ -38,13 +38,13 @@ using ecmascript::FileStream;
 void DFXJSNApi::DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, const std::string &path, bool isVmMode)
 {
     FileStream stream(path);
-    DumpHeapSnapshot(vm, dumpFormat, &stream, isVmMode);
+    DumpHeapSnapshot(vm, dumpFormat, &stream, nullptr, isVmMode);
 }
 
-void DFXJSNApi::DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, Stream *stream, bool isVmMode)
+void DFXJSNApi::DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, Stream *stream, Progress *progress, bool isVmMode)
 {
     ecmascript::HeapProfilerInterface *heapProfile = ecmascript::HeapProfilerInterface::GetInstance(vm);
-    heapProfile->DumpHeapSnapshot(ecmascript::DumpFormat(dumpFormat), stream, isVmMode);
+    heapProfile->DumpHeapSnapshot(ecmascript::DumpFormat(dumpFormat), stream, progress, isVmMode);
     ecmascript::HeapProfilerInterface::Destroy(vm);
 }
 
@@ -67,14 +67,14 @@ bool DFXJSNApi::StartHeapTracking(EcmaVM *vm, double timeInterval, bool isVmMode
 bool DFXJSNApi::StopHeapTracking(EcmaVM *vm, const std::string &filePath)
 {
     FileStream stream(filePath);
-    return StopHeapTracking(vm, &stream);
+    return StopHeapTracking(vm, &stream, nullptr);
 }
 
-bool DFXJSNApi::StopHeapTracking(EcmaVM *vm, Stream* stream)
+bool DFXJSNApi::StopHeapTracking(EcmaVM *vm, Stream* stream, Progress *progress)
 {
     bool result = false;
     ecmascript::HeapProfilerInterface *heapProfile = ecmascript::HeapProfilerInterface::GetInstance(vm);
-    result = heapProfile->StopHeapTracking(stream);
+    result = heapProfile->StopHeapTracking(stream, progress);
     ecmascript::HeapProfilerInterface::Destroy(vm);
     return result;
 }

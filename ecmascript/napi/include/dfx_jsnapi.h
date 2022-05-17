@@ -29,19 +29,22 @@ namespace panda {
 namespace ecmascript {
 class EcmaVM;
 class Stream;
+class Progress;
 }
 class DFXJSNApi;
 using EcmaVM = ecmascript::EcmaVM;
 using Stream = ecmascript::Stream;
+using Progress = ecmascript::Progress;
 
 class PUBLIC_API DFXJSNApi {
 public:
     static void DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, const std::string &path, bool isVmMode = true);
-    static void DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, Stream *stream, bool isVmMode = true);
+    static void DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, Stream *stream,
+                                 Progress *progress, bool isVmMode = true);
     static bool BuildNativeAndJsBackStackTrace(EcmaVM *vm, std::string &stackTraceStr);
     static bool StartHeapTracking(EcmaVM *vm, double timeInterval, bool isVmMode = true);
     static bool StopHeapTracking(EcmaVM *vm, const std::string &filePath);
-    static bool StopHeapTracking(EcmaVM *vm, Stream *stream);
+    static bool StopHeapTracking(EcmaVM *vm, Stream *stream, Progress *progress);
     static void PrintStatisticResult(const EcmaVM *vm);
     static void StartRuntimeStat(EcmaVM *vm);
     static void StopRuntimeStat(EcmaVM *vm);

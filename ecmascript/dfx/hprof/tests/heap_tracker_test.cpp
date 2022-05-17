@@ -86,7 +86,7 @@ HWTEST_F_L0(HeapTrackerTest, HeapTracker)
     outputString.clear();
 
     FileStream stream(fileName.c_str());
-    heapProfile->StopHeapTracking(&stream);
+    heapProfile->StopHeapTracking(&stream, nullptr);
     HeapProfilerInterface::Destroy(instance);
 
     // Check
