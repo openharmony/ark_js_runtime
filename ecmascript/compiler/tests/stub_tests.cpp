@@ -35,6 +35,7 @@
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/SourceMgr.h"
+#include "ecmascript/compiler/assembler_module.h"
 
 namespace panda::test {
 using namespace panda::coretypes;
@@ -46,7 +47,7 @@ class StubTest : public testing::Test {
 public:
     void SetUp() override
     {
-        TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
+        TestHelper::CreateEcmaVMWithScope(instance, thread, scope, true);
         BytecodeStubCSigns::Initialize();
         CommonStubCSigns::Initialize();
         RuntimeStubCSigns::Initialize();
@@ -1240,7 +1241,7 @@ HWTEST_F_L0(StubTest, FastEqualTest)
     EXPECT_EQ(resI, expectI);
 }
 
-#ifdef ECMASCRIPT_ENABLE_TEST_STUB
+#ifndef NDEBUG
 HWTEST_F_L0(StubTest, JSCallTest)
 {
     auto fooEntry = thread->GetFastStubEntry(CommonStubCSigns::FooAOT);
@@ -1256,12 +1257,14 @@ HWTEST_F_L0(StubTest, JSCallTest)
         JSTaggedValue(y).GetRawData(),
         JSTaggedValue::Undefined().GetRawData(),
     };
-    auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5,
-                                  argV, fooEntry);
+    auto entry = thread->GetRTInterface(kungfu::RuntimeStubCSigns::ID_JSFunctionEntry);
+
+    auto result = reinterpret_cast<JSFunctionEntryType>(entry)(glue,
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5, argV, fooEntry);
     EXPECT_EQ(result, JSTaggedValue(3.0).GetRawData());
 
-    auto result1 = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 6,
-                                   argV, fooEntry);
+    auto result1 = reinterpret_cast<JSFunctionEntryType>(entry)(glue,
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 6, argV, fooEntry);
     EXPECT_EQ(result1, JSTaggedValue(3.0).GetRawData());
 }
 
@@ -1280,8 +1283,9 @@ HWTEST_F_L0(StubTest, JSCallTest1)
         JSTaggedValue(y).GetRawData(),
         JSTaggedValue::Undefined().GetRawData(),
     };
-    auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5,
-                                  argV, foo2Entry);
+    auto entry = thread->GetRTInterface(kungfu::RuntimeStubCSigns::ID_JSFunctionEntry);
+    auto result = reinterpret_cast<JSFunctionEntryType>(entry)(glue,
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5, argV, foo2Entry);
     EXPECT_EQ(result, JSTaggedValue(3.0).GetRawData());
 }
 
@@ -1299,8 +1303,10 @@ HWTEST_F_L0(StubTest, JSCallTest2)
         JSTaggedValue(x).GetRawData(),
         JSTaggedValue(y).GetRawData(),
     };
-    auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5,
-                                  argV, foo1Entry);
+
+    auto entry = thread->GetRTInterface(kungfu::RuntimeStubCSigns::ID_JSFunctionEntry);
+    auto result = reinterpret_cast<JSFunctionEntryType>(entry)(glue,
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5, argV, foo1Entry);
     EXPECT_EQ(result, 0x7ff9000000000000UL);
 }
 
@@ -1318,8 +1324,9 @@ HWTEST_F_L0(StubTest, JSCallNativeTest)
         JSTaggedValue(x).GetRawData(),
         JSTaggedValue(y).GetRawData(),
     };
-    auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5,
-                                  argV, fooEntry);
+    auto entry = thread->GetRTInterface(kungfu::RuntimeStubCSigns::ID_JSFunctionEntry);
+    auto result = reinterpret_cast<JSFunctionEntryType>(entry)(glue,
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5, argV, fooEntry);
     EXPECT_EQ(result, JSTaggedValue::Undefined().GetRawData());
 }
 
@@ -1337,8 +1344,10 @@ HWTEST_F_L0(StubTest, JSCallBoundTest)
         JSTaggedValue(x).GetRawData(),
         JSTaggedValue(y).GetRawData(),
     };
-    auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5,
-                                  argV, fooEntry);
+
+    auto entry = thread->GetRTInterface(kungfu::RuntimeStubCSigns::ID_JSFunctionEntry);
+    auto result = reinterpret_cast<JSFunctionEntryType>(entry)(glue,
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5, argV, fooEntry);
     EXPECT_EQ(result, JSTaggedValue(38.0).GetRawData());
 }
 
@@ -1360,8 +1369,9 @@ HWTEST_F_L0(StubTest, JSCallTest3)
     };
     JSThread::GlueData::GetCOStubEntriesOffset(false);
     JSThread::GlueData::GetCOStubEntriesOffset(true);
-    auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()),
-        5, 5, argV, fooProxyEntry);
+    auto entry = thread->GetRTInterface(kungfu::RuntimeStubCSigns::ID_JSFunctionEntry);
+    auto result = reinterpret_cast<JSFunctionEntryType>(entry)(glue,
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5, argV, fooProxyEntry);
     EXPECT_EQ(result, JSTaggedValue(3.0).GetRawData());
 }
 
@@ -1383,8 +1393,9 @@ HWTEST_F_L0(StubTest, JSCallTest4)
     };
     JSThread::GlueData::GetCOStubEntriesOffset(false);
     JSThread::GlueData::GetCOStubEntriesOffset(true);
-    [[maybe_unused]] auto result = JSFunctionEntry(glue, reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()),
-        5, 5, argV, fooProxyEntry);
+    auto entry = thread->GetRTInterface(kungfu::RuntimeStubCSigns::ID_JSFunctionEntry);
+    [[maybe_unused]] auto result = reinterpret_cast<JSFunctionEntryType>(entry)(glue,
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 5, 5, argV, fooProxyEntry);
 }
 #endif
 }  // namespace panda::test

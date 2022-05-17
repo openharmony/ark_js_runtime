@@ -103,7 +103,11 @@ extern "C" void ResumeCaughtFrameAndDispatch(uintptr_t glue, uintptr_t pc, uintp
     V(PushCallIThisRangeAndDispatchSlowPath) \
     V(ResumeRspAndDispatch)                  \
     V(ResumeRspAndReturn)                    \
-    V(ResumeCaughtFrameAndDispatch)
+    V(ResumeCaughtFrameAndDispatch)          \
+    V(JSFunctionEntry)                       \
+    V(JSCall)                                \
+    V(JSCallWithArgV)                        \
+    V(CallRuntimeWithArgv)
 
 #define RUNTIME_STUB_WITHOUT_GC_LIST(V)        \
     V(DebugPrint)                              \
@@ -113,9 +117,6 @@ extern "C" void ResumeCaughtFrameAndDispatch(uintptr_t glue, uintptr_t pc, uintp
     V(DoubleToInt)                             \
     V(FloatMod)                                \
     V(FindElementWithCache)                    \
-    V(CallRuntimeWithArgv)                     \
-    V(JSCall)                                  \
-    V(JSCallWithArgV)                          \
     V(JSObjectGetMethod)                       \
     V(CreateArrayFromList)                     \
     V(StringsAreEquals)                        \

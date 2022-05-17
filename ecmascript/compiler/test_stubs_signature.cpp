@@ -15,6 +15,7 @@
 
 #include "ecmascript/compiler/call_signature.h"
 namespace panda::ecmascript::kungfu {
+#ifndef NDEBUG
 DEF_CALL_SIGNATURE(FooAOT)
 {
     // 7 : 7 input parameters
@@ -204,4 +205,5 @@ DEF_CALL_SIGNATURE(Bar2AOT)
     callSign->SetVariadicArgs(true);
     callSign->SetCallConv(CallSignature::CallConv::WebKitJSCallConv);
 }
+#endif
 }  // namespace panda::ecmascript::kungfu

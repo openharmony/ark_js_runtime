@@ -60,17 +60,12 @@ source_set("libark_jsoptimizer_set") {
     "rt_call_signature.cpp",
     "scheduler.cpp",
     "stub.cpp",
+    "test_stubs.cpp",
+    "test_stubs_signature.cpp",
     "trampoline/x64/assembler_stubs_x64.cpp",
     "type.cpp",
     "verifier.cpp",
   ]
-
-  if (enable_test_stub) {
-    sources += [
-      "test_stubs.cpp",
-      "test_stubs_signature.cpp",
-    ]
-  }
 
   public_configs = [
     ":include_llvm",
