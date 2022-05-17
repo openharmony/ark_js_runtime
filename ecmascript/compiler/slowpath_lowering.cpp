@@ -751,18 +751,39 @@ void SlowPathLowering::LowerStGlobalVar(GateRef gate, GateRef glue)
 
 void SlowPathLowering::LowerGetIterator(GateRef gate, GateRef glue)
 {
-    Label condTrue(&builder_);
-    Label condFalse(&builder_);
-    GateRef isGeneratorObject = builder_.TaggedIsGeneratorObject(acc_.GetValueIn(gate, 0));
-    GateRef isNotGeneratorObject = builder_.BoolNot(isGeneratorObject);
-    builder_.Branch(isNotGeneratorObject, &condTrue, &condFalse);
-    // 1: number of value inputs
-    ASSERT(acc_.GetNumValueIn(gate) == 1);
-    int id = RTSTUB_ID(GetIterator);
-    GateRef result = LowerCallRuntime(glue, id, {acc_.GetValueIn(gate, 0)}, true);
-    CREATE_DOUBLE_EXIT(condTrue, condTrue)
-    ReplaceHirToSubCfg(gate, result, successControl, failControl);
+    std::vector<GateRef> successControl(2);
+    std::vector<GateRef> failControl(2);
+    DEFVAlUE(result, (&builder_), VariableType::JS_ANY(), acc_.GetValueIn(gate, 0));
+    Label successExit(&builder_);
+    Label exceptionExit(&builder_);
+    Label isTrue(&builder_);
+    Label isNot(&builder_);
+    GateRef value = 0;
+    builder_.Branch(builder_.TaggedIsGeneratorObject(acc_.GetValueIn(gate, 0)), &isTrue, &isNot);
+    builder_.Bind(&isTrue);
+    {
+        builder_.Jump(&successExit);
+    }
+    builder_.Bind(&isNot);
+    {
+        result = LowerCallRuntime(glue, RTSTUB_ID(GetIterator), {acc_.GetValueIn(gate, 0)}, true);
+        builder_.Branch(builder_.IsSpecial(*result, JSTaggedValue::VALUE_EXCEPTION),
+            &exceptionExit, &successExit);
+    }
+    builder_.Bind(&successExit);
+    {
+        value = *result;
+        successControl[0] = builder_.GetState();
+        successControl[1] = builder_.GetDepend();
+    }
+    builder_.Bind(&exceptionExit);
+    {
+        failControl[0] = builder_.GetState();
+        failControl[1] = builder_.GetDepend();
+    }
+    ReplaceHirToSubCfg(gate, value, successControl, failControl);
 }
+
 
 void SlowPathLowering::LowerToJSCall(GateRef gate, GateRef glue, const std::vector<GateRef> &args)
 {
