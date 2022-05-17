@@ -10,19 +10,20 @@
 
 ├── js_runtime 
 
-    ├── build 
+    ├── build     
            
 ├── runtime_core   
           
-├── ts2abc
+├── ts2abc         
+
+├── third_patry         #从openharmony开源项目下载
 
 
 #### 安装教程
 
 1.  独立编译拉取ark_js_runtime、ark_runtime_core、ark_ts2abc，执行./build/prebuilts_download.sh 下载相关的编译所需工具。
-2.  或者直接cp ohos目录下已经下载好的 prebuilts 目录（独立编译与ohos是相同的prebuilts）。
-3.  之后执行./js_runtime/build/compile_script/gen.sh ark将.gn、.sh文件拿出来。
-4.  执行[./gen.sh]命令编译目前独立编译支持的所有目标，执行[./gen.sh abc]命令生成abc文件，执行[./gen.sh .]命令执行abc文件
+2.  之后执行./js_runtime/build/compile_script/gen.sh ark将.gn、.sh文件拿出来。
+3.  执行[./gen.sh]命令编译目前独立编译支持的所有目标，执行[./gen.sh abc]命令生成abc文件，执行[./gen.sh .]命令执行abc文件
 
 #### 使用说明
 
