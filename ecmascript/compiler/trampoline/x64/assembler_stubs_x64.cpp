@@ -2031,7 +2031,7 @@ void AssemblerStubsX64::PushCallIRangeAndDispatchNative(ExtendedAssembler *assem
     __ Movq(rsp, stackArgs);
 
     __ Testq(0xf, rsp);  // 0xf: 0x1111
-    __ Jnz(&notAligned, Distance::NEAR);
+    __ Jnz(&notAligned, Distance::Near);
     __ PushAlignBytes();
 
     __ Bind(&notAligned);
