@@ -380,8 +380,8 @@ CallNativeTrampoline:
 
     // construct leave frame
     mov     x19, #LEAVE_FRAME_TYPE
-    str     x19, [sp, #-8]
-    add     sp, sp, #-16
+    str     x19, [sp, #-8]!
+    add     sp, sp, #-8
 
     // load runtime trampoline address
     ldr     x19, [x29, #16]  // codeaddress

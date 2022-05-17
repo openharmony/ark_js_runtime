@@ -139,8 +139,8 @@ enum CompareCode {
     CMP_Extend  = 0x6d20000f,
     CMP_Imm     = 0x7100000f,
     CMP_Shift   = 0x6d00000f,
-    CSEL        = 0x1c800000,
-    CSET        = 0x1c9f07e0,
+    CSEL        = 0x1a800000,
+    CSET        = 0x1a9f07e0,
 };
 
 // memory code
