@@ -25,6 +25,8 @@ group("ark_aot_test") {
     "dec:decAotAction",
 
     # "definefunc:definefuncAotAction",
+    # "definemethod:definemethodAotAction",
+    # "definencfunc:definencfuncAotAction",
     "delobjprop:delobjpropAotAction",
     "div:divAotAction",
     "exp:expAotAction",
