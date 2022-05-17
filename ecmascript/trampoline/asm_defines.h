@@ -156,12 +156,6 @@
 #define MESSAGE_STRING_NON_CALLABLE_ID      (0xffff000000000005)
 #define RUNTIME_ID_THROW_TYPE_ERROR         (0x16)
 
-// com stub
-#ifdef PANDA_TARGET_64
-#define ASM_GLUE_COMSTUB_ENTRY_OFFSET     (0xdf0)
-#else
-#define ASM_GLUE_COMSTUB_ENTRY_OFFSET     (0x708)
-#endif
 #define JSPROXY_CALL_INTERNAL_INDEX       (0x15)
 
 #define ASM_NUM_MANDATORY_JSFUNC_ARGS       (3)
