@@ -1131,7 +1131,8 @@ void AssemblerStubsX64::PushArgsSlowPath(ExtendedAssemblerX64 *assembler, Regist
     // fall through
     __ Bind(&haveExtra);
     {
-        __ Pushq(argcRegister);
+        Register tempArgcRegister = r15;
+        __ PushArgc(argcRegister, tempArgcRegister);
         __ Subq(argcRegister, declaredNumArgsRegister);
         __ Cmpq(0, declaredNumArgsRegister);
         __ Jle(&jumpToFastPath);
@@ -1300,7 +1301,8 @@ void AssemblerStubsX64::PushCallIThisRangeAndDispatchSlowPath(ExtendedAssemblerX
 
     __ Bind(&haveExtraEntry);
     {
-        __ Pushq(argcRegister);
+        Register tempArgcRegister = r9;
+        __ PushArgc(argcRegister, tempArgcRegister);
         __ Movq(declaredNumArgsRegister, diffRegister);
         __ Subq(argcRegister, diffRegister);
         __ Cmpq(0, diffRegister);
@@ -1345,7 +1347,8 @@ void AssemblerStubsX64::PushCallIRangeAndDispatchSlowPath(ExtendedAssemblerX64 *
 
     __ Bind(&haveExtraEntry);
     {
-        __ Pushq(argcRegister);
+        Register tempArgcRegister = r9;
+        __ PushArgc(argcRegister, tempArgcRegister);
         __ Movq(declaredNumArgsRegister, diffRegister);
         __ Subq(argcRegister, diffRegister);
         __ Cmpq(0, diffRegister);
@@ -1390,7 +1393,8 @@ void AssemblerStubsX64::PushCallArgs3AndDispatchSlowPath(ExtendedAssemblerX64 *a
 
     __ Bind(&haveExtraEntry);
     {
-        __ Pushq(argc);
+        Register tempArgcRegister = r9;
+        __ PushArgc(argc, tempArgcRegister);
         __ Movq(declaredNumArgsRegister, diffRegister);
         __ Subq(argc, diffRegister);
         __ Cmpq(0, diffRegister);
@@ -1435,7 +1439,8 @@ void AssemblerStubsX64::PushCallArgs2AndDispatchSlowPath(ExtendedAssemblerX64 *a
 
     __ Bind(&haveExtraEntry);
     {
-        __ Pushq(argc);
+        Register tempArgcRegister = r9;
+        __ PushArgc(argc, tempArgcRegister);
         __ Movq(declaredNumArgsRegister, diffRegister);
         __ Subq(argc, diffRegister);
         __ Cmpq(0, diffRegister);
@@ -1480,7 +1485,8 @@ void AssemblerStubsX64::PushCallArgs1AndDispatchSlowPath(ExtendedAssemblerX64 *a
 
     __ Bind(&haveExtraEntry);
     {
-        __ Pushq(argc);
+        Register tempArgcRegister = r9;
+        __ PushArgc(argc, tempArgcRegister);
         __ Movq(declaredNumArgsRegister, diffRegister);
         __ Subq(argc, diffRegister);
         __ Cmpq(0, diffRegister);
@@ -1525,7 +1531,8 @@ void AssemblerStubsX64::PushCallArgs0AndDispatchSlowPath(ExtendedAssemblerX64 *a
 
     __ Bind(&haveExtraEntry);
     {
-        __ Pushq(argc);
+        Register tempArgcRegister = r9;
+        __ PushArgc(argc, tempArgcRegister);
         __ Movq(declaredNumArgsRegister, diffRegister);
         __ Subq(argc, diffRegister);
         __ Cmpq(0, diffRegister);
@@ -1935,15 +1942,15 @@ void AssemblerStubsX64::CallNativeEntry(ExtendedAssemblerX64 *assembler)
     Register function = r9;
     Register nativeCode = rbx;
 
-    // skip nativeCode & argc
-    __ Addq(16, rsp);
     __ Push(function);
+    // 24: skip nativeCode & argc & returnAddr
+    __ Subq(24, rsp);
     PushBuiltinFrame(assembler, glue, FrameType::BUILTIN_ENTRY_FRAME);
     __ Movq(Operand(method, JSMethod::GetBytecodeArrayOffset(false)), nativeCode); // get native pointer
     CallNativeInternal(assembler, glue, argc, argv, nativeCode);
 
-    // 24: skip function
-    __ Addq(24, rsp);
+    // 32: skip function
+    __ Addq(32, rsp);
     __ Ret();
 }
 
