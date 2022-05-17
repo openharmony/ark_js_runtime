@@ -833,11 +833,11 @@ DECLARE_ASM_HANDLER(HandleAsyncFunctionResolvePrefV8V8V8)
 
 DECLARE_ASM_HANDLER(HandleAsyncFunctionRejectPrefV8V8V8)
 {
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     auto env = GetEnvironment();
     GateRef asyncFuncObj = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_3(pc)));
-    GateRef res = CallRuntime(glue,
-                              RTSTUB_ID(AsyncFunctionResolveOrReject),
+    GateRef res = CallRuntime(glue, RTSTUB_ID(AsyncFunctionResolveOrReject),
                               { asyncFuncObj, value, TaggedFalse() });
     Label isException(env);
     Label notException(env);
@@ -848,7 +848,8 @@ DECLARE_ASM_HANDLER(HandleAsyncFunctionRejectPrefV8V8V8)
     }
     Bind(&notException);
     {
-        DISPATCH(PREF_V8_V8_V8);
+        varAcc = res;
+        DISPATCH_WITH_ACC(PREF_V8_V8_V8);
     }
 }
 

@@ -2699,10 +2699,9 @@ void InterpreterAssembly::HandleAsyncFunctionRejectPrefV8V8V8(
 
     JSTaggedValue asyncFuncObj = GET_VREG_VALUE(v0);
     JSTaggedValue value = GET_VREG_VALUE(v2);
-    SAVE_ACC();
     JSTaggedValue res = SlowRuntimeStub::AsyncFunctionResolveOrReject(thread, asyncFuncObj, value, false);
     INTERPRETER_RETURN_IF_ABRUPT(res);
-    RESTORE_ACC();
+    SET_ACC(res);
     DISPATCH(BytecodeInstruction::Format::PREF_V8_V8_V8);
 }
 
