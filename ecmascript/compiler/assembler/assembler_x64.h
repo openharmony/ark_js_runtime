@@ -120,6 +120,8 @@ public:
     void Andq(Immediate src, Register dst);
     void Andl(Immediate src, Register dst);
     void And(Register src, Register dst);
+    void Or(Immediate src, Register dst);
+    void Orq(Register src, Register dst);
     void Btq(Immediate src, Register dst);
     void Btl(Immediate src, Register dst);
     void Cmpl(Register src, Register dst);
