@@ -1020,8 +1020,8 @@ void AssemblerStubsX64::PushArgsFastPath(ExtendedAssembler *assembler, Register 
     __ Cmpq(0, argcRegister);
     __ Jbe(&pushCallThis);  // skip push args
     Register argvOnlyHaveArgsRegister = r12;
-    __ Leaq(Operand(argvRegister, Scale::Times8, BuiltinFrame::RESERVED_CALL_ARGCOUNT),
-            argvOnlyHaveArgsRegister);
+    __ Leaq(Operand(argvRegister, BuiltinFrame::RESERVED_CALL_ARGCOUNT * JSTaggedValue::TaggedTypeSize()),
+        argvOnlyHaveArgsRegister);
     Register tempRegister = r11;
     __ PushArgsWithArgv(argcRegister, argvOnlyHaveArgsRegister, tempRegister);  // args
 
@@ -1910,13 +1910,15 @@ void AssemblerStubsX64::PushCallIRangeAndDispatchNative(ExtendedAssembler *assem
     Register numArgs = r8;
     Register stackArgs = r9;
     Register temporary = rax;
+    Register opNumArgs = r10;
     Label aligned;
 
     PushBuiltinFrame(assembler, glue, FrameType::BUILTIN_FRAME_WITH_ARGV);
 
     StackOverflowCheck(assembler);
     __ Push(numArgs);
-    __ PushArgsWithArgv(numArgs, stackArgs, temporary);
+    __ Movq(numArgs, opNumArgs);
+    __ PushArgsWithArgv(opNumArgs, stackArgs, temporary);
     __ Push(thisValue);
     // new.target
     __ Pushq(JSTaggedValue::Undefined().GetRawData());
@@ -1924,7 +1926,7 @@ void AssemblerStubsX64::PushCallIRangeAndDispatchNative(ExtendedAssembler *assem
     __ Movq(rsp, stackArgs);
 
     __ Testq(0xf, rsp);  // 0xf: 0x1111
-    __ Jnz(&aligned, Distance::NEAR);
+    __ Jz(&aligned, Distance::NEAR);
     __ PushAlignBytes();
 
     __ Bind(&aligned);

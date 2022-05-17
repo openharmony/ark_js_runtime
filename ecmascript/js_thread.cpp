@@ -316,11 +316,15 @@ void JSThread::LoadBytecodeHandlerStubsFromFile(std::string &fileName)
             if (des.IsBCHandlerStub()) {
                 glueData_.bcStubEntries_.Set(des.indexInKind_, des.codeAddr_);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_LOG
-                std::cout << "bytecode index: " << des.indexInKind_ << " addr:" << des.codeAddr_ << std::endl;
+                std::cout << "bytecode: " << GetEcmaOpcodeStr(static_cast<EcmaOpcode>(des.indexInKind_))
+                    << " addr:" << des.codeAddr_ << std::endl;
 #endif
             }
         } else {
             glueData_.rtStubEntries_.Set(des.indexInKind_, des.codeAddr_);
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_LOG
+                std::cout << "runtime index: " << des.indexInKind_ << " addr:" << des.codeAddr_ << std::endl;
+#endif
         }
     }
     AsmInterParsedOption asmInterOpt = GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();

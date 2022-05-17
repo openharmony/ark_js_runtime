@@ -134,6 +134,12 @@ enum class SplitKind : uint8_t {
     END
 };
 
+enum class VisitState : uint8_t {
+    UNVISITED,
+    PENDING,
+    VISITED
+};
+
 struct CfgInfo {
     uint8_t *pc {nullptr};
     SplitKind splitKind {SplitKind::DEFAULT};
@@ -157,7 +163,7 @@ struct CfgInfo {
 };
 
 struct BytecodeRegion {
-    int32_t id {-1};
+    size_t id {0};
     uint8_t *start {nullptr};
     uint8_t *end {nullptr};
     std::vector<BytecodeRegion *> preds {}; // List of predessesor blocks
@@ -167,14 +173,22 @@ struct BytecodeRegion {
     std::vector<BytecodeRegion *> immDomBlocks {}; // List of dominated blocks
     BytecodeRegion *iDominator {nullptr}; // Block that dominates the current block
     std::vector<BytecodeRegion *> domFrontiers {}; // List of dominace frontiers
+    std::set<size_t> loopbackBlocks {}; // List of loopback block ids
     bool isDead {false};
     std::set<uint16_t> phi {}; // phi node
     bool phiAcc {false};
-    int32_t numOfStatePreds {0};
-    int32_t statePredIndex {0};
-    std::vector<std::tuple<size_t, uint8_t *, bool>> expandedPreds {};
+    size_t numOfStatePreds {0};
+    size_t numOfLoopBacks {0};
+    size_t statePredIndex {0};
+    size_t forwardIndex {0};
+    size_t loopBackIndex {0};
+    std::vector<std::tuple<size_t, const uint8_t *, bool>> expandedPreds {};
     kungfu::GateRef stateStart {kungfu::Circuit::NullGate()};
     kungfu::GateRef dependStart {kungfu::Circuit::NullGate()};
+    kungfu::GateRef mergeForwardEdges {kungfu::Circuit::NullGate()};
+    kungfu::GateRef mergeLoopBackEdges {kungfu::Circuit::NullGate()};
+    kungfu::GateRef depForward {kungfu::Circuit::NullGate()};
+    kungfu::GateRef depLoopBack {kungfu::Circuit::NullGate()};
     std::map<uint16_t, kungfu::GateRef> vregToValSelectorGate {}; // corresponding ValueSelector gates of vregs
     kungfu::GateRef valueSelectorAccGate {kungfu::Circuit::NullGate()};
 
@@ -184,6 +198,8 @@ struct BytecodeRegion {
     }
 };
 
+using BytecodeGraph = std::vector<BytecodeRegion>;
+
 struct BytecodeInfo {
     // set of id, immediate and read register
     std::vector<std::variant<StringId, MethodId, Immediate, VirtualRegister>> inputs {};
@@ -192,11 +208,6 @@ struct BytecodeInfo {
     bool accOut {false}; // write acc
     uint8_t opcode {0};
     uint16_t offset {0};
-};
-
-struct BytecodeGraph {
-    std::vector<BytecodeRegion> graph {};
-    const JSMethod *method;
 };
 
 enum BytecodeOffset {
@@ -240,12 +251,12 @@ public:
         return &circuit_;
     }
 
-    [[nodiscard]] const std::map<kungfu::GateRef, std::pair<size_t, uint8_t *>>& GetGateToBytecode() const
+    [[nodiscard]] const std::map<kungfu::GateRef, std::pair<size_t, const uint8_t *>>& GetGateToBytecode() const
     {
         return jsgateToBytecode_;
     }
 
-    [[nodiscard]] const std::map<uint8_t *, kungfu::GateRef>& GetBytecodeToGate() const
+    [[nodiscard]] const std::map<const uint8_t *, kungfu::GateRef>& GetBytecodeToGate() const
     {
         return byteCodeToJSGate_;
     }
@@ -256,7 +267,7 @@ public:
         return GetEcmaOpcodeStr(static_cast<EcmaOpcode>(*pc));
     }
 
-    [[nodiscard]] uint8_t* GetJSBytecode(GateRef gate) const
+    [[nodiscard]] const uint8_t* GetJSBytecode(GateRef gate) const
     {
         return jsgateToBytecode_.at(gate).second;
     }
@@ -266,7 +277,7 @@ public:
         return commonArgs_[idx];
     }
 
-    BytecodeInfo GetBytecodeInfo(uint8_t *pc);
+    BytecodeInfo GetBytecodeInfo(const uint8_t *pc);
 
     EcmaVM *GetEcmaVM() const
     {
@@ -290,19 +301,35 @@ private:
     void BuildBasicBlocks(std::map<std::pair<uint8_t *, uint8_t *>, std::vector<uint8_t *>> &exception,
                           std::vector<CfgInfo> &bytecodeBlockInfo,
                           std::map<uint8_t *, uint8_t*> &byteCodeCurPrePc);
-    void ComputeDominatorTree(BytecodeGraph &byteCodeGraph);
-    void BuildImmediateDominator(std::vector<int32_t> &immDom, BytecodeGraph &byteCodeGraph);
-    void ComputeDomFrontiers(std::vector<int32_t> &immDom, BytecodeGraph &byteCodeGraph);
-    void RemoveDeadRegions(const std::map<size_t, size_t> &dfsTimestamp, BytecodeGraph &byteCodeGraph);
-    void InsertPhi(BytecodeGraph &byteCodeGraph);
-    void UpdateCFG(BytecodeGraph &byteCodeGraph);
-    void BuildCircuit(BytecodeGraph &byteCodeGraph);
-    GateRef SetGateConstant(const BytecodeInfo &info);
+    void ComputeDominatorTree();
+    void BuildImmediateDominator(const std::vector<size_t> &immDom);
+    void ComputeDomFrontiers(const std::vector<size_t> &immDom);
+    void RemoveDeadRegions(const std::map<size_t, size_t> &dfsTimestamp);
+    void InsertPhi();
+    void UpdateCFG();
+    // build circuit
+    void BuildCircuitArgs();
+    void CollectPredsInfo();
+    void NewMerge(GateRef &state, GateRef &depend, size_t numOfIns);
+    void NewLoopBegin(BytecodeRegion &bb);
+    void BuildBlockCircuitHead();
+    std::vector<GateRef> CreateGateInList(const BytecodeInfo &info);
+    void SetBlockPred(BytecodeRegion &bbNext, const GateRef &state, const GateRef &depend, bool isLoopBack);
+    GateRef NewConst(const BytecodeInfo &info);
+    void NewJSGate(BytecodeRegion &bb, const uint8_t *pc, GateRef &state, GateRef &depend);
+    void NewJump(BytecodeRegion &bb, const uint8_t *pc, GateRef &state, GateRef &depend);
+    void NewReturn(BytecodeRegion &bb, const uint8_t *pc, GateRef &state, GateRef &depend);
+    void NewByteCode(BytecodeRegion &bb, const uint8_t *pc, GateRef &state, GateRef &depend);
+    void BuildSubCircuit();
+    GateRef NewPhi(BytecodeRegion &bb, uint16_t reg, bool acc);
+    GateRef RenameVariable(size_t bbId, const uint8_t *end, uint16_t reg, bool acc);
+    void BuildCircuit();
+
     void PrintCollectBlockInfo(std::vector<CfgInfo> &bytecodeBlockInfos);
     size_t GetFunctionArgIndex(size_t currentVreg, size_t numVregs) const;
-    void PrintGraph(std::vector<BytecodeRegion> &graph);
-    void PrintBytecodeInfo(std::vector<BytecodeRegion> &graph);
-    void PrintBBInfo(std::vector<BytecodeRegion> &graph);
+    void PrintGraph();
+    void PrintBytecodeInfo();
+    void PrintBBInfo();
     static bool IsJump(EcmaOpcode opcode);
     static bool IsCondJump(EcmaOpcode opcode);
     static bool IsMov(EcmaOpcode opcode);
@@ -317,10 +344,11 @@ private:
     }
 
     kungfu::Circuit circuit_;
-    std::map<kungfu::GateRef, std::pair<size_t, uint8_t *>> jsgateToBytecode_;
-    std::map<uint8_t *, kungfu::GateRef> byteCodeToJSGate_;
-    std::map<int32_t, BytecodeRegion *> bbIdToBasicBlock_;
+    std::map<kungfu::GateRef, std::pair<size_t, const uint8_t *>> jsgateToBytecode_;
+    std::map<const uint8_t *, kungfu::GateRef> byteCodeToJSGate_;
+    BytecodeGraph graph_;
     std::array<GateRef, CommonArgIdx::NUM_OF_ARGS> commonArgs_ {};
+    std::vector<GateRef> actualArgs_ {};
     EcmaVM* vm_;
     const JSPandaFile* file_ {nullptr};
     const JSMethod* method_ {nullptr};

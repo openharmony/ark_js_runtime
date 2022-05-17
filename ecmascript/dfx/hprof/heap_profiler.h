@@ -32,10 +32,10 @@ class HeapProfiler : public HeapProfilerInterface {
 public:
     NO_MOVE_SEMANTIC(HeapProfiler);
     NO_COPY_SEMANTIC(HeapProfiler);
-    explicit HeapProfiler(const Heap *heap) : heap_(heap), hprofs_(heap_->GetEcmaVM()->GetChunk())
+    explicit HeapProfiler(const EcmaVM *vm) : vm_(vm), hprofs_(vm->GetChunk())
     {
         jsonSerializer_ =
-            const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->New<HeapSnapshotJSONSerializer>();
+            const_cast<NativeAreaAllocator *>(vm->GetNativeAreaAllocator())->New<HeapSnapshotJSONSerializer>();
         if (UNLIKELY(jsonSerializer_ == nullptr)) {
             LOG_ECMA(FATAL) << "alloc snapshot json serializer failed";
             UNREACHABLE();
@@ -47,28 +47,28 @@ public:
     /**
      * dump the specific snapshot in target format
      */
-    bool DumpHeapSnapshot(JSThread *thread, DumpFormat dumpFormat, Stream *stream, bool isVmMode = true);
+    bool DumpHeapSnapshot(DumpFormat dumpFormat, Stream *stream, bool isVmMode = true) override;
     void AddSnapshot(HeapSnapshot *snapshot);
 
-    bool StartHeapTracking(JSThread *thread, double timeInterval, bool isVmMode = true) override;
-    bool StopHeapTracking(JSThread *thread, Stream *stream) override;
+    bool StartHeapTracking(double timeInterval, bool isVmMode = true) override;
+    bool StopHeapTracking(Stream *stream) override;
 
 private:
     /**
      * tigger full gc to make sure no unreachable objects in heap
      */
-    bool ForceFullGC(JSThread *thread);
+    bool ForceFullGC(const EcmaVM *vm);
 
     /**
      * make a new heap snapshot and put it into a container eg, vector
      */
-    HeapSnapshot *MakeHeapSnapshot(JSThread *thread, SampleType sampleType, bool isVmMode = true);
+    HeapSnapshot *MakeHeapSnapshot(SampleType sampleType, bool isVmMode = true);
     std::string GenDumpFileName(DumpFormat dumpFormat);
     CString GetTimeStamp();
     void ClearSnapshot();
 
     const size_t MAX_NUM_HPROF = 5;  // ~10MB
-    const Heap *heap_;
+    const EcmaVM *vm_;
     ChunkVector<HeapSnapshot *> hprofs_;
     HeapSnapshotJSONSerializer *jsonSerializer_ {nullptr};
     std::unique_ptr<HeapTracker> heapTracker_;

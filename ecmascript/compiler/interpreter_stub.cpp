@@ -403,9 +403,9 @@ DECLARE_ASM_HANDLER(HandleNewObjDynRangePrefImm16V8)
                           IntPtr(0), sp, Int64(static_cast<uint64_t>(FrameType::ASM_INTERPRETER_FRAME)));
             SetCurrentSpFrame(glue, *newSp);
             GateRef numArgsWithThis = Int16Add(numArgs,
-                                               Int16(static_cast<int16_t>(1 - NUM_MANDATORY_JSFUNC_ARGS)));  // 1: this
+                                               Int16(1 - static_cast<int16_t>(NUM_MANDATORY_JSFUNC_ARGS)));  // 1: this
             GateRef retValue = CallRuntime(glue, RTSTUB_ID(CallNative),
-                                           {Int16BuildTaggedTypeWithNoGC(numArgsWithThis), *newSp, ctorMethod});
+                                           {Int16BuildTaggedTypeWithNoGC(numArgsWithThis)});
             SetCurrentSpFrame(glue, sp);
             Label hasPendingException(env);
             Label noPendingException(env);
@@ -5540,7 +5540,7 @@ DECLARE_ASM_HANDLER(HandleCallIRangeDynPrefImm16V8)
     USE_PARAMS()
     GateRef func = GetVregValue(sp, ZExtInt8ToPtr(funcReg));
     GateRef argv = PtrAdd(sp, PtrMul(
-        PtrAdd(ZExtInt8ToPtr(funcReg), IntPtr(1)), IntPtr(8))); // 1: skip this
+        PtrAdd(ZExtInt8ToPtr(funcReg), IntPtr(1)), IntPtr(8))); // 1: skip function
     GateRef jumpSize = IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_IMM16_V8));
     GateRef numArgs = ChangeInt32ToIntPtr(actualNumArgs);
     JSCallDispatch(glue, func, actualNumArgs, jumpSize,
@@ -5681,12 +5681,12 @@ void InterpreterStub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualN
                     { glue, nativeCode, actualNumArgs, func,
                       newTarget, thisValue, data[0], data[1], data[2] });
                 break;
-            case JSCallMode::CALL_WITH_ARGV: {
+            case JSCallMode::CALL_THIS_WITH_ARGV: {
                 auto argv = data[1];
-                thisValue = GetVregValue(sp, PtrAdd(argv, IntPtr(1)));
+                thisValue = GetVregValue(argv, IntPtr(-1));  // -1: this is just before argv
                 [[fallthrough]];
             }
-            case JSCallMode::CALL_THIS_WITH_ARGV:
+            case JSCallMode::CALL_WITH_ARGV:
                 retValue = CallNGCRuntime(glue, RTSTUB_ID(PushCallIRangeAndDispatchNative),
                     { glue, nativeCode, func, thisValue, data[0], data[1] });
                 break;

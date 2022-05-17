@@ -14,14 +14,11 @@
  */
 
 declare function print(str:any):string;
-function* foo(){
-    let index = 0;
-    while(index < 1) {
-        yield index++;
-    }
+function* foo(i:number){
+    yield i;
+    yield i + 7;
 }
+let gen = foo(10);
 
-let gen = foo();
-
-print(gen.next());
-print(gen.next());
+print(gen.next().value);
+print(gen.next().value);

@@ -11,10 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-group("ark_asm_test") {
-  testonly = true
-  deps = [
-    "helloworld:helloworldAsmAction",
-    "trycatch:trycatchAsmAction",
-  ]
+import("//ark/js_runtime/test/test_helper.gni")
+
+host_aot_test_action("getunmappedargs") {
+  deps = []
 }

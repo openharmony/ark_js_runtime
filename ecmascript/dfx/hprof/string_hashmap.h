@@ -16,10 +16,9 @@
 #ifndef ECMASCRIPT_HPROF_STRING_HASHMAP_H
 #define ECMASCRIPT_HPROF_STRING_HASHMAP_H
 
-#include "ecmascript/js_thread.h"
+#include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/c_string.h"
-#include "ecmascript/mem/heap.h"
 #include "os/mem.h"
 
 namespace panda::ecmascript {
@@ -30,9 +29,9 @@ using StringId = uint64_t;
 // To make sure when using String, it still stays where it was.
 class StringHashMap {
 public:
-    explicit StringHashMap(const Heap *heap) : heap_(heap)
+    explicit StringHashMap(const EcmaVM *vm) : vm_(vm)
     {
-        ASSERT(heap_ != nullptr);
+        ASSERT(vm_ != nullptr);
     }
     ~StringHashMap()
     {
@@ -73,7 +72,7 @@ private:
      * Free all memory
      */
     void Clear();
-    const Heap *heap_;
+    const EcmaVM *vm_;
     CVector<StringKey> orderedKey_;  // Used for Serialize Order
     size_t index_ {2};                       // 2: Offset the String-Table Header
     CUnorderedMap<StringKey, StringId> indexMap_;

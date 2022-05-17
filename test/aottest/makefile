@@ -37,7 +37,7 @@ ts2abc=$(root_dir)/out/hi3516dv300/clang_x64/obj/ark/ts2abc/ts2panda/build/src/i
 test_dir=$(root_dir)/ark/js_runtime/test/aottest
 out_dir=$(root_dir)/out/hi3516dv300/clang_x64/aottest
 case_dir=$(out_dir)/$(test_name)
-com_stub_args=--enable-stub-aot=1 --asmInter=1 --bc-stub-out=$(out_dir)/bc_stub.m --com-stub-out=$(out_dir)/com_stub.m
+com_stub_args=--enable-stub-aot=1 --asm-interpreter=true --bc-stub-out=$(out_dir)/bc_stub.m --com-stub-out=$(out_dir)/com_stub.m
 
 abc:
 	mkdir -p $(case_dir)

@@ -130,7 +130,8 @@ EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
     // Mem
     runtimeOptions.SetHeapSizeLimit(option.GetGcPoolSize());
     // asmInterpreter
-    runtimeOptions.SetAsmInterOption(option.GetAsmInterOption());
+    runtimeOptions.SetEnableAsmInterpreter(option.GetEnableAsmInterpreter());
+    runtimeOptions.SetAsmOpcodeDisableRange(option.GetAsmOpcodeDisableRange());
 
     // Dfx
     base_options::Options baseOptions("");
@@ -162,18 +163,16 @@ EcmaVM *JSNApi::CreateEcmaVM(const JSRuntimeOptions &options)
 
 void JSNApi::DestroyJSVM(EcmaVM *ecmaVm)
 {
-    {
-        os::memory::LockHolder lock(mutex);
-        if (!initialize_) {
-            return;
-        }
-        vmCount_--;
-        if (vmCount_ <= 0) {
-            DestroyMemMapAllocator();
-            initialize_ = false;
-        }
+    os::memory::LockHolder lock(mutex);
+    if (!initialize_) {
+        return;
     }
     EcmaVM::Destroy(ecmaVm);
+    vmCount_--;
+    if (vmCount_ <= 0) {
+        DestroyMemMapAllocator();
+        initialize_ = false;
+    }
 }
 
 void JSNApi::TriggerGC(const EcmaVM *vm,  TRIGGER_GC_TYPE gcType)
