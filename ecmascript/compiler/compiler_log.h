@@ -41,7 +41,9 @@ public:
 
     bool IncludesMethod(const std::string &methodName) const
     {
-        return methods_.find(methodName) != std::string::npos;
+        bool empty = methodName.empty();
+        bool found = methods_.find(methodName) != std::string::npos;
+        return !empty && found;
     }
 
 private:

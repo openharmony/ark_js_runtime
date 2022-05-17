@@ -1110,13 +1110,13 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(const uint8_t *pc)
             break;
         }
         case EcmaOpcode::NEWOBJDYNRANGE_PREF_IMM16_V8: {
-            uint16_t firstArgRegIdx = READ_INST_8_3();
             info.accOut = true;
             info.offset = BytecodeOffset::FIVE;
-            info.inputs.emplace_back(Immediate(READ_INST_16_1()));
-            info.inputs.emplace_back(Immediate(firstArgRegIdx));
-            info.inputs.emplace_back(VirtualRegister(firstArgRegIdx));
-            info.inputs.emplace_back(VirtualRegister(firstArgRegIdx + 1));
+            uint16_t range = READ_INST_16_1();
+            uint16_t firstArgRegIdx = READ_INST_8_3();
+            for (uint16_t i = 0; i < range; ++i) {
+                info.inputs.emplace_back(VirtualRegister(firstArgRegIdx + i));
+            }
             break;
         }
         case EcmaOpcode::EXPDYN_PREF_V8: {
