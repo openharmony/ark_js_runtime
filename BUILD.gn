@@ -193,9 +193,6 @@ config("ark_jsruntime_common_config") {
       defines += [ "PANDA_USE_MUSL" ]
     }
   }
-  if (enable_test_stub) {
-    defines += [ "ECMASCRIPT_ENABLE_TEST_STUB" ]
-  }
 
   if (build_public_version) {
     defines += [ "IS_PUBLIC_VERSION" ]
@@ -484,15 +481,12 @@ ecma_source = [
   "ecmascript/ts_types/ts_type_table.cpp",
   "ecmascript/ts_types/ts_loader.cpp",
   "ecmascript/ts_types/ts_obj_layout_info.cpp",
+  "ecmascript/stubs/test_runtime_stubs.cpp",
 ]
 
 if (!is_mingw && !is_mac) {
   ecma_source += [ "ecmascript/napi/dfx_jsnapi.cpp" ]
   ecma_source += [ "ecmascript/tooling/interface/file_stream.cpp" ]
-}
-
-if (enable_test_stub) {
-  ecma_source += [ "ecmascript/stubs/test_runtime_stubs.cpp" ]
 }
 
 ecma_debugger_source = []
