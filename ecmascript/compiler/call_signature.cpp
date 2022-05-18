@@ -495,6 +495,21 @@ DEF_CALL_SIGNATURE(AsmInterpreterEntry)
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
+DEF_CALL_SIGNATURE(GeneratorReEnterAsmInterp)
+{
+    /* 2 : 2 input parameters */
+    CallSignature generatorReEnterAsmInterp("GeneratorReEnterAsmInterp", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *callSign = generatorReEnterAsmInterp;
+    std::array<VariableType, 2> params = { /* 2 : 2 input parameters */
+        VariableType::NATIVE_POINTER(),  // glue
+        VariableType::JS_POINTER(),      // context
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
+}
+
 DEF_CALL_SIGNATURE(JSCallDispatch)
 {
     /* 3 : 3 input parameters */
