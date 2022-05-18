@@ -455,10 +455,15 @@ Node *HeapSnapshot::GenerateNode(JSTaggedValue entry, int sequenceId)
             entry.RemoveWeakTag();
         }
         if (entry.IsString()) {
-            node = GenerateStringNode(entry, sequenceId);
+            if (isPrivate_) {
+                node = GeneratePrivateStringNode(sequenceId);
+            } else {
+                node = GenerateStringNode(entry, sequenceId);
+            }
             if (node == nullptr) {
                 LOG(DEBUG, RUNTIME) << "string node nullptr";
             }
+            return node;
         }
         TaggedObject *obj = entry.GetTaggedObject();
         auto *baseClass = obj->GetClass();
@@ -484,9 +489,15 @@ Node *HeapSnapshot::GenerateNode(JSTaggedValue entry, int sequenceId)
         // A primitive value with tag will be regarded as a pointer
         auto *obj = reinterpret_cast<TaggedObject *>(entry.GetRawData());
         if (entry.IsInt()) {
-            primitiveName.append("Int:" + ToCString(entry.GetInt()));
+            primitiveName.append("Int:");
+            if (!isPrivate_) {
+                primitiveName.append(ToCString(entry.GetInt()));
+            }
         } else if (entry.IsDouble()) {
             primitiveName.append("Double:");
+            if (!isPrivate_) {
+                primitiveName.append(FloatToCString(entry.GetDouble()));
+            }
         } else if (entry.IsHole()) {
             primitiveName.append("Hole");
         } else if (entry.IsNull()) {
@@ -537,6 +548,37 @@ Node *HeapSnapshot::GenerateStringNode(JSTaggedValue entry, int sequenceId)
         const_cast<NativeAreaAllocator *>(vm_->GetNativeAreaAllocator())->Delete(node);
         return nullptr;
     }
+    return node;
+}
+
+Node *HeapSnapshot::GeneratePrivateStringNode(int sequenceId)
+{
+    if (privateStringNode_ != nullptr) {
+        return privateStringNode_;
+    }
+    Node *node = nullptr;
+    JSTaggedValue stringValue = vm_->GetJSThread()->GlobalConstants()->GetStringString();
+    auto originStr = static_cast<EcmaString *>(stringValue.GetTaggedObject());
+    size_t selfsize = originStr->ObjectSize();
+    CString strContent;
+    strContent.append(EntryVisitor::ConvertKey(stringValue));
+    node = Node::NewNode(vm_, sequenceId, nodeCount_, GetString(strContent), NodeType::PRIM_STRING, selfsize,
+                         stringValue.GetTaggedObject());
+    Node *existNode = entryMap_.FindOrInsertNode(node);  // Fast Index
+    if (existNode == node) {
+        if (sequenceId == sequenceId_ + SEQ_STEP) {
+            sequenceId_ = sequenceId;  // Odd Digit
+        }
+        InsertNodeUnique(node);
+    } else {
+        existNode->SetLive(true);
+    }
+    ASSERT(entryMap_.FindEntry(node->GetAddress())->GetAddress() == node->GetAddress());
+    if (existNode != node) {
+        const_cast<NativeAreaAllocator *>(vm_->GetNativeAreaAllocator())->Delete(node);
+        return nullptr;
+    }
+    privateStringNode_ = node;
     return node;
 }
 

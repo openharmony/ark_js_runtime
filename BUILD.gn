@@ -282,14 +282,6 @@ config("ark_jsruntime_common_config") {
       "PANDA_USE_32_BIT_POINTER",
     ]
   }
-
-  if (!is_linux) {
-    if (build_public_version && enable_bytrace) {
-      defines += [ "ENABLE_BYTRACE" ]
-      include_dirs = [ "//base/hiviewdfx/hitrace/interfaces/native/innerkits/include/hitrace_meter" ]
-    }
-    cflags_cc += [ "-Wno-gnu-zero-variadic-macro-arguments" ]
-  }
 }
 
 # ecmascript unit testcase config
@@ -565,6 +557,21 @@ source_set("libark_jsruntime_set") {
       run_with_asan) {
     deps += [ ":copy_asan_runtime" ]
   }
+
+  defines = []
+  include_dirs = []
+  if (is_ohos && is_standard_system) {
+    if (enable_bytrace) {
+      defines += [ "ENABLE_BYTRACE" ]
+      include_dirs += [ "//base/hiviewdfx/hitrace/interfaces/native/innerkits/include/hitrace_meter" ]
+    }
+    defines += [ "ENABLE_DUMP_IN_FAULTLOG" ]
+    include_dirs += [
+      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client",
+    ]
+
+    cflags_cc += [ "-Wno-gnu-zero-variadic-macro-arguments" ]
+  }
 }
 
 source_set("libark_js_intl_set") {
@@ -616,10 +623,11 @@ if (!defined(ark_independent_build)) {
     ]
 
     defines = []
-    if (!is_linux && !is_mingw && !is_mac) {
-      if (build_public_version && enable_bytrace) {
+    if (is_ohos && is_standard_system) {
+      external_deps = [ "faultloggerd:libfaultloggerd" ]
+      if (enable_bytrace) {
         defines += [ "ENABLE_BYTRACE" ]
-        external_deps = [ "hitrace_native:hitrace_meter" ]
+        external_deps += [ "hitrace_native:hitrace_meter" ]
       }
     }
 
@@ -639,11 +647,9 @@ if (!defined(ark_independent_build)) {
     deps = [ ":libark_jsruntime_test_set" ]
 
     defines = []
-    if (!is_linux && !is_mingw && !is_mac) {
-      if (build_public_version && enable_bytrace) {
-        defines += [ "ENABLE_BYTRACE" ]
-        external_deps = [ "hitrace_native:hitrace_meter" ]
-      }
+    if (is_ohos && is_standard_system && enable_bytrace) {
+      defines += [ "ENABLE_BYTRACE" ]
+      external_deps = [ "hitrace_native:hitrace_meter" ]
     }
 
     install_enable = false
