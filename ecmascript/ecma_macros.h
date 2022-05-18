@@ -19,7 +19,7 @@
 #include "ecmascript/common.h"
 #include "libpandabase/trace/trace.h"
 
-#if !defined(PANDA_TARGET_LINUX) && defined(IS_PUBLIC_VERSION) && defined(ENABLE_BYTRACE)
+#if defined(ENABLE_BYTRACE)
     #include "hitrace_meter.h"
 #endif
 
@@ -37,12 +37,9 @@
 #define COMPILER_OPTIONAL_LOG(level) LOG_IF(IsLogEnabled(), level, ECMASCRIPT)
 
 #if !defined(ENABLE_BYTRACE)
-    #define ECMA_BYTRACE_NAME(tag, name)
-#elif !defined(PANDA_TARGET_LINUX) && !defined(PANDA_TARGET_WINDOWS)                \
-        && !defined(PANDA_TARGET_MACOS) && defined(IS_PUBLIC_VERSION)
-    #define ECMA_BYTRACE_NAME(tag, name) HITRACE_METER_NAME(tag, name); trace::ScopedTrace scopedTrace(name)
-#elif defined(ENABLE_BYTRACE)
     #define ECMA_BYTRACE_NAME(tag, name) trace::ScopedTrace scopedTrace(name)
+#else
+    #define ECMA_BYTRACE_NAME(tag, name) HITRACE_METER_NAME(tag, name); trace::ScopedTrace scopedTrace(name)
 #endif
 
 /* Note: We can't statically decide the element type is a primitive or heap object, especially for */
