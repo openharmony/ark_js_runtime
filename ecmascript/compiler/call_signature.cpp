@@ -604,13 +604,13 @@ DEF_CALL_SIGNATURE(JSFunctionEntry)
     CallSignature jsCallFunctionEntry("JSFunctionEntry", 0, 6,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *callSign = jsCallFunctionEntry;
-    std::array<VariableType, 6> params = { // 4 : 4 input parameters
+    std::array<VariableType, 6> params = {  // 6 : 6 input parameters
         VariableType::NATIVE_POINTER(),     // glue
         VariableType::NATIVE_POINTER(),     // prev fp
-        VariableType::INT32(),             // expectedNumArgs
-        VariableType::INT32(),             // actualNumArgs
-        VariableType::NATIVE_POINTER(),    // argv
-        VariableType::NATIVE_POINTER(),    // codeAddr
+        VariableType::INT32(),              // expectedNumArgs
+        VariableType::INT32(),              // actualNumArgs
+        VariableType::NATIVE_POINTER(),     // argv
+        VariableType::NATIVE_POINTER(),     // codeAddr
     };
     callSign->SetParameters(params.data());
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);

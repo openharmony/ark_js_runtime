@@ -274,7 +274,7 @@ GateRef CircuitBuilder::CallRuntimeVarargs(GateRef glue, int index, GateRef argc
     GateRef target = IntPtr(index);
     auto label = GetCurrentLabel();
     auto depend = label->GetDepend();
-    assert(cs->IsRuntimeVAStub());  
+    assert(cs->IsRuntimeVAStub());
     GateRef result = Call(cs, glue, target, depend, {argc, argv});
     label->SetDepend(result);
     return result;

@@ -165,12 +165,15 @@ void AssemblerAarch64::Ldp(const VectorRegister &vt, const VectorRegister &vt2, 
         uint64_t imm = operand.GetImmediate().Value();
         switch (vt.GetScale()) {
             case S:
+                // 2 : 2 means remove trailing zeros
                 imm >>= 2;
                 break;
             case D:
+                // 3 : 3 means remove trailing zeros
                 imm >>= 3;
                 break;
             case Q:
+                // 4 : 4 means remove trailing zeros
                 imm >>= 4;
                 break;
             default:
@@ -205,12 +208,15 @@ void AssemblerAarch64::Stp(const VectorRegister &vt, const VectorRegister &vt2, 
         uint64_t imm = operand.GetImmediate().Value();
         switch (vt.GetScale()) {
             case S:
+                // 2 : 2 means remove trailing zeros
                 imm >>= 2;
                 break;
             case D:
+                // 3 : 3 means remove trailing zeros
                 imm >>= 3;
                 break;
             case Q:
+                // 4 : 4 means remove trailing zeros
                 imm >>= 4;
                 break;
             default:
@@ -228,7 +234,7 @@ void AssemblerAarch64::Stp(const VectorRegister &vt, const VectorRegister &vt2, 
 uint32_t AssemblerAarch64::GetOpcFromScale(Scale scale, bool ispair)
 {
     uint32_t opc = 0;
-    switch(scale) {
+    switch (scale) {
         case Scale::B:
         case Scale::H:
             ASSERT(!ispair);
@@ -241,6 +247,7 @@ uint32_t AssemblerAarch64::GetOpcFromScale(Scale scale, bool ispair)
             opc = ispair ? 1 : 1;
             break;
         case Scale::Q:
+            // 3 : means opc bit is 11
             opc = ispair ? 1 : 3;
             break;
         default:
@@ -614,12 +621,10 @@ void AssemblerAarch64::Movn(const Register &rd, uint64_t imm, int shift)
 
 void AssemblerAarch64::MovWide(uint32_t op, const Register &rd, uint64_t imm, int shift)
 {
-#define Imm16(x) (((x) << MOV_WIDE_Imm16_LOWBITS) & MOV_WIDE_Imm16_MASK)
-#define Hw(x)    (((x) << MOV_WIDE_Hw_LOWBITS) & MOV_WIDE_Hw_MASK)
-    uint32_t code = Sf(!rd.IsW()) | op | Imm16(imm) | Hw((shift/16)) | Rd(rd.GetId());
+    uint32_t imm_field = (imm << MOV_WIDE_Imm16_LOWBITS) & MOV_WIDE_Imm16_MASK;
+    uint32_t hw_field = ((shift / 16) << MOV_WIDE_Hw_LOWBITS) & MOV_WIDE_Hw_MASK;
+    uint32_t code = Sf(!rd.IsW()) | op | imm_field | hw_field | Rd(rd.GetId());
     EmitU32(code);
-#undef Imm16
-#undef Hw
 }
 
 
@@ -653,13 +658,11 @@ void AssemblerAarch64::BitWiseOpImm(BitwiseOpCode op, const Register &rd, const 
 
 void AssemblerAarch64::BitWiseOpShift(BitwiseOpCode op, const Register &rd, const Register &rn, const Operand &operand)
 {
-#define Shift(x)   (((x) << BITWISE_OP_Shift_LOWBITS) & BITWISE_OP_Shift_MASK)
-#define ShiftAmount(x)   (((x) << BITWISE_OP_ShiftAmount_LOWBITS) & BITWISE_OP_ShiftAmount_MASK)
-    uint32_t code = Sf(!rd.IsW()) | op | Shift(operand.GetShiftOption()) | Rm(operand.Reg().GetId())
-               | ShiftAmount(operand.GetShiftAmount()) | Rn(rn.GetId()) | Rd(rd.GetId());
+    uint32_t shift_field = (operand.GetShiftOption() << BITWISE_OP_Shift_LOWBITS) & BITWISE_OP_Shift_MASK;
+    uint32_t shift_amount = (operand.GetShiftAmount() << BITWISE_OP_ShiftAmount_LOWBITS) & BITWISE_OP_ShiftAmount_MASK;
+    uint32_t code = Sf(!rd.IsW()) | op | shift_field | Rm(operand.Reg().GetId())
+               |shift_amount | Rn(rn.GetId()) | Rd(rd.GetId());
     EmitU32(code);
-#undef ShiftAmount
-#undef Shift
 }
 
 void AssemblerAarch64::Lsl(const Register &rd, const Register &rn, const Register &rm)
@@ -671,7 +674,7 @@ void AssemblerAarch64::Lsl(const Register &rd, const Register &rn, const Registe
 void AssemblerAarch64::Lsr(const Register &rd, const Register &rn, const Register &rm)
 {
     uint32_t code = Sf(!rd.IsW()) | LSR_Reg | Rm(rm.GetId()) | Rn(rn.GetId()) | Rd(rd.GetId());
-    EmitU32(code); 
+    EmitU32(code);
 }
 
 void AssemblerAarch64::Ubfm(const Register &rd, const Register &rn, unsigned immr, unsigned imms)
@@ -681,7 +684,7 @@ void AssemblerAarch64::Ubfm(const Register &rd, const Register &rn, unsigned imm
     uint32_t immr_field = (immr << BITWISE_OP_Immr_LOWBITS) & BITWISE_OP_Immr_MASK;
     uint32_t imms_field = (imms << BITWISE_OP_Imms_LOWBITS) & BITWISE_OP_Imms_MASK;
     uint32_t code = Sf(sf) | UBFM | n | immr_field | imms_field | Rn(rn.GetId()) | Rd(rd.GetId());
-    EmitU32(code);    
+    EmitU32(code);
 }
 
 void AssemblerAarch64::Lsr(const Register &rd, const Register &rn, unsigned shift)
@@ -1065,7 +1068,6 @@ void AssemblerAarch64::Ret(const Register &rn)
 
 void AssemblerAarch64::Brk(const Immediate &imm)
 {
-
     uint32_t brk_number_field =
         (static_cast<uint32_t>(imm.Value()) << BRK_Imm16_LOWBITS) & BRK_Imm16_MASK;
     uint32_t code = BRKImm | brk_number_field;

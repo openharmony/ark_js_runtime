@@ -26,7 +26,7 @@ void AssemblerModule::Run(const std::string &triple, Chunk* chunk)
     SetUpForAsmStubs();
     if (triple.compare("x86_64-unknown-linux-gnu") == 0) {
         GenerateStubsX64(chunk);
-    } else if (triple.compare("aarch64-unknown-linux-gnu") == 0){
+    } else if (triple.compare("aarch64-unknown-linux-gnu") == 0) {
         GenerateStubsAarch64(chunk);
     } else {
         UNREACHABLE();
@@ -70,7 +70,7 @@ void AssemblerModule::GenerateStubsAarch64(Chunk* chunk)
 void AssemblerModule::SetUpForAsmStubs()
 {
     RuntimeStubCSigns::GetASMCSigns(asmCallSigns_);
-    for(auto cs : asmCallSigns_) {
+    for (auto cs : asmCallSigns_) {
         symbolTable_[cs->GetID()] = new Label();
     }
 }

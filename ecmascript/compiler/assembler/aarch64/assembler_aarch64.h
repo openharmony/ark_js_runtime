@@ -84,7 +84,7 @@ public:
     }
 private:
     VectorRegisterId reg_;
-    Scale scale_; 
+    Scale scale_;
 };
 
 class Immediate {
