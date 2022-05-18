@@ -58,16 +58,6 @@ JSBackend::~JSBackend()
     DebuggerApi::DestroyJSDebugger(debugger_);
 }
 
-void JSBackend::ProcessCommand()
-{
-    frontend_->ProcessCommand(ecmaVm_);
-}
-
-void JSBackend::WaitForDebugger()
-{
-    frontend_->WaitForDebugger(ecmaVm_);
-}
-
 void JSBackend::NotifyPaused(std::optional<JSPtLocation> location, PauseReason reason)
 {
     if (!pauseOnException_ && reason == EXCEPTION) {
@@ -116,7 +106,7 @@ void JSBackend::NotifyPaused(std::optional<JSPtLocation> location, PauseReason r
     frontend_->SendNotification(ecmaVm_, std::move(paused));
 
     // Waiting for Debugger
-    frontend_->WaitForDebugger(ecmaVm_);
+    frontend_->WaitForDebugger();
     if (!exception->IsHole()) {
         DebuggerApi::SetException(ecmaVm_, exception);
     }

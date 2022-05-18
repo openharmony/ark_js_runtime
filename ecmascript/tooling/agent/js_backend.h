@@ -33,8 +33,6 @@ public:
     ~JSBackend();
 
     // add for hooks
-    void ProcessCommand();
-    void WaitForDebugger();
     void NotifyPaused(std::optional<JSPtLocation> location, PauseReason reason);
     void NotifyResume();
     void NotifyAllScriptParsed();
