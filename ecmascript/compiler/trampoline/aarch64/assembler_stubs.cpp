@@ -450,7 +450,7 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
         Register nativeFuncAddr(X4);
         __ Ldr(nativeFuncAddr, MemoryOperand(method, JSMethod::GetNativePointerOffset()));
         __ Str(nativeFuncAddr, MemoryOperand(sp, -8, MemoryOperand::AddrMode::PREINDEX));
-        __ CallAssemblerStub(RTSTUB_ID(CallBuiltinTrampoline), W);
+        __ CallAssemblerStub(RTSTUB_ID(CallBuiltinTrampoline), true);
     }
 
     __ Bind(&callOptimizedMethod);
@@ -469,7 +469,7 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
         __ Cmp(arg2.W(), expectedNumArgs);
         __ Add(argV, sp, Immediate(8));
         __ B(Condition::HI, &directCallCodeEntry);
-        __ CallAssemblerStub(RTSTUB_ID(OptimizedCallOptimized), W);
+        __ CallAssemblerStub(RTSTUB_ID(OptimizedCallOptimized), true);
         __ Bind(&directCallCodeEntry);
         __ Br(codeAddress);
     }
