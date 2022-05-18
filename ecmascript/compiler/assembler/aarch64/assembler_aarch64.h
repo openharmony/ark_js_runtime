@@ -21,14 +21,14 @@
 namespace panda::ecmascript::aarch64 {
 class Register {
 public:
-    Register(RegisterId reg, bool isWReg = false) : reg_(reg), isWReg_(isWReg) {};
+    Register(RegisterId reg, RegisterType type = RegisterType::X) : reg_(reg), type_(type) {};
     Register W() const
     {
-        return Register(reg_, true);
+        return Register(reg_, RegisterType::W);
     }
     Register X() const
     {
-        return Register(reg_, false);
+        return Register(reg_, RegisterType::X);
     }
     inline bool IsSp() const
     {
@@ -36,7 +36,7 @@ public:
     }
     inline bool IsW() const
     {
-        return isWReg_;
+        return type_ == RegisterType::W;
     }
     inline RegisterId GetId() const
     {
@@ -48,7 +48,7 @@ public:
     }
 private:
     RegisterId reg_;
-    bool isWReg_;
+    RegisterType type_;
 };
 
 class VectorRegister {
@@ -131,7 +131,7 @@ private:
 class Operand {
 public:
     Operand(Immediate imm)
-        : reg_(RegisterId::INVALID_REG, false), extend_(Extend::NO_EXTEND), shift_(Shift::NO_SHIFT),
+        : reg_(RegisterId::INVALID_REG), extend_(Extend::NO_EXTEND), shift_(Shift::NO_SHIFT),
           shiftAmount_(0), immediate_(imm)
     {
     }
@@ -214,7 +214,7 @@ public:
     {
     }
     MemoryOperand(Register base, int64_t offset, AddrMode addrmod = AddrMode::OFFSET)
-        : base_(base), offsetReg_(RegisterId::INVALID_REG, false), offsetImm_(offset), addrmod_(addrmod),
+        : base_(base), offsetReg_(RegisterId::INVALID_REG), offsetImm_(offset), addrmod_(addrmod),
           extend_(Extend::NO_EXTEND), shift_(Shift::NO_SHIFT), shiftAmount_(0)
     {
     }
@@ -317,6 +317,56 @@ public:
     void Brk(const Immediate &imm);
     void Bind(Label *target);
 private:
+    // common reg field defines
+    inline uint32_t Rd(uint32_t id)
+    {
+        return (id << COMMON_REG_Rd_LOWBITS) & COMMON_REG_Rd_MASK;
+    }
+
+    inline uint32_t Rn(uint32_t id)
+    {
+        return (id << COMMON_REG_Rn_LOWBITS) & COMMON_REG_Rn_MASK;
+    }
+
+    inline uint32_t Rm(uint32_t id)
+    {
+        return (id << COMMON_REG_Rm_LOWBITS) & COMMON_REG_Rm_MASK;
+    }
+
+    inline uint32_t Rt(uint32_t id)
+    {
+        return (id << COMMON_REG_Rt_LOWBITS) & COMMON_REG_Rt_MASK;
+    }
+
+    inline uint32_t Rt2(uint32_t id)
+    {
+        return (id << COMMON_REG_Rt2_LOWBITS) & COMMON_REG_Rt2_MASK;
+    }
+
+    inline uint32_t Sf(uint32_t id)
+    {
+        return (id << COMMON_REG_Sf_LOWBITS) & COMMON_REG_Sf_MASK;
+    }
+
+    inline uint32_t LoadAndStorePairImm(uint32_t imm)
+    {
+        return (((imm) << LDP_STP_Imm7_LOWBITS) & LDP_STP_Imm7_MASK);
+    }
+
+    inline uint32_t LoadAndStoreImm(uint32_t imm, bool isSigned)
+    {
+        if (isSigned) {
+            return (imm << LDR_STR_Imm9_LOWBITS) & LDR_STR_Imm9_MASK;
+        } else {
+            return (imm << LDR_STR_Imm12_LOWBITS) & LDR_STR_Imm12_MASK;
+        }
+    }
+
+    inline uint32_t BranchImm19(uint32_t imm)
+    {
+        return (imm << BRANCH_Imm19_LOWBITS) & BRANCH_Imm19_MASK;
+    }
+
     uint32_t GetOpcFromScale(Scale scale, bool ispair);
     bool IsAddSubImm(uint64_t imm);
     void AddSubImm(AddSubOpCode op, const Register &rd, const Register &rn, bool setFlags, uint64_t imm);

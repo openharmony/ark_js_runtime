@@ -72,11 +72,11 @@ HWTEST_F_L0(AssemblerStubsTest, OptimizedCallOptimized)
     ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
 
-HWTEST_F_L0(AssemblerStubsTest, CallNativeTrampoline)
+HWTEST_F_L0(AssemblerStubsTest, CallBuiltinTrampoline)
 {
     x64::AssemblerX64 masm(chunk_);
     x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
-    x64::AssemblerStubsX64::CallNativeTrampoline(assemblerX64);
+    x64::AssemblerStubsX64::CallBuiltinTrampoline(assemblerX64);
     ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
 

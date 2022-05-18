@@ -36,5 +36,5 @@ public:
 private:
     AssemblerModule *module_ {nullptr};
 };
-}  // panda::ecmascript::x64
-#endif  // ECMASCRIPT_COMPILER_EXTENDED_ASSEMBLER_X64_H
+}  // panda::ecmascript::aarch64
+#endif  // ECMASCRIPT_COMPILER_AARCH64_EXTEND_ASSEMBLER_H

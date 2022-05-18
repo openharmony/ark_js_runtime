@@ -240,7 +240,7 @@ void AssemblerStubsX64::OptimizedCallOptimized(ExtendedAssembler *assembler)
     __ Ret();
 }
 
-// uint64_t CallNativeTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
+// uint64_t CallBuiltinTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // Input:
 // %rax - glue
@@ -270,9 +270,9 @@ void AssemblerStubsX64::OptimizedCallOptimized(ExtendedAssembler *assembler)
 //  sp - 8 : pc
 //  sp - 16: rbp <---------current rbp & current sp
 //  current sp - 8:  type
-void AssemblerStubsX64::CallNativeTrampoline(ExtendedAssembler *assembler)
+void AssemblerStubsX64::CallBuiltinTrampoline(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(CallNativeTrampoline));
+    __ BindAssemblerStub(RTSTUB_ID(CallBuiltinTrampoline));
     Register glueReg = rax;
     __ Pushq(rbp);
     __ Movq(rsp, rbp);
@@ -463,7 +463,7 @@ void AssemblerStubsX64::JSCallWithArgV(ExtendedAssembler *assembler)
         __ Push(nativePointer); // native code address
         __ Push(rax); // pc
         __ Movq(glueReg, rax);
-        __ CallAssemblerStub(RTSTUB_ID(CallNativeTrampoline), true);
+        __ CallAssemblerStub(RTSTUB_ID(CallBuiltinTrampoline), true);
     }
 
     __ Bind(&lJSBoundFunction);
@@ -716,7 +716,7 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
         __ Push(nativePointer); // native code address
         __ Push(rax); // pc
         __ Movq(glueReg, rax);
-        __ CallAssemblerStub(RTSTUB_ID(CallNativeTrampoline), true);
+        __ CallAssemblerStub(RTSTUB_ID(CallBuiltinTrampoline), true);
     }
 
     __ Bind(&lJSBoundFunction);

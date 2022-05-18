@@ -22,13 +22,32 @@
 namespace panda::ecmascript::aarch64 {
 class AssemblerStubs {
 public:
+    static inline int64_t GetStackArgOffSetToFp(unsigned argId)
+    {
+        //   +--------------------------+
+        //   |       argv0              | calltarget , newtARGET, this, ....
+        //   +--------------------------+ ---
+        //   |       argc               |   ^
+        //   |--------------------------|   arguments
+        //   |       codeAddress        |   |
+        //   |--------------------------|   |
+        //   |       returnAddr         |   |
+        //   |--------------------------| Fixed OptimizedLeaveFrame
+        //   |       callsiteFp         |   |
+        //   |--------------------------|   |
+        //   |       frameType          |   v
+        //   +--------------------------+ ---
+        // 16 : 16 means arguments offset to fp
+        return 16 + argId * 8;  // 8 : 8 means size of each args
+    }
+
     static void CallRuntime(ExtendedAssembler *assembler);
 
     static void JSFunctionEntry(ExtendedAssembler *assembler);
 
     static void OptimizedCallOptimized(ExtendedAssembler *assembler);
 
-    static void CallNativeTrampoline(ExtendedAssembler *assembler);
+    static void CallBuiltinTrampoline(ExtendedAssembler *assembler);
 
     static void JSCallWithArgV(ExtendedAssembler *assembler);
 

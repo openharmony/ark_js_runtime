@@ -12,13 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "assembler/x64/assembler_x64.h"
-#include "assembler/aarch64/assembler_aarch64.h"
-#include "call_signature.h"
-#include "rt_call_signature.h"
-#include "trampoline/x64/assembler_stubs_x64.h"
-#include "trampoline/aarch64/assembler_stubs.h"
 #include "assembler_module.h"
+#include "ecmascript/compiler/assembler/x64/assembler_x64.h"
+#include "ecmascript/compiler/assembler/aarch64/assembler_aarch64.h"
+#include "ecmascript/compiler/call_signature.h"
+#include "ecmascript/compiler/rt_call_signature.h"
+#include "ecmascript/compiler/trampoline/x64/assembler_stubs_x64.h"
+#include "ecmascript/compiler/trampoline/aarch64/assembler_stubs.h"
 
 namespace panda::ecmascript::kungfu {
 void AssemblerModule::Run(const std::string &triple, Chunk* chunk)
@@ -28,6 +28,8 @@ void AssemblerModule::Run(const std::string &triple, Chunk* chunk)
         GenerateStubsX64(chunk);
     } else if (triple.compare("aarch64-unknown-linux-gnu") == 0){
         GenerateStubsAarch64(chunk);
+    } else {
+        UNREACHABLE();
     }
 }
 

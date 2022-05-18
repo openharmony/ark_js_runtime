@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-#include "assembler/assembler.h"
+#include "ecmascript/compiler/assembler/assembler.h"
 #include "ecmascript/compiler/call_signature.h"
 #include "ecmascript/compiler/rt_call_signature.h"
 #include "ecmascript/stubs/runtime_stubs.h"
@@ -48,7 +48,7 @@ public:
         if (label->IsBound()) {
             return label->GetPos();
         } else {
-            return -1;
+            UNREACHABLE();
         }
     }
 

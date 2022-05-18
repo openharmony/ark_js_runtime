@@ -339,7 +339,7 @@ OptimizedCallOptimized:
     ldp     x29, x30, [sp], #16
     ret
 
-// uint64_t CallNativeTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
+// uint64_t CallBuiltinTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // Input:
 // %x0 - glue
@@ -370,9 +370,9 @@ OptimizedCallOptimized:
 //  sp - 16: rbp <---------current rbp & current sp
 //  current sp - 8:  type
 
-.global CallNativeTrampoline
-.type CallNativeTrampoline, %function
-CallNativeTrampoline:
+.global CallBuiltinTrampoline
+.type CallBuiltinTrampoline, %function
+CallBuiltinTrampoline:
     stp     x29, x30, [sp, #-16]!  // save register for fp, rip
     mov     x29, sp                // set frame pointer = callsiteFp
     str     x29, [x0, #ASM_GLUE_CURRENT_FRAME_OFFSET]       // save to thread->currentFrame_
@@ -478,7 +478,7 @@ JSCall:
 .LCallNativeMethod:
     ldr     x4, [x2, #JS_METHOD_NATIVE_POINTER_OFFSET]  // get native pointer
     str     x4, [sp, #-8]!                              // push native address
-    b       CallNativeTrampoline
+    b       CallBuiltinTrampoline
 
 // Input:
 // x0 -- glue

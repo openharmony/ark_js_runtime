@@ -145,12 +145,12 @@ void AssemblerStubs::JSFunctionEntry(ExtendedAssembler *assembler)
 
     Label copyUndefined;
     Label copyArguments;
-    Register tmp(X19, true);
+    Register tmp(X19, W);
     __ Mov(glue, Register(X0));
     __ Mov(tmp, expectedNumArgs.W());
     __ Cmp(tmp, actualNumArgs.W());
     __ B(Condition::LS, &copyArguments);
-    Register count(X9, true);
+    Register count(X9, W);
     Register undefValue(X8);
     __ Mov(count, tmp.W());
     __ Mov(undefValue, Immediate(JSTaggedValue::VALUE_UNDEFINED));
@@ -165,7 +165,7 @@ void AssemblerStubs::JSFunctionEntry(ExtendedAssembler *assembler)
     __ Bind(&copyArguments);
     {
         Register argVEnd(X9);
-        Register argC(X8, true);
+        Register argC(X8, W);
         Register argValue(X10);
         Label copyArgLoop;
 
@@ -242,8 +242,8 @@ void AssemblerStubs::OptimizedCallOptimized(ExtendedAssembler *assembler)
     Register tmp(X19);
     __ Str(tmp, MemoryOperand(sp, -8, MemoryOperand::AddrMode::PREINDEX));
 
-    Register count(X5, true);
-    Register actualNumArgs(X2, true);
+    Register count(X5, W);
+    Register actualNumArgs(X2, W);
     Label copyArguments;
     __ Mov(count, expectedNumArgs);
     __ Cmp(count, actualNumArgs);
@@ -292,7 +292,7 @@ void AssemblerStubs::OptimizedCallOptimized(ExtendedAssembler *assembler)
     __ Ret();
 }
 
-// uint64_t CallNativeTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
+// uint64_t CallBuiltinTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // Input:
 // %x0 - glue
@@ -323,9 +323,9 @@ void AssemblerStubs::OptimizedCallOptimized(ExtendedAssembler *assembler)
 //  sp - 16: rbp <---------current rbp & current sp
 //  current sp - 8:  type
 
-void AssemblerStubs::CallNativeTrampoline(ExtendedAssembler *assembler)
+void AssemblerStubs::CallBuiltinTrampoline(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(CallNativeTrampoline));
+    __ BindAssemblerStub(RTSTUB_ID(CallBuiltinTrampoline));
     __ SaveFpAndLr();
     // save to thread currentLeaveFrame_;
     Register fp(X29);
@@ -341,7 +341,7 @@ void AssemblerStubs::CallNativeTrampoline(ExtendedAssembler *assembler)
     __ Stp(nativeFuncAddr, frameType, MemoryOperand(sp, -16, MemoryOperand::AddrMode::PREINDEX));
     
     // load runtime trampoline address
-    __ Ldr(nativeFuncAddr, MemoryOperand(fp, 16));
+    __ Ldr(nativeFuncAddr, MemoryOperand(fp, GetStackArgOffSetToFp(0)));
 
     // construct ecma_runtime_call_info
     __ Sub(sp, sp, Immediate(sizeof(EcmaRuntimeCallInfo)));
@@ -351,11 +351,11 @@ void AssemblerStubs::CallNativeTrampoline(ExtendedAssembler *assembler)
     __ Sub(thread, glue, glueToThread);   // thread
     __ Str(thread, MemoryOperand(sp, 0));
     Register argC(X0);
-    __ Ldr(argC, MemoryOperand(fp, 24));  // argc
+    __ Ldr(argC, MemoryOperand(fp, GetStackArgOffSetToFp(1)));  // argc
     __ Sub(argC, argC, Immediate(3));
     __ Str(argC, MemoryOperand(sp, EcmaRuntimeCallInfo::GetNumArgsOffset()));
     Register argV(X0);
-    __ Add(argV, fp, Immediate(32));    // argV
+    __ Add(argV, fp, Immediate(GetStackArgOffSetToFp(2)));    // argV
     __ Str(argV, MemoryOperand(sp, EcmaRuntimeCallInfo::GetStackArgsOffset()));
     Register zero(X0);
     __ Mov(zero, 0);
@@ -427,7 +427,7 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
     __ Ldr(bitfield, MemoryOperand(jshclass, JSHClass::BIT_FIELD_OFFSET));
     __ Tbz(bitfield, JSHClass::CallableBit::START_BIT, &nonCallable);
 
-    Register jstype(X3, true);
+    Register jstype(X3, W);
     __ And(jstype, bitfield, LogicalImmediate::Create(0xFF, 32));
     __ Sub(jstype, jstype, Immediate(4));
     __ Cmp(jstype, Immediate(9));
@@ -450,12 +450,12 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
         Register nativeFuncAddr(X4);
         __ Ldr(nativeFuncAddr, MemoryOperand(method, JSMethod::GetNativePointerOffset()));
         __ Str(nativeFuncAddr, MemoryOperand(sp, -8, MemoryOperand::AddrMode::PREINDEX));
-        __ CallAssemblerStub(RTSTUB_ID(CallNativeTrampoline), true);
+        __ CallAssemblerStub(RTSTUB_ID(CallBuiltinTrampoline), W);
     }
 
     __ Bind(&callOptimizedMethod);
     {
-        Register expectedNumArgs(X1, true);
+        Register expectedNumArgs(X1, W);
         Register arg2(X2);
         Register codeAddress(X3);
         Register argV(X4);
@@ -469,7 +469,7 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
         __ Cmp(arg2.W(), expectedNumArgs);
         __ Add(argV, sp, Immediate(8));
         __ B(Condition::HI, &directCallCodeEntry);
-        __ CallAssemblerStub(RTSTUB_ID(OptimizedCallOptimized), true);
+        __ CallAssemblerStub(RTSTUB_ID(OptimizedCallOptimized), W);
         __ Bind(&directCallCodeEntry);
         __ Br(codeAddress);
     }
@@ -477,8 +477,8 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
     Label jsProxy;
     __ Bind(&notJSFunction);
     {
-        Register jstype2(X5, true);
-        __ And(jstype2, bitfield.W(), LogicalImmediate::Create(0xff, 32));
+        Register jstype2(X5, W);
+        __ And(jstype2, bitfield.W(), LogicalImmediate::Create(0xff, RegWSize));
         __ Cmp(jstype2, Immediate(static_cast<int64_t>(JSType::JS_BOUND_FUNCTION)));
         __ B(Condition::EQ, &jsBoundFunction);
         __ Cmp(jstype2, Immediate(static_cast<int64_t>(JSType::JS_PROXY)));
@@ -502,7 +502,7 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
 
         
         Register boundLength(X2);
-        Register realArgC(X19, true);
+        Register realArgC(X19, W);
         Label copyBoundArgument;
         Label copyArgument;
         Label pushCallTarget;

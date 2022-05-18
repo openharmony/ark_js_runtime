@@ -25,6 +25,14 @@ enum RegisterId : uint8_t {
     INVALID_REG = 0xFF,
 };
 
+enum RegisterType {
+    W = 0,
+    X = 1,
+};
+
+static const int RegXSize = 64;
+static const int RegWSize = 32;
+
 enum VectorRegisterId : uint8_t {
     v0, v1, v2, v3, v4, v5, v6, v7,
     v8, v9, v10, v11, v12, v13, v14, v15,
@@ -145,18 +153,18 @@ enum CompareCode {
 
 // memory code
 enum LoadStorePairOpCode {
-    LDP_Post    = 0x28c00000,
-    LDP_Pre     = 0x29c00000,
-    LDP_Offset  = 0x29400000,
-    LDP_V_Post  = 0x2cc00000,
-    LDP_V_Pre   = 0x2dc00000,
-    LDP_V_Offset  = 0x2d40000,
-    STP_Post    = 0x28800000,
-    STP_Pre     = 0x29800000,
-    STP_Offset  = 0x29000000,
-    STP_V_Post  = 0x2c800000,
-    STP_V_Pre   = 0x2d800000,
-    STP_V_Offset  = 0x2d00000,
+    LDP_Post     = 0x28c00000,
+    LDP_Pre      = 0x29c00000,
+    LDP_Offset   = 0x29400000,
+    LDP_V_Post   = 0x2cc00000,
+    LDP_V_Pre    = 0x2dc00000,
+    LDP_V_Offset = 0x2d400000,
+    STP_Post     = 0x28800000,
+    STP_Pre      = 0x29800000,
+    STP_Offset   = 0x29000000,
+    STP_V_Post   = 0x2c800000,
+    STP_V_Pre    = 0x2d800000,
+    STP_V_Offset = 0x2d00000,
 };
 
 enum LoadStoreOpCode {
