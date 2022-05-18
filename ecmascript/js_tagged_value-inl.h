@@ -911,6 +911,11 @@ inline bool JSTaggedValue::IsJSSetIterator() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSSetIterator();
 }
 
+inline bool JSTaggedValue::IsJSRegExpIterator() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSRegExpIterator();
+}
+
 inline bool JSTaggedValue::IsJSMapIterator() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSMapIterator();

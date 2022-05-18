@@ -51,6 +51,7 @@
 #include "ecmascript/js_proxy.h"
 #include "ecmascript/js_realm.h"
 #include "ecmascript/js_regexp.h"
+#include "ecmascript/js_regexp_iterator.h"
 #include "ecmascript/js_set.h"
 #include "ecmascript/js_set_iterator.h"
 #include "ecmascript/js_symbol.h"
@@ -174,6 +175,8 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
                 factory->NewEcmaDynClass(dynClassClass, TSFunctionType::SIZE, JSType::TS_FUNCTION_TYPE));
     SetConstant(ConstantIndex::TS_ARRAY_TYPE_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, TSArrayType::SIZE, JSType::TS_ARRAY_TYPE));
+    SetConstant(ConstantIndex::JS_REGEXP_ITERATOR_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, JSRegExpIterator::SIZE, JSType::JS_REG_EXP_ITERATOR));
     SetConstant(ConstantIndex::JS_SET_ITERATOR_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, JSSetIterator::SIZE, JSType::JS_SET_ITERATOR));
     SetConstant(ConstantIndex::JS_MAP_ITERATOR_CLASS_INDEX,
@@ -231,6 +234,8 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::TREEMAP_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
     SetConstant(ConstantIndex::TREESET_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
     SetConstant(ConstantIndex::QUEUE_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
+    SetConstant(ConstantIndex::PLAIN_ARRAY_FUNCTION_INDEX, JSTaggedValue::Undefined());
+    SetConstant(ConstantIndex::PLAIN_ARRAY_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
     SetConstant(ConstantIndex::DEQUE_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
     SetConstant(ConstantIndex::STACK_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
     /* SymbolTable *RegisterSymbols */
@@ -462,6 +467,8 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::FALLBACK_INDEX, factory->NewFromASCII("fallback"));
     SetConstant(ConstantIndex::DISJUNCTION_INDEX, factory->NewFromASCII("disjunction"));
     SetConstant(ConstantIndex::ELEMENT_INDEX, factory->NewFromASCII("element"));
+    SetConstant(ConstantIndex::FLAGS_INDEX, factory->NewFromASCII("flags"));
+    SetConstant(ConstantIndex::G_INDEX, factory->NewFromASCII("g"));
 
     auto accessor = factory->NewInternalAccessor(reinterpret_cast<void *>(JSFunction::PrototypeSetter),
                                                  reinterpret_cast<void *>(JSFunction::PrototypeGetter));

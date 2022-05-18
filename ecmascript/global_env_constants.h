@@ -79,6 +79,7 @@ class JSThread;
     V(JSTaggedValue, TSFunctionTypeClass, TS_FUNCTION_TYPE_CLASS_INDEX, ecma_roots_class)                             \
     V(JSTaggedValue, TSArrayTypeClass, TS_ARRAY_TYPE_CLASS_INDEX, ecma_roots_class)                                   \
     V(JSTaggedValue, JSSetIteratorClass, JS_SET_ITERATOR_CLASS_INDEX, ecma_roots_class)                               \
+    V(JSTaggedValue, JSRegExpIteratorClass, JS_REGEXP_ITERATOR_CLASS_INDEX, ecma_roots_class)                         \
     V(JSTaggedValue, JSMapIteratorClass, JS_MAP_ITERATOR_CLASS_INDEX, ecma_roots_class)                               \
     V(JSTaggedValue, JSArrayIteratorClass, JS_ARRAY_ITERATOR_CLASS_INDEX, ecma_roots_class)                           \
     V(JSTaggedValue, JSAPIArrayListIteratorClass, JS_API_ARRAYLIST_ITERATOR_CLASS_INDEX, ecma_roots_class)            \
@@ -336,7 +337,9 @@ class JSThread;
     V(JSTaggedValue, NoneString, NONE_INDEX, none)                                                                    \
     V(JSTaggedValue, FallbackString, FALLBACK_INDEX, fallback)                                                        \
     V(JSTaggedValue, DisjunctionString, DISJUNCTION_INDEX, disjunction)                                               \
-    V(JSTaggedValue, ElementString, ELEMENT_INDEX, element)
+    V(JSTaggedValue, ElementString, ELEMENT_INDEX, element)                                                           \
+    V(JSTaggedValue, FlagsString, FLAGS_INDEX, flags)                                                                 \
+    V(JSTaggedValue, GString, G_INDEX, g)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GLOBAL_ENV_CONSTANT_ACCESSOR(V)                                                           \

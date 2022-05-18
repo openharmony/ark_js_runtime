@@ -97,6 +97,7 @@ class JSThread;
     V(JSTaggedValue, ToStringTagSymbol, TOSTRINGTAG_SYMBOL_INDEX)                                   \
     V(JSTaggedValue, IteratorSymbol, ITERATOR_SYMBOL_INDEX)                                         \
     V(JSTaggedValue, MatchSymbol, MATCH_SYMBOL_INDEX)                                               \
+    V(JSTaggedValue, MatchAllSymbol, MATCH_All_SYMBOL_INDEX)                                        \
     V(JSTaggedValue, ReplaceSymbol, REPLACE_SYMBOL_INDEX)                                           \
     V(JSTaggedValue, SearchSymbol, SEARCH_SYMBOL_INDEX)                                             \
     V(JSTaggedValue, SpeciesSymbol, SPECIES_SYMBOL_INDEX)                                           \
@@ -111,6 +112,7 @@ class JSThread;
     V(JSTaggedValue, StringIterator, STRING_ITERATOR_INDEX)                                         \
     V(JSTaggedValue, MapIteratorPrototype, MAP_ITERATOR_PROTOTYPE_INDEX)                            \
     V(JSTaggedValue, SetIteratorPrototype, SET_ITERATOR_PROTOTYPE_INDEX)                            \
+    V(JSTaggedValue, RegExpIteratorPrototype, REGEXP_ITERATOR_PROTOTYPE_INDEX)                      \
     V(JSTaggedValue, ArrayIteratorPrototype, ARRAY_ITERATOR_PROTOTYPE_INDEX)                        \
     V(JSTaggedValue, StringIteratorPrototype, STRING_ITERATOR_PROTOTYPE_INDEX)                      \
     /* SymbolTable *RegisterSymbols */                                                              \

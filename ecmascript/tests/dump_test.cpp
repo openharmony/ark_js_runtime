@@ -71,6 +71,7 @@
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_realm.h"
 #include "ecmascript/js_regexp.h"
+#include "ecmascript/js_regexp_iterator.h"
 #include "ecmascript/js_relative_time_format.h"
 #include "ecmascript/js_set.h"
 #include "ecmascript/js_set_iterator.h"
@@ -227,6 +228,18 @@ static JSHandle<JSAPIStack> NewJSAPIStack(ObjectFactory *factory, JSHandle<JSTag
     JSHandle<JSAPIStack> jsStack = JSHandle<JSAPIStack>::Cast(factory->NewJSObject(stackClass));
     jsStack->SetTop(0);
     return jsStack;
+}
+
+static JSHandle<JSRegExp> NewJSRegExp(JSThread *thread, ObjectFactory *factory, JSHandle<JSTaggedValue> proto)
+{
+    JSHandle<JSHClass> jSRegExpClass =
+        factory->NewEcmaDynClass(JSRegExp::SIZE, JSType::JS_REG_EXP, proto);
+    JSHandle<JSRegExp> jSRegExp = JSHandle<JSRegExp>::Cast(factory->NewJSObject(jSRegExpClass));
+    jSRegExp->SetByteCodeBuffer(thread, JSTaggedValue::Undefined());
+    jSRegExp->SetOriginalSource(thread, JSTaggedValue::Undefined());
+    jSRegExp->SetOriginalFlags(thread, JSTaggedValue(0));
+    jSRegExp->SetLength(0);
+    return jSRegExp;
 }
 
 static JSHandle<JSAPIQueue> NewJSAPIQueue(JSThread *thread, ObjectFactory *factory, JSHandle<JSTaggedValue> proto)
@@ -431,6 +444,15 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 JSHandle<JSSetIterator> jsSetIter =
                     factory->NewJSSetIterator(NewJSSet(thread, factory, proto), IterationKind::KEY);
                 DUMP_FOR_HANDLE(jsSetIter)
+                break;
+            }
+            case JSType::JS_REG_EXP_ITERATOR: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSRegExpIterator::SIZE, 3U)
+                JSHandle<EcmaString> emptyString(thread->GlobalConstants()->GetHandledEmptyString());
+                JSHandle<JSTaggedValue> jsRegExp(NewJSRegExp(thread, factory, proto));
+                JSHandle<JSRegExpIterator> jsRegExpIter =
+                    factory->NewJSRegExpIterator(jsRegExp, emptyString, false, false);
+                DUMP_FOR_HANDLE(jsRegExpIter)
                 break;
             }
             case JSType::JS_ARRAY_ITERATOR: {

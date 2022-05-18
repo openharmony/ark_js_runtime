@@ -56,6 +56,7 @@ class JSSet;
 class JSMap;
 class JSRegExp;
 class JSSetIterator;
+class JSRegExpIterator;
 class JSMapIterator;
 class JSArrayIterator;
 class JSAPIPlainArrayIterator;
@@ -297,6 +298,10 @@ public:
     JSHandle<TaggedQueue> GetEmptyTaggedQueue() const;
 
     JSHandle<JSSetIterator> NewJSSetIterator(const JSHandle<JSSet> &set, IterationKind kind);
+
+    JSHandle<JSRegExpIterator> NewJSRegExpIterator(const JSHandle<JSTaggedValue> &matcher,
+                                                   const JSHandle<EcmaString> &inputStr, bool global,
+                                                   bool fullUnicode);
 
     JSHandle<JSMapIterator> NewJSMapIterator(const JSHandle<JSMap> &map, IterationKind kind);
 
