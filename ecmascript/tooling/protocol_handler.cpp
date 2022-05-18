@@ -20,16 +20,19 @@
 #include "utils/logger.h"
 
 namespace panda::ecmascript::tooling {
-ProtocolHandler::ProtocolHandler(std::function<void(std::string)> callback, const EcmaVM *vm)
+ProtocolHandler::ProtocolHandler(std::function<void(const std::string &)> callback, const EcmaVM *vm)
     : callback_(std::move(callback)), vm_(vm)
 {
     dispatcher_ = std::make_unique<Dispatcher>(this);
 }
 
-void ProtocolHandler::WaitForDebugger(const EcmaVM *ecmaVm)
+void ProtocolHandler::WaitForDebugger()
 {
     waitingForDebugger_ = true;
-    ProcessCommand(ecmaVm);
+    static constexpr int DEBUGGER_WAIT_SLEEP_TIME = 100;
+    while (waitingForDebugger_) {
+        usleep(DEBUGGER_WAIT_SLEEP_TIME);
+    }
 }
 
 void ProtocolHandler::RunIfWaitingForDebugger()
@@ -37,25 +40,18 @@ void ProtocolHandler::RunIfWaitingForDebugger()
     waitingForDebugger_ = false;
 }
 
-void ProtocolHandler::ProcessCommand(const EcmaVM *ecmaVm)
+void ProtocolHandler::ProcessCommand(const CString &msg)
 {
-    static constexpr int DEBUGGER_WAIT_SLEEP_TIME = 100;
-    while (waitingForDebugger_) {
-        usleep(DEBUGGER_WAIT_SLEEP_TIME);
-    }
-}
-
-void ProtocolHandler::SendCommand(const CString &msg)
-{
-    LOG(DEBUG, DEBUGGER) << "ProtocolHandler::SendCommand: " << msg;
+    LOG(DEBUG, DEBUGGER) << "ProtocolHandler::ProcessCommand: " << msg;
+    [[maybe_unused]] LocalScope scope(vm_);
     Local<JSValueRef> exception = DebuggerApi::GetAndClearException(vm_);
     dispatcher_->Dispatch(DispatchRequest(vm_, msg));
     DebuggerApi::ClearException(vm_);
     if (!exception->IsHole()) {
         DebuggerApi::SetException(vm_, exception);
     }
-    std::string startDebugging("Runtime.runIfWaitingForDebugger");
-    if (msg.find(startDebugging, 0) != std::string::npos) {
+    CString startDebugging("Runtime.runIfWaitingForDebugger");
+    if (msg.find(startDebugging, 0) != CString::npos) {
         waitingForDebugger_ = false;
     }
 }

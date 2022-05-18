@@ -225,14 +225,17 @@ void JSNApi::ThrowException(const EcmaVM *vm, Local<JSValueRef> error)
     thread->SetException(JSNApiHelper::ToJSTaggedValue(*error));
 }
 
-bool JSNApi::StartDebugger(const char *libraryPath, EcmaVM *vm, bool isDebugMode)
+bool JSNApi::StartDebugger(const char *libraryPath, EcmaVM *vm, bool isDebugMode, int32_t instanceId)
 {
+    if (vm->GetJsDebuggerManager()->GetDebuggerHandler() != nullptr) {
+        return false;
+    }
+
     auto handle = panda::os::library_loader::Load(std::string(libraryPath));
     if (!handle) {
         return false;
     }
-
-    using StartDebugger = bool (*)(const std::string &, EcmaVM *, bool);
+    using StartDebugger = bool (*)(const std::string &, EcmaVM *, bool, int32_t);
 
     auto sym = panda::os::library_loader::ResolveSymbol(handle.Value(), "StartDebug");
     if (!sym) {
@@ -240,7 +243,7 @@ bool JSNApi::StartDebugger(const char *libraryPath, EcmaVM *vm, bool isDebugMode
         return false;
     }
 
-    bool ret = reinterpret_cast<StartDebugger>(sym.Value())("PandaDebugger", vm, isDebugMode);
+    bool ret = reinterpret_cast<StartDebugger>(sym.Value())("PandaDebugger", vm, isDebugMode, instanceId);
     if (ret) {
         vm->GetJsDebuggerManager()->SetDebugMode(isDebugMode);
         vm->GetJsDebuggerManager()->SetDebugLibraryHandle(std::move(handle.Value()));
@@ -248,22 +251,23 @@ bool JSNApi::StartDebugger(const char *libraryPath, EcmaVM *vm, bool isDebugMode
     return ret;
 }
 
-bool JSNApi::StopDebugger(const char *libraryPath)
+bool JSNApi::StopDebugger(EcmaVM *vm)
 {
-    auto handle = panda::os::library_loader::Load(std::string(libraryPath));
-    if (!handle) {
+    if (vm == nullptr) {
         return false;
     }
 
+    const auto &handle = vm->GetJsDebuggerManager()->GetDebugLibraryHandle();
     using StopDebug = void (*)(const std::string &);
 
-    auto sym = panda::os::library_loader::ResolveSymbol(handle.Value(), "StopDebug");
+    auto sym = panda::os::library_loader::ResolveSymbol(handle, "StopDebug");
     if (!sym) {
         LOG(ERROR, RUNTIME) << sym.Error().ToString();
         return false;
     }
 
     reinterpret_cast<StopDebug>(sym.Value())("PandaDebugger");
+    vm->GetJsDebuggerManager()->SetDebugMode(false);
     return true;
 }
 
