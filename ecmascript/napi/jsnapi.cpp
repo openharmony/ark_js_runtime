@@ -1467,11 +1467,11 @@ int32_t SetRef::GetSize()
 }
 
 // ----------------------------------- FunctionCallback ---------------------------------
-JSTaggedValue Callback::RegisterCallback(ecmascript::EcmaRuntimeCallInfo *info)
+JSTaggedValue Callback::RegisterCallback(ecmascript::EcmaRuntimeCallInfo *ecmaRuntimeCallInfo)
 {
     // Constructor
-    JSThread *thread = info->GetThread();
-    JSHandle<JSTaggedValue> constructor = BuiltinsBase::GetConstructor(info);
+    JSThread *thread = ecmaRuntimeCallInfo->GetThread();
+    JSHandle<JSTaggedValue> constructor = BuiltinsBase::GetConstructor(ecmaRuntimeCallInfo);
     if (!constructor->IsJSFunction()) {
         return JSTaggedValue::False();
     }
@@ -1481,12 +1481,10 @@ JSTaggedValue Callback::RegisterCallback(ecmascript::EcmaRuntimeCallInfo *info)
         return JSTaggedValue::False();
     }
     JSHandle<JSNativePointer> extraInfo(extraInfoValue);
-    info->SetData(extraInfo->GetData());
-
     // callBack
     FunctionCallback nativeFunc = reinterpret_cast<FunctionCallback>(extraInfo->GetExternalPointer());
 
-    JsiRuntimeCallInfo jsiRuntimeCallInfo(info);
+    JsiRuntimeCallInfo jsiRuntimeCallInfo(ecmaRuntimeCallInfo, extraInfo->GetData());
     Local<JSValueRef> result = nativeFunc(&jsiRuntimeCallInfo);
     return JSNApiHelper::ToJSHandle(result).GetTaggedValue();
 }
@@ -1924,11 +1922,11 @@ bool JSValueRef::IsGeneratorFunction()
 }
 
 // ------------------------------------ JsiRuntimeCallInfo -----------------------------------------------
-JsiRuntimeCallInfo::JsiRuntimeCallInfo(ecmascript::EcmaRuntimeCallInfo* ecmaInfo)
+JsiRuntimeCallInfo::JsiRuntimeCallInfo(ecmascript::EcmaRuntimeCallInfo* ecmaInfo, void* data)
     : thread_(ecmaInfo->GetThread()), numArgs_(ecmaInfo->GetArgsNumber())
 {
     stackArgs_ = ecmaInfo->GetArgs();
-    data_ = ecmaInfo->GetData();
+    data_ = data;
 }
 
 EcmaVM *JsiRuntimeCallInfo::GetVM() const
