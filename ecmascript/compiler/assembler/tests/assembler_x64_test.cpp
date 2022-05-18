@@ -460,54 +460,5 @@ HWTEST_F_L0(AssemblerX64Test, Emit4)
     ASSERT_EQ(value, 0xCCU);
     ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
-
-HWTEST_F_L0(AssemblerX64Test, JSFunctionEntry)
-{
-    x64::AssemblerX64 masm(chunk_);
-    x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
-    x64::AssemblerStubsX64::JSFunctionEntry(assemblerX64);
-    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
-}
-
-HWTEST_F_L0(AssemblerX64Test, OptimizedCallOptimized)
-{
-    x64::AssemblerX64 masm(chunk_);
-    x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
-    x64::AssemblerStubsX64::OptimizedCallOptimized(assemblerX64);
-    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
-}
-
-HWTEST_F_L0(AssemblerX64Test, CallNativeTrampoline)
-{
-    x64::AssemblerX64 masm(chunk_);
-    x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
-    x64::AssemblerStubsX64::CallNativeTrampoline(assemblerX64);
-    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
-}
-
-HWTEST_F_L0(AssemblerX64Test, JSCallWithArgv)
-{
-    x64::AssemblerX64 masm(chunk_);
-    x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
-    x64::AssemblerStubsX64::JSCallWithArgv(assemblerX64);
-    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
-}
-
-HWTEST_F_L0(AssemblerX64Test, JSCall)
-{
-    x64::AssemblerX64 masm(chunk_);
-    x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
-    x64::AssemblerStubsX64::JSCall(assemblerX64);
-    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
-}
-
-HWTEST_F_L0(AssemblerX64Test, CallRuntimeWithArgv)
-{
-    x64::AssemblerX64 masm(chunk_);
-    x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
-    x64::AssemblerStubsX64::CallRuntimeWithArgv(assemblerX64);
-    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
-}
-
 #undef __
 }  // namespace panda::test

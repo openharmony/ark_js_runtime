@@ -16,7 +16,7 @@
 #define ECMASCRIPT_COMPILER_TEST_STUBS_SIGNATURE_H
 
 namespace panda::ecmascript::kungfu {
-#ifdef ECMASCRIPT_ENABLE_TEST_STUB
+#ifndef NDEBUG
 #define TEST_STUB_SIGNATRUE_LIST(V)         \
     V(FooAOT)                               \
     V(BarAOT)                               \

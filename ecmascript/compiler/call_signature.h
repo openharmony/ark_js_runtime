@@ -336,6 +336,7 @@ private:
     V(CreateArrayFromList)                  \
     V(JSObjectGetMethod)                    \
     V(JsProxyCallInternal)                  \
+    V(JSFunctionEntry)                      \
     TEST_STUB_SIGNATRUE_LIST(V)
 
 #define DECL_CALL_SIGNATURE(name)                                  \

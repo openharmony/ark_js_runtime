@@ -55,7 +55,6 @@ public:
     Chunk *chunk_ {nullptr};
 };
 
-#define __ masm.
 HWTEST_F_L0(AssemblerStubsTest, JSFunctionEntry)
 {
     x64::AssemblerX64 masm(chunk_);
@@ -64,27 +63,11 @@ HWTEST_F_L0(AssemblerStubsTest, JSFunctionEntry)
     ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
 
-HWTEST_F_L0(AssemblerStubsTest, OptimizedCallOptimized)
-{
-    x64::AssemblerX64 masm(chunk_);
-    x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
-    x64::AssemblerStubsX64::OptimizedCallOptimized(assemblerX64);
-    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
-}
-
-HWTEST_F_L0(AssemblerStubsTest, CallNativeTrampoline)
-{
-    x64::AssemblerX64 masm(chunk_);
-    x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
-    x64::AssemblerStubsX64::CallNativeTrampoline(assemblerX64);
-    ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
-}
-
 HWTEST_F_L0(AssemblerStubsTest, JSCallWithArgv)
 {
     x64::AssemblerX64 masm(chunk_);
     x64::ExtendedAssemblerX64 *assemblerX64 = static_cast<ExtendedAssemblerX64 *>(&masm);
-    x64::AssemblerStubsX64::JSCallWithArgv(assemblerX64);
+    x64::AssemblerStubsX64::JSCallWithArgV(assemblerX64);
     ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
 
@@ -103,5 +86,4 @@ HWTEST_F_L0(AssemblerStubsTest, CallRuntimeWithArgv)
     x64::AssemblerStubsX64::CallRuntimeWithArgv(assemblerX64);
     ecmascript::kungfu::LLVMAssembler::Disassemble(masm.GetBegin(), masm.GetCurrentPosition());
 }
-#undef __
 }  // namespace panda::test

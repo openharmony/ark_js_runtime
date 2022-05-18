@@ -27,11 +27,7 @@ public:
 
     static void JSFunctionEntry(ExtendedAssemblerX64 *assembler);
 
-    static void OptimizedCallOptimized(ExtendedAssemblerX64 *assembler);
-
-    static void CallNativeTrampoline(ExtendedAssemblerX64 *assembler);
-
-    static void JSCallWithArgv(ExtendedAssemblerX64 *assembler);
+    static void JSCallWithArgV(ExtendedAssemblerX64 *assembler);
 
     static void JSCall(ExtendedAssemblerX64 *assembler);
 
@@ -76,6 +72,8 @@ public:
     static void ResumeCaughtFrameAndDispatch(ExtendedAssemblerX64 *assembler);
 
 private:
+    static void OptimizedCallOptimized(ExtendedAssemblerX64 *assembler);
+    static void CallNativeTrampoline(ExtendedAssemblerX64 *assembler);
     static void PushArgsFastPath(ExtendedAssemblerX64 *assembler, Register glueRegister, Register argcRegister,
         Register argvRegister, Register callTargetRegister, Register methodRegister, Register prevSpRegister,
         Register fpRegister, Register callFieldRegister);

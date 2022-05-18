@@ -22,6 +22,7 @@
 
 namespace panda::ecmascript::kungfu {
 using namespace panda::ecmascript;
+#ifndef NDEBUG
 void FooAOTStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
@@ -205,4 +206,5 @@ void Bar2AOTStub::GenerateCircuit(const CompilationConfig *cfg)
     CallRuntime(glue, RTSTUB_ID(DumpTaggedType), {thisObj});
     Return(thisObj);
 }
+#endif
 }   // namespace panda::ecmascript::kungfu

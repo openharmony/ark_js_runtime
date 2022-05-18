@@ -1006,4 +1006,23 @@ DEF_CALL_SIGNATURE(JSObjectGetMethod)
     callSign->SetTailCall(false);
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
+
+DEF_CALL_SIGNATURE(JSFunctionEntry)
+{
+    // 6 : 6 input parameters
+    CallSignature jsFunctionEntry("JSFunctionEntry", 0, 6, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *callSign = jsFunctionEntry;
+    std::array<VariableType, 6> params = { /* 6 : 6 input parameters */
+        VariableType::NATIVE_POINTER(), // glue
+        VariableType::NATIVE_POINTER(), // prevFp
+        VariableType::INT32(), // expectedNumArgs
+        VariableType::INT32(), // actualNumArgs
+        VariableType::JS_ANY(), // argv
+        VariableType::NATIVE_POINTER(), // codeAddr
+    };
+    callSign->SetVariadicArgs(true);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
+    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
+}
 }  // namespace panda::ecmascript::kungfu
