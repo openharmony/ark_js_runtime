@@ -322,6 +322,8 @@ public:
 
     inline size_t GetHeapObjectSize() const;
 
+    inline int32_t GetHeapObjectCount() const;
+
     size_t GetPromotedSize() const
     {
         return promotedSize_;

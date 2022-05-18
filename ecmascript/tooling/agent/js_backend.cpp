@@ -48,8 +48,8 @@ JSBackend::JSBackend(FrontEnd *frontend) : frontend_(frontend)
     DebuggerApi::InitJSDebugger(debugger_);
     DebuggerApi::RegisterHooks(debugger_, hooks_.get());
 
-    ecmaVm_->GetJsDebuggerManager()->SetLocalScopeUpdater(
-        std::bind(&JSBackend::UpdateScopeObject, this, _1, _2, _3));
+    updaterFunc_ = std::bind(&JSBackend::UpdateScopeObject, this, _1, _2, _3);
+    ecmaVm_->GetJsDebuggerManager()->SetLocalScopeUpdater(&updaterFunc_);
 }
 
 JSBackend::JSBackend(const EcmaVM *vm) : ecmaVm_(vm)

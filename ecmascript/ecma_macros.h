@@ -520,4 +520,11 @@
     }
 
 #define CHECK_JS_THREAD(vm) ASSERT(vm->GetJSThread()->GetThreadId() == JSThread::GetCurrentThreadId())
+
+#if !defined(NDEBUG)
+#define STACK_ASSERT_SCOPE(thread) [[maybe_unused]] StackAssertScope stackAssertScope = StackAssertScope(thread)
+#else
+#define STACK_ASSERT_SCOPE(thread) static_cast<void>(0)
+#endif
+
 #endif  // ECMASCRIPT_ECMA_MACROS_H

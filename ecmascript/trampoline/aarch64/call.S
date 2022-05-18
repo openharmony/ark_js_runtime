@@ -138,66 +138,6 @@
 //   +--------------------------+
 
 JSFunctionEntry:
-    str     x30, [sp, #-8]!          // returnaddress
-    PUSH_CALLEE_SAVED_REGS
-    str     x29, [sp, #-8]!          // callee c-fp
-    mov     x29, sp
-    mov     x19, #JS_ENTRY_FRAME_TYPE
-    stp     x1, x19, [sp, #-16]!
-
-    mov     x20, x0
-    mov     w19, w2
-    mov     x2, x1
-    // expectedNumArgs <= actualNumArgs
-    cmp     w19, w3
-    b.ls    .LCopyArguments
-    mov     w8, #JSUNDEFINED
-    mov     w9, w19
-
-.LCopyUndefined:
-    sub     x9, x9, #1
-    cmp     w9, w3
-    str     x8, [sp, #-8]!
-    b.hi    .LCopyUndefined
-.LCopyArguments:
-    // w8 = min(expectedNumArgs, actualNumArgs)
-    cmp     w19, w3
-    csel    w8, w19, w3, lo
-    cbz     w8, .InvokeCompiledJSFunction
-    sub     w9, w8, #1              // =1
-    add     x9, x4, w9, uxtw #3
-.LCopyArgLoop:
-    ldr     x10, [x9], #-8
-    subs    w8, w8, #1              // =1
-    str     x10, [sp, #-8]!
-
-    b.ne    .LCopyArgLoop
-
-// Input:
-// %x0 - glue
-// argv push stack
-.InvokeCompiledJSFunction:
-    str     x3, [sp, #-8]!
-    blr     x5
-
-    // pop argv
-    add     sp, sp, w19, uxtw #3
-    add     sp, sp, #8
-
-    // pop prevLeaveFrameFp to restore thread->currentFrame_
-    ldr    x19, [sp]
-    add    sp, sp, #0x8
-    str    x19, [x20, #ASM_GLUE_CURRENT_FRAME_OFFSET]
-    // pop entry frame type and c-fp
-    add    sp, sp, #0x8
-    ldr    x29, [sp]
-    add    sp, sp, #0x8
-
-    // restore callee save registers
-    POP_CALLEE_SAVED_REGS
-    // restore return address
-    ldr     x30, [sp]
-    add     sp, sp, #0x8
     ret
 
 // uint64_t CallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
@@ -240,29 +180,6 @@ JSFunctionEntry:
 //  current sp - 16: callee save x19
 
 CallRuntime:
-    stp     x29, x30, [sp, #-16]!  // save register for fp, rip
-    mov     x29, sp                // set frame pointer = callsiteFp
-    str     x29, [x0, #ASM_GLUE_LEAVE_FRAME_OFFSET]       // save to thread->currentFrame_
-    str     x19, [sp, #-16]        // callee save register
-
-    // construct leave frame
-    mov     x19, #LEAVE_FRAME_TYPE
-    str     x19, [sp, #-8]
-    add     sp, sp, #-16
-
-    // load runtime trampoline address
-    ldr     x19, [x29, #16]  // runtime_id
-    add     x19, x0, x19, lsl #3
-    ldr     x19, [x19, #ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET]
-    ldr     x1, [x29, #24]  // argc
-    add     x2, x29,  #32   // argv[]
-    blr     x19
-
-    // descontruct leave frame and callee save register
-    ldr     x19, [sp]
-    add   sp, sp, #16
-    // restore register
-    ldp     x29, x30, [sp], #16
     ret
 
 // extern "C" JSTaggedType OptimizedCallOptimized(uintptr_t glue, uint32_t expectedNumArgs,
@@ -288,55 +205,6 @@ CallRuntime:
 // sp[- 8(N)]     - argc
 
 OptimizedCallOptimized:
-    stp     x29, x30, [sp, #-16]!  // save register for fp, rip
-    mov     x29, sp
-    mov     x5, #OPTIMIZE_FRAME_TYPE
-    str     x5, [sp, #-8]!
-    // callee save
-    str     x19, [sp, #-8]!
-
-    mov     w5, w1
-    // expectedNumArgs <= actualNumArgs
-    cmp     w5, w2
-    b.ls    .LCopyArguments1
-    // undefined
-    mov     x8, #JSUNDEFINED
-
-.LCopyUndefined1:
-    sub     x5, x5, #1
-    cmp     w5, w2
-    str     x8, [sp, #-8]!
-    b.hi    .LCopyUndefined1
-.LCopyArguments1:
-    // w8 = min(expectedNumArgs, actualNumArgs)
-    cmp     w1, w2
-    csel    w5, w1, w2, lo
-    cbz     w5, .InvokeCompiledJSFunction1
-    mov     x19, x1                 // save expected numArgs
-    sub     w5, w5, #1
-    add     x5, x4, w5, uxtw #3
-.LCopyArgLoop1:
-    ldr     x10, [x4], #-8
-    subs    w5, w5, #1
-    str     x10, [sp, #-8]!
-
-    b.ne    .LCopyArgLoop1
-
-// Input:
-// %x0 - glue
-// argv push stack
-.InvokeCompiledJSFunction1:
-    str     x2, [sp, #-8]!
-    blr     x3
-
-    // pop argv
-    add     sp, sp, w19, uxtw #3
-    add     sp, sp, #8
-    // callee restore
-    ldr     x19, [sp], #8
-    // deconstruct frame
-    add     sp, sp, #8
-    ldp     x29, x30, [sp], #16
     ret
 
 // uint64_t CallBuiltinTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
@@ -373,40 +241,6 @@ OptimizedCallOptimized:
 .global CallBuiltinTrampoline
 .type CallBuiltinTrampoline, %function
 CallBuiltinTrampoline:
-    stp     x29, x30, [sp, #-16]!  // save register for fp, rip
-    mov     x29, sp                // set frame pointer = callsiteFp
-    str     x29, [x0, #ASM_GLUE_CURRENT_FRAME_OFFSET]       // save to thread->currentFrame_
-
-    // construct leave frame and callee save
-    mov     x1, #LEAVE_FRAME_TYPE
-    stp     x19, x1, [sp, #-16]!
-
-    // load runtime trampoline address
-    ldr     x19, [x29, #16]  // codeaddress
-
-    // construct ecma_runtime_call_info
-    sub     sp, sp, #ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE
-    mov     x1, #ASM_GLUE_TO_THREAD_OFFSET
-    sub     x0, x0, x1       // get thread
-    str     x0, [sp]
-    ldr     x0, [x29, #24]  // argc
-    sub     x0, x0, #3
-    str     x0, [sp, #ECMA_RUNTIME_CALLINFO_NUMARGS_OFFSET]     // numArgs
-    add     x1, x29, #32    //argV
-    str     x1, [sp, #ECMA_RUNTIME_CALLINFO_STACKARGS_OFFSET]     // data_
-    mov     x0, 0
-    str     x0, [sp, #ECMA_RUNTIME_CALLINFO_DATA_OFFSET]
-    str     x0, [sp, #ECMA_RUNTIME_CALLINFO_PPREV_SP_OFFSET]
-
-    mov     x0, sp
-    blr     x19
-
-    add     sp, sp, #ASM_GLUE_ECMA_RUNTIME_CALLINFO_SIZE
-    // descontruct leave frame and callee save register
-    ldp     x19, x1, [sp], #16
-    // restore register
-    ldp     x29, x30, [sp], #16
-    add     sp, sp, #8          // revert native pointer
     ret
 
 // uint64_t JSCallWithArgV(uintptr_t glue, uint32_t argc, JSTaggedType callTarget, JSTaggedType argV[]);
@@ -452,143 +286,6 @@ CallBuiltinTrampoline:
 .global JSCall
 .type JSCall, %function
 JSCall:
-    ldr     x1, [sp, #8]       // get jsfunc
-    mov     x2, TAGGED_MASK
-    cmp     x1, x2              // TaggedIsInt
-    b.hs    .LNonCallable
-    cbz     x1, .LNonCallable   // IsHole
-    mov     x2, TAGGED_SPECIAL_VALUE
-    and     x2, x1, x2
-    cbnz    x2, .LNonCallable   // IsSpecial
-    ldr     x2, [x1]            // get jshclass
-    ldr     x2, [x2, #JS_HCLASS_BITFIELD_OFFSET]                  // get bitfield
-    tbz     x2, #JS_HCLASS_BITFIELD_CALLABLE_BIT, .LNonCallable   // is callable
-    and     w3, w2, #0xff
-    sub     w3, w3, #4
-    cmp     w3, #9
-    b.hs    .LNotJSFunction
-    // x0 -- glue
-    // x1 -- jsfunc
-    ldr     x2, [x1, #JS_FUNCTION_METHOD_OFFSET]    // get method
-    ldr     x3, [sp, #8]                            // actual argc
-    ldr     x4, [x2, #JS_METHOD_CALLFIELD_OFFSET]   // get call field of method
-    tbnz    x4, #JS_METHOD_CALL_FIELD_NATIVE_BIT, .LCallNativeMethod
-    tbnz    x4, #JS_METHOD_CALL_FIELD_AOT_BIT, .LCallOptimziedMethod
-    brk     0
-.LCallNativeMethod:
-    ldr     x4, [x2, #JS_METHOD_NATIVE_POINTER_OFFSET]  // get native pointer
-    str     x4, [sp, #-8]!                              // push native address
-    b       CallBuiltinTrampoline
-
-// Input:
-// x0 -- glue
-// x1 -- jsfunc
-// x2 -- method
-// x3 -- actual argc
-// x4 -- callfield
-// output:
-// %x0 - glue
-// %w1 - expectedNumArgs
-// %w2 - actualNumArgs
-// %x3 - codeAddr
-.LCallOptimziedMethod:
-    mov     x2, x3                                      // actual argc
-    ldr     x3, [x1, #JS_FUNCTION_CODE_ENTRY_OFFSET]    // get codeaddress
-    lsr     x4, x4, #JS_METHOD_NUM_ARGS_SHIFT
-    and     w4, w4, #ASM_JS_METHOD_NUM_ARGS_MASK
-    add     w1, w4, #ASM_NUM_MANDATORY_JSFUNC_ARGS      // add mandatory arguments
-    cmp     w2, w1                                      // expectedNumArgs <= actualNumArgs
-    add     x4, sp, #8                                  // argv
-    b.hi    .LDirectCallCodeEntry
-    b       OptimizedCallOptimized
-.LDirectCallCodeEntry:
-    br      x3
-
-.LNotJSFunction:
-    and     w5, w2, #0xff
-    cmp     w5, #0x0d       // IsJsBoundFunction
-    b.eq    .LJSBoundFunction
-    cmp     w5, #0x4d       // IsJsProxy
-    b.eq    .LJSProxy
-    ret
-
-// x0 -- glue
-// x1 -- jsfunc
-// x2 -- method
-// x3 -- actual argc
-// x4 -- callfield
-.LJSBoundFunction:
-    // construct frame
-    stp     x29, x30, [sp, #-16]!           // save register for fp, rip
-    mov     x29, sp
-    mov     x5, #OPTIMIZE_FRAME_TYPE
-    str     x5, [sp, #-8]!                  // set frame type
-
-    add     x4, x29, #16                    // &argc -> x4
-    // callee save
-    str     x19, [sp, #-8]!
-
-    // get bound arguments
-    ldr     x2, [x1, #JS_FUNCTION_BOUND_ARG_OFFSET]
-    // get bound length
-    ldr     x2, [x2, #TAGGED_ARRAY_LENGTH_OFFSET]
-    add     w19, w2, w3                    // boundNumArgs + actualArgs
-    add     x4, x4, w3, uxtw #3            // argV[actualArgs - 1] -> x4
-    sub     w3, w3, #ASM_NUM_MANDATORY_JSFUNC_ARGS
-    cmp     w3, #0
-    b.eq    .LCopyBoundArgument
-
-.LCopyArgument2:
-    ldr     x5, [x4], #-8
-    str     x5, [sp, #-8]!
-    add     w3, w3, #-1
-    b.hi    .LCopyArgument2
-
-.LCopyBoundArgument:
-    // get bound arguments
-    ldr     x4, [x1, #JS_FUNCTION_BOUND_ARG_OFFSET]
-    add     x4, x4, #TAGGED_ARRAY_DATA_OFFSET
-    cmp     w2, #0
-    b.eq    .LPushCallTarget
-    add     w2, w2, #-1
-    add     x4, x4, w2, uxtw #3         // boundArg[length - 1]
-.LCopyBoundArgumentLoop:
-    ldr     x5, [x4], #-8
-    str     x5, [sp, #-8]!
-    add     w2, w2, #-1
-    b.pl    .LCopyBoundArgumentLoop      // w2 >= 0
-
-.LPushCallTarget:
-    ldr     x5, [x1, #JS_FUNCTION_BOUND_THIS_OFFSET]     // thisObj
-    mov     x6, #JSUNDEFINED                             // newTarget
-    stp     x6, x5, [sp, #-16]!
-    ldr     x5, [x1, #JS_FUNCTION_BOUND_TARGET_OFFSET]
-    stp     x19, x5, [sp, #-16]!                           // calltarget actualArgc
-    bl      JSCall                                         // recursive call jscall
-    add     sp, sp, #8
-    add     sp, sp, w19, uxtw #3
-    ldr     x19, [sp, #8]!
-    add     sp, sp, #8
-    ldp     x29, x30, [sp, #16]!
-    ret
-
-.LJSProxy:
-    brk     0
-    ret
-.LNonCallable:
-    stp     x29, x30, [sp, #-16]!  // save register for fp, rip
-    mov     x29, sp
-    mov     x6, #OPTIMIZE_FRAME_TYPE
-    mov     x5, #5
-    and     x5, x5, #TAGGED_MASK
-    stp     x5, x6, [sp, #-16]!
-    mov     x5, #1
-    mov     x6, #RUNTIME_ID_THROW_TYPE_ERROR
-    stp     x5, x6, [sp, #-16]!
-    bl      CallRuntime
-    mov     x0, #TAGGED_VALUE_EXCEPTION
-    add     sp, sp, #32
-    ldp     x29, x30, [sp], #16
     ret
 
 JSCallWithArgV:

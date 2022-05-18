@@ -89,7 +89,7 @@ public:
         return frameHandler_;
     }
 
-    void SetLocalScopeUpdater(const ObjectUpdaterFunc &updaterFunc)
+    void SetLocalScopeUpdater(ObjectUpdaterFunc *updaterFunc)
     {
         updaterFunc_ = updaterFunc;
     }
@@ -97,7 +97,7 @@ public:
     void NotifyLocalScopeUpdated(const CString &varName, const Local<JSValueRef> &value)
     {
         if (updaterFunc_ != nullptr) {
-            updaterFunc_(frameHandler_.get(), varName, value);
+            (*updaterFunc_)(frameHandler_.get(), varName, value);
         }
     }
 
@@ -106,9 +106,9 @@ private:
     ProtocolHandler *debuggerHandler_ {nullptr};
     LibraryHandle debuggerLibraryHandle_ {nullptr};
     NotificationManager *notificationManager_ {nullptr};
+    ObjectUpdaterFunc *updaterFunc_ {nullptr};
 
     std::shared_ptr<FrameHandler> frameHandler_;
-    ObjectUpdaterFunc updaterFunc_;
 };
 }  // panda::ecmascript::tooling
 

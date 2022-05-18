@@ -79,10 +79,14 @@ public:
     }
 
     // If you want to call once create, you can refer to BuiltinsMathTest for detail.
-    static void CreateEcmaVMWithScope(EcmaVM *&instance, JSThread *&thread, EcmaHandleScope *&scope)
+    static void CreateEcmaVMWithScope(EcmaVM *&instance, JSThread *&thread, EcmaHandleScope *&scope,
+                                      bool tryLoadStubFile = false)
     {
         JSRuntimeOptions options;
         options.SetEnableForceGC(true);
+        if (tryLoadStubFile) {
+            options.SetEnableStubAot(true);
+        }
         instance = JSNApi::CreateEcmaVM(options);
         instance->SetEnableForceGC(true);
         ASSERT_TRUE(instance != nullptr) << "Cannot create EcmaVM";

@@ -83,6 +83,19 @@ void ExtendedAssembler::CallAssemblerStub(int id, bool isTail)
 void ExtendedAssembler::BindAssemblerStub(int id)
 {
     Label *target = module_->GetFunctionLabel(id);
-    Bind(target);    
+    Bind(target);
+}
+
+void ExtendedAssembler::PushArgc(int32_t argc, Register tempArgcRegister)
+{
+    Movabs(JSTaggedValue(argc).GetRawData(), tempArgcRegister);
+    Pushq(tempArgcRegister);
+}
+
+void ExtendedAssembler::PushArgc(Register argcRegister, Register tempArgcRegister)
+{
+    Movabs(JSTaggedValue::TAG_INT, tempArgcRegister);
+    Orq(argcRegister, tempArgcRegister);
+    Pushq(tempArgcRegister);
 }
 }  // panda::ecmascript::x64

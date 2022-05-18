@@ -190,6 +190,21 @@ private:
     JSTaggedType *fp_ {nullptr};
     const JSThread *thread_ {nullptr};
 };
+
+class StackAssertScope {
+public:
+    explicit StackAssertScope(JSThread *thread) : thread_(thread), oldSp_(thread->GetCurrentSPFrame()) {}
+
+    ~StackAssertScope()
+    {
+        DASSERT_PRINT(oldSp_ == thread_->GetCurrentSPFrame(),
+                      "StackAssertScope assert failed, sp did not restore as expeted");
+    }
+
+private:
+    [[maybe_unused]] JSThread *thread_ {nullptr};
+    const JSTaggedType *oldSp_ {nullptr};
+};
 } // namespace ecmascript
 }  // namespace panda
 #endif  // ECMASCRIPT_INTERPRETER_FRAME_HANDLER_H

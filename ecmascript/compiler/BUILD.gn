@@ -28,8 +28,8 @@ if (defined(ark_independent_build)) {
 config("include_llvm") {
   if (compile_llvm_online) {
     include_dirs = [
-      "$ark_third_party_path/llvm-project/build/include",
-      "$ark_third_party_path/llvm-project/llvm/include/",
+      "//third_party/llvm-project/build/include",
+      "//third_party/llvm-project/llvm/include/",
     ]
   } else {
     include_dirs = [
@@ -61,18 +61,13 @@ source_set("libark_jsoptimizer_set") {
     "rt_call_signature.cpp",
     "scheduler.cpp",
     "stub.cpp",
+    "test_stubs.cpp",
+    "test_stubs_signature.cpp",
     "trampoline/aarch64/assembler_stubs.cpp",
     "trampoline/x64/assembler_stubs_x64.cpp",
     "type.cpp",
     "verifier.cpp",
   ]
-
-  if (enable_test_stub) {
-    sources += [
-      "test_stubs.cpp",
-      "test_stubs_signature.cpp",
-    ]
-  }
 
   public_configs = [
     ":include_llvm",
@@ -81,7 +76,7 @@ source_set("libark_jsoptimizer_set") {
   ]
 
   if (compile_llvm_online) {
-    lib_dirs = [ "$ark_third_party_path/llvm-project/build/lib" ]
+    lib_dirs = [ "//third_party/llvm-project/build/lib" ]
   } else {
     lib_dirs =
         [ "//prebuilts/ark_tools/ark_js_prebuilts/llvm_prebuilts/build/lib" ]

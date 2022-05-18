@@ -55,6 +55,7 @@ JSTaggedType RuntimeStubs::name(uintptr_t argGlue, uint32_t argc, uintptr_t argv
     ASSERT((index) < argc);                        \
     type name = reinterpret_cast<type>(*(reinterpret_cast<JSTaggedType *>(argv) + (index)))
 
+#ifndef NDEBUG
 DEF_RUNTIME_STUBS(DefineAotFunc)
 {
     RUNTIME_STUBS_HEADER(DefineAotFunc);
@@ -163,4 +164,5 @@ DEF_RUNTIME_STUBS(DumpTaggedType)
     value->D();
     return value.GetTaggedValue().GetRawData();
 }
+#endif
 }  // namespace panda::ecmascript

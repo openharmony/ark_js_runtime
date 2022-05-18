@@ -300,6 +300,11 @@ EcmaVM::~EcmaVM()
         tsLoader_ = nullptr;
     }
 
+    if (snapshotEnv_ != nullptr) {
+        delete snapshotEnv_;
+        snapshotEnv_ = nullptr;
+    }
+
     if (aotInfo_ != nullptr) {
         delete aotInfo_;
         aotInfo_  = nullptr;
