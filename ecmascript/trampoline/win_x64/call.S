@@ -101,6 +101,9 @@ CallRuntime:
 .global AsmInterpreterEntry
 AsmInterpreterEntry:
 
+.global GeneratorReEnterAsmInterp
+GeneratorReEnterAsmInterp:
+
 .global JSCallDispatch
 JSCallDispatch:
 
