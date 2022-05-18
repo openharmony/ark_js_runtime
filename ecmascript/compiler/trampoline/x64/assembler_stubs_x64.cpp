@@ -293,6 +293,7 @@ void AssemblerStubsX64::CallNativeTrampoline(ExtendedAssemblerX64 *assembler)
     __ Addq(16, rdx); // 16 : for rbp & return address
     // load native pointer address
     __ Movq(Operand(rdx, 0), r10);  // r10 -> argv[0]
+    __ Subq(8, rsp); // 8: align 16 bytes
     __ Subq(sizeof(EcmaRuntimeCallInfo), rsp);
 
     // construct ecma_runtime_call_info
@@ -309,10 +310,10 @@ void AssemblerStubsX64::CallNativeTrampoline(ExtendedAssemblerX64 *assembler)
     __ Movq(rdx, rbx);
     __ Addq(16, rbx); // 16: argv[0]
     __ Movq(rbx, Operand(rsp, EcmaRuntimeCallInfo::GetStackArgsOffset())); // argv0
-    __ Movq(0, Operand(rsp, EcmaRuntimeCallInfo::GetDataOffset())); // argv1
 
     __ Movq(rsp, rdi);
     __ Callq(r10);
+    __ Addq(8, rsp); //  8: sp + 8 align 16bytes
     __ Addq(sizeof(EcmaRuntimeCallInfo), rsp);
     __ Popq(rbx);
     __ Pop(r10);
@@ -1184,7 +1185,6 @@ void AssemblerStubsX64::ConstructEcmaRuntimeCallInfo(ExtendedAssemblerX64 *assem
     __ Movq(threadRegister, Operand(rsp, EcmaRuntimeCallInfo::GetThreadOffset()));
     __ Movq(numArgsRegister, Operand(rsp, EcmaRuntimeCallInfo::GetNumArgsOffset()));
     __ Movq(stackArgsRegister, Operand(rsp, EcmaRuntimeCallInfo::GetStackArgsOffset()));
-    __ Movq(0, Operand(rsp, EcmaRuntimeCallInfo::GetDataOffset()));
 }
 
 void AssemblerStubsX64::GetDeclaredNumArgsFromCallField(ExtendedAssemblerX64 *assembler, Register callFieldRegister,
@@ -1916,7 +1916,7 @@ void AssemblerStubsX64::PushCallIRangeAndDispatchNative(ExtendedAssemblerX64 *as
     Register stackArgs = r9;
     Register temporary = rax;
     Register opNumArgs = r10;
-    Label aligned;
+    Label notAligned;
 
     PushBuiltinFrame(assembler, glue, FrameType::BUILTIN_FRAME_WITH_ARGV);
 
@@ -1931,10 +1931,10 @@ void AssemblerStubsX64::PushCallIRangeAndDispatchNative(ExtendedAssemblerX64 *as
     __ Movq(rsp, stackArgs);
 
     __ Testq(0xf, rsp);  // 0xf: 0x1111
-    __ Jz(&aligned, Distance::NEAR);
+    __ Jnz(&notAligned, Distance::NEAR);
     __ PushAlignBytes();
 
-    __ Bind(&aligned);
+    __ Bind(&notAligned);
     CallNativeInternal(assembler, glue, numArgs, stackArgs, nativeCode);
     __ Ret();
 }
@@ -1948,6 +1948,7 @@ void AssemblerStubsX64::CallNativeEntry(ExtendedAssemblerX64 *assembler)
     Register function = r9;
     Register nativeCode = rbx;
 
+    __ PushAlignBytes();
     __ Push(function);
     // 24: skip nativeCode & argc & returnAddr
     __ Subq(24, rsp);
@@ -1955,8 +1956,8 @@ void AssemblerStubsX64::CallNativeEntry(ExtendedAssemblerX64 *assembler)
     __ Movq(Operand(method, JSMethod::GetBytecodeArrayOffset(false)), nativeCode); // get native pointer
     CallNativeInternal(assembler, glue, argc, argv, nativeCode);
 
-    // 32: skip function
-    __ Addq(32, rsp);
+    // 40: skip function
+    __ Addq(40, rsp);
     __ Ret();
 }
 
@@ -1998,8 +1999,6 @@ void AssemblerStubsX64::PushCallArgsAndDispatchNative(ExtendedAssemblerX64 *asse
     __ Movq(Operand(rbp, BuiltinFrame::GetNumArgsToFpDelta(false)), numArgs);
     // 8: offset of &argv[0]
     __ Leaq(Operand(rbp, BuiltinFrame::GetStackArgsToFpDelta(false)), stackArgs);
-
-    __ PushAlignBytes();
 
     CallNativeInternal(assembler, glue, numArgs, stackArgs, nativeCode);
     __ Ret();
