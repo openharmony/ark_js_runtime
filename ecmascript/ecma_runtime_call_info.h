@@ -192,16 +192,6 @@ public:
         return 0U;
     }
 
-    inline void SetData(void *data)
-    {
-        data_ = data;
-    }
-
-    inline void *GetData() const
-    {
-        return data_;
-    }
-
     static constexpr size_t GetThreadOffset()
     {
         return MEMBER_OFFSET(EcmaRuntimeCallInfo, thread_);
@@ -215,11 +205,6 @@ public:
     static constexpr size_t GetStackArgsOffset()
     {
         return MEMBER_OFFSET(EcmaRuntimeCallInfo, stackArgs_);
-    }
-
-    static constexpr size_t GetDataOffset()
-    {
-        return MEMBER_OFFSET(EcmaRuntimeCallInfo, data_);
     }
 
 private:
@@ -237,7 +222,6 @@ private:
     JSThread *thread_ {nullptr};
     size_t numArgs_ = 0;
     JSTaggedType *stackArgs_ {nullptr};
-    void *data_ {nullptr};
 };
 }  // namespace panda::ecmascript
 

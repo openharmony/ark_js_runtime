@@ -977,11 +977,11 @@ private:
 };
 
 /**
- * JsiRuntimeCallInfo is used for ace_engine and napi, same to ark EcamRuntimeCallInfo.
+ * JsiRuntimeCallInfo is used for ace_engine and napi, is same to ark EcamRuntimeCallInfo except data.
  */
 class PUBLIC_API JsiRuntimeCallInfo {
 public:
-    JsiRuntimeCallInfo(ecmascript::EcmaRuntimeCallInfo* ecmaInfo);
+    JsiRuntimeCallInfo(ecmascript::EcmaRuntimeCallInfo* ecmaInfo, void* data);
 
     inline JSThread *GetThread() const
     {
@@ -1018,11 +1018,6 @@ public:
     inline Local<JSValueRef> GetCallArgRef(uint32_t idx) const
     {
         return GetArgRef(FIRST_ARGS_INDEX + idx);
-    }
-
-    inline JSTaggedType *GetArgs() const
-    {
-        return stackArgs_;
     }
 
 private:
