@@ -166,6 +166,11 @@ inline bool JSObject::IsJSSetIterator() const
     return GetJSHClass()->IsJSSetIterator();
 }
 
+inline bool JSObject::IsJSRegExpIterator() const
+{
+    return GetJSHClass()->IsJSRegExpIterator();
+}
+
 inline bool JSObject::IsJSMapIterator() const
 {
     return GetJSHClass()->IsJSMapIterator();

@@ -524,6 +524,7 @@ public:
     bool IsSharedArrayBuffer() const;
 
     bool IsJSSetIterator() const;
+    bool IsJSRegExpIterator() const;
     bool IsJSMapIterator() const;
     bool IsJSArrayIterator() const;
     bool IsIterator() const;

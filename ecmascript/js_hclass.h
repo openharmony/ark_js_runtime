@@ -95,6 +95,7 @@ class ProtoChangeDetails;
         JS_FORIN_ITERATOR,       /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_MAP_ITERATOR,         /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_SET_ITERATOR,         /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_REG_EXP_ITERATOR,        /* ////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_ARRAYLIST_ITERATOR, /* /////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_DEQUE_ITERATOR,   /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_PLAIN_ARRAY_ITERATOR,  /* //////////////////////////////////////////////////////////////////-PADDING */ \
@@ -768,6 +769,11 @@ public:
     inline bool IsJSSetIterator() const
     {
         return GetObjectType() == JSType::JS_SET_ITERATOR;
+    }
+
+    inline bool IsJSRegExpIterator() const
+    {
+        return GetObjectType() == JSType::JS_REG_EXP_ITERATOR;
     }
 
     inline bool IsJSMapIterator() const

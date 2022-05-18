@@ -75,6 +75,7 @@
 #include "ecmascript/js_proxy.h"
 #include "ecmascript/js_realm.h"
 #include "ecmascript/js_regexp.h"
+#include "ecmascript/js_regexp_iterator.h"
 #include "ecmascript/js_relative_time_format.h"
 #include "ecmascript/js_set.h"
 #include "ecmascript/js_set_iterator.h"
@@ -994,6 +995,7 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
             case JSType::JS_FORIN_ITERATOR:
             case JSType::JS_MAP_ITERATOR:
             case JSType::JS_SET_ITERATOR:
+            case JSType::JS_REG_EXP_ITERATOR:
             case JSType::JS_API_ARRAYLIST_ITERATOR:
             case JSType::JS_API_TREEMAP_ITERATOR:
             case JSType::JS_API_TREESET_ITERATOR:
@@ -2066,6 +2068,25 @@ JSHandle<JSSetIterator> ObjectFactory::NewJSSetIterator(const JSHandle<JSSet> &s
     iter->SetIteratedSet(thread_, set->GetLinkedSet());
     iter->SetNextIndex(0);
     iter->SetIterationKind(kind);
+    return iter;
+}
+
+JSHandle<JSRegExpIterator> ObjectFactory::NewJSRegExpIterator(const JSHandle<JSTaggedValue> &matcher,
+                                                              const JSHandle<EcmaString> &inputStr, bool global,
+                                                              bool fullUnicode)
+{
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+    JSHandle<JSTaggedValue> protoValue = env->GetRegExpIteratorPrototype();
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSHClass> dynHandle(globalConst->GetHandledJSRegExpIteratorClass());
+    dynHandle->SetPrototype(thread_, protoValue);
+    JSHandle<JSRegExpIterator> iter(NewJSObject(dynHandle));
+    iter->GetJSHClass()->SetExtensible(true);
+    iter->SetIteratingRegExp(thread_, matcher.GetTaggedValue());
+    iter->SetIteratedString(thread_, inputStr.GetTaggedValue());
+    iter->SetGlobal(global);
+    iter->SetUnicode(fullUnicode);
+    iter->SetDone(false);
     return iter;
 }
 

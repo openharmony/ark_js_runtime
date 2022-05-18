@@ -37,6 +37,7 @@ group("ark_js_moduletest") {
     "newobjdynrange:newobjdynrangeAction",
     "objectcloneproperties:objectclonepropertiesAction",
     "promise:promiseAction",
+    "regexpcallthrow:regexpcallthrowAction",
     "spreadoperator:spreadoperatorAction",
     "stackoverflow:stackoverflowAction",
     "throwdyn:throwdynAction",

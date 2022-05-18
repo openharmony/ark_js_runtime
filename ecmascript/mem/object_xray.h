@@ -63,6 +63,7 @@
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_realm.h"
 #include "ecmascript/js_regexp.h"
+#include "ecmascript/js_regexp_iterator.h"
 #include "ecmascript/js_relative_time_format.h"
 #include "ecmascript/js_set.h"
 #include "ecmascript/js_displaynames.h"
@@ -210,6 +211,9 @@ public:
                 break;
             case JSType::JS_SET_ITERATOR:
                 JSSetIterator::Cast(object)->VisitRangeSlot(visitor);
+                break;
+            case JSType::JS_REG_EXP_ITERATOR:
+                JSRegExpIterator::Cast(object)->VisitRangeSlot(visitor);
                 break;
             case JSType::JS_ARRAY_ITERATOR:
                 JSArrayIterator::Cast(object)->VisitRangeSlot(visitor);
