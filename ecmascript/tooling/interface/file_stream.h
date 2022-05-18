@@ -45,6 +45,31 @@ private:
 
     std::fstream fileStream_;
 };
+
+class FileDescriptorStream : public Stream {
+public:
+    explicit FileDescriptorStream(int32_t fd): fd_(fd)
+    {
+    }
+
+    ~FileDescriptorStream() override;
+
+    void EndOfStream() override;
+
+    // Get chunk's size
+    int GetSize() override
+    {
+        const static int fileChunkSize = 10240;
+        return fileChunkSize;
+    }
+
+    // Writes the chunk of data into the stream
+    bool WriteChunk(char* data, int size) override;
+    bool Good() override;
+
+private:
+    int32_t fd_;
+};
 }  // namespace panda::ecmascript::tooling
 
 #endif  // ECMASCRIPT_TOOLING_INTERFACE_FILE_STREAM_H

@@ -238,8 +238,8 @@ public:
     static constexpr int SEQ_STEP = 2;
     NO_MOVE_SEMANTIC(HeapSnapshot);
     NO_COPY_SEMANTIC(HeapSnapshot);
-    explicit HeapSnapshot(const EcmaVM *vm, const bool isVmMode)
-        : stringTable_(vm), vm_(vm), isVmMode_(isVmMode)
+    explicit HeapSnapshot(const EcmaVM *vm, const bool isVmMode, const bool isPrivate)
+        : stringTable_(vm), vm_(vm), isVmMode_(isVmMode), isPrivate_(isPrivate)
     {
     }
     ~HeapSnapshot();
@@ -300,9 +300,15 @@ public:
         return isVmMode_;
     }
 
+    bool IsPrivate() const
+    {
+        return isPrivate_;
+    }
+
 private:
     void FillNodes();
     Node *GenerateNode(JSTaggedValue entry, int sequenceId = -1);
+    Node *GeneratePrivateStringNode(int sequenceId);
     Node *GenerateStringNode(JSTaggedValue entry, int sequenceId);
     void FillEdges();
     void BridgeAllReferences();
@@ -327,6 +333,8 @@ private:
     panda::ecmascript::HeapRootVisitor rootVisitor_;
     const EcmaVM *vm_;
     bool isVmMode_ {true};
+    bool isPrivate_ {false};
+    Node* privateStringNode_ {nullptr};
 };
 
 class EntryVisitor {
