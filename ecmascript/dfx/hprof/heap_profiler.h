@@ -48,22 +48,24 @@ public:
     /**
      * dump the specific snapshot in target format
      */
-    bool DumpHeapSnapshot(DumpFormat dumpFormat, Stream *stream, Progress *progress, bool isVmMode = true) override;
+    bool DumpHeapSnapshot(DumpFormat dumpFormat, Stream *stream, Progress *progress = nullptr,
+                          bool isVmMode = true, bool isPrivate = false) override;
+
     void AddSnapshot(HeapSnapshot *snapshot);
 
     bool StartHeapTracking(double timeInterval, bool isVmMode = true) override;
-    bool StopHeapTracking(Stream *stream, Progress *progress) override;
+    bool StopHeapTracking(Stream *stream, Progress *progress = nullptr) override;
 
 private:
     /**
-     * tigger full gc to make sure no unreachable objects in heap
+     * trigger full gc to make sure no unreachable objects in heap
      */
     bool ForceFullGC(const EcmaVM *vm);
 
     /**
      * make a new heap snapshot and put it into a container eg, vector
      */
-    HeapSnapshot *MakeHeapSnapshot(SampleType sampleType, bool isVmMode = true);
+    HeapSnapshot *MakeHeapSnapshot(SampleType sampleType, bool isVmMode = true, bool isPrivate = false);
     std::string GenDumpFileName(DumpFormat dumpFormat);
     CString GetTimeStamp();
     void ClearSnapshot();

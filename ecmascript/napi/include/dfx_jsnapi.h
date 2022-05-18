@@ -38,13 +38,21 @@ using Progress = ecmascript::Progress;
 
 class PUBLIC_API DFXJSNApi {
 public:
-    static void DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, const std::string &path, bool isVmMode = true);
-    static void DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, Stream *stream,
-                                 Progress *progress, bool isVmMode = true);
+    // progress pointer is used to report the object number for IDE.
+    // isVmMode means the internal class in vm is visible. isPrivate means the number and string is not visible.
+    static void DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, const std::string &path, bool isVmMode = true,
+                                 bool isPrivate = false);
+    static void DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, Stream *stream, Progress *progress = nullptr,
+                                 bool isVmMode = true, bool isPrivate = false);
+
+#if defined(ENABLE_DUMP_IN_FAULTLOG)
+    static void DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, bool isVmMode = true, bool isPrivate = false);
+#endif
+
     static bool BuildNativeAndJsBackStackTrace(EcmaVM *vm, std::string &stackTraceStr);
     static bool StartHeapTracking(EcmaVM *vm, double timeInterval, bool isVmMode = true);
     static bool StopHeapTracking(EcmaVM *vm, const std::string &filePath);
-    static bool StopHeapTracking(EcmaVM *vm, Stream *stream, Progress *progress);
+    static bool StopHeapTracking(EcmaVM *vm, Stream *stream, Progress *progress = nullptr);
     static void PrintStatisticResult(const EcmaVM *vm);
     static void StartRuntimeStat(EcmaVM *vm);
     static void StopRuntimeStat(EcmaVM *vm);

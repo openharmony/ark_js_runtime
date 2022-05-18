@@ -23,6 +23,10 @@
 #include "ecmascript/mem/gc_stats.h"
 #include "ecmascript/tooling/interface/file_stream.h"
 
+#if defined(ENABLE_DUMP_IN_FAULTLOG)
+#include "include/faultloggerd_client.h"
+#endif
+
 namespace panda {
 using ecmascript::CString;
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
@@ -34,19 +38,36 @@ using ecmascript::GCStats;
 template<typename T>
 using JSHandle = ecmascript::JSHandle<T>;
 using ecmascript::FileStream;
+using ecmascript::FileDescriptorStream;
 
-void DFXJSNApi::DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, const std::string &path, bool isVmMode)
+void DFXJSNApi::DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, const std::string &path, bool isVmMode, bool isPrivate)
 {
     FileStream stream(path);
-    DumpHeapSnapshot(vm, dumpFormat, &stream, nullptr, isVmMode);
+    DumpHeapSnapshot(vm, dumpFormat, &stream, nullptr, isVmMode, isPrivate);
 }
 
-void DFXJSNApi::DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, Stream *stream, Progress *progress, bool isVmMode)
+void DFXJSNApi::DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, Stream *stream, Progress *progress,
+                                 bool isVmMode, bool isPrivate)
 {
     ecmascript::HeapProfilerInterface *heapProfile = ecmascript::HeapProfilerInterface::GetInstance(vm);
-    heapProfile->DumpHeapSnapshot(ecmascript::DumpFormat(dumpFormat), stream, progress, isVmMode);
+    heapProfile->DumpHeapSnapshot(ecmascript::DumpFormat(dumpFormat), stream, progress, isVmMode, isPrivate);
     ecmascript::HeapProfilerInterface::Destroy(vm);
 }
+
+#if defined(ENABLE_DUMP_IN_FAULTLOG)
+void DFXJSNApi::DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, bool isVmMode, bool isPrivate)
+{
+    // Write in faultlog for heap leak.
+    int32_t fd = RequestFileDescriptor(static_cast<int32_t>(FaultLoggerType::JS_HEAP_SNAPSHOT));
+    if (fd < 0) {
+        LOG_ECMA(ERROR) << "Write FD failed, fd" << fd;
+        return;
+    }
+    FileDescriptorStream stream(fd);
+    DumpHeapSnapshot(vm, dumpFormat, &stream, nullptr, isVmMode, isPrivate);
+    close(fd);
+}
+#endif
 
 bool DFXJSNApi::BuildNativeAndJsBackStackTrace(EcmaVM *vm, std::string &stackTraceStr)
 {

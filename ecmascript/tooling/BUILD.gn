@@ -92,7 +92,7 @@ ohos_shared_library("libark_ecma_debugger_test") {
     "//ark/js_runtime:libark_jsruntime_test_set",
   ]
 
-  if (!is_linux && !is_mingw && !is_mac) {
+  if (is_ohos && is_standard_system) {
     if (build_public_version) {
       external_deps = [ "hitrace_native:hitrace_meter" ]
     }

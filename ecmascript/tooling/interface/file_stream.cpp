@@ -92,4 +92,44 @@ bool FileStream::WriteChunk(char* data, int size)
 
     return true;
 }
+
+FileDescriptorStream::~FileDescriptorStream()
+{
+    EndOfStream();
+}
+
+void FileDescriptorStream::EndOfStream()
+{
+    LOG_ECMA(INFO) << "FileDescriptorStream" << fd_;
+}
+
+bool FileDescriptorStream::Good()
+{
+    return fd_ > 0;
+}
+
+// Writes the chunk of data into the stream
+bool FileDescriptorStream::WriteChunk(char* data, int size)
+{
+    if (fd_ < 0) {
+        return false;
+    }
+
+    std::string str;
+    str.resize(size);
+    for (int i = 0; i < size; ++i) {
+        str[i] = data[i];
+    }
+    int ret = dprintf(fd_, "%s", str.c_str());
+    if (ret < 0) {
+        LOG_ECMA(ERROR) << "Write FD print failed, ret" << ret;
+        return false;
+    }
+    ret = fsync(fd_);
+    if (ret < 0) {
+        LOG_ECMA(ERROR) << "Write FD file failed, ret" << ret;
+        return false;
+    }
+    return true;
+}
 }
