@@ -296,6 +296,7 @@ private:
     V(BytecodeDebuggerHandler)              \
     V(CallRuntime)                          \
     V(AsmInterpreterEntry)                  \
+    V(GeneratorReEnterAsmInterp)            \
     V(JSCallDispatch)                       \
     V(CallRuntimeWithArgv)                  \
     V(OptimizedCallOptimized)               \

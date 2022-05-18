@@ -36,6 +36,7 @@ extern "C" JSTaggedType CallRuntimeWithArgv(uintptr_t glue, uint64_t runtime_id,
     uint64_t argc, uintptr_t argv);
 // for platforms not x64
 extern "C" JSTaggedType AsmInterpreterEntry(uintptr_t glue, uint32_t argc, uintptr_t argv);
+extern "C" JSTaggedType GeneratorReEnterAsmInterp(uintptr_t glue, JSTaggedType context);
 extern "C" JSTaggedType JSCallDispatch(uintptr_t glue, uint32_t argc, uintptr_t argv);
 extern "C" void JSCall(uintptr_t glue, uint32_t argc, JSTaggedType callTarget,
                        JSTaggedType newTarget, JSTaggedType thisObj, ...);
@@ -86,9 +87,10 @@ extern "C" void ResumeCaughtFrameAndDispatch(uintptr_t glue, uintptr_t pc, uintp
 #define RUNTIME_ASM_STUB_LIST(V)             \
     V(CallRuntime)                           \
     V(AsmInterpreterEntry)                   \
+    V(GeneratorReEnterAsmInterp)             \
     V(JSCallDispatch)                        \
     V(PushCallArgs0AndDispatch)              \
-    V(PushCallArgsAndDispatchNative)        \
+    V(PushCallArgsAndDispatchNative)         \
     V(PushCallArgs0AndDispatchSlowPath)      \
     V(PushCallArgs1AndDispatch)              \
     V(PushCallArgs1AndDispatchSlowPath)      \

@@ -402,7 +402,7 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
             INTERPRETER_GOTO_EXCEPTION_HANDLER();                                                  \
         }                                                                                          \
         SAVE_PC();                                                                                 \
-        GET_ASM_FRAME(sp)->callSizeOrCallSiteSp = GetJumpSizeAfterCall(pc);                                    \
+        GET_ASM_FRAME(sp)->callSizeOrCallSiteSp = GetJumpSizeAfterCall(pc);                        \
         AsmInterpretedFrame *state = GET_ASM_FRAME(newSp);                                         \
         state->base.prev = sp;                                                                     \
         state->base.type = FrameType::ASM_INTERPRETER_FRAME;                                           \
@@ -424,6 +424,7 @@ extern "C" void JSCallEntry(uintptr_t glue, JSTaggedType *sp, const uint8_t *pc,
     JSTaggedValue profileTypeInfo, JSTaggedValue acc, uint32_t hotnessCounter);
 
 using InterpreterEntry = JSTaggedType (*)(uintptr_t glue, uint32_t argc, uintptr_t argv);
+using GeneratorReEnterInterpEntry = JSTaggedType (*)(uintptr_t glue, JSTaggedType context);
 
 // NOLINTNEXTLINE(readability-function-size)
 void InterpreterAssembly::RunInternal(JSThread *thread, ConstantPool *constpool, const uint8_t *pc, JSTaggedType *sp)
@@ -648,6 +649,14 @@ JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
 }
 #endif
 
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+JSTaggedValue InterpreterAssembly::GeneratorReEnterInterpreter(JSThread *thread, JSHandle<GeneratorContext> context)
+{
+    auto entry = thread->GetRTInterface(kungfu::RuntimeStubCSigns::ID_GeneratorReEnterAsmInterp);
+    auto acc = reinterpret_cast<GeneratorReEnterInterpEntry>(entry)(thread->GetGlueAddr(), context.GetTaggedType());
+    return JSTaggedValue(acc);
+}
+#else
 JSTaggedValue InterpreterAssembly::GeneratorReEnterInterpreter(JSThread *thread, JSHandle<GeneratorContext> context)
 {
     JSHandle<JSFunction> func = JSHandle<JSFunction>::Cast(JSHandle<JSTaggedValue>(thread, context->GetMethod()));
@@ -702,6 +711,7 @@ JSTaggedValue InterpreterAssembly::GeneratorReEnterInterpreter(JSThread *thread,
     thread->SetCurrentSPFrame(currentSp);
     return res;
 }
+#endif
 
 void InterpreterAssembly::HandleMovV4V4(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
