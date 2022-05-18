@@ -27,6 +27,6 @@ extern "C" JSTaggedType OptimizedCallOptimized(uintptr_t glue, uint32_t expected
     uint32_t actualNumArgs, uintptr_t codeAddr, ...);
 
 using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
-                                        uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr);
+                                         uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr);
 }  // panda::ecmascript
 #endif  // ECMASCRIPT_BRIDGE_H

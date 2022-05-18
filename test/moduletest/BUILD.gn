@@ -53,8 +53,6 @@ group("ark_asm_test") {
   testonly = true
   deps = [
     "allocatearraybuffer:allocatearraybufferAsmAction",
-
-    # "async:asyncAsmAction",
     "bindfunction:bindfunctionAsmAction",
     "bitwiseop:bitwiseopAsmAction",
     "callframe:callframeAsmAction",
@@ -81,6 +79,7 @@ group("ark_asm_test") {
   ]
   if (!is_debug) {
     deps += [
+      "async:asyncAsmAction",
       "objectcloneproperties:objectclonepropertiesAsmAction",
       "promise:promiseAsmAction",
       "spreadoperator:spreadoperatorAsmAction",

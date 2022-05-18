@@ -1609,54 +1609,6 @@ JSTaggedValue RuntimeStubs::RuntimeThrowSyntaxError(JSThread *thread, const char
     THROW_SYNTAX_ERROR_AND_RETURN(thread, message, JSTaggedValue::Exception());
 }
 
-JSTaggedType RuntimeStubs::RuntimeCall1(JSThread *thread, JSHandle<JSTaggedValue> func, JSHandle<JSTaggedValue> arg)
-{
-    thread->CheckSafepoint();
-    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    EcmaRuntimeCallInfo info =
-        ecmascript::EcmaInterpreter::NewRuntimeCallInfo(thread, func, undefined, undefined, 1);
-    info.SetCallArg(0, arg.GetTaggedValue());
-
-    JSTaggedValue result = JSFunction::Call(&info);
-    return result.GetRawData();
-}
-
-JSTaggedType RuntimeStubs::RuntimeNativeCall(JSThread *thread, JSHandle<JSTaggedValue> func, bool callThis,
-                                             uint32_t actualNumArgs, std::vector<JSTaggedType> &actualArgs)
-{
-    thread->CheckSafepoint();
-
-    if (!func->IsCallable()) {
-        [[maybe_unused]] EcmaHandleScope handleScope(thread);
-        EcmaVM *ecmaVm = thread->GetEcmaVM();
-        ObjectFactory *factory = ecmaVm->GetFactory();
-        JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR, "is not callable");
-        thread->SetException(error.GetTaggedValue());
-        return JSTaggedValue::VALUE_EXCEPTION;
-    }
-    ECMAObject *funcObject = ECMAObject::Cast(func->GetTaggedObject());
-    JSMethod *method = funcObject->GetCallTarget();
-    [[maybe_unused]] uint64_t callField = method->GetCallField();
-    ASSERT(JSMethod::IsNativeBit::Decode(callField));
-    size_t size = actualNumArgs + NUM_MANDATORY_JSFUNC_ARGS;
-    JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    JSTaggedType *args = sp - size;
-    uint32_t startIdx = 0;
-    args[startIdx++] = static_cast<JSTaggedType>(ToUintPtr(funcObject));
-    args[startIdx++] = JSTaggedValue::VALUE_UNDEFINED;
-    if (!callThis) {
-        args[startIdx++] = JSTaggedValue::VALUE_UNDEFINED;
-    }
-    size_t copyArgs = actualArgs.size();
-    for (size_t i = 0; i < copyArgs; i++) {
-        args[startIdx++] = actualArgs[i];
-    }
-    EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, actualNumArgs, args);
-    JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
-                const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);
-    return retValue.GetRawData();
-}
-
 JSTaggedValue RuntimeStubs::RuntimeLdBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &numberBigInt)
 {
     return JSTaggedValue::ToBigInt(thread, numberBigInt);
@@ -1776,6 +1728,25 @@ JSTaggedValue RuntimeStubs::RuntimeSuspendAotGenerator(JSThread *thread, const J
     }
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return generatorObjectHandle.GetTaggedValue();
+}
+
+JSTaggedValue RuntimeStubs::RuntimeNewAotObjDynRange(JSThread *thread, uintptr_t argv, uint32_t argc)
+{
+    JSTaggedType *args = reinterpret_cast<JSTaggedType *>(argv);
+    JSHandle<JSTaggedValue> ctor = GetHArg<JSTaggedValue>(argv, argc, 0);
+    JSHandle<JSTaggedValue> newTgt = GetHArg<JSTaggedValue>(argv, argc, 1);
+    JSHandle<JSTaggedValue> thisObj = thread->GlobalConstants()->GetHandledUndefined();
+    const size_t numCtorAndNewTgt = 2;
+    STACK_ASSERT_SCOPE(thread);
+    EcmaRuntimeCallInfo info =
+        ecmascript::EcmaInterpreter::NewRuntimeCallInfo(thread, ctor, thisObj, newTgt, argc - numCtorAndNewTgt);
+    for (size_t i = 0; i < argc - numCtorAndNewTgt; ++i) {
+        info.SetCallArg(i, JSTaggedValue(args[i + numCtorAndNewTgt]));
+    }
+
+    JSTaggedValue object = JSFunction::Construct(&info);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    return object;
 }
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_RUNTIME_TRAMPOLINES_INL_H

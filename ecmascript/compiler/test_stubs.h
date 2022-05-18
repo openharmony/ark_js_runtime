@@ -21,8 +21,7 @@
 namespace panda::ecmascript::kungfu {
 #define IGNORE_TEST_STUB(name, count)
 
-#ifdef ECMASCRIPT_ENABLE_TEST_STUB
-
+#ifndef NDEBUG
 #define TEST_STUB_LIST(V)               \
     V(FooAOT, 7)                        \
     V(Foo1AOT, 7)                       \

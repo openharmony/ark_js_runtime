@@ -31,13 +31,20 @@ HeapProfiler::~HeapProfiler()
     jsonSerializer_ = nullptr;
 }
 
-bool HeapProfiler::DumpHeapSnapshot(DumpFormat dumpFormat, Stream *stream, bool isVmMode)
+bool HeapProfiler::DumpHeapSnapshot(DumpFormat dumpFormat, Stream *stream, Progress *progress, bool isVmMode)
 {
     [[maybe_unused]] bool heapClean = ForceFullGC(vm_);
     ASSERT(heapClean);
     size_t heapSize = vm_->GetHeap()->GetHeapObjectSize();
     LOG(ERROR, RUNTIME) << "HeapProfiler DumpSnapshot heap size " << heapSize;
+    int32_t heapCount = vm_->GetHeap()->GetHeapObjectCount();
+    if (progress != nullptr) {
+        progress->ReportProgress(0, heapCount);
+    }
     HeapSnapshot *snapshot = MakeHeapSnapshot(SampleType::ONE_SHOT, isVmMode);
+    if (progress != nullptr) {
+        progress->ReportProgress(heapCount, heapCount);
+    }
     ASSERT(snapshot != nullptr);
     if (!stream->Good()) {
         FileStream newStream(GenDumpFileName(dumpFormat));
@@ -58,11 +65,13 @@ bool HeapProfiler::StartHeapTracking(double timeInterval, bool isVmMode)
     return true;
 }
 
-bool HeapProfiler::StopHeapTracking(Stream *stream)
+bool HeapProfiler::StopHeapTracking(Stream *stream, Progress *progress)
 {
     if (heapTracker_ == nullptr) {
         return false;
     }
+    int32_t heapCount = vm_->GetHeap()->GetHeapObjectCount();
+
     const_cast<EcmaVM *>(vm_)->StopHeapTracking();
     heapTracker_->StopTracing();
 
@@ -70,7 +79,14 @@ bool HeapProfiler::StopHeapTracking(Stream *stream)
     if (snapshot == nullptr) {
         return false;
     }
+
+    if (progress != nullptr) {
+        progress->ReportProgress(0, heapCount);
+    }
     snapshot->FinishSnapshot();
+    if (progress != nullptr) {
+        progress->ReportProgress(heapCount, heapCount);
+    }
     return jsonSerializer_->Serialize(snapshot, stream);
 }
 

@@ -1037,6 +1037,36 @@ void AssemblerX64::And(Register src, Register dst)
     EmitModrm(src, dst);
 }
 
+void AssemblerX64::Or(Immediate src, Register dst)
+{
+    EmitRexPrefixW(dst);
+    if (InRange8(src.Value())) {
+        // 83: or r/m64, imm8
+        EmitU8(0x83);
+        // 1: 83 /1 ib
+        EmitModrm(1, dst);
+        EmitI8(static_cast<int8_t>(src.Value()));
+    } else if (dst == rax) {
+        // 0x0D: or rax, imm32
+        EmitU8(0x0D);
+        EmitI32(src.Value());
+    } else {
+        // 81: or r/m64, imm32
+        EmitU8(0x81);
+        // 1: 81 /1 id
+        EmitModrm(1, dst);
+        EmitI32(src.Value());
+    }
+}
+
+void AssemblerX64::Orq(Register src, Register dst)
+{
+    EmitRexPrefix(src, dst);
+    // 09 : Or r/m64, r64
+    EmitU8(0x09);
+    EmitModrm(src, dst);
+}
+
 void AssemblerX64::Jnz(Label *target, Distance distance)
 {
     if (target->IsBound()) {

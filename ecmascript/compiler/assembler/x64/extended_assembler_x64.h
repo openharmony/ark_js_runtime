@@ -35,6 +35,8 @@ public:
     void PushGhcCalleeSaveRegisters();
     void PopGhcCalleeSaveRegisters();
     void PushArgsWithArgv(Register argc, Register argv, Register operatorRegister);
+    void PushArgc(int32_t argc, Register tempArgcRegister);
+    void PushArgc(Register argcRegister, Register tempArgcRegister);
 private:
     kungfu::AssemblerModule *module_;
 };

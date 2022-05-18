@@ -86,8 +86,10 @@ void FrameHandler::PrevFrame()
             sp_ = frame->GetPrevFrameFp();
             break;
         }
-        default:
+        default: {
+            LOG_ECMA(FATAL) << "frame type error!";
             UNREACHABLE();
+        }
     }
 }
 
@@ -129,8 +131,10 @@ uintptr_t FrameHandler::GetPrevFrameCallSiteSp(const JSTaggedType *sp)
         case FrameType::OPTIMIZED_ENTRY_FRAME:
         case FrameType::INTERPRETER_ENTRY_FRAME:
         case FrameType::ASM_INTERPRETER_ENTRY_FRAME:
-        default:
+        default: {
+            LOG_ECMA(FATAL) << "frame type error!";
             UNREACHABLE();
+        }
     }
 
     if (type == FrameType::OPTIMIZED_FRAME) {
@@ -256,9 +260,10 @@ JSTaggedValue FrameHandler::GetFunction() const
             case FrameType::LEAVE_FRAME:
             case FrameType::LEAVE_FRAME_WITH_ARGV:
             case FrameType::OPTIMIZED_ENTRY_FRAME:
-            default:
+            default: {
                 LOG_ECMA(FATAL) << "frame type error!";
                 UNREACHABLE();
+            }
          }
     } else {
         auto *frame = InterpretedFrame::GetFrameFromSp(sp_);
@@ -346,9 +351,10 @@ ARK_INLINE uintptr_t FrameHandler::GetInterpretedFrameEnd(JSTaggedType *prevSp) 
         case FrameType::LEAVE_FRAME_WITH_ARGV:
         case FrameType::OPTIMIZED_ENTRY_FRAME:
         case FrameType::ASM_INTERPRETER_ENTRY_FRAME:
-        default:
+        default: {
             LOG_ECMA(FATAL) << "frame type error!";
             UNREACHABLE();
+        }
     }
     return end;
 }
@@ -709,6 +715,10 @@ void FrameHandler::IterateFrameChain(JSTaggedType *start, const RootVisitor &v0,
                 InterpretedEntryFrameIterate(current, v0, v1);
                 current = frame->GetPrevFrameFp();
                 break;
+            }
+            default: {
+                LOG_ECMA(FATAL) << "frame type error!";
+                UNREACHABLE();
             }
         }
     }

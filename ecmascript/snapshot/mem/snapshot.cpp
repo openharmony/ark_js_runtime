@@ -135,7 +135,7 @@ const JSPandaFile *Snapshot::Deserialize(SnapshotType type, const CString &snaps
         LOG_ECMA(FATAL) << "lseek failed";
         UNREACHABLE();
     }
-    auto readFile = ToUintPtr(mmap(nullptr, file_size, PROT_READ, MAP_PRIVATE, fd, 0));
+    auto readFile = ToUintPtr(mmap(nullptr, file_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0));
     auto hdr = *ToNativePtr<const Header>(readFile);
     size_t defaultSnapshotSpaceCapacity = vm_->GetJSOptions().DefaultSnapshotSpaceCapacity();
     if (defaultSnapshotSpaceCapacity == 0) {
