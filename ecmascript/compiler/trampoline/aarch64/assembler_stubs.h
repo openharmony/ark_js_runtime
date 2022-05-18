@@ -22,6 +22,7 @@
 namespace panda::ecmascript::aarch64 {
 class AssemblerStubs {
 public:
+    static const int FRAME_SLOT_SIZE = 8;
     static inline int64_t GetStackArgOffSetToFp(unsigned argId)
     {
         //   +--------------------------+
@@ -38,7 +39,7 @@ public:
         //   |       frameType          |   v
         //   +--------------------------+ ---
         // 16 : 16 means arguments offset to fp
-        return 16 + argId * 8;  // 8 : 8 means size of each args
+        return 16 + argId * FRAME_SLOT_SIZE;
     }
 
     static void CallRuntime(ExtendedAssembler *assembler);

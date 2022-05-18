@@ -251,7 +251,7 @@ void AssemblerStubsX64::OptimizedCallOptimized(ExtendedAssembler *assembler)
     __ Ret();
 }
 
-// uint64_t CallBuiltinTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
+// uint64_t CallBuiltinTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...)
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // Input:
 // %rax - glue

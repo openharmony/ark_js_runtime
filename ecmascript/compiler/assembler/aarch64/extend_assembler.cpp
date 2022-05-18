@@ -56,7 +56,7 @@ void ExtendedAssembler::CallAssemblerStub(int id, bool isTail)
 void ExtendedAssembler::BindAssemblerStub(int id)
 {
     Label *target = module_->GetFunctionLabel(id);
-    Bind(target);    
+    Bind(target);
 }
 
 void ExtendedAssembler::SaveFpAndLr()

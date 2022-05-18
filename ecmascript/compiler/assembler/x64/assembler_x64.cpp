@@ -559,6 +559,7 @@ void AssemblerX64::Jmp(Register dst)
     EmitRexPrefix(dst);
     // opcode FF/4 : jmp r/m64
     EmitU8(0xFF);
+    // 4 means register
     EmitModrm(4, dst);
 }
 
@@ -836,7 +837,8 @@ void AssemblerX64::Movl(Operand src, Register dst)
     EmitOperand(dst, src);
 }
 
-void AssemblerX64::Testq(Immediate src, Register dst) {
+void AssemblerX64::Testq(Immediate src, Register dst)
+{
     if (InRange8(src.Value())) {
         Testb(src, dst);
     } else if (dst == rax) {

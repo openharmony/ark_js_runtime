@@ -1863,7 +1863,6 @@ LLVMTypeRef LLVMModule::GetFuncType(const CallSignature *stubDescriptor)
     std::vector<LLVMTypeRef> paramTys;
     auto paramCount = stubDescriptor->GetParametersCount();
     int extraParameterCnt = 0;
-
     auto paramsType = stubDescriptor->GetParametersType();
 
     if (paramsType != nullptr) {
