@@ -264,7 +264,7 @@ OptimizedCallOptimized:
     pop     %rbp
     ret
 
-// uint64_t CallNativeTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
+// uint64_t CallBuiltinTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // Input:
 // %rax - glue
@@ -295,9 +295,9 @@ OptimizedCallOptimized:
 //  sp - 16: rbp <---------current rbp & current sp
 //  current sp - 8:  type
 
-.global CallNativeTrampoline
-.type CallNativeTrampoline, %function
-CallNativeTrampoline:
+.global CallBuiltinTrampoline
+.type CallBuiltinTrampoline, %function
+CallBuiltinTrampoline:
     pushq   %rbp
     movq    %rsp, %rbp     // set frame pointer
     movq    %rbp, ASM_GLUE_LEAVE_FRAME_OFFSET(%rax)   // save to thread->leaveFrame_
@@ -541,7 +541,7 @@ JSCall:
     push    %rsi                                    // native code address
     push    %rax                                    // pc
     mov     %rdi,  %rax
-    jmp     CallNativeTrampoline
+    jmp     CallBuiltinTrampoline
 
 //  input
 //  %rdi -- glue

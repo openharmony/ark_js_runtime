@@ -31,7 +31,7 @@ class GlobalEnv;
 class JSthread;
 class JSFunction;
 class ObjectFactory;
-extern "C" uint64_t CallNativeTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
+extern "C" uint64_t CallBuiltinTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
 extern "C" JSTaggedType CallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
 extern "C" JSTaggedType CallRuntimeWithArgv(uintptr_t glue, uint64_t runtime_id,
     uint64_t argc, uintptr_t argv);
@@ -109,7 +109,7 @@ extern "C" void ResumeCaughtFrameAndDispatch(uintptr_t glue, uintptr_t pc, uintp
     V(JSCall)                                \
     V(JSCallWithArgV)                        \
     V(JSFunctionEntry)                       \
-    V(CallNativeTrampoline)                  \
+    V(CallBuiltinTrampoline)                  \
     V(OptimizedCallOptimized)
 
 #define RUNTIME_STUB_WITHOUT_GC_LIST(V)        \

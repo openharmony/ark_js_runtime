@@ -602,12 +602,12 @@ DEF_CALL_SIGNATURE(JSFunctionEntry)
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
-DEF_CALL_SIGNATURE(CallNativeTrampoline)
+DEF_CALL_SIGNATURE(CallBuiltinTrampoline)
 {
     /* 3 : 3 input parameters */
-    CallSignature callNativeTrampoline("CallNativeTrampoline", 0, 3,
+    CallSignature CallBuiltinTrampoline("CallBuiltinTrampoline", 0, 3,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *callSign = callNativeTrampoline;
+    *callSign = CallBuiltinTrampoline;
     std::array<VariableType, 3> params = { /* 3 : 3 input parameters */
         VariableType::NATIVE_POINTER(),   // glue
         VariableType::NATIVE_POINTER(),   // codeAddress

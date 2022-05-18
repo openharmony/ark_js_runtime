@@ -333,7 +333,7 @@ private:
     V(CallIRangeDyn)                        \
     V(JSCall)                               \
     V(JSFunctionEntry)                      \
-    V(CallNativeTrampoline)                 \
+    V(CallBuiltinTrampoline)                 \
     V(JSCallWithArgV)                       \
     V(CreateArrayFromList)                  \
     V(JSObjectGetMethod)                    \

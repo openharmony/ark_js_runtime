@@ -29,7 +29,7 @@ public:
 
     static void OptimizedCallOptimized(ExtendedAssembler *assembler);
 
-    static void CallNativeTrampoline(ExtendedAssembler *assembler);
+    static void CallBuiltinTrampoline(ExtendedAssembler *assembler);
 
     static void JSCallWithArgV(ExtendedAssembler *assembler);
 

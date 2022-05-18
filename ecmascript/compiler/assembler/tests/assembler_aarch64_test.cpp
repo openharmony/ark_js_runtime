@@ -152,7 +152,7 @@ HWTEST_F_L0(AssemblerAarch64Test, MovReg)
     AssemblerAarch64 masm(chunk_);
     __ Mov(Register(X1),  Register(X2));
     __ Mov(Register(X2),  Register(SP));
-    __ Mov(Register(X1, true),  Register(X2, true));
+    __ Mov(Register(X1, W),  Register(X2, W));
     std::ostringstream oss;
     DisassembleChunk("aarch64-unknown-linux-gnu", &masm, oss);
     ASSERT_EQ(oss.str(), expectResult);
@@ -273,9 +273,9 @@ HWTEST_F_L0(AssemblerAarch64Test, Loop)
     AssemblerAarch64 masm(chunk_);
     Label label1;
     Label labelLoop;
-    Register count(X2, true);
+    Register count(X2, W);
     Register base(X4);
-    Register temp(X5, false);
+    Register temp(X5);
     __ Cmp(count, Immediate(0));
     __ B(Condition::EQ, &label1);
     __ Add(count, count, Immediate(-1));
