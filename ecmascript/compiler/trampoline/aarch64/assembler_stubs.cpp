@@ -357,9 +357,6 @@ void AssemblerStubs::CallBuiltinTrampoline(ExtendedAssembler *assembler)
     Register argV(X0);
     __ Add(argV, fp, Immediate(GetStackArgOffSetToFp(2)));    // argV
     __ Str(argV, MemoryOperand(sp, EcmaRuntimeCallInfo::GetStackArgsOffset()));
-    Register zero(X0);
-    __ Mov(zero, 0);
-    __ Str(zero, MemoryOperand(sp, EcmaRuntimeCallInfo::GetDataOffset()));
 
     Register callInfo(X0);
     __ Mov(callInfo, sp);
@@ -714,4 +711,11 @@ void AssemblerStubs::ResumeCaughtFrameAndDispatch(ExtendedAssembler *assembler)
     __ BindAssemblerStub(RTSTUB_ID(ResumeCaughtFrameAndDispatch));
     __ Ret();
 }
+
+void AssemblerStubs::GeneratorReEnterAsmInterp(ExtendedAssembler *assembler)
+{
+    __ BindAssemblerStub(RTSTUB_ID(GeneratorReEnterAsmInterp));
+    __ Ret();    
+}
+
 }  // panda::ecmascript::aarch64

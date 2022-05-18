@@ -24,6 +24,9 @@
 .global AsmInterpreterEntry
 .type AsmInterpreterEntry, %function
 
+.global GeneratorReEnterAsmInterp
+.type GeneratorReEnterAsmInterp, %function
+
 .global JSCallDispatch
 .type JSCallDispatch, %function
 
@@ -447,6 +450,9 @@ ResumeCaughtFrameAndDispatch:
     bx  lr
 
 AsmInterpreterEntry:
+    bx  lr
+
+GeneratorReEnterAsmInterp:
     bx  lr
 
 JSCallDispatch:

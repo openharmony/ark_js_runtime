@@ -37,9 +37,11 @@ public:
 
     static void CallRuntimeWithArgv(ExtendedAssembler *assembler);
 
-    static void AsmInterpreterEntry(ExtendedAssembler *assembler);
+    static void GeneratorReEnterAsmInterp(ExtendedAssembler *assembler);
 
     static void JSCallDispatch(ExtendedAssembler *assembler);
+
+    static void AsmInterpreterEntry(ExtendedAssembler *assembler);
 
     static void PushCallIThisRangeAndDispatch(ExtendedAssembler *assembler);
 
@@ -84,6 +86,13 @@ private:
         Register methodRegister, Register prevSpRegister, Register callFieldRegister);
     static void PushFrameState(ExtendedAssembler *assembler, Register prevSpRegister, Register fpRegister,
         Register callTargetRegister, Register methodRegister, Register pcRegister, Register operatorRegister);
+    static void PushGeneratorFrameState(ExtendedAssembler *assembler, Register prevSpRegister,
+        Register fpRegister, Register callTargetRegister, Register methodRegister, Register contextRegister,
+        Register pcRegister, Register operatorRegister);
+    static void PushAsmInterpEntryFrame(ExtendedAssembler *assembler);
+    static void PopAsmInterpEntryFrame(ExtendedAssembler *assembler);
+    static void CallBCStub(ExtendedAssembler *assembler, Register newSpRegister, Register glueRegister,
+        Register callTargetRegister, Register methodRegister, Register pcRegister, bool isReturn);
     static void GlueToThread(ExtendedAssembler *assembler, Register glueRegister, Register threadRegister);
     static void ConstructEcmaRuntimeCallInfo(ExtendedAssembler *assembler, Register threadRegister,
         Register numArgsRegister, Register stackArgsRegister);

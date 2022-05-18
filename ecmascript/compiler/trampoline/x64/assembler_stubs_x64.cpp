@@ -26,6 +26,7 @@
 #include "ecmascript/message_string.h"
 #include "ecmascript/runtime_call_id.h"
 #include "libpandafile/bytecode_instruction-inl.h"
+#include "ecmascript/js_generator_object.h"
 
 namespace panda::ecmascript::x64 {
 #define __ assembler->
@@ -297,6 +298,7 @@ void AssemblerStubsX64::CallBuiltinTrampoline(ExtendedAssembler *assembler)
     __ Addq(16, rdx); // 16 : for rbp & return address
     // load native pointer address
     __ Movq(Operand(rdx, 0), r10);  // r10 -> argv[0]
+    __ Subq(8, rsp); // 8: align 16 bytes
     __ Subq(sizeof(EcmaRuntimeCallInfo), rsp);
 
     // construct ecma_runtime_call_info
@@ -313,10 +315,10 @@ void AssemblerStubsX64::CallBuiltinTrampoline(ExtendedAssembler *assembler)
     __ Movq(rdx, rbx);
     __ Addq(16, rbx); // 16: argv[0]
     __ Movq(rbx, Operand(rsp, EcmaRuntimeCallInfo::GetStackArgsOffset())); // argv0
-    __ Movq(0, Operand(rsp, EcmaRuntimeCallInfo::GetDataOffset())); // argv1
 
     __ Movq(rsp, rdi);
     __ Callq(r10);
+    __ Addq(8, rsp); //  8: sp + 8 align 16bytes
     __ Addq(sizeof(EcmaRuntimeCallInfo), rsp);
     __ Popq(rbx);
     __ Pop(r10);
@@ -895,22 +897,67 @@ void AssemblerStubsX64::AsmInterpreterEntry(ExtendedAssembler *assembler)
     __ PushCppCalleeSaveRegisters();
     __ Pushq(rdi);  // caller save register
 
-    __ Pushq(rbp);
-    // construct asm interpreter entry frame
-    __ Movq(rsp, rbp);
-    __ Pushq(static_cast<int64_t>(FrameType::ASM_INTERPRETER_ENTRY_FRAME));
-    __ Movq(Operand(rdi, JSThread::GlueData::GetLeaveFrameOffset(false)), rbx);
-    __ Pushq(rbx);  // prev managed fp is leave frame or nullptr(the first frame)
-    __ Pushq(0);    // pc
+    // push asm interpreter entry frame
+    PushAsmInterpEntryFrame(assembler);
 
     __ Movq(kungfu::RuntimeStubCSigns::ID_JSCallDispatch, r12);
     __ Movq(Operand(rdi, r12, Scale::Times8, JSThread::GlueData::GetRTStubEntriesOffset(false)), r11);
     __ Callq(r11);
 
-    __ Addq(8, rsp);  // 8: skip pc
-    __ Popq(rbx);
-    __ Addq(8, rsp);  // 8: skip frame type
-    __ Popq(rbp);
+    PopAsmInterpEntryFrame(assembler);
+    __ Popq(rdi);
+    __ Movq(rbx, Operand(rdi, JSThread::GlueData::GetLeaveFrameOffset(false)));
+    __ PopCppCalleeSaveRegisters();
+    __ Ret();
+}
+
+// Generate code for generator re-enter asm interpreter
+// c++ calling convention
+// Input:
+// %rdi - glue
+// %rsi - context(GeneratorContext)
+void AssemblerStubsX64::GeneratorReEnterAsmInterp(ExtendedAssembler *assembler)
+{
+    __ BindAssemblerStub(RTSTUB_ID(GeneratorReEnterAsmInterp));
+    __ PushCppCalleeSaveRegisters();
+    __ Pushq(rdi);  // caller save register
+
+    // push asm interpreter entry frame
+    PushAsmInterpEntryFrame(assembler);
+
+    Register glueRegister = rdi;
+    Register contextRegister = rsi;
+    Register prevSpRegister = rbp;
+
+    Register callTargetRegister = r9;
+    Register methodRegister = rcx;
+    Register tempRegister = r11;  // can not be used to store any variable
+    __ Movq(Operand(rsi, GeneratorContext::GENERATOR_METHOD_OFFSET), callTargetRegister);
+    __ Movq(Operand(callTargetRegister, JSFunctionBase::METHOD_OFFSET), methodRegister);
+
+    Register fpRegister = r10;
+    __ Movq(rsp, fpRegister);
+    Register nRegsRegister = rdx;
+    Register regsArrayRegister = r12;
+    // push context regs
+    __ Movl(Operand(rsi, GeneratorContext::GENERATOR_NREGS_OFFSET), nRegsRegister);
+    __ Movq(Operand(rsi, GeneratorContext::GENERATOR_REGS_ARRAY_OFFSET), regsArrayRegister);
+    __ Addq(TaggedArray::DATA_OFFSET, regsArrayRegister);
+    __ PushArgsWithArgv(nRegsRegister, regsArrayRegister, tempRegister);
+
+    // newSp
+    Register newSpRegister = r8;
+    __ Movq(rsp, newSpRegister);
+
+    // resume asm interp frame
+    Register pcRegister = r12;
+    PushGeneratorFrameState(assembler, prevSpRegister, fpRegister, callTargetRegister, methodRegister, contextRegister,
+        pcRegister, tempRegister);
+
+    // call bc stub
+    CallBCStub(assembler, newSpRegister, glueRegister, callTargetRegister, methodRegister, pcRegister, false);
+
+    PopAsmInterpEntryFrame(assembler);
     __ Popq(rdi);
     __ Movq(rbx, Operand(rdi, JSThread::GlueData::GetLeaveFrameOffset(false)));
     __ PopCppCalleeSaveRegisters();
@@ -1020,8 +1067,6 @@ void AssemblerStubsX64::PushArgsFastPath(ExtendedAssembler *assembler, Register 
     Label pushCallTarget;
     Label pushVregs;
     Label pushFrameState;
-    Label alignedJSCallEntry;
-    Label returnOfCallJSFunction;
 
     __ Cmpq(0, argcRegister);
     __ Jbe(&pushCallThis);  // skip push args
@@ -1067,39 +1112,7 @@ void AssemblerStubsX64::PushArgsFastPath(ExtendedAssembler *assembler, Register 
 
     Register pcRegister = r12;  // reuse r12
     PushFrameState(assembler, prevSpRegister, fpRegister, callTargetRegister, methodRegister, pcRegister, tempRegister);
-
-    // align 16 bytes
-    __ Testb(15, rsp);  // 15: 0x1111
-    __ Jnz(&alignedJSCallEntry);
-    __ PushAlignBytes();
-    __ Bind(&alignedJSCallEntry);
-    {
-        __ Pushq(newSpRegister);  // caller save newSp register to restore rsp after call
-        // prepare call entry
-        __ Movq(glueRegister, r13);  // %r13 - glue
-        __ Movq(newSpRegister, rbp); // %rbp - sp
-                                     // %r12 - pc
-        __ Movq(Operand(callTargetRegister, JSFunction::CONSTANT_POOL_OFFSET), rbx);       // rbx - constantpool
-        __ Movq(Operand(callTargetRegister, JSFunction::PROFILE_TYPE_INFO_OFFSET), r14);   // r14 - profileTypeInfo
-        __ Movq(JSTaggedValue::Hole().GetRawData(), rsi);                                  // rsi - acc
-        __ Movzwq(Operand(methodRegister, JSMethod::GetHotnessCounterOffset(false)), rdi); // rdi - hotnessCounter
-
-        // call the first bytecode handler
-        __ Movzbq(Operand(pcRegister, 0), rax);
-        __ Movq(Operand(r13, rax, Times8, JSThread::GlueData::GetBCStubEntriesOffset(false)), r11);
-        __ Callq(r11);
-        __ Jmp(&returnOfCallJSFunction);
-    }
-
-    __ Bind(&returnOfCallJSFunction);
-    {
-        Register frameStateBaseRegister = r11;
-        __ Popq(frameStateBaseRegister);
-        __ Subq(sizeof(AsmInterpretedFrame), frameStateBaseRegister);
-        __ Movq(Operand(frameStateBaseRegister, AsmInterpretedFrame::GetAccOffset(false)), rax);  // return value
-        __ Movq(Operand(frameStateBaseRegister, AsmInterpretedFrame::GetFpOffset(false)), rsp);   // resume rsp
-        __ Ret();
-    }
+    CallBCStub(assembler, newSpRegister, glueRegister, callTargetRegister, methodRegister, pcRegister, true);
 }
 
 // Input:
@@ -1153,15 +1166,95 @@ void AssemblerStubsX64::PushFrameState(ExtendedAssembler *assembler, Register pr
     Register callTargetRegister, Register methodRegister, Register pcRegister, Register operatorRegister)
 {
     __ Pushq(static_cast<int32_t>(FrameType::ASM_INTERPRETER_FRAME));  // frame type
-    __ Pushq(prevSpRegister);                                      // prevSp
+    __ Pushq(prevSpRegister);                                          // prevSp
     __ Movq(Operand(methodRegister, JSMethod::GetBytecodeArrayOffset(false)), pcRegister);
-    __ Pushq(pcRegister);                                          // pc
-    __ Pushq(fpRegister);                                          // fp
-    __ Pushq(0);                                                   // jumpSizeAfterCall
+    __ Pushq(pcRegister);                                              // pc
+    __ Pushq(fpRegister);                                              // fp
+    __ Pushq(0);                                                       // jumpSizeAfterCall
     __ Movq(Operand(callTargetRegister, JSFunction::LEXICAL_ENV_OFFSET), operatorRegister);
-    __ Pushq(operatorRegister);                                    // env
-    __ Pushq(JSTaggedValue::Hole().GetRawData());                  // acc
-    __ Pushq(callTargetRegister);                                  // callTarget
+    __ Pushq(operatorRegister);                                        // env
+    __ Pushq(JSTaggedValue::Hole().GetRawData());                      // acc
+    __ Pushq(callTargetRegister);                                      // callTarget
+}
+
+void AssemblerStubsX64::PushGeneratorFrameState(ExtendedAssembler *assembler, Register prevSpRegister,
+    Register fpRegister, Register callTargetRegister, Register methodRegister, Register contextRegister,
+    Register pcRegister, Register operatorRegister)
+{
+    __ Pushq(static_cast<int32_t>(FrameType::ASM_INTERPRETER_FRAME));  // frame type
+    __ Pushq(prevSpRegister);                                          // prevSp
+    __ Movq(Operand(methodRegister, JSMethod::GetBytecodeArrayOffset(false)), pcRegister);
+    __ Movl(Operand(contextRegister, GeneratorContext::GENERATOR_BC_OFFSET_OFFSET), operatorRegister);
+    __ Addq(operatorRegister, pcRegister);
+    __ Addq(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8), pcRegister);
+    __ Pushq(pcRegister);                                              // pc
+    __ Pushq(fpRegister);                                              // fp
+    __ Pushq(0);                                                       // jumpSizeAfterCall
+    __ Movq(Operand(contextRegister, GeneratorContext::GENERATOR_LEXICALENV_OFFSET), operatorRegister);
+    __ Pushq(operatorRegister);                                        // env
+    __ Movq(Operand(contextRegister, GeneratorContext::GENERATOR_ACC_OFFSET), operatorRegister);
+    __ Pushq(operatorRegister);                                        // acc
+    __ Pushq(callTargetRegister);                                      // callTarget
+}
+
+void AssemblerStubsX64::PushAsmInterpEntryFrame(ExtendedAssembler *assembler)
+{
+    __ Pushq(rbp);
+    // construct asm interpreter entry frame
+    __ Movq(rsp, rbp);
+    __ Pushq(static_cast<int64_t>(FrameType::ASM_INTERPRETER_ENTRY_FRAME));
+    __ Movq(Operand(rdi, JSThread::GlueData::GetLeaveFrameOffset(false)), rbx);
+    __ Pushq(rbx);  // prev managed fp is leave frame or nullptr(the first frame)
+    __ Pushq(0);    // pc
+}
+
+void AssemblerStubsX64::PopAsmInterpEntryFrame(ExtendedAssembler *assembler)
+{
+    __ Addq(8, rsp);  // 8: skip pc
+    __ Popq(rbx);
+    __ Addq(8, rsp);  // 8: skip frame type
+    __ Popq(rbp);
+}
+
+void AssemblerStubsX64::CallBCStub(ExtendedAssembler *assembler, Register newSpRegister, Register glueRegister,
+    Register callTargetRegister, Register methodRegister, Register pcRegister, bool isReturn)
+{
+    Label alignedJSCallEntry;
+    Label returnOfCallJSFunction;
+    // align 16 bytes
+    __ Testb(15, rsp);  // 15: 0x1111
+    __ Jnz(&alignedJSCallEntry);
+    __ PushAlignBytes();
+    __ Bind(&alignedJSCallEntry);
+    {
+        __ Pushq(newSpRegister);  // caller save newSp register to restore rsp after call
+        // prepare call entry
+        __ Movq(glueRegister, r13);  // %r13 - glue
+        __ Movq(newSpRegister, rbp); // %rbp - sp
+                                     // %r12 - pc
+        __ Movq(Operand(callTargetRegister, JSFunction::CONSTANT_POOL_OFFSET), rbx);       // rbx - constantpool
+        __ Movq(Operand(callTargetRegister, JSFunction::PROFILE_TYPE_INFO_OFFSET), r14);   // r14 - profileTypeInfo
+        __ Movq(JSTaggedValue::Hole().GetRawData(), rsi);                                  // rsi - acc
+        __ Movzwq(Operand(methodRegister, JSMethod::GetHotnessCounterOffset(false)), rdi); // rdi - hotnessCounter
+
+        // call the first bytecode handler
+        __ Movzbq(Operand(pcRegister, 0), rax);
+        __ Movq(Operand(r13, rax, Times8, JSThread::GlueData::GetBCStubEntriesOffset(false)), r11);
+        __ Callq(r11);
+        __ Jmp(&returnOfCallJSFunction);
+    }
+
+    __ Bind(&returnOfCallJSFunction);
+    {
+        Register frameStateBaseRegister = r11;
+        __ Popq(frameStateBaseRegister);
+        __ Subq(sizeof(AsmInterpretedFrame), frameStateBaseRegister);
+        __ Movq(Operand(frameStateBaseRegister, AsmInterpretedFrame::GetAccOffset(false)), rax);  // return value
+        __ Movq(Operand(frameStateBaseRegister, AsmInterpretedFrame::GetFpOffset(false)), rsp);   // resume rsp
+        if (isReturn) {
+            __ Ret();
+        }
+    }
 }
 
 void AssemblerStubsX64::GlueToThread(ExtendedAssembler *assembler, Register glueRegister, Register threadRegister)
@@ -1179,7 +1272,6 @@ void AssemblerStubsX64::ConstructEcmaRuntimeCallInfo(ExtendedAssembler *assemble
     __ Movq(threadRegister, Operand(rsp, EcmaRuntimeCallInfo::GetThreadOffset()));
     __ Movq(numArgsRegister, Operand(rsp, EcmaRuntimeCallInfo::GetNumArgsOffset()));
     __ Movq(stackArgsRegister, Operand(rsp, EcmaRuntimeCallInfo::GetStackArgsOffset()));
-    __ Movq(0, Operand(rsp, EcmaRuntimeCallInfo::GetDataOffset()));
 }
 
 void AssemblerStubsX64::GetDeclaredNumArgsFromCallField(ExtendedAssembler *assembler, Register callFieldRegister,
@@ -1864,8 +1956,8 @@ void AssemblerStubsX64::PushVregs(ExtendedAssembler *assembler)
         __ Movq(prevSpRegister, tempRegister);
         __ Subq(sizeof(AsmInterpretedFrame), tempRegister);
         __ Movq(jumpSizeRegister, Operand(tempRegister, AsmInterpretedFrame::GetCallSizeOffset(false)));
-        PushFrameState(assembler, prevSpRegister, fpRegister, callTargetRegister, methodRegister, pcRegister,
-            tempRegister);
+        PushFrameState(assembler, prevSpRegister, fpRegister,
+            callTargetRegister, methodRegister, pcRegister, tempRegister);
         // align 16 bytes
         __ Testq(15, rsp);  // 15: low 4 bits must be 0b0000
         __ Jnz(&dispatchCall);
@@ -1924,7 +2016,7 @@ void AssemblerStubsX64::PushCallIRangeAndDispatchNative(ExtendedAssembler *assem
     Register stackArgs = r9;
     Register temporary = rax;
     Register opNumArgs = r10;
-    Label aligned;
+    Label notAligned;
 
     PushBuiltinFrame(assembler, glue, FrameType::BUILTIN_FRAME_WITH_ARGV);
 
@@ -1939,10 +2031,10 @@ void AssemblerStubsX64::PushCallIRangeAndDispatchNative(ExtendedAssembler *assem
     __ Movq(rsp, stackArgs);
 
     __ Testq(0xf, rsp);  // 0xf: 0x1111
-    __ Jz(&aligned, Distance::NEAR);
+    __ Jnz(&notAligned, Distance::NEAR);
     __ PushAlignBytes();
 
-    __ Bind(&aligned);
+    __ Bind(&notAligned);
     CallNativeInternal(assembler, glue, numArgs, stackArgs, nativeCode);
     __ Ret();
 }
@@ -1956,6 +2048,7 @@ void AssemblerStubsX64::CallNativeEntry(ExtendedAssembler *assembler)
     Register function = r9;
     Register nativeCode = rbx;
 
+    __ PushAlignBytes();
     __ Push(function);
     // 24: skip nativeCode & argc & returnAddr
     __ Subq(24, rsp);
@@ -1963,8 +2056,8 @@ void AssemblerStubsX64::CallNativeEntry(ExtendedAssembler *assembler)
     __ Movq(Operand(method, JSMethod::GetBytecodeArrayOffset(false)), nativeCode); // get native pointer
     CallNativeInternal(assembler, glue, argc, argv, nativeCode);
 
-    // 32: skip function
-    __ Addq(32, rsp);
+    // 40: skip function
+    __ Addq(40, rsp);
     __ Ret();
 }
 
@@ -2007,8 +2100,6 @@ void AssemblerStubsX64::PushCallArgsAndDispatchNative(ExtendedAssembler *assembl
     __ Movq(Operand(rbp, BuiltinFrame::GetNumArgsToFpDelta(false)), numArgs);
     // 8: offset of &argv[0]
     __ Leaq(Operand(rbp, BuiltinFrame::GetStackArgsToFpDelta(false)), stackArgs);
-
-    __ PushAlignBytes();
 
     CallNativeInternal(assembler, glue, numArgs, stackArgs, nativeCode);
     __ Ret();

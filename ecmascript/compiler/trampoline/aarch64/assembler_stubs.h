@@ -59,6 +59,8 @@ public:
 
     static void JSCallDispatch(ExtendedAssembler *assembler);
 
+    static void GeneratorReEnterAsmInterp(ExtendedAssembler *assembler);
+
     static void PushCallIThisRangeAndDispatch(ExtendedAssembler *assembler);
 
     static void PushCallIRangeAndDispatch(ExtendedAssembler *assembler);
