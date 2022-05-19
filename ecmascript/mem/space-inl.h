@@ -39,6 +39,9 @@ template<class Callback>
 void Space::EnumerateRegions(const Callback &cb, Region *end) const
 {
     Region *current = regionList_.GetFirst();
+    if (current == nullptr) {
+        return;
+    }
     if (end == nullptr) {
         end = regionList_.GetLast();
     }
