@@ -264,7 +264,7 @@ JSTaggedValue FrameHandler::GetFunction() const
                 LOG_ECMA(FATAL) << "frame type error!";
                 UNREACHABLE();
             }
-         }
+        }
     } else {
         auto *frame = InterpretedFrame::GetFrameFromSp(sp_);
         return frame->function;
