@@ -472,4 +472,33 @@ HWTEST_F_L0(BuiltinsLocaleTest, Minimize_002)
     JSHandle<EcmaString> handleEcmaStr(thread, result);
     EXPECT_STREQ("zh", CString(handleEcmaStr->GetCString().get()).c_str());
 }
+
+// test NormalizeKeywordValue(kf is not setted "yes")
+HWTEST_F_L0(BuiltinsLocaleTest, NormalizeKeywordValue)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<JSFunction> newTarget(env->GetLocaleFunction());
+    JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
+
+    JSHandle<JSTaggedValue> caseFirstKey = thread->GlobalConstants()->GetHandledCaseFirstString();
+    JSHandle<JSTaggedValue> caseFirstValue(factory->NewFromASCII("false"));
+    JSHandle<EcmaString> locale = factory->NewFromASCII("en-US");
+
+    JSHandle<JSObject> optionsObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    JSObject::SetProperty(thread, optionsObj, caseFirstKey, caseFirstValue);
+
+    auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue(*newTarget), 8);
+    ecmaRuntimeCallInfo->SetFunction(newTarget.GetTaggedValue());
+    ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo->SetCallArg(0, locale.GetTaggedValue());
+    ecmaRuntimeCallInfo->SetCallArg(1, optionsObj.GetTaggedValue());
+
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    JSTaggedValue result = BuiltinsLocale::LocaleConstructor(ecmaRuntimeCallInfo.get());
+
+    JSHandle<JSLocale> jsInitLocale(thread, result);
+    JSHandle<EcmaString> keyWords = JSLocale::NormalizeKeywordValue(thread, jsInitLocale, "kf");
+    EXPECT_STREQ("false", CString(keyWords->GetCString().get()).c_str());
+}
 }  // namespace panda::test
