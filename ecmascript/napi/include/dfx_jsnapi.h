@@ -44,10 +44,7 @@ public:
                                  bool isPrivate = false);
     static void DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, Stream *stream, Progress *progress = nullptr,
                                  bool isVmMode = true, bool isPrivate = false);
-
-#if defined(ENABLE_DUMP_IN_FAULTLOG)
     static void DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, bool isVmMode = true, bool isPrivate = false);
-#endif
 
     static bool BuildNativeAndJsBackStackTrace(EcmaVM *vm, std::string &stackTraceStr);
     static bool StartHeapTracking(EcmaVM *vm, double timeInterval, bool isVmMode = true);
