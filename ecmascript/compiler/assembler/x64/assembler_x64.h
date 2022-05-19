@@ -15,7 +15,7 @@
 #ifndef ECMASCRIPT_COMPILER_ASSEMBLER_X64_H
 #define ECMASCRIPT_COMPILER_ASSEMBLER_X64_H
 
-#include "assembler.h"
+#include "ecmascript/compiler/assembler/assembler.h"
 
 namespace panda::ecmascript::x64 {
 enum Register : uint8_t {

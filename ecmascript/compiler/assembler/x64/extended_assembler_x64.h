@@ -16,16 +16,18 @@
 #define ECMASCRIPT_COMPILER_EXTENDED_ASSEMBLER_X64_H
 
 #include "assembler_x64.h"
+#include "ecmascript/compiler/assembler_module.h"
 
 namespace panda::ecmascript::x64 {
 // ExtendedAssembler implements frequently-used assembler macros with some extended usages.
-class ExtendedAssemblerX64 : public AssemblerX64 {
+class ExtendedAssembler : public AssemblerX64 {
 public:
-    explicit ExtendedAssemblerX64(Chunk *chunk)
-        : AssemblerX64(chunk)
+    explicit ExtendedAssembler(Chunk *chunk, kungfu::AssemblerModule *module)
+        : AssemblerX64(chunk), module_(module)
     {
     }
-
+    void CallAssemblerStub(int id, bool isTail);
+    void BindAssemblerStub(int id);
     void PushAlignBytes();
     void PopAlignBytes();
     void PushCppCalleeSaveRegisters();
@@ -35,6 +37,8 @@ public:
     void PushArgsWithArgv(Register argc, Register argv, Register operatorRegister);
     void PushArgc(int32_t argc, Register tempArgcRegister);
     void PushArgc(Register argcRegister, Register tempArgcRegister);
+private:
+    kungfu::AssemblerModule *module_;
 };
 }  // panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_EXTENDED_ASSEMBLER_X64_H

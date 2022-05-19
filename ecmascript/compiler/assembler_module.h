@@ -19,24 +19,44 @@
 #include <string>
 #include <vector>
 
-#include "assembler/assembler.h"
+#include "ecmascript/compiler/assembler/assembler.h"
 #include "ecmascript/compiler/call_signature.h"
+#include "ecmascript/compiler/rt_call_signature.h"
+#include "ecmascript/stubs/runtime_stubs.h"
 
 namespace panda::ecmascript::kungfu {
 class AssemblerModule {
 public:
+    AssemblerModule() = default;
+    ~AssemblerModule()
+    {
+        for (auto it : symbolTable_) {
+            delete it.second;
+        }
+    }
+
     void Run(const std::string &triple, Chunk* chunk);
 
     size_t GetFunctionCount() const
     {
-        return offsetTable_.size();
+        return symbolTable_.size();
     }
 
-    size_t GetFunction(size_t index) const
+    size_t GetFunction(int id) const
     {
-        return offsetTable_[index];
+        panda::ecmascript::Label *label = GetFunctionLabel(id);
+        if (label->IsBound()) {
+            return label->GetPos();
+        } else {
+            UNREACHABLE();
+        }
     }
-    
+
+    panda::ecmascript::Label* GetFunctionLabel(int id) const
+    {
+        return symbolTable_.at(id);
+    }
+
     uint8_t* GetBuffer() const
     {
         return buffer_;
@@ -64,9 +84,10 @@ public:
         codeBufferOffset_ = offset;
     }
     void GenerateStubsX64(Chunk* chunk);
+    void GenerateStubsAarch64(Chunk* chunk);
 private:
     std::vector<const CallSignature *> asmCallSigns_;
-    std::vector<size_t> offsetTable_;
+    std::map<int, panda::ecmascript::Label *> symbolTable_;
     size_t codeBufferOffset_ {0};
     uint8_t* buffer_ {nullptr};
     size_t bufferSize_ {0};
@@ -74,15 +95,17 @@ private:
 
 class AssemblerStub {
 public:
-    virtual void Generate(Assembler* assembler) = 0;
+    virtual void GenerateX64(Assembler* assembler) = 0;
+    virtual void GenerateAarch64(Assembler* assembler) = 0;
     virtual ~AssemblerStub() = default;
 };
 
-#define DECLARE_ASM_STUB_CLASS(name)                 \
-class name##Stub : public AssemblerStub {            \
-public:                                              \
-    ~name##Stub() = default;                         \
-    void Generate(Assembler* assembler) override;    \
+#define DECLARE_ASM_STUB_CLASS(name)                        \
+class name##Stub : public AssemblerStub {                   \
+public:                                                     \
+    ~name##Stub() = default;                                \
+    void GenerateX64(Assembler* assembler) override;        \
+    void GenerateAarch64(Assembler* assembler) override;    \
 };
 RUNTIME_ASM_STUB_LIST(DECLARE_ASM_STUB_CLASS)
 #undef DECLARE_ASM_STUB_CLASS

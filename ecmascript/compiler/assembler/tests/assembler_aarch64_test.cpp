@@ -15,7 +15,7 @@
 #include <ostream>
 #include <sstream>
 #include "ecmascript/tests/test_helper.h"
-#include "ecmascript/compiler/assembler/assembler_aarch64.h"
+#include "ecmascript/compiler/assembler/aarch64/assembler_aarch64.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/dyn_chunk.h"
 #include "llvm-c/Analysis.h"
@@ -152,7 +152,7 @@ HWTEST_F_L0(AssemblerAarch64Test, MovReg)
     AssemblerAarch64 masm(chunk_);
     __ Mov(Register(X1),  Register(X2));
     __ Mov(Register(X2),  Register(SP));
-    __ Mov(Register(X1, true),  Register(X2, true));
+    __ Mov(Register(X1, W),  Register(X2, W));
     std::ostringstream oss;
     DisassembleChunk("aarch64-unknown-linux-gnu", &masm, oss);
     ASSERT_EQ(oss.str(), expectResult);
@@ -166,11 +166,10 @@ HWTEST_F_L0(AssemblerAarch64Test, LdpStp)
                              "0000000c:294113e3 \tldp\tw3, w4, [sp, #8]\n");
 
     AssemblerAarch64 masm(chunk_);
-    __ Stp(Register(X1),  Register(X2), MemoryOperand(Register(SP), Immediate(8), MemoryOperand::AddrMode::POSTINDEX));
-    __ Ldp(Register(X1),  Register(X2), MemoryOperand(Register(SP), Immediate(8), MemoryOperand::AddrMode::PREINDEX));
-    __ Ldp(Register(X3),  Register(X4), MemoryOperand(Register(SP), Immediate(8), MemoryOperand::AddrMode::OFFSET));
-    __ Ldp(Register(X3).W(),  Register(X4).W(), MemoryOperand(Register(SP), Immediate(8),
-           MemoryOperand::AddrMode::OFFSET));
+    __ Stp(Register(X1),  Register(X2), MemoryOperand(Register(SP), 8, MemoryOperand::AddrMode::POSTINDEX));
+    __ Ldp(Register(X1),  Register(X2), MemoryOperand(Register(SP), 8, MemoryOperand::AddrMode::PREINDEX));
+    __ Ldp(Register(X3),  Register(X4), MemoryOperand(Register(SP), 8, MemoryOperand::AddrMode::OFFSET));
+    __ Ldp(Register(X3).W(),  Register(X4).W(), MemoryOperand(Register(SP), 8, MemoryOperand::AddrMode::OFFSET));
     std::ostringstream oss;
     DisassembleChunk("aarch64-unknown-linux-gnu", &masm, oss);
     ASSERT_EQ(oss.str(), expectResult);
@@ -185,11 +184,11 @@ HWTEST_F_L0(AssemblerAarch64Test, LdrStr)
                              "00000010:b9400be3 \tldr\tw3, [sp, #8]\n");
 
     AssemblerAarch64 masm(chunk_);
-    __ Str(Register(X1), MemoryOperand(Register(SP), Immediate(8), MemoryOperand::AddrMode::POSTINDEX));
-    __ Str(Register(X1), MemoryOperand(Register(SP), Immediate(-8), MemoryOperand::AddrMode::POSTINDEX));
-    __ Ldr(Register(X1), MemoryOperand(Register(SP), Immediate(8), MemoryOperand::AddrMode::PREINDEX));
-    __ Ldr(Register(X3), MemoryOperand(Register(SP), Immediate(8), MemoryOperand::AddrMode::OFFSET));
-    __ Ldr(Register(X3).W(), MemoryOperand(Register(SP), Immediate(8), MemoryOperand::AddrMode::OFFSET));
+    __ Str(Register(X1), MemoryOperand(Register(SP), 8, MemoryOperand::AddrMode::POSTINDEX));
+    __ Str(Register(X1), MemoryOperand(Register(SP), -8, MemoryOperand::AddrMode::POSTINDEX));
+    __ Ldr(Register(X1), MemoryOperand(Register(SP), 8, MemoryOperand::AddrMode::PREINDEX));
+    __ Ldr(Register(X3), MemoryOperand(Register(SP), 8, MemoryOperand::AddrMode::OFFSET));
+    __ Ldr(Register(X3).W(), MemoryOperand(Register(SP), 8, MemoryOperand::AddrMode::OFFSET));
     std::ostringstream oss;
     DisassembleChunk("aarch64-unknown-linux-gnu", &masm, oss);
     ASSERT_EQ(oss.str(), expectResult);
@@ -274,17 +273,17 @@ HWTEST_F_L0(AssemblerAarch64Test, Loop)
     AssemblerAarch64 masm(chunk_);
     Label label1;
     Label labelLoop;
-    Register count(X2, true);
+    Register count(X2, W);
     Register base(X4);
-    Register temp(X5, false);
+    Register temp(X5);
     __ Cmp(count, Immediate(0));
     __ B(Condition::EQ, &label1);
     __ Add(count, count, Immediate(-1));
     __ Add(base, base, Operand(count, UXTW, 3));
     __ Bind(&labelLoop);
     {
-        __ Ldr(temp, MemoryOperand(base, Immediate(-8), MemoryOperand::AddrMode::POSTINDEX));
-        __ Str(temp, MemoryOperand(Register(SP), Immediate(-8), MemoryOperand::AddrMode::PREINDEX));
+        __ Ldr(temp, MemoryOperand(base, -8, MemoryOperand::AddrMode::POSTINDEX));
+        __ Str(temp, MemoryOperand(Register(SP), -8, MemoryOperand::AddrMode::PREINDEX));
         __ Add(count, count, Immediate(-1));
         __ B(Condition::PL, &labelLoop);
     }

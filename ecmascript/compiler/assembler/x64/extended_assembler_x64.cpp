@@ -17,18 +17,18 @@
 #include "ecmascript/frames.h"
 
 namespace panda::ecmascript::x64 {
-void ExtendedAssemblerX64::PushAlignBytes()
+void ExtendedAssembler::PushAlignBytes()
 {
     Pushq(0);
 }
 
-void ExtendedAssemblerX64::PopAlignBytes()
+void ExtendedAssembler::PopAlignBytes()
 {
     Addq(8, rsp);  // 8: 8 bytes
 }
 
 // c++ calling convention
-void ExtendedAssemblerX64::PushCppCalleeSaveRegisters()
+void ExtendedAssembler::PushCppCalleeSaveRegisters()
 {
     Pushq(r12);
     Pushq(r13);
@@ -37,7 +37,7 @@ void ExtendedAssemblerX64::PushCppCalleeSaveRegisters()
     Pushq(rbx);
 }
 
-void ExtendedAssemblerX64::PopCppCalleeSaveRegisters()
+void ExtendedAssembler::PopCppCalleeSaveRegisters()
 {
     Popq(rbx);
     Popq(r15);
@@ -46,7 +46,7 @@ void ExtendedAssemblerX64::PopCppCalleeSaveRegisters()
     Popq(r12);
 }
 
-void ExtendedAssemblerX64::PushGhcCalleeSaveRegisters()
+void ExtendedAssembler::PushGhcCalleeSaveRegisters()
 {
     Pushq(r10);
     Pushq(r11);
@@ -55,7 +55,7 @@ void ExtendedAssemblerX64::PushGhcCalleeSaveRegisters()
     Pushq(r15);
 }
 
-void ExtendedAssemblerX64::PopGhcCalleeSaveRegisters()
+void ExtendedAssembler::PopGhcCalleeSaveRegisters()
 {
     Popq(r15);
     Popq(r13);
@@ -64,7 +64,7 @@ void ExtendedAssemblerX64::PopGhcCalleeSaveRegisters()
     Popq(r10);
 }
 
-void ExtendedAssemblerX64::PushArgsWithArgv(Register argc, Register argv, Register operatorRegister)
+void ExtendedAssembler::PushArgsWithArgv(Register argc, Register argv, Register operatorRegister)
 {
     Label loopBeginning;
     Bind(&loopBeginning);
@@ -74,13 +74,25 @@ void ExtendedAssemblerX64::PushArgsWithArgv(Register argc, Register argv, Regist
     Ja(&loopBeginning);
 }
 
-void ExtendedAssemblerX64::PushArgc(int32_t argc, Register tempArgcRegister)
+void ExtendedAssembler::CallAssemblerStub(int id, bool isTail)
+{
+    Label *target = module_->GetFunctionLabel(id);
+    isTail ? Jmp(target) : Callq(target);
+}
+
+void ExtendedAssembler::BindAssemblerStub(int id)
+{
+    Label *target = module_->GetFunctionLabel(id);
+    Bind(target);
+}
+
+void ExtendedAssembler::PushArgc(int32_t argc, Register tempArgcRegister)
 {
     Movabs(JSTaggedValue(argc).GetRawData(), tempArgcRegister);
     Pushq(tempArgcRegister);
 }
 
-void ExtendedAssemblerX64::PushArgc(Register argcRegister, Register tempArgcRegister)
+void ExtendedAssembler::PushArgc(Register argcRegister, Register tempArgcRegister)
 {
     Movabs(JSTaggedValue::TAG_INT, tempArgcRegister);
     Orq(argcRegister, tempArgcRegister);

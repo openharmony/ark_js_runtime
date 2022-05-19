@@ -94,3 +94,6 @@ _CallRuntimeWithArgv:
 
 .global _CallRuntime
 _CallRuntime:
+
+.global _CallBuiltinTrampoline
+_CallBuiltinTrampoline:

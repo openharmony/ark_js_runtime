@@ -152,7 +152,7 @@ JSFunctionEntry:
 OptimizedCallOptimized:
     ret
 
-// uint64_t CallNativeTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
+// uint64_t CallBuiltinTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // Input:
 // %rax - glue
@@ -183,9 +183,9 @@ OptimizedCallOptimized:
 //  sp - 16: rbp <---------current rbp & current sp
 //  current sp - 8:  type
 
-.global CallNativeTrampoline
-.type CallNativeTrampoline, %function
-CallNativeTrampoline:
+.global CallBuiltinTrampoline
+.type CallBuiltinTrampoline, %function
+CallBuiltinTrampoline:
     ret
 
 // uint64_t CallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
