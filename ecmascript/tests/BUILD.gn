@@ -56,6 +56,7 @@ host_unittest_action("EcmaVmTest") {
     "js_function_test.cpp",
     "js_handle_test.cpp",
     "js_iterator_test.cpp",
+    "js_locale_test.cpp",
     "js_map_test.cpp",
     "js_object_test.cpp",
     "js_primitive_ref_test.cpp",
@@ -81,10 +82,14 @@ host_unittest_action("EcmaVmTest") {
     "weak_ref_semi_gc_test.cpp",
   ]
 
-  configs = [ "//ark/js_runtime:ecma_test_config" ]
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:icu_path_test_config",
+  ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_js_intl_set",
     "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]

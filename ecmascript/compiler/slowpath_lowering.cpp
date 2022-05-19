@@ -2234,7 +2234,7 @@ void SlowPathLowering::LowerStObjByName(GateRef gate, GateRef glue)
 
 void SlowPathLowering::LowerDefineGetterSetterByValue(GateRef gate, GateRef glue)
 {
-    // 4: number of value inputs
+    // 5: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 5);
     GateRef obj = acc_.GetValueIn(gate, 0);
     GateRef prop = acc_.GetValueIn(gate, 1);
@@ -2334,6 +2334,7 @@ void SlowPathLowering::LowerLdObjByValue(GateRef gate, GateRef glue)
 {
     std::vector<GateRef> successControl;
     std::vector<GateRef> failControl;
+    // 2: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 2);
     GateRef receiver = acc_.GetValueIn(gate, 0);
     GateRef propKey = acc_.GetValueIn(gate, 1);
@@ -2379,6 +2380,7 @@ void SlowPathLowering::LowerLdObjByValue(GateRef gate, GateRef glue)
 
 void SlowPathLowering::LowerStObjByValue(GateRef gate, GateRef glue)
 {
+    // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
     GateRef receiver = acc_.GetValueIn(gate, 0);
     GateRef propKey = acc_.GetValueIn(gate, 1);
