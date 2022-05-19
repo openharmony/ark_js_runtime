@@ -57,6 +57,16 @@ public:
         return end_;
     }
 
+    const uintptr_t *GetTopAddress()
+    {
+        return &top_;
+    }
+
+    const uintptr_t *GetEndAddress()
+    {
+        return &end_;
+    }
+
     size_t Available() const
     {
         return (end_ - top_);

@@ -82,7 +82,7 @@ struct CodeInfo {
         machineCode_ = nullptr;
     }
 
-    uint8_t *AllocaCodeSection(uintptr_t size, const char *sectionName)
+    uint8_t *Alloca(uintptr_t size, const char *sectionName)
     {
         uint8_t *addr = nullptr;
         if (codeBufferPos_ + size > MAX_MACHINE_CODE_SIZE) {
@@ -92,13 +92,22 @@ struct CodeInfo {
         }
         codeSectionNames_.push_back(sectionName);
         addr = machineCode_ + codeBufferPos_;
-        codeInfo_.push_back({addr, size});
         codeBufferPos_ += size;
+        return addr;
+    }
+
+    uint8_t *AllocaCodeSection(uintptr_t size, const char *sectionName)
+    {
+        uint8_t *addr = Alloca(size, sectionName);
+        codeInfo_.push_back({addr, size});
         return addr;
     }
 
     uint8_t *AllocaDataSection(uintptr_t size, const char *sectionName)
     {
+        if (strncmp(sectionName, ".rodata", strlen(".rodata")) == 0) {
+            return Alloca(size, sectionName);
+        }
         uint8_t *addr = nullptr;
         dataSectionList_.push_back(std::vector<uint8_t>());
         dataSectionList_.back().resize(size);

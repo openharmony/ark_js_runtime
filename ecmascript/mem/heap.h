@@ -190,6 +190,7 @@ public:
     // Young
     inline TaggedObject *AllocateYoungOrHugeObject(JSHClass *hclass);
     inline TaggedObject *AllocateYoungOrHugeObject(JSHClass *hclass, size_t size);
+    inline TaggedObject *AllocateYoungOrHugeObject(size_t size);
     inline uintptr_t AllocateYoungSync(size_t size);
     inline TaggedObject *TryAllocateYoungGeneration(JSHClass *hclass, size_t size);
     // Old
@@ -201,6 +202,7 @@ public:
     inline TaggedObject *AllocateDynClassClass(JSHClass *hclass, size_t size);
     // Huge
     inline TaggedObject *AllocateHugeObject(JSHClass *hclass, size_t size);
+    inline TaggedObject *AllocateHugeObject(size_t size);
     // Machine code
     inline TaggedObject *AllocateMachineCodeObject(JSHClass *hclass, size_t size);
     // Snapshot
