@@ -829,7 +829,7 @@ void AssemblerAarch64::AddSubReg(AddSubOpCode op, const Register &rd, const Regi
 
 void AssemblerAarch64::Cmp(const Register &rd, const Operand &operand)
 {
-    Subs(Register(Zero), rd, operand);
+    Subs(Register(Zero, rd.GetType()), rd, operand);
 }
 
 void AssemblerAarch64::CMov(const Register &rd, const Register &rn, const Operand &operand, Condition cond)
