@@ -16,10 +16,6 @@ import("//ark/js_runtime/test/test_helper.gni")
 import("//build/test.gni")
 
 module_output_path = "ark/js_runtime"
-config("icu_data_path_config") {
-  icu_data_path = rebase_path("//third_party/icu/ohos_icu4j/data")
-  defines = [ "ICU_PATH=\"${icu_data_path}\"" ]
-}
 
 host_unittest_action("BuiltinsInternationalTest") {
   module_out_path = module_output_path
@@ -39,7 +35,7 @@ host_unittest_action("BuiltinsInternationalTest") {
 
   configs = [
     "//ark/js_runtime:ecma_test_config",
-    ":icu_data_path_config",
+    "//ark/js_runtime:icu_path_test_config",
   ]
 
   deps = [

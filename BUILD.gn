@@ -293,6 +293,12 @@ config("ecma_test_config") {
   ldflags = [ "-Wl,-rpath=\$ORIGIN/" ]
 }
 
+# ecmascript icu path for testcase config
+config("icu_path_test_config") {
+  icu_data_path = rebase_path("//third_party/icu/ohos_icu4j/data")
+  defines = [ "ICU_PATH=\"${icu_data_path}\"" ]
+}
+
 ecma_source = [
   "ecmascript/base/array_helper.cpp",
   "ecmascript/base/builtins_base.cpp",
