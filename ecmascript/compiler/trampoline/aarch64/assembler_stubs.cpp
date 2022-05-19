@@ -276,7 +276,7 @@ void AssemblerStubs::OptimizedCallOptimized(ExtendedAssembler *assembler)
         __ Add(argVEnd, argVEnd, Operand(count, UXTW, 3));
         __ Bind(&copyArgLoop);
         __ Ldr(argValue, MemoryOperand(argVEnd, -FRAME_SLOT_SIZE, MemoryOperand::AddrMode::POSTINDEX));
-        __ Sub(count, count, Immediate(1));
+        __ Subs(count, count, Immediate(1));
         __ Str(argValue,  MemoryOperand(sp, -FRAME_SLOT_SIZE, MemoryOperand::AddrMode::PREINDEX));
         __ B(Condition::NE, &copyArgLoop);
     }
@@ -443,8 +443,7 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
     Label callNativeMethod;
     Label callOptimizedMethod;
     __ Ldr(method, MemoryOperand(jsfunc, JSFunction::METHOD_OFFSET));
-    // 8 : 8 means actualArgc on the stack offset
-    __ Ldr(actualArgC, MemoryOperand(sp, 8));
+    __ Ldr(actualArgC, MemoryOperand(sp, 0));
     __ Ldr(callField, MemoryOperand(method, JSMethod::GetCallFieldOffset(false)));
     __ Tbnz(callField, JSMethod::IsNativeBit::START_BIT, &callNativeMethod);
     __ Tbnz(callField, JSMethod::IsAotCodeBit::START_BIT, &callOptimizedMethod);
@@ -475,7 +474,7 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
         __ Cmp(arg2.W(), expectedNumArgs);
         // 8 : 8 mean argV = sp + 8
         __ Add(argV, sp, Immediate(8));
-        __ B(Condition::HI, &directCallCodeEntry);
+        __ B(Condition::HS, &directCallCodeEntry);
         __ CallAssemblerStub(RTSTUB_ID(OptimizedCallOptimized), true);
         __ Bind(&directCallCodeEntry);
         __ Br(codeAddress);
@@ -502,7 +501,8 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
         __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_FRAME)));
         __ Str(frameType, MemoryOperand(sp, -FRAME_SLOT_SIZE, MemoryOperand::AddrMode::PREINDEX));
         Register argVEnd(X4);
-        __ Add (argVEnd, fp, Immediate(GetStackArgOffSetToFp(0)));
+        __ Add(argVEnd, fp, Immediate(GetStackArgOffSetToFp(0)));
+        __ Ldr(actualArgC, MemoryOperand(argVEnd, 0));
         // callee save
         Register tmp(X19);
         __ Str(tmp, MemoryOperand(sp, -8, MemoryOperand::AddrMode::PREINDEX));
@@ -528,13 +528,14 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
             __ Ldr(argValue, MemoryOperand(argVEnd, -FRAME_SLOT_SIZE, MemoryOperand::AddrMode::POSTINDEX));
             __ Str(argValue, MemoryOperand(sp, -FRAME_SLOT_SIZE, MemoryOperand::AddrMode::PREINDEX));
             __ Sub(actualArgC.W(), actualArgC.W(), Immediate(1));
-            __ B(Condition::HI, &copyArgument);
+            __ Cmp(actualArgC.W(), Immediate(0));
+            __ B(Condition::NE, &copyArgument);
         }
         __ Bind(&copyBoundArgument);
         {
             Register boundArgs(X4);
             Label copyBoundArgumentLoop;
-            __ Ldr(boundArgs, MemoryOperand(jsfunc, 0));
+            __ Ldr(boundArgs, MemoryOperand(jsfunc, JSBoundFunction::BOUND_ARGUMENTS_OFFSET));
             __ Add(boundArgs, boundArgs, Immediate(TaggedArray::DATA_OFFSET));
             __ Cmp(boundLength.W(), Immediate(0));
             __ B(Condition::EQ, &pushCallTarget);
@@ -546,8 +547,8 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
                 Register boundargValue(X5);
                 __ Ldr(boundargValue, MemoryOperand(boundArgs, -FRAME_SLOT_SIZE, MemoryOperand::AddrMode::POSTINDEX));
                 __ Str(boundargValue, MemoryOperand(sp, -FRAME_SLOT_SIZE, MemoryOperand::AddrMode::PREINDEX));
-                __ Sub(boundLength.W(), boundLength.W(), Immediate(1));
-                __ B(Condition::HI, &copyBoundArgumentLoop);
+                __ Subs(boundLength.W(), boundLength.W(), Immediate(1));
+                __ B(Condition::PL, &copyBoundArgumentLoop);
             }
         }
         __ Bind(&pushCallTarget);
@@ -565,7 +566,7 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
         __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE));
         // 3 : 3 means 2^3 = 8 
         __ Add(sp, sp, Operand(realArgC, UXTW, 3));
-        __ Ldr(realArgC, MemoryOperand(sp, FRAME_SLOT_SIZE, MemoryOperand::AddrMode::POSTINDEX));
+        __ Ldr(tmp, MemoryOperand(sp, FRAME_SLOT_SIZE, MemoryOperand::AddrMode::POSTINDEX));
         __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE));
         __ RestoreFpAndLr();
         __ Ret();

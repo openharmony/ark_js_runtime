@@ -30,6 +30,10 @@ public:
     {
         return Register(reg_, RegisterType::X);
     }
+    RegisterType GetType() const
+    {
+        return type_;
+    }
     inline bool IsSp() const
     {
         return reg_ == RegisterId::SP;
