@@ -357,7 +357,7 @@ JSTaggedValue RuntimeStubs::RuntimeStArraySpread(JSThread *thread, const JSHandl
 JSTaggedValue RuntimeStubs::RuntimeGetIteratorNext(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
                                                    const JSHandle<JSTaggedValue> &method)
 {
-    ASSERT(obj->IsCallable());
+    ASSERT(method->IsCallable());
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, method, obj, undefined, 0);
     JSTaggedValue ret = JSFunction::Call(&info);
