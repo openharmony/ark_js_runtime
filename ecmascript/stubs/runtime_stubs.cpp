@@ -74,6 +74,22 @@ DEF_RUNTIME_STUBS(AddElementInternal)
     return JSTaggedValue(result).GetRawData();
 }
 
+DEF_RUNTIME_STUBS(AllocateInYoung)
+{
+    RUNTIME_STUBS_HEADER(AllocateInYoung);
+    JSTaggedValue allocateSize = GetArg(argv, argc, 0);
+    auto size = static_cast<size_t>(allocateSize.GetInt());
+    auto heap = const_cast<Heap*>(thread->GetEcmaVM()->GetHeap());
+    auto space = heap->GetNewSpace();
+    ASSERT(size <= MAX_REGULAR_HEAP_OBJECT_SIZE);
+    auto result = reinterpret_cast<TaggedObject *>(space->Allocate(size));
+    if (result == nullptr) {
+        result = heap->AllocateYoungOrHugeObject(size);
+        ASSERT(result != nullptr);
+    }
+    return JSTaggedValue(result).GetRawData();
+}
+
 DEF_RUNTIME_STUBS(CallSetter)
 {
     RUNTIME_STUBS_HEADER(CallSetter);

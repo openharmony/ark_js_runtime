@@ -108,11 +108,11 @@ TaggedObject *Heap::AllocateYoungOrHugeObject(JSHClass *hclass)
     return AllocateYoungOrHugeObject(hclass, size);
 }
 
-TaggedObject *Heap::AllocateYoungOrHugeObject(JSHClass *hclass, size_t size)
+TaggedObject *Heap::AllocateYoungOrHugeObject(size_t size)
 {
     size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
     if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
-        return AllocateHugeObject(hclass, size);
+        return AllocateHugeObject(size);
     }
 
     auto object = reinterpret_cast<TaggedObject *>(activeSpace_->Allocate(size));
@@ -128,7 +128,12 @@ TaggedObject *Heap::AllocateYoungOrHugeObject(JSHClass *hclass, size_t size)
             }
         }
     }
+    return object;
+}
 
+TaggedObject *Heap::AllocateYoungOrHugeObject(JSHClass *hclass, size_t size)
+{
+    auto object = AllocateYoungOrHugeObject(size);
     object->SetClass(hclass);
     OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
     return object;
@@ -218,7 +223,7 @@ TaggedObject *Heap::AllocateDynClassClass(JSHClass *hclass, size_t size)
     return object;
 }
 
-TaggedObject *Heap::AllocateHugeObject(JSHClass *hclass, size_t size)
+TaggedObject *Heap::AllocateHugeObject(size_t size)
 {
     // Check whether it is necessary to trigger Old GC before expanding to avoid OOM risk.
     CheckAndTriggerOldGC();
@@ -231,6 +236,14 @@ TaggedObject *Heap::AllocateHugeObject(JSHClass *hclass, size_t size)
             ThrowOutOfMemoryError(size, "Heap::AllocateHugeObject");
         }
     }
+    return object;
+}
+
+TaggedObject *Heap::AllocateHugeObject(JSHClass *hclass, size_t size)
+{
+    // Check whether it is necessary to trigger Old GC before expanding to avoid OOM risk.
+    CheckAndTriggerOldGC();
+    auto object = AllocateHugeObject(size);
     object->SetClass(hclass);
     OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
     return object;
@@ -286,6 +299,9 @@ void Heap::SwapNewSpace()
     SemiSpace *newSpace = inactiveSpace_;
     inactiveSpace_ = activeSpace_;
     activeSpace_ = newSpace;
+    auto topAddress = activeSpace_->GetAllocationTopAddress();
+    auto endAddress = activeSpace_->GetAllocationEndAddress();
+    thread_->ReSetNewSpaceAllocationAddress(topAddress, endAddress);
 }
 
 void Heap::ReclaimRegions(TriggerGCType gcType)

@@ -873,7 +873,7 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
             auto oldToNewSet = Load(VariableType::NATIVE_POINTER(), objectRegion, loadOffset);
             Label isNullPtr(env);
             Label notNullPtr(env);
-            Branch(IntptrEuqal(oldToNewSet, IntPtr(0)), &isNullPtr, &notNullPtr);
+            Branch(IntPtrEuqal(oldToNewSet, IntPtr(0)), &isNullPtr, &notNullPtr);
             Bind(&notNullPtr);
             {
                 // (slotAddr - this) >> TAGGED_TYPE_SIZE_LOG
@@ -3574,5 +3574,110 @@ GateRef Stub::GetHashcodeFromString(GateRef glue, GateRef value)
     auto ret = *hashcode;
     env->SubCfgExit();
     return ret;
+}
+
+GateRef Stub::AllocateInYoung(GateRef glue, GateRef size)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->SubCfgEntry(&entry);
+    Label exit(env);
+    Label success(env);
+    Label callRuntime(env);
+
+    auto topOffset = JSThread::GlueData::GetNewSpaceAllocationTopAddressOffset(env->Is32Bit());
+    auto endOffset = JSThread::GlueData::GetNewSpaceAllocationEndAddressOffset(env->Is32Bit());
+    auto topAddress = Load(VariableType::NATIVE_POINTER(), glue, IntPtr(topOffset));
+    auto endAddress = Load(VariableType::NATIVE_POINTER(), glue, IntPtr(endOffset));
+    auto top = Load(VariableType::NATIVE_POINTER(), topAddress, IntPtr(0));
+    auto end = Load(VariableType::NATIVE_POINTER(), endAddress, IntPtr(0));
+    DEFVARIABLE(result, VariableType::INT64(), Undefined());
+    auto newTop = PtrAdd(top, size);
+    Branch(IntPtrGreaterThan(newTop, end), &callRuntime, &success);
+    Bind(&success);
+    {
+        Store(VariableType::NATIVE_POINTER(), glue, topAddress, IntPtr(0), newTop);
+        if (env->Is32Bit()) {
+            top = ZExtInt32ToInt64(top);
+        }
+        result = top;
+        Jump(&exit);
+    }
+    Bind(&callRuntime);
+    {
+        result = TaggedCastToInt64(CallRuntime(glue, RTSTUB_ID(AllocateInYoung), {
+            IntBuildTaggedTypeWithNoGC(size) }));
+        Jump(&exit);
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->SubCfgExit();
+    return ret;
+}
+
+void Stub::InitializeTaggedArrayWithSpeicalValue(
+    GateRef glue, GateRef array, GateRef value, GateRef start, GateRef length)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->SubCfgEntry(&entry);
+    Label exit(env);
+    Label begin(env);
+    Label storeValue(env);
+    Label end(env);
+    Store(VariableType::INT32(), glue, array, IntPtr(TaggedArray::LENGTH_OFFSET), length);
+    DEFVARIABLE(i, VariableType::INT32(), start);
+    Jump(&begin);
+    LoopBegin(&begin);
+    {
+        Branch(Int32UnsignedLessThan(*i, length), &storeValue, &exit);
+        Bind(&storeValue);
+        {
+            SetValueToTaggedArray(VariableType::INT64(), glue, array, *i, value);
+            i = Int32Add(*i, Int32(1));
+            Jump(&end);
+        }
+        Bind(&end);
+        LoopEnd(&begin);
+    }
+    Bind(&exit);
+    env->SubCfgExit();
+}
+
+GateRef Stub::NewLexicalEnv(GateRef glue, GateRef numSlots, GateRef parent)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->SubCfgEntry(&entry);
+    Label exit(env);
+
+    auto length = Int32Add(numSlots, Int32(LexicalEnv::RESERVED_ENV_LENGTH));
+    auto size = ComputeTaggedArraySize(ChangeInt32ToIntPtr(length));
+    // Be careful. NO GC is allowed when initization is not complete.
+    auto object = AllocateInYoung(glue, size);
+    Label hasPendingException(env);
+    Label noException(env);
+    Branch(TaggedIsException(object), &hasPendingException, &noException);
+    Bind(&noException);
+    {
+        auto hclass = GetGlobalConstantValue(
+            VariableType::JS_POINTER(), glue, ConstantIndex::ENV_CLASS_INDEX);
+        StoreHClass(glue, object, hclass);
+        InitializeTaggedArrayWithSpeicalValue(glue,
+            object, Hole(), Int32(LexicalEnv::RESERVED_ENV_LENGTH), length);
+        SetValueToTaggedArray(VariableType::INT64(),
+            glue, object, Int32(LexicalEnv::SCOPE_INFO_INDEX), Hole());
+        SetValueToTaggedArray(VariableType::JS_POINTER(),
+            glue, object, Int32(LexicalEnv::PARENT_ENV_INDEX), parent);
+        Jump(&exit);
+    }
+    Bind(&hasPendingException);
+    {
+        Jump(&exit);
+    }
+
+    Bind(&exit);
+    env->SubCfgExit();
+    return ChangeInt64ToTagged(object);
 }
 }  // namespace panda::ecmascript::kungfu

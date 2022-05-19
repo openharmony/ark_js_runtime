@@ -54,6 +54,9 @@ void Heap::Initialize()
     activeSpace_ = new SemiSpace(this, defaultSemiSpaceCapacity, defaultSemiSpaceCapacity);
     activeSpace_->Restart();
     activeSpace_->SetWaterLine();
+    auto topAddress = activeSpace_->GetAllocationTopAddress();
+    auto endAddress = activeSpace_->GetAllocationEndAddress();
+    thread_->ReSetNewSpaceAllocationAddress(topAddress, endAddress);
     inactiveSpace_ = new SemiSpace(this, defaultSemiSpaceCapacity, defaultSemiSpaceCapacity);
 
     // not set up from space
