@@ -59,6 +59,7 @@ void SlowPathLowering::ReplaceHirControlGate(GateAccessor::UsesIterator &useIt, 
     acc.DeleteGate(useIt);
 }
 
+// depends on the construction of JSgates in BytecodeCircuitBuilder
 void SlowPathLowering::ReplaceHirToSubCfg(GateRef hir, GateRef outir,
                                           const std::vector<GateRef> &successControl,
                                           const std::vector<GateRef> &exceptionControl,
@@ -95,10 +96,10 @@ void SlowPathLowering::ReplaceHirToSubCfg(GateRef hir, GateRef outir,
         } else if ((acc.GetOpCode(*useIt) == OpCode::RETURN) &&
                     acc.GetOpCode(acc.GetIn(*useIt, 0)) == OpCode::IF_EXCEPTION) {
             noThrow ? acc.DeleteExceptionDep(useIt) : acc.ReplaceIn(useIt, exceptionControl[1]);
-        // if isThrow..
-        } else if (useIt.GetIndex() == 1) {
+        // if hir isThrow
+        } else if (acc.GetOpCode(*useIt) != OpCode::VALUE_SELECTOR && useIt.GetIndex() == 1) {
             acc.ReplaceIn(useIt, successControl[1]);
-        // replace data flow with data output in label successExit(valueSelector...)
+        // replace data flow with data output in label successExit(incluing JSgates and phigates)
         } else {
             acc.ReplaceIn(useIt, outir);
         }
