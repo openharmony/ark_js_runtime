@@ -54,9 +54,10 @@ void DFXJSNApi::DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, Stream *stream, Pro
     ecmascript::HeapProfilerInterface::Destroy(vm);
 }
 
-#if defined(ENABLE_DUMP_IN_FAULTLOG)
-void DFXJSNApi::DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, bool isVmMode, bool isPrivate)
+void DFXJSNApi::DumpHeapSnapshot([[maybe_unused]] EcmaVM *vm, [[maybe_unused]] int dumpFormat,
+                                 [[maybe_unused]] bool isVmMode, [[maybe_unused]] bool isPrivate)
 {
+#if defined(ENABLE_DUMP_IN_FAULTLOG)
     // Write in faultlog for heap leak.
     int32_t fd = RequestFileDescriptor(static_cast<int32_t>(FaultLoggerType::JS_HEAP_SNAPSHOT));
     if (fd < 0) {
@@ -66,8 +67,8 @@ void DFXJSNApi::DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, bool isVmMode, bool
     FileDescriptorStream stream(fd);
     DumpHeapSnapshot(vm, dumpFormat, &stream, nullptr, isVmMode, isPrivate);
     close(fd);
-}
 #endif
+}
 
 bool DFXJSNApi::BuildNativeAndJsBackStackTrace(EcmaVM *vm, std::string &stackTraceStr)
 {
