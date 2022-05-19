@@ -387,14 +387,14 @@ JSHandle<TSObjectType> TSTypeTable::LinkSuper(JSThread *thread, JSHandle<TSClass
     JSHandle<TSObjectType> baseInstanceType(thread, baseClassType->GetInstanceType());
     JSHandle<TSObjLayoutInfo> baseInstanceTypeInfo(thread, baseInstanceType->GetObjLayoutInfo());
 
-    *numBaseFields = baseInstanceTypeInfo->GetLength();
+    *numBaseFields = baseInstanceTypeInfo->NumberOfElements();
 
     JSHandle<TSObjectType> derivedInstanceType = factory->NewTSObjectType(*numBaseFields + numDerivedFields);
     JSHandle<TSObjLayoutInfo> derivedInstanceTypeInfo(thread, derivedInstanceType->GetObjLayoutInfo());
 
     JSMutableHandle<JSTaggedValue> baseInstanceKey(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> baseInstanceTypeId(thread, JSTaggedValue::Undefined());
-    for (uint32_t index = 0; index < baseInstanceTypeInfo->GetLength(); ++index) {
+    for (uint32_t index = 0; index < baseInstanceTypeInfo->NumberOfElements(); ++index) {
         baseInstanceKey.Update(baseInstanceTypeInfo->GetKey(index));
         baseInstanceTypeId.Update(baseInstanceTypeInfo->GetTypeId(index));
         derivedInstanceTypeInfo->SetKey(thread, index, baseInstanceKey.GetTaggedValue(),
