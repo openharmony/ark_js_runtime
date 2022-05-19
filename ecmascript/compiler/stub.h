@@ -216,6 +216,7 @@ public:
     GateRef Int64LessThanOrEqual(GateRef x, GateRef y);
     GateRef Int64GreaterThanOrEqual(GateRef x, GateRef y);
     GateRef Int64UnsignedLessThanOrEqual(GateRef x, GateRef y);
+    GateRef IntPtrGreaterThan(GateRef x, GateRef y);
     // cast operation
     GateRef ChangeInt64ToInt32(GateRef val);
     GateRef ChangeInt64ToIntPtr(GateRef val);
@@ -394,7 +395,7 @@ public:
     void SetHasConstructorToHClass(GateRef glue, GateRef hClass, GateRef value);
     void UpdateValueInDict(GateRef glue, GateRef elements, GateRef index, GateRef value);
     GateRef GetBitMask(GateRef bitoffset);
-    GateRef IntptrEuqal(GateRef x, GateRef y);
+    GateRef IntPtrEuqal(GateRef x, GateRef y);
     void SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRef value);
     GateRef GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index);
     GateRef GetPropertyByName(GateRef glue, GateRef receiver, GateRef key);
@@ -447,6 +448,13 @@ public:
     GateRef GetHandlerFromJSProxy(GateRef proxy);
     GateRef GetTargetFromJSProxy(GateRef proxy);
     inline void SavePcIfNeeded(GateRef glue);
+    inline GateRef ComputeTaggedArraySize(GateRef length);
+    inline GateRef GetGlobalConstantValue(
+        VariableType type, GateRef glue, ConstantIndex index);
+    void InitializeTaggedArrayWithSpeicalValue(
+        GateRef glue, GateRef array, GateRef value, GateRef start, GateRef length);
+    GateRef AllocateInYoung(GateRef glue, GateRef size);
+    GateRef NewLexicalEnv(GateRef glue, GateRef numSlots, GateRef parent);
 private:
     using BinaryOperation = std::function<GateRef(Environment*, GateRef, GateRef)>;
     template<OpCode::Op Op>

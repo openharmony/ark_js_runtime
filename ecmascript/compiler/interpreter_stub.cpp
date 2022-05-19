@@ -333,7 +333,9 @@ DECLARE_ASM_HANDLER(HandleNewLexEnvDynPrefImm16)
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     auto env = GetEnvironment();
     GateRef numVars = ReadInst16_1(pc);
-    GateRef res = CallRuntime(glue, RTSTUB_ID(NewLexicalEnvDyn), { Int16BuildTaggedTypeWithNoGC(numVars) });
+    GateRef state = GetFrame(sp);
+    auto parent = GetEnvFromFrame(state);
+    GateRef res = NewLexicalEnv(glue, ZExtInt16ToInt32(numVars), parent);
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -1960,7 +1962,7 @@ DECLARE_ASM_HANDLER(HandleIncDynPrefV8)
         }
     }
     Bind(&valueNotInt);
-    if (!env->IsAmd64()) {
+    {
         Label valueIsDouble(env);
         Label valueNotDouble(env);
         Branch(TaggedIsDouble(value), &valueIsDouble, &valueNotDouble);
@@ -1971,8 +1973,6 @@ DECLARE_ASM_HANDLER(HandleIncDynPrefV8)
             Jump(&accDispatch);
         }
         Bind(&valueNotDouble);
-        Jump(&slowPath);
-    } else {
         Jump(&slowPath);
     }
     Bind(&slowPath);
@@ -2018,7 +2018,7 @@ DECLARE_ASM_HANDLER(HandleDecDynPrefV8)
         }
     }
     Bind(&valueNotInt);
-    if (!env->IsAmd64()) {
+    {
         Label valueIsDouble(env);
         Label valueNotDouble(env);
         Branch(TaggedIsDouble(value), &valueIsDouble, &valueNotDouble);
@@ -2029,8 +2029,6 @@ DECLARE_ASM_HANDLER(HandleDecDynPrefV8)
             Jump(&accDispatch);
         }
         Bind(&valueNotDouble);
-        Jump(&slowPath);
-    } else {
         Jump(&slowPath);
     }
     Bind(&slowPath);
@@ -5630,7 +5628,7 @@ void InterpreterStub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualN
     GateRef acc = TaggedArgument(static_cast<size_t>(InterpreterHandlerInputs::ACC));
     GateRef hotnessCounter = Int32Argument(
         static_cast<size_t>(InterpreterHandlerInputs::HOTNESS_COUNTER));
-    
+
     // 1. call initialize
     Label funcIsHeapObject(env);
     Label funcIsCallable(env);

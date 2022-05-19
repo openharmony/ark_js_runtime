@@ -166,6 +166,11 @@ public:
         nestedLevel_ = level;
     }
 
+    void SetLastFp(JSTaggedType *fp)
+    {
+        glueData_.lastFp_ = fp;
+    }
+
     const JSTaggedType *GetCurrentSPFrame() const
     {
         return glueData_.currentFrame_;
@@ -186,16 +191,6 @@ public:
         glueData_.leaveFrame_ = sp;
     }
 
-    const JSTaggedType *GetLastFp() const
-    {
-        return glueData_.lastFp_;
-    }
-
-    void SetLastFp(JSTaggedType *fp)
-    {
-        glueData_.lastFp_ = fp;
-    }
-
     const JSTaggedType *GetCurrentFrame() const;
 
     void SetCurrentFrame(JSTaggedType *sp);
@@ -212,6 +207,12 @@ public:
     HeapRegionAllocator *GetHeapRegionAllocator() const
     {
         return heapRegionAllocator_;
+    }
+
+    void ReSetNewSpaceAllocationAddress(const uintptr_t *top, const uintptr_t* end)
+    {
+        glueData_.newSpaceAllocationTopAddress_ = top;
+        glueData_.newSpaceAllocationEndAddress_ = end;
     }
 
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1);
@@ -425,6 +426,8 @@ public:
                                                  base::AlignedPointer,
                                                  base::AlignedPointer,
                                                  base::AlignedPointer,
+                                                 base::AlignedPointer,
+                                                 base::AlignedPointer,
                                                  BCStubEntries,
                                                  RTStubEntries,
                                                  COStubEntries,
@@ -438,6 +441,8 @@ public:
             CurrentFrameIndex,
             LeaveFrameIndex,
             LastFpIndex,
+            NewSpaceAllocationTopAddressIndex,
+            NewSpaceAllocationEndAddressIndex,
             BCStubEntriesIndex,
             RTStubEntriesIndex,
             COStubEntriesIndex,
@@ -484,6 +489,16 @@ public:
             return GetOffset<static_cast<size_t>(Index::LastFpIndex)>(isArch32);
         }
 
+        static size_t GetNewSpaceAllocationTopAddressOffset(bool isArch32)
+        {
+            return GetOffset<static_cast<size_t>(Index::NewSpaceAllocationTopAddressIndex)>(isArch32);
+        }
+
+        static size_t GetNewSpaceAllocationEndAddressOffset(bool isArch32)
+        {
+            return GetOffset<static_cast<size_t>(Index::NewSpaceAllocationEndAddressIndex)>(isArch32);
+        }
+
         static size_t GetBCStubEntriesOffset(bool isArch32)
         {
             return GetOffset<static_cast<size_t>(Index::BCStubEntriesIndex)>(isArch32);
@@ -514,6 +529,8 @@ public:
         alignas(EAS) JSTaggedType *currentFrame_ {nullptr};
         alignas(EAS) JSTaggedType *leaveFrame_ {nullptr};
         alignas(EAS) JSTaggedType *lastFp_ {nullptr};
+        alignas(EAS) const uintptr_t *newSpaceAllocationTopAddress_ {nullptr};
+        alignas(EAS) const uintptr_t *newSpaceAllocationEndAddress_ {nullptr};
         alignas(EAS) BCStubEntries bcStubEntries_;
         alignas(EAS) RTStubEntries rtStubEntries_;
         alignas(EAS) COStubEntries coStubEntries_;

@@ -130,6 +130,7 @@ extern "C" void ResumeCaughtFrameAndDispatch(uintptr_t glue, uintptr_t pc, uintp
 
 #define RUNTIME_STUB_WITH_GC_LIST(V)      \
     V(AddElementInternal)                 \
+    V(AllocateInYoung)                    \
     V(CallSetter)                         \
     V(CallSetter2)                        \
     V(CallGetter)                         \

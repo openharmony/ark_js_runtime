@@ -877,6 +877,11 @@ inline GateRef Stub::Int64UnsignedLessThanOrEqual(GateRef x, GateRef y)
     return env_.GetBulder()->BinaryLogic(OpCode(OpCode::ULE), x, y);
 }
 
+inline GateRef Stub::IntPtrGreaterThan(GateRef x, GateRef y)
+{
+    return env_.Is32Bit() ? Int32GreaterThan(x, y) : Int64GreaterThan(x, y);
+}
+
 // cast operation
 inline GateRef Stub::ChangeInt64ToInt32(GateRef val)
 {
@@ -1793,7 +1798,7 @@ inline void Stub::SetHasConstructorToHClass(GateRef glue, GateRef hClass, GateRe
     Store(VariableType::INT32(), glue, hClass, IntPtr(JSHClass::BIT_FIELD_OFFSET), newVal);
 }
 
-inline GateRef Stub::IntptrEuqal(GateRef x, GateRef y)
+inline GateRef Stub::IntPtrEuqal(GateRef x, GateRef y)
 {
     return env_.Is32Bit() ? Int32Equal(x, y) : Int64Equal(x, y);
 }
@@ -1991,6 +1996,19 @@ inline GateRef Stub::GetTargetFromJSProxy(GateRef proxy)
 {
     GateRef offset = IntPtr(JSProxy::TARGET_OFFSET);
     return Load(VariableType::JS_ANY(), proxy, offset);
+}
+
+inline GateRef Stub::ComputeTaggedArraySize(GateRef length)
+{
+    return PtrAdd(IntPtr(TaggedArray::DATA_OFFSET),
+        PtrMul(IntPtr(JSTaggedValue::TaggedTypeSize()), length));
+}
+inline GateRef Stub::GetGlobalConstantValue(VariableType type, GateRef glue, ConstantIndex index)
+{
+    GateRef gConstAddr = PtrAdd(glue,
+        IntPtr(JSThread::GlueData::GetGlobalConstOffset(env_.Is32Bit())));
+    auto constantIndex = IntPtr(JSTaggedValue::TaggedTypeSize() * static_cast<size_t>(index));
+    return Load(type, gConstAddr, constantIndex);
 }
 } //  namespace panda::ecmascript::kungfu
 #endif // ECMASCRIPT_COMPILER_STUB_INL_H
