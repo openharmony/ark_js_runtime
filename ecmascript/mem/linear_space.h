@@ -31,6 +31,14 @@ public:
     {
         survivalObjectSize_ -= objSize;
     }
+    const uintptr_t *GetAllocationTopAddress()
+    {
+        return allocator_->GetTopAddress();
+    }
+    const uintptr_t *GetAllocationEndAddress()
+    {
+        return allocator_->GetEndAddress();
+    }
 protected:
     Heap *heap_ {nullptr};
 
