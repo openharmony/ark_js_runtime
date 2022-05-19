@@ -106,3 +106,6 @@ GeneratorReEnterAsmInterp:
 
 .global JSCallDispatch
 JSCallDispatch:
+
+.global CallBuiltinTrampoline
+CallBuiltinTrampoline:

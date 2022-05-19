@@ -401,7 +401,6 @@ JSTaggedValue EcmaVM::InvokeEcmaAotEntrypoint(JSHandle<JSFunction> mainFunc, con
     UpdateMethodInFunc(mainFunc, jsPandaFile);
     std::vector<JSTaggedType> args(6, JSTaggedValue::Undefined().GetRawData()); // 6: number of para
     args[0] = mainFunc.GetTaggedValue().GetRawData();
-
     auto entry = thread_->GetRTInterface(kungfu::RuntimeStubCSigns::ID_JSFunctionEntry);
     auto res = reinterpret_cast<JSFunctionEntryType>(entry)(thread_->GetGlueAddr(),
                                                             reinterpret_cast<uintptr_t>(thread_->GetCurrentSPFrame()),

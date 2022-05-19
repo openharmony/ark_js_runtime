@@ -36,7 +36,7 @@ void AotFileManager::CollectAOTCodeInfoOfStubs()
     auto asmCallSigns = asmModule_.GetCSigns();
     for (size_t i = 0; i < asmModule_.GetFunctionCount(); i++) {
         auto cs = asmCallSigns[i];
-        auto entryOffset = asmModule_.GetFunction(i);
+        auto entryOffset = asmModule_.GetFunction(cs->GetID());
         aotInfo_.AddStubEntry(cs->GetTargetKind(), cs->GetID(), entryOffset + codeBegin);
         ASSERT(!cs->GetName().empty());
         uintptr_t entry = codeBuff + entryOffset + codeBegin;

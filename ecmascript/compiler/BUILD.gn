@@ -42,9 +42,10 @@ config("include_llvm") {
 source_set("libark_jsoptimizer_set") {
   sources = [
     "aot_file_manager.cpp",
-    "assembler/assembler_aarch64.cpp",
-    "assembler/assembler_x64.cpp",
-    "assembler/extended_assembler_x64.cpp",
+    "assembler/aarch64/assembler_aarch64.cpp",
+    "assembler/aarch64/extend_assembler.cpp",
+    "assembler/x64/assembler_x64.cpp",
+    "assembler/x64/extended_assembler_x64.cpp",
     "assembler_module.cpp",
     "bc_call_signature.cpp",
     "bytecode_circuit_builder.cpp",
@@ -62,6 +63,7 @@ source_set("libark_jsoptimizer_set") {
     "stub.cpp",
     "test_stubs.cpp",
     "test_stubs_signature.cpp",
+    "trampoline/aarch64/assembler_stubs.cpp",
     "trampoline/x64/assembler_stubs_x64.cpp",
     "type.cpp",
     "verifier.cpp",

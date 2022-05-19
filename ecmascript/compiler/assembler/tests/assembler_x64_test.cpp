@@ -14,13 +14,13 @@
  */
 #include <ostream>
 #include "ecmascript/tests/test_helper.h"
-#include "ecmascript/compiler/assembler/assembler_x64.h"
-#include "ecmascript/compiler/assembler/assembler_aarch64.h"
+#include "ecmascript/compiler/assembler/x64/assembler_x64.h"
+#include "ecmascript/compiler/assembler/aarch64/assembler_aarch64.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/dyn_chunk.h"
 #include "ecmascript/compiler/llvm_codegen.h"
 #include "ecmascript/compiler/trampoline/x64/assembler_stubs_x64.h"
-#include "ecmascript/compiler/assembler/extended_assembler_x64.h"
+#include "ecmascript/compiler/assembler/x64/extended_assembler_x64.h"
 #include "llvm-c/Analysis.h"
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
