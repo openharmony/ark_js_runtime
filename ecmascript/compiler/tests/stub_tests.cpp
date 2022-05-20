@@ -1082,7 +1082,7 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
     double key = 4.29497e+09;
     resVal = getPropertyByValuePtr(thread->GetGlueAddr(), strHello.GetTaggedValue().GetRawData(),
                                    JSTaggedValue(key).GetRawData());
-    EXPECT_EQ(resVal.GetRawData(), 0ULL);
+    EXPECT_EQ(resVal.GetRawData(), JSTaggedValue::Hole().GetRawData());
 }
 
 HWTEST_F_L0(StubTest, FastTypeOfTest)

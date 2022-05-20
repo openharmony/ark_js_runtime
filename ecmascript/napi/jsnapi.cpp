@@ -507,7 +507,7 @@ LocalScope::~LocalScope()
 }
 
 // ----------------------------------- EscapeLocalScope ------------------------------
-EscapeLocalScope::EscapeLocalScope(const EcmaVM *vm) : LocalScope(vm, 0U)
+EscapeLocalScope::EscapeLocalScope(const EcmaVM *vm) : LocalScope(vm, JSTaggedValue::Undefined().GetRawData())
 {
     auto thread = vm->GetJSThread();
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)

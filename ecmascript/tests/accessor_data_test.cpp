@@ -63,6 +63,8 @@ HWTEST_F_L0(AccessorDataTest, AccessorData_Cast)
     JSHandle<JSHClass> accDynclassHandle =
         factory->NewEcmaDynClass(JSObject::SIZE, JSType::ACCESSOR_DATA, nullHandle);
     ObjectHeader *accObject = factory->NewDynObject(accDynclassHandle);
+    AccessorData::Cast(accObject)->SetGetter(thread, JSTaggedValue::Undefined());
+    AccessorData::Cast(accObject)->SetSetter(thread, JSTaggedValue::Undefined());
     EXPECT_TRUE(JSTaggedValue(accObject).IsAccessorData());
     AccessorData *acc = AccessorData::Cast(accObject);
     EXPECT_TRUE(JSTaggedValue(acc).IsAccessorData());
@@ -96,6 +98,8 @@ HWTEST_F_L0(AccessorDataTest, IsInternal)
     JSHandle<JSHClass> accDynclass = factory->NewEcmaDynClass(JSObject::SIZE, JSType::ACCESSOR_DATA, nullHandle);
     ObjectHeader *accObject = factory->NewDynObject(accDynclass);
     AccessorData *acc = AccessorData::Cast(accObject);
+    acc->SetGetter(thread, JSTaggedValue::Undefined());
+    acc->SetSetter(thread, JSTaggedValue::Undefined());
     EXPECT_EQ(acc->IsInternal(), false);
 
     JSHandle<JSHClass> internalAccDynClass =
@@ -140,6 +144,7 @@ HWTEST_F_L0(AccessorDataTest, HasSetter)
     JSHandle<JSHClass> accDynclass = factory->NewEcmaDynClass(JSObject::SIZE, JSType::ACCESSOR_DATA, nullHandle);
     ObjectHeader *accObject = factory->NewDynObject(accDynclass);
     AccessorData *acc = AccessorData::Cast(accObject);
+    acc->SetGetter(thread, JSTaggedValue::Undefined());
     EXPECT_EQ(acc->HasSetter(), true);
     acc->SetSetter(thread, JSTaggedValue::Undefined());
     EXPECT_EQ(acc->HasSetter(), false);
@@ -179,6 +184,8 @@ HWTEST_F_L0(AccessorDataTest, CallInternalSet)
     JSHandle<JSHClass> accDynclass1 =
         factory->NewEcmaDynClass(JSObject::SIZE, JSType::INTERNAL_ACCESSOR, nullPrototypeHandle);
     JSHandle<AccessorData> accObject1(thread, factory->NewDynObject(accDynclass1));
+    accObject1->SetGetter(thread, JSTaggedValue::Undefined());
+    accObject1->SetSetter(thread, JSTaggedValue::Undefined());
     JSHandle<JSNativePointer> prototypeGetterFuncNativePtrHandle =
         factory->NewJSNativePointer(reinterpret_cast<void *>(JSFunction::PrototypeGetter), nullptr, nullptr, true);
     accObject1->SetGetter(thread, prototypeGetterFuncNativePtrHandle);

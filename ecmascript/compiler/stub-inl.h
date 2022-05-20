@@ -604,19 +604,13 @@ inline GateRef Stub::TaggedIsException(GateRef x)
 
 inline GateRef Stub::TaggedIsSpecial(GateRef x)
 {
-    return TruncInt32ToInt1(Int32And(
-        SExtInt1ToInt32(
-            Int64Equal(Int64And(x, Int64(~JSTaggedValue::TAG_SPECIAL_MASK)), Int64(0))),
-        Int32Or(SExtInt1ToInt32(
-            Int64NotEqual(Int64And(x, Int64(JSTaggedValue::TAG_SPECIAL_VALUE)), Int64(0))),
-            SExtInt1ToInt32(TaggedIsHole(x)))));
+    return BoolOr(Int64Equal(Int64And(x, Int64(JSTaggedValue::TAG_SPECIAL_MARK)),
+        Int64(JSTaggedValue::TAG_SPECIAL_VALUE)), TaggedIsHole(x));
 }
 
 inline GateRef Stub::TaggedIsHeapObject(GateRef x)
 {
-    return TruncInt32ToInt1(
-        Int32And(SExtInt1ToInt32(TaggedIsObject(x)),
-                 SExtInt1ToInt32(Int32Equal(SExtInt1ToInt32(TaggedIsSpecial(x)), Int32(0)))));
+    return Int64Equal(Int64And(x, Int64(JSTaggedValue::TAG_HEAPOBJECT_BOOLEAN)), Int64(0));
 }
 
 inline GateRef Stub::TaggedIsGeneratorObject(GateRef x)
@@ -638,10 +632,7 @@ inline GateRef Stub::TaggedIsPropertyBox(GateRef x)
 
 inline GateRef Stub::TaggedIsWeak(GateRef x)
 {
-    return TruncInt32ToInt1(
-        Int32And(SExtInt1ToInt32(TaggedIsHeapObject(x)), SExtInt1ToInt32(
-            Int64Equal(Int64And(x, Int64(JSTaggedValue::TAG_WEAK_MASK)),
-                Int64(1)))));
+    return Int64Equal(Int64And(x, Int64(JSTaggedValue::TAG_WEAK)), Int64(1));
 }
 
 inline GateRef Stub::TaggedIsPrototypeHandler(GateRef x)
@@ -686,7 +677,8 @@ inline GateRef Stub::TaggedIsNull(GateRef x)
 
 inline GateRef Stub::TaggedIsUndefinedOrNull(GateRef x)
 {
-    return TruncInt32ToInt1(Int32Or(SExtInt1ToInt32(TaggedIsUndefined(x)), SExtInt1ToInt32(TaggedIsNull(x))));
+    return Int64Equal(Int64And(x, Int64(JSTaggedValue::TAG_HEAPOBJECT_BOOLEAN)),
+        Int64(JSTaggedValue::TAG_SPECIAL_VALUE));
 }
 
 inline GateRef Stub::TaggedIsTrue(GateRef x)
@@ -701,7 +693,8 @@ inline GateRef Stub::TaggedIsFalse(GateRef x)
 
 inline GateRef Stub::TaggedIsBoolean(GateRef x)
 {
-    return TruncInt32ToInt1(Int32Or(SExtInt1ToInt32(TaggedIsTrue(x)), SExtInt1ToInt32(TaggedIsFalse(x))));
+    return Int64Equal(Int64And(x, Int64(JSTaggedValue::TAG_HEAPOBJECT_BOOLEAN)),
+        Int64(JSTaggedValue::TAG_BOOLEAN_MASK));
 }
 
 inline GateRef Stub::TaggedGetInt(GateRef x)
