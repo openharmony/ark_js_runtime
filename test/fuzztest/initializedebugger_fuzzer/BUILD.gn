@@ -22,8 +22,7 @@ import("//build/test.gni")
 ohos_fuzztest("InitializeDebuggerFuzzTest") {
   module_out_path = "ark/js_runtime"
 
-  fuzz_config_file =
-      "//ark/ark_js_runtime/test/fuzztest/initializedebugger_fuzzer"
+  fuzz_config_file = "//ark/js_runtime/test/fuzztest/initializedebugger_fuzzer"
 
   sources = [ "initializedebugger_fuzzer.cpp" ]
 
@@ -32,7 +31,7 @@ ohos_fuzztest("InitializeDebuggerFuzzTest") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "//ark/js_runtime:libark_jsruntime",
-    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_static",
+    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_set",
     sdk_libc_secshared_dep,
   ]
 }
