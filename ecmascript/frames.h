@@ -761,7 +761,7 @@ struct BuiltinWithArgvFrame : public base::AlignedStruct<base::AlignedPointer::S
     uintptr_t GetStackArgsAddress()
     {
         auto topAddress = ToUintPtr(this) +
-            (static_cast<size_t>(Index::StackArgsTopIndex) * sizeof(uintptr_t));
+            (static_cast<int>(Index::StackArgsTopIndex) * sizeof(uintptr_t));
         auto numberArgs = GetNumArgs() + BuiltinFrame::RESERVED_CALL_ARGCOUNT;
         return topAddress - numberArgs * sizeof(uintptr_t);
     }
@@ -773,7 +773,7 @@ struct BuiltinWithArgvFrame : public base::AlignedStruct<base::AlignedPointer::S
     size_t GetNumArgs()
     {
         auto argcAddress = reinterpret_cast<size_t *>(
-            ToUintPtr(this) + (static_cast<size_t>(Index::NumArgsIndex) * sizeof(uintptr_t)));
+            ToUintPtr(this) + (static_cast<int>(Index::NumArgsIndex) * sizeof(uintptr_t)));
         return *argcAddress;
     }
     // argv(... this, new.target, function)

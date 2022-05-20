@@ -265,7 +265,7 @@ JSTaggedValue NumberHelper::StringToDoubleWithRadix(const uint8_t *start, const 
 
 char NumberHelper::Carry(char current, int radix)
 {
-    int digit = (current > '9') ? (current - 'a' + DECIMAL) : (current - '0');
+    int digit = static_cast<int>((current > '9') ? (current - 'a' + DECIMAL) : (current - '0'));
     digit = (digit == (radix - 1)) ? 0 : digit + 1;
     return CHARS[digit];
 }
