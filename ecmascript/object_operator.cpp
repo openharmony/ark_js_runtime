@@ -210,8 +210,12 @@ void ObjectOperator::ToPropertyDescriptor(PropertyDescriptor &desc) const
         JSTaggedValue val = GetValue();
         desc.SetValue(JSHandle<JSTaggedValue>(thread_, val));
     } else {
-        AccessorData *accessor = AccessorData::Cast(GetValue().GetTaggedObject());
-
+        auto result = GetValue();
+        if (result.IsPropertyBox()) {
+            result = PropertyBox::Cast(result.GetTaggedObject())->GetValue();
+        }
+        AccessorData *accessor = AccessorData::Cast(result.GetTaggedObject());
+    
         if (UNLIKELY(accessor->IsInternal())) {
             desc.SetWritable(IsWritable());
             auto val = accessor->CallInternalGet(thread_, JSHandle<JSObject>::Cast(GetHolder()));
