@@ -999,17 +999,22 @@ inline GateRef Stub::NotBuiltinsConstructor(GateRef object)
         Int32(0));
 }
 
+inline GateRef Stub::IsClassConstructorFromBitField(GateRef bitfield)
+{
+    // decode
+    return Int32NotEqual(
+        Int32And(Int32LSR(bitfield, Int32(JSHClass::ClassConstructorBit::START_BIT)),
+                 Int32((1LU << JSHClass::ClassConstructorBit::SIZE) - 1)),
+        Int32(0));
+}
+
 inline GateRef Stub::IsClassConstructor(GateRef object)
 {
     GateRef hClass = LoadHClass(object);
     GateRef bitfieldOffset = IntPtr(JSHClass::BIT_FIELD_OFFSET);
 
     GateRef bitfield = Load(VariableType::INT32(), hClass, bitfieldOffset);
-    // decode
-    return Int32NotEqual(
-        Int32And(Int32LSR(bitfield, Int32(JSHClass::ClassConstructorBit::START_BIT)),
-                 Int32((1LU << JSHClass::ClassConstructorBit::SIZE) - 1)),
-        Int32(0));
+    return IsClassConstructorFromBitField(bitfield);
 }
 
 inline GateRef Stub::IsClassPrototype(GateRef object)
@@ -1739,15 +1744,20 @@ inline GateRef Stub::GetGlobalConstantString(ConstantIndex index)
     }
 }
 
+inline GateRef Stub::IsCallableFromBitField(GateRef bitfield)
+{
+    return Int32NotEqual(
+        Int32And(Int32LSR(bitfield, Int32(JSHClass::CallableBit::START_BIT)),
+            Int32((1LU << JSHClass::CallableBit::SIZE) - 1)),
+        Int32(0));
+}
+
 inline GateRef Stub::IsCallable(GateRef obj)
 {
     GateRef hclass = LoadHClass(obj);
     GateRef bitfieldOffset = IntPtr(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(VariableType::INT32(), hclass, bitfieldOffset);
-    return Int32NotEqual(
-        Int32And(Int32LSR(bitfield, Int32(JSHClass::CallableBit::START_BIT)),
-            Int32((1LU << JSHClass::CallableBit::SIZE) - 1)),
-        Int32(0));
+    return IsCallableFromBitField(bitfield);
 }
 
 // GetOffset func in property_attribute.h
@@ -2002,6 +2012,12 @@ inline GateRef Stub::GetGlobalConstantValue(VariableType type, GateRef glue, Con
         IntPtr(JSThread::GlueData::GetGlobalConstOffset(env_.Is32Bit())));
     auto constantIndex = IntPtr(JSTaggedValue::TaggedTypeSize() * static_cast<size_t>(index));
     return Load(type, gConstAddr, constantIndex);
+}
+
+inline GateRef Stub::HasPendingException(GateRef glue)
+{
+    GateRef exception = Load(VariableType::JS_ANY(), glue);
+    return Int64NotEqual(exception, Int64(JSTaggedValue::VALUE_HOLE));
 }
 } //  namespace panda::ecmascript::kungfu
 #endif // ECMASCRIPT_COMPILER_STUB_INL_H

@@ -1653,7 +1653,7 @@ void Stub::StoreWithTransition(GateRef glue, GateRef receiver, GateRef value, Ga
         }
         Bind(&indexLessCapacity);
         {
-            Store(VariableType::INT64(), glue, PtrAdd(array, IntPtr(TaggedArray::DATA_OFFSET)),
+            Store(VariableType::JS_ANY(), glue, PtrAdd(array, IntPtr(TaggedArray::DATA_OFFSET)),
                 PtrMul(ChangeInt32ToIntPtr(index), IntPtr(JSTaggedValue::TaggedTypeSize())),
                 value);
             Jump(&exit);

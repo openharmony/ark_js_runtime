@@ -4127,7 +4127,7 @@ void InterpreterAssembly::ExceptionHandler(
     FrameHandler frameHandler(thread);
     uint32_t pcOffset = panda_file::INVALID_OFFSET;
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
-        if (frameHandler.IsEntryFrame()) {
+        if (frameHandler.IsEntryFrame() || frameHandler.IsBuiltinFrame()) {
             thread->SetCurrentSPFrame(frameHandler.GetSp());
             return;
         }
