@@ -89,7 +89,8 @@ host_unittest_action("EcmaVmTest") {
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_js_intl_set",
+    "$third_party_gn_path/icu/icu4c:shared_icui18n",
+    "$third_party_gn_path/icu/icu4c:shared_icuuc",
     "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]

@@ -210,7 +210,7 @@ bool JSDate::GetNumFromString(const CString &str, int len, int *index, int *num)
     int value = 0;
     while (indexStr < len) {
         oneByte = str.at(indexStr);
-        int val = oneByte - '0';
+        int val = static_cast<int>(oneByte - '0');
         if (val >= 0 && val <= NUM_NINE) {
             value = value * TEN + val;
             indexStr++;
