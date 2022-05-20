@@ -16,15 +16,26 @@
 #include "dispatchprotocolmessage_fuzzer.h"
 #include<cstddef>
 #include<cstdint>
+#include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/tooling/debugger_service.h"
 
-using namespace panda::tooling::ecmascript;
+using namespace panda;
+using namespace panda::ecmascript;
+using namespace panda::ecmascript::tooling;
 
+bool createstatus = true;
 namespace OHOS {
     bool doSomethingInterestingWithMyAPI(const uint8_t* data, size_t size)
     {
+        RuntimeOption option;
+        if (createstatus) {
+            JSNApi::CreateJSVM(option);
+            createstatus = false;
+        }
+        option.SetLogLevel(RuntimeOption::LOG_LEVEL::ERROR);
+        auto jsvm = JSNApi::CreateJSVM(option);
         std::string message(data, data+size);
-        panda::tooling::ecmascript::DispatchProtocolMessage(message);
+        panda::ecmascript::tooling::DispatchProtocolMessage(jsvm, message);
         return true;
     }
 }

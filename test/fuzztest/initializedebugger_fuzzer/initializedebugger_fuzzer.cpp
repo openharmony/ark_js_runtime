@@ -23,7 +23,7 @@
 
 using namespace panda;
 using namespace panda::ecmascript;
-using namespace panda::tooling::ecmascript;
+using namespace panda::ecmascript::tooling;
 
 bool createstatus = true;
 namespace OHOS {
@@ -37,10 +37,10 @@ namespace OHOS {
         option.SetLogLevel(RuntimeOption::LOG_LEVEL::ERROR);
         auto jsvm = JSNApi::CreateJSVM(option);
         auto onResponse = [data, size](std::string) {
-            return;
+            return data + size;
         };
-        panda::tooling::ecmascript::InitializeDebugger(onResponse, jsvm);
-        panda::tooling::ecmascript::UninitializeDebugger();
+        panda::ecmascript::tooling::InitializeDebugger(onResponse, jsvm);
+        panda::ecmascript::tooling::UninitializeDebugger(jsvm);
         JSNApi::DestroyJSVM(jsvm);
         return true;
     }
