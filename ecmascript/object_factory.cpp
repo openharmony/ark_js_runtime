@@ -2245,6 +2245,13 @@ JSHandle<EcmaString> ObjectFactory::NewFromStdStringUnCheck(const std::string &d
     return GetStringFromStringTable(utf8Data, data.size(), canBeCompress);
 }
 
+JSHandle<EcmaString> ObjectFactory::NewFromUtf8(const CString &data)
+{
+    auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
+    bool canBeCompress = EcmaString::CanBeCompressed(utf8Data, data.length());
+    return GetStringFromStringTable(utf8Data, data.length(), canBeCompress);
+}
+
 JSHandle<EcmaString> ObjectFactory::NewFromUtf8(const uint8_t *utf8Data, uint32_t utf8Len)
 {
     bool canBeCompress = EcmaString::CanBeCompressed(utf8Data, utf8Len);

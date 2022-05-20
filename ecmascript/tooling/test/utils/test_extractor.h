@@ -19,10 +19,10 @@
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/tooling/pt_js_extractor.h"
 
-namespace panda::tooling::ecmascript::test {
+namespace panda::ecmascript::tooling::test {
 using EntityId = panda_file::File::EntityId;
 using panda::ecmascript::CString;
-using panda::tooling::ecmascript::PtJSExtractor;
+using panda::ecmascript::tooling::PtJSExtractor;
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct SourceLocation {
@@ -52,6 +52,6 @@ public:
 
     SourceLocation GetSourceLocation(EntityId methodId, uint32_t bytecodeOffset);
 };
-}  // namespace panda::tooling::ecmascript::test
+}  // namespace panda::ecmascript::tooling::test
 
 #endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TEST_EXTRACTOR_H

@@ -20,7 +20,7 @@
 #include "ecmascript/tooling/test/utils/testcases/test_list.h"
 #include "ecmascript/tooling/test/utils/test_hooks.h"
 
-namespace panda::tooling::ecmascript::test {
+namespace panda::ecmascript::tooling::test {
 static std::thread g_debuggerThread;
 static std::unique_ptr<TestHooks> g_hooks = nullptr;
 
@@ -43,4 +43,4 @@ int StopDebuggerImpl()
     g_hooks.reset();
     return 0;
 }
-}  // namespace panda::tooling::ecmascript::test
+}  // namespace panda::ecmascript::tooling::test

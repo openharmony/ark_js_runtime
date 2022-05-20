@@ -22,7 +22,7 @@
 #include "ecmascript/tooling/front_end.h"
 #include "libpandabase/utils/logger.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 DebuggerImpl::DispatcherImpl::DispatcherImpl(FrontEnd *frontend, std::unique_ptr<DebuggerImpl> debugger)
     : DispatcherBase(frontend), debugger_(std::move(debugger))
 {
@@ -324,4 +324,4 @@ DispatchResponse DebuggerImpl::SetBlackboxPatterns()
 {
     return DispatchResponse::Ok();
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling

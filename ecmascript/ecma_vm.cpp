@@ -52,9 +52,9 @@
 #include "ecmascript/tagged_queue-inl.h"
 #include "ecmascript/tagged_queue.h"
 #include "ecmascript/template_map.h"
+#include "ecmascript/tooling/interface/js_debugger_manager.h"
 #include "ecmascript/ts_types/ts_loader.h"
 #include "ecmascript/vmstat/runtime_stat.h"
-#include "include/runtime_notification.h"
 #include "libpandafile/file.h"
 
 namespace panda::ecmascript {
@@ -115,7 +115,6 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
     options_ = std::move(options);
     icEnable_ = options_.IsIcEnable();
     optionalLogEnabled_ = options_.IsEnableOptionalLog();
-    rendezvous_ = chunk_.New<EmptyRendezvous>();
     snapshotSerializeEnable_ = options_.IsSnapshotSerializeEnabled();
     if (!snapshotSerializeEnable_) {
         snapshotDeserializeEnable_ = options_.IsSnapshotDeserializeEnabled();
@@ -123,9 +122,7 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
     snapshotFileName_ = options_.GetSnapshotFile();
     frameworkAbcFileName_ = options_.GetFrameworkAbcFile();
 
-    auto runtime = Runtime::GetCurrent();
-    notificationManager_ = chunk_.New<RuntimeNotificationManager>(runtime->GetInternalAllocator());
-    notificationManager_->SetRendezvous(rendezvous_);
+    debuggerManager_ = chunk_.New<tooling::JsDebuggerManager>();
 }
 
 bool EcmaVM::Initialize()
@@ -193,9 +190,8 @@ bool EcmaVM::Initialize()
     thread_->SetGlobalObject(GetGlobalEnv()->GetGlobalObject());
     moduleManager_ = new ModuleManager(this);
     tsLoader_ = new TSLoader(this);
+    debuggerManager_->Initialize();
     InitializeFinish();
-    notificationManager_->VmStartEvent();
-    notificationManager_->VmInitializationEvent(thread_->GetThreadId());
     return true;
 }
 
@@ -284,9 +280,9 @@ EcmaVM::~EcmaVM()
     delete regExpParserCache_;
     regExpParserCache_ = nullptr;
 
-    if (notificationManager_ != nullptr) {
-        chunk_.Delete(notificationManager_);
-        notificationManager_ = nullptr;
+    if (debuggerManager_ != nullptr) {
+        chunk_.Delete(debuggerManager_);
+        debuggerManager_ = nullptr;
     }
 
     if (factory_ != nullptr) {
@@ -381,9 +377,9 @@ bool EcmaVM::ExecuteFromBuffer(const void *buffer, size_t size, std::string_view
     return true;
 }
 
-tooling::ecmascript::PtJSExtractor *EcmaVM::GetDebugInfoExtractor(const panda_file::File *file)
+tooling::PtJSExtractor *EcmaVM::GetDebugInfoExtractor(const panda_file::File *file)
 {
-    tooling::ecmascript::PtJSExtractor *res = GetJSPandaFileManager()->GetOrCreatePtJSExtractor(file);
+    tooling::PtJSExtractor *res = GetJSPandaFileManager()->GetOrCreatePtJSExtractor(file);
     return res;
 }
 
@@ -488,7 +484,7 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
         return Unexpected(Runtime::Error::PANDA_FILE_LOAD_ERROR);
     }
     // for debugger
-    notificationManager_->LoadModuleEvent(jsPandaFile->GetJSPandaFileDesc());
+    debuggerManager_->GetNotificationManager()->LoadModuleEvent(jsPandaFile->GetJSPandaFileDesc());
 
     JSHandle<JSFunction> func = JSHandle<JSFunction>(thread_, program->GetMainFunction());
     JSHandle<JSTaggedValue> global = GlobalEnv::Cast(globalEnv_.GetTaggedObject())->GetJSGlobalObject();

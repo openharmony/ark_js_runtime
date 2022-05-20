@@ -19,7 +19,7 @@
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/tooling/test/utils/test_util.h"
 
-namespace panda::tooling::ecmascript::test {
+namespace panda::ecmascript::tooling::test {
 class JsBreakpointTest : public TestEvents {
 public:
     JsBreakpointTest()
@@ -30,11 +30,11 @@ public:
             return true;
         };
 
-        breakpoint = [this](PtThread thread, const PtLocation &location) {
+        breakpoint = [this](const JSPtLocation &locatioon) {
             ASSERT_TRUE(location.GetMethodId().IsValid());
             ASSERT_LOCATION_EQ(location, location_);
             ++breakpointCounter_;
-            TestUtil::SuspendUntilContinue(DebugEvent::BREAKPOINT, thread, location);
+            TestUtil::SuspendUntilContinue(DebugEvent::BREAKPOINT, location);
             return true;
         };
 
@@ -46,7 +46,7 @@ public:
                 ASSERT_TRUE(backend_->NotifyScriptParsed(0, pandaFile_));
                 flag_ = false;
                 auto error = debugInterface_->SetBreakpoint(location_);
-                ASSERT_FALSE(error.has_value());
+                ASSERT_FALSE(error);
             }
             return true;
         };
@@ -56,7 +56,7 @@ public:
             TestUtil::Continue();
             ASSERT_BREAKPOINT_SUCCESS(location_);
             TestUtil::Continue();
-            ASSERT_SUCCESS(debugInterface_->RemoveBreakpoint(location_));
+            ASSERT_TRUE(debugInterface_->RemoveBreakpoint(location_));
             ASSERT_EXITED();
             return true;
         };
@@ -75,7 +75,7 @@ public:
 private:
     CString pandaFile_ = "/data/test/Sample.abc";
     CString entryPoint_ = "_GLOBAL::func_main_0";
-    PtLocation location_ {nullptr, PtLocation::EntityId(0), 0};
+    JSPtLocation location_ {nullptr, JSPtLocation::EntityId(0), 0};
     size_t breakpointCounter_ = 0;
     bool flag_ = true;
 };
@@ -84,6 +84,6 @@ std::unique_ptr<TestEvents> GetJsBreakpointTest()
 {
     return std::make_unique<JsBreakpointTest>();
 }
-}  // namespace panda::tooling::ecmascript::test
+}  // namespace panda::ecmascript::tooling::test
 
 #endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TESTCASES_JS_BREAKPOINT_TEST_H

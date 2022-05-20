@@ -25,7 +25,7 @@
 #include "ecmascript/tooling/dispatcher.h"
 #include "ecmascript/mem/c_containers.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 using panda::ecmascript::EcmaVM;
 
 class PtBaseEvents : public PtBaseTypes {
@@ -162,14 +162,17 @@ public:
         return "";
     }
 
-    Local<ObjectRef> GetData() const
+    RemoteObject *GetData() const
     {
-        return data_.value_or(Local<ObjectRef>());
+        if (data_) {
+            return data_->get();
+        }
+        return nullptr;
     }
 
-    Paused &SetData(const Local<ObjectRef> &data)
+    Paused &SetData(std::unique_ptr<RemoteObject> data)
     {
-        data_ = data;
+        data_ = std::move(data);
         return *this;
     }
 
@@ -200,7 +203,7 @@ private:
 
     CVector<std::unique_ptr<CallFrame>> callFrames_ {};
     CString reason_ {};
-    std::optional<Local<ObjectRef>> data_ {};
+    std::optional<std::unique_ptr<RemoteObject>> data_ {};
     std::optional<CVector<BreakpointId>> hitBreakpoints_ {};
 };
 
@@ -738,5 +741,5 @@ private:
     std::optional<CString> scriptLanguage_ {};
     std::optional<CString> embedderName_ {};
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif

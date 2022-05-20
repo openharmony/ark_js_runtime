@@ -15,25 +15,31 @@
 
 #include "ecmascript/tooling/debugger_service.h"
 
+#include "ecmascript/ecma_vm.h"
 #include "ecmascript/tooling/protocol_handler.h"
 
-namespace panda::tooling::ecmascript {
-static std::unique_ptr<ProtocolHandler> g_handler = nullptr;  // NOLINT(fuchsia-statically-constructed-objects)
-
-void InitializeDebugger(const std::function<void(std::string)> &onResponse, const EcmaVM *vm)
+namespace panda::ecmascript::tooling {
+void InitializeDebugger(const std::function<void(const std::string &)> &onResponse, ::panda::ecmascript::EcmaVM *vm)
 {
-    g_handler = std::make_unique<ProtocolHandler>(onResponse, vm);
+    ProtocolHandler *handler = vm->GetJsDebuggerManager()->GetDebuggerHandler();
+    if (handler != nullptr) {
+        LOG(FATAL, DEBUGGER) << "JS debugger was initialized";
+    }
+    vm->GetJsDebuggerManager()->SetDebuggerHandler(new ProtocolHandler(onResponse, vm));
 }
 
-void UninitializeDebugger()
+void UninitializeDebugger(::panda::ecmascript::EcmaVM *vm)
 {
-    g_handler.reset();
+    ProtocolHandler *handler = vm->GetJsDebuggerManager()->GetDebuggerHandler();
+    delete handler;
+    vm->GetJsDebuggerManager()->SetDebuggerHandler(nullptr);
 }
 
-void DispatchProtocolMessage(const std::string &message)
+void DispatchProtocolMessage(const ::panda::ecmascript::EcmaVM *vm, const std::string &message)
 {
-    if (g_handler != nullptr) {
-        g_handler->SendCommand(DebuggerApi::ConvertToString(message));
+    ProtocolHandler *handler = vm->GetJsDebuggerManager()->GetDebuggerHandler();
+    if (handler != nullptr) {
+        handler->ProcessCommand(message.c_str());
     }
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling

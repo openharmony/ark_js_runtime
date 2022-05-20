@@ -21,15 +21,14 @@
 #include "ecmascript/tooling/base/pt_returns.h"
 #include "ecmascript/tooling/dispatcher.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 class FrontEnd {
 public:
     FrontEnd() = default;
     virtual ~FrontEnd() = default;
 
-    virtual void WaitForDebugger(const EcmaVM *ecmaVm) = 0;
+    virtual void WaitForDebugger() = 0;
     virtual void RunIfWaitingForDebugger() = 0;
-    virtual void ProcessCommand(const EcmaVM *ecmaVm) = 0;
     virtual void SendResponse(const DispatchRequest &request, const DispatchResponse &response,
                               std::unique_ptr<PtBaseReturns> result) = 0;
     virtual void SendNotification(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events) = 0;
@@ -38,6 +37,6 @@ private:
     NO_COPY_SEMANTIC(FrontEnd);
     NO_MOVE_SEMANTIC(FrontEnd);
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 
 #endif

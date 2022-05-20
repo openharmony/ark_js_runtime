@@ -34,13 +34,20 @@ public:
         return panda_file::SourceLang::ECMASCRIPT;
     }
 
-    std::pair<Method *, uint32_t> GetCatchMethodAndOffset(Method *method, ManagedThread *thread) const override;
+    std::pair<Method *, uint32_t> GetCatchMethodAndOffset(
+        [[maybe_unused]] Method *method, [[maybe_unused]] ManagedThread *thread) const override
+    {
+        return std::make_pair(nullptr, 0);
+    }
 
     PandaVM *CreateVM(Runtime *runtime, const RuntimeOptions &options) const override;
 
     std::unique_ptr<ClassLinkerExtension> CreateClassLinkerExtension() const override;
 
-    PandaUniquePtr<tooling::PtLangExt> CreatePtLangExt() const override;
+    PandaUniquePtr<tooling::PtLangExt> CreatePtLangExt() const override
+    {
+        return nullptr;
+    }
 
     void ThrowException(ManagedThread *thread, const uint8_t *mutf8_name, const uint8_t *mutf8_msg) const override;
 

@@ -19,7 +19,7 @@
 #include "libpandabase/macros.h"
 #include "ecmascript/mem/c_string.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 using panda::ecmascript::CString;
 
 enum class ScriptMatchType : uint8_t {
@@ -116,5 +116,5 @@ private:
     CString sourceMapUrl_ {};  // source map url
     int32_t endLine_ {0};      // total line number of source file
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 #endif

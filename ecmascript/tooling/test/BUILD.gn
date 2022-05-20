@@ -278,7 +278,6 @@ group("unittest") {
     ":DebuggerEventsTest",
     ":DebuggerScriptTest",
     ":DebuggerTypesTest",
-    ":EcmaDebugApiTest",
   ]
 }
 
