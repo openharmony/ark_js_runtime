@@ -357,6 +357,7 @@ public:
     JSHandle<EcmaString> NewFromStdString(const std::string &data);
     JSHandle<EcmaString> NewFromStdStringUnCheck(const std::string &data, bool canBeCompress);
 
+    JSHandle<EcmaString> NewFromUtf8(const CString &data);
     JSHandle<EcmaString> NewFromUtf8(const uint8_t *utf8Data, uint32_t utf8Len);
     JSHandle<EcmaString> NewFromUtf8UnCheck(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress);
 

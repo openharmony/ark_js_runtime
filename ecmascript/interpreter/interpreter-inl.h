@@ -34,7 +34,7 @@
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/template_string.h"
-#include "include/runtime_notification.h"
+#include "ecmascript/tooling/interface/js_debugger_manager.h"
 #include "libpandafile/code_data_accessor.h"
 #include "libpandafile/file.h"
 #include "libpandafile/method_data_accessor.h"
@@ -96,14 +96,13 @@ namespace panda::ecmascript {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define INTERPRETER_HANDLE_RETURN()                                                     \
     do {                                                                                \
-        thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, method); \
         size_t jumpSize = GetJumpSizeAfterCall(pc);                                     \
         DISPATCH_OFFSET(jumpSize);                                                      \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CHECK_SWITCH_TO_DEBUGGER_TABLE()        \
-    if (Runtime::GetCurrent()->IsDebugMode()) { \
+    if (ecmaVm->GetJsDebuggerManager()->IsDebugMode()) { \
         dispatchTable = debugDispatchTable;     \
     }
 
@@ -517,13 +516,11 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
     LOG(DEBUG, INTERPRETER) << "break Entry: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(newSp) << " "
                             << std::hex << reinterpret_cast<uintptr_t>(pc);
 
-    thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
 #if ECMASCRIPT_ENABLE_INTERPRETER_ASM
     InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
 #else
     EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
 #endif
-    thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, method);
 
     // NOLINTNEXTLINE(readability-identifier-naming)
     const JSTaggedValue resAcc = state->acc;
@@ -589,13 +586,11 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
     // execute interpreter
     thread->SetCurrentSPFrame(newSp);
 
-    thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
 #if ECMASCRIPT_ENABLE_INTERPRETER_ASM
     InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
 #else
     EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
 #endif
-    thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, method);
 
     JSTaggedValue res = state->acc;
     // pop frame
@@ -677,7 +672,8 @@ void EcmaInterpreter::NotifyBytecodePcChanged(JSThread *thread)
             continue;
         }
         auto bcOffset = frameHandler.GetBytecodeOffset();
-        thread->GetEcmaVM()->GetNotificationManager()->BytecodePcChangedEvent(thread, method, bcOffset);
+        auto *debuggerMgr = thread->GetEcmaVM()->GetJsDebuggerManager();
+        debuggerMgr->GetNotificationManager()->BytecodePcChangedEvent(thread, method, bcOffset);
         return;
     }
 }
@@ -934,14 +930,14 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             state->function = JSTaggedValue(funcTagged);
             thread->SetCurrentSPFrame(newSp);
             LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call.";
-            thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
             JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
                 const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);
+
+            thread->SetCurrentSPFrame(sp);
             if (UNLIKELY(thread->HasPendingException())) {
                 INTERPRETER_GOTO_EXCEPTION_HANDLER();
             }
             LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call.";
-            thread->SetCurrentSPFrame(sp);
             SET_ACC(retValue);
             INTERPRETER_HANDLE_RETURN();
         }
@@ -994,7 +990,6 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             thread->SetCurrentSPFrame(newSp);
             LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                                     << std::hex << reinterpret_cast<uintptr_t>(pc);
-            thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
             DISPATCH_OFFSET(0);
         }
     }
@@ -2021,17 +2016,15 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 state->function = ctor;
                 thread->SetCurrentSPFrame(newSp);
                 LOG(DEBUG, INTERPRETER) << "Entry: Runtime New.";
-                thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, ctorMethod);
                 JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
                     const_cast<void *>(ctorMethod->GetNativePointer()))(&ecmaRuntimeCallInfo);
 
+                thread->SetCurrentSPFrame(sp);
                 if (UNLIKELY(thread->HasPendingException())) {
                     INTERPRETER_GOTO_EXCEPTION_HANDLER();
                 }
                 LOG(DEBUG, INTERPRETER) << "Exit: Runtime New.";
-                thread->SetCurrentSPFrame(sp);
                 SET_ACC(retValue);
-                thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, ctorMethod);
                 DISPATCH(BytecodeInstruction::Format::PREF_IMM16_V8);
             }
 
@@ -2100,7 +2093,6 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 thread->SetCurrentSPFrame(newSp);
                 LOG(DEBUG, INTERPRETER) << "Entry: Runtime New " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                                         << std::hex << reinterpret_cast<uintptr_t>(pc);
-                thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, ctorMethod);
                 DISPATCH_OFFSET(0);
             }
         }
@@ -3667,8 +3659,6 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         DISPATCH(BytecodeInstruction::Format::PREF_NONE);
     }
     HANDLE_OPCODE(EXCEPTION_HANDLER) {
-        auto exception = thread->GetException();
-
         InterpretedFrameHandler frameHandler(sp);
         uint32_t pcOffset = panda_file::INVALID_OFFSET;
         for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
@@ -3689,6 +3679,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             return;
         }
 
+        auto exception = thread->GetException();
         SET_ACC(exception);
         thread->ClearException();
         thread->SetCurrentSPFrame(sp);

@@ -15,7 +15,10 @@ import("//ark/js_runtime/js_runtime_config.gni")
 import("//build/ohos.gni")
 
 config("ark_ecma_debugger_config") {
-  include_dirs = [ "//ark/js_runtime/ecmascript/tooling" ]
+  include_dirs = [
+    "//ark/js_runtime/ecmascript/tooling",
+    "//third_party/boost",
+  ]
 }
 
 debugger_sources = [

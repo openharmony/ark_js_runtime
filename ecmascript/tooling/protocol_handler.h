@@ -22,16 +22,15 @@
 
 #include "ecmascript/tooling/front_end.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 class ProtocolHandler final : public FrontEnd {
 public:
-    explicit ProtocolHandler(std::function<void(std::string)> callback, const EcmaVM *vm);
+    explicit ProtocolHandler(std::function<void(const std::string &)> callback, const EcmaVM *vm);
     ~ProtocolHandler() override = default;
 
-    void WaitForDebugger(const EcmaVM *ecmaVm) override;
+    void WaitForDebugger() override;
     void RunIfWaitingForDebugger() override;
-    void ProcessCommand(const EcmaVM *ecmaVm) override;
-    void SendCommand(const CString &msg);
+    void ProcessCommand(const CString &msg);
     void SendResponse(const DispatchRequest &request, const DispatchResponse &response,
                       std::unique_ptr<PtBaseReturns> result) override;
     void SendNotification(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events) override;
@@ -46,15 +45,12 @@ private:
     Local<ObjectRef> CreateErrorReply(const EcmaVM *ecmaVm, const DispatchResponse &response);
     void SendReply(const EcmaVM *ecmaVm, Local<ObjectRef> reply);
 
-    std::function<void(std::string)> callback_;
+    std::function<void(const std::string &)> callback_;
     std::unique_ptr<Dispatcher> dispatcher_ {};
 
     bool waitingForDebugger_ {false};
-    CQueue<CString> msgQueue_ {};
-    os::memory::Mutex queueLock_;
-    os::memory::ConditionVariable queueCond_ GUARDED_BY(queueLock_);
     const EcmaVM *vm_ {nullptr};
 };
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript::tooling
 
 #endif

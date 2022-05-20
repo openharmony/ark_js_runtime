@@ -25,25 +25,25 @@ namespace panda::ecmascript {
 class EcmaVM;
 }  // panda::ecmascript
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
 #endif
 #endif /* End of #ifdef __cplusplus */
 
-PUBLIC_API void InitializeDebugger(const std::function<void(std::string)> &on_response,
-    const ::panda::ecmascript::EcmaVM *vm);
+PUBLIC_API void InitializeDebugger(const std::function<void(const std::string &)> &on_response,
+    ::panda::ecmascript::EcmaVM *vm);
 
-PUBLIC_API void UninitializeDebugger();
+PUBLIC_API void UninitializeDebugger(::panda::ecmascript::EcmaVM *vm);
 
-PUBLIC_API void DispatchProtocolMessage(const std::string &message);
+PUBLIC_API void DispatchProtocolMessage(const ::panda::ecmascript::EcmaVM *vm, const std::string &message);
 
 #ifdef __cplusplus
 #if __cplusplus
 }
 #endif
 #endif /* End of #ifdef __cplusplus */
-}  // panda::tooling::ecmascript
+}  // panda::ecmascript::tooling
 
 #endif

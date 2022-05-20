@@ -47,7 +47,7 @@ public:
 
     const JSPandaFile *CreateJSPandaFile(const panda_file::File *pf, const CString &desc);
 
-    tooling::ecmascript::PtJSExtractor *GetOrCreatePtJSExtractor(const panda_file::File *pf);
+    tooling::PtJSExtractor *GetOrCreatePtJSExtractor(const panda_file::File *pf);
 
     static void RemoveJSPandaFile(void *pointer, void *data);
 

@@ -15,75 +15,81 @@
 
 #include "ecmascript/tooling/interface/js_debugger.h"
 
-#include "ecmascript/js_thread.h"
+#include "ecmascript/base/builtins_base.h"
+#include "ecmascript/ecma_macros.h"
+#include "ecmascript/global_env.h"
+#include "ecmascript/interpreter/fast_runtime_stub-inl.h"
+#include "ecmascript/interpreter/frame_handler.h"
+#include "ecmascript/interpreter/slow_runtime_stub.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
+#include "ecmascript/js_thread.h"
+#include "ecmascript/tooling/interface/js_debugger_manager.h"
+#include "ecmascript/napi/jsnapi_helper-inl.h"
 #include "runtime/tooling/pt_method_private.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 using panda::ecmascript::Program;
+using panda::ecmascript::base::BuiltinsBase;
 
-std::optional<Error> JSDebugger::SetBreakpoint(const PtLocation &location)
+bool JSDebugger::SetBreakpoint(const JSPtLocation &location)
 {
     JSMethod *method = FindMethod(location);
     if (method == nullptr) {
-        return Error(Error::Type::METHOD_NOT_FOUND,
-                     std::string("Cannot find JSMethod with id ") + std::to_string(location.GetMethodId().GetOffset()) +
-                         " in panda file '" + std::string(location.GetPandaFile()) + "'");
+        LOG(ERROR, DEBUGGER) << "SetBreakpoint: Cannot find JSMethod";
+        return false;
     }
 
     if (location.GetBytecodeOffset() >= method->GetCodeSize()) {
-        return Error(Error::Type::INVALID_BREAKPOINT, std::string("Invalid breakpoint location: bytecode offset (") +
-                                                          std::to_string(location.GetBytecodeOffset()) +
-                                                          ") >= JSMethod code size (" +
-                                                          std::to_string(method->GetCodeSize()) + ")");
+        LOG(ERROR, DEBUGGER) << "SetBreakpoint: Invalid breakpoint location";
+        return false;
     }
 
     if (!breakpoints_.emplace(method, location.GetBytecodeOffset()).second) {
-        return Error(Error::Type::BREAKPOINT_ALREADY_EXISTS,
-                     std::string("Breakpoint already exists: bytecode offset ") +
-                         std::to_string(location.GetBytecodeOffset()));
+        LOG(ERROR, DEBUGGER) << "SetBreakpoint: Breakpoint already exists";
+        return false;
     }
 
-    return {};
+    return true;
 }
 
-std::optional<Error> JSDebugger::RemoveBreakpoint(const PtLocation &location)
+bool JSDebugger::RemoveBreakpoint(const JSPtLocation &location)
 {
     JSMethod *method = FindMethod(location);
     if (method == nullptr) {
-        return Error(Error::Type::METHOD_NOT_FOUND,
-                     std::string("Cannot find JSMethod with id ") + std::to_string(location.GetMethodId().GetOffset()) +
-                         " in panda file '" + std::string(location.GetPandaFile()) + "'");
+        LOG(ERROR, DEBUGGER) << "RemoveBreakpoint: Cannot find JSMethod";
+        return false;
     }
 
     if (!RemoveBreakpoint(method, location.GetBytecodeOffset())) {
-        return Error(Error::Type::BREAKPOINT_NOT_FOUND, "Breakpoint not found");
+        LOG(ERROR, DEBUGGER) << "RemoveBreakpoint: Breakpoint not found";
+        return false;
     }
 
-    return {};
+    return true;
 }
 
-void JSDebugger::BytecodePcChanged(ManagedThread *thread, Method *method, uint32_t bcOffset)
+void JSDebugger::BytecodePcChanged(JSThread *thread, JSMethod *method, uint32_t bcOffset)
 {
     ASSERT(bcOffset < method->GetCodeSize() && "code size of current JSMethod less then bcOffset");
 
-    HandleExceptionThrowEvent(JSThread::Cast(thread), JSMethod::Cast(method), bcOffset);
+    HandleExceptionThrowEvent(thread, method, bcOffset);
 
     // Step event is reported before breakpoint, according to the spec.
-    HandleStep(JSThread::Cast(thread), JSMethod::Cast(method), bcOffset);
-    HandleBreakpoint(JSThread::Cast(thread), JSMethod::Cast(method), bcOffset);
+    if (!HandleStep(method, bcOffset)) {
+        HandleBreakpoint(method, bcOffset);
+    }
 }
 
-bool JSDebugger::HandleBreakpoint(const JSThread *thread, const JSMethod *method, uint32_t bcOffset)
+bool JSDebugger::HandleBreakpoint(const JSMethod *method, uint32_t bcOffset)
 {
     if (hooks_ == nullptr || !FindBreakpoint(method, bcOffset)) {
         return false;
     }
 
     auto *pf = method->GetPandaFile();
-    PtLocation location {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
+    JSPtLocation location {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
 
-    hooks_->Breakpoint(PtThread(thread->GetId()), location);
+    hooks_->Breakpoint(location);
     return true;
 }
 
@@ -94,22 +100,21 @@ void JSDebugger::HandleExceptionThrowEvent(const JSThread *thread, const JSMetho
     }
 
     auto *pf = method->GetPandaFile();
-    PtLocation throwLocation {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
+    JSPtLocation throwLocation {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
 
-    hooks_->Exception(PtThread(thread->GetId()), throwLocation, PtObject(), throwLocation);
+    hooks_->Exception(throwLocation);
 }
 
-bool JSDebugger::HandleStep(const JSThread *thread, const JSMethod *method, uint32_t bcOffset)
+bool JSDebugger::HandleStep(const JSMethod *method, uint32_t bcOffset)
 {
     if (hooks_ == nullptr) {
         return false;
     }
 
     auto *pf = method->GetPandaFile();
-    PtLocation location {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
+    JSPtLocation location {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
 
-    hooks_->SingleStep(PtThread(thread->GetId()), location);
-    return true;
+    return hooks_->SingleStep(location);
 }
 
 bool JSDebugger::FindBreakpoint(const JSMethod *method, uint32_t bcOffset) const
@@ -137,7 +142,7 @@ bool JSDebugger::RemoveBreakpoint(const JSMethod *method, uint32_t bcOffset)
     return false;
 }
 
-JSMethod *JSDebugger::FindMethod(const PtLocation &location) const
+JSMethod *JSDebugger::FindMethod(const JSPtLocation &location) const
 {
     JSMethod *method = nullptr;
     EcmaVM::GetJSPandaFileManager()->EnumerateJSPandaFiles([&method, location](
@@ -157,27 +162,205 @@ JSMethod *JSDebugger::FindMethod(const PtLocation &location) const
     return method;
 }
 
-void JSDebugger::MethodEntry(ManagedThread *thread, Method *method)
+JSTaggedValue JSDebugger::DebuggerSetValue(EcmaRuntimeCallInfo *argv)
 {
-    if (hooks_ == nullptr) {
-        return;
-    }
+    LOG(INFO, DEBUGGER) << "DebuggerSetValue: called";
+    auto localEvalFunc = [](const EcmaVM *ecmaVm, InterpretedFrameHandler *frameHandler, int32_t regIndex,
+        const CString &varName, Local<JSValueRef> value) {
+        JSTaggedValue newVal = JSNApiHelper::ToJSTaggedValue(*value);
+        frameHandler->SetVRegValue(regIndex, newVal);
+        ecmaVm->GetJsDebuggerManager()->NotifyLocalScopeUpdated(varName, value);
+        return newVal;
+    };
 
-    uint32_t threadId = thread->GetId();
-    PtThread ptThread(threadId);
-    hooks_->MethodEntry(ptThread, MethodToPtMethod(method));
+    auto lexEvalFunc = [](const EcmaVM *ecmaVm, int32_t level, uint32_t slot,
+        const CString &varName, Local<JSValueRef> value) {
+        DebuggerApi::SetProperties(ecmaVm, level, slot, value);
+        if (level == 0) {
+            // local closure variable
+            ecmaVm->GetJsDebuggerManager()->NotifyLocalScopeUpdated(varName, value);
+        }
+        return JSNApiHelper::ToJSTaggedValue(*value);
+    };
+
+    auto globalEvalFunc = [](const EcmaVM *ecmaVm, JSTaggedValue key,
+        const CString &varName, JSTaggedValue value) {
+        JSTaggedValue result = SetGlobalValue(ecmaVm, key, value);
+        if (!result.IsException()) {
+            return value;
+        }
+
+        JSThread *thread = ecmaVm->GetJSThread();
+        CString msg = varName + " is not defined";
+        THROW_REFERENCE_ERROR_AND_RETURN(thread, msg.data(), JSTaggedValue::Exception());
+    };
+
+    return Evaluate(argv, localEvalFunc, lexEvalFunc, globalEvalFunc);
 }
 
-void JSDebugger::MethodExit(ManagedThread *thread, Method *method)
+JSTaggedValue JSDebugger::DebuggerGetValue(EcmaRuntimeCallInfo *argv)
 {
-    if (hooks_ == nullptr) {
-        return;
-    }
-    bool isExceptionTriggered = thread->HasPendingException();
-    PtThread ptThread(thread->GetId());
-    auto sp = const_cast<JSTaggedType *>(JSThread::Cast(thread)->GetCurrentSPFrame());
-    InterpretedFrameHandler frameHandler(sp);
-    PtValue retValue(frameHandler.GetAcc().GetRawData());
-    hooks_->MethodExit(ptThread, MethodToPtMethod(method), isExceptionTriggered, retValue);
+    LOG(INFO, DEBUGGER) << "DebuggerGetValue: called";
+    auto localEvalFunc = [](const EcmaVM *, InterpretedFrameHandler *frameHandler, int32_t regIndex,
+        const CString &, Local<JSValueRef>) {
+        return frameHandler->GetVRegValue(regIndex);
+    };
+
+    auto lexEvalFunc = [](const EcmaVM *ecmaVm, int32_t level, uint32_t slot,
+        const CString &, Local<JSValueRef>) {
+        Local<JSValueRef> valRef = DebuggerApi::GetProperties(ecmaVm, level, slot);
+        return JSNApiHelper::ToJSTaggedValue(*valRef);
+    };
+
+    auto globalEvalFunc = [](const EcmaVM *ecmaVm, JSTaggedValue key,
+        const CString &varName, JSTaggedValue isThrow) {
+        JSTaggedValue globalVal = GetGlobalValue(ecmaVm, key);
+        if (!globalVal.IsException()) {
+            return globalVal;
+        }
+
+        JSThread *thread = ecmaVm->GetJSThread();
+        if (isThrow.ToBoolean()) {
+            CString msg = varName + " is not defined";
+            THROW_REFERENCE_ERROR_AND_RETURN(thread, msg.data(), JSTaggedValue::Exception());
+        }
+        // in case of `typeof`, return undefined instead of exception
+        thread->ClearException();
+        return JSTaggedValue::Undefined();
+    };
+
+    return Evaluate(argv, localEvalFunc, lexEvalFunc, globalEvalFunc);
 }
-}  // panda::tooling::ecmascript
+
+JSTaggedValue JSDebugger::Evaluate(EcmaRuntimeCallInfo *argv, LocalEvalFunc localEvalFunc,
+    LexEvalFunc lexEvalFunc, GlobalEvalFunc globalEvalFunc)
+{
+    LOG(INFO, DEBUGGER) << "Evaluate: called";
+    ASSERT(argv);
+    JSThread *thread = argv->GetThread();
+    const EcmaVM *ecmaVm = thread->GetEcmaVM();
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    // The arg2 is the new value for setter and throw flag for getter
+    JSHandle<JSTaggedValue> arg1 = BuiltinsBase::GetCallArg(argv, 0);
+    JSHandle<JSTaggedValue> arg2 = BuiltinsBase::GetCallArg(argv, 1);
+    CString varName = ConvertToString(arg1.GetTaggedValue());
+    Local<JSValueRef> valRef = JSNApiHelper::ToLocal<JSValueRef>(arg2);
+    LOG(INFO, DEBUGGER) << "Evaluate: varName = " << varName;
+
+    auto &frameHandler = ecmaVm->GetJsDebuggerManager()->GetEvalFrameHandler();
+    ASSERT(frameHandler);
+    JSMethod *method = frameHandler->GetMethod();
+    int32_t regIndex = -1;
+    bool found = EvaluateLocalValue(method, thread, varName, regIndex);
+    if (found) {
+        LOG(ERROR, DEBUGGER) << "Evaluate: found regIndex = " << regIndex;
+        return localEvalFunc(ecmaVm, frameHandler.get(), regIndex, varName, valRef);
+    }
+
+    int32_t level = 0;
+    uint32_t slot = 0;
+    found = DebuggerApi::EvaluateLexicalValue(ecmaVm, varName, level, slot);
+    if (found) {
+        LOG(ERROR, DEBUGGER) << "Evaluate: found level = " << level;
+        return lexEvalFunc(ecmaVm, level, slot, varName, valRef);
+    }
+
+    return globalEvalFunc(ecmaVm, arg1.GetTaggedValue(), varName, arg2.GetTaggedValue());
+}
+
+JSTaggedValue JSDebugger::GetGlobalValue(const EcmaVM *ecmaVm, JSTaggedValue key)
+{
+    JSTaggedValue globalObj = ecmaVm->GetGlobalEnv()->GetGlobalObject();
+    JSThread *thread = ecmaVm->GetJSThread();
+
+    JSTaggedValue globalRec = SlowRuntimeStub::LdGlobalRecord(thread, key);
+    if (!globalRec.IsUndefined()) {
+        ASSERT(globalRec.IsPropertyBox());
+        return PropertyBox::Cast(globalRec.GetTaggedObject())->GetValue();
+    }
+
+    JSTaggedValue globalVar = FastRuntimeStub::GetGlobalOwnProperty(thread, globalObj, key);
+    if (!globalVar.IsHole()) {
+        return globalVar;
+    } else {
+        return SlowRuntimeStub::TryLdGlobalByName(thread, globalObj, key);
+    }
+
+    return JSTaggedValue::Exception();
+}
+
+JSTaggedValue JSDebugger::SetGlobalValue(const EcmaVM *ecmaVm, JSTaggedValue key, JSTaggedValue newVal)
+{
+    JSTaggedValue globalObj = ecmaVm->GetGlobalEnv()->GetGlobalObject();
+    JSThread *thread = ecmaVm->GetJSThread();
+
+    JSTaggedValue globalRec = SlowRuntimeStub::LdGlobalRecord(thread, key);
+    if (!globalRec.IsUndefined()) {
+        return SlowRuntimeStub::TryUpdateGlobalRecord(thread, key, newVal);
+    }
+
+    JSTaggedValue globalVar = FastRuntimeStub::GetGlobalOwnProperty(thread, globalObj, key);
+    if (!globalVar.IsHole()) {
+        return SlowRuntimeStub::StGlobalVar(thread, key, newVal);
+    }
+
+    return JSTaggedValue::Exception();
+}
+
+bool JSDebugger::EvaluateLocalValue(JSMethod *method, JSThread *thread, const CString &varName, int32_t &regIndex)
+{
+    if (method->IsNative()) {
+        LOG(ERROR, DEBUGGER) << "EvaluateLocalValue: native frame not support";
+        THROW_TYPE_ERROR_AND_RETURN(thread, "native frame not support", false);
+    }
+    PtJSExtractor *extractor = thread->GetEcmaVM()->GetDebugInfoExtractor(method->GetPandaFile());
+    if (extractor == nullptr) {
+        LOG(ERROR, DEBUGGER) << "EvaluateLocalValue: extractor is null";
+        THROW_TYPE_ERROR_AND_RETURN(thread, "extractor is null", false);
+    }
+
+    auto varInfos = extractor->GetLocalVariableTable(method->GetFileId());
+    for (const auto &varInfo : varInfos) {
+        if (varInfo.name == std::string(varName)) {
+            regIndex = varInfo.reg_number;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void JSDebugger::Init()
+{
+    JSThread *thread = ecmaVm_->GetJSThread();
+    [[maybe_unused]] EcmaHandleScope scope(thread);
+
+    ObjectFactory *factory = ecmaVm_->GetFactory();
+    constexpr int32_t NUM_ARGS = 2;
+    JSHandle<JSTaggedValue> getter(factory->NewFromUtf8("debuggerGetValue"));
+    SetGlobalFunction(getter, JSDebugger::DebuggerGetValue, NUM_ARGS);
+    JSHandle<JSTaggedValue> setter(factory->NewFromUtf8("debuggerSetValue"));
+    SetGlobalFunction(setter, JSDebugger::DebuggerSetValue, NUM_ARGS);
+}
+
+void JSDebugger::SetGlobalFunction(const JSHandle<JSTaggedValue> &funcName,
+    EcmaEntrypoint nativeFunc, int32_t numArgs) const
+{
+    ObjectFactory *factory = ecmaVm_->GetFactory();
+    JSThread *thread = ecmaVm_->GetJSThread();
+    [[maybe_unused]] EcmaHandleScope scope(thread);
+    JSHandle<GlobalEnv> env = ecmaVm_->GetGlobalEnv();
+    JSHandle<JSObject> globalObject(thread, env->GetGlobalObject());
+
+    JSHandle<JSFunction> jsFunc = factory->NewJSFunction(env, reinterpret_cast<void *>(nativeFunc));
+    JSFunction::SetFunctionLength(thread, jsFunc, JSTaggedValue(numArgs));
+    JSHandle<JSFunctionBase> baseFunc(jsFunc);
+    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    JSFunction::SetFunctionName(thread, baseFunc, funcName, undefined);
+
+    JSHandle<JSFunction> funcHandle(jsFunc);
+    PropertyDescriptor desc(thread, JSHandle<JSTaggedValue>(funcHandle), true, false, true);
+    JSObject::DefineOwnProperty(thread, globalObject, funcName, desc);
+}
+}  // panda::ecmascript::tooling

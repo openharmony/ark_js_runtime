@@ -22,7 +22,7 @@
 #include "ecmascript/mem/c_string.h"
 #include "libpandafile/file_items.h"
 
-namespace panda::tooling::ecmascript::test {
+namespace panda::ecmascript::tooling::test {
 using panda::ecmascript::CString;
 
 std::vector<const char *> GetTestList(panda_file::SourceLang language);
@@ -31,6 +31,6 @@ void SetCurrentTestName(const char *testName);
 const char *GetCurrentTestName();
 
 std::pair<CString, CString> GetTestEntryPoint(const char *testName);
-}  // namespace panda::tooling::ecmascript::test
+}  // namespace panda::ecmascript::tooling::test
 
 #endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TESTCASES_TEST_LIST_H

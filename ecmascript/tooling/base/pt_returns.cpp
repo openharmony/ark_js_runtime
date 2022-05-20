@@ -15,7 +15,7 @@
 
 #include "ecmascript/tooling/base/pt_returns.h"
 
-namespace panda::tooling::ecmascript {
+namespace panda::ecmascript::tooling {
 Local<ObjectRef> EnableReturns::ToObject(const EcmaVM *ecmaVm)
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
@@ -216,4 +216,22 @@ Local<ObjectRef> GetPropertiesReturns::ToObject(const EcmaVM *ecmaVm)
 
     return result;
 }
-}  // namespace panda::tooling::ecmascript
+
+Local<ObjectRef> CallFunctionOnReturns::ToObject(const EcmaVM *ecmaVm)
+{
+    // For this
+    Local<ObjectRef> returns = NewObject(ecmaVm);
+
+    // For this.result_
+    Local<ObjectRef> result = result_->ToObject(ecmaVm);
+    returns->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "result")),
+        Local<JSValueRef>(result));
+    // For this.exceptionDetails_
+    if (exceptionDetails_) {
+        returns->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "exceptionDetails")),
+            Local<JSValueRef>(exceptionDetails_.value()->ToObject(ecmaVm)));
+    }
+
+    return returns;
+}
+}  // namespace panda::ecmascript::tooling

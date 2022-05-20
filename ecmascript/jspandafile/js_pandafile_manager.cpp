@@ -153,7 +153,7 @@ void JSPandaFileManager::ReleaseJSPandaFile(const JSPandaFile *jsPandaFile)
     delete jsPandaFile;
 }
 
-tooling::ecmascript::PtJSExtractor *JSPandaFileManager::GetOrCreatePtJSExtractor(const panda_file::File *pf)
+tooling::PtJSExtractor *JSPandaFileManager::GetOrCreatePtJSExtractor(const panda_file::File *pf)
 {
     os::memory::LockHolder lock(jsPandaFileLock_);
     const JSPandaFile *existJSPandaFile = GetJSPandaFile(pf);

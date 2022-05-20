@@ -27,7 +27,7 @@
 #include "ecmascript/tooling/pt_js_extractor.h"
 
 namespace panda::ecmascript::base {
-using panda::tooling::ecmascript::PtJSExtractor;
+using panda::ecmascript::tooling::PtJSExtractor;
 
 JSTaggedValue ErrorHelper::ErrorCommonToString(EcmaRuntimeCallInfo *argv, const ErrorType &errorType)
 {
