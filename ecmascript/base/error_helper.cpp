@@ -199,9 +199,7 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
             continue;
         }
         auto method = frameHandler.GetMethod();
-        if (method->IsNative()) {
-            data += INTRINSIC_METHOD_NAME;
-        } else {
+        if (! method->IsNative()) {
             data.append("    at ");
             data += DecodeFunctionName(method->ParseFunctionName());
             data.append(" (");
@@ -225,8 +223,8 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
                 data.push_back('?');
             }
             data.push_back(')');
+            data.push_back('\n');
         }
-        data.push_back('\n');
     }
 
     return data;
