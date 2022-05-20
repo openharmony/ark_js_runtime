@@ -91,11 +91,11 @@ public:
     void Popq(Register x);
     void Pop(Register x);
     void Movq(Register src, Register dst);
-    void Movq(Operand src, Register dst);
-    void Movq(Register src, Operand dst);
+    void Movq(const Operand &src, Register dst);
+    void Movq(Register src, const Operand &dst);
     void Movq(Immediate src, Operand dst);
     void Movq(Immediate src, Register dst);
-    void Mov(Operand src, Register dst);
+    void Mov(const Operand &src, Register dst);
     void Mov(Register src, Register dst);
     void Addq(Immediate src, Register dst);
     void Addq(Register src, Register dst);
@@ -111,7 +111,7 @@ public:
     void Callq(Register addr);
     void Callq(Label *target);
     void Ret();
-    void Jmp(Label *target, Distance distance = Distance::FAR);
+    void Jmp(Label *target, Distance distance = Distance::Far);
     void Jmp(Register dst);
     void Jmp(Immediate offset);
     void Bind(Label* target);
@@ -126,22 +126,22 @@ public:
     void Btl(Immediate src, Register dst);
     void Cmpl(Register src, Register dst);
     void CMovbe(Register src, Register dst);
-    void Ja(Label *target, Distance distance = Distance::FAR);
-    void Jb(Label *target, Distance distance = Distance::FAR);
-    void Jz(Label *target, Distance distance = Distance::FAR);
-    void Je(Label *target, Distance distance = Distance::FAR);
-    void Jg(Label *target, Distance distance = Distance::FAR);
-    void Jne(Label *target, Distance distance = Distance::FAR);
-    void Jbe(Label *target, Distance distance = Distance::FAR);
-    void Jnz(Label *target, Distance distance = Distance::FAR);
-    void Jle(Label *target, Distance distance = Distance::FAR);
-    void Jae(Label *target, Distance distance = Distance::FAR);
-    void Jnb(Label *target, Distance distance = Distance::FAR);
-    void Leaq(Operand src, Register dst);
-    void Leal(Operand src, Register dst);
+    void Ja(Label *target, Distance distance = Distance::Far);
+    void Jb(Label *target, Distance distance = Distance::Far);
+    void Jz(Label *target, Distance distance = Distance::Far);
+    void Je(Label *target, Distance distance = Distance::Far);
+    void Jg(Label *target, Distance distance = Distance::Far);
+    void Jne(Label *target, Distance distance = Distance::Far);
+    void Jbe(Label *target, Distance distance = Distance::Far);
+    void Jnz(Label *target, Distance distance = Distance::Far);
+    void Jle(Label *target, Distance distance = Distance::Far);
+    void Jae(Label *target, Distance distance = Distance::Far);
+    void Jnb(Label *target, Distance distance = Distance::Far);
+    void Leaq(const Operand &src, Register dst);
+    void Leal(const Operand &src, Register dst);
     void Movl(Register src, Register dst);
-    void Movl(Operand src, Register dst);
-    void Movzbq(Operand src, Register dst);
+    void Movl(const Operand &src, Register dst);
+    void Movzbq(const Operand &src, Register dst);
     void Movabs(uint64_t src, Register dst);
     void Shrq(Immediate src, Register dst);
     void Shr(Immediate src, Register dst);
@@ -149,27 +149,27 @@ public:
     void Testq(Immediate src, Register dst);
     void Testb(Immediate src, Register dst);
     void Int3();
-    void Movzwq(Operand src, Register dst);
+    void Movzwq(const Operand &src, Register dst);
 
 private:
-    void EmitRexPrefix(Register x)
+    void EmitRexPrefix(const Register &x)
     {
         if (HighBit(x) != 0) {
             EmitU8(REX_PREFIX_B);
         }
     }
 
-    void EmitRexPrefixW(Register rm)
+    void EmitRexPrefixW(const Register &rm)
     {
         EmitU8(REX_PREFIX_W | HighBit(rm));
     }
 
-    void EmitRexPrefixL(Register rm)
+    void EmitRexPrefixL(const Register &rm)
     {
         EmitU8(REX_PREFIX_FIXED_BITS | HighBit(rm));
     }
 
-    void EmitRexPrefix(Operand rm)
+    void EmitRexPrefix(const Operand &rm)
     {
         // 0: Extension to the MODRM.rm field B
         EmitU8(REX_PREFIX_W | rm.rex_);

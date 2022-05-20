@@ -267,30 +267,6 @@ enum class JSCallMode : uintptr_t {
     CALL_FROM_AOT,
 };
 
-class FrameConstants {
-public:
-#ifdef PANDA_TARGET_AMD64
-    static constexpr int SP_DWARF_REG_NUM = 7;
-    static constexpr int FP_DWARF_REG_NUM = 6;
-#else
-#ifdef PANDA_TARGET_ARM64
-    static constexpr int SP_DWARF_REG_NUM = 31;  /* x31 */
-    static constexpr int FP_DWARF_REG_NUM = 29;  /* x29 */
-#else
-#ifdef PANDA_TARGET_ARM32
-    static constexpr int SP_DWARF_REG_NUM = 13;
-    static constexpr int FP_DWARF_REG_NUM = 11;
-#else
-    static constexpr int SP_DWARF_REG_NUM = 0;
-    static constexpr int FP_DWARF_REG_NUM = 0;
-#endif
-#endif
-#endif
-    static constexpr int AARCH64_SLOT_SIZE = sizeof(uint64_t);
-    static constexpr int AMD64_SLOT_SIZE = sizeof(uint64_t);
-    static constexpr int ARM32_SLOT_SIZE = sizeof(uint32_t);
-};
-
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct OptimizedFrame : public base::AlignedStruct<base::AlignedPointer::Size(),
                                                    base::AlignedPointer,

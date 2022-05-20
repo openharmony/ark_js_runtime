@@ -260,7 +260,7 @@ void AssemblerX64::Align16()
     }
 }
 
-void AssemblerX64::Movq(Operand src, Register dst)
+void AssemblerX64::Movq(const Operand &src, Register dst)
 {
     EmitRexPrefix(dst, src);
     // 0x8B: Move r/m64 to r64
@@ -268,7 +268,7 @@ void AssemblerX64::Movq(Operand src, Register dst)
     EmitOperand(dst, src);
 }
 
-void AssemblerX64::Movq(Register src, Operand dst)
+void AssemblerX64::Movq(Register src, const Operand &dst)
 {
     EmitRexPrefix(src, dst);
     // 0x89: Move r64 to r/m64
@@ -294,7 +294,7 @@ void AssemblerX64::Movq(Immediate src, Register dst)
     EmitI32(src.Value());
 }
 
-void AssemblerX64::Mov(Operand src, Register dst)
+void AssemblerX64::Mov(const Operand &src, Register dst)
 {
     Movq(src, dst);
 }
@@ -532,7 +532,7 @@ void AssemblerX64::Jmp(Label *target, Distance distance)
 
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
-    if (distance == Distance::NEAR) {
+    if (distance == Distance::Near) {
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
@@ -585,7 +585,7 @@ void AssemblerX64::Ja(Label *target, Distance distance)
     }
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
-    if (distance == Distance::NEAR) {
+    if (distance == Distance::Near) {
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
@@ -617,7 +617,7 @@ void AssemblerX64::Jb(Label *target, Distance distance)
     }
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
-    if (distance == Distance::NEAR) {
+    if (distance == Distance::Near) {
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
@@ -648,7 +648,7 @@ void AssemblerX64::Jz(Label *target, Distance distance)
     }
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
-    if (distance == Distance::NEAR) {
+    if (distance == Distance::Near) {
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
@@ -680,7 +680,7 @@ void AssemblerX64::Je(Label *target, Distance distance)
     }
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
-    if (distance == Distance::NEAR) {
+    if (distance == Distance::Near) {
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
@@ -829,7 +829,7 @@ void AssemblerX64::Movl(Register src, Register dst)
     EmitModrm(src, dst);
 }
 
-void AssemblerX64::Movl(Operand src, Register dst)
+void AssemblerX64::Movl(const Operand &src, Register dst)
 {
     EmitRexPrefixl(dst, src);
     // 0x8B: Move r/m64 to r64
@@ -884,7 +884,7 @@ void AssemblerX64::Jne(Label *target, Distance distance)
     }
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
-    if (distance == Distance::NEAR) {
+    if (distance == Distance::Near) {
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
@@ -924,7 +924,7 @@ void AssemblerX64::Jbe(Label *target, Distance distance)
     }
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
-    if (distance == Distance::NEAR) {
+    if (distance == Distance::Near) {
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
@@ -956,7 +956,7 @@ void AssemblerX64::CMovbe(Register src, Register dst)
     EmitModrm(dst, src);
 }
 
-void AssemblerX64::Leaq(Operand src, Register dst)
+void AssemblerX64::Leaq(const Operand &src, Register dst)
 {
     EmitRexPrefix(dst, src);
     // 8D : lea r64, m
@@ -964,7 +964,7 @@ void AssemblerX64::Leaq(Operand src, Register dst)
     EmitOperand(dst, src);
 }
 
-void AssemblerX64::Leal(Operand src, Register dst)
+void AssemblerX64::Leal(const Operand &src, Register dst)
 {
     EmitRexPrefixl(dst, src);
     // 8D : lea r64, m
@@ -1078,7 +1078,7 @@ void AssemblerX64::Jnz(Label *target, Distance distance)
     }
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
-    if (distance == Distance::NEAR) {
+    if (distance == Distance::Near) {
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
@@ -1110,7 +1110,7 @@ void AssemblerX64::Jle(Label *target, Distance distance)
     }
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
-    if (distance == Distance::NEAR) {
+    if (distance == Distance::Near) {
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
@@ -1142,7 +1142,7 @@ void AssemblerX64::Jae(Label *target, Distance distance)
     }
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
-    if (distance == Distance::NEAR) {
+    if (distance == Distance::Near) {
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
@@ -1174,7 +1174,7 @@ void AssemblerX64::Jg(Label *target, Distance distance)
     }
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
-    if (distance == Distance::NEAR) {
+    if (distance == Distance::Near) {
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }
@@ -1197,7 +1197,7 @@ void AssemblerX64::Jg(Label *target, Distance distance)
     }
 }
 
-void AssemblerX64::Movzbq(Operand src, Register dst)
+void AssemblerX64::Movzbq(const Operand &src, Register dst)
 {
     EmitRexPrefix(dst, src);
     // 0F B6 : Movzx r64, r/m16
@@ -1252,7 +1252,7 @@ void AssemblerX64::Int3()
     EmitU8(0xCC);
 }
 
-void AssemblerX64::Movzwq(Operand src, Register dst)
+void AssemblerX64::Movzwq(const Operand &src, Register dst)
 {
     EmitRexPrefixW(dst);
     EmitU8(0x0F);
@@ -1269,7 +1269,7 @@ void AssemblerX64::Jnb(Label *target, Distance distance)
     }
     auto pos = GetCurrentPosition();
     int32_t emitPos = 0;
-    if (distance == Distance::NEAR) {
+    if (distance == Distance::Near) {
         if (target->IsLinkedNear()) {
             emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
         }

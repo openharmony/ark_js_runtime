@@ -25,6 +25,7 @@
 #include "ecmascript/compiler/scheduler.h"
 #include "ecmascript/compiler/call_signature.h"
 #include "ecmascript/compiler/verifier.h"
+#include "ecmascript/compiler/assembler/assembler.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/js_array.h"
@@ -846,9 +847,9 @@ void DoSafepoint()
         if (infos != nullptr) {
             for (auto &info : *infos) {
                 uintptr_t **address = nullptr;
-                if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
+                if (info.first == GCStackMapRegisters::SP) {
                     address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rsp) + info.second);
-                } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
+                } else if (info.first == GCStackMapRegisters::FP) {
                     address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rbp) + info.second);
                 }
                 // print ref and vlue for debug
