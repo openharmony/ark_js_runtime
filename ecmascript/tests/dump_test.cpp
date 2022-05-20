@@ -151,7 +151,7 @@ HWTEST_F_L0(EcmaDumpTest, Dump)
 static JSHandle<JSMap> NewJSMap(JSThread *thread, ObjectFactory *factory, JSHandle<JSTaggedValue> proto)
 {
     JSHandle<JSHClass> mapClass = factory->NewEcmaDynClass(JSMap::SIZE, JSType::JS_MAP, proto);
-    JSHandle<JSMap> jsMap = JSHandle<JSMap>::Cast(factory->NewJSObject(mapClass));
+    JSHandle<JSMap> jsMap = JSHandle<JSMap>::Cast(factory->NewJSObjectWithInit(mapClass));
     JSHandle<LinkedHashMap> linkedMap(LinkedHashMap::Create(thread));
     jsMap->SetLinkedMap(thread, linkedMap);
     return jsMap;
@@ -160,7 +160,7 @@ static JSHandle<JSMap> NewJSMap(JSThread *thread, ObjectFactory *factory, JSHand
 static JSHandle<JSSet> NewJSSet(JSThread *thread, ObjectFactory *factory, JSHandle<JSTaggedValue> proto)
 {
     JSHandle<JSHClass> setClass = factory->NewEcmaDynClass(JSSet::SIZE, JSType::JS_SET, proto);
-    JSHandle<JSSet> jsSet = JSHandle<JSSet>::Cast(factory->NewJSObject(setClass));
+    JSHandle<JSSet> jsSet = JSHandle<JSSet>::Cast(factory->NewJSObjectWithInit(setClass));
     JSHandle<LinkedHashSet> linkedSet(LinkedHashSet::Create(thread));
     jsSet->SetLinkedSet(thread, linkedSet);
     return jsSet;
@@ -171,7 +171,7 @@ static JSHandle<JSAPITreeMap> NewJSAPITreeMap(JSThread *thread, ObjectFactory *f
     auto globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> proto = globalEnv->GetObjectFunctionPrototype();
     JSHandle<JSHClass> mapClass = factory->NewEcmaDynClass(JSAPITreeMap::SIZE, JSType::JS_API_TREE_MAP, proto);
-    JSHandle<JSAPITreeMap> jsTreeMap = JSHandle<JSAPITreeMap>::Cast(factory->NewJSObject(mapClass));
+    JSHandle<JSAPITreeMap> jsTreeMap = JSHandle<JSAPITreeMap>::Cast(factory->NewJSObjectWithInit(mapClass));
     JSHandle<TaggedTreeMap> treeMap(thread, TaggedTreeMap::Create(thread));
     jsTreeMap->SetTreeMap(thread, treeMap);
     return jsTreeMap;
@@ -182,7 +182,7 @@ static JSHandle<JSAPITreeSet> NewJSAPITreeSet(JSThread *thread, ObjectFactory *f
     auto globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> proto = globalEnv->GetObjectFunctionPrototype();
     JSHandle<JSHClass> setClass = factory->NewEcmaDynClass(JSAPITreeSet::SIZE, JSType::JS_API_TREE_SET, proto);
-    JSHandle<JSAPITreeSet> jsTreeSet = JSHandle<JSAPITreeSet>::Cast(factory->NewJSObject(setClass));
+    JSHandle<JSAPITreeSet> jsTreeSet = JSHandle<JSAPITreeSet>::Cast(factory->NewJSObjectWithInit(setClass));
     JSHandle<TaggedTreeSet> treeSet(thread, TaggedTreeSet::Create(thread));
     jsTreeSet->SetTreeSet(thread, treeSet);
     return jsTreeSet;
@@ -193,7 +193,7 @@ static JSHandle<JSAPIPlainArray> NewJSAPIPlainArray(JSThread *thread, ObjectFact
     auto globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> proto = globalEnv->GetObjectFunctionPrototype();
     JSHandle<JSHClass> mapClass = factory->NewEcmaDynClass(JSAPIPlainArray::SIZE, JSType::JS_API_PLAIN_ARRAY, proto);
-    JSHandle<JSAPIPlainArray> jSAPIPlainArray = JSHandle<JSAPIPlainArray>::Cast(factory->NewJSObject(mapClass));
+    JSHandle<JSAPIPlainArray> jSAPIPlainArray = JSHandle<JSAPIPlainArray>::Cast(factory->NewJSObjectWithInit(mapClass));
     JSHandle<TaggedArray> keys =
             JSAPIPlainArray::CreateSlot(thread, JSAPIPlainArray::DEFAULT_CAPACITY_LENGTH);
     JSHandle<TaggedArray> values =
@@ -217,7 +217,7 @@ static JSHandle<JSAPIArrayList> NewJSAPIArrayList(JSThread *thread, ObjectFactor
 {
     JSHandle<JSHClass> arrayListClass =
         factory->NewEcmaDynClass(JSAPIArrayList::SIZE, JSType::JS_API_ARRAY_LIST, proto);
-    JSHandle<JSAPIArrayList> jsArrayList = JSHandle<JSAPIArrayList>::Cast(factory->NewJSObject(arrayListClass));
+    JSHandle<JSAPIArrayList> jsArrayList = JSHandle<JSAPIArrayList>::Cast(factory->NewJSObjectWithInit(arrayListClass));
     jsArrayList->SetLength(thread, JSTaggedValue(0));
     return jsArrayList;
 }
@@ -225,7 +225,7 @@ static JSHandle<JSAPIArrayList> NewJSAPIArrayList(JSThread *thread, ObjectFactor
 static JSHandle<JSAPIStack> NewJSAPIStack(ObjectFactory *factory, JSHandle<JSTaggedValue> proto)
 {
     JSHandle<JSHClass> stackClass = factory->NewEcmaDynClass(JSAPIStack::SIZE, JSType::JS_API_STACK, proto);
-    JSHandle<JSAPIStack> jsStack = JSHandle<JSAPIStack>::Cast(factory->NewJSObject(stackClass));
+    JSHandle<JSAPIStack> jsStack = JSHandle<JSAPIStack>::Cast(factory->NewJSObjectWithInit(stackClass));
     jsStack->SetTop(0);
     return jsStack;
 }
@@ -245,7 +245,7 @@ static JSHandle<JSRegExp> NewJSRegExp(JSThread *thread, ObjectFactory *factory, 
 static JSHandle<JSAPIQueue> NewJSAPIQueue(JSThread *thread, ObjectFactory *factory, JSHandle<JSTaggedValue> proto)
 {
     JSHandle<JSHClass> queueClass = factory->NewEcmaDynClass(JSAPIQueue::SIZE, JSType::JS_API_QUEUE, proto);
-    JSHandle<JSAPIQueue> jsQueue = JSHandle<JSAPIQueue>::Cast(factory->NewJSObject(queueClass));
+    JSHandle<JSAPIQueue> jsQueue = JSHandle<JSAPIQueue>::Cast(factory->NewJSObjectWithInit(queueClass));
     JSHandle<TaggedArray> newElements = factory->NewTaggedArray(JSAPIQueue::DEFAULT_CAPACITY_LENGTH);
     jsQueue->SetLength(thread, JSTaggedValue(0));
     jsQueue->SetFront(0);
@@ -257,7 +257,7 @@ static JSHandle<JSAPIQueue> NewJSAPIQueue(JSThread *thread, ObjectFactory *facto
 static JSHandle<JSAPIDeque> NewJSAPIDeque(JSThread *thread, ObjectFactory *factory, JSHandle<JSTaggedValue> proto)
 {
     JSHandle<JSHClass> dequeClass = factory->NewEcmaDynClass(JSAPIDeque::SIZE, JSType::JS_API_DEQUE, proto);
-    JSHandle<JSAPIDeque> jsDeque = JSHandle<JSAPIDeque>::Cast(factory->NewJSObject(dequeClass));
+    JSHandle<JSAPIDeque> jsDeque = JSHandle<JSAPIDeque>::Cast(factory->NewJSObjectWithInit(dequeClass));
     JSHandle<TaggedArray> newElements = factory->NewTaggedArray(JSAPIDeque::DEFAULT_CAPACITY_LENGTH);
     jsDeque->SetFirst(0);
     jsDeque->SetLast(0);
@@ -282,7 +282,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
 #define NEW_OBJECT_AND_DUMP(ClassName, TypeName)                                       \
     JSHandle<JSHClass> class##ClassName =                                              \
         factory->NewEcmaDynClass(ClassName::SIZE, JSType::TypeName, proto);            \
-        JSHandle<JSObject> object##ClassName = factory->NewJSObject(class##ClassName); \
+        JSHandle<JSObject> object##ClassName = factory->NewJSObjectWithInit(class##ClassName); \
         object##ClassName.GetTaggedValue().Dump(os);                                        \
         object##ClassName.GetTaggedValue().DumpForSnapshot(snapshotVector);
 
@@ -325,7 +325,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 CHECK_DUMP_FIELDS(JSFunction::SIZE, JSProxyRevocFunction::SIZE, 1U)
                 JSHandle<JSHClass> proxyRevocClass =
                     JSHandle<JSHClass>::Cast(globalEnv->GetProxyRevocFunctionClass());
-                JSHandle<JSObject> proxyRevocFunc = factory->NewJSObject(proxyRevocClass);
+                JSHandle<JSObject> proxyRevocFunc = factory->NewJSObjectWithInit(proxyRevocClass);
                 DUMP_FOR_HANDLE(proxyRevocFunc)
                 break;
             }
@@ -333,7 +333,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 CHECK_DUMP_FIELDS(JSFunction::SIZE, JSPromiseReactionsFunction::SIZE, 2U)
                 JSHandle<JSHClass> promiseReactClass =
                     JSHandle<JSHClass>::Cast(globalEnv->GetPromiseReactionFunctionClass());
-                JSHandle<JSObject> promiseReactFunc = factory->NewJSObject(promiseReactClass);
+                JSHandle<JSObject> promiseReactFunc = factory->NewJSObjectWithInit(promiseReactClass);
                 DUMP_FOR_HANDLE(promiseReactFunc)
                 break;
             }
@@ -341,7 +341,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 CHECK_DUMP_FIELDS(JSFunction::SIZE, JSPromiseExecutorFunction::SIZE, 1U)
                 JSHandle<JSHClass> promiseExeClass =
                     JSHandle<JSHClass>::Cast(globalEnv->GetPromiseExecutorFunctionClass());
-                JSHandle<JSObject> promiseExeFunc = factory->NewJSObject(promiseExeClass);
+                JSHandle<JSObject> promiseExeFunc = factory->NewJSObjectWithInit(promiseExeClass);
                 DUMP_FOR_HANDLE(promiseExeFunc)
                 break;
             }
@@ -349,7 +349,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 CHECK_DUMP_FIELDS(JSFunction::SIZE, JSPromiseAllResolveElementFunction::SIZE, 5U)
                 JSHandle<JSHClass> promiseAllClass =
                     JSHandle<JSHClass>::Cast(globalEnv->GetPromiseAllResolveElementFunctionClass());
-                JSHandle<JSObject> promiseAllFunc = factory->NewJSObject(promiseAllClass);
+                JSHandle<JSObject> promiseAllFunc = factory->NewJSObjectWithInit(promiseAllClass);
                 DUMP_FOR_HANDLE(promiseAllFunc)
                 break;
             }
@@ -398,7 +398,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
             case JSType::JS_WEAK_MAP: {
                 CHECK_DUMP_FIELDS(JSObject::SIZE, JSWeakMap::SIZE, 1U)
                 JSHandle<JSHClass> weakMapClass = factory->NewEcmaDynClass(JSWeakMap::SIZE, JSType::JS_WEAK_MAP, proto);
-                JSHandle<JSWeakMap> jsWeakMap = JSHandle<JSWeakMap>::Cast(factory->NewJSObject(weakMapClass));
+                JSHandle<JSWeakMap> jsWeakMap = JSHandle<JSWeakMap>::Cast(factory->NewJSObjectWithInit(weakMapClass));
                 JSHandle<LinkedHashMap> weakLinkedMap(LinkedHashMap::Create(thread));
                 jsWeakMap->SetLinkedMap(thread, weakLinkedMap);
                 DUMP_FOR_HANDLE(jsWeakMap)
@@ -407,7 +407,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
             case JSType::JS_WEAK_SET: {
                 CHECK_DUMP_FIELDS(JSObject::SIZE, JSWeakSet::SIZE, 1U)
                 JSHandle<JSHClass> weakSetClass = factory->NewEcmaDynClass(JSWeakSet::SIZE, JSType::JS_WEAK_SET, proto);
-                JSHandle<JSWeakSet> jsWeakSet = JSHandle<JSWeakSet>::Cast(factory->NewJSObject(weakSetClass));
+                JSHandle<JSWeakSet> jsWeakSet = JSHandle<JSWeakSet>::Cast(factory->NewJSObjectWithInit(weakSetClass));
                 JSHandle<LinkedHashSet> weakLinkedSet(LinkedHashSet::Create(thread));
                 jsWeakSet->SetLinkedSet(thread, weakLinkedSet);
                 DUMP_FOR_HANDLE(jsWeakSet)
@@ -416,7 +416,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
             case JSType::JS_DATE: {
                 CHECK_DUMP_FIELDS(JSObject::SIZE, JSDate::SIZE, 2U)
                 JSHandle<JSHClass> dateClass = factory->NewEcmaDynClass(JSDate::SIZE, JSType::JS_DATE, proto);
-                JSHandle<JSDate> date = JSHandle<JSDate>::Cast(factory->NewJSObject(dateClass));
+                JSHandle<JSDate> date = JSHandle<JSDate>::Cast(factory->NewJSObjectWithInit(dateClass));
                 date->SetTimeValue(thread, JSTaggedValue(0.0));
                 date->SetLocalOffset(thread, JSTaggedValue(0.0));
                 DUMP_FOR_HANDLE(date)
@@ -724,6 +724,8 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 JSHandle<JSHClass> pendingClass(thread,
                     JSHClass::Cast(globalConst->GetPendingJobClass().GetTaggedObject()));
                 JSHandle<TaggedObject> pendingJob(thread, factory->NewDynObject(pendingClass));
+                ecmascript::job::PendingJob::Cast(*pendingJob)->SetJob(JSTaggedValue::Undefined());
+                ecmascript::job::PendingJob::Cast(*pendingJob)->SetArguments(JSTaggedValue::Undefined());
                 DUMP_FOR_HANDLE(pendingJob)
                 break;
             }
