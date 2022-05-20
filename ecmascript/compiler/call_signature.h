@@ -317,6 +317,7 @@ private:
     V(ResumeRspAndDispatch)                 \
     V(ResumeRspAndReturn)                   \
     V(ResumeCaughtFrameAndDispatch)         \
+    V(ResumeUncaughtFrameAndReturn)         \
     V(StringsAreEquals)                     \
     V(BigIntEquals)                         \
     V(DebugPrint)                           \

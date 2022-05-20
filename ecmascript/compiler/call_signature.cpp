@@ -686,6 +686,20 @@ DEF_CALL_SIGNATURE(ResumeCaughtFrameAndDispatch)
     callSign->SetCallConv(CallSignature::CallConv::GHCCallConv);
 }
 
+DEF_CALL_SIGNATURE(ResumeUncaughtFrameAndReturn)
+{
+    // 1 : 1 input parameters
+    CallSignature resumeUncaughtFrameAndReturn("ResumeUncaughtFrameAndReturn", 0, 1,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = resumeUncaughtFrameAndReturn;
+    std::array<VariableType, 1> params = { // 1 : 1 input parameters
+        VariableType::NATIVE_POINTER(),
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
+    callSign->SetCallConv(CallSignature::CallConv::GHCCallConv);
+}
+
 DEF_CALL_SIGNATURE(StringsAreEquals)
 {
     // 2 : 2 input parameters

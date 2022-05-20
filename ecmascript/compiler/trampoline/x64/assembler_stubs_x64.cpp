@@ -1002,7 +1002,7 @@ void AssemblerStubsX64::JSCallDispatch(ExtendedAssembler *assembler)
         __ Je(&callJSProxyEntry);
         // bound function branch, default native
         __ Movq(Operand(callTargetRegister, JSFunctionBase::METHOD_OFFSET), methodRegister);
-        __ Jmp(&callNativeEntry);
+        // fall through
     }
     __ Bind(&callNativeEntry);
     CallNativeEntry(assembler);
@@ -1241,7 +1241,7 @@ void AssemblerStubsX64::CallBCStub(ExtendedAssembler *assembler, Register newSpR
         __ Movzbq(Operand(pcRegister, 0), rax);
         __ Movq(Operand(r13, rax, Times8, JSThread::GlueData::GetBCStubEntriesOffset(false)), r11);
         __ Callq(r11);
-        __ Jmp(&returnOfCallJSFunction);
+        // fall through
     }
 
     __ Bind(&returnOfCallJSFunction);
@@ -1676,7 +1676,7 @@ void AssemblerStubsX64::CallIThisRangeNoExtraEntry(ExtendedAssembler *assembler,
         __ Jbe(&pushCallThis);
         Register opRegister = r8;
         __ PushArgsWithArgv(numRegister, argvRegister, opRegister);
-        __ Jmp(&pushCallThis);
+        // fall through
     }
     __ Bind(&pushCallThis);
     {
@@ -1704,7 +1704,7 @@ void AssemblerStubsX64::CallIRangeNoExtraEntry(ExtendedAssembler *assembler, Reg
         __ Jbe(&pushCallThisUndefined);
         Register opRegister = r8;
         __ PushArgsWithArgv(numRegister, argvRegister, opRegister);
-        __ Jmp(&pushCallThisUndefined);
+        // fall through
     }
     __ Bind(&pushCallThisUndefined);
     {
@@ -2017,13 +2017,18 @@ void AssemblerStubsX64::PushCallIRangeAndDispatchNative(ExtendedAssembler *assem
     Register temporary = rax;
     Register opNumArgs = r10;
     Label notAligned;
+    Label pushThis;
 
     PushBuiltinFrame(assembler, glue, FrameType::BUILTIN_FRAME_WITH_ARGV);
 
     StackOverflowCheck(assembler);
     __ Push(numArgs);
+    __ Cmpq(0, numArgs);
+    __ Jz(&pushThis);
     __ Movq(numArgs, opNumArgs);
     __ PushArgsWithArgv(opNumArgs, stackArgs, temporary);
+
+    __ Bind(&pushThis);
     __ Push(thisValue);
     // new.target
     __ Pushq(JSTaggedValue::Undefined().GetRawData());
@@ -2203,6 +2208,24 @@ void AssemblerStubsX64::ResumeCaughtFrameAndDispatch(ExtendedAssembler *assemble
             bcStubRegister);
         __ Jmp(bcStubRegister);
     }
+}
+
+// ResumeUncaughtFrameAndReturn(uintptr_t glue)
+// GHC calling convention
+// %r13 - glue
+void AssemblerStubsX64::ResumeUncaughtFrameAndReturn(ExtendedAssembler *assembler)
+{
+    __ BindAssemblerStub(RTSTUB_ID(ResumeUncaughtFrameAndReturn));
+    Register glueRegister = r13;
+
+    Label ret;
+    Register fpRegister = r11;
+    __ Movq(Operand(glueRegister, JSThread::GlueData::GetLastFpOffset(false)), fpRegister);
+    __ Cmpq(0, fpRegister);
+    __ Jz(&ret);
+    __ Movq(fpRegister, rsp);  // resume rsp
+    __ Bind(&ret);
+    __ Ret();
 }
 
 void AssemblerStubsX64::PushUndefinedWithArgc(ExtendedAssembler *assembler, Register argc)

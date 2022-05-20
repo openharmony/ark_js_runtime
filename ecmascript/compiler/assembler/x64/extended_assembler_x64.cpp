@@ -19,7 +19,7 @@
 namespace panda::ecmascript::x64 {
 void ExtendedAssembler::PushAlignBytes()
 {
-    Pushq(0);
+    Subq(8, rsp);  // 8: 8 bytes
 }
 
 void ExtendedAssembler::PopAlignBytes()
