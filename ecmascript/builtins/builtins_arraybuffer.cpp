@@ -247,7 +247,7 @@ JSTaggedValue BuiltinsArrayBuffer::AllocateArrayBuffer(JSThread *thread, const J
 bool BuiltinsArrayBuffer::IsDetachedBuffer(JSTaggedValue arrayBuffer)
 {
     // 1. Assert: Type(arrayBuffer) is Object and it has an [[ArrayBufferData]] internal slot.
-    ASSERT(arrayBuffer.IsArrayBuffer());
+    ASSERT(arrayBuffer.IsArrayBuffer() || arrayBuffer.IsSharedArrayBuffer());
     JSArrayBuffer *buffer = JSArrayBuffer::Cast(arrayBuffer.GetTaggedObject());
     JSTaggedValue dataSlot = buffer->GetArrayBufferData();
     // 2. If arrayBuffer’s [[ArrayBufferData]] internal slot is null, return true.
@@ -261,7 +261,7 @@ JSTaggedValue BuiltinsArrayBuffer::CloneArrayBuffer(JSThread *thread, const JSHa
 {
     BUILTINS_API_TRACE(thread, ArrayBuffer, CloneArrayBuffer);
     // 1. Assert: Type(srcBuffer) is Object and it has an [[ArrayBufferData]] internal slot.
-    ASSERT(srcBuffer->IsArrayBuffer());
+    ASSERT(srcBuffer->IsArrayBuffer() || srcBuffer->IsSharedArrayBuffer());
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     // 2. If cloneConstructor is not present
     if (constructor->IsUndefined()) {
