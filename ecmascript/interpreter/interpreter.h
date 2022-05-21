@@ -50,7 +50,6 @@ public:
         JSHandle<JSTaggedValue> newTarget, size_t numArgs);
     static inline JSTaggedValue GeneratorReEnterInterpreter(JSThread *thread, JSHandle<GeneratorContext> context);
     static inline void RunInternal(JSThread *thread, ConstantPool *constpool, const uint8_t *pc, JSTaggedType *sp);
-    static inline uint8_t ReadU8(const uint8_t *pc, uint32_t offset);
     static inline void InitStackFrame(JSThread *thread);
     static inline uint32_t FindCatchBlock(JSMethod *caller, uint32_t pc);
     static inline size_t GetJumpSizeAfterCall(const uint8_t *prevPc);

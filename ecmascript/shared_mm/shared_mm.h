@@ -16,7 +16,7 @@
 #ifndef ECMASCRIPT_SHARED_MEMORY_MANAGER_MANAGER_H
 #define ECMASCRIPT_SHARED_MEMORY_MANAGER_MANAGER_H
 
-#include "ecmascript/tooling/js_pt_extractor.h"
+#include "ecmascript/mem/c_containers.h"
 #include "libpandabase/utils/logger.h"
 #include "os/mutex.h"
 
