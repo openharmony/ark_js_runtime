@@ -586,15 +586,7 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
 {
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     if (thread->IsAsmInterpreter()) {
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
         return InterpreterAssembly::GeneratorReEnterInterpreter(thread, context);
-#else
-        auto prevLeaveFrame = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
-        thread->SetLastLeaveFrame(nullptr);  // avoid setting again in NewRuntimeCallInfo()
-        JSTaggedValue asmResult = InterpreterAssembly::GeneratorReEnterInterpreter(thread, context);
-        thread->SetLastLeaveFrame(prevLeaveFrame);
-        return asmResult;
-#endif
     }
     JSHandle<JSFunction> func = JSHandle<JSFunction>::Cast(JSHandle<JSTaggedValue>(thread, context->GetMethod()));
     JSMethod *method = func->GetCallTarget();
