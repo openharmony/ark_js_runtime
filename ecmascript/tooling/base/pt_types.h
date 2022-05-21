@@ -21,7 +21,7 @@
 
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/c_string.h"
-#include "ecmascript/tooling/interface/debugger_api.h"
+#include "ecmascript/tooling/backend/debugger_api.h"
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript::tooling {
@@ -40,7 +40,7 @@ private:
     NO_MOVE_SEMANTIC(PtBaseTypes);
 
     friend class ProtocolHandler;
-    friend class JSBackend;
+    friend class DebuggerImpl;
 };
 
 // ========== Debugger types begin

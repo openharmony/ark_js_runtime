@@ -17,29 +17,27 @@
 
 
 namespace panda::ecmascript::tooling {
-HeapProfilerImpl::DispatcherImpl::DispatcherImpl(FrontEnd *frontend, std::unique_ptr<HeapProfilerImpl> heapprofiler)
-    : DispatcherBase(frontend), heapprofiler_(std::move(heapprofiler))
-{
-    dispatcherTable_["addInspectedHeapObject"] = &HeapProfilerImpl::DispatcherImpl::AddInspectedHeapObject;
-    dispatcherTable_["collectGarbage"] = &HeapProfilerImpl::DispatcherImpl::CollectGarbage;
-    dispatcherTable_["enable"] = &HeapProfilerImpl::DispatcherImpl::Enable;
-    dispatcherTable_["disable"] = &HeapProfilerImpl::DispatcherImpl::Disable;
-    dispatcherTable_["getHeapObjectId"] = &HeapProfilerImpl::DispatcherImpl::GetHeapObjectId;
-    dispatcherTable_["getObjectByHeapObjectId"] = &HeapProfilerImpl::DispatcherImpl::GetObjectByHeapObjectId;
-    dispatcherTable_["getSamplingProfile"] = &HeapProfilerImpl::DispatcherImpl::GetSamplingProfile;
-    dispatcherTable_["startSampling"] = &HeapProfilerImpl::DispatcherImpl::StartSampling;
-    dispatcherTable_["startTrackingHeapObjects"] = &HeapProfilerImpl::DispatcherImpl::StartTrackingHeapObjects;
-    dispatcherTable_["stopSampling"] = &HeapProfilerImpl::DispatcherImpl::StopSampling;
-    dispatcherTable_["stopTrackingHeapObjects"] = &HeapProfilerImpl::DispatcherImpl::StopTrackingHeapObjects;
-    dispatcherTable_["takeHeapSnapshot"] = &HeapProfilerImpl::DispatcherImpl::TakeHeapSnapshot;
-}
-
 void HeapProfilerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
 {
-    CString method = request.GetMethod();
+    static CUnorderedMap<CString, AgentHandler> dispatcherTable {
+        { "addInspectedHeapObject", &HeapProfilerImpl::DispatcherImpl::AddInspectedHeapObject },
+        { "collectGarbage", &HeapProfilerImpl::DispatcherImpl::CollectGarbage },
+        { "enable", &HeapProfilerImpl::DispatcherImpl::Enable },
+        { "disable", &HeapProfilerImpl::DispatcherImpl::Disable },
+        { "getHeapObjectId", &HeapProfilerImpl::DispatcherImpl::GetHeapObjectId },
+        { "getObjectByHeapObjectId", &HeapProfilerImpl::DispatcherImpl::GetObjectByHeapObjectId },
+        { "getSamplingProfile", &HeapProfilerImpl::DispatcherImpl::GetSamplingProfile },
+        { "startSampling", &HeapProfilerImpl::DispatcherImpl::StartSampling },
+        { "startTrackingHeapObjects", &HeapProfilerImpl::DispatcherImpl::StartTrackingHeapObjects },
+        { "stopSampling", &HeapProfilerImpl::DispatcherImpl::StopSampling },
+        { "stopTrackingHeapObjects", &HeapProfilerImpl::DispatcherImpl::StopTrackingHeapObjects },
+        { "takeHeapSnapshot", &HeapProfilerImpl::DispatcherImpl::TakeHeapSnapshot }
+    };
+
+    const CString &method = request.GetMethod();
     LOG(DEBUG, DEBUGGER) << "dispatch [" << method << "] to HeapProfilerImpl";
-    auto entry = dispatcherTable_.find(method);
-    if (entry != dispatcherTable_.end() && entry->second != nullptr) {
+    auto entry = dispatcherTable.find(method);
+    if (entry != dispatcherTable.end() && entry->second != nullptr) {
         (this->*(entry->second))(request);
     } else {
         SendResponse(request, DispatchResponse::Fail("Unknown method: " + method), nullptr);
@@ -178,6 +176,110 @@ void HeapProfilerImpl::DispatcherImpl::TakeHeapSnapshot(const DispatchRequest &r
     SendResponse(request, response, std::move(result));
 }
 
+class HeapProfilerStream final : public Stream {
+public:
+    explicit HeapProfilerStream(HeapProfilerImpl::Frontend *frontend)
+        : frontend_(frontend) {}
+    
+    void EndOfStream() override {}
+    int GetSize() override
+    {
+        static const int heapProfilerChunkSise = 102400;
+        return heapProfilerChunkSise;
+    }
+    bool WriteChunk(char *data, int size) override
+    {
+        if (!Good()) {
+            return false;
+        }
+        frontend_->AddHeapSnapshotChunk(data, size);
+        return true;
+    }
+    bool Good() override
+    {
+        return frontend_ != nullptr;
+    }
+
+private:
+    NO_COPY_SEMANTIC(HeapProfilerStream);
+    NO_MOVE_SEMANTIC(HeapProfilerStream);
+
+    HeapProfilerImpl::Frontend *frontend_ {nullptr};
+};
+
+class HeapProfilerProgress final : public Progress {
+public:
+    explicit HeapProfilerProgress(HeapProfilerImpl::Frontend *frontend)
+        : frontend_(frontend) {}
+    
+    void ReportProgress(int32_t done, int32_t total) override
+    {
+        frontend_->ReportHeapSnapshotProgress(done, total);
+    }
+
+private:
+    NO_COPY_SEMANTIC(HeapProfilerProgress);
+    NO_MOVE_SEMANTIC(HeapProfilerProgress);
+
+    HeapProfilerImpl::Frontend *frontend_ {nullptr};
+};
+
+bool HeapProfilerImpl::Frontend::AllowNotify() const
+{
+    return channel_ != nullptr;
+}
+
+void HeapProfilerImpl::Frontend::AddHeapSnapshotChunk(char *data, int size)
+{
+    if (!AllowNotify()) {
+        return;
+    }
+
+    channel_->SendNotification(AddHeapSnapshotChunk::Create(data, size));
+}
+
+void HeapProfilerImpl::Frontend::ReportHeapSnapshotProgress(int32_t done, int32_t total)
+{
+    if (!AllowNotify()) {
+        return;
+    }
+
+    auto reportHeapSnapshotProgress = std::make_unique<tooling::ReportHeapSnapshotProgress>();
+    reportHeapSnapshotProgress->SetDone(done);
+    reportHeapSnapshotProgress->SetTotal(total);
+    if (done >= total) {
+        reportHeapSnapshotProgress->SetFinished(true);
+    }
+    channel_->SendNotification(std::move(reportHeapSnapshotProgress));
+}
+
+void HeapProfilerImpl::Frontend::HeapStatsUpdate()
+{
+    if (!AllowNotify()) {
+        return;
+    }
+
+    auto heapStatsUpdate = std::make_unique<tooling::HeapStatsUpdate>();
+    channel_->SendNotification(std::move(heapStatsUpdate));
+}
+
+void HeapProfilerImpl::Frontend::LastSeenObjectId()
+{
+    if (!AllowNotify()) {
+        return;
+    }
+
+    auto lastSeenObjectId = std::make_unique<tooling::LastSeenObjectId>();
+    channel_->SendNotification(std::move(lastSeenObjectId));
+}
+
+void HeapProfilerImpl::Frontend::ResetProfiles()
+{
+    if (!AllowNotify()) {
+        return;
+    }
+}
+
 DispatchResponse HeapProfilerImpl::AddInspectedHeapObject(
     [[maybe_unused]] std::unique_ptr<AddInspectedHeapObjectParams> params)
 {
@@ -235,15 +337,13 @@ DispatchResponse HeapProfilerImpl::StartSampling([[maybe_unused]]std::unique_ptr
 DispatchResponse HeapProfilerImpl::StartTrackingHeapObjects(
     [[maybe_unused]] std::unique_ptr<StartTrackingHeapObjectsParams> params)
 {
-    auto ecmaVm = const_cast<EcmaVM *>(static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM());
-    bool result = panda::DFXJSNApi::StartHeapTracking(ecmaVm, INTERVAL, true);
+    bool result = panda::DFXJSNApi::StartHeapTracking(vm_, INTERVAL, true);
     if (result) {
         return DispatchResponse::Ok();
     } else {
         return DispatchResponse::Fail("StartHeapTracking fail");
     }
 }
-
 
 DispatchResponse HeapProfilerImpl::StopSampling([[maybe_unused]]std::unique_ptr<SamplingHeapProfile> *profile)
 {
@@ -253,14 +353,13 @@ DispatchResponse HeapProfilerImpl::StopSampling([[maybe_unused]]std::unique_ptr<
 
 DispatchResponse HeapProfilerImpl::StopTrackingHeapObjects(std::unique_ptr<StopTrackingHeapObjectsParams> params)
 {
-    HeapProfilerStream stream(frontend_);
-    auto ecmaVm = (panda::EcmaVM *)static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM();
+    HeapProfilerStream stream(&frontend_);
     bool result = false;
     if (params->GetReportProgress()) {
-        HeapProfilerProgress progress(frontend_);
-        result = panda::DFXJSNApi::StopHeapTracking(ecmaVm, &stream, &progress);
+        HeapProfilerProgress progress(&frontend_);
+        result = panda::DFXJSNApi::StopHeapTracking(vm_, &stream, &progress);
     } else {
-        result = panda::DFXJSNApi::StopHeapTracking(ecmaVm, &stream, nullptr);
+        result = panda::DFXJSNApi::StopHeapTracking(vm_, &stream, nullptr);
     }
     if (result) {
         return DispatchResponse::Ok();
@@ -271,13 +370,12 @@ DispatchResponse HeapProfilerImpl::StopTrackingHeapObjects(std::unique_ptr<StopT
 
 DispatchResponse HeapProfilerImpl::TakeHeapSnapshot(std::unique_ptr<StopTrackingHeapObjectsParams> params)
 {
-    HeapProfilerStream stream(frontend_);
-    auto ecmaVm = (panda::EcmaVM *)static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM();
+    HeapProfilerStream stream(&frontend_);
     if (params->GetReportProgress()) {
-        HeapProfilerProgress progress(frontend_);
-        panda::DFXJSNApi::DumpHeapSnapshot(ecmaVm, 0, &stream, &progress, true);
+        HeapProfilerProgress progress(&frontend_);
+        panda::DFXJSNApi::DumpHeapSnapshot(vm_, 0, &stream, &progress, true);
     } else {
-        panda::DFXJSNApi::DumpHeapSnapshot(ecmaVm, 0, &stream, nullptr, true);
+        panda::DFXJSNApi::DumpHeapSnapshot(vm_, 0, &stream, nullptr, true);
     }
     return DispatchResponse::Ok();
 }

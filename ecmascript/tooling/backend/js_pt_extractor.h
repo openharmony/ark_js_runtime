@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_TOOLING_JS_PT_EXTRACTOR_H
-#define ECMASCRIPT_TOOLING_JS_PT_EXTRACTOR_H
+#ifndef ECMASCRIPT_TOOLING_BACKEND_JS_PT_EXTRACTOR_H
+#define ECMASCRIPT_TOOLING_BACKEND_JS_PT_EXTRACTOR_H
 
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/jspandafile/debug_info_extractor.h"
-#include "ecmascript/tooling/interface/js_debug_interface.h"
+#include "ecmascript/tooling/backend/js_debugger_interface.h"
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript::tooling {
@@ -122,4 +122,4 @@ private:
     std::unique_ptr<SingleStepper> GetStepper(const EcmaVM *ecmaVm, SingleStepper::Type type);
 };
 }  // namespace panda::ecmascript::tooling
-#endif  // ECMASCRIPT_TOOLING_JS_PT_EXTRACTOR_H
+#endif  // ECMASCRIPT_TOOLING_BACKEND_JS_PT_EXTRACTOR_H
