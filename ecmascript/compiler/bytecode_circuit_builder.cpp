@@ -2305,7 +2305,7 @@ void BytecodeCircuitBuilder::NewReturn(BytecodeRegion &bb, const uint8_t *pc, Ga
     } else if (static_cast<EcmaOpcode>(bytecodeInfo.opcode) == EcmaOpcode::RETURNUNDEFINED_PREF) {
         // handle returnundefined bytecode
         auto constant = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
-                                         coretypes::TaggedValue::VALUE_UNDEFINED,
+                                         JSTaggedValue::VALUE_UNDEFINED,
                                          { Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST)) },
                                          GateType::JS_ANY);
         auto gate = circuit_.NewGate(OpCode(OpCode::RETURN), 0,

@@ -51,7 +51,9 @@ public:
         JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
         size_t frameSize = ecmascript::INTERPRETER_FRAME_STATE_SIZE + numActualArgs;
         JSTaggedType *newSp = sp - frameSize;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-
+        for (int i = numActualArgs; i > 0; i--) {
+            newSp[i - 1] = JSTaggedValue::Undefined().GetRawData();
+        }
         auto callInfo = std::make_unique<EcmaRuntimeCallInfo>(thread, numActualArgs - NUM_MANDATORY_JSFUNC_ARGS, newSp);
         callInfo->SetNewTarget(newTgt);
         return callInfo;
