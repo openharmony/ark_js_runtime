@@ -1180,7 +1180,7 @@ bool FastRuntimeStub::FastSetProperty(JSThread *thread, JSTaggedValue receiver, 
 JSTaggedValue FastRuntimeStub::FastGetProperty(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key)
 {
     INTERPRETER_TRACE(thread, FastGetProperty);
-    JSTaggedValue result;
+    JSTaggedValue result = JSTaggedValue::Hole();
     if (receiver.IsJSObject() && !receiver.IsTypedArray() && (key.IsStringOrSymbol())) {
         uint32_t index = 0;
         if (UNLIKELY(JSTaggedValue::ToElementIndex(key, &index))) {
