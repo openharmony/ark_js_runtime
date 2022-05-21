@@ -24,7 +24,7 @@ namespace panda::ecmascript {
 class FileStream : public Stream {
 public:
     FileStream(const std::string &fileName);
-    ~FileStream() override;
+    ~FileStream() override = default;
 
     void EndOfStream() override;
 
@@ -48,11 +48,8 @@ private:
 
 class FileDescriptorStream : public Stream {
 public:
-    explicit FileDescriptorStream(int32_t fd): fd_(fd)
-    {
-    }
-
-    ~FileDescriptorStream() override;
+    explicit FileDescriptorStream(int32_t fd): fd_(fd) {}
+    ~FileDescriptorStream() override  = default;
 
     void EndOfStream() override;
 
