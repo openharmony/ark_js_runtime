@@ -42,9 +42,9 @@ public:
                 if (moduleName != pandaFile_) {
                     return true;
                 }
-                ASSERT_TRUE(backend_->NotifyScriptParsed(0, pandaFile_));
+                ASSERT_TRUE(debugger_->NotifyScriptParsed(0, pandaFile_));
                 flag_ = false;
-                auto condFuncRef = FunctionRef::Undefined(backend_->GetEcmaVm());
+                auto condFuncRef = FunctionRef::Undefined(vm_);
                 auto ret = debugInterface_->SetBreakpoint(location_, condFuncRef);
                 ASSERT_TRUE(ret);
             }

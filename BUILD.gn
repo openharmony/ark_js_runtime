@@ -494,8 +494,8 @@ if (!is_mingw && !is_mac) {
 ecma_debugger_source = []
 if (!is_mingw && !is_mac) {
   ecma_debugger_source += [
-    "ecmascript/tooling/interface/debugger_api.cpp",
-    "ecmascript/tooling/interface/js_debugger.cpp",
+    "ecmascript/tooling/backend/debugger_api.cpp",
+    "ecmascript/tooling/backend/js_debugger.cpp",
   ]
 }
 

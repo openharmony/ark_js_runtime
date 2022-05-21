@@ -20,12 +20,12 @@
 #include <queue>
 #include <memory>
 
-#include "ecmascript/tooling/front_end.h"
+#include "ecmascript/tooling/protocol_channel.h"
 
 namespace panda::ecmascript::tooling {
-class ProtocolHandler final : public FrontEnd {
+class ProtocolHandler final : public ProtocolChannel {
 public:
-    explicit ProtocolHandler(std::function<void(const std::string &)> callback, const EcmaVM *vm);
+    ProtocolHandler(std::function<void(const std::string &)> callback, const EcmaVM *vm);
     ~ProtocolHandler() override = default;
 
     void WaitForDebugger() override;
@@ -33,18 +33,13 @@ public:
     void ProcessCommand(const CString &msg);
     void SendResponse(const DispatchRequest &request, const DispatchResponse &response,
                       std::unique_ptr<PtBaseReturns> result) override;
-    void SendNotification(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events) override;
-    void SendProfilerNotify(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events) override;
-    const EcmaVM *GetEcmaVM() const
-    {
-        return vm_;
-    }
+    void SendNotification(std::unique_ptr<PtBaseEvents> events) override;
 
 private:
     NO_MOVE_SEMANTIC(ProtocolHandler);
     NO_COPY_SEMANTIC(ProtocolHandler);
-    Local<ObjectRef> CreateErrorReply(const EcmaVM *ecmaVm, const DispatchResponse &response);
-    void SendReply(const EcmaVM *ecmaVm, Local<ObjectRef> reply);
+    Local<ObjectRef> CreateErrorReply(const DispatchResponse &response);
+    void SendReply(Local<ObjectRef> reply);
 
     std::function<void(const std::string &)> callback_;
     std::unique_ptr<Dispatcher> dispatcher_ {};

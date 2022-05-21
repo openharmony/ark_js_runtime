@@ -16,21 +16,17 @@
 #ifndef ECMASCRIPT_TOOLING_AGENT_PROFILER_IMPL_H
 #define ECMASCRIPT_TOOLING_AGENT_PROFILER_IMPL_H
 
-#include "libpandabase/macros.h"
-#include "libpandabase/utils/logger.h"
 #include "ecmascript/dfx/cpu_profiler/samples_record.h"
-#include "ecmascript/napi/include/dfx_jsnapi.h"
-#include "ecmascript/tooling/agent/js_backend.h"
 #include "ecmascript/tooling/base/pt_params.h"
 #include "ecmascript/tooling/base/pt_returns.h"
 #include "ecmascript/tooling/dispatcher.h"
-#include "ecmascript/tooling/front_end.h"
+#include "libpandabase/macros.h"
 
 namespace panda::ecmascript::tooling {
 using CpuProfileNode = ecmascript::ProfileNode;
 class ProfilerImpl final {
 public:
-    explicit ProfilerImpl(JSBackend *backend) : backend_(backend) {}
+    ProfilerImpl(const EcmaVM *vm, ProtocolChannel *channel) : vm_(vm), frontend_(channel) {}
     ~ProfilerImpl() = default;
 
     DispatchResponse Disable();
@@ -50,8 +46,10 @@ public:
 
     class DispatcherImpl final : public DispatcherBase {
     public:
-        DispatcherImpl(FrontEnd *frontend, std::unique_ptr<ProfilerImpl> profiler);
+        DispatcherImpl(ProtocolChannel *channel, std::unique_ptr<ProfilerImpl> profiler)
+            : DispatcherBase(channel), profiler_(std::move(profiler)) {}
         ~DispatcherImpl() override = default;
+
         void Dispatch(const DispatchRequest &request) override;
         void Enable(const DispatchRequest &request);
         void Disable(const DispatchRequest &request);
@@ -70,15 +68,29 @@ public:
         NO_MOVE_SEMANTIC(DispatcherImpl);
 
         using AgentHandler = void (ProfilerImpl::DispatcherImpl::*)(const DispatchRequest &request);
-        CUnorderedMap<CString, AgentHandler> dispatcherTable_ {};
         std::unique_ptr<ProfilerImpl> profiler_ {};
+    };
+
+    class Frontend {
+    public:
+        explicit Frontend(ProtocolChannel *channel) : channel_(channel) {}
+
+        void ConsoleProfileFinished();
+        void ConsoleProfileStarted();
+        void PreciseCoverageDeltaUpdate();
+
+    private:
+        bool AllowNotify() const;
+
+        ProtocolChannel *channel_ {nullptr};
     };
 
 private:
     NO_COPY_SEMANTIC(ProfilerImpl);
     NO_MOVE_SEMANTIC(ProfilerImpl);
 
-    JSBackend *backend_ {nullptr};
+    const EcmaVM *vm_ {nullptr};
+    [[maybe_unused]] Frontend frontend_;
 };
 }  // namespace panda::ecmascript::tooling
 #endif
