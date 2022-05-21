@@ -54,6 +54,7 @@ group("ark_asm_test") {
   testonly = true
   deps = [
     "allocatearraybuffer:allocatearraybufferAsmAction",
+    "async:asyncAsmAction",
     "bindfunction:bindfunctionAsmAction",
     "bitwiseop:bitwiseopAsmAction",
     "callframe:callframeAsmAction",
@@ -74,18 +75,17 @@ group("ark_asm_test") {
     "module:moduleAsmAction",
     "multiargs:multiargsAsmAction",
     "newobjdynrange:newobjdynrangeAsmAction",
+    "objectcloneproperties:objectclonepropertiesAsmAction",
+    "promise:promiseAsmAction",
+    "regexpcallthrow:regexpcallthrowAsmAction",
+    "spreadoperator:spreadoperatorAsmAction",
+    "stackoverflow:stackoverflowAsmAction",
     "throwdyn:throwdynAsmAction",
     "trycatch:trycatchAsmAction",
     "watch:watchAsmAction",
   ]
   if (!is_debug) {
     deps += [
-      "async:asyncAsmAction",
-      "objectcloneproperties:objectclonepropertiesAsmAction",
-      "promise:promiseAsmAction",
-      "spreadoperator:spreadoperatorAsmAction",
-      "stackoverflow:stackoverflowAsmAction",
-
       # "weaktransitions:weaktransitionsAsmAction",
       "yieldstar:yieldstarAsmAction",
     ]
