@@ -162,7 +162,7 @@ void AssemblerAarch64::Ldp(const VectorRegister &vt, const VectorRegister &vt2, 
             default:
                 UNREACHABLE();
         }
-        uint64_t imm = operand.GetImmediate().Value();
+        uint64_t imm = static_cast<uint64_t>(operand.GetImmediate().Value());
         switch (vt.GetScale()) {
             case S:
                 // 2 : 2 means remove trailing zeros
@@ -205,7 +205,7 @@ void AssemblerAarch64::Stp(const VectorRegister &vt, const VectorRegister &vt2, 
             default:
                 UNREACHABLE();
         }
-        uint64_t imm = operand.GetImmediate().Value();
+        uint64_t imm = static_cast<uint64_t>(operand.GetImmediate().Value());
         switch (vt.GetScale()) {
             case S:
                 // 2 : 2 means remove trailing zeros
@@ -260,7 +260,7 @@ uint32_t AssemblerAarch64::GetOpcFromScale(Scale scale, bool ispair)
 void AssemblerAarch64::Ldr(const Register &rt, const MemoryOperand &operand)
 {
     uint32_t op;
-    uint64_t imm = operand.GetImmediate().Value();
+    uint64_t imm = static_cast<uint64_t>(operand.GetImmediate().Value());
     bool regX = !rt.IsW();
     bool isSigned = true;
     if (operand.IsImmediateOffset()) {
@@ -297,7 +297,7 @@ void AssemblerAarch64::Str(const Register &rt, const MemoryOperand &operand)
     uint32_t op;
     bool regX = !rt.IsW();
     bool isSigned = true;
-    uint64_t imm = operand.GetImmediate().Value();
+    uint64_t imm = static_cast<uint64_t>(operand.GetImmediate().Value());
     if (operand.IsImmediateOffset()) {
         switch (operand.GetAddrMode()) {
             case MemoryOperand::AddrMode::OFFSET:

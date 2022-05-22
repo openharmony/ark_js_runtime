@@ -458,7 +458,7 @@ void BytecodeCircuitBuilder::ComputeDominatorTree()
         }
         auto it = std::remove(doms[i].begin(), doms[i].end(), i);
         doms[i].resize(it - doms[i].cbegin());
-        immDom[i] = static_cast<int32_t>(*std::max_element(
+        immDom[i] = static_cast<size_t>(*std::max_element(
             doms[i].cbegin(),
             doms[i].cend(),
             [this, &bbIdToDfsTimestamp](size_t lhs, size_t rhs) -> bool {

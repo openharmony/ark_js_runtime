@@ -67,7 +67,7 @@ void AssemblerStubsX64::CallRuntime(ExtendedAssembler *assembler)
 }
 
 // uint64_t JSFunctionEntry(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
-//     uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr);
+//     uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr)
 // Input:
 // %rdi - glue
 // %rsi - prevFp
@@ -161,7 +161,7 @@ void AssemblerStubsX64::JSFunctionEntry(ExtendedAssembler *assembler)
 }
 
 // uint64_t OptimizedCallOptimized(uintptr_t glue, uint32_t expectedNumArgs,
-//                                uint32_t actualNumArgs, uintptr_t codeAddr, uintptr_t argv);
+//                                uint32_t actualNumArgs, uintptr_t codeAddr, uintptr_t argv)
 // Input:
 // %rdi - glue
 // %rsi - expectedNumArgs
@@ -331,7 +331,7 @@ void AssemblerStubsX64::CallBuiltinTrampoline(ExtendedAssembler *assembler)
     __ Ret();
 }
 
-// uint64_t JSCallWithArgV(uintptr_t glue, uint32_t argc, JSTaggedType calltarget, uintptr_t argv[]);
+// uint64_t JSCallWithArgV(uintptr_t glue, uint32_t argc, JSTaggedType calltarget, uintptr_t argv[])
 // c++ calling convention call js function
 // Input:
 // %rdi - glue
@@ -565,7 +565,7 @@ void AssemblerStubsX64::JSCallWithArgV(ExtendedAssembler *assembler)
     __ Ret();
 }
 
-// uint64_t JSCall(uintptr_t glue, uint32_t argc, JSTaggedType calltarget, JSTaggedType new, JSTaggedType this, ...);
+// uint64_t JSCall(uintptr_t glue, uint32_t argc, JSTaggedType calltarget, JSTaggedType new, JSTaggedType this, ...)
 // webkit_jscc calling convention call js function()
 // Input:
 // %rax - glue
@@ -818,7 +818,7 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
 }
 
 
-// uint64_t CallRuntimeWithArgv(uintptr_t glue, uint64_t runtime_id, uint64_t argc, uintptr_t argv);
+// uint64_t CallRuntimeWithArgv(uintptr_t glue, uint64_t runtime_id, uint64_t argc, uintptr_t argv)
 // cc calling convention call runtime_id's runtion function(c-abi)
 // JSTaggedType (*)(uintptr_t argGlue, uint64_t argc, JSTaggedType argv[])
 // Input:
@@ -1291,7 +1291,7 @@ void AssemblerStubsX64::GetNumVregsFromCallField(ExtendedAssembler *assembler, R
 }
 
 // void PushCallArgsxAndDispatch(uintptr_t glue, uintptr_t sp, uint64_t callTarget, uintptr_t method,
-//     uint64_t callField, ...);
+//     uint64_t callField, ...)
 // GHC calling convention
 // Input1: for callarg0/1/2/3         Input2: for callrange
 // %r13 - glue                        // %r13 - glue
@@ -1363,7 +1363,7 @@ void AssemblerStubsX64::PushCallArgs0AndDispatch(ExtendedAssembler *assembler)
 }
 
 // void PushCallArgsxAndDispatchSlowPath(uintptr_t glue, uintptr_t sp, uint64_t callTarget, uintptr_t method,
-//       uint64_t callField, ...);
+//       uint64_t callField, ...)
 // GHC calling convention
 // Input1: for callarg0/1/2/3         Input2: for callrange
 // %r13 - glue                        // %r13 - glue
