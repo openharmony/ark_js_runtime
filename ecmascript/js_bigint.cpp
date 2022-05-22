@@ -23,7 +23,7 @@ class ObjectFactory;
 constexpr char dp[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 static int CharToInt(char c)
 {
-    int res = 0;
+    uint32_t res = 0;
     if (c >= '0' && c <= '9') {
         res = c - '0';
     } else if (c >= 'A' && c <= 'Z') {
@@ -31,7 +31,7 @@ static int CharToInt(char c)
     } else if (c >= 'a' && c <= 'z') {
         res = c - 'a' + 10; // 10:res must Greater than 10
     }
-    return res;
+    return static_cast<int>(res);
 }
 
 static std::string Division(std::string &num, uint32_t conversionToRadix, uint32_t currentRadix, uint32_t &remain)
