@@ -632,9 +632,9 @@ public:
 
 class PUBLIC_API TypedArrayRef : public ObjectRef {
 public:
-    int32_t ByteLength(const EcmaVM *vm);
-    int32_t ByteOffset(const EcmaVM *vm);
-    int32_t ArrayLength(const EcmaVM *vm);
+    uint32_t ByteLength(const EcmaVM *vm);
+    uint32_t ByteOffset(const EcmaVM *vm);
+    uint32_t ArrayLength(const EcmaVM *vm);
     Local<ArrayBufferRef> GetArrayBuffer(const EcmaVM *vm);
 };
 

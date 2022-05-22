@@ -30,13 +30,17 @@
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/base/error_helper.h"
 #include "ecmascript/js_tagged_value-inl.h"
-#include "ecmascript/js_typed_array.h"
 #include "ecmascript/base/error_type.h"
 
 namespace panda::ecmascript::base {
-DataViewType TypedArrayHelper::GetType(const JSHandle<JSObject> &obj)
+DataViewType TypedArrayHelper::GetType(const JSHandle<JSTypedArray> &obj)
 {
     JSType type = obj->GetJSHClass()->GetObjectType();
+    return GetType(type);
+}
+
+DataViewType TypedArrayHelper::GetType(JSType type)
+{
     switch (type) {
         case JSType::JS_INT8_ARRAY:
             return DataViewType::INT8;
@@ -63,9 +67,14 @@ DataViewType TypedArrayHelper::GetType(const JSHandle<JSObject> &obj)
     }
 }
 
-int32_t TypedArrayHelper::GetElementSize(const JSHandle<JSObject> &obj)
+uint32_t TypedArrayHelper::GetElementSize(const JSHandle<JSTypedArray> &obj)
 {
     JSType type = obj->GetJSHClass()->GetObjectType();
+    return GetElementSize(type);
+}
+
+uint32_t TypedArrayHelper::GetElementSize(JSType type)
+{
     switch (type) {
         case JSType::JS_INT8_ARRAY:
         case JSType::JS_UINT8_ARRAY:
@@ -186,9 +195,9 @@ JSHandle<JSFunction> TypedArrayHelper::GetConstructorFromName(JSThread *thread, 
     return JSHandle<JSFunction>(env->GetBigUint64ArrayFunction());
 }
 
-int32_t TypedArrayHelper::GetSizeFromName(JSThread *thread, const JSHandle<JSTaggedValue> &typeName)
+uint32_t TypedArrayHelper::GetSizeFromName(JSThread *thread, const JSHandle<JSTaggedValue> &typeName)
 {
-    int32_t elementSize;
+    uint32_t elementSize;
     auto globalConst = thread->GlobalConstants();
     if (JSTaggedValue::SameValue(typeName, globalConst->GetHandledInt8ArrayString()) ||
         JSTaggedValue::SameValue(typeName, globalConst->GetHandledUint8ArrayString()) ||
@@ -206,18 +215,5 @@ int32_t TypedArrayHelper::GetSizeFromName(JSThread *thread, const JSHandle<JSTag
     }
     return elementSize;
 }
-
-int32_t TypedArrayHelper::GetByteOffset(JSThread *thread, const JSHandle<JSObject> &obj)
-{
-    JSTaggedValue length = JSTypedArray::Cast(*obj)->GetByteOffset();
-    return JSTaggedValue::ToLength(thread, JSHandle<JSTaggedValue>(thread, length)).ToInt32();
-}
-
-int32_t TypedArrayHelper::GetArrayLength(JSThread *thread, const JSHandle<JSObject> &obj)
-{
-    JSTaggedValue length = JSTypedArray::Cast(*obj)->GetArrayLength();
-    return JSTaggedValue::ToLength(thread, JSHandle<JSTaggedValue>(thread, length)).ToInt32();
-}
 }  // namespace panda::ecmascript::base
-
 #endif  // ECMASCRIPT_BASE_TYPED_ARRAY_HELPER_INL_H

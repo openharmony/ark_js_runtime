@@ -915,9 +915,9 @@ void ObjectFactory::InitializeJSObject(const JSHandle<JSObject> &obj, const JSHa
         case JSType::JS_BIGUINT64_ARRAY:
             JSTypedArray::Cast(*obj)->SetViewedArrayBuffer(thread_, JSTaggedValue::Undefined());
             JSTypedArray::Cast(*obj)->SetTypedArrayName(thread_, JSTaggedValue::Undefined());
-            JSTypedArray::Cast(*obj)->SetByteLength(thread_, JSTaggedValue(0));
-            JSTypedArray::Cast(*obj)->SetByteOffset(thread_, JSTaggedValue(0));
-            JSTypedArray::Cast(*obj)->SetArrayLength(thread_, JSTaggedValue(0));
+            JSTypedArray::Cast(*obj)->SetByteLength(0);
+            JSTypedArray::Cast(*obj)->SetByteOffset(0);
+            JSTypedArray::Cast(*obj)->SetArrayLength(0);
             JSTypedArray::Cast(*obj)->SetContentType(ContentType::None);
             break;
         case JSType::JS_REG_EXP:

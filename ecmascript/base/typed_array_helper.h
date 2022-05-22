@@ -18,6 +18,7 @@
 
 #include "ecmascript/base/builtins_base.h"
 #include "ecmascript/js_dataview.h"
+#include "ecmascript/js_typed_array.h"
 #include <limits>
 #include <string>
 
@@ -33,20 +34,20 @@ public:
     static JSHandle<JSObject> AllocateTypedArray(ObjectFactory *factory, EcmaVM *ecmaVm,
                                                  const JSHandle<JSTaggedValue> &constructorName,
                                                  const JSHandle<JSTaggedValue> &newTarget, int32_t length);
-    static JSHandle<JSObject> TypedArraySpeciesCreate(JSThread *thread, const JSHandle<JSObject> &obj,
+    static JSHandle<JSObject> TypedArraySpeciesCreate(JSThread *thread, const JSHandle<JSTypedArray> &obj,
                                                       uint32_t argc, JSTaggedType argv[]);
     static JSHandle<JSObject> TypedArrayCreate(JSThread *thread, const JSHandle<JSTaggedValue> &constructor,
                                                uint32_t argc, const JSTaggedType argv[]);
     static JSTaggedValue ValidateTypedArray(JSThread *thread, const JSHandle<JSTaggedValue> &value);
-    inline static DataViewType GetType(const JSHandle<JSObject> &obj);
-    inline static int32_t GetElementSize(const JSHandle<JSObject> &obj);
+    inline static DataViewType GetType(const JSHandle<JSTypedArray> &obj);
+    inline static DataViewType GetType(JSType type);
+    inline static uint32_t GetElementSize(const JSHandle<JSTypedArray> &obj);
+    inline static uint32_t GetElementSize(JSType type);
     inline static DataViewType GetTypeFromName(JSThread *thread, const JSHandle<JSTaggedValue> &typeName);
     inline static JSHandle<JSTaggedValue> GetConstructor(JSThread *thread, const JSHandle<JSTaggedValue> &obj);
     inline static JSHandle<JSFunction> GetConstructorFromName(JSThread *thread,
                                                               const JSHandle<JSTaggedValue> &typeName);
-    inline static int32_t GetSizeFromName(JSThread *thread, const JSHandle<JSTaggedValue> &typeName);
-    inline static int32_t GetByteOffset(JSThread *thread, const JSHandle<JSObject> &obj);
-    inline static int32_t GetArrayLength(JSThread *thread, const JSHandle<JSObject> &obj);
+    inline static uint32_t GetSizeFromName(JSThread *thread, const JSHandle<JSTaggedValue> &typeName);
     static int32_t SortCompare(JSThread *thread, const JSHandle<JSTaggedValue> &callbackfnHandle,
                                const JSHandle<JSTaggedValue> &buffer, const JSHandle<JSTaggedValue> &firstValue,
                                const JSHandle<JSTaggedValue> &secondValue);

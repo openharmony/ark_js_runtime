@@ -372,14 +372,15 @@ JSTaggedValue BuiltinsTypedArray::GetByteLength(EcmaRuntimeCallInfo *argv)
                                     JSTaggedValue::Exception());
     }
     // 4. Let buffer be the value of O’s [[ViewedArrayBuffer]] internal slot.
-    JSTaggedValue buffer = JSHandle<JSTypedArray>::Cast(thisHandle)->GetViewedArrayBuffer();
+    JSHandle<JSTypedArray> typeArrayObj = JSHandle<JSTypedArray>::Cast(thisHandle);
+    JSTaggedValue buffer = typeArrayObj->GetViewedArrayBuffer();
     // 5. If IsDetachedBuffer(buffer) is true, return 0.
     if (BuiltinsArrayBuffer::IsDetachedBuffer(buffer)) {
         return JSTaggedValue(0);
     }
     // 6. Let size be the value of O’s [[ByteLength]] internal slot.
     // 7. Return size.
-    return JSHandle<JSTypedArray>(thisHandle)->GetByteLength();
+    return JSTaggedValue(typeArrayObj->GetByteLength());
 }
 
 // 22.2.3.3
@@ -401,13 +402,14 @@ JSTaggedValue BuiltinsTypedArray::GetByteOffset(EcmaRuntimeCallInfo *argv)
                                     JSTaggedValue::Exception());
     }
     // 4. Let buffer be the value of O’s [[ViewedArrayBuffer]] internal slot.
-    JSTaggedValue buffer = JSHandle<JSTypedArray>::Cast(thisHandle)->GetViewedArrayBuffer();
+    JSHandle<JSTypedArray> typeArrayObj = JSHandle<JSTypedArray>::Cast(thisHandle);
+    JSTaggedValue buffer = typeArrayObj->GetViewedArrayBuffer();
     // 5. If IsDetachedBuffer(buffer) is true, return 0.
     if (BuiltinsArrayBuffer::IsDetachedBuffer(buffer)) {
         return JSTaggedValue(0);
     }
     // 6. Let offset be the value of O’s [[ByteOffset]] internal slot.
-    int32_t offset = TypedArrayHelper::GetByteOffset(thread, JSHandle<JSObject>(thisHandle));
+    uint32_t offset = typeArrayObj->GetByteOffset();
     // 7. Return offset.
     return JSTaggedValue(offset);
 }
@@ -462,7 +464,7 @@ JSTaggedValue BuiltinsTypedArray::Every(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> thisObjVal(thisObjHandle);
 
     // 3. Let len be ToLength(Get(O, "length")).
-    int32_t len = TypedArrayHelper::GetArrayLength(thread, thisObjHandle);
+    uint32_t len = JSHandle<JSTypedArray>::Cast(thisObjHandle)->GetArrayLength();
     // 4. ReturnIfAbrupt(len).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
@@ -490,7 +492,7 @@ JSTaggedValue BuiltinsTypedArray::Every(EcmaRuntimeCallInfo *argv)
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     const size_t argsLength = 3;
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    int32_t k = 0;
+    uint32_t k = 0;
     while (k < len) {
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         JSHandle<JSTaggedValue> kValue = JSTaggedValue::GetProperty(thread, thisObjVal, k).GetValue();
@@ -537,9 +539,9 @@ JSTaggedValue BuiltinsTypedArray::Filter(EcmaRuntimeCallInfo *argv)
     // 3. ReturnIfAbrupt(valid).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
-    JSHandle<JSObject> thisObj(thisHandle);
+    JSHandle<JSTypedArray> thisObj(thisHandle);
     // 4. Let len be the value of O’s [[ArrayLength]] internal slot.
-    int32_t len = TypedArrayHelper::GetArrayLength(thread, thisObj);
+    uint32_t len = thisObj->GetArrayLength();
     // 5. If IsCallable(callbackfn) is false, throw a TypeError exception.
     JSHandle<JSTaggedValue> callbackFnHandle = GetCallArg(argv, 0);
     if (!callbackFnHandle->IsCallable()) {
@@ -566,7 +568,7 @@ JSTaggedValue BuiltinsTypedArray::Filter(EcmaRuntimeCallInfo *argv)
     int32_t captured = 0;
     JSMutableHandle<JSTaggedValue> tKey(thread, JSTaggedValue::Undefined());
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    for (int32_t k = 0; k < len; k++) {
+    for (uint32_t k = 0; k < len; k++) {
         tKey.Update(JSTaggedValue(k));
         JSHandle<JSTaggedValue> kKey(JSTaggedValue::ToString(thread, tKey));
         JSHandle<JSTaggedValue> kValue = JSTaggedValue::GetProperty(thread, thisHandle, kKey).GetValue();
@@ -645,7 +647,7 @@ JSTaggedValue BuiltinsTypedArray::ForEach(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> thisObjVal(thisObjHandle);
 
     // 3. Let len be ToLength(Get(O, "length")).
-    int32_t len = TypedArrayHelper::GetArrayLength(thread, thisObjHandle);
+    uint32_t len = JSHandle<JSTypedArray>::Cast(thisObjHandle)->GetArrayLength();
     // 4. ReturnIfAbrupt(len).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
@@ -672,7 +674,7 @@ JSTaggedValue BuiltinsTypedArray::ForEach(EcmaRuntimeCallInfo *argv)
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     const size_t argsLength = 3;
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    int32_t k = 0;
+    uint32_t k = 0;
     while (k < len) {
         JSHandle<JSTaggedValue> kValue = JSTaggedValue::GetProperty(thread, thisObjVal, k).GetValue();
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -713,8 +715,7 @@ JSTaggedValue BuiltinsTypedArray::Join(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(argv->GetThread(), "This is not a TypedArray.", JSTaggedValue::Exception());
     }
 
-    uint32_t length =
-        static_cast<uint32_t>(TypedArrayHelper::GetArrayLength(thread, JSHandle<JSObject>::Cast(thisHandle)));
+    uint32_t length = JSHandle<JSTypedArray>::Cast(thisHandle)->GetArrayLength();
 
     JSHandle<JSTaggedValue> sepHandle = GetCallArg(argv, 0);
     int sep = ',';
@@ -845,7 +846,7 @@ JSTaggedValue BuiltinsTypedArray::GetLength(EcmaRuntimeCallInfo *argv)
         return JSTaggedValue(0);
     }
     // 7. Let length be the value of O’s [[ArrayLength]] internal slot.
-    int32_t length = TypedArrayHelper::GetArrayLength(thread, JSHandle<JSObject>(thisHandle));
+    uint32_t length = JSHandle<JSTypedArray>(thisHandle)->GetArrayLength();
     // 8. Return length.
     return JSTaggedValue(length);
 }
@@ -864,9 +865,9 @@ JSTaggedValue BuiltinsTypedArray::Map(EcmaRuntimeCallInfo *argv)
     // 3. ReturnIfAbrupt(valid).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
-    JSHandle<JSObject> thisObj(thisHandle);
+    JSHandle<JSTypedArray> thisObj(thisHandle);
     // 4. Let len be the value of O’s [[ArrayLength]] internal slot.
-    int32_t len = TypedArrayHelper::GetArrayLength(thread, thisObj);
+    uint32_t len = thisObj->GetArrayLength();
     // 5. If IsCallable(callbackfn) is false, throw a TypeError exception.
     JSHandle<JSTaggedValue> callbackfnHandle = GetCallArg(argv, 0);
     if (!callbackfnHandle->IsCallable()) {
@@ -894,7 +895,7 @@ JSTaggedValue BuiltinsTypedArray::Map(EcmaRuntimeCallInfo *argv)
     JSMutableHandle<JSTaggedValue> mapValue(thread, JSTaggedValue::Undefined());
     const size_t argsLength = 3;
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
-    for (int32_t k = 0; k < len; k++) {
+    for (uint32_t k = 0; k < len; k++) {
         key.Update(JSTaggedValue(k));
         JSHandle<JSTaggedValue> kValue = JSTaggedValue::GetProperty(thread, thisHandle, key).GetValue();
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -958,7 +959,7 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
     if (!target->IsECMAObject()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "This value is not an object.", JSTaggedValue::Exception());
     }
-    JSHandle<JSObject> targetObj(target);
+    JSHandle<JSTypedArray> targetObj(target);
     // 4. If target does not have a [[TypedArrayName]] internal slot, throw a TypeError exception.
     if (!target->IsTypedArray()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "This value does not have a [[TypedArrayName]] internal slot.",
@@ -977,7 +978,7 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
                                      JSTaggedValue::Exception());
     }
     // 9. Let targetBuffer be the value of target’s [[ViewedArrayBuffer]] internal slot.
-    JSHandle<JSTaggedValue> targetBuffer(thread, JSTypedArray::Cast(*targetObj)->GetViewedArrayBuffer());
+    JSHandle<JSTaggedValue> targetBuffer(thread, targetObj->GetViewedArrayBuffer());
     // 10. If IsDetachedBuffer(targetBuffer) is true, throw a TypeError exception.
     if (BuiltinsArrayBuffer::IsDetachedBuffer(targetBuffer.GetTaggedValue())) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "The targetBuffer of This value is detached buffer.",
@@ -988,11 +989,11 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
     // 13. Let targetElementSize be the Number value of the Element Size value specified in Table 49 for targetName.
     // 14. Let targetType be the String value of the Element Type value in Table 49 for targetName.
     // 15. Let targetByteOffset be the value of target’s [[ByteOffset]] internal slot.
-    int32_t targetLength = TypedArrayHelper::GetArrayLength(thread, targetObj);
-    JSHandle<JSTaggedValue> targetName(thread, JSTypedArray::Cast(*targetObj)->GetTypedArrayName());
-    int32_t targetElementSize = TypedArrayHelper::GetSizeFromName(thread, targetName);
+    uint32_t targetLength = targetObj->GetArrayLength();
+    JSHandle<JSTaggedValue> targetName(thread, targetObj->GetTypedArrayName());
+    uint32_t targetElementSize = TypedArrayHelper::GetSizeFromName(thread, targetName);
     DataViewType targetType = TypedArrayHelper::GetTypeFromName(thread, targetName);
-    int32_t targetByteOffset = TypedArrayHelper::GetByteOffset(thread, targetObj);
+    uint32_t targetByteOffset = targetObj->GetByteOffset();
 
     JSHandle<JSTaggedValue> argArray = GetCallArg(argv, 0);
 
@@ -1060,10 +1061,10 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
     }
 
     // 22.2.3.22.2 %TypedArray%.prototype.set(typedArray [, offset ] )
-    JSHandle<JSObject> typedArray(argArray);
+    JSHandle<JSTypedArray> typedArray(argArray);
     // 12. Let srcBuffer be the value of typedArray’s [[ViewedArrayBuffer]] internal slot.
     // 13. If IsDetachedBuffer(srcBuffer) is true, throw a TypeError exception.
-    JSTaggedValue srcBuffer = JSTypedArray::Cast(*typedArray)->GetViewedArrayBuffer();
+    JSTaggedValue srcBuffer = typedArray->GetViewedArrayBuffer();
     JSHandle<JSTaggedValue> srcBufferHandle = JSHandle<JSTaggedValue>(thread, srcBuffer);
     if (BuiltinsArrayBuffer::IsDetachedBuffer(srcBuffer)) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "The ArrayBuffer of typedArray is detached buffer.",
@@ -1082,11 +1083,11 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
     // 20. Let srcElementSize be the Number value of the Element Size value specified in Table 49 for srcName.
     // 21. Let srcLength be the value of typedArray’s [[ArrayLength]] internal slot.
     // 22. Let srcByteOffset be the value of typedArray’s [[ByteOffset]] internal slot.
-    JSHandle<JSTaggedValue> srcName(thread, JSTypedArray::Cast(*typedArray)->GetTypedArrayName());
+    JSHandle<JSTaggedValue> srcName(thread, typedArray->GetTypedArrayName());
     DataViewType srcType = TypedArrayHelper::GetTypeFromName(thread, srcName);
-    int32_t srcElementSize = TypedArrayHelper::GetSizeFromName(thread, srcName);
-    int32_t srcLength = TypedArrayHelper::GetArrayLength(thread, typedArray);
-    int32_t srcByteOffset = TypedArrayHelper::GetByteOffset(thread, typedArray);
+    uint32_t srcElementSize = TypedArrayHelper::GetSizeFromName(thread, srcName);
+    uint32_t srcLength = typedArray->GetArrayLength();
+    uint32_t srcByteOffset = typedArray->GetByteOffset();
     // 23. If srcLength + targetOffset > targetLength, throw a RangeError exception.
     if (srcLength + targetOffset > targetLength) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "The sum of srcLength and targetOffset is greater than targetLength.",
@@ -1171,9 +1172,9 @@ JSTaggedValue BuiltinsTypedArray::Slice(EcmaRuntimeCallInfo *argv)
     // 3. ReturnIfAbrupt(valid).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
-    JSHandle<JSObject> thisObj(thisHandle);
+    JSHandle<JSTypedArray> thisObj(thisHandle);
     // 4. Let len be the value of O’s [[ArrayLength]] internal slot.
-    int32_t len = TypedArrayHelper::GetArrayLength(thread, thisObj);
+    uint32_t len = thisObj->GetArrayLength();
 
     double k;
     // 5. Let relativeStart be ToInteger(start).
@@ -1212,7 +1213,7 @@ JSTaggedValue BuiltinsTypedArray::Slice(EcmaRuntimeCallInfo *argv)
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 17. Let srcName be the String value of O’s [[TypedArrayName]] internal slot.
     // 18. Let srcType be the String value of the Element Type value in Table 49 for srcName.
-    JSHandle<JSTaggedValue> srcName(thread, JSTypedArray::Cast(*thisObj)->GetTypedArrayName());
+    JSHandle<JSTaggedValue> srcName(thread, thisObj->GetTypedArrayName());
     DataViewType srcType = TypedArrayHelper::GetTypeFromName(thread, srcName);
     // 19. Let targetName be the String value of A’s [[TypedArrayName]] internal slot.
     // 20. Let targetType be the String value of the Element Type value in Table 49 for targetName.
@@ -1249,7 +1250,7 @@ JSTaggedValue BuiltinsTypedArray::Slice(EcmaRuntimeCallInfo *argv)
         // 22. Else if count > 0,
         //   a. Let srcBuffer be the value of O’s [[ViewedArrayBuffer]] internal slot.
         //   b. If IsDetachedBuffer(srcBuffer) is true, throw a TypeError exception.
-        JSHandle<JSTaggedValue> srcBuffer(thread, JSTypedArray::Cast(*thisObj)->GetViewedArrayBuffer());
+        JSHandle<JSTaggedValue> srcBuffer(thread, thisObj->GetViewedArrayBuffer());
         if (BuiltinsArrayBuffer::IsDetachedBuffer(srcBuffer.GetTaggedValue())) {
             THROW_TYPE_ERROR_AND_RETURN(thread, "The ArrayBuffer of this value is detached buffer.",
                                         JSTaggedValue::Exception());
@@ -1257,15 +1258,15 @@ JSTaggedValue BuiltinsTypedArray::Slice(EcmaRuntimeCallInfo *argv)
         //   c. Let targetBuffer be the value of A’s [[ViewedArrayBuffer]] internal slot.
         JSHandle<JSTaggedValue> targetBuffer(thread, JSTypedArray::Cast(*newArrObj)->GetViewedArrayBuffer());
         //   d. Let elementSize be the Number value of the Element Size value specified in Table 49 for srcType.
-        int32_t elementSize = TypedArrayHelper::GetSizeFromName(thread, srcName);
+        uint32_t elementSize = TypedArrayHelper::GetSizeFromName(thread, srcName);
         //   e. NOTE: If srcType and targetType are the same the transfer must be performed in a manner that
         //   preserves the bit-level encoding of the source data. f. Let srcByteOffset be the value of O’s
         //   [[ByteOffset]] internal slot.
-        int32_t srcByteOffset = TypedArrayHelper::GetByteOffset(thread, thisObj);
+        uint32_t srcByteOffset = thisObj->GetByteOffset();
         //   g. Let targetByteIndex be 0.
         //   h. Let srcByteIndex be (k × elementSize) + srcByteOffset.
 
-        int32_t srcByteIndex = k * elementSize + srcByteOffset;
+        uint32_t srcByteIndex = k * elementSize + srcByteOffset;
         //   i. Repeat, while targetByteIndex < count × elementSize
         //     i. Let value be GetValueFromBuffer(srcBuffer, srcByteIndex, "Uint8").
         //     ii. Perform SetValueInBuffer (targetBuffer, targetByteIndex, "Uint8", value).
@@ -1316,7 +1317,7 @@ JSTaggedValue BuiltinsTypedArray::Sort(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> buffer;
     buffer = JSHandle<JSTaggedValue>(thread, TypedArrayHelper::ValidateTypedArray(thread, thisHandle));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    double len = TypedArrayHelper::GetArrayLength(thread, thisObjHandle);
+    uint32_t len = JSHandle<JSTypedArray>::Cast(thisObjHandle)->GetArrayLength();
 
     JSHandle<JSTaggedValue> callbackFnHandle = GetCallArg(argv, 0);
 
@@ -1357,7 +1358,7 @@ JSTaggedValue BuiltinsTypedArray::Subarray(EcmaRuntimeCallInfo *argv)
     if (!thisHandle->IsECMAObject()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "This value is not an object.", JSTaggedValue::Exception());
     }
-    JSHandle<JSObject> thisObj(thisHandle);
+    JSHandle<JSTypedArray> thisObj(thisHandle);
     // 3. If O does not have a [[TypedArrayName]] internal slot, throw a TypeError exception.
     if (!thisHandle->IsTypedArray()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "This value does not have a [[TypedArrayName]] internal slot.",
@@ -1365,7 +1366,7 @@ JSTaggedValue BuiltinsTypedArray::Subarray(EcmaRuntimeCallInfo *argv)
     }
     // 4. Assert: O has a [[ViewedArrayBuffer]] internal slot.
     // 6. Let srcLength be the value of O’s [[ArrayLength]] internal slot.
-    int32_t srcLength = TypedArrayHelper::GetArrayLength(thread, thisObj);
+    uint32_t srcLength = thisObj->GetArrayLength();
     // 7. Let relativeBegin be ToInteger(begin).
     JSTaggedNumber tRelativeBegin = JSTaggedValue::ToInteger(thread, GetCallArg(argv, 0));
     // 8. ReturnIfAbrupt(relativeBegin).
@@ -1404,11 +1405,11 @@ JSTaggedValue BuiltinsTypedArray::Subarray(EcmaRuntimeCallInfo *argv)
     // 15. Let elementSize be the Number value of the Element Size value specified in Table 49 for constructorName.
     // 16. Let srcByteOffset be the value of O’s [[ByteOffset]] internal slot.
     // 17. Let beginByteOffset be srcByteOffset + beginIndex × elementSize.
-    JSHandle<JSTaggedValue> constructorName(thread, JSTypedArray::Cast(*thisObj)->GetTypedArrayName());
-    int32_t elementSize = TypedArrayHelper::GetSizeFromName(thread, constructorName);
-    int32_t srcByteOffset = TypedArrayHelper::GetByteOffset(thread, thisObj);
-    int32_t beginByteOffset = srcByteOffset + beginIndex * elementSize;
-    JSTaggedValue buffer = JSTypedArray::Cast(*thisObj)->GetViewedArrayBuffer();
+    JSHandle<JSTaggedValue> constructorName(thread, thisObj->GetTypedArrayName());
+    uint32_t elementSize = TypedArrayHelper::GetSizeFromName(thread, constructorName);
+    uint32_t srcByteOffset = thisObj->GetByteOffset();
+    uint32_t beginByteOffset = srcByteOffset + beginIndex * elementSize;
+    JSTaggedValue buffer = thisObj->GetViewedArrayBuffer();
     // 21. Let argumentsList be «buffer, beginByteOffset, newLength».
     // 5. Let buffer be the value of O’s [[ViewedArrayBuffer]] internal slot.
     // 22. Return Construct(constructor, argumentsList).

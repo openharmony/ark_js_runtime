@@ -178,9 +178,9 @@ JSTaggedValue TypedArrayHelper::CreateFromTypedArray(EcmaRuntimeCallInfo *argv, 
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
     // 5. Let srcArray be typedArray.
     JSHandle<JSTaggedValue> srcArray = BuiltinsBase::GetCallArg(argv, 0);
-    JSHandle<JSObject> srcObj(srcArray);
+    JSHandle<JSTypedArray> srcObj(srcArray);
     // 6. Let srcData be srcArray.[[ViewedArrayBuffer]].
-    JSHandle<JSTaggedValue> srcData(thread, JSTypedArray::Cast(*srcObj)->GetViewedArrayBuffer());
+    JSHandle<JSTaggedValue> srcData(thread, srcObj->GetViewedArrayBuffer());
     // 7. If IsDetachedBuffer(srcData) is true, throw a TypeError exception.
     if (BuiltinsArrayBuffer::IsDetachedBuffer(srcData.GetTaggedValue())) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "The srcData is detached buffer.", JSTaggedValue::Exception());
@@ -191,16 +191,16 @@ JSTaggedValue TypedArrayHelper::CreateFromTypedArray(EcmaRuntimeCallInfo *argv, 
     // 10. Let srcName be the String value of srcArray.[[TypedArrayName]].
     // 11. Let srcType be the Element Type value in Table 61 for srcName.
     // 12. Let srcElementSize be the Element Size value specified in Table 61 for srcName.
-    int32_t elementLength = TypedArrayHelper::GetArrayLength(thread, srcObj);
-    JSHandle<JSTaggedValue> srcName(thread, JSTypedArray::Cast(*srcObj)->GetTypedArrayName());
+    uint32_t elementLength = srcObj->GetArrayLength();
+    JSHandle<JSTaggedValue> srcName(thread, srcObj->GetTypedArrayName());
     DataViewType srcType = TypedArrayHelper::GetTypeFromName(thread, srcName);
-    int32_t srcElementSize = TypedArrayHelper::GetSizeFromName(thread, srcName);
+    uint32_t srcElementSize = TypedArrayHelper::GetSizeFromName(thread, srcName);
     // 13. Let srcByteOffset be srcArray.[[ByteOffset]].
     // 14. Let elementSize be the Element Size value specified in Table 61 for constructorName.
     // 15. Let byteLength be elementSize × elementLength.
-    int32_t srcByteOffset = TypedArrayHelper::GetByteOffset(thread, srcObj);
-    int32_t elementSize = TypedArrayHelper::GetSizeFromName(thread, constructorName);
-    int32_t byteLength = elementSize * elementLength;
+    uint32_t srcByteOffset = srcObj->GetByteOffset();
+    uint32_t elementSize = TypedArrayHelper::GetSizeFromName(thread, constructorName);
+    uint32_t byteLength = elementSize * elementLength;
     // 16. If IsSharedArrayBuffer(srcData) is false, then
     //   a. Let bufferConstructor be ? SpeciesConstructor(srcData, %ArrayBuffer%).
 
@@ -260,9 +260,9 @@ JSTaggedValue TypedArrayHelper::CreateFromTypedArray(EcmaRuntimeCallInfo *argv, 
     // 22. Set O’s [[ArrayLength]] internal slot to elementLength.
     JSTypedArray *jsTypedArray = JSTypedArray::Cast(*obj);
     jsTypedArray->SetViewedArrayBuffer(thread, data);
-    jsTypedArray->SetByteLength(thread, JSTaggedValue(byteLength));
-    jsTypedArray->SetByteOffset(thread, JSTaggedValue(0));
-    jsTypedArray->SetArrayLength(thread, JSTaggedValue(elementLength));
+    jsTypedArray->SetByteLength(byteLength);
+    jsTypedArray->SetByteOffset(0);
+    jsTypedArray->SetArrayLength(elementLength);
     // 23. Return O.
     return obj.GetTaggedValue();
 }
@@ -331,9 +331,9 @@ JSTaggedValue TypedArrayHelper::CreateFromArrayBuffer(EcmaRuntimeCallInfo *argv,
     // 16. Set O.[[ArrayLength]] to newByteLength / elementSize.
     JSTypedArray *jsTypedArray = JSTypedArray::Cast(*obj);
     jsTypedArray->SetViewedArrayBuffer(thread, buffer);
-    jsTypedArray->SetByteLength(thread, JSTaggedValue(newByteLength));
-    jsTypedArray->SetByteOffset(thread, JSTaggedValue(offset));
-    jsTypedArray->SetArrayLength(thread, JSTaggedValue(newByteLength / static_cast<int32_t>(elementSize)));
+    jsTypedArray->SetByteLength(newByteLength);
+    jsTypedArray->SetByteOffset(offset);
+    jsTypedArray->SetArrayLength(newByteLength / static_cast<int32_t>(elementSize));
     // 17. Return O.
     return obj.GetTaggedValue();
 }
@@ -367,9 +367,9 @@ JSHandle<JSObject> TypedArrayHelper::AllocateTypedArray(ObjectFactory *factory, 
     //   b. Set obj.[[ByteOffset]] to 0.
     //   c. Set obj.[[ArrayLength]] to 0.
     jsTypedArray->SetTypedArrayName(thread, constructorName);
-    jsTypedArray->SetByteLength(thread, JSTaggedValue(0));
-    jsTypedArray->SetByteOffset(thread, JSTaggedValue(0));
-    jsTypedArray->SetArrayLength(thread, JSTaggedValue(0));
+    jsTypedArray->SetByteLength(0);
+    jsTypedArray->SetByteOffset(0);
+    jsTypedArray->SetArrayLength(0);
     // 9. Return obj.
     return obj;
 }  // namespace panda::ecmascript::base
@@ -415,7 +415,7 @@ JSHandle<JSObject> TypedArrayHelper::AllocateTypedArrayBuffer(JSThread *thread, 
     // 4. Let constructorName be the String value of O.[[TypedArrayName]].
     JSHandle<JSTaggedValue> constructorName(thread, JSTypedArray::Cast(*obj)->GetTypedArrayName());
     // 5. Let elementSize be the Element Size value specified in Table 61 for constructorName.
-    int32_t elementSize = TypedArrayHelper::GetSizeFromName(thread, constructorName);
+    uint32_t elementSize = TypedArrayHelper::GetSizeFromName(thread, constructorName);
     // 6. Let byteLength be elementSize × length.
     double byteLength = elementSize * length;
     // 7. Let data be ? AllocateArrayBuffer(%ArrayBuffer%, byteLength).
@@ -434,15 +434,15 @@ JSHandle<JSObject> TypedArrayHelper::AllocateTypedArrayBuffer(JSThread *thread, 
     // 10. Set O.[[ByteOffset]] to 0.
     // 11. Set O.[[ArrayLength]] to length.
     jsTypedArray->SetViewedArrayBuffer(thread, data);
-    jsTypedArray->SetByteLength(thread, JSTaggedValue(byteLength));
-    jsTypedArray->SetByteOffset(thread, JSTaggedValue(0));
-    jsTypedArray->SetArrayLength(thread, JSTaggedValue(length));
+    jsTypedArray->SetByteLength(byteLength);
+    jsTypedArray->SetByteOffset(0);
+    jsTypedArray->SetArrayLength(length);
     // 12. Return O.
     return obj;
 }
 
 // es11 22.2.4.7 TypedArraySpeciesCreate ( exemplar, argumentList )
-JSHandle<JSObject> TypedArrayHelper::TypedArraySpeciesCreate(JSThread *thread, const JSHandle<JSObject> &obj,
+JSHandle<JSObject> TypedArrayHelper::TypedArraySpeciesCreate(JSThread *thread, const JSHandle<JSTypedArray> &obj,
                                                              uint32_t argc, JSTaggedType argv[])
 {
     // 1. Assert: exemplar is an Object that has [[TypedArrayName]] and [[ContentType]] internal slots.
@@ -451,14 +451,15 @@ JSHandle<JSObject> TypedArrayHelper::TypedArraySpeciesCreate(JSThread *thread, c
     JSHandle<JSTaggedValue> buffHandle(thread, JSTaggedValue(argv[0]));
     JSHandle<JSTaggedValue> defaultConstructor = TypedArrayHelper::GetConstructor(thread, JSHandle<JSTaggedValue>(obj));
     // 3. Let constructor be ? SpeciesConstructor(exemplar, defaultConstructor).
-    JSHandle<JSTaggedValue> thisConstructor = JSObject::SpeciesConstructor(thread, obj, defaultConstructor);
+    JSHandle<JSTaggedValue> thisConstructor =
+        JSObject::SpeciesConstructor(thread, JSHandle<JSObject>::Cast(obj), defaultConstructor);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSHandle<JSObject>(thread, JSTaggedValue::Exception()));
     // 4. Let result be ? TypedArrayCreate(constructor, argumentList).
     argv[0] = buffHandle.GetTaggedType();
     JSHandle<JSObject> result = TypedArrayHelper::TypedArrayCreate(thread, thisConstructor, argc, argv);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSHandle<JSObject>(thread, JSTaggedValue::Exception()));
     // 5. If result.[[ContentType]] ≠ exemplar.[[ContentType]], throw a TypeError exception.
-    ContentType objContentType = JSHandle<JSTypedArray>::Cast(obj)->GetContentType();
+    ContentType objContentType = obj->GetContentType();
     ContentType resultContentType = JSHandle<JSTypedArray>::Cast(result)->GetContentType();
     if (objContentType != resultContentType) {
         JSHandle<JSObject> exception(thread, JSTaggedValue::Exception());
@@ -489,8 +490,8 @@ JSHandle<JSObject> TypedArrayHelper::TypedArrayCreate(JSThread *thread, const JS
     // 3. If argumentList is a List of a single Number, then
     //   a. If newTypedArray.[[ArrayLength]] < argumentList[0], throw a TypeError exception.
     if (argc == 1) {
-        if (TypedArrayHelper::GetArrayLength(thread, newTypedArray) <
-            JSTaggedValue::ToInt32(thread, info.GetCallArg(0))) {
+        if (JSHandle<JSTypedArray>::Cast(newTypedArray)->GetArrayLength() <
+            JSTaggedValue::ToUint32(thread, info.GetCallArg(0))) {
             THROW_TYPE_ERROR_AND_RETURN(thread, "the length of newTypedArray is not a correct value.",
                                         JSHandle<JSObject>(thread, JSTaggedValue::Exception()));
         }

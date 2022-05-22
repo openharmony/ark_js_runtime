@@ -86,19 +86,24 @@ public:
     static bool IntegerIndexedElementSet(JSThread *thread, const JSHandle<JSTaggedValue> &typedarray,
                                          JSTaggedValue index, const JSHandle<JSTaggedValue> &value);
     // s12 10.4.5.9 IsValidIntegerIndex ( O, index )
-    static bool IsValidIntegerIndex(JSThread *thread, const JSHandle<JSTaggedValue> &typedArray,
-                                    JSTaggedValue index);
+    static bool IsValidIntegerIndex(const JSHandle<JSTaggedValue> &typedArray, JSTaggedValue index);
+    static JSTaggedValue FastGetPropertyByIndex(JSThread *thread, const JSTaggedValue typedarray, uint32_t index,
+                                                JSType jsType);
+    static JSTaggedValue FastSetPropertyByIndex(JSThread *thread, const JSTaggedValue typedarray, uint32_t index,
+                                                JSTaggedValue value, JSType jsType);
+    // only use in TypeArray fast set property
+    static JSTaggedNumber NonEcmaObjectToNumber(JSThread *thread, const JSTaggedValue tagged);
     static constexpr size_t VIEWED_ARRAY_BUFFER_OFFSET = JSObject::SIZE;
     ACCESSORS(ViewedArrayBuffer, VIEWED_ARRAY_BUFFER_OFFSET, TYPED_ARRAY_NAME_OFFSET)
     ACCESSORS(TypedArrayName, TYPED_ARRAY_NAME_OFFSET, BYTE_LENGTH_OFFSET)
-    ACCESSORS(ByteLength, BYTE_LENGTH_OFFSET, BYTE_OFFSET_OFFSET)
-    ACCESSORS(ByteOffset, BYTE_OFFSET_OFFSET, ARRAY_LENGTH_OFFSET)
-    ACCESSORS(ArrayLength, ARRAY_LENGTH_OFFSET, CONTENT_TYPE_OFFSET)
+    ACCESSORS_PRIMITIVE_FIELD(ByteLength, uint32_t, BYTE_LENGTH_OFFSET, BYTE_OFFSET_OFFSET)
+    ACCESSORS_PRIMITIVE_FIELD(ByteOffset, uint32_t, BYTE_OFFSET_OFFSET, ARRAY_LENGTH_OFFSET)
+    ACCESSORS_PRIMITIVE_FIELD(ArrayLength, uint32_t, ARRAY_LENGTH_OFFSET, CONTENT_TYPE_OFFSET)
     ACCESSORS_PRIMITIVE_FIELD(ContentType, ContentType, CONTENT_TYPE_OFFSET, LAST_OFFSET)
     DEFINE_ALIGN_SIZE(LAST_OFFSET);
     static const uint32_t MAX_TYPED_ARRAY_INDEX = MAX_ELEMENT_INDEX;
     DECL_DUMP()
-    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, VIEWED_ARRAY_BUFFER_OFFSET, CONTENT_TYPE_OFFSET)
+    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, VIEWED_ARRAY_BUFFER_OFFSET, BYTE_LENGTH_OFFSET)
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_JS_TYPED_ARRAY_H
