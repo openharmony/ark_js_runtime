@@ -1294,34 +1294,22 @@ Local<ArrayBufferRef> DataViewRef::GetArrayBuffer(const EcmaVM *vm)
 // ---------------------------------- DataView -----------------------------------
 
 // ---------------------------------- TypedArray -----------------------------------
-int32_t TypedArrayRef::ByteLength([[maybe_unused]] const EcmaVM *vm)
+uint32_t TypedArrayRef::ByteLength([[maybe_unused]] const EcmaVM *vm)
 {
     JSHandle<JSTypedArray> typedArray(JSNApiHelper::ToJSHandle(this));
-    JSTaggedValue length = typedArray->GetByteLength();
-    if (!length.IsNumber()) {
-        return 0;
-    }
-    return length.GetNumber();
+    return typedArray->GetByteLength();
 }
 
-int32_t TypedArrayRef::ByteOffset([[maybe_unused]] const EcmaVM *vm)
+uint32_t TypedArrayRef::ByteOffset([[maybe_unused]] const EcmaVM *vm)
 {
     JSHandle<JSTypedArray> typedArray(JSNApiHelper::ToJSHandle(this));
-    JSTaggedValue length = typedArray->GetByteOffset();
-    if (!length.IsNumber()) {
-        return 0;
-    }
-    return length.GetNumber();
+    return typedArray->GetByteOffset();
 }
 
-int32_t TypedArrayRef::ArrayLength([[maybe_unused]] const EcmaVM *vm)
+uint32_t TypedArrayRef::ArrayLength([[maybe_unused]] const EcmaVM *vm)
 {
     JSHandle<JSTypedArray> typedArray(JSNApiHelper::ToJSHandle(this));
-    JSTaggedValue length = typedArray->GetArrayLength();
-    if (!length.IsNumber()) {
-        return 0;
-    }
-    return length.GetNumber();
+    return typedArray->GetArrayLength();
 }
 
 Local<ArrayBufferRef> TypedArrayRef::GetArrayBuffer(const EcmaVM *vm)

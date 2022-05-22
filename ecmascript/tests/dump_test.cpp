@@ -563,7 +563,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
             case JSType::JS_FLOAT64_ARRAY:
             case JSType::JS_BIGINT64_ARRAY:
             case JSType::JS_BIGUINT64_ARRAY: {
-                CHECK_DUMP_FIELDS(JSObject::SIZE, JSTypedArray::SIZE, 6U)
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSTypedArray::SIZE, 4U)
                 NEW_OBJECT_AND_DUMP(JSTypedArray, JS_TYPED_ARRAY)
                 break;
             }
