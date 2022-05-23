@@ -630,18 +630,18 @@ void AssemblerStubs::JSCallWithArgV(ExtendedAssembler *assembler)
 void AssemblerStubs::CallRuntimeWithArgv(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(CallRuntimeWithArgv));
-    Register returnAddr(X9);
     Register glue(X0);
     Register runtimeId(X1);
     Register argc(X2);
     Register argv(X3);
     Register sp(SP);
-    __ Ldr(returnAddr, MemoryOperand(sp, 8));
     __ Stp(argc, argv, MemoryOperand(sp, -16, MemoryOperand::AddrMode::PREINDEX));
-    __ Stp(returnAddr, runtimeId, MemoryOperand(sp, -16, MemoryOperand::AddrMode::PREINDEX));
+    __ Str(runtimeId, MemoryOperand(sp, -8, MemoryOperand::AddrMode::PREINDEX));
+    __ SaveFpAndLr();
+    Register fp(X29);
+    __ Str(fp, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
     // construct leave frame
     Register frameType(X9);
-    Register fp(X29);
     __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::LEAVE_FRAME_WITH_ARGV)));
     __ Str(frameType, MemoryOperand(sp, -8, MemoryOperand::AddrMode::PREINDEX));
 
@@ -653,8 +653,9 @@ void AssemblerStubs::CallRuntimeWithArgv(ExtendedAssembler *assembler)
     __ Mov(X1, argc);
     __ Mov(X2, argv);
     __ Blr(rtfunc);
-    __ Add(sp, sp, Immediate(8 * 7));
-
+    __ Add(sp, sp, Immediate(8));
+    __ RestoreFpAndLr();
+    __ Add(sp, sp, Immediate(3 * 8));
     __ Ret();
 }
 
