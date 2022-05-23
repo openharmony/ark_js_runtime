@@ -595,6 +595,7 @@ DEF_CALL_SIGNATURE(JSCallWithArgV)
     };
     callSign->SetParameters(params.data());
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
+    callSign->SetGCLeafFunction(true);
     callSign->SetTailCall(true);
 }
 
@@ -711,6 +712,7 @@ DEF_CALL_SIGNATURE(StringsAreEquals)
         VariableType::JS_POINTER(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
@@ -725,6 +727,7 @@ DEF_CALL_SIGNATURE(BigIntEquals)
         VariableType::JS_POINTER(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
@@ -834,6 +837,7 @@ DEF_CALL_SIGNATURE(DebugPrint)
     };
     callSign->SetVariadicArgs(true);
     callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
@@ -849,6 +853,7 @@ DEF_CALL_SIGNATURE(FatalPrint)
     };
     callSign->SetVariadicArgs(true);
     callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
@@ -864,6 +869,7 @@ DEF_CALL_SIGNATURE(InsertOldToNewRSet)
         VariableType::NATIVE_POINTER(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
@@ -878,6 +884,7 @@ DEF_CALL_SIGNATURE(FloatMod)
         VariableType::FLOAT64(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
@@ -894,6 +901,7 @@ DEF_CALL_SIGNATURE(FindElementWithCache)
         VariableType::INT32(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
@@ -907,6 +915,7 @@ DEF_CALL_SIGNATURE(DoubleToInt)
         VariableType::FLOAT64(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
@@ -924,6 +933,7 @@ DEF_CALL_SIGNATURE(MarkingBarrier)
         VariableType::NATIVE_POINTER(),
     };
     callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
@@ -1035,6 +1045,7 @@ DEF_CALL_SIGNATURE(JsProxyCallInternal)
     callSign->SetVariadicArgs(false);
     callSign->SetParameters(params.data());
     callSign->SetTailCall(true);
+    callSign->SetGCLeafFunction(true);
     callSign->SetTargetKind(CallSignature::TargetKind::COMMON_STUB);
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
@@ -1069,7 +1080,6 @@ DEF_CALL_SIGNATURE(JSObjectGetMethod)
         VariableType::JS_POINTER(),
     };
     callSign->SetParameters(params.data());
-    callSign->SetTailCall(false);
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 }  // namespace panda::ecmascript::kungfu

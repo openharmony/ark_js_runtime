@@ -84,6 +84,8 @@ struct CodeInfo {
 
     uint8_t *Alloca(uintptr_t size, const char *sectionName)
     {
+        // align up for rodata section
+        size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_REGION));
         uint8_t *addr = nullptr;
         if (codeBufferPos_ + size > MAX_MACHINE_CODE_SIZE) {
             COMPILER_LOG(ERROR) << std::hex << "AllocaCodeSection failed alloc codeBufferPos_:" << codeBufferPos_

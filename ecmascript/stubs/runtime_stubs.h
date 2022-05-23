@@ -31,61 +31,10 @@ class GlobalEnv;
 class JSthread;
 class JSFunction;
 class ObjectFactory;
-extern "C" uint64_t CallBuiltinTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
-extern "C" JSTaggedType CallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
-extern "C" JSTaggedType CallRuntimeWithArgv(uintptr_t glue, uint64_t runtime_id,
-    uint64_t argc, uintptr_t argv);
-// for platforms not x64
-extern "C" JSTaggedType AsmInterpreterEntry(uintptr_t glue, uint32_t argc, uintptr_t argv);
-extern "C" JSTaggedType GeneratorReEnterAsmInterp(uintptr_t glue, JSTaggedType context);
-extern "C" JSTaggedType JSCallDispatch(uintptr_t glue, uint32_t argc, uintptr_t argv);
-extern "C" void JSCall(uintptr_t glue, uint32_t argc, JSTaggedType callTarget,
-                       JSTaggedType newTarget, JSTaggedType thisObj, ...);
-extern "C" void JSCallWithArgV(uintptr_t glue, uint32_t argc, JSTaggedType callTarget, JSTaggedType argV[]);
 
-extern "C" JSTaggedType OptimizedCallOptimized(uintptr_t glue, uint32_t expectedNumArgs,
-    uint32_t actualNumArgs, uintptr_t codeAddr, ...);
+using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
+                                         uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr);
 
-extern "C" void PushCallArgs0AndDispatch(uintptr_t glue, uintptr_t function,
-    uintptr_t sp, uintptr_t method, uint64_t callField);
-extern "C" void PushCallArgsAndDispatchNative(uintptr_t glue, uintptr_t function,
-    uintptr_t sp, uintptr_t method, uint64_t actualArgc);
-extern "C" void PushCallArgs0AndDispatchSlowPath(uintptr_t glue, uintptr_t function,
-    uintptr_t sp, uintptr_t method, uint64_t callField);
-
-extern "C" void PushCallArgs1AndDispatch(uintptr_t glue, uintptr_t function,
-    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0);
-extern "C" void PushCallArgs1AndDispatchSlowPath(uintptr_t glue, uintptr_t function,
-    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0);
-
-extern "C" void PushCallArgs2AndDispatch(uintptr_t glue, uintptr_t function,
-    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0, uint64_t arg1);
-extern "C" void PushCallArgs2AndDispatchSlowPath(uintptr_t glue, uintptr_t function,
-    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0, uint64_t arg1);
-
-extern "C" void PushCallArgs3AndDispatch(uintptr_t glue, uintptr_t function,
-    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0, uint64_t arg1, uint64_t arg2);
-extern "C" void PushCallArgs3AndDispatchSlowPath(uintptr_t glue, uintptr_t function,
-    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t arg0, uint64_t arg1, uint64_t arg2);
-
-extern "C" void PushCallIRangeAndDispatch(uintptr_t glue, uintptr_t function,
-    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t actualArgc, uintptr_t argv);
-extern "C" void PushCallIRangeAndDispatchNative(uintptr_t glue, uintptr_t function,
-    uintptr_t sp, uintptr_t method, uint64_t actualArgc, uintptr_t argv);
-extern "C" void PushCallIRangeAndDispatchSlowPath(uintptr_t glue, uintptr_t function,
-    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t actualArgc, uintptr_t argv);
-
-extern "C" void PushCallIThisRangeAndDispatch(uintptr_t glue, uintptr_t function,
-    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t actualArgc, uintptr_t argv);
-extern "C" void PushCallIThisRangeAndDispatchSlowPath(uintptr_t glue, uintptr_t function,
-    uintptr_t sp, uintptr_t method, uint64_t callField, uint64_t actualArgc, uintptr_t argv);
-
-extern "C" void ResumeRspAndDispatch(uintptr_t glue, uintptr_t pc, uintptr_t sp, uintptr_t constantPool,
-    uint64_t profileTypeInfo, uint64_t acc, uint32_t hotnessCounter, size_t jumpSize);
-extern "C" void ResumeRspAndReturn();
-extern "C" void ResumeCaughtFrameAndDispatch(uintptr_t glue, uintptr_t pc, uintptr_t sp, uintptr_t constantPool,
-    uint64_t profileTypeInfo, uint64_t acc, uint32_t hotnessCounter);
-extern "C" void ResumeUncaughtFrameAndReturn(uintptr_t glue);
 #define RUNTIME_ASM_STUB_LIST(V)             \
     V(CallRuntime)                           \
     V(AsmInterpreterEntry)                   \
@@ -128,7 +77,6 @@ extern "C" void ResumeUncaughtFrameAndReturn(uintptr_t glue);
     V(CreateArrayFromList)                     \
     V(StringsAreEquals)                        \
     V(BigIntEquals)                            \
-    RUNTIME_ASM_STUB_LIST(V)
 
 #define RUNTIME_STUB_WITH_GC_LIST(V)      \
     V(AddElementInternal)                 \
@@ -282,6 +230,7 @@ extern "C" void ResumeUncaughtFrameAndReturn(uintptr_t glue);
 
 #define RUNTIME_STUB_LIST(V)                 \
     RUNTIME_STUB_WITHOUT_GC_LIST(V)          \
+    RUNTIME_ASM_STUB_LIST(V)                 \
     RUNTIME_STUB_WITH_GC_LIST(V)             \
     TEST_RUNTIME_STUB_GC_LIST(V)
 

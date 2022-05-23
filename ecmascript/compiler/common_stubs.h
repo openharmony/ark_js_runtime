@@ -364,6 +364,5 @@ public:
 private:
     static CallSignature callSigns_[NUM_OF_STUBS];
 };
-static_assert(CommonStubCSigns::JsProxyCallInternal == JSPROXY_CALL_INTERNAL_INDEX);
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_COMMON_STUBS_H
