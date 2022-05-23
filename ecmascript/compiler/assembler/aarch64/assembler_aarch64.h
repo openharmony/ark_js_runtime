@@ -22,30 +22,37 @@ namespace panda::ecmascript::aarch64 {
 class Register {
 public:
     Register(RegisterId reg, RegisterType type = RegisterType::X) : reg_(reg), type_(type) {};
+
     Register W() const
     {
         return Register(reg_, RegisterType::W);
     }
+
     Register X() const
     {
         return Register(reg_, RegisterType::X);
     }
+
     RegisterType GetType() const
     {
         return type_;
     }
+
     inline bool IsSp() const
     {
         return reg_ == RegisterId::SP;
     }
+
     inline bool IsW() const
     {
         return type_ == RegisterType::W;
     }
+
     inline RegisterId GetId() const
     {
         return reg_;
     }
+
     inline bool IsValid() const
     {
         return reg_ != RegisterId::INVALID_REG;
@@ -63,14 +70,17 @@ public:
     {
         return reg_;
     }
+
     inline bool IsValid() const
     {
         return reg_ != VectorRegisterId::INVALID_VREG;
     }
+
     inline Scale GetScale() const
     {
         return scale_;
     }
+
     inline int GetRegSize() const
     {
         if (scale_ == B) {
