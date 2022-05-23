@@ -261,7 +261,7 @@ HWTEST_F_L0(AssemblerAarch64Test, Branch)
 
 HWTEST_F_L0(AssemblerAarch64Test, Loop)
 {
-    std::string expectResult("00000000:f100005f \tcmp\tx2, #0\n"
+    std::string expectResult("00000000:7100005f \tcmp\tw2, #0\n"
                              "00000004:540000e0 \tb.eq\t0x20\n"
                              "00000008:51000442 \tsub\tw2, w2, #1\n"
                              "0000000c:8b224c84 \tadd\tx4, x4, w2, uxtw #3\n"
