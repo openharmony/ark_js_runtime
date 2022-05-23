@@ -412,7 +412,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, Race2)
     ecmaRuntimeCallInfo5->SetCallArg(0, JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo5->SetCallArg(1, native_func_race_then_onrejected.GetTaggedValue());
 
-    [[maybe_unused]] auto prev5 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo4.get());
+    [[maybe_unused]] auto prev5 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo5.get());
     JSTaggedValue thenResult = BuiltinsPromise::Then(ecmaRuntimeCallInfo5.get());
     JSHandle<JSPromise> thenPromise(thread, thenResult);
 

@@ -982,6 +982,7 @@ private:
 class PUBLIC_API JsiRuntimeCallInfo {
 public:
     JsiRuntimeCallInfo(ecmascript::EcmaRuntimeCallInfo* ecmaInfo, void* data);
+    ~JsiRuntimeCallInfo() = default;
 
     inline JSThread *GetThread() const
     {
