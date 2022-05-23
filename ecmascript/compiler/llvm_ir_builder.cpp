@@ -1933,7 +1933,7 @@ LLVMValueRef LLVMModule::AddFunc(const panda::ecmascript::JSMethod *method)
         paramTys.push_back(ConvertLLVMTypeFromVariableType(paramsType));
     }
     auto funcType = LLVMFunctionType(returnType, paramTys.data(), paramCount, false); // not variable args
-    CString name = method->ParseFunctionName();
+    CString name = method->GetMethodName();
     auto function = LLVMAddFunction(module_, name.c_str(), funcType);
     auto offsetInPandaFile = method->GetMethodId().GetOffset();
     JSPandaFile *jsPandaFile = const_cast<JSPandaFile *>(method->GetJSPandaFile());
