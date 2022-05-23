@@ -32,6 +32,10 @@
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/jspandafile/class_info_extractor.h"
+#include "ecmascript/jspandafile/program_object.h"
+#include "ecmascript/js_api_arraylist.h"
+#include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
 #include "ecmascript/js_api_plain_array.h"
@@ -40,12 +44,12 @@
 #include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_stack.h"
 #include "ecmascript/js_api_stack_iterator.h"
-#include "ecmascript/jspandafile/class_info_extractor.h"
-#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_api_tree_map.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set.h"
 #include "ecmascript/js_api_tree_set_iterator.h"
+#include "ecmascript/js_api_vector.h"
+#include "ecmascript/js_api_vector_iterator.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_array_iterator.h"
@@ -1003,6 +1007,9 @@ void ObjectFactory::InitializeJSObject(const JSHandle<JSObject> &obj, const JSHa
         case JSType::JS_API_DEQUE:
             JSAPIDeque::Cast(*obj)->SetFirst(0);
             JSAPIDeque::Cast(*obj)->SetLast(0);
+            break;
+        case JSType::JS_API_VECTOR:
+            JSAPIVector::Cast(*obj)->SetLength(0);
             break;
         case JSType::JS_ASYNC_FUNC_OBJECT:
             JSAsyncFuncObject::Cast(*obj)->SetGeneratorContext(thread_, JSTaggedValue::Undefined());
@@ -2886,6 +2893,33 @@ JSHandle<JSAPITreeSetIterator> ObjectFactory::NewJSAPITreeSetIterator(const JSHa
     JSHandle<TaggedTreeSet> tset(thread_, set->GetTreeSet());
     JSHandle<TaggedArray> entries = TaggedTreeSet::GetArrayFromSet(thread_, tset);
     iter->SetEntries(thread_, entries);
+    return iter;
+}
+
+JSHandle<JSAPIVector> ObjectFactory::NewJSAPIVector(uint32_t capacity)
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> builtinObj(thread_, thread_->GlobalConstants()->GetVectorFunction());
+
+    JSHandle<JSAPIVector> obj =
+        JSHandle<JSAPIVector>(NewJSObjectByConstructor(JSHandle<JSFunction>(builtinObj), builtinObj));
+    JSHandle<TaggedArray> newVector = NewTaggedArray(capacity);
+    obj->SetElements(thread_, newVector);
+
+    return obj;
+}
+
+JSHandle<JSAPIVectorIterator> ObjectFactory::NewJSAPIVectorIterator(const JSHandle<JSAPIVector> &vector)
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> proto(thread_, thread_->GlobalConstants()->GetVectorIteratorPrototype());
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSHClass> dynHandle(globalConst->GetHandledJSAPIVectorIteratorClass());
+    dynHandle->SetPrototype(thread_, proto);
+    JSHandle<JSAPIVectorIterator> iter(NewJSObject(dynHandle));
+    iter->GetJSHClass()->SetExtensible(true);
+    iter->SetIteratedVector(thread_, vector);
+    iter->SetNextIndex(0);
     return iter;
 }
 

@@ -433,7 +433,7 @@ public:
 
     // Add SpecialContainer
     GateRef GetContainerProperty(GateRef glue, GateRef receiver, GateRef index, GateRef jsType);
-    GateRef JSArrayListGet(GateRef glue, GateRef receiver, GateRef index);
+    GateRef JSAPIContainerGet(GateRef glue, GateRef receiver, GateRef index);
 
     // Exception handle
     GateRef HasPendingException(GateRef glue);
