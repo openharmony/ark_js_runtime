@@ -368,7 +368,7 @@ OperationResult JSTypedArray::IntegerIndexedElementGet(JSThread *thread, const J
     // arrayTypeName.
     uint32_t elementSize = TypedArrayHelper::GetElementSize(typedarrayObj);
     // 12. Let indexedPosition = (index × elementSize) + offset.
-    uint32_t k = JSTaggedValue::ToInteger(thread, indexHandle).ToInt32();
+    uint32_t k = static_cast<uint32_t>(JSTaggedValue::ToInteger(thread, indexHandle).ToInt32());
     uint32_t byteIndex = k * elementSize + offset;
     // 13. Let elementType be the String value of the Element Type value in Table 49 for arrayTypeName.
     DataViewType elementType = TypedArrayHelper::GetType(typedarrayObj);

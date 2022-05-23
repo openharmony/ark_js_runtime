@@ -1018,7 +1018,7 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
                                          JSTaggedValue::Exception());
         }
         // 21. Let targetByteIndex be targetOffset × targetElementSize + targetByteOffset.
-        int32_t targetByteIndex = targetOffset * targetElementSize + targetByteOffset;
+        int32_t targetByteIndex = static_cast<int32_t>(targetOffset * targetElementSize + targetByteOffset);
         // 22. Let k be 0.
         // 23. Let limit be targetByteIndex + targetElementSize × srcLength.
         int32_t k = 0;
@@ -1100,7 +1100,7 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
     //   c. ReturnIfAbrupt(srcBuffer).
     //   d. Let srcByteIndex be 0.
     // 25. Else, let srcByteIndex be srcByteOffset.
-    int32_t srcByteIndex;
+    uint32_t srcByteIndex;
     if (JSTaggedValue::SameValue(srcBufferHandle.GetTaggedValue(), targetBuffer.GetTaggedValue())) {
         srcBuffer =
             BuiltinsArrayBuffer::CloneArrayBuffer(thread, targetBuffer, srcByteOffset, env->GetArrayBufferFunction());
@@ -1111,7 +1111,7 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
         srcByteIndex = srcByteOffset;
     }
     // 26. Let targetByteIndex be targetOffset × targetElementSize + targetByteOffset.
-    int32_t targetByteIndex = targetOffset * targetElementSize + targetByteOffset;
+    int32_t targetByteIndex = static_cast<int32_t>(targetOffset * targetElementSize + targetByteOffset);
     // 27. Let limit be targetByteIndex + targetElementSize × srcLength.
     int32_t limit = targetByteIndex + targetElementSize * srcLength;
     // 28. If SameValue(srcType, targetType) is false, then
@@ -1131,7 +1131,7 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
                                                   targetType, value, true);
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
             srcByteIndex = srcByteIndex + srcElementSize;
-            targetByteIndex = targetByteIndex + targetElementSize;
+            targetByteIndex = targetByteIndex + static_cast<int32_t>(targetElementSize);
         }
     } else {
         // 29. Else,
@@ -1150,7 +1150,7 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
             BuiltinsArrayBuffer::SetValueInBuffer(thread, targetBuffer.GetTaggedValue(), targetByteIndex,
                                                   DataViewType::UINT8, value, true);
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-            srcByteIndex = srcByteIndex + 1;
+            srcByteIndex = srcByteIndex + 1U;
             targetByteIndex = targetByteIndex + 1;
         }
     }
@@ -1273,7 +1273,7 @@ JSTaggedValue BuiltinsTypedArray::Slice(EcmaRuntimeCallInfo *argv)
         //     iii. Increase srcByteIndex by 1.
         //     iv. Increase targetByteIndex by 1.
         JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
-        for (int32_t targetByteIndex = 0; targetByteIndex < count * elementSize; srcByteIndex++, targetByteIndex++) {
+        for (uint32_t targetByteIndex = 0; targetByteIndex < count * elementSize; srcByteIndex++, targetByteIndex++) {
             JSTaggedValue taggedData = BuiltinsArrayBuffer::GetValueFromBuffer(thread, srcBuffer.GetTaggedValue(),
                                                                                srcByteIndex, DataViewType::UINT8,
                                                                                true);
