@@ -2044,10 +2044,8 @@ void SlowPathLowering::LowerStOwnByValueWithNameSet(GateRef gate, GateRef glue)
                     builder_.Branch(builder_.IsSpecial(res, JSTaggedValue::VALUE_EXCEPTION),
                         &exceptionExit, &notexception);
                     builder_.Bind(&notexception);
-                    res = LowerCallRuntime(glue, RTSTUB_ID(SetFunctionNameNoPrefix),
-                        { accValue, propKey }, true);
-                    builder_.Branch(builder_.IsSpecial(res, JSTaggedValue::VALUE_EXCEPTION),
-                        &exceptionExit, &successExit);
+                    LowerCallRuntime(glue, RTSTUB_ID(SetFunctionNameNoPrefix), { accValue, propKey }, true);
+                    builder_.Jump(&successExit);
                 }
             }
         }
@@ -2097,9 +2095,8 @@ void SlowPathLowering::LowerStOwnByNameWithNameSet(GateRef gate, GateRef glue)
                     builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
                         &exceptionExit, &notException);
                     builder_.Bind(&notException);
-                    result = LowerCallRuntime(glue, RTSTUB_ID(SetFunctionNameNoPrefix), {accValue, propKey}, true);
-                    builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
-                        &exceptionExit, &successExit);
+                    LowerCallRuntime(glue, RTSTUB_ID(SetFunctionNameNoPrefix), {accValue, propKey}, true);
+                    builder_.Jump(&successExit);
                 }
             }
         }
@@ -2110,6 +2107,8 @@ void SlowPathLowering::LowerStOwnByNameWithNameSet(GateRef gate, GateRef glue)
         builder_.Branch(builder_.IsSpecial(result, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &successExit);
     }
+    CREATE_DOUBLE_EXIT(successExit, exceptionExit);
+    ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl);
 }
 
 void SlowPathLowering::LowerLdGlobalVar(GateRef gate, GateRef glue)
