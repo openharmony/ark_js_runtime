@@ -642,6 +642,37 @@ namespace panda::ecmascript {
     V(Stack, Locate)                          \
     V(Stack, ForEach)                         \
     V(Stack, GetLength)                       \
+    V(Vector, Constructor)                    \
+    V(Vector, Add)                            \
+    V(Vector, Insert)                         \
+    V(Vector, SetLength)                      \
+    V(Vector, GetCapacity)                    \
+    V(Vector, IncreaseCapacityTo)             \
+    V(Vector, Get)                            \
+    V(Vector, GetIndexOf)                     \
+    V(Vector, GetIndexFrom)                   \
+    V(Vector, IsEmpty)                        \
+    V(Vector, GetLastElement)                 \
+    V(Vector, GetLastIndexOf)                 \
+    V(Vector, GetLastIndexFrom)               \
+    V(Vector, Remove)                         \
+    V(Vector, RemoveByIndex)                  \
+    V(Vector, RemoveByRange)                  \
+    V(Vector, Set)                            \
+    V(Vector, SubVector)                      \
+    V(Vector, ToString)                       \
+    V(Vector, GetSize)                        \
+    V(Vector, forEach)                        \
+    V(Vector, ReplaceAllElements)             \
+    V(Vector, Has)                            \
+    V(Vector, Sort)                           \
+    V(Vector, Clear)                          \
+    V(Vector, Clone)                          \
+    V(Vector, CopyToArray)                    \
+    V(Vector, ConvertToArray)                 \
+    V(Vector, GetFirstElement)                \
+    V(Vector, TrimToCurrentLength)            \
+    V(Vector, GetIteratorObj)                 \
     V(Queue, Constructor)                     \
     V(Queue, Add)                             \
     V(Queue, GetFirst)                        \

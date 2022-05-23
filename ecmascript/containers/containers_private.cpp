@@ -22,9 +22,12 @@
 #include "containers_stack.h"
 #include "containers_treemap.h"
 #include "containers_treeset.h"
+#include "containers_vector.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/global_env_constants.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
+#include "ecmascript/js_api_arraylist.h"
+#include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
 #include "ecmascript/js_api_plain_array.h"
@@ -37,8 +40,8 @@
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set.h"
 #include "ecmascript/js_api_tree_set_iterator.h"
-#include "ecmascript/js_api_arraylist.h"
-#include "ecmascript/js_api_arraylist_iterator.h"
+#include "ecmascript/js_api_vector.h"
+#include "ecmascript/js_api_vector_iterator.h"
 #include "ecmascript/js_function.h"
 
 namespace panda::ecmascript::containers {
@@ -85,7 +88,10 @@ JSTaggedValue ContainersPrivate::Load(EcmaRuntimeCallInfo *msg)
             res = InitializeContainer(thread, thisValue, InitializePlainArray, "PlainArrayConstructor");
             break;
         }
-        case ContainerTag::Vector:
+        case ContainerTag::Vector: {
+            res = InitializeContainer(thread, thisValue, InitializeVector, "VectorConstructor");
+            break;
+        }
         case ContainerTag::List:
         case ContainerTag::LinkedList:
         case ContainerTag::HashMap:
@@ -266,7 +272,7 @@ JSHandle<JSTaggedValue> ContainersPrivate::InitializeArrayList(JSThread *thread)
 
     JSHandle<JSTaggedValue> lengthGetter = CreateGetter(thread, ContainersArrayList::GetSize, "length",
                                                         FuncLength::ZERO);
-    JSHandle<JSTaggedValue> lengthKey(factory->NewFromASCII("length"));
+    JSHandle<JSTaggedValue> lengthKey(thread, globalConst->GetLengthString());
     SetGetter(thread, prototype, lengthKey, lengthGetter);
 
     SetFunctionAtSymbol(thread, env, prototype, env->GetIteratorSymbol(), "[Symbol.iterator]",
@@ -568,6 +574,85 @@ void ContainersPrivate::InitializeStackIterator(JSThread *thread, GlobalEnvConst
     // Iterator.prototype.next()
     SetFrozenFunction(thread, stackIteratorPrototype, "next", JSAPIStackIterator::Next, FuncLength::ONE);
     globalConst->SetConstant(ConstantIndex::STACK_ITERATOR_PROTOTYPE_INDEX, stackIteratorPrototype.GetTaggedValue());
+}
+
+JSHandle<JSTaggedValue> ContainersPrivate::InitializeVector(JSThread *thread)
+{
+    auto globalConst = const_cast<GlobalEnvConstants *>(thread->GlobalConstants());
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    // Vector.prototype
+    JSHandle<JSObject> prototype = factory->NewEmptyJSObject();
+    JSHandle<JSTaggedValue> vectorFuncPrototypeValue(prototype);
+    // Vector.prototype_or_dynclass
+    JSHandle<JSHClass> vectorInstanceDynclass =
+        factory->NewEcmaDynClass(JSAPIVector::SIZE, JSType::JS_API_VECTOR, vectorFuncPrototypeValue);
+    // Vector() = new Function()
+    JSHandle<JSTaggedValue> vectorFunction(NewContainerConstructor(
+        thread, prototype, ContainersVector::VectorConstructor, "Vector", FuncLength::ZERO));
+    JSHandle<JSFunction>(vectorFunction)->SetFunctionPrototype(thread, vectorInstanceDynclass.GetTaggedValue());
+
+    // "constructor" property on the prototype
+    JSHandle<JSTaggedValue> constructorKey = globalConst->GetHandledConstructorString();
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(prototype), constructorKey, vectorFunction);
+
+    // Vector.prototype
+    SetFrozenFunction(thread, prototype, "add", ContainersVector::Add, FuncLength::ONE);
+    SetFrozenFunction(thread, prototype, "insert", ContainersVector::Insert, FuncLength::TWO);
+    SetFrozenFunction(thread, prototype, "setLength", ContainersVector::SetLength, FuncLength::ONE);
+    SetFrozenFunction(thread, prototype, "getCapacity", ContainersVector::GetCapacity, FuncLength::ZERO);
+    SetFrozenFunction(thread, prototype, "increaseCapacityTo", ContainersVector::IncreaseCapacityTo, FuncLength::ONE);
+    SetFrozenFunction(thread, prototype, "get", ContainersVector::Get, FuncLength::ONE);
+    SetFrozenFunction(thread, prototype, "getIndexOf", ContainersVector::GetIndexOf, FuncLength::ONE);
+    SetFrozenFunction(thread, prototype, "getIndexFrom", ContainersVector::GetIndexFrom, FuncLength::TWO);
+    SetFrozenFunction(thread, prototype, "isEmpty", ContainersVector::IsEmpty, FuncLength::ZERO);
+    SetFrozenFunction(thread, prototype, "getLastElement", ContainersVector::GetLastElement, FuncLength::ZERO);
+    SetFrozenFunction(thread, prototype, "getLastIndexOf", ContainersVector::GetLastIndexOf, FuncLength::ONE);
+    SetFrozenFunction(thread, prototype, "getLastIndexFrom", ContainersVector::GetLastIndexFrom, FuncLength::TWO);
+    SetFrozenFunction(thread, prototype, "remove", ContainersVector::Remove, FuncLength::ONE);
+    SetFrozenFunction(thread, prototype, "removeByIndex", ContainersVector::RemoveByIndex, FuncLength::ONE);
+    SetFrozenFunction(thread, prototype, "removeByRange", ContainersVector::RemoveByRange, FuncLength::TWO);
+    SetFrozenFunction(thread, prototype, "set", ContainersVector::Set, FuncLength::TWO);
+    SetFrozenFunction(thread, prototype, "subVector", ContainersVector::SubVector, FuncLength::TWO);
+    SetFrozenFunction(thread, prototype, "toString", ContainersVector::ToString, FuncLength::ZERO);
+    SetFrozenFunction(thread, prototype, "forEach", ContainersVector::ForEach, FuncLength::TWO);
+    SetFrozenFunction(thread, prototype, "replaceAllElements", ContainersVector::ReplaceAllElements, FuncLength::TWO);
+    SetFrozenFunction(thread, prototype, "has", ContainersVector::Has, FuncLength::ONE);
+    SetFrozenFunction(thread, prototype, "sort", ContainersVector::Sort, FuncLength::ZERO);
+    SetFrozenFunction(thread, prototype, "clear", ContainersVector::Clear, FuncLength::ZERO);
+    SetFrozenFunction(thread, prototype, "clone", ContainersVector::Clone, FuncLength::ZERO);
+    SetFrozenFunction(thread, prototype, "copyToArray", ContainersVector::CopyToArray, FuncLength::ONE);
+    SetFrozenFunction(thread, prototype, "convertToArray", ContainersVector::ConvertToArray, FuncLength::ZERO);
+    SetFrozenFunction(thread, prototype, "getFirstElement", ContainersVector::GetFirstElement, FuncLength::ZERO);
+    SetFrozenFunction(thread, prototype, "trimToCurrentLength",
+                      ContainersVector::TrimToCurrentLength, FuncLength::ZERO);
+    
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    SetStringTagSymbol(thread, env, prototype, "Vector");
+
+    JSHandle<JSTaggedValue> lengthGetter = CreateGetter(thread, ContainersVector::GetSize, "length", FuncLength::ZERO);
+    JSHandle<JSTaggedValue> lengthKey(thread, globalConst->GetLengthString());
+    SetGetter(thread, prototype, lengthKey, lengthGetter);
+
+    SetFunctionAtSymbol(thread, env, prototype, env->GetIteratorSymbol(), "[Symbol.iterator]",
+                        ContainersVector::GetIteratorObj, FuncLength::ONE);
+
+    ContainersPrivate::InitializeVectorIterator(thread, env, globalConst);
+    globalConst->SetConstant(ConstantIndex::VECTOR_FUNCTION_INDEX, vectorFunction.GetTaggedValue());
+    return vectorFunction;
+}
+
+void ContainersPrivate::InitializeVectorIterator(JSThread *thread, const JSHandle<GlobalEnv> &env,
+                                                 GlobalEnvConstants *globalConst)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSHClass> iteratorFuncDynclass = JSHandle<JSHClass>(thread, globalConst->
+                        GetHandledJSAPIIteratorFuncDynClass().GetObject<JSHClass>());
+    // VectorIterator.prototype
+    JSHandle<JSObject> vectorIteratorPrototype(factory->NewJSObject(iteratorFuncDynclass));
+    // Iterator.prototype.next()
+    SetFrozenFunction(thread, vectorIteratorPrototype, "next", JSAPIVectorIterator::Next, FuncLength::ONE);
+    SetStringTagSymbol(thread, env, vectorIteratorPrototype, "Vector Iterator");
+    globalConst->SetConstant(ConstantIndex::VECTOR_ITERATOR_PROTOTYPE_INDEX, vectorIteratorPrototype.GetTaggedValue());
 }
 
 JSHandle<JSTaggedValue> ContainersPrivate::InitializeQueue(JSThread *thread)
