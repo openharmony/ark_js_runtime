@@ -120,7 +120,12 @@ public:
 
     JSHandle<job::MicroJobQueue> GetMicroJobQueue() const;
 
-    bool ExecutePromisePendingJob() const;
+    bool ExecutePromisePendingJob();
+
+    static EcmaVM *ConstCast(const EcmaVM *vm)
+    {
+        return const_cast<EcmaVM *>(vm);
+    }
 
     RegExpParserCache *GetRegExpParserCache() const
     {
@@ -373,6 +378,8 @@ private:
     PromiseRejectCallback promiseRejectCallback_ {nullptr};
     HostPromiseRejectionTracker hostPromiseRejectionTracker_ {nullptr};
     void* data_ {nullptr};
+
+    bool isProcessingPendingJob_ = false;
 
     friend class Snapshot;
     friend class SnapshotProcessor;
