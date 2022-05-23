@@ -458,9 +458,9 @@ std::unique_ptr<StepIntoParams> StepIntoParams::Create(const EcmaVM *ecmaVm, con
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             Local<ArrayRef> array = Local<ArrayRef>(result);
-            uint32_t len = array->Length(ecmaVm);
+            int32_t len = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (uint32_t i = 0; i < len; i++) {
+            for (int32_t i = 0; i < len; i++) {
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> value = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 if (value->IsObject()) {
