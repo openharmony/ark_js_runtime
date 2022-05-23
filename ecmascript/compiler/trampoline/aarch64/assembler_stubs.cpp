@@ -622,7 +622,8 @@ void AssemblerStubs::JSCallWithArgV(ExtendedAssembler *assembler)
     __ BindAssemblerStub(RTSTUB_ID(JSCallWithArgV));
     Register jsfunc(X1);
     Register argv(X3);
-    __ Ldr(jsfunc, MemoryOperand(argv, 0));
+    __ Mov(jsfunc, Register(X2));
+    __ Str(jsfunc, MemoryOperand(argv, 0));
     JSCallStart(assembler, jsfunc);
 }
 

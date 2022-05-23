@@ -1634,6 +1634,8 @@ JSTaggedType RuntimeStubs::JSObjectGetMethod([[maybe_unused]]uintptr_t argGlue,
     auto thread = JSThread::GlueToJSThread(argGlue);
     JSHandle<JSTaggedValue> obj(thread, handler);
     JSHandle<JSTaggedValue> value(thread, key);
+    handler.D();
+    key.D();
     JSHandle<JSTaggedValue> result = JSObject::GetMethod(thread, obj, value);
     return result->GetRawData();
 }
