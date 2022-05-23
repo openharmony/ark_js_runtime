@@ -52,7 +52,7 @@ def judge_output(args):
     if input_args.timeout_limit:
         timeout_limit = int(input_args.timeout_limit)
     else:
-        timeout_limit = 60  # units: s
+        timeout_limit = 120  # units: s
     print("timeout limit: ", timeout_limit)
     subp = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         env={'LD_LIBRARY_PATH': str(input_args.env_path)})
