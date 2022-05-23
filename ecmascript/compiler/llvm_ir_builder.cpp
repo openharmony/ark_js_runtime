@@ -67,10 +67,10 @@ LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, 
 
     LLVMSetGC(function_, "statepoint-example");
     if (compCfg_->Is32Bit()) {
-        slotSize_ = panda::ecmascript::FrameConstants::ARM32_SLOT_SIZE;
+        slotSize_ = sizeof(uint32_t);
         slotType_ = LLVMInt32Type();
     } else {
-        slotSize_ = panda::ecmascript::FrameConstants::AARCH64_SLOT_SIZE;
+        slotSize_ = sizeof(uint64_t);
         slotType_ = LLVMInt64Type();
     }
     if (compCfg_->Is32Bit()) {

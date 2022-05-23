@@ -66,7 +66,6 @@ void DFXJSNApi::DumpHeapSnapshot([[maybe_unused]] EcmaVM *vm, [[maybe_unused]] i
     }
     FileDescriptorStream stream(fd);
     DumpHeapSnapshot(vm, dumpFormat, &stream, nullptr, isVmMode, isPrivate);
-    close(fd);
 #endif
 }
 

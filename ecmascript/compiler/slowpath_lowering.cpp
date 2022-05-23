@@ -2203,7 +2203,7 @@ void SlowPathLowering::LowerStObjByName(GateRef gate, GateRef glue)
     Label slowPath(&builder_);
     Label successExit(&builder_);
     Label exceptionExit(&builder_);
-    // 2: number of value inputs
+    // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
     GateRef stringId = builder_.TaggedTypeNGC(builder_.ZExtInt32ToInt64(acc_.GetValueIn(gate, 0)));
     GateRef prop = LowerCallRuntime(glue, RTSTUB_ID(LoadValueFromConstantStringTable), {stringId}, true);

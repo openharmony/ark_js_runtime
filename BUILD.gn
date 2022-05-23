@@ -544,8 +544,9 @@ source_set("libark_jsruntime_set") {
     public_configs += [ ":ark_jsruntime_windows_config" ]
   }
 
+  cflags_cc = []
   if (is_standard_system) {
-    cflags_cc = [ "-fvisibility=hidden" ]
+    cflags_cc += [ "-fvisibility=hidden" ]
   }
 
   deps = [
@@ -559,19 +560,18 @@ source_set("libark_jsruntime_set") {
     deps += [ ":copy_asan_runtime" ]
   }
 
-  defines = []
-  include_dirs = []
   if (is_ohos && is_standard_system) {
+    defines = []
+    include_dirs = []
     if (enable_bytrace) {
       defines += [ "ENABLE_BYTRACE" ]
       include_dirs += [ "//base/hiviewdfx/hitrace/interfaces/native/innerkits/include/hitrace_meter" ]
+      cflags_cc += [ "-Wno-gnu-zero-variadic-macro-arguments" ]
     }
-    defines += [ "ENABLE_DUMP_IN_FAULTLOG" ]
-    include_dirs += [
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client",
-    ]
-
-    cflags_cc += [ "-Wno-gnu-zero-variadic-macro-arguments" ]
+    if (enable_dump_in_faultlog) {
+      defines += [ "ENABLE_DUMP_IN_FAULTLOG" ]
+      include_dirs += [ "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client" ]
+    }
   }
 }
 
@@ -623,11 +623,12 @@ if (!defined(ark_independent_build)) {
       ":libark_jsruntime_set",
     ]
 
-    defines = []
     if (is_ohos && is_standard_system) {
-      external_deps = [ "faultloggerd:libfaultloggerd" ]
+      external_deps = []
+      if (enable_dump_in_faultlog) {
+        external_deps += [ "faultloggerd:libfaultloggerd" ]
+      }
       if (enable_bytrace) {
-        defines += [ "ENABLE_BYTRACE" ]
         external_deps += [ "hitrace_native:hitrace_meter" ]
       }
     }
@@ -646,12 +647,6 @@ if (!defined(ark_independent_build)) {
 
   ohos_shared_library("libark_jsruntime_test") {
     deps = [ ":libark_jsruntime_test_set" ]
-
-    defines = []
-    if (is_ohos && is_standard_system && enable_bytrace) {
-      defines += [ "ENABLE_BYTRACE" ]
-      external_deps = [ "hitrace_native:hitrace_meter" ]
-    }
 
     install_enable = false
     if (!is_mingw && !is_mac) {

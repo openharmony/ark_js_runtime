@@ -213,5 +213,6 @@ void HeapSnapshotJSONSerializer::WriteChunk()
             LOG_ECMA(ERROR) << "WriteChunk failed";
         }
     }
+    stream_->EndOfStream();
 }
 }  // namespace panda::ecmascript

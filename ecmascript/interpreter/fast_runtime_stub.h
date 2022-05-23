@@ -107,6 +107,7 @@ private:
     friend class ICRuntimeStub;
     static inline bool IsSpecialIndexedObj(JSType jsType);
     static inline bool IsSpecialReceiverObj(JSType jsType);
+    static inline bool IsFastTypeArray(JSType jsType);
     static inline int32_t TryToElementsIndex(JSTaggedValue key);
     static inline JSTaggedValue CallGetter(JSThread *thread, JSTaggedValue receiver, JSTaggedValue holder,
                                            JSTaggedValue value);
@@ -123,6 +124,11 @@ private:
                                                      JSType jsType);
     static inline JSTaggedValue SetContainerProperty(JSThread *thread, JSTaggedValue receiver, uint32_t index,
                                                      JSTaggedValue value, JSType jsType);
+    static inline bool TryStringOrSymbolToIndex(JSTaggedValue key, uint32_t *output);
+    static inline JSTaggedValue FastGetTypeArrayProperty(JSThread *thread, JSTaggedValue receiver, JSTaggedValue holder,
+                                                         JSTaggedValue key, JSType jsType);
+    static inline JSTaggedValue FastSetTypeArrayProperty(JSThread *thread, JSTaggedValue receiver, JSTaggedValue holder,
+                                                         JSTaggedValue key, JSTaggedValue value, JSType jsType);
 };
 }  // namespace panda::ecmascript
 

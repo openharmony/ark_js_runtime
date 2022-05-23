@@ -19,10 +19,10 @@ import("//build/ohos.gni")
 import("//build/test.gni")
 
 ############################fuzztest################################
-ohos_fuzztest("ExecutefuzzTest") {
+ohos_fuzztest("ExecuteFuzzTest") {
   module_out_path = "ark/js_runtime"
 
-  fuzz_config_file = "//ark/ark_js_runtime/test/fuzztest/execute_fuzzer"
+  fuzz_config_file = "//ark/js_runtime/test/fuzztest/execute_fuzzer"
 
   sources = [ "execute_fuzzer.cpp" ]
 
@@ -30,9 +30,7 @@ ohos_fuzztest("ExecutefuzzTest") {
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_js_intl_static",
     "//ark/js_runtime:libark_jsruntime",
-    "//ark/js_runtime:libark_jsruntime_static",
     sdk_libc_secshared_dep,
   ]
 }
@@ -40,5 +38,5 @@ ohos_fuzztest("ExecutefuzzTest") {
 group("fuzztest") {
   testonly = true
   deps = []
-  deps += [ ":ExecutefuzzTest" ]
+  deps += [ ":ExecuteFuzzTest" ]
 }

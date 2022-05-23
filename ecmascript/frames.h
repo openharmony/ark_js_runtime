@@ -267,30 +267,6 @@ enum class JSCallMode : uintptr_t {
     CALL_FROM_AOT,
 };
 
-class FrameConstants {
-public:
-#ifdef PANDA_TARGET_AMD64
-    static constexpr int SP_DWARF_REG_NUM = 7;
-    static constexpr int FP_DWARF_REG_NUM = 6;
-#else
-#ifdef PANDA_TARGET_ARM64
-    static constexpr int SP_DWARF_REG_NUM = 31;  /* x31 */
-    static constexpr int FP_DWARF_REG_NUM = 29;  /* x29 */
-#else
-#ifdef PANDA_TARGET_ARM32
-    static constexpr int SP_DWARF_REG_NUM = 13;
-    static constexpr int FP_DWARF_REG_NUM = 11;
-#else
-    static constexpr int SP_DWARF_REG_NUM = 0;
-    static constexpr int FP_DWARF_REG_NUM = 0;
-#endif
-#endif
-#endif
-    static constexpr int AARCH64_SLOT_SIZE = sizeof(uint64_t);
-    static constexpr int AMD64_SLOT_SIZE = sizeof(uint64_t);
-    static constexpr int ARM32_SLOT_SIZE = sizeof(uint32_t);
-};
-
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct OptimizedFrame : public base::AlignedStruct<base::AlignedPointer::Size(),
                                                    base::AlignedPointer,
@@ -761,7 +737,7 @@ struct BuiltinWithArgvFrame : public base::AlignedStruct<base::AlignedPointer::S
     uintptr_t GetStackArgsAddress()
     {
         auto topAddress = ToUintPtr(this) +
-            (static_cast<size_t>(Index::StackArgsTopIndex) * sizeof(uintptr_t));
+            (static_cast<int>(Index::StackArgsTopIndex) * sizeof(uintptr_t));
         auto numberArgs = GetNumArgs() + BuiltinFrame::RESERVED_CALL_ARGCOUNT;
         return topAddress - numberArgs * sizeof(uintptr_t);
     }
@@ -773,7 +749,7 @@ struct BuiltinWithArgvFrame : public base::AlignedStruct<base::AlignedPointer::S
     size_t GetNumArgs()
     {
         auto argcAddress = reinterpret_cast<size_t *>(
-            ToUintPtr(this) + (static_cast<size_t>(Index::NumArgsIndex) * sizeof(uintptr_t)));
+            ToUintPtr(this) + (static_cast<int>(Index::NumArgsIndex) * sizeof(uintptr_t)));
         return *argcAddress;
     }
     // argv(... this, new.target, function)

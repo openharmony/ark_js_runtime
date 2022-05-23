@@ -559,19 +559,19 @@ bool JSSerializer::WriteJSTypedArray(const JSHandle<JSTaggedValue> &value, Seria
         return false;
     }
     // Write ACCESSORS(ByteLength)
-    JSTaggedValue byteLength = typedArray->GetByteLength();
+    JSTaggedValue byteLength(typedArray->GetByteLength());
     if (!WriteRawData(&byteLength, sizeof(JSTaggedValue))) {
         bufferSize_ = oldSize;
         return false;
     }
     // Write ACCESSORS(ByteOffset)
-    JSTaggedValue byteOffset = typedArray->GetByteOffset();
+    JSTaggedValue byteOffset(typedArray->GetByteOffset());
     if (!WriteRawData(&byteOffset, sizeof(JSTaggedValue))) {
         bufferSize_ = oldSize;
         return false;
     }
     // Write ACCESSORS(ArrayLength)
-    JSTaggedValue arrayLength = typedArray->GetArrayLength();
+    JSTaggedValue arrayLength(typedArray->GetArrayLength());
     if (!WriteRawData(&arrayLength, sizeof(JSTaggedValue))) {
         bufferSize_ = oldSize;
         return false;
@@ -1209,19 +1209,19 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSTypedArray(SerializationUID uid)
     if (!ReadJSTaggedValue(&byteLength) || !byteLength.IsNumber()) {
         return JSHandle<JSTaggedValue>();
     }
-    typedArray->SetByteLength(thread_, byteLength);
+    typedArray->SetByteLength(byteLength.GetNumber());
 
     JSTaggedValue byteOffset;
     if (!ReadJSTaggedValue(&byteOffset) || !byteOffset.IsNumber()) {
         return JSHandle<JSTaggedValue>();
     }
-    typedArray->SetByteOffset(thread_, byteOffset);
+    typedArray->SetByteOffset(byteOffset.GetNumber());
 
     JSTaggedValue arrayLength;
     if (!ReadJSTaggedValue(&arrayLength) || !byteOffset.IsNumber()) {
         return JSHandle<JSTaggedValue>();
     }
-    typedArray->SetArrayLength(thread_, arrayLength);
+    typedArray->SetArrayLength(arrayLength.GetNumber());
 
     ContentType *contentType = reinterpret_cast<ContentType*>(GetBuffer(sizeof(ContentType)));
     if (contentType == nullptr) {
