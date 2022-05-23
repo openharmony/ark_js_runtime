@@ -69,7 +69,6 @@ public:
         state->base.type = ecmascript::FrameType::INTERPRETER_FRAME;
         state->base.prev = sp;
         state->pc = nullptr;
-        state->sp = newSp;
         state->function = methodFunction_.GetTaggedValue();
         thread->SetCurrentSPFrame(newSp);
         return sp;
