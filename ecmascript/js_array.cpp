@@ -34,7 +34,7 @@ bool JSArray::LengthSetter(JSThread *thread, const JSHandle<JSObject> &self, con
 {
     uint32_t newLen = 0;
     if (!JSTaggedValue::ToArrayLength(thread, value, &newLen) && mayThrow) {
-        THROW_RANGE_ERROR_AND_RETURN(thread, "array length must less than 2^32 - 1", false);
+        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
     }
 
     if (!IsArrayLengthWritable(thread, self)) {

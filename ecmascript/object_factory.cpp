@@ -345,7 +345,11 @@ JSHandle<TaggedArray> ObjectFactory::CloneProperties(const JSHandle<TaggedArray>
         return EmptyArray();
     }
     NewObjectHook();
-    JSHandle<TaggedArray> newArray = NewTaggedArray(newLength);
+    auto klass = old->GetClass();
+    size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), newLength);
+    auto header = heap_->AllocateYoungOrHugeObject(klass, size);
+    JSHandle<TaggedArray> newArray(thread_, header);
+    newArray->SetLength(newLength);
 
     for (uint32_t i = 0; i < newLength; i++) {
         JSTaggedValue value = old->Get(i);
