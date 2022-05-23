@@ -624,7 +624,9 @@ if (!defined(ark_independent_build)) {
     ]
 
     if (is_ohos && is_standard_system) {
-      external_deps = []
+      if (enable_dump_in_faultlog || enable_bytrace) {
+        external_deps = []
+      }
       if (enable_dump_in_faultlog) {
         external_deps += [ "faultloggerd:libfaultloggerd" ]
       }
