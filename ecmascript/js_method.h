@@ -261,10 +261,6 @@ struct PUBLIC_API JSMethod : public base::AlignedStruct<sizeof(uint64_t),
     // hotnessCounter, methodId and slotSize are encoded in literalInfo_.
     alignas(EAS) uint64_t literalInfo_ {0};
 };
-static_assert(MEMBER_OFFSET(JSMethod, callField_) == ASM_JS_METHOD_CALLFIELD_OFFSET);
-static_assert(MEMBER_OFFSET(JSMethod, nativePointerOrBytecodeArray_) == ASM_JS_METHOD_BYTECODEARRAY_OFFSET);
-static_assert(MEMBER_OFFSET(JSMethod, literalInfo_) == ASM_JS_METHOD_HOTNESS_COUNTER_OFFSET);
-static_assert(MEMBER_OFFSET(JSMethod, nativePointerOrBytecodeArray_) == ASM_JS_METHOD_NATIVE_POINTER_OFFSET);
 STATIC_ASSERT_EQ_ARCH(sizeof(JSMethod), JSMethod::SizeArch32, JSMethod::SizeArch64);
 }  // namespace panda::ecmascript
 

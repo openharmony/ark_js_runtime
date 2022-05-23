@@ -58,9 +58,7 @@
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/snapshot/mem/snapshot_env.h"
 #include "ecmascript/snapshot/mem/snapshot.h"
-#ifndef PANDA_TARGET_WINDOWS
 #include "ecmascript/stubs/runtime_stubs.h"
-#endif
 #include "ecmascript/tagged_array-inl.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/tagged_queue.h"

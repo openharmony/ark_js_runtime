@@ -290,7 +290,7 @@ private:
     LLVMValueRef GetFunction(LLVMValueRef glue, StubIdType id, bool isDebug = false);
     bool IsInterpreted();
     bool IsOptimized();
-    void SetTailCallAttr(LLVMValueRef call);
+    void SetGCLeafFunction(LLVMValueRef call);
     void SetCallConvAttr(const CallSignature *calleeDescriptor, LLVMValueRef call);
 
 private:
