@@ -17,6 +17,7 @@
 #include "ecmascript/compiler/llvm_ir_builder.h"
 #include "ecmascript/compiler/stub-inl.h"
 #include "ecmascript/js_api_arraylist.h"
+#include "ecmascript/js_api_vector.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/mem/remembered_set.h"
 #include "ecmascript/message_string.h"
@@ -2593,34 +2594,20 @@ GateRef Stub::GetContainerProperty(GateRef glue, GateRef receiver, GateRef index
     Label exit(env);
     DEFVARIABLE(result, VariableType::JS_ANY(), Undefined());
 
-    Label arrayListLabel(env);
-    Label queueLabel(env);
-    Label defaultLabel(env);
-    std::array<Label, 2> repCaseLabels = { // 2 : 2 means that there are 2 args in total.
-        arrayListLabel,
-        queueLabel,
-    };
-    std::array<int64_t, 2> keyValues = { // 2 : 2 means that there are 2 args in total.
-        static_cast<int64_t>(JSType::JS_API_ARRAY_LIST),
-        static_cast<int64_t>(JSType::JS_API_QUEUE),
-    };
-    // 2 : 2 means that there are 2 cases.
-    Switch(ZExtInt32ToInt64(jsType), &defaultLabel, keyValues.data(), repCaseLabels.data(), 2);
-    Bind(&arrayListLabel);
+    Label isDefaultLabel(env);
+    Label noDefaultLabel(env);
+    Branch(IsSpecialContainer(jsType), &noDefaultLabel, &isDefaultLabel);
+    Bind(&noDefaultLabel);
     {
-        result = JSArrayListGet(glue, receiver, index);
+        result = JSAPIContainerGet(glue, receiver, index);
         Jump(&exit);
     }
-    Bind(&queueLabel);
+    Bind(&isDefaultLabel);
     {
         Jump(&exit);
     }
-    Bind(&defaultLabel);
-    {
-        Jump(&exit);
-    }
-
     Bind(&exit);
+
     auto ret = *result;
     env->SubCfgExit();
     return ret;
@@ -3469,7 +3456,7 @@ GateRef Stub::GetGlobalOwnProperty(GateRef glue, GateRef receiver, GateRef key)
     return ret;
 }
 
-GateRef Stub::JSArrayListGet(GateRef glue, GateRef receiver, GateRef index)
+GateRef Stub::JSAPIContainerGet(GateRef glue, GateRef receiver, GateRef index)
 {
     auto env = GetEnvironment();
     Label entry(env);

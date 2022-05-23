@@ -103,6 +103,7 @@ class ProtoChangeDetails;
         JS_API_STACK_ITERATOR,   /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_TREEMAP_ITERATOR, /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_TREESET_ITERATOR, /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_API_VECTOR_ITERATOR,  /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_ARRAY_ITERATOR,       /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_STRING_ITERATOR,      /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_INTL, /* ///////////////////////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -723,6 +724,14 @@ public:
     inline bool IsJSAPITreeSetIterator() const
     {
         return GetObjectType() == JSType::JS_API_TREESET_ITERATOR;
+    }
+    inline bool IsJSAPIVector() const
+    {
+        return GetObjectType() == JSType::JS_API_VECTOR;
+    }
+    inline bool IsJSAPIVectorIterator() const
+    {
+        return GetObjectType() == JSType::JS_API_VECTOR_ITERATOR;
     }
 
     inline bool IsAccessorData() const

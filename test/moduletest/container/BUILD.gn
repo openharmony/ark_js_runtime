@@ -25,15 +25,21 @@ host_moduletest_action("container_treeset") {
   deps = []
 }
 
+host_moduletest_action("container_vector") {
+  deps = []
+}
+
 host_moduletest_action("container") {
   extra_modules = [
     "container_arraylist",
     "container_treemap",
     "container_treeset",
+    "container_vector",
   ]
   deps = [
     ":gen_container_arraylist_abc",
     ":gen_container_treemap_abc",
     ":gen_container_treeset_abc",
+    ":gen_container_vector_abc",
   ]
 }

@@ -61,6 +61,7 @@
 #include "ecmascript/containers/containers_stack.h"
 #include "ecmascript/containers/containers_treemap.h"
 #include "ecmascript/containers/containers_treeset.h"
+#include "ecmascript/containers/containers_vector.h"
 #include "ecmascript/ecma_string_table.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/jspandafile/program_object.h"
@@ -71,6 +72,7 @@
 #include "ecmascript/js_api_stack_iterator.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set_iterator.h"
+#include "ecmascript/js_api_vector_iterator.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_for_in_iterator.h"
@@ -135,6 +137,7 @@ using PluralRules = builtins::BuiltinsPluralRules;
 using ArrayList = containers::ContainersArrayList;
 using TreeMap = containers::ContainersTreeMap;
 using TreeSet = containers::ContainersTreeSet;
+using Vector = containers::ContainersVector;
 using Queue = containers::ContainersQueue;
 using PlainArray = containers::ContainersPlainArray;
 using Deque = containers::ContainersDeque;
@@ -658,6 +661,38 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(Deque::GetIteratorObj),
     reinterpret_cast<uintptr_t>(Deque::GetSize),
     reinterpret_cast<uintptr_t>(JSAPIDequeIterator::Next),
+    reinterpret_cast<uintptr_t>(Vector::VectorConstructor),
+    reinterpret_cast<uintptr_t>(Vector::Add),
+    reinterpret_cast<uintptr_t>(Vector::Insert),
+    reinterpret_cast<uintptr_t>(Vector::SetLength),
+    reinterpret_cast<uintptr_t>(Vector::GetCapacity),
+    reinterpret_cast<uintptr_t>(Vector::IncreaseCapacityTo),
+    reinterpret_cast<uintptr_t>(Vector::Get),
+    reinterpret_cast<uintptr_t>(Vector::GetIndexOf),
+    reinterpret_cast<uintptr_t>(Vector::GetIndexFrom),
+    reinterpret_cast<uintptr_t>(Vector::IsEmpty),
+    reinterpret_cast<uintptr_t>(Vector::GetLastElement),
+    reinterpret_cast<uintptr_t>(Vector::GetLastIndexOf),
+    reinterpret_cast<uintptr_t>(Vector::GetLastIndexFrom),
+    reinterpret_cast<uintptr_t>(Vector::Remove),
+    reinterpret_cast<uintptr_t>(Vector::RemoveByIndex),
+    reinterpret_cast<uintptr_t>(Vector::RemoveByRange),
+    reinterpret_cast<uintptr_t>(Vector::Set),
+    reinterpret_cast<uintptr_t>(Vector::SubVector),
+    reinterpret_cast<uintptr_t>(Vector::ToString),
+    reinterpret_cast<uintptr_t>(Vector::GetSize),
+    reinterpret_cast<uintptr_t>(Vector::ForEach),
+    reinterpret_cast<uintptr_t>(Vector::ReplaceAllElements),
+    reinterpret_cast<uintptr_t>(Vector::TrimToCurrentLength),
+    reinterpret_cast<uintptr_t>(Vector::Clear),
+    reinterpret_cast<uintptr_t>(Vector::Clone),
+    reinterpret_cast<uintptr_t>(Vector::Has),
+    reinterpret_cast<uintptr_t>(Vector::GetFirstElement),
+    reinterpret_cast<uintptr_t>(Vector::CopyToArray),
+    reinterpret_cast<uintptr_t>(Vector::ConvertToArray),
+    reinterpret_cast<uintptr_t>(Vector::Sort),
+    reinterpret_cast<uintptr_t>(Vector::GetIteratorObj),
+    reinterpret_cast<uintptr_t>(JSAPIVectorIterator::Next),
     reinterpret_cast<uintptr_t>(Queue::QueueConstructor),
     reinterpret_cast<uintptr_t>(Queue::Add),
     reinterpret_cast<uintptr_t>(Queue::GetFirst),
