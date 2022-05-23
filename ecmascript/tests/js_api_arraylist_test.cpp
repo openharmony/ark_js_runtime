@@ -400,7 +400,7 @@ HWTEST_F_L0(JSAPIArrayListTest, ReplaceAllElements)
 
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
     JSHandle<JSTaggedValue> result(thread, JSAPIArrayList::ReplaceAllElements(thread,
-        callInfo->GetThis(), callInfo->GetFunction(), callInfo->GetArg(0)));
+        callInfo->GetThis(), callInfo->GetFunction(), callInfo->GetCallArg(0)));
     EXPECT_EQ(result.GetTaggedValue(), JSTaggedValue::Undefined());
     TestHelper::TearDownFrame(thread, prev);
 
@@ -459,7 +459,7 @@ HWTEST_F_L0(JSAPIArrayListTest, ForEach)
 
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, callInfo.get());
     JSHandle<JSTaggedValue> result(thread,
-        JSAPIArrayList::ForEach(thread, callInfo->GetThis(), callInfo->GetFunction(), callInfo->GetArg(0)));
+        JSAPIArrayList::ForEach(thread, callInfo->GetThis(), callInfo->GetFunction(), callInfo->GetCallArg(0)));
     EXPECT_EQ(result.GetTaggedValue(), JSTaggedValue::Undefined());
     TestHelper::TearDownFrame(thread, prev);
 }
