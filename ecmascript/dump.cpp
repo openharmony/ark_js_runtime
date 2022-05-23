@@ -44,6 +44,8 @@
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set.h"
 #include "ecmascript/js_api_tree_set_iterator.h"
+#include "ecmascript/js_api_vector.h"
+#include "ecmascript/js_api_vector_iterator.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
@@ -311,6 +313,10 @@ CString JSHClass::DumpJSType(JSType type)
             return "TreeMapIterator";
         case JSType::JS_API_TREESET_ITERATOR:
             return "TreeSetIterator";
+        case JSType::JS_API_VECTOR:
+            return "Vector";
+        case JSType::JS_API_VECTOR_ITERATOR:
+            return "VectorIterator";
         case JSType::JS_API_QUEUE:
             return "Queue";
         case JSType::JS_API_QUEUE_ITERATOR:
@@ -716,6 +722,12 @@ static void DumpObject(TaggedObject *obj, std::ostream &os)
             break;
         case JSType::JS_API_TREESET_ITERATOR:
             JSAPITreeSetIterator::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_API_VECTOR:
+            JSAPIVector::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_API_VECTOR_ITERATOR:
+            JSAPIVectorIterator::Cast(obj)->Dump(os);
             break;
         case JSType::JS_API_QUEUE:
             JSAPIQueue::Cast(obj)->Dump(os);
@@ -1560,6 +1572,20 @@ void JSAPIQueueIterator::Dump(std::ostream &os) const
 {
     JSAPIQueue *queue = JSAPIQueue::Cast(GetIteratedQueue().GetTaggedObject());
     os << " - length: " << std::dec << queue->GetSize() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
+    JSObject::Dump(os);
+}
+
+void JSAPIVector::Dump(std::ostream &os) const
+{
+    os << " - length: " << std::dec << GetSize() << "\n";
+    JSObject::Dump(os);
+}
+
+void JSAPIVectorIterator::Dump(std::ostream &os) const
+{
+    JSAPIVector *vector = JSAPIVector::Cast(GetIteratedVector().GetTaggedObject());
+    os << " - length: " << std::dec << vector->GetSize() << "\n";
     os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
     JSObject::Dump(os);
 }
@@ -2968,6 +2994,12 @@ static void DumpObject(TaggedObject *obj,
         case JSType::JS_API_TREESET_ITERATOR:
             JSAPITreeSetIterator::Cast(obj)->DumpForSnapshot(vec);
             return;
+        case JSType::JS_API_VECTOR:
+            JSAPIVector::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_API_VECTOR_ITERATOR:
+            JSAPIVectorIterator::Cast(obj)->DumpForSnapshot(vec);
+            return;
         case JSType::JS_API_QUEUE:
             JSAPIQueue::Cast(obj)->DumpForSnapshot(vec);
             return;
@@ -3448,6 +3480,19 @@ void JSArrayIterator::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedVal
     JSObject::DumpForSnapshot(vec);
 }
 
+void JSAPIVector::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    JSObject::DumpForSnapshot(vec);
+}
+
+void JSAPIVectorIterator::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    JSAPIVector *vector = JSAPIVector::Cast(GetIteratedVector().GetTaggedObject());
+    vector->DumpForSnapshot(vec);
+    vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
+    JSObject::DumpForSnapshot(vec);
+}
+
 void JSStringIterator::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     vec.push_back(std::make_pair(CString("IteratedString"), GetIteratedString()));
@@ -3628,6 +3673,8 @@ void GlobalEnv::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &
     vec.push_back(std::make_pair(CString("ArrayListIteratorPrototype"), globalConst->GetArrayListIteratorPrototype()));
     vec.push_back(std::make_pair(CString("TreeMapIteratorPrototype"), globalConst->GetTreeMapIteratorPrototype()));
     vec.push_back(std::make_pair(CString("TreeSetIteratorPrototype"), globalConst->GetTreeSetIteratorPrototype()));
+    vec.push_back(std::make_pair(CString("VectorFunction"), globalConst->GetVectorFunction()));
+    vec.push_back(std::make_pair(CString("VectorIteratorPrototype"), globalConst->GetVectorIteratorPrototype()));
     vec.push_back(std::make_pair(CString("QueueIteratorPrototype"), globalConst->GetQueueIteratorPrototype()));
     vec.push_back(
         std::make_pair(CString("PlainArrayIteratorPrototype"), globalConst->GetPlainArrayIteratorPrototype()));

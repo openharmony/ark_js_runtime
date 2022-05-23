@@ -24,6 +24,10 @@
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/jspandafile/class_info_extractor.h"
+#include "ecmascript/jspandafile/program_object.h"
+#include "ecmascript/js_api_arraylist.h"
+#include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
 #include "ecmascript/js_api_plain_array.h"
@@ -36,10 +40,10 @@
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set.h"
 #include "ecmascript/js_api_tree_set_iterator.h"
+#include "ecmascript/js_api_vector.h"
+#include "ecmascript/js_api_vector_iterator.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_array.h"
-#include "ecmascript/js_api_arraylist.h"
-#include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_async_function.h"
@@ -462,6 +466,12 @@ public:
                 break;
             case JSType::JS_API_STACK_ITERATOR:
                 JSAPIStackIterator::Cast(object)->VisitRangeSlot(visitor);
+                break;
+            case JSType::JS_API_VECTOR:
+                JSAPIVector::Cast(object)->VisitRangeSlot(visitor);
+                break;
+            case JSType::JS_API_VECTOR_ITERATOR:
+                JSAPIVectorIterator::Cast(object)->VisitRangeSlot(visitor);
                 break;
             case JSType::BIGINT:
                 BigInt::Cast(object)->VisitRangeSlot(visitor);

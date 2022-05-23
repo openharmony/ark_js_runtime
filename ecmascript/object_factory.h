@@ -111,6 +111,8 @@ class JSAPITreeSet;
 class JSAPITreeMap;
 class JSAPITreeSetIterator;
 class JSAPITreeMapIterator;
+class JSAPIVector;
+class JSAPIVectorIterator;
 class ModuleNamespace;
 class ImportEntry;
 class ExportEntry;
@@ -427,6 +429,8 @@ public:
     JSHandle<JSAPITreeMapIterator> NewJSAPITreeMapIterator(const JSHandle<JSAPITreeMap> &map, IterationKind kind);
     JSHandle<JSAPITreeSetIterator> NewJSAPITreeSetIterator(const JSHandle<JSAPITreeSet> &set, IterationKind kind);
     JSHandle<JSAPIStackIterator> NewJSAPIStackIterator(const JSHandle<JSAPIStack> &stack);
+    JSHandle<JSAPIVector> NewJSAPIVector(uint32_t capacity);
+    JSHandle<JSAPIVectorIterator> NewJSAPIVectorIterator(const JSHandle<JSAPIVector> &vector);
     // --------------------------------------module--------------------------------------------
     JSHandle<ModuleNamespace> NewModuleNamespace();
     JSHandle<ImportEntry> NewImportEntry();

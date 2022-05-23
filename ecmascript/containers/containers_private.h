@@ -76,6 +76,9 @@ private:
     static void InitializeTreeSetIterator(JSThread *thread);
     static JSHandle<JSTaggedValue> InitializePlainArray(JSThread *thread);
     static void InitializePlainArrayIterator(JSThread *thread);
+    static JSHandle<JSTaggedValue> InitializeVector(JSThread *thread);
+    static void InitializeVectorIterator(JSThread *thread, const JSHandle<GlobalEnv> &env,
+                                         GlobalEnvConstants *globalConst);
     static JSHandle<JSTaggedValue> InitializeQueue(JSThread *thread);
     static void InitializeQueueIterator(JSThread *thread, const JSHandle<GlobalEnv> &env,
                                         GlobalEnvConstants *globalConst);
