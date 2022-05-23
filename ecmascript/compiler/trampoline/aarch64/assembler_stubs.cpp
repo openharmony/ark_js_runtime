@@ -583,12 +583,13 @@ void AssemblerStubs::JSCallStart(ExtendedAssembler *assembler, Register jsfunc)
         // output: glue:x0 argc:x1 calltarget:x2 argv:x3
         __ Mov(Register(X2), jsfunc);
         __ Ldr(Register(X1), MemoryOperand(sp, 0));
-        __ Add(X3, sp, Immediate(8));
+        __ Add(X3, sp, Immediate(FRAME_SLOT_SIZE));
 
         Register proxyCallInternalId(Register(X9).W());
         Register codeAddress(X10);
         __ Mov(proxyCallInternalId, Immediate(CommonStubCSigns::JsProxyCallInternal));
         __ Add(codeAddress, X0, Immediate(JSThread::GlueData::GetCOStubEntriesOffset(false)));
+        // 3 : 3 means 2 << 3 = 8
         __ Ldr(codeAddress, MemoryOperand(codeAddress, proxyCallInternalId, UXTW, 3));
         __ Br(codeAddress);
     }
@@ -635,27 +636,28 @@ void AssemblerStubs::CallRuntimeWithArgv(ExtendedAssembler *assembler)
     Register argc(X2);
     Register argv(X3);
     Register sp(SP);
-    __ Stp(argc, argv, MemoryOperand(sp, -16, MemoryOperand::AddrMode::PREINDEX));
-    __ Str(runtimeId, MemoryOperand(sp, -8, MemoryOperand::AddrMode::PREINDEX));
+    __ Stp(argc, argv, MemoryOperand(sp, -FRAME_SLOT_SIZE * 2, MemoryOperand::AddrMode::PREINDEX));
+    __ Str(runtimeId, MemoryOperand(sp, -FRAME_SLOT_SIZE, MemoryOperand::AddrMode::PREINDEX));
     __ SaveFpAndLr();
     Register fp(X29);
     __ Str(fp, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
     // construct leave frame
     Register frameType(X9);
     __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::LEAVE_FRAME_WITH_ARGV)));
-    __ Str(frameType, MemoryOperand(sp, -8, MemoryOperand::AddrMode::PREINDEX));
+    __ Str(frameType, MemoryOperand(sp, -FRAME_SLOT_SIZE, MemoryOperand::AddrMode::PREINDEX));
 
      // load runtime trampoline address
     Register tmp(X9);
     Register rtfunc(X9);
+    // 3 : 3 means 2 << 3 = 8
     __ Add(tmp, glue, Operand(runtimeId, LSL, 3));
     __ Ldr(rtfunc, MemoryOperand(tmp, JSThread::GlueData::GetRTStubEntriesOffset(false)));
     __ Mov(X1, argc);
     __ Mov(X2, argv);
     __ Blr(rtfunc);
-    __ Add(sp, sp, Immediate(8));
+    __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE));
     __ RestoreFpAndLr();
-    __ Add(sp, sp, Immediate(3 * 8));
+    __ Add(sp, sp, Immediate(3 * FRAME_SLOT_SIZE));
     __ Ret();
 }
 

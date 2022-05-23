@@ -58,7 +58,6 @@ public:
 
     static void CallRuntimeWithArgv(ExtendedAssembler *assembler);
 
-
     static void AsmInterpreterEntry(ExtendedAssembler *assembler);
 
     static void JSCallDispatch(ExtendedAssembler *assembler);
