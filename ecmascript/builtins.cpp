@@ -400,9 +400,9 @@ void Builtins::InitializeFunction(const JSHandle<GlobalEnv> &env, const JSHandle
 {
     [[maybe_unused]] EcmaHandleScope scope(thread_);
     // Initialize Function.prototype
-    JSMethod *invokeSelf =
-        vm_->GetMethodForNativeFunction(reinterpret_cast<void *>(Function::FunctionPrototypeInvokeSelf));
-    JSHandle<JSFunction> funcFuncPrototype = factory_->NewJSFunctionByDynClass(invokeSelf, emptyFuncDynclass);
+    JSHandle<JSFunction> funcFuncPrototype = factory_->NewJSFunctionByDynClass(
+        reinterpret_cast<void *>(Function::FunctionPrototypeInvokeSelf),
+        emptyFuncDynclass);
     // ecma 19.2.3 The value of the name property of the Function prototype object is the empty String.
     JSHandle<JSTaggedValue> emptyString(thread_->GlobalConstants()->GetHandledEmptyString());
     JSHandle<JSTaggedValue> undefinedString(thread_, JSTaggedValue::Undefined());
@@ -419,9 +419,9 @@ void Builtins::InitializeFunction(const JSHandle<GlobalEnv> &env, const JSHandle
     function->SetBuiltinsCtorMode();
 
     // Function = new Function() (forbidden use NewBuiltinConstructor)
-    JSMethod *ctor = vm_->GetMethodForNativeFunction(reinterpret_cast<void *>(Function::FunctionConstructor));
     JSHandle<JSFunction> funcFunc =
-        factory_->NewJSFunctionByDynClass(ctor, funcFuncIntanceDynclass, FunctionKind::BUILTIN_CONSTRUCTOR);
+        factory_->NewJSFunctionByDynClass(reinterpret_cast<void *>(Function::FunctionConstructor),
+        funcFuncIntanceDynclass, FunctionKind::BUILTIN_CONSTRUCTOR);
 
     auto funcFuncPrototypeObj = JSHandle<JSObject>(funcFuncPrototype);
     InitializeCtor(env, funcFuncPrototypeObj, funcFunc, "Function", FunctionLength::ONE);

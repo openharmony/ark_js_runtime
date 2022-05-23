@@ -520,8 +520,7 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAll(JSThread *thread,
         RETURN_COMPLETION_IF_ABRUPT(thread, nextPromise);
         // k. Let resolveElement be a new built-in function object as defined in Promise.all
         //    Resolve Element Functions.
-        JSHandle<JSPromiseAllResolveElementFunction> resoleveElement = factory->NewJSPromiseAllResolveElementFunction(
-            reinterpret_cast<void *>(BuiltinsPromiseHandler::ResolveElementFunction));
+        JSHandle<JSPromiseAllResolveElementFunction> resoleveElement = factory->NewJSPromiseAllResolveElementFunction();
         // l. Set the [[AlreadyCalled]] internal slot of resolveElement to a new Record {[[value]]: false }.
         JSHandle<PromiseRecord> falseRecord = factory->NewPromiseRecord();
         falseRecord->SetValue(thread, JSTaggedValue::False());

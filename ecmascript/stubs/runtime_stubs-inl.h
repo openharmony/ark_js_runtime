@@ -1426,15 +1426,16 @@ JSTaggedValue RuntimeStubs::RuntimeDefineGeneratorFunc(JSThread *thread, JSFunct
 
 JSTaggedValue RuntimeStubs::RuntimeDefineGeneratorFuncWithMethodId(JSThread *thread, JSTaggedValue methodId)
 {
-    auto aotCodeInfo  = thread->GetEcmaVM()->GetAotCodeInfo();
+    auto vm = thread->GetEcmaVM();
+    ObjectFactory *factory = vm->GetFactory();
+    auto aotCodeInfo  = vm->GetAotCodeInfo();
     auto codeEntry = aotCodeInfo->GetAOTFuncEntry(methodId.GetInt());
-    JSMethod *method = thread->GetEcmaVM()->GetMethodForNativeFunction(reinterpret_cast<void *>(codeEntry));
+    JSMethod *method = factory->NewMethodForNativeFunction(reinterpret_cast<void *>(codeEntry));
     method->SetAotCodeBit(true);
     method->SetNativeBit(false);
     method->SetNumArgsWithCallField(1);
 
-    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
     JSHandle<JSFunction> jsFunc = factory->NewJSGeneratorFunction(method);
     ASSERT_NO_ABRUPT_COMPLETION(thread);
 

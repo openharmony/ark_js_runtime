@@ -125,7 +125,7 @@ JSTaggedValue BuiltinsNumberFormat::Format(EcmaRuntimeCallInfo *argv)
     if (boundFunc->IsUndefined()) {
         ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
         JSHandle<JSIntlBoundFunction> intlBoundFunc = factory->NewJSIntlBoundFunction(
-            reinterpret_cast<void *>(BuiltinsNumberFormat::NumberFormatInternalFormatNumber));
+            MethodIndex::BUILTINS_NUMBER_FORMAT_NUMBER_FORMAT_INTERNAL_FORMAT_NUMBER);
         intlBoundFunc->SetNumberFormat(thread, typpedNf);
         typpedNf->SetBoundFormat(thread, intlBoundFunc);
     }

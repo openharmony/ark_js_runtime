@@ -56,8 +56,7 @@ JSTaggedValue BuiltinsProxy::Revocable([[maybe_unused]] EcmaRuntimeCallInfo *arg
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     // 3 ~ 4 new revoker function and set the [[RevocableProxy]] internal slot
-    JSHandle<JSProxyRevocFunction> revoker = thread->GetEcmaVM()->GetFactory()->NewJSProxyRevocFunction(
-        proxy, reinterpret_cast<void *>(InvalidateProxyFunction));
+    JSHandle<JSProxyRevocFunction> revoker = thread->GetEcmaVM()->GetFactory()->NewJSProxyRevocFunction(proxy);
 
     // 5.Let result be ObjectCreate(%ObjectPrototype%).
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
