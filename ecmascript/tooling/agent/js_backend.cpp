@@ -641,12 +641,21 @@ void JSBackend::GetLocalVariables(const InterpretedFrameHandler *frameHandler, c
     auto methodId = method->GetFileId();
     auto *extractor = GetExtractor(method->GetPandaFile());
     Local<JSValueRef> value = JSValueRef::Undefined(ecmaVm_);
+    Local<JSValueRef> name = JSValueRef::Undefined(ecmaVm_);
+    bool hasThis = false;
     for (const auto &var: extractor->GetLocalVariableTable(methodId)) {
         value = DebuggerApi::GetVRegValue(ecmaVm_, frameHandler, var.reg_number);
-        if (var.name == "this") {
+        if (var.name == "4newTarget") {
+            continue;
+        } else if (var.name == "this") {
             thisVal = value;
+            hasThis = true;
         } else {
-            Local<JSValueRef> name = StringRef::NewFromUtf8(ecmaVm_, var.name.c_str());
+            if (var.name == "4funcObj" && value->IsFunction()) {
+                name = Local<FunctionRef>(value)->GetName(ecmaVm_);
+            } else {
+                name = StringRef::NewFromUtf8(ecmaVm_, var.name.c_str());
+            }
             PropertyAttribute descriptor(value, true, true, true);
             localObj->DefineProperty(ecmaVm_, name, descriptor);
         }
@@ -655,8 +664,10 @@ void JSBackend::GetLocalVariables(const InterpretedFrameHandler *frameHandler, c
         thisVal = DebuggerApi::GetLexicalValueInfo(ecmaVm_, "this");
     }
 
-    // closure variables are stored in env
-    DebuggerApi::SetClosureVariables(ecmaVm_, frameHandler, localObj);
+    if (hasThis) {
+        // closure variables are stored in env
+        DebuggerApi::SetClosureVariables(ecmaVm_, frameHandler, localObj);
+    }
 }
 
 void JSBackend::UpdateScopeObject(const InterpretedFrameHandler *frameHandler,
