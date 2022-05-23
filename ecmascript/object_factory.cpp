@@ -714,10 +714,12 @@ JSHandle<JSObject> ObjectFactory::NewJSError(const ErrorType &errorType, const J
 
     // current frame may be entry frame, exception happened in JSFunction::Call and JSFunction::Construct,
     // in this case sp = the prev frame (interpreter frame).
+#if !ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
     FrameHandler frameHandler(thread_);
     if (frameHandler.IsInterpretedEntryFrame()) {
         thread_->SetCurrentSPFrame(frameHandler.GetPrevInterpretedFrame());
     }
+#endif
 
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     const GlobalEnvConstants *globalConst = thread_->GlobalConstants();

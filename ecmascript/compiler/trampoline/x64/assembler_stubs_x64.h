@@ -77,6 +77,8 @@ public:
 
     static void ResumeCaughtFrameAndDispatch(ExtendedAssembler *assembler);
 
+    static void ResumeUncaughtFrameAndReturn(ExtendedAssembler *assembler);
+
 private:
     static void PushArgsFastPath(ExtendedAssembler *assembler, Register glueRegister, Register argcRegister,
         Register argvRegister, Register callTargetRegister, Register methodRegister, Register prevSpRegister,

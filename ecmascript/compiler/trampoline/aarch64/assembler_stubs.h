@@ -97,6 +97,8 @@ public:
     static void ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *assembler);
 
     static void ResumeCaughtFrameAndDispatch(ExtendedAssembler *assembler);
+
+    static void ResumeUncaughtFrameAndReturn(ExtendedAssembler *assembler);
 };
 }  // namespace panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H

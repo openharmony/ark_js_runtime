@@ -240,6 +240,7 @@ public:
     GateRef IsDictionaryModeByHClass(GateRef hClass);
     GateRef IsDictionaryElement(GateRef hClass);
     GateRef NotBuiltinsConstructor(GateRef object);
+    GateRef IsClassConstructorFromBitField(GateRef bitfield);
     GateRef IsClassConstructor(GateRef object);
     GateRef IsClassPrototype(GateRef object);
     GateRef IsExtensible(GateRef object);
@@ -388,6 +389,7 @@ public:
     GateRef TruncInt32ToInt1(GateRef x);
     GateRef GetGlobalConstantAddr(GateRef index);
     GateRef GetGlobalConstantString(ConstantIndex index);
+    GateRef IsCallableFromBitField(GateRef bitfield);
     GateRef IsCallable(GateRef obj);
     GateRef GetOffsetFieldInPropAttr(GateRef attr);
     GateRef SetOffsetFieldInPropAttr(GateRef attr, GateRef value);
@@ -434,6 +436,7 @@ public:
     GateRef JSArrayListGet(GateRef glue, GateRef receiver, GateRef index);
 
     // Exception handle
+    GateRef HasPendingException(GateRef glue);
     void ReturnExceptionIfAbruptCompletion(GateRef glue);
 
     // method operator

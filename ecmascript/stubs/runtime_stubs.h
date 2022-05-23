@@ -85,6 +85,7 @@ extern "C" void ResumeRspAndDispatch(uintptr_t glue, uintptr_t pc, uintptr_t sp,
 extern "C" void ResumeRspAndReturn();
 extern "C" void ResumeCaughtFrameAndDispatch(uintptr_t glue, uintptr_t pc, uintptr_t sp, uintptr_t constantPool,
     uint64_t profileTypeInfo, uint64_t acc, uint32_t hotnessCounter);
+extern "C" void ResumeUncaughtFrameAndReturn(uintptr_t glue);
 #define RUNTIME_ASM_STUB_LIST(V)             \
     V(CallRuntime)                           \
     V(AsmInterpreterEntry)                   \
@@ -107,6 +108,7 @@ extern "C" void ResumeCaughtFrameAndDispatch(uintptr_t glue, uintptr_t pc, uintp
     V(ResumeRspAndDispatch)                  \
     V(ResumeRspAndReturn)                    \
     V(ResumeCaughtFrameAndDispatch)          \
+    V(ResumeUncaughtFrameAndReturn)          \
     V(CallRuntimeWithArgv)                   \
     V(JSCall)                                \
     V(JSCallWithArgV)                        \

@@ -925,7 +925,8 @@ DEF_RUNTIME_STUBS(UpFrame)
     FrameHandler frameHandler(thread);
     uint32_t pcOffset = panda_file::INVALID_OFFSET;
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
-        if (frameHandler.IsEntryFrame()) {
+        if (frameHandler.IsEntryFrame() || frameHandler.IsBuiltinFrame()) {
+            thread->SetLastFp(frameHandler.GetFp());
             return JSTaggedValue(static_cast<uint64_t>(0)).GetRawData();
         }
         auto method = frameHandler.GetMethod();
@@ -1265,7 +1266,7 @@ DEF_RUNTIME_STUBS(NotifyBytecodePcChanged)
     RUNTIME_STUBS_HEADER(NotifyBytecodePcChanged);
     FrameHandler frameHandler(thread);
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
-        if (frameHandler.IsEntryFrame()) {
+        if (frameHandler.IsEntryFrame() || frameHandler.IsBuiltinFrame()) {
             continue;
         }
         JSMethod *method = frameHandler.GetMethod();
