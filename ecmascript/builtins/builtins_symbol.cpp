@@ -250,13 +250,14 @@ JSTaggedValue BuiltinsSymbol::ThisSymbolValue(JSThread *thread, const JSHandle<J
     }
 
     // If s does not have a [[SymbolData]] internal slot, throw a TypeError exception.
-    if (!value->IsJSPrimitive()) {
-        THROW_TYPE_ERROR_AND_RETURN(thread, "ThisSymbolValue: no SymbolData", JSTaggedValue::Exception());
+    if (value->IsJSPrimitiveRef()) {
+        JSTaggedValue primitive = JSPrimitiveRef::Cast(value->GetTaggedObject())->GetValue();
+        if (primitive.IsSymbol()) {
+            // Return the value of s's [[SymbolData]] internal slot.
+            JSTaggedValue primitiveDesValue = JSSymbol::Cast(primitive.GetTaggedObject())->GetDescription();
+            return primitiveDesValue;
+        }
     }
-    JSTaggedValue primitive = JSPrimitiveRef::Cast(value->GetTaggedObject())->GetValue();
-    ASSERT(primitive.IsSymbol());
-    // Return the value of s's [[SymbolData]] internal slot.
-    JSTaggedValue primitiveDesValue = JSSymbol::Cast(primitive.GetTaggedObject())->GetDescription();
-    return primitiveDesValue;
+    THROW_TYPE_ERROR_AND_RETURN(thread, "can not convert to Symbol", JSTaggedValue::Exception());
 }
 }  // namespace panda::ecmascript::builtins
