@@ -121,11 +121,6 @@ public:
         }
     }
 
-    inline JSHandle<JSTaggedValue> GetArg(size_t idx) const
-    {
-        return JSHandle<JSTaggedValue>(GetArgAddress(idx));
-    }
-
     inline JSHandle<JSTaggedValue> GetFunction() const
     {
         return GetArg(FUNC_INDEX);
@@ -179,17 +174,9 @@ public:
         return numArgs_;
     }
 
-    inline JSTaggedType *GetArgs()
+    inline JSTaggedType *GetArgs() const
     {
         return stackArgs_;
-    }
-
-    inline uintptr_t GetArgAddress(size_t idx) const
-    {
-        if (stackArgs_ != nullptr && (idx < static_cast<size_t>(numArgs_ + NUM_MANDATORY_JSFUNC_ARGS))) {
-            return reinterpret_cast<uintptr_t>(&stackArgs_[idx]);
-        }
-        return 0U;
     }
 
     static constexpr size_t GetThreadOffset()
@@ -210,12 +197,25 @@ public:
 private:
     enum ArgsIndex : uint8_t { FUNC_INDEX = 0, NEW_TARGET_INDEX, THIS_INDEX, FIRST_ARGS_INDEX };
 
+    inline uintptr_t GetArgAddress(size_t idx) const
+    {
+        if (stackArgs_ != nullptr && (idx < static_cast<size_t>(numArgs_ + NUM_MANDATORY_JSFUNC_ARGS))) {
+            return reinterpret_cast<uintptr_t>(&stackArgs_[idx]);
+        }
+        return 0U;
+    }
+
     inline void SetArg(size_t idx, const JSTaggedValue tagged)
     {
         uintptr_t addr = GetArgAddress(idx);
         if (addr != 0U) {
             *reinterpret_cast<JSTaggedValue *>(addr) = tagged;
         }
+    }
+
+    inline JSHandle<JSTaggedValue> GetArg(size_t idx) const
+    {
+        return JSHandle<JSTaggedValue>(GetArgAddress(idx));
     }
 
 private:

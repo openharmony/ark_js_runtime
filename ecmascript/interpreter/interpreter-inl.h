@@ -404,39 +404,17 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(EcmaRuntimeCallInfo *info)
 {
     JSThread *thread = info->GetThread();
     INTERPRETER_TRACE(thread, ExecuteNative);
-    ECMAObject *callTarget = reinterpret_cast<ECMAObject*>(info->GetFunctionValue().GetTaggedObject());
-    JSMethod *method = callTarget->GetCallTarget();
-    ASSERT(method->GetNumVregsWithCallField() == 0);
 
     // current is entry frame.
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    InterpretedEntryFrame *entryState = GET_ENTRY_FRAME(sp);
-    JSTaggedType *prevSp = entryState->base.prev;
-
     int32_t actualNumArgs = static_cast<int32_t>(info->GetArgsNumber());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     JSTaggedType *newSp = sp - GET_ENTRY_FRAME_WITH_ARGS_SIZE(static_cast<uint32_t>(actualNumArgs));
-    if (UNLIKELY(thread->DoStackOverflowCheck(newSp - actualNumArgs - RESERVED_CALL_ARGCOUNT))) {
-        return JSTaggedValue::Undefined();
-    }
-
-    for (int i = actualNumArgs - 1; i >= 0; i--) {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        *(--newSp) = info->GetCallArgValue(i).GetRawData();
-    }
-    newSp -= RESERVED_CALL_ARGCOUNT;
-
-    EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, static_cast<size_t>(actualNumArgs), newSp);
-    newSp[RESERVED_INDEX_CALL_TARGET] = info->GetFunctionValue().GetRawData();
-    newSp[RESERVED_INDEX_NEW_TARGET] = info->GetNewTargetValue().GetRawData();
-    newSp[RESERVED_INDEX_THIS] = info->GetThisValue().GetRawData();
 
     InterpretedFrame *state = GET_FRAME(newSp);
     state->base.prev = sp;
     state->base.type = FrameType::INTERPRETER_FRAME;
     state->pc = nullptr;
-    state->sp = newSp;
     state->function = info->GetFunctionValue();
     thread->SetCurrentSPFrame(newSp);
 
@@ -444,10 +422,15 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(EcmaRuntimeCallInfo *info)
     CpuProfiler::IsNeedAndGetStack(thread);
 #endif
     thread->CheckSafepoint();
+    ECMAObject *callTarget = reinterpret_cast<ECMAObject*>(info->GetFunctionValue().GetTaggedObject());
+    JSMethod *method = callTarget->GetCallTarget();
     LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call.";
     JSTaggedValue tagged =
-        reinterpret_cast<EcmaEntrypoint>(const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);
+        reinterpret_cast<EcmaEntrypoint>(const_cast<void *>(method->GetNativePointer()))(info);
     LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call.";
+
+    InterpretedEntryFrame *entryState = GET_ENTRY_FRAME(sp);
+    JSTaggedType *prevSp = entryState->base.prev;
     thread->SetCurrentSPFrame(prevSp);
 #if ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER
     CpuProfiler::IsNeedAndGetStack(thread);
@@ -484,9 +467,6 @@ JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
 
     // current is entry frame.
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    InterpretedEntryFrame *entryState = GET_ENTRY_FRAME(sp);
-    JSTaggedType *prevSp = entryState->base.prev;
-
     int32_t actualNumArgs = static_cast<int32_t>(info->GetArgsNumber());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     JSTaggedType *newSp = sp - GET_ENTRY_FRAME_WITH_ARGS_SIZE(static_cast<uint32_t>(actualNumArgs));
@@ -552,7 +532,6 @@ JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
     const uint8_t *pc = method->GetBytecodeArray();
     InterpretedFrame *state = GET_FRAME(newSp);
     state->pc = pc;
-    state->sp = newSp;
     state->function = info->GetFunctionValue();
     state->acc = JSTaggedValue::Hole();
     JSHandle<JSFunction> thisFunc = JSHandle<JSFunction>::Cast(func);
@@ -567,7 +546,7 @@ JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
     CpuProfiler::IsNeedAndGetStack(thread);
 #endif
     thread->CheckSafepoint();
-    LOG(DEBUG, INTERPRETER) << "break Entry: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(newSp) << " "
+    LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(newSp) << " "
                             << std::hex << reinterpret_cast<uintptr_t>(pc);
 
     EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
@@ -575,6 +554,8 @@ JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
     // NOLINTNEXTLINE(readability-identifier-naming)
     const JSTaggedValue resAcc = state->acc;
     // pop frame
+    InterpretedEntryFrame *entryState = GET_ENTRY_FRAME(sp);
+    JSTaggedType *prevSp = entryState->base.prev;
     thread->SetCurrentSPFrame(prevSp);
 #if ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER
     CpuProfiler::IsNeedAndGetStack(thread);
@@ -610,7 +591,6 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
 
     InterpretedFrame *breakState = GET_FRAME(breakSp);
     breakState->pc = nullptr;
-    breakState->sp = nullptr;
     breakState->function = JSTaggedValue::Hole();
     breakState->base.prev = currentSp;
     breakState->base.type = FrameType::INTERPRETER_FRAME;
@@ -635,7 +615,6 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
 
     InterpretedFrame *state = GET_FRAME(newSp);
     state->pc = resumePc;
-    state->sp = newSp;
     state->function = func.GetTaggedValue();
     state->constpool = constpool;
     state->profileTypeInfo = func->GetProfileTypeInfo();
@@ -919,7 +898,6 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             state->base.prev = sp;
             state->base.type = FrameType::INTERPRETER_FRAME;
             state->pc = nullptr;
-            state->sp = newSp;
             state->function = JSTaggedValue(funcTagged);
             thread->SetCurrentSPFrame(newSp);
             LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call.";
@@ -971,7 +949,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             state->base.prev = sp;
             state->base.type = FrameType::INTERPRETER_FRAME;
             state->pc = pc = method->GetBytecodeArray();
-            state->sp = sp = newSp;
+            sp = newSp;
             state->function = JSTaggedValue(funcTagged);
             state->acc = JSTaggedValue::Hole();
             state->constpool = JSFunction::Cast(funcObject)->GetConstantPool();
@@ -986,9 +964,9 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         }
     }
     HANDLE_OPCODE(HANDLE_RETURN_DYN) {
-        LOG_INST() << "returnla ";
+        LOG_INST() << "return.dyn";
         InterpretedFrame *state = GET_FRAME(sp);
-        LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(state->sp) << " "
+        LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                                 << std::hex << reinterpret_cast<uintptr_t>(state->pc);
         JSMethod *method = JSFunction::Cast(state->function.GetTaggedObject())->GetMethod();
         [[maybe_unused]] auto fistPC = method->GetBytecodeArray();
@@ -1983,7 +1961,6 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 state->base.prev = sp;
                 state->base.type = FrameType::INTERPRETER_FRAME;
                 state->pc = nullptr;
-                state->sp = newSp;
                 state->function = ctor;
                 thread->SetCurrentSPFrame(newSp);
 
@@ -2061,7 +2038,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 state->base.prev = sp;
                 state->base.type = FrameType::INTERPRETER_FAST_NEW_FRAME;
                 state->pc = pc = ctorMethod->GetBytecodeArray();
-                state->sp = sp = newSp;
+                sp = newSp;
                 state->acc = JSTaggedValue::Hole();
                 constpool = ConstantPool::Cast(state->constpool.GetTaggedObject());
 
@@ -3523,7 +3500,6 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 state->base.prev = sp;
                 state->base.type = FrameType::INTERPRETER_FRAME;
                 state->pc = nullptr;
-                state->sp = newSp;
                 state->function = superCtor;
                 thread->SetCurrentSPFrame(newSp);
                 LOG(DEBUG, INTERPRETER) << "Entry: Runtime SuperCall ";
@@ -3599,7 +3575,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 state->base.prev = sp;
                 state->base.type = FrameType::INTERPRETER_FAST_NEW_FRAME;
                 state->pc = pc = superCtorMethod->GetBytecodeArray();
-                state->sp = sp = newSp;
+                sp = newSp;
                 state->acc = JSTaggedValue::Hole();
                 constpool = ConstantPool::Cast(state->constpool.GetTaggedObject());
 
@@ -3733,7 +3709,6 @@ void EcmaInterpreter::InitStackFrame(JSThread *thread)
     uint64_t *prevSp = const_cast<uint64_t *>(thread->GetCurrentSPFrame());
     InterpretedFrame *state = GET_FRAME(prevSp);
     state->pc = nullptr;
-    state->sp = nullptr;
     state->function = JSTaggedValue::Hole();
     state->acc = JSTaggedValue::Hole();
     state->constpool = JSTaggedValue::Hole();

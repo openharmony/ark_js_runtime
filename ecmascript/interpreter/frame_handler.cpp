@@ -364,7 +364,7 @@ ARK_INLINE void FrameHandler::InterpretedFrameIterate(const JSTaggedType *sp,
                                                       const RootRangeVisitor &v1) const
 {
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp);
-    if (frame->sp == nullptr) {
+    if (frame->function == JSTaggedValue::Hole()) {
         return;
     }
     JSTaggedType *prevSp = frame->GetPrevFrameFp();
