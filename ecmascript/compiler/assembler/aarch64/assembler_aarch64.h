@@ -30,6 +30,10 @@ public:
     {
         return Register(reg_, RegisterType::X);
     }
+    RegisterType GetType() const
+    {
+        return type_;
+    }
     inline bool IsSp() const
     {
         return reg_ == RegisterId::SP;
@@ -252,6 +256,11 @@ public:
     uint8_t GetShiftAmount() const
     {
         return shiftAmount_;
+    }
+
+    Register GetRegisterOffset() const
+    {
+        return offsetReg_;
     }
 private:
     Register base_;

@@ -54,7 +54,10 @@ public:
 
     static void JSCall(ExtendedAssembler *assembler);
 
+    static void JSCallStart(ExtendedAssembler *assembler, Register jsfunc);
+
     static void CallRuntimeWithArgv(ExtendedAssembler *assembler);
+
 
     static void AsmInterpreterEntry(ExtendedAssembler *assembler);
 
