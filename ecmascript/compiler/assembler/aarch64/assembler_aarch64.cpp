@@ -291,8 +291,10 @@ void AssemblerAarch64::Ldr(const Register &rt, const MemoryOperand &operand)
         ASSERT(operand.GetExtendOption() != Extend::NO_EXTEND);
         uint32_t shift = operand.GetShiftAmount();
         if (regX) {
+            // 3 : 3 means address aligned with 8bytes
             ASSERT(shift == 0 || shift == 3);
         } else {
+            // 2 : 2 means address aligned with 4bytes
             ASSERT(shift == 0 || shift == 2);
         }
         shift = (shift == 0) ? 0 : 1;
@@ -303,7 +305,7 @@ void AssemblerAarch64::Ldr(const Register &rt, const MemoryOperand &operand)
         uint32_t shift_field = (shift << LDR_STR_S_LOWBITS) & LDR_STR_S_MASK;
         uint32_t instructionCode = (regX << 30) | LDR_Register | Rm(rm.GetId())
                                    | extend_field | shift_field | Rn(rn.GetId()) | Rt(rt.GetId());
-         EmitU32(instructionCode);
+        EmitU32(instructionCode);
     }
 }
 
