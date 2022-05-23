@@ -298,7 +298,7 @@ Local<ObjectRef> JSNApi::GetGlobalObject(const EcmaVM *vm)
 
 void JSNApi::ExecutePendingJob(const EcmaVM *vm)
 {
-    vm->ExecutePromisePendingJob();
+    EcmaVM::ConstCast(vm)->ExecutePromisePendingJob();
 }
 
 uintptr_t JSNApi::GetHandleAddr(const EcmaVM *vm, uintptr_t localAddress)
@@ -991,7 +991,7 @@ Local<JSValueRef> FunctionRef::Call(const EcmaVM *vm, Local<JSValueRef> thisObj,
     RETURN_VALUE_IF_ABRUPT_NOT_CLEAR_EXCEPTION(thread, JSValueRef::Exception(vm));
     JSHandle<JSTaggedValue> resultValue(thread, result);
 
-    vm->ExecutePromisePendingJob();
+    EcmaVM::ConstCast(vm)->ExecutePromisePendingJob();
     RETURN_VALUE_IF_ABRUPT_NOT_CLEAR_EXCEPTION(thread, JSValueRef::Exception(vm));
 
     return scope.Escape(JSNApiHelper::ToLocal<JSValueRef>(resultValue));
@@ -1137,7 +1137,7 @@ bool PromiseCapabilityRef::Resolve(const EcmaVM *vm, Local<JSValueRef> value)
     JSFunction::Call(&info);
     RETURN_VALUE_IF_ABRUPT(thread, false);
 
-    vm->ExecutePromisePendingJob();
+    EcmaVM::ConstCast(vm)->ExecutePromisePendingJob();
     RETURN_VALUE_IF_ABRUPT(thread, false);
     return true;
 }
@@ -1158,7 +1158,7 @@ bool PromiseCapabilityRef::Reject(const EcmaVM *vm, Local<JSValueRef> reason)
     JSFunction::Call(&info);
     RETURN_VALUE_IF_ABRUPT(thread, false);
 
-    vm->ExecutePromisePendingJob();
+    EcmaVM::ConstCast(vm)->ExecutePromisePendingJob();
     RETURN_VALUE_IF_ABRUPT(thread, false);
     return true;
 }
