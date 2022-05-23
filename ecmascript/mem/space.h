@@ -201,6 +201,11 @@ public:
     void FinishConcurrentSweep();
     size_t GetHeapObjectSize() const;
     void IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const;
+
+    void RecliamHugeRegion();
+
+private:
+    EcmaList<Region> hugeNeedFreeList_ {};
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_SPACE_H
