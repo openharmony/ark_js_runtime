@@ -480,8 +480,6 @@ static_assert(GLUE_##name##_OFFSET_64 ==                                        
 GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
 #undef GLUE_OFFSET_MACRO
 // check asm glue offset definition samed with clang
-static_assert(GLUE_CURRENT_FRAME_OFFSET_64 == ASM_GLUE_CURRENT_FRAME_OFFSET);
-static_assert(GLUE_RUNTIME_FUNCTIONS_OFFSET_64 == ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET);
 #endif
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_JS_THREAD_H

@@ -236,13 +236,23 @@ private:
                 if (!isLegalChar) {
                     THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected string in JSON", JSTaggedValue::Exception());
                 }
+                current_++;
             } else if (UNLIKELY(*current_ > ASCII_END)) {
-                std::u16string str(current_, current_ + 1);
-                res += ConvertToString(StringHelper::U16stringToString(str));
+                if (UNLIKELY(*current_ > utf_helper::DECODE_LEAD_LOW && *current_ < utf_helper::DECODE_LEAD_HIGH &&
+                             *(current_ + 1) > utf_helper::DECODE_TRAIL_LOW &&
+                             *(current_ + 1) < utf_helper::DECODE_TRAIL_HIGH)) {
+                    std::u16string str(current_, current_ + 2);  // 2 means twice as many bytes as normal u16string
+                    res += ConvertToString(StringHelper::U16stringToString(str));
+                    current_ += 2;  // 2 means twice as many bytes as normal u16string
+                } else {
+                    std::u16string str(current_, current_ + 1);
+                    res += ConvertToString(StringHelper::U16stringToString(str));
+                    current_++;
+                }
             } else {
                 res += *current_;
+                current_++;
             }
-            current_++;
         }
         return factory_->NewFromUtf8Literal(reinterpret_cast<const uint8_t *>(res.c_str()), res.length())
             .GetTaggedValue();
@@ -263,13 +273,13 @@ private:
                 if (isAscii) {
                     CString value(current_, end_);
                     current_ = end_;
-                    return factory_->NewFromUtf8LiteralUnCheck(
-                        reinterpret_cast<const uint8_t *>(value.c_str()), value.length(), true).GetTaggedValue();
+                    return factory_->NewFromUtf8Literal(
+                        reinterpret_cast<const uint8_t *>(value.c_str()), value.length()).GetTaggedValue();
                 }
                 std::u16string value(current_, end_);
                 current_ = end_;
-                return factory_->NewFromUtf16LiteralUnCheck(
-                    reinterpret_cast<const uint16_t *>(value.c_str()), value.length(), false).GetTaggedValue();
+                return factory_->NewFromUtf16Literal(
+                    reinterpret_cast<const uint16_t *>(value.c_str()), value.length()).GetTaggedValue();
             }
         } else {
             if (*end_ != '"' || current_ == end_) {
@@ -282,12 +292,12 @@ private:
             if (LIKELY(isFastString)) {
                 if (isAscii) {
                     CString value(current_, end_);
-                    return factory_->NewFromUtf8LiteralUnCheck(
-                        reinterpret_cast<const uint8_t *>(value.c_str()), value.length(), true).GetTaggedValue();
+                    return factory_->NewFromUtf8Literal(
+                        reinterpret_cast<const uint8_t *>(value.c_str()), value.length()).GetTaggedValue();
                 }
                 std::u16string value(current_, end_);
-                return factory_->NewFromUtf16LiteralUnCheck(
-                    reinterpret_cast<const uint16_t *>(value.c_str()), value.length(), false).GetTaggedValue();
+                return factory_->NewFromUtf16Literal(
+                    reinterpret_cast<const uint16_t *>(value.c_str()), value.length()).GetTaggedValue();
             }
         }
         return SlowParseString();
@@ -601,9 +611,7 @@ private:
                 end_ = current;
                 return true;
             } else if (UNLIKELY(c == '\\')) {
-                if (*(current + 1) == '"') {
-                    current++;
-                }
+                current++;
                 isFast = false;
             }
             if (!IsLegalAsciiCharacter(c, isAscii)) {
@@ -625,9 +633,7 @@ private:
                 end_ = current;
                 return true;
             } else if (UNLIKELY(c == '\\')) {
-                if (*(current + 1) == '"') {
-                    current++;
-                }
+                current++;
                 isFast = false;
             } else if (UNLIKELY(c < CODE_SPACE)) {
                 return false;

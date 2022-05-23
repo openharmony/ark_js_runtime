@@ -1309,15 +1309,17 @@ JSHandle<TaggedArray> JSObject::EnumerableOwnNames(JSThread *thread, const JSHan
     uint32_t length = keys->GetLength();
 
     JSHandle<TaggedArray> names = factory->NewTaggedArray(length);
+    JSMutableHandle<JSTaggedValue> keyHandle(thread, JSTaggedValue::Undefined());
     for (uint32_t i = 0; i < length; i++) {
-        JSTaggedValue key(keys->Get(i));
-        if (key.IsString()) {
+        keyHandle.Update(keys->Get(i));
+        if (keyHandle->IsString()) {
             PropertyDescriptor desc(thread);
-            bool status = GetOwnProperty(thread, obj, JSHandle<JSTaggedValue>(thread, key), desc);
+            bool status = JSTaggedValue::GetOwnProperty(thread, JSHandle<JSTaggedValue>(obj),
+                                                        keyHandle, desc);
             RETURN_HANDLE_IF_ABRUPT_COMPLETION(TaggedArray, thread);
 
             if (status && desc.IsEnumerable()) {
-                names->Set(thread, copyLength, key);
+                names->Set(thread, copyLength, keyHandle);
                 copyLength++;
             }
         }
