@@ -27,18 +27,11 @@ FileStream::FileStream(const std::string &fileName)
     Initialize(fileName);
 }
 
-FileStream::~FileStream()
-{
-    EndOfStream();
-}
-
 void FileStream::EndOfStream()
 {
-    if (fileStream_.fail()) {
-        return;
+    if (Good()) {
+        fileStream_.close();
     }
-
-    fileStream_.close();
 }
 
 bool FileStream::Good()
@@ -93,14 +86,11 @@ bool FileStream::WriteChunk(char* data, int size)
     return true;
 }
 
-FileDescriptorStream::~FileDescriptorStream()
-{
-    EndOfStream();
-}
-
 void FileDescriptorStream::EndOfStream()
 {
-    LOG_ECMA(INFO) << "FileDescriptorStream" << fd_;
+    if (Good()) {
+        close(fd_);
+    }
 }
 
 bool FileDescriptorStream::Good()

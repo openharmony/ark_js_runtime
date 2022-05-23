@@ -36,6 +36,7 @@ host_unittest_action("EcmaVmTest") {
     "global_dictionary_test.cpp",
     "glue_regs_test.cpp",
     "huge_object_test.cpp",
+    "js_api_arraylist_iterator_test.cpp",
     "js_api_arraylist_test.cpp",
     "js_api_deque_iterator_test.cpp",
     "js_api_deque_test.cpp",
@@ -50,6 +51,7 @@ host_unittest_action("EcmaVmTest") {
     "js_array_buffer_test.cpp",
     "js_array_iterator_test.cpp",
     "js_array_test.cpp",
+    "js_bigint_test.cpp",
     "js_dataview_test.cpp",
     "js_date_test.cpp",
     "js_forin_iterator_test.cpp",
@@ -89,7 +91,8 @@ host_unittest_action("EcmaVmTest") {
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_js_intl_set",
+    "$third_party_gn_path/icu/icu4c:shared_icui18n",
+    "$third_party_gn_path/icu/icu4c:shared_icuuc",
     "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]

@@ -48,7 +48,7 @@ enum class ComparisonResult {
 
 using JSTaggedType = uint64_t;
 
-static const JSTaggedType NULL_POINTER = 0;
+static const JSTaggedType NULL_POINTER = 0x05ULL;
 
 static inline JSTaggedType ReinterpretDoubleToTaggedType(double value)
 {
@@ -76,9 +76,9 @@ static inline double ReinterpretTaggedTypeToDouble(JSTaggedType value)
 //  There are some special markers of Object:
 //    False:       [56 bits 0] | 0x06          // 0110
 //    True:        [56 bits 0] | 0x07          // 0111
-//    Undefined:   [56 bits 0] | 0x0a          // 1010
-//    Null:        [56 bits 0] | 0x02          // 0010
-//    Hole:        [56 bits 0] | 0x00          // 0000
+//    Undefined:   [56 bits 0] | 0x02          // 0010
+//    Null:        [56 bits 0] | 0x03          // 0011
+//    Hole:        [56 bits 0] | 0x05          // 0101
 
 class JSTaggedValue {
 public:
@@ -90,20 +90,24 @@ public:
     static constexpr JSTaggedType TAG_OBJECT = 0x0000ULL << TAG_BITS_SHIFT;
 
     static constexpr JSTaggedType TAG_SPECIAL_MASK = 0xFFULL;
+    static constexpr TaggedType TAG_HEAPOBJECT_BOOLEAN = TAG_INT | 0x06ULL;
+    static constexpr TaggedType TAG_WEAK = TAG_INT | 0x07ULL;
+    static constexpr TaggedType TAG_SPECIAL_MARK = TAG_INT | 0x02ULL;
     static constexpr JSTaggedType TAG_SPECIAL_VALUE = 0x02ULL;
     static constexpr JSTaggedType TAG_BOOLEAN = 0x04ULL;
-    static constexpr JSTaggedType TAG_UNDEFINED = 0x08ULL;
-    static constexpr JSTaggedType TAG_EXCEPTION = 0x10ULL;
+    static constexpr JSTaggedType TAG_BOOLEAN_MASK = 0x06ULL;
+    static constexpr TaggedType TAG_NULL = 0x01ULL;
+    static constexpr TaggedType TAG_EXCEPTION = 0x08ULL;
     static constexpr JSTaggedType TAG_WEAK_FILTER = 0x03ULL;
-    static constexpr JSTaggedType VALUE_HOLE = TAG_OBJECT | 0x00ULL;
+    static constexpr JSTaggedType VALUE_HOLE = TAG_OBJECT | 0x05ULL;
     static constexpr JSTaggedType TAG_WEAK_MASK = TAG_OBJECT | 0x01ULL;
-    static constexpr JSTaggedType VALUE_NULL = TAG_OBJECT | TAG_SPECIAL_VALUE;
+    static constexpr JSTaggedType VALUE_NULL = TAG_OBJECT | TAG_SPECIAL_VALUE | TAG_NULL;
     static constexpr JSTaggedType VALUE_FALSE =
         TAG_OBJECT | TAG_BOOLEAN | TAG_SPECIAL_VALUE | static_cast<JSTaggedType>(false);
     static constexpr JSTaggedType VALUE_TRUE =
         TAG_OBJECT | TAG_BOOLEAN | TAG_SPECIAL_VALUE | static_cast<JSTaggedType>(true);
     static constexpr JSTaggedType VALUE_ZERO = TAG_INT | 0x00ULL;
-    static constexpr JSTaggedType VALUE_UNDEFINED = TAG_OBJECT | TAG_SPECIAL_VALUE | TAG_UNDEFINED;
+    static constexpr JSTaggedType VALUE_UNDEFINED = TAG_OBJECT | TAG_SPECIAL_VALUE;
     static constexpr JSTaggedType VALUE_EXCEPTION = TAG_OBJECT | TAG_SPECIAL_VALUE | TAG_EXCEPTION;
 
     static constexpr size_t DOUBLE_ENCODE_OFFSET_BIT = 48;
@@ -191,7 +195,7 @@ public:
 
     inline bool IsWeak() const
     {
-        return IsHeapObject() && ((value_ & TAG_WEAK_MASK) == 1U);
+        return ((value_ & TAG_WEAK) == 0x01ULL);;
     }
 
     inline bool IsDouble() const
@@ -206,7 +210,7 @@ public:
 
     inline bool IsSpecial() const
     {
-        return ((value_ & (~TAG_SPECIAL_MASK)) == 0U) && (((value_ & TAG_SPECIAL_VALUE) != 0U) || IsHole());
+        return ((value_ & TAG_SPECIAL_MARK) == TAG_SPECIAL_VALUE) || IsHole();
     }
 
     inline bool IsObject() const
@@ -221,7 +225,7 @@ public:
 
     inline bool IsHeapObject() const
     {
-        return IsObject() && !IsSpecial();
+        return ((value_ & TAG_HEAPOBJECT_BOOLEAN) == 0U);
     }
 
     inline double GetDouble() const
@@ -289,7 +293,7 @@ public:
 
     inline bool IsUndefinedOrNull() const
     {
-        return IsNull() || IsUndefined();
+        return ((value_ & TAG_HEAPOBJECT_BOOLEAN) == TAG_SPECIAL_VALUE);
     }
 
     inline bool IsHole() const
@@ -399,6 +403,7 @@ public:
     static JSTaggedNumber ToLength(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
     static JSTaggedValue CanonicalNumericIndexString(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
     static JSTaggedNumber ToIndex(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
+    static JSTaggedNumber StringToDouble(JSTaggedValue tagged);
 
     static bool ToArrayLength(JSThread *thread, const JSHandle<JSTaggedValue> &tagged, uint32_t *output);
     static bool ToElementIndex(JSTaggedValue key, uint32_t *output);

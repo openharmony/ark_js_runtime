@@ -358,7 +358,7 @@ JSTaggedValue BuiltinsArrayBuffer::SetValueInBuffer(JSThread *thread, JSTaggedVa
     void *pointer = JSNativePointer::Cast(data.GetTaggedObject())->GetExternalPointer();
     auto *block = reinterpret_cast<uint8_t *>(pointer);
 
-    if (IsBigIntElementType(type)) {
+    if (UNLIKELY(IsBigIntElementType(type))) {
         switch (type) {
             case DataViewType::BIGINT64:
                 SetValueInBufferForBigInt<int64_t>(thread, value, block, byteIndex, littleEndian);
@@ -374,38 +374,7 @@ JSTaggedValue BuiltinsArrayBuffer::SetValueInBuffer(JSThread *thread, JSTaggedVa
         return JSTaggedValue::Undefined();
     }
     double val = value.GetTaggedValue().GetNumber();
-    switch (type) {
-        case DataViewType::UINT8:
-            SetValueInBufferForByte<uint8_t>(val, block, byteIndex);
-            break;
-        case DataViewType::UINT8_CLAMPED:
-            SetValueInBufferForUint8Clamped(val, block, byteIndex);
-            break;
-        case DataViewType::INT8:
-            SetValueInBufferForByte<int8_t>(val, block, byteIndex);
-            break;
-        case DataViewType::UINT16:
-            SetValueInBufferForInteger<uint16_t>(val, block, byteIndex, littleEndian);
-            break;
-        case DataViewType::INT16:
-            SetValueInBufferForInteger<int16_t>(val, block, byteIndex, littleEndian);
-            break;
-        case DataViewType::UINT32:
-            SetValueInBufferForInteger<uint32_t>(val, block, byteIndex, littleEndian);
-            break;
-        case DataViewType::INT32:
-            SetValueInBufferForInteger<int32_t>(val, block, byteIndex, littleEndian);
-            break;
-        case DataViewType::FLOAT32:
-            SetValueInBufferForFloat<float>(val, block, byteIndex, littleEndian);
-            break;
-        case DataViewType::FLOAT64:
-            SetValueInBufferForFloat<double>(val, block, byteIndex, littleEndian);
-            break;
-        default:
-            UNREACHABLE();
-    }
-    return JSTaggedValue::Undefined();
+    return SetValueInBuffer(byteIndex, block, type, val, littleEndian);
 }
 
 // es12 25.1.2.7 IsBigIntElementType ( type )
@@ -629,5 +598,52 @@ void BuiltinsArrayBuffer::SetValueInBufferForBigInt(JSThread *thread, const JSHa
         value = LittleEndianToBigEndian64Bit<T>(value);
     }
     SetTypeData(block, value, byteIndex);
+}
+
+JSTaggedValue BuiltinsArrayBuffer::FastSetValueInBuffer(JSTaggedValue arrBuf, uint32_t byteIndex,
+                                                        DataViewType type, double val, bool littleEndian)
+{
+    JSArrayBuffer *jsArrayBuffer = JSArrayBuffer::Cast(arrBuf.GetTaggedObject());
+    JSTaggedValue data = jsArrayBuffer->GetArrayBufferData();
+    void *pointer = JSNativePointer::Cast(data.GetTaggedObject())->GetExternalPointer();
+    auto *block = reinterpret_cast<uint8_t *>(pointer);
+    return SetValueInBuffer(byteIndex, block, type, val, littleEndian);
+}
+
+JSTaggedValue BuiltinsArrayBuffer::SetValueInBuffer(uint32_t byteIndex, uint8_t *block, DataViewType type, double val,
+                                                    bool littleEndian)
+{
+    switch (type) {
+        case DataViewType::UINT8:
+            SetValueInBufferForByte<uint8_t>(val, block, byteIndex);
+            break;
+        case DataViewType::UINT8_CLAMPED:
+            SetValueInBufferForUint8Clamped(val, block, byteIndex);
+            break;
+        case DataViewType::INT8:
+            SetValueInBufferForByte<int8_t>(val, block, byteIndex);
+            break;
+        case DataViewType::UINT16:
+            SetValueInBufferForInteger<uint16_t>(val, block, byteIndex, littleEndian);
+            break;
+        case DataViewType::INT16:
+            SetValueInBufferForInteger<int16_t>(val, block, byteIndex, littleEndian);
+            break;
+        case DataViewType::UINT32:
+            SetValueInBufferForInteger<uint32_t>(val, block, byteIndex, littleEndian);
+            break;
+        case DataViewType::INT32:
+            SetValueInBufferForInteger<int32_t>(val, block, byteIndex, littleEndian);
+            break;
+        case DataViewType::FLOAT32:
+            SetValueInBufferForFloat<float>(val, block, byteIndex, littleEndian);
+            break;
+        case DataViewType::FLOAT64:
+            SetValueInBufferForFloat<double>(val, block, byteIndex, littleEndian);
+            break;
+        default:
+            UNREACHABLE();
+    }
+    return JSTaggedValue::Undefined();
 }
 }  // namespace panda::ecmascript::builtins

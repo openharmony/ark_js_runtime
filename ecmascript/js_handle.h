@@ -20,7 +20,47 @@
 
 #include "ecmascript/ecma_handle_scope.h"
 #include "ecmascript/js_tagged_value.h"
-#include "handle_base.h"
+
+/*
+ * JSHandle: A JSHandle provides a reference to an object that survives relocation by the garbage collector.
+ *
+ * HandleStorage: Handles are only valid within a HandleScope. When a JSHandle is created for an object a cell is
+ * allocated in the current HandleScope.
+ *
+ * HandleStorage: HandleStorage is the storage structure of the object pointer. GC will use the stored pointer as root
+ * and update the stored value after the object is moved
+ *
+ *  JSHandle ---- HandleStorage -----  heap
+ *    |               |               |
+ * address-----> store: T*  ------> object
+ *
+ *    {
+ *      EcmaHandleScope scope2(thread);
+ *      JSHandle<T> jhandle(thread, obj4);
+ *      JSHandle<T> jhandle(thread, obj5);
+ *      JSHandle<T> jhandle(thread, obj6);
+ *      JSHandle<T> jhandle(thread, obj7);
+ *    }
+ *
+ *  // out of scope, The obj pointer in node will be free (obj7, obj6, obj5, obj4) and PopTopNode(top_node = prev_node)
+ *
+ *      |        |          |  obj5   |
+ *      |        | scope2-> |  obj4   |
+ *      |        |          |  obj3   |
+ *      |  obj7  |          |  obj2   |
+ *      |__obj6__| scope1-> |__obj1___|
+ *       top_node --------->  prev_node------>nullptr
+ *
+ *  example:
+ *      JSHandle<T> handle;
+ *      {
+ *          EcmaHandleScope(thread);
+ *          JSHandle<T> jshandle(thread, T*);
+ *          jshandle->method();  // to invoke method of T
+ *          handle = jshandle;
+ *      }
+ *      handle->method(); // error! do not used handle out of scope
+ */
 
 namespace panda::test {
 class JSHandleTest;
@@ -33,32 +73,35 @@ class LinkedHashSet;
 class NameDictionary;
 
 template <typename T>
-class JSHandle : public HandleBase {
+class JSHandle {
 public:
-    inline explicit JSHandle() : HandleBase(reinterpret_cast<uintptr_t>(nullptr)) {}
+    inline explicit JSHandle() : address_(reinterpret_cast<uintptr_t>(nullptr)) {}
     ~JSHandle() = default;
     DEFAULT_NOEXCEPT_MOVE_SEMANTIC(JSHandle);
     DEFAULT_COPY_SEMANTIC(JSHandle);
 
-    explicit JSHandle(const JSThread *thread, JSTaggedValue value) : HandleBase()
+    explicit JSHandle(const JSThread *thread, JSTaggedValue value)
     {
         address_ = EcmaHandleScope::NewHandle(const_cast<JSThread *>(thread), value.GetRawData());
     }
 
-    explicit JSHandle(const JSThread *thread, const ObjectHeader *value) : HandleBase()
+    explicit JSHandle(const JSThread *thread, const ObjectHeader *value)
     {
         address_ = EcmaHandleScope::NewHandle(const_cast<JSThread *>(thread), JSTaggedValue(value).GetRawData());
     }
 
-    explicit JSHandle(const JSThread *thread, const TaggedObject *value) : HandleBase()
+    explicit JSHandle(const JSThread *thread, const TaggedObject *value)
     {
         address_ = EcmaHandleScope::NewHandle(const_cast<JSThread *>(thread), JSTaggedValue(value).GetRawData());
+    }
+
+    inline uintptr_t GetAddress() const
+    {
+        return address_;
     }
 
     template <typename S>
-    explicit JSHandle(const JSHandle<S> &handle) : HandleBase(handle.GetAddress())
-    {
-    }
+    explicit JSHandle(const JSHandle<S> &handle) : address_(handle.GetAddress()) {}
 
     template <typename S>
     inline static JSHandle<T> Cast(const JSHandle<S> &handle)
@@ -114,7 +157,7 @@ public:
         return reinterpret_cast<R *>(GetTaggedValue().GetTaggedObject());
     }
 
-    inline explicit JSHandle(uintptr_t slot) : HandleBase(slot)
+    inline explicit JSHandle(uintptr_t slot) : address_(slot)
     {
         if (!std::is_convertible<T *, JSTaggedValue *>::value) {
             T::Cast((*reinterpret_cast<JSTaggedValue *>(slot)).GetTaggedObject());
@@ -127,9 +170,10 @@ public:
     }
 
 private:
-    inline explicit JSHandle(const JSTaggedType *slot) : HandleBase(reinterpret_cast<uintptr_t>(slot)) {}
-    inline explicit JSHandle(const T *const *slot) : HandleBase(reinterpret_cast<uintptr_t>(slot)) {}
+    inline explicit JSHandle(const JSTaggedType *slot) : address_(reinterpret_cast<uintptr_t>(slot)) {}
+    inline explicit JSHandle(const T *const *slot) : address_(reinterpret_cast<uintptr_t>(slot)) {}
 
+    uintptr_t address_;  // NOLINT(misc-non-private-member-variables-in-classes)
     friend class EcmaVM;
     friend class GlobalEnv;
     friend class JSHandleTest;

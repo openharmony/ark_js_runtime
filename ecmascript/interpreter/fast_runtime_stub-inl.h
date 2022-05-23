@@ -36,6 +36,12 @@
 #include "ecmascript/tagged_dictionary.h"
 
 namespace panda::ecmascript {
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CHECK_IS_ON_PROTOTYPE_CHAIN(receiver, holder) \
+    if (UNLIKELY((receiver) != (holder))) {           \
+        return JSTaggedValue::Hole();                 \
+    }
+
 JSTaggedValue FastRuntimeStub::FastAdd(JSTaggedValue left, JSTaggedValue right)
 {
     if (left.IsNumber() && right.IsNumber()) {
@@ -330,6 +336,9 @@ JSTaggedValue FastRuntimeStub::GetPropertyByIndex(JSThread *thread, JSTaggedValu
         auto *hclass = holder.GetTaggedObject()->GetClass();
         JSType jsType = hclass->GetObjectType();
         if (IsSpecialIndexedObj(jsType)) {
+            if (IsFastTypeArray(jsType)) {
+                return JSTypedArray::FastGetPropertyByIndex(thread, receiver, index, jsType);
+            }
             if (IsSpecialContainer(jsType)) {
                 return GetContainerProperty(thread, holder, index, jsType);
             }
@@ -407,7 +416,16 @@ JSTaggedValue FastRuntimeStub::GetPropertyByName(JSThread *thread, JSTaggedValue
         auto *hclass = holder.GetTaggedObject()->GetClass();
         JSType jsType = hclass->GetObjectType();
         if (IsSpecialIndexedObj(jsType)) {
-            return JSTaggedValue::Hole();
+            if (IsFastTypeArray(jsType)) {
+                JSTaggedValue res = FastGetTypeArrayProperty(thread, receiver, holder, key, jsType);
+                if (res.IsNull()) {
+                    return JSTaggedValue::Hole();
+                } else if (UNLIKELY(!res.IsHole())) {
+                    return res;
+                }
+            } else {
+                return JSTaggedValue::Hole();
+            }
         }
 
         if (LIKELY(!hclass->IsDictionaryMode())) {
@@ -461,10 +479,18 @@ JSTaggedValue FastRuntimeStub::SetPropertyByName(JSThread *thread, JSTaggedValue
         auto *hclass = holder.GetTaggedObject()->GetClass();
         JSType jsType = hclass->GetObjectType();
         if (IsSpecialIndexedObj(jsType)) {
-            if (IsSpecialContainer(jsType)) {
+            if (IsFastTypeArray(jsType)) {
+                JSTaggedValue res = FastSetTypeArrayProperty(thread, receiver, holder, key, value, jsType);
+                if (res.IsNull()) {
+                    return JSTaggedValue::Hole();
+                } else if (UNLIKELY(!res.IsHole())) {
+                    return res;
+                }
+            } else if (IsSpecialContainer(jsType)) {
                 THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot set property on Container", JSTaggedValue::Exception());
+            } else {
+                return JSTaggedValue::Hole();
             }
-            return JSTaggedValue::Hole();
         }
         // UpdateRepresentation
         if (LIKELY(!hclass->IsDictionaryMode())) {
@@ -545,6 +571,9 @@ JSTaggedValue FastRuntimeStub::SetPropertyByIndex(JSThread *thread, JSTaggedValu
         auto *hclass = holder.GetTaggedObject()->GetClass();
         JSType jsType = hclass->GetObjectType();
         if (IsSpecialIndexedObj(jsType)) {
+            if (IsFastTypeArray(jsType)) {
+                return JSTypedArray::FastSetPropertyByIndex(thread, receiver, index, value, jsType);
+            }
             if (IsSpecialContainer(jsType)) {
                 return SetContainerProperty(thread, holder, index, value, jsType);
             }
@@ -1180,7 +1209,7 @@ bool FastRuntimeStub::FastSetProperty(JSThread *thread, JSTaggedValue receiver, 
 JSTaggedValue FastRuntimeStub::FastGetProperty(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key)
 {
     INTERPRETER_TRACE(thread, FastGetProperty);
-    JSTaggedValue result;
+    JSTaggedValue result = JSTaggedValue::Hole();
     if (receiver.IsJSObject() && !receiver.IsTypedArray() && (key.IsStringOrSymbol())) {
         uint32_t index = 0;
         if (UNLIKELY(JSTaggedValue::ToElementIndex(key, &index))) {
@@ -1442,6 +1471,101 @@ JSTaggedValue FastRuntimeStub::NewThisObject(JSThread *thread, JSTaggedValue cto
     state->env = ctorHandle->GetLexicalEnv();
 
     return obj.GetTaggedValue();
+}
+
+bool FastRuntimeStub::TryStringOrSymbolToIndex(JSTaggedValue key, uint32_t *output)
+{
+    if (key.IsSymbol()) {
+        return false;
+    }
+    auto strObj = static_cast<EcmaString *>(key.GetTaggedObject());
+    uint32_t len = strObj->GetLength();
+    if (UNLIKELY(len == 0 || len > MAX_INDEX_LEN)) {
+        return false;
+    }
+    if (UNLIKELY(strObj->IsUtf16())) {
+        return false;
+    }
+
+    uint32_t c = strObj->GetDataUtf8()[0];  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    uint64_t n  = 0;
+    if (c >= '0' && c <= '9') {
+        if (c == '0') {
+            if (len != 1) {
+                return false;
+            }
+            *output = 0;
+            return true;
+        }
+
+        n = c - '0';
+        for (uint32_t i = 1; i < len; i++) {
+            c = strObj->GetDataUtf8()[i];  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            if (c >= '0' && c <= '9') {
+                // NOLINTNEXTLINE(readability-magic-numbers)
+                n = n * 10 + (c - '0');  // 10: decimal factor
+            } else if (c == '.') {
+                n = JSObject::MAX_ELEMENT_INDEX;
+            } else {
+                return false;
+            }
+        }
+        if (n < JSObject::MAX_ELEMENT_INDEX) {
+            *output = n;
+            return true;
+        } else {
+            *output = JSObject::MAX_ELEMENT_INDEX;
+            return true;
+        }
+    } else if (c == '-') {
+        *output = JSObject::MAX_ELEMENT_INDEX;
+        return true;
+    }
+    return false;
+}
+
+bool FastRuntimeStub::IsFastTypeArray(JSType jsType)
+{
+    return jsType >= JSType::JS_TYPED_ARRAY_BEGIN && jsType <= JSType::JS_FLOAT64_ARRAY;
+}
+
+JSTaggedValue FastRuntimeStub::FastGetTypeArrayProperty(JSThread *thread, JSTaggedValue receiver, JSTaggedValue holder,
+                                                        JSTaggedValue key, JSType jsType)
+{
+    CHECK_IS_ON_PROTOTYPE_CHAIN(receiver, holder);
+    JSTaggedValue negativeZero = thread->GlobalConstants()->GetNegativeZeroString();
+    if (UNLIKELY(negativeZero == key)) {
+        return JSTaggedValue::Undefined();
+    }
+    uint32_t index = 0;
+    if (TryStringOrSymbolToIndex(key, &index)) {
+        if (UNLIKELY(index == JSObject::MAX_ELEMENT_INDEX)) {
+            return JSTaggedValue::Null();
+        }
+        return JSTypedArray::FastGetPropertyByIndex(thread, receiver, index, jsType);
+    }
+    return JSTaggedValue::Hole();
+}
+
+JSTaggedValue FastRuntimeStub::FastSetTypeArrayProperty(JSThread *thread, JSTaggedValue receiver, JSTaggedValue holder,
+                                                        JSTaggedValue key, JSTaggedValue value, JSType jsType)
+{
+    CHECK_IS_ON_PROTOTYPE_CHAIN(receiver, holder);
+    JSTaggedValue negativeZero = thread->GlobalConstants()->GetNegativeZeroString();
+    if (UNLIKELY(negativeZero == key)) {
+        if (value.IsECMAObject()) {
+            return JSTaggedValue::Null();
+        }
+        return JSTaggedValue::Undefined();
+    }
+    uint32_t index = 0;
+    if (TryStringOrSymbolToIndex(key, &index)) {
+        if (UNLIKELY(index == JSObject::MAX_ELEMENT_INDEX)) {
+            return JSTaggedValue::Null();
+        }
+        return JSTypedArray::FastSetPropertyByIndex(thread, receiver, index, value, jsType);
+    }
+    return JSTaggedValue::Hole();
 }
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_INTERPRETER_FAST_RUNTIME_STUB_INL_H

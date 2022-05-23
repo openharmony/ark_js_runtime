@@ -352,7 +352,7 @@ JSHandle<TaggedArray> ObjectFactory::CloneProperties(const JSHandle<TaggedArray>
     auto header = heap_->AllocateYoungOrHugeObject(klass, size);
     JSHandle<TaggedArray> newArray(thread_, header);
     newArray->SetLength(newLength);
-
+    newArray->InitializeWithSpecialValue(JSTaggedValue::Hole(), newLength);
     for (uint32_t i = 0; i < newLength; i++) {
         JSTaggedValue value = old->Get(i);
         newArray->Set(thread_, i, value);
@@ -416,6 +416,7 @@ JSHandle<TaggedArray> ObjectFactory::CloneProperties(const JSHandle<TaggedArray>
     size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), newLength);
     auto header = heap_->AllocateYoungOrHugeObject(klass, size);
     JSHandle<TaggedArray> newArray(thread_, header);
+    newArray->InitializeWithSpecialValue(JSTaggedValue::Hole(), newLength);
     newArray->SetLength(newLength);
 
     for (uint32_t i = 0; i < newLength; i++) {
@@ -535,6 +536,7 @@ JSHandle<JSObject> ObjectFactory::NewNonMovableJSObject(const JSHandle<JSHClass>
 {
     JSHandle<JSObject> obj(thread_,
                            JSObject::Cast(NewNonMovableDynObject(jshclass, jshclass->GetInlinedProperties())));
+    obj->InitializeHash();
     obj->SetElements(thread_, EmptyArray(), SKIP_BARRIER);
     obj->SetProperties(thread_, EmptyArray(), SKIP_BARRIER);
     return obj;
@@ -768,247 +770,298 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
     }
     // Check this exception elsewhere
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSObject, thread_);
+    return NewJSObjectWithInit(jshclass);
+}
 
+JSHandle<JSObject> ObjectFactory::NewJSObjectWithInit(const JSHandle<JSHClass> &jshclass)
+{
     JSHandle<JSObject> obj = NewJSObject(jshclass);
-    {
-        JSType type = jshclass->GetObjectType();
-        switch (type) {
-            case JSType::JS_OBJECT:
-            case JSType::JS_ERROR:
-            case JSType::JS_EVAL_ERROR:
-            case JSType::JS_RANGE_ERROR:
-            case JSType::JS_REFERENCE_ERROR:
-            case JSType::JS_TYPE_ERROR:
-            case JSType::JS_URI_ERROR:
-            case JSType::JS_SYNTAX_ERROR:
-            case JSType::JS_ITERATOR: {
-                break;
-            }
-            case JSType::JS_INTL: {
-                JSIntl::Cast(*obj)->SetFallbackSymbol(thread_, JSTaggedValue::Undefined());
-                break;
-            }
-            case JSType::JS_LOCALE: {
-                JSLocale::Cast(*obj)->SetIcuField(thread_, JSTaggedValue::Undefined());
-                break;
-            }
-            case JSType::JS_DATE_TIME_FORMAT: {
-                JSDateTimeFormat::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
-                JSDateTimeFormat::Cast(*obj)->SetCalendar(thread_, JSTaggedValue::Undefined());
-                JSDateTimeFormat::Cast(*obj)->SetNumberingSystem(thread_, JSTaggedValue::Undefined());
-                JSDateTimeFormat::Cast(*obj)->SetTimeZone(thread_, JSTaggedValue::Undefined());
-                JSDateTimeFormat::Cast(*obj)->SetLocaleIcu(thread_, JSTaggedValue::Undefined());
-                JSDateTimeFormat::Cast(*obj)->SetSimpleDateTimeFormatIcu(thread_, JSTaggedValue::Undefined());
-                JSDateTimeFormat::Cast(*obj)->SetIso8601(thread_, JSTaggedValue::Undefined());
-                JSDateTimeFormat::Cast(*obj)->SetBoundFormat(thread_, JSTaggedValue::Undefined());
-                JSDateTimeFormat::Cast(*obj)->SetHourCycle(HourCycleOption::EXCEPTION);
-                JSDateTimeFormat::Cast(*obj)->SetDateStyle(DateTimeStyleOption::EXCEPTION);
-                JSDateTimeFormat::Cast(*obj)->SetTimeStyle(DateTimeStyleOption::EXCEPTION);
-                break;
-            }
-            case JSType::JS_NUMBER_FORMAT: {
-                JSNumberFormat::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
-                JSNumberFormat::Cast(*obj)->SetNumberingSystem(thread_, JSTaggedValue::Undefined());
-                JSNumberFormat::Cast(*obj)->SetCurrency(thread_, JSTaggedValue::Undefined());
-                JSNumberFormat::Cast(*obj)->SetUnit(thread_, JSTaggedValue::Undefined());
-                JSNumberFormat::Cast(*obj)->SetMinimumIntegerDigits(thread_, JSTaggedValue::Undefined());
-                JSNumberFormat::Cast(*obj)->SetMinimumFractionDigits(thread_, JSTaggedValue::Undefined());
-                JSNumberFormat::Cast(*obj)->SetMaximumFractionDigits(thread_, JSTaggedValue::Undefined());
-                JSNumberFormat::Cast(*obj)->SetMinimumSignificantDigits(thread_, JSTaggedValue::Undefined());
-                JSNumberFormat::Cast(*obj)->SetMaximumSignificantDigits(thread_, JSTaggedValue::Undefined());
-                JSNumberFormat::Cast(*obj)->SetUseGrouping(thread_, JSTaggedValue::Undefined());
-                JSNumberFormat::Cast(*obj)->SetBoundFormat(thread_, JSTaggedValue::Undefined());
-                JSNumberFormat::Cast(*obj)->SetIcuField(thread_, JSTaggedValue::Undefined());
-                JSNumberFormat::Cast(*obj)->SetStyle(StyleOption::EXCEPTION);
-                JSNumberFormat::Cast(*obj)->SetCurrencySign(CurrencySignOption::EXCEPTION);
-                JSNumberFormat::Cast(*obj)->SetCurrencyDisplay(CurrencyDisplayOption::EXCEPTION);
-                JSNumberFormat::Cast(*obj)->SetUnitDisplay(UnitDisplayOption::EXCEPTION);
-                JSNumberFormat::Cast(*obj)->SetSignDisplay(SignDisplayOption::EXCEPTION);
-                JSNumberFormat::Cast(*obj)->SetCompactDisplay(CompactDisplayOption::EXCEPTION);
-                JSNumberFormat::Cast(*obj)->SetNotation(NotationOption::EXCEPTION);
-                JSNumberFormat::Cast(*obj)->SetRoundingType(RoundingType::EXCEPTION);
-                break;
-            }
-            case JSType::JS_RELATIVE_TIME_FORMAT: {
-                JSRelativeTimeFormat::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
-                JSRelativeTimeFormat::Cast(*obj)->SetInitializedRelativeTimeFormat(thread_, JSTaggedValue::Undefined());
-                JSRelativeTimeFormat::Cast(*obj)->SetNumberingSystem(thread_, JSTaggedValue::Undefined());
-                JSRelativeTimeFormat::Cast(*obj)->SetAvailableLocales(thread_, JSTaggedValue::Undefined());
-                JSRelativeTimeFormat::Cast(*obj)->SetIcuField(thread_, JSTaggedValue::Undefined());
-                JSRelativeTimeFormat::Cast(*obj)->SetStyle(RelativeStyleOption::EXCEPTION);
-                JSRelativeTimeFormat::Cast(*obj)->SetNumeric(NumericOption::EXCEPTION);
-                break;
-            }
-            case JSType::JS_COLLATOR: {
-                JSCollator::Cast(*obj)->SetIcuField(thread_, JSTaggedValue::Undefined());
-                JSCollator::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
-                JSCollator::Cast(*obj)->SetCollation(thread_, JSTaggedValue::Undefined());
-                JSCollator::Cast(*obj)->SetBoundCompare(thread_, JSTaggedValue::Undefined());
-                JSCollator::Cast(*obj)->SetUsage(UsageOption::EXCEPTION);
-                JSCollator::Cast(*obj)->SetCaseFirst(CaseFirstOption::EXCEPTION);
-                JSCollator::Cast(*obj)->SetSensitivity(SensitivityOption::EXCEPTION);
-                JSCollator::Cast(*obj)->SetIgnorePunctuation(false);
-                JSCollator::Cast(*obj)->SetNumeric(false);
-                break;
-            }
-            case JSType::JS_PLURAL_RULES: {
-                JSPluralRules::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
-                JSPluralRules::Cast(*obj)->SetInitializedPluralRules(thread_, JSTaggedValue::Undefined());
-                JSPluralRules::Cast(*obj)->SetMinimumIntegerDigits(thread_, JSTaggedValue::Undefined());
-                JSPluralRules::Cast(*obj)->SetMinimumFractionDigits(thread_, JSTaggedValue::Undefined());
-                JSPluralRules::Cast(*obj)->SetMaximumFractionDigits(thread_, JSTaggedValue::Undefined());
-                JSPluralRules::Cast(*obj)->SetMinimumSignificantDigits(thread_, JSTaggedValue::Undefined());
-                JSPluralRules::Cast(*obj)->SetMaximumSignificantDigits(thread_, JSTaggedValue::Undefined());
-                JSPluralRules::Cast(*obj)->SetIcuPR(thread_, JSTaggedValue::Undefined());
-                JSPluralRules::Cast(*obj)->SetIcuNF(thread_, JSTaggedValue::Undefined());
-                JSPluralRules::Cast(*obj)->SetRoundingType(RoundingType::EXCEPTION);
-                JSPluralRules::Cast(*obj)->SetType(TypeOption::EXCEPTION);
-                break;
-            }
-            case JSType::JS_DISPLAYNAMES: {
-                JSDisplayNames::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
-                JSDisplayNames::Cast(*obj)->SetType(TypednsOption::EXCEPTION);
-                JSDisplayNames::Cast(*obj)->SetStyle(StyOption::EXCEPTION);
-                JSDisplayNames::Cast(*obj)->SetFallback(FallbackOption::EXCEPTION);
-                JSDisplayNames::Cast(*obj)->SetIcuLDN(thread_, JSTaggedValue::Undefined());
-                break;
-            }
-            case JSType::JS_LIST_FORMAT: {
-                JSListFormat::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
-                JSListFormat::Cast(*obj)->SetType(ListTypeOption::EXCEPTION);
-                JSListFormat::Cast(*obj)->SetStyle(ListStyleOption::EXCEPTION);
-                JSListFormat::Cast(*obj)->SetIcuLF(thread_, JSTaggedValue::Undefined());
-                break;
-            }
-            case JSType::JS_ARRAY: {
-                JSArray::Cast(*obj)->SetLength(thread_, JSTaggedValue(0));
-                auto accessor = thread_->GlobalConstants()->GetArrayLengthAccessor();
-                JSArray::Cast(*obj)->SetPropertyInlinedProps(thread_, JSArray::LENGTH_INLINE_PROPERTY_INDEX, accessor);
-                break;
-            }
-            case JSType::JS_DATE:
-                JSDate::Cast(*obj)->SetTimeValue(thread_, JSTaggedValue(0.0));
-                JSDate::Cast(*obj)->SetLocalOffset(thread_, JSTaggedValue(JSDate::MAX_DOUBLE));
-                break;
-            case JSType::JS_INT8_ARRAY:
-            case JSType::JS_UINT8_ARRAY:
-            case JSType::JS_UINT8_CLAMPED_ARRAY:
-            case JSType::JS_INT16_ARRAY:
-            case JSType::JS_UINT16_ARRAY:
-            case JSType::JS_INT32_ARRAY:
-            case JSType::JS_UINT32_ARRAY:
-            case JSType::JS_FLOAT32_ARRAY:
-            case JSType::JS_FLOAT64_ARRAY:
-            case JSType::JS_BIGINT64_ARRAY:
-            case JSType::JS_BIGUINT64_ARRAY:
-                JSTypedArray::Cast(*obj)->SetViewedArrayBuffer(thread_, JSTaggedValue::Undefined());
-                JSTypedArray::Cast(*obj)->SetTypedArrayName(thread_, JSTaggedValue::Undefined());
-                JSTypedArray::Cast(*obj)->SetByteLength(thread_, JSTaggedValue(0));
-                JSTypedArray::Cast(*obj)->SetByteOffset(thread_, JSTaggedValue(0));
-                JSTypedArray::Cast(*obj)->SetArrayLength(thread_, JSTaggedValue(0));
-                JSTypedArray::Cast(*obj)->SetContentType(ContentType::None);
-                break;
-            case JSType::JS_REG_EXP:
-                JSRegExp::Cast(*obj)->SetByteCodeBuffer(thread_, JSTaggedValue::Undefined());
-                JSRegExp::Cast(*obj)->SetOriginalSource(thread_, JSTaggedValue::Undefined());
-                JSRegExp::Cast(*obj)->SetOriginalFlags(thread_, JSTaggedValue(0));
-                JSRegExp::Cast(*obj)->SetLength(0);
-                break;
-            case JSType::JS_PRIMITIVE_REF:
-                JSPrimitiveRef::Cast(*obj)->SetValue(thread_, JSTaggedValue::Undefined());
-                break;
-            case JSType::JS_SET:
-                JSSet::Cast(*obj)->SetLinkedSet(thread_, JSTaggedValue::Undefined());
-                break;
-            case JSType::JS_MAP:
-                JSMap::Cast(*obj)->SetLinkedMap(thread_, JSTaggedValue::Undefined());
-                break;
-            case JSType::JS_WEAK_MAP:
-                JSWeakMap::Cast(*obj)->SetLinkedMap(thread_, JSTaggedValue::Undefined());
-                break;
-            case JSType::JS_WEAK_SET:
-                JSWeakSet::Cast(*obj)->SetLinkedSet(thread_, JSTaggedValue::Undefined());
-                break;
-            case JSType::JS_GENERATOR_OBJECT:
-                JSGeneratorObject::Cast(*obj)->SetGeneratorContext(thread_, JSTaggedValue::Undefined());
-                JSGeneratorObject::Cast(*obj)->SetResumeResult(thread_, JSTaggedValue::Undefined());
-                JSGeneratorObject::Cast(*obj)->SetGeneratorState(JSGeneratorState::UNDEFINED);
-                JSGeneratorObject::Cast(*obj)->SetResumeMode(GeneratorResumeMode::UNDEFINED);
-                break;
-            case JSType::JS_STRING_ITERATOR:
-                JSStringIterator::Cast(*obj)->SetStringIteratorNextIndex(0);
-                JSStringIterator::Cast(*obj)->SetIteratedString(thread_, JSTaggedValue::Undefined());
-                break;
-            case JSType::JS_ARRAY_BUFFER:
-                JSArrayBuffer::Cast(*obj)->SetArrayBufferData(thread_, JSTaggedValue::Undefined());
-                JSArrayBuffer::Cast(*obj)->SetArrayBufferByteLength(0);
-                JSArrayBuffer::Cast(*obj)->ClearBitField();
-                break;
-            case JSType::JS_SHARED_ARRAY_BUFFER:
-                JSArrayBuffer::Cast(*obj)->SetArrayBufferData(thread_, JSTaggedValue::Undefined());
-                JSArrayBuffer::Cast(*obj)->SetArrayBufferByteLength(0);
-                JSArrayBuffer::Cast(*obj)->SetShared(true);
-                break;
-            case JSType::JS_PROMISE:
-                JSPromise::Cast(*obj)->SetPromiseState(PromiseState::PENDING);
-                JSPromise::Cast(*obj)->SetPromiseResult(thread_, JSTaggedValue::Undefined());
-                JSPromise::Cast(*obj)->SetPromiseRejectReactions(thread_, GetEmptyTaggedQueue().GetTaggedValue());
-                JSPromise::Cast(*obj)->SetPromiseFulfillReactions(thread_, GetEmptyTaggedQueue().GetTaggedValue());
-
-                JSPromise::Cast(*obj)->SetPromiseIsHandled(false);
-                break;
-            case JSType::JS_DATA_VIEW:
-                JSDataView::Cast(*obj)->SetDataView(thread_, JSTaggedValue(false));
-                JSDataView::Cast(*obj)->SetViewedArrayBuffer(thread_, JSTaggedValue::Undefined());
-                JSDataView::Cast(*obj)->SetByteLength(0);
-                JSDataView::Cast(*obj)->SetByteOffset(0);
-                break;
-            // non ECMA standard jsapi container
-            case JSType::JS_API_ARRAY_LIST:
-                JSAPIArrayList::Cast(*obj)->SetLength(thread_, JSTaggedValue(0));
-                break;
-            case JSType::JS_API_TREE_MAP:
-                JSAPITreeMap::Cast(*obj)->SetTreeMap(thread_, JSTaggedValue::Undefined());
-                break;
-            case JSType::JS_API_TREE_SET:
-                JSAPITreeSet::Cast(*obj)->SetTreeSet(thread_, JSTaggedValue::Undefined());
-                break;
-            case JSType::JS_API_QUEUE:
-                JSAPIQueue::Cast(*obj)->SetLength(thread_, JSTaggedValue(0));
-                JSAPIQueue::Cast(*obj)->SetFront(0);
-                JSAPIQueue::Cast(*obj)->SetTail(0);
-                break;
-            case JSType::JS_API_PLAIN_ARRAY:
-                JSAPIPlainArray::Cast(*obj)->SetLength(0);
-                JSAPIPlainArray::Cast(*obj)->SetValues(thread_, JSTaggedValue(0));
-                JSAPIPlainArray::Cast(*obj)->SetKeys(thread_, JSTaggedValue(0));
-                break;
-            case JSType::JS_API_STACK:
-                JSAPIStack::Cast(*obj)->SetTop(0);
-                break;
-            case JSType::JS_API_DEQUE:
-                JSAPIDeque::Cast(*obj)->SetFirst(0);
-                JSAPIDeque::Cast(*obj)->SetLast(0);
-                break;
-            case JSType::JS_FUNCTION:
-            case JSType::JS_GENERATOR_FUNCTION:
-            case JSType::JS_FORIN_ITERATOR:
-            case JSType::JS_MAP_ITERATOR:
-            case JSType::JS_SET_ITERATOR:
-            case JSType::JS_REG_EXP_ITERATOR:
-            case JSType::JS_API_ARRAYLIST_ITERATOR:
-            case JSType::JS_API_TREEMAP_ITERATOR:
-            case JSType::JS_API_TREESET_ITERATOR:
-            case JSType::JS_API_QUEUE_ITERATOR:
-            case JSType::JS_API_DEQUE_ITERATOR:
-            case JSType::JS_API_STACK_ITERATOR:
-            case JSType::JS_ARRAY_ITERATOR:
-            case JSType::JS_API_PLAIN_ARRAY_ITERATOR:
-            default:
-                UNREACHABLE();
-        }
-    }
+    InitializeJSObject(obj, jshclass);
     return obj;
+}
+
+void ObjectFactory::InitializeJSObject(const JSHandle<JSObject> &obj, const JSHandle<JSHClass> &jshclass)
+{
+    JSType type = jshclass->GetObjectType();
+    switch (type) {
+        case JSType::JS_OBJECT:
+        case JSType::JS_ERROR:
+        case JSType::JS_EVAL_ERROR:
+        case JSType::JS_RANGE_ERROR:
+        case JSType::JS_REFERENCE_ERROR:
+        case JSType::JS_TYPE_ERROR:
+        case JSType::JS_URI_ERROR:
+        case JSType::JS_SYNTAX_ERROR:
+        case JSType::JS_ITERATOR: {
+            break;
+        }
+        case JSType::JS_INTL: {
+            JSIntl::Cast(*obj)->SetFallbackSymbol(thread_, JSTaggedValue::Undefined());
+            break;
+        }
+        case JSType::JS_LOCALE: {
+            JSLocale::Cast(*obj)->SetIcuField(thread_, JSTaggedValue::Undefined());
+            break;
+        }
+        case JSType::JS_DATE_TIME_FORMAT: {
+            JSDateTimeFormat::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
+            JSDateTimeFormat::Cast(*obj)->SetCalendar(thread_, JSTaggedValue::Undefined());
+            JSDateTimeFormat::Cast(*obj)->SetNumberingSystem(thread_, JSTaggedValue::Undefined());
+            JSDateTimeFormat::Cast(*obj)->SetTimeZone(thread_, JSTaggedValue::Undefined());
+            JSDateTimeFormat::Cast(*obj)->SetLocaleIcu(thread_, JSTaggedValue::Undefined());
+            JSDateTimeFormat::Cast(*obj)->SetSimpleDateTimeFormatIcu(thread_, JSTaggedValue::Undefined());
+            JSDateTimeFormat::Cast(*obj)->SetIso8601(thread_, JSTaggedValue::Undefined());
+            JSDateTimeFormat::Cast(*obj)->SetBoundFormat(thread_, JSTaggedValue::Undefined());
+            JSDateTimeFormat::Cast(*obj)->SetHourCycle(HourCycleOption::EXCEPTION);
+            JSDateTimeFormat::Cast(*obj)->SetDateStyle(DateTimeStyleOption::EXCEPTION);
+            JSDateTimeFormat::Cast(*obj)->SetTimeStyle(DateTimeStyleOption::EXCEPTION);
+            break;
+        }
+        case JSType::JS_NUMBER_FORMAT: {
+            JSNumberFormat::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
+            JSNumberFormat::Cast(*obj)->SetNumberingSystem(thread_, JSTaggedValue::Undefined());
+            JSNumberFormat::Cast(*obj)->SetCurrency(thread_, JSTaggedValue::Undefined());
+            JSNumberFormat::Cast(*obj)->SetUnit(thread_, JSTaggedValue::Undefined());
+            JSNumberFormat::Cast(*obj)->SetMinimumIntegerDigits(thread_, JSTaggedValue::Undefined());
+            JSNumberFormat::Cast(*obj)->SetMinimumFractionDigits(thread_, JSTaggedValue::Undefined());
+            JSNumberFormat::Cast(*obj)->SetMaximumFractionDigits(thread_, JSTaggedValue::Undefined());
+            JSNumberFormat::Cast(*obj)->SetMinimumSignificantDigits(thread_, JSTaggedValue::Undefined());
+            JSNumberFormat::Cast(*obj)->SetMaximumSignificantDigits(thread_, JSTaggedValue::Undefined());
+            JSNumberFormat::Cast(*obj)->SetUseGrouping(thread_, JSTaggedValue::Undefined());
+            JSNumberFormat::Cast(*obj)->SetBoundFormat(thread_, JSTaggedValue::Undefined());
+            JSNumberFormat::Cast(*obj)->SetIcuField(thread_, JSTaggedValue::Undefined());
+            JSNumberFormat::Cast(*obj)->SetStyle(StyleOption::EXCEPTION);
+            JSNumberFormat::Cast(*obj)->SetCurrencySign(CurrencySignOption::EXCEPTION);
+            JSNumberFormat::Cast(*obj)->SetCurrencyDisplay(CurrencyDisplayOption::EXCEPTION);
+            JSNumberFormat::Cast(*obj)->SetUnitDisplay(UnitDisplayOption::EXCEPTION);
+            JSNumberFormat::Cast(*obj)->SetSignDisplay(SignDisplayOption::EXCEPTION);
+            JSNumberFormat::Cast(*obj)->SetCompactDisplay(CompactDisplayOption::EXCEPTION);
+            JSNumberFormat::Cast(*obj)->SetNotation(NotationOption::EXCEPTION);
+            JSNumberFormat::Cast(*obj)->SetRoundingType(RoundingType::EXCEPTION);
+            break;
+        }
+        case JSType::JS_RELATIVE_TIME_FORMAT: {
+            JSRelativeTimeFormat::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
+            JSRelativeTimeFormat::Cast(*obj)->SetInitializedRelativeTimeFormat(thread_, JSTaggedValue::Undefined());
+            JSRelativeTimeFormat::Cast(*obj)->SetNumberingSystem(thread_, JSTaggedValue::Undefined());
+            JSRelativeTimeFormat::Cast(*obj)->SetAvailableLocales(thread_, JSTaggedValue::Undefined());
+            JSRelativeTimeFormat::Cast(*obj)->SetIcuField(thread_, JSTaggedValue::Undefined());
+            JSRelativeTimeFormat::Cast(*obj)->SetStyle(RelativeStyleOption::EXCEPTION);
+            JSRelativeTimeFormat::Cast(*obj)->SetNumeric(NumericOption::EXCEPTION);
+            break;
+        }
+        case JSType::JS_COLLATOR: {
+            JSCollator::Cast(*obj)->SetIcuField(thread_, JSTaggedValue::Undefined());
+            JSCollator::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
+            JSCollator::Cast(*obj)->SetCollation(thread_, JSTaggedValue::Undefined());
+            JSCollator::Cast(*obj)->SetBoundCompare(thread_, JSTaggedValue::Undefined());
+            JSCollator::Cast(*obj)->SetUsage(UsageOption::EXCEPTION);
+            JSCollator::Cast(*obj)->SetCaseFirst(CaseFirstOption::EXCEPTION);
+            JSCollator::Cast(*obj)->SetSensitivity(SensitivityOption::EXCEPTION);
+            JSCollator::Cast(*obj)->SetIgnorePunctuation(false);
+            JSCollator::Cast(*obj)->SetNumeric(false);
+            break;
+        }
+        case JSType::JS_PLURAL_RULES: {
+            JSPluralRules::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
+            JSPluralRules::Cast(*obj)->SetInitializedPluralRules(thread_, JSTaggedValue::Undefined());
+            JSPluralRules::Cast(*obj)->SetMinimumIntegerDigits(thread_, JSTaggedValue::Undefined());
+            JSPluralRules::Cast(*obj)->SetMinimumFractionDigits(thread_, JSTaggedValue::Undefined());
+            JSPluralRules::Cast(*obj)->SetMaximumFractionDigits(thread_, JSTaggedValue::Undefined());
+            JSPluralRules::Cast(*obj)->SetMinimumSignificantDigits(thread_, JSTaggedValue::Undefined());
+            JSPluralRules::Cast(*obj)->SetMaximumSignificantDigits(thread_, JSTaggedValue::Undefined());
+            JSPluralRules::Cast(*obj)->SetIcuPR(thread_, JSTaggedValue::Undefined());
+            JSPluralRules::Cast(*obj)->SetIcuNF(thread_, JSTaggedValue::Undefined());
+            JSPluralRules::Cast(*obj)->SetRoundingType(RoundingType::EXCEPTION);
+            JSPluralRules::Cast(*obj)->SetType(TypeOption::EXCEPTION);
+            break;
+        }
+        case JSType::JS_DISPLAYNAMES: {
+            JSDisplayNames::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
+            JSDisplayNames::Cast(*obj)->SetType(TypednsOption::EXCEPTION);
+            JSDisplayNames::Cast(*obj)->SetStyle(StyOption::EXCEPTION);
+            JSDisplayNames::Cast(*obj)->SetFallback(FallbackOption::EXCEPTION);
+            JSDisplayNames::Cast(*obj)->SetIcuLDN(thread_, JSTaggedValue::Undefined());
+            break;
+        }
+        case JSType::JS_LIST_FORMAT: {
+            JSListFormat::Cast(*obj)->SetLocale(thread_, JSTaggedValue::Undefined());
+            JSListFormat::Cast(*obj)->SetType(ListTypeOption::EXCEPTION);
+            JSListFormat::Cast(*obj)->SetStyle(ListStyleOption::EXCEPTION);
+            JSListFormat::Cast(*obj)->SetIcuLF(thread_, JSTaggedValue::Undefined());
+            break;
+        }
+        case JSType::JS_ARRAY: {
+            JSArray::Cast(*obj)->SetLength(thread_, JSTaggedValue(0));
+            auto accessor = thread_->GlobalConstants()->GetArrayLengthAccessor();
+            JSArray::Cast(*obj)->SetPropertyInlinedProps(thread_, JSArray::LENGTH_INLINE_PROPERTY_INDEX, accessor);
+            break;
+        }
+        case JSType::JS_DATE:
+            JSDate::Cast(*obj)->SetTimeValue(thread_, JSTaggedValue(0.0));
+            JSDate::Cast(*obj)->SetLocalOffset(thread_, JSTaggedValue(JSDate::MAX_DOUBLE));
+            break;
+        case JSType::JS_TYPED_ARRAY:
+        case JSType::JS_INT8_ARRAY:
+        case JSType::JS_UINT8_ARRAY:
+        case JSType::JS_UINT8_CLAMPED_ARRAY:
+        case JSType::JS_INT16_ARRAY:
+        case JSType::JS_UINT16_ARRAY:
+        case JSType::JS_INT32_ARRAY:
+        case JSType::JS_UINT32_ARRAY:
+        case JSType::JS_FLOAT32_ARRAY:
+        case JSType::JS_FLOAT64_ARRAY:
+        case JSType::JS_BIGINT64_ARRAY:
+        case JSType::JS_BIGUINT64_ARRAY:
+            JSTypedArray::Cast(*obj)->SetViewedArrayBuffer(thread_, JSTaggedValue::Undefined());
+            JSTypedArray::Cast(*obj)->SetTypedArrayName(thread_, JSTaggedValue::Undefined());
+            JSTypedArray::Cast(*obj)->SetByteLength(0);
+            JSTypedArray::Cast(*obj)->SetByteOffset(0);
+            JSTypedArray::Cast(*obj)->SetArrayLength(0);
+            JSTypedArray::Cast(*obj)->SetContentType(ContentType::None);
+            break;
+        case JSType::JS_REG_EXP:
+            JSRegExp::Cast(*obj)->SetByteCodeBuffer(thread_, JSTaggedValue::Undefined());
+            JSRegExp::Cast(*obj)->SetOriginalSource(thread_, JSTaggedValue::Undefined());
+            JSRegExp::Cast(*obj)->SetOriginalFlags(thread_, JSTaggedValue(0));
+            JSRegExp::Cast(*obj)->SetLength(0);
+            break;
+        case JSType::JS_PRIMITIVE_REF:
+            JSPrimitiveRef::Cast(*obj)->SetValue(thread_, JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_SET:
+            JSSet::Cast(*obj)->SetLinkedSet(thread_, JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_MAP:
+            JSMap::Cast(*obj)->SetLinkedMap(thread_, JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_WEAK_MAP:
+            JSWeakMap::Cast(*obj)->SetLinkedMap(thread_, JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_WEAK_SET:
+            JSWeakSet::Cast(*obj)->SetLinkedSet(thread_, JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_GENERATOR_OBJECT:
+            JSGeneratorObject::Cast(*obj)->SetGeneratorContext(thread_, JSTaggedValue::Undefined());
+            JSGeneratorObject::Cast(*obj)->SetResumeResult(thread_, JSTaggedValue::Undefined());
+            JSGeneratorObject::Cast(*obj)->SetGeneratorState(JSGeneratorState::UNDEFINED);
+            JSGeneratorObject::Cast(*obj)->SetResumeMode(GeneratorResumeMode::UNDEFINED);
+            break;
+        case JSType::JS_STRING_ITERATOR:
+            JSStringIterator::Cast(*obj)->SetStringIteratorNextIndex(0);
+            JSStringIterator::Cast(*obj)->SetIteratedString(thread_, JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_ARRAY_BUFFER:
+            JSArrayBuffer::Cast(*obj)->SetArrayBufferData(thread_, JSTaggedValue::Undefined());
+            JSArrayBuffer::Cast(*obj)->SetArrayBufferByteLength(0);
+            JSArrayBuffer::Cast(*obj)->ClearBitField();
+            break;
+        case JSType::JS_SHARED_ARRAY_BUFFER:
+            JSArrayBuffer::Cast(*obj)->SetArrayBufferData(thread_, JSTaggedValue::Undefined());
+            JSArrayBuffer::Cast(*obj)->SetArrayBufferByteLength(0);
+            JSArrayBuffer::Cast(*obj)->SetShared(true);
+            break;
+        case JSType::JS_PROMISE:
+            JSPromise::Cast(*obj)->SetPromiseState(PromiseState::PENDING);
+            JSPromise::Cast(*obj)->SetPromiseResult(thread_, JSTaggedValue::Undefined());
+            JSPromise::Cast(*obj)->SetPromiseRejectReactions(thread_, GetEmptyTaggedQueue().GetTaggedValue());
+            JSPromise::Cast(*obj)->SetPromiseFulfillReactions(thread_, GetEmptyTaggedQueue().GetTaggedValue());
+
+            JSPromise::Cast(*obj)->SetPromiseIsHandled(false);
+            break;
+        case JSType::JS_DATA_VIEW:
+            JSDataView::Cast(*obj)->SetDataView(thread_, JSTaggedValue(false));
+            JSDataView::Cast(*obj)->SetViewedArrayBuffer(thread_, JSTaggedValue::Undefined());
+            JSDataView::Cast(*obj)->SetByteLength(0);
+            JSDataView::Cast(*obj)->SetByteOffset(0);
+            break;
+        // non ECMA standard jsapi container
+        case JSType::JS_API_ARRAY_LIST:
+            JSAPIArrayList::Cast(*obj)->SetLength(thread_, JSTaggedValue(0));
+            break;
+        case JSType::JS_API_TREE_MAP:
+            JSAPITreeMap::Cast(*obj)->SetTreeMap(thread_, JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_API_TREE_SET:
+            JSAPITreeSet::Cast(*obj)->SetTreeSet(thread_, JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_API_QUEUE:
+            JSAPIQueue::Cast(*obj)->SetLength(thread_, JSTaggedValue(0));
+            JSAPIQueue::Cast(*obj)->SetFront(0);
+            JSAPIQueue::Cast(*obj)->SetTail(0);
+            break;
+        case JSType::JS_API_PLAIN_ARRAY:
+            JSAPIPlainArray::Cast(*obj)->SetLength(0);
+            JSAPIPlainArray::Cast(*obj)->SetValues(thread_, JSTaggedValue(0));
+            JSAPIPlainArray::Cast(*obj)->SetKeys(thread_, JSTaggedValue(0));
+            break;
+        case JSType::JS_API_STACK:
+            JSAPIStack::Cast(*obj)->SetTop(0);
+            break;
+        case JSType::JS_API_DEQUE:
+            JSAPIDeque::Cast(*obj)->SetFirst(0);
+            JSAPIDeque::Cast(*obj)->SetLast(0);
+            break;
+        case JSType::JS_ASYNC_FUNC_OBJECT:
+            JSAsyncFuncObject::Cast(*obj)->SetGeneratorContext(thread_, JSTaggedValue::Undefined());
+            JSAsyncFuncObject::Cast(*obj)->SetResumeResult(thread_, JSTaggedValue::Undefined());
+            JSAsyncFuncObject::Cast(*obj)->SetPromise(JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_FUNCTION:
+        case JSType::JS_GENERATOR_FUNCTION:
+            JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>(obj), FunctionKind::NORMAL_FUNCTION);
+            break;
+        case JSType::JS_PROXY_REVOC_FUNCTION:
+            JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>(obj), FunctionKind::NORMAL_FUNCTION);
+            JSProxyRevocFunction::Cast(*obj)->SetRevocableProxy(JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_PROMISE_REACTIONS_FUNCTION:
+            JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>(obj), FunctionKind::NORMAL_FUNCTION);
+            JSPromiseReactionsFunction::Cast(*obj)->SetPromise(JSTaggedValue::Undefined());
+            JSPromiseReactionsFunction::Cast(*obj)->SetAlreadyResolved(JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_PROMISE_EXECUTOR_FUNCTION:
+            JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>(obj), FunctionKind::NORMAL_FUNCTION);
+            JSPromiseExecutorFunction::Cast(*obj)->SetCapability(JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_PROMISE_ALL_RESOLVE_ELEMENT_FUNCTION:
+            JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>(obj), FunctionKind::NORMAL_FUNCTION);
+            JSPromiseAllResolveElementFunction::Cast(*obj)->SetIndex(JSTaggedValue::Undefined());
+            JSPromiseAllResolveElementFunction::Cast(*obj)->SetValues(JSTaggedValue::Undefined());
+            JSPromiseAllResolveElementFunction::Cast(*obj)->SetCapabilities(JSTaggedValue::Undefined());
+            JSPromiseAllResolveElementFunction::Cast(*obj)->SetRemainingElements(JSTaggedValue::Undefined());
+            JSPromiseAllResolveElementFunction::Cast(*obj)->SetAlreadyCalled(JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_INTL_BOUND_FUNCTION:
+            JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>(obj), FunctionKind::NORMAL_FUNCTION);
+            JSIntlBoundFunction::Cast(*obj)->SetNumberFormat(JSTaggedValue::Undefined());
+            JSIntlBoundFunction::Cast(*obj)->SetDateTimeFormat(JSTaggedValue::Undefined());
+            JSIntlBoundFunction::Cast(*obj)->SetCollator(JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_BOUND_FUNCTION:
+            JSBoundFunction::Cast(*obj)->SetBoundTarget(JSTaggedValue::Undefined());
+            JSBoundFunction::Cast(*obj)->SetBoundThis(JSTaggedValue::Undefined());
+            JSBoundFunction::Cast(*obj)->SetBoundArguments(JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_ARGUMENTS:
+            JSArguments::Cast(*obj)->SetParameterMap(JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_FORIN_ITERATOR:
+        case JSType::JS_MAP_ITERATOR:
+        case JSType::JS_SET_ITERATOR:
+        case JSType::JS_REG_EXP_ITERATOR:
+        case JSType::JS_API_ARRAYLIST_ITERATOR:
+        case JSType::JS_API_TREEMAP_ITERATOR:
+        case JSType::JS_API_TREESET_ITERATOR:
+        case JSType::JS_API_QUEUE_ITERATOR:
+        case JSType::JS_API_DEQUE_ITERATOR:
+        case JSType::JS_API_STACK_ITERATOR:
+        case JSType::JS_ARRAY_ITERATOR:
+        case JSType::JS_API_PLAIN_ARRAY_ITERATOR:
+            break;
+        default:
+            UNREACHABLE();
+    }
 }
 
 FreeObject *ObjectFactory::FillFreeObject(uintptr_t address, size_t size, RemoveSlots removeSlots)
@@ -1239,6 +1292,9 @@ JSHandle<JSIntlBoundFunction> ObjectFactory::NewJSIntlBoundFunction(const void *
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetJSIntlBoundFunctionClass());
 
     JSHandle<JSIntlBoundFunction> intlBoundFunc = JSHandle<JSIntlBoundFunction>::Cast(NewJSObject(dynclass));
+    intlBoundFunc->SetNumberFormat(JSTaggedValue::Undefined());
+    intlBoundFunc->SetDateTimeFormat(JSTaggedValue::Undefined());
+    intlBoundFunc->SetCollator(JSTaggedValue::Undefined());
     JSMethod *method = vm_->GetMethodForNativeFunction(nativeFunc);
     intlBoundFunc->SetCallTarget(thread_, method);
     JSHandle<JSFunction> function = JSHandle<JSFunction>::Cast(intlBoundFunc);
@@ -1260,6 +1316,7 @@ JSHandle<JSProxyRevocFunction> ObjectFactory::NewJSProxyRevocFunction(const JSHa
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetProxyRevocFunctionClass());
 
     JSHandle<JSProxyRevocFunction> revocFunction = JSHandle<JSProxyRevocFunction>::Cast(NewJSObject(dynclass));
+    revocFunction->SetRevocableProxy(JSTaggedValue::Undefined());
     revocFunction->SetRevocableProxy(thread_, proxy);
 
     JSMethod *target = vm_->GetMethodForNativeFunction(nativeFunc);
@@ -1281,7 +1338,7 @@ JSHandle<JSAsyncAwaitStatusFunction> ObjectFactory::NewJSAsyncAwaitStatusFunctio
 
     JSHandle<JSAsyncAwaitStatusFunction> awaitFunction =
         JSHandle<JSAsyncAwaitStatusFunction>::Cast(NewJSObject(dynclass));
-
+    awaitFunction->SetAsyncContext(JSTaggedValue::Undefined());
     JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>::Cast(awaitFunction));
     JSMethod *target = vm_->GetMethodForNativeFunction(nativeFunc);
     awaitFunction->SetCallTarget(thread_, target);
@@ -1308,6 +1365,8 @@ JSHandle<JSGeneratorObject> ObjectFactory::NewJSGeneratorObject(JSHandle<JSTagge
     }
     JSHandle<JSHClass> dynclass = NewEcmaDynClass(JSGeneratorObject::SIZE, JSType::JS_GENERATOR_OBJECT, proto);
     JSHandle<JSGeneratorObject> generatorObject = JSHandle<JSGeneratorObject>::Cast(NewJSObject(dynclass));
+    generatorObject->SetGeneratorContext(JSTaggedValue::Undefined());
+    generatorObject->SetResumeResult(JSTaggedValue::Undefined());
     return generatorObject;
 }
 
@@ -1326,7 +1385,7 @@ JSHandle<JSAsyncFuncObject> ObjectFactory::NewJSAsyncFuncObject()
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSTaggedValue> proto = env->GetInitialGenerator();
     JSHandle<JSHClass> dynclass = NewEcmaDynClass(JSAsyncFuncObject::SIZE, JSType::JS_ASYNC_FUNC_OBJECT, proto);
-    JSHandle<JSAsyncFuncObject> asyncFuncObject = JSHandle<JSAsyncFuncObject>::Cast(NewJSObject(dynclass));
+    JSHandle<JSAsyncFuncObject> asyncFuncObject = JSHandle<JSAsyncFuncObject>::Cast(NewJSObjectWithInit(dynclass));
     return asyncFuncObject;
 }
 
@@ -1551,6 +1610,8 @@ JSHandle<AccessorData> ObjectFactory::NewInternalAccessor(void *setter, void *ge
     TaggedObject *header = heap_->AllocateNonMovableOrHugeObject(
         JSHClass::Cast(thread_->GlobalConstants()->GetInternalAccessorClass().GetTaggedObject()));
     JSHandle<AccessorData> obj(thread_, AccessorData::Cast(header));
+    obj->SetGetter(thread_, JSTaggedValue::Undefined());
+    obj->SetSetter(thread_, JSTaggedValue::Undefined());
     if (setter != nullptr) {
         JSHandle<JSNativePointer> setFunc = NewJSNativePointer(setter, nullptr, nullptr, true);
         obj->SetSetter(thread_, setFunc.GetTaggedValue());
@@ -1670,6 +1731,7 @@ JSHandle<JSRealm> ObjectFactory::NewJSRealm()
     JSHandle<JSHClass> dynHandle = NewEcmaDynClass(JSRealm::SIZE, JSType::JS_REALM, protoValue);
     JSHandle<JSRealm> realm(NewJSObject(dynHandle));
     realm->SetGlobalEnv(thread_, realmEnvHandle.GetTaggedValue());
+    realm->SetValue(JSTaggedValue::Undefined());
 
     JSHandle<JSTaggedValue> realmObj = realmEnvHandle->GetJSGlobalObject();
     JSHandle<JSTaggedValue> realmkey(thread_->GlobalConstants()->GetHandledGlobalString());
@@ -1797,6 +1859,7 @@ JSHandle<TaggedArray> ObjectFactory::CopyPartArray(const JSHandle<TaggedArray> &
     auto header = heap_->AllocateYoungOrHugeObject(
         JSHClass::Cast(thread_->GlobalConstants()->GetArrayClass().GetTaggedObject()), size);
     JSHandle<TaggedArray> newArray(thread_, header);
+    newArray->InitializeWithSpecialValue(JSTaggedValue::Hole(), newLength);
     newArray->SetLength(newLength);
 
     for (uint32_t i = 0; i < newLength; i++) {
@@ -1825,6 +1888,7 @@ JSHandle<TaggedArray> ObjectFactory::CopyArray(const JSHandle<TaggedArray> &old,
     auto header = heap_->AllocateYoungOrHugeObject(
         JSHClass::Cast(thread_->GlobalConstants()->GetArrayClass().GetTaggedObject()), size);
     JSHandle<TaggedArray> newArray(thread_, header);
+    newArray->InitializeWithSpecialValue(JSTaggedValue::Hole(), newLength);
     newArray->SetLength(newLength);
 
     for (uint32_t i = 0; i < newLength; i++) {
@@ -2163,6 +2227,11 @@ JSHandle<JSPromiseAllResolveElementFunction> ObjectFactory::NewJSPromiseAllResol
     JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>::Cast(function));
     JSMethod *method = vm_->GetMethodForNativeFunction(nativeFunc);
     function->SetCallTarget(thread_, method);
+    function->SetIndex(JSTaggedValue::Undefined());
+    function->SetValues(JSTaggedValue::Undefined());
+    function->SetCapabilities(JSTaggedValue::Undefined());
+    function->SetRemainingElements(JSTaggedValue::Undefined());
+    function->SetAlreadyCalled(JSTaggedValue::Undefined());
     JSFunction::SetFunctionLength(thread_, JSHandle<JSFunction>::Cast(function), JSTaggedValue(1));
     return function;
 }
@@ -2184,6 +2253,8 @@ JSHandle<TransitionHandler> ObjectFactory::NewTransitionHandler()
     TransitionHandler *handler =
         TransitionHandler::Cast(heap_->AllocateYoungOrHugeObject(
             JSHClass::Cast(thread_->GlobalConstants()->GetTransitionHandlerClass().GetTaggedObject())));
+    handler->SetHandlerInfo(JSTaggedValue::Undefined());
+    handler->SetTransitionHClass(JSTaggedValue::Undefined());
     return JSHandle<TransitionHandler>(thread_, handler);
 }
 
@@ -2312,7 +2383,7 @@ JSHandle<JSHClass> ObjectFactory::GetObjectLiteralHClass(const JSHandle<TaggedAr
 JSHandle<JSObject> ObjectFactory::GetObjectLiteralByHClass(const JSHandle<TaggedArray> &properties, size_t length)
 {
     JSHandle<JSHClass> dynclass = GetObjectLiteralHClass(properties, length);
-    JSHandle<JSObject> obj = NewJSObject(dynclass);
+    JSHandle<JSObject> obj = NewJSObjectWithInit(dynclass);
     return obj;
 }
 
@@ -2383,14 +2454,12 @@ JSHandle<TSObjectType> ObjectFactory::NewTSObjectType(uint32_t numOfKeys)
     TaggedObject *header = heap_->AllocateYoungOrHugeObject(
         JSHClass::Cast(thread_->GlobalConstants()->GetTSObjectTypeClass().GetTaggedObject()));
     JSHandle<TSObjectType> objectType(thread_, header);
-
+    objectType->SetHClass(thread_, JSTaggedValue::Undefined());
+    objectType->SetObjLayoutInfo(thread_, JSTaggedValue::Undefined());
     objectType->SetGTRef(GlobalTSTypeRef::Default());
 
     JSHandle<TSObjLayoutInfo> tsPropInfo = CreateTSObjLayoutInfo(numOfKeys);
     objectType->SetObjLayoutInfo(thread_, tsPropInfo);
-
-    objectType->SetHClass(thread_, JSTaggedValue::Undefined());
-
     return objectType;
 }
 
@@ -2438,6 +2507,7 @@ JSHandle<TSUnionType> ObjectFactory::NewTSUnionType(uint32_t length)
     JSHandle<TSUnionType> unionType(thread_, header);
 
     unionType->SetGTRef(GlobalTSTypeRef::Default());
+    unionType->SetComponentTypes(thread_, JSTaggedValue::Undefined());
     JSHandle<TaggedArray> componentTypes = NewTaggedArray(length, JSTaggedValue::Undefined());
     unionType->SetComponentTypes(thread_, componentTypes);
 
@@ -2480,6 +2550,7 @@ JSHandle<TSFunctionType> ObjectFactory::NewTSFunctionType(uint32_t length)
     TaggedObject *header = heap_->AllocateYoungOrHugeObject(
         JSHClass::Cast(thread_->GlobalConstants()->GetTSFunctionTypeClass().GetTaggedObject()));
     JSHandle<TSFunctionType> functionType(thread_, header);
+    functionType->SetParameterTypes(thread_, JSTaggedValue::Undefined());
 
     JSHandle<TaggedArray> parameterTypes = NewTaggedArray(length + TSFunctionType::DEFAULT_LENGTH,
                                                           JSTaggedValue::Undefined());
@@ -2711,6 +2782,7 @@ JSHandle<TaggedArray> ObjectFactory::CopyDeque(const JSHandle<TaggedArray> &old,
     auto header = heap_->AllocateYoungOrHugeObject(
         JSHClass::Cast(thread_->GlobalConstants()->GetArrayClass().GetTaggedObject()), size);
     JSHandle<TaggedArray> newArray(thread_, header);
+    newArray->InitializeWithSpecialValue(JSTaggedValue::Hole(), newLength);
 
     uint32_t curIndex = first;
     // newIndex use in new TaggedArray, 0 : New TaggedArray index
@@ -2750,6 +2822,7 @@ JSHandle<TaggedArray> ObjectFactory::CopyQueue(const JSHandle<TaggedArray> &old,
     auto header = heap_->AllocateYoungOrHugeObject(
         JSHClass::Cast(thread_->GlobalConstants()->GetArrayClass().GetTaggedObject()), size);
     JSHandle<TaggedArray> newArray(thread_, header);
+    newArray->InitializeWithSpecialValue(JSTaggedValue::Hole(), newLength);
     newArray->SetLength(newLength);
 
     for (uint32_t i = 0; i < oldLength; i++) {
@@ -2786,6 +2859,7 @@ JSHandle<JSAPITreeMapIterator> ObjectFactory::NewJSAPITreeMapIterator(const JSHa
     iter->GetJSHClass()->SetExtensible(true);
     iter->SetIteratedMap(thread_, map);
     iter->SetNextIndex(0);
+    iter->SetEntries(JSTaggedValue::Undefined());
     iter->SetIterationKind(kind);
     JSHandle<TaggedTreeMap> tmap(thread_, map->GetTreeMap());
     JSHandle<TaggedArray> entries = TaggedTreeMap::GetArrayFromMap(thread_, tmap);
@@ -2805,6 +2879,7 @@ JSHandle<JSAPITreeSetIterator> ObjectFactory::NewJSAPITreeSetIterator(const JSHa
     iter->GetJSHClass()->SetExtensible(true);
     iter->SetIteratedSet(thread_, set);
     iter->SetNextIndex(0);
+    iter->SetEntries(JSTaggedValue::Undefined());
     iter->SetIterationKind(kind);
     JSHandle<TaggedTreeSet> tset(thread_, set->GetTreeSet());
     JSHandle<TaggedArray> entries = TaggedTreeSet::GetArrayFromSet(thread_, tset);
@@ -2863,6 +2938,7 @@ JSHandle<SourceTextModule> ObjectFactory::NewSourceTextModule()
     JSTaggedValue undefinedValue = thread_->GlobalConstants()->GetUndefined();
     obj->SetEnvironment(thread_, undefinedValue);
     obj->SetNamespace(thread_, undefinedValue);
+    obj->SetEcmaModuleFilename(thread_, undefinedValue);
     obj->SetRequestedModules(thread_, undefinedValue);
     obj->SetImportEntries(thread_, undefinedValue);
     obj->SetLocalExportEntries(thread_, undefinedValue);

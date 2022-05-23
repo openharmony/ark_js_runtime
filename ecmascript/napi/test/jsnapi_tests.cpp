@@ -442,9 +442,9 @@ HWTEST_F_L0(JSNApiTests, Int8Array)
     // 5 : offset of byte, 6 : length
     Local<Int8ArrayRef> typedArray = Int8ArrayRef::New(vm_, arrayBuffer, 5, 6);
     ASSERT_TRUE(typedArray->IsInt8Array());
-    ASSERT_EQ(typedArray->ByteLength(vm_), 6); // 6 : length of bytes
-    ASSERT_EQ(typedArray->ByteOffset(vm_), 5); // 5 : offset of byte
-    ASSERT_EQ(typedArray->ArrayLength(vm_), 6); // 6 : length of array
+    ASSERT_EQ(typedArray->ByteLength(vm_), 6U); // 6 : length of bytes
+    ASSERT_EQ(typedArray->ByteOffset(vm_), 5U); // 5 : offset of byte
+    ASSERT_EQ(typedArray->ArrayLength(vm_), 6U); // 6 : length of array
     ASSERT_EQ(typedArray->GetArrayBuffer(vm_)->GetBuffer(), arrayBuffer->GetBuffer());
 }
 
@@ -458,9 +458,9 @@ HWTEST_F_L0(JSNApiTests, Uint8Array)
     // 5 : offset of byte, 6 : length
     Local<Uint8ArrayRef> typedArray = Uint8ArrayRef::New(vm_, arrayBuffer, 5, 6);
     ASSERT_TRUE(typedArray->IsUint8Array());
-    ASSERT_EQ(typedArray->ByteLength(vm_), 6);  // 6 : length of bytes
-    ASSERT_EQ(typedArray->ByteOffset(vm_), 5);  // 5 : offset of byte
-    ASSERT_EQ(typedArray->ArrayLength(vm_), 6); // 6 : length of array
+    ASSERT_EQ(typedArray->ByteLength(vm_), 6U);  // 6 : length of bytes
+    ASSERT_EQ(typedArray->ByteOffset(vm_), 5U);  // 5 : offset of byte
+    ASSERT_EQ(typedArray->ArrayLength(vm_), 6U); // 6 : length of array
     ASSERT_EQ(typedArray->GetArrayBuffer(vm_)->GetBuffer(), arrayBuffer->GetBuffer());
 }
 
@@ -474,9 +474,9 @@ HWTEST_F_L0(JSNApiTests, Uint8ClampedArray)
     // 5 : offset of byte, 6 : length
     Local<Uint8ClampedArrayRef> typedArray = Uint8ClampedArrayRef::New(vm_, arrayBuffer, 5, 6);
     ASSERT_TRUE(typedArray->IsUint8ClampedArray());
-    ASSERT_EQ(typedArray->ByteLength(vm_), 6);  // 6 : length of bytes
-    ASSERT_EQ(typedArray->ByteOffset(vm_), 5);  // 5 : offset of byte
-    ASSERT_EQ(typedArray->ArrayLength(vm_), 6); // 6 : length of array
+    ASSERT_EQ(typedArray->ByteLength(vm_), 6U);  // 6 : length of bytes
+    ASSERT_EQ(typedArray->ByteOffset(vm_), 5U);  // 5 : offset of byte
+    ASSERT_EQ(typedArray->ArrayLength(vm_), 6U); // 6 : length of array
     ASSERT_EQ(typedArray->GetArrayBuffer(vm_)->GetBuffer(), arrayBuffer->GetBuffer());
 }
 
@@ -490,9 +490,9 @@ HWTEST_F_L0(JSNApiTests, Int16Array)
     // 4 : offset of byte, 6 : length
     Local<Int16ArrayRef> typedArray = Int16ArrayRef::New(vm_, arrayBuffer, 4, 6);
     ASSERT_TRUE(typedArray->IsInt16Array());
-    ASSERT_EQ(typedArray->ByteLength(vm_), 12);  // 12 : length of bytes
-    ASSERT_EQ(typedArray->ByteOffset(vm_), 4);   // 4 : offset of byte
-    ASSERT_EQ(typedArray->ArrayLength(vm_), 6);  // 6 : length of array
+    ASSERT_EQ(typedArray->ByteLength(vm_), 12U);  // 12 : length of bytes
+    ASSERT_EQ(typedArray->ByteOffset(vm_), 4U);   // 4 : offset of byte
+    ASSERT_EQ(typedArray->ArrayLength(vm_), 6U);  // 6 : length of array
     ASSERT_EQ(typedArray->GetArrayBuffer(vm_)->GetBuffer(), arrayBuffer->GetBuffer());
 }
 
@@ -506,9 +506,9 @@ HWTEST_F_L0(JSNApiTests, Uint16Array)
     // 4 : offset of byte, 6 : length
     Local<Uint16ArrayRef> typedArray = Uint16ArrayRef::New(vm_, arrayBuffer, 4, 6);
     ASSERT_TRUE(typedArray->IsUint16Array());
-    ASSERT_EQ(typedArray->ByteLength(vm_), 12);  // 12 : length of bytes
-    ASSERT_EQ(typedArray->ByteOffset(vm_), 4);   // 4 : offset of byte
-    ASSERT_EQ(typedArray->ArrayLength(vm_), 6);  // 6 : length of array
+    ASSERT_EQ(typedArray->ByteLength(vm_), 12U);  // 12 : length of bytes
+    ASSERT_EQ(typedArray->ByteOffset(vm_), 4U);   // 4 : offset of byte
+    ASSERT_EQ(typedArray->ArrayLength(vm_), 6U);  // 6 : length of array
     ASSERT_EQ(typedArray->GetArrayBuffer(vm_)->GetBuffer(), arrayBuffer->GetBuffer());
 }
 
@@ -522,9 +522,9 @@ HWTEST_F_L0(JSNApiTests, Uint32Array)
     // 4 : offset of byte, 6 : length
     Local<Uint32ArrayRef> typedArray = Uint32ArrayRef::New(vm_, arrayBuffer, 4, 6);
     ASSERT_TRUE(typedArray->IsUint32Array());
-    ASSERT_EQ(typedArray->ByteLength(vm_), 24);  // 24 : length of bytes
-    ASSERT_EQ(typedArray->ByteOffset(vm_), 4);   // 4 : offset of byte
-    ASSERT_EQ(typedArray->ArrayLength(vm_), 6);  // 6 : length of array
+    ASSERT_EQ(typedArray->ByteLength(vm_), 24U);  // 24 : length of bytes
+    ASSERT_EQ(typedArray->ByteOffset(vm_), 4U);   // 4 : offset of byte
+    ASSERT_EQ(typedArray->ArrayLength(vm_), 6U);  // 6 : length of array
     ASSERT_EQ(typedArray->GetArrayBuffer(vm_)->GetBuffer(), arrayBuffer->GetBuffer());
 }
 
@@ -538,9 +538,9 @@ HWTEST_F_L0(JSNApiTests, Int32Array)
     // 4 : offset of byte, 6 : length
     Local<Int32ArrayRef> typedArray = Int32ArrayRef::New(vm_, arrayBuffer, 4, 6);
     ASSERT_TRUE(typedArray->IsInt32Array());
-    ASSERT_EQ(typedArray->ByteLength(vm_), 24);  // 24 : length of bytes
-    ASSERT_EQ(typedArray->ByteOffset(vm_), 4);   // 4 : offset of byte
-    ASSERT_EQ(typedArray->ArrayLength(vm_), 6);  // 6 : length of array
+    ASSERT_EQ(typedArray->ByteLength(vm_), 24U);  // 24 : length of bytes
+    ASSERT_EQ(typedArray->ByteOffset(vm_), 4U);   // 4 : offset of byte
+    ASSERT_EQ(typedArray->ArrayLength(vm_), 6U);  // 6 : length of array
     ASSERT_EQ(typedArray->GetArrayBuffer(vm_)->GetBuffer(), arrayBuffer->GetBuffer());
 }
 
@@ -554,9 +554,9 @@ HWTEST_F_L0(JSNApiTests, Float32Array)
     // 4 : offset of byte, 6 : length
     Local<Float32ArrayRef> typedArray = Float32ArrayRef::New(vm_, arrayBuffer, 4, 6);
     ASSERT_TRUE(typedArray->IsFloat32Array());
-    ASSERT_EQ(typedArray->ByteLength(vm_), 24);  // 24 : length of bytes
-    ASSERT_EQ(typedArray->ByteOffset(vm_), 4);   // 4 : offset of byte
-    ASSERT_EQ(typedArray->ArrayLength(vm_), 6);  // 6 : length of array
+    ASSERT_EQ(typedArray->ByteLength(vm_), 24U);  // 24 : length of bytes
+    ASSERT_EQ(typedArray->ByteOffset(vm_), 4U);   // 4 : offset of byte
+    ASSERT_EQ(typedArray->ArrayLength(vm_), 6U);  // 6 : length of array
     ASSERT_EQ(typedArray->GetArrayBuffer(vm_)->GetBuffer(), arrayBuffer->GetBuffer());
 }
 
@@ -570,9 +570,9 @@ HWTEST_F_L0(JSNApiTests, Float64Array)
     // 8 : offset of byte, 6 : length
     Local<Float64ArrayRef> typedArray = Float64ArrayRef::New(vm_, arrayBuffer, 8, 6);
     ASSERT_TRUE(typedArray->IsFloat64Array());
-    ASSERT_EQ(typedArray->ByteLength(vm_), 48);  // 48 : length of bytes
-    ASSERT_EQ(typedArray->ByteOffset(vm_), 8);   // 8 : offset of byte
-    ASSERT_EQ(typedArray->ArrayLength(vm_), 6);  // 6 : length of array
+    ASSERT_EQ(typedArray->ByteLength(vm_), 48U);  // 48 : length of bytes
+    ASSERT_EQ(typedArray->ByteOffset(vm_), 8U);   // 8 : offset of byte
+    ASSERT_EQ(typedArray->ArrayLength(vm_), 6U);  // 6 : length of array
     ASSERT_EQ(typedArray->GetArrayBuffer(vm_)->GetBuffer(), arrayBuffer->GetBuffer());
 }
 
@@ -586,9 +586,9 @@ HWTEST_F_L0(JSNApiTests, BigInt64Array)
     // 8 : offset of byte, 6 : length
     Local<BigInt64ArrayRef> typedArray = BigInt64ArrayRef::New(vm_, arrayBuffer, 8, 6);
     ASSERT_TRUE(typedArray->IsBigInt64Array());
-    ASSERT_EQ(typedArray->ByteLength(vm_), 48);  // 48 : length of bytes
-    ASSERT_EQ(typedArray->ByteOffset(vm_), 8);   // 8 : offset of byte
-    ASSERT_EQ(typedArray->ArrayLength(vm_), 6);  // 6 : length of array
+    ASSERT_EQ(typedArray->ByteLength(vm_), 48U);  // 48 : length of bytes
+    ASSERT_EQ(typedArray->ByteOffset(vm_), 8U);   // 8 : offset of byte
+    ASSERT_EQ(typedArray->ArrayLength(vm_), 6U);  // 6 : length of array
     ASSERT_EQ(typedArray->GetArrayBuffer(vm_)->GetBuffer(), arrayBuffer->GetBuffer());
 }
 
@@ -602,9 +602,9 @@ HWTEST_F_L0(JSNApiTests, BigUint64Array)
     // 8 : offset of byte, 6 : length
     Local<BigUint64ArrayRef> typedArray = BigUint64ArrayRef::New(vm_, arrayBuffer, 8, 6);
     ASSERT_TRUE(typedArray->IsBigUint64Array());
-    ASSERT_EQ(typedArray->ByteLength(vm_), 48);  // 48 : length of bytes
-    ASSERT_EQ(typedArray->ByteOffset(vm_), 8);   // 8 : offset of byte
-    ASSERT_EQ(typedArray->ArrayLength(vm_), 6);  // 6 : length of array
+    ASSERT_EQ(typedArray->ByteLength(vm_), 48U);  // 48 : length of bytes
+    ASSERT_EQ(typedArray->ByteOffset(vm_), 8U);   // 8 : offset of byte
+    ASSERT_EQ(typedArray->ArrayLength(vm_), 6U);  // 6 : length of array
     ASSERT_EQ(typedArray->GetArrayBuffer(vm_)->GetBuffer(), arrayBuffer->GetBuffer());
 }
 

@@ -430,8 +430,12 @@ JSHandle<EcmaString> JSTaggedValue::ToString(JSThread *thread, const JSHandle<JS
 
 JSTaggedValue JSTaggedValue::CanonicalNumericIndexString(JSThread *thread, const JSHandle<JSTaggedValue> &tagged)
 {
-    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromASCII("-0");
+    if (tagged->IsNumber()) {
+        return tagged.GetTaggedValue();
+    }
+
     if (tagged->IsString()) {
+        JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromASCII("-0");
         if (EcmaString::StringsAreEqual(static_cast<EcmaString *>(tagged->GetTaggedObject()), *str)) {
             return JSTaggedValue(-0.0);
         }
@@ -502,7 +506,7 @@ OperationResult JSTaggedValue::GetProperty(JSThread *thread, const JSHandle<JSTa
         return JSProxy::GetProperty(thread, JSHandle<JSProxy>(obj), key);
     }
     if (obj->IsTypedArray()) {
-        return JSTypedArray::GetProperty(thread, obj, JSTypedArray::ToPropKey(thread, key));
+        return JSTypedArray::GetProperty(thread, obj, key);
     }
     if (obj->IsModuleNamespace()) {
         return ModuleNamespace::GetProperty(thread, obj, key);
@@ -552,7 +556,7 @@ OperationResult JSTaggedValue::GetProperty(JSThread *thread, const JSHandle<JSTa
         return JSProxy::GetProperty(thread, JSHandle<JSProxy>(obj), key, receiver);
     }
     if (obj->IsTypedArray()) {
-        return JSTypedArray::GetProperty(thread, obj, JSTypedArray::ToPropKey(thread, key), receiver);
+        return JSTypedArray::GetProperty(thread, obj, key, receiver);
     }
 
     if (obj->IsSpecialContainer()) {
@@ -577,7 +581,7 @@ bool JSTaggedValue::SetProperty(JSThread *thread, const JSHandle<JSTaggedValue> 
     if (obj->IsJSProxy()) {
         success = JSProxy::SetProperty(thread, JSHandle<JSProxy>(obj), key, value, mayThrow);
     } else if (obj->IsTypedArray()) {
-        success = JSTypedArray::SetProperty(thread, obj, JSTypedArray::ToPropKey(thread, key), value, mayThrow);
+        success = JSTypedArray::SetProperty(thread, obj, key, value, mayThrow);
     } else if (obj->IsModuleNamespace()) {
         success = ModuleNamespace::SetProperty(thread, mayThrow);
     } else {
@@ -604,8 +608,7 @@ bool JSTaggedValue::SetProperty(JSThread *thread, const JSHandle<JSTaggedValue> 
         success = JSProxy::SetProperty(thread, JSHandle<JSProxy>(obj), keyHandle, value, mayThrow);
     } else if (obj->IsTypedArray()) {
         JSHandle<JSTaggedValue> keyHandle(thread, JSTaggedValue(key));
-        success = JSTypedArray::SetProperty(
-            thread, obj, JSHandle<JSTaggedValue>(JSTaggedValue::ToString(thread, keyHandle)), value, mayThrow);
+        success = JSTypedArray::SetProperty(thread, obj, keyHandle, value, mayThrow);
     } else if (obj->IsModuleNamespace()) {
         success = ModuleNamespace::SetProperty(thread, mayThrow);
     } else {
@@ -633,8 +636,7 @@ bool JSTaggedValue::SetProperty(JSThread *thread, const JSHandle<JSTaggedValue> 
     if (obj->IsJSProxy()) {
         success = JSProxy::SetProperty(thread, JSHandle<JSProxy>(obj), key, value, receiver, mayThrow);
     } else if (obj->IsTypedArray()) {
-        success =
-            JSTypedArray::SetProperty(thread, obj, JSTypedArray::ToPropKey(thread, key), value, receiver, mayThrow);
+        success = JSTypedArray::SetProperty(thread, obj, key, value, receiver, mayThrow);
     } else if (obj->IsModuleNamespace()) {
         success = ModuleNamespace::SetProperty(thread, mayThrow);
     } else {
@@ -659,7 +661,7 @@ bool JSTaggedValue::DeleteProperty(JSThread *thread, const JSHandle<JSTaggedValu
     }
 
     if (obj->IsTypedArray()) {
-        return JSTypedArray::DeleteProperty(thread, obj, JSTypedArray::ToPropKey(thread, key));
+        return JSTypedArray::DeleteProperty(thread, obj, key);
     }
 
     if (obj->IsSpecialContainer()) {
@@ -720,7 +722,7 @@ bool JSTaggedValue::DefineOwnProperty(JSThread *thread, const JSHandle<JSTaggedV
     }
 
     if (obj->IsTypedArray()) {
-        return JSTypedArray::DefineOwnProperty(thread, obj, JSTypedArray::ToPropKey(thread, key), desc);
+        return JSTypedArray::DefineOwnProperty(thread, obj, key, desc);
     }
 
     if (obj->IsModuleNamespace()) {
@@ -741,7 +743,7 @@ bool JSTaggedValue::GetOwnProperty(JSThread *thread, const JSHandle<JSTaggedValu
         return JSProxy::GetOwnProperty(thread, JSHandle<JSProxy>(obj), key, desc);
     }
     if (obj->IsTypedArray()) {
-        return JSTypedArray::GetOwnProperty(thread, obj, JSTypedArray::ToPropKey(thread, key), desc);
+        return JSTypedArray::GetOwnProperty(thread, obj, key, desc);
     }
     if (obj->IsModuleNamespace()) {
         return ModuleNamespace::GetOwnProperty(thread, obj, key, desc);
@@ -814,7 +816,7 @@ bool JSTaggedValue::HasProperty(JSThread *thread, const JSHandle<JSTaggedValue> 
         return JSProxy::HasProperty(thread, JSHandle<JSProxy>(obj), key);
     }
     if (obj->IsTypedArray()) {
-        return JSTypedArray::HasProperty(thread, obj, JSTypedArray::ToPropKey(thread, key));
+        return JSTypedArray::HasProperty(thread, obj, key);
     }
     if (obj->IsModuleNamespace()) {
         return ModuleNamespace::HasProperty(thread, obj, key);
@@ -833,7 +835,7 @@ bool JSTaggedValue::HasProperty(JSThread *thread, const JSHandle<JSTaggedValue> 
     }
     if (obj->IsTypedArray()) {
         JSHandle<JSTaggedValue> key_handle(thread, JSTaggedValue(key));
-        return JSTypedArray::HasProperty(thread, obj, JSHandle<JSTaggedValue>(ToString(thread, key_handle)));
+        return JSTypedArray::HasProperty(thread, obj, key_handle);
     }
     if (obj->IsSpecialContainer()) {
         return HasContainerProperty(thread, obj, JSHandle<JSTaggedValue>(thread, JSTaggedValue(key)));
@@ -1014,7 +1016,6 @@ bool JSTaggedValue::GetContainerProperty(JSThread *thread, const JSHandle<JSTagg
 JSHandle<JSTaggedValue> JSTaggedValue::ToNumeric(JSThread *thread, JSHandle<JSTaggedValue> tagged)
 {
     // 1. Let primValue be ? ToPrimitive(value, number)
-    
     JSHandle<JSTaggedValue> primValue(thread, ToPrimitive(thread, tagged, PREFER_NUMBER));
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSTaggedValue, thread);
     // 2. If Type(primValue) is BigInt, return primValue.

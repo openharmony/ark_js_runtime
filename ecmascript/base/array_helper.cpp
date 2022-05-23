@@ -119,7 +119,7 @@ double ArrayHelper::GetLength(JSThread *thread, const JSHandle<JSTaggedValue> &t
         return JSArray::Cast(thisHandle->GetTaggedObject())->GetArrayLength();
     }
     if (thisHandle->IsTypedArray()) {
-        return TypedArrayHelper::GetArrayLength(thread, JSHandle<JSObject>::Cast(thisHandle));
+        return JSHandle<JSTypedArray>::Cast(thisHandle)->GetArrayLength();
     }
     JSHandle<JSTaggedValue> lengthKey = thread->GlobalConstants()->GetHandledLengthString();
     JSHandle<JSTaggedValue> lenResult = JSTaggedValue::GetProperty(thread, thisHandle, lengthKey).GetValue();
