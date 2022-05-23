@@ -34,6 +34,7 @@ public:
     static JSTaggedValue ResolvedOptions(EcmaRuntimeCallInfo *argv);
 
 private:
+    friend class panda::ecmascript::ObjectFactory;
     static JSTaggedValue AnonymousCollator(EcmaRuntimeCallInfo *argv);
 };
 }  // namespace panda::ecmascript::builtins

@@ -107,8 +107,7 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
       nativeAreaAllocator_(std::make_unique<NativeAreaAllocator>()),
       heapRegionAllocator_(std::make_unique<HeapRegionAllocator>()),
       chunk_(nativeAreaAllocator_.get()),
-      nativePointerList_(&chunk_),
-      nativeMethods_(&chunk_)
+      nativePointerList_(&chunk_)
 {
     options_ = std::move(options);
     icEnabled_ = options_.EnableIC();
@@ -146,7 +145,7 @@ bool EcmaVM::Initialize()
     heap_ = new Heap(this);
     heap_->Initialize();
     gcStats_ = chunk_.New<GCStats>(heap_);
-    factory_ = chunk_.New<ObjectFactory>(thread_, heap_);
+    factory_ = chunk_.New<ObjectFactory>(thread_, heap_, &chunk_);
     if (UNLIKELY(factory_ == nullptr)) {
         LOG_ECMA(FATAL) << "alloc factory_ failed";
         UNREACHABLE();
@@ -167,6 +166,7 @@ bool EcmaVM::Initialize()
     microJobQueue_ = factory_->NewMicroJobQueue().GetTaggedValue();
     Builtins builtins;
     builtins.Initialize(globalEnv, thread_);
+    factory_->GenerateInternalNativeMethods();
     thread_->SetGlobalObject(GetGlobalEnv()->GetGlobalObject());
     moduleManager_ = new ModuleManager(this);
     debuggerManager_->Initialize();
@@ -244,7 +244,6 @@ EcmaVM::~EcmaVM()
 {
     vmInitialized_ = false;
     Taskpool::GetCurrentTaskpool()->Destroy();
-    ClearNativeMethodsData();
 
     if (runtimeStat_ != nullptr && runtimeStat_->IsRuntimeStatEnabled()) {
         runtimeStat_->Print();
@@ -346,34 +345,12 @@ EcmaVM::CpuProfilingScope::~CpuProfilingScope()
 #endif
 }
 
-JSMethod *EcmaVM::GetMethodForNativeFunction(const void *func)
-{
-    uint32_t numArgs = 2;  // function object and this
-    auto method = chunk_.New<JSMethod>(nullptr, panda_file::File::EntityId(0));
-    method->SetNativePointer(const_cast<void *>(func));
-
-    method->SetNativeBit(true);
-    method->SetNumArgsWithCallField(numArgs);
-    nativeMethods_.push_back(method);
-    return nativeMethods_.back();
-}
-
-JSMethod *EcmaVM::GenerateMethodForAOTFunction(const void *func, size_t numArgs)
-{
-    auto method = chunk_.New<JSMethod>(nullptr, panda_file::File::EntityId(0)); // 0 : temporary file id
-    method->SetNativePointer(const_cast<void *>(func));
-    method->SetAotCodeBit(true);
-    method->SetNativeBit(false);
-    method->SetNumArgsWithCallField(numArgs);
-    nativeMethods_.push_back(method);
-    return nativeMethods_.back();
-}
-
 void EcmaVM::UpdateMethodInFunc(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile)
 {
     const std::string funcName = "func_main_0";
     auto mainEntry = static_cast<uintptr_t>(aotInfo_->GetAOTFuncEntry(funcName));
-    JSMethod *mainMethod = GenerateMethodForAOTFunction(reinterpret_cast<void *>(mainEntry), 1); // 1 : default paras
+    // 1 : default paras
+    JSMethod *mainMethod = factory_->NewMethodForAOTFunction(reinterpret_cast<void *>(mainEntry), 1);
     mainFunc->SetCallTarget(thread_, mainMethod);
     mainFunc->SetCodeEntry(reinterpret_cast<uintptr_t>(mainEntry));
     JSHandle<JSTaggedValue> constPool(thread_, mainFunc->GetConstantPool());
@@ -388,7 +365,7 @@ void EcmaVM::UpdateMethodInFunc(JSHandle<JSFunction> mainFunc, const JSPandaFile
             value.GetConstpoolType() == ConstPoolType::METHOD) {
                 auto id = value.GetConstpoolIndex();
                 auto codeEntry = static_cast<uintptr_t>(aotInfo_->GetAOTFuncEntry(id));
-                JSMethod *curMethod = GenerateMethodForAOTFunction(reinterpret_cast<void *>(codeEntry), 1);
+                JSMethod *curMethod = factory_->NewMethodForAOTFunction(reinterpret_cast<void *>(codeEntry), 1);
                 auto curFunction = JSFunction::Cast(curPool->GetObjectFromCache(id).GetTaggedObject());
                 curFunction->SetCallTarget(thread_, curMethod);
                 curFunction->SetCodeEntry(reinterpret_cast<uintptr_t>(codeEntry));
@@ -659,14 +636,6 @@ void EcmaVM::SetMicroJobQueue(job::MicroJobQueue *queue)
 {
     ASSERT(queue != nullptr);
     microJobQueue_ = JSTaggedValue(queue);
-}
-
-void EcmaVM::ClearNativeMethodsData()
-{
-    for (auto iter : nativeMethods_) {
-        chunk_.Delete(iter);
-    }
-    nativeMethods_.clear();
 }
 
 void EcmaVM::LoadStubs()

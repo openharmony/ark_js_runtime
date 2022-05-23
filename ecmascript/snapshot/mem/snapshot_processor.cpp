@@ -1007,7 +1007,7 @@ void *SnapshotProcessor::NativePointerEncodeBitToAddr(EncodeBit nativeBit)
     size_t nativeTableSize = GetNativeTableSize();
 
     if (index < nativeTableSize - Constants::PROGRAM_NATIVE_METHOD_BEGIN) {
-        addr = reinterpret_cast<void *>(vm_->nativeMethods_.at(index));
+        addr = reinterpret_cast<void *>(vm_->GetFactory()->nativeMethods_.at(index));
     } else if (index < nativeTableSize) {
         addr = reinterpret_cast<void *>(g_nativeTable[index]);
     } else {
@@ -1060,7 +1060,7 @@ void SnapshotProcessor::DeserializeNativePointer(uint64_t *value)
         return;
     }
     if (index < nativeTableSize - Constants::PROGRAM_NATIVE_METHOD_BEGIN) {
-        addr = reinterpret_cast<uintptr_t>(vm_->nativeMethods_.at(index));
+        addr = reinterpret_cast<uintptr_t>(vm_->GetFactory()->nativeMethods_.at(index));
     } else if (index < nativeTableSize) {
         addr = g_nativeTable[index];
     } else {
@@ -1158,7 +1158,7 @@ void SnapshotProcessor::GeneratedNativeMethod()  // NOLINT(readability-function-
 {
     size_t nativeMethodSize = GetNativeTableSize() - Constants::PROGRAM_NATIVE_METHOD_BEGIN;
     for (size_t i = 0; i < nativeMethodSize; i++) {
-        vm_->GetMethodForNativeFunction(reinterpret_cast<void *>(g_nativeTable[i]));
+        vm_->GetFactory()->NewMethodForNativeFunction(reinterpret_cast<void *>(g_nativeTable[i]));
     }
 }
 
