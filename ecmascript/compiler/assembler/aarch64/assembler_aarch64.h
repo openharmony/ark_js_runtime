@@ -257,6 +257,11 @@ public:
     {
         return shiftAmount_;
     }
+
+    Register GetRegisterOffset() const
+    {
+        return offsetReg_;
+    }
 private:
     Register base_;
     Register offsetReg_;

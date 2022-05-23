@@ -411,10 +411,16 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
     __ BindAssemblerStub(RTSTUB_ID(JSCall));
     Register jsfunc(X1);
     Register sp(SP);
+    __ Ldr(jsfunc, MemoryOperand(sp, FRAME_SLOT_SIZE));
+    JSCallStart(assembler, jsfunc);
+}
+
+void AssemblerStubs::JSCallStart(ExtendedAssembler *assembler, Register jsfunc)
+{
+    Register sp(SP);
     Register taggedValue(X2);
     Label nonCallable;
     Label notJSFunction;
-    __ Ldr(jsfunc, MemoryOperand(sp, FRAME_SLOT_SIZE));
     __ Mov(taggedValue, JSTaggedValue::TAG_MASK);
     __ Cmp(jsfunc, taggedValue);
     __ B(Condition::HS, &nonCallable);
@@ -573,8 +579,18 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
     }
     __ Bind(&jsProxy);
     {
-        __ Brk(Immediate(0));
-        __ Ret();
+        // input: x1(calltarget)
+        // output: glue:x0 argc:x1 calltarget:x2 argv:x3
+        __ Mov(Register(X2), jsfunc);
+        __ Ldr(Register(X1), MemoryOperand(sp, 0));
+        __ Add(X3, sp, Immediate(8));
+
+        Register proxyCallInternalId(Register(X9).W());
+        Register codeAddress(X10);
+        __ Mov(proxyCallInternalId, Immediate(CommonStubCSigns::JsProxyCallInternal));
+        __ Add(codeAddress, X0, Immediate(JSThread::GlueData::GetCOStubEntriesOffset(false)));
+        __ Ldr(codeAddress, MemoryOperand(codeAddress, proxyCallInternalId, UXTW, 3));
+        __ Br(codeAddress);
     }
     __ Bind(&nonCallable);
     {
@@ -604,12 +620,40 @@ void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
 void AssemblerStubs::JSCallWithArgV(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(JSCallWithArgV));
-    __ Ret();
+    Register jsfunc(X1);
+    Register argv(X3);
+    __ Ldr(jsfunc, MemoryOperand(argv, 0));
+    JSCallStart(assembler, jsfunc);
 }
 
 void AssemblerStubs::CallRuntimeWithArgv(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(CallRuntimeWithArgv));
+    Register returnAddr(X9);
+    Register glue(X0);
+    Register runtimeId(X1);
+    Register argc(X2);
+    Register argv(X3);
+    Register sp(SP);
+    __ Ldr(returnAddr, MemoryOperand(sp, 8));
+    __ Stp(argc, argv, MemoryOperand(sp, -16, MemoryOperand::AddrMode::PREINDEX));
+    __ Stp(returnAddr, runtimeId, MemoryOperand(sp, -16, MemoryOperand::AddrMode::PREINDEX));
+    // construct leave frame
+    Register frameType(X9);
+    Register fp(X29);
+    __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::LEAVE_FRAME_WITH_ARGV)));
+    __ Str(frameType, MemoryOperand(sp, -8, MemoryOperand::AddrMode::PREINDEX));
+
+     // load runtime trampoline address
+    Register tmp(X9);
+    Register rtfunc(X9);
+    __ Add(tmp, glue, Operand(runtimeId, LSL, 3));
+    __ Ldr(rtfunc, MemoryOperand(tmp, JSThread::GlueData::GetRTStubEntriesOffset(false)));
+    __ Mov(X1, argc);
+    __ Mov(X2, argv);
+    __ Blr(rtfunc);
+    __ Add(sp, sp, Immediate(8 * 7));
+
     __ Ret();
 }
 
