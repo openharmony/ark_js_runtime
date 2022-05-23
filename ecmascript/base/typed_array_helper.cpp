@@ -233,12 +233,12 @@ JSTaggedValue TypedArrayHelper::CreateFromTypedArray(EcmaRuntimeCallInfo *argv, 
         }
         //   d. Let srcByteIndex be srcByteOffset.
         //   e. Let targetByteIndex be 0.
-        int32_t srcByteIndex = srcByteOffset;
-        int32_t targetByteIndex = 0;
+        uint32_t srcByteIndex = srcByteOffset;
+        uint32_t targetByteIndex = 0;
         //   f. Let count be elementLength.
         //   g. Repeat, while count > 0
         JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
-        for (int32_t count = elementLength; count > 0; count--) {
+        for (uint32_t count = elementLength; count > 0; count--) {
             // i. Let value be GetValueFromBuffer(srcData, srcByteIndex, srcType, true, Unordered).
             JSTaggedValue taggedData =
                 BuiltinsArrayBuffer::GetValueFromBuffer(thread, srcData.GetTaggedValue(), srcByteIndex, srcType, true);
