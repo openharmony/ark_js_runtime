@@ -287,9 +287,24 @@ void AssemblerAarch64::Ldr(const Register &rt, const MemoryOperand &operand)
         uint32_t instructionCode = (regX << 30) | op | LoadAndStoreImm(imm, isSigned)
                                    | Rn(operand.GetRegBase().GetId()) | Rt(rt.GetId());
         EmitU32(instructionCode);
-        return;
+    } else {
+        ASSERT(operand.GetExtendOption() != Extend::NO_EXTEND);
+        uint32_t shift = operand.GetShiftAmount();
+        if (regX) {
+            ASSERT(shift == 0 || shift == 3);
+        } else {
+            ASSERT(shift == 0 || shift == 2);
+        }
+        shift = (shift == 0) ? 0 : 1;
+        Register rm = operand.GetRegisterOffset();
+        Register rn = operand.GetRegBase();
+        uint32_t extend_field =
+            (operand.GetExtendOption() << LDR_STR_Extend_LOWBITS) & LDR_STR_Extend_MASK;
+        uint32_t shift_field = (shift << LDR_STR_S_LOWBITS) & LDR_STR_S_MASK;
+        uint32_t instructionCode = (regX << 30) | LDR_Register | Rm(rm.GetId())
+                                   | extend_field | shift_field | Rn(rn.GetId()) | Rt(rt.GetId());
+         EmitU32(instructionCode);
     }
-    UNREACHABLE();
 }
 
 void AssemblerAarch64::Str(const Register &rt, const MemoryOperand &operand)
