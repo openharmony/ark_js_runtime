@@ -212,11 +212,6 @@ private:
 
 class MemoryOperand {
 public:
-    enum class AddrMode {
-        OFFSET,
-        PREINDEX,
-        POSTINDEX
-    };
     MemoryOperand(Register base, Register offset, Extend extend, uint8_t  shiftAmount = 0)
         : base_(base), offsetReg_(offset), offsetImm_(0), addrmod_(AddrMode::OFFSET),
           extend_(extend), shift_(Shift::NO_SHIFT), shiftAmount_(shiftAmount)
