@@ -254,6 +254,14 @@ bool JSBackend::IsSkipLine(const JSPtLocation &location)
     return false;
 }
 
+void JSBackend::PendingJobEntry()
+{
+    if (singleStepper_ != nullptr) {
+        singleStepper_.reset();
+        pauseOnNextByteCode_ = true;
+    }
+}
+
 std::optional<CString> JSBackend::GetPossibleBreakpoints(Location *start, [[maybe_unused]] Location *end,
     CVector<std::unique_ptr<BreakLocation>> *locations)
 {
