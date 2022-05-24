@@ -168,12 +168,19 @@ enum LoadStorePairOpCode {
 };
 
 enum LoadStoreOpCode {
-    LDR_Post    = 0xb8400400,
-    LDR_Pre     = 0xb8400c00,
-    LDR_Offset  = 0xb9400000,
-    STR_Post    = 0xb8000400,
-    STR_Pre     = 0xb8000c00,
-    STR_Offset  = 0xb9000000,
+    LDR_Post     = 0xb8400400,
+    LDR_Pre      = 0xb8400c00,
+    LDR_Offset   = 0xb9400000,
+    STR_Post     = 0xb8000400,
+    STR_Pre      = 0xb8000c00,
+    STR_Offset   = 0xb9000000,
+    LDR_Register = 0xb8600800,
+};
+
+enum  AddrMode {
+    OFFSET,
+    PREINDEX,
+    POSTINDEX
 };
 
 enum LogicShiftOpCode {
@@ -266,7 +273,9 @@ enum RetOpCode {
     V(LDR_STR, Size, 31, 30)        \
     V(LDR_STR, Opc, 23, 22)         \
     V(LDR_STR, Imm9, 20, 12)        \
-    V(LDR_STR, Imm12, 21, 10)
+    V(LDR_STR, Imm12, 21, 10)       \
+    V(LDR_STR, Extend, 15, 13)      \
+    V(LDR_STR, S, 12, 12)
 
 
 /* Aarch64 Instruction LDP Field Defines

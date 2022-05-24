@@ -99,6 +99,8 @@ public:
     static void ResumeCaughtFrameAndDispatch(ExtendedAssembler *assembler);
 
     static void ResumeUncaughtFrameAndReturn(ExtendedAssembler *assembler);
+private:
+    static void JSCallBody(ExtendedAssembler *assembler, Register jsfunc);
 };
 }  // namespace panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H
