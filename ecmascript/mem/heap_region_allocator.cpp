@@ -14,10 +14,10 @@
  */
 
 #include "ecmascript/mem/heap_region_allocator.h"
-#include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/mark_stack.h"
-#include "ecmascript/mem/region.h"
 #include "ecmascript/mem/mem_map_allocator.h"
+#include "ecmascript/mem/region.h"
+#include "ecmascript/mem/space-inl.h"
 
 namespace panda::ecmascript {
 Region *HeapRegionAllocator::AllocateAlignedRegion(Space *space, size_t capacity, JSThread* thread)
