@@ -345,7 +345,8 @@ size_t Heap::GetCommittedSize() const
                     + oldSpace_->GetCommittedSize()
                     + hugeObjectSpace_->GetCommittedSize()
                     + nonMovableSpace_->GetCommittedSize()
-                    + machineCodeSpace_->GetCommittedSize();
+                    + machineCodeSpace_->GetCommittedSize()
+                    + snapshotSpace_->GetCommittedSize();
     return result;
 }
 
@@ -355,7 +356,8 @@ size_t Heap::GetHeapObjectSize() const
                     + oldSpace_->GetHeapObjectSize()
                     + hugeObjectSpace_->GetHeapObjectSize()
                     + nonMovableSpace_->GetHeapObjectSize()
-                    + machineCodeSpace_->GetCommittedSize();
+                    + machineCodeSpace_->GetCommittedSize()
+                    + snapshotSpace_->GetHeapObjectSize();
     return result;
 }
 

@@ -102,12 +102,19 @@ public:
 
     inline void FreeBumpPoint();
     // Only fill free object
-    inline void FillBumpPoint();
+    inline void FillBumpPointer();
+
+    inline void ResetBumpPointer(uintptr_t begin, uintptr_t end, uintptr_t top);
 
     inline void Free(uintptr_t begin, size_t size, bool isAdd = true);
 
     inline size_t GetAvailableSize() const;
     inline size_t GetWastedSize() const;
+
+    uintptr_t GetTop() const
+    {
+        return bpAllocator_.GetTop();
+    }
 
     size_t GetAllocatedSize() const
     {

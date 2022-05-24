@@ -39,9 +39,10 @@ enum RegionFlags {
     IS_IN_YOUNG_OR_OLD_GENERATION = IS_IN_YOUNG_GENERATION | IS_IN_OLD_GENERATION,
     IS_IN_COLLECT_SET = 1 << 8,
     IS_IN_NEW_TO_NEW_SET = 1 << 9,
-    HAS_SWEPT = 1 << 10,
+    NEED_RELOCATE = 1 << 10,
+    HAS_SWEPT = 1 << 11,
     IS_IN_YOUNG_OR_CSET_GENERATION = IS_IN_YOUNG_GENERATION | IS_IN_COLLECT_SET,
-    IS_INVALID = 1 << 10,
+    IS_INVALID = 1 << 11,
 };
 
 #define REGION_OFFSET_LIST(V)                                                             \
@@ -243,6 +244,11 @@ public:
     bool BelowAgeMark() const
     {
         return IsFlagSet(RegionFlags::BELOW_AGE_MARK);
+    }
+
+    bool NeedRelocate() const
+    {
+        return IsFlagSet(RegionFlags::NEED_RELOCATE);
     }
 
     void SetSwept()
@@ -473,6 +479,7 @@ private:
     os::memory::Mutex lock_;
     NativeAreaAllocator* nativeAreaAllocator_ {nullptr};
     friend class Snapshot;
+    friend class SnapshotProcessor;
 };
 
 static_assert(Region::CheckLayout());
