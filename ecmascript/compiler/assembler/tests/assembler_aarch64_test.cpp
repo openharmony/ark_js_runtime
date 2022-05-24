@@ -166,10 +166,10 @@ HWTEST_F_L0(AssemblerAarch64Test, LdpStp)
                              "0000000c:294113e3 \tldp\tw3, w4, [sp, #8]\n");
 
     AssemblerAarch64 masm(chunk_);
-    __ Stp(Register(X1),  Register(X2), MemoryOperand(Register(SP), 8, MemoryOperand::AddrMode::POSTINDEX));
-    __ Ldp(Register(X1),  Register(X2), MemoryOperand(Register(SP), 8, MemoryOperand::AddrMode::PREINDEX));
-    __ Ldp(Register(X3),  Register(X4), MemoryOperand(Register(SP), 8, MemoryOperand::AddrMode::OFFSET));
-    __ Ldp(Register(X3).W(),  Register(X4).W(), MemoryOperand(Register(SP), 8, MemoryOperand::AddrMode::OFFSET));
+    __ Stp(Register(X1),  Register(X2), MemoryOperand(Register(SP), 8, POSTINDEX));
+    __ Ldp(Register(X1),  Register(X2), MemoryOperand(Register(SP), 8, PREINDEX));
+    __ Ldp(Register(X3),  Register(X4), MemoryOperand(Register(SP), 8, OFFSET));
+    __ Ldp(Register(X3).W(),  Register(X4).W(), MemoryOperand(Register(SP), 8, OFFSET));
     std::ostringstream oss;
     DisassembleChunk("aarch64-unknown-linux-gnu", &masm, oss);
     ASSERT_EQ(oss.str(), expectResult);
@@ -184,11 +184,11 @@ HWTEST_F_L0(AssemblerAarch64Test, LdrStr)
                              "00000010:b9400be3 \tldr\tw3, [sp, #8]\n");
 
     AssemblerAarch64 masm(chunk_);
-    __ Str(Register(X1), MemoryOperand(Register(SP), 8, MemoryOperand::AddrMode::POSTINDEX));
-    __ Str(Register(X1), MemoryOperand(Register(SP), -8, MemoryOperand::AddrMode::POSTINDEX));
-    __ Ldr(Register(X1), MemoryOperand(Register(SP), 8, MemoryOperand::AddrMode::PREINDEX));
-    __ Ldr(Register(X3), MemoryOperand(Register(SP), 8, MemoryOperand::AddrMode::OFFSET));
-    __ Ldr(Register(X3).W(), MemoryOperand(Register(SP), 8, MemoryOperand::AddrMode::OFFSET));
+    __ Str(Register(X1), MemoryOperand(Register(SP), 8, POSTINDEX));
+    __ Str(Register(X1), MemoryOperand(Register(SP), -8, POSTINDEX));
+    __ Ldr(Register(X1), MemoryOperand(Register(SP), 8, PREINDEX));
+    __ Ldr(Register(X3), MemoryOperand(Register(SP), 8, OFFSET));
+    __ Ldr(Register(X3).W(), MemoryOperand(Register(SP), 8, OFFSET));
     std::ostringstream oss;
     DisassembleChunk("aarch64-unknown-linux-gnu", &masm, oss);
     ASSERT_EQ(oss.str(), expectResult);
@@ -261,7 +261,7 @@ HWTEST_F_L0(AssemblerAarch64Test, Branch)
 
 HWTEST_F_L0(AssemblerAarch64Test, Loop)
 {
-    std::string expectResult("00000000:f100005f \tcmp\tx2, #0\n"
+    std::string expectResult("00000000:7100005f \tcmp\tw2, #0\n"
                              "00000004:540000e0 \tb.eq\t0x20\n"
                              "00000008:51000442 \tsub\tw2, w2, #1\n"
                              "0000000c:8b224c84 \tadd\tx4, x4, w2, uxtw #3\n"
@@ -282,8 +282,8 @@ HWTEST_F_L0(AssemblerAarch64Test, Loop)
     __ Add(base, base, Operand(count, UXTW, 3));
     __ Bind(&labelLoop);
     {
-        __ Ldr(temp, MemoryOperand(base, -8, MemoryOperand::AddrMode::POSTINDEX));
-        __ Str(temp, MemoryOperand(Register(SP), -8, MemoryOperand::AddrMode::PREINDEX));
+        __ Ldr(temp, MemoryOperand(base, -8, POSTINDEX));
+        __ Str(temp, MemoryOperand(Register(SP), -8, PREINDEX));
         __ Add(count, count, Immediate(-1));
         __ B(Condition::PL, &labelLoop);
     }

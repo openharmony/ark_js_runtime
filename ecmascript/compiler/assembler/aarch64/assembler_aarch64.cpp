@@ -86,13 +86,13 @@ void AssemblerAarch64::Ldp(const Register &rt, const Register &rt2, const Memory
     uint32_t op;
     if (operand.IsImmediateOffset()) {
         switch (operand.GetAddrMode()) {
-            case MemoryOperand::AddrMode::OFFSET:
+            case OFFSET:
                 op = LoadStorePairOpCode::LDP_Offset;
                 break;
-            case MemoryOperand::AddrMode::PREINDEX:
+            case PREINDEX:
                 op = LoadStorePairOpCode::LDP_Pre;
                 break;
-            case MemoryOperand::AddrMode::POSTINDEX:
+            case POSTINDEX:
                 op = LoadStorePairOpCode::LDP_Post;
                 break;
             default:
@@ -118,13 +118,13 @@ void AssemblerAarch64::Stp(const Register &rt, const Register &rt2, const Memory
     uint32_t op;
     if (operand.IsImmediateOffset()) {
         switch (operand.GetAddrMode()) {
-            case MemoryOperand::AddrMode::OFFSET:
+            case OFFSET:
                 op = LoadStorePairOpCode::STP_Offset;
                 break;
-            case MemoryOperand::AddrMode::PREINDEX:
+            case PREINDEX:
                 op = LoadStorePairOpCode::STP_Pre;
                 break;
-            case MemoryOperand::AddrMode::POSTINDEX:
+            case POSTINDEX:
                 op = LoadStorePairOpCode::STP_Post;
                 break;
             default:
@@ -150,13 +150,13 @@ void AssemblerAarch64::Ldp(const VectorRegister &vt, const VectorRegister &vt2, 
     uint32_t op;
     if (operand.IsImmediateOffset()) {
         switch (operand.GetAddrMode()) {
-            case MemoryOperand::AddrMode::OFFSET:
+            case OFFSET:
                 op = LoadStorePairOpCode::LDP_V_Offset;
                 break;
-            case MemoryOperand::AddrMode::PREINDEX:
+            case PREINDEX:
                 op = LoadStorePairOpCode::LDP_V_Pre;
                 break;
-            case MemoryOperand::AddrMode::POSTINDEX:
+            case POSTINDEX:
                 op = LoadStorePairOpCode::LDP_V_Post;
                 break;
             default:
@@ -193,13 +193,13 @@ void AssemblerAarch64::Stp(const VectorRegister &vt, const VectorRegister &vt2, 
     uint32_t op;
     if (operand.IsImmediateOffset()) {
         switch (operand.GetAddrMode()) {
-            case MemoryOperand::AddrMode::OFFSET:
+            case OFFSET:
                 op = LoadStorePairOpCode::STP_V_Offset;
                 break;
-            case MemoryOperand::AddrMode::PREINDEX:
+            case PREINDEX:
                 op = LoadStorePairOpCode::STP_V_Pre;
                 break;
-            case MemoryOperand::AddrMode::POSTINDEX:
+            case POSTINDEX:
                 op = LoadStorePairOpCode::STP_V_Post;
                 break;
             default:
@@ -265,7 +265,7 @@ void AssemblerAarch64::Ldr(const Register &rt, const MemoryOperand &operand)
     bool isSigned = true;
     if (operand.IsImmediateOffset()) {
         switch (operand.GetAddrMode()) {
-            case  MemoryOperand::AddrMode::OFFSET:
+            case  OFFSET:
                 op = LoadStoreOpCode::LDR_Offset;
                 if (regX) {
                     imm >>= 3;  // 3:  64 RegSise, imm/8 to remove trailing zeros
@@ -274,10 +274,10 @@ void AssemblerAarch64::Ldr(const Register &rt, const MemoryOperand &operand)
                 }
                 isSigned = false;
                 break;
-            case MemoryOperand::AddrMode::PREINDEX:
+            case PREINDEX:
                 op = LoadStoreOpCode::LDR_Pre;
                 break;
-            case MemoryOperand::AddrMode::POSTINDEX:
+            case POSTINDEX:
                 op = LoadStoreOpCode::LDR_Post;
                 break;
             default:
@@ -287,9 +287,26 @@ void AssemblerAarch64::Ldr(const Register &rt, const MemoryOperand &operand)
         uint32_t instructionCode = (regX << 30) | op | LoadAndStoreImm(imm, isSigned)
                                    | Rn(operand.GetRegBase().GetId()) | Rt(rt.GetId());
         EmitU32(instructionCode);
-        return;
+    } else {
+        ASSERT(operand.GetExtendOption() != Extend::NO_EXTEND);
+        uint32_t shift = operand.GetShiftAmount();
+        if (regX) {
+            // 3 : 3 means address aligned with 8bytes
+            ASSERT(shift == 0 || shift == 3);
+        } else {
+            // 2 : 2 means address aligned with 4bytes
+            ASSERT(shift == 0 || shift == 2);
+        }
+        shift = (shift == 0) ? 0 : 1;
+        Register rm = operand.GetRegisterOffset();
+        Register rn = operand.GetRegBase();
+        uint32_t extend_field =
+            (operand.GetExtendOption() << LDR_STR_Extend_LOWBITS) & LDR_STR_Extend_MASK;
+        uint32_t shift_field = (shift << LDR_STR_S_LOWBITS) & LDR_STR_S_MASK;
+        uint32_t instructionCode = (regX << 30) | LDR_Register | Rm(rm.GetId())
+                                   | extend_field | shift_field | Rn(rn.GetId()) | Rt(rt.GetId());
+        EmitU32(instructionCode);
     }
-    UNREACHABLE();
 }
 
 void AssemblerAarch64::Str(const Register &rt, const MemoryOperand &operand)
@@ -300,7 +317,7 @@ void AssemblerAarch64::Str(const Register &rt, const MemoryOperand &operand)
     uint64_t imm = static_cast<uint64_t>(operand.GetImmediate().Value());
     if (operand.IsImmediateOffset()) {
         switch (operand.GetAddrMode()) {
-            case MemoryOperand::AddrMode::OFFSET:
+            case OFFSET:
                 op = LoadStoreOpCode::STR_Offset;
                 if (regX) {
                     imm >>= 3;   // 3:  64 RegSise, imm/8 to remove trailing zeros
@@ -309,10 +326,10 @@ void AssemblerAarch64::Str(const Register &rt, const MemoryOperand &operand)
                 }
                 isSigned = false;
                 break;
-            case MemoryOperand::AddrMode::PREINDEX:
+            case PREINDEX:
                 op = LoadStoreOpCode::STR_Pre;
                 break;
-            case MemoryOperand::AddrMode::POSTINDEX:
+            case POSTINDEX:
                 op = LoadStoreOpCode::STR_Post;
                 break;
             default:
@@ -829,7 +846,7 @@ void AssemblerAarch64::AddSubReg(AddSubOpCode op, const Register &rd, const Regi
 
 void AssemblerAarch64::Cmp(const Register &rd, const Operand &operand)
 {
-    Subs(Register(Zero), rd, operand);
+    Subs(Register(Zero, rd.GetType()), rd, operand);
 }
 
 void AssemblerAarch64::CMov(const Register &rd, const Register &rn, const Operand &operand, Condition cond)
