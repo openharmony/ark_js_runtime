@@ -28,7 +28,6 @@
 
 namespace panda::ecmascript::aarch64 {
 using Label = panda::ecmascript::Label;
-using AddrMode = MemoryOperand::AddrMode;
 #define __ assembler->
 
 // uint64_t CallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
@@ -137,7 +136,7 @@ void AssemblerStubs::JSFunctionEntry(ExtendedAssembler *assembler)
     __ BindAssemblerStub(RTSTUB_ID(JSFunctionEntry));
     __ Str(Register(X30), MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     __ CalleeSave();
-    __ Str(fp, MemoryOperand(sp, -8, AddrMode::PREINDEX));
+    __ Str(fp, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     __ Mov(fp, sp);
 
     
@@ -512,7 +511,7 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
         __ Ldr(actualArgC, MemoryOperand(argVEnd, 0));
         // callee save
         Register tmp(X19);
-        __ Str(tmp, MemoryOperand(sp, -8, AddrMode::PREINDEX));
+        __ Str(tmp, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
 
         Register boundLength(X2);
         Register realArgC(X19, W);

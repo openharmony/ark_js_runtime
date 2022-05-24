@@ -177,6 +177,12 @@ enum LoadStoreOpCode {
     LDR_Register = 0xb8600800,
 };
 
+enum  AddrMode {
+    OFFSET,
+    PREINDEX,
+    POSTINDEX
+};
+
 enum LogicShiftOpCode {
     LSL_Reg = 0x1AC02000,
     LSR_Reg = 0x1AC02400,
