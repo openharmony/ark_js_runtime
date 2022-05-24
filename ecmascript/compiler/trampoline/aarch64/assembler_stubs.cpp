@@ -770,7 +770,7 @@ void AssemblerStubs::ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *asse
     Register sp(SP);
     Register lr(X30);
     // 2 ：2 means stack frame slot size
-    __ Ldr(lr, MemoryOperand(sp, FRAME_SLOT_SIZE * 2, MemoryOperand::AddrMode::POSTINDEX));
+    __ Ldr(lr, MemoryOperand(sp, FRAME_SLOT_SIZE * 2, AddrMode::POSTINDEX));
     __ Ret();
 }
 
