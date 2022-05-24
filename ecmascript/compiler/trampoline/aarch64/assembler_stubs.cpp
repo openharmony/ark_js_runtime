@@ -718,6 +718,10 @@ void AssemblerStubs::ResumeRspAndDispatch(ExtendedAssembler *assembler)
 void AssemblerStubs::ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(ResumeRspAndReturn));
+    Register sp(SP);
+    Register lr(X30);
+    // 2 ：2 means stack frame slot size
+    __ Ldr(lr, MemoryOperand(sp, FRAME_SLOT_SIZE * 2, MemoryOperand::AddrMode::POSTINDEX));
     __ Ret();
 }
 
