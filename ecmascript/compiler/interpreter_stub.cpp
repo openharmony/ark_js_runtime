@@ -2557,8 +2557,9 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
         Bind(&tryIC);
         {
             Label isHeapObject(env);
+            Label notHeapObject(env);
             GateRef firstValue = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo, slotId);
-            Branch(TaggedIsHeapObject(firstValue), &isHeapObject, &slowPath);
+            Branch(TaggedIsHeapObject(firstValue), &isHeapObject, &notHeapObject);
             Bind(&isHeapObject);
             {
                 Label loadElement(env);
@@ -2592,7 +2593,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
                     Bind(&loadWithHandler);
                     GateRef result = LoadICWithHandler(glue, receiver, receiver, *cachedHandler);
                     Label notHole(env);
-                    Branch(TaggedIsHole(result), &tryFastPath, &notHole);
+                    Branch(TaggedIsHole(result), &slowPath, &notHole);
                     Bind(&notHole);
                     Label notException(env);
                     Branch(TaggedIsException(result), &isException, &notException);
@@ -2600,6 +2601,10 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
                     varAcc = result;
                     Jump(&accDispatch);
                 }
+            }
+            Bind(&notHeapObject);
+            {
+                Branch(TaggedIsUndefined(firstValue), &slowPath, &tryFastPath);
             }
         }
         Bind(&tryFastPath);
@@ -2658,8 +2663,9 @@ DECLARE_ASM_HANDLER(HandleStObjByValuePrefV8V8)
         Bind(&tryIC);
         {
             Label isHeapObject(env);
+            Label notHeapObject(env);
             GateRef firstValue = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo, slotId);
-            Branch(TaggedIsHeapObject(firstValue), &isHeapObject, &slowPath);
+            Branch(TaggedIsHeapObject(firstValue), &isHeapObject, &notHeapObject);
             Bind(&isHeapObject);
             {
                 Label storeElement(env);
@@ -2690,10 +2696,14 @@ DECLARE_ASM_HANDLER(HandleStObjByValuePrefV8V8)
                     Bind(&loadWithHandler);
                     GateRef result = StoreICWithHandler(glue, receiver, receiver, acc, *cachedHandler); // acc is value
                     Label notHole(env);
-                    Branch(TaggedIsHole(result), &tryFastPath, &notHole);
+                    Branch(TaggedIsHole(result), &slowPath, &notHole);
                     Bind(&notHole);
                     Branch(TaggedIsException(result), &isException, &notException);
                 }
+            }
+            Bind(&notHeapObject);
+            {
+                Branch(TaggedIsUndefined(firstValue), &slowPath, &tryFastPath);
             }
         }
         Bind(&tryFastPath);
@@ -3781,8 +3791,9 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
         Bind(&tryIC);
         {
             Label isHeapObject(env);
+            Label notHeapObject(env);
             GateRef firstValue = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo, slotId);
-            Branch(TaggedIsHeapObject(firstValue), &isHeapObject, &slowPath);
+            Branch(TaggedIsHeapObject(firstValue), &isHeapObject, &notHeapObject);
             Bind(&isHeapObject);
             {
                 Label tryPoly(env);
@@ -3797,7 +3808,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
                 Bind(&tryPoly);
                 {
                     cachedHandler = CheckPolyHClass(firstValue, hclass);
-                    Branch(TaggedIsHole(*cachedHandler), &tryFastPath, &loadWithHandler);
+                    Branch(TaggedIsHole(*cachedHandler), &slowPath, &loadWithHandler);
                 }
 
                 Bind(&loadWithHandler);
@@ -3805,6 +3816,10 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
                     result = LoadICWithHandler(glue, receiver, receiver, *cachedHandler);
                     Branch(TaggedIsHole(*result), &slowPath, &notHole);
                 }
+            }
+            Bind(&notHeapObject);
+            {
+                Branch(TaggedIsUndefined(firstValue), &slowPath, &tryFastPath);
             }
         }
         Bind(&tryFastPath);
@@ -3872,8 +3887,9 @@ DECLARE_ASM_HANDLER(HandleStObjByNamePrefId32V8)
         Bind(&tryIC);
         {
             Label isHeapObject(env);
+            Label notHeapObject(env);
             GateRef firstValue = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo, slotId);
-            Branch(TaggedIsHeapObject(firstValue), &isHeapObject, &slowPath);
+            Branch(TaggedIsHeapObject(firstValue), &isHeapObject, &notHeapObject);
             Bind(&isHeapObject);
             {
                 Label tryPoly(env);
@@ -3887,13 +3903,17 @@ DECLARE_ASM_HANDLER(HandleStObjByNamePrefId32V8)
                 Bind(&tryPoly);
                 {
                     cachedHandler = CheckPolyHClass(firstValue, hclass);
-                    Branch(TaggedIsHole(*cachedHandler), &tryFastPath, &storeWithHandler);
+                    Branch(TaggedIsHole(*cachedHandler), &slowPath, &storeWithHandler);
                 }
                 Bind(&storeWithHandler);
                 {
                     result = StoreICWithHandler(glue, receiver, receiver, acc, *cachedHandler);
                     Branch(TaggedIsHole(*result), &slowPath, &checkResult);
                 }
+            }
+            Bind(&notHeapObject);
+            {
+                Branch(TaggedIsUndefined(firstValue), &slowPath, &tryFastPath);
             }
         }
         Bind(&tryFastPath);

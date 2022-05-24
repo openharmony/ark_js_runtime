@@ -29,6 +29,7 @@ void RuntimeStubCSigns::Initialize()
            callSigns_[ID_##name].IsRuntimeStub() ||           \
            callSigns_[ID_##name].IsRuntimeVAStub());
     RUNTIME_STUB_WITHOUT_GC_LIST(INIT_SIGNATURES)
+    RUNTIME_ASM_STUB_LIST(INIT_SIGNATURES)
 #undef INIT_SIGNATURES
 
 #define INIT_ASM_SIGNATURES(name)                             \

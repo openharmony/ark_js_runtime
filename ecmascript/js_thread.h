@@ -539,10 +539,6 @@ public:
         alignas(EAS) JSTaggedType *frameBase_ {nullptr};
         alignas(EAS) GlobalEnvConstants globalConst_;
     };
-    static_assert(MEMBER_OFFSET(GlueData, bcStubEntries_) == ASM_GLUE_BC_HANDLERS_OFFSET);
-    static_assert(MEMBER_OFFSET(GlueData, rtStubEntries_) == ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET);
-    static_assert(MEMBER_OFFSET(GlueData, currentFrame_) == ASM_GLUE_CURRENT_FRAME_OFFSET);
-    static_assert(MEMBER_OFFSET(GlueData, leaveFrame_) == ASM_GLUE_LEAVE_FRAME_OFFSET);
     STATIC_ASSERT_EQ_ARCH(sizeof(GlueData), GlueData::SizeArch32, GlueData::SizeArch64);
 
 private:
