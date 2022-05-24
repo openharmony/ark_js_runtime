@@ -109,6 +109,9 @@ void DebuggerApi::SetClosureVariables(const EcmaVM *ecmaVm, const InterpretedFra
         auto *scopeDebugInfo = reinterpret_cast<ScopeDebugInfo *>(ptr);
         JSThread *thread = ecmaVm->GetJSThread();
         for (const auto &scopeInfo : scopeDebugInfo->scopeInfo) {
+            if (scopeInfo.name == "this" || scopeInfo.name == "4newTarget") {
+                continue;
+            }
             Local<JSValueRef> name = StringRef::NewFromUtf8(ecmaVm, scopeInfo.name.c_str());
             Local<JSValueRef> value = JSNApiHelper::ToLocal<JSValueRef>(
                 JSHandle<JSTaggedValue>(thread, lexEnv->GetProperties(scopeInfo.slot)));
