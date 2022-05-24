@@ -118,6 +118,13 @@ public:
         }
         hooks_->VmDeath();
     }
+    void PendingJobEntry() override
+    {
+        if (hooks_ == nullptr) {
+            return;
+        }
+        hooks_->PendingJobEntry();
+    }
 
 private:
     using LocalEvalFunc =

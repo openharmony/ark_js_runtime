@@ -35,6 +35,7 @@ public:
 
     virtual void VmStart() = 0;
     virtual void VmDeath() = 0;
+    virtual void PendingJobEntry() = 0;
 };
 
 class NotificationManager {
@@ -64,6 +65,13 @@ public:
     {
         if (UNLIKELY(listener_ != nullptr)) {
             listener_->BytecodePcChanged(thread, method, bcOffset);
+        }
+    }
+
+    void PendingJobEntryEvent() const
+    {
+        if (UNLIKELY(listener_ != nullptr)) {
+            listener_->PendingJobEntry();
         }
     }
 
