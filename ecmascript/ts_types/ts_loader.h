@@ -23,7 +23,7 @@
 namespace panda::ecmascript {
 class GlobalTSTypeRef {
 public:
-    GlobalTSTypeRef(uint64_t num = 0) : ref_(num) {}
+    GlobalTSTypeRef(uint64_t ref = 0) : ref_(ref) {}
     GlobalTSTypeRef(int moduleId, int localId, int typeKind)
     {
         ref_ = 0;

@@ -113,9 +113,8 @@ GlobalTSTypeRef TSClassInstanceType::GetPropTypeGT(const JSThread *thread, JSHan
     JSHandle<TSClassInstanceType> classInstanceType(thread, table->Get(localtypeId));
     GlobalTSTypeRef createClassTypeRefGT = classInstanceType->GetClassRefGT();
     uint32_t localId = createClassTypeRefGT.GetLocalId();
-    int localTableIndex = TSTypeTable::GetUserdefinedTypeId(localId);
 
-    JSHandle<TSClassType> createClassType(thread, table->Get(localTableIndex));
+    JSHandle<TSClassType> createClassType(thread, table->Get(localId));
     JSHandle<TSObjectType> instanceType(thread, createClassType->GetInstanceType());
     JSHandle<TSObjectType> protoTypeType(thread, createClassType->GetPrototypeType());
 
