@@ -22,26 +22,37 @@ namespace panda::ecmascript::aarch64 {
 class Register {
 public:
     Register(RegisterId reg, RegisterType type = RegisterType::X) : reg_(reg), type_(type) {};
+
     Register W() const
     {
         return Register(reg_, RegisterType::W);
     }
+
     Register X() const
     {
         return Register(reg_, RegisterType::X);
     }
+
+    RegisterType GetType() const
+    {
+        return type_;
+    }
+
     inline bool IsSp() const
     {
         return reg_ == RegisterId::SP;
     }
+
     inline bool IsW() const
     {
         return type_ == RegisterType::W;
     }
+
     inline RegisterId GetId() const
     {
         return reg_;
     }
+
     inline bool IsValid() const
     {
         return reg_ != RegisterId::INVALID_REG;
@@ -59,14 +70,17 @@ public:
     {
         return reg_;
     }
+
     inline bool IsValid() const
     {
         return reg_ != VectorRegisterId::INVALID_VREG;
     }
+
     inline Scale GetScale() const
     {
         return scale_;
     }
+
     inline int GetRegSize() const
     {
         if (scale_ == B) {
@@ -198,11 +212,6 @@ private:
 
 class MemoryOperand {
 public:
-    enum class AddrMode {
-        OFFSET,
-        PREINDEX,
-        POSTINDEX
-    };
     MemoryOperand(Register base, Register offset, Extend extend, uint8_t  shiftAmount = 0)
         : base_(base), offsetReg_(offset), offsetImm_(0), addrmod_(AddrMode::OFFSET),
           extend_(extend), shift_(Shift::NO_SHIFT), shiftAmount_(shiftAmount)
@@ -252,6 +261,11 @@ public:
     uint8_t GetShiftAmount() const
     {
         return shiftAmount_;
+    }
+
+    Register GetRegisterOffset() const
+    {
+        return offsetReg_;
     }
 private:
     Register base_;
