@@ -59,6 +59,11 @@ public:
         return reinterpret_cast<const GCBitsetWord *>(this);
     }
 
+    void SetGCWords(uint32_t index) // Only used for snapshot to record region index
+    {
+        *reinterpret_cast<GCBitsetWord *>(this) = index;
+    }
+
     void Clear(size_t bitSize)
     {
         GCBitsetWord *words = Words();
