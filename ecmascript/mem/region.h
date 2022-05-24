@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -25,24 +25,51 @@
 namespace panda {
 namespace ecmascript {
 class JSThread;
-class Space;
 
 enum RegionFlags {
     NEVER_EVACUATE = 1,
     HAS_AGE_MARK = 1 << 1,
     BELOW_AGE_MARK = 1 << 2,
-    IS_IN_YOUNG_GENERATION = 1 << 3,
-    IS_IN_SNAPSHOT_GENERATION = 1 << 4,
-    IS_HUGE_OBJECT = 1 << 5,
-    IS_IN_OLD_GENERATION = 1 << 6,
-    IS_IN_NON_MOVABLE_GENERATION = 1 << 7,
-    IS_IN_YOUNG_OR_OLD_GENERATION = IS_IN_YOUNG_GENERATION | IS_IN_OLD_GENERATION,
-    IS_IN_COLLECT_SET = 1 << 8,
-    IS_IN_NEW_TO_NEW_SET = 1 << 9,
-    HAS_SWEPT = 1 << 10,
-    IS_IN_YOUNG_OR_CSET_GENERATION = IS_IN_YOUNG_GENERATION | IS_IN_COLLECT_SET,
-    IS_INVALID = 1 << 10,
+    IN_YOUNG_SPACE = 1 << 3,
+    IN_SNAPSHOT_SPACE = 1 << 4,
+    IN_HUGE_OBJECT_SPACE = 1 << 5,
+    IN_OLD_SPACE = 1 << 6,
+    IN_NON_MOVABLE_SPACE = 1 << 7,
+    IN_COLLECT_SET = 1 << 8,
+    IN_NEW_TO_NEW_SET = 1 << 9,
+    HAS_BEEN_SWEPT = 1 << 10,
+    INVALID = 1 << 11,
 };
+
+static inline bool IsFlagSet(uintptr_t flags, RegionFlags target)
+{
+    return (flags & target) == target;
+}
+
+static inline std::string ToSpaceTypeName(uintptr_t flags)
+{
+    if (IsFlagSet(flags, RegionFlags::IN_YOUNG_SPACE)) {
+        return "young space";
+    }
+
+    if (IsFlagSet(flags, RegionFlags::IN_OLD_SPACE)) {
+        return "old space";
+    }
+
+    if (IsFlagSet(flags, RegionFlags::IN_SNAPSHOT_SPACE)) {
+        return "snapshot space";
+    }
+
+    if (IsFlagSet(flags, RegionFlags::IN_HUGE_OBJECT_SPACE)) {
+        return "huge object space";
+    }
+
+    if (IsFlagSet(flags, IN_NON_MOVABLE_SPACE)) {
+        return "non movable space";
+    }
+
+    return "other space";
+}
 
 #define REGION_OFFSET_LIST(V)                                                             \
     V(GCBITSET, GCBitset, markGCBitset_, FLAG, sizeof(uint32_t), sizeof(uint64_t))              \
@@ -57,9 +84,8 @@ enum RegionFlags {
 
 class Region {
 public:
-    Region(Space *space, JSThread *thread, uintptr_t allocateBase, uintptr_t begin, uintptr_t end, RegionFlags flags)
-        : flags_(0),
-          space_(space),
+    Region(JSThread *thread, uintptr_t allocateBase, uintptr_t begin, uintptr_t end, RegionFlags flags)
+        : flags_(flags),
           thread_(thread),
           allocateBase_(allocateBase),
           end_(end),
@@ -67,8 +93,7 @@ public:
           aliveObject_(0),
           wasted_(0)
     {
-        SetFlag(flags);
-        bitsetSize_ = IsFlagSet(RegionFlags::IS_HUGE_OBJECT) ?
+        bitsetSize_ = IsFlagSet(flags_, RegionFlags::IN_HUGE_OBJECT_SPACE) ?
             GCBitset::BYTE_PER_WORD : GCBitset::SizeOfGCBitset(GetCapacity());
         markGCBitset_ = new (ToVoidPtr(begin)) GCBitset();
         markGCBitset_->Clear(bitsetSize_);
@@ -124,16 +149,6 @@ public:
         return end_ - begin_;
     }
 
-    inline void SetSpace(Space *space)
-    {
-        space_ = space;
-    }
-
-    Space *GetSpace() const
-    {
-        return space_;
-    }
-
     JSThread *GetJSThread() const
     {
         return thread_;
@@ -155,9 +170,9 @@ public:
         flags_ &= ~flag;
     }
 
-    bool IsFlagSet(RegionFlags flag) const
+    std::string GetSpaceTypeName()
     {
-        return (flags_ & flag) != 0;
+        return ToSpaceTypeName(flags_);
     }
 
     // Mark bitset
@@ -200,64 +215,64 @@ public:
         return reinterpret_cast<Region *>(objAddress & ~DEFAULT_REGION_MASK);
     }
 
-    bool InYoungGeneration() const
+    bool InYoungSpace() const
     {
-        return IsFlagSet(RegionFlags::IS_IN_YOUNG_GENERATION);
+        return IsFlagSet(flags_, RegionFlags::IN_YOUNG_SPACE);
     }
 
-    bool InOldGeneration() const
+    bool InOldSpace() const
     {
-        return IsFlagSet(RegionFlags::IS_IN_OLD_GENERATION);
+        return IsFlagSet(flags_, RegionFlags::IN_OLD_SPACE);
     }
 
-    bool InYoungAndOldGeneration() const
+    bool InYoungOrOldSpace() const
     {
-        return IsFlagSet(RegionFlags::IS_IN_YOUNG_OR_OLD_GENERATION);
+        return InYoungSpace() || InOldSpace();
     }
 
-    bool InHugeObjectGeneration() const
+    bool InHugeObjectSpace() const
     {
-        return IsFlagSet(RegionFlags::IS_HUGE_OBJECT);
-    }
-
-    bool InYoungOrCSetGeneration() const
-    {
-        return IsFlagSet(RegionFlags::IS_IN_YOUNG_OR_CSET_GENERATION);
-    }
-
-    bool InNewToNewSet() const
-    {
-        return IsFlagSet(RegionFlags::IS_IN_NEW_TO_NEW_SET);
+        return IsFlagSet(flags_, RegionFlags::IN_HUGE_OBJECT_SPACE);
     }
 
     bool InCollectSet() const
     {
-        return IsFlagSet(RegionFlags::IS_IN_COLLECT_SET);
+        return IsFlagSet(flags_, RegionFlags::IN_COLLECT_SET);
+    }
+
+    bool InYoungSpaceOrCSet() const
+    {
+        return InYoungSpace() || InCollectSet();
+    }
+
+    bool InNewToNewSet() const
+    {
+        return IsFlagSet(flags_, RegionFlags::IN_NEW_TO_NEW_SET);
     }
 
     bool HasAgeMark() const
     {
-        return IsFlagSet(RegionFlags::HAS_AGE_MARK);
+        return IsFlagSet(flags_, RegionFlags::HAS_AGE_MARK);
     }
 
     bool BelowAgeMark() const
     {
-        return IsFlagSet(RegionFlags::BELOW_AGE_MARK);
+        return IsFlagSet(flags_, RegionFlags::BELOW_AGE_MARK);
+    }
+
+    bool IsInvalid() const
+    {
+        return IsFlagSet(flags_, RegionFlags::INVALID);
     }
 
     void SetSwept()
     {
-        SetFlag(RegionFlags::HAS_SWEPT);
+        SetFlag(RegionFlags::HAS_BEEN_SWEPT);
     }
 
     void ResetSwept()
     {
-        ClearFlag(RegionFlags::HAS_SWEPT);
-    }
-
-    bool HasSwept() const
-    {
-        return IsFlagSet(RegionFlags::HAS_SWEPT);
+        ClearFlag(RegionFlags::HAS_BEEN_SWEPT);
     }
 
     bool InRange(uintptr_t address) const
@@ -420,18 +435,18 @@ public:
     static constexpr bool CheckLayout()
     {
 #ifdef PANDA_TARGET_32
-        #define REGION_OFFSET_ASSET(name, camelName, memberName, lastName, lastSize32, lastSize64)         \
+        #define REGION_OFFSET_ASSERT(name, camelName, memberName, lastName, lastSize32, lastSize64)         \
         static_assert(MEMBER_OFFSET(Region, memberName) == (Get##camelName##Offset(true)));
-        REGION_OFFSET_LIST(REGION_OFFSET_ASSET)
+        REGION_OFFSET_LIST(REGION_OFFSET_ASSERT)
         static_assert(GetFlagOffset(true) == MEMBER_OFFSET(Region, flags_));
-        #undef REGION_OFFSET_ASSET
+        #undef REGION_OFFSET_ASSERT
 #endif
 #ifdef PANDA_TARGET_64
-        #define REGION_OFFSET_ASSET(name, camelName, memberName, lastName, lastSize32, lastSize64)         \
+        #define REGION_OFFSET_ASSERT(name, camelName, memberName, lastName, lastSize32, lastSize64)         \
         static_assert(MEMBER_OFFSET(Region, memberName) == (Get##camelName##Offset(false)));
-        REGION_OFFSET_LIST(REGION_OFFSET_ASSET)
+        REGION_OFFSET_LIST(REGION_OFFSET_ASSERT)
         static_assert(GetFlagOffset(false) == MEMBER_OFFSET(Region, flags_));
-        #undef REGION_OFFSET_ASSET
+        #undef REGION_OFFSET_ASSERT
 #endif
         return true;
     }
@@ -447,7 +462,6 @@ private:
     GCBitset *markGCBitset_ {nullptr};
     RememberedSet *oldToNewSet_ {nullptr};
     uintptr_t begin_;
-    Space *space_;
     /*
      * The thread instance here is used by the GC barriers to get marking related information
      * and perform marking related operations. The barriers will indirectly access such information

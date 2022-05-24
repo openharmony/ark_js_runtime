@@ -47,7 +47,7 @@ void Space::ReclaimRegions()
 void Space::ClearAndFreeRegion(Region *region)
 {
     LOG_ECMA_MEM(DEBUG) << "Clear region from:" << region << " to " << ToSpaceTypeName(spaceType_);
-    region->SetSpace(nullptr);
+    region->SetFlag(RegionFlags::INVALID);
     region->DeleteCrossRegionRSet();
     region->DeleteOldToNewRSet();
     region->DeleteSweepingRSet();
@@ -58,12 +58,6 @@ void Space::ClearAndFreeRegion(Region *region)
         region->DestroySet();
     }
     heapRegionAllocator_->FreeRegion(region);
-}
-
-bool Space::ContainObject(TaggedObject *object) const
-{
-    Region *region = Region::ObjectAddressToRange(object);
-    return region->GetSpace() == this;
 }
 
 HugeObjectSpace::HugeObjectSpace(HeapRegionAllocator *heapRegionAllocator,

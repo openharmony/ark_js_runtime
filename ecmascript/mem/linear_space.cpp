@@ -156,8 +156,7 @@ bool SemiSpace::SwapRegion(Region *region, SemiSpace *fromSpace)
     }
     fromSpace->RemoveRegion(region);
 
-    region->SetFlag(RegionFlags::IS_IN_NEW_TO_NEW_SET);
-    region->SetSpace(this);
+    region->SetFlag(RegionFlags::IN_NEW_TO_NEW_SET);
 
     regionList_.AddNodeToFront(region);
     IncreaseCommitted(region->GetCapacity());

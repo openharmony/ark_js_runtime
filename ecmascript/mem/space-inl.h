@@ -64,24 +64,24 @@ void Space::EnumerateRegionsWithRecord(const Callback &cb) const
 
 RegionFlags Space::GetRegionFlag() const
 {
-    RegionFlags flags = RegionFlags::IS_INVALID;
+    RegionFlags flags = RegionFlags::INVALID;
     switch (spaceType_) {
         case MemSpaceType::OLD_SPACE:
         case MemSpaceType::LOCAL_SPACE:
-            flags = RegionFlags::IS_IN_OLD_GENERATION;
+            flags = RegionFlags::IN_OLD_SPACE;
             break;
         case MemSpaceType::NON_MOVABLE:
         case MemSpaceType::MACHINE_CODE_SPACE:
-            flags = RegionFlags::IS_IN_NON_MOVABLE_GENERATION;
+            flags = RegionFlags::IN_NON_MOVABLE_SPACE;
             break;
         case MemSpaceType::SEMI_SPACE:
-            flags = RegionFlags::IS_IN_YOUNG_GENERATION;
+            flags = RegionFlags::IN_YOUNG_SPACE;
             break;
         case MemSpaceType::SNAPSHOT_SPACE:
-            flags = RegionFlags::IS_IN_SNAPSHOT_GENERATION;
+            flags = RegionFlags::IN_SNAPSHOT_SPACE;
             break;
         case MemSpaceType::HUGE_OBJECT_SPACE:
-            flags = RegionFlags::IS_HUGE_OBJECT;
+            flags = RegionFlags::IN_HUGE_OBJECT_SPACE;
             break;
         default:
             UNREACHABLE();

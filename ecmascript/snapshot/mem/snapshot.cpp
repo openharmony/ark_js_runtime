@@ -182,8 +182,6 @@ const JSPandaFile *Snapshot::Deserialize(SnapshotType type, const CString &snaps
         region->crossRegionSet_ = nullptr;
         // old_to_new_set_
         region->oldToNewSet_ = nullptr;
-        // space_
-        region->space_ = space;
         // thread_
         region->thread_ = vm_->GetAssociatedJSThread();
         // nativePoniterAllocator_

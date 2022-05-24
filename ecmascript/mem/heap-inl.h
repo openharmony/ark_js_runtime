@@ -310,7 +310,7 @@ void Heap::ReclaimRegions(TriggerGCType gcType)
         region->ClearMarkGCBitset();
         region->ClearCrossRegionRSet();
         region->ResetAliveObject();
-        region->ClearFlag(RegionFlags::IS_IN_NEW_TO_NEW_SET);
+        region->ClearFlag(RegionFlags::IN_NEW_TO_NEW_SET);
     });
     if (gcType == TriggerGCType::FULL_GC) {
         compressSpace_->Reset();

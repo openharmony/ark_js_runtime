@@ -651,14 +651,11 @@ bool Heap::IsAlive(TaggedObject *object) const
         return false;
     }
 
-    Region *region = Region::ObjectAddressToRange(object);
-    if (region->InHugeObjectGeneration()) {
-        return true;
-    }
     bool isFree = FreeObject::Cast(ToUintPtr(object))->IsFreeObject();
     if (isFree) {
+        Region *region = Region::ObjectAddressToRange(object);
         LOG(ERROR, RUNTIME) << "The object " << object << " in "
-                            << ToSpaceTypeName(region->GetSpace()->GetSpaceType())
+                            << region->GetSpaceTypeName()
                             << " already free";
     }
     return !isFree;
@@ -666,30 +663,7 @@ bool Heap::IsAlive(TaggedObject *object) const
 
 bool Heap::ContainObject(TaggedObject *object) const
 {
-    // semi space
-    if (activeSpace_->ContainObject(object)) {
-        return true;
-    }
-    // old space
-    if (oldSpace_->ContainObject(object)) {
-        return true;
-    }
-    // non movable space
-    if (nonMovableSpace_->ContainObject(object)) {
-        return true;
-    }
-    // huge object space
-    if (hugeObjectSpace_->ContainObject(object)) {
-        return true;
-    }
-    // machine code space
-    if (machineCodeSpace_->ContainObject(object)) {
-        return true;
-    }
-    // snapshot space
-    if (snapshotSpace_->ContainObject(object)) {
-        return true;
-    }
-    return false;
+    Region *region = Region::ObjectAddressToRange(object);
+    return !region->IsInvalid();
 }
 }  // namespace panda::ecmascript
