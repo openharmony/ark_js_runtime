@@ -678,18 +678,35 @@ void JSBackend::GetLocalVariables(const FrameHandler *frameHandler, const JSMeth
     auto methodId = method->GetMethodId();
     auto *extractor = GetExtractor(method->GetJSPandaFile());
     Local<JSValueRef> value = JSValueRef::Undefined(ecmaVm_);
+    // in case of arrow function, which doesn't have this in local variable table
+    bool hasThis = false;
     for (const auto &[varName, regIndex] : extractor->GetLocalVariableTable(methodId)) {
         value = DebuggerApi::GetVRegValue(ecmaVm_, frameHandler, regIndex);
+        if (varName == "4newTarget") {
+            continue;
+        }
+
         if (varName == "this") {
             thisVal = value;
+            hasThis = true;
         } else {
-            Local<JSValueRef> name = StringRef::NewFromUtf8(ecmaVm_, varName.c_str());
+            Local<JSValueRef> name = JSValueRef::Undefined(ecmaVm_);
+            if (varName == "4funcObj" && value->IsFunction()) {
+                auto funcName = Local<FunctionRef>(value)->GetName(ecmaVm_)->ToString();
+                name = StringRef::NewFromUtf8(ecmaVm_, funcName.c_str());
+            } else {
+                name = StringRef::NewFromUtf8(ecmaVm_, varName.c_str());
+            }
             PropertyAttribute descriptor(value, true, true, true);
             localObj->DefineProperty(ecmaVm_, name, descriptor);
         }
     }
     if (thisVal->IsUndefined()) {
         thisVal = DebuggerApi::GetLexicalValueInfo(ecmaVm_, "this");
+    }
+
+    if (!hasThis) {
+        return;
     }
 
     // closure variables are stored in env
@@ -703,6 +720,10 @@ void JSBackend::GetLocalVariables(const FrameHandler *frameHandler, const JSMeth
         auto *scopeDebugInfo = reinterpret_cast<ScopeDebugInfo *>(ptr);
         JSThread *thread = ecmaVm_->GetJSThread();
         for (const auto &[varName, slot] : scopeDebugInfo->scopeInfo) {
+            // skip possible duplicate variables both in local variable table and env
+            if (varName == "this" || varName == "4newTarget") {
+                continue;
+            }
             Local<JSValueRef> name = StringRef::NewFromUtf8(ecmaVm_, varName.c_str());
             value = JSNApiHelper::ToLocal<JSValueRef>(
                 JSHandle<JSTaggedValue>(thread, lexEnv->GetProperties(slot)));
