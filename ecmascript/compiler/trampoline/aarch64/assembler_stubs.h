@@ -54,8 +54,6 @@ public:
 
     static void JSCall(ExtendedAssembler *assembler);
 
-    static void JSCallBody(ExtendedAssembler *assembler, Register jsfunc);
-
     static void CallRuntimeWithArgv(ExtendedAssembler *assembler);
 
     static void AsmInterpreterEntry(ExtendedAssembler *assembler);
@@ -99,6 +97,8 @@ public:
     static void ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *assembler);
 
     static void ResumeCaughtFrameAndDispatch(ExtendedAssembler *assembler);
+private:
+    static void JSCallBody(ExtendedAssembler *assembler, Register jsfunc);
 };
 }  // namespace panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H
