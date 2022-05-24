@@ -101,7 +101,8 @@ JSHandle<JSTaggedValue> TSTypeTable::ParseType(JSThread *thread, JSHandle<TSType
         case TypeLiteralFlag::CLASS_INSTANCE: {
             JSHandle<TSClassInstanceType> classInstance = factory->NewTSClassInstanceType();
             int classIndex = literal->Get(TSClassInstanceType::CREATE_CLASS_OFFSET).GetInt();
-            classInstance->SetClassRefGT(GlobalTSTypeRef(classIndex));
+            JSHandle<TSClassType> classType(thread, table->Get(classIndex - GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT));
+            classInstance->SetClassRefGT(classType->GetGTRef());
             return JSHandle<JSTaggedValue>(classInstance);
         }
         case TypeLiteralFlag::INTERFACE: {
