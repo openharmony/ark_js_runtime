@@ -2715,7 +2715,7 @@ void Builtins::InitializeIntlCtor(const JSHandle<GlobalEnv> &env, const JSHandle
 void Builtins::InitializeIntl(const JSHandle<GlobalEnv> &env, const JSHandle<JSTaggedValue> &objFuncPrototypeValue)
 {
     [[maybe_unused]] EcmaHandleScope scope(thread_);
-    JSHandle<JSHClass> intlDynclass = factory_->NewEcmaDynClass(JSObject::SIZE, JSType::JS_INTL, objFuncPrototypeValue);
+    JSHandle<JSHClass> intlDynclass = factory_->NewEcmaDynClass(JSIntl::SIZE, JSType::JS_INTL, objFuncPrototypeValue);
     JSHandle<JSObject> intlObject = factory_->NewJSObjectWithInit(intlDynclass);
 
     JSHandle<JSTaggedValue> initIntlSymbol(factory_->NewPublicSymbolWithChar("Symbol.IntlLegacyConstructedSymbol"));
