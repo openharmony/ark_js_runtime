@@ -97,7 +97,7 @@ bool ParallelEvacuator::EvacuateSpace(TlabAllocator *allocator, bool isMain)
 
 void ParallelEvacuator::EvacuateRegion(TlabAllocator *allocator, Region *region)
 {
-    bool isInOldGen = region->InOldGeneration();
+    bool isInOldGen = region->InOldSpace();
     bool isBelowAgeMark = region->BelowAgeMark();
     size_t promotedSize = 0;
     if (!isBelowAgeMark && !isInOldGen && IsWholeRegionEvacuate(region)) {
@@ -157,7 +157,7 @@ void ParallelEvacuator::VerifyHeapObject(TaggedObject *object)
                         continue;
                     }
                     Region *objectRegion = Region::ObjectAddressToRange(value.GetTaggedObject());
-                    if (!heap_->IsFullMark() && !objectRegion->InYoungGeneration()) {
+                    if (!heap_->IsFullMark() && !objectRegion->InYoungSpace()) {
                         continue;
                     }
                     if (!objectRegion->Test(value.GetTaggedObject())) {
@@ -259,7 +259,7 @@ void ParallelEvacuator::UpdateWeakReference()
     bool isFullMark = heap_->IsFullMark();
     WeakRootVisitor gcUpdateWeak = [isFullMark](TaggedObject *header) {
         Region *objectRegion = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(header));
-        if (objectRegion->InYoungOrCSetGeneration()) {
+        if (objectRegion->InYoungSpaceOrCSet()) {
             if (objectRegion->InNewToNewSet()) {
                 if (objectRegion->Test(header)) {
                     return header;
@@ -291,7 +291,7 @@ void ParallelEvacuator::UpdateRSet(Region *region)
         ObjectSlot slot(ToUintPtr(mem));
         if (UpdateObjectSlot(slot)) {
             Region *valueRegion = Region::ObjectAddressToRange(slot.GetTaggedObjectHeader());
-            if (!valueRegion->InYoungGeneration()) {
+            if (!valueRegion->InYoungSpace()) {
                 return false;
             }
         }

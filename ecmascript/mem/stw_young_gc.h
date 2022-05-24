@@ -56,7 +56,7 @@ private:
         ASSERT(value.IsHeapObject());
 #endif
         Region *objectRegion = Region::ObjectAddressToRange(object);
-        ASSERT(!objectRegion->InYoungGeneration());
+        ASSERT(!objectRegion->InYoungSpace());
         objectRegion->InsertOldToNewRSet(slot.SlotAddress());
     }
 

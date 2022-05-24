@@ -311,7 +311,6 @@ void OldSpace::Merge(LocalSpace *localSpace)
         localSpace->DetachFreeObjectSet(region);
         localSpace->RemoveRegion(region);
         localSpace->DecreaseLiveObjectSize(region->AliveObject());
-        region->SetSpace(this);
         AddRegion(region);
         IncreaseLiveObjectSize(region->AliveObject());
         allocator_->CollectFreeObjectSet(region);
@@ -354,7 +353,7 @@ void OldSpace::SelectCSet()
         RemoveRegion(current);
         DecreaseLiveObjectSize(current->AliveObject());
         allocator_->DetachFreeObjectSet(current);
-        current->SetFlag(RegionFlags::IS_IN_COLLECT_SET);
+        current->SetFlag(RegionFlags::IN_COLLECT_SET);
     });
     sweepState_ = SweepState::NO_SWEEP;
     LOG_ECMA_MEM(DEBUG) << "Select CSet success: number is " << collectRegionSet_.size();
@@ -380,8 +379,7 @@ void OldSpace::CheckRegionSize()
 void OldSpace::RevertCSet()
 {
     EnumerateCollectRegionSet([&](Region *region) {
-        region->ClearFlag(RegionFlags::IS_IN_COLLECT_SET);
-        region->SetSpace(this);
+        region->ClearFlag(RegionFlags::IN_COLLECT_SET);
         AddRegion(region);
         allocator_->CollectFreeObjectSet(region);
         IncreaseLiveObjectSize(region->AliveObject());
@@ -392,7 +390,7 @@ void OldSpace::RevertCSet()
 void OldSpace::ReclaimCSet()
 {
     EnumerateCollectRegionSet([this](Region *region) {
-        region->SetSpace(nullptr);
+        region->SetFlag(RegionFlags::INVALID);
         region->DeleteCrossRegionRSet();
         region->DeleteOldToNewRSet();
         region->DeleteSweepingRSet();
@@ -411,7 +409,6 @@ bool LocalSpace::AddRegionToList(Region *region)
         LOG_ECMA_MEM(FATAL) << "AddRegionTotList::Committed size " << committedSize_ << " of local space is too big.";
         return false;
     }
-    region->SetSpace(this);
     AddRegion(region);
     allocator_->CollectFreeObjectSet(region);
     IncreaseLiveObjectSize(region->AliveObject());

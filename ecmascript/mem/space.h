@@ -174,8 +174,6 @@ public:
 
     void ReclaimRegions();
 
-    bool ContainObject(TaggedObject *object) const;
-
 protected:
     void ClearAndFreeRegion(Region *region);
 

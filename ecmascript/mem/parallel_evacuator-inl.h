@@ -52,7 +52,7 @@ bool ParallelEvacuator::UpdateObjectSlot(ObjectSlot &slot)
 bool ParallelEvacuator::UpdateWeakObjectSlot(TaggedObject *value, ObjectSlot &slot)
 {
     Region *objectRegion = Region::ObjectAddressToRange(value);
-    if (objectRegion->InYoungOrCSetGeneration()) {
+    if (objectRegion->InYoungSpaceOrCSet()) {
         if (objectRegion->InNewToNewSet()) {
             if (!objectRegion->Test(value)) {
                 slot.Update(static_cast<JSTaggedType>(JSTaggedValue::Undefined().GetRawData()));
@@ -89,7 +89,7 @@ void ParallelEvacuator::SetObjectFieldRSet(TaggedObject *object, JSHClass *cls)
                 continue;
             }
             Region *valueRegion = Region::ObjectAddressToRange(value);
-            if (valueRegion->InYoungGeneration()) {
+            if (valueRegion->InYoungSpace()) {
                 region->InsertOldToNewRSet(slot.SlotAddress());
             } else if (valueRegion->InCollectSet() || JSTaggedValue(value).IsWeakForHeapObject()) {
                 region->InsertCrossRegionRSet(slot.SlotAddress());

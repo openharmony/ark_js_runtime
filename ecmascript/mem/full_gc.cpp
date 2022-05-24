@@ -96,7 +96,7 @@ void FullGC::Sweep()
             auto header = value.GetTaggedWeakRef();
 
             Region *objectRegion = Region::ObjectAddressToRange(header);
-            if (!objectRegion->InYoungAndOldGeneration()) {
+            if (!objectRegion->InYoungOrOldSpace()) {
                 if (!objectRegion->Test(header)) {
                     slot.Update(static_cast<JSTaggedType>(JSTaggedValue::Undefined().GetRawData()));
                 }
@@ -116,7 +116,7 @@ void FullGC::Sweep()
     auto stringTable = heap_->GetEcmaVM()->GetEcmaStringTable();
     WeakRootVisitor gcUpdateWeak = [](TaggedObject *header) {
         Region *objectRegion = Region::ObjectAddressToRange(header);
-        if (!objectRegion->InYoungAndOldGeneration()) {
+        if (!objectRegion->InYoungOrOldSpace()) {
             if (objectRegion->Test(header)) {
                 return header;
             }

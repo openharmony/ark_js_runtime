@@ -27,7 +27,7 @@ Region *HeapRegionAllocator::AllocateAlignedRegion(Space *space, size_t capacity
         UNREACHABLE();
     }
     RegionFlags flags = space->GetRegionFlag();
-    bool isRegular = (flags == RegionFlags::IS_HUGE_OBJECT) ? false : true;
+    bool isRegular = (flags == RegionFlags::IN_HUGE_OBJECT_SPACE) ? false : true;
     auto pool = MemMapAllocator::GetInstance()->Allocate(capacity, DEFAULT_REGION_SIZE, isRegular);
     void *mapMem = pool.GetMem();
     if (mapMem == nullptr) {
@@ -50,7 +50,7 @@ Region *HeapRegionAllocator::AllocateAlignedRegion(Space *space, size_t capacity
     uintptr_t begin = AlignUp(mem + sizeof(Region), static_cast<size_t>(MemAlignment::MEM_ALIGN_REGION));
     uintptr_t end = mem + capacity;
 
-    return new (ToVoidPtr(mem)) Region(space, thread, mem, begin, end, flags);
+    return new (ToVoidPtr(mem)) Region(thread, mem, begin, end, flags);
 }
 
 void HeapRegionAllocator::FreeRegion(Region *region)
@@ -63,7 +63,7 @@ void HeapRegionAllocator::FreeRegion(Region *region)
         UNREACHABLE();
     }
 #endif
-    bool isRegular = region->InHugeObjectGeneration() ? false : true;
+    bool isRegular = region->InHugeObjectSpace() ? false : true;
     MemMapAllocator::GetInstance()->Free(ToVoidPtr(region->GetAllocateBase()), size, isRegular);
 }
 }  // namespace panda::ecmascript
