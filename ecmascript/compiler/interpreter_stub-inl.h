@@ -291,7 +291,7 @@ void InterpreterStub::SetResolvedToFunction(GateRef glue, GateRef function, Gate
 void InterpreterStub::SetHomeObjectToFunction(GateRef glue, GateRef function, GateRef value)
 {
     GateRef offset = IntPtr(JSFunction::HOME_OBJECT_OFFSET);
-    Store(VariableType::INT64(), glue, function, offset, value);
+    Store(VariableType::JS_ANY(), glue, function, offset, value);
 }
 
 void InterpreterStub::SetModuleToFunction(GateRef glue, GateRef function, GateRef value)

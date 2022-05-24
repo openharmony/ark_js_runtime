@@ -4632,9 +4632,13 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
     Branch(IntPtrEqual(*varPc, IntPtr(0)), &pcIsInvalid, &pcNotInvalid);
     Bind(&pcIsInvalid);
     {
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+        CallNGCRuntime(glue, RTSTUB_ID(ResumeUncaughtFrameAndReturn), { glue });
+#else
         if (env->IsAArch64()) {
             CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndReturn), {});
         }
+#endif
         Return();
     }
     Bind(&pcNotInvalid);
@@ -5638,7 +5642,9 @@ void InterpreterStub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualN
     SetPcToFrame(glue, GetFrame(sp), pc);
     Branch(TaggedIsHeapObject(func), &funcIsHeapObject, &funcNotCallable);
     Bind(&funcIsHeapObject);
-    Branch(IsCallable(func), &funcIsCallable, &funcNotCallable);
+    GateRef hclass = LoadHClass(func);
+    GateRef bitfield = Load(VariableType::INT32(), hclass, IntPtr(JSHClass::BIT_FIELD_OFFSET));
+    Branch(IsCallableFromBitField(bitfield), &funcIsCallable, &funcNotCallable);
     Bind(&funcNotCallable);
     {
         CallRuntime(glue, RTSTUB_ID(ThrowNotCallableException), {});
@@ -5696,7 +5702,7 @@ void InterpreterStub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualN
         }
         Label hasPendingException(env);
         Label noPendingException(env);
-        Branch(TaggedIsException(retValue), &hasPendingException, &noPendingException);
+        Branch(HasPendingException(glue), &hasPendingException, &noPendingException);
         Bind(&hasPendingException);
         {
             DISPATCH_LAST();
@@ -5706,6 +5712,15 @@ void InterpreterStub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualN
     }
     // 4. call nonNative
     Bind(&methodNotNative);
+    Label funcIsClassConstructor(env);
+    Label funcNotClassConstructor(env);
+    Branch(IsClassConstructorFromBitField(bitfield), &funcIsClassConstructor, &funcNotClassConstructor);
+    Bind(&funcIsClassConstructor);
+    {
+        CallRuntime(glue, RTSTUB_ID(ThrowCallConstructorException), {});
+        DISPATCH_LAST();
+    }
+    Bind(&funcNotClassConstructor);
     GateRef numArgsOffset = Int64(JSMethod::NumArgsBits::START_BIT);
     GateRef numArgsMask = Int64((static_cast<uint64_t>(1) << JSMethod::NumArgsBits::SIZE) - 1);
     GateRef declaredNumArgs = ChangeInt64ToInt32(Int64And(Int64LSR(callField, numArgsOffset), numArgsMask));

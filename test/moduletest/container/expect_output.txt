@@ -52,3 +52,24 @@ test popFirst and popLast, out: true
 test remove, out: true
 test clear, out: true
 TypeError: Cannot set property on Container
+### test Vector start ###
+test add and toString, out: 4,3,1,5,14
+test length, out: true
+test get(index is 2), out: true
+test get(index is 3), out: false
+test getIndexOf(target is 3), out: true
+test getIndexOf(target is 2), out: false
+test isEmpty, out: false
+test clear, out: true
+test set, out: true
+test subVector and tostring, out: 4,3,8
+test replaceAllElements, out: true
+test GetFirstElement, out: true
+test forof, out:
+4
+3
+8
+1
+5
+14
+TypeError: Cannot set property on Container

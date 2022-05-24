@@ -984,7 +984,7 @@ void JSBackend::GetAdditionalProperties(const Local<JSValueRef> &value,
 
     if (value->IsTypedArray()) {
         Local<TypedArrayRef> localTypedArrayRef(value);
-        int32_t lengthTypedArray = localTypedArrayRef->ArrayLength(ecmaVm_);
+        int32_t lengthTypedArray = static_cast<int32_t>(localTypedArrayRef->ArrayLength(ecmaVm_));
         if (lengthTypedArray < 0 || lengthTypedArray > lengthTypedArrayLimit) {
             LOG(ERROR, DEBUGGER) << "The length of the TypedArray is non-compliant or unsupported.";
             return;

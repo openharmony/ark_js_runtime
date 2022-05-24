@@ -777,6 +777,12 @@ void AssemblerStubs::ResumeCaughtFrameAndDispatch(ExtendedAssembler *assembler)
     __ Ret();
 }
 
+void AssemblerStubs::ResumeUncaughtFrameAndReturn(ExtendedAssembler *assembler)
+{
+    __ BindAssemblerStub(RTSTUB_ID(ResumeUncaughtFrameAndReturn));
+    __ Ret();
+}
+
 void AssemblerStubs::GeneratorReEnterAsmInterp(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(GeneratorReEnterAsmInterp));

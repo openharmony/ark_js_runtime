@@ -34,6 +34,7 @@
 #include "ecmascript/js_api_stack_iterator.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set_iterator.h"
+#include "ecmascript/js_api_vector_iterator.h"
 #include "ecmascript/jspandafile/class_info_extractor.h"
 #include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_arguments.h"
@@ -195,6 +196,8 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
                 factory->NewEcmaDynClass(dynClassClass, JSAPIQueueIterator::SIZE, JSType::JS_API_QUEUE_ITERATOR));
     SetConstant(ConstantIndex::JS_API_STACK_ITERATOR_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, JSAPIStackIterator::SIZE, JSType::JS_API_STACK_ITERATOR));
+    SetConstant(ConstantIndex::JS_API_VECTOR_ITERATOR_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, JSAPIVectorIterator::SIZE, JSType::JS_API_VECTOR_ITERATOR));
     SetConstant(ConstantIndex::JS_API_TREE_MAP_ITERATOR_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, JSAPITreeMapIterator::SIZE, JSType::JS_API_TREEMAP_ITERATOR));
     SetConstant(ConstantIndex::JS_API_TREE_SET_ITERATOR_CLASS_INDEX,
@@ -238,6 +241,8 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::PLAIN_ARRAY_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
     SetConstant(ConstantIndex::DEQUE_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
     SetConstant(ConstantIndex::STACK_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
+    SetConstant(ConstantIndex::VECTOR_FUNCTION_INDEX, JSTaggedValue::Undefined());
+    SetConstant(ConstantIndex::VECTOR_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
     /* SymbolTable *RegisterSymbols */
     SetConstant(ConstantIndex::NAME_STRING_INDEX, factory->NewFromASCII("name"));
     SetConstant(ConstantIndex::GETPROTOTYPEOF_STRING_INDEX, factory->NewFromASCII("getPrototypeOf"));

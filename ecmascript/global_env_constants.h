@@ -87,6 +87,7 @@ class JSThread;
     V(JSTaggedValue, JSAPIPlainArrayIteratorClass, JS_API_PLAIN_ARRAY_ITERATOR_CLASS_INDEX, ecma_roots_class)         \
     V(JSTaggedValue, JSAPIQueueIteratorClass, JS_API_QUEUE_ITERATOR_CLASS_INDEX, ecma_roots_class)                    \
     V(JSTaggedValue, JSAPIStackIteratorClass, JS_API_STACK_ITERATOR_CLASS_INDEX, ecma_roots_class)                    \
+    V(JSTaggedValue, JSAPIVectorIteratorClass, JS_API_VECTOR_ITERATOR_CLASS_INDEX, ecma_roots_class)                  \
     V(JSTaggedValue, JSAPITreeMapIteratorClass, JS_API_TREE_MAP_ITERATOR_CLASS_INDEX, ecma_roots_class)               \
     V(JSTaggedValue, JSAPITreeSetIteratorClass, JS_API_TREE_SET_ITERATOR_CLASS_INDEX, ecma_roots_class)               \
     V(JSTaggedValue, JSAPIIteratorFuncDynClass, JS_API_ITERATOR_FUNC_DYN_CLASS_INDEX, ecma_roots_class)
@@ -116,6 +117,8 @@ class JSThread;
     V(JSTaggedValue, ArrayListIteratorPrototype, ARRAYLIST_ITERATOR_PROTOTYPE_INDEX, ArrayListIterator)               \
     V(JSTaggedValue, TreeMapIteratorPrototype, TREEMAP_ITERATOR_PROTOTYPE_INDEX, TreeMapIterator)                     \
     V(JSTaggedValue, TreeSetIteratorPrototype, TREESET_ITERATOR_PROTOTYPE_INDEX, TreeSetIterator)                     \
+    V(JSTaggedValue, VectorFunction, VECTOR_FUNCTION_INDEX, VectorFunction)                                           \
+    V(JSTaggedValue, VectorIteratorPrototype, VECTOR_ITERATOR_PROTOTYPE_INDEX, VectorIterator)                        \
     V(JSTaggedValue, QueueIteratorPrototype, QUEUE_ITERATOR_PROTOTYPE_INDEX, QueueIterator)                           \
     V(JSTaggedValue, PlainArrayIteratorPrototype, PLAIN_ARRAY_ITERATOR_PROTOTYPE_INDEX, PlainArrayIterator)           \
     V(JSTaggedValue, PlainArrayFunction, PLAIN_ARRAY_FUNCTION_INDEX, PlainArrayFunction)                              \
