@@ -755,9 +755,5 @@ struct BuiltinWithArgvFrame : public base::AlignedStruct<base::AlignedPointer::S
     alignas(EAS) JSTaggedType *prevFp;
     alignas(EAS) uintptr_t returnAddr;
 };
-
-static_assert(static_cast<uint64_t>(FrameType::OPTIMIZED_FRAME) == OPTIMIZE_FRAME_TYPE);
-static_assert(static_cast<uint64_t>(FrameType::OPTIMIZED_ENTRY_FRAME) == JS_ENTRY_FRAME_TYPE);
-static_assert(static_cast<uint64_t>(FrameType::LEAVE_FRAME) == LEAVE_FRAME_TYPE);
 }  // namespace panda::ecmascript
 #endif // ECMASCRIPT_FRAMES_H
