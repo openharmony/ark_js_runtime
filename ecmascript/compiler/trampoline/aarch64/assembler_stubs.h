@@ -97,6 +97,8 @@ public:
     static void ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *assembler);
 
     static void ResumeCaughtFrameAndDispatch(ExtendedAssembler *assembler);
+
+    static void ResumeUncaughtFrameAndReturn(ExtendedAssembler *assembler);
 private:
     static void JSCallBody(ExtendedAssembler *assembler, Register jsfunc);
 };

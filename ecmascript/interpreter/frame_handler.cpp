@@ -40,8 +40,12 @@ void FrameHandler::PrevFrame()
         }
         case FrameType::ASM_INTERPRETER_FRAME: {
             auto frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
-            fp_ = frame->GetCurrentFramePointer();
             sp_ = frame->GetPrevFrameFp();
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+            if ((sp_ != nullptr) && (GetFrameType() != FrameType::ASM_INTERPRETER_ENTRY_FRAME)) {
+                fp_ = frame->GetCurrentFramePointer();
+            }
+#endif
             break;
         }
         case FrameType::INTERPRETER_CONSTRUCTOR_FRAME: {
@@ -364,7 +368,7 @@ ARK_INLINE void FrameHandler::InterpretedFrameIterate(const JSTaggedType *sp,
                                                       const RootRangeVisitor &v1) const
 {
     InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp);
-    if (frame->sp == nullptr) {
+    if (frame->function == JSTaggedValue::Hole()) {
         return;
     }
     JSTaggedType *prevSp = frame->GetPrevFrameFp();

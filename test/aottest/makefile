@@ -26,16 +26,16 @@ ifeq ($(log), yes)
 endif
 
 ifeq ($(debug), no)
-	export LD_LIBRARY_PATH=$(root_dir)/out/hi3516dv300/clang_x64/ark/ark:$(root_dir)/out/hi3516dv300/clang_x64/ark/ark_js_runtime:$(root_dir)/out/hi3516dv300/clang_x64/thirdparty/icu:$(root_dir)/prebuilts/clang/ohos/linux-x86_64/llvm/lib
-	bin_dir=$(root_dir)/out/hi3516dv300/clang_x64/ark/ark_js_runtime
+	export LD_LIBRARY_PATH=$(root_dir)/out/hispark_taurus/clang_x64/ark/ark:$(root_dir)/out/hispark_taurus/clang_x64/ark/ark_js_runtime:$(root_dir)/out/hispark_taurus/clang_x64/thirdparty/icu:$(root_dir)/prebuilts/clang/ohos/linux-x86_64/llvm/lib
+	bin_dir=$(root_dir)/out/hispark_taurus/clang_x64/ark/ark_js_runtime
 else
-	export LD_LIBRARY_PATH=$(root_dir)/out/hi3516dv300/clang_x64/exe.unstripped/clang_x64/ark/ark:$(root_dir)/out/hi3516dv300/clang_x64/exe.unstripped/clang_x64/ark/ark_js_runtime:$(root_dir)/out/hi3516dv300/clang_x64/lib.unstripped/clang_x64/ark/ark:$(root_dir)/out/hi3516dv300/clang_x64/lib.unstripped/clang_x64/ark/ark_js_runtime:$(root_dir)/out/hi3516dv300/clang_x64/lib.unstripped/clang_x64/test/test:$(root_dir)/out/hi3516dv300/clang_x64/lib.unstripped/clang_x64/thirdparty/icu:$(root_dir)/prebuilts/clang/ohos/linux-x86_64/llvm/lib
-	bin_dir=$(root_dir)/out/hi3516dv300/clang_x64/exe.unstripped/clang_x64/ark/ark_js_runtime
+	export LD_LIBRARY_PATH=$(root_dir)/out/hispark_taurus/clang_x64/exe.unstripped/clang_x64/ark/ark:$(root_dir)/out/hispark_taurus/clang_x64/exe.unstripped/clang_x64/ark/ark_js_runtime:$(root_dir)/out/hispark_taurus/clang_x64/lib.unstripped/clang_x64/ark/ark:$(root_dir)/out/hispark_taurus/clang_x64/lib.unstripped/clang_x64/ark/ark_js_runtime:$(root_dir)/out/hispark_taurus/clang_x64/lib.unstripped/clang_x64/test/test:$(root_dir)/out/hispark_taurus/clang_x64/lib.unstripped/clang_x64/thirdparty/icu:$(root_dir)/prebuilts/clang/ohos/linux-x86_64/llvm/lib
+	bin_dir=$(root_dir)/out/hispark_taurus/clang_x64/exe.unstripped/clang_x64/ark/ark_js_runtime
 endif
 
-ts2abc=$(root_dir)/out/hi3516dv300/clang_x64/obj/ark/ts2abc/ts2panda/build/src/index.js
+ts2abc=$(root_dir)/out/hispark_taurus/clang_x64/obj/ark/ts2abc/ts2panda/build/src/index.js
 test_dir=$(root_dir)/ark/js_runtime/test/aottest
-out_dir=$(root_dir)/out/hi3516dv300/clang_x64/aottest
+out_dir=$(root_dir)/out/hispark_taurus/clang_x64/aottest
 case_dir=$(out_dir)/$(test_name)
 com_stub_args=--enable-stub-aot=1 --asm-interpreter=true --bc-stub-out=$(out_dir)/bc_stub.m --com-stub-out=$(out_dir)/com_stub.m
 

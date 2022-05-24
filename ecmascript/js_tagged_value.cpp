@@ -24,6 +24,7 @@
 #include "ecmascript/js_api_stack.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_api_arraylist.h"
+#include "ecmascript/js_api_vector.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_proxy.h"
@@ -944,6 +945,9 @@ bool JSTaggedValue::HasContainerProperty(JSThread *thread, const JSHandle<JSTagg
         case JSType::JS_API_TREE_SET: {
             return JSObject::HasProperty(thread, JSHandle<JSObject>(obj), key);
         }
+        case JSType::JS_API_VECTOR: {
+            return JSHandle<JSAPIVector>::Cast(obj)->Has(key.GetTaggedValue());
+        }
         default: {
             UNREACHABLE();
         }
@@ -974,6 +978,9 @@ JSHandle<TaggedArray> JSTaggedValue::GetOwnContainerPropertyKeys(JSThread *threa
         case JSType::JS_API_TREE_MAP:
         case JSType::JS_API_TREE_SET: {
             return JSObject::GetOwnPropertyKeys(thread, JSHandle<JSObject>(obj));
+        }
+        case JSType::JS_API_VECTOR: {
+            return JSAPIVector::OwnKeys(thread, JSHandle<JSAPIVector>::Cast(obj));
         }
         default: {
             UNREACHABLE();
@@ -1006,6 +1013,9 @@ bool JSTaggedValue::GetContainerProperty(JSThread *thread, const JSHandle<JSTagg
         case JSType::JS_API_TREE_MAP:
         case JSType::JS_API_TREE_SET: {
             return JSObject::GetOwnProperty(thread, JSHandle<JSObject>(obj), key, desc);
+        }
+        case JSType::JS_API_VECTOR: {
+            return JSAPIVector::GetOwnProperty(thread, JSHandle<JSAPIVector>::Cast(obj), key, desc);
         }
         default: {
             UNREACHABLE();

@@ -608,13 +608,16 @@ void EcmaVM::ClearBufferData()
     cachedConstpools_.clear();
 }
 
-bool EcmaVM::ExecutePromisePendingJob() const
+bool EcmaVM::ExecutePromisePendingJob()
 {
-    thread_local bool isProcessing = false;
-    if (!isProcessing && !thread_->HasPendingException()) {
-        isProcessing = true;
+    if (isProcessingPendingJob_) {
+        LOG(ERROR, RUNTIME) << "EcmaVM::ExecutePromisePendingJob can not reentrant";
+        return false;
+    }
+    if (!thread_->HasPendingException()) {
+        isProcessingPendingJob_ = true;
         job::MicroJobQueue::ExecutePendingJob(thread_, GetMicroJobQueue());
-        isProcessing = false;
+        isProcessingPendingJob_ = false;
         return true;
     }
     return false;

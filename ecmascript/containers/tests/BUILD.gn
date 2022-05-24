@@ -27,6 +27,7 @@ host_unittest_action("ContainersTest") {
     "containers_stack_test.cpp",
     "containers_treemap_test.cpp",
     "containers_treeset_test.cpp",
+    "containers_vector_test.cpp",
   ]
 
   configs = [ "//ark/js_runtime:ecma_test_config" ]

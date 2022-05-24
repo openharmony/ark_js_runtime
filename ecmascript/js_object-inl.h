@@ -191,6 +191,11 @@ inline bool JSObject::IsJSAPIStackIterator() const
     return GetJSHClass()->IsJSAPIStackIterator();
 }
 
+inline bool JSObject::IsJSAPIVectorIterator() const
+{
+    return GetJSHClass()->IsJSAPIVectorIterator();
+}
+
 inline bool JSObject::IsJSPrimitiveRef() const
 {
     return GetJSHClass()->IsJsPrimitiveRef();

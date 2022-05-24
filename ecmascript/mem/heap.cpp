@@ -212,6 +212,7 @@ void Heap::Resume(TriggerGCType gcType)
 
     activeSpace_->SetWaterLine();
     PrepareRecordRegionsForReclaim();
+    hugeObjectSpace_->RecliamHugeRegion();
     if (parallelGC_) {
         clearTaskFinished_ = false;
         Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<AsyncClearTask>(this, gcType));

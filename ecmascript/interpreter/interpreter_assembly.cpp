@@ -663,6 +663,7 @@ JSTaggedValue InterpreterAssembly::GeneratorReEnterInterpreter(JSThread *thread,
     JSMethod *method = func->GetCallTarget();
 
     JSTaggedType *currentSp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    JSTaggedType *currentLeaveFrame = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
 
     // push break frame
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -673,7 +674,14 @@ JSTaggedValue InterpreterAssembly::GeneratorReEnterInterpreter(JSThread *thread,
     AsmInterpretedFrame *breakState = GET_ASM_FRAME(breakSp);
     breakState->pc = nullptr;
     breakState->function = JSTaggedValue::Hole();
-    breakState->base.prev = currentSp;
+    if (currentLeaveFrame == nullptr) {
+        // no leave frame, set frame chain as usual
+        breakState->base.prev = currentSp;
+    } else {
+        // set current leave frame into the frame chain
+        breakState->base.prev = currentLeaveFrame;
+        thread->SetLastLeaveFrame(nullptr);
+    }
     breakState->base.type = FrameType::ASM_INTERPRETER_FRAME;
 
     // create new frame and resume sp and pc
@@ -709,6 +717,7 @@ JSTaggedValue InterpreterAssembly::GeneratorReEnterInterpreter(JSThread *thread,
     JSTaggedValue res = state->acc;
     // pop frame
     thread->SetCurrentSPFrame(currentSp);
+    thread->SetLastLeaveFrame(currentLeaveFrame);
     return res;
 }
 #endif
@@ -4118,7 +4127,7 @@ void InterpreterAssembly::ExceptionHandler(
     FrameHandler frameHandler(thread);
     uint32_t pcOffset = panda_file::INVALID_OFFSET;
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
-        if (frameHandler.IsEntryFrame()) {
+        if (frameHandler.IsEntryFrame() || frameHandler.IsBuiltinFrame()) {
             thread->SetCurrentSPFrame(frameHandler.GetSp());
             return;
         }

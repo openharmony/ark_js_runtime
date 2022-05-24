@@ -80,6 +80,9 @@ ResumeRspAndReturn:
 .global ResumeCaughtFrameAndDispatch
 ResumeCaughtFrameAndDispatch:
 
+.global ResumeUncaughtFrameAndReturn
+ResumeUncaughtFrameAndReturn:
+
 .global OptimizedCallRuntimeWithArgv
 OptimizedCallRuntimeWithArgv:
 

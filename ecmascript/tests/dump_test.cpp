@@ -27,6 +27,10 @@
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/jspandafile/class_info_extractor.h"
+#include "ecmascript/jspandafile/program_object.h"
+#include "ecmascript/js_api_arraylist.h"
+#include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
 #include "ecmascript/js_api_plain_array.h"
@@ -35,16 +39,14 @@
 #include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_stack.h"
 #include "ecmascript/js_api_stack_iterator.h"
-#include "ecmascript/jspandafile/class_info_extractor.h"
-#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_api_tree_map.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set.h"
 #include "ecmascript/js_api_tree_set_iterator.h"
+#include "ecmascript/js_api_vector.h"
+#include "ecmascript/js_api_vector_iterator.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_array.h"
-#include "ecmascript/js_api_arraylist.h"
-#include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_async_function.h"
@@ -263,6 +265,14 @@ static JSHandle<JSAPIDeque> NewJSAPIDeque(JSThread *thread, ObjectFactory *facto
     jsDeque->SetLast(0);
     jsDeque->SetElements(thread, newElements);
     return jsDeque;
+}
+
+static JSHandle<JSAPIVector> NewJSAPIVector(ObjectFactory *factory, JSHandle<JSTaggedValue> proto)
+{
+    JSHandle<JSHClass> vectorClass = factory->NewEcmaDynClass(JSAPIVector::SIZE, JSType::JS_API_VECTOR, proto);
+    JSHandle<JSAPIVector> jsVector = JSHandle<JSAPIVector>::Cast(factory->NewJSObjectWithInit(vectorClass));
+    jsVector->SetLength(0);
+    return jsVector;
 }
 
 HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
@@ -800,7 +810,6 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 DUMP_FOR_HANDLE(arrayType)
                 break;
             }
-            case JSType::JS_API_VECTOR:
             case JSType::JS_API_ARRAY_LIST: {
                 // 1 : 1 dump fileds number
                 CHECK_DUMP_FIELDS(JSObject::SIZE, JSAPIArrayList::SIZE, 1U)
@@ -902,6 +911,19 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 JSHandle<JSAPIStackIterator> jsStackIter =
                     factory->NewJSAPIStackIterator(NewJSAPIStack(factory, proto));
                 DUMP_FOR_HANDLE(jsStackIter)
+                break;
+            }
+            case JSType::JS_API_VECTOR: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSAPIVector::SIZE, 1)
+                JSHandle<JSAPIVector> jsVector = NewJSAPIVector(factory, proto);
+                DUMP_FOR_HANDLE(jsVector)
+                break;
+            }
+            case JSType::JS_API_VECTOR_ITERATOR: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSAPIVectorIterator::SIZE, 2U)
+                JSHandle<JSAPIVectorIterator> jsVectorIter =
+                    factory->NewJSAPIVectorIterator(NewJSAPIVector(factory, proto));
+                DUMP_FOR_HANDLE(jsVectorIter)
                 break;
             }
             case JSType::MODULE_RECORD: {

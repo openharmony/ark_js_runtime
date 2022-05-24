@@ -570,6 +570,8 @@ public:
     bool IsJSAPITreeSet() const;
     bool IsJSAPITreeMapIterator() const;
     bool IsJSAPITreeSetIterator() const;
+    bool IsJSAPIVector() const;
+    bool IsJSAPIVectorIterator() const;
     bool IsJSAPIQueue() const;
     bool IsJSAPIQueueIterator() const;
     bool IsJSAPIPlainArray() const;

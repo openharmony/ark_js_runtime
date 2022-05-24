@@ -84,11 +84,11 @@ group("ark_asm_test") {
     "throwdyn:throwdynAsmAction",
     "trycatch:trycatchAsmAction",
     "watch:watchAsmAction",
+    "yieldstar:yieldstarAsmAction",
   ]
   if (!is_debug) {
     deps += [
       # "weaktransitions:weaktransitionsAsmAction",
-      "yieldstar:yieldstarAsmAction",
     ]
   }
 }
