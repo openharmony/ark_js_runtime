@@ -1532,7 +1532,7 @@ inline GateRef Stub::IsSpecialContainer(GateRef jsType)
     return TruncInt32ToInt1(Int32And(
         ZExtInt1ToInt32(
             Int32GreaterThanOrEqual(jsType, Int32(static_cast<int32_t>(JSType::JS_API_ARRAY_LIST)))),
-        ZExtInt1ToInt32(Int32LessThanOrEqual(jsType, Int32(static_cast<int32_t>(JSType::JS_API_VECTOR))))));
+        ZExtInt1ToInt32(Int32LessThanOrEqual(jsType, Int32(static_cast<int32_t>(JSType::JS_API_QUEUE))))));
 }
 
 inline GateRef Stub::IsAccessorInternal(GateRef value)
