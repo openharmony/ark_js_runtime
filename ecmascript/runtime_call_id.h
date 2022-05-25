@@ -371,6 +371,18 @@ namespace panda::ecmascript {
     V(Math, Tan)                              \
     V(Math, Tanh)                             \
     V(Math, Trunc)                            \
+    V(Atomics, Add)                           \
+    V(Atomics, And)                           \
+    V(Atomics, Or)                            \
+    V(Atomics, Xor)                           \
+    V(Atomics, Sub)                           \
+    V(Atomics, Exchange)                      \
+    V(Atomics, CompareEchange)                \
+    V(Atomics, Store)                         \
+    V(Atomics, Load)                          \
+    V(Atomics, IsLockFree)                    \
+    V(Atomics, Wait)                          \
+    V(Atomics, Notify)                        \
     V(Number, Constructor)                    \
     V(Number, IsFinite)                       \
     V(Number, IsInteger)                      \

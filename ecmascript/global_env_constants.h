@@ -342,7 +342,10 @@ class JSThread;
     V(JSTaggedValue, DisjunctionString, DISJUNCTION_INDEX, disjunction)                                               \
     V(JSTaggedValue, ElementString, ELEMENT_INDEX, element)                                                           \
     V(JSTaggedValue, FlagsString, FLAGS_INDEX, flags)                                                                 \
-    V(JSTaggedValue, GString, G_INDEX, g)
+    V(JSTaggedValue, GString, G_INDEX, g)                                                                             \
+    V(JSTaggedValue, NotEqualString, NOT_EQUAL_INDEX, notEqual)                                                       \
+    V(JSTaggedValue, OkString, OK_INDEX, ok)                                                                          \
+    V(JSTaggedValue, TimeoutString, TIMEOUT_INDEX, timedout)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GLOBAL_ENV_CONSTANT_ACCESSOR(V)                                                           \

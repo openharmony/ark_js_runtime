@@ -406,6 +406,42 @@ bool JSTypedArray::IsValidIntegerIndex(const JSHandle<JSTaggedValue> &typedArray
     return true;
 }
 
+DataViewType JSTypedArray::GetTypeFromName(JSThread *thread, const JSHandle<JSTaggedValue> &typeName)
+{
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    if (JSTaggedValue::SameValue(typeName, globalConst->GetHandledInt8ArrayString())) {
+        return DataViewType::INT8;
+    }
+    if (JSTaggedValue::SameValue(typeName, globalConst->GetHandledUint8ArrayString())) {
+        return DataViewType::UINT8;
+    }
+    if (JSTaggedValue::SameValue(typeName, globalConst->GetHandledUint8ClampedArrayString())) {
+        return DataViewType::UINT8_CLAMPED;
+    }
+    if (JSTaggedValue::SameValue(typeName, globalConst->GetHandledInt16ArrayString())) {
+        return DataViewType::INT16;
+    }
+    if (JSTaggedValue::SameValue(typeName, globalConst->GetHandledUint16ArrayString())) {
+        return DataViewType::UINT16;
+    }
+    if (JSTaggedValue::SameValue(typeName, globalConst->GetHandledInt32ArrayString())) {
+        return DataViewType::INT32;
+    }
+    if (JSTaggedValue::SameValue(typeName, globalConst->GetHandledUint32ArrayString())) {
+        return DataViewType::UINT32;
+    }
+    if (JSTaggedValue::SameValue(typeName, globalConst->GetHandledFloat32ArrayString())) {
+        return DataViewType::FLOAT32;
+    }
+    if (JSTaggedValue::SameValue(typeName, globalConst->GetHandledFloat64ArrayString())) {
+        return DataViewType::FLOAT64;
+    }
+    if (JSTaggedValue::SameValue(typeName, globalConst->GetHandledBigInt64ArrayString())) {
+        return DataViewType::BIGINT64;
+    }
+    return DataViewType::BIGUINT64;
+}
+
 // static
 bool JSTypedArray::FastCopyElementToArray(JSThread *thread, const JSHandle<JSTaggedValue> &typedArray,
                                           JSHandle<TaggedArray> &array)

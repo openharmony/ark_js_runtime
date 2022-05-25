@@ -301,6 +301,7 @@ config("icu_path_test_config") {
 
 ecma_source = [
   "ecmascript/base/array_helper.cpp",
+  "ecmascript/base/atomic_helper.cpp",
   "ecmascript/base/builtins_base.cpp",
   "ecmascript/base/error_helper.cpp",
   "ecmascript/base/json_parser.cpp",
@@ -314,6 +315,7 @@ ecma_source = [
   "ecmascript/builtins/builtins_array.cpp",
   "ecmascript/builtins/builtins_arraybuffer.cpp",
   "ecmascript/builtins/builtins_async_function.cpp",
+  "ecmascript/builtins/builtins_atomics.cpp",
   "ecmascript/builtins/builtins_bigint.cpp",
   "ecmascript/builtins/builtins_boolean.cpp",
   "ecmascript/builtins/builtins_dataview.cpp",
@@ -476,6 +478,7 @@ ecma_source = [
   "ecmascript/tagged_dictionary.cpp",
   "ecmascript/tagged_tree.cpp",
   "ecmascript/template_string.cpp",
+  "ecmascript/waiter_list.cpp",
   "ecmascript/weak_vector.cpp",
   "ecmascript/compiler/llvm/llvm_stackmap_parser.cpp",
   "ecmascript/stubs/runtime_stubs.cpp",

@@ -89,6 +89,8 @@ public:
     static JSTaggedValue AsintN(JSThread *thread, JSTaggedNumber &bits, JSHandle<BigInt> bigint);
     static JSTaggedNumber BigIntToNumber(JSHandle<BigInt> bigint);
     static ComparisonResult CompareWithNumber(JSHandle<BigInt> bigint, JSHandle<JSTaggedValue> number);
+
+    int64_t ToInt64();
     inline bool IsZero()
     {
         return GetLength() == 1 && !GetDigit(0);

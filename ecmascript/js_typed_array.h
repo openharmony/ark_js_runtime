@@ -17,6 +17,7 @@
 #define ECMASCRIPT_JS_TYPED_ARRAY_H
 
 #include "ecmascript/tagged_array.h"
+#include "ecmascript/js_dataview.h"
 #include "js_object.h"
 
 namespace panda::ecmascript {
@@ -94,6 +95,7 @@ public:
     // only use in TypeArray fast set property
     static JSTaggedNumber NonEcmaObjectToNumber(JSThread *thread, const JSTaggedValue tagged);
     static constexpr size_t VIEWED_ARRAY_BUFFER_OFFSET = JSObject::SIZE;
+    static DataViewType GetTypeFromName(JSThread *thread, const JSHandle<JSTaggedValue> &typeName);
     ACCESSORS(ViewedArrayBuffer, VIEWED_ARRAY_BUFFER_OFFSET, TYPED_ARRAY_NAME_OFFSET)
     ACCESSORS(TypedArrayName, TYPED_ARRAY_NAME_OFFSET, BYTE_LENGTH_OFFSET)
     ACCESSORS_PRIMITIVE_FIELD(ByteLength, uint32_t, BYTE_LENGTH_OFFSET, BYTE_OFFSET_OFFSET)
