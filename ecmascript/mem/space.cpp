@@ -47,7 +47,6 @@ void Space::ReclaimRegions()
 void Space::ClearAndFreeRegion(Region *region)
 {
     LOG_ECMA_MEM(DEBUG) << "Clear region from:" << region << " to " << ToSpaceTypeName(spaceType_);
-    region->SetFlag(RegionFlags::INVALID);
     region->DeleteCrossRegionRSet();
     region->DeleteOldToNewRSet();
     region->DeleteSweepingRSet();
@@ -55,7 +54,7 @@ void Space::ClearAndFreeRegion(Region *region)
     DecreaseObjectSize(region->GetSize());
     if (spaceType_ == MemSpaceType::OLD_SPACE || spaceType_ == MemSpaceType::NON_MOVABLE ||
         spaceType_ == MemSpaceType::MACHINE_CODE_SPACE) {
-        region->DestroySet();
+        region->DestroyFreeObjectSets();
     }
     heapRegionAllocator_->FreeRegion(region);
 }

@@ -184,8 +184,8 @@ const JSPandaFile *Snapshot::Deserialize(SnapshotType type, const CString &snaps
         region->oldToNewSet_ = nullptr;
         // thread_
         region->thread_ = vm_->GetAssociatedJSThread();
-        // nativePoniterAllocator_
-        region->nativeAreaAllocator_ = region->thread_->GetNativeAreaAllocator();
+        // reclaimed__
+        region->reclaimed_ = false;
 
         space->AddRegion(region);
     }

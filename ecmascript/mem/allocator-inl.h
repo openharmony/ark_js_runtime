@@ -165,7 +165,7 @@ void FreeListAllocator::RebuildFreeList()
 
 inline void FreeListAllocator::CollectFreeObjectSet(Region *region)
 {
-    region->EnumerateSets([&](FreeObjectSet *set) {
+    region->EnumerateFreeObjectSets([&](FreeObjectSet *set) {
         if (set == nullptr || set->Empty()) {
             return;
         }
@@ -176,7 +176,7 @@ inline void FreeListAllocator::CollectFreeObjectSet(Region *region)
 
 inline void FreeListAllocator::DetachFreeObjectSet(Region *region)
 {
-    region->EnumerateSets([&](FreeObjectSet *set) {
+    region->EnumerateFreeObjectSets([&](FreeObjectSet *set) {
         if (set == nullptr || set->Empty()) {
             return;
         }

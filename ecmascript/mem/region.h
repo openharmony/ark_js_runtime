@@ -87,6 +87,7 @@ public:
     Region(JSThread *thread, uintptr_t allocateBase, uintptr_t begin, uintptr_t end, RegionFlags flags)
         : flags_(flags),
           thread_(thread),
+          reclaimed_(false),
           allocateBase_(allocateBase),
           end_(end),
           highWaterMark_(end),
@@ -215,6 +216,16 @@ public:
         return reinterpret_cast<Region *>(objAddress & ~DEFAULT_REGION_MASK);
     }
 
+    bool IsReclaimed() const
+    {
+        return reclaimed_;
+    }
+
+    void SetReclaimed()
+    {
+        reclaimed_ = true;
+    }
+
     bool InYoungSpace() const
     {
         return IsFlagSet(flags_, RegionFlags::IN_YOUNG_SPACE);
@@ -258,11 +269,6 @@ public:
     bool BelowAgeMark() const
     {
         return IsFlagSet(flags_, RegionFlags::BELOW_AGE_MARK);
-    }
-
-    bool IsInvalid() const
-    {
-        return IsFlagSet(flags_, RegionFlags::INVALID);
     }
 
     void SetSwept()
@@ -313,42 +319,33 @@ public:
         return res;
     }
 
-    void InitializeSet()
+    void InitializeFreeObjectSets()
     {
-        sets_ = Span<FreeObjectSet *>(new FreeObjectSet *[FreeObjectList::NumberOfSets()](),
+        freeObjectSets_ = Span<FreeObjectSet *>(new FreeObjectSet *[FreeObjectList::NumberOfSets()](),
             FreeObjectList::NumberOfSets());
     }
 
-    void RebuildSet()
+    void DestroyFreeObjectSets()
     {
-        EnumerateSets([](FreeObjectSet *set) {
-            if (set != nullptr) {
-                set->Rebuild();
-            }
-        });
-    }
-
-    void DestroySet()
-    {
-        for (auto set : sets_) {
+        for (auto set : freeObjectSets_) {
             delete set;
         }
-        delete[] sets_.data();
+        delete[] freeObjectSets_.data();
     }
 
     FreeObjectSet *GetFreeObjectSet(SetType type)
     {
         // Thread safe
-        if (sets_[type] == nullptr) {
-            sets_[type] = new FreeObjectSet(type);
+        if (freeObjectSets_[type] == nullptr) {
+            freeObjectSets_[type] = new FreeObjectSet(type);
         }
-        return sets_[type];
+        return freeObjectSets_[type];
     }
 
     template<class Callback>
-    void EnumerateSets(Callback cb)
+    void EnumerateFreeObjectSets(Callback cb)
     {
-        for (auto set : sets_) {
+        for (auto set : freeObjectSets_) {
             cb(set);
         }
     }
@@ -471,6 +468,7 @@ private:
      * and consequently, the region allocator, the spaces using the region allocator, etc.
      */
     JSThread *thread_;
+    bool reclaimed_ {false};
 
     uintptr_t allocateBase_;
     uintptr_t end_;
@@ -482,10 +480,9 @@ private:
 
     RememberedSet *crossRegionSet_ {nullptr};
     RememberedSet *sweepingRSet_ {nullptr};
-    Span<FreeObjectSet *> sets_;
+    Span<FreeObjectSet *> freeObjectSets_;
     size_t wasted_;
     os::memory::Mutex lock_;
-    NativeAreaAllocator* nativeAreaAllocator_ {nullptr};
     friend class Snapshot;
 };
 
