@@ -99,8 +99,57 @@ public:
     static void ResumeCaughtFrameAndDispatch(ExtendedAssembler *assembler);
 
     static void ResumeUncaughtFrameAndReturn(ExtendedAssembler *assembler);
+
 private:
     static void JSCallBody(ExtendedAssembler *assembler, Register jsfunc);
+
+    static void CallIThisRangeNoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgs);
+
+    static void CallIRangeNoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgs);
+
+    static void Callargs3NoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgs);
+
+    static void Callargs2NoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgs);
+
+    static void Callargs1NoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgs);
+
+    static void Callargs0NoExtraEntry(ExtendedAssembler *assembler);
+
+    static void CallIThisRangeEntry(ExtendedAssembler *assembler);
+
+    static void PushCallThis(ExtendedAssembler *assembler);
+
+    static void CallIRangeEntry(ExtendedAssembler *assembler);
+
+    static void Callargs3Entry(ExtendedAssembler *assembler);
+
+    static void Callargs2Entry(ExtendedAssembler *assembler);
+
+    static void Callarg1Entry(ExtendedAssembler *assembler);
+
+    static void PushCallThisUndefined(ExtendedAssembler *assembler);
+
+    static void PushNewTarget(ExtendedAssembler *assembler);
+
+    static void PushCallTarget(ExtendedAssembler *assembler);
+
+    static void PushVregs(ExtendedAssembler *assembler);
+
+    static void DispatchCall(ExtendedAssembler *assembler, Register pc, Register newSp);
+
+    static void PushFrameState(ExtendedAssembler *assembler, Register prevSp, Register fp, Register callTarget,
+        Register method, Register pc, Register op);
+
+    static void GetNumVregsFromCallField(ExtendedAssembler *assembler, Register callField, Register numVregs);
+
+    static void GetDeclaredNumArgsFromCallField(ExtendedAssembler *assembler, Register callField,
+        Register declaredNumArgs);
+
+    static void PushUndefinedWithArgc(ExtendedAssembler *assembler, Register argc, Register temp, Label *next);
+
+    static void SaveFpAndJumpSize(ExtendedAssembler *assembler, Immediate jumpSize);
+
+    static void StackOverflowCheck([[maybe_unused]] ExtendedAssembler *assembler);
 };
 }  // namespace panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H
