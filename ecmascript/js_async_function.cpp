@@ -33,12 +33,13 @@ void JSAsyncFunction::AsyncFunctionAwait(JSThread *thread, const JSHandle<JSAsyn
                                          const JSHandle<JSTaggedValue> &value)
 {
     // 1.Let asyncContext be the running execution context.
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    auto vm = thread->GetEcmaVM();
+    ObjectFactory *factory = vm->GetFactory();
 
     JSHandle<JSTaggedValue> asyncCtxt(thread, asyncFuncObj->GetGeneratorContext());
 
     // 2.Let promiseCapability be ! NewPromiseCapability(%Promise%).
-    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
     JSHandle<PromiseCapability> pcap =
         JSPromise::NewPromiseCapability(thread, JSHandle<JSTaggedValue>::Cast(env->GetPromiseFunction()));
@@ -54,12 +55,12 @@ void JSAsyncFunction::AsyncFunctionAwait(JSThread *thread, const JSHandle<JSAsyn
     [[maybe_unused]] JSTaggedValue res = JSFunction::Call(&info);
 
     // 4.Let onFulfilled be a new built-in function object as defined in AsyncFunction Awaited Fulfilled.
-    JSHandle<JSAsyncAwaitStatusFunction> fulFunc =
-        factory->NewJSAsyncAwaitStatusFunction(reinterpret_cast<void *>(BuiltinsPromiseHandler::AsyncAwaitFulfilled));
+    JSHandle<JSAsyncAwaitStatusFunction> fulFunc = factory->NewJSAsyncAwaitStatusFunction(
+        MethodIndex::BUILTINS_PROMISE_HANDLER_ASYNC_AWAIT_FULFILLED);
 
     // 5.Let onRejected be a new built-in function object as defined in AsyncFunction Awaited Rejected.
-    JSHandle<JSAsyncAwaitStatusFunction> rejFunc =
-        factory->NewJSAsyncAwaitStatusFunction(reinterpret_cast<void *>(BuiltinsPromiseHandler::AsyncAwaitRejected));
+    JSHandle<JSAsyncAwaitStatusFunction> rejFunc = factory->NewJSAsyncAwaitStatusFunction(
+        MethodIndex::BUILTINS_PROMISE_HANDLER_ASYNC_AWAIT_REJECTED);
 
     // 6.Set onFulfilled.[[AsyncContext]] to asyncContext.
     // 7.Set onRejected.[[AsyncContext]] to asyncContext.

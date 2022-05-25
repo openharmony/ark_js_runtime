@@ -100,7 +100,7 @@ JSTaggedValue BuiltinsCollator::Compare(EcmaRuntimeCallInfo *argv)
     if (boundCompare->IsUndefined()) {
         ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
         JSHandle<JSIntlBoundFunction> intlBoundFunc = factory->NewJSIntlBoundFunction(
-            reinterpret_cast<void *>(BuiltinsCollator::AnonymousCollator), FUNCTION_LENGTH_TWO);
+            MethodIndex::BUILTINS_COLLATOR_ANONYMOUS_COLLATOR, FUNCTION_LENGTH_TWO);
         intlBoundFunc->SetCollator(thread, collator);
         collator->SetBoundCompare(thread, intlBoundFunc);
     }
