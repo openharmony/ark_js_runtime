@@ -433,7 +433,7 @@ JSTaggedValue ContainersVector::GetSize(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "obj is not JSAPIVector", JSTaggedValue::Exception());
     }
 
-    uint32_t length = JSHandle<JSAPIVector>::Cast(self)->GetSize();
+    int32_t length = JSHandle<JSAPIVector>::Cast(self)->GetSize();
     return JSTaggedValue(length);
 }
 
@@ -563,7 +563,7 @@ JSTaggedValue ContainersVector::CopyToArray(EcmaRuntimeCallInfo *argv)
     JSHandle<TaggedArray> resultArray = TaggedArray::Append(thread, arrayElements, vectorElements);
 
     JSHandle<JSArray> jsArray = JSHandle<JSArray>::Cast(array);
-    uint32_t sumLength = vector->GetSize() + jsArray->GetArrayLength();
+    uint32_t sumLength = static_cast<uint32_t>(vector->GetSize()) + jsArray->GetArrayLength();
     jsArray->SetArrayLength(thread, sumLength);
     jsArray->SetElements(thread, resultArray);
     
@@ -584,7 +584,7 @@ JSTaggedValue ContainersVector::ConvertToArray(EcmaRuntimeCallInfo *argv)
     }
 
     JSHandle<JSAPIVector> vector = JSHandle<JSAPIVector>::Cast(self);
-    uint32_t length = vector->GetSize();
+    int32_t length = vector->GetSize();
     JSHandle<JSArray> array = thread->GetEcmaVM()->GetFactory()->NewJSArray();
     array->SetArrayLength(thread, length);
     JSHandle<TaggedArray> vectorElements(thread, vector->GetElements());
@@ -630,7 +630,7 @@ JSTaggedValue ContainersVector::Sort(EcmaRuntimeCallInfo *argv)
     JSMutableHandle<JSTaggedValue> presentValue(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> middleValue(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> previousValue(thread, JSTaggedValue::Undefined());
-    uint32_t length = JSHandle<JSAPIVector>::Cast(self)->GetSize();
+    uint32_t length = static_cast<uint32_t>(JSHandle<JSAPIVector>::Cast(self)->GetSize());
 
     for (uint32_t i = 1; i < length; i++) {
         uint32_t beginIndex = 0;
