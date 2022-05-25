@@ -309,6 +309,14 @@ void AssemblerAarch64::Ldr(const Register &rt, const MemoryOperand &operand)
     }
 }
 
+void AssemblerAarch64::Ldrh([[maybe_unused]] const Register &rt, [[maybe_unused]] const MemoryOperand &operand)
+{
+}
+
+void AssemblerAarch64::Ldrb([[maybe_unused]] const Register &rt, [[maybe_unused]] const MemoryOperand &operand)
+{
+}
+
 void AssemblerAarch64::Str(const Register &rt, const MemoryOperand &operand)
 {
     uint32_t op;
@@ -667,6 +675,12 @@ void AssemblerAarch64::And(const Register &rd, const Register &rn, const Operand
     BitWiseOpShift(AND_Shift, rd, rn, operand);
 }
 
+void AssemblerAarch64::Ands(const Register &rd, const Register &rn, const Operand &operand)
+{
+    ASSERT(operand.IsShifted());
+    BitWiseOpShift(ANDS_Shift, rd, rn, operand);
+}
+
 void AssemblerAarch64::BitWiseOpImm(BitwiseOpCode op, const Register &rd, const Register &rn, uint64_t imm)
 {
     uint32_t code = Sf(!rd.IsW()) | op | imm | Rn(rn.GetId()) | Rd(rd.GetId());
@@ -972,6 +986,11 @@ void AssemblerAarch64::Tbnz(const Register &rt, int32_t bitPos, int32_t imm)
     uint32_t imm14 = (imm <<BRANCH_Imm14_LOWBITS) & BRANCH_Imm14_MASK;
     uint32_t code = b5 | BranchOpCode::TBNZ | b40 | imm14 | rt.GetId();
     EmitU32(code);
+}
+
+void AssemblerAarch64::Tst(const Register &rn, const Operand &operand)
+{
+    Ands(Register(Zero), rn, operand);
 }
 
 int32_t AssemblerAarch64::LinkAndGetInstOffsetToLabel(Label *label)
