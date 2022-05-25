@@ -43,7 +43,6 @@ public:
     inline static DataViewType GetType(JSType type);
     inline static uint32_t GetElementSize(const JSHandle<JSTypedArray> &obj);
     inline static uint32_t GetElementSize(JSType type);
-    inline static DataViewType GetTypeFromName(JSThread *thread, const JSHandle<JSTaggedValue> &typeName);
     inline static JSHandle<JSTaggedValue> GetConstructor(JSThread *thread, const JSHandle<JSTaggedValue> &obj);
     inline static JSHandle<JSFunction> GetConstructorFromName(JSThread *thread,
                                                               const JSHandle<JSTaggedValue> &typeName);

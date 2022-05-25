@@ -474,6 +474,9 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::ELEMENT_INDEX, factory->NewFromASCII("element"));
     SetConstant(ConstantIndex::FLAGS_INDEX, factory->NewFromASCII("flags"));
     SetConstant(ConstantIndex::G_INDEX, factory->NewFromASCII("g"));
+    SetConstant(ConstantIndex::NOT_EQUAL_INDEX, factory->NewFromASCII("not-equal"));
+    SetConstant(ConstantIndex::OK_INDEX, factory->NewFromASCII("ok"));
+    SetConstant(ConstantIndex::TIMEOUT_INDEX, factory->NewFromASCII("timed-out"));
 
     auto accessor = factory->NewInternalAccessor(reinterpret_cast<void *>(JSFunction::PrototypeSetter),
                                                  reinterpret_cast<void *>(JSFunction::PrototypeGetter));

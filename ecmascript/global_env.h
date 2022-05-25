@@ -81,6 +81,7 @@ class JSThread;
     V(JSTaggedValue, BuiltinsWeakSetFunction, BUILTINS_WEAK_SET_FUNCTION_INDEX)                     \
     V(JSTaggedValue, MapPrototype, MAP_PROTOTYPE_INDEX)                                             \
     V(JSTaggedValue, MathFunction, MATH_FUNCTION_INDEX)                                             \
+    V(JSTaggedValue, AtomicsFunction, ATOMICS_FUNCTION_INDEX)                                       \
     V(JSTaggedValue, JsonFunction, JSON_FUNCTION_INDEX)                                             \
     V(JSTaggedValue, StringFunction, STRING_FUNCTION_INDEX)                                         \
     V(JSTaggedValue, ProxyFunction, PROXY_FUNCTION_INDEX)                                           \

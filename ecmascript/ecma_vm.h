@@ -24,6 +24,7 @@
 #include "ecmascript/mem/chunk_containers.h"
 #include "ecmascript/taskpool/taskpool.h"
 #include "ecmascript/js_thread.h"
+#include "ecmascript/waiter_list.h"
 
 namespace panda {
 class JSNApi;
@@ -273,6 +274,21 @@ public:
         hostPromiseRejectionTracker_ = cb;
     }
 
+    void SetAllowAtomicWait(bool wait)
+    {
+        AllowAtomicWait_ = wait;
+    }
+
+    bool GetAllowAtomicWait() const
+    {
+        return AllowAtomicWait_;
+    }
+
+    WaiterListNode *GetWaiterListNode()
+    {
+        return &waiterListNode_;
+    }
+
     void PromiseRejectionTracker(const JSHandle<JSPromise> &promise,
                                  const JSHandle<JSTaggedValue> &reason, PromiseRejectionEvent operation)
     {
@@ -374,6 +390,9 @@ private:
     void* data_ {nullptr};
 
     bool isProcessingPendingJob_ = false;
+	// atomics
+    bool AllowAtomicWait_ {true};
+    WaiterListNode waiterListNode_;
 
     friend class Snapshot;
     friend class SnapshotProcessor;

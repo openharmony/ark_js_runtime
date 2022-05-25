@@ -30,6 +30,7 @@
 #include "ecmascript/builtins/builtins_array.h"
 #include "ecmascript/builtins/builtins_arraybuffer.h"
 #include "ecmascript/builtins/builtins_async_function.h"
+#include "ecmascript/builtins/builtins_atomics.h"
 #include "ecmascript/builtins/builtins_bigint.h"
 #include "ecmascript/builtins/builtins_boolean.h"
 #include "ecmascript/builtins/builtins_collator.h"
@@ -134,6 +135,7 @@ using StringIterator = builtins::BuiltinsStringIterator;
 using RegExp = builtins::BuiltinsRegExp;
 using Function = builtins::BuiltinsFunction;
 using Math = builtins::BuiltinsMath;
+using Atomics = builtins::BuiltinsAtomics;
 using ArrayBuffer = builtins::BuiltinsArrayBuffer;
 using Json = builtins::BuiltinsJson;
 using Proxy = builtins::BuiltinsProxy;
@@ -314,6 +316,7 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
 
     InitializeGlobalObject(env, globalObject);
     InitializeMath(env, objFuncPrototypeVal);
+    InitializeAtomics(env, objFuncPrototypeVal);
     InitializeJson(env, objFuncPrototypeVal);
     InitializeIterator(env, objFuncDynclass);
     InitializeProxy(env);
@@ -1355,6 +1358,34 @@ void Builtins::InitializeWeakSet(const JSHandle<GlobalEnv> &env, const JSHandle<
     SetStringTagSymbol(env, weakSetFuncPrototype, "WeakSet");
 
     env->SetBuiltinsWeakSetFunction(thread_, weakSetFunction);
+}
+
+void Builtins::InitializeAtomics(const JSHandle<GlobalEnv> &env,
+                                 const JSHandle<JSTaggedValue> &objFuncPrototypeVal) const
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    JSHandle<JSHClass> atomicsDynclass = factory_->NewEcmaDynClass(JSObject::SIZE, JSType::JS_OBJECT,
+                                                                   objFuncPrototypeVal);
+    JSHandle<JSObject> atomicsObject = factory_->NewJSObject(atomicsDynclass);
+    SetFunction(env, atomicsObject, "add", Atomics::Add, FunctionLength::THREE);
+    SetFunction(env, atomicsObject, "and", Atomics::And, FunctionLength::THREE);
+    SetFunction(env, atomicsObject, "sub", Atomics::Sub, FunctionLength::THREE);
+    SetFunction(env, atomicsObject, "or", Atomics::Or, FunctionLength::THREE);
+    SetFunction(env, atomicsObject, "xor", Atomics::Xor, FunctionLength::THREE);
+    SetFunction(env, atomicsObject, "compareExchange", Atomics::CompareExchange, FunctionLength::FOUR);
+    SetFunction(env, atomicsObject, "exchange", Atomics::Exchange, FunctionLength::THREE);
+    SetFunction(env, atomicsObject, "isLockFree", Atomics::IsLockFree, FunctionLength::ONE);
+    SetFunction(env, atomicsObject, "load", Atomics::Load, FunctionLength::TWO);
+    SetFunction(env, atomicsObject, "store", Atomics::Store, FunctionLength::THREE);
+    SetFunction(env, atomicsObject, "wait", Atomics::Wait, FunctionLength::FOUR);
+    SetFunction(env, atomicsObject, "notify", Atomics::Notify, FunctionLength::THREE);
+    JSHandle<JSTaggedValue> atomicsString(factory_->NewFromASCII("Atomics"));
+    JSHandle<JSObject> globalObject(thread_, env->GetGlobalObject());
+    PropertyDescriptor atomicsDesc(thread_, JSHandle<JSTaggedValue>::Cast(atomicsObject), true, false, true);
+    JSObject::DefineOwnProperty(thread_, globalObject, atomicsString, atomicsDesc);
+    // @@ToStringTag
+    SetStringTagSymbol(env, atomicsObject, "Atomics");
+    env->SetAtomicsFunction(thread_, atomicsObject);
 }
 
 void Builtins::InitializeMath(const JSHandle<GlobalEnv> &env, const JSHandle<JSTaggedValue> &objFuncPrototypeVal) const

@@ -141,6 +141,8 @@ private:
 
     void InitializeMath(const JSHandle<GlobalEnv> &env, const JSHandle<JSTaggedValue> &objFuncPrototypeVal) const;
 
+    void InitializeAtomics(const JSHandle<GlobalEnv> &env, const JSHandle<JSTaggedValue> &objFuncPrototypeVal) const;
+
     void InitializeJson(const JSHandle<GlobalEnv> &env, const JSHandle<JSTaggedValue> &objFuncPrototypeVal) const;
 
     void InitializeString(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &primRefObjDynclass) const;
