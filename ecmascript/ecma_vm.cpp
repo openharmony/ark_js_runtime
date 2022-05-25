@@ -330,7 +330,7 @@ EcmaVM::CpuProfilingScope::CpuProfilingScope(EcmaVM* vm) : vm_(vm), profiler_(nu
     JSRuntimeOptions options = vm_->GetJSOptions();
     if (options.EnableCpuProfiler()) {
         profiler_ = CpuProfiler::GetInstance();
-        profiler_->CpuProfiler::StartCpuProfiler(vm, "");
+        profiler_->CpuProfiler::StartCpuProfilerForFile(vm, "");
     }
 #endif
 }
@@ -339,7 +339,7 @@ EcmaVM::CpuProfilingScope::~CpuProfilingScope()
 {
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
     if (profiler_ != nullptr) {
-        profiler_->CpuProfiler::StopCpuProfiler();
+        profiler_->CpuProfiler::StopCpuProfilerForFile();
     }
 #endif
 }

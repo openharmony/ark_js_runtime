@@ -13,37 +13,40 @@
  * limitations under the License.
  */
 
-#include "ecmascript/dfx/cpu_profiler/profile_generator.h"
+#include "ecmascript/dfx/cpu_profiler/samples_record.h"
 
 #include <climits>
 #include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
 #include "ecmascript/interpreter/interpreter.h"
 namespace panda::ecmascript {
-bool ProfileGenerator::staticGcState_ = false;
-ProfileGenerator::ProfileGenerator()
+bool SamplesRecord::staticGcState_ = false;
+SamplesRecord::SamplesRecord()
 {
     stackTopLines_.push_back(0);
     struct MethodKey methodkey;
-    struct MethodNode methodNode;
+    struct ProfileNode methodNode;
     methodkey.method = reinterpret_cast<JSMethod*>(INT_MAX - 1);
     methodMap_.insert(std::make_pair(methodkey, methodMap_.size() + 1));
     methodNode.parentId = 0;
     methodNode.codeEntry.codeType = "JS";
-    methodNodes_.push_back(methodNode);
+    methodNode.codeEntry.functionName = "(root)";
+    methodNode.id = 1;
+    profileInfo_ = std::make_unique<struct ProfileInfo>();
+    profileInfo_->nodes.push_back(methodNode);
 }
 
-ProfileGenerator::~ProfileGenerator()
+SamplesRecord::~SamplesRecord()
 {
     if (fileHandle_.is_open()) {
         fileHandle_.close();
     }
 }
 
-void ProfileGenerator::AddSample(CVector<JSMethod *> sample, uint64_t sampleTimeStamp)
+void SamplesRecord::AddSample(CVector<JSMethod *> sample, uint64_t sampleTimeStamp, bool outToFile)
 {
     static int PreviousId = 0;
     struct MethodKey methodkey;
-    struct MethodNode methodNode;
+    struct ProfileNode methodNode;
     if (staticGcState_) {
         methodkey.method = reinterpret_cast<JSMethod*>(INT_MAX);
         methodNode.parentId = methodkey.parentId = PreviousId;
@@ -53,7 +56,14 @@ void ProfileGenerator::AddSample(CVector<JSMethod *> sample, uint64_t sampleTime
             methodMap_.insert(std::make_pair(methodkey, methodNode.id));
             methodNode.codeEntry = GetGcInfo();
             stackTopLines_.push_back(0);
-            methodNodes_.push_back(methodNode);
+            profileInfo_->nodes.push_back(methodNode);
+            if (!outToFile) {
+                if (UNLIKELY(methodNode.parentId) == 0) {
+                    profileInfo_->nodes[0].children.push_back(methodNode.id);
+                } else {
+                    profileInfo_->nodes[methodNode.parentId - 1].children.push_back(methodNode.id);
+                }
+            }
         } else {
             methodNode.id = result->second;
         }
@@ -74,7 +84,10 @@ void ProfileGenerator::AddSample(CVector<JSMethod *> sample, uint64_t sampleTime
                 PreviousId = methodNode.id = id;
                 methodNode.codeEntry = GetMethodInfo(methodkey.method);
                 stackTopLines_.push_back(methodNode.codeEntry.lineNumber);
-                methodNodes_.push_back(methodNode);
+                profileInfo_->nodes.push_back(methodNode);
+                if (!outToFile) {
+                    profileInfo_->nodes[methodNode.parentId - 1].children.push_back(id);
+                }
             } else {
                 PreviousId = methodNode.id = result->second;
             }
@@ -82,21 +95,24 @@ void ProfileGenerator::AddSample(CVector<JSMethod *> sample, uint64_t sampleTime
     }
     static uint64_t threadStartTime = 0;
     struct SampleInfo sampleInfo;
-    sampleInfo.id = methodNode.id == 0 ? PreviousId = 1, 1 : methodNode.id;
-    sampleInfo.line = stackTopLines_[methodNode.id];
-    if (threadStartTime == 0) {
-        sampleInfo.timeStamp = sampleTimeStamp - threadStartTime_;
+    int sampleNodeId = methodNode.id == 0 ? PreviousId = 1, 1 : methodNode.id;
+    int timeDelta = sampleTimeStamp - (threadStartTime == 0 ? profileInfo_->startTime : threadStartTime);
+    if (outToFile) {
+        sampleInfo.id = sampleNodeId;
+        sampleInfo.line = stackTopLines_[methodNode.id];
+        sampleInfo.timeStamp = timeDelta;
+        samples_.push_back(sampleInfo);
     } else {
-        sampleInfo.timeStamp = sampleTimeStamp - threadStartTime;
+        profileInfo_->samples.push_back(sampleNodeId);
+        profileInfo_->timeDeltas.push_back(timeDelta);
     }
-    samples_.push_back(sampleInfo);
     threadStartTime = sampleTimeStamp;
 }
 
-void ProfileGenerator::WriteAddNodes()
+void SamplesRecord::WriteAddNodes()
 {
     sampleData_ += "{\"args\":{\"data\":{\"cpuProfile\":{\"nodes\":[";
-    for (auto it : methodNodes_) {
+    for (auto it : profileInfo_->nodes) {
         sampleData_ += "{\"callFrame\":{\"codeType\":\"" + it.codeEntry.codeType + "\",";
         if (it.parentId == 0) {
             sampleData_ += "\"functionName\":\"(root)\",\"scriptId\":0},\"id\":1},";
@@ -118,7 +134,7 @@ void ProfileGenerator::WriteAddNodes()
     sampleData_ += "],\"samples\":[";
 }
 
-void ProfileGenerator::WriteAddSamples()
+void SamplesRecord::WriteAddSamples()
 {
     if (samples_.empty()) {
         return;
@@ -137,18 +153,18 @@ void ProfileGenerator::WriteAddSamples()
     sampleData_ += sampleId + "]},\"lines\":[" + sampleLine + "],\"timeDeltas\":[" + timeStamp + "]}},";
 }
 
-void ProfileGenerator::WriteMethodsAndSampleInfo(bool timeEnd)
+void SamplesRecord::WriteMethodsAndSampleInfo(bool timeEnd)
 {
-    if (methodNodes_.size() >= 10) { // 10:Number of nodes currently stored
+    if (profileInfo_->nodes.size() >= 10) { // 10:Number of nodes currently stored
         WriteAddNodes();
         WriteAddSamples();
-        methodNodes_.clear();
+        profileInfo_->nodes.clear();
         samples_.clear();
     } else if (samples_.size() == 100 || timeEnd) { // 100:Number of samples currently stored
-        if (!methodNodes_.empty()) {
+        if (!profileInfo_->nodes.empty()) {
             WriteAddNodes();
             WriteAddSamples();
-            methodNodes_.clear();
+            profileInfo_->nodes.clear();
             samples_.clear();
         } else if (!samples_.empty()) {
             sampleData_ += "{\"args\":{\"data\":{\"cpuProfile\":{\"samples\":[";
@@ -162,7 +178,7 @@ void ProfileGenerator::WriteMethodsAndSampleInfo(bool timeEnd)
                     "\"0x2\",\"name\":\"ProfileChunk\",\"ph\":\"P\",\"pid\":";
     pid_t pid = getpid();
     int64_t tid = syscall(SYS_gettid);
-    uint64_t ts = ProfileProcessor::GetMicrosecondsTimeStamp();
+    uint64_t ts = SamplingProcessor::GetMicrosecondsTimeStamp();
     ts = ts % TIME_CHANGE;
     struct timespec time = {0, 0};
     clock_gettime(CLOCK_MONOTONIC, &time);
@@ -173,24 +189,24 @@ void ProfileGenerator::WriteMethodsAndSampleInfo(bool timeEnd)
                    std::to_string(tts) + "},\n";
 }
 
-CVector<struct MethodNode> ProfileGenerator::GetMethodNodes() const
+CVector<struct ProfileNode> SamplesRecord::GetMethodNodes() const
 {
-    return methodNodes_;
+    return profileInfo_->nodes;
 }
 
-CDeque<struct SampleInfo> ProfileGenerator::GetSamples() const
+CDeque<struct SampleInfo> SamplesRecord::GetSamples() const
 {
     return samples_;
 }
 
-std::string ProfileGenerator::GetSampleData() const
+std::string SamplesRecord::GetSampleData() const
 {
     return sampleData_;
 }
 
-struct StackInfo ProfileGenerator::GetMethodInfo(JSMethod *method)
+struct FrameInfo SamplesRecord::GetMethodInfo(JSMethod *method)
 {
-    struct StackInfo entry;
+    struct FrameInfo entry;
     auto iter = CpuProfiler::staticStackInfo_.find(method);
     if (iter != CpuProfiler::staticStackInfo_.end()) {
         entry = iter->second;
@@ -198,36 +214,46 @@ struct StackInfo ProfileGenerator::GetMethodInfo(JSMethod *method)
     return entry;
 }
 
-struct StackInfo ProfileGenerator::GetGcInfo()
+struct FrameInfo SamplesRecord::GetGcInfo()
 {
-    struct StackInfo gcEntry;
+    struct FrameInfo gcEntry;
     gcEntry.codeType = "jsvm";
     gcEntry.functionName = "garbage collector";
     return gcEntry;
 }
 
-void ProfileGenerator::SetThreadStartTime(uint64_t threadStartTime)
+void SamplesRecord::SetThreadStartTime(uint64_t threadStartTime)
 {
-    threadStartTime_ = threadStartTime;
+    profileInfo_->startTime = threadStartTime;
 }
 
-void ProfileGenerator::SetStartsampleData(std::string sampleData)
+void SamplesRecord::SetThreadStopTime(uint64_t threadStopTime)
+{
+    profileInfo_->stopTime = threadStopTime;
+}
+
+void SamplesRecord::SetStartsampleData(std::string sampleData)
 {
     sampleData_ += sampleData;
 }
 
-void ProfileGenerator::SetFileName(std::string &fileName)
+void SamplesRecord::SetFileName(std::string &fileName)
 {
     fileName_ = fileName;
 }
 
-const std::string ProfileGenerator::GetFileName() const
+const std::string SamplesRecord::GetFileName() const
 {
     return fileName_;
 }
 
-void ProfileGenerator::ClearSampleData()
+void SamplesRecord::ClearSampleData()
 {
     sampleData_.clear();
+}
+
+std::unique_ptr<struct ProfileInfo> SamplesRecord::GetProfileInfo()
+{
+    return std::move(profileInfo_);
 }
 } // namespace panda::ecmascript

@@ -18,8 +18,8 @@
 
 #include <semaphore.h>
 
-#include "ecmascript/dfx/cpu_profiler/profile_generator.h"
-#include "ecmascript/dfx/cpu_profiler/profile_processor.h"
+#include "ecmascript/dfx/cpu_profiler/samples_record.h"
+#include "ecmascript/dfx/cpu_profiler/sampling_processor.h"
 #include "os/mutex.h"
 
 namespace panda::ecmascript {
@@ -54,12 +54,14 @@ public:
     static void IsNeedAndGetStack(JSThread *thread);
     static void GetStackSignalHandler(int signal);
 
-    static CMap<JSMethod *, struct StackInfo> staticStackInfo_;
+    static CMap<JSMethod *, struct FrameInfo> staticStackInfo_;
     static sem_t sem_;
     static CVector<JSMethod *> staticFrameStack_;
 
-    void StartCpuProfiler(const EcmaVM *vm, const std::string &fileName);
-    void StopCpuProfiler();
+    void StartCpuProfilerForInfo(const EcmaVM *vm);
+    std::unique_ptr<struct ProfileInfo> StopCpuProfilerForInfo();
+    void StartCpuProfilerForFile(const EcmaVM *vm, const std::string &fileName);
+    void StopCpuProfilerForFile();
     std::string GetProfileName() const;
     virtual ~CpuProfiler();
 
@@ -73,10 +75,11 @@ private:
     void GetCurrentProcessInfo(struct CurrentProcessInfo &currentProcessInfo);
     bool CheckFileName(const std::string &fileName, std::string &absoluteFilePath) const;
 
-    bool isOnly_ = false;
+    bool isProfiling_ = false;
+    bool outToFile_ = false;
     int interval_ = 500; // 500:Sampling interval 500 microseconds
     std::string fileName_ = "";
-    ProfileGenerator *generator_ = nullptr;
+    SamplesRecord *generator_ = nullptr;
     pthread_t tid_ = 0;
 };
 } // namespace panda::ecmascript
