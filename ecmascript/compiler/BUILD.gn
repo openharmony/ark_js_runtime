@@ -66,6 +66,7 @@ source_set("libark_jsoptimizer_set") {
     "trampoline/aarch64/assembler_stubs.cpp",
     "trampoline/x64/assembler_stubs_x64.cpp",
     "type.cpp",
+    "type_inference/type_infer.cpp",
     "verifier.cpp",
   ]
 

@@ -391,11 +391,6 @@ void TSLoader::Iterate(const RootVisitor &v)
     }
 }
 
-GlobalTSTypeRef TSLoader::GetPrimitiveGT(TSTypeKind kind) const
-{
-    return GlobalTSTypeRef(static_cast<uint64_t>(kind));
-}
-
 GlobalTSTypeRef TSLoader::GetImportTypeTargetGT(GlobalTSTypeRef gt) const
 {
     JSThread *thread = vm_->GetJSThread();

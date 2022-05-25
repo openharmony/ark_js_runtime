@@ -104,9 +104,9 @@ GateType GateAccessor::GetGateType(GateRef gate)
     return circuit_->LoadGatePtr(gate)->GetGateType();
 }
 
-void GateAccessor::SetGateType(GateRef gate, GateType gt)
+bool GateAccessor::SetGateType(GateRef gate, GateType gt)
 {
-    circuit_->LoadGatePtr(gate)->SetGateType(gt);
+    return circuit_->LoadGatePtr(gate)->SetGateType(gt);
 }
 
 void GateAccessor::DeleteExceptionDep(UsesIterator &useIt)

@@ -209,7 +209,10 @@ public:
     GlobalTSTypeRef PUBLIC_API GetGTFromPandaFile(const panda_file::File &pf, uint32_t vregId,
                                                  const JSMethod* method) const;
 
-    GlobalTSTypeRef PUBLIC_API GetPrimitiveGT(TSTypeKind kind) const;
+    static GlobalTSTypeRef PUBLIC_API GetPrimitiveGT(TSTypeKind kind)
+    {
+        return GlobalTSTypeRef(static_cast<uint64_t>(kind));
+    }
 
     GlobalTSTypeRef PUBLIC_API GetImportTypeTargetGT(GlobalTSTypeRef gt) const;
 
@@ -267,6 +270,86 @@ private:
     JSTaggedValue globalModuleTable_ {JSTaggedValue::Hole()};
     CVector<JSTaggedType> constantStringTable_ {};
     friend class EcmaVM;
+};
+
+class GateTypeCoder {
+public:
+    explicit GateTypeCoder() {}
+    ~GateTypeCoder() = default;
+
+    static kungfu::GateType GetAnyType()
+    {
+        auto numberType = static_cast<kungfu::GateType>
+            (TSLoader::GetPrimitiveGT(TSTypeKind::TS_ANY).GetGlobalTSTypeRef());
+        return numberType;
+    }
+
+    static kungfu::GateType GetNumberType()
+    {
+        auto numberType = static_cast<kungfu::GateType>
+            (TSLoader::GetPrimitiveGT(TSTypeKind::TS_NUMBER).GetGlobalTSTypeRef());
+        return numberType;
+    }
+
+    static kungfu::GateType GetBooleanType()
+    {
+        auto numberType = static_cast<kungfu::GateType>
+            (TSLoader::GetPrimitiveGT(TSTypeKind::TS_BOOLEAN).GetGlobalTSTypeRef());
+        return numberType;
+    }
+
+    static kungfu::GateType GetVoidType()
+    {
+        auto stringType = static_cast<kungfu::GateType>
+            (TSLoader::GetPrimitiveGT(TSTypeKind::TS_VOID).GetGlobalTSTypeRef());
+        return stringType;
+    }
+
+    static kungfu::GateType GetStringType()
+    {
+        auto stringType = static_cast<kungfu::GateType>
+            (TSLoader::GetPrimitiveGT(TSTypeKind::TS_STRING).GetGlobalTSTypeRef());
+        return stringType;
+    }
+
+    static kungfu::GateType GetSymbolType()
+    {
+        auto stringType = static_cast<kungfu::GateType>
+            (TSLoader::GetPrimitiveGT(TSTypeKind::TS_SYMBOL).GetGlobalTSTypeRef());
+        return stringType;
+    }
+
+    static kungfu::GateType GetNullType()
+    {
+        auto stringType = static_cast<kungfu::GateType>
+            (TSLoader::GetPrimitiveGT(TSTypeKind::TS_NULL).GetGlobalTSTypeRef());
+        return stringType;
+    }
+
+    static kungfu::GateType GetUndefinedType()
+    {
+        auto stringType = static_cast<kungfu::GateType>
+            (TSLoader::GetPrimitiveGT(TSTypeKind::TS_UNDEFINED).GetGlobalTSTypeRef());
+        return stringType;
+    }
+
+    static kungfu::GateType GetGateTypeByTypeRef(GlobalTSTypeRef typeRef)
+    {
+        auto gateType = static_cast<kungfu::GateType>(typeRef.GetGlobalTSTypeRef());
+        return gateType;
+    }
+
+    static bool IsString(kungfu::GateType gateType)
+    {
+        auto stringType = GetStringType();
+        return (gateType == stringType);
+    }
+
+    static bool IsAny(kungfu::GateType gateType)
+    {
+        auto anyType = GetAnyType();
+        return (gateType == anyType);
+    }
 };
 }  // namespace panda::ecmascript
 

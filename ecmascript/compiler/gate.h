@@ -325,7 +325,7 @@ public:
     [[nodiscard]] OpCode GetOpCode() const;
     void SetOpCode(OpCode opcode);
     [[nodiscard]] GateType GetGateType() const;
-    void SetGateType(GateType type);
+    bool SetGateType(GateType type);
     [[nodiscard]] GateId GetId() const;
     [[nodiscard]] size_t GetNumIns() const;
     [[nodiscard]] size_t GetStateCount() const;
