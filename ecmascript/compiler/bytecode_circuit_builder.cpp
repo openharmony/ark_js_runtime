@@ -451,7 +451,7 @@ void BytecodeCircuitBuilder::ComputeDominatorTree()
     }
 
     // compute immediate dominator
-    immDom[0] = static_cast<int32_t>(doms[0].front());
+    immDom[0] = static_cast<size_t>(doms[0].front());
     for (size_t i = 1; i < doms.size(); i++) {
         if (graph_[i].isDead) {
             continue;
