@@ -1054,7 +1054,7 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
                                                   targetType, kNumberHandle, true);
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
             k++;
-            targetByteIndex = targetByteIndex + targetElementSize;
+            targetByteIndex = targetByteIndex + static_cast<int32_t>(targetElementSize);
         }
         // 25. Return undefined.
         return JSTaggedValue::Undefined();
