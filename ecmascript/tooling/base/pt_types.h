@@ -1535,9 +1535,21 @@ public:
     static std::unique_ptr<RuntimeCallFrame> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
 
+    RuntimeCallFrame &SetFunctionName(const CString &functionName)
+    {
+        functionName_ = functionName;
+        return *this;
+    }
+
     const CString &GetFunctionName() const
     {
         return functionName_;
+    }
+
+    RuntimeCallFrame &SetScriptId(const CString &scriptId)
+    {
+        scriptId_ = scriptId;
+        return *this;
     }
 
     const CString &GetScriptId() const
@@ -1545,14 +1557,32 @@ public:
         return scriptId_;
     }
 
+    RuntimeCallFrame &SetUrl(const CString &url)
+    {
+        url_ = url;
+        return *this;
+    }
+
     const CString &GetUrl() const
     {
         return url_;
     }
 
+    RuntimeCallFrame &SetLineNumber(int32_t lineNumber)
+    {
+        lineNumber_ = lineNumber;
+        return *this;
+    }
+
     int32_t GetLineNumber() const
     {
         return lineNumber_;
+    }
+
+    RuntimeCallFrame &SetColumnNumber(int32_t columnNumber)
+    {
+        columnNumber_ = columnNumber;
+        return *this;
     }
 
     int32_t GetColumnNumber() const
@@ -1721,7 +1751,7 @@ public:
         return id_;
     }
 
-    ProfileNode &SetId(size_t id)
+    ProfileNode &SetId(int32_t id)
     {
         id_ = id;
         return *this;
@@ -1754,7 +1784,7 @@ public:
         return hitCount_.has_value();
     }
 
-    const CVector<std::unique_ptr<int32_t>> *GetChildren() const
+    const CVector<int32_t> *GetChildren() const
     {
         if (children_) {
             return &children_.value();
@@ -1762,7 +1792,7 @@ public:
         return nullptr;
     }
 
-    ProfileNode &SetChildren(CVector<std::unique_ptr<int32_t>> children)
+    ProfileNode &SetChildren(CVector<int32_t> children)
     {
         children_ = std::move(children);
         return *this;
@@ -1811,10 +1841,10 @@ public:
 private:
     NO_COPY_SEMANTIC(ProfileNode);
     NO_MOVE_SEMANTIC(ProfileNode);
-    size_t id_ {0};
+    int32_t id_ {0};
     std::unique_ptr<RuntimeCallFrame> callFrame_ {nullptr};
     std::optional<size_t> hitCount_ {0};
-    std::optional<CVector<std::unique_ptr<int32_t>>> children_ {};
+    std::optional<CVector<int32_t>> children_ {};
     std::optional<CVector<std::unique_ptr<PositionTickInfo>>> positionTicks_ {};
     std::optional<CString> deoptReason_ {};
 };
@@ -1828,7 +1858,7 @@ public:
     static std::unique_ptr<Profile> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
 
-    int32_t GetStartTime() const
+    uint64_t GetStartTime() const
     {
         return startTime_;
     }
@@ -1839,7 +1869,7 @@ public:
         return *this;
     }
 
-    int32_t GetEndTime() const
+    uint64_t GetEndTime() const
     {
         return endTime_;
     }
@@ -1861,7 +1891,7 @@ public:
         return *this;
     }
 
-    const CVector<std::unique_ptr<int32_t>> *GetSamples() const
+    const CVector<int32_t> *GetSamples() const
     {
         if (samples_) {
             return &samples_.value();
@@ -1869,7 +1899,7 @@ public:
         return nullptr;
     }
 
-    Profile &SetSamples(CVector<std::unique_ptr<int32_t>> samples)
+    Profile &SetSamples(CVector<int32_t> samples)
     {
         samples_ = std::move(samples);
         return *this;
@@ -1880,7 +1910,7 @@ public:
         return samples_.has_value();
     }
 
-    const CVector<std::unique_ptr<int32_t>> *GetTimeDeltas() const
+    const CVector<int32_t> *GetTimeDeltas() const
     {
         if (timeDeltas_) {
             return &timeDeltas_.value();
@@ -1888,7 +1918,7 @@ public:
         return nullptr;
     }
 
-    Profile &SetTimeDeltas(CVector<std::unique_ptr<int32_t>> timeDeltas)
+    Profile &SetTimeDeltas(CVector<int32_t> timeDeltas)
     {
         timeDeltas_ = std::move(timeDeltas);
         return *this;
@@ -1906,8 +1936,8 @@ private:
     size_t startTime_ {0};
     size_t endTime_ {0};
     CVector<std::unique_ptr<ProfileNode>> nodes_ {};
-    std::optional<CVector<std::unique_ptr<int32_t>>> samples_ {};
-    std::optional<CVector<std::unique_ptr<int32_t>>> timeDeltas_ {};
+    std::optional<CVector<int32_t>> samples_ {};
+    std::optional<CVector<int32_t>> timeDeltas_ {};
 };
 
 // Profiler.Coverage
