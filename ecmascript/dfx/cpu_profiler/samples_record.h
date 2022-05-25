@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_PROFILE_GENERSTOR_H
-#define ECMASCRIPT_PROFILE_GENERSTOR_H
+#ifndef ECMASCRIPT_SAMPLES_RECORD_H
+#define ECMASCRIPT_SAMPLES_RECORD_H
 
 #include <ctime>
 #include <fstream>
@@ -25,7 +25,7 @@
 #include "ecmascript/mem/c_containers.h"
 namespace panda::ecmascript {
 const long long TIME_CHANGE = 10000000000000; // 10000000000000:Discard the first 3 bits of the current nanosecond time
-struct StackInfo {
+struct FrameInfo {
     std::string codeType = "";
     std::string functionName = "";
     int columnNumber = 0;
@@ -33,15 +33,23 @@ struct StackInfo {
     int scriptId = 0;
     std::string url = "";
 };
-struct MethodNode {
+struct ProfileNode {
     int id = 0;
     int parentId = 0;
-    struct StackInfo codeEntry;
+    struct FrameInfo codeEntry;
+    CVector<int> children;
+};
+struct ProfileInfo {
+    uint64_t startTime = 0;
+    uint64_t stopTime = 0;
+    CVector<struct ProfileNode> nodes;
+    CVector<int> samples;
+    CVector<int> timeDeltas;
 };
 struct SampleInfo {
     int id = 0;
     int line = 0;
-    uint64_t timeStamp = 0;
+    int timeStamp = 0;
 };
 struct MethodKey {
     JSMethod *method = nullptr;
@@ -52,21 +60,23 @@ struct MethodKey {
     }
 };
 
-class ProfileGenerator {
+class SamplesRecord {
 public:
-    explicit ProfileGenerator();
-    virtual ~ProfileGenerator();
+    explicit SamplesRecord();
+    virtual ~SamplesRecord();
 
-    void AddSample(CVector<JSMethod *> sample, uint64_t sampleTimeStamp);
+    void AddSample(CVector<JSMethod *> sample, uint64_t sampleTimeStamp, bool outToFile);
     void WriteMethodsAndSampleInfo(bool timeEnd);
-    CVector<struct MethodNode> GetMethodNodes() const;
+    CVector<struct ProfileNode> GetMethodNodes() const;
     CDeque<struct SampleInfo> GetSamples() const;
     std::string GetSampleData() const;
     void SetThreadStartTime(uint64_t threadStartTime);
+    void SetThreadStopTime(uint64_t threadStopTime);
     void SetStartsampleData(std::string sampleData);
     void SetFileName(std::string &fileName);
     const std::string GetFileName() const;
     void ClearSampleData();
+    std::unique_ptr<struct ProfileInfo> GetProfileInfo();
 
     static bool staticGcState_;
     std::ofstream fileHandle_;
@@ -74,16 +84,15 @@ public:
 private:
     void WriteAddNodes();
     void WriteAddSamples();
-    struct StackInfo GetMethodInfo(JSMethod *method);
-    struct StackInfo GetGcInfo();
+    struct FrameInfo GetMethodInfo(JSMethod *method);
+    struct FrameInfo GetGcInfo();
 
-    CVector<struct MethodNode> methodNodes_;
+    std::unique_ptr<struct ProfileInfo> profileInfo_;
     CVector<int> stackTopLines_;
     CMap<struct MethodKey, int> methodMap_;
     CDeque<struct SampleInfo> samples_;
     std::string sampleData_ = "";
-    uint64_t threadStartTime_ = 0;
     std::string fileName_ = "";
 };
 } // namespace panda::ecmascript
-#endif // ECMASCRIPT_PROFILE_GENERSTOR_H
+#endif // ECMASCRIPT_SAMPLES_RECORD_H
