@@ -18,6 +18,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -30,11 +31,13 @@ namespace ecmascript {
 class EcmaVM;
 class Stream;
 class Progress;
+struct ProfileInfo;
 }
 class DFXJSNApi;
 using EcmaVM = ecmascript::EcmaVM;
 using Stream = ecmascript::Stream;
 using Progress = ecmascript::Progress;
+using ProfileInfo = ecmascript::ProfileInfo;
 
 class PUBLIC_API DFXJSNApi {
 public:
@@ -61,6 +64,8 @@ public:
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
     static void StartCpuProfilerForFile(const EcmaVM *vm, const std::string &fileName);
     static void StopCpuProfilerForFile();
+    static void StartCpuProfilerForInfo(const EcmaVM *vm);
+    static std::unique_ptr<ProfileInfo> StopCpuProfilerForInfo();
 #endif
 
     static void ResumeVM(const EcmaVM *vm);
