@@ -664,6 +664,6 @@ bool Heap::IsAlive(TaggedObject *object) const
 bool Heap::ContainObject(TaggedObject *object) const
 {
     Region *region = Region::ObjectAddressToRange(object);
-    return !region->IsInvalid();
+    return !region->IsReclaimed();
 }
 }  // namespace panda::ecmascript

@@ -56,6 +56,7 @@ Region *HeapRegionAllocator::AllocateAlignedRegion(Space *space, size_t capacity
 void HeapRegionAllocator::FreeRegion(Region *region)
 {
     auto size = region->GetCapacity();
+    region->SetReclaimed();
     DecreaseAnnoMemoryUsage(size);
 #if ECMASCRIPT_ENABLE_ZAP_MEM
     if (memset_s(ToVoidPtr(region->GetAllocateBase()), size, INVALID_VALUE, size) != EOK) {
