@@ -660,14 +660,12 @@ void JSBackend::GetLocalVariables(const InterpretedFrameHandler *frameHandler, c
             localObj->DefineProperty(ecmaVm_, name, descriptor);
         }
     }
-    if (thisVal->IsUndefined()) {
+    if (!hasThis) {
         thisVal = DebuggerApi::GetLexicalValueInfo(ecmaVm_, "this");
     }
 
-    if (hasThis) {
-        // closure variables are stored in env
-        DebuggerApi::SetClosureVariables(ecmaVm_, frameHandler, localObj);
-    }
+    // closure variables are stored in env
+    DebuggerApi::SetClosureVariables(ecmaVm_, frameHandler, localObj);
 }
 
 void JSBackend::UpdateScopeObject(const InterpretedFrameHandler *frameHandler,
