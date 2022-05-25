@@ -132,9 +132,6 @@ public:
         ASSERT(regExpParserCache_ != nullptr);
         return regExpParserCache_;
     }
-
-    JSMethod *GetMethodForNativeFunction(const void *func);
-    JSMethod *GenerateMethodForAOTFunction(const void *func, size_t numArgs);
     void UpdateMethodInFunc(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile);
 
     EcmaStringTable *GetEcmaStringTable() const
@@ -323,8 +320,6 @@ private:
 
     void ClearBufferData();
 
-    void ClearNativeMethodsData();
-
     void LoadAOTFile(const std::string &fileName);
 
     NO_MOVE_SEMANTIC(EcmaVM);
@@ -364,7 +359,6 @@ private:
     CMap<const JSPandaFile *, JSTaggedValue> cachedConstpools_ {};
 
     // VM resources.
-    ChunkVector<JSMethod *> nativeMethods_;
     ModuleManager *moduleManager_ {nullptr};
     TSLoader *tsLoader_ {nullptr};
     SnapshotEnv *snapshotEnv_ {nullptr};

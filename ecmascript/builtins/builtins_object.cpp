@@ -962,9 +962,9 @@ JSTaggedValue BuiltinsObject::FromEntries(EcmaRuntimeCallInfo *argv)
     // 5. Let lengthDefine be the number of non-optional parameters of the function definition in
     //    CreateDataPropertyOnObject Functions.
     // 6. Let adder be ! CreateBuiltinFunction(stepsDefine, lengthDefine, "", « »).
+    JSMethod* method = factory->GetMethodByIndex(MethodIndex::BUILTINS_OBJECT_CREATE_DATA_PROPERTY_ON_OBJECT_FUNCTIONS);
     JSHandle<JSFunction> addrFunc =
-        factory->NewJSFunction(env, reinterpret_cast<void *>(CreateDataPropertyOnObjectFunctions),
-                               FunctionKind::NORMAL_FUNCTION);
+        factory->NewJSFunction(env, method, FunctionKind::NORMAL_FUNCTION);
 
     JSHandle<JSTaggedValue> adder(thread, addrFunc.GetTaggedValue());
 

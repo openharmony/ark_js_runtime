@@ -79,7 +79,7 @@ public:
         auto ecmaVm = thread->GetEcmaVM();
         ObjectFactory *factory = ecmaVm->GetFactory();
         JSHandle<GlobalEnv> env = ecmaVm->GetGlobalEnv();
-        JSMethod *method = ecmaVm->GetMethodForNativeFunction(reinterpret_cast<void *>(codeEntry));
+        JSMethod *method = factory->NewMethodForNativeFunction(reinterpret_cast<void *>(codeEntry));
         method->SetAotCodeBit(true);
         method->SetNativeBit(false);
         method->SetNumArgsWithCallField(numArgs);
@@ -1157,8 +1157,8 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     EXPECT_EQ(resultVal7, expectResult7);
 
     // obj is callable
-    JSHandle<JSPromiseReactionsFunction> resolveCallable =
-        factory->CreateJSPromiseReactionsFunction(reinterpret_cast<void *>(BuiltinsPromiseHandler::Resolve));
+    JSHandle<JSPromiseReactionsFunction> resolveCallable = factory->CreateJSPromiseReactionsFunction(
+        MethodIndex::BUILTINS_PROMISE_HANDLER_RESOLVE);
     JSTaggedValue expectResult8= FastRuntimeStub::FastTypeOf(thread, resolveCallable.GetTaggedValue());
     JSTaggedValue resultVal8 = typeOfPtr(thread->GetGlueAddr(), resolveCallable.GetTaggedValue().GetRawData());
     EXPECT_EQ(resultVal8, globalConst->GetFunctionString());

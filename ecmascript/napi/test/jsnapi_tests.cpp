@@ -769,7 +769,7 @@ HWTEST_F_L0(JSNApiTests, InheritPrototype_003)
     auto factory = vm_->GetFactory();
 
     JSMethod *invokeSelf =
-        vm_->GetMethodForNativeFunction(reinterpret_cast<void *>(BuiltinsFunction::FunctionPrototypeInvokeSelf));
+        factory->NewMethodForNativeFunction(reinterpret_cast<void *>(BuiltinsFunction::FunctionPrototypeInvokeSelf));
     // father type
     JSHandle<JSHClass> protoDynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithProto());
     JSHandle<JSFunction> protoFunc = factory->NewJSFunctionByDynClass(invokeSelf, protoDynclass);
@@ -815,8 +815,9 @@ HWTEST_F_L0(JSNApiTests, InheritPrototype_004)
     JSHandle<JSTaggedValue> addMethod = JSObject::GetMethod(thread_, weakSet, addString);
 
     JSMethod *invokeSelf =
-        vm_->GetMethodForNativeFunction(reinterpret_cast<void *>(BuiltinsFunction::FunctionPrototypeInvokeSelf));
-    JSMethod *ctor = vm_->GetMethodForNativeFunction(reinterpret_cast<void *>(BuiltinsFunction::FunctionConstructor));
+        factory->NewMethodForNativeFunction(reinterpret_cast<void *>(BuiltinsFunction::FunctionPrototypeInvokeSelf));
+    JSMethod *ctor =
+        factory->NewMethodForNativeFunction(reinterpret_cast<void *>(BuiltinsFunction::FunctionConstructor));
 
     JSHandle<JSHClass> protoDynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithProto());
     JSHandle<JSFunction> funcFuncPrototype = factory->NewJSFunctionByDynClass(invokeSelf, protoDynclass);
@@ -845,8 +846,8 @@ HWTEST_F_L0(JSNApiTests, InheritPrototype_004)
     JSHandle<JSHClass> funcFuncNoProtoProtoIntanceDynclass =
        factory->NewEcmaDynClass(JSFunction::SIZE, JSType::JS_FUNCTION, funcFuncNoProtoPrototypeValue);
     // new with NewJSFunctionByDynClass::function DynClass
-    JSHandle<JSFunction> noProtoFunc =
-       factory->NewJSFunctionByDynClass(ctor, funcFuncNoProtoProtoIntanceDynclass, FunctionKind::BUILTIN_CONSTRUCTOR);
+    JSHandle<JSFunction> noProtoFunc = factory->NewJSFunctionByDynClass(ctor,
+        funcFuncNoProtoProtoIntanceDynclass, FunctionKind::BUILTIN_CONSTRUCTOR);
     EXPECT_TRUE(*noProtoFunc != nullptr);
     // set property that has same key with fater type
     PropertyDescriptor desc2 = PropertyDescriptor(thread_, defaultString);

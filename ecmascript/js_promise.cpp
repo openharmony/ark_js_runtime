@@ -37,15 +37,15 @@ JSHandle<ResolvingFunctionsRecord> JSPromise::CreateResolvingFunctions(JSThread 
     record->SetValue(thread, JSTaggedValue::False());
 
     // 2. Let resolve be a new built-in function object as defined in Promise Resolve Functions (25.4.1.3.2).
-    JSHandle<JSPromiseReactionsFunction> resolve =
-        factory->CreateJSPromiseReactionsFunction(reinterpret_cast<void *>(BuiltinsPromiseHandler::Resolve));
+    JSHandle<JSPromiseReactionsFunction> resolve = factory->CreateJSPromiseReactionsFunction(
+        MethodIndex::BUILTINS_PROMISE_HANDLER_RESOLVE);
     // 3. Set the [[Promise]] internal slot of resolve to promise.
     resolve->SetPromise(thread, promise);
     // 4. Set the [[AlreadyResolved]] internal slot of resolve to alreadyResolved.
     resolve->SetAlreadyResolved(thread, record);
     // 5. Let reject be a new built-in function object as defined in Promise Reject Functions (25.4.1.3.1).
-    JSHandle<JSPromiseReactionsFunction> reject =
-        factory->CreateJSPromiseReactionsFunction(reinterpret_cast<void *>(BuiltinsPromiseHandler::Reject));
+    JSHandle<JSPromiseReactionsFunction> reject = factory->CreateJSPromiseReactionsFunction(
+        MethodIndex::BUILTINS_PROMISE_HANDLER_REJECT);
     // 6. Set the [[Promise]] internal slot of reject to promise.
     reject->SetPromise(thread, promise);
     // 7. Set the [[AlreadyResolved]] internal slot of reject to alreadyResolved.
@@ -92,8 +92,7 @@ JSHandle<PromiseCapability> JSPromise::NewPromiseCapability(JSThread *thread, co
     JSHandle<PromiseCapability> promiseCapability = factory->NewPromiseCapability();
     // 4. Let executor be a new built-in function object as defined in GetCapabilitiesExecutor Functions
     //    (25.4.1.5.1).
-    JSHandle<JSPromiseExecutorFunction> executor =
-        factory->CreateJSPromiseExecutorFunction(reinterpret_cast<void *>(BuiltinsPromiseHandler::Executor));
+    JSHandle<JSPromiseExecutorFunction> executor = factory->CreateJSPromiseExecutorFunction();
     // 5. Set the [[Capability]] internal slot of executor to promiseCapability.
     executor->SetCapability(thread, promiseCapability.GetTaggedValue());
     // 6. Let promise be Construct(C, «executor»).
