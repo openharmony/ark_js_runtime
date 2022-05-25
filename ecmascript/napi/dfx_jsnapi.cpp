@@ -143,6 +143,22 @@ void DFXJSNApi::StopCpuProfilerForFile()
     panda::ecmascript::CpuProfiler* singleton = panda::ecmascript::CpuProfiler::GetInstance();
     singleton->StopCpuProfilerForFile();
 }
+
+void DFXJSNApi::StartCpuProfilerForInfo(const EcmaVM *vm)
+{
+    CpuProfiler *singleton = CpuProfiler::GetInstance();
+    singleton->StartCpuProfilerForInfo(vm);
+}
+
+std::unique_ptr<ProfileInfo> DFXJSNApi::StopCpuProfilerForInfo()
+{
+    CpuProfiler *singleton = CpuProfiler::GetInstance();
+    auto profile = singleton->StopCpuProfilerForInfo();
+    if (profile == nullptr) {
+        LOG(ERROR, DEBUGGER) << "Transfer CpuProfiler::StopCpuProfilerImpl is failure";
+    }
+    return profile;
+}
 #endif
 
 bool DFXJSNApi::SuspendVM(const EcmaVM *vm)

@@ -14,9 +14,6 @@
  */
 
 #include "ecmascript/tooling/agent/profiler_impl.h"
-#include "ecmascript/tooling/base/pt_returns.h"
-#include "ecmascript/tooling/front_end.h"
-#include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript::tooling {
 ProfilerImpl::DispatcherImpl::DispatcherImpl(FrontEnd *frontend, std::unique_ptr<ProfilerImpl> profiler)
@@ -70,8 +67,9 @@ void ProfilerImpl::DispatcherImpl::Start(const DispatchRequest &request)
 
 void ProfilerImpl::DispatcherImpl::Stop(const DispatchRequest &request)
 {
-    DispatchResponse response = profiler_->Stop();
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
+    std::unique_ptr<Profile> profile;
+    DispatchResponse response = profiler_->Stop(profile);
+    std::unique_ptr<StopReturns> result = std::make_unique<StopReturns>(std::move(profile));
     SendResponse(request, response, std::move(result));
 }
 
@@ -144,13 +142,19 @@ DispatchResponse ProfilerImpl::Enable()
 
 DispatchResponse ProfilerImpl::Start()
 {
-    LOG(ERROR, DEBUGGER) << "Start not support now.";
+    auto ecmaVm = const_cast<EcmaVM *>(backend_->GetEcmaVm());
+    panda::DFXJSNApi::StartCpuProfilerForInfo(ecmaVm);
     return DispatchResponse::Ok();
 }
 
-DispatchResponse ProfilerImpl::Stop()
+DispatchResponse ProfilerImpl::Stop(std::unique_ptr<Profile> &profile)
 {
-    LOG(ERROR, DEBUGGER) << "Stop not support now.";
+    auto profileInfo = panda::DFXJSNApi::StopCpuProfilerForInfo();
+    if (profileInfo == nullptr) {
+        LOG(ERROR, DEBUGGER) << "Transfer DFXJSNApi::StopCpuProfilerImpl is failure";
+        return DispatchResponse::Fail("Stop is failure");
+    }
+    profile = FromCpuProfiler(profileInfo);
     return DispatchResponse::Ok();
 }
 
@@ -195,5 +199,63 @@ DispatchResponse ProfilerImpl::TakeTypeProfile()
     LOG(ERROR, DEBUGGER) << "TakeTypeProfile not support now.";
     return DispatchResponse::Ok();
 }
-}  // namespace panda::ecmascript::tooling
 
+std::unique_ptr<RuntimeCallFrame> ProfilerImpl::FromCpuFrameInfo(const std::unique_ptr<FrameInfo> &cpuFrameInfo)
+{
+    auto runtimeCallFrame = std::make_unique<RuntimeCallFrame>();
+    runtimeCallFrame->SetFunctionName(cpuFrameInfo->functionName.c_str());
+    runtimeCallFrame->SetScriptId(std::to_string(cpuFrameInfo->scriptId).c_str());
+    runtimeCallFrame->SetColumnNumber(cpuFrameInfo->columnNumber);
+    runtimeCallFrame->SetLineNumber(cpuFrameInfo->lineNumber);
+    runtimeCallFrame->SetUrl(cpuFrameInfo->url.c_str());
+    return runtimeCallFrame;
+}
+
+std::unique_ptr<ProfileNode> ProfilerImpl::FromCpuProfileNode(const std::unique_ptr<CpuProfileNode> &cpuProfileNode)
+{
+    auto profileNode = std::make_unique<ProfileNode>();
+    profileNode->SetId(cpuProfileNode->id);
+
+    size_t childrenLen = cpuProfileNode->children.size();
+    CVector<int32_t> tmpChildren;
+    tmpChildren.reserve(childrenLen);
+    for (uint32_t i = 0; i < childrenLen; ++i) {
+        tmpChildren.push_back(cpuProfileNode->children[i]);
+    }
+    profileNode->SetChildren(tmpChildren);
+    auto frameInfo = std::make_unique<FrameInfo>(cpuProfileNode->codeEntry);
+    profileNode->SetCallFrame(FromCpuFrameInfo(frameInfo));
+    return profileNode;
+}
+
+std::unique_ptr<Profile> ProfilerImpl::FromCpuProfiler(const std::unique_ptr<ProfileInfo> &profileInfo)
+{
+    auto profile = std::make_unique<Profile>();
+    profile->SetStartTime(profileInfo->startTime);
+    profile->SetEndTime(profileInfo->stopTime);
+    size_t samplesLen = profileInfo->samples.size();
+    CVector<int32_t> tmpSamples;
+    tmpSamples.reserve(samplesLen);
+    for (uint32_t i = 0; i < samplesLen; ++i) {
+        tmpSamples.push_back(profileInfo->samples[i]);
+    }
+    profile->SetSamples(tmpSamples);
+
+    size_t timeDeltasLen = profileInfo->timeDeltas.size();
+    CVector<int32_t> tmpTimeDeltas;
+    tmpTimeDeltas.reserve(timeDeltasLen);
+    for (uint32_t i = 0; i < timeDeltasLen; ++i) {
+        tmpTimeDeltas.push_back(profileInfo->timeDeltas[i]);
+    }
+    profile->SetTimeDeltas(tmpTimeDeltas);
+    
+    CVector<std::unique_ptr<ProfileNode>> profileNode;
+    size_t nodesLen = profileInfo->nodes.size();
+    for (uint32_t i = 0; i < nodesLen; ++i) {
+        auto cpuProfileNode = std::make_unique<CpuProfileNode>(profileInfo->nodes[i]);
+        profileNode.push_back(FromCpuProfileNode(cpuProfileNode));
+    }
+    profile->SetNodes(std::move(profileNode));
+    return profile;
+}
+}  // namespace panda::ecmascript::tooling
