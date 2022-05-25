@@ -2333,8 +2333,8 @@ HWTEST_F_L0(DebuggerTypesTest, ProfileCreateTest)
     profile = Profile::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(profile, nullptr);
 
-    EXPECT_EQ(profile->GetStartTime(), 10);
-    EXPECT_EQ(profile->GetEndTime(), 25);
+    EXPECT_EQ(profile->GetStartTime(), 10ULL);
+    EXPECT_EQ(profile->GetEndTime(), 25ULL);
     const CVector<std::unique_ptr<ProfileNode>> *profileNode = profile->GetNodes();
     ASSERT_NE(profileNode, nullptr);
     EXPECT_EQ((int)profileNode->size(), 0);
