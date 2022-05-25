@@ -708,7 +708,7 @@ struct BuiltinWithArgvFrame : public base::AlignedStruct<base::AlignedPointer::S
                                                          base::AlignedSize,
                                                          base::AlignedPointer,
                                                          base::AlignedPointer> {
-    enum class Index : size_t {
+    enum class Index : int {
         StackArgsTopIndex = -1,
         NumArgsIndex = -1,
         TypeIndex = 0,
