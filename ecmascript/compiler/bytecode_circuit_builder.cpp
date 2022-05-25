@@ -1831,109 +1831,6 @@ void BytecodeCircuitBuilder::UpdateCFG()
     }
 }
 
-bool BytecodeCircuitBuilder::IsJump(EcmaOpcode opcode)
-{
-    switch (opcode) {
-        case EcmaOpcode::JMP_IMM8:
-        case EcmaOpcode::JMP_IMM16:
-        case EcmaOpcode::JMP_IMM32:
-        case EcmaOpcode::JEQZ_IMM8:
-        case EcmaOpcode::JEQZ_IMM16:
-        case EcmaOpcode::JNEZ_IMM8:
-        case EcmaOpcode::JNEZ_IMM16:
-            return true;
-        default:
-            return false;
-    }
-}
-
-bool BytecodeCircuitBuilder::IsCondJump(EcmaOpcode opcode)
-{
-    switch (opcode) {
-        case EcmaOpcode::JEQZ_IMM8:
-        case EcmaOpcode::JEQZ_IMM16:
-        case EcmaOpcode::JNEZ_IMM8:
-        case EcmaOpcode::JNEZ_IMM16:
-            return true;
-        default:
-            return false;
-    }
-}
-
-bool BytecodeCircuitBuilder::IsMov(EcmaOpcode opcode)
-{
-    switch (opcode) {
-        case EcmaOpcode::MOV_V4_V4:
-        case EcmaOpcode::MOV_DYN_V8_V8:
-        case EcmaOpcode::MOV_DYN_V16_V16:
-        case EcmaOpcode::LDA_DYN_V8:
-        case EcmaOpcode::STA_DYN_V8:
-            return true;
-        default:
-            return false;
-    }
-}
-
-bool BytecodeCircuitBuilder::IsReturn(EcmaOpcode opcode)
-{
-    switch (opcode) {
-        case EcmaOpcode::RETURN_DYN:
-        case EcmaOpcode::RETURNUNDEFINED_PREF:
-            return true;
-        default:
-            return false;
-    }
-}
-
-bool BytecodeCircuitBuilder::IsThrow(EcmaOpcode opcode)
-{
-    switch (opcode) {
-        case EcmaOpcode::THROWDYN_PREF:
-        case EcmaOpcode::THROWCONSTASSIGNMENT_PREF_V8:
-        case EcmaOpcode::THROWTHROWNOTEXISTS_PREF:
-        case EcmaOpcode::THROWPATTERNNONCOERCIBLE_PREF:
-        case EcmaOpcode::THROWDELETESUPERPROPERTY_PREF:
-            return true;
-        default:
-            return false;
-    }
-}
-
-bool BytecodeCircuitBuilder::IsDiscarded(EcmaOpcode opcode)
-{
-    switch (opcode) {
-        case EcmaOpcode::COPYMODULE_PREF_V8:
-        case EcmaOpcode::DEBUGGER_PREF:
-            return true;
-        default:
-            return false;
-    }
-}
-
-bool BytecodeCircuitBuilder::IsGeneral(EcmaOpcode opcode)
-{
-    return !IsMov(opcode) && !IsJump(opcode) && !IsReturn(opcode) && !IsSetConstant(opcode) && !IsDiscarded(opcode);
-}
-
-bool BytecodeCircuitBuilder::IsSetConstant(EcmaOpcode opcode)
-{
-    switch (opcode) {
-        case EcmaOpcode::LDNAN_PREF:
-        case EcmaOpcode::LDINFINITY_PREF:
-        case EcmaOpcode::LDUNDEFINED_PREF:
-        case EcmaOpcode::LDNULL_PREF:
-        case EcmaOpcode::LDTRUE_PREF:
-        case EcmaOpcode::LDFALSE_PREF:
-        case EcmaOpcode::LDHOLE_PREF:
-        case EcmaOpcode::LDAI_DYN_IMM32:
-        case EcmaOpcode::FLDAI_DYN_IMM64:
-        case EcmaOpcode::LDFUNCTION_PREF:
-            return true;
-        default:
-            return false;
-    }
-}
-
 // build circuit
 void BytecodeCircuitBuilder::BuildCircuitArgs()
 {
@@ -1983,7 +1880,7 @@ void BytecodeCircuitBuilder::CollectPredsInfo()
         while (pc <= bb.end) {
             auto bytecodeInfo = GetBytecodeInfo(pc);
             pc = pc + bytecodeInfo.offset; // next inst start pc
-            if (IsGeneral(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+            if (bytecodeInfo.IsGeneral()) {
                 if (!bb.catchs.empty()) {
                     bb.catchs.at(0)->numOfStatePreds++;
                 }
@@ -2222,7 +2119,7 @@ void BytecodeCircuitBuilder::NewJSGate(BytecodeRegion &bb, const uint8_t *pc, Ga
                          GateType::JS_ANY);
     }
     jsgateToBytecode_[gate] = {bb.id, pc};
-    if (IsThrow(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+    if (bytecodeInfo.IsThrow()) {
         auto constant = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
                                          JSTaggedValue::VALUE_HOLE,
                                          {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
@@ -2249,7 +2146,7 @@ void BytecodeCircuitBuilder::NewJump(BytecodeRegion &bb, const uint8_t *pc, Gate
 {
     auto bytecodeInfo = GetBytecodeInfo(pc);
     size_t numValueInputs = (bytecodeInfo.accIn ? 1 : 0) + bytecodeInfo.inputs.size();
-    if (IsCondJump(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+    if (bytecodeInfo.IsCondJump()) {
         GateRef gate = 0;
         gate = circuit_.NewGate(OpCode(OpCode::JS_BYTECODE), MachineType::NOVALUE, numValueInputs,
                                 std::vector<GateRef>(2 + numValueInputs, // 2: state and depend input
@@ -2320,20 +2217,20 @@ void BytecodeCircuitBuilder::NewByteCode(BytecodeRegion &bb, const uint8_t *pc, 
 {
     ASSERT(pc != nullptr);
     auto bytecodeInfo = GetBytecodeInfo(pc);
-    if (IsSetConstant(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+    if (bytecodeInfo.IsSetConstant()) {
         // handle bytecode command to get constants
         GateRef gate = NewConst(bytecodeInfo);
         jsgateToBytecode_[gate] = {bb.id, pc};
-    } else if (IsGeneral(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+    } else if (bytecodeInfo.IsGeneral()) {
         // handle general ecma.* bytecodes
         NewJSGate(bb, pc, state, depend);
-    } else if (IsJump(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+    } else if (bytecodeInfo.IsJump()) {
         // handle conditional jump and unconditional jump bytecodes
         NewJump(bb, pc, state, depend);
-    } else if (IsReturn(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+    } else if (bytecodeInfo.IsReturn()) {
         // handle return.dyn and returnundefined bytecodes
         NewReturn(bb, pc, state, depend);
-    } else if (IsMov(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+    } else if (bytecodeInfo.IsMov()) {
         // handle mov.dyn lda.dyn sta.dyn bytecodes
         if (pc == bb.end) {
             auto &bbNext = graph_[bb.id + 1];
@@ -2343,7 +2240,7 @@ void BytecodeCircuitBuilder::NewByteCode(BytecodeRegion &bb, const uint8_t *pc, 
                 {bb.id, pc, false}
             );
         }
-    } else if (IsDiscarded(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+    } else if (bytecodeInfo.IsDiscarded()) {
         return;
     } else {
         UNREACHABLE();
@@ -2369,8 +2266,7 @@ void BytecodeCircuitBuilder::BuildSubCircuit()
             auto bytecodeInfo = GetBytecodeInfo(pc);
             pc = pc + bytecodeInfo.offset; // next inst start pc
             NewByteCode(bb, pcPrev, stateCur, dependCur);
-            if (IsJump(static_cast<EcmaOpcode>(bytecodeInfo.opcode)) ||
-                IsThrow(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+            if (bytecodeInfo.IsJump() || bytecodeInfo.IsThrow()) {
                 break;
             }
         }
@@ -2429,13 +2325,23 @@ GateRef BytecodeCircuitBuilder::NewPhi(BytecodeRegion &bb, uint16_t reg, bool ac
     return gate;
 }
 
+GateType BytecodeCircuitBuilder::GetRealGateType(const uint16_t reg, const GateType gateType)
+{
+    // ts loader
+    panda::ecmascript::TSLoader* tsLoader = vm_->GetTSLoader();
+    auto curType = static_cast<GateType>(tsLoader->GetGTFromPandaFile(*pf_, reg, method_).GetGlobalTSTypeRef());
+    auto type = (curType == GateType::JS_ANY) ? gateType : curType;
+    return type;
+}
+
 // recursive variables renaming algorithm
-GateRef BytecodeCircuitBuilder::RenameVariable(size_t bbId, const uint8_t *end, uint16_t reg, bool acc)
+GateRef BytecodeCircuitBuilder::RenameVariable(const size_t bbId,
+    const uint8_t *end, const uint16_t reg, const bool acc, const GateType gateType)
 {
     ASSERT(end != nullptr);
     const size_t offsetArgs = method_->GetNumVregs();
-    // ts loader
-    panda::ecmascript::TSLoader* tsLoader = vm_->GetTSLoader();
+    auto tmpReg = reg;
+    auto tsType = GetRealGateType(tmpReg, gateType);
     // find def-site in bytecodes of basic block
     auto ans = Circuit::NullGate();
     auto &bb = graph_.at(bbId);
@@ -2449,40 +2355,29 @@ GateRef BytecodeCircuitBuilder::RenameVariable(size_t bbId, const uint8_t *end, 
         }
     }
     std::reverse(instList.begin(), instList.end());
+    auto tmpAcc = acc;
     for (auto pcIter: instList) { // upper bound
         auto curInfo = GetBytecodeInfo(pcIter);
-        if (acc) {
-            if (curInfo.accOut) {
-                if (IsMov(static_cast<EcmaOpcode>(curInfo.opcode))) {
-                    acc = curInfo.accIn;
-                    if (!curInfo.inputs.empty()) {
-                        ASSERT(!acc);
-                        ASSERT(curInfo.inputs.size() == 1);
-                        reg = std::get<VirtualRegister>(curInfo.inputs.at(0)).GetId();
-                    }
-                } else {
-                    ans = byteCodeToJSGate_.at(pcIter);
-                    break;
+        // curent bc use acc as input && pcIter bc use acc as output
+        bool bothAcc = tmpAcc && curInfo.accOut;
+        bool isDefineSite = (!tmpAcc && curInfo.IsOut(tmpReg, 0));
+        if (bothAcc || isDefineSite) {
+            if (curInfo.IsMov()) {
+                tmpAcc = curInfo.accIn;
+                if (!curInfo.inputs.empty()) {
+                    ASSERT(!tmpAcc);
+                    ASSERT(curInfo.inputs.size() == 1);
+                    tmpReg = std::get<VirtualRegister>(curInfo.inputs.at(0)).GetId();
+                    tsType = GetRealGateType(tmpReg, tsType);
                 }
-            }
-        } else {
-            if (!curInfo.vregOut.empty() && curInfo.vregOut.at(0) == reg) {
-                if (IsMov(static_cast<EcmaOpcode>(curInfo.opcode))) {
-                    acc = curInfo.accIn;
-                    if (!curInfo.inputs.empty()) {
-                        ASSERT(!acc);
-                        ASSERT(curInfo.inputs.size() == 1);
-                        reg = std::get<VirtualRegister>(curInfo.inputs.at(0)).GetId();
-                    }
-                } else {
-                    ans = byteCodeToJSGate_.at(pcIter);
-                    break;
-                }
+            } else {
+                ans = byteCodeToJSGate_.at(pcIter);
+                break;
             }
         }
     }
     // find GET_EXCEPTION gate if this is a catch block
-    if (ans == Circuit::NullGate() && acc) {
+    if (ans == Circuit::NullGate() && tmpAcc) {
         if (!bb.trys.empty()) {
             const auto &outList = circuit_.GetOutVector(bb.dependStart);
             ASSERT(outList.size() == 1);
@@ -2492,36 +2387,31 @@ GateRef BytecodeCircuitBuilder::RenameVariable(size_t bbId, const uint8_t *end, 
         }
     }
     // find def-site in value selectors of vregs
-    if (ans == Circuit::NullGate() && !acc && bb.phi.count(reg)) {
-        if (!bb.vregToValSelectorGate.count(reg)) {
-            bb.vregToValSelectorGate[reg] = NewPhi(bb, reg, acc);
+    if (ans == Circuit::NullGate() && !tmpAcc && bb.phi.count(tmpReg)) {
+        if (!bb.vregToValSelectorGate.count(tmpReg)) {
+            bb.vregToValSelectorGate[tmpReg] = NewPhi(bb, tmpReg, tmpAcc);
         }
-        ans = bb.vregToValSelectorGate.at(reg);
+        ans = bb.vregToValSelectorGate.at(tmpReg);
     }
     // find def-site in value selectors of acc
-    if (ans == Circuit::NullGate() && acc && bb.phiAcc) {
+    if (ans == Circuit::NullGate() && tmpAcc && bb.phiAcc) {
         if (bb.valueSelectorAccGate == Circuit::NullGate()) {
-            bb.valueSelectorAccGate = NewPhi(bb, reg, acc);
+            bb.valueSelectorAccGate = NewPhi(bb, tmpReg, tmpAcc);
         }
         ans = bb.valueSelectorAccGate;
     }
     if (ans == Circuit::NullGate() && bbId == 0) { // entry block
         // find def-site in function args
-        ASSERT(!acc && reg >= offsetArgs && reg < offsetArgs + actualArgs_.size());
-        const panda_file::File *pf = file_->GetPandaFile();
-        auto argVreg = reg - offsetArgs;
-        auto tsType = tsLoader->GetGTFromPandaFile(*pf, argVreg, method_).GetGlobalTSTypeRef();
-        auto index = GetFunctionArgIndex(reg, offsetArgs);
+        ASSERT(!tmpAcc && tmpReg >= offsetArgs && tmpReg < offsetArgs + actualArgs_.size());
+        auto index = GetFunctionArgIndex(tmpReg, offsetArgs);
         circuit_.LoadGatePtr(ans)->SetGateType(static_cast<GateType>(tsType));
         return actualArgs_.at(index);
     }
     if (ans == Circuit::NullGate()) {
         // recursively find def-site in dominator block
-        return RenameVariable(bb.iDominator->id, bb.iDominator->end, reg, acc);
+        return RenameVariable(bb.iDominator->id, bb.iDominator->end, tmpReg, tmpAcc, tsType);
     } else {
         // def-site already found
-        const panda_file::File *pf = file_->GetPandaFile();
-        auto tsType = tsLoader->GetGTFromPandaFile(*pf, reg, method_).GetGlobalTSTypeRef();
         circuit_.LoadGatePtr(ans)->SetGateType(static_cast<GateType>(tsType));
         return ans;
     }
