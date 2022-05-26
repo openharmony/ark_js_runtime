@@ -44,7 +44,7 @@ JSThread *JSThread::Create(EcmaVM *vm)
 JSThread::JSThread(EcmaVM *vm) : id_(os::thread::GetCurrentThreadId()), vm_(vm)
 {
     auto chunk = vm->GetChunk();
-    globalStorage_ = chunk->New<EcmaGlobalStorage>(chunk);
+    globalStorage_ = chunk->New<EcmaGlobalStorage>(this, chunk);
     propertiesCache_ = new PropertiesCache();
     vmThreadControl_ = new VmThreadControl();
 }
@@ -293,5 +293,13 @@ bool JSThread::CheckSafepoint() const
         return true;
     }
     return false;
+}
+
+void JSThread::CheckJSTaggedType(JSTaggedType value) const
+{
+    if (JSTaggedValue(value).IsHeapObject() &&
+        !GetEcmaVM()->GetHeap()->IsAlive(reinterpret_cast<TaggedObject *>(value))) {
+        LOG(FATAL, RUNTIME) << "value:" << value << " is invalid!";
+    }
 }
 }  // namespace panda::ecmascript

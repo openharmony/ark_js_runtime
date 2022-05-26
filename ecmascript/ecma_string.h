@@ -25,6 +25,7 @@
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/mem/tagged_object.h"
 #include "ecmascript/mem/barriers.h"
+#include "macros.h"
 
 namespace panda {
 namespace ecmascript {
@@ -106,7 +107,7 @@ public:
      */
     const uint8_t *GetDataUtf8() const
     {
-        LOG_IF(IsUtf16(), FATAL, RUNTIME) << "EcmaString: Read data as utf8 for utf16 string";
+        ASSERT_PRINT(IsUtf8(), "EcmaString: Read data as utf8 for utf16 string");
         return reinterpret_cast<uint8_t *>(GetData());
     }
 
@@ -329,7 +330,7 @@ private:
 
     uint8_t *GetDataUtf8Writable()
     {
-        LOG_IF(IsUtf16(), FATAL, RUNTIME) << "EcmaString: Read data as utf8 for utf16 string";
+        ASSERT_PRINT(IsUtf8(), "EcmaString: Read data as utf8 for utf16 string");
         return reinterpret_cast<uint8_t *>(GetData());
     }
 
