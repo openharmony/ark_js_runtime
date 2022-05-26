@@ -352,7 +352,7 @@ bool JSNApi::IsWeak(const EcmaVM *vm, uintptr_t localAddress)
 
 void JSNApi::DisposeGlobalHandleAddr(const EcmaVM *vm, uintptr_t addr)
 {
-    if (addr == 0 || reinterpret_cast<ecmascript::EcmaGlobalStorage::Node *>(addr)->IsFree()) {
+    if (addr == 0 || !reinterpret_cast<ecmascript::EcmaGlobalStorage::Node *>(addr)->IsUsing()) {
         return;
     }
     vm->GetJSThread()->GetEcmaGlobalStorage()->DisposeGlobalHandle(addr);
