@@ -219,8 +219,6 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
 
     // init global object
     JSHandle<JSObject> globalObject = factory_->NewNonMovableJSObject(globalObjFuncDynclass);
-    JSHandle<JSHClass> newGlobalDynclass = JSHClass::Clone(thread_, globalObjFuncDynclass);
-    globalObject->SetClass(newGlobalDynclass);
     env->SetJSGlobalObject(thread_, globalObject);
 
     // initialize Function, forbidden change order
