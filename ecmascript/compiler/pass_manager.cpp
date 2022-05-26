@@ -36,6 +36,7 @@ bool PassManager::Compile(const std::string &fileName, AOTFileGenerator &generat
     auto aotModule = new LLVMModule("aot_" + fileName, triple_);
     auto aotModuleAssembler = new LLVMAssembler(aotModule->GetModule(), LOptions(optLevel_, true));
     CompilationConfig cmpCfg(triple_);
+    TSLoader *tsLoader = vm_->GetTSLoader();
 
     bool enableLog = log_->IsAlwaysEnabled();
 
@@ -51,11 +52,11 @@ bool PassManager::Compile(const std::string &fileName, AOTFileGenerator &generat
                                << methodName << "] log:" << "\033[0m";
         }
 
-        BytecodeCircuitBuilder builder(vm_, translationInfo, i, enableLog);
+        BytecodeCircuitBuilder builder(translationInfo, i, tsLoader, enableLog);
         builder.BytecodeToCircuit();
         PassData data(builder.GetCircuit());
         PassRunner<PassData> pipeline(&data, enableLog);
-        pipeline.RunPass<TypeInferPass>(&builder);
+        pipeline.RunPass<TypeInferPass>(&builder, tsLoader);
         pipeline.RunPass<SlowPathLoweringPass>(&builder, &cmpCfg);
         pipeline.RunPass<VerifierPass>();
         pipeline.RunPass<SchedulingPass>();

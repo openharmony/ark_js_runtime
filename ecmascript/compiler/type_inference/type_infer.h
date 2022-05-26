@@ -17,24 +17,32 @@
 #define ECMASCRIPT_COMPILER_TYPE_INFERENCE_TYPE_INFER_H
 
 #include "ecmascript/compiler/bytecode_circuit_builder.h"
+#include "ecmascript/compiler/circuit.h"
+#include "ecmascript/compiler/gate_accessor.h"
 #include "ecmascript/ts_types/ts_loader.h"
 
 namespace panda::ecmascript::kungfu {
 class TypeInfer {
 public:
-    TypeInfer(BytecodeCircuitBuilder *builder, Circuit *circuit, bool enableLog)
-        : builder_(builder), circuit_(circuit), gateAccessor_(circuit), enableLog_(enableLog) {}
+    TypeInfer(BytecodeCircuitBuilder *builder, Circuit *circuit, TSLoader *tsLoader, bool enableLog)
+        : builder_(builder), circuit_(circuit), gateAccessor_(circuit),
+          tsLoader_(tsLoader), enableLog_(enableLog) {}
+    ~TypeInfer() = default;
+    NO_COPY_SEMANTIC(TypeInfer);
+    NO_MOVE_SEMANTIC(TypeInfer);
+    void TraverseCircuit();
 
     bool IsLogEnabled() const
     {
         return enableLog_;
     }
 
-    void TraverseCircuit();
-
 private:
+    bool UpdateType(GateRef gate, const GateType type);
+    bool UpdateType(GateRef gate, const GlobalTSTypeRef &typeRef);
+    bool ShouldInfer(const GateRef gate);
     bool Infer(GateRef gate);
-    struct BytecodeInfo GetByteCodeInfoByGate(GateRef gate) const;
+    bool InferPhiGate(GateRef gate);
     bool SetNumberType(GateRef gate);
     bool SetBooleanType(GateRef gate);
     bool InferLdUndefined(GateRef gate);
@@ -51,25 +59,21 @@ private:
     bool InferReturnDyn(GateRef gate);
     bool InferLdObjByName(GateRef gate);
     bool InferLdNewObjDynRange(GateRef gate);
-    bool SetStGlobalBcType(GateRef gateRef);
-    bool InferLdStr(GateRef gateRef);
-    static bool ShouldInfer(OpCode opCode)
-    {
-        switch (opCode) {
-            case OpCode::JS_BYTECODE:
-            case OpCode::CONSTANT:
-            case OpCode::RETURN:
-                return true;
-            default:
-                return false;
-        }
-    }
+    bool SetStGlobalBcType(GateRef gate);
+    bool InferLdStr(GateRef gate);
+    bool InferCallFunction(GateRef gate);
+    bool InferLdObjByValue(GateRef gate);
+    bool InferGetNextPropName(GateRef gate);
+    bool InferDefineGetterSetterByValue(GateRef gate);
+    bool InferNewObjSpread(GateRef gate);
+    bool InferSuperCall(GateRef gate);
 
-    BytecodeCircuitBuilder *builder_;
-    Circuit *circuit_;
+    BytecodeCircuitBuilder *builder_ {nullptr};
+    Circuit *circuit_ {nullptr};
     GateAccessor gateAccessor_;
+    TSLoader *tsLoader_ {nullptr};
     bool enableLog_ {false};
     std::map<uint32_t, GateType> stringIdToGateType_;
 };
-}
-#endif
+}  // namespace panda::ecmascript::kungfu
+#endif  // ECMASCRIPT_COMPILER_TYPE_INFERENCE_TYPE_INFER_H

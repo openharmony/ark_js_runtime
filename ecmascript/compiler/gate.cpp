@@ -1004,15 +1004,6 @@ GateType Gate::GetGateType() const
     return type_;
 }
 
-bool Gate::SetGateType(GateType type)
-{
-    if (type_ != type) {
-        type_ = type;
-        return true;
-    }
-    return false;
-}
-
 size_t Gate::GetNumIns() const
 {
     return GetOpCodeNumIns(GetOpCode(), GetBitField());

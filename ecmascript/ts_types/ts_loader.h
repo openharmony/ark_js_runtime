@@ -74,6 +74,16 @@ public:
         return ref_ == 0;
     }
 
+    bool operator <(const GlobalTSTypeRef &type) const
+    {
+        return ref_ < type.ref_;
+    }
+
+    bool operator ==(const GlobalTSTypeRef &type) const
+    {
+        return ref_ == type.ref_;
+    }
+
 private:
     uint64_t ref_;
 };
@@ -218,6 +228,9 @@ public:
 
     GlobalTSTypeRef PUBLIC_API GetPropType(GlobalTSTypeRef gt, JSHandle<EcmaString> propertyName) const;
 
+    // use for object
+    GlobalTSTypeRef PUBLIC_API GetPropType(GlobalTSTypeRef gt, const uint64_t key) const;
+
     uint32_t PUBLIC_API GetUnionTypeLength(GlobalTSTypeRef gt) const;
 
     GlobalTSTypeRef PUBLIC_API GetUnionTypeByIndex(GlobalTSTypeRef gt, int index) const;
@@ -233,6 +246,9 @@ public:
     GlobalTSTypeRef PUBLIC_API GetArrayParameterTypeGT(GlobalTSTypeRef gt) const;
 
     size_t PUBLIC_API AddConstString(JSTaggedValue string);
+
+    // add string to constantstringtable and get its index
+    size_t PUBLIC_API GetStringIdx(JSHandle<JSTaggedValue> constPool, const uint16_t id);
 
     /*
      * Before using this method for type infer, you need to wait until all the

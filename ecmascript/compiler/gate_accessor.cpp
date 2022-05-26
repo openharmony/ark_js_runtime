@@ -99,14 +99,14 @@ void GateAccessor::ReplaceIn(UsesIterator &useIt, GateRef replaceGate)
     useIt.SetChanged();
 }
 
-GateType GateAccessor::GetGateType(GateRef gate)
+GateType GateAccessor::GetGateType(GateRef gate) const
 {
     return circuit_->LoadGatePtr(gate)->GetGateType();
 }
 
-bool GateAccessor::SetGateType(GateRef gate, GateType gt)
+void GateAccessor::SetGateType(GateRef gate, GateType gt)
 {
-    return circuit_->LoadGatePtr(gate)->SetGateType(gt);
+    circuit_->LoadGatePtr(gate)->SetGateType(gt);
 }
 
 void GateAccessor::DeleteExceptionDep(UsesIterator &useIt)
