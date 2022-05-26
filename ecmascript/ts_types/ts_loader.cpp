@@ -16,6 +16,7 @@
 #include "ecmascript/ts_types/ts_loader.h"
 
 #include "ecmascript/jspandafile/js_pandafile.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/ts_types/ts_type_table.h"
 #include "libpandafile/file-inl.h"
 #include "libpandafile/method_data_accessor-inl.h"
@@ -136,6 +137,13 @@ GlobalTSTypeRef TSLoader::GetPropType(GlobalTSTypeRef gt, JSHandle<EcmaString> p
     JSHandle<TSTypeTable> typeTable = table->GetTSTypeTable(thread, moduleId);
     GlobalTSTypeRef propTypeRef = TSTypeTable::GetPropertyTypeGT(thread, typeTable, typeKind, localId, propertyName);
     return propTypeRef;
+}
+
+GlobalTSTypeRef TSLoader::GetPropType(GlobalTSTypeRef gt, const uint64_t key) const
+{
+    ObjectFactory *factory = vm_->GetFactory();
+    auto propertyName = factory->NewFromStdString(std::to_string(key).c_str());
+    return GetPropType(gt, propertyName);
 }
 
 uint32_t TSLoader::GetUnionTypeLength(GlobalTSTypeRef gt) const
@@ -486,6 +494,14 @@ size_t TSLoader::AddConstString(JSTaggedValue string)
         constantStringTable_.emplace_back(string.GetRawData());
         return constantStringTable_.size() - 1;
     }
+}
+
+// add string to constantstringtable and get its index
+size_t TSLoader::GetStringIdx(JSHandle<JSTaggedValue> constPool, const uint16_t id)
+{
+    JSHandle<ConstantPool> newConstPool(vm_->GetJSThread(), constPool.GetTaggedValue());
+    auto str = newConstPool->GetObjectFromCache(id);
+    return AddConstString(str);
 }
 
 JSHandle<EcmaString> TSModuleTable::GetAmiPathByModuleId(JSThread *thread, int entry) const

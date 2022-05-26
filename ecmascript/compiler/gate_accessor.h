@@ -325,8 +325,8 @@ public:
     void SetDep(GateRef gate, GateRef depGate, size_t idx = 0);
     void ReplaceIn(UsesIterator &useIt, GateRef replaceGate);
     // Add for lowering
-    [[nodiscard]] GateType GetGateType(GateRef gate);
-    bool SetGateType(GateRef gate, GateType gt);
+    [[nodiscard]] GateType GetGateType(GateRef gate) const;
+    void SetGateType(GateRef gate, GateType gt);
     void DeleteExceptionDep(UsesIterator &useIt);
     void DeleteIn(UsesIterator &useIt);
     void DeleteGate(UsesIterator &useIt);

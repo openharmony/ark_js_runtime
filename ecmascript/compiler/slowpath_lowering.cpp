@@ -2232,6 +2232,7 @@ void SlowPathLowering::LowerStObjByName(GateRef gate, GateRef glue)
 
 void SlowPathLowering::LowerDefineGetterSetterByValue(GateRef gate, GateRef glue)
 {
+    const int id = RTSTUB_ID(DefineGetterSetterByValue);
     // 5: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 5);
     GateRef obj = acc_.GetValueIn(gate, 0);
@@ -2239,9 +2240,8 @@ void SlowPathLowering::LowerDefineGetterSetterByValue(GateRef gate, GateRef glue
     GateRef getter = acc_.GetValueIn(gate, 2);
     GateRef setter = acc_.GetValueIn(gate, 3);
     GateRef acc = acc_.GetValueIn(gate, 4);
-    const CallSignature* cs = RuntimeStubCSigns::Get(RTSTUB_ID(DefineGetterSetterByValue));
-    GateRef target = builder_.IntPtr(RTSTUB_ID(DefineGetterSetterByValue));
-    GateRef newGate = builder_.Call(cs, glue, target, dependEntry_, {obj, prop, getter, setter, acc});
+    auto args = { obj, prop, getter, setter, acc };
+    GateRef newGate = LowerCallRuntime(glue, id, args);
     ReplaceHirToCall(gate, newGate);
 }
 
