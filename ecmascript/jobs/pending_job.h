@@ -23,6 +23,7 @@
 #include "ecmascript/js_handle.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
+#include "ecmascript/tooling/interface/js_debugger_manager.h"
 #include "ecmascript/mem/c_containers.h"
 
 namespace panda::ecmascript::job {
@@ -36,6 +37,9 @@ public:
 
     static JSTaggedValue ExecutePendingJob(const JSHandle<PendingJob> &pendingJob, JSThread *thread)
     {
+        tooling::JsDebuggerManager *jsDebuggerManager = thread->GetEcmaVM()->GetJsDebuggerManager();
+        jsDebuggerManager->GetNotificationManager()->PendingJobEntryEvent();
+
         JSHandle<JSTaggedValue> job(thread, pendingJob->GetJob());
         ASSERT(job->IsCallable());
         JSHandle<TaggedArray> argv(thread, pendingJob->GetArguments());
