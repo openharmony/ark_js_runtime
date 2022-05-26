@@ -96,7 +96,8 @@ void SamplesRecord::AddSample(CVector<JSMethod *> sample, uint64_t sampleTimeSta
     static uint64_t threadStartTime = 0;
     struct SampleInfo sampleInfo;
     int sampleNodeId = methodNode.id == 0 ? PreviousId = 1, 1 : methodNode.id;
-    int timeDelta = sampleTimeStamp - (threadStartTime == 0 ? profileInfo_->startTime : threadStartTime);
+    int timeDelta = static_cast<int>(sampleTimeStamp -
+        (threadStartTime == 0 ? profileInfo_->startTime : threadStartTime));
     if (outToFile) {
         sampleInfo.id = sampleNodeId;
         sampleInfo.line = stackTopLines_[methodNode.id];

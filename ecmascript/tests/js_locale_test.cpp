@@ -64,7 +64,7 @@ void CreateLanguageIterator(std::vector<std::string>& languageTemp)
 {
     languageTemp.push_back("zh-Hans-Cn");
     languageTemp.push_back("ko-kore-kr");
-    languageTemp.push_back("en-US");
+    languageTemp.push_back("fr-FR");
     languageTemp.push_back("en-Latn-US");
     languageTemp.push_back("ja-JP-u-ca-japanese");
     languageTemp.push_back("ar-EG");
