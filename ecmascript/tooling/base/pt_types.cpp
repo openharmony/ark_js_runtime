@@ -2158,9 +2158,9 @@ std::unique_ptr<Profile> Profile::Create(const EcmaVM *ecmaVm, const Local<JSVal
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             auto array = Local<ArrayRef>(result);
-            uint32_t nodesLen = array->Length(ecmaVm);
+            int32_t nodesLen = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (uint32_t i = 0; i < nodesLen; ++i) {
+            for (int32_t i = 0; i < nodesLen; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 std::unique_ptr<ProfileNode> node = ProfileNode::Create(ecmaVm, resultValue);
