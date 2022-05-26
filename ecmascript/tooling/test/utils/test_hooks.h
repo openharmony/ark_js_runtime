@@ -100,6 +100,8 @@ public:
         TestUtil::Event(DebugEvent::VM_START);
     }
 
+    void PendingJobEntry() override {}
+
     void TerminateTest()
     {
         debugInterface_->UnregisterHooks();
