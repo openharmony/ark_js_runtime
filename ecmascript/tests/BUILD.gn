@@ -54,6 +54,7 @@ host_unittest_action("EcmaVmTest") {
     "js_array_iterator_test.cpp",
     "js_array_test.cpp",
     "js_bigint_test.cpp",
+    "js_collator_test.cpp",
     "js_dataview_test.cpp",
     "js_date_test.cpp",
     "js_forin_iterator_test.cpp",
