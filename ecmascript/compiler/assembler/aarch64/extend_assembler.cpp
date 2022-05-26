@@ -69,4 +69,29 @@ void ExtendedAssembler::RestoreFpAndLr()
     Register sp(SP);
     Ldp(Register(X29), Register(X30), MemoryOperand(sp, 16, POSTINDEX));
 }
+
+void ExtendedAssembler::PushArgsWithArgv(Register argc, Register argv, Register op, Label *next)
+{
+    Label loopBeginning;
+    Register sp(SP);
+    Cmp(argc.W(), Immediate(0));
+    B(Condition::LS, next);
+    Bind(&loopBeginning);
+    Ldr(op, MemoryOperand(argv, -8, POSTINDEX));  // -8: 8 bytes
+    Str(op, MemoryOperand(sp, -8, PREINDEX));  // -8: 8 bytes
+    Sub(argc.W(), argc.W(), Immediate(1));
+    Cbnz(argc.W(), &loopBeginning);
+}
+
+void ExtendedAssembler::PushArgc(int32_t argc, Register op)
+{
+    Mov(op, Immediate(JSTaggedValue(argc).GetRawData()));
+    Str(op, MemoryOperand(Register(SP), -8, PREINDEX));  // -8: 8 bytes
+}
+
+void ExtendedAssembler::PushArgc(Register argc, Register op)
+{
+    Orr(op, argc, LogicalImmediate::Create(JSTaggedValue::TAG_INT, RegXSize));
+    Str(op, MemoryOperand(Register(SP), -8, PREINDEX));  // -8: 8 bytes
+}
 }  // namespace panda::ecmascript::aarch64
