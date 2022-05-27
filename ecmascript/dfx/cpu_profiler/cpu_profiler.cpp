@@ -77,6 +77,7 @@ void CpuProfiler::StartCpuProfilerForInfo(const EcmaVM *vm)
     }
 #endif
     tid_ = static_cast<pthread_t>(syscall(SYS_gettid));
+    SamplingProcessor::SetIsStart(true);
     Taskpool::GetCurrentTaskpool()->PostTask(
         std::make_unique<SamplingProcessor>(generator_, vm, interval_, outToFile_));
 }
@@ -124,6 +125,7 @@ void CpuProfiler::StartCpuProfilerForFile(const EcmaVM *vm, const std::string &f
     ts = ts % TIME_CHANGE;
     SetProfileStart(ts);
     outToFile_ = true;
+    SamplingProcessor::SetIsStart(true);
     Taskpool::GetCurrentTaskpool()->PostTask(
         std::make_unique<SamplingProcessor>(generator_, vm, interval_, outToFile_));
 }

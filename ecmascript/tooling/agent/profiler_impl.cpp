@@ -231,8 +231,8 @@ std::unique_ptr<ProfileNode> ProfilerImpl::FromCpuProfileNode(const std::unique_
 std::unique_ptr<Profile> ProfilerImpl::FromCpuProfiler(const std::unique_ptr<ProfileInfo> &profileInfo)
 {
     auto profile = std::make_unique<Profile>();
-    profile->SetStartTime(profileInfo->startTime);
-    profile->SetEndTime(profileInfo->stopTime);
+    profile->SetStartTime(static_cast<int64_t>(profileInfo->startTime));
+    profile->SetEndTime(static_cast<int64_t>(profileInfo->stopTime));
     size_t samplesLen = profileInfo->samples.size();
     CVector<int32_t> tmpSamples;
     tmpSamples.reserve(samplesLen);
