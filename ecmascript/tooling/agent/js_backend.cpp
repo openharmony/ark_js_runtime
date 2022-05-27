@@ -244,7 +244,8 @@ std::optional<CString> JSBackend::GetPossibleBreakpoints(Location *start, [[mayb
 }
 
 std::optional<CString> JSBackend::SetBreakpointByUrl(const CString &url, size_t lineNumber,
-    size_t columnNumber, CString *out_id, CVector<std::unique_ptr<Location>> *outLocations)
+    size_t columnNumber, const std::optional<CString> &condition, CString *outId,
+    CVector<std::unique_ptr<Location>> *outLocations)
 {
     PtJSExtractor *extractor = GetExtractor(url);
     if (extractor == nullptr) {
@@ -264,9 +265,22 @@ std::optional<CString> JSBackend::SetBreakpointByUrl(const CString &url, size_t 
         return "Unknown file name.";
     }
 
-    auto callbackFunc = [this, fileName](File::EntityId id, uint32_t offset) -> bool {
+    auto callbackFunc = [this, fileName, &condition](File::EntityId id, uint32_t offset) -> bool {
         JSPtLocation location {fileName.c_str(), id, offset};
-        return DebuggerApi::SetBreakpoint(debugger_, location);
+        Local<FunctionRef> condFuncRef = FunctionRef::Undefined(ecmaVm_);
+        if (condition.has_value() && !condition.value().empty()) {
+            CString dest;
+            if (!DecodeAndCheckBase64(condition.value(), dest)) {
+                LOG(ERROR, DEBUGGER) << "SetBreakpointByUrl: base64 decode failed";
+                return false;
+            }
+            condFuncRef = DebuggerApi::GenerateFuncFromBuffer(ecmaVm_, dest.data(), dest.size());
+            if (condFuncRef->IsUndefined()) {
+                LOG(ERROR, DEBUGGER) << "SetBreakpointByUrl: generate function failed";
+                return false;
+            }
+        }
+        return DebuggerApi::SetBreakpoint(debugger_, location, condFuncRef);
     };
     if (!extractor->MatchWithLocation(callbackFunc, lineNumber, columnNumber)) {
         LOG(ERROR, DEBUGGER) << "failed to set breakpoint location number: " << lineNumber << ":" << columnNumber;
@@ -274,7 +288,7 @@ std::optional<CString> JSBackend::SetBreakpointByUrl(const CString &url, size_t 
     }
 
     BreakpointDetails metaData{lineNumber, 0, url};
-    *out_id = BreakpointDetails::ToString(metaData);
+    *outId = BreakpointDetails::ToString(metaData);
     *outLocations = CVector<std::unique_ptr<Location>>();
     std::unique_ptr<Location> location = std::make_unique<Location>();
     location->SetScriptId(scriptId).SetLine(lineNumber).SetColumn(0);

@@ -68,7 +68,8 @@ public:
                 }
                 ASSERT_TRUE(backend_->NotifyScriptParsed(0, pandaFile_));
                 flag_ = false;
-                auto error = debugInterface_->SetBreakpoint(location_);
+                auto condFuncRef = FunctionRef::Undefined(backend_->GetEcmaVm());
+                auto error = debugInterface_->SetBreakpoint(location_, condFuncRef);
                 ASSERT_FALSE(error);
             }
             return true;
