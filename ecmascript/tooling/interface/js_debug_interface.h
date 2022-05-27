@@ -18,6 +18,7 @@
 
 #include <string_view>
 
+#include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/tooling/interface/js_pt_location.h"
 
 namespace panda::ecmascript::tooling {
@@ -100,11 +101,12 @@ public:
     virtual void UnregisterHooks() = 0;
 
     /**
-     * \brief Set breakpoint to \param location
+     * \brief Set breakpoint to \param location with an optional \param condition
      * @param location Breakpoint location
+     * @param condition Optional condition
      * @return Error if any errors occur
      */
-    virtual bool SetBreakpoint(const JSPtLocation &location) = 0;
+    virtual bool SetBreakpoint(const JSPtLocation &location, const Local<FunctionRef> &condFuncRef) = 0;
 
     /**
      * \brief Remove breakpoint from \param location

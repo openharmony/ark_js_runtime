@@ -218,9 +218,10 @@ void DebuggerApi::RegisterHooks(JSDebugger *debugger, PtHooks *hooks)
     debugger->RegisterHooks(hooks);
 }
 
-bool DebuggerApi::SetBreakpoint(JSDebugger *debugger, const JSPtLocation &location)
+bool DebuggerApi::SetBreakpoint(JSDebugger *debugger, const JSPtLocation &location,
+    const Local<FunctionRef> &condFuncRef)
 {
-    return debugger->SetBreakpoint(location);
+    return debugger->SetBreakpoint(location, condFuncRef);
 }
 
 bool DebuggerApi::RemoveBreakpoint(JSDebugger *debugger, const JSPtLocation &location)

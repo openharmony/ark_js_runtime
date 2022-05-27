@@ -47,8 +47,8 @@ public:
     }
 
     std::optional<CString> SetBreakpointByUrl(const CString &url, size_t lineNumber, size_t columnNumber,
-                                            CString *outId,
-                                            CVector<std::unique_ptr<Location>> *outLocations);
+                                              const std::optional<CString> &condition, CString *outId,
+                                              CVector<std::unique_ptr<Location>> *outLocations);
     std::optional<CString> RemoveBreakpoint(const BreakpointDetails &metaData);
 
     std::optional<CString> Pause();
