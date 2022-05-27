@@ -356,7 +356,8 @@ public:
 
     inline void OnAllocateEvent(uintptr_t address);
     inline void OnMoveEvent(uintptr_t address, uintptr_t forwardAddress);
-
+    void AddToKeptObjects(JSHandle<JSTaggedValue> value) const;
+    void ClearKeptObjects() const;
     /*
      * Funtions used by heap verification.
      */

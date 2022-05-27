@@ -56,6 +56,7 @@ host_unittest_action("BuiltinsNaturalTest") {
     "builtins_dataview_test.cpp",
     "builtins_date_test.cpp",
     "builtins_errors_test.cpp",
+    "builtins_finalizationregistry_test.cpp",
     "builtins_function_test.cpp",
     "builtins_iterator_test.cpp",
     "builtins_json_test.cpp",
@@ -74,6 +75,7 @@ host_unittest_action("BuiltinsNaturalTest") {
     "builtins_symbol_test.cpp",
     "builtins_typedarray_test.cpp",
     "builtins_weak_map_test.cpp",
+    "builtins_weak_ref_test.cpp",
     "builtins_weak_set_test.cpp",
   ]
 

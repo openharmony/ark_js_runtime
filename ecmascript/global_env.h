@@ -79,6 +79,8 @@ class JSThread;
     V(JSTaggedValue, BuiltinsMapFunction, BUILTINS_MAP_FUNCTION_INDEX)                              \
     V(JSTaggedValue, BuiltinsWeakMapFunction, BUILTINS_WEAK_MAP_FUNCTION_INDEX)                     \
     V(JSTaggedValue, BuiltinsWeakSetFunction, BUILTINS_WEAK_SET_FUNCTION_INDEX)                     \
+    V(JSTaggedValue, BuiltinsWeakRefFunction, BUILTINS_WEAK_REF_FUNCTION_INDEX)                     \
+    V(JSTaggedValue, BuiltinsFinalizationRegistryFunction, BUILTINS_FINALIZATION_REGISTRY_FUNCTION_INDEX) \
     V(JSTaggedValue, MapPrototype, MAP_PROTOTYPE_INDEX)                                             \
     V(JSTaggedValue, MathFunction, MATH_FUNCTION_INDEX)                                             \
     V(JSTaggedValue, JsonFunction, JSON_FUNCTION_INDEX)                                             \
@@ -145,7 +147,9 @@ class JSThread;
     V(JSTaggedValue, ListFormatLocales, LIST_FORMAT_LOCALES_INDEX)                                  \
     V(JSTaggedValue, GlobalRecord, GLOBAL_RECORD)                                                   \
     V(JSTaggedValue, ModuleNamespaceClass, MODULENAMESPACE_CLASS)                                   \
-    V(JSTaggedValue, ObjectLiteralHClassCache, OBJECT_LITERAL_HCLASS_CACHE)
+    V(JSTaggedValue, ObjectLiteralHClassCache, OBJECT_LITERAL_HCLASS_CACHE)                         \
+    V(JSTaggedValue, WeakRefKeepObjects, WEAK_REF_KEEP_OBJECTS)                                     \
+    V(JSTaggedValue, FinRegLists, FIN_REG_LISTS)
 
 class GlobalEnv : public TaggedObject {
 public:
