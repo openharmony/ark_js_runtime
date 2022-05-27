@@ -38,6 +38,8 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 
+#include "ecmascript/mem/machine_code.h"
+#include "ecmascript/mem/region.h"
 #include "llvm-c/Analysis.h"
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
@@ -71,6 +73,9 @@ struct CodeInfo {
         if (machineCode_ != nullptr) {
             ASAN_UNPOISON_MEMORY_REGION(machineCode_, MAX_MACHINE_CODE_SIZE);
         }
+        // align machineCode for aarch64
+        machineCode_ += MachineCode::DATA_OFFSET +
+            AlignUp(sizeof(Region), static_cast<size_t>(MemAlignment::MEM_ALIGN_REGION));
     }
     ~CodeInfo()
     {

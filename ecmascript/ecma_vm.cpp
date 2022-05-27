@@ -641,10 +641,10 @@ void EcmaVM::SetMicroJobQueue(job::MicroJobQueue *queue)
 
 void EcmaVM::LoadStubs()
 {
-    std::string comStubFile = options_.GetComStubFile();
-    thread_->LoadCommonStubsFromFile(comStubFile);
     std::string bcStubFile = options_.GetBcStubFile();
     thread_->LoadBytecodeHandlerStubsFromFile(bcStubFile);
+    std::string comStubFile = options_.GetComStubFile();
+    thread_->LoadCommonStubsFromFile(comStubFile);
 }
 
 void EcmaVM::SetupRegExpResultCache()
