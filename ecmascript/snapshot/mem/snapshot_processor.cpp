@@ -26,6 +26,7 @@
 #include "ecmascript/builtins/builtins_date.h"
 #include "ecmascript/builtins/builtins_date_time_format.h"
 #include "ecmascript/builtins/builtins_errors.h"
+#include "ecmascript/builtins/builtins_finalization_registry.h"
 #include "ecmascript/builtins/builtins_function.h"
 #include "ecmascript/builtins/builtins_generator.h"
 #include "ecmascript/builtins/builtins_global.h"
@@ -52,6 +53,7 @@
 #include "ecmascript/builtins/builtins_symbol.h"
 #include "ecmascript/builtins/builtins_typedarray.h"
 #include "ecmascript/builtins/builtins_weak_map.h"
+#include "ecmascript/builtins/builtins_weak_ref.h"
 #include "ecmascript/builtins/builtins_weak_set.h"
 #include "ecmascript/containers/containers_arraylist.h"
 #include "ecmascript/containers/containers_deque.h"
@@ -99,6 +101,8 @@ using BuiltinsMap = builtins::BuiltinsMap;
 using BuiltinsSet = builtins::BuiltinsSet;
 using BuiltinsWeakMap = builtins::BuiltinsWeakMap;
 using BuiltinsWeakSet = builtins::BuiltinsWeakSet;
+using BuiltinsWeakRef = builtins::BuiltinsWeakRef;
+using BuiltinsFinalizationRegistry = builtins::BuiltinsFinalizationRegistry;
 using BuiltinsArray = builtins::BuiltinsArray;
 using BuiltinsTypedArray = builtins::BuiltinsTypedArray;
 using BuiltinsIterator = builtins::BuiltinsIterator;
@@ -325,6 +329,11 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(BuiltinsWeakSet::Add),
     reinterpret_cast<uintptr_t>(BuiltinsWeakSet::Delete),
     reinterpret_cast<uintptr_t>(BuiltinsWeakSet::Has),
+    reinterpret_cast<uintptr_t>(BuiltinsWeakRef::WeakRefConstructor),
+    reinterpret_cast<uintptr_t>(BuiltinsWeakRef::Deref),
+    reinterpret_cast<uintptr_t>(BuiltinsFinalizationRegistry::FinalizationRegistryConstructor),
+    reinterpret_cast<uintptr_t>(BuiltinsFinalizationRegistry::Register),
+    reinterpret_cast<uintptr_t>(BuiltinsFinalizationRegistry::Unregister),
     reinterpret_cast<uintptr_t>(BuiltinsArray::ArrayConstructor),
     reinterpret_cast<uintptr_t>(BuiltinsArray::Concat),
     reinterpret_cast<uintptr_t>(BuiltinsArray::CopyWithin),

@@ -53,6 +53,7 @@
 #include "ecmascript/js_date.h"
 #include "ecmascript/js_date_time_format.h"
 #include "ecmascript/js_for_in_iterator.h"
+#include "ecmascript/js_finalization_registry.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_hclass.h"
@@ -78,6 +79,7 @@
 #include "ecmascript/js_weak_container.h"
 #include "ecmascript/jspandafile/class_info_extractor.h"
 #include "ecmascript/jspandafile/program_object.h"
+#include "ecmascript/js_weak_ref.h"
 #include "ecmascript/mem/machine_code.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/slots.h"
@@ -203,6 +205,15 @@ public:
                 break;
             case JSType::JS_WEAK_SET:
                 JSWeakSet::Cast(object)->VisitRangeSlot(visitor);
+                break;
+            case JSType::JS_WEAK_REF:
+                JSWeakRef::Cast(object)->VisitRangeSlot(visitor);
+                break;
+            case JSType::JS_FINALIZATION_REGISTRY:
+                JSFinalizationRegistry::Cast(object)->VisitRangeSlot(visitor);
+                break;
+            case JSType::CELL_RECORD:
+                CellRecord::Cast(object)->VisitRangeSlot(visitor);
                 break;
             case JSType::JS_DATE:
                 JSDate::Cast(object)->VisitRangeSlot(visitor);

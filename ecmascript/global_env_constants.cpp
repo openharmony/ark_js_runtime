@@ -41,6 +41,7 @@
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
+#include "ecmascript/js_finalization_registry.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_hclass.h"
@@ -202,6 +203,8 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
                 factory->NewEcmaDynClass(dynClassClass, JSAPITreeMapIterator::SIZE, JSType::JS_API_TREEMAP_ITERATOR));
     SetConstant(ConstantIndex::JS_API_TREE_SET_ITERATOR_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, JSAPITreeSetIterator::SIZE, JSType::JS_API_TREESET_ITERATOR));
+    SetConstant(ConstantIndex::CELL_RECORD_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, CellRecord::SIZE, JSType::CELL_RECORD));
 }
 
 void GlobalEnvConstants::InitGlobalConstantSpecial(JSThread *thread)
