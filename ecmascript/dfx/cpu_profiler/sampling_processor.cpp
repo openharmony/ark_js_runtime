@@ -21,7 +21,7 @@
 
 namespace panda::ecmascript {
 JSThread *SamplingProcessor::thread_ = nullptr;
-bool SamplingProcessor::isStart_ = true;
+bool SamplingProcessor::isStart_ = false;
 SamplingProcessor::SamplingProcessor(SamplesRecord *generator, const EcmaVM *vm, int interval, bool outToFile)
 {
     generator_ = generator;
