@@ -33,7 +33,7 @@ double MemController::CalculateAllocLimit(size_t currentSize, size_t minSize, si
     const uint64_t halfToMaxSize = (static_cast<uint64_t>(currentSize) + maxSize) / 2;
     auto result = static_cast<size_t>(std::min(limitAboveMinSize, halfToMaxSize));
     // Avoid the limit is larger than maxSize - newSpaceCapacity. It may cause old space merge OOM.
-    result = static_cast<size_t>(std::min(result, maxSize - newSpaceCapacity));
+    result = static_cast<size_t>(std::min(result, maxSize));
     return result;
 }
 

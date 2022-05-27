@@ -27,6 +27,8 @@ class GCStats {
 
 public:
     explicit GCStats(const Heap *heap) : heap_(heap) {}
+    explicit GCStats(const Heap *heap, size_t longPuaseTime) : heap_(heap),
+        longPauseTime_(longPuaseTime) {}
     ~GCStats() = default;
 
     void PrintStatisticResult(bool force = false);
@@ -41,6 +43,7 @@ public:
     void StatisticConcurrentRemark(Duration time);
     void StatisticConcurrentEvacuate(Duration time);
 
+    void CheckIfLongTimePause();
 private:
     void PrintSemiStatisticResult(bool force);
     void PrintPartialStatisticResult(bool force);
@@ -101,6 +104,9 @@ private:
     size_t compressNonMoveTotalCommitSize_ = 0;
 
     const Heap *heap_;
+    std::string currentGcType_ = "";
+    size_t currentPauseTime_ = 0;
+    size_t longPauseTime_ = 0;
 
     static constexpr uint32_t THOUSAND = 1000;
     static constexpr uint32_t MB = 1 * 1024 * 1024;

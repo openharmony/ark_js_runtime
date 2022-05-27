@@ -482,7 +482,7 @@ private:
     bool concurrentMarkingEnabled_ {true};
     bool fullGCRequested_ {false};
 
-    size_t globalSpaceAllocLimit_ {GLOBAL_SPACE_LIMIT_BEGIN};
+    size_t globalSpaceAllocLimit_ {0};
     bool oldSpaceLimitAdjusted_ {false};
     size_t promotedSize_ {0};
     size_t semiSpaceCopiedSize_ {0};
@@ -491,6 +491,7 @@ private:
     os::memory::Mutex waitClearTaskFinishedMutex_;
     os::memory::ConditionVariable waitClearTaskFinishedCV_;
     uint32_t runningTaskCount_ {0};
+    uint32_t maxTaskCount_ {0};
     os::memory::Mutex waitTaskFinishedMutex_;
     os::memory::ConditionVariable waitTaskFinishedCV_;
 
