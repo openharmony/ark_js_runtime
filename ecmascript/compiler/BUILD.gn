@@ -240,7 +240,7 @@ if (!defined(ark_independent_build)) {
     deps =
         [ "$js_root/ecmascript/compiler:ark_stub_compiler(${host_toolchain})" ]
 
-    stub_file_gen_dir = "$root_gen_dir/ark/js_runtime"
+    stub_file_gen_dir = "$root_out_dir/../.."
 
     stub_option = " --com-stub-out=" + rebase_path(stub_file_gen_dir) +
                   "/com_stub.m --bc-stub-out=" +
@@ -276,6 +276,6 @@ if (!defined(ark_independent_build)) {
 }
 
 config("gen_stub_file_dir_config") {
-  stub_file_gen_dir = rebase_path(root_gen_dir) + "/ark/js_runtime"
+  stub_file_gen_dir = rebase_path("//out")
   defines = [ "STUB_FILE_GEN_DIR=\"${stub_file_gen_dir}/\"" ]
 }
