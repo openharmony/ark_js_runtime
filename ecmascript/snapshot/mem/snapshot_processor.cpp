@@ -745,15 +745,14 @@ static uintptr_t g_nativeTable[] = {
 void SnapshotProcessor::Initialize()
 {
     auto heap = const_cast<Heap *>(vm_->GetHeap());
-    size_t maxOldSpaceCapacity = vm_->GetJSOptions().MaxOldSpaceCapacity();
-    oldLocalSpace_ = new LocalSpace(heap, maxOldSpaceCapacity, maxOldSpaceCapacity);
-    size_t maxNonMovableCapacity = vm_->GetJSOptions().MaxNonmovableSpaceCapacity();
-    nonMovableLocalSpace_ = new LocalSpace(heap, maxNonMovableCapacity, maxNonMovableCapacity);
-    size_t maxMachineCodeCapacity = vm_->GetJSOptions().MaxMachineCodeSpaceCapacity();
-    machineCodeLocalSpace_ = new LocalSpace(heap, maxMachineCodeCapacity, maxMachineCodeCapacity);
-    size_t defaultSnapshotSpaceCapacity = vm_->GetJSOptions().DefaultSnapshotSpaceCapacity();
-    size_t maxSnapshotSpaceCapacity = vm_->GetJSOptions().MaxSnapshotSpaceCapacity();
-    snapshotLocalSpace_ = new SnapshotSpace(heap, defaultSnapshotSpaceCapacity, maxSnapshotSpaceCapacity);
+    size_t oldSpaceCapacity = heap->GetOldSpace()->GetInitialCapacity();
+    oldLocalSpace_ = new LocalSpace(heap, oldSpaceCapacity, oldSpaceCapacity);
+    size_t nonMovableCapacity = heap->GetNonMovableSpace()->GetInitialCapacity();
+    nonMovableLocalSpace_ = new LocalSpace(heap, nonMovableCapacity, nonMovableCapacity);
+    size_t machineCodeCapacity = heap->GetMachineCodeSpace()->GetInitialCapacity();
+    machineCodeLocalSpace_ = new LocalSpace(heap, machineCodeCapacity, machineCodeCapacity);
+    size_t snapshotSpaceCapacity = heap->GetSnapshotSpace()->GetMaximumCapacity();
+    snapshotLocalSpace_ = new SnapshotSpace(heap, snapshotSpaceCapacity, snapshotSpaceCapacity);
 }
 
 void SnapshotProcessor::StopAllocate()
