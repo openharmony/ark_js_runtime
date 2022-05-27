@@ -36,7 +36,8 @@ using panda::ecmascript::EcmaRuntimeCallInfo;
 class JSBreakpoint {
 public:
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-    JSBreakpoint(JSMethod *method, uint32_t bcOffset) : method_(method), bc_offset_(bcOffset) {}
+    JSBreakpoint(JSMethod *method, uint32_t bcOffset, const Global<FunctionRef> &condFuncRef)
+        : method_(method), bcOffset_(bcOffset), condFuncRef_(condFuncRef) {}
     ~JSBreakpoint() = default;
 
     JSMethod *GetMethod() const
@@ -46,7 +47,7 @@ public:
 
     uint32_t GetBytecodeOffset() const
     {
-        return bc_offset_;
+        return bcOffset_;
     }
 
     bool operator==(const JSBreakpoint &bpoint) const
@@ -54,12 +55,18 @@ public:
         return GetMethod() == bpoint.GetMethod() && GetBytecodeOffset() == bpoint.GetBytecodeOffset();
     }
 
+    const Global<FunctionRef> &GetConditionFunction()
+    {
+        return condFuncRef_;
+    }
+
     DEFAULT_COPY_SEMANTIC(JSBreakpoint);
     DEFAULT_MOVE_SEMANTIC(JSBreakpoint);
 
 private:
     JSMethod *method_;
-    uint32_t bc_offset_;
+    uint32_t bcOffset_;
+    Global<FunctionRef> condFuncRef_;
 };
 
 class HashJSBreakpoint {
@@ -95,7 +102,7 @@ public:
         hooks_ = nullptr;
     }
 
-    bool SetBreakpoint(const JSPtLocation &location) override;
+    bool SetBreakpoint(const JSPtLocation &location, const Local<FunctionRef> &condFuncRef) override;
     bool RemoveBreakpoint(const JSPtLocation &location) override;
     void BytecodePcChanged(JSThread *thread, JSMethod *method, uint32_t bcOffset) override;
     void LoadModule(std::string_view filename) override
@@ -133,7 +140,7 @@ private:
         std::function<JSTaggedValue(const EcmaVM *, JSTaggedValue, const CString &, JSTaggedValue)>;
 
     JSMethod *FindMethod(const JSPtLocation  &location) const;
-    bool FindBreakpoint(const JSMethod *method, uint32_t bcOffset) const;
+    std::optional<JSBreakpoint> FindBreakpoint(const JSMethod *method, uint32_t bcOffset) const;
     bool RemoveBreakpoint(const JSMethod *method, uint32_t bcOffset);
     void HandleExceptionThrowEvent(const JSThread *thread, const JSMethod *method, uint32_t bcOffset);
     bool HandleStep(const JSMethod *method, uint32_t bcOffset);

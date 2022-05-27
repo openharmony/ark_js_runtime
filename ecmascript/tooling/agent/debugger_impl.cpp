@@ -287,11 +287,12 @@ DispatchResponse DebuggerImpl::SetAsyncCallStackDepth()
 }
 
 DispatchResponse DebuggerImpl::SetBreakpointByUrl(std::unique_ptr<SetBreakpointByUrlParams> params,
-                                                  CString *out_id,
+                                                  CString *outId,
                                                   CVector<std::unique_ptr<Location>> *outLocations)
 {
     return DispatchResponse::Create(
-        backend_->SetBreakpointByUrl(params->GetUrl(), params->GetLine(), params->GetColumn(), out_id, outLocations));
+        backend_->SetBreakpointByUrl(params->GetUrl(), params->GetLine(), params->GetColumn(),
+        (params->HasCondition() ? params->GetCondition() : std::optional<CString> {}), outId, outLocations));
 }
 
 DispatchResponse DebuggerImpl::SetPauseOnExceptions(std::unique_ptr<SetPauseOnExceptionsParams> params)
