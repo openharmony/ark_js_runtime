@@ -31,7 +31,7 @@ namespace panda::ecmascript::tooling {
 using panda::ecmascript::Program;
 using panda::ecmascript::base::BuiltinsBase;
 
-bool JSDebugger::SetBreakpoint(const JSPtLocation &location)
+bool JSDebugger::SetBreakpoint(const JSPtLocation &location, const Local<FunctionRef> &condFuncRef)
 {
     JSMethod *method = FindMethod(location);
     if (method == nullptr) {
@@ -44,9 +44,11 @@ bool JSDebugger::SetBreakpoint(const JSPtLocation &location)
         return false;
     }
 
-    if (!breakpoints_.emplace(method, location.GetBytecodeOffset()).second) {
-        LOG(ERROR, DEBUGGER) << "SetBreakpoint: Breakpoint already exists";
-        return false;
+    auto [_, success] = breakpoints_.emplace(method, location.GetBytecodeOffset(),
+        Global<FunctionRef>(ecmaVm_, condFuncRef));
+    if (!success) {
+        // also return true
+        LOG(WARNING, DEBUGGER) << "SetBreakpoint: Breakpoint already exists";
     }
 
     return true;
@@ -82,8 +84,28 @@ void JSDebugger::BytecodePcChanged(JSThread *thread, JSMethod *method, uint32_t 
 
 bool JSDebugger::HandleBreakpoint(const JSMethod *method, uint32_t bcOffset)
 {
-    if (hooks_ == nullptr || !FindBreakpoint(method, bcOffset)) {
+    auto breakpoint = FindBreakpoint(method, bcOffset);
+    if (hooks_ == nullptr || !breakpoint.has_value()) {
         return false;
+    }
+
+    JSThread *thread = ecmaVm_->GetJSThread();
+    auto condFuncRef = breakpoint.value().GetConditionFunction();
+    if (condFuncRef->IsFunction()) {
+        LOG(INFO, DEBUGGER) << "HandleBreakpoint: begin evaluate condition";
+        auto handlerPtr = std::make_shared<InterpretedFrameHandler>(ecmaVm_->GetJSThread());
+        auto res = DebuggerApi::EvaluateViaFuncCall(const_cast<EcmaVM *>(ecmaVm_),
+            condFuncRef.ToLocal(ecmaVm_), handlerPtr);
+        if (thread->HasPendingException()) {
+            LOG(ERROR, DEBUGGER) << "HandleBreakpoint: has pending exception";
+            thread->ClearException();
+            return false;
+        }
+        bool isMeet = res->ToBoolean(ecmaVm_)->Value();
+        if (!isMeet) {
+            LOG(ERROR, DEBUGGER) << "HandleBreakpoint: condition not meet";
+            return false;
+        }
     }
 
     auto *pf = method->GetPandaFile();
@@ -117,16 +139,16 @@ bool JSDebugger::HandleStep(const JSMethod *method, uint32_t bcOffset)
     return hooks_->SingleStep(location);
 }
 
-bool JSDebugger::FindBreakpoint(const JSMethod *method, uint32_t bcOffset) const
+std::optional<JSBreakpoint> JSDebugger::FindBreakpoint(const JSMethod *method, uint32_t bcOffset) const
 {
     for (const auto &bp : breakpoints_) {
         if (bp.GetBytecodeOffset() == bcOffset && bp.GetMethod()->GetPandaFile()->GetFilename() ==
             method->GetPandaFile()->GetFilename() && bp.GetMethod()->GetFileId() == method->GetFileId()) {
-            return true;
+            return bp;
         }
     }
 
-    return false;
+    return {};
 }
 
 bool JSDebugger::RemoveBreakpoint(const JSMethod *method, uint32_t bcOffset)

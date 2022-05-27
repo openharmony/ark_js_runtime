@@ -84,7 +84,8 @@ public:
     static JSDebugger *CreateJSDebugger(const EcmaVM *ecmaVm);
     static void DestroyJSDebugger(JSDebugger *debugger);
     static void RegisterHooks(JSDebugger *debugger, PtHooks *hooks);
-    static bool SetBreakpoint(JSDebugger *debugger, const JSPtLocation &location);
+    static bool SetBreakpoint(JSDebugger *debugger, const JSPtLocation &location,
+        const Local<FunctionRef> &condFuncRef);
     static bool RemoveBreakpoint(JSDebugger *debugger, const JSPtLocation &location);
 
     // JSMehthod
