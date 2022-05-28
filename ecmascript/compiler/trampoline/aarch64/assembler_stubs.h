@@ -166,6 +166,28 @@ private:
         Register stackArgs);
 
     static void StackOverflowCheck([[maybe_unused]] ExtendedAssembler *assembler);
+
+    static void PushAsmInterpEntryFrame(ExtendedAssembler *assembler, Register &frameTypeRegister,
+        Register &prevFrameRegister, Register &pcRegister);
+
+    static void PopAsmInterpEntryFrame(ExtendedAssembler *assembler, Register &prevFrameRegister);
+
+    static void PushGeneratorFrameState(ExtendedAssembler *assembler, Register &frameTypeRegister,
+        Register &prevSpRegister, Register &fpRegister, Register &callTargetRegister, Register &methodRegister,
+        Register &contextRegister, Register &pcRegister, Register &operatorRegister);
+
+    static void CallBCStub(ExtendedAssembler *assembler, Register &newSp, Register &glue,
+        Register &callTarget, Register &method, Register &pc, Register &temp, bool isReturn);
+
+    static void CallNativeEntry(ExtendedAssembler *assembler);
+
+    static void PushArgsFastPath(ExtendedAssembler *assembler,
+        Register &glue, Register &argc, Register &argv, Register &callTarget,
+        Register &method, Register &prevSp, Register &fp, Register &callField);
+
+    static void PushArgsSlowPath(ExtendedAssembler *assembler, Register &glueRegister,
+        Register &declaredNumArgsRegister, Register &argcRegister, Register &argvRegister, Register &callTargetRegister,
+        Register &methodRegister, Register &prevSpRegister, Register &callFieldRegister);
 };
 }  // namespace panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H
