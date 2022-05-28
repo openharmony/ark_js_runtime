@@ -62,7 +62,7 @@ public:
     // or copied into (from the other semi space) during semi space GC.
     SemiSpace *GetNewSpace() const
     {
-        return activeSpace_;
+        return activeSemiSpace_;
     }
 
     /*
@@ -72,7 +72,7 @@ public:
      */
     SemiSpace *GetFromSpaceDuringEvacuation() const
     {
-        return inactiveSpace_;
+        return inactiveSemiSpace_;
     }
 
     OldSpace *GetOldSpace() const
@@ -287,7 +287,7 @@ public:
     // record lastRegion for each space, which will be used in ReclaimRegions()
     void PrepareRecordRegionsForReclaim()
     {
-        activeSpace_->SetRecordRegion();
+        activeSemiSpace_->SetRecordRegion();
         oldSpace_->SetRecordRegion();
         snapshotSpace_->SetRecordRegion();
         nonMovableSpace_->SetRecordRegion();
@@ -423,8 +423,8 @@ private:
      * Young generation spaces where most new objects are allocated.
      * (only one of the spaces is active at a time in semi space GC).
      */
-    SemiSpace *activeSpace_ {nullptr};
-    SemiSpace *inactiveSpace_ {nullptr};
+    SemiSpace *activeSemiSpace_ {nullptr};
+    SemiSpace *inactiveSemiSpace_ {nullptr};
 
     // Old generation spaces where some long living objects are allocated or promoted.
     OldSpace *oldSpace_ {nullptr};

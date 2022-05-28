@@ -544,7 +544,7 @@ void EcmaVM::ProcessReferences(const WeakRootVisitor &v0)
     // program maps
     for (auto iter = cachedConstpools_.begin(); iter != cachedConstpools_.end();) {
         auto object = iter->second;
-        if (object.IsObject()) {
+        if (object.IsHeapObject()) {
             TaggedObject *obj = object.GetTaggedObject();
             auto fwd = v0(obj);
             if (fwd == nullptr) {
