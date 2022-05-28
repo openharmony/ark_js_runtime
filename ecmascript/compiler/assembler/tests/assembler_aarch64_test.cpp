@@ -181,7 +181,11 @@ HWTEST_F_L0(AssemblerAarch64Test, LdrStr)
                              "00000004:f81f87e1 \tstr\tx1, [sp], #-8\n"
                              "00000008:f8408fe1 \tldr\tx1, [sp, #8]!\n"
                              "0000000c:f94007e3 \tldr\tx3, [sp, #8]\n"
-                             "00000010:b9400be3 \tldr\tw3, [sp, #8]\n");
+                             "00000010:b9400be3 \tldr\tw3, [sp, #8]\n"
+                             "00000014:38408fe1 \tldrb\tw1, [sp, #8]!\n"
+                             "00000018:394023e1 \tldrb\tw1, [sp, #8]\n"
+                             "0000001c:78408fe1 \tldrh\tw1, [sp, #8]!\n"
+                             "00000020:794013e1 \tldrh\tw1, [sp, #8]\n");
 
     AssemblerAarch64 masm(chunk_);
     __ Str(Register(X1), MemoryOperand(Register(SP), 8, POSTINDEX));
@@ -189,6 +193,10 @@ HWTEST_F_L0(AssemblerAarch64Test, LdrStr)
     __ Ldr(Register(X1), MemoryOperand(Register(SP), 8, PREINDEX));
     __ Ldr(Register(X3), MemoryOperand(Register(SP), 8, OFFSET));
     __ Ldr(Register(X3).W(), MemoryOperand(Register(SP), 8, OFFSET));
+    __ Ldrb(Register(X1).W(), MemoryOperand(Register(SP), 8, PREINDEX));
+    __ Ldrb(Register(X1).W(), MemoryOperand(Register(SP), 8, OFFSET));
+    __ Ldrh(Register(X1).W(), MemoryOperand(Register(SP), 8, PREINDEX));
+    __ Ldrh(Register(X1).W(), MemoryOperand(Register(SP), 8, OFFSET));
     std::ostringstream oss;
     DisassembleChunk("aarch64-unknown-linux-gnu", &masm, oss);
     ASSERT_EQ(oss.str(), expectResult);

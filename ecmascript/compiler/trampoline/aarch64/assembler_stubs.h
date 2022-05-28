@@ -18,6 +18,7 @@
 
 #include "ecmascript/compiler/assembler/aarch64/assembler_aarch64.h"
 #include "ecmascript/compiler/assembler/aarch64/extend_assembler.h"
+#include "ecmascript/frames.h"
 
 namespace panda::ecmascript::aarch64 {
 class AssemblerStubs {
@@ -137,6 +138,11 @@ private:
 
     static void DispatchCall(ExtendedAssembler *assembler, Register pc, Register newSp);
 
+    static void CallNativeInternal(ExtendedAssembler *assembler, Register glue, Register numArgs, Register stackArgs,
+        Register nativeCode);
+
+    static void PushBuiltinFrame(ExtendedAssembler *assembler, Register glue, FrameType type, Register op);
+
     static void PushFrameState(ExtendedAssembler *assembler, Register prevSp, Register fp, Register callTarget,
         Register method, Register pc, Register op);
 
@@ -148,6 +154,11 @@ private:
     static void PushUndefinedWithArgc(ExtendedAssembler *assembler, Register argc, Register temp, Label *next);
 
     static void SaveFpAndJumpSize(ExtendedAssembler *assembler, Immediate jumpSize);
+
+    static void GlueToThread(ExtendedAssembler *assembler, Register glue, Register thread);
+
+    static void ConstructEcmaRuntimeCallInfo(ExtendedAssembler *assembler, Register thread, Register numArgs,
+        Register stackArgs);
 
     static void StackOverflowCheck([[maybe_unused]] ExtendedAssembler *assembler);
 };

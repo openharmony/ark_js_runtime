@@ -999,12 +999,14 @@ void AssemblerStubs::CallIThisRangeNoExtraEntry(ExtendedAssembler *assembler, Re
     Register argc(X24);
     Register argv(X25);
     Register op(X5);
+    Register opArgv(X6);
 
     Label pushCallThis;
     Register numRegister = declaredNumArgs;
     __ Cmp(declaredNumArgs.W(), argc.W());
     __ CMov(numRegister.W(), declaredNumArgs.W(), argc.W(), Condition::LO);
-    __ PushArgsWithArgv(numRegister, argv, op, &pushCallThis);
+    __ Mov(opArgv, argv);
+    __ PushArgsWithArgv(numRegister, opArgv, op, &pushCallThis);
     __ Bind(&pushCallThis);
     {
         PushCallThis(assembler);
@@ -1019,12 +1021,14 @@ void AssemblerStubs::CallIRangeNoExtraEntry(ExtendedAssembler *assembler, Regist
     Register argc(X24);
     Register argv(X25);
     Register op(X5);
+    Register opArgv(X6);
 
     Label pushCallThisUndefined;
     Register numRegister = declaredNumArgs;
     __ Cmp(declaredNumArgs.W(), argc.W());
     __ CMov(numRegister.W(), declaredNumArgs.W(), argc.W(), Condition::LO);
-    __ PushArgsWithArgv(numRegister, argv, op, &pushCallThisUndefined);
+    __ Mov(opArgv, argv);
+    __ PushArgsWithArgv(numRegister, opArgv, op, &pushCallThisUndefined);
     __ Bind(&pushCallThisUndefined);
     {
         PushCallThisUndefined(assembler);
@@ -1081,22 +1085,155 @@ void AssemblerStubs::Callargs0NoExtraEntry(ExtendedAssembler *assembler)
     PushCallThisUndefined(assembler);
 }
 
+// uint64_t PushCallIRangeAndDispatchNative(uintptr_t glue, uint32_t argc, JSTaggedType calltarget, uintptr_t argv[]);
+// c++ calling convention call js function
+// Input:
+// X0 - glue
+// X1 - nativeCode
+// X2 - callTarget
+// X3 - thisValue
+// X4  - argc
+// X5  - argV (...)
 void AssemblerStubs::PushCallIRangeAndDispatchNative(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(PushCallIRangeAndDispatchNative));
+
+    Register glue(X0);
+    Register nativeCode(X1);
+    Register callTarget(X2);
+    Register thisObj(X3);
+    Register argc(X4);
+    Register argv(X5);
+    Register opArgc(X8);
+    Register opArgv(X9);
+    Register temp(X10);
+    Register stackArgs(X11);
+    Register sp(SP);
+
+    Label pushThis;
+
+    PushBuiltinFrame(assembler, glue, FrameType::BUILTIN_FRAME_WITH_ARGV, temp);
+
+    StackOverflowCheck(assembler);
+
+    __ Str(argc, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+    __ Mov(opArgc, argc);
+    __ Mov(opArgv, argv);
+    __ PushArgsWithArgv(opArgc, opArgv, temp, &pushThis);
+
+    __ Bind(&pushThis);
+    __ Str(thisObj, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));    // this
+    __ Mov(temp, Immediate(JSTaggedValue::VALUE_UNDEFINED));
+    __ Str(temp, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));       // newTarget
+    __ Str(callTarget, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX)); // callTarget
+    __ Mov(stackArgs, sp);
+
+    CallNativeInternal(assembler, glue, argc, stackArgs, nativeCode);
     __ Ret();
 }
 
+// uint64_t PushCallArgsAndDispatchNative(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
+// webkit_jscc calling convention call runtime_id's runtion function(c-abi)
+// Input:
+// X0 - glue
+// stack layout:
+// sp + N*8 argvN
+// ........
+// sp + 24: argv1
+// sp + 16: argv0
+// sp + 8:  actualArgc
+// sp:      codeAddress
+// construct Native Leave Frame:
+//   +--------------------------+
+//   |       argv0              | calltarget , newTarget, this, ....
+//   +--------------------------+ ---
+//   |       argc               |   ^
+//   |--------------------------|  Fixed
+//   |       codeAddress        | BuiltinFrame
+//   |--------------------------|   |
+//   |       returnAddr         |   |
+//   |--------------------------|   |
+//   |       callsiteFp         |   |
+//   |--------------------------|   |
+//   |       frameType          |   v
+//   +--------------------------+ ---
 void AssemblerStubs::PushCallArgsAndDispatchNative(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(PushCallArgsAndDispatchNative));
+
+    Register glue(X0);
+    Register nativeCode(X1);
+    Register argc(X4);
+    Register argv(X5);
+    Register temp(X6);
+    Register fp(X20);
+
+    PushBuiltinFrame(assembler, glue, FrameType::BUILTIN_FRAME, temp);
+
+    __ Ldr(nativeCode, MemoryOperand(fp, BuiltinFrame::GetNativeCodeToFpDelta(false)));
+    __ Ldr(argc, MemoryOperand(fp, BuiltinFrame::GetNumArgsToFpDelta(false)));
+    __ Add(argv, fp, Immediate(BuiltinFrame::GetStackArgsToFpDelta(false)));
+
+    CallNativeInternal(assembler, glue, argc, argv, nativeCode);
     __ Ret();
 }
 
+void AssemblerStubs::PushBuiltinFrame(ExtendedAssembler *assembler, Register glue, FrameType type, Register op)
+{
+    Register sp(X20);
+    __ Str(sp, MemoryOperand(Register(SP), -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+    __ Mov(sp, Register(SP));
+    __ Str(sp, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
+    __ Mov(op, Immediate(static_cast<int32_t>(type)));
+    __ Str(op, MemoryOperand(Register(SP), -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+}
+
+void AssemblerStubs::CallNativeInternal(ExtendedAssembler *assembler, Register glue, Register numArgs,
+    Register stackArgs, Register nativeCode)
+{
+    GlueToThread(assembler, glue, glue);
+    ConstructEcmaRuntimeCallInfo(assembler, glue, numArgs, stackArgs);
+
+    // rsp is ecma callinfo base
+    __ Mov(Register(X0), Register(SP));
+    __ Blr(nativeCode);
+    // resume rsp
+    __ Mov(Register(SP), Register(X20));
+    __ Ldr(Register(X20), MemoryOperand(Register(SP), FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
+}
+
+// ResumeRspAndDispatch(uintptr_t glue, uintptr_t sp, uintptr_t pc, uintptr_t constantPool,
+//     uint64_t profileTypeInfo, uint64_t acc, uint32_t hotnessCounter, size_t jumpSize)
+// GHC calling convention
+// X19 - glue
+// X20 - sp
+// X21 - pc
+// X22 - constantPool
+// X23 - profileTypeInfo
+// X24 - acc
+// X25 - hotnessCounter
+// X26 - jumpSizeAfterCall
 void AssemblerStubs::ResumeRspAndDispatch(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(ResumeRspAndDispatch));
-    __ Ret();
+
+    Register glue(X19);
+    Register sp(X20);
+    Register pc(X21);
+    Register jumpSize(X26);
+    Register frameState(X5);
+    Register opcode(X6, W);
+    Register bcStub(X7);
+
+    __ Sub(frameState, sp, Immediate(sizeof(AsmInterpretedFrame)));
+    __ Ldr(Register(SP), MemoryOperand(frameState, AsmInterpretedFrame::GetFpOffset(false)));  // resume rsp
+    __ Ldr(sp, MemoryOperand(frameState, AsmInterpretedFrame::GetBaseOffset(false)));  // update sp
+
+    __ Add(pc, pc, Operand(jumpSize, LSL, 0));
+    __ Ldrb(opcode, MemoryOperand(pc, 0));
+    __ Add(bcStub, glue, Operand(opcode, LSL, 3));  // 3： bc * 8
+    __ Ldr(bcStub, MemoryOperand(bcStub, JSThread::GlueData::GetBCStubEntriesOffset(false)));
+    __ Br(bcStub);
 }
 
 void AssemblerStubs::ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *assembler)
@@ -1109,15 +1246,55 @@ void AssemblerStubs::ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *asse
     __ Ret();
 }
 
+// ResumeCaughtFrameAndDispatch(uintptr_t glue, uintptr_t sp, uintptr_t pc, uintptr_t constantPool,
+//     uint64_t profileTypeInfo, uint64_t acc, uint32_t hotnessCounter)
+// GHC calling convention
+// X19 - glue
+// X20 - sp
+// X21 - pc
+// X22 - constantPool
+// X23 - profileTypeInfo
+// X24 - acc
+// X25 - hotnessCounter
 void AssemblerStubs::ResumeCaughtFrameAndDispatch(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(ResumeCaughtFrameAndDispatch));
-    __ Ret();
+
+    Register glue(X19);
+    Register pc(X21);
+    Register fp(X5);
+    Register opcode(X6, W);
+    Register bcStub(X7);
+
+    Label dispatch;
+    __ Ldr(fp, MemoryOperand(glue, JSThread::GlueData::GetLastFpOffset(false)));
+    __ Cmp(fp, Immediate(0));
+    __ CMov(Register(SP), Register(SP), fp, Condition::EQ);
+    __ Bind(&dispatch);
+    {
+        __ Ldrb(opcode, MemoryOperand(pc, 0));
+        __ Add(bcStub, glue, Operand(opcode, LSL, 3));  // 3： bc * 8
+        __ Ldr(bcStub, MemoryOperand(bcStub, JSThread::GlueData::GetBCStubEntriesOffset(false)));
+        __ Br(bcStub);
+    }
 }
 
+// ResumeUncaughtFrameAndReturn(uintptr_t glue)
+// GHC calling convention
+// X19 - glue
 void AssemblerStubs::ResumeUncaughtFrameAndReturn(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(ResumeUncaughtFrameAndReturn));
+
+    Register glue(X19);
+    Register fp(X5);
+
+    Label ret;
+
+    __ Ldr(fp, MemoryOperand(glue, JSThread::GlueData::GetLastFpOffset(false)));
+    __ Cmp(fp, Immediate(0));
+    __ CMov(Register(SP), Register(SP), fp, Condition::EQ);
+    __ Bind(&ret);
     __ Ret();
 }
 
@@ -1135,11 +1312,13 @@ void AssemblerStubs::CallIThisRangeEntry(ExtendedAssembler *assembler)
     Register argc(X24);
     Register argv(X25);
     Register opArgc(X3);
-    Register op(X4);
+    Register opArgv(X4);
+    Register op(X5);
     Label pushCallThis;
 
     __ Mov(opArgc, argc);
-    __ PushArgsWithArgv(opArgc, argv, op, &pushCallThis);
+    __ Mov(opArgv, argv);
+    __ PushArgsWithArgv(opArgc, opArgv, op, &pushCallThis);
     __ Bind(&pushCallThis);
     PushCallThis(assembler);
 }
@@ -1156,12 +1335,12 @@ void AssemblerStubs::PushCallThis(ExtendedAssembler *assembler)
 
     Label pushVregs;
     Label pushNewTarget;
-    __ Tst(callField, Immediate(CALL_TYPE_MASK));
+    __ Tst(callField, LogicalImmediate::Create(CALL_TYPE_MASK, RegXSize));
     __ B(Condition::EQ, &pushVregs);
     // fall through
     __ Tbz(callField, JSMethod::HaveThisBit::START_BIT, &pushNewTarget);
     // 8: this is just before the argv list
-    __ Ldr(thisObj, MemoryOperand(argv, -8, AddrMode::POSTINDEX));
+    __ Ldr(thisObj, MemoryOperand(argv, -8));
     __ Str(thisObj, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     // fall through
     __ Bind(&pushNewTarget);
@@ -1182,11 +1361,13 @@ void AssemblerStubs::CallIRangeEntry(ExtendedAssembler *assembler)
     Register argc(X24);
     Register argv(X25);
     Register opArgc(X3);
-    Register op(X4);
+    Register opArgv(X4);
+    Register op(X5);
     Label pushCallThisUndefined;
 
     __ Mov(opArgc, argc);
-    __ PushArgsWithArgv(opArgc, argv, op, &pushCallThisUndefined);
+    __ Mov(opArgv, argv);
+    __ PushArgsWithArgv(opArgc, opArgv, op, &pushCallThisUndefined);
     __ Bind(&pushCallThisUndefined);
     PushCallThisUndefined(assembler);
 }
@@ -1227,7 +1408,7 @@ void AssemblerStubs::PushCallThisUndefined(ExtendedAssembler *assembler)
 
     Label pushVregs;
     Label pushNewTarget;
-    __ Tst(callField, Immediate(CALL_TYPE_MASK));
+    __ Tst(callField, LogicalImmediate::Create(CALL_TYPE_MASK, RegXSize));
     __ B(Condition::EQ, &pushVregs);
     // fall through
     __ Tbz(callField, JSMethod::HaveThisBit::START_BIT, &pushNewTarget);
@@ -1334,7 +1515,7 @@ void AssemblerStubs::DispatchCall(ExtendedAssembler *assembler, Register pc, Reg
     Register constantPool(X22);
     Register profileTypeInfo(X23);
     Register acc(X24);
-    Register hotnessCounter(X25);
+    Register hotnessCounter(X25, W);
 
     __ Ldrh(hotnessCounter, MemoryOperand(method, JSMethod::GetHotnessCounterOffset(false)));
     __ Mov(acc, Immediate(JSTaggedValue::VALUE_HOLE));
@@ -1343,7 +1524,7 @@ void AssemblerStubs::DispatchCall(ExtendedAssembler *assembler, Register pc, Reg
     __ Mov(Register(X21), pc);
     __ Mov(Register(X20), newSp);
 
-    Register bcIndex(X9);
+    Register bcIndex(X9, W);
     Register temp(X10);
     __ Ldrb(bcIndex, MemoryOperand(pc, 0));
     __ Add(temp, glue, Operand(bcIndex, LSL, 3));  // 3： bc * 8
@@ -1399,6 +1580,21 @@ void AssemblerStubs::SaveFpAndJumpSize(ExtendedAssembler *assembler, Immediate j
 {
     __ Mov(Register(X1), jumpSize);
     __ Mov(Register(X2), Register(SP));
+}
+
+void AssemblerStubs::GlueToThread(ExtendedAssembler *assembler, Register glue, Register thread)
+{
+    __ Sub(thread, glue, Immediate(JSThread::GetGlueDataOffset()));
+}
+
+void AssemblerStubs::ConstructEcmaRuntimeCallInfo(ExtendedAssembler *assembler, Register thread, Register numArgs,
+    Register stackArgs)
+{
+    Register sp(SP);
+    __ Sub(sp, sp, Immediate(sizeof(EcmaRuntimeCallInfo)));
+    __ Str(thread, MemoryOperand(sp, EcmaRuntimeCallInfo::GetThreadOffset()));
+    __ Str(numArgs, MemoryOperand(sp, EcmaRuntimeCallInfo::GetNumArgsOffset()));
+    __ Str(stackArgs, MemoryOperand(sp, EcmaRuntimeCallInfo::GetStackArgsOffset()));
 }
 
 void AssemblerStubs::StackOverflowCheck([[maybe_unused]] ExtendedAssembler *assembler)
