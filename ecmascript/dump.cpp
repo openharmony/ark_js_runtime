@@ -1814,6 +1814,10 @@ void GlobalEnv::Dump(std::ostream &os) const
     GetUnscopablesSymbol().GetTaggedValue().Dump(os);
     os << " - HoleySymbol: ";
     GetHoleySymbol().GetTaggedValue().Dump(os);
+    os << " - AttachSymbol: ";
+    GetAttachSymbol().GetTaggedValue().Dump(os);
+    os << " - DetachSymbol: ";
+    GetDetachSymbol().GetTaggedValue().Dump(os);
     os << " - ConstructorString: ";
     globalConst->GetConstructorString().Dump(os);
     os << " - IteratorPrototype: ";
@@ -3702,6 +3706,8 @@ void GlobalEnv::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &
     vec.push_back(std::make_pair(CString("ToPrimitiveSymbol"), GetToPrimitiveSymbol().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("UnscopablesSymbol"), GetUnscopablesSymbol().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("HoleySymbol"), GetHoleySymbol().GetTaggedValue()));
+    vec.push_back(std::make_pair(CString("AttachSymbol"), GetAttachSymbol().GetTaggedValue()));
+    vec.push_back(std::make_pair(CString("DetachSymbol"), GetDetachSymbol().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("ConstructorString"), globalConst->GetConstructorString()));
     vec.push_back(std::make_pair(CString("IteratorPrototype"), GetIteratorPrototype().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("ForinIteratorPrototype"), GetForinIteratorPrototype().GetTaggedValue()));
