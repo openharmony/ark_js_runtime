@@ -732,7 +732,6 @@ std::unique_ptr<AddHeapSnapshotChunk> AddHeapSnapshotChunk::Create(char* data, i
     return addHeapSnapshotChunk;
 }
 
-
 std::unique_ptr<AddHeapSnapshotChunk> AddHeapSnapshotChunk::Create(const EcmaVM *ecmaVm,
                                                                    const Local<JSValueRef> &params)
 {
