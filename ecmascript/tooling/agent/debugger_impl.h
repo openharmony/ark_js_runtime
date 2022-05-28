@@ -28,6 +28,7 @@ public:
     ~DebuggerImpl() = default;
 
     DispatchResponse Enable(std::unique_ptr<EnableParams> params, UniqueDebuggerId *id);
+    DispatchResponse Disable();
     DispatchResponse EvaluateOnCallFrame(std::unique_ptr<EvaluateOnCallFrameParams> params,
                                          std::unique_ptr<RemoteObject> *result);
     DispatchResponse GetPossibleBreakpoints(std::unique_ptr<GetPossibleBreakpointsParams> params,
@@ -51,6 +52,7 @@ public:
         ~DispatcherImpl() override = default;
         void Dispatch(const DispatchRequest &request) override;
         void Enable(const DispatchRequest &request);
+        void Disable(const DispatchRequest &request);
         void EvaluateOnCallFrame(const DispatchRequest &request);
         void GetPossibleBreakpoints(const DispatchRequest &request);
         void GetScriptSource(const DispatchRequest &request);
