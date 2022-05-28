@@ -2249,10 +2249,10 @@ Local<ObjectRef> Profile::ToObject(const EcmaVM *ecmaVm)
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "nodes")), nodeValues);
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startTime")),
-        IntegerRef::New(ecmaVm, startTime_));
+        NumberRef::New(ecmaVm, startTime_));
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endTime")),
-        IntegerRef::New(ecmaVm, endTime_));
+        NumberRef::New(ecmaVm, endTime_));
     
     if (samples_) {
         size_t samplesLen = samples_->size();
