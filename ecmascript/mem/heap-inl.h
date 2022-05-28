@@ -69,7 +69,7 @@ void Heap::EnumerateNonNewSpaceRegionsWithRecord(const Callback &cb) const
 template<class Callback>
 void Heap::EnumerateNewSpaceRegions(const Callback &cb) const
 {
-    activeSpace_->EnumerateRegions(cb);
+    activeSemiSpace_->EnumerateRegions(cb);
 }
 
 template<class Callback>
@@ -84,7 +84,7 @@ void Heap::EnumerateNonMovableRegions(const Callback &cb) const
 template<class Callback>
 void Heap::EnumerateRegions(const Callback &cb) const
 {
-    activeSpace_->EnumerateRegions(cb);
+    activeSemiSpace_->EnumerateRegions(cb);
     oldSpace_->EnumerateRegions(cb);
     oldSpace_->EnumerateCollectRegionSet(cb);
     snapshotSpace_->EnumerateRegions(cb);
@@ -96,7 +96,7 @@ void Heap::EnumerateRegions(const Callback &cb) const
 template<class Callback>
 void Heap::IterateOverObjects(const Callback &cb) const
 {
-    activeSpace_->IterateOverObjects(cb);
+    activeSemiSpace_->IterateOverObjects(cb);
     oldSpace_->IterateOverObjects(cb);
     nonMovableSpace_->IterateOverObjects(cb);
     hugeObjectSpace_->IterateOverObjects(cb);
@@ -115,13 +115,13 @@ TaggedObject *Heap::AllocateYoungOrHugeObject(size_t size)
         return AllocateHugeObject(size);
     }
 
-    auto object = reinterpret_cast<TaggedObject *>(activeSpace_->Allocate(size));
+    auto object = reinterpret_cast<TaggedObject *>(activeSemiSpace_->Allocate(size));
     if (object == nullptr) {
         CollectGarbage(SelectGCType());
-        object = reinterpret_cast<TaggedObject *>(activeSpace_->Allocate(size));
+        object = reinterpret_cast<TaggedObject *>(activeSemiSpace_->Allocate(size));
         if (object == nullptr) {
             CollectGarbage(SelectGCType());
-            object = reinterpret_cast<TaggedObject *>(activeSpace_->Allocate(size));
+            object = reinterpret_cast<TaggedObject *>(activeSemiSpace_->Allocate(size));
             if  (UNLIKELY(object == nullptr)) {
                 ThrowOutOfMemoryError(size, "AllocateYoungObject");
                 UNREACHABLE();
@@ -141,12 +141,12 @@ TaggedObject *Heap::AllocateYoungOrHugeObject(JSHClass *hclass, size_t size)
 
 uintptr_t Heap::AllocateYoungSync(size_t size)
 {
-    return activeSpace_->AllocateSync(size);
+    return activeSemiSpace_->AllocateSync(size);
 }
 
 bool Heap::MoveYoungRegionSync(Region *region)
 {
-    return activeSpace_->SwapRegion(region, inactiveSpace_);
+    return activeSemiSpace_->SwapRegion(region, inactiveSemiSpace_);
 }
 
 void Heap::MergeToOldSpaceSync(LocalSpace *localSpace)
@@ -160,7 +160,7 @@ TaggedObject *Heap::TryAllocateYoungGeneration(JSHClass *hclass, size_t size)
     if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
         return nullptr;
     }
-    auto object = reinterpret_cast<TaggedObject *>(activeSpace_->Allocate(size));
+    auto object = reinterpret_cast<TaggedObject *>(activeSemiSpace_->Allocate(size));
     if (object != nullptr) {
         object->SetClass(hclass);
     }
@@ -293,20 +293,20 @@ void Heap::OnMoveEvent([[maybe_unused]] uintptr_t address, [[maybe_unused]] uint
 
 void Heap::SwapNewSpace()
 {
-    activeSpace_->Stop();
-    inactiveSpace_->Restart();
+    activeSemiSpace_->Stop();
+    inactiveSemiSpace_->Restart();
 
-    SemiSpace *newSpace = inactiveSpace_;
-    inactiveSpace_ = activeSpace_;
-    activeSpace_ = newSpace;
-    auto topAddress = activeSpace_->GetAllocationTopAddress();
-    auto endAddress = activeSpace_->GetAllocationEndAddress();
+    SemiSpace *newSpace = inactiveSemiSpace_;
+    inactiveSemiSpace_ = activeSemiSpace_;
+    activeSemiSpace_ = newSpace;
+    auto topAddress = activeSemiSpace_->GetAllocationTopAddress();
+    auto endAddress = activeSemiSpace_->GetAllocationEndAddress();
     thread_->ReSetNewSpaceAllocationAddress(topAddress, endAddress);
 }
 
 void Heap::ReclaimRegions(TriggerGCType gcType)
 {
-    activeSpace_->EnumerateRegionsWithRecord([] (Region *region) {
+    activeSemiSpace_->EnumerateRegionsWithRecord([] (Region *region) {
         region->ClearMarkGCBitset();
         region->ClearCrossRegionRSet();
         region->ResetAliveObject();
@@ -317,7 +317,7 @@ void Heap::ReclaimRegions(TriggerGCType gcType)
     } else if (gcType == TriggerGCType::OLD_GC) {
         oldSpace_->ReclaimCSet();
     }
-    inactiveSpace_->ReclaimRegions();
+    inactiveSemiSpace_->ReclaimRegions();
 
     sweeper_->WaitAllTaskFinished();
     EnumerateNonNewSpaceRegionsWithRecord([] (Region *region) {
@@ -341,7 +341,7 @@ void Heap::ClearSlotsRange(Region *current, uintptr_t freeStart, uintptr_t freeE
 
 size_t Heap::GetCommittedSize() const
 {
-    size_t result = activeSpace_->GetCommittedSize()
+    size_t result = activeSemiSpace_->GetCommittedSize()
                     + oldSpace_->GetCommittedSize()
                     + hugeObjectSpace_->GetCommittedSize()
                     + nonMovableSpace_->GetCommittedSize()
@@ -351,7 +351,7 @@ size_t Heap::GetCommittedSize() const
 
 size_t Heap::GetHeapObjectSize() const
 {
-    size_t result = activeSpace_->GetHeapObjectSize()
+    size_t result = activeSemiSpace_->GetHeapObjectSize()
                     + oldSpace_->GetHeapObjectSize()
                     + hugeObjectSpace_->GetHeapObjectSize()
                     + nonMovableSpace_->GetHeapObjectSize()

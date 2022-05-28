@@ -932,7 +932,7 @@ JSTaggedValue JSProxy::ConstructInternal(EcmaRuntimeCallInfo *info)
     // 10.ReturnIfAbrupt(newObj).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 11.If Type(newObj) is not Object, throw a TypeError exception.
-    if (!newObj.IsObject()) {
+    if (!newObj.IsHeapObject()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "new object is not object", JSTaggedValue::Exception());
     }
     // 12.Return newObj.

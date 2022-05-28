@@ -60,7 +60,7 @@ FreeObject *FreeObjectList::Allocate(size_t size)
                 continue;
             }
             FreeObjectSet *next = nullptr;
-            FreeObject *object = nullptr;
+            FreeObject *object = INVALID_OBJECT;
             if (type <= SMALL_SET_MAX_INDEX) {
                 object = current->ObtainSmallFreeObject(size);
             } else {
@@ -71,7 +71,7 @@ FreeObject *FreeObjectList::Allocate(size_t size)
                 RemoveSet(current);
                 current->Rebuild();
             }
-            if (object != nullptr) {
+            if (object != INVALID_OBJECT) {
                 available_ -= object->Available();
                 return object;
             }
@@ -99,14 +99,14 @@ FreeObject *FreeObjectList::LookupSuitableFreeObject(size_t size)
         FreeObjectSet *current = sets_[type];
         while (current != nullptr) {
             FreeObjectSet *next = nullptr;
-            FreeObject *object = nullptr;
+            FreeObject *object = INVALID_OBJECT;
             if (type <= SMALL_SET_MAX_INDEX) {
                 object = current->LookupSmallFreeObject(size);
             } else {
                 next = current->next_;
                 object = current->LookupLargeFreeObject(size);
             }
-            if (object != nullptr) {
+            if (object != INVALID_OBJECT) {
                 return object;
             }
             current = next;
