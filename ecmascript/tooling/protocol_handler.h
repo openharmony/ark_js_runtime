@@ -34,6 +34,7 @@ public:
     void SendResponse(const DispatchRequest &request, const DispatchResponse &response,
                       std::unique_ptr<PtBaseReturns> result) override;
     void SendNotification(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events) override;
+    void SendProfilerNotify(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events) override;
     const EcmaVM *GetEcmaVM() const
     {
         return vm_;

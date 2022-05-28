@@ -32,6 +32,7 @@ public:
     virtual void SendResponse(const DispatchRequest &request, const DispatchResponse &response,
                               std::unique_ptr<PtBaseReturns> result) = 0;
     virtual void SendNotification(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events) = 0;
+    virtual void SendProfilerNotify(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events) = 0;
 
 private:
     NO_COPY_SEMANTIC(FrontEnd);

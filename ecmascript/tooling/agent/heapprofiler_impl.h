@@ -100,7 +100,7 @@ public:
     bool WriteChunk(char* data, int size) override
     {
         auto ecmaVm = static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM();
-        frontend_->SendNotification(ecmaVm, AddHeapSnapshotChunk::Create(data, size));
+        frontend_->SendProfilerNotify(ecmaVm, AddHeapSnapshotChunk::Create(data, size));
         return true;
     }
     bool Good() override
@@ -129,7 +129,7 @@ public:
         if (done == total) {
             reportHeapSnapshotProgress->SetFinished(true);
         }
-        frontend_->SendNotification(ecmaVm, std::move(reportHeapSnapshotProgress));
+        frontend_->SendProfilerNotify(ecmaVm, std::move(reportHeapSnapshotProgress));
     }
 
 private:

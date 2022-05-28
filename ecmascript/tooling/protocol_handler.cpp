@@ -77,7 +77,15 @@ void ProtocolHandler::SendResponse(const DispatchRequest &request, const Dispatc
 
 void ProtocolHandler::SendNotification(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events)
 {
-    if (!ecmaVm->GetJsDebuggerManager()->IsDebugMode() || events == nullptr) {
+    if (!ecmaVm->GetJsDebuggerManager()->IsDebugMode()) {
+        return;
+    }
+    SendProfilerNotify(ecmaVm, std::move(events));
+}
+
+void ProtocolHandler::SendProfilerNotify(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events)
+{
+    if (events == nullptr) {
         return;
     }
     LOG(DEBUG, DEBUGGER) << "ProtocolHandler::SendNotification: " << events->GetName();
