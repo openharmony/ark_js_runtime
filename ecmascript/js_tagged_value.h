@@ -298,7 +298,7 @@ public:
 
     inline bool IsHole() const
     {
-        return value_ == VALUE_HOLE;
+        return value_ == VALUE_HOLE || value_ == 0U;
     }
 
     inline bool IsException() const

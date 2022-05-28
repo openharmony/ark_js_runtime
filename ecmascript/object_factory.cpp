@@ -1163,7 +1163,7 @@ FreeObject *ObjectFactory::FillFreeObject(uintptr_t address, size_t size, Remove
     if (size >= FreeObject::SIZE_OFFSET && size < FreeObject::SIZE) {
         object = reinterpret_cast<FreeObject *>(address);
         object->SetClassWithoutBarrier(JSHClass::Cast(globalConst->GetFreeObjectWithOneFieldClass().GetTaggedObject()));
-        object->SetNext(nullptr);
+        object->SetNext(INVALID_OBJECT);
     } else if (size >= FreeObject::SIZE) {
         object = reinterpret_cast<FreeObject *>(address);
         bool firstHClassLoaded = false;
@@ -1175,7 +1175,7 @@ FreeObject *ObjectFactory::FillFreeObject(uintptr_t address, size_t size, Remove
                 JSHClass::Cast(globalConst->GetFreeObjectWithTwoFieldClass().GetTaggedObject()));
         }
         object->SetAvailable(size);
-        object->SetNext(nullptr);
+        object->SetNext(INVALID_OBJECT);
     } else if (size == FreeObject::NEXT_OFFSET) {
         object = reinterpret_cast<FreeObject *>(address);
         object->SetClassWithoutBarrier(
