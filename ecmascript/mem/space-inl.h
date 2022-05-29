@@ -27,6 +27,14 @@ void Space::AddRegion(Region *region)
     IncreaseObjectSize(region->GetSize());
 }
 
+void Space::AddRegionToFront(Region *region)
+{
+    LOG_ECMA_MEM(DEBUG) << "Add region:" << region << " to " << ToSpaceTypeName(spaceType_);
+    regionList_.AddNodeToFront(region);
+    IncreaseCommitted(region->GetCapacity());
+    IncreaseObjectSize(region->GetSize());
+}
+
 void Space::RemoveRegion(Region *region)
 {
     LOG_ECMA_MEM(DEBUG) << "Remove region:" << region << " to " << ToSpaceTypeName(spaceType_);
