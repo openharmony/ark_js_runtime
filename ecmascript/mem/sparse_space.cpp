@@ -139,8 +139,10 @@ void SparseSpace::AsyncSweep(bool isMain)
         // Main thread sweeping region is added;
         if (!isMain) {
             AddSweptRegionSafe(current);
+            current->SetSwept();
+        } else {
+            current->MergeRSetForConcurrentSweeping();
         }
-        current->SetSwept();
         current = GetSweepingRegionSafe();
     }
 }
@@ -311,7 +313,6 @@ void OldSpace::Merge(LocalSpace *localSpace)
         localSpace->DecreaseLiveObjectSize(region->AliveObject());
         region->SetSpace(this);
         AddRegion(region);
-        region->MergeRSetForConcurrentSweeping();
         IncreaseLiveObjectSize(region->AliveObject());
         allocator_->CollectFreeObjectSet(region);
     });
