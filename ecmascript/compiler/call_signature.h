@@ -243,6 +243,11 @@ public:
         return name_;
     }
 
+    void SetName(const std::string &str)
+    {
+        name_ = str;
+    }
+
     void SetConstructor(TargetConstructor ctor)
     {
         constructor_ = ctor;
