@@ -886,6 +886,8 @@ void ObjectFactory::InitializeJSObject(const JSHandle<JSObject> &obj, const JSHa
         }
         case JSType::JS_INTL: {
             JSIntl::Cast(*obj)->SetFallbackSymbol(thread_, JSTaggedValue::Undefined());
+            JSHandle<JSSymbol> jsSymbol = NewPublicSymbolWithChar("IntlLegacyConstructedSymbol");
+            JSIntl::Cast(*obj)->SetFallbackSymbol(thread_, jsSymbol);
             break;
         }
         case JSType::JS_LOCALE: {
