@@ -52,6 +52,7 @@ source_set("libark_jsoptimizer_set") {
     "call_signature.cpp",
     "circuit.cpp",
     "circuit_builder.cpp",
+    "circuit_optimizer.cpp",
     "common_stubs.cpp",
     "gate.cpp",
     "gate_accessor.cpp",

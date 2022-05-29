@@ -1122,6 +1122,7 @@ void Gate::Print(std::string bytecode, bool inListPreview, size_t highlightIdx) 
             }
         }
         log += "])";
+        log += "\n";
         COMPILER_LOG(INFO) << std::dec << log;
     }
 }
