@@ -1768,8 +1768,7 @@ void SlowPathLowering::LowerDefineGeneratorFunc(GateRef gate, GateRef glue, Gate
     builder_.Branch(builder_.FunctionIsResolved(*method), &isResolved, &notResolved);
     builder_.Bind(&isResolved);
     {
-        auto methodIdTagged = builder_.TaggedNGC(builder_.ZExtInt16ToInt64(methodId));
-        method = LowerCallRuntime(glue, RTSTUB_ID(DefineGeneratorFuncWithMethodId), {methodIdTagged});
+        method = LowerCallRuntime(glue, RTSTUB_ID(DefineGeneratorFunc), { *method });
         Label notException(&builder_);
         builder_.Branch(builder_.IsSpecial(*method, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &notException);

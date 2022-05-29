@@ -91,7 +91,7 @@ public:
     static void PushCallIRangeAndDispatchNative(ExtendedAssembler *assembler);
 
     static void PushCallArgsAndDispatchNative(ExtendedAssembler *assembler);
-    
+
     static void ResumeRspAndDispatch(ExtendedAssembler *assembler);
 
     static void ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *assembler);
@@ -145,7 +145,8 @@ private:
     static void GetDeclaredNumArgsFromCallField(ExtendedAssembler *assembler, Register callField,
         Register declaredNumArgs);
 
-    static void PushUndefinedWithArgc(ExtendedAssembler *assembler, Register argc, Register temp, Label *next);
+    static void PushUndefinedWithArgc(ExtendedAssembler *assembler, Register argc, Register temp,
+        panda::ecmascript::Label *next);
 
     static void SaveFpAndJumpSize(ExtendedAssembler *assembler, Immediate jumpSize);
 

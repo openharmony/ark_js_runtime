@@ -17,7 +17,6 @@
 #include "ecmascript/global_env_constants-inl.h"
 #include "ecmascript/ic/properties_cache.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
-#include "ecmascript/mem/machine_code.h"
 
 namespace panda::ecmascript {
 using CommonStubCSigns = panda::ecmascript::kungfu::CommonStubCSigns;
@@ -126,12 +125,6 @@ void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
 
     if (!glueData_.exception_.IsHole()) {
         v0(Root::ROOT_VM, ObjectSlot(ToUintPtr(&glueData_.exception_)));
-    }
-    if (!coStubCode_.IsHole()) {
-        v0(Root::ROOT_VM, ObjectSlot(ToUintPtr(&coStubCode_)));
-    }
-    if (!bcStubCode_.IsHole()) {
-        v0(Root::ROOT_VM, ObjectSlot(ToUintPtr(&bcStubCode_)));
     }
     // visit global Constant
     glueData_.globalConst_.VisitRangeSlot(v1);
@@ -257,79 +250,6 @@ void JSThread::NotifyStableArrayElementsGuardians(JSHandle<JSObject> receiver)
 void JSThread::ResetGuardians()
 {
     stableArrayElementsGuardians_ = true;
-}
-
-void AdjustBCStubAndDebuggerStubEntries(BCStubEntries &bcStubEntries, BCStubEntries &bcDebuggerStubEntries,
-    const std::vector<AotCodeInfo::StubDes> &stubs, const AsmInterParsedOption &asmInterOpt)
-{
-    auto defaultBCStubDes = stubs[BytecodeStubCSigns::SingleStepDebugging];
-    auto defaultNonexistentBCStubDes = stubs[BytecodeStubCSigns::HandleOverflow];
-    auto defaultBCDebuggerStubDes = stubs[BytecodeStubCSigns::BCDebuggerEntry];
-    auto defaultBCDebuggerExceptionStubDes = stubs[BytecodeStubCSigns::BCDebuggerExceptionEntry];
-    bcStubEntries.SetUnrealizedBCHandlerStubEntries(defaultBCStubDes.codeAddr_);
-    bcStubEntries.SetNonexistentBCHandlerStubEntries(defaultNonexistentBCStubDes.codeAddr_);
-#define UNDEF_STUB(name)                                                                               \
-    bcStubEntries.Set(BytecodeStubCSigns::ID_##name, defaultBCStubDes.codeAddr_);
-    INTERPRETER_IGNORED_BC_STUB_LIST(UNDEF_STUB)
-#undef UNDEF_STUB
-    for (int i = asmInterOpt.handleStart; i <= asmInterOpt.handleEnd && i >= 0; i++) {
-        bcStubEntries.Set(static_cast<size_t>(i), defaultBCStubDes.codeAddr_);
-    }
-    // bc debugger stub entries
-    bcDebuggerStubEntries.SetNonexistentBCHandlerStubEntries(defaultNonexistentBCStubDes.codeAddr_);
-    for (size_t i = 0; i < BCStubEntries::EXISTING_BC_HANDLER_STUB_ENTRIES_COUNT; i++) {
-        if (i == BytecodeStubCSigns::ID_ExceptionHandler) {
-            bcDebuggerStubEntries.Set(i, defaultBCDebuggerExceptionStubDes.codeAddr_);
-            continue;
-        }
-        bcDebuggerStubEntries.Set(i, defaultBCDebuggerStubDes.codeAddr_);
-    }
-}
-
-void JSThread::LoadCommonStubsFromFile(std::string &fileName)
-{
-    AotCodeInfo aotInfo;
-    if (!aotInfo.DeserializeForStub(this, fileName)) {
-        return;
-    }
-    auto stubs = aotInfo.GetStubs();
-    for (size_t i = 0; i < stubs.size(); i++) {
-        auto des = stubs[i];
-        if (des.IsCommonStub()) {
-            glueData_.coStubEntries_.Set(des.indexInKind_, des.codeAddr_);
-        }
-    }
-    coStubCode_ = aotInfo.GetCode().GetTaggedValue();
-}
-
-void JSThread::LoadBytecodeHandlerStubsFromFile(std::string &fileName)
-{
-    AotCodeInfo aotInfo;
-    if (!aotInfo.DeserializeForStub(this, fileName)) {
-        return;
-    }
-    auto stubs = aotInfo.GetStubs();
-    for (size_t i = 0; i < stubs.size(); i++) {
-        auto des = stubs[i];
-        if (des.IsBCStub()) {
-            // bc helper handler use to adjust bc stub, not init bc stub
-            if (des.IsBCHandlerStub()) {
-                glueData_.bcStubEntries_.Set(des.indexInKind_, des.codeAddr_);
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_LOG
-                std::cout << "bytecode: " << GetEcmaOpcodeStr(static_cast<EcmaOpcode>(des.indexInKind_))
-                    << " addr:" << des.codeAddr_ << std::endl;
-#endif
-            }
-        } else {
-            glueData_.rtStubEntries_.Set(des.indexInKind_, des.codeAddr_);
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_LOG
-                std::cout << "runtime index: " << des.indexInKind_ << " addr:" << des.codeAddr_ << std::endl;
-#endif
-        }
-    }
-    AsmInterParsedOption asmInterOpt = GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
-    AdjustBCStubAndDebuggerStubEntries(glueData_.bcStubEntries_, glueData_.bcDebuggerStubEntries_, stubs, asmInterOpt);
-    bcStubCode_ = aotInfo.GetCode().GetTaggedValue();
 }
 
 void JSThread::CheckSwitchDebuggerBCStub()

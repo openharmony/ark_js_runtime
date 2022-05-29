@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_RUNTIME_TRAMPOLINES_NEW_H
-#define ECMASCRIPT_RUNTIME_TRAMPOLINES_NEW_H
+#ifndef ECMASCRIPT_RUNTIME_STUBS_H
+#define ECMASCRIPT_RUNTIME_STUBS_H
 
 #include "ecmascript/compiler/call_signature.h"
 #include "ecmascript/stubs/test_runtime_stubs.h"
@@ -28,7 +28,7 @@ using kungfu::CallSignature;
 class ConstantPool;
 class EcmaVM;
 class GlobalEnv;
-class JSthread;
+class JSThread;
 class JSFunction;
 class ObjectFactory;
 
@@ -221,7 +221,6 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
     V(GetAotUnmapedArgs)                  \
     V(CopyAotRestArgs)                    \
     V(NotifyBytecodePcChanged)            \
-    V(DefineGeneratorFuncWithMethodId)    \
     V(GetAotLexicalEnv)                   \
     V(NewAotLexicalEnvDyn)                \
     V(NewAotLexicalEnvWithNameDyn)        \
@@ -473,7 +472,6 @@ private:
     static inline JSTaggedValue RuntimeNewAotLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId,
                                                                    JSHandle<JSTaggedValue> &currentLexEnv);
     static inline JSTaggedValue RuntimeCopyAotRestArgs(JSThread *thread, uint32_t restNumArgs, uintptr_t argv);
-    static inline JSTaggedValue RuntimeDefineGeneratorFuncWithMethodId(JSThread *thread, JSTaggedValue methodId);
     static inline JSTaggedValue RuntimeSuspendAotGenerator(JSThread *thread, const JSHandle<JSTaggedValue> &genObj,
                                                            const JSHandle<JSTaggedValue> &value);
     static inline JSTaggedValue RuntimeNewAotObjDynRange(JSThread *thread, uintptr_t argv, uint32_t argc);

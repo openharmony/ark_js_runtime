@@ -317,13 +317,40 @@ public:
         glueData_.coStubEntries_.Set(id, entry);
     }
 
+    Address GetBCStubEntry(uint32_t id)
+    {
+        return glueData_.bcStubEntries_.Get(id);
+    }
+
+    void SetBCStubEntry(size_t id, Address entry)
+    {
+        glueData_.bcStubEntries_.Set(id, entry);
+    }
+
+    void SetUnrealizedBCStubEntry(Address entry)
+    {
+        glueData_.bcStubEntries_.SetUnrealizedBCHandlerStubEntries(entry);
+    }
+
+    void SetNonExistedBCStubEntry(Address entry)
+    {
+        glueData_.bcStubEntries_.SetNonexistentBCHandlerStubEntries(entry);
+    }
+
+    void SetBCDebugStubEntry(size_t id, Address entry)
+    {
+        glueData_.bcDebuggerStubEntries_.Set(id, entry);
+    }
+
+    void SetNonExistedBCDebugStubEntry(Address entry)
+    {
+        glueData_.bcDebuggerStubEntries_.SetNonexistentBCHandlerStubEntries(entry);
+    }
+
     Address *GetBytecodeHandler()
     {
         return glueData_.bcStubEntries_.GetAddr();
     }
-
-    void LoadCommonStubsFromFile(std::string &fileName);
-    void LoadBytecodeHandlerStubsFromFile(std::string &fileName);
 
     void CheckSwitchDebuggerBCStub();
 
@@ -563,8 +590,6 @@ private:
     std::vector<std::array<JSTaggedType, NODE_BLOCK_SIZE> *> handleStorageNodes_ {};
     int32_t currentHandleStorageIndex_ {-1};
     int32_t handleScopeCount_ {0};
-    JSTaggedValue coStubCode_ {JSTaggedValue::Hole()};
-    JSTaggedValue bcStubCode_ {JSTaggedValue::Hole()};
 
     PropertiesCache *propertiesCache_ {nullptr};
     EcmaGlobalStorage *globalStorage_ {nullptr};

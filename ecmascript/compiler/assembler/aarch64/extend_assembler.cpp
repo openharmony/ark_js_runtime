@@ -70,7 +70,7 @@ void ExtendedAssembler::RestoreFpAndLr()
     Ldp(Register(X29), Register(X30), MemoryOperand(sp, 16, POSTINDEX));
 }
 
-void ExtendedAssembler::PushArgsWithArgv(Register argc, Register argv, Register op, Label *next)
+void ExtendedAssembler::PushArgsWithArgv(Register argc, Register argv, Register op, panda::ecmascript::Label *next)
 {
     Label loopBeginning;
     Register sp(SP);

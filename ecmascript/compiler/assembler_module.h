@@ -25,6 +25,7 @@
 #include "ecmascript/stubs/runtime_stubs.h"
 
 namespace panda::ecmascript::kungfu {
+class CompilationConfig;
 class AssemblerModule {
 public:
     AssemblerModule() = default;
@@ -35,7 +36,7 @@ public:
         }
     }
 
-    void Run(const std::string &triple, Chunk* chunk);
+    void Run(const CompilationConfig *cfg, Chunk* chunk);
 
     size_t GetFunctionCount() const
     {

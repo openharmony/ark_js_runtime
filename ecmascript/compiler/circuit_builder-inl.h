@@ -523,16 +523,6 @@ void Label::Seal()
     return impl_->Seal();
 }
 
-void Label::WriteVariable(Variable *var, GateRef value)
-{
-    impl_->WriteVariable(var, value);
-}
-
-GateRef Label::ReadVariable(Variable *var)
-{
-    return impl_->ReadVariable(var);
-}
-
 void Label::Bind()
 {
     impl_->Bind();

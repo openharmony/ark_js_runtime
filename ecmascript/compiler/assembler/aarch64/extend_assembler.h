@@ -33,7 +33,7 @@ public:
     void CallAssemblerStub(int id, bool isTail = false);
     void SaveFpAndLr();
     void RestoreFpAndLr();
-    void PushArgsWithArgv(Register argc, Register argv, Register op, Label *next);
+    void PushArgsWithArgv(Register argc, Register argv, Register op, panda::ecmascript::Label *next);
     void PushArgc(int32_t argc, Register op);
     void PushArgc(Register argc, Register op);
 private:
