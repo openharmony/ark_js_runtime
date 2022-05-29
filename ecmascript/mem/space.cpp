@@ -104,7 +104,7 @@ void HugeObjectSpace::Sweep(bool isConcurrentSweep)
         currentRegion->IterateAllMarkedBits([&isMarked]([[maybe_unused]] void *mem) { isMarked = true; });
         if (!isMarked) {
             GetRegionList().RemoveNode(currentRegion);
-            ClearAndFreeRegion(currentRegion);
+            hugeNeedFreeList_.AddNode(currentRegion);
         }
         currentRegion = next;
     }
@@ -130,5 +130,16 @@ void HugeObjectSpace::IterateOverObjects(const std::function<void(TaggedObject *
         uintptr_t curPtr = region->GetBegin();
         objectVisitor(reinterpret_cast<TaggedObject *>(curPtr));
     });
+}
+
+void HugeObjectSpace::ReclaimHugeRegion()
+{
+    if (hugeNeedFreeList_.IsEmpty()) {
+        return;
+    }
+    do {
+        Region *last = hugeNeedFreeList_.PopBack();
+        ClearAndFreeRegion(last);
+    } while (!hugeNeedFreeList_.IsEmpty());
 }
 }  // namespace panda::ecmascript

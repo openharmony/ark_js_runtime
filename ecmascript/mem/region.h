@@ -41,7 +41,7 @@ enum RegionFlags {
     IS_IN_NEW_TO_NEW_SET = 1 << 9,
     HAS_SWEPT = 1 << 10,
     IS_IN_YOUNG_OR_CSET_GENERATION = IS_IN_YOUNG_GENERATION | IS_IN_COLLECT_SET,
-    IS_INVALID = 1 << 10,
+    IS_INVALID = 1 << 11,
 };
 
 #define REGION_OFFSET_LIST(V)                                                             \
