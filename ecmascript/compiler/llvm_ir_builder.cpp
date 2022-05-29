@@ -1941,9 +1941,7 @@ LLVMValueRef LLVMModule::AddFunc(const panda::ecmascript::JSMethod *method)
     CString name = method->GetMethodName();
     auto function = LLVMAddFunction(module_, name.c_str(), funcType);
     auto offsetInPandaFile = method->GetMethodId().GetOffset();
-    JSPandaFile *jsPandaFile = const_cast<JSPandaFile *>(method->GetJSPandaFile());
-    size_t index = jsPandaFile->GetIdInConstantPool(offsetInPandaFile);
-    SetFunction(index, function);
+    SetFunction(offsetInPandaFile, function);
     return function;
 }
 }  // namespace panda::ecmascript::kungfu

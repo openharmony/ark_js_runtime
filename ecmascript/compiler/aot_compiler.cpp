@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "ecmascript/compiler/bytecode_circuit_builder.h"
+#include "ecmascript/compiler/file_generators.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_runtime_options.h"
@@ -111,9 +112,7 @@ int Main(const int argc, const char **argv)
 
     LocalScope scope(vm);
     std::string entry = entrypoint.GetValue();
-
     arg_list_t pandaFileNames = files.GetValue();
-    PassManager passManager(vm, entry);
     std::string triple = runtimeOptions.GetTargetTriple();
     std::string outputFileName = runtimeOptions.GetAOTOutputFile();
     size_t optLevel = runtimeOptions.GetOptLevel();
@@ -123,14 +122,17 @@ int Main(const int argc, const char **argv)
 
     std::string logMethods = vm->GetJSOptions().GetlogCompiledMethods();
     AotLog log(logMethods);
+    AOTFileGenerator generator(&log, vm);
+    PassManager passManager(vm, entry, triple, optLevel, &log);
     for (const auto &fileName : pandaFileNames) {
         COMPILER_LOG(INFO) << "AOT start to execute ark file: " << fileName;
-        if (passManager.Compile(fileName, triple, outputFileName, log, optLevel) == false) {
+        if (passManager.Compile(fileName, generator) == false) {
             ret = false;
             break;
         }
     }
-
+    generator.SaveAOTFile(outputFileName);
+    generator.GenerateSnapshotFile();
     JSNApi::DestroyJSVM(vm);
     paParser.DisableTail();
     return ret ? 0 : -1;

@@ -50,8 +50,7 @@ public:
     {
         parser->Add(&enableArkTools_);
         parser->Add(&enableStubAot_);
-        parser->Add(&comStubFile_);
-        parser->Add(&bcStubFile_);
+        parser->Add(&stubFile_);
         parser->Add(&enableCpuprofiler_);
         parser->Add(&arkProperties_);
         parser->Add(&enableTSAot_);
@@ -121,34 +120,19 @@ public:
         return enableRuntimeStat_.WasSet();
     }
 
-    std::string GetComStubFile() const
+    std::string GetStubFile() const
     {
-        return comStubFile_.GetValue();
+        return stubFile_.GetValue();
     }
 
-    void SetComStubFile(std::string value)
+    void SetStubFile(std::string value)
     {
-        comStubFile_.SetValue(std::move(value));
+        stubFile_.SetValue(std::move(value));
     }
 
-    bool WasComStubFileSet() const
+    bool WasStubFileSet() const
     {
-        return comStubFile_.WasSet();
-    }
-
-    std::string GetBcStubFile() const
-    {
-        return bcStubFile_.GetValue();
-    }
-
-    void SetBcStubFile(std::string value)
-    {
-        bcStubFile_.SetValue(std::move(value));
-    }
-
-    bool WasBcStubFileSet() const
-    {
-        return bcStubFile_.WasSet();
+        return stubFile_.WasSet();
     }
 
     std::string GetAOTOutputFile() const
@@ -503,14 +487,10 @@ private:
     PandArg<bool> enableStubAot_ {"enable-stub-aot", false,
         R"(enable aot of common stub and bc handler stub. Default: false)"};
     PandArg<bool> enableTSAot_ {"enable-ts-aot", false, R"(enable aot. Default: false)"};
-    PandArg<std::string> comStubFile_ {"com-stub-out",
-        STUB_FILE_GEN_DIR R"(com_stub.m)",
+    PandArg<std::string> stubFile_ {"stub-file",
+        STUB_FILE_GEN_DIR R"(stub.m)",
         R"(Path of file includes common stubs module compiled by stub compiler. Default: )"
-            STUB_FILE_GEN_DIR R"(com_stub.m)"};
-    PandArg<std::string> bcStubFile_ {"bc-stub-out",
-        STUB_FILE_GEN_DIR R"(bc_stub.m)",
-        R"(Path of file includes bytecode handler stubs module compiled by stub compiler. Default: )"
-            STUB_FILE_GEN_DIR R"(bc_stub.m)"};
+            STUB_FILE_GEN_DIR R"(stub.m)"};
     PandArg<bool> enableForceGc_ {"enable-force-gc", true, R"(enable force gc when allocating object)"};
     PandArg<bool> forceFullGc_ {"force-full-gc",
         true,
