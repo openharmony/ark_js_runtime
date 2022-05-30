@@ -30,5 +30,6 @@ class Dog extends Animal {
    }
 }
 
+var a = new Animal(1);
 var wang = new Dog(3);
 wang.disp()

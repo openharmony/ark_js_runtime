@@ -258,6 +258,7 @@ void AssemblerStubs::OptimizedCallOptimized(ExtendedAssembler *assembler)
     __ Mov(undefValue, Immediate(JSTaggedValue::VALUE_UNDEFINED));
     Label copyUndefined;
     __ Sub(count, count, Immediate(1));
+    __ Str(undefValue, MemoryOperand(sp, -FRAME_SLOT_SIZE, PREINDEX));
     __ Cmp(count, actualNumArgs);
     __ B(Condition::HI, &copyUndefined);
 
@@ -273,14 +274,14 @@ void AssemblerStubs::OptimizedCallOptimized(ExtendedAssembler *assembler)
         Register argValue(X10);
         Label copyArgLoop;
         __ Mov(saveNumArgs, expectedNumArgs);
-        __ Sub(count, count, Immediate(1));
+        __ Subs(count, count, Immediate(1));
         // 3 : 3 means count * 8
         __ Add(argVEnd, argVEnd, Operand(count, UXTW, 3));
         __ Bind(&copyArgLoop);
         __ Ldr(argValue, MemoryOperand(argVEnd, -FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
         __ Subs(count, count, Immediate(1));
         __ Str(argValue,  MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-        __ B(Condition::NE, &copyArgLoop);
+        __ B(Condition::PL, &copyArgLoop);
     }
 
     Register codeAddr(X3);
