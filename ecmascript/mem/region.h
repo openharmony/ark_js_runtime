@@ -35,11 +35,12 @@ enum RegionFlags {
     IN_HUGE_OBJECT_SPACE = 1 << 5,
     IN_OLD_SPACE = 1 << 6,
     IN_NON_MOVABLE_SPACE = 1 << 7,
-    IN_COLLECT_SET = 1 << 8,
-    IN_NEW_TO_NEW_SET = 1 << 9,
-    HAS_BEEN_SWEPT = 1 << 10,
-    NEED_RELOCATE = 1 << 11,
-    INVALID = 1 << 12,
+    IN_MACHINE_CODE_SPACE = 1 << 8,
+    IN_COLLECT_SET = 1 << 9,
+    IN_NEW_TO_NEW_SET = 1 << 10,
+    HAS_BEEN_SWEPT = 1 << 11,
+    NEED_RELOCATE = 1 << 12,
+    INVALID = 1 << 13,
 };
 
 static inline bool IsFlagSet(uintptr_t flags, RegionFlags target)
@@ -63,6 +64,10 @@ static inline std::string ToSpaceTypeName(uintptr_t flags)
 
     if (IsFlagSet(flags, RegionFlags::IN_HUGE_OBJECT_SPACE)) {
         return "huge object space";
+    }
+
+    if (IsFlagSet(flags, IN_MACHINE_CODE_SPACE)) {
+        return "machine code space";
     }
 
     if (IsFlagSet(flags, IN_NON_MOVABLE_SPACE)) {
@@ -247,6 +252,16 @@ public:
         return IsFlagSet(flags_, RegionFlags::IN_HUGE_OBJECT_SPACE);
     }
 
+    bool InMachineCodeSpace() const
+    {
+        return IsFlagSet(flags_, RegionFlags::IN_MACHINE_CODE_SPACE);
+    }
+
+    bool InNonMovableSpace() const
+    {
+        return IsFlagSet(flags_, RegionFlags::IN_NON_MOVABLE_SPACE);
+    }
+
     bool InCollectSet() const
     {
         return IsFlagSet(flags_, RegionFlags::IN_COLLECT_SET);
@@ -274,7 +289,7 @@ public:
 
     bool NeedRelocate() const
     {
-        return IsFlagSet(RegionFlags::NEED_RELOCATE);
+        return IsFlagSet(flags_, RegionFlags::NEED_RELOCATE);
     }
 
     void SetSwept()

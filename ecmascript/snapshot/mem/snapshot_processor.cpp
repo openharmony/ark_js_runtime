@@ -895,18 +895,16 @@ void SnapshotProcessor::DeserializeSpaceObject(uintptr_t beginAddr, Space* space
         region->crossRegionSet_ = nullptr;
         // old_to_new_set_
         region->oldToNewSet_ = nullptr;
-        // space_
-        region->space_ = space;
         // thread_
         region->thread_ = vm_->GetAssociatedJSThread();
-        // nativePoniterAllocator_
-        region->nativeAreaAllocator_ = region->thread_->GetNativeAreaAllocator();
+        // reclaimed_
+        region->reclaimed_ = false;
 
         region->SetFlag(RegionFlags::NEED_RELOCATE);
         size_t liveObjectSize = region->GetHighWaterMark() - region->GetBegin();
         if (space->GetSpaceType() != MemSpaceType::SNAPSHOT_SPACE) {
             auto sparseSpace = reinterpret_cast<SparseSpace *>(space);
-            region->InitializeSet();
+            region->InitializeFreeObjectSets();
             sparseSpace->FreeLiveRange(region, region->GetHighWaterMark(), region->GetEnd(), true);
             sparseSpace->IncreaseLiveObjectSize(liveObjectSize);
             sparseSpace->IncreaseAllocatedSize(liveObjectSize);
@@ -1347,22 +1345,17 @@ EncodeBit SnapshotProcessor::EncodeTaggedObject(TaggedObject *objectHeader, CQue
         LOG_ECMA_MEM(FATAL) << "It is a zero object. Not Support.";
     }
     uintptr_t newObj = 0;
-    auto space = Region::ObjectAddressToRange(objectHeader)->GetSpace();
-    switch (space->GetSpaceType()) {
-        case MemSpaceType::SEMI_SPACE:
-        case MemSpaceType::OLD_SPACE:
-            newObj = AllocateObjectToLocalSpace(oldLocalSpace_, objectSize);
-            break;
-        case MemSpaceType::NON_MOVABLE:
-            newObj = AllocateObjectToLocalSpace(nonMovableLocalSpace_, objectSize);
-            break;
-        case MemSpaceType::MACHINE_CODE_SPACE:
-            newObj = AllocateObjectToLocalSpace(machineCodeLocalSpace_, objectSize);
-            break;
-        default:
-            newObj = AllocateObjectToLocalSpace(snapshotLocalSpace_, objectSize);
-            break;
+    auto region = Region::ObjectAddressToRange(objectHeader);
+    if (region->InYoungOrOldSpace()) {
+        newObj = AllocateObjectToLocalSpace(oldLocalSpace_, objectSize);
+    } else if (region->InMachineCodeSpace()) {
+        newObj = AllocateObjectToLocalSpace(machineCodeLocalSpace_, objectSize);
+    } else if (region->InNonMovableSpace()) {
+        newObj = AllocateObjectToLocalSpace(nonMovableLocalSpace_, objectSize);
+    } else {
+        newObj = AllocateObjectToLocalSpace(snapshotLocalSpace_, objectSize);
     }
+
     if (newObj == 0) {
         LOG_ECMA_MEM(FATAL) << "Snapshot Allocate OOM";
     }
