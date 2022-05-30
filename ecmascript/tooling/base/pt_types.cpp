@@ -2038,7 +2038,7 @@ std::unique_ptr<ProfileNode> ProfileNode::Create(const EcmaVM *ecmaVm, const Loc
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "hitCount")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            profileNode->hitCount_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            profileNode->hitCount_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'hitCount' should be a Number;";
         }
@@ -2175,7 +2175,7 @@ std::unique_ptr<Profile> Profile::Create(const EcmaVM *ecmaVm, const Local<JSVal
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startTime")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            profile->startTime_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            profile->startTime_ = static_cast<int64_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'startTime' should be a Number;";
         }
@@ -2185,7 +2185,7 @@ std::unique_ptr<Profile> Profile::Create(const EcmaVM *ecmaVm, const Local<JSVal
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endTime")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            profile->endTime_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            profile->endTime_ = static_cast<int64_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'endTime' should be a Number;";
         }
