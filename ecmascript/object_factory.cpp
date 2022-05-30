@@ -2605,9 +2605,9 @@ JSHandle<TSUnionType> ObjectFactory::NewTSUnionType(uint32_t length)
     JSHandle<TSUnionType> unionType(thread_, header);
 
     unionType->SetGTRef(GlobalTSTypeRef::Default());
-    unionType->SetComponentTypes(thread_, JSTaggedValue::Undefined());
+    unionType->SetComponents(thread_, JSTaggedValue::Undefined());
     JSHandle<TaggedArray> componentTypes = NewTaggedArray(length, JSTaggedValue::Undefined());
-    unionType->SetComponentTypes(thread_, componentTypes);
+    unionType->SetComponents(thread_, componentTypes);
 
     return unionType;
 }
@@ -2681,6 +2681,7 @@ JSHandle<TSTypeTable> ObjectFactory::NewTSTypeTable(uint32_t length)
 
     JSHandle<TSTypeTable> table(thread_, header);
     table->InitializeWithSpecialValue(JSTaggedValue::Undefined(), length + TSTypeTable::RESERVE_TABLE_LENGTH);
+    table->SetNumberOfTypes(thread_, length);
 
     return table;
 }
@@ -2695,7 +2696,6 @@ JSHandle<TSModuleTable> ObjectFactory::NewTSModuleTable(uint32_t length)
     auto header = heap_->AllocateYoungOrHugeObject(arrayClass, size);
     JSHandle<TSModuleTable> array(thread_, header);
     array->InitializeWithSpecialValue(JSTaggedValue::Undefined(), length);
-    array->InitializeNumberOfTSTypeTable(thread_);
 
     return array;
 }

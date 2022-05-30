@@ -48,6 +48,7 @@ public:
     EcmaVM *ecmaVm = nullptr;
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
+    JSPandaFile *jsPandaFile {nullptr};  // just for test pass parameter
 };
 
 HWTEST_F_L0(TSTypeTest, UnionType)
@@ -58,24 +59,22 @@ HWTEST_F_L0(TSTypeTest, UnionType)
     const uint32_t literalLength = 4;
     const uint32_t unionLength = 2;
     JSHandle<TaggedArray> literal = factory->NewTaggedArray(literalLength);
-    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeTable::TypeLiteralFlag::UNION)));
+    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeKind::UNION)));
     literal->Set(thread, 1, JSTaggedValue(unionLength));
-    literal->Set(thread, 2, JSTaggedValue(51));
-    literal->Set(thread, 3, JSTaggedValue(57));
+    literal->Set(thread, 2, JSTaggedValue(1));
+    literal->Set(thread, 3, JSTaggedValue(7));
 
     CVector<JSHandle<EcmaString>> recordImportModules {};
-    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, table, literal,
-                                                          factory->NewFromASCII("test"),
-                                                          recordImportModules);
+    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, table, literal, jsPandaFile, recordImportModules);
     ASSERT_TRUE(type->IsTSUnionType());
 
     JSHandle<TSUnionType> unionType = JSHandle<TSUnionType>(type);
-    ASSERT_TRUE(unionType->GetComponentTypes().IsTaggedArray());
+    ASSERT_TRUE(unionType->GetComponents().IsTaggedArray());
 
-    JSHandle<TaggedArray> unionArray(thread, unionType->GetComponentTypes());
+    JSHandle<TaggedArray> unionArray(thread, unionType->GetComponents());
     ASSERT_EQ(unionArray->GetLength(), unionLength);
-    ASSERT_EQ(unionArray->Get(0).GetInt(), 51);
-    ASSERT_EQ(unionArray->Get(1).GetInt(), 57);
+    ASSERT_EQ(unionArray->Get(0).GetInt(), 1);
+    ASSERT_EQ(unionArray->Get(1).GetInt(), 7);
 }
 
 HWTEST_F_L0(TSTypeTest, ImportType)
@@ -94,21 +93,19 @@ HWTEST_F_L0(TSTypeTest, ImportType)
     CString importVarAndPath = "#A#test_redirect_import";
     JSHandle<EcmaString> importString = factory->NewFromUtf8(importVarAndPath);
     JSHandle<TaggedArray> importLiteral = factory->NewTaggedArray(ImportLiteralLength);
-    importLiteral->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeTable::TypeLiteralFlag::IMPORT)));
+    importLiteral->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeKind::IMPORT)));
     importLiteral->Set(thread, 1, importString);
 
     CVector<JSHandle<EcmaString>> recordImportModules {};
-    JSHandle<JSTaggedValue> importValueType = TSTypeTable::ParseType(thread, importTable,
-                                                                     importLiteral, importFileHandle,
+    JSHandle<TSImportType> importType = TSTypeTable::ParseImportType(thread, importLiteral, importFileHandle,
                                                                      recordImportModules);
     CString importMdoule = ConvertToString(recordImportModules.back().GetTaggedValue());
     recordImportModules.pop_back();
     ASSERT_EQ(importMdoule, "test_redirect_import.abc");
 
-    ASSERT_TRUE(importValueType->IsTSImportType());
-    JSHandle<TSImportType> importType = JSHandle<TSImportType>(importValueType);
+    ASSERT_TRUE(importType.GetTaggedValue().IsTSImportType());
 
-    gt.SetUserDefineTypeKind(importLiteral->Get(0).GetInt() + GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT);
+    gt.SetKind(importLiteral->Get(0).GetInt());
     gt.SetModuleId(tsLoader->GetNextModuleId());
     gt.SetLocalId(1);
     importType->SetGTRef(gt);
@@ -116,7 +113,7 @@ HWTEST_F_L0(TSTypeTest, ImportType)
     importTable->Set(thread, 1, JSHandle<JSTaggedValue>(importType));
 
     GlobalTSTypeRef importGT = importType->GetGTRef();
-    ASSERT_EQ(importType->GetTargetRefGT().GetGlobalTSTypeRef(), 0ULL);
+    ASSERT_EQ(importType->GetTargetRefGT().GetData(), 0ULL);
 
     tsLoader->AddTypeTable(JSHandle<JSTaggedValue>(importTable), importFileHandle);
 
@@ -133,21 +130,19 @@ HWTEST_F_L0(TSTypeTest, ImportType)
 
     JSHandle<EcmaString> redirectImportString = factory->NewFromUtf8(redirectImportVarAndPath);
     JSHandle<TaggedArray> redirectImportLiteral = factory->NewTaggedArray(redirectImportLiteralLength);
-    redirectImportLiteral->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeTable::TypeLiteralFlag::IMPORT)));
+    redirectImportLiteral->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeKind::IMPORT)));
     redirectImportLiteral->Set(thread, 1, redirectImportString);
 
-    JSHandle<JSTaggedValue> redirectImportValueType = TSTypeTable::ParseType(thread, redirectImportTable,
-                                                                             redirectImportLiteral,
+    JSHandle<TSImportType> redirectImportType = TSTypeTable::ParseImportType(thread, redirectImportLiteral,
                                                                              redirectImportFileHandle,
                                                                              recordImportModules);
     importMdoule = ConvertToString(recordImportModules.back().GetTaggedValue());
     recordImportModules.pop_back();
     ASSERT_EQ(importMdoule, "test.abc");
 
-    ASSERT_TRUE(redirectImportValueType->IsTSImportType());
-    JSHandle<TSImportType> redirectImportType = JSHandle<TSImportType>(redirectImportValueType);
+    ASSERT_TRUE(redirectImportType.GetTaggedValue().IsTSImportType());
     gt.Clear();
-    gt.SetUserDefineTypeKind(redirectImportLiteral->Get(0).GetInt() + GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT);
+    gt.SetKind(redirectImportLiteral->Get(0).GetInt());
     gt.SetModuleId(tsLoader->GetNextModuleId());
     gt.SetLocalId(1);
     redirectImportType->SetGTRef(gt);
@@ -156,7 +151,7 @@ HWTEST_F_L0(TSTypeTest, ImportType)
     redirectImportTable->Set(thread, redirectImportTable->GetLength() - 1, redirectExportTableHandle);
 
     GlobalTSTypeRef redirectImportGT = redirectImportType->GetGTRef();
-    ASSERT_EQ(redirectImportType->GetTargetRefGT().GetGlobalTSTypeRef(), 0ULL);
+    ASSERT_EQ(redirectImportType->GetTargetRefGT().GetData(), 0ULL);
 
     tsLoader->AddTypeTable(JSHandle<JSTaggedValue>(redirectImportTable), redirectImportFileHandle);
 
@@ -169,18 +164,18 @@ HWTEST_F_L0(TSTypeTest, ImportType)
     exportValueTableHandle->Set(thread, 0, exportVal);
     exportValueTableHandle->Set(thread, 1, exportIndex);
     JSHandle<TaggedArray> literal = factory->NewTaggedArray(literalLength);
-    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeTable::TypeLiteralFlag::UNION)));
+    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeKind::UNION)));
     literal->Set(thread, 1, JSTaggedValue(unionLength));
-    literal->Set(thread, 2, JSTaggedValue(51));
-    literal->Set(thread, 3, JSTaggedValue(57));
+    literal->Set(thread, 2, JSTaggedValue(1));
+    literal->Set(thread, 3, JSTaggedValue(7));
 
-    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, exportTable, literal,
-                                                          fileNameHandle, recordImportModules);
+    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, exportTable, literal, jsPandaFile,
+                                                          recordImportModules);
     ASSERT_TRUE(type->IsTSUnionType());
     JSHandle<TSUnionType> unionType = JSHandle<TSUnionType>(type);
 
     gt.Clear();
-    gt.SetUserDefineTypeKind(literal->Get(0).GetInt() + GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT);
+    gt.SetKind(literal->Get(0).GetInt());
     gt.SetModuleId(tsLoader->GetNextModuleId());
     gt.SetLocalId(1);
     unionType->SetGTRef(gt);
@@ -194,8 +189,8 @@ HWTEST_F_L0(TSTypeTest, ImportType)
     tsLoader->Link();
     GlobalTSTypeRef linkimportGT = tsLoader->GetImportTypeTargetGT(importGT);
     GlobalTSTypeRef linkredirectImportGT = tsLoader->GetImportTypeTargetGT(redirectImportGT);
-    ASSERT_EQ(linkimportGT.GetGlobalTSTypeRef(), unionTypeGT.GetGlobalTSTypeRef());
-    ASSERT_EQ(linkredirectImportGT.GetGlobalTSTypeRef(), unionTypeGT.GetGlobalTSTypeRef());
+    ASSERT_EQ(linkimportGT.GetData(), unionTypeGT.GetData());
+    ASSERT_EQ(linkredirectImportGT.GetData(), unionTypeGT.GetData());
 
     uint32_t length = tsLoader->GetUnionTypeLength(unionTypeGT);
     ASSERT_EQ(length, unionLength);
@@ -211,23 +206,21 @@ HWTEST_F_L0(TSTypeTest, InterfaceType)
     JSHandle<TaggedArray> literal = factory->NewTaggedArray(literalLength);
     JSHandle<EcmaString> propsNameA = factory->NewFromASCII("propsA");
     JSHandle<EcmaString> propsNameB = factory->NewFromASCII("propsB");
-    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeTable::TypeLiteralFlag::INTERFACE)));
+    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeKind::INTERFACE)));
     literal->Set(thread, 1, JSTaggedValue(0));
     literal->Set(thread, 2, JSTaggedValue(propsNum));
     literal->Set(thread, 3, propsNameA.GetTaggedValue());
-    literal->Set(thread, 4, JSTaggedValue(static_cast<int>(TSTypeKind::TS_STRING)));
+    literal->Set(thread, 4, JSTaggedValue(static_cast<int>(TSPrimitiveType::STRING)));
     literal->Set(thread, 5, JSTaggedValue(0));
     literal->Set(thread, 6, JSTaggedValue(0));
     literal->Set(thread, 7, propsNameB.GetTaggedValue());
-    literal->Set(thread, 8, JSTaggedValue(static_cast<int>(TSTypeKind::TS_NUMBER)));
+    literal->Set(thread, 8, JSTaggedValue(static_cast<int>(TSPrimitiveType::NUMBER)));
     literal->Set(thread, 9, JSTaggedValue(0));
     literal->Set(thread, 10, JSTaggedValue(0));
     literal->Set(thread, 11, JSTaggedValue(0));
 
     CVector<JSHandle<EcmaString>> recordImportModules {};
-    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, table, literal,
-                                                          factory->NewFromASCII(CString("test")),
-                                                          recordImportModules);
+    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, table, literal, jsPandaFile, recordImportModules);
     ASSERT_TRUE(type->IsTSInterfaceType());
     JSHandle<TSInterfaceType> interfaceType = JSHandle<TSInterfaceType>(type);
     JSHandle<TSObjectType> fields =  JSHandle<TSObjectType>(thread, interfaceType->GetFields());
@@ -235,9 +228,9 @@ HWTEST_F_L0(TSTypeTest, InterfaceType)
 
     ASSERT_EQ(fieldsTypeInfo->GetPropertiesCapacity(), propsNum);
     ASSERT_EQ(fieldsTypeInfo->GetKey(0), propsNameA.GetTaggedValue());
-    ASSERT_EQ(fieldsTypeInfo->GetTypeId(0).GetInt(), static_cast<int>(TSTypeKind::TS_STRING));
+    ASSERT_EQ(fieldsTypeInfo->GetTypeId(0).GetInt(), static_cast<int>(TSPrimitiveType::STRING));
     ASSERT_EQ(fieldsTypeInfo->GetKey(1), propsNameB.GetTaggedValue());
-    ASSERT_EQ(fieldsTypeInfo->GetTypeId(1).GetInt(), static_cast<int>(TSTypeKind::TS_NUMBER));
+    ASSERT_EQ(fieldsTypeInfo->GetTypeId(1).GetInt(), static_cast<int>(TSPrimitiveType::NUMBER));
 }
 
 HWTEST_F_L0(TSTypeTest, ClassType)
@@ -251,29 +244,27 @@ HWTEST_F_L0(TSTypeTest, ClassType)
     JSHandle<EcmaString> propsNameA = factory->NewFromASCII("propsA");
     JSHandle<EcmaString> propsNameB = factory->NewFromASCII("propsB");
     JSHandle<EcmaString> funcName = factory->NewFromASCII("constructor");
-    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeTable::TypeLiteralFlag::CLASS)));
+    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeKind::CLASS)));
     literal->Set(thread, 1, JSTaggedValue(0));
     literal->Set(thread, 2, JSTaggedValue(0));
     literal->Set(thread, 3, JSTaggedValue(0));
     literal->Set(thread, 4, JSTaggedValue(propsNum));
     literal->Set(thread, 5, propsNameA.GetTaggedValue());
-    literal->Set(thread, 6, JSTaggedValue(static_cast<int>(TSTypeKind::TS_STRING)));
+    literal->Set(thread, 6, JSTaggedValue(static_cast<int>(TSPrimitiveType::STRING)));
     literal->Set(thread, 7, JSTaggedValue(0));
     literal->Set(thread, 8, JSTaggedValue(0));
     literal->Set(thread, 9, propsNameB.GetTaggedValue());
-    literal->Set(thread, 10, JSTaggedValue(static_cast<int>(TSTypeKind::TS_NUMBER)));
+    literal->Set(thread, 10, JSTaggedValue(static_cast<int>(TSPrimitiveType::NUMBER)));
     literal->Set(thread, 11, JSTaggedValue(0));
     literal->Set(thread, 12, JSTaggedValue(0));
     literal->Set(thread, 13, JSTaggedValue(1));
     literal->Set(thread, 14, funcName.GetTaggedValue());
-    literal->Set(thread, 15, JSTaggedValue(static_cast<int>(TSTypeTable::TypeLiteralFlag::FUNCTION)));
+    literal->Set(thread, 15, JSTaggedValue(static_cast<int>(TSTypeKind::FUNCTION)));
     literal->Set(thread, 16, JSTaggedValue(0));
     literal->Set(thread, 17, JSTaggedValue(0));
 
     CVector<JSHandle<EcmaString>> recordImportModules {};
-    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, table, literal,
-                                                          factory->NewFromASCII(CString("test")),
-                                                          recordImportModules);
+    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, table, literal, jsPandaFile, recordImportModules);
     ASSERT_TRUE(type->IsTSClassType());
     JSHandle<TSClassType> classType = JSHandle<TSClassType>(type);
     JSHandle<TSObjectType> fields =  JSHandle<TSObjectType>(thread, classType->GetInstanceType());
@@ -281,9 +272,9 @@ HWTEST_F_L0(TSTypeTest, ClassType)
 
     ASSERT_EQ(fieldsTypeInfo->GetPropertiesCapacity(), propsNum);
     ASSERT_EQ(fieldsTypeInfo->GetKey(0), propsNameA.GetTaggedValue());
-    ASSERT_EQ(fieldsTypeInfo->GetTypeId(0).GetInt(), static_cast<int>(TSTypeKind::TS_STRING));
+    ASSERT_EQ(fieldsTypeInfo->GetTypeId(0).GetInt(), static_cast<int>(TSPrimitiveType::STRING));
     ASSERT_EQ(fieldsTypeInfo->GetKey(1), propsNameB.GetTaggedValue());
-    ASSERT_EQ(fieldsTypeInfo->GetTypeId(1).GetInt(), static_cast<int>(TSTypeKind::TS_NUMBER));
+    ASSERT_EQ(fieldsTypeInfo->GetTypeId(1).GetInt(), static_cast<int>(TSPrimitiveType::NUMBER));
 }
 
 HWTEST_F_L0(TSTypeTest, ClassInstanceType)
@@ -295,17 +286,15 @@ HWTEST_F_L0(TSTypeTest, ClassInstanceType)
     table->Set(thread, 0, extendClass);
     JSHandle<TaggedArray> literal = factory->NewTaggedArray(literalLength);
 
-    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeTable::TypeLiteralFlag::CLASS_INSTANCE)));
+    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeKind::CLASS_INSTANCE)));
     literal->Set(thread, 1, JSTaggedValue(50));
 
     CVector<JSHandle<EcmaString>> recordImportModules {};
-    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, table, literal,
-                                                          factory->NewFromASCII(CString("test")),
-                                                          recordImportModules);
+    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, table, literal, jsPandaFile, recordImportModules);
     ASSERT_TRUE(type->IsTSClassInstanceType());
     JSHandle<TSClassInstanceType> classInstanceType = JSHandle<TSClassInstanceType>(type);
 
-    ASSERT_EQ(classInstanceType->GetClassRefGT().GetGlobalTSTypeRef(), extendClass->GetGT());
+    ASSERT_EQ(classInstanceType->GetClassRefGT().GetData(), extendClass->GetGT());
 }
 
 HWTEST_F_L0(TSTypeTest, FuntionType)
@@ -317,7 +306,7 @@ HWTEST_F_L0(TSTypeTest, FuntionType)
     const int parameterLength = 2;
     JSHandle<TaggedArray> literal = factory->NewTaggedArray(literalLength);
     JSHandle<EcmaString> functionName = factory->NewFromASCII("testFunction");
-    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeTable::TypeLiteralFlag::FUNCTION)));
+    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeKind::FUNCTION)));
     literal->Set(thread, 1, JSTaggedValue(0));
     literal->Set(thread, 2, JSTaggedValue(0));
     literal->Set(thread, 3, functionName);
@@ -327,9 +316,7 @@ HWTEST_F_L0(TSTypeTest, FuntionType)
     literal->Set(thread, 7, JSTaggedValue(6));
 
     CVector<JSHandle<EcmaString>> recordImportModules {};
-    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, table, literal,
-                                                          factory->NewFromASCII(CString("test")),
-                                                          recordImportModules);
+    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, table, literal, jsPandaFile, recordImportModules);
     ASSERT_TRUE(type->IsTSFunctionType());
 
     JSHandle<TSFunctionType> functionType = JSHandle<TSFunctionType>(type);
@@ -338,9 +325,9 @@ HWTEST_F_L0(TSTypeTest, FuntionType)
     JSHandle<TaggedArray> parameterTypes(thread, functionType->GetParameterTypes());
     ASSERT_EQ(parameterTypes->GetLength(), parameterLength + TSFunctionType::DEFAULT_LENGTH);
     ASSERT_EQ(functionType->GetParametersNum(), parameterLength);
-    ASSERT_EQ(functionType->GetParameterTypeGT(table, 0).GetGlobalTSTypeRef(), 1ULL);
-    ASSERT_EQ(functionType->GetParameterTypeGT(table, 1).GetGlobalTSTypeRef(), 2ULL);
-    ASSERT_EQ(functionType->GetReturnValueTypeGT(table).GetGlobalTSTypeRef(), 6ULL);
+    ASSERT_EQ(functionType->GetParameterTypeGT(table, 0).GetData(), 1ULL);
+    ASSERT_EQ(functionType->GetParameterTypeGT(table, 1).GetData(), 2ULL);
+    ASSERT_EQ(functionType->GetReturnValueTypeGT(table).GetData(), 6ULL);
 }
 
 HWTEST_F_L0(TSTypeTest, ObjectType)
@@ -353,25 +340,23 @@ HWTEST_F_L0(TSTypeTest, ObjectType)
     JSHandle<TaggedArray> literal = factory->NewTaggedArray(literalLength);
     JSHandle<EcmaString> propsNameA = factory->NewFromASCII("1");
     JSHandle<EcmaString> propsNameB = factory->NewFromASCII("name");
-    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeTable::TypeLiteralFlag::OBJECT)));
+    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeKind::OBJECT)));
     literal->Set(thread, 1, JSTaggedValue(propsNum));
     literal->Set(thread, 2, propsNameA.GetTaggedValue());
-    literal->Set(thread, 3, JSTaggedValue(static_cast<int>(TSTypeKind::TS_STRING)));
+    literal->Set(thread, 3, JSTaggedValue(static_cast<int>(TSPrimitiveType::STRING)));
     literal->Set(thread, 4, propsNameB.GetTaggedValue());
-    literal->Set(thread, 5, JSTaggedValue(static_cast<int>(TSTypeKind::TS_STRING)));
+    literal->Set(thread, 5, JSTaggedValue(static_cast<int>(TSPrimitiveType::STRING)));
     CVector<JSHandle<EcmaString>> recordImportModules {};
-    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, table, literal,
-                                                          factory->NewFromASCII(CString("test")),
-                                                          recordImportModules);
+    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, table, literal, jsPandaFile, recordImportModules);
     ASSERT_TRUE(type->IsTSObjectType());
     JSHandle<TSObjectType> objectType = JSHandle<TSObjectType>(type);
     TSObjLayoutInfo *fieldsTypeInfo = TSObjLayoutInfo::Cast(objectType->GetObjLayoutInfo().GetTaggedObject());
 
     ASSERT_EQ(fieldsTypeInfo->GetPropertiesCapacity(), propsNum);
     ASSERT_EQ(fieldsTypeInfo->GetKey(0), propsNameA.GetTaggedValue());
-    ASSERT_EQ(fieldsTypeInfo->GetTypeId(0).GetInt(), static_cast<int>(TSTypeKind::TS_STRING));
+    ASSERT_EQ(fieldsTypeInfo->GetTypeId(0).GetInt(), static_cast<int>(TSPrimitiveType::STRING));
     ASSERT_EQ(fieldsTypeInfo->GetKey(1), propsNameB.GetTaggedValue());
-    ASSERT_EQ(fieldsTypeInfo->GetTypeId(1).GetInt(), static_cast<int>(TSTypeKind::TS_STRING));
+    ASSERT_EQ(fieldsTypeInfo->GetTypeId(1).GetInt(), static_cast<int>(TSPrimitiveType::STRING));
 }
 
 HWTEST_F_L0(TSTypeTest, ArrayType)
@@ -382,13 +367,11 @@ HWTEST_F_L0(TSTypeTest, ArrayType)
     const int literalLength = 2;
     JSHandle<TaggedArray> literal = factory->NewTaggedArray(literalLength);
 
-    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeTable::TypeLiteralFlag::ARRAY)));
+    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeKind::ARRAY)));
     literal->Set(thread, 1, JSTaggedValue(2));
 
     CVector<JSHandle<EcmaString>> recordImportModules {};
-    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, table, literal,
-                                                          factory->NewFromASCII(CString("test")),
-                                                          recordImportModules);
+    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, table, literal, jsPandaFile, recordImportModules);
     ASSERT_TRUE(type->IsTSArrayType());
     JSHandle<TSArrayType> arrayType = JSHandle<TSArrayType>(type);
 

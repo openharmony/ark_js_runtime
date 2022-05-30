@@ -68,7 +68,7 @@ bool TypeInfer::UpdateType(GateRef gate, const GateType type)
 
 bool TypeInfer::UpdateType(GateRef gate, const GlobalTSTypeRef &typeRef)
 {
-    auto type = static_cast<GateType>(typeRef.GetGlobalTSTypeRef());
+    auto type = static_cast<GateType>(typeRef.GetData());
     return UpdateType(gate, type);
 }
 
@@ -242,7 +242,7 @@ bool TypeInfer::InferPhiGate(GateRef gate)
     auto deduplicateIndex = std::unique(typeList.begin(), typeList.end());
     typeList.erase(deduplicateIndex, typeList.end());
     if (typeList.size() > 1) {
-        auto unionType = tsLoader_->GetOrCreateUnionType(typeList, typeList.size());
+        auto unionType = tsLoader_->GetOrCreateUnionType(typeList);
         return UpdateType(gate, unionType);
     }
     auto type = typeList.at(0);
@@ -328,7 +328,7 @@ bool TypeInfer::InferLdObjByIndex(GateRef gate)
     // 2: number of value inputs
     ASSERT(gateAccessor_.GetNumValueIn(gate) == 2);
     auto inValueType = gateAccessor_.GetGateType(gateAccessor_.GetValueIn(gate, 0));
-    if (TSLoader::GetTypeKind(GlobalTSTypeRef(inValueType)) == TSTypeKind::TS_ARRAY) {
+    if (TSLoader::GetTypeKind(GlobalTSTypeRef(inValueType)) == TSTypeKind::ARRAY) {
         auto type = GateTypeCoder::GetGateTypeByTypeRef(tsLoader_->GetArrayParameterTypeGT(inValueType));
         return UpdateType(gate, type);
     }
@@ -384,8 +384,8 @@ bool TypeInfer::InferLdObjByName(GateRef gate)
     auto objType = gateAccessor_.GetGateType(gateAccessor_.GetValueIn(gate, 1));
     // If this object has no gt type, we cannot get its internal property type
     auto objTypeKind = TSLoader::GetTypeKind(GlobalTSTypeRef(objType));
-    if (objTypeKind == TSTypeKind::TS_CLASS || objTypeKind == TSTypeKind::TS_CLASS_INSTANCE ||
-        objTypeKind == TSTypeKind::TS_OBJECT) {
+    if (objTypeKind == TSTypeKind::CLASS || objTypeKind == TSTypeKind::CLASS_INSTANCE ||
+        objTypeKind == TSTypeKind::OBJECT) {
         auto index = circuit_->GetBitField(gateAccessor_.GetValueIn(gate, 0));
         auto name = tsLoader_->GetStringById(index);
         auto type = GateTypeCoder::GetGateTypeByTypeRef(tsLoader_->GetPropType(objType, name));
@@ -417,7 +417,7 @@ bool TypeInfer::InferCallFunction(GateRef gate)
 {
     // 0 : the index of function
     auto funcType = gateAccessor_.GetGateType(gateAccessor_.GetValueIn(gate, 0));
-    if (TSLoader::GetTypeKind(funcType) == TSTypeKind::TS_FUNCTION) {
+    if (TSLoader::GetTypeKind(funcType) == TSTypeKind::FUNCTION) {
         auto returnType = tsLoader_->GetFuncReturnValueTypeGT(funcType);
         return UpdateType(gate, returnType);
     }
@@ -429,14 +429,12 @@ bool TypeInfer::InferLdObjByValue(GateRef gate)
     auto objType = gateAccessor_.GetGateType(gateAccessor_.GetValueIn(gate, 0));
     auto typeKind = TSLoader::GetTypeKind(GlobalTSTypeRef(objType));
     // handle array
-    if (typeKind == TSTypeKind::TS_ARRAY) {
+    if (typeKind == TSTypeKind::ARRAY) {
         auto elementType = tsLoader_->GetArrayParameterTypeGT(objType);
         return UpdateType(gate, elementType);
     }
     // handle object
-    if (typeKind == TSTypeKind::TS_CLASS ||
-        typeKind == TSTypeKind::TS_CLASS_INSTANCE ||
-        typeKind == TSTypeKind::TS_OBJECT) {
+    if (typeKind == TSTypeKind::CLASS || typeKind == TSTypeKind::CLASS_INSTANCE || typeKind == TSTypeKind::OBJECT) {
         auto valueGate = gateAccessor_.GetValueIn(gate, 1);
         if (gateAccessor_.GetOpCode(valueGate) == OpCode::CONSTANT) {
             auto value = circuit_->GetBitField(valueGate);
