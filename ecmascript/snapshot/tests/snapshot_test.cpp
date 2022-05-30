@@ -181,14 +181,14 @@ HWTEST_F_L0(SnapshotTest, SerializeDifferentSpace)
     EXPECT_TRUE(constpool1->Get(200).IsMachineCodeObject());
     EXPECT_TRUE(constpool1->Get(300).IsTaggedArray());
     auto obj1 = constpool1->Get(0).GetTaggedObject();
-    EXPECT_TRUE(Region::ObjectAddressToRange(obj1)->InOldGeneration());
+    EXPECT_TRUE(Region::ObjectAddressToRange(obj1)->InOldSpace());
     auto obj2 = constpool1->Get(100).GetTaggedObject();
-    EXPECT_TRUE(Region::ObjectAddressToRange(obj2)->InOldGeneration());
+    EXPECT_TRUE(Region::ObjectAddressToRange(obj2)->InOldSpace());
     auto obj3 = constpool1->Get(200).GetTaggedObject();
     auto region = Region::ObjectAddressToRange(obj3);
-    EXPECT_EQ(region->GetSpace()->GetSpaceType(), MemSpaceType::MACHINE_CODE_SPACE);
+    EXPECT_TRUE(region->InMachineCodeSpace());
     auto region1 = Region::ObjectAddressToRange(constpool1);
-    EXPECT_EQ(region1->GetSpace()->GetSpaceType(), MemSpaceType::NON_MOVABLE);
+    EXPECT_TRUE(region1->InNonMovableSpace());
 
     std::remove(fileName.c_str());
 }
@@ -236,14 +236,14 @@ HWTEST_F_L0(SnapshotTest, SerializeMultiFile)
     EXPECT_TRUE(constpool->Get(100).IsTaggedArray());
     EXPECT_TRUE(constpool->Get(200).IsMachineCodeObject());
     auto obj1 = constpool->Get(0).GetTaggedObject();
-    EXPECT_TRUE(Region::ObjectAddressToRange(obj1)->InOldGeneration());
+    EXPECT_TRUE(Region::ObjectAddressToRange(obj1)->InOldSpace());
     auto obj2 = constpool->Get(100).GetTaggedObject();
-    EXPECT_TRUE(Region::ObjectAddressToRange(obj2)->InOldGeneration());
+    EXPECT_TRUE(Region::ObjectAddressToRange(obj2)->InOldSpace());
     auto obj3 = constpool->Get(200).GetTaggedObject();
     auto region = Region::ObjectAddressToRange(obj3);
-    EXPECT_EQ(region->GetSpace()->GetSpaceType(), MemSpaceType::MACHINE_CODE_SPACE);
+    EXPECT_TRUE(region->InMachineCodeSpace());
     auto region1 = Region::ObjectAddressToRange(constpool);
-    EXPECT_EQ(region1->GetSpace()->GetSpaceType(), MemSpaceType::NON_MOVABLE);
+    EXPECT_TRUE(region1->InNonMovableSpace());
 
     std::remove(fileName1.c_str());
     std::remove(fileName2.c_str());
