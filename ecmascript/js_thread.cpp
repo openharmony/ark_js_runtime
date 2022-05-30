@@ -92,29 +92,32 @@ JSTaggedValue JSThread::GetCurrentLexenv() const
 const JSTaggedType *JSThread::GetCurrentFrame() const
 {
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-    return GetLastLeaveFrame();
-#else
-    return GetCurrentSPFrame();
+    if (IsAsmInterpreter()) {
+        return GetLastLeaveFrame();
+    }
 #endif
+    return GetCurrentSPFrame();
 }
 
 void JSThread::SetCurrentFrame(JSTaggedType *sp)
 {
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-    return SetLastLeaveFrame(sp);
-#else
-    return SetCurrentSPFrame(sp);
+    if (IsAsmInterpreter()) {
+        return SetLastLeaveFrame(sp);
+    }
 #endif
+    return SetCurrentSPFrame(sp);
 }
 
 const JSTaggedType *JSThread::GetCurrentInterpretedFrame() const
 {
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-    auto frameHandler = FrameHandler(this);
-    return frameHandler.GetSp();
-#else
-    return GetCurrentSPFrame();
+    if (IsAsmInterpreter()) {
+        auto frameHandler = FrameHandler(this);
+        return frameHandler.GetSp();
+    }
 #endif
+    return GetCurrentSPFrame();
 }
 
 void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)

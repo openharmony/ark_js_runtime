@@ -42,7 +42,9 @@ void FrameHandler::PrevFrame()
             auto frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
             sp_ = frame->GetPrevFrameFp();
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-            if ((sp_ != nullptr) && (GetFrameType() != FrameType::ASM_INTERPRETER_ENTRY_FRAME)) {
+            if (thread_->IsAsmInterpreter() &&
+                sp_ != nullptr &&
+                GetFrameType() != FrameType::ASM_INTERPRETER_ENTRY_FRAME) {
                 fp_ = frame->GetCurrentFramePointer();
             }
 #endif
@@ -179,11 +181,13 @@ JSTaggedType* FrameHandler::GetPrevInterpretedFrame()
 uint32_t FrameHandler::GetNumberArgs()
 {
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-    auto *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
-    return static_cast<uint32_t>(frame->GetCurrentFramePointer() - sp_);
-#else
+    if (thread_->IsAsmInterpreter()) {
+        auto *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
+        return static_cast<uint32_t>(frame->GetCurrentFramePointer() - sp_);
+    }
+#endif
     ASSERT(IsInterpretedFrame());
-    JSTaggedType *prevSp;
+    JSTaggedType *prevSp = nullptr;
     if (IsAsmInterpretedFrame()) {
         auto *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
         prevSp = frame->GetPrevFrameFp();
@@ -193,7 +197,6 @@ uint32_t FrameHandler::GetNumberArgs()
     }
     auto prevSpEnd = reinterpret_cast<JSTaggedType*>(GetInterpretedFrameEnd(prevSp));
     return static_cast<uint32_t>(prevSpEnd - sp_);
-#endif
 }
 
 JSTaggedValue FrameHandler::GetVRegValue(size_t index) const
@@ -608,7 +611,6 @@ ARK_INLINE void FrameHandler::OptimizedWithArgvLeaveFrameIterate(const JSTaggedT
     }
 }
 
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
 void FrameHandler::IterateRsp(const RootVisitor &v0, const RootRangeVisitor &v1) const
 {
     JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
@@ -629,12 +631,13 @@ void FrameHandler::IterateSp(const RootVisitor &v0, const RootRangeVisitor &v1) 
 
 void FrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
 {
-    IterateSp(v0, v1);
-    IterateRsp(v0, v1);
-}
-#else
-void FrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
-{
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+    if (thread_->IsAsmInterpreter()) {
+        IterateSp(v0, v1);
+        IterateRsp(v0, v1);
+        return;
+    }
+#endif
     JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
     FrameType frameType = FrameHandler::GetFrameType(current);
     if (frameType != FrameType::INTERPRETER_ENTRY_FRAME) {
@@ -645,7 +648,6 @@ void FrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) co
     }
     IterateFrameChain(current, v0, v1);
 }
-#endif  // ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
 
 void FrameHandler::IterateFrameChain(JSTaggedType *start, const RootVisitor &v0, const RootRangeVisitor &v1) const
 {
