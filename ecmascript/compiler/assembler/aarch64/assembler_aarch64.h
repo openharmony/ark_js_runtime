@@ -299,7 +299,7 @@ public:
     void Orr(const Register &rd, const Register &rn, const LogicalImmediate &imm);
     void Orr(const Register &rd, const Register &rn, const Operand &operand);
     void And(const Register &rd, const Register &rn, const Operand &operand);
-    void Ands(const Register &rd, const Register &rn, const Operand &operand);
+    void Ands(const Register &rd, const Register &rn, const LogicalImmediate &imm);
     void And(const Register &rd, const Register &rn, const LogicalImmediate &imm);
     void Lsr(const Register &rd, const Register &rn, unsigned shift);
     void Lsl(const Register &rd, const Register &rn, unsigned shift);
@@ -329,7 +329,7 @@ public:
     void Tbz(const Register &rt, int32_t bitPos, int32_t imm);
     void Tbnz(const Register &rt, int32_t bitPos, Label *label);
     void Tbnz(const Register &rt, int32_t bitPos, int32_t imm);
-    void Tst(const Register &rn, const Operand &operand);
+    void Tst(const Register &rn, const LogicalImmediate &imm);
     void Ret();
     void Ret(const Register &rn);
     void Brk(const Immediate &imm);
@@ -400,6 +400,10 @@ private:
     int32_t LinkAndGetInstOffsetToLabel(Label *label);
     int32_t ImmBranch(uint32_t branchCode);
     void SetRealOffsetToBranchInst(uint32_t linkPos, int32_t disp);
+    void Ldr(const Register &rt, const MemoryOperand &operand, Scale scale);
+    uint64_t GetImmOfLdr(const MemoryOperand &operand, Scale scale, bool isRegX);
+    uint64_t GetOpcodeOfLdr(const MemoryOperand &operand, Scale scale);
+    uint32_t GetShiftOfLdr(const MemoryOperand &operand, Scale scale, bool isRegX);
 };
 }  // namespace panda::ecmascript::aarch64
 #endif
