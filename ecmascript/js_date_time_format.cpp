@@ -1030,7 +1030,6 @@ JSHandle<JSArray> JSDateTimeFormat::ConstructFDateIntervalToJSArray(JSThread *th
         if (fCategory == UFIELD_CATEGORY_DATE) {
             if (preEndPos < fStart) {
                 parts.emplace_back(CommonDateFormatPart(fField, preEndPos, fStart, index, true));
-                preEndPos = fStart;  // NOLINT(clang-analyzer-deadcode.DeadStores)
                 index++;
             }
             parts.emplace_back(CommonDateFormatPart(fField, fStart, fLimit, index, false));
