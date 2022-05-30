@@ -754,7 +754,6 @@ void AssemblerStubs::PushCallArgs0AndDispatch(ExtendedAssembler *assembler)
 // X26 - arg2
 void AssemblerStubs::PushCallIThisRangeAndDispatchSlowPath(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(PushCallIThisRangeAndDispatchSlowPath));
     Register callField(X23);
     Register argc(X25);
 
@@ -793,8 +792,6 @@ void AssemblerStubs::PushCallIThisRangeAndDispatchSlowPath(ExtendedAssembler *as
 
 void AssemblerStubs::PushCallIRangeAndDispatchSlowPath(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(PushCallIRangeAndDispatchSlowPath));
-
     Register callField(X23);
     Register argc(X25);
 
@@ -833,8 +830,6 @@ void AssemblerStubs::PushCallIRangeAndDispatchSlowPath(ExtendedAssembler *assemb
 
 void AssemblerStubs::PushCallArgs3AndDispatchSlowPath(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs3AndDispatchSlowPath));
-
     Register callField(X23);
     constexpr int32_t argc = 3;
 
@@ -873,8 +868,6 @@ void AssemblerStubs::PushCallArgs3AndDispatchSlowPath(ExtendedAssembler *assembl
 
 void AssemblerStubs::PushCallArgs2AndDispatchSlowPath(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs2AndDispatchSlowPath));
-
     Register callField(X23);
     constexpr int32_t argc = 2;
 
@@ -913,8 +906,6 @@ void AssemblerStubs::PushCallArgs2AndDispatchSlowPath(ExtendedAssembler *assembl
 
 void AssemblerStubs::PushCallArgs1AndDispatchSlowPath(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs1AndDispatchSlowPath));
-
     Register callField(X23);
     constexpr int32_t argc = 1;
 
@@ -953,8 +944,6 @@ void AssemblerStubs::PushCallArgs1AndDispatchSlowPath(ExtendedAssembler *assembl
 
 void AssemblerStubs::PushCallArgs0AndDispatchSlowPath(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(PushCallArgs0AndDispatchSlowPath));
-
     Register callField(X23);
     constexpr int32_t argc = 0;
 
@@ -1097,7 +1086,6 @@ void AssemblerStubs::Callargs0NoExtraEntry(ExtendedAssembler *assembler)
 void AssemblerStubs::PushCallIRangeAndDispatchNative(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(PushCallIRangeAndDispatchNative));
-
     Register glue(X0);
     Register nativeCode(X1);
     Register callTarget(X2);
@@ -1295,6 +1283,18 @@ void AssemblerStubs::ResumeUncaughtFrameAndReturn(ExtendedAssembler *assembler)
     __ Cmp(fp, Immediate(0));
     __ CMov(Register(SP), Register(SP), fp, Condition::EQ);
     __ Bind(&ret);
+    __ Ret();
+}
+
+void AssemblerStubs::CallGetter([[maybe_unused]] ExtendedAssembler *assembler)
+{
+    __ BindAssemblerStub(RTSTUB_ID(CallGetter));
+    __ Ret();
+}
+
+void AssemblerStubs::CallSetter([[maybe_unused]] ExtendedAssembler *assembler)
+{
+    __ BindAssemblerStub(RTSTUB_ID(CallSetter));
     __ Ret();
 }
 
