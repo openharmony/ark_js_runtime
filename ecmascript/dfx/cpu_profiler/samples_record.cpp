@@ -104,6 +104,7 @@ void SamplesRecord::AddSample(CVector<JSMethod *> sample, uint64_t sampleTimeSta
         sampleInfo.timeStamp = timeDelta;
         samples_.push_back(sampleInfo);
     } else {
+        profileInfo_->nodes[sampleNodeId].hitCount++;
         profileInfo_->samples.push_back(sampleNodeId);
         profileInfo_->timeDeltas.push_back(timeDelta);
     }

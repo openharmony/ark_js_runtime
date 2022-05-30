@@ -215,6 +215,7 @@ std::unique_ptr<ProfileNode> ProfilerImpl::FromCpuProfileNode(const std::unique_
 {
     auto profileNode = std::make_unique<ProfileNode>();
     profileNode->SetId(cpuProfileNode->id);
+    profileNode->SetHitCount(cpuProfileNode->hitCount);
 
     size_t childrenLen = cpuProfileNode->children.size();
     CVector<int32_t> tmpChildren;
