@@ -184,7 +184,7 @@ const JSPandaFile *Snapshot::Deserialize(SnapshotType type, const CString &snaps
         region->oldToNewSet_ = nullptr;
         // thread_
         region->thread_ = vm_->GetAssociatedJSThread();
-        // reclaimed__
+        // reclaimed_
         region->reclaimed_ = false;
 
         space->AddRegion(region);
