@@ -101,6 +101,10 @@ public:
 
     static void ResumeUncaughtFrameAndReturn(ExtendedAssembler *assembler);
 
+    static void CallGetter(ExtendedAssembler *assembler);
+
+    static void CallSetter(ExtendedAssembler *assembler);
+
 private:
     static void JSCallBody(ExtendedAssembler *assembler, Register jsfunc);
 

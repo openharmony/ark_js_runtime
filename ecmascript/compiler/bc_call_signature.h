@@ -253,6 +253,18 @@ enum class InterpreterHandlerInputs : size_t {
     NUM_OF_INPUTS
 };
 
+enum class CallDispatchInputs : size_t {
+    GLUE = 0,
+    SP,
+    CALL_TARGET,
+    METHOD,
+    CALL_FIELD,
+    ARG0,
+    ARG1,
+    ARG2,
+    NUM_OF_INPUTS
+};
+
 #define BYTECODE_STUB_END_ID BytecodeStubCSigns::ID_ExceptionHandler
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_BC_CALL_SIGNATURE_H
