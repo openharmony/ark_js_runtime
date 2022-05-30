@@ -359,6 +359,7 @@ ecma_source = [
   "ecmascript/ecma_string_table.cpp",
   "ecmascript/ecma_vm.cpp",
   "ecmascript/free_object.cpp",
+  "ecmascript/file_loader.cpp",
   "ecmascript/generator_helper.cpp",
   "ecmascript/global_env.cpp",
   "ecmascript/global_env_constants.cpp",
@@ -445,7 +446,6 @@ ecma_source = [
   "ecmascript/mem/heap.cpp",
   "ecmascript/mem/heap_region_allocator.cpp",
   "ecmascript/mem/linear_space.cpp",
-  "ecmascript/mem/machine_code.cpp",
   "ecmascript/mem/mem_controller.cpp",
   "ecmascript/mem/mem_map_allocator.cpp",
   "ecmascript/mem/native_area_allocator.cpp",
@@ -503,8 +503,8 @@ ecma_profiler_source = []
 if (!is_mingw && !is_mac) {
   ecma_profiler_source += [
     "ecmascript/dfx/cpu_profiler/cpu_profiler.cpp",
-    "ecmascript/dfx/cpu_profiler/profile_processor.cpp",
-    "ecmascript/dfx/cpu_profiler/profile_generator.cpp",
+    "ecmascript/dfx/cpu_profiler/sampling_processor.cpp",
+    "ecmascript/dfx/cpu_profiler/samples_record.cpp",
     "ecmascript/dfx/hprof/heap_profiler.cpp",
     "ecmascript/dfx/hprof/heap_profiler_interface.cpp",
     "ecmascript/dfx/hprof/heap_root_visitor.cpp",

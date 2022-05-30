@@ -687,9 +687,8 @@ LLVMValueRef LLVMIRBuilder::GetCurrentFrameType(LLVMValueRef currentSpFrameAddr)
     return frameType;
 }
 
-void LLVMIRBuilder::SetTailCallAttr(LLVMValueRef call)
+void LLVMIRBuilder::SetGCLeafFunction(LLVMValueRef call)
 {
-    LLVMSetTailCall(call, true);
     const char *attrName = "gc-leaf-function";
     const char *attrValue = "true";
     LLVMAttributeRef llvmAttr = LLVMCreateStringAttribute(context_, attrName, strlen(attrName), attrValue,
@@ -701,13 +700,17 @@ void LLVMIRBuilder::SetCallConvAttr(const CallSignature *calleeDescriptor, LLVMV
 {
     assert(calleeDescriptor != nullptr);
     if (calleeDescriptor->GetCallConv() == CallSignature::CallConv::GHCCallConv) {
-        SetTailCallAttr(call);
+        LLVMSetTailCall(call, true);
+        SetGCLeafFunction(call);
         LLVMSetInstructionCallConv(call, LLVMGHCCallConv);
     } else if (calleeDescriptor->GetCallConv() == CallSignature::CallConv::WebKitJSCallConv) {
         LLVMSetInstructionCallConv(call, LLVMWebKitJSCallConv);
     }
     if (calleeDescriptor->GetTailCall()) {
-        SetTailCallAttr(call);
+        LLVMSetTailCall(call, true);
+    }
+    if (calleeDescriptor->GetGCLeafFunction()) {
+        SetGCLeafFunction(call);
     }
 }
 
@@ -775,7 +778,8 @@ void LLVMIRBuilder::VisitBytecodeCall(GateRef gate, const std::vector<GateRef> &
         params.push_back(gate2LValue_[gateTmp]);
     }
     LLVMValueRef call = LLVMBuildCall(builder_, callee, params.data(), inList.size() - paraStartIndex, "");
-    SetTailCallAttr(call);
+    SetGCLeafFunction(call);
+    LLVMSetTailCall(call, true);
     LLVMSetInstructionCallConv(call, LLVMGHCCallConv);
     gate2LValue_[gate] = call;
 }
@@ -799,7 +803,8 @@ void LLVMIRBuilder::VisitDebuggerBytecodeCall(GateRef gate, const std::vector<Ga
         params.push_back(gate2LValue_[gateTmp]);
     }
     LLVMValueRef call = LLVMBuildCall(builder_, callee, params.data(), inList.size() - paraStartIndex, "");
-    SetTailCallAttr(call);
+    SetGCLeafFunction(call);
+    LLVMSetTailCall(call, true);
     LLVMSetInstructionCallConv(call, LLVMGHCCallConv);
     gate2LValue_[gate] = call;
 }
@@ -1936,9 +1941,7 @@ LLVMValueRef LLVMModule::AddFunc(const panda::ecmascript::JSMethod *method)
     CString name = method->GetMethodName();
     auto function = LLVMAddFunction(module_, name.c_str(), funcType);
     auto offsetInPandaFile = method->GetMethodId().GetOffset();
-    JSPandaFile *jsPandaFile = const_cast<JSPandaFile *>(method->GetJSPandaFile());
-    size_t index = jsPandaFile->GetIdInConstantPool(offsetInPandaFile);
-    SetFunction(index, function);
+    SetFunction(offsetInPandaFile, function);
     return function;
 }
 }  // namespace panda::ecmascript::kungfu

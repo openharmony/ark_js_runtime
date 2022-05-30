@@ -246,7 +246,7 @@ void SparseSpace::FreeLiveRange(Region *current, uintptr_t freeStart, uintptr_t 
 
 void SparseSpace::IterateOverObjects(const std::function<void(TaggedObject *object)> &visitor) const
 {
-    allocator_->FillBumpPoint();
+    allocator_->FillBumpPointer();
     EnumerateRegions([&](Region *region) {
         if (region->InCollectSet()) {
             return;
@@ -273,6 +273,11 @@ void SparseSpace::IterateOverObjects(const std::function<void(TaggedObject *obje
 size_t SparseSpace::GetHeapObjectSize() const
 {
     return liveObjectSize_;
+}
+
+void SparseSpace::IncreaseAllocatedSize(size_t size)
+{
+    allocator_->IncreaseAllocatedSize(size);
 }
 
 size_t SparseSpace::GetTotalAllocatedSize() const
@@ -312,6 +317,7 @@ void OldSpace::Merge(LocalSpace *localSpace)
         localSpace->RemoveRegion(region);
         localSpace->DecreaseLiveObjectSize(region->AliveObject());
         AddRegion(region);
+        region->MergeRSetForConcurrentSweeping();
         IncreaseLiveObjectSize(region->AliveObject());
         allocator_->CollectFreeObjectSet(region);
     });
@@ -418,6 +424,13 @@ bool LocalSpace::AddRegionToList(Region *region)
 void LocalSpace::FreeBumpPoint()
 {
     allocator_->FreeBumpPoint();
+}
+
+void LocalSpace::Stop()
+{
+    if (GetCurrentRegion() != nullptr) {
+        GetCurrentRegion()->SetHighWaterMark(allocator_->GetTop());
+    }
 }
 
 NonMovableSpace::NonMovableSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)

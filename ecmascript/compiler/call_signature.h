@@ -61,6 +61,7 @@ public:
     using CallConvBit = TargetKindBit::NextField<CallConv, CALL_CONV_BIT_LENGTH>;
     using VariadicArgsBit = CallConvBit::NextField<bool, 1>;
     using TailCallBit = VariadicArgsBit::NextField<bool, 1>;
+    using GCLeafFunctionBit = TailCallBit::NextField<bool, 1>;
 
     explicit CallSignature(std::string name, int flags, int paramCounter, ArgumentsOrder order, VariableType returnType)
         : name_(name), paramCounter_(paramCounter), order_(order), returnType_(returnType)
@@ -68,6 +69,7 @@ public:
         SetTargetKind(TargetKind::COMMON_STUB);
         SetCallConv(CallSignature::CallConv::CCallConv);
         SetTailCall(false);
+        SetGCLeafFunction(false);
         SetVariadicArgs(flags);
     }
 
@@ -206,6 +208,16 @@ public:
         return TailCallBit::Decode(kind_);
     }
 
+    void SetGCLeafFunction(bool value)
+    {
+        GCLeafFunctionBit::Set<uint64_t>(value, &kind_);
+    }
+
+    bool GetGCLeafFunction() const
+    {
+        return GCLeafFunctionBit::Decode(kind_);
+    }
+
     TargetKind GetTargetKind() const
     {
         return TargetKindBit::Decode(kind_);
@@ -229,6 +241,11 @@ public:
     const std::string &GetName() const
     {
         return name_;
+    }
+
+    void SetName(const std::string &str)
+    {
+        name_ = str;
     }
 
     void SetConstructor(TargetConstructor ctor)

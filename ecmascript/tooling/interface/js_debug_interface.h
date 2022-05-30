@@ -74,6 +74,11 @@ public:
      */
     virtual void VmDeath() = 0;
 
+    /**
+     * \brief called before executing pending job
+     */
+    virtual void PendingJobEntry() = 0;
+
     virtual void Paused(PauseReason reason) = 0;
 
     virtual void Exception(const JSPtLocation &location) = 0;

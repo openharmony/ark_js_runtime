@@ -13,20 +13,22 @@
  * limitations under the License.
  */
 #include "assembler_module.h"
+
 #include "ecmascript/compiler/assembler/x64/assembler_x64.h"
 #include "ecmascript/compiler/assembler/aarch64/assembler_aarch64.h"
 #include "ecmascript/compiler/call_signature.h"
+#include "ecmascript/compiler/circuit_builder.h"
 #include "ecmascript/compiler/rt_call_signature.h"
 #include "ecmascript/compiler/trampoline/x64/assembler_stubs_x64.h"
 #include "ecmascript/compiler/trampoline/aarch64/assembler_stubs.h"
 
 namespace panda::ecmascript::kungfu {
-void AssemblerModule::Run(const std::string &triple, Chunk* chunk)
+void AssemblerModule::Run(const CompilationConfig *cfg, Chunk* chunk)
 {
     SetUpForAsmStubs();
-    if (triple.compare("x86_64-unknown-linux-gnu") == 0) {
+    if (cfg->IsAmd64()) {
         GenerateStubsX64(chunk);
-    } else if (triple.compare("aarch64-unknown-linux-gnu") == 0) {
+    } else if (cfg->IsAArch64()) {
         GenerateStubsAarch64(chunk);
     } else {
         UNREACHABLE();
@@ -71,7 +73,7 @@ void AssemblerModule::SetUpForAsmStubs()
 {
     RuntimeStubCSigns::GetASMCSigns(asmCallSigns_);
     for (auto cs : asmCallSigns_) {
-        symbolTable_[cs->GetID()] = new Label();
+        symbolTable_[cs->GetID()] = new panda::ecmascript::Label();
     }
 }
 

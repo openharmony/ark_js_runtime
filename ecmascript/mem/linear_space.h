@@ -90,6 +90,19 @@ public:
     ~SnapshotSpace() override = default;
     NO_COPY_SEMANTIC(SnapshotSpace);
     NO_MOVE_SEMANTIC(SnapshotSpace);
+
+    size_t GetHeapObjectSize() const
+    {
+        return liveObjectSize_;
+    }
+
+    void IncreaseLiveObjectSize(size_t size)
+    {
+        liveObjectSize_ += size;
+    }
+
+private:
+    size_t liveObjectSize_ {0};
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_LINEAR_SPACE_H

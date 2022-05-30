@@ -51,13 +51,13 @@ void Heap::Initialize()
     memController_ = new MemController(this);
 
     size_t defaultSemiSpaceCapacity = ecmaVm_->GetJSOptions().DefaultSemiSpaceCapacity();
-    activeSpace_ = new SemiSpace(this, defaultSemiSpaceCapacity, defaultSemiSpaceCapacity);
-    activeSpace_->Restart();
-    activeSpace_->SetWaterLine();
-    auto topAddress = activeSpace_->GetAllocationTopAddress();
-    auto endAddress = activeSpace_->GetAllocationEndAddress();
+    activeSemiSpace_ = new SemiSpace(this, defaultSemiSpaceCapacity, defaultSemiSpaceCapacity);
+    activeSemiSpace_->Restart();
+    activeSemiSpace_->SetWaterLine();
+    auto topAddress = activeSemiSpace_->GetAllocationTopAddress();
+    auto endAddress = activeSemiSpace_->GetAllocationEndAddress();
     thread_->ReSetNewSpaceAllocationAddress(topAddress, endAddress);
-    inactiveSpace_ = new SemiSpace(this, defaultSemiSpaceCapacity, defaultSemiSpaceCapacity);
+    inactiveSemiSpace_ = new SemiSpace(this, defaultSemiSpaceCapacity, defaultSemiSpaceCapacity);
 
     // not set up from space
     size_t maxOldSpaceCapacity = ecmaVm_->GetJSOptions().MaxOldSpaceCapacity();
@@ -100,15 +100,15 @@ void Heap::Initialize()
 void Heap::Destroy()
 {
     Prepare();
-    if (activeSpace_ != nullptr) {
-        activeSpace_->Destroy();
-        delete activeSpace_;
-        activeSpace_ = nullptr;
+    if (activeSemiSpace_ != nullptr) {
+        activeSemiSpace_->Destroy();
+        delete activeSemiSpace_;
+        activeSemiSpace_ = nullptr;
     }
-    if (inactiveSpace_ != nullptr) {
-        inactiveSpace_->Destroy();
-        delete inactiveSpace_;
-        inactiveSpace_ = nullptr;
+    if (inactiveSemiSpace_ != nullptr) {
+        inactiveSemiSpace_->Destroy();
+        delete inactiveSemiSpace_;
+        inactiveSemiSpace_ = nullptr;
     }
     if (oldSpace_ != nullptr) {
         oldSpace_->Destroy();
@@ -206,11 +206,11 @@ void Heap::Resume(TriggerGCType gcType)
         compressSpace_ = oldSpace_;
         oldSpace_ = oldSpace;
     }
-    if (activeSpace_->AdjustCapacity(inactiveSpace_->GetAllocatedSizeSinceGC())) {
-        inactiveSpace_->SetMaximumCapacity(activeSpace_->GetMaximumCapacity());
+    if (activeSemiSpace_->AdjustCapacity(inactiveSemiSpace_->GetAllocatedSizeSinceGC())) {
+        inactiveSemiSpace_->SetMaximumCapacity(activeSemiSpace_->GetMaximumCapacity());
     }
 
-    activeSpace_->SetWaterLine();
+    activeSemiSpace_->SetWaterLine();
     PrepareRecordRegionsForReclaim();
     hugeObjectSpace_->RecliamHugeRegion();
     if (parallelGC_) {
@@ -227,7 +227,8 @@ TriggerGCType Heap::SelectGCType() const
     if (concurrentMarkingEnabled_) {
         return YOUNG_GC;
     }
-    if (oldSpace_->CanExpand(activeSpace_->GetSurvivalObjectSize()) && GetHeapObjectSize() <= globalSpaceAllocLimit_) {
+    if (oldSpace_->CanExpand(activeSemiSpace_->GetSurvivalObjectSize()) &&
+        GetHeapObjectSize() <= globalSpaceAllocLimit_) {
         return YOUNG_GC;
     }
     return OLD_GC;
@@ -256,7 +257,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
     if (fullGCRequested_ && thread_->IsReadyToMark() && gcType != TriggerGCType::FULL_GC) {
         gcType = TriggerGCType::FULL_GC;
     }
-    size_t originalNewSpaceSize = activeSpace_->GetHeapObjectSize();
+    size_t originalNewSpaceSize = activeSemiSpace_->GetHeapObjectSize();
     memController_->StartCalculationBeforeGC();
     OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Heap::CollectGarbage, gcType = " << gcType
                                              << " global CommittedSize" << GetCommittedSize()
@@ -293,7 +294,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
     }
 
     if (!oldSpaceLimitAdjusted_ && originalNewSpaceSize > 0) {
-        semiSpaceCopiedSize_ = activeSpace_->GetHeapObjectSize();
+        semiSpaceCopiedSize_ = activeSemiSpace_->GetHeapObjectSize();
         double copiedRate = semiSpaceCopiedSize_ * 1.0 / originalNewSpaceSize;
         promotedSize_ = GetEvacuator()->GetPromotedSize();
         double promotedRate = promotedSize_ * 1.0 / originalNewSpaceSize;
@@ -341,7 +342,7 @@ size_t Heap::VerifyHeapObjects() const
     size_t failCount = 0;
     {
         VerifyObjectVisitor verifier(this, &failCount);
-        activeSpace_->IterateOverObjects(verifier);
+        activeSemiSpace_->IterateOverObjects(verifier);
     }
 
     {
@@ -397,7 +398,7 @@ void Heap::RecomputeLimits()
     double gcSpeed = memController_->CalculateMarkCompactSpeedPerMS();
     double mutatorSpeed = memController_->GetCurrentOldSpaceAllocationThroughputPerMS();
     size_t oldSpaceSize = oldSpace_->GetHeapObjectSize() + hugeObjectSpace_->GetHeapObjectSize();
-    size_t newSpaceCapacity = activeSpace_->GetMaximumCapacity();
+    size_t newSpaceCapacity = activeSemiSpace_->GetMaximumCapacity();
 
     double growingFactor = memController_->CalculateGrowingFactor(gcSpeed, mutatorSpeed);
     size_t maxOldSpaceCapacity = GetEcmaVM()->GetJSOptions().MaxOldSpaceCapacity();
@@ -481,16 +482,16 @@ void Heap::TryTriggerConcurrentMarking()
     double newSpaceConcurrentMarkSpeed = memController_->GetNewSpaceConcurrentMarkSpeedPerMS();
 
     if (newSpaceConcurrentMarkSpeed == 0 || newSpaceAllocSpeed == 0) {
-        if (activeSpace_->GetCommittedSize() >= SEMI_SPACE_TRIGGER_CONCURRENT_MARK) {
+        if (activeSemiSpace_->GetCommittedSize() >= SEMI_SPACE_TRIGGER_CONCURRENT_MARK) {
             markType_ = MarkType::MARK_YOUNG;
             TriggerConcurrentMarking();
             OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Trigger the first semi mark" << fullGCRequested_;
         }
         return;
     }
-    newSpaceAllocToLimitDuration = (activeSpace_->GetMaximumCapacity() - activeSpace_->GetCommittedSize())
+    newSpaceAllocToLimitDuration = (activeSemiSpace_->GetMaximumCapacity() - activeSemiSpace_->GetCommittedSize())
                                     / newSpaceAllocSpeed;
-    newSpaceMarkDuration = activeSpace_->GetHeapObjectSize() / newSpaceConcurrentMarkSpeed;
+    newSpaceMarkDuration = activeSemiSpace_->GetHeapObjectSize() / newSpaceConcurrentMarkSpeed;
     // newSpaceRemainSize means the predicted size which can be allocated after the semi concurrent mark.
     newSpaceRemainSize = (newSpaceAllocToLimitDuration - newSpaceMarkDuration) * newSpaceAllocSpeed;
 

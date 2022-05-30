@@ -41,6 +41,7 @@ public:
     void NotifyAllScriptParsed();
     bool NotifyScriptParsed(ScriptId scriptId, const CString &fileName);
     bool StepComplete(const JSPtLocation &location);
+    void PendingJobEntry();
 
     std::optional<CString> GetPossibleBreakpoints(Location *start, Location *end,
                                                 CVector<std::unique_ptr<BreakLocation>> *locations);

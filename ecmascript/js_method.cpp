@@ -68,7 +68,7 @@ void JSMethod::InitializeCallField(uint32_t numVregs, uint32_t numArgs)
         }
     });
     // Needed info for call can be got by loading callField only once.
-    // Native bit will be set in GetMethodForNativeFunction();
+    // Native bit will be set in NewMethodForNativeFunction();
     callField_ = (callType & CALL_TYPE_MASK) |
                  NumVregsBits::Encode(numVregs) |
                  NumArgsBits::Encode(numArgs - HaveFuncBit::Decode(callType)  // exclude func

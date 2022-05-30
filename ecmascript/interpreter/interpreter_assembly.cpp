@@ -30,7 +30,6 @@
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/template_string.h"
-#include "ecmascript/trampoline/trampoline.h"
 #include "libpandafile/code_data_accessor.h"
 #include "libpandafile/file.h"
 #include "libpandafile/method_data_accessor-inl.h"

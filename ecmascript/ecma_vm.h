@@ -19,11 +19,11 @@
 #include "ecmascript/base/config.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_runtime_options.h"
+#include "ecmascript/js_thread.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/mem/chunk_containers.h"
 #include "ecmascript/taskpool/taskpool.h"
-#include "ecmascript/js_thread.h"
 
 namespace panda {
 class JSNApi;
@@ -65,8 +65,8 @@ class JSArrayBuffer;
 class JSFunction;
 class Program;
 class TSLoader;
+class FileLoader;
 class ModuleManager;
-class AotCodeInfo;
 
 using HostPromiseRejectionTracker = void (*)(const EcmaVM* vm,
                                              const JSHandle<JSPromise> promise,
@@ -132,10 +132,6 @@ public:
         ASSERT(regExpParserCache_ != nullptr);
         return regExpParserCache_;
     }
-
-    JSMethod *GetMethodForNativeFunction(const void *func);
-    JSMethod *GenerateMethodForAOTFunction(const void *func, size_t numArgs);
-    void UpdateMethodInFunc(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile);
 
     EcmaStringTable *GetEcmaStringTable() const
     {
@@ -233,7 +229,6 @@ public:
         return snapshotEnv_;
     }
 
-    void LoadStubs();
     void SetupRegExpResultCache();
 
     JSHandle<JSTaggedValue> GetRegExpCache() const
@@ -288,13 +283,7 @@ public:
 
     JSTaggedValue FindConstpool(const JSPandaFile *jsPandaFile);
 
-    void TryLoadSnapshotFile();
-
-    AotCodeInfo *GetAotCodeInfo() const
-    {
-        return aotInfo_;
-    }
-
+    void SetAOTFuncEntry(uint32_t hash, uint32_t methodId, uint64_t funcEntry);
 protected:
 
     void HandleUncaughtException(ObjectHeader *exception);
@@ -323,9 +312,8 @@ private:
 
     void ClearBufferData();
 
-    void ClearNativeMethodsData();
-
-    void LoadAOTFile(const std::string &fileName);
+    void LoadAOTFiles();
+    void LoadStubFile();
 
     NO_MOVE_SEMANTIC(EcmaVM);
     NO_COPY_SEMANTIC(EcmaVM);
@@ -364,12 +352,11 @@ private:
     CMap<const JSPandaFile *, JSTaggedValue> cachedConstpools_ {};
 
     // VM resources.
-    ChunkVector<JSMethod *> nativeMethods_;
     ModuleManager *moduleManager_ {nullptr};
     TSLoader *tsLoader_ {nullptr};
     SnapshotEnv *snapshotEnv_ {nullptr};
     bool optionalLogEnabled_ {false};
-    AotCodeInfo *aotInfo_ {nullptr};
+    FileLoader *fileLoader_ {nullptr};
 
     // Debugger
     tooling::JsDebuggerManager *debuggerManager_ {nullptr};

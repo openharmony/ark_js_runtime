@@ -465,7 +465,7 @@ JSTaggedValue BuiltinsObject::IsExtensible(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     // 1.If Type(O) is not Object, return false.
     JSTaggedValue obj = GetCallArg(argv, 0).GetTaggedValue();
-    if (!obj.IsObject()) {
+    if (!obj.IsHeapObject()) {
         return GetTaggedBoolean(false);
     }
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
@@ -962,9 +962,9 @@ JSTaggedValue BuiltinsObject::FromEntries(EcmaRuntimeCallInfo *argv)
     // 5. Let lengthDefine be the number of non-optional parameters of the function definition in
     //    CreateDataPropertyOnObject Functions.
     // 6. Let adder be ! CreateBuiltinFunction(stepsDefine, lengthDefine, "", « »).
+    JSMethod* method = factory->GetMethodByIndex(MethodIndex::BUILTINS_OBJECT_CREATE_DATA_PROPERTY_ON_OBJECT_FUNCTIONS);
     JSHandle<JSFunction> addrFunc =
-        factory->NewJSFunction(env, reinterpret_cast<void *>(CreateDataPropertyOnObjectFunctions),
-                               FunctionKind::NORMAL_FUNCTION);
+        factory->NewJSFunction(env, method, FunctionKind::NORMAL_FUNCTION);
 
     JSHandle<JSTaggedValue> adder(thread, addrFunc.GetTaggedValue());
 
@@ -985,7 +985,7 @@ JSTaggedValue BuiltinsObject::CreateDataPropertyOnObjectFunctions(EcmaRuntimeCal
 
     // 2. Assert: Type(O) is Object.
     // 3. Assert: O is an extensible ordinary object.
-    ASSERT(thisHandle->IsObject());
+    ASSERT(thisHandle->IsHeapObject());
 
     JSHandle<JSTaggedValue> key = GetCallArg(argv, 0);
     JSHandle<JSTaggedValue> value = GetCallArg(argv, 1);

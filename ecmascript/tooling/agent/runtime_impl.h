@@ -28,6 +28,7 @@ public:
     ~RuntimeImpl() = default;
 
     DispatchResponse Enable();
+    DispatchResponse Disable();
     DispatchResponse RunIfWaitingForDebugger();
     DispatchResponse GetProperties(
         std::unique_ptr<GetPropertiesParams> params,
@@ -47,6 +48,7 @@ public:
         ~DispatcherImpl() override = default;
 
         void Dispatch(const DispatchRequest &request) override;
+        void Disable(const DispatchRequest &request);
         void Enable(const DispatchRequest &request);
         void RunIfWaitingForDebugger(const DispatchRequest &request);
         void GetProperties(const DispatchRequest &request);

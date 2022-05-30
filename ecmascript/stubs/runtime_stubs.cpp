@@ -1433,13 +1433,6 @@ DEF_RUNTIME_STUBS(DefineGeneratorFunc)
     return RuntimeDefineGeneratorFunc(thread, reinterpret_cast<JSFunction*>(func)).GetRawData();
 }
 
-DEF_RUNTIME_STUBS(DefineGeneratorFuncWithMethodId)
-{
-    RUNTIME_STUBS_HEADER(DefineGeneratorFuncWithMethodId);
-    JSTaggedValue id = GetArg(argv, argc, 0);
-    return RuntimeDefineGeneratorFuncWithMethodId(thread, id).GetRawData();
-}
-
 DEF_RUNTIME_STUBS(DefineAsyncFunc)
 {
     RUNTIME_STUBS_HEADER(DefineAsyncFunc);
@@ -1695,7 +1688,9 @@ void RuntimeStubs::Initialize(JSThread *thread)
 #define DEF_RUNTIME_STUB(name) kungfu::RuntimeStubCSigns::ID_##name
 #define INITIAL_RUNTIME_FUNCTIONS(name) \
     thread->RegisterRTInterface(DEF_RUNTIME_STUB(name), reinterpret_cast<uintptr_t>(name));
-    RUNTIME_STUB_LIST(INITIAL_RUNTIME_FUNCTIONS)
+    RUNTIME_STUB_WITHOUT_GC_LIST(INITIAL_RUNTIME_FUNCTIONS)
+    RUNTIME_STUB_WITH_GC_LIST(INITIAL_RUNTIME_FUNCTIONS)
+    TEST_RUNTIME_STUB_GC_LIST(INITIAL_RUNTIME_FUNCTIONS)
 #undef INITIAL_RUNTIME_FUNCTIONS
 #undef DEF_RUNTIME_STUB
 }

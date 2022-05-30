@@ -125,8 +125,8 @@ JSTaggedValue BuiltinsDateTimeFormat::Format(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> boundFormat(thread, dtf->GetBoundFormat());
     if (boundFormat->IsUndefined()) {
         ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-        JSHandle<JSIntlBoundFunction> intlBoundFunc =
-            factory->NewJSIntlBoundFunction(reinterpret_cast<void *>(BuiltinsDateTimeFormat::AnonymousDateTimeFormat));
+        JSHandle<JSIntlBoundFunction> intlBoundFunc = factory->NewJSIntlBoundFunction(
+            MethodIndex::BUILTINS_DATE_TIME_FORMAT_ANONYMOUS_DATE_TIME_FORMAT);
         intlBoundFunc->SetDateTimeFormat(thread, dtf);
         dtf->SetBoundFormat(thread, intlBoundFunc);
     }

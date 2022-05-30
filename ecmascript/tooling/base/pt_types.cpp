@@ -2013,7 +2013,7 @@ std::unique_ptr<ProfileNode> ProfileNode::Create(const EcmaVM *ecmaVm, const Loc
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "id")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            profileNode->id_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            profileNode->id_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'id' should be a Number;";
         }
@@ -2053,10 +2053,10 @@ std::unique_ptr<ProfileNode> ProfileNode::Create(const EcmaVM *ecmaVm, const Loc
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
             for (int32_t i = 0; i < childrenLen; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
-                std::unique_ptr<int32_t> pChildren;
+                int32_t pChildren;
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                *pChildren = resultValue->Int32Value(ecmaVm);
-                profileNode->children_->emplace_back(std::move(pChildren));
+                pChildren = resultValue->Int32Value(ecmaVm);
+                profileNode->children_.value()[i] = pChildren;
             }
         } else {
             error += "'children' should be an Array;";
@@ -2119,7 +2119,7 @@ Local<ObjectRef> ProfileNode::ToObject(const EcmaVM *ecmaVm)
         size_t childrenLen = children_->size();
         Local<ArrayRef> childrenValues = ArrayRef::New(ecmaVm, childrenLen);
         for (size_t i = 0; i < childrenLen; i++) {
-            Local<IntegerRef> elem = IntegerRef::New(ecmaVm, *(children_.value()[i]));
+            Local<IntegerRef> elem = IntegerRef::New(ecmaVm, children_.value()[i]);
             childrenValues->Set(ecmaVm, i, elem);
         }
         params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "children")), childrenValues);
@@ -2154,7 +2154,25 @@ std::unique_ptr<Profile> Profile::Create(const EcmaVM *ecmaVm, const Local<JSVal
     auto profile = std::make_unique<Profile>();
 
     Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startTime")));
+        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "nodes")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsArray(ecmaVm)) {
+            auto array = Local<ArrayRef>(result);
+            int32_t nodesLen = array->Length(ecmaVm);
+            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
+            for (int32_t i = 0; i < nodesLen; ++i) {
+                key = IntegerRef::New(ecmaVm, i);
+                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
+                std::unique_ptr<ProfileNode> node = ProfileNode::Create(ecmaVm, resultValue);
+                profile->nodes_.emplace_back(std::move(node));
+            }
+        } else {
+            error += "'nodes' should be an Array;";
+        }
+    } else {
+        error += "should contain 'nodes';";
+    }
+    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startTime")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             profile->startTime_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
@@ -2174,24 +2192,6 @@ std::unique_ptr<Profile> Profile::Create(const EcmaVM *ecmaVm, const Local<JSVal
     } else {
         error += "should contain 'endTime';";
     }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "nodes")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            auto array = Local<ArrayRef>(result);
-            int32_t nodesLen = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < nodesLen; ++i) {
-                key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                std::unique_ptr<ProfileNode> node = ProfileNode::Create(ecmaVm, resultValue);
-                profile->nodes_.emplace_back(std::move(node));
-            }
-        } else {
-            error += "'nodes' should be an Array;";
-        }
-    } else {
-        error += "should contain 'nodes';";
-    }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samples")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
@@ -2200,10 +2200,10 @@ std::unique_ptr<Profile> Profile::Create(const EcmaVM *ecmaVm, const Local<JSVal
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
             for (int32_t i = 0; i < samplesLen; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
-                std::unique_ptr<int32_t> pSamples;
+                int32_t pSamples;
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                *pSamples = resultValue->Int32Value(ecmaVm);
-                profile->samples_->emplace_back(std::move(pSamples));
+                pSamples = resultValue->Int32Value(ecmaVm);
+                profile->samples_.value()[i] = pSamples;
             }
         } else {
             error += "'samples' should be an Array;";
@@ -2219,10 +2219,10 @@ std::unique_ptr<Profile> Profile::Create(const EcmaVM *ecmaVm, const Local<JSVal
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
             for (int32_t i = 0; i < timeDeltasLen; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
-                std::unique_ptr<int32_t> pTime;
+                int32_t pTime;
                 Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                *pTime = resultValue->Int32Value(ecmaVm);
-                profile->timeDeltas_->emplace_back(std::move(pTime));
+                pTime = resultValue->Int32Value(ecmaVm);
+                profile->timeDeltas_.value()[i] = pTime;
             }
         } else {
             error += "'timeDeltas' should be an Array;";
@@ -2240,12 +2240,6 @@ std::unique_ptr<Profile> Profile::Create(const EcmaVM *ecmaVm, const Local<JSVal
 Local<ObjectRef> Profile::ToObject(const EcmaVM *ecmaVm)
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startTime")),
-        IntegerRef::New(ecmaVm, startTime_));
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endTime")),
-        IntegerRef::New(ecmaVm, endTime_));
     size_t nodeLen = nodes_.size();
     Local<ArrayRef> nodeValues = ArrayRef::New(ecmaVm, nodeLen);
     for (size_t i = 0; i < nodeLen; i++) {
@@ -2253,12 +2247,18 @@ Local<ObjectRef> Profile::ToObject(const EcmaVM *ecmaVm)
         nodeValues->Set(ecmaVm, i, profileNode);
     }
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "nodes")), nodeValues);
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startTime")),
+        NumberRef::New(ecmaVm, startTime_));
+    params->Set(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endTime")),
+        NumberRef::New(ecmaVm, endTime_));
     
     if (samples_) {
         size_t samplesLen = samples_->size();
         Local<ArrayRef> sampleValues = ArrayRef::New(ecmaVm, samplesLen);
         for (size_t i = 0; i < samplesLen; i++) {
-            Local<IntegerRef> elem = IntegerRef::New(ecmaVm, *(samples_.value()[i]));
+            Local<IntegerRef> elem = IntegerRef::New(ecmaVm, samples_.value()[i]);
             sampleValues->Set(ecmaVm, i, elem);
         }
         params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samples")), sampleValues);
@@ -2268,7 +2268,7 @@ Local<ObjectRef> Profile::ToObject(const EcmaVM *ecmaVm)
         size_t tdLen = timeDeltas_->size();
         Local<ArrayRef> timeValues = ArrayRef::New(ecmaVm, tdLen);
         for (size_t i = 0; i < tdLen; i++) {
-            Local<IntegerRef> elem = IntegerRef::New(ecmaVm, *(timeDeltas_.value()[i]));
+            Local<IntegerRef> elem = IntegerRef::New(ecmaVm, timeDeltas_.value()[i]);
             timeValues->Set(ecmaVm, i, elem);
         }
         params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timeDeltas")), timeValues);

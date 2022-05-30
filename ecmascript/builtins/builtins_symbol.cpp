@@ -69,7 +69,7 @@ JSTaggedValue BuiltinsSymbol::ToString(EcmaRuntimeCallInfo *argv)
     JSTaggedValue sym = valueHandle.GetTaggedValue();
     // 3.Else
     if (!valueHandle->IsSymbol()) {
-        if (valueHandle->IsObject()) {
+        if (valueHandle->IsHeapObject()) {
             if (!valueHandle->IsJSPrimitiveRef()) {
                 // If s does not have a [[SymbolData]] internal slot, throw a TypeError exception.
                 THROW_TYPE_ERROR_AND_RETURN(thread, "ToString: no [[SymbolData]]", JSTaggedValue::Exception());
@@ -131,7 +131,7 @@ JSTaggedValue BuiltinsSymbol::ValueOf(EcmaRuntimeCallInfo *argv)
         return valueHandle.GetTaggedValue();
     }
     // If Type(s) is not Object, throw a TypeError exception.
-    if (!valueHandle->IsObject()) {
+    if (!valueHandle->IsHeapObject()) {
         // return TypeError
         THROW_TYPE_ERROR_AND_RETURN(thread, "ValueOf: s is not Object", JSTaggedValue::Exception());
     }
@@ -211,11 +211,11 @@ JSTaggedValue BuiltinsSymbol::ToPrimitive(EcmaRuntimeCallInfo *argv)
         return sym.GetTaggedValue();
     }
     // 3.If Type(s) is not Object, throw a TypeError exception.
-    if (!sym->IsObject()) {
+    if (!sym->IsHeapObject()) {
         // return TypeError
         THROW_TYPE_ERROR_AND_RETURN(thread, "ToPrimitive: s is not Object", JSTaggedValue::Exception());
     }
-    ASSERT(sym->IsObject());
+    ASSERT(sym->IsHeapObject());
     // 4.If s does not have a [[SymbolData]] internal slot, throw a TypeError exception.
     // 5.Return the value of s's [[SymbolData]] internal slot.
     if (!sym->IsJSPrimitiveRef()) {

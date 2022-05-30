@@ -130,12 +130,17 @@ void FreeListAllocator::FreeBumpPoint()
     Free(begin, size);
 }
 
-void FreeListAllocator::FillBumpPoint()
+void FreeListAllocator::FillBumpPointer()
 {
     size_t size = bpAllocator_.Available();
     if (size != 0) {
         FreeObject::FillFreeObject(heap_->GetEcmaVM(), bpAllocator_.GetTop(), size);
     }
+}
+
+void FreeListAllocator::ResetBumpPointer(uintptr_t begin, uintptr_t end, uintptr_t top)
+{
+    bpAllocator_.Reset(begin, end, top);
 }
 
 void FreeListAllocator::Free(uintptr_t begin, size_t size, bool isAdd)

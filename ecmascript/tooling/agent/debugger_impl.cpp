@@ -27,6 +27,7 @@ DebuggerImpl::DispatcherImpl::DispatcherImpl(FrontEnd *frontend, std::unique_ptr
     : DispatcherBase(frontend), debugger_(std::move(debugger))
 {
     dispatcherTable_["enable"] = &DebuggerImpl::DispatcherImpl::Enable;
+    dispatcherTable_["disable"] = &DebuggerImpl::DispatcherImpl::Disable;
     dispatcherTable_["evaluateOnCallFrame"] = &DebuggerImpl::DispatcherImpl::EvaluateOnCallFrame;
     dispatcherTable_["getPossibleBreakpoints"] = &DebuggerImpl::DispatcherImpl::GetPossibleBreakpoints;
     dispatcherTable_["getScriptSource"] = &DebuggerImpl::DispatcherImpl::GetScriptSource;
@@ -67,6 +68,12 @@ void DebuggerImpl::DispatcherImpl::Enable(const DispatchRequest &request)
 
     std::unique_ptr<PtBaseReturns> result = std::make_unique<EnableReturns>(id);
     SendResponse(request, response, std::move(result));
+}
+
+void DebuggerImpl::DispatcherImpl::Disable(const DispatchRequest &request)
+{
+    DispatchResponse response = debugger_->Disable();
+    SendResponse(request, response, nullptr);
 }
 
 void DebuggerImpl::DispatcherImpl::EvaluateOnCallFrame(const DispatchRequest &request)
@@ -226,6 +233,16 @@ DispatchResponse DebuggerImpl::Enable([[maybe_unused]] std::unique_ptr<EnablePar
 {
     ASSERT(id != nullptr);
     *id = 0;
+    auto ecmaVm = const_cast<EcmaVM *>(backend_->GetEcmaVm());
+    ecmaVm->GetJsDebuggerManager()->SetDebugMode(true);
+    backend_->NotifyAllScriptParsed();
+    return DispatchResponse::Ok();
+}
+
+DispatchResponse DebuggerImpl::Disable()
+{
+    auto ecmaVm = const_cast<EcmaVM *>(backend_->GetEcmaVm());
+    ecmaVm->GetJsDebuggerManager()->SetDebugMode(false);
     return DispatchResponse::Ok();
 }
 
