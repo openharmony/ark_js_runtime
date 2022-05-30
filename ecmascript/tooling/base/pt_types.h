@@ -1773,7 +1773,7 @@ public:
         return hitCount_.value();
     }
 
-    ProfileNode &SetHitCount(size_t hitCount)
+    ProfileNode &SetHitCount(int32_t hitCount)
     {
         hitCount_ = hitCount;
         return *this;
@@ -1843,7 +1843,7 @@ private:
     NO_MOVE_SEMANTIC(ProfileNode);
     int32_t id_ {0};
     std::unique_ptr<RuntimeCallFrame> callFrame_ {nullptr};
-    std::optional<size_t> hitCount_ {0};
+    std::optional<int32_t> hitCount_ {0};
     std::optional<CVector<int32_t>> children_ {};
     std::optional<CVector<std::unique_ptr<PositionTickInfo>>> positionTicks_ {};
     std::optional<CString> deoptReason_ {};

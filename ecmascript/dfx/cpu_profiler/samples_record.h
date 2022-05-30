@@ -36,6 +36,7 @@ struct FrameInfo {
 struct ProfileNode {
     int id = 0;
     int parentId = 0;
+    int hitCount = 0;
     struct FrameInfo codeEntry;
     CVector<int> children;
 };
