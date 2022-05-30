@@ -907,7 +907,6 @@ void SnapshotProcessor::DeserializeSpaceObject(uintptr_t beginAddr, Space* space
 	 * in this case.
 	 * Currently we use a safer approach by clearing the space type related flags only.
 	 */
-        // region->ResetFlag();
         region->ClearFlag(RegionFlags::IN_OLD_SPACE);
         region->ClearFlag(RegionFlags::IN_YOUNG_SPACE);
         region->ClearFlag(RegionFlags::IN_HUGE_OBJECT_SPACE);
