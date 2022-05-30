@@ -123,7 +123,7 @@ fi
 test_name=$(basename $test_name)
 echo "Run test: $test_dir/$test_name ================="
 
-if [ ! -f "$out_dir/com_stub.m" ]; then
+if [ ! -f "$out_dir/stub.m" ]; then
     make -n -f $test_dir/makefile $run_args stub
     run_check $test_timeout make -s -f $test_dir/makefile $run_args stub
 fi

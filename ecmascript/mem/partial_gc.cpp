@@ -107,8 +107,8 @@ void PartialGC::Mark()
 void PartialGC::Sweep()
 {
     ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "PartialGC::Sweep");
+    ProcessNativeDelete();
     if (heap_->IsFullMark()) {
-        ProcessNativeDelete();
         heap_->GetSweeper()->Sweep();
     }
 }

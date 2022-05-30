@@ -37,6 +37,7 @@ public:
     bool SingleStep(const JSPtLocation &location) override;
     void VmStart() override {}
     void VmDeath() override {}
+    void PendingJobEntry() override;
 
 private:
     NO_COPY_SEMANTIC(JSPtHooks);

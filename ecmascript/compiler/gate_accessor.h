@@ -326,7 +326,7 @@ public:
     void ReplaceIn(UsesIterator &useIt, GateRef replaceGate);
     // Add for lowering
     [[nodiscard]] GateType GetGateType(GateRef gate);
-    void SetGateType(GateRef gate, GateType gt);
+    bool SetGateType(GateRef gate, GateType gt);
     void DeleteExceptionDep(UsesIterator &useIt);
     void DeleteIn(UsesIterator &useIt);
     void DeleteGate(UsesIterator &useIt);

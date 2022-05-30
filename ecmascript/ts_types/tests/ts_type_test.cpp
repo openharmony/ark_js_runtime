@@ -305,7 +305,7 @@ HWTEST_F_L0(TSTypeTest, ClassInstanceType)
     ASSERT_TRUE(type->IsTSClassInstanceType());
     JSHandle<TSClassInstanceType> classInstanceType = JSHandle<TSClassInstanceType>(type);
 
-    ASSERT_EQ(classInstanceType->GetClassRefGT().GetGlobalTSTypeRef(), 50ULL);
+    ASSERT_EQ(classInstanceType->GetClassRefGT().GetGlobalTSTypeRef(), extendClass->GetGT());
 }
 
 HWTEST_F_L0(TSTypeTest, FuntionType)

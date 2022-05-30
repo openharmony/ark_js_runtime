@@ -23,6 +23,7 @@
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_native_pointer.h"
 #include "ecmascript/js_tagged_value.h"
+#include "ecmascript/mem/chunk_containers.h"
 #include "ecmascript/mem/heap_region_allocator.h"
 #include "ecmascript/mem/machine_code.h"
 #include "ecmascript/mem/native_area_allocator.h"
@@ -141,9 +142,31 @@ using base::ErrorType;
 using DeleteEntryPoint = void (*)(void *, void *);
 
 enum class RemoveSlots { YES, NO };
+enum class MethodIndex : uint8_t {
+    BUILTINS_GLOBAL_CALL_JS_BOUND_FUNCTION = 0,
+    BUILTINS_GLOBAL_CALL_JS_PROXY,
+    BUILTINS_OBJECT_CREATE_DATA_PROPERTY_ON_OBJECT_FUNCTIONS,
+    BUILTINS_COLLATOR_ANONYMOUS_COLLATOR,
+    BUILTINS_DATE_TIME_FORMAT_ANONYMOUS_DATE_TIME_FORMAT,
+    BUILTINS_NUMBER_FORMAT_NUMBER_FORMAT_INTERNAL_FORMAT_NUMBER,
+    BUILTINS_PROXY_INVALIDATE_PROXY_FUNCTION,
+    BUILTINS_PROMISE_HANDLER_ASYNC_AWAIT_FULFILLED,
+    BUILTINS_PROMISE_HANDLER_ASYNC_AWAIT_REJECTED,
+    BUILTINS_PROMISE_HANDLER_RESOLVE_ELEMENT_FUNCTION,
+    BUILTINS_PROMISE_HANDLER_RESOLVE,
+    BUILTINS_PROMISE_HANDLER_REJECT,
+    BUILTINS_PROMISE_HANDLER_EXECUTOR,
+    METHOD_END
+};
+
 class ObjectFactory {
 public:
-    explicit ObjectFactory(JSThread *thread, Heap *heap);
+    explicit ObjectFactory(JSThread *thread, Heap *heap, Chunk *chunk);
+    ~ObjectFactory();
+    void GenerateInternalNativeMethods();
+    JSMethod *GetMethodByIndex(MethodIndex idx);
+    JSMethod *NewMethodForNativeFunction(const void *func);
+    JSMethod *NewMethodForAOTFunction(const void *func, size_t numArgs);
 
     JSHandle<ProfileTypeInfo> NewProfileTypeInfo(uint32_t length);
     JSHandle<ConstantPool> NewConstantPool(uint32_t capacity);
@@ -180,12 +203,11 @@ public:
                                                  const JSHandle<JSTaggedValue> &boundThis,
                                                  const JSHandle<TaggedArray> &args);
 
-    JSHandle<JSIntlBoundFunction> NewJSIntlBoundFunction(const void *nativeFunc = nullptr, int functionLength = 1);
+    JSHandle<JSIntlBoundFunction> NewJSIntlBoundFunction(MethodIndex idx, int functionLength = 1);
 
-    JSHandle<JSProxyRevocFunction> NewJSProxyRevocFunction(const JSHandle<JSProxy> &proxy,
-                                                           const void *nativeFunc = nullptr);
+    JSHandle<JSProxyRevocFunction> NewJSProxyRevocFunction(const JSHandle<JSProxy> &proxy);
 
-    JSHandle<JSAsyncAwaitStatusFunction> NewJSAsyncAwaitStatusFunction(const void *nativeFunc = nullptr);
+    JSHandle<JSAsyncAwaitStatusFunction> NewJSAsyncAwaitStatusFunction(MethodIndex idx);
     JSHandle<JSFunction> NewJSGeneratorFunction(JSMethod *method);
 
     JSHandle<JSAsyncFunction> NewAsyncFunction(JSMethod *method);
@@ -313,11 +335,11 @@ public:
 
     JSHandle<GeneratorContext> NewGeneratorContext();
 
-    JSHandle<JSPromiseReactionsFunction> CreateJSPromiseReactionsFunction(const void *nativeFunc);
+    JSHandle<JSPromiseReactionsFunction> CreateJSPromiseReactionsFunction(MethodIndex idx);
 
-    JSHandle<JSPromiseExecutorFunction> CreateJSPromiseExecutorFunction(const void *nativeFunc);
+    JSHandle<JSPromiseExecutorFunction> CreateJSPromiseExecutorFunction();
 
-    JSHandle<JSPromiseAllResolveElementFunction> NewJSPromiseAllResolveElementFunction(const void *nativeFunc);
+    JSHandle<JSPromiseAllResolveElementFunction> NewJSPromiseAllResolveElementFunction();
 
     JSHandle<JSObject> CloneObjectLiteral(JSHandle<JSObject> object, const JSHandle<JSTaggedValue> &env,
                                           const JSHandle<JSTaggedValue> &constpool, bool canShareHClass = true);
@@ -361,6 +383,8 @@ public:
     // only use for creating Function.prototype and Function
     JSHandle<JSFunction> NewJSFunctionByDynClass(JSMethod *method, const JSHandle<JSHClass> &clazz,
                                                  FunctionKind kind = FunctionKind::NORMAL_FUNCTION);
+    JSHandle<JSFunction> NewJSFunctionByDynClass(const void *func, const JSHandle<JSHClass> &clazz,
+                                                 FunctionKind kind = FunctionKind::NORMAL_FUNCTION);
 
     // used for creating jsobject by constructor
     JSHandle<JSObject> NewJSObjectByConstructor(const JSHandle<JSFunction> &constructor,
@@ -383,8 +407,6 @@ public:
     JSHandle<TSModuleTable> NewTSModuleTable(uint32_t length);
     JSHandle<TSFunctionType> NewTSFunctionType(uint32_t length);
     JSHandle<TSArrayType> NewTSArrayType();
-
-    ~ObjectFactory() = default;
 
     // ----------------------------------- new string ----------------------------------------
     JSHandle<EcmaString> NewFromASCII(const CString &data);
@@ -451,8 +473,10 @@ private:
     friend class GlobalEnv;
     friend class GlobalEnvConstants;
     friend class EcmaString;
+    friend class SnapshotProcessor;
+    void ClearNativeMethodsData();
     JSHandle<JSFunction> NewJSFunctionImpl(JSMethod *method);
-
+    static void * InternalMethodTable[static_cast<uint8_t>(MethodIndex::METHOD_END)];
     void InitObjectFields(const TaggedObject *object);
 
     JSThread *thread_ {nullptr};
@@ -461,6 +485,8 @@ private:
 
     EcmaVM *vm_ {nullptr};
     Heap *heap_ {nullptr};
+    ChunkVector<JSMethod *> nativeMethods_;
+    ChunkVector<JSMethod *> internalNativeMethods_;
 
     NO_COPY_SEMANTIC(ObjectFactory);
     NO_MOVE_SEMANTIC(ObjectFactory);

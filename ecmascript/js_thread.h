@@ -317,13 +317,40 @@ public:
         glueData_.coStubEntries_.Set(id, entry);
     }
 
+    Address GetBCStubEntry(uint32_t id)
+    {
+        return glueData_.bcStubEntries_.Get(id);
+    }
+
+    void SetBCStubEntry(size_t id, Address entry)
+    {
+        glueData_.bcStubEntries_.Set(id, entry);
+    }
+
+    void SetUnrealizedBCStubEntry(Address entry)
+    {
+        glueData_.bcStubEntries_.SetUnrealizedBCHandlerStubEntries(entry);
+    }
+
+    void SetNonExistedBCStubEntry(Address entry)
+    {
+        glueData_.bcStubEntries_.SetNonexistentBCHandlerStubEntries(entry);
+    }
+
+    void SetBCDebugStubEntry(size_t id, Address entry)
+    {
+        glueData_.bcDebuggerStubEntries_.Set(id, entry);
+    }
+
+    void SetNonExistedBCDebugStubEntry(Address entry)
+    {
+        glueData_.bcDebuggerStubEntries_.SetNonexistentBCHandlerStubEntries(entry);
+    }
+
     Address *GetBytecodeHandler()
     {
         return glueData_.bcStubEntries_.GetAddr();
     }
-
-    void LoadCommonStubsFromFile(std::string &fileName);
-    void LoadBytecodeHandlerStubsFromFile(std::string &fileName);
 
     void CheckSwitchDebuggerBCStub();
 
@@ -539,10 +566,6 @@ public:
         alignas(EAS) JSTaggedType *frameBase_ {nullptr};
         alignas(EAS) GlobalEnvConstants globalConst_;
     };
-    static_assert(MEMBER_OFFSET(GlueData, bcStubEntries_) == ASM_GLUE_BC_HANDLERS_OFFSET);
-    static_assert(MEMBER_OFFSET(GlueData, rtStubEntries_) == ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET);
-    static_assert(MEMBER_OFFSET(GlueData, currentFrame_) == ASM_GLUE_CURRENT_FRAME_OFFSET);
-    static_assert(MEMBER_OFFSET(GlueData, leaveFrame_) == ASM_GLUE_LEAVE_FRAME_OFFSET);
     STATIC_ASSERT_EQ_ARCH(sizeof(GlueData), GlueData::SizeArch32, GlueData::SizeArch64);
 
 private:
@@ -567,8 +590,6 @@ private:
     std::vector<std::array<JSTaggedType, NODE_BLOCK_SIZE> *> handleStorageNodes_ {};
     int32_t currentHandleStorageIndex_ {-1};
     int32_t handleScopeCount_ {0};
-    JSTaggedValue coStubCode_ {JSTaggedValue::Hole()};
-    JSTaggedValue bcStubCode_ {JSTaggedValue::Hole()};
 
     PropertiesCache *propertiesCache_ {nullptr};
     EcmaGlobalStorage *globalStorage_ {nullptr};

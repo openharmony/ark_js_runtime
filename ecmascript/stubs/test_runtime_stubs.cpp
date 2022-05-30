@@ -65,7 +65,7 @@ DEF_RUNTIME_STUBS(DefineAotFunc)
     ObjectFactory *factory = ecmaVm->GetFactory();
     JSHandle<GlobalEnv> env = ecmaVm->GetGlobalEnv();
     auto codeEntry = thread->GetFastStubEntry(funcIndex.GetInt());
-    JSMethod *method = ecmaVm->GetMethodForNativeFunction(reinterpret_cast<void *>(codeEntry));
+    JSMethod *method = factory->NewMethodForNativeFunction(reinterpret_cast<void *>(codeEntry));
     method->SetAotCodeBit(true);
     method->SetNativeBit(false);
     method->SetNumArgsWithCallField(numArgs.GetInt());

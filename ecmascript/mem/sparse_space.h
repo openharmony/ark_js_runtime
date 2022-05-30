@@ -70,6 +70,9 @@ public:
     void IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const;
 
     size_t GetHeapObjectSize() const;
+
+    void IncreaseAllocatedSize(size_t size);
+
     void IncreaseLiveObjectSize(size_t size)
     {
         liveObjectSize_ += size;
@@ -163,6 +166,7 @@ public:
     uintptr_t Allocate(size_t size, bool isExpand = true);
     bool AddRegionToList(Region *region);
     void FreeBumpPoint();
+    void Stop();
 };
 
 class MachineCodeSpace : public SparseSpace {

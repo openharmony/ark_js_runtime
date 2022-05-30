@@ -49,6 +49,7 @@ void Snapshot::Serialize(TaggedObject *objectHeader, const panda_file::File *pf,
     }
 
     SnapshotProcessor processor(vm_);
+    processor.Initialize();
     vm_->GetSnapshotEnv()->Initialize();
 
     std::unordered_map<uint64_t, std::pair<uint64_t, EncodeBit>> data;
@@ -71,9 +72,9 @@ void Snapshot::Serialize(TaggedObject *objectHeader, const panda_file::File *pf,
 
         processor.SerializeObject(taggedObject, &objectQueue, &data);
     }
-    vm_->GetHeap()->GetSnapshotSpace()->Stop();
+    processor.StopAllocate();
 
-    WriteToFile(write, pf, rootObjSize, processor.GetStringVector());
+    WriteToFile(write, pf, rootObjSize, processor);
     vm_->GetSnapshotEnv()->ClearEnvMap();
 }
 
@@ -92,6 +93,7 @@ void Snapshot::Serialize(uintptr_t startAddr, size_t size, const CString &fileNa
     }
 
     SnapshotProcessor processor(vm_);
+    processor.Initialize();
     vm_->GetSnapshotEnv()->Initialize();
 
     std::unordered_map<uint64_t, std::pair<uint64_t, EncodeBit>> data;
@@ -110,9 +112,9 @@ void Snapshot::Serialize(uintptr_t startAddr, size_t size, const CString &fileNa
         processor.SerializeObject(taggedObject, &objectQueue, &data);
     }
 
-    vm_->GetHeap()->GetSnapshotSpace()->Stop();
+    processor.StopAllocate();
 
-    WriteToFile(write, nullptr, size, processor.GetStringVector());
+    WriteToFile(write, nullptr, size, processor);
     vm_->GetSnapshotEnv()->ClearEnvMap();
 }
 
@@ -137,63 +139,14 @@ const JSPandaFile *Snapshot::Deserialize(SnapshotType type, const CString &snaps
     }
     auto readFile = ToUintPtr(mmap(nullptr, file_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0));
     auto hdr = *ToNativePtr<const Header>(readFile);
-    size_t defaultSnapshotSpaceCapacity = vm_->GetJSOptions().DefaultSnapshotSpaceCapacity();
-    if (defaultSnapshotSpaceCapacity == 0) {
-        LOG_ECMA_MEM(FATAL) << "defaultSnapshotSpaceCapacity must have a size bigger than 0";
-        UNREACHABLE();
-    }
-    SnapshotSpace *space = vm_->GetHeap()->GetSnapshotSpace();
-    uintptr_t snapshotBegin = readFile + sizeof(Header);
-    size_t regionSize = 0U;
-    if (hdr.snapshotSize != 0) {
-        regionSize = (hdr.snapshotSize - 1) / defaultSnapshotSpaceCapacity + 1; // round up
-    }
-    for (size_t i = 0; i < regionSize; i++) {
-        Region *region = vm_->GetHeapRegionAllocator()->AllocateAlignedRegion(
-            space, defaultSnapshotSpaceCapacity, vm_->GetAssociatedJSThread());
-        auto fileRegion = ToNativePtr<Region>(snapshotBegin + i * defaultSnapshotSpaceCapacity);
-
-        uint64_t base = region->allocateBase_;
-        GCBitset *markGCBitset = region->markGCBitset_;
-        uint64_t begin = (fileRegion->begin_) % defaultSnapshotSpaceCapacity;
-        uint64_t waterMark = (fileRegion->highWaterMark_) % defaultSnapshotSpaceCapacity;
-        size_t copyBytes = fileRegion->highWaterMark_ - fileRegion->allocateBase_;
-
-        if (memcpy_s(region, copyBytes, fileRegion, copyBytes) != EOK) {
-            LOG_ECMA(FATAL) << "memcpy_s failed";
-            UNREACHABLE();
-        }
-
-        // allocate_base_
-        region->allocateBase_ = base;
-        // begin_
-        region->begin_ = ToUintPtr(region) + begin;
-        // end_
-        region->end_ = ToUintPtr(region) + defaultSnapshotSpaceCapacity;
-        // high_water_mark_
-        region->highWaterMark_ = ToUintPtr(region) + waterMark;
-        // prev_
-        region->prev_ = nullptr;
-        // next_
-        region->next_ = nullptr;
-        // mark_bitset_
-        region->markGCBitset_ = markGCBitset;
-        // cross_region_set_
-        region->crossRegionSet_ = nullptr;
-        // old_to_new_set_
-        region->oldToNewSet_ = nullptr;
-        // thread_
-        region->thread_ = vm_->GetAssociatedJSThread();
-        // reclaimed_
-        region->reclaimed_ = false;
-
-        space->AddRegion(region);
-    }
-    space->ResetAllocator();
-    uintptr_t stringBegin = snapshotBegin + hdr.snapshotSize;
+    uintptr_t oldSpaceBegin = readFile + sizeof(Header);
+    processor.DeserializeObjectExcludeString(oldSpaceBegin, hdr.oldSpaceObjSize, hdr.nonMovableObjSize,
+                                             hdr.machineCodeObjSize, hdr.snapshotObjSize);
+    uintptr_t stringBegin =
+        oldSpaceBegin + hdr.oldSpaceObjSize + hdr.nonMovableObjSize + hdr.machineCodeObjSize + hdr.snapshotObjSize;
     uintptr_t stringEnd = stringBegin + hdr.stringSize;
     processor.DeserializeString(stringBegin, stringEnd);
-    vm_->GetHeap()->GetSnapshotSpace()->Stop();
+
     if (type == SnapshotType::TS_LOADER) {
         auto stringVector = processor.GetStringVector();
         for (uint32_t i = 0; i < hdr.rootObjectSize; ++i) {
@@ -239,53 +192,35 @@ std::pair<bool, CString> Snapshot::VerifyFilePath(const CString &filePath, bool 
     return std::make_pair(true, CString(resolvedPath.data()));
 }
 
-void Snapshot::WriteToFile(std::fstream &write, const panda_file::File *pf,
-                           size_t size, const CVector<uintptr_t> &stringVector)
+void Snapshot::WriteToFile(std::fstream &write, const panda_file::File *pf, size_t size, SnapshotProcessor &processor)
 {
     uint32_t totalStringSize = 0U;
+    CVector<uintptr_t> stringVector = processor.GetStringVector();
     for (size_t i = 0; i < stringVector.size(); ++i) {
         auto str = reinterpret_cast<EcmaString *>(stringVector[i]);
         size_t objectSize = AlignUp(str->ObjectSize(), static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
         totalStringSize += objectSize;
     }
-    SnapshotSpace *space = vm_->GetHeap()->GetSnapshotSpace();
-    size_t defaultSnapshotSpaceCapacity = vm_->GetJSOptions().DefaultSnapshotSpaceCapacity();
-    auto lastRegion = space->GetCurrentRegion();
-    size_t regionCount = space->GetRegionCount();
-    uint32_t snapshotSize;
-    if (regionCount == 0) {
-        snapshotSize = 0U;
-    } else if (regionCount == 1) {
-        snapshotSize = lastRegion->GetHighWaterMarkSize();
-    } else {
-        snapshotSize = (regionCount - 1) * defaultSnapshotSpaceCapacity + lastRegion->GetHighWaterMarkSize();
-    }
-    uint32_t pandaFileBegin = RoundUp(snapshotSize + totalStringSize + sizeof(Header), Constants::PAGE_SIZE_ALIGN_UP);
-    Header hdr {snapshotSize, totalStringSize, pandaFileBegin, static_cast<uint32_t>(size)};
-    write.write(reinterpret_cast<char *>(&hdr), sizeof(hdr));
-    if (regionCount > 0) {
-        space->EnumerateRegions([&write, &defaultSnapshotSpaceCapacity, lastRegion](Region *current) {
-            if (current != lastRegion) {
-                write.write(reinterpret_cast<char *>(current), defaultSnapshotSpaceCapacity);
-                write.flush();
-            }
-        });
-        write.write(reinterpret_cast<char *>(lastRegion), lastRegion->GetHighWaterMarkSize());
-        write.flush();
-        space->ReclaimRegions();
-    }
 
-    auto globalConst = const_cast<GlobalEnvConstants *>(vm_->GetJSThread()->GlobalConstants());
-    auto stringClass = reinterpret_cast<JSHClass *>(globalConst->GetStringClass().GetTaggedObject());
+    std::vector<uint32_t> objSizeVector = processor.StatisticsObjectSize();
+    size_t totalObjSize = totalStringSize;
+    for (uint32_t objSize : objSizeVector) {
+        totalObjSize += objSize;
+    }
+    uint32_t pandaFileBegin = RoundUp(totalObjSize + sizeof(Header), Constants::PAGE_SIZE_ALIGN_UP);
+    Header hdr {objSizeVector[0], objSizeVector[1], objSizeVector[2], objSizeVector[3], // 0,1,2,3: index of element
+                totalStringSize, pandaFileBegin, static_cast<uint32_t>(size)};
+    write.write(reinterpret_cast<char *>(&hdr), sizeof(hdr));
+
+    processor.WriteObjectToFile(write);
 
     for (size_t i = 0; i < stringVector.size(); ++i) {
         auto str = reinterpret_cast<EcmaString *>(stringVector[i]);
         size_t strSize = AlignUp(str->ObjectSize(), static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
         write.write(reinterpret_cast<char *>(str), strSize);
         write.flush();
-        str->SetClass(stringClass);
     }
-    ASSERT(static_cast<size_t>(write.tellp()) == snapshotSize + totalStringSize + sizeof(Header));
+    ASSERT(static_cast<size_t>(write.tellp()) == totalObjSize + sizeof(Header));
     if (pf) {
         write.seekp(pandaFileBegin);
         write.write(reinterpret_cast<const char *>(pf->GetBase()), pf->GetHeader()->file_size);

@@ -23,6 +23,7 @@ RuntimeImpl::DispatcherImpl::DispatcherImpl(FrontEnd *frontend, std::unique_ptr<
     : DispatcherBase(frontend), runtime_(std::move(runtime))
 {
     dispatcherTable_["enable"] = &RuntimeImpl::DispatcherImpl::Enable;
+    dispatcherTable_["disable"] = &RuntimeImpl::DispatcherImpl::Disable;
     dispatcherTable_["getProperties"] = &RuntimeImpl::DispatcherImpl::GetProperties;
     dispatcherTable_["runIfWaitingForDebugger"] = &RuntimeImpl::DispatcherImpl::RunIfWaitingForDebugger;
     dispatcherTable_["callFunctionOn"] = &RuntimeImpl::DispatcherImpl::CallFunctionOn;
@@ -46,6 +47,12 @@ void RuntimeImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
 void RuntimeImpl::DispatcherImpl::Enable(const DispatchRequest &request)
 {
     DispatchResponse response = runtime_->Enable();
+    SendResponse(request, response, nullptr);
+}
+
+void RuntimeImpl::DispatcherImpl::Disable(const DispatchRequest &request)
+{
+    DispatchResponse response = runtime_->Disable();
     SendResponse(request, response, nullptr);
 }
 
@@ -111,9 +118,11 @@ void RuntimeImpl::DispatcherImpl::GetHeapUsage(const DispatchRequest &request)
 
 DispatchResponse RuntimeImpl::Enable()
 {
-    auto ecmaVm = const_cast<EcmaVM *>(backend_->GetEcmaVm());
-    ecmaVm->GetJsDebuggerManager()->SetDebugMode(true);
-    backend_->NotifyAllScriptParsed();
+    return DispatchResponse::Ok();
+}
+
+DispatchResponse RuntimeImpl::Disable()
+{
     return DispatchResponse::Ok();
 }
 

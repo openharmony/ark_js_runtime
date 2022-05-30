@@ -18,15 +18,16 @@
 #include "ecmascript/base/string_helper.h"
 #include "ecmascript/builtins.h"
 #include "ecmascript/builtins/builtins_regexp.h"
+#include "ecmascript/compiler/call_signature.h"
 #include "ecmascript/compiler/common_stubs.h"
 #include "ecmascript/compiler/interpreter_stub.h"
 #include "ecmascript/compiler/rt_call_signature.h"
-#include "ecmascript/compiler/call_signature.h"
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
 #include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
 #endif
 #include "ecmascript/dfx/vmstat/runtime_stat.h"
 #include "ecmascript/ecma_string_table.h"
+#include "ecmascript/file_loader.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/global_env_constants-inl.h"
 #include "ecmascript/global_env_constants.h"
@@ -44,7 +45,6 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/mem/heap.h"
-#include "ecmascript/mem/machine_code.h"
 #include "ecmascript/mem/gc_stats.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/space.h"
@@ -58,9 +58,7 @@
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/snapshot/mem/snapshot_env.h"
 #include "ecmascript/snapshot/mem/snapshot.h"
-#ifndef PANDA_TARGET_WINDOWS
 #include "ecmascript/stubs/runtime_stubs.h"
-#endif
 #include "ecmascript/tagged_array-inl.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/tagged_queue.h"
@@ -107,8 +105,7 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
       nativeAreaAllocator_(std::make_unique<NativeAreaAllocator>()),
       heapRegionAllocator_(std::make_unique<HeapRegionAllocator>()),
       chunk_(nativeAreaAllocator_.get()),
-      nativePointerList_(&chunk_),
-      nativeMethods_(&chunk_)
+      nativePointerList_(&chunk_)
 {
     options_ = std::move(options);
     icEnabled_ = options_.EnableIC();
@@ -124,15 +121,6 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
     debuggerManager_ = chunk_.New<tooling::JsDebuggerManager>();
 }
 
-void EcmaVM::TryLoadSnapshotFile()
-{
-    const CString snapshotPath(options_.GetSnapshotOutputFile().c_str());
-    Snapshot snapshot(this);
-#if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MACOS)
-    snapshot.Deserialize(SnapshotType::TS_LOADER, snapshotPath);
-#endif
-}
-
 bool EcmaVM::Initialize()
 {
     LOG(INFO, RUNTIME) << "EcmaVM Initialize";
@@ -146,7 +134,7 @@ bool EcmaVM::Initialize()
     heap_ = new Heap(this);
     heap_->Initialize();
     gcStats_ = chunk_.New<GCStats>(heap_);
-    factory_ = chunk_.New<ObjectFactory>(thread_, heap_);
+    factory_ = chunk_.New<ObjectFactory>(thread_, heap_, &chunk_);
     if (UNLIKELY(factory_ == nullptr)) {
         LOG_ECMA(FATAL) << "alloc factory_ failed";
         UNREACHABLE();
@@ -167,19 +155,18 @@ bool EcmaVM::Initialize()
     microJobQueue_ = factory_->NewMicroJobQueue().GetTaggedValue();
     Builtins builtins;
     builtins.Initialize(globalEnv, thread_);
+    factory_->GenerateInternalNativeMethods();
     thread_->SetGlobalObject(GetGlobalEnv()->GetGlobalObject());
     moduleManager_ = new ModuleManager(this);
     debuggerManager_->Initialize();
     tsLoader_ = new TSLoader(this);
     snapshotEnv_ = new SnapshotEnv(this);
-    aotInfo_ = new AotCodeInfo();
+    fileLoader_ = new FileLoader(this);
     if (options_.EnableStubAot()) {
-        LoadStubs();
+        LoadStubFile();
     }
     if (options_.EnableTSAot()) {
-        TryLoadSnapshotFile();
-        std::string file = options_.GetAOTOutputFile();
-        LoadAOTFile(file);
+        LoadAOTFiles();
     }
     InitializeFinish();
     return true;
@@ -244,7 +231,6 @@ EcmaVM::~EcmaVM()
 {
     vmInitialized_ = false;
     Taskpool::GetCurrentTaskpool()->Destroy();
-    ClearNativeMethodsData();
 
     if (runtimeStat_ != nullptr && runtimeStat_->IsRuntimeStatEnabled()) {
         runtimeStat_->Print();
@@ -305,9 +291,9 @@ EcmaVM::~EcmaVM()
         snapshotEnv_ = nullptr;
     }
 
-    if (aotInfo_ != nullptr) {
-        delete aotInfo_;
-        aotInfo_  = nullptr;
+    if (fileLoader_ != nullptr) {
+        delete fileLoader_;
+        fileLoader_  = nullptr;
     }
 
     if (thread_ != nullptr) {
@@ -332,7 +318,7 @@ EcmaVM::CpuProfilingScope::CpuProfilingScope(EcmaVM* vm) : vm_(vm), profiler_(nu
     JSRuntimeOptions options = vm_->GetJSOptions();
     if (options.EnableCpuProfiler()) {
         profiler_ = CpuProfiler::GetInstance();
-        profiler_->CpuProfiler::StartCpuProfiler(vm, "");
+        profiler_->CpuProfiler::StartCpuProfilerForFile(vm, "");
     }
 #endif
 }
@@ -341,64 +327,14 @@ EcmaVM::CpuProfilingScope::~CpuProfilingScope()
 {
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
     if (profiler_ != nullptr) {
-        profiler_->CpuProfiler::StopCpuProfiler();
+        profiler_->CpuProfiler::StopCpuProfilerForFile();
     }
 #endif
 }
 
-JSMethod *EcmaVM::GetMethodForNativeFunction(const void *func)
-{
-    uint32_t numArgs = 2;  // function object and this
-    auto method = chunk_.New<JSMethod>(nullptr, panda_file::File::EntityId(0));
-    method->SetNativePointer(const_cast<void *>(func));
-
-    method->SetNativeBit(true);
-    method->SetNumArgsWithCallField(numArgs);
-    nativeMethods_.push_back(method);
-    return nativeMethods_.back();
-}
-
-JSMethod *EcmaVM::GenerateMethodForAOTFunction(const void *func, size_t numArgs)
-{
-    auto method = chunk_.New<JSMethod>(nullptr, panda_file::File::EntityId(0)); // 0 : temporary file id
-    method->SetNativePointer(const_cast<void *>(func));
-    method->SetAotCodeBit(true);
-    method->SetNativeBit(false);
-    method->SetNumArgsWithCallField(numArgs);
-    nativeMethods_.push_back(method);
-    return nativeMethods_.back();
-}
-
-void EcmaVM::UpdateMethodInFunc(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile)
-{
-    const std::string funcName = "func_main_0";
-    auto mainEntry = static_cast<uintptr_t>(aotInfo_->GetAOTFuncEntry(funcName));
-    JSMethod *mainMethod = GenerateMethodForAOTFunction(reinterpret_cast<void *>(mainEntry), 1); // 1 : default paras
-    mainFunc->SetCallTarget(thread_, mainMethod);
-    mainFunc->SetCodeEntry(reinterpret_cast<uintptr_t>(mainEntry));
-    JSHandle<JSTaggedValue> constPool(thread_, mainFunc->GetConstantPool());
-    ConstantPool *curPool = ConstantPool::Cast(constPool->GetTaggedObject());
-    const CUnorderedMap<uint32_t, uint64_t> &constpoolMap = jsPandaFile->GetConstpoolMap();
-    for (const auto &it : constpoolMap) {
-        ConstPoolValue value(it.second);
-        if (value.GetConstpoolType() == ConstPoolType::BASE_FUNCTION ||
-            value.GetConstpoolType() == ConstPoolType::NC_FUNCTION ||
-            value.GetConstpoolType() == ConstPoolType::GENERATOR_FUNCTION ||
-            value.GetConstpoolType() == ConstPoolType::ASYNC_FUNCTION ||
-            value.GetConstpoolType() == ConstPoolType::METHOD) {
-                auto id = value.GetConstpoolIndex();
-                auto codeEntry = static_cast<uintptr_t>(aotInfo_->GetAOTFuncEntry(id));
-                JSMethod *curMethod = GenerateMethodForAOTFunction(reinterpret_cast<void *>(codeEntry), 1);
-                auto curFunction = JSFunction::Cast(curPool->GetObjectFromCache(id).GetTaggedObject());
-                curFunction->SetCallTarget(thread_, curMethod);
-                curFunction->SetCodeEntry(reinterpret_cast<uintptr_t>(codeEntry));
-        }
-    }
-}
-
 JSTaggedValue EcmaVM::InvokeEcmaAotEntrypoint(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile)
 {
-    UpdateMethodInFunc(mainFunc, jsPandaFile);
+    fileLoader_->UpdateJSMethods(mainFunc, jsPandaFile);
     std::vector<JSTaggedType> args(6, JSTaggedValue::Undefined().GetRawData()); // 6: number of para
     args[0] = mainFunc.GetTaggedValue().GetRawData();
     auto entry = thread_->GetRTInterface(kungfu::RuntimeStubCSigns::ID_JSFunctionEntry);
@@ -569,7 +505,7 @@ void EcmaVM::ProcessReferences(const WeakRootVisitor &v0)
     // program maps
     for (auto iter = cachedConstpools_.begin(); iter != cachedConstpools_.end();) {
         auto object = iter->second;
-        if (object.IsObject()) {
+        if (object.IsHeapObject()) {
             TaggedObject *obj = object.GetTaggedObject();
             auto fwd = v0(obj);
             if (fwd == nullptr) {
@@ -646,7 +582,7 @@ void EcmaVM::Iterate(const RootVisitor &v)
     v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&frameworkProgram_)));
     moduleManager_->Iterate(v);
     tsLoader_->Iterate(v);
-    aotInfo_->Iterate(v);
+    fileLoader_->Iterate(v);
 #if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MACOS)
     snapshotEnv_->Iterate(v);
 #endif
@@ -664,31 +600,26 @@ void EcmaVM::SetMicroJobQueue(job::MicroJobQueue *queue)
     microJobQueue_ = JSTaggedValue(queue);
 }
 
-void EcmaVM::ClearNativeMethodsData()
-{
-    for (auto iter : nativeMethods_) {
-        chunk_.Delete(iter);
-    }
-    nativeMethods_.clear();
-}
-
-void EcmaVM::LoadStubs()
-{
-    std::string comStubFile = options_.GetComStubFile();
-    thread_->LoadCommonStubsFromFile(comStubFile);
-    std::string bcStubFile = options_.GetBcStubFile();
-    thread_->LoadBytecodeHandlerStubsFromFile(bcStubFile);
-}
-
 void EcmaVM::SetupRegExpResultCache()
 {
     regexpCache_ = builtins::RegExpExecResultCache::CreateCacheTable(thread_);
 }
 
-void EcmaVM::LoadAOTFile(const std::string &fileName)
+void EcmaVM::LoadStubFile()
 {
-    if (!aotInfo_->Deserialize(this, fileName)) {
-        return;
-    }
+    std::string file = options_.GetStubFile();
+    fileLoader_->LoadStubFile(file);
+}
+
+void EcmaVM::LoadAOTFiles()
+{
+    std::string file = options_.GetAOTOutputFile();
+    fileLoader_->LoadAOTFile(file);
+    fileLoader_->TryLoadSnapshotFile();
+}
+
+void EcmaVM::SetAOTFuncEntry(uint32_t hash, uint32_t methodId, uint64_t funcEntry)
+{
+    fileLoader_->SetAOTFuncEntry(hash, methodId, funcEntry);
 }
 }  // namespace panda::ecmascript

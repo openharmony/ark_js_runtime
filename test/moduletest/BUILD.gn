@@ -61,8 +61,7 @@ group("ark_asm_test") {
     "callframe:callframeAsmAction",
     "class:classAsmAction",
     "compareobjecthclass:compareobjecthclassAsmAction",
-
-    # "container:containerAsmAction",
+    "container:containerAsmAction",
     "dyninstruction:dyninstructionAsmAction",
     "ecmastringtable:ecmastringtableAsmAction",
     "fortest:fortestAsmAction",

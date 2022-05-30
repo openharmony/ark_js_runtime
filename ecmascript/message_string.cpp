@@ -21,7 +21,7 @@ namespace panda::ecmascript {
 // NOLINTNEXTLINE(fuchsia-statically-constructed-objects)
 static std::array<std::string, MessageString::MAX_MESSAGE_COUNT> g_messageString = {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DEF_COMMON_MESSAGE(name, string) #string,
+#define DEF_COMMON_MESSAGE(name, string) (string),
     COMMON_MESSAGE_STRING_LIST(DEF_COMMON_MESSAGE)
 #undef DEF_COMMON_MESSAGE
 #define DEF_ASM_INTERPRETER_STUB_MESSAGE(name) #name,

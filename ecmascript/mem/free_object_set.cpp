@@ -30,7 +30,7 @@ void FreeObjectSet::Free(uintptr_t begin, size_t size)
 
 void FreeObjectSet::Rebuild()
 {
-    freeObject_ = nullptr;
+    freeObject_ = INVALID_OBJECT;
     available_ = 0;
     isAdded_ = false;
     next_ = nullptr;
@@ -39,11 +39,11 @@ void FreeObjectSet::Rebuild()
 
 FreeObject *FreeObjectSet::ObtainSmallFreeObject(size_t size)
 {
-    FreeObject *curFreeObject = nullptr;
-    if (freeObject_ != nullptr && freeObject_->Available() >= size) {
+    FreeObject *curFreeObject = INVALID_OBJECT;
+    if (freeObject_ != INVALID_OBJECT && freeObject_->Available() >= size) {
         curFreeObject = freeObject_;
         freeObject_ = freeObject_->GetNext();
-        curFreeObject->SetNext(nullptr);
+        curFreeObject->SetNext(INVALID_OBJECT);
         available_ -= curFreeObject->Available();
     }
     return curFreeObject;
@@ -53,43 +53,43 @@ FreeObject *FreeObjectSet::ObtainLargeFreeObject(size_t size)
 {
     FreeObject *prevFreeObject = freeObject_;
     FreeObject *curFreeObject = freeObject_;
-    while (curFreeObject != nullptr) {
+    while (curFreeObject != INVALID_OBJECT) {
         if (curFreeObject->Available() >= size) {
             if (curFreeObject == freeObject_) {
                 freeObject_ = curFreeObject->GetNext();
             } else {
                 prevFreeObject->SetNext(curFreeObject->GetNext());
             }
-            curFreeObject->SetNext(nullptr);
+            curFreeObject->SetNext(INVALID_OBJECT);
             available_ -= curFreeObject->Available();
             return curFreeObject;
         }
         prevFreeObject = curFreeObject;
         curFreeObject = curFreeObject->GetNext();
     }
-    return nullptr;
+    return INVALID_OBJECT;
 }
 
 FreeObject *FreeObjectSet::LookupSmallFreeObject(size_t size)
 {
-    if (freeObject_ != nullptr && freeObject_->Available() >= size) {
+    if (freeObject_ != INVALID_OBJECT && freeObject_->Available() >= size) {
         return freeObject_;
     }
-    return nullptr;
+    return INVALID_OBJECT;
 }
 
 FreeObject *FreeObjectSet::LookupLargeFreeObject(size_t size)
 {
     if (available_ < size) {
-        return nullptr;
+        return INVALID_OBJECT;
     }
     FreeObject *curFreeObject = freeObject_;
-    while (curFreeObject != nullptr) {
+    while (curFreeObject != INVALID_OBJECT) {
         if (curFreeObject->Available() >= size) {
             return curFreeObject;
         }
         curFreeObject = curFreeObject->GetNext();
     }
-    return nullptr;
+    return INVALID_OBJECT;
 }
 }  // namespace panda::ecmascript

@@ -38,6 +38,8 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 
+#include "ecmascript/mem/machine_code.h"
+#include "ecmascript/mem/region.h"
 #include "llvm-c/Analysis.h"
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
@@ -71,6 +73,9 @@ struct CodeInfo {
         if (machineCode_ != nullptr) {
             ASAN_UNPOISON_MEMORY_REGION(machineCode_, MAX_MACHINE_CODE_SIZE);
         }
+        // align machineCode for aarch64
+        machineCode_ += MachineCode::DATA_OFFSET +
+            AlignUp(sizeof(Region), static_cast<size_t>(MemAlignment::MEM_ALIGN_REGION));
     }
     ~CodeInfo()
     {
@@ -84,6 +89,8 @@ struct CodeInfo {
 
     uint8_t *Alloca(uintptr_t size, const char *sectionName)
     {
+        // align up for rodata section
+        size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_REGION));
         uint8_t *addr = nullptr;
         if (codeBufferPos_ + size > MAX_MACHINE_CODE_SIZE) {
             COMPILER_LOG(ERROR) << std::hex << "AllocaCodeSection failed alloc codeBufferPos_:" << codeBufferPos_
@@ -164,7 +171,7 @@ private:
     static constexpr int protRWX = PROT_READ | PROT_WRITE | PROT_EXEC;  // NOLINT(hicpp-signed-bitwise)
     static constexpr int flags = MAP_ANONYMOUS | MAP_SHARED;            // NOLINT(hicpp-signed-bitwise)
     size_t codeBufferPos_ {0};
-    /* <addr, size > for asssembler */
+    /* <addr, size > for disasssembler */
     std::vector<std::pair<uint8_t *, uintptr_t>> codeInfo_ {};
     /* stack map */
     uint8_t *stackMapsSection_ {nullptr};
@@ -189,24 +196,24 @@ public:
     }
     void Disassemble(const std::map<uint64_t, std::string> &addr2name, const CompilerLog &log) const;
     static void Disassemble(uint8_t *buf, size_t size);
-    uint8_t *GetStackMapsSection() const
+    uintptr_t GetStackMapsSection() const
     {
-        return codeInfo_.GetStackMapsSection();
+        return reinterpret_cast<uintptr_t>(codeInfo_.GetStackMapsSection());
     }
 
-    size_t GetStackMapsSize() const
+    uint32_t GetStackMapsSize() const
     {
-        return codeInfo_.GetStackMapsSize();
+        return static_cast<uint32_t>(codeInfo_.GetStackMapsSize());
     }
 
-    uint8_t *GetCodeBuffer() const
+    uintptr_t GetCodeBuffer() const
     {
-        return codeInfo_.GetCodeBuff();
+        return reinterpret_cast<uintptr_t>(codeInfo_.GetCodeBuff());
     }
 
-    size_t GetCodeSize() const
+    uint32_t GetCodeSize() const
     {
-        return codeInfo_.GetCodeSize();
+        return static_cast<uint32_t>(codeInfo_.GetCodeSize());
     }
 
     void *GetFuncPtrFromCompiledModule(LLVMValueRef function)

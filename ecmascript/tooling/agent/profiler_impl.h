@@ -17,20 +17,26 @@
 #define ECMASCRIPT_TOOLING_AGENT_PROFILER_IMPL_H
 
 #include "libpandabase/macros.h"
+#include "libpandabase/utils/logger.h"
+#include "ecmascript/dfx/cpu_profiler/samples_record.h"
+#include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "ecmascript/tooling/agent/js_backend.h"
 #include "ecmascript/tooling/base/pt_params.h"
+#include "ecmascript/tooling/base/pt_returns.h"
 #include "ecmascript/tooling/dispatcher.h"
+#include "ecmascript/tooling/front_end.h"
 
 namespace panda::ecmascript::tooling {
+using CpuProfileNode = ecmascript::ProfileNode;
 class ProfilerImpl final {
 public:
-    explicit ProfilerImpl() {}
+    explicit ProfilerImpl(JSBackend *backend) : backend_(backend) {}
     ~ProfilerImpl() = default;
 
     DispatchResponse Disable();
     DispatchResponse Enable();
     DispatchResponse Start();
-    DispatchResponse Stop();
+    DispatchResponse Stop(std::unique_ptr<Profile> &profile);
     DispatchResponse GetBestEffortCoverage();
     DispatchResponse StopPreciseCoverage();
     DispatchResponse TakePreciseCoverage();
@@ -38,6 +44,9 @@ public:
     DispatchResponse StartTypeProfile();
     DispatchResponse StopTypeProfile();
     DispatchResponse TakeTypeProfile();
+    std::unique_ptr<Profile> FromCpuProfiler(const std::unique_ptr<ProfileInfo> &profileInfo);
+    std::unique_ptr<ProfileNode> FromCpuProfileNode(const std::unique_ptr<CpuProfileNode> &cpuProfileNode);
+    std::unique_ptr<RuntimeCallFrame> FromCpuFrameInfo(const std::unique_ptr<FrameInfo> &cpuFrameInfo);
 
     class DispatcherImpl final : public DispatcherBase {
     public:
@@ -67,7 +76,9 @@ public:
 
 private:
     NO_COPY_SEMANTIC(ProfilerImpl);
-    NO_MOVE_SEMANTIC(ProfilerImpl);   
+    NO_MOVE_SEMANTIC(ProfilerImpl);
+
+    JSBackend *backend_ {nullptr};
 };
 }  // namespace panda::ecmascript::tooling
 #endif

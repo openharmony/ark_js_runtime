@@ -38,7 +38,8 @@ enum RegionFlags {
     IN_COLLECT_SET = 1 << 8,
     IN_NEW_TO_NEW_SET = 1 << 9,
     HAS_BEEN_SWEPT = 1 << 10,
-    INVALID = 1 << 11,
+    NEED_RELOCATE = 1 << 11,
+    INVALID = 1 << 12,
 };
 
 static inline bool IsFlagSet(uintptr_t flags, RegionFlags target)
@@ -271,6 +272,11 @@ public:
         return IsFlagSet(flags_, RegionFlags::BELOW_AGE_MARK);
     }
 
+    bool NeedRelocate() const
+    {
+        return IsFlagSet(RegionFlags::NEED_RELOCATE);
+    }
+
     void SetSwept()
     {
         SetFlag(RegionFlags::HAS_BEEN_SWEPT);
@@ -484,6 +490,7 @@ private:
     size_t wasted_;
     os::memory::Mutex lock_;
     friend class Snapshot;
+    friend class SnapshotProcessor;
 };
 
 static_assert(Region::CheckLayout());

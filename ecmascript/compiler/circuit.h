@@ -99,6 +99,7 @@ public:
     void SetFrameType(panda::ecmascript::FrameType type);
     GateRef GetConstantGate(MachineType bitValue, BitField bitfield,
                             GateType type);
+    size_t GetGateCount() const;
 
 private:
     uint8_t *AllocateSpace(size_t gateSize);

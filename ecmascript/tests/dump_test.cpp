@@ -373,13 +373,15 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
             }
             case JSType::JS_INTL_BOUND_FUNCTION: {
                 CHECK_DUMP_FIELDS(JSFunction::SIZE, JSIntlBoundFunction::SIZE, 3U)
-                JSHandle<JSIntlBoundFunction> intlBoundFunc = factory->NewJSIntlBoundFunction();
+                JSHandle<JSIntlBoundFunction> intlBoundFunc = factory->NewJSIntlBoundFunction(
+                    MethodIndex::BUILTINS_NUMBER_FORMAT_NUMBER_FORMAT_INTERNAL_FORMAT_NUMBER);
                 DUMP_FOR_HANDLE(intlBoundFunc)
                 break;
             }
             case JSType::JS_ASYNC_AWAIT_STATUS_FUNCTION: {
                 CHECK_DUMP_FIELDS(JSFunction::SIZE, JSAsyncAwaitStatusFunction::SIZE, 1U)
-                JSHandle<JSAsyncAwaitStatusFunction> asyncAwaitFunc = factory->NewJSAsyncAwaitStatusFunction();
+                JSHandle<JSAsyncAwaitStatusFunction> asyncAwaitFunc = factory->NewJSAsyncAwaitStatusFunction(
+                    MethodIndex::BUILTINS_PROMISE_HANDLER_ASYNC_AWAIT_FULFILLED);
                 DUMP_FOR_HANDLE(asyncAwaitFunc)
                 break;
             }

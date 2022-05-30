@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ecmascript/dfx/cpu_profiler/profile_processor.h"
+#include "ecmascript/dfx/cpu_profiler/sampling_processor.h"
 
 #include <csignal>
 #include <sys/time.h>
@@ -20,18 +20,19 @@
 #include "ecmascript/interpreter/interpreter.h"
 
 namespace panda::ecmascript {
-JSThread *ProfileProcessor::thread_ = nullptr;
-bool ProfileProcessor::isStart_ = true;
-ProfileProcessor::ProfileProcessor(ProfileGenerator *generator, const EcmaVM *vm, int interval)
+JSThread *SamplingProcessor::thread_ = nullptr;
+bool SamplingProcessor::isStart_ = false;
+SamplingProcessor::SamplingProcessor(SamplesRecord *generator, const EcmaVM *vm, int interval, bool outToFile)
 {
     generator_ = generator;
     interval_ = interval;
     pid_ = pthread_self();
     thread_ = vm->GetAssociatedJSThread();
+    outToFile_ = outToFile;
 }
-ProfileProcessor::~ProfileProcessor() {}
+SamplingProcessor::~SamplingProcessor() {}
 
-bool ProfileProcessor::Run([[maybe_unused]] uint32_t threadIndex)
+bool SamplingProcessor::Run([[maybe_unused]] uint32_t threadIndex)
 {
     uint64_t startTime = 0;
     uint64_t endTime = 0;
@@ -41,8 +42,8 @@ bool ProfileProcessor::Run([[maybe_unused]] uint32_t threadIndex)
         static int collectCount = 1;
 #if ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER
         JSThread *thread = GetJSThread();
-        ProfileGenerator::staticGcState_ = thread->GetGcState();
-        if (!ProfileGenerator::staticGcState_) {
+        SamplesRecord::staticGcState_ = thread->GetGcState();
+        if (!SamplesRecord::staticGcState_) {
             thread->SetGetStackSignal(true);
             if (sem_wait(&CpuProfiler::sem_) != 0) {
                 LOG(ERROR, RUNTIME) << "sem_ wait failed";
@@ -59,21 +60,27 @@ bool ProfileProcessor::Run([[maybe_unused]] uint32_t threadIndex)
         }
 #endif
         endTime = GetMicrosecondsTimeStamp();
-        generator_->AddSample(CpuProfiler::staticFrameStack_, endTime);
-        if (generator_->GetMethodNodes().size() >= 10 || // 10:Number of nodes currently stored
-            generator_->GetSamples().size() == 100) { // 100:Number of Samples currently stored
-            generator_->WriteMethodsAndSampleInfo(false);
+        generator_->AddSample(CpuProfiler::staticFrameStack_, endTime, outToFile_);
+        if (outToFile_) {
+            if (generator_->GetMethodNodes().size() >= 10 || // 10:Number of nodes currently stored
+                generator_->GetSamples().size() == 100) { // 100:Number of Samples currently stored
+                generator_->WriteMethodsAndSampleInfo(false);
+            }
         }
         int64_t ts = interval_ - (endTime - startTime);
         if (ts > 0) {
             usleep(ts);
         }
         startTime = GetMicrosecondsTimeStamp();
-        if (collectCount % 50 == 0) { // 50:The sampling times reached 50 times.
-            WriteSampleDataToFile();
+        if (outToFile_) {
+            if (collectCount % 50 == 0) { // 50:The sampling times reached 50 times.
+                WriteSampleDataToFile();
+            }
+            collectCount++;
         }
-        collectCount++;
     }
+    uint64_t stopTime = GetMicrosecondsTimeStamp();
+    generator_->SetThreadStopTime(stopTime);
     if (sem_post(&CpuProfiler::sem_) != 0) {
         LOG(ERROR, RUNTIME) << "sem_ post failed";
         return false;
@@ -81,24 +88,24 @@ bool ProfileProcessor::Run([[maybe_unused]] uint32_t threadIndex)
     return true;
 }
 
-uint64_t ProfileProcessor::GetMicrosecondsTimeStamp()
+uint64_t SamplingProcessor::GetMicrosecondsTimeStamp()
 {
     struct timeval time;
     gettimeofday(&time, nullptr);
     return (time.tv_sec * 1000000 + time.tv_usec); // 1000000:Second to subtle
 }
 
-JSThread *ProfileProcessor::GetJSThread()
+JSThread *SamplingProcessor::GetJSThread()
 {
     return thread_;
 }
 
-void ProfileProcessor::SetIsStart(bool isStart)
+void SamplingProcessor::SetIsStart(bool isStart)
 {
     isStart_ = isStart;
 }
 
-void ProfileProcessor::WriteSampleDataToFile()
+void SamplingProcessor::WriteSampleDataToFile()
 {
     static int flag = 0;
     if (!generator_->fileHandle_.is_open() || generator_->GetSampleData().size() < 1024 * 1024) { // 1024 * 1024:1M

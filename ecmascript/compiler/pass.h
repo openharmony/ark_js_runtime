@@ -66,6 +66,16 @@ private:
     bool enableLog_ {false};
 };
 
+class TypeInferPass {
+public:
+    bool Run(PassData* data, bool enableLog, BytecodeCircuitBuilder *builder)
+    {
+        TypeInfer typeInfer(builder, data->GetCircuit(), enableLog);
+        typeInfer.TraverseCircuit();
+        return true;
+    }
+};
+
 class SlowPathLoweringPass {
 public:
     bool Run(PassData* data, bool enableLog, BytecodeCircuitBuilder *builder, CompilationConfig *cmpCfg)

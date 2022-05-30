@@ -44,6 +44,7 @@ public:
     static JSTaggedValue FormatRangeToParts(EcmaRuntimeCallInfo *argv);
 
 private:
+    friend class panda::ecmascript::ObjectFactory;
     // 13.1.5 DateTime Format Functions
     static JSTaggedValue AnonymousDateTimeFormat(EcmaRuntimeCallInfo *argv);
 };

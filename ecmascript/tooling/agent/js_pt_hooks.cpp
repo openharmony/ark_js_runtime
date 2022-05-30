@@ -73,4 +73,13 @@ void JSPtHooks::LoadModule(std::string_view pandaFileName)
         firstTime_ = true;
     }
 }
+
+void JSPtHooks::PendingJobEntry()
+{
+    LOG(INFO, DEBUGGER) << "JSPtHooks: PendingJobEntry";
+
+    [[maybe_unused]] LocalScope scope(backend_->ecmaVm_);
+
+    backend_->PendingJobEntry();
+}
 }  // namespace panda::ecmascript::tooling

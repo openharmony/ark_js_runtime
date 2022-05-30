@@ -27,6 +27,7 @@ void BytecodeStubCSigns::Initialize()
 #define INIT_SIGNATURES(name)                                            \
     BytecodeHandlerCallSignature::Initialize(&callSigns_[name]);         \
     callSigns_[name].SetID(ID_##name);                                   \
+    callSigns_[name].SetName(#name);                                     \
     callSigns_[name].SetCallConv(CallSignature::CallConv::GHCCallConv);  \
     callSigns_[name].SetConstructor(                                     \
     [](void* ciruit) {                                                   \

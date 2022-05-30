@@ -29,15 +29,14 @@ public:
 
     ~StubCompiler() = default;
 
-    bool BuildStubModuleAndSave(const std::string &triple, const std::string &commonStubFile,
-        const std::string &bcHandlerStubFile, size_t optLevel);
+    bool BuildStubModuleAndSave(const std::string &triple, const std::string &stubFile, size_t optLevel);
 
     const CompilerLog *GetLog() const
     {
         return log_;
     }
 private:
-    void RunPipeline(LLVMModule &module);
+    void RunPipeline(LLVMModule *module);
     const CompilerLog *log_ {nullptr};
 };
 }  // namespace panda::ecmascript::kungfu

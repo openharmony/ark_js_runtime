@@ -41,7 +41,10 @@ public:
 
 private:
     struct Header {
-        uint32_t snapshotSize;
+        uint32_t oldSpaceObjSize;
+        uint32_t nonMovableObjSize;
+        uint32_t machineCodeObjSize;
+        uint32_t snapshotObjSize;
         uint32_t stringSize;
         uint32_t pandaFileBegin;
         uint32_t rootObjectSize;
@@ -50,8 +53,7 @@ private:
 private:
     size_t AlignUpPageSize(size_t spaceSize);
     std::pair<bool, CString> VerifyFilePath(const CString &filePath, bool toGenerate);
-    void WriteToFile(std::fstream &write, const panda_file::File *pf, size_t size,
-                     const CVector<uintptr_t> &stringVector);
+    void WriteToFile(std::fstream &write, const panda_file::File *pf, size_t size, SnapshotProcessor &processor);
 
     NO_MOVE_SEMANTIC(Snapshot);
     NO_COPY_SEMANTIC(Snapshot);

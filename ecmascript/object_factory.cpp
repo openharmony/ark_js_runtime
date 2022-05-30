@@ -18,8 +18,15 @@
 #include "ecmascript/accessor_data.h"
 #include "ecmascript/base/error_helper.h"
 #include "ecmascript/builtins.h"
+#include "ecmascript/builtins/builtins_collator.h"
+#include "ecmascript/builtins/builtins_date_time_format.h"
 #include "ecmascript/builtins/builtins_errors.h"
 #include "ecmascript/builtins/builtins_global.h"
+#include "ecmascript/builtins/builtins_number_format.h"
+#include "ecmascript/builtins/builtins_promise.h"
+#include "ecmascript/builtins/builtins_promise_handler.h"
+#include "ecmascript/builtins/builtins_object.h"
+#include "ecmascript/builtins/builtins_proxy.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/free_object.h"
 #include "ecmascript/global_env.h"
@@ -116,9 +123,50 @@ using EvalError = builtins::BuiltinsEvalError;
 using ErrorType = base::ErrorType;
 using ErrorHelper = base::ErrorHelper;
 
-ObjectFactory::ObjectFactory(JSThread *thread, Heap *heap)
-    : thread_(thread), vm_(thread->GetEcmaVM()), heap_(heap)
+ObjectFactory::ObjectFactory(JSThread *thread, Heap *heap, Chunk *chunk)
+    : thread_(thread), vm_(thread->GetEcmaVM()), heap_(heap),
+      nativeMethods_(chunk), internalNativeMethods_(chunk)
 {
+}
+
+ObjectFactory::~ObjectFactory()
+{
+    ClearNativeMethodsData();
+}
+
+void ObjectFactory::ClearNativeMethodsData()
+{
+    for (auto iter : nativeMethods_) {
+        vm_->GetChunk()->Delete(iter);
+    }
+    nativeMethods_.clear();
+    for (auto iter : internalNativeMethods_) {
+        vm_->GetChunk()->Delete(iter);
+    }
+    internalNativeMethods_.clear();
+}
+
+JSMethod *ObjectFactory::NewMethodForNativeFunction(const void *func)
+{
+    uint32_t numArgs = 2;  // function object and this
+    auto method = vm_->GetChunk()->New<JSMethod>(nullptr, panda_file::File::EntityId(0));
+    method->SetNativePointer(const_cast<void *>(func));
+
+    method->SetNativeBit(true);
+    method->SetNumArgsWithCallField(numArgs);
+    nativeMethods_.push_back(method);
+    return nativeMethods_.back();
+}
+
+JSMethod *ObjectFactory::NewMethodForAOTFunction(const void *func, size_t numArgs)
+{
+    auto method = vm_->GetChunk()->New<JSMethod>(nullptr, panda_file::File::EntityId(0)); // 0 : temporary file id
+    method->SetNativePointer(const_cast<void *>(func));
+    method->SetAotCodeBit(true);
+    method->SetNativeBit(false);
+    method->SetNumArgsWithCallField(numArgs);
+    nativeMethods_.push_back(method);
+    return nativeMethods_.back();
 }
 
 JSHandle<JSHClass> ObjectFactory::NewEcmaDynClassClass(JSHClass *hclass, uint32_t size, JSType type)
@@ -137,6 +185,41 @@ JSHandle<JSHClass> ObjectFactory::InitClassClass()
     JSHClass *dynclass = reinterpret_cast<JSHClass *>(dynClassClassHandle.GetTaggedValue().GetTaggedObject());
     dynclass->SetClass(dynclass);
     return dynClassClassHandle;
+}
+
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
+void * ObjectFactory::InternalMethodTable[] = {
+    reinterpret_cast<void *>(builtins::BuiltinsGlobal::CallJsBoundFunction),
+    reinterpret_cast<void *>(builtins::BuiltinsGlobal::CallJsProxy),
+    reinterpret_cast<void *>(builtins::BuiltinsObject::CreateDataPropertyOnObjectFunctions),
+    reinterpret_cast<void *>(builtins::BuiltinsCollator::AnonymousCollator),
+    reinterpret_cast<void *>(builtins::BuiltinsDateTimeFormat::AnonymousDateTimeFormat),
+    reinterpret_cast<void *>(builtins::BuiltinsNumberFormat::NumberFormatInternalFormatNumber),
+    reinterpret_cast<void *>(builtins::BuiltinsProxy::InvalidateProxyFunction),
+    reinterpret_cast<void *>(builtins::BuiltinsPromiseHandler::AsyncAwaitFulfilled),
+    reinterpret_cast<void *>(builtins::BuiltinsPromiseHandler::AsyncAwaitRejected),
+    reinterpret_cast<void *>(builtins::BuiltinsPromiseHandler::ResolveElementFunction),
+    reinterpret_cast<void *>(builtins::BuiltinsPromiseHandler::Resolve),
+    reinterpret_cast<void *>(builtins::BuiltinsPromiseHandler::Reject),
+    reinterpret_cast<void *>(builtins::BuiltinsPromiseHandler::Executor)
+};
+
+void ObjectFactory::GenerateInternalNativeMethods()
+{
+    size_t length = static_cast<size_t>(MethodIndex::METHOD_END);
+    for (size_t i = 0; i < length; i++) {
+        uint32_t numArgs = 2;  // function object and this
+        auto method = vm_->GetChunk()->New<JSMethod>(nullptr, panda_file::File::EntityId(0));
+        method->SetNativePointer(InternalMethodTable[i]);
+        method->SetNativeBit(true);
+        method->SetNumArgsWithCallField(numArgs);
+        internalNativeMethods_.emplace_back(method);
+    }
+}
+
+JSMethod *ObjectFactory::GetMethodByIndex(MethodIndex idx)
+{
+    return internalNativeMethods_[static_cast<uint8_t>(idx)];
 }
 
 JSHandle<JSHClass> ObjectFactory::NewEcmaDynClass(JSHClass *hclass, uint32_t size, JSType type, uint32_t inlinedProps)
@@ -803,6 +886,8 @@ void ObjectFactory::InitializeJSObject(const JSHandle<JSObject> &obj, const JSHa
         }
         case JSType::JS_INTL: {
             JSIntl::Cast(*obj)->SetFallbackSymbol(thread_, JSTaggedValue::Undefined());
+            JSHandle<JSSymbol> jsSymbol = NewPublicSymbolWithChar("IntlLegacyConstructedSymbol");
+            JSIntl::Cast(*obj)->SetFallbackSymbol(thread_, jsSymbol);
             break;
         }
         case JSType::JS_LOCALE: {
@@ -1080,7 +1165,7 @@ FreeObject *ObjectFactory::FillFreeObject(uintptr_t address, size_t size, Remove
     if (size >= FreeObject::SIZE_OFFSET && size < FreeObject::SIZE) {
         object = reinterpret_cast<FreeObject *>(address);
         object->SetClassWithoutBarrier(JSHClass::Cast(globalConst->GetFreeObjectWithOneFieldClass().GetTaggedObject()));
-        object->SetNext(nullptr);
+        object->SetNext(INVALID_OBJECT);
     } else if (size >= FreeObject::SIZE) {
         object = reinterpret_cast<FreeObject *>(address);
         bool firstHClassLoaded = false;
@@ -1092,7 +1177,7 @@ FreeObject *ObjectFactory::FillFreeObject(uintptr_t address, size_t size, Remove
                 JSHClass::Cast(globalConst->GetFreeObjectWithTwoFieldClass().GetTaggedObject()));
         }
         object->SetAvailable(size);
-        object->SetNext(nullptr);
+        object->SetNext(INVALID_OBJECT);
     } else if (size == FreeObject::NEXT_OFFSET) {
         object = reinterpret_cast<FreeObject *>(address);
         object->SetClassWithoutBarrier(
@@ -1154,7 +1239,7 @@ JSHandle<JSObject> ObjectFactory::OrdinaryNewJSObjectCreate(const JSHandle<JSTag
 JSHandle<JSFunction> ObjectFactory::NewJSFunction(const JSHandle<GlobalEnv> &env, const void *nativeFunc,
                                                   FunctionKind kind)
 {
-    JSMethod *target = vm_->GetMethodForNativeFunction(nativeFunc);
+    JSMethod *target = NewMethodForNativeFunction(nativeFunc);
     return NewJSFunction(env, target, kind);
 }
 
@@ -1246,9 +1331,20 @@ JSHandle<JSFunction> ObjectFactory::NewJSFunctionByDynClass(JSMethod *method, co
     return function;
 }
 
+JSHandle<JSFunction> ObjectFactory::NewJSFunctionByDynClass(const void *func, const JSHandle<JSHClass> &clazz,
+                                                            FunctionKind kind)
+{
+    JSHandle<JSFunction> function = JSHandle<JSFunction>::Cast(NewJSObject(clazz));
+    clazz->SetCallable(true);
+    clazz->SetExtensible(true);
+    JSFunction::InitializeJSFunction(thread_, function, kind);
+    function->SetCallTarget(thread_, NewMethodForNativeFunction(func));
+    return function;
+}
+
 JSHandle<JSFunction> ObjectFactory::NewJSNativeErrorFunction(const JSHandle<GlobalEnv> &env, const void *nativeFunc)
 {
-    JSMethod *target = vm_->GetMethodForNativeFunction(nativeFunc);
+    JSMethod *target = NewMethodForNativeFunction(nativeFunc);
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetNativeErrorFunctionClass());
     return NewJSFunctionByDynClass(target, dynclass, FunctionKind::BUILTIN_CONSTRUCTOR);
 }
@@ -1256,7 +1352,7 @@ JSHandle<JSFunction> ObjectFactory::NewJSNativeErrorFunction(const JSHandle<Glob
 JSHandle<JSFunction> ObjectFactory::NewSpecificTypedArrayFunction(const JSHandle<GlobalEnv> &env,
                                                                   const void *nativeFunc)
 {
-    JSMethod *target = vm_->GetMethodForNativeFunction(nativeFunc);
+    JSMethod *target = NewMethodForNativeFunction(nativeFunc);
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetSpecificTypedArrayFunctionClass());
     return NewJSFunctionByDynClass(target, dynclass, FunctionKind::BUILTIN_CONSTRUCTOR);
 }
@@ -1264,7 +1360,7 @@ JSHandle<JSFunction> ObjectFactory::NewSpecificTypedArrayFunction(const JSHandle
 JSHandle<JSFunction> ObjectFactory::NewAotFunction(uint32_t numArgs, uintptr_t codeEntry)
 {
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
-    JSMethod *method = vm_->GetMethodForNativeFunction(reinterpret_cast<void *>(codeEntry));
+    JSMethod *method = NewMethodForNativeFunction(reinterpret_cast<void *>(codeEntry));
     method->SetAotCodeBit(true);
     method->SetNativeBit(false);
     method->SetNumArgsWithCallField(numArgs);
@@ -1289,13 +1385,12 @@ JSHandle<JSBoundFunction> ObjectFactory::NewJSBoundFunction(const JSHandle<JSFun
     if (target.GetTaggedValue().IsConstructor()) {
         bundleFunction->SetConstructor(true);
     }
-    JSMethod *method =
-        vm_->GetMethodForNativeFunction(reinterpret_cast<void *>(builtins::BuiltinsGlobal::CallJsBoundFunction));
+    JSMethod *method = GetMethodByIndex(MethodIndex::BUILTINS_GLOBAL_CALL_JS_BOUND_FUNCTION);
     bundleFunction->SetCallTarget(thread_, method);
     return bundleFunction;
 }
 
-JSHandle<JSIntlBoundFunction> ObjectFactory::NewJSIntlBoundFunction(const void *nativeFunc, int functionLength)
+JSHandle<JSIntlBoundFunction> ObjectFactory::NewJSIntlBoundFunction(MethodIndex idx, int functionLength)
 {
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetJSIntlBoundFunctionClass());
@@ -1304,8 +1399,7 @@ JSHandle<JSIntlBoundFunction> ObjectFactory::NewJSIntlBoundFunction(const void *
     intlBoundFunc->SetNumberFormat(JSTaggedValue::Undefined());
     intlBoundFunc->SetDateTimeFormat(JSTaggedValue::Undefined());
     intlBoundFunc->SetCollator(JSTaggedValue::Undefined());
-    JSMethod *method = vm_->GetMethodForNativeFunction(nativeFunc);
-    intlBoundFunc->SetCallTarget(thread_, method);
+    intlBoundFunc->SetCallTarget(thread_, GetMethodByIndex(idx));
     JSHandle<JSFunction> function = JSHandle<JSFunction>::Cast(intlBoundFunc);
     JSFunction::InitializeJSFunction(thread_, function, FunctionKind::NORMAL_FUNCTION);
     JSFunction::SetFunctionLength(thread_, function, JSTaggedValue(functionLength));
@@ -1317,8 +1411,7 @@ JSHandle<JSIntlBoundFunction> ObjectFactory::NewJSIntlBoundFunction(const void *
     return intlBoundFunc;
 }
 
-JSHandle<JSProxyRevocFunction> ObjectFactory::NewJSProxyRevocFunction(const JSHandle<JSProxy> &proxy,
-                                                                      const void *nativeFunc)
+JSHandle<JSProxyRevocFunction> ObjectFactory::NewJSProxyRevocFunction(const JSHandle<JSProxy> &proxy)
 {
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
@@ -1327,9 +1420,7 @@ JSHandle<JSProxyRevocFunction> ObjectFactory::NewJSProxyRevocFunction(const JSHa
     JSHandle<JSProxyRevocFunction> revocFunction = JSHandle<JSProxyRevocFunction>::Cast(NewJSObject(dynclass));
     revocFunction->SetRevocableProxy(JSTaggedValue::Undefined());
     revocFunction->SetRevocableProxy(thread_, proxy);
-
-    JSMethod *target = vm_->GetMethodForNativeFunction(nativeFunc);
-    revocFunction->SetCallTarget(thread_, target);
+    revocFunction->SetCallTarget(thread_, GetMethodByIndex(MethodIndex::BUILTINS_PROXY_INVALIDATE_PROXY_FUNCTION));
     JSHandle<JSFunction> function = JSHandle<JSFunction>::Cast(revocFunction);
     JSFunction::InitializeJSFunction(thread_, function, FunctionKind::NORMAL_FUNCTION);
     JSFunction::SetFunctionLength(thread_, function, JSTaggedValue(0));
@@ -1340,7 +1431,7 @@ JSHandle<JSProxyRevocFunction> ObjectFactory::NewJSProxyRevocFunction(const JSHa
     return revocFunction;
 }
 
-JSHandle<JSAsyncAwaitStatusFunction> ObjectFactory::NewJSAsyncAwaitStatusFunction(const void *nativeFunc)
+JSHandle<JSAsyncAwaitStatusFunction> ObjectFactory::NewJSAsyncAwaitStatusFunction(MethodIndex idx)
 {
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetAsyncAwaitStatusFunctionClass());
@@ -1349,8 +1440,7 @@ JSHandle<JSAsyncAwaitStatusFunction> ObjectFactory::NewJSAsyncAwaitStatusFunctio
         JSHandle<JSAsyncAwaitStatusFunction>::Cast(NewJSObject(dynclass));
     awaitFunction->SetAsyncContext(JSTaggedValue::Undefined());
     JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>::Cast(awaitFunction));
-    JSMethod *target = vm_->GetMethodForNativeFunction(nativeFunc);
-    awaitFunction->SetCallTarget(thread_, target);
+    awaitFunction->SetCallTarget(thread_, GetMethodByIndex(idx));
     return awaitFunction;
 }
 
@@ -1712,8 +1802,7 @@ JSHandle<JSProxy> ObjectFactory::NewJSProxy(const JSHandle<JSTaggedValue> &targe
     JSHandle<JSProxy> proxy(thread_, header);
     JSMethod *method = nullptr;
     if (target->IsCallable()) {
-        JSMethod *nativeMethod =
-            vm_->GetMethodForNativeFunction(reinterpret_cast<void *>(builtins::BuiltinsGlobal::CallJsProxy));
+        JSMethod *nativeMethod = GetMethodByIndex(MethodIndex::BUILTINS_GLOBAL_CALL_JS_PROXY);
         proxy->SetCallTarget(thread_, nativeMethod);
     }
     proxy->SetMethod(method);
@@ -2193,7 +2282,7 @@ JSHandle<JSArrayIterator> ObjectFactory::NewJSArrayIterator(const JSHandle<JSObj
     return iter;
 }
 
-JSHandle<JSPromiseReactionsFunction> ObjectFactory::CreateJSPromiseReactionsFunction(const void *nativeFunc)
+JSHandle<JSPromiseReactionsFunction> ObjectFactory::CreateJSPromiseReactionsFunction(MethodIndex idx)
 {
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetPromiseReactionFunctionClass());
@@ -2202,23 +2291,21 @@ JSHandle<JSPromiseReactionsFunction> ObjectFactory::CreateJSPromiseReactionsFunc
         JSHandle<JSPromiseReactionsFunction>::Cast(NewJSObject(dynclass));
     reactionsFunction->SetPromise(thread_, JSTaggedValue::Hole());
     reactionsFunction->SetAlreadyResolved(thread_, JSTaggedValue::Hole());
-    JSMethod *method = vm_->GetMethodForNativeFunction(nativeFunc);
-    reactionsFunction->SetCallTarget(thread_, method);
+    reactionsFunction->SetCallTarget(thread_, GetMethodByIndex(idx));
     JSHandle<JSFunction> function = JSHandle<JSFunction>::Cast(reactionsFunction);
     JSFunction::InitializeJSFunction(thread_, function);
     JSFunction::SetFunctionLength(thread_, function, JSTaggedValue(1));
     return reactionsFunction;
 }
 
-JSHandle<JSPromiseExecutorFunction> ObjectFactory::CreateJSPromiseExecutorFunction(const void *nativeFunc)
+JSHandle<JSPromiseExecutorFunction> ObjectFactory::CreateJSPromiseExecutorFunction()
 {
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetPromiseExecutorFunctionClass());
     JSHandle<JSPromiseExecutorFunction> executorFunction =
         JSHandle<JSPromiseExecutorFunction>::Cast(NewJSObject(dynclass));
     executorFunction->SetCapability(thread_, JSTaggedValue::Hole());
-    JSMethod *method = vm_->GetMethodForNativeFunction(nativeFunc);
-    executorFunction->SetCallTarget(thread_, method);
+    executorFunction->SetCallTarget(thread_, GetMethodByIndex(MethodIndex::BUILTINS_PROMISE_HANDLER_EXECUTOR));
     executorFunction->SetCapability(thread_, JSTaggedValue::Undefined());
     JSHandle<JSFunction> function = JSHandle<JSFunction>::Cast(executorFunction);
     JSFunction::InitializeJSFunction(thread_, function, FunctionKind::NORMAL_FUNCTION);
@@ -2226,16 +2313,14 @@ JSHandle<JSPromiseExecutorFunction> ObjectFactory::CreateJSPromiseExecutorFuncti
     return executorFunction;
 }
 
-JSHandle<JSPromiseAllResolveElementFunction> ObjectFactory::NewJSPromiseAllResolveElementFunction(
-    const void *nativeFunc)
+JSHandle<JSPromiseAllResolveElementFunction> ObjectFactory::NewJSPromiseAllResolveElementFunction()
 {
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetPromiseAllResolveElementFunctionClass());
     JSHandle<JSPromiseAllResolveElementFunction> function =
         JSHandle<JSPromiseAllResolveElementFunction>::Cast(NewJSObject(dynclass));
     JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>::Cast(function));
-    JSMethod *method = vm_->GetMethodForNativeFunction(nativeFunc);
-    function->SetCallTarget(thread_, method);
+    function->SetCallTarget(thread_, GetMethodByIndex(MethodIndex::BUILTINS_PROMISE_HANDLER_RESOLVE_ELEMENT_FUNCTION));
     function->SetIndex(JSTaggedValue::Undefined());
     function->SetValues(JSTaggedValue::Undefined());
     function->SetCapabilities(JSTaggedValue::Undefined());

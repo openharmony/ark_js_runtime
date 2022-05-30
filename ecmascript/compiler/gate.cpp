@@ -1004,9 +1004,13 @@ GateType Gate::GetGateType() const
     return type_;
 }
 
-void Gate::SetGateType(GateType type)
+bool Gate::SetGateType(GateType type)
 {
-    type_ = type;
+    if (type_ != type) {
+        type_ = type;
+        return true;
+    }
+    return false;
 }
 
 size_t Gate::GetNumIns() const

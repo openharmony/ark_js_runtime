@@ -47,7 +47,7 @@ JSTaggedValue JSAPIVectorIterator::Next(EcmaRuntimeCallInfo *argv)
     // If a has a [[TypedVectorName]] internal slot, then
     // Let len be the value of O’s [[VectorLength]] internal slot.
     ASSERT(vector->IsJSAPIVector());
-    const uint32_t length = JSHandle<JSAPIVector>::Cast(vector)->GetSize();
+    const uint32_t length = static_cast<uint32_t>(JSHandle<JSAPIVector>::Cast(vector)->GetSize());
     // If index >= len, then
     if (index >= length) {
         // Set O.[[IteratedVectorLike]] to undefined.

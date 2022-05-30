@@ -30,8 +30,8 @@
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/message_string.h"
+#include "ecmascript/stubs/runtime_stubs.h"
 #include "ecmascript/tests/test_helper.h"
-#include "ecmascript/trampoline/trampoline.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Support/Host.h"
@@ -79,7 +79,7 @@ public:
         auto ecmaVm = thread->GetEcmaVM();
         ObjectFactory *factory = ecmaVm->GetFactory();
         JSHandle<GlobalEnv> env = ecmaVm->GetGlobalEnv();
-        JSMethod *method = ecmaVm->GetMethodForNativeFunction(reinterpret_cast<void *>(codeEntry));
+        JSMethod *method = factory->NewMethodForNativeFunction(reinterpret_cast<void *>(codeEntry));
         method->SetAotCodeBit(true);
         method->SetNativeBit(false);
         method->SetNumArgsWithCallField(numArgs);
@@ -825,7 +825,7 @@ HWTEST_F_L0(StubTest, LoadGCIRTest)
     LLVMValueRef function = LLVMGetNamedFunction(module, "main");
 
     auto *mainPtr = reinterpret_cast<int (*)()>(LLVMGetPointerToGlobal(engine, function));
-    uint8_t *ptr = assembler.GetStackMapsSection();
+    uint8_t *ptr = reinterpret_cast<uint8_t *>(assembler.GetStackMapsSection());
     LLVMStackMapParser::GetInstance().CalculateStackMap(ptr);
 
     int value = reinterpret_cast<int (*)()>(mainPtr)();
@@ -1157,8 +1157,8 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     EXPECT_EQ(resultVal7, expectResult7);
 
     // obj is callable
-    JSHandle<JSPromiseReactionsFunction> resolveCallable =
-        factory->CreateJSPromiseReactionsFunction(reinterpret_cast<void *>(BuiltinsPromiseHandler::Resolve));
+    JSHandle<JSPromiseReactionsFunction> resolveCallable = factory->CreateJSPromiseReactionsFunction(
+        MethodIndex::BUILTINS_PROMISE_HANDLER_RESOLVE);
     JSTaggedValue expectResult8= FastRuntimeStub::FastTypeOf(thread, resolveCallable.GetTaggedValue());
     JSTaggedValue resultVal8 = typeOfPtr(thread->GetGlueAddr(), resolveCallable.GetTaggedValue().GetRawData());
     EXPECT_EQ(resultVal8, globalConst->GetFunctionString());

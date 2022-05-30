@@ -86,13 +86,13 @@ void AssemblerAarch64::Ldp(const Register &rt, const Register &rt2, const Memory
     uint32_t op;
     if (operand.IsImmediateOffset()) {
         switch (operand.GetAddrMode()) {
-            case MemoryOperand::AddrMode::OFFSET:
+            case OFFSET:
                 op = LoadStorePairOpCode::LDP_Offset;
                 break;
-            case MemoryOperand::AddrMode::PREINDEX:
+            case PREINDEX:
                 op = LoadStorePairOpCode::LDP_Pre;
                 break;
-            case MemoryOperand::AddrMode::POSTINDEX:
+            case POSTINDEX:
                 op = LoadStorePairOpCode::LDP_Post;
                 break;
             default:
@@ -118,13 +118,13 @@ void AssemblerAarch64::Stp(const Register &rt, const Register &rt2, const Memory
     uint32_t op;
     if (operand.IsImmediateOffset()) {
         switch (operand.GetAddrMode()) {
-            case MemoryOperand::AddrMode::OFFSET:
+            case OFFSET:
                 op = LoadStorePairOpCode::STP_Offset;
                 break;
-            case MemoryOperand::AddrMode::PREINDEX:
+            case PREINDEX:
                 op = LoadStorePairOpCode::STP_Pre;
                 break;
-            case MemoryOperand::AddrMode::POSTINDEX:
+            case POSTINDEX:
                 op = LoadStorePairOpCode::STP_Post;
                 break;
             default:
@@ -150,13 +150,13 @@ void AssemblerAarch64::Ldp(const VectorRegister &vt, const VectorRegister &vt2, 
     uint32_t op;
     if (operand.IsImmediateOffset()) {
         switch (operand.GetAddrMode()) {
-            case MemoryOperand::AddrMode::OFFSET:
+            case OFFSET:
                 op = LoadStorePairOpCode::LDP_V_Offset;
                 break;
-            case MemoryOperand::AddrMode::PREINDEX:
+            case PREINDEX:
                 op = LoadStorePairOpCode::LDP_V_Pre;
                 break;
-            case MemoryOperand::AddrMode::POSTINDEX:
+            case POSTINDEX:
                 op = LoadStorePairOpCode::LDP_V_Post;
                 break;
             default:
@@ -193,13 +193,13 @@ void AssemblerAarch64::Stp(const VectorRegister &vt, const VectorRegister &vt2, 
     uint32_t op;
     if (operand.IsImmediateOffset()) {
         switch (operand.GetAddrMode()) {
-            case MemoryOperand::AddrMode::OFFSET:
+            case OFFSET:
                 op = LoadStorePairOpCode::STP_V_Offset;
                 break;
-            case MemoryOperand::AddrMode::PREINDEX:
+            case PREINDEX:
                 op = LoadStorePairOpCode::STP_V_Pre;
                 break;
-            case MemoryOperand::AddrMode::POSTINDEX:
+            case POSTINDEX:
                 op = LoadStorePairOpCode::STP_V_Post;
                 break;
             default:
@@ -257,39 +257,47 @@ uint32_t AssemblerAarch64::GetOpcFromScale(Scale scale, bool ispair)
     return (opc << LDP_STP_Opc_LOWBITS) & LDP_STP_Opc_MASK;
 }
 
-void AssemblerAarch64::Ldr(const Register &rt, const MemoryOperand &operand)
+void AssemblerAarch64::Ldr(const Register &rt, const MemoryOperand &operand, Scale scale)
 {
-    uint32_t op;
-    uint64_t imm = static_cast<uint64_t>(operand.GetImmediate().Value());
     bool regX = !rt.IsW();
-    bool isSigned = true;
+    uint32_t op = GetOpcodeOfLdr(operand, scale);
     if (operand.IsImmediateOffset()) {
-        switch (operand.GetAddrMode()) {
-            case  MemoryOperand::AddrMode::OFFSET:
-                op = LoadStoreOpCode::LDR_Offset;
-                if (regX) {
-                    imm >>= 3;  // 3:  64 RegSise, imm/8 to remove trailing zeros
-                } else {
-                    imm >>= 2;  // 2: 32 RegSise, imm/4 to remove trailing zeros
-                }
-                isSigned = false;
-                break;
-            case MemoryOperand::AddrMode::PREINDEX:
-                op = LoadStoreOpCode::LDR_Pre;
-                break;
-            case MemoryOperand::AddrMode::POSTINDEX:
-                op = LoadStoreOpCode::LDR_Post;
-                break;
-            default:
-                UNREACHABLE();
-        }
-        // 30: 30bit indicate the size of LDR Reg
-        uint32_t instructionCode = (regX << 30) | op | LoadAndStoreImm(imm, isSigned)
+        uint64_t imm = GetImmOfLdr(operand, scale, regX);
+        bool isSigned = operand.GetAddrMode() != AddrMode::OFFSET;
+        // 30: 30bit indicate the size of LDR Reg, and Ldrb and Ldrh do not need it
+        uint32_t instructionCode = ((regX && (scale == Scale::Q)) << 30) | op | LoadAndStoreImm(imm, isSigned)
                                    | Rn(operand.GetRegBase().GetId()) | Rt(rt.GetId());
         EmitU32(instructionCode);
-        return;
+    } else {
+        ASSERT(operand.GetExtendOption() != Extend::NO_EXTEND);
+        uint32_t shift = GetShiftOfLdr(operand, scale, regX);
+        Register rm = operand.GetRegisterOffset();
+        Register rn = operand.GetRegBase();
+        uint32_t extendField =
+            (operand.GetExtendOption() << LDR_STR_Extend_LOWBITS) & LDR_STR_Extend_MASK;
+        uint32_t shiftField = (shift << LDR_STR_S_LOWBITS) & LDR_STR_S_MASK;
+        // 30: 30bit indicate the size of LDR Reg, and Ldrb and Ldrh do not need it
+        uint32_t instructionCode = ((regX && (scale == Scale::Q)) << 30) | op | Rm(rm.GetId())
+                                   | extendField | shiftField | Rn(rn.GetId()) | Rt(rt.GetId());
+        EmitU32(instructionCode);
     }
-    UNREACHABLE();
+}
+
+void AssemblerAarch64::Ldr(const Register &rt, const MemoryOperand &operand)
+{
+    Ldr(rt, operand, Scale::Q);
+}
+
+void AssemblerAarch64::Ldrh(const Register &rt, const MemoryOperand &operand)
+{
+    ASSERT(rt.IsW());
+    Ldr(rt, operand, Scale::H);
+}
+
+void AssemblerAarch64::Ldrb(const Register &rt, const MemoryOperand &operand)
+{
+    ASSERT(rt.IsW());
+    Ldr(rt, operand, Scale::B);
 }
 
 void AssemblerAarch64::Str(const Register &rt, const MemoryOperand &operand)
@@ -300,7 +308,7 @@ void AssemblerAarch64::Str(const Register &rt, const MemoryOperand &operand)
     uint64_t imm = static_cast<uint64_t>(operand.GetImmediate().Value());
     if (operand.IsImmediateOffset()) {
         switch (operand.GetAddrMode()) {
-            case MemoryOperand::AddrMode::OFFSET:
+            case OFFSET:
                 op = LoadStoreOpCode::STR_Offset;
                 if (regX) {
                     imm >>= 3;   // 3:  64 RegSise, imm/8 to remove trailing zeros
@@ -309,10 +317,10 @@ void AssemblerAarch64::Str(const Register &rt, const MemoryOperand &operand)
                 }
                 isSigned = false;
                 break;
-            case MemoryOperand::AddrMode::PREINDEX:
+            case PREINDEX:
                 op = LoadStoreOpCode::STR_Pre;
                 break;
-            case MemoryOperand::AddrMode::POSTINDEX:
+            case POSTINDEX:
                 op = LoadStoreOpCode::STR_Post;
                 break;
             default:
@@ -638,6 +646,11 @@ void AssemblerAarch64::And(const Register &rd, const Register &rn, const Logical
     BitWiseOpImm(AND_Imm, rd, rn, imm.Value());
 }
 
+void AssemblerAarch64::Ands(const Register &rd, const Register &rn, const LogicalImmediate &imm)
+{
+    BitWiseOpImm(ANDS_Imm, rd, rn, imm.Value());
+}
+
 void AssemblerAarch64::Orr(const Register &rd, const Register &rn, const Operand &operand)
 {
     ASSERT(operand.IsShifted());
@@ -829,7 +842,7 @@ void AssemblerAarch64::AddSubReg(AddSubOpCode op, const Register &rd, const Regi
 
 void AssemblerAarch64::Cmp(const Register &rd, const Operand &operand)
 {
-    Subs(Register(Zero), rd, operand);
+    Subs(Register(Zero, rd.GetType()), rd, operand);
 }
 
 void AssemblerAarch64::CMov(const Register &rd, const Register &rn, const Operand &operand, Condition cond)
@@ -957,6 +970,11 @@ void AssemblerAarch64::Tbnz(const Register &rt, int32_t bitPos, int32_t imm)
     EmitU32(code);
 }
 
+void AssemblerAarch64::Tst(const Register &rn, const LogicalImmediate &imm)
+{
+    Ands(Register(Zero, rn.GetType()), rn, imm);
+}
+
 int32_t AssemblerAarch64::LinkAndGetInstOffsetToLabel(Label *label)
 {
     int32_t offset = 0;
@@ -1072,5 +1090,104 @@ void AssemblerAarch64::Brk(const Immediate &imm)
         (static_cast<uint32_t>(imm.Value()) << BRK_Imm16_LOWBITS) & BRK_Imm16_MASK;
     uint32_t code = BRKImm | brk_number_field;
     EmitU32(code);
+}
+
+uint64_t AssemblerAarch64::GetImmOfLdr(const MemoryOperand &operand, Scale scale, bool isRegX)
+{
+    ASSERT(operand.IsImmediateOffset());
+    uint64_t imm = static_cast<uint64_t>(operand.GetImmediate().Value());
+    if (operand.GetAddrMode() == OFFSET) {
+        if (scale == Scale::H) {
+            imm >>= 1;
+        } else if (scale == Scale::Q) {
+            if (isRegX) {
+                imm >>= 3;  // 3:  64 RegSise, imm/8 to remove trailing zeros
+            } else {
+                imm >>= 2;  // 2: 32 RegSise, imm/4 to remove trailing zeros
+            }
+        }
+    }
+    return imm;
+}
+
+uint64_t AssemblerAarch64::GetOpcodeOfLdr(const MemoryOperand &operand, Scale scale)
+{
+    uint32_t op = 0;
+    if (operand.IsImmediateOffset()) {
+        switch (operand.GetAddrMode()) {
+            case OFFSET: {
+                if (scale == Scale::B) {
+                    op = LoadStoreOpCode::LDRB_Offset;
+                } else if (scale == Scale::H) {
+                    op = LoadStoreOpCode::LDRH_Offset;
+                } else if (scale == Scale::Q) {
+                    op = LoadStoreOpCode::LDR_Offset;
+                } else {
+                    UNREACHABLE();
+                }
+                break;
+            }
+            case PREINDEX: {
+                if (scale == Scale::B) {
+                    op = LoadStoreOpCode::LDRB_Pre;
+                } else if (scale == Scale::H) {
+                    op = LoadStoreOpCode::LDRH_Pre;
+                } else if (scale == Scale::Q) {
+                    op = LoadStoreOpCode::LDR_Pre;
+                } else {
+                    UNREACHABLE();
+                }
+                break;
+            }
+            case POSTINDEX: {
+                if (scale == Scale::B) {
+                    op = LoadStoreOpCode::LDRB_Post;
+                } else if (scale == Scale::H) {
+                    op = LoadStoreOpCode::LDRH_Post;
+                } else if (scale == Scale::Q) {
+                    op = LoadStoreOpCode::LDR_Post;
+                } else {
+                    UNREACHABLE();
+                }
+                break;
+            }
+            default:
+                UNREACHABLE();
+        }
+    } else {
+        if (scale == Scale::B) {
+            op = LoadStoreOpCode::LDRB_Register;
+        } else if (scale == Scale::H) {
+            op = LoadStoreOpCode::LDRH_Register;
+        } else if (scale == Scale::Q) {
+            op = LoadStoreOpCode::LDR_Register;
+        } else {
+            UNREACHABLE();
+        }
+    }
+    return op;
+}
+
+uint32_t AssemblerAarch64::GetShiftOfLdr(const MemoryOperand &operand, Scale scale, bool isRegX)
+{
+    uint32_t shift = 0;
+    if (scale == Scale::B) {
+        shift = operand.GetShiftOption() != Shift::NO_SHIFT;
+    } else if (scale == Scale::H) {
+        shift = operand.GetShiftAmount();
+        ASSERT(shift == 0 || shift == 1);
+        shift = (shift == 0) ? 0 : 1;
+    } else if (scale == Scale::Q) {
+        shift = operand.GetShiftAmount();
+        if (isRegX) {
+            // 3 : 3 means address aligned with 8bytes
+            ASSERT(shift == 0 || shift == 3);
+        } else {
+            // 2 : 2 means address aligned with 4bytes
+            ASSERT(shift == 0 || shift == 2);
+        }
+        shift = (shift == 0) ? 0 : 1;
+    }
+    return shift;
 }
 }   // namespace panda::ecmascript::aarch64
