@@ -900,7 +900,25 @@ void SnapshotProcessor::DeserializeSpaceObject(uintptr_t beginAddr, Space* space
         // reclaimed_
         region->reclaimed_ = false;
 
+        /*
+	 * Reset flags according to the space type.
+	 * fixme: ResetFlag will erase all of the set bits which may include information other than space types,
+	 * like in CSet, has been swept, etc.. Double confirm whether such flags still need to be retained
+	 * in this case.
+	 * Currently we use a safer approach by clearing the space type related flags only.
+	 */
+        // region->ResetFlag();
+        region->ClearFlag(RegionFlags::IN_OLD_SPACE);
+        region->ClearFlag(RegionFlags::IN_YOUNG_SPACE);
+        region->ClearFlag(RegionFlags::IN_HUGE_OBJECT_SPACE);
+        region->ClearFlag(RegionFlags::IN_MACHINE_CODE_SPACE);
+        region->ClearFlag(RegionFlags::IN_NON_MOVABLE_SPACE);
+        region->ClearFlag(RegionFlags::IN_SNAPSHOT_SPACE);
+
+        region->SetFlag(space->GetRegionFlag());
+
         region->SetFlag(RegionFlags::NEED_RELOCATE);
+
         size_t liveObjectSize = region->GetHighWaterMark() - region->GetBegin();
         if (space->GetSpaceType() != MemSpaceType::SNAPSHOT_SPACE) {
             auto sparseSpace = reinterpret_cast<SparseSpace *>(space);
