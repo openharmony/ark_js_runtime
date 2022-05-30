@@ -111,31 +111,34 @@ void EcmaGlobalStorage::NodeList::RemoveList()
 uintptr_t EcmaGlobalStorage::NewGlobalHandleImplement(NodeList **storage, NodeList **freeList,
                                                       bool isWeak, JSTaggedType value)
 {
-    if ((*storage)->IsFull() && *freeList == nullptr) {
+    if (!(*storage)->IsFull()) {
         // alloc new block
-        auto block = chunk_->New<NodeList>(isWeak);
-        block->LinkTo(*storage);
-        *storage = block;
-    }
-
-    // use node in block first
-    Node *node = (*storage)->NewNode(value);
-    if (node != nullptr) {
+        Node *node = (*storage)->NewNode(value);
+        ASSERT(node != nullptr);
         return node->GetObjectAddress();
     }
-
-    // use free_list node
-    node = (*freeList)->GetFreeNode(value);
-    ASSERT(node != nullptr);
-    if (!(*freeList)->HasFreeNode()) {
-        auto next = (*freeList)->GetFreeNext();
-        (*freeList)->SetFreeNext(nullptr);
-        (*freeList)->SetFreePrev(nullptr);
-        if (next != nullptr) {
-            next->SetFreePrev(nullptr);
+    if (*freeList != nullptr) {
+        // use free_list node
+        Node *node = (*freeList)->GetFreeNode(value);
+        ASSERT(node != nullptr);
+        if (!(*freeList)->HasFreeNode()) {
+            auto next = (*freeList)->GetFreeNext();
+            (*freeList)->SetFreeNext(nullptr);
+            (*freeList)->SetFreePrev(nullptr);
+            if (next != nullptr) {
+                next->SetFreePrev(nullptr);
+            }
+            *freeList = next;
         }
-        *freeList = next;
+        return node->GetObjectAddress();
     }
+    auto block = chunk_->New<NodeList>(isWeak);
+    block->LinkTo(*storage);
+    *storage = block;
+
+    // use node in block finally
+    Node *node = (*storage)->NewNode(value);
+    ASSERT(node != nullptr);
     return node->GetObjectAddress();
 }
 
