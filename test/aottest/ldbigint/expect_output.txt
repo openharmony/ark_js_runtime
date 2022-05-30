@@ -11,6 +11,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-0
-1
-undefined
+123456789012345678901234567890
