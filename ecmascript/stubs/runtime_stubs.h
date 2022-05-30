@@ -40,24 +40,20 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
     V(AsmInterpreterEntry)                   \
     V(GeneratorReEnterAsmInterp)             \
     V(JSCallDispatch)                        \
-    V(PushCallArgs0AndDispatch)              \
     V(PushCallArgsAndDispatchNative)         \
-    V(PushCallArgs0AndDispatchSlowPath)      \
+    V(PushCallArgs0AndDispatch)              \
     V(PushCallArgs1AndDispatch)              \
-    V(PushCallArgs1AndDispatchSlowPath)      \
     V(PushCallArgs2AndDispatch)              \
-    V(PushCallArgs2AndDispatchSlowPath)      \
     V(PushCallArgs3AndDispatch)              \
-    V(PushCallArgs3AndDispatchSlowPath)      \
     V(PushCallIRangeAndDispatch)             \
     V(PushCallIRangeAndDispatchNative)       \
-    V(PushCallIRangeAndDispatchSlowPath)     \
     V(PushCallIThisRangeAndDispatch)         \
-    V(PushCallIThisRangeAndDispatchSlowPath) \
     V(ResumeRspAndDispatch)                  \
     V(ResumeRspAndReturn)                    \
     V(ResumeCaughtFrameAndDispatch)          \
     V(ResumeUncaughtFrameAndReturn)          \
+    V(CallSetter)                            \
+    V(CallGetter)                            \
     V(CallRuntimeWithArgv)                   \
     V(JSCall)                                \
     V(JSCallWithArgV)                        \
@@ -81,11 +77,8 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
 #define RUNTIME_STUB_WITH_GC_LIST(V)      \
     V(AddElementInternal)                 \
     V(AllocateInYoung)                    \
-    V(CallSetter)                         \
-    V(CallSetter2)                        \
-    V(CallGetter)                         \
-    V(CallGetter2)                        \
     V(CallInternalGetter)                 \
+    V(CallInternalSetter)                 \
     V(ThrowTypeError)                     \
     V(JSProxySetProperty)                 \
     V(GetHash32)                          \
@@ -208,6 +201,7 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
     V(DefineGeneratorFunc)                \
     V(DefineAsyncFunc)                    \
     V(DefineMethod)                       \
+    V(ThrowSetterIsUndefinedException)    \
     V(ThrowNotCallableException)          \
     V(ThrowCallConstructorException)      \
     V(ThrowStackOverflowException)        \
@@ -228,8 +222,8 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
     V(NewAotObjDynRange)
 
 #define RUNTIME_STUB_LIST(V)                 \
-    RUNTIME_STUB_WITHOUT_GC_LIST(V)          \
     RUNTIME_ASM_STUB_LIST(V)                 \
+    RUNTIME_STUB_WITHOUT_GC_LIST(V)          \
     RUNTIME_STUB_WITH_GC_LIST(V)             \
     TEST_RUNTIME_STUB_GC_LIST(V)
 

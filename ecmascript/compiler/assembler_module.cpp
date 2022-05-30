@@ -21,6 +21,7 @@
 #include "ecmascript/compiler/rt_call_signature.h"
 #include "ecmascript/compiler/trampoline/x64/assembler_stubs_x64.h"
 #include "ecmascript/compiler/trampoline/aarch64/assembler_stubs.h"
+#include "libpandafile/bytecode_instruction-inl.h"
 
 namespace panda::ecmascript::kungfu {
 void AssemblerModule::Run(const CompilationConfig *cfg, Chunk* chunk)
@@ -75,6 +76,67 @@ void AssemblerModule::SetUpForAsmStubs()
     for (auto cs : asmCallSigns_) {
         symbolTable_[cs->GetID()] = new panda::ecmascript::Label();
     }
+}
+
+int AssemblerModule::GetArgcFromJSCallMode(JSCallMode mode)
+{
+    switch (mode) {
+        case JSCallMode::CALL_ARG0:
+            return 0;
+        case JSCallMode::CALL_ARG1:
+            return 1;
+        case JSCallMode::CALL_ARG2:
+            return 2; // 2: arg2
+        case JSCallMode::CALL_ARG3:
+            return 3; // 3: arg3
+        case JSCallMode::CALL_THIS_WITH_ARGV:
+        case JSCallMode::CALL_WITH_ARGV:
+        case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
+        case JSCallMode::CALL_SUPER_CALL_WITH_ARGV:
+        case JSCallMode::CALL_ENTRY:
+            return -1;
+        case JSCallMode::CALL_GETTER:
+            return 0;
+        case JSCallMode::CALL_SETTER:
+            return 1;
+        case JSCallMode::CALL_FROM_AOT:
+        default:
+            UNREACHABLE();
+    }
+}
+
+size_t AssemblerModule::GetJumpSizeFromJSCallMode(JSCallMode mode)
+{
+    size_t jumpSize = 0U;
+    switch (mode) {
+        case JSCallMode::CALL_ARG0:
+            jumpSize = BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8);
+            break;
+        case JSCallMode::CALL_ARG1:
+            jumpSize = BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8);
+            break;
+        case JSCallMode::CALL_ARG2:
+            jumpSize = BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8_V8);
+            break;
+        case JSCallMode::CALL_ARG3:
+            jumpSize = BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8_V8_V8);
+            break;
+        case JSCallMode::CALL_THIS_WITH_ARGV:
+        case JSCallMode::CALL_WITH_ARGV:
+        case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
+        case JSCallMode::CALL_SUPER_CALL_WITH_ARGV:
+            jumpSize = BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_IMM16_V8);
+            break;
+        case JSCallMode::CALL_GETTER:
+        case JSCallMode::CALL_SETTER:
+        case JSCallMode::CALL_ENTRY:
+            // default return 0
+            break;
+        case JSCallMode::CALL_FROM_AOT:
+        default:
+            UNREACHABLE();
+    }
+    return jumpSize;
 }
 
 #define DECLARE_ASM_STUB_X64_GENERATE(name)                                                       \
