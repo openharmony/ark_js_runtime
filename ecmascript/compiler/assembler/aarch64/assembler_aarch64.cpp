@@ -663,6 +663,12 @@ void AssemblerAarch64::And(const Register &rd, const Register &rn, const Operand
     BitWiseOpShift(AND_Shift, rd, rn, operand);
 }
 
+void AssemblerAarch64::Ands(const Register &rd, const Register &rn, const Operand &operand)
+{
+    ASSERT(operand.IsShifted());
+    BitWiseOpShift(ANDS_Shift, rd, rn, operand);
+}
+
 void AssemblerAarch64::BitWiseOpImm(BitwiseOpCode op, const Register &rd, const Register &rn, uint64_t imm)
 {
     uint32_t code = Sf(!rd.IsW()) | op | imm | Rn(rn.GetId()) | Rd(rd.GetId());

@@ -299,8 +299,9 @@ public:
     void Orr(const Register &rd, const Register &rn, const LogicalImmediate &imm);
     void Orr(const Register &rd, const Register &rn, const Operand &operand);
     void And(const Register &rd, const Register &rn, const Operand &operand);
-    void Ands(const Register &rd, const Register &rn, const LogicalImmediate &imm);
+    void Ands(const Register &rd, const Register &rn, const Operand &operand);
     void And(const Register &rd, const Register &rn, const LogicalImmediate &imm);
+    void Ands(const Register &rd, const Register &rn, const LogicalImmediate &imm);
     void Lsr(const Register &rd, const Register &rn, unsigned shift);
     void Lsl(const Register &rd, const Register &rn, unsigned shift);
     void Lsl(const Register &rd, const Register &rn, const Register &rm);
@@ -329,6 +330,7 @@ public:
     void Tbz(const Register &rt, int32_t bitPos, int32_t imm);
     void Tbnz(const Register &rt, int32_t bitPos, Label *label);
     void Tbnz(const Register &rt, int32_t bitPos, int32_t imm);
+    void Tst(const Register &rn, const Operand &operand);
     void Tst(const Register &rn, const LogicalImmediate &imm);
     void Ret();
     void Ret(const Register &rn);
