@@ -22,6 +22,7 @@ enum RegisterId : uint8_t {
     X16, X17, X18, X19, X20, X21, X22, X23,
     X24, X25, X26, X27, X28, X29, X30, SP,
     Zero = SP,
+    FP = X29,
     INVALID_REG = 0xFF,
 };
 
