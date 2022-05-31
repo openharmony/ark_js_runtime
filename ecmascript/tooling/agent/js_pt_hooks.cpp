@@ -76,7 +76,7 @@ void JSPtHooks::LoadModule(std::string_view pandaFileName)
 
 void JSPtHooks::PendingJobEntry()
 {
-    LOG(INFO, DEBUGGER) << "JSPtHooks: PendingJobEntry";
+    LOG(DEBUG, DEBUGGER) << "JSPtHooks: PendingJobEntry";
 
     [[maybe_unused]] LocalScope scope(backend_->ecmaVm_);
 

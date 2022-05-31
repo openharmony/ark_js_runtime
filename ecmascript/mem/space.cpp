@@ -83,10 +83,6 @@ uintptr_t HugeObjectSpace::Allocate(size_t objectSize, JSThread *thread)
     }
 
     size_t alignedSize = AlignUp(objectSize + sizeof(Region), PANDA_POOL_ALIGNMENT_IN_BYTES);
-    if (UNLIKELY(alignedSize > MAX_HUGE_OBJECT_SIZE)) {
-        LOG_ECMA_MEM(FATAL) << "The size is too big for this allocator. Return nullptr.";
-        return 0;
-    }
     Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, alignedSize, thread);
     AddRegion(region);
     return region->GetBegin();
