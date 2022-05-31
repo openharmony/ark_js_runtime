@@ -28,6 +28,18 @@ OpCode GateAccessor::GetOpCode(GateRef gate) const
     return gatePtr->GetOpCode();
 }
 
+BitField GateAccessor::GetBitField(GateRef gate) const
+{
+    Gate *gatePtr = circuit_->LoadGatePtr(gate);
+    return gatePtr->GetBitField();
+}
+
+void GateAccessor::Print(GateRef gate) const
+{
+    Gate *gatePtr = circuit_->LoadGatePtr(gate);
+    gatePtr->Print();
+}
+
 GateId GateAccessor::GetId(GateRef gate) const
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);
@@ -38,6 +50,12 @@ void GateAccessor::SetOpCode(GateRef gate, OpCode::Op opcode)
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);
     gatePtr->SetOpCode(OpCode(opcode));
+}
+
+void GateAccessor::SetBitField(GateRef gate, BitField bitField)
+{
+    Gate *gatePtr = circuit_->LoadGatePtr(gate);
+    gatePtr->SetBitField(bitField);
 }
 
 GateRef GateAccessor::GetValueIn(GateRef gate, size_t idx) const
