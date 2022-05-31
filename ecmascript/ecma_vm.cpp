@@ -133,7 +133,7 @@ bool EcmaVM::Initialize()
     regExpParserCache_ = new RegExpParserCache();
     heap_ = new Heap(this);
     heap_->Initialize();
-    gcStats_ = chunk_.New<GCStats>(heap_);
+    gcStats_ = chunk_.New<GCStats>(heap_, options_.GetLongPauseTime());
     factory_ = chunk_.New<ObjectFactory>(thread_, heap_, &chunk_);
     if (UNLIKELY(factory_ == nullptr)) {
         LOG_ECMA(FATAL) << "alloc factory_ failed";

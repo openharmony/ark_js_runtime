@@ -82,6 +82,7 @@ public:
 
 private:
     os::memory::Mutex lock_;
+    size_t minimumCapacity_;
 };
 
 class SnapshotSpace : public LinearSpace {

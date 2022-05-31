@@ -127,6 +127,8 @@ EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
 {
     JSRuntimeOptions runtimeOptions;
     runtimeOptions.SetArkProperties(option.GetArkProperties());
+    runtimeOptions.SetLongPauseTime(option.GetLongPauseTime());
+    runtimeOptions.SetGcThreadNum(option.GetGcThreadNum());
     // Mem
     runtimeOptions.SetHeapSizeLimit(option.GetGcPoolSize());
     // asmInterpreter

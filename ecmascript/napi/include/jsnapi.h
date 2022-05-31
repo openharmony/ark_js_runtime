@@ -58,6 +58,8 @@ using JSThread = ecmascript::JSThread;
 using JSTaggedType = uint64_t;
 
 static constexpr uint32_t DEFAULT_GC_POOL_SIZE = 256 * 1024 * 1024;
+static constexpr size_t DEFAULT_GC_THREAD_NUM = 7;
+static constexpr size_t DEFAULT_LONG_PAUSE_TIME = 40;
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define ECMA_DISALLOW_COPY(className)      \
@@ -790,6 +792,16 @@ public:
         arkProperties_ = prop;
     }
 
+    void SetGcThreadNum(size_t num)
+    {
+        gcThreadNum_ = num;
+    }
+
+    void SetLongPauseTime(size_t time)
+    {
+        longPauseTime_ = time;
+    }
+
     void SetEnableAsmInterpreter(bool value)
     {
         enableAsmInterpreter_ = value;
@@ -875,6 +887,16 @@ private:
         return arkProperties_;
     }
 
+    size_t GetGcThreadNum() const
+    {
+        return gcThreadNum_;
+    }
+
+    size_t GetLongPauseTime() const
+    {
+        return longPauseTime_;
+    }
+
     bool GetEnableAsmInterpreter() const
     {
         return enableAsmInterpreter_;
@@ -895,6 +917,8 @@ private:
     bool enableCpuprofiler_ {false};
 #endif
     int arkProperties_ {-1};
+    size_t gcThreadNum_ {DEFAULT_GC_THREAD_NUM};
+    size_t longPauseTime_ {DEFAULT_LONG_PAUSE_TIME};
     bool enableAsmInterpreter_ {false};
     std::string asmOpcodeDisableRange_ {""};
     friend JSNApi;
