@@ -291,7 +291,7 @@ JSTaggedValue BuiltinsLocale::GetLanguage(EcmaRuntimeCallInfo *argv)
     // 4. Assert: locale matches the unicode_locale_id production.
     // 5. Return the substring of locale corresponding to the unicode_language_subtag production of the
     //    unicode_language_id.
-    JSHandle<EcmaString> result = factory->NewFromASCII("undefined");
+    JSHandle<EcmaString> result = JSHandle<EcmaString>::Cast(thread->GlobalConstants()->GetHandledUndefinedString());
     CString language = locale->GetIcuLocale()->getLanguage();
     if (language.empty()) {
         return result.GetTaggedValue();

@@ -2094,6 +2094,16 @@ JSHandle<EcmaString> ObjectFactory::GetStringFromStringTable(const uint8_t *utf8
     return JSHandle<EcmaString>(thread_, stringTable->GetOrInternString(utf8Data, utf8Len, canBeCompress));
 }
 
+JSHandle<EcmaString> ObjectFactory::GetStringFromStringTableNonMovable(const uint8_t *utf8Data, uint32_t utf8Len) const
+{
+    NewObjectHook();
+    if (utf8Len == 0) {
+        return GetEmptyString();
+    }
+    auto stringTable = vm_->GetEcmaStringTable();
+    return JSHandle<EcmaString>(thread_, stringTable->CreateAndInternStringNonMovable(utf8Data, utf8Len));
+}
+
 JSHandle<EcmaString> ObjectFactory::GetStringFromStringTable(const uint16_t *utf16Data, uint32_t utf16Len,
                                                              bool canBeCompress) const
 {
@@ -2705,6 +2715,13 @@ JSHandle<EcmaString> ObjectFactory::NewFromASCII(const CString &data)
     auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
     ASSERT(EcmaString::CanBeCompressed(utf8Data, data.length()));
     return GetStringFromStringTable(utf8Data, data.length(), true);
+}
+
+JSHandle<EcmaString> ObjectFactory::NewFromASCIINonMovable(const CString &data)
+{
+    auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
+    ASSERT(EcmaString::CanBeCompressed(utf8Data, data.length()));
+    return GetStringFromStringTableNonMovable(utf8Data, data.length());
 }
 
 JSHandle<EcmaString> ObjectFactory::NewFromUtf8(const CString &data)

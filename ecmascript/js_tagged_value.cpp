@@ -39,14 +39,14 @@
 namespace panda::ecmascript {
 JSHandle<EcmaString> GetTypeString(JSThread *thread, PreferredPrimitiveType type)
 {
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
     if (type == NO_PREFERENCE) {
-        return factory->NewFromASCII("default");
+        return JSHandle<EcmaString>::Cast(globalConst->GetHandledDefaultString());
     }
     if (type == PREFER_NUMBER) {
-        return factory->NewFromASCII("number");
+        return JSHandle<EcmaString>::Cast(globalConst->GetHandledNumberString());
     }
-    return factory->NewFromASCII("string");
+    return JSHandle<EcmaString>::Cast(globalConst->GetHandledStringString());
 }
 
 JSHandle<JSTaggedValue> JSTaggedValue::ToPropertyKey(JSThread *thread, const JSHandle<JSTaggedValue> &tagged)
