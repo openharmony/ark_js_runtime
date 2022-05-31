@@ -2325,7 +2325,7 @@ GateRef BytecodeCircuitBuilder::NewPhi(BytecodeRegion &bb, uint16_t reg, bool ac
 GateType BytecodeCircuitBuilder::GetRealGateType(const uint16_t reg, const GateType gateType)
 {
     const panda_file::File *pf = file_->GetPandaFile();
-    auto curType = static_cast<GateType>(tsLoader_->GetGTFromPandaFile(*pf, reg, method_).GetGlobalTSTypeRef());
+    auto curType = static_cast<GateType>(tsLoader_->GetGTFromPandaFile(*pf, reg, method_).GetData());
     auto type = (curType == GateType::JS_ANY) ? gateType : curType;
     return type;
 }
