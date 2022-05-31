@@ -14,8 +14,6 @@
  */
 
 #include "ecmascript/js_collator.h"
-#include "ecmascript/js_number_format.h"
-#include "ecmascript/js_plural_rules.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/tests/test_helper.h"
 
