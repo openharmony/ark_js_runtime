@@ -204,20 +204,20 @@ JSTaggedValue BuiltinsDate::ToPrimitive(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTaggedValue> object = GetThis(argv);
     if (!object->IsECMAObject()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Not a JSObject", JSTaggedValue::Exception());
     }
     JSHandle<JSTaggedValue> hint = GetCallArg(argv, 0);
     PreferredPrimitiveType tryFirst = PREFER_STRING;
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
     if (hint->IsString()) {
-        JSHandle<EcmaString> numberStrHandle = factory->NewFromASCII("number");
+        JSHandle<EcmaString> numberStrHandle = JSHandle<EcmaString>::Cast(globalConst->GetHandledNumberString());
         if (EcmaString::StringsAreEqual(hint.GetObject<EcmaString>(), *numberStrHandle)) {
             tryFirst = PREFER_NUMBER;
         } else {
-            JSHandle<EcmaString> stringStrHandle = factory->NewFromASCII("string");
-            JSHandle<EcmaString> defaultStrHandle = factory->NewFromASCII("default");
+            JSHandle<EcmaString> stringStrHandle = JSHandle<EcmaString>::Cast(globalConst->GetHandledStringString());
+            JSHandle<EcmaString> defaultStrHandle = JSHandle<EcmaString>::Cast(globalConst->GetHandledDefaultString());
             if (EcmaString::StringsAreEqual(hint.GetObject<EcmaString>(), *stringStrHandle) ||
                 EcmaString::StringsAreEqual(hint.GetObject<EcmaString>(), *defaultStrHandle)) {
                 tryFirst = PREFER_STRING;

@@ -288,12 +288,13 @@ void DebuggerApi::HandleUncaughtException(const EcmaVM *ecmaVm, CString &message
 {
     JSThread *thread = ecmaVm->GetJSThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
 
     JSHandle<JSTaggedValue> exHandle(thread, thread->GetException());
     if (exHandle->IsJSError()) {
-        JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
+        JSHandle<JSTaggedValue> nameKey = globalConst->GetHandledNameString();
         JSHandle<EcmaString> name(JSObject::GetProperty(thread, exHandle, nameKey).GetValue());
-        JSHandle<JSTaggedValue> msgKey = thread->GlobalConstants()->GetHandledMessageString();
+        JSHandle<JSTaggedValue> msgKey = globalConst->GetHandledMessageString();
         JSHandle<EcmaString> msg(JSObject::GetProperty(thread, exHandle, msgKey).GetValue());
         message = ConvertToString(*name) + ": " + ConvertToString(*msg);
     } else {

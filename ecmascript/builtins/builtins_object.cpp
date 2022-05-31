@@ -782,7 +782,7 @@ JSTaggedValue BuiltinsObject::GetBuiltinTag(JSThread *thread, const JSHandle<JSO
     } else if (object->IsCallable()) {
         builtinTag = factory->NewFromASCII("Function");
     } else if (object->IsJSError()) {
-        builtinTag = factory->NewFromASCII("Error");
+        builtinTag = JSHandle<EcmaString>::Cast(thread->GlobalConstants()->GetHandledErrorString());
     } else if (object->IsDate()) {
         builtinTag = factory->NewFromASCII("Date");
     } else if (object->IsJSRegExp()) {
