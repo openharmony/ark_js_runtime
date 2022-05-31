@@ -164,40 +164,31 @@ HWTEST_F_L0(CircuitOptimizerTests, TestSubgraphRewriteFramework)
     const uint64_t numOfUses = 10;
     std::random_device randomDevice;
     std::mt19937_64 rng(randomDevice());
-    __gnu_pbds::tree<std::pair<uint64_t, ecmascript::kungfu::GateRef>,
-                     __gnu_pbds::null_type,
-                     std::less<>,
-                     __gnu_pbds::rb_tree_tag,
-                     __gnu_pbds::tree_order_statistics_node_update> constantsSet;
-    uint64_t counter = 0;
+    std::multimap<uint64_t, ecmascript::kungfu::GateRef> constantsSet;
     for (uint64_t iter = 0; iter < numOfUses; iter++) {
         for (uint64_t idx = 0; idx < numOfConstants; idx++) {
             constantsSet.insert(
-                std::make_pair(counter,
+                std::make_pair(rng(),
                                circuit.GetConstantGate(MachineType::I64,
                                                        idx,
                                                        GateType::NJS_VALUE)));
-            counter++;
         }
     }
     while (constantsSet.size() > 1) {
-        const auto elementA =
-            constantsSet.find_by_order(std::uniform_int_distribution<size_t>(0, constantsSet.size() - 1)(rng));
+        const auto elementA = constantsSet.begin();
         const auto operandA = elementA->second;
         constantsSet.erase(elementA);
-        const auto elementB =
-            constantsSet.find_by_order(std::uniform_int_distribution<size_t>(0, constantsSet.size() - 1)(rng));
+        const auto elementB = constantsSet.begin();
         const auto operandB = elementB->second;
         constantsSet.erase(elementB);
         constantsSet.insert(
-            std::make_pair(counter,
+            std::make_pair(rng(),
                            circuit.NewGate(OpCode(OpCode::ADD),
                                            MachineType::I64,
                                            0,
                                            {operandA,
                                             operandB},
                                            GateType::NJS_VALUE)));
-        counter++;
     }
     auto ret = circuit.NewGate(OpCode(OpCode::RETURN),
                                0,
