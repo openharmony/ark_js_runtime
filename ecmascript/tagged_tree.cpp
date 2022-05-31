@@ -386,7 +386,7 @@ JSHandle<Derived> TaggedTree<Derived>::Insert(JSThread *thread, JSHandle<Derived
     }
 
     int entry = newTree->NumberOfElements() + newTree->NumberOfDeletedElements();
-    if (static_cast<bool>(res)) {
+    if (res != ComparisonResult::LESS) {
         newTree->InsertRightEntry(thread, parentIndex, entry, key.GetTaggedValue(), value.GetTaggedValue());
     } else {
         newTree->InsertLeftEntry(thread, parentIndex, entry, key.GetTaggedValue(), value.GetTaggedValue());

@@ -218,7 +218,6 @@ JSHandle<JSPluralRules> JSPluralRules::InitializePluralRules(JSThread *thread,
     if (!success || icuPluralRules == nullptr) {
         icu::Locale noExtensionLocale(icuLocale.getBaseName());
         status = U_ZERO_ERROR;
-        icuType = UPLURAL_TYPE_CARDINAL;
         switch (type) {
             case TypeOption::ORDINAL:
                 icuType = UPLURAL_TYPE_ORDINAL;
