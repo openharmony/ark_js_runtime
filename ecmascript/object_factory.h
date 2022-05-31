@@ -505,6 +505,9 @@ private:
     // used to create nonmovable js_object
     JSHandle<JSObject> NewNonMovableJSObject(const JSHandle<JSHClass> &jshclass);
 
+    // used to create nonmovable utf8 string at global constants
+    JSHandle<EcmaString> NewFromASCIINonMovable(const CString &data);
+
     // used for creating Function
     JSHandle<JSFunction> NewJSFunction(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &dynKlass);
     JSHandle<JSHClass> CreateObjectClass(const JSHandle<TaggedArray> &properties, size_t length);
@@ -516,6 +519,7 @@ private:
                                                const JSHandle<JSTaggedValue> &object);
 
     JSHandle<EcmaString> GetStringFromStringTable(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress) const;
+    JSHandle<EcmaString> GetStringFromStringTableNonMovable(const uint8_t *utf8Data, uint32_t utf8Len) const;
     // For MUtf-8 string data
     EcmaString *GetRawStringFromStringTable(const uint8_t *mutf8Data, uint32_t utf16Len, bool canBeCompressed) const;
 

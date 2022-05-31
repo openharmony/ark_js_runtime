@@ -126,4 +126,17 @@ HWTEST_F_L0(EcmaStringTableTest, GetOrInternString_EcmaString)
     EXPECT_STREQ(ecmaStrGetPtr->GetCString().get(), "hello world");
     EXPECT_TRUE(ecmaStrGetPtr->IsInternString());
 }
+
+/**
+ * @tc.name: GetOrInternString
+ * @tc.desc: Check the uniqueness of string and its hashcode in stringtable to ensure that no two strings have
+             same contents and same hashcode
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F_L0(EcmaStringTableTest, GetOrInternString_CheckStringTable)
+{
+    EcmaVM *vm = thread->GetEcmaVM();
+    EXPECT_TRUE(vm->GetEcmaStringTable()->CheckStringTableValidity());
+}
 }  // namespace panda::test

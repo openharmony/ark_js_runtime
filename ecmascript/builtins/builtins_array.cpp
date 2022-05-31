@@ -46,7 +46,6 @@ JSTaggedValue BuiltinsArray::ArrayConstructor(EcmaRuntimeCallInfo *argv)
     BUILTINS_API_TRACE(argv->GetThread(), Array, Constructor);
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     // 1. Let numberOfArgs be the number of arguments passed to this function call.
     uint32_t argc = argv->GetArgsNumber();
@@ -84,7 +83,7 @@ JSTaggedValue BuiltinsArray::ArrayConstructor(EcmaRuntimeCallInfo *argv)
         // 9. Let setStatus be Set(array, "length", intLen, true).
         // 10. Assert: setStatus is not an abrupt completion.
         if (!len->IsNumber()) {
-            JSHandle<JSTaggedValue> key0(factory->NewFromASCII("0"));
+            JSHandle<JSTaggedValue> key0 = thread->GlobalConstants()->GetHandledZeroString();
             JSObject::CreateDataProperty(thread, newArrayHandle, key0, len);
             newLen = 1;
         } else {
@@ -1187,7 +1186,7 @@ JSTaggedValue BuiltinsArray::Join(EcmaRuntimeCallInfo *argv)
     // 6. Let sep be ToString(separator).
     JSHandle<JSTaggedValue> sepHandle;
     if ((GetCallArg(argv, 0)->IsUndefined())) {
-        sepHandle = JSHandle<JSTaggedValue>::Cast(factory->NewFromASCII(","));
+        sepHandle = thread->GlobalConstants()->GetHandledCommaString();
     } else {
         sepHandle = GetCallArg(argv, 0);
     }
@@ -2486,7 +2485,6 @@ JSTaggedValue BuiltinsArray::ToString(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     auto ecmaVm = thread->GetEcmaVM();
-    ObjectFactory *factory = ecmaVm->GetFactory();
 
     // 1. Let array be ToObject(this value).
     JSHandle<JSTaggedValue> thisHandle = GetThis(argv);
@@ -2496,7 +2494,7 @@ JSTaggedValue BuiltinsArray::ToString(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> thisObjVal(thisObjHandle);
 
     // 3. Let func be Get(array, "join").
-    JSHandle<JSTaggedValue> joinKey(factory->NewFromASCII("join"));
+    JSHandle<JSTaggedValue> joinKey = thread->GlobalConstants()->GetHandledJoinString();
     JSHandle<JSTaggedValue> callbackFnHandle = JSTaggedValue::GetProperty(thread, thisObjVal, joinKey).GetValue();
 
     // 4. ReturnIfAbrupt(func).
@@ -2633,39 +2631,40 @@ JSTaggedValue BuiltinsArray::Unscopables(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
 
     JSHandle<JSTaggedValue> nullHandle(thread, JSTaggedValue::Null());
     JSHandle<JSObject> unscopableList = factory->OrdinaryNewJSObjectCreate(nullHandle);
 
     JSHandle<JSTaggedValue> trueVal(thread, JSTaggedValue::True());
-    JSHandle<JSTaggedValue> copyWithKey(factory->NewFromASCII("copyWithin"));
+    JSHandle<JSTaggedValue> copyWithKey = globalConst->GetHandledCopyWithinString();
     JSObject::CreateDataProperty(thread, unscopableList, copyWithKey, trueVal);
 
-    JSHandle<JSTaggedValue> entriesKey(factory->NewFromASCII("entries"));
+    JSHandle<JSTaggedValue> entriesKey = globalConst->GetHandledEntriesString();
     JSObject::CreateDataProperty(thread, unscopableList, entriesKey, trueVal);
 
-    JSHandle<JSTaggedValue> fillKey(factory->NewFromASCII("fill"));
+    JSHandle<JSTaggedValue> fillKey = globalConst->GetHandledFillString();
     JSObject::CreateDataProperty(thread, unscopableList, fillKey, trueVal);
 
-    JSHandle<JSTaggedValue> findKey(factory->NewFromASCII("find"));
+    JSHandle<JSTaggedValue> findKey = globalConst->GetHandledFindString();
     JSObject::CreateDataProperty(thread, unscopableList, findKey, trueVal);
 
-    JSHandle<JSTaggedValue> findIndexKey(factory->NewFromASCII("findIndex"));
+    JSHandle<JSTaggedValue> findIndexKey = globalConst->GetHandledFindIndexString();
     JSObject::CreateDataProperty(thread, unscopableList, findIndexKey, trueVal);
 
-    JSHandle<JSTaggedValue> flatKey(factory->NewFromASCII("flat"));
+    JSHandle<JSTaggedValue> flatKey = globalConst->GetHandledFlatString();
     JSObject::CreateDataProperty(thread, unscopableList, flatKey, trueVal);
 
-    JSHandle<JSTaggedValue> flatMapKey(factory->NewFromASCII("flatMap"));
+    JSHandle<JSTaggedValue> flatMapKey = globalConst->GetHandledFlatMapString();
     JSObject::CreateDataProperty(thread, unscopableList, flatMapKey, trueVal);
 
-    JSHandle<JSTaggedValue> includesKey(factory->NewFromASCII("includes"));
+    JSHandle<JSTaggedValue> includesKey = globalConst->GetHandledIncludesString();
     JSObject::CreateDataProperty(thread, unscopableList, includesKey, trueVal);
 
-    JSHandle<JSTaggedValue> keysKey(factory->NewFromASCII("keys"));
+    JSHandle<JSTaggedValue> keysKey = globalConst->GetHandledKeysString();
     JSObject::CreateDataProperty(thread, unscopableList, keysKey, trueVal);
 
-    JSHandle<JSTaggedValue> valuesKey(factory->NewFromASCII("values"));
+    JSHandle<JSTaggedValue> valuesKey = globalConst->GetHandledValuesString();
     JSObject::CreateDataProperty(thread, unscopableList, valuesKey, trueVal);
 
     return unscopableList.GetTaggedValue();
