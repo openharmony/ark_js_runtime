@@ -101,6 +101,15 @@ size_t GateAccessor::GetImmediateId(GateRef gate) const
     return imm;
 }
 
+bool GateAccessor::IsDependIn(const UsesIterator &useIt) const
+{
+    Gate *gatePtr = circuit_->LoadGatePtr(*useIt);
+    size_t dependStartIndex = gatePtr->GetStateCount();
+    size_t dependEndIndex = gatePtr->GetDependCount() + dependStartIndex;
+    size_t index = useIt.GetIndex();
+    return index >= dependStartIndex && index < dependEndIndex;
+}
+
 void GateAccessor::SetDep(GateRef gate, GateRef depGate, size_t idx)
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);
