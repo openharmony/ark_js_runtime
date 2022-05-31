@@ -410,6 +410,12 @@ void JSNApi::SetHostPromiseRejectionTracker(EcmaVM *vm, void *cb, void* data)
     vm->SetData(data);
 }
 
+void JSNApi::SetHostResolvePathTracker(EcmaVM *vm,
+                                       std::function<std::string(std::string dirPath, std::string requestPath)> cb)
+{
+    vm->SetResolvePathCallback(cb);
+}
+
 void JSNApi::SetHostEnqueueJob(const EcmaVM *vm, Local<JSValueRef> cb)
 {
     JSHandle<JSFunction> fun = JSHandle<JSFunction>::Cast(JSNApiHelper::ToJSHandle(cb));

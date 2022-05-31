@@ -20,6 +20,7 @@
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/jspandafile/js_pandafile.h"
+#include "ecmascript/module/js_module_manager.h"
 #include "ecmascript/tagged_array-inl.h"
 #include "libpandafile/literal_data_accessor-inl.h"
 
@@ -88,7 +89,7 @@ void LiteralDataExtractor::ExtractObjectDatas(JSThread *thread, const JSPandaFil
             case LiteralTag::METHODAFFILIATE: {
                 uint16_t length = std::get<uint16_t>(value);
                 auto method = jsPandaFile->FindMethods(methodId);
-                JSHandle<JSFunction> jsFunc = DefineMethodInLiteral(thread, method, kind, length);
+                JSHandle<JSFunction> jsFunc = DefineMethodInLiteral(thread, jsPandaFile, method, kind, length);
                 jt = jsFunc.GetTaggedValue();
                 break;
             }
@@ -167,7 +168,7 @@ JSHandle<TaggedArray> LiteralDataExtractor::GetDatasIgnoreType(JSThread *thread,
                 case LiteralTag::METHODAFFILIATE: {
                     uint16_t length = std::get<uint16_t>(value);
                     auto method = jsPandaFile->FindMethods(methodId);
-                    JSHandle<JSFunction> jsFunc = DefineMethodInLiteral(thread, method, kind, length);
+                    JSHandle<JSFunction> jsFunc = DefineMethodInLiteral(thread, jsPandaFile, method, kind, length);
                     jt = jsFunc.GetTaggedValue();
                     break;
                 }
@@ -194,8 +195,8 @@ JSHandle<TaggedArray> LiteralDataExtractor::GetDatasIgnoreType(JSThread *thread,
     return literals;
 }
 
-JSHandle<JSFunction> LiteralDataExtractor::DefineMethodInLiteral(JSThread *thread, JSMethod *method, FunctionKind kind,
-                                                                 uint16_t length)
+JSHandle<JSFunction> LiteralDataExtractor::DefineMethodInLiteral(JSThread *thread, const JSPandaFile *jsPandaFile,
+                                                                 JSMethod *method, FunctionKind kind, uint16_t length)
 {
     ASSERT(method != nullptr);
 
@@ -217,6 +218,12 @@ JSHandle<JSFunction> LiteralDataExtractor::DefineMethodInLiteral(JSThread *threa
         jsFunc->SetProtoOrDynClass(thread, initialGeneratorFuncPrototype);
     }
     jsFunc->SetPropertyInlinedProps(thread, JSFunction::LENGTH_INLINE_PROPERTY_INDEX, JSTaggedValue(length));
+    if (jsPandaFile->IsModule()) {
+        EcmaVM *vm = thread->GetEcmaVM();
+        JSHandle<SourceTextModule> module =
+            vm->GetModuleManager()->HostGetImportedModule(jsPandaFile->GetJSPandaFileDesc());
+        jsFunc->SetModule(module.GetTaggedValue());
+    }
     return jsFunc;
 }
 }  // namespace panda::ecmascript
