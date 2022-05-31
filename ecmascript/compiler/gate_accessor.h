@@ -315,6 +315,9 @@ public:
     [[nodiscard]] size_t GetNumIns(GateRef gate) const;
     [[nodiscard]] OpCode GetOpCode(GateRef gate) const;
     void SetOpCode(GateRef gate, OpCode::Op opcode);
+    [[nodiscard]] BitField GetBitField(GateRef gate) const;
+    void SetBitField(GateRef gate, BitField bitField);
+    void Print(GateRef gate) const;
     [[nodiscard]] GateId GetId(GateRef gate) const;
     [[nodiscard]] GateRef GetValueIn(GateRef gate, size_t idx) const;
     [[nodiscard]] size_t GetNumValueIn(GateRef gate) const;
