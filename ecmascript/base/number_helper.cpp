@@ -336,10 +336,10 @@ JSHandle<EcmaString> NumberHelper::NumberToString(const JSThread *thread, JSTagg
 
     double d = number.GetDouble();
     if (std::isnan(d)) {
-        return factory->NewFromASCII("NaN");
+        return JSHandle<EcmaString>::Cast(thread->GlobalConstants()->GetHandledNanCapitalString());
     }
     if (d == 0.0) {
-        return factory->NewFromASCII("0");
+        return JSHandle<EcmaString>::Cast(thread->GlobalConstants()->GetHandledZeroString());
     }
     if (d >= INT32_MIN + 1 && d <= INT32_MAX && d == static_cast<double>(static_cast<int32_t>(d))) {
         return factory->NewFromASCII(IntToString(static_cast<int32_t>(d)));

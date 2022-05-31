@@ -651,17 +651,17 @@ JSTaggedValue BuiltinsString::Normalize(EcmaRuntimeCallInfo *argv)
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
     JSHandle<EcmaString> formValue;
     if (argv->GetArgsNumber() == 0) {
-        formValue = factory->NewFromASCII("NFC");
+        formValue = JSHandle<EcmaString>::Cast(thread->GlobalConstants()->GetHandledNfcString());
     } else {
         JSHandle<JSTaggedValue> formTag = BuiltinsString::GetCallArg(argv, 0);
         if (formTag->IsUndefined()) {
-            formValue = factory->NewFromASCII("NFC");
+            formValue = JSHandle<EcmaString>::Cast(thread->GlobalConstants()->GetHandledNfcString());
         } else {
             formValue = JSTaggedValue::ToString(thread, formTag);
             RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
         }
     }
-    JSHandle<EcmaString> nfc = factory->NewFromASCII("NFC");
+    JSHandle<EcmaString> nfc = JSHandle<EcmaString>::Cast(thread->GlobalConstants()->GetHandledNfcString());
     JSHandle<EcmaString> nfd = factory->NewFromASCII("NFD");
     JSHandle<EcmaString> nfkc = factory->NewFromASCII("NFKC");
     JSHandle<EcmaString> nfkd = factory->NewFromASCII("NFKD");
@@ -884,7 +884,7 @@ JSTaggedValue BuiltinsString::GetSubstitution(JSThread *thread, const JSHandle<E
     BUILTINS_API_TRACE(thread, String, GetSubstitution);
     auto ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
-    JSHandle<EcmaString> dollarString = factory->NewFromASCII("$");
+    JSHandle<EcmaString> dollarString = JSHandle<EcmaString>::Cast(thread->GlobalConstants()->GetHandledDollarString());
     int32_t replaceLength = static_cast<int32_t>(replacement->GetLength());
     int32_t tailPos = position + matched->GetLength();
 

@@ -341,7 +341,7 @@ JSHandle<JSTaggedValue> ContainersPrivate::InitializeTreeMap(JSThread *thread)
     SetStringTagSymbol(thread, env, mapFuncPrototype, "TreeMap");
     // %TreeMapPrototype% [ @@iterator ]
     JSHandle<JSTaggedValue> iteratorSymbol = env->GetIteratorSymbol();
-    JSHandle<JSTaggedValue> entries(factory->NewFromASCII("entries"));
+    JSHandle<JSTaggedValue> entries = globalConst->GetHandledEntriesString();
     JSHandle<JSTaggedValue> entriesFunc =
         JSObject::GetMethod(thread, JSHandle<JSTaggedValue>::Cast(mapFuncPrototype), entries);
     PropertyDescriptor descriptor(thread, entriesFunc, false, false, false);
@@ -492,7 +492,7 @@ JSHandle<JSTaggedValue> ContainersPrivate::InitializePlainArray(JSThread *thread
     
     JSHandle<JSTaggedValue> lengthGetter = CreateGetter(thread, ContainersPlainArray::GetSize, "length",
                                                         FuncLength::ZERO);
-    JSHandle<JSTaggedValue> lengthKey(factory->NewFromASCII("length"));
+    JSHandle<JSTaggedValue> lengthKey =  globalConst->GetHandledLengthString();
     SetGetter(thread, plainArrayFuncPrototype, lengthKey, lengthGetter);
     
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
@@ -554,7 +554,7 @@ JSHandle<JSTaggedValue> ContainersPrivate::InitializeStack(JSThread *thread)
     SetStringTagSymbol(thread, env, stackFuncPrototype, "Stack");
 
     JSHandle<JSTaggedValue> lengthGetter = CreateGetter(thread, ContainersStack::GetLength, "length", FuncLength::ZERO);
-    JSHandle<JSTaggedValue> lengthKey(factory->NewFromASCII("length"));
+    JSHandle<JSTaggedValue> lengthKey = globalConst->GetHandledLengthString();
     SetGetter(thread, stackFuncPrototype, lengthKey, lengthGetter);
 
     SetFunctionAtSymbol(thread, env, stackFuncPrototype, env->GetIteratorSymbol(), "[Symbol.iterator]",
@@ -740,7 +740,7 @@ JSHandle<JSTaggedValue> ContainersPrivate::InitializeDeque(JSThread *thread)
     SetStringTagSymbol(thread, env, dequeFuncPrototype, "Deque");
 
     JSHandle<JSTaggedValue> lengthGetter = CreateGetter(thread, ContainersDeque::GetSize, "length", FuncLength::ZERO);
-    JSHandle<JSTaggedValue> lengthKey(factory->NewFromASCII("length"));
+    JSHandle<JSTaggedValue> lengthKey = globalConst->GetHandledLengthString();
     SetGetter(thread, dequeFuncPrototype, lengthKey, lengthGetter);
 
     SetFunctionAtSymbol(thread, env, dequeFuncPrototype, env->GetIteratorSymbol(), "[Symbol.iterator]",

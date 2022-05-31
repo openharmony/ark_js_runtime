@@ -59,7 +59,7 @@ JSTaggedValue BuiltinsWeakMap::WeakMapConstructor(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "iterable is not object", JSTaggedValue::Exception());
     }
     // Let adder be Get(weakMap, "set").
-    JSHandle<JSTaggedValue> adderKey(factory->NewFromASCII("set"));
+    JSHandle<JSTaggedValue> adderKey = thread->GlobalConstants()->GetHandledSetString();
     JSHandle<JSTaggedValue> adder =
         JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(weakMap), adderKey).GetValue();
     // ReturnIfAbrupt(adder).
