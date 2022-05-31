@@ -91,7 +91,6 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptimizedL
         }
         i++;
     }
-    i = 0;
 }
 
 void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp) const
@@ -252,9 +251,8 @@ bool LLVMStackMapParser::CalculateStackMap(std::unique_ptr<uint8_t []> stackMapA
             auto location = dataInfo_->Read<struct LocationTy>();
             stkSizeRecord.Locations.push_back(location);
         }
-        [[maybe_unused]] uint16_t padding;
         while (dataInfo_->GetOffset() & 7) { // 7: 8 byte align
-            padding = dataInfo_->Read<uint16_t>();
+            dataInfo_->Read<uint16_t>();
         }
         uint32_t numLiveOuts = dataInfo_->Read<uint32_t>();
         if (numLiveOuts > 0) {
@@ -264,7 +262,7 @@ bool LLVMStackMapParser::CalculateStackMap(std::unique_ptr<uint8_t []> stackMapA
             }
         }
         while (dataInfo_->GetOffset() & 7) { // 7: 8 byte align
-            padding = dataInfo_->Read<uint16_t>();
+            dataInfo_->Read<uint16_t>();
         }
         llvmStackMap_.StkMapRecord.push_back(stkSizeRecord);
     }
