@@ -32,38 +32,37 @@ namespace panda::ecmascript::aarch64 {
 using Label = panda::ecmascript::Label;
 #define __ assembler->
 
-// uint64_t CallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
+// uint64_t CallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...)
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // JSTaggedType (*)(uintptr_t argGlue, uint64_t argc, JSTaggedType argv[])
 // Input:
 // %x0 - glue
-// stack layout:
-// sp + N*8 argvN
-// ........
-// sp + 24: argv1
-// sp + 16: argv0
-// sp + 8:  argc
-// sp:      runtime_id
-// construct Leave Frame:
-//   +--------------------------+
-//   |       argv[argc-1]       |
-//   +--------------------------+
-//   |       ..........         |
-//   +--------------------------+
-//   |       argv[1]            |
-//   +--------------------------+
-//   |       argv[0]            |
-//   +--------------------------+ ---
-//   |       argc               |   ^
-//   |--------------------------|  Fixed
-//   |       RuntimeId          | OptimizedLeaveFrame
-//   |--------------------------|   |
-//   |       returnAddr         |   |
-//   |--------------------------|   |
-//   |       callsiteFp         |   |
-//   |--------------------------|   |
-//   |       frameType          |   v
-//   +--------------------------+ ---
+// stack layout: sp + N*8 argvN
+//               ........
+//               sp + 24: argv1
+//               sp + 16: argv0
+// sp + 8:       argc
+// sp:           runtime_id
+// construct Leave Frame
+//               +--------------------------+
+//               |       argv[argc-1]       |
+//               +--------------------------+
+//               |       ..........         |
+//               +--------------------------+
+//               |       argv[1]            |
+//               +--------------------------+
+//               |       argv[0]            |
+//               +--------------------------+ ---
+//               |       argc               |   ^
+//               |--------------------------|  Fixed
+//               |       RuntimeId          | OptimizedLeaveFrame
+//               |--------------------------|   |
+//               |       returnAddr         |   |
+//               |--------------------------|   |
+//               |       callsiteFp         |   |
+//               |--------------------------|   |
+//               |       frameType          |   v
+//               +--------------------------+ ---
 void AssemblerStubs::CallRuntime(ExtendedAssembler *assembler)
 {
     Register glue(X0);
@@ -104,26 +103,25 @@ void AssemblerStubs::CallRuntime(ExtendedAssembler *assembler)
 }
 
 // uint64_t JSFunctionEntry(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
-//                                uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr);
-// Input:
-// %x0 - glue
-// %x1 - prevFp
-// %x2 - expectedNumArgs
-// %x3 - actualNumArgs
-// %x4 - argV
-// %x5 - codeAddr
+//                                uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr)
+// Input: %x0 - glue
+//        %x1 - prevFp
+//        %x2 - expectedNumArgs
+//        %x3 - actualNumArgs
+//        %x4 - argV
+//        %x5 - codeAddr
 // construct Entry Frame
-//   +--------------------------+
-//   |   returnaddress      |   ^
-//   |----------------------|   |
-//   |calleesave registers  | Fixed
-//   |----------------------| OptimizedEntryFrame
-//   |      prevFp          |   |
-//   |----------------------|   |
-//   |      frameType       |   |
-//   |----------------------|   |
-//   |  prevLeaveFrameFp    |   v
-//   +--------------------------+
+//        +--------------------------+
+//        |   returnaddress      |   ^
+//        |----------------------|   |
+//        |calleesave registers  | Fixed
+//        |----------------------| OptimizedEntryFrame
+//        |      prevFp          |   |
+//        |----------------------|   |
+//        |      frameType       |   |
+//        |----------------------|   |
+//        |  prevLeaveFrameFp    |   v
+//        +--------------------------+
 void AssemblerStubs::JSFunctionEntry(ExtendedAssembler *assembler)
 {
     Register glue(X20);
@@ -213,25 +211,23 @@ void AssemblerStubs::JSFunctionEntry(ExtendedAssembler *assembler)
 
 // extern "C" JSTaggedType OptimizedCallOptimized(uintptr_t glue, uint32_t expectedNumArgs,
 //                                  uint32_t actualNumArgs, uintptr_t codeAddr, uintptr_t argv)
-// Input:
-// %x0 - glue
-// %w1 - expectedNumArgs
-// %w2 - actualNumArgs
-// %x3 - codeAddr
-// %x4 - argv
+// Input:  %x0 - glue
+//         %w1 - expectedNumArgs
+//         %w2 - actualNumArgs
+//         %x3 - codeAddr
+//         %x4 - argv
 
-// sp[0 * 8]  -  argc
-// sp[1 * 8]  -  argv[0]
-// sp[2 * 8]  -  argv[1]
-// .....
-// sp[(N -3) * 8] - argv[N - 1]
-// Output:
-// stack as followsn from high address to lowAdress
-//  sp       -      argv[N - 1]
-// sp[-8]    -      argv[N -2]
-// ...........................
-// sp[- 8(N - 1)] - arg[0]
-// sp[- 8(N)]     - argc
+//         sp[0 * 8]  -  argc
+//         sp[1 * 8]  -  argv[0]
+//         sp[2 * 8]  -  argv[1]
+//         .....
+//         sp[(N -3) * 8] - argv[N - 1]
+// Output: stack as followsn from high address to lowAdress
+//         sp       -      argv[N - 1]
+//         sp[-8]    -      argv[N -2]
+//         ...........................
+//         sp[- 8(N - 1)] - arg[0]
+//         sp[- 8(N)]     - argc
 void AssemblerStubs::OptimizedCallOptimized(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(OptimizedCallOptimized));
@@ -300,36 +296,34 @@ void AssemblerStubs::OptimizedCallOptimized(ExtendedAssembler *assembler)
     __ Ret();
 }
 
-// uint64_t CallBuiltinTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
+// uint64_t CallBuiltinTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...)
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // Input:
 // %x0 - glue
-// stack layout:
-// sp + N*8 argvN
-// ........
-// sp + 24: argv1
-// sp + 16: argv0
-// sp + 8:  actualArgc
-// sp:      codeAddress
-// construct Native Leave Frame:
-//   +--------------------------+
-//   |       argv0              | calltarget , newtARGET, this, ....
-//   +--------------------------+ ---
-//   |       argc               |   ^
-//   |--------------------------|  Fixed
-//   |       codeAddress        | OptimizedLeaveFrame
-//   |--------------------------|   |
-//   |       returnAddr         |   |
-//   |--------------------------|   |
-//   |       callsiteFp         |   |
-//   |--------------------------|   |
-//   |       frameType          |   v
-//   +--------------------------+ ---
+// stack layout: sp + N*8 argvN
+//               ........
+//               sp + 24: argv1
+//               sp + 16: argv0
+//               sp + 8:  actualArgc
+//               sp:      codeAddress
+// construct Native Leave Frame
+//               +--------------------------+
+//               |       argv0              | calltarget , newtARGET, this, ....
+//               +--------------------------+ ---
+//               |       argc               |   ^
+//               |--------------------------|  Fixed
+//               |       codeAddress        | OptimizedLeaveFrame
+//               |--------------------------|   |
+//               |       returnAddr         |   |
+//               |--------------------------|   |
+//               |       callsiteFp         |   |
+//               |--------------------------|   |
+//               |       frameType          |   v
+//               +--------------------------+ ---
 
-// Output:
-//  sp - 8 : pc
-//  sp - 16: rbp <---------current rbp & current sp
-//  current sp - 8:  type
+// Output:       sp - 8 : pc
+//               sp - 16: rbp <---------current rbp & current sp
+//               current sp - 8:        type
 
 void AssemblerStubs::CallBuiltinTrampoline(ExtendedAssembler *assembler)
 {
@@ -375,40 +369,38 @@ void AssemblerStubs::CallBuiltinTrampoline(ExtendedAssembler *assembler)
     // descontruct leave frame and callee save register
     __ Ldp(nativeFuncAddr, frameType, MemoryOperand(sp, 2 * FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
     __ RestoreFpAndLr();
-    __ Add(sp, sp, Immediate(8));
+    __ Add(sp, sp, Immediate(8)); // 8 : 8 skip native code address
     __ Ret();
 }
 
-// uint64_t JSCall(uintptr_t glue, uint32_t argc, JSTaggedType calltarget, JSTaggedType new, JSTaggedType this, ...);
+// uint64_t JSCall(uintptr_t glue, uint32_t argc, JSTaggedType calltarget, JSTaggedType new, JSTaggedType this, ...)
 // webkit_jscc calling convention call js function()
-// Input:
-// %x0 - glue
-// stack layout:
-// sp + N*8 argvN
-// ........
-// sp + 24: argc
-// sp + 16: this
-// sp + 8:  new
-// sp:      jsfunc
-//   +--------------------------+
-//   |       argv[argc-1]       |
-//   +--------------------------+
-//   |       ..........         |
-//   +--------------------------+
-//   |       argv[1]            |
-//   +--------------------------+
-//   |       argv[0]            |
-//   +--------------------------+ ---
-//   |       argc               |   ^
-//   |--------------------------|  Fixed
-//   |       RuntimeId          | OptimizedFrame
-//   |--------------------------|   |
-//   |       returnAddr         |   |
-//   |--------------------------|   |
-//   |       callsiteFp         |   |
-//   |--------------------------|   |
-//   |       frameType          |   v
-//   +--------------------------+ ---
+// Input:        %x0 - glue
+// stack layout: sp + N*8 argvN
+//               ........
+//               sp + 24: argc
+//               sp + 16: this
+// sp + 8:       new
+// sp:           jsfunc
+//               +--------------------------+
+//               |       argv[argc-1]       |
+//               +--------------------------+
+//               |       ..........         |
+//               +--------------------------+
+//               |       argv[1]            |
+//               +--------------------------+
+//               |       argv[0]            |
+//               +--------------------------+ ---
+//               |       argc               |   ^
+//               |--------------------------|  Fixed
+//               |       RuntimeId          | OptimizedFrame
+//               |--------------------------|   |
+//               |       returnAddr         |   |
+//               |--------------------------|   |
+//               |       callsiteFp         |   |
+//               |--------------------------|   |
+//               |       frameType          |   v
+//               +--------------------------+ ---
 void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(JSCall));
@@ -569,6 +561,7 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
             __ Mov(newTarget, Immediate(JSTaggedValue::VALUE_UNDEFINED));
             __ Stp(newTarget, thisObj, MemoryOperand(sp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
             __ Ldr(boundTarget, MemoryOperand(jsfunc, JSBoundFunction::BOUND_TARGET_OFFSET));
+            // 2 : 2 means pair
             __ Stp(realArgC.X(), boundTarget, MemoryOperand(sp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
         }
         __ CallAssemblerStub(RTSTUB_ID(JSCall), false);
@@ -639,6 +632,7 @@ void AssemblerStubs::CallRuntimeWithArgv(ExtendedAssembler *assembler)
     Register argc(X2);
     Register argv(X3);
     Register sp(SP);
+    // 2 : 2 means pair
     __ Stp(argc, argv, MemoryOperand(sp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
     __ Str(runtimeId, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     __ SaveFpAndLr();
@@ -660,16 +654,15 @@ void AssemblerStubs::CallRuntimeWithArgv(ExtendedAssembler *assembler)
     __ Blr(rtfunc);
     __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE));
     __ RestoreFpAndLr();
-    __ Add(sp, sp, Immediate(3 * FRAME_SLOT_SIZE));
+    __ Add(sp, sp, Immediate(3 * FRAME_SLOT_SIZE)); // 3 : 3 means pair
     __ Ret();
 }
 
 // Generate code for entering asm interpreter
 // c++ calling convention
-// Input:
-// %X0 - glue
-// %X1 - argc
-// %X2 - argv(<callTarget, newTarget, this> are at the beginning of argv)
+// Input: %X0 - glue
+//        %X1 - argc
+//        %X2 - argv(<callTarget, newTarget, this> are at the beginning of argv)
 void AssemblerStubs::AsmInterpreterEntry(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(AsmInterpreterEntry));
@@ -698,11 +691,10 @@ void AssemblerStubs::AsmInterpreterEntry(ExtendedAssembler *assembler)
     __ Ret();
 }
 
-// Input:
-// glueRegister   - %X0
-// argcRegister   - %X1
-// argvRegister   - %X2(<callTarget, newTarget, this> are at the beginning of argv)
-// prevSpRegister - %X29
+// Input: glueRegister   - %X0
+//        argcRegister   - %X1
+//        argvRegister   - %X2(<callTarget, newTarget, this> are at the beginning of argv)
+//        prevSpRegister - %X29
 void AssemblerStubs::JSCallDispatch(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(JSCallDispatch));
@@ -784,7 +776,7 @@ void AssemblerStubs::JSCallDispatch(ExtendedAssembler *assembler)
 // void PushCallArgsxAndDispatch(uintptr_t glue, uintptr_t sp, uint64_t callTarget, uintptr_t method,
 //     uint64_t callField, ...)
 // GHC calling convention
-// Input1: for callarg0/1/2/3         Input2: for callrange
+// Input1: for callarg0/1/2/3        Input2: for callrange
 // X19 - glue                        // X19 - glue
 // X20 - sp                          // X20 - sp
 // X21 - callTarget                  // X21 - callTarget
@@ -850,7 +842,7 @@ void AssemblerStubs::PushCallArgs0AndDispatch(ExtendedAssembler *assembler)
 // void PushCallArgsxAndDispatchSlowPath(uintptr_t glue, uintptr_t sp, uint64_t callTarget, uintptr_t method,
 //       uint64_t callField, ...)
 // GHC calling convention
-// Input1: for callarg0/1/2/3         Input2: for callrange
+// Input1: for callarg0/1/2/3        Input2: for callrange
 // X19 - glue                        // X19 - glue
 // X20 - sp                          // X20 - sp
 // X21 - callTarget                  // X21 - callTarget
@@ -1087,9 +1079,8 @@ void AssemblerStubs::PushCallArgs0AndDispatchSlowPath(ExtendedAssembler *assembl
     __ Ret();
 }
 
-// Input:
-// X24 - actualArgc
-// X25 - argv
+// Input: X24 - actualArgc
+//        X25 - argv
 void AssemblerStubs::CallIThisRangeNoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgs)
 {
     Register argc(X24);
@@ -1109,9 +1100,8 @@ void AssemblerStubs::CallIThisRangeNoExtraEntry(ExtendedAssembler *assembler, Re
     }
 }
 
-// Input:
-// X24 - actualArgc
-// X25 - argv
+// Input: X24 - actualArgc
+//        X25 - argv
 void AssemblerStubs::CallIRangeNoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgs)
 {
     Register argc(X24);
@@ -1131,10 +1121,9 @@ void AssemblerStubs::CallIRangeNoExtraEntry(ExtendedAssembler *assembler, Regist
     }
 }
 
-// Input:
-// X24 - arg0
-// X25 - arg1
-// X26 - arg2
+// Input: X24 - arg0
+//        X25 - arg1
+//        X26 - arg2
 void AssemblerStubs::Callargs3NoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgs)
 {
     constexpr int32_t argc = 3;
@@ -1147,9 +1136,8 @@ void AssemblerStubs::Callargs3NoExtraEntry(ExtendedAssembler *assembler, Registe
     Callargs2NoExtraEntry(assembler, declaredNumArgs);
 }
 
-// Input:
-// X24 - arg0
-// X25 - arg1
+// Input: X24 - arg0
+//        X25 - arg1
 void AssemblerStubs::Callargs2NoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgs)
 {
     constexpr int32_t argc = 2;
@@ -1162,8 +1150,7 @@ void AssemblerStubs::Callargs2NoExtraEntry(ExtendedAssembler *assembler, Registe
     Callargs1NoExtraEntry(assembler, declaredNumArgs);
 }
 
-// Input:
-// X24 - arg0
+// Input: X24 - arg0
 void AssemblerStubs::Callargs1NoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgs)
 {
     constexpr int32_t argc = 1;
@@ -1181,15 +1168,14 @@ void AssemblerStubs::Callargs0NoExtraEntry(ExtendedAssembler *assembler)
     PushCallThisUndefined(assembler);
 }
 
-// uint64_t PushCallIRangeAndDispatchNative(uintptr_t glue, uint32_t argc, JSTaggedType calltarget, uintptr_t argv[]);
+// uint64_t PushCallIRangeAndDispatchNative(uintptr_t glue, uint32_t argc, JSTaggedType calltarget, uintptr_t argv[])
 // c++ calling convention call js function
-// Input:
-// X0 - glue
-// X1 - nativeCode
-// X2 - callTarget
-// X3 - thisValue
-// X4  - argc
-// X5  - argV (...)
+// Input: X0 - glue
+//        X1 - nativeCode
+//        X2 - callTarget
+//        X3 - thisValue
+//        X4  - argc
+//        X5  - argV (...)
 void AssemblerStubs::PushCallIRangeAndDispatchNative(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(PushCallIRangeAndDispatchNative));
@@ -1227,31 +1213,29 @@ void AssemblerStubs::PushCallIRangeAndDispatchNative(ExtendedAssembler *assemble
     __ Ret();
 }
 
-// uint64_t PushCallArgsAndDispatchNative(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...);
+// uint64_t PushCallArgsAndDispatchNative(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...)
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
-// Input:
-// X0 - glue
-// stack layout:
-// sp + N*8 argvN
-// ........
-// sp + 24: argv1
-// sp + 16: argv0
-// sp + 8:  actualArgc
-// sp:      codeAddress
-// construct Native Leave Frame:
-//   +--------------------------+
-//   |       argv0              | calltarget , newTarget, this, ....
-//   +--------------------------+ ---
-//   |       argc               |   ^
-//   |--------------------------|  Fixed
-//   |       codeAddress        | BuiltinFrame
-//   |--------------------------|   |
-//   |       returnAddr         |   |
-//   |--------------------------|   |
-//   |       callsiteFp         |   |
-//   |--------------------------|   |
-//   |       frameType          |   v
-//   +--------------------------+ ---
+// Input: X0 - glue
+// stack layout: sp + N*8 argvN
+//               ........
+//               sp + 24: argv1
+//               sp + 16: argv0
+//               sp + 8:  actualArgc
+// sp:           codeAddress
+// construct Native Leave Frame
+//               +--------------------------+
+//               |       argv0              | calltarget , newTarget, this, ....
+//               +--------------------------+ ---
+//               |       argc               |   ^
+//               |--------------------------|  Fixed
+//               |       codeAddress        | BuiltinFrame
+//               |--------------------------|   |
+//               |       returnAddr         |   |
+//               |--------------------------|   |
+//               |       callsiteFp         |   |
+//               |--------------------------|   |
+//               |       frameType          |   v
+//               +--------------------------+ ---
 void AssemblerStubs::PushCallArgsAndDispatchNative(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(PushCallArgsAndDispatchNative));
@@ -1407,9 +1391,8 @@ void AssemblerStubs::CallSetter([[maybe_unused]] ExtendedAssembler *assembler)
 
 // Generate code for generator re-entering asm interpreter
 // c++ calling convention
-// Input:
-// %X0 - glue
-// %X1 - context(GeneratorContext)
+// Input: %X0 - glue
+//        %X1 - context(GeneratorContext)
 void AssemblerStubs::GeneratorReEnterAsmInterp(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(GeneratorReEnterAsmInterp));
@@ -1459,9 +1442,8 @@ void AssemblerStubs::GeneratorReEnterAsmInterp(ExtendedAssembler *assembler)
     __ Ret();
 }
 
-// Input:
-// X24 - actualArgc
-// X25 - argv
+// Input: X24 - actualArgc
+//        X25 - argv
 void AssemblerStubs::CallIThisRangeEntry(ExtendedAssembler *assembler)
 {
     Register argc(X24);
@@ -1478,9 +1460,8 @@ void AssemblerStubs::CallIThisRangeEntry(ExtendedAssembler *assembler)
     PushCallThis(assembler);
 }
 
-// Input:
-// X23 - callField
-// X25 - argv
+// Input: X23 - callField
+//        X25 - argv
 void AssemblerStubs::PushCallThis(ExtendedAssembler *assembler)
 {
     Register callField(X23);
@@ -1508,9 +1489,8 @@ void AssemblerStubs::PushCallThis(ExtendedAssembler *assembler)
     }
 }
 
-// Input:
-// X24 - actualArgc
-// X25 - argv
+// Input: X24 - actualArgc
+//        X25 - argv
 void AssemblerStubs::CallIRangeEntry(ExtendedAssembler *assembler)
 {
     Register argc(X24);
@@ -1527,35 +1507,31 @@ void AssemblerStubs::CallIRangeEntry(ExtendedAssembler *assembler)
     PushCallThisUndefined(assembler);
 }
 
-// Input:
-// X24 - arg0
-// X25 - arg1
-// X26 - arg2
+// Input: X24 - arg0
+//        X25 - arg1
+//        X26 - arg2
 void AssemblerStubs::Callargs3Entry(ExtendedAssembler *assembler)
 {
     __ Str(Register(X26), MemoryOperand(Register(SP), -FRAME_SLOT_SIZE, AddrMode::PREINDEX));  // arg2
     Callargs2Entry(assembler);
 }
 
-// Input:
-// X24 - arg0
-// X25 - arg1
+// Input: X24 - arg0
+//        X25 - arg1
 void AssemblerStubs::Callargs2Entry(ExtendedAssembler *assembler)
 {
     __ Str(Register(X25), MemoryOperand(Register(SP), -FRAME_SLOT_SIZE, AddrMode::PREINDEX));  // arg1
     Callarg1Entry(assembler);
 }
 
-// Input:
-// X24 - arg0
+// Input: X24 - arg0
 void AssemblerStubs::Callarg1Entry(ExtendedAssembler *assembler)
 {
     __ Str(Register(X24), MemoryOperand(Register(SP), -FRAME_SLOT_SIZE, AddrMode::PREINDEX));  // arg0
     PushCallThisUndefined(assembler);
 }
 
-// Input:
-// X23 - callField
+// Input: X23 - callField
 void AssemblerStubs::PushCallThisUndefined(ExtendedAssembler *assembler)
 {
     Register callField(X23);
@@ -1581,8 +1557,7 @@ void AssemblerStubs::PushCallThisUndefined(ExtendedAssembler *assembler)
     }
 }
 
-// Input:
-// X23 - callField
+// Input: X23 - callField
 void AssemblerStubs::PushNewTarget(ExtendedAssembler *assembler)
 {
     Register callField(X23);
@@ -1597,9 +1572,8 @@ void AssemblerStubs::PushNewTarget(ExtendedAssembler *assembler)
     PushCallTarget(assembler);
 }
 
-// Input:
-// X21 - callTarget
-// X23 - callField
+// Input: X21 - callTarget
+//        X23 - callField
 void AssemblerStubs::PushCallTarget(ExtendedAssembler *assembler)
 {
     Register callTarget(X21);
@@ -1614,13 +1588,12 @@ void AssemblerStubs::PushCallTarget(ExtendedAssembler *assembler)
     PushVregs(assembler);
 }
 
-// Input:
-// X20 - sp
-// X21 - callTarget
-// X22 - method
-// X23 - callField
-// X1  - jumpSizeAfterCall
-// X2  - fp
+// Input: X20 - sp
+//        X21 - callTarget
+//        X22 - method
+//        X23 - callField
+//        X1  - jumpSizeAfterCall
+//        X2  - fp
 void AssemblerStubs::PushVregs(ExtendedAssembler *assembler)
 {
     Register prevSp(X20);
@@ -1656,11 +1629,10 @@ void AssemblerStubs::PushVregs(ExtendedAssembler *assembler)
     }
 }
 
-// Input:
-// X19 - glue
-// X20 - sp
-// X21 - callTarget
-// X22 - method
+// Input: X19 - glue
+//        X20 - sp
+//        X21 - callTarget
+//        X22 - method
 void AssemblerStubs::DispatchCall(ExtendedAssembler *assembler, Register pc, Register newSp)
 {
     Register glue(X19);
@@ -1766,6 +1738,7 @@ void AssemblerStubs::PushAsmInterpEntryFrame(ExtendedAssembler *assembler, Regis
     __ Mov(frameTypeRegister, Immediate(static_cast<int64_t>(FrameType::ASM_INTERPRETER_ENTRY_FRAME)));
     // prev managed fp is leave frame or nullptr(the first frame)
     __ Ldr(prevFrameRegister, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
+    // 2 : 2 means pair
     __ Stp(prevFrameRegister, frameTypeRegister, MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     __ Mov(pcRegister, Immediate(0));
     // pc
@@ -1790,13 +1763,14 @@ void AssemblerStubs::PushGeneratorFrameState(ExtendedAssembler *assembler, Regis
     Register sp(SP);
     __ Mov(frameTypeRegister, Immediate(static_cast<int64_t>(FrameType::ASM_INTERPRETER_FRAME)));
     // frameType and prevSp
+    // 2 : 2 means pair
     __ Stp(prevSpRegister, frameTypeRegister, MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     __ Ldr(pcRegister, MemoryOperand(methodRegister, JSMethod::GetBytecodeArrayOffset(false)));
     __ Ldr(operatorRegister, MemoryOperand(contextRegister, GeneratorContext::GENERATOR_BC_OFFSET_OFFSET));
     __ Add(pcRegister, operatorRegister, pcRegister);
     __ Add(pcRegister, pcRegister, Immediate(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8)));
     // pc and fp
-    __ Stp(fpRegister, pcRegister, MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+    __ Stp(fpRegister, pcRegister, MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX)); // 2 : 2 means pair
     __ Mov(operatorRegister, Immediate(0));
     // jumpSizeAfterCall
     __ Str(operatorRegister, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
@@ -1805,6 +1779,7 @@ void AssemblerStubs::PushGeneratorFrameState(ExtendedAssembler *assembler, Regis
     __ Str(operatorRegister, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     __ Ldr(operatorRegister, MemoryOperand(contextRegister, GeneratorContext::GENERATOR_ACC_OFFSET));
     // acc and callTarget
+    // 2 : 2 means pair
     __ Stp(callTargetRegister, operatorRegister, MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
 }
 
@@ -1868,15 +1843,14 @@ void AssemblerStubs::CallNativeEntry(ExtendedAssembler *assembler)
     __ Ret();
 }
 
-// Input:
-// glue       - %X0
-// argc       - %X1
-// argv       - %X2(<callTarget, newTarget, this> are at the beginning of argv)
-// callTarget - %X3
-// method     - %X4
-// prevSp     - %X29
-// fp         - %10
-// callField  - %X7
+// Input: glue       - %X0
+//        argc       - %X1
+//        argv       - %X2(<callTarget, newTarget, this> are at the beginning of argv)
+//        callTarget - %X3
+//        method     - %X4
+//        prevSp     - %X29
+//        fp         - %10
+//        callField  - %X7
 void AssemblerStubs::PushArgsFastPath(ExtendedAssembler *assembler,
     Register &glue, Register &argc, Register &argv, Register &callTarget,
     Register &method, Register &prevSp, Register &fp, Register &callField)
@@ -1933,15 +1907,14 @@ void AssemblerStubs::PushArgsFastPath(ExtendedAssembler *assembler,
     CallBCStub(assembler, newSpRegister, glue, callTarget, method, pcRegister, tempRegister, true);
 }
 
-// Input:
-// glueRegister       - %X0
-// declaredNumArgsRegister - %X9
-// argcRegister       - %X1
-// argvRegister       - %X2(<callTarget, newTarget, this> are at the beginning of argv)
-// callTargetRegister - %X3
-// methodRegister     - %X4
-// prevSpRegister     - %X29
-// callFieldRegister  - %X7
+// Input: glueRegister       - %X0
+//        declaredNumArgsRegister - %X9
+//        argcRegister       - %X1
+//        argvRegister       - %X2(<callTarget, newTarget, this> are at the beginning of argv)
+//        callTargetRegister - %X3
+//        methodRegister     - %X4
+//        prevSpRegister     - %X29
+//        callFieldRegister  - %X7
 void AssemblerStubs::PushArgsSlowPath(ExtendedAssembler *assembler, Register &glueRegister,
     Register &declaredNumArgsRegister, Register &argcRegister, Register &argvRegister, Register &callTargetRegister,
     Register &methodRegister, Register &prevSpRegister, Register &callFieldRegister)
