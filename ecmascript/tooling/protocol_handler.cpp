@@ -20,12 +20,6 @@
 #include "utils/logger.h"
 
 namespace panda::ecmascript::tooling {
-ProtocolHandler::ProtocolHandler(std::function<void(const std::string &)> callback, const EcmaVM *vm)
-    : callback_(std::move(callback)), vm_(vm)
-{
-    dispatcher_ = std::make_unique<Dispatcher>(vm_, this);
-}
-
 void ProtocolHandler::WaitForDebugger()
 {
     waitingForDebugger_ = true;
@@ -45,12 +39,12 @@ void ProtocolHandler::ProcessCommand(const CString &msg)
     LOG(DEBUG, DEBUGGER) << "ProtocolHandler::ProcessCommand: " << msg;
     [[maybe_unused]] LocalScope scope(vm_);
     Local<JSValueRef> exception = DebuggerApi::GetAndClearException(vm_);
-    dispatcher_->Dispatch(DispatchRequest(vm_, msg));
+    dispatcher_.Dispatch(DispatchRequest(vm_, msg));
     DebuggerApi::SetException(vm_, exception);
 }
 
 void ProtocolHandler::SendResponse(const DispatchRequest &request, const DispatchResponse &response,
-    std::unique_ptr<PtBaseReturns> result)
+    const PtBaseReturns &result)
 {
     LOG(INFO, DEBUGGER) << "ProtocolHandler::SendResponse: "
                         << (response.IsOk() ? "success" : "failed: " + response.GetMessage());
@@ -58,8 +52,8 @@ void ProtocolHandler::SendResponse(const DispatchRequest &request, const Dispatc
     Local<ObjectRef> reply = PtBaseTypes::NewObject(vm_);
     reply->Set(vm_, StringRef::NewFromUtf8(vm_, "id"), IntegerRef::New(vm_, request.GetCallId()));
     Local<ObjectRef> resultObj;
-    if (response.IsOk() && result != nullptr) {
-        resultObj = result->ToObject(vm_);
+    if (response.IsOk()) {
+        resultObj = result.ToObject(vm_);
     } else {
         resultObj = CreateErrorReply(response);
     }
@@ -67,13 +61,10 @@ void ProtocolHandler::SendResponse(const DispatchRequest &request, const Dispatc
     SendReply(reply);
 }
 
-void ProtocolHandler::SendNotification(std::unique_ptr<PtBaseEvents> events)
+void ProtocolHandler::SendNotification(const PtBaseEvents &events)
 {
-    if (events == nullptr) {
-        return;
-    }
-    LOG(DEBUG, DEBUGGER) << "ProtocolHandler::SendNotification: " << events->GetName();
-    SendReply(events->ToObject(vm_));
+    LOG(DEBUG, DEBUGGER) << "ProtocolHandler::SendNotification: " << events.GetName();
+    SendReply(events.ToObject(vm_));
 }
 
 void ProtocolHandler::SendReply(Local<ObjectRef> reply)
