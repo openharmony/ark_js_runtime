@@ -86,7 +86,7 @@ public:
             changed_ = true;
         }
 
-        GateRef operator*()
+        GateRef operator*() const
         {
             return circuit_->SaveGatePtr(out_->GetGate());
         }
@@ -325,6 +325,7 @@ public:
     [[nodiscard]] GateRef GetState(GateRef gate, size_t idx = 0) const;
     [[nodiscard]] GateRef GetDep(GateRef gate, size_t idx = 0) const;
     [[nodiscard]] size_t GetImmediateId(GateRef gate) const;
+    [[nodiscard]] bool IsDependIn(const UsesIterator &useIt) const;
     void SetDep(GateRef gate, GateRef depGate, size_t idx = 0);
     void ReplaceIn(UsesIterator &useIt, GateRef replaceGate);
     // Add for lowering
