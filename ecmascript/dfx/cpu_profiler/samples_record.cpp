@@ -24,7 +24,7 @@ SamplesRecord::SamplesRecord()
 {
     stackTopLines_.push_back(0);
     struct MethodKey methodkey;
-    struct ProfileNode methodNode;
+    struct CpuProfileNode methodNode;
     methodkey.method = reinterpret_cast<JSMethod*>(INT_MAX - 1);
     methodMap_.insert(std::make_pair(methodkey, methodMap_.size() + 1));
     methodNode.parentId = 0;
@@ -46,7 +46,7 @@ void SamplesRecord::AddSample(CVector<JSMethod *> sample, uint64_t sampleTimeSta
 {
     static int PreviousId = 0;
     struct MethodKey methodkey;
-    struct ProfileNode methodNode;
+    struct CpuProfileNode methodNode;
     if (staticGcState_) {
         methodkey.method = reinterpret_cast<JSMethod*>(INT_MAX);
         methodNode.parentId = methodkey.parentId = PreviousId;
@@ -191,7 +191,7 @@ void SamplesRecord::WriteMethodsAndSampleInfo(bool timeEnd)
                    std::to_string(tts) + "},\n";
 }
 
-CVector<struct ProfileNode> SamplesRecord::GetMethodNodes() const
+CVector<struct CpuProfileNode> SamplesRecord::GetMethodNodes() const
 {
     return profileInfo_->nodes;
 }

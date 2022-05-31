@@ -23,6 +23,7 @@
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/tooling/backend/js_debugger_interface.h"
+#include "ecmascript/tooling/base/pt_returns.h"
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript::tooling {
@@ -129,7 +130,7 @@ public:
 
 protected:
     void SendResponse(const DispatchRequest &request, const DispatchResponse &response,
-                      std::unique_ptr<PtBaseReturns> result);
+                      const PtBaseReturns &result = PtBaseReturns());
 
 private:
     ProtocolChannel *channel_ {nullptr};

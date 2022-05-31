@@ -24,7 +24,7 @@ public:
     PtBaseReturns() = default;
     ~PtBaseReturns() override = default;
 
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override
     {
         return NewObject(ecmaVm);
     }
@@ -39,7 +39,7 @@ public:
     explicit EnableReturns(UniqueDebuggerId id) : debuggerId_(id) {}
     ~EnableReturns() override = default;
 
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     EnableReturns() = default;
@@ -56,7 +56,7 @@ public:
     {}
     ~SetBreakpointByUrlReturns() override = default;
 
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     SetBreakpointByUrlReturns() = default;
@@ -74,7 +74,7 @@ public:
         : result_(std::move(result)), exceptionDetails_(std::move(exceptionDetails))
     {}
     ~EvaluateOnCallFrameReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     EvaluateOnCallFrameReturns() = default;
@@ -92,7 +92,7 @@ public:
     {}
     ~GetPossibleBreakpointsReturns() override = default;
 
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     GetPossibleBreakpointsReturns() = default;
@@ -104,12 +104,12 @@ private:
 
 class GetScriptSourceReturns : public PtBaseReturns {
 public:
-    explicit GetScriptSourceReturns(CString scriptSource, std::optional<CString> bytecode = std::nullopt)
-        : scriptSource_(std::move(scriptSource)), bytecode_(std::move(bytecode))
+    explicit GetScriptSourceReturns(const CString &scriptSource, std::optional<CString> bytecode = std::nullopt)
+        : scriptSource_(scriptSource), bytecode_(std::move(bytecode))
     {}
     ~GetScriptSourceReturns() override = default;
 
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     GetScriptSourceReturns() = default;
@@ -126,7 +126,7 @@ public:
         : callFrames_(std::move(callFrames))
     {}
     ~RestartFrameReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     RestartFrameReturns() = default;
@@ -141,7 +141,7 @@ public:
     explicit SearchInContentReturns(CVector<std::unique_ptr<SearchMatch>> result) : result_(std::move(result))
     {}
     ~SearchInContentReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     SearchInContentReturns() = default;
@@ -157,7 +157,7 @@ public:
         : breakpointId_(id), location_(std::move(location))
     {}
     ~SetBreakpointReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     SetBreakpointReturns() = default;
@@ -172,7 +172,7 @@ public:
     explicit SetInstrumentationBreakpointReturns(const CString &id) : breakpointId_(id)
     {}
     ~SetInstrumentationBreakpointReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     SetInstrumentationBreakpointReturns() = default;
@@ -192,7 +192,7 @@ public:
           exceptionDetails_(std::move(exceptionDetails))
     {}
     ~SetScriptSourceReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     SetScriptSourceReturns() = default;
@@ -216,7 +216,7 @@ public:
           exceptionDetails_(std::move(exceptionDetails))
     {}
     ~GetPropertiesReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     GetPropertiesReturns() = default;
@@ -237,7 +237,7 @@ public:
           exceptionDetails_(std::move(exceptionDetails))
     {}
     ~CallFunctionOnReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     CallFunctionOnReturns() = default;
@@ -255,7 +255,7 @@ public:
     {}
     ~StopSamplingReturns() override = default;
 
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     StopSamplingReturns() = default;
@@ -272,7 +272,7 @@ public:
     {}
     ~GetHeapObjectIdReturns() override = default;
 
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     GetHeapObjectIdReturns() = default;
@@ -289,7 +289,7 @@ public:
     {}
     ~GetObjectByHeapObjectIdReturns() override = default;
 
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     GetObjectByHeapObjectIdReturns() = default;
@@ -303,7 +303,7 @@ class StopReturns : public PtBaseReturns {
 public:
     explicit StopReturns(std::unique_ptr<Profile> profile) : profile_(std::move(profile)) {}
     ~StopReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     StopReturns() = default;
@@ -318,7 +318,7 @@ public:
     explicit GetHeapUsageReturns(double usedSize, double totalSize)
         : usedSize_(usedSize), totalSize_(totalSize) {}
     ~GetHeapUsageReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     GetHeapUsageReturns() = default;
@@ -335,7 +335,7 @@ public:
         : result_(std::move(result))
     {}
     ~GetBestEffortCoverageReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     GetBestEffortCoverageReturns() = default;
@@ -349,7 +349,7 @@ class StartPreciseCoverageReturns : public PtBaseReturns {
 public:
     explicit StartPreciseCoverageReturns(size_t tamp) : timestamp_(tamp) {}
     ~StartPreciseCoverageReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     StartPreciseCoverageReturns() = default;
@@ -366,7 +366,7 @@ public:
           timestamp_(tamp)
     {}
     ~TakePreciseCoverageReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     TakePreciseCoverageReturns() = default;
@@ -383,7 +383,7 @@ public:
         : result_(std::move(result))
     {}
     ~TakeTypeProfileturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     TakeTypeProfileturns() = default;

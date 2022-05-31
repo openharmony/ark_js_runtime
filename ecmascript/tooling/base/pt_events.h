@@ -29,8 +29,8 @@ class PtBaseEvents : public PtBaseTypes {
 public:
     PtBaseEvents() = default;
     ~PtBaseEvents() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override = 0;
-    virtual CString GetName() = 0;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override = 0;
+    virtual CString GetName() const = 0;
 
 private:
     NO_COPY_SEMANTIC(PtBaseEvents);
@@ -41,10 +41,9 @@ class BreakpointResolved final : public PtBaseEvents {
 public:
     BreakpointResolved() = default;
     ~BreakpointResolved() override = default;
-    static std::unique_ptr<BreakpointResolved> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() override
+    CString GetName() const override
     {
         return "Debugger.breakpointResolved";
     }
@@ -83,10 +82,9 @@ class Paused final : public PtBaseEvents {
 public:
     Paused() = default;
     ~Paused() override = default;
-    static std::unique_ptr<Paused> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() override
+    CString GetName() const override
     {
         return "Debugger.paused";
     }
@@ -208,10 +206,9 @@ class Resumed final : public PtBaseEvents {
 public:
     Resumed() = default;
     ~Resumed() override = default;
-    static std::unique_ptr<Resumed> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() override
+    CString GetName() const override
     {
         return "Debugger.resumed";
     }
@@ -225,10 +222,9 @@ class ScriptFailedToParse final : public PtBaseEvents {
 public:
     ScriptFailedToParse() = default;
     ~ScriptFailedToParse() override = default;
-    static std::unique_ptr<ScriptFailedToParse> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() override
+    CString GetName() const override
     {
         return "Debugger.scriptFailedToParse";
     }
@@ -475,11 +471,9 @@ class ScriptParsed final : public PtBaseEvents {
 public:
     ScriptParsed() = default;
     ~ScriptParsed() override = default;
-    static std::unique_ptr<ScriptParsed> Create(const std::unique_ptr<PtScript> &script);
-    static std::unique_ptr<ScriptParsed> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() override
+    CString GetName() const override
     {
         return "Debugger.scriptParsed";
     }
@@ -743,13 +737,16 @@ class AddHeapSnapshotChunk final : public PtBaseEvents {
 public:
     AddHeapSnapshotChunk() = default;
     ~AddHeapSnapshotChunk() override = default;
-    static std::unique_ptr<AddHeapSnapshotChunk> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    static std::unique_ptr<AddHeapSnapshotChunk> Create(char* data, int size);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() override
+    CString GetName() const override
     {
         return "HeapProfiler.addHeapSnapshotChunk";
+    }
+
+    CString &GetChunk()
+    {
+        return chunk_;
     }
 
 private:
@@ -763,9 +760,8 @@ class ConsoleProfileFinished final : public PtBaseEvents {
 public:
     ConsoleProfileFinished() = default;
     ~ConsoleProfileFinished() override = default;
-    static std::unique_ptr<ConsoleProfileFinished> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
-    CString GetName() override
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    CString GetName() const override
     {
         return "Profile.ConsoleProfileFinished";
     }
@@ -833,9 +829,8 @@ class ConsoleProfileStarted final : public PtBaseEvents {
 public:
     ConsoleProfileStarted() = default;
     ~ConsoleProfileStarted() override = default;
-    static std::unique_ptr<ConsoleProfileStarted> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
-    CString GetName() override
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    CString GetName() const override
     {
         return "Profile.ConsoleProfileStarted";
     }
@@ -891,9 +886,8 @@ class PreciseCoverageDeltaUpdate final : public PtBaseEvents {
 public:
     PreciseCoverageDeltaUpdate() = default;
     ~PreciseCoverageDeltaUpdate() override = default;
-    static std::unique_ptr<PreciseCoverageDeltaUpdate> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
-    CString GetName() override
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    CString GetName() const override
     {
         return "Profile.PreciseCoverageDeltaUpdate";
     }
@@ -944,10 +938,9 @@ class HeapStatsUpdate final : public PtBaseEvents {
 public:
     HeapStatsUpdate() = default;
     ~HeapStatsUpdate() override = default;
-    static std::unique_ptr<HeapStatsUpdate> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() override
+    CString GetName() const override
     {
         return "HeapProfiler.heapStatsUpdate";
     }
@@ -974,10 +967,9 @@ class LastSeenObjectId final : public PtBaseEvents {
 public:
     LastSeenObjectId() = default;
     ~LastSeenObjectId() override = default;
-    static std::unique_ptr<LastSeenObjectId> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() override
+    CString GetName() const override
     {
         return "HeapProfiler.lastSeenObjectId";
     }
@@ -1016,10 +1008,9 @@ class ReportHeapSnapshotProgress final : public PtBaseEvents {
 public:
     ReportHeapSnapshotProgress() = default;
     ~ReportHeapSnapshotProgress() override = default;
-    static std::unique_ptr<ReportHeapSnapshotProgress> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() override
+    CString GetName() const override
     {
         return "HeapProfiler.reportHeapSnapshotProgress";
     }
