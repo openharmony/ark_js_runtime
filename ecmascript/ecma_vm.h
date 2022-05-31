@@ -75,6 +75,8 @@ using HostPromiseRejectionTracker = void (*)(const EcmaVM* vm,
                                              void* data);
 using PromiseRejectCallback = void (*)(void* info);
 
+using ResolvePathCallback = std::function<std::string(std::string dirPath, std::string requestPath)>;
+
 class EcmaVM {
 public:
     static EcmaVM *Create(const JSRuntimeOptions &options);
@@ -279,6 +281,17 @@ public:
         }
     }
 
+    // CJS callbacks
+    void SetResolvePathCallback(ResolvePathCallback cb)
+    {
+        resolvePathCallback_ = cb;
+    }
+
+    ResolvePathCallback GetResolvePathCallback() const
+    {
+        return resolvePathCallback_;
+    }
+
     void SetConstpool(const JSPandaFile *jsPandaFile, JSTaggedValue constpool);
 
     JSTaggedValue FindConstpool(const JSPandaFile *jsPandaFile);
@@ -352,6 +365,9 @@ private:
     CMap<const JSPandaFile *, JSTaggedValue> cachedConstpools_ {};
 
     // VM resources.
+    // CJS resolve path Callbacks
+    ResolvePathCallback resolvePathCallback_ {nullptr};
+
     ModuleManager *moduleManager_ {nullptr};
     TSLoader *tsLoader_ {nullptr};
     SnapshotEnv *snapshotEnv_ {nullptr};
