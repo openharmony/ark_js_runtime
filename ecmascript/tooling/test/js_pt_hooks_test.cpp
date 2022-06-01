@@ -17,13 +17,13 @@
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tests/test_helper.h"
-#include "ecmascript/tooling/agent/js_backend.h"
-#include "ecmascript/tooling/dispatcher.h"
-#include "ecmascript/tooling/agent/js_pt_hooks.h"
-#include "ecmascript/tooling/interface/js_debugger.h"
+#include "ecmascript/tooling/agent/debugger_impl.h"
+#include "ecmascript/tooling/backend/js_pt_hooks.h"
+#include "ecmascript/tooling/backend/js_debugger.h"
 #include "ecmascript/tooling/base/pt_types.h"
 #include "ecmascript/tooling/base/pt_events.h"
 #include "ecmascript/tooling/dispatcher.h"
+
 using namespace panda::ecmascript;
 using namespace panda::ecmascript::tooling;
 
@@ -59,8 +59,8 @@ protected:
 
 HWTEST_F_L0(JSPtHooksTest, BreakpointTest)
 {
-    auto backend = std::make_unique<JSBackend>(ecmaVm);
-    std::unique_ptr<JSPtHooks>jspthooks = std::make_unique<JSPtHooks>(backend.get());
+    auto debugger = std::make_unique<DebuggerImpl>(ecmaVm, nullptr, nullptr);
+    std::unique_ptr<JSPtHooks> jspthooks = std::make_unique<JSPtHooks>(debugger.get());
     const char *pandaFile = " ";
     EntityId methodId(0);
     uint32_t bytecodeOffset = 0;
@@ -71,25 +71,16 @@ HWTEST_F_L0(JSPtHooksTest, BreakpointTest)
 
 HWTEST_F_L0(JSPtHooksTest, LoadModuleTest)
 {
-    auto backend = std::make_unique<JSBackend>(ecmaVm);
-    std::unique_ptr<JSPtHooks>jspthooks = std::make_unique<JSPtHooks>(backend.get());
+    auto debugger = std::make_unique<DebuggerImpl>(ecmaVm, nullptr, nullptr);
+    std::unique_ptr<JSPtHooks> jspthooks = std::make_unique<JSPtHooks>(debugger.get());
     jspthooks->LoadModule("pandafile/test.abc");
-    ASSERT_NE(jspthooks, nullptr);
-}
-
-HWTEST_F_L0(JSPtHooksTest, PausedTest)
-{
-    auto backend = std::make_unique<JSBackend>(ecmaVm);
-    std::unique_ptr<JSPtHooks>jspthooks = std::make_unique<JSPtHooks>(backend.get());
-    PauseReason reason1 = PauseReason::EXCEPTION;
-    jspthooks->Paused(reason1);
     ASSERT_NE(jspthooks, nullptr);
 }
 
 HWTEST_F_L0(JSPtHooksTest, ExceptionTest)
 {
-    auto backend = std::make_unique<JSBackend>(ecmaVm);
-    std::unique_ptr<JSPtHooks>jspthooks = std::make_unique<JSPtHooks>(backend.get());
+    auto debugger = std::make_unique<DebuggerImpl>(ecmaVm, nullptr, nullptr);
+    std::unique_ptr<JSPtHooks> jspthooks = std::make_unique<JSPtHooks>(debugger.get());
     const char *pandaFile = " ";
     EntityId methodId(0);
     uint32_t bytecodeOffset = 0;
@@ -100,8 +91,8 @@ HWTEST_F_L0(JSPtHooksTest, ExceptionTest)
 
 HWTEST_F_L0(JSPtHooksTest, SingleStepTest)
 {
-    auto backend = std::make_unique<JSBackend>(ecmaVm);
-    std::unique_ptr<JSPtHooks>jspthooks = std::make_unique<JSPtHooks>(backend.get());
+    auto debugger = std::make_unique<DebuggerImpl>(ecmaVm, nullptr, nullptr);
+    std::unique_ptr<JSPtHooks> jspthooks = std::make_unique<JSPtHooks>(debugger.get());
     const char *pandaFile = " ";
     EntityId methodId(0);
     uint32_t bytecodeOffset = 0;
@@ -111,16 +102,16 @@ HWTEST_F_L0(JSPtHooksTest, SingleStepTest)
 
 HWTEST_F_L0(JSPtHooksTest, VmStartTest)
 {
-    auto backend = std::make_unique<JSBackend>(ecmaVm);
-    std::unique_ptr<JSPtHooks>jspthooks = std::make_unique<JSPtHooks>(backend.get());
+    auto debugger = std::make_unique<DebuggerImpl>(ecmaVm, nullptr, nullptr);
+    std::unique_ptr<JSPtHooks> jspthooks = std::make_unique<JSPtHooks>(debugger.get());
     jspthooks->VmStart();
     ASSERT_NE(jspthooks, nullptr);
 }
 
 HWTEST_F_L0(JSPtHooksTest, VmDeathTest)
 {
-    auto backend = std::make_unique<JSBackend>(ecmaVm);
-    std::unique_ptr<JSPtHooks>jspthooks = std::make_unique<JSPtHooks>(backend.get());
+    auto debugger = std::make_unique<DebuggerImpl>(ecmaVm, nullptr, nullptr);
+    std::unique_ptr<JSPtHooks> jspthooks = std::make_unique<JSPtHooks>(debugger.get());
     jspthooks->VmDeath();
     ASSERT_NE(jspthooks, nullptr);
 }

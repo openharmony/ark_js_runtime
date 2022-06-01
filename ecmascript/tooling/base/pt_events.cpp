@@ -753,7 +753,7 @@ std::unique_ptr<AddHeapSnapshotChunk> AddHeapSnapshotChunk::Create(const EcmaVM 
     } else {
         error += "should contain 'chunk';";
     }
-    
+
     if (!error.empty()) {
         LOG(ERROR, DEBUGGER) << "AddHeapSnapshotChunk::Create " << error;
         return nullptr;

@@ -19,10 +19,10 @@
 #include <string_view>
 
 #include "ecmascript/napi/include/jsnapi.h"
-#include "ecmascript/tooling/interface/js_pt_location.h"
+#include "ecmascript/tooling/backend/js_pt_location.h"
+#include "libpandafile/file.h"
 #include "libpandabase/macros.h"
 #include "libpandabase/utils/expected.h"
-#include "libpandafile/file.h"
 
 namespace panda::ecmascript::tooling {
 struct JSPtStepRange {
@@ -65,6 +65,11 @@ public:
     virtual void LoadModule(std::string_view pandaFileName) = 0;
 
     /**
+     * \brief called before executing pending job
+     */
+    virtual void PendingJobEntry() = 0;
+
+    /**
      * \brief called by the ecmavm when virtual machine start initialization
      */
     virtual void VmStart() = 0;
@@ -73,13 +78,6 @@ public:
      * \brief called by the ecmavm when virtual machine death
      */
     virtual void VmDeath() = 0;
-
-    /**
-     * \brief called before executing pending job
-     */
-    virtual void PendingJobEntry() = 0;
-
-    virtual void Paused(PauseReason reason) = 0;
 
     virtual void Exception(const JSPtLocation &location) = 0;
 

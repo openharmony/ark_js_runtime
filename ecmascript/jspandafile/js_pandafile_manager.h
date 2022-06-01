@@ -19,7 +19,7 @@
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/jspandafile/js_pandafile.h"
 #include "ecmascript/jspandafile/panda_file_translator.h"
-#include "ecmascript/tooling/js_pt_extractor.h"
+#include "ecmascript/tooling/backend/js_pt_extractor.h"
 #include "libpandafile/file.h"
 #include "libpandabase/utils/logger.h"
 

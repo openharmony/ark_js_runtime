@@ -17,7 +17,6 @@
 #define ECMASCRIPT_TOOLING_AGENT_HEAPPROFILER_IMPL_H
 
 #include "libpandabase/macros.h"
-#include "ecmascript/tooling/agent/js_backend.h"
 #include "ecmascript/tooling/base/pt_params.h"
 #include "ecmascript/tooling/base/pt_events.h"
 #include "ecmascript/tooling/base/pt_returns.h"
@@ -25,17 +24,16 @@
 #include "ecmascript/tooling/interface/stream.h"
 #include "ecmascript/tooling/interface/progress.h"
 #include "ecmascript/tooling/protocol_handler.h"
-#include "ecmascript/tooling/front_end.h"
+#include "ecmascript/tooling/protocol_channel.h"
 #include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "libpandabase/utils/logger.h"
 
 static const double INTERVAL = 0.05;
-static const int  MAX_HEAPPROFILER_CHUNK_SIZE = 102400;
 
 namespace panda::ecmascript::tooling {
 class HeapProfilerImpl final {
 public:
-    explicit HeapProfilerImpl(FrontEnd *frontend) : frontend_(frontend) {}
+    explicit HeapProfilerImpl(const EcmaVM *vm, ProtocolChannel *channel) : vm_(vm), frontend_(channel) {}
     ~HeapProfilerImpl() = default;
 
     DispatchResponse AddInspectedHeapObject(std::unique_ptr<AddInspectedHeapObjectParams> params);
@@ -55,8 +53,10 @@ public:
 
     class DispatcherImpl final : public DispatcherBase {
     public:
-        DispatcherImpl(FrontEnd *frontend, std::unique_ptr<HeapProfilerImpl> heapprofiler);
+        DispatcherImpl(ProtocolChannel *channel, std::unique_ptr<HeapProfilerImpl> heapprofiler)
+            : DispatcherBase(channel), heapprofiler_(std::move(heapprofiler)) {}
         ~DispatcherImpl() override = default;
+
         void Dispatch(const DispatchRequest &request) override;
         void AddInspectedHeapObject(const DispatchRequest &request);
         void CollectGarbage(const DispatchRequest &request);
@@ -76,67 +76,31 @@ public:
         NO_MOVE_SEMANTIC(DispatcherImpl);
 
         using AgentHandler = void (HeapProfilerImpl::DispatcherImpl::*)(const DispatchRequest &request);
-        CUnorderedMap<CString, AgentHandler> dispatcherTable_ {};
         std::unique_ptr<HeapProfilerImpl> heapprofiler_ {};
+    };
+
+    class Frontend {
+    public:
+        explicit Frontend(ProtocolChannel *channel) : channel_(channel) {}
+
+        void AddHeapSnapshotChunk(char *data, int size);
+        void ReportHeapSnapshotProgress(int32_t done, int32_t total);
+        void HeapStatsUpdate();
+        void LastSeenObjectId();
+        void ResetProfiles();
+
+    private:
+        bool AllowNotify() const;
+
+        ProtocolChannel *channel_ {nullptr};
     };
 
 private:
     NO_COPY_SEMANTIC(HeapProfilerImpl);
     NO_MOVE_SEMANTIC(HeapProfilerImpl);
 
-    FrontEnd* frontend_ {nullptr};
-};
-
-class HeapProfilerStream final : public Stream {
-public:
-    explicit HeapProfilerStream(FrontEnd* frontend)
-        : frontend_(frontend) {}
-    
-    void EndOfStream() override {}
-    int GetSize() override
-    {
-        return MAX_HEAPPROFILER_CHUNK_SIZE;
-    }
-    bool WriteChunk(char* data, int size) override
-    {
-        auto ecmaVm = static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM();
-        frontend_->SendProfilerNotify(ecmaVm, AddHeapSnapshotChunk::Create(data, size));
-        return true;
-    }
-    bool Good() override
-    {
-        return frontend_ != nullptr;
-    }
-
-private:
-    NO_COPY_SEMANTIC(HeapProfilerStream);
-    NO_MOVE_SEMANTIC(HeapProfilerStream);
-
-    FrontEnd* frontend_ {nullptr};
-};
-
-class HeapProfilerProgress final : public Progress {
-public:
-    explicit HeapProfilerProgress(FrontEnd* frontend)
-        : frontend_(frontend) {}
-    
-    void ReportProgress(int32_t done, int32_t total) override
-    {
-        auto ecmaVm = static_cast<ProtocolHandler *>(frontend_)->GetEcmaVM();
-        auto reportHeapSnapshotProgress = std::make_unique<ReportHeapSnapshotProgress>();
-        reportHeapSnapshotProgress->SetDone(done);
-        reportHeapSnapshotProgress->SetTotal(total);
-        if (done == total) {
-            reportHeapSnapshotProgress->SetFinished(true);
-        }
-        frontend_->SendProfilerNotify(ecmaVm, std::move(reportHeapSnapshotProgress));
-    }
-
-private:
-    NO_COPY_SEMANTIC(HeapProfilerProgress);
-    NO_MOVE_SEMANTIC(HeapProfilerProgress);
-
-    FrontEnd* frontend_ {nullptr};
+    const EcmaVM *vm_ {nullptr};
+    Frontend frontend_;
 };
 }  // namespace panda::ecmascript::tooling
 #endif

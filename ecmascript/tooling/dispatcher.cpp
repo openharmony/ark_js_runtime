@@ -21,7 +21,7 @@
 #include "ecmascript/tooling/agent/runtime_impl.h"
 #include "ecmascript/tooling/agent/heapprofiler_impl.h"
 #include "ecmascript/tooling/agent/profiler_impl.h"
-#include "ecmascript/tooling/front_end.h"
+#include "ecmascript/tooling/protocol_channel.h"
 
 namespace panda::ecmascript::tooling {
 DispatchRequest::DispatchRequest(const EcmaVM *ecmaVm, const CString &message) : ecmaVm_(ecmaVm)
@@ -128,22 +128,28 @@ DispatchResponse DispatchResponse::Fail(const CString &message)
 void DispatcherBase::SendResponse(const DispatchRequest &request, const DispatchResponse &response,
                                   std::unique_ptr<PtBaseReturns> result)
 {
-    if (frontend_ != nullptr) {
-        frontend_->SendResponse(request, response, std::move(result));
+    if (channel_ != nullptr) {
+        channel_->SendResponse(request, response, std::move(result));
     }
 }
 
-Dispatcher::Dispatcher(FrontEnd *front)
+Dispatcher::Dispatcher(const EcmaVM *vm, ProtocolChannel *channel)
 {
-    std::unique_ptr<JSBackend> backend = std::make_unique<JSBackend>(front);
-    dispatchers_["Runtime"] =
-        std::make_unique<RuntimeImpl::DispatcherImpl>(front, std::make_unique<RuntimeImpl>(backend.get()));
-    dispatchers_["HeapProfiler"] =
-        std::make_unique<HeapProfilerImpl::DispatcherImpl>(front, std::make_unique<HeapProfilerImpl>(front));
+    // profiler
+    auto profiler = std::make_unique<ProfilerImpl>(vm, channel);
+    auto heapProfiler = std::make_unique<HeapProfilerImpl>(vm, channel);
     dispatchers_["Profiler"] =
-        std::make_unique<ProfilerImpl::DispatcherImpl>(front, std::make_unique<ProfilerImpl>(backend.get()));
+        std::make_unique<ProfilerImpl::DispatcherImpl>(channel, std::move(profiler));
+    dispatchers_["HeapProfiler"] =
+        std::make_unique<HeapProfilerImpl::DispatcherImpl>(channel, std::move(heapProfiler));
+
+    // debugger
+    auto runtime = std::make_unique<RuntimeImpl>(vm, channel);
+    auto debugger = std::make_unique<DebuggerImpl>(vm, channel, runtime.get());
+    dispatchers_["Runtime"] =
+        std::make_unique<RuntimeImpl::DispatcherImpl>(channel, std::move(runtime));
     dispatchers_["Debugger"] =
-        std::make_unique<DebuggerImpl::DispatcherImpl>(front, std::make_unique<DebuggerImpl>(std::move(backend)));
+        std::make_unique<DebuggerImpl::DispatcherImpl>(channel, std::move(debugger));
 }
 
 void Dispatcher::Dispatch(const DispatchRequest &request)
@@ -152,7 +158,7 @@ void Dispatcher::Dispatch(const DispatchRequest &request)
         LOG(ERROR, DEBUGGER) << "Unknown request";
         return;
     }
-    CString domain = request.GetDomain();
+    const CString &domain = request.GetDomain();
     auto dispatcher = dispatchers_.find(domain);
     if (dispatcher != dispatchers_.end()) {
         dispatcher->second->Dispatch(request);
