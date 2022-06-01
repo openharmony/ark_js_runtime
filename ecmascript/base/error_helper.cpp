@@ -26,7 +26,7 @@
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/object_factory.h"
-#include "ecmascript/tooling/js_pt_extractor.h"
+#include "ecmascript/tooling/backend/js_pt_extractor.h"
 
 namespace panda::ecmascript::base {
 JSTaggedValue ErrorHelper::ErrorCommonToString(EcmaRuntimeCallInfo *argv, const ErrorType &errorType)

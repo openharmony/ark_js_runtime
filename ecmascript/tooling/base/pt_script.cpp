@@ -14,7 +14,7 @@
  */
 
 #include "ecmascript/tooling/base/pt_script.h"
-#include "ecmascript/tooling/interface/debugger_api.h"
+#include "ecmascript/tooling/backend/debugger_api.h"
 
 namespace panda::ecmascript::tooling {
 PtScript::PtScript(ScriptId scriptId, const CString &fileName, const CString &url, const CString &source)

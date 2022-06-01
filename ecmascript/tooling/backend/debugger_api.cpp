@@ -13,10 +13,12 @@
  * limitations under the License.
  */
 
-#include "ecmascript/tooling/interface/debugger_api.h"
+#include "ecmascript/tooling/backend/debugger_api.h"
 
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/interpreter/frame_handler.h"
+#include "ecmascript/interpreter/slow_runtime_stub.h"
+#include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/jspandafile/js_pandafile_executor.h"
 #include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_handle.h"
@@ -24,26 +26,13 @@
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/napi/jsnapi_helper.h"
-#include "ecmascript/tooling/interface/js_debugger.h"
+#include "ecmascript/tooling/backend/js_debugger.h"
 
 namespace panda::ecmascript::tooling {
 using panda::ecmascript::base::ALLOW_BINARY;
 using panda::ecmascript::base::ALLOW_HEX;
 using panda::ecmascript::base::ALLOW_OCTAL;
 using panda::ecmascript::base::NumberHelper;
-
-// JSPandaFileExecutor
-Local<JSValueRef> DebuggerApi::Execute(const EcmaVM *ecmaVm, const void *buffer, size_t size,
-                                       std::string_view entryPoint)
-{
-    JSThread *thread = ecmaVm->GetJSThread();
-    auto result = JSPandaFileExecutor::ExecuteFromBuffer(thread, buffer, size, entryPoint);
-    if (!result) {
-        return JSValueRef::Undefined(ecmaVm);
-    }
-
-    return JSNApiHelper::ToLocal<JSValueRef>(JSHandle<JSTaggedValue>(thread, result.Value()));
-}
 
 // FrameHandler
 uint32_t DebuggerApi::GetStackDepth(const EcmaVM *ecmaVm)
@@ -93,16 +82,9 @@ JSMethod *DebuggerApi::GetMethod(const EcmaVM *ecmaVm)
     return FrameHandler(ecmaVm->GetJSThread()).GetMethod();
 }
 
-Local<JSValueRef> DebuggerApi::GetVRegValue(const EcmaVM *ecmaVm, size_t index)
+void DebuggerApi::SetVRegValue(FrameHandler *frameHandler, size_t index, Local<JSValueRef> value)
 {
-    auto value = FrameHandler(ecmaVm->GetJSThread()).GetVRegValue(index);
-    JSHandle<JSTaggedValue> handledValue(ecmaVm->GetJSThread(), value);
-    return JSNApiHelper::ToLocal<JSValueRef>(handledValue);
-}
-
-void DebuggerApi::SetVRegValue(const EcmaVM *ecmaVm, size_t index, Local<JSValueRef> value)
-{
-    return FrameHandler(ecmaVm->GetJSThread()).SetVRegValue(index, JSNApiHelper::ToJSTaggedValue(*value));
+    return frameHandler->SetVRegValue(index, JSNApiHelper::ToJSTaggedValue(*value));
 }
 
 uint32_t DebuggerApi::GetBytecodeOffset(const FrameHandler *frameHandler)
@@ -123,6 +105,26 @@ JSTaggedValue DebuggerApi::GetEnv(const FrameHandler *frameHandler)
 JSTaggedType *DebuggerApi::GetSp(const FrameHandler *frameHandler)
 {
     return frameHandler->GetSp();
+}
+
+int32_t DebuggerApi::GetVregIndex(const FrameHandler *frameHandler, std::string_view name)
+{
+    JSMethod *method = frameHandler->GetMethod();
+    if (method->IsNativeWithCallField()) {
+        LOG(ERROR, DEBUGGER) << "GetVregIndex: native frame not support";
+        return -1;
+    }
+    JSPtExtractor *extractor = JSPandaFileManager::GetInstance()->GetJSPtExtractor(method->GetJSPandaFile());
+    if (extractor == nullptr) {
+        LOG(ERROR, DEBUGGER) << "GetVregIndex: extractor is null";
+        return -1;
+    }
+    auto table = extractor->GetLocalVariableTable(method->GetMethodId());
+    auto iter = table.find(name.data());
+    if (iter == table.end()) {
+        return -1;
+    }
+    return iter->second;
 }
 
 Local<JSValueRef> DebuggerApi::GetVRegValue(const EcmaVM *ecmaVm,
@@ -210,34 +212,38 @@ CString DebuggerApi::ParseFunctionName(const JSMethod *method)
 }
 
 // ScopeInfo
-Local<JSValueRef> DebuggerApi::GetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t slot)
+Local<JSValueRef> DebuggerApi::GetProperties(const EcmaVM *vm, const FrameHandler *frameHandler,
+                                             int32_t level, uint32_t slot)
 {
-    JSTaggedValue env = GetCurrentEvaluateEnv(ecmaVm);
+    JSTaggedValue env = frameHandler->GetEnv();
     for (int i = 0; i < level; i++) {
         JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
         ASSERT(!taggedParentEnv.IsUndefined());
         env = taggedParentEnv;
     }
     JSTaggedValue value = LexicalEnv::Cast(env.GetTaggedObject())->GetProperties(slot);
-    JSHandle<JSTaggedValue> handledValue(ecmaVm->GetJSThread(), value);
+    JSHandle<JSTaggedValue> handledValue(vm->GetJSThread(), value);
     return JSNApiHelper::ToLocal<JSValueRef>(handledValue);
 }
 
-void DebuggerApi::SetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t slot, Local<JSValueRef> value)
+void DebuggerApi::SetProperties(const EcmaVM *vm, const FrameHandler *frameHandler,
+                                int32_t level, uint32_t slot, Local<JSValueRef> value)
 {
-    JSTaggedValue env = GetCurrentEvaluateEnv(ecmaVm);
+    JSTaggedValue env = frameHandler->GetEnv();
     for (int i = 0; i < level; i++) {
         JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
         ASSERT(!taggedParentEnv.IsUndefined());
         env = taggedParentEnv;
     }
     JSTaggedValue target = JSNApiHelper::ToJSHandle(value).GetTaggedValue();
-    LexicalEnv::Cast(env.GetTaggedObject())->SetProperties(ecmaVm->GetJSThread(), slot, target);
+    LexicalEnv::Cast(env.GetTaggedObject())->SetProperties(vm->GetJSThread(), slot, target);
 }
 
-bool DebuggerApi::EvaluateLexicalValue(const EcmaVM *ecmaVm, const CString &name, int32_t &level, uint32_t &slot)
+std::pair<int32_t, uint32_t> DebuggerApi::GetLevelSlot(const FrameHandler *frameHandler, std::string_view name)
 {
-    JSTaggedValue curEnv = GetCurrentEvaluateEnv(ecmaVm);
+    int32_t level = 0;
+    uint32_t slot = 0;
+    JSTaggedValue curEnv = frameHandler->GetEnv();
     for (; curEnv.IsTaggedArray(); curEnv = LexicalEnv::Cast(curEnv.GetTaggedObject())->GetParentEnv(), level++) {
         LexicalEnv *lexicalEnv = LexicalEnv::Cast(curEnv.GetTaggedObject());
         if (lexicalEnv->GetScopeInfo().IsHole()) {
@@ -245,43 +251,62 @@ bool DebuggerApi::EvaluateLexicalValue(const EcmaVM *ecmaVm, const CString &name
         }
         auto result = JSNativePointer::Cast(lexicalEnv->GetScopeInfo().GetTaggedObject())->GetExternalPointer();
         ScopeDebugInfo *scopeDebugInfo = reinterpret_cast<ScopeDebugInfo *>(result);
-        auto iter = scopeDebugInfo->scopeInfo.find(name);
+        auto iter = scopeDebugInfo->scopeInfo.find(name.data());
         if (iter == scopeDebugInfo->scopeInfo.end()) {
             continue;
         }
         slot = iter->second;
-        return true;
+        return std::make_pair(level, slot);
     }
+    return std::make_pair(-1, 0);
+}
+
+Local<JSValueRef> DebuggerApi::GetGlobalValue(const EcmaVM *vm, Local<StringRef> name)
+{
+    JSTaggedValue result;
+    JSTaggedValue globalObj = vm->GetGlobalEnv()->GetGlobalObject();
+    JSThread *thread = vm->GetJSThread();
+
+    JSTaggedValue key = JSNApiHelper::ToJSTaggedValue(*name);
+    JSTaggedValue globalRec = SlowRuntimeStub::LdGlobalRecord(thread, key);
+    if (!globalRec.IsUndefined()) {
+        ASSERT(globalRec.IsPropertyBox());
+        result = PropertyBox::Cast(globalRec.GetTaggedObject())->GetValue();
+        return JSNApiHelper::ToLocal<JSValueRef>(JSHandle<JSTaggedValue>(thread, result));
+    }
+
+    JSTaggedValue globalVar = FastRuntimeStub::GetGlobalOwnProperty(thread, globalObj, key);
+    if (!globalVar.IsHole()) {
+        return JSNApiHelper::ToLocal<JSValueRef>(JSHandle<JSTaggedValue>(thread, globalVar));
+    } else {
+        result = SlowRuntimeStub::TryLdGlobalByName(thread, globalObj, key);
+        return JSNApiHelper::ToLocal<JSValueRef>(JSHandle<JSTaggedValue>(thread, result));
+    }
+
+    return JSValueRef::Exception(vm);
+}
+
+bool DebuggerApi::SetGlobalValue(const EcmaVM *vm, Local<StringRef> name, Local<JSValueRef> value)
+{
+    JSTaggedValue result;
+    JSTaggedValue globalObj = vm->GetGlobalEnv()->GetGlobalObject();
+    JSThread *thread = vm->GetJSThread();
+
+    JSTaggedValue key = JSNApiHelper::ToJSTaggedValue(*name);
+    JSTaggedValue newVal = JSNApiHelper::ToJSTaggedValue(*value);
+    JSTaggedValue globalRec = SlowRuntimeStub::LdGlobalRecord(thread, key);
+    if (!globalRec.IsUndefined()) {
+        result = SlowRuntimeStub::TryUpdateGlobalRecord(thread, key, newVal);
+        return !result.IsException();
+    }
+
+    JSTaggedValue globalVar = FastRuntimeStub::GetGlobalOwnProperty(thread, globalObj, key);
+    if (!globalVar.IsHole()) {
+        result = SlowRuntimeStub::StGlobalVar(thread, key, newVal);
+        return !result.IsException();
+    }
+
     return false;
-}
-
-Local<JSValueRef> DebuggerApi::GetLexicalValueInfo(const EcmaVM *ecmaVm, const CString &name)
-{
-    JSThread *thread = ecmaVm->GetJSThread();
-    JSTaggedValue curEnv = thread->GetCurrentLexenv();
-    for (; curEnv.IsTaggedArray(); curEnv = LexicalEnv::Cast(curEnv.GetTaggedObject())->GetParentEnv()) {
-        LexicalEnv *lexicalEnv = LexicalEnv::Cast(curEnv.GetTaggedObject());
-        if (lexicalEnv->GetScopeInfo().IsHole()) {
-            continue;
-        }
-        void *pointer = JSNativePointer::Cast(lexicalEnv->GetScopeInfo().GetTaggedObject())->GetExternalPointer();
-        ScopeDebugInfo *scopeDebugInfo = static_cast<ScopeDebugInfo *>(pointer);
-        auto iter = scopeDebugInfo->scopeInfo.find(name);
-        if (iter == scopeDebugInfo->scopeInfo.end()) {
-            continue;
-        }
-        uint32_t slot = iter->second;
-        JSTaggedValue value = lexicalEnv->GetProperties(slot);
-        JSHandle<JSTaggedValue> handledValue(thread, value);
-        return JSNApiHelper::ToLocal<JSValueRef>(handledValue);
-    }
-    JSHandle<JSTaggedValue> handledValue(thread, JSTaggedValue::Hole());
-    return JSNApiHelper::ToLocal<JSValueRef>(handledValue);
-}
-
-void DebuggerApi::InitJSDebugger(JSDebugger *debugger)
-{
-    debugger->Init();
 }
 
 void DebuggerApi::HandleUncaughtException(const EcmaVM *ecmaVm, CString &message)
@@ -302,15 +327,6 @@ void DebuggerApi::HandleUncaughtException(const EcmaVM *ecmaVm, CString &message
         message = ConvertToString(*ecmaStr);
     }
     thread->ClearException();
-}
-
-JSTaggedValue DebuggerApi::GetCurrentEvaluateEnv(const EcmaVM *ecmaVm)
-{
-    auto &frameHandler = ecmaVm->GetJsDebuggerManager()->GetEvalFrameHandler();
-    if (frameHandler != nullptr) {
-        return frameHandler->GetEnv();
-    }
-    return ecmaVm->GetJSThread()->GetCurrentLexenv();
 }
 
 Local<FunctionRef> DebuggerApi::GenerateFuncFromBuffer(const EcmaVM *ecmaVm, const void *buffer,

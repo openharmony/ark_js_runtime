@@ -23,7 +23,7 @@ namespace panda::ecmascript::tooling {
 ProtocolHandler::ProtocolHandler(std::function<void(const std::string &)> callback, const EcmaVM *vm)
     : callback_(std::move(callback)), vm_(vm)
 {
-    dispatcher_ = std::make_unique<Dispatcher>(this);
+    dispatcher_ = std::make_unique<Dispatcher>(vm_, this);
 }
 
 void ProtocolHandler::WaitForDebugger()
@@ -46,14 +46,7 @@ void ProtocolHandler::ProcessCommand(const CString &msg)
     [[maybe_unused]] LocalScope scope(vm_);
     Local<JSValueRef> exception = DebuggerApi::GetAndClearException(vm_);
     dispatcher_->Dispatch(DispatchRequest(vm_, msg));
-    DebuggerApi::ClearException(vm_);
-    if (!exception->IsHole()) {
-        DebuggerApi::SetException(vm_, exception);
-    }
-    CString startDebugging("Runtime.runIfWaitingForDebugger");
-    if (msg.find(startDebugging, 0) != CString::npos) {
-        waitingForDebugger_ = false;
-    }
+    DebuggerApi::SetException(vm_, exception);
 }
 
 void ProtocolHandler::SendResponse(const DispatchRequest &request, const DispatchResponse &response,
@@ -61,42 +54,33 @@ void ProtocolHandler::SendResponse(const DispatchRequest &request, const Dispatc
 {
     LOG(INFO, DEBUGGER) << "ProtocolHandler::SendResponse: "
                         << (response.IsOk() ? "success" : "failed: " + response.GetMessage());
-    const EcmaVM *ecmaVm = request.GetEcmaVM();
 
-    Local<ObjectRef> reply = PtBaseTypes::NewObject(ecmaVm);
-    reply->Set(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "id"), IntegerRef::New(ecmaVm, request.GetCallId()));
+    Local<ObjectRef> reply = PtBaseTypes::NewObject(vm_);
+    reply->Set(vm_, StringRef::NewFromUtf8(vm_, "id"), IntegerRef::New(vm_, request.GetCallId()));
     Local<ObjectRef> resultObj;
     if (response.IsOk() && result != nullptr) {
-        resultObj = result->ToObject(ecmaVm);
+        resultObj = result->ToObject(vm_);
     } else {
-        resultObj = CreateErrorReply(ecmaVm, response);
+        resultObj = CreateErrorReply(response);
     }
-    reply->Set(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "result"), Local<JSValueRef>(resultObj));
-    SendReply(ecmaVm, reply);
+    reply->Set(vm_, StringRef::NewFromUtf8(vm_, "result"), Local<JSValueRef>(resultObj));
+    SendReply(reply);
 }
 
-void ProtocolHandler::SendNotification(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events)
-{
-    if (!ecmaVm->GetJsDebuggerManager()->IsDebugMode()) {
-        return;
-    }
-    SendProfilerNotify(ecmaVm, std::move(events));
-}
-
-void ProtocolHandler::SendProfilerNotify(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events)
+void ProtocolHandler::SendNotification(std::unique_ptr<PtBaseEvents> events)
 {
     if (events == nullptr) {
         return;
     }
     LOG(DEBUG, DEBUGGER) << "ProtocolHandler::SendNotification: " << events->GetName();
-    SendReply(ecmaVm, events->ToObject(ecmaVm));
+    SendReply(events->ToObject(vm_));
 }
 
-void ProtocolHandler::SendReply(const EcmaVM *ecmaVm, Local<ObjectRef> reply)
+void ProtocolHandler::SendReply(Local<ObjectRef> reply)
 {
-    Local<JSValueRef> str = JSON::Stringify(ecmaVm, reply);
+    Local<JSValueRef> str = JSON::Stringify(vm_, reply);
     if (str->IsException()) {
-        DebuggerApi::ClearException(ecmaVm);
+        DebuggerApi::ClearException(vm_);
         LOG(ERROR, DEBUGGER) << "json stringifier throw exception";
         return;
     }
@@ -108,17 +92,17 @@ void ProtocolHandler::SendReply(const EcmaVM *ecmaVm, Local<ObjectRef> reply)
     callback_(StringRef::Cast(*str)->ToString());
 }
 
-Local<ObjectRef> ProtocolHandler::CreateErrorReply(const EcmaVM *ecmaVm, const DispatchResponse &response)
+Local<ObjectRef> ProtocolHandler::CreateErrorReply(const DispatchResponse &response)
 {
-    Local<ObjectRef> result = PtBaseTypes::NewObject(ecmaVm);
+    Local<ObjectRef> result = PtBaseTypes::NewObject(vm_);
 
     if (!response.IsOk()) {
-        result->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "code")),
-            IntegerRef::New(ecmaVm, static_cast<int32_t>(response.GetError())));
-        result->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "message")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, response.GetMessage().c_str())));
+        result->Set(vm_,
+            Local<JSValueRef>(StringRef::NewFromUtf8(vm_, "code")),
+            IntegerRef::New(vm_, static_cast<int32_t>(response.GetError())));
+        result->Set(vm_,
+            Local<JSValueRef>(StringRef::NewFromUtf8(vm_, "message")),
+            Local<JSValueRef>(StringRef::NewFromUtf8(vm_, response.GetMessage().c_str())));
     }
 
     return result;

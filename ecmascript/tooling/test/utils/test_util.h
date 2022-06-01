@@ -17,7 +17,8 @@
 #define ECMASCRIPT_TOOLING_TEST_UTILS_TEST_UTIL_H
 
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
-#include "ecmascript/tooling/interface/js_debugger.h"
+#include "ecmascript/tooling/agent/debugger_impl.h"
+#include "ecmascript/tooling/backend/js_debugger.h"
 #include "ecmascript/tooling/test/utils/test_events.h"
 #include "ecmascript/tooling/test/utils/test_extractor.h"
 #include "os/mutex.h"

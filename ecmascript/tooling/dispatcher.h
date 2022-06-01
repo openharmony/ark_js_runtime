@@ -22,11 +22,11 @@
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/napi/include/jsnapi.h"
-#include "ecmascript/tooling/interface/js_debug_interface.h"
+#include "ecmascript/tooling/backend/js_debugger_interface.h"
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript::tooling {
-class FrontEnd;
+class ProtocolChannel;
 class PtBaseReturns;
 class PtBaseEvents;
 
@@ -120,10 +120,10 @@ private:
 
 class DispatcherBase {
 public:
-    explicit DispatcherBase(FrontEnd *frontend) : frontend_(frontend) {}
+    explicit DispatcherBase(ProtocolChannel *channel) : channel_(channel) {}
     virtual ~DispatcherBase()
     {
-        frontend_ = nullptr;
+        channel_ = nullptr;
     };
     virtual void Dispatch(const DispatchRequest &request) = 0;
 
@@ -132,7 +132,7 @@ protected:
                       std::unique_ptr<PtBaseReturns> result);
 
 private:
-    FrontEnd *frontend_ {nullptr};
+    ProtocolChannel *channel_ {nullptr};
 
     NO_COPY_SEMANTIC(DispatcherBase);
     NO_MOVE_SEMANTIC(DispatcherBase);
@@ -140,7 +140,7 @@ private:
 
 class Dispatcher {
 public:
-    explicit Dispatcher(FrontEnd *front);
+    explicit Dispatcher(const EcmaVM *vm, ProtocolChannel *channel);
     ~Dispatcher() = default;
     void Dispatch(const DispatchRequest &request);
 

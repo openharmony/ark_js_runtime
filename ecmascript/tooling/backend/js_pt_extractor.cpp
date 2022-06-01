@@ -13,8 +13,9 @@
  * limitations under the License.
  */
 
-#include "ecmascript/tooling/interface/debugger_api.h"
-#include "ecmascript/tooling/js_pt_extractor.h"
+#include "ecmascript/tooling/backend/js_pt_extractor.h"
+
+#include "ecmascript/tooling/backend/debugger_api.h"
 
 namespace panda::ecmascript::tooling {
 uint32_t JSPtExtractor::SingleStepper::GetStackDepth() const

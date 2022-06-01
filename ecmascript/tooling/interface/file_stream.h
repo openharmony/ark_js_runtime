@@ -49,7 +49,7 @@ private:
 class FileDescriptorStream : public Stream {
 public:
     explicit FileDescriptorStream(int32_t fd): fd_(fd) {}
-    ~FileDescriptorStream() override  = default;
+    ~FileDescriptorStream() override = default;
 
     void EndOfStream() override;
 
@@ -61,7 +61,7 @@ public:
     }
 
     // Writes the chunk of data into the stream
-    bool WriteChunk(char* data, int size) override;
+    bool WriteChunk(char *data, int size) override;
     bool Good() override;
 
 private:

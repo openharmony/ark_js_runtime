@@ -38,7 +38,6 @@
 #include "ecmascript/message_string.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_dictionary.h"
-#include "ecmascript/tooling/test/utils/test_util.h"
 #include "libpandabase/utils/string_helpers.h"
 #include "ecmascript/ts_types/ts_loader.h"
 

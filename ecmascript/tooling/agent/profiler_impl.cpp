@@ -15,29 +15,32 @@
 
 #include "ecmascript/tooling/agent/profiler_impl.h"
 
-namespace panda::ecmascript::tooling {
-ProfilerImpl::DispatcherImpl::DispatcherImpl(FrontEnd *frontend, std::unique_ptr<ProfilerImpl> profiler)
-    : DispatcherBase(frontend), profiler_(std::move(profiler))
-{
-    dispatcherTable_["disable"] = &ProfilerImpl::DispatcherImpl::Disable;
-    dispatcherTable_["enable"] = &ProfilerImpl::DispatcherImpl::Enable;
-    dispatcherTable_["start"] = &ProfilerImpl::DispatcherImpl::Start;
-    dispatcherTable_["stop"] = &ProfilerImpl::DispatcherImpl::Stop;
-    dispatcherTable_["getBestEffortCoverage"] = &ProfilerImpl::DispatcherImpl::GetBestEffortCoverage;
-    dispatcherTable_["stopPreciseCoverage"] = &ProfilerImpl::DispatcherImpl::StopPreciseCoverage;
-    dispatcherTable_["takePreciseCoverage"] = &ProfilerImpl::DispatcherImpl::TakePreciseCoverage;
-    dispatcherTable_["startPreciseCoverage"] = &ProfilerImpl::DispatcherImpl::StartPreciseCoverage;
-    dispatcherTable_["startTypeProfile"] = &ProfilerImpl::DispatcherImpl::StartTypeProfile;
-    dispatcherTable_["stopTypeProfile"] = &ProfilerImpl::DispatcherImpl::StopTypeProfile;
-    dispatcherTable_["takeTypeProfile"] = &ProfilerImpl::DispatcherImpl::TakeTypeProfile;
-}
+#include "ecmascript/napi/include/dfx_jsnapi.h"
+#include "ecmascript/tooling/base/pt_events.h"
+#include "ecmascript/tooling/protocol_channel.h"
+#include "libpandabase/utils/logger.h"
 
+namespace panda::ecmascript::tooling {
 void ProfilerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
 {
-    CString method = request.GetMethod();
+    static CUnorderedMap<CString, AgentHandler> dispatcherTable {
+        { "disable", &ProfilerImpl::DispatcherImpl::Disable },
+        { "enable", &ProfilerImpl::DispatcherImpl::Enable },
+        { "start", &ProfilerImpl::DispatcherImpl::Start },
+        { "stop", &ProfilerImpl::DispatcherImpl::Stop },
+        { "getBestEffortCoverage", &ProfilerImpl::DispatcherImpl::GetBestEffortCoverage },
+        { "stopPreciseCoverage", &ProfilerImpl::DispatcherImpl::StopPreciseCoverage },
+        { "takePreciseCoverage", &ProfilerImpl::DispatcherImpl::TakePreciseCoverage },
+        { "startPreciseCoverage", &ProfilerImpl::DispatcherImpl::StartPreciseCoverage },
+        { "startTypeProfile", &ProfilerImpl::DispatcherImpl::StartTypeProfile },
+        { "stopTypeProfile", &ProfilerImpl::DispatcherImpl::StopTypeProfile },
+        { "takeTypeProfile", &ProfilerImpl::DispatcherImpl::TakeTypeProfile }
+    };
+
+    const CString &method = request.GetMethod();
     LOG(DEBUG, DEBUGGER) << "dispatch [" << method << "] to ProfilerImpl";
-    auto entry = dispatcherTable_.find(method);
-    if (entry != dispatcherTable_.end() && entry->second != nullptr) {
+    auto entry = dispatcherTable.find(method);
+    if (entry != dispatcherTable.end() && entry->second != nullptr) {
         (this->*(entry->second))(request);
     } else {
         SendResponse(request, DispatchResponse::Fail("Unknown method: " + method), nullptr);
@@ -128,6 +131,41 @@ void ProfilerImpl::DispatcherImpl::TakeTypeProfile(const DispatchRequest &reques
     SendResponse(request, response, std::move(result));
 }
 
+bool ProfilerImpl::Frontend::AllowNotify() const
+{
+    return channel_ != nullptr;
+}
+
+void ProfilerImpl::Frontend::ConsoleProfileFinished()
+{
+    if (!AllowNotify()) {
+        return;
+    }
+
+    auto consoleProfileFinished = std::make_unique<tooling::ConsoleProfileFinished>();
+    channel_->SendNotification(std::move(consoleProfileFinished));
+}
+
+void ProfilerImpl::Frontend::ConsoleProfileStarted()
+{
+    if (!AllowNotify()) {
+        return;
+    }
+
+    auto consoleProfileStarted = std::make_unique<tooling::ConsoleProfileStarted>();
+    channel_->SendNotification(std::move(consoleProfileStarted));
+}
+
+void ProfilerImpl::Frontend::PreciseCoverageDeltaUpdate()
+{
+    if (!AllowNotify()) {
+        return;
+    }
+
+    auto preciseCoverageDeltaUpdate = std::make_unique<tooling::PreciseCoverageDeltaUpdate>();
+    channel_->SendNotification(std::move(preciseCoverageDeltaUpdate));
+}
+
 DispatchResponse ProfilerImpl::Disable()
 {
     LOG(ERROR, DEBUGGER) << "Disable not support now.";
@@ -142,8 +180,7 @@ DispatchResponse ProfilerImpl::Enable()
 
 DispatchResponse ProfilerImpl::Start()
 {
-    auto ecmaVm = const_cast<EcmaVM *>(backend_->GetEcmaVm());
-    panda::DFXJSNApi::StartCpuProfilerForInfo(ecmaVm);
+    panda::DFXJSNApi::StartCpuProfilerForInfo(vm_);
     return DispatchResponse::Ok();
 }
 
