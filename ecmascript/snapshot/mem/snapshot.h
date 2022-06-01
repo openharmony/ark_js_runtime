@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -53,7 +53,7 @@ private:
 private:
     size_t AlignUpPageSize(size_t spaceSize);
     std::pair<bool, CString> VerifyFilePath(const CString &filePath, bool toGenerate);
-    void WriteToFile(std::fstream &write, const panda_file::File *pf, size_t size, SnapshotProcessor &processor);
+    void WriteToFile(std::fstream &writer, const panda_file::File *pf, size_t size, SnapshotProcessor &processor);
 
     NO_MOVE_SEMANTIC(Snapshot);
     NO_COPY_SEMANTIC(Snapshot);
