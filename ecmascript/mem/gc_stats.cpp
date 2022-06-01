@@ -123,15 +123,15 @@ void GCStats::PrintHeapStatisticResult(bool force)
         NativeAreaAllocator *nativeAreaAllocator = heap_->GetNativeAreaAllocator();
         HeapRegionAllocator *heapRegionAllocator = heap_->GetHeapRegionAllocator();
         LOG(INFO, RUNTIME) << "/******************* Memory statistic: *******************/";
-        LOG(INFO, RUNTIME) << " Anno memory usage size:" << sizeToMB(heapRegionAllocator->GetAnnoMemoryUsage())
+        LOG(INFO, RUNTIME) << " Anno memory usage size: " << sizeToMB(heapRegionAllocator->GetAnnoMemoryUsage())
                             << "MB"
-                            << " anno memory max usage size:" << sizeToMB(heapRegionAllocator->GetMaxAnnoMemoryUsage())
+                            << " anno memory max usage size: " << sizeToMB(heapRegionAllocator->GetMaxAnnoMemoryUsage())
                             << "MB"
-                            << " native memory usage size:" << sizeToMB(nativeAreaAllocator->GetNativeMemoryUsage())
+                            << " native memory usage size: " << sizeToMB(nativeAreaAllocator->GetNativeMemoryUsage())
                             << "MB"
-                            << " native memory max usage size:"
+                            << " native memory max usage size: "
                             << sizeToMB(nativeAreaAllocator->GetMaxNativeMemoryUsage()) << "MB";
-        LOG(INFO, RUNTIME) << " Semi space commit size" << sizeToMB(heap_->GetNewSpace()->GetCommittedSize()) << "MB"
+        LOG(INFO, RUNTIME) << " Semi space commit size: " << sizeToMB(heap_->GetNewSpace()->GetCommittedSize()) << "MB"
                             << " semi space heap object size: " << sizeToMB(heap_->GetNewSpace()->GetHeapObjectSize())
                             << "MB"
                             << " old space commit size: "
@@ -160,6 +160,8 @@ void GCStats::StatisticSTWYoungGC(Duration time, size_t aliveSize, size_t promot
     semiTotalCommitSize_ += commitSize;
     semiTotalPromoteSize_ += promotedSize;
     semiGCCount_++;
+    currentGcType_ = "STWYoungGC";
+    currentPauseTime_ = timeInMS / THOUSAND;
 }
 
 void GCStats::StatisticPartialGC(bool concurrentMark, Duration time, size_t freeSize)
@@ -191,6 +193,8 @@ void GCStats::StatisticPartialGC(bool concurrentMark, Duration time, size_t free
         partialOldSpaceFreeSize_ = freeSize;
         partialGCCount_++;
     }
+    currentGcType_ = "PartialGC";
+    currentPauseTime_ = timeInMS / THOUSAND;
 }
 
 void GCStats::StatisticFullGC(Duration time, size_t youngAndOldAliveSize, size_t youngCommitSize,
@@ -212,6 +216,21 @@ void GCStats::StatisticFullGC(Duration time, size_t youngAndOldAliveSize, size_t
     compressNonMoveTotalFreeSize_ += nonMoveSpaceFreeSize;
     compressNonMoveTotalCommitSize_ += nonMoveSpaceCommitSize;
     fullGCCount_++;
+    currentGcType_ = "FullGC";
+    currentPauseTime_ = timeInMS / THOUSAND;
+}
+
+void GCStats::CheckIfLongTimePause()
+{
+    if (currentPauseTime_ > longPauseTime_) {
+        LOG(INFO, RUNTIME) << "Has checked a long time gc; gc type = " << currentGcType_ << "; pause time = "
+                            << currentPauseTime_ << "ms";
+        LOG(INFO, RUNTIME) << "/******************* GCStats statistic: *******************/";
+        PrintSemiStatisticResult(true);
+        PrintPartialStatisticResult(true);
+        PrintCompressStatisticResult(true);
+        PrintHeapStatisticResult(true);
+    }
 }
 
 void GCStats::StatisticConcurrentMark(Duration time)

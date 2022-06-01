@@ -38,7 +38,6 @@
 #include "ecmascript/message_string.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_dictionary.h"
-#include "ecmascript/tooling/test/utils/test_util.h"
 #include "libpandabase/utils/string_helpers.h"
 #include "ecmascript/ts_types/ts_loader.h"
 
@@ -90,42 +89,28 @@ DEF_RUNTIME_STUBS(AllocateInYoung)
     return JSTaggedValue(result).GetRawData();
 }
 
-DEF_RUNTIME_STUBS(CallSetter)
+DEF_RUNTIME_STUBS(CallInternalGetter)
 {
-    RUNTIME_STUBS_HEADER(CallSetter);
-    JSTaggedType argSetter = GetTArg(argv, argc, 0);
-    JSHandle<JSTaggedValue> receiver = GetHArg<JSTaggedValue>(argv, argc, 1);
+    RUNTIME_STUBS_HEADER(CallInternalGetter);
+    JSTaggedType argAccessor = GetTArg(argv, argc, 0);
+    JSHandle<JSObject> argReceiver = GetHArg<JSObject>(argv, argc, 1);
+
+    auto accessor = AccessorData::Cast(reinterpret_cast<TaggedObject *>(argAccessor));
+    return accessor->CallInternalGet(thread, argReceiver).GetRawData();
+}
+
+DEF_RUNTIME_STUBS(CallInternalSetter)
+{
+    RUNTIME_STUBS_HEADER(CallInternalSetter);
+    JSHandle<JSObject> receiver = GetHArg<JSObject>(argv, argc, 0);
+    JSTaggedType argSetter = GetTArg(argv, argc, 1);
     JSHandle<JSTaggedValue> value = GetHArg<JSTaggedValue>(argv, argc, 2);
-    JSTaggedValue argMayThrow = GetArg(argv, argc, 3);
     auto setter = AccessorData::Cast((reinterpret_cast<TaggedObject *>(argSetter)));
-    auto result = JSObject::CallSetter(thread, *setter, receiver, value, argMayThrow.IsTrue());
-    return JSTaggedValue(result).GetRawData();
-}
-
-DEF_RUNTIME_STUBS(CallSetter2)
-{
-    RUNTIME_STUBS_HEADER(CallSetter2);
-    JSHandle<JSTaggedValue> objHandle = GetHArg<JSTaggedValue>(argv, argc, 0);
-    JSHandle<JSTaggedValue> valueHandle = GetHArg<JSTaggedValue>(argv, argc, 1);
-    JSTaggedValue argAccessor = GetArg(argv, argc, 2);
-    auto accessor = AccessorData::Cast(argAccessor.GetTaggedObject());
-    bool success = JSObject::CallSetter(thread, *accessor, objHandle, valueHandle, true);
-    return success ? JSTaggedValue::Undefined().GetRawData() : JSTaggedValue::Exception().GetRawData();
-}
-
-DEF_RUNTIME_STUBS(CallGetter2)
-{
-    RUNTIME_STUBS_HEADER(CallGetter2);
-    JSTaggedValue argReceiver = GetArg(argv, argc, 0);
-    JSTaggedValue argHolder = GetArg(argv, argc, 1);
-    JSTaggedValue argAccessor = GetArg(argv, argc, 2);
-    AccessorData *accessor = AccessorData::Cast(argAccessor.GetTaggedObject());
-    if (UNLIKELY(accessor->IsInternal())) {
-        JSHandle<JSObject> objHandle(thread, argHolder);
-        return accessor->CallInternalGet(thread, objHandle).GetRawData();
+    auto result = setter->CallInternalSet(thread, receiver, value, true);
+    if (!result) {
+        return JSTaggedValue::Exception().GetRawData();
     }
-    JSHandle<JSTaggedValue> objHandle(thread, argReceiver);
-    return JSObject::CallGetter(thread, accessor, objHandle).GetRawData();
+    return JSTaggedValue::Undefined().GetRawData();
 }
 
 DEF_RUNTIME_STUBS(JSProxySetProperty)
@@ -148,28 +133,6 @@ DEF_RUNTIME_STUBS(GetHash32)
     auto pkey = reinterpret_cast<uint8_t *>(&key);
     uint32_t result = panda::GetHash32(pkey, len.GetInt());
     return JSTaggedValue(static_cast<uint64_t>(result)).GetRawData();
-}
-
-DEF_RUNTIME_STUBS(CallGetter)
-{
-    RUNTIME_STUBS_HEADER(CallGetter);
-    JSTaggedType argGetter = GetTArg(argv, argc, 0);
-    JSTaggedType argReceiver = GetTArg(argv, argc, 1);
-
-    auto accessor = AccessorData::Cast(reinterpret_cast<TaggedObject *>(argGetter));
-    JSHandle<JSTaggedValue> objHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argReceiver)));
-    return JSObject::CallGetter(thread, accessor, objHandle).GetRawData();
-}
-
-DEF_RUNTIME_STUBS(CallInternalGetter)
-{
-    RUNTIME_STUBS_HEADER(CallInternalGetter);
-    JSTaggedType argAccessor = GetTArg(argv, argc, 0);
-    JSTaggedType argReceiver = GetTArg(argv, argc, 1);
-
-    auto accessor = AccessorData::Cast(reinterpret_cast<TaggedObject *>(argAccessor));
-    JSHandle<JSObject> objHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argReceiver)));
-    return accessor->CallInternalGet(thread, objHandle).GetRawData();
 }
 
 DEF_RUNTIME_STUBS(ComputeHashcode)
@@ -1488,6 +1451,17 @@ DEF_RUNTIME_STUBS(ThrowNotCallableException)
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
     JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR, "is not callable");
+    thread->SetException(error.GetTaggedValue());
+    return JSTaggedValue::Exception().GetRawData();
+}
+
+DEF_RUNTIME_STUBS(ThrowSetterIsUndefinedException)
+{
+    RUNTIME_STUBS_HEADER(ThrowSetterIsUndefinedException);
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR,
+        "Cannot set property when setter is undefined");
     thread->SetException(error.GetTaggedValue());
     return JSTaggedValue::Exception().GetRawData();
 }

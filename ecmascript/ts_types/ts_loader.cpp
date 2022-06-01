@@ -16,6 +16,7 @@
 #include "ecmascript/ts_types/ts_loader.h"
 
 #include "ecmascript/jspandafile/js_pandafile.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/ts_types/ts_type_table.h"
 #include "libpandafile/file-inl.h"
 #include "libpandafile/method_data_accessor-inl.h"
@@ -25,10 +26,10 @@ void TSLoader::DecodeTSTypes(const JSPandaFile *jsPandaFile)
 {
     JSThread *thread = vm_->GetJSThread();
     ObjectFactory *factory = vm_->GetFactory();
-    JSHandle<TSModuleTable> table = GetTSModuleTable();
+    JSHandle<TSModuleTable> mTable = GetTSModuleTable();
 
     JSHandle<EcmaString> queryFileName = factory->NewFromUtf8(jsPandaFile->GetJSPandaFileDesc());
-    int index = table->GetGlobalModuleID(thread, queryFileName);
+    int index = mTable->GetGlobalModuleID(thread, queryFileName);
     if (index == TSModuleTable::NOT_FOUND) {
         CVector<JSHandle<EcmaString>> recordImportModules {};
         TSTypeTable::Initialize(thread, jsPandaFile, recordImportModules);
@@ -38,8 +39,9 @@ void TSLoader::DecodeTSTypes(const JSPandaFile *jsPandaFile)
 
 TSLoader::TSLoader(EcmaVM *vm) : vm_(vm)
 {
-    JSHandle<TSModuleTable> table = vm_->GetFactory()->NewTSModuleTable(TSModuleTable::DEFAULT_TABLE_CAPACITY);
-    SetTSModuleTable(table);
+    JSHandle<TSModuleTable> mTable = vm_->GetFactory()->NewTSModuleTable(TSModuleTable::DEFAULT_TABLE_CAPACITY);
+    TSModuleTable::Initialize(vm_->GetJSThread(), mTable);
+    SetTSModuleTable(mTable);
 }
 
 void TSLoader::AddTypeTable(JSHandle<JSTaggedValue> typeTable, JSHandle<EcmaString> amiPath)
@@ -55,7 +57,7 @@ void TSLoader::Link()
     JSThread *thread = vm_->GetJSThread();
     JSHandle<TSModuleTable> table = GetTSModuleTable();
 
-    int length = table->GetNumberOfTSTypeTable();
+    int length = table->GetNumberOfTSTypeTables();
     for (int i = 0; i < length; i++) {
         JSHandle<TSTypeTable> typeTable = table->GetTSTypeTable(thread, i);
         LinkTSTypeTable(typeTable);
@@ -138,6 +140,13 @@ GlobalTSTypeRef TSLoader::GetPropType(GlobalTSTypeRef gt, JSHandle<EcmaString> p
     return propTypeRef;
 }
 
+GlobalTSTypeRef TSLoader::GetPropType(GlobalTSTypeRef gt, const uint64_t key) const
+{
+    ObjectFactory *factory = vm_->GetFactory();
+    auto propertyName = factory->NewFromStdString(std::to_string(key).c_str());
+    return GetPropType(gt, propertyName);
+}
+
 uint32_t TSLoader::GetUnionTypeLength(GlobalTSTypeRef gt) const
 {
     JSThread *thread = vm_->GetJSThread();
@@ -146,11 +155,11 @@ uint32_t TSLoader::GetUnionTypeLength(GlobalTSTypeRef gt) const
     uint32_t moduleId = gt.GetModuleId();
     uint32_t localId = gt.GetLocalId();
     [[maybe_unused]] TSTypeKind typeKind = GetTypeKind(gt);
-    ASSERT(typeKind == TSTypeKind::TS_UNION);
+    ASSERT(typeKind == TSTypeKind::UNION);
 
     JSHandle<TSTypeTable> typeTable = table->GetTSTypeTable(thread, moduleId);
     JSHandle<TSUnionType> unionType(thread, typeTable->Get(localId));
-    JSHandle<TaggedArray> unionTypeArray(thread, unionType->GetComponentTypes());
+    JSHandle<TaggedArray> unionTypeArray(thread, unionType->GetComponents());
 
     return unionTypeArray->GetLength();
 }
@@ -163,11 +172,11 @@ GlobalTSTypeRef TSLoader::GetUnionTypeByIndex(GlobalTSTypeRef gt, int index) con
     uint32_t moduleId = gt.GetModuleId();
     uint32_t localId = gt.GetLocalId();
     [[maybe_unused]] TSTypeKind typeKind = GetTypeKind(gt);
-    ASSERT(typeKind == TSTypeKind::TS_UNION);
+    ASSERT(typeKind == TSTypeKind::UNION);
 
     JSHandle<TSTypeTable> typeTable = table->GetTSTypeTable(thread, moduleId);
     JSHandle<TSUnionType> unionType(thread, typeTable->Get(localId));
-    JSHandle<TaggedArray> unionTypeArray(thread, unionType->GetComponentTypes());
+    JSHandle<TaggedArray> unionTypeArray(thread, unionType->GetComponents());
 
     int localUnionId = unionTypeArray->Get(index).GetNumber();
     if (GlobalTSTypeRef(localUnionId).IsBuiltinType()) {
@@ -285,101 +294,64 @@ JSHandle<EcmaString> TSLoader::GenerateImportRelativePath(JSHandle<EcmaString> i
     return factory->NewFromUtf8(path); // #A#./A -> ./A
 }
 
-JSHandle<JSTaggedValue> TSLoader::InitUnionTypeTable()
-{
-    ObjectFactory *factory = vm_->GetFactory();
-
-    JSHandle<JSTaggedValue> initUnionTypeTable(factory->EmptyArray());
-    return  initUnionTypeTable;
-}
-
-GlobalTSTypeRef TSLoader::AddUnionTypeToGlobalUnionTable(JSHandle<TSUnionType> unionType)
+GlobalTSTypeRef TSLoader::AddUnionToInferTable(JSHandle<TSUnionType> unionType)
 {
     JSThread *thread = vm_->GetJSThread();
-    JSHandle<TSModuleTable> table = GetTSModuleTable();
+    JSHandle<TSTypeTable> iTable = GetInferTypeTable();
+    JSHandle<TSTypeTable> newITable = TSTypeTable::PushBackTypeToInferTable(thread, iTable,
+                                                                            JSHandle<TSType>(unionType));
+    SetInferTypeTable(newITable);
 
-    int unionTableId = table->GetNumberOfTSTypeTable() - 1;
-    JSHandle<EcmaString> finalNameString = table->GetAmiPathByModuleId(thread, (unionTableId));
-    [[maybe_unused]] CString finalModuleName = ConvertToString(finalNameString.GetTaggedValue());
-    ASSERT(finalModuleName == "UnionTypeTable");
-
-    JSHandle<TaggedArray> unionTypeTable = GetGlobalUTable();
-    JSHandle<TaggedArray> utWithNewUnion = TaggedArray::SetCapacity(thread, unionTypeTable,
-                                                                    unionTypeTable->GetLength() + 1);
-    uint32_t unionIndex = utWithNewUnion->GetLength() - 1;
-    utWithNewUnion->Set(thread, unionIndex, unionType);
-
-    uint32_t unionTypeTableOffset = TSModuleTable::GetTSTypeTableOffset(unionTableId);
-    table->Set(thread, unionTypeTableOffset, utWithNewUnion);
-    SetTSModuleTable(table);
-    GlobalTSTypeRef addUnionRef = CreateGT(unionTableId, unionIndex, static_cast<int>(TSTypeKind::TS_UNION));
-    return addUnionRef;
+    int localId = newITable->GetNumberOfTypes() - 1;
+    GlobalTSTypeRef gt = GlobalTSTypeRef(TSModuleTable::INFER_TABLE_ID, localId,
+                                         static_cast<int>(TSTypeKind::UNION));
+    unionType->SetGTRef(gt);
+    return gt;
 }
 
-GlobalTSTypeRef TSLoader::CreateGT(int moduleId, int localId, int typeKind) const
+GlobalTSTypeRef TSLoader::FindUnionInTypeTable(JSHandle<TSTypeTable> table, JSHandle<TSUnionType> unionType) const
 {
-    return GlobalTSTypeRef(moduleId, localId, typeKind);
-}
+    DISALLOW_GARBAGE_COLLECTION;
+    ASSERT(unionType.GetTaggedValue().IsTSUnionType());
 
-GlobalTSTypeRef TSLoader::FindInGlobalUTable(JSHandle<TSUnionType> unionType) const
-{
-    JSThread *thread = vm_->GetJSThread();
-    JSHandle<TSModuleTable> table = GetTSModuleTable();
-    int unionTableId = table->GetNumberOfTSTypeTable() - 1;
+    for (int index = 1; index <= table->GetNumberOfTypes(); ++index) {  // index 0 reseved for num of types
+        JSTaggedValue type = table->Get(index);
+        if (!type.IsTSUnionType()) {
+            continue;
+        }
 
-    JSHandle<EcmaString> finalNameString = table->GetAmiPathByModuleId(thread, unionTableId);
-    [[maybe_unused]] CString finalModuleName = ConvertToString(finalNameString.GetTaggedValue());
-    ASSERT(finalModuleName == "UnionTypeTable");
-
-    JSHandle<TaggedArray> unionTypeTable = GetGlobalUTable();
-    uint32_t tableLength = unionTypeTable->GetLength();
-    GlobalTSTypeRef foundUnionRef = GlobalTSTypeRef::Default();
-    for (uint32_t unionIndex = 0; unionIndex < tableLength; unionIndex++) {
-        JSHandle<TSUnionType> unionTemp(thread, unionTypeTable->Get(unionIndex));
-        ASSERT(unionTemp.GetTaggedValue().IsTSUnionType() && unionType.GetTaggedValue().IsTSUnionType());
-        bool foundTag = unionTemp->IsEqual(unionType);
-        if (foundTag) {
-            foundUnionRef = CreateGT(unionTableId, unionIndex,
-                                     static_cast<int>(TSTypeKind::TS_UNION));
-            break;
+        TSUnionType *uType = TSUnionType::Cast(type.GetTaggedObject());
+        if (uType->IsEqual(unionType)) {
+            return uType->GetGTRef();
         }
     }
-    return foundUnionRef;
+
+    return GlobalTSTypeRef::Default();  // not found
 }
 
-GlobalTSTypeRef TSLoader::GetOrCreateUnionType(CVector<GlobalTSTypeRef> unionTypeRef, int size)
+GlobalTSTypeRef TSLoader::GetOrCreateUnionType(CVector<GlobalTSTypeRef> unionTypeVec)
 {
     JSThread *thread = vm_->GetJSThread();
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<TSModuleTable> table = GetTSModuleTable();
-    int finalTableId = table->GetNumberOfTSTypeTable() - 1;
 
-    JSHandle<EcmaString> finalNameString = table->GetAmiPathByModuleId(thread, finalTableId);
-    [[maybe_unused]] CString finalModuleName = ConvertToString(finalNameString.GetTaggedValue());
-    if (finalModuleName != "UnionTypeTable") {
-        // Set UnionTypeTable -> GlobalModuleTable
-        JSHandle<JSTaggedValue> initUnionTypeTable = InitUnionTypeTable();
-        JSHandle<EcmaString> unionTableName = factory->NewFromASCII("UnionTypeTable");
-        AddTypeTable(initUnionTypeTable, unionTableName);
+    uint32_t length = unionTypeVec.size();
+    JSHandle<TSUnionType> unionType = factory->NewTSUnionType(length);
+    JSHandle<TaggedArray> components(thread, unionType->GetComponents());
+    for (uint32_t unionArgIndex = 0; unionArgIndex < length; unionArgIndex++) {
+        components->Set(thread, unionArgIndex, JSTaggedValue(unionTypeVec[unionArgIndex].GetData()));
+    }
+    unionType->SetComponents(thread, components);
+
+    JSHandle<TSModuleTable> mTable = GetTSModuleTable();
+    for (int tableIndex = 0; tableIndex < mTable->GetNumberOfTSTypeTables(); ++tableIndex) {
+        JSHandle<TSTypeTable> typeTable = mTable->GetTSTypeTable(thread, tableIndex);
+        GlobalTSTypeRef foundUnionRef = FindUnionInTypeTable(typeTable, unionType);
+        if (!foundUnionRef.IsDefault()) {
+            return foundUnionRef;
+        }
     }
 
-    JSHandle<TSUnionType> unionType = factory->NewTSUnionType(size);
-    JSHandle<TaggedArray> unionTypeArray(thread, unionType->GetComponentTypes());
-
-    for (int unionArgIndex = 0; unionArgIndex < size; unionArgIndex++) {
-        unionTypeArray->Set(thread, static_cast<uint32_t>(unionArgIndex),
-            JSTaggedValue(unionTypeRef[unionArgIndex].GetLocalId()));
-    }
-    unionType->SetComponentTypes(thread, unionTypeArray);
-
-    GlobalTSTypeRef foundUnionRef = FindInGlobalUTable(unionType);
-    int unionModuleId = table->GetNumberOfTSTypeTable();
-
-    int foundUnionModuleId = static_cast<int>(foundUnionRef.GetModuleId());
-    if (foundUnionModuleId != unionModuleId) {
-        foundUnionRef = AddUnionTypeToGlobalUnionTable(unionType);
-    }
-    return foundUnionRef;
+    return AddUnionToInferTable(unionType);
 }
 
 void TSLoader::Iterate(const RootVisitor &v)
@@ -400,7 +372,7 @@ GlobalTSTypeRef TSLoader::GetImportTypeTargetGT(GlobalTSTypeRef gt) const
     uint32_t localId = gt.GetLocalId();
 
     [[maybe_unused]] TSTypeKind typeKind = GetTypeKind(gt);
-    ASSERT(typeKind == TSTypeKind::TS_IMPORT);
+    ASSERT(typeKind == TSTypeKind::IMPORT);
 
     JSHandle<TSTypeTable> typeTable = table->GetTSTypeTable(thread, moduleId);
     JSHandle<TSImportType> importType(thread, typeTable->Get(localId));
@@ -408,16 +380,29 @@ GlobalTSTypeRef TSLoader::GetImportTypeTargetGT(GlobalTSTypeRef gt) const
     return importType->GetTargetRefGT();
 }
 
-JSHandle<TaggedArray> TSLoader::GetGlobalUTable() const
+JSHandle<TSTypeTable> TSLoader::GetInferTypeTable() const
 {
     JSThread *thread = vm_->GetJSThread();
-    JSHandle<TSModuleTable> table = GetTSModuleTable();
-    int moduleId = table->GetNumberOfTSTypeTable() - 1;
+    JSHandle<TSModuleTable> mTable = GetTSModuleTable();
 
-    uint32_t globalUTableOffset = TSModuleTable::GetTSTypeTableOffset(moduleId);
-    JSHandle<TaggedArray> globalUTable(thread, table->Get(globalUTableOffset));
+    ASSERT(ConvertToString(mTable->GetAmiPathByModuleId(thread, TSModuleTable::INFER_TABLE_ID).GetTaggedValue()) ==
+           TSTypeTable::INFER_TABLE_NAME);
 
-    return globalUTable;
+    uint32_t inferTableOffset = TSModuleTable::GetTSTypeTableOffset(TSModuleTable::INFER_TABLE_ID);
+    JSHandle<TSTypeTable> inferTable(thread, mTable->Get(inferTableOffset));
+    return inferTable;
+}
+
+void TSLoader::SetInferTypeTable(JSHandle<TSTypeTable> inferTable)
+{
+    JSThread *thread = vm_->GetJSThread();
+    JSHandle<TSModuleTable> mTable = GetTSModuleTable();
+
+    ASSERT(ConvertToString(mTable->GetAmiPathByModuleId(thread, TSModuleTable::INFER_TABLE_ID).GetTaggedValue()) ==
+           TSTypeTable::INFER_TABLE_NAME);
+
+    uint32_t inferTableOffset = TSModuleTable::GetTSTypeTableOffset(TSModuleTable::INFER_TABLE_ID);
+    mTable->Set(thread, inferTableOffset, inferTable);
 }
 
 int TSLoader::GetFuncParametersNum(GlobalTSTypeRef gt) const
@@ -427,7 +412,7 @@ int TSLoader::GetFuncParametersNum(GlobalTSTypeRef gt) const
 
     uint32_t moduleId = gt.GetModuleId();
     uint32_t localId = gt.GetLocalId();
-    ASSERT(GetTypeKind(gt) == TSTypeKind::TS_FUNCTION);
+    ASSERT(GetTypeKind(gt) == TSTypeKind::FUNCTION);
 
     JSHandle<TSTypeTable> typeTable = table->GetTSTypeTable(thread, moduleId);
     JSHandle<TSFunctionType> functionType(thread, typeTable->Get(localId));
@@ -441,7 +426,7 @@ GlobalTSTypeRef TSLoader::GetFuncParameterTypeGT(GlobalTSTypeRef gt, int index) 
 
     uint32_t moduleId = gt.GetModuleId();
     uint32_t localId = gt.GetLocalId();
-    ASSERT(GetTypeKind(gt) == TSTypeKind::TS_FUNCTION);
+    ASSERT(GetTypeKind(gt) == TSTypeKind::FUNCTION);
 
     JSHandle<TSTypeTable> typeTable = table->GetTSTypeTable(thread, moduleId);
     JSHandle<TSFunctionType> functionType(thread, typeTable->Get(localId));
@@ -455,7 +440,7 @@ GlobalTSTypeRef TSLoader::GetFuncReturnValueTypeGT(GlobalTSTypeRef gt) const
 
     uint32_t moduleId = gt.GetModuleId();
     uint32_t localId = gt.GetLocalId();
-    ASSERT(GetTypeKind(gt) == TSTypeKind::TS_FUNCTION);
+    ASSERT(GetTypeKind(gt) == TSTypeKind::FUNCTION);
 
     JSHandle<TSTypeTable> typeTable = table->GetTSTypeTable(thread, moduleId);
     JSHandle<TSFunctionType> functionType(thread, typeTable->Get(localId));
@@ -469,7 +454,7 @@ GlobalTSTypeRef TSLoader::GetArrayParameterTypeGT(GlobalTSTypeRef gt) const
 
     uint32_t moduleId = gt.GetModuleId();
     uint32_t localId = gt.GetLocalId();
-    ASSERT(GetTypeKind(gt) == TSTypeKind::TS_ARRAY);
+    ASSERT(GetTypeKind(gt) == TSTypeKind::ARRAY);
 
     JSHandle<TSTypeTable> typeTable = table->GetTSTypeTable(thread, moduleId);
     JSHandle<TSArrayType> arrayType(thread, typeTable->Get(localId));
@@ -486,6 +471,34 @@ size_t TSLoader::AddConstString(JSTaggedValue string)
         constantStringTable_.emplace_back(string.GetRawData());
         return constantStringTable_.size() - 1;
     }
+}
+
+// add string to constantstringtable and get its index
+size_t TSLoader::GetStringIdx(JSHandle<JSTaggedValue> constPool, const uint16_t id)
+{
+    JSHandle<ConstantPool> newConstPool(vm_->GetJSThread(), constPool.GetTaggedValue());
+    auto str = newConstPool->GetObjectFromCache(id);
+    return AddConstString(str);
+}
+
+void TSModuleTable::Initialize(JSThread *thread, JSHandle<TSModuleTable> mTable)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    mTable->SetNumberOfTSTypeTables(thread, DEFAULT_NUMBER_OF_TABLES);
+
+    // set builtins type table
+    JSHandle<EcmaString> builtinsTableName = factory->NewFromASCII(TSTypeTable::BUILTINS_TABLE_NAME);
+    mTable->Set(thread, GetAmiPathOffset(BUILTINS_TABLE_ID), builtinsTableName);
+    mTable->Set(thread, GetSortIdOffset(BUILTINS_TABLE_ID), JSTaggedValue(BUILTINS_TABLE_ID));
+    JSHandle<TSTypeTable> builtinsTable = factory->NewTSTypeTable(0);
+    mTable->Set(thread, GetTSTypeTableOffset(BUILTINS_TABLE_ID), builtinsTable);
+
+    // set infer type table
+    JSHandle<EcmaString> inferTableName = factory->NewFromASCII(TSTypeTable::INFER_TABLE_NAME);
+    mTable->Set(thread, GetAmiPathOffset(INFER_TABLE_ID), inferTableName);
+    mTable->Set(thread, GetSortIdOffset(INFER_TABLE_ID), JSTaggedValue(INFER_TABLE_ID));
+    JSHandle<TSTypeTable> inferTable = factory->NewTSTypeTable(0);
+    mTable->Set(thread, GetTSTypeTableOffset(INFER_TABLE_ID), inferTable);
 }
 
 JSHandle<EcmaString> TSModuleTable::GetAmiPathByModuleId(JSThread *thread, int entry) const
@@ -505,7 +518,7 @@ JSHandle<TSTypeTable> TSModuleTable::GetTSTypeTable(JSThread *thread, int entry)
 
 int TSModuleTable::GetGlobalModuleID(JSThread *thread, JSHandle<EcmaString> amiPath) const
 {
-    int length = GetNumberOfTSTypeTable();
+    int length = GetNumberOfTSTypeTables();
     for (int i = 0; i < length; i ++) {
         JSHandle<EcmaString> valueString = GetAmiPathByModuleId(thread, i);
         if (EcmaString::StringsAreEqual(*amiPath, *valueString)) {
@@ -518,15 +531,15 @@ int TSModuleTable::GetGlobalModuleID(JSThread *thread, JSHandle<EcmaString> amiP
 JSHandle<TSModuleTable> TSModuleTable::AddTypeTable(JSThread *thread, JSHandle<TSModuleTable> table,
                                                     JSHandle<JSTaggedValue> typeTable, JSHandle<EcmaString> amiPath)
 {
-    int numberOfTSTypeTable = table->GetNumberOfTSTypeTable();
+    int numberOfTSTypeTable = table->GetNumberOfTSTypeTables();
     if (GetTSTypeTableOffset(numberOfTSTypeTable) > table->GetLength()) {
         table = JSHandle<TSModuleTable>(TaggedArray::SetCapacity(thread, JSHandle<TaggedArray>(table),
                                                                  table->GetLength() * INCREASE_CAPACITY_RATE));
     }
     // add ts type table
-    table->Set(thread, NUMBER_ELEMENTS_OFFSET, JSTaggedValue(numberOfTSTypeTable + 1));
+    table->SetNumberOfTSTypeTables(thread, numberOfTSTypeTable + 1);
     table->Set(thread, GetAmiPathOffset(numberOfTSTypeTable), amiPath);
-    table->Set(thread, GetSortIdOffset(numberOfTSTypeTable), JSTaggedValue(GetSortIdOffset(numberOfTSTypeTable)));
+    table->Set(thread, GetSortIdOffset(numberOfTSTypeTable), JSTaggedValue(numberOfTSTypeTable));
     table->Set(thread, GetTSTypeTableOffset(numberOfTSTypeTable), typeTable);
     return table;
 }

@@ -121,6 +121,14 @@ JSHandle<SourceTextModule> SourceTextModule::HostResolveImportedModule(JSThread 
         RETURN_HANDLE_IF_ABRUPT_COMPLETION(SourceTextModule, thread);
     }
     CString moduleFullname;
+    if (thread->GetEcmaVM()->GetResolvePathCallback() != nullptr) {
+        auto resolvePathCallback = thread->GetEcmaVM()->GetResolvePathCallback();
+        std::string dirPath = std::string(baseFilename);
+        std::string requestPath = std::string(moduleFilename);
+        std::string callbackModuleName = resolvePathCallback(dirPath, requestPath);
+        moduleFullname = callbackModuleName.c_str();
+        return thread->GetEcmaVM()->GetModuleManager()->HostResolveImportedModule(moduleFullname);
+    }
     if (moduleFilename[0] == '/') { // absoluteFilePath
         moduleFullname = moduleFilename.substr(0, suffixEnd) + ".abc";
     } else {

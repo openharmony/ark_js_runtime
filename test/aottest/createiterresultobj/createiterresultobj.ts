@@ -16,12 +16,13 @@
 declare function print(str:any):string;
 function* foo(){
     let index = 0;
-    while(index < 1) {
+    while(index < 2) {
         yield index++;
     }
 }
 
 let gen = foo();
 
-print(gen.next());
-print(gen.next());
+print(gen.next().value);
+print(gen.next().value);
+print(gen.next().value);

@@ -44,7 +44,7 @@ public:
 
     void SetGTRef(GlobalTSTypeRef r)
     {
-        SetGT(r.GetGlobalTSTypeRef());
+        SetGT(r.GetData());
     }
 };
 
@@ -108,7 +108,7 @@ public:
 
     void SetClassRefGT(GlobalTSTypeRef r)
     {
-        SetClassTypeRef(r.GetGlobalTSTypeRef());
+        SetClassTypeRef(r.GetData());
     }
 
     DECL_DUMP()
@@ -131,7 +131,7 @@ public:
 
     void SetTargetRefGT(GlobalTSTypeRef r)
     {
-        SetTargetTypeRef(r.GetGlobalTSTypeRef());
+        SetTargetTypeRef(r.GetData());
     }
 
     DECL_VISIT_OBJECT(IMPORT_TYPE_ID_OFFSET, IMPORT_PATH)
@@ -144,10 +144,10 @@ public:
 
     bool IsEqual(JSHandle<TSUnionType> unionB);
 
-    static constexpr size_t COMPONENT_OFFSET = TSType::SIZE;
-    ACCESSORS(ComponentTypes, COMPONENT_OFFSET, SIZE);
+    static constexpr size_t COMPONENTS_OFFSET = TSType::SIZE;
+    ACCESSORS(Components, COMPONENTS_OFFSET, SIZE);  // the gt collection of union type components
 
-    DECL_VISIT_OBJECT(COMPONENT_OFFSET, SIZE)
+    DECL_VISIT_OBJECT(COMPONENTS_OFFSET, SIZE)
     DECL_DUMP()
 };
 

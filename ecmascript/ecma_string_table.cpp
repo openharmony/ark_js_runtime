@@ -120,6 +120,17 @@ EcmaString *EcmaStringTable::GetOrInternString(const uint8_t *utf8Data, uint32_t
     return result;
 }
 
+/*
+    This function is used to create global constant strings from non-movable sapce only.
+    It only inserts string into string-table and provides no string-table validity check.
+*/
+EcmaString *EcmaStringTable::CreateAndInternStringNonMovable(const uint8_t *utf8Data, uint32_t utf8Len)
+{
+    EcmaString *result = EcmaString::CreateFromUtf8NonMovable(vm_, utf8Data, utf8Len);
+    InternString(result);
+    return result;
+}
+
 EcmaString *EcmaStringTable::GetOrInternString(const uint16_t *utf16Data, uint32_t utf16Len, bool canBeCompress)
 {
     EcmaString *result = GetString(utf16Data, utf16Len);
@@ -163,5 +174,25 @@ void EcmaStringTable::SweepWeakReference(const WeakRootVisitor &visitor)
             ++it;
         }
     }
+}
+
+bool EcmaStringTable::CheckStringTableValidity()
+{
+    for (auto itemOuter = table_.begin(); itemOuter != table_.end(); ++itemOuter) {
+        auto outerString = itemOuter->second;
+        int counter = 0;
+        auto range = table_.equal_range(outerString->GetHashcode());
+        auto it = range.first;
+        for (; it != range.second; ++it) {
+            auto foundString = it->second;
+            if (EcmaString::StringsAreEqual(foundString, outerString)) {
+                ++counter;
+            }
+        }
+        if (counter > 1) {
+            return false;
+        }
+    }
+    return true;
 }
 }  // namespace panda::ecmascript

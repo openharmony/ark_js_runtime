@@ -419,14 +419,14 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
         DISPATCH_OFFSET(0);                                                                        \
     } while (false)
 
-extern "C" void JSCallEntry(uintptr_t glue, JSTaggedType *sp, const uint8_t *pc, JSTaggedValue constpool,
+extern "C" JSTaggedType JSCallEntry(uintptr_t glue, JSTaggedType *sp, const uint8_t *pc, JSTaggedValue constpool,
     JSTaggedValue profileTypeInfo, JSTaggedValue acc, uint32_t hotnessCounter);
 
 using InterpreterEntry = JSTaggedType (*)(uintptr_t glue, uint32_t argc, uintptr_t argv);
 using GeneratorReEnterInterpEntry = JSTaggedType (*)(uintptr_t glue, JSTaggedType context);
 
 // NOLINTNEXTLINE(readability-function-size)
-void InterpreterAssembly::RunInternal(JSThread *thread, ConstantPool *constpool, const uint8_t *pc, JSTaggedType *sp)
+JSTaggedType InterpreterAssembly::RunInternal(JSThread *thread, ConstantPool *constpool, const uint8_t *pc, JSTaggedType *sp)
 {
     // check is or not debugger
     thread->CheckSwitchDebuggerBCStub();
@@ -436,7 +436,7 @@ void InterpreterAssembly::RunInternal(JSThread *thread, ConstantPool *constpool,
     auto hotnessCounter = method->GetHotnessCounter();
     auto profileTypeInfo = JSFunction::Cast(state->function.GetTaggedObject())->GetProfileTypeInfo();
 
-    JSCallEntry(thread->GetGlueAddr(), sp, pc, JSTaggedValue(constpool), profileTypeInfo, acc, hotnessCounter);
+    return JSCallEntry(thread->GetGlueAddr(), sp, pc, JSTaggedValue(constpool), profileTypeInfo, acc, hotnessCounter);
 }
 
 void InterpreterAssembly::InitStackFrame(JSThread *thread)
@@ -635,10 +635,10 @@ JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
     LOG(DEBUG, INTERPRETER) << "break Entry: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(newSp) << " "
                             << std::hex << reinterpret_cast<uintptr_t>(pc);
 
-    InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
+    auto res = InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
 
     // NOLINTNEXTLINE(readability-identifier-naming)
-    const JSTaggedValue resAcc = state->acc;
+    const JSTaggedValue resAcc = JSTaggedValue(res);
     // pop frame
     thread->SetCurrentSPFrame(prevSp);
 #if ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER
@@ -712,12 +712,12 @@ JSTaggedValue InterpreterAssembly::GeneratorReEnterInterpreter(JSThread *thread,
     state->env = env;
     // execute interpreter
     thread->SetCurrentSPFrame(newSp);
-    InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
-    JSTaggedValue res = state->acc;
+    auto res = InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
+    JSTaggedValue acc = JSTaggedValue(res);
     // pop frame
     thread->SetCurrentSPFrame(currentSp);
     thread->SetLastLeaveFrame(currentLeaveFrame);
-    return res;
+    return acc;
 }
 #endif
 

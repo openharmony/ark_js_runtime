@@ -18,6 +18,7 @@
 
 #include <cstdint>
 
+#include "ecmascript/ecma_param_configuration.h"
 #include "ecmascript/mem/tagged_object.h"
 #include "libpandabase/mem/mem.h"
 #include "libpandabase/utils/logger.h"
@@ -36,25 +37,26 @@ enum class MemAlignmentLog2 : uint8_t {
     MEM_ALIGN_REGION_LOG2 = 4,
 };
 
-static constexpr size_t SEMI_SPACE_TRIGGER_CONCURRENT_MARK = 1.5 * 1024 * 1024;
-static constexpr size_t SEMI_SPACE_OVERSHOOT_SIZE = 2 * 1024 * 1024;
+static constexpr size_t SEMI_SPACE_TRIGGER_CONCURRENT_MARK = 1.5_MB;
+static constexpr size_t SEMI_SPACE_OVERSHOOT_SIZE = 2_MB;
 
-static constexpr size_t MIN_OLD_SPACE_LIMIT = 2 * 1024 * 1024;
-static constexpr size_t OLD_SPACE_LIMIT_BEGIN = 256 * 1024 * 1024;
-static constexpr size_t GLOBAL_SPACE_LIMIT_BEGIN = 256 * 1024 * 1024;
-static constexpr size_t MIN_GROWING_STEP = 16 * 1024 * 1024;
-static constexpr size_t MIN_AllOC_LIMIT_GROWING_STEP = 8 * 1024 * 1024;
+static constexpr size_t CONSTRAINT_MIN_SEMI_SPACE_SIZE = 1_MB;
+static constexpr size_t CONSTRAINT_MAX_SEMI_SPACE_SIZE = 16_MB;
+static constexpr size_t CONSTRAINT_MIN_NONMOVABLE_SPACE_SIZE = 1_MB;
+static constexpr size_t CONSTRAINT_MIN_SNAPSHOT_SPACE_SIZE = 256_KB;
+static constexpr size_t CONSTRAINT_MIN_MACHINECODE_SPACE_SIZE = 4_MB;
+
+static constexpr size_t MIN_OLD_SPACE_LIMIT = 2_MB;
+static constexpr size_t MIN_GROWING_STEP = 16_MB;
 
 static constexpr size_t REGION_SIZE_LOG2 = 18U;
 
-static constexpr size_t MAX_HEAP_SIZE = 512 * 1024 * 1024;
-static constexpr size_t HALF_MAX_HEAP_SIZE = MAX_HEAP_SIZE / 2;
-static constexpr size_t DEFAULT_HEAP_SIZE = 5 * 1024 * 1024;
+static constexpr size_t DEFAULT_HEAP_SIZE = 5_MB;
 
 static constexpr size_t DEFAULT_REGION_SIZE = 1U << REGION_SIZE_LOG2;
 static constexpr size_t DEFAULT_REGION_MASK = DEFAULT_REGION_SIZE - 1;
 
-static constexpr size_t DEFAULT_MARK_STACK_SIZE = 4 * 1024;
+static constexpr size_t DEFAULT_MARK_STACK_SIZE = 4_KB;
 
 static constexpr double MIN_OBJECT_SURVIVAL_RATE = 0.75;
 
@@ -62,15 +64,13 @@ static constexpr double MIN_OBJECT_SURVIVAL_RATE = 0.75;
 // Regular objects will be allocated on regular regions and migrated on spaces.
 // They will never be moved to huge object space. So we take half of a regular
 // region as the border of regular objects.
-static constexpr size_t MAX_32BIT_OBJECT_SPACE_SIZE = 1 * 1024 * 1024 * 1024;
+static constexpr size_t MAX_32BIT_OBJECT_SPACE_SIZE = 1_GB;
 static constexpr size_t MAX_REGULAR_HEAP_OBJECT_SIZE = DEFAULT_REGION_SIZE * 2 / 3;
-static constexpr size_t MAX_HUGE_OBJECT_SIZE = 256 * 1024 * 1024;
-static constexpr size_t MAX_HUGE_OBJECT_SPACE_SIZE = 256 * 1024 * 1024;
 // internal allocator
-static constexpr size_t CHUNK_ALIGN_SIZE = 4 * 1024;
-static constexpr size_t MIN_CHUNK_AREA_SIZE = 4 * 1024;
-static constexpr size_t MAX_CACHED_CHUNK_AREA_SIZE = 16 * 1024;
-static constexpr size_t MAX_CHUNK_AREA_SIZE = 1 * 1024 * 1024;
+static constexpr size_t CHUNK_ALIGN_SIZE = 4_KB;
+static constexpr size_t MIN_CHUNK_AREA_SIZE = 4_KB;
+static constexpr size_t MAX_CACHED_CHUNK_AREA_SIZE = 16_KB;
+static constexpr size_t MAX_CHUNK_AREA_SIZE = 1 * 1024_KB;
 
 using TaggedType = uint64_t;
 static constexpr uint32_t TAGGED_TYPE_SIZE = sizeof(TaggedType);

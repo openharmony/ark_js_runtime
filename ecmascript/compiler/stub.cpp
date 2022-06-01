@@ -532,24 +532,107 @@ GateRef Stub::ComputePropertyCapacityInJSObj(GateRef oldLength)
     return ret;
 }
 
-GateRef Stub::CallSetterUtil(GateRef glue, GateRef holder, GateRef accessor, GateRef value)
+GateRef Stub::CallGetterHelper(GateRef glue, GateRef receiver, GateRef holder, GateRef accessor)
 {
     auto env = GetEnvironment();
     Label subEntry(env);
     env->SubCfgEntry(&subEntry);
     Label exit(env);
-    DEFVARIABLE(result, VariableType::INT64(), Undefined(VariableType::INT64()));
-    GateRef callRes = CallRuntime(glue, RTSTUB_ID(CallSetter), { accessor, holder, value, TaggedTrue() });
-    Label callSuccess(env);
-    Label callFail(env);
-    Branch(TaggedIsTrue(callRes), &callSuccess, &callFail);
+    DEFVARIABLE(result, VariableType::JS_ANY(), Exception());
+
+    Label isInternal(env);
+    Label notInternal(env);
+    Branch(IsAccessorInternal(accessor), &isInternal, &notInternal);
+    Bind(&isInternal);
     {
-        Bind(&callSuccess);
-        result = Undefined(VariableType::INT64());
+        Label arrayLength(env);
+        Label tryContinue(env);
+        auto lengthAccessor = GetGlobalConstantValue(
+            VariableType::JS_POINTER(), glue, ConstantIndex::ARRAY_LENGTH_ACCESSOR);
+        Branch(Int64Equal(accessor, lengthAccessor), &arrayLength, &tryContinue);
+        Bind(&arrayLength);
+        {
+            result = Load(VariableType::JS_ANY(), holder,
+                          IntPtr(JSArray::LENGTH_OFFSET));
+            Jump(&exit);
+        }
+        Bind(&tryContinue);
+        result = CallRuntime(glue, RTSTUB_ID(CallInternalGetter), { accessor, holder });
         Jump(&exit);
-        Bind(&callFail);
-        result = Exception(VariableType::INT64());
+    }
+    Bind(&notInternal);
+    {
+        auto getter = Load(VariableType::JS_ANY(), accessor,
+                           IntPtr(AccessorData::GETTER_OFFSET));
+        Label objIsUndefined(env);
+        Label objNotUndefined(env);
+        Branch(TaggedIsUndefined(getter), &objIsUndefined, &objNotUndefined);
+        // if getter is undefined, return undefiend
+        Bind(&objIsUndefined);
+        {
+            result = Undefined();
+            Jump(&exit);
+        }
+        Bind(&objNotUndefined);
+        {
+            auto retValue = JSCallDispatch(glue, getter, IntPtr(0),
+                                           JSCallMode::CALL_GETTER, { receiver });
+            Label noPendingException(env);
+            Branch(HasPendingException(glue), &exit, &noPendingException);
+            Bind(&noPendingException);
+            {
+                result = retValue;
+                Jump(&exit);
+            }
+        }
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->SubCfgExit();
+    return ret;
+}
+
+GateRef Stub::CallSetterHelper(GateRef glue, GateRef receiver, GateRef accessor, GateRef value)
+{
+    auto env = GetEnvironment();
+    Label subEntry(env);
+    env->SubCfgEntry(&subEntry);
+    Label exit(env);
+    DEFVARIABLE(result, VariableType::JS_ANY(), Exception());
+
+    Label isInternal(env);
+    Label notInternal(env);
+    Branch(IsAccessorInternal(accessor), &isInternal, &notInternal);
+    Bind(&isInternal);
+    {
+        result = CallRuntime(glue, RTSTUB_ID(CallInternalSetter), { receiver, accessor, value });
         Jump(&exit);
+    }
+    Bind(&notInternal);
+    {
+        auto setter = Load(VariableType::JS_ANY(), accessor,
+                           IntPtr(AccessorData::SETTER_OFFSET));
+        Label objIsUndefined(env);
+        Label objNotUndefined(env);
+        Branch(TaggedIsUndefined(setter), &objIsUndefined, &objNotUndefined);
+        // if getter is undefined, return undefiend
+        Bind(&objIsUndefined);
+        {
+            result = Undefined();
+            Jump(&exit);
+        }
+        Bind(&objNotUndefined);
+        {
+            auto retValue = JSCallDispatch(glue, setter, IntPtr(1),
+                                           JSCallMode::CALL_SETTER, { receiver, value });
+            Label noPendingException(env);
+            Branch(HasPendingException(glue), &exit, &noPendingException);
+            Bind(&noPendingException);
+            {
+                result = retValue;
+                Jump(&exit);
+            }
+        }
     }
     Bind(&exit);
     auto ret = *result;
@@ -1326,7 +1409,7 @@ GateRef Stub::LoadICWithHandler(GateRef glue, GateRef receiver, GateRef argHolde
                 Jump(&exit);
                 Bind(&handlerInfoNotNonExist);
                 GateRef accessor = LoadFromField(*holder, handlerInfo);
-                result = CallRuntime(glue, RTSTUB_ID(CallGetter2), { receiver, *holder, accessor });
+                result = CallGetterHelper(glue, receiver, *holder, accessor);
                 Jump(&exit);
             }
         }
@@ -1545,9 +1628,7 @@ GateRef Stub::StoreICWithHandler(GateRef glue, GateRef receiver, GateRef argHold
             Bind(&handlerInfoNotField);
             {
                 GateRef accessor = LoadFromField(*holder, handlerInfo);
-                result = ChangeTaggedPointerToInt64(CallRuntime(glue,
-                                                                RTSTUB_ID(CallSetter2),
-                                                                { receiver, value, accessor }));
+                result = ChangeTaggedPointerToInt64(CallSetterHelper(glue, receiver, accessor, value));
                 Jump(&exit);
             }
         }
@@ -1860,19 +1941,8 @@ GateRef Stub::GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index)
                     Branch(IsAccessor(attr), &isAccessor, &notAccessor);
                     Bind(&isAccessor);
                     {
-                        Label isInternal(env);
-                        Label notInternal(env);
-                        Branch(IsAccessorInternal(value), &isInternal, &notInternal);
-                        Bind(&isInternal);
-                        {
-                            result = CallRuntime(glue, RTSTUB_ID(CallInternalGetter), { value, *holder });
-                            Jump(&exit);
-                        }
-                        Bind(&notInternal);
-                        {
-                            result = CallRuntime(glue, RTSTUB_ID(CallGetter), { value, receiver });
-                            Jump(&exit);
-                        }
+                        result = CallGetterHelper(glue, receiver, *holder, value);
+                        Jump(&exit);
                     }
                     Bind(&notAccessor);
                     {
@@ -1954,19 +2024,8 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
                     Branch(IsAccessor(attr), &isAccessor, &notAccessor);
                     Bind(&isAccessor);
                     {
-                        Label isInternal(env);
-                        Label notInternal(env);
-                        Branch(IsAccessorInternal(value), &isInternal, &notInternal);
-                        Bind(&isInternal);
-                        {
-                            result = CallRuntime(glue, RTSTUB_ID(CallInternalGetter), { value, *holder });
-                            Jump(&exit);
-                        }
-                        Bind(&notInternal);
-                        {
-                            result = CallRuntime(glue, RTSTUB_ID(CallGetter), { value, receiver });
-                            Jump(&exit);
-                        }
+                        result = CallGetterHelper(glue, receiver, *holder, value);
+                        Jump(&exit);
                     }
                     Bind(&notAccessor);
                     {
@@ -1999,19 +2058,8 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
                     Branch(IsAccessor(attr), &isAccessor1, &notAccessor1);
                     Bind(&isAccessor1);
                     {
-                        Label isInternal1(env);
-                        Label notInternal1(env);
-                        Branch(IsAccessorInternal(value), &isInternal1, &notInternal1);
-                        Bind(&isInternal1);
-                        {
-                            result = CallRuntime(glue, RTSTUB_ID(CallInternalGetter), { value, *holder });
-                            Jump(&exit);
-                        }
-                        Bind(&notInternal1);
-                        {
-                            result = CallRuntime(glue, RTSTUB_ID(CallGetter), { value, receiver });
-                            Jump(&exit);
-                        }
+                        result = CallGetterHelper(glue, receiver, *holder, value);
+                        Jump(&exit);
                     }
                     Bind(&notAccessor1);
                     {
@@ -2352,7 +2400,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                     Branch(ShouldCallSetter(receiver, *holder, accessor, attr), &shouldCall, &notAccessor);
                     Bind(&shouldCall);
                     {
-                        result = CallSetterUtil(glue, receiver, accessor, value);
+                        result = ChangeTaggedPointerToInt64(CallSetterHelper(glue, receiver, accessor, value));
                         Jump(&exit);
                     }
                 }
@@ -2417,7 +2465,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                     Branch(ShouldCallSetter(receiver, *holder, accessor1, attr1), &shouldCall1, &notAccessor1);
                     Bind(&shouldCall1);
                     {
-                        result = CallSetterUtil(glue, receiver, accessor1, value);
+                        result = ChangeTaggedPointerToInt64(CallSetterHelper(glue, receiver, accessor1, value));
                         Jump(&exit);
                     }
                 }
@@ -3666,5 +3714,174 @@ GateRef Stub::NewLexicalEnv(GateRef glue, GateRef numSlots, GateRef parent)
     Bind(&exit);
     env->SubCfgExit();
     return ChangeInt64ToTagged(object);
+}
+
+GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
+                             JSCallMode mode, std::initializer_list<GateRef> args)
+{
+    auto env = GetEnvironment();
+    Label entryPass(env);
+    Label exit(env);
+    env->SubCfgEntry(&entryPass);
+    DEFVARIABLE(result, VariableType::JS_ANY(), Exception());
+    // 1. call initialize
+    Label funcIsHeapObject(env);
+    Label funcIsCallable(env);
+    Label funcNotCallable(env);
+    // save pc
+    SavePcIfNeeded(glue);
+    Branch(TaggedIsHeapObject(func), &funcIsHeapObject, &funcNotCallable);
+    Bind(&funcIsHeapObject);
+    GateRef hclass = LoadHClass(func);
+    GateRef bitfield = Load(VariableType::INT32(), hclass, IntPtr(JSHClass::BIT_FIELD_OFFSET));
+    Branch(IsCallableFromBitField(bitfield), &funcIsCallable, &funcNotCallable);
+    Bind(&funcNotCallable);
+    {
+        CallRuntime(glue, RTSTUB_ID(ThrowNotCallableException), {});
+        Jump(&exit);
+    }
+    Bind(&funcIsCallable);
+    GateRef method = GetMethodFromJSFunction(func);
+    GateRef callField = GetCallFieldFromMethod(method);
+    GateRef isNativeMask = Int64(static_cast<uint64_t>(1) << JSMethod::IsNativeBit::START_BIT);
+
+    // 2. call dispatch
+    Label methodIsNative(env);
+    Label methodNotNative(env);
+    Branch(Int64NotEqual(Int64And(callField, isNativeMask), Int64(0)), &methodIsNative, &methodNotNative);
+    auto data = std::begin(args);
+    // 3. call native
+    Bind(&methodIsNative);
+    {
+        GateRef nativeCode = Load(VariableType::NATIVE_POINTER(), method,
+            IntPtr(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
+        GateRef newTarget = Undefined();
+        GateRef thisValue = Undefined();
+        switch (mode) {
+            case JSCallMode::CALL_ARG0:
+                result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
+                    { glue, nativeCode, actualNumArgs, func, newTarget, thisValue });
+                break;
+            case JSCallMode::CALL_ARG1:
+                result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
+                    { glue, nativeCode, actualNumArgs, func, newTarget, thisValue, data[0]});
+                break;
+            case JSCallMode::CALL_ARG2:
+                result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
+                    { glue, nativeCode, actualNumArgs, func, newTarget, thisValue, data[0], data[1] });
+                break;
+            case JSCallMode::CALL_ARG3:
+                result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
+                    { glue, nativeCode, actualNumArgs, func,
+                      newTarget, thisValue, data[0], data[1], data[2] }); // 2: args2
+                break;
+            case JSCallMode::CALL_THIS_WITH_ARGV: {
+                thisValue = data[2]; // 2: this input
+                [[fallthrough]];
+            }
+            case JSCallMode::CALL_WITH_ARGV:
+                result = CallNGCRuntime(glue, RTSTUB_ID(PushCallIRangeAndDispatchNative),
+                    { glue, nativeCode, func, thisValue, data[0], data[1] });
+                break;
+            case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
+                break;
+            case JSCallMode::CALL_GETTER:
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+                result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
+                    { glue, nativeCode, actualNumArgs, func,
+                      newTarget, data[0] });
+#else
+                result = Hole();
+#endif
+                break;
+            case JSCallMode::CALL_SETTER:
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+                result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
+                    { glue, nativeCode, actualNumArgs, func,
+                      newTarget, data[0], data[1] });
+#else
+                result = Hole();
+#endif
+                break;
+            default:
+                UNREACHABLE();
+        }
+        Jump(&exit);
+    }
+    // 4. call nonNative
+    Bind(&methodNotNative);
+    Label funcIsClassConstructor(env);
+    Label funcNotClassConstructor(env);
+    Branch(IsClassConstructorFromBitField(bitfield), &funcIsClassConstructor, &funcNotClassConstructor);
+    Bind(&funcIsClassConstructor);
+    {
+        CallRuntime(glue, RTSTUB_ID(ThrowCallConstructorException), {});
+        Jump(&exit);
+    }
+    Bind(&funcNotClassConstructor);
+    GateRef sp = 0;
+    if (env->IsAsmInterp()) {
+        sp = PtrArgument(static_cast<size_t>(InterpreterHandlerInputs::SP));
+    }
+    {
+        switch (mode) {
+            case JSCallMode::CALL_ARG0:
+                result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgs0AndDispatch),
+                    { glue, sp, func, method, callField });
+                Return();
+                break;
+            case JSCallMode::CALL_ARG1:
+                result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgs1AndDispatch),
+                    { glue, sp, func, method, callField, data[0] });
+                Return();
+                break;
+            case JSCallMode::CALL_ARG2:
+                result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgs2AndDispatch),
+                    { glue, sp, func, method, callField, data[0], data[1] });
+                Return();
+                break;
+            case JSCallMode::CALL_ARG3:
+                result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgs3AndDispatch),
+                    { glue, sp, func, method, callField, data[0], data[1], data[2] }); // 2: args2
+                Return();
+                break;
+            case JSCallMode::CALL_WITH_ARGV:
+                result = CallNGCRuntime(glue, RTSTUB_ID(PushCallIRangeAndDispatch),
+                    { glue, sp, func, method, callField, data[0], data[1] });
+                Return();
+                break;
+            case JSCallMode::CALL_THIS_WITH_ARGV:
+                result = CallNGCRuntime(glue, RTSTUB_ID(PushCallIThisRangeAndDispatch),
+                    { glue, sp, func, method, callField, data[0], data[1] });
+                Return();
+                break;
+            case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
+                break;
+            case JSCallMode::CALL_GETTER:
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+                result = CallNGCRuntime(glue, RTSTUB_ID(CallGetter),
+                    { glue, func, method, callField, data[0] });
+#else
+                result = Hole();
+#endif
+                Jump(&exit);
+                break;
+            case JSCallMode::CALL_SETTER:
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+                result = CallNGCRuntime(glue, RTSTUB_ID(CallSetter),
+                    { glue, func, method, callField, data[0], data[1], });
+#else
+                result = Hole();
+#endif
+                Jump(&exit);
+                break;
+            default:
+                UNREACHABLE();
+        }
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->SubCfgExit();
+    return ret;
 }
 }  // namespace panda::ecmascript::kungfu

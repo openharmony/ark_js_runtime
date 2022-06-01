@@ -28,6 +28,18 @@ OpCode GateAccessor::GetOpCode(GateRef gate) const
     return gatePtr->GetOpCode();
 }
 
+BitField GateAccessor::GetBitField(GateRef gate) const
+{
+    Gate *gatePtr = circuit_->LoadGatePtr(gate);
+    return gatePtr->GetBitField();
+}
+
+void GateAccessor::Print(GateRef gate) const
+{
+    Gate *gatePtr = circuit_->LoadGatePtr(gate);
+    gatePtr->Print();
+}
+
 GateId GateAccessor::GetId(GateRef gate) const
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);
@@ -38,6 +50,12 @@ void GateAccessor::SetOpCode(GateRef gate, OpCode::Op opcode)
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);
     gatePtr->SetOpCode(OpCode(opcode));
+}
+
+void GateAccessor::SetBitField(GateRef gate, BitField bitField)
+{
+    Gate *gatePtr = circuit_->LoadGatePtr(gate);
+    gatePtr->SetBitField(bitField);
 }
 
 GateRef GateAccessor::GetValueIn(GateRef gate, size_t idx) const
@@ -83,6 +101,15 @@ size_t GateAccessor::GetImmediateId(GateRef gate) const
     return imm;
 }
 
+bool GateAccessor::IsDependIn(const UsesIterator &useIt) const
+{
+    Gate *gatePtr = circuit_->LoadGatePtr(*useIt);
+    size_t dependStartIndex = gatePtr->GetStateCount();
+    size_t dependEndIndex = gatePtr->GetDependCount() + dependStartIndex;
+    size_t index = useIt.GetIndex();
+    return index >= dependStartIndex && index < dependEndIndex;
+}
+
 void GateAccessor::SetDep(GateRef gate, GateRef depGate, size_t idx)
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);
@@ -99,14 +126,14 @@ void GateAccessor::ReplaceIn(UsesIterator &useIt, GateRef replaceGate)
     useIt.SetChanged();
 }
 
-GateType GateAccessor::GetGateType(GateRef gate)
+GateType GateAccessor::GetGateType(GateRef gate) const
 {
     return circuit_->LoadGatePtr(gate)->GetGateType();
 }
 
-bool GateAccessor::SetGateType(GateRef gate, GateType gt)
+void GateAccessor::SetGateType(GateRef gate, GateType gt)
 {
-    return circuit_->LoadGatePtr(gate)->SetGateType(gt);
+    circuit_->LoadGatePtr(gate)->SetGateType(gt);
 }
 
 void GateAccessor::DeleteExceptionDep(UsesIterator &useIt)

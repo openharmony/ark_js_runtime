@@ -106,8 +106,6 @@ public:
                                      GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter);
     inline GateRef FunctionIsResolved(GateRef object);
     inline GateRef GetObjectFromConstPool(GateRef constpool, GateRef index);
-    void JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs, GateRef jumpSize,
-                        JSCallMode mode, std::initializer_list<GateRef> args);
 private:
     template<typename... Args>
     void DispatchBase(GateRef target, GateRef glue, Args... args);

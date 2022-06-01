@@ -19,6 +19,7 @@
 #include <climits>
 
 #include "ecmascript/ecma_macros.h"
+#include "ecmascript/mem/c_string.h"
 #include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript {
@@ -69,7 +70,7 @@ std::pair<bool, std::string> FileStream::FilePathValid(const std::string &fileNa
 }
 
 // Writes the chunk of data into the stream
-bool FileStream::WriteChunk(char* data, int size)
+bool FileStream::WriteChunk(char *data, int size)
 {
     if (fileStream_.fail()) {
         return false;
@@ -99,13 +100,13 @@ bool FileDescriptorStream::Good()
 }
 
 // Writes the chunk of data into the stream
-bool FileDescriptorStream::WriteChunk(char* data, int size)
+bool FileDescriptorStream::WriteChunk(char *data, int size)
 {
     if (fd_ < 0) {
         return false;
     }
 
-    std::string str;
+    CString str;
     str.resize(size);
     for (int i = 0; i < size; ++i) {
         str[i] = data[i];

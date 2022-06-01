@@ -663,6 +663,12 @@ void AssemblerAarch64::And(const Register &rd, const Register &rn, const Operand
     BitWiseOpShift(AND_Shift, rd, rn, operand);
 }
 
+void AssemblerAarch64::Ands(const Register &rd, const Register &rn, const Operand &operand)
+{
+    ASSERT(operand.IsShifted());
+    BitWiseOpShift(ANDS_Shift, rd, rn, operand);
+}
+
 void AssemblerAarch64::BitWiseOpImm(BitwiseOpCode op, const Register &rd, const Register &rn, uint64_t imm)
 {
     uint32_t code = Sf(!rd.IsW()) | op | imm | Rn(rn.GetId()) | Rd(rd.GetId());
@@ -704,8 +710,14 @@ void AssemblerAarch64::Lsr(const Register &rd, const Register &rn, unsigned shif
 {
     unsigned imms = 0;
     if (rd.IsW()) {
+        // 31 : 32-bit variant Applies when sf == 0 && N == 0 && imms == 011111
+        // LSR <Wd>, <Wn>, #<shift> is equivalent to UBFM <Wd>, <Wn>, #<shift>, #31
+        // and is always the preferred disassembly
         imms = 31;
     } else {
+        // 63 : 64-bit variant Applies when sf == 1 && N == 1 && imms == 111111
+        // LSR <Xd>, <Xn>, #<shift> is equivalent to UBFM <Xd>, <Xn>, #<shift>, #63
+        // and is always the preferred disassembly
         imms = 63;
     }
     Ubfm(rd, rn, shift, imms);
@@ -716,11 +728,17 @@ void AssemblerAarch64::Lsl(const Register &rd, const Register &rn, unsigned shif
     unsigned immr = 0;
     unsigned imms = 0;
     if (rd.IsW()) {
+        // 32 : 32-bit variant Applies when sf == 0 && N == 0 && imms != 011111
+        // LSL <Wd>, <Wn>, #<shift> is equivalent to UBFM <Wd>, <Wn>, #(-<shift> MOD 32), #(31-<shift>)
+        // and is the preferred disassembly when imms + 1 == immr
         immr = (32 - shift) % 32;
         imms = (31 - shift);
     } else {
+        // 64 : 64-bit variant Applies when sf == 1 && N == 1 && imms != 111111
+        // LSL <Xd>, <Xn>, #<shift> is equivalent to UBFM <Xd>, <Xn>, #(-<shift> MOD 64), #(63-<shift>)
+        // and is the preferred disassembly when imms + 1 == imm
         immr = (64 - shift) % 64;
-        imms = (63 - shift);        
+        imms = (63 - shift);
     }
     Ubfm(rd, rn, immr, 63 - shift);
 }

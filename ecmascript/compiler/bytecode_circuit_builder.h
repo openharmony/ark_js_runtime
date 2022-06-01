@@ -23,8 +23,6 @@
 #include <variant>
 
 #include "circuit.h"
-#include "ecmascript/ecma_vm.h"
-#include "ecmascript/compiler/type_inference/type_infer.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/jspandafile/js_pandafile.h"
@@ -351,13 +349,14 @@ enum CommonArgIdx : uint8_t {
 
 class BytecodeCircuitBuilder {
 public:
-    explicit BytecodeCircuitBuilder(EcmaVM *vm, const BytecodeTranslationInfo &translationInfo, size_t index, 
-                                    bool enableLog)
-        : vm_(vm), file_(translationInfo.jsPandaFile), method_(translationInfo.methodPcInfos[index].method),
-        pcArray_(translationInfo.methodPcInfos[index].pcArray), constantPool_(translationInfo.constantPool),
-        enableLog_(enableLog)
+    explicit BytecodeCircuitBuilder(const BytecodeTranslationInfo &translationInfo, size_t index,
+                                    TSLoader *tsLoader, bool enableLog)
+        : tsLoader_(tsLoader), file_(translationInfo.jsPandaFile),
+          method_(translationInfo.methodPcInfos[index].method),
+          pcArray_(translationInfo.methodPcInfos[index].pcArray),
+          constantPool_(translationInfo.constantPool),
+          enableLog_(enableLog)
     {
-        pf_ =  file_->GetPandaFile();
     }
     ~BytecodeCircuitBuilder() = default;
     NO_COPY_SEMANTIC(BytecodeCircuitBuilder);
@@ -385,6 +384,12 @@ public:
         return GetEcmaOpcodeStr(static_cast<EcmaOpcode>(*pc));
     }
 
+    [[nodiscard]] EcmaOpcode GetByteCodeOpcode(kungfu::GateRef gate) const
+    {
+        auto pc = jsgateToBytecode_.at(gate).second;
+        return static_cast<EcmaOpcode>(*pc);
+    }
+
     [[nodiscard]] const uint8_t* GetJSBytecode(GateRef gate) const
     {
         return jsgateToBytecode_.at(gate).second;
@@ -396,21 +401,16 @@ public:
     }
 
     BytecodeInfo GetBytecodeInfo(const uint8_t *pc);
-
-    EcmaVM *GetEcmaVM() const
+    // for external users, circuit must be built
+    BytecodeInfo GetByteCodeInfo(const GateRef gate)
     {
-        return vm_;
+        auto pc = jsgateToBytecode_.at(gate).second;
+        return GetBytecodeInfo(pc);
     }
 
     bool IsLogEnabled() const
     {
         return enableLog_;
-    }
-
-    [[nodiscard]] EcmaOpcode GetByteCodeOpcode(kungfu::GateRef gate) const
-    {
-        auto pc = jsgateToBytecode_.at(gate).second;
-        return static_cast<EcmaOpcode>(*pc);
     }
 
 private:
@@ -467,12 +467,11 @@ private:
     BytecodeGraph graph_;
     std::array<GateRef, CommonArgIdx::NUM_OF_ARGS> commonArgs_ {};
     std::vector<GateRef> actualArgs_ {};
-    EcmaVM* vm_;
-    const JSPandaFile* file_ {nullptr};
-    const JSMethod* method_ {nullptr};
+    TSLoader *tsLoader_ {nullptr};
+    const JSPandaFile *file_ {nullptr};
+    const JSMethod *method_ {nullptr};
     const std::vector<uint8_t *> pcArray_;
     JSHandle<JSTaggedValue> constantPool_;
-    const panda_file::File *pf_ {nullptr};
     bool enableLog_ {false};
 };
 }  // namespace panda::ecmascript::kungfu

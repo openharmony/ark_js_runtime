@@ -16,7 +16,7 @@
 #ifndef ECMASCRIPT_TOOLING_TEST_UTILS_TEST_EXTRACTOR_H
 #define ECMASCRIPT_TOOLING_TEST_UTILS_TEST_EXTRACTOR_H
 
-#include "ecmascript/tooling/js_pt_extractor.h"
+#include "ecmascript/tooling/backend/js_pt_extractor.h"
 
 namespace panda::ecmascript::tooling::test {
 using EntityId = panda_file::File::EntityId;

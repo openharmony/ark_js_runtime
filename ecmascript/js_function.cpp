@@ -362,6 +362,7 @@ bool JSFunctionBase::SetFunctionName(JSThread *thread, const JSHandle<JSFunction
     ASSERT_PRINT(name->IsStringOrSymbol(), "name must be string or symbol");
     bool needPrefix = false;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
     if (!prefix->IsUndefined()) {
         ASSERT_PRINT(prefix->IsString(), "prefix must be string");
         needPrefix = true;
@@ -377,8 +378,10 @@ bool JSFunctionBase::SetFunctionName(JSThread *thread, const JSHandle<JSFunction
         if (description.IsUndefined()) {
             functionName = factory->GetEmptyString();
         } else {
-            JSHandle<EcmaString> leftBrackets = factory->NewFromASCII("[");
-            JSHandle<EcmaString> rightBrackets = factory->NewFromASCII("]");
+            JSHandle<EcmaString> leftBrackets = JSHandle<EcmaString>::Cast(globalConst->
+                                                                            GetHandledLeftSquareBracketString());
+            JSHandle<EcmaString> rightBrackets = JSHandle<EcmaString>::Cast(globalConst->
+                                                                            GetHandledRightSquareBracketString());
             functionName = factory->ConcatFromString(leftBrackets, descriptionHandle);
             functionName = factory->ConcatFromString(functionName, rightBrackets);
         }
@@ -388,14 +391,14 @@ bool JSFunctionBase::SetFunctionName(JSThread *thread, const JSHandle<JSFunction
     EcmaString *newString;
     if (needPrefix) {
         JSHandle<EcmaString> handlePrefixString = JSTaggedValue::ToString(thread, prefix);
-        JSHandle<EcmaString> spaceString(factory->NewFromASCII(" "));
+        JSHandle<EcmaString> spaceString = JSHandle<EcmaString>::Cast(globalConst->GetHandledSpaceString());
         JSHandle<EcmaString> concatString = factory->ConcatFromString(handlePrefixString, spaceString);
         newString = *factory->ConcatFromString(concatString, functionName);
     } else {
         newString = *functionName;
     }
     JSHandle<JSTaggedValue> nameHandle(thread, newString);
-    JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
+    JSHandle<JSTaggedValue> nameKey = globalConst->GetHandledNameString();
     PropertyDescriptor nameDesc(thread, nameHandle, false, false, true);
     JSHandle<JSTaggedValue> funcHandle(func);
     return JSTaggedValue::DefinePropertyOrThrow(thread, funcHandle, nameKey, nameDesc);
@@ -480,6 +483,7 @@ void JSFunction::SetFunctionNameNoPrefix(JSThread *thread, JSFunction *func, JST
 {
     ASSERT_PRINT(func->IsExtensible(), "Function must be extensible");
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
 
     JSHandle<JSTaggedValue> funcHandle(thread, func);
     {
@@ -490,11 +494,13 @@ void JSFunction::SetFunctionNameNoPrefix(JSThread *thread, JSFunction *func, JST
             JSHandle<JSTaggedValue> nameBegin(thread, name);
             JSTaggedValue description = JSSymbol::Cast(name.GetTaggedObject())->GetDescription();
             if (description.IsUndefined()) {
-                nameHandle.Update(thread->GlobalConstants()->GetEmptyString());
+                nameHandle.Update(globalConst->GetEmptyString());
             } else {
                 JSHandle<EcmaString> concatName;
-                JSHandle<EcmaString> leftBrackets = factory->NewFromASCII("[");
-                JSHandle<EcmaString> rightBrackets = factory->NewFromASCII("]");
+                JSHandle<EcmaString> leftBrackets = JSHandle<EcmaString>::Cast(globalConst->
+                                                                                GetHandledLeftSquareBracketString());
+                JSHandle<EcmaString> rightBrackets = JSHandle<EcmaString>::Cast(globalConst->
+                                                                                GetHandledRightSquareBracketString());
                 concatName = factory->ConcatFromString(
                     leftBrackets,
                     JSHandle<EcmaString>(thread, JSSymbol::Cast(nameBegin->GetHeapObject())->GetDescription()));
@@ -503,8 +509,7 @@ void JSFunction::SetFunctionNameNoPrefix(JSThread *thread, JSFunction *func, JST
             }
         }
         PropertyDescriptor nameDesc(thread, nameHandle, false, false, true);
-        JSTaggedValue::DefinePropertyOrThrow(thread, funcHandle, thread->GlobalConstants()->GetHandledNameString(),
-                                             nameDesc);
+        JSTaggedValue::DefinePropertyOrThrow(thread, funcHandle, globalConst->GetHandledNameString(), nameDesc);
     }
 }
 

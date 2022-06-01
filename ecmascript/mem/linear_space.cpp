@@ -52,7 +52,7 @@ uintptr_t LinearSpace::Allocate(size_t size, bool isPromoted)
 
 bool LinearSpace::Expand(bool isPromoted)
 {
-    if (committedSize_ >= maximumCapacity_ + overShootSize_) {
+    if (committedSize_ >= initialCapacity_ + overShootSize_) {
         return false;
     }
 
@@ -125,7 +125,8 @@ void LinearSpace::IterateOverObjects(const std::function<void(TaggedObject *obje
 }
 
 SemiSpace::SemiSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
-    : LinearSpace(heap, MemSpaceType::SEMI_SPACE, initialCapacity, maximumCapacity) {}
+    : LinearSpace(heap, MemSpaceType::SEMI_SPACE, initialCapacity, maximumCapacity),
+      minimumCapacity_(initialCapacity) {}
 
 void SemiSpace::Initialize()
 {
@@ -202,24 +203,23 @@ bool SemiSpace::AdjustCapacity(size_t allocatedSizeSinceGC)
     static constexpr double growObjectSurvivalRate = 0.8;
     static constexpr double shrinkObjectSurvivalRate = 0.2;
     static constexpr int growingFactor = 2;
-    if (allocatedSizeSinceGC <= maximumCapacity_ * growObjectSurvivalRate / growingFactor) {
+    if (allocatedSizeSinceGC <= initialCapacity_ * growObjectSurvivalRate / growingFactor) {
         return false;
     }
     double curObjectSurvivalRate = static_cast<double>(survivalObjectSize_) / allocatedSizeSinceGC;
     if (curObjectSurvivalRate > growObjectSurvivalRate) {
-        size_t maxCapacity = heap_->GetEcmaVM()->GetJSOptions().MaxSemiSpaceCapacity();
-        if (GetMaximumCapacity() >= maxCapacity) {
+        if (initialCapacity_ >= maximumCapacity_) {
             return false;
         }
-        size_t newCapacity = GetMaximumCapacity() * growingFactor;
-        SetMaximumCapacity(std::min(newCapacity, maxCapacity));
+        size_t newCapacity = initialCapacity_ * growingFactor;
+        SetInitialCapacity(std::min(newCapacity, maximumCapacity_));
         return true;
     } else if (curObjectSurvivalRate < shrinkObjectSurvivalRate) {
-        if (GetMaximumCapacity() <= initialCapacity_) {
+        if (initialCapacity_ <= minimumCapacity_) {
             return false;
         }
-        size_t newCapacity = GetMaximumCapacity() / growingFactor;
-        SetMaximumCapacity(std::max(newCapacity, initialCapacity_));
+        size_t newCapacity = initialCapacity_ / growingFactor;
+        SetInitialCapacity(std::max(newCapacity, minimumCapacity_));
         return true;
     }
     return false;
