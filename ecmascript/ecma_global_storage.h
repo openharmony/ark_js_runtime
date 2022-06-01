@@ -26,7 +26,7 @@ class EcmaGlobalStorage {
 public:
     static const int32_t GLOBAL_BLOCK_SIZE = 256;
 
-    explicit EcmaGlobalStorage(Chunk *chunk) : chunk_(chunk)
+    explicit EcmaGlobalStorage(JSThread *thread, Chunk *chunk) : thread_(thread), chunk_(chunk)
     {
         ASSERT(chunk != nullptr);
         topGlobalNodes_ = lastGlobalNodes_ = chunk_->New<NodeList>(false);
@@ -41,7 +41,7 @@ public:
             current = next;
             next = current->GetNext();
             current->IterateUsageGlobal([] (Node *node) {
-                node->SetFree(true);
+                node->SetUsing(false);
                 node->SetObject(JSTaggedValue::Undefined().GetRawData());
             });
             chunk_->Delete(current);
@@ -52,7 +52,7 @@ public:
             current = next;
             next = current->GetNext();
             current->IterateUsageGlobal([] (Node *node) {
-                node->SetFree(true);
+                node->SetUsing(false);
                 node->SetObject(JSTaggedValue::Undefined().GetRawData());
             });
             chunk_->Delete(current);
@@ -101,14 +101,14 @@ public:
             index_ = index;
         }
 
-        void SetFree(bool free)
+        void SetUsing(bool free)
         {
-            isFree_ = free;
+            isUsing_ = free;
         }
 
-        bool IsFree() const
+        bool IsUsing() const
         {
-            return isFree_;
+            return isUsing_;
         }
 
         uintptr_t GetObjectAddress() const
@@ -121,7 +121,7 @@ public:
         Node *next_ {nullptr};
         Node *prev_ {nullptr};
         int32_t index_ {-1};
-        bool isFree_ {false};
+        bool isUsing_ {false};
     };
 
     class NodeList {
@@ -262,6 +262,7 @@ private:
 
     inline uintptr_t NewGlobalHandleImplement(NodeList **storage, NodeList **freeList, bool isWeak, JSTaggedType value);
 
+    [[maybe_unused]] JSThread *thread_ {nullptr};
     Chunk *chunk_ {nullptr};
     NodeList *topGlobalNodes_ {nullptr};
     NodeList *lastGlobalNodes_ {nullptr};
