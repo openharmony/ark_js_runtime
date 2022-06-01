@@ -682,7 +682,7 @@ bool Heap::IsAlive(TaggedObject *object) const
     if (region->InHugeObjectGeneration()) {
         return true;
     }
-    bool isFree = FreeObject::Cast(ToUintPtr(object))->IsFreeObject();
+    bool isFree = object->GetClass() != nullptr && FreeObject::Cast(ToUintPtr(object))->IsFreeObject();
     if (isFree) {
         LOG(ERROR, RUNTIME) << "The object " << object << " in "
                             << ToSpaceTypeName(region->GetSpace()->GetSpaceType())
