@@ -221,7 +221,7 @@ template("host_aot_test_action") {
     extra_dependencies = _deps_
     src_js = rebase_path(_test_ts_path_)
     dst_file = rebase_path(_test_abc_path_)
-    extra_args = [ "--debug" ]
+    extra_args = []
 
     in_puts = [
       _test_ts_path_,
