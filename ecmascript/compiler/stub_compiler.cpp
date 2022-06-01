@@ -129,19 +129,19 @@ bool StubCompiler::BuildStubModuleAndSave(const std::string &triple, const std::
     const CompilerLog *log = GetLog();
     StubFileGenerator generator(log);
     if (!stubFile.empty()) {
-        COMPILER_LOG(INFO) << "compiling common stubs";
-        LLVMModule comStubModule("com_stub", triple);
-        LLVMAssembler comStubAssembler(comStubModule.GetModule(), LOptions(optLevel, true));
-        comStubModule.SetUpForCommonStubs();
-        RunPipeline(&comStubModule);
-        generator.AddModule(&comStubModule, &comStubAssembler);
-        res++;
         COMPILER_LOG(INFO) << "compiling bytecode handler stubs";
         LLVMModule bcStubModule("bc_stub", triple);
         LLVMAssembler bcStubAssembler(bcStubModule.GetModule(), LOptions(optLevel, false));
         bcStubModule.SetUpForBytecodeHandlerStubs();
         RunPipeline(&bcStubModule);
         generator.AddModule(&bcStubModule, &bcStubAssembler);
+        res++;
+        COMPILER_LOG(INFO) << "compiling common stubs";
+        LLVMModule comStubModule("com_stub", triple);
+        LLVMAssembler comStubAssembler(comStubModule.GetModule(), LOptions(optLevel, true));
+        comStubModule.SetUpForCommonStubs();
+        RunPipeline(&comStubModule);
+        generator.AddModule(&comStubModule, &comStubAssembler);
         res++;
         generator.SaveStubFile(stubFile);
     }
