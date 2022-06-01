@@ -897,8 +897,6 @@ void SnapshotProcessor::DeserializeSpaceObject(uintptr_t beginAddr, Space* space
         region->oldToNewSet_ = nullptr;
         // thread_
         region->thread_ = vm_->GetAssociatedJSThread();
-        // reclaimed_
-        region->reclaimed_ = false;
 
         /*
 	 * Reset flags according to the space type.

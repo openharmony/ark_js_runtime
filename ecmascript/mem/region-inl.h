@@ -20,6 +20,7 @@
 
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/mem.h"
+#include "ecmascript/mem/native_area_allocator.h"
 
 namespace panda::ecmascript {
 inline RememberedSet *Region::CreateRememberedSet()
