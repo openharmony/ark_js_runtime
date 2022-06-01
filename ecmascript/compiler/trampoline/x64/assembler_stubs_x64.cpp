@@ -1426,6 +1426,7 @@ void AssemblerStubsX64::JSCallCommonSlowPath(ExtendedAssembler *assembler, JSCal
     __ Jnz(&haveExtraEntry);
     {
         if (argc == 0) {
+            PushUndefinedWithArgc(assembler, declaredNumArgsRegister);
             entry(assembler);
             return;
         }
@@ -1448,6 +1449,7 @@ void AssemblerStubsX64::JSCallCommonSlowPath(ExtendedAssembler *assembler, JSCal
             [[maybe_unused]] TempRegisterScope scope(assembler);
             Register tempArgcRegister = __ TempRegister();
             __ PushArgc(argc, tempArgcRegister);
+            PushUndefinedWithArgc(assembler, declaredNumArgsRegister);
             extraEntry(assembler);
             return;
         }

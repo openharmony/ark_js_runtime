@@ -545,6 +545,18 @@ GateRef Stub::CallGetterHelper(GateRef glue, GateRef receiver, GateRef holder, G
     Branch(IsAccessorInternal(accessor), &isInternal, &notInternal);
     Bind(&isInternal);
     {
+        Label arrayLength(env);
+        Label tryContinue(env);
+        auto lengthAccessor = GetGlobalConstantValue(
+            VariableType::JS_POINTER(), glue, ConstantIndex::ARRAY_LENGTH_ACCESSOR);
+        Branch(Int64Equal(accessor, lengthAccessor), &arrayLength, &tryContinue);
+        Bind(&arrayLength);
+        {
+            result = Load(VariableType::JS_ANY(), holder,
+                          IntPtr(JSArray::LENGTH_OFFSET));
+            Jump(&exit);
+        }
+        Bind(&tryContinue);
         result = CallRuntime(glue, RTSTUB_ID(CallInternalGetter), { accessor, holder });
         Jump(&exit);
     }
