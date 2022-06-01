@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -72,7 +72,7 @@ void Space::EnumerateRegionsWithRecord(const Callback &cb) const
 
 RegionFlags Space::GetRegionFlag() const
 {
-    RegionFlags flags = RegionFlags::INVALID;
+    RegionFlags flags = RegionFlags::UNINITIALIZED;
     switch (spaceType_) {
         case MemSpaceType::OLD_SPACE:
         case MemSpaceType::LOCAL_SPACE:

@@ -18,7 +18,6 @@
 
 #include "ecmascript/mem/free_object_list.h"
 #include "ecmascript/mem/gc_bitset.h"
-#include "ecmascript/mem/native_area_allocator.h"
 #include "ecmascript/mem/remembered_set.h"
 #include "securec.h"
 
@@ -27,20 +26,22 @@ namespace ecmascript {
 class JSThread;
 
 enum RegionFlags {
-    NEVER_EVACUATE = 1,
-    HAS_AGE_MARK = 1 << 1,
-    BELOW_AGE_MARK = 1 << 2,
-    IN_YOUNG_SPACE = 1 << 3,
-    IN_SNAPSHOT_SPACE = 1 << 4,
-    IN_HUGE_OBJECT_SPACE = 1 << 5,
-    IN_OLD_SPACE = 1 << 6,
-    IN_NON_MOVABLE_SPACE = 1 << 7,
-    IN_MACHINE_CODE_SPACE = 1 << 8,
-    IN_COLLECT_SET = 1 << 9,
-    IN_NEW_TO_NEW_SET = 1 << 10,
-    HAS_BEEN_SWEPT = 1 << 11,
-    NEED_RELOCATE = 1 << 12,
-    INVALID = 1 << 13,
+    UNINITIALIZED = 0,
+    // We shuold avoid using the lower 3 bits.
+    // If ZAP_MEM is enabled, the value of the lower 3 bits conflicts with the INVALID_VALUE.
+    NEVER_EVACUATE = 1 << 3,
+    HAS_AGE_MARK = 1 << 4,
+    BELOW_AGE_MARK = 1 << 5,
+    IN_YOUNG_SPACE = 1 << 6,
+    IN_SNAPSHOT_SPACE = 1 << 7,
+    IN_HUGE_OBJECT_SPACE = 1 << 8,
+    IN_OLD_SPACE = 1 << 9,
+    IN_NON_MOVABLE_SPACE = 1 << 10,
+    IN_MACHINE_CODE_SPACE = 1 << 11,
+    IN_COLLECT_SET = 1 << 12,
+    IN_NEW_TO_NEW_SET = 1 << 13,
+    HAS_BEEN_SWEPT = 1 << 14,
+    NEED_RELOCATE = 1 << 15,
 };
 
 static inline bool IsFlagSet(uintptr_t flags, RegionFlags target)
@@ -93,7 +94,6 @@ public:
     Region(JSThread *thread, uintptr_t allocateBase, uintptr_t begin, uintptr_t end, RegionFlags flags)
         : flags_(flags),
           thread_(thread),
-          reclaimed_(false),
           allocateBase_(allocateBase),
           end_(end),
           highWaterMark_(end),
@@ -222,14 +222,14 @@ public:
         return reinterpret_cast<Region *>(objAddress & ~DEFAULT_REGION_MASK);
     }
 
-    bool IsReclaimed() const
+    bool IsValid() const
     {
-        return reclaimed_;
-    }
-
-    void SetReclaimed()
-    {
-        reclaimed_ = true;
+#if ECMASCRIPT_ENABLE_ZAP_MEM
+        if (flags_ == INVALID_VALUE) {
+            return false;
+        }
+#endif
+        return flags_ != RegionFlags::UNINITIALIZED;
     }
 
     bool InYoungSpace() const
@@ -489,7 +489,6 @@ private:
      * and consequently, the region allocator, the spaces using the region allocator, etc.
      */
     JSThread *thread_;
-    bool reclaimed_ {false};
 
     uintptr_t allocateBase_;
     uintptr_t end_;

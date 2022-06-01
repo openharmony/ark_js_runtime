@@ -396,7 +396,6 @@ void OldSpace::RevertCSet()
 void OldSpace::ReclaimCSet()
 {
     EnumerateCollectRegionSet([this](Region *region) {
-        region->SetFlag(RegionFlags::INVALID);
         region->DeleteCrossRegionRSet();
         region->DeleteOldToNewRSet();
         region->DeleteSweepingRSet();
