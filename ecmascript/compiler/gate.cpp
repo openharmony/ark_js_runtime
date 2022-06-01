@@ -1004,15 +1004,6 @@ GateType Gate::GetGateType() const
     return type_;
 }
 
-bool Gate::SetGateType(GateType type)
-{
-    if (type_ != type) {
-        type_ = type;
-        return true;
-    }
-    return false;
-}
-
 size_t Gate::GetNumIns() const
 {
     return GetOpCodeNumIns(GetOpCode(), GetBitField());
@@ -1126,6 +1117,7 @@ void Gate::Print(std::string bytecode, bool inListPreview, size_t highlightIdx) 
             }
         }
         log += "])";
+        log += "\n";
         COMPILER_LOG(INFO) << std::dec << log;
     }
 }

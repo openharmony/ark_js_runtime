@@ -17,6 +17,11 @@
 #include "ecmascript/frames.h"
 
 namespace panda::ecmascript::x64 {
+Register ExtendedAssembler::ghcJSCallDispacherArgs_[JS_CALL_DISPATCHER_ARGS_COUNT] =
+    { r13, rbp, r12, rbx, r14, rsi, rdi, r8 };
+Register ExtendedAssembler::cppJSCallDispacherArgs_[JS_CALL_DISPATCHER_ARGS_COUNT] =
+    { rdi, rbp, rsi, rdx, rcx, r8, r9, rInvalid };
+
 void ExtendedAssembler::PushAlignBytes()
 {
     Subq(8, rsp);  // 8: 8 bytes
@@ -84,6 +89,10 @@ void ExtendedAssembler::BindAssemblerStub(int id)
 {
     Label *target = module_->GetFunctionLabel(id);
     Bind(target);
+    auto callSigns = module_->GetCSigns();
+    auto cs = callSigns[id];
+    isGhcCallingConv_ = cs->GetCallConv() ==
+        CallSignature::CallConv::GHCCallConv;
 }
 
 void ExtendedAssembler::PushArgc(int32_t argc, Register tempArgcRegister)

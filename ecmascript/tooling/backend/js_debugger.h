@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_TOOLING_INTERFACE_JS_DEBUGGER_H
-#define ECMASCRIPT_TOOLING_INTERFACE_JS_DEBUGGER_H
+#ifndef ECMASCRIPT_TOOLING_BACKEND_JS_DEBUGGER_H
+#define ECMASCRIPT_TOOLING_BACKEND_JS_DEBUGGER_H
 
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_method.h"
-#include "ecmascript/tooling/interface/debugger_api.h"
+#include "ecmascript/tooling/backend/debugger_api.h"
 #include "ecmascript/tooling/interface/notification_manager.h"
 #include "ecmascript/tooling/interface/js_debugger_manager.h"
 
@@ -92,8 +92,6 @@ public:
         hooks_ = nullptr;
     }
 
-    void Init();
-
     bool SetBreakpoint(const JSPtLocation &location, const Local<FunctionRef> &condFuncRef) override;
     bool RemoveBreakpoint(const JSPtLocation &location) override;
     void BytecodePcChanged(JSThread *thread, JSMethod *method, uint32_t bcOffset) override;
@@ -127,28 +125,12 @@ public:
     }
 
 private:
-    using LocalEvalFunc =
-        std::function<JSTaggedValue(const EcmaVM *, FrameHandler *, int32_t, const CString &, Local<JSValueRef>)>;
-    using LexEvalFunc =
-        std::function<JSTaggedValue(const EcmaVM *, int32_t, uint32_t, const CString &, Local<JSValueRef>)>;
-    using GlobalEvalFunc =
-        std::function<JSTaggedValue(const EcmaVM *, JSTaggedValue, const CString &, JSTaggedValue)>;
-
     JSMethod *FindMethod(const JSPtLocation &location) const;
     std::optional<JSBreakpoint> FindBreakpoint(const JSMethod *method, uint32_t bcOffset) const;
     bool RemoveBreakpoint(const JSMethod *method, uint32_t bcOffset);
     void HandleExceptionThrowEvent(const JSThread *thread, const JSMethod *method, uint32_t bcOffset);
     bool HandleStep(const JSMethod *method, uint32_t bcOffset);
     bool HandleBreakpoint(const JSMethod *method, uint32_t bcOffset);
-    void SetGlobalFunction(const JSHandle<JSTaggedValue> &funcName, EcmaEntrypoint nativeFunc, int32_t numArgs) const;
-
-    static JSTaggedValue Evaluate(EcmaRuntimeCallInfo *argv, LocalEvalFunc localEvalFunc,
-        LexEvalFunc lexEvalFunc, GlobalEvalFunc globalEvalFunc);
-    static JSTaggedValue DebuggerSetValue(EcmaRuntimeCallInfo *argv);
-    static JSTaggedValue DebuggerGetValue(EcmaRuntimeCallInfo *argv);
-    static JSTaggedValue GetGlobalValue(const EcmaVM *ecmaVm, JSTaggedValue key);
-    static JSTaggedValue SetGlobalValue(const EcmaVM *ecmaVm, JSTaggedValue key, JSTaggedValue value);
-    static bool EvaluateLocalValue(JSMethod *method, JSThread *thread, const CString &varName, int32_t &regIndex);
 
     const EcmaVM *ecmaVm_;
     PtHooks *hooks_ {nullptr};
@@ -158,4 +140,4 @@ private:
 };
 }  // namespace panda::ecmascript::tooling
 
-#endif  // ECMASCRIPT_TOOLING_JS_DEBUGGER_H
+#endif  // ECMASCRIPT_TOOLING_BACKEND_JS_DEBUGGER_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_TOOLING_INTERFACE_JS_PT_LOCATION_H
-#define ECMASCRIPT_TOOLING_INTERFACE_JS_PT_LOCATION_H
+#ifndef ECMASCRIPT_TOOLING_BACKEND_JS_PT_LOCATION_H
+#define ECMASCRIPT_TOOLING_BACKEND_JS_PT_LOCATION_H
 
 #include <cstring>
 
@@ -64,4 +64,4 @@ private:
 };
 }  // namespace panda::ecmascript::tooling
 
-#endif  // ECMASCRIPT_TOOLING_INTERFACE_JS_PT_LOCATION_H
+#endif  // ECMASCRIPT_TOOLING_BACKEND_JS_PT_LOCATION_H

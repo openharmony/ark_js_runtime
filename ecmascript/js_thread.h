@@ -219,6 +219,7 @@ public:
 
     uintptr_t* PUBLIC_API ExpandHandleStorage();
     void PUBLIC_API ShrinkHandleStorage(int prevIndex);
+    void PUBLIC_API CheckJSTaggedType(JSTaggedType value) const;
 
     JSTaggedType *GetHandleScopeStorageNext() const
     {
@@ -416,6 +417,16 @@ public:
         return gcState_;
     }
 
+    void SetCheckAndCallEnterState(bool checkAndCallEnterState)
+    {
+        checkAndCallEnterState_ = checkAndCallEnterState;
+    }
+
+    bool GetCheckAndCallEnterState() const
+    {
+        return checkAndCallEnterState_;
+    }
+
     void EnableAsmInterpreter()
     {
         isAsmInterpreter_ = true;
@@ -574,7 +585,6 @@ private:
 
     void DumpStack() DUMP_API_ATTR;
 
-    static constexpr uint32_t MAX_STACK_SIZE = 512 * 1024;
     static const uint32_t NODE_BLOCK_SIZE_LOG2 = 10;
     static const uint32_t NODE_BLOCK_SIZE = 1U << NODE_BLOCK_SIZE_LOG2;
     static constexpr int32_t MIN_HANDLE_STORAGE_SIZE = 2;
@@ -603,6 +613,7 @@ private:
     bool stableArrayElementsGuardians_ {true};
     GlueData glueData_;
 
+    bool checkAndCallEnterState_ {false};
     friend class EcmaHandleScope;
     friend class GlobalHandleCollection;
 };

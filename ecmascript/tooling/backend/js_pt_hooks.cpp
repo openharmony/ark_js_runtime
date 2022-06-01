@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#include "ecmascript/tooling/agent/js_pt_hooks.h"
-#include "ecmascript/tooling/agent/js_backend.h"
+#include "ecmascript/tooling/agent/debugger_impl.h"
+#include "ecmascript/tooling/backend/js_pt_hooks.h"
 
 namespace panda::ecmascript::tooling {
 void JSPtHooks::Breakpoint(const JSPtLocation &location)
@@ -22,41 +22,33 @@ void JSPtHooks::Breakpoint(const JSPtLocation &location)
     LOG(DEBUG, DEBUGGER) << "JSPtHooks: Breakpoint => " << location.GetMethodId() << ": "
                          << location.GetBytecodeOffset();
 
-    [[maybe_unused]] LocalScope scope(backend_->ecmaVm_);
-    backend_->NotifyPaused(location, INSTRUMENTATION);
-}
-
-void JSPtHooks::Paused(PauseReason reason)
-{
-    LOG(DEBUG, DEBUGGER) << "JSPtHooks: Paused";
-
-    [[maybe_unused]] LocalScope scope(backend_->ecmaVm_);
-    backend_->NotifyPaused({}, reason);
+    [[maybe_unused]] LocalScope scope(debugger_->vm_);
+    debugger_->NotifyPaused(location, INSTRUMENTATION);
 }
 
 void JSPtHooks::Exception([[maybe_unused]] const JSPtLocation &location)
 {
     LOG(DEBUG, DEBUGGER) << "JSPtHooks: Exception";
-    [[maybe_unused]] LocalScope scope(backend_->ecmaVm_);
+    [[maybe_unused]] LocalScope scope(debugger_->vm_);
 
-    backend_->NotifyPaused({}, EXCEPTION);
+    debugger_->NotifyPaused({}, EXCEPTION);
 }
 
 bool JSPtHooks::SingleStep(const JSPtLocation &location)
 {
     LOG(DEBUG, DEBUGGER) << "JSPtHooks: SingleStep => " << location.GetBytecodeOffset();
 
-    [[maybe_unused]] LocalScope scope(backend_->ecmaVm_);
+    [[maybe_unused]] LocalScope scope(debugger_->vm_);
     if (UNLIKELY(firstTime_)) {
         firstTime_ = false;
 
-        backend_->NotifyPaused({}, BREAK_ON_START);
+        debugger_->NotifyPaused({}, BREAK_ON_START);
         return false;
     }
 
     // pause or step complete
-    if (backend_->StepComplete(location)) {
-        backend_->NotifyPaused({}, OTHER);
+    if (debugger_->NotifySingleStep(location)) {
+        debugger_->NotifyPaused({}, OTHER);
         return true;
     }
     return false;
@@ -66,20 +58,20 @@ void JSPtHooks::LoadModule(std::string_view pandaFileName)
 {
     LOG(INFO, DEBUGGER) << "JSPtHooks: LoadModule: " << pandaFileName;
 
-    [[maybe_unused]] LocalScope scope(backend_->ecmaVm_);
+    [[maybe_unused]] LocalScope scope(debugger_->vm_);
 
     static uint32_t scriptId = 0;
-    if (backend_->NotifyScriptParsed(scriptId++, pandaFileName.data())) {
+    if (debugger_->NotifyScriptParsed(scriptId++, pandaFileName.data())) {
         firstTime_ = true;
     }
 }
 
 void JSPtHooks::PendingJobEntry()
 {
-    LOG(INFO, DEBUGGER) << "JSPtHooks: PendingJobEntry";
+    LOG(DEBUG, DEBUGGER) << "JSPtHooks: PendingJobEntry";
 
-    [[maybe_unused]] LocalScope scope(backend_->ecmaVm_);
+    [[maybe_unused]] LocalScope scope(debugger_->vm_);
 
-    backend_->PendingJobEntry();
+    debugger_->NotifyPendingJobEntry();
 }
 }  // namespace panda::ecmascript::tooling

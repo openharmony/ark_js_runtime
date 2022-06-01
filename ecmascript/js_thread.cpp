@@ -14,6 +14,7 @@
  */
 #include "ecmascript/js_thread.h"
 #include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
+#include "ecmascript/ecma_param_configuration.h"
 #include "ecmascript/global_env_constants-inl.h"
 #include "ecmascript/ic/properties_cache.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
@@ -43,7 +44,7 @@ JSThread *JSThread::Create(EcmaVM *vm)
 JSThread::JSThread(EcmaVM *vm) : id_(os::thread::GetCurrentThreadId()), vm_(vm)
 {
     auto chunk = vm->GetChunk();
-    globalStorage_ = chunk->New<EcmaGlobalStorage>(chunk);
+    globalStorage_ = chunk->New<EcmaGlobalStorage>(this, chunk);
     propertiesCache_ = new PropertiesCache();
     vmThreadControl_ = new VmThreadControl();
 }
@@ -92,29 +93,32 @@ JSTaggedValue JSThread::GetCurrentLexenv() const
 const JSTaggedType *JSThread::GetCurrentFrame() const
 {
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-    return GetLastLeaveFrame();
-#else
-    return GetCurrentSPFrame();
+    if (IsAsmInterpreter()) {
+        return GetLastLeaveFrame();
+    }
 #endif
+    return GetCurrentSPFrame();
 }
 
 void JSThread::SetCurrentFrame(JSTaggedType *sp)
 {
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-    return SetLastLeaveFrame(sp);
-#else
-    return SetCurrentSPFrame(sp);
+    if (IsAsmInterpreter()) {
+        return SetLastLeaveFrame(sp);
+    }
 #endif
+    return SetCurrentSPFrame(sp);
 }
 
 const JSTaggedType *JSThread::GetCurrentInterpretedFrame() const
 {
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-    auto frameHandler = FrameHandler(this);
-    return frameHandler.GetSp();
-#else
-    return GetCurrentSPFrame();
+    if (IsAsmInterpreter()) {
+        auto frameHandler = FrameHandler(this);
+        return frameHandler.GetSp();
+    }
 #endif
+    return GetCurrentSPFrame();
 }
 
 void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
@@ -289,5 +293,13 @@ bool JSThread::CheckSafepoint() const
         return true;
     }
     return false;
+}
+
+void JSThread::CheckJSTaggedType(JSTaggedType value) const
+{
+    if (JSTaggedValue(value).IsHeapObject() &&
+        !GetEcmaVM()->GetHeap()->IsAlive(reinterpret_cast<TaggedObject *>(value))) {
+        LOG(FATAL, RUNTIME) << "value:" << value << " is invalid!";
+    }
 }
 }  // namespace panda::ecmascript

@@ -46,6 +46,9 @@ public:
     {
         // Each Handle must be managed by HandleScope, otherwise it may cause Handle leakage.
         ASSERT(thread->handleScopeCount_ > 0);
+#if ECMASCRIPT_ENABLE_NEW_HANDLE_CHECK
+        thread->CheckJSTaggedType(value);
+#endif
         auto result = thread->handleScopeStorageNext_;
         if (result == thread->handleScopeStorageEnd_) {
             result = reinterpret_cast<JSTaggedType *>(thread->ExpandHandleStorage());

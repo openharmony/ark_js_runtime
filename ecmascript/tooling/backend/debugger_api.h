@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_TOOLING_INTERFACE_DEBUGGER_API_H
-#define ECMASCRIPT_TOOLING_INTERFACE_DEBUGGER_API_H
+#ifndef ECMASCRIPT_TOOLING_BACKEND_DEBUGGER_API_H
+#define ECMASCRIPT_TOOLING_BACKEND_DEBUGGER_API_H
 
 #include <functional>
 
@@ -23,7 +23,7 @@
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/lexical_env.h"
-#include "ecmascript/tooling/interface/js_debug_interface.h"
+#include "ecmascript/tooling/backend/js_debugger_interface.h"
 
 namespace panda {
 namespace ecmascript {
@@ -46,24 +46,28 @@ enum StackState {
 
 class PUBLIC_API DebuggerApi {
 public:
-    // JSPandaFileExecutor
-    static Local<JSValueRef> Execute(const EcmaVM *ecmaVm, const void *buffer, size_t size,
-                              std::string_view entryPoint);
-
     // FrameHandler
     static uint32_t GetStackDepth(const EcmaVM *ecmaVm);
     static std::shared_ptr<FrameHandler> NewFrameHandler(const EcmaVM *ecmaVm);
     static bool StackWalker(const EcmaVM *ecmaVm, std::function<StackState(const FrameHandler *)> func);
     static uint32_t GetBytecodeOffset(const EcmaVM *ecmaVm);
     static JSMethod *GetMethod(const EcmaVM *ecmaVm);
-    static Local<JSValueRef> GetVRegValue(const EcmaVM *ecmaVm, size_t index);
-    static void SetVRegValue(const EcmaVM *ecmaVm, size_t index, Local<JSValueRef> value);
     static uint32_t GetBytecodeOffset(const FrameHandler *frameHandler);
     static JSMethod *GetMethod(const FrameHandler *frameHandler);
     static JSTaggedValue GetEnv(const FrameHandler *frameHandler);
     static JSTaggedType *GetSp(const FrameHandler *frameHandler);
+    static int32_t GetVregIndex(const FrameHandler *frameHandler, std::string_view name);
     static Local<JSValueRef> GetVRegValue(const EcmaVM *ecmaVm,
-        const FrameHandler *frameHandler, size_t index);
+                                          const FrameHandler *frameHandler, size_t index);
+    static void SetVRegValue(FrameHandler *frameHandler, size_t index, Local<JSValueRef> value);
+
+    static Local<JSValueRef> GetProperties(const EcmaVM *ecmaVm, const FrameHandler *frameHandler,
+                                           int32_t level, uint32_t slot);
+    static void SetProperties(const EcmaVM *vm, const FrameHandler *frameHandler,
+                              int32_t level, uint32_t slot, Local<JSValueRef> value);
+    static std::pair<int32_t, uint32_t> GetLevelSlot(const FrameHandler *frameHandler, std::string_view name);
+    static Local<JSValueRef> GetGlobalValue(const EcmaVM *vm, Local<StringRef> name);
+    static bool SetGlobalValue(const EcmaVM *vm, Local<StringRef> name, Local<JSValueRef> value);
 
     // String
     static int32_t CStringToInt(const CString &str);
@@ -85,7 +89,6 @@ public:
     static bool SetBreakpoint(JSDebugger *debugger, const JSPtLocation &location,
         const Local<FunctionRef> &condFuncRef);
     static bool RemoveBreakpoint(JSDebugger *debugger, const JSPtLocation &location);
-    static void InitJSDebugger(JSDebugger *debugger);
     static void HandleUncaughtException(const EcmaVM *ecmaVm, CString &message);
     static Local<JSValueRef> EvaluateViaFuncCall(EcmaVM *ecmaVm, const Local<FunctionRef> &funcRef,
         std::shared_ptr<FrameHandler> &frameHandler);
@@ -94,16 +97,7 @@ public:
 
     // JSMethod
     static CString ParseFunctionName(const JSMethod *method);
-
-    // ScopeInfo
-    static Local<JSValueRef> GetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t slot);
-    static void SetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t slot, Local<JSValueRef> value);
-    static bool EvaluateLexicalValue(const EcmaVM *ecmaVm, const CString &name, int32_t &level, uint32_t &slot);
-    static Local<JSValueRef> GetLexicalValueInfo(const EcmaVM *ecmaVm, const CString &name);
-
-private:
-    static JSTaggedValue GetCurrentEvaluateEnv(const EcmaVM *ecmaVm);
 };
 }  // namespace panda::ecmascript::tooling
 
-#endif  // ECMASCRIPT_TOOLING_DEBUGGER_API_H
+#endif  // ECMASCRIPT_TOOLING_BACKEND_DEBUGGER_API_H

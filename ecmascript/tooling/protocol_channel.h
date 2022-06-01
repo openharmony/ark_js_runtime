@@ -13,31 +13,31 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_TOOLING_FRONT_END_H
-#define ECMASCRIPT_TOOLING_FRONT_END_H
+#ifndef ECMASCRIPT_TOOLING_PROTOCOL_CHANNEL_H
+#define ECMASCRIPT_TOOLING_PROTOCOL_CHANNEL_H
 
-#include "libpandabase/macros.h"
 #include "ecmascript/tooling/base/pt_events.h"
 #include "ecmascript/tooling/base/pt_returns.h"
 #include "ecmascript/tooling/dispatcher.h"
 
+#include "libpandabase/macros.h"
+
 namespace panda::ecmascript::tooling {
-class FrontEnd {
+class ProtocolChannel {
 public:
-    FrontEnd() = default;
-    virtual ~FrontEnd() = default;
+    ProtocolChannel() = default;
+    virtual ~ProtocolChannel() = default;
 
     virtual void WaitForDebugger() = 0;
     virtual void RunIfWaitingForDebugger() = 0;
     virtual void SendResponse(const DispatchRequest &request, const DispatchResponse &response,
                               std::unique_ptr<PtBaseReturns> result) = 0;
-    virtual void SendNotification(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events) = 0;
-    virtual void SendProfilerNotify(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events) = 0;
+    virtual void SendNotification(std::unique_ptr<PtBaseEvents> events) = 0;
 
 private:
-    NO_COPY_SEMANTIC(FrontEnd);
-    NO_MOVE_SEMANTIC(FrontEnd);
+    NO_COPY_SEMANTIC(ProtocolChannel);
+    NO_MOVE_SEMANTIC(ProtocolChannel);
 };
 }  // namespace panda::ecmascript::tooling
 
-#endif
+#endif  // ECMASCRIPT_TOOLING_PROTOCOL_CHANNEL_H

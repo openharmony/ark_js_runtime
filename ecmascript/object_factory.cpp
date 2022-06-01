@@ -71,6 +71,7 @@
 #include "ecmascript/js_date_time_format.h"
 #include "ecmascript/js_displaynames.h"
 #include "ecmascript/js_list_format.h"
+#include "ecmascript/js_finalization_registry.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_hclass-inl.h"
@@ -96,6 +97,7 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/js_weak_container.h"
+#include "ecmascript/js_weak_ref.h"
 #include "ecmascript/layout_info-inl.h"
 #include "ecmascript/linked_hash_table.h"
 #include "ecmascript/mem/heap-inl.h"
@@ -573,6 +575,7 @@ JSHandle<JSFunction> ObjectFactory::CloneJSFuction(JSHandle<JSFunction> obj, Fun
 
     JSTaggedValue length = obj->GetPropertyInlinedProps(JSFunction::LENGTH_INLINE_PROPERTY_INDEX);
     cloneFunc->SetPropertyInlinedProps(thread_, JSFunction::LENGTH_INLINE_PROPERTY_INDEX, length);
+    cloneFunc->SetModule(obj->GetModule());
     return cloneFunc;
 }
 
@@ -801,10 +804,14 @@ JSHandle<JSObject> ObjectFactory::NewJSError(const ErrorType &errorType, const J
 
     // current frame may be entry frame, exception happened in JSFunction::Call and JSFunction::Construct,
     // in this case sp = the prev frame (interpreter frame).
-#if !ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
+    if (!thread_->IsAsmInterpreter()) {
+#endif
     FrameHandler frameHandler(thread_);
     if (frameHandler.IsInterpretedEntryFrame()) {
         thread_->SetCurrentSPFrame(frameHandler.GetPrevInterpretedFrame());
+    }
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
     }
 #endif
 
@@ -1031,6 +1038,16 @@ void ObjectFactory::InitializeJSObject(const JSHandle<JSObject> &obj, const JSHa
             break;
         case JSType::JS_WEAK_SET:
             JSWeakSet::Cast(*obj)->SetLinkedSet(thread_, JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_WEAK_REF:
+            JSWeakRef::Cast(*obj)->SetWeakObject(thread_, JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_FINALIZATION_REGISTRY:
+            JSFinalizationRegistry::Cast(*obj)->SetCleanupCallback(thread_, JSTaggedValue::Undefined());
+            JSFinalizationRegistry::Cast(*obj)->SetNoUnregister(thread_, JSTaggedValue::Undefined());
+            JSFinalizationRegistry::Cast(*obj)->SetMaybeUnregister(thread_, JSTaggedValue::Undefined());
+            JSFinalizationRegistry::Cast(*obj)->SetNext(thread_, JSTaggedValue::Null());
+            JSFinalizationRegistry::Cast(*obj)->SetPrev(thread_, JSTaggedValue::Null());
             break;
         case JSType::JS_GENERATOR_OBJECT:
             JSGeneratorObject::Cast(*obj)->SetGeneratorContext(thread_, JSTaggedValue::Undefined());
@@ -2090,6 +2107,16 @@ JSHandle<EcmaString> ObjectFactory::GetStringFromStringTable(const uint8_t *utf8
     return JSHandle<EcmaString>(thread_, stringTable->GetOrInternString(utf8Data, utf8Len, canBeCompress));
 }
 
+JSHandle<EcmaString> ObjectFactory::GetStringFromStringTableNonMovable(const uint8_t *utf8Data, uint32_t utf8Len) const
+{
+    NewObjectHook();
+    if (utf8Len == 0) {
+        return GetEmptyString();
+    }
+    auto stringTable = vm_->GetEcmaStringTable();
+    return JSHandle<EcmaString>(thread_, stringTable->CreateAndInternStringNonMovable(utf8Data, utf8Len));
+}
+
 JSHandle<EcmaString> ObjectFactory::GetStringFromStringTable(const uint16_t *utf16Data, uint32_t utf16Len,
                                                              bool canBeCompress) const
 {
@@ -2601,9 +2628,9 @@ JSHandle<TSUnionType> ObjectFactory::NewTSUnionType(uint32_t length)
     JSHandle<TSUnionType> unionType(thread_, header);
 
     unionType->SetGTRef(GlobalTSTypeRef::Default());
-    unionType->SetComponentTypes(thread_, JSTaggedValue::Undefined());
+    unionType->SetComponents(thread_, JSTaggedValue::Undefined());
     JSHandle<TaggedArray> componentTypes = NewTaggedArray(length, JSTaggedValue::Undefined());
-    unionType->SetComponentTypes(thread_, componentTypes);
+    unionType->SetComponents(thread_, componentTypes);
 
     return unionType;
 }
@@ -2677,6 +2704,7 @@ JSHandle<TSTypeTable> ObjectFactory::NewTSTypeTable(uint32_t length)
 
     JSHandle<TSTypeTable> table(thread_, header);
     table->InitializeWithSpecialValue(JSTaggedValue::Undefined(), length + TSTypeTable::RESERVE_TABLE_LENGTH);
+    table->SetNumberOfTypes(thread_, length);
 
     return table;
 }
@@ -2691,7 +2719,6 @@ JSHandle<TSModuleTable> ObjectFactory::NewTSModuleTable(uint32_t length)
     auto header = heap_->AllocateYoungOrHugeObject(arrayClass, size);
     JSHandle<TSModuleTable> array(thread_, header);
     array->InitializeWithSpecialValue(JSTaggedValue::Undefined(), length);
-    array->InitializeNumberOfTSTypeTable(thread_);
 
     return array;
 }
@@ -2701,6 +2728,13 @@ JSHandle<EcmaString> ObjectFactory::NewFromASCII(const CString &data)
     auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
     ASSERT(EcmaString::CanBeCompressed(utf8Data, data.length()));
     return GetStringFromStringTable(utf8Data, data.length(), true);
+}
+
+JSHandle<EcmaString> ObjectFactory::NewFromASCIINonMovable(const CString &data)
+{
+    auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
+    ASSERT(EcmaString::CanBeCompressed(utf8Data, data.length()));
+    return GetStringFromStringTableNonMovable(utf8Data, data.length());
 }
 
 JSHandle<EcmaString> ObjectFactory::NewFromUtf8(const CString &data)
@@ -3090,6 +3124,17 @@ JSHandle<ResolvedBinding> ObjectFactory::NewResolvedBindingRecord(const JSHandle
     JSHandle<ResolvedBinding> obj(thread_, header);
     obj->SetModule(thread_, module);
     obj->SetBindingName(thread_, bindingName);
+    return obj;
+}
+
+JSHandle<CellRecord> ObjectFactory::NewCellRecord()
+{
+    NewObjectHook();
+    TaggedObject *header = heap_->AllocateYoungOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetCellRecordClass().GetTaggedObject()));
+    JSHandle<CellRecord> obj(thread_, header);
+    obj->SetWeakRefTarget(thread_, JSTaggedValue::Undefined());
+    obj->SetHeldValue(thread_, JSTaggedValue::Undefined());
     return obj;
 }
 }  // namespace panda::ecmascript

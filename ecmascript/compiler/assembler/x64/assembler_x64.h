@@ -34,7 +34,8 @@ enum Register : uint8_t {
     r12,
     r13,
     r14,
-    r15
+    r15,
+    rInvalid,
 };
 
 enum Scale : uint8_t {

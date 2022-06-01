@@ -24,6 +24,7 @@
 #include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
 #endif
 #include "ecmascript/ecma_vm.h"
+#include "ecmascript/linked_hash_table.h"
 #include "ecmascript/mem/assert_scope.h"
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/mem/concurrent_sweeper.h"
@@ -40,6 +41,7 @@
 #include "ecmascript/mem/gc_stats.h"
 #include "ecmascript/ecma_string_table.h"
 #include "ecmascript/runtime_call_id.h"
+#include "ecmascript/js_finalization_registry.h"
 
 namespace panda::ecmascript {
 Heap::Heap(EcmaVM *ecmaVm) : ecmaVm_(ecmaVm), thread_(ecmaVm->GetJSThread()),
@@ -50,30 +52,51 @@ void Heap::Initialize()
 {
     memController_ = new MemController(this);
 
-    size_t defaultSemiSpaceCapacity = ecmaVm_->GetJSOptions().DefaultSemiSpaceCapacity();
-    activeSemiSpace_ = new SemiSpace(this, defaultSemiSpaceCapacity, defaultSemiSpaceCapacity);
+    size_t minSemiSpaceCapacity = std::max(DEFAULT_SEMI_SPACE_SIZE, CONSTRAINT_MIN_SEMI_SPACE_SIZE);
+    size_t maxSemiSpaceCapacity = std::min(MAX_SEMI_SPACE_SIZE, CONSTRAINT_MAX_SEMI_SPACE_SIZE);
+    activeSemiSpace_ = new SemiSpace(this, minSemiSpaceCapacity, maxSemiSpaceCapacity);
     activeSemiSpace_->Restart();
     activeSemiSpace_->SetWaterLine();
     auto topAddress = activeSemiSpace_->GetAllocationTopAddress();
     auto endAddress = activeSemiSpace_->GetAllocationEndAddress();
     thread_->ReSetNewSpaceAllocationAddress(topAddress, endAddress);
-    inactiveSemiSpace_ = new SemiSpace(this, defaultSemiSpaceCapacity, defaultSemiSpaceCapacity);
-
+    inactiveSemiSpace_ = new SemiSpace(this, minSemiSpaceCapacity, maxSemiSpaceCapacity);
     // not set up from space
-    size_t maxOldSpaceCapacity = ecmaVm_->GetJSOptions().MaxOldSpaceCapacity();
-    oldSpace_ = new OldSpace(this, OLD_SPACE_LIMIT_BEGIN, maxOldSpaceCapacity);
-    compressSpace_ = new OldSpace(this, OLD_SPACE_LIMIT_BEGIN, maxOldSpaceCapacity);
-    oldSpace_->Initialize();
-    size_t maxNonmovableSpaceCapacity = ecmaVm_->GetJSOptions().MaxNonmovableSpaceCapacity();
-    nonMovableSpace_ = new NonMovableSpace(this, maxNonmovableSpaceCapacity, maxNonmovableSpaceCapacity);
+
+    size_t nonmovableSpaceCapacity = std::max(DEFAULT_NONMOVABLE_SPACE_SIZE, CONSTRAINT_MIN_NONMOVABLE_SPACE_SIZE);
+    if (ecmaVm_->GetJSOptions().WasSetMaxNonmovableSpaceCapacity()) {
+        nonmovableSpaceCapacity = ecmaVm_->GetJSOptions().MaxNonmovableSpaceCapacity();
+    }
+    nonMovableSpace_ = new NonMovableSpace(this, nonmovableSpaceCapacity, nonmovableSpaceCapacity);
     nonMovableSpace_->Initialize();
-    size_t defaultSnapshotSpaceCapacity = ecmaVm_->GetJSOptions().DefaultSnapshotSpaceCapacity();
-    size_t maxSnapshotSpaceCapacity = ecmaVm_->GetJSOptions().MaxSnapshotSpaceCapacity();
-    snapshotSpace_ = new SnapshotSpace(this, defaultSnapshotSpaceCapacity, maxSnapshotSpaceCapacity);
-    size_t maxMachineCodeSpaceCapacity = ecmaVm_->GetJSOptions().MaxMachineCodeSpaceCapacity();
-    machineCodeSpace_ = new MachineCodeSpace(this, maxMachineCodeSpaceCapacity, maxMachineCodeSpaceCapacity);
+    size_t snapshotSpaceCapacity = std::max(DEFAULT_SNAPSHOT_SPACE_SIZE, CONSTRAINT_MIN_SNAPSHOT_SPACE_SIZE);
+    snapshotSpace_ = new SnapshotSpace(this, snapshotSpaceCapacity, MAX_SNAPSHOT_SPACE_SIZE);
+    size_t machineCodeSpaceCapacity = std::max(DEFAULT_MACHINECODE_SPACE_SIZE, CONSTRAINT_MIN_MACHINECODE_SPACE_SIZE);
+    machineCodeSpace_ = new MachineCodeSpace(this, machineCodeSpaceCapacity, machineCodeSpaceCapacity);
     machineCodeSpace_->Initialize();
-    hugeObjectSpace_ = new HugeObjectSpace(heapRegionAllocator_);
+
+    size_t capacities = minSemiSpaceCapacity * 2 + nonmovableSpaceCapacity + snapshotSpaceCapacity +
+        machineCodeSpaceCapacity;
+    if (MAX_HEAP_SIZE < capacities || MAX_HEAP_SIZE - capacities < MIN_OLD_SPACE_LIMIT) {
+        LOG_ECMA_MEM(FATAL) << "HeapSize is too small to initialize oldspace, heapSize = " << MAX_HEAP_SIZE;
+    }
+    size_t oldSpaceCapacity = MAX_HEAP_SIZE - capacities;
+    globalSpaceAllocLimit_ = MAX_HEAP_SIZE - minSemiSpaceCapacity;
+
+    oldSpace_ = new OldSpace(this, oldSpaceCapacity, oldSpaceCapacity);
+    compressSpace_ = new OldSpace(this, oldSpaceCapacity, oldSpaceCapacity);
+    oldSpace_->Initialize();
+    hugeObjectSpace_ = new HugeObjectSpace(heapRegionAllocator_, oldSpaceCapacity, oldSpaceCapacity);
+    maxTaskCount_ = std::min<size_t>(ecmaVm_->GetJSOptions().GetGcThreadNum(),
+        (Taskpool::GetCurrentTaskpool()->GetTotalThreadNum()) - 1);
+    LOG(INFO, RUNTIME) << "heap initialize: heap size = " << MAX_HEAP_SIZE
+        << ", semispace capacity = " << minSemiSpaceCapacity
+        << ", nonmovablespace capacity = " << nonmovableSpaceCapacity
+        << ", snapshotspace capacity = " << snapshotSpaceCapacity
+        << ", machinecodespace capacity = " << machineCodeSpaceCapacity
+        << ", oldspace capacity = " << oldSpaceCapacity
+        << ", globallimit = " << globalSpaceAllocLimit_
+        << ", gcThreadNum = " << maxTaskCount_;
     parallelGC_ = ecmaVm_->GetJSOptions().EnableParallelGC();
     concurrentMarkingEnabled_ = ecmaVm_->GetJSOptions().EnableConcurrentMark();
     markType_ = MarkType::MARK_YOUNG;
@@ -207,7 +230,11 @@ void Heap::Resume(TriggerGCType gcType)
         oldSpace_ = oldSpace;
     }
     if (activeSemiSpace_->AdjustCapacity(inactiveSemiSpace_->GetAllocatedSizeSinceGC())) {
-        inactiveSemiSpace_->SetMaximumCapacity(activeSemiSpace_->GetMaximumCapacity());
+        // if activeSpace capacity changes， oldSpace maximumCapacity should change, too.
+        int delta = activeSemiSpace_->GetInitialCapacity() - inactiveSemiSpace_->GetInitialCapacity();
+        size_t oldSpaceMaxLimit = static_cast<int>(oldSpace_->GetMaximumCapacity()) - delta * 2;
+        oldSpace_->SetMaximumCapacity(oldSpaceMaxLimit);
+        inactiveSemiSpace_->SetInitialCapacity(activeSemiSpace_->GetInitialCapacity());
     }
 
     activeSemiSpace_->SetWaterLine();
@@ -260,8 +287,8 @@ void Heap::CollectGarbage(TriggerGCType gcType)
     size_t originalNewSpaceSize = activeSemiSpace_->GetHeapObjectSize();
     memController_->StartCalculationBeforeGC();
     OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Heap::CollectGarbage, gcType = " << gcType
-                                             << " global CommittedSize" << GetCommittedSize()
-                                             << " global limit" << globalSpaceAllocLimit_;
+                                             << " global CommittedSize " << GetCommittedSize()
+                                             << " global limit " << globalSpaceAllocLimit_;
     switch (gcType) {
         case TriggerGCType::YOUNG_GC:
             // Use partial GC for young generation.
@@ -309,11 +336,11 @@ void Heap::CollectGarbage(TriggerGCType gcType)
         // the limits of old space and global space can be recomputed.
         RecomputeLimits();
         OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << " GC after: is full mark" << IsFullMark()
-                                                 << " global CommittedSize" << GetCommittedSize()
-                                                 << " global limit" << globalSpaceAllocLimit_;
+                                                 << " global CommittedSize " << GetCommittedSize()
+                                                 << " global limit " << globalSpaceAllocLimit_;
         markType_ = MarkType::MARK_YOUNG;
     }
-
+    ecmaVm_->GetEcmaGCStats()->CheckIfLongTimePause();
 # if ECMASCRIPT_ENABLE_GC_LOG
     ecmaVm_->GetEcmaGCStats()->PrintStatisticResult();
 #endif
@@ -328,6 +355,9 @@ void Heap::CollectGarbage(TriggerGCType gcType)
     }
     isVerifying_ = false;
 #endif
+    if (!thread_->GetCheckAndCallEnterState()) {
+        JSFinalizationRegistry::CheckAndCall(thread_);
+    }
 }
 
 void Heap::ThrowOutOfMemoryError(size_t size, std::string functionName)
@@ -393,19 +423,39 @@ void Heap::AdjustOldSpaceLimit()
         << " globalSpaceAllocLimit_" << globalSpaceAllocLimit_;
 }
 
+void Heap::AddToKeptObjects(JSHandle<JSTaggedValue> value) const
+{
+    JSHandle<GlobalEnv> env = ecmaVm_->GetGlobalEnv();
+    JSHandle<LinkedHashSet> linkedSet;
+    if (env->GetWeakRefKeepObjects()->IsUndefined()) {
+        linkedSet = LinkedHashSet::Create(thread_);
+    } else {
+        linkedSet =
+            JSHandle<LinkedHashSet>(thread_, LinkedHashSet::Cast(env->GetWeakRefKeepObjects()->GetTaggedObject()));
+    }
+    linkedSet = LinkedHashSet::Add(thread_, linkedSet, value);
+    env->SetWeakRefKeepObjects(thread_, linkedSet);
+}
+
+void Heap::ClearKeptObjects() const
+{
+    ecmaVm_->GetGlobalEnv()->SetWeakRefKeepObjects(thread_, JSTaggedValue::Undefined());
+}
+
 void Heap::RecomputeLimits()
 {
     double gcSpeed = memController_->CalculateMarkCompactSpeedPerMS();
     double mutatorSpeed = memController_->GetCurrentOldSpaceAllocationThroughputPerMS();
     size_t oldSpaceSize = oldSpace_->GetHeapObjectSize() + hugeObjectSpace_->GetHeapObjectSize();
-    size_t newSpaceCapacity = activeSemiSpace_->GetMaximumCapacity();
+    size_t newSpaceCapacity = activeSemiSpace_->GetInitialCapacity();
 
     double growingFactor = memController_->CalculateGrowingFactor(gcSpeed, mutatorSpeed);
-    size_t maxOldSpaceCapacity = GetEcmaVM()->GetJSOptions().MaxOldSpaceCapacity();
+    size_t maxOldSpaceCapacity = oldSpace_->GetMaximumCapacity();
     auto newOldSpaceLimit = memController_->CalculateAllocLimit(oldSpaceSize, MIN_OLD_SPACE_LIMIT, maxOldSpaceCapacity,
                                                                 newSpaceCapacity, growingFactor);
+    size_t maxGlobalSize = MAX_HEAP_SIZE - newSpaceCapacity;
     auto newGlobalSpaceLimit = memController_->CalculateAllocLimit(GetHeapObjectSize(), DEFAULT_HEAP_SIZE,
-                                                                   MAX_HEAP_SIZE, newSpaceCapacity, growingFactor);
+                                                                   maxGlobalSize, newSpaceCapacity, growingFactor);
     globalSpaceAllocLimit_ = newGlobalSpaceLimit;
     oldSpace_->SetInitialCapacity(newOldSpaceLimit);
     OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "RecomputeLimits oldSpaceAllocLimit_" << newOldSpaceLimit
@@ -489,8 +539,8 @@ void Heap::TryTriggerConcurrentMarking()
         }
         return;
     }
-    newSpaceAllocToLimitDuration = (activeSemiSpace_->GetMaximumCapacity() - activeSemiSpace_->GetCommittedSize())
-                                    / newSpaceAllocSpeed;
+    newSpaceAllocToLimitDuration = (activeSemiSpace_->GetInitialCapacity() - activeSemiSpace_->GetCommittedSize())
+        / newSpaceAllocSpeed;
     newSpaceMarkDuration = activeSemiSpace_->GetHeapObjectSize() / newSpaceConcurrentMarkSpeed;
     // newSpaceRemainSize means the predicted size which can be allocated after the semi concurrent mark.
     newSpaceRemainSize = (newSpaceAllocToLimitDuration - newSpaceMarkDuration) * newSpaceAllocSpeed;
@@ -585,7 +635,7 @@ void Heap::IncreaseTaskCount()
 bool Heap::CheckCanDistributeTask()
 {
     os::memory::LockHolder holder(waitTaskFinishedMutex_);
-    return (runningTaskCount_ < Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() - 1);
+    return runningTaskCount_ < maxTaskCount_;
 }
 
 void Heap::ReduceTaskCount()
@@ -652,7 +702,7 @@ bool Heap::IsAlive(TaggedObject *object) const
         return false;
     }
 
-    bool isFree = FreeObject::Cast(ToUintPtr(object))->IsFreeObject();
+    bool isFree = object->GetClass() != nullptr && FreeObject::Cast(ToUintPtr(object))->IsFreeObject();
     if (isFree) {
         Region *region = Region::ObjectAddressToRange(object);
         LOG(ERROR, RUNTIME) << "The object " << object << " in "

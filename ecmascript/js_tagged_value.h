@@ -472,6 +472,9 @@ public:
     bool IsJSSet() const;
     bool IsJSWeakMap() const;
     bool IsJSWeakSet() const;
+    bool IsJSWeakRef() const;
+    bool IsJSFinalizationRegistry() const;
+    bool IsCellRecord() const;
     bool IsJSRegExp() const;
     bool IsNumber() const;
     bool IsBigInt() const;

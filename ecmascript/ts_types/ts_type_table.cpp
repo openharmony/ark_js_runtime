@@ -53,79 +53,72 @@ JSHandle<TSTypeTable> TSTypeTable::GenerateTypeTable(JSThread *thread, const JSP
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     TSLoader *tsLoader = thread->GetEcmaVM()->GetTSLoader();
-    GlobalTSTypeRef ref = GlobalTSTypeRef::Default();
-    int typeKind = 0;
+
+    // read type summary literal
     uint32_t summaryIndex = jsPandaFile->GetTypeSummaryIndex();
-
     JSHandle<TaggedArray> summaryLiteral = LiteralDataExtractor::GetDatasIgnoreType(thread, jsPandaFile, summaryIndex);
-    ASSERT_PRINT(summaryLiteral->Get(TYPE_KIND_OFFSET).GetInt() == static_cast<int32_t>(TypeLiteralFlag::COUNTER),
-                 "summary type literal flag is not counter");
+    ASSERT_PRINT(summaryLiteral->Get(TYPE_KIND_INDEX_IN_LITERAL).GetInt() == 0, "can not read type summary literal");
 
-    uint32_t length = static_cast<uint32_t>(summaryLiteral->Get(TABLE_LENGTH_OFFSET_IN_LITREAL).GetInt());
-    JSHandle<TSTypeTable> table = factory->NewTSTypeTable(length);
-    JSMutableHandle<TaggedArray> typeLiteral(thread, JSTaggedValue::Undefined());
+    uint32_t numTypes = static_cast<uint32_t>(summaryLiteral->Get(NUM_OF_TYPES_INDEX_IN_SUMMARY_LITREAL).GetInt());
+    JSHandle<TSTypeTable> table = factory->NewTSTypeTable(numTypes);
+    int moduleId = tsLoader->GetNextModuleId();
 
-    JSHandle<EcmaString> fileName = factory->NewFromUtf8(jsPandaFile->GetJSPandaFileDesc());
-    for (uint32_t idx = 1; idx <= length; ++idx) {
-        JSHandle<TaggedArray> literalData = LiteralDataExtractor::GetDatasIgnoreType(thread, jsPandaFile,
+    for (uint32_t idx = 1; idx <= numTypes; ++idx) {
+        JSHandle<TaggedArray> typeLiteral = LiteralDataExtractor::GetDatasIgnoreType(thread, jsPandaFile,
                                                                                      idx + summaryIndex);
-        typeLiteral.Update(literalData);
-        JSHandle<JSTaggedValue> type = ParseType(thread, table, typeLiteral, fileName, recordImportModules);
+        JSHandle<JSTaggedValue> type = ParseType(thread, table, typeLiteral, jsPandaFile, recordImportModules);
         if (!type->IsNull()) {
-            // Set every object type GT
-            typeKind = typeLiteral->Get(TYPE_KIND_OFFSET).GetInt();
-            ref.SetUserDefineTypeKind(typeKind + GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT);
-            ref.SetModuleId(tsLoader->GetNextModuleId());
-            ref.SetLocalId(idx);
-            JSHandle<TSType>(type)->SetGTRef(ref);
+            int typeKind = typeLiteral->Get(TYPE_KIND_INDEX_IN_LITERAL).GetInt();
+            GlobalTSTypeRef gt = GlobalTSTypeRef(moduleId, idx, typeKind);
+            JSHandle<TSType>(type)->SetGTRef(gt);
         }
         table->Set(thread, idx, type);
     }
 
-    table->SetTypeTableLength(thread, length); // record the object type number
     table->SetExportValueTable(thread, *jsPandaFile->GetPandaFile());
     return table;
 }
 
 JSHandle<JSTaggedValue> TSTypeTable::ParseType(JSThread *thread, JSHandle<TSTypeTable> &table,
-                                               JSHandle<TaggedArray> &literal, JSHandle<EcmaString> fileName,
+                                               JSHandle<TaggedArray> &literal, const JSPandaFile *jsPandaFile,
                                                CVector<JSHandle<EcmaString>> &recordImportModules)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    TypeLiteralFlag flag = static_cast<TypeLiteralFlag>(literal->Get(TYPE_KIND_OFFSET).GetInt());
-    switch (flag) {
-        case TypeLiteralFlag::CLASS: {
+    TSTypeKind kind = static_cast<TSTypeKind>(literal->Get(TYPE_KIND_INDEX_IN_LITERAL).GetInt());
+    switch (kind) {
+        case TSTypeKind::CLASS: {
             JSHandle<TSClassType> classType = ParseClassType(thread, table, literal);
             return JSHandle<JSTaggedValue>(classType);
         }
-        case TypeLiteralFlag::CLASS_INSTANCE: {
+        case TSTypeKind::CLASS_INSTANCE: {
             JSHandle<TSClassInstanceType> classInstance = factory->NewTSClassInstanceType();
             int classIndex = literal->Get(TSClassInstanceType::CREATE_CLASS_OFFSET).GetInt();
             JSHandle<TSClassType> classType(thread, table->Get(classIndex - GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT));
             classInstance->SetClassRefGT(classType->GetGTRef());
             return JSHandle<JSTaggedValue>(classInstance);
         }
-        case TypeLiteralFlag::INTERFACE: {
+        case TSTypeKind::INTERFACE: {
             JSHandle<TSInterfaceType> interfaceType = ParseInterfaceType(thread, literal);
             return JSHandle<JSTaggedValue>(interfaceType);
         }
-        case TypeLiteralFlag::IMPORT: {
+        case TSTypeKind::IMPORT: {
+            JSHandle<EcmaString> fileName = factory->NewFromUtf8(jsPandaFile->GetJSPandaFileDesc());
             JSHandle<TSImportType> importType = ParseImportType(thread, literal, fileName, recordImportModules);
             return JSHandle<JSTaggedValue>(importType);
         }
-        case TypeLiteralFlag::UNION: {
-            JSHandle<TSUnionType> unionType = ParseUnionType(thread, literal);
+        case TSTypeKind::UNION: {
+            JSHandle<TSUnionType> unionType = ParseUnionType(thread, jsPandaFile, literal);
             return JSHandle<JSTaggedValue>(unionType);
         }
-        case TypeLiteralFlag::FUNCTION: {
+        case TSTypeKind::FUNCTION: {
             JSHandle<TSFunctionType> functionType = ParseFunctionType(thread, literal);
             return JSHandle<JSTaggedValue>(functionType);
         }
-        case TypeLiteralFlag::ARRAY: {
+        case TSTypeKind::ARRAY: {
             JSHandle<TSArrayType> arrayType = ParseArrayType(thread, literal);
             return JSHandle<JSTaggedValue>(arrayType);
         }
-        case TypeLiteralFlag::OBJECT: {
+        case TSTypeKind::OBJECT: {
             JSHandle<TSObjectType> objectType = ParseObjectType(thread, literal);
             return JSHandle<JSTaggedValue>(objectType);
         }
@@ -141,15 +134,15 @@ GlobalTSTypeRef TSTypeTable::GetPropertyTypeGT(JSThread *thread, JSHandle<TSType
 {
     GlobalTSTypeRef gt = GlobalTSTypeRef::Default();
     switch (typeKind) {
-        case TSTypeKind::TS_CLASS: {
+        case TSTypeKind::CLASS: {
             gt = TSClassType::GetPropTypeGT(thread, table, localtypeId, propName);
             break;
         }
-        case TSTypeKind::TS_CLASS_INSTANCE: {
+        case TSTypeKind::CLASS_INSTANCE: {
             gt = TSClassInstanceType::GetPropTypeGT(thread, table, localtypeId, propName);
             break;
         }
-        case TSTypeKind::TS_OBJECT: {
+        case TSTypeKind::OBJECT: {
             JSHandle<TSObjectType> ObjectType(thread, table->Get(localtypeId));
             gt = TSObjectType::GetPropTypeGT(table, ObjectType, propName);
             break;
@@ -195,7 +188,7 @@ JSHandle<TaggedArray> TSTypeTable::GetExportTableFromPandFile(JSThread *thread, 
     const char *symbols;
     const char *symbolTypes;
     auto *fileName = pf.GetFilename().c_str();
-    if (::strcmp(DECLARED_FILE_NAME, fileName) == 0) {
+    if (::strcmp(BUILTINS_TABLE_NAME, fileName) == 0) {
         symbols = DECLARED_SYMBOLS;
         symbolTypes = DECLARED_SYMBOL_TYPES;
     } else {
@@ -263,7 +256,7 @@ JSHandle<TSClassType> TSTypeTable::ParseClassType(JSThread *thread, JSHandle<TST
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TSClassType> classType = factory->NewTSClassType();
     int32_t index = 0;
-    ASSERT(static_cast<TypeLiteralFlag>(literal->Get(index).GetInt()) == TypeLiteralFlag::CLASS);
+    ASSERT(static_cast<TSTypeKind>(literal->Get(index).GetInt()) == TSTypeKind::CLASS);
 
     index = index + 2;  // 2: ignore accessFlag and readonly
     int32_t extendsTypeId = literal->Get(index++).GetInt();
@@ -347,7 +340,7 @@ JSHandle<TSInterfaceType> TSTypeTable::ParseInterfaceType(JSThread *thread, cons
 
     uint32_t index = 0;
     JSHandle<TSInterfaceType> interfaceType = factory->NewTSInterfaceType();
-    ASSERT(static_cast<TypeLiteralFlag>(literal->Get(index).GetInt()) == TypeLiteralFlag::INTERFACE);
+    ASSERT(static_cast<TSTypeKind>(literal->Get(index).GetInt()) == TSTypeKind::INTERFACE);
 
     index++;
     // resolve extends of interface
@@ -404,22 +397,35 @@ JSHandle<TSObjectType> TSTypeTable::LinkSuper(JSThread *thread, JSHandle<TSClass
     return derivedInstanceType;
 }
 
-JSHandle<TSUnionType> TSTypeTable::ParseUnionType(JSThread *thread, const JSHandle<TaggedArray> &literal)
+JSHandle<TSUnionType> TSTypeTable::ParseUnionType(JSThread *thread, const JSPandaFile *jsPandaFile,
+                                                  const JSHandle<TaggedArray> &literal)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    uint32_t index = 0;
-    ASSERT(static_cast<TypeLiteralFlag>(literal->Get(index).GetInt()) == TypeLiteralFlag::UNION);
-    index++;
-    int32_t unionTypeLength = literal->Get(index++).GetInt();
+    TSLoader *tsLoader = thread->GetEcmaVM()->GetTSLoader();
+    int moduleId = tsLoader->GetNextModuleId();
 
-    JSHandle<TSUnionType> unionType = factory->NewTSUnionType(unionTypeLength);
-    JSHandle<TaggedArray> unionTypeArray(thread, unionType->GetComponentTypes());
-    JSMutableHandle<JSTaggedValue> localTypeIdHandle(thread, JSTaggedValue::Undefined());
-    for (int32_t unionTypeId = 0; unionTypeId < unionTypeLength; ++unionTypeId) {
-        localTypeIdHandle.Update(literal->Get(index++));
-        unionTypeArray->Set(thread, unionTypeId, localTypeIdHandle);
+    uint32_t literalIndex = 0;
+    ASSERT(static_cast<TSTypeKind>(literal->Get(literalIndex).GetInt()) == TSTypeKind::UNION);
+    literalIndex++;
+    int32_t numOfUnionMembers = literal->Get(literalIndex++).GetInt();
+
+    JSHandle<TSUnionType> unionType = factory->NewTSUnionType(numOfUnionMembers);
+    JSHandle<TaggedArray> components(thread, unionType->GetComponents());
+    for (int32_t index = 0; index < numOfUnionMembers; ++index) {
+        int componentTypeId = literal->Get(literalIndex++).GetInt();
+        GlobalTSTypeRef gt;
+        if (componentTypeId < static_cast<int>(TSPrimitiveType::END)) {
+            gt = TSLoader::GetPrimitiveGT(static_cast<TSPrimitiveType>(componentTypeId));
+        } else if (componentTypeId < GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT) {
+            gt = TSLoader::GetBuiltinsGT(componentTypeId);
+        } else {
+            int localId = componentTypeId - GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT;
+            int typeKind = GetTypeKindFromFileByLocalId(thread, jsPandaFile, localId);
+            gt = GlobalTSTypeRef(moduleId, localId, typeKind);
+        }
+        components->Set(thread, index, JSTaggedValue(gt.GetData()));
     }
-    unionType->SetComponentTypes(thread, unionTypeArray);
+    unionType->SetComponents(thread, components);
     return unionType;
 }
 
@@ -482,7 +488,7 @@ JSHandle<TSFunctionType> TSTypeTable::ParseFunctionType(JSThread *thread, const 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     uint32_t index = 0;
-    ASSERT(static_cast<TypeLiteralFlag>(literal->Get(index).GetInt()) == TypeLiteralFlag::FUNCTION);
+    ASSERT(static_cast<TSTypeKind>(literal->Get(index).GetInt()) == TSTypeKind::FUNCTION);
     index++;
 
     index += TSFunctionType::FIELD_LENGTH;
@@ -509,7 +515,7 @@ JSHandle<TSArrayType> TSTypeTable::ParseArrayType(JSThread *thread, const JSHand
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     uint32_t index = 0;
-    ASSERT(static_cast<TypeLiteralFlag>(literal->Get(index).GetInt()) == TypeLiteralFlag::ARRAY);
+    ASSERT(static_cast<TSTypeKind>(literal->Get(index).GetInt()) == TSTypeKind::ARRAY);
     index++;
     JSHandle<JSTaggedValue> parameterTypeRef(thread, literal->Get(index++));
     ASSERT(parameterTypeRef->IsInt());
@@ -523,7 +529,7 @@ JSHandle<TSObjectType> TSTypeTable::ParseObjectType(JSThread *thread, const JSHa
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     uint32_t index = 0;
-    ASSERT(static_cast<TypeLiteralFlag>(literal->Get(index).GetInt()) == TypeLiteralFlag::OBJECT);
+    ASSERT(static_cast<TSTypeKind>(literal->Get(index).GetInt()) == TSTypeKind::OBJECT);
     index++;
     int32_t length = literal->Get(index++).GetInt();
 
@@ -540,5 +546,27 @@ JSHandle<TSObjectType> TSTypeTable::ParseObjectType(JSThread *thread, const JSHa
     }
     objectType->SetObjLayoutInfo(thread, propertyTypeInfo);
     return objectType;
+}
+
+int TSTypeTable::GetTypeKindFromFileByLocalId(JSThread *thread, const JSPandaFile *jsPandaFile, int localId)
+{
+    JSHandle<TaggedArray> literal = LiteralDataExtractor::GetDatasIgnoreType(thread, jsPandaFile, localId);
+    return literal->Get(TYPE_KIND_INDEX_IN_LITERAL).GetInt();
+}
+
+JSHandle<TSTypeTable> TSTypeTable::PushBackTypeToInferTable(JSThread *thread, JSHandle<TSTypeTable> &table,
+                                                            const JSHandle<TSType> &type)
+{
+    uint32_t capacity = table->GetLength();  // can't be 0 due to RESERVE_TABLE_LENGTH
+    uint32_t numberOfTypes = table->GetNumberOfTypes();
+    if (UNLIKELY(capacity <= numberOfTypes + RESERVE_TABLE_LENGTH)) {
+        table = JSHandle<TSTypeTable>(TaggedArray::SetCapacity(thread, JSHandle<TaggedArray>(table),
+                                                               capacity * INCREASE_CAPACITY_RATE));
+    }
+
+    table->Set(thread, numberOfTypes + 1, type);
+    table->SetNumberOfTypes(thread, numberOfTypes + 1);
+
+    return table;
 }
 } // namespace panda::ecmascript

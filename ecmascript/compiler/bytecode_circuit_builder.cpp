@@ -1978,10 +1978,7 @@ std::vector<GateRef> BytecodeCircuitBuilder::CreateGateInList(const BytecodeInfo
                                                   {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
                                                   GateType::NJS_VALUE);
         } else if (std::holds_alternative<StringId>(input)) {
-            auto tsLoader = vm_->GetTSLoader();
-            JSHandle<ConstantPool> newConstPool(vm_->GetJSThread(), constantPool_.GetTaggedValue());
-            auto string = newConstPool->GetObjectFromCache(std::get<StringId>(input).GetId());
-            size_t index = tsLoader->AddConstString(string);
+            size_t index = tsLoader_->GetStringIdx(constantPool_, std::get<StringId>(input).GetId());
             inList[i + length] = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I32, index,
                                                   {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
                                                   GateType::NJS_VALUE);
@@ -2327,9 +2324,8 @@ GateRef BytecodeCircuitBuilder::NewPhi(BytecodeRegion &bb, uint16_t reg, bool ac
 
 GateType BytecodeCircuitBuilder::GetRealGateType(const uint16_t reg, const GateType gateType)
 {
-    // ts loader
-    panda::ecmascript::TSLoader* tsLoader = vm_->GetTSLoader();
-    auto curType = static_cast<GateType>(tsLoader->GetGTFromPandaFile(*pf_, reg, method_).GetGlobalTSTypeRef());
+    const panda_file::File *pf = file_->GetPandaFile();
+    auto curType = static_cast<GateType>(tsLoader_->GetGTFromPandaFile(*pf, reg, method_).GetData());
     auto type = (curType == GateType::JS_ANY) ? gateType : curType;
     return type;
 }
@@ -2358,10 +2354,11 @@ GateRef BytecodeCircuitBuilder::RenameVariable(const size_t bbId,
     auto tmpAcc = acc;
     for (auto pcIter: instList) { // upper bound
         auto curInfo = GetBytecodeInfo(pcIter);
-        // curent bc use acc as input && pcIter bc use acc as output
-        bool bothAcc = tmpAcc && curInfo.accOut;
-        bool isDefineSite = (!tmpAcc && curInfo.IsOut(tmpReg, 0));
-        if (bothAcc || isDefineSite) {
+        // original bc use acc as input && current bc use acc as output
+        bool isTransByAcc = tmpAcc && curInfo.accOut;
+        // 0 : the index in vreg-out list
+        bool isTransByVreg = (!tmpAcc && curInfo.IsOut(tmpReg, 0));
+        if (isTransByAcc || isTransByVreg) {
             if (curInfo.IsMov()) {
                 tmpAcc = curInfo.accIn;
                 if (!curInfo.inputs.empty()) {
@@ -2404,8 +2401,9 @@ GateRef BytecodeCircuitBuilder::RenameVariable(const size_t bbId,
         // find def-site in function args
         ASSERT(!tmpAcc && tmpReg >= offsetArgs && tmpReg < offsetArgs + actualArgs_.size());
         auto index = GetFunctionArgIndex(tmpReg, offsetArgs);
+        ans = actualArgs_.at(index);
         circuit_.LoadGatePtr(ans)->SetGateType(static_cast<GateType>(tsType));
-        return actualArgs_.at(index);
+        return ans;
     }
     if (ans == Circuit::NullGate()) {
         // recursively find def-site in dominator block

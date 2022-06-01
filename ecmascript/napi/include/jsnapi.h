@@ -18,6 +18,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -29,6 +30,8 @@ namespace panda {
 class JSNApiHelper;
 class EscapeLocalScope;
 class PromiseRejectInfo;
+template<typename T>
+class CopyableGlobal;
 template<typename T>
 class Global;
 class JSNApi;
@@ -58,6 +61,8 @@ using JSThread = ecmascript::JSThread;
 using JSTaggedType = uint64_t;
 
 static constexpr uint32_t DEFAULT_GC_POOL_SIZE = 256 * 1024 * 1024;
+static constexpr size_t DEFAULT_GC_THREAD_NUM = 7;
+static constexpr size_t DEFAULT_LONG_PAUSE_TIME = 40;
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define ECMA_DISALLOW_COPY(className)      \
@@ -81,6 +86,8 @@ public:
     }
 
     Local(const EcmaVM *vm, const Global<T> &current);
+
+    Local(const EcmaVM *vm, const CopyableGlobal<T> &current);
 
     ~Local() = default;
 
@@ -126,6 +133,121 @@ private:
     friend JsiRuntimeCallInfo;
 };
 
+/**
+ * A Copyable global handle, keeps a separate global handle for each CopyableGlobal.
+ *
+ * Support Copy Constructor and Assign, Move Constructor And Assign.
+ *
+ * If destructed, the global handle held will be automatically released.
+ *
+ * Usage: It Can be used as heap object assign to another variable, a value passing parameter, or
+ *        a value passing return value and so on.
+ */
+template<typename T>
+class PUBLIC_API CopyableGlobal {
+public:
+    inline CopyableGlobal() = default;
+    ~CopyableGlobal()
+    {
+        Free();
+    }
+
+    inline CopyableGlobal(const CopyableGlobal &that)
+    {
+        Copy(that);
+    }
+
+    inline CopyableGlobal &operator=(const CopyableGlobal &that)
+    {
+        Copy(that);
+        return *this;
+    }
+
+    inline CopyableGlobal(CopyableGlobal &&that)
+    {
+        Move(that);
+    }
+
+    inline CopyableGlobal &operator=(CopyableGlobal &&that)
+    {
+        Move(that);
+        return *this;
+    }
+
+    template<typename S>
+    CopyableGlobal(const EcmaVM *vm, const Local<S> &current);
+
+    CopyableGlobal(const EcmaVM *vm, const Local<T> &current);
+
+    template<typename S>
+    CopyableGlobal(const CopyableGlobal<S> &that)
+    {
+        Copy(that);
+    }
+
+    void Reset()
+    {
+        Free();
+    }
+
+    Local<T> ToLocal() const
+    {
+        if (IsEmpty()) {
+            return Local<T>();
+        }
+        return Local<T>(vm_, *this);
+    }
+
+    void Empty()
+    {
+        address_ = 0;
+    }
+
+    inline T *operator*() const
+    {
+        return GetAddress();
+    }
+
+    inline T *operator->() const
+    {
+        return GetAddress();
+    }
+
+    inline bool IsEmpty() const
+    {
+        return GetAddress() == nullptr;
+    }
+
+    inline bool CheckException() const
+    {
+        return IsEmpty() || GetAddress()->IsException();
+    }
+
+    void SetWeak();
+
+    void ClearWeak();
+
+    bool IsWeak() const;
+
+    const EcmaVM *GetEcmaVM() const
+    {
+        return vm_;
+    }
+
+private:
+    inline T *GetAddress() const
+    {
+        return reinterpret_cast<T *>(address_);
+    };
+    inline void Copy(const CopyableGlobal &that);
+    template<typename S>
+    inline void Copy(const CopyableGlobal<S> &that);
+    inline void Move(CopyableGlobal &that);
+    inline void Free();
+    uintptr_t address_ = 0U;
+    const EcmaVM *vm_ {nullptr};
+};
+
 template<typename T>
 class PUBLIC_API Global {  // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions
 public:
@@ -152,14 +274,21 @@ public:
         Update(that);
         return *this;
     }
-    // Non-empty initial value.
-    explicit Global(const EcmaVM *vm);
 
     template<typename S>
     Global(const EcmaVM *vm, const Local<S> &current);
     template<typename S>
     Global(const EcmaVM *vm, const Global<S> &current);
+
     ~Global() = default;
+
+    Local<T> ToLocal() const
+    {
+        if (IsEmpty()) {
+            return Local<T>();
+        }
+        return Local<T>(vm_, *this);
+    }
 
     Local<T> ToLocal(const EcmaVM *vm) const
     {
@@ -790,6 +919,16 @@ public:
         arkProperties_ = prop;
     }
 
+    void SetGcThreadNum(size_t num)
+    {
+        gcThreadNum_ = num;
+    }
+
+    void SetLongPauseTime(size_t time)
+    {
+        longPauseTime_ = time;
+    }
+
     void SetEnableAsmInterpreter(bool value)
     {
         enableAsmInterpreter_ = value;
@@ -875,6 +1014,16 @@ private:
         return arkProperties_;
     }
 
+    size_t GetGcThreadNum() const
+    {
+        return gcThreadNum_;
+    }
+
+    size_t GetLongPauseTime() const
+    {
+        return longPauseTime_;
+    }
+
     bool GetEnableAsmInterpreter() const
     {
         return enableAsmInterpreter_;
@@ -895,6 +1044,8 @@ private:
     bool enableCpuprofiler_ {false};
 #endif
     int arkProperties_ {-1};
+    size_t gcThreadNum_ {DEFAULT_GC_THREAD_NUM};
+    size_t longPauseTime_ {DEFAULT_LONG_PAUSE_TIME};
     bool enableAsmInterpreter_ {false};
     std::string asmOpcodeDisableRange_ {""};
     friend JSNApi;
@@ -953,6 +1104,8 @@ public:
     static Local<JSValueRef> DeserializeValue(const EcmaVM *vm, void* recoder);
     static void DeleteSerializationData(void *data);
     static void SetHostPromiseRejectionTracker(EcmaVM *vm, void *cb, void* data);
+    static void SetHostResolvePathTracker(EcmaVM *vm,
+                                          std::function<std::string(std::string dirPath, std::string requestPath)> cb);
     static void SetHostEnqueueJob(const EcmaVM* vm, Local<JSValueRef> cb);
     static void InitializeMemMapAllocator(const ecmascript::JSRuntimeOptions &options);
     static void DestroyMemMapAllocator();
@@ -971,6 +1124,8 @@ private:
     static void DisposeGlobalHandleAddr(const EcmaVM *vm, uintptr_t addr);
     template<typename T>
     friend class Global;
+    template<typename T>
+    friend class CopyableGlobal;
     template<typename T>
     friend class Local;
     friend class test::JSNApiTests;
@@ -1064,6 +1219,83 @@ Global<T>::Global(const EcmaVM *vm, const Global<S> &current) : vm_(vm)
 }
 
 template<typename T>
+CopyableGlobal<T>::CopyableGlobal(const EcmaVM *vm, const Local<T> &current) : vm_(vm)
+{
+    if (!current.IsEmpty()) {
+        address_ = JSNApi::GetGlobalHandleAddr(vm_, reinterpret_cast<uintptr_t>(*current));
+    }
+}
+
+template<typename T>
+template<typename S>
+CopyableGlobal<T>::CopyableGlobal(const EcmaVM *vm, const Local<S> &current) : vm_(vm)
+{
+    if (!current.IsEmpty()) {
+        address_ = JSNApi::GetGlobalHandleAddr(vm_, reinterpret_cast<uintptr_t>(*current));
+    }
+}
+
+template<typename T>
+void CopyableGlobal<T>::Copy(const CopyableGlobal &that)
+{
+    Free();
+    vm_ = that.vm_;
+    if (!that.IsEmpty()) {
+        ASSERT(vm_ != nullptr);
+        address_ = JSNApi::GetGlobalHandleAddr(vm_, reinterpret_cast<uintptr_t>(*that));
+    }
+}
+
+template<typename T>
+template<typename S>
+void CopyableGlobal<T>::Copy(const CopyableGlobal<S> &that)
+{
+    Free();
+    vm_ = that.GetEcmaVM();
+    if (!that.IsEmpty()) {
+        ASSERT(vm_ != nullptr);
+        address_ = JSNApi::GetGlobalHandleAddr(vm_, reinterpret_cast<uintptr_t>(*that));
+    }
+}
+
+template<typename T>
+void CopyableGlobal<T>::Move(CopyableGlobal &that)
+{
+    Free();
+    vm_ = that.vm_;
+    address_ = that.address_;
+    that.vm_ = nullptr;
+    that.address_ = 0U;
+}
+
+template<typename T>
+inline void CopyableGlobal<T>::Free()
+{
+    if (!IsEmpty()) {
+        JSNApi::DisposeGlobalHandleAddr(vm_, address_);
+        address_ = 0U;
+    }
+}
+
+template<typename T>
+void CopyableGlobal<T>::SetWeak()
+{
+    address_ = JSNApi::SetWeak(vm_, address_);
+}
+
+template<typename T>
+void CopyableGlobal<T>::ClearWeak()
+{
+    address_ = JSNApi::ClearWeak(vm_, address_);
+}
+
+template<typename T>
+bool CopyableGlobal<T>::IsWeak() const
+{
+    return JSNApi::IsWeak(vm_, address_);
+}
+
+template<typename T>
 void Global<T>::Update(const Global &that)
 {
     if (address_ != 0) {
@@ -1102,6 +1334,12 @@ bool Global<T>::IsWeak() const
 }
 
 // ---------------------------------- Local --------------------------------------------
+template<typename T>
+Local<T>::Local(const EcmaVM *vm, const CopyableGlobal<T> &current)
+{
+    address_ = JSNApi::GetHandleAddr(vm, reinterpret_cast<uintptr_t>(*current));
+}
+
 template<typename T>
 Local<T>::Local(const EcmaVM *vm, const Global<T> &current)
 {

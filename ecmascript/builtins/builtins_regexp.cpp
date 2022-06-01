@@ -228,7 +228,7 @@ JSTaggedValue BuiltinsRegExp::ToString(EcmaRuntimeCallInfo *argv)
     JSHandle<EcmaString> flagsStrHandle = JSTaggedValue::ToString(thread, getFlags);
     // 4. ReturnIfAbrupt(flags).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<EcmaString> slashStr = factory->NewFromASCII("/");
+    JSHandle<EcmaString> slashStr = JSHandle<EcmaString>::Cast(globalConstants->GetHandledBackslashString());
     // 7. Let result be the String value formed by concatenating "/", pattern, and "/", and flags.
     JSHandle<EcmaString> tempStr = factory->ConcatFromString(slashStr, sourceStrHandle);
     JSHandle<EcmaString> resultTemp = factory->ConcatFromString(tempStr, slashStr);
@@ -1085,12 +1085,12 @@ JSTaggedValue BuiltinsRegExp::Split(EcmaRuntimeCallInfo *argv)
     bool unicodeMatching = base::StringHelper::Contains(*flags, *uStringHandle);
     // 11. If flags contains "y", let newFlags be flags.
     JSHandle<EcmaString> newFlagsHandle;
-    JSHandle<EcmaString> yStringHandle(factory->NewFromASCII("y"));
+    JSHandle<EcmaString> yStringHandle = JSHandle<EcmaString>::Cast(globalConstants->GetHandledYString());
     if (base::StringHelper::Contains(*flags, *yStringHandle)) {
         newFlagsHandle = flags;
     } else {
         // 12. Else, let newFlags be the string that is the concatenation of flags and "y".
-        JSHandle<EcmaString> yStr = factory->NewFromASCII("y");
+        JSHandle<EcmaString> yStr = JSHandle<EcmaString>::Cast(globalConstants->GetHandledYString());
         newFlagsHandle = factory->ConcatFromString(flags, yStr);
     }
 
@@ -1126,7 +1126,7 @@ JSTaggedValue BuiltinsRegExp::Split(EcmaRuntimeCallInfo *argv)
 
     // 13. Let splitter be Construct(C, «rx, newFlags»).
     JSHandle<JSObject> globalObject(thread, thread->GetEcmaVM()->GetGlobalEnv()->GetGlobalObject());
-    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    JSHandle<JSTaggedValue> undefined = globalConstants->GetHandledUndefined();
     EcmaRuntimeCallInfo runtimeInfo =
         EcmaInterpreter::NewRuntimeCallInfo(thread, constructor, undefined, undefined, 2); // 2: two args
     runtimeInfo.SetCallArg(thisObj.GetTaggedValue(), newFlagsHandle.GetTaggedValue());
@@ -1168,7 +1168,7 @@ JSTaggedValue BuiltinsRegExp::Split(EcmaRuntimeCallInfo *argv)
     uint32_t endIndex = startIndex;
     JSMutableHandle<JSTaggedValue> lastIndexvalue(thread, JSTaggedValue(endIndex));
     // 24. Repeat, while q < size
-    JSHandle<JSTaggedValue> lastIndexString(thread->GlobalConstants()->GetHandledLastIndexString());
+    JSHandle<JSTaggedValue> lastIndexString = globalConstants->GetHandledLastIndexString();
     while (endIndex < size) {
         // a. Let setStatus be Set(splitter, "lastIndex", q, true).
         lastIndexvalue.Update(JSTaggedValue(endIndex));
@@ -1486,14 +1486,15 @@ JSTaggedValue BuiltinsRegExp::RegExpExec(JSThread *thread, const JSHandle<JSTagg
     // 3. Let exec be Get(R, "exec").
     JSHandle<EcmaString> inputStr = JSTaggedValue::ToString(thread, inputString);
 
-    JSHandle<JSTaggedValue> execHandle(thread->GlobalConstants()->GetHandledExecString());
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    JSHandle<JSTaggedValue> execHandle = globalConst->GetHandledExecString();
     JSHandle<JSTaggedValue> exec(
         thread, FastRuntimeStub::FastGetProperty(thread, regexp.GetTaggedValue(), execHandle.GetTaggedValue()));
     // 4. ReturnIfAbrupt(exec).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 5. If IsCallable(exec) is true, then
     if (exec->IsCallable()) {
-        JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+        JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
         EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, exec, regexp, undefined, 1);
         info.SetCallArg(inputStr.GetTaggedValue());
         JSTaggedValue result = JSFunction::Call(&info);
