@@ -71,6 +71,7 @@
 #include "ecmascript/js_date_time_format.h"
 #include "ecmascript/js_displaynames.h"
 #include "ecmascript/js_list_format.h"
+#include "ecmascript/js_finalization_registry.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_hclass-inl.h"
@@ -96,6 +97,7 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/js_weak_container.h"
+#include "ecmascript/js_weak_ref.h"
 #include "ecmascript/layout_info-inl.h"
 #include "ecmascript/linked_hash_table.h"
 #include "ecmascript/mem/heap-inl.h"
@@ -1036,6 +1038,16 @@ void ObjectFactory::InitializeJSObject(const JSHandle<JSObject> &obj, const JSHa
             break;
         case JSType::JS_WEAK_SET:
             JSWeakSet::Cast(*obj)->SetLinkedSet(thread_, JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_WEAK_REF:
+            JSWeakRef::Cast(*obj)->SetWeakObject(thread_, JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_FINALIZATION_REGISTRY:
+            JSFinalizationRegistry::Cast(*obj)->SetCleanupCallback(thread_, JSTaggedValue::Undefined());
+            JSFinalizationRegistry::Cast(*obj)->SetNoUnregister(thread_, JSTaggedValue::Undefined());
+            JSFinalizationRegistry::Cast(*obj)->SetMaybeUnregister(thread_, JSTaggedValue::Undefined());
+            JSFinalizationRegistry::Cast(*obj)->SetNext(thread_, JSTaggedValue::Null());
+            JSFinalizationRegistry::Cast(*obj)->SetPrev(thread_, JSTaggedValue::Null());
             break;
         case JSType::JS_GENERATOR_OBJECT:
             JSGeneratorObject::Cast(*obj)->SetGeneratorContext(thread_, JSTaggedValue::Undefined());
@@ -3112,6 +3124,17 @@ JSHandle<ResolvedBinding> ObjectFactory::NewResolvedBindingRecord(const JSHandle
     JSHandle<ResolvedBinding> obj(thread_, header);
     obj->SetModule(thread_, module);
     obj->SetBindingName(thread_, bindingName);
+    return obj;
+}
+
+JSHandle<CellRecord> ObjectFactory::NewCellRecord()
+{
+    NewObjectHook();
+    TaggedObject *header = heap_->AllocateYoungOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetCellRecordClass().GetTaggedObject()));
+    JSHandle<CellRecord> obj(thread_, header);
+    obj->SetWeakRefTarget(thread_, JSTaggedValue::Undefined());
+    obj->SetHeldValue(thread_, JSTaggedValue::Undefined());
     return obj;
 }
 }  // namespace panda::ecmascript

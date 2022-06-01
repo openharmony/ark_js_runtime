@@ -24,6 +24,7 @@
 #include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
 #endif
 #include "ecmascript/ecma_vm.h"
+#include "ecmascript/linked_hash_table.h"
 #include "ecmascript/mem/assert_scope.h"
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/mem/concurrent_sweeper.h"
@@ -40,6 +41,7 @@
 #include "ecmascript/mem/gc_stats.h"
 #include "ecmascript/ecma_string_table.h"
 #include "ecmascript/runtime_call_id.h"
+#include "ecmascript/js_finalization_registry.h"
 
 namespace panda::ecmascript {
 Heap::Heap(EcmaVM *ecmaVm) : ecmaVm_(ecmaVm), thread_(ecmaVm->GetJSThread()),
@@ -353,6 +355,9 @@ void Heap::CollectGarbage(TriggerGCType gcType)
     }
     isVerifying_ = false;
 #endif
+    if (!thread_->GetCheckAndCallEnterState()) {
+        JSFinalizationRegistry::CheckAndCall(thread_);
+    }
 }
 
 void Heap::ThrowOutOfMemoryError(size_t size, std::string functionName)
@@ -416,6 +421,25 @@ void Heap::AdjustOldSpaceLimit()
     }
     OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "AdjustOldSpaceLimit oldSpaceAllocLimit_" << oldSpaceAllocLimit
         << " globalSpaceAllocLimit_" << globalSpaceAllocLimit_;
+}
+
+void Heap::AddToKeptObjects(JSHandle<JSTaggedValue> value) const
+{
+    JSHandle<GlobalEnv> env = ecmaVm_->GetGlobalEnv();
+    JSHandle<LinkedHashSet> linkedSet;
+    if (env->GetWeakRefKeepObjects()->IsUndefined()) {
+        linkedSet = LinkedHashSet::Create(thread_);
+    } else {
+        linkedSet =
+            JSHandle<LinkedHashSet>(thread_, LinkedHashSet::Cast(env->GetWeakRefKeepObjects()->GetTaggedObject()));
+    }
+    linkedSet = LinkedHashSet::Add(thread_, linkedSet, value);
+    env->SetWeakRefKeepObjects(thread_, linkedSet);
+}
+
+void Heap::ClearKeptObjects() const
+{
+    ecmaVm_->GetGlobalEnv()->SetWeakRefKeepObjects(thread_, JSTaggedValue::Undefined());
 }
 
 void Heap::RecomputeLimits()

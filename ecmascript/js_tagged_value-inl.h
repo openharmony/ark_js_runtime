@@ -790,6 +790,21 @@ inline bool JSTaggedValue::IsJSSet() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSSet();
 }
 
+inline bool JSTaggedValue::IsJSWeakRef() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSWeakRef();
+}
+
+inline bool JSTaggedValue::IsJSFinalizationRegistry() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSFinalizationRegistry();
+}
+
+inline bool JSTaggedValue::IsCellRecord() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsCellRecord();
+}
+
 inline bool JSTaggedValue::IsJSRegExp() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSRegExp();

@@ -120,6 +120,7 @@ class ExportEntry;
 class SourceTextModule;
 class ResolvedBinding;
 class BigInt;
+class CellRecord;
 namespace job {
 class MicroJobQueue;
 class PendingJob;
@@ -468,6 +469,7 @@ public:
     JSHandle<ResolvedBinding> NewResolvedBindingRecord();
     JSHandle<ResolvedBinding> NewResolvedBindingRecord(const JSHandle<SourceTextModule> &module,
                                                        const JSHandle<JSTaggedValue> &bindingName);
+    JSHandle<CellRecord> NewCellRecord();
 
 private:
     friend class GlobalEnv;
