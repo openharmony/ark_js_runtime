@@ -101,7 +101,7 @@ public:
           wasted_(0)
     {
         bitsetSize_ = IsFlagSet(flags_, RegionFlags::IN_HUGE_OBJECT_SPACE) ?
-            GCBitset::BYTE_PER_WORD : GCBitset::SizeOfGCBitset(GetCapacity());
+            GCBitset::BYTE_PER_WORD : GCBitset::SizeOfGCBitset(end - begin);
         markGCBitset_ = new (ToVoidPtr(begin)) GCBitset();
         markGCBitset_->Clear(bitsetSize_);
         begin_ = AlignUp(begin + bitsetSize_, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
@@ -148,7 +148,7 @@ public:
 
     size_t GetCapacity() const
     {
-        return end_ - reinterpret_cast<uintptr_t>(this);
+        return end_ - allocateBase_;
     }
 
     size_t GetSize() const
@@ -316,11 +316,6 @@ public:
     {
         ASSERT(top == 0 || InRange(top));
         return (top == 0) ? (highWaterMark_ - begin_) : (top - begin_);
-    }
-
-    size_t GetHighWaterMarkSize() const
-    {
-        return highWaterMark_ - allocateBase_;
     }
 
     void SetHighWaterMark(uintptr_t mark)
@@ -503,6 +498,7 @@ private:
     Span<FreeObjectSet *> freeObjectSets_;
     size_t wasted_;
     os::memory::Mutex lock_;
+
     friend class Snapshot;
     friend class SnapshotProcessor;
 };

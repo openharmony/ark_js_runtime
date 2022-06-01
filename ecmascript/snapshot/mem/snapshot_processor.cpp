@@ -764,27 +764,45 @@ void SnapshotProcessor::StopAllocate()
     snapshotLocalSpace_->Stop();
 }
 
-void SnapshotProcessor::WriteObjectToFile(std::fstream &write)
+void SnapshotProcessor::WriteObjectToFile(std::fstream &writer)
 {
-    WriteSpaceObjectToFile(oldLocalSpace_, write);
-    WriteSpaceObjectToFile(nonMovableLocalSpace_, write);
-    WriteSpaceObjectToFile(machineCodeLocalSpace_, write);
-    WriteSpaceObjectToFile(snapshotLocalSpace_, write);
+    WriteSpaceObjectToFile(oldLocalSpace_, writer);
+    WriteSpaceObjectToFile(nonMovableLocalSpace_, writer);
+    WriteSpaceObjectToFile(machineCodeLocalSpace_, writer);
+    WriteSpaceObjectToFile(snapshotLocalSpace_, writer);
 }
 
-void SnapshotProcessor::WriteSpaceObjectToFile(Space* space, std::fstream &write)
+void SnapshotProcessor::WriteSpaceObjectToFile(Space* space, std::fstream &writer)
 {
     size_t regionCount = space->GetRegionCount();
-    auto lastRegion = space->GetCurrentRegion();
     if (regionCount > 0) {
-        space->EnumerateRegions([&write, lastRegion](Region *current) {
+        size_t alignedRegionObjSize = AlignUp(sizeof(Region), static_cast<size_t>(MemAlignment::MEM_ALIGN_REGION));
+        auto lastRegion = space->GetCurrentRegion();
+        space->EnumerateRegions([&writer, lastRegion, alignedRegionObjSize](Region *current) {
             if (current != lastRegion) {
-                write.write(reinterpret_cast<char *>(current), DEFAULT_REGION_SIZE);
-                write.flush();
+                // fixme: Except for the last region of a space,
+                // currently the snapshot feature assumes that every serialized region must have fixed size.
+                // The original region size plus the aligned region object size should not exceed DEFAULT_REGION_SIZE.
+                // Currently we even harden it to make them exactly equal to avoid writing dirty / invalid data to the
+                // file. Because in the snapshot file the region object and the associated region will be serialized
+                // together to an area which has the fixed size of DEFAULT_REGION_SIZE.
+                // Need to relax this assumption / limitation.
+                ASSERT(alignedRegionObjSize + (current->end_ - ToUintPtr(current->markGCBitset_)) ==
+                       DEFAULT_REGION_SIZE);
+
+                // Firstly, serialize the region object into the file;
+                writer.write(reinterpret_cast<char *>(current), alignedRegionObjSize);
+                // Secondly, write the valid region memory (from the GC bit set at the beginning to end).
+                writer.write(reinterpret_cast<char *>(current->markGCBitset_), DEFAULT_REGION_SIZE - alignedRegionObjSize);
+                writer.flush();
             }
         });
-        write.write(reinterpret_cast<char *>(lastRegion), lastRegion->GetHighWaterMarkSize());
-        write.flush();
+        // Firstly, serialize the region object into the file;
+        writer.write(reinterpret_cast<char *>(lastRegion), alignedRegionObjSize);
+        // Secondly, write the valid region memory (from the GC bit set at the beginning to high water mark).
+        writer.write(reinterpret_cast<char *>(lastRegion->markGCBitset_),
+                     lastRegion->highWaterMark_ - ToUintPtr(lastRegion->markGCBitset_));
+        writer.flush();
         space->ReclaimRegions();
     }
 }
@@ -801,11 +819,19 @@ std::vector<uint32_t> SnapshotProcessor::StatisticsObjectSize()
 
 uint32_t SnapshotProcessor::StatisticsSpaceObjectSize(Space* space)
 {
-    auto lastRegion = space->GetCurrentRegion();
     size_t regionCount = space->GetRegionCount();
     size_t objSize = 0U;
     if (regionCount > 0) {
-        objSize = (regionCount - 1) * DEFAULT_REGION_SIZE + lastRegion->GetHighWaterMarkSize();
+        auto lastRegion = space->GetCurrentRegion();
+        size_t alignedRegionObjSize = AlignUp(sizeof(Region), static_cast<size_t>(MemAlignment::MEM_ALIGN_REGION));
+        size_t lastRegionSize = lastRegion->highWaterMark_ - ToUintPtr(lastRegion->markGCBitset_);
+        // fixme: Except for the last region of a space,
+        // currently the snapshot feature assumes that every serialized region must have fixed size.
+        // The original region size plus the aligned region object size should not exceed DEFAULT_REGION_SIZE.
+        // Because in the snapshot file the region object and the associated region will be serialized
+        // together to an area which has the fixed size of DEFAULT_REGION_SIZE.
+        // Need to relax this assumption / limitation.
+        objSize = (regionCount - 1) * DEFAULT_REGION_SIZE + alignedRegionObjSize + lastRegionSize;
     }
     ASSERT(objSize <= Constants::MAX_UINT_32);
     return static_cast<uint32_t>(objSize);
@@ -853,11 +879,11 @@ void SnapshotProcessor::DeserializeObjectExcludeString(uintptr_t oldSpaceBegin, 
 
 void SnapshotProcessor::DeserializeSpaceObject(uintptr_t beginAddr, Space* space, size_t spaceObjSize)
 {
-    size_t regionSize = 0U;
+    size_t numberOfRegions = 0U;
     if (spaceObjSize != 0) {
-        regionSize = (spaceObjSize - 1) / DEFAULT_REGION_SIZE + 1; // round up
+        numberOfRegions = (spaceObjSize - 1) / DEFAULT_REGION_SIZE + 1; // round up
     }
-    for (size_t i = 0; i < regionSize; i++) {
+    for (size_t i = 0; i < numberOfRegions; i++) {
         Region *region = vm_->GetHeapRegionAllocator()->AllocateAlignedRegion(
             space, DEFAULT_REGION_SIZE, vm_->GetAssociatedJSThread());
         auto fileRegion = ToNativePtr<Region>(beginAddr + i * DEFAULT_REGION_SIZE);
@@ -866,53 +892,23 @@ void SnapshotProcessor::DeserializeSpaceObject(uintptr_t beginAddr, Space* space
         uint32_t regionIndex = *(reinterpret_cast<GCBitset *>(oldMarkGCBitsetAddr)->Words());
         regionIndexMap_.emplace(regionIndex, region);
 
-        uint64_t base = region->allocateBase_;
-        GCBitset *markGCBitset = region->markGCBitset_;
-        uint64_t begin = (fileRegion->begin_) % DEFAULT_REGION_SIZE;
-        uint64_t waterMark = (fileRegion->highWaterMark_) % DEFAULT_REGION_SIZE;
-        size_t copyBytes = fileRegion->highWaterMark_ - fileRegion->allocateBase_;
+        size_t copyBytes = fileRegion->highWaterMark_ - fileRegion->begin_;
+        // Retrieve the data beginning address based on the serialized data format.
+        uintptr_t copyFrom = oldMarkGCBitsetAddr + (fileRegion->begin_ - ToUintPtr(fileRegion->markGCBitset_));
+        ASSERT(copyBytes <= region->end_ - region->begin_);
 
-        if (memcpy_s(region, copyBytes, fileRegion, copyBytes) != EOK) {
+        if (memcpy_s(ToVoidPtr(region->begin_),
+                     copyBytes,
+                     ToVoidPtr(copyFrom),
+                     copyBytes) != EOK) {
             LOG_ECMA(FATAL) << "memcpy_s failed";
             UNREACHABLE();
         }
 
-        // allocate_base_
-        region->allocateBase_ = base;
-        // begin_
-        region->begin_ = ToUintPtr(region) + begin;
-        // end_
-        region->end_ = ToUintPtr(region) + DEFAULT_REGION_SIZE;
-        // high_water_mark_
-        region->highWaterMark_ = ToUintPtr(region) + waterMark;
-        // prev_
-        region->prev_ = nullptr;
-        // next_
-        region->next_ = nullptr;
-        // mark_bitset_
-        region->markGCBitset_ = markGCBitset;
-        // cross_region_set_
-        region->crossRegionSet_ = nullptr;
-        // old_to_new_set_
-        region->oldToNewSet_ = nullptr;
-        // thread_
-        region->thread_ = vm_->GetAssociatedJSThread();
-
-        /*
-	 * Reset flags according to the space type.
-	 * fixme: ResetFlag will erase all of the set bits which may include information other than space types,
-	 * like in CSet, has been swept, etc.. Double confirm whether such flags still need to be retained
-	 * in this case.
-	 * Currently we use a safer approach by clearing the space type related flags only.
-	 */
-        region->ClearFlag(RegionFlags::IN_OLD_SPACE);
-        region->ClearFlag(RegionFlags::IN_YOUNG_SPACE);
-        region->ClearFlag(RegionFlags::IN_HUGE_OBJECT_SPACE);
-        region->ClearFlag(RegionFlags::IN_MACHINE_CODE_SPACE);
-        region->ClearFlag(RegionFlags::IN_NON_MOVABLE_SPACE);
-        region->ClearFlag(RegionFlags::IN_SNAPSHOT_SPACE);
-
-        region->SetFlag(space->GetRegionFlag());
+        region->highWaterMark_ = region->begin_ + copyBytes;
+        // Other information like aliveObject size, wasted size etc. in the region object, TBD for restore.
+        region->aliveObject_ = fileRegion->AliveObject();
+        region->wasted_ = fileRegion->wasted_;
 
         region->SetFlag(RegionFlags::NEED_RELOCATE);
 
