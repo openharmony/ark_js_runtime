@@ -994,7 +994,7 @@ void SlowPathLowering::LowerExceptionHandler(GateRef hirGate)
         { loadException, holeCst, glue }, VariableType::INT64().GetGateType());
     auto uses = acc_.Uses(hirGate);
     for (auto it = uses.begin(); it != uses.end(); it++) {
-        if (acc_.GetDep(*it) == hirGate) {
+        if (acc_.GetDep(*it) == hirGate && acc_.IsDependIn(it)) {
             acc_.ReplaceIn(it, clearException);
         } else {
             acc_.ReplaceIn(it, loadException);
@@ -1885,11 +1885,12 @@ void SlowPathLowering::LowerPopLexicalEnv(GateRef gate, GateRef glue, GateRef js
     GateRef result = LowerCallRuntime(glue, RTSTUB_ID(GetAotLexicalEnv), {jsFunc}, true);
     GateRef index = builder_.Int32(LexicalEnv::PARENT_ENV_INDEX);
     GateRef parentLexEnv = builder_.GetValueFromTaggedArray(VariableType::JS_ANY(), result, index);
+    builder_.SetLexicalEnvToFunction(glue, jsFunc, parentLexEnv);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());
     failControl.emplace_back(Circuit::NullGate());
     failControl.emplace_back(Circuit::NullGate());
-    ReplaceHirToSubCfg(gate, parentLexEnv, successControl, failControl, true);
+    ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl, true);
 }
 
 void SlowPathLowering::LowerLdSuperByValue(GateRef gate, GateRef glue, GateRef jsFunc)
