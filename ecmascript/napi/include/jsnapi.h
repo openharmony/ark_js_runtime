@@ -977,6 +977,8 @@ public:
     static Local<JSValueRef> DeserializeValue(const EcmaVM *vm, void* recoder);
     static void DeleteSerializationData(void *data);
     static void SetHostPromiseRejectionTracker(EcmaVM *vm, void *cb, void* data);
+    static void SetHostResolvePathTracker(EcmaVM *vm,
+                                          std::function<std::string(std::string dirPath, std::string requestPath)> cb);
     static void SetHostEnqueueJob(const EcmaVM* vm, Local<JSValueRef> cb);
     static void InitializeMemMapAllocator(const ecmascript::JSRuntimeOptions &options);
     static void DestroyMemMapAllocator();
