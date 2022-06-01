@@ -56,6 +56,7 @@
 #include "ecmascript/js_date.h"
 #include "ecmascript/js_date_time_format.h"
 #include "ecmascript/js_for_in_iterator.h"
+#include "ecmascript/js_finalization_registry.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_global_object.h"
@@ -81,6 +82,7 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/js_weak_container.h"
+#include "ecmascript/js_weak_ref.h"
 #include "ecmascript/layout_info-inl.h"
 #include "ecmascript/lexical_env.h"
 #include "ecmascript/linked_hash_table.h"
@@ -149,6 +151,12 @@ CString JSHClass::DumpJSType(JSType type)
             return "WeakSet";
         case JSType::JS_WEAK_MAP:
             return "WeakMap";
+        case JSType::JS_WEAK_REF:
+            return "WeakRef";
+        case JSType::JS_FINALIZATION_REGISTRY:
+            return "JSFinalizationRegistry";
+        case JSType::CELL_RECORD:
+            return "CellRecord";
         case JSType::JS_DATE:
             return "Date";
         case JSType::JS_BOUND_FUNCTION:
@@ -502,6 +510,15 @@ static void DumpObject(TaggedObject *obj, std::ostream &os)
             break;
         case JSType::JS_WEAK_MAP:
             JSWeakMap::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_WEAK_REF:
+            JSWeakRef::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_FINALIZATION_REGISTRY:
+            JSFinalizationRegistry::Cast(obj)->Dump(os);
+            break;
+        case JSType::CELL_RECORD:
+            CellRecord::Cast(obj)->Dump(os);
             break;
         case JSType::JS_REG_EXP:
             JSRegExp::Cast(obj)->Dump(os);
@@ -1474,6 +1491,40 @@ void JSWeakSet::Dump(std::ostream &os) const
     set->Dump(os);
 }
 
+void JSWeakRef::Dump(std::ostream &os) const
+{
+    os << " - WeakObject : ";
+    GetWeakObject().DumpTaggedValue(os);
+    os << "\n";
+    JSObject::Dump(os);
+}
+
+void JSFinalizationRegistry::Dump(std::ostream &os) const
+{
+    os << " - CleanupCallback : ";
+    GetCleanupCallback().DumpTaggedValue(os);
+    os << "\n";
+    os << " - NoUnregister : ";
+    GetNoUnregister().D();
+    os << "\n";
+    os << " - MaybeUnregister : ";
+    LinkedHashMap *map = LinkedHashMap::Cast(GetMaybeUnregister().GetTaggedObject());
+    os << "   -   elements: " << std::dec << map->NumberOfElements() << "\n";
+    os << "   -   deleted-elements: " << std::dec << map->NumberOfDeletedElements() << "\n";
+    os << "   -   capacity: " << std::dec << map->Capacity() << "\n";
+    JSObject::Dump(os);
+}
+
+void CellRecord::Dump(std::ostream &os) const
+{
+    os << " - WeakRefTarget : ";
+    GetFromWeakRefTarget().DumpTaggedValue(os);
+    os << "\n";
+    os << " - HeldValue : ";
+    GetHeldValue().DumpTaggedValue(os);
+    os << "\n";
+}
+
 void JSSetIterator::Dump(std::ostream &os) const
 {
     LinkedHashSet *set = LinkedHashSet::Cast(GetIteratedSet().GetTaggedObject());
@@ -1709,6 +1760,10 @@ void GlobalEnv::Dump(std::ostream &os) const
     GetBuiltinsWeakSetFunction().GetTaggedValue().Dump(os);
     os << " - BuiltinsWeakMapFunction: ";
     GetBuiltinsWeakMapFunction().GetTaggedValue().Dump(os);
+    os << " - BuiltinsWeakRefFunction: ";
+    GetBuiltinsWeakRefFunction().GetTaggedValue().Dump(os);
+    os << " - BuiltinsFinalizationRegistryFunction: ";
+    GetBuiltinsFinalizationRegistryFunction().GetTaggedValue().Dump(os);
     os << " - MathFunction: ";
     GetMathFunction().GetTaggedValue().Dump(os);
     os << " - JsonFunction: ";
@@ -2831,6 +2886,15 @@ static void DumpObject(TaggedObject *obj,
         case JSType::JS_WEAK_MAP:
             JSWeakMap::Cast(obj)->DumpForSnapshot(vec);
             return;
+        case JSType::JS_WEAK_REF:
+            JSWeakRef::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_FINALIZATION_REGISTRY:
+            JSFinalizationRegistry::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::CELL_RECORD:
+            CellRecord::Cast(obj)->DumpForSnapshot(vec);
+            return;
         case JSType::JS_REG_EXP:
             JSRegExp::Cast(obj)->DumpForSnapshot(vec);
             return;
@@ -3406,6 +3470,28 @@ void JSWeakSet::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &
 
     JSObject::DumpForSnapshot(vec);
 }
+
+void JSWeakRef::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("WeakObject"), GetWeakObject()));
+    JSObject::DumpForSnapshot(vec);
+}
+
+void JSFinalizationRegistry::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("CleanupCallback"), GetCleanupCallback()));
+    LinkedHashMap *map = LinkedHashMap::Cast(GetMaybeUnregister().GetTaggedObject());
+    map->DumpForSnapshot(vec);
+    vec.push_back(std::make_pair(CString("MaybeUnregister"), GetMaybeUnregister()));
+    JSObject::DumpForSnapshot(vec);
+}
+
+void CellRecord::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("WeakRefTarget"), GetWeakRefTarget()));
+    vec.push_back(std::make_pair(CString("HeldValue"), GetHeldValue()));
+}
+
 void JSSetIterator::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     LinkedHashSet *set = LinkedHashSet::Cast(GetIteratedSet().GetTaggedObject());
@@ -3588,6 +3674,9 @@ void GlobalEnv::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &
     vec.push_back(std::make_pair(CString("BuiltinsMapFunction"), GetBuiltinsMapFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("BuiltinsWeakSetFunction"), GetBuiltinsWeakSetFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("BuiltinsWeakMapFunction"), GetBuiltinsWeakMapFunction().GetTaggedValue()));
+    vec.push_back(std::make_pair(CString("BuiltinsWeakRefFunction"), GetBuiltinsWeakRefFunction().GetTaggedValue()));
+    vec.push_back(std::make_pair(CString("BuiltinsFinalizationRegistryFunction"),
+                                 GetBuiltinsFinalizationRegistryFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("MathFunction"), GetMathFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("JsonFunction"), GetJsonFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("StringFunction"), GetStringFunction().GetTaggedValue()));

@@ -90,6 +90,8 @@ class ProtoChangeDetails;
         JS_MAP,      /* ///////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_WEAK_MAP, /* ///////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_WEAK_SET, /* ///////////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_WEAK_REF, /* ///////////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_FINALIZATION_REGISTRY, /* //////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_DATE,     /* ///////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_ITERATOR, /* ///////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_FORIN_ITERATOR,       /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -185,6 +187,7 @@ class ProtoChangeDetails;
         IMPORTENTRY_RECORD, /* /////////////////////////////////////////////////////////////////////////-PADDING */    \
         EXPORTENTRY_RECORD, /* /////////////////////////////////////////////////////////////////////////-PADDING */    \
         RESOLVEDBINDING_RECORD, /* /////////////////////////////////////////////////////////////////////-PADDING */    \
+        CELL_RECORD,          /* //////////////////////////////////////////////////////////////////////////-PADDING */ \
         COMPLETION_RECORD, /* JS_RECORD_END /////////////////////////////////////////////////////////////////////// */ \
         MACHINE_CODE_OBJECT,                                                                                           \
         CLASS_INFO_EXTRACTOR, /* //////////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -590,6 +593,16 @@ public:
         return GetObjectType() == JSType::JS_WEAK_SET;
     }
 
+    bool IsJSWeakRef() const
+    {
+        return GetObjectType() == JSType::JS_WEAK_REF;
+    }
+
+    bool IsJSFinalizationRegistry() const
+    {
+        return GetObjectType() == JSType::JS_FINALIZATION_REGISTRY;
+    }
+
     bool IsJSFunction() const
     {
         return GetObjectType() >= JSType::JS_FUNCTION_BEGIN && GetObjectType() <= JSType::JS_FUNCTION_END;
@@ -952,6 +965,11 @@ public:
     inline bool IsPromiseReaction() const
     {
         return GetObjectType() == JSType::PROMISE_REACTIONS;
+    }
+
+    inline bool IsCellRecord() const
+    {
+        return GetObjectType() == JSType::CELL_RECORD;
     }
 
     inline bool IsCompletionRecord() const

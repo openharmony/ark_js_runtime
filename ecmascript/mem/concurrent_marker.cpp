@@ -104,6 +104,7 @@ void ConcurrentMarker::Reset(bool revertCSet)
         auto callback = [](Region *region) {
             region->ClearMarkGCBitset();
             region->ClearCrossRegionRSet();
+            region->ResetAliveObject();
         };
         if (heap_->IsFullMark()) {
             heap_->EnumerateRegions(callback);

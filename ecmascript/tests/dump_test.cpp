@@ -55,6 +55,7 @@
 #include "ecmascript/js_dataview.h"
 #include "ecmascript/js_date.h"
 #include "ecmascript/js_date_time_format.h"
+#include "ecmascript/js_finalization_registry.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_generator_object.h"
@@ -83,6 +84,7 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/js_weak_container.h"
+#include "ecmascript/js_weak_ref.h"
 #include "ecmascript/layout_info-inl.h"
 #include "ecmascript/lexical_env.h"
 #include "ecmascript/linked_hash_table.h"
@@ -423,6 +425,31 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 JSHandle<LinkedHashSet> weakLinkedSet(LinkedHashSet::Create(thread));
                 jsWeakSet->SetLinkedSet(thread, weakLinkedSet);
                 DUMP_FOR_HANDLE(jsWeakSet)
+                break;
+            }
+            case JSType::JS_WEAK_REF: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSWeakRef::SIZE, 1U)
+                JSHandle<JSHClass> weakRefClass = factory->NewEcmaDynClass(JSWeakRef::SIZE, JSType::JS_WEAK_REF, proto);
+                JSHandle<JSWeakRef> jsWeakRef = JSHandle<JSWeakRef>::Cast(factory->NewJSObjectWithInit(weakRefClass));
+                jsWeakRef->SetWeakObject(thread, JSTaggedValue::Undefined());
+                DUMP_FOR_HANDLE(jsWeakRef)
+                break;
+            }
+            case JSType::JS_FINALIZATION_REGISTRY: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSFinalizationRegistry::SIZE, 5U)
+                JSHandle<JSHClass> finalizationRegistryClass =
+                    factory->NewEcmaDynClass(JSFinalizationRegistry::SIZE, JSType::JS_FINALIZATION_REGISTRY, proto);
+                JSHandle<JSFinalizationRegistry> jsFinalizationRegistry =
+                    JSHandle<JSFinalizationRegistry>::Cast(factory->NewJSObjectWithInit(finalizationRegistryClass));
+                JSHandle<LinkedHashMap> weakLinkedMap(LinkedHashMap::Create(thread));
+                jsFinalizationRegistry->SetMaybeUnregister(thread, weakLinkedMap);
+                DUMP_FOR_HANDLE(jsFinalizationRegistry)
+                break;
+            }
+            case JSType::CELL_RECORD: {
+                CHECK_DUMP_FIELDS(Record::SIZE, CellRecord::SIZE, 2U)
+                JSHandle<CellRecord> cellRecord = factory->NewCellRecord();
+                DUMP_FOR_HANDLE(cellRecord)
                 break;
             }
             case JSType::JS_DATE: {
