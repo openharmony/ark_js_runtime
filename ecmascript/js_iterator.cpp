@@ -71,10 +71,12 @@ JSHandle<JSTaggedValue> JSIterator::GetIterator(JSThread *thread, const JSHandle
 // 7.4.2
 JSHandle<JSObject> JSIterator::IteratorNext(JSThread *thread, const JSHandle<JSTaggedValue> &iter)
 {
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+
     // 1.If value was not passed, then Let result be Invoke(iterator, "next", «‍ »).
-    JSHandle<JSTaggedValue> key(thread->GlobalConstants()->GetHandledNextString());
+    JSHandle<JSTaggedValue> key(globalConst->GetHandledNextString());
     JSHandle<JSTaggedValue> next(JSObject::GetMethod(thread, iter, key));
-    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
     EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, next, iter, undefined, 0);
     JSTaggedValue ret = JSFunction::Call(&info);
     JSHandle<JSObject> result(thread, ret);
@@ -90,10 +92,11 @@ JSHandle<JSObject> JSIterator::IteratorNext(JSThread *thread, const JSHandle<JST
 JSHandle<JSObject> JSIterator::IteratorNext(JSThread *thread, const JSHandle<JSTaggedValue> &iter,
                                             const JSHandle<JSTaggedValue> &value)
 {
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
     // 2.Let result be Invoke(iterator, "next", «‍value»).
-    JSHandle<JSTaggedValue> key(thread->GlobalConstants()->GetHandledNextString());
+    JSHandle<JSTaggedValue> key(globalConst->GetHandledNextString());
     JSHandle<JSTaggedValue> next(JSObject::GetMethod(thread, iter, key));
-    JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
+    JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
     EcmaRuntimeCallInfo info = EcmaInterpreter::NewRuntimeCallInfo(thread, next, iter, undefined, 1);
     info.SetCallArg(value.GetTaggedValue());
     JSTaggedValue ret = JSFunction::Call(&info);

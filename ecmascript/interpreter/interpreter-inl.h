@@ -446,15 +446,7 @@ JSTaggedValue EcmaInterpreter::Execute(EcmaRuntimeCallInfo *info)
     JSThread *thread = info->GetThread();
     INTERPRETER_TRACE(thread, Execute);
     if (thread->IsAsmInterpreter()) {
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
         return InterpreterAssembly::Execute(info);
-#else
-        auto prevLeaveFrame = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
-        thread->SetLastLeaveFrame(nullptr);  // avoid setting again in NewRuntimeCallInfo()
-        JSTaggedValue asmResult = InterpreterAssembly::Execute(info);
-        thread->SetLastLeaveFrame(prevLeaveFrame);
-        return asmResult;
-#endif
     }
     JSHandle<JSTaggedValue> func = info->GetFunction();
     ECMAObject *callTarget = reinterpret_cast<ECMAObject*>(func.GetTaggedValue().GetTaggedObject());

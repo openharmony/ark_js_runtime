@@ -29,10 +29,11 @@ config("ark_ecma_debugger_config") {
 debugger_sources = [
   "agent/debugger_impl.cpp",
   "agent/heapprofiler_impl.cpp",
-  "agent/js_backend.cpp",
-  "agent/js_pt_hooks.cpp",
   "agent/profiler_impl.cpp",
   "agent/runtime_impl.cpp",
+  "backend/debugger_executor.cpp",
+  "backend/js_pt_extractor.cpp",
+  "backend/js_pt_hooks.cpp",
   "base/pt_events.cpp",
   "base/pt_params.cpp",
   "base/pt_returns.cpp",
@@ -40,7 +41,6 @@ debugger_sources = [
   "base/pt_types.cpp",
   "debugger_service.cpp",
   "dispatcher.cpp",
-  "js_pt_extractor.cpp",
   "protocol_handler.cpp",
 ]
 

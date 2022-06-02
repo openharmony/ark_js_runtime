@@ -658,11 +658,14 @@ DEF_CALL_SIGNATURE(ResumeRspAndDispatch)
 
 DEF_CALL_SIGNATURE(ResumeRspAndReturn)
 {
-    // 2 : 2 input parameters
-    CallSignature resumeRspAndReturn("ResumeRspAndReturn", 0, 0,
+    // 1 : 1 input parameters
+    CallSignature resumeRspAndReturn("ResumeRspAndReturn", 0, 1,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
     *callSign = resumeRspAndReturn;
-    callSign->SetParameters(nullptr);
+    std::array<VariableType, 1> params = { // 1 : 1 input parameters
+        VariableType::JS_ANY(),
+    };
+    callSign->SetParameters(params.data());
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
     callSign->SetCallConv(CallSignature::CallConv::GHCCallConv);
 }
@@ -765,19 +768,9 @@ DEF_CALL_SIGNATURE(PushCallArgs0AndDispatch)
     PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE(PushCallArgs0AndDispatch)
 }
 
-DEF_CALL_SIGNATURE(PushCallArgs0AndDispatchSlowPath)
-{
-    PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE(PushCallArgs0AndDispatchSlowPath)
-}
-
 DEF_CALL_SIGNATURE(PushCallArgs1AndDispatch)
 {
     PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE(PushCallArgs1AndDispatch)
-}
-
-DEF_CALL_SIGNATURE(PushCallArgs1AndDispatchSlowPath)
-{
-    PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE(PushCallArgs1AndDispatchSlowPath)
 }
 
 DEF_CALL_SIGNATURE(PushCallArgs2AndDispatch)
@@ -785,19 +778,9 @@ DEF_CALL_SIGNATURE(PushCallArgs2AndDispatch)
     PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE(PushCallArgs2AndDispatch)
 }
 
-DEF_CALL_SIGNATURE(PushCallArgs2AndDispatchSlowPath)
-{
-    PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE(PushCallArgs2AndDispatchSlowPath)
-}
-
 DEF_CALL_SIGNATURE(PushCallArgs3AndDispatch)
 {
     PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE(PushCallArgs3AndDispatch)
-}
-
-DEF_CALL_SIGNATURE(PushCallArgs3AndDispatchSlowPath)
-{
-    PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE(PushCallArgs3AndDispatchSlowPath)
 }
 
 DEF_CALL_SIGNATURE(PushCallIRangeAndDispatchNative)
@@ -810,19 +793,19 @@ DEF_CALL_SIGNATURE(PushCallIRangeAndDispatch)
     PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE(PushCallIRangeAndDispatch)
 }
 
-DEF_CALL_SIGNATURE(PushCallIRangeAndDispatchSlowPath)
-{
-    PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE(PushCallIRangeAndDispatchSlowPath)
-}
-
 DEF_CALL_SIGNATURE(PushCallIThisRangeAndDispatch)
 {
     PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE(PushCallIThisRangeAndDispatch)
 }
 
-DEF_CALL_SIGNATURE(PushCallIThisRangeAndDispatchSlowPath)
+DEF_CALL_SIGNATURE(CallGetter)
 {
-    PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE(PushCallIThisRangeAndDispatchSlowPath)
+    PUSH_CALL_ARGS_AND_DISPATCH_NATIVE_RANGE_SIGNATURE(CallGetter)
+}
+
+DEF_CALL_SIGNATURE(CallSetter)
+{
+    PUSH_CALL_ARGS_AND_DISPATCH_NATIVE_RANGE_SIGNATURE(CallSetter)
 }
 
 DEF_CALL_SIGNATURE(DebugPrint)

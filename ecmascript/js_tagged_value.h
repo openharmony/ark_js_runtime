@@ -298,7 +298,7 @@ public:
 
     inline bool IsHole() const
     {
-        return value_ == VALUE_HOLE;
+        return value_ == VALUE_HOLE || value_ == 0U;
     }
 
     inline bool IsException() const
@@ -472,6 +472,9 @@ public:
     bool IsJSSet() const;
     bool IsJSWeakMap() const;
     bool IsJSWeakSet() const;
+    bool IsJSWeakRef() const;
+    bool IsJSFinalizationRegistry() const;
+    bool IsCellRecord() const;
     bool IsJSRegExp() const;
     bool IsNumber() const;
     bool IsBigInt() const;

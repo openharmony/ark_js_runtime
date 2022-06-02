@@ -40,13 +40,14 @@ using JSHandle = ecmascript::JSHandle<T>;
 using ecmascript::FileStream;
 using ecmascript::FileDescriptorStream;
 
-void DFXJSNApi::DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, const std::string &path, bool isVmMode, bool isPrivate)
+void DFXJSNApi::DumpHeapSnapshot(const EcmaVM *vm, int dumpFormat,
+                                 const std::string &path, bool isVmMode, bool isPrivate)
 {
     FileStream stream(path);
     DumpHeapSnapshot(vm, dumpFormat, &stream, nullptr, isVmMode, isPrivate);
 }
 
-void DFXJSNApi::DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, Stream *stream, Progress *progress,
+void DFXJSNApi::DumpHeapSnapshot(const EcmaVM *vm, int dumpFormat, Stream *stream, Progress *progress,
                                  bool isVmMode, bool isPrivate)
 {
     ecmascript::HeapProfilerInterface *heapProfile = ecmascript::HeapProfilerInterface::GetInstance(vm);
@@ -54,7 +55,7 @@ void DFXJSNApi::DumpHeapSnapshot(EcmaVM *vm, int dumpFormat, Stream *stream, Pro
     ecmascript::HeapProfilerInterface::Destroy(vm);
 }
 
-void DFXJSNApi::DumpHeapSnapshot([[maybe_unused]] EcmaVM *vm, [[maybe_unused]] int dumpFormat,
+void DFXJSNApi::DumpHeapSnapshot([[maybe_unused]] const EcmaVM *vm, [[maybe_unused]] int dumpFormat,
                                  [[maybe_unused]] bool isVmMode, [[maybe_unused]] bool isPrivate)
 {
 #if defined(ENABLE_DUMP_IN_FAULTLOG)
@@ -69,7 +70,7 @@ void DFXJSNApi::DumpHeapSnapshot([[maybe_unused]] EcmaVM *vm, [[maybe_unused]] i
 #endif
 }
 
-bool DFXJSNApi::BuildNativeAndJsBackStackTrace(EcmaVM *vm, std::string &stackTraceStr)
+bool DFXJSNApi::BuildNativeAndJsBackStackTrace(const EcmaVM *vm, std::string &stackTraceStr)
 {
     CString trace = ecmascript::base::ErrorHelper::BuildNativeAndJsStackTrace(vm->GetJSThreadNoCheck());
     stackTraceStr = CstringConvertToStdString(trace);
@@ -79,19 +80,19 @@ bool DFXJSNApi::BuildNativeAndJsBackStackTrace(EcmaVM *vm, std::string &stackTra
     return true;
 }
 
-bool DFXJSNApi::StartHeapTracking(EcmaVM *vm, double timeInterval, bool isVmMode)
+bool DFXJSNApi::StartHeapTracking(const EcmaVM *vm, double timeInterval, bool isVmMode)
 {
     ecmascript::HeapProfilerInterface *heapProfile = ecmascript::HeapProfilerInterface::GetInstance(vm);
     return heapProfile->StartHeapTracking(timeInterval, isVmMode);
 }
 
-bool DFXJSNApi::StopHeapTracking(EcmaVM *vm, const std::string &filePath)
+bool DFXJSNApi::StopHeapTracking(const EcmaVM *vm, const std::string &filePath)
 {
     FileStream stream(filePath);
     return StopHeapTracking(vm, &stream, nullptr);
 }
 
-bool DFXJSNApi::StopHeapTracking(EcmaVM *vm, Stream* stream, Progress *progress)
+bool DFXJSNApi::StopHeapTracking(const EcmaVM *vm, Stream* stream, Progress *progress)
 {
     bool result = false;
     ecmascript::HeapProfilerInterface *heapProfile = ecmascript::HeapProfilerInterface::GetInstance(vm);
@@ -116,17 +117,17 @@ void DFXJSNApi::StopRuntimeStat(EcmaVM *vm)
     vm->SetRuntimeStatEnable(false);
 }
 
-size_t DFXJSNApi::GetArrayBufferSize(EcmaVM *vm)
+size_t DFXJSNApi::GetArrayBufferSize(const EcmaVM *vm)
 {
     return vm->GetHeap()->GetArrayBufferSize();
 }
 
-size_t DFXJSNApi::GetHeapTotalSize(EcmaVM *vm)
+size_t DFXJSNApi::GetHeapTotalSize(const EcmaVM *vm)
 {
     return vm->GetHeap()->GetCommittedSize();
 }
 
-size_t DFXJSNApi::GetHeapUsedSize(EcmaVM *vm)
+size_t DFXJSNApi::GetHeapUsedSize(const EcmaVM *vm)
 {
     return vm->GetHeap()->GetHeapObjectSize();
 }

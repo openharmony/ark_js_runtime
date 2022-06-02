@@ -23,80 +23,104 @@
 namespace panda::ecmascript {
 class GlobalTSTypeRef {
 public:
-    GlobalTSTypeRef(uint64_t ref = 0) : ref_(ref) {}
+    GlobalTSTypeRef(uint32_t data = 0) : data_(data) {}
     GlobalTSTypeRef(int moduleId, int localId, int typeKind)
     {
-        ref_ = 0;
-        SetUserDefineTypeKind(typeKind);
+        data_ = 0;
+        SetKind(typeKind);
         SetLocalId(localId);
         SetModuleId(moduleId);
     }
     ~GlobalTSTypeRef() = default;
 
     static constexpr int TS_TYPE_RESERVED_COUNT = 50;
-    static constexpr int GLOBAL_TSTYPE_REF_SIZE = 64;
-    static constexpr int USER_DEFINE_TYPE_KIND_FIELD_NUM = 6;
-    static constexpr int GC_TYPE_FIELD_NUM = 3;
-    static constexpr int LOCAL_TSTYPETABLE_INDEX_FIELD_NUM = 32;
-    static constexpr int GLOBAL_MODULE_ID_FIELD_NUM = 23;
-    FIRST_BIT_FIELD(GlobalTSTypeRef, UserDefineTypeKind, uint8_t, USER_DEFINE_TYPE_KIND_FIELD_NUM);
-    NEXT_BIT_FIELD(GlobalTSTypeRef, GCType, uint32_t, GC_TYPE_FIELD_NUM, UserDefineTypeKind);
-    NEXT_BIT_FIELD(GlobalTSTypeRef, LocalId, uint32_t, LOCAL_TSTYPETABLE_INDEX_FIELD_NUM, GCType);
-    NEXT_BIT_FIELD(GlobalTSTypeRef, ModuleId, uint32_t, GLOBAL_MODULE_ID_FIELD_NUM, LocalId);
+    static constexpr int KIND_BITS = 6;
+    static constexpr int GC_TYPE_BITS = 3;
+    static constexpr int LOCAL_ID_BITS = 16;
+    static constexpr int MODULE_ID_BITS = 7;
+    FIRST_BIT_FIELD(Data, Kind, uint8_t, KIND_BITS);
+    NEXT_BIT_FIELD(Data, GCType, uint8_t, GC_TYPE_BITS, Kind);
+    NEXT_BIT_FIELD(Data, LocalId, uint16_t, LOCAL_ID_BITS, GCType);
+    NEXT_BIT_FIELD(Data, ModuleId, uint8_t, MODULE_ID_BITS, LocalId);
 
     static GlobalTSTypeRef Default()
     {
         return GlobalTSTypeRef(0u);
     }
 
-    uint64_t GetGlobalTSTypeRef() const
+    uint32_t GetData() const
     {
-        return ref_;
+        return data_;
     }
 
-    void SetGlobalTSTypeRef(uint64_t gt)
+    void SetData(uint32_t data)
     {
-        ref_ = gt;
+        data_ = data;
     }
 
     void Clear()
     {
-        ref_ = 0;
+        data_ = 0;
     }
 
     bool IsBuiltinType() const
     {
-        return ref_ < TS_TYPE_RESERVED_COUNT;
+        return data_ < TS_TYPE_RESERVED_COUNT;
     }
 
     bool IsDefault() const
     {
-        return ref_ == 0;
+        return data_ == 0;
+    }
+
+    bool operator <(const GlobalTSTypeRef &type) const
+    {
+        return data_ < type.data_;
+    }
+
+    bool operator ==(const GlobalTSTypeRef &type) const
+    {
+        return data_ == type.data_;
+    }
+
+    void Dump() const
+    {
+        uint8_t kind = GetKind();
+        uint32_t gcType = GetGCType();
+        uint32_t localId = GetLocalId();
+        uint32_t moduleId = GetModuleId();
+        LOG(ERROR, ECMASCRIPT) << "kind: " << kind << " gcType: " << gcType
+                               << " localId: " << localId << " moduleId: " << moduleId;
     }
 
 private:
-    uint64_t ref_;
+     uint32_t data_ {0};
 };
 
 enum class TSTypeKind : int {
-    TS_ANY = 0,
-    TS_NUMBER,
-    TS_BOOLEAN,
-    TS_VOID,
-    TS_STRING,
-    TS_SYMBOL,
-    TS_NULL,
-    TS_UNDEFINED,
-    TS_INT,
-    TS_TYPE_RESERVED_LENGTH = GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT, // include builtins type and MR type
-    TS_CLASS,
-    TS_CLASS_INSTANCE,
-    TS_FUNCTION,
-    TS_UNION,
-    TS_ARRAY,
-    TS_OBJECT,
-    TS_IMPORT,
-    TS_INTERFACE
+    PRIMITIVE = 0,
+    CLASS,
+    CLASS_INSTANCE,
+    FUNCTION,
+    UNION,
+    ARRAY,
+    OBJECT,
+    IMPORT,
+    INTERFACE
+};
+
+enum class TSPrimitiveType : int {
+    ANY = 0,
+    NUMBER,
+    BOOLEAN,
+    VOID_TYPE,
+    STRING,
+    SYMBOL,
+    NULL_TYPE,
+    UNDEFINED,
+    INT,
+    BIG_INT,
+    END
 };
 
 class TSModuleTable : public TaggedArray {
@@ -105,11 +129,14 @@ public:
     static constexpr int AMI_PATH_OFFSET = 1;
     static constexpr int SORT_ID_OFFSET = 2;
     static constexpr int TYPE_TABLE_OFFSET = 3;
-    static constexpr int ELEMENT_OFFSET = 3;
-    static constexpr int NUMBER_ELEMENTS_OFFSET = 0;
+    static constexpr int ELEMENTS_LENGTH = 3;
+    static constexpr int NUMBER_OF_TABLES_INDEX = 0;
     static constexpr int INCREASE_CAPACITY_RATE = 2;
-    static constexpr int DEFAULT_TABLE_CAPACITY = 4;
-    static constexpr int INITIAL_TSTYPE_TABLE_NUMBER = 0;
+    static constexpr int DEFAULT_NUMBER_OF_TABLES = 2;  // builtins table and global union table
+    // first +1 means reserve a table from pandafile, second +1 menas the NUMBER_OF_TABLES_INDEX
+    static constexpr int DEFAULT_TABLE_CAPACITY =  (DEFAULT_NUMBER_OF_TABLES + 1) * ELEMENTS_LENGTH + 1;
+    static constexpr int BUILTINS_TABLE_ID = 0;
+    static constexpr int INFER_TABLE_ID = 1;
     static constexpr int NOT_FOUND = -1;
 
     static TSModuleTable *Cast(TaggedObject *object)
@@ -117,6 +144,8 @@ public:
         ASSERT(JSTaggedValue(object).IsTaggedArray());
         return static_cast<TSModuleTable *>(object);
     }
+
+    static void Initialize(JSThread *thread, JSHandle<TSModuleTable> mTable);
 
     static JSHandle<TSModuleTable> AddTypeTable(JSThread *thread, JSHandle<TSModuleTable> table,
                                                 JSHandle<JSTaggedValue> typeTable, JSHandle<EcmaString> amiPath);
@@ -127,30 +156,31 @@ public:
 
     int GetGlobalModuleID(JSThread *thread, JSHandle<EcmaString> amiPath) const;
 
-    inline int GetNumberOfTSTypeTable() const
+    inline int GetNumberOfTSTypeTables() const
     {
-        return Get(NUMBER_ELEMENTS_OFFSET).GetInt();;
+        return Get(NUMBER_OF_TABLES_INDEX).GetInt();
+    }
+
+    inline void SetNumberOfTSTypeTables(JSThread *thread, int num)
+    {
+        Set(thread, NUMBER_OF_TABLES_INDEX, JSTaggedValue(num));
     }
 
     static uint32_t GetTSTypeTableOffset(int entry)
     {
-        return entry * ELEMENT_OFFSET + TYPE_TABLE_OFFSET;
+        return entry * ELEMENTS_LENGTH + TYPE_TABLE_OFFSET;
     }
 
-    void InitializeNumberOfTSTypeTable(JSThread *thread)
-    {
-        Set(thread, NUMBER_ELEMENTS_OFFSET, JSTaggedValue(INITIAL_TSTYPE_TABLE_NUMBER));
-    }
 private:
 
     static int GetAmiPathOffset(int entry)
     {
-        return entry * ELEMENT_OFFSET + AMI_PATH_OFFSET;
+        return entry * ELEMENTS_LENGTH + AMI_PATH_OFFSET;
     }
 
     static int GetSortIdOffset(int entry)
     {
-        return entry * ELEMENT_OFFSET + SORT_ID_OFFSET;
+        return entry * ELEMENTS_LENGTH + SORT_ID_OFFSET;
     }
 };
 
@@ -192,12 +222,12 @@ public:
     int GetNextModuleId() const
     {
         JSHandle<TSModuleTable> table = GetTSModuleTable();
-        return table->GetNumberOfTSTypeTable();
+        return table->GetNumberOfTSTypeTables();
     }
 
     inline static TSTypeKind PUBLIC_API GetTypeKind(GlobalTSTypeRef gt)
     {
-        return static_cast<TSTypeKind>(gt.GetUserDefineTypeKind());
+        return static_cast<TSTypeKind>(gt.GetKind());
     }
 
     JSHandle<EcmaString> GenerateAmiPath(JSHandle<EcmaString> cur, JSHandle<EcmaString> rel) const;
@@ -209,17 +239,28 @@ public:
     GlobalTSTypeRef PUBLIC_API GetGTFromPandaFile(const panda_file::File &pf, uint32_t vregId,
                                                  const JSMethod* method) const;
 
-    GlobalTSTypeRef PUBLIC_API GetPrimitiveGT(TSTypeKind kind) const;
+    static GlobalTSTypeRef PUBLIC_API GetPrimitiveGT(TSPrimitiveType type)
+    {
+        return GlobalTSTypeRef(static_cast<uint32_t>(type));
+    }
+
+    static GlobalTSTypeRef PUBLIC_API GetBuiltinsGT(int type)
+    {
+        return GlobalTSTypeRef(type);  // not implement yet.
+    }
 
     GlobalTSTypeRef PUBLIC_API GetImportTypeTargetGT(GlobalTSTypeRef gt) const;
 
     GlobalTSTypeRef PUBLIC_API GetPropType(GlobalTSTypeRef gt, JSHandle<EcmaString> propertyName) const;
 
+    // use for object
+    GlobalTSTypeRef PUBLIC_API GetPropType(GlobalTSTypeRef gt, const uint64_t key) const;
+
     uint32_t PUBLIC_API GetUnionTypeLength(GlobalTSTypeRef gt) const;
 
     GlobalTSTypeRef PUBLIC_API GetUnionTypeByIndex(GlobalTSTypeRef gt, int index) const;
 
-    GlobalTSTypeRef PUBLIC_API GetOrCreateUnionType(CVector<GlobalTSTypeRef> unionTypeRef, int size);
+    GlobalTSTypeRef PUBLIC_API GetOrCreateUnionType(CVector<GlobalTSTypeRef> unionTypeVec);
 
     int PUBLIC_API GetFuncParametersNum(GlobalTSTypeRef gt) const;
 
@@ -230,6 +271,9 @@ public:
     GlobalTSTypeRef PUBLIC_API GetArrayParameterTypeGT(GlobalTSTypeRef gt) const;
 
     size_t PUBLIC_API AddConstString(JSTaggedValue string);
+
+    // add string to constantstringtable and get its index
+    size_t PUBLIC_API GetStringIdx(JSHandle<JSTaggedValue> constPool, const uint16_t id);
 
     /*
      * Before using this method for type infer, you need to wait until all the
@@ -253,20 +297,90 @@ private:
 
     int GetTypeIndexFromExportTable(JSHandle<EcmaString> target, JSHandle<TaggedArray> &exportTable) const;
 
-    JSHandle<JSTaggedValue> InitUnionTypeTable();
+    GlobalTSTypeRef PUBLIC_API AddUnionToInferTable(JSHandle<TSUnionType> unionType);
 
-    GlobalTSTypeRef CreateGT(int moduleId, int localId, int typeKind) const;
+    GlobalTSTypeRef FindUnionInTypeTable(JSHandle<TSTypeTable> table, JSHandle<TSUnionType> unionType) const;
 
-    GlobalTSTypeRef AddUnionTypeToGlobalUnionTable(JSHandle<TSUnionType> unionType);
+    JSHandle<TSTypeTable> GetInferTypeTable() const;
 
-    GlobalTSTypeRef FindInGlobalUTable(JSHandle<TSUnionType> unionType) const;
-
-    JSHandle<TaggedArray> GetGlobalUTable() const;
+    void SetInferTypeTable(JSHandle<TSTypeTable> inferTable);
 
     EcmaVM *vm_ {nullptr};
     JSTaggedValue globalModuleTable_ {JSTaggedValue::Hole()};
     CVector<JSTaggedType> constantStringTable_ {};
     friend class EcmaVM;
+};
+
+class GateTypeCoder {
+public:
+    explicit GateTypeCoder() {}
+    ~GateTypeCoder() = default;
+
+    static kungfu::GateType GetAnyType()
+    {
+        auto numberType = static_cast<kungfu::GateType>(TSLoader::GetPrimitiveGT(TSPrimitiveType::ANY).GetData());
+        return numberType;
+    }
+
+    static kungfu::GateType GetNumberType()
+    {
+        auto numberType = static_cast<kungfu::GateType>(TSLoader::GetPrimitiveGT(TSPrimitiveType::NUMBER).GetData());
+        return numberType;
+    }
+
+    static kungfu::GateType GetBooleanType()
+    {
+        auto numberType = static_cast<kungfu::GateType>(TSLoader::GetPrimitiveGT(TSPrimitiveType::BOOLEAN).GetData());
+        return numberType;
+    }
+
+    static kungfu::GateType GetVoidType()
+    {
+        auto stringType = static_cast<kungfu::GateType>(TSLoader::GetPrimitiveGT(TSPrimitiveType::VOID_TYPE).GetData());
+        return stringType;
+    }
+
+    static kungfu::GateType GetStringType()
+    {
+        auto stringType = static_cast<kungfu::GateType>(TSLoader::GetPrimitiveGT(TSPrimitiveType::STRING).GetData());
+        return stringType;
+    }
+
+    static kungfu::GateType GetSymbolType()
+    {
+        auto stringType = static_cast<kungfu::GateType>(TSLoader::GetPrimitiveGT(TSPrimitiveType::SYMBOL).GetData());
+        return stringType;
+    }
+
+    static kungfu::GateType GetNullType()
+    {
+        auto stringType = static_cast<kungfu::GateType>(TSLoader::GetPrimitiveGT(TSPrimitiveType::NULL_TYPE).GetData());
+        return stringType;
+    }
+
+    static kungfu::GateType GetUndefinedType()
+    {
+        auto stringType = static_cast<kungfu::GateType>(TSLoader::GetPrimitiveGT(TSPrimitiveType::UNDEFINED).GetData());
+        return stringType;
+    }
+
+    static kungfu::GateType GetGateTypeByTypeRef(GlobalTSTypeRef typeRef)
+    {
+        auto gateType = static_cast<kungfu::GateType>(typeRef.GetData());
+        return gateType;
+    }
+
+    static bool IsString(kungfu::GateType gateType)
+    {
+        auto stringType = GetStringType();
+        return (gateType == stringType);
+    }
+
+    static bool IsAny(kungfu::GateType gateType)
+    {
+        auto anyType = GetAnyType();
+        return (gateType == anyType);
+    }
 };
 }  // namespace panda::ecmascript
 

@@ -411,8 +411,14 @@ public:
     Label(Label &&label) = default;
     Label &operator=(Label &&label) = default;
     inline void Seal();
-    inline void WriteVariable(Variable *var, GateRef value);
-    inline GateRef ReadVariable(Variable *var);
+    inline void WriteVariable(Variable *var, GateRef value)
+    {
+        impl_->WriteVariable(var, value);
+    }
+    inline GateRef ReadVariable(Variable *var)
+    {
+        return impl_->ReadVariable(var);
+    }
     inline void Bind();
     inline void MergeAllControl();
     inline void MergeAllDepend();

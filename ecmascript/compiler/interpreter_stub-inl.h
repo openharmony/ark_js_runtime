@@ -405,11 +405,7 @@ GateRef InterpreterStub::PushRange(GateRef glue, GateRef sp, GateRef array, Gate
 
 GateRef InterpreterStub::GetCurrentFrame(GateRef glue)
 {
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
     return GetLastLeaveFrame(glue);
-#else
-    return GetCurrentSpFrame(glue);
-#endif
 }
 
 GateRef InterpreterStub::ReadInst32_0(GateRef pc)

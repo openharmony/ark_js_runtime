@@ -34,7 +34,7 @@ public:
             ASSERT_LOCATION_EQ(location, location_);
             ++breakpointCounter_;
             CVector<std::unique_ptr<CallFrame>> callFrames;
-            ASSERT_TRUE(backend_->GenerateCallFrames(&callFrames));
+            ASSERT_TRUE(debugger_->GenerateCallFrames(&callFrames));
             ASSERT_TRUE(callFrames.size() > 0);
             auto jsLocation = callFrames[0]->GetLocation();
             ASSERT_TRUE(jsLocation != nullptr);
@@ -50,7 +50,7 @@ public:
             ASSERT_EQ(sourceLocation.column, 27);
             ++exceptionCounter_;
             CVector<std::unique_ptr<CallFrame>> callFrames;
-            ASSERT_TRUE(backend_->GenerateCallFrames(&callFrames));
+            ASSERT_TRUE(debugger_->GenerateCallFrames(&callFrames));
             ASSERT_TRUE(callFrames.size() > 0);
             auto jsLocation = callFrames[0]->GetLocation();
             ASSERT_TRUE(jsLocation != nullptr);
@@ -65,9 +65,9 @@ public:
                 if (moduleName != pandaFile_) {
                     return true;
                 }
-                ASSERT_TRUE(backend_->NotifyScriptParsed(0, pandaFile_));
+                ASSERT_TRUE(debugger_->NotifyScriptParsed(0, pandaFile_));
                 flag_ = false;
-                auto condFuncRef = FunctionRef::Undefined(backend_->GetEcmaVm());
+                auto condFuncRef = FunctionRef::Undefined(vm_);
                 auto ret = debugInterface_->SetBreakpoint(location_, condFuncRef);
                 ASSERT_TRUE(ret);
             }

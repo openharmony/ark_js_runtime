@@ -406,12 +406,6 @@ bool EcmaString::StringCopy(Span<T> &dst, size_t dstMax, Span<const T> &src, siz
 {
     ASSERT(dstMax >= count);
     ASSERT(dst.Size() >= src.Size());
-    if (src.Size() < SMALL_STRING_SIZE) {
-        for (size_t i = 0; i < src.Size(); i++) {
-            dst[i] = src[i];
-        }
-        return true;
-    }
     if (memcpy_s(dst.data(), dstMax, src.data(), count) != EOK) {
         LOG_ECMA(FATAL) << "memcpy_s failed";
         UNREACHABLE();
@@ -433,15 +427,14 @@ static int32_t ComputeHashForData(const T *data, size_t size, uint32_t hashSeed)
 
 static int32_t ComputeHashForUtf8(const uint8_t *utf8Data, uint32_t utf8DataLength)
 {
-    uint32_t utf8DataIndex = 0;
     if (utf8Data == nullptr) {
         return 0;
     }
     uint32_t hash = 0;
-    while (utf8DataIndex < utf8DataLength) { // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    const uint8_t *end = utf8Data + utf8DataLength;
+    while (utf8Data < end) { // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         constexpr size_t SHIFT = 5;
         hash = (hash << SHIFT) - hash + *utf8Data++;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        utf8DataIndex++;
     }
     return static_cast<int32_t>(hash);
 }

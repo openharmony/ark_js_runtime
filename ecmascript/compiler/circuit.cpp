@@ -473,4 +473,9 @@ GateRef Circuit::GetConstantGate(MachineType bitValue, BitField bitfield,
     constantCache_[{bitValue, bitfield, type}] = gate;
     return gate;
 }
+
+size_t Circuit::GetGateCount() const
+{
+    return gateCount_;
+}
 }  // namespace panda::ecmascript::kungfu

@@ -62,4 +62,4 @@ private:
     os::memory::ConditionVariable vmThreadHasSuspendedCV_;
 };
 } // namespace panda::ecmascript
-#endif  // ECMASCRIPT_JS_THREAD_H
+#endif  // ECMASCRIPT_VM_THREAD_CONTROL_H

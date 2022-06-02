@@ -69,11 +69,11 @@ JSHClass *TSObjectType::CreateHClassByProps(JSThread *thread, JSHandle<TSObjLayo
 bool TSUnionType::IsEqual(JSHandle<TSUnionType> unionB)
 {
     DISALLOW_GARBAGE_COLLECTION;
-    ASSERT(unionB->GetComponentTypes().IsTaggedArray());
+    ASSERT(unionB->GetComponents().IsTaggedArray());
     bool findUnionTag = 0;
 
-    TaggedArray *unionArrayA = TaggedArray::Cast(TSUnionType::GetComponentTypes().GetTaggedObject());
-    TaggedArray *unionArrayB = TaggedArray::Cast(unionB->GetComponentTypes().GetTaggedObject());
+    TaggedArray *unionArrayA = TaggedArray::Cast(TSUnionType::GetComponents().GetTaggedObject());
+    TaggedArray *unionArrayB = TaggedArray::Cast(unionB->GetComponents().GetTaggedObject());
     uint32_t unionALength = unionArrayA->GetLength();
     uint32_t unionBLength = unionArrayB->GetLength();
     if (unionALength != unionBLength) {

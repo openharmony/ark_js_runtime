@@ -22,9 +22,11 @@
 #include "ecmascript/compiler/assembler/assembler.h"
 #include "ecmascript/compiler/call_signature.h"
 #include "ecmascript/compiler/rt_call_signature.h"
+#include "ecmascript/frames.h"
 #include "ecmascript/stubs/runtime_stubs.h"
 
 namespace panda::ecmascript::kungfu {
+class CompilationConfig;
 class AssemblerModule {
 public:
     AssemblerModule() = default;
@@ -35,7 +37,7 @@ public:
         }
     }
 
-    void Run(const std::string &triple, Chunk* chunk);
+    void Run(const CompilationConfig *cfg, Chunk* chunk);
 
     size_t GetFunctionCount() const
     {
@@ -85,6 +87,9 @@ public:
     }
     void GenerateStubsX64(Chunk* chunk);
     void GenerateStubsAarch64(Chunk* chunk);
+
+    static size_t GetJumpSizeFromJSCallMode(JSCallMode mode);
+    static int GetArgcFromJSCallMode(JSCallMode mode);
 private:
     std::vector<const CallSignature *> asmCallSigns_;
     std::map<int, panda::ecmascript::Label *> symbolTable_;

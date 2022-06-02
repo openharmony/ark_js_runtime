@@ -994,7 +994,7 @@ void SlowPathLowering::LowerExceptionHandler(GateRef hirGate)
         { loadException, holeCst, glue }, VariableType::INT64().GetGateType());
     auto uses = acc_.Uses(hirGate);
     for (auto it = uses.begin(); it != uses.end(); it++) {
-        if (acc_.GetDep(*it) == hirGate) {
+        if (acc_.GetDep(*it) == hirGate && acc_.IsDependIn(it)) {
             acc_.ReplaceIn(it, clearException);
         } else {
             acc_.ReplaceIn(it, loadException);
@@ -1768,8 +1768,7 @@ void SlowPathLowering::LowerDefineGeneratorFunc(GateRef gate, GateRef glue, Gate
     builder_.Branch(builder_.FunctionIsResolved(*method), &isResolved, &notResolved);
     builder_.Bind(&isResolved);
     {
-        auto methodIdTagged = builder_.TaggedNGC(builder_.ZExtInt16ToInt64(methodId));
-        method = LowerCallRuntime(glue, RTSTUB_ID(DefineGeneratorFuncWithMethodId), {methodIdTagged});
+        method = LowerCallRuntime(glue, RTSTUB_ID(DefineGeneratorFunc), { *method });
         Label notException(&builder_);
         builder_.Branch(builder_.IsSpecial(*method, JSTaggedValue::VALUE_EXCEPTION),
             &exceptionExit, &notException);
@@ -1886,11 +1885,12 @@ void SlowPathLowering::LowerPopLexicalEnv(GateRef gate, GateRef glue, GateRef js
     GateRef result = LowerCallRuntime(glue, RTSTUB_ID(GetAotLexicalEnv), {jsFunc}, true);
     GateRef index = builder_.Int32(LexicalEnv::PARENT_ENV_INDEX);
     GateRef parentLexEnv = builder_.GetValueFromTaggedArray(VariableType::JS_ANY(), result, index);
+    builder_.SetLexicalEnvToFunction(glue, jsFunc, parentLexEnv);
     successControl.emplace_back(builder_.GetState());
     successControl.emplace_back(builder_.GetDepend());
     failControl.emplace_back(Circuit::NullGate());
     failControl.emplace_back(Circuit::NullGate());
-    ReplaceHirToSubCfg(gate, parentLexEnv, successControl, failControl, true);
+    ReplaceHirToSubCfg(gate, Circuit::NullGate(), successControl, failControl, true);
 }
 
 void SlowPathLowering::LowerLdSuperByValue(GateRef gate, GateRef glue, GateRef jsFunc)
@@ -2233,6 +2233,7 @@ void SlowPathLowering::LowerStObjByName(GateRef gate, GateRef glue)
 
 void SlowPathLowering::LowerDefineGetterSetterByValue(GateRef gate, GateRef glue)
 {
+    const int id = RTSTUB_ID(DefineGetterSetterByValue);
     // 5: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 5);
     GateRef obj = acc_.GetValueIn(gate, 0);
@@ -2240,9 +2241,8 @@ void SlowPathLowering::LowerDefineGetterSetterByValue(GateRef gate, GateRef glue
     GateRef getter = acc_.GetValueIn(gate, 2);
     GateRef setter = acc_.GetValueIn(gate, 3);
     GateRef acc = acc_.GetValueIn(gate, 4);
-    const CallSignature* cs = RuntimeStubCSigns::Get(RTSTUB_ID(DefineGetterSetterByValue));
-    GateRef target = builder_.IntPtr(RTSTUB_ID(DefineGetterSetterByValue));
-    GateRef newGate = builder_.Call(cs, glue, target, dependEntry_, {obj, prop, getter, setter, acc});
+    auto args = { obj, prop, getter, setter, acc };
+    GateRef newGate = LowerCallRuntime(glue, id, args);
     ReplaceHirToCall(gate, newGate);
 }
 

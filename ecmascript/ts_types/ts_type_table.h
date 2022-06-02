@@ -22,24 +22,14 @@
 namespace panda::ecmascript {
 class TSTypeTable : public TaggedArray {
 public:
-    enum class TypeLiteralFlag : uint8_t {
-        COUNTER = 0,     // just used for the first type literal
-        CLASS,
-        CLASS_INSTANCE,
-        FUNCTION,
-        UNION,
-        ARRAY,
-        OBJECT, // object literal
-        IMPORT,
-        INTERFACE
-    };
-
     static constexpr std::string_view ENTRY_FUNC_NAME = "func_main_0";
+    static constexpr size_t NUM_OF_TYPES_INDEX_IN_SUMMARY_LITREAL = 1;
+    static constexpr size_t TYPE_KIND_INDEX_IN_LITERAL = 0;
     static constexpr size_t RESERVE_TABLE_LENGTH = 2; // for reserve length and exportTable
-    static constexpr size_t TABLE_LENGTH_OFFSET_IN_LITREAL = 1;
-    static constexpr size_t TYPE_KIND_OFFSET = 0;
-    static constexpr size_t LENGTH_OFFSET = 0;
-    static constexpr const char* DECLARED_FILE_NAME = "ohos.lib.d.ts";
+    static constexpr size_t NUMBER_OF_TYPES_INDEX = 0;
+    static constexpr size_t INCREASE_CAPACITY_RATE = 2;
+    static constexpr const char* BUILTINS_TABLE_NAME = "ohos.lib.d.ts";
+    static constexpr const char* INFER_TABLE_NAME = "inferTypes";
     static constexpr const char* DECLARED_SYMBOLS = "declaredSymbols";
     static constexpr const char* DECLARED_SYMBOL_TYPES = "declaredSymbolTypes";
     static constexpr const char* EXPORTED_SYMBOLS = "exportedSymbols";
@@ -58,15 +48,23 @@ public:
                                            uint32_t index, JSHandle<EcmaString> propName);
 
     static JSHandle<JSTaggedValue> ParseType(JSThread *thread, JSHandle<TSTypeTable> &table,
-                                             JSHandle<TaggedArray> &literal,
-                                             JSHandle<EcmaString> fileName,
+                                             JSHandle<TaggedArray> &literal, const JSPandaFile *jsPandaFile,
                                              CVector<JSHandle<EcmaString>> &recordImportModules);
+
+    static JSHandle<TSImportType> ParseImportType(JSThread *thread, const JSHandle<TaggedArray> &literal,
+                                                  JSHandle<EcmaString> fileName,
+                                                  CVector<JSHandle<EcmaString>> &recordImportModules);
 
     static JSHandle<TaggedArray> GetExportValueTable(JSThread *thread, JSHandle<TSTypeTable> typeTable);
 
-    void SetTypeTableLength(JSThread *thread, uint32_t length)
+    inline int GetNumberOfTypes() const
     {
-        TaggedArray::Set(thread, LENGTH_OFFSET, JSTaggedValue(length));
+        return TaggedArray::Get(NUMBER_OF_TYPES_INDEX).GetInt();
+    }
+
+    inline void SetNumberOfTypes(JSThread *thread, uint32_t num)
+    {
+        TaggedArray::Set(thread, NUMBER_OF_TYPES_INDEX, JSTaggedValue(num));
     }
 
     static int GetUserdefinedTypeId(int localId)
@@ -76,8 +74,10 @@ public:
 
     void SetExportValueTable(JSThread *thread, const panda_file::File &pf);
 
-private:
+    static JSHandle<TSTypeTable> PushBackTypeToInferTable(JSThread *thread, JSHandle<TSTypeTable> &table,
+                                                          const JSHandle<TSType> &type);
 
+private:
     static JSHandle<TSTypeTable> GenerateTypeTable(JSThread *thread, const JSPandaFile *jsPandaFile,
                                                     CVector<JSHandle<EcmaString>> &recordImportModules);
 
@@ -90,11 +90,8 @@ private:
 
     static JSHandle<TSInterfaceType> ParseInterfaceType(JSThread *thread, const JSHandle<TaggedArray> &literal);
 
-    static JSHandle<TSImportType> ParseImportType(JSThread *thread, const JSHandle<TaggedArray> &literal,
-                                                  JSHandle<EcmaString> fileName,
-                                                  CVector<JSHandle<EcmaString>> &recordImportModules);
-
-    static JSHandle<TSUnionType> ParseUnionType(JSThread *thread, const JSHandle<TaggedArray> &literal);
+    static JSHandle<TSUnionType> ParseUnionType(JSThread *thread, const JSPandaFile *jsPandaFile,
+                                                const JSHandle<TaggedArray> &literal);
 
     static JSHandle<TSObjectType> LinkSuper(JSThread *thread, JSHandle<TSClassType> &baseClassType,
                                             uint32_t *numBaseFields, uint32_t numDerivedFields);
@@ -111,6 +108,8 @@ private:
     static JSHandle<TSArrayType> ParseArrayType(JSThread *thread, const JSHandle<TaggedArray> &literal);
 
     static JSHandle<TSObjectType> ParseObjectType(JSThread *thread, const JSHandle<TaggedArray> &literal);
+
+    static int GetTypeKindFromFileByLocalId(JSThread *thread, const JSPandaFile *jsPandaFile, int localId);
 };
 }  // namespace panda::ecmascript
 

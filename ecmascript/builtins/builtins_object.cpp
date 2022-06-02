@@ -465,7 +465,7 @@ JSTaggedValue BuiltinsObject::IsExtensible(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     // 1.If Type(O) is not Object, return false.
     JSTaggedValue obj = GetCallArg(argv, 0).GetTaggedValue();
-    if (!obj.IsObject()) {
+    if (!obj.IsHeapObject()) {
         return GetTaggedBoolean(false);
     }
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
@@ -782,7 +782,7 @@ JSTaggedValue BuiltinsObject::GetBuiltinTag(JSThread *thread, const JSHandle<JSO
     } else if (object->IsCallable()) {
         builtinTag = factory->NewFromASCII("Function");
     } else if (object->IsJSError()) {
-        builtinTag = factory->NewFromASCII("Error");
+        builtinTag = JSHandle<EcmaString>::Cast(thread->GlobalConstants()->GetHandledErrorString());
     } else if (object->IsDate()) {
         builtinTag = factory->NewFromASCII("Date");
     } else if (object->IsJSRegExp()) {
@@ -985,7 +985,7 @@ JSTaggedValue BuiltinsObject::CreateDataPropertyOnObjectFunctions(EcmaRuntimeCal
 
     // 2. Assert: Type(O) is Object.
     // 3. Assert: O is an extensible ordinary object.
-    ASSERT(thisHandle->IsObject());
+    ASSERT(thisHandle->IsHeapObject());
 
     JSHandle<JSTaggedValue> key = GetCallArg(argv, 0);
     JSHandle<JSTaggedValue> value = GetCallArg(argv, 1);

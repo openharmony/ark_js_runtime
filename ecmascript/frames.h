@@ -17,7 +17,6 @@
 #define ECMASCRIPT_FRAMES_H
 
 #include "ecmascript/js_tagged_value.h"
-#include "ecmascript/trampoline/asm_defines.h"
 
 // Frame Layout
 // Interpreter Frame(alias   **iframe** ) Layout as follow:
@@ -257,13 +256,18 @@ enum class FrameType: uintptr_t {
 };
 
 enum class JSCallMode : uintptr_t {
-    CALL_ARG0,
+    CALL_ARG0 = 0,
     CALL_ARG1,
     CALL_ARG2,
     CALL_ARG3,
     CALL_WITH_ARGV,
     CALL_THIS_WITH_ARGV,
     CALL_CONSTRUCTOR_WITH_ARGV,
+    CALL_SUPER_CALL_WITH_ARGV,
+    CALL_GETTER,
+    CALL_SETTER,
+    CALL_ENTRY,
+    CALL_GENERATOR,
     CALL_FROM_AOT,
 };
 

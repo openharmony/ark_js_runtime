@@ -1293,11 +1293,13 @@ JSTaggedNumber BigInt::BigIntToNumber(JSHandle<BigInt> bigint)
     }
     // After the mantissa is filled, if the bits of bigint have not been used up, consider the rounding problem
     // The remaining bits of the current digit
+    if (remainMantissaBits > 0) {
+        return CalculateNumber(sign, mantissa, exponent);
+    }
     int remainDigitBits = 0;
     if (remainMantissaBits < 0) {
         remainDigitBits = -remainMantissaBits;
-    }
-    if (remainMantissaBits == 0) {
+    } else {
         if (!index) {
             return CalculateNumber(sign, mantissa, exponent);
         }

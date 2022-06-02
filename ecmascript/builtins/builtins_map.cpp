@@ -57,7 +57,7 @@ JSTaggedValue BuiltinsMap::MapConstructor(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "iterable is not object", JSTaggedValue::Exception());
     }
     // Let adder be Get(map, "set").
-    JSHandle<JSTaggedValue> adderKey(factory->NewFromASCII("set"));
+    JSHandle<JSTaggedValue> adderKey = thread->GlobalConstants()->GetHandledSetString();
     JSHandle<JSTaggedValue> adder = JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(map), adderKey).GetValue();
     // ReturnIfAbrupt(adder).
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, adder.GetTaggedValue());

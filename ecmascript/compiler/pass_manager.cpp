@@ -12,20 +12,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "pass_manager.h"
+#include "ecmascript/compiler/pass_manager.h"
 
-#include "aot_file_manager.h"
+#include "ecmascript/compiler/file_generators.h"
+#include "ecmascript/compiler/pass.h"
 #include "ecmascript/ecma_handle_scope.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/jspandafile/panda_file_translator.h"
 #include "ecmascript/snapshot/mem/snapshot.h"
 #include "ecmascript/ts_types/ts_loader.h"
-#include "pass.h"
 
 namespace panda::ecmascript::kungfu {
-bool PassManager::Compile(const std::string &fileName, const std::string &triple,
-                          const std::string &outputFileName, const AotLog &log, size_t optLevel)
+bool PassManager::Compile(const std::string &fileName, AOTFileGenerator &generator)
 {
     BytecodeTranslationInfo translationInfo;
     [[maybe_unused]] EcmaHandleScope handleScope(vm_->GetJSThread());
@@ -34,16 +33,18 @@ bool PassManager::Compile(const std::string &fileName, const std::string &triple
         COMPILER_LOG(ERROR) << "Cannot execute panda file '" << fileName << "'";
         return false;
     }
-    LLVMModule aotModule("aot_file", triple);
-    CompilationConfig cmpCfg(triple);
+    auto aotModule = new LLVMModule("aot_" + fileName, triple_);
+    auto aotModuleAssembler = new LLVMAssembler(aotModule->GetModule(), LOptions(optLevel_, true));
+    CompilationConfig cmpCfg(triple_);
+    TSLoader *tsLoader = vm_->GetTSLoader();
 
-    bool enableLog = log.IsAlwaysEnabled();
+    bool enableLog = log_->IsAlwaysEnabled();
 
     for (size_t i = 0; i < translationInfo.methodPcInfos.size(); i++) {
         const JSMethod *method = translationInfo.methodPcInfos[i].method;
         const std::string methodName(method->GetMethodName());
-        if (!log.IsAlwaysEnabled() && !log.IsAlwaysDisabled()) {  // neither "all" nor "none"
-            enableLog = log.IncludesMethod(fileName, methodName);
+        if (!log_->IsAlwaysEnabled() && !log_->IsAlwaysDisabled()) {  // neither "all" nor "none"
+            enableLog = log_->IncludesMethod(fileName, methodName);
         }
 
         if (enableLog) {
@@ -51,23 +52,18 @@ bool PassManager::Compile(const std::string &fileName, const std::string &triple
                                << methodName << "] log:" << "\033[0m";
         }
 
-        BytecodeCircuitBuilder builder(vm_, translationInfo, i, enableLog);
+        BytecodeCircuitBuilder builder(translationInfo, i, tsLoader, enableLog);
         builder.BytecodeToCircuit();
         PassData data(builder.GetCircuit());
         PassRunner<PassData> pipeline(&data, enableLog);
+        pipeline.RunPass<TypeInferPass>(&builder, tsLoader);
         pipeline.RunPass<SlowPathLoweringPass>(&builder, &cmpCfg);
         pipeline.RunPass<VerifierPass>();
         pipeline.RunPass<SchedulingPass>();
-        pipeline.RunPass<LLVMIRGenPass>(&aotModule, method);
+        pipeline.RunPass<LLVMIRGenPass>(aotModule, method);
     }
 
-    AotFileManager manager(&aotModule, &log, LOptions(optLevel, true));
-    manager.SaveAOTFile(outputFileName);
-    TSLoader *tsLoader = vm_->GetTSLoader();
-    Snapshot snapshot(vm_);
-    CVector<JSTaggedType> constStringTable = tsLoader->GetConstStringTable();
-    const CString snapshotPath(vm_->GetJSOptions().GetSnapshotOutputFile().c_str());
-    snapshot.Serialize(reinterpret_cast<uintptr_t>(constStringTable.data()), constStringTable.size(), snapshotPath);
+    generator.AddModule(aotModule, aotModuleAssembler, translationInfo.jsPandaFile);
     return true;
 }
 

@@ -17,17 +17,15 @@
 #define ECMASCRIPT_TOOLING_TEST_UTILS_TEST_EVENTS_H
 
 #include <utility>
-#include "ecmascript/tooling/agent/js_backend.h"
-#include "ecmascript/tooling/agent/js_pt_hooks.h"
+
+#include "ecmascript/tooling/backend/js_pt_hooks.h"
 
 namespace panda::ecmascript::tooling::test {
 using BreakpointCallback = std::function<bool(const JSPtLocation &)>;
 using LoadModuleCallback = std::function<bool(std::string_view)>;
-using PausedCallback = std::function<bool(PauseReason)>;
 using ExceptionCallback = std::function<bool(const JSPtLocation &)>;
 using SingleStepCallback = std::function<bool(const JSPtLocation &)>;
 using VmStartCallback = std::function<bool()>;
-using VmInitializationCallback = std::function<bool()>;
 using VmDeathCallback = std::function<bool()>;
 using Scenario = std::function<bool()>;
 
@@ -49,16 +47,15 @@ std::ostream &operator<<(std::ostream &out, DebugEvent value);
 struct TestEvents {
     BreakpointCallback breakpoint;
     LoadModuleCallback loadModule;
-    PausedCallback paused;
     ExceptionCallback exception;
     SingleStepCallback singleStep;
     VmStartCallback vmStart;
-    VmInitializationCallback vmInit;
     VmDeathCallback vmDeath;
 
     Scenario scenario;
+    const EcmaVM *vm_ {nullptr};
     JSDebugger *debugInterface_ {nullptr};
-    JSBackend *backend_ {nullptr};
+    DebuggerImpl *debugger_ {nullptr};
     TestEvents();
     virtual ~TestEvents() = default;
 

@@ -27,6 +27,7 @@
 #include "ecmascript/builtins/builtins_date.h"
 #include "ecmascript/builtins/builtins_date_time_format.h"
 #include "ecmascript/builtins/builtins_errors.h"
+#include "ecmascript/builtins/builtins_finalization_registry.h"
 #include "ecmascript/builtins/builtins_function.h"
 #include "ecmascript/builtins/builtins_generator.h"
 #include "ecmascript/builtins/builtins_global.h"
@@ -53,6 +54,7 @@
 #include "ecmascript/builtins/builtins_symbol.h"
 #include "ecmascript/builtins/builtins_typedarray.h"
 #include "ecmascript/builtins/builtins_weak_map.h"
+#include "ecmascript/builtins/builtins_weak_ref.h"
 #include "ecmascript/builtins/builtins_weak_set.h"
 #include "ecmascript/containers/containers_arraylist.h"
 #include "ecmascript/containers/containers_deque.h"
@@ -100,6 +102,8 @@ using BuiltinsMap = builtins::BuiltinsMap;
 using BuiltinsSet = builtins::BuiltinsSet;
 using BuiltinsWeakMap = builtins::BuiltinsWeakMap;
 using BuiltinsWeakSet = builtins::BuiltinsWeakSet;
+using BuiltinsWeakRef = builtins::BuiltinsWeakRef;
+using BuiltinsFinalizationRegistry = builtins::BuiltinsFinalizationRegistry;
 using BuiltinsArray = builtins::BuiltinsArray;
 using BuiltinsTypedArray = builtins::BuiltinsTypedArray;
 using BuiltinsIterator = builtins::BuiltinsIterator;
@@ -327,6 +331,11 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(BuiltinsWeakSet::Add),
     reinterpret_cast<uintptr_t>(BuiltinsWeakSet::Delete),
     reinterpret_cast<uintptr_t>(BuiltinsWeakSet::Has),
+    reinterpret_cast<uintptr_t>(BuiltinsWeakRef::WeakRefConstructor),
+    reinterpret_cast<uintptr_t>(BuiltinsWeakRef::Deref),
+    reinterpret_cast<uintptr_t>(BuiltinsFinalizationRegistry::FinalizationRegistryConstructor),
+    reinterpret_cast<uintptr_t>(BuiltinsFinalizationRegistry::Register),
+    reinterpret_cast<uintptr_t>(BuiltinsFinalizationRegistry::Unregister),
     reinterpret_cast<uintptr_t>(BuiltinsArray::ArrayConstructor),
     reinterpret_cast<uintptr_t>(BuiltinsArray::Concat),
     reinterpret_cast<uintptr_t>(BuiltinsArray::CopyWithin),
@@ -755,15 +764,189 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(JSPandaFileManager::GetInstance)
 };
 
+void SnapshotProcessor::Initialize()
+{
+    auto heap = const_cast<Heap *>(vm_->GetHeap());
+    size_t oldSpaceCapacity = heap->GetOldSpace()->GetInitialCapacity();
+    oldLocalSpace_ = new LocalSpace(heap, oldSpaceCapacity, oldSpaceCapacity);
+    size_t nonMovableCapacity = heap->GetNonMovableSpace()->GetInitialCapacity();
+    nonMovableLocalSpace_ = new LocalSpace(heap, nonMovableCapacity, nonMovableCapacity);
+    size_t machineCodeCapacity = heap->GetMachineCodeSpace()->GetInitialCapacity();
+    machineCodeLocalSpace_ = new LocalSpace(heap, machineCodeCapacity, machineCodeCapacity);
+    size_t snapshotSpaceCapacity = heap->GetSnapshotSpace()->GetMaximumCapacity();
+    snapshotLocalSpace_ = new SnapshotSpace(heap, snapshotSpaceCapacity, snapshotSpaceCapacity);
+}
+
+void SnapshotProcessor::StopAllocate()
+{
+    oldLocalSpace_->Stop();
+    nonMovableLocalSpace_->Stop();
+    machineCodeLocalSpace_->Stop();
+    snapshotLocalSpace_->Stop();
+}
+
+void SnapshotProcessor::WriteObjectToFile(std::fstream &write)
+{
+    WriteSpaceObjectToFile(oldLocalSpace_, write);
+    WriteSpaceObjectToFile(nonMovableLocalSpace_, write);
+    WriteSpaceObjectToFile(machineCodeLocalSpace_, write);
+    WriteSpaceObjectToFile(snapshotLocalSpace_, write);
+}
+
+void SnapshotProcessor::WriteSpaceObjectToFile(Space* space, std::fstream &write)
+{
+    size_t regionCount = space->GetRegionCount();
+    auto lastRegion = space->GetCurrentRegion();
+    if (regionCount > 0) {
+        space->EnumerateRegions([&write, lastRegion](Region *current) {
+            if (current != lastRegion) {
+                write.write(reinterpret_cast<char *>(current), DEFAULT_REGION_SIZE);
+                write.flush();
+            }
+        });
+        write.write(reinterpret_cast<char *>(lastRegion), lastRegion->GetHighWaterMarkSize());
+        write.flush();
+        space->ReclaimRegions();
+    }
+}
+
+std::vector<uint32_t> SnapshotProcessor::StatisticsObjectSize()
+{
+    std::vector<uint32_t> objSizeVector;
+    objSizeVector.emplace_back(StatisticsSpaceObjectSize(oldLocalSpace_));
+    objSizeVector.emplace_back(StatisticsSpaceObjectSize(nonMovableLocalSpace_));
+    objSizeVector.emplace_back(StatisticsSpaceObjectSize(machineCodeLocalSpace_));
+    objSizeVector.emplace_back(StatisticsSpaceObjectSize(snapshotLocalSpace_));
+    return objSizeVector;
+}
+
+uint32_t SnapshotProcessor::StatisticsSpaceObjectSize(Space* space)
+{
+    auto lastRegion = space->GetCurrentRegion();
+    size_t regionCount = space->GetRegionCount();
+    size_t objSize = 0U;
+    if (regionCount > 0) {
+        objSize = (regionCount - 1) * DEFAULT_REGION_SIZE + lastRegion->GetHighWaterMarkSize();
+    }
+    ASSERT(objSize <= Constants::MAX_UINT_32);
+    return static_cast<uint32_t>(objSize);
+}
+
+uintptr_t SnapshotProcessor::AllocateObjectToLocalSpace(Space *space, size_t objectSize)
+{
+    uintptr_t newObj = 0;
+    if (space->GetSpaceType() != MemSpaceType::SNAPSHOT_SPACE) {
+        newObj = reinterpret_cast<LocalSpace *>(space)->Allocate(objectSize);
+    } else {
+        newObj = reinterpret_cast<SnapshotSpace *>(space)->Allocate(objectSize);
+    }
+    auto current = space->GetCurrentRegion();
+    if (newObj == current->GetBegin()) {
+        regionIndex_++;
+        current->GetMarkGCBitset()->SetGCWords(regionIndex_-1);
+    }
+    return newObj;
+}
+
 void SnapshotProcessor::SetObjectEncodeField(uintptr_t obj, size_t offset, uint64_t value)
 {
     *reinterpret_cast<uint64_t *>(obj + offset) = value;
+}
+
+void SnapshotProcessor::DeserializeObjectExcludeString(uintptr_t oldSpaceBegin, size_t oldSpaceObjSize,
+                                                       size_t nonMovableObjSize, size_t machineCodeObjSize,
+                                                       size_t snapshotObjSize)
+{
+    uintptr_t nonMovableBegin = oldSpaceBegin + oldSpaceObjSize;
+    uintptr_t machineCodeBegin = nonMovableBegin + nonMovableObjSize;
+    uintptr_t snapshotBegin = machineCodeBegin + machineCodeObjSize;
+    auto heap = vm_->GetHeap();
+    auto oldSpace = heap->GetOldSpace();
+    auto nonMovableSpace = heap->GetNonMovableSpace();
+    auto machineCodeSpace = heap->GetMachineCodeSpace();
+    auto snapshotSpace = heap->GetSnapshotSpace();
+    DeserializeSpaceObject(oldSpaceBegin, oldSpace, oldSpaceObjSize);
+    DeserializeSpaceObject(nonMovableBegin, nonMovableSpace, nonMovableObjSize);
+    DeserializeSpaceObject(machineCodeBegin, machineCodeSpace, machineCodeObjSize);
+    DeserializeSpaceObject(snapshotBegin, snapshotSpace, snapshotObjSize);
+    snapshotSpace->ResetAllocator();
+}
+
+void SnapshotProcessor::DeserializeSpaceObject(uintptr_t beginAddr, Space* space, size_t spaceObjSize)
+{
+    size_t regionSize = 0U;
+    if (spaceObjSize != 0) {
+        regionSize = (spaceObjSize - 1) / DEFAULT_REGION_SIZE + 1; // round up
+    }
+    for (size_t i = 0; i < regionSize; i++) {
+        Region *region = vm_->GetHeapRegionAllocator()->AllocateAlignedRegion(
+            space, DEFAULT_REGION_SIZE, vm_->GetAssociatedJSThread());
+        auto fileRegion = ToNativePtr<Region>(beginAddr + i * DEFAULT_REGION_SIZE);
+        uintptr_t oldMarkGCBitsetAddr =
+            ToUintPtr(fileRegion) + AlignUp(sizeof(Region),  static_cast<size_t>(MemAlignment::MEM_ALIGN_REGION));
+        uint32_t regionIndex = *(reinterpret_cast<GCBitset *>(oldMarkGCBitsetAddr)->Words());
+        regionIndexMap_.emplace(regionIndex, region);
+
+        uint64_t base = region->allocateBase_;
+        GCBitset *markGCBitset = region->markGCBitset_;
+        uint64_t begin = (fileRegion->begin_) % DEFAULT_REGION_SIZE;
+        uint64_t waterMark = (fileRegion->highWaterMark_) % DEFAULT_REGION_SIZE;
+        size_t copyBytes = fileRegion->highWaterMark_ - fileRegion->allocateBase_;
+
+        if (memcpy_s(region, copyBytes, fileRegion, copyBytes) != EOK) {
+            LOG_ECMA(FATAL) << "memcpy_s failed";
+            UNREACHABLE();
+        }
+
+        // allocate_base_
+        region->allocateBase_ = base;
+        // begin_
+        region->begin_ = ToUintPtr(region) + begin;
+        // end_
+        region->end_ = ToUintPtr(region) + DEFAULT_REGION_SIZE;
+        // high_water_mark_
+        region->highWaterMark_ = ToUintPtr(region) + waterMark;
+        // prev_
+        region->prev_ = nullptr;
+        // next_
+        region->next_ = nullptr;
+        // mark_bitset_
+        region->markGCBitset_ = markGCBitset;
+        // cross_region_set_
+        region->crossRegionSet_ = nullptr;
+        // old_to_new_set_
+        region->oldToNewSet_ = nullptr;
+        // space_
+        region->space_ = space;
+        // thread_
+        region->thread_ = vm_->GetAssociatedJSThread();
+        // nativePoniterAllocator_
+        region->nativeAreaAllocator_ = region->thread_->GetNativeAreaAllocator();
+
+        region->SetFlag(RegionFlags::NEED_RELOCATE);
+        size_t liveObjectSize = region->GetHighWaterMark() - region->GetBegin();
+        if (space->GetSpaceType() != MemSpaceType::SNAPSHOT_SPACE) {
+            auto sparseSpace = reinterpret_cast<SparseSpace *>(space);
+            region->InitializeSet();
+            sparseSpace->FreeLiveRange(region, region->GetHighWaterMark(), region->GetEnd(), true);
+            sparseSpace->IncreaseLiveObjectSize(liveObjectSize);
+            sparseSpace->IncreaseAllocatedSize(liveObjectSize);
+            sparseSpace->AddRegionToFront(region);
+        } else {
+            auto snapshotSpace = reinterpret_cast<SnapshotSpace *>(space);
+            snapshotSpace->IncreaseLiveObjectSize(liveObjectSize);
+            snapshotSpace->AddRegion(region);
+        }
+    }
 }
 
 void SnapshotProcessor::DeserializeString(uintptr_t stringBegin, uintptr_t stringEnd)
 {
     EcmaStringTable *stringTable = vm_->GetEcmaStringTable();
     ASSERT(stringVector_.empty());
+    auto oldSpace = const_cast<Heap *>(vm_->GetHeap())->GetOldSpace();
+    auto globalConst = const_cast<GlobalEnvConstants *>(vm_->GetJSThread()->GlobalConstants());
+    auto stringClass = globalConst->GetStringClass();
     while (stringBegin < stringEnd) {
         EcmaString *str = reinterpret_cast<EcmaString *>(stringBegin);
         size_t strSize = str->ObjectSize();
@@ -773,18 +956,19 @@ void SnapshotProcessor::DeserializeString(uintptr_t stringBegin, uintptr_t strin
         if (strFromTable) {
             stringVector_.emplace_back(ToUintPtr(strFromTable));
         } else {
-            uintptr_t snapshotObj = const_cast<Heap *>(vm_->GetHeap())->AllocateSnapshotSpace(strSize);
-            if (snapshotObj == 0) {
-                LOG_ECMA_MEM(FATAL) << "SnapshotAllocator OOM";
+            uintptr_t newObj = oldSpace->Allocate(strSize);
+            if (newObj == 0) {
+                LOG_ECMA_MEM(FATAL) << "Snapshot Allocate OldLocalSpace OOM";
             }
-            if (memcpy_s(ToVoidPtr(snapshotObj), strSize, str, strSize) != EOK) {
+            if (memcpy_s(ToVoidPtr(newObj), strSize, str, strSize) != EOK) {
                 LOG_ECMA(FATAL) << "memcpy_s failed";
                 UNREACHABLE();
             }
-            str = reinterpret_cast<EcmaString *>(snapshotObj);
+            str = reinterpret_cast<EcmaString *>(newObj);
+            str->SetClass(reinterpret_cast<JSHClass *>(stringClass.GetTaggedObject()));
             str->ClearInternStringFlag();
             stringTable->GetOrInternString(str);
-            stringVector_.emplace_back(snapshotObj);
+            stringVector_.emplace_back(newObj);
         }
         stringBegin += strSize;
     }
@@ -833,12 +1017,7 @@ void SnapshotProcessor::SerializeObject(TaggedObject *objectHeader, CQueue<Tagge
 {
     auto hclass = objectHeader->GetClass();
     JSType objectType = hclass->GetObjectType();
-    if (objectType== JSType::STRING) {
-        EncodeBit encodeBit = SerializeObjectHeader(objectHeader, static_cast<size_t>(objectType), queue, data);
-        SetObjectEncodeField(ToUintPtr(objectHeader), 0, encodeBit.GetValue());
-        return;
-    }
-    uintptr_t snapshotObj;
+    uintptr_t snapshotObj = 0;
     if (UNLIKELY(data->find(ToUintPtr(objectHeader)) == data->end())) {
         LOG_ECMA(FATAL) << "Data map can not find object";
         UNREACHABLE();
@@ -870,7 +1049,6 @@ void SnapshotProcessor::SerializeObject(TaggedObject *objectHeader, CQueue<Tagge
 
 void SnapshotProcessor::Relocate(SnapshotType type, const JSPandaFile *jsPandaFile, uint64_t rootObjSize)
 {
-    SnapshotSpace *space = vm_->GetHeap()->GetSnapshotSpace();
     size_t methodNums = 0;
     JSMethod *methods = nullptr;
     if (jsPandaFile) {
@@ -878,9 +1056,28 @@ void SnapshotProcessor::Relocate(SnapshotType type, const JSPandaFile *jsPandaFi
         methods = jsPandaFile->GetMethods();
     }
 
+    auto heap = vm_->GetHeap();
+    auto oldSpace = heap->GetOldSpace();
+    auto nonMovableSpace = heap->GetNonMovableSpace();
+    auto machineCodeSpace = heap->GetMachineCodeSpace();
+    auto snapshotSpace = heap->GetSnapshotSpace();
+
+    RelocateSpaceObject(oldSpace, type, methods, methodNums, rootObjSize);
+    RelocateSpaceObject(nonMovableSpace, type, methods, methodNums, rootObjSize);
+    RelocateSpaceObject(machineCodeSpace, type, methods, methodNums, rootObjSize);
+    RelocateSpaceObject(snapshotSpace, type, methods, methodNums, rootObjSize);
+}
+
+void SnapshotProcessor::RelocateSpaceObject(Space* space, SnapshotType type, JSMethod* methods,
+                                            size_t methodNums, size_t rootObjSize)
+{
     size_t others = 0;
     size_t objIndex = 0;
     space->EnumerateRegions([&others, &objIndex, &rootObjSize, &type, this, methods, &methodNums](Region *current) {
+        if (!current->NeedRelocate()) {
+            return;
+        }
+        current->ClearFlag(RegionFlags::NEED_RELOCATE);
         size_t allocated = current->GetAllocatedBytes();
         uintptr_t begin = current->GetBegin();
         uintptr_t end = begin + allocated;
@@ -1091,10 +1288,12 @@ uintptr_t SnapshotProcessor::TaggedObjectEncodeBitToAddr(EncodeBit taggedBit)
         return stringVector_[stringIndex];
     }
     size_t regionIndex = taggedBit.GetRegionIndex();
+    if (UNLIKELY(regionIndexMap_.find(regionIndex) == regionIndexMap_.end())) {
+        LOG_ECMA(FATAL) << "Snapshot deserialize can not find region by index";
+    }
+    Region *region = regionIndexMap_.find(regionIndex)->second;
     size_t objectOffset  = taggedBit.GetObjectOffsetInRegion();
-    auto snapshotSpace = const_cast<Heap *>(vm_->GetHeap())->GetSnapshotSpace();
-    size_t defaultSnapshotSpaceCapacity = vm_->GetJSOptions().DefaultSnapshotSpaceCapacity();
-    return ToUintPtr(snapshotSpace->GetFirstRegion()) + regionIndex * defaultSnapshotSpaceCapacity + objectOffset;
+    return ToUintPtr(region) + objectOffset;
 }
 
 void SnapshotProcessor::DeserializeNativePointer(uint64_t *value)
@@ -1152,7 +1351,6 @@ EncodeBit SnapshotProcessor::EncodeTaggedObject(TaggedObject *objectHeader, CQue
                                                 std::unordered_map<uint64_t,
                                                                    std::pair<uint64_t, ecmascript::EncodeBit>> *data)
 {
-    queue->emplace(objectHeader);
     if (objectHeader->GetClass()->GetObjectType() == JSType::STRING) {
         ASSERT(stringVector_.size() < Constants::MAX_STRING_SIZE);
         EncodeBit encodeBit(stringVector_.size());
@@ -1160,6 +1358,7 @@ EncodeBit SnapshotProcessor::EncodeTaggedObject(TaggedObject *objectHeader, CQue
         data->emplace(ToUintPtr(objectHeader), std::make_pair(0U, encodeBit));
         return encodeBit;
     }
+    queue->emplace(objectHeader);
     size_t objectSize = objectHeader->GetClass()->SizeFromJSHClass(objectHeader);
     if (objectSize > MAX_REGULAR_HEAP_OBJECT_SIZE) {
         LOG_ECMA_MEM(FATAL) << "It is a huge object. Not Support.";
@@ -1168,21 +1367,36 @@ EncodeBit SnapshotProcessor::EncodeTaggedObject(TaggedObject *objectHeader, CQue
     if (objectSize == 0) {
         LOG_ECMA_MEM(FATAL) << "It is a zero object. Not Support.";
     }
-    auto heap = const_cast<Heap *>(vm_->GetHeap());
-    uintptr_t snapshotObj = heap->AllocateSnapshotSpace(objectSize);
-    if (snapshotObj == 0) {
-        LOG_ECMA_MEM(FATAL) << "SnapshotAllocator OOM";
+    uintptr_t newObj = 0;
+    auto space = Region::ObjectAddressToRange(objectHeader)->GetSpace();
+    switch (space->GetSpaceType()) {
+        case MemSpaceType::SEMI_SPACE:
+        case MemSpaceType::OLD_SPACE:
+            newObj = AllocateObjectToLocalSpace(oldLocalSpace_, objectSize);
+            break;
+        case MemSpaceType::NON_MOVABLE:
+            newObj = AllocateObjectToLocalSpace(nonMovableLocalSpace_, objectSize);
+            break;
+        case MemSpaceType::MACHINE_CODE_SPACE:
+            newObj = AllocateObjectToLocalSpace(machineCodeLocalSpace_, objectSize);
+            break;
+        default:
+            newObj = AllocateObjectToLocalSpace(snapshotLocalSpace_, objectSize);
+            break;
     }
-    if (memcpy_s(ToVoidPtr(snapshotObj), objectSize, objectHeader, objectSize) != EOK) {
+    if (newObj == 0) {
+        LOG_ECMA_MEM(FATAL) << "Snapshot Allocate OOM";
+    }
+    if (memcpy_s(ToVoidPtr(newObj), objectSize, objectHeader, objectSize) != EOK) {
         LOG_ECMA(FATAL) << "memcpy_s failed";
         UNREACHABLE();
     }
-    auto snapshotSpace = heap->GetSnapshotSpace();
-    size_t regionIndex = snapshotSpace->GetRegionCount() - 1;
-    size_t objOffset = snapshotObj - ToUintPtr(snapshotSpace->GetCurrentRegion());
+    auto currentRegion = Region::ObjectAddressToRange(newObj);
+    size_t regionIndex = *(currentRegion->GetMarkGCBitset()->Words());
+    size_t objOffset = newObj - ToUintPtr(currentRegion);
     EncodeBit encodeBit(static_cast<uint64_t>(regionIndex));
     encodeBit.SetObjectOffsetInRegion(objOffset);
-    data->emplace(ToUintPtr(objectHeader), std::make_pair(snapshotObj, encodeBit));
+    data->emplace(ToUintPtr(objectHeader), std::make_pair(newObj, encodeBit));
     return encodeBit;
 }
 

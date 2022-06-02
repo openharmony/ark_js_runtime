@@ -330,7 +330,7 @@ public:
     GateRef JSObjectGetProperty(VariableType returnType, GateRef obj, GateRef hClass, GateRef propAttr);
     void JSObjectSetProperty(GateRef glue, GateRef obj, GateRef hClass, GateRef attr, GateRef value);
     GateRef ShouldCallSetter(GateRef receiver, GateRef holder, GateRef accessor, GateRef attr);
-    GateRef CallSetterUtil(GateRef glue, GateRef holder, GateRef accessor,  GateRef value);
+    GateRef CallSetterHelper(GateRef glue, GateRef holder, GateRef accessor,  GateRef value);
     GateRef SetHasConstructorCondition(GateRef glue, GateRef receiver, GateRef key);
     GateRef AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, GateRef value, GateRef propertyAttributes);
     GateRef IsUtf16String(GateRef string);
@@ -458,6 +458,9 @@ public:
         GateRef glue, GateRef array, GateRef value, GateRef start, GateRef length);
     GateRef AllocateInYoung(GateRef glue, GateRef size);
     GateRef NewLexicalEnv(GateRef glue, GateRef numSlots, GateRef parent);
+    GateRef CallGetterHelper(GateRef glue, GateRef receiver, GateRef holder, GateRef accessor);
+    GateRef JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
+                           JSCallMode mode, std::initializer_list<GateRef> args);
 private:
     using BinaryOperation = std::function<GateRef(Environment*, GateRef, GateRef)>;
     template<OpCode::Op Op>

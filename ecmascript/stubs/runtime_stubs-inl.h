@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_RUNTIME_TRAMPOLINES_INL_H
-#define ECMASCRIPT_RUNTIME_TRAMPOLINES_INL_H
+#ifndef ECMASCRIPT_STUBS_RUNTIME_STUBS_INL_H
+#define ECMASCRIPT_STUBS_RUNTIME_STUBS_INL_H
 
 #include "runtime_stubs.h"
 #include "ecmascript/builtins/builtins_regexp.h"
@@ -1424,35 +1424,6 @@ JSTaggedValue RuntimeStubs::RuntimeDefineGeneratorFunc(JSThread *thread, JSFunct
     return jsFunc.GetTaggedValue();
 }
 
-JSTaggedValue RuntimeStubs::RuntimeDefineGeneratorFuncWithMethodId(JSThread *thread, JSTaggedValue methodId)
-{
-    auto vm = thread->GetEcmaVM();
-    ObjectFactory *factory = vm->GetFactory();
-    auto aotCodeInfo  = vm->GetAotCodeInfo();
-    auto codeEntry = aotCodeInfo->GetAOTFuncEntry(methodId.GetInt());
-    JSMethod *method = factory->NewMethodForNativeFunction(reinterpret_cast<void *>(codeEntry));
-    method->SetAotCodeBit(true);
-    method->SetNativeBit(false);
-    method->SetNumArgsWithCallField(1);
-
-    JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
-    JSHandle<JSFunction> jsFunc = factory->NewJSGeneratorFunction(method);
-    ASSERT_NO_ABRUPT_COMPLETION(thread);
-
-    // 26.3.4.3 prototype
-    // Whenever a GeneratorFunction instance is created another ordinary object is also created and
-    // is the initial value of the generator function's "prototype" property.
-    JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
-    JSHandle<JSObject> initialGeneratorFuncPrototype =
-        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
-    JSObject::SetPrototype(thread, initialGeneratorFuncPrototype, env->GetGeneratorPrototype());
-    ASSERT_NO_ABRUPT_COMPLETION(thread);
-    jsFunc->SetProtoOrDynClass(thread, initialGeneratorFuncPrototype);
-    jsFunc->SetCodeEntry(codeEntry);
-
-    return jsFunc.GetTaggedValue();
-}
-
 JSTaggedValue RuntimeStubs::RuntimeDefineAsyncFunc(JSThread *thread, JSFunction *func)
 {
     auto method = func->GetCallTarget();
@@ -1750,4 +1721,4 @@ JSTaggedValue RuntimeStubs::RuntimeNewAotObjDynRange(JSThread *thread, uintptr_t
     return object;
 }
 }  // namespace panda::ecmascript
-#endif  // ECMASCRIPT_RUNTIME_TRAMPOLINES_INL_H
+#endif  // ECMASCRIPT_STUBS_RUNTIME_STUBS_INL_H

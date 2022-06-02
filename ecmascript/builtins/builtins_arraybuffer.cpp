@@ -115,7 +115,7 @@ JSTaggedValue BuiltinsArrayBuffer::Slice(EcmaRuntimeCallInfo *argv)
     // 1. Let O be the this value.
     JSHandle<JSTaggedValue> thisHandle = GetThis(argv);
     // 2. If Type(O) is not Object, throw a TypeError exception.
-    if (!thisHandle->IsObject()) {
+    if (!thisHandle->IsHeapObject()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "this value is not an object", JSTaggedValue::Exception());
     }
     JSHandle<JSArrayBuffer> arrBuf(thisHandle);

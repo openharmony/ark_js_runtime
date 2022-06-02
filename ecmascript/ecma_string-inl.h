@@ -76,6 +76,22 @@ inline EcmaString *EcmaString::CreateFromUtf8(const uint8_t *utf8Data, uint32_t 
     return string;
 }
 
+/* static */
+inline EcmaString *EcmaString::CreateFromUtf8NonMovable(const EcmaVM *vm, const uint8_t *utf8Data, uint32_t utf8Len)
+{
+    if (utf8Len == 0) {
+        return vm->GetFactory()->GetEmptyString().GetObject<EcmaString>();
+    }
+    EcmaString *string = AllocStringObjectNonMovable(vm, utf8Len);
+    ASSERT(string != nullptr);
+    if (memcpy_s(string->GetDataUtf8Writable(), utf8Len, utf8Data, utf8Len) != EOK) {
+        LOG_ECMA(FATAL) << "memcpy_s failed";
+        UNREACHABLE();
+    }
+    ASSERT_PRINT(CanBeCompressed(string) == true, "Bad input canBeCompress!");
+    return string;
+}
+
 inline EcmaString *EcmaString::CreateFromUtf16(const uint16_t *utf16Data, uint32_t utf16Len, const EcmaVM *vm,
                                                bool canBeCompress)
 {
@@ -123,7 +139,18 @@ inline EcmaString *EcmaString::AllocStringObject(size_t length, bool compressed,
     auto string = reinterpret_cast<EcmaString *>(vm->GetFactory()->AllocStringObject(size));
     string->SetLength(length, compressed);
     string->SetRawHashcode(0);
-    return reinterpret_cast<EcmaString *>(string);
+    return string;
+}
+
+/* static */
+inline EcmaString *EcmaString::AllocStringObjectNonMovable(const EcmaVM *vm, size_t length)
+{
+    // we only consider compressable string which is utf8 strings
+    size_t size = ComputeSizeUtf8(length);
+    auto string = reinterpret_cast<EcmaString *>(vm->GetFactory()->AllocNonMovableStringObject(size));
+    string->SetLength(length, true);
+    string->SetRawHashcode(0);
+    return string;
 }
 
 void EcmaString::WriteData(EcmaString *src, uint32_t start, uint32_t destSize, uint32_t length)

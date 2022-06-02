@@ -36,7 +36,6 @@ class InterpreterAssembly {
 public:
     static const uint32_t METHOD_HOTNESS_THRESHOLD = 512;
     enum ActualNumArgsOfCall : uint8_t { CALLARG0 = 0, CALLARG1, CALLARGS2, CALLARGS3 };
-    static void RunInternal(JSThread *thread, ConstantPool *constpool, const uint8_t *pc, JSTaggedType *sp);
     static void InitStackFrame(JSThread *thread);
     static JSTaggedValue Execute(EcmaRuntimeCallInfo *info);
     static JSTaggedValue ExecuteNative(EcmaRuntimeCallInfo *info);

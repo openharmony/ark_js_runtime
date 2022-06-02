@@ -321,6 +321,7 @@ ecma_source = [
   "ecmascript/builtins/builtins_dataview.cpp",
   "ecmascript/builtins/builtins_date.cpp",
   "ecmascript/builtins/builtins_errors.cpp",
+  "ecmascript/builtins/builtins_finalization_registry.cpp",
   "ecmascript/builtins/builtins_function.cpp",
   "ecmascript/builtins/builtins_generator.cpp",
   "ecmascript/builtins/builtins_global.cpp",
@@ -343,6 +344,7 @@ ecma_source = [
   "ecmascript/builtins/builtins_symbol.cpp",
   "ecmascript/builtins/builtins_typedarray.cpp",
   "ecmascript/builtins/builtins_weak_map.cpp",
+  "ecmascript/builtins/builtins_weak_ref.cpp",
   "ecmascript/builtins/builtins_weak_set.cpp",
   "ecmascript/containers/containers_arraylist.cpp",
   "ecmascript/containers/containers_deque.cpp",
@@ -361,6 +363,7 @@ ecma_source = [
   "ecmascript/ecma_string_table.cpp",
   "ecmascript/ecma_vm.cpp",
   "ecmascript/free_object.cpp",
+  "ecmascript/file_loader.cpp",
   "ecmascript/generator_helper.cpp",
   "ecmascript/global_env.cpp",
   "ecmascript/global_env_constants.cpp",
@@ -411,6 +414,7 @@ ecma_source = [
   "ecmascript/js_dataview.cpp",
   "ecmascript/js_date.cpp",
   "ecmascript/js_for_in_iterator.cpp",
+  "ecmascript/js_finalization_registry.cpp",
   "ecmascript/js_function.cpp",
   "ecmascript/js_generator_object.cpp",
   "ecmascript/js_hclass.cpp",
@@ -447,7 +451,6 @@ ecma_source = [
   "ecmascript/mem/heap.cpp",
   "ecmascript/mem/heap_region_allocator.cpp",
   "ecmascript/mem/linear_space.cpp",
-  "ecmascript/mem/machine_code.cpp",
   "ecmascript/mem/mem_controller.cpp",
   "ecmascript/mem/mem_map_allocator.cpp",
   "ecmascript/mem/native_area_allocator.cpp",
@@ -497,8 +500,8 @@ if (!is_mingw && !is_mac) {
 ecma_debugger_source = []
 if (!is_mingw && !is_mac) {
   ecma_debugger_source += [
-    "ecmascript/tooling/interface/debugger_api.cpp",
-    "ecmascript/tooling/interface/js_debugger.cpp",
+    "ecmascript/tooling/backend/debugger_api.cpp",
+    "ecmascript/tooling/backend/js_debugger.cpp",
   ]
 }
 
@@ -519,21 +522,6 @@ if (!is_mingw && !is_mac) {
     "ecmascript/snapshot/mem/snapshot_env.cpp",
     "ecmascript/snapshot/mem/snapshot_processor.cpp",
   ]
-}
-
-if (current_cpu == "arm") {
-  ecma_source += [ "ecmascript/trampoline/arm32/call.S" ]
-} else if (current_cpu == "arm64") {
-  ecma_source += [ "ecmascript/trampoline/aarch64/call.S" ]
-} else if (current_cpu == "amd64" || current_cpu == "x64" ||
-           current_cpu == "x86_64") {
-  if (is_linux) {
-    ecma_source += [ "ecmascript/trampoline/x64/call.S" ]
-  } else if (is_mingw) {
-    ecma_source += [ "ecmascript/trampoline/win_x64/call.S" ]
-  } else if (is_mac) {
-    ecma_source += [ "ecmascript/trampoline/mac_x64/call.S" ]
-  }
 }
 
 source_set("libark_jsruntime_set") {

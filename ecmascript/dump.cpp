@@ -56,6 +56,7 @@
 #include "ecmascript/js_date.h"
 #include "ecmascript/js_date_time_format.h"
 #include "ecmascript/js_for_in_iterator.h"
+#include "ecmascript/js_finalization_registry.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_global_object.h"
@@ -81,6 +82,7 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/js_weak_container.h"
+#include "ecmascript/js_weak_ref.h"
 #include "ecmascript/layout_info-inl.h"
 #include "ecmascript/lexical_env.h"
 #include "ecmascript/linked_hash_table.h"
@@ -149,6 +151,12 @@ CString JSHClass::DumpJSType(JSType type)
             return "WeakSet";
         case JSType::JS_WEAK_MAP:
             return "WeakMap";
+        case JSType::JS_WEAK_REF:
+            return "WeakRef";
+        case JSType::JS_FINALIZATION_REGISTRY:
+            return "JSFinalizationRegistry";
+        case JSType::CELL_RECORD:
+            return "CellRecord";
         case JSType::JS_DATE:
             return "Date";
         case JSType::JS_BOUND_FUNCTION:
@@ -502,6 +510,15 @@ static void DumpObject(TaggedObject *obj, std::ostream &os)
             break;
         case JSType::JS_WEAK_MAP:
             JSWeakMap::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_WEAK_REF:
+            JSWeakRef::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_FINALIZATION_REGISTRY:
+            JSFinalizationRegistry::Cast(obj)->Dump(os);
+            break;
+        case JSType::CELL_RECORD:
+            CellRecord::Cast(obj)->Dump(os);
             break;
         case JSType::JS_REG_EXP:
             JSRegExp::Cast(obj)->Dump(os);
@@ -1474,6 +1491,40 @@ void JSWeakSet::Dump(std::ostream &os) const
     set->Dump(os);
 }
 
+void JSWeakRef::Dump(std::ostream &os) const
+{
+    os << " - WeakObject : ";
+    GetWeakObject().DumpTaggedValue(os);
+    os << "\n";
+    JSObject::Dump(os);
+}
+
+void JSFinalizationRegistry::Dump(std::ostream &os) const
+{
+    os << " - CleanupCallback : ";
+    GetCleanupCallback().DumpTaggedValue(os);
+    os << "\n";
+    os << " - NoUnregister : ";
+    GetNoUnregister().D();
+    os << "\n";
+    os << " - MaybeUnregister : ";
+    LinkedHashMap *map = LinkedHashMap::Cast(GetMaybeUnregister().GetTaggedObject());
+    os << "   -   elements: " << std::dec << map->NumberOfElements() << "\n";
+    os << "   -   deleted-elements: " << std::dec << map->NumberOfDeletedElements() << "\n";
+    os << "   -   capacity: " << std::dec << map->Capacity() << "\n";
+    JSObject::Dump(os);
+}
+
+void CellRecord::Dump(std::ostream &os) const
+{
+    os << " - WeakRefTarget : ";
+    GetFromWeakRefTarget().DumpTaggedValue(os);
+    os << "\n";
+    os << " - HeldValue : ";
+    GetHeldValue().DumpTaggedValue(os);
+    os << "\n";
+}
+
 void JSSetIterator::Dump(std::ostream &os) const
 {
     LinkedHashSet *set = LinkedHashSet::Cast(GetIteratedSet().GetTaggedObject());
@@ -1709,6 +1760,10 @@ void GlobalEnv::Dump(std::ostream &os) const
     GetBuiltinsWeakSetFunction().GetTaggedValue().Dump(os);
     os << " - BuiltinsWeakMapFunction: ";
     GetBuiltinsWeakMapFunction().GetTaggedValue().Dump(os);
+    os << " - BuiltinsWeakRefFunction: ";
+    GetBuiltinsWeakRefFunction().GetTaggedValue().Dump(os);
+    os << " - BuiltinsFinalizationRegistryFunction: ";
+    GetBuiltinsFinalizationRegistryFunction().GetTaggedValue().Dump(os);
     os << " - MathFunction: ";
     GetMathFunction().GetTaggedValue().Dump(os);
     os << " - AtomicsFunction: ";
@@ -2374,7 +2429,7 @@ void TSObjectType::Dump(std::ostream &os) const
 {
     os << " - TSObjectType globalTSTypeRef: ";
     GlobalTSTypeRef gt = GetGTRef();
-    uint64_t globalTSTypeRef = gt.GetGlobalTSTypeRef();
+    uint64_t globalTSTypeRef = gt.GetData();
     os << globalTSTypeRef;
     os << "\n";
     os << " - TSObjectType moduleId: ";
@@ -2386,7 +2441,7 @@ void TSObjectType::Dump(std::ostream &os) const
     os << localTypeId;
     os << "\n";
     os << " - TSObjectType typeKind: ";
-    uint32_t typeKind = gt.GetUserDefineTypeKind();
+    uint32_t typeKind = gt.GetKind();
     os << typeKind;
     os << "\n";
     os << "  - ObjLayoutInfo: ";
@@ -2400,7 +2455,7 @@ void TSClassType::Dump(std::ostream &os) const
     os << " - Dump TSClassType - " << "\n";
     os << " - TSClassType globalTSTypeRef: ";
     GlobalTSTypeRef gt = GetGTRef();
-    uint64_t globalTSTypeRef = gt.GetGlobalTSTypeRef();
+    uint64_t globalTSTypeRef = gt.GetData();
     os << globalTSTypeRef;
     os << "\n";
     os << " - TSClassType moduleId: ";
@@ -2412,7 +2467,7 @@ void TSClassType::Dump(std::ostream &os) const
     os << localTypeId;
     os << "\n";
     os << " - TSClassType typeKind: ";
-    uint32_t typeKind = gt.GetUserDefineTypeKind();
+    uint32_t typeKind = gt.GetKind();
     os << typeKind;
     os << "\n";
     os << " - ExtensionTypeGT: ";
@@ -2420,7 +2475,7 @@ void TSClassType::Dump(std::ostream &os) const
     if (extensionType.IsUndefined()) {
         os << " (base class type) ";
     } else {
-        uint64_t extensionTypeGT = TSType::Cast(extensionType.GetTaggedObject())->GetGTRef().GetGlobalTSTypeRef();
+        uint64_t extensionTypeGT = TSType::Cast(extensionType.GetTaggedObject())->GetGTRef().GetData();
         os << extensionTypeGT;
     }
     os << "\n";
@@ -2452,7 +2507,7 @@ void TSInterfaceType::Dump(std::ostream &os) const
     os << " - Dump Interface Type - " << "\n";
     os << " - TSInterfaceType globalTSTypeRef: ";
     GlobalTSTypeRef gt = GetGTRef();
-    uint64_t globalTSTypeRef = gt.GetGlobalTSTypeRef();
+    uint64_t globalTSTypeRef = gt.GetData();
     os << globalTSTypeRef;
     os << "\n";
     os << " - TSInterfaceType moduleId: ";
@@ -2464,7 +2519,7 @@ void TSInterfaceType::Dump(std::ostream &os) const
     os << localTypeId;
     os << "\n";
     os << " - TSInterfaceType typeKind: ";
-    uint32_t typeKind = gt.GetUserDefineTypeKind();
+    uint32_t typeKind = gt.GetKind();
     os << typeKind;
     os << "\n";
     os << " - Extends TypeId: " << "\n";
@@ -2486,7 +2541,7 @@ void TSImportType::Dump(std::ostream &os) const
     os << " - Dump Import Type - " << "\n";
     os << " - TSImportType globalTSTypeRef: ";
     GlobalTSTypeRef gt = GetGTRef();
-    uint64_t globalTSTypeRef = gt.GetGlobalTSTypeRef();
+    uint64_t globalTSTypeRef = gt.GetData();
     os << globalTSTypeRef;
     os << "\n";
     os << " - TSImportType moduleId: ";
@@ -2498,13 +2553,13 @@ void TSImportType::Dump(std::ostream &os) const
     os << localTypeId;
     os << "\n";
     os << " - TSImportType typeKind: ";
-    uint32_t typeKind = gt.GetUserDefineTypeKind();
+    uint32_t typeKind = gt.GetKind();
     os << typeKind;
     os << "\n";
     os << " -------------------------------------------- ";
     os << " - Target Type: ";
     GlobalTSTypeRef targetGT = GetTargetRefGT();
-    uint64_t targetGTValue = targetGT.GetGlobalTSTypeRef();
+    uint64_t targetGTValue = targetGT.GetData();
     os << " - TargetTypeGT: ";
     os << targetGTValue;
     os << "\n";
@@ -2517,36 +2572,36 @@ void TSImportType::Dump(std::ostream &os) const
     os << targetLocalTypeId;
     os << "\n";
     os << " - Target Type typeKind: ";
-    uint32_t targetTypeKind = targetGT.GetUserDefineTypeKind();
+    uint32_t targetTypeKind = targetGT.GetKind();
     os << targetTypeKind;
     os << "\n";
     TSTypeKind flag = static_cast<TSTypeKind>(targetTypeKind);
     switch (flag) {
-        case TSTypeKind::TS_CLASS: {
+        case TSTypeKind::CLASS: {
             os << " - Target Type typeKind is classType ";
             break;
         }
-        case TSTypeKind::TS_CLASS_INSTANCE: {
+        case TSTypeKind::CLASS_INSTANCE: {
             os << " - Target Type typeKind is classInstanceType ";
             break;
         }
-        case TSTypeKind::TS_INTERFACE: {
+        case TSTypeKind::INTERFACE: {
             os << " - Target Type typeKind is interfaceType";
             break;
         }
-        case TSTypeKind::TS_IMPORT: {
+        case TSTypeKind::IMPORT: {
             os << " - Target Type typeKind is importType";
             break;
         }
-        case TSTypeKind::TS_UNION: {
+        case TSTypeKind::UNION: {
             os << " - Target Type typeKind is UnionType";
             break;
         }
-        case TSTypeKind::TS_FUNCTION: {
+        case TSTypeKind::FUNCTION: {
             os << " - Target Type typeKind is funtionType";
             break;
         }
-        case TSTypeKind::TS_OBJECT: {
+        case TSTypeKind::OBJECT: {
             os << " - Target Type typeKind is objectType";
             break;
         }
@@ -2565,7 +2620,7 @@ void TSClassInstanceType::Dump(std::ostream &os) const
     os << " - Dump ClassInstance Type - " << "\n";
     os << " - TSClassInstanceType globalTSTypeRef: ";
     GlobalTSTypeRef gt = GetGTRef();
-    uint64_t globalTSTypeRef = gt.GetGlobalTSTypeRef();
+    uint64_t globalTSTypeRef = gt.GetData();
     os << globalTSTypeRef;
     os << "\n";
     os << " - TSClassInstanceType moduleId: ";
@@ -2577,14 +2632,14 @@ void TSClassInstanceType::Dump(std::ostream &os) const
     os << localTypeId;
     os << "\n";
     os << " - TSClassInstanceType typeKind: ";
-    uint32_t typeKind = gt.GetUserDefineTypeKind();
+    uint32_t typeKind = gt.GetKind();
     os << typeKind;
     os << "\n";
 
     os << " -------------------------------------------- ";
     os << " - createClassType GT: ";
     GlobalTSTypeRef createClassTypeGT = GetClassRefGT();
-    os << createClassTypeGT.GetGlobalTSTypeRef();
+    os << createClassTypeGT.GetData();
     os << "\n";
 }
 
@@ -2593,7 +2648,7 @@ void TSUnionType::Dump(std::ostream &os) const
     os << " - Dump UnionType Type - " << "\n";
     os << " - TSUnionType globalTSTypeRef: ";
     GlobalTSTypeRef gt = GetGTRef();
-    uint64_t globalTSTypeRef = gt.GetGlobalTSTypeRef();
+    uint64_t globalTSTypeRef = gt.GetData();
     os << globalTSTypeRef;
     os << "\n";
     os << " - TSUnionType moduleId: ";
@@ -2605,11 +2660,11 @@ void TSUnionType::Dump(std::ostream &os) const
     os << localTypeId;
     os << "\n";
     os << " - TSUnionType typeKind: ";
-    uint32_t typeKind = gt.GetUserDefineTypeKind();
+    uint32_t typeKind = gt.GetKind();
     os << typeKind;
     os << "\n";
     os << " - TSUnionType TypeId: " << "\n";
-    DumpArrayClass(TaggedArray::Cast(GetComponentTypes().GetTaggedObject()), os);
+    DumpArrayClass(TaggedArray::Cast(GetComponents().GetTaggedObject()), os);
 }
 
 void TSFunctionType::Dump(std::ostream &os) const
@@ -2617,7 +2672,7 @@ void TSFunctionType::Dump(std::ostream &os) const
     os << " - Dump TSFunctionType - " << "\n";
     os << " - TSFunctionType globalTSTypeRef: ";
     GlobalTSTypeRef gt = GetGTRef();
-    uint64_t globalTSTypeRef = gt.GetGlobalTSTypeRef();
+    uint64_t globalTSTypeRef = gt.GetData();
     os << globalTSTypeRef;
     os << "\n";
     os << " - TSFunctionType moduleId: ";
@@ -2629,7 +2684,7 @@ void TSFunctionType::Dump(std::ostream &os) const
     os << localTypeId;
     os << "\n";
     os << " - TSFunctionType typeKind: ";
-    uint32_t typeKind = gt.GetUserDefineTypeKind();
+    uint32_t typeKind = gt.GetKind();
     os << typeKind;
     os << "\n";
     os << " - TSFunctionType ParameterTypeIds: " << "\n";
@@ -2641,7 +2696,7 @@ void TSArrayType::Dump(std::ostream &os) const
     os << " - Dump TSArrayType - " << "\n";
     os << " - TSArrayType globalTSTypeRef: ";
     GlobalTSTypeRef gt = GetGTRef();
-    uint64_t globalTSTypeRef = gt.GetGlobalTSTypeRef();
+    uint64_t globalTSTypeRef = gt.GetData();
     os << globalTSTypeRef;
     os << "\n";
     os << " - TSArrayType moduleId: ";
@@ -2653,7 +2708,7 @@ void TSArrayType::Dump(std::ostream &os) const
     os << localTypeId;
     os << "\n";
     os << " - TSArrayType typeKind: ";
-    uint32_t typeKind = gt.GetUserDefineTypeKind();
+    uint32_t typeKind = gt.GetKind();
     os << typeKind;
     os << "\n";
     os << " - TSArrayType parameterTypeRef: " << "\n";
@@ -2832,6 +2887,15 @@ static void DumpObject(TaggedObject *obj,
             return;
         case JSType::JS_WEAK_MAP:
             JSWeakMap::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_WEAK_REF:
+            JSWeakRef::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_FINALIZATION_REGISTRY:
+            JSFinalizationRegistry::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::CELL_RECORD:
+            CellRecord::Cast(obj)->DumpForSnapshot(vec);
             return;
         case JSType::JS_REG_EXP:
             JSRegExp::Cast(obj)->DumpForSnapshot(vec);
@@ -3408,6 +3472,28 @@ void JSWeakSet::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &
 
     JSObject::DumpForSnapshot(vec);
 }
+
+void JSWeakRef::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("WeakObject"), GetWeakObject()));
+    JSObject::DumpForSnapshot(vec);
+}
+
+void JSFinalizationRegistry::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("CleanupCallback"), GetCleanupCallback()));
+    LinkedHashMap *map = LinkedHashMap::Cast(GetMaybeUnregister().GetTaggedObject());
+    map->DumpForSnapshot(vec);
+    vec.push_back(std::make_pair(CString("MaybeUnregister"), GetMaybeUnregister()));
+    JSObject::DumpForSnapshot(vec);
+}
+
+void CellRecord::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("WeakRefTarget"), GetWeakRefTarget()));
+    vec.push_back(std::make_pair(CString("HeldValue"), GetHeldValue()));
+}
+
 void JSSetIterator::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     LinkedHashSet *set = LinkedHashSet::Cast(GetIteratedSet().GetTaggedObject());
@@ -3590,6 +3676,9 @@ void GlobalEnv::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &
     vec.push_back(std::make_pair(CString("BuiltinsMapFunction"), GetBuiltinsMapFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("BuiltinsWeakSetFunction"), GetBuiltinsWeakSetFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("BuiltinsWeakMapFunction"), GetBuiltinsWeakMapFunction().GetTaggedValue()));
+    vec.push_back(std::make_pair(CString("BuiltinsWeakRefFunction"), GetBuiltinsWeakRefFunction().GetTaggedValue()));
+    vec.push_back(std::make_pair(CString("BuiltinsFinalizationRegistryFunction"),
+                                 GetBuiltinsFinalizationRegistryFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("MathFunction"), GetMathFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("AtomicsFunction"), GetAtomicsFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("JsonFunction"), GetJsonFunction().GetTaggedValue()));
@@ -4024,7 +4113,7 @@ void TSInterfaceType::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedVal
 
 void TSClassInstanceType::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
-    vec.push_back(std::make_pair(CString("classTypeIndex"), JSTaggedValue(GetClassRefGT().GetGlobalTSTypeRef())));
+    vec.push_back(std::make_pair(CString("classTypeIndex"), JSTaggedValue(GetClassRefGT().GetData())));
 }
 
 void TSImportType::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
@@ -4034,7 +4123,7 @@ void TSImportType::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>
 
 void TSUnionType::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
-    vec.push_back(std::make_pair(CString("ComponentTypes"), GetComponentTypes()));
+    vec.push_back(std::make_pair(CString("ComponentTypes"), GetComponents()));
 }
 
 void TSFunctionType::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const

@@ -127,6 +127,8 @@ EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
 {
     JSRuntimeOptions runtimeOptions;
     runtimeOptions.SetArkProperties(option.GetArkProperties());
+    runtimeOptions.SetLongPauseTime(option.GetLongPauseTime());
+    runtimeOptions.SetGcThreadNum(option.GetGcThreadNum());
     // Mem
     runtimeOptions.SetHeapSizeLimit(option.GetGcPoolSize());
     // asmInterpreter
@@ -350,7 +352,7 @@ bool JSNApi::IsWeak(const EcmaVM *vm, uintptr_t localAddress)
 
 void JSNApi::DisposeGlobalHandleAddr(const EcmaVM *vm, uintptr_t addr)
 {
-    if (addr == 0 || reinterpret_cast<ecmascript::EcmaGlobalStorage::Node *>(addr)->IsFree()) {
+    if (addr == 0 || !reinterpret_cast<ecmascript::EcmaGlobalStorage::Node *>(addr)->IsUsing()) {
         return;
     }
     vm->GetJSThread()->GetEcmaGlobalStorage()->DisposeGlobalHandle(addr);
@@ -408,6 +410,12 @@ void JSNApi::SetHostPromiseRejectionTracker(EcmaVM *vm, void *cb, void* data)
     vm->SetHostPromiseRejectionTracker(HostPromiseRejectionTracker);
     vm->SetPromiseRejectCallback(reinterpret_cast<ecmascript::PromiseRejectCallback>(cb));
     vm->SetData(data);
+}
+
+void JSNApi::SetHostResolvePathTracker(EcmaVM *vm,
+                                       std::function<std::string(std::string dirPath, std::string requestPath)> cb)
+{
+    vm->SetResolvePathCallback(cb);
 }
 
 void JSNApi::SetHostEnqueueJob(const EcmaVM *vm, Local<JSValueRef> cb)
@@ -992,6 +1000,7 @@ Local<JSValueRef> FunctionRef::Call(const EcmaVM *vm, Local<JSValueRef> thisObj,
 
     EcmaVM::ConstCast(vm)->ExecutePromisePendingJob();
     RETURN_VALUE_IF_ABRUPT_NOT_CLEAR_EXCEPTION(thread, JSValueRef::Exception(vm));
+    vm->GetHeap()->ClearKeptObjects();
 
     return scope.Escape(JSNApiHelper::ToLocal<JSValueRef>(resultValue));
 }
@@ -1138,6 +1147,7 @@ bool PromiseCapabilityRef::Resolve(const EcmaVM *vm, Local<JSValueRef> value)
 
     EcmaVM::ConstCast(vm)->ExecutePromisePendingJob();
     RETURN_VALUE_IF_ABRUPT(thread, false);
+    vm->GetHeap()->ClearKeptObjects();
     return true;
 }
 
@@ -1159,6 +1169,7 @@ bool PromiseCapabilityRef::Reject(const EcmaVM *vm, Local<JSValueRef> reason)
 
     EcmaVM::ConstCast(vm)->ExecutePromisePendingJob();
     RETURN_VALUE_IF_ABRUPT(thread, false);
+    vm->GetHeap()->ClearKeptObjects();
     return true;
 }
 

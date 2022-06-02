@@ -55,18 +55,6 @@ public:
 
     static void PushCallArgs0AndDispatch(ExtendedAssembler *assembler);
 
-    static void PushCallIThisRangeAndDispatchSlowPath(ExtendedAssembler *assembler);
-
-    static void PushCallIRangeAndDispatchSlowPath(ExtendedAssembler *assembler);
-
-    static void PushCallArgs3AndDispatchSlowPath(ExtendedAssembler *assembler);
-
-    static void PushCallArgs2AndDispatchSlowPath(ExtendedAssembler *assembler);
-
-    static void PushCallArgs1AndDispatchSlowPath(ExtendedAssembler *assembler);
-
-    static void PushCallArgs0AndDispatchSlowPath(ExtendedAssembler *assembler);
-
     static void PushCallIRangeAndDispatchNative(ExtendedAssembler *assembler);
 
     static void PushCallArgsAndDispatchNative(ExtendedAssembler *assembler);
@@ -74,6 +62,10 @@ public:
     static void ResumeRspAndDispatch(ExtendedAssembler *assembler);
 
     static void ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *assembler);
+
+    static void CallGetter(ExtendedAssembler *assembler);
+
+    static void CallSetter(ExtendedAssembler *assembler);
 
     static void ResumeCaughtFrameAndDispatch(ExtendedAssembler *assembler);
 
@@ -91,10 +83,10 @@ private:
     static void PushGeneratorFrameState(ExtendedAssembler *assembler, Register prevSpRegister,
         Register fpRegister, Register callTargetRegister, Register methodRegister, Register contextRegister,
         Register pcRegister, Register operatorRegister);
-    static void PushAsmInterpEntryFrame(ExtendedAssembler *assembler);
-    static void PopAsmInterpEntryFrame(ExtendedAssembler *assembler);
+    static void PushAsmInterpEntryFrame(ExtendedAssembler *assembler, bool saveLeave);
+    static void PopAsmInterpEntryFrame(ExtendedAssembler *assembler, bool saveLeave);
     static void CallBCStub(ExtendedAssembler *assembler, Register newSpRegister, Register glueRegister,
-        Register callTargetRegister, Register methodRegister, Register pcRegister, bool isReturn);
+        Register callTargetRegister, Register methodRegister, Register pcRegister);
     static void GlueToThread(ExtendedAssembler *assembler, Register glueRegister, Register threadRegister);
     static void ConstructEcmaRuntimeCallInfo(ExtendedAssembler *assembler, Register threadRegister,
         Register numArgsRegister, Register stackArgsRegister);
@@ -105,14 +97,13 @@ private:
     static void PushUndefinedWithArgc(ExtendedAssembler *assembler, Register argc);
     static void HasPendingException(ExtendedAssembler *assembler, Register threadRegister);
     static void StackOverflowCheck(ExtendedAssembler *assembler);
-    static void CallIThisRangeNoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgsRegister);
-    static void CallIRangeNoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgsRegister);
-    static void Callargs3NoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgsRegister);
-    static void Callargs2NoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgsRegister);
-    static void Callargs1NoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgsRegister);
-    static void Callargs0NoExtraEntry(ExtendedAssembler *assembler);
+    static void CallIThisRangeNoExtraEntry(ExtendedAssembler *assembler);
+    static void CallIRangeNoExtraEntry(ExtendedAssembler *assembler);
+    static void Callargs3NoExtraEntry(ExtendedAssembler *assembler);
+    static void Callargs2NoExtraEntry(ExtendedAssembler *assembler);
+    static void Callargs1NoExtraEntry(ExtendedAssembler *assembler);
     static void CallIThisRangeEntry(ExtendedAssembler *assembler);
-    static void PushCallThis(ExtendedAssembler *assembler);
+    static void PushCallThis(ExtendedAssembler *assembler, Register thisRegister, bool isUndefined);
     static void CallIRangeEntry(ExtendedAssembler *assembler);
     static void Callargs3Entry(ExtendedAssembler *assembler);
     static void Callargs2Entry(ExtendedAssembler *assembler);
@@ -122,10 +113,27 @@ private:
     static void PushCallTarget(ExtendedAssembler *assembler);
     static void PushVregs(ExtendedAssembler *assembler);
     static void DispatchCall(ExtendedAssembler *assembler, Register pcRegister, Register newSpRegister);
-    static void CallNativeEntry(ExtendedAssembler *assembler);
+    static void CallNativeEntry(ExtendedAssembler *assemblSer);
     static void CallNativeInternal(ExtendedAssembler *assembler,
         Register glue, Register numArgs, Register stackArgs, Register nativeCode);
     static void PushBuiltinFrame(ExtendedAssembler *assembler, Register glue, FrameType type);
+    using AssemblerClosure = std::function<void(ExtendedAssembler *assembler)>;
+    static void JSCallCommonEntry(ExtendedAssembler *assembler, JSCallMode mode,
+                                  const AssemblerClosure& fastEntry, const AssemblerClosure& slowEntry);
+    static void JSCallCommonSlowPath(ExtendedAssembler *assembler, JSCallMode mode,
+                                     const AssemblerClosure& entry,
+                                     const AssemblerClosure& extraEntry);
+    static void PushCallIThisRangeAndDispatchSlowPath(ExtendedAssembler *assembler);
+    static void PushCallIRangeAndDispatchSlowPath(ExtendedAssembler *assembler);
+    static void PushCallArgs3AndDispatchSlowPath(ExtendedAssembler *assembler);
+    static void PushCallArgs2AndDispatchSlowPath(ExtendedAssembler *assembler);
+    static void PushCallArgs1AndDispatchSlowPath(ExtendedAssembler *assembler);
+    static void PushCallArgs0AndDispatchSlowPath(ExtendedAssembler *assembler);
+    static void CallGetterSlow(ExtendedAssembler *assembler);
+    static void CallSetterSlow(ExtendedAssembler *assembler);
+    static void CallGetterEntry(ExtendedAssembler *assembler);
+    static void CallSetterEntry(ExtendedAssembler *assembler);
+    static void CallNoExtraSetterEntry(ExtendedAssembler *assembler);
 };
 }  // namespace panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H

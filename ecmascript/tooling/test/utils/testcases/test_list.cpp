@@ -19,6 +19,8 @@
 
 // testcase list
 #include "js_breakpoint_test.h"
+#include "js_breakpoint_arrow_test.h"
+#include "js_breakpoint_async_test.h"
 #include "js_exception_test.h"
 #include "js_single_step_test.h"
 
@@ -31,6 +33,8 @@ static void RegisterTests()
     TestUtil::RegisterTest("JsExceptionTest", GetJsExceptionTest());
     TestUtil::RegisterTest("JsSingleStepTest", GetJsSingleStepTest());
     TestUtil::RegisterTest("JsBreakpointTest", GetJsBreakpointTest());
+    TestUtil::RegisterTest("JsBreakpointAsyncTest", GetJsBreakpointAsyncTest());
+    TestUtil::RegisterTest("JsBreakpointArrowTest", GetJsBreakpointArrowTest());
 }
 
 CVector<const char *> GetTestList()

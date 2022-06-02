@@ -554,6 +554,11 @@ namespace panda::ecmascript {
     V(WeakSet, Delete)                        \
     V(WeakSet, Add)                           \
     V(WeakSet, Has)                           \
+    V(WeakRef, Constructor)                   \
+    V(WeakRef, Deref)                         \
+    V(FinalizationRegistry, Constructor)      \
+    V(FinalizationRegistry, Register)         \
+    V(FinalizationRegistry, Unregister)       \
     V(ArrayList, Constructor)                 \
     V(ArrayList, Add)                         \
     V(ArrayList, Insert)                      \

@@ -20,20 +20,20 @@
 #include <iostream>
 #include <unistd.h>
 
-#include "ecmascript/js_thread.h"
 #include "ecmascript/base/config.h"
-#include "common_stubs.h"
-#include "ecmascript/compiler/aot_file_manager.h"
+#include "ecmascript/compiler/common_stubs.h"
+#include "ecmascript/compiler/file_generators.h"
+#include "ecmascript/compiler/llvm_codegen.h"
+#include "ecmascript/compiler/pass.h"
+#include "ecmascript/compiler/scheduler.h"
+#include "ecmascript/compiler/stub-inl.h"
+#include "ecmascript/compiler/verifier.h"
+#include "ecmascript/js_thread.h"
 #include "ecmascript/napi/include/jsnapi.h"
-#include "interpreter_stub-inl.h"
 #include "generated/base_options.h"
+#include "interpreter_stub-inl.h"
 #include "libpandabase/utils/pandargs.h"
 #include "libpandabase/utils/span.h"
-#include "llvm_codegen.h"
-#include "pass.h"
-#include "scheduler.h"
-#include "stub-inl.h"
-#include "verifier.h"
 
 namespace panda::ecmascript::kungfu {
 class StubPassData : public PassData {
@@ -95,9 +95,9 @@ private:
     std::unique_ptr<CodeGeneratorImpl> llvmImpl_ {nullptr};
 };
 
-void StubCompiler::RunPipeline(LLVMModule &module)
+void StubCompiler::RunPipeline(LLVMModule *module)
 {
-    auto callSigns = module.GetCSigns();
+    auto callSigns = module->GetCSigns();
     const CompilerLog *log = GetLog();
     bool enableLog = log->IsAlwaysEnabled();
 
@@ -110,7 +110,7 @@ void StubCompiler::RunPipeline(LLVMModule &module)
             enableLog = log->IncludesMethod(stub->GetMethodName());
         }
 
-        StubPassData data(stub, &module);
+        StubPassData data(stub, module);
         PassRunner<StubPassData> pipeline(&data, enableLog);
         pipeline.RunPass<StubBuildCircuitPass>();
         pipeline.RunPass<VerifierPass>();
@@ -120,32 +120,30 @@ void StubCompiler::RunPipeline(LLVMModule &module)
     }
 }
 
-bool StubCompiler::BuildStubModuleAndSave(const std::string &triple, const std::string &commonStubFile,
-    const std::string &bcHandlerStubFile, size_t optLevel)
+bool StubCompiler::BuildStubModuleAndSave(const std::string &triple, const std::string &stubFile, size_t optLevel)
 {
     BytecodeStubCSigns::Initialize();
     CommonStubCSigns::Initialize();
     RuntimeStubCSigns::Initialize();
     size_t res = 0;
     const CompilerLog *log = GetLog();
-    if (!commonStubFile.empty()) {
-        COMPILER_LOG(INFO) << "compiling common stubs";
-        LLVMModule commonStubModule("com_stub", triple);
-        commonStubModule.SetUpForCommonStubs();
-        RunPipeline(commonStubModule);
-        AotFileManager manager(&commonStubModule, log, LOptions(optLevel, true));
-        manager.SaveStubFile(commonStubFile);
-        res++;
-    }
-
-    if (!bcHandlerStubFile.empty()) {
+    StubFileGenerator generator(log);
+    if (!stubFile.empty()) {
         COMPILER_LOG(INFO) << "compiling bytecode handler stubs";
-        LLVMModule bcHandlerStubModule("bc_stub", triple);
-        bcHandlerStubModule.SetUpForBytecodeHandlerStubs();
-        RunPipeline(bcHandlerStubModule);
-        AotFileManager manager(&bcHandlerStubModule, log, LOptions(optLevel, false));
-        manager.SaveStubFile(bcHandlerStubFile);
+        LLVMModule bcStubModule("bc_stub", triple);
+        LLVMAssembler bcStubAssembler(bcStubModule.GetModule(), LOptions(optLevel, false));
+        bcStubModule.SetUpForBytecodeHandlerStubs();
+        RunPipeline(&bcStubModule);
+        generator.AddModule(&bcStubModule, &bcStubAssembler);
         res++;
+        COMPILER_LOG(INFO) << "compiling common stubs";
+        LLVMModule comStubModule("com_stub", triple);
+        LLVMAssembler comStubAssembler(comStubModule.GetModule(), LOptions(optLevel, true));
+        comStubModule.SetUpForCommonStubs();
+        RunPipeline(&comStubModule);
+        generator.AddModule(&comStubModule, &comStubAssembler);
+        res++;
+        generator.SaveStubFile(stubFile);
     }
     return (res > 0);
 }
@@ -183,18 +181,17 @@ int main(const int argc, const char **argv)
 
     panda::ecmascript::EcmaVM *vm = panda::JSNApi::CreateEcmaVM(runtimeOptions);
     if (vm == nullptr) {
-        COMPILER_LOG(INFO) << "Cann't Create EcmaVM";
+        COMPILER_LOG(INFO) << "Can't Create EcmaVM";
         return -1;
     }
     std::string tripleString = runtimeOptions.GetTargetTriple();
-    std::string commonStubFile = runtimeOptions.WasComStubFileSet() ? runtimeOptions.GetComStubFile() : "";
-    std::string bcHandlerFile = runtimeOptions.WasBcStubFileSet() ? runtimeOptions.GetBcStubFile() : "";
+    std::string stubFile = runtimeOptions.WasStubFileSet() ? runtimeOptions.GetStubFile() : "";
     std::string logMethods = vm->GetJSOptions().GetlogCompiledMethods();
     size_t optLevel = runtimeOptions.GetOptLevel();
     panda::ecmascript::kungfu::CompilerLog log(logMethods);
     panda::ecmascript::kungfu::StubCompiler compiler(&log);
 
-    bool res = compiler.BuildStubModuleAndSave(tripleString, commonStubFile, bcHandlerFile, optLevel);
+    bool res = compiler.BuildStubModuleAndSave(tripleString, stubFile, optLevel);
     COMPILER_LOG(INFO) << "stub compiler run finish, result condition(T/F):" << std::boolalpha << res;
     panda::JSNApi::DestroyJSVM(vm);
     return res ? 0 : -1;
