@@ -416,10 +416,10 @@ JSHandle<TaggedArray> JSAPIVector::OwnKeys(JSThread *thread, const JSHandle<JSAP
 }
 
 bool JSAPIVector::GetOwnProperty(JSThread *thread, const JSHandle<JSAPIVector> &obj,
-                                 const JSHandle<JSTaggedValue> &key, PropertyDescriptor &desc)
+                                 const JSHandle<JSTaggedValue> &key)
 {
     uint32_t index = 0;
-    if (UNLIKELY(JSTaggedValue::ToElementIndex(key.GetTaggedValue(), &index))) {
+    if (UNLIKELY(!JSTaggedValue::ToElementIndex(key.GetTaggedValue(), &index))) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Can not obtain attributes of no-number type", false);
     }
 
@@ -427,7 +427,10 @@ bool JSAPIVector::GetOwnProperty(JSThread *thread, const JSHandle<JSAPIVector> &
     if (index >= length) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "GetOwnProperty index out-of-bounds", false);
     }
-    return JSObject::GetOwnProperty(thread, JSHandle<JSObject>::Cast(obj), key, desc);
+
+    JSAPIVector::Get(thread, obj, index);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
+    return true;
 }
 
 void JSAPIVector::TrimToCurrentLength(JSThread *thread, const JSHandle<JSAPIVector> &obj)

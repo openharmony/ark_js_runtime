@@ -85,6 +85,8 @@ class JSThread;
     V(JSTaggedValue, JSAPIArrayListIteratorClass, JS_API_ARRAYLIST_ITERATOR_CLASS_INDEX, ecma_roots_class)            \
     V(JSTaggedValue, JSAPIDequeIteratorClass, JS_API_DEQUE_ITERATOR_CLASS_INDEX, ecma_roots_class)                    \
     V(JSTaggedValue, JSAPIPlainArrayIteratorClass, JS_API_PLAIN_ARRAY_ITERATOR_CLASS_INDEX, ecma_roots_class)         \
+    V(JSTaggedValue, JSAPILinkedListIteratorClass, JS_API_LINKED_LIST_ITERATOR_CLASS_INDEX, ecma_roots_class)         \
+    V(JSTaggedValue, JSAPIListIteratorClass, JS_API_LIST_ITERATOR_CLASS_INDEX, ecma_roots_class)                      \
     V(JSTaggedValue, JSAPIQueueIteratorClass, JS_API_QUEUE_ITERATOR_CLASS_INDEX, ecma_roots_class)                    \
     V(JSTaggedValue, JSAPIStackIteratorClass, JS_API_STACK_ITERATOR_CLASS_INDEX, ecma_roots_class)                    \
     V(JSTaggedValue, JSAPIVectorIteratorClass, JS_API_VECTOR_ITERATOR_CLASS_INDEX, ecma_roots_class)                  \
@@ -125,6 +127,10 @@ class JSThread;
     V(JSTaggedValue, PlainArrayFunction, PLAIN_ARRAY_FUNCTION_INDEX, PlainArrayFunction)                              \
     V(JSTaggedValue, DequeIteratorPrototype, DEQUE_ITERATOR_PROTOTYPE_INDEX, DequeIterator)                           \
     V(JSTaggedValue, StackIteratorPrototype, STACK_ITERATOR_PROTOTYPE_INDEX, StackIterator)                           \
+    V(JSTaggedValue, ListFunction, LIST_FUNCTION_INDEX, ListFunction)                                                 \
+    V(JSTaggedValue, LinkedListFunction, LINKED_LIST_FUNCTION_INDEX, LinkedListFunction)                              \
+    V(JSTaggedValue, ListIteratorPrototype, LIST_ITERATOR_PROTOTYPE_INDEX, ListIterator)                              \
+    V(JSTaggedValue, LinkedListIteratorPrototype, LINKED_LIST_ITERATOR_PROTOTYPE_INDEX, LinkedListIterator)           \
     /* SymbolTable*RegisterSymbols */                                                                                 \
     V(JSTaggedValue, NameString, NAME_STRING_INDEX, name)                                                             \
     V(JSTaggedValue, GetPrototypeOfString, GETPROTOTYPEOF_STRING_INDEX, getPrototypeOf)                               \

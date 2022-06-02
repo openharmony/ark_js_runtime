@@ -191,4 +191,26 @@ HWTEST_F_L0(JSAPIStackTest, Search)
 
     toor->Dump();
 }
+
+HWTEST_F_L0(JSAPIStackTest, GetOwnProperty)
+{
+    constexpr uint32_t DEFAULT_LENGTH = 8;
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
+    JSHandle<JSAPIStack> toor(thread, CreateStack());
+
+    std::string stackvalue("stackvalue");
+    for (uint32_t i = 0; i < DEFAULT_LENGTH; i++) {
+        std::string ivalue = stackvalue + std::to_string(i);
+        value.Update(factory->NewFromStdString(ivalue).GetTaggedValue());
+        JSAPIStack::Push(thread, toor, value);
+    }
+    // test GetOwnProperty
+    int testInt = 1;
+    JSHandle<JSTaggedValue> stackKey1(thread, JSTaggedValue(testInt));
+    EXPECT_TRUE(JSAPIStack::GetOwnProperty(thread, toor, stackKey1));
+    testInt = 20;
+    JSHandle<JSTaggedValue> stackKey2(thread, JSTaggedValue(testInt));
+    EXPECT_FALSE(JSAPIStack::GetOwnProperty(thread, toor, stackKey2));
+}
 }  // namespace panda::test

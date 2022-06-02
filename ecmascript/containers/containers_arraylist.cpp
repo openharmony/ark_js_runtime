@@ -76,10 +76,11 @@ JSTaggedValue ContainersArrayList::Insert(EcmaRuntimeCallInfo *argv)
 
     JSHandle<JSTaggedValue> value = GetCallArg(argv, 0);
     JSHandle<JSTaggedValue> index = GetCallArg(argv, 1);
-    if (!index->IsNumber()) {
+    if (!index->IsInteger()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "index is not Integer", JSTaggedValue::Exception());
     }
     JSAPIArrayList::Insert(thread, JSHandle<JSAPIArrayList>::Cast(self), value, JSTaggedValue::ToUint32(thread, index));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     return JSTaggedValue::Undefined();
 }
@@ -166,7 +167,7 @@ JSTaggedValue ContainersArrayList::IncreaseCapacityTo(EcmaRuntimeCallInfo *argv)
     }
 
     JSHandle<JSTaggedValue> newCapacity = GetCallArg(argv, 0);
-    if (!newCapacity->IsNumber()) {
+    if (!newCapacity->IsInteger()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "newCapacity is not Integer", JSTaggedValue::Exception());
     }
 
@@ -274,7 +275,7 @@ JSTaggedValue ContainersArrayList::RemoveByIndex(EcmaRuntimeCallInfo *argv)
     }
 
     JSHandle<JSTaggedValue> value = GetCallArg(argv, 0);
-    if (!value->IsNumber()) {
+    if (!value->IsInteger()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "index is not Integer", JSTaggedValue::Exception());
     }
 
@@ -318,7 +319,7 @@ JSTaggedValue ContainersArrayList::RemoveByRange(EcmaRuntimeCallInfo *argv)
 
     JSHandle<JSTaggedValue> startIndex = GetCallArg(argv, 0);
     JSHandle<JSTaggedValue> endIndex = GetCallArg(argv, 1);
-    if (!startIndex->IsNumber() || !endIndex->IsNumber()) {
+    if (!startIndex->IsInteger() || !endIndex->IsInteger()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "startIndex or endIndex is not Integer", JSTaggedValue::Exception());
     }
     JSAPIArrayList::RemoveByRange(thread, JSHandle<JSAPIArrayList>::Cast(self), startIndex, endIndex);
@@ -382,7 +383,7 @@ JSTaggedValue ContainersArrayList::SubArrayList(EcmaRuntimeCallInfo *argv)
 
     JSHandle<JSTaggedValue> value1 = GetCallArg(argv, 0);
     JSHandle<JSTaggedValue> value2 = GetCallArg(argv, 1);
-    if (!value1->IsNumber() || !value2->IsNumber()) {
+    if (!value1->IsInteger() || !value2->IsInteger()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "startIndex or endIndex is not Integer", JSTaggedValue::Exception());
     }
     JSHandle<JSAPIArrayList> newArrayList =

@@ -184,4 +184,26 @@ HWTEST_F_L0(JSAPIVectorTest, GetIndexOf)
 
     toor->Dump();
 }
+
+HWTEST_F_L0(JSAPIVectorTest, GetOwnProperty)
+{
+    constexpr uint32_t DEFAULT_LENGTH = 8;
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
+    JSHandle<JSAPIVector> toor(thread, CreateVector());
+
+    std::string vectorvalue("vectorvalue");
+    for (uint32_t i = 0; i < DEFAULT_LENGTH; i++) {
+        std::string ivalue = vectorvalue + std::to_string(i);
+        value.Update(factory->NewFromStdString(ivalue).GetTaggedValue());
+        JSAPIVector::Add(thread, toor, value);
+    }
+    // test GetOwnProperty
+    int testInt = 1;
+    JSHandle<JSTaggedValue> vectorKey1(thread, JSTaggedValue(testInt));
+    EXPECT_TRUE(JSAPIVector::GetOwnProperty(thread, toor, vectorKey1));
+    testInt = 20;
+    JSHandle<JSTaggedValue> vectorKey2(thread, JSTaggedValue(testInt));
+    EXPECT_FALSE(JSAPIVector::GetOwnProperty(thread, toor, vectorKey2));
+}
 }  // namespace panda::test

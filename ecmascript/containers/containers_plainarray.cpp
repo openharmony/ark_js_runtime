@@ -57,7 +57,7 @@ JSTaggedValue ContainersPlainArray::Add(EcmaRuntimeCallInfo *argv)
     }
     JSHandle<JSTaggedValue> key(GetCallArg(argv, 0));
     JSHandle<JSTaggedValue> value(GetCallArg(argv, 1));
-    if (!key->IsNumber()) {
+    if (!key->IsInteger()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "the index is not integer", JSTaggedValue::Exception());
     }
     JSAPIPlainArray::Add(thread, JSHandle<JSAPIPlainArray>::Cast(self), key, value);
@@ -125,7 +125,7 @@ JSTaggedValue ContainersPlainArray::Get(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "obj is not JSAPIPlainArray", JSTaggedValue::Exception());
     }
     JSHandle<JSTaggedValue> key(GetCallArg(argv, 0));
-    if (!key->IsNumber()) {
+    if (!key->IsInteger()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "the key is not integer", JSTaggedValue::Exception());
     }
     JSAPIPlainArray *array = JSAPIPlainArray::Cast(self->GetTaggedObject());
@@ -253,7 +253,7 @@ JSTaggedValue ContainersPlainArray::Remove(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "obj is not JSAPIPlainArray", JSTaggedValue::Exception());
     }
     JSHandle<JSTaggedValue> key(GetCallArg(argv, 0));
-    if (!key->IsNumber()) {
+    if (!key->IsInteger()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "the key is not integer", JSTaggedValue::Undefined());
     }
     JSAPIPlainArray *array = JSAPIPlainArray::Cast(self->GetTaggedObject());
@@ -271,7 +271,7 @@ JSTaggedValue ContainersPlainArray::RemoveAt(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "obj is not JSAPIPlainArray", JSTaggedValue::Exception());
     }
     JSHandle<JSTaggedValue> index(GetCallArg(argv, 0));
-    if (!index->IsNumber()) {
+    if (!index->IsInteger()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "the index is not integer", JSTaggedValue::Undefined());
     }
     JSAPIPlainArray *array = JSAPIPlainArray::Cast(self->GetTaggedObject());
@@ -290,7 +290,7 @@ JSTaggedValue ContainersPlainArray::RemoveRangeFrom(EcmaRuntimeCallInfo *argv)
     }
     JSHandle<JSTaggedValue> valueIndex(GetCallArg(argv, 0));
     JSHandle<JSTaggedValue> valueSize(GetCallArg(argv, 1));
-    if (!valueIndex->IsNumber() || !valueSize->IsNumber()) {
+    if (!valueIndex->IsInteger() || !valueSize->IsInteger()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "the index or the value is not integer", JSTaggedValue::Undefined());
     }
     int32_t index = valueIndex->GetNumber();
@@ -312,7 +312,7 @@ JSTaggedValue ContainersPlainArray::SetValueAt(EcmaRuntimeCallInfo *argv)
     }
     JSHandle<JSTaggedValue> index(GetCallArg(argv, 0));
     JSHandle<JSTaggedValue> value(GetCallArg(argv, 1));
-    if (!index->IsNumber()) {
+    if (!index->IsInteger()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "the index is not integer", JSTaggedValue::Exception());
     }
     JSAPIPlainArray *array = JSAPIPlainArray::Cast(self->GetTaggedObject());
@@ -331,7 +331,7 @@ JSTaggedValue ContainersPlainArray::GetValueAt(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "obj is not JSAPIPlainArray", JSTaggedValue::Exception());
     }
     JSHandle<JSTaggedValue> idx(GetCallArg(argv, 0));
-    if (!idx->IsNumber()) {
+    if (!idx->IsInteger()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "the index is not integer", JSTaggedValue::Undefined());
     }
     JSAPIPlainArray *array = JSAPIPlainArray::Cast(self->GetTaggedObject());

@@ -137,17 +137,32 @@ JSHandle<TaggedArray> JSAPIStack::OwnKeys(JSThread *thread, const JSHandle<JSAPI
 }
 
 bool JSAPIStack::GetOwnProperty(JSThread *thread, const JSHandle<JSAPIStack> &obj,
-                                const JSHandle<JSTaggedValue> &key, PropertyDescriptor &desc)
+                                const JSHandle<JSTaggedValue> &key)
 {
     uint32_t index = 0;
-    if (UNLIKELY(JSTaggedValue::ToElementIndex(key.GetTaggedValue(), &index))) {
+    if (UNLIKELY(!JSTaggedValue::ToElementIndex(key.GetTaggedValue(), &index))) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Can not obtain attributes of no-number type", false);
     }
 
     uint32_t length = static_cast<uint32_t>(obj->GetTop() + 1);
-    if (index + 1 > length) {
+    if (index >= length) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "GetOwnProperty index out-of-bounds", false);
     }
-    return JSObject::GetOwnProperty(thread, JSHandle<JSObject>::Cast(obj), key, desc);
+
+    obj->Get(index);
+    return true;
+}
+
+OperationResult JSAPIStack::GetProperty(JSThread *thread, const JSHandle<JSAPIStack> &obj,
+                                        const JSHandle<JSTaggedValue> &key)
+{
+    int length = obj->GetTop() + 1;
+    int index = key->GetInt();
+    if (index < 0 || index >= length) {
+        THROW_RANGE_ERROR_AND_RETURN(thread, "GetProperty index out-of-bounds",
+                                     OperationResult(thread, JSTaggedValue::Exception(), PropertyMetaData(false)));
+    }
+
+    return OperationResult(thread, obj->Get(index), PropertyMetaData(false));
 }
 }  // namespace panda::ecmascript

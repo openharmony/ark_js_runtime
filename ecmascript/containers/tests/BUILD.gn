@@ -23,6 +23,8 @@ host_unittest_action("ContainersTest") {
   sources = [
     # test file
     "containers_deque_test.cpp",
+    "containers_linked_list_test.cpp",
+    "containers_list_test.cpp",
     "containers_plainarray_test.cpp",
     "containers_stack_test.cpp",
     "containers_treemap_test.cpp",

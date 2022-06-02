@@ -161,6 +161,7 @@ JSTaggedValue JSAPIDeque::Get(const uint32_t index)
 
 JSTaggedValue JSAPIDeque::Set(JSThread *thread, const uint32_t index, JSTaggedValue value)
 {
+    ASSERT(index < GetSize());
     TaggedArray *elements = TaggedArray::Cast(GetElements().GetTaggedObject());
     uint32_t capacity = elements->GetLength();
     uint32_t first = GetFirst();
@@ -214,10 +215,10 @@ JSHandle<TaggedArray> JSAPIDeque::OwnKeys(JSThread *thread, const JSHandle<JSAPI
 }
 
 bool JSAPIDeque::GetOwnProperty(JSThread *thread, const JSHandle<JSAPIDeque> &deque,
-                                const JSHandle<JSTaggedValue> &key, PropertyDescriptor &desc)
+                                const JSHandle<JSTaggedValue> &key)
 {
     uint32_t index = 0;
-    if (UNLIKELY(JSTaggedValue::ToElementIndex(key.GetTaggedValue(), &index))) {
+    if (UNLIKELY(!JSTaggedValue::ToElementIndex(key.GetTaggedValue(), &index))) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Can not obtain attributes of no-number type", false);
     }
 
@@ -225,7 +226,9 @@ bool JSAPIDeque::GetOwnProperty(JSThread *thread, const JSHandle<JSAPIDeque> &de
     if (index >= length) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "GetOwnProperty index out-of-bounds", false);
     }
-    return JSObject::GetOwnProperty(thread, JSHandle<JSObject>::Cast(deque), key, desc);
+
+    deque->Get(index);
+    return true;
 }
 
 JSTaggedValue JSAPIDeque::GetIteratorObj(JSThread *thread, const JSHandle<JSAPIDeque> &deque)
@@ -234,5 +237,18 @@ JSTaggedValue JSAPIDeque::GetIteratorObj(JSThread *thread, const JSHandle<JSAPID
     JSHandle<JSAPIDequeIterator> iter(factory->NewJSAPIDequeIterator(deque));
 
     return iter.GetTaggedValue();
+}
+
+OperationResult JSAPIDeque::GetProperty(JSThread *thread, const JSHandle<JSAPIDeque> &obj,
+                                        const JSHandle<JSTaggedValue> &key)
+{
+    int length = static_cast<int>(obj->GetSize());
+    int index = key->GetInt();
+    if (index < 0 || index >= length) {
+        THROW_RANGE_ERROR_AND_RETURN(thread, "GetProperty index out-of-bounds",
+                                     OperationResult(thread, JSTaggedValue::Exception(), PropertyMetaData(false)));
+    }
+
+    return OperationResult(thread, obj->Get(index), PropertyMetaData(false));
 }
 } // namespace panda::ecmascript
