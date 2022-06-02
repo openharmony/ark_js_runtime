@@ -39,9 +39,9 @@ public:
     
     static JSHandle<TaggedArray> OwnKeys(JSThread *thread, const JSHandle<JSAPIDeque> &deque);
 
-    static bool GetOwnProperty(JSThread *thread, const JSHandle<JSAPIDeque> &deque, const JSHandle<JSTaggedValue> &key,
-                               PropertyDescriptor &desc);
-
+    static bool GetOwnProperty(JSThread *thread, const JSHandle<JSAPIDeque> &deque, const JSHandle<JSTaggedValue> &key);
+    static OperationResult GetProperty(JSThread *thread, const JSHandle<JSAPIDeque> &obj,
+                                       const JSHandle<JSTaggedValue> &key);
     JSTaggedValue GetFront();
 
     JSTaggedValue GetTail();

@@ -361,6 +361,10 @@ CString *HeapSnapshot::GenerateNodeName(TaggedObject *entry)
             return GetString("Stack");
         case JSType::JS_API_STACK_ITERATOR:
             return GetString("StackIterator");
+        case JSType::JS_API_LIST:
+            return GetString("List");
+        case JSType::JS_API_LINKED_LIST:
+            return GetString("LinkedList");
         case JSType::SOURCE_TEXT_MODULE_RECORD:
             return GetString("SourceTextModule");
         case JSType::IMPORTENTRY_RECORD:

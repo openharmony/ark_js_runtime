@@ -167,4 +167,27 @@ HWTEST_F_L0(JSAPIDequeTest, PopLast)
 
     toor->Dump();
 }
+
+HWTEST_F_L0(JSAPIDequeTest, GetOwnProperty)
+{
+    constexpr uint32_t DEFAULT_LENGTH = 8;
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
+    JSHandle<JSAPIDeque> toor(thread, CreateDeque());
+
+    std::string dequeValue("dequevalue");
+    for (uint32_t i = 0; i < DEFAULT_LENGTH; i++) {
+        std::string ivalue = dequeValue + std::to_string(i);
+        value.Update(factory->NewFromStdString(ivalue).GetTaggedValue());
+        JSAPIDeque::InsertFront(thread, toor, value);
+        JSAPIDeque::InsertEnd(thread, toor, value);
+    }
+    // test GetOwnProperty
+    int testInt = 1;
+    JSHandle<JSTaggedValue> dequeKey1(thread, JSTaggedValue(testInt));
+    EXPECT_TRUE(JSAPIDeque::GetOwnProperty(thread, toor, dequeKey1));
+    testInt = 20;
+    JSHandle<JSTaggedValue> dequeKey2(thread, JSTaggedValue(testInt));
+    EXPECT_FALSE(JSAPIDeque::GetOwnProperty(thread, toor, dequeKey2));
+}
 }  // namespace panda::test
