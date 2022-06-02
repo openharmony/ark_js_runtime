@@ -3786,22 +3786,14 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
             case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
                 break;
             case JSCallMode::CALL_GETTER:
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
                 result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
                     { glue, nativeCode, actualNumArgs, func,
                       newTarget, data[0] });
-#else
-                result = Hole();
-#endif
                 break;
             case JSCallMode::CALL_SETTER:
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
                 result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
                     { glue, nativeCode, actualNumArgs, func,
                       newTarget, data[0], data[1] });
-#else
-                result = Hole();
-#endif
                 break;
             default:
                 UNREACHABLE();
@@ -3858,21 +3850,13 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
             case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
                 break;
             case JSCallMode::CALL_GETTER:
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
                 result = CallNGCRuntime(glue, RTSTUB_ID(CallGetter),
                     { glue, func, method, callField, data[0] });
-#else
-                result = Hole();
-#endif
                 Jump(&exit);
                 break;
             case JSCallMode::CALL_SETTER:
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
                 result = CallNGCRuntime(glue, RTSTUB_ID(CallSetter),
                     { glue, func, method, callField, data[0], data[1], });
-#else
-                result = Hole();
-#endif
                 Jump(&exit);
                 break;
             default:

@@ -92,32 +92,26 @@ JSTaggedValue JSThread::GetCurrentLexenv() const
 
 const JSTaggedType *JSThread::GetCurrentFrame() const
 {
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
     if (IsAsmInterpreter()) {
         return GetLastLeaveFrame();
     }
-#endif
     return GetCurrentSPFrame();
 }
 
 void JSThread::SetCurrentFrame(JSTaggedType *sp)
 {
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
     if (IsAsmInterpreter()) {
         return SetLastLeaveFrame(sp);
     }
-#endif
     return SetCurrentSPFrame(sp);
 }
 
 const JSTaggedType *JSThread::GetCurrentInterpretedFrame() const
 {
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
     if (IsAsmInterpreter()) {
         auto frameHandler = FrameHandler(this);
         return frameHandler.GetSp();
     }
-#endif
     return GetCurrentSPFrame();
 }
 

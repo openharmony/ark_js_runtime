@@ -2039,12 +2039,10 @@ void AssemblerStubsX64::CallSetterSlow(ExtendedAssembler *assembler)
 void AssemblerStubsX64::ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(ResumeRspAndReturn));
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
     Register fpRegister = r10;
     auto offset = AsmInterpretedFrame::GetFpOffset(false) - AsmInterpretedFrame::GetSize(false);
     __ Movq(Operand(rbp, offset), fpRegister);
     __ Movq(fpRegister, rsp);
-#endif
     // return
     {
         __ Movq(r13, rax);
