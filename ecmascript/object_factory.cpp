@@ -1340,7 +1340,7 @@ JSHandle<JSFunction> ObjectFactory::NewJSFunctionByDynClass(JSMethod *method, co
     clazz->SetCallable(true);
     clazz->SetExtensible(true);
     JSFunction::InitializeJSFunction(thread_, function, kind);
-    function->SetCallTarget(thread_, method);
+    function->SetMethod(method);
     return function;
 }
 
@@ -1351,7 +1351,7 @@ JSHandle<JSFunction> ObjectFactory::NewJSFunctionByDynClass(const void *func, co
     clazz->SetCallable(true);
     clazz->SetExtensible(true);
     JSFunction::InitializeJSFunction(thread_, function, kind);
-    function->SetCallTarget(thread_, NewMethodForNativeFunction(func));
+    function->SetMethod(NewMethodForNativeFunction(func));
     return function;
 }
 
@@ -1399,7 +1399,7 @@ JSHandle<JSBoundFunction> ObjectFactory::NewJSBoundFunction(const JSHandle<JSFun
         bundleFunction->SetConstructor(true);
     }
     JSMethod *method = GetMethodByIndex(MethodIndex::BUILTINS_GLOBAL_CALL_JS_BOUND_FUNCTION);
-    bundleFunction->SetCallTarget(thread_, method);
+    bundleFunction->SetMethod(method);
     return bundleFunction;
 }
 
@@ -1412,7 +1412,7 @@ JSHandle<JSIntlBoundFunction> ObjectFactory::NewJSIntlBoundFunction(MethodIndex 
     intlBoundFunc->SetNumberFormat(JSTaggedValue::Undefined());
     intlBoundFunc->SetDateTimeFormat(JSTaggedValue::Undefined());
     intlBoundFunc->SetCollator(JSTaggedValue::Undefined());
-    intlBoundFunc->SetCallTarget(thread_, GetMethodByIndex(idx));
+    intlBoundFunc->SetMethod(GetMethodByIndex(idx));
     JSHandle<JSFunction> function = JSHandle<JSFunction>::Cast(intlBoundFunc);
     JSFunction::InitializeJSFunction(thread_, function, FunctionKind::NORMAL_FUNCTION);
     JSFunction::SetFunctionLength(thread_, function, JSTaggedValue(functionLength));
@@ -1433,7 +1433,7 @@ JSHandle<JSProxyRevocFunction> ObjectFactory::NewJSProxyRevocFunction(const JSHa
     JSHandle<JSProxyRevocFunction> revocFunction = JSHandle<JSProxyRevocFunction>::Cast(NewJSObject(dynclass));
     revocFunction->SetRevocableProxy(JSTaggedValue::Undefined());
     revocFunction->SetRevocableProxy(thread_, proxy);
-    revocFunction->SetCallTarget(thread_, GetMethodByIndex(MethodIndex::BUILTINS_PROXY_INVALIDATE_PROXY_FUNCTION));
+    revocFunction->SetMethod(GetMethodByIndex(MethodIndex::BUILTINS_PROXY_INVALIDATE_PROXY_FUNCTION));
     JSHandle<JSFunction> function = JSHandle<JSFunction>::Cast(revocFunction);
     JSFunction::InitializeJSFunction(thread_, function, FunctionKind::NORMAL_FUNCTION);
     JSFunction::SetFunctionLength(thread_, function, JSTaggedValue(0));
@@ -1453,7 +1453,7 @@ JSHandle<JSAsyncAwaitStatusFunction> ObjectFactory::NewJSAsyncAwaitStatusFunctio
         JSHandle<JSAsyncAwaitStatusFunction>::Cast(NewJSObject(dynclass));
     awaitFunction->SetAsyncContext(JSTaggedValue::Undefined());
     JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>::Cast(awaitFunction));
-    awaitFunction->SetCallTarget(thread_, GetMethodByIndex(idx));
+    awaitFunction->SetMethod(GetMethodByIndex(idx));
     return awaitFunction;
 }
 
@@ -1464,7 +1464,7 @@ JSHandle<JSFunction> ObjectFactory::NewJSGeneratorFunction(JSMethod *method)
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetGeneratorFunctionClass());
     JSHandle<JSFunction> generatorFunc = JSHandle<JSFunction>::Cast(NewJSObject(dynclass));
     JSFunction::InitializeJSFunction(thread_, generatorFunc, FunctionKind::GENERATOR_FUNCTION);
-    generatorFunc->SetCallTarget(thread_, method);
+    generatorFunc->SetMethod(method);
     return generatorFunc;
 }
 
@@ -1488,7 +1488,7 @@ JSHandle<JSAsyncFunction> ObjectFactory::NewAsyncFunction(JSMethod *method)
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetAsyncFunctionClass());
     JSHandle<JSAsyncFunction> asyncFunction = JSHandle<JSAsyncFunction>::Cast(NewJSObject(dynclass));
     JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>::Cast(asyncFunction));
-    asyncFunction->SetCallTarget(thread_, method);
+    asyncFunction->SetMethod(method);
     return asyncFunction;
 }
 
@@ -1813,11 +1813,7 @@ JSHandle<JSProxy> ObjectFactory::NewJSProxy(const JSHandle<JSTaggedValue> &targe
     }
 
     JSHandle<JSProxy> proxy(thread_, header);
-    JSMethod *method = nullptr;
-    if (target->IsCallable()) {
-        JSMethod *nativeMethod = GetMethodByIndex(MethodIndex::BUILTINS_GLOBAL_CALL_JS_PROXY);
-        proxy->SetCallTarget(thread_, nativeMethod);
-    }
+    JSMethod *method = GetMethodByIndex(MethodIndex::BUILTINS_GLOBAL_CALL_JS_PROXY);
     proxy->SetMethod(method);
 
     proxy->SetTarget(thread_, target.GetTaggedValue());
@@ -2314,7 +2310,7 @@ JSHandle<JSPromiseReactionsFunction> ObjectFactory::CreateJSPromiseReactionsFunc
         JSHandle<JSPromiseReactionsFunction>::Cast(NewJSObject(dynclass));
     reactionsFunction->SetPromise(thread_, JSTaggedValue::Hole());
     reactionsFunction->SetAlreadyResolved(thread_, JSTaggedValue::Hole());
-    reactionsFunction->SetCallTarget(thread_, GetMethodByIndex(idx));
+    reactionsFunction->SetMethod(GetMethodByIndex(idx));
     JSHandle<JSFunction> function = JSHandle<JSFunction>::Cast(reactionsFunction);
     JSFunction::InitializeJSFunction(thread_, function);
     JSFunction::SetFunctionLength(thread_, function, JSTaggedValue(1));
@@ -2328,7 +2324,7 @@ JSHandle<JSPromiseExecutorFunction> ObjectFactory::CreateJSPromiseExecutorFuncti
     JSHandle<JSPromiseExecutorFunction> executorFunction =
         JSHandle<JSPromiseExecutorFunction>::Cast(NewJSObject(dynclass));
     executorFunction->SetCapability(thread_, JSTaggedValue::Hole());
-    executorFunction->SetCallTarget(thread_, GetMethodByIndex(MethodIndex::BUILTINS_PROMISE_HANDLER_EXECUTOR));
+    executorFunction->SetMethod(GetMethodByIndex(MethodIndex::BUILTINS_PROMISE_HANDLER_EXECUTOR));
     executorFunction->SetCapability(thread_, JSTaggedValue::Undefined());
     JSHandle<JSFunction> function = JSHandle<JSFunction>::Cast(executorFunction);
     JSFunction::InitializeJSFunction(thread_, function, FunctionKind::NORMAL_FUNCTION);
@@ -2343,7 +2339,7 @@ JSHandle<JSPromiseAllResolveElementFunction> ObjectFactory::NewJSPromiseAllResol
     JSHandle<JSPromiseAllResolveElementFunction> function =
         JSHandle<JSPromiseAllResolveElementFunction>::Cast(NewJSObject(dynclass));
     JSFunction::InitializeJSFunction(thread_, JSHandle<JSFunction>::Cast(function));
-    function->SetCallTarget(thread_, GetMethodByIndex(MethodIndex::BUILTINS_PROMISE_HANDLER_RESOLVE_ELEMENT_FUNCTION));
+    function->SetMethod(GetMethodByIndex(MethodIndex::BUILTINS_PROMISE_HANDLER_RESOLVE_ELEMENT_FUNCTION));
     function->SetIndex(JSTaggedValue::Undefined());
     function->SetValues(JSTaggedValue::Undefined());
     function->SetCapabilities(JSTaggedValue::Undefined());
