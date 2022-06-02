@@ -282,11 +282,13 @@ enum class JSCallMode : uintptr_t {
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct OptimizedFrame : public base::AlignedStruct<base::AlignedPointer::Size(),
                                                    base::AlignedPointer,
+                                                   base::AlignedPointer,
                                                    base::AlignedPointer> {
 public:
     enum class Index : size_t {
         TypeIndex = 0,
         PrevFpIndex,
+        ReturnAddrIndex,
         NumOfMembers
     };
     static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
@@ -302,6 +304,7 @@ public:
     }
     alignas(EAS) FrameType type {0};
     alignas(EAS) JSTaggedType *prevFp {nullptr};
+    alignas(EAS) uintptr_t returnAddr {0};
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(OptimizedFrame), OptimizedFrame::SizeArch32, OptimizedFrame::SizeArch64);
 

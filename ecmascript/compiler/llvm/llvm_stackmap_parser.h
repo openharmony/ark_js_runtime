@@ -209,7 +209,8 @@ public:
     const CallSiteInfo *GetCallSiteInfoByPc(uintptr_t funcAddr) const;
     bool CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp,
                             std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, uintptr_t> *data,
-                            [[maybe_unused]] bool isVerifying) const;
+                            [[maybe_unused]] bool isVerifying,
+                            uintptr_t curPc) const;
 
     bool IsLogEnabled() const
     {
@@ -251,7 +252,7 @@ private:
     void CalcCallSite();
     bool IsDeriveredPointer(int callsitetime) const;
     void PrintCallSiteInfo(const CallSiteInfo *infos, OptimizedLeaveFrame *frame) const;
-    void PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp, uintptr_t callSiteAddr) const;
+    void PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp, uintptr_t curPc) const;
     int FindFpDelta(uintptr_t funcAddr, uintptr_t callsitePc) const;
 
     struct LLVMStackMap llvmStackMap_;
