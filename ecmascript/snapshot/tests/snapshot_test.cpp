@@ -126,7 +126,7 @@ HWTEST_F_L0(SnapshotTest, SerializeConstPool)
     Snapshot snapshotDeserialize(ecmaVm);
     snapshotDeserialize.Deserialize(SnapshotType::VM_ROOT, fileName);
 
-    auto beginRegion = const_cast<Heap *>(ecmaVm->GetHeap())->GetSnapshotSpace()->GetFirstRegion();
+    auto beginRegion = const_cast<Heap *>(ecmaVm->GetHeap())->GetNonMovableSpace()->GetFirstRegion();
     auto constpool1 = reinterpret_cast<ConstantPool *>(beginRegion->GetBegin());
     EXPECT_EQ(constpool->GetClass()->SizeFromJSHClass(*constpool),
               constpool1->GetClass()->SizeFromJSHClass(constpool1));
@@ -141,5 +141,111 @@ HWTEST_F_L0(SnapshotTest, SerializeConstPool)
     EXPECT_EQ(std::strcmp(str22->GetCString().get(), "str22"), 0);
     EXPECT_EQ(std::strcmp(str33->GetCString().get(), "str11"), 0);
     std::remove(fileName.c_str());
+}
+
+HWTEST_F_L0(SnapshotTest, SerializeDifferentSpace)
+{
+    auto factory = ecmaVm->GetFactory();
+    JSHandle<ConstantPool> constpool = factory->NewConstantPool(400);
+    for (int i = 0; i < 100; i++) {
+        JSHandle<TaggedArray> array = factory->NewTaggedArray(10, JSTaggedValue::Hole(), MemSpaceType::SEMI_SPACE);
+        constpool->Set(thread, i, array.GetTaggedValue());
+    }
+    for (int i = 0; i < 100; i++) {
+        JSHandle<TaggedArray> array = factory->NewTaggedArray(10, JSTaggedValue::Hole(), MemSpaceType::OLD_SPACE);
+        constpool->Set(thread, i + 100, array.GetTaggedValue());
+    }
+    for (int i = 0; i < 100; i++) {
+        JSHandle<MachineCode> codeObj = factory->NewMachineCodeObject(0, nullptr);
+        constpool->Set(thread, i + 200, codeObj.GetTaggedValue());
+    }
+    for (int i = 0; i < 100; i++) {
+        JSHandle<ConstantPool> constpool1 = factory->NewConstantPool(10);
+        constpool->Set(thread, i + 300, constpool1.GetTaggedValue());
+    }
+
+    CString fileName = "snapshot";
+    Snapshot snapshotSerialize(ecmaVm);
+    // serialize
+    snapshotSerialize.Serialize(*constpool, nullptr, fileName);
+    // deserialize
+    Snapshot snapshotDeserialize(ecmaVm);
+    snapshotDeserialize.Deserialize(SnapshotType::VM_ROOT, fileName);
+
+    auto beginRegion = const_cast<Heap *>(ecmaVm->GetHeap())->GetNonMovableSpace()->GetFirstRegion();
+    auto constpool1 = reinterpret_cast<ConstantPool *>(beginRegion->GetBegin());
+    EXPECT_EQ(constpool->GetClass()->SizeFromJSHClass(*constpool),
+              constpool1->GetClass()->SizeFromJSHClass(constpool1));
+    EXPECT_TRUE(constpool1->Get(0).IsTaggedArray());
+    EXPECT_TRUE(constpool1->Get(100).IsTaggedArray());
+    EXPECT_TRUE(constpool1->Get(200).IsMachineCodeObject());
+    EXPECT_TRUE(constpool1->Get(300).IsTaggedArray());
+    auto obj1 = constpool1->Get(0).GetTaggedObject();
+    EXPECT_TRUE(Region::ObjectAddressToRange(obj1)->InOldGeneration());
+    auto obj2 = constpool1->Get(100).GetTaggedObject();
+    EXPECT_TRUE(Region::ObjectAddressToRange(obj2)->InOldGeneration());
+    auto obj3 = constpool1->Get(200).GetTaggedObject();
+    auto region = Region::ObjectAddressToRange(obj3);
+    EXPECT_EQ(region->GetSpace()->GetSpaceType(), MemSpaceType::MACHINE_CODE_SPACE);
+    auto region1 = Region::ObjectAddressToRange(constpool1);
+    EXPECT_EQ(region1->GetSpace()->GetSpaceType(), MemSpaceType::NON_MOVABLE);
+
+    std::remove(fileName.c_str());
+}
+
+HWTEST_F_L0(SnapshotTest, SerializeMultiFile)
+{
+    auto factory = ecmaVm->GetFactory();
+    JSHandle<ConstantPool> constpool1 = factory->NewConstantPool(400);
+    JSHandle<ConstantPool> constpool2 = factory->NewConstantPool(400);
+    for (int i = 0; i < 100; i++) {
+        JSHandle<TaggedArray> array = factory->NewTaggedArray(10, JSTaggedValue::Hole(), MemSpaceType::SEMI_SPACE);
+        constpool1->Set(thread, i, array.GetTaggedValue());
+        constpool2->Set(thread, i, array.GetTaggedValue());
+    }
+    for (int i = 0; i < 100; i++) {
+        JSHandle<TaggedArray> array = factory->NewTaggedArray(10, JSTaggedValue::Hole(), MemSpaceType::OLD_SPACE);
+        constpool1->Set(thread, i + 100, array.GetTaggedValue());
+        constpool2->Set(thread, i + 100, array.GetTaggedValue());
+    }
+    for (int i = 0; i < 100; i++) {
+        JSHandle<MachineCode> codeObj = factory->NewMachineCodeObject(0, nullptr);
+        constpool1->Set(thread, i + 200, codeObj.GetTaggedValue());
+        constpool2->Set(thread, i + 200, codeObj.GetTaggedValue());
+    }
+    for (int i = 0; i < 100; i++) {
+        JSHandle<ConstantPool> constpool3 = factory->NewConstantPool(10);
+        constpool1->Set(thread, i + 300, constpool3.GetTaggedValue());
+        constpool2->Set(thread, i + 300, constpool3.GetTaggedValue());
+    }
+
+    CString fileName1 = "snapshot1";
+    CString fileName2 = "snapshot2";
+    Snapshot snapshotSerialize(ecmaVm);
+    // serialize
+    snapshotSerialize.Serialize(*constpool1, nullptr, fileName1);
+    snapshotSerialize.Serialize(*constpool2, nullptr, fileName2);
+    // deserialize
+    Snapshot snapshotDeserialize(ecmaVm);
+    snapshotDeserialize.Deserialize(SnapshotType::VM_ROOT, fileName1);
+    snapshotDeserialize.Deserialize(SnapshotType::VM_ROOT, fileName2);
+
+    auto beginRegion = const_cast<Heap *>(ecmaVm->GetHeap())->GetNonMovableSpace()->GetFirstRegion();
+    auto constpool = reinterpret_cast<ConstantPool *>(beginRegion->GetBegin());
+    EXPECT_TRUE(constpool->Get(0).IsTaggedArray());
+    EXPECT_TRUE(constpool->Get(100).IsTaggedArray());
+    EXPECT_TRUE(constpool->Get(200).IsMachineCodeObject());
+    auto obj1 = constpool->Get(0).GetTaggedObject();
+    EXPECT_TRUE(Region::ObjectAddressToRange(obj1)->InOldGeneration());
+    auto obj2 = constpool->Get(100).GetTaggedObject();
+    EXPECT_TRUE(Region::ObjectAddressToRange(obj2)->InOldGeneration());
+    auto obj3 = constpool->Get(200).GetTaggedObject();
+    auto region = Region::ObjectAddressToRange(obj3);
+    EXPECT_EQ(region->GetSpace()->GetSpaceType(), MemSpaceType::MACHINE_CODE_SPACE);
+    auto region1 = Region::ObjectAddressToRange(constpool);
+    EXPECT_EQ(region1->GetSpace()->GetSpaceType(), MemSpaceType::NON_MOVABLE);
+
+    std::remove(fileName1.c_str());
+    std::remove(fileName2.c_str());
 }
 }  // namespace panda::test

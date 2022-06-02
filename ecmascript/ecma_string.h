@@ -25,6 +25,7 @@
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/mem/tagged_object.h"
 #include "ecmascript/mem/barriers.h"
+#include "macros.h"
 
 namespace panda {
 namespace ecmascript {
@@ -39,6 +40,7 @@ public:
 
     static EcmaString *CreateEmptyString(const EcmaVM *vm);
     static EcmaString *CreateFromUtf8(const uint8_t *utf8Data, uint32_t utf8Len, const EcmaVM *vm, bool canBeCompress);
+    static EcmaString *CreateFromUtf8NonMovable(const EcmaVM *vm, const uint8_t *utf8Data, uint32_t utf8Len);
     static EcmaString *CreateFromUtf16(const uint16_t *utf16Data, uint32_t utf16Len, const EcmaVM *vm,
                                        bool canBeCompress);
     static EcmaString *Concat(const JSHandle<EcmaString> &str1Handle, const JSHandle<EcmaString> &str2Handle,
@@ -105,7 +107,7 @@ public:
      */
     const uint8_t *GetDataUtf8() const
     {
-        LOG_IF(IsUtf16(), FATAL, RUNTIME) << "EcmaString: Read data as utf8 for utf16 string";
+        ASSERT_PRINT(IsUtf8(), "EcmaString: Read data as utf8 for utf16 string");
         return reinterpret_cast<uint8_t *>(GetData());
     }
 
@@ -298,6 +300,7 @@ public:
     }
 
     static EcmaString *AllocStringObject(size_t length, bool compressed, const EcmaVM *vm);
+    static EcmaString *AllocStringObjectNonMovable(const EcmaVM *vm, size_t length);
 
     static bool CanBeCompressed(const uint8_t *utf8Data, uint32_t utf8Len);
     static bool CanBeCompressed(const uint16_t *utf16Data, uint32_t utf16Len);
@@ -327,7 +330,7 @@ private:
 
     uint8_t *GetDataUtf8Writable()
     {
-        LOG_IF(IsUtf16(), FATAL, RUNTIME) << "EcmaString: Read data as utf8 for utf16 string";
+        ASSERT_PRINT(IsUtf8(), "EcmaString: Read data as utf8 for utf16 string");
         return reinterpret_cast<uint8_t *>(GetData());
     }
 

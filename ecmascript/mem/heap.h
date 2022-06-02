@@ -62,7 +62,7 @@ public:
     // or copied into (from the other semi space) during semi space GC.
     SemiSpace *GetNewSpace() const
     {
-        return activeSpace_;
+        return activeSemiSpace_;
     }
 
     /*
@@ -72,7 +72,7 @@ public:
      */
     SemiSpace *GetFromSpaceDuringEvacuation() const
     {
-        return inactiveSpace_;
+        return inactiveSemiSpace_;
     }
 
     OldSpace *GetOldSpace() const
@@ -287,7 +287,7 @@ public:
     // record lastRegion for each space, which will be used in ReclaimRegions()
     void PrepareRecordRegionsForReclaim()
     {
-        activeSpace_->SetRecordRegion();
+        activeSemiSpace_->SetRecordRegion();
         oldSpace_->SetRecordRegion();
         snapshotSpace_->SetRecordRegion();
         nonMovableSpace_->SetRecordRegion();
@@ -356,7 +356,8 @@ public:
 
     inline void OnAllocateEvent(uintptr_t address);
     inline void OnMoveEvent(uintptr_t address, uintptr_t forwardAddress);
-
+    void AddToKeptObjects(JSHandle<JSTaggedValue> value) const;
+    void ClearKeptObjects() const;
     /*
      * Funtions used by heap verification.
      */
@@ -423,8 +424,8 @@ private:
      * Young generation spaces where most new objects are allocated.
      * (only one of the spaces is active at a time in semi space GC).
      */
-    SemiSpace *activeSpace_ {nullptr};
-    SemiSpace *inactiveSpace_ {nullptr};
+    SemiSpace *activeSemiSpace_ {nullptr};
+    SemiSpace *inactiveSemiSpace_ {nullptr};
 
     // Old generation spaces where some long living objects are allocated or promoted.
     OldSpace *oldSpace_ {nullptr};
@@ -482,7 +483,7 @@ private:
     bool concurrentMarkingEnabled_ {true};
     bool fullGCRequested_ {false};
 
-    size_t globalSpaceAllocLimit_ {GLOBAL_SPACE_LIMIT_BEGIN};
+    size_t globalSpaceAllocLimit_ {0};
     bool oldSpaceLimitAdjusted_ {false};
     size_t promotedSize_ {0};
     size_t semiSpaceCopiedSize_ {0};
@@ -491,6 +492,7 @@ private:
     os::memory::Mutex waitClearTaskFinishedMutex_;
     os::memory::ConditionVariable waitClearTaskFinishedCV_;
     uint32_t runningTaskCount_ {0};
+    uint32_t maxTaskCount_ {0};
     os::memory::Mutex waitTaskFinishedMutex_;
     os::memory::ConditionVariable waitTaskFinishedCV_;
 

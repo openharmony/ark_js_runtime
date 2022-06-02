@@ -38,6 +38,7 @@
 #include "ecmascript/builtins/builtins_date.h"
 #include "ecmascript/builtins/builtins_date_time_format.h"
 #include "ecmascript/builtins/builtins_errors.h"
+#include "ecmascript/builtins/builtins_finalization_registry.h"
 #include "ecmascript/builtins/builtins_function.h"
 #include "ecmascript/builtins/builtins_generator.h"
 #include "ecmascript/builtins/builtins_global.h"
@@ -67,6 +68,7 @@
 #include "ecmascript/builtins/builtins_symbol.h"
 #include "ecmascript/builtins/builtins_typedarray.h"
 #include "ecmascript/builtins/builtins_weak_map.h"
+#include "ecmascript/builtins/builtins_weak_ref.h"
 #include "ecmascript/builtins/builtins_weak_set.h"
 #include "ecmascript/containers/containers_private.h"
 #include "ecmascript/ecma_runtime_call_info.h"
@@ -78,6 +80,7 @@
 #include "ecmascript/js_dataview.h"
 #include "ecmascript/js_date_time_format.h"
 #include "ecmascript/js_for_in_iterator.h"
+#include "ecmascript/js_finalization_registry.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_hclass.h"
@@ -100,6 +103,7 @@
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/js_weak_container.h"
+#include "ecmascript/js_weak_ref.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/module/js_module_namespace.h"
 #include "ecmascript/napi/include/jsnapi.h"
@@ -117,6 +121,8 @@ using BuiltinsMap = builtins::BuiltinsMap;
 using BuiltinsSet = builtins::BuiltinsSet;
 using BuiltinsWeakMap = builtins::BuiltinsWeakMap;
 using BuiltinsWeakSet = builtins::BuiltinsWeakSet;
+using BuiltinsWeakRef = builtins::BuiltinsWeakRef;
+using BuiltinsFinalizationRegistry = builtins::BuiltinsFinalizationRegistry;
 using BuiltinsArray = builtins::BuiltinsArray;
 using BuiltinsTypedArray = builtins::BuiltinsTypedArray;
 using BuiltinsIterator = builtins::BuiltinsIterator;
@@ -221,8 +227,6 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
 
     // init global object
     JSHandle<JSObject> globalObject = factory_->NewNonMovableJSObject(globalObjFuncDynclass);
-    JSHandle<JSHClass> newGlobalDynclass = JSHClass::Clone(thread_, globalObjFuncDynclass);
-    globalObject->SetClass(newGlobalDynclass);
     env->SetJSGlobalObject(thread_, globalObject);
 
     // initialize Function, forbidden change order
@@ -303,6 +307,8 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     InitializeMap(env, objFuncDynclass);
     InitializeWeakMap(env, objFuncDynclass);
     InitializeWeakSet(env, objFuncDynclass);
+    InitializeWeakRef(env, objFuncDynclass);
+    InitializeFinalizationRegistry(env, objFuncDynclass);
     InitializeArray(env, objFuncPrototypeVal);
     InitializeTypedArray(env, objFuncDynclass);
     InitializeString(env, primRefObjDynclass);
@@ -1386,6 +1392,67 @@ void Builtins::InitializeAtomics(const JSHandle<GlobalEnv> &env,
     // @@ToStringTag
     SetStringTagSymbol(env, atomicsObject, "Atomics");
     env->SetAtomicsFunction(thread_, atomicsObject);
+}
+
+void Builtins::InitializeWeakRef(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &objFuncDynclass) const
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    // WeakRef.prototype
+    JSHandle<JSObject> weakRefFuncPrototype = factory_->NewJSObject(objFuncDynclass);
+    JSHandle<JSTaggedValue> weakRefFuncPrototypeValue(weakRefFuncPrototype);
+    // WeakRef.prototype_or_dynclass
+    JSHandle<JSHClass> weakRefFuncInstanceDynclass =
+        factory_->NewEcmaDynClass(JSWeakRef::SIZE, JSType::JS_WEAK_REF, weakRefFuncPrototypeValue);
+    // WeakRef() = new Function()
+    JSHandle<JSTaggedValue> weakRefFunction(NewBuiltinConstructor(
+        env, weakRefFuncPrototype, BuiltinsWeakRef::WeakRefConstructor, "WeakRef", FunctionLength::ONE));
+    JSHandle<JSFunction>(weakRefFunction)->SetProtoOrDynClass(thread_, weakRefFuncInstanceDynclass.GetTaggedValue());
+
+    // "constructor" property on the prototype
+    JSHandle<JSTaggedValue> constructorKey = globalConst->GetHandledConstructorString();
+    JSObject::SetProperty(thread_, JSHandle<JSTaggedValue>(weakRefFuncPrototype), constructorKey, weakRefFunction);
+    // WeakRef.prototype.deref()
+    SetFunction(env, weakRefFuncPrototype, "deref", BuiltinsWeakRef::Deref, FunctionLength::ZERO);
+
+    // @@ToStringTag
+    SetStringTagSymbol(env, weakRefFuncPrototype, "WeakRef");
+
+    env->SetBuiltinsWeakRefFunction(thread_, weakRefFunction);
+}
+
+void Builtins::InitializeFinalizationRegistry(const JSHandle<GlobalEnv> &env,
+                                              const JSHandle<JSHClass> &objFuncDynclass) const
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    // FinalizationRegistry.prototype
+    JSHandle<JSObject> finalizationRegistryFuncPrototype = factory_->NewJSObject(objFuncDynclass);
+    JSHandle<JSTaggedValue> finalizationRegistryFuncPrototypeValue(finalizationRegistryFuncPrototype);
+    // FinalizationRegistry.prototype_or_dynclass
+    JSHandle<JSHClass> finalizationRegistryFuncInstanceDynclass =
+        factory_->NewEcmaDynClass(JSFinalizationRegistry::SIZE, JSType::JS_FINALIZATION_REGISTRY,
+                                  finalizationRegistryFuncPrototypeValue);
+    // FinalizationRegistry() = new Function()
+    JSHandle<JSTaggedValue> finalizationRegistryFunction(NewBuiltinConstructor(
+        env, finalizationRegistryFuncPrototype, BuiltinsFinalizationRegistry::FinalizationRegistryConstructor,
+        "FinalizationRegistry", FunctionLength::ONE));
+    JSHandle<JSFunction>(finalizationRegistryFunction)->SetProtoOrDynClass(
+        thread_, finalizationRegistryFuncInstanceDynclass.GetTaggedValue());
+
+    // "constructor" property on the prototype
+    JSHandle<JSTaggedValue> constructorKey = globalConst->GetHandledConstructorString();
+    JSObject::SetProperty(thread_, JSHandle<JSTaggedValue>(finalizationRegistryFuncPrototype),
+                          constructorKey, finalizationRegistryFunction);
+    // FinalizationRegistry.prototype.deref()
+    SetFunction(env, finalizationRegistryFuncPrototype, "register",
+                BuiltinsFinalizationRegistry::Register, FunctionLength::TWO);
+    SetFunction(env, finalizationRegistryFuncPrototype, "unregister",
+                BuiltinsFinalizationRegistry::Unregister, FunctionLength::ONE);
+    // @@ToStringTag
+    SetStringTagSymbol(env, finalizationRegistryFuncPrototype, "FinalizationRegistry");
+
+    env->SetBuiltinsFinalizationRegistryFunction(thread_, finalizationRegistryFunction);
 }
 
 void Builtins::InitializeMath(const JSHandle<GlobalEnv> &env, const JSHandle<JSTaggedValue> &objFuncPrototypeVal) const

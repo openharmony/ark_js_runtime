@@ -160,8 +160,8 @@ public:
         return callSigns_;
     }
 private:
-    void InitialLLVMFuncTypeAndFuncByModuleCSigns();
     LLVMValueRef AddAndGetFunc(const CallSignature *stubDescriptor);
+    void InitialLLVMFuncTypeAndFuncByModuleCSigns();
     LLVMTypeRef ConvertLLVMTypeFromVariableType(VariableType type);
     // index:
     //     stub scenario - sequence of function adding to llvmModule

@@ -23,7 +23,6 @@
 #include <variant>
 
 #include "circuit.h"
-#include "ecmascript/ecma_vm.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/jspandafile/js_pandafile.h"
@@ -208,6 +207,122 @@ struct BytecodeInfo {
     bool accOut {false}; // write acc
     uint8_t opcode {0};
     uint16_t offset {0};
+
+    bool IsOut(VRegIDType reg, uint32_t index) const
+    {
+        bool isDefined = (!vregOut.empty() && (reg == vregOut.at(index)));
+        return isDefined;
+    }
+
+    bool IsMov() const
+    {
+        auto ecmaOpcode = static_cast<EcmaOpcode>(opcode);
+        switch (ecmaOpcode) {
+            case EcmaOpcode::MOV_V4_V4:
+            case EcmaOpcode::MOV_DYN_V8_V8:
+            case EcmaOpcode::MOV_DYN_V16_V16:
+            case EcmaOpcode::LDA_DYN_V8:
+            case EcmaOpcode::STA_DYN_V8:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsJump() const
+    {
+        auto ecmaOpcode = static_cast<EcmaOpcode>(opcode);
+        switch (ecmaOpcode) {
+            case EcmaOpcode::JMP_IMM8:
+            case EcmaOpcode::JMP_IMM16:
+            case EcmaOpcode::JMP_IMM32:
+            case EcmaOpcode::JEQZ_IMM8:
+            case EcmaOpcode::JEQZ_IMM16:
+            case EcmaOpcode::JNEZ_IMM8:
+            case EcmaOpcode::JNEZ_IMM16:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsCondJump() const
+    {
+        auto ecmaOpcode = static_cast<EcmaOpcode>(opcode);
+        switch (ecmaOpcode) {
+            case EcmaOpcode::JEQZ_IMM8:
+            case EcmaOpcode::JEQZ_IMM16:
+            case EcmaOpcode::JNEZ_IMM8:
+            case EcmaOpcode::JNEZ_IMM16:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsReturn() const
+    {
+        auto ecmaOpcode = static_cast<EcmaOpcode>(opcode);
+        switch (ecmaOpcode) {
+            case EcmaOpcode::RETURN_DYN:
+            case EcmaOpcode::RETURNUNDEFINED_PREF:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsThrow() const
+    {
+        auto ecmaOpcode = static_cast<EcmaOpcode>(opcode);
+        switch (ecmaOpcode) {
+            case EcmaOpcode::THROWDYN_PREF:
+            case EcmaOpcode::THROWCONSTASSIGNMENT_PREF_V8:
+            case EcmaOpcode::THROWTHROWNOTEXISTS_PREF:
+            case EcmaOpcode::THROWPATTERNNONCOERCIBLE_PREF:
+            case EcmaOpcode::THROWDELETESUPERPROPERTY_PREF:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsDiscarded() const
+    {
+        auto ecmaOpcode = static_cast<EcmaOpcode>(opcode);
+        switch (ecmaOpcode) {
+            case EcmaOpcode::COPYMODULE_PREF_V8:
+            case EcmaOpcode::DEBUGGER_PREF:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsSetConstant() const
+    {
+        auto ecmaOpcode = static_cast<EcmaOpcode>(opcode);
+        switch (ecmaOpcode) {
+            case EcmaOpcode::LDNAN_PREF:
+            case EcmaOpcode::LDINFINITY_PREF:
+            case EcmaOpcode::LDUNDEFINED_PREF:
+            case EcmaOpcode::LDNULL_PREF:
+            case EcmaOpcode::LDTRUE_PREF:
+            case EcmaOpcode::LDFALSE_PREF:
+            case EcmaOpcode::LDHOLE_PREF:
+            case EcmaOpcode::LDAI_DYN_IMM32:
+            case EcmaOpcode::FLDAI_DYN_IMM64:
+            case EcmaOpcode::LDFUNCTION_PREF:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsGeneral() const
+    {
+        return !IsMov() && !IsJump() && !IsReturn() && !IsSetConstant() && !IsDiscarded();
+    }
 };
 
 enum BytecodeOffset {
@@ -234,11 +349,13 @@ enum CommonArgIdx : uint8_t {
 
 class BytecodeCircuitBuilder {
 public:
-    explicit BytecodeCircuitBuilder(EcmaVM *vm, const BytecodeTranslationInfo &translationInfo, size_t index, 
-                                    bool enableLog)
-        : vm_(vm), file_(translationInfo.jsPandaFile), method_(translationInfo.methodPcInfos[index].method),
-        pcArray_(translationInfo.methodPcInfos[index].pcArray), constantPool_(translationInfo.constantPool),
-        enableLog_(enableLog)
+    explicit BytecodeCircuitBuilder(const BytecodeTranslationInfo &translationInfo, size_t index,
+                                    TSLoader *tsLoader, bool enableLog)
+        : tsLoader_(tsLoader), file_(translationInfo.jsPandaFile),
+          method_(translationInfo.methodPcInfos[index].method),
+          pcArray_(translationInfo.methodPcInfos[index].pcArray),
+          constantPool_(translationInfo.constantPool),
+          enableLog_(enableLog)
     {
     }
     ~BytecodeCircuitBuilder() = default;
@@ -267,6 +384,12 @@ public:
         return GetEcmaOpcodeStr(static_cast<EcmaOpcode>(*pc));
     }
 
+    [[nodiscard]] EcmaOpcode GetByteCodeOpcode(kungfu::GateRef gate) const
+    {
+        auto pc = jsgateToBytecode_.at(gate).second;
+        return static_cast<EcmaOpcode>(*pc);
+    }
+
     [[nodiscard]] const uint8_t* GetJSBytecode(GateRef gate) const
     {
         return jsgateToBytecode_.at(gate).second;
@@ -278,10 +401,11 @@ public:
     }
 
     BytecodeInfo GetBytecodeInfo(const uint8_t *pc);
-
-    EcmaVM *GetEcmaVM() const
+    // for external users, circuit must be built
+    BytecodeInfo GetByteCodeInfo(const GateRef gate)
     {
-        return vm_;
+        auto pc = jsgateToBytecode_.at(gate).second;
+        return GetBytecodeInfo(pc);
     }
 
     bool IsLogEnabled() const
@@ -322,7 +446,8 @@ private:
     void NewByteCode(BytecodeRegion &bb, const uint8_t *pc, GateRef &state, GateRef &depend);
     void BuildSubCircuit();
     GateRef NewPhi(BytecodeRegion &bb, uint16_t reg, bool acc);
-    GateRef RenameVariable(size_t bbId, const uint8_t *end, uint16_t reg, bool acc);
+    GateRef RenameVariable(const size_t bbId, const uint8_t *end,
+        const uint16_t reg, const bool acc, GateType gateType = GateType::JS_ANY);
     void BuildCircuit();
 
     void PrintCollectBlockInfo(std::vector<CfgInfo> &bytecodeBlockInfos);
@@ -330,14 +455,7 @@ private:
     void PrintGraph();
     void PrintBytecodeInfo();
     void PrintBBInfo();
-    static bool IsJump(EcmaOpcode opcode);
-    static bool IsCondJump(EcmaOpcode opcode);
-    static bool IsMov(EcmaOpcode opcode);
-    static bool IsReturn(EcmaOpcode opcode);
-    static bool IsThrow(EcmaOpcode opcode);
-    static bool IsDiscarded(EcmaOpcode opcode);
-    static bool IsGeneral(EcmaOpcode opcode);
-    static bool IsSetConstant(EcmaOpcode opcode);
+    GateType GetRealGateType(const uint16_t reg, const GateType gateType);
     size_t GetActualNumArgs(size_t numArgs)
     {
         return numArgs + CommonArgIdx::NUM_OF_ARGS;
@@ -349,9 +467,9 @@ private:
     BytecodeGraph graph_;
     std::array<GateRef, CommonArgIdx::NUM_OF_ARGS> commonArgs_ {};
     std::vector<GateRef> actualArgs_ {};
-    EcmaVM* vm_;
-    const JSPandaFile* file_ {nullptr};
-    const JSMethod* method_ {nullptr};
+    TSLoader *tsLoader_ {nullptr};
+    const JSPandaFile *file_ {nullptr};
+    const JSMethod *method_ {nullptr};
     const std::vector<uint8_t *> pcArray_;
     JSHandle<JSTaggedValue> constantPool_;
     bool enableLog_ {false};

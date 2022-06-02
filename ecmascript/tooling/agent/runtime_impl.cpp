@@ -15,27 +15,29 @@
 
 #include "ecmascript/tooling/agent/runtime_impl.h"
 
+#include <iomanip>
+
+#include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "ecmascript/tooling/base/pt_returns.h"
+#include "ecmascript/tooling/protocol_channel.h"
 #include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript::tooling {
-RuntimeImpl::DispatcherImpl::DispatcherImpl(FrontEnd *frontend, std::unique_ptr<RuntimeImpl> runtime)
-    : DispatcherBase(frontend), runtime_(std::move(runtime))
-{
-    dispatcherTable_["enable"] = &RuntimeImpl::DispatcherImpl::Enable;
-    dispatcherTable_["getProperties"] = &RuntimeImpl::DispatcherImpl::GetProperties;
-    dispatcherTable_["runIfWaitingForDebugger"] = &RuntimeImpl::DispatcherImpl::RunIfWaitingForDebugger;
-    dispatcherTable_["callFunctionOn"] = &RuntimeImpl::DispatcherImpl::CallFunctionOn;
-    dispatcherTable_["getHeapUsage"] = &RuntimeImpl::DispatcherImpl::GetHeapUsage;
-}
-
 void RuntimeImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
 {
-    CString method = request.GetMethod();
+    static CUnorderedMap<CString, AgentHandler> dispatcherTable {
+        { "enable", &RuntimeImpl::DispatcherImpl::Enable },
+        { "getProperties", &RuntimeImpl::DispatcherImpl::GetProperties },
+        { "runIfWaitingForDebugger", &RuntimeImpl::DispatcherImpl::RunIfWaitingForDebugger },
+        { "callFunctionOn", &RuntimeImpl::DispatcherImpl::CallFunctionOn },
+        { "getHeapUsage", &RuntimeImpl::DispatcherImpl::GetHeapUsage }
+    };
+
+    const CString &method = request.GetMethod();
     LOG(DEBUG, DEBUGGER) << "dispatch [" << method << "] to RuntimeImpl";
 
-    auto entry = dispatcherTable_.find(method);
-    if (entry != dispatcherTable_.end()) {
+    auto entry = dispatcherTable.find(method);
+    if (entry != dispatcherTable.end()) {
         (this->*(entry->second))(request);
     } else {
         LOG(ERROR, DEBUGGER) << "unknown method: " << method;
@@ -46,6 +48,12 @@ void RuntimeImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
 void RuntimeImpl::DispatcherImpl::Enable(const DispatchRequest &request)
 {
     DispatchResponse response = runtime_->Enable();
+    SendResponse(request, response, nullptr);
+}
+
+void RuntimeImpl::DispatcherImpl::Disable(const DispatchRequest &request)
+{
+    DispatchResponse response = runtime_->Disable();
     SendResponse(request, response, nullptr);
 }
 
@@ -109,17 +117,51 @@ void RuntimeImpl::DispatcherImpl::GetHeapUsage(const DispatchRequest &request)
     SendResponse(request, response, std::move(result));
 }
 
+bool RuntimeImpl::Frontend::AllowNotify() const
+{
+    return channel_ != nullptr;
+}
+
+void RuntimeImpl::Frontend::RunIfWaitingForDebugger()
+{
+    if (!AllowNotify()) {
+        return;
+    }
+
+    channel_->RunIfWaitingForDebugger();
+}
+
 DispatchResponse RuntimeImpl::Enable()
 {
-    auto ecmaVm = const_cast<EcmaVM *>(backend_->GetEcmaVm());
-    ecmaVm->GetJsDebuggerManager()->SetDebugMode(true);
-    backend_->NotifyAllScriptParsed();
+    return DispatchResponse::Ok();
+}
+
+DispatchResponse RuntimeImpl::Disable()
+{
     return DispatchResponse::Ok();
 }
 
 DispatchResponse RuntimeImpl::RunIfWaitingForDebugger()
 {
-    return DispatchResponse::Create(backend_->Resume());
+    frontend_.RunIfWaitingForDebugger();
+    return DispatchResponse::Ok();
+}
+
+DispatchResponse RuntimeImpl::CallFunctionOn([[maybe_unused]] std::unique_ptr<CallFunctionOnParams> params,
+    std::unique_ptr<RemoteObject> *outRemoteObject,
+    [[maybe_unused]] std::optional<std::unique_ptr<ExceptionDetails>> *outExceptionDetails)
+{
+    // Return EvalError temporarily.
+    auto error = Exception::EvalError(vm_, StringRef::NewFromUtf8(vm_, "Unsupport eval now"));
+    *outRemoteObject = RemoteObject::FromTagged(vm_, error);
+    return DispatchResponse::Ok();
+}
+
+DispatchResponse RuntimeImpl::GetHeapUsage(double *usedSize, double *totalSize)
+{
+    *totalSize = static_cast<double>(DFXJSNApi::GetHeapTotalSize(vm_));
+    *usedSize = static_cast<double>(DFXJSNApi::GetHeapUsedSize(vm_));
+    return DispatchResponse::Ok();
 }
 
 DispatchResponse RuntimeImpl::GetProperties(std::unique_ptr<GetPropertiesParams> params,
@@ -128,24 +170,190 @@ DispatchResponse RuntimeImpl::GetProperties(std::unique_ptr<GetPropertiesParams>
     [[maybe_unused]] std::optional<CVector<std::unique_ptr<PrivatePropertyDescriptor>>> *outPrivateProps,
     [[maybe_unused]] std::optional<std::unique_ptr<ExceptionDetails>> *outExceptionDetails)
 {
-    backend_->GetProperties(params->GetObjectId(),
-        params->GetOwnProperties(),
-        params->GetAccessPropertiesOnly(),
-        outPropertyDesc);
+    RemoteObjectId objectId = params->GetObjectId();
+    bool isOwn = params->GetOwnProperties();
+    bool isAccessorOnly = params->GetAccessPropertiesOnly();
+    auto iter = properties_.find(objectId);
+    if (iter == properties_.end()) {
+        LOG(ERROR, DEBUGGER) << "RuntimeImpl::GetProperties Unknown object id: " << objectId;
+        return DispatchResponse::Fail("Unknown object id");
+    }
+    Local<JSValueRef> value = Local<JSValueRef>(vm_, iter->second);
+    if (value.IsEmpty() || !value->IsObject()) {
+        LOG(ERROR, DEBUGGER) << "RuntimeImpl::GetProperties should a js object";
+        return DispatchResponse::Fail("Not a object");
+    }
+    if (value->IsArrayBuffer()) {
+        Local<ArrayBufferRef> arrayBufferRef(value);
+        AddTypedArrayRefs(arrayBufferRef, outPropertyDesc);
+    }
+    Local<ArrayRef> keys = Local<ObjectRef>(value)->GetOwnPropertyNames(vm_);
+    int32_t length = keys->Length(vm_);
+    Local<JSValueRef> name = JSValueRef::Undefined(vm_);
+    for (int32_t i = 0; i < length; ++i) {
+        name = keys->Get(vm_, i);
+        PropertyAttribute jsProperty = PropertyAttribute::Default();
+        if (!Local<ObjectRef>(value)->GetOwnProperty(vm_, name, jsProperty)) {
+            continue;
+        }
+        std::unique_ptr<PropertyDescriptor> debuggerProperty =
+            PropertyDescriptor::FromProperty(vm_, name, jsProperty);
+        if (isAccessorOnly && !jsProperty.HasGetter() && !jsProperty.HasSetter()) {
+            continue;
+        }
+        if (jsProperty.HasGetter()) {
+            debuggerProperty->GetGet()->SetObjectId(curObjectId_);
+            properties_[curObjectId_++] = Global<JSValueRef>(vm_, jsProperty.GetGetter(vm_));
+        }
+        if (jsProperty.HasSetter()) {
+            debuggerProperty->GetSet()->SetObjectId(curObjectId_);
+            properties_[curObjectId_++] = Global<JSValueRef>(vm_, jsProperty.GetSetter(vm_));
+        }
+        if (jsProperty.HasValue()) {
+            Local<JSValueRef> vValue = jsProperty.GetValue(vm_);
+            if (vValue->IsObject() && !vValue->IsProxy()) {
+                debuggerProperty->GetValue()->SetObjectId(curObjectId_);
+                properties_[curObjectId_++] = Global<JSValueRef>(vm_, vValue);
+            }
+        }
+        if (name->IsSymbol()) {
+            debuggerProperty->GetSymbol()->SetObjectId(curObjectId_);
+            properties_[curObjectId_++] = Global<JSValueRef>(vm_, name);
+        }
+        outPropertyDesc->emplace_back(std::move(debuggerProperty));
+    }
+    GetProtoOrProtoType(value, isOwn, isAccessorOnly, outPropertyDesc);
+    GetAdditionalProperties(value, outPropertyDesc);
+
     return DispatchResponse::Ok();
 }
 
-DispatchResponse RuntimeImpl::CallFunctionOn(std::unique_ptr<CallFunctionOnParams> params,
-    std::unique_ptr<RemoteObject> *outRemoteObject,
-    [[maybe_unused]] std::optional<std::unique_ptr<ExceptionDetails>> *outExceptionDetails)
+void RuntimeImpl::AddTypedArrayRefs(Local<ArrayBufferRef> arrayBufferRef,
+    CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
 {
-    backend_->CallFunctionOn(params->GetFunctionDeclaration(), outRemoteObject);
-    return DispatchResponse::Ok();
+    int32_t arrayBufferByteLength = arrayBufferRef->ByteLength(vm_);
+    int32_t typedArrayLength = arrayBufferByteLength;
+    AddTypedArrayRef<Int8ArrayRef>(arrayBufferRef, typedArrayLength, "[[Int8Array]]", outPropertyDesc);
+    AddTypedArrayRef<Uint8ArrayRef>(arrayBufferRef, typedArrayLength, "[[Uint8Array]]", outPropertyDesc);
+    AddTypedArrayRef<Uint8ClampedArrayRef>(arrayBufferRef, typedArrayLength, "[[Uint8ClampedArray]]", outPropertyDesc);
+
+    if ((arrayBufferByteLength % NumberSize::BYTES_OF_16BITS) == 0) {
+        typedArrayLength = arrayBufferByteLength / NumberSize::BYTES_OF_16BITS;
+        AddTypedArrayRef<Int16ArrayRef>(arrayBufferRef, typedArrayLength, "[[Int16Array]]", outPropertyDesc);
+        AddTypedArrayRef<Uint16ArrayRef>(arrayBufferRef, typedArrayLength, "[[Uint16Array]]", outPropertyDesc);
+    }
+
+    if ((arrayBufferByteLength % NumberSize::BYTES_OF_32BITS) == 0) {
+        typedArrayLength = arrayBufferByteLength / NumberSize::BYTES_OF_32BITS;
+        AddTypedArrayRef<Int32ArrayRef>(arrayBufferRef, typedArrayLength, "[[Int32Array]]", outPropertyDesc);
+        AddTypedArrayRef<Uint32ArrayRef>(arrayBufferRef, typedArrayLength, "[[Uint32Array]]", outPropertyDesc);
+        AddTypedArrayRef<Float32ArrayRef>(arrayBufferRef, typedArrayLength, "[[Float32Array]]", outPropertyDesc);
+    }
+
+    if ((arrayBufferByteLength % NumberSize::BYTES_OF_64BITS) == 0) {
+        typedArrayLength = arrayBufferByteLength / NumberSize::BYTES_OF_64BITS;
+        AddTypedArrayRef<Float64ArrayRef>(arrayBufferRef, typedArrayLength, "[[Float64Array]]", outPropertyDesc);
+        AddTypedArrayRef<BigInt64ArrayRef>(arrayBufferRef, typedArrayLength, "[[BigInt64Array]]", outPropertyDesc);
+        AddTypedArrayRef<BigUint64ArrayRef>(arrayBufferRef, typedArrayLength, "[[BigUint64Array]]", outPropertyDesc);
+    }
 }
 
-DispatchResponse RuntimeImpl::GetHeapUsage(double *usedSize, double *totalSize)
+template <typename TypedArrayRef>
+void RuntimeImpl::AddTypedArrayRef(Local<ArrayBufferRef> arrayBufferRef, int32_t length, const char* name,
+    CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
 {
-    backend_->GetHeapUsage(usedSize, totalSize);
-    return DispatchResponse::Ok();
+    Local<JSValueRef> jsValueRefTypedArray(TypedArrayRef::New(vm_, arrayBufferRef, 0, length));
+    std::unique_ptr<RemoteObject> remoteObjectTypedArray = RemoteObject::FromTagged(vm_, jsValueRefTypedArray);
+    remoteObjectTypedArray->SetObjectId(curObjectId_);
+    properties_[curObjectId_++] = Global<JSValueRef>(vm_, jsValueRefTypedArray);
+    std::unique_ptr<PropertyDescriptor> debuggerProperty = std::make_unique<PropertyDescriptor>();
+    debuggerProperty->SetName(name)
+        .SetWritable(true)
+        .SetConfigurable(true)
+        .SetEnumerable(false)
+        .SetIsOwn(true)
+        .SetValue(std::move(remoteObjectTypedArray));
+    outPropertyDesc->emplace_back(std::move(debuggerProperty));
+}
+
+void RuntimeImpl::CacheObjectIfNeeded(Local<JSValueRef> valRef, RemoteObject *remoteObj)
+{
+    if (valRef->IsObject() && !valRef->IsProxy()) {
+        remoteObj->SetObjectId(curObjectId_);
+        properties_[curObjectId_++] = Global<JSValueRef>(vm_, valRef);
+    }
+}
+
+void RuntimeImpl::GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn, bool isAccessorOnly,
+    CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
+{
+    if (!isAccessorOnly && isOwn && !value->IsProxy()) {
+        return;
+    }
+    // Get Function ProtoOrDynClass
+    if (value->IsConstructor()) {
+        Local<JSValueRef> prototype = Local<FunctionRef>(value)->GetFunctionPrototype(vm_);
+        std::unique_ptr<RemoteObject> protoObj = RemoteObject::FromTagged(vm_, prototype);
+        CacheObjectIfNeeded(prototype, protoObj.get());
+        std::unique_ptr<PropertyDescriptor> debuggerProperty = std::make_unique<PropertyDescriptor>();
+        debuggerProperty->SetName("prototype")
+            .SetWritable(false)
+            .SetConfigurable(false)
+            .SetEnumerable(false)
+            .SetIsOwn(true)
+            .SetValue(std::move(protoObj));
+        outPropertyDesc->emplace_back(std::move(debuggerProperty));
+    }
+    // Get __proto__
+    Local<JSValueRef> proto = Local<ObjectRef>(value)->GetPrototype(vm_);
+    std::unique_ptr<RemoteObject> protoObj = RemoteObject::FromTagged(vm_, proto);
+    CacheObjectIfNeeded(proto, protoObj.get());
+    std::unique_ptr<PropertyDescriptor> debuggerProperty = std::make_unique<PropertyDescriptor>();
+    debuggerProperty->SetName("__proto__")
+        .SetWritable(true)
+        .SetConfigurable(true)
+        .SetEnumerable(false)
+        .SetIsOwn(true)
+        .SetValue(std::move(protoObj));
+    outPropertyDesc->emplace_back(std::move(debuggerProperty));
+}
+
+void RuntimeImpl::GetAdditionalProperties(const Local<JSValueRef> &value,
+    CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
+{
+    // The length of the TypedArray have to be limited(less than or equal to lengthTypedArrayLimit) until we construct
+    // the PropertyPreview class. Let lengthTypedArrayLimit be 10000 temporarily.
+    static const int32_t lengthTypedArrayLimit = 10000;
+
+    // The width of the string-expression for JSTypedArray::MAX_TYPED_ARRAY_INDEX which is euqal to
+    // JSObject::MAX_ELEMENT_INDEX which is equal to std::numeric_limits<uint32_t>::max(). (42,9496,7295)
+    static const int32_t widthStrExprMaxElementIndex = 10;
+
+    if (value->IsTypedArray()) {
+        Local<TypedArrayRef> localTypedArrayRef(value);
+        int32_t lengthTypedArray = localTypedArrayRef->ArrayLength(vm_);
+        if (lengthTypedArray < 0 || lengthTypedArray > lengthTypedArrayLimit) {
+            LOG(ERROR, DEBUGGER) << "The length of the TypedArray is non-compliant or unsupported.";
+            return;
+        }
+        for (int32_t i = 0; i < lengthTypedArray; i++) {
+            Local<JSValueRef> localValRefElement = localTypedArrayRef->Get(vm_, i);
+            std::unique_ptr<RemoteObject> remoteObjElement = RemoteObject::FromTagged(vm_, localValRefElement);
+            remoteObjElement->SetObjectId(curObjectId_);
+            properties_[curObjectId_++] = Global<JSValueRef>(vm_, localValRefElement);
+            std::unique_ptr<PropertyDescriptor> debuggerProperty = std::make_unique<PropertyDescriptor>();
+
+            std::ostringstream osNameElement;
+            osNameElement << std::right << std::setw(widthStrExprMaxElementIndex) << i;
+            CString cStrNameElement = CString(osNameElement.str());
+            debuggerProperty->SetName(cStrNameElement)
+                .SetWritable(true)
+                .SetConfigurable(true)
+                .SetEnumerable(false)
+                .SetIsOwn(true)
+                .SetValue(std::move(remoteObjElement));
+            outPropertyDesc->emplace_back(std::move(debuggerProperty));
+        }
+    }
 }
 }  // namespace panda::ecmascript::tooling

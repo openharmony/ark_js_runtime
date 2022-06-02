@@ -18,11 +18,13 @@ declare function print(str:any):string;
 var A=[1,2,"a"];
 class obj{
     a; b; c;
-    constructor(a, b, c) {
-        this.a = a;
-        this.b = b;
-        this.c = c;
+    constructor(...rest:any) {
+        this.a = arguments[0];
+        this.b = arguments[1];
+        this.c = arguments[2];
     }
 }
 let c = new obj(...A);
-print(c);
+print(c.a);
+print(c.b);
+print(c.c);

@@ -89,11 +89,10 @@ public:
 
     bool IsInterpretedEntryFrame() const
     {
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-        return (GetFrameType() == FrameType::ASM_INTERPRETER_ENTRY_FRAME);
-#else
+        if (thread_->IsAsmInterpreter()) {
+            return (GetFrameType() == FrameType::ASM_INTERPRETER_ENTRY_FRAME);
+        }
         return (GetFrameType() == FrameType::INTERPRETER_ENTRY_FRAME);
-#endif
     }
 
     bool IsLeaveFrame() const
@@ -149,10 +148,8 @@ public:
     // for Frame GC.
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
     void IterateFrameChain(JSTaggedType *start, const RootVisitor &v0, const RootRangeVisitor &v1) const;
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
     void IterateRsp(const RootVisitor &v0, const RootRangeVisitor &v1) const;
     void IterateSp(const RootVisitor &v0, const RootRangeVisitor &v1) const;
-#endif
 
 private:
     FrameType GetFrameType() const

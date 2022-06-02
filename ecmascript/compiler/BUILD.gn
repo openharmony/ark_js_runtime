@@ -41,7 +41,6 @@ config("include_llvm") {
 
 source_set("libark_jsoptimizer_set") {
   sources = [
-    "aot_file_manager.cpp",
     "assembler/aarch64/assembler_aarch64.cpp",
     "assembler/aarch64/extend_assembler.cpp",
     "assembler/x64/assembler_x64.cpp",
@@ -52,7 +51,9 @@ source_set("libark_jsoptimizer_set") {
     "call_signature.cpp",
     "circuit.cpp",
     "circuit_builder.cpp",
+    "circuit_optimizer.cpp",
     "common_stubs.cpp",
+    "file_generators.cpp",
     "gate.cpp",
     "gate_accessor.cpp",
     "interpreter_stub.cpp",
@@ -66,6 +67,7 @@ source_set("libark_jsoptimizer_set") {
     "trampoline/aarch64/assembler_stubs.cpp",
     "trampoline/x64/assembler_stubs_x64.cpp",
     "type.cpp",
+    "type_inference/type_infer.cpp",
     "verifier.cpp",
   ]
 
@@ -239,11 +241,9 @@ if (!defined(ark_independent_build)) {
     deps =
         [ "$js_root/ecmascript/compiler:ark_stub_compiler(${host_toolchain})" ]
 
-    stub_file_gen_dir = "$root_gen_dir/ark/js_runtime"
+    stub_file_gen_dir = "$root_out_dir/../.."
 
-    stub_option = " --com-stub-out=" + rebase_path(stub_file_gen_dir) +
-                  "/com_stub.m --bc-stub-out=" +
-                  rebase_path(stub_file_gen_dir) + "/bc_stub.m"
+    stub_option = " --stub-file=" + rebase_path(stub_file_gen_dir) + "/stub.m"
 
     args = [
       "--script-file",
@@ -259,10 +259,7 @@ if (!defined(ark_independent_build)) {
           rebase_path("//prebuilts/clang/ohos/linux-x86_64/llvm/lib/"),
     ]
 
-    outputs = [
-      "$stub_file_gen_dir/com_stub.m",
-      "$stub_file_gen_dir/bc_stub.m",
-    ]
+    outputs = [ "$stub_file_gen_dir/stub.m" ]
   }
 } else {
   ark_shared_library("libark_jsoptimizer") {
@@ -275,6 +272,6 @@ if (!defined(ark_independent_build)) {
 }
 
 config("gen_stub_file_dir_config") {
-  stub_file_gen_dir = rebase_path(root_gen_dir) + "/ark/js_runtime"
+  stub_file_gen_dir = rebase_path("//out")
   defines = [ "STUB_FILE_GEN_DIR=\"${stub_file_gen_dir}/\"" ]
 }

@@ -21,7 +21,7 @@
 
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/c_string.h"
-#include "ecmascript/tooling/interface/debugger_api.h"
+#include "ecmascript/tooling/backend/debugger_api.h"
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript::tooling {
@@ -40,7 +40,7 @@ private:
     NO_MOVE_SEMANTIC(PtBaseTypes);
 
     friend class ProtocolHandler;
-    friend class JSBackend;
+    friend class DebuggerImpl;
 };
 
 // ========== Debugger types begin
@@ -1773,7 +1773,7 @@ public:
         return hitCount_.value();
     }
 
-    ProfileNode &SetHitCount(size_t hitCount)
+    ProfileNode &SetHitCount(int32_t hitCount)
     {
         hitCount_ = hitCount;
         return *this;
@@ -1843,7 +1843,7 @@ private:
     NO_MOVE_SEMANTIC(ProfileNode);
     int32_t id_ {0};
     std::unique_ptr<RuntimeCallFrame> callFrame_ {nullptr};
-    std::optional<size_t> hitCount_ {0};
+    std::optional<int32_t> hitCount_ {0};
     std::optional<CVector<int32_t>> children_ {};
     std::optional<CVector<std::unique_ptr<PositionTickInfo>>> positionTicks_ {};
     std::optional<CString> deoptReason_ {};
@@ -1858,23 +1858,23 @@ public:
     static std::unique_ptr<Profile> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
 
-    uint64_t GetStartTime() const
+    int64_t GetStartTime() const
     {
         return startTime_;
     }
 
-    Profile &SetStartTime(size_t startTime)
+    Profile &SetStartTime(int64_t startTime)
     {
         startTime_ = startTime;
         return *this;
     }
 
-    uint64_t GetEndTime() const
+    int64_t GetEndTime() const
     {
         return endTime_;
     }
 
-    Profile &SetEndTime(size_t endTime)
+    Profile &SetEndTime(int64_t endTime)
     {
         endTime_ = endTime;
         return *this;
@@ -1933,8 +1933,8 @@ private:
     NO_COPY_SEMANTIC(Profile);
     NO_MOVE_SEMANTIC(Profile);
 
-    size_t startTime_ {0};
-    size_t endTime_ {0};
+    int64_t startTime_ {0};
+    int64_t endTime_ {0};
     CVector<std::unique_ptr<ProfileNode>> nodes_ {};
     std::optional<CVector<int32_t>> samples_ {};
     std::optional<CVector<int32_t>> timeDeltas_ {};

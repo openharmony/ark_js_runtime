@@ -219,6 +219,7 @@ public:
 
     uintptr_t* PUBLIC_API ExpandHandleStorage();
     void PUBLIC_API ShrinkHandleStorage(int prevIndex);
+    void PUBLIC_API CheckJSTaggedType(JSTaggedType value) const;
 
     JSTaggedType *GetHandleScopeStorageNext() const
     {
@@ -317,13 +318,40 @@ public:
         glueData_.coStubEntries_.Set(id, entry);
     }
 
+    Address GetBCStubEntry(uint32_t id)
+    {
+        return glueData_.bcStubEntries_.Get(id);
+    }
+
+    void SetBCStubEntry(size_t id, Address entry)
+    {
+        glueData_.bcStubEntries_.Set(id, entry);
+    }
+
+    void SetUnrealizedBCStubEntry(Address entry)
+    {
+        glueData_.bcStubEntries_.SetUnrealizedBCHandlerStubEntries(entry);
+    }
+
+    void SetNonExistedBCStubEntry(Address entry)
+    {
+        glueData_.bcStubEntries_.SetNonexistentBCHandlerStubEntries(entry);
+    }
+
+    void SetBCDebugStubEntry(size_t id, Address entry)
+    {
+        glueData_.bcDebuggerStubEntries_.Set(id, entry);
+    }
+
+    void SetNonExistedBCDebugStubEntry(Address entry)
+    {
+        glueData_.bcDebuggerStubEntries_.SetNonexistentBCHandlerStubEntries(entry);
+    }
+
     Address *GetBytecodeHandler()
     {
         return glueData_.bcStubEntries_.GetAddr();
     }
-
-    void LoadCommonStubsFromFile(std::string &fileName);
-    void LoadBytecodeHandlerStubsFromFile(std::string &fileName);
 
     void CheckSwitchDebuggerBCStub();
 
@@ -387,6 +415,16 @@ public:
     bool GetGcState() const
     {
         return gcState_;
+    }
+
+    void SetCheckAndCallEnterState(bool checkAndCallEnterState)
+    {
+        checkAndCallEnterState_ = checkAndCallEnterState;
+    }
+
+    bool GetCheckAndCallEnterState() const
+    {
+        return checkAndCallEnterState_;
     }
 
     void EnableAsmInterpreter()
@@ -547,7 +585,6 @@ private:
 
     void DumpStack() DUMP_API_ATTR;
 
-    static constexpr uint32_t MAX_STACK_SIZE = 512 * 1024;
     static const uint32_t NODE_BLOCK_SIZE_LOG2 = 10;
     static const uint32_t NODE_BLOCK_SIZE = 1U << NODE_BLOCK_SIZE_LOG2;
     static constexpr int32_t MIN_HANDLE_STORAGE_SIZE = 2;
@@ -563,8 +600,6 @@ private:
     std::vector<std::array<JSTaggedType, NODE_BLOCK_SIZE> *> handleStorageNodes_ {};
     int32_t currentHandleStorageIndex_ {-1};
     int32_t handleScopeCount_ {0};
-    JSTaggedValue coStubCode_ {JSTaggedValue::Hole()};
-    JSTaggedValue bcStubCode_ {JSTaggedValue::Hole()};
 
     PropertiesCache *propertiesCache_ {nullptr};
     EcmaGlobalStorage *globalStorage_ {nullptr};
@@ -578,6 +613,7 @@ private:
     bool stableArrayElementsGuardians_ {true};
     GlueData glueData_;
 
+    bool checkAndCallEnterState_ {false};
     friend class EcmaHandleScope;
     friend class GlobalHandleCollection;
 };

@@ -243,6 +243,11 @@ public:
         return name_;
     }
 
+    void SetName(const std::string &str)
+    {
+        name_ = str;
+    }
+
     void SetConstructor(TargetConstructor ctor)
     {
         constructor_ = ctor;
@@ -313,19 +318,15 @@ private:
     V(CallRuntimeWithArgv)                  \
     V(OptimizedCallOptimized)               \
     V(PushCallArgs0AndDispatch)             \
-    V(PushCallArgsAndDispatchNative)       \
-    V(PushCallArgs0AndDispatchSlowPath)     \
+    V(PushCallArgsAndDispatchNative)        \
     V(PushCallArgs1AndDispatch)             \
-    V(PushCallArgs1AndDispatchSlowPath)     \
     V(PushCallArgs2AndDispatch)             \
-    V(PushCallArgs2AndDispatchSlowPath)     \
     V(PushCallArgs3AndDispatch)             \
-    V(PushCallArgs3AndDispatchSlowPath)     \
     V(PushCallIRangeAndDispatch)            \
     V(PushCallIRangeAndDispatchNative)      \
-    V(PushCallIRangeAndDispatchSlowPath)    \
     V(PushCallIThisRangeAndDispatch)        \
-    V(PushCallIThisRangeAndDispatchSlowPath)\
+    V(CallGetter)                           \
+    V(CallSetter)                           \
     V(ResumeRspAndDispatch)                 \
     V(ResumeRspAndReturn)                   \
     V(ResumeCaughtFrameAndDispatch)         \

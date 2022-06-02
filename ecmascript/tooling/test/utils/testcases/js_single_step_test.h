@@ -41,7 +41,7 @@ public:
                     return true;
                 }
                 flag_ = false;
-                auto condFuncRef = FunctionRef::Undefined(backend_->GetEcmaVm());
+                auto condFuncRef = FunctionRef::Undefined(vm_);
                 auto ret = debugInterface_->SetBreakpoint(locationEnd_, condFuncRef);
                 ASSERT_TRUE(ret);
             }

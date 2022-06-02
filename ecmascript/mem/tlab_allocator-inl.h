@@ -28,7 +28,7 @@ static constexpr size_t SMALL_OBJECT_SIZE = 8 * 1024;
 TlabAllocator::TlabAllocator(Heap *heap)
     : heap_(heap), enableExpandYoung_(true)
 {
-    size_t maxOldSpaceCapacity = heap->GetEcmaVM()->GetJSOptions().MaxOldSpaceCapacity();
+    size_t maxOldSpaceCapacity = heap->GetOldSpace()->GetMaximumCapacity();
     localSpace_ = new LocalSpace(heap, maxOldSpaceCapacity, maxOldSpaceCapacity);
     youngAllocator_.Reset();
 }

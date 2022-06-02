@@ -21,6 +21,7 @@
 #include "llvm_codegen.h"
 #include "scheduler.h"
 #include "slowpath_lowering.h"
+#include "type_inference/type_infer.h"
 #include "verifier.h"
 
 namespace panda::ecmascript::kungfu {
@@ -64,6 +65,16 @@ public:
 private:
     T1* data_;
     bool enableLog_ {false};
+};
+
+class TypeInferPass {
+public:
+    bool Run(PassData* data, bool enableLog, BytecodeCircuitBuilder *builder, TSLoader *tsLoader)
+    {
+        TypeInfer typeInfer(builder, data->GetCircuit(), tsLoader, enableLog);
+        typeInfer.TraverseCircuit();
+        return true;
+    }
 };
 
 class SlowPathLoweringPass {

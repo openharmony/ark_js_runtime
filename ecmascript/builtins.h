@@ -139,6 +139,11 @@ private:
 
     void InitializeWeakSet(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &objFuncDynclass) const;
 
+    void InitializeWeakRef(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &objFuncDynclass) const;
+
+    void InitializeFinalizationRegistry(const JSHandle<GlobalEnv> &env,
+                                        const JSHandle<JSHClass> &objFuncDynclass) const;
+
     void InitializeMath(const JSHandle<GlobalEnv> &env, const JSHandle<JSTaggedValue> &objFuncPrototypeVal) const;
 
     void InitializeAtomics(const JSHandle<GlobalEnv> &env, const JSHandle<JSTaggedValue> &objFuncPrototypeVal) const;

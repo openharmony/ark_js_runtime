@@ -23,7 +23,8 @@ void InitializeDebugger(const std::function<void(const std::string &)> &onRespon
 {
     ProtocolHandler *handler = vm->GetJsDebuggerManager()->GetDebuggerHandler();
     if (handler != nullptr) {
-        LOG(FATAL, DEBUGGER) << "JS debugger was initialized";
+        LOG(ERROR, DEBUGGER) << "JS debugger was initialized";
+        return;
     }
     vm->GetJsDebuggerManager()->SetDebuggerHandler(new ProtocolHandler(onResponse, vm));
 }

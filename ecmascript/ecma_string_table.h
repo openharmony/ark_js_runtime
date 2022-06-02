@@ -34,11 +34,12 @@ public:
     void InternEmptyString(EcmaString *emptyStr);
     EcmaString *GetOrInternString(const JSHandle<EcmaString> &firstString, const JSHandle<EcmaString> &secondString);
     EcmaString *GetOrInternString(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress);
+    EcmaString *CreateAndInternStringNonMovable(const uint8_t *utf8Data, uint32_t utf8Len);
     EcmaString *GetOrInternString(const uint16_t *utf16Data, uint32_t utf16Len, bool canBeCompress);
     EcmaString *GetOrInternString(EcmaString *string);
 
     void SweepWeakReference(const WeakRootVisitor &visitor);
-
+    bool CheckStringTableValidity();
 private:
     NO_COPY_SEMANTIC(EcmaStringTable);
     NO_MOVE_SEMANTIC(EcmaStringTable);

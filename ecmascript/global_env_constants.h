@@ -90,7 +90,8 @@ class JSThread;
     V(JSTaggedValue, JSAPIVectorIteratorClass, JS_API_VECTOR_ITERATOR_CLASS_INDEX, ecma_roots_class)                  \
     V(JSTaggedValue, JSAPITreeMapIteratorClass, JS_API_TREE_MAP_ITERATOR_CLASS_INDEX, ecma_roots_class)               \
     V(JSTaggedValue, JSAPITreeSetIteratorClass, JS_API_TREE_SET_ITERATOR_CLASS_INDEX, ecma_roots_class)               \
-    V(JSTaggedValue, JSAPIIteratorFuncDynClass, JS_API_ITERATOR_FUNC_DYN_CLASS_INDEX, ecma_roots_class)
+    V(JSTaggedValue, JSAPIIteratorFuncDynClass, JS_API_ITERATOR_FUNC_DYN_CLASS_INDEX, ecma_roots_class)               \
+    V(JSTaggedValue, CellRecordClass, CELL_RECORD_CLASS_INDEX, ecma_roots_class)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GLOBAL_ENV_CONSTANT_SPECIAL(V)                                                      \
@@ -246,7 +247,6 @@ class JSThread;
     V(JSTaggedValue, DateStyleString, DATE_STYLE_STRING_INDEX, dateStyle)                                             \
     V(JSTaggedValue, TimeStyleString, TIME_STYLE_STRING_INDEX, timeStyle)                                             \
     V(JSTaggedValue, UTCString, UTC_STRING_INDEX, UTC)                                                                \
-    V(JSTaggedValue, InitializedRelativeTimeFormatString, INITIALIZED_RELATIVE_INDEX, true)                           \
     V(JSTaggedValue, WeekString, WEEK_STRING_INDEX, week)                                                             \
     V(JSTaggedValue, WeeksString, WEEKS_STRING_INDEX, weeks)                                                          \
     V(JSTaggedValue, SourceString, SOURCE_STRING_INDEX, source)                                                       \
@@ -345,7 +345,27 @@ class JSThread;
     V(JSTaggedValue, GString, G_INDEX, g)                                                                             \
     V(JSTaggedValue, NotEqualString, NOT_EQUAL_INDEX, notEqual)                                                       \
     V(JSTaggedValue, OkString, OK_INDEX, ok)                                                                          \
-    V(JSTaggedValue, TimeoutString, TIMEOUT_INDEX, timedout)
+    V(JSTaggedValue, TimeoutString, TIMEOUT_INDEX, timedout)                                                          \
+    V(JSTaggedValue, NfcString, NFC_INDEX, nfc)                                                                       \
+    V(JSTaggedValue, EntriesString, ENTRIES_INDEX, entries)                                                           \
+    V(JSTaggedValue, LeftSquareBracketString, LEFT_SQUARE_BRACKET_INDEX, leftsquarebracket)                           \
+    V(JSTaggedValue, RightSquareBracketString, RIGHT_SQUARE_BRACKET_INDEX, rightsquarebracket)                        \
+    V(JSTaggedValue, YString, Y_INDEX, y)                                                                             \
+    V(JSTaggedValue, DollarString, DOLLAR_INDEX, dollar)                                                              \
+    V(JSTaggedValue, CommaString, COMMA_INDEX, comma)                                                                 \
+    V(JSTaggedValue, JoinString, JOIN_INDEX, join)                                                                    \
+    V(JSTaggedValue, CopyWithinString, COPY_WITHIN_INDEX, copywithin)                                                 \
+    V(JSTaggedValue, FillString, FILL_INDEX, fill)                                                                    \
+    V(JSTaggedValue, FindString, FIND_INDEX, find)                                                                    \
+    V(JSTaggedValue, FindIndexString, FIND_INDEX_INDEX, findindex)                                                    \
+    V(JSTaggedValue, FlatString, FLAT_INDEX, flat)                                                                    \
+    V(JSTaggedValue, FlatMapString, FLATMAP_INDEX, flatmap)                                                           \
+    V(JSTaggedValue, IncludesString, INCLUDES_INDEX, includes)                                                        \
+    V(JSTaggedValue, KeysString, KEYS_INDEX, keys)                                                                    \
+    V(JSTaggedValue, BoundString, BOUND_INDEX, bound)                                                                 \
+    V(JSTaggedValue, BackslashString, BACKSLASH_INDEX, backslash)                                                     \
+    V(JSTaggedValue, SpaceString, SPACE_INDEX, space)                                                                 \
+    V(JSTaggedValue, NanCapitalString, NAN_INDEX, nan)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GLOBAL_ENV_CONSTANT_ACCESSOR(V)                                                           \

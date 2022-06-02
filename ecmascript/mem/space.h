@@ -167,6 +167,7 @@ public:
     inline void EnumerateRegionsWithRecord(const Callback &cb) const;
 
     inline void AddRegion(Region *region);
+    inline void AddRegionToFront(Region *region);
     inline void RemoveRegion(Region *region);
 
     virtual void Initialize() {};
@@ -191,8 +192,7 @@ protected:
 
 class HugeObjectSpace : public Space {
 public:
-    explicit HugeObjectSpace(HeapRegionAllocator *regionAllocator, size_t initialCapacity = MAX_HUGE_OBJECT_SPACE_SIZE,
-                             size_t maximumCapacity = MAX_HUGE_OBJECT_SPACE_SIZE);
+    explicit HugeObjectSpace(HeapRegionAllocator *regionAllocator, size_t initialCapacity, size_t maximumCapacity);
     ~HugeObjectSpace() override = default;
     NO_COPY_SEMANTIC(HugeObjectSpace);
     NO_MOVE_SEMANTIC(HugeObjectSpace);
