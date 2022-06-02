@@ -67,7 +67,7 @@ HWTEST_F_L0(NativePointerTest, Print)
     EXPECT_TRUE(*jsFunction != nullptr);
 
     JSMethod *target = factory->NewMethodForNativeFunction(nullptr);
-    jsFunction->SetCallTarget(thread, target);
+    jsFunction->SetMethod(target);
 
     // run cpp methed 'Print'
     ASSERT_EQ(target, jsFunction->GetCallTarget());

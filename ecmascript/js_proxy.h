@@ -77,11 +77,6 @@ public:
         GetClass()->SetConstructor(constructor);
     }
 
-    void SetCallTarget([[maybe_unused]] const JSThread *thread, JSMethod *p)
-    {
-        SetMethod(p);
-    }
-
     JSHandle<JSTaggedValue> GetSourceTarget(JSThread *thread) const;
 
     // ES6 9.5.13 [[Call]] (thisArgument, argumentsList)

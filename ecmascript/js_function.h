@@ -39,11 +39,6 @@ public:
                                 const JSHandle<JSTaggedValue> &name, const JSHandle<JSTaggedValue> &prefix);
     static JSHandle<JSTaggedValue> GetFunctionName(JSThread *thread, const JSHandle<JSFunctionBase> &func);
 
-    void SetCallTarget([[maybe_unused]] const JSThread *thread, JSMethod *p)
-    {
-        SetMethod(p);
-    }
-
     static constexpr size_t METHOD_OFFSET = JSObject::SIZE;
     ACCESSORS_NATIVE_FIELD(Method, JSMethod, METHOD_OFFSET, CODE_ENTRY_OFFSET)
     ACCESSORS_PRIMITIVE_FIELD(CodeEntry, uintptr_t, CODE_ENTRY_OFFSET, LAST_OFFSET)
