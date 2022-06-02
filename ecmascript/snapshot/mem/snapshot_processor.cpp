@@ -801,7 +801,8 @@ void SnapshotProcessor::WriteSpaceObjectToFile(Space* space, std::fstream &write
                 // Firstly, serialize the region object into the file;
                 writer.write(reinterpret_cast<char *>(current), alignedRegionObjSize);
                 // Secondly, write the valid region memory (from the GC bit set at the beginning to end).
-                writer.write(reinterpret_cast<char *>(current->markGCBitset_), DEFAULT_REGION_SIZE - alignedRegionObjSize);
+                writer.write(reinterpret_cast<char *>(current->markGCBitset_),
+                             DEFAULT_REGION_SIZE - alignedRegionObjSize);
                 writer.flush();
             }
         });
@@ -914,7 +915,7 @@ void SnapshotProcessor::DeserializeSpaceObject(uintptr_t beginAddr, Space* space
         }
 
         region->highWaterMark_ = region->begin_ + copyBytes;
-        // Other information like aliveObject size, wasted size etc. in the region object, TBD for restore.
+        // Other information like aliveObject size, wasted size etc. in the region object to restore.
         region->aliveObject_ = fileRegion->AliveObject();
         region->wasted_ = fileRegion->wasted_;
 
