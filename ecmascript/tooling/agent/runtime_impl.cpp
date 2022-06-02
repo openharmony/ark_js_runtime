@@ -201,22 +201,22 @@ DispatchResponse RuntimeImpl::GetProperties(std::unique_ptr<GetPropertiesParams>
         if (isAccessorOnly && !jsProperty.HasGetter() && !jsProperty.HasSetter()) {
             continue;
         }
-        if (jsProperty.HasGetter()) {
+        if (debuggerProperty->HasGet()) {
             debuggerProperty->GetGet()->SetObjectId(curObjectId_);
             properties_[curObjectId_++] = Global<JSValueRef>(vm_, jsProperty.GetGetter(vm_));
         }
-        if (jsProperty.HasSetter()) {
+        if (debuggerProperty->HasSet()) {
             debuggerProperty->GetSet()->SetObjectId(curObjectId_);
             properties_[curObjectId_++] = Global<JSValueRef>(vm_, jsProperty.GetSetter(vm_));
         }
-        if (jsProperty.HasValue()) {
+        if (debuggerProperty->HasValue()) {
             Local<JSValueRef> vValue = jsProperty.GetValue(vm_);
             if (vValue->IsObject() && !vValue->IsProxy()) {
                 debuggerProperty->GetValue()->SetObjectId(curObjectId_);
                 properties_[curObjectId_++] = Global<JSValueRef>(vm_, vValue);
             }
         }
-        if (name->IsSymbol()) {
+        if (debuggerProperty->HasSymbol()) {
             debuggerProperty->GetSymbol()->SetObjectId(curObjectId_);
             properties_[curObjectId_++] = Global<JSValueRef>(vm_, name);
         }
@@ -323,7 +323,7 @@ void RuntimeImpl::GetAdditionalProperties(const Local<JSValueRef> &value,
 {
     // The length of the TypedArray have to be limited(less than or equal to lengthTypedArrayLimit) until we construct
     // the PropertyPreview class. Let lengthTypedArrayLimit be 10000 temporarily.
-    static const int32_t lengthTypedArrayLimit = 10000;
+    static const uint32_t lengthTypedArrayLimit = 10000;
 
     // The width of the string-expression for JSTypedArray::MAX_TYPED_ARRAY_INDEX which is euqal to
     // JSObject::MAX_ELEMENT_INDEX which is equal to std::numeric_limits<uint32_t>::max(). (42,9496,7295)
@@ -331,12 +331,12 @@ void RuntimeImpl::GetAdditionalProperties(const Local<JSValueRef> &value,
 
     if (value->IsTypedArray()) {
         Local<TypedArrayRef> localTypedArrayRef(value);
-        int32_t lengthTypedArray = localTypedArrayRef->ArrayLength(vm_);
-        if (lengthTypedArray < 0 || lengthTypedArray > lengthTypedArrayLimit) {
+        uint32_t lengthTypedArray = localTypedArrayRef->ArrayLength(vm_);
+        if (lengthTypedArray > lengthTypedArrayLimit) {
             LOG(ERROR, DEBUGGER) << "The length of the TypedArray is non-compliant or unsupported.";
             return;
         }
-        for (int32_t i = 0; i < lengthTypedArray; i++) {
+        for (uint32_t i = 0; i < lengthTypedArray; i++) {
             Local<JSValueRef> localValRefElement = localTypedArrayRef->Get(vm_, i);
             std::unique_ptr<RemoteObject> remoteObjElement = RemoteObject::FromTagged(vm_, localValRefElement);
             remoteObjElement->SetObjectId(curObjectId_);
