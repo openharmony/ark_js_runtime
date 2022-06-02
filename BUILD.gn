@@ -521,21 +521,6 @@ if (!is_mingw && !is_mac) {
   ]
 }
 
-if (current_cpu == "arm") {
-  ecma_source += [ "ecmascript/trampoline/arm32/call.S" ]
-} else if (current_cpu == "arm64") {
-  ecma_source += [ "ecmascript/trampoline/aarch64/call.S" ]
-} else if (current_cpu == "amd64" || current_cpu == "x64" ||
-           current_cpu == "x86_64") {
-  if (is_linux) {
-    ecma_source += [ "ecmascript/trampoline/x64/call.S" ]
-  } else if (is_mingw) {
-    ecma_source += [ "ecmascript/trampoline/win_x64/call.S" ]
-  } else if (is_mac) {
-    ecma_source += [ "ecmascript/trampoline/mac_x64/call.S" ]
-  }
-}
-
 source_set("libark_jsruntime_set") {
   sources = ecma_source
   sources += ecma_profiler_source

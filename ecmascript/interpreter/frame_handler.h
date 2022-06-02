@@ -89,11 +89,9 @@ public:
 
     bool IsInterpretedEntryFrame() const
     {
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
         if (thread_->IsAsmInterpreter()) {
             return (GetFrameType() == FrameType::ASM_INTERPRETER_ENTRY_FRAME);
         }
-#endif
         return (GetFrameType() == FrameType::INTERPRETER_ENTRY_FRAME);
     }
 
