@@ -262,7 +262,7 @@ void FileLoader::UpdateJSMethods(JSHandle<JSFunction> mainFunc, const JSPandaFil
     auto mainEntry = GetAOTFuncEntry(fileHash, mainFuncMethodId);
     // 1 : default para number
     JSMethod *mainMethod = factory_->NewMethodForAOTFunction(reinterpret_cast<void *>(mainEntry), 1);
-    mainFunc->SetCallTarget(thread, mainMethod);
+    mainFunc->SetMethod(mainMethod);
     mainFunc->SetCodeEntry(reinterpret_cast<uintptr_t>(mainEntry));
 
     const CUnorderedMap<uint32_t, uint64_t> &constpoolMap = jsPandaFile->GetConstpoolMap();
@@ -277,7 +277,7 @@ void FileLoader::UpdateJSMethods(JSHandle<JSFunction> mainFunc, const JSPandaFil
                 auto codeEntry = GetAOTFuncEntry(fileHash, it.first);
                 JSMethod *curMethod = factory_->NewMethodForAOTFunction(reinterpret_cast<void *>(codeEntry), 1);
                 auto curFunction = JSFunction::Cast(curPool->GetObjectFromCache(id).GetTaggedObject());
-                curFunction->SetCallTarget(thread, curMethod);
+                curFunction->SetMethod(curMethod);
                 curFunction->SetCodeEntry(reinterpret_cast<uintptr_t>(codeEntry));
         }
     }
