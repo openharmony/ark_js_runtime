@@ -231,8 +231,8 @@ void Heap::Resume(TriggerGCType gcType)
     }
     if (activeSemiSpace_->AdjustCapacity(inactiveSemiSpace_->GetAllocatedSizeSinceGC())) {
         // if activeSpace capacity changes， oldSpace maximumCapacity should change, too.
-        int delta = activeSemiSpace_->GetInitialCapacity() - inactiveSemiSpace_->GetInitialCapacity();
-        size_t oldSpaceMaxLimit = static_cast<int>(oldSpace_->GetMaximumCapacity()) - delta * 2;
+        size_t delta = activeSemiSpace_->GetInitialCapacity() - inactiveSemiSpace_->GetInitialCapacity();
+        size_t oldSpaceMaxLimit = oldSpace_->GetMaximumCapacity() - delta * 2;
         oldSpace_->SetMaximumCapacity(oldSpaceMaxLimit);
         inactiveSemiSpace_->SetInitialCapacity(activeSemiSpace_->GetInitialCapacity());
     }
