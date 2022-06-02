@@ -93,7 +93,7 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptimizedL
     }
 }
 
-void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp, uintptr_t callSiteAddr) const
+void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp, uintptr_t curPc) const
 {
     if (!IsLogEnabled()) {
         return;
@@ -105,7 +105,7 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t 
     uintptr_t derived = 0;
 
     uintptr_t callsiteFp = *fp;
-    uintptr_t callSiteSp = FrameHandler::GetPrevFrameCallSiteSp(reinterpret_cast<JSTaggedType *>(fp), callSiteAddr);
+    uintptr_t callSiteSp = FrameHandler::GetPrevFrameCallSiteSp(reinterpret_cast<JSTaggedType *>(fp), curPc);
 
     for (auto &info: *infos) {
         if (info.first == GCStackMapRegisters::SP) {
@@ -138,7 +138,8 @@ bool LLVMStackMapParser::IsDeriveredPointer(int callsitetime) const
 }
 
 bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp,
-    std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, uintptr_t> *data, [[maybe_unused]] bool isVerifying) const
+    std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, uintptr_t> *data, [[maybe_unused]] bool isVerifying,
+    uintptr_t curPc) const
 {
     const CallSiteInfo *infos = GetCallSiteInfoByPc(callSiteAddr);
     if (infos == nullptr) {
@@ -147,21 +148,14 @@ bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t 
 
     uintptr_t *fp = reinterpret_cast<uintptr_t *>(frameFp);
     uintptr_t callsiteFp = *fp;
-    uintptr_t callSiteSp = 0x0;
-    auto type = FrameHandler::GetFrameType(reinterpret_cast<JSTaggedType *>(frameFp));
-    if (type == FrameType::OPTIMIZED_JS_FUNCTION_FRAME || type == FrameType::OPTIMIZED_FRAME) {
-        callSiteSp = FrameHandler::GetPrevFrameCallSiteSp(reinterpret_cast<JSTaggedType *>(frameFp), callSiteAddr);
-    } else {
-        callSiteSp = FrameHandler::GetPrevFrameCallSiteSp(reinterpret_cast<JSTaggedType *>(frameFp));
-    }
-
+    uintptr_t callSiteSp = FrameHandler::GetPrevFrameCallSiteSp(reinterpret_cast<JSTaggedType *>(frameFp), curPc);
     uintptr_t address = 0;
     uintptr_t base = 0;
     uintptr_t derived = 0;
     int i = 0;
 
     if (IsLogEnabled()) {
-        PrintCallSiteInfo(infos, fp, callSiteAddr);
+        PrintCallSiteInfo(infos, fp, curPc);
     }
 
     for (auto &info: *infos) {
