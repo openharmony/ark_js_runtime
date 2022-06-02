@@ -23,14 +23,22 @@ void StubFileGenerator::CollectAsmStubCodeInfo(std::map<uintptr_t, std::string> 
 {
     uintptr_t codeBegin = asmModule_.GetCodeBufferOffset();
     auto asmCallSigns = asmModule_.GetCSigns();
+    uint32_t funSize = 0;
     for (size_t i = 0; i < asmModule_.GetFunctionCount(); i++) {
         auto cs = asmCallSigns[i];
         auto entryOffset = asmModule_.GetFunction(cs->GetID());
-        stubInfo_.AddStubEntry(cs->GetTargetKind(), cs->GetID(), entryOffset + codeBegin, 0);
+        if (i < asmModule_.GetFunctionCount() - 1) {
+            auto nextcs = asmCallSigns[i + 1];
+            funSize = asmModule_.GetFunction(nextcs->GetID()) - entryOffset;
+        } else {
+            funSize = asmModule_.GetBufferSize() - entryOffset;
+        }
+        stubInfo_.AddStubEntry(cs->GetTargetKind(), cs->GetID(), entryOffset + codeBegin, 0, 0, funSize);
         ASSERT(!cs->GetName().empty());
         auto codeBuffer = modulePackage_[0].GetCodeBuffer();
         uintptr_t entry = codeBuffer + entryOffset + codeBegin;
         addr2name[entry] = cs->GetName();
+        DisassembleEachFunc(addr2name);
     }
 }
 
@@ -38,7 +46,7 @@ void StubFileGenerator::CollectCodeInfo()
 {
     std::map<uintptr_t, std::string> addr2name;
     for (size_t i = 0; i < modulePackage_.size(); i++) {
-        modulePackage_[i].CollectFuncEntryInfo(addr2name, stubInfo_, i);
+        modulePackage_[i].CollectFuncEntryInfo(addr2name, stubInfo_, i, GetLog());
         if (i == 0) {
             CollectAsmStubCodeInfo(addr2name);
         }
@@ -52,7 +60,7 @@ void AOTFileGenerator::CollectCodeInfo()
 {
     std::map<uintptr_t, std::string> addr2name;
     for (size_t i = 0; i < modulePackage_.size(); i++) {
-        modulePackage_[i].CollectFuncEntryInfo(addr2name, aotInfo_, i);
+        modulePackage_[i].CollectFuncEntryInfo(addr2name, aotInfo_, i, GetLog());
         auto des = modulePackage_[i].GetModuleSectionDes();
         aotInfo_.AddModuleDes(des, aotfileHashs_[i]);
     }

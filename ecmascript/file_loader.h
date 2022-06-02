@@ -95,6 +95,8 @@ public:
         CallSignature::TargetKind kind_;
         uint32_t indexInKind_;
         uint32_t moduleIndex_;
+        int fpDeltaPrevFramSp_;
+        uint32_t funcSize_;
         bool IsStub() const
         {
             return CallSignature::TargetKind::STUB_BEGIN <= kind_ && kind_ < CallSignature::TargetKind::STUB_END;
@@ -154,13 +156,16 @@ public:
         entryNum_ = n;
     }
 
-    void AddStubEntry(CallSignature::TargetKind kind, int indexInKind, uint64_t offset, uint32_t moduleIndex)
+    void AddStubEntry(CallSignature::TargetKind kind, int indexInKind, uint64_t offset,
+    uint32_t moduleIndex, int delta, uint32_t size)
     {
         FuncEntryDes des;
         des.kind_ = kind;
         des.indexInKind_ = static_cast<uint32_t>(indexInKind);
         des.codeAddr_ = offset;
         des.moduleIndex_ = moduleIndex;
+        des.fpDeltaPrevFramSp_ = delta;
+        des.funcSize_ = size;
         entries_.emplace_back(des);
     }
 

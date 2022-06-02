@@ -193,7 +193,7 @@ void AssemblerStubsX64::OptimizedCallOptimized(ExtendedAssembler *assembler)
     Label lPopFrame1;
     __ Pushq(rbp);
     __ Movq(rsp, rbp);
-    __ Pushq(static_cast<int32_t>(FrameType::OPTIMIZED_FRAME));
+    __ Pushq(static_cast<int32_t>(FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME));
     // callee save
     __ Pushq(r14);
     __ Pushq(rbx);
@@ -402,7 +402,7 @@ void AssemblerStubsX64::JSCallWithArgV(ExtendedAssembler *assembler)
     {
         __ Pushq(rbp);
         __ Movq(rsp, rbp); // set frame pointer
-        __ Pushq(static_cast<int32_t>(FrameType::OPTIMIZED_FRAME)); // set frame type
+        __ Pushq(static_cast<int32_t>(FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME)); // set frame type
         __ Movq(MessageString::Message_NonCallable, rax);
         __ Pushq(rax); // message id
         __ Pushq(1); // argc
@@ -473,7 +473,7 @@ void AssemblerStubsX64::JSCallWithArgV(ExtendedAssembler *assembler)
     {
         __ Pushq(rbp);
         __ Movq(rsp, rbp);
-        __ Pushq(static_cast<int32_t>(FrameType::OPTIMIZED_FRAME));
+        __ Pushq(static_cast<int32_t>(FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME));
         __ Pushq(r10); // callee save
         __ Movq(rsp, rdx);
         __ Addq(32, rdx); // 32: sp + 32 argv
@@ -653,7 +653,7 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
     {
         __ Pushq(rbp);
         __ Movq(rsp, rbp); // set frame pointer
-        __ Pushq(static_cast<int32_t>(FrameType::OPTIMIZED_FRAME)); // set frame type
+        __ Pushq(static_cast<int32_t>(FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME)); // set frame type
         __ Movq(MessageString::Message_NonCallable, rax);
         __ Pushq(rax); // message id
         __ Pushq(1); // argc
@@ -724,7 +724,7 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
     {
         __ Pushq(rbp);
         __ Movq(rsp, rbp);
-        __ Pushq(static_cast<int32_t>(FrameType::OPTIMIZED_FRAME));
+        __ Pushq(static_cast<int32_t>(FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME));
         __ Pushq(r10); // callee save
         __ Movq(rsp, rdx);
         __ Addq(32, rdx); // 32: sp + 32 argv

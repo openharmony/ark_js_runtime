@@ -32,6 +32,10 @@ using DwarfRegAndOffsetType = std::pair<DwarfRegType, OffsetType>;
 using CallSiteInfo = std::vector<DwarfRegAndOffsetType>;
 using Fun2InfoType = std::pair<uintptr_t, DwarfRegAndOffsetType>;
 using Pc2CallSiteInfo = std::unordered_map<uintptr_t, CallSiteInfo>;
+using FpDelta = std::pair<int, uint32_t>;
+using Func2FpDelta = std::unordered_map<uintptr_t, FpDelta>; // value: fpDelta & funcSize
+using ConstInfo = std::vector<OffsetType>;
+using Pc2ConstInfo = std::unordered_map<uintptr_t, ConstInfo>;
 
 struct Header {
     uint8_t  stackmapversion; // Stack Map Version (current version is 3)
@@ -89,6 +93,7 @@ struct  LocationTy {
         CONSTANT = 4,
         CONSTANTNDEX = 5,
     };
+    static constexpr int CONSTANT_FIRST_ELEMENT_INDEX = 3;
     Kind location;
     uint8_t Reserved_0;
     uint16_t LocationSize;
@@ -211,35 +216,51 @@ public:
         return enableLog_;
     }
 
+    void PUBLIC_API CalculateFuncFpDelta(Func2FpDelta info);
+    int PUBLIC_API GetFuncFpDelta(uintptr_t callsitePc) const;
+    ConstInfo GetConstInfo(uintptr_t callsite)
+    {
+        // next optimization can be performed via sorted/map to accelerate the search
+        for (auto &pc2ConstInfo : pc2ConstInfoVec_) {
+            auto it = pc2ConstInfo.find(callsite);
+            if (it != pc2ConstInfo.end()) {
+                return pc2ConstInfo[callsite];
+            }
+        }
+        return {};
+    }
+
 private:
     explicit LLVMStackMapParser(bool enableLog)
     {
-        stackMapAddr_ = nullptr;
-        pc2CallSiteInfo_.clear();
         pc2CallSiteInfoVec_.clear();
         dataInfo_ = nullptr;
         enableLog_ = enableLog;
+        funAddr_.clear();
+        fun2FpDelta_.clear();
+        pc2ConstInfoVec_.clear();
     }
     ~LLVMStackMapParser()
     {
-        if (stackMapAddr_) {
-            stackMapAddr_.release();
-        }
-        pc2CallSiteInfo_.clear();
         pc2CallSiteInfoVec_.clear();
         dataInfo_ = nullptr;
+        funAddr_.clear();
+        fun2FpDelta_.clear();
+        pc2ConstInfoVec_.clear();
     }
     void CalcCallSite();
     bool IsDeriveredPointer(int callsitetime) const;
     void PrintCallSiteInfo(const CallSiteInfo *infos, OptimizedLeaveFrame *frame) const;
-    void PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp) const;
+    void PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp, uintptr_t callSiteAddr) const;
+    int FindFpDelta(uintptr_t funcAddr, uintptr_t callsitePc) const;
 
-    std::unique_ptr<uint8_t[]> stackMapAddr_;
     struct LLVMStackMap llvmStackMap_;
-    Pc2CallSiteInfo pc2CallSiteInfo_;
     std::vector<Pc2CallSiteInfo> pc2CallSiteInfoVec_;
     [[maybe_unused]] std::unique_ptr<DataInfo> dataInfo_;
     bool enableLog_ {false};
+    std::set<uintptr_t> funAddr_;
+    std::vector<Func2FpDelta> fun2FpDelta_;
+    std::vector<Pc2ConstInfo> pc2ConstInfoVec_;
 };
 } // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_LLVM_LLVMSTACKPARSE_H
