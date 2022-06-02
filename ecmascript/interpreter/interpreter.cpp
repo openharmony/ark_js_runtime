@@ -44,15 +44,7 @@ EcmaRuntimeCallInfo EcmaInterpreter::NewRuntimeCallInfo(
     JSTaggedType *newSp;
     JSTaggedType *prevSp = sp;
     if (thread->IsAsmInterpreter()) {
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
         newSp = FrameHandler::GetInterpretedEntryFrameStart(sp);
-#else
-        newSp = sp - AsmInterpretedFrame::NumOfMembers();  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        auto leaveFrame = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
-        if (leaveFrame != nullptr) {
-            prevSp = leaveFrame;
-        }
-#endif
     } else {
         newSp = sp - InterpretedFrame::NumOfMembers();  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     }

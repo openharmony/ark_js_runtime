@@ -41,13 +41,9 @@ void FrameHandler::PrevFrame()
         case FrameType::ASM_INTERPRETER_FRAME: {
             auto frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
             sp_ = frame->GetPrevFrameFp();
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
-            if (thread_->IsAsmInterpreter() &&
-                sp_ != nullptr &&
-                GetFrameType() != FrameType::ASM_INTERPRETER_ENTRY_FRAME) {
+            if (thread_->IsAsmInterpreter()) {
                 fp_ = frame->GetCurrentFramePointer();
             }
-#endif
             break;
         }
         case FrameType::INTERPRETER_CONSTRUCTOR_FRAME: {
@@ -180,12 +176,10 @@ JSTaggedType* FrameHandler::GetPrevInterpretedFrame()
 
 uint32_t FrameHandler::GetNumberArgs()
 {
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
     if (thread_->IsAsmInterpreter()) {
         auto *frame = AsmInterpretedFrame::GetFrameFromSp(sp_);
         return static_cast<uint32_t>(frame->GetCurrentFramePointer() - sp_);
     }
-#endif
     ASSERT(IsInterpretedFrame());
     JSTaggedType *prevSp = nullptr;
     if (IsAsmInterpretedFrame()) {
@@ -402,7 +396,6 @@ ARK_INLINE void FrameHandler::AsmInterpretedFrameIterate(const JSTaggedType *sp,
                                                          const RootVisitor &v0,
                                                          const RootRangeVisitor &v1) const
 {
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
     AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp);
     uintptr_t start = ToUintPtr(sp);
     uintptr_t end = ToUintPtr(frame->GetCurrentFramePointer());
@@ -412,22 +405,6 @@ ARK_INLINE void FrameHandler::AsmInterpretedFrameIterate(const JSTaggedType *sp,
         v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->acc)));
         v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->env)));
     }
-#else
-    AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp);
-    if (frame->function == JSTaggedValue::Hole()) {
-        return;
-    }
-
-    JSTaggedType *prevSp = frame->GetPrevFrameFp();
-    uintptr_t start = ToUintPtr(sp);
-    uintptr_t end = GetInterpretedFrameEnd(prevSp);
-    v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
-    v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->function)));
-    if (frame->pc != nullptr) {
-        v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->acc)));
-        v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->env)));
-    }
-#endif  // ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
 }
 
 ARK_INLINE void FrameHandler::BuiltinFrameIterate(const JSTaggedType *sp,
@@ -631,13 +608,11 @@ void FrameHandler::IterateSp(const RootVisitor &v0, const RootRangeVisitor &v1) 
 
 void FrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
 {
-#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_RSP_STACK
     if (thread_->IsAsmInterpreter()) {
         IterateSp(v0, v1);
         IterateRsp(v0, v1);
         return;
     }
-#endif
     JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
     FrameType frameType = FrameHandler::GetFrameType(current);
     if (frameType != FrameType::INTERPRETER_ENTRY_FRAME) {
