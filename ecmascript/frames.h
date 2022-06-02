@@ -17,7 +17,6 @@
 #define ECMASCRIPT_FRAMES_H
 
 #include "ecmascript/js_tagged_value.h"
-#include "ecmascript/trampoline/asm_defines.h"
 
 // Frame Layout
 // Interpreter Frame(alias   **iframe** ) Layout as follow:
