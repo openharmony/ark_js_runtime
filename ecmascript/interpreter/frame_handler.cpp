@@ -33,6 +33,16 @@ void FrameHandler::PrevFrame()
             sp_ = frame->GetPrevFrameFp();
             break;
         }
+        case FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME: {
+            auto frame = OptimizedJSFunctionArgConfigFrame::GetFrameFromSp(sp_);
+            sp_ = frame->GetPrevFrameFp();
+            break;
+        }
+        case FrameType::OPTIMIZED_JS_FUNCTION_FRAME: {
+            auto frame = OptimizedJSFunctionFrame::GetFrameFromSp(sp_);
+            sp_ = frame->GetPrevFrameFp();
+            break;
+        }
         case FrameType::OPTIMIZED_ENTRY_FRAME: {
             auto frame = OptimizedEntryFrame::GetFrameFromSp(sp_);
             sp_ = frame->GetPrevFrameFp();
@@ -95,7 +105,7 @@ void FrameHandler::PrevFrame()
     }
 }
 
-uintptr_t FrameHandler::GetPrevFrameCallSiteSp(const JSTaggedType *sp)
+uintptr_t FrameHandler::GetPrevFrameCallSiteSp(const JSTaggedType *sp, uintptr_t callSiteAddr)
 {
     if (sp == nullptr) {
         return 0U;
@@ -119,11 +129,11 @@ uintptr_t FrameHandler::GetPrevFrameCallSiteSp(const JSTaggedType *sp)
             auto frame = BuiltinFrame::GetFrameFromSp(sp);
             return frame->GetCallSiteSp();
         }
-        case FrameType::OPTIMIZED_FRAME: {
-            auto frame = OptimizedFrame::GetFrameFromSp(sp);
-            sp = frame->GetPrevFrameFp();
-            type = GetFrameType(sp);
-            break;
+        case FrameType::OPTIMIZED_FRAME:
+        case FrameType::OPTIMIZED_JS_FUNCTION_FRAME: {
+            auto callSiteSp = reinterpret_cast<uintptr_t>(sp) +
+                kungfu::LLVMStackMapParser::GetInstance().GetFuncFpDelta(callSiteAddr);
+            return callSiteSp;
         }
         case FrameType::BUILTIN_ENTRY_FRAME:
         case FrameType::ASM_INTERPRETER_FRAME:
@@ -138,14 +148,6 @@ uintptr_t FrameHandler::GetPrevFrameCallSiteSp(const JSTaggedType *sp)
             UNREACHABLE();
         }
     }
-
-    if (type == FrameType::OPTIMIZED_FRAME) {
-        auto frame = OptimizedFrame::GetFrameFromSp(sp);
-        return frame->GetCallSiteSp();
-    }
-
-    auto frame = AsmInterpretedFrame::GetFrameFromSp(sp);
-    return frame->GetCallSiteSp();
 }
 
 ARK_INLINE void FrameHandler::AdvanceToInterpretedFrame()
@@ -487,11 +489,49 @@ ARK_INLINE void FrameHandler::InterpretedEntryFrameIterate(const JSTaggedType *s
 }
 
 ARK_INLINE void FrameHandler::OptimizedFrameIterate(const JSTaggedType *sp,
-                                                    const RootVisitor &v0,
-                                                    [[maybe_unused]] const RootRangeVisitor &v1,
-                                                    ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
-                                                    bool isVerifying) const
+    const RootVisitor &v0,
+    [[maybe_unused]] const RootRangeVisitor &v1,
+    ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
+    bool isVerifying) const
 {
+    std::set<uintptr_t> slotAddrs;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    auto returnAddr =
+        reinterpret_cast<uintptr_t>(*(reinterpret_cast<uintptr_t*>(const_cast<JSTaggedType *>(sp)) + 1));
+    bool enableCompilerLog = thread_->GetEcmaVM()->GetJSOptions().WasSetlogCompiledMethods();
+    bool ret = kungfu::LLVMStackMapParser::GetInstance(enableCompilerLog).CollectStackMapSlots(
+        returnAddr, reinterpret_cast<uintptr_t>(sp), slotAddrs, derivedPointers, isVerifying);
+    if (!ret) {
+#ifndef NDEBUG
+        LOG_ECMA(DEBUG) << " stackmap don't found returnAddr " << returnAddr;
+#endif
+        return;
+    }
+
+    for (const auto &slot : slotAddrs) {
+        v0(Root::ROOT_FRAME, ObjectSlot(slot));
+    }
+}
+
+ARK_INLINE void FrameHandler::OptimizedJSFunctionFrameIterate(const JSTaggedType *sp,
+    const RootVisitor &v0,
+    [[maybe_unused]] const RootRangeVisitor &v1,
+    ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
+    bool isVerifying)
+{
+    OptimizedJSFunctionFrame *frame = OptimizedJSFunctionFrame::GetFrameFromSp(sp);
+    auto currentPc = optimizedReturnAddr_;
+    optimizedReturnAddr_ = frame->returnAddr;
+    int delta = kungfu::LLVMStackMapParser::GetInstance().GetFuncFpDelta(currentPc);
+    uintptr_t *preFrameSp = frame->ComputePrevFrameSp(sp, delta);
+
+    auto argc = *(reinterpret_cast<uint64_t *>(preFrameSp));
+    JSTaggedType *argv = frame->GetArgv(preFrameSp);
+    if (argc > 0) {
+        uintptr_t start = ToUintPtr(argv); // argv
+        uintptr_t end = ToUintPtr(argv + argc);
+        v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
+    }
     std::set<uintptr_t> slotAddrs;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     auto returnAddr =
@@ -515,10 +555,11 @@ ARK_INLINE void FrameHandler::OptimizedEntryFrameIterate(const JSTaggedType *sp,
                                                          const RootVisitor &v0,
                                                          [[maybe_unused]] const RootRangeVisitor &v1,
                                                          ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
-                                                         bool isVerifying) const
+                                                         bool isVerifying)
 {
     std::set<uintptr_t> slotAddrs;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    optimizedReturnAddr_ = 0;
     auto returnAddr = reinterpret_cast<uintptr_t>(*(reinterpret_cast<uintptr_t*>(const_cast<JSTaggedType *>(sp)) + 1));
     bool enableCompilerLog = thread_->GetEcmaVM()->GetJSOptions().WasSetlogCompiledMethods();
     bool ret = kungfu::LLVMStackMapParser::GetInstance(enableCompilerLog).CollectStackMapSlots(
@@ -539,9 +580,10 @@ ARK_INLINE void FrameHandler::OptimizedLeaveFrameIterate(const JSTaggedType *sp,
                                                          const RootVisitor &v0,
                                                          [[maybe_unused]] const RootRangeVisitor &v1,
                                                          ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
-                                                         bool isVerifying) const
+                                                         bool isVerifying)
 {
     OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(sp);
+    optimizedReturnAddr_ = frame->returnAddr;
     if (frame->argc > 0) {
         JSTaggedType *argv = reinterpret_cast<JSTaggedType *>(&frame->argc + 1);
         uintptr_t start = ToUintPtr(argv); // argv
@@ -565,9 +607,10 @@ ARK_INLINE void FrameHandler::OptimizedWithArgvLeaveFrameIterate(const JSTaggedT
                                                                  const RootVisitor &v0,
                                                                  [[maybe_unused]] const RootRangeVisitor &v1,
                                                                  ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
-                                                                 bool isVerifying) const
+                                                                 bool isVerifying)
 {
     OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(sp);
+    optimizedReturnAddr_ = frame->returnAddr;
     if (frame->argc > 0) {
         uintptr_t* argvPtr = reinterpret_cast<uintptr_t *>(&frame->argc + 1);
         JSTaggedType *argv = reinterpret_cast<JSTaggedType *>(*argvPtr);
@@ -588,13 +631,13 @@ ARK_INLINE void FrameHandler::OptimizedWithArgvLeaveFrameIterate(const JSTaggedT
     }
 }
 
-void FrameHandler::IterateRsp(const RootVisitor &v0, const RootRangeVisitor &v1) const
+void FrameHandler::IterateRsp(const RootVisitor &v0, const RootRangeVisitor &v1)
 {
     JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
     IterateFrameChain(current, v0, v1);
 }
 
-void FrameHandler::IterateSp(const RootVisitor &v0, const RootRangeVisitor &v1) const
+void FrameHandler::IterateSp(const RootVisitor &v0, const RootRangeVisitor &v1)
 {
     JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
     while (current) {
@@ -606,7 +649,7 @@ void FrameHandler::IterateSp(const RootVisitor &v0, const RootRangeVisitor &v1) 
     }
 }
 
-void FrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
+void FrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
 {
     if (thread_->IsAsmInterpreter()) {
         IterateSp(v0, v1);
@@ -624,7 +667,7 @@ void FrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) co
     IterateFrameChain(current, v0, v1);
 }
 
-void FrameHandler::IterateFrameChain(JSTaggedType *start, const RootVisitor &v0, const RootRangeVisitor &v1) const
+void FrameHandler::IterateFrameChain(JSTaggedType *start, const RootVisitor &v0, const RootRangeVisitor &v1)
 {
     ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers = thread_->GetEcmaVM()->GetHeap()->GetDerivedPointers();
     bool isVerifying = false;
@@ -638,8 +681,22 @@ void FrameHandler::IterateFrameChain(JSTaggedType *start, const RootVisitor &v0,
         switch (type) {
             case FrameType::OPTIMIZED_FRAME: {
                 auto frame = OptimizedFrame::GetFrameFromSp(current);
+                auto prevFrame = frame->GetPrevFrameFp();
                 OptimizedFrameIterate(current, v0, v1, derivedPointers, isVerifying);
+                current = prevFrame;
+                break;
+            }
+            case FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME: {
+                OptimizedJSFunctionFrame *frame = OptimizedJSFunctionFrame::GetFrameFromSp(current);
+                optimizedReturnAddr_ = frame->returnAddr;
                 current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::OPTIMIZED_JS_FUNCTION_FRAME: {
+                auto frame = OptimizedJSFunctionFrame::GetFrameFromSp(current);
+                auto prevFrame = frame->GetPrevFrameFp();
+                OptimizedJSFunctionFrameIterate(current, v0, v1, derivedPointers, isVerifying);
+                current = prevFrame;
                 break;
             }
             case FrameType::OPTIMIZED_ENTRY_FRAME: {

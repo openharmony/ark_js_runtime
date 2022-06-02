@@ -105,6 +105,17 @@ bool StubModulePackInfo::Load(EcmaVM *vm, const std::string &filename)
                 des_[i].GetHostCodeSecAddr(), startAddr);
         }
     }
+    for (auto &funcEntryDes : GetStubs()) {
+        auto codeAddr = funcEntryDes.codeAddr_; // offset
+        auto moduleIndex = funcEntryDes.moduleIndex_;
+        auto startAddr = des_[moduleIndex].GetDeviceCodeSecAddr();
+        auto delta = funcEntryDes.fpDeltaPrevFramSp_;
+        uintptr_t funAddr = startAddr + codeAddr;
+        kungfu::Func2FpDelta fun2fpDelta;
+        auto funSize = funcEntryDes.funcSize_;
+        fun2fpDelta[funAddr] = std::make_pair(delta, funSize);
+        kungfu::LLVMStackMapParser::GetInstance().CalculateFuncFpDelta(fun2fpDelta);
+    }
     for (size_t i = 0; i < entries_.size(); i++) {
         auto des = des_[entries_[i].moduleIndex_];
         entries_[i].codeAddr_ += des.GetDeviceCodeSecAddr();
@@ -184,6 +195,18 @@ bool AOTModulePackInfo::Load(EcmaVM *vm, const std::string &filename)
                 des_[i].GetHostCodeSecAddr(), startAddr);
         }
     }
+    for (auto &funcEntryDes : GetStubs()) {
+        auto codeAddr = funcEntryDes.codeAddr_; // offset
+        auto moduleIndex = funcEntryDes.moduleIndex_;
+        auto delta = funcEntryDes.fpDeltaPrevFramSp_;
+        auto funSize = funcEntryDes.funcSize_;
+        auto startAddr = des_[moduleIndex].GetDeviceCodeSecAddr();
+        uintptr_t funAddr = startAddr + codeAddr;
+        kungfu::Func2FpDelta fun2fpDelta;
+        fun2fpDelta[funAddr] = std::make_pair(delta, funSize);
+        kungfu::LLVMStackMapParser::GetInstance().CalculateFuncFpDelta(fun2fpDelta);
+    }
+
     for (size_t i = 0; i < entries_.size(); i++) {
         auto des = des_[entries_[i].moduleIndex_];
         entries_[i].codeAddr_ += des.GetDeviceCodeSecAddr();

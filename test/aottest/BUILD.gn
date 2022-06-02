@@ -59,7 +59,8 @@ group("ark_aot_test") {
     "stownbyname:stownbynameAotAction",
     "stownbynamewithnameset:stownbynamewithnamesetAotAction",
     "stownbyvalue:stownbyvalueAotAction",
-    "stownbyvaluewithnameset:stownbyvaluewithnamesetAotAction",
+
+    #"stownbyvaluewithnameset:stownbyvaluewithnamesetAotAction",
     "strictequal:strictequalAotAction",
     "strictnotequal:strictnotequalAotAction",
     "sub:subAotAction",
