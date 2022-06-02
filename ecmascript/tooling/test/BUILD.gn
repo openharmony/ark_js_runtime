@@ -44,6 +44,30 @@ ts2abc_gen_abc("ark_sample_abc") {
   out_puts = [ test_abc_path ]
 }
 
+ts2abc_gen_abc("ark_asyncfunc_abc") {
+  test_js_path = "//ark/js_runtime/ecmascript/tooling/test/js/AsyncFunc.js"
+  test_abc_path = "$target_out_dir/AsyncFunc.abc"
+  extra_visibility = [ ":*" ]  # Only targets in this file can depend on this.
+  src_js = rebase_path(test_js_path)
+  dst_file = rebase_path(test_abc_path)
+  extra_args = [ "--debug" ]
+
+  in_puts = [ test_js_path ]
+  out_puts = [ test_abc_path ]
+}
+
+ts2abc_gen_abc("ark_arrowfunc_abc") {
+  test_js_path = "//ark/js_runtime/ecmascript/tooling/test/js/ArrowFunc.js"
+  test_abc_path = "$target_out_dir/ArrowFunc.abc"
+  extra_visibility = [ ":*" ]  # Only targets in this file can depend on this.
+  src_js = rebase_path(test_js_path)
+  dst_file = rebase_path(test_abc_path)
+  extra_args = [ "--debug" ]
+
+  in_puts = [ test_js_path ]
+  out_puts = [ test_abc_path ]
+}
+
 ts2abc_gen_abc("ark_exception_abc") {
   test_js_path = "//ark/js_runtime/ecmascript/tooling/test/js/exception.js"
   test_abc_path = "$target_out_dir/exception.abc"
@@ -62,6 +86,8 @@ source_set("debugger_entry_set") {
   public_configs = [ ":debug_api_test" ]
 
   deps = [
+    ":ark_arrowfunc_abc",
+    ":ark_asyncfunc_abc",
     ":ark_exception_abc",
     ":ark_sample_abc",
     ":jsdebugtest",
