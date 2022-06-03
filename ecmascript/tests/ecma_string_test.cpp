@@ -48,25 +48,8 @@ public:
 };
 
 /*
- * @tc.name: SetCompressedStringsEnabled
- * @tc.desc: Check whether the bool returned through calling GetCompressedStringsEnabled function is within
- * expectations after calling SetCompressedStringsEnabled function.
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F_L0(EcmaStringTest, SetCompressedStringsEnabled)
-{
-    EXPECT_TRUE(EcmaString::GetCompressedStringsEnabled());
-    EcmaString::SetCompressedStringsEnabled(false);
-    EXPECT_FALSE(EcmaString::GetCompressedStringsEnabled());
-    EcmaString::SetCompressedStringsEnabled(true);
-    EXPECT_TRUE(EcmaString::GetCompressedStringsEnabled());
-}
-
-/*
  * @tc.name: CanBeCompressed
- * @tc.desc: Check whether the bool returned through calling CanBeCompressed function is within expectations before and
- * after calling SetCompressedStringsEnabled function with false.
+ * @tc.desc: Check whether the bool returned through calling CanBeCompressed function is within expectations.
  * @tc.type: FUNC
  * @tc.require:
  */
@@ -78,19 +61,11 @@ HWTEST_F_L0(EcmaStringTest, CanBeCompressed)
     EXPECT_TRUE(EcmaString::CanBeCompressed(arrayU8, sizeof(arrayU8) / sizeof(arrayU8[0])));
     EXPECT_TRUE(EcmaString::CanBeCompressed(arrayU16Comp, sizeof(arrayU16Comp) / sizeof(arrayU16Comp[0])));
     EXPECT_FALSE(EcmaString::CanBeCompressed(arrayU16NotComp, sizeof(arrayU16Comp) / sizeof(arrayU16Comp[0])));
-
-    EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
-    EXPECT_FALSE(EcmaString::CanBeCompressed(arrayU16NotComp, sizeof(arrayU16Comp) / sizeof(arrayU16Comp[0])));
-    /* Set compressedStringsEnabled default, because it is a static boolean that some other functions rely on.The foll-
-     * owing HWTEST_F_L0 will come to an unexpected result if we do not set it default in the end of this HWTEST_F_L0.
-     */
-    EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 
 /*
  * @tc.name: CreateEmptyString
- * @tc.desc: Check whether the EcmaString created through calling CreateEmptyString function is within expectations
- * before and after calling SetCompressedStringsEnabled function with false.
+ * @tc.desc: Check whether the EcmaString created through calling CreateEmptyString function is within expectations.
  * @tc.type: FUNC
  * @tc.require:
  */
@@ -100,18 +75,11 @@ HWTEST_F_L0(EcmaStringTest, CreateEmptyString)
     EXPECT_EQ(handleEcmaStrEmpty->GetLength(), 0U);
     EXPECT_TRUE(handleEcmaStrEmpty->IsUtf8());
     EXPECT_FALSE(handleEcmaStrEmpty->IsUtf16());
-
-
-    EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
-    EXPECT_EQ(handleEcmaStrEmpty->GetLength(), 0U);
-    EXPECT_TRUE(handleEcmaStrEmpty->IsUtf16());
-    EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 
 /*
  * @tc.name: AllocStringObject
- * @tc.desc: Check whether the EcmaString created through calling AllocStringObject function is within expectations
- * before and after calling SetCompressedStringsEnabled function with false.
+ * @tc.desc: Check whether the EcmaString created through calling AllocStringObject function is within expectations.
  * @tc.type: FUNC
  * @tc.require:
  */
@@ -137,9 +105,6 @@ HWTEST_F_L0(EcmaStringTest, AllocStringObject)
     EXPECT_EQ(handleEcmaStrAllocNotComp->GetLength(), sizeAllocNotComp);
     EXPECT_FALSE(handleEcmaStrAllocNotComp->IsUtf8());
     EXPECT_TRUE(handleEcmaStrAllocNotComp->IsUtf16());
-    EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
-    EXPECT_TRUE(handleEcmaStrAllocNotComp->IsUtf16());
-    EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 
 /*
@@ -164,8 +129,7 @@ HWTEST_F_L0(EcmaStringTest, CreateFromUtf8)
 
 /*
  * @tc.name: CreateFromUtf16
- * @tc.desc: Check whether the EcmaString created through calling CreateFromUtf16 function is within expectations
- * before and after calling SetCompressedStringsEnabled function with false.
+ * @tc.desc: Check whether the EcmaString created through calling CreateFromUtf16 function is within expectations.
  * @tc.type: FUNC
  * @tc.require:
  */
@@ -188,9 +152,6 @@ HWTEST_F_L0(EcmaStringTest, CreateFromUtf16)
     EXPECT_EQ(handleEcmaStrU16NotComp->GetLength(), lengthEcmaStrU16NotComp);
     EXPECT_FALSE(handleEcmaStrU16NotComp->IsUtf8());
     EXPECT_TRUE(handleEcmaStrU16NotComp->IsUtf16());
-    EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
-    EXPECT_TRUE(handleEcmaStrU16NotComp->IsUtf16());
-    EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 
 /*
@@ -568,42 +529,6 @@ HWTEST_F_L0(EcmaStringTest, Concat_003)
         EXPECT_EQ(handleEcmaStrConcatU8U16NotComp->At(i + lengthEcmaStrFrontU8), arrayBackU16NotComp[i]);
     }
     EXPECT_EQ(handleEcmaStrConcatU8U16NotComp->GetLength(), lengthEcmaStrFrontU8 + lengthEcmaStrBackU16NotComp);
-}
-
-/*
- * @tc.name: Concat_004
- * @tc.desc: Call SetCompressedStringsEnabled() function with false, check whether the EcmaString returned through
- * calling Concat function between EcmaString made by CreateFromUtf8() and EcmaString made by
- * CreateFromUtf16( , , , false) is within expectations.
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F_L0(EcmaStringTest, Concat_004)
-{
-    /* Concat() after SetCompressedStringsEnabled(false). EcmaString made by CreateFromUtf16( , , , false) and
-     * EcmaString made by CreateFromUtf16( , , , false).
-     */
-    // CompressedStringEnabled cannot be changed
-    uint16_t arrayFrontU16NotComp[] = {128, 129, 256, 11100, 65535, 100};
-    uint16_t arrayBackU16NotComp[] = {88, 768, 1, 270, 345, 333};
-    uint32_t lengthEcmaStrFrontU16NotComp = sizeof(arrayFrontU16NotComp) / sizeof(arrayFrontU16NotComp[0]);
-    uint32_t lengthEcmaStrBackU16NotComp = sizeof(arrayBackU16NotComp) / sizeof(arrayBackU16NotComp[0]);
-    JSHandle<EcmaString> handleEcmaStrFrontU16NotComp(thread,
-        EcmaString::CreateFromUtf16(&arrayFrontU16NotComp[0], lengthEcmaStrFrontU16NotComp, ecmaVMPtr, false));
-    JSHandle<EcmaString> handleEcmaStrBackU16NotComp(thread,
-        EcmaString::CreateFromUtf16(&arrayBackU16NotComp[0], lengthEcmaStrBackU16NotComp, ecmaVMPtr, false));
-    JSHandle<EcmaString> handleEcmaStrConcatU16NotCompAfterSetFalse(thread,
-        EcmaString::Concat(handleEcmaStrFrontU16NotComp, handleEcmaStrBackU16NotComp, ecmaVMPtr));
-    EXPECT_TRUE(handleEcmaStrConcatU16NotCompAfterSetFalse->IsUtf16());
-    for (uint32_t i = 0; i < lengthEcmaStrFrontU16NotComp; i++) {
-        EXPECT_EQ(handleEcmaStrConcatU16NotCompAfterSetFalse->At(i), arrayFrontU16NotComp[i]);
-    }
-    for (uint32_t i = 0; i < lengthEcmaStrBackU16NotComp; i++) {
-        EXPECT_EQ(handleEcmaStrConcatU16NotCompAfterSetFalse->At(i + lengthEcmaStrFrontU16NotComp),
-            arrayBackU16NotComp[i]);
-    }
-    EXPECT_EQ(handleEcmaStrConcatU16NotCompAfterSetFalse->GetLength(),
-        lengthEcmaStrFrontU16NotComp + lengthEcmaStrBackU16NotComp);
 }
 
 /*
@@ -1666,8 +1591,7 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_002)
 /*
  * @tc.name: GetHashcode_003
  * @tc.desc: Check whether the value returned through an EcmaString made by CreateFromUtf16( , , , false) calling
- * GetHashcode function is within expectations before and after calling SetCompressedStringsEnabled function with
- * false.
+ * GetHashcode function is within expectations.
  * @tc.type: FUNC
  * @tc.require:
  */
@@ -1683,15 +1607,12 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_003)
         hashExpect = hashExpect * 31 + arrayU16NotComp[i];
     }
     EXPECT_EQ(handleEcmaStrU16NotComp->GetHashcode(), hashExpect);
-    EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
-    EXPECT_EQ(handleEcmaStrU16NotComp->GetHashcode(), hashExpect);
-    EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 
 /*
  * @tc.name: GetHashcode_004
  * @tc.desc: Check whether the value returned through an EcmaString made by CreateEmptyString() calling GetHashcode
- * function is within expectations before and after calling SetCompressedStringsEnabled function with false.
+ * function is within expectations.
  * @tc.type: FUNC
  * @tc.require:
  */
@@ -1700,17 +1621,12 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_004)
     // GetHashcode(). EcmaString made by CreateEmptyString().
     JSHandle<EcmaString> handleEcmaStrEmpty(thread, EcmaString::CreateEmptyString(ecmaVMPtr));
     EXPECT_EQ(handleEcmaStrEmpty->GetHashcode(), 0U);
-
-    EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
-    EXPECT_EQ(handleEcmaStrEmpty->GetHashcode(), 0U);
-    EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 
 /*
  * @tc.name: GetHashcode_005
  * @tc.desc: Check whether the value returned through an EcmaString made by AllocStringObject(, true/false, ) calling
- * GetHashcode function is within expectations before and after calling SetCompressedStringsEnabled function with
- * false.
+ * GetHashcode function is within expectations.
  * @tc.type: FUNC
  * @tc.require:
  */
@@ -1722,10 +1638,6 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_005)
     JSHandle<EcmaString> handleEcmaStrAllocNotComp(thread, EcmaString::AllocStringObject(sizeAlloc, false, ecmaVMPtr));
     EXPECT_EQ(handleEcmaStrAllocComp->GetHashcode(), 0U);
     EXPECT_EQ(handleEcmaStrAllocNotComp->GetHashcode(), 0U);
-
-    EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
-    EXPECT_EQ(handleEcmaStrAllocNotComp->GetHashcode(), 0U);
-    EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 
 /*
