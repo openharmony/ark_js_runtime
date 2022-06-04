@@ -15,6 +15,7 @@
 #ifndef ECMASCRIPT_COMPILER_FILE_GENERATORS_H
 #define ECMASCRIPT_COMPILER_FILE_GENERATORS_H
 
+#include <tuple>
 #include "ecmascript/compiler/assembler_module.h"
 #include "ecmascript/compiler/compiler_log.h"
 #include "ecmascript/compiler/llvm_codegen.h"
@@ -32,35 +33,71 @@ public:
     }
 
     void CollectFuncEntryInfo(std::map<uintptr_t, std::string> &addr2name, StubModulePackInfo &stubInfo,
-        uint32_t moduleIndex)
+        uint32_t moduleIndex, const CompilerLog &log)
     {
         auto codeBuff = assembler_->GetCodeBuffer();
         auto engine = assembler_->GetEngine();
         auto callSigns = llvmModule_->GetCSigns();
+        std::map<uintptr_t, int> addr2FpToPrevFrameSpDelta;
+        std::vector<uint64_t> funSizeVec;
+        std::vector<uintptr_t> entrys;
         for (size_t j = 0; j < llvmModule_->GetFuncCount(); j++) {
-            auto cs = callSigns[j];
             LLVMValueRef func = llvmModule_->GetFunction(j);
             ASSERT(func != nullptr);
             uintptr_t entry = reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, func));
-            stubInfo.AddStubEntry(cs->GetTargetKind(), cs->GetID(), entry - codeBuff, moduleIndex);
-            ASSERT(!cs->GetName().empty());
-            addr2name[entry] = cs->GetName();
+            entrys.push_back(entry);
         }
+        const size_t funcCount = llvmModule_->GetFuncCount();
+        for (size_t j = 0; j < funcCount; j++) {
+            auto cs = callSigns[j];
+            LLVMValueRef func = llvmModule_->GetFunction(j);
+            ASSERT(func != nullptr);
+            int delta = assembler_->GetFpDeltaPrevFramSp(func, log);
+            ASSERT(delta >= 0 && (delta % sizeof(uintptr_t) == 0));
+            uint32_t funcSize = 0;
+            if (j < funcCount - 1) {
+                funcSize = entrys[j + 1] - entrys[j];
+            } else {
+                funcSize = codeBuff + assembler_->GetCodeSize() - entrys[j];
+            }
+            stubInfo.AddStubEntry(cs->GetTargetKind(), cs->GetID(), entrys[j] - codeBuff, moduleIndex, delta, funcSize);
+            ASSERT(!cs->GetName().empty());
+            addr2name[entrys[j]] = cs->GetName();
+        }
+        // GetCodeSize
     }
     void CollectFuncEntryInfo(std::map<uintptr_t, std::string> &addr2name, AOTModulePackInfo &aotInfo,
-        uint32_t moduleIndex)
+        uint32_t moduleIndex, const CompilerLog &log)
     {
         auto codeBuff = assembler_->GetCodeBuffer();
         auto engine = assembler_->GetEngine();
+        std::vector<std::tuple<uint64_t, size_t, int>> funcInfo; // entry、idx、delta
         llvmModule_->IteratefuncIndexMap([&](size_t idx, LLVMValueRef func) {
             uint64_t funcEntry = reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, func));
             uint64_t length = 0;
             std::string funcName(LLVMGetValueName2(func, &length));
             assert(length != 0);
             COMPILER_LOG(INFO) << "CollectCodeInfo for AOT func: " << funcName.c_str();
-            aotInfo.AddStubEntry(CallSignature::TargetKind::JSFUNCTION, idx, funcEntry - codeBuff, moduleIndex);
             addr2name[funcEntry] = funcName;
+            int delta = assembler_->GetFpDeltaPrevFramSp(func, log);
+            ASSERT(delta >= 0 && (delta % sizeof(uintptr_t) == 0));
+            funcInfo.emplace_back(std::tuple(funcEntry, idx, delta));
         });
+        const size_t funcCount = funcInfo.size();
+        for (size_t i = 0; i < funcInfo.size(); i++) {
+            uint64_t funcEntry;
+            size_t idx;
+            int delta;
+            uint32_t funcSize;
+            std::tie(funcEntry, idx, delta) = funcInfo[i];
+            if (i < funcCount - 1) {
+                funcSize = std::get<0>(funcInfo[i + 1]) - funcEntry;
+            } else {
+                funcSize = codeBuff + assembler_->GetCodeSize() - funcEntry;
+            }
+            aotInfo.AddStubEntry(CallSignature::TargetKind::JSFUNCTION, idx,
+                funcEntry - codeBuff, moduleIndex, delta, funcSize);
+        }
     }
 
     ModuleSectionDes GetModuleSectionDes()
@@ -126,9 +163,9 @@ public:
     explicit FileGenerator(const CompilerLog *log) : log_(log) {};
     virtual ~FileGenerator() = default;
 
-    const CompilerLog *GetLog() const
+    const CompilerLog GetLog() const
     {
-        return log_;
+        return *log_;
     }
 protected:
     std::vector<Module> modulePackage_ {};

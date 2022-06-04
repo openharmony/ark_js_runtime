@@ -609,7 +609,6 @@ private:
     bool gcState_ {false};
     bool isAsmInterpreter_ {false};
     VmThreadControl *vmThreadControl_ {nullptr};
-
     bool stableArrayElementsGuardians_ {true};
     GlueData glueData_;
 

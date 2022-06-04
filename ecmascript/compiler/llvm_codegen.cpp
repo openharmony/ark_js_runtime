@@ -87,6 +87,7 @@ void LLVMIRGeneratorImpl::GenerateCode(Circuit *circuit, const ControlFlowGraph 
     const panda::ecmascript::JSMethod *method)
 {
     auto function = module_->AddFunc(method);
+    circuit->SetFrameType(FrameType::OPTIMIZED_JS_FUNCTION_FRAME);
     LLVMIRBuilder builder(&graph, circuit, module_, function, cfg, CallSignature::CallConv::WebKitJSCallConv,
                           enableLog_);
     builder.Build();
@@ -248,7 +249,26 @@ static const char *SymbolLookupCallback([[maybe_unused]] void *disInfo, [[maybe_
     return nullptr;
 }
 
-void LLVMAssembler::Disassemble(const std::map<uint64_t, std::string> &addr2name, const CompilerLog &log) const
+int LLVMAssembler::GetFpDeltaPrevFramSp(LLVMValueRef fn, const CompilerLog &log)
+{
+    int fpToCallerSpDelta = 0;
+    const char attrKey[] = "fpToCallerSpDelta"; // this key must consistent with llvm backend.
+    LLVMAttributeRef attrirbuteRef = LLVMGetStringAttributeAtIndex(fn,
+        llvm::AttributeList::FunctionIndex, attrKey, strlen(attrKey));
+    if (attrirbuteRef) {
+        llvm::Attribute attr = llvm::unwrap(attrirbuteRef);
+        auto value = attr.getValueAsString().data();
+        fpToCallerSpDelta = atoi(value);
+        if (log.IsAlwaysEnabled()) {
+            size_t length;
+            COMPILER_LOG(INFO) << " funcName: " << LLVMGetValueName2(fn, &length) << " fpToCallerSpDelta:"
+            << fpToCallerSpDelta;
+        }
+    }
+    return fpToCallerSpDelta;
+}
+
+void LLVMAssembler::Disassemble(const std::map<uintptr_t, std::string> &addr2name, const CompilerLog &log) const
 {
     LLVMDisasmContextRef dcr = LLVMCreateDisasm(LLVMGetTarget(module_), nullptr, 0, nullptr, SymbolLookupCallback);
     bool logFlag = false;
