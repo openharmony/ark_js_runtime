@@ -371,10 +371,14 @@ void LLVMIRBuilder::GenPrologue([[maybe_unused]] LLVMModuleRef &module, LLVMBuil
     LLVMValueRef addr = LLVMBuildIntToPtr(builder, frameTypeSlotAddr,
         LLVMPointerType(slotType_, 0), "frameType.Addr");
 
+    int reservedSlotsSize = slotSize_ * static_cast<int>(ReservedSlots::OPTIMIZED_RESERVED_SLOT);
     if (frameType == panda::ecmascript::FrameType::OPTIMIZED_FRAME) {
-        LLVMAddTargetDependentFunctionAttr(function_, "js-stub-call", "0");
-    } else if (frameType == panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME) {
-        LLVMAddTargetDependentFunctionAttr(function_, "js-stub-call", "1");
+        LLVMAddTargetDependentFunctionAttr(function_, "frame-reserved-slots",
+            std::to_string(reservedSlotsSize).c_str());
+    } else if (frameType == panda::ecmascript::FrameType::OPTIMIZED_JS_FUNCTION_FRAME) {
+        reservedSlotsSize = slotSize_ * static_cast<int>(ReservedSlots::OPTIMIZED_JS_FUNCTION_RESERVED_SLOT);
+        LLVMAddTargetDependentFunctionAttr(function_, "frame-reserved-slots",
+            std::to_string(reservedSlotsSize).c_str());
     } else {
         COMPILER_OPTIONAL_LOG(FATAL) << "frameType interpret type error !";
         ASSERT_PRINT(static_cast<uintptr_t>(frameType), "is not support !");
@@ -629,56 +633,6 @@ LLVMValueRef LLVMIRBuilder::GetCurrentSP()
     return spValue;
 }
 
-void LLVMIRBuilder::SaveCurrentSP()
-{
-    if (compCfg_->Is64Bit()) {
-        LLVMValueRef llvmFpAddr = CallingFp(module_, builder_, false);
-        LLVMValueRef frameAddr = LLVMBuildPtrToInt(builder_, llvmFpAddr, slotType_, "cast_int_t");
-        auto callSiteSpOffset = IsInterpreted() ?
-            AsmInterpretedFrame::GetCallSiteFpToSpDelta(compCfg_->Is32Bit()) :
-            OptimizedFrame::GetCallSiteFpToSpDelta(compCfg_->Is32Bit());
-        LLVMValueRef frameSpSlotAddr = LLVMBuildSub(builder_, frameAddr, LLVMConstInt(slotType_,
-            callSiteSpOffset, false), "");
-        LLVMValueRef addr = LLVMBuildIntToPtr(builder_, frameSpSlotAddr,
-                                              LLVMPointerType(slotType_, 0), "frameCallSiteSP.Addr");
-        LLVMMetadataRef meta;
-        if (compCfg_->IsAmd64()) {
-            meta = LLVMMDStringInContext2(context_, "rsp", 4);   // 4 : 4 means len of "rsp"
-        } else {
-            meta = LLVMMDStringInContext2(context_, "sp", 3);   // 3 : 3 means len of "sp"
-        }
-        LLVMMetadataRef metadataNode = LLVMMDNodeInContext2(context_, &meta, 1);
-        LLVMValueRef spValue = ReadRegister(module_, builder_, metadataNode);
-        LLVMBuildStore(builder_, spValue, addr);
-    }
-}
-
-LLVMValueRef LLVMIRBuilder::GetCurrentSPFrameAddr()
-{
-    LLVMValueRef glue = LLVMGetParam(function_, 0);
-    LLVMTypeRef glueType = LLVMTypeOf(glue);
-    LLVMValueRef rtoffset = LLVMConstInt(glueType,
-                                         JSThread::GlueData::GetCurrentFrameOffset(compCfg_->Is32Bit()),
-                                         0);
-    LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
-    return rtbaseoffset;
-}
-
-LLVMValueRef LLVMIRBuilder::GetCurrentSPFrame()
-{
-    LLVMValueRef addr = GetCurrentSPFrameAddr();
-    LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, addr, LLVMPointerType(slotType_, 0), "");
-    LLVMValueRef currentSpFrame = LLVMBuildLoad(builder_, rtbaseAddr, "");
-    return currentSpFrame;
-}
-
-void LLVMIRBuilder::SetCurrentSPFrame(LLVMValueRef sp)
-{
-    LLVMValueRef addr = GetCurrentSPFrameAddr();
-    LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, addr, LLVMPointerType(slotType_, 0), "");
-    LLVMBuildStore(builder_, sp, rtbaseAddr);
-}
-
 LLVMValueRef LLVMIRBuilder::GetCurrentFrameType(LLVMValueRef currentSpFrameAddr)
 {
     LLVMValueRef tmp = LLVMBuildSub(builder_, currentSpFrameAddr, LLVMConstInt(slotType_, slotSize_, 1), "");
@@ -748,9 +702,6 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList, 
     for (size_t paraIdx = firstArg + 1; paraIdx < inList.size(); ++paraIdx) {
         GateRef gateTmp = inList[paraIdx];
         params.push_back(gate2LValue_[gateTmp]);
-    }
-    if (op == OpCode::CALL) {
-        SaveCurrentSP();
     }
     LLVMValueRef call = LLVMBuildCall(builder_, callee, params.data(),
         inList.size() - firstArg + extraParameterCnt, "");

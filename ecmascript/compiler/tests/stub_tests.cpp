@@ -555,7 +555,8 @@ HWTEST_F_L0(StubTest, JSEntryTest)
     /* implement stub1 */
     LLVMValueRef stub1 = LLVMAddFunction(module, "stub1", LLVMFunctionType(LLVMInt64Type(), paramTys0, 1, 0));
     LLVMAddTargetDependentFunctionAttr(stub1, "frame-pointer", "all");
-    LLVMAddTargetDependentFunctionAttr(stub1, "js-stub-call", "1");
+    int reservedSlotsSize = sizeof(uint64_t) * static_cast<int>(ReservedSlots::OPTIMIZED_ENTRY_RESERVED_SLOT);
+    LLVMAddTargetDependentFunctionAttr(stub1, "frame-reserved-slots", std::to_string(reservedSlotsSize).c_str());
 
     LLVMBasicBlockRef entryBb = LLVMAppendBasicBlock(stub1, "entry");
     LLVMPositionBuilderAtEnd(builder, entryBb);
@@ -593,7 +594,8 @@ HWTEST_F_L0(StubTest, JSEntryTest)
     /* implement stub2 call stub3 */
     LLVMValueRef stub2 = LLVMAddFunction(module, "stub2", LLVMFunctionType(LLVMInt64Type(), paramTys0, 1, 0));
     LLVMAddTargetDependentFunctionAttr(stub2, "frame-pointer", "all");
-    LLVMAddTargetDependentFunctionAttr(stub2, "js-stub-call", "1");
+    int reservedSlotsSize = sizeof(uint64_t) * static_cast<int>(ReservedSlots::OPTIMIZED_ENTRY_RESERVED_SLOT);
+    LLVMAddTargetDependentFunctionAttr(stub2, "frame-reserved-slots", std::to_string(reservedSlotsSize).c_str());
 
     entryBb = LLVMAppendBasicBlock(stub2, "entry");
     LLVMPositionBuilderAtEnd(builder, entryBb);
@@ -623,7 +625,8 @@ HWTEST_F_L0(StubTest, JSEntryTest)
 
     /* implement stub3 call RuntimeFunc2 */
     LLVMAddTargetDependentFunctionAttr(stub3, "frame-pointer", "all");
-    LLVMAddTargetDependentFunctionAttr(stub3, "js-stub-call", "0");
+    int reservedSlotsSize = sizeof(uint64_t) * static_cast<int>(ReservedSlots::OPTIMIZED_RESERVED_SLOT);
+    LLVMAddTargetDependentFunctionAttr(stub3, "frame-reserved-slots", std::to_string(reservedSlotsSize).c_str());
 
     entryBb = LLVMAppendBasicBlock(stub3, "entry");
     LLVMPositionBuilderAtEnd(builder, entryBb);
@@ -686,7 +689,8 @@ HWTEST_F_L0(StubTest, Prologue)
     /* implement main implement */
     LLVMValueRef func = LLVMAddFunction(module, "main", LLVMFunctionType(LLVMInt64Type(), nullptr, 0, 0));
     LLVMAddTargetDependentFunctionAttr(func, "frame-pointer", "all");
-    LLVMAddTargetDependentFunctionAttr(func, "js-stub-call", "1");
+    int reservedSlotsSize = sizeof(uint64_t) * static_cast<int>(ReservedSlots::OPTIMIZED_ENTRY_RESERVED_SLOT);
+    LLVMAddTargetDependentFunctionAttr(func, "frame-reserved-slots", std::to_string(reservedSlotsSize).c_str());
 
     LLVMBasicBlockRef entryBb = LLVMAppendBasicBlock(func, "entry");
     LLVMPositionBuilderAtEnd(builder, entryBb);
@@ -695,7 +699,8 @@ HWTEST_F_L0(StubTest, Prologue)
     LLVMBuilderRef builderBar = LLVMCreateBuilder();
     LLVMValueRef bar = LLVMAddFunction(module, "bar", LLVMFunctionType(LLVMInt64Type(), paramTys0, 2, 0));
     LLVMAddTargetDependentFunctionAttr(bar, "frame-pointer", "all");
-    LLVMAddTargetDependentFunctionAttr(bar, "js-stub-call", "0");
+    int reservedSlotsSize = sizeof(uint64_t) * static_cast<int>(ReservedSlots::OPTIMIZED_RESERVED_SLOT);
+    LLVMAddTargetDependentFunctionAttr(bar, "frame-reserved-slots", std::to_string(reservedSlotsSize).c_str());
     LLVMBasicBlockRef entryBbBar = LLVMAppendBasicBlock(bar, "entry");
     LLVMPositionBuilderAtEnd(builderBar, entryBbBar);
     LLVMValueRef value0Bar = LLVMGetParam(bar, 0);
@@ -744,7 +749,8 @@ HWTEST_F_L0(StubTest, CEntryFp)
     /* implement main call RuntimeFunc */
     LLVMValueRef func = LLVMAddFunction(module, "main", LLVMFunctionType(LLVMInt64Type(), paramTys0, 1, 0));
     LLVMAddTargetDependentFunctionAttr(func, "frame-pointer", "all");
-    LLVMAddTargetDependentFunctionAttr(func, "js-stub-call", "1");
+    int reservedSlotsSize = sizeof(uint64_t) * static_cast<int>(ReservedSlots::OPTIMIZED_ENTRY_RESERVED_SLOT);
+    LLVMAddTargetDependentFunctionAttr(func, "frame-reserved-slots", std::to_string(reservedSlotsSize).c_str());
     LLVMBasicBlockRef entryBb = LLVMAppendBasicBlock(func, "entry");
     LLVMPositionBuilderAtEnd(builder, entryBb);
 
