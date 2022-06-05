@@ -19,6 +19,7 @@
 #include <memory>
 #include <optional>
 
+#include "ecmascript/dfx/cpu_profiler/samples_record.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/tooling/backend/debugger_api.h"
@@ -30,7 +31,7 @@ class PtBaseTypes {
 public:
     PtBaseTypes() = default;
     virtual ~PtBaseTypes() = default;
-    virtual Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) = 0;
+    virtual Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const = 0;
 
 protected:
     static Local<ObjectRef> NewObject(const EcmaVM *ecmaVm);
@@ -110,7 +111,7 @@ public:
 
     static std::unique_ptr<RemoteObject> FromTagged(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
     static std::unique_ptr<RemoteObject> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     /*
      * @see {#ObjectType}
@@ -402,7 +403,7 @@ public:
     ExceptionDetails() = default;
     ~ExceptionDetails() override = default;
     static std::unique_ptr<ExceptionDetails> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     int32_t GetExceptionId() const
     {
@@ -536,7 +537,7 @@ public:
     ~InternalPropertyDescriptor() override = default;
 
     static std::unique_ptr<InternalPropertyDescriptor> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     CString GetName() const
     {
@@ -583,7 +584,7 @@ public:
     ~PrivatePropertyDescriptor() override = default;
 
     static std::unique_ptr<PrivatePropertyDescriptor> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     CString GetName() const
     {
@@ -672,7 +673,7 @@ public:
     static std::unique_ptr<PropertyDescriptor> FromProperty(const EcmaVM *ecmaVm, const Local<JSValueRef> &name,
         const PropertyAttribute &property);
     static std::unique_ptr<PropertyDescriptor> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     CString GetName() const
     {
@@ -854,7 +855,7 @@ public:
     ~CallArgument() override = default;
 
     static std::unique_ptr<CallArgument> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     Local<JSValueRef> GetValue() const
     {
@@ -937,7 +938,7 @@ public:
     ~Location() override = default;
 
     static std::unique_ptr<Location> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     ScriptId GetScriptId() const
     {
@@ -993,7 +994,7 @@ public:
     ~ScriptPosition() override = default;
 
     static std::unique_ptr<ScriptPosition> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     int32_t GetLine() const
     {
@@ -1031,7 +1032,7 @@ public:
     SearchMatch() = default;
     ~SearchMatch() override = default;
     static std::unique_ptr<SearchMatch> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
 private:
     NO_COPY_SEMANTIC(SearchMatch);
@@ -1048,7 +1049,7 @@ public:
     ~LocationRange() override = default;
 
     static std::unique_ptr<LocationRange> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     ScriptId GetScriptId() const
     {
@@ -1099,7 +1100,7 @@ public:
     ~BreakLocation() override = default;
 
     static std::unique_ptr<BreakLocation> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     ScriptId GetScriptId() const
     {
@@ -1208,7 +1209,7 @@ public:
     ~Scope() override = default;
 
     static std::unique_ptr<Scope> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     /*
      * @see {#Scope::Type}
@@ -1356,7 +1357,7 @@ public:
     ~CallFrame() override = default;
 
     static std::unique_ptr<CallFrame> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     CallFrameId GetCallFrameId() const
     {
@@ -1484,7 +1485,7 @@ public:
     SamplingHeapProfileSample() = default;
     ~SamplingHeapProfileSample() override = default;
     static std::unique_ptr<SamplingHeapProfileSample> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     SamplingHeapProfileSample &SetSize(size_t size)
     {
@@ -1533,7 +1534,8 @@ public:
     RuntimeCallFrame() = default;
     ~RuntimeCallFrame() override = default;
     static std::unique_ptr<RuntimeCallFrame> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    static std::unique_ptr<RuntimeCallFrame> FromFrameInfo(const FrameInfo &cpuFrameInfo);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     RuntimeCallFrame &SetFunctionName(const CString &functionName)
     {
@@ -1606,7 +1608,7 @@ public:
     SamplingHeapProfileNode() = default;
     ~SamplingHeapProfileNode() override = default;
     static std::unique_ptr<SamplingHeapProfileNode> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     SamplingHeapProfileNode &SetCallFrame(std::unique_ptr<RuntimeCallFrame> callFrame)
     {
@@ -1667,7 +1669,7 @@ public:
     SamplingHeapProfile() = default;
     ~SamplingHeapProfile() override = default;
     static std::unique_ptr<SamplingHeapProfile> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     SamplingHeapProfile &SetHead(std::unique_ptr<SamplingHeapProfileNode> head)
     {
@@ -1707,7 +1709,7 @@ public:
     ~PositionTickInfo() override = default;
 
     static std::unique_ptr<PositionTickInfo> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     int32_t GetLine() const
     {
         return line_;
@@ -1744,7 +1746,8 @@ public:
     ~ProfileNode() override = default;
 
     static std::unique_ptr<ProfileNode> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    static std::unique_ptr<ProfileNode> FromCpuProfileNode(const CpuProfileNode &cpuProfileNode);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     
     int32_t GetId() const
     {
@@ -1856,7 +1859,8 @@ public:
     ~Profile() override = default;
 
     static std::unique_ptr<Profile> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    static std::unique_ptr<Profile> FromProfileInfo(const ProfileInfo &profileInfo);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     int64_t GetStartTime() const
     {
@@ -1947,7 +1951,7 @@ public:
     ~Coverage() override = default;
 
     static std::unique_ptr<Coverage > Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     int32_t GetStartOffset() const
     {
@@ -1998,7 +2002,7 @@ public:
     ~FunctionCoverage() override = default;
 
     static std::unique_ptr<FunctionCoverage > Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     const CString &GetFunctionName() const
     {
@@ -2050,7 +2054,7 @@ public:
     ~ScriptCoverage() override = default;
 
     static std::unique_ptr<ScriptCoverage> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     const CString &GetScriptId() const
     {
@@ -2101,7 +2105,7 @@ public:
     ~TypeObject() override = default;
 
     static std::unique_ptr<TypeObject> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     const CString &GetName() const
     {
         return name_;
@@ -2127,7 +2131,7 @@ public:
     ~TypeProfileEntry() override = default;
 
     static std::unique_ptr<TypeProfileEntry> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     int32_t GetOffset() const
     {
         return offset_;
@@ -2165,7 +2169,7 @@ public:
     ~ScriptTypeProfile() override = default;
 
     static std::unique_ptr<ScriptTypeProfile> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     const CString &GetScriptId() const
     {
         return scriptId_;

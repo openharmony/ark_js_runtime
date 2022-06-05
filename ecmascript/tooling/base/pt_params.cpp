@@ -753,7 +753,7 @@ std::unique_ptr<StartSamplingParams> StartSamplingParams::Create(const EcmaVM *e
     return paramsObject;
 }
 
-Local<ObjectRef> StartSamplingParams::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> StartSamplingParams::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -790,7 +790,7 @@ std::unique_ptr<StartTrackingHeapObjectsParams> StartTrackingHeapObjectsParams::
     return paramsObject;
 }
 
-Local<ObjectRef> StartTrackingHeapObjectsParams::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> StartTrackingHeapObjectsParams::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -848,7 +848,7 @@ std::unique_ptr<StopTrackingHeapObjectsParams> StopTrackingHeapObjectsParams::Cr
     return paramsObject;
 }
 
-Local<ObjectRef> StopTrackingHeapObjectsParams::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> StopTrackingHeapObjectsParams::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -892,7 +892,7 @@ std::unique_ptr<AddInspectedHeapObjectParams> AddInspectedHeapObjectParams::Crea
     return paramsObject;
 }
 
-Local<ObjectRef> AddInspectedHeapObjectParams::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> AddInspectedHeapObjectParams::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -933,7 +933,7 @@ std::unique_ptr<GetHeapObjectIdParams> GetHeapObjectIdParams::Create(const EcmaV
     return paramsObject;
 }
 
-Local<ObjectRef> GetHeapObjectIdParams::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> GetHeapObjectIdParams::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -983,7 +983,7 @@ std::unique_ptr<GetObjectByHeapObjectIdParams> GetObjectByHeapObjectIdParams::Cr
     return paramsObject;
 }
 
-Local<ObjectRef> GetObjectByHeapObjectIdParams::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> GetObjectByHeapObjectIdParams::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -1044,7 +1044,7 @@ std::unique_ptr<StartPreciseCoverageParam> StartPreciseCoverageParam::Create(con
     return paramsObject;
 }
 
-Local<ObjectRef> StartPreciseCoverageParam::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> StartPreciseCoverageParam::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 

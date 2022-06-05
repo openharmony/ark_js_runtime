@@ -31,8 +31,8 @@ public:
         test_ = TestUtil::GetTest(testName);
         test_->vm_ = vm;
         test_->debugger_ = debugger_.get();
-        test_->debugInterface_ = debugger_->GetDebugger();
-        debugInterface_ = debugger_->GetDebugger();
+        test_->debugInterface_ = debugger_->jsDebugger_;
+        debugInterface_ = debugger_->jsDebugger_;
         TestUtil::Reset();
         debugInterface_->RegisterHooks(this);
     }

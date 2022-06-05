@@ -16,50 +16,7 @@
 #include "ecmascript/tooling/base/pt_events.h"
 
 namespace panda::ecmascript::tooling {
-std::unique_ptr<BreakpointResolved> BreakpointResolved::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "BreakpointResolved::Create params is nullptr";
-        return nullptr;
-    }
-    CString error;
-    auto breakpointResolved = std::make_unique<BreakpointResolved>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "breakpointId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            breakpointResolved->breakpointId_ = DebuggerApi::ToCString(result);
-        } else {
-            error += "'breakpointId' should a String;";
-        }
-    } else {
-        error += "should contain 'breakpointId';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "location")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<Location> location = Location::Create(ecmaVm, result);
-            if (location == nullptr) {
-                error += "'location' format error;";
-            } else {
-                breakpointResolved->location_ = std::move(location);
-            }
-        } else {
-            error += "'exception' should a Object;";
-        }
-    } else {
-        error += "should contain 'location';";
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "BreakpointResolved::Create " << error;
-        return nullptr;
-    }
-
-    return breakpointResolved;
-}
-
-Local<ObjectRef> BreakpointResolved::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> BreakpointResolved::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -79,89 +36,7 @@ Local<ObjectRef> BreakpointResolved::ToObject(const EcmaVM *ecmaVm)
     return object;
 }
 
-std::unique_ptr<Paused> Paused::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "Paused::Create params is nullptr";
-        return nullptr;
-    }
-    CString error;
-    auto paused = std::make_unique<Paused>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrames")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            auto array = Local<ArrayRef>(result);
-            int32_t len = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < len; ++i) {
-                key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                std::unique_ptr<CallFrame> callFrame = CallFrame::Create(ecmaVm, resultValue);
-                if (resultValue.IsEmpty() || callFrame == nullptr) {
-                    error += "'callFrames' format invalid;";
-                }
-                paused->callFrames_.emplace_back(std::move(callFrame));
-            }
-        } else {
-            error += "'callFrames' should a Array;";
-        }
-    } else {
-        error += "should contain 'callFrames';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "reason")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            paused->reason_ = DebuggerApi::ToCString(result);
-        } else {
-            error += "'reason' should a String;";
-        }
-    } else {
-        error += "should contain 'reason';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "data")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'data' format error;";
-            } else {
-                paused->data_ = std::move(obj);
-            }
-        } else {
-            error += "'data' should a Object;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "hitBreakpoints")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            CVector<BreakpointId> breakPoints;
-            auto array = Local<ArrayRef>(result);
-            int32_t len = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < len; ++i) {
-                key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                if (resultValue.IsEmpty()) {
-                    error += "'hitBreakpoints' format invalid;";
-                }
-                breakPoints.emplace_back(DebuggerApi::ToCString(result));
-            }
-            paused->hitBreakpoints_ = std::move(breakPoints);
-        } else {
-            error += "'hitBreakpoints' should a Array;";
-        }
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "Parsed::Create " << error;
-        return nullptr;
-    }
-
-    return paused;
-}
-
-Local<ObjectRef> Paused::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> Paused::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -198,13 +73,7 @@ Local<ObjectRef> Paused::ToObject(const EcmaVM *ecmaVm)
     return object;
 }
 
-std::unique_ptr<Resumed> Resumed::Create([[maybe_unused]] const EcmaVM *ecmaVm,
-                                         [[maybe_unused]] const Local<JSValueRef> &params)
-{
-    return std::make_unique<Resumed>();
-}
-
-Local<ObjectRef> Resumed::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> Resumed::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -217,170 +86,7 @@ Local<ObjectRef> Resumed::ToObject(const EcmaVM *ecmaVm)
     return object;
 }
 
-std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "ScriptFailedToParse::Create params is nullptr";
-        return nullptr;
-    }
-    CString error;
-    auto scriptEvent = std::make_unique<ScriptFailedToParse>();
-
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "scriptId"));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            scriptEvent->scriptId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
-        } else {
-            error += "'scriptId' should a String;";
-        }
-    } else {
-        error += "should contain 'scriptId';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            scriptEvent->url_ = DebuggerApi::ToCString(result);
-        } else {
-            error += "'url' should a String;";
-        }
-    } else {
-        error += "should contain 'url';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startLine")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            scriptEvent->startLine_ = Local<NumberRef>(result)->Value();
-        } else {
-            error += "'startLine' should a Number;";
-        }
-    } else {
-        error += "should contain 'startLine';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startColumn")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            scriptEvent->startColumn_ = Local<NumberRef>(result)->Value();
-        } else {
-            error += "'startColumn' should a Number;";
-        }
-    } else {
-        error += "should contain 'startColumn';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endLine")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            scriptEvent->endLine_ = Local<NumberRef>(result)->Value();
-        } else {
-            error += "'endLine' should a Number;";
-        }
-    } else {
-        error += "should contain 'endLine';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endColumn")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            scriptEvent->endColumn_ = Local<NumberRef>(result)->Value();
-        } else {
-            error += "'endColumn' should a Number;";
-        }
-    } else {
-        error += "should contain 'endColumn';";
-    }
-    result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            scriptEvent->executionContextId_ = static_cast<ExecutionContextId>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'executionContextId' should a Number;";
-        }
-    } else {
-        error += "should contain 'executionContextId';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "hash")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            scriptEvent->hash_ = DebuggerApi::ToCString(result);
-        } else {
-            error += "'hash' should a String;";
-        }
-    } else {
-        error += "should contain 'hash';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextAuxData")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            scriptEvent->execContextAuxData_ = Local<ObjectRef>(result);
-        } else {
-            error += "'executionContextAuxData' should a Object;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "sourceMapURL")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            scriptEvent->sourceMapUrl_ = DebuggerApi::ToCString(result);
-        } else {
-            error += "'sourceMapURL' should a String;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "hasSourceURL")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            scriptEvent->hasSourceUrl_ = result->IsTrue();
-        } else {
-            error += "'hasSourceURL' should a Boolean;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "isModule")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            scriptEvent->isModule_ = result->IsTrue();
-        } else {
-            error += "'isModule' should a Boolean;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "length")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            scriptEvent->length_ = static_cast<uint32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'length' should a Number;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "codeOffset")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            scriptEvent->codeOffset_ = static_cast<uint32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'codeOffset' should a Number;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptLanguage")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            scriptEvent->scriptLanguage_ = DebuggerApi::ToCString(result);
-        } else {
-            error += "'scriptLanguage' should a String;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "embedderName")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            scriptEvent->embedderName_ = DebuggerApi::ToCString(result);
-        } else {
-            error += "'embedderName' should a String;";
-        }
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "ScriptFailedToParse::Create " << error;
-        return nullptr;
-    }
-
-    return scriptEvent;
-}
-
-Local<ObjectRef> ScriptFailedToParse::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> ScriptFailedToParse::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -455,193 +161,7 @@ Local<ObjectRef> ScriptFailedToParse::ToObject(const EcmaVM *ecmaVm)
     return object;
 }
 
-std::unique_ptr<ScriptParsed> ScriptParsed::Create(const std::unique_ptr<PtScript> &script)
-{
-    std::unique_ptr<ScriptParsed> scriptParsed = std::make_unique<ScriptParsed>();
-    scriptParsed->SetScriptId(script->GetScriptId())
-        .SetUrl(script->GetUrl())
-        .SetStartLine(0)
-        .SetStartColumn(0)
-        .SetEndLine(script->GetEndLine())
-        .SetEndColumn(0)
-        .SetExecutionContextId(0)
-        .SetHash(script->GetHash());
-    return scriptParsed;
-}
-
-std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "ScriptParsed::Create params is nullptr";
-        return nullptr;
-    }
-    CString error;
-    auto scriptEvent = std::make_unique<ScriptParsed>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            scriptEvent->scriptId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
-        } else {
-            error += "'scriptId' should a String;";
-        }
-    } else {
-        error += "should contain 'scriptId';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            scriptEvent->url_ = DebuggerApi::ToCString(result);
-        } else {
-            error += "'url' should a String;";
-        }
-    } else {
-        error += "should contain 'url';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startLine")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            scriptEvent->startLine_ = Local<NumberRef>(result)->Value();
-        } else {
-            error += "'startLine' should a Number;";
-        }
-    } else {
-        error += "should contain 'startLine';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startColumn")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            scriptEvent->startColumn_ = Local<NumberRef>(result)->Value();
-        } else {
-            error += "'startColumn' should a Number;";
-        }
-    } else {
-        error += "should contain 'startColumn';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endLine")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            scriptEvent->endLine_ = Local<NumberRef>(result)->Value();
-        } else {
-            error += "'endLine' should a Number;";
-        }
-    } else {
-        error += "should contain 'endLine';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endColumn")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            scriptEvent->endColumn_ = Local<NumberRef>(result)->Value();
-        } else {
-            error += "'endColumn' should a Number;";
-        }
-    } else {
-        error += "should contain 'endColumn';";
-    }
-    result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            scriptEvent->executionContextId_ = static_cast<ExecutionContextId>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'executionContextId' should a Number;";
-        }
-    } else {
-        error += "should contain 'executionContextId';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "hash")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            scriptEvent->hash_ = DebuggerApi::ToCString(result);
-        } else {
-            error += "'hash' should a String;";
-        }
-    } else {
-        error += "should contain 'hash';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextAuxData")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            scriptEvent->execContextAuxData_ = Local<ObjectRef>(result);
-        } else {
-            error += "'executionContextAuxData' should a Object;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "isLiveEdit")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            scriptEvent->isLiveEdit_ = result->IsTrue();
-        } else {
-            error += "'isLiveEdit' should a Boolean;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "sourceMapURL")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            scriptEvent->sourceMapUrl_ = DebuggerApi::ToCString(result);
-        } else {
-            error += "'sourceMapURL' should a String;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "hasSourceURL")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            scriptEvent->hasSourceUrl_ = result->IsTrue();
-        } else {
-            error += "'hasSourceURL' should a Boolean;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "isModule")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            scriptEvent->isModule_ = result->IsTrue();
-        } else {
-            error += "'isModule' should a Boolean;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "length")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            scriptEvent->length_ = static_cast<uint32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'length' should a Number;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "codeOffset")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            scriptEvent->codeOffset_ = static_cast<uint32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'codeOffset' should a Number;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptLanguage")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            scriptEvent->scriptLanguage_ = DebuggerApi::ToCString(result);
-        } else {
-            error += "'scriptLanguage' should a String;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "embedderName")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            scriptEvent->embedderName_ = DebuggerApi::ToCString(result);
-        } else {
-            error += "'embedderName' should a String;";
-        }
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "ScriptParsed::Create " << error;
-        return nullptr;
-    }
-
-    return scriptEvent;
-}
-
-Local<ObjectRef> ScriptParsed::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> ScriptParsed::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -720,49 +240,7 @@ Local<ObjectRef> ScriptParsed::ToObject(const EcmaVM *ecmaVm)
     return object;
 }
 
-std::unique_ptr<AddHeapSnapshotChunk> AddHeapSnapshotChunk::Create(char* data, int size)
-{
-    auto addHeapSnapshotChunk = std::make_unique<AddHeapSnapshotChunk>();
-
-    addHeapSnapshotChunk->chunk_.resize(size);
-    for (int i = 0; i < size; ++i) {
-        addHeapSnapshotChunk->chunk_[i] = data[i];
-    }
-
-    return addHeapSnapshotChunk;
-}
-
-std::unique_ptr<AddHeapSnapshotChunk> AddHeapSnapshotChunk::Create(const EcmaVM *ecmaVm,
-                                                                   const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "AddHeapSnapshotChunk::Create params is nullptr";
-        return nullptr;
-    }
-    CString error;
-    auto addHeapSnapshotChunk = std::make_unique<AddHeapSnapshotChunk>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "chunk")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            addHeapSnapshotChunk->chunk_ = DebuggerApi::ToCString(result);
-        } else {
-            error += "'chunk' should a String;";
-        }
-    } else {
-        error += "should contain 'chunk';";
-    }
-
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "AddHeapSnapshotChunk::Create " << error;
-        return nullptr;
-    }
-
-    return addHeapSnapshotChunk;
-}
-
-Local<ObjectRef> AddHeapSnapshotChunk::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> AddHeapSnapshotChunk::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -779,76 +257,7 @@ Local<ObjectRef> AddHeapSnapshotChunk::ToObject(const EcmaVM *ecmaVm)
     return object;
 }
 
-std::unique_ptr<ConsoleProfileFinished> ConsoleProfileFinished::Create(const EcmaVM *ecmaVm,
-                                                                       const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "ConsoleProfileFinished::Create params is nullptr";
-        return nullptr;
-    }
-    CString error;
-    auto consoleProfileFinished = std::make_unique<ConsoleProfileFinished>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "id")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            consoleProfileFinished->id_ = DebuggerApi::ToCString(result);
-        } else {
-            error += "'id' should a String;";
-        }
-    } else {
-        error += "should contain 'id';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "location")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<Location> location = Location::Create(ecmaVm, result);
-            if (location == nullptr) {
-                error += "'location' format error;";
-            } else {
-                consoleProfileFinished->location_ = std::move(location);
-            }
-        } else {
-            error += "'location' should a Object;";
-        }
-    } else {
-        error += "should contain 'location';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "profile")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<Profile> profile = Profile::Create(ecmaVm, result);
-            if (profile == nullptr) {
-                error += "'profile' format error;";
-            } else {
-                consoleProfileFinished->profile_ = std::move(profile);
-            }
-        } else {
-            error += "'profile' should a Object;";
-        }
-    } else {
-        error += "should contain 'profile';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "title")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            consoleProfileFinished->title_ = DebuggerApi::ToCString(result);
-        } else {
-            error += "'title' should a String;";
-        }
-    } else {
-        error += "should contain 'title';";
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "ConsoleProfileFinished::Create " << error;
-        return nullptr;
-    }
-
-    return consoleProfileFinished;
-}
-
-Local<ObjectRef> ConsoleProfileFinished::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> ConsoleProfileFinished::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -876,61 +285,7 @@ Local<ObjectRef> ConsoleProfileFinished::ToObject(const EcmaVM *ecmaVm)
     return object;
 }
 
-std::unique_ptr<ConsoleProfileStarted> ConsoleProfileStarted::Create(const EcmaVM *ecmaVm,
-                                                                     const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "ConsoleProfileStarted::Create params is nullptr";
-        return nullptr;
-    }
-    CString error;
-    auto consoleProfileStarted = std::make_unique<ConsoleProfileStarted>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "id")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            consoleProfileStarted->id_ = DebuggerApi::ToCString(result);
-        } else {
-            error += "'id' should a String;";
-        }
-    } else {
-        error += "should contain 'id';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "location")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<Location> location = Location::Create(ecmaVm, result);
-            if (location == nullptr) {
-                error += "'location' format error;";
-            } else {
-                consoleProfileStarted->location_ = std::move(location);
-            }
-        } else {
-            error += "'location' should a Object;";
-        }
-    } else {
-        error += "should contain 'location';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "title")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            consoleProfileStarted->title_ = DebuggerApi::ToCString(result);
-        } else {
-            error += "'title' should a String;";
-        }
-    } else {
-        error += "should contain 'title';";
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "ConsoleProfileStarted::Create " << error;
-        return nullptr;
-    }
-
-    return consoleProfileStarted;
-}
-
-Local<ObjectRef> ConsoleProfileStarted::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> ConsoleProfileStarted::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -955,64 +310,7 @@ Local<ObjectRef> ConsoleProfileStarted::ToObject(const EcmaVM *ecmaVm)
     return object;
 }
 
-std::unique_ptr<PreciseCoverageDeltaUpdate> PreciseCoverageDeltaUpdate::Create(const EcmaVM *ecmaVm,
-                                                                               const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "PreciseCoverageDeltaUpdate::Create params is nullptr";
-        return nullptr;
-    }
-    CString error;
-    auto preciseCoverageDeltaUpdate = std::make_unique<PreciseCoverageDeltaUpdate>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timestamp")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            preciseCoverageDeltaUpdate->timestamp_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'timestamp' should a Number;";
-        }
-    } else {
-        error += "should contain 'timestamp';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "occasion")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            preciseCoverageDeltaUpdate->occasion_ = DebuggerApi::ToCString(result);
-        } else {
-            error += "'occasion' should a String;";
-        }
-    } else {
-        error += "should contain 'occasion';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "result")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            auto array = Local<ArrayRef>(result);
-            int32_t resultLen = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < resultLen; ++i) {
-                key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                std::unique_ptr<ScriptCoverage> tmpResult = ScriptCoverage::Create(ecmaVm, resultValue);
-                preciseCoverageDeltaUpdate->result_.emplace_back(std::move(tmpResult));
-            }
-        } else {
-            error += "'result' should be an Array;";
-        }
-    } else {
-        error += "should contain 'result';";
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "PreciseCoverageDeltaUpdate::Create " << error;
-        return nullptr;
-    }
-
-    return preciseCoverageDeltaUpdate;
-}
-
-Local<ObjectRef> PreciseCoverageDeltaUpdate::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> PreciseCoverageDeltaUpdate::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -1038,44 +336,7 @@ Local<ObjectRef> PreciseCoverageDeltaUpdate::ToObject(const EcmaVM *ecmaVm)
     return object;
 }
 
-std::unique_ptr<HeapStatsUpdate> HeapStatsUpdate::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "HeapStatsUpdate::Create params is nullptr";
-        return nullptr;
-    }
-    CString error;
-    auto heapStatsUpdate = std::make_unique<HeapStatsUpdate>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "statsUpdate")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            auto array = Local<ArrayRef>(result);
-            int32_t resultLen = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < resultLen; ++i) {
-                key = IntegerRef::New(ecmaVm, i);
-                int32_t statsUpdate;
-                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                statsUpdate = resultValue->Int32Value(ecmaVm);
-                heapStatsUpdate ->statsUpdate_[i] = statsUpdate;
-            }
-        } else {
-            error += "'statsUpdate' should be an Array;";
-        }
-    } else {
-        error += "should contain 'statsUpdate';";
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "HeapStatsUpdate::Create " << error;
-        return nullptr;
-    }
-
-    return heapStatsUpdate;
-}
-
-Local<ObjectRef> HeapStatsUpdate::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> HeapStatsUpdate::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -1096,48 +357,7 @@ Local<ObjectRef> HeapStatsUpdate::ToObject(const EcmaVM *ecmaVm)
     return object;
 }
 
-std::unique_ptr<LastSeenObjectId> LastSeenObjectId::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "LastSeenObjectId::Create params is nullptr";
-        return nullptr;
-    }
-    CString error;
-    auto lastSeenObjectId = std::make_unique<LastSeenObjectId>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timestamp")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            lastSeenObjectId->timestamp_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'timestamp' should a Number;";
-        }
-    } else {
-        error += "should contain 'timestamp';";
-    }
-
-    result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lastSeenObjectId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            lastSeenObjectId->lastSeenObjectId_ = Local<NumberRef>(result)->Value();
-        } else {
-            error += "'lastSeenObjectId' should a Number;";
-        }
-    } else {
-        error += "should contain 'lastSeenObjectId';";
-    }
-   
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "LastSeenObjectId::Create " << error;
-        return nullptr;
-    }
-
-    return lastSeenObjectId;
-}
-
-Local<ObjectRef> LastSeenObjectId::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> LastSeenObjectId::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -1155,57 +375,7 @@ Local<ObjectRef> LastSeenObjectId::ToObject(const EcmaVM *ecmaVm)
     return object;
 }
 
-std::unique_ptr<ReportHeapSnapshotProgress> ReportHeapSnapshotProgress::Create(const EcmaVM *ecmaVm,
-                                                                               const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "ReportHeapSnapshotProgress::Create params is nullptr";
-        return nullptr;
-    }
-    CString error;
-    auto reportHeapSnapshotProgress = std::make_unique<ReportHeapSnapshotProgress>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "done")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            reportHeapSnapshotProgress->done_ = Local<NumberRef>(result)->Value();
-        } else {
-            error += "'done' should a Number;";
-        }
-    } else {
-        error += "should contain 'done';";
-    }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "total")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            reportHeapSnapshotProgress->total_ = Local<NumberRef>(result)->Value();
-        } else {
-            error += "'total' should a Number;";
-        }
-    } else {
-        error += "should contain 'total';";
-    }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "finished")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            reportHeapSnapshotProgress->finished_ = result->IsTrue();
-        } else {
-            error += "'finished' should a Boolean;";
-        }
-    }
-   
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "ReportHeapSnapshotProgress::Create " << error;
-        return nullptr;
-    }
-
-    return reportHeapSnapshotProgress;
-}
-
-Local<ObjectRef> ReportHeapSnapshotProgress::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> ReportHeapSnapshotProgress::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 

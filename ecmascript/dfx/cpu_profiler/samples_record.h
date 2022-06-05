@@ -33,7 +33,7 @@ struct FrameInfo {
     int scriptId = 0;
     std::string url = "";
 };
-struct ProfileNode {
+struct CpuProfileNode {
     int id = 0;
     int parentId = 0;
     int hitCount = 0;
@@ -43,7 +43,7 @@ struct ProfileNode {
 struct ProfileInfo {
     uint64_t startTime = 0;
     uint64_t stopTime = 0;
-    CVector<struct ProfileNode> nodes;
+    CVector<struct CpuProfileNode> nodes;
     CVector<int> samples;
     CVector<int> timeDeltas;
 };
@@ -68,7 +68,7 @@ public:
 
     void AddSample(CVector<JSMethod *> sample, uint64_t sampleTimeStamp, bool outToFile);
     void WriteMethodsAndSampleInfo(bool timeEnd);
-    CVector<struct ProfileNode> GetMethodNodes() const;
+    CVector<struct CpuProfileNode> GetMethodNodes() const;
     CDeque<struct SampleInfo> GetSamples() const;
     std::string GetSampleData() const;
     void SetThreadStartTime(uint64_t threadStartTime);

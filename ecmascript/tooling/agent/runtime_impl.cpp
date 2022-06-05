@@ -41,33 +41,33 @@ void RuntimeImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
         (this->*(entry->second))(request);
     } else {
         LOG(ERROR, DEBUGGER) << "unknown method: " << method;
-        SendResponse(request, DispatchResponse::Fail("unknown method: " + method), nullptr);
+        SendResponse(request, DispatchResponse::Fail("unknown method: " + method));
     }
 }
 
 void RuntimeImpl::DispatcherImpl::Enable(const DispatchRequest &request)
 {
     DispatchResponse response = runtime_->Enable();
-    SendResponse(request, response, nullptr);
+    SendResponse(request, response);
 }
 
 void RuntimeImpl::DispatcherImpl::Disable(const DispatchRequest &request)
 {
     DispatchResponse response = runtime_->Disable();
-    SendResponse(request, response, nullptr);
+    SendResponse(request, response);
 }
 
 void RuntimeImpl::DispatcherImpl::RunIfWaitingForDebugger(const DispatchRequest &request)
 {
     DispatchResponse response = runtime_->RunIfWaitingForDebugger();
-    SendResponse(request, response, nullptr);
+    SendResponse(request, response);
 }
 
 void RuntimeImpl::DispatcherImpl::GetProperties(const DispatchRequest &request)
 {
     std::unique_ptr<GetPropertiesParams> params = GetPropertiesParams::Create(request.GetEcmaVM(), request.GetParams());
     if (params == nullptr) {
-        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
 
@@ -80,11 +80,11 @@ void RuntimeImpl::DispatcherImpl::GetProperties(const DispatchRequest &request)
     if (outExceptionDetails) {
         LOG(WARNING, DEBUGGER) << "GetProperties thrown an exception";
     }
-    std::unique_ptr<GetPropertiesReturns> result = std::make_unique<GetPropertiesReturns>(std::move(outPropertyDesc),
+    GetPropertiesReturns result(std::move(outPropertyDesc),
         std::move(outInternalDescs),
         std::move(outPrivateProperties),
         std::move(outExceptionDetails));
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response, result);
 }
 
 void RuntimeImpl::DispatcherImpl::CallFunctionOn(const DispatchRequest &request)
@@ -92,7 +92,7 @@ void RuntimeImpl::DispatcherImpl::CallFunctionOn(const DispatchRequest &request)
     std::unique_ptr<CallFunctionOnParams> params =
         CallFunctionOnParams::Create(request.GetEcmaVM(), request.GetParams());
     if (params == nullptr) {
-        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
 
@@ -102,9 +102,8 @@ void RuntimeImpl::DispatcherImpl::CallFunctionOn(const DispatchRequest &request)
     if (outExceptionDetails) {
         LOG(WARNING, DEBUGGER) << "CallFunctionOn thrown an exception";
     }
-    std::unique_ptr<CallFunctionOnReturns> result = std::make_unique<CallFunctionOnReturns>(std::move(outRemoteObject),
-        std::move(outExceptionDetails));
-    SendResponse(request, response, std::move(result));
+    CallFunctionOnReturns result(std::move(outRemoteObject), std::move(outExceptionDetails));
+    SendResponse(request, response, result);
 }
 
 void RuntimeImpl::DispatcherImpl::GetHeapUsage(const DispatchRequest &request)
@@ -112,9 +111,8 @@ void RuntimeImpl::DispatcherImpl::GetHeapUsage(const DispatchRequest &request)
     double usedSize = 0;
     double totalSize = 0;
     DispatchResponse response = runtime_->GetHeapUsage(&usedSize, &totalSize);
-    std::unique_ptr<GetHeapUsageReturns> result = std::make_unique<GetHeapUsageReturns>(usedSize,
-        totalSize);
-    SendResponse(request, response, std::move(result));
+    GetHeapUsageReturns result(usedSize, totalSize);
+    SendResponse(request, response, result);
 }
 
 bool RuntimeImpl::Frontend::AllowNotify() const

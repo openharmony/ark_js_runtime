@@ -15,6 +15,8 @@
 
 #include "pt_types.h"
 
+#include "ecmascript/dfx/cpu_profiler/samples_record.h"
+
 namespace panda::ecmascript::tooling {
 using ObjectType = RemoteObject::TypeName;
 using ObjectSubType = RemoteObject::SubTypeName;
@@ -389,7 +391,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
     return remoteObject;
 }
 
-Local<ObjectRef> RemoteObject::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> RemoteObject::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -525,7 +527,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
     return exceptionDetails;
 }
 
-Local<ObjectRef> ExceptionDetails::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> ExceptionDetails::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -606,7 +608,7 @@ std::unique_ptr<InternalPropertyDescriptor> InternalPropertyDescriptor::Create(c
     return internalPropertyDescriptor;
 }
 
-Local<ObjectRef> InternalPropertyDescriptor::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> InternalPropertyDescriptor::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -691,7 +693,7 @@ std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(con
     return propertyDescriptor;
 }
 
-Local<ObjectRef> PrivatePropertyDescriptor::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> PrivatePropertyDescriptor::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -879,7 +881,7 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const EcmaVM *ecm
     return propertyDescriptor;
 }
 
-Local<ObjectRef> PropertyDescriptor::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> PropertyDescriptor::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -973,7 +975,7 @@ std::unique_ptr<CallArgument> CallArgument::Create(const EcmaVM *ecmaVm, const L
     return callArgument;
 }
 
-Local<ObjectRef> CallArgument::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> CallArgument::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -1040,7 +1042,7 @@ std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSV
     return location;
 }
 
-Local<ObjectRef> Location::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> Location::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -1096,7 +1098,7 @@ std::unique_ptr<ScriptPosition> ScriptPosition::Create(const EcmaVM *ecmaVm, con
     return scriptPosition;
 }
 
-Local<ObjectRef> ScriptPosition::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> ScriptPosition::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -1148,7 +1150,7 @@ std::unique_ptr<SearchMatch> SearchMatch::Create(const EcmaVM *ecmaVm, const Loc
     return locationSearch;
 }
 
-Local<ObjectRef> SearchMatch::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> SearchMatch::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -1218,7 +1220,7 @@ std::unique_ptr<LocationRange> LocationRange::Create(const EcmaVM *ecmaVm, const
     return locationRange;
 }
 
-Local<ObjectRef> LocationRange::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> LocationRange::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -1295,7 +1297,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const
     return breakLocation;
 }
 
-Local<ObjectRef> BreakLocation::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> BreakLocation::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -1400,7 +1402,7 @@ std::unique_ptr<Scope> Scope::Create(const EcmaVM *ecmaVm, const Local<JSValueRe
     return scope;
 }
 
-Local<ObjectRef> Scope::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> Scope::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -1558,7 +1560,7 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
     return callFrame;
 }
 
-Local<ObjectRef> CallFrame::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> CallFrame::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -1653,7 +1655,7 @@ std::unique_ptr<SamplingHeapProfileSample> SamplingHeapProfileSample::Create(con
     return samplingHeapProfileSample;
 }
 
-Local<ObjectRef> SamplingHeapProfileSample::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> SamplingHeapProfileSample::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -1740,7 +1742,18 @@ std::unique_ptr<RuntimeCallFrame> RuntimeCallFrame::Create(const EcmaVM *ecmaVm,
     return runtimeCallFrame;
 }
 
-Local<ObjectRef> RuntimeCallFrame::ToObject(const EcmaVM *ecmaVm)
+std::unique_ptr<RuntimeCallFrame> RuntimeCallFrame::FromFrameInfo(const FrameInfo &cpuFrameInfo)
+{
+    auto runtimeCallFrame = std::make_unique<RuntimeCallFrame>();
+    runtimeCallFrame->SetFunctionName(cpuFrameInfo.functionName.c_str());
+    runtimeCallFrame->SetScriptId(std::to_string(cpuFrameInfo.scriptId).c_str());
+    runtimeCallFrame->SetColumnNumber(cpuFrameInfo.columnNumber);
+    runtimeCallFrame->SetLineNumber(cpuFrameInfo.lineNumber);
+    runtimeCallFrame->SetUrl(cpuFrameInfo.url.c_str());
+    return runtimeCallFrame;
+}
+
+Local<ObjectRef> RuntimeCallFrame::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -1842,7 +1855,7 @@ std::unique_ptr<SamplingHeapProfileNode> SamplingHeapProfileNode::Create(const E
     return samplingHeapProfileNode;
 }
 
-Local<ObjectRef> SamplingHeapProfileNode::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> SamplingHeapProfileNode::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -1927,7 +1940,7 @@ std::unique_ptr<SamplingHeapProfile> SamplingHeapProfile::Create(const EcmaVM *e
     return samplingHeapProfile;
 }
 
-Local<ObjectRef> SamplingHeapProfile::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> SamplingHeapProfile::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -1987,7 +2000,7 @@ std::unique_ptr<PositionTickInfo> PositionTickInfo::Create(const EcmaVM *ecmaVm,
     return positionTicks;
 }
 
-Local<ObjectRef> PositionTickInfo::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> PositionTickInfo::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
     params->Set(ecmaVm,
@@ -2099,7 +2112,24 @@ std::unique_ptr<ProfileNode> ProfileNode::Create(const EcmaVM *ecmaVm, const Loc
     return profileNode;
 }
 
-Local<ObjectRef> ProfileNode::ToObject(const EcmaVM *ecmaVm)
+std::unique_ptr<ProfileNode> ProfileNode::FromCpuProfileNode(const CpuProfileNode &cpuProfileNode)
+{
+    auto profileNode = std::make_unique<ProfileNode>();
+    profileNode->SetId(cpuProfileNode.id);
+    profileNode->SetHitCount(cpuProfileNode.hitCount);
+
+    size_t childrenLen = cpuProfileNode.children.size();
+    CVector<int32_t> tmpChildren;
+    tmpChildren.reserve(childrenLen);
+    for (uint32_t i = 0; i < childrenLen; ++i) {
+        tmpChildren.push_back(cpuProfileNode.children[i]);
+    }
+    profileNode->SetChildren(tmpChildren);
+    profileNode->SetCallFrame(RuntimeCallFrame::FromFrameInfo(cpuProfileNode.codeEntry));
+    return profileNode;
+}
+
+Local<ObjectRef> ProfileNode::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
     params->Set(ecmaVm,
@@ -2237,7 +2267,38 @@ std::unique_ptr<Profile> Profile::Create(const EcmaVM *ecmaVm, const Local<JSVal
     return profile;
 }
 
-Local<ObjectRef> Profile::ToObject(const EcmaVM *ecmaVm)
+std::unique_ptr<Profile> Profile::FromProfileInfo(const ProfileInfo &profileInfo)
+{
+    auto profile = std::make_unique<Profile>();
+    profile->SetStartTime(static_cast<int64_t>(profileInfo.startTime));
+    profile->SetEndTime(static_cast<int64_t>(profileInfo.stopTime));
+    size_t samplesLen = profileInfo.samples.size();
+    CVector<int32_t> tmpSamples;
+    tmpSamples.reserve(samplesLen);
+    for (uint32_t i = 0; i < samplesLen; ++i) {
+        tmpSamples.push_back(profileInfo.samples[i]);
+    }
+    profile->SetSamples(tmpSamples);
+
+    size_t timeDeltasLen = profileInfo.timeDeltas.size();
+    CVector<int32_t> tmpTimeDeltas;
+    tmpTimeDeltas.reserve(timeDeltasLen);
+    for (uint32_t i = 0; i < timeDeltasLen; ++i) {
+        tmpTimeDeltas.push_back(profileInfo.timeDeltas[i]);
+    }
+    profile->SetTimeDeltas(tmpTimeDeltas);
+
+    CVector<std::unique_ptr<ProfileNode>> profileNode;
+    size_t nodesLen = profileInfo.nodes.size();
+    for (uint32_t i = 0; i < nodesLen; ++i) {
+        const auto &cpuProfileNode = profileInfo.nodes[i];
+        profileNode.push_back(ProfileNode::FromCpuProfileNode(cpuProfileNode));
+    }
+    profile->SetNodes(std::move(profileNode));
+    return profile;
+}
+
+Local<ObjectRef> Profile::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
     size_t nodeLen = nodes_.size();
@@ -2324,7 +2385,7 @@ std::unique_ptr<Coverage> Coverage::Create(const EcmaVM *ecmaVm, const Local<JSV
     return coverage;
 }
 
-Local<ObjectRef> Coverage::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> Coverage::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
     params->Set(ecmaVm,
@@ -2392,7 +2453,7 @@ std::unique_ptr<FunctionCoverage> FunctionCoverage::Create(const EcmaVM *ecmaVm,
     return functionCoverage;
 }
 
-Local<ObjectRef> FunctionCoverage::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> FunctionCoverage::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
     params->Set(ecmaVm,
@@ -2469,7 +2530,7 @@ std::unique_ptr<ScriptCoverage> ScriptCoverage::Create(const EcmaVM *ecmaVm, con
     return scriptCoverage;
 }
 
-Local<ObjectRef> ScriptCoverage::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> ScriptCoverage::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
     params->Set(ecmaVm,
@@ -2515,7 +2576,7 @@ std::unique_ptr<TypeObject> TypeObject::Create(const EcmaVM *ecmaVm, const Local
     return typeObject;
 }
 
-Local<ObjectRef> TypeObject::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> TypeObject::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
     params->Set(ecmaVm,
@@ -2568,7 +2629,7 @@ std::unique_ptr<TypeProfileEntry> TypeProfileEntry::Create(const EcmaVM *ecmaVm,
     return typeProfileEntry;
 }
 
-Local<ObjectRef> TypeProfileEntry::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> TypeProfileEntry::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
     params->Set(ecmaVm,
@@ -2640,7 +2701,7 @@ std::unique_ptr<ScriptTypeProfile> ScriptTypeProfile::Create(const EcmaVM *ecmaV
     return scriptTypeProfile;
 }
 
-Local<ObjectRef> ScriptTypeProfile::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> ScriptTypeProfile::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
     params->Set(ecmaVm,
