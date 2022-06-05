@@ -126,10 +126,10 @@ DispatchResponse DispatchResponse::Fail(const CString &message)
 }
 
 void DispatcherBase::SendResponse(const DispatchRequest &request, const DispatchResponse &response,
-                                  std::unique_ptr<PtBaseReturns> result)
+                                  const PtBaseReturns &result)
 {
     if (channel_ != nullptr) {
-        channel_->SendResponse(request, response, std::move(result));
+        channel_->SendResponse(request, response, result);
     }
 }
 

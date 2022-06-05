@@ -43,58 +43,52 @@ void ProfilerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
     if (entry != dispatcherTable.end() && entry->second != nullptr) {
         (this->*(entry->second))(request);
     } else {
-        SendResponse(request, DispatchResponse::Fail("Unknown method: " + method), nullptr);
+        SendResponse(request, DispatchResponse::Fail("Unknown method: " + method));
     }
 }
 
 void ProfilerImpl::DispatcherImpl::Disable(const DispatchRequest &request)
 {
     DispatchResponse response = profiler_->Disable();
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 void ProfilerImpl::DispatcherImpl::Enable(const DispatchRequest &request)
 {
     DispatchResponse response = profiler_->Enable();
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 void ProfilerImpl::DispatcherImpl::Start(const DispatchRequest &request)
 {
     DispatchResponse response = profiler_->Start();
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 void ProfilerImpl::DispatcherImpl::Stop(const DispatchRequest &request)
 {
     std::unique_ptr<Profile> profile;
-    DispatchResponse response = profiler_->Stop(profile);
-    std::unique_ptr<StopReturns> result = std::make_unique<StopReturns>(std::move(profile));
-    SendResponse(request, response, std::move(result));
+    DispatchResponse response = profiler_->Stop(&profile);
+    StopReturns result(std::move(profile));
+    SendResponse(request, response, result);
 }
 
 void ProfilerImpl::DispatcherImpl::GetBestEffortCoverage(const DispatchRequest &request)
 {
     DispatchResponse response = profiler_->GetBestEffortCoverage();
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 void ProfilerImpl::DispatcherImpl::StopPreciseCoverage(const DispatchRequest &request)
 {
     DispatchResponse response = profiler_->StopPreciseCoverage();
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 void ProfilerImpl::DispatcherImpl::TakePreciseCoverage(const DispatchRequest &request)
 {
     DispatchResponse response = profiler_->TakePreciseCoverage();
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 void ProfilerImpl::DispatcherImpl::StartPreciseCoverage(const DispatchRequest &request)
@@ -102,33 +96,29 @@ void ProfilerImpl::DispatcherImpl::StartPreciseCoverage(const DispatchRequest &r
     std::unique_ptr<StartPreciseCoverageParam> params =
         StartPreciseCoverageParam::Create(request.GetEcmaVM(), request.GetParams());
     if (params == nullptr) {
-        SendResponse(request, DispatchResponse::Fail("Profiler got wrong params"), nullptr);
+        SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
     DispatchResponse response = profiler_->StartPreciseCoverage(std::move(params));
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 void ProfilerImpl::DispatcherImpl::StartTypeProfile(const DispatchRequest &request)
 {
     DispatchResponse response = profiler_->StartTypeProfile();
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 void ProfilerImpl::DispatcherImpl::StopTypeProfile(const DispatchRequest &request)
 {
     DispatchResponse response = profiler_->StopTypeProfile();
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 void ProfilerImpl::DispatcherImpl::TakeTypeProfile(const DispatchRequest &request)
 {
     DispatchResponse response = profiler_->TakeTypeProfile();
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 bool ProfilerImpl::Frontend::AllowNotify() const
@@ -142,8 +132,8 @@ void ProfilerImpl::Frontend::ConsoleProfileFinished()
         return;
     }
 
-    auto consoleProfileFinished = std::make_unique<tooling::ConsoleProfileFinished>();
-    channel_->SendNotification(std::move(consoleProfileFinished));
+    tooling::ConsoleProfileFinished consoleProfileFinished;
+    channel_->SendNotification(consoleProfileFinished);
 }
 
 void ProfilerImpl::Frontend::ConsoleProfileStarted()
@@ -152,8 +142,8 @@ void ProfilerImpl::Frontend::ConsoleProfileStarted()
         return;
     }
 
-    auto consoleProfileStarted = std::make_unique<tooling::ConsoleProfileStarted>();
-    channel_->SendNotification(std::move(consoleProfileStarted));
+    tooling::ConsoleProfileStarted consoleProfileStarted;
+    channel_->SendNotification(consoleProfileStarted);
 }
 
 void ProfilerImpl::Frontend::PreciseCoverageDeltaUpdate()
@@ -162,8 +152,8 @@ void ProfilerImpl::Frontend::PreciseCoverageDeltaUpdate()
         return;
     }
 
-    auto preciseCoverageDeltaUpdate = std::make_unique<tooling::PreciseCoverageDeltaUpdate>();
-    channel_->SendNotification(std::move(preciseCoverageDeltaUpdate));
+    tooling::PreciseCoverageDeltaUpdate preciseCoverageDeltaUpdate;
+    channel_->SendNotification(preciseCoverageDeltaUpdate);
 }
 
 DispatchResponse ProfilerImpl::Disable()
@@ -184,14 +174,14 @@ DispatchResponse ProfilerImpl::Start()
     return DispatchResponse::Ok();
 }
 
-DispatchResponse ProfilerImpl::Stop(std::unique_ptr<Profile> &profile)
+DispatchResponse ProfilerImpl::Stop(std::unique_ptr<Profile> *profile)
 {
     auto profileInfo = panda::DFXJSNApi::StopCpuProfilerForInfo();
     if (profileInfo == nullptr) {
         LOG(ERROR, DEBUGGER) << "Transfer DFXJSNApi::StopCpuProfilerImpl is failure";
         return DispatchResponse::Fail("Stop is failure");
     }
-    profile = FromCpuProfiler(profileInfo);
+    *profile = Profile::FromProfileInfo(*profileInfo);
     return DispatchResponse::Ok();
 }
 
@@ -235,65 +225,5 @@ DispatchResponse ProfilerImpl::TakeTypeProfile()
 {
     LOG(ERROR, DEBUGGER) << "TakeTypeProfile not support now.";
     return DispatchResponse::Ok();
-}
-
-std::unique_ptr<RuntimeCallFrame> ProfilerImpl::FromCpuFrameInfo(const std::unique_ptr<FrameInfo> &cpuFrameInfo)
-{
-    auto runtimeCallFrame = std::make_unique<RuntimeCallFrame>();
-    runtimeCallFrame->SetFunctionName(cpuFrameInfo->functionName.c_str());
-    runtimeCallFrame->SetScriptId(std::to_string(cpuFrameInfo->scriptId).c_str());
-    runtimeCallFrame->SetColumnNumber(cpuFrameInfo->columnNumber);
-    runtimeCallFrame->SetLineNumber(cpuFrameInfo->lineNumber);
-    runtimeCallFrame->SetUrl(cpuFrameInfo->url.c_str());
-    return runtimeCallFrame;
-}
-
-std::unique_ptr<ProfileNode> ProfilerImpl::FromCpuProfileNode(const std::unique_ptr<CpuProfileNode> &cpuProfileNode)
-{
-    auto profileNode = std::make_unique<ProfileNode>();
-    profileNode->SetId(cpuProfileNode->id);
-    profileNode->SetHitCount(cpuProfileNode->hitCount);
-
-    size_t childrenLen = cpuProfileNode->children.size();
-    CVector<int32_t> tmpChildren;
-    tmpChildren.reserve(childrenLen);
-    for (uint32_t i = 0; i < childrenLen; ++i) {
-        tmpChildren.push_back(cpuProfileNode->children[i]);
-    }
-    profileNode->SetChildren(tmpChildren);
-    auto frameInfo = std::make_unique<FrameInfo>(cpuProfileNode->codeEntry);
-    profileNode->SetCallFrame(FromCpuFrameInfo(frameInfo));
-    return profileNode;
-}
-
-std::unique_ptr<Profile> ProfilerImpl::FromCpuProfiler(const std::unique_ptr<ProfileInfo> &profileInfo)
-{
-    auto profile = std::make_unique<Profile>();
-    profile->SetStartTime(static_cast<int64_t>(profileInfo->startTime));
-    profile->SetEndTime(static_cast<int64_t>(profileInfo->stopTime));
-    size_t samplesLen = profileInfo->samples.size();
-    CVector<int32_t> tmpSamples;
-    tmpSamples.reserve(samplesLen);
-    for (uint32_t i = 0; i < samplesLen; ++i) {
-        tmpSamples.push_back(profileInfo->samples[i]);
-    }
-    profile->SetSamples(tmpSamples);
-
-    size_t timeDeltasLen = profileInfo->timeDeltas.size();
-    CVector<int32_t> tmpTimeDeltas;
-    tmpTimeDeltas.reserve(timeDeltasLen);
-    for (uint32_t i = 0; i < timeDeltasLen; ++i) {
-        tmpTimeDeltas.push_back(profileInfo->timeDeltas[i]);
-    }
-    profile->SetTimeDeltas(tmpTimeDeltas);
-    
-    CVector<std::unique_ptr<ProfileNode>> profileNode;
-    size_t nodesLen = profileInfo->nodes.size();
-    for (uint32_t i = 0; i < nodesLen; ++i) {
-        auto cpuProfileNode = std::make_unique<CpuProfileNode>(profileInfo->nodes[i]);
-        profileNode.push_back(FromCpuProfileNode(cpuProfileNode));
-    }
-    profile->SetNodes(std::move(profileNode));
-    return profile;
 }
 }  // namespace panda::ecmascript::tooling

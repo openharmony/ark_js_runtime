@@ -25,6 +25,9 @@
 #include "ecmascript/tooling/interface/js_debugger_manager.h"
 
 namespace panda::ecmascript::tooling {
+namespace test {
+class TestHooks;
+}  // namespace test
 class DebuggerImpl final {
 public:
     DebuggerImpl(const EcmaVM *vm, ProtocolChannel *channel, RuntimeImpl *runtime);
@@ -54,13 +57,6 @@ public:
     DispatchResponse StepOut();
     DispatchResponse StepOver(std::unique_ptr<StepOverParams> params);
     DispatchResponse SetBlackboxPatterns();
-
-    // for testcase
-    JSDebugger *GetDebugger() const
-    {
-        return jsDebugger_;
-    }
-    bool GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames);
 
     /**
      * @brief: match first script and callback
@@ -95,6 +91,7 @@ public:
         }
         return false;
     }
+    bool GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames);
 
     class DispatcherImpl final : public DispatcherBase {
     public:
@@ -154,10 +151,10 @@ private:
         explicit Frontend(ProtocolChannel *channel) : channel_(channel) {}
 
         void BreakpointResolved(const EcmaVM *vm);
-        void Paused(const EcmaVM *vm, std::unique_ptr<tooling::Paused> paused);
+        void Paused(const EcmaVM *vm, const tooling::Paused &paused);
         void Resumed(const EcmaVM *vm);
         void ScriptFailedToParse(const EcmaVM *vm);
-        void ScriptParsed(const EcmaVM *vm, const std::unique_ptr<PtScript> &script);
+        void ScriptParsed(const EcmaVM *vm, const PtScript &script);
         void WaitForDebugger(const EcmaVM *vm);
 
     private:
@@ -184,6 +181,7 @@ private:
     JsDebuggerManager::ObjectUpdaterFunc updaterFunc_ {nullptr};
 
     friend class JSPtHooks;
+    friend class test::TestHooks;
 };
 }  // namespace panda::ecmascript::tooling
 #endif
