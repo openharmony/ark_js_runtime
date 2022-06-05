@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -39,8 +39,9 @@ public:
     bool Has(JSTaggedValue value) const;
 
     static JSHandle<TaggedArray> OwnKeys(JSThread *thread, const JSHandle<JSAPIQueue> &obj);
-    static bool GetOwnProperty(JSThread *thread, const JSHandle<JSAPIQueue> &obj, const JSHandle<JSTaggedValue> &key,
-                               PropertyDescriptor &desc);
+    static bool GetOwnProperty(JSThread *thread, const JSHandle<JSAPIQueue> &obj, const JSHandle<JSTaggedValue> &key);
+    static OperationResult GetProperty(JSThread *thread, const JSHandle<JSAPIQueue> &obj,
+                                       const JSHandle<JSTaggedValue> &key);
 
     inline uint32_t GetSize() const
     {

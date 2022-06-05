@@ -154,15 +154,17 @@ JSTaggedValue JSAPIPlainArray::Set(JSThread *thread, const JSHandle<JSAPIPlainAr
 }
 
 bool JSAPIPlainArray::GetOwnProperty(JSThread *thread, const JSHandle<JSAPIPlainArray> &obj,
-                                     const JSHandle<JSTaggedValue> &key, PropertyDescriptor &desc)
+                                     const JSHandle<JSTaggedValue> &key)
 {
     TaggedArray *keyArray = TaggedArray::Cast(obj->GetKeys().GetTaggedObject());
     int32_t size = obj->GetLength();
-    int32_t index = obj->BinarySearch(keyArray, 0, size, key.GetTaggedValue().GetNumber());
-    if (index < 0 || index > size) {
+    int32_t index = obj->BinarySearch(keyArray, 0, size, key.GetTaggedValue().GetInt());
+    if (index < 0 || index >= size) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "GetOwnProperty index out-of-bounds", false);
     }
-    return JSObject::GetOwnProperty(thread, JSHandle<JSObject>::Cast(obj), key, desc);
+
+    obj->Get(key.GetTaggedValue());
+    return true;
 }
 
 OperationResult JSAPIPlainArray::GetProperty(JSThread *thread, const JSHandle<JSAPIPlainArray> &obj,
@@ -170,8 +172,8 @@ OperationResult JSAPIPlainArray::GetProperty(JSThread *thread, const JSHandle<JS
 {
     TaggedArray *keyArray = TaggedArray::Cast(obj->GetKeys().GetTaggedObject());
     int32_t size = obj->GetLength();
-    int32_t index = obj->BinarySearch(keyArray, 0, size, key.GetTaggedValue().GetNumber());
-    if (index < 0 || index > size) {
+    int32_t index = obj->BinarySearch(keyArray, 0, size, key.GetTaggedValue().GetInt());
+    if (index < 0 || index >= size) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "GetProperty index out-of-bounds",
                                      OperationResult(thread, JSTaggedValue::Exception(), PropertyMetaData(false)));
     }

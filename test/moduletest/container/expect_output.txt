@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Copyright (c) 2022 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,6 +14,52 @@
 container test start
 1
 TypeError: Cannot set property on Container
+test linkedlist has: true
+test linkedlist not has: true
+test linkedlist getLastIndexOf: true
+test linkedlist getIndexOf: true
+test linkedlist removeByIndex: true
+test linkedlist remove: true
+test linkedlist remove1: true
+test linkedlist getFirst: true
+test linkedlist getLast: true
+test linkedlist insert: true
+test linkedlist set: true
+test linkedlist clone: true
+test linkedlist addfirst: true
+test linkedlist removeFirst: true
+test linkedlist intertor: true
+test linkedlist forEach: true
+test linkedlist clear: true
+test linkedlist get: true
+test linkedlist getLastIndexOf: true
+test linkedlist removeByIndex: There is no such element to delete
+test linkedlist remove: true
+test linkedlist convertToArray: true
+test list get 1: true
+test list has: true
+test list not has: true
+test list equal: true
+test list equal: true
+test list getLastIndexOf: true
+test list getIndexOf: true
+test list removeByIndex: true
+test list remove: true
+test list replaceAllElements: true
+test list getFirst: true
+test list getLast: true
+test list insert: true
+test list set: true
+test list sort: true
+test list getSubList: true
+test list convertToArray: true
+test list itertor: true
+test list forEach: true
+test list clear: true
+test list get: true
+test list getLastIndexOf: true
+test list removeByIndex: There is no such element to delete
+test list remove: false
 ### test TreeMap start ###
 test get, out: true
 test hasKey and hasValue, out: true

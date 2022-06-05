@@ -188,7 +188,6 @@ HWTEST_F_L0(JSAPIQueueTest, GetOwnProperty)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     JSHandle<JSAPIQueue> jsQueue = CreateQueue();
-    PropertyDescriptor queueDesc(thread);
 
     std::string queueValue("queuevalue");
     for (uint32_t i = 0; i < DEFAULT_LENGTH; i++) {
@@ -199,9 +198,9 @@ HWTEST_F_L0(JSAPIQueueTest, GetOwnProperty)
     // test GetOwnProperty
     int testInt = 1;
     JSHandle<JSTaggedValue> queueKey1(thread, JSTaggedValue(testInt));
-    EXPECT_TRUE(JSAPIQueue::GetOwnProperty(thread, jsQueue, queueKey1, queueDesc));
+    EXPECT_TRUE(JSAPIQueue::GetOwnProperty(thread, jsQueue, queueKey1));
     testInt = 9;
     JSHandle<JSTaggedValue> queueKey2(thread, JSTaggedValue(testInt));
-    EXPECT_FALSE(JSAPIQueue::GetOwnProperty(thread, jsQueue, queueKey2, queueDesc));
+    EXPECT_FALSE(JSAPIQueue::GetOwnProperty(thread, jsQueue, queueKey2));
 }
 }  // namespace panda::test

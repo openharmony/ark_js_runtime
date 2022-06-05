@@ -23,6 +23,8 @@
 #include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_api_deque.h"
+#include "ecmascript/js_api_linked_list.h"
+#include "ecmascript/js_api_list.h"
 #include "ecmascript/js_api_plain_array.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_stack.h"
@@ -1411,6 +1413,14 @@ JSTaggedValue FastRuntimeStub::GetContainerProperty(JSThread *thread, JSTaggedVa
             res = JSAPIVector::Get(thread, JSHandle<JSAPIVector>::Cast(self), index);
             break;
         }
+        case JSType::JS_API_LIST: {
+            res = JSAPIList::Cast(receiver.GetTaggedObject())->Get(index);
+            break;
+        }
+        case JSType::JS_API_LINKED_LIST: {
+            res = JSAPILinkedList::Cast(receiver.GetTaggedObject())->Get(index);
+            break;
+        }
         default:
             break;
     }
@@ -1428,9 +1438,11 @@ JSTaggedValue FastRuntimeStub::SetContainerProperty(JSThread *thread, JSTaggedVa
         case JSType::JS_API_QUEUE:
             res = JSAPIQueue::Cast(receiver.GetTaggedObject())->Set(thread, index, value);
             break;
-        case JSType::JS_API_PLAIN_ARRAY:
-            res = JSAPIPlainArray::Set(thread, JSHandle<JSAPIPlainArray> (thread, receiver), index, value);
+        case JSType::JS_API_PLAIN_ARRAY: {
+            JSHandle<JSAPIPlainArray> plainArray(thread, receiver);
+            res = JSAPIPlainArray::Set(thread, plainArray, index, value);
             break;
+        }
         case JSType::JS_API_DEQUE:
             res = JSAPIDeque::Cast(receiver.GetTaggedObject())->Set(thread, index, value);
             break;
@@ -1440,6 +1452,16 @@ JSTaggedValue FastRuntimeStub::SetContainerProperty(JSThread *thread, JSTaggedVa
         case JSType::JS_API_VECTOR:
             res = JSAPIVector::Cast(receiver.GetTaggedObject())->Set(thread, index, value);
             break;
+        case JSType::JS_API_LIST: {
+            JSHandle<JSAPIList> singleList(thread, receiver);
+            res = JSAPIList::Set(thread, singleList, index, JSHandle<JSTaggedValue>(thread, value));
+            break;
+        }
+        case JSType::JS_API_LINKED_LIST: {
+            JSHandle<JSAPILinkedList> doubleList(thread, receiver);
+            res = JSAPILinkedList::Set(thread, doubleList, index, JSHandle<JSTaggedValue>(thread, value));
+            break;
+        }
         default:
             break;
     }

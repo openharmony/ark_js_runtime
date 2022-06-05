@@ -535,10 +535,9 @@ HWTEST_F_L0(JSAPIArrayListTest, GetOwnProperty)
         JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));
         JSAPIArrayList::Add(thread, arrayList, value);
     }
-    PropertyDescriptor descRes(thread);
     for (uint32_t i = 0; i < elementsNums; i++) {
         JSHandle<JSTaggedValue> key(thread, JSTaggedValue(i));
-        bool getOwnPropertyRes = JSAPIArrayList::GetOwnProperty(thread, arrayList, key, descRes);
+        bool getOwnPropertyRes = JSAPIArrayList::GetOwnProperty(thread, arrayList, key);
         EXPECT_EQ(getOwnPropertyRes, true);
     }
 }

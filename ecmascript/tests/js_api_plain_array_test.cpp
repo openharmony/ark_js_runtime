@@ -250,4 +250,29 @@ HWTEST_F_L0(JSAPIPlainArrayTest, PA_RemvoeAnrRemvoeAtAndSetValueAtAndGetValueAt)
     taggedValue = array->GetValueAt(lvalue);
     EXPECT_TRUE(JSTaggedValue::Equal(thread, value, JSHandle<JSTaggedValue>(thread, taggedValue)));
 }
+
+HWTEST_F_L0(JSAPIPlainArrayTest, GetOwnProperty)
+{
+    constexpr uint32_t DEFAULT_LENGTH = 8;
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSAPIPlainArray> toor(thread, CreatePlainArray());
+    JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
+    JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
+
+    std::string plainArrayvalue("plainArrayvalue");
+    for (uint32_t i = 0; i < DEFAULT_LENGTH; i++) {
+        uint32_t ikey = 100 + i;
+        std::string ivalue = plainArrayvalue + std::to_string(i);
+        key.Update(JSTaggedValue(ikey));
+        value.Update(factory->NewFromStdString(ivalue).GetTaggedValue());
+        JSAPIPlainArray::Add(thread, toor, key, value);
+    }
+    // test GetOwnProperty
+    int testInt = 100 + 1;
+    JSHandle<JSTaggedValue> plainArrayKey1(thread, JSTaggedValue(testInt));
+    EXPECT_TRUE(JSAPIPlainArray::GetOwnProperty(thread, toor, plainArrayKey1));
+    testInt = 100 + 20;
+    JSHandle<JSTaggedValue> plainArrayKey2(thread, JSTaggedValue(testInt));
+    EXPECT_FALSE(JSAPIPlainArray::GetOwnProperty(thread, toor, plainArrayKey2));
+}
 }  // namespace panda::test
