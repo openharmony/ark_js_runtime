@@ -45,6 +45,10 @@
 #include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_linked_list.h"
+#include "ecmascript/js_api_linked_list_iterator.h"
+#include "ecmascript/js_api_list.h"
+#include "ecmascript/js_api_list_iterator.h"
 #include "ecmascript/js_api_plain_array.h"
 #include "ecmascript/js_api_plain_array_iterator.h"
 #include "ecmascript/js_api_queue.h"
@@ -61,8 +65,6 @@
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
-#include "ecmascript/js_api_arraylist.h"
-#include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_async_function.h"
 #include "ecmascript/js_bigint.h"
 #include "ecmascript/js_collator.h"
@@ -107,6 +109,7 @@
 #include "ecmascript/record.h"
 #include "ecmascript/shared_mm/shared_mm.h"
 #include "ecmascript/symbol_table.h"
+#include "ecmascript/tagged_list.h"
 #include "ecmascript/tagged_tree.h"
 #include "ecmascript/template_map.h"
 #include "ecmascript/ts_types/ts_obj_layout_info.h"
@@ -1108,6 +1111,12 @@ void ObjectFactory::InitializeJSObject(const JSHandle<JSObject> &obj, const JSHa
             break;
         case JSType::JS_API_VECTOR:
             JSAPIVector::Cast(*obj)->SetLength(0);
+            break;
+        case JSType::JS_API_LIST:
+            JSAPIList::Cast(*obj)->SetSingleList(thread_, JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_API_LINKED_LIST:
+            JSAPILinkedList::Cast(*obj)->SetDoubleList(thread_, JSTaggedValue::Undefined());
             break;
         case JSType::JS_ASYNC_FUNC_OBJECT:
             JSAsyncFuncObject::Cast(*obj)->SetGeneratorContext(thread_, JSTaggedValue::Undefined());
@@ -2933,9 +2942,8 @@ JSHandle<JSAPIDequeIterator> ObjectFactory::NewJSAPIDequeIterator(const JSHandle
     return iter;
 }
 
-JSHandle<TaggedArray> ObjectFactory::CopyQueue(const JSHandle<TaggedArray> &old, uint32_t oldLength,
-                                               uint32_t newLength, [[maybe_unused]] uint32_t front,
-                                               [[maybe_unused]] uint32_t tail)
+JSHandle<TaggedArray> ObjectFactory::CopyQueue(const JSHandle<TaggedArray> &old, uint32_t newLength,
+                                               uint32_t front, uint32_t tail)
 {
     NewObjectHook();
     size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), newLength);
@@ -2945,11 +2953,17 @@ JSHandle<TaggedArray> ObjectFactory::CopyQueue(const JSHandle<TaggedArray> &old,
     newArray->InitializeWithSpecialValue(JSTaggedValue::Hole(), newLength);
     newArray->SetLength(newLength);
 
-    for (uint32_t i = 0; i < oldLength; i++) {
-        JSTaggedValue value = old->Get(i);
-        newArray->Set(thread_, i, value);
+    uint32_t curIndex = front;
+    // newIndex use in new TaggedArray, 0 : New TaggedArray index
+    uint32_t newIndex = 0;
+    uint32_t oldCapacity = old->GetLength();
+    while (curIndex != tail) {
+        JSTaggedValue value = old->Get(curIndex);
+        newArray->Set(thread_, newIndex, value);
+        ASSERT(oldCapacity != 0);
+        curIndex = (curIndex + 1) % oldCapacity;
+        newIndex = newIndex + 1;
     }
-
     return newArray;
 }
 
@@ -3032,6 +3046,48 @@ JSHandle<JSAPIVectorIterator> ObjectFactory::NewJSAPIVectorIterator(const JSHand
     iter->SetIteratedVector(thread_, vector);
     iter->SetNextIndex(0);
     return iter;
+}
+
+JSHandle<JSAPILinkedListIterator> ObjectFactory::NewJSAPILinkedListIterator(const JSHandle<JSAPILinkedList> &linkedList)
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> proto(thread_, thread_->GlobalConstants()->GetLinkedListIteratorPrototype());
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSHClass> dynHandle(globalConst->GetHandledJSAPILinkedListIteratorClass());
+    dynHandle->SetPrototype(thread_, proto);
+    JSHandle<JSAPILinkedListIterator> iter(NewJSObject(dynHandle));
+    iter->GetJSHClass()->SetExtensible(true);
+    iter->SetIteratedLinkedList(thread_, linkedList->GetDoubleList());
+    iter->SetNextIndex(0);
+    return iter;
+}
+
+JSHandle<JSAPIListIterator> ObjectFactory::NewJSAPIListIterator(const JSHandle<JSAPIList> &List)
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> proto(thread_, thread_->GlobalConstants()->GetListIteratorPrototype());
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSHClass> dynHandle(globalConst->GetHandledJSAPIListIteratorClass());
+    dynHandle->SetPrototype(thread_, proto);
+    JSHandle<JSAPIListIterator> iter(NewJSObject(dynHandle));
+    iter->GetJSHClass()->SetExtensible(true);
+    iter->SetIteratedList(thread_, List->GetSingleList());
+    iter->SetNextIndex(0);
+    return iter;
+}
+
+JSHandle<JSAPIList> ObjectFactory::NewJSAPIList()
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> function(thread_, thread_->GlobalConstants()->GetListFunction());
+    return JSHandle<JSAPIList>::Cast(NewJSObjectByConstructor(JSHandle<JSFunction>(function), function));
+}
+
+JSHandle<JSAPILinkedList> ObjectFactory::NewJSAPILinkedList()
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> function(thread_, thread_->GlobalConstants()->GetLinkedListFunction());
+    return JSHandle<JSAPILinkedList>::Cast(NewJSObjectByConstructor(JSHandle<JSFunction>(function), function));
 }
 
 JSHandle<ImportEntry> ObjectFactory::NewImportEntry()

@@ -30,6 +30,10 @@
 #include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_linked_list.h"
+#include "ecmascript/js_api_linked_list_iterator.h"
+#include "ecmascript/js_api_list.h"
+#include "ecmascript/js_api_list_iterator.h"
 #include "ecmascript/js_api_plain_array.h"
 #include "ecmascript/js_api_plain_array_iterator.h"
 #include "ecmascript/js_api_queue.h"
@@ -483,6 +487,18 @@ public:
                 break;
             case JSType::JS_API_VECTOR_ITERATOR:
                 JSAPIVectorIterator::Cast(object)->VisitRangeSlot(visitor);
+                break;
+            case JSType::JS_API_LIST:
+                JSAPIList::Cast(object)->VisitRangeSlot(visitor);
+                break;
+            case JSType::JS_API_LINKED_LIST:
+                JSAPILinkedList::Cast(object)->VisitRangeSlot(visitor);
+                break;
+            case JSType::JS_API_LIST_ITERATOR:
+                JSAPIListIterator::Cast(object)->VisitRangeSlot(visitor);
+                break;
+            case JSType::JS_API_LINKED_LIST_ITERATOR:
+                JSAPILinkedListIterator::Cast(object)->VisitRangeSlot(visitor);
                 break;
             case JSType::BIGINT:
                 BigInt::Cast(object)->VisitRangeSlot(visitor);

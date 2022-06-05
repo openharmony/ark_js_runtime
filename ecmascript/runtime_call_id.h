@@ -684,7 +684,52 @@ namespace panda::ecmascript {
     V(Queue, Pop)                             \
     V(Queue, ForEach)                         \
     V(Queue, GetIteratorObj)                  \
-    V(Queue, GetSize)
+    V(Queue, GetSize)                         \
+    V(List, Constructor)                      \
+    V(List, Add)                              \
+    V(List, GetFirst)                         \
+    V(List, GetLast)                          \
+    V(List, Insert)                           \
+    V(List, Clear)                            \
+    V(List, RemoveByIndex)                    \
+    V(List, Remove)                           \
+    V(List, Has)                              \
+    V(List, IsEmpty)                          \
+    V(List, Get)                              \
+    V(List, GetIndexOf)                       \
+    V(List, GetLastIndexOf)                   \
+    V(List, Set)                              \
+    V(List, ForEach)                          \
+    V(List, ReplaceAllElements)               \
+    V(List, GetIteratorObj)                   \
+    V(List, Equal)                            \
+    V(List, Sort)                             \
+    V(List, ConvertToArray)                   \
+    V(List, GetSubList)                       \
+    V(List, Length)                           \
+    V(LinkedList, Constructor)                \
+    V(LinkedList, Length)                     \
+    V(LinkedList, Add)                        \
+    V(LinkedList, GetFirst)                   \
+    V(LinkedList, GetLast)                    \
+    V(LinkedList, Insert)                     \
+    V(LinkedList, AddFirst)                   \
+    V(LinkedList, Clear)                      \
+    V(LinkedList, Clone)                      \
+    V(LinkedList, Has)                        \
+    V(LinkedList, Get)                        \
+    V(LinkedList, GetIndexOf)                 \
+    V(LinkedList, GetLastIndexOf)             \
+    V(LinkedList, RemoveByIndex)              \
+    V(LinkedList, Remove)                     \
+    V(LinkedList, RemoveFirst)                \
+    V(LinkedList, RemoveLast)                 \
+    V(LinkedList, RemoveFirstFound)           \
+    V(LinkedList, RemoveLastFound)            \
+    V(LinkedList, Set)                        \
+    V(LinkedList, ConvertToArray)             \
+    V(LinkedList, ForEach)                    \
+    V(LinkedList, GetIteratorObj)
 
 #define ABSTRACT_OPERATION_LIST(V) \
     V(JSTaggedValue, ToString)     \

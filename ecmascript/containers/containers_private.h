@@ -87,6 +87,10 @@ private:
                                         GlobalEnvConstants *globalConst);
     static JSHandle<JSTaggedValue> InitializeStack(JSThread *thread);
     static void InitializeStackIterator(JSThread *thread, GlobalEnvConstants *globalConst);
+    static JSHandle<JSTaggedValue> InitializeList(JSThread *thread);
+    static JSHandle<JSTaggedValue> InitializeLinkedList(JSThread *thread);
+    static void InitializeLinkedListIterator(JSThread *thread, const JSHandle<GlobalEnv> &env);
+    static void InitializeListIterator(JSThread *thread, const JSHandle<GlobalEnv> &env);
 };
 }  // namespace panda::ecmascript::containers
 

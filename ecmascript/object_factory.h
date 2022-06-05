@@ -114,6 +114,10 @@ class JSAPITreeSetIterator;
 class JSAPITreeMapIterator;
 class JSAPIVector;
 class JSAPIVectorIterator;
+class JSAPILinkedList;
+class JSAPIList;
+class JSAPILinkedListIterator;
+class JSAPIListIterator;
 class ModuleNamespace;
 class ImportEntry;
 class ExportEntry;
@@ -442,13 +446,17 @@ public:
     JSHandle<JSAPIPlainArrayIterator> NewJSAPIPlainArrayIterator(const JSHandle<JSAPIPlainArray> &plainarray,
                                                                  IterationKind kind);
     JSHandle<JSAPIArrayList> NewJSAPIArrayList(uint32_t capacity);
-    JSHandle<TaggedArray> CopyQueue(const JSHandle<TaggedArray> &old, uint32_t oldLength,
-                                    uint32_t newLength, uint32_t front, uint32_t tail);
+    JSHandle<TaggedArray> CopyQueue(const JSHandle<TaggedArray> &old, uint32_t newLength,
+                                    uint32_t front, uint32_t tail);
     JSHandle<JSAPIQueueIterator> NewJSAPIQueueIterator(const JSHandle<JSAPIQueue> &queue);
     JSHandle<TaggedArray> CopyDeque(const JSHandle<TaggedArray> &old, uint32_t newLength, uint32_t oldLength,
                                     uint32_t first, uint32_t last);
     JSHandle<JSAPIDequeIterator> NewJSAPIDequeIterator(const JSHandle<JSAPIDeque> &deque);
     JSHandle<JSAPIArrayListIterator> NewJSAPIArrayListIterator(const JSHandle<JSAPIArrayList> &arrayList);
+    JSHandle<JSAPIList> NewJSAPIList();
+    JSHandle<JSAPILinkedList> NewJSAPILinkedList();
+    JSHandle<JSAPILinkedListIterator> NewJSAPILinkedListIterator(const JSHandle<JSAPILinkedList> &linkedList);
+    JSHandle<JSAPIListIterator> NewJSAPIListIterator(const JSHandle<JSAPIList> &list);
     JSHandle<JSAPITreeMapIterator> NewJSAPITreeMapIterator(const JSHandle<JSAPITreeMap> &map, IterationKind kind);
     JSHandle<JSAPITreeSetIterator> NewJSAPITreeSetIterator(const JSHandle<JSAPITreeSet> &set, IterationKind kind);
     JSHandle<JSAPIStackIterator> NewJSAPIStackIterator(const JSHandle<JSAPIStack> &stack);

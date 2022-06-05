@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,23 +35,26 @@ JSTaggedValue JSAPIDequeIterator::Next(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "this value is not an deque iterator", JSTaggedValue::Exception());
     }
     JSHandle<JSAPIDequeIterator> iter(input);
-    JSHandle<JSTaggedValue> deque(thread, iter->GetIteratedDeque());
+    JSHandle<JSTaggedValue> iteratorDeque(thread, iter->GetIteratedDeque());
     JSHandle<JSTaggedValue> undefinedHandle = thread->GlobalConstants()->GetHandledUndefined();
-    if (deque->IsUndefined()) {
+    if (iteratorDeque->IsUndefined()) {
         return JSIterator::CreateIterResultObject(thread, undefinedHandle, true).GetTaggedValue();
     }
+    JSHandle<JSAPIDeque> deque = JSHandle<JSAPIDeque>::Cast(iteratorDeque);
     uint32_t index = iter->GetNextIndex();
 
-    JSHandle<TaggedArray> elements(thread, JSHandle<JSAPIDeque>(deque)->GetElements());
+    JSHandle<TaggedArray> elements(thread, deque->GetElements());
     array_size_t capacity = elements->GetLength();
-    uint32_t last = JSHandle<JSAPIDeque>(deque)->GetLast();
+    uint32_t first = deque->GetFirst();
+    uint32_t last = deque->GetLast();
     if (index == last) {
         iter->SetIteratedDeque(thread, undefinedHandle);
         return JSIterator::CreateIterResultObject(thread, undefinedHandle, true).GetTaggedValue();
     }
     ASSERT(capacity != 0);
     iter->SetNextIndex((index + 1) % capacity);
-    JSHandle<JSTaggedValue> value = JSTaggedValue::GetProperty(thread, deque, index).GetValue();
+    uint32_t elementIndex = (index + capacity - first) % capacity;
+    JSHandle<JSTaggedValue> value = JSTaggedValue::GetProperty(thread, iteratorDeque, elementIndex).GetValue();
 
     return JSIterator::CreateIterResultObject(thread, value, false).GetTaggedValue();
 }
