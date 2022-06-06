@@ -198,6 +198,7 @@ private:
     static void CallGetterEntry(ExtendedAssembler *assembler);
     static void CallSetterEntry(ExtendedAssembler *assembler);
     static void CallNoExtraSetterEntry(ExtendedAssembler *assembler);
+    static void OptimizedCallAsmInterpreter(ExtendedAssembler *assembler);
 };
 }  // namespace panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H

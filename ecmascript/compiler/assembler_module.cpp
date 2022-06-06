@@ -94,12 +94,12 @@ int AssemblerModule::GetArgcFromJSCallMode(JSCallMode mode)
         case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
         case JSCallMode::CALL_SUPER_CALL_WITH_ARGV:
         case JSCallMode::CALL_ENTRY:
+        case JSCallMode::CALL_FROM_AOT:
             return -1;
         case JSCallMode::CALL_GETTER:
             return 0;
         case JSCallMode::CALL_SETTER:
             return 1;
-        case JSCallMode::CALL_FROM_AOT:
         default:
             UNREACHABLE();
     }

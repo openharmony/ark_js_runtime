@@ -114,6 +114,8 @@ private:
     static void JSCallCommonFastPath(ExtendedAssembler *assembler, JSCallMode mode);
     static void JSCallCommonSlowPath(ExtendedAssembler *assembler, JSCallMode mode,
         Label *fastPathEntry, Label *pushCallThis);
+    static void OptimizedCallAsmInterpreter(ExtendedAssembler *assembler, Register jsfunc, Register method, 
+                                            Register callfield, Register argC, Register argV);
 };
 }  // namespace panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H

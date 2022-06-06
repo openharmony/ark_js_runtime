@@ -296,6 +296,22 @@ void AssemblerStubs::OptimizedCallOptimized(ExtendedAssembler *assembler)
     __ Ret();
 }
 
+// OptimizedCallAsmInterpreter(ExtendedAssembler *assembler, Register jsfunc, Register method, 
+//                                            Register callfield, Register argC, Register argV)
+void AssemblerStubs::OptimizedCallAsmInterpreter(ExtendedAssembler *assembler)
+{
+    Label target;
+    PushAsmInterpEntryFrame(assembler, false);
+    __ Bl(&target);
+    PopAsmInterpEntryFrame(assembler, false);
+    __ Ret();
+    __ Bind(&target);
+    {
+        __ PushFpAndLr();
+        JSCallCommonEntry(assembler, JSCallMode::CALL_GETTER, CallGetterEntry, CallGetterSlow);
+    }
+}
+
 // uint64_t CallBuiltinTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...)
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // Input:
@@ -443,8 +459,8 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
     __ B(Condition::HS, &notJSFunction);
 
     Register method(X2);
-    Register actualArgC(X3);
-    Register callField(X4);
+    Register callField(X3);
+    Register actualArgC(X4);
     Label callNativeMethod;
     Label callOptimizedMethod;
     __ Ldr(method, MemoryOperand(jsfunc, JSFunction::METHOD_OFFSET));
@@ -452,7 +468,12 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
     __ Ldr(callField, MemoryOperand(method, JSMethod::GetCallFieldOffset(false)));
     __ Tbnz(callField, JSMethod::IsNativeBit::START_BIT, &callNativeMethod);
     __ Tbnz(callField, JSMethod::IsAotCodeBit::START_BIT, &callOptimizedMethod);
-    __ Brk(0);
+    {
+        Register argV(X5);
+        // 8 : 8 mean argV = sp + 8
+        __ Add(argV, sp, Immediate(8));
+        OptimizedCallAsmInterpreter(assembler);
+    }
 
     __ Bind(&callNativeMethod);
     {
