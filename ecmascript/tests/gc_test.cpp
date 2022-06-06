@@ -17,6 +17,7 @@
 #include "ecmascript/mem/full_gc.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/mem/stw_young_gc.h"
+#include "ecmascript/mem/partial_gc.h"
 #include "ecmascript/tests/test_helper.h"
 
 using namespace panda;
@@ -74,5 +75,63 @@ HWTEST_F_L0(GCTest, FullGCOne)
     fullGc->RunPhases();
     auto oldSizeAfter = heap->GetOldSpace()->GetHeapObjectSize();
     EXPECT_TRUE(oldSizeBefore > oldSizeAfter);
+}
+
+HWTEST_F_L0(GCTest, ChangeGCParams)
+{
+    auto heap = const_cast<Heap *>(thread->GetEcmaVM()->GetHeap());
+    EXPECT_EQ(heap->GetMemGrowingType(), MemGrowingType::HIGH_THROUGHPUT);
+    uint32_t markTaskNum = heap->GetMaxMarkTaskCount();
+    uint32_t evacuateTaskNum = heap->GetMaxEvacuateTaskCount();
+
+    auto partialGc = heap->GetPartialGC();
+    partialGc->RunPhases();
+    heap->ChangeGCParams(true);
+    heap->Prepare();
+    uint32_t markTaskNumBackground = heap->GetMaxMarkTaskCount();
+    uint32_t evacuateTaskNumBackground = heap->GetMaxEvacuateTaskCount();
+    EXPECT_TRUE(markTaskNum > markTaskNumBackground);
+    EXPECT_TRUE(evacuateTaskNum > evacuateTaskNumBackground);
+    EXPECT_EQ(heap->GetMemGrowingType(), MemGrowingType::CONSERVATIVE);
+
+    partialGc->RunPhases();
+    heap->ChangeGCParams(false);
+    heap->Prepare();
+    uint32_t markTaskNumForeground = heap->GetMaxMarkTaskCount();
+    uint32_t evacuateTaskNumForeground = heap->GetMaxEvacuateTaskCount();
+    EXPECT_EQ(markTaskNum, markTaskNumForeground);
+    EXPECT_EQ(evacuateTaskNum, evacuateTaskNumForeground);
+    EXPECT_EQ(heap->GetMemGrowingType(), MemGrowingType::HIGH_THROUGHPUT);
+}
+
+HWTEST_F_L0(GCTest, NotifyMemoryPressure)
+{
+    auto heap = const_cast<Heap *>(thread->GetEcmaVM()->GetHeap());
+    EXPECT_EQ(heap->GetMemGrowingType(), MemGrowingType::HIGH_THROUGHPUT);
+    uint32_t markTaskNum = heap->GetMaxMarkTaskCount();
+    uint32_t evacuateTaskNum = heap->GetMaxEvacuateTaskCount();
+
+    auto partialGc = heap->GetPartialGC();
+    partialGc->RunPhases();
+    heap->ChangeGCParams(true);
+    heap->NotifyMemoryPressure(true);
+    heap->Prepare();
+    uint32_t markTaskNumBackground = heap->GetMaxMarkTaskCount();
+    uint32_t evacuateTaskNumBackground = heap->GetMaxEvacuateTaskCount();
+    EXPECT_TRUE(markTaskNum > markTaskNumBackground);
+    EXPECT_TRUE(evacuateTaskNum > evacuateTaskNumBackground);
+    EXPECT_EQ(heap->GetMemGrowingType(), MemGrowingType::PRESSURE);
+
+    partialGc->RunPhases();
+    heap->ChangeGCParams(false);
+    heap->Prepare();
+    uint32_t markTaskNumForeground = heap->GetMaxMarkTaskCount();
+    uint32_t evacuateTaskNumForeground = heap->GetMaxEvacuateTaskCount();
+    EXPECT_EQ(markTaskNum, markTaskNumForeground);
+    EXPECT_EQ(evacuateTaskNum, evacuateTaskNumForeground);
+    EXPECT_EQ(heap->GetMemGrowingType(), MemGrowingType::PRESSURE);
+
+    heap->NotifyMemoryPressure(false);
+    EXPECT_EQ(heap->GetMemGrowingType(), MemGrowingType::CONSERVATIVE);
 }
 }  // namespace panda::test
