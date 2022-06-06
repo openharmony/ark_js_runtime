@@ -248,6 +248,40 @@ void AssemblerStubsX64::OptimizedCallOptimized(ExtendedAssembler *assembler)
     __ Ret();
 }
 
+// uint64_t OptimizedCallAsmInterpreter(uintptr_t glue, Register jsfunc
+//                                Register method, Register callfield, Register argC)
+// Input:  %rdi - glue
+//         %rdx - actualNumArgs
+//         %r8  - jsfunc
+
+//         sp[0 * 8]  -  argc
+//         sp[1 * 8]  -  argv[0]
+//         sp[2 * 8]  -  argv[1]
+//         .....
+//         sp[(N -3) * 8] - argv[N - 1]
+// Output: stack as followsn from high address to lowAdress
+//         sp       -      argv[N - 1]
+//         sp[-8]    -      argv[N -2]
+//         ...........................
+//         sp[- 8(N - 1)] - arg[0]
+void AssemblerStubsX64::OptimizedCallAsmInterpreter(ExtendedAssembler *assembler, Register jsfunc, Register method, 
+                                                    Register callfield, Register argC, Register argV)
+{
+    Label target;
+    PushAsmInterpEntryFrame(assembler, false);
+    __ Movq(argV, __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARGV));
+    __ Movq(callfield, __ CallDispatcherArgument(kungfu::CallDispatchInputs::CALL_FIELD));
+    __ Movq(jsfunc, rax);
+    __ Movq(argC, __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARGC));
+    __ Movq(method, __ CallDispatcherArgument(kungfu::CallDispatchInputs::METHOD));
+    __ Movq(rax, __ CallDispatcherArgument(kungfu::CallDispatchInputs::CALL_TARGET));
+    __ Callq(&target);
+    PopAsmInterpEntryFrame(assembler, false);
+    __ Ret();
+    __ Bind(&target);
+    JSCallCommonEntry(assembler, JSCallMode::CALL_FROM_AOT);
+}
+
 // uint64_t CallBuiltinTrampoline(uintptr_t glue, uintptr_t codeAddress, uint32_t argc, ...)
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // Input:   %rax - glue
@@ -430,8 +464,7 @@ void AssemblerStubsX64::JSCallWithArgV(ExtendedAssembler *assembler)
         __ Jb(&lCallNativeMethod);
         __ Btq(JSMethod::IsAotCodeBit::START_BIT, methodCallField); // is aot
         __ Jb(&lCallOptimziedMethod);
-        __ Int3();
-        __ Ret();
+        OptimizedCallAsmInterpreter(assembler, jsFuncReg, jsMethod, methodCallField, argc, rcx);
     }
 
     __ Bind(&lCallOptimziedMethod);
@@ -673,6 +706,7 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
     Register argc = rdx;
     Register methodCallField = rax;
     Register jsMethod = rsi;
+    Register argV = rcx;
     {
         __ Mov(Operand(jsFuncReg, JSFunctionBase::METHOD_OFFSET), jsMethod); // get method
         __ Movl(Operand(rsp, 8), argc); // 8: sp + 8 actual argc
@@ -681,8 +715,9 @@ void AssemblerStubsX64::JSCall(ExtendedAssembler *assembler)
         __ Jb(&lCallNativeMethod);
         __ Btq(JSMethod::IsAotCodeBit::START_BIT, methodCallField); // is aot
         __ Jb(&lCallOptimziedMethod);
-        __ Int3();
-        __ Ret();
+        __ Movq(rsp, argV);
+        __ Addq(16, argV); // 16: sp + 16 argv
+        OptimizedCallAsmInterpreter(assembler, jsFuncReg, jsMethod, methodCallField, argc, argV);
     }
 
     __ Bind(&lCallOptimziedMethod);
@@ -1489,7 +1524,7 @@ Register AssemblerStubsX64::GetThisRegsiter(ExtendedAssembler *assembler, JSCall
     } else if (mode == JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV) {
         return __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG2);
     } else {
-        ASSERT(mode == JSCallMode::CALL_THIS_WITH_ARGV);
+        ASSERT(mode == JSCallMode::CALL_THIS_WITH_ARGV || mode == JSCallMode::CALL_FROM_AOT);
         Register argvRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG1);
         Register thisRegister = __ AvailableRegister2();
         __ Movq(Operand(argvRegister, -8), thisRegister);  // 8: this is just before the argv list
