@@ -929,7 +929,7 @@ private:
     NO_COPY_SEMANTIC(PreciseCoverageDeltaUpdate);
     NO_MOVE_SEMANTIC(PreciseCoverageDeltaUpdate);
 
-    size_t timestamp_ {0};
+    int64_t timestamp_ {0};
     CString occasion_ {};
     CVector<std::unique_ptr<ScriptCoverage>> result_ {};
 };
@@ -945,12 +945,12 @@ public:
         return "HeapProfiler.heapStatsUpdate";
     }
 
-    const CVector<int32_t> *GetStatsUpdate() const
+    const CVector<uint32_t> *GetStatsUpdate() const
     {
         return &statsUpdate_;
     }
 
-    HeapStatsUpdate &SetStatsUpdate(CVector<int32_t> statsUpdate)
+    HeapStatsUpdate &SetStatsUpdate(CVector<uint32_t> statsUpdate)
     {
         statsUpdate_ = std::move(statsUpdate);
         return *this;
@@ -960,7 +960,7 @@ private:
     NO_COPY_SEMANTIC(HeapStatsUpdate);
     NO_MOVE_SEMANTIC(HeapStatsUpdate);
 
-    CVector<int32_t> statsUpdate_ {};
+    CVector<uint32_t> statsUpdate_ {};
 };
 
 class LastSeenObjectId final : public PtBaseEvents {
@@ -979,18 +979,18 @@ public:
         return lastSeenObjectId_;
     }
 
-    LastSeenObjectId &SetLastSeenObjectId(int32_t lastSeenObjectId)
+    LastSeenObjectId &SetLastSeenObjectId(uint32_t lastSeenObjectId)
     {
         lastSeenObjectId_ = lastSeenObjectId;
         return *this;
     }
 
-    size_t GetTimestamp() const
+    int64_t GetTimestamp() const
     {
         return timestamp_;
     }
 
-    LastSeenObjectId &SetTimestamp(size_t timestamp)
+    LastSeenObjectId &SetTimestamp(int64_t timestamp)
     {
         timestamp_ = timestamp;
         return *this;
@@ -1000,8 +1000,8 @@ private:
     NO_COPY_SEMANTIC(LastSeenObjectId);
     NO_MOVE_SEMANTIC(LastSeenObjectId);
 
-    int32_t lastSeenObjectId_ {};
-    size_t timestamp_ {};
+    uint32_t lastSeenObjectId_ {};
+    int64_t timestamp_ {};
 };
 
 class ReportHeapSnapshotProgress final : public PtBaseEvents {

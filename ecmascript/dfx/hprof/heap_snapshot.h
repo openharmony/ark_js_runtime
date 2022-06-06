@@ -29,6 +29,7 @@
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/mem/c_containers.h"
 #include "os/mem.h"
+#include "ecmascript/tooling/interface/stream.h"
 
 namespace panda::ecmascript {
 // Define the Object Graphic
@@ -196,6 +197,26 @@ public:
         return timeStampUs_;
     }
 
+    uint32_t GetSize() const
+    {
+        return size_;
+    }
+
+    void SetSize(uint32_t size)
+    {
+        size_ = size;
+    }
+
+    uint32_t GetCount() const
+    {
+        return count_;
+    }
+
+    void SetCount(uint32_t count)
+    {
+        count_ = count;
+    }
+
 private:
     static int64_t Now()
     {
@@ -207,6 +228,8 @@ private:
 
     int lastSequenceId_ {0};
     int64_t timeStampUs_ {0};
+    uint32_t size_ {0};
+    uint32_t count_ {0};
 };
 
 class HeapEntryMap {
@@ -248,10 +271,11 @@ public:
 
     void PrepareSnapshot();
     void UpdateNode();
-    void AddNode(uintptr_t address);
-    void MoveNode(uintptr_t address, uintptr_t forward_address);
+    void AddNode(TaggedObject* address);
+    void MoveNode(uintptr_t address, TaggedObject* forward_address);
     void RecordSampleTime();
     bool FinishSnapshot();
+    void PushHeapStat(Stream* stream);
 
     const CVector<TimeStamp> &GetTimeStamps() const
     {
