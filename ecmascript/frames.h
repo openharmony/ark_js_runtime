@@ -697,7 +697,7 @@ struct BuiltinFrame : public base::AlignedStruct<base::AlignedPointer::Size(),
     }
     size_t GetNumArgs()
     {
-        return numArgs;
+        return numArgs & 0xFFFFFFFF;
     }
 
     alignas(EAS) FrameType type;
