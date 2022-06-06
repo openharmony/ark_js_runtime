@@ -59,6 +59,8 @@ public:
     static size_t GetArrayBufferSize(const EcmaVM *vm);
     static size_t GetHeapTotalSize(const EcmaVM *vm);
     static size_t GetHeapUsedSize(const EcmaVM *vm);
+    static void NotifyApplicationState(EcmaVM *vm, bool inBackground);
+    static void NotifyMemoryPressure(EcmaVM *vm, bool inHighMemoryPressure);
 
     // profile generator
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)

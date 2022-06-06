@@ -46,6 +46,11 @@ enum class MarkType : uint8_t {
     MARK_FULL
 };
 
+enum class MemGrowingType : uint8_t {
+    HIGH_THROUGHPUT,
+    CONSERVATIVE,
+    PRESSURE
+};
 class Heap {
 public:
     explicit Heap(EcmaVM *ecmaVm);
@@ -236,7 +241,8 @@ public:
     {
         return parallelGC_;
     }
-
+    void ChangeGCParams(bool inBackground);
+    void NotifyMemoryPressure(bool inHighMemoryPressure);
     bool CheckCanDistributeTask();
 
     void WaitRunningTaskFinished();
@@ -245,10 +251,7 @@ public:
      * Concurrent marking related configurations and utilities.
      */
 
-    void EnableConcurrentMarking(bool flag)
-    {
-        concurrentMarkingEnabled_ = flag;
-    }
+    void EnableConcurrentMarking(bool flag);
 
     bool ConcurrentMarkingEnabled() const
     {
@@ -320,6 +323,16 @@ public:
 
     void WaitConcurrentMarkingFinished();
 
+    MemGrowingType GetMemGrowingType() const
+    {
+        return memGrowingtype_;
+    }
+
+    void SetMemGrowingType(MemGrowingType memGrowingType)
+    {
+        memGrowingtype_ = memGrowingType;
+    }
+
     inline size_t GetCommittedSize() const;
 
     inline size_t GetHeapObjectSize() const;
@@ -332,6 +345,16 @@ public:
     }
 
     size_t GetArrayBufferSize() const;
+
+    uint32_t GetMaxMarkTaskCount() const
+    {
+        return maxMarkTaskCount_;
+    }
+
+    uint32_t GetMaxEvacuateTaskCount() const
+    {
+        return maxEvacuateTaskCount_;
+    }
 
     ChunkMap<DerivedDataKey, uintptr_t> *GetDerivedPointers() const
     {
@@ -481,18 +504,24 @@ private:
 
     bool parallelGC_ {true};
     bool concurrentMarkingEnabled_ {true};
+    bool disableConcurrentMarkRequested_ {false};
     bool fullGCRequested_ {false};
 
     size_t globalSpaceAllocLimit_ {0};
     bool oldSpaceLimitAdjusted_ {false};
     size_t promotedSize_ {0};
     size_t semiSpaceCopiedSize_ {0};
+    MemGrowingType memGrowingtype_ {MemGrowingType::HIGH_THROUGHPUT};
 
     bool clearTaskFinished_ {true};
     os::memory::Mutex waitClearTaskFinishedMutex_;
     os::memory::ConditionVariable waitClearTaskFinishedCV_;
     uint32_t runningTaskCount_ {0};
-    uint32_t maxTaskCount_ {0};
+    // parallel marker task number.
+    uint32_t maxMarkTaskCount_ {0};
+    // parallel evacuator task number.
+    uint32_t initialEvacuateTaskCount_ {0};
+    uint32_t maxEvacuateTaskCount_ {0};
     os::memory::Mutex waitTaskFinishedMutex_;
     os::memory::ConditionVariable waitTaskFinishedCV_;
 

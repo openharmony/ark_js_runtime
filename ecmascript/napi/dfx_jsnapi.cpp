@@ -132,6 +132,15 @@ size_t DFXJSNApi::GetHeapUsedSize(const EcmaVM *vm)
     return vm->GetHeap()->GetHeapObjectSize();
 }
 
+void DFXJSNApi::NotifyApplicationState(EcmaVM *vm, bool inBackground)
+{
+    const_cast<ecmascript::Heap *>(vm->GetHeap())->ChangeGCParams(inBackground);
+}
+
+void DFXJSNApi::NotifyMemoryPressure(EcmaVM *vm, bool inHighMemoryPressure)
+{
+    const_cast<ecmascript::Heap *>(vm->GetHeap())->NotifyMemoryPressure(inHighMemoryPressure);
+}
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
 void DFXJSNApi::StartCpuProfilerForFile(const EcmaVM *vm, const std::string &fileName)
 {
