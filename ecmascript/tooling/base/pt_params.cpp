@@ -1057,4 +1057,43 @@ Local<ObjectRef> StartPreciseCoverageParam::ToObject(const EcmaVM *ecmaVm) const
 
     return params;
 }
+
+std::unique_ptr<SetSamplingIntervalParams> SetSamplingIntervalParams::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
+{
+    ASSERT(ecmaVm);
+    if (params.IsEmpty()) {
+        LOG(ERROR, DEBUGGER) << "SetSamplingIntervalParams::Create params is nullptr";
+        return nullptr;
+    }
+    CString error;
+    auto paramsObject = std::make_unique<SetSamplingIntervalParams>();
+
+    Local<JSValueRef> result =
+        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "interval")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            paramsObject->interval_ = static_cast<int>(Local<NumberRef>(result)->Value());
+        } else {
+            error += "'interval' should be a Number;";
+        }
+    } else {
+        error += "should contain 'interval';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "SetSamplingIntervalParams::Create " << error;
+        return nullptr;
+    }
+    return paramsObject;
+}
+
+Local<ObjectRef> SetSamplingIntervalParams::ToObject(const EcmaVM *ecmaVm) const
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "interval")),
+        IntegerRef::New(ecmaVm, interval_));
+    return params;
+}
 }  // namespace panda::ecmascript::tooling
