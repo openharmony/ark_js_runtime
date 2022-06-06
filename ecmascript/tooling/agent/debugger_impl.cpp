@@ -527,7 +527,11 @@ DispatchResponse DebuggerImpl::EvaluateOnCallFrame(std::unique_ptr<EvaluateOnCal
     CString dest;
     if (!DecodeAndCheckBase64(expression, dest)) {
         LOG(ERROR, DEBUGGER) << "EvaluateValue: base64 decode failed";
-        return DispatchResponse::Create(CmptEvaluateValue(callFrameId, expression, result));
+        auto ret = CmptEvaluateValue(callFrameId, expression, result);
+        if (ret.has_value()) {
+            LOG(ERROR, DEBUGGER) << "Evaluate fail, expression: " << expression;
+        }
+        return DispatchResponse::Create(ret);
     }
 
     auto funcRef = DebuggerApi::GenerateFuncFromBuffer(vm_, dest.data(), dest.size(),
@@ -1066,6 +1070,9 @@ std::optional<CString> DebuggerImpl::CmptEvaluateValue(CallFrameId callFrameId, 
         }
     } else {
         Local<JSValueRef> value = ConvertToLocal(varValue);
+        if (value.IsEmpty()) {
+            return "Unsupported expression.";
+        }
         bool ret = DebuggerExecutor::SetValue(vm_, frameHandler, name, value);
         if (ret) {
             *result = RemoteObject::FromTagged(vm_, value);
