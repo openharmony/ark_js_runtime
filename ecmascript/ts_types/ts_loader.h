@@ -272,6 +272,8 @@ public:
 
     size_t PUBLIC_API AddConstString(JSTaggedValue string);
 
+    bool PUBLIC_API GetTypeInferenceLog() const;
+
     // add string to constantstringtable and get its index
     size_t PUBLIC_API GetStringIdx(JSHandle<JSTaggedValue> constPool, const uint16_t id);
 
