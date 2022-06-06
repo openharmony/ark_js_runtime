@@ -27,55 +27,57 @@ class JSThread;
 
 enum RegionFlags {
     UNINITIALIZED = 0,
-    // We shuold avoid using the lower 3 bits.
+    // We shuold avoid using the lower 3 bits (bits 0 to 2).
     // If ZAP_MEM is enabled, the value of the lower 3 bits conflicts with the INVALID_VALUE.
-    NEVER_EVACUATE = 1 << 3,
-    HAS_AGE_MARK = 1 << 4,
-    BELOW_AGE_MARK = 1 << 5,
-    IN_YOUNG_SPACE = 1 << 6,
-    IN_SNAPSHOT_SPACE = 1 << 7,
-    IN_HUGE_OBJECT_SPACE = 1 << 8,
-    IN_OLD_SPACE = 1 << 9,
-    IN_NON_MOVABLE_SPACE = 1 << 10,
-    IN_MACHINE_CODE_SPACE = 1 << 11,
-    IN_COLLECT_SET = 1 << 12,
-    IN_NEW_TO_NEW_SET = 1 << 13,
-    HAS_BEEN_SWEPT = 1 << 14,
-    NEED_RELOCATE = 1 << 15,
-};
 
-static inline bool IsFlagSet(uintptr_t flags, RegionFlags target)
-{
-    return (flags & target) == target;
-}
+    // Bits 3 to 7 are reserved to denote the space where the region is located.
+    IN_YOUNG_SPACE = 0x08,
+    IN_SNAPSHOT_SPACE = 0x09,
+    IN_HUGE_OBJECT_SPACE = 0x0A,
+    IN_OLD_SPACE = 0x0B,
+    IN_NON_MOVABLE_SPACE = 0x0C,
+    IN_MACHINE_CODE_SPACE = 0x0D,
+    VALID_SPACE_MASK = 0xFF,
+
+    // Below flags are used for GC, and each flag has a dedicated bit starting from the 8th bit.
+    // We could think about further separating them from the space type values,
+    // e.g., by using separately declared types.
+    NEVER_EVACUATE = 1 << 8,
+    HAS_AGE_MARK = 1 << 9,
+    BELOW_AGE_MARK = 1 << 10,
+    IN_COLLECT_SET = 1 << 11,
+    IN_NEW_TO_NEW_SET = 1 << 12,
+    HAS_BEEN_SWEPT = 1 << 13,
+    NEED_RELOCATE = 1 << 14,
+};
 
 static inline std::string ToSpaceTypeName(uintptr_t flags)
 {
-    if (IsFlagSet(flags, RegionFlags::IN_YOUNG_SPACE)) {
+    if ((flags & RegionFlags::VALID_SPACE_MASK) == RegionFlags::IN_YOUNG_SPACE) {
         return "young space";
     }
 
-    if (IsFlagSet(flags, RegionFlags::IN_OLD_SPACE)) {
+    if ((flags & RegionFlags::VALID_SPACE_MASK) == RegionFlags::IN_OLD_SPACE) {
         return "old space";
     }
 
-    if (IsFlagSet(flags, RegionFlags::IN_SNAPSHOT_SPACE)) {
+    if ((flags & RegionFlags::VALID_SPACE_MASK) == RegionFlags::IN_SNAPSHOT_SPACE) {
         return "snapshot space";
     }
 
-    if (IsFlagSet(flags, RegionFlags::IN_HUGE_OBJECT_SPACE)) {
+    if ((flags & RegionFlags::VALID_SPACE_MASK) == RegionFlags::IN_HUGE_OBJECT_SPACE) {
         return "huge object space";
     }
 
-    if (IsFlagSet(flags, IN_MACHINE_CODE_SPACE)) {
+    if ((flags & RegionFlags::VALID_SPACE_MASK) == RegionFlags::IN_MACHINE_CODE_SPACE) {
         return "machine code space";
     }
 
-    if (IsFlagSet(flags, IN_NON_MOVABLE_SPACE)) {
+    if ((flags & RegionFlags::VALID_SPACE_MASK) == RegionFlags::IN_NON_MOVABLE_SPACE) {
         return "non movable space";
     }
 
-    return "other space";
+    return "invalid space";
 }
 
 #define REGION_OFFSET_LIST(V)                                                             \
@@ -100,7 +102,7 @@ public:
           aliveObject_(0),
           wasted_(0)
     {
-        bitsetSize_ = IsFlagSet(flags_, RegionFlags::IN_HUGE_OBJECT_SPACE) ?
+        bitsetSize_ = (flags & RegionFlags::VALID_SPACE_MASK) == RegionFlags::IN_HUGE_OBJECT_SPACE ?
             GCBitset::BYTE_PER_WORD : GCBitset::SizeOfGCBitset(end - begin);
         markGCBitset_ = new (ToVoidPtr(begin)) GCBitset();
         markGCBitset_->Clear(bitsetSize_);
@@ -161,18 +163,21 @@ public:
         return thread_;
     }
 
-    void ResetFlag()
+    bool IsGCFlagSet(RegionFlags flag) const
     {
-        flags_ = 0;
+        ASSERT(flag > RegionFlags::VALID_SPACE_MASK);
+        return (flags_ & flag) == flag;
     }
 
-    void SetFlag(RegionFlags flag)
+    void SetGCFlag(RegionFlags flag)
     {
+        ASSERT(flag > RegionFlags::VALID_SPACE_MASK);
         flags_ |= flag;
     }
 
-    void ClearFlag(RegionFlags flag)
+    void ClearGCFlag(RegionFlags flag)
     {
+        ASSERT(flag > RegionFlags::VALID_SPACE_MASK);
         // NOLINTNEXTLINE(hicpp-signed-bitwise)
         flags_ &= ~flag;
     }
@@ -222,24 +227,19 @@ public:
         return reinterpret_cast<Region *>(objAddress & ~DEFAULT_REGION_MASK);
     }
 
-    bool IsValid() const
+    void Invalidate()
     {
-#if ECMASCRIPT_ENABLE_ZAP_MEM
-        if (flags_ == INVALID_VALUE) {
-            return false;
-        }
-#endif
-        return flags_ != RegionFlags::UNINITIALIZED;
+        flags_ = RegionFlags::UNINITIALIZED;
     }
 
     bool InYoungSpace() const
     {
-        return IsFlagSet(flags_, RegionFlags::IN_YOUNG_SPACE);
+        return (flags_ & RegionFlags::VALID_SPACE_MASK) == RegionFlags::IN_YOUNG_SPACE;
     }
 
     bool InOldSpace() const
     {
-        return IsFlagSet(flags_, RegionFlags::IN_OLD_SPACE);
+        return (flags_ & RegionFlags::VALID_SPACE_MASK) == RegionFlags::IN_OLD_SPACE;
     }
 
     bool InYoungOrOldSpace() const
@@ -249,22 +249,38 @@ public:
 
     bool InHugeObjectSpace() const
     {
-        return IsFlagSet(flags_, RegionFlags::IN_HUGE_OBJECT_SPACE);
+        return (flags_ & RegionFlags::VALID_SPACE_MASK) == RegionFlags::IN_HUGE_OBJECT_SPACE;
     }
 
     bool InMachineCodeSpace() const
     {
-        return IsFlagSet(flags_, RegionFlags::IN_MACHINE_CODE_SPACE);
+        return (flags_ & RegionFlags::VALID_SPACE_MASK) == RegionFlags::IN_MACHINE_CODE_SPACE;
     }
 
     bool InNonMovableSpace() const
     {
-        return IsFlagSet(flags_, RegionFlags::IN_NON_MOVABLE_SPACE);
+        return (flags_ & RegionFlags::VALID_SPACE_MASK) == RegionFlags::IN_NON_MOVABLE_SPACE;
+    }
+
+    bool InSnapshotSpace() const
+    {
+        return (flags_ & RegionFlags::VALID_SPACE_MASK) == RegionFlags::IN_SNAPSHOT_SPACE;
+    }
+
+    bool InHeapSpace() const
+    {
+        uintptr_t space = flags_ & RegionFlags::VALID_SPACE_MASK;
+        return (space == RegionFlags::IN_YOUNG_SPACE ||
+                space == RegionFlags::IN_OLD_SPACE ||
+                space == RegionFlags::IN_HUGE_OBJECT_SPACE ||
+                space == RegionFlags::IN_MACHINE_CODE_SPACE ||
+                space == RegionFlags::IN_NON_MOVABLE_SPACE ||
+                space == RegionFlags::IN_SNAPSHOT_SPACE);
     }
 
     bool InCollectSet() const
     {
-        return IsFlagSet(flags_, RegionFlags::IN_COLLECT_SET);
+        return IsGCFlagSet(RegionFlags::IN_COLLECT_SET);
     }
 
     bool InYoungSpaceOrCSet() const
@@ -274,32 +290,32 @@ public:
 
     bool InNewToNewSet() const
     {
-        return IsFlagSet(flags_, RegionFlags::IN_NEW_TO_NEW_SET);
+        return IsGCFlagSet(RegionFlags::IN_NEW_TO_NEW_SET);
     }
 
     bool HasAgeMark() const
     {
-        return IsFlagSet(flags_, RegionFlags::HAS_AGE_MARK);
+        return IsGCFlagSet(RegionFlags::HAS_AGE_MARK);
     }
 
     bool BelowAgeMark() const
     {
-        return IsFlagSet(flags_, RegionFlags::BELOW_AGE_MARK);
+        return IsGCFlagSet(RegionFlags::BELOW_AGE_MARK);
     }
 
     bool NeedRelocate() const
     {
-        return IsFlagSet(flags_, RegionFlags::NEED_RELOCATE);
+        return IsGCFlagSet(RegionFlags::NEED_RELOCATE);
     }
 
     void SetSwept()
     {
-        SetFlag(RegionFlags::HAS_BEEN_SWEPT);
+        SetGCFlag(RegionFlags::HAS_BEEN_SWEPT);
     }
 
     void ResetSwept()
     {
-        ClearFlag(RegionFlags::HAS_BEEN_SWEPT);
+        ClearGCFlag(RegionFlags::HAS_BEEN_SWEPT);
     }
 
     bool InRange(uintptr_t address) const

@@ -56,9 +56,11 @@ Region *HeapRegionAllocator::AllocateAlignedRegion(Space *space, size_t capacity
 void HeapRegionAllocator::FreeRegion(Region *region)
 {
     auto size = region->GetCapacity();
-    DecreaseAnnoMemoryUsage(size);
     bool isRegular = region->InHugeObjectSpace() ? false : true;
     auto allocateBase = region->GetAllocateBase();
+
+    DecreaseAnnoMemoryUsage(size);
+    region->Invalidate();
 #if ECMASCRIPT_ENABLE_ZAP_MEM
     if (memset_s(ToVoidPtr(allocateBase), size, INVALID_VALUE, size) != EOK) {
         LOG_ECMA(FATAL) << "memset_s failed";
