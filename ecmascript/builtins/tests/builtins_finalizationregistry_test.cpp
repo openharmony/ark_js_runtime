@@ -17,6 +17,7 @@
 #include "ecmascript/js_finalization_registry.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_array_iterator.h"
 
@@ -32,12 +33,10 @@
 #include "ecmascript/tests/test_helper.h"
 #include "utils/bit_utils.h"
 
-#include "ecmascript/jobs/micro_job_queue.h"
-
 using namespace panda::ecmascript;
 using namespace panda::ecmascript::builtins;
 using BuiltinsBase = panda::ecmascript::base::BuiltinsBase;
-static JSTaggedValue testArgv = JSTaggedValue(0);
+static int testValue = 0;
 
 namespace panda::test {
 class BuiltinsFinalizationRegistryTest : public testing::Test {
@@ -70,7 +69,7 @@ public:
     public:
         static JSTaggedValue cleanupCallback()
         {
-            testArgv = JSTaggedValue(10);  // number of 10
+            ++testValue;
             return JSTaggedValue::Undefined();
         }
     };
@@ -116,6 +115,7 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, FinalizationRegistryConstructor)
 // finalizationRegistry.Register(target, heldValue [ , unregisterToken ])
 HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register1)
 {
+    testValue = 0;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> objectFunc = env->GetObjectFunction();
@@ -136,12 +136,13 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register1)
 
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
     BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo.get());
-    ASSERT_EQ(testArgv, JSTaggedValue(0));
+    ASSERT_EQ(testValue, 0);
 }
 
 // finalizationRegistry.Register(target, heldValue [ , unregisterToken ])
 HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register2)
 {
+    testValue = 0;
     EcmaVM *vm = thread->GetEcmaVM();
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
@@ -149,31 +150,143 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register2)
 
     JSTaggedValue result = CreateFinalizationRegistryConstructor(thread);
     JSHandle<JSFinalizationRegistry> jsfinalizationRegistry(thread, result);
-    JSTaggedValue target =
-	    factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc).GetTaggedValue();
+    vm->SetEnableForceGC(false);
+    JSTaggedValue target = JSTaggedValue::Undefined();
+    {
+        [[maybe_unused]] EcmaHandleScope handleScope(thread);
+        auto obj =
+	        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
+        target = obj.GetTaggedValue();
+        auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
+        ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
+        ecmaRuntimeCallInfo->SetThis(jsfinalizationRegistry.GetTaggedValue());
+        ecmaRuntimeCallInfo->SetCallArg(0, target);
+        ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(10));
+        ecmaRuntimeCallInfo->SetCallArg(2, target);
 
-    auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
-    ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
-    ecmaRuntimeCallInfo->SetThis(jsfinalizationRegistry.GetTaggedValue());
-    ecmaRuntimeCallInfo->SetCallArg(0, target);
-    ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(10));
-    ecmaRuntimeCallInfo->SetCallArg(2, target);
-    target = JSTaggedValue::Undefined();
-
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo.get());
-    [[maybe_unused]] JSTaggedValue target22 =
-	    factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc).GetTaggedValue();
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo.get());
+        TestHelper::TearDownFrame(thread, prev);
+    }
     vm->CollectGarbage(TriggerGCType::FULL_GC);
     if (!thread->HasPendingException()) {
         job::MicroJobQueue::ExecutePendingJob(thread, vm->GetMicroJobQueue());
     }
-    ASSERT_EQ(testArgv, JSTaggedValue(0));
+    vm->SetEnableForceGC(true);
+    ASSERT_EQ(testValue, 1);
+}
+
+// finalizationRegistry.Register(target, heldValue [ , unregisterToken ])
+HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register3)
+{
+    testValue = 0;
+    EcmaVM *vm = thread->GetEcmaVM();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<JSTaggedValue> objectFunc = env->GetObjectFunction();
+
+    JSTaggedValue result = CreateFinalizationRegistryConstructor(thread);
+    JSHandle<JSFinalizationRegistry> jsfinalizationRegistry(thread, result);
+
+    vm->SetEnableForceGC(false);
+    JSTaggedValue target = JSTaggedValue::Undefined();
+    JSTaggedValue target1 = JSTaggedValue::Undefined();
+    {
+        [[maybe_unused]] EcmaHandleScope handleScope(thread);
+        auto obj =
+	        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
+        auto obj1 =
+	        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
+        target = obj.GetTaggedValue();
+        target1 = obj1.GetTaggedValue();
+        auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
+        ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
+        ecmaRuntimeCallInfo->SetThis(jsfinalizationRegistry.GetTaggedValue());
+        ecmaRuntimeCallInfo->SetCallArg(0, target);
+        ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(10));
+        ecmaRuntimeCallInfo->SetCallArg(2, target);
+
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo.get());
+        TestHelper::TearDownFrame(thread, prev);
+
+        auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
+        ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
+        ecmaRuntimeCallInfo1->SetThis(jsfinalizationRegistry.GetTaggedValue());
+        ecmaRuntimeCallInfo1->SetCallArg(0, target1);
+        ecmaRuntimeCallInfo1->SetCallArg(1, JSTaggedValue(10));
+        ecmaRuntimeCallInfo1->SetCallArg(2, target1);
+
+        [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
+        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo1.get());
+        TestHelper::TearDownFrame(thread, prev1);
+    }
+    vm->CollectGarbage(TriggerGCType::FULL_GC);
+    if (!thread->HasPendingException()) {
+        job::MicroJobQueue::ExecutePendingJob(thread, vm->GetMicroJobQueue());
+    }
+    vm->SetEnableForceGC(true);
+    ASSERT_EQ(testValue, 2);
+}
+
+// finalizationRegistry.Register(target, heldValue [ , unregisterToken ])
+HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register4)
+{
+    testValue = 0;
+    EcmaVM *vm = thread->GetEcmaVM();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<JSTaggedValue> objectFunc = env->GetObjectFunction();
+
+    JSTaggedValue result = CreateFinalizationRegistryConstructor(thread);
+    JSHandle<JSFinalizationRegistry> jsfinalizationRegistry(thread, result);
+    JSTaggedValue result1 = CreateFinalizationRegistryConstructor(thread);
+    JSHandle<JSFinalizationRegistry> jsfinalizationRegistry1(thread, result1);
+    vm->SetEnableForceGC(false);
+    JSTaggedValue target = JSTaggedValue::Undefined();
+    JSTaggedValue target1 = JSTaggedValue::Undefined();
+    {
+        [[maybe_unused]] EcmaHandleScope handleScope(thread);
+        auto obj =
+	        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
+        auto obj1 =
+	        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
+        target = obj.GetTaggedValue();
+        target1 = obj1.GetTaggedValue();
+        auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
+        ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
+        ecmaRuntimeCallInfo->SetThis(jsfinalizationRegistry.GetTaggedValue());
+        ecmaRuntimeCallInfo->SetCallArg(0, target);
+        ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(10));
+        ecmaRuntimeCallInfo->SetCallArg(2, target);
+
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo.get());
+        TestHelper::TearDownFrame(thread, prev);
+
+        auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
+        ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
+        ecmaRuntimeCallInfo1->SetThis(jsfinalizationRegistry1.GetTaggedValue());
+        ecmaRuntimeCallInfo1->SetCallArg(0, target1);
+        ecmaRuntimeCallInfo1->SetCallArg(1, JSTaggedValue(10));
+        ecmaRuntimeCallInfo1->SetCallArg(2, target1);
+
+        [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
+        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo1.get());
+        TestHelper::TearDownFrame(thread, prev1);
+    }
+    vm->CollectGarbage(TriggerGCType::FULL_GC);
+    if (!thread->HasPendingException()) {
+        job::MicroJobQueue::ExecutePendingJob(thread, vm->GetMicroJobQueue());
+    }
+    vm->SetEnableForceGC(true);
+    ASSERT_EQ(testValue, 2);
 }
 
 // finalizationRegistry.Unregister(unregisterToken ])
-HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Unregister)
+HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Unregister1)
 {
+    testValue = 0;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> objectFunc = env->GetObjectFunction();
@@ -201,7 +314,50 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Unregister)
     ecmaRuntimeCallInfo1->SetCallArg(0, target.GetTaggedValue());
 
     [[maybe_unused]] auto prev1 = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
-    BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo1.get());
-    ASSERT_EQ(testArgv, JSTaggedValue(0));
+    BuiltinsFinalizationRegistry::Unregister(ecmaRuntimeCallInfo1.get());
+    ASSERT_EQ(testValue, 0);
+}
+
+HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Unregister2)
+{
+    testValue = 0;
+    EcmaVM *vm = thread->GetEcmaVM();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<JSTaggedValue> objectFunc = env->GetObjectFunction();
+
+    JSTaggedValue result = CreateFinalizationRegistryConstructor(thread);
+    JSHandle<JSFinalizationRegistry> jsfinalizationRegistry(thread, result);
+    vm->SetEnableForceGC(false);
+    JSTaggedValue target = JSTaggedValue::Undefined();
+    {
+        [[maybe_unused]] EcmaHandleScope handleScope(thread);
+        auto obj =
+	        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
+        target = obj.GetTaggedValue();
+        auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
+        ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
+        ecmaRuntimeCallInfo->SetThis(jsfinalizationRegistry.GetTaggedValue());
+        ecmaRuntimeCallInfo->SetCallArg(0, target);
+        ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(10));
+        ecmaRuntimeCallInfo->SetCallArg(2, target);
+
+        [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+        BuiltinsFinalizationRegistry::Register(ecmaRuntimeCallInfo.get());
+
+        auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
+        ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
+        ecmaRuntimeCallInfo1->SetThis(jsfinalizationRegistry.GetTaggedValue());
+        ecmaRuntimeCallInfo1->SetCallArg(0, target);
+
+        BuiltinsFinalizationRegistry::Unregister(ecmaRuntimeCallInfo1.get());
+        TestHelper::TearDownFrame(thread, prev);
+    }
+    vm->CollectGarbage(TriggerGCType::FULL_GC);
+    if (!thread->HasPendingException()) {
+        job::MicroJobQueue::ExecutePendingJob(thread, vm->GetMicroJobQueue());
+    }
+    vm->SetEnableForceGC(true);
+    ASSERT_EQ(testValue, 0);
 }
 }  // namespace panda::test
