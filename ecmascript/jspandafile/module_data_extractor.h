@@ -36,6 +36,7 @@ public:
                                    JSHandle<SourceTextModule> &moduleRecord);
     static JSHandle<JSTaggedValue> ParseModule(JSThread *thread, const JSPandaFile *jsPandaFile,
                                                const CString &descriptor);
+    static JSHandle<JSTaggedValue> ParseCjsModule(JSThread *thread, const CString &descriptor);
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_JSPANDAFILE_MODULE_DATA_EXTRACTOR_H

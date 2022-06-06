@@ -126,6 +126,10 @@ JSHandle<SourceTextModule> SourceTextModule::HostResolveImportedModule(JSThread 
         std::string dirPath = std::string(baseFilename);
         std::string requestPath = std::string(moduleFilename);
         std::string callbackModuleName = resolvePathCallback(dirPath, requestPath);
+        if (callbackModuleName == "") {
+            LOG_ECMA(ERROR) << "moduleRequest callbackModuleName is hole failed";
+            UNREACHABLE();
+        }
         moduleFullname = callbackModuleName.c_str();
         return thread->GetEcmaVM()->GetModuleManager()->HostResolveImportedModule(moduleFullname);
     }
