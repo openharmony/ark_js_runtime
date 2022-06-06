@@ -143,7 +143,8 @@ private:
     void Lower(GateRef gate);
     void LowerAdd2Dyn(GateRef gate, GateRef glue);
     void LowerCreateIterResultObj(GateRef gate, GateRef glue);
-    void LowerSuspendGenerator(GateRef gate, GateRef glue);
+    void SaveFrameToContext(GateRef gate, GateRef glue, GateRef jsFunc);
+    void LowerSuspendGenerator(GateRef gate, GateRef glue, [[maybe_unused]]GateRef jsFunc);
     void LowerAsyncFunctionAwaitUncaught(GateRef gate, GateRef glue);
     void LowerAsyncFunctionResolve(GateRef gate, GateRef glue);
     void LowerAsyncFunctionReject(GateRef gate, GateRef glue);
@@ -265,6 +266,7 @@ private:
     void LowerCopyRestArgs(GateRef gate, GateRef glue, GateRef actualArgc);
     GateRef LowerCallRuntime(GateRef glue, int index, const std::vector<GateRef> &args, bool useLabel = false);
     int32_t ComputeCallArgc(GateRef gate, EcmaOpcode op);
+    GateRef GetValueFromTaggedArray(GateRef arrayGate, GateRef indexOffset);
 
     BytecodeCircuitBuilder *bcBuilder_;
     Circuit *circuit_;

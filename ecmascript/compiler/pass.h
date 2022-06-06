@@ -16,14 +16,15 @@
 #ifndef ECMASCRIPT_COMPILER_PASS_H
 #define ECMASCRIPT_COMPILER_PASS_H
 
-#include "bytecode_circuit_builder.h"
-#include "common_stubs.h"
-#include "type_lowering.h"
-#include "llvm_codegen.h"
-#include "scheduler.h"
-#include "slowpath_lowering.h"
-#include "type_inference/type_infer.h"
-#include "verifier.h"
+#include "ecmascript/compiler/async_function_lowering.h"
+#include "ecmascript/compiler/bytecode_circuit_builder.h"
+#include "ecmascript/compiler/common_stubs.h"
+#include "ecmascript/compiler/llvm_codegen.h"
+#include "ecmascript/compiler/scheduler.h"
+#include "ecmascript/compiler/slowpath_lowering.h"
+#include "ecmascript/compiler/type_inference/type_infer.h"
+#include "ecmascript/compiler/type_lowering.h"
+#include "ecmascript/compiler/verifier.h"
 
 namespace panda::ecmascript::kungfu {
 class PassData {
@@ -132,6 +133,18 @@ public:
     }
 private:
     std::unique_ptr<CodeGeneratorImpl> llvmImpl_ {nullptr};
+};
+
+class AsyncFunctionLoweringPass {
+public:
+    bool Run(PassData* data, bool enableLog, BytecodeCircuitBuilder *builder, CompilationConfig *cmpCfg)
+    {
+        AsyncFunctionLowering lowering(builder, data->GetCircuit(), cmpCfg, enableLog);
+        if (lowering.IsAsyncRelated()) {
+            lowering.ProcessAll();
+        }
+        return true;
+    }
 };
 } // namespace panda::ecmascript::kungfu
 #endif
