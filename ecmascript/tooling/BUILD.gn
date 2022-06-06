@@ -21,8 +21,9 @@ config("ark_ecma_debugger_config") {
   ]
 
   include_dirs = [
-    "//ark/js_runtime/ecmascript/tooling",
+    ".",
     "//third_party/boost",
+    "//third_party/cJSON",
   ]
 }
 
@@ -35,6 +36,7 @@ debugger_sources = [
   "backend/js_pt_extractor.cpp",
   "backend/js_pt_hooks.cpp",
   "base/pt_events.cpp",
+  "base/pt_json.cpp",
   "base/pt_params.cpp",
   "base/pt_returns.cpp",
   "base/pt_script.cpp",
@@ -52,6 +54,7 @@ source_set("libark_ecma_debugger_set") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
+    "//third_party/cJSON:cjson_static",
   ]
 
   cflags_cc = [ "-fvisibility=hidden" ]
@@ -83,6 +86,7 @@ source_set("libark_ecma_debugger_test_set") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
+    "//third_party/cJSON:cjson_static",
   ]
 }
 
