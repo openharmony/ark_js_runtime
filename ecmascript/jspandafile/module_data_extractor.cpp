@@ -64,6 +64,8 @@ JSHandle<JSTaggedValue> ModuleDataExtractor::ParseModule(JSThread *thread, const
     moduleRecord->SetEcmaModuleFilename(thread, ecmaModuleFilename);
 
     moduleRecord->SetStatus(ModuleStatus::UNINSTANTIATED);
+    moduleRecord->SetTypes(ModuleTypes::ECMAMODULE);
+
     return JSHandle<JSTaggedValue>::Cast(moduleRecord);
 }
 
@@ -171,5 +173,26 @@ void ModuleDataExtractor::ExtractModuleDatas(JSThread *thread, const JSPandaFile
             }
         }
     });
+}
+
+JSHandle<JSTaggedValue> ModuleDataExtractor::ParseCjsModule(JSThread *thread, const CString &descriptor)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSTaggedValue> defaultValue = thread->GlobalConstants()->GetHandledUndefined();
+    JSHandle<SourceTextModule> moduleRecord = factory->NewSourceTextModule();
+
+    JSHandle<EcmaString> cjsModuleFilename = factory->NewFromUtf8(descriptor);
+    moduleRecord->SetEcmaModuleFilename(thread, cjsModuleFilename);
+    JSHandle<TaggedArray> requestModuleArray = factory->EmptyArray();
+    moduleRecord->SetRequestedModules(thread, requestModuleArray);
+
+    JSHandle<JSTaggedValue> defaultName = thread->GlobalConstants()->GetHandledDefaultString();
+    JSHandle<ExportEntry> exportEntry =
+        factory->NewExportEntry(defaultName, defaultValue, defaultValue, defaultName);
+    SourceTextModule::AddLocalExportEntry(thread, moduleRecord, exportEntry);
+    moduleRecord->SetStatus(ModuleStatus::UNINSTANTIATED);
+    moduleRecord->SetTypes(ModuleTypes::CJSMODULE);
+
+    return JSHandle<JSTaggedValue>::Cast(moduleRecord);
 }
 }  // namespace panda::ecmascript

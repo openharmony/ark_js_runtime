@@ -3150,6 +3150,7 @@ JSHandle<SourceTextModule> ObjectFactory::NewSourceTextModule()
     obj->SetDFSAncestorIndex(SourceTextModule::UNDEFINED_INDEX);
     obj->SetEvaluationError(SourceTextModule::UNDEFINED_INDEX);
     obj->SetStatus(ModuleStatus::UNINSTANTIATED);
+    obj->SetTypes(ModuleTypes::UNKNOWN);
     return obj;
 }
 
