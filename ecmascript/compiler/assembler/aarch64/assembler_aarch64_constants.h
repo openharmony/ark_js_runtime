@@ -184,6 +184,8 @@ enum LoadStoreOpCode {
     LDR_Register = 0xb8600800,
     LDRB_Register = 0x38600800,
     LDRH_Register = 0x78600800,
+    LDUR_Offset   = 0xb8400000,
+    STUR_Offset   = 0xb8000000,
 };
 
 enum  AddrMode {
