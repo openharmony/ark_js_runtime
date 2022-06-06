@@ -20,7 +20,8 @@ if (!defined(ark_independent_build)) {
   js_root = "//js_runtime"
   third_party_gn_path = "$build_root/third_party_gn"
 }
-compile_llvm_online = false
+compile_llvm_online = true
+compiler_llvm_12 = false
 run_with_asan = false
 enable_bytrace = true
 enable_dump_in_faultlog = true

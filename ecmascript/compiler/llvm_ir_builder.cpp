@@ -375,10 +375,12 @@ void LLVMIRBuilder::GenPrologue([[maybe_unused]] LLVMModuleRef &module, LLVMBuil
     if (frameType == panda::ecmascript::FrameType::OPTIMIZED_FRAME) {
         LLVMAddTargetDependentFunctionAttr(function_, "frame-reserved-slots",
             std::to_string(reservedSlotsSize).c_str());
+        LLVMAddTargetDependentFunctionAttr(function_, "js-stub-call", "0");
     } else if (frameType == panda::ecmascript::FrameType::OPTIMIZED_JS_FUNCTION_FRAME) {
         reservedSlotsSize = slotSize_ * static_cast<int>(ReservedSlots::OPTIMIZED_JS_FUNCTION_RESERVED_SLOT);
         LLVMAddTargetDependentFunctionAttr(function_, "frame-reserved-slots",
             std::to_string(reservedSlotsSize).c_str());
+        LLVMAddTargetDependentFunctionAttr(function_, "js-stub-call", "1");
     } else {
         COMPILER_OPTIONAL_LOG(FATAL) << "frameType interpret type error !";
         ASSERT_PRINT(static_cast<uintptr_t>(frameType), "is not support !");
