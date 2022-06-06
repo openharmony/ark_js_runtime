@@ -50,7 +50,8 @@ public:
     static void DumpHeapSnapshot(const EcmaVM *vm, int dumpFormat, bool isVmMode = true, bool isPrivate = false);
 
     static bool BuildNativeAndJsBackStackTrace(const EcmaVM *vm, std::string &stackTraceStr);
-    static bool StartHeapTracking(const EcmaVM *vm, double timeInterval, bool isVmMode = true);
+    static bool StartHeapTracking(const EcmaVM *vm, double timeInterval, bool isVmMode = true,
+                                  Stream *stream = nullptr);
     static bool StopHeapTracking(const EcmaVM *vm, const std::string &filePath);
     static bool StopHeapTracking(const EcmaVM *vm, Stream *stream, Progress *progress = nullptr);
     static void PrintStatisticResult(const EcmaVM *vm);

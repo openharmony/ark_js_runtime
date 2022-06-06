@@ -22,6 +22,7 @@
 #include "ecmascript/mem/heap-inl.h"
 #include "ecmascript/mem/gc_stats.h"
 #include "ecmascript/tooling/interface/file_stream.h"
+#include "ecmascript/tooling/interface/stream.h"
 
 #if defined(ENABLE_DUMP_IN_FAULTLOG)
 #include "include/faultloggerd_client.h"
@@ -39,6 +40,7 @@ template<typename T>
 using JSHandle = ecmascript::JSHandle<T>;
 using ecmascript::FileStream;
 using ecmascript::FileDescriptorStream;
+using ecmascript::Stream;
 
 void DFXJSNApi::DumpHeapSnapshot(const EcmaVM *vm, int dumpFormat,
                                  const std::string &path, bool isVmMode, bool isPrivate)
@@ -80,10 +82,10 @@ bool DFXJSNApi::BuildNativeAndJsBackStackTrace(const EcmaVM *vm, std::string &st
     return true;
 }
 
-bool DFXJSNApi::StartHeapTracking(const EcmaVM *vm, double timeInterval, bool isVmMode)
+bool DFXJSNApi::StartHeapTracking(const EcmaVM *vm, double timeInterval, bool isVmMode, Stream *stream)
 {
     ecmascript::HeapProfilerInterface *heapProfile = ecmascript::HeapProfilerInterface::GetInstance(vm);
-    return heapProfile->StartHeapTracking(timeInterval, isVmMode);
+    return heapProfile->StartHeapTracking(timeInterval, isVmMode, stream);
 }
 
 bool DFXJSNApi::StopHeapTracking(const EcmaVM *vm, const std::string &filePath)
