@@ -262,7 +262,10 @@ enum class CallDispatchInputs : size_t {
     ARG0,
     ARG1,
     ARG2,
-    NUM_OF_INPUTS
+    NUM_OF_INPUTS,
+
+    ARGC = ARG0,
+    ARGV = ARG1,
 };
 
 #define BYTECODE_STUB_END_ID BytecodeStubCSigns::ID_ExceptionHandler
