@@ -32,6 +32,7 @@ public:
     DispatchResponse Enable();
     DispatchResponse Start();
     DispatchResponse Stop(std::unique_ptr<Profile> *profile);
+    DispatchResponse SetSamplingInterval(std::unique_ptr<SetSamplingIntervalParams> params);
     DispatchResponse GetBestEffortCoverage();
     DispatchResponse StopPreciseCoverage();
     DispatchResponse TakePreciseCoverage();
@@ -51,6 +52,7 @@ public:
         void Disable(const DispatchRequest &request);
         void Start(const DispatchRequest &request);
         void Stop(const DispatchRequest &request);
+        void SetSamplingInterval(const DispatchRequest &request);
         void GetBestEffortCoverage(const DispatchRequest &request);
         void StopPreciseCoverage(const DispatchRequest &request);
         void TakePreciseCoverage(const DispatchRequest &request);

@@ -868,5 +868,31 @@ private:
     std::optional<bool> detailed_ {};
     std::optional<bool> allowTriggeredUpdates_ {};
 };
+
+class SetSamplingIntervalParams : public PtBaseParams {
+public:
+    SetSamplingIntervalParams() = default;
+    ~SetSamplingIntervalParams() override = default;
+
+    static std::unique_ptr<SetSamplingIntervalParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+
+    int GetInterval() const
+    {
+        return interval_;
+    }
+
+    SetSamplingIntervalParams &SetInterval(int interval)
+    {
+        interval_ = interval;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(SetSamplingIntervalParams);
+    NO_MOVE_SEMANTIC(SetSamplingIntervalParams);
+
+    int interval_ {0};
+};
 }  // namespace panda::ecmascript::tooling
 #endif

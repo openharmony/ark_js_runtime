@@ -160,6 +160,12 @@ std::unique_ptr<ProfileInfo> DFXJSNApi::StopCpuProfilerForInfo()
     }
     return profile;
 }
+
+void DFXJSNApi::SetCpuSamplingInterval(int interval)
+{
+    CpuProfiler *singleton = CpuProfiler::GetInstance();
+    singleton->SetCpuSamplingInterval(interval);
+}
 #endif
 
 bool DFXJSNApi::SuspendVM(const EcmaVM *vm)
