@@ -583,6 +583,7 @@ ARK_INLINE void FrameHandler::OptimizedLeaveFrameIterate(const JSTaggedType *sp,
                                                          ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
                                                          bool isVerifying)
 {
+    std::cout << __FUNCTION__ << " " << std::dec << __LINE__ << "  " << std::hex << " sp:0x" << sp << std::endl;
     OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(sp);
     if (frame->argc > 0) {
         JSTaggedType *argv = reinterpret_cast<JSTaggedType *>(&frame->argc + 1);
@@ -731,6 +732,7 @@ void FrameHandler::IterateFrameChain(JSTaggedType *start, const RootVisitor &v0,
             }
             case FrameType::LEAVE_FRAME: {
                 auto frame = OptimizedLeaveFrame::GetFrameFromSp(current);
+                std::cout << __FUNCTION__ << " " << std::dec << __LINE__ << "  " << std::hex << " sp:0x" << current << std::endl;
                 OptimizedLeaveFrameIterate(current, v0, v1, derivedPointers, isVerifying);
                 current = frame->GetPrevFrameFp();
                 optimizedReturnAddr_ = frame->returnAddr;

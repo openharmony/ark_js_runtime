@@ -17,10 +17,17 @@ import("//build/test.gni")
 
 config("include_llvm_config") {
   if (compile_llvm_online) {
-    include_dirs = [
-      "//third_party/third_party_llvm-project/build/include",
-      "//third_party/third_party_llvm-project/llvm/include/",
-    ]
+    if (compiler_llvm_12) {
+      include_dirs = [
+        "//third_party/third_party_llvm-project/build/include",
+        "//third_party/third_party_llvm-project/llvm/include/",
+        ]
+    } else {
+        include_dirs = [
+        "//third_party/llvm-project/build/include",
+        "//third_party/llvm-project/llvm/include/",
+        ]
+    }
   } else {
     include_dirs = [
       "//prebuilts/ark_tools/ark_js_prebuilts/llvm_prebuilts/llvm/include",
@@ -46,7 +53,11 @@ host_unittest_action("StubTest") {
   ]
 
   if (compile_llvm_online) {
-    lib_dirs = [ "//third_party/third_party_llvm-project/build/lib" ]
+    if (compiler_llvm_12) {
+      lib_dirs = [ "//third_party/third_party_llvm-project/build/lib" ]
+    } else {
+      lib_dirs = [ "//third_party/llvm-project/build/lib" ]
+    }
   } else {
     lib_dirs =
         [ "//prebuilts/ark_tools/ark_js_prebuilts/llvm_prebuilts/build/lib" ]
@@ -135,7 +146,11 @@ host_unittest_action("AssemblerTest") {
   ]
 
   if (compile_llvm_online) {
-    lib_dirs = [ "//third_party/third_party_llvm-project/build/lib" ]
+    if (compiler_llvm_12) {
+      lib_dirs = [ "//third_party/third_party_llvm-project/build/lib" ]
+    } else {
+      lib_dirs = [ "//third_party/llvm-project/build/lib" ]
+    }
   } else {
     lib_dirs =
         [ "//prebuilts/ark_tools/ark_js_prebuilts/llvm_prebuilts/build/lib" ]
@@ -223,7 +238,11 @@ host_unittest_action("CircuitOptimizerTest") {
   ]
 
   if (compile_llvm_online) {
-    lib_dirs = [ "//third_party/llvm-project/build/lib" ]
+    if (compiler_llvm_12) {
+      lib_dirs = [ "//third_party/third_party_llvm-project/build/lib" ]
+    } else {
+      lib_dirs = [ "//third_party/llvm-project/build/lib" ]
+    }
   } else {
     lib_dirs =
         [ "//prebuilts/ark_tools/ark_js_prebuilts/llvm_prebuilts/build/lib" ]
