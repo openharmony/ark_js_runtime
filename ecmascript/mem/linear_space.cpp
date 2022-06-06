@@ -157,7 +157,7 @@ bool SemiSpace::SwapRegion(Region *region, SemiSpace *fromSpace)
     }
     fromSpace->RemoveRegion(region);
 
-    region->SetFlag(RegionFlags::IN_NEW_TO_NEW_SET);
+    region->SetGCFlag(RegionFlags::IN_NEW_TO_NEW_SET);
 
     regionList_.AddNodeToFront(region);
     IncreaseCommitted(region->GetCapacity());
@@ -172,11 +172,11 @@ void SemiSpace::SetWaterLine()
     allocateAfterLastGC_ = 0;
     Region *last = GetCurrentRegion();
     if (last != nullptr) {
-        last->SetFlag(RegionFlags::HAS_AGE_MARK);
+        last->SetGCFlag(RegionFlags::HAS_AGE_MARK);
 
         EnumerateRegions([&last](Region *current) {
             if (current != last) {
-                current->SetFlag(RegionFlags::BELOW_AGE_MARK);
+                current->SetGCFlag(RegionFlags::BELOW_AGE_MARK);
             }
         });
         survivalObjectSize_ += last->GetAllocatedBytes(waterLine_);
