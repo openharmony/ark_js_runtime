@@ -19,6 +19,7 @@
 #include "ecmascript/builtins/builtins_array.h"
 #include "ecmascript/builtins/builtins_arraybuffer.h"
 #include "ecmascript/builtins/builtins_async_function.h"
+#include "ecmascript/builtins/builtins_atomics.h"
 #include "ecmascript/builtins/builtins_bigint.h"
 #include "ecmascript/builtins/builtins_boolean.h"
 #include "ecmascript/builtins/builtins_collator.h"
@@ -124,6 +125,7 @@ using StringIterator = builtins::BuiltinsStringIterator;
 using RegExp = builtins::BuiltinsRegExp;
 using Function = builtins::BuiltinsFunction;
 using Math = builtins::BuiltinsMath;
+using Atomics = builtins::BuiltinsAtomics;
 using ArrayBuffer = builtins::BuiltinsArrayBuffer;
 using Json = builtins::BuiltinsJson;
 using Proxy = builtins::BuiltinsProxy;
@@ -519,6 +521,17 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(Math::Tan),
     reinterpret_cast<uintptr_t>(Math::Tanh),
     reinterpret_cast<uintptr_t>(Math::Trunc),
+    reinterpret_cast<uintptr_t>(Atomics::Wait),
+    reinterpret_cast<uintptr_t>(Atomics::Exchange),
+    reinterpret_cast<uintptr_t>(Atomics::CompareExchange),
+    reinterpret_cast<uintptr_t>(Atomics::Store),
+    reinterpret_cast<uintptr_t>(Atomics::Load),
+    reinterpret_cast<uintptr_t>(Atomics::Notify),
+    reinterpret_cast<uintptr_t>(Atomics::Xor),
+    reinterpret_cast<uintptr_t>(Atomics::Or),
+    reinterpret_cast<uintptr_t>(Atomics::Sub),
+    reinterpret_cast<uintptr_t>(Atomics::And),
+    reinterpret_cast<uintptr_t>(Atomics::Add),
     reinterpret_cast<uintptr_t>(Json::Parse),
     reinterpret_cast<uintptr_t>(Json::Stringify),
     reinterpret_cast<uintptr_t>(BuiltinsIterator::Next),

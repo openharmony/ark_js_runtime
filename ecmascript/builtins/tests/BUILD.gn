@@ -52,6 +52,7 @@ host_unittest_action("BuiltinsNaturalTest") {
     # test file
     "builtins_array_test.cpp",
     "builtins_arraybuffer_test.cpp",
+    "builtins_atomics_test.cpp",
     "builtins_boolean_test.cpp",
     "builtins_dataview_test.cpp",
     "builtins_date_test.cpp",

@@ -992,7 +992,7 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
     uint32_t targetLength = targetObj->GetArrayLength();
     JSHandle<JSTaggedValue> targetName(thread, targetObj->GetTypedArrayName());
     uint32_t targetElementSize = TypedArrayHelper::GetSizeFromName(thread, targetName);
-    DataViewType targetType = TypedArrayHelper::GetTypeFromName(thread, targetName);
+    DataViewType targetType = JSTypedArray::GetTypeFromName(thread, targetName);
     uint32_t targetByteOffset = targetObj->GetByteOffset();
 
     JSHandle<JSTaggedValue> argArray = GetCallArg(argv, 0);
@@ -1084,7 +1084,7 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
     // 21. Let srcLength be the value of typedArray’s [[ArrayLength]] internal slot.
     // 22. Let srcByteOffset be the value of typedArray’s [[ByteOffset]] internal slot.
     JSHandle<JSTaggedValue> srcName(thread, typedArray->GetTypedArrayName());
-    DataViewType srcType = TypedArrayHelper::GetTypeFromName(thread, srcName);
+    DataViewType srcType = JSTypedArray::GetTypeFromName(thread, srcName);
     uint32_t srcElementSize = TypedArrayHelper::GetSizeFromName(thread, srcName);
     uint32_t srcLength = typedArray->GetArrayLength();
     uint32_t srcByteOffset = typedArray->GetByteOffset();
@@ -1214,11 +1214,11 @@ JSTaggedValue BuiltinsTypedArray::Slice(EcmaRuntimeCallInfo *argv)
     // 17. Let srcName be the String value of O’s [[TypedArrayName]] internal slot.
     // 18. Let srcType be the String value of the Element Type value in Table 49 for srcName.
     JSHandle<JSTaggedValue> srcName(thread, thisObj->GetTypedArrayName());
-    DataViewType srcType = TypedArrayHelper::GetTypeFromName(thread, srcName);
+    DataViewType srcType = JSTypedArray::GetTypeFromName(thread, srcName);
     // 19. Let targetName be the String value of A’s [[TypedArrayName]] internal slot.
     // 20. Let targetType be the String value of the Element Type value in Table 49 for targetName.
     JSHandle<JSTaggedValue> targetName(thread, JSTypedArray::Cast(*newArrObj)->GetTypedArrayName());
-    DataViewType targetType = TypedArrayHelper::GetTypeFromName(thread, targetName);
+    DataViewType targetType = JSTypedArray::GetTypeFromName(thread, targetName);
     // 21. If SameValue(srcType, targetType) is false, then
     //   a. Let n be 0.
     //   b. Repeat, while k < final

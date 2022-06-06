@@ -386,6 +386,22 @@ bool BuiltinsArrayBuffer::IsBigIntElementType(DataViewType type)
     return false;
 }
 
+// es12 25.1.2.6 IsUnclampedIntegerElementType ( type )
+bool BuiltinsArrayBuffer::IsUnclampedIntegerElementType(DataViewType type)
+{
+    switch (type) {
+        case DataViewType::INT8:
+        case DataViewType::INT16:
+        case DataViewType::INT32:
+        case DataViewType::UINT8:
+        case DataViewType::UINT16:
+        case DataViewType::UINT32:
+            return true;
+        default:
+            return false;
+    }
+}
+
 template<typename T>
 void BuiltinsArrayBuffer::SetTypeData(uint8_t *block, T value, uint32_t index)
 {
