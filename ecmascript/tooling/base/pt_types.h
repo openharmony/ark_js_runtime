@@ -20,8 +20,6 @@
 #include <optional>
 
 #include "ecmascript/dfx/cpu_profiler/samples_record.h"
-#include "ecmascript/mem/c_containers.h"
-#include "ecmascript/mem/c_string.h"
 #include "ecmascript/tooling/backend/debugger_api.h"
 #include "libpandabase/macros.h"
 
@@ -46,33 +44,33 @@ private:
 
 // ========== Debugger types begin
 // Debugger.BreakpointId
-using BreakpointId = CString;
+using BreakpointId = std::string;
 struct BreakpointDetails {
     static BreakpointId ToString(const BreakpointDetails &metaData)
     {
-        return "id:" + ToCString<uint32_t>(metaData.line_) + ":" + ToCString<uint32_t>(metaData.column_) + ":" +
-               metaData.url_;
+        return "id:" + std::to_string(metaData.line_) + ":" + std::to_string(metaData.column_) + ":" +
+            metaData.url_;
     }
 
     static bool ParseBreakpointId(const BreakpointId &id, BreakpointDetails *metaData)
     {
         auto lineStart = id.find(':');
-        if (lineStart == CString::npos) {
+        if (lineStart == std::string::npos) {
             return false;
         }
         auto columnStart = id.find(':', lineStart + 1);
-        if (columnStart == CString::npos) {
+        if (columnStart == std::string::npos) {
             return false;
         }
         auto urlStart = id.find(':', columnStart + 1);
-        if (urlStart == CString::npos) {
+        if (urlStart == std::string::npos) {
             return false;
         }
-        CString lineStr = id.substr(lineStart + 1, columnStart - lineStart - 1);
-        CString columnStr = id.substr(columnStart + 1, urlStart - columnStart - 1);
-        CString url = id.substr(urlStart + 1);
-        metaData->line_ = DebuggerApi::CStringToInt(lineStr);
-        metaData->column_ = DebuggerApi::CStringToInt(columnStr);
+        std::string lineStr = id.substr(lineStart + 1, columnStart - lineStart - 1);
+        std::string columnStr = id.substr(columnStart + 1, urlStart - columnStart - 1);
+        std::string url = id.substr(urlStart + 1);
+        metaData->line_ = std::stoi(lineStr);
+        metaData->column_ = std::stoi(columnStr);
         metaData->url_ = url;
 
         return true;
@@ -80,7 +78,7 @@ struct BreakpointDetails {
 
     int32_t line_ {0};
     int32_t column_ {0};
-    CString url_ {};
+    std::string url_ {};
 };
 
 // Debugger.CallFrameId
@@ -98,7 +96,7 @@ using RemoteObjectId = uint32_t;
 using ExecutionContextId = int32_t;
 
 // Runtime.UnserializableValue
-using UnserializableValue = CString;
+using UnserializableValue = std::string;
 
 // Runtime.UniqueDebuggerId
 using UniqueDebuggerId = uint32_t;
@@ -116,12 +114,12 @@ public:
     /*
      * @see {#ObjectType}
      */
-    const CString &GetType() const
+    const std::string &GetType() const
     {
         return type_;
     }
 
-    RemoteObject &SetType(const CString &type)
+    RemoteObject &SetType(const std::string &type)
     {
         type_ = type;
         return *this;
@@ -129,12 +127,12 @@ public:
     /*
      * @see {#ObjectSubType}
      */
-    const CString &GetSubType() const
+    const std::string &GetSubType() const
     {
         return subtype_.value();
     }
 
-    RemoteObject &SetSubType(const CString &type)
+    RemoteObject &SetSubType(const std::string &type)
     {
         subtype_ = type;
         return *this;
@@ -145,12 +143,12 @@ public:
         return subtype_.has_value();
     }
 
-    const CString &GetClassName() const
+    const std::string &GetClassName() const
     {
         return className_.value();
     }
 
-    RemoteObject &SetClassName(const CString &className)
+    RemoteObject &SetClassName(const std::string &className)
     {
         className_ = className;
         return *this;
@@ -193,12 +191,12 @@ public:
         return unserializableValue_.has_value();
     }
 
-    const CString &GetDescription() const
+    const std::string &GetDescription() const
     {
         return description_.value();
     }
 
-    RemoteObject &SetDescription(const CString &description)
+    RemoteObject &SetDescription(const std::string &description)
     {
         description_ = description;
         return *this;
@@ -226,16 +224,16 @@ public:
     }
 
     struct TypeName {
-        static const CString Object;     // NOLINT (readability-identifier-naming)
-        static const CString Function;   // NOLINT (readability-identifier-naming)
-        static const CString Undefined;  // NOLINT (readability-identifier-naming)
-        static const CString String;     // NOLINT (readability-identifier-naming)
-        static const CString Number;     // NOLINT (readability-identifier-naming)
-        static const CString Boolean;    // NOLINT (readability-identifier-naming)
-        static const CString Symbol;     // NOLINT (readability-identifier-naming)
-        static const CString Bigint;     // NOLINT (readability-identifier-naming)
-        static const CString Wasm;       // NOLINT (readability-identifier-naming)
-        static bool Valid(const CString &type)
+        static const std::string Object;     // NOLINT (readability-identifier-naming)
+        static const std::string Function;   // NOLINT (readability-identifier-naming)
+        static const std::string Undefined;  // NOLINT (readability-identifier-naming)
+        static const std::string String;     // NOLINT (readability-identifier-naming)
+        static const std::string Number;     // NOLINT (readability-identifier-naming)
+        static const std::string Boolean;    // NOLINT (readability-identifier-naming)
+        static const std::string Symbol;     // NOLINT (readability-identifier-naming)
+        static const std::string Bigint;     // NOLINT (readability-identifier-naming)
+        static const std::string Wasm;       // NOLINT (readability-identifier-naming)
+        static bool Valid(const std::string &type)
         {
             return type == Object || type == Function || type == Undefined || type == String || type == Number ||
                    type == Boolean || type == Symbol || type == Bigint || type == Wasm;
@@ -243,30 +241,30 @@ public:
     };
 
     struct SubTypeName {
-        static const CString Array;        // NOLINT (readability-identifier-naming)
-        static const CString Null;         // NOLINT (readability-identifier-naming)
-        static const CString Node;         // NOLINT (readability-identifier-naming)
-        static const CString Regexp;       // NOLINT (readability-identifier-naming)
-        static const CString Date;         // NOLINT (readability-identifier-naming)
-        static const CString Map;          // NOLINT (readability-identifier-naming)
-        static const CString Set;          // NOLINT (readability-identifier-naming)
-        static const CString Weakmap;      // NOLINT (readability-identifier-naming)
-        static const CString Weakset;      // NOLINT (readability-identifier-naming)
-        static const CString Iterator;     // NOLINT (readability-identifier-naming)
-        static const CString Generator;    // NOLINT (readability-identifier-naming)
-        static const CString Error;        // NOLINT (readability-identifier-naming)
-        static const CString Proxy;        // NOLINT (readability-identifier-naming)
-        static const CString Promise;      // NOLINT (readability-identifier-naming)
-        static const CString Typedarray;   // NOLINT (readability-identifier-naming)
-        static const CString Arraybuffer;  // NOLINT (readability-identifier-naming)
-        static const CString Dataview;     // NOLINT (readability-identifier-naming)
-        static const CString I32;          // NOLINT (readability-identifier-naming)
-        static const CString I64;          // NOLINT (readability-identifier-naming)
-        static const CString F32;          // NOLINT (readability-identifier-naming)
-        static const CString F64;          // NOLINT (readability-identifier-naming)
-        static const CString V128;         // NOLINT (readability-identifier-naming)
-        static const CString Externref;    // NOLINT (readability-identifier-naming)
-        static bool Valid(const CString &type)
+        static const std::string Array;        // NOLINT (readability-identifier-naming)
+        static const std::string Null;         // NOLINT (readability-identifier-naming)
+        static const std::string Node;         // NOLINT (readability-identifier-naming)
+        static const std::string Regexp;       // NOLINT (readability-identifier-naming)
+        static const std::string Date;         // NOLINT (readability-identifier-naming)
+        static const std::string Map;          // NOLINT (readability-identifier-naming)
+        static const std::string Set;          // NOLINT (readability-identifier-naming)
+        static const std::string Weakmap;      // NOLINT (readability-identifier-naming)
+        static const std::string Weakset;      // NOLINT (readability-identifier-naming)
+        static const std::string Iterator;     // NOLINT (readability-identifier-naming)
+        static const std::string Generator;    // NOLINT (readability-identifier-naming)
+        static const std::string Error;        // NOLINT (readability-identifier-naming)
+        static const std::string Proxy;        // NOLINT (readability-identifier-naming)
+        static const std::string Promise;      // NOLINT (readability-identifier-naming)
+        static const std::string Typedarray;   // NOLINT (readability-identifier-naming)
+        static const std::string Arraybuffer;  // NOLINT (readability-identifier-naming)
+        static const std::string Dataview;     // NOLINT (readability-identifier-naming)
+        static const std::string I32;          // NOLINT (readability-identifier-naming)
+        static const std::string I64;          // NOLINT (readability-identifier-naming)
+        static const std::string F32;          // NOLINT (readability-identifier-naming)
+        static const std::string F64;          // NOLINT (readability-identifier-naming)
+        static const std::string V128;         // NOLINT (readability-identifier-naming)
+        static const std::string Externref;    // NOLINT (readability-identifier-naming)
+        static bool Valid(const std::string &type)
         {
             return type == Array || type == Null || type == Node || type == Regexp || type == Map || type == Set ||
                    type == Weakmap || type == Iterator || type == Generator || type == Error || type == Proxy ||
@@ -275,27 +273,27 @@ public:
         }
     };
     struct ClassName {
-        static const CString Object;          // NOLINT (readability-identifier-naming)
-        static const CString Function;        // NOLINT (readability-identifier-naming)
-        static const CString Array;           // NOLINT (readability-identifier-naming)
-        static const CString Regexp;          // NOLINT (readability-identifier-naming)
-        static const CString Date;            // NOLINT (readability-identifier-naming)
-        static const CString Map;             // NOLINT (readability-identifier-naming)
-        static const CString Set;             // NOLINT (readability-identifier-naming)
-        static const CString Weakmap;         // NOLINT (readability-identifier-naming)
-        static const CString Weakset;         // NOLINT (readability-identifier-naming)
-        static const CString ArrayIterator;   // NOLINT (readability-identifier-naming)
-        static const CString StringIterator;  // NOLINT (readability-identifier-naming)
-        static const CString SetIterator;     // NOLINT (readability-identifier-naming)
-        static const CString MapIterator;     // NOLINT (readability-identifier-naming)
-        static const CString Iterator;        // NOLINT (readability-identifier-naming)
-        static const CString Error;           // NOLINT (readability-identifier-naming)
-        static const CString Proxy;           // NOLINT (readability-identifier-naming)
-        static const CString Promise;         // NOLINT (readability-identifier-naming)
-        static const CString Typedarray;      // NOLINT (readability-identifier-naming)
-        static const CString Arraybuffer;     // NOLINT (readability-identifier-naming)
-        static const CString Global;          // NOLINT (readability-identifier-naming)
-        static bool Valid(const CString &type)
+        static const std::string Object;          // NOLINT (readability-identifier-naming)
+        static const std::string Function;        // NOLINT (readability-identifier-naming)
+        static const std::string Array;           // NOLINT (readability-identifier-naming)
+        static const std::string Regexp;          // NOLINT (readability-identifier-naming)
+        static const std::string Date;            // NOLINT (readability-identifier-naming)
+        static const std::string Map;             // NOLINT (readability-identifier-naming)
+        static const std::string Set;             // NOLINT (readability-identifier-naming)
+        static const std::string Weakmap;         // NOLINT (readability-identifier-naming)
+        static const std::string Weakset;         // NOLINT (readability-identifier-naming)
+        static const std::string ArrayIterator;   // NOLINT (readability-identifier-naming)
+        static const std::string StringIterator;  // NOLINT (readability-identifier-naming)
+        static const std::string SetIterator;     // NOLINT (readability-identifier-naming)
+        static const std::string MapIterator;     // NOLINT (readability-identifier-naming)
+        static const std::string Iterator;        // NOLINT (readability-identifier-naming)
+        static const std::string Error;           // NOLINT (readability-identifier-naming)
+        static const std::string Proxy;           // NOLINT (readability-identifier-naming)
+        static const std::string Promise;         // NOLINT (readability-identifier-naming)
+        static const std::string Typedarray;      // NOLINT (readability-identifier-naming)
+        static const std::string Arraybuffer;     // NOLINT (readability-identifier-naming)
+        static const std::string Global;          // NOLINT (readability-identifier-naming)
+        static bool Valid(const std::string &type)
         {
             return type == Object || type == Array || type == Regexp || type == Date || type == Map || type == Set ||
                    type == Weakmap || type == Weakset || type == ArrayIterator || type == StringIterator ||
@@ -303,27 +301,27 @@ public:
                    type == Promise || type == Typedarray || type == Arraybuffer || type == Function;
         }
     };
-    static const CString ObjectDescription;          // NOLINT (readability-identifier-naming)
-    static const CString GlobalDescription;          // NOLINT (readability-identifier-naming)
-    static const CString ProxyDescription;           // NOLINT (readability-identifier-naming)
-    static const CString PromiseDescription;         // NOLINT (readability-identifier-naming)
-    static const CString ArrayIteratorDescription;   // NOLINT (readability-identifier-naming)
-    static const CString StringIteratorDescription;  // NOLINT (readability-identifier-naming)
-    static const CString SetIteratorDescription;     // NOLINT (readability-identifier-naming)
-    static const CString MapIteratorDescription;     // NOLINT (readability-identifier-naming)
-    static const CString WeakMapDescription;         // NOLINT (readability-identifier-naming)
-    static const CString WeakSetDescription;         // NOLINT (readability-identifier-naming)
+    static const std::string ObjectDescription;          // NOLINT (readability-identifier-naming)
+    static const std::string GlobalDescription;          // NOLINT (readability-identifier-naming)
+    static const std::string ProxyDescription;           // NOLINT (readability-identifier-naming)
+    static const std::string PromiseDescription;         // NOLINT (readability-identifier-naming)
+    static const std::string ArrayIteratorDescription;   // NOLINT (readability-identifier-naming)
+    static const std::string StringIteratorDescription;  // NOLINT (readability-identifier-naming)
+    static const std::string SetIteratorDescription;     // NOLINT (readability-identifier-naming)
+    static const std::string MapIteratorDescription;     // NOLINT (readability-identifier-naming)
+    static const std::string WeakMapDescription;         // NOLINT (readability-identifier-naming)
+    static const std::string WeakSetDescription;         // NOLINT (readability-identifier-naming)
 
 private:
     NO_COPY_SEMANTIC(RemoteObject);
     NO_MOVE_SEMANTIC(RemoteObject);
 
-    CString type_ {};
-    std::optional<CString> subtype_ {};
-    std::optional<CString> className_ {};
+    std::string type_ {};
+    std::optional<std::string> subtype_ {};
+    std::optional<std::string> className_ {};
     std::optional<Local<JSValueRef>> value_ {};
     std::optional<UnserializableValue> unserializableValue_ {};
-    std::optional<CString> description_ {};
+    std::optional<std::string> description_ {};
     std::optional<RemoteObjectId> objectId_ {};
 };
 
@@ -351,7 +349,7 @@ public:
     ~SymbolRemoteObject() override = default;
 
 private:
-    CString DescriptionForSymbol(const EcmaVM *ecmaVm, const Local<SymbolRef> &tagged) const;
+    std::string DescriptionForSymbol(const EcmaVM *ecmaVm, const Local<SymbolRef> &tagged) const;
 };
 
 class FunctionRemoteObject final : public RemoteObject {
@@ -365,19 +363,19 @@ public:
     ~FunctionRemoteObject() override = default;
 
 private:
-    CString DescriptionForFunction(const EcmaVM *ecmaVm, const Local<FunctionRef> &tagged) const;
+    std::string DescriptionForFunction(const EcmaVM *ecmaVm, const Local<FunctionRef> &tagged) const;
 };
 
 class ObjectRemoteObject final : public RemoteObject {
 public:
-    explicit ObjectRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged, const CString &classname)
+    explicit ObjectRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged, const std::string &classname)
     {
         SetType(RemoteObject::TypeName::Object)
             .SetClassName(classname)
             .SetDescription(DescriptionForObject(ecmaVm, tagged));
     }
-    explicit ObjectRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged, const CString &classname,
-        const CString &subtype)
+    explicit ObjectRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged, const std::string &classname,
+        const std::string &subtype)
     {
         SetType(RemoteObject::TypeName::Object)
             .SetSubType(subtype)
@@ -385,16 +383,16 @@ public:
             .SetDescription(DescriptionForObject(ecmaVm, tagged));
     }
     ~ObjectRemoteObject() override = default;
-    static CString DescriptionForObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
+    static std::string DescriptionForObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
 
 private:
-    static CString DescriptionForArray(const EcmaVM *ecmaVm, const Local<ArrayRef> &tagged);
-    static CString DescriptionForRegexp(const EcmaVM *ecmaVm, const Local<RegExpRef> &tagged);
-    static CString DescriptionForDate(const EcmaVM *ecmaVm, const Local<DateRef> &tagged);
-    static CString DescriptionForMap(const Local<MapRef> &tagged);
-    static CString DescriptionForSet(const Local<SetRef> &tagged);
-    static CString DescriptionForError(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
-    static CString DescriptionForArrayBuffer(const EcmaVM *ecmaVm, const Local<ArrayBufferRef> &tagged);
+    static std::string DescriptionForArray(const EcmaVM *ecmaVm, const Local<ArrayRef> &tagged);
+    static std::string DescriptionForRegexp(const EcmaVM *ecmaVm, const Local<RegExpRef> &tagged);
+    static std::string DescriptionForDate(const EcmaVM *ecmaVm, const Local<DateRef> &tagged);
+    static std::string DescriptionForMap(const Local<MapRef> &tagged);
+    static std::string DescriptionForSet(const Local<SetRef> &tagged);
+    static std::string DescriptionForError(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
+    static std::string DescriptionForArrayBuffer(const EcmaVM *ecmaVm, const Local<ArrayBufferRef> &tagged);
 };
 
 // Runtime.ExceptionDetails
@@ -416,12 +414,12 @@ public:
         return *this;
     }
 
-    const CString &GetText() const
+    const std::string &GetText() const
     {
         return text_;
     }
 
-    ExceptionDetails &SetText(const CString &text)
+    ExceptionDetails &SetText(const std::string &text)
     {
         text_ = text;
         return *this;
@@ -465,12 +463,12 @@ public:
         return scriptId_.has_value();
     }
 
-    const CString &GetUrl() const
+    const std::string &GetUrl() const
     {
         return url_.value();
     }
 
-    ExceptionDetails &SetUrl(const CString &url)
+    ExceptionDetails &SetUrl(const std::string &url)
     {
         url_ = url;
         return *this;
@@ -521,11 +519,11 @@ private:
     NO_MOVE_SEMANTIC(ExceptionDetails);
 
     int32_t exceptionId_ {0};
-    CString text_ {};
+    std::string text_ {};
     int32_t line_ {0};
     int32_t column_ {0};
     std::optional<ScriptId> scriptId_ {};
-    std::optional<CString> url_ {};
+    std::optional<std::string> url_ {};
     std::optional<std::unique_ptr<RemoteObject>> exception_ {};
     std::optional<ExecutionContextId> executionContextId_ {0};
 };
@@ -539,12 +537,12 @@ public:
     static std::unique_ptr<InternalPropertyDescriptor> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() const
+    std::string GetName() const
     {
         return name_;
     }
 
-    InternalPropertyDescriptor &SetName(const CString &name)
+    InternalPropertyDescriptor &SetName(const std::string &name)
     {
         name_ = name;
         return *this;
@@ -573,7 +571,7 @@ private:
     NO_COPY_SEMANTIC(InternalPropertyDescriptor);
     NO_MOVE_SEMANTIC(InternalPropertyDescriptor);
 
-    CString name_ {};
+    std::string name_ {};
     std::optional<std::unique_ptr<RemoteObject>> value_ {};
 };
 
@@ -586,12 +584,12 @@ public:
     static std::unique_ptr<PrivatePropertyDescriptor> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() const
+    std::string GetName() const
     {
         return name_;
     }
 
-    PrivatePropertyDescriptor &SetName(const CString &name)
+    PrivatePropertyDescriptor &SetName(const std::string &name)
     {
         name_ = name;
         return *this;
@@ -658,7 +656,7 @@ private:
     NO_COPY_SEMANTIC(PrivatePropertyDescriptor);
     NO_MOVE_SEMANTIC(PrivatePropertyDescriptor);
 
-    CString name_ {};
+    std::string name_ {};
     std::optional<std::unique_ptr<RemoteObject>> value_ {};
     std::optional<std::unique_ptr<RemoteObject>> get_ {};
     std::optional<std::unique_ptr<RemoteObject>> set_ {};
@@ -675,12 +673,12 @@ public:
     static std::unique_ptr<PropertyDescriptor> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() const
+    std::string GetName() const
     {
         return name_;
     }
 
-    PropertyDescriptor &SetName(const CString &name)
+    PropertyDescriptor &SetName(const std::string &name)
     {
         name_ = name;
         return *this;
@@ -836,7 +834,7 @@ private:
     NO_COPY_SEMANTIC(PropertyDescriptor);
     NO_MOVE_SEMANTIC(PropertyDescriptor);
 
-    CString name_ {};
+    std::string name_ {};
     std::optional<std::unique_ptr<RemoteObject>> value_ {};
     std::optional<bool> writable_ {};
     std::optional<std::unique_ptr<RemoteObject>> get_ {};
@@ -917,15 +915,15 @@ private:
 // ========== Debugger types begin
 // Debugger.ScriptLanguage
 struct ScriptLanguage {
-    static bool Valid(const CString &language)
+    static bool Valid(const std::string &language)
     {
         return language == JavaScript() || language == WebAssembly();
     }
-    static CString JavaScript()
+    static std::string JavaScript()
     {
         return "JavaScript";
     }
-    static CString WebAssembly()
+    static std::string WebAssembly()
     {
         return "WebAssembly";
     }
@@ -1039,7 +1037,7 @@ private:
     NO_MOVE_SEMANTIC(SearchMatch);
 
     int32_t lineNumber_ {0};
-    CString lineContent_ {};
+    std::string lineContent_ {};
 };
 
 // Debugger.LocationRange
@@ -1143,12 +1141,12 @@ public:
     /*
      * @see {#BreakType}
      */
-    const CString &GetType() const
+    const std::string &GetType() const
     {
         return type_.value();
     }
 
-    BreakLocation &SetType(const CString &type)
+    BreakLocation &SetType(const std::string &type)
     {
         type_ = type;
         return *this;
@@ -1160,19 +1158,19 @@ public:
     }
 
     struct Type {
-        static bool Valid(const CString &type)
+        static bool Valid(const std::string &type)
         {
             return type == DebuggerStatement() || type == Call() || type == Return();
         }
-        static CString DebuggerStatement()
+        static std::string DebuggerStatement()
         {
             return "debuggerStatement";
         }
-        static CString Call()
+        static std::string Call()
         {
             return "call";
         }
-        static CString Return()
+        static std::string Return()
         {
             return "return";
         }
@@ -1185,7 +1183,7 @@ private:
     ScriptId scriptId_ {};
     int32_t line_ {0};
     std::optional<int32_t> column_ {};
-    std::optional<CString> type_ {};
+    std::optional<std::string> type_ {};
 };
 using BreakType = BreakLocation::Type;
 
@@ -1214,12 +1212,12 @@ public:
     /*
      * @see {#Scope::Type}
      */
-    const CString &GetType() const
+    const std::string &GetType() const
     {
         return type_;
     }
 
-    Scope &SetType(const CString &type)
+    Scope &SetType(const std::string &type)
     {
         type_ = type;
         return *this;
@@ -1236,12 +1234,12 @@ public:
         return *this;
     }
 
-    const CString &GetName() const
+    const std::string &GetName() const
     {
         return name_.value();
     }
 
-    Scope &SetName(const CString &name)
+    Scope &SetName(const std::string &name)
     {
         name_ = name;
         return *this;
@@ -1291,49 +1289,49 @@ public:
     }
 
     struct Type {
-        static bool Valid(const CString &type)
+        static bool Valid(const std::string &type)
         {
             return type == Global() || type == Local() || type == With() || type == Closure() || type == Catch() ||
                    type == Block() || type == Script() || type == Eval() || type == Module() ||
                    type == WasmExpressionStack();
         }
-        static CString Global()
+        static std::string Global()
         {
             return "global";
         }
-        static CString Local()
+        static std::string Local()
         {
             return "local";
         }
-        static CString With()
+        static std::string With()
         {
             return "with";
         }
-        static CString Closure()
+        static std::string Closure()
         {
             return "closure";
         }
-        static CString Catch()
+        static std::string Catch()
         {
             return "catch";
         }
-        static CString Block()
+        static std::string Block()
         {
             return "block";
         }
-        static CString Script()
+        static std::string Script()
         {
             return "script";
         }
-        static CString Eval()
+        static std::string Eval()
         {
             return "eval";
         }
-        static CString Module()
+        static std::string Module()
         {
             return "module";
         }
-        static CString WasmExpressionStack()
+        static std::string WasmExpressionStack()
         {
             return "wasm-expression-stack";
         }
@@ -1343,9 +1341,9 @@ private:
     NO_COPY_SEMANTIC(Scope);
     NO_MOVE_SEMANTIC(Scope);
 
-    CString type_ {};
+    std::string type_ {};
     std::unique_ptr<RemoteObject> object_ {nullptr};
-    std::optional<CString> name_ {};
+    std::optional<std::string> name_ {};
     std::optional<std::unique_ptr<Location>> startLocation_ {};
     std::optional<std::unique_ptr<Location>> endLocation_ {};
 };
@@ -1370,12 +1368,12 @@ public:
         return *this;
     }
 
-    const CString &GetFunctionName() const
+    const std::string &GetFunctionName() const
     {
         return functionName_;
     }
 
-    CallFrame &SetFunctionName(const CString &functionName)
+    CallFrame &SetFunctionName(const std::string &functionName)
     {
         functionName_ = functionName;
         return *this;
@@ -1411,23 +1409,23 @@ public:
         return *this;
     }
 
-    const CString &GetUrl() const
+    const std::string &GetUrl() const
     {
         return url_;
     }
 
-    CallFrame &SetUrl(const CString &url)
+    CallFrame &SetUrl(const std::string &url)
     {
         url_ = url;
         return *this;
     }
 
-    const CVector<std::unique_ptr<Scope>> *GetScopeChain() const
+    const std::vector<std::unique_ptr<Scope>> *GetScopeChain() const
     {
         return &scopeChain_;
     }
 
-    CallFrame &SetScopeChain(CVector<std::unique_ptr<Scope>> scopeChain)
+    CallFrame &SetScopeChain(std::vector<std::unique_ptr<Scope>> scopeChain)
     {
         scopeChain_ = std::move(scopeChain);
         return *this;
@@ -1467,11 +1465,11 @@ private:
     NO_MOVE_SEMANTIC(CallFrame);
 
     CallFrameId callFrameId_ {};
-    CString functionName_ {};
+    std::string functionName_ {};
     std::optional<std::unique_ptr<Location>> functionLocation_ {};
     std::unique_ptr<Location> location_ {nullptr};
-    CString url_ {};
-    CVector<std::unique_ptr<Scope>> scopeChain_ {};
+    std::string url_ {};
+    std::vector<std::unique_ptr<Scope>> scopeChain_ {};
     std::unique_ptr<RemoteObject> this_ {nullptr};
     std::optional<std::unique_ptr<RemoteObject>> returnValue_ {};
 };
@@ -1537,35 +1535,35 @@ public:
     static std::unique_ptr<RuntimeCallFrame> FromFrameInfo(const FrameInfo &cpuFrameInfo);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    RuntimeCallFrame &SetFunctionName(const CString &functionName)
+    RuntimeCallFrame &SetFunctionName(const std::string &functionName)
     {
         functionName_ = functionName;
         return *this;
     }
 
-    const CString &GetFunctionName() const
+    const std::string &GetFunctionName() const
     {
         return functionName_;
     }
 
-    RuntimeCallFrame &SetScriptId(const CString &scriptId)
+    RuntimeCallFrame &SetScriptId(const std::string &scriptId)
     {
         scriptId_ = scriptId;
         return *this;
     }
 
-    const CString &GetScriptId() const
+    const std::string &GetScriptId() const
     {
         return scriptId_;
     }
 
-    RuntimeCallFrame &SetUrl(const CString &url)
+    RuntimeCallFrame &SetUrl(const std::string &url)
     {
         url_ = url;
         return *this;
     }
 
-    const CString &GetUrl() const
+    const std::string &GetUrl() const
     {
         return url_;
     }
@@ -1596,9 +1594,9 @@ private:
     NO_COPY_SEMANTIC(RuntimeCallFrame);
     NO_MOVE_SEMANTIC(RuntimeCallFrame);
 
-    CString functionName_ {};
-    CString scriptId_ {};
-    CString url_ {};
+    std::string functionName_ {};
+    std::string scriptId_ {};
+    std::string url_ {};
     int32_t lineNumber_ {};
     int32_t columnNumber_ {};
 };
@@ -1643,13 +1641,13 @@ public:
         return id_;
     }
     
-    SamplingHeapProfileNode &SetChildren(CVector<std::unique_ptr<SamplingHeapProfileNode>> children)
+    SamplingHeapProfileNode &SetChildren(std::vector<std::unique_ptr<SamplingHeapProfileNode>> children)
     {
         children_ = std::move(children);
         return *this;
     }
 
-    const CVector<std::unique_ptr<SamplingHeapProfileNode>> *GetChildren() const
+    const std::vector<std::unique_ptr<SamplingHeapProfileNode>> *GetChildren() const
     {
         return &children_;
     }
@@ -1661,7 +1659,7 @@ private:
     std::unique_ptr<RuntimeCallFrame> callFrame_ {nullptr};
     size_t selfSize_ {};
     int32_t id_ {};
-    CVector<std::unique_ptr<SamplingHeapProfileNode>> children_ {};
+    std::vector<std::unique_ptr<SamplingHeapProfileNode>> children_ {};
 };
 
 class SamplingHeapProfile final : public PtBaseTypes {
@@ -1682,13 +1680,13 @@ public:
         return head_.get();
     }
     
-    SamplingHeapProfile &SetSamples(CVector<std::unique_ptr<SamplingHeapProfileSample>> samples)
+    SamplingHeapProfile &SetSamples(std::vector<std::unique_ptr<SamplingHeapProfileSample>> samples)
     {
         samples_ = std::move(samples);
         return *this;
     }
 
-    const CVector<std::unique_ptr<SamplingHeapProfileSample>> *GetSamples() const
+    const std::vector<std::unique_ptr<SamplingHeapProfileSample>> *GetSamples() const
     {
         return &samples_;
     }
@@ -1698,7 +1696,7 @@ private:
     NO_MOVE_SEMANTIC(SamplingHeapProfile);
 
     std::unique_ptr<SamplingHeapProfileNode> head_ {nullptr};
-    CVector<std::unique_ptr<SamplingHeapProfileSample>> samples_ {};
+    std::vector<std::unique_ptr<SamplingHeapProfileSample>> samples_ {};
 };
 
 // ========== Profiler types begin
@@ -1787,7 +1785,7 @@ public:
         return hitCount_.has_value();
     }
 
-    const CVector<int32_t> *GetChildren() const
+    const std::vector<int32_t> *GetChildren() const
     {
         if (children_) {
             return &children_.value();
@@ -1795,7 +1793,7 @@ public:
         return nullptr;
     }
 
-    ProfileNode &SetChildren(CVector<int32_t> children)
+    ProfileNode &SetChildren(std::vector<int32_t> children)
     {
         children_ = std::move(children);
         return *this;
@@ -1806,7 +1804,7 @@ public:
         return children_.has_value();
     }
 
-    const CVector<std::unique_ptr<PositionTickInfo>> *GetPositionTicks() const
+    const std::vector<std::unique_ptr<PositionTickInfo>> *GetPositionTicks() const
     {
         if (positionTicks_) {
             return &positionTicks_.value();
@@ -1814,7 +1812,7 @@ public:
         return nullptr;
     }
 
-    ProfileNode &SetPositionTicks(CVector<std::unique_ptr<PositionTickInfo>> positionTicks)
+    ProfileNode &SetPositionTicks(std::vector<std::unique_ptr<PositionTickInfo>> positionTicks)
     {
         positionTicks_ = std::move(positionTicks);
         return *this;
@@ -1825,12 +1823,12 @@ public:
         return positionTicks_.has_value();
     }
 
-    const CString &GetDeoptReason() const
+    const std::string &GetDeoptReason() const
     {
         return deoptReason_.value();
     }
 
-    ProfileNode &SetDeoptReason(const CString &deoptReason)
+    ProfileNode &SetDeoptReason(const std::string &deoptReason)
     {
         deoptReason_ = deoptReason;
         return *this;
@@ -1847,9 +1845,9 @@ private:
     int32_t id_ {0};
     std::unique_ptr<RuntimeCallFrame> callFrame_ {nullptr};
     std::optional<int32_t> hitCount_ {0};
-    std::optional<CVector<int32_t>> children_ {};
-    std::optional<CVector<std::unique_ptr<PositionTickInfo>>> positionTicks_ {};
-    std::optional<CString> deoptReason_ {};
+    std::optional<std::vector<int32_t>> children_ {};
+    std::optional<std::vector<std::unique_ptr<PositionTickInfo>>> positionTicks_ {};
+    std::optional<std::string> deoptReason_ {};
 };
 
 // Profiler.Profile
@@ -1884,18 +1882,18 @@ public:
         return *this;
     }
 
-    const CVector<std::unique_ptr<ProfileNode>> *GetNodes() const
+    const std::vector<std::unique_ptr<ProfileNode>> *GetNodes() const
     {
         return &nodes_;
     }
 
-    Profile &SetNodes(CVector<std::unique_ptr<ProfileNode>> nodes)
+    Profile &SetNodes(std::vector<std::unique_ptr<ProfileNode>> nodes)
     {
         nodes_ = std::move(nodes);
         return *this;
     }
 
-    const CVector<int32_t> *GetSamples() const
+    const std::vector<int32_t> *GetSamples() const
     {
         if (samples_) {
             return &samples_.value();
@@ -1903,7 +1901,7 @@ public:
         return nullptr;
     }
 
-    Profile &SetSamples(CVector<int32_t> samples)
+    Profile &SetSamples(std::vector<int32_t> samples)
     {
         samples_ = std::move(samples);
         return *this;
@@ -1914,7 +1912,7 @@ public:
         return samples_.has_value();
     }
 
-    const CVector<int32_t> *GetTimeDeltas() const
+    const std::vector<int32_t> *GetTimeDeltas() const
     {
         if (timeDeltas_) {
             return &timeDeltas_.value();
@@ -1922,7 +1920,7 @@ public:
         return nullptr;
     }
 
-    Profile &SetTimeDeltas(CVector<int32_t> timeDeltas)
+    Profile &SetTimeDeltas(std::vector<int32_t> timeDeltas)
     {
         timeDeltas_ = std::move(timeDeltas);
         return *this;
@@ -1939,9 +1937,9 @@ private:
 
     int64_t startTime_ {0};
     int64_t endTime_ {0};
-    CVector<std::unique_ptr<ProfileNode>> nodes_ {};
-    std::optional<CVector<int32_t>> samples_ {};
-    std::optional<CVector<int32_t>> timeDeltas_ {};
+    std::vector<std::unique_ptr<ProfileNode>> nodes_ {};
+    std::optional<std::vector<int32_t>> samples_ {};
+    std::optional<std::vector<int32_t>> timeDeltas_ {};
 };
 
 // Profiler.Coverage
@@ -2004,23 +2002,23 @@ public:
     static std::unique_ptr<FunctionCoverage > Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    const CString &GetFunctionName() const
+    const std::string &GetFunctionName() const
     {
         return functionName_;
     }
 
-    FunctionCoverage &SetFunctionName(const CString &functionName)
+    FunctionCoverage &SetFunctionName(const std::string &functionName)
     {
         functionName_ = functionName;
         return *this;
     }
 
-    const CVector<std::unique_ptr<Coverage>> *GetRanges() const
+    const std::vector<std::unique_ptr<Coverage>> *GetRanges() const
     {
         return &ranges_;
     }
 
-    FunctionCoverage &SetFunctions(CVector<std::unique_ptr<Coverage>> ranges)
+    FunctionCoverage &SetFunctions(std::vector<std::unique_ptr<Coverage>> ranges)
     {
         ranges_ = std::move(ranges);
         return *this;
@@ -2041,8 +2039,8 @@ private:
     NO_COPY_SEMANTIC(FunctionCoverage);
     NO_MOVE_SEMANTIC(FunctionCoverage);
 
-    CString functionName_ {};
-    CVector<std::unique_ptr<Coverage>> ranges_ {};
+    std::string functionName_ {};
+    std::vector<std::unique_ptr<Coverage>> ranges_ {};
     bool isBlockCoverage_ {};
 };
 
@@ -2056,34 +2054,34 @@ public:
     static std::unique_ptr<ScriptCoverage> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    const CString &GetScriptId() const
+    const std::string &GetScriptId() const
     {
         return scriptId_;
     }
 
-    ScriptCoverage &SetScriptId(const CString &scriptId)
+    ScriptCoverage &SetScriptId(const std::string &scriptId)
     {
         scriptId_ = scriptId;
         return *this;
     }
 
-    const CString &GetUrl() const
+    const std::string &GetUrl() const
     {
         return url_;
     }
 
-    ScriptCoverage &SetUrl(const CString &url)
+    ScriptCoverage &SetUrl(const std::string &url)
     {
         url_ = url;
         return *this;
     }
 
-    const CVector<std::unique_ptr<FunctionCoverage>> *GetFunctions() const
+    const std::vector<std::unique_ptr<FunctionCoverage>> *GetFunctions() const
     {
         return &functions_;
     }
 
-    ScriptCoverage &SetFunctions(CVector<std::unique_ptr<FunctionCoverage>> functions)
+    ScriptCoverage &SetFunctions(std::vector<std::unique_ptr<FunctionCoverage>> functions)
     {
         functions_ = std::move(functions);
         return *this;
@@ -2093,9 +2091,9 @@ private:
     NO_COPY_SEMANTIC(ScriptCoverage);
     NO_MOVE_SEMANTIC(ScriptCoverage);
 
-    CString scriptId_ {};
-    CString url_ {};
-    CVector<std::unique_ptr<FunctionCoverage>> functions_ {};
+    std::string scriptId_ {};
+    std::string url_ {};
+    std::vector<std::unique_ptr<FunctionCoverage>> functions_ {};
 };
 
 // Profiler.TypeObject
@@ -2106,12 +2104,12 @@ public:
 
     static std::unique_ptr<TypeObject> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
-    const CString &GetName() const
+    const std::string &GetName() const
     {
         return name_;
     }
 
-    TypeObject &SetName(const CString &name)
+    TypeObject &SetName(const std::string &name)
     {
         name_ = name;
         return *this;
@@ -2121,7 +2119,7 @@ private:
     NO_COPY_SEMANTIC(TypeObject);
     NO_MOVE_SEMANTIC(TypeObject);
 
-    CString name_ {};
+    std::string name_ {};
 };
 
 // Profiler.TypeProfileEntry
@@ -2143,12 +2141,12 @@ public:
         return *this;
     }
 
-    const CVector<std::unique_ptr<TypeObject>> *GetTypes() const
+    const std::vector<std::unique_ptr<TypeObject>> *GetTypes() const
     {
         return &types_;
     }
 
-    TypeProfileEntry &SetTypes(CVector<std::unique_ptr<TypeObject>> types)
+    TypeProfileEntry &SetTypes(std::vector<std::unique_ptr<TypeObject>> types)
     {
         types_ = std::move(types);
         return *this;
@@ -2159,7 +2157,7 @@ private:
     NO_MOVE_SEMANTIC(TypeProfileEntry);
 
     size_t offset_ {0};
-    CVector<std::unique_ptr<TypeObject>> types_ {};
+    std::vector<std::unique_ptr<TypeObject>> types_ {};
 };
 
 // Profiler.ScriptTypeProfile
@@ -2170,34 +2168,34 @@ public:
 
     static std::unique_ptr<ScriptTypeProfile> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
-    const CString &GetScriptId() const
+    const std::string &GetScriptId() const
     {
         return scriptId_;
     }
 
-    ScriptTypeProfile &SetScriptId(const CString &scriptId)
+    ScriptTypeProfile &SetScriptId(const std::string &scriptId)
     {
         scriptId_ = scriptId;
         return *this;
     }
 
-    const CString &GetUrl() const
+    const std::string &GetUrl() const
     {
         return url_;
     }
 
-    ScriptTypeProfile &SetUrl(const CString &url)
+    ScriptTypeProfile &SetUrl(const std::string &url)
     {
         url_ = url;
         return *this;
     }
 
-    const CVector<std::unique_ptr<TypeProfileEntry>> *GetEntries() const
+    const std::vector<std::unique_ptr<TypeProfileEntry>> *GetEntries() const
     {
         return &entries_;
     }
 
-    ScriptTypeProfile &SetEntries(CVector<std::unique_ptr<TypeProfileEntry>> entries)
+    ScriptTypeProfile &SetEntries(std::vector<std::unique_ptr<TypeProfileEntry>> entries)
     {
         entries_ = std::move(entries);
         return *this;
@@ -2207,9 +2205,9 @@ private:
     NO_COPY_SEMANTIC(ScriptTypeProfile);
     NO_MOVE_SEMANTIC(ScriptTypeProfile);
 
-    CString scriptId_ {};
-    CString url_ {};
-    CVector<std::unique_ptr<TypeProfileEntry>> entries_ {};
+    std::string scriptId_ {};
+    std::string url_ {};
+    std::vector<std::unique_ptr<TypeProfileEntry>> entries_ {};
 };
 }  // namespace panda::ecmascript::tooling
 #endif

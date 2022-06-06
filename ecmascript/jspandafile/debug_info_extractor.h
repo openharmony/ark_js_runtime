@@ -49,14 +49,14 @@ using ColumnNumberTable = CVector<ColumnTableEntry>;
 
 /*
  * LocalVariableInfo define in frontend, now only use name and regNumber:
- *   CString name
- *   CString type
- *   CString typeSignature
+ *   std::string name
+ *   std::string type
+ *   std::string typeSignature
  *   int32_t regNumber
  *   uint32_t startOffset
  *   uint32_t endOffset
  */
-using LocalVariableTable = CUnorderedMap<CString, int32_t>;  // name, regNumber
+using LocalVariableTable = CUnorderedMap<std::string, int32_t>;  // name, regNumber
 
 // public for debugger
 class PUBLIC_API DebugInfoExtractor {
@@ -74,9 +74,9 @@ public:
 
     const LocalVariableTable &GetLocalVariableTable(panda_file::File::EntityId methodId) const;
 
-    const CString &GetSourceFile(panda_file::File::EntityId methodId) const;
+    const std::string &GetSourceFile(panda_file::File::EntityId methodId) const;
 
-    const CString &GetSourceCode(panda_file::File::EntityId methodId) const;
+    const std::string &GetSourceCode(panda_file::File::EntityId methodId) const;
 
     CVector<panda_file::File::EntityId> GetMethodIdList() const;
 
@@ -84,8 +84,8 @@ private:
     void Extract(const panda_file::File *pf);
 
     struct MethodDebugInfo {
-        CString sourceFile;
-        CString sourceCode;
+        std::string sourceFile;
+        std::string sourceCode;
         LineNumberTable lineNumberTable;
         ColumnNumberTable columnNumberTable;
         LocalVariableTable localVariableTable;

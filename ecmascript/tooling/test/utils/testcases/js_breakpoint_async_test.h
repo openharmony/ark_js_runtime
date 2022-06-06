@@ -68,15 +68,15 @@ public:
         };
     }
 
-    std::pair<CString, CString> GetEntryPoint() override
+    std::pair<std::string, std::string> GetEntryPoint() override
     {
         return {pandaFile_, entryPoint_};
     }
     ~JsBreakpointAsyncTest() = default;
 
 private:
-    CString pandaFile_ = DEBUGGER_ABC_DIR "AsyncFunc.abc";
-    CString entryPoint_ = "_GLOBAL::func_main_0";
+    std::string pandaFile_ = DEBUGGER_ABC_DIR "AsyncFunc.abc";
+    std::string entryPoint_ = "_GLOBAL::func_main_0";
     JSPtLocation location_ {nullptr, JSPtLocation::EntityId(0), 0};
     size_t breakpointCounter_ = 0;
     bool flag_ = true;

@@ -30,7 +30,7 @@ public:
     class SingleStepper {
     public:
         enum class Type { INTO, OVER, OUT };
-        SingleStepper(const EcmaVM *ecmaVm, JSMethod *method, CList<JSPtStepRange> stepRanges, Type type)
+        SingleStepper(const EcmaVM *ecmaVm, JSMethod *method, std::list<JSPtStepRange> stepRanges, Type type)
             : ecmaVm_(ecmaVm),
               method_(method),
               stepRanges_(std::move(stepRanges)),
@@ -50,7 +50,7 @@ public:
 
         const EcmaVM *ecmaVm_;
         JSMethod *method_;
-        CList<JSPtStepRange> stepRanges_;
+        std::list<JSPtStepRange> stepRanges_;
         uint32_t stackDepth_;
         Type type_;
     };
@@ -118,7 +118,7 @@ public:
 private:
     NO_COPY_SEMANTIC(JSPtExtractor);
     NO_MOVE_SEMANTIC(JSPtExtractor);
-    CList<JSPtStepRange> GetStepRanges(File::EntityId methodId, uint32_t offset);
+    std::list<JSPtStepRange> GetStepRanges(File::EntityId methodId, uint32_t offset);
     std::unique_ptr<SingleStepper> GetStepper(const EcmaVM *ecmaVm, SingleStepper::Type type);
 };
 }  // namespace panda::ecmascript::tooling

@@ -22,73 +22,73 @@ using ObjectType = RemoteObject::TypeName;
 using ObjectSubType = RemoteObject::SubTypeName;
 using ObjectClassName = RemoteObject::ClassName;
 
-const CString ObjectType::Object = "object";        // NOLINT (readability-identifier-naming)
-const CString ObjectType::Function = "function";    // NOLINT (readability-identifier-naming)
-const CString ObjectType::Undefined = "undefined";  // NOLINT (readability-identifier-naming)
-const CString ObjectType::String = "string";        // NOLINT (readability-identifier-naming)
-const CString ObjectType::Number = "number";        // NOLINT (readability-identifier-naming)
-const CString ObjectType::Boolean = "boolean";      // NOLINT (readability-identifier-naming)
-const CString ObjectType::Symbol = "symbol";        // NOLINT (readability-identifier-naming)
-const CString ObjectType::Bigint = "bigint";        // NOLINT (readability-identifier-naming)
-const CString ObjectType::Wasm = "wasm";            // NOLINT (readability-identifier-naming)
+const std::string ObjectType::Object = "object";        // NOLINT (readability-identifier-naming)
+const std::string ObjectType::Function = "function";    // NOLINT (readability-identifier-naming)
+const std::string ObjectType::Undefined = "undefined";  // NOLINT (readability-identifier-naming)
+const std::string ObjectType::String = "string";        // NOLINT (readability-identifier-naming)
+const std::string ObjectType::Number = "number";        // NOLINT (readability-identifier-naming)
+const std::string ObjectType::Boolean = "boolean";      // NOLINT (readability-identifier-naming)
+const std::string ObjectType::Symbol = "symbol";        // NOLINT (readability-identifier-naming)
+const std::string ObjectType::Bigint = "bigint";        // NOLINT (readability-identifier-naming)
+const std::string ObjectType::Wasm = "wasm";            // NOLINT (readability-identifier-naming)
 
-const CString ObjectSubType::Array = "array";              // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::Null = "null";                // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::Node = "node";                // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::Regexp = "regexp";            // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::Date = "date";                // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::Map = "map";                  // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::Set = "set";                  // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::Weakmap = "weakmap";          // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::Weakset = "weakset";          // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::Iterator = "iterator";        // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::Generator = "generator";      // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::Error = "error";              // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::Proxy = "proxy";              // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::Promise = "promise";          // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::Typedarray = "typedarray";    // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::Arraybuffer = "arraybuffer";  // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::Dataview = "dataview";        // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::I32 = "i32";                  // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::I64 = "i64";                  // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::F32 = "f32";                  // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::F64 = "f64";                  // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::V128 = "v128";                // NOLINT (readability-identifier-naming)
-const CString ObjectSubType::Externref = "externref";      // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::Array = "array";              // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::Null = "null";                // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::Node = "node";                // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::Regexp = "regexp";            // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::Date = "date";                // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::Map = "map";                  // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::Set = "set";                  // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::Weakmap = "weakmap";          // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::Weakset = "weakset";          // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::Iterator = "iterator";        // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::Generator = "generator";      // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::Error = "error";              // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::Proxy = "proxy";              // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::Promise = "promise";          // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::Typedarray = "typedarray";    // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::Arraybuffer = "arraybuffer";  // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::Dataview = "dataview";        // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::I32 = "i32";                  // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::I64 = "i64";                  // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::F32 = "f32";                  // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::F64 = "f64";                  // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::V128 = "v128";                // NOLINT (readability-identifier-naming)
+const std::string ObjectSubType::Externref = "externref";      // NOLINT (readability-identifier-naming)
 
-const CString ObjectClassName::Object = "Object";                  // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::Function = "Function";              // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::Array = "Array";                    // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::Regexp = "RegExp";                  // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::Date = "Date";                      // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::Map = "Map";                        // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::Set = "Set";                        // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::Weakmap = "Weakmap";                // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::Weakset = "Weakset";                // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::ArrayIterator = "ArrayIterator";    // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::StringIterator = "StringIterator";  // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::SetIterator = "SetIterator";        // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::MapIterator = "MapIterator";        // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::Iterator = "Iterator";              // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::Error = "Error";                    // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::Proxy = "Object";                   // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::Promise = "Promise";                // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::Typedarray = "Typedarray";          // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::Arraybuffer = "Arraybuffer";        // NOLINT (readability-identifier-naming)
-const CString ObjectClassName::Global = "global";                  // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::Object = "Object";                  // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::Function = "Function";              // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::Array = "Array";                    // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::Regexp = "RegExp";                  // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::Date = "Date";                      // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::Map = "Map";                        // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::Set = "Set";                        // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::Weakmap = "Weakmap";                // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::Weakset = "Weakset";                // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::ArrayIterator = "ArrayIterator";    // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::StringIterator = "StringIterator";  // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::SetIterator = "SetIterator";        // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::MapIterator = "MapIterator";        // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::Iterator = "Iterator";              // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::Error = "Error";                    // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::Proxy = "Object";                   // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::Promise = "Promise";                // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::Typedarray = "Typedarray";          // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::Arraybuffer = "Arraybuffer";        // NOLINT (readability-identifier-naming)
+const std::string ObjectClassName::Global = "global";                  // NOLINT (readability-identifier-naming)
 
-const CString RemoteObject::ObjectDescription = "Object";    // NOLINT (readability-identifier-naming)
-const CString RemoteObject::GlobalDescription = "global";    // NOLINT (readability-identifier-naming)
-const CString RemoteObject::ProxyDescription = "Proxy";      // NOLINT (readability-identifier-naming)
-const CString RemoteObject::PromiseDescription = "Promise";  // NOLINT (readability-identifier-naming)
-const CString RemoteObject::ArrayIteratorDescription =       // NOLINT (readability-identifier-naming)
+const std::string RemoteObject::ObjectDescription = "Object";    // NOLINT (readability-identifier-naming)
+const std::string RemoteObject::GlobalDescription = "global";    // NOLINT (readability-identifier-naming)
+const std::string RemoteObject::ProxyDescription = "Proxy";      // NOLINT (readability-identifier-naming)
+const std::string RemoteObject::PromiseDescription = "Promise";  // NOLINT (readability-identifier-naming)
+const std::string RemoteObject::ArrayIteratorDescription =       // NOLINT (readability-identifier-naming)
     "ArrayIterator";
-const CString RemoteObject::StringIteratorDescription =  // NOLINT (readability-identifier-naming)
+const std::string RemoteObject::StringIteratorDescription =  // NOLINT (readability-identifier-naming)
     "StringIterator";
-const CString RemoteObject::SetIteratorDescription = "SetIterator";  // NOLINT (readability-identifier-naming)
-const CString RemoteObject::MapIteratorDescription = "MapIterator";  // NOLINT (readability-identifier-naming)
-const CString RemoteObject::WeakMapDescription = "WeakMap";          // NOLINT (readability-identifier-naming)
-const CString RemoteObject::WeakSetDescription = "WeakSet";          // NOLINT (readability-identifier-naming)
+const std::string RemoteObject::SetIteratorDescription = "SetIterator";  // NOLINT (readability-identifier-naming)
+const std::string RemoteObject::MapIteratorDescription = "MapIterator";  // NOLINT (readability-identifier-naming)
+const std::string RemoteObject::WeakMapDescription = "WeakMap";          // NOLINT (readability-identifier-naming)
+const std::string RemoteObject::WeakSetDescription = "WeakSet";          // NOLINT (readability-identifier-naming)
 
 static constexpr uint64_t DOUBLE_SIGN_MASK = 0x8000000000000000ULL;
 
@@ -179,7 +179,7 @@ PrimitiveRemoteObject::PrimitiveRemoteObject(const EcmaVM *ecmaVm, const Local<J
         this->SetType(ObjectType::Undefined);
     } else if (tagged->IsNumber()) {
         this->SetType(ObjectType::Number)
-            .SetDescription(DebuggerApi::ToCString(tagged->ToString(ecmaVm)));
+            .SetDescription(DebuggerApi::ToStdString(tagged->ToString(ecmaVm)));
         double val = Local<NumberRef>(tagged)->Value();
         if (!std::isfinite(val) || (val == 0 && ((bit_cast<uint64_t>(val) & DOUBLE_SIGN_MASK) == DOUBLE_SIGN_MASK))) {
             this->SetUnserializableValue(this->GetDescription());
@@ -192,7 +192,7 @@ PrimitiveRemoteObject::PrimitiveRemoteObject(const EcmaVM *ecmaVm, const Local<J
     }
 }
 
-CString ObjectRemoteObject::DescriptionForObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
+std::string ObjectRemoteObject::DescriptionForObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
 {
     if (tagged->IsArray(ecmaVm)) {
         return DescriptionForArray(ecmaVm, Local<ArrayRef>(tagged));
@@ -242,69 +242,69 @@ CString ObjectRemoteObject::DescriptionForObject(const EcmaVM *ecmaVm, const Loc
     return RemoteObject::ObjectDescription;
 }
 
-CString ObjectRemoteObject::DescriptionForArray(const EcmaVM *ecmaVm, const Local<ArrayRef> &tagged)
+std::string ObjectRemoteObject::DescriptionForArray(const EcmaVM *ecmaVm, const Local<ArrayRef> &tagged)
 {
-    CString description = "Array(" + ToCString<uint32_t>(tagged->Length(ecmaVm)) + ")";
+    std::string description = "Array(" + std::to_string(tagged->Length(ecmaVm)) + ")";
     return description;
 }
 
-CString ObjectRemoteObject::DescriptionForRegexp(const EcmaVM *ecmaVm, const Local<RegExpRef> &tagged)
+std::string ObjectRemoteObject::DescriptionForRegexp(const EcmaVM *ecmaVm, const Local<RegExpRef> &tagged)
 {
-    CString regexpSource = DebuggerApi::ToCString(tagged->GetOriginalSource(ecmaVm));
-    CString description = "/" + regexpSource + "/";
+    std::string regexpSource = DebuggerApi::ToStdString(tagged->GetOriginalSource(ecmaVm));
+    std::string description = "/" + regexpSource + "/";
     return description;
 }
 
-CString ObjectRemoteObject::DescriptionForDate(const EcmaVM *ecmaVm, const Local<DateRef> &tagged)
+std::string ObjectRemoteObject::DescriptionForDate(const EcmaVM *ecmaVm, const Local<DateRef> &tagged)
 {
-    CString description = DebuggerApi::ToCString(tagged->ToString(ecmaVm));
+    std::string description = DebuggerApi::ToStdString(tagged->ToString(ecmaVm));
     return description;
 }
 
-CString ObjectRemoteObject::DescriptionForMap(const Local<MapRef> &tagged)
+std::string ObjectRemoteObject::DescriptionForMap(const Local<MapRef> &tagged)
 {
-    CString description = ("Map(" + ToCString<uint32_t>(tagged->GetSize()) + ")");
+    std::string description = ("Map(" + std::to_string(tagged->GetSize()) + ")");
     return description;
 }
 
-CString ObjectRemoteObject::DescriptionForSet(const Local<SetRef> &tagged)
+std::string ObjectRemoteObject::DescriptionForSet(const Local<SetRef> &tagged)
 {
-    CString description = ("Set(" + ToCString<uint32_t>(tagged->GetSize()) + ")");
+    std::string description = ("Set(" + std::to_string(tagged->GetSize()) + ")");
     return description;
 }
 
-CString ObjectRemoteObject::DescriptionForError(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
+std::string ObjectRemoteObject::DescriptionForError(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged)
 {
     // add message
     Local<JSValueRef> stack = StringRef::NewFromUtf8(ecmaVm, "message");
     Local<JSValueRef> result = Local<ObjectRef>(tagged)->Get(ecmaVm, stack);
-    return DebuggerApi::ToCString(result->ToString(ecmaVm));
+    return DebuggerApi::ToStdString(result->ToString(ecmaVm));
 }
 
-CString ObjectRemoteObject::DescriptionForArrayBuffer(const EcmaVM *ecmaVm, const Local<ArrayBufferRef> &tagged)
+std::string ObjectRemoteObject::DescriptionForArrayBuffer(const EcmaVM *ecmaVm, const Local<ArrayBufferRef> &tagged)
 {
     int32_t len = tagged->ByteLength(ecmaVm);
-    CString description = ("ArrayBuffer(" + ToCString<uint32_t>(len) + ")");
+    std::string description = ("ArrayBuffer(" + std::to_string(len) + ")");
     return description;
 }
 
-CString SymbolRemoteObject::DescriptionForSymbol(const EcmaVM *ecmaVm, const Local<SymbolRef> &tagged) const
+std::string SymbolRemoteObject::DescriptionForSymbol(const EcmaVM *ecmaVm, const Local<SymbolRef> &tagged) const
 {
-    CString description =
-        "Symbol(" + DebuggerApi::ToCString(tagged->GetDescription(ecmaVm)) + ")";
+    std::string description =
+        "Symbol(" + DebuggerApi::ToStdString(tagged->GetDescription(ecmaVm)) + ")";
     return description;
 }
 
-CString FunctionRemoteObject::DescriptionForFunction(const EcmaVM *ecmaVm, const Local<FunctionRef> &tagged) const
+std::string FunctionRemoteObject::DescriptionForFunction(const EcmaVM *ecmaVm, const Local<FunctionRef> &tagged) const
 {
-    CString sourceCode;
+    std::string sourceCode;
     if (tagged->IsNative(ecmaVm)) {
         sourceCode = "[native code]";
     } else {
         sourceCode = "[js code]";
     }
     Local<StringRef> name = tagged->GetName(ecmaVm);
-    CString description = "function " + DebuggerApi::ToCString(name) + "( { " + sourceCode + " }";
+    std::string description = "function " + DebuggerApi::ToStdString(name) + "( { " + sourceCode + " }";
     return description;
 }
 
@@ -314,14 +314,14 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
         LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto remoteObject = std::make_unique<RemoteObject>();
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "type")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            auto type = DebuggerApi::ToCString(result);
+            auto type = DebuggerApi::ToStdString(result);
             if (ObjectType::Valid(type)) {
                 remoteObject->type_ = type;
             } else {
@@ -336,7 +336,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "subtype")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            auto type = DebuggerApi::ToCString(result);
+            auto type = DebuggerApi::ToStdString(result);
             if (ObjectSubType::Valid(type)) {
                 remoteObject->subtype_ = type;
             } else {
@@ -349,7 +349,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "className")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            remoteObject->className_ = DebuggerApi::ToCString(result);
+            remoteObject->className_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'className' should be a String;";
         }
@@ -362,7 +362,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "unserializableValue")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            remoteObject->unserializableValue_ = DebuggerApi::ToCString(result);
+            remoteObject->unserializableValue_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'unserializableValue' should be a String;";
         }
@@ -370,7 +370,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "description")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            remoteObject->description_ = DebuggerApi::ToCString(result);
+            remoteObject->description_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'description' should be a String;";
         }
@@ -436,7 +436,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
         LOG(ERROR, DEBUGGER) << "ExceptionDetails::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto exceptionDetails = std::make_unique<ExceptionDetails>();
 
     Local<JSValueRef> result =
@@ -453,7 +453,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "text")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            exceptionDetails->text_ = DebuggerApi::ToCString(result);
+            exceptionDetails->text_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'text' should be a String;";
         }
@@ -491,7 +491,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            exceptionDetails->url_ = DebuggerApi::ToCString(result);
+            exceptionDetails->url_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'url' should be a String;";
         }
@@ -573,14 +573,14 @@ std::unique_ptr<InternalPropertyDescriptor> InternalPropertyDescriptor::Create(c
         LOG(ERROR, DEBUGGER) << "InternalPropertyDescriptor::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto internalPropertyDescriptor = std::make_unique<InternalPropertyDescriptor>();
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            internalPropertyDescriptor->name_ = DebuggerApi::ToCString(result);
+            internalPropertyDescriptor->name_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'name' should be a String;";
         }
@@ -632,14 +632,14 @@ std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(con
         LOG(ERROR, DEBUGGER) << "PrivatePropertyDescriptor::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto propertyDescriptor = std::make_unique<PrivatePropertyDescriptor>();
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            propertyDescriptor->name_ = DebuggerApi::ToCString(result);
+            propertyDescriptor->name_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'name' should be a String;";
         }
@@ -727,14 +727,14 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::FromProperty(const EcmaV
 {
     std::unique_ptr<PropertyDescriptor> debuggerProperty = std::make_unique<PropertyDescriptor>();
 
-    CString nameStr;
+    std::string nameStr;
     if (name->IsSymbol()) {
         Local<SymbolRef> symbol(name);
         nameStr =
-            "Symbol(" + DebuggerApi::ToCString(Local<SymbolRef>(name)->GetDescription(ecmaVm)) + ")";
+            "Symbol(" + DebuggerApi::ToStdString(Local<SymbolRef>(name)->GetDescription(ecmaVm)) + ")";
         debuggerProperty->symbol_ = RemoteObject::FromTagged(ecmaVm, name);
     } else {
-        nameStr = DebuggerApi::ToCString(name->ToString(ecmaVm));
+        nameStr = DebuggerApi::ToStdString(name->ToString(ecmaVm));
     }
 
     debuggerProperty->name_ = nameStr;
@@ -763,14 +763,14 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const EcmaVM *ecm
         LOG(ERROR, DEBUGGER) << "PropertyDescriptor::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto propertyDescriptor = std::make_unique<PropertyDescriptor>();
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            propertyDescriptor->name_ = DebuggerApi::ToCString(result);
+            propertyDescriptor->name_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'name' should be a String;";
         }
@@ -942,7 +942,7 @@ std::unique_ptr<CallArgument> CallArgument::Create(const EcmaVM *ecmaVm, const L
         LOG(ERROR, DEBUGGER) << "CallArgument::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto callArgument = std::make_unique<CallArgument>();
 
     Local<JSValueRef> result =
@@ -954,7 +954,7 @@ std::unique_ptr<CallArgument> CallArgument::Create(const EcmaVM *ecmaVm, const L
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "unserializableValue")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            callArgument->unserializableValue_ = DebuggerApi::ToCString(result);
+            callArgument->unserializableValue_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'unserializableValue' should be a String;";
         }
@@ -1002,7 +1002,7 @@ std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSV
         LOG(ERROR, DEBUGGER) << "Location::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto location = std::make_unique<Location>();
 
     Local<JSValueRef> result =
@@ -1066,7 +1066,7 @@ std::unique_ptr<ScriptPosition> ScriptPosition::Create(const EcmaVM *ecmaVm, con
         LOG(ERROR, DEBUGGER) << "ScriptPosition::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto scriptPosition = std::make_unique<ScriptPosition>();
 
     Local<JSValueRef> result =
@@ -1116,7 +1116,7 @@ std::unique_ptr<SearchMatch> SearchMatch::Create(const EcmaVM *ecmaVm, const Loc
         LOG(ERROR, DEBUGGER) << "SearchMatch::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto locationSearch = std::make_unique<SearchMatch>();
 
     Local<JSValueRef> result =
@@ -1134,7 +1134,7 @@ std::unique_ptr<SearchMatch> SearchMatch::Create(const EcmaVM *ecmaVm, const Loc
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineContent")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            locationSearch->lineContent_ = DebuggerApi::ToCString(result);
+            locationSearch->lineContent_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'lineContent' should be a String;";
         }
@@ -1168,7 +1168,7 @@ std::unique_ptr<LocationRange> LocationRange::Create(const EcmaVM *ecmaVm, const
         LOG(ERROR, DEBUGGER) << "BreakLocation::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto locationRange = std::make_unique<LocationRange>();
 
     Local<JSValueRef> result =
@@ -1244,7 +1244,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const
         LOG(ERROR, DEBUGGER) << "BreakLocation::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto breakLocation = std::make_unique<BreakLocation>();
 
     Local<JSValueRef> result =
@@ -1279,7 +1279,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "type")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            auto type = DebuggerApi::ToCString(result);
+            auto type = DebuggerApi::ToStdString(result);
             if (BreakType::Valid(type)) {
                 breakLocation->type_ = type;
             } else {
@@ -1326,14 +1326,14 @@ std::unique_ptr<Scope> Scope::Create(const EcmaVM *ecmaVm, const Local<JSValueRe
         LOG(ERROR, DEBUGGER) << "Scope::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto scope = std::make_unique<Scope>();
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "type")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            auto type = DebuggerApi::ToCString(result);
+            auto type = DebuggerApi::ToStdString(result);
             if (Scope::Type::Valid(type)) {
                 scope->type_ = type;
             } else {
@@ -1363,7 +1363,7 @@ std::unique_ptr<Scope> Scope::Create(const EcmaVM *ecmaVm, const Local<JSValueRe
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scope->name_ = DebuggerApi::ToCString(result);
+            scope->name_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'name' should be a String;";
         }
@@ -1440,7 +1440,7 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
         LOG(ERROR, DEBUGGER) << "CallFrame::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto callFrame = std::make_unique<CallFrame>();
 
     Local<JSValueRef> result =
@@ -1457,7 +1457,7 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionName")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            callFrame->functionName_ = DebuggerApi::ToCString(result);
+            callFrame->functionName_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'functionName' should be a String;";
         }
@@ -1496,7 +1496,7 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            callFrame->url_ = DebuggerApi::ToCString(result);
+            callFrame->url_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'url' should be a String;";
         }
@@ -1610,7 +1610,7 @@ std::unique_ptr<SamplingHeapProfileSample> SamplingHeapProfileSample::Create(con
         LOG(ERROR, DEBUGGER) << "SamplingHeapProfileSample::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto samplingHeapProfileSample = std::make_unique<SamplingHeapProfileSample>();
 
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
@@ -1675,14 +1675,14 @@ std::unique_ptr<RuntimeCallFrame> RuntimeCallFrame::Create(const EcmaVM *ecmaVm,
         LOG(ERROR, DEBUGGER) << "RuntimeCallFrame::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto runtimeCallFrame = std::make_unique<RuntimeCallFrame>();
 
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionName")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            runtimeCallFrame->functionName_ = DebuggerApi::ToCString(result);
+            runtimeCallFrame->functionName_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'functionName' should be a String;";
         }
@@ -1693,7 +1693,7 @@ std::unique_ptr<RuntimeCallFrame> RuntimeCallFrame::Create(const EcmaVM *ecmaVm,
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            runtimeCallFrame->scriptId_ = DebuggerApi::ToCString(result);
+            runtimeCallFrame->scriptId_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'scriptId' should be a String;";
         }
@@ -1704,7 +1704,7 @@ std::unique_ptr<RuntimeCallFrame> RuntimeCallFrame::Create(const EcmaVM *ecmaVm,
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            runtimeCallFrame->url_ = DebuggerApi::ToCString(result);
+            runtimeCallFrame->url_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'url' should be a String;";
         }
@@ -1745,11 +1745,11 @@ std::unique_ptr<RuntimeCallFrame> RuntimeCallFrame::Create(const EcmaVM *ecmaVm,
 std::unique_ptr<RuntimeCallFrame> RuntimeCallFrame::FromFrameInfo(const FrameInfo &cpuFrameInfo)
 {
     auto runtimeCallFrame = std::make_unique<RuntimeCallFrame>();
-    runtimeCallFrame->SetFunctionName(cpuFrameInfo.functionName.c_str());
-    runtimeCallFrame->SetScriptId(std::to_string(cpuFrameInfo.scriptId).c_str());
+    runtimeCallFrame->SetFunctionName(cpuFrameInfo.functionName);
+    runtimeCallFrame->SetScriptId(std::to_string(cpuFrameInfo.scriptId));
     runtimeCallFrame->SetColumnNumber(cpuFrameInfo.columnNumber);
     runtimeCallFrame->SetLineNumber(cpuFrameInfo.lineNumber);
-    runtimeCallFrame->SetUrl(cpuFrameInfo.url.c_str());
+    runtimeCallFrame->SetUrl(cpuFrameInfo.url);
     return runtimeCallFrame;
 }
 
@@ -1783,7 +1783,7 @@ std::unique_ptr<SamplingHeapProfileNode> SamplingHeapProfileNode::Create(const E
         return nullptr;
     }
 
-    CString error;
+    std::string error;
     auto samplingHeapProfileNode = std::make_unique<SamplingHeapProfileNode>();
 
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
@@ -1889,7 +1889,7 @@ std::unique_ptr<SamplingHeapProfile> SamplingHeapProfile::Create(const EcmaVM *e
         LOG(ERROR, DEBUGGER) << "SamplingHeapProfile::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto samplingHeapProfile = std::make_unique<SamplingHeapProfile>();
 
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
@@ -1969,7 +1969,7 @@ std::unique_ptr<PositionTickInfo> PositionTickInfo::Create(const EcmaVM *ecmaVm,
         LOG(ERROR, DEBUGGER) << "PositionTickInfo::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto positionTicks = std::make_unique<PositionTickInfo>();
 
     Local<JSValueRef> result =
@@ -2019,7 +2019,7 @@ std::unique_ptr<ProfileNode> ProfileNode::Create(const EcmaVM *ecmaVm, const Loc
         LOG(ERROR, DEBUGGER) << "ProfileNode::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto profileNode = std::make_unique<ProfileNode>();
 
     Local<JSValueRef> result =
@@ -2098,7 +2098,7 @@ std::unique_ptr<ProfileNode> ProfileNode::Create(const EcmaVM *ecmaVm, const Loc
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "deoptReason")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            profileNode->deoptReason_ = DebuggerApi::ToCString(result);
+            profileNode->deoptReason_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'deoptReason' should be a String;";
         }
@@ -2119,7 +2119,7 @@ std::unique_ptr<ProfileNode> ProfileNode::FromCpuProfileNode(const CpuProfileNod
     profileNode->SetHitCount(cpuProfileNode.hitCount);
 
     size_t childrenLen = cpuProfileNode.children.size();
-    CVector<int32_t> tmpChildren;
+    std::vector<int32_t> tmpChildren;
     tmpChildren.reserve(childrenLen);
     for (uint32_t i = 0; i < childrenLen; ++i) {
         tmpChildren.push_back(cpuProfileNode.children[i]);
@@ -2180,7 +2180,7 @@ std::unique_ptr<Profile> Profile::Create(const EcmaVM *ecmaVm, const Local<JSVal
         LOG(ERROR, DEBUGGER) << "Profile::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto profile = std::make_unique<Profile>();
 
     Local<JSValueRef> result =
@@ -2273,7 +2273,7 @@ std::unique_ptr<Profile> Profile::FromProfileInfo(const ProfileInfo &profileInfo
     profile->SetStartTime(static_cast<int64_t>(profileInfo.startTime));
     profile->SetEndTime(static_cast<int64_t>(profileInfo.stopTime));
     size_t samplesLen = profileInfo.samples.size();
-    CVector<int32_t> tmpSamples;
+    std::vector<int32_t> tmpSamples;
     tmpSamples.reserve(samplesLen);
     for (uint32_t i = 0; i < samplesLen; ++i) {
         tmpSamples.push_back(profileInfo.samples[i]);
@@ -2281,14 +2281,14 @@ std::unique_ptr<Profile> Profile::FromProfileInfo(const ProfileInfo &profileInfo
     profile->SetSamples(tmpSamples);
 
     size_t timeDeltasLen = profileInfo.timeDeltas.size();
-    CVector<int32_t> tmpTimeDeltas;
+    std::vector<int32_t> tmpTimeDeltas;
     tmpTimeDeltas.reserve(timeDeltasLen);
     for (uint32_t i = 0; i < timeDeltasLen; ++i) {
         tmpTimeDeltas.push_back(profileInfo.timeDeltas[i]);
     }
     profile->SetTimeDeltas(tmpTimeDeltas);
 
-    CVector<std::unique_ptr<ProfileNode>> profileNode;
+    std::vector<std::unique_ptr<ProfileNode>> profileNode;
     size_t nodesLen = profileInfo.nodes.size();
     for (uint32_t i = 0; i < nodesLen; ++i) {
         const auto &cpuProfileNode = profileInfo.nodes[i];
@@ -2344,7 +2344,7 @@ std::unique_ptr<Coverage> Coverage::Create(const EcmaVM *ecmaVm, const Local<JSV
         LOG(ERROR, DEBUGGER) << "Coverage::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto coverage = std::make_unique<Coverage>();
 
     Local<JSValueRef> result =
@@ -2403,14 +2403,14 @@ std::unique_ptr<FunctionCoverage> FunctionCoverage::Create(const EcmaVM *ecmaVm,
         LOG(ERROR, DEBUGGER) << "FunctionCoverage::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto functionCoverage = std::make_unique<FunctionCoverage>();
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionName")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            functionCoverage->functionName_ = DebuggerApi::ToCString(result);
+            functionCoverage->functionName_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'functionName' should be a String;";
         }
@@ -2481,14 +2481,14 @@ std::unique_ptr<ScriptCoverage> ScriptCoverage::Create(const EcmaVM *ecmaVm, con
         LOG(ERROR, DEBUGGER) << "ScriptCoverage::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto scriptCoverage = std::make_unique<ScriptCoverage>();
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptCoverage->scriptId_ = DebuggerApi::ToCString(result);
+            scriptCoverage->scriptId_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'scriptId' should be a String;";
         }
@@ -2498,7 +2498,7 @@ std::unique_ptr<ScriptCoverage> ScriptCoverage::Create(const EcmaVM *ecmaVm, con
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptCoverage->url_ = DebuggerApi::ToCString(result);
+            scriptCoverage->url_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'url' should be a String;";
         }
@@ -2555,14 +2555,14 @@ std::unique_ptr<TypeObject> TypeObject::Create(const EcmaVM *ecmaVm, const Local
         LOG(ERROR, DEBUGGER) << "TypeObject::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto typeObject = std::make_unique<TypeObject>();
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            typeObject->name_ = DebuggerApi::ToCString(result);
+            typeObject->name_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'name' should be a String;";
         }
@@ -2591,7 +2591,7 @@ std::unique_ptr<TypeProfileEntry> TypeProfileEntry::Create(const EcmaVM *ecmaVm,
         LOG(ERROR, DEBUGGER) << "TypeProfileEntry::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto typeProfileEntry = std::make_unique<TypeProfileEntry>();
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "offset")));
@@ -2651,14 +2651,14 @@ std::unique_ptr<ScriptTypeProfile> ScriptTypeProfile::Create(const EcmaVM *ecmaV
         LOG(ERROR, DEBUGGER) << "ScriptTypeProfile::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto scriptTypeProfile = std::make_unique<ScriptTypeProfile>();
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptTypeProfile->scriptId_ = DebuggerApi::ToCString(result);
+            scriptTypeProfile->scriptId_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'scriptId' should be a String;";
         }
@@ -2669,7 +2669,7 @@ std::unique_ptr<ScriptTypeProfile> ScriptTypeProfile::Create(const EcmaVM *ecmaV
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            scriptTypeProfile->url_ = DebuggerApi::ToCString(result);
+            scriptTypeProfile->url_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'url' should be a String;";
         }

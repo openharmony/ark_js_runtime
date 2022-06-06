@@ -75,7 +75,7 @@ public:
         return callFrameId_;
     }
 
-    const CString &GetExpression()
+    const std::string &GetExpression()
     {
         return expression_;
     }
@@ -85,8 +85,8 @@ private:
     NO_MOVE_SEMANTIC(EvaluateOnCallFrameParams);
 
     CallFrameId callFrameId_ {};
-    CString expression_ {};
-    std::optional<CString> objectGroup_ {};
+    std::string expression_ {};
+    std::optional<std::string> objectGroup_ {};
     std::optional<bool> includeCommandLineApi_ {};
     std::optional<bool> silent_ {};
     std::optional<bool> returnByValue_ {};
@@ -249,7 +249,7 @@ public:
         return Local<ObjectRef>();
     }
 
-    CList<CString> GetPatterns() const
+    std::list<std::string> GetPatterns() const
     {
         return patterns_;
     }
@@ -258,7 +258,7 @@ private:
     NO_COPY_SEMANTIC(SetBlackboxPatternsParams);
     NO_MOVE_SEMANTIC(SetBlackboxPatternsParams);
 
-    CList<CString> patterns_ {};
+    std::list<std::string> patterns_ {};
 };
 
 class SetBreakpointByUrlParams : public PtBaseParams {
@@ -277,7 +277,7 @@ public:
         return line_;
     }
 
-    const CString &GetUrl() const
+    const std::string &GetUrl() const
     {
         return url_.value();
     }
@@ -287,7 +287,7 @@ public:
         return url_.has_value();
     }
 
-    const CString &GetUrlRegex() const
+    const std::string &GetUrlRegex() const
     {
         return urlRegex_.value();
     }
@@ -297,7 +297,7 @@ public:
         return urlRegex_.has_value();
     }
 
-    const CString &GetScriptHash() const
+    const std::string &GetScriptHash() const
     {
         return scriptHash_.value();
     }
@@ -317,7 +317,7 @@ public:
         return column_.has_value();
     }
 
-    const CString &GetCondition() const
+    const std::string &GetCondition() const
     {
         return condition_.value();
     }
@@ -332,11 +332,11 @@ private:
     NO_MOVE_SEMANTIC(SetBreakpointByUrlParams);
 
     int32_t line_ {0};
-    std::optional<CString> url_ {};
-    std::optional<CString> urlRegex_ {};
-    std::optional<CString> scriptHash_ {};
+    std::optional<std::string> url_ {};
+    std::optional<std::string> urlRegex_ {};
+    std::optional<std::string> scriptHash_ {};
     std::optional<int32_t> column_ {0};
-    std::optional<CString> condition_ {};
+    std::optional<std::string> condition_ {};
 };
 
 enum class PauseOnExceptionsState : uint8_t { NONE, UNCAUGHT, ALL };
@@ -356,7 +356,7 @@ public:
         return state_;
     }
 
-    bool StoreState(const CString &state)
+    bool StoreState(const std::string &state)
     {
         if (state == "none") {
             state_ = PauseOnExceptionsState::NONE;
@@ -401,7 +401,7 @@ public:
         return breakOnAsyncCall_.has_value();
     }
 
-    const CList<std::unique_ptr<LocationRange>> *GetSkipList() const
+    const std::list<std::unique_ptr<LocationRange>> *GetSkipList() const
     {
         if (!skipList_) {
             return nullptr;
@@ -419,7 +419,7 @@ private:
     NO_MOVE_SEMANTIC(StepIntoParams);
 
     std::optional<bool> breakOnAsyncCall_ {};
-    std::optional<CList<std::unique_ptr<LocationRange>>> skipList_ {};
+    std::optional<std::list<std::unique_ptr<LocationRange>>> skipList_ {};
 };
 
 class StepOverParams : public PtBaseParams {
@@ -433,7 +433,7 @@ public:
         return Local<ObjectRef>();
     }
 
-    const CList<std::unique_ptr<LocationRange>> *GetSkipList() const
+    const std::list<std::unique_ptr<LocationRange>> *GetSkipList() const
     {
         if (!skipList_) {
             return nullptr;
@@ -450,7 +450,7 @@ private:
     NO_COPY_SEMANTIC(StepOverParams);
     NO_MOVE_SEMANTIC(StepOverParams);
 
-    std::optional<CList<std::unique_ptr<LocationRange>>> skipList_ {};
+    std::optional<std::list<std::unique_ptr<LocationRange>>> skipList_ {};
 };
 
 class GetPropertiesParams : public PtBaseParams {
@@ -520,7 +520,7 @@ public:
         return Local<ObjectRef>();
     }
 
-    const CString &GetFunctionDeclaration()
+    const std::string &GetFunctionDeclaration()
     {
         return functionDeclaration_;
     }
@@ -541,7 +541,7 @@ public:
         return objectId_.has_value();
     }
 
-    const CVector<std::unique_ptr<CallArgument>> *GetArguments() const
+    const std::vector<std::unique_ptr<CallArgument>> *GetArguments() const
     {
         if (!arguments_) {
             return nullptr;
@@ -620,7 +620,7 @@ public:
         return executionContextId_.has_value();
     }
 
-    const CString &GetObjectGroup() const
+    const std::string &GetObjectGroup() const
     {
         return objectGroup_.value();
     }
@@ -644,16 +644,16 @@ private:
     NO_COPY_SEMANTIC(CallFunctionOnParams);
     NO_MOVE_SEMANTIC(CallFunctionOnParams);
 
-    CString functionDeclaration_ {};
+    std::string functionDeclaration_ {};
     std::optional<RemoteObjectId> objectId_ {};
-    std::optional<CVector<std::unique_ptr<CallArgument>>> arguments_ {};
+    std::optional<std::vector<std::unique_ptr<CallArgument>>> arguments_ {};
     std::optional<bool> silent_ {};
     std::optional<bool> returnByValue_ {};
     std::optional<bool> generatePreview_ {};
     std::optional<bool> userGesture_ {};
     std::optional<bool> awaitPromise_ {};
     std::optional<ExecutionContextId> executionContextId_ {};
-    std::optional<CString> objectGroup_ {};
+    std::optional<std::string> objectGroup_ {};
     std::optional<bool> throwOnSideEffect_ {};
 };
 
@@ -803,7 +803,7 @@ public:
         return objectId_;
     }
 
-    const CString &GetObjectGroup() const
+    const std::string &GetObjectGroup() const
     {
         return objectGroup_.value();
     }
@@ -818,7 +818,7 @@ private:
     NO_MOVE_SEMANTIC(GetObjectByHeapObjectIdParams);
 
     HeapSnapshotObjectId objectId_ {};
-    std::optional<CString> objectGroup_ {};
+    std::optional<std::string> objectGroup_ {};
 };
 
 class StartPreciseCoverageParam : public PtBaseParams {

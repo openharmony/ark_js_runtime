@@ -26,16 +26,16 @@
 namespace panda::ecmascript::tooling::test {
 template<class Key, class T, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
 using CUnorderedMap = panda::ecmascript::CUnorderedMap<Key, T, Hash, KeyEqual>;
-using TestMap = CUnorderedMap<CString, std::unique_ptr<TestEvents>>;
+using TestMap = CUnorderedMap<std::string, std::unique_ptr<TestEvents>>;
 
 class TestUtil {
 public:
-    static void RegisterTest(const CString &testName, std::unique_ptr<TestEvents> test)
+    static void RegisterTest(const std::string &testName, std::unique_ptr<TestEvents> test)
     {
         testMap_.insert({testName, std::move(test)});
     }
 
-    static TestEvents *GetTest(const CString &name)
+    static TestEvents *GetTest(const std::string &name)
     {
         auto iter = std::find_if(testMap_.begin(), testMap_.end(), [&name](auto &it) {
             return it.first == name;
