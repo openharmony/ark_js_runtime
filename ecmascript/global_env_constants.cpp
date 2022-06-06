@@ -507,6 +507,9 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::BACKSLASH_INDEX, factory->NewFromASCIINonMovable("/"));
     SetConstant(ConstantIndex::SPACE_INDEX, factory->NewFromASCIINonMovable(" "));
     SetConstant(ConstantIndex::NAN_INDEX, factory->NewFromASCIINonMovable("NaN"));
+    SetConstant(ConstantIndex::NOT_EQUAL_INDEX, factory->NewFromASCIINonMovable("not-equal"));
+    SetConstant(ConstantIndex::OK_INDEX, factory->NewFromASCIINonMovable("ok"));
+    SetConstant(ConstantIndex::TIMEOUT_INDEX, factory->NewFromASCIINonMovable("timed-out"));
 
     auto accessor = factory->NewInternalAccessor(reinterpret_cast<void *>(JSFunction::PrototypeSetter),
                                                  reinterpret_cast<void *>(JSFunction::PrototypeGetter));

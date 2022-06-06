@@ -349,6 +349,9 @@ class JSThread;
     V(JSTaggedValue, ElementString, ELEMENT_INDEX, element)                                                           \
     V(JSTaggedValue, FlagsString, FLAGS_INDEX, flags)                                                                 \
     V(JSTaggedValue, GString, G_INDEX, g)                                                                             \
+    V(JSTaggedValue, NotEqualString, NOT_EQUAL_INDEX, notEqual)                                                       \
+    V(JSTaggedValue, OkString, OK_INDEX, ok)                                                                          \
+    V(JSTaggedValue, TimeoutString, TIMEOUT_INDEX, timedout)                                                          \
     V(JSTaggedValue, NfcString, NFC_INDEX, nfc)                                                                       \
     V(JSTaggedValue, EntriesString, ENTRIES_INDEX, entries)                                                           \
     V(JSTaggedValue, LeftSquareBracketString, LEFT_SQUARE_BRACKET_INDEX, leftsquarebracket)                           \

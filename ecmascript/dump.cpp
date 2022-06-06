@@ -1917,6 +1917,8 @@ void GlobalEnv::Dump(std::ostream &os) const
     GetBuiltinsFinalizationRegistryFunction().GetTaggedValue().Dump(os);
     os << " - MathFunction: ";
     GetMathFunction().GetTaggedValue().Dump(os);
+    os << " - AtomicsFunction: ";
+    GetAtomicsFunction().GetTaggedValue().Dump(os);
     os << " - JsonFunction: ";
     GetJsonFunction().GetTaggedValue().Dump(os);
     os << " - StringFunction: ";
@@ -3865,6 +3867,7 @@ void GlobalEnv::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &
     vec.push_back(std::make_pair(CString("BuiltinsFinalizationRegistryFunction"),
                                  GetBuiltinsFinalizationRegistryFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("MathFunction"), GetMathFunction().GetTaggedValue()));
+    vec.push_back(std::make_pair(CString("AtomicsFunction"), GetAtomicsFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("JsonFunction"), GetJsonFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("StringFunction"), GetStringFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("ProxyFunction"), GetProxyFunction().GetTaggedValue()));
