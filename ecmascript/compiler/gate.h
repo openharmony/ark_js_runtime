@@ -157,6 +157,8 @@ public:
         FLOAT_TO_SIGNED_INT,
         UNSIGNED_FLOAT_TO_INT,
         BITCAST,
+        RESTORE_REGISTER,
+        SAVE_REGISTER,
     };
 
     OpCode() = default;

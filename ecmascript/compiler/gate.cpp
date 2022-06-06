@@ -184,6 +184,11 @@ Properties OpCode::GetProperties() const
             return {FLEX, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case BITCAST:
             return {FLEX, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
+        // suspend relate HIR
+        case RESTORE_REGISTER:
+            return {FLEX, NO_STATE, ONE_DEPEND, NO_VALUE, NO_ROOT};
+        case SAVE_REGISTER:
+            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         default:
             LOG_COMPILER(ERROR) << "Please complete OpCode properties (OpCode=" << op_ << ")";
             UNREACHABLE();
@@ -293,6 +298,8 @@ std::string OpCode::Str() const
         {FLOAT_TO_SIGNED_INT, "FLOAT_TO_SIGNED_INT"},
         {UNSIGNED_FLOAT_TO_INT, "UNSIGNED_FLOAT_TO_INT"},
         {BITCAST, "BITCAST"},
+        {RESTORE_REGISTER, "RESTORE_REGISTER"},
+        {SAVE_REGISTER, "SAVE_REGISTER"},
     };
     if (strMap.count(op_) > 0) {
         return strMap.at(op_);
@@ -309,10 +316,9 @@ size_t OpCode::GetStateCount(BitField bitfield) const
 
 size_t OpCode::GetDependCount(BitField bitfield) const
 {
-    const size_t manyDepend = 2;
     auto properties = GetProperties();
     auto dependProp = properties.dependsIn;
-    return (dependProp == manyDepend) ? bitfield : dependProp;
+    return (dependProp == MANY_DEPEND) ? bitfield : dependProp;
 }
 
 size_t OpCode::GetInValueCount(BitField bitfield) const

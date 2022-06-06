@@ -129,7 +129,7 @@ void BytecodeCircuitBuilder::CollectBytecodeBlockInfo(uint8_t *pc, std::vector<C
         case EcmaOpcode::JNEZ_IMM16: {
             std::vector<uint8_t *> temp;
             temp.emplace_back(pc + BytecodeOffset::THREE); // first successor
-            int8_t offset = static_cast<int8_t>(READ_INST_16_0());
+            int16_t offset = static_cast<int16_t>(READ_INST_16_0());
             temp.emplace_back(pc + offset); // second successor
             bytecodeBlockInfos.emplace_back(pc, SplitKind::END, temp);
             bytecodeBlockInfos.emplace_back(pc + BytecodeOffset::THREE, SplitKind::START,
@@ -1255,8 +1255,11 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(const uint8_t *pc)
         case EcmaOpcode::SUSPENDGENERATOR_PREF_V8_V8: {
             uint16_t v0 = READ_INST_8_1();
             uint16_t v1 = READ_INST_8_2();
+            info.accIn = true;
             info.accOut = true;
             info.offset = BytecodeOffset::FOUR;
+            uint32_t offset = pc - method_->GetBytecodeArray();
+            info.inputs.emplace_back(Immediate(offset)); // Save the pc offset when suspend
             info.inputs.emplace_back(VirtualRegister(v0));
             info.inputs.emplace_back(VirtualRegister(v1));
             break;
@@ -1766,6 +1769,12 @@ void BytecodeCircuitBuilder::InsertPhi()
         auto pc = bb.start;
         while (pc <= bb.end) {
             auto bytecodeInfo = GetBytecodeInfo(pc);
+            if (bytecodeInfo.IsBc(EcmaOpcode::RESUMEGENERATOR_PREF_V8)) {
+                auto numVRegs = method_->GetNumVregs();
+                for (size_t i = 0; i < numVRegs; i++) {
+                    bytecodeInfo.vregOut.emplace_back(i);
+                }
+            }
             pc = pc + bytecodeInfo.offset; // next inst start pc
             for (const auto &vreg: bytecodeInfo.vregOut) {
                 defsitesInfo[vreg].insert(bb.id);
@@ -2109,6 +2118,9 @@ void BytecodeCircuitBuilder::NewJSGate(BytecodeRegion &bb, const uint8_t *pc, Ga
                          GateType::AnyType());
     }
     jsgateToBytecode_[gate] = {bb.id, pc};
+    if (bytecodeInfo.IsGeneratorRelative()) {
+        suspendAndResumeGates_.emplace_back(gate);
+    }
     if (bytecodeInfo.IsThrow()) {
         auto constant = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
                                          JSTaggedValue::VALUE_HOLE,
@@ -2337,8 +2349,8 @@ GateRef BytecodeCircuitBuilder::RenameVariable(const size_t bbId,
     }
     std::reverse(instList.begin(), instList.end());
     auto tmpAcc = acc;
-    for (auto pcIter: instList) { // upper bound
-        auto curInfo = GetBytecodeInfo(pcIter);
+    for (auto pcIter = instList.begin(); pcIter != instList.end(); pcIter++) { // upper bound
+        auto curInfo = GetBytecodeInfo(*pcIter);
         // original bc use acc as input && current bc use acc as output
         bool isTransByAcc = tmpAcc && curInfo.accOut;
         // 0 : the index in vreg-out list
@@ -2353,10 +2365,31 @@ GateRef BytecodeCircuitBuilder::RenameVariable(const size_t bbId,
                     tsType = GetRealGateType(tmpReg, tsType);
                 }
             } else {
-                ans = byteCodeToJSGate_.at(pcIter);
+                ans = byteCodeToJSGate_.at(*pcIter);
                 break;
             }
         }
+        if (static_cast<EcmaOpcode>(curInfo.opcode) != EcmaOpcode::RESUMEGENERATOR_PREF_V8) {
+            continue;
+        }
+        // New RESTORE_REGISTER HIR, used to restore the register content when processing resume instruction.
+        // New SAVE_REGISTER HIR, used to save register content when processing suspend instruction.
+        GateAccessor accessor(&circuit_);
+        auto resumeGate = byteCodeToJSGate_.at(*pcIter);
+        GateRef resumeDependGate = accessor.GetDep(resumeGate);
+        ans = circuit_.NewGate(OpCode(OpCode::RESTORE_REGISTER), MachineType::I64, tmpReg,
+                               {resumeDependGate}, GateType::NJSValue());
+        accessor.SetDep(resumeGate, ans);
+        auto saveRegGate = RenameVariable(bbId, *pcIter - 1, tmpReg, tmpAcc, tsType);
+        auto nextPcIter = pcIter;
+        nextPcIter++;
+        ASSERT(GetBytecodeInfo(*nextPcIter).opcode == EcmaOpcode::SUSPENDGENERATOR_PREF_V8_V8);
+        GateRef suspendGate = byteCodeToJSGate_.at(*nextPcIter);
+        auto dependGate = accessor.GetDep(suspendGate);
+        auto newDependGate = circuit_.NewGate(OpCode(OpCode::SAVE_REGISTER), tmpReg, {dependGate, saveRegGate},
+                                              GateType::Empty());
+        accessor.SetDep(suspendGate, newDependGate);
+        break;
     }
     // find GET_EXCEPTION gate if this is a catch block
     if (ans == Circuit::NullGate() && tmpAcc) {
@@ -2430,9 +2463,10 @@ void BytecodeCircuitBuilder::BuildCircuit()
     for (const auto &[key, value]: jsgateToBytecode_) {
         byteCodeToJSGate_[value.second] = key;
     }
+    GateAccessor accessor = GateAccessor(&circuit_);
     // resolve def-site of virtual regs and set all value inputs
     for (auto gate: circuit_.GetAllGates()) {
-        auto valueCount = circuit_.GetOpCode(gate).GetInValueCount(circuit_.GetBitField(gate));
+        auto valueCount = accessor.GetInValueCount(gate);
         auto it = jsgateToBytecode_.find(gate);
         if (it == jsgateToBytecode_.cend()) {
             continue;
@@ -2446,8 +2480,8 @@ void BytecodeCircuitBuilder::BuildCircuit()
         [[maybe_unused]] size_t numValueOutputs = bytecodeInfo.ComputeOutCount() + bytecodeInfo.vregOut.size();
         ASSERT(numValueInputs == valueCount);
         ASSERT(numValueOutputs <= 1);
-        auto stateCount = circuit_.GetOpCode(gate).GetStateCount(circuit_.GetBitField(gate));
-        auto dependCount = circuit_.GetOpCode(gate).GetDependCount(circuit_.GetBitField(gate));
+        auto stateCount = accessor.GetStateCount(gate);
+        auto dependCount = accessor.GetDependCount(gate);
         for (size_t valueIdx = 0; valueIdx < valueCount; valueIdx++) {
             auto inIdx = valueIdx + stateCount + dependCount;
             if (!circuit_.IsInGateNull(gate, inIdx)) {

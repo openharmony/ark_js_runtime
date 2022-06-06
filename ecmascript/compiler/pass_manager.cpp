@@ -56,6 +56,7 @@ bool PassManager::Compile(const std::string &fileName, AOTFileGenerator &generat
         builder.BytecodeToCircuit();
         PassData data(builder.GetCircuit());
         PassRunner<PassData> pipeline(&data, enableLog);
+        pipeline.RunPass<AsyncFunctionLoweringPass>(&builder, &cmpCfg);
         pipeline.RunPass<TypeInferPass>(&builder, tsLoader);
         pipeline.RunPass<TypeLoweringPass>(&builder, &cmpCfg, tsLoader);
         pipeline.RunPass<SlowPathLoweringPass>(&builder, &cmpCfg);

@@ -320,7 +320,7 @@ public:
     void SetBitField(GateRef gate, BitField bitField);
     void Print(GateRef gate) const;
     [[nodiscard]] GateId GetId(GateRef gate) const;
-    [[nodiscard]] GateRef GetValueIn(GateRef gate, size_t idx) const;
+    [[nodiscard]] GateRef GetValueIn(GateRef gate, size_t idx = 0) const;
     [[nodiscard]] size_t GetNumValueIn(GateRef gate) const;
     [[nodiscard]] GateRef GetIn(GateRef gate, size_t idx) const;
     [[nodiscard]] GateRef GetState(GateRef gate, size_t idx = 0) const;
@@ -337,6 +337,17 @@ public:
     void DeleteGate(UsesIterator &useIt);
     void DecreaseIn(UsesIterator &useIt);
     void NewIn(GateRef gate, size_t idx, GateRef in);
+    [[nodiscard]] size_t GetStateCount(GateRef gate) const;
+    [[nodiscard]] size_t GetDependCount(GateRef gate) const;
+    [[nodiscard]] size_t GetInValueCount(GateRef gate) const;
+    void ReplaceAllDepends(GateRef gate, GateRef replaceDependIn);
+    void ReplaceIn(GateRef gate, size_t index, GateRef in);
+    void ReplaceStateIn(GateRef gate, GateRef in, size_t index = 0);
+    void ReplaceDependIn(GateRef gate, GateRef in, size_t index = 0);
+    void ReplaceValueIn(GateRef gate, GateRef in, size_t index = 0);
+    void DeleteGate(GateRef gate);
+    MachineType GetMachineType(GateRef gate) const;
+    GateRef GetConstantGate(MachineType bitValue, BitField bitfield, GateType type) const;
 
 private:
     [[nodiscard]] ConstUsesIterator ConstUseBegin(GateRef gate) const

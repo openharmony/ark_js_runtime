@@ -180,4 +180,70 @@ void GateAccessor::NewIn(GateRef gate, size_t idx, GateRef in)
 {
     circuit_->NewIn(gate, idx, in);
 }
+
+size_t GateAccessor::GetStateCount(GateRef gate) const
+{
+    return circuit_->LoadGatePtr(gate)->GetStateCount();
+}
+
+size_t GateAccessor::GetDependCount(GateRef gate) const
+{
+    return circuit_->LoadGatePtr(gate)->GetDependCount();
+}
+
+size_t GateAccessor::GetInValueCount(GateRef gate) const
+{
+    return circuit_->LoadGatePtr(gate)->GetInValueCount();
+}
+
+void GateAccessor::ReplaceAllDepends(GateRef gate, GateRef replaceDependIn)
+{
+    auto uses = Uses(gate);
+    for (auto useIt = uses.begin(); useIt != uses.end(); useIt++) {
+        size_t dependStartIndex = circuit_->LoadGatePtr(*useIt)->GetStateCount();
+        size_t dependEndIndex = circuit_->LoadGatePtr(*useIt)->GetDependCount() + dependStartIndex;
+        if (useIt.GetIndex() >= dependStartIndex && useIt.GetIndex() < dependEndIndex) {
+            circuit_->ModifyIn(*useIt, useIt.GetIndex(), replaceDependIn);
+        }
+    }
+}
+
+void GateAccessor::ReplaceIn(GateRef gate, size_t index, GateRef in)
+{
+    circuit_->ModifyIn(gate, index, in);
+}
+void GateAccessor::ReplaceStateIn(GateRef gate, GateRef in, size_t index)
+{
+    ASSERT(index < GetStateCount(gate));
+    circuit_->ModifyIn(gate, index, in);
+}
+
+void GateAccessor::ReplaceDependIn(GateRef gate, GateRef in, size_t index)
+{
+    ASSERT(index < GetDependCount(gate));
+    size_t stateCount = GetStateCount(gate);
+    circuit_->ModifyIn(gate, stateCount + index, in);
+}
+
+void GateAccessor::ReplaceValueIn(GateRef gate, GateRef in, size_t index)
+{
+    ASSERT(index < GetInValueCount(gate));
+    size_t valueStartIndex = GetStateCount(gate) + GetDependCount(gate);
+    circuit_->ModifyIn(gate, valueStartIndex + index, in);
+}
+
+void GateAccessor::DeleteGate(GateRef gate)
+{
+    circuit_->DeleteGate(gate);
+}
+
+MachineType GateAccessor::GetMachineType(GateRef gate) const
+{
+    return circuit_->GetMachineType(gate);
+}
+
+GateRef GateAccessor::GetConstantGate(MachineType bitValue, BitField bitfield, GateType type) const
+{
+    return circuit_->GetConstantGate(bitValue, bitfield, type);
+}
 }  // namespace panda::ecmascript::kungfu
