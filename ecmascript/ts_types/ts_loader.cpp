@@ -94,7 +94,7 @@ void TSLoader::RecursivelyResolveTargetType(JSMutableHandle<TSImportType>& impor
     JSHandle<TaggedArray> moduleExportTable = TSTypeTable::GetExportValueTable(thread, typeTable);
 
     int localId = GetTypeIndexFromExportTable(target, moduleExportTable);
-    if (GlobalTSTypeRef(static_cast<uint64_t>(localId)).IsBuiltinType()) {
+    if (GlobalTSTypeRef(static_cast<uint32_t>(localId)).IsBuiltinType()) {
         importType->SetTargetRefGT(GlobalTSTypeRef(localId));
         return;
     }

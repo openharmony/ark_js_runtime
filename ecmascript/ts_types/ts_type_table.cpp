@@ -558,7 +558,7 @@ JSHandle<TSTypeTable> TSTypeTable::PushBackTypeToInferTable(JSThread *thread, JS
                                                             const JSHandle<TSType> &type)
 {
     uint32_t capacity = table->GetLength();  // can't be 0 due to RESERVE_TABLE_LENGTH
-    uint32_t numberOfTypes = table->GetNumberOfTypes();
+    uint32_t numberOfTypes = static_cast<uint32_t>(table->GetNumberOfTypes());
     if (UNLIKELY(capacity <= numberOfTypes + RESERVE_TABLE_LENGTH)) {
         table = JSHandle<TSTypeTable>(TaggedArray::SetCapacity(thread, JSHandle<TaggedArray>(table),
                                                                capacity * INCREASE_CAPACITY_RATE));
