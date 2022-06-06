@@ -18,7 +18,7 @@
 namespace panda::ecmascript::tooling {
 void HeapProfilerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
 {
-    static CUnorderedMap<CString, AgentHandler> dispatcherTable {
+    static std::unordered_map<std::string, AgentHandler> dispatcherTable {
         { "addInspectedHeapObject", &HeapProfilerImpl::DispatcherImpl::AddInspectedHeapObject },
         { "collectGarbage", &HeapProfilerImpl::DispatcherImpl::CollectGarbage },
         { "enable", &HeapProfilerImpl::DispatcherImpl::Enable },
@@ -33,7 +33,7 @@ void HeapProfilerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
         { "takeHeapSnapshot", &HeapProfilerImpl::DispatcherImpl::TakeHeapSnapshot }
     };
 
-    const CString &method = request.GetMethod();
+    const std::string &method = request.GetMethod();
     LOG(DEBUG, DEBUGGER) << "dispatch [" << method << "] to HeapProfilerImpl";
     auto entry = dispatcherTable.find(method);
     if (entry != dispatcherTable.end() && entry->second != nullptr) {
@@ -208,14 +208,14 @@ void HeapProfilerImpl::Frontend::HeapStatsUpdate(HeapStat* updateData, int count
     if (!AllowNotify()) {
         return;
     }
-    auto statsDiff = CVector<uint32_t>();
+    std::vector<uint32_t> statsDiff;
     for (int i = 0; i < count; ++i) {
         statsDiff.emplace_back(updateData[i].index_);
         statsDiff.emplace_back(updateData[i].count_);
         statsDiff.emplace_back(updateData[i].size_);
     }
     tooling::HeapStatsUpdate heapStatsUpdate;
-    heapStatsUpdate.SetStatsUpdate(statsDiff);
+    heapStatsUpdate.SetStatsUpdate(std::move(statsDiff));
     channel_->SendNotification(heapStatsUpdate);
 }
 

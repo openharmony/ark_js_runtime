@@ -34,7 +34,7 @@ void ProtocolHandler::RunIfWaitingForDebugger()
     waitingForDebugger_ = false;
 }
 
-void ProtocolHandler::ProcessCommand(const CString &msg)
+void ProtocolHandler::ProcessCommand(const std::string &msg)
 {
     LOG(DEBUG, DEBUGGER) << "ProtocolHandler::ProcessCommand: " << msg;
     [[maybe_unused]] LocalScope scope(vm_);

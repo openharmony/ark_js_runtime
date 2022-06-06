@@ -278,20 +278,20 @@ void CpuProfiler::ParseMethodInfo(JSMethod *method, FrameHandler frameHandler)
         staticStackInfo_.insert(std::make_pair(method, codeEntry));
     } else if (method != nullptr) {
         codeEntry.codeType = "JS";
-        const CString &functionName = method->ParseFunctionName();
+        const std::string &functionName = method->ParseFunctionName();
         if (functionName.empty()) {
             codeEntry.functionName = "anonymous";
         } else {
-            codeEntry.functionName = functionName.c_str();
+            codeEntry.functionName = functionName;
         }
         // source file
         tooling::JSPtExtractor *debugExtractor =
             JSPandaFileManager::GetInstance()->GetJSPtExtractor(method->GetJSPandaFile());
-        const CString &sourceFile = debugExtractor->GetSourceFile(method->GetMethodId());
+        const std::string &sourceFile = debugExtractor->GetSourceFile(method->GetMethodId());
         if (sourceFile.empty()) {
             codeEntry.url = "";
         } else {
-            codeEntry.url = sourceFile.c_str();
+            codeEntry.url = sourceFile;
             auto iter = scriptIdMap_.find(codeEntry.url);
             if (iter == scriptIdMap_.end()) {
                 scriptIdMap_.insert(std::make_pair(codeEntry.url, scriptIdMap_.size() + 1));

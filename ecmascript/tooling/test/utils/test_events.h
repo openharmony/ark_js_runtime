@@ -59,7 +59,7 @@ struct TestEvents {
     TestEvents();
     virtual ~TestEvents() = default;
 
-    virtual std::pair<CString, CString> GetEntryPoint() = 0;
+    virtual std::pair<std::string, std::string> GetEntryPoint() = 0;
 };
 }  // namespace panda::ecmascript::tooling::test
 

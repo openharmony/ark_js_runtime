@@ -201,16 +201,16 @@ public:
         return res;
     }
 
-    static inline CString GetSpecifiedLine(const CString &srcStr, int lineNumber)
+    static inline std::string GetSpecifiedLine(const std::string &srcStr, int lineNumber)
     {
-        std::stringstream ss(CstringConvertToStdString(srcStr));
+        std::stringstream ss(srcStr);
         int count = 0;
-        CString lineStr = "";
+        std::string lineStr = "";
         std::string tempLine;
         while (getline(ss, tempLine, '\n')) {
             count++;
             if (count == lineNumber) {
-                lineStr = ConvertToString(tempLine);
+                lineStr = tempLine;
                 break;
             }
         }

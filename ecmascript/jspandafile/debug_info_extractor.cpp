@@ -32,7 +32,7 @@ using panda::panda_file::ProtoDataAccessor;
 
 static const char *GetStringFromConstantPool(const panda_file::File &pf, uint32_t offset)
 {
-    return utf::Mutf8AsCString(pf.GetStringData(panda_file::File::EntityId(offset)).data);
+    return reinterpret_cast<const char *>(pf.GetStringData(panda_file::File::EntityId(offset)).data);
 }
 
 DebugInfoExtractor::DebugInfoExtractor(const JSPandaFile *jsPandaFile)
@@ -196,8 +196,8 @@ void DebugInfoExtractor::Extract(const panda_file::File *pf)
             programProcessor.Process();
 
             panda_file::File::EntityId methodId = mda.GetMethodId();
-            const char *sourceFile = utf::Mutf8AsCString(handler.GetFile());
-            const char *sourceCode = utf::Mutf8AsCString(handler.GetSourceCode());
+            const char *sourceFile = reinterpret_cast<const char *>(handler.GetFile());
+            const char *sourceCode = reinterpret_cast<const char *>(handler.GetSourceCode());
             methods_.insert(std::make_pair(methodId.GetOffset(), MethodDebugInfo {sourceFile, sourceCode,
                                            handler.GetLineNumberTable(),
                                            handler.GetColumnNumberTable(),
@@ -239,7 +239,7 @@ const LocalVariableTable &DebugInfoExtractor::GetLocalVariableTable(panda_file::
     return iter->second.localVariableTable;
 }
 
-const CString &DebugInfoExtractor::GetSourceFile(panda_file::File::EntityId methodId) const
+const std::string &DebugInfoExtractor::GetSourceFile(panda_file::File::EntityId methodId) const
 {
     auto iter = methods_.find(methodId.GetOffset());
     if (iter == methods_.end()) {
@@ -248,7 +248,7 @@ const CString &DebugInfoExtractor::GetSourceFile(panda_file::File::EntityId meth
     return iter->second.sourceFile;
 }
 
-const CString &DebugInfoExtractor::GetSourceCode(panda_file::File::EntityId methodId) const
+const std::string &DebugInfoExtractor::GetSourceCode(panda_file::File::EntityId methodId) const
 {
     auto iter = methods_.find(methodId.GetOffset());
     if (iter == methods_.end()) {

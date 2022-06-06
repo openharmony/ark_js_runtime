@@ -100,7 +100,7 @@ struct PUBLIC_API JSMethod : public base::AlignedStruct<sizeof(uint64_t),
         callField_ = IsAotCodeBit::Update(callField_, isCompiled);
     }
 
-    CString PUBLIC_API ParseFunctionName() const;
+    std::string PUBLIC_API ParseFunctionName() const;
 
     void InitializeCallField(uint32_t numVregs, uint32_t numArgs);
 

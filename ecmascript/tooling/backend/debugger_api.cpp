@@ -24,7 +24,6 @@
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
-#include "ecmascript/mem/c_string.h"
 #include "ecmascript/napi/jsnapi_helper.h"
 #include "ecmascript/tooling/backend/js_debugger.h"
 
@@ -135,22 +134,17 @@ Local<JSValueRef> DebuggerApi::GetVRegValue(const EcmaVM *ecmaVm,
     return JSNApiHelper::ToLocal<JSValueRef>(handledValue);
 }
 
-CString DebuggerApi::ToCString(Local<JSValueRef> str)
+std::string DebuggerApi::ToStdString(Local<JSValueRef> str)
 {
     ecmascript::JSHandle<ecmascript::JSTaggedValue> ret = JSNApiHelper::ToJSHandle(str);
     ASSERT(ret->IsString());
     EcmaString *ecmaStr = EcmaString::Cast(ret.GetTaggedValue().GetTaggedObject());
-    return ConvertToString(ecmaStr);
-}
-
-int32_t DebuggerApi::CStringToInt(const CString &str)
-{
-    return CStringToL(str);
+    return CstringConvertToStdString(ConvertToString(ecmaStr));
 }
 
 int32_t DebuggerApi::StringToInt(Local<JSValueRef> str)
 {
-    return CStringToInt(ToCString(str));
+    return std::stoi(ToStdString(str));
 }
 
 // JSThread
@@ -206,7 +200,7 @@ bool DebuggerApi::RemoveBreakpoint(JSDebugger *debugger, const JSPtLocation &loc
 }
 
 // JSMethod
-CString DebuggerApi::ParseFunctionName(const JSMethod *method)
+std::string DebuggerApi::ParseFunctionName(const JSMethod *method)
 {
     return method->ParseFunctionName();
 }
@@ -309,7 +303,7 @@ bool DebuggerApi::SetGlobalValue(const EcmaVM *vm, Local<StringRef> name, Local<
     return false;
 }
 
-void DebuggerApi::HandleUncaughtException(const EcmaVM *ecmaVm, CString &message)
+void DebuggerApi::HandleUncaughtException(const EcmaVM *ecmaVm, std::string &message)
 {
     JSThread *thread = ecmaVm->GetJSThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
