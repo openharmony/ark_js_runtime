@@ -75,18 +75,6 @@ public:
 
     static void PushCallArgs0AndDispatch(ExtendedAssembler *assembler);
 
-    static void PushCallIThisRangeAndDispatchSlowPath(ExtendedAssembler *assembler);
-
-    static void PushCallIRangeAndDispatchSlowPath(ExtendedAssembler *assembler);
-
-    static void PushCallArgs3AndDispatchSlowPath(ExtendedAssembler *assembler);
-
-    static void PushCallArgs2AndDispatchSlowPath(ExtendedAssembler *assembler);
-
-    static void PushCallArgs1AndDispatchSlowPath(ExtendedAssembler *assembler);
-
-    static void PushCallArgs0AndDispatchSlowPath(ExtendedAssembler *assembler);
-
     static void PushCallIThisRangeAndDispatchNative(ExtendedAssembler *assembler);
 
     static void PushCallIRangeAndDispatchNative(ExtendedAssembler *assembler);
@@ -108,21 +96,21 @@ public:
 private:
     static void JSCallBody(ExtendedAssembler *assembler, Register jsfunc);
 
-    static void CallIThisRangeNoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgs);
+    static void CallIThisRangeNoExtraEntry(ExtendedAssembler *assembler);
 
-    static void CallIRangeNoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgs);
+    static void CallIRangeNoExtraEntry(ExtendedAssembler *assembler);
 
-    static void Callargs3NoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgs);
+    static void Callargs3NoExtraEntry(ExtendedAssembler *assembler);
 
-    static void Callargs2NoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgs);
+    static void Callargs2NoExtraEntry(ExtendedAssembler *assembler);
 
-    static void Callargs1NoExtraEntry(ExtendedAssembler *assembler, Register declaredNumArgs);
+    static void Callargs1NoExtraEntry(ExtendedAssembler *assembler);
 
     static void Callargs0NoExtraEntry(ExtendedAssembler *assembler);
 
     static void CallIThisRangeEntry(ExtendedAssembler *assembler);
 
-    static void PushCallThis(ExtendedAssembler *assembler);
+    static void PushCallThis(ExtendedAssembler *assembler, Register thisRegister, bool isUndefined);
 
     static void CallIRangeEntry(ExtendedAssembler *assembler);
 
@@ -149,6 +137,19 @@ private:
 
     static void PushFrameState(ExtendedAssembler *assembler, Register prevSp, Register fp, Register callTarget,
         Register method, Register pc, Register op);
+
+    using AssemblerClosure = std::function<void(ExtendedAssembler *assembler)>;
+    static void JSCallCommonEntry(ExtendedAssembler *assembler, JSCallMode mode,
+                                  const AssemblerClosure& fastEntry, const AssemblerClosure& slowEntry);
+    static void JSCallCommonSlowPath(ExtendedAssembler *assembler, JSCallMode mode,
+                                     const AssemblerClosure& entry,
+                                     const AssemblerClosure& extraEntry);
+    static void PushCallIThisRangeAndDispatchSlowPath(ExtendedAssembler *assembler);
+    static void PushCallIRangeAndDispatchSlowPath(ExtendedAssembler *assembler);
+    static void PushCallArgs3AndDispatchSlowPath(ExtendedAssembler *assembler);
+    static void PushCallArgs2AndDispatchSlowPath(ExtendedAssembler *assembler);
+    static void PushCallArgs1AndDispatchSlowPath(ExtendedAssembler *assembler);
+    static void PushCallArgs0AndDispatchSlowPath(ExtendedAssembler *assembler);
 
     static void GetNumVregsFromCallField(ExtendedAssembler *assembler, Register callField, Register numVregs);
 
@@ -177,7 +178,7 @@ private:
         Register &contextRegister, Register &pcRegister, Register &operatorRegister);
 
     static void CallBCStub(ExtendedAssembler *assembler, Register &newSp, Register &glue,
-        Register &callTarget, Register &method, Register &pc, Register &temp, bool isReturn);
+        Register &callTarget, Register &method, Register &pc, Register &temp);
 
     static void CallNativeEntry(ExtendedAssembler *assembler);
 
