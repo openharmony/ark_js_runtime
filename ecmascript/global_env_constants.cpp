@@ -242,21 +242,8 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::ENUMERABLE_STRING_INDEX, factory->NewFromASCIINonMovable("enumerable"));
     SetConstant(ConstantIndex::CONFIGURABLE_STRING_INDEX, factory->NewFromASCIINonMovable("configurable"));
     /* non ECMA standard jsapi containers iterators, init to Undefined first */
-    SetConstant(ConstantIndex::ARRAYLIST_FUNCTION_INDEX, JSTaggedValue::Undefined());
-    SetConstant(ConstantIndex::ARRAYLIST_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
-    SetConstant(ConstantIndex::TREEMAP_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
-    SetConstant(ConstantIndex::TREESET_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
-    SetConstant(ConstantIndex::QUEUE_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
-    SetConstant(ConstantIndex::PLAIN_ARRAY_FUNCTION_INDEX, JSTaggedValue::Undefined());
-    SetConstant(ConstantIndex::PLAIN_ARRAY_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
-    SetConstant(ConstantIndex::DEQUE_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
-    SetConstant(ConstantIndex::STACK_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
-    SetConstant(ConstantIndex::VECTOR_FUNCTION_INDEX, JSTaggedValue::Undefined());
-    SetConstant(ConstantIndex::VECTOR_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
-    SetConstant(ConstantIndex::LIST_FUNCTION_INDEX, JSTaggedValue::Undefined());
-    SetConstant(ConstantIndex::LINKED_LIST_FUNCTION_INDEX, JSTaggedValue::Undefined());
-    SetConstant(ConstantIndex::LIST_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
-    SetConstant(ConstantIndex::LINKED_LIST_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
+    InitJSAPIContainers();
+
     /* SymbolTable *RegisterSymbols */
     SetConstant(ConstantIndex::NAME_STRING_INDEX, factory->NewFromASCIINonMovable("name"));
     SetConstant(ConstantIndex::GETPROTOTYPEOF_STRING_INDEX, factory->NewFromASCIINonMovable("getPrototypeOf"));
@@ -523,8 +510,17 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::ARRAY_LENGTH_ACCESSOR, accessor);
 }
 
-void GlobalEnvConstants::InitGlobalUndefined()
+void GlobalEnvConstants::InitJSAPIContainers()
+{
+    for (size_t i = GetJSAPIContainersBegin(); i <= GetJSAPIContainersEnd(); i++) {
+        SetConstant(static_cast<ConstantIndex>(i), JSTaggedValue::Undefined());
+    }
+}
+
+void GlobalEnvConstants::InitSpecialForSnapshot()
 {
     SetConstant(ConstantIndex::UNDEFINED_INDEX, JSTaggedValue::Undefined());
+    SetConstant(ConstantIndex::NULL_INDEX, JSTaggedValue::Null());
+    InitJSAPIContainers();
 }
 }  // namespace panda::ecmascript
