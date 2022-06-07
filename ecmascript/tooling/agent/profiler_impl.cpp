@@ -23,7 +23,7 @@
 namespace panda::ecmascript::tooling {
 void ProfilerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
 {
-    static CUnorderedMap<CString, AgentHandler> dispatcherTable {
+    static std::unordered_map<std::string, AgentHandler> dispatcherTable {
         { "disable", &ProfilerImpl::DispatcherImpl::Disable },
         { "enable", &ProfilerImpl::DispatcherImpl::Enable },
         { "start", &ProfilerImpl::DispatcherImpl::Start },
@@ -38,7 +38,7 @@ void ProfilerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
         { "takeTypeProfile", &ProfilerImpl::DispatcherImpl::TakeTypeProfile }
     };
 
-    const CString &method = request.GetMethod();
+    const std::string &method = request.GetMethod();
     LOG(DEBUG, DEBUGGER) << "dispatch [" << method << "] to ProfilerImpl";
     auto entry = dispatcherTable.find(method);
     if (entry != dispatcherTable.end() && entry->second != nullptr) {

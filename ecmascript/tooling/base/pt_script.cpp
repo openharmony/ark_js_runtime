@@ -17,7 +17,7 @@
 #include "ecmascript/tooling/backend/debugger_api.h"
 
 namespace panda::ecmascript::tooling {
-PtScript::PtScript(ScriptId scriptId, const CString &fileName, const CString &url, const CString &source)
+PtScript::PtScript(ScriptId scriptId, const std::string &fileName, const std::string &url, const std::string &source)
     : scriptId_(scriptId),
       fileName_(fileName),
       url_(url),

@@ -69,12 +69,12 @@ HWTEST_F_L0(DebuggerReturnsTest, EnableReturnsToObjectTest)
     ASSERT_TRUE(enableObject->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = enableObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(CString("100"), DebuggerApi::ToCString(result));
+    EXPECT_EQ(std::string("100"), DebuggerApi::ToStdString(result));
 }
 
 HWTEST_F_L0(DebuggerReturnsTest, SetBreakpointByUrlReturnsToObjectTest)
 {
-    auto locations = CVector<std::unique_ptr<Location>>();
+    auto locations = std::vector<std::unique_ptr<Location>>();
     std::unique_ptr<Location> location = std::make_unique<Location>();
     location->SetScriptId(1);
     locations.emplace_back(std::move(location));
@@ -88,7 +88,7 @@ HWTEST_F_L0(DebuggerReturnsTest, SetBreakpointByUrlReturnsToObjectTest)
     ASSERT_TRUE(setObject->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = setObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(CString("11"), DebuggerApi::ToCString(result));
+    EXPECT_EQ(std::string("11"), DebuggerApi::ToStdString(result));
 }
 
 HWTEST_F_L0(DebuggerReturnsTest, EvaluateOnCallFrameReturnsToObjectTest)
@@ -114,7 +114,7 @@ HWTEST_F_L0(DebuggerReturnsTest, EvaluateOnCallFrameReturnsToObjectTest)
 
 HWTEST_F_L0(DebuggerReturnsTest, GetPossibleBreakpointsReturnsToObjectTest)
 {
-    auto locations = CVector<std::unique_ptr<BreakLocation>>();
+    auto locations = std::vector<std::unique_ptr<BreakLocation>>();
     std::unique_ptr<BreakLocation> breakLocation = std::make_unique<BreakLocation>();
     std::unique_ptr<GetPossibleBreakpointsReturns> getPossibleBreakpointsReturns = std::make_unique
                                                     <GetPossibleBreakpointsReturns>(std::move(locations));
@@ -136,18 +136,18 @@ HWTEST_F_L0(DebuggerReturnsTest, GetScriptSourceReturnsToObjectTest)
     ASSERT_TRUE(scriptObject->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = scriptObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(CString("source_1"), DebuggerApi::ToCString(result));
+    EXPECT_EQ(std::string("source_1"), DebuggerApi::ToStdString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "bytecode");
     ASSERT_TRUE(scriptObject->Has(ecmaVm, tmpStr));
     result = scriptObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(CString("bytecode_1"), DebuggerApi::ToCString(result));
+    EXPECT_EQ(std::string("bytecode_1"), DebuggerApi::ToStdString(result));
 }
 
 HWTEST_F_L0(DebuggerReturnsTest, RestartFrameReturnsToObjectTest)
 {
-    auto callFrames = CVector<std::unique_ptr<CallFrame>>();
+    auto callFrames = std::vector<std::unique_ptr<CallFrame>>();
     std::unique_ptr<CallFrame> callFrame = std::make_unique<CallFrame>();
     std::unique_ptr<RestartFrameReturns> restartFrameReturns = std::make_unique
                                                                      <RestartFrameReturns>(std::move(callFrames));
@@ -170,7 +170,7 @@ HWTEST_F_L0(DebuggerReturnsTest, SetBreakpointReturnsToObjectTest)
     ASSERT_TRUE(breakObject->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = breakObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(CString("breakpointId_1"), DebuggerApi::ToCString(result));
+    EXPECT_EQ(std::string("breakpointId_1"), DebuggerApi::ToStdString(result));
     
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "actualLocation");
     ASSERT_TRUE(breakObject->Has(ecmaVm, tmpStr));
@@ -189,12 +189,12 @@ HWTEST_F_L0(DebuggerReturnsTest, SetInstrumentationBreakpointReturnsToObjectTest
     ASSERT_TRUE(instrumentationObject->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = instrumentationObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(CString("111"), DebuggerApi::ToCString(result));
+    EXPECT_EQ(std::string("111"), DebuggerApi::ToStdString(result));
 }
 
 HWTEST_F_L0(DebuggerReturnsTest, SetScriptSourceReturnsToObjectTest)
 {
-    auto callFrames = CVector<std::unique_ptr<CallFrame>>();
+    auto callFrames = std::vector<std::unique_ptr<CallFrame>>();
     std::unique_ptr<CallFrame> callFrame = std::make_unique<CallFrame>();
     std::unique_ptr<ExceptionDetails> exceptionDetails = std::make_unique<ExceptionDetails>();
     std::unique_ptr<SetScriptSourceReturns> setScriptSourceReturns = std::make_unique
@@ -213,7 +213,7 @@ HWTEST_F_L0(DebuggerReturnsTest, SetScriptSourceReturnsToObjectTest)
 
 HWTEST_F_L0(DebuggerReturnsTest, GetPropertiesReturnsToObjectTest)
 {
-    auto descriptor = CVector<std::unique_ptr<PropertyDescriptor>>();
+    auto descriptor = std::vector<std::unique_ptr<PropertyDescriptor>>();
     std::unique_ptr<PropertyDescriptor> propertyDescriptor = std::make_unique<PropertyDescriptor>();
     std::unique_ptr<ExceptionDetails> exceptionDetails = std::make_unique<ExceptionDetails>();
     std::unique_ptr<GetPropertiesReturns> getPropertiesReturns = std::make_unique
@@ -229,14 +229,14 @@ HWTEST_F_L0(DebuggerReturnsTest, GetPropertiesReturnsToObjectTest)
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
     ASSERT_TRUE(result->IsArray(ecmaVm));
 
-    auto internalDescripties = CVector<std::unique_ptr<InternalPropertyDescriptor>>();
+    auto internalDescripties = std::vector<std::unique_ptr<InternalPropertyDescriptor>>();
     std::unique_ptr<InternalPropertyDescriptor> internalPropertyDescriptor =
                                                 std::make_unique<InternalPropertyDescriptor>();
     internalPropertyDescriptor->SetName("filename1");
     internalDescripties.emplace_back(std::move(internalPropertyDescriptor));
     ASSERT_EQ(internalDescripties.back()->GetName(), "filename1");
 
-    auto privateProperties = CVector<std::unique_ptr<PrivatePropertyDescriptor>>();
+    auto privateProperties = std::vector<std::unique_ptr<PrivatePropertyDescriptor>>();
     std::unique_ptr<PrivatePropertyDescriptor> privatePropertyDescriptor =
                                                std::make_unique<PrivatePropertyDescriptor>();
     privatePropertyDescriptor->SetName("filename2");
@@ -268,7 +268,7 @@ HWTEST_F_L0(DebuggerReturnsTest, GetHeapObjectIdReturnsToObjectTest)
     
     Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(CString("10"), DebuggerApi::ToCString(result));
+    EXPECT_EQ(std::string("10"), DebuggerApi::ToStdString(result));
 }
 
 HWTEST_F_L0(DebuggerReturnsTest, GetObjectByHeapObjectIdReturnsToObjectTest)
@@ -322,7 +322,7 @@ HWTEST_F_L0(DebuggerReturnsTest, GetHeapUsageReturnsToObjectTest)
 
 HWTEST_F_L0(DebuggerReturnsTest, GetBestEffortCoverageReturnsToObjectTest)
 {
-    auto result = CVector<std::unique_ptr<ScriptCoverage>>();
+    auto result = std::vector<std::unique_ptr<ScriptCoverage>>();
     std::unique_ptr<ScriptCoverage> scriptCoverage = std::make_unique<ScriptCoverage>();
     std::unique_ptr<GetBestEffortCoverageReturns> getBestEffortCoverageReturns =
                                                 std::make_unique<GetBestEffortCoverageReturns>(std::move(result));
@@ -349,7 +349,7 @@ HWTEST_F_L0(DebuggerReturnsTest, StartPreciseCoverageReturnsToObjectTest)
 
 HWTEST_F_L0(DebuggerReturnsTest, TakePreciseCoverageReturnsToObjectTest)
 {
-    auto coverage = CVector<std::unique_ptr<ScriptCoverage>>();
+    auto coverage = std::vector<std::unique_ptr<ScriptCoverage>>();
     std::unique_ptr<TakePreciseCoverageReturns> takePreciseCoverageReturns =
                                                 std::make_unique<TakePreciseCoverageReturns>(std::move(coverage), 1001);
     ASSERT_NE(takePreciseCoverageReturns, nullptr);
@@ -370,7 +370,7 @@ HWTEST_F_L0(DebuggerReturnsTest, TakePreciseCoverageReturnsToObjectTest)
 
 HWTEST_F_L0(DebuggerReturnsTest, TakeTypeProfileturnsToObjectTest)
 {
-    auto result = CVector<std::unique_ptr<ScriptTypeProfile>>();
+    auto result = std::vector<std::unique_ptr<ScriptTypeProfile>>();
     std::unique_ptr<ScriptTypeProfile> scriptTypeProfile = std::make_unique<ScriptTypeProfile>();
     std::unique_ptr<TakeTypeProfileturns> takeTypeProfileturns = std::make_unique
                                                     <TakeTypeProfileturns>(std::move(result));

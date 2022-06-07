@@ -62,7 +62,6 @@ protected:
 
 HWTEST_F_L0(DebuggerEventsTest, BreakpointResolvedToObjectTest)
 {
-    CString msg;
     BreakpointResolved breakpointResolved;
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
@@ -79,7 +78,7 @@ HWTEST_F_L0(DebuggerEventsTest, BreakpointResolvedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("00", DebuggerApi::ToCString(result));
+    EXPECT_EQ("00", DebuggerApi::ToStdString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "location");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -90,16 +89,11 @@ HWTEST_F_L0(DebuggerEventsTest, BreakpointResolvedToObjectTest)
 
 HWTEST_F_L0(DebuggerEventsTest, PausedToObjectTest)
 {
-    CString msg;
     Paused paused;
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
-    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":
-    {"callFrames":[{"callFrameId":"10","functionName":"name0",
-    "location":{"scriptId":"5","lineNumber":19},"url":"url7",
-    "scopeChain":[{"type":"global","object":{"type":"object"}}, {"type":"local","object":{"type":"object"}}],
-    "this":{"type":"object","subtype":"v128"}}],"reason":"exception"}})";
-    paused.SetCallFrames(CVector<std::unique_ptr<CallFrame>>{})
+    std::vector<std::unique_ptr<CallFrame>> v;
+    paused.SetCallFrames(std::move(v))
         .SetReason(PauseReason::EXCEPTION);
     Local<ObjectRef> object1 = paused.ToObject(ecmaVm);
     Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
@@ -111,7 +105,7 @@ HWTEST_F_L0(DebuggerEventsTest, PausedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("exception", DebuggerApi::ToCString(result));
+    EXPECT_EQ("exception", DebuggerApi::ToStdString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "callFrames");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -122,7 +116,6 @@ HWTEST_F_L0(DebuggerEventsTest, PausedToObjectTest)
 
 HWTEST_F_L0(DebuggerEventsTest, ResumedToObjectTest)
 {
-    CString msg;
     Resumed resumed;
     Local<StringRef> tmpStr;
 
@@ -132,7 +125,7 @@ HWTEST_F_L0(DebuggerEventsTest, ResumedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(resumed.GetName(), DebuggerApi::ToCString(result));
+    EXPECT_EQ(resumed.GetName(), DebuggerApi::ToStdString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -143,7 +136,6 @@ HWTEST_F_L0(DebuggerEventsTest, ResumedToObjectTest)
 
 HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseToObjectTest)
 {
-    CString msg;
     ScriptFailedToParse parsed;
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
@@ -172,13 +164,13 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("100", DebuggerApi::ToCString(result));
+    EXPECT_EQ("100", DebuggerApi::ToStdString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "url");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("use/test.js", DebuggerApi::ToCString(result));
+    EXPECT_EQ("use/test.js", DebuggerApi::ToStdString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "startLine");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -214,7 +206,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("hash0001", DebuggerApi::ToCString(result));
+    EXPECT_EQ("hash0001", DebuggerApi::ToStdString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "executionContextAuxData");
     ASSERT_FALSE(object->Has(ecmaVm, tmpStr));
@@ -223,7 +215,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("usr/", DebuggerApi::ToCString(result));
+    EXPECT_EQ("usr/", DebuggerApi::ToStdString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "hasSourceURL");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -253,18 +245,17 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptFailedToParseToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("JavaScript", DebuggerApi::ToCString(result));
+    EXPECT_EQ("JavaScript", DebuggerApi::ToStdString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "embedderName");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("hh", DebuggerApi::ToCString(result));
+    EXPECT_EQ("hh", DebuggerApi::ToStdString(result));
 }
 
 HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
 {
-    CString msg;
     ScriptParsed parsed;
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
@@ -294,13 +285,13 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("10", DebuggerApi::ToCString(result));
+    EXPECT_EQ("10", DebuggerApi::ToStdString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "url");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("use/test.js", DebuggerApi::ToCString(result));
+    EXPECT_EQ("use/test.js", DebuggerApi::ToStdString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "startLine");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -336,7 +327,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("hash0001", DebuggerApi::ToCString(result));
+    EXPECT_EQ("hash0001", DebuggerApi::ToStdString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "executionContextAuxData");
     ASSERT_FALSE(object->Has(ecmaVm, tmpStr));
@@ -351,7 +342,7 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("usr/", DebuggerApi::ToCString(result));
+    EXPECT_EQ("usr/", DebuggerApi::ToStdString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "hasSourceURL");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -381,29 +372,29 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("JavaScript", DebuggerApi::ToCString(result));
+    EXPECT_EQ("JavaScript", DebuggerApi::ToStdString(result));
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "embedderName");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("hh", DebuggerApi::ToCString(result));
+    EXPECT_EQ("hh", DebuggerApi::ToStdString(result));
 }
 
 HWTEST_F_L0(DebuggerEventsTest, ConsoleProfileFinishedToObjectTest)
 {
-    CString msg;
     ConsoleProfileFinished consoleProfileFinished;
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
     auto location = std::make_unique<Location>();
     location->SetScriptId(13).SetLine(20);
+    std::vector<std::unique_ptr<ProfileNode>> v;
     auto profile = std::make_unique<Profile>();
-    profile->SetNodes(CVector<std::unique_ptr<ProfileNode>>{})
+    profile->SetNodes(std::move(v))
         .SetStartTime(0)
         .SetEndTime(15)
-        .SetSamples(CVector<int32_t>{})
-        .SetTimeDeltas(CVector<int32_t>{});
+        .SetSamples(std::vector<int32_t>{})
+        .SetTimeDeltas(std::vector<int32_t>{});
     consoleProfileFinished.SetId("11").SetLocation(std::move(location)).SetProfile(std::move(profile)).SetTitle("001");
     Local<ObjectRef> object1 = consoleProfileFinished.ToObject(ecmaVm);
     Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
@@ -415,7 +406,7 @@ HWTEST_F_L0(DebuggerEventsTest, ConsoleProfileFinishedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(DebuggerApi::ToCString(result), "11");
+    EXPECT_EQ(DebuggerApi::ToStdString(result), "11");
 
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "location");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
@@ -433,12 +424,11 @@ HWTEST_F_L0(DebuggerEventsTest, ConsoleProfileFinishedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(DebuggerApi::ToCString(result), "001");
+    EXPECT_EQ(DebuggerApi::ToStdString(result), "001");
 }
 
 HWTEST_F_L0(DebuggerEventsTest, ConsoleProfileStartedToObjectTest)
 {
-    CString msg;
     ConsoleProfileStarted consoleProfileStarted;
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
@@ -455,14 +445,14 @@ HWTEST_F_L0(DebuggerEventsTest, ConsoleProfileStartedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(DebuggerApi::ToCString(result), "12");
+    EXPECT_EQ(DebuggerApi::ToStdString(result), "12");
 
     Local<ObjectRef> tmpObject = consoleProfileStarted.GetLocation()->ToObject(ecmaVm);
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "scriptId");
     ASSERT_TRUE(tmpObject->Has(ecmaVm, tmpStr));
     Local<JSValueRef> tmpResult = tmpObject->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!tmpResult.IsEmpty() && !tmpResult->IsUndefined());
-    EXPECT_EQ(DebuggerApi::ToCString(tmpResult), "17");
+    EXPECT_EQ(DebuggerApi::ToStdString(tmpResult), "17");
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "lineNumber");
     ASSERT_TRUE(tmpObject->Has(ecmaVm, tmpStr));
     tmpResult = tmpObject->Get(ecmaVm, tmpStr);
@@ -473,17 +463,17 @@ HWTEST_F_L0(DebuggerEventsTest, ConsoleProfileStartedToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(DebuggerApi::ToCString(result), "002");
+    EXPECT_EQ(DebuggerApi::ToStdString(result), "002");
 }
 
 HWTEST_F_L0(DebuggerEventsTest, PreciseCoverageDeltaUpdateToObjectTest)
 {
-    CString msg;
     PreciseCoverageDeltaUpdate preciseCoverageDeltaUpdate;
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
+    std::vector<std::unique_ptr<ScriptCoverage>> v;
     preciseCoverageDeltaUpdate.SetOccasion("percise")
-        .SetResult(CVector<std::unique_ptr<ScriptCoverage>>{})
+        .SetResult(std::move(v))
         .SetTimestamp(77);
     Local<ObjectRef> object1 = preciseCoverageDeltaUpdate.ToObject(ecmaVm);
     Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
@@ -500,7 +490,7 @@ HWTEST_F_L0(DebuggerEventsTest, PreciseCoverageDeltaUpdateToObjectTest)
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(DebuggerApi::ToCString(result), "percise");
+    EXPECT_EQ(DebuggerApi::ToStdString(result), "percise");
     tmpStr = StringRef::NewFromUtf8(ecmaVm, "result");
     ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
     result = object->Get(ecmaVm, tmpStr);
@@ -510,11 +500,10 @@ HWTEST_F_L0(DebuggerEventsTest, PreciseCoverageDeltaUpdateToObjectTest)
 
 HWTEST_F_L0(DebuggerEventsTest, HeapStatsUpdateToObjectTest)
 {
-    CString msg;
     HeapStatsUpdate heapStatsUpdate;
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
-    heapStatsUpdate.SetStatsUpdate(CVector<uint32_t> {});
+    heapStatsUpdate.SetStatsUpdate(std::vector<uint32_t> {});
     Local<ObjectRef> object1 = heapStatsUpdate.ToObject(ecmaVm);
     Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
@@ -530,7 +519,6 @@ HWTEST_F_L0(DebuggerEventsTest, HeapStatsUpdateToObjectTest)
 
 HWTEST_F_L0(DebuggerEventsTest, LastSeenObjectIdToObjectTest)
 {
-    CString msg;
     LastSeenObjectId lastSeenObjectId;
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
@@ -555,7 +543,6 @@ HWTEST_F_L0(DebuggerEventsTest, LastSeenObjectIdToObjectTest)
 
 HWTEST_F_L0(DebuggerEventsTest, ReportHeapSnapshotProgressToObjectTest)
 {
-    CString msg;
     ReportHeapSnapshotProgress reportHeapSnapshotProgress;
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 

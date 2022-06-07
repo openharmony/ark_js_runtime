@@ -37,9 +37,9 @@ using ObjectSubType = RemoteObject::SubTypeName;
 using ObjectClassName = RemoteObject::ClassName;
 
 #ifdef DEBUGGER_TEST
-const CString DATA_APP_PATH = "/";
+const std::string DATA_APP_PATH = "/";
 #else
-const CString DATA_APP_PATH = "/data/";
+const std::string DATA_APP_PATH = "/data/";
 #endif
 
 DebuggerImpl::DebuggerImpl(const EcmaVM *vm, ProtocolChannel *channel, RuntimeImpl *runtime)
@@ -60,7 +60,7 @@ DebuggerImpl::~DebuggerImpl()
     DebuggerApi::DestroyJSDebugger(jsDebugger_);
 }
 
-bool DebuggerImpl::NotifyScriptParsed(ScriptId scriptId, const CString &fileName)
+bool DebuggerImpl::NotifyScriptParsed(ScriptId scriptId, const std::string &fileName)
 {
     if (fileName.substr(0, DATA_APP_PATH.length()) != DATA_APP_PATH) {
         LOG(WARNING, DEBUGGER) << "NotifyScriptParsed: unsupport file: " << fileName;
@@ -77,7 +77,7 @@ bool DebuggerImpl::NotifyScriptParsed(ScriptId scriptId, const CString &fileName
     const JSPandaFile *jsPandaFile = nullptr;
     JSPandaFileManager::GetInstance()->EnumerateJSPandaFiles([&jsPandaFile, &fileName](
         const panda::ecmascript::JSPandaFile *pf) {
-        if (pf->GetJSPandaFileDesc() == fileName) {
+        if (fileName == pf->GetJSPandaFileDesc().c_str()) {
             jsPandaFile = pf;
             return false;
         }
@@ -95,8 +95,8 @@ bool DebuggerImpl::NotifyScriptParsed(ScriptId scriptId, const CString &fileName
     }
 
     auto mainMethodIndex = panda_file::File::EntityId(jsPandaFile->GetMainMethodIndex());
-    const CString &source = extractor->GetSourceCode(mainMethodIndex);
-    const CString &url = extractor->GetSourceFile(mainMethodIndex);
+    const std::string &source = extractor->GetSourceCode(mainMethodIndex);
+    const std::string &url = extractor->GetSourceFile(mainMethodIndex);
     const uint32_t MIN_SOURCE_CODE_LENGTH = 5;  // maybe return 'ANDA' when source code is empty
     if (source.size() < MIN_SOURCE_CODE_LENGTH) {
         LOG(ERROR, DEBUGGER) << "NotifyScriptParsed: invalid file: " << fileName;
@@ -176,7 +176,7 @@ void DebuggerImpl::NotifyPaused(std::optional<JSPtLocation> location, PauseReaso
     }
     Local<JSValueRef> exception = DebuggerApi::GetAndClearException(vm_);
 
-    CVector<CString> hitBreakpoints;
+    std::vector<std::string> hitBreakpoints;
     if (location.has_value()) {
         BreakpointDetails detail;
         JSPtExtractor *extractor = nullptr;
@@ -208,7 +208,7 @@ void DebuggerImpl::NotifyPaused(std::optional<JSPtLocation> location, PauseReaso
     CleanUpOnPaused();
 
     // Notify paused event
-    CVector<std::unique_ptr<CallFrame>> callFrames;
+    std::vector<std::unique_ptr<CallFrame>> callFrames;
     if (!GenerateCallFrames(&callFrames)) {
         LOG(ERROR, DEBUGGER) << "NotifyPaused: GenerateCallFrames failed";
         return;
@@ -236,7 +236,7 @@ void DebuggerImpl::NotifyPendingJobEntry()
 
 void DebuggerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
 {
-    static CUnorderedMap<CString, AgentHandler> dispatcherTable {
+    static std::unordered_map<std::string, AgentHandler> dispatcherTable {
         { "enable", &DebuggerImpl::DispatcherImpl::Enable },
         { "disable", &DebuggerImpl::DispatcherImpl::Disable },
         { "evaluateOnCallFrame", &DebuggerImpl::DispatcherImpl::EvaluateOnCallFrame },
@@ -253,7 +253,7 @@ void DebuggerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
         { "stepOver", &DebuggerImpl::DispatcherImpl::StepOver }
     };
 
-    const CString &method = request.GetMethod();
+    const std::string &method = request.GetMethod();
     LOG(DEBUG, DEBUGGER) << "dispatch [" << method << "] to DebuggerImpl";
     auto entry = dispatcherTable.find(method);
     if (entry != dispatcherTable.end() && entry->second != nullptr) {
@@ -307,7 +307,7 @@ void DebuggerImpl::DispatcherImpl::GetPossibleBreakpoints(const DispatchRequest 
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
-    CVector<std::unique_ptr<BreakLocation>> locations;
+    std::vector<std::unique_ptr<BreakLocation>> locations;
     DispatchResponse response = debugger_->GetPossibleBreakpoints(std::move(params), &locations);
     GetPossibleBreakpointsReturns result(std::move(locations));
     SendResponse(request, response, result);
@@ -321,7 +321,7 @@ void DebuggerImpl::DispatcherImpl::GetScriptSource(const DispatchRequest &reques
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
-    CString source;
+    std::string source;
     DispatchResponse response = debugger_->GetScriptSource(std::move(params), &source);
     GetScriptSourceReturns result(source);
     SendResponse(request, response, result);
@@ -371,8 +371,8 @@ void DebuggerImpl::DispatcherImpl::SetBreakpointByUrl(const DispatchRequest &req
         return;
     }
 
-    CString out_id;
-    CVector<std::unique_ptr<Location>> outLocations;
+    std::string out_id;
+    std::vector<std::unique_ptr<Location>> outLocations;
     DispatchResponse response = debugger_->SetBreakpointByUrl(std::move(params), &out_id, &outLocations);
     SetBreakpointByUrlReturns result(out_id, std::move(outLocations));
     SendResponse(request, response, result);
@@ -519,12 +519,12 @@ DispatchResponse DebuggerImpl::EvaluateOnCallFrame(std::unique_ptr<EvaluateOnCal
                                                    std::unique_ptr<RemoteObject> *result)
 {
     CallFrameId callFrameId = params->GetCallFrameId();
-    CString expression = params->GetExpression();
+    std::string expression = params->GetExpression();
     if (callFrameId < 0 || callFrameId >= callFrameHandlers_.size()) {
         return DispatchResponse::Fail("Invalid callFrameId.");
     }
 
-    CString dest;
+    std::string dest;
     if (!DecodeAndCheckBase64(expression, dest)) {
         LOG(ERROR, DEBUGGER) << "EvaluateValue: base64 decode failed";
         auto ret = CmptEvaluateValue(callFrameId, expression, result);
@@ -540,7 +540,7 @@ DispatchResponse DebuggerImpl::EvaluateOnCallFrame(std::unique_ptr<EvaluateOnCal
         callFrameHandlers_[callFrameId]);
     if (vm_->GetJSThread()->HasPendingException()) {
         LOG(ERROR, DEBUGGER) << "EvaluateValue: has pending exception";
-        CString msg;
+        std::string msg;
         DebuggerApi::HandleUncaughtException(vm_, msg);
         *result = RemoteObject::FromTagged(vm_,
             Exception::EvalError(vm_, StringRef::NewFromUtf8(vm_, msg.data())));
@@ -553,7 +553,7 @@ DispatchResponse DebuggerImpl::EvaluateOnCallFrame(std::unique_ptr<EvaluateOnCal
 }
 
 DispatchResponse DebuggerImpl::GetPossibleBreakpoints(std::unique_ptr<GetPossibleBreakpointsParams> params,
-                                                      CVector<std::unique_ptr<BreakLocation>> *locations)
+                                                      std::vector<std::unique_ptr<BreakLocation>> *locations)
 {
     Location *start = params->GetStart();
     auto iter = scripts_.find(start->GetScriptId());
@@ -579,13 +579,13 @@ DispatchResponse DebuggerImpl::GetPossibleBreakpoints(std::unique_ptr<GetPossibl
     return DispatchResponse::Ok();
 }
 
-DispatchResponse DebuggerImpl::GetScriptSource(std::unique_ptr<GetScriptSourceParams> params, CString *source)
+DispatchResponse DebuggerImpl::GetScriptSource(std::unique_ptr<GetScriptSourceParams> params, std::string *source)
 {
     ScriptId scriptId = params->GetScriptId();
     auto iter = scripts_.find(scriptId);
     if (iter == scripts_.end()) {
         *source = "";
-        return DispatchResponse::Fail("unknown script id: " + ToCString<uint32_t>(scriptId));
+        return DispatchResponse::Fail("unknown script id: " + std::to_string(scriptId));
     }
     *source = iter->second->GetScriptSource();
 
@@ -600,7 +600,7 @@ DispatchResponse DebuggerImpl::Pause()
 
 DispatchResponse DebuggerImpl::RemoveBreakpoint(std::unique_ptr<RemoveBreakpointParams> params)
 {
-    CString id = params->GetBreakpointId();
+    std::string id = params->GetBreakpointId();
     LOG(INFO, DEBUGGER) << "RemoveBreakpoint: " << id;
     BreakpointDetails metaData{};
     if (!BreakpointDetails::ParseBreakpointId(id, &metaData)) {
@@ -612,7 +612,7 @@ DispatchResponse DebuggerImpl::RemoveBreakpoint(std::unique_ptr<RemoveBreakpoint
         return DispatchResponse::Fail("Unknown file name.");
     }
 
-    CString fileName;
+    std::string fileName;
     auto scriptFunc = [&fileName](PtScript *script) -> bool {
         fileName = script->GetFileName();
         return true;
@@ -650,13 +650,13 @@ DispatchResponse DebuggerImpl::SetAsyncCallStackDepth()
 }
 
 DispatchResponse DebuggerImpl::SetBreakpointByUrl(std::unique_ptr<SetBreakpointByUrlParams> params,
-                                                  CString *outId,
-                                                  CVector<std::unique_ptr<Location>> *outLocations)
+                                                  std::string *outId,
+                                                  std::vector<std::unique_ptr<Location>> *outLocations)
 {
-    const CString &url = params->GetUrl();
+    const std::string &url = params->GetUrl();
     int32_t lineNumber = params->GetLine();
     int32_t columnNumber = params->GetColumn();
-    std::optional<CString> condition = params->HasCondition() ? params->GetCondition() : std::optional<CString> {};
+    auto condition = params->HasCondition() ? params->GetCondition() : std::optional<std::string> {};
 
     JSPtExtractor *extractor = GetExtractor(url);
     if (extractor == nullptr) {
@@ -665,7 +665,7 @@ DispatchResponse DebuggerImpl::SetBreakpointByUrl(std::unique_ptr<SetBreakpointB
     }
 
     ScriptId scriptId;
-    CString fileName;
+    std::string fileName;
     auto scriptFunc = [&scriptId, &fileName](PtScript *script) -> bool {
         scriptId = script->GetScriptId();
         fileName = script->GetFileName();
@@ -680,7 +680,7 @@ DispatchResponse DebuggerImpl::SetBreakpointByUrl(std::unique_ptr<SetBreakpointB
         JSPtLocation location {fileName.c_str(), id, offset};
         Local<FunctionRef> condFuncRef = FunctionRef::Undefined(vm_);
         if (condition.has_value() && !condition.value().empty()) {
-            CString dest;
+            std::string dest;
             if (!DecodeAndCheckBase64(condition.value(), dest)) {
                 LOG(ERROR, DEBUGGER) << "SetBreakpointByUrl: base64 decode failed";
                 return false;
@@ -701,7 +701,7 @@ DispatchResponse DebuggerImpl::SetBreakpointByUrl(std::unique_ptr<SetBreakpointB
 
     BreakpointDetails metaData{lineNumber, 0, url};
     *outId = BreakpointDetails::ToString(metaData);
-    *outLocations = CVector<std::unique_ptr<Location>>();
+    *outLocations = std::vector<std::unique_ptr<Location>>();
     std::unique_ptr<Location> location = std::make_unique<Location>();
     location->SetScriptId(scriptId).SetLine(lineNumber).SetColumn(0);
     outLocations->emplace_back(std::move(location));
@@ -774,9 +774,9 @@ void DebuggerImpl::CleanUpOnPaused()
     scopeObjects_.clear();
 }
 
-CString DebuggerImpl::Trim(const CString &str)
+std::string DebuggerImpl::Trim(const std::string &str)
 {
-    CString ret = str;
+    std::string ret = str;
     // If ret has only ' ', remove all charactors.
     ret.erase(ret.find_last_not_of(' ') + 1);
     // If ret has only ' ', remove all charactors.
@@ -789,7 +789,7 @@ JSPtExtractor *DebuggerImpl::GetExtractor(const JSPandaFile *jsPandaFile)
     return JSPandaFileManager::GetInstance()->GetJSPtExtractor(jsPandaFile);
 }
 
-JSPtExtractor *DebuggerImpl::GetExtractor(const CString &url)
+JSPtExtractor *DebuggerImpl::GetExtractor(const std::string &url)
 {
     auto iter = extractors_.find(url);
     if (iter == extractors_.end()) {
@@ -799,7 +799,7 @@ JSPtExtractor *DebuggerImpl::GetExtractor(const CString &url)
     return iter->second;
 }
 
-bool DebuggerImpl::GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames)
+bool DebuggerImpl::GenerateCallFrames(std::vector<std::unique_ptr<CallFrame>> *callFrames)
 {
     CallFrameId callFrameId = 0;
     auto walkerFunc = [this, &callFrameId, &callFrames](const FrameHandler *frameHandler) -> StackState {
@@ -842,7 +842,7 @@ bool DebuggerImpl::GenerateCallFrame(CallFrame *callFrame,
 
     // location
     std::unique_ptr<Location> location = std::make_unique<Location>();
-    CString url = extractor->GetSourceFile(method->GetMethodId());
+    std::string url = extractor->GetSourceFile(method->GetMethodId());
     auto scriptFunc = [&location](PtScript *script) -> bool {
         location->SetScriptId(script->GetScriptId());
         return true;
@@ -870,12 +870,12 @@ bool DebuggerImpl::GenerateCallFrame(CallFrame *callFrame,
     std::unique_ptr<RemoteObject> thisObj = std::make_unique<RemoteObject>();
     thisObj->SetType(ObjectType::Undefined);
 
-    CVector<std::unique_ptr<Scope>> scopeChain;
+    std::vector<std::unique_ptr<Scope>> scopeChain;
     scopeChain.emplace_back(GetLocalScopeChain(frameHandler, &thisObj));
     scopeChain.emplace_back(GetGlobalScopeChain());
 
     // functionName
-    CString functionName = DebuggerApi::ParseFunctionName(method);
+    std::string functionName = DebuggerApi::ParseFunctionName(method);
 
     callFrame->SetCallFrameId(callFrameId)
         .SetFunctionName(functionName)
@@ -1036,7 +1036,7 @@ void DebuggerImpl::UpdateScopeObject(const FrameHandler *frameHandler,
     }
 }
 
-std::optional<CString> DebuggerImpl::CmptEvaluateValue(CallFrameId callFrameId, const CString &expression,
+std::optional<std::string> DebuggerImpl::CmptEvaluateValue(CallFrameId callFrameId, const std::string &expression,
     std::unique_ptr<RemoteObject> *result)
 {
     JSMethod *method = DebuggerApi::GetMethod(vm_);
@@ -1051,10 +1051,10 @@ std::optional<CString> DebuggerImpl::CmptEvaluateValue(CallFrameId callFrameId, 
             Exception::EvalError(vm_, StringRef::NewFromUtf8(vm_, "Internal error.")));
         return "Internal error.";
     }
-    CString varName = expression;
-    CString varValue;
-    CString::size_type indexEqual = expression.find_first_of('=', 0);
-    if (indexEqual != CString::npos) {
+    std::string varName = expression;
+    std::string varValue;
+    std::string::size_type indexEqual = expression.find_first_of('=', 0);
+    if (indexEqual != std::string::npos) {
         varName = Trim(expression.substr(0, indexEqual));
         varValue = Trim(expression.substr(indexEqual + 1, expression.length()));
     }
@@ -1085,7 +1085,7 @@ std::optional<CString> DebuggerImpl::CmptEvaluateValue(CallFrameId callFrameId, 
     return "Unsupported expression.";
 }
 
-Local<JSValueRef> DebuggerImpl::ConvertToLocal(const CString &varValue)
+Local<JSValueRef> DebuggerImpl::ConvertToLocal(const std::string &varValue)
 {
     Local<JSValueRef> taggedValue;
     if (varValue == "false") {
@@ -1108,7 +1108,7 @@ Local<JSValueRef> DebuggerImpl::ConvertToLocal(const CString &varValue)
     return taggedValue;
 }
 
-bool DebuggerImpl::DecodeAndCheckBase64(const CString &src, CString &dest)
+bool DebuggerImpl::DecodeAndCheckBase64(const std::string &src, std::string &dest)
 {
     dest.resize(base64::decoded_size(src.size()));
     auto [numOctets, _] = base64::decode(dest.data(), src.data(), src.size());

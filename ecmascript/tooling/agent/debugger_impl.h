@@ -34,7 +34,7 @@ public:
     ~DebuggerImpl();
 
     // event
-    bool NotifyScriptParsed(ScriptId scriptId, const CString &fileName);
+    bool NotifyScriptParsed(ScriptId scriptId, const std::string &fileName);
     bool NotifySingleStep(const JSPtLocation &location);
     void NotifyPaused(std::optional<JSPtLocation> location, PauseReason reason);
     void NotifyPendingJobEntry();
@@ -44,14 +44,14 @@ public:
     DispatchResponse EvaluateOnCallFrame(std::unique_ptr<EvaluateOnCallFrameParams> params,
                                          std::unique_ptr<RemoteObject> *result);
     DispatchResponse GetPossibleBreakpoints(std::unique_ptr<GetPossibleBreakpointsParams> params,
-                                            CVector<std::unique_ptr<BreakLocation>> *outLocations);
-    DispatchResponse GetScriptSource(std::unique_ptr<GetScriptSourceParams> params, CString *source);
+                                            std::vector<std::unique_ptr<BreakLocation>> *outLocations);
+    DispatchResponse GetScriptSource(std::unique_ptr<GetScriptSourceParams> params, std::string *source);
     DispatchResponse Pause();
     DispatchResponse RemoveBreakpoint(std::unique_ptr<RemoveBreakpointParams> params);
     DispatchResponse Resume(std::unique_ptr<ResumeParams> params);
     DispatchResponse SetAsyncCallStackDepth();
-    DispatchResponse SetBreakpointByUrl(std::unique_ptr<SetBreakpointByUrlParams> params, CString *outId,
-                                        CVector<std::unique_ptr<Location>> *outLocations);
+    DispatchResponse SetBreakpointByUrl(std::unique_ptr<SetBreakpointByUrlParams> params, std::string *outId,
+                                        std::vector<std::unique_ptr<Location>> *outLocations);
     DispatchResponse SetPauseOnExceptions(std::unique_ptr<SetPauseOnExceptionsParams> params);
     DispatchResponse StepInto(std::unique_ptr<StepIntoParams> params);
     DispatchResponse StepOut();
@@ -64,10 +64,10 @@ public:
      * @return: true means matched and callback execute success
      */
     template<class Callback>
-    bool MatchScripts(const Callback &cb, const CString &matchStr, ScriptMatchType type) const
+    bool MatchScripts(const Callback &cb, const std::string &matchStr, ScriptMatchType type) const
     {
         for (const auto &script : scripts_) {
-            CString value;
+            std::string value;
             switch (type) {
                 case ScriptMatchType::URL: {
                     value = script.second->GetUrl();
@@ -91,7 +91,7 @@ public:
         }
         return false;
     }
-    bool GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames);
+    bool GenerateCallFrames(std::vector<std::unique_ptr<CallFrame>> *callFrames);
 
     class DispatcherImpl final : public DispatcherBase {
     public:
@@ -128,10 +128,10 @@ private:
     NO_COPY_SEMANTIC(DebuggerImpl);
     NO_MOVE_SEMANTIC(DebuggerImpl);
 
-    CString Trim(const CString &str);
+    std::string Trim(const std::string &str);
     JSPtExtractor *GetExtractor(const JSPandaFile *jsPandaFile);
-    JSPtExtractor *GetExtractor(const CString &url);
-    std::optional<CString> CmptEvaluateValue(CallFrameId callFrameId, const CString &expression,
+    JSPtExtractor *GetExtractor(const std::string &url);
+    std::optional<std::string> CmptEvaluateValue(CallFrameId callFrameId, const std::string &expression,
                                              std::unique_ptr<RemoteObject> *result);
     bool GenerateCallFrame(CallFrame *callFrame, const FrameHandler *frameHandler, CallFrameId frameId);
     void SaveCallFrameHandler(const FrameHandler *frameHandler);
@@ -142,8 +142,8 @@ private:
         Local<JSValueRef> &thisVal, Local<ObjectRef> &localObj);
     void CleanUpOnPaused();
     void UpdateScopeObject(const FrameHandler *frameHandler, std::string_view varName, const Local<JSValueRef> &newVal);
-    Local<JSValueRef> ConvertToLocal(const CString &varValue);
-    bool DecodeAndCheckBase64(const CString &src, CString &dest);
+    Local<JSValueRef> ConvertToLocal(const std::string &varValue);
+    bool DecodeAndCheckBase64(const std::string &src, std::string &dest);
     bool IsSkipLine(const JSPtLocation &location);
 
     class Frontend {
@@ -170,14 +170,14 @@ private:
     std::unique_ptr<JSPtHooks> hooks_ {nullptr};
     JSDebugger *jsDebugger_ {nullptr};
 
-    CUnorderedMap<CString, JSPtExtractor *> extractors_ {};
-    CUnorderedMap<ScriptId, std::unique_ptr<PtScript>> scripts_ {};
+    std::unordered_map<std::string, JSPtExtractor *> extractors_ {};
+    std::unordered_map<ScriptId, std::unique_ptr<PtScript>> scripts_ {};
     bool pauseOnException_ {false};
     bool pauseOnNextByteCode_ {false};
     std::unique_ptr<JSPtExtractor::SingleStepper> singleStepper_ {nullptr};
 
-    CUnorderedMap<JSTaggedType *, RemoteObjectId> scopeObjects_ {};
-    CVector<std::shared_ptr<FrameHandler>> callFrameHandlers_;
+    std::unordered_map<JSTaggedType *, RemoteObjectId> scopeObjects_ {};
+    std::vector<std::shared_ptr<FrameHandler>> callFrameHandlers_;
     JsDebuggerManager::ObjectUpdaterFunc updaterFunc_ {nullptr};
 
     friend class JSPtHooks;
