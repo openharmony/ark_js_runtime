@@ -182,23 +182,26 @@ CString ErrorHelper::DecodeFunctionName(const CString &name)
 
 JSHandle<EcmaString> ErrorHelper::BuildEcmaStackTrace(JSThread *thread)
 {
-    CString data = BuildNativeAndJsStackTrace(thread);
+    CString data = BuildJsStackTrace(thread, false);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     LOG(DEBUG, ECMASCRIPT) << data;
     return factory->NewFromUtf8(data);
 }
 
-CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
+CString ErrorHelper::BuildJsStackTrace(JSThread *thread, bool needNative)
 {
     CString data;
     CString fristLineSrcCode;
     bool isFirstLine = true;
     FrameHandler frameHandler(thread);
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
-        if (frameHandler.IsEntryFrame()) {
+        if (!frameHandler.IsInterpretedFrame()) {
             continue;
         }
-        auto method = frameHandler.GetMethod();
+        auto method = frameHandler.CheckAndGetMethod();
+        if (method == nullptr) {
+            continue;
+        }
         if (!method->IsNativeWithCallField()) {
             data.append("    at ");
             data += DecodeFunctionName(method->ParseFunctionName());
@@ -239,6 +242,15 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
                 fristLineSrcCode = StringHelper::GetSpecifiedLine(sourceCode, lineNumber);
                 isFirstLine = false;
             }
+        } else if (needNative) {
+            data.append("    at native method");
+            data.append(" (");
+            auto addr = method->GetNativePointer();
+            std::stringstream strm;
+            strm << addr;
+            data.append(strm.str());
+            data.push_back(')');
+            data.push_back('\n');
         }
     }
     if (!fristLineSrcCode.empty()) {
@@ -246,17 +258,13 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
         if (fristLineSrcCode[codeLen - 1] == '\r') {
             fristLineSrcCode = fristLineSrcCode.substr(0, codeLen - 1);
         }
-        fristLineSrcCode = "SourceCode (" + fristLineSrcCode;
-        fristLineSrcCode.push_back(')');
-        fristLineSrcCode.push_back('\n');
-        data = fristLineSrcCode + data;
+        if (fristLineSrcCode != "ANDA") {
+            fristLineSrcCode = "SourceCode (" + fristLineSrcCode;
+            fristLineSrcCode.push_back(')');
+            fristLineSrcCode.push_back('\n');
+            data = fristLineSrcCode + data;
+        }
     }
-    return data;
-}
-
-CString ErrorHelper::BuildNativeAndJsStackTrace(JSThread *thread)
-{
-    CString data = BuildNativeEcmaStackTrace(thread);
     return data;
 }
 }  // namespace panda::ecmascript::base
