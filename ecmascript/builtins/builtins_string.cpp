@@ -1543,14 +1543,14 @@ JSTaggedValue BuiltinsString::Trim(EcmaRuntimeCallInfo *argv)
         Span<const uint8_t> data(reinterpret_cast<const uint8_t *>(thisHandle->GetData()), thisLen);
         uint32_t start = base::StringHelper::GetStart(data, thisLen);
         uint32_t end = base::StringHelper::GetEnd(data, start, thisLen);
-        EcmaString *res = EcmaString::FastSubUtf8String(thread->GetEcmaVM(), thisHandle, start, end - start + 1);
+        EcmaString *res = EcmaString::FastSubUtf8String(thread->GetEcmaVM(), thisHandle, start, end + 1 - start);
         return JSTaggedValue(res);
     }
 
     Span<const uint16_t> data(thisHandle->GetData(), thisLen);
     uint32_t start = base::StringHelper::GetStart(data, thisLen);
     uint32_t end = base::StringHelper::GetEnd(data, start, thisLen);
-    EcmaString *res = EcmaString::FastSubUtf16String(thread->GetEcmaVM(), thisHandle, start, end - start + 1);
+    EcmaString *res = EcmaString::FastSubUtf16String(thread->GetEcmaVM(), thisHandle, start, end + 1 - start);
     return JSTaggedValue(res);
 }
 

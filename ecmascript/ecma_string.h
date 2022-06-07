@@ -315,9 +315,9 @@ public:
     static constexpr size_t DATA_OFFSET = SIZE;  // DATA_OFFSET equal to Empty String size
 
     static inline EcmaString *FastSubUtf8String(const EcmaVM *vm, const JSHandle<EcmaString> &src, uint32_t start,
-                                                uint32_t utf16Len);
+                                                uint32_t length);
     static inline EcmaString *FastSubUtf16String(const EcmaVM *vm, const JSHandle<EcmaString> &src, uint32_t start,
-                                                 uint32_t utf16Len);
+                                                 uint32_t length);
 private:
     void SetLength(uint32_t length, bool compressed = false)
     {
