@@ -126,6 +126,7 @@ public:
     uint32_t GetNumberArgs();
     uint32_t GetBytecodeOffset() const;
     JSMethod *GetMethod() const;
+    JSMethod *CheckAndGetMethod() const;
     JSTaggedValue GetFunction() const;
     const uint8_t *GetPc() const;
     ConstantPool *GetConstpool() const;
