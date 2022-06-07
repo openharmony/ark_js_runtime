@@ -146,8 +146,8 @@ bool EcmaVM::Initialize()
     JSHandle<JSHClass> globalEnvClass = factory_->NewEcmaDynClass(*dynClassClassHandle,
                                                                   GlobalEnv::SIZE,
                                                                   JSType::GLOBAL_ENV);
-    globalConst->InitRootsClass(thread_, *dynClassClassHandle);
-    globalConst->InitGlobalConstant(thread_);
+    globalConst->Init(thread_, *dynClassClassHandle);
+    globalConstInitialized_ = true;
     JSHandle<GlobalEnv> globalEnv = factory_->NewGlobalEnv(*globalEnvClass);
     globalEnv->Init(thread_);
     globalEnv_ = globalEnv.GetTaggedValue();

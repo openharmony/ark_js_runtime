@@ -1190,10 +1190,8 @@ FreeObject *ObjectFactory::FillFreeObject(uintptr_t address, size_t size, Remove
         object->SetNext(INVALID_OBJECT);
     } else if (size >= FreeObject::SIZE) {
         object = reinterpret_cast<FreeObject *>(address);
-        bool firstHClassLoaded = false;
-        if (!firstHClassLoaded && !globalConst->GetFreeObjectWithTwoFieldClass().GetRawData()) {
+        if (!vm_->IsGlobalConstInitialized()) {
             object->SetClassWithoutBarrier(nullptr);
-            firstHClassLoaded = true;
         } else {
             object->SetClassWithoutBarrier(
                 JSHClass::Cast(globalConst->GetFreeObjectWithTwoFieldClass().GetTaggedObject()));
