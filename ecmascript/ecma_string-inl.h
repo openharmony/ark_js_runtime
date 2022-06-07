@@ -192,13 +192,16 @@ void EcmaString::WriteData(char src, uint32_t start)
 
 /* static */
 EcmaString *EcmaString::FastSubUtf8String(const EcmaVM *vm, const JSHandle<EcmaString> &src, uint32_t start,
-                                          uint32_t utf16Len)
+                                          uint32_t length)
 {
-    auto string = AllocStringObject(utf16Len, true, vm);
+    if (length == 0) {
+        return *vm->GetFactory()->GetEmptyString();
+    }
+    auto string = AllocStringObject(length, true, vm);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    Span<uint8_t> dst(string->GetDataUtf8Writable(), utf16Len);
-    Span<const uint8_t> source(src->GetDataUtf8() + start, utf16Len);
-    EcmaString::StringCopy(dst, utf16Len, source, utf16Len);
+    Span<uint8_t> dst(string->GetDataUtf8Writable(), length);
+    Span<const uint8_t> source(src->GetDataUtf8() + start, length);
+    EcmaString::StringCopy(dst, length, source, length);
 
     ASSERT_PRINT(CanBeCompressed(string), "canBeCompresse does not match the real value!");
     return string;
@@ -206,18 +209,21 @@ EcmaString *EcmaString::FastSubUtf8String(const EcmaVM *vm, const JSHandle<EcmaS
 
 /* static */
 EcmaString *EcmaString::FastSubUtf16String(const EcmaVM *vm, const JSHandle<EcmaString> &src, uint32_t start,
-                                           uint32_t utf16Len)
+                                           uint32_t length)
 {
-    bool canBeCompressed = CanBeCompressed(src->GetDataUtf16() + start, utf16Len);
-    auto string = AllocStringObject(utf16Len, canBeCompressed, vm);
+    if (length == 0) {
+        return *vm->GetFactory()->GetEmptyString();
+    }
+    bool canBeCompressed = CanBeCompressed(src->GetDataUtf16() + start, length);
+    auto string = AllocStringObject(length, canBeCompressed, vm);
     if (canBeCompressed) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        CopyUtf16AsUtf8(src->GetDataUtf16() + start, string->GetDataUtf8Writable(), utf16Len);
+        CopyUtf16AsUtf8(src->GetDataUtf16() + start, string->GetDataUtf8Writable(), length);
     } else {
-        uint32_t len = utf16Len * (sizeof(uint16_t) / sizeof(uint8_t));
+        uint32_t len = length * (sizeof(uint16_t) / sizeof(uint8_t));
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        Span<uint16_t> dst(string->GetDataUtf16Writable(), utf16Len);
-        Span<const uint16_t> source(src->GetDataUtf16() + start, utf16Len);
+        Span<uint16_t> dst(string->GetDataUtf16Writable(), length);
+        Span<const uint16_t> source(src->GetDataUtf16() + start, length);
         EcmaString::StringCopy(dst, len, source, len);
     }
     ASSERT_PRINT(canBeCompressed == CanBeCompressed(string), "canBeCompresse does not match the real value!");
