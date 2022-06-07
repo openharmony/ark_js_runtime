@@ -93,7 +93,7 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptimizedL
     }
 }
 
-void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp) const
+void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp, uintptr_t curPc) const
 {
     if (!IsLogEnabled()) {
         return;
@@ -105,7 +105,7 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t 
     uintptr_t derived = 0;
 
     uintptr_t callsiteFp = *fp;
-    uintptr_t callSiteSp = FrameHandler::GetPrevFrameCallSiteSp(reinterpret_cast<JSTaggedType *>(fp));
+    uintptr_t callSiteSp = FrameHandler::GetPrevFrameCallSiteSp(reinterpret_cast<JSTaggedType *>(fp), curPc);
 
     for (auto &info: *infos) {
         if (info.first == GCStackMapRegisters::SP) {
@@ -138,24 +138,32 @@ bool LLVMStackMapParser::IsDeriveredPointer(int callsitetime) const
 }
 
 bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp,
-    std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, uintptr_t> *data, [[maybe_unused]] bool isVerifying) const
+    std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, uintptr_t> *data, [[maybe_unused]] bool isVerifying,
+    uintptr_t curPc) const
 {
     const CallSiteInfo *infos = GetCallSiteInfoByPc(callSiteAddr);
     if (infos == nullptr) {
         return false;
     }
+
     uintptr_t *fp = reinterpret_cast<uintptr_t *>(frameFp);
+    uintptr_t callsiteFp = *fp;
+    uintptr_t callSiteSp = FrameHandler::GetPrevFrameCallSiteSp(reinterpret_cast<JSTaggedType *>(frameFp), curPc);
+    // std::cout << std::hex << " callSiteAddr:0x" << callSiteAddr << " curPc:0x" << curPc
+    //     << " callsiteFp:0x" << callsiteFp
+    //     << " callSiteSp:0x" << callSiteSp
+    //     << " stack size:0x" << (callsiteFp- callSiteSp)
+    //     << std::endl;
+    ASSERT(callsiteFp - callSiteSp >= 8);
     uintptr_t address = 0;
     uintptr_t base = 0;
     uintptr_t derived = 0;
     int i = 0;
 
     if (IsLogEnabled()) {
-        PrintCallSiteInfo(infos, fp);
+        PrintCallSiteInfo(infos, fp, curPc);
     }
 
-    uintptr_t callsiteFp = *fp;
-    uintptr_t callSiteSp = FrameHandler::GetPrevFrameCallSiteSp(reinterpret_cast<JSTaggedType *>(frameFp));
     for (auto &info: *infos) {
         if (info.first == GCStackMapRegisters::SP) {
             address = callSiteSp + info.second;
@@ -180,6 +188,7 @@ bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t 
             }
         } else {
             base = reinterpret_cast<uintptr_t>(address);
+            baseSet.emplace(base);
         }
         i++;
     }
@@ -189,7 +198,9 @@ bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t 
 void LLVMStackMapParser::CalcCallSite()
 {
     uint64_t recordNum = 0;
-    auto calStkMapRecordFunc = [this, &recordNum](uintptr_t address, int recordId) {
+    Pc2CallSiteInfo pc2CallSiteInfo;
+    Pc2ConstInfo pc2ConstInfo;
+    auto calStkMapRecordFunc = [this, &recordNum, &pc2CallSiteInfo, &pc2ConstInfo](uintptr_t address, int recordId) {
         struct StkMapRecordHeadTy recordHead = llvmStackMap_.StkMapRecord[recordNum + recordId].head;
         for (int j = 0; j < recordHead.NumLocations; j++) {
                 struct LocationTy loc = llvmStackMap_.StkMapRecord[recordNum + recordId].Locations[j];
@@ -202,11 +213,15 @@ void LLVMStackMapParser::CalcCallSite()
                         instructionOffset << " callsite:" << "  patchPointID :" << std::hex << patchPointID <<
                         callsite;
                     DwarfRegAndOffsetType info(loc.DwarfRegNum, loc.OffsetOrSmallConstant);
-                    auto it = pc2CallSiteInfo_.find(callsite);
-                    if (pc2CallSiteInfo_.find(callsite) == pc2CallSiteInfo_.end()) {
-                        pc2CallSiteInfo_.insert(std::pair<uintptr_t, CallSiteInfo>(callsite, {info}));
+                    auto it = pc2CallSiteInfo.find(callsite);
+                    if (pc2CallSiteInfo.find(callsite) == pc2CallSiteInfo.end()) {
+                        pc2CallSiteInfo.insert(std::pair<uintptr_t, CallSiteInfo>(callsite, {info}));
                     } else {
                         it->second.emplace_back(info);
+                    }
+                } else if (loc.location == LocationTy::Kind::CONSTANT) {
+                    if (j >= LocationTy::CONSTANT_FIRST_ELEMENT_INDEX) {
+                        pc2ConstInfo[callsite].push_back(loc.OffsetOrSmallConstant);
                     }
                 }
         }
@@ -219,16 +234,17 @@ void LLVMStackMapParser::CalcCallSite()
         }
         recordNum += recordCount;
     }
+    pc2CallSiteInfoVec_.emplace_back(pc2CallSiteInfo);
+    pc2ConstInfoVec_.emplace_back(pc2ConstInfo);
 }
 
 bool LLVMStackMapParser::CalculateStackMap(std::unique_ptr<uint8_t []> stackMapAddr)
 {
-    stackMapAddr_ = std::move(stackMapAddr);
-    if (!stackMapAddr_) {
-        COMPILER_LOG(ERROR) << "stackMapAddr_ nullptr error ! ";
+    if (!stackMapAddr) {
+        COMPILER_LOG(ERROR) << "stackMapAddr nullptr error ! ";
         return false;
     }
-    dataInfo_ = std::make_unique<DataInfo>(std::move(stackMapAddr_));
+    dataInfo_ = std::make_unique<DataInfo>(std::move(stackMapAddr));
     llvmStackMap_.head = dataInfo_->Read<struct Header>();
     uint32_t numFunctions, numConstants, numRecords;
     numFunctions = dataInfo_->Read<uint32_t>();
@@ -288,9 +304,56 @@ bool LLVMStackMapParser::CalculateStackMap(std::unique_ptr<uint8_t []> stackMapA
         COMPILER_OPTIONAL_LOG(DEBUG) << std::dec << i << "th function " << std::hex << hostAddr << " ---> "
                                      << deviceAddr;
     }
-    pc2CallSiteInfo_.clear();
     CalcCallSite();
-    pc2CallSiteInfoVec_.push_back(pc2CallSiteInfo_);
     return true;
+}
+
+void LLVMStackMapParser::CalculateFuncFpDelta(Func2FpDelta info)
+{
+    bool find = std::find(fun2FpDelta_.begin(), fun2FpDelta_.end(), info) == fun2FpDelta_.end();
+    if (!info.empty() && find) {
+        fun2FpDelta_.emplace_back(info);
+    }
+    for (auto &it: info) {
+        funAddr_.insert(it.first);
+    }
+}
+
+int LLVMStackMapParser::FindFpDelta(uintptr_t funcAddr, uintptr_t callsitePc) const
+{
+    int delta = 0;
+    // next optimization can be performed via sorted/map.
+    for (auto &info: fun2FpDelta_) {
+        if (info.find(funcAddr) != info.end()) {
+            delta = info.at(funcAddr).first;
+            int funcSize = info.at(funcAddr).second;
+            if (callsitePc <= funcAddr + funcSize && callsitePc >= funcAddr) {
+                return delta;
+            }
+        }
+    }
+    return delta;
+}
+
+int LLVMStackMapParser::GetFuncFpDelta(uintptr_t callsitePc) const
+{
+    int delta = 0;
+    auto itupper = funAddr_.upper_bound(callsitePc);
+    if (itupper != funAddr_.end()) { // find first element >= callsitePc
+        --itupper;
+        // callsitePC may jscall or entry, thus not existed in funAddr_
+        if ((itupper == funAddr_.end()) || (*itupper > callsitePc)) {
+            return delta;
+        }
+        delta = FindFpDelta(*itupper, callsitePc);
+    } else {
+        auto rit = funAddr_.crbegin(); // find last element
+        // callsitePC may jscall or entry, thus not existed in funAddr_
+        if ((rit == funAddr_.crend()) || (*rit > callsitePc)) {
+            return delta;
+        }
+        delta = FindFpDelta(*rit, callsitePc);
+    }
+    return delta;
 }
 }  // namespace panda::ecmascript::kungfu

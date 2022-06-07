@@ -236,7 +236,7 @@ void AssemblerStubs::OptimizedCallOptimized(ExtendedAssembler *assembler)
     __ SaveFpAndLr();
     // Construct frame
     Register frameType(X5);
-    __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_FRAME)));
+    __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME)));
     __ Str(frameType, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
 
     // callee save
@@ -375,32 +375,33 @@ void AssemblerStubs::CallBuiltinTrampoline(ExtendedAssembler *assembler)
 
 // uint64_t JSCall(uintptr_t glue, uint32_t argc, JSTaggedType calltarget, JSTaggedType new, JSTaggedType this, ...)
 // webkit_jscc calling convention call js function()
-// Input:        %x0 - glue
-// stack layout: sp + N*8 argvN
-//               ........
-//               sp + 24: argc
-//               sp + 16: this
-// sp + 8:       new
-// sp:           jsfunc
-//               +--------------------------+
-//               |       argv[argc-1]       |
-//               +--------------------------+
-//               |       ..........         |
-//               +--------------------------+
-//               |       argv[1]            |
-//               +--------------------------+
-//               |       argv[0]            |
-//               +--------------------------+ ---
-//               |       argc               |   ^
-//               |--------------------------|  Fixed
-//               |       RuntimeId          | OptimizedFrame
-//               |--------------------------|   |
-//               |       returnAddr         |   |
-//               |--------------------------|   |
-//               |       callsiteFp         |   |
-//               |--------------------------|   |
-//               |       frameType          |   v
-//               +--------------------------+ ---
+// %x0 - glue
+// stack layout
+// sp + N*8 argvN
+// ........
+// sp + 24: argc
+// sp + 16: this
+// sp + 8:  new
+// sp:      jsfunc
+//   +--------------------------+
+//   |       ...                |
+//   +--------------------------+
+//   |       arg0               |
+//   +--------------------------+
+//   |       this               |
+//   +--------------------------+
+//   |       new                |
+//   +--------------------------+ ---
+//   |       jsfunction         |   ^
+//   |--------------------------|  Fixed
+//   |       argc               | OptimizedFrame
+//   |--------------------------|   |
+//   |       returnAddr         |   |
+//   |--------------------------|   |
+//   |       callsiteFp         |   |
+//   |--------------------------|   |
+//   |       frameType          |   v
+//   +--------------------------+ ---
 void AssemblerStubs::JSCall(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(JSCall));
@@ -499,7 +500,7 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
         // construct frame
         Register frameType(X5);
         Register fp(X29);
-        __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_FRAME)));
+        __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME)));
         __ Str(frameType, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
         Register argVEnd(X4);
         __ Add(argVEnd, fp, Immediate(GetStackArgOffSetToFp(0)));
@@ -594,7 +595,7 @@ void AssemblerStubs::JSCallBody(ExtendedAssembler *assembler, Register jsfunc)
         Register frameType(X6);
         Register taggedMessageId(X5);
         __ SaveFpAndLr();
-        __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_FRAME)));
+        __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME)));
         __ Mov(taggedMessageId,
             Immediate(JSTaggedValue(GET_MESSAGE_STRING_ID(NonCallable)).GetRawData()));
         // 2 : 2 means pair
