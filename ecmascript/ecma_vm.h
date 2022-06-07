@@ -95,6 +95,11 @@ public:
         return vmInitialized_;
     }
 
+    bool IsGlobalConstInitialized() const
+    {
+        return globalConstInitialized_;
+    }
+
     ObjectFactory *GetFactory() const
     {
         return factory_;
@@ -351,6 +356,7 @@ private:
     JSRuntimeOptions options_;
     bool icEnabled_ {true};
     bool vmInitialized_ {false};
+    bool globalConstInitialized_ {false};
     GCStats *gcStats_ {nullptr};
     bool snapshotSerializeEnable_ {false};
     bool snapshotDeserializeEnable_ {false};
