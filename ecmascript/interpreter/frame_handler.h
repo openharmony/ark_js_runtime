@@ -115,7 +115,7 @@ public:
     JSTaggedType *GetPrevInterpretedFrame();
 
     // for llvm.
-    static uintptr_t GetPrevFrameCallSiteSp(const JSTaggedType *sp);
+    static uintptr_t GetPrevFrameCallSiteSp(const JSTaggedType *sp, uintptr_t curPc);
 
     // for InterpretedFrame.
     JSTaggedValue GetVRegValue(size_t index) const;
@@ -146,10 +146,10 @@ public:
     static JSTaggedType* GetInterpretedEntryFrameStart(const JSTaggedType *sp);
 
     // for Frame GC.
-    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
-    void IterateFrameChain(JSTaggedType *start, const RootVisitor &v0, const RootRangeVisitor &v1) const;
-    void IterateRsp(const RootVisitor &v0, const RootRangeVisitor &v1) const;
-    void IterateSp(const RootVisitor &v0, const RootRangeVisitor &v1) const;
+    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1);
+    void IterateFrameChain(JSTaggedType *start, const RootVisitor &v0, const RootRangeVisitor &v1);
+    void IterateRsp(const RootVisitor &v0, const RootRangeVisitor &v1);
+    void IterateSp(const RootVisitor &v0, const RootRangeVisitor &v1);
 
 private:
     FrameType GetFrameType() const
@@ -176,20 +176,24 @@ private:
     void OptimizedFrameIterate(
         const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
         ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
+    void OptimizedJSFunctionFrameIterate(
+        const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
+        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying);
     void OptimizedEntryFrameIterate(
         const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
-        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
+        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying);
     void OptimizedLeaveFrameIterate(
         const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
-        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
+        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying);
     void OptimizedWithArgvLeaveFrameIterate(
         const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
-        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
+        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying);
 
 private:
     JSTaggedType *sp_ {nullptr};
     JSTaggedType *fp_ {nullptr};
     const JSThread *thread_ {nullptr};
+    uintptr_t optimizedReturnAddr_ {0};
 };
 
 class StackAssertScope {

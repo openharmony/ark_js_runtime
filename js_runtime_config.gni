@@ -21,6 +21,7 @@ if (!defined(ark_independent_build)) {
   third_party_gn_path = "$build_root/third_party_gn"
 }
 compile_llvm_online = false
+compiler_llvm_12 = true
 run_with_asan = false
 enable_bytrace = true
 enable_dump_in_faultlog = true
