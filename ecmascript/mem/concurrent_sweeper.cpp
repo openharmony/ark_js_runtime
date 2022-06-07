@@ -95,6 +95,9 @@ void ConcurrentSweeper::EnsureAllTaskFinished()
         WaitingTaskFinish(static_cast<MemSpaceType>(i));
     }
     isSweeping_ = false;
+    if (disableConcurrentRequested_) {
+        EnableConcurrentSweep(false);
+    }
 }
 
 void ConcurrentSweeper::EnsureTaskFinished(MemSpaceType type)

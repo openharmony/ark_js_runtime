@@ -87,8 +87,11 @@ void Heap::Initialize()
     compressSpace_ = new OldSpace(this, oldSpaceCapacity, oldSpaceCapacity);
     oldSpace_->Initialize();
     hugeObjectSpace_ = new HugeObjectSpace(heapRegionAllocator_, oldSpaceCapacity, oldSpaceCapacity);
-    maxTaskCount_ = std::min<size_t>(ecmaVm_->GetJSOptions().GetGcThreadNum(),
-        (Taskpool::GetCurrentTaskpool()->GetTotalThreadNum()) - 1);
+    initialEvacuateTaskCount_ = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum();
+    maxEvacuateTaskCount_ = initialEvacuateTaskCount_;
+    maxMarkTaskCount_ = std::min<size_t>(ecmaVm_->GetJSOptions().GetGcThreadNum(),
+        initialEvacuateTaskCount_ - 1);
+
     LOG(INFO, RUNTIME) << "heap initialize: heap size = " << MAX_HEAP_SIZE
         << ", semispace capacity = " << minSemiSpaceCapacity
         << ", nonmovablespace capacity = " << nonmovableSpaceCapacity
@@ -96,7 +99,7 @@ void Heap::Initialize()
         << ", machinecodespace capacity = " << machineCodeSpaceCapacity
         << ", oldspace capacity = " << oldSpaceCapacity
         << ", globallimit = " << globalSpaceAllocLimit_
-        << ", gcThreadNum = " << maxTaskCount_;
+        << ", gcThreadNum = " << maxMarkTaskCount_;
     parallelGC_ = ecmaVm_->GetJSOptions().EnableParallelGC();
     concurrentMarkingEnabled_ = ecmaVm_->GetJSOptions().EnableConcurrentMark();
     markType_ = MarkType::MARK_YOUNG;
@@ -482,6 +485,9 @@ bool Heap::CheckOngoingConcurrentMarking()
             ECMA_GC_LOG() << "wait concurrent marking finish pause time " << clockScope.TotalSpentTime();
         }
         memController_->RecordAfterConcurrentMark(IsFullMark(), concurrentMarker_);
+        if (disableConcurrentMarkRequested_) {
+            EnableConcurrentMarking(false);
+        }
         return true;
     }
     return false;
@@ -632,10 +638,56 @@ void Heap::IncreaseTaskCount()
     runningTaskCount_++;
 }
 
+void Heap::EnableConcurrentMarking(bool flag)
+{
+    if (concurrentMarkingEnabled_ && thread_->IsMarking() && !flag) {
+        disableConcurrentMarkRequested_ = true;
+    } else {
+        concurrentMarkingEnabled_ = flag;
+    }
+}
+
+void Heap::ChangeGCParams(bool inBackground)
+{
+    if (inBackground) {
+        LOG(INFO, RUNTIME) << "app is inBackground";
+        if (GetMemGrowingType() != MemGrowingType::PRESSURE) {
+            SetMemGrowingType(MemGrowingType::CONSERVATIVE);
+            LOG(INFO, RUNTIME) << "Heap Growing Type CONSERVATIVE";
+        }
+        EnableConcurrentMarking(false);
+        sweeper_->EnableConcurrentSweep(false);
+        maxMarkTaskCount_ = 1;
+        maxEvacuateTaskCount_ = 1;
+    } else {
+        LOG(INFO, RUNTIME) << "app is not inBackground";
+        if (GetMemGrowingType() != MemGrowingType::PRESSURE) {
+            SetMemGrowingType(MemGrowingType::HIGH_THROUGHPUT);
+            LOG(INFO, RUNTIME) << "Heap Growing Type HIGH_THROUGHPUT";
+        }
+        EnableConcurrentMarking(true);
+        sweeper_->EnableConcurrentSweep(true);
+        maxMarkTaskCount_ = std::min<size_t>(ecmaVm_->GetJSOptions().GetGcThreadNum(),
+            initialEvacuateTaskCount_ - 1);
+        maxEvacuateTaskCount_ = initialEvacuateTaskCount_;
+    }
+}
+
+void Heap::NotifyMemoryPressure(bool inHighMemoryPressure)
+{
+    if (inHighMemoryPressure) {
+        LOG(INFO, RUNTIME) << "app is inHighMemoryPressure";
+        SetMemGrowingType(MemGrowingType::PRESSURE);
+    } else {
+        LOG(INFO, RUNTIME) << "app is not inHighMemoryPressure";
+        SetMemGrowingType(MemGrowingType::CONSERVATIVE);
+    }
+}
+
 bool Heap::CheckCanDistributeTask()
 {
     os::memory::LockHolder holder(waitTaskFinishedMutex_);
-    return runningTaskCount_ < maxTaskCount_;
+    return runningTaskCount_ < maxMarkTaskCount_;
 }
 
 void Heap::ReduceTaskCount()

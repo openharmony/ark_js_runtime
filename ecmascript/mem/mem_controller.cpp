@@ -39,8 +39,23 @@ double MemController::CalculateAllocLimit(size_t currentSize, size_t minSize, si
 
 double MemController::CalculateGrowingFactor(double gcSpeed, double mutatorSpeed)
 {
-    static constexpr double minGrowingFactor = 1.3;
-    static constexpr double maxGrowingFactor = 4.0;
+    double maxGrowingFactor = 4.0;
+    double halfMaxGrowingFactor = 2.0;
+    double minGrowingFactor = 1.3;
+    double minimumFactor = 1.1;
+    switch (heap_->GetMemGrowingType()) {
+        case MemGrowingType::HIGH_THROUGHPUT:
+            break;
+        case MemGrowingType::CONSERVATIVE:
+            minGrowingFactor = minimumFactor;
+            maxGrowingFactor = halfMaxGrowingFactor;
+            break;
+        case MemGrowingType::PRESSURE:
+            return minimumFactor;
+        default:
+            break;
+    }
+
     static constexpr double targetMutatorUtilization = 0.97;
     if (gcSpeed == 0 || mutatorSpeed == 0) {
         return maxGrowingFactor;
