@@ -156,7 +156,7 @@ EcmaVM *JSNApi::CreateEcmaVM(const JSRuntimeOptions &options)
         os::memory::LockHolder lock(mutex);
         vmCount_++;
         if (!initialize_) {
-            InitializeMemMapAllocator(options);
+            InitializeMemMapAllocator();
             initialize_ = true;
         }
     }
@@ -473,9 +473,9 @@ Local<ObjectRef> JSNApi::GetExportObject(EcmaVM *vm, const std::string &file, co
     return JSNApiHelper::ToLocal<ObjectRef>(exportObj);
 }
 
-void JSNApi::InitializeMemMapAllocator(const ecmascript::JSRuntimeOptions &options)
+void JSNApi::InitializeMemMapAllocator()
 {
-    MemMapAllocator::GetInstance()->Initialize(options.GetHeapSizeLimit(), ecmascript::DEFAULT_REGION_SIZE);
+    MemMapAllocator::GetInstance()->Initialize(ecmascript::DEFAULT_REGION_SIZE);
 }
 
 void JSNApi::DestroyMemMapAllocator()

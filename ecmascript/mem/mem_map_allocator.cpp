@@ -14,7 +14,16 @@
  */
 
 #include "ecmascript/mem/mem_map_allocator.h"
+#include "mem/runslots.h"
+#if defined(PANDA_TARGET_WINDOWS)
+#include <sysinfoapi.h>
+#elif defined(PANDA_TARGET_MACOS)
+#include "sys/sysctl.h"
+#else
+#include "sys/sysinfo.h"
+#endif
 #ifdef PANDA_TARGET_WINDOWS
+
 void *mmap(size_t size, int fd, off_t offset)
 {
     HANDLE handle = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
@@ -92,5 +101,31 @@ MemMap MemMapAllocator::PageMap(size_t size, size_t alignment)
     munmap(alignEndResult, rightSize);
 #endif
     return MemMap(reinterpret_cast<void *>(alignResult), size);
+}
+
+void MemMapAllocator::AdapterSuitablePoolCapacity()
+{
+#ifdef PANDA_TARGET_WINDOWS
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    GlobalMemoryStatusEx(&status);
+    long physSize = status.ullTotalPhys;
+#elif PANDA_TARGET_MACOS
+    static constexpr int MIB_LENGTH = 2;
+    int mib[2];
+    mib[0] = CTL_HW;
+    mib[1] = HW_MEMSIZE;
+    int64_t size = 0;
+    if (sysctl(mib, MIB_LENGTH, &size, sizeof(size), NULL, 0) != 0) {
+        LOG(FATAL, RUNTIME) << "sysctl error";
+    }
+    long physSize = static_cast<long>(size);
+#else
+    auto pages = sysconf(_SC_PHYS_PAGES);
+    auto pageSize = sysconf(_SC_PAGE_SIZE);
+    long physSize = pages * pageSize;
+#endif
+    capacity_ = std::max<size_t>(physSize / PHY_SIZE_MULTIPLE, MIN_MEM_POOL_CAPACITY);
+    LOG(INFO, RUNTIME) << "Auto adapter memory pool capacity:" << capacity_;
 }
 }  // namespace panda::ecmascript
