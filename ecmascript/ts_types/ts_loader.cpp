@@ -481,6 +481,11 @@ size_t TSLoader::GetStringIdx(JSHandle<JSTaggedValue> constPool, const uint16_t 
     return AddConstString(str);
 }
 
+bool TSLoader::GetTypeInferenceLog() const
+{
+    return vm_->GetJSOptions().GetLogTypeInfer();
+}
+
 void TSModuleTable::Initialize(JSThread *thread, JSHandle<TSModuleTable> mTable)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();

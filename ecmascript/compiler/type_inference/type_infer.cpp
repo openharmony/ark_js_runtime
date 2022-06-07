@@ -54,6 +54,26 @@ void TypeInfer::TraverseCircuit()
         COMPILER_LOG(INFO) << "TypeInfer:======================================================";
         circuit_->PrintAllGates(*builder_);
     }
+
+    if (tsLoader_->GetTypeInferenceLog()) {
+        TypeInferPrint();
+    }
+}
+
+void TypeInfer::TypeInferPrint() const
+{
+    const auto &gateList = circuit_->GetAllGates();
+    std::string log("TestInfer:");
+    for (const auto &gate : gateList) {
+        auto op = gateAccessor_.GetOpCode(gate);
+        if (op == OpCode::JS_BYTECODE) {
+            log += "&" + builder_->GetBytecodeStr(gate) + ":";
+            auto gateType = gateAccessor_.GetGateType(gate);
+            auto type = gateType > GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT ? "INF" : std::to_string(gateType);
+            log += type;
+        }
+    }
+    COMPILER_LOG(INFO) << std::dec << log;
 }
 
 bool TypeInfer::UpdateType(GateRef gate, const GateType type)
