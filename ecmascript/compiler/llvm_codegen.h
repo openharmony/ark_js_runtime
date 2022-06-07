@@ -194,7 +194,8 @@ public:
     {
         return engine_;
     }
-    void Disassemble(const std::map<uint64_t, std::string> &addr2name, const CompilerLog &log) const;
+    void Disassemble(const std::map<uintptr_t, std::string> &addr2name, const CompilerLog &log) const;
+    static int GetFpDeltaPrevFramSp(LLVMValueRef fn, const CompilerLog &log);
     static void Disassemble(uint8_t *buf, size_t size);
     uintptr_t GetStackMapsSection() const
     {
