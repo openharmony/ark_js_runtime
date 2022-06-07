@@ -72,11 +72,21 @@ void DFXJSNApi::DumpHeapSnapshot([[maybe_unused]] const EcmaVM *vm, [[maybe_unus
 #endif
 }
 
-bool DFXJSNApi::BuildNativeAndJsBackStackTrace(const EcmaVM *vm, std::string &stackTraceStr)
+bool DFXJSNApi::BuildNativeAndJsStackTrace(const EcmaVM *vm, std::string &stackTraceStr)
 {
-    CString trace = ecmascript::base::ErrorHelper::BuildNativeAndJsStackTrace(vm->GetJSThreadNoCheck());
+    CString trace = ecmascript::base::ErrorHelper::BuildJsStackTrace(vm->GetJSThreadNoCheck(), true);
     stackTraceStr = CstringConvertToStdString(trace);
-    if (stackTraceStr == "") {
+    if (stackTraceStr.empty()) {
+        return false;
+    }
+    return true;
+}
+
+bool DFXJSNApi::BuildJsStackTrace(const EcmaVM *vm, std::string &stackTraceStr)
+{
+    CString trace = ecmascript::base::ErrorHelper::BuildJsStackTrace(vm->GetJSThreadNoCheck(), false);
+    stackTraceStr = CstringConvertToStdString(trace);
+    if (stackTraceStr.empty()) {
         return false;
     }
     return true;

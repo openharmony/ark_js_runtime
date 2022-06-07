@@ -234,6 +234,16 @@ JSMethod *FrameHandler::GetMethod() const
     return ECMAObject::Cast(function.GetTaggedObject())->GetCallTarget();
 }
 
+JSMethod *FrameHandler::CheckAndGetMethod() const
+{
+    ASSERT(IsInterpretedFrame());
+    auto function = GetFunction();
+    if (function.IsJSFunctionBase() || function.IsJSProxy()) {
+        return ECMAObject::Cast(function.GetTaggedObject())->GetCallTarget();
+    }
+    return nullptr;
+}
+
 JSTaggedValue FrameHandler::GetFunction() const
 {
     ASSERT(IsInterpretedFrame());
