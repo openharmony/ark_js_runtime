@@ -25,7 +25,7 @@
 namespace panda::ecmascript::tooling {
 void RuntimeImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
 {
-    static CUnorderedMap<CString, AgentHandler> dispatcherTable {
+    static std::unordered_map<std::string, AgentHandler> dispatcherTable {
         { "enable", &RuntimeImpl::DispatcherImpl::Enable },
         { "getProperties", &RuntimeImpl::DispatcherImpl::GetProperties },
         { "runIfWaitingForDebugger", &RuntimeImpl::DispatcherImpl::RunIfWaitingForDebugger },
@@ -33,7 +33,7 @@ void RuntimeImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
         { "getHeapUsage", &RuntimeImpl::DispatcherImpl::GetHeapUsage }
     };
 
-    const CString &method = request.GetMethod();
+    const std::string &method = request.GetMethod();
     LOG(DEBUG, DEBUGGER) << "dispatch [" << method << "] to RuntimeImpl";
 
     auto entry = dispatcherTable.find(method);
@@ -71,9 +71,9 @@ void RuntimeImpl::DispatcherImpl::GetProperties(const DispatchRequest &request)
         return;
     }
 
-    CVector<std::unique_ptr<PropertyDescriptor>> outPropertyDesc;
-    std::optional<CVector<std::unique_ptr<InternalPropertyDescriptor>>> outInternalDescs;
-    std::optional<CVector<std::unique_ptr<PrivatePropertyDescriptor>>> outPrivateProperties;
+    std::vector<std::unique_ptr<PropertyDescriptor>> outPropertyDesc;
+    std::optional<std::vector<std::unique_ptr<InternalPropertyDescriptor>>> outInternalDescs;
+    std::optional<std::vector<std::unique_ptr<PrivatePropertyDescriptor>>> outPrivateProperties;
     std::optional<std::unique_ptr<ExceptionDetails>> outExceptionDetails;
     DispatchResponse response = runtime_->GetProperties(std::move(params), &outPropertyDesc, &outInternalDescs,
         &outPrivateProperties, &outExceptionDetails);
@@ -163,9 +163,9 @@ DispatchResponse RuntimeImpl::GetHeapUsage(double *usedSize, double *totalSize)
 }
 
 DispatchResponse RuntimeImpl::GetProperties(std::unique_ptr<GetPropertiesParams> params,
-    CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc,
-    [[maybe_unused]] std::optional<CVector<std::unique_ptr<InternalPropertyDescriptor>>> *outInternalDescs,
-    [[maybe_unused]] std::optional<CVector<std::unique_ptr<PrivatePropertyDescriptor>>> *outPrivateProps,
+    std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc,
+    [[maybe_unused]] std::optional<std::vector<std::unique_ptr<InternalPropertyDescriptor>>> *outInternalDescs,
+    [[maybe_unused]] std::optional<std::vector<std::unique_ptr<PrivatePropertyDescriptor>>> *outPrivateProps,
     [[maybe_unused]] std::optional<std::unique_ptr<ExceptionDetails>> *outExceptionDetails)
 {
     RemoteObjectId objectId = params->GetObjectId();
@@ -227,7 +227,7 @@ DispatchResponse RuntimeImpl::GetProperties(std::unique_ptr<GetPropertiesParams>
 }
 
 void RuntimeImpl::AddTypedArrayRefs(Local<ArrayBufferRef> arrayBufferRef,
-    CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
+    std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
 {
     int32_t arrayBufferByteLength = arrayBufferRef->ByteLength(vm_);
     int32_t typedArrayLength = arrayBufferByteLength;
@@ -258,7 +258,7 @@ void RuntimeImpl::AddTypedArrayRefs(Local<ArrayBufferRef> arrayBufferRef,
 
 template <typename TypedArrayRef>
 void RuntimeImpl::AddTypedArrayRef(Local<ArrayBufferRef> arrayBufferRef, int32_t length, const char* name,
-    CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
+    std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
 {
     Local<JSValueRef> jsValueRefTypedArray(TypedArrayRef::New(vm_, arrayBufferRef, 0, length));
     std::unique_ptr<RemoteObject> remoteObjectTypedArray = RemoteObject::FromTagged(vm_, jsValueRefTypedArray);
@@ -283,7 +283,7 @@ void RuntimeImpl::CacheObjectIfNeeded(Local<JSValueRef> valRef, RemoteObject *re
 }
 
 void RuntimeImpl::GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn, bool isAccessorOnly,
-    CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
+    std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
 {
     if (!isAccessorOnly && isOwn && !value->IsProxy()) {
         return;
@@ -317,7 +317,7 @@ void RuntimeImpl::GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn
 }
 
 void RuntimeImpl::GetAdditionalProperties(const Local<JSValueRef> &value,
-    CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
+    std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
 {
     // The length of the TypedArray have to be limited(less than or equal to lengthTypedArrayLimit) until we construct
     // the PropertyPreview class. Let lengthTypedArrayLimit be 10000 temporarily.
@@ -343,7 +343,7 @@ void RuntimeImpl::GetAdditionalProperties(const Local<JSValueRef> &value,
 
             std::ostringstream osNameElement;
             osNameElement << std::right << std::setw(widthStrExprMaxElementIndex) << i;
-            CString cStrNameElement = CString(osNameElement.str());
+            std::string cStrNameElement = osNameElement.str();
             debuggerProperty->SetName(cStrNameElement)
                 .SetWritable(true)
                 .SetConfigurable(true)

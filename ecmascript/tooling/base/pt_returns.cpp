@@ -152,7 +152,7 @@ Local<ObjectRef> SetScriptSourceReturns::ToObject(const EcmaVM *ecmaVm) const
     Local<ObjectRef> result = NewObject(ecmaVm);
 
     if (callFrames_) {
-        const CVector<std::unique_ptr<CallFrame>> &callFrame = callFrames_.value();
+        const std::vector<std::unique_ptr<CallFrame>> &callFrame = callFrames_.value();
         size_t len = callFrame.size();
         Local<ArrayRef> values = ArrayRef::New(ecmaVm, len);
         for (size_t i = 0; i < len; i++) {

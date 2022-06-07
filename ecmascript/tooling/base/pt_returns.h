@@ -51,7 +51,7 @@ private:
 
 class SetBreakpointByUrlReturns : public PtBaseReturns {
 public:
-    explicit SetBreakpointByUrlReturns(const CString &id, CVector<std::unique_ptr<Location>> locations)
+    explicit SetBreakpointByUrlReturns(const std::string &id, std::vector<std::unique_ptr<Location>> locations)
         : id_(id), locations_(std::move(locations))
     {}
     ~SetBreakpointByUrlReturns() override = default;
@@ -63,8 +63,8 @@ private:
     NO_COPY_SEMANTIC(SetBreakpointByUrlReturns);
     NO_MOVE_SEMANTIC(SetBreakpointByUrlReturns);
 
-    CString id_ {};
-    CVector<std::unique_ptr<Location>> locations_ {};
+    std::string id_ {};
+    std::vector<std::unique_ptr<Location>> locations_ {};
 };
 
 class EvaluateOnCallFrameReturns : public PtBaseReturns {
@@ -87,7 +87,7 @@ private:
 
 class GetPossibleBreakpointsReturns : public PtBaseReturns {
 public:
-    explicit GetPossibleBreakpointsReturns(CVector<std::unique_ptr<BreakLocation>> locations)
+    explicit GetPossibleBreakpointsReturns(std::vector<std::unique_ptr<BreakLocation>> locations)
         : locations_(std::move(locations))
     {}
     ~GetPossibleBreakpointsReturns() override = default;
@@ -99,12 +99,12 @@ private:
     NO_COPY_SEMANTIC(GetPossibleBreakpointsReturns);
     NO_MOVE_SEMANTIC(GetPossibleBreakpointsReturns);
 
-    CVector<std::unique_ptr<BreakLocation>> locations_ {};
+    std::vector<std::unique_ptr<BreakLocation>> locations_ {};
 };
 
 class GetScriptSourceReturns : public PtBaseReturns {
 public:
-    explicit GetScriptSourceReturns(const CString &scriptSource, std::optional<CString> bytecode = std::nullopt)
+    explicit GetScriptSourceReturns(const std::string &scriptSource, std::optional<std::string> bytecode = std::nullopt)
         : scriptSource_(scriptSource), bytecode_(std::move(bytecode))
     {}
     ~GetScriptSourceReturns() override = default;
@@ -116,13 +116,13 @@ private:
     NO_COPY_SEMANTIC(GetScriptSourceReturns);
     NO_MOVE_SEMANTIC(GetScriptSourceReturns);
 
-    CString scriptSource_ {};
-    std::optional<CString> bytecode_ {};
+    std::string scriptSource_ {};
+    std::optional<std::string> bytecode_ {};
 };
 
 class RestartFrameReturns : public PtBaseReturns {
 public:
-    explicit RestartFrameReturns(CVector<std::unique_ptr<CallFrame>> callFrames)
+    explicit RestartFrameReturns(std::vector<std::unique_ptr<CallFrame>> callFrames)
         : callFrames_(std::move(callFrames))
     {}
     ~RestartFrameReturns() override = default;
@@ -133,12 +133,12 @@ private:
     NO_COPY_SEMANTIC(RestartFrameReturns);
     NO_MOVE_SEMANTIC(RestartFrameReturns);
 
-    CVector<std::unique_ptr<CallFrame>> callFrames_ {};
+    std::vector<std::unique_ptr<CallFrame>> callFrames_ {};
 };
 
 class SearchInContentReturns : public PtBaseReturns {
 public:
-    explicit SearchInContentReturns(CVector<std::unique_ptr<SearchMatch>> result) : result_(std::move(result))
+    explicit SearchInContentReturns(std::vector<std::unique_ptr<SearchMatch>> result) : result_(std::move(result))
     {}
     ~SearchInContentReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
@@ -148,12 +148,12 @@ private:
     NO_COPY_SEMANTIC(SearchInContentReturns);
     NO_MOVE_SEMANTIC(SearchInContentReturns);
 
-    CVector<std::unique_ptr<SearchMatch>> result_ {};
+    std::vector<std::unique_ptr<SearchMatch>> result_ {};
 };
 
 class SetBreakpointReturns : public PtBaseReturns {
 public:
-    explicit SetBreakpointReturns(const CString &id, std::unique_ptr<Location> location)
+    explicit SetBreakpointReturns(const std::string &id, std::unique_ptr<Location> location)
         : breakpointId_(id), location_(std::move(location))
     {}
     ~SetBreakpointReturns() override = default;
@@ -163,13 +163,13 @@ private:
     SetBreakpointReturns() = default;
     NO_COPY_SEMANTIC(SetBreakpointReturns);
     NO_MOVE_SEMANTIC(SetBreakpointReturns);
-    CString breakpointId_ {};
+    std::string breakpointId_ {};
     std::unique_ptr<Location> location_ {};
 };
 
 class SetInstrumentationBreakpointReturns : public PtBaseReturns {
 public:
-    explicit SetInstrumentationBreakpointReturns(const CString &id) : breakpointId_(id)
+    explicit SetInstrumentationBreakpointReturns(const std::string &id) : breakpointId_(id)
     {}
     ~SetInstrumentationBreakpointReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
@@ -179,12 +179,12 @@ private:
     NO_COPY_SEMANTIC(SetInstrumentationBreakpointReturns);
     NO_MOVE_SEMANTIC(SetInstrumentationBreakpointReturns);
 
-    CString breakpointId_ {};
+    std::string breakpointId_ {};
 };
 
 class SetScriptSourceReturns : public PtBaseReturns {
 public:
-    explicit SetScriptSourceReturns(std::optional<CVector<std::unique_ptr<CallFrame>>> callFrames = std::nullopt,
+    explicit SetScriptSourceReturns(std::optional<std::vector<std::unique_ptr<CallFrame>>> callFrames = std::nullopt,
         std::optional<bool> stackChanged = std::nullopt,
         std::optional<std::unique_ptr<ExceptionDetails>> exceptionDetails = std::nullopt)
         : callFrames_(std::move(callFrames)),
@@ -199,16 +199,16 @@ private:
     NO_COPY_SEMANTIC(SetScriptSourceReturns);
     NO_MOVE_SEMANTIC(SetScriptSourceReturns);
 
-    std::optional<CVector<std::unique_ptr<CallFrame>>> callFrames_ {};
+    std::optional<std::vector<std::unique_ptr<CallFrame>>> callFrames_ {};
     std::optional<bool> stackChanged_ {};
     std::optional<std::unique_ptr<ExceptionDetails>> exceptionDetails_ {};
 };
 
 class GetPropertiesReturns : public PtBaseReturns {
 public:
-    explicit GetPropertiesReturns(CVector<std::unique_ptr<PropertyDescriptor>> descriptor,
-        std::optional<CVector<std::unique_ptr<InternalPropertyDescriptor>>> internalDescripties = std::nullopt,
-        std::optional<CVector<std::unique_ptr<PrivatePropertyDescriptor>>> privateProperties = std::nullopt,
+    explicit GetPropertiesReturns(std::vector<std::unique_ptr<PropertyDescriptor>> descriptor,
+        std::optional<std::vector<std::unique_ptr<InternalPropertyDescriptor>>> internalDescripties = std::nullopt,
+        std::optional<std::vector<std::unique_ptr<PrivatePropertyDescriptor>>> privateProperties = std::nullopt,
         std::optional<std::unique_ptr<ExceptionDetails>> exceptionDetails = std::nullopt)
         : result_(std::move(descriptor)),
           internalPropertyDescripties_(std::move(internalDescripties)),
@@ -223,9 +223,9 @@ private:
     NO_COPY_SEMANTIC(GetPropertiesReturns);
     NO_MOVE_SEMANTIC(GetPropertiesReturns);
 
-    CVector<std::unique_ptr<PropertyDescriptor>> result_ {};
-    std::optional<CVector<std::unique_ptr<InternalPropertyDescriptor>>> internalPropertyDescripties_ {};
-    std::optional<CVector<std::unique_ptr<PrivatePropertyDescriptor>>> privateProperties_ {};
+    std::vector<std::unique_ptr<PropertyDescriptor>> result_ {};
+    std::optional<std::vector<std::unique_ptr<InternalPropertyDescriptor>>> internalPropertyDescripties_ {};
+    std::optional<std::vector<std::unique_ptr<PrivatePropertyDescriptor>>> privateProperties_ {};
     std::optional<std::unique_ptr<ExceptionDetails>> exceptionDetails_ {};
 };
 
@@ -331,7 +331,7 @@ private:
 
 class GetBestEffortCoverageReturns : public PtBaseReturns {
 public:
-    explicit GetBestEffortCoverageReturns(CVector<std::unique_ptr<ScriptCoverage>> result)
+    explicit GetBestEffortCoverageReturns(std::vector<std::unique_ptr<ScriptCoverage>> result)
         : result_(std::move(result))
     {}
     ~GetBestEffortCoverageReturns() override = default;
@@ -342,7 +342,7 @@ private:
     NO_COPY_SEMANTIC(GetBestEffortCoverageReturns);
     NO_MOVE_SEMANTIC(GetBestEffortCoverageReturns);
 
-    CVector<std::unique_ptr<ScriptCoverage>> result_ {};
+    std::vector<std::unique_ptr<ScriptCoverage>> result_ {};
 };
 
 class StartPreciseCoverageReturns : public PtBaseReturns {
@@ -361,7 +361,7 @@ private:
 
 class TakePreciseCoverageReturns : public PtBaseReturns {
 public:
-    explicit TakePreciseCoverageReturns(CVector<std::unique_ptr<ScriptCoverage>> result, size_t tamp)
+    explicit TakePreciseCoverageReturns(std::vector<std::unique_ptr<ScriptCoverage>> result, size_t tamp)
         : result_(std::move(result)),
           timestamp_(tamp)
     {}
@@ -373,13 +373,13 @@ private:
     NO_COPY_SEMANTIC(TakePreciseCoverageReturns);
     NO_MOVE_SEMANTIC(TakePreciseCoverageReturns);
 
-    CVector<std::unique_ptr<ScriptCoverage>> result_ {};
+    std::vector<std::unique_ptr<ScriptCoverage>> result_ {};
     size_t timestamp_ {0};
 };
 
 class TakeTypeProfileturns : public PtBaseReturns {
 public:
-    explicit TakeTypeProfileturns(CVector<std::unique_ptr<ScriptTypeProfile>> result)
+    explicit TakeTypeProfileturns(std::vector<std::unique_ptr<ScriptTypeProfile>> result)
         : result_(std::move(result))
     {}
     ~TakeTypeProfileturns() override = default;
@@ -390,7 +390,7 @@ private:
     NO_COPY_SEMANTIC(TakeTypeProfileturns);
     NO_MOVE_SEMANTIC(TakeTypeProfileturns);
 
-    CVector<std::unique_ptr<ScriptTypeProfile>> result_ {};
+    std::vector<std::unique_ptr<ScriptTypeProfile>> result_ {};
 };
 }  // namespace panda::ecmascript::tooling
 #endif

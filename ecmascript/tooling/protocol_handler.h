@@ -31,7 +31,7 @@ public:
 
     void WaitForDebugger() override;
     void RunIfWaitingForDebugger() override;
-    void ProcessCommand(const CString &msg);
+    void ProcessCommand(const std::string &msg);
     void SendResponse(const DispatchRequest &request, const DispatchResponse &response,
                       const PtBaseReturns &result) override;
     void SendNotification(const PtBaseEvents &events) override;

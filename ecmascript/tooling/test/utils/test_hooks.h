@@ -23,7 +23,7 @@
 namespace panda::ecmascript::tooling::test {
 class TestHooks : public PtHooks {
 public:
-    TestHooks(const CString &testName, const EcmaVM *vm) : vm_(vm)
+    TestHooks(const std::string &testName, const EcmaVM *vm) : vm_(vm)
     {
         runtime_ = std::make_unique<RuntimeImpl>(vm, nullptr);
         debugger_ = std::make_unique<DebuggerImpl>(vm, nullptr, runtime_.get());
@@ -113,7 +113,7 @@ private:
     std::unique_ptr<RuntimeImpl> runtime_ {nullptr};
     std::unique_ptr<DebuggerImpl> debugger_ {nullptr};
     JSDebugger *debugInterface_;
-    CString testName_;
+    std::string testName_;
     TestEvents *test_;
 };
 }  // namespace panda::ecmascript::tooling::test

@@ -38,14 +38,14 @@ JSMethod::JSMethod(const JSPandaFile *jsPandaFile, panda_file::File::EntityId me
 }
 
 // It's not allowed '#' token appear in ECMA function(method) name, which discriminates same names in panda methods.
-CString JSMethod::ParseFunctionName() const
+std::string JSMethod::ParseFunctionName() const
 {
-    CString methodName(utf::Mutf8AsCString(GetName().data));
+    std::string methodName(utf::Mutf8AsCString(GetName().data));
     if (LIKELY(methodName[0] != '#')) {
         return methodName;
     }
     size_t index = methodName.find_last_of('#');
-    return CString(methodName.substr(index + 1));
+    return methodName.substr(index + 1);
 }
 
 void JSMethod::InitializeCallField(uint32_t numVregs, uint32_t numArgs)

@@ -37,9 +37,9 @@ public:
     DispatchResponse GetHeapUsage(double *usedSize, double *totalSize);
     DispatchResponse GetProperties(
         std::unique_ptr<GetPropertiesParams> params,
-        CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc,
-        std::optional<CVector<std::unique_ptr<InternalPropertyDescriptor>>> *outInternalDescs,
-        std::optional<CVector<std::unique_ptr<PrivatePropertyDescriptor>>> *outPrivateProps,
+        std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc,
+        std::optional<std::vector<std::unique_ptr<InternalPropertyDescriptor>>> *outInternalDescs,
+        std::optional<std::vector<std::unique_ptr<PrivatePropertyDescriptor>>> *outPrivateProps,
         std::optional<std::unique_ptr<ExceptionDetails>> *outExceptionDetails);
 
     class DispatcherImpl final : public DispatcherBase {
@@ -73,13 +73,13 @@ private:
 
     template <typename TypedArrayRef>
     void AddTypedArrayRef(Local<ArrayBufferRef> arrayBufferRef, int32_t length,
-        const char* name, CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
+        const char* name, std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
     void AddTypedArrayRefs(Local<ArrayBufferRef> arrayBufferRef,
-        CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
+        std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
     void GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn, bool isAccessorOnly,
-                             CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
+                             std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
     void GetAdditionalProperties(const Local<JSValueRef> &value,
-        CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
+        std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
 
     class Frontend {
     public:
@@ -97,7 +97,7 @@ private:
     Frontend frontend_;
 
     RemoteObjectId curObjectId_ {0};
-    CUnorderedMap<RemoteObjectId, Global<JSValueRef>> properties_ {};
+    std::unordered_map<RemoteObjectId, Global<JSValueRef>> properties_ {};
 
     friend class DebuggerImpl;
 };
