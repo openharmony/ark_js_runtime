@@ -22,12 +22,6 @@
 #include "ecmascript/js_tagged_value.h"
 
 namespace panda::ecmascript::base {
-// NOLINTNEXTLINE(modernize-avoid-c-arrays)
-static constexpr uint16_t SPACE_OR_LINE_TERMINAL[] = {
-    0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x0020, 0x00A0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004,
-    0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200A, 0x2028, 0x2029, 0x202F, 0x205F, 0x3000, 0xFEFF,
-};
-
 constexpr double MIN_RADIX = 2;
 constexpr double MAX_RADIX = 36;
 constexpr double MIN_FRACTION = 0;
@@ -107,7 +101,6 @@ private:
     static char Carry(char current, int radix);
     static double Strtod(const char *str, int exponent, uint8_t radix);
     static CString DecimalsToString(double *numberInteger, double fraction, int radix, double delta);
-    static bool IsNonspace(uint16_t c);
     static bool GotoNonspace(uint8_t **ptr, const uint8_t *end);
     static void GetBase(double d, int digits, int *decpt, char *buf, char *bufTmp, int size);
     static int GetMinmumDigits(double d, int *decpt, char *buf);

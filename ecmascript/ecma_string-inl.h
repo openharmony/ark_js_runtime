@@ -189,6 +189,39 @@ void EcmaString::WriteData(char src, uint32_t start)
         *(GetDataUtf16Writable() + start) = src;
     }
 }
-}  // namespace panda::ecmascript
 
+/* static */
+EcmaString *EcmaString::FastSubUtf8String(const EcmaVM *vm, const JSHandle<EcmaString> &src, uint32_t start,
+                                          uint32_t utf16Len)
+{
+    auto string = AllocStringObject(utf16Len, true, vm);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    Span<uint8_t> dst(string->GetDataUtf8Writable(), utf16Len);
+    Span<const uint8_t> source(src->GetDataUtf8() + start, utf16Len);
+    EcmaString::StringCopy(dst, utf16Len, source, utf16Len);
+
+    ASSERT_PRINT(CanBeCompressed(string), "canBeCompresse does not match the real value!");
+    return string;
+}
+
+/* static */
+EcmaString *EcmaString::FastSubUtf16String(const EcmaVM *vm, const JSHandle<EcmaString> &src, uint32_t start,
+                                           uint32_t utf16Len)
+{
+    bool canBeCompressed = CanBeCompressed(src->GetDataUtf16() + start, utf16Len);
+    auto string = AllocStringObject(utf16Len, canBeCompressed, vm);
+    if (canBeCompressed) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        CopyUtf16AsUtf8(src->GetDataUtf16() + start, string->GetDataUtf8Writable(), utf16Len);
+    } else {
+        uint32_t len = utf16Len * (sizeof(uint16_t) / sizeof(uint8_t));
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        Span<uint16_t> dst(string->GetDataUtf16Writable(), utf16Len);
+        Span<const uint16_t> source(src->GetDataUtf16() + start, utf16Len);
+        EcmaString::StringCopy(dst, len, source, len);
+    }
+    ASSERT_PRINT(canBeCompressed == CanBeCompressed(string), "canBeCompresse does not match the real value!");
+    return string;
+}
+}  // namespace panda::ecmascript
 #endif
