@@ -52,12 +52,6 @@ const JSPandaFile *JSPandaFileManager::LoadAotInfoFromPf(const CString &filename
         return nullptr;
     }
 
-    if (!jsPandaFile->HasTSTypes()) {
-        LOG_ECMA(ERROR) << filename << " has no type info";
-        ReleaseJSPandaFile(jsPandaFile);
-        return nullptr;
-    }
-
     CString methodName;
     auto pos = entryPoint.find_last_of("::");
     if (pos != std::string_view::npos) {

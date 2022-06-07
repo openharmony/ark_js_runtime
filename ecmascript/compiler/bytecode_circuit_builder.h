@@ -351,7 +351,7 @@ class BytecodeCircuitBuilder {
 public:
     explicit BytecodeCircuitBuilder(const BytecodeTranslationInfo &translationInfo, size_t index,
                                     TSLoader *tsLoader, bool enableLog)
-        : tsLoader_(tsLoader), file_(translationInfo.jsPandaFile),
+        : tsLoader_(tsLoader), file_(translationInfo.jsPandaFile), pf_(translationInfo.jsPandaFile->GetPandaFile()),
           method_(translationInfo.methodPcInfos[index].method),
           pcArray_(translationInfo.methodPcInfos[index].pcArray),
           constantPool_(translationInfo.constantPool),
@@ -469,6 +469,7 @@ private:
     std::vector<GateRef> actualArgs_ {};
     TSLoader *tsLoader_ {nullptr};
     const JSPandaFile *file_ {nullptr};
+    const panda_file::File *pf_ {nullptr};
     const JSMethod *method_ {nullptr};
     const std::vector<uint8_t *> pcArray_;
     JSHandle<JSTaggedValue> constantPool_;
