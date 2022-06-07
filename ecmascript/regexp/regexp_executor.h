@@ -493,7 +493,6 @@ public:
                 c1 = *(uint16_t *)cptr;  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
                 if (U16_IS_TRAIL(c1)) {
                     c = static_cast<uint32_t>(U16_GET_SUPPLEMENTARY(c, c1));  // NOLINTNEXTLINE(hicpp-signed-bitwise)
-                    cptr += WIDE_CHAR_SIZE;  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 }
             }
         }
@@ -526,7 +525,6 @@ public:
         const uint8_t *cptr = p;
         if (!isWideChar_) {
             c = *(cptr - 1);  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            cptr -= 1;        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         } else {
             cptr -= WIDE_CHAR_SIZE;           // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
@@ -537,7 +535,6 @@ public:
                 c1 = (reinterpret_cast<const uint16_t *>(cptr))[-1];
                 if (U16_IS_LEAD(c1)) {
                     c = static_cast<uint32_t>(U16_GET_SUPPLEMENTARY(c1, c));  // NOLINTNEXTLINE(hicpp-signed-bitwise)
-                    cptr -= WIDE_CHAR_SIZE;  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 }
             }
         }

@@ -54,6 +54,7 @@ const JSPandaFile *JSPandaFileManager::LoadAotInfoFromPf(const CString &filename
 
     if (!jsPandaFile->HasTSTypes()) {
         LOG_ECMA(ERROR) << filename << " has no type info";
+        ReleaseJSPandaFile(jsPandaFile);
         return nullptr;
     }
 
@@ -67,6 +68,7 @@ const JSPandaFile *JSPandaFileManager::LoadAotInfoFromPf(const CString &filename
     }
 
     PandaFileTranslator::TranslateClasses(jsPandaFile, methodName, methodPcInfos);
+    InsertJSPandaFile(jsPandaFile);
     return jsPandaFile;
 }
 

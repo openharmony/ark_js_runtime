@@ -270,8 +270,7 @@ int SourceTextModule::Instantiate(JSThread *thread, const JSHandle<SourceTextMod
 {
     // 1. Let module be this Source Text Module Record.
     // 2. Assert: module.[[Status]] is not "instantiating" or "evaluating".
-    [[maybe_unused]] ModuleStatus status = module->GetStatus();
-    ASSERT(status != ModuleStatus::INSTANTIATING && status != ModuleStatus::EVALUATING);
+    ASSERT(module->GetStatus() != ModuleStatus::INSTANTIATING && module->GetStatus() != ModuleStatus::EVALUATING);
     // 3. Let stack be a new empty List.
     CVector<JSHandle<SourceTextModule>> stack;
     // 4. Let result be InnerModuleInstantiation(module, stack, 0).
@@ -282,8 +281,7 @@ int SourceTextModule::Instantiate(JSThread *thread, const JSHandle<SourceTextMod
         // a. For each module m in stack, do
         for (auto mm : stack) {
             // i. Assert: m.[[Status]] is "instantiating".
-            [[maybe_unused]] ModuleStatus mmStatus = mm->GetStatus();
-            ASSERT(mmStatus == ModuleStatus::INSTANTIATING);
+            ASSERT(mm->GetStatus() == ModuleStatus::INSTANTIATING);
             // ii. Set m.[[Status]] to "uninstantiated".
             mm->SetStatus(ModuleStatus::UNINSTANTIATED);
             // iii. Set m.[[Environment]] to undefined.
@@ -293,14 +291,12 @@ int SourceTextModule::Instantiate(JSThread *thread, const JSHandle<SourceTextMod
             mm->SetDFSAncestorIndex(SourceTextModule::UNDEFINED_INDEX);
         }
         // b. Assert: module.[[Status]] is "uninstantiated".
-        status = module->GetStatus();
-        ASSERT(status == ModuleStatus::UNINSTANTIATED);
+        ASSERT(module->GetStatus() == ModuleStatus::UNINSTANTIATED);
         // c. return result
         return result;
     }
     // 6. Assert: module.[[Status]] is "instantiated" or "evaluated".
-    status = module->GetStatus();
-    ASSERT(status == ModuleStatus::INSTANTIATED || status == ModuleStatus::EVALUATED);
+    ASSERT(module->GetStatus() == ModuleStatus::INSTANTIATED || module->GetStatus() == ModuleStatus::EVALUATED);
     // 7. Assert: stack is empty.
     ASSERT(stack.empty());
     // 8. Return undefined.
@@ -543,8 +539,7 @@ int SourceTextModule::Evaluate(JSThread *thread, const JSHandle<SourceTextModule
         // a. For each module m in stack, do
         for (auto mm : stack) {
             // i. Assert: m.[[Status]] is "evaluating".
-            [[maybe_unused]] ModuleStatus mmStatus = mm->GetStatus();
-            ASSERT(mmStatus == ModuleStatus::EVALUATING);
+            ASSERT(mm->GetStatus() == ModuleStatus::EVALUATING);
             // ii. Set m.[[Status]] to "evaluated".
             mm->SetStatus(ModuleStatus::EVALUATED);
             // iii. Set m.[[EvaluationError]] to result.
