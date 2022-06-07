@@ -21,14 +21,16 @@
 #include <thread>
 
 #include "libpandabase/macros.h"
+#include "ecmascript/tooling/interface/stream.h"
+#include "ecmascript/mem/tagged_object.h"
 
 namespace panda::ecmascript {
 class HeapSnapshot;
 
 class HeapTrackerSample {
 public:
-    explicit HeapTrackerSample(HeapSnapshot *snapshot, double timeInterval)
-        : timeInterval_(timeInterval), snapshot_(snapshot)
+    explicit HeapTrackerSample(HeapSnapshot *snapshot, double timeInterval, Stream *stream)
+        : timeInterval_(timeInterval), snapshot_(snapshot), stream_(stream)
     {
     }
 
@@ -61,11 +63,13 @@ private:
     std::atomic_bool isInterrupt_ = true;
     double timeInterval_ = 0;
     HeapSnapshot *snapshot_;
+    Stream *stream_ {nullptr};
 };
 
 class HeapTracker {
 public:
-    HeapTracker(HeapSnapshot *snapshot, double timeInterval) : snapshot_(snapshot), sample_(snapshot, timeInterval) {}
+    HeapTracker(HeapSnapshot *snapshot, double timeInterval, Stream *stream)
+        : snapshot_(snapshot), sample_(snapshot, timeInterval, stream) {}
     ~HeapTracker() = default;
 
     void StartTracing()
@@ -78,8 +82,8 @@ public:
         sample_.Stop();
     }
 
-    void AllocationEvent(uintptr_t address);
-    void MoveEvent(uintptr_t address, uintptr_t forward_address);
+    void AllocationEvent(TaggedObject* address);
+    void MoveEvent(uintptr_t address, TaggedObject* forward_address);
 
     NO_COPY_SEMANTIC(HeapTracker);
     NO_MOVE_SEMANTIC(HeapTracker);

@@ -15,7 +15,6 @@
 
 #include "ecmascript/tooling/agent/heapprofiler_impl.h"
 
-
 namespace panda::ecmascript::tooling {
 void HeapProfilerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
 {
@@ -170,54 +169,6 @@ void HeapProfilerImpl::DispatcherImpl::TakeHeapSnapshot(const DispatchRequest &r
     SendResponse(request, response);
 }
 
-class HeapProfilerStream final : public Stream {
-public:
-    explicit HeapProfilerStream(HeapProfilerImpl::Frontend *frontend)
-        : frontend_(frontend) {}
-    
-    void EndOfStream() override {}
-    int GetSize() override
-    {
-        static const int heapProfilerChunkSise = 102400;
-        return heapProfilerChunkSise;
-    }
-    bool WriteChunk(char *data, int size) override
-    {
-        if (!Good()) {
-            return false;
-        }
-        frontend_->AddHeapSnapshotChunk(data, size);
-        return true;
-    }
-    bool Good() override
-    {
-        return frontend_ != nullptr;
-    }
-
-private:
-    NO_COPY_SEMANTIC(HeapProfilerStream);
-    NO_MOVE_SEMANTIC(HeapProfilerStream);
-
-    HeapProfilerImpl::Frontend *frontend_ {nullptr};
-};
-
-class HeapProfilerProgress final : public Progress {
-public:
-    explicit HeapProfilerProgress(HeapProfilerImpl::Frontend *frontend)
-        : frontend_(frontend) {}
-    
-    void ReportProgress(int32_t done, int32_t total) override
-    {
-        frontend_->ReportHeapSnapshotProgress(done, total);
-    }
-
-private:
-    NO_COPY_SEMANTIC(HeapProfilerProgress);
-    NO_MOVE_SEMANTIC(HeapProfilerProgress);
-
-    HeapProfilerImpl::Frontend *frontend_ {nullptr};
-};
-
 bool HeapProfilerImpl::Frontend::AllowNotify() const
 {
     return channel_ != nullptr;
@@ -252,24 +203,37 @@ void HeapProfilerImpl::Frontend::ReportHeapSnapshotProgress(int32_t done, int32_
     channel_->SendNotification(reportHeapSnapshotProgress);
 }
 
-void HeapProfilerImpl::Frontend::HeapStatsUpdate()
+void HeapProfilerImpl::Frontend::HeapStatsUpdate(HeapStat* updateData, int count)
 {
     if (!AllowNotify()) {
         return;
     }
-
+    auto statsDiff = CVector<uint32_t>();
+    for (int i = 0; i < count; ++i) {
+        statsDiff.emplace_back(updateData[i].index_);
+        statsDiff.emplace_back(updateData[i].count_);
+        statsDiff.emplace_back(updateData[i].size_);
+    }
     tooling::HeapStatsUpdate heapStatsUpdate;
+    heapStatsUpdate.SetStatsUpdate(statsDiff);
     channel_->SendNotification(heapStatsUpdate);
 }
 
-void HeapProfilerImpl::Frontend::LastSeenObjectId()
+void HeapProfilerImpl::Frontend::LastSeenObjectId(uint32_t lastSeenObjectId)
 {
     if (!AllowNotify()) {
         return;
     }
 
-    tooling::LastSeenObjectId lastSeenObjectId;
-    channel_->SendNotification(lastSeenObjectId);
+    tooling::LastSeenObjectId lastSeenObjectIdEvent;
+    lastSeenObjectIdEvent.SetLastSeenObjectId(lastSeenObjectId);
+    size_t timestamp = 0;
+    struct timeval tv = {0, 0};
+    gettimeofday(&tv, nullptr);
+    const int THOUSAND = 1000;
+    timestamp = tv.tv_usec + tv.tv_sec * THOUSAND * THOUSAND;
+    lastSeenObjectIdEvent.SetTimestamp(timestamp);
+    channel_->SendNotification(lastSeenObjectIdEvent);
 }
 
 void HeapProfilerImpl::Frontend::ResetProfiles()
@@ -333,10 +297,16 @@ DispatchResponse HeapProfilerImpl::StartSampling([[maybe_unused]]std::unique_ptr
     return DispatchResponse::Ok();
 }
 
-DispatchResponse HeapProfilerImpl::StartTrackingHeapObjects(
-    [[maybe_unused]] std::unique_ptr<StartTrackingHeapObjectsParams> params)
+DispatchResponse HeapProfilerImpl::StartTrackingHeapObjects(std::unique_ptr<StartTrackingHeapObjectsParams> params)
 {
-    bool result = panda::DFXJSNApi::StartHeapTracking(vm_, INTERVAL, true);
+    bool result = false;
+    bool trackAllocations = params->GetTrackAllocations();
+    if (trackAllocations) {
+        result = panda::DFXJSNApi::StartHeapTracking(vm_, INTERVAL, true, &stream_);
+    } else {
+        result = panda::DFXJSNApi::StartHeapTracking(vm_, INTERVAL, true, nullptr);
+    }
+
     if (result) {
         return DispatchResponse::Ok();
     } else {
@@ -352,13 +322,12 @@ DispatchResponse HeapProfilerImpl::StopSampling([[maybe_unused]]std::unique_ptr<
 
 DispatchResponse HeapProfilerImpl::StopTrackingHeapObjects(std::unique_ptr<StopTrackingHeapObjectsParams> params)
 {
-    HeapProfilerStream stream(&frontend_);
     bool result = false;
     if (params->GetReportProgress()) {
         HeapProfilerProgress progress(&frontend_);
-        result = panda::DFXJSNApi::StopHeapTracking(vm_, &stream, &progress);
+        result = panda::DFXJSNApi::StopHeapTracking(vm_, &stream_, &progress);
     } else {
-        result = panda::DFXJSNApi::StopHeapTracking(vm_, &stream, nullptr);
+        result = panda::DFXJSNApi::StopHeapTracking(vm_, &stream_, nullptr);
     }
     if (result) {
         return DispatchResponse::Ok();
@@ -369,12 +338,11 @@ DispatchResponse HeapProfilerImpl::StopTrackingHeapObjects(std::unique_ptr<StopT
 
 DispatchResponse HeapProfilerImpl::TakeHeapSnapshot(std::unique_ptr<StopTrackingHeapObjectsParams> params)
 {
-    HeapProfilerStream stream(&frontend_);
     if (params->GetReportProgress()) {
         HeapProfilerProgress progress(&frontend_);
-        panda::DFXJSNApi::DumpHeapSnapshot(vm_, 0, &stream, &progress, true);
+        panda::DFXJSNApi::DumpHeapSnapshot(vm_, 0, &stream_, &progress, true);
     } else {
-        panda::DFXJSNApi::DumpHeapSnapshot(vm_, 0, &stream, nullptr, true);
+        panda::DFXJSNApi::DumpHeapSnapshot(vm_, 0, &stream_, nullptr, true);
     }
     return DispatchResponse::Ok();
 }
