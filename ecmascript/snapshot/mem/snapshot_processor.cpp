@@ -919,7 +919,7 @@ void SnapshotProcessor::DeserializeSpaceObject(uintptr_t beginAddr, Space* space
         region->aliveObject_ = fileRegion->AliveObject();
         region->wasted_ = fileRegion->wasted_;
 
-        region->SetGCFlag(RegionFlags::NEED_RELOCATE);
+        region->SetGCFlag(RegionGCFlags::NEED_RELOCATE);
 
         size_t liveObjectSize = region->GetHighWaterMark() - region->GetBegin();
         if (space->GetSpaceType() != MemSpaceType::SNAPSHOT_SPACE) {
@@ -1074,7 +1074,7 @@ void SnapshotProcessor::RelocateSpaceObject(Space* space, SnapshotType type, JSM
         if (!current->NeedRelocate()) {
             return;
         }
-        current->ClearGCFlag(RegionFlags::NEED_RELOCATE);
+        current->ClearGCFlag(RegionGCFlags::NEED_RELOCATE);
         size_t allocated = current->GetAllocatedBytes();
         uintptr_t begin = current->GetBegin();
         uintptr_t end = begin + allocated;

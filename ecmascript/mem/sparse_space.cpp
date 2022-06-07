@@ -359,7 +359,7 @@ void OldSpace::SelectCSet()
         RemoveRegion(current);
         DecreaseLiveObjectSize(current->AliveObject());
         allocator_->DetachFreeObjectSet(current);
-        current->SetGCFlag(RegionFlags::IN_COLLECT_SET);
+        current->SetGCFlag(RegionGCFlags::IN_COLLECT_SET);
     });
     sweepState_ = SweepState::NO_SWEEP;
     LOG_ECMA_MEM(DEBUG) << "Select CSet success: number is " << collectRegionSet_.size();
@@ -385,7 +385,7 @@ void OldSpace::CheckRegionSize()
 void OldSpace::RevertCSet()
 {
     EnumerateCollectRegionSet([&](Region *region) {
-        region->ClearGCFlag(RegionFlags::IN_COLLECT_SET);
+        region->ClearGCFlag(RegionGCFlags::IN_COLLECT_SET);
         AddRegion(region);
         allocator_->CollectFreeObjectSet(region);
         IncreaseLiveObjectSize(region->AliveObject());

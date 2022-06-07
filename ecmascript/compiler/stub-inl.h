@@ -1828,10 +1828,10 @@ inline GateRef Stub::InYoungGeneration(GateRef region)
         IntPtr(0));
     if (env_.Is32Bit()) {
         return Int32Equal(Int32And(x,
-            Int32(RegionFlags::VALID_SPACE_MASK)), Int32(RegionFlags::IN_YOUNG_SPACE));
+            Int32(RegionSpaceType::VALID_SPACE_MASK)), Int32(RegionSpaceType::IN_YOUNG_SPACE));
     } else {
         return Int64Equal(Int64And(x,
-            Int64(RegionFlags::VALID_SPACE_MASK)), Int64(RegionFlags::IN_YOUNG_SPACE));
+            Int64(RegionSpaceType::VALID_SPACE_MASK)), Int64(RegionSpaceType::IN_YOUNG_SPACE));
     }
 }
 
