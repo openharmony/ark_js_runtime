@@ -40,7 +40,7 @@ public:
 private:
     bool UpdateType(GateRef gate, const GateType type);
     bool UpdateType(GateRef gate, const GlobalTSTypeRef &typeRef);
-    bool ShouldInfer(const GateRef gate);
+    bool ShouldInfer(const GateRef gate) const;
     bool Infer(GateRef gate);
     bool InferPhiGate(GateRef gate);
     bool SetNumberType(GateRef gate);

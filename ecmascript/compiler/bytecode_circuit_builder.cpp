@@ -2202,7 +2202,7 @@ void BytecodeCircuitBuilder::NewReturn(BytecodeRegion &bb, const uint8_t *pc, Ga
         auto gate = circuit_.NewGate(OpCode(OpCode::RETURN), 0,
                                      { state, depend, Circuit::NullGate(),
                                      Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST)) },
-                                     GateType::Empty());
+                                     GateType::AnyType());
         jsgateToBytecode_[gate] = {bb.id, pc};
     } else if (static_cast<EcmaOpcode>(bytecodeInfo.opcode) == EcmaOpcode::RETURNUNDEFINED_PREF) {
         // handle returnundefined bytecode
@@ -2213,7 +2213,7 @@ void BytecodeCircuitBuilder::NewReturn(BytecodeRegion &bb, const uint8_t *pc, Ga
         auto gate = circuit_.NewGate(OpCode(OpCode::RETURN), 0,
                                      { state, depend, constant,
                                      Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST)) },
-                                     GateType::Empty());
+                                     GateType::AnyType());
         jsgateToBytecode_[gate] = {bb.id, pc};
     }
 }

@@ -113,7 +113,7 @@ def judge_output(args):
                 if "TestInfer:" in item:
                     err_list.append(item.split("&")[1:])
             expect_output = expect_output.replace('\n', '')
-            expect_list = [elements.split(",") for elements in expect_output.split("[")]
+            expect_list = [elements.split(",") for elements in expect_output.split("----")]
             for obj1, obj2 in zip(err_list, expect_list):
                 if not isSubSequence(obj1, obj2):
                     print(">>>>> Expect :", end = " ")

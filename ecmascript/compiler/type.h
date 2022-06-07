@@ -124,6 +124,13 @@ public:
         return GateType(TSPrimitiveType::BIG_INT);
     }
 
+    bool inline IsTSType() const
+    {
+        GlobalTSTypeRef gt = GlobalTSTypeRef(GetType());
+        // 0: TS type
+        return gt.GetFlag() == 0;
+    }
+
     bool inline IsAnyType() const
     {
         return type_ == static_cast<uint32_t>(TSPrimitiveType::ANY);
@@ -266,6 +273,8 @@ public:
     {
         return type_ >= other.type_;
     }
+
+    std::string GetTypeStr() const;
 
 private:
     uint32_t type_ {0};
