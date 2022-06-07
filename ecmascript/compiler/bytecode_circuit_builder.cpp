@@ -149,10 +149,9 @@ std::map<std::pair<uint8_t *, uint8_t *>, std::vector<uint8_t *>> BytecodeCircui
     std::map<uint8_t *, uint8_t*> &byteCodeCurPrePc, std::vector<CfgInfo> &bytecodeBlockInfos)
 {
     // try contains many catch
-    const panda_file::File *file = file_->GetPandaFile();
     std::map<std::pair<uint8_t *, uint8_t *>, std::vector<uint8_t *>> byteCodeException;
-    panda_file::MethodDataAccessor mda(*file, method_->GetMethodId());
-    panda_file::CodeDataAccessor cda(*file, mda.GetCodeId().value());
+    panda_file::MethodDataAccessor mda(*pf_, method_->GetMethodId());
+    panda_file::CodeDataAccessor cda(*pf_, mda.GetCodeId().value());
     cda.EnumerateTryBlocks([this, &byteCodeCurPrePc, &bytecodeBlockInfos, &byteCodeException](
             panda_file::CodeDataAccessor::TryBlock &try_block) {
         auto tryStartOffset = try_block.GetStartPc();
@@ -2324,10 +2323,13 @@ GateRef BytecodeCircuitBuilder::NewPhi(BytecodeRegion &bb, uint16_t reg, bool ac
 
 GateType BytecodeCircuitBuilder::GetRealGateType(const uint16_t reg, const GateType gateType)
 {
-    const panda_file::File *pf = file_->GetPandaFile();
-    auto curType = static_cast<GateType>(tsLoader_->GetGTFromPandaFile(*pf, reg, method_).GetData());
-    auto type = (curType == GateType::JS_ANY) ? gateType : curType;
-    return type;
+    if (file_->HasTSTypes()) {
+        auto curType = static_cast<GateType>(tsLoader_->GetGTFromPandaFile(*pf_, reg, method_).GetData());
+        auto type = (curType == GateType::JS_ANY) ? gateType : curType;
+        return type;
+    }
+
+    return GateType::JS_ANY;
 }
 
 // recursive variables renaming algorithm

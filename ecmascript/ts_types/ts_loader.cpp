@@ -24,6 +24,7 @@
 namespace panda::ecmascript {
 void TSLoader::DecodeTSTypes(const JSPandaFile *jsPandaFile)
 {
+    ASSERT_PRINT(jsPandaFile->HasTSTypes(), "the file has no ts type info");
     JSThread *thread = vm_->GetJSThread();
     ObjectFactory *factory = vm_->GetFactory();
     JSHandle<TSModuleTable> mTable = GetTSModuleTable();
