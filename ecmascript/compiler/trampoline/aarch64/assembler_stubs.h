@@ -168,14 +168,13 @@ private:
 
     static void StackOverflowCheck([[maybe_unused]] ExtendedAssembler *assembler);
 
-    static void PushAsmInterpEntryFrame(ExtendedAssembler *assembler, Register &frameTypeRegister,
-        Register &prevFrameRegister, Register &pcRegister);
+    static void PushAsmInterpEntryFrame(ExtendedAssembler *assembler, bool saveLeave);
 
-    static void PopAsmInterpEntryFrame(ExtendedAssembler *assembler, Register &prevFrameRegister);
+    static void PopAsmInterpEntryFrame(ExtendedAssembler *assembler, bool saveLeave);
 
-    static void PushGeneratorFrameState(ExtendedAssembler *assembler, Register &frameTypeRegister,
-        Register &prevSpRegister, Register &fpRegister, Register &callTargetRegister, Register &methodRegister,
-        Register &contextRegister, Register &pcRegister, Register &operatorRegister);
+    static void PushGeneratorFrameState(ExtendedAssembler *assembler, Register &prevSpRegister, Register &fpRegister,
+        Register &callTargetRegister, Register &methodRegister, Register &contextRegister, Register &pcRegister,
+        Register &operatorRegister);
 
     static void CallBCStub(ExtendedAssembler *assembler, Register &newSp, Register &glue,
         Register &callTarget, Register &method, Register &pc, Register &temp);
@@ -189,6 +188,12 @@ private:
     static void PushArgsSlowPath(ExtendedAssembler *assembler, Register &glueRegister,
         Register &declaredNumArgsRegister, Register &argcRegister, Register &argvRegister, Register &callTargetRegister,
         Register &methodRegister, Register &prevSpRegister, Register &callFieldRegister);
+
+    static void CallGetterSlow(ExtendedAssembler *assembler);
+    static void CallSetterSlow(ExtendedAssembler *assembler);
+    static void CallGetterEntry(ExtendedAssembler *assembler);
+    static void CallSetterEntry(ExtendedAssembler *assembler);
+    static void CallNoExtraSetterEntry(ExtendedAssembler *assembler);
 };
 }  // namespace panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H
