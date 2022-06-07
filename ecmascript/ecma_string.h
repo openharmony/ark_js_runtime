@@ -314,6 +314,10 @@ public:
     // Data can be stored in utf8 or utf16 form according to compressed bit.
     static constexpr size_t DATA_OFFSET = SIZE;  // DATA_OFFSET equal to Empty String size
 
+    static inline EcmaString *FastSubUtf8String(const EcmaVM *vm, const JSHandle<EcmaString> &src, uint32_t start,
+                                                uint32_t utf16Len);
+    static inline EcmaString *FastSubUtf16String(const EcmaVM *vm, const JSHandle<EcmaString> &src, uint32_t start,
+                                                 uint32_t utf16Len);
 private:
     void SetLength(uint32_t length, bool compressed = false)
     {
