@@ -741,6 +741,23 @@ Local<ObjectRef> ObjectRef::New(const EcmaVM *vm)
     return JSNApiHelper::ToLocal<ObjectRef>(object);
 }
 
+Local<ObjectRef> ObjectRef::New(const EcmaVM *vm, void *detach, void *attach)
+{
+    ObjectFactory *factory = vm->GetFactory();
+    JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
+    JSHandle<JSTaggedValue> constructor = env->GetObjectFunction();
+    JSHandle<JSTaggedValue> object(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(constructor), constructor));
+    JSHandle<JSTaggedValue> detachKey = env->GetDetachSymbol();
+    JSHandle<JSTaggedValue> attachKey = env->GetAttachSymbol();
+    JSHandle<JSTaggedValue> detachValue = JSNApiHelper::ToJSHandle(NativePointerRef::New(vm, detach));
+    JSHandle<JSTaggedValue> attachValue = JSNApiHelper::ToJSHandle(NativePointerRef::New(vm, attach));
+    JSTaggedValue::SetProperty(vm->GetJSThread(), object, detachKey, detachValue);
+    RETURN_VALUE_IF_ABRUPT(vm->GetJSThread(), JSValueRef::Exception(vm));
+    JSTaggedValue::SetProperty(vm->GetJSThread(), object, attachKey, attachValue);
+    RETURN_VALUE_IF_ABRUPT(vm->GetJSThread(), JSValueRef::Exception(vm));
+    return JSNApiHelper::ToLocal<ObjectRef>(object);
+}
+
 bool ObjectRef::Set(const EcmaVM *vm, Local<JSValueRef> key, Local<JSValueRef> value)
 {
     [[maybe_unused]] LocalScope scope(vm);

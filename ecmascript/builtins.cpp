@@ -589,6 +589,10 @@ void Builtins::InitializeSymbol(const JSHandle<GlobalEnv> &env, const JSHandle<J
     SetNoneAttributeProperty(symbolFunction, "toPrimitive", toPrimitiveSymbol);
     JSHandle<JSTaggedValue> unscopablesSymbol(factory_->NewPublicSymbolWithChar("Symbol.unscopables"));
     SetNoneAttributeProperty(symbolFunction, "unscopables", unscopablesSymbol);
+    JSHandle<JSTaggedValue> attachSymbol(factory_->NewPublicSymbolWithChar("Symbol.attach"));
+    SetNoneAttributeProperty(symbolFunction, "attach", attachSymbol);
+    JSHandle<JSTaggedValue> detachSymbol(factory_->NewPublicSymbolWithChar("Symbol.detach"));
+    SetNoneAttributeProperty(symbolFunction, "detach", detachSymbol);
 
     // symbol.prototype.description
     PropertyDescriptor descriptionDesc(thread_);
@@ -618,6 +622,8 @@ void Builtins::InitializeSymbol(const JSHandle<GlobalEnv> &env, const JSHandle<J
     env->SetSplitSymbol(thread_, splitSymbol);
     env->SetToPrimitiveSymbol(thread_, toPrimitiveSymbol);
     env->SetUnscopablesSymbol(thread_, unscopablesSymbol);
+    env->SetAttachSymbol(thread_, attachSymbol);
+    env->SetDetachSymbol(thread_, detachSymbol);
 
     // Setup %SymbolPrototype%
     SetStringTagSymbol(env, symbolFuncPrototype, "Symbol");
@@ -673,6 +679,8 @@ void Builtins::InitializeSymbolWithRealm(const JSHandle<GlobalEnv> &realm,
     SetNoneAttributeProperty(symbolFunction, "split", env->GetSplitSymbol());
     SetNoneAttributeProperty(symbolFunction, "toPrimitive", env->GetToPrimitiveSymbol());
     SetNoneAttributeProperty(symbolFunction, "unscopables", env->GetUnscopablesSymbol());
+    SetNoneAttributeProperty(symbolFunction, "attach", env->GetAttachSymbol());
+    SetNoneAttributeProperty(symbolFunction, "detach", env->GetDetachSymbol());
 
     // symbol.prototype.description
     PropertyDescriptor descriptionDesc(thread_);
@@ -703,6 +711,8 @@ void Builtins::InitializeSymbolWithRealm(const JSHandle<GlobalEnv> &realm,
     realm->SetSplitSymbol(thread_, env->GetSplitSymbol());
     realm->SetToPrimitiveSymbol(thread_, env->GetToPrimitiveSymbol());
     realm->SetUnscopablesSymbol(thread_, env->GetUnscopablesSymbol());
+    realm->SetAttachSymbol(thread_, env->GetAttachSymbol());
+    realm->SetDetachSymbol(thread_, env->GetDetachSymbol());
 
     // Setup %SymbolPrototype%
     SetStringTagSymbol(realm, symbolFuncPrototype, "Symbol");
