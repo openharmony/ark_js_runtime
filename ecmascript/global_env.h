@@ -150,7 +150,9 @@ class JSThread;
     V(JSTaggedValue, ModuleNamespaceClass, MODULENAMESPACE_CLASS)                                   \
     V(JSTaggedValue, ObjectLiteralHClassCache, OBJECT_LITERAL_HCLASS_CACHE)                         \
     V(JSTaggedValue, WeakRefKeepObjects, WEAK_REF_KEEP_OBJECTS)                                     \
-    V(JSTaggedValue, FinRegLists, FIN_REG_LISTS)
+    V(JSTaggedValue, FinRegLists, FIN_REG_LISTS)                                                    \
+    V(JSTaggedValue, AttachSymbol, ATTACH_SYMBOL_INDEX)                                             \
+    V(JSTaggedValue, DetachSymbol, DETACH_SYMBOL_INDEX)
 
 class GlobalEnv : public TaggedObject {
 public:
