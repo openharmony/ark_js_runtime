@@ -361,10 +361,10 @@ Local<ObjectRef> LastSeenObjectId::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timestamp")),
-        IntegerRef::New(ecmaVm, timestamp_));
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lastSeenObjectId")),
         IntegerRef::New(ecmaVm, lastSeenObjectId_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timestamp")),
+        NumberRef::New(ecmaVm, timestamp_));
 
     Local<ObjectRef> object = NewObject(ecmaVm);
     object->Set(ecmaVm,

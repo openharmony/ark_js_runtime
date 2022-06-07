@@ -514,7 +514,7 @@ HWTEST_F_L0(DebuggerEventsTest, HeapStatsUpdateToObjectTest)
     HeapStatsUpdate heapStatsUpdate;
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "params");
 
-    heapStatsUpdate.SetStatsUpdate(CVector<int32_t> {});
+    heapStatsUpdate.SetStatsUpdate(CVector<uint32_t> {});
     Local<ObjectRef> object1 = heapStatsUpdate.ToObject(ecmaVm);
     Local<JSValueRef> result = object1->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());

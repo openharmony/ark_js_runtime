@@ -54,13 +54,14 @@ bool HeapProfiler::DumpHeapSnapshot(DumpFormat dumpFormat, Stream *stream, Progr
     return jsonSerializer_->Serialize(snapshot, stream);
 }
 
-bool HeapProfiler::StartHeapTracking(double timeInterval, bool isVmMode)
+bool HeapProfiler::StartHeapTracking(double timeInterval, bool isVmMode, Stream *stream)
 {
     HeapSnapshot *snapshot = MakeHeapSnapshot(SampleType::REAL_TIME, isVmMode);
     if (snapshot == nullptr) {
         return false;
     }
-    heapTracker_ = std::make_unique<HeapTracker>(snapshot, timeInterval);
+    
+    heapTracker_ = std::make_unique<HeapTracker>(snapshot, timeInterval, stream);
     const_cast<EcmaVM *>(vm_)->StartHeapTracking(heapTracker_.get());
     heapTracker_->StartTracing();
     return true;

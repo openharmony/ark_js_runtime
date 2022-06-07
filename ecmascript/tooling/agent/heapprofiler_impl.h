@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_TOOLING_AGENT_HEAPPROFILER_IMPL_H
 #define ECMASCRIPT_TOOLING_AGENT_HEAPPROFILER_IMPL_H
 
+#include <sys/time.h>
 #include "libpandabase/macros.h"
 #include "ecmascript/tooling/base/pt_params.h"
 #include "ecmascript/tooling/base/pt_events.h"
@@ -33,7 +34,8 @@ static const double INTERVAL = 0.05;
 namespace panda::ecmascript::tooling {
 class HeapProfilerImpl final {
 public:
-    explicit HeapProfilerImpl(const EcmaVM *vm, ProtocolChannel *channel) : vm_(vm), frontend_(channel) {}
+    explicit HeapProfilerImpl(const EcmaVM *vm, ProtocolChannel *channel)
+        : vm_(vm), frontend_(channel), stream_(&frontend_) {}
     ~HeapProfilerImpl() = default;
 
     DispatchResponse AddInspectedHeapObject(std::unique_ptr<AddInspectedHeapObjectParams> params);
@@ -79,14 +81,18 @@ public:
         std::unique_ptr<HeapProfilerImpl> heapprofiler_ {};
     };
 
+private:
+    NO_COPY_SEMANTIC(HeapProfilerImpl);
+    NO_MOVE_SEMANTIC(HeapProfilerImpl);
+
     class Frontend {
     public:
         explicit Frontend(ProtocolChannel *channel) : channel_(channel) {}
 
         void AddHeapSnapshotChunk(char *data, int size);
         void ReportHeapSnapshotProgress(int32_t done, int32_t total);
-        void HeapStatsUpdate();
-        void LastSeenObjectId();
+        void HeapStatsUpdate(HeapStat* updateData, int count);
+        void LastSeenObjectId(uint32_t lastSeenObjectId);
         void ResetProfiles();
 
     private:
@@ -95,12 +101,73 @@ public:
         ProtocolChannel *channel_ {nullptr};
     };
 
-private:
-    NO_COPY_SEMANTIC(HeapProfilerImpl);
-    NO_MOVE_SEMANTIC(HeapProfilerImpl);
+    class HeapProfilerStream final : public Stream {
+    public:
+        explicit HeapProfilerStream(Frontend *frontend)
+            : frontend_(frontend) {}
+        
+        void EndOfStream() override {}
+        int GetSize() override
+        {
+            static const int heapProfilerChunkSise = 102400;
+            return heapProfilerChunkSise;
+        }
+        bool WriteChunk(char *data, int size) override
+        {
+            if (!Good()) {
+                return false;
+            }
+            frontend_->AddHeapSnapshotChunk(data, size);
+            return true;
+        }
+        bool Good() override
+        {
+            return frontend_ != nullptr;
+        }
+
+        void UpdateHeapStats(HeapStat* updateData, int count) override
+        {
+            if (!Good()) {
+                return;
+            }
+            frontend_->HeapStatsUpdate(updateData, count);
+        }
+
+        void UpdateLastSeenObjectId(uint32_t lastSeenObjectId) override
+        {
+            if (!Good()) {
+                return;
+            }
+            frontend_->LastSeenObjectId(lastSeenObjectId);
+        }
+
+    private:
+        NO_COPY_SEMANTIC(HeapProfilerStream);
+        NO_MOVE_SEMANTIC(HeapProfilerStream);
+
+        Frontend *frontend_ {nullptr};
+    };
+
+    class HeapProfilerProgress final : public Progress {
+    public:
+        explicit HeapProfilerProgress(Frontend *frontend)
+            : frontend_(frontend) {}
+        
+        void ReportProgress(int32_t done, int32_t total) override
+        {
+            frontend_->ReportHeapSnapshotProgress(done, total);
+        }
+
+    private:
+        NO_COPY_SEMANTIC(HeapProfilerProgress);
+        NO_MOVE_SEMANTIC(HeapProfilerProgress);
+
+        Frontend *frontend_ {nullptr};
+    };
 
     const EcmaVM *vm_ {nullptr};
     Frontend frontend_;
+    HeapProfilerStream stream_;
 };
 }  // namespace panda::ecmascript::tooling
 #endif
