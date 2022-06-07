@@ -161,6 +161,11 @@ std::unique_ptr<struct ProfileInfo> CpuProfiler::StopCpuProfilerForInfo()
     return profileInfo;
 }
 
+void CpuProfiler::SetCpuSamplingInterval(int interval)
+{
+    interval_ = interval;
+}
+
 void CpuProfiler::StopCpuProfilerForFile()
 {
     if (!isProfiling_) {

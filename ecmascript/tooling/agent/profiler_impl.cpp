@@ -28,6 +28,7 @@ void ProfilerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
         { "enable", &ProfilerImpl::DispatcherImpl::Enable },
         { "start", &ProfilerImpl::DispatcherImpl::Start },
         { "stop", &ProfilerImpl::DispatcherImpl::Stop },
+        { "SetSamplingInterval", &ProfilerImpl::DispatcherImpl::SetSamplingInterval },
         { "getBestEffortCoverage", &ProfilerImpl::DispatcherImpl::GetBestEffortCoverage },
         { "stopPreciseCoverage", &ProfilerImpl::DispatcherImpl::StopPreciseCoverage },
         { "takePreciseCoverage", &ProfilerImpl::DispatcherImpl::TakePreciseCoverage },
@@ -71,6 +72,18 @@ void ProfilerImpl::DispatcherImpl::Stop(const DispatchRequest &request)
     DispatchResponse response = profiler_->Stop(&profile);
     StopReturns result(std::move(profile));
     SendResponse(request, response, result);
+}
+
+void ProfilerImpl::DispatcherImpl::SetSamplingInterval(const DispatchRequest &request)
+{
+    std::unique_ptr<SetSamplingIntervalParams> params =
+        SetSamplingIntervalParams::Create(request.GetEcmaVM(), request.GetParams());
+    if (params == nullptr) {
+        SendResponse(request, DispatchResponse::Fail("wrong params"));
+        return;
+    }
+    DispatchResponse response = profiler_->SetSamplingInterval(std::move(params));
+    SendResponse(request, response);
 }
 
 void ProfilerImpl::DispatcherImpl::GetBestEffortCoverage(const DispatchRequest &request)
@@ -182,6 +195,12 @@ DispatchResponse ProfilerImpl::Stop(std::unique_ptr<Profile> *profile)
         return DispatchResponse::Fail("Stop is failure");
     }
     *profile = Profile::FromProfileInfo(*profileInfo);
+    return DispatchResponse::Ok();
+}
+
+DispatchResponse ProfilerImpl::SetSamplingInterval(std::unique_ptr<SetSamplingIntervalParams> params)
+{
+    panda::DFXJSNApi::SetCpuSamplingInterval(params->GetInterval());
     return DispatchResponse::Ok();
 }
 
