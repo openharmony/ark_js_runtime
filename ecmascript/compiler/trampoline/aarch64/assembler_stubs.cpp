@@ -669,23 +669,12 @@ void AssemblerStubs::CallRuntimeWithArgv(ExtendedAssembler *assembler)
 void AssemblerStubs::AsmInterpreterEntry(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(AsmInterpreterEntry));
-    __ CalleeSave();
-    Register glueRegister(X0);
-    Register spRegister(SP);
-    // caller save reg
-    __ Str(glueRegister, MemoryOperand(spRegister, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-    // push asm interpreter entry frame
-    Register frameTypeRegister(X3);
-    Register prevFrameRegister(X4);
-    Register pcRegister(X21);
-    PushAsmInterpEntryFrame(assembler, frameTypeRegister, prevFrameRegister, pcRegister);
+
+    PushAsmInterpEntryFrame(assembler, true);
 
     __ CallAssemblerStub(RTSTUB_ID(JSCallDispatch), false);
 
-    PopAsmInterpEntryFrame(assembler, prevFrameRegister);
-    __ Ldr(glueRegister, MemoryOperand(spRegister, FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
-    __ Str(prevFrameRegister, MemoryOperand(glueRegister, JSThread::GlueData::GetLeaveFrameOffset(false)));
-    __ CalleeRestore();
+    PopAsmInterpEntryFrame(assembler, true);
     __ Ret();
 }
 
@@ -1221,7 +1210,7 @@ void AssemblerStubs::ResumeRspAndDispatch(ExtendedAssembler *assembler)
     __ Br(bcStub);
 }
 
-void AssemblerStubs::ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *assembler)
+void AssemblerStubs::ResumeRspAndReturn(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(ResumeRspAndReturn));
     Register sp(SP);
@@ -1295,16 +1284,81 @@ void AssemblerStubs::ResumeUncaughtFrameAndReturn(ExtendedAssembler *assembler)
     __ Ret();
 }
 
-void AssemblerStubs::CallGetter([[maybe_unused]] ExtendedAssembler *assembler)
+// c++ calling convention
+// X0 - glue
+// X1 - callTarget
+// X2 - method
+// X3 - callField
+// X4 - receiver
+// X5 - value
+void AssemblerStubs::CallGetter(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(CallGetter));
+    Label target;
+
+    PushAsmInterpEntryFrame(assembler, false);
+    __ Bl(&target);
+    PopAsmInterpEntryFrame(assembler, false);
     __ Ret();
+    __ Bind(&target);
+    {
+        __ PushFpAndLr();
+        JSCallCommonEntry(assembler, JSCallMode::CALL_GETTER, CallGetterEntry, CallGetterSlow);
+    }
 }
 
-void AssemblerStubs::CallSetter([[maybe_unused]] ExtendedAssembler *assembler)
+void AssemblerStubs::CallGetterEntry(ExtendedAssembler *assembler)
+{
+    Register receiverRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG0);
+    PushCallThis(assembler, receiverRegister, false);  // receiver
+}
+
+void AssemblerStubs::CallGetterSlow(ExtendedAssembler *assembler)
+{
+    JSCallCommonSlowPath(assembler, JSCallMode::CALL_GETTER, CallGetterEntry, CallGetterEntry);
+}
+
+void AssemblerStubs::CallSetter(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(CallSetter));
+    Label target;
+    PushAsmInterpEntryFrame(assembler, false);
+    __ Bl(&target);
+    PopAsmInterpEntryFrame(assembler, false);
     __ Ret();
+    __ Bind(&target);
+    {
+        __ PushFpAndLr();
+        JSCallCommonEntry(assembler, JSCallMode::CALL_SETTER, CallSetterEntry, CallSetterSlow);
+    }
+}
+
+void AssemblerStubs::CallSetterEntry(ExtendedAssembler *assembler)
+{
+    Register receiverRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG0);
+    Register valueRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG1);
+    __ Str(valueRegister, MemoryOperand(Register(SP), -FRAME_SLOT_SIZE, AddrMode::PREINDEX));    // arg0
+    PushCallThis(assembler, receiverRegister, false);  // receiver
+}
+
+void AssemblerStubs::CallNoExtraSetterEntry(ExtendedAssembler *assembler)
+{
+    constexpr int32_t argc = 1;
+    Register declaredNumArgsRegister = __ AvailableRegister2();
+    Label callargs0NoExtraEntry;
+    __ Cmp(declaredNumArgsRegister.W(), Immediate(argc));
+    __ B(Condition::LO, &callargs0NoExtraEntry);
+    Register valueRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG1);
+    __ Str(valueRegister, MemoryOperand(Register(SP), -FRAME_SLOT_SIZE, AddrMode::PREINDEX));  // arg0
+    // fall through
+    __ Bind(&callargs0NoExtraEntry);
+    Register receiverRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG0);
+    PushCallThis(assembler, receiverRegister, false);  // receiver
+}
+
+void AssemblerStubs::CallSetterSlow(ExtendedAssembler *assembler)
+{
+    JSCallCommonSlowPath(assembler, JSCallMode::CALL_SETTER, CallNoExtraSetterEntry, CallSetterEntry);
 }
 
 // Generate code for generator re-entering asm interpreter
@@ -1314,18 +1368,13 @@ void AssemblerStubs::CallSetter([[maybe_unused]] ExtendedAssembler *assembler)
 void AssemblerStubs::GeneratorReEnterAsmInterp(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(GeneratorReEnterAsmInterp));
-    __ CalleeSave();
     Label pushFrameState;
-    Register glue(X0);
+    Register glue = __ GlueRegister();
     Register contextRegister(X1);
     Register spRegister(SP);
-    // caller save reg
-    __ Str(glue, MemoryOperand(spRegister, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-    // push asm interpreter entry frame
-    Register frameTypeRegister(X2);
-    Register prevFrameRegister(X3);
     Register pc(X21);
-    PushAsmInterpEntryFrame(assembler, frameTypeRegister, prevFrameRegister, pc);
+
+    PushAsmInterpEntryFrame(assembler, true);
 
     Register prevSpRegister(FP);
     Register callTarget(X4);
@@ -1347,16 +1396,12 @@ void AssemblerStubs::GeneratorReEnterAsmInterp(ExtendedAssembler *assembler)
     __ Bind(&pushFrameState);
     __ Mov(newSp, spRegister);
     // push frame state
-    PushGeneratorFrameState(assembler, frameTypeRegister, prevSpRegister, fpRegister, callTarget,
-        method, contextRegister, pc, temp);
+    PushGeneratorFrameState(assembler, prevSpRegister, fpRegister, callTarget, method, contextRegister, pc, temp);
 
     // call bc stub
     CallBCStub(assembler, newSp, glue, callTarget, method, pc, temp);
 
-    PopAsmInterpEntryFrame(assembler, prevFrameRegister);
-    __ Ldr(glue, MemoryOperand(spRegister, FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
-    __ Str(prevFrameRegister, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
-    __ CalleeRestore();
+    PopAsmInterpEntryFrame(assembler, true);
     __ Ret();
 }
 
@@ -1398,6 +1443,7 @@ void AssemblerStubs::PushCallThis(ExtendedAssembler *assembler, Register thisReg
         [[maybe_unused]] TempRegister1Scope scope1(assembler);
         Register tempRegister = __ TempRegister1();
         __ Mov(tempRegister, Immediate(JSTaggedValue::VALUE_UNDEFINED));
+        __ Str(tempRegister, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     } else {
         __ Str(thisRegister, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     }
@@ -1616,58 +1662,75 @@ void AssemblerStubs::StackOverflowCheck([[maybe_unused]] ExtendedAssembler *asse
 {
 }
 
-void AssemblerStubs::PushAsmInterpEntryFrame(ExtendedAssembler *assembler, Register &frameTypeRegister,
-    Register &prevFrameRegister, Register &pcRegister)
+void AssemblerStubs::PushAsmInterpEntryFrame(ExtendedAssembler *assembler, bool saveLeave)
 {
-    __ SaveFpAndLr();
-    // construct asm interpreter entry frame
-    Register glue(X0);
+    Register glue = __ GlueRegister();
     Register sp(SP);
+
+    __ CalleeSave();
+
+    [[maybe_unused]] TempRegister1Scope scope1(assembler);
+    Register prevFrameRegister = __ TempRegister1();
+    [[maybe_unused]] TempRegister2Scope scope2(assembler);
+    Register frameTypeRegister = __ TempRegister2();
+
+    if (saveLeave) {
+        __ Str(glue, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+        // prev managed fp is leave frame or nullptr(the first frame)
+        __ Ldr(prevFrameRegister, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
+    } else {
+        __ Mov(prevFrameRegister, Register(FP));
+    }
+    __ SaveFpAndLr();
     __ Mov(frameTypeRegister, Immediate(static_cast<int64_t>(FrameType::ASM_INTERPRETER_ENTRY_FRAME)));
-    // prev managed fp is leave frame or nullptr(the first frame)
-    __ Ldr(prevFrameRegister, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
+
     // 2 : 2 means pair
     __ Stp(prevFrameRegister, frameTypeRegister, MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
-    __ Mov(pcRegister, Immediate(0));
-    // pc
-    __ Str(pcRegister, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+    __ Str(Register(Zero), MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));  // pc
 }
 
-void AssemblerStubs::PopAsmInterpEntryFrame(ExtendedAssembler *assembler, Register &prevFrameRegister)
+void AssemblerStubs::PopAsmInterpEntryFrame(ExtendedAssembler *assembler, bool saveLeave)
 {
+    Register glue = __ GlueRegister();
     Register sp(SP);
+
+    [[maybe_unused]] TempRegister1Scope scope1(assembler);
+    Register prevFrameRegister = __ TempRegister1();
     // skip pc
     __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE));
     __ Ldr(prevFrameRegister, MemoryOperand(sp, FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
     // skip frame type
     __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE));
+
     __ RestoreFpAndLr();
+    if (saveLeave) {
+        __ Ldr(glue, MemoryOperand(sp, FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
+        __ Str(prevFrameRegister, MemoryOperand(glue, JSThread::GlueData::GetLeaveFrameOffset(false)));
+    }
+    __ CalleeRestore();
 }
 
-void AssemblerStubs::PushGeneratorFrameState(ExtendedAssembler *assembler, Register &frameTypeRegister,
-    Register &prevSpRegister, Register &fpRegister, Register &callTargetRegister, Register &methodRegister,
+void AssemblerStubs::PushGeneratorFrameState(ExtendedAssembler *assembler, Register &prevSpRegister,
+    Register &fpRegister, Register &callTargetRegister, Register &methodRegister,
     Register &contextRegister, Register &pcRegister, Register &operatorRegister)
 {
     Register sp(SP);
-    __ Mov(frameTypeRegister, Immediate(static_cast<int64_t>(FrameType::ASM_INTERPRETER_FRAME)));
-    // frameType and prevSp
-    // 2 : 2 means pair
-    __ Stp(prevSpRegister, frameTypeRegister, MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+    __ Mov(operatorRegister, Immediate(static_cast<int64_t>(FrameType::ASM_INTERPRETER_FRAME)));
+    // 2 : frameType and prevSp
+    __ Stp(prevSpRegister, operatorRegister, MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     __ Ldr(pcRegister, MemoryOperand(methodRegister, JSMethod::GetBytecodeArrayOffset(false)));
     __ Ldr(operatorRegister, MemoryOperand(contextRegister, GeneratorContext::GENERATOR_BC_OFFSET_OFFSET));
     __ Add(pcRegister, operatorRegister, pcRegister);
     __ Add(pcRegister, pcRegister, Immediate(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8)));
     // pc and fp
     __ Stp(fpRegister, pcRegister, MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX)); // 2 : 2 means pair
-    __ Mov(operatorRegister, Immediate(0));
     // jumpSizeAfterCall
-    __ Str(operatorRegister, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
+    __ Str(Register(Zero), MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     __ Ldr(operatorRegister, MemoryOperand(contextRegister, GeneratorContext::GENERATOR_LEXICALENV_OFFSET));
     // env
     __ Str(operatorRegister, MemoryOperand(sp, -FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     __ Ldr(operatorRegister, MemoryOperand(contextRegister, GeneratorContext::GENERATOR_ACC_OFFSET));
-    // acc and callTarget
-    // 2 : 2 means pair
+    // 2 : acc and callTarget
     __ Stp(callTargetRegister, operatorRegister, MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
 }
 
