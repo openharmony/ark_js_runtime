@@ -72,6 +72,7 @@ public:
         parser->Add(&startup_time_);
         parser->Add(&snapshotOutputFile_);
         parser->Add(&enableRuntimeStat_);
+        parser->Add(&logTypeInfer_);
     }
 
     bool EnableArkTools() const
@@ -471,6 +472,16 @@ public:
         snapshotOutputFile_.SetValue(std::move(value));
     }
 
+    bool GetLogTypeInfer() const
+    {
+        return logTypeInfer_.GetValue();
+    }
+
+    void SetLogTypeInfer(bool value)
+    {
+        logTypeInfer_.SetValue(value);
+    }
+
 private:
     static constexpr uint64_t INTERNAL_MEMORY_SIZE_LIMIT_DEFAULT = 2147483648;
     static constexpr uint64_t COMPILER_MEMORY_SIZE_LIMIT_DEFAULT = 268435456;
@@ -535,6 +546,8 @@ private:
         R"(Path to snapshot output file. Default: "snapshot")"};
     PandArg<bool> enableRuntimeStat_ {"enable-runtime-stat", false,
         R"(enable statistics of runtime state. Default: false)"};
+    PandArg<bool> logTypeInfer_ {"log-Type-Infer", false,
+        R"(print aot type infer log. Default: false)"};
 };
 }  // namespace panda::ecmascript
 

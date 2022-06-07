@@ -109,6 +109,7 @@ if (defined(ark_independent_build)) {
       if (is_standard_system) {
         deps += [ "//ark/js_runtime/test/aottest:ark_aot_test" ]
         deps += [ "//ark/js_runtime/test/moduletest:ark_asm_test" ]
+        deps += [ "//ark/js_runtime/test/typeinfer:ark_typeinfer_test" ]
       }
     }
   }
