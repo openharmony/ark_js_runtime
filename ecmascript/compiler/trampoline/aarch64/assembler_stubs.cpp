@@ -785,11 +785,11 @@ void AssemblerStubs::JSCallCommonEntry(ExtendedAssembler *assembler, JSCallMode 
         auto jumpSize = kungfu::AssemblerModule::GetJumpSizeFromJSCallMode(mode);
         [[maybe_unused]] TempRegister1Scope scope1(assembler);
         Register temp = __ TempRegister1();
-        [[maybe_unused]] TempRegister2Scope scope2(assembler);
-        Register frameStateRegister = __ TempRegister2();
         __ Mov(temp, Immediate(static_cast<int>(jumpSize)));
-        __ Sub(frameStateRegister, Register(FP), Immediate(AsmInterpretedFrame::GetSize(false)));
-        __ Str(temp, MemoryOperand(frameStateRegister, AsmInterpretedFrame::GetCallSizeOffset(false)));
+        int64_t offset = static_cast<int64_t>(AsmInterpretedFrame::GetCallSizeOffset(false))
+            - static_cast<int64_t>(AsmInterpretedFrame::GetSize(false));
+        ASSERT(offset < 0);
+        __ Stur(temp, MemoryOperand(Register(FP), offset));
     }
 
     Register declaredNumArgsRegister = __ AvailableRegister2();
@@ -815,7 +815,7 @@ void AssemblerStubs::JSCallCommonEntry(ExtendedAssembler *assembler, JSCallMode 
 // GHC calling convention
 // Input1: for callarg0/1/2/3        Input2: for callrange
 // X19 - glue                        // X19 - glue
-// FP - sp                           // FP - sp
+// FP  - sp                          // FP  - sp
 // X20 - callTarget                  // X20 - callTarget
 // X21 - method                      // X21 - method
 // X22 - callField                   // X22 - callField
@@ -997,7 +997,7 @@ void AssemblerStubs::CallIThisRangeNoExtraEntry(ExtendedAssembler *assembler)
     __ Bind(&pushCallThis);
     {
         Register thisRegister = __ AvailableRegister2();
-        __ Ldr(thisRegister, MemoryOperand(argvRegister, -8));  // 8: this is just before the argv list
+        __ Ldur(thisRegister, MemoryOperand(argvRegister, -8));  // 8: this is just before the argv list
         PushCallThis(assembler, thisRegister, false);
     }
 }
@@ -1201,11 +1201,15 @@ void AssemblerStubs::ResumeRspAndDispatch(ExtendedAssembler *assembler)
 
     Register opcode(X6, W);
     Register bcStub(X7);
-    Register frameStateRegister(X16);
 
-    __ Sub(frameStateRegister, sp, Immediate(AsmInterpretedFrame::GetSize(false)));
-    __ Ldr(Register(SP), MemoryOperand(frameStateRegister, AsmInterpretedFrame::GetFpOffset(false)));  // resume rsp
-    __ Ldr(sp, MemoryOperand(frameStateRegister, AsmInterpretedFrame::GetBaseOffset(false)));  // update sp
+    int64_t fpOffset = static_cast<int64_t>(AsmInterpretedFrame::GetFpOffset(false))
+        - static_cast<int64_t>(AsmInterpretedFrame::GetSize(false));
+    int64_t spOffset = static_cast<int64_t>(AsmInterpretedFrame::GetBaseOffset(false))
+        - static_cast<int64_t>(AsmInterpretedFrame::GetSize(false));
+    ASSERT(fpOffset < 0);
+    ASSERT(spOffset < 0);
+    __ Ldur(Register(SP), MemoryOperand(sp, fpOffset));  // resume rsp
+    __ Ldur(sp, MemoryOperand(sp, spOffset));  // update sp
 
     __ Add(pc, pc, Operand(jumpSize, LSL, 0));
     __ Ldrb(opcode, MemoryOperand(pc, 0));
@@ -1222,10 +1226,10 @@ void AssemblerStubs::ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *asse
 
     [[maybe_unused]] TempRegister1Scope scope1(assembler);
     Register fpRegister = __ TempRegister1();
-    [[maybe_unused]] TempRegister2Scope scope2(assembler);
-    Register frameStateRegister = __ TempRegister2();
-    __ Sub(frameStateRegister, Register(FP), Immediate(AsmInterpretedFrame::GetSize(false)));
-    __ Ldr(fpRegister, MemoryOperand(frameStateRegister, AsmInterpretedFrame::GetFpOffset(false)));
+    int64_t offset = static_cast<int64_t>(AsmInterpretedFrame::GetFpOffset(false))
+        - static_cast<int64_t>(AsmInterpretedFrame::GetSize(false));
+    ASSERT(offset < 0);
+    __ Ldur(fpRegister, MemoryOperand(Register(FP), offset));
     __ Mov(sp, fpRegister);
 
     // return
@@ -1372,7 +1376,7 @@ void AssemblerStubs::CallIThisRangeEntry(ExtendedAssembler *assembler)
     }
     __ Bind(&pushCallThis);
     Register thisRegister = __ AvailableRegister2();
-    __ Ldr(thisRegister, MemoryOperand(argvRegister, -8));  // 8: this is just before the argv list
+    __ Ldur(thisRegister, MemoryOperand(argvRegister, -8));  // 8: this is just before the argv list
     PushCallThis(assembler, thisRegister, false);
 }
 
@@ -1600,6 +1604,7 @@ void AssemblerStubs::ConstructEcmaRuntimeCallInfo(ExtendedAssembler *assembler, 
     Register sp(SP);
     __ Sub(sp, sp, Immediate(sizeof(EcmaRuntimeCallInfo)));
     __ Str(thread, MemoryOperand(sp, EcmaRuntimeCallInfo::GetThreadOffset()));
+    __ And(numArgs, numArgs, LogicalImmediate::Create(0x00000000FFFFFFFF, RegXSize));
     __ Str(numArgs, MemoryOperand(sp, EcmaRuntimeCallInfo::GetNumArgsOffset()));
     __ Str(stackArgs, MemoryOperand(sp, EcmaRuntimeCallInfo::GetStackArgsOffset()));
 }
@@ -1705,8 +1710,8 @@ void AssemblerStubs::CallNativeEntry(ExtendedAssembler *assembler)
     __ Ldr(nativeCode, MemoryOperand(method, JSMethod::GetBytecodeArrayOffset(false)));
     CallNativeInternal(assembler, glue, argc, argv, nativeCode);
 
-    // 40: skip function
-    __ Add(sp, sp, Immediate(40));
+    // 32: skip function
+    __ Add(sp, sp, Immediate(32));
     __ Ret();
 }
 

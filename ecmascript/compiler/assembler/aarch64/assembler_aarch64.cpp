@@ -335,6 +335,30 @@ void AssemblerAarch64::Str(const Register &rt, const MemoryOperand &operand)
     UNREACHABLE();
 }
 
+void AssemblerAarch64::Ldur(const Register &rt, const MemoryOperand &operand)
+{
+    bool regX = !rt.IsW();
+    uint32_t op = LDUR_Offset;
+    ASSERT(operand.IsImmediateOffset());
+    uint64_t imm = static_cast<uint64_t>(operand.GetImmediate().Value());
+    // 30: 30bit indicate the size of LDUR Reg
+    uint32_t instructionCode = (regX << 30) | op | LoadAndStoreImm(imm, true)
+                               | Rn(operand.GetRegBase().GetId()) | Rt(rt.GetId());
+    EmitU32(instructionCode);
+}
+
+void AssemblerAarch64::Stur(const Register &rt, const MemoryOperand &operand)
+{
+    bool regX = !rt.IsW();
+    uint32_t op = STUR_Offset;
+    ASSERT(operand.IsImmediateOffset());
+    uint64_t imm = static_cast<uint64_t>(operand.GetImmediate().Value());
+    // 30: 30bit indicate the size of LDUR Reg
+    uint32_t instructionCode = (regX << 30) | op | LoadAndStoreImm(imm, true)
+                               | Rn(operand.GetRegBase().GetId()) | Rt(rt.GetId());
+    EmitU32(instructionCode);
+}
+
 void AssemblerAarch64::Mov(const Register &rd, const Immediate &imm)
 {
     ASSERT_PRINT(!rd.IsSp(), "sp can't load immediate, please use add instruction");

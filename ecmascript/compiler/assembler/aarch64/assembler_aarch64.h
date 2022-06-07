@@ -291,6 +291,8 @@ public:
     void Ldrh(const Register &rt, const MemoryOperand &operand);
     void Ldrb(const Register &rt, const MemoryOperand &operand);
     void Str(const Register &rt, const MemoryOperand &operand);
+    void Ldur(const Register &rt, const MemoryOperand &operand);
+    void Stur(const Register &rt, const MemoryOperand &operand);
     void Mov(const Register &rd, const Immediate &imm);
     void Mov(const Register &rd, const Register &rm);
     void Movz(const Register &rd, uint64_t imm, int shift);
