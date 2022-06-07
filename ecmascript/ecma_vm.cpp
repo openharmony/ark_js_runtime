@@ -229,6 +229,7 @@ bool EcmaVM::InitializeFinish()
 
 EcmaVM::~EcmaVM()
 {
+    LOG(INFO, RUNTIME) << "Destruct ecma_vm, vm address is: " << this;
     vmInitialized_ = false;
     Taskpool::GetCurrentTaskpool()->Destroy();
 
