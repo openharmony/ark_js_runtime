@@ -24,4 +24,59 @@ bool Type::IsBitset() const
 }
 
 Type::~Type() {}
+
+std::string GateType::GetTypeStr() const
+{
+    GlobalTSTypeRef gt = GlobalTSTypeRef(GetType());
+    ASSERT(gt.GetFlag() == 0);
+    if (IsPrimitiveTypeKind()) {
+        auto primitive = static_cast<TSPrimitiveType>(gt.GetLocalId());
+        switch (primitive) {
+            case TSPrimitiveType::ANY:
+                return "any";
+            case TSPrimitiveType::NUMBER:
+                return "number";
+            case TSPrimitiveType::BOOLEAN:
+                return "boolean";
+            case TSPrimitiveType::VOID_TYPE:
+                return "void";
+            case TSPrimitiveType::STRING:
+                return "string";
+            case TSPrimitiveType::SYMBOL:
+                return "symbol";
+            case TSPrimitiveType::NULL_TYPE:
+                return "null";
+            case TSPrimitiveType::UNDEFINED:
+                return "undefined";
+            case TSPrimitiveType::INT:
+                return "int";
+            case TSPrimitiveType::BIG_INT:
+                return "big_int";
+            default:
+                break;
+        }
+    }
+    auto typeKind = static_cast<TSTypeKind>(gt.GetKind());
+    switch (typeKind) {
+        case TSTypeKind::CLASS:
+            return "class";
+        case TSTypeKind::CLASS_INSTANCE:
+            return "class_instance";
+        case TSTypeKind::FUNCTION:
+            return "function";
+        case TSTypeKind::UNION:
+            return "union";
+        case TSTypeKind::ARRAY:
+            return "array";
+        case TSTypeKind::OBJECT:
+            return "object";
+        case TSTypeKind::IMPORT:
+            return "import";
+        case TSTypeKind::INTERFACE_KIND:
+            return "interface";
+        default:
+            break;
+    }
+    return "gatetype:" + std::to_string(gt.GetType());
+}
 };  // namespace panda::ecmascript::kungfu

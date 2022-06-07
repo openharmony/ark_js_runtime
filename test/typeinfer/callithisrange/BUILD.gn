@@ -11,18 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-group("ark_typeinfer_test") {
-  testonly = true
-  deps = [
-    "bitwise_op:bitwise_opAotTypeInferAction",
-    "callarg0dyn:callarg0dynAotTypeInferAction",
-    "callarg1dyn:callarg1dynAotTypeInferAction",
-    "callargs2dyn:callargs2dynAotTypeInferAction",
-    "callargs3dyn:callargs3dynAotTypeInferAction",
-    "callirangedyn:callirangedynAotTypeInferAction",
-    "callithisrange:callithisrangeAotTypeInferAction",
-    "ldobjbyname:ldobjbynameAotTypeInferAction",
-    "ldobjbyvalue:ldobjbyvalueAotTypeInferAction",
-    "logic_op:logic_opAotTypeInferAction",
-  ]
+import("//ark/js_runtime/test/test_helper.gni")
+
+host_typeinfer_test_action("callithisrange") {
+  deps = []
 }
