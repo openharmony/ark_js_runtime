@@ -27,18 +27,10 @@ if (defined(ark_independent_build)) {
 
 config("include_llvm") {
   if (compile_llvm_online) {
-    if (compiler_llvm_12) {
-      include_dirs = [
-        "//third_party/third_party_llvm-project/build/include",
-        "//third_party/third_party_llvm-project/llvm/include/",
-        ]
-    } else {
-        include_dirs = [
-        "//third_party/llvm-project/build/include",
-        "//third_party/llvm-project/llvm/include/",
-        ]
-    }
-
+    include_dirs = [
+      "//third_party/third_party_llvm-project/build/include",
+      "//third_party/third_party_llvm-project/llvm/include/",
+    ]
   } else {
     include_dirs = [
       "//prebuilts/ark_tools/ark_js_prebuilts/llvm_prebuilts/llvm/include",
@@ -86,11 +78,7 @@ source_set("libark_jsoptimizer_set") {
   ]
 
   if (compile_llvm_online) {
-    if (compiler_llvm_12) {
-      lib_dirs = [ "//third_party/third_party_llvm-project/build/lib" ]
-    } else {
-      lib_dirs = [ "//third_party/llvm-project/build/lib" ]
-    }
+    lib_dirs = [ "//third_party/third_party_llvm-project/build/lib" ]
   } else {
     lib_dirs =
         [ "//prebuilts/ark_tools/ark_js_prebuilts/llvm_prebuilts/build/lib" ]
@@ -154,26 +142,18 @@ source_set("libark_jsoptimizer_set") {
     "LLVMX86Desc",
     "LLVMX86Disassembler",
     "LLVMX86Info",
+    "LLVMFrontendOpenMP",
+    "LLVMBitWriter",
   ]
-  if (compile_llvm_online && compiler_llvm_12) {
-    libs += [
-      "LLVMX86Utils",
-    ]
-  } else {
-    libs += [
-      "LLVMFrontendOpenMP",
-      "LLVMBitWriter",
-    ]
-  }
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
   ]
 
-  #if (compile_llvm_online) {
-  #  deps += [ ":build_llvm_libs" ]
-  #}
+  if (compile_llvm_online) {
+    deps += [ ":build_llvm_libs" ]
+  }
 }
 
 source_set("ark_stub_compiler_set") {

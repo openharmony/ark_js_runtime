@@ -149,12 +149,6 @@ bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t 
     uintptr_t *fp = reinterpret_cast<uintptr_t *>(frameFp);
     uintptr_t callsiteFp = *fp;
     uintptr_t callSiteSp = FrameHandler::GetPrevFrameCallSiteSp(reinterpret_cast<JSTaggedType *>(frameFp), curPc);
-    // std::cout << std::hex << " callSiteAddr:0x" << callSiteAddr << " curPc:0x" << curPc
-    //     << " callsiteFp:0x" << callsiteFp
-    //     << " callSiteSp:0x" << callSiteSp
-    //     << " stack size:0x" << (callsiteFp- callSiteSp)
-    //     << std::endl;
-    ASSERT(callsiteFp - callSiteSp >= 8);
     uintptr_t address = 0;
     uintptr_t base = 0;
     uintptr_t derived = 0;
