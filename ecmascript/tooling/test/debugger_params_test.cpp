@@ -553,4 +553,58 @@ HWTEST_F_L0(DebuggerParamsTest, StartPreciseCoverageParamToObjectTest)
     ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
     ASSERT_TRUE(result->IsTrue());
 }
+
+HWTEST_F_L0(DebuggerParamsTest, SetSamplingIntervalParamsCreateTest)
+{
+    CString msg;
+    std::unique_ptr<SetSamplingIntervalParams> objectData;
+
+    //  abnormal params of null msg
+    msg = CString() + R"({})";
+    objectData = SetSamplingIntervalParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of unexist key params
+    msg = CString() + R"({"id":0,"method":"Debugger.Test"})";
+    objectData = SetSamplingIntervalParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of null params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    objectData = SetSamplingIntervalParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    // abnormal params of unknown params.sub-key
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
+    objectData = SetSamplingIntervalParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
+            "interval":"500"}})";
+    objectData = SetSamplingIntervalParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    EXPECT_EQ(objectData, nullptr);
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"interval":500}})";
+    objectData = SetSamplingIntervalParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(objectData, nullptr);
+    EXPECT_EQ(objectData->GetInterval(), 500);
+}
+
+HWTEST_F_L0(DebuggerParamsTest, SetSamplingIntervalParamsToObjectTest)
+{
+    CString msg;
+    std::unique_ptr<SetSamplingIntervalParams> setSamplingIntervalData;
+    Local<StringRef> tmpStr;
+
+    msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{"interval":500}})";
+    setSamplingIntervalData = SetSamplingIntervalParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(setSamplingIntervalData, nullptr);
+    Local<ObjectRef> object = setSamplingIntervalData->ToObject(ecmaVm);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "interval");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 500);
+}
 }  // namespace panda::test

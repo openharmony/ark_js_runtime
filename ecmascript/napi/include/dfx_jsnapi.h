@@ -67,6 +67,7 @@ public:
     static void StopCpuProfilerForFile();
     static void StartCpuProfilerForInfo(const EcmaVM *vm);
     static std::unique_ptr<ProfileInfo> StopCpuProfilerForInfo();
+    static void SetCpuSamplingInterval(int interval);
 #endif
 
     static void ResumeVM(const EcmaVM *vm);
