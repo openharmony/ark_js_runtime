@@ -247,17 +247,6 @@ public:
 
     void WaitRunningTaskFinished();
 
-    /*
-     * Concurrent marking related configurations and utilities.
-     */
-
-    void EnableConcurrentMarking(bool flag);
-
-    bool ConcurrentMarkingEnabled() const
-    {
-        return concurrentMarkingEnabled_;
-    }
-
     void TryTriggerConcurrentMarking();
 
     void TriggerConcurrentMarking();
@@ -503,8 +492,6 @@ private:
     MarkType markType_ {MarkType::MARK_YOUNG};
 
     bool parallelGC_ {true};
-    bool concurrentMarkingEnabled_ {true};
-    bool disableConcurrentMarkRequested_ {false};
     bool fullGCRequested_ {false};
 
     size_t globalSpaceAllocLimit_ {0};
@@ -520,7 +507,6 @@ private:
     // parallel marker task number.
     uint32_t maxMarkTaskCount_ {0};
     // parallel evacuator task number.
-    uint32_t initialEvacuateTaskCount_ {0};
     uint32_t maxEvacuateTaskCount_ {0};
     os::memory::Mutex waitTaskFinishedMutex_;
     os::memory::ConditionVariable waitTaskFinishedCV_;
