@@ -1278,7 +1278,8 @@ void AssemblerStubsX64::JSCallCommonEntry(ExtendedAssembler *assembler, JSCallMo
 
     if (assembler->FromInterpreterHandler()) {
         auto jumpSize = kungfu::AssemblerModule::GetJumpSizeFromJSCallMode(mode);
-        auto offset = AsmInterpretedFrame::GetCallSizeOffset(false) - AsmInterpretedFrame::GetSize(false);
+        int32_t offset = static_cast<int32_t>(
+            AsmInterpretedFrame::GetCallSizeOffset(false) - AsmInterpretedFrame::GetSize(false));
         __ Movq(static_cast<int>(jumpSize), Operand(rbp, offset));
     }
 

@@ -340,6 +340,7 @@ void AssemblerStubs::CallBuiltinTrampoline(ExtendedAssembler *assembler)
     // construct leave frame and callee save
     Register frameType(X1);
     __ Mov(frameType, Immediate(static_cast<int64_t>(FrameType::LEAVE_FRAME)));
+    // 2 : 2 means pair
     __ Stp(nativeFuncAddr, frameType, MemoryOperand(sp, -FRAME_SLOT_SIZE * 2, AddrMode::PREINDEX));
 
     // load runtime trampoline address
@@ -353,10 +354,12 @@ void AssemblerStubs::CallBuiltinTrampoline(ExtendedAssembler *assembler)
     __ Sub(thread, glue, glueToThread);   // thread
     __ Str(thread, MemoryOperand(sp, 0));
     Register argC(X0);
+    // 1 : 1 means argC id
     __ Ldr(argC, MemoryOperand(fp, GetStackArgOffSetToFp(1)));  // argc
     __ Sub(argC, argC, Immediate(NUM_MANDATORY_JSFUNC_ARGS));
     __ Str(argC, MemoryOperand(sp, EcmaRuntimeCallInfo::GetNumArgsOffset()));
     Register argV(X0);
+    // 2 : 2 means argV id
     __ Add(argV, fp, Immediate(GetStackArgOffSetToFp(2)));    // argV
     __ Str(argV, MemoryOperand(sp, EcmaRuntimeCallInfo::GetStackArgsOffset()));
 

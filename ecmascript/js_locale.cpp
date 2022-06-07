@@ -134,7 +134,6 @@ bool JSLocale::IsValidTimeZoneName(const icu::TimeZone &tz)
 void JSLocale::HandleLocaleExtension(size_t &start, size_t &extensionEnd,
                                      const std::string result, size_t len)
 {
-    bool flag = false;
     while (start < len - INTL_INDEX_TWO) {
         if (result[start] != '-') {
             start++;
@@ -142,13 +141,9 @@ void JSLocale::HandleLocaleExtension(size_t &start, size_t &extensionEnd,
         }
         if (result[start + INTL_INDEX_TWO] == '-') {
             extensionEnd = start;
-            flag = true;
             break;
         }
-        if (!flag) {
-            start++;
-        }
-        start += INTL_INDEX_TWO;
+        start += INTL_INDEX_THREE;
     }
 }
 
