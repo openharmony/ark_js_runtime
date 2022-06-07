@@ -80,10 +80,6 @@ EcmaString *EcmaString::Concat(const JSHandle<EcmaString> &str1Handle, const JSH
 EcmaString *EcmaString::FastSubString(const JSHandle<EcmaString> &src, uint32_t start, uint32_t utf16Len,
                                       const EcmaVM *vm)
 {
-    if (utf16Len == 0) {
-        return vm->GetFactory()->GetEmptyString().GetObject<EcmaString>();
-    }
-
     if (src->IsUtf8()) {
         return FastSubUtf8String(vm, src, start, utf16Len);
     }
