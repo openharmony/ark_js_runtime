@@ -70,28 +70,28 @@ void Space::EnumerateRegionsWithRecord(const Callback &cb) const
     EnumerateRegions(cb, recordRegion_);
 }
 
-RegionFlags Space::GetRegionFlag() const
+RegionSpaceType Space::GetRegionFlag() const
 {
-    RegionFlags flags = RegionFlags::UNINITIALIZED;
+    RegionSpaceType flags = RegionSpaceType::UNINITIALIZED;
     switch (spaceType_) {
         case MemSpaceType::OLD_SPACE:
         case MemSpaceType::LOCAL_SPACE:
-            flags = RegionFlags::IN_OLD_SPACE;
+            flags = RegionSpaceType::IN_OLD_SPACE;
             break;
         case MemSpaceType::SEMI_SPACE:
-            flags = RegionFlags::IN_YOUNG_SPACE;
+            flags = RegionSpaceType::IN_YOUNG_SPACE;
             break;
         case MemSpaceType::HUGE_OBJECT_SPACE:
-            flags = RegionFlags::IN_HUGE_OBJECT_SPACE;
+            flags = RegionSpaceType::IN_HUGE_OBJECT_SPACE;
             break;
         case MemSpaceType::MACHINE_CODE_SPACE:
-            flags = RegionFlags::IN_MACHINE_CODE_SPACE;
+            flags = RegionSpaceType::IN_MACHINE_CODE_SPACE;
             break;
         case MemSpaceType::NON_MOVABLE:
-            flags = RegionFlags::IN_NON_MOVABLE_SPACE;
+            flags = RegionSpaceType::IN_NON_MOVABLE_SPACE;
             break;
         case MemSpaceType::SNAPSHOT_SPACE:
-            flags = RegionFlags::IN_SNAPSHOT_SPACE;
+            flags = RegionSpaceType::IN_SNAPSHOT_SPACE;
             break;
         default:
             UNREACHABLE();

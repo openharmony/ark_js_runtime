@@ -48,7 +48,7 @@ inline RememberedSet *Region::GetOrCreateOldToNewRememberedSet()
     if (UNLIKELY(oldToNewSet_ == nullptr)) {
         os::memory::LockHolder lock(lock_);
         if (oldToNewSet_ == nullptr) {
-            if (sweepingRSet_ != nullptr && IsGCFlagSet(RegionFlags::HAS_BEEN_SWEPT)) {
+            if (sweepingRSet_ != nullptr && IsGCFlagSet(RegionGCFlags::HAS_BEEN_SWEPT)) {
                 oldToNewSet_ = sweepingRSet_;
                 sweepingRSet_ = nullptr;
             } else {

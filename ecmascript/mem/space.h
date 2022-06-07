@@ -119,7 +119,7 @@ public:
         return spaceType_;
     }
 
-    inline RegionFlags GetRegionFlag() const;
+    inline RegionSpaceType GetRegionFlag() const;
 
     uintptr_t GetAllocateAreaBegin() const
     {
