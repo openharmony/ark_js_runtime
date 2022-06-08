@@ -426,6 +426,12 @@ CString *HeapSnapshot::GenerateNodeName(TaggedObject *entry)
             return GetString("PlainArray");
         case JSType::JS_API_PLAIN_ARRAY_ITERATOR:
             return GetString("PlainArrayIterator");
+        case JSType::JS_CJS_EXPORTS:
+            return GetString("CJS Exports");
+        case JSType::JS_CJS_MODULE:
+            return GetString("CJS Module");
+        case JSType::JS_CJS_REQUIRE:
+            return GetString("CJS Require");
         default:
             break;
     }

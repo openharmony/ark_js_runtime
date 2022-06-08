@@ -22,6 +22,7 @@
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/frames.h"
+#include "ecmascript/require/js_cjs_module.h"
 
 namespace panda::ecmascript {
 class ConstantPool;
@@ -57,6 +58,7 @@ public:
     static inline JSTaggedValue GetRuntimeProfileTypeInfo(JSTaggedType *sp);
     static inline bool UpdateHotnessCounter(JSThread* thread, JSTaggedType *sp, JSTaggedValue acc, int32_t offset);
     static inline void NotifyBytecodePcChanged(JSThread *thread);
+    static inline const JSPandaFile *GetNativeCallPandafile(JSThread *thread);
     static inline JSTaggedValue GetThisFunction(JSTaggedType *sp);
     static inline JSTaggedValue GetNewTarget(JSTaggedType *sp);
     static inline uint32_t GetNumArgs(JSTaggedType *sp, uint32_t restIdx, uint32_t &startIdx);

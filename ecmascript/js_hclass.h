@@ -154,6 +154,9 @@ class ProtoChangeDetails;
         JS_BIGUINT64_ARRAY,     /* JS_TYPED_ARRAY_END ///////////////////////////////////////////////////////////// */ \
         JS_PRIMITIVE_REF, /* number\boolean\string. SPECIAL indexed objects end, DON'T CHANGE HERE ////////-PADDING */ \
         JS_MODULE_NAMESPACE, /* ///////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_CJS_MODULE, /* /////////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_CJS_EXPORTS, /* ////////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_CJS_REQUIRE, /* ////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_GLOBAL_OBJECT, /* JS_OBJECT_END/////////////////////////////////////////////////////////////////-PADDING */ \
         JS_PROXY, /* ECMA_OBJECT_END ////////////////////////////////////////////////////////////////////////////// */ \
                                                                                                                        \
@@ -1101,6 +1104,21 @@ public:
     inline bool IsSourceTextModule() const
     {
         return GetObjectType() == JSType::SOURCE_TEXT_MODULE_RECORD;
+    }
+
+    inline bool IsJSCjsExports() const
+    {
+        return GetObjectType() == JSType::JS_CJS_EXPORTS;
+    }
+
+    inline bool IsJSCjsModule() const
+    {
+        return GetObjectType() == JSType::JS_CJS_MODULE;
+    }
+
+    inline bool IsJSCjsRequire() const
+    {
+        return GetObjectType() == JSType::JS_CJS_REQUIRE;
     }
 
     inline bool IsImportEntry() const

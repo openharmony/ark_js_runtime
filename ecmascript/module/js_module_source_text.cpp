@@ -121,8 +121,8 @@ JSHandle<SourceTextModule> SourceTextModule::HostResolveImportedModule(JSThread 
         RETURN_HANDLE_IF_ABRUPT_COMPLETION(SourceTextModule, thread);
     }
     CString moduleFullname;
-    if (thread->GetEcmaVM()->GetResolvePathCallback() != nullptr) {
-        auto resolvePathCallback = thread->GetEcmaVM()->GetResolvePathCallback();
+    ResolvePathCallback resolvePathCallback = thread->GetEcmaVM()->GetResolvePathCallback();
+    if (resolvePathCallback != nullptr) {
         std::string dirPath = std::string(baseFilename);
         std::string requestPath = std::string(moduleFilename);
         std::string callbackModuleName = resolvePathCallback(dirPath, requestPath);

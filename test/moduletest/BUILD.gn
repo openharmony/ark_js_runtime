@@ -39,6 +39,7 @@ group("ark_js_moduletest") {
     "promise:promiseAction",
     "proxy:proxyAction",
     "regexpcallthrow:regexpcallthrowAction",
+    "require:requireAction",
     "spreadoperator:spreadoperatorAction",
     "stackoverflow:stackoverflowAction",
     "throwdyn:throwdynAction",

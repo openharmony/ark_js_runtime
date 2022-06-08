@@ -74,6 +74,10 @@ template("host_moduletest_action") {
   if (defined(invoker.is_module) && invoker.is_module) {
     _is_module_ = true
   }
+  _is_commonjs_ = false
+  if (defined(invoker.is_commonjs) && invoker.is_commonjs) {
+    _is_commonjs_ = true
+  }
 
   _test_js_path_ = "./${_target_name_}.js"
   _test_abc_path_ = "$target_out_dir/${_target_name_}.abc"
@@ -87,6 +91,9 @@ template("host_moduletest_action") {
     extra_args = [ "--debug" ]
     if (_is_module_) {
       extra_args += [ "--module" ]
+    }
+    if (_is_commonjs_) {
+      extra_args += [ "--commonjs" ]
     }
 
     in_puts = [
