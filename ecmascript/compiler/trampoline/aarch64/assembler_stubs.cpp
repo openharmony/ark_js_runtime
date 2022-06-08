@@ -1692,11 +1692,12 @@ void AssemblerStubs::PushAsmInterpEntryFrame(ExtendedAssembler *assembler, bool 
 
 void AssemblerStubs::PopAsmInterpEntryFrame(ExtendedAssembler *assembler, bool saveLeave)
 {
-    Register glue = __ GlueRegister();
     Register sp(SP);
 
     [[maybe_unused]] TempRegister1Scope scope1(assembler);
     Register prevFrameRegister = __ TempRegister1();
+    [[maybe_unused]] TempRegister2Scope scope2(assembler);
+    Register glue = __ TempRegister2();
     // skip pc
     __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE));
     __ Ldr(prevFrameRegister, MemoryOperand(sp, FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
