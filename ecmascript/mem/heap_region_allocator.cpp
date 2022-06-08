@@ -26,8 +26,8 @@ Region *HeapRegionAllocator::AllocateAlignedRegion(Space *space, size_t capacity
         LOG_ECMA_MEM(FATAL) << "capacity must have a size bigger than 0";
         UNREACHABLE();
     }
-    RegionSpaceType flags = space->GetRegionFlag();
-    bool isRegular = (flags == RegionSpaceType::IN_HUGE_OBJECT_SPACE) ? false : true;
+    RegionSpaceFlag flags = space->GetRegionFlag();
+    bool isRegular = (flags == RegionSpaceFlag::IN_HUGE_OBJECT_SPACE) ? false : true;
     auto pool = MemMapAllocator::GetInstance()->Allocate(capacity, DEFAULT_REGION_SIZE, isRegular);
     void *mapMem = pool.GetMem();
     if (mapMem == nullptr) {
