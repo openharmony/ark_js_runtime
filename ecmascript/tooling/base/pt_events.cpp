@@ -36,6 +36,19 @@ Local<ObjectRef> BreakpointResolved::ToObject(const EcmaVM *ecmaVm) const
     return object;
 }
 
+std::unique_ptr<PtJson> BreakpointResolved::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+    result->Add("breakpointId", breakpointId_.c_str());
+    result->Add("location", location_->ToJson());
+
+    std::unique_ptr<PtJson> object = PtJson::CreateObject();
+    object->Add("method", GetName().c_str());
+    object->Add("params", result);
+
+    return object;
+}
+
 Local<ObjectRef> Paused::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);

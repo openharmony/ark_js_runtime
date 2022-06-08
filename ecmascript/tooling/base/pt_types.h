@@ -21,6 +21,7 @@
 
 #include "ecmascript/dfx/cpu_profiler/samples_record.h"
 #include "ecmascript/tooling/backend/debugger_api.h"
+#include "ecmascript/tooling/base/pt_json.h"
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript::tooling {
@@ -30,6 +31,10 @@ public:
     PtBaseTypes() = default;
     virtual ~PtBaseTypes() = default;
     virtual Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const = 0;
+    virtual std::unique_ptr<PtJson> ToJson() const
+    {
+        return PtJson::CreateObject();
+    }
 
 protected:
     static Local<ObjectRef> NewObject(const EcmaVM *ecmaVm);
@@ -936,7 +941,9 @@ public:
     ~Location() override = default;
 
     static std::unique_ptr<Location> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<Location> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     ScriptId GetScriptId() const
     {

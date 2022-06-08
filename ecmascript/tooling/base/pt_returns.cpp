@@ -27,6 +27,15 @@ Local<ObjectRef> EnableReturns::ToObject(const EcmaVM *ecmaVm) const
     return result;
 }
 
+std::unique_ptr<PtJson> EnableReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("debuggerId", std::to_string(debuggerId_).c_str());
+
+    return result;
+}
+
 Local<ObjectRef> SetBreakpointByUrlReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     size_t len = locations_.size();

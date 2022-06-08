@@ -36,7 +36,7 @@ public:
     void ReleaseRoot();
 
     // String parse to json
-    static std::unique_ptr<PtJson> Parse(const char *data);
+    static std::unique_ptr<PtJson> Parse(const std::string &data);
 
     // To string
     std::string Stringify() const;
@@ -90,7 +90,7 @@ public:
     int32_t GetInt(const char *key, int32_t defaultValue = 0) const;
     int64_t GetInt64(const char *key, int64_t defaultValue = 0) const;
     double GetDouble(const char *key, double defaultValue = 0.0) const;
-    std::string GetString(const char *key, std::string defaultValue = "") const;
+    std::string GetString(const char *key) const;
     std::unique_ptr<PtJson> GetObject(const char *key) const;
     std::unique_ptr<PtJson> GetArray(const char *key) const;
 
