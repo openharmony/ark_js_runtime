@@ -64,6 +64,8 @@
 #include "ecmascript/tagged_queue.h"
 #include "ecmascript/tagged_queue.h"
 #include "ecmascript/ts_types/ts_loader.h"
+#include "ecmascript/require/js_cjs_module_cache.h"
+#include "ecmascript/require/js_require_manager.h"
 #include "ecmascript/tooling/interface/js_debugger_manager.h"
 #ifdef PANDA_TARGET_WINDOWS
 #ifdef ERROR
@@ -377,12 +379,16 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
     if (options.EnableTSAot()) {
         result = InvokeEcmaAotEntrypoint(func, jsPandaFile);
     } else {
-        JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
-        EcmaRuntimeCallInfo info =
-            EcmaInterpreter::NewRuntimeCallInfo(thread_, JSHandle<JSTaggedValue>(func), global, undefined, 0);
-        CpuProfilingScope profilingScope(this);
-        EcmaRuntimeStatScope runtimeStatScope(this);
-        result = EcmaInterpreter::Execute(&info);
+        if (jsPandaFile->IsCjs()) {
+            CJSExecution(func, jsPandaFile);
+        } else {
+            JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
+            EcmaRuntimeCallInfo info =
+                EcmaInterpreter::NewRuntimeCallInfo(thread_, JSHandle<JSTaggedValue>(func), global, undefined, 0);
+            EcmaRuntimeStatScope runtimeStatScope(this);
+            CpuProfilingScope profilingScope(this);
+            EcmaInterpreter::Execute(&info);
+        }  
     }
     if (!thread_->HasPendingException()) {
         job::MicroJobQueue::ExecutePendingJob(thread_, GetMicroJobQueue());
@@ -403,6 +409,42 @@ JSTaggedValue EcmaVM::FindConstpool(const JSPandaFile *jsPandaFile)
         return JSTaggedValue::Hole();
     }
     return iter->second;
+}
+
+void EcmaVM::CJSExecution(JSHandle<JSFunction> &func, const JSPandaFile *jsPandaFile)
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    ObjectFactory *factory = GetFactory();
+    
+    // create "module", "exports", "require", "filename", "dirname"
+    JSHandle<JSCjsModule> module = factory->NewCjsModule();
+    JSHandle<JSTaggedValue> require = GetGlobalEnv()->GetCjsRequireFunction();
+    JSHandle<JSCjsExports> exports = factory->NewCjsExports();
+    JSMutableHandle<JSTaggedValue> filename(thread_, JSTaggedValue::Undefined());;
+    JSMutableHandle<JSTaggedValue> dirname(thread_, JSTaggedValue::Undefined());;
+    JSRequireManager::ResolveCurrentPath(thread_, dirname, filename, jsPandaFile);
+    CJSInfo cjsInfo(module, require, exports, filename, dirname);
+    JSRequireManager::InitializeCommonJS(thread_, cjsInfo);
+
+    // Execute main function
+    JSHandle<JSTaggedValue> global = GlobalEnv::Cast(globalEnv_.GetTaggedObject())->GetJSGlobalObject();
+    JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info =
+        EcmaInterpreter::NewRuntimeCallInfo(thread_,
+                                            JSHandle<JSTaggedValue>(func),
+                                            global, undefined, 5); // 5 : argument numbers
+    info.SetCallArg(cjsInfo.exportsHdl.GetTaggedValue(),
+                    cjsInfo.requireHdl.GetTaggedValue(),
+                    cjsInfo.moduleHdl.GetTaggedValue(),
+                    cjsInfo.filenameHdl.GetTaggedValue(),
+                    cjsInfo.dirnameHdl.GetTaggedValue());
+    EcmaRuntimeStatScope runtimeStatScope(this);
+    CpuProfilingScope profilingScope(this);
+    EcmaInterpreter::Execute(&info);
+
+    // Collecting module.exports : exports ---> module.exports --->Module._cache
+    JSRequireManager::CollectExecutedExp(thread_, cjsInfo);
+    return;
 }
 
 void EcmaVM::SetConstpool(const JSPandaFile *jsPandaFile, JSTaggedValue constpool)

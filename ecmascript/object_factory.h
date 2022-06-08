@@ -122,6 +122,9 @@ class ModuleNamespace;
 class ImportEntry;
 class ExportEntry;
 class SourceTextModule;
+class JSCjsModule;
+class JSCjsRequire;
+class JSCjsExports;
 class ResolvedBinding;
 class BigInt;
 class CellRecord;
@@ -478,6 +481,11 @@ public:
     JSHandle<ResolvedBinding> NewResolvedBindingRecord(const JSHandle<SourceTextModule> &module,
                                                        const JSHandle<JSTaggedValue> &bindingName);
     JSHandle<CellRecord> NewCellRecord();
+
+    // --------------------------------------require--------------------------------------------
+    JSHandle<JSCjsModule> NewCjsModule();
+    JSHandle<JSCjsExports> NewCjsExports();
+    JSHandle<JSCjsRequire> NewCjsRequire();
 
 private:
     friend class GlobalEnv;
