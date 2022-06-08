@@ -265,7 +265,7 @@ void DebuggerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
 
 void DebuggerImpl::DispatcherImpl::Enable(const DispatchRequest &request)
 {
-    std::unique_ptr<EnableParams> params = EnableParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<EnableParams> params = EnableParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;

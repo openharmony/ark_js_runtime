@@ -1033,64 +1033,57 @@ HWTEST_F_L0(DebuggerTypesTest, LocationCreateTest)
 
     //  abnormal params of null msg
     msg = std::string() + R"({})";
-    location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    location = Location::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(location, nullptr);
 
     // abnormal params of unexist key params
     msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
-    location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    location = Location::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(location, nullptr);
 
     // abnormal params of null params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    location = Location::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(location, nullptr);
 
     // abnormal params of unknown params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    location = Location::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(location, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":10,"lineNumber":99]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "scriptId":10,"lineNumber":99
     }})";
-    location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    location = Location::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(location, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":["id3"],"lineNumber":99]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "scriptId":["id3"],"lineNumber":99
     }})";
-    location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    location = Location::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(location, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":"222","lineNumber":"99"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "scriptId":"222","lineNumber":"99"
     }})";
-    location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    location = Location::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(location, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":"222","lineNumber":[99]]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "scriptId":"222","lineNumber":[99]
     }})";
-    location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    EXPECT_EQ(location, nullptr);
-
-    // abnormal params of params.sub-key=["scriptId":"2","lineNumber":99,"columnNumber":"18"]
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
-          "scriptId":"222","lineNumber":899,"columnNumber":"18"
-    }})";
-    location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    location = Location::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(location, nullptr);
 
     // normal params of params.sub-key=["scriptId":"2","lineNumber":99,"columnNumber":138]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "scriptId":"222","lineNumber":899,"columnNumber":138
     }})";
-    location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    location = Location::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(location, nullptr);
     EXPECT_EQ(222U, location->GetScriptId());
     EXPECT_EQ(location->GetLine(), 899);
@@ -1100,7 +1093,7 @@ HWTEST_F_L0(DebuggerTypesTest, LocationCreateTest)
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "scriptId":"2122","lineNumber":8299
     }})";
-    location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    location = Location::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(location, nullptr);
     EXPECT_EQ(2122U, location->GetScriptId());
     EXPECT_EQ(location->GetLine(), 8299);
