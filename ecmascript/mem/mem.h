@@ -46,6 +46,9 @@ static constexpr size_t CONSTRAINT_MIN_NONMOVABLE_SPACE_SIZE = 1_MB;
 static constexpr size_t CONSTRAINT_MIN_SNAPSHOT_SPACE_SIZE = 256_KB;
 static constexpr size_t CONSTRAINT_MIN_MACHINECODE_SPACE_SIZE = 4_MB;
 
+static constexpr size_t MIN_MEM_POOL_CAPACITY = 32_MB;
+static constexpr size_t PHY_SIZE_MULTIPLE = 4;
+
 static constexpr size_t MIN_OLD_SPACE_LIMIT = 2_MB;
 static constexpr size_t MIN_GROWING_STEP = 16_MB;
 

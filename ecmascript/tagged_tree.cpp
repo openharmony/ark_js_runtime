@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -386,7 +386,7 @@ JSHandle<Derived> TaggedTree<Derived>::Insert(JSThread *thread, JSHandle<Derived
     }
 
     int entry = newTree->NumberOfElements() + newTree->NumberOfDeletedElements();
-    if (static_cast<bool>(res)) {
+    if (res != ComparisonResult::LESS) {
         newTree->InsertRightEntry(thread, parentIndex, entry, key.GetTaggedValue(), value.GetTaggedValue());
     } else {
         newTree->InsertLeftEntry(thread, parentIndex, entry, key.GetTaggedValue(), value.GetTaggedValue());

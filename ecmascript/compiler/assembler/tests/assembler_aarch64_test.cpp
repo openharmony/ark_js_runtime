@@ -185,7 +185,9 @@ HWTEST_F_L0(AssemblerAarch64Test, LdrStr)
                              "00000014:38408fe1 \tldrb\tw1, [sp, #8]!\n"
                              "00000018:394023e1 \tldrb\tw1, [sp, #8]\n"
                              "0000001c:78408fe1 \tldrh\tw1, [sp, #8]!\n"
-                             "00000020:794013e1 \tldrh\tw1, [sp, #8]\n");
+                             "00000020:794013e1 \tldrh\tw1, [sp, #8]\n"
+                             "00000024:f85f83e1 \tldur\tx1, [sp, #-8]\n"
+                             "00000028:f81f83e3 \tstur\tx3, [sp, #-8]\n");
 
     AssemblerAarch64 masm(chunk_);
     __ Str(Register(X1), MemoryOperand(Register(SP), 8, POSTINDEX));
@@ -197,6 +199,8 @@ HWTEST_F_L0(AssemblerAarch64Test, LdrStr)
     __ Ldrb(Register(X1).W(), MemoryOperand(Register(SP), 8, OFFSET));
     __ Ldrh(Register(X1).W(), MemoryOperand(Register(SP), 8, PREINDEX));
     __ Ldrh(Register(X1).W(), MemoryOperand(Register(SP), 8, OFFSET));
+    __ Ldur(Register(X1), MemoryOperand(Register(SP), -8, OFFSET));
+    __ Stur(Register(X3), MemoryOperand(Register(SP), -8, OFFSET));
     std::ostringstream oss;
     DisassembleChunk("aarch64-unknown-linux-gnu", &masm, oss);
     ASSERT_EQ(oss.str(), expectResult);

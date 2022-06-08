@@ -16,7 +16,7 @@
 #include "ecmascript/tooling/base/pt_returns.h"
 
 namespace panda::ecmascript::tooling {
-Local<ObjectRef> EnableReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> EnableReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
 
@@ -27,7 +27,7 @@ Local<ObjectRef> EnableReturns::ToObject(const EcmaVM *ecmaVm)
     return result;
 }
 
-Local<ObjectRef> SetBreakpointByUrlReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> SetBreakpointByUrlReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     size_t len = locations_.size();
     Local<ArrayRef> values = ArrayRef::New(ecmaVm, len);
@@ -45,7 +45,7 @@ Local<ObjectRef> SetBreakpointByUrlReturns::ToObject(const EcmaVM *ecmaVm)
     return result;
 }
 
-Local<ObjectRef> EvaluateOnCallFrameReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> EvaluateOnCallFrameReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
 
@@ -61,7 +61,7 @@ Local<ObjectRef> EvaluateOnCallFrameReturns::ToObject(const EcmaVM *ecmaVm)
     return result;
 }
 
-Local<ObjectRef> GetPossibleBreakpointsReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> GetPossibleBreakpointsReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     size_t len = locations_.size();
     Local<ArrayRef> values = ArrayRef::New(ecmaVm, len);
@@ -76,7 +76,7 @@ Local<ObjectRef> GetPossibleBreakpointsReturns::ToObject(const EcmaVM *ecmaVm)
     return result;
 }
 
-Local<ObjectRef> GetScriptSourceReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> GetScriptSourceReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
 
@@ -92,7 +92,7 @@ Local<ObjectRef> GetScriptSourceReturns::ToObject(const EcmaVM *ecmaVm)
     return result;
 }
 
-Local<ObjectRef> RestartFrameReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> RestartFrameReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     size_t len = callFrames_.size();
     Local<ArrayRef> values = ArrayRef::New(ecmaVm, len);
@@ -106,7 +106,7 @@ Local<ObjectRef> RestartFrameReturns::ToObject(const EcmaVM *ecmaVm)
     return result;
 }
 
-Local<ObjectRef> SearchInContentReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> SearchInContentReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     size_t len = result_.size();
     Local<ArrayRef> values = ArrayRef::New(ecmaVm, len);
@@ -121,7 +121,7 @@ Local<ObjectRef> SearchInContentReturns::ToObject(const EcmaVM *ecmaVm)
     return result;
 }
 
-Local<ObjectRef> SetBreakpointReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> SetBreakpointReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
 
@@ -136,7 +136,7 @@ Local<ObjectRef> SetBreakpointReturns::ToObject(const EcmaVM *ecmaVm)
     return result;
 }
 
-Local<ObjectRef> SetInstrumentationBreakpointReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> SetInstrumentationBreakpointReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
 
@@ -147,12 +147,12 @@ Local<ObjectRef> SetInstrumentationBreakpointReturns::ToObject(const EcmaVM *ecm
     return result;
 }
 
-Local<ObjectRef> SetScriptSourceReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> SetScriptSourceReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
 
     if (callFrames_) {
-        CVector<std::unique_ptr<CallFrame>> callFrame(std::move(callFrames_.value()));
+        const std::vector<std::unique_ptr<CallFrame>> &callFrame = callFrames_.value();
         size_t len = callFrame.size();
         Local<ArrayRef> values = ArrayRef::New(ecmaVm, len);
         for (size_t i = 0; i < len; i++) {
@@ -177,7 +177,7 @@ Local<ObjectRef> SetScriptSourceReturns::ToObject(const EcmaVM *ecmaVm)
     return result;
 }
 
-Local<ObjectRef> GetPropertiesReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> GetPropertiesReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
 
@@ -189,7 +189,7 @@ Local<ObjectRef> GetPropertiesReturns::ToObject(const EcmaVM *ecmaVm)
     }
     result->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "result")), values);
     if (internalPropertyDescripties_) {
-        auto descripties = std::move(internalPropertyDescripties_.value());
+        auto &descripties = internalPropertyDescripties_.value();
         len = descripties.size();
         values = ArrayRef::New(ecmaVm, len);
         for (size_t i = 0; i < len; i++) {
@@ -199,7 +199,7 @@ Local<ObjectRef> GetPropertiesReturns::ToObject(const EcmaVM *ecmaVm)
         result->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "internalProperties")), values);
     }
     if (privateProperties_) {
-        auto descripties = std::move(privateProperties_.value());
+        auto &descripties = privateProperties_.value();
         len = descripties.size();
         values = ArrayRef::New(ecmaVm, len);
         for (size_t i = 0; i < len; i++) {
@@ -217,7 +217,7 @@ Local<ObjectRef> GetPropertiesReturns::ToObject(const EcmaVM *ecmaVm)
     return result;
 }
 
-Local<ObjectRef> CallFunctionOnReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> CallFunctionOnReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     // For this
     Local<ObjectRef> returns = NewObject(ecmaVm);
@@ -235,7 +235,7 @@ Local<ObjectRef> CallFunctionOnReturns::ToObject(const EcmaVM *ecmaVm)
     return returns;
 }
 
-Local<ObjectRef> StopSamplingReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> StopSamplingReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
 
@@ -247,7 +247,7 @@ Local<ObjectRef> StopSamplingReturns::ToObject(const EcmaVM *ecmaVm)
     return result;
 }
 
-Local<ObjectRef> GetHeapObjectIdReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> GetHeapObjectIdReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
 
@@ -258,7 +258,7 @@ Local<ObjectRef> GetHeapObjectIdReturns::ToObject(const EcmaVM *ecmaVm)
     return result;
 }
 
-Local<ObjectRef> GetObjectByHeapObjectIdReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> GetObjectByHeapObjectIdReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
     
@@ -271,7 +271,7 @@ Local<ObjectRef> GetObjectByHeapObjectIdReturns::ToObject(const EcmaVM *ecmaVm)
     return result;
 }
 
-Local<ObjectRef> StopReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> StopReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
 
@@ -281,7 +281,7 @@ Local<ObjectRef> StopReturns::ToObject(const EcmaVM *ecmaVm)
     return result;
 }
 
-Local<ObjectRef> GetHeapUsageReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> GetHeapUsageReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
 
@@ -295,7 +295,7 @@ Local<ObjectRef> GetHeapUsageReturns::ToObject(const EcmaVM *ecmaVm)
     return result;
 }
 
-Local<ObjectRef> GetBestEffortCoverageReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> GetBestEffortCoverageReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
 
@@ -310,7 +310,7 @@ Local<ObjectRef> GetBestEffortCoverageReturns::ToObject(const EcmaVM *ecmaVm)
     return result;
 }
 
-Local<ObjectRef> StartPreciseCoverageReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> StartPreciseCoverageReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
     result->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timestamp")),
@@ -319,7 +319,7 @@ Local<ObjectRef> StartPreciseCoverageReturns::ToObject(const EcmaVM *ecmaVm)
     return result;
 }
 
-Local<ObjectRef> TakePreciseCoverageReturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> TakePreciseCoverageReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> returns = NewObject(ecmaVm);
 
@@ -338,7 +338,7 @@ Local<ObjectRef> TakePreciseCoverageReturns::ToObject(const EcmaVM *ecmaVm)
     return returns;
 }
 
-Local<ObjectRef> TakeTypeProfileturns::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> TakeTypeProfileturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
 

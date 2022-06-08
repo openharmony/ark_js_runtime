@@ -19,11 +19,13 @@
 
 // testcase list
 #include "js_breakpoint_test.h"
+#include "js_breakpoint_arrow_test.h"
+#include "js_breakpoint_async_test.h"
 #include "js_exception_test.h"
 #include "js_single_step_test.h"
 
 namespace panda::ecmascript::tooling::test {
-static CString g_currentTestName = "";
+static std::string g_currentTestName = "";
 
 static void RegisterTests()
 {
@@ -31,12 +33,14 @@ static void RegisterTests()
     TestUtil::RegisterTest("JsExceptionTest", GetJsExceptionTest());
     TestUtil::RegisterTest("JsSingleStepTest", GetJsSingleStepTest());
     TestUtil::RegisterTest("JsBreakpointTest", GetJsBreakpointTest());
+    TestUtil::RegisterTest("JsBreakpointAsyncTest", GetJsBreakpointAsyncTest());
+    TestUtil::RegisterTest("JsBreakpointArrowTest", GetJsBreakpointArrowTest());
 }
 
-CVector<const char *> GetTestList()
+std::vector<const char *> GetTestList()
 {
     RegisterTests();
-    CVector<const char *> res;
+    std::vector<const char *> res;
 
     auto &tests = TestUtil::GetTests();
     for (const auto &entry : tests) {
@@ -45,17 +49,17 @@ CVector<const char *> GetTestList()
     return res;
 }
 
-void SetCurrentTestName(const CString &testName)
+void SetCurrentTestName(const std::string &testName)
 {
     g_currentTestName = testName;
 }
 
-CString GetCurrentTestName()
+std::string GetCurrentTestName()
 {
     return g_currentTestName;
 }
 
-std::pair<CString, CString> GetTestEntryPoint(const CString &testName)
+std::pair<std::string, std::string> GetTestEntryPoint(const std::string &testName)
 {
     return TestUtil::GetTest(testName)->GetEntryPoint();
 }

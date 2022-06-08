@@ -19,7 +19,6 @@
 #include <climits>
 
 #include "ecmascript/ecma_macros.h"
-#include "ecmascript/mem/c_string.h"
 #include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript {
@@ -106,7 +105,7 @@ bool FileDescriptorStream::WriteChunk(char *data, int size)
         return false;
     }
 
-    CString str;
+    std::string str;
     str.resize(size);
     for (int i = 0; i < size; ++i) {
         str[i] = data[i];

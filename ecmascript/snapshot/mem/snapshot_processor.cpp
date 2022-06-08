@@ -19,6 +19,7 @@
 #include "ecmascript/builtins/builtins_array.h"
 #include "ecmascript/builtins/builtins_arraybuffer.h"
 #include "ecmascript/builtins/builtins_async_function.h"
+#include "ecmascript/builtins/builtins_atomics.h"
 #include "ecmascript/builtins/builtins_bigint.h"
 #include "ecmascript/builtins/builtins_boolean.h"
 #include "ecmascript/builtins/builtins_collator.h"
@@ -57,6 +58,8 @@
 #include "ecmascript/builtins/builtins_weak_set.h"
 #include "ecmascript/containers/containers_arraylist.h"
 #include "ecmascript/containers/containers_deque.h"
+#include "ecmascript/containers/containers_linked_list.h"
+#include "ecmascript/containers/containers_list.h"
 #include "ecmascript/containers/containers_plainarray.h"
 #include "ecmascript/containers/containers_private.h"
 #include "ecmascript/containers/containers_queue.h"
@@ -68,7 +71,10 @@
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_linked_list_iterator.h"
+#include "ecmascript/js_api_list_iterator.h"
 #include "ecmascript/js_api_plain_array_iterator.h"
 #include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_stack_iterator.h"
@@ -76,7 +82,6 @@
 #include "ecmascript/js_api_tree_set_iterator.h"
 #include "ecmascript/js_api_vector_iterator.h"
 #include "ecmascript/js_array_iterator.h"
-#include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_map_iterator.h"
@@ -120,6 +125,7 @@ using StringIterator = builtins::BuiltinsStringIterator;
 using RegExp = builtins::BuiltinsRegExp;
 using Function = builtins::BuiltinsFunction;
 using Math = builtins::BuiltinsMath;
+using Atomics = builtins::BuiltinsAtomics;
 using ArrayBuffer = builtins::BuiltinsArrayBuffer;
 using Json = builtins::BuiltinsJson;
 using Proxy = builtins::BuiltinsProxy;
@@ -143,6 +149,8 @@ using TreeMap = containers::ContainersTreeMap;
 using TreeSet = containers::ContainersTreeSet;
 using Vector = containers::ContainersVector;
 using Queue = containers::ContainersQueue;
+using List = containers::ContainersList;
+using LinkedList = containers::ContainersLinkedList;
 using PlainArray = containers::ContainersPlainArray;
 using Deque = containers::ContainersDeque;
 using ContainerStack = panda::ecmascript::containers::ContainersStack;
@@ -513,6 +521,17 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(Math::Tan),
     reinterpret_cast<uintptr_t>(Math::Tanh),
     reinterpret_cast<uintptr_t>(Math::Trunc),
+    reinterpret_cast<uintptr_t>(Atomics::Wait),
+    reinterpret_cast<uintptr_t>(Atomics::Exchange),
+    reinterpret_cast<uintptr_t>(Atomics::CompareExchange),
+    reinterpret_cast<uintptr_t>(Atomics::Store),
+    reinterpret_cast<uintptr_t>(Atomics::Load),
+    reinterpret_cast<uintptr_t>(Atomics::Notify),
+    reinterpret_cast<uintptr_t>(Atomics::Xor),
+    reinterpret_cast<uintptr_t>(Atomics::Or),
+    reinterpret_cast<uintptr_t>(Atomics::Sub),
+    reinterpret_cast<uintptr_t>(Atomics::And),
+    reinterpret_cast<uintptr_t>(Atomics::Add),
     reinterpret_cast<uintptr_t>(Json::Parse),
     reinterpret_cast<uintptr_t>(Json::Stringify),
     reinterpret_cast<uintptr_t>(BuiltinsIterator::Next),
@@ -740,6 +759,51 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(ContainerStack::ForEach),
     reinterpret_cast<uintptr_t>(ContainerStack::GetLength),
     reinterpret_cast<uintptr_t>(JSAPIStackIterator::Next),
+    reinterpret_cast<uintptr_t>(List::ListConstructor),
+    reinterpret_cast<uintptr_t>(List::Add),
+    reinterpret_cast<uintptr_t>(List::GetFirst),
+    reinterpret_cast<uintptr_t>(List::GetLast),
+    reinterpret_cast<uintptr_t>(List::Insert),
+    reinterpret_cast<uintptr_t>(List::Clear),
+    reinterpret_cast<uintptr_t>(List::RemoveByIndex),
+    reinterpret_cast<uintptr_t>(List::Remove),
+    reinterpret_cast<uintptr_t>(List::Has),
+    reinterpret_cast<uintptr_t>(List::IsEmpty),
+    reinterpret_cast<uintptr_t>(List::Get),
+    reinterpret_cast<uintptr_t>(List::GetIndexOf),
+    reinterpret_cast<uintptr_t>(List::GetLastIndexOf),
+    reinterpret_cast<uintptr_t>(List::Set),
+    reinterpret_cast<uintptr_t>(List::ForEach),
+    reinterpret_cast<uintptr_t>(List::ReplaceAllElements),
+    reinterpret_cast<uintptr_t>(List::GetIteratorObj),
+    reinterpret_cast<uintptr_t>(List::Equal),
+    reinterpret_cast<uintptr_t>(List::Sort),
+    reinterpret_cast<uintptr_t>(List::ConvertToArray),
+    reinterpret_cast<uintptr_t>(List::GetSubList),
+    reinterpret_cast<uintptr_t>(List::Length),
+    reinterpret_cast<uintptr_t>(JSAPIListIterator::Next),
+    reinterpret_cast<uintptr_t>(LinkedList::LinkedListConstructor),
+    reinterpret_cast<uintptr_t>(LinkedList::Add),
+    reinterpret_cast<uintptr_t>(LinkedList::GetFirst),
+    reinterpret_cast<uintptr_t>(LinkedList::GetLast),
+    reinterpret_cast<uintptr_t>(LinkedList::Insert),
+    reinterpret_cast<uintptr_t>(LinkedList::AddFirst),
+    reinterpret_cast<uintptr_t>(LinkedList::Clear),
+    reinterpret_cast<uintptr_t>(LinkedList::Clone),
+    reinterpret_cast<uintptr_t>(LinkedList::Has),
+    reinterpret_cast<uintptr_t>(LinkedList::Get),
+    reinterpret_cast<uintptr_t>(LinkedList::GetIndexOf),
+    reinterpret_cast<uintptr_t>(LinkedList::GetLastIndexOf),
+    reinterpret_cast<uintptr_t>(LinkedList::RemoveByIndex),
+    reinterpret_cast<uintptr_t>(LinkedList::Remove),
+    reinterpret_cast<uintptr_t>(LinkedList::RemoveFirst),
+    reinterpret_cast<uintptr_t>(LinkedList::RemoveLast),
+    reinterpret_cast<uintptr_t>(LinkedList::RemoveFirstFound),
+    reinterpret_cast<uintptr_t>(LinkedList::RemoveLastFound),
+    reinterpret_cast<uintptr_t>(LinkedList::Set),
+    reinterpret_cast<uintptr_t>(LinkedList::ConvertToArray),
+    reinterpret_cast<uintptr_t>(LinkedList::ForEach),
+    reinterpret_cast<uintptr_t>(JSAPILinkedListIterator::Next),
 
     // not builtins method
     reinterpret_cast<uintptr_t>(JSFunction::PrototypeSetter),

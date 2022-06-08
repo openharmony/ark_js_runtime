@@ -34,6 +34,13 @@
 #include "unicode/unistr.h"
 
 namespace panda::ecmascript::base {
+// White Space Code Points and Line Terminators Code Point
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
+static constexpr uint16_t SPACE_OR_LINE_TERMINAL[] = {
+    0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x0020, 0x00A0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004,
+    0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200A, 0x2028, 0x2029, 0x202F, 0x205F, 0x3000, 0xFEFF,
+};
+
 class StringHelper {
 public:
     static std::string ToStdString(EcmaString *string);
@@ -194,20 +201,54 @@ public:
         return res;
     }
 
-    static inline CString GetSpecifiedLine(const CString &srcStr, int lineNumber)
+    static inline std::string GetSpecifiedLine(const std::string &srcStr, int lineNumber)
     {
-        std::stringstream ss(CstringConvertToStdString(srcStr));
+        std::stringstream ss(srcStr);
         int count = 0;
-        CString lineStr = "";
+        std::string lineStr = "";
         std::string tempLine;
         while (getline(ss, tempLine, '\n')) {
             count++;
             if (count == lineNumber) {
-                lineStr = ConvertToString(tempLine);
+                lineStr = tempLine;
                 break;
             }
         }
         return lineStr;
+    }
+
+    static inline bool IsNonspace(uint16_t c)
+    {
+        uint32_t len = sizeof(SPACE_OR_LINE_TERMINAL) / sizeof(SPACE_OR_LINE_TERMINAL[0]);
+        for (uint32_t i = 0; i < len; i++) {
+            if (c == SPACE_OR_LINE_TERMINAL[i]) {
+                return true;
+            }
+            if (c < SPACE_OR_LINE_TERMINAL[i]) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    template<typename T>
+    static inline uint32_t GetStart(Span<T> &data, uint32_t length)
+    {
+        uint32_t start = 0;
+        while (start < length && IsNonspace(data[start])) {
+            start++;
+        }
+        return start;
+    }
+
+    template<typename T>
+    static inline uint32_t GetEnd(Span<T> &data, uint32_t start, uint32_t length)
+    {
+        uint32_t end = length - 1;
+        while (end >= start && IsNonspace(data[end])) {
+            end--;
+        }
+        return end;
     }
 };
 }  // namespace panda::ecmascript::base

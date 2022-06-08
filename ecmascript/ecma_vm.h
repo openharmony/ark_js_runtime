@@ -24,6 +24,7 @@
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/mem/chunk_containers.h"
 #include "ecmascript/taskpool/taskpool.h"
+#include "ecmascript/waiter_list.h"
 
 namespace panda {
 class JSNApi;
@@ -92,6 +93,11 @@ public:
     bool IsInitialized() const
     {
         return vmInitialized_;
+    }
+
+    bool IsGlobalConstInitialized() const
+    {
+        return globalConstInitialized_;
     }
 
     ObjectFactory *GetFactory() const
@@ -273,6 +279,21 @@ public:
         hostPromiseRejectionTracker_ = cb;
     }
 
+    void SetAllowAtomicWait(bool wait)
+    {
+        AllowAtomicWait_ = wait;
+    }
+
+    bool GetAllowAtomicWait() const
+    {
+        return AllowAtomicWait_;
+    }
+
+    WaiterListNode *GetWaiterListNode()
+    {
+        return &waiterListNode_;
+    }
+
     void PromiseRejectionTracker(const JSHandle<JSPromise> &promise,
                                  const JSHandle<JSTaggedValue> &reason, PromiseRejectionEvent operation)
     {
@@ -335,6 +356,7 @@ private:
     JSRuntimeOptions options_;
     bool icEnabled_ {true};
     bool vmInitialized_ {false};
+    bool globalConstInitialized_ {false};
     GCStats *gcStats_ {nullptr};
     bool snapshotSerializeEnable_ {false};
     bool snapshotDeserializeEnable_ {false};
@@ -383,6 +405,9 @@ private:
     void* data_ {nullptr};
 
     bool isProcessingPendingJob_ = false;
+	// atomics
+    bool AllowAtomicWait_ {true};
+    WaiterListNode waiterListNode_;
 
     friend class Snapshot;
     friend class SnapshotProcessor;

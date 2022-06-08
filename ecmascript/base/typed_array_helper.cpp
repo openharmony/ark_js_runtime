@@ -186,14 +186,14 @@ JSTaggedValue TypedArrayHelper::CreateFromTypedArray(EcmaRuntimeCallInfo *argv, 
         THROW_TYPE_ERROR_AND_RETURN(thread, "The srcData is detached buffer.", JSTaggedValue::Exception());
     }
     // 8. Let elementType be the Element Type value in Table 61 for constructorName.
-    DataViewType elementType = TypedArrayHelper::GetTypeFromName(thread, constructorName);
+    DataViewType elementType = JSTypedArray::GetTypeFromName(thread, constructorName);
     // 9. Let elementLength be srcArray.[[ArrayLength]].
     // 10. Let srcName be the String value of srcArray.[[TypedArrayName]].
     // 11. Let srcType be the Element Type value in Table 61 for srcName.
     // 12. Let srcElementSize be the Element Size value specified in Table 61 for srcName.
     uint32_t elementLength = srcObj->GetArrayLength();
     JSHandle<JSTaggedValue> srcName(thread, srcObj->GetTypedArrayName());
-    DataViewType srcType = TypedArrayHelper::GetTypeFromName(thread, srcName);
+    DataViewType srcType = JSTypedArray::GetTypeFromName(thread, srcName);
     uint32_t srcElementSize = TypedArrayHelper::GetSizeFromName(thread, srcName);
     // 13. Let srcByteOffset be srcArray.[[ByteOffset]].
     // 14. Let elementSize be the Element Size value specified in Table 61 for constructorName.

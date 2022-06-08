@@ -23,7 +23,7 @@ using EntityId = panda_file::File::EntityId;
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct SourceLocation {
-    CString path;  // NOLINT(misc-non-private-member-variables-in-classes)
+    std::string path;  // NOLINT(misc-non-private-member-variables-in-classes)
     int32_t line;          // NOLINT(misc-non-private-member-variables-in-classes)
     int32_t column;
 

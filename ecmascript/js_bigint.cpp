@@ -954,7 +954,7 @@ std::string BigIntHelper::MultiplyImpl(std::string &a, std::string &b)
             str[i + j + 1] = static_cast<int8_t>(temp2 % 10 + 48); // 2 and 10 and 48 is number
             addflag = temp2 / 10;
         }
-        str[i] += static_cast<int8_t>(mulflag + addflag);
+        str[i] += static_cast<uint32_t>(mulflag + addflag);
     }
     if (str[0] == '0') {
         str = str.substr(1, str.size());
@@ -1430,5 +1430,20 @@ ComparisonResult BigInt::CompareWithNumber(JSHandle<BigInt> bigint, JSHandle<JST
         return bigintSign ? ComparisonResult::GREAT : ComparisonResult::LESS;
     }
     return ComparisonResult::EQUAL;
+}
+
+int64_t BigInt::ToInt64()
+{
+    int len = GetLength();
+    ASSERT(len < 2); // The maximum length of the BigInt data is less 2
+    uint64_t value = 0;
+    uint32_t *addr = reinterpret_cast<uint32_t *>(&value);
+    for (int index = len - 1; index >= 0; --index) {
+        *(addr + index) = GetDigit(index);
+    }
+    if (GetSign()) {
+        value = ~(value - 1);
+    }
+    return static_cast<int64_t>(value);
 }
 } // namespace

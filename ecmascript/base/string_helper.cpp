@@ -59,29 +59,4 @@ EcmaString *StringHelper::Repeat(JSThread *thread, const std::u16string &thisStr
     return canBeCompress ? *factory->NewFromUtf16Compress(uint16tData, length) :
                            *factory->NewFromUtf16NotCompress(uint16tData, length);
 }
-
-EcmaString *StringHelper::Trim(JSThread *thread, const std::u16string &thisStr)
-{
-    ecmascript::ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    std::u16string tmpStr = thisStr;
-    if (tmpStr.empty()) {
-        return *factory->GetEmptyString();
-    }
-    std::string str = U16stringToString(tmpStr);
-    std::wstring wstr = StringToWstring(str);
-    std::wregex r(
-        L"^["
-        L"\u0009\u000A\u000B\u000C\u000D\u0020\u00A0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007"
-        L"\u2008\u2009\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]+|["
-        L"\u0009\u000A\u000B\u000C\u000D\u0020\u00A0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007"
-        L"\u2008\u2009\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]+$");
-    wstr = regex_replace(wstr, r, L"");
-    str = WstringToString(wstr);
-    tmpStr = StringToU16string(str);
-    const char16_t *constChar16tData = tmpStr.data();
-    auto *char16tData = const_cast<char16_t *>(constChar16tData);
-    auto *uint16tData = reinterpret_cast<uint16_t *>(char16tData);
-    uint32_t length = tmpStr.size();
-    return *factory->NewFromUtf16(uint16tData, length);
-}
 }  // namespace panda::ecmascript::base

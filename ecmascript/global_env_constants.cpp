@@ -29,6 +29,8 @@
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_linked_list_iterator.h"
+#include "ecmascript/js_api_list_iterator.h"
 #include "ecmascript/js_api_plain_array_iterator.h"
 #include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_stack_iterator.h"
@@ -191,6 +193,11 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
     SetConstant(ConstantIndex::JS_API_DEQUE_ITERATOR_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, JSAPIDequeIterator::SIZE, JSType::JS_API_DEQUE_ITERATOR));
     SetConstant(
+        ConstantIndex::JS_API_LINKED_LIST_ITERATOR_CLASS_INDEX,
+        factory->NewEcmaDynClass(dynClassClass, JSAPILinkedListIterator::SIZE, JSType::JS_API_LINKED_LIST_ITERATOR));
+    SetConstant(ConstantIndex::JS_API_LIST_ITERATOR_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, JSAPIListIterator::SIZE, JSType::JS_API_LIST_ITERATOR));
+    SetConstant(
         ConstantIndex::JS_API_PLAIN_ARRAY_ITERATOR_CLASS_INDEX,
         factory->NewEcmaDynClass(dynClassClass, JSAPIPlainArrayIterator::SIZE, JSType::JS_API_PLAIN_ARRAY_ITERATOR));
     SetConstant(ConstantIndex::JS_API_QUEUE_ITERATOR_CLASS_INDEX,
@@ -246,6 +253,10 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::STACK_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
     SetConstant(ConstantIndex::VECTOR_FUNCTION_INDEX, JSTaggedValue::Undefined());
     SetConstant(ConstantIndex::VECTOR_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
+    SetConstant(ConstantIndex::LIST_FUNCTION_INDEX, JSTaggedValue::Undefined());
+    SetConstant(ConstantIndex::LINKED_LIST_FUNCTION_INDEX, JSTaggedValue::Undefined());
+    SetConstant(ConstantIndex::LIST_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
+    SetConstant(ConstantIndex::LINKED_LIST_ITERATOR_PROTOTYPE_INDEX, JSTaggedValue::Undefined());
     /* SymbolTable *RegisterSymbols */
     SetConstant(ConstantIndex::NAME_STRING_INDEX, factory->NewFromASCIINonMovable("name"));
     SetConstant(ConstantIndex::GETPROTOTYPEOF_STRING_INDEX, factory->NewFromASCIINonMovable("getPrototypeOf"));
@@ -496,6 +507,9 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::BACKSLASH_INDEX, factory->NewFromASCIINonMovable("/"));
     SetConstant(ConstantIndex::SPACE_INDEX, factory->NewFromASCIINonMovable(" "));
     SetConstant(ConstantIndex::NAN_INDEX, factory->NewFromASCIINonMovable("NaN"));
+    SetConstant(ConstantIndex::NOT_EQUAL_INDEX, factory->NewFromASCIINonMovable("not-equal"));
+    SetConstant(ConstantIndex::OK_INDEX, factory->NewFromASCIINonMovable("ok"));
+    SetConstant(ConstantIndex::TIMEOUT_INDEX, factory->NewFromASCIINonMovable("timed-out"));
 
     auto accessor = factory->NewInternalAccessor(reinterpret_cast<void *>(JSFunction::PrototypeSetter),
                                                  reinterpret_cast<void *>(JSFunction::PrototypeGetter));

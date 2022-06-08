@@ -199,11 +199,11 @@ public:
     NO_COPY_SEMANTIC(MemMapAllocator);
     NO_MOVE_SEMANTIC(MemMapAllocator);
 
-    void Initialize(size_t capacity, size_t alignment)
+    void Initialize(size_t alignment)
     {
+        AdapterSuitablePoolCapacity();
         memMapTotalSize_ = 0;
-        capacity_ = capacity;
-        MemMap memMap = PageMap(capacity, alignment);
+        MemMap memMap = PageMap(capacity_ / 2, alignment);
         PageRelease(memMap.GetMem(), memMap.GetSize());
         memMapFreeList_.Initialize(memMap);
     }
@@ -248,6 +248,8 @@ private:
         }
 #endif // PANDA_TARGET_UNIX
     }
+
+    void AdapterSuitablePoolCapacity();
 
     MemMapPool memMapPool_;
     MemMapFreeList memMapFreeList_;

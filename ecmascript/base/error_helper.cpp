@@ -172,7 +172,7 @@ JSTaggedValue ErrorHelper::ErrorCommonConstructor(EcmaRuntimeCallInfo *argv,
     return nativeInstanceObj.GetTaggedValue();
 }
 
-CString ErrorHelper::DecodeFunctionName(const CString &name)
+std::string ErrorHelper::DecodeFunctionName(const std::string &name)
 {
     if (name.empty()) {
         return "anonymous";
@@ -182,31 +182,34 @@ CString ErrorHelper::DecodeFunctionName(const CString &name)
 
 JSHandle<EcmaString> ErrorHelper::BuildEcmaStackTrace(JSThread *thread)
 {
-    CString data = BuildNativeAndJsStackTrace(thread);
+    std::string data = BuildJsStackTrace(thread, false);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     LOG(DEBUG, ECMASCRIPT) << data;
-    return factory->NewFromUtf8(data);
+    return factory->NewFromStdString(data);
 }
 
-CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
+std::string ErrorHelper::BuildJsStackTrace(JSThread *thread, bool needNative)
 {
-    CString data;
-    CString fristLineSrcCode;
+    std::string data;
+    std::string fristLineSrcCode;
     bool isFirstLine = true;
     FrameHandler frameHandler(thread);
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
-        if (frameHandler.IsEntryFrame()) {
+        if (!frameHandler.IsInterpretedFrame()) {
             continue;
         }
-        auto method = frameHandler.GetMethod();
+        auto method = frameHandler.CheckAndGetMethod();
+        if (method == nullptr) {
+            continue;
+        }
         if (!method->IsNativeWithCallField()) {
             data.append("    at ");
-            data += DecodeFunctionName(method->ParseFunctionName());
+            data += DecodeFunctionName(method->ParseFunctionName().c_str());
             data.append(" (");
             // source file
             tooling::JSPtExtractor *debugExtractor =
                 JSPandaFileManager::GetInstance()->GetJSPtExtractor(method->GetJSPandaFile());
-            const CString &sourceFile = debugExtractor->GetSourceFile(method->GetMethodId());
+            const std::string &sourceFile = debugExtractor->GetSourceFile(method->GetMethodId());
             if (sourceFile.empty()) {
                 data.push_back('?');
             } else {
@@ -234,11 +237,20 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
             data.push_back(')');
             data.push_back('\n');
             if (isFirstLine) {
-                const CString &sourceCode = debugExtractor->GetSourceCode(
+                const std::string &sourceCode = debugExtractor->GetSourceCode(
                     panda_file::File::EntityId(method->GetJSPandaFile()->GetMainMethodIndex()));
                 fristLineSrcCode = StringHelper::GetSpecifiedLine(sourceCode, lineNumber);
                 isFirstLine = false;
             }
+        } else if (needNative) {
+            data.append("    at native method");
+            data.append(" (");
+            auto addr = method->GetNativePointer();
+            std::stringstream strm;
+            strm << addr;
+            data.append(strm.str());
+            data.push_back(')');
+            data.push_back('\n');
         }
     }
     if (!fristLineSrcCode.empty()) {
@@ -246,17 +258,13 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
         if (fristLineSrcCode[codeLen - 1] == '\r') {
             fristLineSrcCode = fristLineSrcCode.substr(0, codeLen - 1);
         }
-        fristLineSrcCode = "SourceCode (" + fristLineSrcCode;
-        fristLineSrcCode.push_back(')');
-        fristLineSrcCode.push_back('\n');
-        data = fristLineSrcCode + data;
+        if (fristLineSrcCode != "ANDA") {
+            fristLineSrcCode = "SourceCode (" + fristLineSrcCode;
+            fristLineSrcCode.push_back(')');
+            fristLineSrcCode.push_back('\n');
+            data = fristLineSrcCode + data;
+        }
     }
-    return data;
-}
-
-CString ErrorHelper::BuildNativeAndJsStackTrace(JSThread *thread)
-{
-    CString data = BuildNativeEcmaStackTrace(thread);
     return data;
 }
 }  // namespace panda::ecmascript::base

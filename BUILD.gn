@@ -109,6 +109,7 @@ if (defined(ark_independent_build)) {
       if (is_standard_system) {
         deps += [ "//ark/js_runtime/test/aottest:ark_aot_test" ]
         deps += [ "//ark/js_runtime/test/moduletest:ark_asm_test" ]
+        deps += [ "//ark/js_runtime/test/typeinfer:ark_typeinfer_test" ]
       }
     }
   }
@@ -301,6 +302,7 @@ config("icu_path_test_config") {
 
 ecma_source = [
   "ecmascript/base/array_helper.cpp",
+  "ecmascript/base/atomic_helper.cpp",
   "ecmascript/base/builtins_base.cpp",
   "ecmascript/base/error_helper.cpp",
   "ecmascript/base/json_parser.cpp",
@@ -314,6 +316,7 @@ ecma_source = [
   "ecmascript/builtins/builtins_array.cpp",
   "ecmascript/builtins/builtins_arraybuffer.cpp",
   "ecmascript/builtins/builtins_async_function.cpp",
+  "ecmascript/builtins/builtins_atomics.cpp",
   "ecmascript/builtins/builtins_bigint.cpp",
   "ecmascript/builtins/builtins_boolean.cpp",
   "ecmascript/builtins/builtins_dataview.cpp",
@@ -346,6 +349,8 @@ ecma_source = [
   "ecmascript/builtins/builtins_weak_set.cpp",
   "ecmascript/containers/containers_arraylist.cpp",
   "ecmascript/containers/containers_deque.cpp",
+  "ecmascript/containers/containers_linked_list.cpp",
+  "ecmascript/containers/containers_list.cpp",
   "ecmascript/containers/containers_plainarray.cpp",
   "ecmascript/containers/containers_private.cpp",
   "ecmascript/containers/containers_queue.cpp",
@@ -391,6 +396,10 @@ ecma_source = [
   "ecmascript/js_api_arraylist_iterator.cpp",
   "ecmascript/js_api_deque.cpp",
   "ecmascript/js_api_deque_iterator.cpp",
+  "ecmascript/js_api_linked_list.cpp",
+  "ecmascript/js_api_linked_list_iterator.cpp",
+  "ecmascript/js_api_list.cpp",
+  "ecmascript/js_api_list_iterator.cpp",
   "ecmascript/js_api_plain_array.cpp",
   "ecmascript/js_api_plain_array_iterator.cpp",
   "ecmascript/js_api_queue.cpp",
@@ -477,8 +486,10 @@ ecma_source = [
   "ecmascript/regexp/regexp_parser_cache.cpp",
   "ecmascript/shared_mm/shared_mm.cpp",
   "ecmascript/tagged_dictionary.cpp",
+  "ecmascript/tagged_list.cpp",
   "ecmascript/tagged_tree.cpp",
   "ecmascript/template_string.cpp",
+  "ecmascript/waiter_list.cpp",
   "ecmascript/weak_vector.cpp",
   "ecmascript/compiler/llvm/llvm_stackmap_parser.cpp",
   "ecmascript/stubs/runtime_stubs.cpp",
@@ -519,21 +530,6 @@ if (!is_mingw && !is_mac) {
     "ecmascript/snapshot/mem/snapshot_env.cpp",
     "ecmascript/snapshot/mem/snapshot_processor.cpp",
   ]
-}
-
-if (current_cpu == "arm") {
-  ecma_source += [ "ecmascript/trampoline/arm32/call.S" ]
-} else if (current_cpu == "arm64") {
-  ecma_source += [ "ecmascript/trampoline/aarch64/call.S" ]
-} else if (current_cpu == "amd64" || current_cpu == "x64" ||
-           current_cpu == "x86_64") {
-  if (is_linux) {
-    ecma_source += [ "ecmascript/trampoline/x64/call.S" ]
-  } else if (is_mingw) {
-    ecma_source += [ "ecmascript/trampoline/win_x64/call.S" ]
-  } else if (is_mac) {
-    ecma_source += [ "ecmascript/trampoline/mac_x64/call.S" ]
-  }
 }
 
 source_set("libark_jsruntime_set") {

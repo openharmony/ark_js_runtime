@@ -583,6 +583,10 @@ public:
     bool IsJSAPIDequeIterator() const;
     bool IsJSAPIStack() const;
     bool IsJSAPIStackIterator() const;
+    bool IsJSAPIList() const;
+    bool IsJSAPILinkedList() const;
+    bool IsJSAPIListIterator() const;
+    bool IsJSAPILinkedListIterator() const;
     bool IsSpecialContainer() const;
 
     bool IsPrototypeHandler() const;

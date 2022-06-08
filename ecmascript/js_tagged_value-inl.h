@@ -626,6 +626,26 @@ inline bool JSTaggedValue::IsJSAPIVector() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIVector();
 }
 
+inline bool JSTaggedValue::IsJSAPIList() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIList();
+}
+
+inline bool JSTaggedValue::IsJSAPILinkedList() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPILinkedList();
+}
+
+inline bool JSTaggedValue::IsJSAPILinkedListIterator() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPILinkedListIterator();
+}
+
+inline bool JSTaggedValue::IsJSAPIListIterator() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIListIterator();
+}
+
 inline bool JSTaggedValue::IsSpecialContainer() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsSpecialContainer();

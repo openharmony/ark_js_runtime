@@ -31,8 +31,8 @@ public:
     virtual void WaitForDebugger() = 0;
     virtual void RunIfWaitingForDebugger() = 0;
     virtual void SendResponse(const DispatchRequest &request, const DispatchResponse &response,
-                              std::unique_ptr<PtBaseReturns> result) = 0;
-    virtual void SendNotification(std::unique_ptr<PtBaseEvents> events) = 0;
+                              const PtBaseReturns &result) = 0;
+    virtual void SendNotification(const PtBaseEvents &events) = 0;
 
 private:
     NO_COPY_SEMANTIC(ProtocolChannel);

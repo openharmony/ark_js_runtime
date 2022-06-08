@@ -23,7 +23,18 @@ pushd ark/ts2abc
         mkdir report
     fi
 
-    python3 test262/run_test262.py --es2015 all --threads=16 --libs-dir ../../out/hi3516dv300/clang_x64/ark/ark:../../out/hi3516dv300/clang_x64/ark/ark_js_runtime:../../out/hi3516dv300/clang_x64/thirdparty/icu:../../prebuilts/clang/ohos/linux-x86_64/llvm/lib --ark-tool=../../out/hi3516dv300/clang_x64/ark/ark_js_runtime/ark_js_vm --ark-frontend-tool=../../out/hi3516dv300/clang_x64/ark/ark/build/src/index.js
+    pushd ../../
+    if [ -d out/rk3568 ];then
+        pushd ark/ts2abc
+        python3 test262/run_test262.py --es2015 all --threads=16 --libs-dir ../../out/rk3568/clang_x64/ark/ark:../../out/rk3568/clang_x64/ark/ark_js_runtime:../../out/rk3568/clang_x64/thirdparty/icu:../../prebuilts/clang/ohos/linux-x86_64/llvm/lib --ark-tool=../../out/rk3568/clang_x64/ark/ark_js_runtime/ark_js_vm --ark-frontend-tool=../../out/rk3568/clang_x64/ark/ark/build/src/index.js
+        popd
+    fi
+    if [ -d out/hispark_taurus ];then
+        pushd ark/ts2abc
+        python3 test262/run_test262.py --es2015 all --threads=16 --libs-dir ../../out/hispark_taurus/clang_x64/ark/ark:../../out/hispark_taurus/clang_x64/ark/ark_js_runtime:../../out/hispark_taurus/clang_x64/thirdparty/icu:../../prebuilts/clang/ohos/linux-x86_64/llvm/lib --ark-tool=../../out/hispark_taurus/clang_x64/ark/ark_js_runtime/ark_js_vm --ark-frontend-tool=../../out/hispark_taurus/clang_x64/ark/ark/build/src/index.js
+        popd
+    fi
+    popd
     
     if [ $? -ne 0 ];then
         echo 'execute run_test262.py failed!'

@@ -40,7 +40,7 @@ void DispatchProtocolMessage(const ::panda::ecmascript::EcmaVM *vm, const std::s
 {
     ProtocolHandler *handler = vm->GetJsDebuggerManager()->GetDebuggerHandler();
     if (handler != nullptr) {
-        handler->ProcessCommand(message.c_str());
+        handler->ProcessCommand(message);
     }
 }
 }  // namespace panda::ecmascript::tooling

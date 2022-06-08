@@ -23,7 +23,7 @@ std::unique_ptr<EnableParams> EnableParams::Create(const EcmaVM *ecmaVm, const L
         LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<EnableParams>();
 
     Local<JSValueRef> result =
@@ -51,7 +51,7 @@ std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(con
         LOG(ERROR, DEBUGGER) << "EvaluateOnCallFrameParams::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<EvaluateOnCallFrameParams>();
 
     Local<JSValueRef> result =
@@ -69,7 +69,7 @@ std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(con
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "expression")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->expression_ = DebuggerApi::ToCString(result);
+            paramsObject->expression_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'expression' should be a String;";
         }
@@ -79,7 +79,7 @@ std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(con
 
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectGroup")));
     if (!result.IsEmpty() && result->IsString()) {
-        paramsObject->objectGroup_ = DebuggerApi::ToCString(result);
+        paramsObject->objectGroup_ = DebuggerApi::ToStdString(result);
     }
 
     result = Local<ObjectRef>(params)->Get(ecmaVm,
@@ -125,7 +125,7 @@ std::unique_ptr<GetPossibleBreakpointsParams> GetPossibleBreakpointsParams::Crea
         LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<GetPossibleBreakpointsParams>();
 
     Local<JSValueRef> result =
@@ -182,7 +182,7 @@ std::unique_ptr<GetScriptSourceParams> GetScriptSourceParams::Create(const EcmaV
         LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<GetScriptSourceParams>();
 
     Local<JSValueRef> result =
@@ -212,14 +212,14 @@ std::unique_ptr<RemoveBreakpointParams> RemoveBreakpointParams::Create(const Ecm
         LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<RemoveBreakpointParams>();
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "breakpointId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->breakpointId_ = DebuggerApi::ToCString(result);
+            paramsObject->breakpointId_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'breakpointId' should be a String;";
         }
@@ -241,7 +241,7 @@ std::unique_ptr<ResumeParams> ResumeParams::Create(const EcmaVM *ecmaVm, const L
         LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<ResumeParams>();
 
     Local<JSValueRef> result =
@@ -269,7 +269,7 @@ std::unique_ptr<SetAsyncCallStackDepthParams> SetAsyncCallStackDepthParams::Crea
         LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<SetAsyncCallStackDepthParams>();
 
     Local<JSValueRef> result =
@@ -299,7 +299,7 @@ std::unique_ptr<SetBlackboxPatternsParams> SetBlackboxPatternsParams::Create(con
         LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<SetBlackboxPatternsParams>();
 
     Local<JSValueRef> result =
@@ -314,7 +314,7 @@ std::unique_ptr<SetBlackboxPatternsParams> SetBlackboxPatternsParams::Create(con
                 Local<JSValueRef> value = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 if (value->IsString()) {
                     paramsObject->patterns_.emplace_back(
-                        DebuggerApi::ToCString(value));
+                        DebuggerApi::ToStdString(value));
                 } else {
                     error += "'patterns' items should be a String;";
                 }
@@ -341,7 +341,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
         LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<SetBreakpointByUrlParams>();
 
     Local<JSValueRef> result =
@@ -358,7 +358,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->url_ = DebuggerApi::ToCString(result);
+            paramsObject->url_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'url' should be a String;";
         }
@@ -366,7 +366,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "urlRegex")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->urlRegex_ = DebuggerApi::ToCString(result);
+            paramsObject->urlRegex_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'urlRegex' should be a String;";
         }
@@ -374,7 +374,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptHash")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->scriptHash_ = DebuggerApi::ToCString(result);
+            paramsObject->scriptHash_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'scriptHash' should be a String;";
         }
@@ -390,7 +390,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "condition")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->condition_ = DebuggerApi::ToCString(result);
+            paramsObject->condition_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'condition' should be a String;";
         }
@@ -411,14 +411,14 @@ std::unique_ptr<SetPauseOnExceptionsParams> SetPauseOnExceptionsParams::Create(c
         LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<SetPauseOnExceptionsParams>();
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "state")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            if (!paramsObject->StoreState(DebuggerApi::ToCString(result))) {
+            if (!paramsObject->StoreState(DebuggerApi::ToStdString(result))) {
                 error += "'state' is invalid;";
             }
         } else {
@@ -442,7 +442,7 @@ std::unique_ptr<StepIntoParams> StepIntoParams::Create(const EcmaVM *ecmaVm, con
         LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<StepIntoParams>();
 
     Local<JSValueRef> result =
@@ -493,7 +493,7 @@ std::unique_ptr<StepOverParams> StepOverParams::Create(const EcmaVM *ecmaVm, con
         LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<StepOverParams>();
 
     Local<JSValueRef> result =
@@ -536,7 +536,7 @@ std::unique_ptr<GetPropertiesParams> GetPropertiesParams::Create(const EcmaVM *e
         LOG(ERROR, DEBUGGER) << "GetPropertiesParams::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<GetPropertiesParams>();
 
     Local<JSValueRef> result =
@@ -592,7 +592,7 @@ std::unique_ptr<CallFunctionOnParams> CallFunctionOnParams::Create(const EcmaVM 
         LOG(ERROR, DEBUGGER) << "CallFunctionOnParams::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<CallFunctionOnParams>();
 
     // paramsObject->functionDeclaration_
@@ -600,7 +600,7 @@ std::unique_ptr<CallFunctionOnParams> CallFunctionOnParams::Create(const EcmaVM 
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionDeclaration")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->functionDeclaration_ = DebuggerApi::ToCString(result);
+            paramsObject->functionDeclaration_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'functionDeclaration' should be a String;";
         }
@@ -701,7 +701,7 @@ std::unique_ptr<CallFunctionOnParams> CallFunctionOnParams::Create(const EcmaVM 
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectGroup")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->objectGroup_ = DebuggerApi::ToCString(result);
+            paramsObject->objectGroup_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'objectGroup' should be a String;";
         }
@@ -716,7 +716,7 @@ std::unique_ptr<CallFunctionOnParams> CallFunctionOnParams::Create(const EcmaVM 
             error += "'throwOnSideEffect' should be a Boolean;";
         }
     }
-    // Check whether the CString(error) is empty.
+    // Check whether the error is empty.
     if (!error.empty()) {
         LOG(ERROR, DEBUGGER) << "CallFunctionOnParams::Create " << error;
         return nullptr;
@@ -733,7 +733,7 @@ std::unique_ptr<StartSamplingParams> StartSamplingParams::Create(const EcmaVM *e
         LOG(ERROR, DEBUGGER) << "StartSamplingParams::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<StartSamplingParams>();
 
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
@@ -753,7 +753,7 @@ std::unique_ptr<StartSamplingParams> StartSamplingParams::Create(const EcmaVM *e
     return paramsObject;
 }
 
-Local<ObjectRef> StartSamplingParams::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> StartSamplingParams::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -771,7 +771,7 @@ std::unique_ptr<StartTrackingHeapObjectsParams> StartTrackingHeapObjectsParams::
         LOG(ERROR, DEBUGGER) << "StartTrackingHeapObjectsParams::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<StartTrackingHeapObjectsParams>();
 
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
@@ -790,7 +790,7 @@ std::unique_ptr<StartTrackingHeapObjectsParams> StartTrackingHeapObjectsParams::
     return paramsObject;
 }
 
-Local<ObjectRef> StartTrackingHeapObjectsParams::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> StartTrackingHeapObjectsParams::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -808,7 +808,7 @@ std::unique_ptr<StopTrackingHeapObjectsParams> StopTrackingHeapObjectsParams::Cr
         LOG(ERROR, DEBUGGER) << "StopTrackingHeapObjectsParams::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<StopTrackingHeapObjectsParams>();
 
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
@@ -848,7 +848,7 @@ std::unique_ptr<StopTrackingHeapObjectsParams> StopTrackingHeapObjectsParams::Cr
     return paramsObject;
 }
 
-Local<ObjectRef> StopTrackingHeapObjectsParams::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> StopTrackingHeapObjectsParams::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -870,7 +870,7 @@ std::unique_ptr<AddInspectedHeapObjectParams> AddInspectedHeapObjectParams::Crea
         LOG(ERROR, DEBUGGER) << "AddInspectedHeapObjectParams::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<AddInspectedHeapObjectParams>();
 
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
@@ -892,7 +892,7 @@ std::unique_ptr<AddInspectedHeapObjectParams> AddInspectedHeapObjectParams::Crea
     return paramsObject;
 }
 
-Local<ObjectRef> AddInspectedHeapObjectParams::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> AddInspectedHeapObjectParams::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -911,7 +911,7 @@ std::unique_ptr<GetHeapObjectIdParams> GetHeapObjectIdParams::Create(const EcmaV
         LOG(ERROR, DEBUGGER) << "GetHeapObjectIdParams::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<GetHeapObjectIdParams>();
 
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
@@ -933,7 +933,7 @@ std::unique_ptr<GetHeapObjectIdParams> GetHeapObjectIdParams::Create(const EcmaV
     return paramsObject;
 }
 
-Local<ObjectRef> GetHeapObjectIdParams::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> GetHeapObjectIdParams::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -951,7 +951,7 @@ std::unique_ptr<GetObjectByHeapObjectIdParams> GetObjectByHeapObjectIdParams::Cr
         LOG(ERROR, DEBUGGER) << "GetObjectByHeapObjectIdParams::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<GetObjectByHeapObjectIdParams>();
 
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
@@ -970,7 +970,7 @@ std::unique_ptr<GetObjectByHeapObjectIdParams> GetObjectByHeapObjectIdParams::Cr
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectGroup")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            paramsObject->objectGroup_ = DebuggerApi::ToCString(result);
+            paramsObject->objectGroup_ = DebuggerApi::ToStdString(result);
         } else {
             error += "'objectGroup' should be a String;";
         }
@@ -983,7 +983,7 @@ std::unique_ptr<GetObjectByHeapObjectIdParams> GetObjectByHeapObjectIdParams::Cr
     return paramsObject;
 }
 
-Local<ObjectRef> GetObjectByHeapObjectIdParams::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> GetObjectByHeapObjectIdParams::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -1004,7 +1004,7 @@ std::unique_ptr<StartPreciseCoverageParam> StartPreciseCoverageParam::Create(con
         LOG(ERROR, DEBUGGER) << "StartPreciseCoverageParam::Create params is nullptr";
         return nullptr;
     }
-    CString error;
+    std::string error;
     auto paramsObject = std::make_unique<StartPreciseCoverageParam>();
 
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
@@ -1044,7 +1044,7 @@ std::unique_ptr<StartPreciseCoverageParam> StartPreciseCoverageParam::Create(con
     return paramsObject;
 }
 
-Local<ObjectRef> StartPreciseCoverageParam::ToObject(const EcmaVM *ecmaVm)
+Local<ObjectRef> StartPreciseCoverageParam::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
@@ -1055,6 +1055,45 @@ Local<ObjectRef> StartPreciseCoverageParam::ToObject(const EcmaVM *ecmaVm)
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "allowTriggeredUpdates")),
         BooleanRef::New(ecmaVm, allowTriggeredUpdates_.value()));
 
+    return params;
+}
+
+std::unique_ptr<SetSamplingIntervalParams> SetSamplingIntervalParams::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
+{
+    ASSERT(ecmaVm);
+    if (params.IsEmpty()) {
+        LOG(ERROR, DEBUGGER) << "SetSamplingIntervalParams::Create params is nullptr";
+        return nullptr;
+    }
+    std::string error;
+    auto paramsObject = std::make_unique<SetSamplingIntervalParams>();
+
+    Local<JSValueRef> result =
+        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "interval")));
+    if (!result.IsEmpty() && !result->IsUndefined()) {
+        if (result->IsNumber()) {
+            paramsObject->interval_ = static_cast<int>(Local<NumberRef>(result)->Value());
+        } else {
+            error += "'interval' should be a Number;";
+        }
+    } else {
+        error += "should contain 'interval';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "SetSamplingIntervalParams::Create " << error;
+        return nullptr;
+    }
+    return paramsObject;
+}
+
+Local<ObjectRef> SetSamplingIntervalParams::ToObject(const EcmaVM *ecmaVm) const
+{
+    Local<ObjectRef> params = NewObject(ecmaVm);
+
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "interval")),
+        IntegerRef::New(ecmaVm, interval_));
     return params;
 }
 }  // namespace panda::ecmascript::tooling

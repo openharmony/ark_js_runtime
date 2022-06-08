@@ -53,7 +53,7 @@ public:
 
 HWTEST_P_L0(DebuggerEntryTest, DebuggerSuite)
 {
-    CString testName = GetCurrentTestName();
+    std::string testName = GetCurrentTestName();
     std::cout << "Running " << testName << std::endl;
     ASSERT_NE(instance, nullptr);
     auto [pandaFile, entryPoint] = GetTestEntryPoint(testName);

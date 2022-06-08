@@ -1535,16 +1535,23 @@ JSTaggedValue BuiltinsString::Trim(EcmaRuntimeCallInfo *argv)
     JSHandle<EcmaString> thisHandle = JSTaggedValue::ToString(thread, thisTag);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     uint32_t thisLen = thisHandle->GetLength();
-    std::u16string u16strThis;
-    if (thisHandle->IsUtf16()) {
-        u16strThis = base::StringHelper::Utf16ToU16String(thisHandle->GetDataUtf16(), thisLen);
-    } else {
-        const uint8_t *uint8This = thisHandle->GetDataUtf8();
-        u16strThis = base::StringHelper::Utf8ToU16String(uint8This, thisLen);
+    if (UNLIKELY(thisLen == 0)) {
+        return thread->GlobalConstants()->GetEmptyString();
     }
 
-    EcmaString *str = base::StringHelper::Trim(thread, u16strThis);
-    return JSTaggedValue(str);
+    if (thisHandle->IsUtf8()) {
+        Span<const uint8_t> data(reinterpret_cast<const uint8_t *>(thisHandle->GetData()), thisLen);
+        uint32_t start = base::StringHelper::GetStart(data, thisLen);
+        uint32_t end = base::StringHelper::GetEnd(data, start, thisLen);
+        EcmaString *res = EcmaString::FastSubUtf8String(thread->GetEcmaVM(), thisHandle, start, end + 1 - start);
+        return JSTaggedValue(res);
+    }
+
+    Span<const uint16_t> data(thisHandle->GetData(), thisLen);
+    uint32_t start = base::StringHelper::GetStart(data, thisLen);
+    uint32_t end = base::StringHelper::GetEnd(data, start, thisLen);
+    EcmaString *res = EcmaString::FastSubUtf16String(thread->GetEcmaVM(), thisHandle, start, end + 1 - start);
+    return JSTaggedValue(res);
 }
 
 // 21.1.3.26
