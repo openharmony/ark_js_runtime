@@ -347,7 +347,7 @@ private:
 
 class StartPreciseCoverageReturns : public PtBaseReturns {
 public:
-    explicit StartPreciseCoverageReturns(size_t tamp) : timestamp_(tamp) {}
+    explicit StartPreciseCoverageReturns(int64_t tamp) : timestamp_(tamp) {}
     ~StartPreciseCoverageReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
@@ -356,12 +356,12 @@ private:
     NO_COPY_SEMANTIC(StartPreciseCoverageReturns);
     NO_MOVE_SEMANTIC(StartPreciseCoverageReturns);
 
-    size_t timestamp_ {0};
+    int64_t timestamp_ {0};
 };
 
 class TakePreciseCoverageReturns : public PtBaseReturns {
 public:
-    explicit TakePreciseCoverageReturns(std::vector<std::unique_ptr<ScriptCoverage>> result, size_t tamp)
+    explicit TakePreciseCoverageReturns(std::vector<std::unique_ptr<ScriptCoverage>> result, int64_t tamp)
         : result_(std::move(result)),
           timestamp_(tamp)
     {}
@@ -374,7 +374,7 @@ private:
     NO_MOVE_SEMANTIC(TakePreciseCoverageReturns);
 
     std::vector<std::unique_ptr<ScriptCoverage>> result_ {};
-    size_t timestamp_ {0};
+    int64_t timestamp_ {0};
 };
 
 class TakeTypeProfileturns : public PtBaseReturns {

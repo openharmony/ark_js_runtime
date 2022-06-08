@@ -892,12 +892,12 @@ public:
         return "Profile.PreciseCoverageDeltaUpdate";
     }
 
-    size_t GetTimestamp() const
+    int64_t GetTimestamp() const
     {
         return timestamp_;
     }
 
-    PreciseCoverageDeltaUpdate &SetTimestamp(size_t timestamp)
+    PreciseCoverageDeltaUpdate &SetTimestamp(int64_t timestamp)
     {
         timestamp_ = timestamp;
         return *this;
