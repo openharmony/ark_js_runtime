@@ -28,6 +28,10 @@ public:
     {
         return NewObject(ecmaVm);
     }
+    std::unique_ptr<PtJson> ToJson() const override
+    {
+        return PtJson::CreateObject();
+    }
 
 private:
     NO_COPY_SEMANTIC(PtBaseReturns);
