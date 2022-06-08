@@ -1042,6 +1042,35 @@ std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSV
     return location;
 }
 
+std::unique_ptr<Location> Location::Create(const PtJson &params)
+{
+    std::string error;
+    auto location = std::make_unique<Location>();
+
+    std::string scriptId = params.GetString("scriptId");
+    if (scriptId.empty()) {
+        error += "should contain string 'scriptId';";
+    } else {
+        location->scriptId_ = static_cast<uint32_t>(std::stoi(scriptId));
+    }
+    int32_t line = params.GetInt("lineNumber", -1);
+    if (line == -1) {
+        error += "should contain number 'lineNumber';";
+    } else {
+        location->line_ = line;
+    }
+    int32_t column = params.GetInt("columnNumber", -1);
+    if (column != -1) {
+        location->column_ = column;
+    }
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "Location::Create " << error;
+        return nullptr;
+    }
+
+    return location;
+}
+
 Local<ObjectRef> Location::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -1058,6 +1087,19 @@ Local<ObjectRef> Location::ToObject(const EcmaVM *ecmaVm) const
     }
 
     return params;
+}
+
+std::unique_ptr<PtJson> Location::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("scriptId", std::to_string(scriptId_).c_str());
+    result->Add("lineNumber", line_);
+    if (column_) {
+        result->Add("columnNumber", column_.value());
+    }
+
+    return result;
 }
 
 std::unique_ptr<ScriptPosition> ScriptPosition::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)

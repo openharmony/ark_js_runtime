@@ -28,6 +28,10 @@ public:
     {
         return NewObject(ecmaVm);
     }
+    std::unique_ptr<PtJson> ToJson() const override
+    {
+        return PtJson::CreateObject();
+    }
 
 private:
     NO_COPY_SEMANTIC(PtBaseReturns);
@@ -40,6 +44,7 @@ public:
     ~EnableReturns() override = default;
 
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     EnableReturns() = default;

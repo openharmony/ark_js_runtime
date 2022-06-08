@@ -36,9 +36,9 @@ void PtJson::ReleaseRoot()
     }
 }
 
-std::unique_ptr<PtJson> PtJson::Parse(const char *data)
+std::unique_ptr<PtJson> PtJson::Parse(const std::string &data)
 {
-    cJSON *value = cJSON_ParseWithOpts(data, nullptr, true);
+    cJSON *value = cJSON_ParseWithOpts(data.c_str(), nullptr, true);
     return std::make_unique<PtJson>(value);
 }
 
@@ -369,11 +369,11 @@ double PtJson::GetDouble(const char *key, double defaultValue) const
     return value->valuedouble;
 }
 
-std::string PtJson::GetString(const char *key, std::string defaultValue) const
+std::string PtJson::GetString(const char *key) const
 {
     cJSON *value = cJSON_GetObjectItem(object_, key);
     if (value == nullptr || cJSON_IsString(value) == 0) {
-        return defaultValue;
+        return "";
     }
 
     return value->valuestring;

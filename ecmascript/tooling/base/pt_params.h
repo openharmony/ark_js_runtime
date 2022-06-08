@@ -37,6 +37,7 @@ public:
     ~EnableParams() override = default;
 
     static std::unique_ptr<EnableParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<EnableParams> Create(const PtJson &params);
     Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) const override
     {
         return Local<ObjectRef>();
@@ -56,7 +57,7 @@ private:
     NO_COPY_SEMANTIC(EnableParams);
     NO_MOVE_SEMANTIC(EnableParams);
 
-    std::optional<double> maxScriptsCacheSize_ {0};
+    std::optional<double> maxScriptsCacheSize_ {};
 };
 
 class EvaluateOnCallFrameParams : public PtBaseParams {

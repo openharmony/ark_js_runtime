@@ -46,7 +46,7 @@ void HeapProfilerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
 void HeapProfilerImpl::DispatcherImpl::AddInspectedHeapObject(const DispatchRequest &request)
 {
     std::unique_ptr<AddInspectedHeapObjectParams> params =
-        AddInspectedHeapObjectParams::Create(request.GetEcmaVM(), request.GetParams());
+        AddInspectedHeapObjectParams::Create(request.GetEcmaVM(), request.GetParamsObj());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -76,7 +76,7 @@ void HeapProfilerImpl::DispatcherImpl::Disable(const DispatchRequest &request)
 void HeapProfilerImpl::DispatcherImpl::GetHeapObjectId(const DispatchRequest &request)
 {
     std::unique_ptr<GetHeapObjectIdParams> params =
-        GetHeapObjectIdParams::Create(request.GetEcmaVM(), request.GetParams());
+        GetHeapObjectIdParams::Create(request.GetEcmaVM(), request.GetParamsObj());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -91,7 +91,7 @@ void HeapProfilerImpl::DispatcherImpl::GetHeapObjectId(const DispatchRequest &re
 void HeapProfilerImpl::DispatcherImpl::GetObjectByHeapObjectId(const DispatchRequest &request)
 {
     std::unique_ptr<GetObjectByHeapObjectIdParams> params =
-        GetObjectByHeapObjectIdParams::Create(request.GetEcmaVM(), request.GetParams());
+        GetObjectByHeapObjectIdParams::Create(request.GetEcmaVM(), request.GetParamsObj());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -115,7 +115,7 @@ void HeapProfilerImpl::DispatcherImpl::GetSamplingProfile(const DispatchRequest 
 void HeapProfilerImpl::DispatcherImpl::StartSampling(const DispatchRequest &request)
 {
     std::unique_ptr<StartSamplingParams> params =
-        StartSamplingParams::Create(request.GetEcmaVM(), request.GetParams());
+        StartSamplingParams::Create(request.GetEcmaVM(), request.GetParamsObj());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -127,7 +127,7 @@ void HeapProfilerImpl::DispatcherImpl::StartSampling(const DispatchRequest &requ
 void HeapProfilerImpl::DispatcherImpl::StartTrackingHeapObjects(const DispatchRequest &request)
 {
     std::unique_ptr<StartTrackingHeapObjectsParams> params =
-        StartTrackingHeapObjectsParams::Create(request.GetEcmaVM(), request.GetParams());
+        StartTrackingHeapObjectsParams::Create(request.GetEcmaVM(), request.GetParamsObj());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -148,7 +148,7 @@ void HeapProfilerImpl::DispatcherImpl::StopSampling(const DispatchRequest &reque
 void HeapProfilerImpl::DispatcherImpl::StopTrackingHeapObjects(const DispatchRequest &request)
 {
     std::unique_ptr<StopTrackingHeapObjectsParams> params =
-        StopTrackingHeapObjectsParams::Create(request.GetEcmaVM(), request.GetParams());
+        StopTrackingHeapObjectsParams::Create(request.GetEcmaVM(), request.GetParamsObj());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -160,7 +160,7 @@ void HeapProfilerImpl::DispatcherImpl::StopTrackingHeapObjects(const DispatchReq
 void HeapProfilerImpl::DispatcherImpl::TakeHeapSnapshot(const DispatchRequest &request)
 {
     std::unique_ptr<StopTrackingHeapObjectsParams> params =
-        StopTrackingHeapObjectsParams::Create(request.GetEcmaVM(), request.GetParams());
+        StopTrackingHeapObjectsParams::Create(request.GetEcmaVM(), request.GetParamsObj());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;

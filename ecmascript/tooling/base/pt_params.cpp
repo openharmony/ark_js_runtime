@@ -20,7 +20,7 @@ std::unique_ptr<EnableParams> EnableParams::Create(const EcmaVM *ecmaVm, const L
 {
     ASSERT(ecmaVm);
     if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
+        LOG(ERROR, DEBUGGER) << "EnableParams::Create params is nullptr";
         return nullptr;
     }
     std::string error;
@@ -38,6 +38,19 @@ std::unique_ptr<EnableParams> EnableParams::Create(const EcmaVM *ecmaVm, const L
     if (!error.empty()) {
         LOG(ERROR, DEBUGGER) << "EnableParams::Create " << error;
         return nullptr;
+    }
+
+    return paramsObject;
+}
+
+std::unique_ptr<EnableParams> EnableParams::Create(const PtJson &params)
+{
+    auto paramsObject = std::make_unique<EnableParams>();
+
+    double result = params.GetDouble("maxScriptsCacheSize", -1.0);
+    if (result != -1.0) {
+        // optional params
+        paramsObject->maxScriptsCacheSize_ = result;
     }
 
     return paramsObject;
