@@ -34,6 +34,10 @@
 #include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_linked_list.h"
+#include "ecmascript/js_api_linked_list_iterator.h"
+#include "ecmascript/js_api_list.h"
+#include "ecmascript/js_api_list_iterator.h"
 #include "ecmascript/js_api_plain_array.h"
 #include "ecmascript/js_api_plain_array_iterator.h"
 #include "ecmascript/js_api_queue.h"
@@ -93,6 +97,7 @@
 #include "ecmascript/module/js_module_source_text.h"
 #include "ecmascript/tagged_array.h"
 #include "ecmascript/tagged_dictionary.h"
+#include "ecmascript/tagged_list.h"
 #include "ecmascript/tagged_tree.h"
 #include "ecmascript/template_map.h"
 #include "ecmascript/transitions_dictionary.h"
@@ -341,6 +346,14 @@ CString JSHClass::DumpJSType(JSType type)
             return "Stack";
         case JSType::JS_API_STACK_ITERATOR:
             return "StackIterator";
+        case JSType::JS_API_LIST:
+            return "List";
+        case JSType::JS_API_LIST_ITERATOR:
+            return "ListIterator";
+        case JSType::JS_API_LINKED_LIST:
+            return "LinkedList";
+        case JSType::JS_API_LINKED_LIST_ITERATOR:
+            return "LinkedListIterator";
         default: {
             CString ret = "unknown type ";
             return ret + static_cast<char>(type);
@@ -764,6 +777,18 @@ static void DumpObject(TaggedObject *obj, std::ostream &os)
         case JSType::JS_API_STACK_ITERATOR:
             JSAPIStackIterator::Cast(obj)->Dump(os);
             break;
+        case JSType::JS_API_LIST:
+            JSAPIList::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_API_LIST_ITERATOR:
+            JSAPIListIterator::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_API_LINKED_LIST:
+            JSAPILinkedList::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_API_LINKED_LIST_ITERATOR:
+            JSAPILinkedListIterator::Cast(obj)->Dump(os);
+            break;
         case JSType::SOURCE_TEXT_MODULE_RECORD:
             SourceTextModule::Cast(obj)->Dump(os);
             break;
@@ -1004,6 +1029,58 @@ void LinkedHashMap::Dump(std::ostream &os) const
             val.DumpTaggedValue(os);
             os << "\n";
         }
+    }
+}
+
+void TaggedDoubleList::Dump(std::ostream &os) const
+{
+    DISALLOW_GARBAGE_COLLECTION;
+    int capacity = NumberOfNodes();
+    os << " - node num: " << std::dec << capacity << "\n";
+    os << " - delete node num: " << std::dec << NumberOfDeletedNodes() << "\n";
+    os << "head-next: ";
+    // 5 : 5 first element next ptr
+    GetElement(5).D();
+    os << "head-pre: ";
+    // 6 : 6 first element per ptr
+    GetElement(6).D();
+    os << "\n";
+    int i = 0;
+    int next = GetElement(5).GetInt();
+    while (capacity > i) {
+        os << " value: ";
+        GetElement(next).DumpTaggedValue(os);
+        os << " next: ";
+        // 1 : 1 current element next ptr offset
+        GetElement(next + 1).D();
+        os << " pre: ";
+        // 2 : 2 current element pre ptr offset
+        GetElement(next + 2).D();
+        os << "\n";
+        next = GetElement(next + 1).GetInt();
+        i++;
+    }
+}
+
+void TaggedSingleList::Dump(std::ostream &os) const
+{
+    DISALLOW_GARBAGE_COLLECTION;
+    int capacity = NumberOfNodes();
+    os << "head-next: ";
+    // 5 : 5 first element next ptr
+    GetElement(5).D();
+    os << "\n";
+    int i = 0;
+    int next = GetElement(5).GetInt();
+    while (capacity > i) {
+        os << " value: ";
+        GetElement(next).DumpTaggedValue(os);
+        os << " next: ";
+        // 1 : 1 current element next ptr offset
+        GetElement(next + 1).D();
+        os << "\n";
+        next = GetElement(next + 1).GetInt();
+        i++;
     }
 }
 
@@ -1561,14 +1638,14 @@ void JSArray::Dump(std::ostream &os) const
 
 void JSAPIArrayList::Dump(std::ostream &os) const
 {
-    os << " - length: " << std::dec << GetLength().GetArrayLength() << "\n";
+    os << " - length: " << std::dec << GetSize() << "\n";
     JSObject::Dump(os);
 }
 
 void JSAPIArrayListIterator::Dump(std::ostream &os) const
 {
     JSAPIArrayList *arrayList = JSAPIArrayList::Cast(GetIteratedArrayList().GetTaggedObject());
-    os << " - length: " << std::dec << arrayList->GetLength().GetArrayLength() << "\n";
+    os << " - length: " << std::dec << arrayList->GetSize() << "\n";
     os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
     JSObject::Dump(os);
 }
@@ -1609,6 +1686,80 @@ void JSArrayIterator::Dump(std::ostream &os) const
     os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
     os << " - IterationKind: " << std::dec << static_cast<int>(GetIterationKind()) << "\n";
     JSObject::Dump(os);
+}
+
+void JSAPIList::Dump(std::ostream &os) const
+{
+    TaggedSingleList *list = TaggedSingleList::Cast(GetSingleList().GetTaggedObject());
+    os << " - length: " << std::dec << list->GetCapacityFromTaggedArray() << "\n";
+    os << " - node num: " << std::dec << list->NumberOfNodes() << "\n";
+    os << " - delete node num: " << std::dec << list->NumberOfDeletedNodes() << "\n";
+    JSObject::Dump(os);
+    list->Dump(os);
+}
+
+void JSAPIList::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    TaggedSingleList *map = TaggedSingleList::Cast(GetSingleList().GetTaggedObject());
+    map->DumpForSnapshot(vec);
+
+    JSObject::DumpForSnapshot(vec);
+}
+
+void JSAPIListIterator::Dump(std::ostream &os) const
+{
+    TaggedSingleList *list = TaggedSingleList::Cast(GetIteratedList().GetTaggedObject());
+    os << " - length: " << std::dec << list->GetCapacityFromTaggedArray() << "\n";
+    os << " - node num: " << std::dec << list->NumberOfNodes() << "\n";
+    os << " - delete node num: " << std::dec << list->NumberOfDeletedNodes() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
+    JSObject::Dump(os);
+    list->Dump(os);
+}
+
+void JSAPIListIterator::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    TaggedSingleList *list = TaggedSingleList::Cast(GetIteratedList().GetTaggedObject());
+    list->DumpForSnapshot(vec);
+    vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
+    JSObject::DumpForSnapshot(vec);
+}
+
+void JSAPILinkedList::Dump(std::ostream &os) const
+{
+    TaggedDoubleList *linkedList = TaggedDoubleList::Cast(GetDoubleList().GetTaggedObject());
+    os << " - length: " << std::dec << linkedList->GetCapacityFromTaggedArray() << "\n";
+    os << " - node num: " << std::dec << linkedList->NumberOfNodes() << "\n";
+    os << " - delete node num: " << std::dec << linkedList->NumberOfDeletedNodes() << "\n";
+    JSObject::Dump(os);
+    linkedList->Dump(os);
+}
+
+void JSAPILinkedList::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    TaggedDoubleList *map = TaggedDoubleList::Cast(GetDoubleList().GetTaggedObject());
+    map->DumpForSnapshot(vec);
+
+    JSObject::DumpForSnapshot(vec);
+}
+
+void JSAPILinkedListIterator::Dump(std::ostream &os) const
+{
+    TaggedDoubleList *linkedList = TaggedDoubleList::Cast(GetIteratedLinkedList().GetTaggedObject());
+    os << " - length: " << std::dec << linkedList->GetCapacityFromTaggedArray() << "\n";
+    os << " - node num: " << std::dec << linkedList->NumberOfNodes() << "\n";
+    os << " - delete node num: " << std::dec << linkedList->NumberOfDeletedNodes() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
+    JSObject::Dump(os);
+    linkedList->Dump(os);
+}
+
+void JSAPILinkedListIterator::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    TaggedDoubleList *linkedList = TaggedDoubleList::Cast(GetIteratedLinkedList().GetTaggedObject());
+    linkedList->DumpForSnapshot(vec);
+    vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
+    JSObject::DumpForSnapshot(vec);
 }
 
 void JSAPIQueue::Dump(std::ostream &os) const
@@ -1766,6 +1917,8 @@ void GlobalEnv::Dump(std::ostream &os) const
     GetBuiltinsFinalizationRegistryFunction().GetTaggedValue().Dump(os);
     os << " - MathFunction: ";
     GetMathFunction().GetTaggedValue().Dump(os);
+    os << " - AtomicsFunction: ";
+    GetAtomicsFunction().GetTaggedValue().Dump(os);
     os << " - JsonFunction: ";
     GetJsonFunction().GetTaggedValue().Dump(os);
     os << " - StringFunction: ";
@@ -1814,6 +1967,10 @@ void GlobalEnv::Dump(std::ostream &os) const
     GetUnscopablesSymbol().GetTaggedValue().Dump(os);
     os << " - HoleySymbol: ";
     GetHoleySymbol().GetTaggedValue().Dump(os);
+    os << " - AttachSymbol: ";
+    GetAttachSymbol().GetTaggedValue().Dump(os);
+    os << " - DetachSymbol: ";
+    GetDetachSymbol().GetTaggedValue().Dump(os);
     os << " - ConstructorString: ";
     globalConst->GetConstructorString().Dump(os);
     os << " - IteratorPrototype: ";
@@ -3082,6 +3239,18 @@ static void DumpObject(TaggedObject *obj,
         case JSType::JS_API_STACK_ITERATOR:
             JSAPIStackIterator::Cast(obj)->DumpForSnapshot(vec);
             return;
+        case JSType::JS_API_LIST:
+            JSAPIList::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_API_LINKED_LIST:
+            JSAPILinkedList::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_API_LIST_ITERATOR:
+            JSAPIListIterator::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_API_LINKED_LIST_ITERATOR:
+            JSAPILinkedListIterator::Cast(obj)->DumpForSnapshot(vec);
+            return;
         case JSType::SOURCE_TEXT_MODULE_RECORD:
             SourceTextModule::Cast(obj)->DumpForSnapshot(vec);
             return;
@@ -3309,6 +3478,30 @@ void TaggedTreeSet::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue
             KeyToStd(str, key);
             vec.push_back(std::make_pair(str, JSTaggedValue::Hole()));
         }
+    }
+}
+
+void TaggedDoubleList::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    DISALLOW_GARBAGE_COLLECTION;
+    int capacity = NumberOfNodes();
+    for (int index = 0; index < capacity; index++) {
+        JSTaggedValue val = GetElement(index);
+        CString str;
+        KeyToStd(str, JSTaggedValue(index));
+        vec.push_back(std::make_pair(str, val));
+    }
+}
+
+void TaggedSingleList::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    DISALLOW_GARBAGE_COLLECTION;
+    int capacity = NumberOfNodes();
+    for (int index = 0; index < capacity; index++) {
+        JSTaggedValue val = GetElement(index);
+        CString str;
+        KeyToStd(str, JSTaggedValue(index));
+        vec.push_back(std::make_pair(str, val));
     }
 }
 
@@ -3678,6 +3871,7 @@ void GlobalEnv::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &
     vec.push_back(std::make_pair(CString("BuiltinsFinalizationRegistryFunction"),
                                  GetBuiltinsFinalizationRegistryFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("MathFunction"), GetMathFunction().GetTaggedValue()));
+    vec.push_back(std::make_pair(CString("AtomicsFunction"), GetAtomicsFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("JsonFunction"), GetJsonFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("StringFunction"), GetStringFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("ProxyFunction"), GetProxyFunction().GetTaggedValue()));
@@ -3702,6 +3896,8 @@ void GlobalEnv::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &
     vec.push_back(std::make_pair(CString("ToPrimitiveSymbol"), GetToPrimitiveSymbol().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("UnscopablesSymbol"), GetUnscopablesSymbol().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("HoleySymbol"), GetHoleySymbol().GetTaggedValue()));
+    vec.push_back(std::make_pair(CString("AttachSymbol"), GetAttachSymbol().GetTaggedValue()));
+    vec.push_back(std::make_pair(CString("DetachSymbol"), GetDetachSymbol().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("ConstructorString"), globalConst->GetConstructorString()));
     vec.push_back(std::make_pair(CString("IteratorPrototype"), GetIteratorPrototype().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("ForinIteratorPrototype"), GetForinIteratorPrototype().GetTaggedValue()));
@@ -3769,6 +3965,9 @@ void GlobalEnv::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &
         std::make_pair(CString("PlainArrayIteratorPrototype"), globalConst->GetPlainArrayIteratorPrototype()));
     vec.push_back(std::make_pair(CString("DequeIteratorPrototype"), globalConst->GetDequeIteratorPrototype()));
     vec.push_back(std::make_pair(CString("StackIteratorPrototype"), globalConst->GetStackIteratorPrototype()));
+    vec.push_back(std::make_pair(CString(
+        "LinkedListIteratorPrototype"), globalConst->GetLinkedListIteratorPrototype()));
+    vec.push_back(std::make_pair(CString("ListIteratorPrototype"), globalConst->GetListIteratorPrototype()));
 }
 
 void JSDataView::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const

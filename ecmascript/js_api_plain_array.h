@@ -31,7 +31,7 @@ public:
     static void Add(JSThread *thread, const JSHandle<JSAPIPlainArray> &obj, JSHandle<JSTaggedValue> key,
                     JSHandle<JSTaggedValue> value);
     static bool GetOwnProperty(JSThread *thread, const JSHandle<JSAPIPlainArray> &obj,
-                               const JSHandle<JSTaggedValue> &key, PropertyDescriptor &desc);
+                               const JSHandle<JSTaggedValue> &key);
     static JSHandle<TaggedArray> CreateSlot(const JSThread *thread, const uint32_t capacity);
     static JSHandle<JSAPIPlainArray> Clone(JSThread *thread, const JSHandle<JSAPIPlainArray> &plainArray);
     static JSHandle<JSTaggedValue> GetIteratorObj(JSThread *thread, const JSHandle<JSAPIPlainArray> &obj,

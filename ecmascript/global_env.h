@@ -83,6 +83,7 @@ class JSThread;
     V(JSTaggedValue, BuiltinsFinalizationRegistryFunction, BUILTINS_FINALIZATION_REGISTRY_FUNCTION_INDEX) \
     V(JSTaggedValue, MapPrototype, MAP_PROTOTYPE_INDEX)                                             \
     V(JSTaggedValue, MathFunction, MATH_FUNCTION_INDEX)                                             \
+    V(JSTaggedValue, AtomicsFunction, ATOMICS_FUNCTION_INDEX)                                       \
     V(JSTaggedValue, JsonFunction, JSON_FUNCTION_INDEX)                                             \
     V(JSTaggedValue, StringFunction, STRING_FUNCTION_INDEX)                                         \
     V(JSTaggedValue, ProxyFunction, PROXY_FUNCTION_INDEX)                                           \
@@ -149,7 +150,9 @@ class JSThread;
     V(JSTaggedValue, ModuleNamespaceClass, MODULENAMESPACE_CLASS)                                   \
     V(JSTaggedValue, ObjectLiteralHClassCache, OBJECT_LITERAL_HCLASS_CACHE)                         \
     V(JSTaggedValue, WeakRefKeepObjects, WEAK_REF_KEEP_OBJECTS)                                     \
-    V(JSTaggedValue, FinRegLists, FIN_REG_LISTS)
+    V(JSTaggedValue, FinRegLists, FIN_REG_LISTS)                                                    \
+    V(JSTaggedValue, AttachSymbol, ATTACH_SYMBOL_INDEX)                                             \
+    V(JSTaggedValue, DetachSymbol, DETACH_SYMBOL_INDEX)
 
 class GlobalEnv : public TaggedObject {
 public:

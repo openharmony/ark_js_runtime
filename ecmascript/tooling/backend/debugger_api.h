@@ -20,7 +20,6 @@
 
 #include "ecmascript/common.h"
 #include "ecmascript/jspandafile/scope_info_extractor.h"
-#include "ecmascript/mem/c_string.h"
 #include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/lexical_env.h"
 #include "ecmascript/tooling/backend/js_debugger_interface.h"
@@ -70,8 +69,7 @@ public:
     static bool SetGlobalValue(const EcmaVM *vm, Local<StringRef> name, Local<JSValueRef> value);
 
     // String
-    static int32_t CStringToInt(const CString &str);
-    static CString ToCString(Local<JSValueRef> str);
+    static std::string ToStdString(Local<JSValueRef> str);
     static int32_t StringToInt(Local<JSValueRef> str);
 
     // JSThread
@@ -89,14 +87,14 @@ public:
     static bool SetBreakpoint(JSDebugger *debugger, const JSPtLocation &location,
         const Local<FunctionRef> &condFuncRef);
     static bool RemoveBreakpoint(JSDebugger *debugger, const JSPtLocation &location);
-    static void HandleUncaughtException(const EcmaVM *ecmaVm, CString &message);
+    static void HandleUncaughtException(const EcmaVM *ecmaVm, std::string &message);
     static Local<JSValueRef> EvaluateViaFuncCall(EcmaVM *ecmaVm, const Local<FunctionRef> &funcRef,
         std::shared_ptr<FrameHandler> &frameHandler);
     static Local<FunctionRef> GenerateFuncFromBuffer(const EcmaVM *ecmaVm, const void *buffer, size_t size,
         std::string_view entryPoint);
 
     // JSMethod
-    static CString ParseFunctionName(const JSMethod *method);
+    static std::string ParseFunctionName(const JSMethod *method);
 };
 }  // namespace panda::ecmascript::tooling
 

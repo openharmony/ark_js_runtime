@@ -24,7 +24,7 @@ public:
     PtBaseParams() = default;
     ~PtBaseParams() override = default;
 
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override = 0;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override = 0;
 
 private:
     NO_COPY_SEMANTIC(PtBaseParams);
@@ -37,7 +37,7 @@ public:
     ~EnableParams() override = default;
 
     static std::unique_ptr<EnableParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) const override
     {
         return Local<ObjectRef>();
     }
@@ -65,7 +65,7 @@ public:
     ~EvaluateOnCallFrameParams() override = default;
 
     static std::unique_ptr<EvaluateOnCallFrameParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) const override
     {
         return Local<ObjectRef>();
     }
@@ -75,7 +75,7 @@ public:
         return callFrameId_;
     }
 
-    const CString &GetExpression()
+    const std::string &GetExpression()
     {
         return expression_;
     }
@@ -85,8 +85,8 @@ private:
     NO_MOVE_SEMANTIC(EvaluateOnCallFrameParams);
 
     CallFrameId callFrameId_ {};
-    CString expression_ {};
-    std::optional<CString> objectGroup_ {};
+    std::string expression_ {};
+    std::optional<std::string> objectGroup_ {};
     std::optional<bool> includeCommandLineApi_ {};
     std::optional<bool> silent_ {};
     std::optional<bool> returnByValue_ {};
@@ -100,7 +100,7 @@ public:
     ~GetPossibleBreakpointsParams() override = default;
 
     static std::unique_ptr<GetPossibleBreakpointsParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) const override
     {
         return Local<ObjectRef>();
     }
@@ -148,7 +148,7 @@ public:
     ~GetScriptSourceParams() override = default;
 
     static std::unique_ptr<GetScriptSourceParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) const override
     {
         return Local<ObjectRef>();
     }
@@ -171,7 +171,7 @@ public:
     ~RemoveBreakpointParams() override = default;
 
     static std::unique_ptr<RemoveBreakpointParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) const override
     {
         return Local<ObjectRef>();
     }
@@ -194,7 +194,7 @@ public:
     ~ResumeParams() override = default;
 
     static std::unique_ptr<ResumeParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) const override
     {
         return Local<ObjectRef>();
     }
@@ -222,7 +222,7 @@ public:
     ~SetAsyncCallStackDepthParams() override = default;
 
     static std::unique_ptr<SetAsyncCallStackDepthParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) const override
     {
         return Local<ObjectRef>();
     }
@@ -244,12 +244,12 @@ public:
     SetBlackboxPatternsParams() = default;
     ~SetBlackboxPatternsParams() override = default;
     static std::unique_ptr<SetBlackboxPatternsParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) const override
     {
         return Local<ObjectRef>();
     }
 
-    CList<CString> GetPatterns() const
+    std::list<std::string> GetPatterns() const
     {
         return patterns_;
     }
@@ -258,7 +258,7 @@ private:
     NO_COPY_SEMANTIC(SetBlackboxPatternsParams);
     NO_MOVE_SEMANTIC(SetBlackboxPatternsParams);
 
-    CList<CString> patterns_ {};
+    std::list<std::string> patterns_ {};
 };
 
 class SetBreakpointByUrlParams : public PtBaseParams {
@@ -267,7 +267,7 @@ public:
     ~SetBreakpointByUrlParams() override = default;
 
     static std::unique_ptr<SetBreakpointByUrlParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) const override
     {
         return Local<ObjectRef>();
     }
@@ -277,7 +277,7 @@ public:
         return line_;
     }
 
-    const CString &GetUrl() const
+    const std::string &GetUrl() const
     {
         return url_.value();
     }
@@ -287,7 +287,7 @@ public:
         return url_.has_value();
     }
 
-    const CString &GetUrlRegex() const
+    const std::string &GetUrlRegex() const
     {
         return urlRegex_.value();
     }
@@ -297,7 +297,7 @@ public:
         return urlRegex_.has_value();
     }
 
-    const CString &GetScriptHash() const
+    const std::string &GetScriptHash() const
     {
         return scriptHash_.value();
     }
@@ -317,7 +317,7 @@ public:
         return column_.has_value();
     }
 
-    const CString &GetCondition() const
+    const std::string &GetCondition() const
     {
         return condition_.value();
     }
@@ -332,11 +332,11 @@ private:
     NO_MOVE_SEMANTIC(SetBreakpointByUrlParams);
 
     int32_t line_ {0};
-    std::optional<CString> url_ {};
-    std::optional<CString> urlRegex_ {};
-    std::optional<CString> scriptHash_ {};
+    std::optional<std::string> url_ {};
+    std::optional<std::string> urlRegex_ {};
+    std::optional<std::string> scriptHash_ {};
     std::optional<int32_t> column_ {0};
-    std::optional<CString> condition_ {};
+    std::optional<std::string> condition_ {};
 };
 
 enum class PauseOnExceptionsState : uint8_t { NONE, UNCAUGHT, ALL };
@@ -346,7 +346,7 @@ public:
     SetPauseOnExceptionsParams() = default;
     ~SetPauseOnExceptionsParams() override = default;
     static std::unique_ptr<SetPauseOnExceptionsParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) const override
     {
         return Local<ObjectRef>();
     }
@@ -356,7 +356,7 @@ public:
         return state_;
     }
 
-    bool StoreState(const CString &state)
+    bool StoreState(const std::string &state)
     {
         if (state == "none") {
             state_ = PauseOnExceptionsState::NONE;
@@ -386,7 +386,7 @@ public:
     ~StepIntoParams() override = default;
 
     static std::unique_ptr<StepIntoParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) const override
     {
         return Local<ObjectRef>();
     }
@@ -401,7 +401,7 @@ public:
         return breakOnAsyncCall_.has_value();
     }
 
-    const CList<std::unique_ptr<LocationRange>> *GetSkipList() const
+    const std::list<std::unique_ptr<LocationRange>> *GetSkipList() const
     {
         if (!skipList_) {
             return nullptr;
@@ -419,7 +419,7 @@ private:
     NO_MOVE_SEMANTIC(StepIntoParams);
 
     std::optional<bool> breakOnAsyncCall_ {};
-    std::optional<CList<std::unique_ptr<LocationRange>>> skipList_ {};
+    std::optional<std::list<std::unique_ptr<LocationRange>>> skipList_ {};
 };
 
 class StepOverParams : public PtBaseParams {
@@ -428,12 +428,12 @@ public:
     ~StepOverParams() override = default;
 
     static std::unique_ptr<StepOverParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) const override
     {
         return Local<ObjectRef>();
     }
 
-    const CList<std::unique_ptr<LocationRange>> *GetSkipList() const
+    const std::list<std::unique_ptr<LocationRange>> *GetSkipList() const
     {
         if (!skipList_) {
             return nullptr;
@@ -450,7 +450,7 @@ private:
     NO_COPY_SEMANTIC(StepOverParams);
     NO_MOVE_SEMANTIC(StepOverParams);
 
-    std::optional<CList<std::unique_ptr<LocationRange>>> skipList_ {};
+    std::optional<std::list<std::unique_ptr<LocationRange>>> skipList_ {};
 };
 
 class GetPropertiesParams : public PtBaseParams {
@@ -459,7 +459,7 @@ public:
     ~GetPropertiesParams() override = default;
 
     static std::unique_ptr<GetPropertiesParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) const override
     {
         return Local<ObjectRef>();
     }
@@ -515,12 +515,12 @@ public:
     ~CallFunctionOnParams() override = default;
 
     static std::unique_ptr<CallFunctionOnParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) override
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) const override
     {
         return Local<ObjectRef>();
     }
 
-    const CString &GetFunctionDeclaration()
+    const std::string &GetFunctionDeclaration()
     {
         return functionDeclaration_;
     }
@@ -541,7 +541,7 @@ public:
         return objectId_.has_value();
     }
 
-    const CVector<std::unique_ptr<CallArgument>> *GetArguments() const
+    const std::vector<std::unique_ptr<CallArgument>> *GetArguments() const
     {
         if (!arguments_) {
             return nullptr;
@@ -620,7 +620,7 @@ public:
         return executionContextId_.has_value();
     }
 
-    const CString &GetObjectGroup() const
+    const std::string &GetObjectGroup() const
     {
         return objectGroup_.value();
     }
@@ -644,16 +644,16 @@ private:
     NO_COPY_SEMANTIC(CallFunctionOnParams);
     NO_MOVE_SEMANTIC(CallFunctionOnParams);
 
-    CString functionDeclaration_ {};
+    std::string functionDeclaration_ {};
     std::optional<RemoteObjectId> objectId_ {};
-    std::optional<CVector<std::unique_ptr<CallArgument>>> arguments_ {};
+    std::optional<std::vector<std::unique_ptr<CallArgument>>> arguments_ {};
     std::optional<bool> silent_ {};
     std::optional<bool> returnByValue_ {};
     std::optional<bool> generatePreview_ {};
     std::optional<bool> userGesture_ {};
     std::optional<bool> awaitPromise_ {};
     std::optional<ExecutionContextId> executionContextId_ {};
-    std::optional<CString> objectGroup_ {};
+    std::optional<std::string> objectGroup_ {};
     std::optional<bool> throwOnSideEffect_ {};
 };
 
@@ -663,7 +663,7 @@ public:
     ~StartSamplingParams() override = default;
 
     static std::unique_ptr<StartSamplingParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     int32_t GetSamplingInterval() const
     {
@@ -684,7 +684,7 @@ public:
 
     static std::unique_ptr<StartTrackingHeapObjectsParams> Create(const EcmaVM *ecmaVm,
                                                                   const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     bool GetTrackAllocations() const
     {
@@ -709,7 +709,7 @@ public:
     ~StopTrackingHeapObjectsParams() override = default;
 
     static std::unique_ptr<StopTrackingHeapObjectsParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     bool GetReportProgress() const
     {
@@ -756,7 +756,7 @@ public:
     ~AddInspectedHeapObjectParams() override = default;
 
     static std::unique_ptr<AddInspectedHeapObjectParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     HeapSnapshotObjectId GetHeapObjectId() const
     {
@@ -776,7 +776,7 @@ public:
     ~GetHeapObjectIdParams() override = default;
 
     static std::unique_ptr<GetHeapObjectIdParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     RemoteObjectId GetObjectId() const
     {
@@ -796,14 +796,14 @@ public:
     ~GetObjectByHeapObjectIdParams() override = default;
 
     static std::unique_ptr<GetObjectByHeapObjectIdParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     HeapSnapshotObjectId GetObjectId() const
     {
         return objectId_;
     }
 
-    const CString &GetObjectGroup() const
+    const std::string &GetObjectGroup() const
     {
         return objectGroup_.value();
     }
@@ -818,7 +818,7 @@ private:
     NO_MOVE_SEMANTIC(GetObjectByHeapObjectIdParams);
 
     HeapSnapshotObjectId objectId_ {};
-    std::optional<CString> objectGroup_ {};
+    std::optional<std::string> objectGroup_ {};
 };
 
 class StartPreciseCoverageParam : public PtBaseParams {
@@ -828,7 +828,7 @@ public:
 
     static std::unique_ptr<StartPreciseCoverageParam> Create(const EcmaVM *ecmaVm,
                                                                   const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     bool GetCallCount() const
     {
@@ -867,6 +867,32 @@ private:
     std::optional<bool> callCount_ {};
     std::optional<bool> detailed_ {};
     std::optional<bool> allowTriggeredUpdates_ {};
+};
+
+class SetSamplingIntervalParams : public PtBaseParams {
+public:
+    SetSamplingIntervalParams() = default;
+    ~SetSamplingIntervalParams() override = default;
+
+    static std::unique_ptr<SetSamplingIntervalParams> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+
+    int GetInterval() const
+    {
+        return interval_;
+    }
+
+    SetSamplingIntervalParams &SetInterval(int interval)
+    {
+        interval_ = interval;
+        return *this;
+    }
+
+private:
+    NO_COPY_SEMANTIC(SetSamplingIntervalParams);
+    NO_MOVE_SEMANTIC(SetSamplingIntervalParams);
+
+    int interval_ {0};
 };
 }  // namespace panda::ecmascript::tooling
 #endif

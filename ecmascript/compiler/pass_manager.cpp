@@ -81,8 +81,12 @@ bool PassManager::CollectInfoOfPandaFile(const std::string &fileName, std::strin
     }
     translateInfo->jsPandaFile = jsPandaFile;
 
-    TSLoader *tsLoader = vm_->GetTSLoader();
-    tsLoader->DecodeTSTypes(jsPandaFile);
+    if (jsPandaFile->HasTSTypes()) {
+        TSLoader *tsLoader = vm_->GetTSLoader();
+        tsLoader->DecodeTSTypes(jsPandaFile);
+    } else {
+        COMPILER_LOG(INFO) << fileName << " has no type info";
+    }
 
     auto program = PandaFileTranslator::GenerateProgram(vm_, jsPandaFile);
     JSHandle<JSFunction> mainFunc(vm_->GetJSThread(), program->GetMainFunction());

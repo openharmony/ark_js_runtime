@@ -25,15 +25,16 @@
 namespace panda::ecmascript::tooling {
 class ProtocolHandler final : public ProtocolChannel {
 public:
-    ProtocolHandler(std::function<void(const std::string &)> callback, const EcmaVM *vm);
+    ProtocolHandler(std::function<void(const std::string &)> callback, const EcmaVM *vm)
+        : callback_(std::move(callback)), dispatcher_(vm, this), vm_(vm) {}
     ~ProtocolHandler() override = default;
 
     void WaitForDebugger() override;
     void RunIfWaitingForDebugger() override;
-    void ProcessCommand(const CString &msg);
+    void ProcessCommand(const std::string &msg);
     void SendResponse(const DispatchRequest &request, const DispatchResponse &response,
-                      std::unique_ptr<PtBaseReturns> result) override;
-    void SendNotification(std::unique_ptr<PtBaseEvents> events) override;
+                      const PtBaseReturns &result) override;
+    void SendNotification(const PtBaseEvents &events) override;
 
 private:
     NO_MOVE_SEMANTIC(ProtocolHandler);
@@ -42,7 +43,7 @@ private:
     void SendReply(Local<ObjectRef> reply);
 
     std::function<void(const std::string &)> callback_;
-    std::unique_ptr<Dispatcher> dispatcher_ {};
+    Dispatcher dispatcher_;
 
     bool waitingForDebugger_ {false};
     const EcmaVM *vm_ {nullptr};

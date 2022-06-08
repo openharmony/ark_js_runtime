@@ -30,6 +30,7 @@
 #include "ecmascript/builtins/builtins_array.h"
 #include "ecmascript/builtins/builtins_arraybuffer.h"
 #include "ecmascript/builtins/builtins_async_function.h"
+#include "ecmascript/builtins/builtins_atomics.h"
 #include "ecmascript/builtins/builtins_bigint.h"
 #include "ecmascript/builtins/builtins_boolean.h"
 #include "ecmascript/builtins/builtins_collator.h"
@@ -140,6 +141,7 @@ using StringIterator = builtins::BuiltinsStringIterator;
 using RegExp = builtins::BuiltinsRegExp;
 using Function = builtins::BuiltinsFunction;
 using Math = builtins::BuiltinsMath;
+using Atomics = builtins::BuiltinsAtomics;
 using ArrayBuffer = builtins::BuiltinsArrayBuffer;
 using Json = builtins::BuiltinsJson;
 using Proxy = builtins::BuiltinsProxy;
@@ -320,6 +322,7 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
 
     InitializeGlobalObject(env, globalObject);
     InitializeMath(env, objFuncPrototypeVal);
+    InitializeAtomics(env, objFuncPrototypeVal);
     InitializeJson(env, objFuncPrototypeVal);
     InitializeIterator(env, objFuncDynclass);
     InitializeProxy(env);
@@ -586,6 +589,10 @@ void Builtins::InitializeSymbol(const JSHandle<GlobalEnv> &env, const JSHandle<J
     SetNoneAttributeProperty(symbolFunction, "toPrimitive", toPrimitiveSymbol);
     JSHandle<JSTaggedValue> unscopablesSymbol(factory_->NewPublicSymbolWithChar("Symbol.unscopables"));
     SetNoneAttributeProperty(symbolFunction, "unscopables", unscopablesSymbol);
+    JSHandle<JSTaggedValue> attachSymbol(factory_->NewPublicSymbolWithChar("Symbol.attach"));
+    SetNoneAttributeProperty(symbolFunction, "attach", attachSymbol);
+    JSHandle<JSTaggedValue> detachSymbol(factory_->NewPublicSymbolWithChar("Symbol.detach"));
+    SetNoneAttributeProperty(symbolFunction, "detach", detachSymbol);
 
     // symbol.prototype.description
     PropertyDescriptor descriptionDesc(thread_);
@@ -615,6 +622,8 @@ void Builtins::InitializeSymbol(const JSHandle<GlobalEnv> &env, const JSHandle<J
     env->SetSplitSymbol(thread_, splitSymbol);
     env->SetToPrimitiveSymbol(thread_, toPrimitiveSymbol);
     env->SetUnscopablesSymbol(thread_, unscopablesSymbol);
+    env->SetAttachSymbol(thread_, attachSymbol);
+    env->SetDetachSymbol(thread_, detachSymbol);
 
     // Setup %SymbolPrototype%
     SetStringTagSymbol(env, symbolFuncPrototype, "Symbol");
@@ -670,6 +679,8 @@ void Builtins::InitializeSymbolWithRealm(const JSHandle<GlobalEnv> &realm,
     SetNoneAttributeProperty(symbolFunction, "split", env->GetSplitSymbol());
     SetNoneAttributeProperty(symbolFunction, "toPrimitive", env->GetToPrimitiveSymbol());
     SetNoneAttributeProperty(symbolFunction, "unscopables", env->GetUnscopablesSymbol());
+    SetNoneAttributeProperty(symbolFunction, "attach", env->GetAttachSymbol());
+    SetNoneAttributeProperty(symbolFunction, "detach", env->GetDetachSymbol());
 
     // symbol.prototype.description
     PropertyDescriptor descriptionDesc(thread_);
@@ -700,6 +711,8 @@ void Builtins::InitializeSymbolWithRealm(const JSHandle<GlobalEnv> &realm,
     realm->SetSplitSymbol(thread_, env->GetSplitSymbol());
     realm->SetToPrimitiveSymbol(thread_, env->GetToPrimitiveSymbol());
     realm->SetUnscopablesSymbol(thread_, env->GetUnscopablesSymbol());
+    realm->SetAttachSymbol(thread_, env->GetAttachSymbol());
+    realm->SetDetachSymbol(thread_, env->GetDetachSymbol());
 
     // Setup %SymbolPrototype%
     SetStringTagSymbol(realm, symbolFuncPrototype, "Symbol");
@@ -1361,6 +1374,34 @@ void Builtins::InitializeWeakSet(const JSHandle<GlobalEnv> &env, const JSHandle<
     SetStringTagSymbol(env, weakSetFuncPrototype, "WeakSet");
 
     env->SetBuiltinsWeakSetFunction(thread_, weakSetFunction);
+}
+
+void Builtins::InitializeAtomics(const JSHandle<GlobalEnv> &env,
+                                 const JSHandle<JSTaggedValue> &objFuncPrototypeVal) const
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    JSHandle<JSHClass> atomicsDynclass = factory_->NewEcmaDynClass(JSObject::SIZE, JSType::JS_OBJECT,
+                                                                   objFuncPrototypeVal);
+    JSHandle<JSObject> atomicsObject = factory_->NewJSObject(atomicsDynclass);
+    SetFunction(env, atomicsObject, "add", Atomics::Add, FunctionLength::THREE);
+    SetFunction(env, atomicsObject, "and", Atomics::And, FunctionLength::THREE);
+    SetFunction(env, atomicsObject, "sub", Atomics::Sub, FunctionLength::THREE);
+    SetFunction(env, atomicsObject, "or", Atomics::Or, FunctionLength::THREE);
+    SetFunction(env, atomicsObject, "xor", Atomics::Xor, FunctionLength::THREE);
+    SetFunction(env, atomicsObject, "compareExchange", Atomics::CompareExchange, FunctionLength::FOUR);
+    SetFunction(env, atomicsObject, "exchange", Atomics::Exchange, FunctionLength::THREE);
+    SetFunction(env, atomicsObject, "isLockFree", Atomics::IsLockFree, FunctionLength::ONE);
+    SetFunction(env, atomicsObject, "load", Atomics::Load, FunctionLength::TWO);
+    SetFunction(env, atomicsObject, "store", Atomics::Store, FunctionLength::THREE);
+    SetFunction(env, atomicsObject, "wait", Atomics::Wait, FunctionLength::FOUR);
+    SetFunction(env, atomicsObject, "notify", Atomics::Notify, FunctionLength::THREE);
+    JSHandle<JSTaggedValue> atomicsString(factory_->NewFromASCII("Atomics"));
+    JSHandle<JSObject> globalObject(thread_, env->GetGlobalObject());
+    PropertyDescriptor atomicsDesc(thread_, JSHandle<JSTaggedValue>::Cast(atomicsObject), true, false, true);
+    JSObject::DefineOwnProperty(thread_, globalObject, atomicsString, atomicsDesc);
+    // @@ToStringTag
+    SetStringTagSymbol(env, atomicsObject, "Atomics");
+    env->SetAtomicsFunction(thread_, atomicsObject);
 }
 
 void Builtins::InitializeWeakRef(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &objFuncDynclass) const

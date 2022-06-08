@@ -37,9 +37,9 @@ using ObjectSubType = RemoteObject::SubTypeName;
 using ObjectClassName = RemoteObject::ClassName;
 
 #ifdef DEBUGGER_TEST
-const CString DATA_APP_PATH = "/";
+const std::string DATA_APP_PATH = "/";
 #else
-const CString DATA_APP_PATH = "/data/";
+const std::string DATA_APP_PATH = "/data/";
 #endif
 
 DebuggerImpl::DebuggerImpl(const EcmaVM *vm, ProtocolChannel *channel, RuntimeImpl *runtime)
@@ -60,7 +60,7 @@ DebuggerImpl::~DebuggerImpl()
     DebuggerApi::DestroyJSDebugger(jsDebugger_);
 }
 
-bool DebuggerImpl::NotifyScriptParsed(ScriptId scriptId, const CString &fileName)
+bool DebuggerImpl::NotifyScriptParsed(ScriptId scriptId, const std::string &fileName)
 {
     if (fileName.substr(0, DATA_APP_PATH.length()) != DATA_APP_PATH) {
         LOG(WARNING, DEBUGGER) << "NotifyScriptParsed: unsupport file: " << fileName;
@@ -77,7 +77,7 @@ bool DebuggerImpl::NotifyScriptParsed(ScriptId scriptId, const CString &fileName
     const JSPandaFile *jsPandaFile = nullptr;
     JSPandaFileManager::GetInstance()->EnumerateJSPandaFiles([&jsPandaFile, &fileName](
         const panda::ecmascript::JSPandaFile *pf) {
-        if (pf->GetJSPandaFileDesc() == fileName) {
+        if (fileName == pf->GetJSPandaFileDesc().c_str()) {
             jsPandaFile = pf;
             return false;
         }
@@ -95,8 +95,8 @@ bool DebuggerImpl::NotifyScriptParsed(ScriptId scriptId, const CString &fileName
     }
 
     auto mainMethodIndex = panda_file::File::EntityId(jsPandaFile->GetMainMethodIndex());
-    const CString &source = extractor->GetSourceCode(mainMethodIndex);
-    const CString &url = extractor->GetSourceFile(mainMethodIndex);
+    const std::string &source = extractor->GetSourceCode(mainMethodIndex);
+    const std::string &url = extractor->GetSourceFile(mainMethodIndex);
     const uint32_t MIN_SOURCE_CODE_LENGTH = 5;  // maybe return 'ANDA' when source code is empty
     if (source.size() < MIN_SOURCE_CODE_LENGTH) {
         LOG(ERROR, DEBUGGER) << "NotifyScriptParsed: invalid file: " << fileName;
@@ -108,7 +108,7 @@ bool DebuggerImpl::NotifyScriptParsed(ScriptId scriptId, const CString &fileName
     // Notify script parsed event
     std::unique_ptr<PtScript> script = std::make_unique<PtScript>(scriptId, fileName, url, source);
 
-    frontend_.ScriptParsed(vm_, script);
+    frontend_.ScriptParsed(vm_, *script);
 
     // Store parsed script in map
     scripts_[script->GetScriptId()] = std::move(script);
@@ -176,7 +176,7 @@ void DebuggerImpl::NotifyPaused(std::optional<JSPtLocation> location, PauseReaso
     }
     Local<JSValueRef> exception = DebuggerApi::GetAndClearException(vm_);
 
-    CVector<CString> hitBreakpoints;
+    std::vector<std::string> hitBreakpoints;
     if (location.has_value()) {
         BreakpointDetails detail;
         JSPtExtractor *extractor = nullptr;
@@ -208,18 +208,18 @@ void DebuggerImpl::NotifyPaused(std::optional<JSPtLocation> location, PauseReaso
     CleanUpOnPaused();
 
     // Notify paused event
-    CVector<std::unique_ptr<CallFrame>> callFrames;
+    std::vector<std::unique_ptr<CallFrame>> callFrames;
     if (!GenerateCallFrames(&callFrames)) {
         LOG(ERROR, DEBUGGER) << "NotifyPaused: GenerateCallFrames failed";
         return;
     }
-    std::unique_ptr<Paused> paused = std::make_unique<tooling::Paused>();
-    paused->SetCallFrames(std::move(callFrames)).SetReason(reason).SetHitBreakpoints(std::move(hitBreakpoints));
+    tooling::Paused paused;
+    paused.SetCallFrames(std::move(callFrames)).SetReason(reason).SetHitBreakpoints(std::move(hitBreakpoints));
     if (reason == EXCEPTION && exception->IsError()) {
         std::unique_ptr<RemoteObject> tmpException = RemoteObject::FromTagged(vm_, exception);
-        paused->SetData(std::move(tmpException));
+        paused.SetData(std::move(tmpException));
     }
-    frontend_.Paused(vm_, std::move(paused));
+    frontend_.Paused(vm_, paused);
 
     // Waiting for Debugger
     frontend_.WaitForDebugger(vm_);
@@ -236,7 +236,7 @@ void DebuggerImpl::NotifyPendingJobEntry()
 
 void DebuggerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
 {
-    static CUnorderedMap<CString, AgentHandler> dispatcherTable {
+    static std::unordered_map<std::string, AgentHandler> dispatcherTable {
         { "enable", &DebuggerImpl::DispatcherImpl::Enable },
         { "disable", &DebuggerImpl::DispatcherImpl::Disable },
         { "evaluateOnCallFrame", &DebuggerImpl::DispatcherImpl::EvaluateOnCallFrame },
@@ -253,13 +253,13 @@ void DebuggerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
         { "stepOver", &DebuggerImpl::DispatcherImpl::StepOver }
     };
 
-    const CString &method = request.GetMethod();
+    const std::string &method = request.GetMethod();
     LOG(DEBUG, DEBUGGER) << "dispatch [" << method << "] to DebuggerImpl";
     auto entry = dispatcherTable.find(method);
     if (entry != dispatcherTable.end() && entry->second != nullptr) {
         (this->*(entry->second))(request);
     } else {
-        SendResponse(request, DispatchResponse::Fail("Unknown method: " + method), nullptr);
+        SendResponse(request, DispatchResponse::Fail("Unknown method: " + method));
     }
 }
 
@@ -267,21 +267,21 @@ void DebuggerImpl::DispatcherImpl::Enable(const DispatchRequest &request)
 {
     std::unique_ptr<EnableParams> params = EnableParams::Create(request.GetEcmaVM(), request.GetParams());
     if (params == nullptr) {
-        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
 
     UniqueDebuggerId id;
     DispatchResponse response = debugger_->Enable(std::move(params), &id);
 
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<EnableReturns>(id);
-    SendResponse(request, response, std::move(result));
+    EnableReturns result(id);
+    SendResponse(request, response, result);
 }
 
 void DebuggerImpl::DispatcherImpl::Disable(const DispatchRequest &request)
 {
     DispatchResponse response = debugger_->Disable();
-    SendResponse(request, response, nullptr);
+    SendResponse(request, response);
 }
 
 void DebuggerImpl::DispatcherImpl::EvaluateOnCallFrame(const DispatchRequest &request)
@@ -289,15 +289,14 @@ void DebuggerImpl::DispatcherImpl::EvaluateOnCallFrame(const DispatchRequest &re
     std::unique_ptr<EvaluateOnCallFrameParams> params =
         EvaluateOnCallFrameParams::Create(request.GetEcmaVM(), request.GetParams());
     if (params == nullptr) {
-        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
-    std::unique_ptr<RemoteObject> result1 = std::make_unique<RemoteObject>();
+    std::unique_ptr<RemoteObject> result1;
     DispatchResponse response = debugger_->EvaluateOnCallFrame(std::move(params), &result1);
 
-    std::unique_ptr<EvaluateOnCallFrameReturns> result =
-        std::make_unique<EvaluateOnCallFrameReturns>(std::move(result1));
-    SendResponse(request, response, std::move(result));
+    EvaluateOnCallFrameReturns result(std::move(result1));
+    SendResponse(request, response, result);
 }
 
 void DebuggerImpl::DispatcherImpl::GetPossibleBreakpoints(const DispatchRequest &request)
@@ -305,14 +304,13 @@ void DebuggerImpl::DispatcherImpl::GetPossibleBreakpoints(const DispatchRequest 
     std::unique_ptr<GetPossibleBreakpointsParams> params =
         GetPossibleBreakpointsParams::Create(request.GetEcmaVM(), request.GetParams());
     if (params == nullptr) {
-        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
-    CVector<std::unique_ptr<BreakLocation>> locations;
+    std::vector<std::unique_ptr<BreakLocation>> locations;
     DispatchResponse response = debugger_->GetPossibleBreakpoints(std::move(params), &locations);
-    std::unique_ptr<GetPossibleBreakpointsReturns> points =
-        std::make_unique<GetPossibleBreakpointsReturns>(std::move(locations));
-    SendResponse(request, response, std::move(points));
+    GetPossibleBreakpointsReturns result(std::move(locations));
+    SendResponse(request, response, result);
 }
 
 void DebuggerImpl::DispatcherImpl::GetScriptSource(const DispatchRequest &request)
@@ -320,20 +318,19 @@ void DebuggerImpl::DispatcherImpl::GetScriptSource(const DispatchRequest &reques
     std::unique_ptr<GetScriptSourceParams> params =
         GetScriptSourceParams::Create(request.GetEcmaVM(), request.GetParams());
     if (params == nullptr) {
-        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
-    CString source;
+    std::string source;
     DispatchResponse response = debugger_->GetScriptSource(std::move(params), &source);
-    std::unique_ptr<GetScriptSourceReturns> result = std::make_unique<GetScriptSourceReturns>(std::move(source));
-    SendResponse(request, response, std::move(result));
+    GetScriptSourceReturns result(source);
+    SendResponse(request, response, result);
 }
 
 void DebuggerImpl::DispatcherImpl::Pause(const DispatchRequest &request)
 {
     DispatchResponse response = debugger_->Pause();
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 void DebuggerImpl::DispatcherImpl::RemoveBreakpoint(const DispatchRequest &request)
@@ -341,31 +338,28 @@ void DebuggerImpl::DispatcherImpl::RemoveBreakpoint(const DispatchRequest &reque
     std::unique_ptr<RemoveBreakpointParams> params =
         RemoveBreakpointParams::Create(request.GetEcmaVM(), request.GetParams());
     if (params == nullptr) {
-        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
     DispatchResponse response = debugger_->RemoveBreakpoint(std::move(params));
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 void DebuggerImpl::DispatcherImpl::Resume(const DispatchRequest &request)
 {
     std::unique_ptr<ResumeParams> params = ResumeParams::Create(request.GetEcmaVM(), request.GetParams());
     if (params == nullptr) {
-        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
     DispatchResponse response = debugger_->Resume(std::move(params));
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 void DebuggerImpl::DispatcherImpl::SetAsyncCallStackDepth(const DispatchRequest &request)
 {
     DispatchResponse response = debugger_->SetAsyncCallStackDepth();
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 void DebuggerImpl::DispatcherImpl::SetBreakpointByUrl(const DispatchRequest &request)
@@ -373,16 +367,15 @@ void DebuggerImpl::DispatcherImpl::SetBreakpointByUrl(const DispatchRequest &req
     std::unique_ptr<SetBreakpointByUrlParams> params =
         SetBreakpointByUrlParams::Create(request.GetEcmaVM(), request.GetParams());
     if (params == nullptr) {
-        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
 
-    CString out_id;
-    CVector<std::unique_ptr<Location>> outLocations;
+    std::string out_id;
+    std::vector<std::unique_ptr<Location>> outLocations;
     DispatchResponse response = debugger_->SetBreakpointByUrl(std::move(params), &out_id, &outLocations);
-    std::unique_ptr<SetBreakpointByUrlReturns> result =
-        std::make_unique<SetBreakpointByUrlReturns>(out_id, std::move(outLocations));
-    SendResponse(request, response, std::move(result));
+    SetBreakpointByUrlReturns result(out_id, std::move(outLocations));
+    SendResponse(request, response, result);
 }
 
 void DebuggerImpl::DispatcherImpl::SetPauseOnExceptions(const DispatchRequest &request)
@@ -390,51 +383,46 @@ void DebuggerImpl::DispatcherImpl::SetPauseOnExceptions(const DispatchRequest &r
     std::unique_ptr<SetPauseOnExceptionsParams> params =
         SetPauseOnExceptionsParams::Create(request.GetEcmaVM(), request.GetParams());
     if (params == nullptr) {
-        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
 
     DispatchResponse response = debugger_->SetPauseOnExceptions(std::move(params));
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 void DebuggerImpl::DispatcherImpl::StepInto(const DispatchRequest &request)
 {
     std::unique_ptr<StepIntoParams> params = StepIntoParams::Create(request.GetEcmaVM(), request.GetParams());
     if (params == nullptr) {
-        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
     DispatchResponse response = debugger_->StepInto(std::move(params));
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 void DebuggerImpl::DispatcherImpl::StepOut(const DispatchRequest &request)
 {
     DispatchResponse response = debugger_->StepOut();
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 void DebuggerImpl::DispatcherImpl::StepOver(const DispatchRequest &request)
 {
     std::unique_ptr<StepOverParams> params = StepOverParams::Create(request.GetEcmaVM(), request.GetParams());
     if (params == nullptr) {
-        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
     DispatchResponse response = debugger_->StepOver(std::move(params));
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 void DebuggerImpl::DispatcherImpl::SetBlackboxPatterns(const DispatchRequest &request)
 {
     DispatchResponse response = debugger_->SetBlackboxPatterns();
-    std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response);
 }
 
 bool DebuggerImpl::Frontend::AllowNotify(const EcmaVM *vm) const
@@ -448,17 +436,17 @@ void DebuggerImpl::Frontend::BreakpointResolved(const EcmaVM *vm)
         return;
     }
 
-    auto breakpointResolved = std::make_unique<tooling::BreakpointResolved>();
-    channel_->SendNotification(std::move(breakpointResolved));
+    tooling::BreakpointResolved breakpointResolved;
+    channel_->SendNotification(breakpointResolved);
 }
 
-void DebuggerImpl::Frontend::Paused(const EcmaVM *vm, std::unique_ptr<tooling::Paused> paused)
+void DebuggerImpl::Frontend::Paused(const EcmaVM *vm, const tooling::Paused &paused)
 {
     if (!AllowNotify(vm)) {
         return;
     }
 
-    channel_->SendNotification(std::move(paused));
+    channel_->SendNotification(paused);
 }
 
 void DebuggerImpl::Frontend::Resumed(const EcmaVM *vm)
@@ -468,8 +456,8 @@ void DebuggerImpl::Frontend::Resumed(const EcmaVM *vm)
     }
 
     channel_->RunIfWaitingForDebugger();
-    auto resumed = std::make_unique<tooling::Resumed>();
-    channel_->SendNotification(std::move(resumed));
+    tooling::Resumed resumed;
+    channel_->SendNotification(resumed);
 }
 
 void DebuggerImpl::Frontend::ScriptFailedToParse(const EcmaVM *vm)
@@ -478,18 +466,27 @@ void DebuggerImpl::Frontend::ScriptFailedToParse(const EcmaVM *vm)
         return;
     }
 
-    auto scriptFailedToParse = std::make_unique<tooling::ScriptFailedToParse>();
-    channel_->SendNotification(std::move(scriptFailedToParse));
+    tooling::ScriptFailedToParse scriptFailedToParse;
+    channel_->SendNotification(scriptFailedToParse);
 }
 
-void DebuggerImpl::Frontend::ScriptParsed(const EcmaVM *vm, const std::unique_ptr<PtScript> &script)
+void DebuggerImpl::Frontend::ScriptParsed(const EcmaVM *vm, const PtScript &script)
 {
     if (!AllowNotify(vm)) {
         return;
     }
 
-    auto scriptParsed = ScriptParsed::Create(script);
-    channel_->SendNotification(std::move(scriptParsed));
+    tooling::ScriptParsed scriptParsed;
+    scriptParsed.SetScriptId(script.GetScriptId())
+        .SetUrl(script.GetUrl())
+        .SetStartLine(0)
+        .SetStartColumn(0)
+        .SetEndLine(script.GetEndLine())
+        .SetEndColumn(0)
+        .SetExecutionContextId(0)
+        .SetHash(script.GetHash());
+
+    channel_->SendNotification(scriptParsed);
 }
 
 void DebuggerImpl::Frontend::WaitForDebugger(const EcmaVM *vm)
@@ -507,7 +504,7 @@ DispatchResponse DebuggerImpl::Enable([[maybe_unused]] std::unique_ptr<EnablePar
     *id = 0;
     vm_->GetJsDebuggerManager()->SetDebugMode(true);
     for (auto &script : scripts_) {
-        frontend_.ScriptParsed(vm_, script.second);
+        frontend_.ScriptParsed(vm_, *script.second);
     }
     return DispatchResponse::Ok();
 }
@@ -522,15 +519,19 @@ DispatchResponse DebuggerImpl::EvaluateOnCallFrame(std::unique_ptr<EvaluateOnCal
                                                    std::unique_ptr<RemoteObject> *result)
 {
     CallFrameId callFrameId = params->GetCallFrameId();
-    CString expression = params->GetExpression();
+    std::string expression = params->GetExpression();
     if (callFrameId < 0 || callFrameId >= callFrameHandlers_.size()) {
         return DispatchResponse::Fail("Invalid callFrameId.");
     }
 
-    CString dest;
+    std::string dest;
     if (!DecodeAndCheckBase64(expression, dest)) {
         LOG(ERROR, DEBUGGER) << "EvaluateValue: base64 decode failed";
-        return DispatchResponse::Create(CmptEvaluateValue(callFrameId, expression, result));
+        auto ret = CmptEvaluateValue(callFrameId, expression, result);
+        if (ret.has_value()) {
+            LOG(ERROR, DEBUGGER) << "Evaluate fail, expression: " << expression;
+        }
+        return DispatchResponse::Create(ret);
     }
 
     auto funcRef = DebuggerApi::GenerateFuncFromBuffer(vm_, dest.data(), dest.size(),
@@ -539,7 +540,7 @@ DispatchResponse DebuggerImpl::EvaluateOnCallFrame(std::unique_ptr<EvaluateOnCal
         callFrameHandlers_[callFrameId]);
     if (vm_->GetJSThread()->HasPendingException()) {
         LOG(ERROR, DEBUGGER) << "EvaluateValue: has pending exception";
-        CString msg;
+        std::string msg;
         DebuggerApi::HandleUncaughtException(vm_, msg);
         *result = RemoteObject::FromTagged(vm_,
             Exception::EvalError(vm_, StringRef::NewFromUtf8(vm_, msg.data())));
@@ -552,7 +553,7 @@ DispatchResponse DebuggerImpl::EvaluateOnCallFrame(std::unique_ptr<EvaluateOnCal
 }
 
 DispatchResponse DebuggerImpl::GetPossibleBreakpoints(std::unique_ptr<GetPossibleBreakpointsParams> params,
-                                                      CVector<std::unique_ptr<BreakLocation>> *locations)
+                                                      std::vector<std::unique_ptr<BreakLocation>> *locations)
 {
     Location *start = params->GetStart();
     auto iter = scripts_.find(start->GetScriptId());
@@ -578,13 +579,13 @@ DispatchResponse DebuggerImpl::GetPossibleBreakpoints(std::unique_ptr<GetPossibl
     return DispatchResponse::Ok();
 }
 
-DispatchResponse DebuggerImpl::GetScriptSource(std::unique_ptr<GetScriptSourceParams> params, CString *source)
+DispatchResponse DebuggerImpl::GetScriptSource(std::unique_ptr<GetScriptSourceParams> params, std::string *source)
 {
     ScriptId scriptId = params->GetScriptId();
     auto iter = scripts_.find(scriptId);
     if (iter == scripts_.end()) {
         *source = "";
-        return DispatchResponse::Fail("unknown script id: " + ToCString<uint32_t>(scriptId));
+        return DispatchResponse::Fail("unknown script id: " + std::to_string(scriptId));
     }
     *source = iter->second->GetScriptSource();
 
@@ -599,7 +600,7 @@ DispatchResponse DebuggerImpl::Pause()
 
 DispatchResponse DebuggerImpl::RemoveBreakpoint(std::unique_ptr<RemoveBreakpointParams> params)
 {
-    CString id = params->GetBreakpointId();
+    std::string id = params->GetBreakpointId();
     LOG(INFO, DEBUGGER) << "RemoveBreakpoint: " << id;
     BreakpointDetails metaData{};
     if (!BreakpointDetails::ParseBreakpointId(id, &metaData)) {
@@ -611,7 +612,7 @@ DispatchResponse DebuggerImpl::RemoveBreakpoint(std::unique_ptr<RemoveBreakpoint
         return DispatchResponse::Fail("Unknown file name.");
     }
 
-    CString fileName;
+    std::string fileName;
     auto scriptFunc = [&fileName](PtScript *script) -> bool {
         fileName = script->GetFileName();
         return true;
@@ -649,13 +650,13 @@ DispatchResponse DebuggerImpl::SetAsyncCallStackDepth()
 }
 
 DispatchResponse DebuggerImpl::SetBreakpointByUrl(std::unique_ptr<SetBreakpointByUrlParams> params,
-                                                  CString *outId,
-                                                  CVector<std::unique_ptr<Location>> *outLocations)
+                                                  std::string *outId,
+                                                  std::vector<std::unique_ptr<Location>> *outLocations)
 {
-    const CString &url = params->GetUrl();
+    const std::string &url = params->GetUrl();
     int32_t lineNumber = params->GetLine();
     int32_t columnNumber = params->GetColumn();
-    std::optional<CString> condition = params->HasCondition() ? params->GetCondition() : std::optional<CString> {};
+    auto condition = params->HasCondition() ? params->GetCondition() : std::optional<std::string> {};
 
     JSPtExtractor *extractor = GetExtractor(url);
     if (extractor == nullptr) {
@@ -664,7 +665,7 @@ DispatchResponse DebuggerImpl::SetBreakpointByUrl(std::unique_ptr<SetBreakpointB
     }
 
     ScriptId scriptId;
-    CString fileName;
+    std::string fileName;
     auto scriptFunc = [&scriptId, &fileName](PtScript *script) -> bool {
         scriptId = script->GetScriptId();
         fileName = script->GetFileName();
@@ -679,7 +680,7 @@ DispatchResponse DebuggerImpl::SetBreakpointByUrl(std::unique_ptr<SetBreakpointB
         JSPtLocation location {fileName.c_str(), id, offset};
         Local<FunctionRef> condFuncRef = FunctionRef::Undefined(vm_);
         if (condition.has_value() && !condition.value().empty()) {
-            CString dest;
+            std::string dest;
             if (!DecodeAndCheckBase64(condition.value(), dest)) {
                 LOG(ERROR, DEBUGGER) << "SetBreakpointByUrl: base64 decode failed";
                 return false;
@@ -700,7 +701,7 @@ DispatchResponse DebuggerImpl::SetBreakpointByUrl(std::unique_ptr<SetBreakpointB
 
     BreakpointDetails metaData{lineNumber, 0, url};
     *outId = BreakpointDetails::ToString(metaData);
-    *outLocations = CVector<std::unique_ptr<Location>>();
+    *outLocations = std::vector<std::unique_ptr<Location>>();
     std::unique_ptr<Location> location = std::make_unique<Location>();
     location->SetScriptId(scriptId).SetLine(lineNumber).SetColumn(0);
     outLocations->emplace_back(std::move(location));
@@ -773,9 +774,9 @@ void DebuggerImpl::CleanUpOnPaused()
     scopeObjects_.clear();
 }
 
-CString DebuggerImpl::Trim(const CString &str)
+std::string DebuggerImpl::Trim(const std::string &str)
 {
-    CString ret = str;
+    std::string ret = str;
     // If ret has only ' ', remove all charactors.
     ret.erase(ret.find_last_not_of(' ') + 1);
     // If ret has only ' ', remove all charactors.
@@ -788,7 +789,7 @@ JSPtExtractor *DebuggerImpl::GetExtractor(const JSPandaFile *jsPandaFile)
     return JSPandaFileManager::GetInstance()->GetJSPtExtractor(jsPandaFile);
 }
 
-JSPtExtractor *DebuggerImpl::GetExtractor(const CString &url)
+JSPtExtractor *DebuggerImpl::GetExtractor(const std::string &url)
 {
     auto iter = extractors_.find(url);
     if (iter == extractors_.end()) {
@@ -798,7 +799,7 @@ JSPtExtractor *DebuggerImpl::GetExtractor(const CString &url)
     return iter->second;
 }
 
-bool DebuggerImpl::GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames)
+bool DebuggerImpl::GenerateCallFrames(std::vector<std::unique_ptr<CallFrame>> *callFrames)
 {
     CallFrameId callFrameId = 0;
     auto walkerFunc = [this, &callFrameId, &callFrames](const FrameHandler *frameHandler) -> StackState {
@@ -841,7 +842,7 @@ bool DebuggerImpl::GenerateCallFrame(CallFrame *callFrame,
 
     // location
     std::unique_ptr<Location> location = std::make_unique<Location>();
-    CString url = extractor->GetSourceFile(method->GetMethodId());
+    std::string url = extractor->GetSourceFile(method->GetMethodId());
     auto scriptFunc = [&location](PtScript *script) -> bool {
         location->SetScriptId(script->GetScriptId());
         return true;
@@ -869,12 +870,12 @@ bool DebuggerImpl::GenerateCallFrame(CallFrame *callFrame,
     std::unique_ptr<RemoteObject> thisObj = std::make_unique<RemoteObject>();
     thisObj->SetType(ObjectType::Undefined);
 
-    CVector<std::unique_ptr<Scope>> scopeChain;
+    std::vector<std::unique_ptr<Scope>> scopeChain;
     scopeChain.emplace_back(GetLocalScopeChain(frameHandler, &thisObj));
     scopeChain.emplace_back(GetGlobalScopeChain());
 
     // functionName
-    CString functionName = DebuggerApi::ParseFunctionName(method);
+    std::string functionName = DebuggerApi::ParseFunctionName(method);
 
     callFrame->SetCallFrameId(callFrameId)
         .SetFunctionName(functionName)
@@ -1035,7 +1036,7 @@ void DebuggerImpl::UpdateScopeObject(const FrameHandler *frameHandler,
     }
 }
 
-std::optional<CString> DebuggerImpl::CmptEvaluateValue(CallFrameId callFrameId, const CString &expression,
+std::optional<std::string> DebuggerImpl::CmptEvaluateValue(CallFrameId callFrameId, const std::string &expression,
     std::unique_ptr<RemoteObject> *result)
 {
     JSMethod *method = DebuggerApi::GetMethod(vm_);
@@ -1050,10 +1051,10 @@ std::optional<CString> DebuggerImpl::CmptEvaluateValue(CallFrameId callFrameId, 
             Exception::EvalError(vm_, StringRef::NewFromUtf8(vm_, "Internal error.")));
         return "Internal error.";
     }
-    CString varName = expression;
-    CString varValue;
-    CString::size_type indexEqual = expression.find_first_of('=', 0);
-    if (indexEqual != CString::npos) {
+    std::string varName = expression;
+    std::string varValue;
+    std::string::size_type indexEqual = expression.find_first_of('=', 0);
+    if (indexEqual != std::string::npos) {
         varName = Trim(expression.substr(0, indexEqual));
         varValue = Trim(expression.substr(indexEqual + 1, expression.length()));
     }
@@ -1069,6 +1070,9 @@ std::optional<CString> DebuggerImpl::CmptEvaluateValue(CallFrameId callFrameId, 
         }
     } else {
         Local<JSValueRef> value = ConvertToLocal(varValue);
+        if (value.IsEmpty()) {
+            return "Unsupported expression.";
+        }
         bool ret = DebuggerExecutor::SetValue(vm_, frameHandler, name, value);
         if (ret) {
             *result = RemoteObject::FromTagged(vm_, value);
@@ -1081,7 +1085,7 @@ std::optional<CString> DebuggerImpl::CmptEvaluateValue(CallFrameId callFrameId, 
     return "Unsupported expression.";
 }
 
-Local<JSValueRef> DebuggerImpl::ConvertToLocal(const CString &varValue)
+Local<JSValueRef> DebuggerImpl::ConvertToLocal(const std::string &varValue)
 {
     Local<JSValueRef> taggedValue;
     if (varValue == "false") {
@@ -1104,7 +1108,7 @@ Local<JSValueRef> DebuggerImpl::ConvertToLocal(const CString &varValue)
     return taggedValue;
 }
 
-bool DebuggerImpl::DecodeAndCheckBase64(const CString &src, CString &dest)
+bool DebuggerImpl::DecodeAndCheckBase64(const std::string &src, std::string &dest)
 {
     dest.resize(base64::decoded_size(src.size()));
     auto [numOctets, _] = base64::decode(dest.data(), src.data(), src.size());

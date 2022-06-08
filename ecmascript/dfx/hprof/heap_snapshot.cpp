@@ -119,15 +119,62 @@ bool HeapSnapshot::FinishSnapshot()
 
 void HeapSnapshot::RecordSampleTime()
 {
-    timeStamps_.emplace_back(sequenceId_);
+    int len = timeStamps_.size();
+    if (len > 0) {
+        if (sequenceId_ != timeStamps_[len - 1].GetLastSequenceId()) {
+            timeStamps_.emplace_back(sequenceId_);
+        }
+    } else {
+        timeStamps_.emplace_back(sequenceId_);
+    }
 }
 
-void HeapSnapshot::AddNode(uintptr_t address)
+void HeapSnapshot::PushHeapStat(Stream* stream)
+{
+    CVector<HeapStat> statsBuffer;
+    if (stream == nullptr) {
+        LOG(ERROR, DEBUGGER) << "HeapSnapshot::PushHeapStat::stream is nullptr";
+        return;
+    }
+    int preChunkSize = stream->GetSize();
+    uint32_t sequenceId = 0;
+    auto iter = nodes_.begin();
+    for (size_t timeIndex = 0; timeIndex < timeStamps_.size(); ++timeIndex) {
+        TimeStamp& timeStamp = timeStamps_[timeIndex];
+        sequenceId = timeStamp.GetLastSequenceId();
+        uint32_t nodesSize = 0;
+        uint32_t nodesCount = 0;
+
+        while (iter != nodes_.end() && (*iter)->GetId() <= sequenceId) {
+            nodesCount++;
+            nodesSize += (*iter)->GetSelfSize();
+            iter++;
+        }
+        if (((timeStamp.GetCount() != nodesCount) || (timeStamp.GetSize() != nodesSize))
+            && ((nodesCount != 0) && (nodesSize != 0))) {
+            timeStamp.SetCount(nodesCount);
+            timeStamp.SetSize(nodesSize);
+            statsBuffer.emplace_back(static_cast<uint32_t>(timeIndex), nodesCount, nodesSize);
+            if (static_cast<int>(statsBuffer.size()) >= preChunkSize) {
+                stream->UpdateHeapStats(&statsBuffer.front(), static_cast<int>(statsBuffer.size()));
+                statsBuffer.clear();
+            }
+        }
+    }
+
+    if (!statsBuffer.empty()) {
+        stream->UpdateHeapStats(&statsBuffer.front(), static_cast<int>(statsBuffer.size()));
+        statsBuffer.clear();
+    }
+    stream->UpdateLastSeenObjectId(sequenceId);
+}
+
+void HeapSnapshot::AddNode(TaggedObject* address)
 {
     GenerateNode(JSTaggedValue(address));
 }
 
-void HeapSnapshot::MoveNode(uintptr_t address, uintptr_t forward_address)
+void HeapSnapshot::MoveNode(uintptr_t address, TaggedObject* forward_address)
 {
     int sequenceId = -1;
     Node *node = entryMap_.FindAndEraseNode(address);
@@ -361,6 +408,10 @@ CString *HeapSnapshot::GenerateNodeName(TaggedObject *entry)
             return GetString("Stack");
         case JSType::JS_API_STACK_ITERATOR:
             return GetString("StackIterator");
+        case JSType::JS_API_LIST:
+            return GetString("List");
+        case JSType::JS_API_LINKED_LIST:
+            return GetString("LinkedList");
         case JSType::SOURCE_TEXT_MODULE_RECORD:
             return GetString("SourceTextModule");
         case JSType::IMPORTENTRY_RECORD:

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -117,7 +117,7 @@ JSTaggedValue JSAPIArrayList::Get(JSThread *thread, const uint32_t index)
 
 bool JSAPIArrayList::IsEmpty(const JSHandle<JSAPIArrayList> &arrayList)
 {
-    return arrayList->GetLength().GetArrayLength() == 0;
+    return arrayList->GetSize() == 0;
 }
 
 int JSAPIArrayList::GetIndexOf(JSThread *thread, const JSHandle<JSAPIArrayList> &arrayList,
@@ -226,14 +226,14 @@ JSTaggedValue JSAPIArrayList::ReplaceAllElements(JSThread *thread, const JSHandl
                                                  const JSHandle<JSTaggedValue> &callbackFn,
                                                  const JSHandle<JSTaggedValue> &thisArg)
 {
-    JSHandle<JSAPIArrayList> arraylist = JSHandle<JSAPIArrayList>::Cast(thisHandle);
-    uint32_t length = static_cast<uint32_t>(arraylist->GetSize());
+    JSHandle<JSAPIArrayList> arrayList = JSHandle<JSAPIArrayList>::Cast(thisHandle);
+    uint32_t length = static_cast<uint32_t>(arrayList->GetSize());
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> kValue(thread, JSTaggedValue::Undefined());
     const size_t argsLength = 3;
     JSHandle<JSTaggedValue> undefined = thread->GlobalConstants()->GetHandledUndefined();
     for (uint32_t k = 0; k < length; k++) {
-        kValue.Update(arraylist->Get(thread, k));
+        kValue.Update(arrayList->Get(thread, k));
         key.Update(JSTaggedValue(k));
         EcmaRuntimeCallInfo info =
             EcmaInterpreter::NewRuntimeCallInfo(thread, callbackFn, thisArg, undefined, argsLength);
@@ -241,7 +241,7 @@ JSTaggedValue JSAPIArrayList::ReplaceAllElements(JSThread *thread, const JSHandl
         JSTaggedValue funcResult = JSFunction::Call(&info);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, funcResult);
 
-        arraylist->Set(thread, k, funcResult);
+        arrayList->Set(thread, k, funcResult);
     }
     
     return JSTaggedValue::Undefined();
@@ -338,7 +338,7 @@ JSHandle<TaggedArray> JSAPIArrayList::GrowCapacity(const JSThread *thread, const
     return newElements;
 }
 
-bool JSAPIArrayList::Has(JSTaggedValue value) const
+bool JSAPIArrayList::Has(const JSTaggedValue value) const
 {
     TaggedArray *elements = TaggedArray::Cast(GetElements().GetTaggedObject());
     int32_t length = GetSize();
@@ -368,10 +368,10 @@ JSHandle<TaggedArray> JSAPIArrayList::OwnKeys(JSThread *thread, const JSHandle<J
 }
 
 bool JSAPIArrayList::GetOwnProperty(JSThread *thread, const JSHandle<JSAPIArrayList> &obj,
-                                    const JSHandle<JSTaggedValue> &key, PropertyDescriptor &desc)
+                                    const JSHandle<JSTaggedValue> &key)
 {
     uint32_t index = 0;
-    if (!UNLIKELY(JSTaggedValue::ToElementIndex(key.GetTaggedValue(), &index))) {
+    if (UNLIKELY(!JSTaggedValue::ToElementIndex(key.GetTaggedValue(), &index))) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Can not obtain attributes of no-number type", false);
     }
 
@@ -379,7 +379,10 @@ bool JSAPIArrayList::GetOwnProperty(JSThread *thread, const JSHandle<JSAPIArrayL
     if (index >= length) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "GetOwnProperty index out-of-bounds", false);
     }
-    return JSObject::GetOwnProperty(thread, JSHandle<JSObject>::Cast(obj), key, desc);
+
+    obj->Get(thread, index);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
+    return true;
 }
 
 JSTaggedValue JSAPIArrayList::GetIteratorObj(JSThread *thread, const JSHandle<JSAPIArrayList> &obj)
@@ -388,5 +391,18 @@ JSTaggedValue JSAPIArrayList::GetIteratorObj(JSThread *thread, const JSHandle<JS
     JSHandle<JSAPIArrayListIterator> iter(factory->NewJSAPIArrayListIterator(obj));
 
     return iter.GetTaggedValue();
+}
+
+OperationResult JSAPIArrayList::GetProperty(JSThread *thread, const JSHandle<JSAPIArrayList> &obj,
+                                            const JSHandle<JSTaggedValue> &key)
+{
+    int length = obj->GetLength().GetInt();
+    int index = key->GetInt();
+    if (index < 0 || index >= length) {
+        THROW_RANGE_ERROR_AND_RETURN(thread, "GetProperty index out-of-bounds",
+                                     OperationResult(thread, JSTaggedValue::Exception(), PropertyMetaData(false)));
+    }
+
+    return OperationResult(thread, obj->Get(thread, index), PropertyMetaData(false));
 }
 }  // namespace panda::ecmascript

@@ -47,6 +47,15 @@ public:
     {
         return isSweeping_;
     }
+
+    void EnableConcurrentSweep(bool flag)
+    {
+        if (concurrentSweep_ && isSweeping_ && !flag) {
+            disableConcurrentRequested_ = true;
+        } else {
+            concurrentSweep_ = flag;
+        }
+    }
 private:
     class SweeperTask : public Task {
     public:
@@ -73,6 +82,7 @@ private:
 
     Heap *heap_;
     bool concurrentSweep_ {false};
+    bool disableConcurrentRequested_ {false};
     bool isSweeping_ {false};
     MemSpaceType startSpaceType_ = MemSpaceType::OLD_SPACE;
 };

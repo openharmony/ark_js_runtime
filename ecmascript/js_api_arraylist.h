@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -67,13 +67,15 @@ public:
     JSTaggedValue Set(JSThread *thread, const uint32_t index, JSTaggedValue value);
     JSTaggedValue Get(JSThread *thread, const uint32_t index);
 
-    bool Has(JSTaggedValue value) const;
+    bool Has(const JSTaggedValue value) const;
     static JSHandle<TaggedArray> OwnKeys(JSThread *thread, const JSHandle<JSAPIArrayList> &obj);
     static bool GetOwnProperty(JSThread *thread, const JSHandle<JSAPIArrayList> &obj,
-                               const JSHandle<JSTaggedValue> &key, PropertyDescriptor &desc);
+                               const JSHandle<JSTaggedValue> &key);
+    static OperationResult GetProperty(JSThread *thread, const JSHandle<JSAPIArrayList> &obj,
+                                       const JSHandle<JSTaggedValue> &key);
     inline int GetSize() const
     {
-        return GetLength().GetArrayLength();
+        return GetLength().GetInt();
     }
 
     static constexpr size_t LENGTH_OFFSET = JSObject::SIZE;

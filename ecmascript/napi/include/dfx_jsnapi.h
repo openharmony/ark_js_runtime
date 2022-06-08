@@ -49,8 +49,10 @@ public:
                                  bool isVmMode = true, bool isPrivate = false);
     static void DumpHeapSnapshot(const EcmaVM *vm, int dumpFormat, bool isVmMode = true, bool isPrivate = false);
 
-    static bool BuildNativeAndJsBackStackTrace(const EcmaVM *vm, std::string &stackTraceStr);
-    static bool StartHeapTracking(const EcmaVM *vm, double timeInterval, bool isVmMode = true);
+    static bool BuildNativeAndJsStackTrace(const EcmaVM *vm, std::string &stackTraceStr);
+    static bool BuildJsStackTrace(const EcmaVM *vm, std::string &stackTraceStr);
+    static bool StartHeapTracking(const EcmaVM *vm, double timeInterval, bool isVmMode = true,
+                                  Stream *stream = nullptr);
     static bool StopHeapTracking(const EcmaVM *vm, const std::string &filePath);
     static bool StopHeapTracking(const EcmaVM *vm, Stream *stream, Progress *progress = nullptr);
     static void PrintStatisticResult(const EcmaVM *vm);
@@ -59,6 +61,8 @@ public:
     static size_t GetArrayBufferSize(const EcmaVM *vm);
     static size_t GetHeapTotalSize(const EcmaVM *vm);
     static size_t GetHeapUsedSize(const EcmaVM *vm);
+    static void NotifyApplicationState(EcmaVM *vm, bool inBackground);
+    static void NotifyMemoryPressure(EcmaVM *vm, bool inHighMemoryPressure);
 
     // profile generator
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
@@ -66,6 +70,7 @@ public:
     static void StopCpuProfilerForFile();
     static void StartCpuProfilerForInfo(const EcmaVM *vm);
     static std::unique_ptr<ProfileInfo> StopCpuProfilerForInfo();
+    static void SetCpuSamplingInterval(int interval);
 #endif
 
     static void ResumeVM(const EcmaVM *vm);

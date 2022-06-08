@@ -25,7 +25,7 @@
 namespace panda::ecmascript::tooling {
 void RuntimeImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
 {
-    static CUnorderedMap<CString, AgentHandler> dispatcherTable {
+    static std::unordered_map<std::string, AgentHandler> dispatcherTable {
         { "enable", &RuntimeImpl::DispatcherImpl::Enable },
         { "getProperties", &RuntimeImpl::DispatcherImpl::GetProperties },
         { "runIfWaitingForDebugger", &RuntimeImpl::DispatcherImpl::RunIfWaitingForDebugger },
@@ -33,7 +33,7 @@ void RuntimeImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
         { "getHeapUsage", &RuntimeImpl::DispatcherImpl::GetHeapUsage }
     };
 
-    const CString &method = request.GetMethod();
+    const std::string &method = request.GetMethod();
     LOG(DEBUG, DEBUGGER) << "dispatch [" << method << "] to RuntimeImpl";
 
     auto entry = dispatcherTable.find(method);
@@ -41,50 +41,50 @@ void RuntimeImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
         (this->*(entry->second))(request);
     } else {
         LOG(ERROR, DEBUGGER) << "unknown method: " << method;
-        SendResponse(request, DispatchResponse::Fail("unknown method: " + method), nullptr);
+        SendResponse(request, DispatchResponse::Fail("unknown method: " + method));
     }
 }
 
 void RuntimeImpl::DispatcherImpl::Enable(const DispatchRequest &request)
 {
     DispatchResponse response = runtime_->Enable();
-    SendResponse(request, response, nullptr);
+    SendResponse(request, response);
 }
 
 void RuntimeImpl::DispatcherImpl::Disable(const DispatchRequest &request)
 {
     DispatchResponse response = runtime_->Disable();
-    SendResponse(request, response, nullptr);
+    SendResponse(request, response);
 }
 
 void RuntimeImpl::DispatcherImpl::RunIfWaitingForDebugger(const DispatchRequest &request)
 {
     DispatchResponse response = runtime_->RunIfWaitingForDebugger();
-    SendResponse(request, response, nullptr);
+    SendResponse(request, response);
 }
 
 void RuntimeImpl::DispatcherImpl::GetProperties(const DispatchRequest &request)
 {
     std::unique_ptr<GetPropertiesParams> params = GetPropertiesParams::Create(request.GetEcmaVM(), request.GetParams());
     if (params == nullptr) {
-        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
 
-    CVector<std::unique_ptr<PropertyDescriptor>> outPropertyDesc;
-    std::optional<CVector<std::unique_ptr<InternalPropertyDescriptor>>> outInternalDescs;
-    std::optional<CVector<std::unique_ptr<PrivatePropertyDescriptor>>> outPrivateProperties;
+    std::vector<std::unique_ptr<PropertyDescriptor>> outPropertyDesc;
+    std::optional<std::vector<std::unique_ptr<InternalPropertyDescriptor>>> outInternalDescs;
+    std::optional<std::vector<std::unique_ptr<PrivatePropertyDescriptor>>> outPrivateProperties;
     std::optional<std::unique_ptr<ExceptionDetails>> outExceptionDetails;
     DispatchResponse response = runtime_->GetProperties(std::move(params), &outPropertyDesc, &outInternalDescs,
         &outPrivateProperties, &outExceptionDetails);
     if (outExceptionDetails) {
         LOG(WARNING, DEBUGGER) << "GetProperties thrown an exception";
     }
-    std::unique_ptr<GetPropertiesReturns> result = std::make_unique<GetPropertiesReturns>(std::move(outPropertyDesc),
+    GetPropertiesReturns result(std::move(outPropertyDesc),
         std::move(outInternalDescs),
         std::move(outPrivateProperties),
         std::move(outExceptionDetails));
-    SendResponse(request, response, std::move(result));
+    SendResponse(request, response, result);
 }
 
 void RuntimeImpl::DispatcherImpl::CallFunctionOn(const DispatchRequest &request)
@@ -92,7 +92,7 @@ void RuntimeImpl::DispatcherImpl::CallFunctionOn(const DispatchRequest &request)
     std::unique_ptr<CallFunctionOnParams> params =
         CallFunctionOnParams::Create(request.GetEcmaVM(), request.GetParams());
     if (params == nullptr) {
-        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
 
@@ -102,9 +102,8 @@ void RuntimeImpl::DispatcherImpl::CallFunctionOn(const DispatchRequest &request)
     if (outExceptionDetails) {
         LOG(WARNING, DEBUGGER) << "CallFunctionOn thrown an exception";
     }
-    std::unique_ptr<CallFunctionOnReturns> result = std::make_unique<CallFunctionOnReturns>(std::move(outRemoteObject),
-        std::move(outExceptionDetails));
-    SendResponse(request, response, std::move(result));
+    CallFunctionOnReturns result(std::move(outRemoteObject), std::move(outExceptionDetails));
+    SendResponse(request, response, result);
 }
 
 void RuntimeImpl::DispatcherImpl::GetHeapUsage(const DispatchRequest &request)
@@ -112,9 +111,8 @@ void RuntimeImpl::DispatcherImpl::GetHeapUsage(const DispatchRequest &request)
     double usedSize = 0;
     double totalSize = 0;
     DispatchResponse response = runtime_->GetHeapUsage(&usedSize, &totalSize);
-    std::unique_ptr<GetHeapUsageReturns> result = std::make_unique<GetHeapUsageReturns>(usedSize,
-        totalSize);
-    SendResponse(request, response, std::move(result));
+    GetHeapUsageReturns result(usedSize, totalSize);
+    SendResponse(request, response, result);
 }
 
 bool RuntimeImpl::Frontend::AllowNotify() const
@@ -165,9 +163,9 @@ DispatchResponse RuntimeImpl::GetHeapUsage(double *usedSize, double *totalSize)
 }
 
 DispatchResponse RuntimeImpl::GetProperties(std::unique_ptr<GetPropertiesParams> params,
-    CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc,
-    [[maybe_unused]] std::optional<CVector<std::unique_ptr<InternalPropertyDescriptor>>> *outInternalDescs,
-    [[maybe_unused]] std::optional<CVector<std::unique_ptr<PrivatePropertyDescriptor>>> *outPrivateProps,
+    std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc,
+    [[maybe_unused]] std::optional<std::vector<std::unique_ptr<InternalPropertyDescriptor>>> *outInternalDescs,
+    [[maybe_unused]] std::optional<std::vector<std::unique_ptr<PrivatePropertyDescriptor>>> *outPrivateProps,
     [[maybe_unused]] std::optional<std::unique_ptr<ExceptionDetails>> *outExceptionDetails)
 {
     RemoteObjectId objectId = params->GetObjectId();
@@ -201,22 +199,22 @@ DispatchResponse RuntimeImpl::GetProperties(std::unique_ptr<GetPropertiesParams>
         if (isAccessorOnly && !jsProperty.HasGetter() && !jsProperty.HasSetter()) {
             continue;
         }
-        if (jsProperty.HasGetter()) {
+        if (debuggerProperty->HasGet()) {
             debuggerProperty->GetGet()->SetObjectId(curObjectId_);
             properties_[curObjectId_++] = Global<JSValueRef>(vm_, jsProperty.GetGetter(vm_));
         }
-        if (jsProperty.HasSetter()) {
+        if (debuggerProperty->HasSet()) {
             debuggerProperty->GetSet()->SetObjectId(curObjectId_);
             properties_[curObjectId_++] = Global<JSValueRef>(vm_, jsProperty.GetSetter(vm_));
         }
-        if (jsProperty.HasValue()) {
+        if (debuggerProperty->HasValue()) {
             Local<JSValueRef> vValue = jsProperty.GetValue(vm_);
             if (vValue->IsObject() && !vValue->IsProxy()) {
                 debuggerProperty->GetValue()->SetObjectId(curObjectId_);
                 properties_[curObjectId_++] = Global<JSValueRef>(vm_, vValue);
             }
         }
-        if (name->IsSymbol()) {
+        if (debuggerProperty->HasSymbol()) {
             debuggerProperty->GetSymbol()->SetObjectId(curObjectId_);
             properties_[curObjectId_++] = Global<JSValueRef>(vm_, name);
         }
@@ -229,7 +227,7 @@ DispatchResponse RuntimeImpl::GetProperties(std::unique_ptr<GetPropertiesParams>
 }
 
 void RuntimeImpl::AddTypedArrayRefs(Local<ArrayBufferRef> arrayBufferRef,
-    CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
+    std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
 {
     int32_t arrayBufferByteLength = arrayBufferRef->ByteLength(vm_);
     int32_t typedArrayLength = arrayBufferByteLength;
@@ -260,7 +258,7 @@ void RuntimeImpl::AddTypedArrayRefs(Local<ArrayBufferRef> arrayBufferRef,
 
 template <typename TypedArrayRef>
 void RuntimeImpl::AddTypedArrayRef(Local<ArrayBufferRef> arrayBufferRef, int32_t length, const char* name,
-    CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
+    std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
 {
     Local<JSValueRef> jsValueRefTypedArray(TypedArrayRef::New(vm_, arrayBufferRef, 0, length));
     std::unique_ptr<RemoteObject> remoteObjectTypedArray = RemoteObject::FromTagged(vm_, jsValueRefTypedArray);
@@ -285,7 +283,7 @@ void RuntimeImpl::CacheObjectIfNeeded(Local<JSValueRef> valRef, RemoteObject *re
 }
 
 void RuntimeImpl::GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn, bool isAccessorOnly,
-    CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
+    std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
 {
     if (!isAccessorOnly && isOwn && !value->IsProxy()) {
         return;
@@ -319,11 +317,11 @@ void RuntimeImpl::GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn
 }
 
 void RuntimeImpl::GetAdditionalProperties(const Local<JSValueRef> &value,
-    CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
+    std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
 {
     // The length of the TypedArray have to be limited(less than or equal to lengthTypedArrayLimit) until we construct
     // the PropertyPreview class. Let lengthTypedArrayLimit be 10000 temporarily.
-    static const int32_t lengthTypedArrayLimit = 10000;
+    static const uint32_t lengthTypedArrayLimit = 10000;
 
     // The width of the string-expression for JSTypedArray::MAX_TYPED_ARRAY_INDEX which is euqal to
     // JSObject::MAX_ELEMENT_INDEX which is equal to std::numeric_limits<uint32_t>::max(). (42,9496,7295)
@@ -331,12 +329,12 @@ void RuntimeImpl::GetAdditionalProperties(const Local<JSValueRef> &value,
 
     if (value->IsTypedArray()) {
         Local<TypedArrayRef> localTypedArrayRef(value);
-        int32_t lengthTypedArray = localTypedArrayRef->ArrayLength(vm_);
-        if (lengthTypedArray < 0 || lengthTypedArray > lengthTypedArrayLimit) {
+        uint32_t lengthTypedArray = localTypedArrayRef->ArrayLength(vm_);
+        if (lengthTypedArray > lengthTypedArrayLimit) {
             LOG(ERROR, DEBUGGER) << "The length of the TypedArray is non-compliant or unsupported.";
             return;
         }
-        for (int32_t i = 0; i < lengthTypedArray; i++) {
+        for (uint32_t i = 0; i < lengthTypedArray; i++) {
             Local<JSValueRef> localValRefElement = localTypedArrayRef->Get(vm_, i);
             std::unique_ptr<RemoteObject> remoteObjElement = RemoteObject::FromTagged(vm_, localValRefElement);
             remoteObjElement->SetObjectId(curObjectId_);
@@ -345,7 +343,7 @@ void RuntimeImpl::GetAdditionalProperties(const Local<JSValueRef> &value,
 
             std::ostringstream osNameElement;
             osNameElement << std::right << std::setw(widthStrExprMaxElementIndex) << i;
-            CString cStrNameElement = CString(osNameElement.str());
+            std::string cStrNameElement = osNameElement.str();
             debuggerProperty->SetName(cStrNameElement)
                 .SetWritable(true)
                 .SetConfigurable(true)

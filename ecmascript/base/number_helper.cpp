@@ -20,6 +20,7 @@
 #include <iomanip>
 #include <sstream>
 #include "ecmascript/base/builtins_base.h"
+#include "ecmascript/base/string_helper.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/object_factory.h"
 
@@ -49,21 +50,6 @@ static inline uint8_t ToDigit(uint8_t c)
     return '$';
 }
 
-bool NumberHelper::IsNonspace(uint16_t c)
-{
-    int i;
-    int len = sizeof(SPACE_OR_LINE_TERMINAL) / sizeof(SPACE_OR_LINE_TERMINAL[0]);
-    for (i = 0; i < len; i++) {
-        if (c == SPACE_OR_LINE_TERMINAL[i]) {
-            return false;
-        }
-        if (c < SPACE_OR_LINE_TERMINAL[i]) {
-            return true;
-        }
-    }
-    return true;
-}
-
 bool NumberHelper::GotoNonspace(uint8_t **ptr, const uint8_t *end)
 {
     while (*ptr < end) {
@@ -80,7 +66,7 @@ bool NumberHelper::GotoNonspace(uint8_t **ptr, const uint8_t *end)
                 return true;
             }
         }
-        if (IsNonspace(c)) {
+        if (!StringHelper::IsNonspace(c)) {
             return true;
         }
         *ptr += size;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)

@@ -38,6 +38,12 @@ public:
     // Writes the chunk of data into the stream
     bool WriteChunk(char* data, int size) override;
     bool Good() override;
+    void UpdateHeapStats([[maybe_unused]]HeapStat* data, [[maybe_unused]]int count) override
+    {
+    }
+    void UpdateLastSeenObjectId([[maybe_unused]]uint32_t lastSeenObjectId) override
+    {
+    }
 
 private:
     void Initialize(const std::string &fileName);
@@ -63,6 +69,12 @@ public:
     // Writes the chunk of data into the stream
     bool WriteChunk(char *data, int size) override;
     bool Good() override;
+    void UpdateHeapStats([[maybe_unused]]HeapStat* data, [[maybe_unused]]int count) override
+    {
+    }
+    void UpdateLastSeenObjectId([[maybe_unused]]uint32_t lastSeenObjectId) override
+    {
+    }
 
 private:
     int32_t fd_;

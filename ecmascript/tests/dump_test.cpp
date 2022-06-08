@@ -33,6 +33,10 @@
 #include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_api_deque.h"
 #include "ecmascript/js_api_deque_iterator.h"
+#include "ecmascript/js_api_linked_list.h"
+#include "ecmascript/js_api_linked_list_iterator.h"
+#include "ecmascript/js_api_list.h"
+#include "ecmascript/js_api_list_iterator.h"
 #include "ecmascript/js_api_plain_array.h"
 #include "ecmascript/js_api_plain_array_iterator.h"
 #include "ecmascript/js_api_queue.h"
@@ -95,6 +99,7 @@
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
 #include "ecmascript/tagged_dictionary.h"
+#include "ecmascript/tagged_list.h"
 #include "ecmascript/tagged_tree.h"
 #include "ecmascript/template_map.h"
 #include "ecmascript/tests/test_helper.h"
@@ -206,6 +211,28 @@ static JSHandle<JSAPIPlainArray> NewJSAPIPlainArray(JSThread *thread, ObjectFact
     jSAPIPlainArray->SetValues(thread, values);
     jSAPIPlainArray->SetLength(0);
     return jSAPIPlainArray;
+}
+
+static JSHandle<JSAPIList> NewJSAPIList(JSThread *thread, ObjectFactory *factory)
+{
+    auto globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<JSTaggedValue> proto = globalEnv->GetObjectFunctionPrototype();
+    JSHandle<JSHClass> listClass = factory->NewEcmaDynClass(JSAPIList::SIZE, JSType::JS_API_LIST, proto);
+    JSHandle<JSAPIList> jsAPIList = JSHandle<JSAPIList>::Cast(factory->NewJSObjectWithInit(listClass));
+    JSHandle<JSTaggedValue> taggedSingleList(thread, TaggedSingleList::Create(thread));
+    jsAPIList->SetSingleList(thread, taggedSingleList);
+    return jsAPIList;
+}
+
+static JSHandle<JSAPILinkedList> NewJSAPILinkedList(JSThread *thread, ObjectFactory *factory)
+{
+    auto globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<JSTaggedValue> proto = globalEnv->GetObjectFunctionPrototype();
+    JSHandle<JSHClass> mapClass = factory->NewEcmaDynClass(JSAPILinkedList::SIZE, JSType::JS_API_LINKED_LIST, proto);
+    JSHandle<JSAPILinkedList> jsAPILinkedList = JSHandle<JSAPILinkedList>::Cast(factory->NewJSObjectWithInit(mapClass));
+    JSHandle<JSTaggedValue> linkedlist(thread, TaggedDoubleList::Create(thread));
+    jsAPILinkedList->SetDoubleList(thread, linkedlist);
+    return jsAPILinkedList;
 }
 
 static JSHandle<JSObject> NewJSObject(JSThread *thread, ObjectFactory *factory, JSHandle<GlobalEnv> globalEnv)
@@ -953,6 +980,37 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 JSHandle<JSAPIVectorIterator> jsVectorIter =
                     factory->NewJSAPIVectorIterator(NewJSAPIVector(factory, proto));
                 DUMP_FOR_HANDLE(jsVectorIter)
+                break;
+            }
+            case JSType::JS_API_LIST: {
+                // 1 : 1 dump fileds number
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSAPIList::SIZE, 1U)
+                JSHandle<JSAPIList> jsAPIList = NewJSAPIList(thread, factory);
+                DUMP_FOR_HANDLE(jsAPIList)
+                break;
+            }
+            case JSType::JS_API_LINKED_LIST: {
+                // 1 : 1 dump fileds number
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSAPILinkedList::SIZE, 1U)
+                JSHandle<JSAPILinkedList> jsAPILinkedList = NewJSAPILinkedList(thread, factory);
+                DUMP_FOR_HANDLE(jsAPILinkedList)
+                break;
+            }
+            case JSType::JS_API_LIST_ITERATOR: {
+                // 2 : 2 dump fileds number
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSAPIListIterator::SIZE, 2U)
+                JSHandle<JSAPIList> jsAPIList = NewJSAPIList(thread, factory);
+                JSHandle<JSAPIListIterator> jsAPIListIter = factory->NewJSAPIListIterator(jsAPIList);
+                DUMP_FOR_HANDLE(jsAPIListIter)
+                break;
+            }
+            case JSType::JS_API_LINKED_LIST_ITERATOR: {
+                // 2 : 2 dump fileds number
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSAPIListIterator::SIZE, 2U)
+                JSHandle<JSAPILinkedList> jsAPILinkedList = NewJSAPILinkedList(thread, factory);
+                JSHandle<JSAPILinkedListIterator> jsAPILinkedListIter =
+                    factory->NewJSAPILinkedListIterator(jsAPILinkedList);
+                DUMP_FOR_HANDLE(jsAPILinkedListIter)
                 break;
             }
             case JSType::MODULE_RECORD: {

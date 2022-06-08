@@ -335,6 +335,30 @@ void AssemblerAarch64::Str(const Register &rt, const MemoryOperand &operand)
     UNREACHABLE();
 }
 
+void AssemblerAarch64::Ldur(const Register &rt, const MemoryOperand &operand)
+{
+    bool regX = !rt.IsW();
+    uint32_t op = LDUR_Offset;
+    ASSERT(operand.IsImmediateOffset());
+    uint64_t imm = static_cast<uint64_t>(operand.GetImmediate().Value());
+    // 30: 30bit indicate the size of LDUR Reg
+    uint32_t instructionCode = (regX << 30) | op | LoadAndStoreImm(imm, true)
+                               | Rn(operand.GetRegBase().GetId()) | Rt(rt.GetId());
+    EmitU32(instructionCode);
+}
+
+void AssemblerAarch64::Stur(const Register &rt, const MemoryOperand &operand)
+{
+    bool regX = !rt.IsW();
+    uint32_t op = STUR_Offset;
+    ASSERT(operand.IsImmediateOffset());
+    uint64_t imm = static_cast<uint64_t>(operand.GetImmediate().Value());
+    // 30: 30bit indicate the size of LDUR Reg
+    uint32_t instructionCode = (regX << 30) | op | LoadAndStoreImm(imm, true)
+                               | Rn(operand.GetRegBase().GetId()) | Rt(rt.GetId());
+    EmitU32(instructionCode);
+}
+
 void AssemblerAarch64::Mov(const Register &rd, const Immediate &imm)
 {
     ASSERT_PRINT(!rd.IsSp(), "sp can't load immediate, please use add instruction");
@@ -710,12 +734,12 @@ void AssemblerAarch64::Lsr(const Register &rd, const Register &rn, unsigned shif
 {
     unsigned imms = 0;
     if (rd.IsW()) {
-        // 31 : 32-bit variant Applies when sf == 0 && N == 0 && imms == 011111
+        // 31 : 31 32-bit variant Applies when sf == 0 && N == 0 && imms == 011111
         // LSR <Wd>, <Wn>, #<shift> is equivalent to UBFM <Wd>, <Wn>, #<shift>, #31
         // and is always the preferred disassembly
         imms = 31;
     } else {
-        // 63 : 64-bit variant Applies when sf == 1 && N == 1 && imms == 111111
+        // 63 : 63 64-bit variant Applies when sf == 1 && N == 1 && imms == 111111
         // LSR <Xd>, <Xn>, #<shift> is equivalent to UBFM <Xd>, <Xn>, #<shift>, #63
         // and is always the preferred disassembly
         imms = 63;

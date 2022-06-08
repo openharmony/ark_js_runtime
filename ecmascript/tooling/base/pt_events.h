@@ -29,8 +29,8 @@ class PtBaseEvents : public PtBaseTypes {
 public:
     PtBaseEvents() = default;
     ~PtBaseEvents() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override = 0;
-    virtual CString GetName() = 0;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override = 0;
+    virtual std::string GetName() const = 0;
 
 private:
     NO_COPY_SEMANTIC(PtBaseEvents);
@@ -41,10 +41,9 @@ class BreakpointResolved final : public PtBaseEvents {
 public:
     BreakpointResolved() = default;
     ~BreakpointResolved() override = default;
-    static std::unique_ptr<BreakpointResolved> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() override
+    std::string GetName() const override
     {
         return "Debugger.breakpointResolved";
     }
@@ -83,26 +82,25 @@ class Paused final : public PtBaseEvents {
 public:
     Paused() = default;
     ~Paused() override = default;
-    static std::unique_ptr<Paused> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() override
+    std::string GetName() const override
     {
         return "Debugger.paused";
     }
 
-    const CVector<std::unique_ptr<CallFrame>> *GetCallFrames() const
+    const std::vector<std::unique_ptr<CallFrame>> *GetCallFrames() const
     {
         return &callFrames_;
     }
 
-    Paused &SetCallFrames(CVector<std::unique_ptr<CallFrame>> callFrames)
+    Paused &SetCallFrames(std::vector<std::unique_ptr<CallFrame>> callFrames)
     {
         callFrames_ = std::move(callFrames);
         return *this;
     }
 
-    const CString &GetReason() const
+    const std::string &GetReason() const
     {
         return reason_;
     }
@@ -113,7 +111,7 @@ public:
         return *this;
     }
 
-    static CString GetReasonString(PauseReason reason)
+    static std::string GetReasonString(PauseReason reason)
     {
         switch (reason) {
             case AMBIGUOUS: {
@@ -178,12 +176,12 @@ public:
         return data_.has_value();
     }
 
-    CVector<BreakpointId> GetHitBreakpoints() const
+    std::vector<BreakpointId> GetHitBreakpoints() const
     {
-        return hitBreakpoints_.value_or(CVector<BreakpointId>());
+        return hitBreakpoints_.value_or(std::vector<BreakpointId>());
     }
 
-    Paused &SetHitBreakpoints(CVector<BreakpointId> hitBreakpoints)
+    Paused &SetHitBreakpoints(std::vector<BreakpointId> hitBreakpoints)
     {
         hitBreakpoints_ = std::move(hitBreakpoints);
         return *this;
@@ -198,20 +196,19 @@ private:
     NO_COPY_SEMANTIC(Paused);
     NO_MOVE_SEMANTIC(Paused);
 
-    CVector<std::unique_ptr<CallFrame>> callFrames_ {};
-    CString reason_ {};
+    std::vector<std::unique_ptr<CallFrame>> callFrames_ {};
+    std::string reason_ {};
     std::optional<std::unique_ptr<RemoteObject>> data_ {};
-    std::optional<CVector<BreakpointId>> hitBreakpoints_ {};
+    std::optional<std::vector<BreakpointId>> hitBreakpoints_ {};
 };
 
 class Resumed final : public PtBaseEvents {
 public:
     Resumed() = default;
     ~Resumed() override = default;
-    static std::unique_ptr<Resumed> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() override
+    std::string GetName() const override
     {
         return "Debugger.resumed";
     }
@@ -225,10 +222,9 @@ class ScriptFailedToParse final : public PtBaseEvents {
 public:
     ScriptFailedToParse() = default;
     ~ScriptFailedToParse() override = default;
-    static std::unique_ptr<ScriptFailedToParse> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() override
+    std::string GetName() const override
     {
         return "Debugger.scriptFailedToParse";
     }
@@ -244,12 +240,12 @@ public:
         return *this;
     }
 
-    const CString &GetUrl() const
+    const std::string &GetUrl() const
     {
         return url_;
     }
 
-    ScriptFailedToParse &SetUrl(const CString &url)
+    ScriptFailedToParse &SetUrl(const std::string &url)
     {
         url_ = url;
         return *this;
@@ -310,12 +306,12 @@ public:
         return *this;
     }
 
-    const CString &GetHash() const
+    const std::string &GetHash() const
     {
         return hash_;
     }
 
-    ScriptFailedToParse &SetHash(const CString &hash)
+    ScriptFailedToParse &SetHash(const std::string &hash)
     {
         hash_ = hash;
         return *this;
@@ -337,12 +333,12 @@ public:
         return execContextAuxData_.has_value();
     }
 
-    const CString &GetSourceMapURL() const
+    const std::string &GetSourceMapURL() const
     {
         return sourceMapUrl_.value();
     }
 
-    ScriptFailedToParse &SetSourceMapURL(const CString &sourceMapUrl)
+    ScriptFailedToParse &SetSourceMapURL(const std::string &sourceMapUrl)
     {
         sourceMapUrl_ = sourceMapUrl;
         return *this;
@@ -417,12 +413,12 @@ public:
         return codeOffset_.has_value();
     }
 
-    const CString &GetScriptLanguage() const
+    const std::string &GetScriptLanguage() const
     {
         return scriptLanguage_.value();
     }
 
-    ScriptFailedToParse &SetScriptLanguage(const CString &scriptLanguage)
+    ScriptFailedToParse &SetScriptLanguage(const std::string &scriptLanguage)
     {
         scriptLanguage_ = scriptLanguage;
         return *this;
@@ -433,12 +429,12 @@ public:
         return scriptLanguage_.has_value();
     }
 
-    const CString &GetEmbedderName() const
+    const std::string &GetEmbedderName() const
     {
         return embedderName_.value();
     }
 
-    ScriptFailedToParse &SetEmbedderName(const CString &embedderName)
+    ScriptFailedToParse &SetEmbedderName(const std::string &embedderName)
     {
         embedderName_ = embedderName;
         return *this;
@@ -454,32 +450,30 @@ private:
     NO_MOVE_SEMANTIC(ScriptFailedToParse);
 
     ScriptId scriptId_ {};
-    CString url_ {};
+    std::string url_ {};
     int32_t startLine_ {0};
     int32_t startColumn_ {0};
     int32_t endLine_ {0};
     int32_t endColumn_ {0};
     ExecutionContextId executionContextId_ {0};
-    CString hash_ {};
+    std::string hash_ {};
     std::optional<Local<ObjectRef>> execContextAuxData_ {};
-    std::optional<CString> sourceMapUrl_ {};
+    std::optional<std::string> sourceMapUrl_ {};
     std::optional<bool> hasSourceUrl_ {};
     std::optional<bool> isModule_ {};
     std::optional<int32_t> length_ {};
     std::optional<int32_t> codeOffset_ {};
-    std::optional<CString> scriptLanguage_ {};
-    std::optional<CString> embedderName_ {};
+    std::optional<std::string> scriptLanguage_ {};
+    std::optional<std::string> embedderName_ {};
 };
 
 class ScriptParsed final : public PtBaseEvents {
 public:
     ScriptParsed() = default;
     ~ScriptParsed() override = default;
-    static std::unique_ptr<ScriptParsed> Create(const std::unique_ptr<PtScript> &script);
-    static std::unique_ptr<ScriptParsed> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() override
+    std::string GetName() const override
     {
         return "Debugger.scriptParsed";
     }
@@ -495,12 +489,12 @@ public:
         return *this;
     }
 
-    const CString &GetUrl() const
+    const std::string &GetUrl() const
     {
         return url_;
     }
 
-    ScriptParsed &SetUrl(const CString &url)
+    ScriptParsed &SetUrl(const std::string &url)
     {
         url_ = url;
         return *this;
@@ -561,12 +555,12 @@ public:
         return *this;
     }
 
-    const CString &GetHash() const
+    const std::string &GetHash() const
     {
         return hash_;
     }
 
-    ScriptParsed &SetHash(const CString &hash)
+    ScriptParsed &SetHash(const std::string &hash)
     {
         hash_ = hash;
         return *this;
@@ -604,12 +598,12 @@ public:
         return execContextAuxData_.has_value();
     }
 
-    const CString &GetSourceMapURL() const
+    const std::string &GetSourceMapURL() const
     {
         return sourceMapUrl_.value();
     }
 
-    ScriptParsed &SetSourceMapURL(const CString &sourceMapUrl)
+    ScriptParsed &SetSourceMapURL(const std::string &sourceMapUrl)
     {
         sourceMapUrl_ = sourceMapUrl;
         return *this;
@@ -684,12 +678,12 @@ public:
         return codeOffset_.has_value();
     }
 
-    const CString &GetScriptLanguage() const
+    const std::string &GetScriptLanguage() const
     {
         return scriptLanguage_.value();
     }
 
-    ScriptParsed &SetScriptLanguage(const CString &scriptLanguage)
+    ScriptParsed &SetScriptLanguage(const std::string &scriptLanguage)
     {
         scriptLanguage_ = scriptLanguage;
         return *this;
@@ -700,12 +694,12 @@ public:
         return scriptLanguage_.has_value();
     }
 
-    const CString &GetEmbedderName() const
+    const std::string &GetEmbedderName() const
     {
         return embedderName_.value();
     }
 
-    ScriptParsed &SetEmbedderName(const CString &embedderName)
+    ScriptParsed &SetEmbedderName(const std::string &embedderName)
     {
         embedderName_ = embedderName;
         return *this;
@@ -721,61 +715,63 @@ private:
     NO_MOVE_SEMANTIC(ScriptParsed);
 
     ScriptId scriptId_ {};
-    CString url_ {};
+    std::string url_ {};
     int32_t startLine_ {0};
     int32_t startColumn_ {0};
     int32_t endLine_ {0};
     int32_t endColumn_ {0};
     ExecutionContextId executionContextId_ {0};
-    CString hash_ {};
+    std::string hash_ {};
     std::optional<Local<ObjectRef>> execContextAuxData_ {};
     std::optional<bool> isLiveEdit_ {};
-    std::optional<CString> sourceMapUrl_ {};
+    std::optional<std::string> sourceMapUrl_ {};
     std::optional<bool> hasSourceUrl_ {};
     std::optional<bool> isModule_ {};
     std::optional<uint32_t> length_ {};
     std::optional<uint32_t> codeOffset_ {};
-    std::optional<CString> scriptLanguage_ {};
-    std::optional<CString> embedderName_ {};
+    std::optional<std::string> scriptLanguage_ {};
+    std::optional<std::string> embedderName_ {};
 };
 
 class AddHeapSnapshotChunk final : public PtBaseEvents {
 public:
     AddHeapSnapshotChunk() = default;
     ~AddHeapSnapshotChunk() override = default;
-    static std::unique_ptr<AddHeapSnapshotChunk> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    static std::unique_ptr<AddHeapSnapshotChunk> Create(char* data, int size);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() override
+    std::string GetName() const override
     {
         return "HeapProfiler.addHeapSnapshotChunk";
+    }
+
+    std::string &GetChunk()
+    {
+        return chunk_;
     }
 
 private:
     NO_COPY_SEMANTIC(AddHeapSnapshotChunk);
     NO_MOVE_SEMANTIC(AddHeapSnapshotChunk);
 
-    CString chunk_ {};
+    std::string chunk_ {};
 };
 
 class ConsoleProfileFinished final : public PtBaseEvents {
 public:
     ConsoleProfileFinished() = default;
     ~ConsoleProfileFinished() override = default;
-    static std::unique_ptr<ConsoleProfileFinished> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
-    CString GetName() override
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::string GetName() const override
     {
         return "Profile.ConsoleProfileFinished";
     }
 
-    const CString &GetId() const
+    const std::string &GetId() const
     {
         return id_;
     }
 
-    ConsoleProfileFinished &SetId(const CString &id)
+    ConsoleProfileFinished &SetId(const std::string &id)
     {
         id_ = id;
         return *this;
@@ -803,12 +799,12 @@ public:
         return *this;
     }
 
-    const CString &GetTitle() const
+    const std::string &GetTitle() const
     {
         return title_.value();
     }
 
-    ConsoleProfileFinished &SetTitle(const CString &title)
+    ConsoleProfileFinished &SetTitle(const std::string &title)
     {
         title_ = title;
         return *this;
@@ -823,29 +819,28 @@ private:
     NO_COPY_SEMANTIC(ConsoleProfileFinished);
     NO_MOVE_SEMANTIC(ConsoleProfileFinished);
 
-    CString id_ {};
+    std::string id_ {};
     std::unique_ptr<Location> location_ {nullptr};
     std::unique_ptr<Profile> profile_ {nullptr};
-    std::optional<CString> title_ {};
+    std::optional<std::string> title_ {};
 };
 
 class ConsoleProfileStarted final : public PtBaseEvents {
 public:
     ConsoleProfileStarted() = default;
     ~ConsoleProfileStarted() override = default;
-    static std::unique_ptr<ConsoleProfileStarted> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
-    CString GetName() override
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::string GetName() const override
     {
         return "Profile.ConsoleProfileStarted";
     }
 
-    const CString &GetId() const
+    const std::string &GetId() const
     {
         return id_;
     }
 
-    ConsoleProfileStarted &SetId(const CString &id)
+    ConsoleProfileStarted &SetId(const std::string &id)
     {
         id_ = id;
         return *this;
@@ -862,12 +857,12 @@ public:
         return *this;
     }
 
-    const CString &GetTitle() const
+    const std::string &GetTitle() const
     {
         return title_.value();
     }
 
-    ConsoleProfileStarted &SetTitle(const CString &title)
+    ConsoleProfileStarted &SetTitle(const std::string &title)
     {
         title_ = title;
         return *this;
@@ -882,18 +877,17 @@ private:
     NO_COPY_SEMANTIC(ConsoleProfileStarted);
     NO_MOVE_SEMANTIC(ConsoleProfileStarted);
 
-    CString id_ {};
+    std::string id_ {};
     std::unique_ptr<Location> location_ {nullptr};
-    std::optional<CString> title_ {};
+    std::optional<std::string> title_ {};
 };
 
 class PreciseCoverageDeltaUpdate final : public PtBaseEvents {
 public:
     PreciseCoverageDeltaUpdate() = default;
     ~PreciseCoverageDeltaUpdate() override = default;
-    static std::unique_ptr<PreciseCoverageDeltaUpdate> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
-    CString GetName() override
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::string GetName() const override
     {
         return "Profile.PreciseCoverageDeltaUpdate";
     }
@@ -909,23 +903,23 @@ public:
         return *this;
     }
 
-    const CString &GetOccasion() const
+    const std::string &GetOccasion() const
     {
         return occasion_;
     }
 
-    PreciseCoverageDeltaUpdate &SetOccasion(const CString &occasion)
+    PreciseCoverageDeltaUpdate &SetOccasion(const std::string &occasion)
     {
         occasion_ = occasion;
         return *this;
     }
 
-    const CVector<std::unique_ptr<ScriptCoverage>> *GetResult() const
+    const std::vector<std::unique_ptr<ScriptCoverage>> *GetResult() const
     {
         return &result_;
     }
 
-    PreciseCoverageDeltaUpdate &SetResult(CVector<std::unique_ptr<ScriptCoverage>> result)
+    PreciseCoverageDeltaUpdate &SetResult(std::vector<std::unique_ptr<ScriptCoverage>> result)
     {
         result_ = std::move(result);
         return *this;
@@ -935,29 +929,28 @@ private:
     NO_COPY_SEMANTIC(PreciseCoverageDeltaUpdate);
     NO_MOVE_SEMANTIC(PreciseCoverageDeltaUpdate);
 
-    size_t timestamp_ {0};
-    CString occasion_ {};
-    CVector<std::unique_ptr<ScriptCoverage>> result_ {};
+    int64_t timestamp_ {0};
+    std::string occasion_ {};
+    std::vector<std::unique_ptr<ScriptCoverage>> result_ {};
 };
 
 class HeapStatsUpdate final : public PtBaseEvents {
 public:
     HeapStatsUpdate() = default;
     ~HeapStatsUpdate() override = default;
-    static std::unique_ptr<HeapStatsUpdate> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() override
+    std::string GetName() const override
     {
         return "HeapProfiler.heapStatsUpdate";
     }
 
-    const CVector<int32_t> *GetStatsUpdate() const
+    const std::vector<uint32_t> *GetStatsUpdate() const
     {
         return &statsUpdate_;
     }
 
-    HeapStatsUpdate &SetStatsUpdate(CVector<int32_t> statsUpdate)
+    HeapStatsUpdate &SetStatsUpdate(std::vector<uint32_t> statsUpdate)
     {
         statsUpdate_ = std::move(statsUpdate);
         return *this;
@@ -967,17 +960,16 @@ private:
     NO_COPY_SEMANTIC(HeapStatsUpdate);
     NO_MOVE_SEMANTIC(HeapStatsUpdate);
 
-    CVector<int32_t> statsUpdate_ {};
+    std::vector<uint32_t> statsUpdate_ {};
 };
 
 class LastSeenObjectId final : public PtBaseEvents {
 public:
     LastSeenObjectId() = default;
     ~LastSeenObjectId() override = default;
-    static std::unique_ptr<LastSeenObjectId> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() override
+    std::string GetName() const override
     {
         return "HeapProfiler.lastSeenObjectId";
     }
@@ -987,18 +979,18 @@ public:
         return lastSeenObjectId_;
     }
 
-    LastSeenObjectId &SetLastSeenObjectId(int32_t lastSeenObjectId)
+    LastSeenObjectId &SetLastSeenObjectId(uint32_t lastSeenObjectId)
     {
         lastSeenObjectId_ = lastSeenObjectId;
         return *this;
     }
 
-    size_t GetTimestamp() const
+    int64_t GetTimestamp() const
     {
         return timestamp_;
     }
 
-    LastSeenObjectId &SetTimestamp(size_t timestamp)
+    LastSeenObjectId &SetTimestamp(int64_t timestamp)
     {
         timestamp_ = timestamp;
         return *this;
@@ -1008,18 +1000,17 @@ private:
     NO_COPY_SEMANTIC(LastSeenObjectId);
     NO_MOVE_SEMANTIC(LastSeenObjectId);
 
-    int32_t lastSeenObjectId_ {};
-    size_t timestamp_ {};
+    uint32_t lastSeenObjectId_ {};
+    int64_t timestamp_ {};
 };
 
 class ReportHeapSnapshotProgress final : public PtBaseEvents {
 public:
     ReportHeapSnapshotProgress() = default;
     ~ReportHeapSnapshotProgress() override = default;
-    static std::unique_ptr<ReportHeapSnapshotProgress> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
-    CString GetName() override
+    std::string GetName() const override
     {
         return "HeapProfiler.reportHeapSnapshotProgress";
     }

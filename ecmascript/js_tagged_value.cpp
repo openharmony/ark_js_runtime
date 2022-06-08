@@ -18,13 +18,15 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/interpreter/interpreter.h"
+#include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_api_deque.h"
+#include "ecmascript/js_api_linked_list.h"
+#include "ecmascript/js_api_list.h"
 #include "ecmascript/js_api_plain_array.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_stack.h"
-#include "ecmascript/js_array.h"
-#include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_api_vector.h"
+#include "ecmascript/js_array.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_proxy.h"
@@ -941,6 +943,14 @@ bool JSTaggedValue::HasContainerProperty(JSThread *thread, const JSHandle<JSTagg
         case JSType::JS_API_STACK: {
             return JSHandle<JSAPIStack>::Cast(obj)->Has(key.GetTaggedValue());
         }
+        case JSType::JS_API_LIST: {
+            JSHandle<JSAPIList> list = JSHandle<JSAPIList>::Cast(obj);
+            return list->Has(key.GetTaggedValue());
+        }
+        case JSType::JS_API_LINKED_LIST: {
+            JSHandle<JSAPILinkedList> linkedList = JSHandle<JSAPILinkedList>::Cast(obj);
+            return linkedList->Has(key.GetTaggedValue());
+        }
         case JSType::JS_API_TREE_MAP:
         case JSType::JS_API_TREE_SET: {
             return JSObject::HasProperty(thread, JSHandle<JSObject>(obj), key);
@@ -975,6 +985,12 @@ JSHandle<TaggedArray> JSTaggedValue::GetOwnContainerPropertyKeys(JSThread *threa
         case JSType::JS_API_STACK: {
             return JSAPIStack::OwnKeys(thread, JSHandle<JSAPIStack>::Cast(obj));
         }
+        case JSType::JS_API_LIST: {
+            return JSAPIList::OwnKeys(thread, JSHandle<JSAPIList>::Cast(obj));
+        }
+        case JSType::JS_API_LINKED_LIST: {
+            return JSAPILinkedList::OwnKeys(thread, JSHandle<JSAPILinkedList>::Cast(obj));
+        }
         case JSType::JS_API_TREE_MAP:
         case JSType::JS_API_TREE_SET: {
             return JSObject::GetOwnPropertyKeys(thread, JSHandle<JSObject>(obj));
@@ -992,34 +1008,40 @@ JSHandle<TaggedArray> JSTaggedValue::GetOwnContainerPropertyKeys(JSThread *threa
 bool JSTaggedValue::GetContainerProperty(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
                                          const JSHandle<JSTaggedValue> &key, PropertyDescriptor &desc)
 {
-    auto *hclass = obj->GetTaggedObject()->GetClass();
-    JSType jsType = hclass->GetObjectType();
-    switch (jsType) {
-        case JSType::JS_API_ARRAY_LIST: {
-            return JSAPIArrayList::GetOwnProperty(thread, JSHandle<JSAPIArrayList>::Cast(obj), key, desc);
+    if (key->IsInteger()) {
+        auto *hclass = obj->GetTaggedObject()->GetClass();
+        JSType jsType = hclass->GetObjectType();
+        switch (jsType) {
+            case JSType::JS_API_ARRAY_LIST: {
+                return JSAPIArrayList::GetOwnProperty(thread, JSHandle<JSAPIArrayList>::Cast(obj), key);
+            }
+            case JSType::JS_API_QUEUE: {
+                return JSAPIQueue::GetOwnProperty(thread, JSHandle<JSAPIQueue>::Cast(obj), key);
+            }
+            case JSType::JS_API_DEQUE: {
+                return JSAPIDeque::GetOwnProperty(thread, JSHandle<JSAPIDeque>::Cast(obj), key);
+            }
+            case JSType::JS_API_STACK: {
+                return JSAPIStack::GetOwnProperty(thread, JSHandle<JSAPIStack>::Cast(obj), key);
+            }
+            case JSType::JS_API_LIST: {
+                return JSAPIList::GetOwnProperty(thread, JSHandle<JSAPIList>::Cast(obj), key);
+            }
+            case JSType::JS_API_LINKED_LIST: {
+                return JSAPILinkedList::GetOwnProperty(thread, JSHandle<JSAPILinkedList>::Cast(obj), key);
+            }
+            case JSType::JS_API_PLAIN_ARRAY: {
+                return JSAPIPlainArray::GetOwnProperty(thread, JSHandle<JSAPIPlainArray>::Cast(obj), key);
+            }
+            case JSType::JS_API_VECTOR: {
+                return JSAPIVector::GetOwnProperty(thread, JSHandle<JSAPIVector>::Cast(obj), key);
+            }
+            default: {
+                return JSObject::GetOwnProperty(thread, JSHandle<JSObject>(obj), key, desc);
+            }
         }
-        case JSType::JS_API_QUEUE: {
-            return JSAPIQueue::GetOwnProperty(thread, JSHandle<JSAPIQueue>::Cast(obj), key, desc);
-        }
-        case JSType::JS_API_PLAIN_ARRAY: {
-            return JSAPIPlainArray::GetOwnProperty(thread, JSHandle<JSAPIPlainArray>::Cast(obj), key, desc);
-        }
-        case JSType::JS_API_DEQUE: {
-            return JSAPIDeque::GetOwnProperty(thread, JSHandle<JSAPIDeque>::Cast(obj), key, desc);
-        }
-        case JSType::JS_API_STACK: {
-            return JSAPIStack::GetOwnProperty(thread, JSHandle<JSAPIStack>::Cast(obj), key, desc);
-        }
-        case JSType::JS_API_TREE_MAP:
-        case JSType::JS_API_TREE_SET: {
-            return JSObject::GetOwnProperty(thread, JSHandle<JSObject>(obj), key, desc);
-        }
-        case JSType::JS_API_VECTOR: {
-            return JSAPIVector::GetOwnProperty(thread, JSHandle<JSAPIVector>::Cast(obj), key, desc);
-        }
-        default: {
-            UNREACHABLE();
-        }
+    } else {
+        return JSObject::GetOwnProperty(thread, JSHandle<JSObject>(obj), key, desc);
     }
     return false;
 }
@@ -1041,12 +1063,31 @@ JSHandle<JSTaggedValue> JSTaggedValue::ToNumeric(JSThread *thread, JSHandle<JSTa
 OperationResult JSTaggedValue::GetJSAPIProperty(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
                                                 const JSHandle<JSTaggedValue> &key)
 {
-    auto *hclass = obj->GetTaggedObject()->GetClass();
-    JSType jsType = hclass->GetObjectType();
-    if (key->IsNumber()) {
+    if (key->IsInteger()) {
+        auto *hclass = obj->GetTaggedObject()->GetClass();
+        JSType jsType = hclass->GetObjectType();
         switch (jsType) {
-            case JSType::JS_API_PLAIN_ARRAY:
+            case JSType::JS_API_ARRAY_LIST: {
+                return JSAPIArrayList::GetProperty(thread, JSHandle<JSAPIArrayList>::Cast(obj), key);
+            }
+            case JSType::JS_API_LIST: {
+                return JSAPIList::GetProperty(thread, JSHandle<JSAPIList>::Cast(obj), key);
+            }
+            case JSType::JS_API_LINKED_LIST: {
+                return JSAPILinkedList::GetProperty(thread, JSHandle<JSAPILinkedList>::Cast(obj), key);
+            }
+            case JSType::JS_API_QUEUE: {
+                return JSAPIQueue::GetProperty(thread, JSHandle<JSAPIQueue>::Cast(obj), key);
+            }
+            case JSType::JS_API_DEQUE: {
+                return JSAPIDeque::GetProperty(thread, JSHandle<JSAPIDeque>::Cast(obj), key);
+            }
+            case JSType::JS_API_STACK: {
+                return JSAPIStack::GetProperty(thread, JSHandle<JSAPIStack>::Cast(obj), key);
+            }
+            case JSType::JS_API_PLAIN_ARRAY: {
                 return JSAPIPlainArray::GetProperty(thread, JSHandle<JSAPIPlainArray>::Cast(obj), key);
+            }
             default: {
                 return JSObject::GetProperty(thread, JSHandle<JSObject>(obj), key);
             }

@@ -669,6 +669,7 @@ public:
         return static_cast<ObjectRef *>(value);
     }
     static Local<ObjectRef> New(const EcmaVM *vm);
+    static Local<ObjectRef> New(const EcmaVM *vm, void *attach, void *detach);
     bool Set(const EcmaVM *vm, Local<JSValueRef> key, Local<JSValueRef> value);
     bool Set(const EcmaVM *vm, uint32_t key, Local<JSValueRef> value);
     bool SetAccessorProperty(const EcmaVM *vm, Local<JSValueRef> key, Local<FunctionRef> getter,
@@ -1107,7 +1108,7 @@ public:
     static void SetHostResolvePathTracker(EcmaVM *vm,
                                           std::function<std::string(std::string dirPath, std::string requestPath)> cb);
     static void SetHostEnqueueJob(const EcmaVM* vm, Local<JSValueRef> cb);
-    static void InitializeMemMapAllocator(const ecmascript::JSRuntimeOptions &options);
+    static void InitializeMemMapAllocator();
     static void DestroyMemMapAllocator();
     static EcmaVM* CreateEcmaVM(const ecmascript::JSRuntimeOptions &options);
 private:

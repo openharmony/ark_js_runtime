@@ -53,7 +53,7 @@ public:
 
     void AddSnapshot(HeapSnapshot *snapshot);
 
-    bool StartHeapTracking(double timeInterval, bool isVmMode = true) override;
+    bool StartHeapTracking(double timeInterval, bool isVmMode = true, Stream *stream = nullptr) override;
     bool StopHeapTracking(Stream *stream, Progress *progress = nullptr) override;
 
 private:

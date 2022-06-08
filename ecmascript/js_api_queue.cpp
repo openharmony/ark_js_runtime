@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,6 +14,7 @@
  */
 
 #include "js_api_queue.h"
+#include "ecmascript/js_object.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/object_factory.h"
 #include "interpreter/fast_runtime_stub-inl.h"
@@ -45,14 +46,13 @@ JSHandle<TaggedArray> JSAPIQueue::GrowCapacity(const JSThread *thread, const JSH
     ASSERT(!oldElements->IsDictionaryMode());
     uint32_t oldLength = oldElements->GetLength();
     uint32_t newCapacity = 0;
-    // Set the oldLength(DEFAULT_CAPACITY_LENGTH = 8) of elements when constructing
     ASSERT(oldLength != 0);
     if (oldLength == 0) {
         newCapacity = ComputeCapacity(capacity);
         newElements = thread->GetEcmaVM()->GetFactory()->CopyArray(oldElements, oldLength, newCapacity);
     } else if ((tail + 1) % oldLength == front) {
         newCapacity = ComputeCapacity(capacity);
-        newElements = thread->GetEcmaVM()->GetFactory()->CopyQueue(oldElements, oldLength, newCapacity, front, tail);
+        newElements = thread->GetEcmaVM()->GetFactory()->CopyQueue(oldElements, newCapacity, front, tail);
         front = 0;
         tail = oldLength - 1;
     } else {
@@ -101,12 +101,17 @@ JSTaggedValue JSAPIQueue::Pop(JSThread *thread, const JSHandle<JSAPIQueue> &queu
 
 JSTaggedValue JSAPIQueue::Get(JSThread *thread, const uint32_t index)
 {
-    if (index < 0) {
+    uint32_t length = GetSize();
+    if (index >= length) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "Get property index out-of-bounds", JSTaggedValue::Exception());
     }
 
     TaggedArray *elements = TaggedArray::Cast(GetElements().GetTaggedObject());
-    return elements->Get(index);
+    uint32_t capacity = elements->GetLength();
+    uint32_t front = GetCurrentFront();
+    ASSERT(capacity != 0);
+    uint32_t curIndex = (front + index) % capacity;
+    return elements->Get(curIndex);
 }
 
 JSTaggedValue JSAPIQueue::Set(JSThread *thread, const uint32_t index, JSTaggedValue value)
@@ -132,7 +137,6 @@ bool JSAPIQueue::Has(JSTaggedValue value) const
         if (JSTaggedValue::SameValue(elements->Get(index), value)) {
             return true;
         }
-        // Set the capacity(DEFAULT_CAPACITY_LENGTH = 8) of elements when constructing
         ASSERT(capacity != 0);
         index = (index + 1) % capacity;
     }
@@ -153,10 +157,10 @@ JSHandle<TaggedArray> JSAPIQueue::OwnKeys(JSThread *thread, const JSHandle<JSAPI
 }
 
 bool JSAPIQueue::GetOwnProperty(JSThread *thread, const JSHandle<JSAPIQueue> &obj,
-                                const JSHandle<JSTaggedValue> &key, PropertyDescriptor &desc)
+                                const JSHandle<JSTaggedValue> &key)
 {
     uint32_t index = 0;
-    if (!UNLIKELY(JSTaggedValue::ToElementIndex(key.GetTaggedValue(), &index))) {
+    if (UNLIKELY(!JSTaggedValue::ToElementIndex(key.GetTaggedValue(), &index))) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Can not obtain attributes of no-number type", false);
     }
 
@@ -164,7 +168,23 @@ bool JSAPIQueue::GetOwnProperty(JSThread *thread, const JSHandle<JSAPIQueue> &ob
     if (index < 0 || index >= length) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "GetOwnProperty index out-of-bounds", false);
     }
-    return JSObject::GetOwnProperty(thread, JSHandle<JSObject>::Cast(obj), key, desc);
+
+    obj->Get(thread, index);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
+    return true;
+}
+
+OperationResult JSAPIQueue::GetProperty(JSThread *thread, const JSHandle<JSAPIQueue> &obj,
+                                        const JSHandle<JSTaggedValue> &key)
+{
+    int length = obj->GetLength().GetArrayLength();
+    int index = key->GetInt();
+    if (index < 0 || index >= length) {
+        THROW_RANGE_ERROR_AND_RETURN(thread, "GetProperty index out-of-bounds",
+                                     OperationResult(thread, JSTaggedValue::Exception(), PropertyMetaData(false)));
+    }
+    
+    return OperationResult(thread, obj->Get(thread, index), PropertyMetaData(false));
 }
 
 uint32_t JSAPIQueue::GetArrayLength(JSThread *thread, const JSHandle<JSAPIQueue> &queue)

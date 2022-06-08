@@ -24,7 +24,7 @@
 #include "ecmascript/tooling/protocol_channel.h"
 
 namespace panda::ecmascript::tooling {
-DispatchRequest::DispatchRequest(const EcmaVM *ecmaVm, const CString &message) : ecmaVm_(ecmaVm)
+DispatchRequest::DispatchRequest(const EcmaVM *ecmaVm, const std::string &message) : ecmaVm_(ecmaVm)
 {
     Local<JSValueRef> msgValue = JSON::Parse(ecmaVm, StringRef::NewFromUtf8(ecmaVm, message.c_str()));
     if (msgValue->IsException()) {
@@ -65,11 +65,11 @@ DispatchRequest::DispatchRequest(const EcmaVM *ecmaVm, const CString &message) :
         LOG(ERROR, DEBUGGER) << "method format error";
         return;
     }
-    CString wholeMethod = DebuggerApi::ToCString(methodResult);
-    CString::size_type length = wholeMethod.length();
-    CString::size_type indexPoint;
+    std::string wholeMethod = DebuggerApi::ToStdString(methodResult);
+    std::string::size_type length = wholeMethod.length();
+    std::string::size_type indexPoint;
     indexPoint = wholeMethod.find_first_of('.', 0);
-    if (indexPoint == CString::npos || indexPoint == 0 || indexPoint == length - 1) {
+    if (indexPoint == std::string::npos || indexPoint == 0 || indexPoint == length - 1) {
         code_ = RequestCode::METHOD_FORMAT_ERROR;
         LOG(ERROR, DEBUGGER) << "method format error: " << wholeMethod;
         return;
@@ -94,7 +94,7 @@ DispatchRequest::DispatchRequest(const EcmaVM *ecmaVm, const CString &message) :
     params_ = paramsValue;
 }
 
-DispatchResponse DispatchResponse::Create(ResponseCode code, const CString &msg)
+DispatchResponse DispatchResponse::Create(ResponseCode code, const std::string &msg)
 {
     DispatchResponse response;
     response.code_ = code;
@@ -102,7 +102,7 @@ DispatchResponse DispatchResponse::Create(ResponseCode code, const CString &msg)
     return response;
 }
 
-DispatchResponse DispatchResponse::Create(std::optional<CString> error)
+DispatchResponse DispatchResponse::Create(std::optional<std::string> error)
 {
     DispatchResponse response;
     if (error.has_value()) {
@@ -117,7 +117,7 @@ DispatchResponse DispatchResponse::Ok()
     return DispatchResponse();
 }
 
-DispatchResponse DispatchResponse::Fail(const CString &message)
+DispatchResponse DispatchResponse::Fail(const std::string &message)
 {
     DispatchResponse response;
     response.code_ = ResponseCode::NOK;
@@ -126,10 +126,10 @@ DispatchResponse DispatchResponse::Fail(const CString &message)
 }
 
 void DispatcherBase::SendResponse(const DispatchRequest &request, const DispatchResponse &response,
-                                  std::unique_ptr<PtBaseReturns> result)
+                                  const PtBaseReturns &result)
 {
     if (channel_ != nullptr) {
-        channel_->SendResponse(request, response, std::move(result));
+        channel_->SendResponse(request, response, result);
     }
 }
 
@@ -158,7 +158,7 @@ void Dispatcher::Dispatch(const DispatchRequest &request)
         LOG(ERROR, DEBUGGER) << "Unknown request";
         return;
     }
-    const CString &domain = request.GetDomain();
+    const std::string &domain = request.GetDomain();
     auto dispatcher = dispatchers_.find(domain);
     if (dispatcher != dispatchers_.end()) {
         dispatcher->second->Dispatch(request);

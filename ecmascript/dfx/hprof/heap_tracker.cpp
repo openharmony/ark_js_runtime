@@ -24,18 +24,21 @@ void HeapTrackerSample::Run()
 {
     while (!isInterrupt_) {
         snapshot_->RecordSampleTime();
+        if (stream_ != nullptr) {
+            snapshot_->PushHeapStat(stream_);
+        }
         usleep(timeInterval_ * MILLI_TO_MICRO);
     }
 }
 
-void HeapTracker::AllocationEvent(uintptr_t address)
+void HeapTracker::AllocationEvent(TaggedObject* address)
 {
     if (snapshot_ != nullptr) {
         snapshot_->AddNode(address);
     }
 }
 
-void HeapTracker::MoveEvent(uintptr_t address, uintptr_t forward_address)
+void HeapTracker::MoveEvent(uintptr_t address, TaggedObject* forward_address)
 {
     if (snapshot_ != nullptr) {
         snapshot_->MoveNode(address, forward_address);

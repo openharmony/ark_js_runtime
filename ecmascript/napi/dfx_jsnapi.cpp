@@ -22,6 +22,7 @@
 #include "ecmascript/mem/heap-inl.h"
 #include "ecmascript/mem/gc_stats.h"
 #include "ecmascript/tooling/interface/file_stream.h"
+#include "ecmascript/tooling/interface/stream.h"
 
 #if defined(ENABLE_DUMP_IN_FAULTLOG)
 #include "include/faultloggerd_client.h"
@@ -39,6 +40,7 @@ template<typename T>
 using JSHandle = ecmascript::JSHandle<T>;
 using ecmascript::FileStream;
 using ecmascript::FileDescriptorStream;
+using ecmascript::Stream;
 
 void DFXJSNApi::DumpHeapSnapshot(const EcmaVM *vm, int dumpFormat,
                                  const std::string &path, bool isVmMode, bool isPrivate)
@@ -70,20 +72,28 @@ void DFXJSNApi::DumpHeapSnapshot([[maybe_unused]] const EcmaVM *vm, [[maybe_unus
 #endif
 }
 
-bool DFXJSNApi::BuildNativeAndJsBackStackTrace(const EcmaVM *vm, std::string &stackTraceStr)
+bool DFXJSNApi::BuildNativeAndJsStackTrace(const EcmaVM *vm, std::string &stackTraceStr)
 {
-    CString trace = ecmascript::base::ErrorHelper::BuildNativeAndJsStackTrace(vm->GetJSThreadNoCheck());
-    stackTraceStr = CstringConvertToStdString(trace);
-    if (stackTraceStr == "") {
+    stackTraceStr = ecmascript::base::ErrorHelper::BuildJsStackTrace(vm->GetJSThreadNoCheck(), true);
+    if (stackTraceStr.empty()) {
         return false;
     }
     return true;
 }
 
-bool DFXJSNApi::StartHeapTracking(const EcmaVM *vm, double timeInterval, bool isVmMode)
+bool DFXJSNApi::BuildJsStackTrace(const EcmaVM *vm, std::string &stackTraceStr)
+{
+    stackTraceStr = ecmascript::base::ErrorHelper::BuildJsStackTrace(vm->GetJSThreadNoCheck(), false);
+    if (stackTraceStr.empty()) {
+        return false;
+    }
+    return true;
+}
+
+bool DFXJSNApi::StartHeapTracking(const EcmaVM *vm, double timeInterval, bool isVmMode, Stream *stream)
 {
     ecmascript::HeapProfilerInterface *heapProfile = ecmascript::HeapProfilerInterface::GetInstance(vm);
-    return heapProfile->StartHeapTracking(timeInterval, isVmMode);
+    return heapProfile->StartHeapTracking(timeInterval, isVmMode, stream);
 }
 
 bool DFXJSNApi::StopHeapTracking(const EcmaVM *vm, const std::string &filePath)
@@ -132,6 +142,15 @@ size_t DFXJSNApi::GetHeapUsedSize(const EcmaVM *vm)
     return vm->GetHeap()->GetHeapObjectSize();
 }
 
+void DFXJSNApi::NotifyApplicationState(EcmaVM *vm, bool inBackground)
+{
+    const_cast<ecmascript::Heap *>(vm->GetHeap())->ChangeGCParams(inBackground);
+}
+
+void DFXJSNApi::NotifyMemoryPressure(EcmaVM *vm, bool inHighMemoryPressure)
+{
+    const_cast<ecmascript::Heap *>(vm->GetHeap())->NotifyMemoryPressure(inHighMemoryPressure);
+}
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
 void DFXJSNApi::StartCpuProfilerForFile(const EcmaVM *vm, const std::string &fileName)
 {
@@ -159,6 +178,12 @@ std::unique_ptr<ProfileInfo> DFXJSNApi::StopCpuProfilerForInfo()
         LOG(ERROR, DEBUGGER) << "Transfer CpuProfiler::StopCpuProfilerImpl is failure";
     }
     return profile;
+}
+
+void DFXJSNApi::SetCpuSamplingInterval(int interval)
+{
+    CpuProfiler *singleton = CpuProfiler::GetInstance();
+    singleton->SetCpuSamplingInterval(interval);
 }
 #endif
 

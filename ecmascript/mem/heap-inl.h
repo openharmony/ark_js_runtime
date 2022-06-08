@@ -135,7 +135,7 @@ TaggedObject *Heap::AllocateYoungOrHugeObject(JSHClass *hclass, size_t size)
 {
     auto object = AllocateYoungOrHugeObject(size);
     object->SetClass(hclass);
-    OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
+    OnAllocateEvent(reinterpret_cast<TaggedObject*>(object));
     return object;
 }
 
@@ -185,7 +185,7 @@ TaggedObject *Heap::AllocateOldOrHugeObject(JSHClass *hclass, size_t size)
         UNREACHABLE();
     }
     object->SetClass(hclass);
-    OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
+    OnAllocateEvent(reinterpret_cast<TaggedObject*>(object));
     return object;
 }
 
@@ -207,7 +207,7 @@ TaggedObject *Heap::AllocateNonMovableOrHugeObject(JSHClass *hclass, size_t size
         UNREACHABLE();
     }
     object->SetClass(hclass);
-    OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
+    OnAllocateEvent(reinterpret_cast<TaggedObject*>(object));
     return object;
 }
 
@@ -219,7 +219,7 @@ TaggedObject *Heap::AllocateDynClassClass(JSHClass *hclass, size_t size)
         LOG_ECMA_MEM(FATAL) << "Heap::AllocateDynClassClass can not allocate any space";
     }
     *reinterpret_cast<MarkWordType *>(ToUintPtr(object)) = reinterpret_cast<MarkWordType>(hclass);
-    OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
+    OnAllocateEvent(reinterpret_cast<TaggedObject*>(object));
     return object;
 }
 
@@ -245,7 +245,7 @@ TaggedObject *Heap::AllocateHugeObject(JSHClass *hclass, size_t size)
     CheckAndTriggerOldGC();
     auto object = AllocateHugeObject(size);
     object->SetClass(hclass);
-    OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
+    OnAllocateEvent(reinterpret_cast<TaggedObject*>(object));
     return object;
 }
 
@@ -258,7 +258,7 @@ TaggedObject *Heap::AllocateMachineCodeObject(JSHClass *hclass, size_t size)
         return nullptr;
     }
     object->SetClass(hclass);
-    OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
+    OnAllocateEvent(reinterpret_cast<TaggedObject*>(object));
     return object;
 }
 
@@ -273,7 +273,7 @@ uintptr_t Heap::AllocateSnapshotSpace(size_t size)
     return object;
 }
 
-void Heap::OnAllocateEvent([[maybe_unused]] uintptr_t address)
+void Heap::OnAllocateEvent([[maybe_unused]] TaggedObject* address)
 {
 #if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
     if (tracker_ != nullptr) {
@@ -282,7 +282,7 @@ void Heap::OnAllocateEvent([[maybe_unused]] uintptr_t address)
 #endif
 }
 
-void Heap::OnMoveEvent([[maybe_unused]] uintptr_t address, [[maybe_unused]] uintptr_t forwardAddress)
+void Heap::OnMoveEvent([[maybe_unused]] uintptr_t address, [[maybe_unused]] TaggedObject* forwardAddress)
 {
 #if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
     if (tracker_ != nullptr) {

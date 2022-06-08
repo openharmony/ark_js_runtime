@@ -17,6 +17,16 @@
 #define ECMASCRIPT_TOOLING_INTERFACE_STREAM_H
 
 namespace panda::ecmascript {
+class HeapStat {
+public:
+    HeapStat(uint32_t index, uint32_t count, uint32_t size)
+        : index_(index), count_(count), size_(size) {}
+
+    uint32_t index_;
+    uint32_t count_;
+    uint32_t size_;
+};
+
 class Stream {
 public:
     virtual ~Stream() = default;
@@ -29,6 +39,8 @@ public:
     // Writes the chunk of data into the stream
     virtual bool WriteChunk(char *data, int size) = 0;
     virtual bool Good() = 0;
+    virtual void UpdateHeapStats(HeapStat* data, int count) = 0;
+    virtual void UpdateLastSeenObjectId(uint32_t lastSeenObjectId) = 0;
 };
 }  // namespace panda::ecmascript
 

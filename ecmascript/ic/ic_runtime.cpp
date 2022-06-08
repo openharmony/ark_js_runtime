@@ -135,7 +135,7 @@ void ICRuntime::TraceIC([[maybe_unused]] JSHandle<JSTaggedValue> receiver,
 
 JSTaggedValue LoadICRuntime::LoadMiss(JSHandle<JSTaggedValue> receiver, JSHandle<JSTaggedValue> key)
 {
-    if (receiver->IsTypedArray() || !receiver->IsJSObject()) {
+    if (receiver->IsTypedArray() || !receiver->IsJSObject() || receiver->IsSpecialContainer()) {
         return JSTaggedValue::GetProperty(thread_, receiver, key).GetValue().GetTaggedValue();
     }
 

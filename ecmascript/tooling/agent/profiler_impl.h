@@ -23,7 +23,6 @@
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript::tooling {
-using CpuProfileNode = ecmascript::ProfileNode;
 class ProfilerImpl final {
 public:
     ProfilerImpl(const EcmaVM *vm, ProtocolChannel *channel) : vm_(vm), frontend_(channel) {}
@@ -32,7 +31,8 @@ public:
     DispatchResponse Disable();
     DispatchResponse Enable();
     DispatchResponse Start();
-    DispatchResponse Stop(std::unique_ptr<Profile> &profile);
+    DispatchResponse Stop(std::unique_ptr<Profile> *profile);
+    DispatchResponse SetSamplingInterval(std::unique_ptr<SetSamplingIntervalParams> params);
     DispatchResponse GetBestEffortCoverage();
     DispatchResponse StopPreciseCoverage();
     DispatchResponse TakePreciseCoverage();
@@ -40,9 +40,6 @@ public:
     DispatchResponse StartTypeProfile();
     DispatchResponse StopTypeProfile();
     DispatchResponse TakeTypeProfile();
-    std::unique_ptr<Profile> FromCpuProfiler(const std::unique_ptr<ProfileInfo> &profileInfo);
-    std::unique_ptr<ProfileNode> FromCpuProfileNode(const std::unique_ptr<CpuProfileNode> &cpuProfileNode);
-    std::unique_ptr<RuntimeCallFrame> FromCpuFrameInfo(const std::unique_ptr<FrameInfo> &cpuFrameInfo);
 
     class DispatcherImpl final : public DispatcherBase {
     public:
@@ -55,6 +52,7 @@ public:
         void Disable(const DispatchRequest &request);
         void Start(const DispatchRequest &request);
         void Stop(const DispatchRequest &request);
+        void SetSamplingInterval(const DispatchRequest &request);
         void GetBestEffortCoverage(const DispatchRequest &request);
         void StopPreciseCoverage(const DispatchRequest &request);
         void TakePreciseCoverage(const DispatchRequest &request);
