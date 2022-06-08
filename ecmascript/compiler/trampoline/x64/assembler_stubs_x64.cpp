@@ -1278,9 +1278,8 @@ void AssemblerStubsX64::JSCallCommonEntry(ExtendedAssembler *assembler, JSCallMo
 
     if (assembler->FromInterpreterHandler()) {
         auto jumpSize = kungfu::AssemblerModule::GetJumpSizeFromJSCallMode(mode);
-        int32_t offset = static_cast<int32_t>(
-            AsmInterpretedFrame::GetCallSizeOffset(false) - AsmInterpretedFrame::GetSize(false));
-        __ Movq(static_cast<int>(jumpSize), Operand(rbp, offset));
+        intptr_t offset = AsmInterpretedFrame::GetCallSizeOffset(false) - AsmInterpretedFrame::GetSize(false);
+        __ Movq(static_cast<int>(jumpSize), Operand(rbp, static_cast<int32_t>(offset)));
     }
 
     Register declaredNumArgsRegister = __ AvailableRegister2();
@@ -2041,8 +2040,8 @@ void AssemblerStubsX64::ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *a
 {
     __ BindAssemblerStub(RTSTUB_ID(ResumeRspAndReturn));
     Register fpRegister = r10;
-    auto offset = AsmInterpretedFrame::GetFpOffset(false) - AsmInterpretedFrame::GetSize(false);
-    __ Movq(Operand(rbp, offset), fpRegister);
+    intptr_t offset = AsmInterpretedFrame::GetFpOffset(false) - AsmInterpretedFrame::GetSize(false);
+    __ Movq(Operand(rbp, static_cast<int32_t>(offset)), fpRegister);
     __ Movq(fpRegister, rsp);
     // return
     {
