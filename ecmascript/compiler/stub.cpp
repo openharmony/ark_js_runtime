@@ -3730,17 +3730,20 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
     Label funcNotCallable(env);
     // save pc
     SavePcIfNeeded(glue);
-    Branch(TaggedIsHeapObject(func), &funcIsHeapObject, &funcNotCallable);
-    Bind(&funcIsHeapObject);
-    GateRef hclass = LoadHClass(func);
-    GateRef bitfield = Load(VariableType::INT32(), hclass, IntPtr(JSHClass::BIT_FIELD_OFFSET));
-    Branch(IsCallableFromBitField(bitfield), &funcIsCallable, &funcNotCallable);
-    Bind(&funcNotCallable);
-    {
-        CallRuntime(glue, RTSTUB_ID(ThrowNotCallableException), {});
-        Jump(&exit);
+    GateRef bitfield = 0;
+    if (mode != JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV) {
+        Branch(TaggedIsHeapObject(func), &funcIsHeapObject, &funcNotCallable);
+        Bind(&funcIsHeapObject);
+        GateRef hclass = LoadHClass(func);
+        bitfield = Load(VariableType::INT32(), hclass, IntPtr(JSHClass::BIT_FIELD_OFFSET));
+        Branch(IsCallableFromBitField(bitfield), &funcIsCallable, &funcNotCallable);
+        Bind(&funcNotCallable);
+        {
+            CallRuntime(glue, RTSTUB_ID(ThrowNotCallableException), {});
+            Jump(&exit);
+        }
+        Bind(&funcIsCallable);
     }
-    Bind(&funcIsCallable);
     GateRef method = GetMethodFromJSFunction(func);
     GateRef callField = GetCallFieldFromMethod(method);
     GateRef isNativeMask = Int64(static_cast<uint64_t>(1) << JSMethod::IsNativeBit::START_BIT);
@@ -3784,6 +3787,8 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
                     { glue, nativeCode, func, thisValue, data[0], data[1] });
                 break;
             case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
+                result = CallNGCRuntime(glue, RTSTUB_ID(PushCallNewAndDispatchNative),
+                    { glue, nativeCode, func, data[2], data[0], data[1] });
                 break;
             case JSCallMode::CALL_GETTER:
                 result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
@@ -3802,15 +3807,17 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
     }
     // 4. call nonNative
     Bind(&methodNotNative);
-    Label funcIsClassConstructor(env);
-    Label funcNotClassConstructor(env);
-    Branch(IsClassConstructorFromBitField(bitfield), &funcIsClassConstructor, &funcNotClassConstructor);
-    Bind(&funcIsClassConstructor);
-    {
-        CallRuntime(glue, RTSTUB_ID(ThrowCallConstructorException), {});
-        Jump(&exit);
+    if (mode != JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV) {
+        Label funcIsClassConstructor(env);
+        Label funcNotClassConstructor(env);
+        Branch(IsClassConstructorFromBitField(bitfield), &funcIsClassConstructor, &funcNotClassConstructor);
+        Bind(&funcIsClassConstructor);
+        {
+            CallRuntime(glue, RTSTUB_ID(ThrowCallConstructorException), {});
+            Jump(&exit);
+        }
+        Bind(&funcNotClassConstructor);
     }
-    Bind(&funcNotClassConstructor);
     GateRef sp = 0;
     if (env->IsAsmInterp()) {
         sp = PtrArgument(static_cast<size_t>(InterpreterHandlerInputs::SP));
@@ -3848,6 +3855,9 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
                 Return();
                 break;
             case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
+                result = CallNGCRuntime(glue, RTSTUB_ID(PushCallNewAndDispatch),
+                    { glue, sp, func, method, callField, data[0], data[1], data[2] });
+                Return();
                 break;
             case JSCallMode::CALL_GETTER:
                 result = CallNGCRuntime(glue, RTSTUB_ID(CallGetter),
@@ -3856,7 +3866,7 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
                 break;
             case JSCallMode::CALL_SETTER:
                 result = CallNGCRuntime(glue, RTSTUB_ID(CallSetter),
-                    { glue, func, method, callField, data[0], data[1], });
+                    { glue, func, method, callField, data[1], data[0] });
                 Jump(&exit);
                 break;
             default:

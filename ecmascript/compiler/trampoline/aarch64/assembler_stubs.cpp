@@ -1336,8 +1336,8 @@ void AssemblerStubs::CallSetter(ExtendedAssembler *assembler)
 
 void AssemblerStubs::CallSetterEntry(ExtendedAssembler *assembler)
 {
-    Register receiverRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG0);
-    Register valueRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG1);
+    Register receiverRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG1);
+    Register valueRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG0);
     __ Str(valueRegister, MemoryOperand(Register(SP), -FRAME_SLOT_SIZE, AddrMode::PREINDEX));    // arg0
     PushCallThis(assembler, receiverRegister, false);  // receiver
 }
@@ -1349,11 +1349,11 @@ void AssemblerStubs::CallNoExtraSetterEntry(ExtendedAssembler *assembler)
     Label callargs0NoExtraEntry;
     __ Cmp(declaredNumArgsRegister.W(), Immediate(argc));
     __ B(Condition::LO, &callargs0NoExtraEntry);
-    Register valueRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG1);
+    Register valueRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG0);
     __ Str(valueRegister, MemoryOperand(Register(SP), -FRAME_SLOT_SIZE, AddrMode::PREINDEX));  // arg0
     // fall through
     __ Bind(&callargs0NoExtraEntry);
-    Register receiverRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG0);
+    Register receiverRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG1);
     PushCallThis(assembler, receiverRegister, false);  // receiver
 }
 
@@ -1891,5 +1891,17 @@ void AssemblerStubs::PushArgsSlowPath(ExtendedAssembler *assembler, Register &gl
     __ Bind(&jumpToFastPath);
     PushArgsFastPath(assembler, glueRegister, argcRegister, argvRegister, callTargetRegister, methodRegister,
         prevSpRegister, fpRegister, callFieldRegister);
+}
+
+void AssemblerStubs::PushCallNewAndDispatch(ExtendedAssembler *assembler)
+{
+    __ BindAssemblerStub(RTSTUB_ID(PushCallNewAndDispatch));
+    __ Ret();
+}
+
+void AssemblerStubs::PushCallNewAndDispatchNative(ExtendedAssembler *assembler)
+{
+    __ BindAssemblerStub(RTSTUB_ID(PushCallNewAndDispatchNative));
+    __ Ret();
 }
 }  // panda::ecmascript::aarch64
