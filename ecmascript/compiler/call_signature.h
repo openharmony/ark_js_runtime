@@ -325,6 +325,8 @@ private:
     V(PushCallIRangeAndDispatch)            \
     V(PushCallIRangeAndDispatchNative)      \
     V(PushCallIThisRangeAndDispatch)        \
+    V(PushCallNewAndDispatchNative)         \
+    V(PushCallNewAndDispatch)               \
     V(CallGetter)                           \
     V(CallSetter)                           \
     V(ResumeRspAndDispatch)                 \

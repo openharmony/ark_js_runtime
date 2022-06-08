@@ -229,8 +229,8 @@ GateRef InterpreterStub::GetConstpoolFromFunction(GateRef function)
 // only use for fast new, not universal API
 GateRef InterpreterStub::GetThisObjectFromFastNewFrame(GateRef prevSp)
 {
-    GateRef currentSpEnd = PointerSub(prevSp, IntPtr(AsmInterpretedFrame::GetSize(GetEnvironment()->IsArch32Bit())));
-    return GetVregValue(currentSpEnd, IntPtr(AsmInterpretedFrame::ReverseIndex::THIS_OBJECT_REVERSE_INDEX));
+    auto idx = AsmInterpretedFrame::ReverseIndex::THIS_OBJECT_REVERSE_INDEX;
+    return Load(VariableType::JS_ANY(), prevSp, IntPtr(idx * sizeof(JSTaggedType)));
 }
 
 GateRef InterpreterStub::GetResumeModeFromGeneratorObject(GateRef obj)

@@ -255,7 +255,7 @@ void JSThread::CheckSwitchDebuggerBCStub()
     auto isDebug = GetEcmaVM()->GetJsDebuggerManager()->IsDebugMode();
     if (isDebug &&
         glueData_.bcDebuggerStubEntries_.Get(0) == glueData_.bcDebuggerStubEntries_.Get(1)) {
-        for (size_t i = 0; i < BCStubEntries::BC_HANDLER_STUB_ENTRIES_COUNT; i++) {
+        for (size_t i = 0; i < BCStubEntries::BC_HANDLER_COUNT; i++) {
             auto stubEntry = glueData_.bcStubEntries_.Get(i);
             auto debuggerStubEbtry = glueData_.bcDebuggerStubEntries_.Get(i);
             glueData_.bcDebuggerStubEntries_.Set(i, stubEntry);
@@ -263,7 +263,7 @@ void JSThread::CheckSwitchDebuggerBCStub()
         }
     } else if (!isDebug &&
         glueData_.bcStubEntries_.Get(0) == glueData_.bcStubEntries_.Get(1)) {
-        for (size_t i = 0; i < BCStubEntries::BC_HANDLER_STUB_ENTRIES_COUNT; i++) {
+        for (size_t i = 0; i < BCStubEntries::BC_HANDLER_COUNT; i++) {
             auto stubEntry = glueData_.bcDebuggerStubEntries_.Get(i);
             auto debuggerStubEbtry = glueData_.bcStubEntries_.Get(i);
             glueData_.bcStubEntries_.Set(i, stubEntry);

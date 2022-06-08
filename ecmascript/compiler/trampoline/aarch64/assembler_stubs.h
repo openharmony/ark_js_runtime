@@ -79,6 +79,10 @@ public:
 
     static void PushCallIRangeAndDispatchNative(ExtendedAssembler *assembler);
 
+    static void PushCallNewAndDispatchNative(ExtendedAssembler *assembler);
+
+    static void PushCallNewAndDispatch(ExtendedAssembler *assembler);
+
     static void PushCallArgsAndDispatchNative(ExtendedAssembler *assembler);
 
     static void ResumeRspAndDispatch(ExtendedAssembler *assembler);
