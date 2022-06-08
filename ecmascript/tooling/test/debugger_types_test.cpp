@@ -1129,6 +1129,36 @@ HWTEST_F_L0(DebuggerTypesTest, LocationToObjectTest)
     EXPECT_EQ(Local<IntegerRef>(result)->Value(), 18);
 }
 
+HWTEST_F_L0(DebuggerTypesTest, LocationToJsonTest)
+{
+    std::string msg;
+    std::unique_ptr<Location> location;
+    Local<StringRef> tmpStr;
+
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
+          "scriptId":"2","lineNumber":99,"columnNumber":18
+    }})";
+    location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    ASSERT_NE(location, nullptr);
+    Local<ObjectRef> object = location->ToObject(ecmaVm);
+
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "scriptId");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ("2", DebuggerApi::ToStdString(result));
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "lineNumber");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 99);
+    tmpStr = StringRef::NewFromUtf8(ecmaVm, "columnNumber");
+    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
+    result = object->Get(ecmaVm, tmpStr);
+    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
+    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 18);
+}
+
 HWTEST_F_L0(DebuggerTypesTest, BreakLocationCreateTest)
 {
     std::string msg;

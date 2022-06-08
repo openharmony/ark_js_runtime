@@ -44,6 +44,7 @@ public:
     ~EnableReturns() override = default;
 
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     EnableReturns() = default;

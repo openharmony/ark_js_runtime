@@ -1089,6 +1089,19 @@ Local<ObjectRef> Location::ToObject(const EcmaVM *ecmaVm) const
     return params;
 }
 
+std::unique_ptr<PtJson> Location::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("scriptId", std::to_string(scriptId_).c_str());
+    result->Add("lineNumber", line_);
+    if (column_) {
+        result->Add("columnNumber", column_.value());
+    }
+
+    return result;
+}
+
 std::unique_ptr<ScriptPosition> ScriptPosition::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
 {
     if (params.IsEmpty() || !params->IsObject()) {

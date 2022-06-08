@@ -943,6 +943,7 @@ public:
     static std::unique_ptr<Location> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<Location> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     ScriptId GetScriptId() const
     {
