@@ -1043,31 +1043,16 @@ inline GateRef Stub::IsExtensible(GateRef object)
         Int32(0));
 }
 
-inline GateRef Stub::IsEcmaObject(GateRef obj)
+inline GateRef Stub::TaggedObjectIsEcmaObject(GateRef obj)
 {
-    auto env = GetEnvironment();
-    Label subentry(env);
-    env->SubCfgEntry(&subentry);
-    Label exit(env);
-    Label isHeapObject(env);
-    DEFVARIABLE(result, VariableType::BOOL(), False());
-    Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
-    Bind(&isHeapObject);
-    {
-        GateRef objectType = GetObjectType(LoadHClass(obj));
-        auto ret1 = Int32And(
-            ZExtInt1ToInt32(
-                Int32LessThanOrEqual(objectType, Int32(static_cast<int32_t>(JSType::ECMA_OBJECT_END)))),
-            ZExtInt1ToInt32(
-                Int32GreaterThanOrEqual(objectType,
-                    Int32(static_cast<int32_t>(JSType::ECMA_OBJECT_BEGIN)))));
-        result = TruncInt32ToInt1(ret1);
-        Jump(&exit);
-    }
-    Bind(&exit);
-    auto ret = *result;
-    env->SubCfgExit();
-    return ret;
+    GateRef objectType = GetObjectType(LoadHClass(obj));
+    auto ret = Int32And(
+        ZExtInt1ToInt32(
+            Int32LessThanOrEqual(objectType, Int32(static_cast<int32_t>(JSType::ECMA_OBJECT_END)))),
+        ZExtInt1ToInt32(
+            Int32GreaterThanOrEqual(objectType,
+                Int32(static_cast<int32_t>(JSType::ECMA_OBJECT_BEGIN)))));
+    return TruncInt32ToInt1(ret);
 }
 
 inline GateRef Stub::IsJSObject(GateRef obj)

@@ -88,8 +88,10 @@ public:
     void GenerateStubsX64(Chunk* chunk);
     void GenerateStubsAarch64(Chunk* chunk);
 
-    static size_t GetJumpSizeFromJSCallMode(JSCallMode mode);
+    static int GetJumpSizeFromJSCallMode(JSCallMode mode);
     static int GetArgcFromJSCallMode(JSCallMode mode);
+    static bool JSModeHaveThisArg(JSCallMode mode);
+    static bool JSModeHaveNewTargetArg(JSCallMode mode);
 private:
     std::vector<const CallSignature *> asmCallSigns_;
     std::map<int, panda::ecmascript::Label *> symbolTable_;

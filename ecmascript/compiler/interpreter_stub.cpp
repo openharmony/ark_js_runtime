@@ -346,25 +346,67 @@ DECLARE_ASM_HANDLER(HandleNewLexEnvDynPrefImm16)
 DECLARE_ASM_HANDLER(HandleNewObjDynRangePrefImm16V8)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    DEFVARIABLE(res, VariableType::JS_ANY(), Undefined());
+    DEFVARIABLE(thisObj, VariableType::JS_ANY(), Undefined());
     auto env = GetEnvironment();
     GateRef numArgs = ReadInst16_1(pc);
     GateRef firstArgRegIdx = ZExtInt8ToInt16(ReadInst8_3(pc));
     GateRef firstArgOffset = Int16(2);
     GateRef ctor = GetVregValue(sp, ZExtInt16ToPtr(firstArgRegIdx));
-    GateRef newTarget = GetVregValue(sp, PtrAdd(ZExtInt16ToPtr(firstArgRegIdx), IntPtr(1)));
+    GateRef actualNumArgs = ZExtInt16ToPtr(Int16Sub(numArgs, firstArgOffset));
+
+    Label ctorIsHeapObject(env);
+    Label ctorIsJSFunction(env);
+    Label fastPath(env);
+    Label slowPath(env);
+    Label checkResult(env);
+    Label dispatch(env);
+    Label ctorIsBase(env);
+    Label ctorNotBase(env);
+
+    GateRef isBase = IsBase(ctor);
+    Branch(TaggedIsHeapObject(ctor), &ctorIsHeapObject, &slowPath);
+    Bind(&ctorIsHeapObject);
+    Branch(IsJSFunction(ctor), &ctorIsJSFunction, &slowPath);
+    Bind(&ctorIsJSFunction);
+    Branch(IsConstructor(ctor), &fastPath, &slowPath);
+    Bind(&fastPath);
+    {
+        Branch(isBase, &ctorIsBase, &ctorNotBase);
+        Bind(&ctorIsBase);
+        {
+            thisObj = CallRuntime(glue, RTSTUB_ID(NewThisObject), {ctor});
+            // INTERPRETER_RETURN_IF_ABRUPT(thisObj)
+            Label thisObjIsException(env);
+            Branch(TaggedIsException(*thisObj), &thisObjIsException, &ctorNotBase);
+            Bind(&thisObjIsException);
+            {
+                DISPATCH_LAST();
+            }
+        }
+        Bind(&ctorNotBase);
+        GateRef argv = PtrAdd(sp, PtrMul(
+            PtrAdd(firstArgRegIdx, firstArgOffset), IntPtr(8))); // 8: skip function&this
+        res = JSCallDispatch(glue, ctor, actualNumArgs,
+                             JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV,
+                             { actualNumArgs, argv, *thisObj });
+        Jump(&checkResult);
+    }
+    Bind(&slowPath);
     GateRef firstArgIdx = Int16Add(firstArgRegIdx, firstArgOffset);
     GateRef length = Int16Sub(numArgs, firstArgOffset);
-    GateRef res = CallRuntime(glue, RTSTUB_ID(NewObjDynRange),
-        { ctor, newTarget, Int16BuildTaggedTypeWithNoGC(firstArgIdx), Int16BuildTaggedTypeWithNoGC(length) });
+    res = CallRuntime(glue, RTSTUB_ID(NewObjDynRange),
+        { ctor, ctor, Int16BuildTaggedTypeWithNoGC(firstArgIdx), Int16BuildTaggedTypeWithNoGC(length) });
+    Jump(&checkResult);
+    Bind(&checkResult);
     Label isException(env);
-    Label notException(env);
-    Branch(TaggedIsException(res), &isException, &notException);
+    Branch(TaggedIsException(*res), &isException, &dispatch);
     Bind(&isException);
     {
         DISPATCH_LAST();
     }
-    Bind(&notException);
-    varAcc = res;
+    Bind(&dispatch);
+    varAcc = *res;
     DISPATCH_WITH_ACC(PREF_IMM16_V8);
 }
 
@@ -2081,7 +2123,10 @@ DECLARE_ASM_HANDLER(HandleThrowIfNotObjectPrefV8)
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
     Label isEcmaObject(env);
     Label notEcmaObject(env);
-    Branch(IsEcmaObject(value), &isEcmaObject, &notEcmaObject);
+    Label isHeapObject(env);
+    Branch(TaggedIsHeapObject(value), &isHeapObject, &notEcmaObject);
+    Bind(&isHeapObject);
+    Branch(TaggedObjectIsEcmaObject(value), &isEcmaObject, &notEcmaObject);
     Bind(&isEcmaObject);
     {
         DISPATCH(PREF_V8);
@@ -4206,8 +4251,8 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
         varHotnessCounter = GetHotnessCounterFromMethod(method);
         GateRef jumpSize = GetCallSizeFromFrame(prevState);
         CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndDispatch),
-                    { glue, currentSp, *varPc, *varConstpool, *varProfileTypeInfo,
-                      *varAcc, *varHotnessCounter, jumpSize });
+                       { glue, currentSp, *varPc, *varConstpool, *varProfileTypeInfo,
+                         *varAcc, *varHotnessCounter, jumpSize });
         Return();
     }
 }
@@ -4267,8 +4312,8 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
         varHotnessCounter = GetHotnessCounterFromMethod(method);
         GateRef jumpSize = GetCallSizeFromFrame(prevState);
         CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndDispatch),
-                    { glue, currentSp, *varPc, *varConstpool, *varProfileTypeInfo,
-                      *varAcc, *varHotnessCounter, jumpSize });
+                       { glue, currentSp, *varPc, *varConstpool, *varProfileTypeInfo,
+                         *varAcc, *varHotnessCounter, jumpSize });
         Return();
     }
 }
@@ -5044,6 +5089,50 @@ DECLARE_ASM_HANDLER(HandleNewLexEnvWithNameDynPrefImm16Imm16)
     GateRef state = GetFrame(sp);
     SetEnvToFrame(glue, state, res);
     DISPATCH_WITH_ACC(PREF_IMM16_IMM16);
+}
+
+DECLARE_ASM_HANDLER(NewObjectDynRangeReturn)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+
+    Label isHeapObject(env);
+    Label notUndefined(env);
+    Label isEcmaObject(env);
+    Label notEcmaObject(env);
+    Label throwError(env);
+    Label returnObject(env);
+    Label dispatch(env);
+
+    auto frame = GetFrame(sp);
+    auto newSp = Load(VariableType::NATIVE_POINTER(), frame, IntPtr(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
+
+    Branch(TaggedIsHeapObject(*varAcc), &isHeapObject, &notEcmaObject);
+    Bind(&isHeapObject);
+    Branch(TaggedObjectIsEcmaObject(*varAcc), &dispatch, &notEcmaObject);
+    Bind(&notEcmaObject);
+    {
+        Branch(TaggedIsUndefined(*varAcc), &returnObject, &notUndefined);
+        Bind(&notUndefined);
+        auto constructor = GetFunctionFromFrame(frame);
+        Branch(IsBase(constructor), &returnObject, &throwError);
+        Bind(&throwError);
+        {
+            CallRuntime(glue, RTSTUB_ID(ThrowDerivedMustReturnException), {});
+            DispatchLast(glue, newSp, pc, constpool, profileTypeInfo, acc, hotnessCounter);
+        }
+        Bind(&returnObject);
+        {
+            auto fp = Load(VariableType::JS_POINTER(), frame,
+                IntPtr(AsmInterpretedFrame::GetFpOffset(GetEnvironment()->IsArch32Bit())));
+            auto thisObj = GetThisObjectFromFastNewFrame(fp);
+            varAcc = thisObj;
+            Jump(&dispatch);
+        }
+    }
+    Bind(&dispatch);
+    Dispatch(glue, newSp, pc, constpool, profileTypeInfo, *varAcc, hotnessCounter,
+             IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_IMM16_V8)));
 }
 #undef DECLARE_ASM_HANDLER
 #undef DISPATCH
