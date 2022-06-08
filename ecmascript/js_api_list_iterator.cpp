@@ -40,7 +40,7 @@ JSTaggedValue JSAPIListIterator::Next(EcmaRuntimeCallInfo *argv)
     if (list->IsUndefined()) {
         return JSIterator::CreateIterResultObject(thread, undefinedHandle, true).GetTaggedValue();
     }
-    int index = iter->GetNextIndex();
+    int index = static_cast<int>(iter->GetNextIndex());
     int length = singleList->Length();
     if (index >= length) {
         iter->SetIteratedList(thread, undefinedHandle);
