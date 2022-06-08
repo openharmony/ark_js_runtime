@@ -343,14 +343,11 @@ void FileLoader::InitializeStubEntries(const std::vector<AOTModulePackInfo::Func
         if (des.IsCommonStub()) {
             thread->SetFastStubEntry(des.indexInKind_, des.codeAddr_);
         } else if (des.IsBCStub()) {
-            // bc helper handler use to adjust bc stub, not init bc stub
-            if (des.IsBCHandlerStub()) {
-                thread->SetBCStubEntry(des.indexInKind_, des.codeAddr_);
+            thread->SetBCStubEntry(des.indexInKind_, des.codeAddr_);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_LOG
-                std::cout << "bytecode: " << GetEcmaOpcodeStr(static_cast<EcmaOpcode>(des.indexInKind_))
-                    << " addr:" << des.codeAddr_ << std::endl;
+            std::cout << "bytecode: " << GetEcmaOpcodeStr(static_cast<EcmaOpcode>(des.indexInKind_))
+                << " addr:" << des.codeAddr_ << std::endl;
 #endif
-            }
         } else {
             thread->RegisterRTInterface(des.indexInKind_, des.codeAddr_);
 #if ECMASCRIPT_ENABLE_ASM_INTERPRETER_LOG

@@ -244,7 +244,7 @@ public:
     GateRef IsClassConstructor(GateRef object);
     GateRef IsClassPrototype(GateRef object);
     GateRef IsExtensible(GateRef object);
-    GateRef IsEcmaObject(GateRef obj);
+    GateRef TaggedObjectIsEcmaObject(GateRef obj);
     GateRef IsSymbol(GateRef obj);
     GateRef IsString(GateRef obj);
     GateRef TaggedIsBigInt(GateRef obj);

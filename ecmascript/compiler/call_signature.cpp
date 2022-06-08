@@ -443,6 +443,7 @@ DEF_CALL_SIGNATURE(BytecodeHandler)
     };
     callSign->SetParameters(params.data());
     callSign->SetTargetKind(CallSignature::TargetKind::BYTECODE_HANDLER);
+    callSign->SetCallConv(CallSignature::CallConv::GHCCallConv);
 }
 
 DEF_CALL_SIGNATURE(BytecodeDebuggerHandler)
@@ -786,6 +787,16 @@ DEF_CALL_SIGNATURE(PushCallArgs3AndDispatch)
 DEF_CALL_SIGNATURE(PushCallIRangeAndDispatchNative)
 {
     PUSH_CALL_ARGS_AND_DISPATCH_NATIVE_RANGE_SIGNATURE(PushCallIRangeAndDispatchNative)
+}
+
+DEF_CALL_SIGNATURE(PushCallNewAndDispatchNative)
+{
+    PUSH_CALL_ARGS_AND_DISPATCH_NATIVE_RANGE_SIGNATURE(PushCallNewAndDispatchNative)
+}
+
+DEF_CALL_SIGNATURE(PushCallNewAndDispatch)
+{
+    PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE(PushCallNewAndDispatch)
 }
 
 DEF_CALL_SIGNATURE(PushCallIRangeAndDispatch)
