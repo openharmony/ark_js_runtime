@@ -251,7 +251,7 @@ HWTEST_F_L0(JSAPIPlainArrayTest, PA_RemvoeAnrRemvoeAtAndSetValueAtAndGetValueAt)
     EXPECT_TRUE(JSTaggedValue::Equal(thread, value, JSHandle<JSTaggedValue>(thread, taggedValue)));
 }
 
-HWTEST_F_L0(JSAPIPlainArrayTest, GetOwnProperty)
+HWTEST_F_L0(JSAPIPlainArrayTest, PA_GetOwnProperty)
 {
     constexpr uint32_t DEFAULT_LENGTH = 8;
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
@@ -274,5 +274,34 @@ HWTEST_F_L0(JSAPIPlainArrayTest, GetOwnProperty)
     testInt = 100 + 20;
     JSHandle<JSTaggedValue> plainArrayKey2(thread, JSTaggedValue(testInt));
     EXPECT_FALSE(JSAPIPlainArray::GetOwnProperty(thread, toor, plainArrayKey2));
+}
+
+HWTEST_F_L0(JSAPIPlainArrayTest, PA_ToString)
+{
+    constexpr uint32_t NODE_NUMBERS = 3; // 3 means the value
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
+    JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
+
+    // test JSAPIPlainArray
+    JSHandle<JSAPIPlainArray> array(thread, CreatePlainArray());
+    JSTaggedValue result1 = JSAPIPlainArray::ToString(thread, array);
+    JSHandle<EcmaString> resultHandle1(thread, result1);
+    [[maybe_unused]] auto *res1 = EcmaString::Cast(resultHandle1.GetTaggedValue().GetTaggedObject());
+    JSHandle<EcmaString> det = thread->GetEcmaVM()->GetFactory()->NewFromASCII("");
+    ASSERT_EQ(res1->Compare(*det), 0);
+    for (uint32_t i = 0; i < NODE_NUMBERS; i++) {
+        uint32_t ikey = i;
+        std::string ivalue = std::to_string(i);
+        key.Update(JSTaggedValue(ikey));
+        value.Update(factory->NewFromStdString(ivalue).GetTaggedValue());
+        JSAPIPlainArray::Add(thread, array, key, value);
+    }
+    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromASCII("0:0,1:1,2:2");
+    JSTaggedValue result = JSAPIPlainArray::ToString(thread, array);
+    JSHandle<EcmaString> resultHandle(thread, result);
+    [[maybe_unused]] auto *res = EcmaString::Cast(resultHandle.GetTaggedValue().GetTaggedObject());
+
+    ASSERT_EQ(res->Compare(*str), 0);
 }
 }  // namespace panda::test
