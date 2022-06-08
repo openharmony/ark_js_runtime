@@ -20,7 +20,7 @@ std::unique_ptr<EnableParams> EnableParams::Create(const EcmaVM *ecmaVm, const L
 {
     ASSERT(ecmaVm);
     if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
+        LOG(ERROR, DEBUGGER) << "EnableParams::Create params is nullptr";
         return nullptr;
     }
     std::string error;

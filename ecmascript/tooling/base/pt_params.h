@@ -56,7 +56,7 @@ private:
     NO_COPY_SEMANTIC(EnableParams);
     NO_MOVE_SEMANTIC(EnableParams);
 
-    std::optional<double> maxScriptsCacheSize_ {0};
+    std::optional<double> maxScriptsCacheSize_ {};
 };
 
 class EvaluateOnCallFrameParams : public PtBaseParams {
