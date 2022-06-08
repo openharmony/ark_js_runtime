@@ -27,7 +27,7 @@ namespace panda {
 namespace ecmascript {
 class JSThread;
 
-enum RegionSpaceType {
+enum RegionSpaceFlag {
     UNINITIALIZED = 0,
     // We shuold avoid using the lower 3 bits (bits 0 to 2).
     // If ZAP_MEM is enabled, the value of the lower 3 bits conflicts with the INVALID_VALUE.
@@ -64,17 +64,17 @@ enum RegionGCFlags {
 static inline std::string ToSpaceTypeName(uint8_t space)
 {
     switch (space) {
-        case RegionSpaceType::IN_YOUNG_SPACE:
+        case RegionSpaceFlag::IN_YOUNG_SPACE:
             return "young space";
-        case RegionSpaceType::IN_SNAPSHOT_SPACE:
+        case RegionSpaceFlag::IN_SNAPSHOT_SPACE:
             return "snapshot space";
-        case RegionSpaceType::IN_HUGE_OBJECT_SPACE:
+        case RegionSpaceFlag::IN_HUGE_OBJECT_SPACE:
             return "huge object space";
-        case RegionSpaceType::IN_OLD_SPACE:
+        case RegionSpaceFlag::IN_OLD_SPACE:
             return "old space";
-        case RegionSpaceType::IN_NON_MOVABLE_SPACE:
+        case RegionSpaceFlag::IN_NON_MOVABLE_SPACE:
             return "non movable space";
-        case RegionSpaceType::IN_MACHINE_CODE_SPACE:
+        case RegionSpaceFlag::IN_MACHINE_CODE_SPACE:
             return "machine code space";
         default:
             return "invalid space";
@@ -94,7 +94,7 @@ static inline std::string ToSpaceTypeName(uint8_t space)
 
 class Region {
 public:
-    Region(JSThread *thread, uintptr_t allocateBase, uintptr_t begin, uintptr_t end, RegionSpaceType spaceType)
+    Region(JSThread *thread, uintptr_t allocateBase, uintptr_t begin, uintptr_t end, RegionSpaceFlag spaceType)
         : thread_(thread),
           allocateBase_(allocateBase),
           end_(end),
@@ -102,8 +102,8 @@ public:
           aliveObject_(0),
           wasted_(0)
     {
-        flags_.spaceType_ = spaceType;
-        bitsetSize_ = (spaceType == RegionSpaceType::IN_HUGE_OBJECT_SPACE) ?
+        flags_.spaceFlag_ = spaceType;
+        bitsetSize_ = (spaceType == RegionSpaceFlag::IN_HUGE_OBJECT_SPACE) ?
             GCBitset::BYTE_PER_WORD : GCBitset::SizeOfGCBitset(end - begin);
         markGCBitset_ = new (ToVoidPtr(begin)) GCBitset();
         markGCBitset_->Clear(bitsetSize_);
@@ -182,7 +182,7 @@ public:
 
     std::string GetSpaceTypeName()
     {
-        return ToSpaceTypeName(flags_.spaceType_);
+        return ToSpaceTypeName(flags_.spaceFlag_);
     }
 
     // Mark bitset
@@ -227,17 +227,17 @@ public:
 
     void Invalidate()
     {
-        flags_.spaceType_ = RegionSpaceType::UNINITIALIZED;
+        flags_.spaceFlag_ = RegionSpaceFlag::UNINITIALIZED;
     }
 
     bool InYoungSpace() const
     {
-        return flags_.spaceType_ == RegionSpaceType::IN_YOUNG_SPACE;
+        return flags_.spaceFlag_ == RegionSpaceFlag::IN_YOUNG_SPACE;
     }
 
     bool InOldSpace() const
     {
-        return flags_.spaceType_ == RegionSpaceType::IN_OLD_SPACE;
+        return flags_.spaceFlag_ == RegionSpaceFlag::IN_OLD_SPACE;
     }
 
     bool InYoungOrOldSpace() const
@@ -247,33 +247,33 @@ public:
 
     bool InHugeObjectSpace() const
     {
-        return flags_.spaceType_ == RegionSpaceType::IN_HUGE_OBJECT_SPACE;
+        return flags_.spaceFlag_ == RegionSpaceFlag::IN_HUGE_OBJECT_SPACE;
     }
 
     bool InMachineCodeSpace() const
     {
-        return flags_.spaceType_ == RegionSpaceType::IN_MACHINE_CODE_SPACE;
+        return flags_.spaceFlag_ == RegionSpaceFlag::IN_MACHINE_CODE_SPACE;
     }
 
     bool InNonMovableSpace() const
     {
-        return flags_.spaceType_  == RegionSpaceType::IN_NON_MOVABLE_SPACE;
+        return flags_.spaceFlag_  == RegionSpaceFlag::IN_NON_MOVABLE_SPACE;
     }
 
     bool InSnapshotSpace() const
     {
-        return flags_.spaceType_ == RegionSpaceType::IN_SNAPSHOT_SPACE;
+        return flags_.spaceFlag_ == RegionSpaceFlag::IN_SNAPSHOT_SPACE;
     }
 
     bool InHeapSpace() const
     {
-        uint8_t space = flags_.spaceType_;
-        return (space == RegionSpaceType::IN_YOUNG_SPACE ||
-                space == RegionSpaceType::IN_OLD_SPACE ||
-                space == RegionSpaceType::IN_HUGE_OBJECT_SPACE ||
-                space == RegionSpaceType::IN_MACHINE_CODE_SPACE ||
-                space == RegionSpaceType::IN_NON_MOVABLE_SPACE ||
-                space == RegionSpaceType::IN_SNAPSHOT_SPACE);
+        uint8_t space = flags_.spaceFlag_;
+        return (space == RegionSpaceFlag::IN_YOUNG_SPACE ||
+                space == RegionSpaceFlag::IN_OLD_SPACE ||
+                space == RegionSpaceFlag::IN_HUGE_OBJECT_SPACE ||
+                space == RegionSpaceFlag::IN_MACHINE_CODE_SPACE ||
+                space == RegionSpaceFlag::IN_NON_MOVABLE_SPACE ||
+                space == RegionSpaceFlag::IN_SNAPSHOT_SPACE);
     }
 
     bool InCollectSet() const
@@ -488,7 +488,7 @@ private:
     static constexpr size_t PACKED_PTR_NUM_BYTES = sizeof(uintptr_t) / sizeof(uint8_t);
 
     struct PackedPtr : public AlignedStorage<sizeof(uintptr_t), sizeof(uint8_t), PACKED_PTR_NUM_BYTES> {
-        Aligned<uint8_t> spaceType_;
+        Aligned<uint8_t> spaceFlag_;
         Aligned<uint16_t> gcFlags_;
     } flags_;
     static_assert(sizeof(flags_) == PackedPtr::GetSize());
