@@ -1336,8 +1336,8 @@ void AssemblerStubs::CallSetter(ExtendedAssembler *assembler)
 
 void AssemblerStubs::CallSetterEntry(ExtendedAssembler *assembler)
 {
-    Register receiverRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG0);
-    Register valueRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG1);
+    Register receiverRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG1);
+    Register valueRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG0);
     __ Str(valueRegister, MemoryOperand(Register(SP), -FRAME_SLOT_SIZE, AddrMode::PREINDEX));    // arg0
     PushCallThis(assembler, receiverRegister, false);  // receiver
 }
@@ -1349,11 +1349,11 @@ void AssemblerStubs::CallNoExtraSetterEntry(ExtendedAssembler *assembler)
     Label callargs0NoExtraEntry;
     __ Cmp(declaredNumArgsRegister.W(), Immediate(argc));
     __ B(Condition::LO, &callargs0NoExtraEntry);
-    Register valueRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG1);
+    Register valueRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG0);
     __ Str(valueRegister, MemoryOperand(Register(SP), -FRAME_SLOT_SIZE, AddrMode::PREINDEX));  // arg0
     // fall through
     __ Bind(&callargs0NoExtraEntry);
-    Register receiverRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG0);
+    Register receiverRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG1);
     PushCallThis(assembler, receiverRegister, false);  // receiver
 }
 
@@ -1691,11 +1691,12 @@ void AssemblerStubs::PushAsmInterpEntryFrame(ExtendedAssembler *assembler, bool 
 
 void AssemblerStubs::PopAsmInterpEntryFrame(ExtendedAssembler *assembler, bool saveLeave)
 {
-    Register glue = __ GlueRegister();
     Register sp(SP);
 
     [[maybe_unused]] TempRegister1Scope scope1(assembler);
     Register prevFrameRegister = __ TempRegister1();
+    [[maybe_unused]] TempRegister2Scope scope2(assembler);
+    Register glue = __ TempRegister2();
     // skip pc
     __ Add(sp, sp, Immediate(FRAME_SLOT_SIZE));
     __ Ldr(prevFrameRegister, MemoryOperand(sp, FRAME_SLOT_SIZE, AddrMode::POSTINDEX));
@@ -1889,5 +1890,17 @@ void AssemblerStubs::PushArgsSlowPath(ExtendedAssembler *assembler, Register &gl
     __ Bind(&jumpToFastPath);
     PushArgsFastPath(assembler, glueRegister, argcRegister, argvRegister, callTargetRegister, methodRegister,
         prevSpRegister, fpRegister, callFieldRegister);
+}
+
+void AssemblerStubs::PushCallNewAndDispatch(ExtendedAssembler *assembler)
+{
+    __ BindAssemblerStub(RTSTUB_ID(PushCallNewAndDispatch));
+    __ Ret();
+}
+
+void AssemblerStubs::PushCallNewAndDispatchNative(ExtendedAssembler *assembler)
+{
+    __ BindAssemblerStub(RTSTUB_ID(PushCallNewAndDispatchNative));
+    __ Ret();
 }
 }  // panda::ecmascript::aarch64

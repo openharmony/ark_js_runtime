@@ -28,7 +28,6 @@ void BytecodeStubCSigns::Initialize()
     BytecodeHandlerCallSignature::Initialize(&callSigns_[name]);         \
     callSigns_[name].SetID(ID_##name);                                   \
     callSigns_[name].SetName(#name);                                     \
-    callSigns_[name].SetCallConv(CallSignature::CallConv::GHCCallConv);  \
     callSigns_[name].SetConstructor(                                     \
     [](void* ciruit) {                                                   \
         return static_cast<void*>(                                       \
@@ -39,8 +38,8 @@ void BytecodeStubCSigns::Initialize()
 
 #define INIT_HELPER_SIGNATURES(name)                                                        \
     BytecodeHandlerCallSignature::Initialize(&callSigns_[name]);                            \
-    callSigns_[name].SetID(HELPER_ID_##name);                                               \
-    callSigns_[name].SetCallConv(CallSignature::CallConv::GHCCallConv);                     \
+    callSigns_[name].SetID(ID_##name);                                                      \
+    callSigns_[name].SetName(#name);                                                        \
     callSigns_[name].SetTargetKind(CallSignature::TargetKind::BYTECODE_HELPER_HANDLER);     \
     callSigns_[name].SetConstructor(                                                        \
     [](void* ciruit) {                                                                      \

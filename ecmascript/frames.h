@@ -577,7 +577,7 @@ struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTyp
     // args, may be truncated if not extra
     // thisObject, used in asm constructor frame
     // numArgs, used if extra or asm constructor frame
-    enum ReverseIndex : int32_t { NUM_ARGS_REVERSE_INDEX = -1, THIS_OBJECT_REVERSE_INDEX = -2 };
+    enum ReverseIndex : int32_t { THIS_OBJECT_REVERSE_INDEX = -2 };
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(AsmInterpretedFrame), AsmInterpretedFrame::SizeArch32, AsmInterpretedFrame::SizeArch64);
 
@@ -622,9 +622,9 @@ struct AsmInterpretedEntryFrame : public base::AlignedStruct<JSTaggedValue::Tagg
         return base.prev;
     }
 
-    static InterpretedEntryFrame* GetFrameFromSp(const JSTaggedType *sp)
+    static AsmInterpretedEntryFrame* GetFrameFromSp(const JSTaggedType *sp)
     {
-        return reinterpret_cast<InterpretedEntryFrame *>(const_cast<JSTaggedType *>(sp)) - 1;
+        return reinterpret_cast<AsmInterpretedEntryFrame *>(const_cast<JSTaggedType *>(sp)) - 1;
     }
 
     alignas(EAS) const uint8_t *pc {nullptr};
