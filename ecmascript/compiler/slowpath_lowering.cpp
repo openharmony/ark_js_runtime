@@ -132,7 +132,7 @@ void SlowPathLowering::ReplaceHirToCall(GateRef hirGate, GateRef callGate, bool 
     GateRef ifBranch;
     if (!noThrow) {
         // exception value
-        GateRef exceptionVal = builder_.ExceptionConstant(GateType::TAGGED_NPOINTER);
+        GateRef exceptionVal = builder_.ExceptionConstant(GateType::TaggedNPointer());
         // compare with trampolines result
         GateRef equal = builder_.BinaryLogic(OpCode(OpCode::EQ), callGate, exceptionVal);
         ifBranch = builder_.Branch(stateInGate, equal);

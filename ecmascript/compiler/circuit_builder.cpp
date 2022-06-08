@@ -24,7 +24,7 @@
 namespace panda::ecmascript::kungfu {
 GateRef CircuitBuilder::Merge(GateRef *inList, size_t controlCount)
 {
-    return circuit_->NewGate(OpCode(OpCode::MERGE), controlCount, controlCount, inList, GateType::EMPTY);
+    return circuit_->NewGate(OpCode(OpCode::MERGE), controlCount, controlCount, inList, GateType::Empty());
 }
 
 GateRef CircuitBuilder::Selector(OpCode opcode, MachineType machineType, GateRef control,
@@ -68,65 +68,65 @@ GateRef CircuitBuilder::UndefineConstant(GateType type)
 
 GateRef CircuitBuilder::Branch(GateRef state, GateRef condition)
 {
-    return circuit_->NewGate(OpCode(OpCode::IF_BRANCH), 0, { state, condition }, GateType::EMPTY);
+    return circuit_->NewGate(OpCode(OpCode::IF_BRANCH), 0, { state, condition }, GateType::Empty());
 }
 
 GateRef CircuitBuilder::SwitchBranch(GateRef state, GateRef index, int caseCounts)
 {
-    return circuit_->NewGate(OpCode(OpCode::SWITCH_BRANCH), caseCounts, { state, index }, GateType::EMPTY);
+    return circuit_->NewGate(OpCode(OpCode::SWITCH_BRANCH), caseCounts, { state, index }, GateType::Empty());
 }
 
 GateRef CircuitBuilder::Return(GateRef state, GateRef depend, GateRef value)
 {
     auto returnList = Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST));
-    return circuit_->NewGate(OpCode(OpCode::RETURN), 0, { state, depend, value, returnList }, GateType::EMPTY);
+    return circuit_->NewGate(OpCode(OpCode::RETURN), 0, { state, depend, value, returnList }, GateType::Empty());
 }
 
 GateRef CircuitBuilder::ReturnVoid(GateRef state, GateRef depend)
 {
     auto returnList = Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST));
-    return circuit_->NewGate(OpCode(OpCode::RETURN_VOID), 0, { state, depend, returnList }, GateType::EMPTY);
+    return circuit_->NewGate(OpCode(OpCode::RETURN_VOID), 0, { state, depend, returnList }, GateType::Empty());
 }
 
 GateRef CircuitBuilder::Goto(GateRef state)
 {
-    return circuit_->NewGate(OpCode(OpCode::ORDINARY_BLOCK), 0, { state }, GateType::EMPTY);
+    return circuit_->NewGate(OpCode(OpCode::ORDINARY_BLOCK), 0, { state }, GateType::Empty());
 }
 
 GateRef CircuitBuilder::LoopBegin(GateRef state)
 {
     auto nullGate = Circuit::NullGate();
-    return circuit_->NewGate(OpCode(OpCode::LOOP_BEGIN), 0, { state, nullGate }, GateType::EMPTY);
+    return circuit_->NewGate(OpCode(OpCode::LOOP_BEGIN), 0, { state, nullGate }, GateType::Empty());
 }
 
 GateRef CircuitBuilder::LoopEnd(GateRef state)
 {
-    return circuit_->NewGate(OpCode(OpCode::LOOP_BACK), 0, { state }, GateType::EMPTY);
+    return circuit_->NewGate(OpCode(OpCode::LOOP_BACK), 0, { state }, GateType::Empty());
 }
 
 GateRef CircuitBuilder::IfTrue(GateRef ifBranch)
 {
-    return circuit_->NewGate(OpCode(OpCode::IF_TRUE), 0, { ifBranch }, GateType::EMPTY);
+    return circuit_->NewGate(OpCode(OpCode::IF_TRUE), 0, { ifBranch }, GateType::Empty());
 }
 
 GateRef CircuitBuilder::IfFalse(GateRef ifBranch)
 {
-    return circuit_->NewGate(OpCode(OpCode::IF_FALSE), 0, { ifBranch }, GateType::EMPTY);
+    return circuit_->NewGate(OpCode(OpCode::IF_FALSE), 0, { ifBranch }, GateType::Empty());
 }
 
 GateRef CircuitBuilder::SwitchCase(GateRef switchBranch, int64_t value)
 {
-    return circuit_->NewGate(OpCode(OpCode::SWITCH_CASE), value, { switchBranch }, GateType::EMPTY);
+    return circuit_->NewGate(OpCode(OpCode::SWITCH_CASE), value, { switchBranch }, GateType::Empty());
 }
 
 GateRef CircuitBuilder::DefaultCase(GateRef switchBranch)
 {
-    return circuit_->NewGate(OpCode(OpCode::DEFAULT_CASE), 0, { switchBranch }, GateType::EMPTY);
+    return circuit_->NewGate(OpCode(OpCode::DEFAULT_CASE), 0, { switchBranch }, GateType::Empty());
 }
 
 GateRef CircuitBuilder::DependRelay(GateRef state, GateRef depend)
 {
-    return circuit_->NewGate(OpCode(OpCode::DEPEND_RELAY), 0, { state, depend }, GateType::EMPTY);
+    return circuit_->NewGate(OpCode(OpCode::DEPEND_RELAY), 0, { state, depend }, GateType::Empty());
 }
 
 GateRef CircuitBuilder::DependAnd(std::initializer_list<GateRef> args)
@@ -135,54 +135,55 @@ GateRef CircuitBuilder::DependAnd(std::initializer_list<GateRef> args)
     for (auto arg : args) {
         inputs.push_back(arg);
     }
-    return circuit_->NewGate(OpCode(OpCode::DEPEND_AND), args.size(), inputs, GateType::EMPTY);
+    return circuit_->NewGate(OpCode(OpCode::DEPEND_AND), args.size(), inputs, GateType::Empty());
 }
 
 GateRef CircuitBuilder::Arguments(size_t index)
 {
     auto argListOfCircuit = Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST));
-    return GetCircuit()->NewGate(OpCode(OpCode::ARG), MachineType::I64, index, {argListOfCircuit}, GateType::NJS_VALUE);
+    return GetCircuit()->NewGate(OpCode(OpCode::ARG), MachineType::I64, index, {argListOfCircuit},
+                                 GateType::NJSValue());
 }
 
 GateRef CircuitBuilder::Int8(int8_t val)
 {
-    return GetCircuit()->GetConstantGate(MachineType::I8, val, GateType::NJS_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I8, val, GateType::NJSValue());
 }
 
 GateRef CircuitBuilder::Int16(int16_t val)
 {
-    return GetCircuit()->GetConstantGate(MachineType::I16, val, GateType::NJS_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I16, val, GateType::NJSValue());
 }
 
 GateRef CircuitBuilder::Int32(int32_t val)
 {
-    return GetCircuit()->GetConstantGate(MachineType::I32, static_cast<BitField>(val), GateType::NJS_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I32, static_cast<BitField>(val), GateType::NJSValue());
 }
 
 GateRef CircuitBuilder::Int64(int64_t val)
 {
-    return GetCircuit()->GetConstantGate(MachineType::I64, val, GateType::NJS_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I64, val, GateType::NJSValue());
 }
 
 GateRef CircuitBuilder::IntPtr(int64_t val)
 {
-    return GetCircuit()->GetConstantGate(MachineType::ARCH, val, GateType::NJS_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::ARCH, val, GateType::NJSValue());
 }
 
 GateRef CircuitBuilder::RelocatableData(uint64_t val)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
-    return GetCircuit()->NewGate(OpCode(OpCode::RELOCATABLE_DATA), val, {constantList}, GateType::EMPTY);
+    return GetCircuit()->NewGate(OpCode(OpCode::RELOCATABLE_DATA), val, {constantList}, GateType::Empty());
 }
 
 GateRef CircuitBuilder::Boolean(bool val)
 {
-    return GetCircuit()->GetConstantGate(MachineType::I1, val ? 1 : 0, GateType::NJS_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I1, val ? 1 : 0, GateType::NJSValue());
 }
 
 GateRef CircuitBuilder::Double(double val)
 {
-    return GetCircuit()->GetConstantGate(MachineType::F64, bit_cast<int64_t>(val), GateType::NJS_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::F64, bit_cast<int64_t>(val), GateType::NJSValue());
 }
 
 GateRef CircuitBuilder::HoleConstant(GateType type)
@@ -214,22 +215,22 @@ GateRef CircuitBuilder::BinaryArithmetic(OpCode opcode, MachineType machineType,
 
 GateRef CircuitBuilder::TaggedNumber(OpCode opcode, GateRef value)
 {
-    return GetCircuit()->NewGate(opcode, 0, { value }, GateType::TAGGED_VALUE);
+    return GetCircuit()->NewGate(opcode, 0, { value }, GateType::TaggedValue());
 }
 
 GateRef CircuitBuilder::UnaryArithmetic(OpCode opcode, MachineType machineType, GateRef value)
 {
-    return GetCircuit()->NewGate(opcode, machineType, 0, { value }, GateType::NJS_VALUE);
+    return GetCircuit()->NewGate(opcode, machineType, 0, { value }, GateType::NJSValue());
 }
 
 GateRef CircuitBuilder::UnaryArithmetic(OpCode opcode, GateRef value)
 {
-    return GetCircuit()->NewGate(opcode, 0, { value }, GateType::NJS_VALUE);
+    return GetCircuit()->NewGate(opcode, 0, { value }, GateType::NJSValue());
 }
 
 GateRef CircuitBuilder::BinaryLogic(OpCode opcode, GateRef left, GateRef right)
 {
-    return GetCircuit()->NewGate(opcode, 0, { left, right }, GateType::NJS_VALUE);
+    return GetCircuit()->NewGate(opcode, 0, { left, right }, GateType::NJSValue());
 }
 
 GateRef CircuitBuilder::CallBCHandler(GateRef glue, GateRef target, const std::vector<GateRef> &args)
@@ -351,7 +352,7 @@ void CircuitBuilder::Store(VariableType type, GateRef glue, GateRef base, GateRe
 GateRef CircuitBuilder::Alloca(int size)
 {
     auto allocaList = Circuit::GetCircuitRoot(OpCode(OpCode::ALLOCA_LIST));
-    return GetCircuit()->NewGate(OpCode(OpCode::ALLOCA), size, { allocaList }, GateType::NJS_VALUE);
+    return GetCircuit()->NewGate(OpCode(OpCode::ALLOCA), size, { allocaList }, GateType::NJSValue());
 }
 
 GateRef CircuitBuilder::TaggedIsString(GateRef obj)

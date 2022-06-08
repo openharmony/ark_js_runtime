@@ -48,7 +48,7 @@ Validation rules of primary type are already builtin for Circuit IR. Validation 
 
 ### Layout of type representation bits (GateType)
 
-GateType is represented by 64 bits:
+GateType is represented by 32 bits:
 
 * The 31st bit is used to distinguish between MIR type and TS type, `0` means TS type, `1` means MIR type.
 

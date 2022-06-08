@@ -97,7 +97,7 @@ JSHandle<JSTaggedValue> TSTypeTable::ParseType(JSThread *thread, JSHandle<TSType
             classInstance->SetClassRefGT(classType->GetGTRef());
             return JSHandle<JSTaggedValue>(classInstance);
         }
-        case TSTypeKind::INTERFACE: {
+        case TSTypeKind::INTERFACE_KIND: {
             JSHandle<TSInterfaceType> interfaceType = ParseInterfaceType(thread, literal);
             return JSHandle<JSTaggedValue>(interfaceType);
         }
@@ -340,7 +340,7 @@ JSHandle<TSInterfaceType> TSTypeTable::ParseInterfaceType(JSThread *thread, cons
 
     uint32_t index = 0;
     JSHandle<TSInterfaceType> interfaceType = factory->NewTSInterfaceType();
-    ASSERT(static_cast<TSTypeKind>(literal->Get(index).GetInt()) == TSTypeKind::INTERFACE);
+    ASSERT(static_cast<TSTypeKind>(literal->Get(index).GetInt()) == TSTypeKind::INTERFACE_KIND);
 
     index++;
     // resolve extends of interface
@@ -423,7 +423,7 @@ JSHandle<TSUnionType> TSTypeTable::ParseUnionType(JSThread *thread, const JSPand
             int typeKind = GetTypeKindFromFileByLocalId(thread, jsPandaFile, localId);
             gt = GlobalTSTypeRef(moduleId, localId, typeKind);
         }
-        components->Set(thread, index, JSTaggedValue(gt.GetData()));
+        components->Set(thread, index, JSTaggedValue(gt.GetType()));
     }
     unionType->SetComponents(thread, components);
     return unionType;

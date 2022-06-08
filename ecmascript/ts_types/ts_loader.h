@@ -19,110 +19,9 @@
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_tagged_value-inl.h"
+#include "ecmascript/ts_types/global_ts_type_ref.h"
 
 namespace panda::ecmascript {
-class GlobalTSTypeRef {
-public:
-    GlobalTSTypeRef(uint32_t data = 0) : data_(data) {}
-    GlobalTSTypeRef(int moduleId, int localId, int typeKind)
-    {
-        data_ = 0;
-        SetKind(typeKind);
-        SetLocalId(localId);
-        SetModuleId(moduleId);
-    }
-    ~GlobalTSTypeRef() = default;
-
-    static constexpr int TS_TYPE_RESERVED_COUNT = 50;
-    static constexpr int KIND_BITS = 6;
-    static constexpr int GC_TYPE_BITS = 3;
-    static constexpr int LOCAL_ID_BITS = 16;
-    static constexpr int MODULE_ID_BITS = 7;
-    FIRST_BIT_FIELD(Data, Kind, uint8_t, KIND_BITS);
-    NEXT_BIT_FIELD(Data, GCType, uint8_t, GC_TYPE_BITS, Kind);
-    NEXT_BIT_FIELD(Data, LocalId, uint16_t, LOCAL_ID_BITS, GCType);
-    NEXT_BIT_FIELD(Data, ModuleId, uint8_t, MODULE_ID_BITS, LocalId);
-
-    static GlobalTSTypeRef Default()
-    {
-        return GlobalTSTypeRef(0u);
-    }
-
-    uint32_t GetData() const
-    {
-        return data_;
-    }
-
-    void SetData(uint32_t data)
-    {
-        data_ = data;
-    }
-
-    void Clear()
-    {
-        data_ = 0;
-    }
-
-    bool IsBuiltinType() const
-    {
-        return data_ < TS_TYPE_RESERVED_COUNT;
-    }
-
-    bool IsDefault() const
-    {
-        return data_ == 0;
-    }
-
-    bool operator <(const GlobalTSTypeRef &type) const
-    {
-        return data_ < type.data_;
-    }
-
-    bool operator ==(const GlobalTSTypeRef &type) const
-    {
-        return data_ == type.data_;
-    }
-
-    void Dump() const
-    {
-        uint8_t kind = GetKind();
-        uint32_t gcType = GetGCType();
-        uint32_t localId = GetLocalId();
-        uint32_t moduleId = GetModuleId();
-        LOG(ERROR, ECMASCRIPT) << "kind: " << kind << " gcType: " << gcType
-                               << " localId: " << localId << " moduleId: " << moduleId;
-    }
-
-private:
-     uint32_t data_ {0};
-};
-
-enum class TSTypeKind : int {
-    PRIMITIVE = 0,
-    CLASS,
-    CLASS_INSTANCE,
-    FUNCTION,
-    UNION,
-    ARRAY,
-    OBJECT,
-    IMPORT,
-    INTERFACE
-};
-
-enum class TSPrimitiveType : int {
-    ANY = 0,
-    NUMBER,
-    BOOLEAN,
-    VOID_TYPE,
-    STRING,
-    SYMBOL,
-    NULL_TYPE,
-    UNDEFINED,
-    INT,
-    BIG_INT,
-    END
-};
-
 class TSModuleTable : public TaggedArray {
 public:
 
@@ -225,7 +124,13 @@ public:
         return table->GetNumberOfTSTypeTables();
     }
 
-    inline static TSTypeKind PUBLIC_API GetTypeKind(GlobalTSTypeRef gt)
+    inline static TSTypeKind PUBLIC_API GetTypeKind(kungfu::GateType gateType)
+    {
+        GlobalTSTypeRef gt = GlobalTSTypeRef(gateType.GetType());
+        return GetTypeKind(gt);
+    }
+
+    inline static TSTypeKind GetTypeKind(GlobalTSTypeRef gt)
     {
         return static_cast<TSTypeKind>(gt.GetKind());
     }
@@ -251,9 +156,21 @@ public:
 
     GlobalTSTypeRef PUBLIC_API GetImportTypeTargetGT(GlobalTSTypeRef gt) const;
 
+    inline GlobalTSTypeRef PUBLIC_API GetPropType(kungfu::GateType gateType, JSHandle<EcmaString> propertyName) const
+    {
+        GlobalTSTypeRef gt = GlobalTSTypeRef(gateType.GetType());
+        return GetPropType(gt, propertyName);
+    }
+
     GlobalTSTypeRef PUBLIC_API GetPropType(GlobalTSTypeRef gt, JSHandle<EcmaString> propertyName) const;
 
     // use for object
+    inline GlobalTSTypeRef PUBLIC_API GetPropType(kungfu::GateType gateType, const uint64_t key) const
+    {
+        GlobalTSTypeRef gt = GlobalTSTypeRef(gateType.GetType());
+        return GetPropType(gt, key);
+    }
+
     GlobalTSTypeRef PUBLIC_API GetPropType(GlobalTSTypeRef gt, const uint64_t key) const;
 
     uint32_t PUBLIC_API GetUnionTypeLength(GlobalTSTypeRef gt) const;
@@ -266,7 +183,19 @@ public:
 
     GlobalTSTypeRef PUBLIC_API GetFuncParameterTypeGT(GlobalTSTypeRef gt, int index) const;
 
+    inline GlobalTSTypeRef PUBLIC_API GetFuncReturnValueTypeGT(kungfu::GateType gateType) const
+    {
+        GlobalTSTypeRef gt = GlobalTSTypeRef(gateType.GetType());
+        return GetFuncReturnValueTypeGT(gt);
+    }
+
     GlobalTSTypeRef PUBLIC_API GetFuncReturnValueTypeGT(GlobalTSTypeRef gt) const;
+
+    inline GlobalTSTypeRef PUBLIC_API GetArrayParameterTypeGT(kungfu::GateType gateType) const
+    {
+        GlobalTSTypeRef gt = GlobalTSTypeRef(gateType.GetType());
+        return GetArrayParameterTypeGT(gt);
+    }
 
     GlobalTSTypeRef PUBLIC_API GetArrayParameterTypeGT(GlobalTSTypeRef gt) const;
 
@@ -311,78 +240,6 @@ private:
     JSTaggedValue globalModuleTable_ {JSTaggedValue::Hole()};
     CVector<JSTaggedType> constantStringTable_ {};
     friend class EcmaVM;
-};
-
-class GateTypeCoder {
-public:
-    explicit GateTypeCoder() {}
-    ~GateTypeCoder() = default;
-
-    static kungfu::GateType GetAnyType()
-    {
-        auto numberType = static_cast<kungfu::GateType>(TSLoader::GetPrimitiveGT(TSPrimitiveType::ANY).GetData());
-        return numberType;
-    }
-
-    static kungfu::GateType GetNumberType()
-    {
-        auto numberType = static_cast<kungfu::GateType>(TSLoader::GetPrimitiveGT(TSPrimitiveType::NUMBER).GetData());
-        return numberType;
-    }
-
-    static kungfu::GateType GetBooleanType()
-    {
-        auto numberType = static_cast<kungfu::GateType>(TSLoader::GetPrimitiveGT(TSPrimitiveType::BOOLEAN).GetData());
-        return numberType;
-    }
-
-    static kungfu::GateType GetVoidType()
-    {
-        auto stringType = static_cast<kungfu::GateType>(TSLoader::GetPrimitiveGT(TSPrimitiveType::VOID_TYPE).GetData());
-        return stringType;
-    }
-
-    static kungfu::GateType GetStringType()
-    {
-        auto stringType = static_cast<kungfu::GateType>(TSLoader::GetPrimitiveGT(TSPrimitiveType::STRING).GetData());
-        return stringType;
-    }
-
-    static kungfu::GateType GetSymbolType()
-    {
-        auto stringType = static_cast<kungfu::GateType>(TSLoader::GetPrimitiveGT(TSPrimitiveType::SYMBOL).GetData());
-        return stringType;
-    }
-
-    static kungfu::GateType GetNullType()
-    {
-        auto stringType = static_cast<kungfu::GateType>(TSLoader::GetPrimitiveGT(TSPrimitiveType::NULL_TYPE).GetData());
-        return stringType;
-    }
-
-    static kungfu::GateType GetUndefinedType()
-    {
-        auto stringType = static_cast<kungfu::GateType>(TSLoader::GetPrimitiveGT(TSPrimitiveType::UNDEFINED).GetData());
-        return stringType;
-    }
-
-    static kungfu::GateType GetGateTypeByTypeRef(GlobalTSTypeRef typeRef)
-    {
-        auto gateType = static_cast<kungfu::GateType>(typeRef.GetData());
-        return gateType;
-    }
-
-    static bool IsString(kungfu::GateType gateType)
-    {
-        auto stringType = GetStringType();
-        return (gateType == stringType);
-    }
-
-    static bool IsAny(kungfu::GateType gateType)
-    {
-        auto anyType = GetAnyType();
-        return (gateType == anyType);
-    }
 };
 }  // namespace panda::ecmascript
 
