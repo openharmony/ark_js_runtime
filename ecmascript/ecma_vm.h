@@ -242,6 +242,11 @@ public:
         return tsLoader_;
     }
 
+    FileLoader *GetFileLoader() const
+    {
+        return fileLoader_;
+    }
+
     SnapshotEnv *GetSnapshotEnv() const
     {
         return snapshotEnv_;
@@ -359,6 +364,7 @@ private:
         [[maybe_unused]] EcmaVM* vm_;
         [[maybe_unused]] CpuProfiler* profiler_;
     };
+
     void SetGlobalEnv(GlobalEnv *global);
 
     void SetMicroJobQueue(job::MicroJobQueue *queue);

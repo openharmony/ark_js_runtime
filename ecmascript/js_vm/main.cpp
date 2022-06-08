@@ -102,7 +102,6 @@ int Main(const int argc, const char **argv)
         std::cout << "\n"
                   << "Startup start time: " << startTime << std::endl;
     }
-
     bool ret = true;
     EcmaVM *vm = JSNApi::CreateEcmaVM(runtimeOptions);
     if (vm == nullptr) {

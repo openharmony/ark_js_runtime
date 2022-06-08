@@ -14,7 +14,7 @@
  */
 
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
-
+#include "ecmascript/file_loader.h"
 #include "ecmascript/jspandafile/program_object.h"
 
 namespace panda::ecmascript {
@@ -66,7 +66,8 @@ const JSPandaFile *JSPandaFileManager::LoadAotInfoFromPf(const CString &filename
     return jsPandaFile;
 }
 
-const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(const CString &filename, std::string_view entryPoint)
+const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(JSThread *thread, const CString &filename,
+    std::string_view entryPoint)
 {
     ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "JSPandaFileManager::LoadJSPandaFile");
     const JSPandaFile *jsPandaFile = FindJSPandaFile(filename);
@@ -81,12 +82,12 @@ const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(const CString &filename, 
         return nullptr;
     }
 
-    jsPandaFile = GenerateJSPandaFile(pf.release(), filename, entryPoint);
+    jsPandaFile = GenerateJSPandaFile(thread, pf.release(), filename, entryPoint);
     return jsPandaFile;
 }
 
-const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(const CString &filename, std::string_view entryPoint,
-                                                       const void *buffer, size_t size)
+const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(JSThread *thread, const CString &filename,
+                                                       std::string_view entryPoint, const void *buffer, size_t size)
 {
     if (buffer == nullptr || size == 0) {
         return nullptr;
@@ -103,7 +104,7 @@ const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(const CString &filename, 
         LOG_ECMA(ERROR) << "open file " << filename << " error";
         return nullptr;
     }
-    jsPandaFile = GenerateJSPandaFile(pf.release(), filename, entryPoint);
+    jsPandaFile = GenerateJSPandaFile(thread, pf.release(), filename, entryPoint);
     return jsPandaFile;
 }
 
@@ -223,11 +224,16 @@ tooling::JSPtExtractor *JSPandaFileManager::GetJSPtExtractor(const JSPandaFile *
     return iter->second.get();
 }
 
-const JSPandaFile *JSPandaFileManager::GenerateJSPandaFile(const panda_file::File *pf, const CString &desc,
-                                                           std::string_view entryPoint)
+const JSPandaFile *JSPandaFileManager::GenerateJSPandaFile(JSThread *thread, const panda_file::File *pf,
+                                                           const CString &desc, std::string_view entryPoint)
 {
     ASSERT(GetJSPandaFile(pf) == nullptr);
     JSPandaFile *newJsPandaFile = NewJSPandaFile(pf, desc);
+
+    auto loader = thread->GetEcmaVM()->GetFileLoader();
+    if (loader->hasLoaded(newJsPandaFile)) {
+        newJsPandaFile->SetLoadedAOTStatus(true);
+    }
 
     CString methodName;
     auto pos = entryPoint.find_last_of("::");

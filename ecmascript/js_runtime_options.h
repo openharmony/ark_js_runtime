@@ -51,14 +51,12 @@ public:
     void AddOptions(PandArgParser *parser)
     {
         parser->Add(&enableArkTools_);
-        parser->Add(&enableStubAot_);
-        parser->Add(&stubFile_);
         parser->Add(&enableCpuprofiler_);
         parser->Add(&arkProperties_);
-        parser->Add(&enableTSAot_);
         parser->Add(&maxNonmovableSpaceCapacity_);
         parser->Add(&enableAsmInterpreter_);
         parser->Add(&asmOpcodeDisableRange_);
+        parser->Add(&stubFile_);
         parser->Add(&aotOutputFile_);
         parser->Add(&targetTriple_);
         parser->Add(&asmOptLevel_);
@@ -89,21 +87,6 @@ public:
     bool WasSetEnableArkTools() const
     {
         return enableArkTools_.WasSet();
-    }
-
-    bool EnableStubAot() const
-    {
-        return enableStubAot_.GetValue();
-    }
-
-    void SetEnableStubAot(bool value)
-    {
-        enableStubAot_.SetValue(value);
-    }
-
-    bool WasSetEnableStubAot() const
-    {
-        return enableStubAot_.WasSet();
     }
 
     bool IsEnableRuntimeStat() const
@@ -144,6 +127,11 @@ public:
     void SetAOTOutputFile(std::string value)
     {
         aotOutputFile_.SetValue(std::move(value));
+    }
+
+    bool WasAOTOutputFileSet() const
+    {
+        return aotOutputFile_.WasSet();
     }
 
     std::string GetTargetTriple() const
@@ -194,16 +182,6 @@ public:
     void SetEnableCpuprofiler(bool value)
     {
         enableCpuprofiler_.SetValue(value);
-    }
-
-    bool EnableTSAot() const
-    {
-        return enableTSAot_.GetValue();
-    }
-
-    void SetEnableTsAot(bool value)
-    {
-        enableTSAot_.SetValue(value);
     }
 
     void SetGcThreadNum(size_t num)
@@ -300,6 +278,11 @@ public:
     void SetEnableAsmInterpreter(bool value)
     {
         enableAsmInterpreter_.SetValue(value);
+    }
+
+    bool GetEnableAsmInterpreter() const
+    {
+        return enableAsmInterpreter_.GetValue();
     }
 
     void SetAsmOpcodeDisableRange(std::string value)
@@ -474,9 +457,6 @@ private:
     PandArg<bool> enableArkTools_ {"enable-ark-tools", false, R"(Enable ark tools to debug. Default: false)"};
     PandArg<bool> enableCpuprofiler_ {"enable-cpuprofiler", false,
         R"(Enable cpuprofiler to sample call stack and output to json file. Default: false)"};
-    PandArg<bool> enableStubAot_ {"enable-stub-aot", false,
-        R"(enable aot of common stub and bc handler stub. Default: false)"};
-    PandArg<bool> enableTSAot_ {"enable-ts-aot", false, R"(enable aot. Default: false)"};
     PandArg<std::string> stubFile_ {"stub-file",
         STUB_FILE_GEN_DIR R"(stub.m)",
         R"(Path of file includes common stubs module compiled by stub compiler. Default: )"
@@ -488,9 +468,9 @@ private:
     PandArg<int> arkProperties_ {"ark-properties", GetDefaultProperties(), R"(set ark properties)"};
     PandArg<uint32_t> gcThreadNum_ {"gcThreadNum", 7, R"(set gcThreadNum. Default: 7)"};
     PandArg<uint32_t> longPauseTime_ {"longPauseTime", 40, R"(set longPauseTime. Default: 40ms)"};
-    PandArg<std::string> aotOutputFile_ {"aot-output-file",
-        R"(aot_output_file.m)",
-        R"(Path to AOT output file. Default: "aot_output_file.m")"};
+    PandArg<std::string> aotOutputFile_ {"aot-file",
+        R"(aot_file.m)",
+        R"(Path to AOT output file. Default: "aot_file.m")"};
     PandArg<std::string> targetTriple_ {"target-triple", R"(x86_64-unknown-linux-gnu)",
         R"(target triple for aot compiler or stub compiler.
         Possible values: ["x86_64-unknown-linux-gnu", "arm-unknown-linux-gnu", "aarch64-unknown-linux-gnu"].
