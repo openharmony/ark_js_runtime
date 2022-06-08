@@ -65,6 +65,24 @@ protected:
     JSThread *thread {nullptr};
 };
 
+HWTEST_F_L0(DebuggerParamsTest, EnableParamsCreateTest)
+{
+    std::string msg;
+    std::unique_ptr<EnableParams> enableParams;
+
+    // abnormal
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
+    enableParams = EnableParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(enableParams, nullptr);
+    EXPECT_FALSE(enableParams->HasMaxScriptsCacheSize());
+
+    // normal
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"maxScriptsCacheSize":100}})";
+    enableParams = EnableParams::Create(DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(enableParams, nullptr);
+    EXPECT_EQ(enableParams->GetMaxScriptsCacheSize(), 100);
+}
+
 HWTEST_F_L0(DebuggerParamsTest, StartSamplingParamsCreateTest)
 {
     std::string msg;

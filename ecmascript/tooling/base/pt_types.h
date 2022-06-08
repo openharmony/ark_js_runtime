@@ -941,6 +941,7 @@ public:
     ~Location() override = default;
 
     static std::unique_ptr<Location> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<Location> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
     ScriptId GetScriptId() const

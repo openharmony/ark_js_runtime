@@ -43,6 +43,19 @@ std::unique_ptr<EnableParams> EnableParams::Create(const EcmaVM *ecmaVm, const L
     return paramsObject;
 }
 
+std::unique_ptr<EnableParams> EnableParams::Create(const PtJson &params)
+{
+    auto paramsObject = std::make_unique<EnableParams>();
+
+    double result = params.GetDouble("maxScriptsCacheSize", -1.0);
+    if (result != -1.0) {
+        // optional params
+        paramsObject->maxScriptsCacheSize_ = result;
+    }
+
+    return paramsObject;
+}
+
 std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(const EcmaVM *ecmaVm,
     const Local<JSValueRef> &params)
 {

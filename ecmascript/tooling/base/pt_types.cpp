@@ -1042,6 +1042,35 @@ std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSV
     return location;
 }
 
+std::unique_ptr<Location> Location::Create(const PtJson &params)
+{
+    std::string error;
+    auto location = std::make_unique<Location>();
+
+    std::string scriptId = params.GetString("scriptId");
+    if (scriptId.empty()) {
+        error += "should contain string 'scriptId';";
+    } else {
+        location->scriptId_ = static_cast<uint32_t>(std::stoi(scriptId));
+    }
+    int32_t line = params.GetInt("lineNumber", -1);
+    if (line == -1) {
+        error += "should contain number 'lineNumber';";
+    } else {
+        location->line_ = line;
+    }
+    int32_t column = params.GetInt("columnNumber", -1);
+    if (column != -1) {
+        location->column_ = column;
+    }
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "Location::Create " << error;
+        return nullptr;
+    }
+
+    return location;
+}
+
 Local<ObjectRef> Location::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
