@@ -55,6 +55,10 @@ public:
 
     static void PushCallArgs0AndDispatch(ExtendedAssembler *assembler);
 
+    static void PushCallNewAndDispatch(ExtendedAssembler *assembler);
+
+    static void PushCallNewAndDispatchNative(ExtendedAssembler *assembler);
+
     static void PushCallIRangeAndDispatchNative(ExtendedAssembler *assembler);
 
     static void PushCallArgsAndDispatchNative(ExtendedAssembler *assembler);
@@ -97,43 +101,19 @@ private:
     static void PushUndefinedWithArgc(ExtendedAssembler *assembler, Register argc);
     static void HasPendingException(ExtendedAssembler *assembler, Register threadRegister);
     static void StackOverflowCheck(ExtendedAssembler *assembler);
-    static void CallIThisRangeNoExtraEntry(ExtendedAssembler *assembler);
-    static void CallIRangeNoExtraEntry(ExtendedAssembler *assembler);
-    static void Callargs3NoExtraEntry(ExtendedAssembler *assembler);
-    static void Callargs2NoExtraEntry(ExtendedAssembler *assembler);
-    static void Callargs1NoExtraEntry(ExtendedAssembler *assembler);
-    static void CallIThisRangeEntry(ExtendedAssembler *assembler);
-    static void PushCallThis(ExtendedAssembler *assembler, Register thisRegister, bool isUndefined);
-    static void CallIRangeEntry(ExtendedAssembler *assembler);
-    static void Callargs3Entry(ExtendedAssembler *assembler);
-    static void Callargs2Entry(ExtendedAssembler *assembler);
-    static void Callarg1Entry(ExtendedAssembler *assembler);
-    static void PushCallThisUndefined(ExtendedAssembler *assembler);
-    static void PushNewTarget(ExtendedAssembler *assembler);
-    static void PushCallTarget(ExtendedAssembler *assembler);
+    static void PushCallThis(ExtendedAssembler *assembler, JSCallMode mode);
+    static Register GetThisRegsiter(ExtendedAssembler *assembler, JSCallMode mode);
     static void PushVregs(ExtendedAssembler *assembler);
     static void DispatchCall(ExtendedAssembler *assembler, Register pcRegister, Register newSpRegister);
     static void CallNativeEntry(ExtendedAssembler *assemblSer);
+    static void CallNativeWithArgv(ExtendedAssembler *assembler, bool callNew);
     static void CallNativeInternal(ExtendedAssembler *assembler,
         Register glue, Register numArgs, Register stackArgs, Register nativeCode);
     static void PushBuiltinFrame(ExtendedAssembler *assembler, Register glue, FrameType type);
-    using AssemblerClosure = std::function<void(ExtendedAssembler *assembler)>;
-    static void JSCallCommonEntry(ExtendedAssembler *assembler, JSCallMode mode,
-                                  const AssemblerClosure& fastEntry, const AssemblerClosure& slowEntry);
+    static void JSCallCommonEntry(ExtendedAssembler *assembler, JSCallMode mode);
+    static void JSCallCommonFastPath(ExtendedAssembler *assembler, JSCallMode mode);
     static void JSCallCommonSlowPath(ExtendedAssembler *assembler, JSCallMode mode,
-                                     const AssemblerClosure& entry,
-                                     const AssemblerClosure& extraEntry);
-    static void PushCallIThisRangeAndDispatchSlowPath(ExtendedAssembler *assembler);
-    static void PushCallIRangeAndDispatchSlowPath(ExtendedAssembler *assembler);
-    static void PushCallArgs3AndDispatchSlowPath(ExtendedAssembler *assembler);
-    static void PushCallArgs2AndDispatchSlowPath(ExtendedAssembler *assembler);
-    static void PushCallArgs1AndDispatchSlowPath(ExtendedAssembler *assembler);
-    static void PushCallArgs0AndDispatchSlowPath(ExtendedAssembler *assembler);
-    static void CallGetterSlow(ExtendedAssembler *assembler);
-    static void CallSetterSlow(ExtendedAssembler *assembler);
-    static void CallGetterEntry(ExtendedAssembler *assembler);
-    static void CallSetterEntry(ExtendedAssembler *assembler);
-    static void CallNoExtraSetterEntry(ExtendedAssembler *assembler);
+        Label *fastPathEntry, Label *pushCallThis);
 };
 }  // namespace panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H

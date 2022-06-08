@@ -342,7 +342,7 @@ public:
     inline GateRef IsClassConstructor(GateRef object);
     inline GateRef IsClassPrototype(GateRef object);
     inline GateRef IsExtensible(GateRef object);
-    inline GateRef IsEcmaObject(GateRef obj);
+    inline GateRef TaggedObjectIsEcmaObject(GateRef obj);
     inline GateRef IsJsObject(GateRef obj);
     inline GateRef BothAreString(GateRef x, GateRef y);
     inline GateRef IsCallable(GateRef obj);
