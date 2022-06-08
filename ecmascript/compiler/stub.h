@@ -28,7 +28,6 @@ namespace panda::ecmascript::kungfu {
 using namespace panda::ecmascript;
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DEFVARIABLE(varname, type, val) Variable varname(GetEnvironment(), type, NextVariableId(), val)
-#define NOGC_RTSTUB_CSIGNS_BEGIN (CommonStubCSigns::NUM_OF_STUBS + BytecodeStubCSigns::NUM_OF_VALID_STUBS)
 
 class Stub {
 public:

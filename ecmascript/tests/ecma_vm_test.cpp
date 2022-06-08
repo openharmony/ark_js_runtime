@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include "ecmascript/ecma_vm.h"
 #include "ecmascript/tests/test_helper.h"
 #include "generated/base_options.h"
 
@@ -58,7 +58,6 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMInTwoWays)
     options2.SetForceFullGC(false);
     options2.SetEnableCpuprofiler(true);
     options2.SetArkProperties(ArkProperties::GC_STATS_PRINT);
-
     // A non-production gc strategy. Prohibit stw-gc 10 times.
     EcmaVM *ecmaVm2 = EcmaVM::Create(options2);
 

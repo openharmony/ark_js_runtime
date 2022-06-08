@@ -327,7 +327,7 @@ Local<FunctionRef> DebuggerApi::GenerateFuncFromBuffer(const EcmaVM *ecmaVm, con
                                                        size_t size, std::string_view entryPoint)
 {
     JSPandaFileManager *mgr = JSPandaFileManager::GetInstance();
-    const auto *jsPandaFile = mgr->LoadJSPandaFile("", entryPoint, buffer, size);
+    const auto *jsPandaFile = mgr->LoadJSPandaFile(ecmaVm->GetJSThread(), "", entryPoint, buffer, size);
     if (jsPandaFile == nullptr) {
         return JSValueRef::Undefined(ecmaVm);
     }
