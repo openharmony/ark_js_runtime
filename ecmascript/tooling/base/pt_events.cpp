@@ -315,7 +315,7 @@ Local<ObjectRef> PreciseCoverageDeltaUpdate::ToObject(const EcmaVM *ecmaVm) cons
     Local<ObjectRef> params = NewObject(ecmaVm);
 
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timestamp")),
-        IntegerRef::New(ecmaVm, timestamp_));
+        NumberRef::New(ecmaVm, timestamp_));
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "occasion")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, occasion_.c_str())));

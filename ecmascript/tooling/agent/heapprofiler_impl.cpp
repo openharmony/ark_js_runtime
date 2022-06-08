@@ -297,16 +297,10 @@ DispatchResponse HeapProfilerImpl::StartSampling([[maybe_unused]]std::unique_ptr
     return DispatchResponse::Ok();
 }
 
-DispatchResponse HeapProfilerImpl::StartTrackingHeapObjects(std::unique_ptr<StartTrackingHeapObjectsParams> params)
+DispatchResponse HeapProfilerImpl::StartTrackingHeapObjects(
+    [[maybe_unused]]std::unique_ptr<StartTrackingHeapObjectsParams> params)
 {
-    bool result = false;
-    bool trackAllocations = params->GetTrackAllocations();
-    if (trackAllocations) {
-        result = panda::DFXJSNApi::StartHeapTracking(vm_, INTERVAL, true, &stream_);
-    } else {
-        result = panda::DFXJSNApi::StartHeapTracking(vm_, INTERVAL, true, nullptr);
-    }
-
+    bool result = panda::DFXJSNApi::StartHeapTracking(vm_, INTERVAL, true, &stream_);
     if (result) {
         return DispatchResponse::Ok();
     } else {
