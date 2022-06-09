@@ -342,20 +342,6 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     InitializeGeneratorFunction(env, objFuncDynclass);
     InitializePromise(env, objFuncDynclass);
     InitializePromiseJob(env);
-
-    // Initialize IcuData Path
-    JSRuntimeOptions options = vm_->GetJSOptions();
-    std::string icuPath = options.GetIcuDataPath();
-    if (icuPath == "default") {
-#if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MACOS)
-        SetHwIcuDirectory();
-#endif
-    } else {
-        std::string absPath;
-        if (GetAbsolutePath(icuPath, absPath)) {
-            u_setDataDirectory(absPath.c_str());
-        }
-    }
     InitializeIntl(env, objFuncPrototypeVal);
     InitializeLocale(env);
     InitializeDateTimeFormat(env);
@@ -365,6 +351,7 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     InitializePluralRules(env);
     InitializeDisplayNames(env);
     InitializeListFormat(env);
+    InitializeIcuData();
 
     InitializeModuleNamespace(env, objFuncDynclass);
     InitializeCjsModule(env);
@@ -376,6 +363,22 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     env->SetGeneratorFunctionClass(thread_, generatorFuncClass);
     env->SetObjectFunctionPrototypeClass(thread_, JSTaggedValue(objFuncPrototype->GetClass()));
     thread_->ResetGuardians();
+}
+void Builtins::InitializeForSnapshot(JSThread *thread)
+{
+    thread_ = thread;
+    vm_ = thread->GetEcmaVM();
+    factory_ = vm_->GetFactory();
+
+    InitializeIcuData();
+    // Initialize ArkTools
+    JSRuntimeOptions options = vm_->GetJSOptions();
+    if (options.EnableArkTools()) {
+        auto env = vm_->GetGlobalEnv();
+        auto globalObject = JSHandle<JSObject>::Cast(env->GetJSGlobalObject());
+        JSHandle<JSTaggedValue> arkTools(InitializeArkTools(env));
+        SetConstantObject(globalObject, "ArkTools", arkTools);
+    }
 }
 
 void Builtins::InitializeGlobalObject(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &globalObject)
@@ -3342,5 +3345,22 @@ void Builtins::InitializeCjsRequire(const JSHandle<GlobalEnv> &env) const
     SetFunction(env, cjsRequirePrototype, "Main", builtins::BuiltinsCjsRequire::Main, FunctionLength::ONE);
 
     env->SetCjsRequireFunction(thread_, cjsRequireFunction);
+}
+
+void Builtins::InitializeIcuData()
+{
+    ASSERT(vm_ != nullptr);
+    JSRuntimeOptions options = vm_->GetJSOptions();
+    std::string icuPath = options.GetIcuDataPath();
+    if (icuPath == "default") {
+        if (!WIN_OR_MAC_PLATFORM) {
+            SetHwIcuDirectory();
+        }
+    } else {
+        std::string absPath;
+        if (GetAbsolutePath(icuPath, absPath)) {
+            u_setDataDirectory(absPath.c_str());
+        }
+    }
 }
 }  // namespace panda::ecmascript

@@ -40,7 +40,6 @@ void GlobalEnv::Init(JSThread *thread)
     EcmaStringTable *stringTable = thread->GetEcmaVM()->GetEcmaStringTable();
     stringTable->InternEmptyString(EcmaString::Cast(emptyStr.GetTaggedObject()));
     SetTemplateMap(thread, TemplateMap::Create(thread));
-    SetRegisterSymbols(thread, SymbolTable::Create(thread));
     SetObjectLiteralHClassCache(thread, JSTaggedValue::Hole());
 }
 JSHandle<JSTaggedValue> GlobalEnv::GetSymbol(JSThread *thread, const JSHandle<JSTaggedValue> &string)

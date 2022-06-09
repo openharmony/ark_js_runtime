@@ -370,8 +370,6 @@ private:
     bool vmInitialized_ {false};
     bool globalConstInitialized_ {false};
     GCStats *gcStats_ {nullptr};
-    bool snapshotSerializeEnable_ {false};
-    bool snapshotDeserializeEnable_ {false};
     bool isUncaughtExceptionRegistered_ {false};
 
     // VM memory management.

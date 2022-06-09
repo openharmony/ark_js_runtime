@@ -30,6 +30,8 @@ enum ArkProperties {
     CONCURRENT_SWEEP = 1 << 4,
     THREAD_CHECK = 1 << 5,
     ENABLE_ARKTOOLS = 1 << 6,
+    ENABLE_SNAPSHOT_SERIALIZE = 1 << 7,
+    ENABLE_SNAPSHOT_DESERIALIZE = 1 << 8,
 };
 
 // asm interpreter control parsed option
@@ -64,10 +66,8 @@ public:
         parser->Add(&internal_memory_size_limit_);
         parser->Add(&heap_size_limit_);
         parser->Add(&enableIC_);
-        parser->Add(&snapshot_serialize_enabled_);
         parser->Add(&snapshot_file_);
         parser->Add(&framework_abc_file_);
-        parser->Add(&snapshot_deserialize_enabled_);
         parser->Add(&icu_data_path_);
         parser->Add(&startup_time_);
         parser->Add(&snapshotOutputFile_);
@@ -273,6 +273,20 @@ public:
         return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::THREAD_CHECK) != 0;
     }
 
+    bool EnableSnapshotSerialize() const
+    {
+        return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::ENABLE_SNAPSHOT_SERIALIZE) != 0;
+    }
+
+    bool EnableSnapshotDeserialize() const
+    {
+        if (WIN_OR_MAC_PLATFORM) {
+            return false;
+        }
+
+        return (static_cast<uint32_t>(arkProperties_.GetValue()) & ArkProperties::ENABLE_SNAPSHOT_DESERIALIZE) != 0;
+    }
+
     bool WasSetMaxNonmovableSpaceCapacity() const
     {
         return maxNonmovableSpaceCapacity_.WasSet();
@@ -372,21 +386,6 @@ public:
         return enableIC_.WasSet();
     }
 
-    bool IsSnapshotSerializeEnabled() const
-    {
-        return snapshot_serialize_enabled_.GetValue();
-    }
-
-    void SetSnapshotSerializeEnabled(bool value)
-    {
-        snapshot_serialize_enabled_.SetValue(value);
-    }
-
-    bool WasSetSnapshotSerializeEnabled() const
-    {
-        return snapshot_serialize_enabled_.WasSet();
-    }
-
     std::string GetSnapshotFile() const
     {
         return snapshot_file_.GetValue();
@@ -415,21 +414,6 @@ public:
     bool WasSetFrameworkAbcFile() const
     {
         return framework_abc_file_.WasSet();
-    }
-
-    bool IsSnapshotDeserializeEnabled() const
-    {
-        return snapshot_deserialize_enabled_.GetValue();
-    }
-
-    void SetSnapshotDeserializeEnabled(bool value)
-    {
-        snapshot_deserialize_enabled_.SetValue(value);
-    }
-
-    bool WasSetSnapshotDeserializeEnabled() const
-    {
-        return snapshot_deserialize_enabled_.WasSet();
     }
 
     std::string GetIcuDataPath() const
@@ -527,14 +511,10 @@ private:
     PandArg<uint32_t> heap_size_limit_ {"heap-size-limit", 512 * 1024 * 1024,
         R"(Max heap size. Default: 512M)"};
     PandArg<bool> enableIC_ {"enable-ic", true, R"(switch of inline cache. Default: true)"};
-    PandArg<bool> snapshot_serialize_enabled_ {"snapshot-serialize-enabled", false,
-        R"(whether snapshot serialize is enabled. Default: false)"};
     PandArg<std::string> snapshot_file_ {"snapshot-file", R"(/system/etc/snapshot)",
         R"(snapshot file. Default: "/system/etc/snapshot")"};
     PandArg<std::string> framework_abc_file_ {"framework-abc-file", R"(strip.native.min.abc)",
         R"(snapshot file. Default: "strip.native.min.abc")"};
-    PandArg<bool> snapshot_deserialize_enabled_ {"snapshot-deserialize-enabled", true,
-        R"(whether snapshot deserialize is enabled. Default: true)"};
     PandArg<std::string> icu_data_path_ {"icu-data-path", R"(default)",
         R"(Path to generated icu data file. Default: "default")"};
     PandArg<bool> startup_time_ {"startup-time", false, R"(Print the start time of command execution. Default: false)"};
