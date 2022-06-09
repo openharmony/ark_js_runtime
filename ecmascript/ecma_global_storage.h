@@ -25,6 +25,7 @@ namespace panda::ecmascript {
 class EcmaGlobalStorage {
 public:
     static const int32_t GLOBAL_BLOCK_SIZE = 256;
+    using WeakClearCallback = void (*)(void *);
 
     explicit EcmaGlobalStorage(Chunk *chunk) : chunk_(chunk)
     {
@@ -43,6 +44,7 @@ public:
             current->IterateUsageGlobal([] (Node *node) {
                 node->SetFree(true);
                 node->SetObject(JSTaggedValue::Undefined().GetRawData());
+                node->ClearWeakCallback();
             });
             chunk_->Delete(current);
         }
@@ -111,6 +113,23 @@ public:
             return isFree_;
         }
 
+        void SetReference(void *ref)
+        {
+            reference_ = ref;
+        }
+
+        void SetCallback(WeakClearCallback callback)
+        {
+            callback_ = callback;
+        }
+
+        void ClearWeakCallback()
+        {
+            if (callback_ != nullptr) {
+                callback_(reference_);
+            }
+        }
+
         uintptr_t GetObjectAddress() const
         {
             return reinterpret_cast<uintptr_t>(&obj_);
@@ -120,6 +139,8 @@ public:
         JSTaggedType obj_;
         Node *next_ {nullptr};
         Node *prev_ {nullptr};
+        void *reference_ {nullptr};
+        WeakClearCallback callback_ {nullptr};
         int32_t index_ {-1};
         bool isFree_ {false};
     };
@@ -136,8 +157,8 @@ public:
 
         inline static NodeList *NodeToNodeList(Node *node);
 
-        inline Node *NewNode(JSTaggedType value);
-        inline Node *GetFreeNode(JSTaggedType value);
+        inline Node *NewNode(JSTaggedType value, void *ref = nullptr, WeakClearCallback callback = nullptr);
+        inline Node *GetFreeNode(JSTaggedType value, void *ref = nullptr, WeakClearCallback callback = nullptr);
         inline void FreeNode(Node *node);
 
         inline void LinkTo(NodeList *prev);
@@ -226,7 +247,7 @@ public:
 
     inline uintptr_t NewGlobalHandle(JSTaggedType value);
     inline void DisposeGlobalHandle(uintptr_t addr);
-    inline uintptr_t SetWeak(uintptr_t addr);
+    inline uintptr_t SetWeak(uintptr_t addr, void *ref = nullptr, WeakClearCallback callback = nullptr);
     inline uintptr_t ClearWeak(uintptr_t addr);
     inline bool IsWeak(uintptr_t addr) const;
 
@@ -260,7 +281,8 @@ private:
     NO_COPY_SEMANTIC(EcmaGlobalStorage);
     NO_MOVE_SEMANTIC(EcmaGlobalStorage);
 
-    inline uintptr_t NewGlobalHandleImplement(NodeList **storage, NodeList **freeList, bool isWeak, JSTaggedType value);
+    inline uintptr_t NewGlobalHandleImplement(NodeList **storage, NodeList **freeList, bool isWeak, JSTaggedType value,
+                                              void *ref = nullptr, WeakClearCallback callback = nullptr);
 
     Chunk *chunk_ {nullptr};
     NodeList *topGlobalNodes_ {nullptr};
