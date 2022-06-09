@@ -718,14 +718,22 @@ JSTaggedValue RuntimeStubs::RuntimeNotifyInlineCache(JSThread *thread, const JSH
                                                      JSMethod *method)
 {
     uint32_t icSlotSize = method->GetSlotSize();
-    if (icSlotSize > 0 && icSlotSize < ProfileTypeInfo::INVALID_SLOT_INDEX) {
-        ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-
-        JSHandle<ProfileTypeInfo> profileTypeInfo = factory->NewProfileTypeInfo(icSlotSize);
-        func->SetProfileTypeInfo(thread, profileTypeInfo.GetTaggedValue());
-        return profileTypeInfo.GetTaggedValue();
+    if (icSlotSize == 0) {
+        return JSTaggedValue::Undefined();
     }
-    return JSTaggedValue::Undefined();
+    bool overflow = icSlotSize == ProfileTypeInfo::INVALID_SLOT_INDEX;
+    if (overflow) {
+        icSlotSize++;
+    }
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+
+    JSHandle<ProfileTypeInfo> profileTypeInfo = factory->NewProfileTypeInfo(icSlotSize);
+    if (overflow) {
+        profileTypeInfo->Set(thread, ProfileTypeInfo::INVALID_SLOT_INDEX - 1, JSTaggedValue::Hole());
+        profileTypeInfo->Set(thread, ProfileTypeInfo::INVALID_SLOT_INDEX, JSTaggedValue::Hole());
+    }
+    func->SetProfileTypeInfo(thread, profileTypeInfo.GetTaggedValue());
+    return profileTypeInfo.GetTaggedValue();
 }
 
 JSTaggedValue RuntimeStubs::RuntimeStOwnByValueWithNameSet(JSThread *thread, const JSHandle<JSTaggedValue> &obj,

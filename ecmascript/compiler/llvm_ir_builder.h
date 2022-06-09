@@ -227,7 +227,7 @@ private:
     V(ChangeInt64ToTagged, (GateRef gate, GateRef e1))
 
 // runtime/common stub ID, opcodeOffset for bc stub
-using StubIdType = std::variant<RuntimeStubCSigns::ID, CommonStubCSigns::ID, BytecodeStubCSigns::ID, LLVMValueRef>;
+using StubIdType = std::variant<RuntimeStubCSigns::ID, CommonStubCSigns::ID, LLVMValueRef>;
 class LLVMIRBuilder {
 public:
     explicit LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, const Circuit *circuit,

@@ -314,11 +314,7 @@ void PandaFileTranslator::FixOpcode(uint8_t *pc)
 // reuse prefix 8bits to store slotid
 void PandaFileTranslator::UpdateICOffset(JSMethod *method, uint8_t *pc)
 {
-    uint8_t offset = method->GetSlotSize();
-    if (UNLIKELY(offset == JSMethod::MAX_SLOT_SIZE)) {
-        return;
-    }
-
+    uint8_t offset = JSMethod::MAX_SLOT_SIZE;
     auto opcode = static_cast<EcmaOpcode>(*pc);
     switch (opcode) {
         case EcmaOpcode::TRYLDGLOBALBYNAME_PREF_ID32:
@@ -342,7 +338,7 @@ void PandaFileTranslator::UpdateICOffset(JSMethod *method, uint8_t *pc)
         case EcmaOpcode::LESSEQDYN_PREF_V8:
         case EcmaOpcode::GREATERDYN_PREF_V8:
         case EcmaOpcode::GREATEREQDYN_PREF_V8:
-            method->UpdateSlotSize(1);
+            offset = method->UpdateSlotSize(1);
             break;
         case EcmaOpcode::LDOBJBYVALUE_PREF_V8_V8:
         case EcmaOpcode::STOBJBYVALUE_PREF_V8_V8:
@@ -359,7 +355,7 @@ void PandaFileTranslator::UpdateICOffset(JSMethod *method, uint8_t *pc)
         case EcmaOpcode::STSUPERBYNAME_PREF_ID32_V8:
         case EcmaOpcode::LDMODULEVAR_PREF_ID32_IMM8:
         case EcmaOpcode::STMODULEVAR_PREF_ID32:
-            method->UpdateSlotSize(2); // 2: occupy two ic slot
+            offset = method->UpdateSlotSize(2); // 2: occupy two ic slot
             break;
         default:
             return;
