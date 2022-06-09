@@ -119,9 +119,9 @@ bool HeapSnapshot::FinishSnapshot()
 
 void HeapSnapshot::RecordSampleTime()
 {
-    int len = timeStamps_.size();
+    uint32_t len = timeStamps_.size();
     if (len > 0) {
-        if (sequenceId_ != timeStamps_[len - 1].GetLastSequenceId()) {
+        if (sequenceId_ != timeStamps_[len - 1U].GetLastSequenceId()) {
             timeStamps_.emplace_back(sequenceId_);
         }
     } else {
@@ -141,7 +141,7 @@ void HeapSnapshot::PushHeapStat(Stream* stream)
     auto iter = nodes_.begin();
     for (size_t timeIndex = 0; timeIndex < timeStamps_.size(); ++timeIndex) {
         TimeStamp& timeStamp = timeStamps_[timeIndex];
-        sequenceId = timeStamp.GetLastSequenceId();
+        sequenceId = static_cast<uint32_t>(timeStamp.GetLastSequenceId());
         uint32_t nodesSize = 0;
         uint32_t nodesCount = 0;
 
