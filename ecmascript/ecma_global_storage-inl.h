@@ -26,7 +26,7 @@ inline EcmaGlobalStorage::NodeList *EcmaGlobalStorage::NodeList::NodeToNodeList(
     return reinterpret_cast<NodeList *>(ptr);
 }
 
-EcmaGlobalStorage::Node *EcmaGlobalStorage::NodeList::NewNode(JSTaggedType value)
+EcmaGlobalStorage::Node *EcmaGlobalStorage::NodeList::NewNode(JSTaggedType value, void *ref, WeakClearCallback callback)
 {
     if (IsFull()) {
         return nullptr;
@@ -36,6 +36,8 @@ EcmaGlobalStorage::Node *EcmaGlobalStorage::NodeList::NewNode(JSTaggedType value
     node->SetNext(usedList_);
     node->SetObject(value);
     node->SetFree(false);
+    node->SetReference(ref);
+    node->SetCallback(callback);
 
     if (usedList_ != nullptr) {
         usedList_->SetPrev(node);
@@ -66,7 +68,8 @@ void EcmaGlobalStorage::NodeList::FreeNode(EcmaGlobalStorage::Node *node)
     freeList_ = node;
 }
 
-EcmaGlobalStorage::Node *EcmaGlobalStorage::NodeList::GetFreeNode(JSTaggedType value)
+EcmaGlobalStorage::Node *EcmaGlobalStorage::NodeList::GetFreeNode(JSTaggedType value, void *ref,
+                                                                  WeakClearCallback callback)
 {
     Node *node = freeList_;
     if (node != nullptr) {
@@ -76,6 +79,8 @@ EcmaGlobalStorage::Node *EcmaGlobalStorage::NodeList::GetFreeNode(JSTaggedType v
         node->SetNext(usedList_);
         node->SetObject(value);
         node->SetFree(false);
+        node->SetReference(ref);
+        node->SetCallback(callback);
 
         if (usedList_ != nullptr) {
             usedList_->SetPrev(node);
@@ -108,8 +113,8 @@ void EcmaGlobalStorage::NodeList::RemoveList()
     }
 }
 
-uintptr_t EcmaGlobalStorage::NewGlobalHandleImplement(NodeList **storage, NodeList **freeList,
-                                                      bool isWeak, JSTaggedType value)
+uintptr_t EcmaGlobalStorage::NewGlobalHandleImplement(NodeList **storage, NodeList **freeList, bool isWeak,
+                                                      JSTaggedType value, void *ref, WeakClearCallback callback)
 {
     if ((*storage)->IsFull() && *freeList == nullptr) {
         // alloc new block
@@ -119,13 +124,13 @@ uintptr_t EcmaGlobalStorage::NewGlobalHandleImplement(NodeList **storage, NodeLi
     }
 
     // use node in block first
-    Node *node = (*storage)->NewNode(value);
+    Node *node = (*storage)->NewNode(value, ref, callback);
     if (node != nullptr) {
         return node->GetObjectAddress();
     }
 
     // use free_list node
-    node = (*freeList)->GetFreeNode(value);
+    node = (*freeList)->GetFreeNode(value, ref, callback);
     ASSERT(node != nullptr);
     if (!(*freeList)->HasFreeNode()) {
         auto next = (*freeList)->GetFreeNext();
@@ -190,11 +195,11 @@ inline void EcmaGlobalStorage::DisposeGlobalHandle(uintptr_t nodeAddr)
     }
 }
 
-inline uintptr_t EcmaGlobalStorage::SetWeak(uintptr_t nodeAddr)
+inline uintptr_t EcmaGlobalStorage::SetWeak(uintptr_t nodeAddr, void *ref, WeakClearCallback callback)
 {
     auto value = reinterpret_cast<Node *>(nodeAddr)->GetObject();
     DisposeGlobalHandle(nodeAddr);
-    return NewGlobalHandleImplement(&lastWeakGlobalNodes_, &weakFreeListNodes_, true, value);
+    return NewGlobalHandleImplement(&lastWeakGlobalNodes_, &weakFreeListNodes_, true, value, ref, callback);
 }
 
 inline uintptr_t EcmaGlobalStorage::ClearWeak(uintptr_t nodeAddr)
