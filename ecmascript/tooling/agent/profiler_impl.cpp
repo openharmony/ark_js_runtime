@@ -82,7 +82,7 @@ void ProfilerImpl::DispatcherImpl::SetSamplingInterval(const DispatchRequest &re
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
-    DispatchResponse response = profiler_->SetSamplingInterval(std::move(params));
+    DispatchResponse response = profiler_->SetSamplingInterval(*params);
     SendResponse(request, response);
 }
 
@@ -106,13 +106,13 @@ void ProfilerImpl::DispatcherImpl::TakePreciseCoverage(const DispatchRequest &re
 
 void ProfilerImpl::DispatcherImpl::StartPreciseCoverage(const DispatchRequest &request)
 {
-    std::unique_ptr<StartPreciseCoverageParam> params =
-        StartPreciseCoverageParam::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<StartPreciseCoverageParams> params =
+        StartPreciseCoverageParams::Create(request.GetEcmaVM(), request.GetParamsObj());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
-    DispatchResponse response = profiler_->StartPreciseCoverage(std::move(params));
+    DispatchResponse response = profiler_->StartPreciseCoverage(*params);
     SendResponse(request, response);
 }
 
@@ -198,9 +198,9 @@ DispatchResponse ProfilerImpl::Stop(std::unique_ptr<Profile> *profile)
     return DispatchResponse::Ok();
 }
 
-DispatchResponse ProfilerImpl::SetSamplingInterval(std::unique_ptr<SetSamplingIntervalParams> params)
+DispatchResponse ProfilerImpl::SetSamplingInterval(const SetSamplingIntervalParams &params)
 {
-    panda::DFXJSNApi::SetCpuSamplingInterval(params->GetInterval());
+    panda::DFXJSNApi::SetCpuSamplingInterval(params.GetInterval());
     return DispatchResponse::Ok();
 }
 
@@ -222,7 +222,7 @@ DispatchResponse ProfilerImpl::TakePreciseCoverage()
     return DispatchResponse::Ok();
 }
 
-DispatchResponse ProfilerImpl::StartPreciseCoverage([[maybe_unused]] std::unique_ptr<StartPreciseCoverageParam> params)
+DispatchResponse ProfilerImpl::StartPreciseCoverage([[maybe_unused]] const StartPreciseCoverageParams &params)
 {
     LOG(ERROR, DEBUGGER) << "StartPreciseCoverage not support now.";
     return DispatchResponse::Ok();
