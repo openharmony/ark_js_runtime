@@ -1878,8 +1878,8 @@ void AssemblerStubsX64::ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *a
 {
     __ BindAssemblerStub(RTSTUB_ID(ResumeRspAndReturn));
     Register fpRegister = r10;
-    auto offset = AsmInterpretedFrame::GetFpOffset(false) - AsmInterpretedFrame::GetSize(false);
-    __ Movq(Operand(rbp, offset), fpRegister);
+    intptr_t offset = AsmInterpretedFrame::GetFpOffset(false) - AsmInterpretedFrame::GetSize(false);
+    __ Movq(Operand(rbp, static_cast<int32_t>(offset)), fpRegister);
     __ Movq(fpRegister, rsp);
     // return
     {

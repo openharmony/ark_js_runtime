@@ -1568,11 +1568,10 @@ void AssemblerStubs::PushVregs(ExtendedAssembler *assembler)
     }
 }
 
-// Input:
-// X19 - glue
-// FP - sp
-// X20 - callTarget
-// X21 - method
+// Input: X19 - glue
+//        FP - sp
+//        X20 - callTarget
+//        X21 - method
 void AssemblerStubs::DispatchCall(ExtendedAssembler *assembler, Register pcRegister, Register newSpRegister)
 {
     Register glueRegister = __ GlueRegister();
