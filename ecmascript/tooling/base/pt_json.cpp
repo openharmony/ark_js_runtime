@@ -329,73 +329,93 @@ std::unique_ptr<PtJson> PtJson::Get(int32_t index) const
     return std::make_unique<PtJson>(cJSON_GetArrayItem(object_, index));
 }
 
-bool PtJson::GetBool(const char *key, bool defaultValue) const
+Result PtJson::GetBool(const char *key, bool *value) const
 {
-    cJSON *value = cJSON_GetObjectItem(object_, key);
-    if (value == nullptr || cJSON_IsBool(value) == 0) {
-        return defaultValue;
+    cJSON *item = cJSON_GetObjectItem(object_, key);
+    if (item == nullptr) {
+        return Result::NOT_EXIST;
+    }
+    if (cJSON_IsBool(item) == 0) {
+        return Result::TYPE_ERROR;
     }
 
-    return cJSON_IsTrue(value) != 0;
+    *value = cJSON_IsTrue(item) != 0;
+    return Result::SUCCESS;
 }
 
-int32_t PtJson::GetInt(const char *key, int32_t defaultValue) const
+Result PtJson::GetInt(const char *key, int32_t *value) const
 {
-    cJSON *value = cJSON_GetObjectItem(object_, key);
-    if (value == nullptr || cJSON_IsNumber(value) == 0) {
-        return defaultValue;
+    double result;
+    Result ret = GetDouble(key, &result);
+    if (ret == Result::SUCCESS) {
+        *value = static_cast<int32_t>(result);
     }
-
-    return static_cast<int32_t>(value->valuedouble);
+    return ret;
 }
 
-int64_t PtJson::GetInt64(const char *key, int64_t defaultValue) const
+Result PtJson::GetInt64(const char *key, int64_t *value) const
 {
-    cJSON *value = cJSON_GetObjectItem(object_, key);
-    if (value == nullptr || cJSON_IsNumber(value) == 0) {
-        return defaultValue;
+    double result;
+    Result ret = GetDouble(key, &result);
+    if (ret == Result::SUCCESS) {
+        *value = static_cast<int64_t>(result);
     }
-
-    return static_cast<int64_t>(value->valuedouble);
+    return ret;
 }
 
-double PtJson::GetDouble(const char *key, double defaultValue) const
+Result PtJson::GetDouble(const char *key, double *value) const
 {
-    cJSON *value = cJSON_GetObjectItem(object_, key);
-    if (value == nullptr || cJSON_IsNumber(value) == 0) {
-        return defaultValue;
+    cJSON *item = cJSON_GetObjectItem(object_, key);
+    if (item == nullptr) {
+        return Result::NOT_EXIST;
+    }
+    if (cJSON_IsNumber(item) == 0) {
+        return Result::TYPE_ERROR;
     }
 
-    return value->valuedouble;
+    *value = item->valuedouble;
+    return Result::SUCCESS;
 }
 
-std::string PtJson::GetString(const char *key) const
+Result PtJson::GetString(const char *key, std::string *value) const
 {
-    cJSON *value = cJSON_GetObjectItem(object_, key);
-    if (value == nullptr || cJSON_IsString(value) == 0) {
-        return "";
+    cJSON *item = cJSON_GetObjectItem(object_, key);
+    if (item == nullptr) {
+        return Result::NOT_EXIST;
+    }
+    if (cJSON_IsString(item) == 0) {
+        return Result::TYPE_ERROR;
     }
 
-    return value->valuestring;
+    *value = item->valuestring;
+    return Result::SUCCESS;
 }
 
-std::unique_ptr<PtJson> PtJson::GetObject(const char *key) const
+Result PtJson::GetObject(const char *key, std::unique_ptr<PtJson> *value) const
 {
-    cJSON *value = cJSON_GetObjectItem(object_, key);
-    if (value == nullptr || cJSON_IsObject(value) == 0) {
-        return std::make_unique<PtJson>();
+    cJSON *item = cJSON_GetObjectItem(object_, key);
+    if (item == nullptr) {
+        return Result::NOT_EXIST;
+    }
+    if (cJSON_IsObject(item) == 0) {
+        return Result::TYPE_ERROR;
     }
 
-    return std::make_unique<PtJson>(value);
+    *value = std::make_unique<PtJson>(item);
+    return Result::SUCCESS;
 }
 
-std::unique_ptr<PtJson> PtJson::GetArray(const char *key) const
+Result PtJson::GetArray(const char *key, std::unique_ptr<PtJson> *value) const
 {
-    cJSON *value = cJSON_GetObjectItem(object_, key);
-    if (value == nullptr || cJSON_IsArray(value) == 0) {
-        return std::make_unique<PtJson>();
+    cJSON *item = cJSON_GetObjectItem(object_, key);
+    if (item == nullptr) {
+        return Result::NOT_EXIST;
+    }
+    if (cJSON_IsArray(item) == 0) {
+        return Result::TYPE_ERROR;
     }
 
-    return std::make_unique<PtJson>(value);
+    *value = std::make_unique<PtJson>(item);
+    return Result::SUCCESS;
 }
 }  // namespace panda::ecmascript
