@@ -65,8 +65,14 @@ public:
     static JSTaggedValue LocaleCompare(EcmaRuntimeCallInfo *argv);
     // 21.1.3.11
     static JSTaggedValue Match(EcmaRuntimeCallInfo *argv);
+
+    static JSTaggedValue MatchAll(EcmaRuntimeCallInfo *argv);
     // 21.1.3.12
     static JSTaggedValue Normalize(EcmaRuntimeCallInfo *argv);
+    
+    static JSTaggedValue PadStart(EcmaRuntimeCallInfo *argv);
+
+    static JSTaggedValue PadEnd(EcmaRuntimeCallInfo *argv);
     // 21.1.3.13
     static JSTaggedValue Repeat(EcmaRuntimeCallInfo *argv);
     // 21.1.3.14
@@ -95,6 +101,14 @@ public:
     static JSTaggedValue ToUpperCase(EcmaRuntimeCallInfo *argv);
     // 21.1.3.25
     static JSTaggedValue Trim(EcmaRuntimeCallInfo *argv);
+    
+    static JSTaggedValue TrimStart(EcmaRuntimeCallInfo *argv);
+
+    static JSTaggedValue TrimEnd(EcmaRuntimeCallInfo *argv);
+
+    static JSTaggedValue TrimLeft(EcmaRuntimeCallInfo *argv);
+
+    static JSTaggedValue TrimRight(EcmaRuntimeCallInfo *argv);
     // 21.1.3.26
     static JSTaggedValue ValueOf(EcmaRuntimeCallInfo *argv);
     // 21.1.3.27
