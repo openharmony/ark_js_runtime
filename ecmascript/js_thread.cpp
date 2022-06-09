@@ -157,6 +157,7 @@ void JSThread::IterateWeakEcmaGlobalStorage(const WeakRootVisitor &visitor)
             if (fwd == nullptr) {
                 // undefind
                 node->SetObject(JSTaggedValue::Undefined().GetRawData());
+                reinterpret_cast<EcmaGlobalStorage::WeakNode *>(node)->CallWeakCallback();
             } else if (fwd != object) {
                 // update
                 node->SetObject(JSTaggedValue(fwd).GetRawData());
