@@ -215,6 +215,10 @@ void Heap::Destroy()
         delete compressGCMarker_;
         compressGCMarker_ = nullptr;
     }
+    if (evacuator_ != nullptr) {
+        delete evacuator_;
+        evacuator_ = nullptr;
+    }
 }
 
 void Heap::Prepare()

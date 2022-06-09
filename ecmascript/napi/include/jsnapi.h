@@ -56,6 +56,7 @@ class EcmaRuntimeCallInfo;
 }  // namespace ecmascript
 
 using Deleter = void (*)(void *nativePointer, void *data);
+using WeakRefClearCallBack = void (*)(void *);
 using EcmaVM = ecmascript::EcmaVM;
 using JSThread = ecmascript::JSThread;
 using JSTaggedType = uint64_t;
@@ -324,6 +325,8 @@ public:
     }
 
     void SetWeak();
+
+    void SetWeakCallback(void *ref, WeakRefClearCallBack callback);
 
     void ClearWeak();
 
@@ -1120,6 +1123,8 @@ private:
     static uintptr_t GetHandleAddr(const EcmaVM *vm, uintptr_t localAddress);
     static uintptr_t GetGlobalHandleAddr(const EcmaVM *vm, uintptr_t localAddress);
     static uintptr_t SetWeak(const EcmaVM *vm, uintptr_t localAddress);
+    static uintptr_t SetWeakCallback(const EcmaVM *vm, uintptr_t localAddress, void *ref,
+                                     WeakRefClearCallBack callback);
     static uintptr_t ClearWeak(const EcmaVM *vm, uintptr_t localAddress);
     static bool IsWeak(const EcmaVM *vm, uintptr_t localAddress);
     static void DisposeGlobalHandleAddr(const EcmaVM *vm, uintptr_t addr);
@@ -1320,6 +1325,12 @@ template<typename T>
 void Global<T>::SetWeak()
 {
     address_ = JSNApi::SetWeak(vm_, address_);
+}
+
+template <typename T>
+void Global<T>::SetWeakCallback(void *ref, WeakRefClearCallBack callback)
+{
+    address_ = JSNApi::SetWeakCallback(vm_, address_, ref, callback);
 }
 
 template<typename T>
