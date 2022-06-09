@@ -25,7 +25,7 @@
 namespace panda::ecmascript::tooling {
 class ProtocolHandler final : public ProtocolChannel {
 public:
-    ProtocolHandler(std::function<void(const std::string &)> callback, const EcmaVM *vm)
+    ProtocolHandler(std::function<void(const void *, const std::string &)> callback, const EcmaVM *vm)
         : callback_(std::move(callback)), dispatcher_(vm, this), vm_(vm) {}
     ~ProtocolHandler() override = default;
 
@@ -42,7 +42,7 @@ private:
     std::unique_ptr<PtJson> CreateErrorReply(const DispatchResponse &response);
     void SendReply(const PtJson &reply);
 
-    std::function<void(const std::string &)> callback_;
+    std::function<void(const void *, const std::string &)> callback_;
     Dispatcher dispatcher_;
 
     bool waitingForDebugger_ {false};
