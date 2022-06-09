@@ -1571,8 +1571,11 @@ void Builtins::InitializeString(const JSHandle<GlobalEnv> &env, const JSHandle<J
     SetFunction(env, stringFuncPrototype, "lastIndexOf", BuiltinsString::LastIndexOf, FunctionLength::ONE);
     SetFunction(env, stringFuncPrototype, "localeCompare", BuiltinsString::LocaleCompare, FunctionLength::ONE);
     SetFunction(env, stringFuncPrototype, "match", BuiltinsString::Match, FunctionLength::ONE);
+    SetFunction(env, stringFuncPrototype, "matchAll", BuiltinsString::MatchAll, FunctionLength::ONE);
     SetFunction(env, stringFuncPrototype, "repeat", BuiltinsString::Repeat, FunctionLength::ONE);
     SetFunction(env, stringFuncPrototype, "normalize", BuiltinsString::Normalize, FunctionLength::ZERO);
+    SetFunction(env, stringFuncPrototype, "padStart", BuiltinsString::PadStart, FunctionLength::ONE);
+    SetFunction(env, stringFuncPrototype, "padEnd", BuiltinsString::PadEnd, FunctionLength::ONE);
     SetFunction(env, stringFuncPrototype, "replace", BuiltinsString::Replace, FunctionLength::TWO);
     SetFunction(env, stringFuncPrototype, "search", BuiltinsString::Search, FunctionLength::ONE);
     SetFunction(env, stringFuncPrototype, "slice", BuiltinsString::Slice, FunctionLength::TWO);
@@ -1587,6 +1590,10 @@ void Builtins::InitializeString(const JSHandle<GlobalEnv> &env, const JSHandle<J
                 BuiltinsString::ToString, FunctionLength::ZERO);
     SetFunction(env, stringFuncPrototype, "toUpperCase", BuiltinsString::ToUpperCase, FunctionLength::ZERO);
     SetFunction(env, stringFuncPrototype, "trim", BuiltinsString::Trim, FunctionLength::ZERO);
+    SetFunction(env, stringFuncPrototype, "trimStart", BuiltinsString::TrimStart, FunctionLength::ZERO);
+    SetFunction(env, stringFuncPrototype, "trimEnd", BuiltinsString::TrimEnd, FunctionLength::ZERO);
+    SetFunction(env, stringFuncPrototype, "trimLeft", BuiltinsString::TrimLeft, FunctionLength::ZERO);
+    SetFunction(env, stringFuncPrototype, "trimRight", BuiltinsString::TrimRight, FunctionLength::ZERO);
     SetFunction(env, stringFuncPrototype, thread_->GlobalConstants()->GetHandledValueOfString(),
                 BuiltinsString::ValueOf, FunctionLength::ZERO);
     SetFunctionAtSymbol(env, stringFuncPrototype, env->GetIteratorSymbol(), "[Symbol.iterator]",
