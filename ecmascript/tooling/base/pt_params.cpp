@@ -46,11 +46,20 @@ std::unique_ptr<EnableParams> EnableParams::Create(const EcmaVM *ecmaVm, const L
 std::unique_ptr<EnableParams> EnableParams::Create(const PtJson &params)
 {
     auto paramsObject = std::make_unique<EnableParams>();
+    std::string error;
+    Result ret;
 
-    double result = params.GetDouble("maxScriptsCacheSize", -1.0);
-    if (result != -1.0) {
-        // optional params
+    double result;
+    ret = params.GetDouble("maxScriptsCacheSize", &result);
+    if (ret == Result::SUCCESS) {
         paramsObject->maxScriptsCacheSize_ = result;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'maxScriptsCacheSize';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "EnableParams::Create " << error;
+        return nullptr;
     }
 
     return paramsObject;
@@ -766,16 +775,6 @@ std::unique_ptr<StartSamplingParams> StartSamplingParams::Create(const EcmaVM *e
     return paramsObject;
 }
 
-Local<ObjectRef> StartSamplingParams::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samplingInterval")),
-            NumberRef::New(ecmaVm, static_cast<int64_t>(samplingInterval_.value())));
-
-    return params;
-}
-
 std::unique_ptr<StartTrackingHeapObjectsParams> StartTrackingHeapObjectsParams::Create(const EcmaVM *ecmaVm,
     const Local<JSValueRef> &params)
 {
@@ -801,16 +800,6 @@ std::unique_ptr<StartTrackingHeapObjectsParams> StartTrackingHeapObjectsParams::
         return nullptr;
     }
     return paramsObject;
-}
-
-Local<ObjectRef> StartTrackingHeapObjectsParams::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "trackAllocations")),
-        BooleanRef::New(ecmaVm, trackAllocations_.value()));
-
-    return params;
 }
 
 std::unique_ptr<StopTrackingHeapObjectsParams> StopTrackingHeapObjectsParams::Create(const EcmaVM *ecmaVm,
@@ -861,20 +850,6 @@ std::unique_ptr<StopTrackingHeapObjectsParams> StopTrackingHeapObjectsParams::Cr
     return paramsObject;
 }
 
-Local<ObjectRef> StopTrackingHeapObjectsParams::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "reportProgress")),
-        BooleanRef::New(ecmaVm, reportProgress_.value()));
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "treatGlobalObjectsAsRoots")),
-        BooleanRef::New(ecmaVm, treatGlobalObjectsAsRoots_.value()));
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "captureNumericValue")),
-        BooleanRef::New(ecmaVm, captureNumericValue_.value()));
-
-    return params;
-}
-
 std::unique_ptr<AddInspectedHeapObjectParams> AddInspectedHeapObjectParams::Create(const EcmaVM *ecmaVm,
     const Local<JSValueRef> &params)
 {
@@ -905,17 +880,6 @@ std::unique_ptr<AddInspectedHeapObjectParams> AddInspectedHeapObjectParams::Crea
     return paramsObject;
 }
 
-Local<ObjectRef> AddInspectedHeapObjectParams::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "heapObjectId")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(heapObjectId_).c_str())));
-
-    return params;
-}
-
 std::unique_ptr<GetHeapObjectIdParams> GetHeapObjectIdParams::Create(const EcmaVM *ecmaVm,
     const Local<JSValueRef> &params)
 {
@@ -944,16 +908,6 @@ std::unique_ptr<GetHeapObjectIdParams> GetHeapObjectIdParams::Create(const EcmaV
         return nullptr;
     }
     return paramsObject;
-}
-
-Local<ObjectRef> GetHeapObjectIdParams::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(objectId_).c_str())));
-    return params;
 }
 
 std::unique_ptr<GetObjectByHeapObjectIdParams> GetObjectByHeapObjectIdParams::Create(const EcmaVM *ecmaVm,
@@ -994,19 +948,6 @@ std::unique_ptr<GetObjectByHeapObjectIdParams> GetObjectByHeapObjectIdParams::Cr
         return nullptr;
     }
     return paramsObject;
-}
-
-Local<ObjectRef> GetObjectByHeapObjectIdParams::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(objectId_).c_str())));
-    params->Set(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectGroup")),
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, objectGroup_->c_str())));
-    return params;
 }
 
 std::unique_ptr<StartPreciseCoverageParams> StartPreciseCoverageParams::Create(const EcmaVM *ecmaVm,
@@ -1057,20 +998,6 @@ std::unique_ptr<StartPreciseCoverageParams> StartPreciseCoverageParams::Create(c
     return paramsObject;
 }
 
-Local<ObjectRef> StartPreciseCoverageParams::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callCount")),
-        BooleanRef::New(ecmaVm, callCount_.value()));
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "detailed")),
-        BooleanRef::New(ecmaVm, detailed_.value()));
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "allowTriggeredUpdates")),
-        BooleanRef::New(ecmaVm, allowTriggeredUpdates_.value()));
-
-    return params;
-}
-
 std::unique_ptr<SetSamplingIntervalParams> SetSamplingIntervalParams::Create(const EcmaVM *ecmaVm,
     const Local<JSValueRef> &params)
 {
@@ -1099,14 +1026,5 @@ std::unique_ptr<SetSamplingIntervalParams> SetSamplingIntervalParams::Create(con
         return nullptr;
     }
     return paramsObject;
-}
-
-Local<ObjectRef> SetSamplingIntervalParams::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "interval")),
-        IntegerRef::New(ecmaVm, interval_));
-    return params;
 }
 }  // namespace panda::ecmascript::tooling
