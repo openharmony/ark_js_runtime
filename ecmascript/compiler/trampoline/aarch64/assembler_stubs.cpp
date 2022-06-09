@@ -296,8 +296,6 @@ void AssemblerStubs::OptimizedCallOptimized(ExtendedAssembler *assembler)
     __ Ret();
 }
 
-// OptimizedCallAsmInterpreter(ExtendedAssembler *assembler, Register jsfunc, Register method, 
-//                                            Register callfield, Register argC, Register argV)
 void AssemblerStubs::OptimizedCallAsmInterpreter(ExtendedAssembler *assembler)
 {
     Label target;
@@ -308,7 +306,7 @@ void AssemblerStubs::OptimizedCallAsmInterpreter(ExtendedAssembler *assembler)
     __ Bind(&target);
     {
         __ PushFpAndLr();
-        JSCallCommonEntry(assembler, JSCallMode::CALL_GETTER, CallGetterEntry, CallGetterSlow);
+        JSCallCommonEntry(assembler, JSCallMode::CALL_FROM_AOT, CallIRangeEntry, PushCallIRangeAndDispatchSlowPath);
     }
 }
 
