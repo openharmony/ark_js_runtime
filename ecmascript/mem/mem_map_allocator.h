@@ -127,6 +127,7 @@ public:
 
     void InsertMemMap(MemMap memMap)
     {
+        os::memory::LockHolder lock(lock_);
         memMapVector_.emplace_back(memMap);
     }
 

@@ -107,9 +107,9 @@ void MemMapAllocator::AdapterSuitablePoolCapacity()
 {
 #ifdef PANDA_TARGET_WINDOWS
     MEMORYSTATUSEX status;
-    status.dwLength = sizeof(status);
+    status.dwLength = sizeof(MEMORYSTATUSEX);
     GlobalMemoryStatusEx(&status);
-    long physSize = status.ullTotalPhys;
+    DWORDLONG physSize = status.ullTotalPhys;
 #elif PANDA_TARGET_MACOS
     static constexpr int MIB_LENGTH = 2;
     int mib[2];
@@ -120,11 +120,11 @@ void MemMapAllocator::AdapterSuitablePoolCapacity()
     if (sysctl(mib, MIB_LENGTH, &size, &bufferLength, NULL, 0) != 0) {
         LOG(FATAL, RUNTIME) << "sysctl error";
     }
-    long physSize = static_cast<long>(size);
+    size_t physSize = static_cast<size_t>(size);
 #else
     auto pages = sysconf(_SC_PHYS_PAGES);
     auto pageSize = sysconf(_SC_PAGE_SIZE);
-    long physSize = pages * pageSize;
+    size_t physSize = pages * pageSize;
 #endif
     capacity_ = std::max<size_t>(physSize / PHY_SIZE_MULTIPLE, MIN_MEM_POOL_CAPACITY);
     LOG(INFO, RUNTIME) << "Auto adapter memory pool capacity:" << capacity_;

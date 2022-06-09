@@ -68,8 +68,7 @@ void ConcurrentMarker::Mark()
 
 void ConcurrentMarker::Finish()
 {
-    size_t aliveSize = 0;
-    workManager_->Finish(aliveSize);
+    workManager_->Finish();
 }
 
 void ConcurrentMarker::ReMark()
