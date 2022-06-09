@@ -98,6 +98,8 @@ public:
 
     inline void Dispatch(GateRef glue, GateRef sp, GateRef pc, GateRef constpool,
                          GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter, GateRef format);
+    inline void DispatchWithId(GateRef glue, GateRef sp, GateRef pc, GateRef constpool,
+                               GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter, int index);
     inline void DispatchLast(GateRef glue, GateRef sp, GateRef pc, GateRef constpool,
                              GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter);
     inline void DispatchDebugger(GateRef glue, GateRef sp, GateRef pc, GateRef constpool,
