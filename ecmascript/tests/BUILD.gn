@@ -61,6 +61,7 @@ host_unittest_action("EcmaVmTest") {
     "js_dataview_test.cpp",
     "js_date_test.cpp",
     "js_date_time_format_test.cpp",
+    "js_displaynames_test.cpp",
     "js_forin_iterator_test.cpp",
     "js_function_test.cpp",
     "js_handle_test.cpp",
