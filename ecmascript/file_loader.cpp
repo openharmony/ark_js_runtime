@@ -284,8 +284,9 @@ void FileLoader::UpdateJSMethods(JSHandle<JSFunction> mainFunc, const JSPandaFil
     auto fileHash = jsPandaFile->GetPandaFile()->GetFilenameHash();
     auto mainEntry = GetAOTFuncEntry(fileHash, mainFuncMethodId);
     // 1 : default para number
-    JSMethod *mainMethod = factory_->NewMethodForAOTFunction(reinterpret_cast<void *>(mainEntry), 1);
-    mainFunc->SetMethod(mainMethod);
+    JSMethod *mainMethod =  jsPandaFile->FindMethods(mainFuncMethodId);
+    mainMethod->SetAotCodeBit(true);
+    mainMethod->SetNativeBit(false);
     mainFunc->SetCodeEntry(reinterpret_cast<uintptr_t>(mainEntry));
 
     const CUnorderedMap<uint32_t, uint64_t> &constpoolMap = jsPandaFile->GetConstpoolMap();
@@ -298,9 +299,10 @@ void FileLoader::UpdateJSMethods(JSHandle<JSFunction> mainFunc, const JSPandaFil
             value.GetConstpoolType() == ConstPoolType::METHOD) {
                 auto id = value.GetConstpoolIndex();
                 auto codeEntry = GetAOTFuncEntry(fileHash, it.first);
-                JSMethod *curMethod = factory_->NewMethodForAOTFunction(reinterpret_cast<void *>(codeEntry), 1);
+                JSMethod *curMethod = jsPandaFile->FindMethods(it.first);
+                curMethod->SetAotCodeBit(true);
+                curMethod->SetNativeBit(false);
                 auto curFunction = JSFunction::Cast(curPool->GetObjectFromCache(id).GetTaggedObject());
-                curFunction->SetMethod(curMethod);
                 curFunction->SetCodeEntry(reinterpret_cast<uintptr_t>(codeEntry));
         }
     }
