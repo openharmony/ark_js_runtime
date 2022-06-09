@@ -397,6 +397,9 @@ enum class ConstantIndex : size_t {
 
     READ_ONLY_CONSTATNT_BEGIN = CONSTATNT_BEGIN,
     READ_ONLY_CONSTATNT_END = CONSTATNT_END,
+    JSAPI_CONTAINERS_BEGIN = ARRAYLIST_FUNCTION_INDEX,
+    JSAPI_CONTAINERS_END = LINKED_LIST_ITERATOR_PROTOTYPE_INDEX,
+    HCLASS_END = CELL_RECORD_CLASS_INDEX,
     // ...
 };
 // clang-format on
@@ -420,8 +423,9 @@ public:
     void InitGlobalConstantSpecial(JSThread *thread);
 
     void InitGlobalConstant(JSThread *thread);
+    void InitJSAPIContainers();
 
-    void InitGlobalUndefined();
+    void InitSpecialForSnapshot();
 
     void SetConstant(ConstantIndex index, JSTaggedValue value);
 
@@ -453,7 +457,31 @@ public:
 
     size_t GetHClassEndIndex() const
     {
-        return static_cast<size_t>(ConstantIndex::JS_API_TREE_SET_ITERATOR_CLASS_INDEX);
+        return static_cast<size_t>(ConstantIndex::HCLASS_END);
+    }
+
+    size_t GetConstantCount() const
+    {
+        return static_cast<size_t>(ConstantIndex::CONSTATNT_COUNT);
+    }
+
+    size_t GetJSAPIContainersBegin() const
+    {
+        return static_cast<size_t>(ConstantIndex::JSAPI_CONTAINERS_BEGIN);
+    }
+
+    size_t GetJSAPIContainersEnd() const
+    {
+        return static_cast<size_t>(ConstantIndex::JSAPI_CONTAINERS_END);
+    }
+
+    bool IsSpecialOrUndefined(size_t index) const
+    {
+        size_t specialBegin = static_cast<size_t>(ConstantIndex::UNDEFINED_INDEX);
+        size_t specialEnd = static_cast<size_t>(ConstantIndex::NULL_INDEX);
+        size_t undefinedBegin = GetJSAPIContainersBegin();
+        size_t undefinedEnd = GetJSAPIContainersEnd();
+        return (index >= specialBegin  && index <= specialEnd) || (index >= undefinedBegin  && index <= undefinedEnd);
     }
 
     static constexpr size_t SizeArch32 =

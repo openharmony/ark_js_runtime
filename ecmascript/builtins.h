@@ -42,6 +42,7 @@ public:
     NO_MOVE_SEMANTIC(Builtins);
 
     void Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread);
+    void InitializeForSnapshot(JSThread *thread);
 
 private:
     JSThread *thread_{nullptr};
@@ -131,6 +132,9 @@ private:
     void InitializePluralRules(const JSHandle<GlobalEnv> &env);
     void InitializeDisplayNames(const JSHandle<GlobalEnv> &env);
     void InitializeListFormat(const JSHandle<GlobalEnv> &env);
+
+    // Initialize IcuData Path
+    void InitializeIcuData();
 
     void GeneralUpdateError(ErrorParameter *error, EcmaEntrypoint constructor, EcmaEntrypoint method, const char *name,
                             JSType type) const;

@@ -112,10 +112,6 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
     options_ = std::move(options);
     icEnabled_ = options_.EnableIC();
     optionalLogEnabled_ = options_.EnableOptionalLog();
-    snapshotSerializeEnable_ = options_.IsSnapshotSerializeEnabled();
-    if (!snapshotSerializeEnable_) {
-        snapshotDeserializeEnable_ = options_.IsSnapshotDeserializeEnabled();
-    }
     snapshotFileName_ = options_.GetSnapshotFile().c_str();
     frameworkAbcFileName_ = options_.GetFrameworkAbcFile().c_str();
     options_.ParseAsmInterOption();
@@ -143,20 +139,37 @@ bool EcmaVM::Initialize()
     }
     [[maybe_unused]] EcmaHandleScope scope(thread_);
 
-    LOG_ECMA(DEBUG) << "EcmaVM::Initialize run builtins";
-    JSHandle<JSHClass> dynClassClassHandle = factory_->InitClassClass();
-    JSHandle<JSHClass> globalEnvClass = factory_->NewEcmaDynClass(*dynClassClassHandle,
-                                                                  GlobalEnv::SIZE,
-                                                                  JSType::GLOBAL_ENV);
-    globalConst->Init(thread_, *dynClassClassHandle);
-    globalConstInitialized_ = true;
-    JSHandle<GlobalEnv> globalEnv = factory_->NewGlobalEnv(*globalEnvClass);
-    globalEnv->Init(thread_);
-    globalEnv_ = globalEnv.GetTaggedValue();
+    if (!options_.EnableSnapshotDeserialize()) {
+        LOG_ECMA(DEBUG) << "EcmaVM::Initialize run builtins";
+        JSHandle<JSHClass> dynClassClassHandle = factory_->InitClassClass();
+        JSHandle<JSHClass> globalEnvClass = factory_->NewEcmaDynClass(*dynClassClassHandle,
+                                                                      GlobalEnv::SIZE,
+                                                                      JSType::GLOBAL_ENV);
+        globalConst->Init(thread_, *dynClassClassHandle);
+        globalConstInitialized_ = true;
+        JSHandle<GlobalEnv> globalEnv = factory_->NewGlobalEnv(*globalEnvClass);
+        globalEnv->Init(thread_);
+        globalEnv_ = globalEnv.GetTaggedValue();
+        Builtins builtins;
+        builtins.Initialize(globalEnv, thread_);
+        if (!WIN_OR_MAC_PLATFORM && options_.EnableSnapshotSerialize()) {
+            const CString fileName = "builtins.snapshot";
+            Snapshot snapshot(this);
+            snapshot.SerializeBuiltins(fileName);
+        }
+    } else {
+        const CString fileName = "builtins.snapshot";
+        Snapshot snapshot(this);
+        if (!WIN_OR_MAC_PLATFORM) {
+            snapshot.Deserialize(SnapshotType::BUILTINS, fileName, true);
+        }
+        globalConst->InitSpecialForSnapshot();
+        Builtins builtins;
+        builtins.InitializeForSnapshot(thread_);
+    }
+
     SetupRegExpResultCache();
     microJobQueue_ = factory_->NewMicroJobQueue().GetTaggedValue();
-    Builtins builtins;
-    builtins.Initialize(globalEnv, thread_);
     factory_->GenerateInternalNativeMethods();
     thread_->SetGlobalObject(GetGlobalEnv()->GetGlobalObject());
     moduleManager_ = new ModuleManager(this);
@@ -626,9 +639,9 @@ void EcmaVM::Iterate(const RootVisitor &v)
     moduleManager_->Iterate(v);
     tsLoader_->Iterate(v);
     fileLoader_->Iterate(v);
-#if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MACOS)
-    snapshotEnv_->Iterate(v);
-#endif
+    if (!WIN_OR_MAC_PLATFORM) {
+        snapshotEnv_->Iterate(v);
+    }
 }
 
 void EcmaVM::SetGlobalEnv(GlobalEnv *global)
