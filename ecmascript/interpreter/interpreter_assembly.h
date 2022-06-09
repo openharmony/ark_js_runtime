@@ -38,7 +38,6 @@ public:
     enum ActualNumArgsOfCall : uint8_t { CALLARG0 = 0, CALLARG1, CALLARGS2, CALLARGS3 };
     static void InitStackFrame(JSThread *thread);
     static JSTaggedValue Execute(EcmaRuntimeCallInfo *info);
-    static JSTaggedValue ExecuteNative(EcmaRuntimeCallInfo *info);
     static JSTaggedValue GeneratorReEnterInterpreter(JSThread *thread, JSHandle<GeneratorContext> context);
     static uint32_t FindCatchBlock(JSMethod *caller, uint32_t pc);
     static inline size_t GetJumpSizeAfterCall(const uint8_t *prevPc);
@@ -50,9 +49,6 @@ public:
     static JSTaggedValue GetNewTarget(JSTaggedType *sp);
     static uint32_t GetNumArgs(JSTaggedType *sp, uint32_t restIdx, uint32_t &startIdx);
     static JSTaggedType *GetAsmInterpreterFramePointer(AsmInterpretedFrame *state);
-    static inline JSTaggedValue GetThisObjectFromFastNewFrame(JSTaggedType *sp);
-    static inline bool IsFastNewFrameEnter(JSFunction *ctor, JSMethod *method);
-    static inline bool IsFastNewFrameExit(JSTaggedType *sp);
 
     static void HandleOverflow(JSThread *thread, const uint8_t *pc, JSTaggedType *sp,
                                JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
