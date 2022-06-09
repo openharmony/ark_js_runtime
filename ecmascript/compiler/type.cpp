@@ -20,7 +20,7 @@ Type::Type(GateType payload) : payload(payload) {}
 
 bool Type::IsBitset() const
 {
-    return (this->payload & 1U) == 1;
+    return (this->payload.GetType() & 1U) == 1;
 }
 
 Type::~Type() {}

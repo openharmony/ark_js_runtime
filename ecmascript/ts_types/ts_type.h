@@ -44,7 +44,7 @@ public:
 
     void SetGTRef(GlobalTSTypeRef r)
     {
-        SetGT(r.GetData());
+        SetGT(r.GetType());
     }
 };
 
@@ -108,7 +108,7 @@ public:
 
     void SetClassRefGT(GlobalTSTypeRef r)
     {
-        SetClassTypeRef(r.GetData());
+        SetClassTypeRef(r.GetType());
     }
 
     DECL_DUMP()
@@ -131,7 +131,7 @@ public:
 
     void SetTargetRefGT(GlobalTSTypeRef r)
     {
-        SetTargetTypeRef(r.GetData());
+        SetTargetTypeRef(r.GetType());
     }
 
     DECL_VISIT_OBJECT(IMPORT_TYPE_ID_OFFSET, IMPORT_PATH)

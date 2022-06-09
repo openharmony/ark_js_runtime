@@ -339,7 +339,7 @@ GlobalTSTypeRef TSLoader::GetOrCreateUnionType(CVector<GlobalTSTypeRef> unionTyp
     JSHandle<TSUnionType> unionType = factory->NewTSUnionType(length);
     JSHandle<TaggedArray> components(thread, unionType->GetComponents());
     for (uint32_t unionArgIndex = 0; unionArgIndex < length; unionArgIndex++) {
-        components->Set(thread, unionArgIndex, JSTaggedValue(unionTypeVec[unionArgIndex].GetData()));
+        components->Set(thread, unionArgIndex, JSTaggedValue(unionTypeVec[unionArgIndex].GetType()));
     }
     unionType->SetComponents(thread, components);
 
