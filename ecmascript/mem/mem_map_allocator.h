@@ -22,7 +22,7 @@
 #include "ecmascript/mem/mem.h"
 #include "os/mutex.h"
 
-#ifdef PANDA_TARGET_LINUX
+#if !(defined PANDA_TARGET_MACOS || defined PANDA_TARGET_WINDOWS)
 #include <sys/prctl.h>
 #ifndef PR_SET_VMA
 #define PR_SET_VMA 0x53564d41
@@ -240,13 +240,13 @@ private:
 
     void PageTag([[maybe_unused]]void *mem, [[maybe_unused]]size_t size, [[maybe_unused]]bool remove = false)
     {
-#ifdef PANDA_TARGET_LINUX
+#if !(defined PANDA_TARGET_MACOS || defined PANDA_TARGET_WINDOWS)
         if (remove) {
             prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, mem, size, nullptr);
         } else {
             prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, mem, size, "ArkJS Heap");
         }
-#endif // PANDA_TARGET_UNIX
+#endif
     }
 
     void AdapterSuitablePoolCapacity();
