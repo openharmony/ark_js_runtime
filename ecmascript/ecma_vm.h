@@ -152,6 +152,9 @@ public:
 #if defined(ECMASCRIPT_ENABLE_THREAD_CHECK) && ECMASCRIPT_ENABLE_THREAD_CHECK
         // Exclude GC thread
         if (options_.EnableThreadCheck()) {
+            if (thread_ == nullptr) {
+                LOG(FATAL, RUNTIME) << "Fatal: ecma_vm has been destructed! vm address is: " << this;
+            }
             if (!Taskpool::GetCurrentTaskpool()->IsInThreadPool(std::this_thread::get_id()) &&
                 thread_->GetThreadId() != JSThread::GetCurrentThreadId()) {
                     LOG(FATAL, RUNTIME) << "Fatal: ecma_vm cannot run in multi-thread!"
