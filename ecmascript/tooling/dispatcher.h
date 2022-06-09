@@ -48,6 +48,7 @@ enum class ResponseCode : uint8_t { OK, NOK };
 class DispatchRequest {
 public:
     explicit DispatchRequest(const EcmaVM *ecmaVm, const std::string &message);
+    ~DispatchRequest();
 
     bool IsValid() const
     {
@@ -77,8 +78,6 @@ public:
     {
         return ecmaVm_;
     }
-
-    ~DispatchRequest() = default;
 
 private:
     const EcmaVM *ecmaVm_ {nullptr};

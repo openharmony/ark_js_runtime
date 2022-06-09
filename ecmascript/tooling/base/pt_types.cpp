@@ -1044,25 +1044,32 @@ std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSV
 
 std::unique_ptr<Location> Location::Create(const PtJson &params)
 {
-    std::string error;
     auto location = std::make_unique<Location>();
+    std::string error;
+    Result ret;
 
-    std::string scriptId = params.GetString("scriptId");
-    if (scriptId.empty()) {
-        error += "should contain string 'scriptId';";
-    } else {
+    std::string scriptId;
+    ret = params.GetString("scriptId", &scriptId);
+    if (ret == Result::SUCCESS) {
         location->scriptId_ = static_cast<uint32_t>(std::stoi(scriptId));
-    }
-    int32_t line = params.GetInt("lineNumber", -1);
-    if (line == -1) {
-        error += "should contain number 'lineNumber';";
     } else {
+        error += "Unknown 'scriptId';";
+    }
+    int32_t line;
+    ret = params.GetInt("lineNumber", &line);
+    if (ret == Result::SUCCESS) {
         location->line_ = line;
+    } else {
+        error += "Unknown 'lineNumber';";
     }
-    int32_t column = params.GetInt("columnNumber", -1);
-    if (column != -1) {
+    int32_t column;
+    ret = params.GetInt("columnNumber", &column);
+    if (ret == Result::SUCCESS) {
         location->column_ = column;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'columnNumber';";
     }
+
     if (!error.empty()) {
         LOG(ERROR, DEBUGGER) << "Location::Create " << error;
         return nullptr;

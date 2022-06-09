@@ -22,6 +22,12 @@
 #include "cJSON.h"
 
 namespace panda::ecmascript::tooling {
+enum class Result : uint8_t {
+    SUCCESS,
+    NOT_EXIST,
+    TYPE_ERROR,
+};
+
 class PtJson {
 public:
     PtJson() = default;
@@ -86,13 +92,13 @@ public:
     std::unique_ptr<PtJson> Get(int32_t index) const;
 
     // Child item accessor
-    bool GetBool(const char *key, bool defaultValue = false) const;
-    int32_t GetInt(const char *key, int32_t defaultValue = 0) const;
-    int64_t GetInt64(const char *key, int64_t defaultValue = 0) const;
-    double GetDouble(const char *key, double defaultValue = 0.0) const;
-    std::string GetString(const char *key) const;
-    std::unique_ptr<PtJson> GetObject(const char *key) const;
-    std::unique_ptr<PtJson> GetArray(const char *key) const;
+    Result GetBool(const char *key, bool *value) const;
+    Result GetInt(const char *key, int32_t *value) const;
+    Result GetInt64(const char *key, int64_t *value) const;
+    Result GetDouble(const char *key, double *value) const;
+    Result GetString(const char *key, std::string *value) const;
+    Result GetObject(const char *key, std::unique_ptr<PtJson> *value) const;
+    Result GetArray(const char *key, std::unique_ptr<PtJson> *value) const;
 
 private:
     cJSON *object_ = nullptr;
