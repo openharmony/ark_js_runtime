@@ -213,14 +213,16 @@ struct PUBLIC_API JSMethod : public base::AlignedStruct<sizeof(uint64_t),
         return SlotSizeBits::Decode(literalInfo_);;
     }
 
-    void UpdateSlotSize(uint8_t size)
+    uint8_t UpdateSlotSize(uint8_t size)
     {
-        uint16_t end = GetSlotSize() + size;
+        uint8_t start = GetSlotSize();
+        uint16_t end = start + size;
         if (end >= MAX_SLOT_SIZE) {
             literalInfo_ = SlotSizeBits::Update(literalInfo_, MAX_SLOT_SIZE);
-            return;
+            return MAX_SLOT_SIZE;
         }
         literalInfo_ = SlotSizeBits::Update(literalInfo_, static_cast<uint8_t>(end));
+        return start;
     }
 
     uint32_t PUBLIC_API GetNumVregs() const;
