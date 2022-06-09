@@ -115,7 +115,9 @@
 #include "ecmascript/ts_types/ts_obj_layout_info.h"
 #include "ecmascript/ts_types/ts_type.h"
 #include "ecmascript/ts_types/ts_type_table.h"
-
+#include "ecmascript/require/js_cjs_exports.h"
+#include "ecmascript/require/js_cjs_module.h"
+#include "ecmascript/require/js_cjs_require.h"
 
 namespace panda::ecmascript {
 using Error = builtins::BuiltinsError;
@@ -1175,6 +1177,20 @@ void ObjectFactory::InitializeJSObject(const JSHandle<JSObject> &obj, const JSHa
         case JSType::JS_ARRAY_ITERATOR:
         case JSType::JS_API_PLAIN_ARRAY_ITERATOR:
             break;
+        case JSType::JS_CJS_MODULE:
+            JSCjsModule::Cast(*obj)->SetId(thread_, JSTaggedValue::Undefined());
+            JSCjsModule::Cast(*obj)->SetExports(thread_, JSTaggedValue::Undefined());
+            JSCjsModule::Cast(*obj)->SetPath(thread_, JSTaggedValue::Undefined());
+            JSCjsModule::Cast(*obj)->SetFilename(thread_, JSTaggedValue::Undefined());
+            JSCjsModule::Cast(*obj)->SetStatus(CjsModuleStatus::UNLOAD);
+            break;
+        case JSType::JS_CJS_EXPORTS:
+            JSCjsExports::Cast(*obj)->SetExports(thread_, JSTaggedValue::Undefined());
+            break;
+        case JSType::JS_CJS_REQUIRE:
+            JSCjsRequire::Cast(*obj)->SetCache(thread_, JSTaggedValue::Undefined());
+            JSCjsRequire::Cast(*obj)->SetParent(thread_, JSTaggedValue::Undefined());
+            break;
         default:
             UNREACHABLE();
     }
@@ -2083,6 +2099,40 @@ JSHandle<ModuleNamespace> ObjectFactory::NewModuleNamespace()
     moduleNamespace->SetModule(thread_, JSTaggedValue::Undefined());
     moduleNamespace->SetExports(thread_, JSTaggedValue::Undefined());
     return moduleNamespace;
+}
+
+JSHandle<JSCjsModule> ObjectFactory::NewCjsModule()
+{
+    NewObjectHook();
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+
+    JSHandle<JSTaggedValue> moduleObj(env->GetCjsModuleFunction());
+    JSHandle<JSCjsModule> cjsModule =
+        JSHandle<JSCjsModule>(NewJSObjectByConstructor(JSHandle<JSFunction>(moduleObj), moduleObj));
+    return cjsModule;
+}
+
+JSHandle<JSCjsExports> ObjectFactory::NewCjsExports()
+{
+    NewObjectHook();
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+
+    JSHandle<JSTaggedValue> exportsObj(env->GetCjsExportsFunction());
+    JSHandle<JSCjsExports> cjsExports =
+        JSHandle<JSCjsExports>(NewJSObjectByConstructor(JSHandle<JSFunction>(exportsObj), exportsObj));
+    return cjsExports;
+}
+
+JSHandle<JSCjsRequire> ObjectFactory::NewCjsRequire()
+{
+    NewObjectHook();
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+
+    JSHandle<JSTaggedValue> requireObj(env->GetCjsRequireFunction());
+    JSHandle<JSCjsRequire> cjsRequire =
+        JSHandle<JSCjsRequire>(NewJSObjectByConstructor(JSHandle<JSFunction>(requireObj), requireObj));
+    
+    return cjsRequire;
 }
 
 JSHandle<EcmaString> ObjectFactory::GetEmptyString() const

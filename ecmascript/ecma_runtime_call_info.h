@@ -93,6 +93,18 @@ public:
         SetArg(FIRST_ARGS_INDEX + 3, arg3);  // 3: third index
     }
 
+    inline void SetCallArg(const JSTaggedValue arg0, const JSTaggedValue arg1, const JSTaggedValue arg2,
+                           const JSTaggedValue arg3, const JSTaggedValue arg4)
+    {
+        ASSERT_PRINT(GetArgsNumber() == 5, "args number is not 5");  // 5: args number
+
+        SetArg(FIRST_ARGS_INDEX, arg0);
+        SetArg(FIRST_ARGS_INDEX + 1, arg1);
+        SetArg(FIRST_ARGS_INDEX + 2, arg2);  // 2: second index
+        SetArg(FIRST_ARGS_INDEX + 3, arg3);  // 3: third index
+        SetArg(FIRST_ARGS_INDEX + 4, arg4);  // 4: four index
+    }
+
     inline void SetCallArg(size_t argc, const JSTaggedType argv[])
     {
         for (size_t i = 0; i < argc; i++) {

@@ -51,6 +51,10 @@ private:
     JSHandle<JSFunction> NewBuiltinConstructor(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &prototype,
                                                EcmaEntrypoint ctorFunc, const char *name, int length) const;
 
+    JSHandle<JSFunction> NewBuiltinCjsCtor(const JSHandle<GlobalEnv> &env,
+                                           const JSHandle<JSObject> &prototype, EcmaEntrypoint ctorFunc,
+                                           const char *name, int length) const;
+
     JSHandle<JSFunction> NewFunction(const JSHandle<GlobalEnv> &env, const JSHandle<JSTaggedValue> &key,
                                      EcmaEntrypoint func, int length) const;
 
@@ -191,6 +195,12 @@ private:
 
     void InitializeModuleNamespace(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &objFuncDynclass) const;
 
+    void InitializeCjsModule(const JSHandle<GlobalEnv> &env) const;
+
+    void InitializeCjsExports(const JSHandle<GlobalEnv> &env) const;
+
+    void InitializeCjsRequire(const JSHandle<GlobalEnv> &env) const;
+
     void SetFunction(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &obj, const char *key,
                      EcmaEntrypoint func, int length) const;
 
@@ -234,6 +244,7 @@ private:
     void SetConstantObject(const JSHandle<JSObject> &obj, const char *key, JSHandle<JSTaggedValue> &value) const;
     void SetFrozenFunction(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &obj, const char *key,
                            EcmaEntrypoint func, int length) const;
+    void SetNonConstantObject(const JSHandle<JSObject> &obj, const char *key, JSHandle<JSTaggedValue> &value) const;
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_BUILTINS_H

@@ -35,6 +35,7 @@ public:
     static constexpr char ENTRY_MAIN_FUNCTION[] = "_GLOBAL::func_main_0";
     static constexpr char MODULE_CLASS[] = "L_ESModuleRecord;";
     static constexpr char TS_TYPES_CLASS[] = "L_ESTypeInfoRecord;";
+    static constexpr char COMMONJS_CLASS[] = "L_CommonJsRecord;";
     static constexpr char TYPE_FLAG[] = "typeFlag";
     static constexpr char TYPE_SUMMARY_INDEX[] = "typeSummaryIndex";
 
@@ -99,6 +100,8 @@ public:
 
     bool IsModule() const;
 
+    bool IsCjs() const;
+
     bool HasTSTypes() const
     {
         return hasTSTypes_;
@@ -121,6 +124,7 @@ private:
     const panda_file::File *pf_ {nullptr};
     CString desc_;
     bool isModule_ {false};
+    bool isCjs_ {false};
     bool hasTSTypes_ {false};
     uint32_t typeSummaryIndex_ {0};
 };
