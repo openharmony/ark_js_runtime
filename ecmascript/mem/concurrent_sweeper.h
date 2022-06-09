@@ -24,9 +24,19 @@
 #include "os/mutex.h"
 
 namespace panda::ecmascript {
+// CONFIG_DISABLE means concurrent sweeper is disabled by options or macros and cannot be changed.
+// REQUEST_DISABLE means we want to disable concurrent sweeper while it is sweeping.
+// REQUEST_DISABLE can be ragarded as enable and will be changed into disable after finishing sweeping.
+enum class EnableConcurrentSweepType : uint8_t {
+    ENABLE,
+    CONFIG_DISABLE,
+    DISABLE,
+    REQUEST_DISABLE
+};
+
 class ConcurrentSweeper {
 public:
-    ConcurrentSweeper(Heap *heap, bool concurrentSweep);
+    ConcurrentSweeper(Heap *heap, EnableConcurrentSweepType type);
     ~ConcurrentSweeper() = default;
 
     NO_COPY_SEMANTIC(ConcurrentSweeper);
@@ -48,13 +58,26 @@ public:
         return isSweeping_;
     }
 
-    void EnableConcurrentSweep(bool flag)
+    void EnableConcurrentSweep(EnableConcurrentSweepType type);
+
+    bool ConcurrentSweepEnabled()
     {
-        if (concurrentSweep_ && isSweeping_ && !flag) {
-            disableConcurrentRequested_ = true;
-        } else {
-            concurrentSweep_ = flag;
-        }
+        return !IsDisabled();
+    }
+
+    bool IsDisabled() const
+    {
+        return enableType_ == EnableConcurrentSweepType::DISABLE ||
+            enableType_ == EnableConcurrentSweepType::CONFIG_DISABLE;
+    }
+    bool IsRequestDisabled() const
+    {
+        return enableType_ == EnableConcurrentSweepType::REQUEST_DISABLE;
+    }
+
+    bool IsConfigDisabled() const
+    {
+        return enableType_ == EnableConcurrentSweepType::CONFIG_DISABLE;
     }
 private:
     class SweeperTask : public Task {
@@ -81,8 +104,7 @@ private:
     std::array<std::atomic_int, FREE_LIST_NUM> remainingTaskNum_ = {0, 0, 0};
 
     Heap *heap_;
-    bool concurrentSweep_ {false};
-    bool disableConcurrentRequested_ {false};
+    EnableConcurrentSweepType enableType_ {EnableConcurrentSweepType::CONFIG_DISABLE};
     bool isSweeping_ {false};
     MemSpaceType startSpaceType_ = MemSpaceType::OLD_SPACE;
 };
