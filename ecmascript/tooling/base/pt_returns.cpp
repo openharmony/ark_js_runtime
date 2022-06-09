@@ -323,7 +323,7 @@ Local<ObjectRef> StartPreciseCoverageReturns::ToObject(const EcmaVM *ecmaVm) con
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
     result->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timestamp")),
-        IntegerRef::New(ecmaVm, timestamp_));
+        NumberRef::New(ecmaVm, timestamp_));
 
     return result;
 }
@@ -341,7 +341,7 @@ Local<ObjectRef> TakePreciseCoverageReturns::ToObject(const EcmaVM *ecmaVm) cons
     returns->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "result")), values);
     if (timestamp_) {
         returns->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timestamp")),
-            IntegerRef::New(ecmaVm, timestamp_));
+            NumberRef::New(ecmaVm, timestamp_));
     }
 
     return returns;
