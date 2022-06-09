@@ -38,7 +38,7 @@ void WaiterList::DeleteNode(WaiterListNode *node)
     auto iter = locationListMap_.find(node->waitPointer_);
     ASSERT(iter != locationListMap_.end());
     WaiterListNode *temp = iter->second.pHead;
-    bool flag = false;
+    [[maybe_unused]] bool flag = false;
     while (temp != nullptr) {
         if (temp == node) {
             flag = true;
@@ -68,4 +68,4 @@ void WaiterList::DeleteNode(WaiterListNode *node)
 
     node->prev_ = node->next_ = nullptr;
 }
-}  // namespace
+}  // namespace
