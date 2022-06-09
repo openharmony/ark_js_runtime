@@ -39,6 +39,8 @@ public:
 
     static void GeneratorReEnterAsmInterp(ExtendedAssembler *assembler);
 
+    static void GeneratorReEnterAsmInterpDispatch(ExtendedAssembler *assembler);
+
     static void JSCallDispatch(ExtendedAssembler *assembler);
 
     static void AsmInterpreterEntry(ExtendedAssembler *assembler);

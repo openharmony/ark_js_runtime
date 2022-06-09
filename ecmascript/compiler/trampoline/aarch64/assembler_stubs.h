@@ -63,6 +63,8 @@ public:
 
     static void GeneratorReEnterAsmInterp(ExtendedAssembler *assembler);
 
+    static void GeneratorReEnterAsmInterpDispatch(ExtendedAssembler *assembler);
+
     static void PushCallIThisRangeAndDispatch(ExtendedAssembler *assembler);
 
     static void PushCallIRangeAndDispatch(ExtendedAssembler *assembler);
