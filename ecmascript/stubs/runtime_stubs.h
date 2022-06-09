@@ -39,7 +39,6 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
     V(CallRuntime)                           \
     V(AsmInterpreterEntry)                   \
     V(GeneratorReEnterAsmInterp)             \
-    V(JSCallDispatch)                        \
     V(PushCallArgsAndDispatchNative)         \
     V(PushCallArgs0AndDispatch)              \
     V(PushCallArgs1AndDispatch)              \
