@@ -371,7 +371,9 @@ class JSThread;
     V(JSTaggedValue, BoundString, BOUND_INDEX, bound)                                                                 \
     V(JSTaggedValue, BackslashString, BACKSLASH_INDEX, backslash)                                                     \
     V(JSTaggedValue, SpaceString, SPACE_INDEX, space)                                                                 \
-    V(JSTaggedValue, NanCapitalString, NAN_INDEX, nan)
+    V(JSTaggedValue, NanCapitalString, NAN_INDEX, nan)                                                                \
+    V(JSTaggedValue, CjsExportsString, CJS_EXPORTS_INDEX, exportsStr)                                                 \
+    V(JSTaggedValue, CjsCacheString, CJS_CACHE_INDEX, cacheStr)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GLOBAL_ENV_CONSTANT_ACCESSOR(V)                                                           \

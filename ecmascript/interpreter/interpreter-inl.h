@@ -637,6 +637,24 @@ void EcmaInterpreter::NotifyBytecodePcChanged(JSThread *thread)
     }
 }
 
+const JSPandaFile *EcmaInterpreter::GetNativeCallPandafile(JSThread *thread)
+{
+    FrameHandler frameHandler(thread);
+    for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
+        if (frameHandler.IsEntryFrame()) {
+            continue;
+        }
+        JSMethod *method = frameHandler.GetMethod();
+        // Skip builtins method
+        if (method->IsNativeWithCallField()) {
+            continue;
+        }
+        const JSPandaFile *jsPandaFile = method->GetJSPandaFile();
+        return jsPandaFile;
+    }
+    UNREACHABLE();
+}
+
 // NOLINTNEXTLINE(readability-function-size)
 NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool *constpool, const uint8_t *pc,
                                                  JSTaggedType *sp)

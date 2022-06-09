@@ -68,6 +68,9 @@ void JSPandaFile::Initialize()
         if (!isModule_ && std::strcmp(MODULE_CLASS, desc) == 0) {
             isModule_ = true;
         }
+        if (std::strcmp(COMMONJS_CLASS, desc) == 0) {
+            isCjs_ = true;
+        }
 
         if (!HasTSTypes() && std::strcmp(TS_TYPES_CLASS, desc) == 0) {
             cda.EnumerateFields([&](panda_file::FieldDataAccessor &fieldAccessor) -> void {
@@ -94,5 +97,10 @@ JSMethod *JSPandaFile::FindMethods(uint32_t offset) const
 bool JSPandaFile::IsModule() const
 {
     return isModule_;
+}
+
+bool JSPandaFile::IsCjs() const
+{
+    return isCjs_;
 }
 }  // namespace panda::ecmascript

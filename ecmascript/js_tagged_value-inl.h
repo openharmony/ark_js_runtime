@@ -1084,6 +1084,21 @@ inline bool JSTaggedValue::IsTSClassInstanceType() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsTSClassInstanceType();
 }
 
+inline bool JSTaggedValue::IsJSCjsExports() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSCjsExports();
+}
+
+inline bool JSTaggedValue::IsJSCjsModule() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSCjsModule();
+}
+
+inline bool JSTaggedValue::IsJSCjsRequire() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSCjsRequire();
+}
+
 inline bool JSTaggedValue::IsTSFunctionType() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsTSFunctionType();
