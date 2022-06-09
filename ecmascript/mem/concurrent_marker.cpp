@@ -30,13 +30,26 @@
 #include "os/mutex.h"
 
 namespace panda::ecmascript {
-ConcurrentMarker::ConcurrentMarker(Heap *heap)
+ConcurrentMarker::ConcurrentMarker(Heap *heap, EnableConcurrentMarkType type)
     : heap_(heap),
       vm_(heap->GetEcmaVM()),
       thread_(vm_->GetJSThread()),
-      workManager_(heap->GetWorkManager())
+      workManager_(heap->GetWorkManager()),
+      enableMarkType_(type)
 {
     thread_->SetMarkStatus(MarkStatus::READY_TO_MARK);
+}
+
+void ConcurrentMarker::EnableConcurrentMarking(EnableConcurrentMarkType type)
+{
+    if (IsConfigDisabled()) {
+        return;
+    }
+    if (IsEnabled() && thread_->IsMarking() && type == EnableConcurrentMarkType::DISABLE) {
+        enableMarkType_ = EnableConcurrentMarkType::REQUEST_DISABLE;
+    } else {
+        enableMarkType_ = type;
+    }
 }
 
 void ConcurrentMarker::Mark()
