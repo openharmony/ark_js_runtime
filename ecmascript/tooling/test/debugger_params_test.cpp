@@ -492,47 +492,47 @@ HWTEST_F_L0(DebuggerParamsTest, GetObjectByHeapObjectIdParamsToObjectTest)
 HWTEST_F_L0(DebuggerParamsTest, StartPreciseCoverageParamCreateTest)
 {
     std::string msg;
-    std::unique_ptr<StartPreciseCoverageParam> objectData;
+    std::unique_ptr<StartPreciseCoverageParams> objectData;
 
     //  abnormal params of null msg
     msg = std::string() + R"({})";
-    objectData = StartPreciseCoverageParam::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StartPreciseCoverageParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
     EXPECT_EQ(objectData, nullptr);
 
     // abnormal params of unexist key params
     msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
-    objectData = StartPreciseCoverageParam::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StartPreciseCoverageParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
     EXPECT_EQ(objectData, nullptr);
 
     // abnormal params of null params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    objectData = StartPreciseCoverageParam::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StartPreciseCoverageParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
     ASSERT_NE(objectData, nullptr);
 
     // abnormal params of unknown params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    objectData = StartPreciseCoverageParam::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StartPreciseCoverageParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
     ASSERT_NE(objectData, nullptr);
 
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
             "callCount":8,
             "detailed":8,
             "allowTriggeredUpdates":8}})";
-    objectData = StartPreciseCoverageParam::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StartPreciseCoverageParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
     EXPECT_EQ(objectData, nullptr);
 
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
             "callCount":"Test",
             "detailed":"Test",
             "allowTriggeredUpdates":"Test"}})";
-    objectData = StartPreciseCoverageParam::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StartPreciseCoverageParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
     EXPECT_EQ(objectData, nullptr);
 
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
             "callCount":true,
             "detailed":true,
             "allowTriggeredUpdates":true}})";
-    objectData = StartPreciseCoverageParam::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    objectData = StartPreciseCoverageParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
     ASSERT_NE(objectData, nullptr);
     ASSERT_TRUE(objectData->GetCallCount());
     ASSERT_TRUE(objectData->GetDetailed());
@@ -542,14 +542,14 @@ HWTEST_F_L0(DebuggerParamsTest, StartPreciseCoverageParamCreateTest)
 HWTEST_F_L0(DebuggerParamsTest, StartPreciseCoverageParamToObjectTest)
 {
     std::string msg;
-    std::unique_ptr<StartPreciseCoverageParam> startTrackingData;
+    std::unique_ptr<StartPreciseCoverageParams> startTrackingData;
     Local<StringRef> tmpStr;
 
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
             "callCount":true,
             "detailed":true,
             "allowTriggeredUpdates":true}})";
-    startTrackingData = StartPreciseCoverageParam::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    startTrackingData = StartPreciseCoverageParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
     ASSERT_NE(startTrackingData, nullptr);
     Local<ObjectRef> object = startTrackingData->ToObject(ecmaVm);
 

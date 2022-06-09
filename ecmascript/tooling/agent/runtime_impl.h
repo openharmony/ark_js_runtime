@@ -31,12 +31,12 @@ public:
     DispatchResponse Disable();
     DispatchResponse RunIfWaitingForDebugger();
     DispatchResponse CallFunctionOn(
-        std::unique_ptr<CallFunctionOnParams> params,
+        const CallFunctionOnParams &params,
         std::unique_ptr<RemoteObject> *outRemoteObject,
         std::optional<std::unique_ptr<ExceptionDetails>> *outExceptionDetails);
     DispatchResponse GetHeapUsage(double *usedSize, double *totalSize);
     DispatchResponse GetProperties(
-        std::unique_ptr<GetPropertiesParams> params,
+        const GetPropertiesParams &params,
         std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc,
         std::optional<std::vector<std::unique_ptr<InternalPropertyDescriptor>>> *outInternalDescs,
         std::optional<std::vector<std::unique_ptr<PrivatePropertyDescriptor>>> *outPrivateProps,

@@ -87,15 +87,15 @@ struct BreakpointDetails {
 };
 
 // Debugger.CallFrameId
-using CallFrameId = uint32_t;
+using CallFrameId = int32_t;
 
 // ========== Runtime types begin
 // Runtime.ScriptId
-using ScriptId = uint32_t;
+using ScriptId = int32_t;
 
 // Runtime.RemoteObjectId
 
-using RemoteObjectId = uint32_t;
+using RemoteObjectId = int32_t;
 
 // Runtime.ExecutionContextId
 using ExecutionContextId = int32_t;
@@ -104,7 +104,7 @@ using ExecutionContextId = int32_t;
 using UnserializableValue = std::string;
 
 // Runtime.UniqueDebuggerId
-using UniqueDebuggerId = uint32_t;
+using UniqueDebuggerId = int32_t;
 
 // Runtime.RemoteObject
 class RemoteObject : public PtBaseTypes {
@@ -134,22 +134,24 @@ public:
      */
     const std::string &GetSubType() const
     {
-        return subtype_.value();
+        ASSERT(HasSubType());
+        return subType_.value();
     }
 
     RemoteObject &SetSubType(const std::string &type)
     {
-        subtype_ = type;
+        subType_ = type;
         return *this;
     }
 
     bool HasSubType() const
     {
-        return subtype_.has_value();
+        return subType_.has_value();
     }
 
     const std::string &GetClassName() const
     {
+        ASSERT(HasClassName());
         return className_.value();
     }
 
@@ -182,6 +184,7 @@ public:
 
     const UnserializableValue &GetUnserializableValue() const
     {
+        ASSERT(HasUnserializableValue());
         return unserializableValue_.value();
     }
 
@@ -198,6 +201,7 @@ public:
 
     const std::string &GetDescription() const
     {
+        ASSERT(HasDescription());
         return description_.value();
     }
 
@@ -322,7 +326,7 @@ private:
     NO_MOVE_SEMANTIC(RemoteObject);
 
     std::string type_ {};
-    std::optional<std::string> subtype_ {};
+    std::optional<std::string> subType_ {};
     std::optional<std::string> className_ {};
     std::optional<Local<JSValueRef>> value_ {};
     std::optional<UnserializableValue> unserializableValue_ {};
@@ -470,6 +474,7 @@ public:
 
     const std::string &GetUrl() const
     {
+        ASSERT(HasUrl());
         return url_.value();
     }
 
@@ -878,6 +883,7 @@ public:
 
     const UnserializableValue &GetUnserializableValue() const
     {
+        ASSERT(HasUnserializableValue());
         return unserializableValue_.value();
     }
 
@@ -1150,6 +1156,7 @@ public:
      */
     const std::string &GetType() const
     {
+        ASSERT(HasType());
         return type_.value();
     }
 
@@ -1243,6 +1250,7 @@ public:
 
     const std::string &GetName() const
     {
+        ASSERT(HasName());
         return name_.value();
     }
 
@@ -1778,6 +1786,7 @@ public:
 
     int32_t GetHitCount() const
     {
+        ASSERT(HasHitCount());
         return hitCount_.value();
     }
 
@@ -1832,6 +1841,7 @@ public:
 
     const std::string &GetDeoptReason() const
     {
+        ASSERT(HasDeoptReason());
         return deoptReason_.value();
     }
 

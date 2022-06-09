@@ -39,23 +39,23 @@ public:
     void NotifyPaused(std::optional<JSPtLocation> location, PauseReason reason);
     void NotifyPendingJobEntry();
 
-    DispatchResponse Enable(std::unique_ptr<EnableParams> params, UniqueDebuggerId *id);
+    DispatchResponse Enable(const EnableParams &params, UniqueDebuggerId *id);
     DispatchResponse Disable();
-    DispatchResponse EvaluateOnCallFrame(std::unique_ptr<EvaluateOnCallFrameParams> params,
+    DispatchResponse EvaluateOnCallFrame(const EvaluateOnCallFrameParams &params,
                                          std::unique_ptr<RemoteObject> *result);
-    DispatchResponse GetPossibleBreakpoints(std::unique_ptr<GetPossibleBreakpointsParams> params,
+    DispatchResponse GetPossibleBreakpoints(const GetPossibleBreakpointsParams &params,
                                             std::vector<std::unique_ptr<BreakLocation>> *outLocations);
-    DispatchResponse GetScriptSource(std::unique_ptr<GetScriptSourceParams> params, std::string *source);
+    DispatchResponse GetScriptSource(const GetScriptSourceParams &params, std::string *source);
     DispatchResponse Pause();
-    DispatchResponse RemoveBreakpoint(std::unique_ptr<RemoveBreakpointParams> params);
-    DispatchResponse Resume(std::unique_ptr<ResumeParams> params);
+    DispatchResponse RemoveBreakpoint(const RemoveBreakpointParams &params);
+    DispatchResponse Resume(const ResumeParams &params);
     DispatchResponse SetAsyncCallStackDepth();
-    DispatchResponse SetBreakpointByUrl(std::unique_ptr<SetBreakpointByUrlParams> params, std::string *outId,
+    DispatchResponse SetBreakpointByUrl(const SetBreakpointByUrlParams &params, std::string *outId,
                                         std::vector<std::unique_ptr<Location>> *outLocations);
-    DispatchResponse SetPauseOnExceptions(std::unique_ptr<SetPauseOnExceptionsParams> params);
-    DispatchResponse StepInto(std::unique_ptr<StepIntoParams> params);
+    DispatchResponse SetPauseOnExceptions(const SetPauseOnExceptionsParams &params);
+    DispatchResponse StepInto(const StepIntoParams &params);
     DispatchResponse StepOut();
-    DispatchResponse StepOver(std::unique_ptr<StepOverParams> params);
+    DispatchResponse StepOver(const StepOverParams &params);
     DispatchResponse SetBlackboxPatterns();
 
     /**
