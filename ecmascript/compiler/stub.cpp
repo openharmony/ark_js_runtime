@@ -3851,7 +3851,7 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
                 break;
             case JSCallMode::CALL_THIS_WITH_ARGV:
                 result = CallNGCRuntime(glue, RTSTUB_ID(PushCallIThisRangeAndDispatch),
-                    { glue, sp, func, method, callField, data[0], data[1] });
+                    { glue, sp, func, method, callField, data[0], data[1], data[2] });
                 Return();
                 break;
             case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
