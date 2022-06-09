@@ -1009,16 +1009,16 @@ Local<ObjectRef> GetObjectByHeapObjectIdParams::ToObject(const EcmaVM *ecmaVm) c
     return params;
 }
 
-std::unique_ptr<StartPreciseCoverageParam> StartPreciseCoverageParam::Create(const EcmaVM *ecmaVm,
+std::unique_ptr<StartPreciseCoverageParams> StartPreciseCoverageParams::Create(const EcmaVM *ecmaVm,
     const Local<JSValueRef> &params)
 {
     ASSERT(ecmaVm);
     if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "StartPreciseCoverageParam::Create params is nullptr";
+        LOG(ERROR, DEBUGGER) << "StartPreciseCoverageParams::Create params is nullptr";
         return nullptr;
     }
     std::string error;
-    auto paramsObject = std::make_unique<StartPreciseCoverageParam>();
+    auto paramsObject = std::make_unique<StartPreciseCoverageParams>();
 
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callCount")));
@@ -1051,13 +1051,13 @@ std::unique_ptr<StartPreciseCoverageParam> StartPreciseCoverageParam::Create(con
     }
 
     if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "StartPreciseCoverageParam::Create " << error;
+        LOG(ERROR, DEBUGGER) << "StartPreciseCoverageParams::Create " << error;
         return nullptr;
     }
     return paramsObject;
 }
 
-Local<ObjectRef> StartPreciseCoverageParam::ToObject(const EcmaVM *ecmaVm) const
+Local<ObjectRef> StartPreciseCoverageParams::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 

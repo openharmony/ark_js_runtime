@@ -71,12 +71,12 @@ public:
         return Local<ObjectRef>();
     }
 
-    CallFrameId GetCallFrameId()
+    CallFrameId GetCallFrameId() const
     {
         return callFrameId_;
     }
 
-    const std::string &GetExpression()
+    const std::string &GetExpression() const
     {
         return expression_;
     }
@@ -280,6 +280,7 @@ public:
 
     const std::string &GetUrl() const
     {
+        ASSERT(HasUrl());
         return url_.value();
     }
 
@@ -290,6 +291,7 @@ public:
 
     const std::string &GetUrlRegex() const
     {
+        ASSERT(HasUrlRegex());
         return urlRegex_.value();
     }
 
@@ -300,6 +302,7 @@ public:
 
     const std::string &GetScriptHash() const
     {
+        ASSERT(HasScriptHash());
         return scriptHash_.value();
     }
 
@@ -320,6 +323,7 @@ public:
 
     const std::string &GetCondition() const
     {
+        ASSERT(HasCondition());
         return condition_.value();
     }
 
@@ -528,7 +532,7 @@ public:
 
     RemoteObjectId GetObjectId() const
     {
-        return objectId_.value();
+        return objectId_.value_or(-1);
     }
 
     CallFunctionOnParams &SetObjectId(RemoteObjectId objectId)
@@ -623,6 +627,7 @@ public:
 
     const std::string &GetObjectGroup() const
     {
+        ASSERT(HasObjectGroup());
         return objectGroup_.value();
     }
 
@@ -806,6 +811,7 @@ public:
 
     const std::string &GetObjectGroup() const
     {
+        ASSERT(HasObjectGroup());
         return objectGroup_.value();
     }
 
@@ -822,12 +828,12 @@ private:
     std::optional<std::string> objectGroup_ {};
 };
 
-class StartPreciseCoverageParam : public PtBaseParams {
+class StartPreciseCoverageParams : public PtBaseParams {
 public:
-    StartPreciseCoverageParam() = default;
-    ~StartPreciseCoverageParam() override = default;
+    StartPreciseCoverageParams() = default;
+    ~StartPreciseCoverageParams() override = default;
 
-    static std::unique_ptr<StartPreciseCoverageParam> Create(const EcmaVM *ecmaVm,
+    static std::unique_ptr<StartPreciseCoverageParams> Create(const EcmaVM *ecmaVm,
                                                                   const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
 
@@ -862,8 +868,8 @@ public:
     }
 
 private:
-    NO_COPY_SEMANTIC(StartPreciseCoverageParam);
-    NO_MOVE_SEMANTIC(StartPreciseCoverageParam);
+    NO_COPY_SEMANTIC(StartPreciseCoverageParams);
+    NO_MOVE_SEMANTIC(StartPreciseCoverageParams);
 
     std::optional<bool> callCount_ {};
     std::optional<bool> detailed_ {};

@@ -239,7 +239,7 @@ HWTEST_F_L0(DebuggerTypesTest, RemoteObjectCreateTest)
     ASSERT_NE(remoteObject, nullptr);
     EXPECT_EQ(ObjectType::Object, remoteObject->GetType());
     ASSERT_TRUE(remoteObject->HasObjectId());
-    EXPECT_EQ(1U, remoteObject->GetObjectId());
+    EXPECT_EQ(remoteObject->GetObjectId(), 1);
 }
 
 HWTEST_F_L0(DebuggerTypesTest, RemoteObjectToObjectTest)
@@ -399,7 +399,7 @@ HWTEST_F_L0(DebuggerTypesTest, ExceptionDetailsCreateTest)
     EXPECT_EQ("text0", exceptionMetaData->GetText());
     EXPECT_EQ(exceptionMetaData->GetLine(), 10);
     EXPECT_EQ(exceptionMetaData->GetColumn(), 20);
-    EXPECT_EQ(0U, exceptionMetaData->GetScriptId());
+    EXPECT_EQ(exceptionMetaData->GetScriptId(), 0);
 
     // abnormal params of params.sub-key =
     // [exceptionId=3,"text"="text0","lineNumber"=10,"columnNumber"=20,"url"=10]
@@ -1085,7 +1085,7 @@ HWTEST_F_L0(DebuggerTypesTest, LocationCreateTest)
     }})";
     location = Location::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(location, nullptr);
-    EXPECT_EQ(222U, location->GetScriptId());
+    EXPECT_EQ(location->GetScriptId(), 222);
     EXPECT_EQ(location->GetLine(), 899);
     EXPECT_EQ(location->GetColumn(), 138);
 
@@ -1095,7 +1095,7 @@ HWTEST_F_L0(DebuggerTypesTest, LocationCreateTest)
     }})";
     location = Location::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(location, nullptr);
-    EXPECT_EQ(2122U, location->GetScriptId());
+    EXPECT_EQ(location->GetScriptId(), 2122);
     EXPECT_EQ(location->GetLine(), 8299);
 }
 
@@ -1239,7 +1239,7 @@ HWTEST_F_L0(DebuggerTypesTest, BreakLocationCreateTest)
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
     ASSERT_NE(breakLocation, nullptr);
-    EXPECT_EQ(222U, breakLocation->GetScriptId());
+    EXPECT_EQ(breakLocation->GetScriptId(), 222);
     EXPECT_EQ(breakLocation->GetLine(), 899);
     EXPECT_EQ(breakLocation->GetColumn(), 138);
     EXPECT_EQ("return", breakLocation->GetType());
@@ -1250,7 +1250,7 @@ HWTEST_F_L0(DebuggerTypesTest, BreakLocationCreateTest)
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
     ASSERT_NE(breakLocation, nullptr);
-    EXPECT_EQ(2122U, breakLocation->GetScriptId());
+    EXPECT_EQ(breakLocation->GetScriptId(), 2122);
     EXPECT_EQ(breakLocation->GetLine(), 8299);
 }
 
@@ -1670,11 +1670,11 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
     callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
     ASSERT_NE(callFrame, nullptr);
-    EXPECT_EQ(0U, callFrame->GetCallFrameId());
+    EXPECT_EQ(callFrame->GetCallFrameId(), 0);
     EXPECT_EQ("name0", callFrame->GetFunctionName());
     ASSERT_FALSE(callFrame->HasFunctionLocation());
     Location *location = callFrame->GetLocation();
-    EXPECT_EQ(5U, location->GetScriptId());
+    EXPECT_EQ(location->GetScriptId(), 5);
     EXPECT_EQ(location->GetLine(), 19);
     EXPECT_EQ("url7", callFrame->GetUrl());
     const std::vector<std::unique_ptr<Scope>> *scopeChain = callFrame->GetScopeChain();
@@ -1695,13 +1695,13 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           R"("},"returnValue":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::I32 + R"("}}})";
     callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
     ASSERT_NE(callFrame, nullptr);
-    EXPECT_EQ(10U, callFrame->GetCallFrameId());
+    EXPECT_EQ(callFrame->GetCallFrameId(), 10);
     EXPECT_EQ("name0", callFrame->GetFunctionName());
     Location *functionLocation = callFrame->GetFunctionLocation();
-    EXPECT_EQ(3U, functionLocation->GetScriptId());
+    EXPECT_EQ(functionLocation->GetScriptId(), 3);
     EXPECT_EQ(functionLocation->GetLine(), 16);
     location = callFrame->GetLocation();
-    EXPECT_EQ(5U, location->GetScriptId());
+    EXPECT_EQ(location->GetScriptId(), 5);
     EXPECT_EQ(location->GetLine(), 19);
     EXPECT_EQ("url7", callFrame->GetUrl());
     scopeChain = callFrame->GetScopeChain();

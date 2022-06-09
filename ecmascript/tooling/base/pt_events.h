@@ -336,6 +336,7 @@ public:
 
     const std::string &GetSourceMapURL() const
     {
+        ASSERT(HasSourceMapUrl());
         return sourceMapUrl_.value();
     }
 
@@ -345,7 +346,7 @@ public:
         return *this;
     }
 
-    bool HasSourceMapURL() const
+    bool HasSourceMapUrl() const
     {
         return sourceMapUrl_.has_value();
     }
@@ -416,6 +417,7 @@ public:
 
     const std::string &GetScriptLanguage() const
     {
+        ASSERT(HasScriptLanguage());
         return scriptLanguage_.value();
     }
 
@@ -432,6 +434,7 @@ public:
 
     const std::string &GetEmbedderName() const
     {
+        ASSERT(HasEmbedderName());
         return embedderName_.value();
     }
 
@@ -601,6 +604,7 @@ public:
 
     const std::string &GetSourceMapURL() const
     {
+        ASSERT(HasSourceMapUrl());
         return sourceMapUrl_.value();
     }
 
@@ -610,7 +614,7 @@ public:
         return *this;
     }
 
-    bool HasSourceMapURL() const
+    bool HasSourceMapUrl() const
     {
         return sourceMapUrl_.has_value();
     }
@@ -681,6 +685,7 @@ public:
 
     const std::string &GetScriptLanguage() const
     {
+        ASSERT(HasScriptLanguage());
         return scriptLanguage_.value();
     }
 
@@ -697,6 +702,7 @@ public:
 
     const std::string &GetEmbedderName() const
     {
+        ASSERT(HasEmbedderName());
         return embedderName_.value();
     }
 
@@ -802,6 +808,7 @@ public:
 
     const std::string &GetTitle() const
     {
+        ASSERT(HasTitle());
         return title_.value();
     }
 
@@ -860,6 +867,7 @@ public:
 
     const std::string &GetTitle() const
     {
+        ASSERT(HasTitle());
         return title_.value();
     }
 
