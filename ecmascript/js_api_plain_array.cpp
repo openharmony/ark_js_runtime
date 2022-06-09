@@ -257,12 +257,12 @@ JSTaggedValue JSAPIPlainArray::ToString(JSThread *thread, const JSHandle<JSAPIPl
     std::u16string sepStr = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.from_bytes(",");
     std::u16string colonStr = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.from_bytes(":");
 
-    uint32_t length = plainarray->GetLength();
+    int32_t length = plainarray->GetLength();
     std::u16string concatStr = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.from_bytes("");
     std::u16string concatStrNew = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.from_bytes("");
     JSMutableHandle<JSTaggedValue> valueHandle(thread, JSTaggedValue::Undefined());
     JSMutableHandle<JSTaggedValue> keyHandle(thread, JSTaggedValue::Undefined());
-    for (uint32_t k = 0; k < length; k++) {
+    for (int32_t k = 0; k < length; k++) {
         std::u16string valueStr;
         valueHandle.Update(plainarray->GetValueAt(k));
         if (!valueHandle->IsUndefined() && !valueHandle->IsNull()) {
@@ -302,7 +302,7 @@ JSTaggedValue JSAPIPlainArray::ToString(JSThread *thread, const JSHandle<JSAPIPl
 
     char16_t *char16tData = concatStr.data();
     auto *uint16tData = reinterpret_cast<uint16_t *>(char16tData);
-    int32_t u16strSize = concatStr.size();
+    uint32_t u16strSize = concatStr.size();
     return factory->NewFromUtf16Literal(uint16tData, u16strSize).GetTaggedValue();
 }
 
