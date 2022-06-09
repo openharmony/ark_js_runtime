@@ -75,13 +75,17 @@ public:
 
     inline void SetElement(const JSThread *thread, int index, const JSTaggedValue &element)
     {
-        ASSERT(index >= 0 && index < static_cast<int>(GetLength()));
+        if (UNLIKELY((index < 0 || index >= static_cast<int>(GetLength())))) {
+            return;
+        }
         Set(thread, index, element);
     }
 
     inline JSTaggedValue GetElement(int index) const
     {
-        ASSERT(index >= 0 && index < static_cast<int>(GetLength()));
+        if (UNLIKELY((index < 0 || index >= static_cast<int>(GetLength())))) {
+            return JSTaggedValue::Undefined();
+        }
         return Get(index);
     }
 
