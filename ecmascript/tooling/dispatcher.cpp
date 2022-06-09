@@ -33,17 +33,19 @@ DispatchRequest::DispatchRequest(const EcmaVM *ecmaVm, const std::string &messag
         return;
     }
 
-    int32_t callId = json->GetInt("id", -1);
-    if (callId == -1) {
+    Result ret;
+    int32_t callId;
+    ret = json->GetInt("id", &callId);
+    if (ret != Result::SUCCESS) {
         code_ = RequestCode::PARSE_ID_ERROR;
         LOG(ERROR, DEBUGGER) << "parse id error";
         return;
-    } else {
-        callId_ = callId;
     }
+    callId_ = callId;
 
-    std::string wholeMethod = json->GetString("method");
-    if (wholeMethod.empty()) {
+    std::string wholeMethod;
+    ret = json->GetString("method", &wholeMethod);
+    if (ret != Result::SUCCESS) {
         code_ = RequestCode::PARSE_METHOD_ERROR;
         LOG(ERROR, DEBUGGER) << "parse method error";
         return;
@@ -63,17 +65,17 @@ DispatchRequest::DispatchRequest(const EcmaVM *ecmaVm, const std::string &messag
     LOG(DEBUG, DEBUGGER) << "domain: " << domain_;
     LOG(DEBUG, DEBUGGER) << "method: " << method_;
 
-    std::unique_ptr<PtJson> params = json->GetObject("params");
-    if (params == nullptr) {
+    std::unique_ptr<PtJson> params;
+    ret = json->GetObject("params", &params);
+    if (ret == Result::NOT_EXIST) {
         return;
     }
-    if (!params->IsObject()) {
+    if (ret == Result::TYPE_ERROR) {
         code_ = RequestCode::PARAMS_FORMAT_ERROR;
         LOG(ERROR, DEBUGGER) << "params format error";
         return;
-    } else {
-        params_ = std::move(params);
     }
+    params_ = std::move(params);
 
     // below code will delete soon
     Local<JSValueRef> msgValue = JSON::Parse(ecmaVm, StringRef::NewFromUtf8(ecmaVm, message.c_str()));
@@ -99,6 +101,11 @@ DispatchRequest::DispatchRequest(const EcmaVM *ecmaVm, const std::string &messag
         return;
     }
     paramsObj_ = paramsValue;
+}
+
+DispatchRequest::~DispatchRequest()
+{
+    params_->ReleaseRoot();
 }
 
 DispatchResponse DispatchResponse::Create(ResponseCode code, const std::string &msg)

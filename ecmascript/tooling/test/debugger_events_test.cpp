@@ -95,14 +95,19 @@ HWTEST_F_L0(DebuggerEventsTest, BreakpointResolvedToJsonTest)
     location->SetScriptId(2).SetLine(99);
     breakpointResolved.SetBreakpointId("00").SetLocation(std::move(location));
 
-    auto json = breakpointResolved.ToJson()->GetObject("params");
-    auto breakpointId = json->GetString("breakpointId");
+    std::unique_ptr<PtJson> json;
+    ASSERT_EQ(breakpointResolved.ToJson()->GetObject("params", &json), Result::SUCCESS);
+    std::string breakpointId;
+    ASSERT_EQ(json->GetString("breakpointId", &breakpointId), Result::SUCCESS);
     EXPECT_EQ(breakpointId, "00");
 
-    auto locationJson = json->GetObject("location");
-    auto scriptId = locationJson->GetString("scriptId");
+    std::unique_ptr<PtJson> locationJson;
+    ASSERT_EQ(json->GetObject("location", &locationJson), Result::SUCCESS);
+    std::string scriptId;
+    ASSERT_EQ(locationJson->GetString("scriptId", &scriptId), Result::SUCCESS);
     EXPECT_EQ(scriptId, "2");
-    auto lineNumber = locationJson->GetInt("lineNumber");
+    int32_t lineNumber;
+    ASSERT_EQ(locationJson->GetInt("lineNumber", &lineNumber), Result::SUCCESS);
     EXPECT_EQ(lineNumber, 99);
 }
 

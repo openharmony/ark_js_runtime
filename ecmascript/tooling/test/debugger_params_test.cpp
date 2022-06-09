@@ -127,24 +127,6 @@ HWTEST_F_L0(DebuggerParamsTest, StartSamplingParamsCreateTest)
     EXPECT_EQ(startSamplingData->GetSamplingInterval(), 1000);
 }
 
-HWTEST_F_L0(DebuggerParamsTest, StartSamplingParamsToObjectTest)
-{
-    std::string msg;
-    std::unique_ptr<StartSamplingParams> startSamplingData;
-    Local<StringRef> tmpStr;
-
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"samplingInterval":1000}})";
-    startSamplingData = StartSamplingParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    ASSERT_NE(startSamplingData, nullptr);
-    Local<ObjectRef> object = startSamplingData->ToObject(ecmaVm);
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "samplingInterval");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<NumberRef>(result)->Value(), 1000);
-}
-
 HWTEST_F_L0(DebuggerParamsTest, StartTrackingHeapObjectsParamsCreateTest)
 {
     std::string msg;
@@ -187,24 +169,6 @@ HWTEST_F_L0(DebuggerParamsTest, StartTrackingHeapObjectsParamsCreateTest)
     objectData = StartTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
     ASSERT_NE(objectData, nullptr);
     ASSERT_TRUE(objectData->GetTrackAllocations());
-}
-
-HWTEST_F_L0(DebuggerParamsTest, StartTrackingHeapObjectsParamsToObjectTest)
-{
-    std::string msg;
-    std::unique_ptr<StartTrackingHeapObjectsParams> startTrackingData;
-    Local<StringRef> tmpStr;
-
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"trackAllocations":true}})";
-    startTrackingData = StartTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    ASSERT_NE(startTrackingData, nullptr);
-    Local<ObjectRef> object = startTrackingData->ToObject(ecmaVm);
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "trackAllocations");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsTrue());
 }
 
 HWTEST_F_L0(DebuggerParamsTest, StopTrackingHeapObjectsParamsCreateTest)
@@ -263,39 +227,6 @@ HWTEST_F_L0(DebuggerParamsTest, StopTrackingHeapObjectsParamsCreateTest)
     ASSERT_TRUE(objectData->GetCaptureNumericValue());
 }
 
-HWTEST_F_L0(DebuggerParamsTest, StopTrackingHeapObjectsParamsToObjectTest)
-{
-    std::string msg;
-    std::unique_ptr<StopTrackingHeapObjectsParams> stopTrackingData;
-    Local<StringRef> tmpStr;
-
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
-        "reportProgress":true,
-        "treatGlobalObjectsAsRoots":true,
-        "captureNumericValue":true}})";
-    stopTrackingData = StopTrackingHeapObjectsParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    ASSERT_NE(stopTrackingData, nullptr);
-    Local<ObjectRef> object = stopTrackingData->ToObject(ecmaVm);
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "reportProgress");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsTrue());
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "treatGlobalObjectsAsRoots");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsTrue());
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "captureNumericValue");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsTrue());
-}
-
 HWTEST_F_L0(DebuggerParamsTest, AddInspectedHeapObjectParamsCreateTest)
 {
     std::string msg;
@@ -338,24 +269,6 @@ HWTEST_F_L0(DebuggerParamsTest, AddInspectedHeapObjectParamsCreateTest)
     EXPECT_EQ((int)objectData->GetHeapObjectId(), 10);
 }
 
-HWTEST_F_L0(DebuggerParamsTest, AddInspectedHeapObjectParamsToObjectTest)
-{
-    std::string msg;
-    std::unique_ptr<AddInspectedHeapObjectParams> objectData;
-    Local<StringRef> tmpStr;
-
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"heapObjectId":"10"}})";
-    objectData = AddInspectedHeapObjectParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    ASSERT_NE(objectData, nullptr);
-    Local<ObjectRef> object = objectData->ToObject(ecmaVm);
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "heapObjectId");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(DebuggerApi::ToStdString(result), "10");
-}
-
 HWTEST_F_L0(DebuggerParamsTest, GetHeapObjectIdParamsCreateTest)
 {
     std::string msg;
@@ -396,24 +309,6 @@ HWTEST_F_L0(DebuggerParamsTest, GetHeapObjectIdParamsCreateTest)
     objectData = GetHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
     ASSERT_NE(objectData, nullptr);
     EXPECT_EQ((int)objectData->GetObjectId(), 10);
-}
-
-HWTEST_F_L0(DebuggerParamsTest, GetHeapObjectIdParamsToObjectTest)
-{
-    std::string msg;
-    std::unique_ptr<GetHeapObjectIdParams> objectData;
-    Local<StringRef> tmpStr;
-
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"objectId":"10"}})";
-    objectData = GetHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    ASSERT_NE(objectData, nullptr);
-    Local<ObjectRef> object = objectData->ToObject(ecmaVm);
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "objectId");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(DebuggerApi::ToStdString(result), "10");
 }
 
 HWTEST_F_L0(DebuggerParamsTest, GetObjectByHeapObjectIdParamsCreateTest)
@@ -463,30 +358,6 @@ HWTEST_F_L0(DebuggerParamsTest, GetObjectByHeapObjectIdParamsCreateTest)
     ASSERT_NE(objectData, nullptr);
     EXPECT_EQ((int)objectData->GetObjectId(), 10);
     EXPECT_EQ(objectData->GetObjectGroup(), "groupname");
-}
-
-HWTEST_F_L0(DebuggerParamsTest, GetObjectByHeapObjectIdParamsToObjectTest)
-{
-    std::string msg;
-    std::unique_ptr<GetObjectByHeapObjectIdParams> objectData;
-    Local<StringRef> tmpStr;
-
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"objectId":"10", "objectGroup":"groupname"}})";
-    objectData = GetObjectByHeapObjectIdParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    ASSERT_NE(objectData, nullptr);
-    Local<ObjectRef> object = objectData->ToObject(ecmaVm);
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "objectId");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(DebuggerApi::ToStdString(result), "10");
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "objectGroup");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(DebuggerApi::ToStdString(result), "groupname");
 }
 
 HWTEST_F_L0(DebuggerParamsTest, StartPreciseCoverageParamCreateTest)
@@ -539,39 +410,6 @@ HWTEST_F_L0(DebuggerParamsTest, StartPreciseCoverageParamCreateTest)
     ASSERT_TRUE(objectData->GetAllowTriggeredUpdates());
 }
 
-HWTEST_F_L0(DebuggerParamsTest, StartPreciseCoverageParamToObjectTest)
-{
-    std::string msg;
-    std::unique_ptr<StartPreciseCoverageParams> startTrackingData;
-    Local<StringRef> tmpStr;
-
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
-            "callCount":true,
-            "detailed":true,
-            "allowTriggeredUpdates":true}})";
-    startTrackingData = StartPreciseCoverageParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    ASSERT_NE(startTrackingData, nullptr);
-    Local<ObjectRef> object = startTrackingData->ToObject(ecmaVm);
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "callCount");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsTrue());
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "detailed");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsTrue());
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "allowTriggeredUpdates");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    ASSERT_TRUE(result->IsTrue());
-}
-
 HWTEST_F_L0(DebuggerParamsTest, SetSamplingIntervalParamsCreateTest)
 {
     std::string msg;
@@ -606,23 +444,5 @@ HWTEST_F_L0(DebuggerParamsTest, SetSamplingIntervalParamsCreateTest)
     objectData = SetSamplingIntervalParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
     ASSERT_NE(objectData, nullptr);
     EXPECT_EQ(objectData->GetInterval(), 500);
-}
-
-HWTEST_F_L0(DebuggerParamsTest, SetSamplingIntervalParamsToObjectTest)
-{
-    std::string msg;
-    std::unique_ptr<SetSamplingIntervalParams> setSamplingIntervalData;
-    Local<StringRef> tmpStr;
-
-    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"interval":500}})";
-    setSamplingIntervalData = SetSamplingIntervalParams::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
-    ASSERT_NE(setSamplingIntervalData, nullptr);
-    Local<ObjectRef> object = setSamplingIntervalData->ToObject(ecmaVm);
-
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "interval");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 500);
 }
 }  // namespace panda::test
