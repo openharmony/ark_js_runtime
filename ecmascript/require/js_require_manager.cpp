@@ -59,7 +59,7 @@ void JSRequireManager::InitializeCommonJS(JSThread *thread, CJSInfo cjsInfo)
     // initialize module
     JSCjsModule::InitializeModule(thread, module, filename, dirname);
 
-    // Set this.module ---> this.require.parent 
+    // Set this.module ---> this.require.parent
     JSHandle<JSTaggedValue> parentKey(factory->NewFromASCII("parent"));
     SlowRuntimeStub::StObjByName(thread, require.GetTaggedValue(), parentKey.GetTaggedValue(),
                                  module.GetTaggedValue());
@@ -68,7 +68,7 @@ void JSRequireManager::InitializeCommonJS(JSThread *thread, CJSInfo cjsInfo)
     JSHandle<JSTaggedValue> moduleObj(thread->GetEcmaVM()->GetGlobalEnv()->GetCjsModuleFunction());
     JSTaggedValue modCache =
         SlowRuntimeStub::LdObjByName(thread, moduleObj.GetTaggedValue(),
-                                     cacheKey.GetTaggedValue(), false, JSTaggedValue::Undefined());        
+                                     cacheKey.GetTaggedValue(), false, JSTaggedValue::Undefined());
     JSHandle<CjsModuleCache> moduleCache = JSHandle<CjsModuleCache>(thread, modCache);
     JSHandle<CjsModuleCache> newCache = CjsModuleCache::PutIfAbsent(thread, moduleCache,
                                                                     JSHandle<JSTaggedValue>::Cast(filename),
@@ -82,12 +82,8 @@ void JSRequireManager::CollectExecutedExp(JSThread *thread, CJSInfo cjsInfo)
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
 
     JSHandle<JSCjsModule> module = cjsInfo.moduleHdl;
-    JSHandle<JSCjsExports> exports = cjsInfo.exportsHdl;
     JSHandle<JSTaggedValue> filename = cjsInfo.filenameHdl;
 
-    JSHandle<JSTaggedValue> exportsKey = globalConst->GetHandledCjsExportsString();
-    SlowRuntimeStub::StObjByName(thread, module.GetTaggedValue(), exportsKey.GetTaggedValue(),
-                                 exports.GetTaggedValue());
     // get Module from global env
     JSHandle<JSTaggedValue> moduleObj(thread->GetEcmaVM()->GetGlobalEnv()->GetCjsModuleFunction());
     JSHandle<JSTaggedValue> cacheKey = globalConst->GetHandledCjsCacheString();
@@ -100,6 +96,6 @@ void JSRequireManager::CollectExecutedExp(JSThread *thread, CJSInfo cjsInfo)
                                                                       filename,
                                                                       JSHandle<JSTaggedValue>::Cast(module));
     SlowRuntimeStub::StObjByName(thread, moduleObj.GetTaggedValue(), cacheKey.GetTaggedValue(),
-                                 resetCache.GetTaggedValue()); 
+                                 resetCache.GetTaggedValue());
 }
 } // namespace panda::ecmascript
