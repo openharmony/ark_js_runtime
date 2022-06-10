@@ -174,7 +174,7 @@ public:
     void GenerateInternalNativeMethods();
     JSMethod *GetMethodByIndex(MethodIndex idx);
     JSMethod *NewMethodForNativeFunction(const void *func);
-    JSMethod *NewMethodForAOTFunction(const void *func, size_t numArgs);
+    JSMethod *NewMethodForAOTFunction(const void *func, size_t numArgs, const JSPandaFile *pf, uint32_t methodId);
 
     JSHandle<ProfileTypeInfo> NewProfileTypeInfo(uint32_t length);
     JSHandle<ConstantPool> NewConstantPool(uint32_t capacity);
