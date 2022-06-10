@@ -1704,6 +1704,41 @@ std::unique_ptr<SamplingHeapProfileSample> SamplingHeapProfileSample::Create(con
     return samplingHeapProfileSample;
 }
 
+std::unique_ptr<SamplingHeapProfileSample> SamplingHeapProfileSample::Create(const PtJson &params)
+{
+    std::string error;
+    auto samplingHeapProfileSample = std::make_unique<SamplingHeapProfileSample>();
+    Result ret;
+
+    int32_t size;
+    ret = params.GetInt("size", &size);
+    if (ret == Result::SUCCESS) {
+        samplingHeapProfileSample->size_ = size;
+    } else {
+        error += "Unknown 'size';";
+    }
+    int32_t nodeId;
+    ret = params.GetInt("nodeId", &nodeId);
+    if (ret == Result::SUCCESS) {
+        samplingHeapProfileSample->nodeId_ = nodeId;
+    } else {
+        error += "Unknown 'nodeId';";
+    }
+    int32_t ordinal;
+    ret = params.GetInt("ordinal", &ordinal);
+    if (ret == Result::SUCCESS) {
+        samplingHeapProfileSample->ordinal_ = ordinal;
+    } else {
+        error += "Unknown 'ordinal';";
+    }
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "SamplingHeapProfileSample::Create " << error;
+        return nullptr;
+    }
+
+    return samplingHeapProfileSample;
+}
+
 Local<ObjectRef> SamplingHeapProfileSample::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -1716,6 +1751,17 @@ Local<ObjectRef> SamplingHeapProfileSample::ToObject(const EcmaVM *ecmaVm) const
         IntegerRef::New(ecmaVm, nodeId_));
 
     return params;
+}
+
+std::unique_ptr<PtJson> SamplingHeapProfileSample::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("size", static_cast<int32_t>(size_));
+    result->Add("nodeId", nodeId_);
+    result->Add("ordinal", static_cast<int32_t>(ordinal_));
+
+    return result;
 }
 
 std::unique_ptr<RuntimeCallFrame> RuntimeCallFrame::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
@@ -1791,6 +1837,59 @@ std::unique_ptr<RuntimeCallFrame> RuntimeCallFrame::Create(const EcmaVM *ecmaVm,
     return runtimeCallFrame;
 }
 
+std::unique_ptr<RuntimeCallFrame> RuntimeCallFrame::Create(const PtJson &params)
+{
+    std::string error;
+    auto runtimeCallFrame = std::make_unique<RuntimeCallFrame>();
+    Result ret;
+    
+    std::string functionName;
+    ret = params.GetString("functionName", &functionName);
+    if (ret == Result::SUCCESS) {
+        runtimeCallFrame->functionName_ = std::move(functionName);
+    } else {
+        error += "Unknown 'functionName';";
+    }
+
+    std::string scriptId;
+    ret = params.GetString("scriptId", &scriptId);
+    if (ret == Result::SUCCESS) {
+        runtimeCallFrame->scriptId_ = std::move(scriptId);
+    } else {
+        error += "Unknown 'scriptId';";
+    }
+
+    std::string url;
+    ret = params.GetString("url", &url);
+    if (ret == Result::SUCCESS) {
+        runtimeCallFrame->url_ = std::move(url);
+    } else {
+        error += "Unknown 'url';";
+    }
+    
+    int32_t lineNumber;
+    ret = params.GetInt("lineNumber", &lineNumber);
+    if (ret == Result::SUCCESS) {
+        runtimeCallFrame->lineNumber_ = lineNumber;
+    } else {
+        error += "Unknown 'lineNumber';";
+    }
+
+    int32_t columnNumber;
+    ret = params.GetInt("columnNumber", &columnNumber);
+    if (ret == Result::SUCCESS) {
+        runtimeCallFrame->columnNumber_ = columnNumber;
+    } else {
+        error += "Unknown 'columnNumber';";
+    }
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "RuntimeCallFrame::Create " << error;
+        return nullptr;
+    }
+
+    return runtimeCallFrame;
+}
+
 std::unique_ptr<RuntimeCallFrame> RuntimeCallFrame::FromFrameInfo(const FrameInfo &cpuFrameInfo)
 {
     auto runtimeCallFrame = std::make_unique<RuntimeCallFrame>();
@@ -1822,6 +1921,19 @@ Local<ObjectRef> RuntimeCallFrame::ToObject(const EcmaVM *ecmaVm) const
         IntegerRef::New(ecmaVm, columnNumber_));
 
     return params;
+}
+
+std::unique_ptr<PtJson> RuntimeCallFrame::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("functionName", functionName_.c_str());
+    result->Add("scriptId", scriptId_.c_str());
+    result->Add("url", url_.c_str());
+    result->Add("lineNumber", lineNumber_);
+    result->Add("columnNumber", columnNumber_);
+
+    return result;
 }
 
 std::unique_ptr<SamplingHeapProfileNode> SamplingHeapProfileNode::Create(const EcmaVM *ecmaVm,
@@ -1904,6 +2016,70 @@ std::unique_ptr<SamplingHeapProfileNode> SamplingHeapProfileNode::Create(const E
     return samplingHeapProfileNode;
 }
 
+std::unique_ptr<SamplingHeapProfileNode> SamplingHeapProfileNode::Create(const PtJson &params)
+{
+    std::string error;
+    auto samplingHeapProfileNode = std::make_unique<SamplingHeapProfileNode>();
+    Result ret;
+
+    std::unique_ptr<PtJson> callFrame;
+    ret = params.GetObject("callFrame", &callFrame);
+    if (ret == Result::SUCCESS) {
+        std::unique_ptr<RuntimeCallFrame> runtimeCallFrame = RuntimeCallFrame::Create(*callFrame);
+        if (runtimeCallFrame == nullptr) {
+            error += "'callFrame' format invalid;";
+        } else {
+            samplingHeapProfileNode->callFrame_ = std::move(runtimeCallFrame);
+        }
+    } else {
+        error += "Unknown 'callFrame';";
+    }
+    
+    int32_t selfSize;
+    ret = params.GetInt("selfSize", &selfSize);
+    if (ret == Result::SUCCESS) {
+        samplingHeapProfileNode->selfSize_ = static_cast<size_t>(selfSize);
+    } else {
+        error += "Unknown 'selfSize';";
+    }
+
+    int32_t id;
+    ret = params.GetInt("id", &id);
+    if (ret == Result::SUCCESS) {
+        samplingHeapProfileNode->id_ = id;
+    } else {
+        error += "Unknown 'id';";
+    }
+
+    std::unique_ptr<PtJson> children;
+    ret = params.GetArray("children", &children);
+    if (ret == Result::SUCCESS) {
+        int32_t len = children->GetSize();
+        for (int32_t i = 0; i < len; ++i) {
+            std::unique_ptr<PtJson> arrayEle = children->Get(i);
+            if (arrayEle != nullptr) {
+                std::unique_ptr<SamplingHeapProfileNode> node = SamplingHeapProfileNode::Create(*arrayEle);
+                if (node == nullptr) {
+                    error += "'children' format invalid;";
+                } else {
+                    samplingHeapProfileNode->children_.emplace_back(std::move(node));
+                }
+            } else {
+                error += "Unknown 'children';";
+            }
+        }
+    } else {
+        error += "Unknown 'children';";
+    }
+    
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "SamplingHeapProfileNode::Create " << error;
+        return nullptr;
+    }
+
+    return samplingHeapProfileNode;
+}
+
 Local<ObjectRef> SamplingHeapProfileNode::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -1930,6 +2106,25 @@ Local<ObjectRef> SamplingHeapProfileNode::ToObject(const EcmaVM *ecmaVm) const
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "children")), values);
 
     return params;
+}
+
+std::unique_ptr<PtJson> SamplingHeapProfileNode::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+    if (callFrame_ != nullptr) {
+        result->Add("callFrame", callFrame_->ToJson());
+    }
+    
+    result->Add("selfSize", static_cast<int32_t>(selfSize_));
+    result->Add("id", id_);
+    
+    std::unique_ptr<PtJson> childrens = PtJson::CreateArray();
+    size_t len = children_.size();
+    for (size_t i = 0; i < len; i++) {
+        childrens->Push(children_[i]->ToJson());
+    }
+    result->Add("children", childrens);
+    return result;
 }
 
 std::unique_ptr<SamplingHeapProfile> SamplingHeapProfile::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
@@ -1989,6 +2184,54 @@ std::unique_ptr<SamplingHeapProfile> SamplingHeapProfile::Create(const EcmaVM *e
     return samplingHeapProfile;
 }
 
+std::unique_ptr<SamplingHeapProfile> SamplingHeapProfile::Create(const PtJson &params)
+{
+    std::string error;
+    auto samplingHeapProfile = std::make_unique<SamplingHeapProfile>();
+    Result ret;
+    
+    std::unique_ptr<PtJson> head;
+    ret = params.GetObject("head", &head);
+    if (ret == Result::SUCCESS) {
+        std::unique_ptr<SamplingHeapProfileNode> pHead = SamplingHeapProfileNode::Create(*head);
+        if (pHead == nullptr) {
+            error += "'sample' format invalid;";
+        } else {
+            samplingHeapProfile->head_ = std::move(pHead);
+        }
+    } else {
+        error += "Unknown 'head';";
+    }
+
+    std::unique_ptr<PtJson> samples;
+    ret = params.GetArray("samples", &samples);
+    if (ret == Result::SUCCESS) {
+        int32_t len = samples->GetSize();
+        for (int32_t i = 0; i < len; ++i) {
+            std::unique_ptr<PtJson> arrayEle = samples->Get(i);
+            if (arrayEle != nullptr) {
+                std::unique_ptr<SamplingHeapProfileSample> pSample = SamplingHeapProfileSample::Create(*arrayEle);
+                if (pSample == nullptr) {
+                    error += "'sample' format invalid;";
+                } else {
+                    samplingHeapProfile->samples_.emplace_back(std::move(pSample));
+                }
+            } else {
+                error += "Unknown 'samples';";
+            }
+        }
+    } else {
+        error += "Unknown 'samples';";
+    }
+    
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "SamplingHeapProfile::Create " << error;
+        return nullptr;
+    }
+
+    return samplingHeapProfile;
+}
+
 Local<ObjectRef> SamplingHeapProfile::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -2010,6 +2253,23 @@ Local<ObjectRef> SamplingHeapProfile::ToObject(const EcmaVM *ecmaVm) const
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samples")), values);
 
     return params;
+}
+
+std::unique_ptr<PtJson> SamplingHeapProfile::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("head", head_->ToJson());
+    
+    std::unique_ptr<PtJson> samples = PtJson::CreateArray();
+    size_t len = samples_.size();
+    for (size_t i = 0; i < len; i++) {
+        if (samples_[i] != nullptr) {
+            samples->Push(samples_[i]->ToJson());
+        }
+    }
+    result->Add("samples", samples);
+    return result;
 }
 
 std::unique_ptr<PositionTickInfo> PositionTickInfo::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
@@ -2049,6 +2309,36 @@ std::unique_ptr<PositionTickInfo> PositionTickInfo::Create(const EcmaVM *ecmaVm,
     return positionTicks;
 }
 
+std::unique_ptr<PositionTickInfo> PositionTickInfo::Create(const PtJson &params)
+{
+    std::string error;
+    auto positionTickInfo = std::make_unique<PositionTickInfo>();
+    Result ret;
+    
+    int32_t line;
+    ret = params.GetInt("line", &line);
+    if (ret == Result::SUCCESS) {
+        positionTickInfo->line_ = line;
+    } else {
+        error += "Unknown 'line';";
+    }
+
+    int32_t ticks;
+    ret = params.GetInt("ticks", &ticks);
+    if (ret == Result::SUCCESS) {
+        positionTickInfo->ticks_ = ticks;
+    } else {
+        error += "Unknown 'ticks';";
+    }
+    
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "PositionTickInfo::Create " << error;
+        return nullptr;
+    }
+
+    return positionTickInfo;
+}
+
 Local<ObjectRef> PositionTickInfo::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -2060,6 +2350,16 @@ Local<ObjectRef> PositionTickInfo::ToObject(const EcmaVM *ecmaVm) const
         IntegerRef::New(ecmaVm, ticks_));
 
     return params;
+}
+
+std::unique_ptr<PtJson> PositionTickInfo::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("line", static_cast<int32_t>(line_));
+    result->Add("ticks", static_cast<int32_t>(ticks_));
+
+    return result;
 }
 
 std::unique_ptr<ProfileNode> ProfileNode::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
@@ -2161,6 +2461,90 @@ std::unique_ptr<ProfileNode> ProfileNode::Create(const EcmaVM *ecmaVm, const Loc
     return profileNode;
 }
 
+std::unique_ptr<ProfileNode> ProfileNode::Create(const PtJson &params)
+{
+    std::string error;
+    auto profileNode = std::make_unique<ProfileNode>();
+    Result ret;
+    
+    int32_t id;
+    ret = params.GetInt("id", &id);
+    if (ret == Result::SUCCESS) {
+        profileNode->id_ = id;
+    } else {
+        error += "Unknown 'id';";
+    }
+
+    std::unique_ptr<PtJson> callFrame;
+    ret = params.GetObject("callFrame", &callFrame);
+    if (ret == Result::SUCCESS) {
+        std::unique_ptr<RuntimeCallFrame> runtimeCallFrame = RuntimeCallFrame::Create(*callFrame);
+        if (runtimeCallFrame == nullptr) {
+            error += "'callFrame' format invalid;";
+        } else {
+            profileNode->callFrame_ = std::move(runtimeCallFrame);
+        }
+    } else {
+        error += "Unknown 'callFrame';";
+    }
+
+    int32_t hitCount;
+    ret = params.GetInt("hitCount", &hitCount);
+    if (ret == Result::SUCCESS) {
+        profileNode->hitCount_ = hitCount;
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'hitCount';";
+    }
+
+    std::unique_ptr<PtJson> children;
+    ret = params.GetArray("children", &children);
+    if (ret == Result::SUCCESS) {
+        int32_t childrenLen = children->GetSize();
+        for (int32_t i = 0; i < childrenLen; ++i) {
+            int32_t pChildren = children->Get(i)->GetInt();
+            profileNode->children_.value().emplace_back(pChildren);
+        }
+    }  else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'children';";
+    }
+
+    std::unique_ptr<PtJson> positionTicks;
+    ret = params.GetArray("positionTicks", &positionTicks);
+    if (ret == Result::SUCCESS) {
+        int32_t positionTicksLen = positionTicks->GetSize();
+        for (int32_t i = 0; i < positionTicksLen; ++i) {
+            std::unique_ptr<PtJson> arrayEle = positionTicks->Get(i);
+            if (arrayEle != nullptr) {
+                std::unique_ptr<PositionTickInfo> tmpPositionTicks = PositionTickInfo::Create(*arrayEle);
+                if (tmpPositionTicks == nullptr) {
+                    error += "'positionTicks' format invalid;";
+                } else {
+                    profileNode->positionTicks_.value().emplace_back(std::move(tmpPositionTicks));
+                }
+            } else {
+                error += "Unknown 'positionTicks';";
+            }
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'positionTicks';";
+    }
+
+    std::string deoptReason;
+    ret = params.GetString("deoptReason", &deoptReason);
+    if (ret == Result::SUCCESS) {
+        profileNode->deoptReason_ = std::move(deoptReason);
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'deoptReason';";
+    }
+    
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "ProfileNode::Create " << error;
+        return nullptr;
+    }
+
+    return profileNode;
+}
+
 std::unique_ptr<ProfileNode> ProfileNode::FromCpuProfileNode(const CpuProfileNode &cpuProfileNode)
 {
     auto profileNode = std::make_unique<ProfileNode>();
@@ -2221,6 +2605,41 @@ Local<ObjectRef> ProfileNode::ToObject(const EcmaVM *ecmaVm) const
     }
     
     return params;
+}
+
+std::unique_ptr<PtJson> ProfileNode::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("id", id_);
+    result->Add("callFrame", callFrame_->ToJson());
+    if (hitCount_) {
+        result->Add("hitCount", hitCount_.value());
+    }
+    if (children_) {
+        std::unique_ptr<PtJson> childrens = PtJson::CreateArray();
+        size_t len = children_->size();
+        for (size_t i = 0; i < len; i++) {
+            childrens->Push(children_.value()[i]);
+        }
+        result->Add("children", childrens);
+    }
+    if (positionTicks_) {
+        std::unique_ptr<PtJson> positionTicks = PtJson::CreateArray();
+        size_t len = positionTicks_->size();
+        for (size_t i = 0; i < len; i++) {
+            if (positionTicks_.value()[i] != nullptr) {
+                positionTicks->Push(positionTicks_.value()[i]->ToJson());
+            }
+        }
+        result->Add("positionTicks", positionTicks);
+    }
+
+    if (deoptReason_) {
+        result->Add("deoptReason", deoptReason_.value().c_str());
+    }
+    
+    return result;
 }
 
 std::unique_ptr<Profile> Profile::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
@@ -2316,6 +2735,81 @@ std::unique_ptr<Profile> Profile::Create(const EcmaVM *ecmaVm, const Local<JSVal
     return profile;
 }
 
+std::unique_ptr<Profile> Profile::Create(const PtJson &params)
+{
+    std::string error;
+    auto profile = std::make_unique<Profile>();
+    Result ret;
+    
+    std::unique_ptr<PtJson> nodes;
+    ret = params.GetArray("nodes", &nodes);
+    if (ret == Result::SUCCESS) {
+        int32_t nodesLen = nodes->GetSize();
+        for (int32_t i = 0; i < nodesLen; ++i) {
+            std::unique_ptr<PtJson> arrayEle = nodes->Get(i);
+            if (arrayEle != nullptr) {
+                std::unique_ptr<ProfileNode> profileNode = ProfileNode::Create(*arrayEle);
+                if (profileNode == nullptr) {
+                    error += "'nodes' format invalid;";
+                } else {
+                    profile->nodes_.emplace_back(std::move(profileNode));
+                }
+            } else {
+                error += "Unknown 'nodes';";
+            }
+        }
+    } else {
+        error += "Unknown 'nodes';";
+    }
+    
+    int64_t startTime;
+    ret = params.GetInt64("startTime", &startTime);
+    if (ret == Result::SUCCESS) {
+        profile->startTime_ = startTime;
+    } else {
+        error += "Unknown 'startTime';";
+    }
+
+    int64_t endTime;
+    ret = params.GetInt64("endTime", &endTime);
+    if (ret == Result::SUCCESS) {
+        profile->endTime_ = endTime;
+    } else {
+        error += "Unknown 'endTime';";
+    }
+
+    std::unique_ptr<PtJson> samples;
+    ret = params.GetArray("samples", &samples);
+    if (ret == Result::SUCCESS) {
+        int32_t samplesLen = samples->GetSize();
+        for (int32_t i = 0; i < samplesLen; ++i) {
+            int32_t pSamples = samples->Get(i)->GetInt();
+            profile->samples_.value().emplace_back(pSamples);
+        }
+    }  else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'samples';";
+    }
+
+    std::unique_ptr<PtJson> timeDeltas;
+    ret = params.GetArray("timeDeltas", &timeDeltas);
+    if (ret == Result::SUCCESS) {
+        int32_t timeDeltasLen = timeDeltas->GetSize();
+        for (int32_t i = 0; i < timeDeltasLen; ++i) {
+            int32_t pTimeDeltas = timeDeltas->Get(i)->GetInt();
+            profile->timeDeltas_.value().emplace_back(pTimeDeltas);
+        }
+    }  else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'timeDeltas';";
+    }
+    
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "Profile::Create " << error;
+        return nullptr;
+    }
+
+    return profile;
+}
+
 std::unique_ptr<Profile> Profile::FromProfileInfo(const ProfileInfo &profileInfo)
 {
     auto profile = std::make_unique<Profile>();
@@ -2387,6 +2881,43 @@ Local<ObjectRef> Profile::ToObject(const EcmaVM *ecmaVm) const
     return params;
 }
 
+std::unique_ptr<PtJson> Profile::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("startTime", startTime_);
+    result->Add("endTime", endTime_);
+
+    std::unique_ptr<PtJson> nodes = PtJson::CreateArray();
+    size_t nodesLen = nodes_.size();
+    for (size_t i = 0; i < nodesLen; i++) {
+        if (nodes_[i] != nullptr) {
+            nodes->Push(nodes_[i]->ToJson());
+        }
+    }
+    result->Add("nodes", nodes);
+
+    if (samples_) {
+        std::unique_ptr<PtJson> samples = PtJson::CreateArray();
+        size_t samplesLen = samples_->size();
+        for (size_t i = 0; i < samplesLen; i++) {
+            samples->Push(samples_.value()[i]);
+        }
+        result->Add("samples", samples);
+    }
+
+    if (timeDeltas_) {
+        std::unique_ptr<PtJson> timeDeltas = PtJson::CreateArray();
+        size_t timeDeltasLen = timeDeltas_->size();
+        for (size_t i = 0; i < timeDeltasLen; i++) {
+            timeDeltas->Push(timeDeltas_.value()[i]);
+        }
+        result->Add("timeDeltas", timeDeltas);
+    }
+    
+    return result;
+}
+
 std::unique_ptr<Coverage> Coverage::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
 {
     if (params.IsEmpty() || !params->IsObject()) {
@@ -2434,6 +2965,44 @@ std::unique_ptr<Coverage> Coverage::Create(const EcmaVM *ecmaVm, const Local<JSV
     return coverage;
 }
 
+std::unique_ptr<Coverage> Coverage::Create(const PtJson &params)
+{
+    std::string error;
+    auto coverage = std::make_unique<Coverage>();
+    Result ret;
+    
+    int32_t startOffset;
+    ret = params.GetInt("startOffset", &startOffset);
+    if (ret == Result::SUCCESS) {
+        coverage->startOffset_ = startOffset;
+    } else {
+        error += "Unknown 'startOffset';";
+    }
+
+    int32_t endOffset;
+    ret = params.GetInt("endOffset", &endOffset);
+    if (ret == Result::SUCCESS) {
+        coverage->endOffset_ = endOffset;
+    } else {
+        error += "Unknown 'endOffset';";
+    }
+
+    int32_t count;
+    ret = params.GetInt("count", &count);
+    if (ret == Result::SUCCESS) {
+        coverage->count_ = count;
+    } else {
+        error += "Unknown 'count';";
+    }
+    
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "Coverage::Create " << error;
+        return nullptr;
+    }
+
+    return coverage;
+}
+
 Local<ObjectRef> Coverage::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -2444,6 +3013,17 @@ Local<ObjectRef> Coverage::ToObject(const EcmaVM *ecmaVm) const
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "count")), IntegerRef::New(ecmaVm, count_));
     return params;
+}
+
+std::unique_ptr<PtJson> Coverage::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("startOffset", startOffset_);
+    result->Add("endOffset", endOffset_);
+    result->Add("count", count_);
+    
+    return result;
 }
 
 std::unique_ptr<FunctionCoverage> FunctionCoverage::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
@@ -2502,6 +3082,57 @@ std::unique_ptr<FunctionCoverage> FunctionCoverage::Create(const EcmaVM *ecmaVm,
     return functionCoverage;
 }
 
+std::unique_ptr<FunctionCoverage> FunctionCoverage::Create(const PtJson &params)
+{
+    std::string error;
+    auto functionCoverage = std::make_unique<FunctionCoverage>();
+    Result ret;
+    
+    std::string functionName;
+    ret = params.GetString("functionName", &functionName);
+    if (ret == Result::SUCCESS) {
+        functionCoverage->functionName_ = std::move(functionName);
+    } else {
+        error += "Unknown 'functionName';";
+    }
+
+    std::unique_ptr<PtJson> ranges;
+    ret = params.GetArray("ranges", &ranges);
+    if (ret == Result::SUCCESS) {
+        int32_t len = ranges->GetSize();
+        for (int32_t i = 0; i < len; ++i) {
+            std::unique_ptr<PtJson> arrayEle = ranges->Get(i);
+            if (arrayEle != nullptr) {
+                std::unique_ptr<Coverage> pRanges = Coverage::Create(*arrayEle);
+                if (pRanges == nullptr) {
+                    error += "'ranges' format invalid;";
+                } else {
+                    functionCoverage->ranges_.emplace_back(std::move(pRanges));
+                }
+            } else {
+                error += "Unknown 'ranges';";
+            }
+        }
+    } else {
+        error += "Unknown 'ranges';";
+    }
+
+    bool isBlockCoverage;
+    ret = params.GetBool("isBlockCoverage", &isBlockCoverage);
+    if (ret == Result::SUCCESS) {
+        functionCoverage->isBlockCoverage_ = isBlockCoverage;
+    } else {
+        error += "Unknown 'isBlockCoverage';";
+    }
+    
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "FunctionCoverage::Create " << error;
+        return nullptr;
+    }
+
+    return functionCoverage;
+}
+
 Local<ObjectRef> FunctionCoverage::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -2522,6 +3153,26 @@ Local<ObjectRef> FunctionCoverage::ToObject(const EcmaVM *ecmaVm) const
             BooleanRef::New(ecmaVm, isBlockCoverage_));
     }
     return params;
+}
+
+std::unique_ptr<PtJson> FunctionCoverage::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("functionName", functionName_.c_str());
+
+    std::unique_ptr<PtJson> ranges = PtJson::CreateArray();
+    size_t len = ranges_.size();
+    for (size_t i = 0; i < len; i++) {
+        if (ranges_[i] != nullptr) {
+            ranges->Push(ranges_[i]->ToJson());
+        }
+    }
+    result->Add("ranges", ranges);
+
+    result->Add("isBlockCoverage", isBlockCoverage_);
+    
+    return result;
 }
 
 std::unique_ptr<ScriptCoverage> ScriptCoverage::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
@@ -2579,6 +3230,57 @@ std::unique_ptr<ScriptCoverage> ScriptCoverage::Create(const EcmaVM *ecmaVm, con
     return scriptCoverage;
 }
 
+std::unique_ptr<ScriptCoverage> ScriptCoverage::Create(const PtJson &params)
+{
+    std::string error;
+    auto scriptCoverage = std::make_unique<ScriptCoverage>();
+    Result ret;
+    
+    std::string scriptId;
+    ret = params.GetString("scriptId", &scriptId);
+    if (ret == Result::SUCCESS) {
+        scriptCoverage->scriptId_ = std::move(scriptId);
+    } else {
+        error += "Unknown 'scriptId';";
+    }
+
+    std::string url;
+    ret = params.GetString("url", &url);
+    if (ret == Result::SUCCESS) {
+        scriptCoverage->url_ = std::move(url);
+    } else {
+        error += "Unknown 'url';";
+    }
+
+    std::unique_ptr<PtJson> functions;
+    ret = params.GetArray("functions", &functions);
+    if (ret == Result::SUCCESS) {
+        int32_t len = functions->GetSize();
+        for (int32_t i = 0; i < len; ++i) {
+            std::unique_ptr<PtJson> arrayEle = functions->Get(i);
+            if (arrayEle != nullptr) {
+                std::unique_ptr<FunctionCoverage> pFunctions = FunctionCoverage::Create(*arrayEle);
+                if (pFunctions == nullptr) {
+                    error += "'functions' format invalid;";
+                } else {
+                    scriptCoverage->functions_.emplace_back(std::move(pFunctions));
+                }
+            } else {
+                error += "Unknown 'functions';";
+            }
+        }
+    } else {
+        error += "Unknown 'functions';";
+    }
+    
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "ScriptCoverage::Create " << error;
+        return nullptr;
+    }
+
+    return scriptCoverage;
+}
+
 Local<ObjectRef> ScriptCoverage::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -2596,6 +3298,25 @@ Local<ObjectRef> ScriptCoverage::ToObject(const EcmaVM *ecmaVm) const
     }
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functions")), rangesValues);
     return params;
+}
+
+std::unique_ptr<PtJson> ScriptCoverage::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("scriptId", scriptId_.c_str());
+    result->Add("url", url_.c_str());
+
+    std::unique_ptr<PtJson> functions = PtJson::CreateArray();
+    size_t len = functions_.size();
+    for (size_t i = 0; i < len; i++) {
+        if (functions_[i] != nullptr) {
+            functions->Push(functions_[i]->ToJson());
+        }
+    }
+    result->Add("functions", functions);
+    
+    return result;
 }
 
 std::unique_ptr<TypeObject> TypeObject::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
@@ -2625,6 +3346,28 @@ std::unique_ptr<TypeObject> TypeObject::Create(const EcmaVM *ecmaVm, const Local
     return typeObject;
 }
 
+std::unique_ptr<TypeObject> TypeObject::Create(const PtJson &params)
+{
+    std::string error;
+    auto typeObject = std::make_unique<TypeObject>();
+    Result ret;
+    
+    std::string name;
+    ret = params.GetString("name", &name);
+    if (ret == Result::SUCCESS) {
+        typeObject->name_ = std::move(name);
+    } else {
+        error += "Unknown 'name';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "TypeObject::Create " << error;
+        return nullptr;
+    }
+
+    return typeObject;
+}
+
 Local<ObjectRef> TypeObject::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -2632,6 +3375,15 @@ Local<ObjectRef> TypeObject::ToObject(const EcmaVM *ecmaVm) const
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, name_.c_str())));
     return params;
+}
+
+std::unique_ptr<PtJson> TypeObject::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("name", name_.c_str());
+    
+    return result;
 }
 
 std::unique_ptr<TypeProfileEntry> TypeProfileEntry::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
@@ -2678,6 +3430,49 @@ std::unique_ptr<TypeProfileEntry> TypeProfileEntry::Create(const EcmaVM *ecmaVm,
     return typeProfileEntry;
 }
 
+std::unique_ptr<TypeProfileEntry> TypeProfileEntry::Create(const PtJson &params)
+{
+    std::string error;
+    auto typeProfileEntry = std::make_unique<TypeProfileEntry>();
+    Result ret;
+    
+    int32_t offset;
+    ret = params.GetInt("offset", &offset);
+    if (ret == Result::SUCCESS) {
+        typeProfileEntry->offset_ = offset;
+    } else {
+        error += "Unknown 'offset';";
+    }
+
+    std::unique_ptr<PtJson> types;
+    ret = params.GetArray("types", &types);
+    if (ret == Result::SUCCESS) {
+        int32_t len = types->GetSize();
+        for (int32_t i = 0; i < len; ++i) {
+            std::unique_ptr<PtJson> arrayEle = types->Get(i);
+            if (arrayEle != nullptr) {
+                std::unique_ptr<TypeObject> pTypes = TypeObject::Create(*arrayEle);
+                if (pTypes == nullptr) {
+                    error += "'types' format invalid;";
+                } else {
+                    typeProfileEntry->types_.emplace_back(std::move(pTypes));
+                }
+            } else {
+                error += "Unknown 'types';";
+            }
+        }
+    } else {
+        error += "Unknown 'types';";
+    }
+    
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "TypeProfileEntry::Create " << error;
+        return nullptr;
+    }
+
+    return typeProfileEntry;
+}
+
 Local<ObjectRef> TypeProfileEntry::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -2692,6 +3487,22 @@ Local<ObjectRef> TypeProfileEntry::ToObject(const EcmaVM *ecmaVm) const
     }
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "types")), typeValues);
     return params;
+}
+
+std::unique_ptr<PtJson> TypeProfileEntry::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("offset", static_cast<int32_t>(offset_));
+
+    std::unique_ptr<PtJson> types = PtJson::CreateArray();
+    size_t len = types_.size();
+    for (size_t i = 0; i < len; i++) {
+        types->Push(types_[i]->ToJson());
+    }
+    result->Add("types", types);
+
+    return result;
 }
 
 std::unique_ptr<ScriptTypeProfile> ScriptTypeProfile::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
@@ -2750,6 +3561,57 @@ std::unique_ptr<ScriptTypeProfile> ScriptTypeProfile::Create(const EcmaVM *ecmaV
     return scriptTypeProfile;
 }
 
+std::unique_ptr<ScriptTypeProfile> ScriptTypeProfile::Create(const PtJson &params)
+{
+    std::string error;
+    auto scriptTypeProfile = std::make_unique<ScriptTypeProfile>();
+    Result ret;
+    
+    std::string scriptId;
+    ret = params.GetString("scriptId", &scriptId);
+    if (ret == Result::SUCCESS) {
+        scriptTypeProfile->scriptId_ = std::move(scriptId);
+    } else {
+        error += "Unknown 'scriptId';";
+    }
+
+    std::string url;
+    ret = params.GetString("url", &url);
+    if (ret == Result::SUCCESS) {
+        scriptTypeProfile->url_ = std::move(url);
+    } else {
+        error += "Unknown 'url';";
+    }
+
+    std::unique_ptr<PtJson> entries;
+    ret = params.GetArray("entries", &entries);
+    if (ret == Result::SUCCESS) {
+        int32_t len = entries->GetSize();
+        for (int32_t i = 0; i < len; ++i) {
+            std::unique_ptr<PtJson> arrayEle = entries->Get(i);
+            if (arrayEle != nullptr) {
+                std::unique_ptr<TypeProfileEntry> pEntries = TypeProfileEntry::Create(*arrayEle);
+                if (pEntries == nullptr) {
+                    error += "'entries' format invalid;";
+                } else {
+                    scriptTypeProfile->entries_.emplace_back(std::move(pEntries));
+                }
+            } else {
+                error += "Unknown 'entries';";
+            }
+        }
+    } else {
+        error += "Unknown 'entries';";
+    }
+    
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "ScriptTypeProfile::Create " << error;
+        return nullptr;
+    }
+
+    return scriptTypeProfile;
+}
+
 Local<ObjectRef> ScriptTypeProfile::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -2767,5 +3629,22 @@ Local<ObjectRef> ScriptTypeProfile::ToObject(const EcmaVM *ecmaVm) const
     }
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "entries")), entriesValues);
     return params;
+}
+
+std::unique_ptr<PtJson> ScriptTypeProfile::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("scriptId", scriptId_.c_str());
+    result->Add("url", url_.c_str());
+
+    std::unique_ptr<PtJson> entries = PtJson::CreateArray();
+    size_t len = entries_.size();
+    for (size_t i = 0; i < len; i++) {
+        entries->Push(entries_[i]->ToJson());
+    }
+    result->Add("entries", entries);
+    
+    return result;
 }
 }  // namespace panda::ecmascript::tooling

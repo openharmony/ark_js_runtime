@@ -1498,7 +1498,9 @@ public:
     SamplingHeapProfileSample() = default;
     ~SamplingHeapProfileSample() override = default;
     static std::unique_ptr<SamplingHeapProfileSample> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<SamplingHeapProfileSample> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     SamplingHeapProfileSample &SetSize(size_t size)
     {
@@ -1547,8 +1549,10 @@ public:
     RuntimeCallFrame() = default;
     ~RuntimeCallFrame() override = default;
     static std::unique_ptr<RuntimeCallFrame> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<RuntimeCallFrame> Create(const PtJson &params);
     static std::unique_ptr<RuntimeCallFrame> FromFrameInfo(const FrameInfo &cpuFrameInfo);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     RuntimeCallFrame &SetFunctionName(const std::string &functionName)
     {
@@ -1621,7 +1625,9 @@ public:
     SamplingHeapProfileNode() = default;
     ~SamplingHeapProfileNode() override = default;
     static std::unique_ptr<SamplingHeapProfileNode> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<SamplingHeapProfileNode> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     SamplingHeapProfileNode &SetCallFrame(std::unique_ptr<RuntimeCallFrame> callFrame)
     {
@@ -1682,7 +1688,9 @@ public:
     SamplingHeapProfile() = default;
     ~SamplingHeapProfile() override = default;
     static std::unique_ptr<SamplingHeapProfile> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<SamplingHeapProfile> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     SamplingHeapProfile &SetHead(std::unique_ptr<SamplingHeapProfileNode> head)
     {
@@ -1722,7 +1730,10 @@ public:
     ~PositionTickInfo() override = default;
 
     static std::unique_ptr<PositionTickInfo> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<PositionTickInfo> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
+
     int32_t GetLine() const
     {
         return line_;
@@ -1759,8 +1770,10 @@ public:
     ~ProfileNode() override = default;
 
     static std::unique_ptr<ProfileNode> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<ProfileNode> Create(const PtJson &params);
     static std::unique_ptr<ProfileNode> FromCpuProfileNode(const CpuProfileNode &cpuProfileNode);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
     
     int32_t GetId() const
     {
@@ -1874,8 +1887,10 @@ public:
     ~Profile() override = default;
 
     static std::unique_ptr<Profile> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<Profile> Create(const PtJson &params);
     static std::unique_ptr<Profile> FromProfileInfo(const ProfileInfo &profileInfo);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     int64_t GetStartTime() const
     {
@@ -1966,7 +1981,9 @@ public:
     ~Coverage() override = default;
 
     static std::unique_ptr<Coverage > Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<Coverage> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     int32_t GetStartOffset() const
     {
@@ -2005,9 +2022,9 @@ private:
     NO_COPY_SEMANTIC(Coverage);
     NO_MOVE_SEMANTIC(Coverage);
 
-    size_t startOffset_ {0};
-    size_t endOffset_ {0};
-    size_t count_ {0};
+    int32_t startOffset_ {0};
+    int32_t endOffset_ {0};
+    int32_t count_ {0};
 };
 
 // Profiler.FunctionCoverage
@@ -2017,7 +2034,9 @@ public:
     ~FunctionCoverage() override = default;
 
     static std::unique_ptr<FunctionCoverage > Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<FunctionCoverage> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     const std::string &GetFunctionName() const
     {
@@ -2069,7 +2088,9 @@ public:
     ~ScriptCoverage() override = default;
 
     static std::unique_ptr<ScriptCoverage> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<ScriptCoverage> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     const std::string &GetScriptId() const
     {
@@ -2120,7 +2141,10 @@ public:
     ~TypeObject() override = default;
 
     static std::unique_ptr<TypeObject> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<TypeObject> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
+
     const std::string &GetName() const
     {
         return name_;
@@ -2146,7 +2170,10 @@ public:
     ~TypeProfileEntry() override = default;
 
     static std::unique_ptr<TypeProfileEntry> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<TypeProfileEntry> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
+
     int32_t GetOffset() const
     {
         return offset_;
@@ -2184,7 +2211,10 @@ public:
     ~ScriptTypeProfile() override = default;
 
     static std::unique_ptr<ScriptTypeProfile> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<ScriptTypeProfile> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
+    
     const std::string &GetScriptId() const
     {
         return scriptId_;
