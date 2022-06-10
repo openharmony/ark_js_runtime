@@ -33,16 +33,16 @@ public:
     }
     const uintptr_t *GetAllocationTopAddress()
     {
-        return allocator_->GetTopAddress();
+        return allocator_.GetTopAddress();
     }
     const uintptr_t *GetAllocationEndAddress()
     {
-        return allocator_->GetEndAddress();
+        return allocator_.GetEndAddress();
     }
 protected:
     Heap *heap_ {nullptr};
 
-    BumpPointerAllocator *allocator_ {nullptr};
+    BumpPointerAllocator allocator_;
     size_t overShootSize_ {0};
     size_t allocateAfterLastGC_ {0};
     size_t survivalObjectSize_ {0};
@@ -72,7 +72,7 @@ public:
     }
     uintptr_t GetTop() const
     {
-        return allocator_->GetTop();
+        return allocator_.GetTop();
     }
     size_t GetHeapObjectSize() const;
     size_t GetSurvivalObjectSize() const;

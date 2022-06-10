@@ -161,6 +161,7 @@ private:
     static void PushArgsSlowPath(ExtendedAssembler *assembler, Register &glueRegister,
         Register &declaredNumArgsRegister, Register &argcRegister, Register &argvRegister, Register &callTargetRegister,
         Register &methodRegister, Register &prevSpRegister, Register &callFieldRegister);
+    static void OptimizedCallAsmInterpreter(ExtendedAssembler *assembler);
 };
 }  // namespace panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H
