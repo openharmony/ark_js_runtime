@@ -44,6 +44,9 @@ SamplesRecord::~SamplesRecord()
 
 void SamplesRecord::AddSample(CVector<JSMethod *> sample, uint64_t sampleTimeStamp, bool outToFile)
 {
+    if (isLastSample_.load()) {
+        return;
+    }
     static int PreviousId = 0;
     struct MethodKey methodkey;
     struct CpuProfileNode methodNode;
@@ -257,5 +260,10 @@ void SamplesRecord::ClearSampleData()
 std::unique_ptr<struct ProfileInfo> SamplesRecord::GetProfileInfo()
 {
     return std::move(profileInfo_);
+}
+
+void SamplesRecord::SetLastSampleFlag()
+{
+    isLastSample_.store(true);
 }
 } // namespace panda::ecmascript
