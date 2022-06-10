@@ -88,8 +88,10 @@ void ExtendedAssembler::PushArgsWithArgv(Register argc, Register argv, Register 
 {
     Label loopBeginning;
     Register sp(SP);
-    Cmp(argc.W(), Immediate(0));
-    B(Condition::LS, next);
+    if (next != nullptr) {
+        Cmp(argc.W(), Immediate(0));
+        B(Condition::LS, next);
+    }
     Add(argv, argv, Operand(argc.W(), UXTW, 3));  // 3: argc * 8
     Bind(&loopBeginning);
     Ldr(op, MemoryOperand(argv, -8, PREINDEX));  // -8: 8 bytes

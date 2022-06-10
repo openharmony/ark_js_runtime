@@ -116,7 +116,8 @@ void MemMapAllocator::AdapterSuitablePoolCapacity()
     mib[0] = CTL_HW;
     mib[1] = HW_MEMSIZE;
     int64_t size = 0;
-    if (sysctl(mib, MIB_LENGTH, &size, sizeof(size), NULL, 0) != 0) {
+    size_t bufferLength = sizeof(size);
+    if (sysctl(mib, MIB_LENGTH, &size, &bufferLength, NULL, 0) != 0) {
         LOG(FATAL, RUNTIME) << "sysctl error";
     }
     long physSize = static_cast<long>(size);

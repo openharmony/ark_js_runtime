@@ -105,6 +105,9 @@
 #include "ecmascript/tests/test_helper.h"
 #include "ecmascript/transitions_dictionary.h"
 #include "ecmascript/ts_types/ts_type.h"
+#include "ecmascript/require/js_cjs_module.h"
+#include "ecmascript/require/js_cjs_require.h"
+#include "ecmascript/require/js_cjs_exports.h"
 
 using namespace panda::ecmascript;
 using namespace panda::ecmascript::base;
@@ -1045,6 +1048,24 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 CHECK_DUMP_FIELDS(JSObject::SIZE, ModuleNamespace::SIZE, 2U);
                 JSHandle<ModuleNamespace> moduleNamespace = factory->NewModuleNamespace();
                 DUMP_FOR_HANDLE(moduleNamespace);
+                break;
+            }
+            case JSType::JS_CJS_EXPORTS: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSCjsExports::SIZE, 1U);
+                JSHandle<JSCjsExports> cjsExports = factory->NewCjsExports();
+                DUMP_FOR_HANDLE(cjsExports);
+                break;
+            }
+            case JSType::JS_CJS_MODULE: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSCjsModule::SIZE, 5U);
+                JSHandle<JSCjsModule> cjsModule = factory->NewCjsModule();
+                DUMP_FOR_HANDLE(cjsModule);
+                break;
+            }
+            case JSType::JS_CJS_REQUIRE: {
+                CHECK_DUMP_FIELDS(JSObject::SIZE, JSCjsRequire::SIZE, 2U);
+                JSHandle<JSCjsRequire> cjsRequire = factory->NewCjsRequire();
+                DUMP_FOR_HANDLE(cjsRequire);
                 break;
             }
             default:

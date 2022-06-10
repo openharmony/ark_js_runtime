@@ -3686,16 +3686,6 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
                 Branch(TaggedIsUndefined(firstValue), &slowPath, &tryFastPath);
             }
         }
-        Bind(&tryFastPath);
-        {
-            GateRef stringId = ReadInst32_1(pc);
-            GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
-            result = CallStub(glue,
-                CommonStubCSigns::GetPropertyByName, {
-                glue, receiver, propKey
-            });
-            Branch(TaggedIsHole(*result), &slowPath, &notHole);
-        }
         Bind(&notHole);
         {
             Branch(TaggedIsException(*result), &hasException, &notException);
@@ -3706,6 +3696,11 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
             Bind(&notException);
             varAcc = *result;
             Jump(&dispatch);
+        }
+        Bind(&tryFastPath);
+        {
+            DispatchWithId(glue, sp, pc, constpool, profileTypeInfo, receiver, hotnessCounter,
+                BCSTUB_ID(InterpreterGetPropertyByName));
         }
     }
     Bind(&slowPath);
@@ -5133,6 +5128,43 @@ DECLARE_ASM_HANDLER(NewObjectDynRangeReturn)
     Bind(&dispatch);
     Dispatch(glue, newSp, pc, constpool, profileTypeInfo, *varAcc, hotnessCounter,
              IntPtr(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_IMM16_V8)));
+}
+
+DECLARE_ASM_HANDLER(InterpreterGetPropertyByName)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
+
+    Label checkResult(env);
+    Label dispatch(env);
+    Label slowPath(env);
+    Label isException(env);
+
+    GateRef receiver = acc;
+    GateRef stringId = ReadInst32_1(pc);
+    GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
+    result = GetPropertyByName(glue, receiver, propKey);
+
+    Branch(TaggedIsHole(*result), &slowPath, &checkResult);
+    Bind(&slowPath);
+    {
+        GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
+        result = CallRuntime(glue, RTSTUB_ID(LoadICByName),
+                             { profileTypeInfo, receiver, propKey, IntBuildTaggedTypeWithNoGC(slotId) });
+        Jump(&checkResult);
+    }
+    Bind(&checkResult);
+    {
+        Branch(TaggedIsException(*result), &isException, &dispatch);
+        Bind(&isException);
+        {
+            DISPATCH_LAST_WITH_ACC();
+        }
+    }
+    Bind(&dispatch);
+    varAcc = *result;
+    DISPATCH_WITH_ACC(PREF_ID32_V8);
 }
 #undef DECLARE_ASM_HANDLER
 #undef DISPATCH

@@ -19,6 +19,7 @@
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/mem/clock_scope.h"
+#include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/mem/verification.h"
 
 using namespace panda::ecmascript;
@@ -45,7 +46,7 @@ public:
         scope = new EcmaHandleScope(thread);
         instance->SetEnableForceGC(false);
         auto heap = const_cast<Heap *>(thread->GetEcmaVM()->GetHeap());
-        heap->EnableConcurrentMarking(true);
+        heap->GetConcurrentMarker()->EnableConcurrentMarking(EnableConcurrentMarkType::ENABLE);
     }
 
     void TearDown() override

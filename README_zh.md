@@ -57,7 +57,7 @@
 ## 编译构建<a name="section137768191623"></a>
 
 ```
-$ ./build.sh --product-name Hi3516DV300 --build-target ark_js_host_linux_tools_packages
+$./build.sh --product-name rk3568 --build-target ark_js_host_linux_tools_packages
 ```
 
 ### 接口说明<a name="section175841548124517"></a>
@@ -70,8 +70,8 @@ JS生成字节码参考[工具链使用](docs/using-the-toolchain-zh.md)
 
 字节码执行：
 ```
-$ export LD_LIBRARY_PATH=out/hi3516dv300/clang_x64/ark/ark:out/hi3516dv300/clang_x64/ark/ark_js_runtime:out/hi3516dv300/clang_x64/global/i18n_standard:prebuilts/clang/ohos/linux-x86_64/llvm/lib
-$ ./out/hi3516dv300/clang_x64/ark/ark_js_runtime/ark_js_vm helloworld.abc
+LD_LIBRARY_PATH=out/rk3568/clang_x64/ark/ark:out/rk3568/clang_x64/ark/ark_js_runtime:out/rk3568/clang_x64/thirdparty/icu:prebuilts/clang/ohos/linux-x86_64/llvm/lib ./out/rk3568/clang_x64/ark/ark_js_runtime/ark_js_vm helloworld.abc
+
 ```
 
 更多使用说明请参考：[方舟运行时使用指南](https://gitee.com/openharmony/ark_js_runtime/blob/master/docs/ARK-Runtime-Usage-Guide-zh.md)

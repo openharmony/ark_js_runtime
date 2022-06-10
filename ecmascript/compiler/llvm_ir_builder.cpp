@@ -519,9 +519,6 @@ LLVMValueRef LLVMIRBuilder::GetFunction(LLVMValueRef glue, StubIdType id, bool i
     } else if (std::holds_alternative<CommonStubCSigns::ID>(id)) {
         signature = CommonStubCSigns::Get(std::get<CommonStubCSigns::ID>(id));
         index = static_cast<int>(std::get<CommonStubCSigns::ID>(id));
-    } else if (std::holds_alternative<BytecodeStubCSigns::ID>(id)) {
-        signature = BytecodeStubCSigns::BCHandler();
-        index = static_cast<int>(std::get<BytecodeStubCSigns::ID>(id));
     } else if (std::holds_alternative<LLVMValueRef>(id)) {
         signature = BytecodeStubCSigns::BCHandler();
     } else {
@@ -1207,7 +1204,7 @@ LLVMValueRef LLVMIRBuilder::VectorAdd(LLVMValueRef baseAddr, LLVMValueRef offset
 
 bool LLVMIRBuilder::IsGCRelated(GateType typeCode) const
 {
-    if ((typeCode & (~GC_MASK)) == 0) {
+    if ((typeCode.GetType() & (~GateType::GC_MASK)) == 0) {
         return true;
     }
     return false;
@@ -1875,20 +1872,20 @@ LLVMTypeRef LLVMModule::ConvertLLVMTypeFromVariableType(VariableType type)
 
 LLVMValueRef LLVMModule::AddFunc(const panda::ecmascript::JSMethod *method)
 {
-    VariableType retType(MachineType::I64, GateType::TAGGED_VALUE); // possibly get it for circuit
+    VariableType retType(MachineType::I64, GateType::TaggedValue()); // possibly get it for circuit
     LLVMTypeRef returnType = ConvertLLVMTypeFromVariableType(retType);
     std::vector<LLVMTypeRef> paramTys;
     auto paramCount = method->GetNumArgs() + CommonArgIdx::NUM_OF_ARGS;
-    VariableType glueParamType(MachineType::I64, GateType::NJS_VALUE);
+    VariableType glueParamType(MachineType::I64, GateType::NJSValue());
     paramTys.push_back(ConvertLLVMTypeFromVariableType(glueParamType));
-    VariableType actualArgc(MachineType::I32, GateType::NJS_VALUE);
+    VariableType actualArgc(MachineType::I32, GateType::NJSValue());
     paramTys.push_back(ConvertLLVMTypeFromVariableType(actualArgc));
     for (uint32_t i = CommonArgIdx::FUNC; i < CommonArgIdx::NUM_OF_ARGS; i++) {
-        VariableType paramsType(MachineType::I64, GateType::TAGGED_VALUE);
+        VariableType paramsType(MachineType::I64, GateType::TaggedValue());
         paramTys.push_back(ConvertLLVMTypeFromVariableType(paramsType));
     }
     for (uint32_t j = CommonArgIdx::NUM_OF_ARGS; j < paramCount; j++) {
-        VariableType paramsType(MachineType::I64, GateType::TAGGED_VALUE);
+        VariableType paramsType(MachineType::I64, GateType::TaggedValue());
         paramTys.push_back(ConvertLLVMTypeFromVariableType(paramsType));
     }
     auto funcType = LLVMFunctionType(returnType, paramTys.data(), paramCount, false); // not variable args

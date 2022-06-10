@@ -118,10 +118,9 @@ int AssemblerModule::GetJumpSizeFromJSCallMode(JSCallMode mode)
             return BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8_V8_V8);
         case JSCallMode::CALL_THIS_WITH_ARGV:
         case JSCallMode::CALL_WITH_ARGV:
-            return BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_IMM16_V8);
         case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
         case JSCallMode::CALL_SUPER_CALL_WITH_ARGV:
-            return 0;
+            return BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_IMM16_V8);
         case JSCallMode::CALL_GETTER:
         case JSCallMode::CALL_SETTER:
         case JSCallMode::CALL_ENTRY:

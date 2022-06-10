@@ -253,41 +253,45 @@ JSTaggedValue JSAPIPlainArray::ForEach(JSThread *thread, const JSHandle<JSTagged
 
 JSTaggedValue JSAPIPlainArray::ToString(JSThread *thread, const JSHandle<JSAPIPlainArray> &plainarray)
 {
-    EcmaVM *ecmaVM = thread->GetEcmaVM();
-    ObjectFactory *factory = ecmaVM->GetFactory();
-    std::u16string sepStr = std::wstring_convert < std::codecvt_utf8_utf16<char16_t>, char16_t > {}.from_bytes(",");
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    std::u16string sepStr = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.from_bytes(",");
+    std::u16string colonStr = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.from_bytes(":");
+
     int32_t length = plainarray->GetLength();
-    JSHandle<TaggedArray> keyArray(thread, plainarray->GetKeys());
-    JSHandle<TaggedArray> elements(thread, plainarray->GetValues());
-    std::u16string concatStr;
-    std::u16string concatStrNew;
-
-    JSHandle<EcmaString> stringSeparate = factory->NewFromASCII(":");
-    JSMutableHandle<JSTaggedValue> keys(thread, JSTaggedValue::Undefined());
-    JSMutableHandle<JSTaggedValue> element(thread, JSTaggedValue::Undefined());
-    JSMutableHandle<EcmaString> ret(thread, nullptr);
-    JSMutableHandle<EcmaString> stringKey(thread, nullptr);
-    JSMutableHandle<EcmaString> stringValue(thread, nullptr);
-    JSMutableHandle<EcmaString> concatValue(thread, nullptr);
-    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    std::u16string concatStr = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.from_bytes("");
+    std::u16string concatStrNew = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.from_bytes("");
+    JSMutableHandle<JSTaggedValue> valueHandle(thread, JSTaggedValue::Undefined());
+    JSMutableHandle<JSTaggedValue> keyHandle(thread, JSTaggedValue::Undefined());
     for (int32_t k = 0; k < length; k++) {
-        std::u16string nextStr;
-        keys.Update(JSTaggedValue(keyArray->Get(k)));
-        element.Update(JSTaggedValue(elements->Get(k)));
-        if (!element->IsUndefined() && !element->IsNull()) {
-            stringKey.Update(JSTaggedValue::ToString(thread, keys).GetTaggedValue());
-            ret.Update(JSTaggedValue(EcmaString::Concat(stringKey, stringSeparate, ecmaVM)));
-
-            stringValue.Update(JSTaggedValue::ToString(thread, element).GetTaggedValue());
-            concatValue.Update(JSTaggedValue(EcmaString::Concat(ret, stringValue, ecmaVM)));
+        std::u16string valueStr;
+        valueHandle.Update(plainarray->GetValueAt(k));
+        if (!valueHandle->IsUndefined() && !valueHandle->IsNull()) {
+            JSHandle<EcmaString> valueStringHandle = JSTaggedValue::ToString(thread, valueHandle);
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-            uint32_t nextLen = concatValue->GetLength();
-            if (concatValue->IsUtf16()) {
-                nextStr = base::StringHelper::Utf16ToU16String(concatValue->GetDataUtf16(), nextLen);
+            uint32_t valueLen = valueStringHandle->GetLength();
+            if (valueStringHandle->IsUtf16()) {
+                valueStr = base::StringHelper::Utf16ToU16String(valueStringHandle->GetDataUtf16(), valueLen);
             } else {
-                nextStr = base::StringHelper::Utf8ToU16String(concatValue->GetDataUtf8(), nextLen);
+                valueStr = base::StringHelper::Utf8ToU16String(valueStringHandle->GetDataUtf8(), valueLen);
             }
         }
+
+        std::u16string keyStr;
+        keyHandle.Update(plainarray->GetKeyAt(k));
+        if (!keyHandle->IsUndefined() && !keyHandle->IsNull()) {
+            JSHandle<EcmaString> keyStringHandle = JSTaggedValue::ToString(thread, keyHandle);
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+            uint32_t keyLen = keyStringHandle->GetLength();
+            if (keyStringHandle->IsUtf16()) {
+                keyStr = base::StringHelper::Utf16ToU16String(keyStringHandle->GetDataUtf16(), keyLen);
+            } else {
+                keyStr = base::StringHelper::Utf8ToU16String(keyStringHandle->GetDataUtf8(), keyLen);
+            }
+        }
+
+        std::u16string nextStr = base::StringHelper::Append(keyStr, colonStr);
+        nextStr = base::StringHelper::Append(nextStr, valueStr);
+
         if (k > 0) {
             concatStrNew = base::StringHelper::Append(concatStr, sepStr);
             concatStr = base::StringHelper::Append(concatStrNew, nextStr);
@@ -295,6 +299,7 @@ JSTaggedValue JSAPIPlainArray::ToString(JSThread *thread, const JSHandle<JSAPIPl
         }
         concatStr = base::StringHelper::Append(concatStr, nextStr);
     }
+
     char16_t *char16tData = concatStr.data();
     auto *uint16tData = reinterpret_cast<uint16_t *>(char16tData);
     uint32_t u16strSize = concatStr.size();

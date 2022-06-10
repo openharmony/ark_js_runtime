@@ -320,7 +320,7 @@ int LLVMStackMapParser::FindFpDelta(uintptr_t funcAddr, uintptr_t callsitePc) co
     for (auto &info: fun2FpDelta_) {
         if (info.find(funcAddr) != info.end()) {
             delta = info.at(funcAddr).first;
-            int funcSize = info.at(funcAddr).second;
+            uint32_t funcSize = info.at(funcAddr).second;
             if (callsitePc <= funcAddr + funcSize && callsitePc >= funcAddr) {
                 return delta;
             }

@@ -1294,17 +1294,18 @@ void AssemblerStubsX64::JSCallCommonEntry(ExtendedAssembler *assembler, JSCallMo
     __ Movq(rsp, fpRegister);
 
     auto jumpSize = kungfu::AssemblerModule::GetJumpSizeFromJSCallMode(mode);
-    if (jumpSize >= 0) {
-        int32_t offset = static_cast<int32_t>(
-            AsmInterpretedFrame::GetCallSizeOffset(false) - AsmInterpretedFrame::GetSize(false));
-        __ Movq(static_cast<int>(jumpSize), Operand(rbp, offset));
-    }
     if (mode == JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV) {
         Register thisRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG2);
         [[maybe_unused]] TempRegisterScope scope(assembler);
         Register tempArgcRegister = __ TempRegister();
         __ PushArgc(argcRegister, tempArgcRegister);
         __ Pushq(thisRegister);
+        jumpSize = 0;
+    }
+    if (jumpSize >= 0) {
+        int32_t offset = static_cast<int32_t>(
+            AsmInterpretedFrame::GetCallSizeOffset(false) - AsmInterpretedFrame::GetSize(false));
+        __ Movq(static_cast<int>(jumpSize), Operand(rbp, offset));
     }
 
     Register declaredNumArgsRegister = __ AvailableRegister2();
@@ -1830,7 +1831,23 @@ void AssemblerStubsX64::ResumeRspAndDispatch(ExtendedAssembler *assembler)
         bcStubRegister);
     __ Jmp(bcStubRegister);
 
+    auto jumpSize = kungfu::AssemblerModule::GetJumpSizeFromJSCallMode(
+        JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV);
+    Label notUndefined;
     __ Bind(&newObjectDynRangeReturn);
+    __ Cmpq(JSTaggedValue::Undefined().GetRawData(), rsi);
+    __ Jne(&notUndefined);
+
+    auto index = AsmInterpretedFrame::ReverseIndex::THIS_OBJECT_REVERSE_INDEX;
+    __ Movq(Operand(rsp, index * 8), rsi);  // 8: byte size, update acc
+    __ Movq(Operand(frameStateBaseRegister, AsmInterpretedFrame::GetBaseOffset(false)), spRegister);  // update sp
+    __ Addq(jumpSize, pcRegister);  // newPc
+    __ Movzbq(Operand(pcRegister, 0), opcodeRegister);
+    __ Movq(Operand(glueRegister, opcodeRegister, Times8, JSThread::GlueData::GetBCStubEntriesOffset(false)),
+        bcStubRegister);
+    __ Jmp(bcStubRegister);
+
+    __ Bind(&notUndefined);
     __ Movq(kungfu::BytecodeStubCSigns::ID_NewObjectDynRangeReturn, opcodeRegister);
     __ Movq(Operand(glueRegister, opcodeRegister, Times8, JSThread::GlueData::GetBCStubEntriesOffset(false)),
             bcStubRegister);
@@ -1876,8 +1893,8 @@ void AssemblerStubsX64::ResumeRspAndReturn([[maybe_unused]] ExtendedAssembler *a
 {
     __ BindAssemblerStub(RTSTUB_ID(ResumeRspAndReturn));
     Register fpRegister = r10;
-    auto offset = AsmInterpretedFrame::GetFpOffset(false) - AsmInterpretedFrame::GetSize(false);
-    __ Movq(Operand(rbp, offset), fpRegister);
+    intptr_t offset = AsmInterpretedFrame::GetFpOffset(false) - AsmInterpretedFrame::GetSize(false);
+    __ Movq(Operand(rbp, static_cast<int32_t>(offset)), fpRegister);
     __ Movq(fpRegister, rsp);
     // return
     {

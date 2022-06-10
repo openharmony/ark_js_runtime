@@ -65,7 +65,8 @@ void RuntimeImpl::DispatcherImpl::RunIfWaitingForDebugger(const DispatchRequest 
 
 void RuntimeImpl::DispatcherImpl::GetProperties(const DispatchRequest &request)
 {
-    std::unique_ptr<GetPropertiesParams> params = GetPropertiesParams::Create(request.GetEcmaVM(), request.GetParams());
+    std::unique_ptr<GetPropertiesParams> params =
+        GetPropertiesParams::Create(request.GetEcmaVM(), request.GetParamsObj());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -75,7 +76,7 @@ void RuntimeImpl::DispatcherImpl::GetProperties(const DispatchRequest &request)
     std::optional<std::vector<std::unique_ptr<InternalPropertyDescriptor>>> outInternalDescs;
     std::optional<std::vector<std::unique_ptr<PrivatePropertyDescriptor>>> outPrivateProperties;
     std::optional<std::unique_ptr<ExceptionDetails>> outExceptionDetails;
-    DispatchResponse response = runtime_->GetProperties(std::move(params), &outPropertyDesc, &outInternalDescs,
+    DispatchResponse response = runtime_->GetProperties(*params, &outPropertyDesc, &outInternalDescs,
         &outPrivateProperties, &outExceptionDetails);
     if (outExceptionDetails) {
         LOG(WARNING, DEBUGGER) << "GetProperties thrown an exception";
@@ -90,7 +91,7 @@ void RuntimeImpl::DispatcherImpl::GetProperties(const DispatchRequest &request)
 void RuntimeImpl::DispatcherImpl::CallFunctionOn(const DispatchRequest &request)
 {
     std::unique_ptr<CallFunctionOnParams> params =
-        CallFunctionOnParams::Create(request.GetEcmaVM(), request.GetParams());
+        CallFunctionOnParams::Create(request.GetEcmaVM(), request.GetParamsObj());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -98,7 +99,7 @@ void RuntimeImpl::DispatcherImpl::CallFunctionOn(const DispatchRequest &request)
 
     std::unique_ptr<RemoteObject> outRemoteObject;
     std::optional<std::unique_ptr<ExceptionDetails>> outExceptionDetails;
-    DispatchResponse response = runtime_->CallFunctionOn(std::move(params), &outRemoteObject, &outExceptionDetails);
+    DispatchResponse response = runtime_->CallFunctionOn(*params, &outRemoteObject, &outExceptionDetails);
     if (outExceptionDetails) {
         LOG(WARNING, DEBUGGER) << "CallFunctionOn thrown an exception";
     }
@@ -145,7 +146,7 @@ DispatchResponse RuntimeImpl::RunIfWaitingForDebugger()
     return DispatchResponse::Ok();
 }
 
-DispatchResponse RuntimeImpl::CallFunctionOn([[maybe_unused]] std::unique_ptr<CallFunctionOnParams> params,
+DispatchResponse RuntimeImpl::CallFunctionOn([[maybe_unused]] const CallFunctionOnParams &params,
     std::unique_ptr<RemoteObject> *outRemoteObject,
     [[maybe_unused]] std::optional<std::unique_ptr<ExceptionDetails>> *outExceptionDetails)
 {
@@ -162,15 +163,15 @@ DispatchResponse RuntimeImpl::GetHeapUsage(double *usedSize, double *totalSize)
     return DispatchResponse::Ok();
 }
 
-DispatchResponse RuntimeImpl::GetProperties(std::unique_ptr<GetPropertiesParams> params,
+DispatchResponse RuntimeImpl::GetProperties(const GetPropertiesParams &params,
     std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc,
     [[maybe_unused]] std::optional<std::vector<std::unique_ptr<InternalPropertyDescriptor>>> *outInternalDescs,
     [[maybe_unused]] std::optional<std::vector<std::unique_ptr<PrivatePropertyDescriptor>>> *outPrivateProps,
     [[maybe_unused]] std::optional<std::unique_ptr<ExceptionDetails>> *outExceptionDetails)
 {
-    RemoteObjectId objectId = params->GetObjectId();
-    bool isOwn = params->GetOwnProperties();
-    bool isAccessorOnly = params->GetAccessPropertiesOnly();
+    RemoteObjectId objectId = params.GetObjectId();
+    bool isOwn = params.GetOwnProperties();
+    bool isAccessorOnly = params.GetAccessPropertiesOnly();
     auto iter = properties_.find(objectId);
     if (iter == properties_.end()) {
         LOG(ERROR, DEBUGGER) << "RuntimeImpl::GetProperties Unknown object id: " << objectId;

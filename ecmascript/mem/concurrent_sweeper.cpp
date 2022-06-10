@@ -23,15 +23,16 @@
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
-ConcurrentSweeper::ConcurrentSweeper(Heap *heap, bool concurrentSweep)
-    : heap_(heap), concurrentSweep_(concurrentSweep)
+ConcurrentSweeper::ConcurrentSweeper(Heap *heap, EnableConcurrentSweepType type)
+    : heap_(heap),
+      enableType_(type)
 {
 }
 
 void ConcurrentSweeper::Sweep(bool fullGC)
 {
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ConcurrentSweepingInitialize);
-    if (concurrentSweep_) {
+    if (ConcurrentSweepEnabled()) {
         // Add all region to region list. Ensure all task finish
         if (!fullGC) {
             heap_->GetOldSpace()->PrepareSweeping();
@@ -56,7 +57,7 @@ void ConcurrentSweeper::Sweep(bool fullGC)
         heap_->GetNonMovableSpace()->Sweep();
         heap_->GetMachineCodeSpace()->Sweep();
     }
-    heap_->GetHugeObjectSpace()->Sweep(concurrentSweep_);
+    heap_->GetHugeObjectSpace()->Sweep(ConcurrentSweepEnabled());
 }
 
 void ConcurrentSweeper::AsyncSweepSpace(MemSpaceType type, bool isMain)
@@ -95,8 +96,8 @@ void ConcurrentSweeper::EnsureAllTaskFinished()
         WaitingTaskFinish(static_cast<MemSpaceType>(i));
     }
     isSweeping_ = false;
-    if (disableConcurrentRequested_) {
-        EnableConcurrentSweep(false);
+    if (IsRequestDisabled()) {
+        enableType_ = EnableConcurrentSweepType::DISABLE;
     }
 }
 
@@ -136,14 +137,14 @@ void ConcurrentSweeper::TryFillSweptRegion()
     for (int i = startSpaceType_; i < FREE_LIST_NUM; i++) {
         FinishSweeping(static_cast<MemSpaceType>(i));
     }
-    if (concurrentSweep_) {
+    if (ConcurrentSweepEnabled()) {
         heap_->GetHugeObjectSpace()->FinishConcurrentSweep();
     }
 }
 
 void ConcurrentSweeper::ClearRSetInRange(Region *current, uintptr_t freeStart, uintptr_t freeEnd)
 {
-    if (concurrentSweep_) {
+    if (ConcurrentSweepEnabled()) {
         current->AtomicClearSweepingRSetInRange(freeStart, freeEnd);
         current->AtomicClearCrossRegionRSetInRange(freeStart, freeEnd);
     } else {
@@ -160,5 +161,17 @@ bool ConcurrentSweeper::SweeperTask::Run([[maybe_unused]] uint32_t threadIndex)
         sweeper_->AsyncSweepSpace(type, false);
     }
     return true;
+}
+
+void ConcurrentSweeper::EnableConcurrentSweep(EnableConcurrentSweepType type)
+{
+    if (IsConfigDisabled()) {
+        return;
+    }
+    if (ConcurrentSweepEnabled() && isSweeping_ && type == EnableConcurrentSweepType::DISABLE) {
+        enableType_ = EnableConcurrentSweepType::REQUEST_DISABLE;
+    } else {
+        enableType_ = type;
+    }
 }
 }  // namespace panda::ecmascript

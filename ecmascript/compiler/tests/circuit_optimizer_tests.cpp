@@ -34,46 +34,46 @@ HWTEST_F_L0(CircuitOptimizerTests, TestLatticeEquationsSystemSolverFramework)
                              MachineType::I64,
                              0,
                              {Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST))},
-                             GateType::NJS_VALUE);
+                             GateType::NJSValue());
     auto constantA = circuit.NewGate(OpCode(OpCode::CONSTANT),
                                      MachineType::I64,
                                      1,
                                      {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                     GateType::NJS_VALUE);
+                                     GateType::NJSValue());
     auto constantB = circuit.NewGate(OpCode(OpCode::CONSTANT),
                                      MachineType::I64,
                                      2,
                                      {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                     GateType::NJS_VALUE);
+                                     GateType::NJSValue());
     auto constantC = circuit.NewGate(OpCode(OpCode::CONSTANT),
                                      MachineType::I64,
                                      1,
                                      {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                     GateType::NJS_VALUE);
+                                     GateType::NJSValue());
     auto constantD = circuit.NewGate(OpCode(OpCode::CONSTANT),
                                      MachineType::I64,
                                      0,
                                      {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                     GateType::NJS_VALUE);
+                                     GateType::NJSValue());
     auto loopBegin = circuit.NewGate(OpCode(OpCode::LOOP_BEGIN),
                                      0,
                                      {Circuit::GetCircuitRoot(OpCode(OpCode::STATE_ENTRY)), Circuit::NullGate()},
-                                     GateType::EMPTY);
+                                     GateType::Empty());
     auto selectorA = circuit.NewGate(OpCode(OpCode::VALUE_SELECTOR),
                                      MachineType::I64,
                                      2,
                                      {loopBegin, constantA, Circuit::NullGate()},
-                                     GateType::NJS_VALUE);
+                                     GateType::NJSValue());
     auto selectorB = circuit.NewGate(OpCode(OpCode::VALUE_SELECTOR),
                                      MachineType::I64,
                                      2,
                                      {loopBegin, n, Circuit::NullGate()},
-                                     GateType::NJS_VALUE);
+                                     GateType::NJSValue());
     auto newX = circuit.NewGate(OpCode(OpCode::SUB),
                                 MachineType::I64,
                                 0,
                                 {constantB, selectorA},
-                                GateType::NJS_VALUE);
+                                GateType::NJSValue());
     circuit.NewIn(selectorA, 2, newX);
     circuit.NewIn(selectorB,
                   2,
@@ -81,27 +81,27 @@ HWTEST_F_L0(CircuitOptimizerTests, TestLatticeEquationsSystemSolverFramework)
                                   MachineType::I64,
                                   0,
                                   {selectorB, constantC},
-                                  GateType::NJS_VALUE));
+                                  GateType::NJSValue()));
     auto predicate = circuit.NewGate(OpCode(OpCode::NE),
                                      0,
                                      {selectorB, constantD},
-                                     GateType::NJS_VALUE);
+                                     GateType::NJSValue());
     auto ifBranch = circuit.NewGate(OpCode(OpCode::IF_BRANCH),
                                     0,
                                     {loopBegin, predicate},
-                                    GateType::EMPTY);
+                                    GateType::Empty());
     auto ifTrue = circuit.NewGate(OpCode(OpCode::IF_TRUE),
                                   0,
                                   {ifBranch},
-                                  GateType::EMPTY);
+                                  GateType::Empty());
     auto ifFalse = circuit.NewGate(OpCode(OpCode::IF_FALSE),
                                    0,
                                    {ifBranch},
-                                   GateType::EMPTY);
+                                   GateType::Empty());
     auto loopBack = circuit.NewGate(OpCode(OpCode::LOOP_BACK),
                                     0,
                                     {ifTrue},
-                                    GateType::EMPTY);
+                                    GateType::Empty());
     circuit.NewIn(loopBegin, 1, loopBack);
     auto ret = circuit.NewGate(OpCode(OpCode::RETURN),
                                0,
@@ -109,7 +109,7 @@ HWTEST_F_L0(CircuitOptimizerTests, TestLatticeEquationsSystemSolverFramework)
                                 Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
                                 newX,
                                 Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST))},
-                               GateType::EMPTY);
+                               GateType::Empty());
     // verify the circuit
     {
         auto verifyResult = ecmascript::kungfu::Verifier::Run(&circuit);
@@ -171,7 +171,7 @@ HWTEST_F_L0(CircuitOptimizerTests, TestSubgraphRewriteFramework)
                 std::make_pair(rng(),
                                circuit.GetConstantGate(MachineType::I64,
                                                        idx,
-                                                       GateType::NJS_VALUE)));
+                                                       GateType::NJSValue())));
         }
     }
     while (constantsSet.size() > 1) {
@@ -188,7 +188,7 @@ HWTEST_F_L0(CircuitOptimizerTests, TestSubgraphRewriteFramework)
                                            0,
                                            {operandA,
                                             operandB},
-                                           GateType::NJS_VALUE)));
+                                           GateType::NJSValue())));
     }
     auto ret = circuit.NewGate(OpCode(OpCode::RETURN),
                                0,
@@ -196,7 +196,7 @@ HWTEST_F_L0(CircuitOptimizerTests, TestSubgraphRewriteFramework)
                                 Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
                                 constantsSet.begin()->second,
                                 Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST))},
-                               GateType::EMPTY);
+                               GateType::Empty());
     ecmascript::kungfu::SubgraphRewriteRuleCP rule;
     ecmascript::kungfu::SubGraphRewriteFramework rewriter(&rule);
     rewriter.Run(&circuit);
