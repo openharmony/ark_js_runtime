@@ -73,56 +73,56 @@ HWTEST_F_L0(DebuggerTypesTest, RemoteObjectCreateTest)
 
     //  abnormal params of null msg
     msg = std::string() + R"({})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(remoteObject, nullptr);
 
     // abnormal params of unexist key params
     msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(remoteObject, nullptr);
 
     // abnormal params of null params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(remoteObject, nullptr);
 
     // abnormal params of unknown params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(remoteObject, nullptr);
 
     // abnormal params of params.sub-key = [ type = 100, ]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":100}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(remoteObject, nullptr);
 
     // abnormal params of params.sub-key = [ type = [ "sub": "test" ] }, ]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":100}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(remoteObject, nullptr);
 
     // normal params of params.sub-key = [ type = "object", ]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object + R"("}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(remoteObject, nullptr);
     EXPECT_EQ(ObjectType::Object, remoteObject->GetType());
 
     // abnormal params of params.sub-key = [ type = "object", subtype = "unknown"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object +
           R"(","subtype":"unknown"}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(remoteObject, nullptr);
 
     // abnormal params of params.sub-key = [ type = "object", subtype = 100]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object +
           R"(","subtype":100}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(remoteObject, nullptr);
 
     // normal params of params.sub-key = [ type = "object", subtype = "array"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object +
           R"(","subtype":")" + ObjectSubType::Array + R"("}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(remoteObject, nullptr);
     EXPECT_EQ(ObjectType::Object, remoteObject->GetType());
     ASSERT_TRUE(remoteObject->HasSubType());
@@ -131,19 +131,19 @@ HWTEST_F_L0(DebuggerTypesTest, RemoteObjectCreateTest)
     // abnormal params of params.sub-key = [ type = "object", className = 100]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object +
           R"(","className":100}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(remoteObject, nullptr);
 
     // abnormal params of params.sub-key = [ type = "object", className = {"xx":"yy"}]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object +
           R"(","className":{"xx":"yy"}}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(remoteObject, nullptr);
 
     // normal params of params.sub-key = [ type = "object", className = "TestClass"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object +
           R"(","className":"TestClass"}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(remoteObject, nullptr);
     EXPECT_EQ(ObjectType::Object, remoteObject->GetType());
     ASSERT_TRUE(remoteObject->HasClassName());
@@ -181,19 +181,19 @@ HWTEST_F_L0(DebuggerTypesTest, RemoteObjectCreateTest)
     // abnormal params of params.sub-key = [ type = "object", unserializableValue = 100]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object +
           R"(","unserializableValue":100}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(remoteObject, nullptr);
 
     // abnormal params of params.sub-key = [ type = "object", unserializableValue = {"xx":"yy"}]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object +
           R"(","unserializableValue":{"xx":"yy"}}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(remoteObject, nullptr);
 
     // normal params of params.sub-key = [ type = "object", unserializableValue = "TestClass"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object +
           R"(","unserializableValue":"Test"}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(remoteObject, nullptr);
     EXPECT_EQ(ObjectType::Object, remoteObject->GetType());
     ASSERT_TRUE(remoteObject->HasUnserializableValue());
@@ -202,19 +202,19 @@ HWTEST_F_L0(DebuggerTypesTest, RemoteObjectCreateTest)
     // abnormal params of params.sub-key = [ type = "object", description = 100]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object +
           R"(","description":100}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(remoteObject, nullptr);
 
     // abnormal params of params.sub-key = [ type = "object", description = {"xx":"yy"}]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object +
           R"(","description":{"xx":"yy"}}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(remoteObject, nullptr);
 
     // normal params of params.sub-key = [ type = "object", description = "Test"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object +
           R"(","description":"Test"}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(remoteObject, nullptr);
     EXPECT_EQ(ObjectType::Object, remoteObject->GetType());
     ASSERT_TRUE(remoteObject->HasDescription());
@@ -223,19 +223,19 @@ HWTEST_F_L0(DebuggerTypesTest, RemoteObjectCreateTest)
     // abnormal params of params.sub-key = [ type = "object", objectId = 100]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object +
           R"(","objectId":100}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(remoteObject, nullptr);
 
     // abnormal params of params.sub-key = [ type = "object", objectId = {"xx":"yy"}]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object +
           R"(","objectId":{"xx":"yy"}}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(remoteObject, nullptr);
 
     // normal params of params.sub-key = [ type = "object", objectId = "id_1"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object +
           R"(","objectId":"1"}})";
-    remoteObject = RemoteObject::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(remoteObject, nullptr);
     EXPECT_EQ(ObjectType::Object, remoteObject->GetType());
     ASSERT_TRUE(remoteObject->HasObjectId());
@@ -292,6 +292,45 @@ HWTEST_F_L0(DebuggerTypesTest, RemoteObjectToObjectTest)
     EXPECT_EQ("1", DebuggerApi::ToStdString(result));
 }
 
+HWTEST_F_L0(DebuggerTypesTest, RemoteObjectToJsonTest)
+{
+    std::string msg;
+    std::unique_ptr<RemoteObject> remoteObject;
+    std::string tmpStr;
+    Result ret;
+
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"type":")" + ObjectType::Object +
+        R"(", "subtype":")" + ObjectSubType::Array +
+        R"(","className":"TestClass","value":100, "unserializableValue":"Test","description":"Test","objectId":"1"}})";
+    remoteObject = RemoteObject::Create(DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(remoteObject, nullptr);
+    auto objJson = remoteObject->ToJson();
+
+    ret = objJson->GetString("type", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectType::Object.c_str()), tmpStr);
+
+    ret = objJson->GetString("subtype", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectSubType::Array.c_str()), tmpStr);
+
+    ret = objJson->GetString("className", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("TestClass", tmpStr);
+
+    ret = objJson->GetString("unserializableValue", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("Test", tmpStr);
+
+    ret = objJson->GetString("description", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("Test", tmpStr);
+
+    ret = objJson->GetString("objectId", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("1", tmpStr);
+}
+
 HWTEST_F_L0(DebuggerTypesTest, ExceptionDetailsCreateTest)
 {
     std::string msg;
@@ -299,76 +338,76 @@ HWTEST_F_L0(DebuggerTypesTest, ExceptionDetailsCreateTest)
 
     //  abnormal params of null msg
     msg = std::string() + R"({})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // abnormal params of unexist key params
     msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // abnormal params of null params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // abnormal params of unknown params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // abnormal params of params.sub-key = [ exceptionId="Test","text"="text0","lineNumber"=10,"columnNumber"=20]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":"Test","text":"text0","lineNumber":10,"columnNumber":20}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // abnormal params of params.sub-key = [ exceptionId={"xx":"yy"},"text"="text0","lineNumber"=10,"columnNumber"=20]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":{"xx":"yy"},"text":"text0","lineNumber":10,"columnNumber":20}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // abnormal params of params.sub-key = [ exceptionId=3,"text"=10,"lineNumber"=10,"columnNumber"=20]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":10,"lineNumber":10,"columnNumber":20}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // abnormal params of params.sub-key = [ exceptionId=3,"text"=["text0"],"lineNumber"=10,"columnNumber"=20]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":["text0"],"lineNumber":10,"columnNumber":20}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // abnormal params of params.sub-key = [ exceptionId=3,"text"="text0","lineNumber"="10","columnNumber"=20]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":"text0","lineNumber":"10","columnNumber":20}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // abnormal params of params.sub-key = [ exceptionId=3,"text"="text0","lineNumber"=["10"],"columnNumber"=20]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":"text0","lineNumber":["10"],"columnNumber":20}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // abnormal params of params.sub-key = [ exceptionId=3,"text"="text0","lineNumber"=10,"columnNumber"="20"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":"text0","lineNumber":10,"columnNumber":"20"}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // abnormal params of params.sub-key = [ exceptionId=3,"text"="text0","lineNumber"=10,"columnNumber"=["20"]]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":"text0","lineNumber":10,"columnNumber":["20"]}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // normal params of params.sub-key = [ exceptionId=3,"text"="text0","lineNumber"=10,"columnNumber"=20]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":"text0","lineNumber":10,"columnNumber":20}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(exceptionMetaData, nullptr);
     EXPECT_EQ(exceptionMetaData->GetExceptionId(), 3);
     EXPECT_EQ("text0", exceptionMetaData->GetText());
@@ -379,21 +418,21 @@ HWTEST_F_L0(DebuggerTypesTest, ExceptionDetailsCreateTest)
     // [exceptionId=3,"text"="text0","lineNumber"=10,"columnNumber"=20,"scriptId"=10]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":"text0","lineNumber":10,"columnNumber":20,"scriptId":10}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // abnormal params of params.sub-key =
     // [exceptionId=3,"text"="text0","lineNumber"=10,"columnNumber"=20,"scriptId"=["10"]]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":"text0","lineNumber":10,"columnNumber":20,"scriptId":["10"]}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // normal params of params.sub-key =
     // [exceptionId=3,"text"="text0","lineNumber"=10,"columnNumber"=20,"scriptId"="id0"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":"text0","lineNumber":10,"columnNumber":20,"scriptId":"0"}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(exceptionMetaData, nullptr);
     EXPECT_EQ(exceptionMetaData->GetExceptionId(), 3);
     EXPECT_EQ("text0", exceptionMetaData->GetText());
@@ -405,21 +444,21 @@ HWTEST_F_L0(DebuggerTypesTest, ExceptionDetailsCreateTest)
     // [exceptionId=3,"text"="text0","lineNumber"=10,"columnNumber"=20,"url"=10]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":"text0","lineNumber":10,"columnNumber":20,"url":10}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // abnormal params of params.sub-key =
     // [exceptionId=3,"text"="text0","lineNumber"=10,"columnNumber"=20,"url"=["10"]]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":"text0","lineNumber":10,"columnNumber":20,"url":["10"]}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // normal params of params.sub-key =
     // [exceptionId=3,"text"="text0","lineNumber"=10,"columnNumber"=20,"url"="url0"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":"text0","lineNumber":10,"columnNumber":20,"url":"url0"}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(exceptionMetaData, nullptr);
     EXPECT_EQ(exceptionMetaData->GetExceptionId(), 3);
     EXPECT_EQ("text0", exceptionMetaData->GetText());
@@ -431,14 +470,14 @@ HWTEST_F_L0(DebuggerTypesTest, ExceptionDetailsCreateTest)
     // [exceptionId=3,"text"="text0","lineNumber"=10,"columnNumber"=20,"exception"=10]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":"text0","lineNumber":10,"columnNumber":20,"exception":10}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // abnormal params of params.sub-key =
     // [exceptionId=3,"text"="text0","lineNumber"=10,"columnNumber"=20,"exception"=["10"]]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":"text0","lineNumber":10,"columnNumber":20,"exception":["10"]}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // normal params of params.sub-key =
@@ -446,7 +485,7 @@ HWTEST_F_L0(DebuggerTypesTest, ExceptionDetailsCreateTest)
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":"text0","lineNumber":10,"columnNumber":20,"exception":{"type":")" +
           ObjectType::Object + R"(","subtype":")" + ObjectSubType::Error + R"("}}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(exceptionMetaData, nullptr);
     EXPECT_EQ(exceptionMetaData->GetExceptionId(), 3);
     EXPECT_EQ("text0", exceptionMetaData->GetText());
@@ -461,21 +500,21 @@ HWTEST_F_L0(DebuggerTypesTest, ExceptionDetailsCreateTest)
     // [exceptionId=3,"text"="text0","lineNumber"=10,"columnNumber"=20,"executionContextId"="10"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":"text0","lineNumber":10,"columnNumber":20,"executionContextId":"10"}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // abnormal params of params.sub-key =
     // [exceptionId=3,"text"="text0","lineNumber"=10,"columnNumber"=20,"executionContextId"=["10"]]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":"text0","lineNumber":10,"columnNumber":20,"executionContextId":["10"]}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(exceptionMetaData, nullptr);
 
     // normal params of params.sub-key =
     // [exceptionId=3,"text"="text0","lineNumber"=10,"columnNumber"=20,"executionContextId"=2]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "exceptionId":3,"text":"text0","lineNumber":10,"columnNumber":20,"executionContextId":2}})";
-    exceptionMetaData = ExceptionDetails::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(exceptionMetaData, nullptr);
     EXPECT_EQ(exceptionMetaData->GetExceptionId(), 3);
     EXPECT_EQ("text0", exceptionMetaData->GetText());
@@ -550,6 +589,62 @@ HWTEST_F_L0(DebuggerTypesTest, ExceptionDetailsToObjectTest)
     EXPECT_EQ(Local<IntegerRef>(result)->Value(), 30);
 }
 
+HWTEST_F_L0(DebuggerTypesTest, ExceptionDetailsToJsonTest)
+{
+    std::string msg;
+    std::unique_ptr<ExceptionDetails> exceptionMetaData;
+    std::string tmpStr;
+    int32_t tmpInt;
+    std::unique_ptr<PtJson> tmpJson;
+    Result ret;
+
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
+          "exceptionId":5,"text":"text0","lineNumber":10,"columnNumber":20,"scriptId":"100","url":"url0",
+          "exception":{"type":")" +
+          ObjectType::Object + R"(","subtype":")" + ObjectSubType::Error + R"("},"executionContextId":30}})";
+    exceptionMetaData = ExceptionDetails::Create(DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(exceptionMetaData, nullptr);
+    auto objJson = exceptionMetaData->ToJson();
+
+    ret = objJson->GetInt("exceptionId", &tmpInt);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 5);
+
+    ret = objJson->GetString("text", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("text0", tmpStr);
+
+    ret = objJson->GetInt("lineNumber", &tmpInt);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 10);
+
+    ret = objJson->GetInt("columnNumber", &tmpInt);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 20);
+
+    ret = objJson->GetString("scriptId", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("100", tmpStr);
+
+    ret = objJson->GetString("url", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("url0", tmpStr);
+
+    ret = objJson->GetObject("exception", &tmpJson);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_NE(tmpJson, nullptr);
+    ret = tmpJson->GetString("type", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectType::Object.c_str()), tmpStr);
+    ret = tmpJson->GetString("subtype", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectSubType::Error.c_str()), tmpStr);
+
+    ret = objJson->GetInt("executionContextId", &tmpInt);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 30);
+}
+
 HWTEST_F_L0(DebuggerTypesTest, InternalPropertyDescriptorCreateTest)
 {
     std::string msg;
@@ -557,92 +652,79 @@ HWTEST_F_L0(DebuggerTypesTest, InternalPropertyDescriptorCreateTest)
 
     //  abnormal params of null msg
     msg = std::string() + R"({})";
-    internalPropertyDescriptor =
-        InternalPropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    internalPropertyDescriptor = InternalPropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(internalPropertyDescriptor, nullptr);
 
     // abnormal params of unexist key params
     msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
-    internalPropertyDescriptor =
-        InternalPropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    internalPropertyDescriptor = InternalPropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(internalPropertyDescriptor, nullptr);
 
     // abnormal params of null params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    internalPropertyDescriptor =
-        InternalPropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    internalPropertyDescriptor = InternalPropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(internalPropertyDescriptor, nullptr);
 
     // abnormal params of unknown params.sub-key=["name":"name8"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name8","value":99}})";
-    internalPropertyDescriptor =
-        InternalPropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    internalPropertyDescriptor = InternalPropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(internalPropertyDescriptor, nullptr);
 
     // abnormal params of unknown params.sub-key=["name":"name8"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name8","value":99}})";
-    internalPropertyDescriptor =
-        InternalPropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    internalPropertyDescriptor = InternalPropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(internalPropertyDescriptor, nullptr);
 
     // abnormal params of unknown params.sub-key=["name":"name8","value":99]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name8","value":99}})";
-    internalPropertyDescriptor =
-        InternalPropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    internalPropertyDescriptor = InternalPropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(internalPropertyDescriptor, nullptr);
 
     // abnormal params of unknown params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    internalPropertyDescriptor =
-        InternalPropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    internalPropertyDescriptor = InternalPropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(internalPropertyDescriptor, nullptr);
 
     // abnormal params of unknown params.sub-key=["name":99]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name8","value":99}})";
-    internalPropertyDescriptor =
-        InternalPropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    internalPropertyDescriptor = InternalPropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(internalPropertyDescriptor, nullptr);
 
     // abnormal params of unknown params.sub-key=["name":[99]]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name8","value":[99]}})";
-    internalPropertyDescriptor =
-        InternalPropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    internalPropertyDescriptor = InternalPropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(internalPropertyDescriptor, nullptr);
 
     // normal params of params.sub-key=["name":"name7"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name7"}})";
-    internalPropertyDescriptor =
-        InternalPropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    internalPropertyDescriptor = InternalPropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(internalPropertyDescriptor, nullptr);
     EXPECT_EQ("name7", internalPropertyDescriptor->GetName());
 
     // abnormal params of unknown params.sub-key=["name":"name8","value":{"type":"object","subtype":"map"}]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name8","value":"99"}})";
-    internalPropertyDescriptor =
-        InternalPropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    internalPropertyDescriptor = InternalPropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(internalPropertyDescriptor, nullptr);
 
     // abnormal params of unknown params.sub-key=["name":"name8","value":{"type":"object","subtype":"wrong"}]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name8","value":{"type":")" +
           ObjectType::Object + R"(","subtype":"wrong"}}})";
-    internalPropertyDescriptor =
-        InternalPropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    internalPropertyDescriptor = InternalPropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(internalPropertyDescriptor, nullptr);
 
     // normal params of params.sub-key=["name":"name8","value":{"type":"object","subtype":"map"}]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name8","value":{"type":")" +
           ObjectType::Object + R"(","subtype":")" + ObjectSubType::Map + R"("}}})";
-    internalPropertyDescriptor =
-        InternalPropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    internalPropertyDescriptor = InternalPropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(internalPropertyDescriptor, nullptr);
     EXPECT_EQ("name8", internalPropertyDescriptor->GetName());
     ASSERT_TRUE(internalPropertyDescriptor->HasValue());
@@ -688,6 +770,36 @@ HWTEST_F_L0(DebuggerTypesTest, InternalPropertyDescriptorToObjectTest)
     EXPECT_EQ(std::string(ObjectSubType::Map.c_str()), DebuggerApi::ToStdString(subResult));
 }
 
+HWTEST_F_L0(DebuggerTypesTest, InternalPropertyDescriptorToJsonTest)
+{
+    std::string msg;
+    std::unique_ptr<InternalPropertyDescriptor> internalPropertyDescriptor;
+    std::string tmpStr;
+    std::unique_ptr<PtJson> tmpJson;
+    Result ret;
+
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
+          "name":"name8","value":{"type":")" +
+          ObjectType::Object + R"(","subtype":")" + ObjectSubType::Map + R"("}}})";
+    internalPropertyDescriptor = InternalPropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(internalPropertyDescriptor, nullptr);
+    auto objJson = internalPropertyDescriptor->ToJson();
+
+    ret = objJson->GetString("name", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("name8", tmpStr);
+
+    ret = objJson->GetObject("value", &tmpJson);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_NE(tmpJson, nullptr);
+    ret = tmpJson->GetString("type", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectType::Object.c_str()), tmpStr);
+    ret = tmpJson->GetString("subtype", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectSubType::Map.c_str()), tmpStr);
+}
+
 HWTEST_F_L0(DebuggerTypesTest, PropertyDescriptorCreateTest)
 {
     std::string msg;
@@ -695,77 +807,77 @@ HWTEST_F_L0(DebuggerTypesTest, PropertyDescriptorCreateTest)
 
     //  abnormal params of null msg
     msg = std::string() + R"({})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // abnormal params of unexist key params
     msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // abnormal params of null params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // abnormal params of unknown params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // abnormal params of params.sub-key=["name":10,"configurable":true,"enumerable":true]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":10,"configurable":true,"enumerable":true,"value":10}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // abnormal params of params.sub-key=["name":["name85"],"configurable":true,"enumerable":true]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":["name85"],"configurable":true,"enumerable":true,"value":10}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // abnormal params of params.sub-key=["name":"name8","configurable":10,"enumerable":true]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":10,"enumerable":true}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // abnormal params of params.sub-key=["name":"name8","configurable":"true","enumerable":true]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":"true","enumerable":true}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // abnormal params of params.sub-key=["name":"name8","configurable":true,"enumerable":10]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":10}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // abnormal params of params.sub-key=["name":"name8","configurable":true,"enumerable":"true"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":"true"}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // abnormal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true,"value":10]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"value":10}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // abnormal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true,"value":{"ee":"11"}]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"value":{"ee":"11"}}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // normal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true,"value":{..}]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"value":{"type":")" +
           ObjectType::Symbol + R"("}}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(propertyDescriptor, nullptr);
     EXPECT_EQ("name85", propertyDescriptor->GetName());
     ASSERT_TRUE(propertyDescriptor->GetConfigurable());
@@ -777,19 +889,19 @@ HWTEST_F_L0(DebuggerTypesTest, PropertyDescriptorCreateTest)
     // abnormal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true,"writable":98]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"writable":98}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // abnormal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true,"writable":[true]]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"writable":[true]}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // normal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true,"writable":true]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"writable":true}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(propertyDescriptor, nullptr);
     EXPECT_EQ("name85", propertyDescriptor->GetName());
     ASSERT_TRUE(propertyDescriptor->GetConfigurable());
@@ -799,20 +911,20 @@ HWTEST_F_L0(DebuggerTypesTest, PropertyDescriptorCreateTest)
     // abnormal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true,"get":10]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"get":10}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // abnormal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true,"get":[10]]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"get":[10]}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // normal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true,"get":{}]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"get":{"type":")" +
           ObjectType::Function + R"("}}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(propertyDescriptor, nullptr);
     EXPECT_EQ("name85", propertyDescriptor->GetName());
     ASSERT_TRUE(propertyDescriptor->GetConfigurable());
@@ -824,20 +936,20 @@ HWTEST_F_L0(DebuggerTypesTest, PropertyDescriptorCreateTest)
     // abnormal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true,"set":10]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"set":10}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // abnormal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true,"set":[10]]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"set":[10]}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // normal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true,"set":{}]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"set":{"type":")" +
           ObjectType::String + R"("}}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(propertyDescriptor, nullptr);
     EXPECT_EQ("name85", propertyDescriptor->GetName());
     ASSERT_TRUE(propertyDescriptor->GetConfigurable());
@@ -849,19 +961,19 @@ HWTEST_F_L0(DebuggerTypesTest, PropertyDescriptorCreateTest)
     // abnormal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true,"wasThrown":98]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"wasThrown":98}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // abnormal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true,"wasThrown":[true]]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"wasThrown":[true]}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // normal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true,"wasThrown":true]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"wasThrown":true}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(propertyDescriptor, nullptr);
     EXPECT_EQ("name85", propertyDescriptor->GetName());
     ASSERT_TRUE(propertyDescriptor->GetConfigurable());
@@ -871,19 +983,19 @@ HWTEST_F_L0(DebuggerTypesTest, PropertyDescriptorCreateTest)
     // abnormal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true,"isOwn":98]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"isOwn":98}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // abnormal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true,"isOwn":[true]]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"isOwn":[true]}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // normal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true,"isOwn":true]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"isOwn":true}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(propertyDescriptor, nullptr);
     EXPECT_EQ("name85", propertyDescriptor->GetName());
     ASSERT_TRUE(propertyDescriptor->GetConfigurable());
@@ -893,20 +1005,20 @@ HWTEST_F_L0(DebuggerTypesTest, PropertyDescriptorCreateTest)
     // abnormal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true, "symbol":10]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"symbol":10}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // abnormal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true, "symbol":[10]]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"symbol":[10]}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(propertyDescriptor, nullptr);
 
     // normal params of params.sub-key=["name":"name8","configurable":true,"enumerable":true, "symbol":{}]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "name":"name85","configurable":true,"enumerable":true,"symbol":{"type":")" +
           ObjectType::Wasm + R"("}}})";
-    propertyDescriptor = PropertyDescriptor::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(propertyDescriptor, nullptr);
     EXPECT_EQ("name85", propertyDescriptor->GetName());
     ASSERT_TRUE(propertyDescriptor->GetConfigurable());
@@ -1026,6 +1138,92 @@ HWTEST_F_L0(DebuggerTypesTest, PropertyDescriptorToObjectTest)
     EXPECT_EQ(std::string(ObjectSubType::Proxy.c_str()), DebuggerApi::ToStdString(subResult));
 }
 
+HWTEST_F_L0(DebuggerTypesTest, PropertyDescriptorToJsonTest)
+{
+    std::string msg;
+    std::unique_ptr<PropertyDescriptor> propertyDescriptor;
+    std::string tmpStr;
+    std::unique_ptr<PtJson> tmpJson;
+    bool tmpBool;
+    Result ret;
+
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
+          "name":"name8","value":{"type":")" +
+          ObjectType::Object + R"(","subtype":")" + ObjectSubType::Map + R"("},
+          "writable":true,"get":{"type":")" +
+          ObjectType::Object + R"(","subtype":")" + ObjectSubType::Regexp + R"("},"set":{"type":")" +
+          ObjectType::Object + R"(","subtype":")" + ObjectSubType::Generator +
+          R"("},"configurable":true,"enumerable":true,"wasThrown":true,"isOwn":true,"symbol":{"type":")" +
+          ObjectType::Object + R"(","subtype":")" + ObjectSubType::Proxy + R"("}}})";
+    propertyDescriptor = PropertyDescriptor::Create(DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(propertyDescriptor, nullptr);
+    auto objJson = propertyDescriptor->ToJson();
+
+    ret = objJson->GetString("name", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("name8", tmpStr);
+
+    ret = objJson->GetObject("value", &tmpJson);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_NE(tmpJson, nullptr);
+    ret = tmpJson->GetString("type", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectType::Object.c_str()), tmpStr);
+    ret = tmpJson->GetString("subtype", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectSubType::Map.c_str()), tmpStr);
+
+    ret = objJson->GetBool("writable", &tmpBool);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_TRUE(tmpBool);
+
+    ret = objJson->GetObject("get", &tmpJson);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_NE(tmpJson, nullptr);
+    ret = tmpJson->GetString("type", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectType::Object.c_str()), tmpStr);
+    ret = tmpJson->GetString("subtype", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectSubType::Regexp.c_str()), tmpStr);
+
+    ret = objJson->GetObject("set", &tmpJson);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_NE(tmpJson, nullptr);
+    ret = tmpJson->GetString("type", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectType::Object.c_str()), tmpStr);
+    ret = tmpJson->GetString("subtype", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectSubType::Generator.c_str()), tmpStr);
+
+    ret = objJson->GetBool("configurable", &tmpBool);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_TRUE(tmpBool);
+
+    ret = objJson->GetBool("enumerable", &tmpBool);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_TRUE(tmpBool);
+
+    ret = objJson->GetBool("wasThrown", &tmpBool);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_TRUE(tmpBool);
+
+    ret = objJson->GetBool("isOwn", &tmpBool);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_TRUE(tmpBool);
+
+    ret = objJson->GetObject("symbol", &tmpJson);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_NE(tmpJson, nullptr);
+    ret = tmpJson->GetString("type", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectType::Object.c_str()), tmpStr);
+    ret = tmpJson->GetString("subtype", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectSubType::Proxy.c_str()), tmpStr);
+}
+
 HWTEST_F_L0(DebuggerTypesTest, LocationCreateTest)
 {
     std::string msg;
@@ -1133,30 +1331,28 @@ HWTEST_F_L0(DebuggerTypesTest, LocationToJsonTest)
 {
     std::string msg;
     std::unique_ptr<Location> location;
-    Local<StringRef> tmpStr;
+    std::string tmpStr;
+    int32_t tmpInt;
+    Result ret;
 
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "scriptId":"2","lineNumber":99,"columnNumber":18
     }})";
-    location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    location = Location::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(location, nullptr);
-    Local<ObjectRef> object = location->ToObject(ecmaVm);
+    auto objJson = location->ToJson();
 
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "scriptId");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    Local<JSValueRef> result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ("2", DebuggerApi::ToStdString(result));
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "lineNumber");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 99);
-    tmpStr = StringRef::NewFromUtf8(ecmaVm, "columnNumber");
-    ASSERT_TRUE(object->Has(ecmaVm, tmpStr));
-    result = object->Get(ecmaVm, tmpStr);
-    ASSERT_TRUE(!result.IsEmpty() && !result->IsUndefined());
-    EXPECT_EQ(Local<IntegerRef>(result)->Value(), 18);
+    ret = objJson->GetString("scriptId", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("2", tmpStr);
+
+    ret = objJson->GetInt("lineNumber", &tmpInt);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 99);
+
+    ret = objJson->GetInt("columnNumber", &tmpInt);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 18);
 }
 
 HWTEST_F_L0(DebuggerTypesTest, BreakLocationCreateTest)
@@ -1166,78 +1362,78 @@ HWTEST_F_L0(DebuggerTypesTest, BreakLocationCreateTest)
 
     //  abnormal params of null msg
     msg = std::string() + R"({})";
-    breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    breakLocation = BreakLocation::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
     // abnormal params of unexist key params
     msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
-    breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    breakLocation = BreakLocation::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
     // abnormal params of null params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    breakLocation = BreakLocation::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
     // abnormal params of unknown params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    breakLocation = BreakLocation::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":10,"lineNumber":99]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "scriptId":10,"lineNumber":99
     }})";
-    breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    breakLocation = BreakLocation::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":["id3"],"lineNumber":99]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "scriptId":["id3"],"lineNumber":99
     }})";
-    breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    breakLocation = BreakLocation::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":"222","lineNumber":"99"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "scriptId":"222","lineNumber":"99"
     }})";
-    breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    breakLocation = BreakLocation::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":"222","lineNumber":[99]]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "scriptId":"222","lineNumber":[99]
     }})";
-    breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    breakLocation = BreakLocation::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":"2","lineNumber":99,"columnNumber":"18"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "scriptId":"222","lineNumber":899,"columnNumber":"18"
     }})";
-    breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    breakLocation = BreakLocation::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":"2","lineNumber":99,"columnNumber":"18","type":10]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "scriptId":"222","lineNumber":899,"columnNumber":"18","type":10
     }})";
-    breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    breakLocation = BreakLocation::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":"2","lineNumber":99,"columnNumber":"18","type":"ee"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "scriptId":"222","lineNumber":899,"columnNumber":"18","type":"ee"
     }})";
-    breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    breakLocation = BreakLocation::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
     // normal params of params.sub-key=["scriptId":"2","lineNumber":99,"columnNumber":138,"type":"return"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "scriptId":"222","lineNumber":899,"columnNumber":138,"type":"return"
     }})";
-    breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    breakLocation = BreakLocation::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(breakLocation, nullptr);
     EXPECT_EQ(breakLocation->GetScriptId(), 222);
     EXPECT_EQ(breakLocation->GetLine(), 899);
@@ -1248,7 +1444,7 @@ HWTEST_F_L0(DebuggerTypesTest, BreakLocationCreateTest)
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "scriptId":"2122","lineNumber":8299
     }})";
-    breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    breakLocation = BreakLocation::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(breakLocation, nullptr);
     EXPECT_EQ(breakLocation->GetScriptId(), 2122);
     EXPECT_EQ(breakLocation->GetLine(), 8299);
@@ -1289,6 +1485,38 @@ HWTEST_F_L0(DebuggerTypesTest, BreakLocationToObjectTest)
     EXPECT_EQ("call", DebuggerApi::ToStdString(result));
 }
 
+HWTEST_F_L0(DebuggerTypesTest, BreakLocationToJsonTest)
+{
+    std::string msg;
+    std::unique_ptr<BreakLocation> breakLocation;
+    std::string tmpStr;
+    int32_t tmpInt;
+    Result ret;
+
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
+          "scriptId":"12","lineNumber":919,"columnNumber":148,"type":"call"
+    }})";
+    breakLocation = BreakLocation::Create(DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(breakLocation, nullptr);
+    auto objJson = breakLocation->ToJson();
+
+    ret = objJson->GetString("scriptId", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("12", tmpStr);
+
+    ret = objJson->GetInt("lineNumber", &tmpInt);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 919);
+
+    ret = objJson->GetInt("columnNumber", &tmpInt);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 148); 
+
+    ret = objJson->GetString("type", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("call", tmpStr);
+}
+
 HWTEST_F_L0(DebuggerTypesTest, ScopeCreateTest)
 {
     std::string msg;
@@ -1296,70 +1524,70 @@ HWTEST_F_L0(DebuggerTypesTest, ScopeCreateTest)
 
     //  abnormal params of null msg
     msg = std::string() + R"({})";
-    scope = Scope::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    scope = Scope::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(scope, nullptr);
 
     // abnormal params of unexist key params
     msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
-    scope = Scope::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    scope = Scope::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(scope, nullptr);
 
     // abnormal params of null params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    scope = Scope::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    scope = Scope::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(scope, nullptr);
 
     // abnormal params of unknown params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    scope = Scope::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    scope = Scope::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(scope, nullptr);
 
     // abnormal params of params.sub-key=["type":"ss","object":{..}]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "type":"ss","object":{"type":")" +
           ObjectType::Bigint + R"("}}})";
-    scope = Scope::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    scope = Scope::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(scope, nullptr);
 
     // abnormal params of params.sub-key=["type":12,"object":{..}]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "type":12,"object":{"type":")" +
           ObjectType::Bigint + R"("}}})";
-    scope = Scope::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    scope = Scope::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(scope, nullptr);
 
     // abnormal params of params.sub-key=["type":"global","object":10]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "type":"global","object":10}})";
-    scope = Scope::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    scope = Scope::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(scope, nullptr);
 
     // abnormal params of params.sub-key=["type":"global","object":{..}]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "type":"global","object":{"ww":")" +
           ObjectType::Bigint + R"("}}})";
-    scope = Scope::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    scope = Scope::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(scope, nullptr);
 
     // abnormal params of params.sub-key=["type":"global","object":{..},"name":10]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "type":"global","object":{"type":")" +
           ObjectType::Bigint + R"("},"name":10}})";
-    scope = Scope::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    scope = Scope::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(scope, nullptr);
 
     // abnormal params of params.sub-key=["type":"global","object":{..},"name":["10"]]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "type":"global","object":{"type":")" +
           ObjectType::Bigint + R"("},"name":["10"]}})";
-    scope = Scope::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    scope = Scope::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(scope, nullptr);
 
     // normal params of params.sub-key=["type":"global","object":{..},"name":"name128"]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "type":"global","object":{"type":")" +
           ObjectType::Bigint + R"("},"name":"name117"}})";
-    scope = Scope::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    scope = Scope::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(scope, nullptr);
     EXPECT_EQ("name117", scope->GetName());
 
@@ -1367,35 +1595,35 @@ HWTEST_F_L0(DebuggerTypesTest, ScopeCreateTest)
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "type":"global","object":{"type":")" +
           ObjectType::Bigint + R"("},"startLocation":10}})";
-    scope = Scope::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    scope = Scope::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(scope, nullptr);
 
     // abnormal params of params.sub-key=["type":"global","object":{..},"startLocation":{"12":"34"}]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "type":"global","object":{"type":")" +
           ObjectType::Bigint + R"("},"startLocation":{"12":"34"}}})";
-    scope = Scope::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    scope = Scope::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(scope, nullptr);
 
     // abnormal params of params.sub-key=["type":"global","object":{..},"endLocation":10]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "type":"global","object":{"type":")" +
           ObjectType::Bigint + R"("},"endLocation":10}})";
-    scope = Scope::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    scope = Scope::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(scope, nullptr);
 
     // abnormal params of params.sub-key=["type":"global","object":{..},"endLocation":{"12":"34"}]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "type":"global","object":{"type":")" +
           ObjectType::Bigint + R"("},"endLocation":{"12":"34"}}})";
-    scope = Scope::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    scope = Scope::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(scope, nullptr);
 
     // normal params of params.sub-key=["type":"global","object":{..}]
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
           "type":"global","object":{"type":")" +
           ObjectType::Bigint + R"("}}})";
-    scope = Scope::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    scope = Scope::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(scope, nullptr);
     EXPECT_EQ("global", scope->GetType());
     RemoteObject *object = scope->GetObject();
@@ -1476,6 +1704,64 @@ HWTEST_F_L0(DebuggerTypesTest, ScopeToObjectTest)
     EXPECT_EQ(Local<IntegerRef>(subResult)->Value(), 146);
 }
 
+HWTEST_F_L0(DebuggerTypesTest, ScopeToJsonTest)
+{
+    std::string msg;
+    std::unique_ptr<Scope> scope;
+    std::string tmpStr;
+    int32_t tmpInt;
+    std::unique_ptr<PtJson> tmpJson;
+    Result ret;
+
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
+          "type":"global","object":{"type":")" +
+          ObjectType::Object + R"(","subtype":")" + ObjectSubType::Dataview + R"("},"name":"name9",
+          "startLocation":{"scriptId":"2","lineNumber":99},
+          "endLocation":{"scriptId":"13","lineNumber":146}
+    }})";
+    scope = Scope::Create(DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(scope, nullptr);
+    auto objJson = scope->ToJson();
+
+    ret = objJson->GetString("type", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("global", tmpStr);   
+
+    ret = objJson->GetObject("object", &tmpJson);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_NE(tmpJson, nullptr);
+    ret = tmpJson->GetString("type", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectType::Object.c_str()), tmpStr);
+    ret = tmpJson->GetString("subtype", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectSubType::Dataview.c_str()), tmpStr);
+
+    ret = objJson->GetString("name", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("name9", tmpStr);
+
+    ret = objJson->GetObject("startLocation", &tmpJson);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_NE(tmpJson, nullptr);
+    ret = tmpJson->GetString("scriptId", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("2", tmpStr);
+    ret = tmpJson->GetInt("lineNumber", &tmpInt);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 99);
+
+    ret = objJson->GetObject("endLocation", &tmpJson);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_NE(tmpJson, nullptr);
+    ret = tmpJson->GetString("scriptId", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("13", tmpStr);
+    ret = tmpJson->GetInt("lineNumber", &tmpInt);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 146);
+}
+
 HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 {
     std::string msg;
@@ -1483,22 +1769,22 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
 
     //  abnormal params of null msg
     msg = std::string() + R"({})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of unexist key params
     msg = std::string() + R"({"id":0,"method":"Debugger.Test"})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of null params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of unknown params.sub-key
     msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{"unknownKey":100}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of params.sub-key=[..]
@@ -1508,7 +1794,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of params.sub-key=[..]
@@ -1518,7 +1804,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of params.sub-key=[..]
@@ -1528,7 +1814,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of params.sub-key=[..]
@@ -1538,7 +1824,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of params.sub-key=[..]
@@ -1548,7 +1834,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of params.sub-key=[..]
@@ -1558,7 +1844,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of params.sub-key=[..]
@@ -1568,7 +1854,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of params.sub-key=[..]
@@ -1578,7 +1864,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of params.sub-key=[..]
@@ -1588,7 +1874,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of params.sub-key=[..]
@@ -1598,7 +1884,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of params.sub-key=[..]
@@ -1606,7 +1892,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           "callFrameId":"0","functionName":"name0", "location":{"scriptId":"5","lineNumber":19},
           "url":"url7","scopeChain":10,"this":{"type":")" +
           ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of params.sub-key=[..]
@@ -1616,7 +1902,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           {"type":"22","object":{"type":")" +
           ObjectType::Object + R"("}},"this":{"type":")" + ObjectType::Object + R"(","subtype":")" +
           ObjectSubType::V128 + R"("}}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of params.sub-key=[..]
@@ -1626,7 +1912,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":10}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of params.sub-key=[..]
@@ -1636,7 +1922,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"11":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of params.sub-key=[..]
@@ -1647,7 +1933,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("},
           "returnValue":10}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // abnormal params of params.sub-key=[..]
@@ -1658,7 +1944,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("},
           "returnValue":{"type":"object","subtype":"11"}}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(callFrame, nullptr);
 
     // normal params of params.sub-key=[..]
@@ -1668,7 +1954,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           [{"type":"global","object":{"type":")" +
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 + R"("}}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(callFrame, nullptr);
     EXPECT_EQ(callFrame->GetCallFrameId(), 0);
     EXPECT_EQ("name0", callFrame->GetFunctionName());
@@ -1693,7 +1979,7 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameCreateTest)
           ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
           R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::V128 +
           R"("},"returnValue":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::I32 + R"("}}})";
-    callFrame = CallFrame::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParamsObj());
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(callFrame, nullptr);
     EXPECT_EQ(callFrame->GetCallFrameId(), 10);
     EXPECT_EQ("name0", callFrame->GetFunctionName());
@@ -1815,6 +2101,84 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameToObjectTest)
     subResult = Local<ObjectRef>(result)->Get(ecmaVm, tmpStr);
     ASSERT_TRUE(!subResult.IsEmpty() && !subResult->IsUndefined());
     EXPECT_EQ(std::string(ObjectSubType::I64.c_str()), DebuggerApi::ToStdString(subResult));
+}
+
+HWTEST_F_L0(DebuggerTypesTest, CallFrameToJsonTest)
+{
+    std::string msg;
+    std::unique_ptr<CallFrame> callFrame;
+    std::string tmpStr;
+    int32_t tmpInt;
+    std::unique_ptr<PtJson> tmpJson;
+    Result ret;
+
+    msg = std::string() + R"({"id":0,"method":"Debugger.Test","params":{
+          "callFrameId":"0","functionName":"name0","functionLocation":{"scriptId":"3","lineNumber":16},
+          "location":{"scriptId":"5","lineNumber":19},"url":"url7","scopeChain":
+          [{"type":"global","object":{"type":")" +
+          ObjectType::Object + R"("}}, {"type":"local","object":{"type":")" + ObjectType::Object +
+          R"("}}],"this":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::Iterator +
+          R"("},"returnValue":{"type":")" + ObjectType::Object + R"(","subtype":")" + ObjectSubType::I64 + R"("}}})";
+    callFrame = CallFrame::Create(DispatchRequest(ecmaVm, msg).GetParams());
+    ASSERT_NE(callFrame, nullptr);
+    auto objJson = callFrame->ToJson();
+
+    ret = objJson->GetString("callFrameId", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("0", tmpStr);
+
+    ret = objJson->GetString("functionName", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("name0", tmpStr);
+
+    ret = objJson->GetObject("functionLocation", &tmpJson);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_NE(tmpJson, nullptr);
+    ret = tmpJson->GetString("scriptId", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("3", tmpStr);
+    ret = tmpJson->GetInt("lineNumber", &tmpInt);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 16);
+
+    ret = objJson->GetObject("location", &tmpJson);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_NE(tmpJson, nullptr);
+    ret = tmpJson->GetString("scriptId", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("5", tmpStr);
+    ret = tmpJson->GetInt("lineNumber", &tmpInt);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(tmpInt, 19);
+
+    ret = objJson->GetString("url", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ("url7", tmpStr);
+
+    ret = objJson->GetArray("scopeChain", &tmpJson);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_NE(tmpJson, nullptr);
+    EXPECT_EQ(tmpJson->GetSize(), 2);
+
+    ret = objJson->GetObject("this", &tmpJson);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_NE(tmpJson, nullptr);
+    ret = tmpJson->GetString("type", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectType::Object.c_str()), tmpStr);
+    ret = tmpJson->GetString("subtype", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectSubType::Iterator.c_str()), tmpStr);
+    
+    ret = objJson->GetObject("returnValue", &tmpJson);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    ASSERT_NE(tmpJson, nullptr);
+    ret = tmpJson->GetString("type", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectType::Object.c_str()), tmpStr);
+    ret = tmpJson->GetString("subtype", &tmpStr);
+    EXPECT_EQ(ret, Result::SUCCESS);
+    EXPECT_EQ(std::string(ObjectSubType::I64.c_str()), tmpStr);
 }
 
 HWTEST_F_L0(DebuggerTypesTest, SamplingHeapProfileSampleCreateTest)
