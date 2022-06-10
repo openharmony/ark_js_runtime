@@ -363,6 +363,10 @@ DECLARE_ASM_HANDLER(HandleNewObjDynRangePrefImm16V8)
     Label dispatch(env);
     Label ctorIsBase(env);
     Label ctorNotBase(env);
+    Label isException(env);
+    Label callRuntime(env);
+    Label newObject(env);
+    Label newObjectCheckException(env);
 
     GateRef isBase = IsBase(ctor);
     Branch(TaggedIsHeapObject(ctor), &ctorIsHeapObject, &slowPath);
@@ -375,14 +379,29 @@ DECLARE_ASM_HANDLER(HandleNewObjDynRangePrefImm16V8)
         Branch(isBase, &ctorIsBase, &ctorNotBase);
         Bind(&ctorIsBase);
         {
-            thisObj = CallRuntime(glue, RTSTUB_ID(NewThisObject), {ctor});
-            // INTERPRETER_RETURN_IF_ABRUPT(thisObj)
-            Label thisObjIsException(env);
-            Branch(TaggedIsException(*thisObj), &thisObjIsException, &ctorNotBase);
-            Bind(&thisObjIsException);
+            Label notHole(env);
+            Label checkJSObject(env);
+            auto protoOrHclass = Load(VariableType::JS_ANY(), ctor,
+                IntPtr(JSFunction::PROTO_OR_DYNCLASS_OFFSET));
+            Branch(TaggedIsHole(protoOrHclass), &callRuntime, &notHole);
+            Bind(&notHole);
+            Branch(IsJSHClass(protoOrHclass), &checkJSObject, &callRuntime);
+            Bind(&checkJSObject);
+            auto objectType = GetObjectType(protoOrHclass);
+            Branch(Int32Equal(objectType, Int32(static_cast<int32_t>(JSType::JS_OBJECT))),
+                &newObject, &callRuntime);
+            Bind(&newObject);
             {
-                DISPATCH_LAST();
+                thisObj = NewJSObject(glue, protoOrHclass);
+                Jump(&newObjectCheckException);
             }
+            Bind(&callRuntime);
+            {
+                thisObj = CallRuntime(glue, RTSTUB_ID(NewThisObject), {ctor});
+                Jump(&newObjectCheckException);
+            }
+            Bind(&newObjectCheckException);
+            Branch(TaggedIsException(*res), &isException, &ctorNotBase);
         }
         Bind(&ctorNotBase);
         GateRef argv = PtrAdd(sp, PtrMul(
@@ -399,7 +418,6 @@ DECLARE_ASM_HANDLER(HandleNewObjDynRangePrefImm16V8)
         { ctor, ctor, Int16BuildTaggedTypeWithNoGC(firstArgIdx), Int16BuildTaggedTypeWithNoGC(length) });
     Jump(&checkResult);
     Bind(&checkResult);
-    Label isException(env);
     Branch(TaggedIsException(*res), &isException, &dispatch);
     Bind(&isException);
     {
