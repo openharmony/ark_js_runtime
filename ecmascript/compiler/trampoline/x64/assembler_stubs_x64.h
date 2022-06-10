@@ -89,8 +89,10 @@ private:
     static void PushGeneratorFrameState(ExtendedAssembler *assembler, Register prevSpRegister,
         Register fpRegister, Register callTargetRegister, Register methodRegister, Register contextRegister,
         Register pcRegister, Register operatorRegister);
-    static void PushAsmInterpEntryFrame(ExtendedAssembler *assembler, bool saveLeave);
-    static void PopAsmInterpEntryFrame(ExtendedAssembler *assembler, bool saveLeave);
+    static void PushAsmInterpEntryFrame(ExtendedAssembler *assembler);
+    static void PopAsmInterpEntryFrame(ExtendedAssembler *assembler);
+    static void PushAsmInterpBridgeFrame(ExtendedAssembler *assembler);
+    static void PopAsmInterpBridgeFrame(ExtendedAssembler *assembler);
     static void CallBCStub(ExtendedAssembler *assembler, Register newSpRegister, Register glueRegister,
         Register callTargetRegister, Register methodRegister, Register pcRegister);
     static void GlueToThread(ExtendedAssembler *assembler, Register glueRegister, Register threadRegister);

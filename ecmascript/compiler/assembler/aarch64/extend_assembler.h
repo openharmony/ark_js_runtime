@@ -35,6 +35,8 @@ public:
     void PushFpAndLr();
     void SaveFpAndLr();
     void RestoreFpAndLr();
+    void SaveLrAndFp();
+    void RestoreLrAndFp();
     void PushArgsWithArgv(Register argc, Register argv, Register op, panda::ecmascript::Label *next);
     void PushArgc(int32_t argc, Register op);
     void PushArgc(Register argc, Register op);
