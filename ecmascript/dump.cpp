@@ -95,6 +95,10 @@
 #include "ecmascript/mem/machine_code.h"
 #include "ecmascript/module/js_module_namespace.h"
 #include "ecmascript/module/js_module_source_text.h"
+#include "ecmascript/require/js_cjs_module.h"
+#include "ecmascript/require/js_cjs_module_cache.h"
+#include "ecmascript/require/js_cjs_require.h"
+#include "ecmascript/require/js_cjs_exports.h"
 #include "ecmascript/tagged_array.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/tagged_list.h"
@@ -354,6 +358,12 @@ CString JSHClass::DumpJSType(JSType type)
             return "LinkedList";
         case JSType::JS_API_LINKED_LIST_ITERATOR:
             return "LinkedListIterator";
+        case JSType::JS_CJS_EXPORTS:
+            return "CommonJSExports";
+        case JSType::JS_CJS_MODULE:
+            return "CommonJSModule";
+        case JSType::JS_CJS_REQUIRE:
+            return "CommonJSRequire";
         default: {
             CString ret = "unknown type ";
             return ret + static_cast<char>(type);
@@ -809,6 +819,15 @@ static void DumpObject(TaggedObject *obj, std::ostream &os)
             break;
         case JSType::JS_API_PLAIN_ARRAY_ITERATOR:
             JSAPIPlainArrayIterator::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_CJS_MODULE:
+            JSCjsModule::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_CJS_REQUIRE:
+            JSCjsRequire::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_CJS_EXPORTS:
+            JSCjsExports::Cast(obj)->Dump(os);
             break;
         default:
             UNREACHABLE();
@@ -2584,7 +2603,7 @@ void TSObjectType::Dump(std::ostream &os) const
 {
     os << " - TSObjectType globalTSTypeRef: ";
     GlobalTSTypeRef gt = GetGTRef();
-    uint64_t globalTSTypeRef = gt.GetData();
+    uint64_t globalTSTypeRef = gt.GetType();
     os << globalTSTypeRef;
     os << "\n";
     os << " - TSObjectType moduleId: ";
@@ -2610,7 +2629,7 @@ void TSClassType::Dump(std::ostream &os) const
     os << " - Dump TSClassType - " << "\n";
     os << " - TSClassType globalTSTypeRef: ";
     GlobalTSTypeRef gt = GetGTRef();
-    uint64_t globalTSTypeRef = gt.GetData();
+    uint64_t globalTSTypeRef = gt.GetType();
     os << globalTSTypeRef;
     os << "\n";
     os << " - TSClassType moduleId: ";
@@ -2630,7 +2649,7 @@ void TSClassType::Dump(std::ostream &os) const
     if (extensionType.IsUndefined()) {
         os << " (base class type) ";
     } else {
-        uint64_t extensionTypeGT = TSType::Cast(extensionType.GetTaggedObject())->GetGTRef().GetData();
+        uint64_t extensionTypeGT = TSType::Cast(extensionType.GetTaggedObject())->GetGTRef().GetType();
         os << extensionTypeGT;
     }
     os << "\n";
@@ -2662,7 +2681,7 @@ void TSInterfaceType::Dump(std::ostream &os) const
     os << " - Dump Interface Type - " << "\n";
     os << " - TSInterfaceType globalTSTypeRef: ";
     GlobalTSTypeRef gt = GetGTRef();
-    uint64_t globalTSTypeRef = gt.GetData();
+    uint64_t globalTSTypeRef = gt.GetType();
     os << globalTSTypeRef;
     os << "\n";
     os << " - TSInterfaceType moduleId: ";
@@ -2696,7 +2715,7 @@ void TSImportType::Dump(std::ostream &os) const
     os << " - Dump Import Type - " << "\n";
     os << " - TSImportType globalTSTypeRef: ";
     GlobalTSTypeRef gt = GetGTRef();
-    uint64_t globalTSTypeRef = gt.GetData();
+    uint64_t globalTSTypeRef = gt.GetType();
     os << globalTSTypeRef;
     os << "\n";
     os << " - TSImportType moduleId: ";
@@ -2714,7 +2733,7 @@ void TSImportType::Dump(std::ostream &os) const
     os << " -------------------------------------------- ";
     os << " - Target Type: ";
     GlobalTSTypeRef targetGT = GetTargetRefGT();
-    uint64_t targetGTValue = targetGT.GetData();
+    uint64_t targetGTValue = targetGT.GetType();
     os << " - TargetTypeGT: ";
     os << targetGTValue;
     os << "\n";
@@ -2740,7 +2759,7 @@ void TSImportType::Dump(std::ostream &os) const
             os << " - Target Type typeKind is classInstanceType ";
             break;
         }
-        case TSTypeKind::INTERFACE: {
+        case TSTypeKind::INTERFACE_KIND: {
             os << " - Target Type typeKind is interfaceType";
             break;
         }
@@ -2775,7 +2794,7 @@ void TSClassInstanceType::Dump(std::ostream &os) const
     os << " - Dump ClassInstance Type - " << "\n";
     os << " - TSClassInstanceType globalTSTypeRef: ";
     GlobalTSTypeRef gt = GetGTRef();
-    uint64_t globalTSTypeRef = gt.GetData();
+    uint64_t globalTSTypeRef = gt.GetType();
     os << globalTSTypeRef;
     os << "\n";
     os << " - TSClassInstanceType moduleId: ";
@@ -2794,7 +2813,7 @@ void TSClassInstanceType::Dump(std::ostream &os) const
     os << " -------------------------------------------- ";
     os << " - createClassType GT: ";
     GlobalTSTypeRef createClassTypeGT = GetClassRefGT();
-    os << createClassTypeGT.GetData();
+    os << createClassTypeGT.GetType();
     os << "\n";
 }
 
@@ -2803,7 +2822,7 @@ void TSUnionType::Dump(std::ostream &os) const
     os << " - Dump UnionType Type - " << "\n";
     os << " - TSUnionType globalTSTypeRef: ";
     GlobalTSTypeRef gt = GetGTRef();
-    uint64_t globalTSTypeRef = gt.GetData();
+    uint64_t globalTSTypeRef = gt.GetType();
     os << globalTSTypeRef;
     os << "\n";
     os << " - TSUnionType moduleId: ";
@@ -2827,7 +2846,7 @@ void TSFunctionType::Dump(std::ostream &os) const
     os << " - Dump TSFunctionType - " << "\n";
     os << " - TSFunctionType globalTSTypeRef: ";
     GlobalTSTypeRef gt = GetGTRef();
-    uint64_t globalTSTypeRef = gt.GetData();
+    uint64_t globalTSTypeRef = gt.GetType();
     os << globalTSTypeRef;
     os << "\n";
     os << " - TSFunctionType moduleId: ";
@@ -2851,7 +2870,7 @@ void TSArrayType::Dump(std::ostream &os) const
     os << " - Dump TSArrayType - " << "\n";
     os << " - TSArrayType globalTSTypeRef: ";
     GlobalTSTypeRef gt = GetGTRef();
-    uint64_t globalTSTypeRef = gt.GetData();
+    uint64_t globalTSTypeRef = gt.GetType();
     os << globalTSTypeRef;
     os << "\n";
     os << " - TSArrayType moduleId: ";
@@ -2964,6 +2983,67 @@ void ModuleNamespace::Dump(std::ostream &os) const
     os << "\n";
 }
 
+void JSCjsModule::Dump(std::ostream &os) const
+{
+    os << " - current module path: ";
+    GetPath().Dump(os);
+    os << "\n";
+    os << " - current module filename: ";
+    GetFilename().Dump(os);
+    os << "\n";
+}
+
+void JSCjsRequire::Dump(std::ostream &os) const
+{
+    os << " --- JSCjsRequire is JSFunction: ";
+    os << "\n";
+}
+
+void JSCjsExports::Dump(std::ostream &os) const
+{
+    DISALLOW_GARBAGE_COLLECTION;
+    JSHClass *jshclass = GetJSHClass();
+    os << " - hclass: " << std::hex << jshclass << "\n";
+    os << " - prototype: ";
+    jshclass->GetPrototype().DumpTaggedValue(os);
+    os << "\n";
+
+    TaggedArray *properties = TaggedArray::Cast(GetProperties().GetTaggedObject());
+    os << " - properties: " << std::hex << properties;
+
+    if (!properties->IsDictionaryMode()) {
+        JSTaggedValue attrs = jshclass->GetLayout();
+        if (attrs.IsNull()) {
+            return;
+        }
+
+        LayoutInfo *layoutInfo = LayoutInfo::Cast(attrs.GetTaggedObject());
+        int propNumber = static_cast<int>(jshclass->NumberOfProps());
+        os << " <LayoutInfo[" << std::dec << propNumber << "]>\n";
+        for (int i = 0; i < propNumber; i++) {
+            JSTaggedValue key = layoutInfo->GetKey(i);
+            PropertyAttributes attr = layoutInfo->GetAttr(i);
+            ASSERT(i == static_cast<int>(attr.GetOffset()));
+            os << "     " << std::right << std::setw(DUMP_PROPERTY_OFFSET);
+            DumpPropertyKey(key, os);
+            os << ": (";
+            JSTaggedValue val;
+            if (attr.IsInlinedProps()) {
+                val = GetPropertyInlinedProps(i);
+            } else {
+                val = properties->Get(i - static_cast<int>(jshclass->GetInlinedProperties()));
+            }
+            val.DumpTaggedValue(os);
+            os << ") ";
+            DumpAttr(attr, true, os);
+            os << "\n";
+        }
+    } else {
+        NameDictionary *dict = NameDictionary::Cast(properties);
+        os << " <NameDictionary[" << std::dec << dict->EntriesCount() << "]>\n";
+        dict->Dump(os);
+    }
+}
 // ########################################################################################
 // Dump for Snapshot
 // ########################################################################################
@@ -3175,6 +3255,15 @@ static void DumpObject(TaggedObject *obj,
             return;
         case JSType::JS_NUMBER_FORMAT:
             JSNumberFormat::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_CJS_MODULE:
+            JSCjsModule::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_CJS_EXPORTS:
+            JSCjsExports::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_CJS_REQUIRE:
+            JSCjsExports::Cast(obj)->DumpForSnapshot(vec);
             return;
         case JSType::JS_COLLATOR:
             JSCollator::Cast(obj)->DumpForSnapshot(vec);
@@ -4309,7 +4398,7 @@ void TSInterfaceType::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedVal
 
 void TSClassInstanceType::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
-    vec.push_back(std::make_pair(CString("classTypeIndex"), JSTaggedValue(GetClassRefGT().GetData())));
+    vec.push_back(std::make_pair(CString("classTypeIndex"), JSTaggedValue(GetClassRefGT().GetType())));
 }
 
 void TSImportType::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
@@ -4374,5 +4463,24 @@ void ModuleNamespace::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedVal
 {
     vec.push_back(std::make_pair(CString("Module"), GetModule()));
     vec.push_back(std::make_pair(CString("Exports"), GetExports()));
+}
+
+void JSCjsModule::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("Id"), GetId()));
+    vec.push_back(std::make_pair(CString("Path"), GetPath()));
+    vec.push_back(std::make_pair(CString("Exports"), GetExports()));
+    vec.push_back(std::make_pair(CString("Filename"), GetFilename()));
+}
+
+void JSCjsExports::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("Exports"), GetExports()));
+}
+
+void JSCjsRequire::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("Cache"), GetCache()));
+    vec.push_back(std::make_pair(CString("Parent"), GetParent()));
 }
 }  // namespace panda::ecmascript

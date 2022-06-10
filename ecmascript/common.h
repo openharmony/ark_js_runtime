@@ -65,6 +65,12 @@ using Address = uintptr_t;
 #define STATIC_ASSERT_EQ_ARCH64(a, b)
 #endif
 
+#if defined(PANDA_TARGET_WINDOWS) || defined(PANDA_TARGET_MACOS)
+#define WIN_OR_MAC_PLATFORM true
+#else
+#define WIN_OR_MAC_PLATFORM false
+#endif
+
 #define STATIC_ASSERT_EQ_ARCH(expect, valueArch32, valueArch64) \
     STATIC_ASSERT_EQ_ARCH32(expect, valueArch32)                \
     STATIC_ASSERT_EQ_ARCH64(expect, valueArch64)

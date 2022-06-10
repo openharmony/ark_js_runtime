@@ -87,10 +87,9 @@ void Heap::Initialize()
     compressSpace_ = new OldSpace(this, oldSpaceCapacity, oldSpaceCapacity);
     oldSpace_->Initialize();
     hugeObjectSpace_ = new HugeObjectSpace(heapRegionAllocator_, oldSpaceCapacity, oldSpaceCapacity);
-    initialEvacuateTaskCount_ = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum();
-    maxEvacuateTaskCount_ = initialEvacuateTaskCount_;
+    maxEvacuateTaskCount_ = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum();
     maxMarkTaskCount_ = std::min<size_t>(ecmaVm_->GetJSOptions().GetGcThreadNum(),
-        initialEvacuateTaskCount_ - 1);
+        maxEvacuateTaskCount_ - 1);
 
     LOG(INFO, RUNTIME) << "heap initialize: heap size = " << MAX_HEAP_SIZE
         << ", semispace capacity = " << minSemiSpaceCapacity
@@ -101,13 +100,13 @@ void Heap::Initialize()
         << ", globallimit = " << globalSpaceAllocLimit_
         << ", gcThreadNum = " << maxMarkTaskCount_;
     parallelGC_ = ecmaVm_->GetJSOptions().EnableParallelGC();
-    concurrentMarkingEnabled_ = ecmaVm_->GetJSOptions().EnableConcurrentMark();
+    bool concurrentMarkerEnabled = ecmaVm_->GetJSOptions().EnableConcurrentMark();
     markType_ = MarkType::MARK_YOUNG;
 #if ECMASCRIPT_DISABLE_PARALLEL_GC
     parallelGC_ = false;
 #endif
 #if ECMASCRIPT_DISABLE_CONCURRENT_MARKING
-    concurrentMarkingEnabled_ = false;
+    concurrentMarkerEnabled = false;
 #endif
     workManager_ = new WorkManager(this, Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() + 1);
     stwYoungGC_ = new STWYoungGC(this, parallelGC_);
@@ -115,8 +114,10 @@ void Heap::Initialize()
 
     derivedPointers_ = new ChunkMap<DerivedDataKey, uintptr_t>(ecmaVm_->GetChunk());
     partialGC_ = new PartialGC(this);
-    sweeper_ = new ConcurrentSweeper(this, ecmaVm_->GetJSOptions().EnableConcurrentSweep());
-    concurrentMarker_ = new ConcurrentMarker(this);
+    sweeper_ = new ConcurrentSweeper(this, ecmaVm_->GetJSOptions().EnableConcurrentSweep() ?
+        EnableConcurrentSweepType::ENABLE : EnableConcurrentSweepType::CONFIG_DISABLE);
+    concurrentMarker_ = new ConcurrentMarker(this, concurrentMarkerEnabled ? EnableConcurrentMarkType::ENABLE :
+        EnableConcurrentMarkType::CONFIG_DISABLE);
     nonMovableMarker_ = new NonMovableMarker(this);
     semiGCMarker_ = new SemiGCMarker(this);
     compressGCMarker_ = new CompressGCMarker(this);
@@ -254,7 +255,7 @@ void Heap::Resume(TriggerGCType gcType)
 TriggerGCType Heap::SelectGCType() const
 {
     // If concurrent mark is enabled, the TryTriggerConcurrentMarking decide which GC to choose.
-    if (concurrentMarkingEnabled_) {
+    if (concurrentMarker_->IsEnabled()) {
         return YOUNG_GC;
     }
     if (oldSpace_->CanExpand(activeSemiSpace_->GetSurvivalObjectSize()) &&
@@ -295,13 +296,13 @@ void Heap::CollectGarbage(TriggerGCType gcType)
     switch (gcType) {
         case TriggerGCType::YOUNG_GC:
             // Use partial GC for young generation.
-            if (!concurrentMarkingEnabled_) {
+            if (!concurrentMarker_->IsEnabled()) {
                 SetMarkType(MarkType::MARK_YOUNG);
             }
             partialGC_->RunPhases();
             break;
         case TriggerGCType::OLD_GC:
-            if (concurrentMarkingEnabled_ && markType_ == MarkType::MARK_YOUNG) {
+            if (concurrentMarker_->IsEnabled() && markType_ == MarkType::MARK_YOUNG) {
                 // Wait for existing concurrent marking tasks to be finished (if any),
                 // and reset concurrent marker's status for full mark.
                 bool concurrentMark = CheckOngoingConcurrentMarking();
@@ -342,6 +343,9 @@ void Heap::CollectGarbage(TriggerGCType gcType)
                                                  << " global CommittedSize " << GetCommittedSize()
                                                  << " global limit " << globalSpaceAllocLimit_;
         markType_ = MarkType::MARK_YOUNG;
+    }
+    if (concurrentMarker_->IsRequestDisabled()) {
+        concurrentMarker_->EnableConcurrentMarking(EnableConcurrentMarkType::DISABLE);
     }
     ecmaVm_->GetEcmaGCStats()->CheckIfLongTimePause();
 # if ECMASCRIPT_ENABLE_GC_LOG
@@ -474,7 +478,7 @@ void Heap::CheckAndTriggerOldGC()
 
 bool Heap::CheckOngoingConcurrentMarking()
 {
-    if (concurrentMarkingEnabled_ && !thread_->IsReadyToMark()) {
+    if (concurrentMarker_->IsEnabled() && !thread_->IsReadyToMark()) {
         if (thread_->IsMarking()) {
             [[maybe_unused]] ClockScope clockScope;
             ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "Heap::CheckOngoingConcurrentMarking");
@@ -485,9 +489,6 @@ bool Heap::CheckOngoingConcurrentMarking()
             ECMA_GC_LOG() << "wait concurrent marking finish pause time " << clockScope.TotalSpentTime();
         }
         memController_->RecordAfterConcurrentMark(IsFullMark(), concurrentMarker_);
-        if (disableConcurrentMarkRequested_) {
-            EnableConcurrentMarking(false);
-        }
         return true;
     }
     return false;
@@ -503,7 +504,7 @@ void Heap::TryTriggerConcurrentMarking()
     // young mark may not result in the new space reaching its limit, young mark can be triggered.
     // If it spends much time in full mark, the compress full GC will be requested when the spaces reach the limit.
     // If the global space is larger than half max heap size, we will turn to use full mark and trigger partial GC.
-    if (!concurrentMarkingEnabled_ || !thread_->IsReadyToMark()) {
+    if (!concurrentMarker_->IsEnabled() || !thread_->IsReadyToMark()) {
         return;
     }
     bool isFullMarkNeeded = false;
@@ -573,7 +574,7 @@ void Heap::TryTriggerConcurrentMarking()
 
 void Heap::TriggerConcurrentMarking()
 {
-    if (concurrentMarkingEnabled_ && !fullGCRequested_) {
+    if (concurrentMarker_->IsEnabled() && !fullGCRequested_) {
         concurrentMarker_->Mark();
     }
 }
@@ -638,15 +639,6 @@ void Heap::IncreaseTaskCount()
     runningTaskCount_++;
 }
 
-void Heap::EnableConcurrentMarking(bool flag)
-{
-    if (concurrentMarkingEnabled_ && thread_->IsMarking() && !flag) {
-        disableConcurrentMarkRequested_ = true;
-    } else {
-        concurrentMarkingEnabled_ = flag;
-    }
-}
-
 void Heap::ChangeGCParams(bool inBackground)
 {
     if (inBackground) {
@@ -655,8 +647,8 @@ void Heap::ChangeGCParams(bool inBackground)
             SetMemGrowingType(MemGrowingType::CONSERVATIVE);
             LOG(INFO, RUNTIME) << "Heap Growing Type CONSERVATIVE";
         }
-        EnableConcurrentMarking(false);
-        sweeper_->EnableConcurrentSweep(false);
+        concurrentMarker_->EnableConcurrentMarking(EnableConcurrentMarkType::DISABLE);
+        sweeper_->EnableConcurrentSweep(EnableConcurrentSweepType::DISABLE);
         maxMarkTaskCount_ = 1;
         maxEvacuateTaskCount_ = 1;
     } else {
@@ -665,11 +657,11 @@ void Heap::ChangeGCParams(bool inBackground)
             SetMemGrowingType(MemGrowingType::HIGH_THROUGHPUT);
             LOG(INFO, RUNTIME) << "Heap Growing Type HIGH_THROUGHPUT";
         }
-        EnableConcurrentMarking(true);
-        sweeper_->EnableConcurrentSweep(true);
+        concurrentMarker_->EnableConcurrentMarking(EnableConcurrentMarkType::ENABLE);
+        sweeper_->EnableConcurrentSweep(EnableConcurrentSweepType::ENABLE);
         maxMarkTaskCount_ = std::min<size_t>(ecmaVm_->GetJSOptions().GetGcThreadNum(),
-            initialEvacuateTaskCount_ - 1);
-        maxEvacuateTaskCount_ = initialEvacuateTaskCount_;
+            Taskpool::GetCurrentTaskpool()->GetTotalThreadNum() - 1);
+        maxEvacuateTaskCount_ = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum();
     }
 }
 

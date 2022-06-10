@@ -534,5 +534,14 @@ void InterpreterStub::SetHotnessCounter(GateRef glue, GateRef method, GateRef va
     Store(VariableType::INT16(), glue, method,
           IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())), newValue);
 }
+
+void InterpreterStub::DispatchWithId(GateRef glue, GateRef sp, GateRef pc, GateRef constpool,
+                                     GateRef profileTypeInfo, GateRef acc,
+                                     GateRef hotnessCounter, int index)
+{
+    GateRef target = PtrMul(IntPtr(index), IntPtrSize());
+    DispatchBase(target, glue, sp, pc, constpool, profileTypeInfo, acc, hotnessCounter);
+    Return();
+}
 } //  namespace panda::ecmascript::kungfu
 #endif // ECMASCRIPT_COMPILER_INTERPRETER_STUB_INL_H

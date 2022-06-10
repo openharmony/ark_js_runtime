@@ -240,25 +240,25 @@ GateRef CircuitBuilder::DoubleToTaggedTypeNGC(GateRef x)
 
 GateRef CircuitBuilder::Tagged(GateRef x)
 {
-    GetCircuit()->SetGateType(x, GateType::TAGGED_VALUE);
+    GetCircuit()->SetGateType(x, GateType::TaggedValue());
     return Int64Or(x, Int64(JSTaggedValue::TAG_INT));
 }
 
 GateRef CircuitBuilder::DoubleToTagged(GateRef x)
 {
     GateRef val = CastDoubleToInt64(x);
-    GetCircuit()->SetGateType(val, GateType::TAGGED_VALUE);
+    GetCircuit()->SetGateType(val, GateType::TaggedValue());
     return Int64Add(val, Int64(JSTaggedValue::DOUBLE_ENCODE_OFFSET));
 }
 
 GateRef CircuitBuilder::TaggedTrue()
 {
-    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_TRUE, GateType::NJS_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_TRUE, GateType::NJSValue());
 }
 
 GateRef CircuitBuilder::TaggedFalse()
 {
-    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_FALSE, GateType::NJS_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_FALSE, GateType::NJSValue());
 }
 
 GateRef CircuitBuilder::GetValueFromTaggedArray(VariableType returnType, GateRef array, GateRef index)

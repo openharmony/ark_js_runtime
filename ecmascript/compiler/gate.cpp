@@ -1063,18 +1063,18 @@ std::string Gate::MachineTypeStr(MachineType machineType) const
 std::string Gate::GateTypeStr(GateType gateType) const
 {
     const std::map<GateType, const char *> strMap = {
-            {NJS_VALUE, "NJS_VALUE"},
-            {TAGGED_VALUE, "TAGGED_VALUE"},
-            {TAGGED_POINTER, "TAGGED_POINTER"},
-            {TAGGED_NPOINTER, "TAGGED_NPOINTER"},
-            {EMPTY, "EMPTY"},
-            {JS_ANY, "JS_ANY"},
+        {GateType::NJSValue(), "NJS_VALUE"},
+        {GateType::TaggedValue(), "TAGGED_VALUE"},
+        {GateType::TaggedPointer(), "TAGGED_POINTER"},
+        {GateType::TaggedNPointer(), "TAGGED_NPOINTER"},
+        {GateType::Empty(), "EMPTY"},
+        {GateType::AnyType(), "ANY_TYPE"},
     };
 
     if (strMap.count(gateType) > 0) {
         return strMap.at(gateType);
     }
-    return "GateType-" + std::to_string(gateType);
+    return "GateType-" + std::to_string(gateType.GetType());
 }
 
 void Gate::Print(std::string bytecode, bool inListPreview, size_t highlightIdx) const

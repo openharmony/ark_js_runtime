@@ -447,7 +447,7 @@ private:
     void BuildSubCircuit();
     GateRef NewPhi(BytecodeRegion &bb, uint16_t reg, bool acc);
     GateRef RenameVariable(const size_t bbId, const uint8_t *end,
-        const uint16_t reg, const bool acc, GateType gateType = GateType::JS_ANY);
+        const uint16_t reg, const bool acc, GateType gateType = GateType::AnyType());
     void BuildCircuit();
 
     void PrintCollectBlockInfo(std::vector<CfgInfo> &bytecodeBlockInfos);

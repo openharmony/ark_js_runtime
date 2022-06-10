@@ -64,6 +64,8 @@
 #include "ecmascript/tagged_queue.h"
 #include "ecmascript/tagged_queue.h"
 #include "ecmascript/ts_types/ts_loader.h"
+#include "ecmascript/require/js_cjs_module_cache.h"
+#include "ecmascript/require/js_require_manager.h"
 #include "ecmascript/tooling/interface/js_debugger_manager.h"
 #ifdef PANDA_TARGET_WINDOWS
 #ifdef ERROR
@@ -110,10 +112,6 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
     options_ = std::move(options);
     icEnabled_ = options_.EnableIC();
     optionalLogEnabled_ = options_.EnableOptionalLog();
-    snapshotSerializeEnable_ = options_.IsSnapshotSerializeEnabled();
-    if (!snapshotSerializeEnable_) {
-        snapshotDeserializeEnable_ = options_.IsSnapshotDeserializeEnabled();
-    }
     snapshotFileName_ = options_.GetSnapshotFile().c_str();
     frameworkAbcFileName_ = options_.GetFrameworkAbcFile().c_str();
     options_.ParseAsmInterOption();
@@ -141,20 +139,37 @@ bool EcmaVM::Initialize()
     }
     [[maybe_unused]] EcmaHandleScope scope(thread_);
 
-    LOG_ECMA(DEBUG) << "EcmaVM::Initialize run builtins";
-    JSHandle<JSHClass> dynClassClassHandle = factory_->InitClassClass();
-    JSHandle<JSHClass> globalEnvClass = factory_->NewEcmaDynClass(*dynClassClassHandle,
-                                                                  GlobalEnv::SIZE,
-                                                                  JSType::GLOBAL_ENV);
-    globalConst->Init(thread_, *dynClassClassHandle);
-    globalConstInitialized_ = true;
-    JSHandle<GlobalEnv> globalEnv = factory_->NewGlobalEnv(*globalEnvClass);
-    globalEnv->Init(thread_);
-    globalEnv_ = globalEnv.GetTaggedValue();
+    if (!options_.EnableSnapshotDeserialize()) {
+        LOG_ECMA(DEBUG) << "EcmaVM::Initialize run builtins";
+        JSHandle<JSHClass> dynClassClassHandle = factory_->InitClassClass();
+        JSHandle<JSHClass> globalEnvClass = factory_->NewEcmaDynClass(*dynClassClassHandle,
+                                                                      GlobalEnv::SIZE,
+                                                                      JSType::GLOBAL_ENV);
+        globalConst->Init(thread_, *dynClassClassHandle);
+        globalConstInitialized_ = true;
+        JSHandle<GlobalEnv> globalEnv = factory_->NewGlobalEnv(*globalEnvClass);
+        globalEnv->Init(thread_);
+        globalEnv_ = globalEnv.GetTaggedValue();
+        Builtins builtins;
+        builtins.Initialize(globalEnv, thread_);
+        if (!WIN_OR_MAC_PLATFORM && options_.EnableSnapshotSerialize()) {
+            const CString fileName = "builtins.snapshot";
+            Snapshot snapshot(this);
+            snapshot.SerializeBuiltins(fileName);
+        }
+    } else {
+        const CString fileName = "builtins.snapshot";
+        Snapshot snapshot(this);
+        if (!WIN_OR_MAC_PLATFORM) {
+            snapshot.Deserialize(SnapshotType::BUILTINS, fileName, true);
+        }
+        globalConst->InitSpecialForSnapshot();
+        Builtins builtins;
+        builtins.InitializeForSnapshot(thread_);
+    }
+
     SetupRegExpResultCache();
     microJobQueue_ = factory_->NewMicroJobQueue().GetTaggedValue();
-    Builtins builtins;
-    builtins.Initialize(globalEnv, thread_);
     factory_->GenerateInternalNativeMethods();
     thread_->SetGlobalObject(GetGlobalEnv()->GetGlobalObject());
     moduleManager_ = new ModuleManager(this);
@@ -229,6 +244,7 @@ bool EcmaVM::InitializeFinish()
 
 EcmaVM::~EcmaVM()
 {
+    LOG(INFO, RUNTIME) << "Destruct ecma_vm, vm address is: " << this;
     vmInitialized_ = false;
     Taskpool::GetCurrentTaskpool()->Destroy();
 
@@ -377,12 +393,16 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
     if (options.EnableTSAot()) {
         result = InvokeEcmaAotEntrypoint(func, jsPandaFile);
     } else {
-        JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
-        EcmaRuntimeCallInfo info =
-            EcmaInterpreter::NewRuntimeCallInfo(thread_, JSHandle<JSTaggedValue>(func), global, undefined, 0);
-        CpuProfilingScope profilingScope(this);
-        EcmaRuntimeStatScope runtimeStatScope(this);
-        result = EcmaInterpreter::Execute(&info);
+        if (jsPandaFile->IsCjs()) {
+            CJSExecution(func, jsPandaFile);
+        } else {
+            JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
+            EcmaRuntimeCallInfo info =
+                EcmaInterpreter::NewRuntimeCallInfo(thread_, JSHandle<JSTaggedValue>(func), global, undefined, 0);
+            EcmaRuntimeStatScope runtimeStatScope(this);
+            CpuProfilingScope profilingScope(this);
+            EcmaInterpreter::Execute(&info);
+        }  
     }
     if (!thread_->HasPendingException()) {
         job::MicroJobQueue::ExecutePendingJob(thread_, GetMicroJobQueue());
@@ -403,6 +423,42 @@ JSTaggedValue EcmaVM::FindConstpool(const JSPandaFile *jsPandaFile)
         return JSTaggedValue::Hole();
     }
     return iter->second;
+}
+
+void EcmaVM::CJSExecution(JSHandle<JSFunction> &func, const JSPandaFile *jsPandaFile)
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    ObjectFactory *factory = GetFactory();
+    
+    // create "module", "exports", "require", "filename", "dirname"
+    JSHandle<JSCjsModule> module = factory->NewCjsModule();
+    JSHandle<JSTaggedValue> require = GetGlobalEnv()->GetCjsRequireFunction();
+    JSHandle<JSCjsExports> exports = factory->NewCjsExports();
+    JSMutableHandle<JSTaggedValue> filename(thread_, JSTaggedValue::Undefined());;
+    JSMutableHandle<JSTaggedValue> dirname(thread_, JSTaggedValue::Undefined());;
+    JSRequireManager::ResolveCurrentPath(thread_, dirname, filename, jsPandaFile);
+    CJSInfo cjsInfo(module, require, exports, filename, dirname);
+    JSRequireManager::InitializeCommonJS(thread_, cjsInfo);
+
+    // Execute main function
+    JSHandle<JSTaggedValue> global = GlobalEnv::Cast(globalEnv_.GetTaggedObject())->GetJSGlobalObject();
+    JSHandle<JSTaggedValue> undefined = thread_->GlobalConstants()->GetHandledUndefined();
+    EcmaRuntimeCallInfo info =
+        EcmaInterpreter::NewRuntimeCallInfo(thread_,
+                                            JSHandle<JSTaggedValue>(func),
+                                            global, undefined, 5); // 5 : argument numbers
+    info.SetCallArg(cjsInfo.exportsHdl.GetTaggedValue(),
+                    cjsInfo.requireHdl.GetTaggedValue(),
+                    cjsInfo.moduleHdl.GetTaggedValue(),
+                    cjsInfo.filenameHdl.GetTaggedValue(),
+                    cjsInfo.dirnameHdl.GetTaggedValue());
+    EcmaRuntimeStatScope runtimeStatScope(this);
+    CpuProfilingScope profilingScope(this);
+    EcmaInterpreter::Execute(&info);
+
+    // Collecting module.exports : exports ---> module.exports --->Module._cache
+    JSRequireManager::CollectExecutedExp(thread_, cjsInfo);
+    return;
 }
 
 void EcmaVM::SetConstpool(const JSPandaFile *jsPandaFile, JSTaggedValue constpool)
@@ -583,9 +639,9 @@ void EcmaVM::Iterate(const RootVisitor &v)
     moduleManager_->Iterate(v);
     tsLoader_->Iterate(v);
     fileLoader_->Iterate(v);
-#if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MACOS)
-    snapshotEnv_->Iterate(v);
-#endif
+    if (!WIN_OR_MAC_PLATFORM) {
+        snapshotEnv_->Iterate(v);
+    }
 }
 
 void EcmaVM::SetGlobalEnv(GlobalEnv *global)

@@ -157,7 +157,7 @@ inline GateRef Stub::TaggedArgument(size_t index)
 {
     GateRef argument = Argument(index);
     env_.GetCircuit()->SetOpCode(argument, OpCode(OpCode::ARG));
-    env_.GetCircuit()->SetGateType(argument, GateType::TAGGED_VALUE);
+    env_.GetCircuit()->SetGateType(argument, GateType::TaggedValue());
     env_.GetCircuit()->SetMachineType(argument, MachineType::I64);
     return argument;
 }

@@ -100,7 +100,7 @@ HWTEST_F_L0(PtJsonTest, StringTest)
     json->ReleaseRoot();
 }
 
-HWTEST_F_L0(PtJsonTest, ArrayTest)
+HWTEST_F_L0(PtJsonTest, ArrayTest1)
 {
     std::string str = "[\"a\",\"b\",200]";
     std::unique_ptr<PtJson> json = PtJson::Parse(str.c_str());
@@ -109,6 +109,21 @@ HWTEST_F_L0(PtJsonTest, ArrayTest)
     EXPECT_EQ(json->Get(0)->GetString(), "a");
     EXPECT_EQ(json->Get(1)->GetString(), "b");
     EXPECT_EQ(json->Get(2)->GetInt(), 200);
+    EXPECT_EQ(json->Stringify(), str);
+    json->ReleaseRoot();
+}
+
+HWTEST_F_L0(PtJsonTest, ArrayTest2)
+{
+    std::string str = "[\"a\",\"b\",200,10.5,{}]";
+    std::unique_ptr<PtJson> json = PtJson::Parse(str.c_str());
+    ASSERT_TRUE(json->IsArray());
+    EXPECT_EQ(json->GetSize(), 5);
+    EXPECT_EQ(json->Get(0)->GetString(), "a");
+    EXPECT_EQ(json->Get(1)->GetString(), "b");
+    EXPECT_EQ(json->Get(2)->GetInt(), 200);
+    EXPECT_EQ(json->Get(3)->GetDouble(), 10.5);
+    EXPECT_TRUE(json->Get(4)->IsObject());
     EXPECT_EQ(json->Stringify(), str);
     json->ReleaseRoot();
 }
@@ -124,13 +139,8 @@ HWTEST_F_L0(PtJsonTest, ObjectTest)
     ASSERT_TRUE(child2->Contains("ch"));
 
     auto arr = PtJson::CreateArray();
-    arr->Push(false);
     arr->Push(100);
-    arr->Push(100.2);
-    arr->Push(static_cast<int64_t>(200));
-    arr->Push("abc");
-    arr->Push(child1);
-    EXPECT_EQ(arr->GetSize(), 6);
+    EXPECT_EQ(arr->GetSize(), 1);
 
     auto root = PtJson::CreateObject();
     root->Add("a", false);
@@ -141,23 +151,31 @@ HWTEST_F_L0(PtJsonTest, ObjectTest)
     root->Add("f", child2);
     root->Add("g", arr);
 
-    EXPECT_FALSE(root->GetBool("a"));
-    EXPECT_EQ(root->GetInt("b"), 100);
-    EXPECT_EQ(root->GetDouble("c"), 100.2);
-    EXPECT_EQ(root->GetInt64("d"), static_cast<int64_t>(200));
-    EXPECT_EQ(root->GetString("e"), "abc");
-    EXPECT_EQ(root->GetObject("f")->GetString("ch"), "child_2");
-    ASSERT_TRUE(root->GetArray("g")->IsArray());
-    EXPECT_FALSE(root->GetArray("g")->Get(0)->GetBool());
-    EXPECT_EQ(root->GetArray("g")->Get(1)->GetInt(), 100);
-    EXPECT_EQ(root->GetArray("g")->Get(2)->GetDouble(), 100.2);
-    EXPECT_EQ(root->GetArray("g")->Get(3)->GetInt64(), static_cast<int64_t>(200));
-    EXPECT_EQ(root->GetArray("g")->Get(4)->GetString(), "abc");
-    EXPECT_EQ(root->GetArray("g")->Get(5)->GetString("ch"), "child_1");
+    bool b;
+    int32_t i32;
+    int64_t i64;
+    double d;
+    std::string str;
+    std::unique_ptr<PtJson> json;
+    ASSERT_EQ(root->GetBool("a", &b), Result::SUCCESS);
+    EXPECT_FALSE(b);
+    ASSERT_EQ(root->GetInt("b", &i32), Result::SUCCESS);
+    EXPECT_EQ(i32, 100);
+    ASSERT_EQ(root->GetDouble("c", &d), Result::SUCCESS);
+    EXPECT_EQ(d, 100.2);
+    ASSERT_EQ(root->GetInt64("d", &i64), Result::SUCCESS);
+    EXPECT_EQ(i64, static_cast<int64_t>(200));
+    ASSERT_EQ(root->GetString("e", &str), Result::SUCCESS);
+    EXPECT_EQ(str, "abc");
+    ASSERT_EQ(root->GetObject("f", &json), Result::SUCCESS);
+    ASSERT_EQ(json->GetString("ch", &str), Result::SUCCESS);
+    EXPECT_EQ(str, "child_2");
+    ASSERT_EQ(root->GetArray("g", &json), Result::SUCCESS);
+    ASSERT_TRUE(json->IsArray());
+    EXPECT_EQ(json->Get(0)->GetInt(), 100);
 
     EXPECT_EQ(root->Stringify(),
-        "{\"a\":false,\"b\":100,\"c\":100.2,\"d\":200,\"e\":\"abc\",\"f\":{\"ch\":\"child_2\"},"
-        "\"g\":[false,100,100.2,200,\"abc\",{\"ch\":\"child_1\"}]}");
+        "{\"a\":false,\"b\":100,\"c\":100.2,\"d\":200,\"e\":\"abc\",\"f\":{\"ch\":\"child_2\"},\"g\":[100]}");
     root->ReleaseRoot();
 }
 }

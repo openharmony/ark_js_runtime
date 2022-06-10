@@ -42,6 +42,7 @@ public:
     BreakpointResolved() = default;
     ~BreakpointResolved() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const override
     {
@@ -335,6 +336,7 @@ public:
 
     const std::string &GetSourceMapURL() const
     {
+        ASSERT(HasSourceMapUrl());
         return sourceMapUrl_.value();
     }
 
@@ -344,7 +346,7 @@ public:
         return *this;
     }
 
-    bool HasSourceMapURL() const
+    bool HasSourceMapUrl() const
     {
         return sourceMapUrl_.has_value();
     }
@@ -415,6 +417,7 @@ public:
 
     const std::string &GetScriptLanguage() const
     {
+        ASSERT(HasScriptLanguage());
         return scriptLanguage_.value();
     }
 
@@ -431,6 +434,7 @@ public:
 
     const std::string &GetEmbedderName() const
     {
+        ASSERT(HasEmbedderName());
         return embedderName_.value();
     }
 
@@ -600,6 +604,7 @@ public:
 
     const std::string &GetSourceMapURL() const
     {
+        ASSERT(HasSourceMapUrl());
         return sourceMapUrl_.value();
     }
 
@@ -609,7 +614,7 @@ public:
         return *this;
     }
 
-    bool HasSourceMapURL() const
+    bool HasSourceMapUrl() const
     {
         return sourceMapUrl_.has_value();
     }
@@ -680,6 +685,7 @@ public:
 
     const std::string &GetScriptLanguage() const
     {
+        ASSERT(HasScriptLanguage());
         return scriptLanguage_.value();
     }
 
@@ -696,6 +702,7 @@ public:
 
     const std::string &GetEmbedderName() const
     {
+        ASSERT(HasEmbedderName());
         return embedderName_.value();
     }
 
@@ -801,6 +808,7 @@ public:
 
     const std::string &GetTitle() const
     {
+        ASSERT(HasTitle());
         return title_.value();
     }
 
@@ -859,6 +867,7 @@ public:
 
     const std::string &GetTitle() const
     {
+        ASSERT(HasTitle());
         return title_.value();
     }
 
@@ -892,12 +901,12 @@ public:
         return "Profile.PreciseCoverageDeltaUpdate";
     }
 
-    size_t GetTimestamp() const
+    int64_t GetTimestamp() const
     {
         return timestamp_;
     }
 
-    PreciseCoverageDeltaUpdate &SetTimestamp(size_t timestamp)
+    PreciseCoverageDeltaUpdate &SetTimestamp(int64_t timestamp)
     {
         timestamp_ = timestamp;
         return *this;

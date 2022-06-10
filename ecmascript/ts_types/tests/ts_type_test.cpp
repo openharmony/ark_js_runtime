@@ -113,7 +113,7 @@ HWTEST_F_L0(TSTypeTest, ImportType)
     importTable->Set(thread, 1, JSHandle<JSTaggedValue>(importType));
 
     GlobalTSTypeRef importGT = importType->GetGTRef();
-    ASSERT_EQ(importType->GetTargetRefGT().GetData(), 0ULL);
+    ASSERT_EQ(importType->GetTargetRefGT().GetType(), 0ULL);
 
     tsLoader->AddTypeTable(JSHandle<JSTaggedValue>(importTable), importFileHandle);
 
@@ -151,7 +151,7 @@ HWTEST_F_L0(TSTypeTest, ImportType)
     redirectImportTable->Set(thread, redirectImportTable->GetLength() - 1, redirectExportTableHandle);
 
     GlobalTSTypeRef redirectImportGT = redirectImportType->GetGTRef();
-    ASSERT_EQ(redirectImportType->GetTargetRefGT().GetData(), 0ULL);
+    ASSERT_EQ(redirectImportType->GetTargetRefGT().GetType(), 0ULL);
 
     tsLoader->AddTypeTable(JSHandle<JSTaggedValue>(redirectImportTable), redirectImportFileHandle);
 
@@ -189,8 +189,8 @@ HWTEST_F_L0(TSTypeTest, ImportType)
     tsLoader->Link();
     GlobalTSTypeRef linkimportGT = tsLoader->GetImportTypeTargetGT(importGT);
     GlobalTSTypeRef linkredirectImportGT = tsLoader->GetImportTypeTargetGT(redirectImportGT);
-    ASSERT_EQ(linkimportGT.GetData(), unionTypeGT.GetData());
-    ASSERT_EQ(linkredirectImportGT.GetData(), unionTypeGT.GetData());
+    ASSERT_EQ(linkimportGT.GetType(), unionTypeGT.GetType());
+    ASSERT_EQ(linkredirectImportGT.GetType(), unionTypeGT.GetType());
 
     uint32_t length = tsLoader->GetUnionTypeLength(unionTypeGT);
     ASSERT_EQ(length, unionLength);
@@ -206,7 +206,7 @@ HWTEST_F_L0(TSTypeTest, InterfaceType)
     JSHandle<TaggedArray> literal = factory->NewTaggedArray(literalLength);
     JSHandle<EcmaString> propsNameA = factory->NewFromASCII("propsA");
     JSHandle<EcmaString> propsNameB = factory->NewFromASCII("propsB");
-    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeKind::INTERFACE)));
+    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeKind::INTERFACE_KIND)));
     literal->Set(thread, 1, JSTaggedValue(0));
     literal->Set(thread, 2, JSTaggedValue(propsNum));
     literal->Set(thread, 3, propsNameA.GetTaggedValue());
@@ -294,7 +294,7 @@ HWTEST_F_L0(TSTypeTest, ClassInstanceType)
     ASSERT_TRUE(type->IsTSClassInstanceType());
     JSHandle<TSClassInstanceType> classInstanceType = JSHandle<TSClassInstanceType>(type);
 
-    ASSERT_EQ(classInstanceType->GetClassRefGT().GetData(), extendClass->GetGT());
+    ASSERT_EQ(classInstanceType->GetClassRefGT().GetType(), extendClass->GetGT());
 }
 
 HWTEST_F_L0(TSTypeTest, FuntionType)
@@ -325,9 +325,9 @@ HWTEST_F_L0(TSTypeTest, FuntionType)
     JSHandle<TaggedArray> parameterTypes(thread, functionType->GetParameterTypes());
     ASSERT_EQ(parameterTypes->GetLength(), parameterLength + TSFunctionType::DEFAULT_LENGTH);
     ASSERT_EQ(functionType->GetParametersNum(), parameterLength);
-    ASSERT_EQ(functionType->GetParameterTypeGT(table, 0).GetData(), 1ULL);
-    ASSERT_EQ(functionType->GetParameterTypeGT(table, 1).GetData(), 2ULL);
-    ASSERT_EQ(functionType->GetReturnValueTypeGT(table).GetData(), 6ULL);
+    ASSERT_EQ(functionType->GetParameterTypeGT(table, 0).GetType(), 1ULL);
+    ASSERT_EQ(functionType->GetParameterTypeGT(table, 1).GetType(), 2ULL);
+    ASSERT_EQ(functionType->GetReturnValueTypeGT(table).GetType(), 6ULL);
 }
 
 HWTEST_F_L0(TSTypeTest, ObjectType)

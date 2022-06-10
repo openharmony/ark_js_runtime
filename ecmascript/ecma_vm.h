@@ -68,6 +68,13 @@ class Program;
 class TSLoader;
 class FileLoader;
 class ModuleManager;
+class JSCjsModule;
+class JSCjsExports;
+class JSCjsRequire;
+class CjsModuleCache;
+class SlowRuntimeStub;
+class JSRequireManager;
+struct CJSInfo;
 
 using HostPromiseRejectionTracker = void (*)(const EcmaVM* vm,
                                              const JSHandle<JSPromise> promise,
@@ -152,6 +159,9 @@ public:
 #if defined(ECMASCRIPT_ENABLE_THREAD_CHECK) && ECMASCRIPT_ENABLE_THREAD_CHECK
         // Exclude GC thread
         if (options_.EnableThreadCheck()) {
+            if (thread_ == nullptr) {
+                LOG(FATAL, RUNTIME) << "Fatal: ecma_vm has been destructed! vm address is: " << this;
+            }
             if (!Taskpool::GetCurrentTaskpool()->IsInThreadPool(std::this_thread::get_id()) &&
                 thread_->GetThreadId() != JSThread::GetCurrentThreadId()) {
                     LOG(FATAL, RUNTIME) << "Fatal: ecma_vm cannot run in multi-thread!"
@@ -342,6 +352,8 @@ private:
 
     JSTaggedValue InvokeEcmaAotEntrypoint(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile);
 
+    void CJSExecution(JSHandle<JSFunction> &func, const JSPandaFile *jsPandaFile);
+
     void InitializeEcmaScriptRunStat();
 
     void ClearBufferData();
@@ -358,8 +370,6 @@ private:
     bool vmInitialized_ {false};
     bool globalConstInitialized_ {false};
     GCStats *gcStats_ {nullptr};
-    bool snapshotSerializeEnable_ {false};
-    bool snapshotDeserializeEnable_ {false};
     bool isUncaughtExceptionRegistered_ {false};
 
     // VM memory management.
@@ -387,9 +397,6 @@ private:
     CMap<const JSPandaFile *, JSTaggedValue> cachedConstpools_ {};
 
     // VM resources.
-    // CJS resolve path Callbacks
-    ResolvePathCallback resolvePathCallback_ {nullptr};
-
     ModuleManager *moduleManager_ {nullptr};
     TSLoader *tsLoader_ {nullptr};
     SnapshotEnv *snapshotEnv_ {nullptr};
@@ -408,6 +415,9 @@ private:
 	// atomics
     bool AllowAtomicWait_ {true};
     WaiterListNode waiterListNode_;
+
+    // CJS resolve path Callbacks
+    ResolvePathCallback resolvePathCallback_ {nullptr};
 
     friend class Snapshot;
     friend class SnapshotProcessor;

@@ -219,7 +219,6 @@ config("ark_jsruntime_common_config") {
     defines += [
       "PANDA_TARGET_UNIX",
       "PANDA_TARGET_MACOS",
-      "PANDA_USE_FUTEX",
     ]
   } else {
     defines += [
@@ -498,6 +497,12 @@ ecma_source = [
   "ecmascript/ts_types/ts_loader.cpp",
   "ecmascript/ts_types/ts_obj_layout_info.cpp",
   "ecmascript/stubs/test_runtime_stubs.cpp",
+  "ecmascript/builtins/builtin_cjs_module.cpp",
+  "ecmascript/builtins/builtin_cjs_require.cpp",
+  "ecmascript/builtins/builtin_cjs_exports.cpp",
+  "ecmascript/require/js_cjs_module_cache.cpp",
+  "ecmascript/require/js_cjs_module.cpp",
+  "ecmascript/require/js_require_manager.cpp",
 ]
 
 if (!is_mingw && !is_mac) {

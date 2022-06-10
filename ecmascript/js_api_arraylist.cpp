@@ -208,7 +208,14 @@ JSTaggedValue JSAPIArrayList::RemoveByRange(JSThread *thread, const JSHandle<JSA
         THROW_RANGE_ERROR_AND_RETURN(thread, "ArrayList: set out-of-bounds", JSTaggedValue::Exception());
     }
 
-    int32_t toIndex = endIndex >= length - 1 ? length - 1 : endIndex;
+    int32_t toIndex;
+    if (endIndex > length) {
+        toIndex = length;
+    } else if (endIndex == length) {
+        toIndex = length - 1;
+    } else {
+        toIndex = endIndex;
+    }
 
     JSHandle<TaggedArray> elements(thread, arrayList->GetElements());
     ASSERT(!elements->IsDictionaryMode());

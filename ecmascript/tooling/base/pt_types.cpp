@@ -338,7 +338,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
         if (result->IsString()) {
             auto type = DebuggerApi::ToStdString(result);
             if (ObjectSubType::Valid(type)) {
-                remoteObject->subtype_ = type;
+                remoteObject->subType_ = type;
             } else {
                 error += "'subtype' is invalid;";
             }
@@ -398,10 +398,10 @@ Local<ObjectRef> RemoteObject::ToObject(const EcmaVM *ecmaVm) const
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "type")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, type_.c_str())));
-    if (subtype_) {
+    if (subType_) {
         params->Set(ecmaVm,
             Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "subtype")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, subtype_->c_str())));
+            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, subType_->c_str())));
     }
     if (className_) {
         params->Set(ecmaVm,
@@ -1042,6 +1042,42 @@ std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSV
     return location;
 }
 
+std::unique_ptr<Location> Location::Create(const PtJson &params)
+{
+    auto location = std::make_unique<Location>();
+    std::string error;
+    Result ret;
+
+    std::string scriptId;
+    ret = params.GetString("scriptId", &scriptId);
+    if (ret == Result::SUCCESS) {
+        location->scriptId_ = static_cast<uint32_t>(std::stoi(scriptId));
+    } else {
+        error += "Unknown 'scriptId';";
+    }
+    int32_t line;
+    ret = params.GetInt("lineNumber", &line);
+    if (ret == Result::SUCCESS) {
+        location->line_ = line;
+    } else {
+        error += "Unknown 'lineNumber';";
+    }
+    int32_t column;
+    ret = params.GetInt("columnNumber", &column);
+    if (ret == Result::SUCCESS) {
+        location->column_ = column;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'columnNumber';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "Location::Create " << error;
+        return nullptr;
+    }
+
+    return location;
+}
+
 Local<ObjectRef> Location::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -1058,6 +1094,19 @@ Local<ObjectRef> Location::ToObject(const EcmaVM *ecmaVm) const
     }
 
     return params;
+}
+
+std::unique_ptr<PtJson> Location::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("scriptId", std::to_string(scriptId_).c_str());
+    result->Add("lineNumber", line_);
+    if (column_) {
+        result->Add("columnNumber", column_.value());
+    }
+
+    return result;
 }
 
 std::unique_ptr<ScriptPosition> ScriptPosition::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)

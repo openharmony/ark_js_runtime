@@ -38,20 +38,20 @@ public:
         : vm_(vm), frontend_(channel), stream_(&frontend_) {}
     ~HeapProfilerImpl() = default;
 
-    DispatchResponse AddInspectedHeapObject(std::unique_ptr<AddInspectedHeapObjectParams> params);
+    DispatchResponse AddInspectedHeapObject(const AddInspectedHeapObjectParams &params);
     DispatchResponse CollectGarbage();
     DispatchResponse Enable();
     DispatchResponse Disable();
-    DispatchResponse GetHeapObjectId(std::unique_ptr<GetHeapObjectIdParams> params, HeapSnapshotObjectId *objectId);
-    DispatchResponse GetObjectByHeapObjectId(std::unique_ptr<GetObjectByHeapObjectIdParams> params,
+    DispatchResponse GetHeapObjectId(const GetHeapObjectIdParams &params, HeapSnapshotObjectId *objectId);
+    DispatchResponse GetObjectByHeapObjectId(const GetObjectByHeapObjectIdParams &params,
                                              std::unique_ptr<RemoteObject> *remoteObjectResult);
     DispatchResponse GetSamplingProfile(std::unique_ptr<SamplingHeapProfile> *profile);
-    DispatchResponse StartSampling(std::unique_ptr<StartSamplingParams> params);
-    DispatchResponse StartTrackingHeapObjects(std::unique_ptr<StartTrackingHeapObjectsParams> params);
+    DispatchResponse StartSampling(const StartSamplingParams &params);
+    DispatchResponse StartTrackingHeapObjects(const StartTrackingHeapObjectsParams &params);
     DispatchResponse StopSampling(std::unique_ptr<SamplingHeapProfile> *profile);
-    DispatchResponse StopTrackingHeapObjects(std::unique_ptr<StopTrackingHeapObjectsParams> params);
+    DispatchResponse StopTrackingHeapObjects(const StopTrackingHeapObjectsParams &params);
     // The params type of TakeHeapSnapshot is the same as of StopTrackingHeapObjects.
-    DispatchResponse TakeHeapSnapshot(std::unique_ptr<StopTrackingHeapObjectsParams> params);
+    DispatchResponse TakeHeapSnapshot(const StopTrackingHeapObjectsParams &params);
 
     class DispatcherImpl final : public DispatcherBase {
     public:
