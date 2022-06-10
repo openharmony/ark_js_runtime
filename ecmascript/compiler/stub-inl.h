@@ -884,7 +884,7 @@ inline GateRef Stub::ChangeInt64ToInt32(GateRef val)
 inline GateRef Stub::ChangeInt64ToIntPtr(GateRef val)
 {
     if (env_.IsArch32Bit()) {
-        return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT32), val);
+        return ChangeInt64ToInt32(val);
     }
     return val;
 }
@@ -895,6 +895,14 @@ inline GateRef Stub::ChangeInt32ToIntPtr(GateRef val)
         return val;
     }
     return ZExtInt32ToInt64(val);
+}
+
+inline GateRef Stub::ChangeIntPtrToInt32(GateRef val)
+{
+    if (env_.IsArch32Bit()) {
+        return val;
+    }
+    return ChangeInt64ToInt32(val);
 }
 
 inline GateRef Stub::GetSetterFromAccessor(GateRef accessor)
@@ -909,10 +917,10 @@ inline GateRef Stub::GetElementsArray(GateRef object)
     return Load(VariableType::JS_POINTER(), object, elementsOffset);
 }
 
-inline void Stub::SetElementsArray(GateRef glue, GateRef object, GateRef elementsArray)
+inline void Stub::SetElementsArray(VariableType type, GateRef glue, GateRef object, GateRef elementsArray)
 {
     GateRef elementsOffset = IntPtr(JSObject::ELEMENTS_OFFSET);
-    Store(VariableType::JS_POINTER(), glue, object, elementsOffset, elementsArray);
+    Store(type, glue, object, elementsOffset, elementsArray);
 }
 
 inline GateRef Stub::GetPropertiesArray(GateRef object)
@@ -922,10 +930,16 @@ inline GateRef Stub::GetPropertiesArray(GateRef object)
 }
 
 // SetProperties in js_object.h
-inline void Stub::SetPropertiesArray(GateRef glue, GateRef object, GateRef propsArray)
+inline void Stub::SetPropertiesArray(VariableType type, GateRef glue, GateRef object, GateRef propsArray)
 {
     GateRef propertiesOffset = IntPtr(JSObject::PROPERTIES_OFFSET);
-    Store(VariableType::JS_POINTER(), glue, object, propertiesOffset, propsArray);
+    Store(type, glue, object, propertiesOffset, propsArray);
+}
+
+inline void Stub::SetHash(GateRef glue, GateRef object, GateRef hash)
+{
+    GateRef hashOffset = IntPtr(ECMAObject::HASH_OFFSET);
+    Store(VariableType::INT64(), glue, object, hashOffset, hash);
 }
 
 inline GateRef Stub::GetLengthOfTaggedArray(GateRef array)
