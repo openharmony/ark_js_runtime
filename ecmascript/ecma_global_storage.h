@@ -44,7 +44,7 @@ public:
             current->IterateUsageGlobal([] (Node *node) {
                 node->SetFree(true);
                 node->SetObject(JSTaggedValue::Undefined().GetRawData());
-                node->ClearWeakCallback();
+                node->CallWeakCallback();
             });
             chunk_->Delete(current);
         }
@@ -59,6 +59,13 @@ public:
             });
             chunk_->Delete(current);
         }
+    }
+
+    void ClearWeakCallback(uintptr_t address)
+    {
+        Node *node = reinterpret_cast<Node *>(address);
+        node->SetCallback(nullptr);
+        node->SetReference(nullptr);
     }
 
     class Node {
@@ -123,7 +130,7 @@ public:
             callback_ = callback;
         }
 
-        void ClearWeakCallback()
+        void CallWeakCallback()
         {
             if (callback_ != nullptr) {
                 callback_(reference_);
