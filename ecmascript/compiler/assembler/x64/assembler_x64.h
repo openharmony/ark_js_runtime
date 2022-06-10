@@ -132,6 +132,7 @@ public:
     void Jz(Label *target, Distance distance = Distance::Far);
     void Je(Label *target, Distance distance = Distance::Far);
     void Jg(Label *target, Distance distance = Distance::Far);
+    void Jge(Label *target, Distance distance = Distance::Far);
     void Jne(Label *target, Distance distance = Distance::Far);
     void Jbe(Label *target, Distance distance = Distance::Far);
     void Jnz(Label *target, Distance distance = Distance::Far);
@@ -236,6 +237,7 @@ private:
     void EmitJle(int32_t offset);
     void EmitJae(int32_t offset);
     void EmitJg(int32_t offset);
+    void EmitJge(int32_t offset);
     void EmitJe(int32_t offset);
     void EmitCall(int32_t offset);
     void EmitJnb(int32_t offset);
