@@ -391,6 +391,76 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
     return remoteObject;
 }
 
+std::unique_ptr<RemoteObject> RemoteObject::Create(const PtJson &params)
+{
+    std::string error;
+    auto remoteObject = std::make_unique<RemoteObject>();
+    Result ret;
+
+    std::string type;
+    ret = params.GetString("type", &type);
+    if (ret == Result::SUCCESS) {
+        if (ObjectType::Valid(type)) {
+            remoteObject->type_ = std::move(type);
+        } else {
+            error += "'type' is invalid;";
+        }
+    } else {
+        error += "Unknown 'type';";
+    }
+
+    std::string subType;
+    ret = params.GetString("subtype", &subType);
+    if (ret == Result::SUCCESS) {
+        if (ObjectSubType::Valid(subType)) {
+            remoteObject->subType_ = std::move(subType);
+        } else {
+            error += "'subtype' is invalid;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'subtype';";
+    }
+
+    std::string className;
+    ret = params.GetString("className", &className);
+    if (ret == Result::SUCCESS) {
+        remoteObject->className_ = std::move(className);
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'className';";
+    }
+
+    std::string unserializableValue;
+    ret = params.GetString("unserializableValue", &unserializableValue);
+    if (ret == Result::SUCCESS) {
+        remoteObject->unserializableValue_ = std::move(unserializableValue);
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'unserializableValue';";
+    }
+
+    std::string description;
+    ret = params.GetString("description", &description);
+    if (ret == Result::SUCCESS) {
+        remoteObject->description_ = std::move(description);
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'description';";
+    }
+
+    std::string objectId;
+    ret = params.GetString("objectId", &objectId);
+    if (ret == Result::SUCCESS) {
+        remoteObject->objectId_ = std::stoi(objectId);
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'objectId';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "RemoteObject::Create " << error;
+        return nullptr;
+    }
+
+    return remoteObject;
+}
+
 Local<ObjectRef> RemoteObject::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -428,6 +498,30 @@ Local<ObjectRef> RemoteObject::ToObject(const EcmaVM *ecmaVm) const
     }
 
     return params;
+}
+
+std::unique_ptr<PtJson> RemoteObject::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("type", type_.c_str());
+    if (subType_) {
+        result->Add("subtype", subType_->c_str());
+    }
+    if (className_) {
+        result->Add("className", className_->c_str());
+    }
+    if (unserializableValue_) {
+        result->Add("unserializableValue", unserializableValue_->c_str());
+    }
+    if (description_) {
+        result->Add("description", description_->c_str());
+    }
+    if (objectId_) {
+        result->Add("objectId", std::to_string(objectId_.value()).c_str());
+    }
+
+    return result;
 }
 
 std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
@@ -527,6 +621,89 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
     return exceptionDetails;
 }
 
+std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const PtJson &params)
+{
+    std::string error;
+    auto exceptionDetails = std::make_unique<ExceptionDetails>();
+    Result ret;
+
+    int32_t exceptionId;
+    ret = params.GetInt("exceptionId", &exceptionId);
+    if (ret == Result::SUCCESS) {
+        exceptionDetails->exceptionId_ = exceptionId;
+    } else {
+        error += "Unknown 'exceptionId';";
+    }
+
+    std::string text;
+    ret = params.GetString("text", &text);
+    if (ret == Result::SUCCESS) {
+        exceptionDetails->text_ = std::move(text);
+    } else {
+        error += "Unknown 'text';";
+    }
+
+    int32_t line;
+    ret = params.GetInt("lineNumber", &line);
+    if (ret == Result::SUCCESS) {
+        exceptionDetails->line_ = line;
+    } else {
+        error += "Unknown 'lineNumber';";
+    }
+
+    int32_t column;
+    ret = params.GetInt("columnNumber", &column);
+    if (ret == Result::SUCCESS) {
+        exceptionDetails->column_ = column;
+    } else {
+        error += "Unknown 'columnNumber';";
+    }
+
+    std::string scriptId;
+    ret = params.GetString("scriptId", &scriptId);
+    if (ret == Result::SUCCESS) {
+        exceptionDetails->scriptId_ = std::stoi(scriptId);
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'scriptId';";
+    }
+
+    std::string url;
+    ret = params.GetString("url", &url);
+    if (ret == Result::SUCCESS) {
+        exceptionDetails->url_ = std::move(url);
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'url';";
+    }
+
+    std::unique_ptr<PtJson> exception;
+    ret = params.GetObject("exception", &exception);
+    if (ret == Result::SUCCESS) {
+        std::unique_ptr<RemoteObject> obj = RemoteObject::Create(*exception);
+        if (obj != nullptr) {
+            exceptionDetails->exception_ = std::move(obj);
+        } else {
+            error += "'exception' format error;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'exception';";
+    }
+
+    int32_t executionContextId;
+    ret = params.GetInt("executionContextId", &executionContextId);
+    if (ret == Result::SUCCESS) {
+        exceptionDetails->executionContextId_ = executionContextId;
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'executionContextId';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "ExceptionDetails::Create " << error;
+        return nullptr;
+    }
+
+    return exceptionDetails;
+}
+
 Local<ObjectRef> ExceptionDetails::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -564,6 +741,31 @@ Local<ObjectRef> ExceptionDetails::ToObject(const EcmaVM *ecmaVm) const
     }
 
     return params;
+}
+
+std::unique_ptr<PtJson> ExceptionDetails::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("exceptionId", exceptionId_);
+    result->Add("text", text_.c_str());
+    result->Add("lineNumber", line_);
+    result->Add("columnNumber", column_);
+
+    if (scriptId_) {
+        result->Add("scriptId", std::to_string(scriptId_.value()).c_str());
+    }
+    if (url_) {
+        result->Add("url", url_->c_str());
+    }
+    if (exception_ && exception_.value() != nullptr) {
+        result->Add("exception", exception_.value()->ToJson());
+    }
+    if (executionContextId_) {
+        result->Add("executionContextId", executionContextId_.value());
+    }
+
+    return result;
 }
 
 std::unique_ptr<InternalPropertyDescriptor> InternalPropertyDescriptor::Create(const EcmaVM *ecmaVm,
@@ -608,6 +810,41 @@ std::unique_ptr<InternalPropertyDescriptor> InternalPropertyDescriptor::Create(c
     return internalPropertyDescriptor;
 }
 
+std::unique_ptr<InternalPropertyDescriptor> InternalPropertyDescriptor::Create(const PtJson &params)
+{
+    std::string error;
+    auto internalPropertyDescriptor = std::make_unique<InternalPropertyDescriptor>();
+    Result ret;
+
+    std::string name;
+    ret = params.GetString("name", &name);
+    if (ret == Result::SUCCESS) {
+        internalPropertyDescriptor->name_ = std::move(name);
+    } else {
+        error += "Unknown 'name';";
+    }
+
+    std::unique_ptr<PtJson> value;
+    ret = params.GetObject("value", &value);
+    if (ret == Result::SUCCESS) {
+        std::unique_ptr<RemoteObject> obj = RemoteObject::Create(*value);
+        if (obj != nullptr) {
+            internalPropertyDescriptor->value_ = std::move(obj);
+        } else {
+            error += "'value' format error;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'value';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "InternalPropertyDescriptor::Create " << error;
+        return nullptr;
+    }
+
+    return internalPropertyDescriptor;
+}
+
 Local<ObjectRef> InternalPropertyDescriptor::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -623,6 +860,18 @@ Local<ObjectRef> InternalPropertyDescriptor::ToObject(const EcmaVM *ecmaVm) cons
     }
 
     return params;
+}
+
+std::unique_ptr<PtJson> InternalPropertyDescriptor::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("name", name_.c_str());
+    if (value_ && value_.value() != nullptr) {
+        result->Add("value", value_.value()->ToJson());
+    }
+
+    return result;
 }
 
 std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(const EcmaVM *ecmaVm,
@@ -693,6 +942,68 @@ std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(con
     return propertyDescriptor;
 }
 
+std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(const PtJson &params)
+{
+    std::string error;
+    auto privatePropertyDescriptor = std::make_unique<PrivatePropertyDescriptor>();
+    Result ret;
+
+    std::string name;
+    ret = params.GetString("name", &name);
+    if (ret == Result::SUCCESS) {
+        privatePropertyDescriptor->name_ = std::move(name);
+    } else {
+        error += "Unknown 'name';";
+    }
+
+    std::unique_ptr<PtJson> value;
+    ret = params.GetObject("value", &value);
+    std::unique_ptr<RemoteObject> obj;
+    if (ret == Result::SUCCESS) {
+        obj = RemoteObject::Create(*value);
+        if (obj != nullptr) {
+            privatePropertyDescriptor->value_ = std::move(obj);
+        } else {
+            error += "'value' format error;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'value';";
+    }
+
+    std::unique_ptr<PtJson> get;
+    ret = params.GetObject("get", &get);
+    if (ret == Result::SUCCESS) {
+        obj = RemoteObject::Create(*get);
+        if (obj != nullptr) {
+            privatePropertyDescriptor->get_ = std::move(obj);
+        } else {
+            error += "'get' format error;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'get';";
+    }
+
+    std::unique_ptr<PtJson> set;
+    ret = params.GetObject("set", &set);
+    if (ret == Result::SUCCESS) {
+        obj = RemoteObject::Create(*set);
+        if (obj != nullptr) {
+            privatePropertyDescriptor->set_ = std::move(obj);
+        } else {
+            error += "'set' format error;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'set';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "PrivatePropertyDescriptor::Create " << error;
+        return nullptr;
+    }
+
+    return privatePropertyDescriptor;
+}
+
 Local<ObjectRef> PrivatePropertyDescriptor::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -720,6 +1031,24 @@ Local<ObjectRef> PrivatePropertyDescriptor::ToObject(const EcmaVM *ecmaVm) const
     }
 
     return params;
+}
+
+std::unique_ptr<PtJson> PrivatePropertyDescriptor::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("name", name_.c_str());
+    if (value_ && value_.value() != nullptr) {
+        result->Add("value", value_.value()->ToJson());
+    }
+    if (get_ && get_.value() != nullptr) {
+        result->Add("get", get_.value()->ToJson());
+    }
+    if (set_ && set_.value() != nullptr) {
+        result->Add("set", set_.value()->ToJson());
+    }
+
+    return result;
 }
 
 std::unique_ptr<PropertyDescriptor> PropertyDescriptor::FromProperty(const EcmaVM *ecmaVm,
@@ -881,6 +1210,121 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const EcmaVM *ecm
     return propertyDescriptor;
 }
 
+std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const PtJson &params)
+{
+    std::string error;
+    auto propertyDescriptor = std::make_unique<PropertyDescriptor>();
+    Result ret;
+
+    std::string name;
+    ret = params.GetString("name", &name);
+    if (ret == Result::SUCCESS) {
+        propertyDescriptor->name_ = std::move(name);
+    } else {
+        error += "Unknown 'name';";
+    }
+
+    std::unique_ptr<PtJson> value;
+    std::unique_ptr<RemoteObject> obj;
+    ret = params.GetObject("value", &value);
+    if (ret == Result::SUCCESS) {
+        obj = RemoteObject::Create(*value);
+        if (obj != nullptr) {
+            propertyDescriptor->value_ = std::move(obj);
+        } else {
+            error += "'value' format error;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'value';";
+    }
+
+    bool writable;
+    ret = params.GetBool("writable", &writable);
+    if (ret == Result::SUCCESS) {
+        propertyDescriptor->writable_ = writable;
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'writable';";
+    }
+
+    std::unique_ptr<PtJson> get;
+    ret = params.GetObject("get", &get);
+    if (ret == Result::SUCCESS) {
+        obj = RemoteObject::Create(*get);
+        if (obj != nullptr) {
+            propertyDescriptor->get_ = std::move(obj);
+        } else {
+            error += "'get' format error;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'get';";
+    }
+
+    std::unique_ptr<PtJson> set;
+    ret = params.GetObject("set", &set);
+    if (ret == Result::SUCCESS) {
+        obj = RemoteObject::Create(*set);
+        if (obj != nullptr) {
+            propertyDescriptor->set_ = std::move(obj);
+        } else {
+            error += "'set' format error;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'set';";
+    }
+
+    bool configurable;
+    ret = params.GetBool("configurable", &configurable);
+    if (ret == Result::SUCCESS) {
+        propertyDescriptor->configurable_ = configurable;
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'configurable';";
+    }
+
+    bool enumerable;
+    ret = params.GetBool("enumerable", &enumerable);
+    if (ret == Result::SUCCESS) {
+        propertyDescriptor->enumerable_ = enumerable;
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'enumerable';";
+    }
+
+    bool wasThrown;
+    ret = params.GetBool("wasThrown", &wasThrown);
+    if (ret == Result::SUCCESS) {
+        propertyDescriptor->wasThrown_ = wasThrown;
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'wasThrown';";
+    }
+
+    bool isOwn;
+    ret = params.GetBool("isOwn", &isOwn);
+    if (ret == Result::SUCCESS) {
+        propertyDescriptor->isOwn_ = isOwn;
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'isOwn';";
+    }
+
+    std::unique_ptr<PtJson> symbol;
+    ret = params.GetObject("symbol", &symbol);
+    if (ret == Result::SUCCESS) {
+        obj = RemoteObject::Create(*symbol);
+        if (obj != nullptr) {
+            propertyDescriptor->symbol_ = std::move(obj);
+        } else {
+            error += "'symbol' format error;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'symbol';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "PropertyDescriptor::Create " << error;
+        return nullptr;
+    }
+
+    return propertyDescriptor;
+}
+
 Local<ObjectRef> PropertyDescriptor::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -936,6 +1380,38 @@ Local<ObjectRef> PropertyDescriptor::ToObject(const EcmaVM *ecmaVm) const
     return params;
 }
 
+std::unique_ptr<PtJson> PropertyDescriptor::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("name", name_.c_str());
+    if (value_ && value_.value() != nullptr) {
+        result->Add("value", value_.value()->ToJson());
+    }
+    if (writable_) {
+        result->Add("writable", writable_.value());
+    }
+    if (get_ && get_.value() != nullptr) {
+        result->Add("get", get_.value()->ToJson());
+    }
+    if (set_ && set_.value() != nullptr) {
+        result->Add("set", set_.value()->ToJson());
+    }
+    result->Add("configurable", configurable_);
+    result->Add("enumerable", enumerable_);
+    if (wasThrown_) {
+        result->Add("wasThrown", wasThrown_.value());
+    }
+    if (isOwn_) {
+        result->Add("isOwn", isOwn_.value());
+    }
+    if (symbol_ && symbol_.value() != nullptr) {
+        result->Add("symbol", symbol_.value()->ToJson());
+    }
+
+    return result;
+}
+
 std::unique_ptr<CallArgument> CallArgument::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
 {
     if (params.IsEmpty() || !params->IsObject()) {
@@ -975,6 +1451,36 @@ std::unique_ptr<CallArgument> CallArgument::Create(const EcmaVM *ecmaVm, const L
     return callArgument;
 }
 
+std::unique_ptr<CallArgument> CallArgument::Create(const PtJson &params)
+{
+    std::string error;
+    auto callArgument = std::make_unique<CallArgument>();
+    Result ret;
+
+    std::string unserializableValue;
+    ret = params.GetString("unserializableValue", &unserializableValue);
+    if (ret == Result::SUCCESS) {
+        callArgument->unserializableValue_ = std::move(unserializableValue);
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'unserializableValue';";
+    }
+
+    std::string objectId;
+    ret = params.GetString("objectId", &objectId);
+    if (ret == Result::SUCCESS) {
+        callArgument->objectId_ = std::stoi(objectId);
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'objectId';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "CallArgument::Create " << error;
+        return nullptr;
+    }
+
+    return callArgument;
+}
+
 Local<ObjectRef> CallArgument::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -994,6 +1500,20 @@ Local<ObjectRef> CallArgument::ToObject(const EcmaVM *ecmaVm) const
     }
 
     return params;
+}
+
+std::unique_ptr<PtJson> CallArgument::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    if (unserializableValue_) {
+        result->Add("unserializableValue", unserializableValue_->c_str());
+    }
+    if (objectId_) {
+        result->Add("objectId", std::to_string(objectId_.value()).c_str());
+    }
+
+    return result;
 }
 
 std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
@@ -1051,7 +1571,7 @@ std::unique_ptr<Location> Location::Create(const PtJson &params)
     std::string scriptId;
     ret = params.GetString("scriptId", &scriptId);
     if (ret == Result::SUCCESS) {
-        location->scriptId_ = static_cast<uint32_t>(std::stoi(scriptId));
+        location->scriptId_ = std::stoi(scriptId);
     } else {
         error += "Unknown 'scriptId';";
     }
@@ -1147,6 +1667,36 @@ std::unique_ptr<ScriptPosition> ScriptPosition::Create(const EcmaVM *ecmaVm, con
     return scriptPosition;
 }
 
+std::unique_ptr<ScriptPosition> ScriptPosition::Create(const PtJson &params)
+{
+    std::string error;
+    auto scriptPosition = std::make_unique<ScriptPosition>();
+    Result ret;
+
+    int32_t line;
+    ret = params.GetInt("lineNumber", &line);
+    if (ret == Result::SUCCESS) {
+        scriptPosition->line_ = line;
+    } else {
+        error += "Unknown 'lineNumber';";
+    }
+
+    int32_t column;
+    ret = params.GetInt("columnNumber", &column);
+    if (ret == Result::SUCCESS) {
+        scriptPosition->column_ = column;
+    } else {
+        error += "Unknown 'columnNumber';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "ScriptPosition::Create " << error;
+        return nullptr;
+    }
+
+    return scriptPosition;
+}
+
 Local<ObjectRef> ScriptPosition::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -1157,6 +1707,16 @@ Local<ObjectRef> ScriptPosition::ToObject(const EcmaVM *ecmaVm) const
         IntegerRef::New(ecmaVm, column_));
 
     return params;
+}
+
+std::unique_ptr<PtJson> ScriptPosition::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("lineNumber", line_);
+    result->Add("columnNumber", column_);
+
+    return result;
 }
 
 std::unique_ptr<SearchMatch> SearchMatch::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
@@ -1199,6 +1759,36 @@ std::unique_ptr<SearchMatch> SearchMatch::Create(const EcmaVM *ecmaVm, const Loc
     return locationSearch;
 }
 
+std::unique_ptr<SearchMatch> SearchMatch::Create(const PtJson &params)
+{
+    std::string error;
+    auto locationSearch = std::make_unique<SearchMatch>();
+    Result ret;
+
+    int32_t lineNumber;
+    ret = params.GetInt("lineNumber", &lineNumber);
+    if (ret == Result::SUCCESS) {
+        locationSearch->lineNumber_ = lineNumber;
+    } else {
+        error += "Unknown 'lineNumber';";
+    }
+
+    std::string lineContent;
+    ret = params.GetString("lineContent", &lineContent);
+    if (ret == Result::SUCCESS) {
+        locationSearch->lineContent_ = std::move(lineContent);
+    } else {
+        error += "Unknown 'lineContent';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "SearchMatch::Create " << error;
+        return nullptr;
+    }
+
+    return locationSearch;
+}
+
 Local<ObjectRef> SearchMatch::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -1209,6 +1799,16 @@ Local<ObjectRef> SearchMatch::ToObject(const EcmaVM *ecmaVm) const
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineContent")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, lineContent_.c_str())));
     return params;
+}
+
+std::unique_ptr<PtJson> SearchMatch::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("lineNumber", lineNumber_);
+    result->Add("lineContent", lineContent_.c_str());
+
+    return result;
 }
 
 std::unique_ptr<LocationRange> LocationRange::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
@@ -1269,6 +1869,55 @@ std::unique_ptr<LocationRange> LocationRange::Create(const EcmaVM *ecmaVm, const
     return locationRange;
 }
 
+std::unique_ptr<LocationRange> LocationRange::Create(const PtJson &params)
+{
+    std::string error;
+    auto locationRange = std::make_unique<LocationRange>();
+    Result ret;
+
+    std::string scriptId;
+    ret = params.GetString("scriptId", &scriptId);
+    if (ret == Result::SUCCESS) {
+        locationRange->scriptId_ = std::stoi(scriptId);
+    } else {
+        error += "Unknown 'scriptId';";
+    }
+
+    std::unique_ptr<PtJson> start;
+    std::unique_ptr<ScriptPosition> obj;
+    ret = params.GetObject("start", &start);
+    if (ret == Result::SUCCESS) {
+        obj = ScriptPosition::Create(*start);
+        if (obj != nullptr) {
+            locationRange->start_ = std::move(obj);
+        } else {
+            error += "'start' format error;";
+        }
+    } else {
+        error += "Unknown 'start';";
+    }
+
+    std::unique_ptr<PtJson> end;
+    ret = params.GetObject("end", &end);
+    if (ret == Result::SUCCESS) {
+        obj = ScriptPosition::Create(*end);
+        if (obj != nullptr) {
+            locationRange->end_ = std::move(obj);
+        } else {
+            error += "'end' format error;";
+        }
+    } else {
+        error += "Unknown 'end';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "LocationRange::Create " << error;
+        return nullptr;
+    }
+
+    return locationRange;
+}
+
 Local<ObjectRef> LocationRange::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -1285,6 +1934,21 @@ Local<ObjectRef> LocationRange::ToObject(const EcmaVM *ecmaVm) const
         Local<JSValueRef>(end_->ToObject(ecmaVm)));
 
     return params;
+}
+
+std::unique_ptr<PtJson> LocationRange::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("scriptId", std::to_string(scriptId_).c_str());
+    if (start_ != nullptr) {
+        result->Add("start", start_->ToJson());
+    }
+    if (end_ != nullptr) {
+        result->Add("end", end_->ToJson());
+    }
+
+    return result;
 }
 
 std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
@@ -1346,6 +2010,56 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const
     return breakLocation;
 }
 
+std::unique_ptr<BreakLocation> BreakLocation::Create(const PtJson &params)
+{
+    std::string error;
+    auto breakLocation = std::make_unique<BreakLocation>();
+    Result ret;
+
+    std::string scriptId;
+    ret = params.GetString("scriptId", &scriptId);
+    if (ret == Result::SUCCESS) {
+        breakLocation->scriptId_ = std::stoi(scriptId);
+    } else {
+        error += "Unknown 'scriptId';";
+    }
+
+    int32_t lineNumber;
+    ret = params.GetInt("lineNumber", &lineNumber);
+    if (ret == Result::SUCCESS) {
+        breakLocation->line_ = lineNumber;
+    } else {
+        error += "Unknown 'lineNumber';";
+    }
+
+    int32_t columnNumber;
+    ret = params.GetInt("columnNumber", &columnNumber);
+    if (ret == Result::SUCCESS) {
+        breakLocation->column_ = columnNumber;
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'columnNumber';";
+    }
+
+    std::string type;
+    ret = params.GetString("type", &type);
+    if (ret == Result::SUCCESS) {
+        if (BreakType::Valid(type)) {
+            breakLocation->type_ = std::move(type);
+        } else {
+            error += "'type' is invalid;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "type 'scriptId';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "Location::Create " << error;
+        return nullptr;
+    }
+
+    return breakLocation;
+}
+
 Local<ObjectRef> BreakLocation::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -1367,6 +2081,22 @@ Local<ObjectRef> BreakLocation::ToObject(const EcmaVM *ecmaVm) const
     }
 
     return params;
+}
+
+std::unique_ptr<PtJson> BreakLocation::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("scriptId", std::to_string(scriptId_).c_str());
+    result->Add("lineNumber", line_);
+    if (column_) {
+        result->Add("columnNumber", column_.value());
+    }
+    if (type_) {
+        result->Add("type", type_->c_str());
+    }
+
+    return result;
 }
 
 std::unique_ptr<Scope> Scope::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
@@ -1451,6 +2181,81 @@ std::unique_ptr<Scope> Scope::Create(const EcmaVM *ecmaVm, const Local<JSValueRe
     return scope;
 }
 
+std::unique_ptr<Scope> Scope::Create(const PtJson &params)
+{
+    std::string error;
+    auto scope = std::make_unique<Scope>();
+    Result ret;
+
+    std::string type;
+    ret = params.GetString("type", &type);
+    if (ret == Result::SUCCESS) {
+        if (Scope::Type::Valid(type)) {
+            scope->type_ = std::move(type);
+        } else {
+            error += "'type' is invalid;";
+        }
+    } else {
+        error += "Unknown 'type';";
+    }
+
+    std::unique_ptr<PtJson> object;
+    std::unique_ptr<RemoteObject> remoteObject;
+    ret = params.GetObject("object", &object);
+    if (ret == Result::SUCCESS) {
+        remoteObject = RemoteObject::Create(*object);
+        if (remoteObject != nullptr) {
+            scope->object_ = std::move(remoteObject);
+        } else {
+            error += "'object' format error;";
+        }
+    } else {
+        error += "Unknown 'object';";
+    }
+
+    std::string name;
+    ret = params.GetString("name", &name);
+    if (ret == Result::SUCCESS) {
+        scope->name_ = std::move(name);
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'name';";
+    }
+
+    std::unique_ptr<PtJson> startLocation;
+    std::unique_ptr<Location> obj;
+    ret = params.GetObject("startLocation", &startLocation);
+    if (ret == Result::SUCCESS) {
+        obj = Location::Create(*startLocation);
+        if (obj != nullptr) {
+            scope->startLocation_ = std::move(obj);
+        } else {
+            error += "'startLocation' format error;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'startLocation';";
+    }
+
+    std::unique_ptr<PtJson> endLocation;
+    ret = params.GetObject("endLocation", &endLocation);
+    if (ret == Result::SUCCESS) {
+        obj = Location::Create(*endLocation);
+        if (obj != nullptr) {
+            scope->endLocation_ = std::move(obj);
+        } else {
+            error += "'endLocation' format error;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'endLocation';";
+    }
+
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "Location::Create " << error;
+        return nullptr;
+    }
+
+    return scope;
+}
+
 Local<ObjectRef> Scope::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -1481,6 +2286,27 @@ Local<ObjectRef> Scope::ToObject(const EcmaVM *ecmaVm) const
     }
 
     return params;
+}
+
+std::unique_ptr<PtJson> Scope::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("type", type_.c_str());
+    if (object_ != nullptr) {
+        result->Add("object", object_->ToJson());
+    }
+    if (name_) {
+        result->Add("name", name_->c_str());
+    }
+    if (startLocation_ && startLocation_.value() != nullptr) {
+        result->Add("startLocation", startLocation_.value()->ToJson());
+    }
+    if (endLocation_ && endLocation_.value() != nullptr) {
+        result->Add("endLocation", endLocation_.value()->ToJson());
+    }
+
+    return result;
 }
 
 std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
@@ -1609,6 +2435,119 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
     return callFrame;
 }
 
+std::unique_ptr<CallFrame> CallFrame::Create(const PtJson &params)
+{
+    std::string error;
+    auto callFrame = std::make_unique<CallFrame>();
+    Result ret;
+
+    std::string callFrameId;
+    ret = params.GetString("callFrameId", &callFrameId);
+    if (ret == Result::SUCCESS) {
+        callFrame->callFrameId_ = std::stoi(callFrameId);
+    } else {
+        error += "Unknown 'callFrameId';";
+    }
+
+    std::string functionName;
+    ret = params.GetString("functionName", &functionName);
+    if (ret == Result::SUCCESS) {
+        callFrame->functionName_ = std::move(functionName);
+    } else {
+        error += "Unknown 'functionName';";
+    }
+
+    std::unique_ptr<PtJson> functionLocation;
+    std::unique_ptr<Location> obj;
+    ret = params.GetObject("functionLocation", &functionLocation);
+    if (ret == Result::SUCCESS) {
+        obj = Location::Create(*functionLocation);
+        if (obj != nullptr) {
+            callFrame->functionLocation_ = std::move(obj);
+        } else {
+            error += "'functionLocation' format error;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'functionLocation';";
+    }
+
+    std::unique_ptr<PtJson> location;
+    ret = params.GetObject("location", &location);
+    if (ret == Result::SUCCESS) {
+        obj = Location::Create(*location);
+        if (obj != nullptr) {
+            callFrame->location_ = std::move(obj);
+        } else {
+            error += "'location' format error;";
+        }
+    } else {
+        error += "Unknown 'location';";
+    }
+
+    std::string url;
+    ret = params.GetString("url", &url);
+    if (ret == Result::SUCCESS) {
+        callFrame->url_ = std::move(url);
+    } else {
+        error += "Unknown 'url';";
+    }
+
+    std::unique_ptr<PtJson> scopeChain;
+    ret = params.GetArray("scopeChain", &scopeChain);
+    if (ret == Result::SUCCESS) {
+        int32_t len = scopeChain->GetSize();
+        for (int32_t i = 0; i < len; ++i) {
+            std::unique_ptr<PtJson> arrayEle = scopeChain->Get(i);
+            if (arrayEle != nullptr) {
+                std::unique_ptr<Scope> scope = Scope::Create(*arrayEle);
+                if (scope != nullptr) {
+                    callFrame->scopeChain_.emplace_back(std::move(scope));
+                } else {
+                    error += "'scopeChain' format error;";
+                }
+            } else {
+                error += "Unknown 'scopeChain';";
+            }
+        }
+    } else {
+        error += "Unknown 'scopeChain';";
+    }
+
+    std::unique_ptr<PtJson> thisObj;
+    std::unique_ptr<RemoteObject> remoteObject;
+    ret = params.GetObject("this", &thisObj);
+    if (ret == Result::SUCCESS) {
+        remoteObject = RemoteObject::Create(*thisObj);
+        if (remoteObject != nullptr) {
+            callFrame->this_ = std::move(remoteObject);
+        } else {
+            error += "'this' format error;";
+        }
+    } else {
+        error += "Unknown 'this';";
+    }
+
+    std::unique_ptr<PtJson> returnValue;
+    ret = params.GetObject("returnValue", &returnValue);
+    if (ret == Result::SUCCESS) {
+        remoteObject = RemoteObject::Create(*returnValue);
+        if (remoteObject != nullptr) {
+            callFrame->returnValue_ = std::move(remoteObject);
+        } else {
+            error += "'returnValue' format error;";
+        }
+    } else if (ret == Result::TYPE_ERROR) {
+        error += "Unknown 'returnValue';";
+    }
+    
+    if (!error.empty()) {
+        LOG(ERROR, DEBUGGER) << "CallFrame::Create " << error;
+        return nullptr;
+    }
+
+    return callFrame;
+}
+
 Local<ObjectRef> CallFrame::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -1650,6 +2589,39 @@ Local<ObjectRef> CallFrame::ToObject(const EcmaVM *ecmaVm) const
     }
 
     return params;
+}
+
+std::unique_ptr<PtJson> CallFrame::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("callFrameId", std::to_string(callFrameId_).c_str());
+    result->Add("functionName", functionName_.c_str());
+
+    if (functionLocation_ && functionLocation_.value() != nullptr) {
+        result->Add("functionLocation", functionLocation_.value()->ToJson());
+    }
+    if (location_ != nullptr) {
+        result->Add("location", location_->ToJson());
+    }
+    result->Add("url", url_.c_str());
+
+    size_t len = scopeChain_.size();
+    std::unique_ptr<PtJson> values = PtJson::CreateArray();
+    for (size_t i = 0; i < len; i++) {
+        std::unique_ptr<PtJson> scope = scopeChain_[i]->ToJson();
+        values->Push(scope);
+    }
+    result->Add("scopeChain", values);
+
+    if (this_ != nullptr) {
+        result->Add("this", this_->ToJson());
+    }
+    if (returnValue_ && returnValue_.value() != nullptr) {
+        result->Add("returnValue", returnValue_.value()->ToJson());
+    }
+
+    return result;
 }
 
 std::unique_ptr<SamplingHeapProfileSample> SamplingHeapProfileSample::Create(const EcmaVM *ecmaVm,

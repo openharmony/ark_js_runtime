@@ -114,7 +114,9 @@ public:
 
     static std::unique_ptr<RemoteObject> FromTagged(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
     static std::unique_ptr<RemoteObject> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<RemoteObject> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     /*
      * @see {#ObjectType}
@@ -410,7 +412,9 @@ public:
     ExceptionDetails() = default;
     ~ExceptionDetails() override = default;
     static std::unique_ptr<ExceptionDetails> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<ExceptionDetails> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     int32_t GetExceptionId() const
     {
@@ -545,7 +549,9 @@ public:
     ~InternalPropertyDescriptor() override = default;
 
     static std::unique_ptr<InternalPropertyDescriptor> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<InternalPropertyDescriptor> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const
     {
@@ -592,7 +598,9 @@ public:
     ~PrivatePropertyDescriptor() override = default;
 
     static std::unique_ptr<PrivatePropertyDescriptor> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<PrivatePropertyDescriptor> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const
     {
@@ -681,7 +689,9 @@ public:
     static std::unique_ptr<PropertyDescriptor> FromProperty(const EcmaVM *ecmaVm, const Local<JSValueRef> &name,
         const PropertyAttribute &property);
     static std::unique_ptr<PropertyDescriptor> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<PropertyDescriptor> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const
     {
@@ -863,7 +873,9 @@ public:
     ~CallArgument() override = default;
 
     static std::unique_ptr<CallArgument> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<CallArgument> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     Local<JSValueRef> GetValue() const
     {
@@ -1005,7 +1017,9 @@ public:
     ~ScriptPosition() override = default;
 
     static std::unique_ptr<ScriptPosition> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<ScriptPosition> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     int32_t GetLine() const
     {
@@ -1043,7 +1057,9 @@ public:
     SearchMatch() = default;
     ~SearchMatch() override = default;
     static std::unique_ptr<SearchMatch> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<SearchMatch> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     NO_COPY_SEMANTIC(SearchMatch);
@@ -1060,7 +1076,9 @@ public:
     ~LocationRange() override = default;
 
     static std::unique_ptr<LocationRange> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<LocationRange> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     ScriptId GetScriptId() const
     {
@@ -1111,7 +1129,9 @@ public:
     ~BreakLocation() override = default;
 
     static std::unique_ptr<BreakLocation> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<BreakLocation> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     ScriptId GetScriptId() const
     {
@@ -1221,7 +1241,9 @@ public:
     ~Scope() override = default;
 
     static std::unique_ptr<Scope> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<Scope> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     /*
      * @see {#Scope::Type}
@@ -1370,7 +1392,9 @@ public:
     ~CallFrame() override = default;
 
     static std::unique_ptr<CallFrame> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
+    static std::unique_ptr<CallFrame> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
     CallFrameId GetCallFrameId() const
     {
