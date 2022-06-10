@@ -152,6 +152,10 @@ public:
     void IterateRsp(const RootVisitor &v0, const RootRangeVisitor &v1);
     void IterateSp(const RootVisitor &v0, const RootRangeVisitor &v1);
 
+    // for collecting bc offset in aot
+    void CollectBCOffsetInfo();
+    std::string GetAotExceptionFuncName(JSTaggedType* fp) const;
+
 private:
     FrameType GetFrameType() const
     {
