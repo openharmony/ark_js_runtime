@@ -689,13 +689,16 @@ void AssemblerStubs::CallRuntimeWithArgv(ExtendedAssembler *assembler)
 void AssemblerStubs::AsmInterpreterEntry(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(AsmInterpreterEntry));
-
+    Label target;
     PushAsmInterpEntryFrame(assembler, true);
-
-    __ CallAssemblerStub(RTSTUB_ID(JSCallDispatch), false);
-
+    __ Bl(&target);
     PopAsmInterpEntryFrame(assembler, true);
     __ Ret();
+
+    __ Bind(&target);
+    {
+        JSCallDispatch(assembler);
+    }
 }
 
 // Input: glueRegister   - %X0
@@ -704,7 +707,6 @@ void AssemblerStubs::AsmInterpreterEntry(ExtendedAssembler *assembler)
 //        prevSpRegister - %X29
 void AssemblerStubs::JSCallDispatch(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(JSCallDispatch));
     Label notJSFunction;
     Label callNativeEntry;
     Label callJSFunctionEntry;
@@ -1310,14 +1312,24 @@ void AssemblerStubs::CallSetter(ExtendedAssembler *assembler)
 void AssemblerStubs::GeneratorReEnterAsmInterp(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(GeneratorReEnterAsmInterp));
+    Label target;
+    PushAsmInterpEntryFrame(assembler, true);
+    __ Bl(&target);
+    PopAsmInterpEntryFrame(assembler, true);
+    __ Ret();
+    __ Bind(&target);
+    {
+        GeneratorReEnterAsmInterpDispatch(assembler);
+    }
+}
+
+void AssemblerStubs::GeneratorReEnterAsmInterpDispatch(ExtendedAssembler *assembler)
+{
     Label pushFrameState;
     Register glue = __ GlueRegister();
     Register contextRegister(X1);
     Register spRegister(SP);
-    Register pc(X21);
-
-    PushAsmInterpEntryFrame(assembler, true);
-
+    Register pc(X8);
     Register prevSpRegister(FP);
     Register callTarget(X4);
     Register method(X5);
@@ -1328,6 +1340,7 @@ void AssemblerStubs::GeneratorReEnterAsmInterp(ExtendedAssembler *assembler)
     Register newSp(X28);
     __ Ldr(callTarget, MemoryOperand(contextRegister, GeneratorContext::GENERATOR_METHOD_OFFSET));
     __ Ldr(method, MemoryOperand(callTarget, JSFunctionBase::METHOD_OFFSET));
+    __ PushFpAndLr();
     __ Mov(fpRegister, spRegister);
     // push context regs
     __ Ldr(nRegsRegister, MemoryOperand(contextRegister, GeneratorContext::GENERATOR_NREGS_OFFSET));
@@ -1342,9 +1355,6 @@ void AssemblerStubs::GeneratorReEnterAsmInterp(ExtendedAssembler *assembler)
 
     // call bc stub
     CallBCStub(assembler, newSp, glue, callTarget, method, pc, temp);
-
-    PopAsmInterpEntryFrame(assembler, true);
-    __ Ret();
 }
 
 void AssemblerStubs::PushCallThis(ExtendedAssembler *assembler, JSCallMode mode)
@@ -1583,7 +1593,10 @@ void AssemblerStubs::PushGeneratorFrameState(ExtendedAssembler *assembler, Regis
     // 2 : frameType and prevSp
     __ Stp(prevSpRegister, operatorRegister, MemoryOperand(sp, -2 * FRAME_SLOT_SIZE, AddrMode::PREINDEX));
     __ Ldr(pcRegister, MemoryOperand(methodRegister, JSMethod::GetBytecodeArrayOffset(false)));
-    __ Ldr(operatorRegister, MemoryOperand(contextRegister, GeneratorContext::GENERATOR_BC_OFFSET_OFFSET));
+    // offset need 8 align, GENERATOR_NREGS_OFFSET instead of GENERATOR_BC_OFFSET_OFFSET
+    __ Ldr(operatorRegister, MemoryOperand(contextRegister, GeneratorContext::GENERATOR_NREGS_OFFSET));
+    // 32: get high 32bit
+    __ Lsr(operatorRegister, operatorRegister, 32);
     __ Add(pcRegister, operatorRegister, pcRegister);
     __ Add(pcRegister, pcRegister, Immediate(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8)));
     // pc and fp

@@ -511,22 +511,6 @@ DEF_CALL_SIGNATURE(GeneratorReEnterAsmInterp)
     callSign->SetCallConv(CallSignature::CallConv::CCallConv);
 }
 
-DEF_CALL_SIGNATURE(JSCallDispatch)
-{
-    /* 3 : 3 input parameters */
-    CallSignature jsCallDispatch("JSCallDispatch", 0, 3,
-        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *callSign = jsCallDispatch;
-    std::array<VariableType, 3> params = { /* 3 : 3 input parameters */
-        VariableType::NATIVE_POINTER(),  // glue
-        VariableType::INT32(),  // argc
-        VariableType::NATIVE_POINTER(),  // argv
-    };
-    callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
-    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
-}
-
 DEF_CALL_SIGNATURE(CallRuntimeWithArgv)
 {
     /* 4 : 4 input parameters */
