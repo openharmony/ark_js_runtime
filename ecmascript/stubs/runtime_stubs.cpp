@@ -32,6 +32,7 @@
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_proxy.h"
 #include "ecmascript/js_thread.h"
+#include "ecmascript/js_typed_array.h"
 #include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/layout_info.h"
 #include "ecmascript/mem/space-inl.h"
@@ -1582,6 +1583,25 @@ DEF_RUNTIME_STUBS(NewAotObjDynRange)
 {
     RUNTIME_STUBS_HEADER(NewAotObjDynRange);
     return RuntimeNewAotObjDynRange(thread, argv, argc).GetRawData();
+}
+
+DEF_RUNTIME_STUBS(GetTypeArrayPropertyByIndex)
+{
+    RUNTIME_STUBS_HEADER(GetTypeArrayPropertyByIndex);
+    JSTaggedValue obj = GetArg(argv, argc, 0);
+    JSTaggedValue idx = GetArg(argv, argc, 1);
+    JSTaggedValue jsType = GetArg(argv, argc, 2); // 2:means the second parameter
+    return JSTypedArray::FastGetPropertyByIndex(thread, obj, idx.GetInt(), JSType(jsType.GetInt())).GetRawData();
+}
+
+DEF_RUNTIME_STUBS(SetTypeArrayPropertyByIndex)
+{
+    RUNTIME_STUBS_HEADER(SetTypeArrayPropertyByIndex);
+    JSTaggedValue obj = GetArg(argv, argc, 0);
+    JSTaggedValue idx = GetArg(argv, argc, 1);
+    JSTaggedValue value = GetArg(argv, argc, 2);  // 2:means the second parameter
+    JSTaggedValue jsType = GetArg(argv, argc, 3); // 3:means the third parameter
+    return JSTypedArray::FastSetPropertyByIndex(thread, obj, idx.GetInt(), value, JSType(jsType.GetInt())).GetRawData();
 }
 
 JSTaggedType RuntimeStubs::CreateArrayFromList([[maybe_unused]]uintptr_t argGlue, int32_t argc, JSTaggedValue *argvPtr)
