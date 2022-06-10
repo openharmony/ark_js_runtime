@@ -115,7 +115,7 @@ public:
     JSTaggedType *GetPrevInterpretedFrame();
 
     // for llvm.
-    static uintptr_t GetPrevFrameCallSiteSp(const JSTaggedType *sp, uintptr_t curPc);
+    static uintptr_t GetPrevFrameCallSiteSp(const JSTaggedType *sp, uintptr_t curPc = 0);
 
     // for InterpretedFrame.
     JSTaggedValue GetVRegValue(size_t index) const;
@@ -166,17 +166,18 @@ private:
 
     // for Frame GC.
     void InterpretedFrameIterate(const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1) const;
-    void AsmInterpretedFrameIterate(const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1) const;
+    void AsmInterpretedFrameIterate(const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
+        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying);
     void InterpretedEntryFrameIterate(const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1) const;
     void BuiltinFrameIterate(
         const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
-        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
+        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying);
     void BuiltinWithArgvFrameIterate(
         const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
-        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
+        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying);
     void OptimizedFrameIterate(
         const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
-        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
+        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying);
     void OptimizedJSFunctionFrameIterate(
         const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
         ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying);
@@ -194,6 +195,7 @@ private:
     JSTaggedType *sp_ {nullptr};
     JSTaggedType *fp_ {nullptr};
     const JSThread *thread_ {nullptr};
+    uintptr_t optimizedCallSiteSp_ {0};
     uintptr_t optimizedReturnAddr_ {0};
 };
 

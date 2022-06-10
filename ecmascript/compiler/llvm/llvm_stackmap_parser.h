@@ -207,11 +207,10 @@ public:
         }
     }
     const CallSiteInfo *GetCallSiteInfoByPc(uintptr_t funcAddr) const;
-    bool CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp,
+    bool CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t callsiteFp,
                             std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, uintptr_t> *data,
                             [[maybe_unused]] bool isVerifying,
-                            uintptr_t curPc) const;
-
+                            uintptr_t callSiteSp) const;
     bool IsLogEnabled() const
     {
         return enableLog_;
@@ -250,10 +249,15 @@ private:
         pc2ConstInfoVec_.clear();
     }
     void CalcCallSite();
-    bool IsDeriveredPointer(int callsitetime) const;
     void PrintCallSiteInfo(const CallSiteInfo *infos, OptimizedLeaveFrame *frame) const;
-    void PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp, uintptr_t curPc) const;
+    void PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t callSiteFp, uintptr_t callSiteSp) const;
     int FindFpDelta(uintptr_t funcAddr, uintptr_t callsitePc) const;
+    inline uintptr_t GetStackAddress(const DwarfRegAndOffsetType info,
+        uintptr_t callSiteSp, uintptr_t callsiteFp) const;
+    void IterateCallSiteInfo(const CallSiteInfo *infos, std::set<uintptr_t> &baseSet,
+        ChunkMap<DerivedDataKey, uintptr_t> *data, uintptr_t callsiteFp, uintptr_t callSiteSp) const;
+    void PrintCallSiteSlotAddr(const CallSiteInfo& callsiteInfo, uintptr_t callSiteSp,
+        uintptr_t callsiteFp) const;
 
     struct LLVMStackMap llvmStackMap_;
     std::vector<Pc2CallSiteInfo> pc2CallSiteInfoVec_;
