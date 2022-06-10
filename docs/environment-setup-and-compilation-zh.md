@@ -14,7 +14,7 @@ Ubuntu版本要求18.04或20.04，详细环境搭建参考：
 1.  首次编译：
 
     ```
-    ./build.sh --product-name rk3568
+    ./build.sh --product-name hispark_taurus_standard
     ```
 
 2.  首次编译后增量编译方舟运行时：
@@ -37,7 +37,7 @@ Ubuntu版本要求18.04或20.04，详细环境搭建参考：
 3.  首次编译后增量编译方舟前端：
 
     ```
-    ./build.sh --product-name rk3568 --build-target ark_ts2abc_build
+    ./build.sh --product-name hispark_taurus_standard --build-target ark_ts2abc_build
     ```
 
 **说明**：上述编译命令为release版本，且执行路径为项目根目录。编译debug版本需增加编译选项：--gn-args is_debug=true。
@@ -45,9 +45,9 @@ Ubuntu版本要求18.04或20.04，详细环境搭建参考：
 方舟相关的二进制文件在如下路径：
 
 ```
-out/rk3568/ark/ark/
-out/rk3568/ark/ark_js_runtime/
-out/rk3568/clang_x64/ark/ark/
-out/rk3568/clang_x64/ark/ark_js_runtime
+out/hispark_taurus/ark/ark/
+out/hispark_taurus/ark/ark_js_runtime/
+out/hispark_taurus/clang_x64/ark/ark/
+out/hispark_taurus/clang_x64/ark/ark_js_runtime
 ```
 

@@ -11,7 +11,7 @@ Use Ubuntu 18.04 or 20.04. For details about how to set up the environment, see:
 1.  First compilation:
 
     ```
-    ./build.sh --product-name rk3568
+    ./build.sh --product-name hispark_taurus_standard
     ```
 
 2.  Compile an ARK runtime after the first compilation:
@@ -34,7 +34,7 @@ Use Ubuntu 18.04 or 20.04. For details about how to set up the environment, see:
 3.  Compile the ARK frontend after the first compilation:
 
     ```
-    ./build.sh --product-name rk3568 --build-target ark_ts2abc_build
+    ./build.sh --product-name hispark_taurus_standard --build-target ark_ts2abc_build
     ```
 
 **NOTE**:  Run the compilation commands in the project root directory.
@@ -42,8 +42,8 @@ Use Ubuntu 18.04 or 20.04. For details about how to set up the environment, see:
 The binary files related to ARK are available in the following paths:
 
 ```
-out/rk3568/ark/ark/
-out/rk3568/ark/ark_js_runtime/
-out/rk3568/clang_x64/ark/ark/
-out/rk3568/clang_x64/ark/ark_js_runtime
+out/hispark_taurus/ark/ark/
+out/hispark_taurus/ark/ark_js_runtime/
+out/hispark_taurus/clang_x64/ark/ark/
+out/hispark_taurus/clang_x64/ark/ark_js_runtime
 ```
