@@ -57,7 +57,7 @@
 ## 编译构建<a name="section137768191623"></a>
 
 ```
-$./build.sh --product-name rk3568 --build-target ark_js_host_linux_tools_packages
+$./build.sh --product-name hispark_taurus_standard --build-target ark_js_host_linux_tools_packages
 ```
 
 ### 接口说明<a name="section175841548124517"></a>
@@ -70,7 +70,7 @@ JS生成字节码参考[工具链使用](docs/using-the-toolchain-zh.md)
 
 字节码执行：
 ```
-LD_LIBRARY_PATH=out/rk3568/clang_x64/ark/ark:out/rk3568/clang_x64/ark/ark_js_runtime:out/rk3568/clang_x64/thirdparty/icu:prebuilts/clang/ohos/linux-x86_64/llvm/lib ./out/rk3568/clang_x64/ark/ark_js_runtime/ark_js_vm helloworld.abc
+LD_LIBRARY_PATH=out/hispark_taurus/clang_x64/ark/ark:out/hispark_taurus/clang_x64/ark/ark_js_runtime:out/hispark_taurus/clang_x64/thirdparty/icu:prebuilts/clang/ohos/linux-x86_64/llvm/lib ./out/hispark_taurus/clang_x64/ark/ark_js_runtime/ark_js_vm helloworld.abc
 
 ```
 
