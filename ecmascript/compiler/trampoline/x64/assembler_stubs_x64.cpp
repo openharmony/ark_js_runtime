@@ -1303,9 +1303,8 @@ void AssemblerStubsX64::JSCallCommonEntry(ExtendedAssembler *assembler, JSCallMo
         jumpSize = 0;
     }
     if (jumpSize >= 0) {
-        int32_t offset = static_cast<int32_t>(
-            AsmInterpretedFrame::GetCallSizeOffset(false) - AsmInterpretedFrame::GetSize(false));
-        __ Movq(static_cast<int>(jumpSize), Operand(rbp, offset));
+        intptr_t offset = AsmInterpretedFrame::GetCallSizeOffset(false) - AsmInterpretedFrame::GetSize(false);
+        __ Movq(static_cast<int>(jumpSize), Operand(rbp, static_cast<int32_t>(offset)));
     }
 
     Register declaredNumArgsRegister = __ AvailableRegister2();
