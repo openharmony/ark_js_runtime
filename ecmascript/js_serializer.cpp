@@ -672,7 +672,7 @@ bool JSSerializer::WritePlainObject(const JSHandle<JSTaggedValue> &objValue)
     }
 
     if (keyVector.size() >= 2 && (keyVector[0].IsSymbol() && keyVector[1].IsSymbol())) { // 2:attachSymbol, detachSymbol
-        return WriteNativeObject(objValue, keyVector);
+        return WriteNativeBindingObject(objValue, keyVector);
     }
     if (!WriteType(SerializationUID::JS_PLAIN_OBJECT)) {
         return false;
@@ -745,7 +745,8 @@ bool JSSerializer::WritePlainObject(const JSHandle<JSTaggedValue> &objValue)
     return true;
 }
 
-bool JSSerializer::WriteNativeObject(const JSHandle<JSTaggedValue> &objValue, std::vector<JSTaggedValue> keyVector)
+bool JSSerializer::WriteNativeBindingObject(
+    const JSHandle<JSTaggedValue> &objValue, std::vector<JSTaggedValue> keyVector)
 {
     JSHandle<JSObject> obj = JSHandle<JSObject>::Cast(objValue);
     size_t oldSize = bufferSize_;
@@ -756,7 +757,7 @@ bool JSSerializer::WriteNativeObject(const JSHandle<JSTaggedValue> &objValue, st
         !(JSTaggedValue::Equal(thread_, attach, JSHandle<JSTaggedValue>(thread_, keyVector[1])))) {
         return false;
     }
-    if (!WriteType(SerializationUID::JS_NATIVE_OBJECT)) {
+    if (!WriteType(SerializationUID::NATIVE_BINDING_OBJECT)) {
         return false;
     }
     // Write custom object's values: AttachFunc*, buffer*
@@ -764,6 +765,9 @@ bool JSSerializer::WriteNativeObject(const JSHandle<JSTaggedValue> &objValue, st
     JSHandle<JSTaggedValue> attackVal = JSObject::GetProperty(thread_, obj, attach).GetRawValue();
     DetachFunc detachNative = reinterpret_cast<DetachFunc>(JSNativePointer::Cast(
         detachVal.GetTaggedValue().GetTaggedObject())->GetExternalPointer());
+    if (detachNative == nullptr) {
+        return false;
+    }
     void *buffer = detachNative();
     AttachFunc attachNative = reinterpret_cast<AttachFunc>(JSNativePointer::Cast(
         attackVal.GetTaggedValue().GetTaggedObject())->GetExternalPointer());
@@ -775,32 +779,43 @@ bool JSSerializer::WriteNativeObject(const JSHandle<JSTaggedValue> &objValue, st
         bufferSize_ = oldSize;
         return false;
     }
-    if (keyVector.size() > 2) { // 2:attachSymbol, detachSymbol
-        uint32_t propertiesLength = keyVector.size() - 2;
-        if (!WriteInt(static_cast<int32_t>(propertiesLength))) {
+    bool hasThirdKey = false;
+    if (keyVector.size() == 2) { // 2:attachSymbol, detachSymbol
+        if (!WriteBoolean(hasThirdKey)) {
+            return false;
+        }
+        return true;
+    }
+
+    hasThirdKey = true;
+    if (!WriteBoolean(hasThirdKey)) {
+        return false;
+    }
+    uint32_t propertiesLength = keyVector.size() - 2;
+    if (!WriteInt(static_cast<int32_t>(propertiesLength))) {
+        bufferSize_ = oldSize;
+        return false;
+    }
+    // Write keys' description attributes and related values
+    for (uint32_t i = 0; i < propertiesLength; i++) {
+        JSMutableHandle<JSTaggedValue> key(thread_, keyVector[i + 2]); // 2:attachSymbol, detachSymbol
+        if (!SerializeJSTaggedValue(key)) {
             bufferSize_ = oldSize;
             return false;
         }
-        // Write keys' description attributes and related values
-        for (uint32_t i = 0; i < propertiesLength; i++) {
-            JSMutableHandle<JSTaggedValue> key(thread_, keyVector[i + 2]); // 2:attachSymbol, detachSymbol
-            if (!SerializeJSTaggedValue(key)) {
-                bufferSize_ = oldSize;
-                return false;
-            }
-            PropertyDescriptor desc(thread_);
-            JSObject::OrdinaryGetOwnProperty(thread_, obj, key, desc);
-            if (!WriteDesc(desc)) {
-                bufferSize_ = oldSize;
-                return false;
-            }
-            JSHandle<JSTaggedValue> value = desc.GetValue();
-            if (!SerializeJSTaggedValue(value)) {
-                bufferSize_ = oldSize;
-                return false;
-            }
+        PropertyDescriptor desc(thread_);
+        JSObject::OrdinaryGetOwnProperty(thread_, obj, key, desc);
+        if (!WriteDesc(desc)) {
+            bufferSize_ = oldSize;
+            return false;
+        }
+        JSHandle<JSTaggedValue> value = desc.GetValue();
+        if (!SerializeJSTaggedValue(value)) {
+            bufferSize_ = oldSize;
+            return false;
         }
     }
+
     return true;
 }
 
@@ -942,8 +957,8 @@ JSHandle<JSTaggedValue> JSDeserializer::DeserializeJSTaggedValue()
             return ReadJSDate();
         case SerializationUID::JS_PLAIN_OBJECT:
             return ReadPlainObject();
-        case SerializationUID::JS_NATIVE_OBJECT:
-            return ReadNativeObject();
+        case SerializationUID::NATIVE_BINDING_OBJECT:
+            return ReadNativeBindingObject();
         case SerializationUID::JS_ARRAY:
             return ReadJSArray();
         case SerializationUID::ECMASTRING:
@@ -1115,7 +1130,7 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadPlainObject()
     return objTag;
 }
 
-JSHandle<JSTaggedValue> JSDeserializer::ReadNativeObject()
+JSHandle<JSTaggedValue> JSDeserializer::ReadNativeBindingObject()
 {
     JSHandle<GlobalEnv> env = thread_->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> objFunc = env->GetObjectFunction();
@@ -1124,21 +1139,31 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadNativeObject()
     JSHandle<JSTaggedValue> objTag(jsObject);
     referenceMap_.insert(std::pair(objectId_++, objTag));
 
-    JSTaggedValue pointer;
-    if (!ReadJSTaggedValue(&pointer)) {
+    uintptr_t pointer;
+    if (!ReadNativePointer(&pointer)) {
         return JSHandle<JSTaggedValue>();
     }
-    AttachFunc attachFunc = reinterpret_cast<AttachFunc>(JSNativePointer::Cast(pointer.GetTaggedObject()));
-    JSTaggedValue bufferPointer;
-    if (!ReadJSTaggedValue(&bufferPointer)) {
+    AttachFunc attachFunc = reinterpret_cast<AttachFunc>(pointer);
+    if (attachFunc == nullptr) {
         return JSHandle<JSTaggedValue>();
     }
-    void *buffer = reinterpret_cast<void *>(JSNativePointer::Cast(bufferPointer.GetTaggedObject()));
+    uintptr_t bufferPointer;
+    if (!ReadNativePointer(&bufferPointer)) {
+        return JSHandle<JSTaggedValue>();
+    }
+    void *buffer = reinterpret_cast<void *>(bufferPointer);
     attachFunc(buffer);
+    bool hasThirdKey = false;
+    if (!ReadBoolean(&hasThirdKey)) {
+        return JSHandle<JSTaggedValue>();
+    }
+    if (!hasThirdKey) {
+        return objTag;
+    }
 
     int32_t propertyLength;
     if (!JudgeType(SerializationUID::INT32) || !ReadInt(&propertyLength)) {
-        return objTag;
+        return JSHandle<JSTaggedValue>();
     }
     for (int32_t i = 0; i < propertyLength; i++) {
         JSHandle<JSTaggedValue> key = DeserializeJSTaggedValue();
@@ -1401,6 +1426,19 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSArrayBuffer()
 bool JSDeserializer::ReadJSTaggedValue(JSTaggedValue *value)
 {
     size_t len = sizeof(JSTaggedValue);
+    if (len > static_cast<size_t>(end_ - position_)) {
+        return false;
+    }
+    if (memcpy_s(value, len, position_, len) != EOK) {
+        UNREACHABLE();
+    }
+    position_ += len;
+    return true;
+}
+
+bool JSDeserializer::ReadNativePointer(uintptr_t *value)
+{
+    size_t len = sizeof(uintptr_t);
     if (len > static_cast<size_t>(end_ - position_)) {
         return false;
     }
