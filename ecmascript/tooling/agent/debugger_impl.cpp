@@ -1073,7 +1073,10 @@ std::optional<std::string> DebuggerImpl::CmptEvaluateValue(CallFrameId callFrame
         if (value.IsEmpty()) {
             return "Unsupported expression.";
         }
+        JsDebuggerManager *mgr = vm_->GetJsDebuggerManager();
+        mgr->SetEvalFrameHandler(callFrameHandlers_[callFrameId]);
         bool ret = DebuggerExecutor::SetValue(vm_, frameHandler, name, value);
+        mgr->SetEvalFrameHandler(nullptr);
         if (ret) {
             *result = RemoteObject::FromTagged(vm_, value);
             return {};
