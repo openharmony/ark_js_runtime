@@ -78,17 +78,24 @@ void JSFinalizationRegistry::Register(JSThread *thread, JSHandle<JSTaggedValue> 
     JSHandle<CellRecord> cellRecord = factory->NewCellRecord();
     cellRecord->SetToWeakRefTarget(target.GetTaggedValue());
     cellRecord->SetHeldValue(thread, heldValue);
+    JSHandle<JSTaggedValue> cell(cellRecord);
     // If unregisterToken is undefined, we use vector to store
     // otherwise we use hash map to store to facilitate subsequent delete operations
     if (!unregisterToken->IsUndefined()) {
         JSHandle<LinkedHashMap> maybeUnregister(thread, obj->GetMaybeUnregister());
-        JSHandle<JSTaggedValue> cell(cellRecord);
-        maybeUnregister = LinkedHashMap::SetWeakRef(thread, maybeUnregister, unregisterToken, cell);
+        JSHandle<CellRecordVector> array(thread, JSTaggedValue::Undefined());
+        if (maybeUnregister->Has(unregisterToken.GetTaggedValue())) {
+            array = JSHandle<CellRecordVector>(thread, maybeUnregister->Get(unregisterToken.GetTaggedValue()));
+        } else {
+            array = JSHandle<CellRecordVector>(CellRecordVector::Create(thread));
+        }
+        array = CellRecordVector::Append(thread, array, cell);
+        JSHandle<JSTaggedValue> arrayValue(array);
+        maybeUnregister = LinkedHashMap::SetWeakRef(thread, maybeUnregister, unregisterToken, arrayValue);
         obj->SetMaybeUnregister(thread, maybeUnregister);
     } else {
         JSHandle<CellRecordVector> noUnregister(thread, obj->GetNoUnregister());
-        JSHandle<JSTaggedValue> cellRecordValue(cellRecord);
-        noUnregister = CellRecordVector::Append(thread, noUnregister, cellRecordValue);
+        noUnregister = CellRecordVector::Append(thread, noUnregister, cell);
         obj->SetNoUnregister(thread, noUnregister);
     }
     JSFinalizationRegistry::AddFinRegLists(thread, obj);
@@ -153,6 +160,28 @@ void JSFinalizationRegistry::CheckAndCall(JSThread *thread)
     }
 }
 
+void DealCallBackOfMap(JSThread *thread, JSHandle<CellRecordVector> &cellVect,
+    JSHandle<job::MicroJobQueue> &job, JSHandle<JSFunction> &func)
+{
+    if (!cellVect->Empty()) {
+        uint32_t cellVectLen = cellVect->GetEnd();
+        for (uint32_t i = 0; i < cellVectLen; ++i) {
+            JSTaggedValue value = cellVect->Get(i);
+            if (value.IsHole()) {
+                continue;
+            }
+            JSHandle<CellRecord> cellRecord(thread, value);
+            // if WeakRefTarget have been gc, set callback to job and delete
+            if (cellRecord->GetFromWeakRefTarget().IsUndefined()) {
+                JSHandle<TaggedArray> argv = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(1);
+                argv->Set(thread, 0, cellRecord->GetHeldValue());
+                job::MicroJobQueue::EnqueueJob(thread, job, job::QueueType::QUEUE_PROMISE, func, argv);
+                cellVect->Delete(thread, i);
+            }
+        }
+    }
+}
+
 bool JSFinalizationRegistry::CleanupFinalizationRegistry(JSThread *thread, JSHandle<JSFinalizationRegistry> obj)
 {
     // 1. Assert: finalizationRegistry has [[Cells]] and [[CleanupCallback]] internal slots.
@@ -193,14 +222,11 @@ bool JSFinalizationRegistry::CleanupFinalizationRegistry(JSThread *thread, JSHan
     while (index < totalElements) {
         key.Update(maybeUnregister->GetKey(index++));
         if (!key->IsHole()) {
-            JSMutableHandle<CellRecord> cellRecord(thread, maybeUnregister->GetValue(index - 1));
-            if (!cellRecord->GetFromWeakRefTarget().IsUndefined()) {
+            JSHandle<CellRecordVector> cellVect(thread, maybeUnregister->GetValue(index - 1));
+            DealCallBackOfMap(thread, cellVect, job, func);
+            if (!cellVect->Empty()) {
                 continue;
             }
-            // WeakRefTarget have been gc, set callback to job and delete
-            JSHandle<TaggedArray> argv = factory->NewTaggedArray(1);
-            argv->Set(thread, 0, cellRecord->GetHeldValue());
-            job::MicroJobQueue::EnqueueJob(thread, job, job::QueueType::QUEUE_PROMISE, func, argv);
             maybeUnregister->RemoveEntry(thread, index - 1);
             // Maybe add or delete
             JSTaggedValue nextTable = maybeUnregister->GetNextTable();
