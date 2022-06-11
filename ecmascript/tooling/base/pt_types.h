@@ -440,23 +440,23 @@ public:
 
     int32_t GetLine() const
     {
-        return line_;
+        return lineNumber_;
     }
 
-    ExceptionDetails &SetLine(int32_t line)
+    ExceptionDetails &SetLine(int32_t lineNumber)
     {
-        line_ = line;
+        lineNumber_ = lineNumber;
         return *this;
     }
 
     int32_t GetColumn() const
     {
-        return column_;
+        return columnNumber_;
     }
 
-    ExceptionDetails &SetColumn(int32_t column)
+    ExceptionDetails &SetColumn(int32_t columnNumber)
     {
-        column_ = column;
+        columnNumber_ = columnNumber;
         return *this;
     }
 
@@ -534,8 +534,8 @@ private:
 
     int32_t exceptionId_ {0};
     std::string text_ {};
-    int32_t line_ {0};
-    int32_t column_ {0};
+    int32_t lineNumber_ {0};
+    int32_t columnNumber_ {0};
     std::optional<ScriptId> scriptId_ {};
     std::optional<std::string> url_ {};
     std::optional<std::unique_ptr<RemoteObject>> exception_ {};
@@ -872,9 +872,11 @@ public:
     CallArgument() = default;
     ~CallArgument() override = default;
 
-    static std::unique_ptr<CallArgument> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<CallArgument> Create(const PtJson &params);
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    Local<ObjectRef> ToObject([[maybe_unused]] const EcmaVM *ecmaVm) const override
+    {
+        return Local<ObjectRef>();
+    }
     std::unique_ptr<PtJson> ToJson() const override;
 
     Local<JSValueRef> GetValue() const
@@ -976,29 +978,29 @@ public:
 
     int32_t GetLine() const
     {
-        return line_;
+        return lineNumber_;
     }
 
     Location &SetLine(int32_t line)
     {
-        line_ = line;
+        lineNumber_ = line;
         return *this;
     }
 
     int32_t GetColumn() const
     {
-        return column_.value_or(-1);
+        return columnNumber_.value_or(-1);
     }
 
     Location &SetColumn(int32_t column)
     {
-        column_ = column;
+        columnNumber_ = column;
         return *this;
     }
 
     bool HasColumn() const
     {
-        return column_.has_value();
+        return columnNumber_.has_value();
     }
 
 private:
@@ -1006,8 +1008,8 @@ private:
     NO_MOVE_SEMANTIC(Location);
 
     ScriptId scriptId_ {};
-    int32_t line_ {0};
-    std::optional<int32_t> column_ {};
+    int32_t lineNumber_ {0};
+    std::optional<int32_t> columnNumber_ {};
 };
 
 // Debugger.ScriptPosition
@@ -1016,30 +1018,29 @@ public:
     ScriptPosition() = default;
     ~ScriptPosition() override = default;
 
-    static std::unique_ptr<ScriptPosition> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<ScriptPosition> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     int32_t GetLine() const
     {
-        return line_;
+        return lineNumber_;
     }
 
     ScriptPosition &SetLine(int32_t line)
     {
-        line_ = line;
+        lineNumber_ = line;
         return *this;
     }
 
     int32_t GetColumn() const
     {
-        return column_;
+        return columnNumber_;
     }
 
     ScriptPosition &SetColumn(int32_t column)
     {
-        column_ = column;
+        columnNumber_ = column;
         return *this;
     }
 
@@ -1047,8 +1048,8 @@ private:
     NO_COPY_SEMANTIC(ScriptPosition);
     NO_MOVE_SEMANTIC(ScriptPosition);
 
-    int32_t line_ {0};
-    int32_t column_ {0};
+    int32_t lineNumber_ {0};
+    int32_t columnNumber_ {0};
 };
 
 // Debugger.SearchMatch
@@ -1075,7 +1076,6 @@ public:
     LocationRange() = default;
     ~LocationRange() override = default;
 
-    static std::unique_ptr<LocationRange> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     static std::unique_ptr<LocationRange> Create(const PtJson &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
@@ -1146,29 +1146,29 @@ public:
 
     int32_t GetLine() const
     {
-        return line_;
+        return lineNumber_;
     }
 
-    BreakLocation &SetLine(int32_t line)
+    BreakLocation &SetLine(int32_t lineNumber)
     {
-        line_ = line;
+        lineNumber_ = lineNumber;
         return *this;
     }
 
     int32_t GetColumn() const
     {
-        return column_.value_or(-1);
+        return columnNumber_.value_or(-1);
     }
 
-    BreakLocation &SetColumn(int32_t column)
+    BreakLocation &SetColumn(int32_t columnNumber)
     {
-        column_ = column;
+        columnNumber_ = columnNumber;
         return *this;
     }
 
     bool HasColumn() const
     {
-        return column_.has_value();
+        return columnNumber_.has_value();
     }
 
     /*
@@ -1215,8 +1215,8 @@ private:
     NO_MOVE_SEMANTIC(BreakLocation);
 
     ScriptId scriptId_ {};
-    int32_t line_ {0};
-    std::optional<int32_t> column_ {};
+    int32_t lineNumber_ {0};
+    std::optional<int32_t> columnNumber_ {};
     std::optional<std::string> type_ {};
 };
 using BreakType = BreakLocation::Type;
@@ -1515,7 +1515,7 @@ private:
 
 // ========== Heapprofiler types begin
 
-using HeapSnapshotObjectId = uint32_t;
+using HeapSnapshotObjectId = int32_t;
 
 class SamplingHeapProfileSample  final :  public PtBaseTypes {
 public:

@@ -99,6 +99,7 @@ public:
     Result GetString(const char *key, std::string *value) const;
     Result GetObject(const char *key, std::unique_ptr<PtJson> *value) const;
     Result GetArray(const char *key, std::unique_ptr<PtJson> *value) const;
+    Result GetAny(const char *key, std::unique_ptr<PtJson> *value) const;
 
 private:
     cJSON *object_ = nullptr;

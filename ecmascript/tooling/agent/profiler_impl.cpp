@@ -76,8 +76,7 @@ void ProfilerImpl::DispatcherImpl::Stop(const DispatchRequest &request)
 
 void ProfilerImpl::DispatcherImpl::SetSamplingInterval(const DispatchRequest &request)
 {
-    std::unique_ptr<SetSamplingIntervalParams> params =
-        SetSamplingIntervalParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<SetSamplingIntervalParams> params = SetSamplingIntervalParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
@@ -106,8 +105,7 @@ void ProfilerImpl::DispatcherImpl::TakePreciseCoverage(const DispatchRequest &re
 
 void ProfilerImpl::DispatcherImpl::StartPreciseCoverage(const DispatchRequest &request)
 {
-    std::unique_ptr<StartPreciseCoverageParams> params =
-        StartPreciseCoverageParams::Create(request.GetEcmaVM(), request.GetParamsObj());
+    std::unique_ptr<StartPreciseCoverageParams> params = StartPreciseCoverageParams::Create(request.GetParams());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;

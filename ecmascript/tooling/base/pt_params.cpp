@@ -16,43 +16,16 @@
 #include "ecmascript/tooling/base/pt_params.h"
 
 namespace panda::ecmascript::tooling {
-std::unique_ptr<EnableParams> EnableParams::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "EnableParams::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto paramsObject = std::make_unique<EnableParams>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "maxScriptsCacheSize")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            paramsObject->maxScriptsCacheSize_ = Local<NumberRef>(result)->Value();
-        } else {
-            error += "'maxScriptsCacheSize' should be a Number;";
-        }
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "EnableParams::Create " << error;
-        return nullptr;
-    }
-
-    return paramsObject;
-}
-
 std::unique_ptr<EnableParams> EnableParams::Create(const PtJson &params)
 {
     auto paramsObject = std::make_unique<EnableParams>();
     std::string error;
     Result ret;
 
-    double result;
-    ret = params.GetDouble("maxScriptsCacheSize", &result);
+    double maxScriptsCacheSize;
+    ret = params.GetDouble("maxScriptsCacheSize", &maxScriptsCacheSize);
     if (ret == Result::SUCCESS) {
-        paramsObject->maxScriptsCacheSize_ = result;
+        paramsObject->maxScriptsCacheSize_ = maxScriptsCacheSize;
     } else if (ret == Result::TYPE_ERROR) {  // optional value
         error += "Unknown 'maxScriptsCacheSize';";
     }
@@ -65,71 +38,67 @@ std::unique_ptr<EnableParams> EnableParams::Create(const PtJson &params)
     return paramsObject;
 }
 
-std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
+std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "EvaluateOnCallFrameParams::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<EvaluateOnCallFrameParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrameId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            paramsObject->callFrameId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
-        } else {
-            error += "'callframeid' should be a String;";
-        }
+    std::string callFrameId;
+    ret = params.GetString("callFrameId", &callFrameId);
+    if (ret == Result::SUCCESS) {
+        paramsObject->callFrameId_ = std::stoi(callFrameId);
     } else {
-        error += "should contain 'callframeid';";
+        error += "Unknown 'callFrameId';";
     }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "expression")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            paramsObject->expression_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'expression' should be a String;";
-        }
+    std::string expression;
+    ret = params.GetString("expression", &expression);
+    if (ret == Result::SUCCESS) {
+        paramsObject->expression_ = std::move(expression);
     } else {
-        error += "should contain 'expression';";
+        error += "Unknown 'expression';";
     }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectGroup")));
-    if (!result.IsEmpty() && result->IsString()) {
-        paramsObject->objectGroup_ = DebuggerApi::ToStdString(result);
+    std::string objectGroup;
+    ret = params.GetString("objectGroup", &objectGroup);
+    if (ret == Result::SUCCESS) {
+        paramsObject->objectGroup_ = std::move(objectGroup);
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'objectGroup';";
     }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "includeCommandLineAPI")));
-    if (!result.IsEmpty() && result->IsBoolean()) {
-        paramsObject->includeCommandLineApi_ = result->IsTrue();
+    bool includeCommandLineAPI;
+    ret = params.GetBool("includeCommandLineAPI", &includeCommandLineAPI);
+    if (ret == Result::SUCCESS) {
+        paramsObject->includeCommandLineAPI_ = includeCommandLineAPI;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'includeCommandLineAPI';";
     }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "silent")));
-    if (!result.IsEmpty() && result->IsBoolean()) {
-        paramsObject->silent_ = result->IsTrue();
+    bool silent;
+    ret = params.GetBool("silent", &silent);
+    if (ret == Result::SUCCESS) {
+        paramsObject->silent_ = silent;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'silent';";
     }
-
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "returnByValue")));
-    if (!result.IsEmpty() && result->IsBoolean()) {
-        paramsObject->returnByValue_ = result->IsTrue();
+    bool returnByValue;
+    ret = params.GetBool("returnByValue", &returnByValue);
+    if (ret == Result::SUCCESS) {
+        paramsObject->returnByValue_ = returnByValue;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'returnByValue';";
     }
-
-    result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "generatePreview")));
-    if (!result.IsEmpty() && result->IsBoolean()) {
-        paramsObject->generatePreview_ = result->IsTrue();
+    bool generatePreview;
+    ret = params.GetBool("generatePreview", &generatePreview);
+    if (ret == Result::SUCCESS) {
+        paramsObject->generatePreview_ = generatePreview;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'generatePreview';";
     }
-
-    result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "throwOnSideEffect")));
-    if (!result.IsEmpty() && result->IsBoolean()) {
-        paramsObject->throwOnSideEffect_ = result->IsTrue();
+    bool throwOnSideEffect;
+    ret = params.GetBool("throwOnSideEffect", &throwOnSideEffect);
+    if (ret == Result::SUCCESS) {
+        paramsObject->throwOnSideEffect_ = throwOnSideEffect;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'throwOnSideEffect';";
     }
 
     if (!error.empty()) {
@@ -139,55 +108,44 @@ std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(con
     return paramsObject;
 }
 
-std::unique_ptr<GetPossibleBreakpointsParams> GetPossibleBreakpointsParams::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
+std::unique_ptr<GetPossibleBreakpointsParams> GetPossibleBreakpointsParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<GetPossibleBreakpointsParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "start")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<Location> obj = Location::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'start' format error;";
-            } else {
-                paramsObject->start_ = std::move(obj);
-            }
+    std::unique_ptr<PtJson> start;
+    ret = params.GetObject("start", &start);
+    if (ret == Result::SUCCESS) {
+        std::unique_ptr<Location> location = Location::Create(*start);
+        if (location == nullptr) {
+            error += "Unknown 'start';";
         } else {
-            error += "'start' should be an Object;";
+            paramsObject->start_ = std::move(location);
         }
     } else {
-        error += "should contain 'start';";
+        error += "Unknown 'start';";
     }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "end")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<Location> obj = Location::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'end' format error;";
-            } else {
-                paramsObject->end_ = std::move(obj);
-            }
+    std::unique_ptr<PtJson> end;
+    ret = params.GetObject("start", &end);
+    if (ret == Result::SUCCESS) {
+        std::unique_ptr<Location> location = Location::Create(*end);
+        if (location == nullptr) {
+            error += "Unknown 'end';";
         } else {
-            error += "'end' should be an Object;";
+            paramsObject->end_ = std::move(location);
         }
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'end';";
     }
-    result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "restrictToFunction")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->restrictToFunction_ = result->IsTrue();
-        } else {
-            error += "'restrictToFunction' should be a Boolean;";
-        }
+    bool restrictToFunction;
+    ret = params.GetBool("restrictToFunction", &restrictToFunction);
+    if (ret == Result::SUCCESS) {
+        paramsObject->restrictToFunction_ = restrictToFunction;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'restrictToFunction';";
     }
+
     if (!error.empty()) {
         LOG(ERROR, DEBUGGER) << "GetPossibleBreakpointsParams::Create " << error;
         return nullptr;
@@ -196,28 +154,20 @@ std::unique_ptr<GetPossibleBreakpointsParams> GetPossibleBreakpointsParams::Crea
     return paramsObject;
 }
 
-std::unique_ptr<GetScriptSourceParams> GetScriptSourceParams::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
+std::unique_ptr<GetScriptSourceParams> GetScriptSourceParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<GetScriptSourceParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            paramsObject->scriptId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
-        } else {
-            error += "'scriptId' should be a String;";
-        }
+    std::string scriptId;
+    ret = params.GetString("scriptId", &scriptId);
+    if (ret == Result::SUCCESS) {
+        paramsObject->scriptId_ = std::stoi(scriptId);
     } else {
-        error += "should contain 'scriptId';";
+        error += "Unknown 'scriptId';";
     }
+
     if (!error.empty()) {
         LOG(ERROR, DEBUGGER) << "GetScriptSourceParams::Create " << error;
         return nullptr;
@@ -226,28 +176,20 @@ std::unique_ptr<GetScriptSourceParams> GetScriptSourceParams::Create(const EcmaV
     return paramsObject;
 }
 
-std::unique_ptr<RemoveBreakpointParams> RemoveBreakpointParams::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
+std::unique_ptr<RemoveBreakpointParams> RemoveBreakpointParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<RemoveBreakpointParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "breakpointId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            paramsObject->breakpointId_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'breakpointId' should be a String;";
-        }
+    std::string breakpointId;
+    ret = params.GetString("breakpointId", &breakpointId);
+    if (ret == Result::SUCCESS) {
+        paramsObject->breakpointId_ = std::move(breakpointId);
     } else {
-        error += "should contain 'breakpointId';";
+        error += "Unknown 'breakpointId';";
     }
+
     if (!error.empty()) {
         LOG(ERROR, DEBUGGER) << "RemoveBreakpointParams::Create " << error;
         return nullptr;
@@ -256,25 +198,20 @@ std::unique_ptr<RemoveBreakpointParams> RemoveBreakpointParams::Create(const Ecm
     return paramsObject;
 }
 
-std::unique_ptr<ResumeParams> ResumeParams::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+std::unique_ptr<ResumeParams> ResumeParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<ResumeParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "terminateOnResume")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->terminateOnResume_ = result->IsTrue();
-        } else {
-            error += "'terminateOnResume' should be a Boolean;";
-        }
+    bool terminateOnResume;
+    ret = params.GetBool("terminateOnResume", &terminateOnResume);
+    if (ret == Result::SUCCESS) {
+        paramsObject->terminateOnResume_ = terminateOnResume;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'terminateOnResume';";
     }
+
     if (!error.empty()) {
         LOG(ERROR, DEBUGGER) << "ResumeParams::Create " << error;
         return nullptr;
@@ -283,28 +220,20 @@ std::unique_ptr<ResumeParams> ResumeParams::Create(const EcmaVM *ecmaVm, const L
     return paramsObject;
 }
 
-std::unique_ptr<SetAsyncCallStackDepthParams> SetAsyncCallStackDepthParams::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
+std::unique_ptr<SetAsyncCallStackDepthParams> SetAsyncCallStackDepthParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<SetAsyncCallStackDepthParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "maxDepth")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            paramsObject->maxDepth_ = static_cast<uint32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'maxDepth' should be a Number;";
-        }
+    int32_t maxDepth;
+    ret = params.GetInt("maxDepth", &maxDepth);
+    if (ret == Result::SUCCESS) {
+        paramsObject->maxDepth_ = maxDepth;
     } else {
-        error += "should contain 'maxDepth';";
+        error += "Unknown 'maxDepth';";
     }
+
     if (!error.empty()) {
         LOG(ERROR, DEBUGGER) << "SetAsyncCallStackDepthParams::Create " << error;
         return nullptr;
@@ -313,40 +242,28 @@ std::unique_ptr<SetAsyncCallStackDepthParams> SetAsyncCallStackDepthParams::Crea
     return paramsObject;
 }
 
-std::unique_ptr<SetBlackboxPatternsParams> SetBlackboxPatternsParams::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
+std::unique_ptr<SetBlackboxPatternsParams> SetBlackboxPatternsParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<SetBlackboxPatternsParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "patterns")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            Local<ArrayRef> array = Local<ArrayRef>(result);
-            int32_t len = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < len; i++) {
-                key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> value = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                if (value->IsString()) {
-                    paramsObject->patterns_.emplace_back(
-                        DebuggerApi::ToStdString(value));
-                } else {
+    std::unique_ptr<PtJson> patterns;
+    ret = params.GetArray("patterns", &patterns);
+    if (ret == Result::SUCCESS) {
+        int32_t len = patterns->GetSize();
+        for (int32_t i = 0; i < len; ++i) {
+            std::unique_ptr<PtJson> item = patterns->Get(i);
+            if (item->IsString()) {
+                paramsObject->patterns_.emplace_back(item->GetString());
+            } else {
                     error += "'patterns' items should be a String;";
-                }
             }
-        } else {
-            error += "'patterns' should be an Array;";
         }
     } else {
-        error += "should contain 'patterns';";
+        error += "Unknown 'patterns';";
     }
+
     if (!error.empty()) {
         LOG(ERROR, DEBUGGER) << "SetBlackboxPatternsParams::Create " << error;
         return nullptr;
@@ -355,67 +272,53 @@ std::unique_ptr<SetBlackboxPatternsParams> SetBlackboxPatternsParams::Create(con
     return paramsObject;
 }
 
-std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
+std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<SetBreakpointByUrlParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            paramsObject->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'lineNumber' should be a Number;";
-        }
+    int32_t lineNumber;
+    ret = params.GetInt("lineNumber", &lineNumber);
+    if (ret == Result::SUCCESS) {
+        paramsObject->lineNumber_ = lineNumber;
     } else {
-        error += "should contain 'lineNumber';";
+        error += "Unknown 'lineNumber';";
     }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            paramsObject->url_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'url' should be a String;";
-        }
+    std::string url;
+    ret = params.GetString("url", &url);
+    if (ret == Result::SUCCESS) {
+        paramsObject->url_ = std::move(url);
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'url';";
     }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "urlRegex")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            paramsObject->urlRegex_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'urlRegex' should be a String;";
-        }
+    std::string urlRegex;
+    ret = params.GetString("urlRegex", &urlRegex);
+    if (ret == Result::SUCCESS) {
+        paramsObject->urlRegex_ = std::move(urlRegex);
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'urlRegex';";
     }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptHash")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            paramsObject->scriptHash_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'scriptHash' should be a String;";
-        }
+    std::string scriptHash;
+    ret = params.GetString("scriptHash", &scriptHash);
+    if (ret == Result::SUCCESS) {
+        paramsObject->scriptHash_ = std::move(scriptHash);
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'scriptHash';";
     }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            paramsObject->column_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'columnNumber' should be a Number;";
-        }
+    int32_t columnNumber;
+    ret = params.GetInt("columnNumber", &columnNumber);
+    if (ret == Result::SUCCESS) {
+        paramsObject->columnNumber_ = columnNumber;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'columnNumber';";
     }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "condition")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            paramsObject->condition_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'condition' should be a String;";
-        }
+    std::string condition;
+    ret = params.GetString("condition", &condition);
+    if (ret == Result::SUCCESS) {
+        paramsObject->condition_ = std::move(condition);
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'condition';";
     }
     if (!error.empty()) {
         LOG(ERROR, DEBUGGER) << "SetBreakpointByUrlParams::Create " << error;
@@ -425,30 +328,20 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
     return paramsObject;
 }
 
-std::unique_ptr<SetPauseOnExceptionsParams> SetPauseOnExceptionsParams::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
+std::unique_ptr<SetPauseOnExceptionsParams> SetPauseOnExceptionsParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<SetPauseOnExceptionsParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "state")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            if (!paramsObject->StoreState(DebuggerApi::ToStdString(result))) {
-                error += "'state' is invalid;";
-            }
-        } else {
-            error += "'state' should be a String;";
-        }
+    std::string state;
+    ret = params.GetString("state", &state);
+    if (ret == Result::SUCCESS) {
+        paramsObject->StoreState(state);
     } else {
-        error += "should contain 'state';";
+        error += "Unknown 'state';";
     }
+
     if (!error.empty()) {
         LOG(ERROR, DEBUGGER) << "SetPauseOnExceptionsParams::Create " << error;
         return nullptr;
@@ -457,49 +350,35 @@ std::unique_ptr<SetPauseOnExceptionsParams> SetPauseOnExceptionsParams::Create(c
     return paramsObject;
 }
 
-std::unique_ptr<StepIntoParams> StepIntoParams::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+std::unique_ptr<StepIntoParams> StepIntoParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<StepIntoParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "breakOnAsyncCall")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->breakOnAsyncCall_ = result->IsTrue();
-        } else {
-            error += "'terminateOnResume' should be a Boolean;";
-        }
+    bool breakOnAsyncCall;
+    ret = params.GetBool("breakOnAsyncCall", &breakOnAsyncCall);
+    if (ret == Result::SUCCESS) {
+        paramsObject->breakOnAsyncCall_ = breakOnAsyncCall;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'breakOnAsyncCall';";
     }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "skipList")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            Local<ArrayRef> array = Local<ArrayRef>(result);
-            int32_t len = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < len; i++) {
-                key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> value = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                if (value->IsObject()) {
-                    std::unique_ptr<LocationRange> obj = LocationRange::Create(ecmaVm, value);
-                    if (obj != nullptr) {
-                        paramsObject->skipList_->emplace_back(std::move(obj));
-                    } else {
-                        error += "'skipList' items LocationRange is invalid;";
-                    }
-                } else {
-                    error += "'skipList' items should be an Object;";
-                }
+    std::unique_ptr<PtJson> skipList;
+    ret = params.GetArray("skipList", &skipList);
+    if (ret == Result::SUCCESS) {
+        int32_t len = skipList->GetSize();
+        for (int32_t i = 0; i < len; ++i) {
+            std::unique_ptr<LocationRange> obj = LocationRange::Create(*skipList->Get(i));
+            if (obj == nullptr) {
+                error += "'skipList' items LocationRange is invalid;";
+            } else {
+                paramsObject->skipList_->emplace_back(std::move(obj));
             }
-        } else {
-            error += "'skipList' should be an Array;";
         }
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'skipList';";
     }
+
     if (!error.empty()) {
         LOG(ERROR, DEBUGGER) << "StepIntoParams::Create " << error;
         return nullptr;
@@ -508,41 +387,28 @@ std::unique_ptr<StepIntoParams> StepIntoParams::Create(const EcmaVM *ecmaVm, con
     return paramsObject;
 }
 
-std::unique_ptr<StepOverParams> StepOverParams::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+std::unique_ptr<StepOverParams> StepOverParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "RemoteObject::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<StepOverParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "skipList")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            Local<ArrayRef> array = Local<ArrayRef>(result);
-            int32_t len = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < len; i++) {
-                key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> value = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                if (value->IsObject()) {
-                    std::unique_ptr<LocationRange> obj = LocationRange::Create(ecmaVm, value);
-                    if (obj != nullptr) {
-                        paramsObject->skipList_->emplace_back(std::move(obj));
-                    } else {
-                        error += "'skipList' items LocationRange is invalid;";
-                    }
-                } else {
-                    error += "'skipList' items should be an Object;";
-                }
+    std::unique_ptr<PtJson> skipList;
+    ret = params.GetArray("skipList", &skipList);
+    if (ret == Result::SUCCESS) {
+        int32_t len = skipList->GetSize();
+        for (int32_t i = 0; i < len; ++i) {
+            std::unique_ptr<LocationRange> obj = LocationRange::Create(*skipList->Get(i));
+            if (obj == nullptr) {
+                error += "'skipList' items LocationRange is invalid;";
+            } else {
+                paramsObject->skipList_->emplace_back(std::move(obj));
             }
-        } else {
-            error += "'skipList' should be an Array;";
         }
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'skipList';";
     }
+
     if (!error.empty()) {
         LOG(ERROR, DEBUGGER) << "StepOverParams::Create " << error;
         return nullptr;
@@ -551,52 +417,39 @@ std::unique_ptr<StepOverParams> StepOverParams::Create(const EcmaVM *ecmaVm, con
     return paramsObject;
 }
 
-std::unique_ptr<GetPropertiesParams> GetPropertiesParams::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+std::unique_ptr<GetPropertiesParams> GetPropertiesParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "GetPropertiesParams::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<GetPropertiesParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            paramsObject->objectId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
-        } else {
-            error += "'objectId' should be a String;";
-        }
+    std::string objectId;
+    ret = params.GetString("objectId", &objectId);
+    if (ret == Result::SUCCESS) {
+        paramsObject->objectId_ = std::stoi(objectId);
     } else {
-        error += "should contain 'objectId';";
+        error += "Unknown 'objectId';";
     }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "ownProperties")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->ownProperties_ = result->IsTrue();
-        } else {
-            error += "'ownProperties' should be a Boolean;";
-        }
+    bool ownProperties;
+    ret = params.GetBool("ownProperties", &ownProperties);
+    if (ret == Result::SUCCESS) {
+        paramsObject->ownProperties_ = ownProperties;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'ownProperties';";
     }
-    result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "accessorPropertiesOnly")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->accessorPropertiesOnly_ = result->IsTrue();
-        } else {
-            error += "'accessorPropertiesOnly' should be a Boolean;";
-        }
+    bool accessorPropertiesOnly;
+    ret = params.GetBool("accessorPropertiesOnly", &accessorPropertiesOnly);
+    if (ret == Result::SUCCESS) {
+        paramsObject->accessorPropertiesOnly_ = accessorPropertiesOnly;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'accessorPropertiesOnly';";
     }
-    result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "generatePreview")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->generatePreview_ = result->IsTrue();
-        } else {
-            error += "'generatePreview' should be a Boolean;";
-        }
+    bool generatePreview;
+    ret = params.GetBool("generatePreview", &generatePreview);
+    if (ret == Result::SUCCESS) {
+        paramsObject->generatePreview_ = generatePreview;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'generatePreview';";
     }
     if (!error.empty()) {
         LOG(ERROR, DEBUGGER) << "GetPropertiesParams::Create " << error;
@@ -606,138 +459,109 @@ std::unique_ptr<GetPropertiesParams> GetPropertiesParams::Create(const EcmaVM *e
     return paramsObject;
 }
 
-std::unique_ptr<CallFunctionOnParams> CallFunctionOnParams::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
+std::unique_ptr<CallFunctionOnParams> CallFunctionOnParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "CallFunctionOnParams::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<CallFunctionOnParams>();
+    std::string error;
+    Result ret;
 
     // paramsObject->functionDeclaration_
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionDeclaration")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            paramsObject->functionDeclaration_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'functionDeclaration' should be a String;";
-        }
+    std::string functionDeclaration;
+    ret = params.GetString("functionDeclaration", &functionDeclaration);
+    if (ret == Result::SUCCESS) {
+        paramsObject->functionDeclaration_ = std::move(functionDeclaration);
     } else {
-        error += "should contain 'functionDeclaration';";
+        error += "Unknown 'functionDeclaration';";
     }
     // paramsObject->objectId_
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            paramsObject->objectId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
-        } else {
-            error += "'objectId' should be a String;";
-        }
+    std::string objectId;
+    ret = params.GetString("objectId", &objectId);
+    if (ret == Result::SUCCESS) {
+        paramsObject->objectId_ = std::stoi(objectId);
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'objectId';";
     }
     // paramsObject->arguments_
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "arguments")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsArray(ecmaVm)) {
-            Local<ArrayRef> array = Local<ArrayRef>(result);
-            int32_t len = array->Length(ecmaVm);
-            Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (int32_t i = 0; i < len; i++) {
-                key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> value = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                if (value->IsObject()) {
-                    std::unique_ptr<CallArgument> obj = CallArgument::Create(ecmaVm, value);
-                    if (obj != nullptr) {
-                        paramsObject->arguments_->emplace_back(std::move(obj));
-                    } else {
-                        error += "'arguments' items CallArgument is invaild;";
-                    }
-                } else {
-                    error += "'arguments' items should be an Object;";
-                }
+    std::unique_ptr<PtJson> arguments;
+    ret = params.GetArray("arguments", &arguments);
+    if (ret == Result::SUCCESS) {
+        int32_t len = arguments->GetSize();
+        for (int32_t i = 0; i < len; ++i) {
+            std::unique_ptr<CallArgument> obj = CallArgument::Create(*arguments->Get(i));
+            if (obj == nullptr) {
+                error += "'arguments' items CallArgument is invaild;";
+            } else {
+                paramsObject->arguments_->emplace_back(std::move(obj));
             }
-        } else {
-            error += "'arguments' should be an Array;";
         }
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'arguments';";
     }
     // paramsObject->silent_
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "silent")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->silent_ = result->IsTrue();
-        } else {
-            error += "'silent' should be a Boolean;";
-        }
+    bool silent;
+    ret = params.GetBool("silent", &silent);
+    if (ret == Result::SUCCESS) {
+        paramsObject->silent_ = silent;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'silent';";
     }
     // paramsObject->returnByValue_
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "returnByValue")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->returnByValue_ = result->IsTrue();
-        } else {
-            error += "'returnByValue' should be a Boolean;";
-        }
+    bool returnByValue;
+    ret = params.GetBool("returnByValue", &returnByValue);
+    if (ret == Result::SUCCESS) {
+        paramsObject->returnByValue_ = returnByValue;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'returnByValue';";
     }
     // paramsObject->generatePreview_
-    result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "generatePreview")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->generatePreview_ = result->IsTrue();
-        } else {
-            error += "'generatePreview' should be a Boolean;";
-        }
+    bool generatePreview;
+    ret = params.GetBool("generatePreview", &generatePreview);
+    if (ret == Result::SUCCESS) {
+        paramsObject->generatePreview_ = generatePreview;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'generatePreview';";
     }
     // paramsObject->userGesture_
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "userGesture")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->userGesture_ = result->IsTrue();
-        } else {
-            error += "'userGesture' should be a Boolean;";
-        }
+    bool userGesture;
+    ret = params.GetBool("userGesture", &userGesture);
+    if (ret == Result::SUCCESS) {
+        paramsObject->userGesture_ = userGesture;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'userGesture';";
     }
     // paramsObject->awaitPromise_
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "awaitPromise")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->awaitPromise_ = result->IsTrue();
-        } else {
-            error += "'awaitPromise' should be a Boolean;";
-        }
+    bool awaitPromise;
+    ret = params.GetBool("awaitPromise", &awaitPromise);
+    if (ret == Result::SUCCESS) {
+        paramsObject->awaitPromise_ = awaitPromise;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'awaitPromise';";
     }
     // paramsObject->executionContextId_
-    result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            paramsObject->executionContextId_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'executionContextId' should be a Number;";
-        }
+    int32_t executionContextId;
+    ret = params.GetInt("executionContextId", &executionContextId);
+    if (ret == Result::SUCCESS) {
+        paramsObject->executionContextId_ = executionContextId;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'executionContextId';";
     }
     // paramsObject->objectGroup_
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectGroup")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            paramsObject->objectGroup_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'objectGroup' should be a String;";
-        }
+    std::string objectGroup;
+    ret = params.GetString("objectGroup", &objectGroup);
+    if (ret == Result::SUCCESS) {
+        paramsObject->objectGroup_ = std::move(objectGroup);
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'objectGroup';";
     }
     // paramsObject->throwOnSideEffect_
-    result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "throwOnSideEffect")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->throwOnSideEffect_ = result->IsTrue();
-        } else {
-            error += "'throwOnSideEffect' should be a Boolean;";
-        }
+    bool throwOnSideEffect;
+    ret = params.GetBool("throwOnSideEffect", &throwOnSideEffect);
+    if (ret == Result::SUCCESS) {
+        paramsObject->throwOnSideEffect_ = throwOnSideEffect;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'throwOnSideEffect';";
     }
+
     // Check whether the error is empty.
     if (!error.empty()) {
         LOG(ERROR, DEBUGGER) << "CallFunctionOnParams::Create " << error;
@@ -747,25 +571,18 @@ std::unique_ptr<CallFunctionOnParams> CallFunctionOnParams::Create(const EcmaVM 
     return paramsObject;
 }
 
-std::unique_ptr<StartSamplingParams> StartSamplingParams::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
+std::unique_ptr<StartSamplingParams> StartSamplingParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "StartSamplingParams::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<StartSamplingParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "samplingInterval")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            paramsObject->samplingInterval_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'samplingInterval' should be a Number;";
-        }
+    int32_t samplingInterval;
+    ret = params.GetInt("samplingInterval", &samplingInterval);
+    if (ret == Result::SUCCESS) {
+        paramsObject->samplingInterval_ = samplingInterval;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'samplingInterval';";
     }
 
     if (!error.empty()) {
@@ -775,26 +592,20 @@ std::unique_ptr<StartSamplingParams> StartSamplingParams::Create(const EcmaVM *e
     return paramsObject;
 }
 
-std::unique_ptr<StartTrackingHeapObjectsParams> StartTrackingHeapObjectsParams::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
+std::unique_ptr<StartTrackingHeapObjectsParams> StartTrackingHeapObjectsParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "StartTrackingHeapObjectsParams::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<StartTrackingHeapObjectsParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "trackAllocations")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->trackAllocations_ = result->IsTrue();
-        } else {
-            error += "'trackAllocations' should be a boolean;";
-        }
+    bool trackAllocations;
+    ret = params.GetBool("trackAllocations", &trackAllocations);
+    if (ret == Result::SUCCESS) {
+        paramsObject->trackAllocations_ = trackAllocations;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'trackAllocations';";
     }
+
     if (!error.empty()) {
         LOG(ERROR, DEBUGGER) << "StartTrackingHeapObjectsParams::Create " << error;
         return nullptr;
@@ -802,45 +613,34 @@ std::unique_ptr<StartTrackingHeapObjectsParams> StartTrackingHeapObjectsParams::
     return paramsObject;
 }
 
-std::unique_ptr<StopTrackingHeapObjectsParams> StopTrackingHeapObjectsParams::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
+std::unique_ptr<StopTrackingHeapObjectsParams> StopTrackingHeapObjectsParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "StopTrackingHeapObjectsParams::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<StopTrackingHeapObjectsParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "reportProgress")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->reportProgress_ = result->IsTrue();
-        } else {
-            error += "'reportProgress' should be a boolean;";
-        }
+    bool reportProgress;
+    ret = params.GetBool("reportProgress", &reportProgress);
+    if (ret == Result::SUCCESS) {
+        paramsObject->reportProgress_ = reportProgress;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'reportProgress';";
     }
 
-    result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "treatGlobalObjectsAsRoots")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->treatGlobalObjectsAsRoots_ = result->IsTrue();
-        } else {
-            error += "'treatGlobalObjectsAsRoots' should be a boolean;";
-        }
+    bool treatGlobalObjectsAsRoots;
+    ret = params.GetBool("treatGlobalObjectsAsRoots", &treatGlobalObjectsAsRoots);
+    if (ret == Result::SUCCESS) {
+        paramsObject->treatGlobalObjectsAsRoots_ = treatGlobalObjectsAsRoots;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'treatGlobalObjectsAsRoots';";
     }
 
-    result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "captureNumericValue")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->captureNumericValue_ = result->IsTrue();
-        } else {
-            error += "'captureNumericValue' should be a boolean;";
-        }
+    bool captureNumericValue;
+    ret = params.GetBool("captureNumericValue", &captureNumericValue);
+    if (ret == Result::SUCCESS) {
+        paramsObject->captureNumericValue_ = captureNumericValue;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'captureNumericValue';";
     }
 
     if (!error.empty()) {
@@ -850,27 +650,18 @@ std::unique_ptr<StopTrackingHeapObjectsParams> StopTrackingHeapObjectsParams::Cr
     return paramsObject;
 }
 
-std::unique_ptr<AddInspectedHeapObjectParams> AddInspectedHeapObjectParams::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
+std::unique_ptr<AddInspectedHeapObjectParams> AddInspectedHeapObjectParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "AddInspectedHeapObjectParams::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<AddInspectedHeapObjectParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "heapObjectId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            paramsObject->heapObjectId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
-        } else {
-            error += "'heapObjectId' should be a String;";
-        }
+    std::string heapObjectId;
+    ret = params.GetString("heapObjectId", &heapObjectId);
+    if (ret == Result::SUCCESS) {
+        paramsObject->heapObjectId_ = std::stoi(heapObjectId);
     } else {
-        error += "should contain 'heapObjectId';";
+        error += "Unknown 'heapObjectId';";
     }
 
     if (!error.empty()) {
@@ -880,27 +671,18 @@ std::unique_ptr<AddInspectedHeapObjectParams> AddInspectedHeapObjectParams::Crea
     return paramsObject;
 }
 
-std::unique_ptr<GetHeapObjectIdParams> GetHeapObjectIdParams::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
+std::unique_ptr<GetHeapObjectIdParams> GetHeapObjectIdParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "GetHeapObjectIdParams::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<GetHeapObjectIdParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            paramsObject->objectId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
-        } else {
-            error += "'objectId' should be a String;";
-        }
-    } else {
-        error += "should contain 'objectId';";
+    std::string objectId;
+    ret = params.GetString("objectId", &objectId);
+    if (ret == Result::SUCCESS) {
+        paramsObject->objectId_ = std::stoi(objectId);
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'objectId';";
     }
 
     if (!error.empty()) {
@@ -910,37 +692,26 @@ std::unique_ptr<GetHeapObjectIdParams> GetHeapObjectIdParams::Create(const EcmaV
     return paramsObject;
 }
 
-std::unique_ptr<GetObjectByHeapObjectIdParams> GetObjectByHeapObjectIdParams::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
+std::unique_ptr<GetObjectByHeapObjectIdParams> GetObjectByHeapObjectIdParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "GetObjectByHeapObjectIdParams::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<GetObjectByHeapObjectIdParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            paramsObject->objectId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
-        } else {
-            error += "'objectId' should be a String;";
-        }
-    } else {
-        error += "should contain 'objectId';";
+    std::string objectId;
+    ret = params.GetString("objectId", &objectId);
+    if (ret == Result::SUCCESS) {
+        paramsObject->objectId_ = std::stoi(objectId);
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'objectId';";
     }
 
-    result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectGroup")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            paramsObject->objectGroup_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'objectGroup' should be a String;";
-        }
+    std::string objectGroup;
+    ret = params.GetString("objectGroup", &objectGroup);
+    if (ret == Result::SUCCESS) {
+        paramsObject->objectGroup_ = std::move(objectGroup);
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'objectGroup';";
     }
 
     if (!error.empty()) {
@@ -950,45 +721,34 @@ std::unique_ptr<GetObjectByHeapObjectIdParams> GetObjectByHeapObjectIdParams::Cr
     return paramsObject;
 }
 
-std::unique_ptr<StartPreciseCoverageParams> StartPreciseCoverageParams::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
+std::unique_ptr<StartPreciseCoverageParams> StartPreciseCoverageParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "StartPreciseCoverageParams::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<StartPreciseCoverageParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callCount")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->callCount_ = result->IsTrue();
-        } else {
-            error += "'callCount' should be a boolean;";
-        }
+    bool callCount;
+    ret = params.GetBool("callCount", &callCount);
+    if (ret == Result::SUCCESS) {
+        paramsObject->callCount_ = callCount;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'callCount';";
     }
 
-    result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "detailed")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->detailed_ = result->IsTrue();
-        } else {
-            error += "'detailed' should be a boolean;";
-        }
+    bool detailed;
+    ret = params.GetBool("detailed", &detailed);
+    if (ret == Result::SUCCESS) {
+        paramsObject->detailed_ = detailed;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'detailed';";
     }
 
-    result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "allowTriggeredUpdates")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsBoolean()) {
-            paramsObject->allowTriggeredUpdates_ = result->IsTrue();
-        } else {
-            error += "'allowTriggeredUpdates' should be a boolean;";
-        }
+    bool allowTriggeredUpdates;
+    ret = params.GetBool("allowTriggeredUpdates", &allowTriggeredUpdates);
+    if (ret == Result::SUCCESS) {
+        paramsObject->allowTriggeredUpdates_ = allowTriggeredUpdates;
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
+        error += "Unknown 'allowTriggeredUpdates';";
     }
 
     if (!error.empty()) {
@@ -998,27 +758,18 @@ std::unique_ptr<StartPreciseCoverageParams> StartPreciseCoverageParams::Create(c
     return paramsObject;
 }
 
-std::unique_ptr<SetSamplingIntervalParams> SetSamplingIntervalParams::Create(const EcmaVM *ecmaVm,
-    const Local<JSValueRef> &params)
+std::unique_ptr<SetSamplingIntervalParams> SetSamplingIntervalParams::Create(const PtJson &params)
 {
-    ASSERT(ecmaVm);
-    if (params.IsEmpty()) {
-        LOG(ERROR, DEBUGGER) << "SetSamplingIntervalParams::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
     auto paramsObject = std::make_unique<SetSamplingIntervalParams>();
+    std::string error;
+    Result ret;
 
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "interval")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            paramsObject->interval_ = static_cast<int>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'interval' should be a Number;";
-        }
+    int32_t interval;
+    ret = params.GetInt("interval", &interval);
+    if (ret == Result::SUCCESS) {
+        paramsObject->interval_ = interval;
     } else {
-        error += "should contain 'interval';";
+        error += "Unknown 'interval';";
     }
 
     if (!error.empty()) {

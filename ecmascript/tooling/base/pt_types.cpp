@@ -557,7 +557,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            exceptionDetails->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+            exceptionDetails->lineNumber_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'lineNumber' should be a Number;";
         }
@@ -567,7 +567,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            exceptionDetails->column_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+            exceptionDetails->columnNumber_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'columnNumber' should be a Number;";
         }
@@ -643,18 +643,18 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const PtJson &params)
         error += "Unknown 'text';";
     }
 
-    int32_t line;
-    ret = params.GetInt("lineNumber", &line);
+    int32_t lineNumber;
+    ret = params.GetInt("lineNumber", &lineNumber);
     if (ret == Result::SUCCESS) {
-        exceptionDetails->line_ = line;
+        exceptionDetails->lineNumber_ = lineNumber;
     } else {
         error += "Unknown 'lineNumber';";
     }
 
-    int32_t column;
-    ret = params.GetInt("columnNumber", &column);
+    int32_t columnNumber;
+    ret = params.GetInt("columnNumber", &columnNumber);
     if (ret == Result::SUCCESS) {
-        exceptionDetails->column_ = column;
+        exceptionDetails->columnNumber_ = columnNumber;
     } else {
         error += "Unknown 'columnNumber';";
     }
@@ -715,9 +715,9 @@ Local<ObjectRef> ExceptionDetails::ToObject(const EcmaVM *ecmaVm) const
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "text")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, text_.c_str())));
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")),
-        IntegerRef::New(ecmaVm, line_));
+        IntegerRef::New(ecmaVm, lineNumber_));
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")),
-        IntegerRef::New(ecmaVm, column_));
+        IntegerRef::New(ecmaVm, columnNumber_));
     if (scriptId_) {
         params->Set(ecmaVm,
             Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
@@ -749,8 +749,8 @@ std::unique_ptr<PtJson> ExceptionDetails::ToJson() const
 
     result->Add("exceptionId", exceptionId_);
     result->Add("text", text_.c_str());
-    result->Add("lineNumber", line_);
-    result->Add("columnNumber", column_);
+    result->Add("lineNumber", lineNumber_);
+    result->Add("columnNumber", columnNumber_);
 
     if (scriptId_) {
         result->Add("scriptId", std::to_string(scriptId_.value()).c_str());
@@ -1412,64 +1412,24 @@ std::unique_ptr<PtJson> PropertyDescriptor::ToJson() const
     return result;
 }
 
-std::unique_ptr<CallArgument> CallArgument::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "CallArgument::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto callArgument = std::make_unique<CallArgument>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "value")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        callArgument->value_ = result;
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm,
-        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "unserializableValue")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            callArgument->unserializableValue_ = DebuggerApi::ToStdString(result);
-        } else {
-            error += "'unserializableValue' should be a String;";
-        }
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            callArgument->objectId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
-        } else {
-            error += "'objectId' should be a String;";
-        }
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "CallArgument::Create " << error;
-        return nullptr;
-    }
-
-    return callArgument;
-}
-
 std::unique_ptr<CallArgument> CallArgument::Create(const PtJson &params)
 {
-    std::string error;
     auto callArgument = std::make_unique<CallArgument>();
+    std::string error;
     Result ret;
 
     std::string unserializableValue;
     ret = params.GetString("unserializableValue", &unserializableValue);
     if (ret == Result::SUCCESS) {
         callArgument->unserializableValue_ = std::move(unserializableValue);
-    } else if (ret == Result::TYPE_ERROR) {
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
         error += "Unknown 'unserializableValue';";
     }
-
     std::string objectId;
     ret = params.GetString("objectId", &objectId);
     if (ret == Result::SUCCESS) {
         callArgument->objectId_ = std::stoi(objectId);
-    } else if (ret == Result::TYPE_ERROR) {
+    } else if (ret == Result::TYPE_ERROR) {  // optional value
         error += "Unknown 'objectId';";
     }
 
@@ -1479,27 +1439,6 @@ std::unique_ptr<CallArgument> CallArgument::Create(const PtJson &params)
     }
 
     return callArgument;
-}
-
-Local<ObjectRef> CallArgument::ToObject(const EcmaVM *ecmaVm) const
-{
-    Local<ObjectRef> params = NewObject(ecmaVm);
-
-    if (value_) {
-        params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "value")), value_.value());
-    }
-    if (unserializableValue_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "unserializableValue")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, unserializableValue_->c_str())));
-    }
-    if (objectId_) {
-        params->Set(ecmaVm,
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(objectId_.value()).c_str())));
-    }
-
-    return params;
 }
 
 std::unique_ptr<PtJson> CallArgument::ToJson() const
@@ -1539,7 +1478,7 @@ std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSV
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            location->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+            location->lineNumber_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'lineNumber' should be a Number;";
         }
@@ -1549,7 +1488,7 @@ std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSV
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            location->column_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            location->columnNumber_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'columnNumber' should be a Number;";
         }
@@ -1575,17 +1514,17 @@ std::unique_ptr<Location> Location::Create(const PtJson &params)
     } else {
         error += "Unknown 'scriptId';";
     }
-    int32_t line;
-    ret = params.GetInt("lineNumber", &line);
+    int32_t lineNumber;
+    ret = params.GetInt("lineNumber", &lineNumber);
     if (ret == Result::SUCCESS) {
-        location->line_ = line;
+        location->lineNumber_ = lineNumber;
     } else {
         error += "Unknown 'lineNumber';";
     }
-    int32_t column;
-    ret = params.GetInt("columnNumber", &column);
+    int32_t columnNumber;
+    ret = params.GetInt("columnNumber", &columnNumber);
     if (ret == Result::SUCCESS) {
-        location->column_ = column;
+        location->columnNumber_ = columnNumber;
     } else if (ret == Result::TYPE_ERROR) {  // optional value
         error += "Unknown 'columnNumber';";
     }
@@ -1606,11 +1545,11 @@ Local<ObjectRef> Location::ToObject(const EcmaVM *ecmaVm) const
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(scriptId_).c_str())));
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")),
-        IntegerRef::New(ecmaVm, line_));
-    if (column_) {
+        IntegerRef::New(ecmaVm, lineNumber_));
+    if (columnNumber_) {
         params->Set(ecmaVm,
             Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")),
-            IntegerRef::New(ecmaVm, column_.value()));
+            IntegerRef::New(ecmaVm, columnNumber_.value()));
     }
 
     return params;
@@ -1621,70 +1560,31 @@ std::unique_ptr<PtJson> Location::ToJson() const
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
     result->Add("scriptId", std::to_string(scriptId_).c_str());
-    result->Add("lineNumber", line_);
-    if (column_) {
-        result->Add("columnNumber", column_.value());
+    result->Add("lineNumber", lineNumber_);
+    if (columnNumber_) {
+        result->Add("columnNumber", columnNumber_.value());
     }
 
     return result;
 }
 
-std::unique_ptr<ScriptPosition> ScriptPosition::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "ScriptPosition::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto scriptPosition = std::make_unique<ScriptPosition>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            scriptPosition->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'lineNumber' should be a Number;";
-        }
-    } else {
-        error += "should contain 'lineNumber';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsNumber()) {
-            scriptPosition->column_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
-        } else {
-            error += "'columnNumber' should be a Number;";
-        }
-    } else {
-        error += "should contain 'columnNumber';";
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "ScriptPosition::Create " << error;
-        return nullptr;
-    }
-
-    return scriptPosition;
-}
-
 std::unique_ptr<ScriptPosition> ScriptPosition::Create(const PtJson &params)
 {
-    std::string error;
     auto scriptPosition = std::make_unique<ScriptPosition>();
+    std::string error;
     Result ret;
 
-    int32_t line;
-    ret = params.GetInt("lineNumber", &line);
+    int32_t lineNumber;
+    ret = params.GetInt("lineNumber", &lineNumber);
     if (ret == Result::SUCCESS) {
-        scriptPosition->line_ = line;
+        scriptPosition->lineNumber_ = lineNumber;
     } else {
         error += "Unknown 'lineNumber';";
     }
-
-    int32_t column;
-    ret = params.GetInt("columnNumber", &column);
+    int32_t columnNumber;
+    ret = params.GetInt("columnNumber", &columnNumber);
     if (ret == Result::SUCCESS) {
-        scriptPosition->column_ = column;
+        scriptPosition->columnNumber_ = columnNumber;
     } else {
         error += "Unknown 'columnNumber';";
     }
@@ -1702,9 +1602,9 @@ Local<ObjectRef> ScriptPosition::ToObject(const EcmaVM *ecmaVm) const
     Local<ObjectRef> params = NewObject(ecmaVm);
 
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")),
-        IntegerRef::New(ecmaVm, line_));
+        IntegerRef::New(ecmaVm, lineNumber_));
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")),
-        IntegerRef::New(ecmaVm, column_));
+        IntegerRef::New(ecmaVm, columnNumber_));
 
     return params;
 }
@@ -1713,8 +1613,8 @@ std::unique_ptr<PtJson> ScriptPosition::ToJson() const
 {
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
-    result->Add("lineNumber", line_);
-    result->Add("columnNumber", column_);
+    result->Add("lineNumber", lineNumber_);
+    result->Add("columnNumber", columnNumber_);
 
     return result;
 }
@@ -1809,64 +1709,6 @@ std::unique_ptr<PtJson> SearchMatch::ToJson() const
     result->Add("lineContent", lineContent_.c_str());
 
     return result;
-}
-
-std::unique_ptr<LocationRange> LocationRange::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
-{
-    if (params.IsEmpty() || !params->IsObject()) {
-        LOG(ERROR, DEBUGGER) << "BreakLocation::Create params is nullptr";
-        return nullptr;
-    }
-    std::string error;
-    auto locationRange = std::make_unique<LocationRange>();
-
-    Local<JSValueRef> result =
-        Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsString()) {
-            locationRange->scriptId_ = DebuggerApi::StringToInt(result);
-        } else {
-            error += "'scriptId' should be a String;";
-        }
-    } else {
-        error += "should contain 'scriptId';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "start")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<ScriptPosition> obj = ScriptPosition::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'start' format error;";
-            } else {
-                locationRange->start_ = std::move(obj);
-            }
-        } else {
-            error += "'start' should be an Object;";
-        }
-    } else {
-        error += "should contain 'start';";
-    }
-    result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "end")));
-    if (!result.IsEmpty() && !result->IsUndefined()) {
-        if (result->IsObject()) {
-            std::unique_ptr<ScriptPosition> obj = ScriptPosition::Create(ecmaVm, result);
-            if (obj == nullptr) {
-                error += "'end' format error;";
-            } else {
-                locationRange->end_ = std::move(obj);
-            }
-        } else {
-            error += "'end' should be an Object;";
-        }
-    } else {
-        error += "should contain 'end';";
-    }
-    if (!error.empty()) {
-        LOG(ERROR, DEBUGGER) << "LocationRange::Create " << error;
-        return nullptr;
-    }
-
-    return locationRange;
 }
 
 std::unique_ptr<LocationRange> LocationRange::Create(const PtJson &params)
@@ -1974,7 +1816,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            breakLocation->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+            breakLocation->lineNumber_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'lineNumber' should be a Number;";
         }
@@ -1984,7 +1826,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            breakLocation->column_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
+            breakLocation->columnNumber_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'columnNumber' should be a Number;";
         }
@@ -2027,7 +1869,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const PtJson &params)
     int32_t lineNumber;
     ret = params.GetInt("lineNumber", &lineNumber);
     if (ret == Result::SUCCESS) {
-        breakLocation->line_ = lineNumber;
+        breakLocation->lineNumber_ = lineNumber;
     } else {
         error += "Unknown 'lineNumber';";
     }
@@ -2035,7 +1877,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const PtJson &params)
     int32_t columnNumber;
     ret = params.GetInt("columnNumber", &columnNumber);
     if (ret == Result::SUCCESS) {
-        breakLocation->column_ = columnNumber;
+        breakLocation->columnNumber_ = columnNumber;
     } else if (ret == Result::TYPE_ERROR) {
         error += "Unknown 'columnNumber';";
     }
@@ -2068,11 +1910,11 @@ Local<ObjectRef> BreakLocation::ToObject(const EcmaVM *ecmaVm) const
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(scriptId_).c_str())));
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")),
-        IntegerRef::New(ecmaVm, line_));
-    if (column_) {
+        IntegerRef::New(ecmaVm, lineNumber_));
+    if (columnNumber_) {
         params->Set(ecmaVm,
             Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")),
-            IntegerRef::New(ecmaVm, column_.value()));
+            IntegerRef::New(ecmaVm, columnNumber_.value()));
     }
     if (type_) {
         params->Set(ecmaVm,
@@ -2088,9 +1930,9 @@ std::unique_ptr<PtJson> BreakLocation::ToJson() const
     std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
     result->Add("scriptId", std::to_string(scriptId_).c_str());
-    result->Add("lineNumber", line_);
-    if (column_) {
-        result->Add("columnNumber", column_.value());
+    result->Add("lineNumber", lineNumber_);
+    if (columnNumber_) {
+        result->Add("columnNumber", columnNumber_.value());
     }
     if (type_) {
         result->Add("type", type_->c_str());
