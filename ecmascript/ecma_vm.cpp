@@ -67,6 +67,7 @@
 #include "ecmascript/require/js_cjs_module_cache.h"
 #include "ecmascript/require/js_require_manager.h"
 #include "ecmascript/tooling/interface/js_debugger_manager.h"
+#include "ecmascript/llvm_stackmap_parser.h"
 #ifdef PANDA_TARGET_WINDOWS
 #ifdef ERROR
 #undef ERROR
@@ -177,11 +178,13 @@ bool EcmaVM::Initialize()
     tsLoader_ = new TSLoader(this);
     snapshotEnv_ = new SnapshotEnv(this);
     fileLoader_ = new FileLoader(this);
-    if (options_.EnableStubAot()) {
-        LoadStubFile();
-    }
+    bool enableLog = GetJSOptions().WasSetlogCompiledMethods();
+    stackMapParser_ = new kungfu::LLVMStackMapParser(enableLog);
     if (options_.EnableTSAot()) {
         LoadAOTFiles();
+    }
+    if (options_.EnableStubAot()) {
+        LoadStubFile();
     }
     InitializeFinish();
     return true;
@@ -310,6 +313,10 @@ EcmaVM::~EcmaVM()
     if (fileLoader_ != nullptr) {
         delete fileLoader_;
         fileLoader_  = nullptr;
+    }
+    if (stackMapParser_ != nullptr) {
+        delete stackMapParser_;
+        stackMapParser_ = nullptr;
     }
 
     if (thread_ != nullptr) {

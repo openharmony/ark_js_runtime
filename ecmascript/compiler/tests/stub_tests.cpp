@@ -21,7 +21,7 @@
 #include "ecmascript/compiler/common_stubs.h"
 #include "ecmascript/compiler/llvm_codegen.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
-#include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
+#include "ecmascript/llvm_stackmap_parser.h"
 #include "ecmascript/compiler/scheduler.h"
 #include "ecmascript/compiler/call_signature.h"
 #include "ecmascript/compiler/verifier.h"
@@ -838,38 +838,6 @@ HWTEST_F_L0(StubTest, LoadGCIRTest)
     COMPILER_LOG(INFO) << " value:" << value;
 }
 #endif
-
-extern "C" {
-void DoSafepoint()
-{
-    uintptr_t *rbp;
-    asm("mov %%rbp, %0" : "=rm" (rbp));
-    for (int i = 0; i < 3; i++) { // 3: call back depth
-        uintptr_t returnAddr =  *(rbp + 1);
-        uintptr_t *rsp = rbp + 2;  // move 2 steps from rbp to get rsp
-        rbp = reinterpret_cast<uintptr_t *>(*rbp);
-        const kungfu::CallSiteInfo *infos =
-            kungfu::LLVMStackMapParser::GetInstance().GetCallSiteInfoByPc(returnAddr);
-        if (infos != nullptr) {
-            for (auto &info : *infos) {
-                uintptr_t **address = nullptr;
-                if (info.first == GCStackMapRegisters::SP) {
-                    address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rsp) + info.second);
-                } else if (info.first == GCStackMapRegisters::FP) {
-                    address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rbp) + info.second);
-                }
-                // print ref and vlue for debug
-                COMPILER_LOG(INFO) << std::hex << "ref addr:" << address;
-                COMPILER_LOG(INFO) << "  value:" << *address;
-                COMPILER_LOG(INFO) << " *value :" << **address;
-            }
-        }
-        COMPILER_LOG(INFO) << std::hex << "+++++++++++++++++++ returnAddr : 0x" << returnAddr << " rbp:" << rbp
-                           << " rsp: " << rsp;
-    }
-    COMPILER_LOG(INFO) << "do_safepoint +++ ";
-}
-}
 
 HWTEST_F_L0(StubTest, GetPropertyByIndexStub)
 {

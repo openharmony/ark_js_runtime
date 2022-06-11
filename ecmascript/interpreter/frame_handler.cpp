@@ -16,7 +16,7 @@
 
 #include "ecmascript/interpreter/frame_handler.h"
 
-#include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
+#include "ecmascript/llvm_stackmap_parser.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/heap.h"
@@ -132,7 +132,7 @@ uintptr_t FrameHandler::GetPrevFrameCallSiteSp(const JSTaggedType *sp, uintptr_t
         case FrameType::OPTIMIZED_FRAME:
         case FrameType::OPTIMIZED_JS_FUNCTION_FRAME: {
             auto callSiteSp = reinterpret_cast<uintptr_t>(sp) +
-                kungfu::LLVMStackMapParser::GetInstance().GetFuncFpDelta(curPc);
+                thread_->GetEcmaVM()->GetStackMapParser()->GetFuncFpDelta(curPc);
             return callSiteSp;
         }
         case FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME : {
@@ -425,7 +425,7 @@ ARK_INLINE void FrameHandler::AsmInterpretedFrameIterate(const JSTaggedType *sp,
 
     uintptr_t curPc = optimizedReturnAddr_;
     std::set<uintptr_t> slotAddrs;
-    bool ret = kungfu::LLVMStackMapParser::GetInstance().CollectStackMapSlots(
+    bool ret = thread_->GetEcmaVM()->GetStackMapParser()->CollectStackMapSlots(
         curPc, reinterpret_cast<uintptr_t>(sp), slotAddrs, derivedPointers, isVerifying,
         optimizedCallSiteSp_);
     if (!ret) {
@@ -499,8 +499,7 @@ ARK_INLINE void FrameHandler::OptimizedFrameIterate(const JSTaggedType *sp,
     bool isVerifying)
 {
     std::set<uintptr_t> slotAddrs;
-    bool enableCompilerLog = thread_->GetEcmaVM()->GetJSOptions().WasSetlogCompiledMethods();
-    bool ret = kungfu::LLVMStackMapParser::GetInstance(enableCompilerLog).CollectStackMapSlots(
+    bool ret = thread_->GetEcmaVM()->GetStackMapParser()->CollectStackMapSlots(
         optimizedReturnAddr_, reinterpret_cast<uintptr_t>(sp), slotAddrs, derivedPointers, isVerifying, optimizedCallSiteSp_);
 
     if (!ret) {
@@ -523,7 +522,7 @@ ARK_INLINE void FrameHandler::OptimizedJSFunctionFrameIterate(const JSTaggedType
 {
     OptimizedJSFunctionFrame *frame = OptimizedJSFunctionFrame::GetFrameFromSp(sp);
 
-    int delta = kungfu::LLVMStackMapParser::GetInstance().GetFuncFpDelta(optimizedReturnAddr_);
+    int delta = thread_->GetEcmaVM()->GetStackMapParser()->GetFuncFpDelta(optimizedReturnAddr_);
     uintptr_t *preFrameSp = frame->ComputePrevFrameSp(sp, delta);
 
     auto argc = *(reinterpret_cast<uint64_t *>(preFrameSp));
@@ -535,9 +534,8 @@ ARK_INLINE void FrameHandler::OptimizedJSFunctionFrameIterate(const JSTaggedType
     }
 
     std::set<uintptr_t> slotAddrs;
-    bool enableCompilerLog = thread_->GetEcmaVM()->GetJSOptions().WasSetlogCompiledMethods();
     auto currentPc = optimizedReturnAddr_;
-    bool ret = kungfu::LLVMStackMapParser::GetInstance(enableCompilerLog).CollectStackMapSlots(
+    bool ret = thread_->GetEcmaVM()->GetStackMapParser()->CollectStackMapSlots(
         currentPc, reinterpret_cast<uintptr_t>(sp), slotAddrs, derivedPointers, isVerifying, optimizedCallSiteSp_);
     if (!ret) {
 #ifndef NDEBUG
@@ -560,8 +558,7 @@ ARK_INLINE void FrameHandler::OptimizedEntryFrameIterate(const JSTaggedType *sp,
     std::set<uintptr_t> slotAddrs;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     auto returnAddr = reinterpret_cast<uintptr_t>(*(reinterpret_cast<uintptr_t*>(const_cast<JSTaggedType *>(sp)) + 1));
-    bool enableCompilerLog = thread_->GetEcmaVM()->GetJSOptions().WasSetlogCompiledMethods();
-    bool ret = kungfu::LLVMStackMapParser::GetInstance(enableCompilerLog).CollectStackMapSlots(
+    bool ret = thread_->GetEcmaVM()->GetStackMapParser()->CollectStackMapSlots(
         returnAddr, reinterpret_cast<uintptr_t>(sp), slotAddrs, derivedPointers, isVerifying, optimizedReturnAddr_);
     if (!ret) {
 #ifndef NDEBUG

@@ -192,11 +192,6 @@ struct LLVMStackMap {
 
 class LLVMStackMapParser {
 public:
-    static LLVMStackMapParser& GetInstance(bool enableLog = false)
-    {
-        static LLVMStackMapParser instance(enableLog);
-        return instance;
-    }
     bool PUBLIC_API CalculateStackMap(std::unique_ptr<uint8_t []> stackMapAddr);
     bool PUBLIC_API CalculateStackMap(std::unique_ptr<uint8_t []> stackMapAddr,
     uintptr_t hostCodeSectionAddr, uintptr_t deviceCodeSectionAddr);
