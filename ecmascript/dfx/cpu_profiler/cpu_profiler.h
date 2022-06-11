@@ -55,8 +55,8 @@ public:
     static void GetStackSignalHandler(int signal);
 
     static CMap<JSMethod *, struct FrameInfo> staticStackInfo_;
-    static sem_t sem_;
     static CVector<JSMethod *> staticFrameStack_;
+    static sem_t sem_[2]; // 2 : sem_ size is two.
 
     void StartCpuProfilerForInfo(const EcmaVM *vm);
     std::unique_ptr<struct ProfileInfo> StopCpuProfilerForInfo();

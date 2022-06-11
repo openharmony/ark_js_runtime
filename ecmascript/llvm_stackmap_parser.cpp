@@ -42,9 +42,9 @@ std::string LocationTy::TypeToString(Kind loc) const
 
 const CallSiteInfo* LLVMStackMapParser::GetCallSiteInfoByPc(uintptr_t callSiteAddr) const
 {
-    for (auto &callSiteInfo: pc2CallSiteInfoVec_) {
-        auto it = callSiteInfo.find(callSiteAddr);
-        if (it != callSiteInfo.end()) {
+    for (auto &pc2CallSiteInfo: pc2CallSiteInfoVec_) {
+        auto it = pc2CallSiteInfo.find(callSiteAddr);
+        if (it != pc2CallSiteInfo.end()) {
             return &(it->second);
         }
     }
@@ -54,15 +54,16 @@ const CallSiteInfo* LLVMStackMapParser::GetCallSiteInfoByPc(uintptr_t callSiteAd
 void LLVMStackMapParser::PrintCallSiteSlotAddr(const CallSiteInfo& callsiteInfo, uintptr_t callSiteSp,
     uintptr_t callsiteFp) const
 {
-    ASSERT(callsiteInfo.size() % 2 == 0);
-    for (size_t j = 0; j < callsiteInfo.size(); j += 2) {
+    bool flag = (callsiteInfo.size() % 2 != 0);
+    size_t j = flag ? 1 : 0; // skip first element when size is odd number
+    for (; j < callsiteInfo.size(); j += 2) {
         const DwarfRegAndOffsetType baseInfo = callsiteInfo[j];
         const DwarfRegAndOffsetType derivedInfo = callsiteInfo[j + 1];
         COMPILER_LOG(DEBUG) << std::hex << " callSiteSp:0x" << callSiteSp << " callsiteFp:" << callsiteFp;
         COMPILER_LOG(DEBUG) << std::dec << "base DWARF_REG:" << baseInfo.first
                     << " OFFSET:" << baseInfo.second;
-        uintptr_t base = GetStackAddress(baseInfo, callSiteSp, callsiteFp);
-        uintptr_t derived = GetStackAddress(derivedInfo, callSiteSp, callsiteFp);
+        uintptr_t base = GetStackSlotAddress(baseInfo, callSiteSp, callsiteFp, flag);
+        uintptr_t derived = GetStackSlotAddress(derivedInfo, callSiteSp, callsiteFp, flag);
         if (base != derived) {
             COMPILER_LOG(DEBUG) << std::dec << "derived DWARF_REG:" << derivedInfo.first
                 << " OFFSET:" << derivedInfo.second;
@@ -87,10 +88,13 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t 
     PrintCallSiteSlotAddr(*infos, callSiteSp, callsiteFp);
 }
 
-uintptr_t LLVMStackMapParser::GetStackAddress(const DwarfRegAndOffsetType info,
-    uintptr_t callSiteSp, uintptr_t callsiteFp) const
+uintptr_t LLVMStackMapParser::GetStackSlotAddress(const DwarfRegAndOffsetType info,
+    uintptr_t callSiteSp, uintptr_t callsiteFp, bool flag) const
 {
     uintptr_t address = 0;
+    if (flag) {
+        std::cout << "  szc--------- ino.first:" << info.first << " second:" << info.second << std::endl;
+    }
     if (info.first == GCStackMapRegisters::SP) {
         address = callSiteSp + info.second;
     } else if (info.first == GCStackMapRegisters::FP) {
@@ -101,16 +105,16 @@ uintptr_t LLVMStackMapParser::GetStackAddress(const DwarfRegAndOffsetType info,
     return address;
 }
 
-void LLVMStackMapParser::IterateCallSiteInfo(const CallSiteInfo *infos, std::set<uintptr_t> &baseSet,
+void LLVMStackMapParser::CollectBaseAndDerivedPointers(const CallSiteInfo* infos, std::set<uintptr_t> &baseSet,
     ChunkMap<DerivedDataKey, uintptr_t> *data, uintptr_t callsiteFp, uintptr_t callSiteSp) const
 {
-    CallSiteInfo callsiteInfo = *infos;
-    ASSERT(callsiteInfo.size() % 2 == 0);
-    for (size_t j = 0; j < callsiteInfo.size(); j += 2) {
-        const DwarfRegAndOffsetType baseInfo = callsiteInfo[j];
-        const DwarfRegAndOffsetType derivedInfo = (*infos)[j + 1];
-        uintptr_t base = GetStackAddress(baseInfo, callSiteSp, callsiteFp);
-        uintptr_t derived = GetStackAddress(derivedInfo, callSiteSp, callsiteFp);
+    bool flag = (infos->size() % 2 != 0);
+    size_t j = flag ? 1 : 0; // skip first element when size is odd number
+    for (; j < infos->size(); j += 2) {
+        const DwarfRegAndOffsetType& baseInfo = infos->at(j);
+        const DwarfRegAndOffsetType& derivedInfo = infos->at(j + 1);
+        uintptr_t base = GetStackSlotAddress(baseInfo, callSiteSp, callsiteFp, flag);
+        uintptr_t derived = GetStackSlotAddress(derivedInfo, callSiteSp, callsiteFp, flag);
         baseSet.emplace(base);
         if (base != derived) {
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
@@ -125,7 +129,7 @@ void LLVMStackMapParser::IterateCallSiteInfo(const CallSiteInfo *infos, std::set
     }
 }
 
-bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t callsiteFp,
+bool LLVMStackMapParser::CollectGCSlots(uintptr_t callSiteAddr, uintptr_t callsiteFp,
     std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, uintptr_t> *data, [[maybe_unused]] bool isVerifying,
     uintptr_t callSiteSp) const
 {
@@ -134,7 +138,7 @@ bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t 
         return false;
     }
     ASSERT(callsiteFp != callSiteSp);
-    IterateCallSiteInfo(infos, baseSet, data, callsiteFp, callSiteSp);
+    CollectBaseAndDerivedPointers(infos, baseSet, data, callsiteFp, callSiteSp);
 
     if (IsLogEnabled()) {
         PrintCallSiteInfo(infos, callsiteFp, callSiteSp);

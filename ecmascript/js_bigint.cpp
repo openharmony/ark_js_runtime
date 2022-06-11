@@ -1434,7 +1434,7 @@ ComparisonResult BigInt::CompareWithNumber(JSHandle<BigInt> bigint, JSHandle<JST
 
 int64_t BigInt::ToInt64()
 {
-    int len = GetLength();
+    int len = static_cast<int>(GetLength());
     ASSERT(len < 2); // The maximum length of the BigInt data is less 2
     uint64_t value = 0;
     uint32_t *addr = reinterpret_cast<uint32_t *>(&value);

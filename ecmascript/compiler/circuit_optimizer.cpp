@@ -446,7 +446,7 @@ bool LatticeUpdateRuleSCCP::RunDefaultCase(GateRef gate)
 bool LatticeUpdateRuleSCCP::RunMerge(GateRef gate)
 {
     ReachabilityLattice reachable;
-    for (const auto &input : circuit_->GetInVector(gate)) {
+    for (const auto &input : GateAccessor(circuit_).ConstIns(gate)) {
         reachable = reachable + reachabilityLatticeMap_(input);
     }
     return UpdateReachabilityLattice(gate, reachable);
@@ -455,7 +455,7 @@ bool LatticeUpdateRuleSCCP::RunMerge(GateRef gate)
 bool LatticeUpdateRuleSCCP::RunLoopBegin(GateRef gate)
 {
     ReachabilityLattice reachable;
-    for (const auto &input : circuit_->GetInVector(gate)) {
+    for (const auto &input : GateAccessor(circuit_).ConstIns(gate)) {
         reachable = reachable + reachabilityLatticeMap_(input);
     }
     return UpdateReachabilityLattice(gate, reachable);
@@ -472,7 +472,7 @@ bool LatticeUpdateRuleSCCP::RunValueSelector(GateRef gate)
     const auto relatedState = GateAccessor(circuit_).GetIn(gate, 0);
     ValueLattice value;
     size_t cnt = 0;
-    for (const auto &input : circuit_->GetInVector(gate)) {
+    for (const auto &input : GateAccessor(circuit_).ConstIns(gate)) {
         if (cnt > 0) {
             value = value.Meet(reachabilityLatticeMap_(
                 GateAccessor(circuit_).GetIn(relatedState, cnt - 1)).Implies(valueLatticeMap_(input)));
@@ -487,7 +487,7 @@ bool LatticeUpdateRuleSCCP::RunDependSelector(GateRef gate)
     const auto relatedState = GateAccessor(circuit_).GetIn(gate, 0);
     ValueLattice value;
     size_t cnt = 0;
-    for (const auto &input : circuit_->GetInVector(gate)) {
+    for (const auto &input : GateAccessor(circuit_).ConstIns(gate)) {
         if (cnt > 0) {
             value = value.Meet(reachabilityLatticeMap_(
                 GateAccessor(circuit_).GetIn(relatedState, cnt - 1)).Implies(valueLatticeMap_(input)));
@@ -513,7 +513,7 @@ bool LatticeUpdateRuleSCCP::RunDependRelay(GateRef gate)
 bool LatticeUpdateRuleSCCP::RunDependAnd(GateRef gate)
 {
     ValueLattice value = ValueLattice(LatticeStatus::BOT);
-    for (const auto &input : circuit_->GetInVector(gate)) {
+    for (const auto &input : GateAccessor(circuit_).ConstIns(gate)) {
         if (valueLatticeMap_(input).IsTop()) {
             value = ValueLattice(LatticeStatus::TOP);
         }
@@ -1235,7 +1235,7 @@ bool LatticeEquationsSystemSolverFramework::Run(Circuit *circuit, bool enableLog
         workList.pop_front();
         workSet.erase(gate);
         if (latticeUpdateRule_->Run(gate) || GateAccessor(circuit_).GetOpCode(gate).IsCFGMerge()) {
-            for (const auto &output : circuit_->GetOutVector(gate)) {
+            for (const auto &output : GateAccessor(circuit_).ConstUses(gate)) {
                 if (!workSet.count(output)) {
                     workList.push_back(output);  // work queue
                     workSet.insert(output);
@@ -1298,7 +1298,7 @@ bool SubGraphRewriteFramework::Run(Circuit *circuit, bool enableLogging)
         workList.pop_front();
         workSet.erase(gate);
         if (subgraphRewriteRule_->Run(gate)) {
-            for (const auto &output : circuit_->GetOutVector(gate)) {
+            for (const auto &output : GateAccessor(circuit_).ConstUses(gate)) {
                 if (!workSet.count(output)) {
                     workList.push_front(output);  // work stack
                     workSet.insert(output);

@@ -21,6 +21,9 @@
 namespace panda::ecmascript {
 class JSpandafile;
 class JSThread;
+namespace kungfu {
+    class LLVMStackMapParser;
+};
 
 struct ModuleSectionDes {
     uint64_t hostCodeSectionAddr_ {0};
@@ -220,8 +223,8 @@ class FileLoader {
 using CommonStubCSigns = kungfu::CommonStubCSigns;
 using BytecodeStubCSigns = kungfu::BytecodeStubCSigns;
 public:
-    explicit FileLoader(EcmaVM *vm) : vm_(vm), factory_(vm->GetFactory()) {}
-    ~FileLoader() = default;
+    explicit FileLoader(EcmaVM *vm);
+    virtual ~FileLoader();
     void LoadStubFile(const std::string &fileName);
     void LoadAOTFile(const std::string &fileName);
     void AddAOTPackInfo(AOTModulePackInfo packInfo)
@@ -257,12 +260,14 @@ public:
 
     void UpdateJSMethods(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile);
     void TryLoadSnapshotFile();
+    kungfu::LLVMStackMapParser* GetStackMapParser();
 private:
     EcmaVM *vm_ {nullptr};
     ObjectFactory *factory_ {nullptr};
     StubModulePackInfo stubPackInfo_ {};
     std::vector<AOTModulePackInfo> aotPackInfos_ {};
     std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint64_t>> hashToEntryMap_ {};
+    kungfu::LLVMStackMapParser *stackMapParser_ {nullptr};
 
     void InitializeStubEntries(const std::vector<AOTModulePackInfo::FuncEntryDes>& stubs);
     void AdjustBCStubAndDebuggerStubEntries(JSThread *thread, const std::vector<ModulePackInfo::FuncEntryDes> &stubs,
