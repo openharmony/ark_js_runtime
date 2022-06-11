@@ -638,6 +638,11 @@ void LLVMIRBuilder::SetCallConvAttr(const CallSignature *calleeDescriptor, LLVMV
     }
 }
 
+bool LLVMIRBuilder::IsHeapPointerType(LLVMTypeRef valueType)
+{
+    return LLVMGetTypeKind(valueType) == LLVMPointerTypeKind && LLVMGetPointerAddressSpace(valueType) > 0;
+}
+
 LLVMValueRef LLVMIRBuilder::GetGlue(const std::vector<GateRef> &inList)
 {
     return gate2LValue_[inList[static_cast<size_t>(CallInputs::GLUE)]];
@@ -710,6 +715,11 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList, 
     GateRef glueGate = inList[firstArg];
     params.push_back(gate2LValue_[glueGate]);
 
+    // get parameter types
+    LLVMTypeRef calleeFuncType = LLVMGetElementType(LLVMTypeOf(callee));
+    std::vector<LLVMTypeRef> paramTypes(LLVMCountParamTypes(calleeFuncType));
+    LLVMGetParamTypes(calleeFuncType, paramTypes.data());
+
     int extraParameterCnt = 0;
     // for arm32, r0-r3 must be occupied by fake parameters, then the actual paramters will be in stack.
     if (compCfg_->Is32Bit() && calleeDescriptor->GetTargetKind() != CallSignature::TargetKind::RUNTIME_STUB) {
@@ -727,10 +737,23 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList, 
     // then push the actual parameter for js function call
     for (size_t paraIdx = firstArg + 1; paraIdx < actualNumArgs; ++paraIdx) {
         GateRef gateTmp = inList[paraIdx];
-        params.push_back(gate2LValue_[gateTmp]);
+        const auto gateTmpType = LLVMTypeOf(gate2LValue_[gateTmp]);
+        if (params.size() < paramTypes.size()) {  // this condition will be false for variadic arguments
+            const auto paramType = paramTypes.at(params.size());
+            // match parameter types and function signature types
+            if (IsHeapPointerType(paramType) && !IsHeapPointerType(gateTmpType)) {
+                params.push_back(
+                    LLVMBuildIntToPtr(builder_, LLVMBuildBitCast(builder_, gate2LValue_[gateTmp], LLVMInt64Type(), ""),
+                                      paramType, ""));
+            } else {
+                params.push_back(LLVMBuildBitCast(builder_, gate2LValue_[gateTmp], paramType, ""));
+            }
+        } else {
+            params.push_back(gate2LValue_[gateTmp]);
+        }
     }
 
-    LLVMValueRef call = 0;
+    LLVMValueRef call = nullptr;
     if (NeedBCOffset(op)) {
         LLVMTypeRef funcType = llvmModule_->GetFuncType(calleeDescriptor);
         std::vector<LLVMValueRef> values;
@@ -743,7 +766,6 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList, 
     }
     SetCallConvAttr(calleeDescriptor, call);
     gate2LValue_[gate] = call;
-    return;
 }
 
 void LLVMIRBuilder::VisitBytecodeCall(GateRef gate, const std::vector<GateRef> &inList)
@@ -860,7 +882,7 @@ void LLVMIRBuilder::VisitPhi(GateRef gate, const std::vector<GateRef> &srcGates)
         } else {
             addToPhiRebuildList = true;
         }
-        if (addToPhiRebuildList == true) {
+        if (addToPhiRebuildList) {
             phiRebuildWorklist_.push_back(currentBb_);
         }
         gate2LValue_[gate] = phi;
@@ -925,8 +947,8 @@ void LLVMIRBuilder::HandleGoto(GateRef gate)
     switch (circuit_->GetOpCode(gate)) {
         case OpCode::MERGE:
         case OpCode::LOOP_BEGIN: {
-            for (size_t i = 0; i < outs.size(); i++) {
-                bbOut = instID2bbID_[circuit_->GetId(outs[i])];
+            for (const auto &out : outs) {
+                bbOut = instID2bbID_[circuit_->GetId(out)];
                 VisitGoto(block, bbOut);
             }
             break;
