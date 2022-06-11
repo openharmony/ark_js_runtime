@@ -2278,56 +2278,46 @@ void BytecodeCircuitBuilder::BuildSubCircuit()
     }
 }
 
-GateRef BytecodeCircuitBuilder::NewPhi(BytecodeRegion &bb, uint16_t reg, bool acc)
+void BytecodeCircuitBuilder::NewPhi(BytecodeRegion &bb, uint16_t reg, bool acc, GateRef &currentPhi)
 {
-    GateRef gate = 0;
     if (bb.numOfLoopBacks == 0) {
-        gate = circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), MachineType::I64,
-                                bb.numOfStatePreds,
-                                std::vector<GateRef>(
-                                    1 + bb.numOfStatePreds, Circuit::NullGate()),
-                                GateType::AnyType());
-        circuit_.NewIn(gate, 0, bb.stateStart);
+        currentPhi =
+            circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), MachineType::I64, bb.numOfStatePreds,
+                             std::vector<GateRef>(1 + bb.numOfStatePreds, Circuit::NullGate()), GateType::AnyType());
+        circuit_.NewIn(currentPhi, 0, bb.stateStart);
         for (size_t i = 0; i < bb.numOfStatePreds; ++i) {
             auto &[predId, predPc, isException] = bb.expandedPreds.at(i);
-            circuit_.NewIn(gate, i + 1, RenameVariable(predId, predPc, reg, acc));
+            circuit_.NewIn(currentPhi, i + 1, RenameVariable(predId, predPc, reg, acc));
         }
     } else {
-        auto loopBackValue = circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), MachineType::I64,
-                                              bb.numOfLoopBacks,
-                                              std::vector<GateRef>(
-                                                  1 + bb.numOfLoopBacks, Circuit::NullGate()),
-                                              GateType::AnyType());
+        // 2: the number of value inputs and it is in accord with LOOP_BEGIN
+        currentPhi = circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), MachineType::I64, 2,
+                                      {bb.stateStart, Circuit::NullGate(), Circuit::NullGate()}, GateType::AnyType());
+        auto loopBackValue =
+            circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), MachineType::I64, bb.numOfLoopBacks,
+                             std::vector<GateRef>(1 + bb.numOfLoopBacks, Circuit::NullGate()), GateType::AnyType());
         circuit_.NewIn(loopBackValue, 0, bb.mergeLoopBackEdges);
-        bb.loopBackIndex = 1; // 1: start index of value inputs
+        bb.loopBackIndex = 1;  // 1: start index of value inputs
         for (size_t i = 0; i < bb.numOfStatePreds; ++i) {
             auto &[predId, predPc, isException] = bb.expandedPreds.at(i);
             if (bb.loopbackBlocks.count(predId)) {
-                circuit_.NewIn(loopBackValue, bb.loopBackIndex++,
-                               RenameVariable(predId, predPc, reg, acc));
+                circuit_.NewIn(loopBackValue, bb.loopBackIndex++, RenameVariable(predId, predPc, reg, acc));
             }
         }
-        auto forwardValue = circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), MachineType::I64,
-                                             bb.numOfStatePreds - bb.numOfLoopBacks,
-                                             std::vector<GateRef>(
-                                                 1 + bb.numOfStatePreds - bb.numOfLoopBacks,
-                                                 Circuit::NullGate()),
-                                             GateType::AnyType());
+        auto forwardValue = circuit_.NewGate(
+            OpCode(OpCode::VALUE_SELECTOR), MachineType::I64, bb.numOfStatePreds - bb.numOfLoopBacks,
+            std::vector<GateRef>(1 + bb.numOfStatePreds - bb.numOfLoopBacks, Circuit::NullGate()), GateType::AnyType());
         circuit_.NewIn(forwardValue, 0, bb.mergeForwardEdges);
-        bb.forwardIndex = 1; // 1: start index of value inputs
+        bb.forwardIndex = 1;  // 1: start index of value inputs
         for (size_t i = 0; i < bb.numOfStatePreds; ++i) {
             auto &[predId, predPc, isException] = bb.expandedPreds.at(i);
             if (!bb.loopbackBlocks.count(predId)) {
-                circuit_.NewIn(forwardValue, bb.forwardIndex++,
-                               RenameVariable(predId, predPc, reg, acc));
+                circuit_.NewIn(forwardValue, bb.forwardIndex++, RenameVariable(predId, predPc, reg, acc));
             }
         }
-        // 2: the number of value inputs and it is in accord with LOOP_BEGIN
-        gate = circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), MachineType::I64, 2,
-                                {bb.stateStart, forwardValue, loopBackValue},
-                                GateType::AnyType());
+        circuit_.NewIn(currentPhi, 1, forwardValue);   // 1: index of forward value input
+        circuit_.NewIn(currentPhi, 2, loopBackValue);  // 2: index of loop-back value input
     }
-    return gate;
 }
 
 GateType BytecodeCircuitBuilder::GetRealGateType(const uint16_t reg, const GateType gateType)
@@ -2397,14 +2387,14 @@ GateRef BytecodeCircuitBuilder::RenameVariable(const size_t bbId,
     // find def-site in value selectors of vregs
     if (ans == Circuit::NullGate() && !tmpAcc && bb.phi.count(tmpReg)) {
         if (!bb.vregToValSelectorGate.count(tmpReg)) {
-            bb.vregToValSelectorGate[tmpReg] = NewPhi(bb, tmpReg, tmpAcc);
+            NewPhi(bb, tmpReg, tmpAcc, bb.vregToValSelectorGate[tmpReg]);
         }
         ans = bb.vregToValSelectorGate.at(tmpReg);
     }
     // find def-site in value selectors of acc
     if (ans == Circuit::NullGate() && tmpAcc && bb.phiAcc) {
         if (bb.valueSelectorAccGate == Circuit::NullGate()) {
-            bb.valueSelectorAccGate = NewPhi(bb, tmpReg, tmpAcc);
+            NewPhi(bb, tmpReg, tmpAcc, bb.valueSelectorAccGate);
         }
         ans = bb.valueSelectorAccGate;
     }
