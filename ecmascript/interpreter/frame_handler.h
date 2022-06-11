@@ -115,7 +115,7 @@ public:
     JSTaggedType *GetPrevInterpretedFrame();
 
     // for llvm.
-    static uintptr_t GetPrevFrameCallSiteSp(const JSTaggedType *sp, uintptr_t curPc = 0);
+    uintptr_t GetPrevFrameCallSiteSp(const JSTaggedType *sp, uintptr_t curPc = 0);
 
     // for InterpretedFrame.
     JSTaggedValue GetVRegValue(size_t index) const;

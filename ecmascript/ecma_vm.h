@@ -67,6 +67,9 @@ class JSFunction;
 class Program;
 class TSLoader;
 class FileLoader;
+namespace kungfu {
+    class LLVMStackMapParser;
+};
 class ModuleManager;
 class JSCjsModule;
 class JSCjsExports;
@@ -328,6 +331,10 @@ public:
     JSTaggedValue FindConstpool(const JSPandaFile *jsPandaFile);
 
     void SetAOTFuncEntry(uint32_t hash, uint32_t methodId, uint64_t funcEntry);
+    kungfu::LLVMStackMapParser *GetStackMapParser()
+    {
+        return stackMapParser_;
+    }
 protected:
 
     void HandleUncaughtException(ObjectHeader *exception);
@@ -402,6 +409,7 @@ private:
     SnapshotEnv *snapshotEnv_ {nullptr};
     bool optionalLogEnabled_ {false};
     FileLoader *fileLoader_ {nullptr};
+    kungfu::LLVMStackMapParser *stackMapParser_ {nullptr};
 
     // Debugger
     tooling::JsDebuggerManager *debuggerManager_ {nullptr};
