@@ -490,6 +490,18 @@ public:
         return reinterpret_cast<JSThread *>(glue - GetGlueDataOffset());
     }
 
+    bool IsPrintBCOffset() const
+    {
+        return enablePrintBCOffset_;
+    }
+
+    void SetPrintBCOffset(bool flag)
+    {
+        enablePrintBCOffset_ = flag;
+    }
+
+    void CollectBCOffsetInfo();
+
     struct GlueData : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
                                                  JSTaggedValue,
                                                  JSTaggedValue,
@@ -641,6 +653,7 @@ private:
     bool gcState_ {false};
     bool isAsmInterpreter_ {false};
     VmThreadControl *vmThreadControl_ {nullptr};
+    bool enablePrintBCOffset_ {false};
     bool stableArrayElementsGuardians_ {true};
     GlueData glueData_;
 

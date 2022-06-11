@@ -336,6 +336,7 @@ public:
     void DeleteIn(UsesIterator &useIt);
     void DeleteGate(UsesIterator &useIt);
     void DecreaseIn(UsesIterator &useIt);
+    void NewIn(GateRef gate, size_t idx, GateRef in);
 
 private:
     [[nodiscard]] ConstUsesIterator ConstUseBegin(GateRef gate) const
