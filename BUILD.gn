@@ -364,6 +364,7 @@ ecma_source = [
   "ecmascript/ecma_string.cpp",
   "ecmascript/ecma_string_table.cpp",
   "ecmascript/ecma_vm.cpp",
+  "ecmascript/frames.cpp",
   "ecmascript/free_object.cpp",
   "ecmascript/file_loader.cpp",
   "ecmascript/llvm_stackmap_parser.cpp",

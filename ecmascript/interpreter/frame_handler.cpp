@@ -73,7 +73,7 @@ void FrameHandler::PrevFrame()
             break;
         }
         case FrameType::LEAVE_FRAME_WITH_ARGV: {
-            auto frame = OptimizedLeaveFrame::GetFrameFromSp(sp_);
+            auto frame = OptimizedWithArgvLeaveFrame::GetFrameFromSp(sp_);
             sp_ = frame->GetPrevFrameFp();
             break;
         }
@@ -648,102 +648,83 @@ void FrameHandler::IterateFrameChain(JSTaggedType *start, const RootVisitor &v0,
     isVerifying = thread_->GetEcmaVM()->GetHeap()->IsVerifying();
 #endif
     JSTaggedType *current = start;
-    while (current) {
-        FrameType type = FrameHandler::GetFrameType(current);
+    for (FrameIterator it(current); !it.done(); it.Advance()) {
+        FrameType type = it.GetFrameType();
         switch (type) {
             case FrameType::OPTIMIZED_FRAME: {
-                auto frame = OptimizedFrame::GetFrameFromSp(current);
-                auto prevFrame = frame->GetPrevFrameFp();
-                OptimizedFrameIterate(current, v0, v1, derivedPointers, isVerifying);
-                optimizedCallSiteSp_ = GetPrevFrameCallSiteSp(current, optimizedReturnAddr_);
-                current = prevFrame;
+                auto frame = it.GetFrame<OptimizedFrame>();
+                OptimizedFrameIterate(it.GetSp(), v0, v1, derivedPointers, isVerifying);
+                optimizedCallSiteSp_ = GetPrevFrameCallSiteSp(it.GetSp(), optimizedReturnAddr_);
                 optimizedReturnAddr_ = frame->returnAddr;
                 break;
             }
             case FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME: {
-                OptimizedJSFunctionFrame *frame = OptimizedJSFunctionFrame::GetFrameFromSp(current);
-                optimizedCallSiteSp_ = GetPrevFrameCallSiteSp(current);
+                auto frame = it.GetFrame<OptimizedJSFunctionFrame>();
+                optimizedCallSiteSp_ = GetPrevFrameCallSiteSp(it.GetSp());
                 optimizedReturnAddr_ = frame->returnAddr;
-                current = frame->GetPrevFrameFp();
                 break;
             }
             case FrameType::OPTIMIZED_JS_FUNCTION_FRAME: {
-                auto frame = OptimizedJSFunctionFrame::GetFrameFromSp(current);
-                auto prevFrame = frame->GetPrevFrameFp();
-                OptimizedJSFunctionFrameIterate(current, v0, v1, derivedPointers, isVerifying);
-                optimizedCallSiteSp_ = GetPrevFrameCallSiteSp(current, optimizedReturnAddr_);
+                auto frame = it.GetFrame<OptimizedJSFunctionFrame>();
+                OptimizedJSFunctionFrameIterate(it.GetSp(), v0, v1, derivedPointers, isVerifying);
+                optimizedCallSiteSp_ = GetPrevFrameCallSiteSp(it.GetSp(), optimizedReturnAddr_);
                 optimizedReturnAddr_ = frame->returnAddr;
-                current = prevFrame;
                 break;
             }
             case FrameType::OPTIMIZED_ENTRY_FRAME: {
-                auto frame = OptimizedEntryFrame::GetFrameFromSp(current);
-                current = frame->GetPrevFrameFp();
                 optimizedReturnAddr_ = 0;
                 optimizedCallSiteSp_ = 0;
                 break;
             }
             case FrameType::ASM_INTERPRETER_ENTRY_FRAME: {
-                auto frame = AsmInterpretedEntryFrame::GetFrameFromSp(current);
-                current = frame->GetPrevFrameFp();
                 optimizedReturnAddr_ = 0;
                 optimizedCallSiteSp_ = 0;
                 break;
             }
             case FrameType::ASM_INTERPRETER_FRAME:
             case FrameType::INTERPRETER_CONSTRUCTOR_FRAME: {
-                auto frame = AsmInterpretedFrame::GetFrameFromSp(current);
-                AsmInterpretedFrameIterate(current, v0, v1, derivedPointers, isVerifying);
-                current = frame->GetPrevFrameFp();
+                AsmInterpretedFrameIterate(it.GetSp(), v0, v1, derivedPointers, isVerifying);
                 optimizedReturnAddr_ = 0;
                 optimizedCallSiteSp_ = 0;
                 break;
             }
             case FrameType::INTERPRETER_FRAME:
             case FrameType::INTERPRETER_FAST_NEW_FRAME: {
-                auto frame = InterpretedFrame::GetFrameFromSp(current);
-                InterpretedFrameIterate(current, v0, v1);
-                current = frame->GetPrevFrameFp();
+                InterpretedFrameIterate(it.GetSp(), v0, v1);
                 optimizedReturnAddr_ = 0;
                 optimizedCallSiteSp_ = 0;
                 break;
             }
             case FrameType::LEAVE_FRAME: {
-                auto frame = OptimizedLeaveFrame::GetFrameFromSp(current);
-                OptimizedLeaveFrameIterate(current, v0, v1, derivedPointers, isVerifying);
-                optimizedCallSiteSp_ = GetPrevFrameCallSiteSp(current);
-                current = frame->GetPrevFrameFp();
+                auto frame = it.GetFrame<OptimizedLeaveFrame>();
+                OptimizedLeaveFrameIterate(it.GetSp(), v0, v1, derivedPointers, isVerifying);
+                optimizedCallSiteSp_ = GetPrevFrameCallSiteSp(it.GetSp());
                 optimizedReturnAddr_ = frame->returnAddr;
                 break;
             }
             case FrameType::LEAVE_FRAME_WITH_ARGV: {
-                auto frame = OptimizedLeaveFrame::GetFrameFromSp(current);
-                OptimizedWithArgvLeaveFrameIterate(current, v0, v1, derivedPointers, isVerifying);
-                current = frame->GetPrevFrameFp();
+                auto frame = it.GetFrame<OptimizedWithArgvLeaveFrame>();
+                OptimizedWithArgvLeaveFrameIterate(it.GetSp(), v0, v1, derivedPointers, isVerifying);
+                optimizedCallSiteSp_ = GetPrevFrameCallSiteSp(it.GetSp());
                 optimizedReturnAddr_ = frame->returnAddr;
                 break;
             }
             case FrameType::BUILTIN_FRAME_WITH_ARGV: {
-                auto frame = BuiltinWithArgvFrame::GetFrameFromSp(current);
-                BuiltinWithArgvFrameIterate(current, v0, v1, derivedPointers, isVerifying);
+                auto frame = it.GetFrame<BuiltinWithArgvFrame>();
+                BuiltinWithArgvFrameIterate(it.GetSp(), v0, v1, derivedPointers, isVerifying);
                 optimizedReturnAddr_ = frame->returnAddr;
-                optimizedCallSiteSp_ = GetPrevFrameCallSiteSp(current);
-                current = frame->GetPrevFrameFp();
+                optimizedCallSiteSp_ = GetPrevFrameCallSiteSp(it.GetSp());
                 break;
             }
             case FrameType::BUILTIN_ENTRY_FRAME:
             case FrameType::BUILTIN_FRAME: {
-                auto frame = BuiltinFrame::GetFrameFromSp(current);
-                BuiltinFrameIterate(current, v0, v1, derivedPointers, isVerifying);
+                auto frame = it.GetFrame<BuiltinFrame>();
+                BuiltinFrameIterate(it.GetSp(), v0, v1, derivedPointers, isVerifying);
                 optimizedReturnAddr_ = frame->returnAddr;
-                optimizedCallSiteSp_ = GetPrevFrameCallSiteSp(current);
-                current = frame->GetPrevFrameFp();
+                optimizedCallSiteSp_ = GetPrevFrameCallSiteSp(it.GetSp());
                 break;
             }
             case FrameType::INTERPRETER_ENTRY_FRAME: {
-                auto frame = InterpretedEntryFrame::GetFrameFromSp(current);
-                InterpretedEntryFrameIterate(current, v0, v1);
-                current = frame->GetPrevFrameFp();
                 optimizedReturnAddr_ = 0;
                 optimizedCallSiteSp_ = 0;
                 break;

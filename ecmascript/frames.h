@@ -817,5 +817,69 @@ struct BuiltinWithArgvFrame : public base::AlignedStruct<base::AlignedPointer::S
     alignas(EAS) JSTaggedType *prevFp;
     alignas(EAS) uintptr_t returnAddr;
 };
+
+#define FRAME_LIST(V)             \
+    V(OptimizedFrame)             \
+    V(OptimizedEntryFrame)        \
+    V(OptimizedJSFunctionFrame)   \
+    V(OptimizedLeaveFrame)        \
+    V(InterpretedFrame)           \
+    V(AsmInterpretedFrame)        \
+    V(BuiltinFrame)               \
+    V(BuiltinWithArgvFrame)       \
+    V(InterpretedEntryFrame)      \
+    V(AsmInterpretedEntryFrame)   \
+    V(OptimizedWithArgvLeaveFrame)
+
+#define FRAME_AND_TYPE_LIST(V)                                           \
+    V(OptimizedFrame, OPTIMIZED_FRAME)                                   \
+    V(OptimizedEntryFrame, OPTIMIZED_ENTRY_FRAME)                        \
+    V(OptimizedJSFunctionFrame, OPTIMIZED_JS_FUNCTION_FRAME)             \
+    V(OptimizedLeaveFrame, LEAVE_FRAME)                                  \
+    V(OptimizedWithArgvLeaveFrame, LEAVE_FRAME_WITH_ARGV)                \
+    V(InterpretedFrame, INTERPRETER_FRAME)                               \
+    V(AsmInterpretedFrame, ASM_INTERPRETER_FRAME)                        \
+    V(AsmInterpretedFrame, INTERPRETER_CONSTRUCTOR_FRAME)                \
+    V(BuiltinFrame, BUILTIN_FRAME)                                       \
+    V(BuiltinWithArgvFrame, BUILTIN_FRAME_WITH_ARGV)                     \
+    V(BuiltinFrame, BUILTIN_ENTRY_FRAME)                                 \
+    V(InterpretedFrame, INTERPRETER_FAST_NEW_FRAME)                      \
+    V(InterpretedEntryFrame, INTERPRETER_ENTRY_FRAME)                    \
+    V(AsmInterpretedEntryFrame, ASM_INTERPRETER_ENTRY_FRAME)             \
+    V(OptimizedJSFunctionFrame, OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME)
+
+class FrameIterator
+{
+public:
+    explicit FrameIterator(JSTaggedType *sp) : current_(sp)
+    {
+    }
+    FrameType GetFrameType()
+    {
+        ASSERT(current_ != nullptr);
+        FrameType *typeAddr = reinterpret_cast<FrameType *>(
+            reinterpret_cast<uintptr_t>(current_) - sizeof(FrameType));
+        return *typeAddr;
+    }
+    template <class Frame>
+    Frame* GetFrame();
+
+    #define EXPLICIT_DECLARE_GET_FRAME(Frame)         \
+        template<>                                    \
+        Frame* GetFrame<Frame>();
+        FRAME_LIST(EXPLICIT_DECLARE_GET_FRAME)
+    #undef EXPLICIT_DECLARE_GET_FRAME
+    bool done()
+    {
+        return current_ == nullptr;
+    }
+    JSTaggedType *GetSp()
+    {
+        return current_;
+    }
+    void Advance();
+private:
+    JSTaggedType *current_;
+};
 }  // namespace panda::ecmascript
 #endif // ECMASCRIPT_FRAMES_H
