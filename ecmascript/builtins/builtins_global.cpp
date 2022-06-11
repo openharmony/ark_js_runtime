@@ -485,6 +485,16 @@ JSTaggedValue BuiltinsGlobal::PrintEntrypoint(EcmaRuntimeCallInfo *msg)
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         PrintString(thread, *stringContent);
 
+        // print bc offset for ts aot
+        if (GetCallArg(msg, i)->IsJSError() && thread->IsPrintBCOffset()) {
+            auto list = thread->GetEcmaVM()->GetBCOffsetInfoList();
+            if (!list.empty()) {
+                for (auto info : list) {
+                    std::cout << "\nException at function " << info.first << ": " << info.second;
+                }
+            }
+        }
+
         if (i != numArgs - 1) {
             std::cout << " ";
         }

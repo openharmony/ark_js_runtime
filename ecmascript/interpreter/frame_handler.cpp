@@ -783,4 +783,103 @@ void FrameHandler::IterateFrameChain(JSTaggedType *start, const RootVisitor &v0,
         }
     }
 }
+
+std::string FrameHandler::GetAotExceptionFuncName(JSTaggedType* fp) const
+{
+    ASSERT(FrameHandler::GetFrameType(fp) == FrameType::OPTIMIZED_JS_FUNCTION_FRAME);
+    JSTaggedValue func = JSTaggedValue(*(fp + 3)); // 3: skip returnaddr and argc
+    JSMethod *method = JSFunction::Cast(func.GetTaggedObject())->GetMethod();
+    return method->GetMethodName();
+}
+
+void FrameHandler::CollectBCOffsetInfo()
+{
+    thread_->GetEcmaVM()->ClearExceptionBCList();
+    JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
+    while (current) {
+        FrameType type = FrameHandler::GetFrameType(current);
+        switch (type) {
+            case FrameType::OPTIMIZED_FRAME: {
+                auto frame = OptimizedFrame::GetFrameFromSp(current);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME:
+            case FrameType::OPTIMIZED_JS_FUNCTION_FRAME: {
+                auto frame = OptimizedJSFunctionFrame::GetFrameFromSp(current);
+                auto returnAddr = reinterpret_cast<uintptr_t>(
+                    *(reinterpret_cast<uintptr_t*>(const_cast<JSTaggedType *>(current)) + 1));
+                bool enableCompilerLog = thread_->GetEcmaVM()->GetJSOptions().WasSetlogCompiledMethods();
+                auto constInfo = kungfu::LLVMStackMapParser::GetInstance(enableCompilerLog).GetConstInfo(returnAddr);
+                if (!constInfo.empty()) {
+                    auto prevFp = frame->GetPrevFrameFp();
+                    auto name = GetAotExceptionFuncName(prevFp);
+                    thread_->GetEcmaVM()->StoreBCOffsetInfo(name, constInfo[0]);
+                }
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::OPTIMIZED_ENTRY_FRAME: {
+                auto frame = OptimizedEntryFrame::GetFrameFromSp(current);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::ASM_INTERPRETER_ENTRY_FRAME: {
+                auto frame = AsmInterpretedEntryFrame::GetFrameFromSp(current);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::ASM_INTERPRETER_FRAME:
+            case FrameType::INTERPRETER_CONSTRUCTOR_FRAME: {
+                auto frame = AsmInterpretedFrame::GetFrameFromSp(current);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::INTERPRETER_FRAME:
+            case FrameType::INTERPRETER_FAST_NEW_FRAME: {
+                auto frame = InterpretedFrame::GetFrameFromSp(current);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::LEAVE_FRAME: {
+                auto frame = OptimizedLeaveFrame::GetFrameFromSp(current);
+                auto returnAddr = frame->returnAddr;
+                bool enableCompilerLog = thread_->GetEcmaVM()->GetJSOptions().WasSetlogCompiledMethods();
+                auto constInfo = kungfu::LLVMStackMapParser::GetInstance(enableCompilerLog).GetConstInfo(returnAddr);
+                if (!constInfo.empty()) {
+                    auto prevFp = frame->GetPrevFrameFp();
+                    auto name = GetAotExceptionFuncName(prevFp);
+                    thread_->GetEcmaVM()->StoreBCOffsetInfo(name, constInfo[0]);
+                }
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::LEAVE_FRAME_WITH_ARGV: {
+                auto frame = OptimizedLeaveFrame::GetFrameFromSp(current);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::BUILTIN_FRAME_WITH_ARGV: {
+                auto frame = BuiltinWithArgvFrame::GetFrameFromSp(current);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::BUILTIN_ENTRY_FRAME:
+            case FrameType::BUILTIN_FRAME: {
+                auto frame = BuiltinFrame::GetFrameFromSp(current);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            case FrameType::INTERPRETER_ENTRY_FRAME: {
+                auto frame = InterpretedEntryFrame::GetFrameFromSp(current);
+                current = frame->GetPrevFrameFp();
+                break;
+            }
+            default: {
+                LOG_ECMA(FATAL) << "frame type error!";
+                UNREACHABLE();
+            }
+        }
+    }
+}
 }  // namespace panda::ecmascript

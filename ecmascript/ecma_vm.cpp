@@ -391,6 +391,7 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
 
     auto options = GetJSOptions();
     if (options.EnableTSAot()) {
+        thread_->SetPrintBCOffset(true);
         result = InvokeEcmaAotEntrypoint(func, jsPandaFile);
     } else {
         if (jsPandaFile->IsCjs()) {
@@ -501,6 +502,11 @@ void EcmaVM::HandleUncaughtException(ObjectHeader *exception)
     thread_->ClearException();
     if (exceptionHandle->IsJSError()) {
         PrintJSErrorInfo(exceptionHandle);
+        if (thread_->IsPrintBCOffset() && exceptionBCList_.size() != 0) {
+            for (auto info : exceptionBCList_) {
+                LOG(ERROR, RUNTIME) << "Exception at function " << info.first << ": " << info.second;
+            }
+        }
         return;
     }
     JSHandle<EcmaString> result = JSTaggedValue::ToString(thread_, exceptionHandle);
