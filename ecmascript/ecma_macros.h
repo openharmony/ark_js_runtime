@@ -275,12 +275,15 @@
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define THROW_NEW_ERROR_AND_RETURN(thread, error) \
-    do {                                          \
-        if (!(thread)->HasPendingException()) {   \
-            (thread)->SetException(error);        \
-        }                                         \
-        return;                                   \
+#define THROW_NEW_ERROR_AND_RETURN(thread, error)       \
+    do {                                                \
+        if (!(thread)->HasPendingException()) {         \
+            (thread)->SetException(error);              \
+            if ((thread)->IsPrintBCOffset()) {          \
+                (thread)->CollectBCOffsetInfo();        \
+            }                                           \
+        }                                               \
+        return;                                         \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -292,6 +295,9 @@
         ObjectFactory *_factory = (thread)->GetEcmaVM()->GetFactory();   \
         JSHandle<JSObject> _error = _factory->GetJSError(type, message); \
         (thread)->SetException(_error.GetTaggedValue());                 \
+        if ((thread)->IsPrintBCOffset()) {                               \
+            (thread)->CollectBCOffsetInfo();                             \
+        }                                                                \
         return;                                                          \
     } while (false)
 
@@ -300,6 +306,9 @@
     do {                                                       \
         if (!(thread)->HasPendingException()) {                \
             (thread)->SetException(error);                     \
+            if ((thread)->IsPrintBCOffset()) {                 \
+                (thread)->CollectBCOffsetInfo();               \
+            }                                                  \
         }                                                      \
         return (value);                                        \
     } while (false)
@@ -313,6 +322,9 @@
         ObjectFactory *_factory = (thread)->GetEcmaVM()->GetFactory();               \
         JSHandle<JSObject> _error = _factory->GetJSError(errorType, message);        \
         (thread)->SetException(_error.GetTaggedValue());                             \
+        if ((thread)->IsPrintBCOffset()) {                                           \
+            (thread)->CollectBCOffsetInfo();                                         \
+        }                                                                            \
         return (value);                                                              \
     } while (false)
 

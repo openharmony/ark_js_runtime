@@ -358,4 +358,23 @@ void FileLoader::InitializeStubEntries(const std::vector<AOTModulePackInfo::Func
     AsmInterParsedOption asmInterOpt = vm_->GetJSOptions().GetAsmInterParsedOption();
     AdjustBCStubAndDebuggerStubEntries(thread, stubs, asmInterOpt);
 }
+
+FileLoader::~FileLoader()
+{
+    if (stackMapParser_ != nullptr) {
+        delete stackMapParser_;
+        stackMapParser_ = nullptr;
+    }
+}
+
+FileLoader::FileLoader(EcmaVM *vm) : vm_(vm), factory_(vm->GetFactory())
+{
+    bool enableLog = vm->GetJSOptions().WasSetlogCompiledMethods();
+    stackMapParser_ = new kungfu::LLVMStackMapParser(enableLog);
+}
+
+kungfu::LLVMStackMapParser* FileLoader::GetStackMapParser()
+{
+    return stackMapParser_;
+}
 }

@@ -331,10 +331,24 @@ public:
     JSTaggedValue FindConstpool(const JSPandaFile *jsPandaFile);
 
     void SetAOTFuncEntry(uint32_t hash, uint32_t methodId, uint64_t funcEntry);
-    kungfu::LLVMStackMapParser *GetStackMapParser()
+
+    kungfu::LLVMStackMapParser* GetStackMapParser();
+
+    void StoreBCOffsetInfo(const std::string& methodName, int32_t bcOffset)
     {
-        return stackMapParser_;
+        exceptionBCList_.emplace_back(std::pair<std::string, int32_t>(methodName, bcOffset));
     }
+
+    std::vector<std::pair<std::string, int32_t>> GetBCOffsetInfoList() const
+    {
+        return exceptionBCList_;
+    }
+
+    void ClearExceptionBCList()
+    {
+        exceptionBCList_.clear();
+    }
+
 protected:
 
     void HandleUncaughtException(ObjectHeader *exception);
@@ -409,7 +423,6 @@ private:
     SnapshotEnv *snapshotEnv_ {nullptr};
     bool optionalLogEnabled_ {false};
     FileLoader *fileLoader_ {nullptr};
-    kungfu::LLVMStackMapParser *stackMapParser_ {nullptr};
 
     // Debugger
     tooling::JsDebuggerManager *debuggerManager_ {nullptr};
@@ -423,6 +436,7 @@ private:
 	// atomics
     bool AllowAtomicWait_ {true};
     WaiterListNode waiterListNode_;
+    std::vector<std::pair<std::string, int32_t>> exceptionBCList_;
 
     // CJS resolve path Callbacks
     ResolvePathCallback resolvePathCallback_ {nullptr};

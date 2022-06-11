@@ -165,9 +165,10 @@ JSMethod *ObjectFactory::NewMethodForNativeFunction(const void *func)
     return nativeMethods_.back();
 }
 
-JSMethod *ObjectFactory::NewMethodForAOTFunction(const void *func, size_t numArgs)
+JSMethod *ObjectFactory::NewMethodForAOTFunction(const void *func, size_t numArgs, const JSPandaFile *pf,
+                                                 uint32_t methodId)
 {
-    auto method = vm_->GetChunk()->New<JSMethod>(nullptr, panda_file::File::EntityId(0)); // 0 : temporary file id
+    auto method = vm_->GetChunk()->New<JSMethod>(pf, panda_file::File::EntityId(methodId));
     method->SetNativePointer(const_cast<void *>(func));
     method->SetAotCodeBit(true);
     method->SetNativeBit(false);

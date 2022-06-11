@@ -899,13 +899,15 @@ void AssemblerStubsX64::CallRuntimeWithArgv(ExtendedAssembler *assembler)
 void AssemblerStubsX64::AsmInterpreterEntry(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(AsmInterpreterEntry));
+    Label target;
     // push asm interpreter entry frame
     PushAsmInterpEntryFrame(assembler, true);
-    __ Movq(kungfu::RuntimeStubCSigns::ID_JSCallDispatch, r12);
-    __ Movq(Operand(rdi, r12, Scale::Times8, JSThread::GlueData::GetRTStubEntriesOffset(false)), r11);
-    __ Callq(r11);
+    __ Callq(&target);
     PopAsmInterpEntryFrame(assembler, true);
     __ Ret();
+
+    __ Bind(&target);
+    JSCallDispatch(assembler);
 }
 
 // Generate code for generator re-enter asm interpreter
@@ -915,16 +917,18 @@ void AssemblerStubsX64::AsmInterpreterEntry(ExtendedAssembler *assembler)
 void AssemblerStubsX64::GeneratorReEnterAsmInterp(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(GeneratorReEnterAsmInterp));
-
     Label target;
-
-    // push asm interpreter entry frame
     PushAsmInterpEntryFrame(assembler, true);
     __ Callq(&target);
     PopAsmInterpEntryFrame(assembler, true);
     __ Ret();
 
     __ Bind(&target);
+    GeneratorReEnterAsmInterpDispatch(assembler);
+}
+
+void AssemblerStubsX64::GeneratorReEnterAsmInterpDispatch(ExtendedAssembler *assembler)
+{
     Register glueRegister = __ GlueRegister();
     Register contextRegister = rsi;
     Register prevSpRegister = rbp;
@@ -964,7 +968,6 @@ void AssemblerStubsX64::GeneratorReEnterAsmInterp(ExtendedAssembler *assembler)
 //        prevSpRegister - %rbp
 void AssemblerStubsX64::JSCallDispatch(ExtendedAssembler *assembler)
 {
-    __ BindAssemblerStub(RTSTUB_ID(JSCallDispatch));
     Label notJSFunction;
     Label callNativeEntry;
     Label callJSFunctionEntry;
@@ -1303,9 +1306,8 @@ void AssemblerStubsX64::JSCallCommonEntry(ExtendedAssembler *assembler, JSCallMo
         jumpSize = 0;
     }
     if (jumpSize >= 0) {
-        int32_t offset = static_cast<int32_t>(
-            AsmInterpretedFrame::GetCallSizeOffset(false) - AsmInterpretedFrame::GetSize(false));
-        __ Movq(static_cast<int>(jumpSize), Operand(rbp, offset));
+        intptr_t offset = AsmInterpretedFrame::GetCallSizeOffset(false) - AsmInterpretedFrame::GetSize(false);
+        __ Movq(static_cast<int>(jumpSize), Operand(rbp, static_cast<int32_t>(offset)));
     }
 
     Register declaredNumArgsRegister = __ AvailableRegister2();

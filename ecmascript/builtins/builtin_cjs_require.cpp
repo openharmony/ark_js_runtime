@@ -41,7 +41,7 @@ JSTaggedValue BuiltinsCjsRequire::CjsRequireConstructor(EcmaRuntimeCallInfo *arg
     }
     JSHandle<EcmaString> requestName = JSHandle<EcmaString>::Cast(GetCallArg(argv, 0));
     result = JSCjsModule::Load(thread, requestName);
-    return JSTaggedValue(JSObject::Cast(result.GetTaggedValue().GetTaggedObject()));
+    return result.GetTaggedValue();
 }
 
 JSTaggedValue BuiltinsCjsRequire::Main(EcmaRuntimeCallInfo *msg)

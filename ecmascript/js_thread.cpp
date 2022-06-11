@@ -296,4 +296,10 @@ void JSThread::CheckJSTaggedType(JSTaggedType value) const
         LOG(FATAL, RUNTIME) << "value:" << value << " is invalid!";
     }
 }
+
+void JSThread::CollectBCOffsetInfo()
+{
+    FrameHandler frameHandler(this);
+    frameHandler.CollectBCOffsetInfo();
+}
 }  // namespace panda::ecmascript

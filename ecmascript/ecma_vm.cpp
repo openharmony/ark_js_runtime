@@ -178,8 +178,6 @@ bool EcmaVM::Initialize()
     tsLoader_ = new TSLoader(this);
     snapshotEnv_ = new SnapshotEnv(this);
     fileLoader_ = new FileLoader(this);
-    bool enableLog = GetJSOptions().WasSetlogCompiledMethods();
-    stackMapParser_ = new kungfu::LLVMStackMapParser(enableLog);
     if (options_.EnableTSAot()) {
         LoadAOTFiles();
     }
@@ -314,10 +312,6 @@ EcmaVM::~EcmaVM()
         delete fileLoader_;
         fileLoader_  = nullptr;
     }
-    if (stackMapParser_ != nullptr) {
-        delete stackMapParser_;
-        stackMapParser_ = nullptr;
-    }
 
     if (thread_ != nullptr) {
         delete thread_;
@@ -398,6 +392,7 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
 
     auto options = GetJSOptions();
     if (options.EnableTSAot()) {
+        thread_->SetPrintBCOffset(true);
         result = InvokeEcmaAotEntrypoint(func, jsPandaFile);
     } else {
         if (jsPandaFile->IsCjs()) {
@@ -508,6 +503,11 @@ void EcmaVM::HandleUncaughtException(ObjectHeader *exception)
     thread_->ClearException();
     if (exceptionHandle->IsJSError()) {
         PrintJSErrorInfo(exceptionHandle);
+        if (thread_->IsPrintBCOffset() && exceptionBCList_.size() != 0) {
+            for (auto info : exceptionBCList_) {
+                LOG(ERROR, RUNTIME) << "Exception at function " << info.first << ": " << info.second;
+            }
+        }
         return;
     }
     JSHandle<EcmaString> result = JSTaggedValue::ToString(thread_, exceptionHandle);
@@ -684,5 +684,10 @@ void EcmaVM::LoadAOTFiles()
 void EcmaVM::SetAOTFuncEntry(uint32_t hash, uint32_t methodId, uint64_t funcEntry)
 {
     fileLoader_->SetAOTFuncEntry(hash, methodId, funcEntry);
+}
+
+kungfu::LLVMStackMapParser* EcmaVM::GetStackMapParser()
+{
+    return fileLoader_->GetStackMapParser();
 }
 }  // namespace panda::ecmascript
