@@ -246,6 +246,33 @@ HWTEST_F_L0(JSNApiTests, TypeValue)
     ASSERT_EQ(toString->IntegerValue(vm_), -123);      // -123 : test case of input
 }
 
+void* detach()
+{
+    GTEST_LOG_(INFO) << "detach is running";
+    return nullptr;
+}
+
+void attach([[maybe_unused]] void* buffer)
+{
+    GTEST_LOG_(INFO) << "attach is running";
+}
+
+HWTEST_F_L0(JSNApiTests, CreateNativeObject)
+{
+    LocalScope scope(vm_);
+    Local<ObjectRef> object = ObjectRef::New(vm_, reinterpret_cast<void*>(detach), reinterpret_cast<void*>(attach));
+    Local<JSValueRef> key = StringRef::NewFromUtf8(vm_, "TestKey");
+    Local<JSValueRef> value = ObjectRef::New(vm_);
+    PropertyAttribute attribute(value, true, true, true);
+
+    ASSERT_TRUE(object->DefineProperty(vm_, key, attribute));
+    Local<JSValueRef> value1 = object->Get(vm_, key);
+    ASSERT_TRUE(value->IsStrictEquals(vm_, value1));
+    ASSERT_TRUE(object->Has(vm_, key));
+    ASSERT_TRUE(object->Delete(vm_, key));
+    ASSERT_FALSE(object->Has(vm_, key));
+}
+
 HWTEST_F_L0(JSNApiTests, DefineProperty)
 {
     LocalScope scope(vm_);
@@ -293,6 +320,10 @@ HWTEST_F_L0(JSNApiTests, GetProtoType)
 
     Local<FunctionRef> object = ObjectRef::New(vm_);
     protoType = object->GetPrototype(vm_);
+    ASSERT_TRUE(protoType->IsObject());
+
+    Local<FunctionRef> native = ObjectRef::New(vm_, reinterpret_cast<void*>(detach), reinterpret_cast<void*>(attach));
+    protoType = native->GetPrototype(vm_);
     ASSERT_TRUE(protoType->IsObject());
 }
 
