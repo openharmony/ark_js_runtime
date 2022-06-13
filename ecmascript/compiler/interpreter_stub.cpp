@@ -360,6 +360,7 @@ DECLARE_ASM_HANDLER(HandleNewObjDynRangePrefImm16V8)
     Label fastPath(env);
     Label slowPath(env);
     Label checkResult(env);
+    Label threadCheck(env);
     Label dispatch(env);
     Label ctorIsBase(env);
     Label ctorNotBase(env);
@@ -409,7 +410,7 @@ DECLARE_ASM_HANDLER(HandleNewObjDynRangePrefImm16V8)
         res = JSCallDispatch(glue, ctor, actualNumArgs,
                              JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV,
                              { actualNumArgs, argv, *thisObj });
-        Jump(&checkResult);
+        Jump(&threadCheck);
     }
     Bind(&slowPath);
     GateRef firstArgIdx = Int16Add(firstArgRegIdx, firstArgOffset);
@@ -418,7 +419,13 @@ DECLARE_ASM_HANDLER(HandleNewObjDynRangePrefImm16V8)
         { ctor, ctor, Int16BuildTaggedTypeWithNoGC(firstArgIdx), Int16BuildTaggedTypeWithNoGC(length) });
     Jump(&checkResult);
     Bind(&checkResult);
-    Branch(TaggedIsException(*res), &isException, &dispatch);
+    {
+        Branch(TaggedIsException(*res), &isException, &dispatch);
+    }
+    Bind(&threadCheck);
+    {
+        Branch(HasPendingException(glue), &isException, &dispatch);
+    }
     Bind(&isException);
     {
         DISPATCH_LAST();
