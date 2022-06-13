@@ -181,7 +181,7 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register2)
     {
         [[maybe_unused]] EcmaHandleScope handleScope(thread);
         auto obj =
-	        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
+            factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
         target = obj.GetTaggedValue();
         auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
         ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -220,9 +220,9 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register3)
     {
         [[maybe_unused]] EcmaHandleScope handleScope(thread);
         auto obj =
-	        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
+            factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
         auto obj1 =
-	        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
+            factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
         target = obj.GetTaggedValue();
         target1 = obj1.GetTaggedValue();
         auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
@@ -274,9 +274,9 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register4)
     {
         [[maybe_unused]] EcmaHandleScope handleScope(thread);
         auto obj =
-	        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
+            factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
         auto obj1 =
-	        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
+            factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
         target = obj.GetTaggedValue();
         target1 = obj1.GetTaggedValue();
         auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
@@ -326,9 +326,9 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Register5)
     {
         [[maybe_unused]] EcmaHandleScope handleScope(thread);
         auto obj =
-	        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
+            factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
         auto obj1 =
-	        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
+            factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
         target = obj.GetTaggedValue();
         target1 = obj1.GetTaggedValue();
         auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
@@ -411,7 +411,7 @@ HWTEST_F_L0(BuiltinsFinalizationRegistryTest, Unregister2)
     {
         [[maybe_unused]] EcmaHandleScope handleScope(thread);
         auto obj =
-	        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
+            factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFunc), objectFunc);
         target = obj.GetTaggedValue();
         auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
         ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());

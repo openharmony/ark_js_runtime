@@ -140,7 +140,6 @@ void JSFinalizationRegistry::CleanFinRegLists(JSThread *thread, JSHandle<JSFinal
 
 void JSFinalizationRegistry::CheckAndCall(JSThread *thread)
 {
-    [[maybe_unused]] CheckAndCallScrop scrop(thread);
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> prev = env->GetFinRegLists();
 
@@ -228,14 +227,6 @@ bool JSFinalizationRegistry::CleanupFinalizationRegistry(JSThread *thread, JSHan
                 continue;
             }
             maybeUnregister->RemoveEntry(thread, index - 1);
-            // Maybe add or delete
-            JSTaggedValue nextTable = maybeUnregister->GetNextTable();
-            while (!nextTable.IsHole()) {
-                index -= maybeUnregister->GetDeletedElementsAt(index);
-                maybeUnregister.Update(nextTable);
-                nextTable = maybeUnregister->GetNextTable();
-            }
-            totalElements = maybeUnregister->NumberOfElements() + maybeUnregister->NumberOfDeletedElements();
         }
     }
     JSHandle<LinkedHashMap> newMap = LinkedHashMap::Shrink(thread, maybeUnregister);
