@@ -4421,7 +4421,7 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
     Branch(IntPtrEqual(*varPc, IntPtr(0)), &pcIsInvalid, &pcNotInvalid);
     Bind(&pcIsInvalid);
     {
-        CallNGCRuntime(glue, RTSTUB_ID(ResumeRspAndReturn), { Undefined() });
+        CallNGCRuntime(glue, RTSTUB_ID(ResumeUncaughtFrameAndReturn), { glue });
         Return();
     }
     Bind(&pcNotInvalid);
@@ -5110,7 +5110,6 @@ DECLARE_ASM_HANDLER(NewObjectDynRangeReturn)
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     Label isHeapObject(env);
-    Label notUndefined(env);
     Label isEcmaObject(env);
     Label notEcmaObject(env);
     Label throwError(env);
@@ -5125,8 +5124,7 @@ DECLARE_ASM_HANDLER(NewObjectDynRangeReturn)
     Branch(TaggedObjectIsEcmaObject(*varAcc), &dispatch, &notEcmaObject);
     Bind(&notEcmaObject);
     {
-        Branch(TaggedIsUndefined(*varAcc), &returnObject, &notUndefined);
-        Bind(&notUndefined);
+        // default acc is not undefined
         auto constructor = GetFunctionFromFrame(frame);
         Branch(IsBase(constructor), &returnObject, &throwError);
         Bind(&throwError);

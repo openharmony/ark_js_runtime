@@ -251,9 +251,9 @@ void AssemblerStubsX64::OptimizedCallOptimized(ExtendedAssembler *assembler)
 void AssemblerStubsX64::OptimizedCallAsmInterpreter(ExtendedAssembler *assembler)
 {
     Label target;
-    PushAsmInterpEntryFrame(assembler, false);
+    PushAsmInterpBridgeFrame(assembler);
     __ Callq(&target);
-    PopAsmInterpEntryFrame(assembler, false);
+    PopAsmInterpBridgeFrame(assembler);
     __ Ret();
     __ Bind(&target);
     JSCallCommonEntry(assembler, JSCallMode::CALL_FROM_AOT);
@@ -901,9 +901,9 @@ void AssemblerStubsX64::AsmInterpreterEntry(ExtendedAssembler *assembler)
     __ BindAssemblerStub(RTSTUB_ID(AsmInterpreterEntry));
     Label target;
     // push asm interpreter entry frame
-    PushAsmInterpEntryFrame(assembler, true);
+    PushAsmInterpEntryFrame(assembler);
     __ Callq(&target);
-    PopAsmInterpEntryFrame(assembler, true);
+    PopAsmInterpEntryFrame(assembler);
     __ Ret();
 
     __ Bind(&target);
@@ -918,9 +918,9 @@ void AssemblerStubsX64::GeneratorReEnterAsmInterp(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(GeneratorReEnterAsmInterp));
     Label target;
-    PushAsmInterpEntryFrame(assembler, true);
+    PushAsmInterpEntryFrame(assembler);
     __ Callq(&target);
-    PopAsmInterpEntryFrame(assembler, true);
+    PopAsmInterpEntryFrame(assembler);
     __ Ret();
 
     __ Bind(&target);
@@ -1191,19 +1191,16 @@ void AssemblerStubsX64::PushGeneratorFrameState(ExtendedAssembler *assembler, Re
     __ Pushq(callTargetRegister);                                      // callTarget
 }
 
-void AssemblerStubsX64::PushAsmInterpEntryFrame(ExtendedAssembler *assembler, bool saveLeave)
+void AssemblerStubsX64::PushAsmInterpEntryFrame(ExtendedAssembler *assembler)
 {
-    Register fpRegister = r10;
     if (!assembler->FromInterpreterHandler()) {
         __ PushCppCalleeSaveRegisters();
     }
-    if (saveLeave) {
-        __ Pushq(rdi);
-        __ Movq(Operand(rdi, JSThread::GlueData::GetLeaveFrameOffset(false)), fpRegister);
-        __ PushAlignBytes();
-    } else {
-        __ Movq(rbp, fpRegister);
-    }
+    Register fpRegister = r10;
+    __ Pushq(rdi);
+    __ PushAlignBytes();
+    __ Movq(Operand(rdi, JSThread::GlueData::GetLeaveFrameOffset(false)), fpRegister);
+    // construct asm interpreter entry frame
     __ Pushq(rbp);
     __ Movq(rsp, rbp);
     __ Pushq(static_cast<int64_t>(FrameType::ASM_INTERPRETER_ENTRY_FRAME));
@@ -1211,21 +1208,43 @@ void AssemblerStubsX64::PushAsmInterpEntryFrame(ExtendedAssembler *assembler, bo
     __ Pushq(0);    // pc
 }
 
-void AssemblerStubsX64::PopAsmInterpEntryFrame(ExtendedAssembler *assembler, bool saveLeave)
+void AssemblerStubsX64::PopAsmInterpEntryFrame(ExtendedAssembler *assembler)
 {
-    Register fpRegister = r10;
     __ Addq(8, rsp);   // 8: skip pc
+    Register fpRegister = r10;
     __ Popq(fpRegister);
     __ Addq(8, rsp);  // 8: skip frame type
     __ Popq(rbp);
-    if (saveLeave) {
-        __ PopAlignBytes();
-        __ Popq(rdi);
-        __ Movq(fpRegister, Operand(rdi, JSThread::GlueData::GetLeaveFrameOffset(false)));
-    }
+    __ PopAlignBytes();
+    __ Popq(rdi);
+    __ Movq(fpRegister, Operand(rdi, JSThread::GlueData::GetLeaveFrameOffset(false)));
     if (!assembler->FromInterpreterHandler()) {
         __ PopCppCalleeSaveRegisters();
     }
+}
+
+void AssemblerStubsX64::PushAsmInterpBridgeFrame(ExtendedAssembler *assembler)
+{
+    // construct asm interpreter bridge frame
+    __ Pushq(static_cast<int64_t>(FrameType::ASM_INTERPRETER_BRIDGE_FRAME));
+    __ Pushq(rbp);
+    __ Leaq(Operand(rsp, 16), rbp);  // 16: skip prevSp and frame type
+    __ Pushq(0);    // pc
+    __ PushAlignBytes();
+    if (!assembler->FromInterpreterHandler()) {
+        __ PushCppCalleeSaveRegisters();
+    }
+}
+
+void AssemblerStubsX64::PopAsmInterpBridgeFrame(ExtendedAssembler *assembler)
+{
+    if (!assembler->FromInterpreterHandler()) {
+        __ PopCppCalleeSaveRegisters();
+    }
+    __ PopAlignBytes();
+    __ Addq(8, rsp);   // 8: skip pc
+    __ Popq(rbp);
+    __ Addq(8, rsp);  // 8: skip frame type
 }
 
 void AssemblerStubsX64::CallBCStub(ExtendedAssembler *assembler, Register newSpRegister, Register glueRegister,
@@ -1500,18 +1519,22 @@ void AssemblerStubsX64::JSCallCommonSlowPath(ExtendedAssembler *assembler, JSCal
 
 Register AssemblerStubsX64::GetThisRegsiter(ExtendedAssembler *assembler, JSCallMode mode)
 {
-    if (mode == JSCallMode::CALL_GETTER) {
-        return __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG0);
-    } else if (mode == JSCallMode::CALL_SETTER) {
-        return __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG1);
-    } else if (mode == JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV) {
-        return __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG2);
-    } else {
-        ASSERT(mode == JSCallMode::CALL_THIS_WITH_ARGV || mode == JSCallMode::CALL_FROM_AOT);
-        Register argvRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG1);
-        Register thisRegister = __ AvailableRegister2();
-        __ Movq(Operand(argvRegister, -8), thisRegister);  // 8: this is just before the argv list
-        return thisRegister;
+    switch (mode) {
+        case JSCallMode::CALL_GETTER:
+            return __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG0);
+        case JSCallMode::CALL_SETTER:
+            return __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG1);
+        case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
+        case JSCallMode::CALL_THIS_WITH_ARGV:
+            return __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG2);
+        case JSCallMode::CALL_FROM_AOT: {
+            Register argvRegister = __ CallDispatcherArgument(kungfu::CallDispatchInputs::ARG1);
+            Register thisRegister = __ AvailableRegister2();
+            __ Movq(Operand(argvRegister, -8), thisRegister);  // 8: this is just before the argv list
+            return thisRegister;
+        }
+        default:
+            UNREACHABLE();
     }
     return rInvalid;
 }
@@ -1856,7 +1879,7 @@ void AssemblerStubsX64::ResumeRspAndDispatch(ExtendedAssembler *assembler)
     __ Jmp(bcStubRegister);
 }
 
-// GHC calling convention
+// c++ calling convention
 // %rdi - glue
 // %rsi - callTarget
 // %rdx - method
@@ -1868,9 +1891,9 @@ void AssemblerStubsX64::CallGetter(ExtendedAssembler *assembler)
     __ BindAssemblerStub(RTSTUB_ID(CallGetter));
     Label target;
 
-    PushAsmInterpEntryFrame(assembler, false);
+    PushAsmInterpBridgeFrame(assembler);
     __ Callq(&target);
-    PopAsmInterpEntryFrame(assembler, false);
+    PopAsmInterpBridgeFrame(assembler);
     __ Ret();
     __ Bind(&target);
     JSCallCommonEntry(assembler, JSCallMode::CALL_GETTER);
@@ -1880,9 +1903,9 @@ void AssemblerStubsX64::CallSetter(ExtendedAssembler *assembler)
 {
     __ BindAssemblerStub(RTSTUB_ID(CallSetter));
     Label target;
-    PushAsmInterpEntryFrame(assembler, false);
+    PushAsmInterpBridgeFrame(assembler);
     __ Callq(&target);
-    PopAsmInterpEntryFrame(assembler, false);
+    PopAsmInterpBridgeFrame(assembler);
     __ Ret();
     __ Bind(&target);
     JSCallCommonEntry(assembler, JSCallMode::CALL_SETTER);
