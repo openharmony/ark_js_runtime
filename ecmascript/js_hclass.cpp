@@ -310,6 +310,29 @@ JSHandle<JSHClass> JSHClass::TransitionProto(const JSThread *thread, const JSHan
     return newJshclass;
 }
 
+JSHandle<JSHClass> JSHClass::TransProtoWithoutLayout(const JSThread *thread, const JSHandle<JSHClass> &jshclass,
+                                                     const JSHandle<JSTaggedValue> &proto)
+{
+    JSHandle<JSTaggedValue> key(thread->GlobalConstants()->GetHandledPrototypeString());
+
+    {
+        auto *newDyn = jshclass->FindProtoTransitions(key.GetTaggedValue(), proto.GetTaggedValue());
+        if (newDyn != nullptr) {
+            return JSHandle<JSHClass>(thread, newDyn);
+        }
+    }
+
+    // 2. new a hclass
+    JSHandle<JSHClass> newJshclass = JSHClass::Clone(thread, jshclass);
+    newJshclass->SetPrototype(thread, proto.GetTaggedValue());
+
+    // 3. Add newJshclass to old jshclass's parent's transitions.
+    AddProtoTransitions(thread, jshclass, newJshclass, key, proto);
+
+    // parent is the same as jshclass, already copy
+    return newJshclass;
+}
+
 void JSHClass::SetPrototype(const JSThread *thread, JSTaggedValue proto)
 {
     if (proto.IsECMAObject()) {

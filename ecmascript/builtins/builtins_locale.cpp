@@ -65,7 +65,7 @@ JSTaggedValue BuiltinsLocale::LocaleConstructor(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> options = GetCallArg(argv, 1);
     JSHandle<JSObject> optionsObj;
     if (options->IsUndefined()) {
-        optionsObj = factory->OrdinaryNewJSObjectCreate(JSHandle<JSTaggedValue>(thread, JSTaggedValue::Null()));
+        optionsObj = factory->CreateNullJSObject();
     } else {
         optionsObj = JSTaggedValue::ToObject(thread, options);
     }
