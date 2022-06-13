@@ -157,7 +157,7 @@ JSHandle<JSPluralRules> JSPluralRules::InitializePluralRules(JSThread *thread,
         prOptions = JSTaggedValue::ToObject(thread, options);
         RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSPluralRules, thread);
     } else {
-        prOptions = factory->OrdinaryNewJSObjectCreate(JSHandle<JSTaggedValue>(thread, JSTaggedValue::Null()));
+        prOptions = factory->CreateNullJSObject();
     }
 
     // 5. Let matcher be ? GetOption(options, "localeMatcher", "string", « "lookup", "best fit" », "best fit").

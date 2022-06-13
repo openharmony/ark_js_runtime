@@ -2633,8 +2633,7 @@ JSTaggedValue BuiltinsArray::Unscopables(EcmaRuntimeCallInfo *argv)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
 
-    JSHandle<JSTaggedValue> nullHandle(thread, JSTaggedValue::Null());
-    JSHandle<JSObject> unscopableList = factory->OrdinaryNewJSObjectCreate(nullHandle);
+    JSHandle<JSObject> unscopableList = factory->CreateNullJSObject();
 
     JSHandle<JSTaggedValue> trueVal(thread, JSTaggedValue::True());
     JSHandle<JSTaggedValue> copyWithKey = globalConst->GetHandledCopyWithinString();
