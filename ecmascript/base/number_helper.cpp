@@ -728,7 +728,7 @@ JSTaggedValue NumberHelper::StringToBigInt(JSThread *thread, JSHandle<JSTaggedVa
         }
     }
     // 6. parse to bigint
-    std::string buffer;
+    CString buffer;
     if (sign == Sign::NEG) {
         buffer += "-";
     }
