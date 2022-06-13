@@ -54,6 +54,22 @@ Local<ObjectRef> SetBreakpointByUrlReturns::ToObject(const EcmaVM *ecmaVm) const
     return result;
 }
 
+std::unique_ptr<PtJson> SetBreakpointByUrlReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("breakpointId", id_.c_str());
+    std::unique_ptr<PtJson> array = PtJson::CreateArray();
+    size_t len = locations_.size();
+    for (size_t i = 0; i < len; i++) {
+        std::unique_ptr<PtJson> location = locations_[i]->ToJson();
+        array->Push(location);
+    }
+    result->Add("locations", array);
+
+    return result;
+}
+
 Local<ObjectRef> EvaluateOnCallFrameReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
@@ -65,6 +81,20 @@ Local<ObjectRef> EvaluateOnCallFrameReturns::ToObject(const EcmaVM *ecmaVm) cons
         result->Set(ecmaVm,
             Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "exceptionDetails")),
             Local<JSValueRef>(exception));
+    }
+
+    return result;
+}
+
+std::unique_ptr<PtJson> EvaluateOnCallFrameReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    if (result_ != nullptr) {
+        result->Add("result", result_->ToJson());
+    }
+    if (exceptionDetails_ && exceptionDetails_.value() != nullptr) {
+        result->Add("exceptionDetails", exceptionDetails_.value()->ToJson());
     }
 
     return result;
@@ -85,6 +115,21 @@ Local<ObjectRef> GetPossibleBreakpointsReturns::ToObject(const EcmaVM *ecmaVm) c
     return result;
 }
 
+std::unique_ptr<PtJson> GetPossibleBreakpointsReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    std::unique_ptr<PtJson> array = PtJson::CreateArray();
+    size_t len = locations_.size();
+    for (size_t i = 0; i < len; i++) {
+        std::unique_ptr<PtJson> location = locations_[i]->ToJson();
+        array->Push(location);
+    }
+    result->Add("locations", array);
+
+    return result;
+}
+
 Local<ObjectRef> GetScriptSourceReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
@@ -96,6 +141,18 @@ Local<ObjectRef> GetScriptSourceReturns::ToObject(const EcmaVM *ecmaVm) const
         result->Set(ecmaVm,
             Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "bytecode")),
             Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, bytecode_->c_str())));
+    }
+
+    return result;
+}
+
+std::unique_ptr<PtJson> GetScriptSourceReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("scriptSource", scriptSource_.c_str());
+    if (bytecode_) {
+        result->Add("bytecode", bytecode_->c_str());
     }
 
     return result;
@@ -115,17 +172,47 @@ Local<ObjectRef> RestartFrameReturns::ToObject(const EcmaVM *ecmaVm) const
     return result;
 }
 
+std::unique_ptr<PtJson> RestartFrameReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    std::unique_ptr<PtJson> array = PtJson::CreateArray();
+    size_t len = callFrames_.size();
+    for (size_t i = 0; i < len; i++) {
+        std::unique_ptr<PtJson> location = callFrames_[i]->ToJson();
+        array->Push(location);
+    }
+    result->Add("callFrames", array);
+
+    return result;
+}
+
 Local<ObjectRef> SearchInContentReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     size_t len = result_.size();
     Local<ArrayRef> values = ArrayRef::New(ecmaVm, len);
     for (size_t i = 0; i < len; i++) {
-        Local<ObjectRef> location = result_[i]->ToObject(ecmaVm);
-        values->Set(ecmaVm, i, location);
+        Local<ObjectRef> res = result_[i]->ToObject(ecmaVm);
+        values->Set(ecmaVm, i, res);
     }
 
     Local<ObjectRef> result = NewObject(ecmaVm);
     result->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "result")), values);
+
+    return result;
+}
+
+std::unique_ptr<PtJson> SearchInContentReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    std::unique_ptr<PtJson> array = PtJson::CreateArray();
+    size_t len = result_.size();
+    for (size_t i = 0; i < len; i++) {
+        std::unique_ptr<PtJson> res = result_[i]->ToJson();
+        array->Push(res);
+    }
+    result->Add("result", array);
 
     return result;
 }
@@ -145,6 +232,18 @@ Local<ObjectRef> SetBreakpointReturns::ToObject(const EcmaVM *ecmaVm) const
     return result;
 }
 
+std::unique_ptr<PtJson> SetBreakpointReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("breakpointId", breakpointId_.c_str());
+    if (location_ != nullptr) {
+        result->Add("actualLocation", location_->ToJson());
+    }
+
+    return result;
+}
+
 Local<ObjectRef> SetInstrumentationBreakpointReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
@@ -152,6 +251,15 @@ Local<ObjectRef> SetInstrumentationBreakpointReturns::ToObject(const EcmaVM *ecm
     result->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "breakpointId")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, breakpointId_.c_str())));
+
+    return result;
+}
+
+std::unique_ptr<PtJson> SetInstrumentationBreakpointReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("breakpointId", breakpointId_.c_str());
 
     return result;
 }
@@ -181,6 +289,29 @@ Local<ObjectRef> SetScriptSourceReturns::ToObject(const EcmaVM *ecmaVm) const
         result->Set(ecmaVm,
             Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "exceptionDetails")),
             Local<JSValueRef>(exceptionDetails_.value()->ToObject(ecmaVm)));
+    }
+
+    return result;
+}
+
+std::unique_ptr<PtJson> SetScriptSourceReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    if (callFrames_) {
+        std::unique_ptr<PtJson> array = PtJson::CreateArray();
+        size_t len = callFrames_->size();
+        for (size_t i = 0; i < len; i++) {
+            std::unique_ptr<PtJson> location = callFrames_.value()[i]->ToJson();
+            array->Push(location);
+        }
+        result->Add("callFrames", array);
+    }
+    if (stackChanged_) {
+        result->Add("stackChanged", stackChanged_.value());
+    }
+    if (exceptionDetails_ && exceptionDetails_.value() != nullptr) {
+        result->Add("exceptionDetails", exceptionDetails_.value()->ToJson());
     }
 
     return result;
@@ -226,6 +357,42 @@ Local<ObjectRef> GetPropertiesReturns::ToObject(const EcmaVM *ecmaVm) const
     return result;
 }
 
+std::unique_ptr<PtJson> GetPropertiesReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    std::unique_ptr<PtJson> array = PtJson::CreateArray();
+    size_t len = result_.size();
+    for (size_t i = 0; i < len; i++) {
+        std::unique_ptr<PtJson> location = result_[i]->ToJson();
+        array->Push(location);
+    }
+    result->Add("result", array);
+    if (internalPropertyDescripties_) {
+        array = PtJson::CreateArray();
+        len = internalPropertyDescripties_->size();
+        for (size_t i = 0; i < len; i++) {
+            std::unique_ptr<PtJson> location = internalPropertyDescripties_.value()[i]->ToJson();
+            array->Push(location);
+        }
+        result->Add("internalProperties", array);
+    }
+    if (privateProperties_) {
+        array = PtJson::CreateArray();
+        len = privateProperties_->size();
+        for (size_t i = 0; i < len; i++) {
+            std::unique_ptr<PtJson> location = privateProperties_.value()[i]->ToJson();
+            array->Push(location);
+        }
+        result->Add("privateProperties", array);
+    }
+    if (exceptionDetails_ && exceptionDetails_.value() != nullptr) {
+        result->Add("exceptionDetails", exceptionDetails_.value()->ToJson());
+    }
+
+    return result;
+}
+
 Local<ObjectRef> CallFunctionOnReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     // For this
@@ -244,6 +411,20 @@ Local<ObjectRef> CallFunctionOnReturns::ToObject(const EcmaVM *ecmaVm) const
     return returns;
 }
 
+std::unique_ptr<PtJson> CallFunctionOnReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    if (result_ != nullptr) {
+        result->Add("result", result_->ToJson());
+    }
+    if (exceptionDetails_ && exceptionDetails_.value() != nullptr) {
+        result->Add("exceptionDetails", exceptionDetails_.value()->ToJson());
+    }
+
+    return result;
+}
+
 Local<ObjectRef> StopSamplingReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
@@ -256,6 +437,17 @@ Local<ObjectRef> StopSamplingReturns::ToObject(const EcmaVM *ecmaVm) const
     return result;
 }
 
+std::unique_ptr<PtJson> StopSamplingReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    if (profile_ != nullptr) {
+        result->Add("profile", profile_->ToJson());
+    }
+
+    return result;
+}
+
 Local<ObjectRef> GetHeapObjectIdReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
@@ -263,6 +455,15 @@ Local<ObjectRef> GetHeapObjectIdReturns::ToObject(const EcmaVM *ecmaVm) const
     result->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "heapSnapshotObjectId")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, std::to_string(heapSnapshotObjectId_).c_str())));
+
+    return result;
+}
+
+std::unique_ptr<PtJson> GetHeapObjectIdReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("heapSnapshotObjectId", std::to_string(heapSnapshotObjectId_).c_str());
 
     return result;
 }
@@ -280,12 +481,34 @@ Local<ObjectRef> GetObjectByHeapObjectIdReturns::ToObject(const EcmaVM *ecmaVm) 
     return result;
 }
 
+std::unique_ptr<PtJson> GetObjectByHeapObjectIdReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    if (remoteObjectResult_ != nullptr) {
+        result->Add("result", remoteObjectResult_->ToJson());
+    }
+
+    return result;
+}
+
 Local<ObjectRef> StopReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
 
     Local<ObjectRef> profile = profile_->ToObject(ecmaVm);
     result->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "profile")), Local<JSValueRef>(profile));
+
+    return result;
+}
+
+std::unique_ptr<PtJson> StopReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    if (profile_ != nullptr) {
+        result->Add("profile", profile_->ToJson());
+    }
 
     return result;
 }
@@ -300,6 +523,16 @@ Local<ObjectRef> GetHeapUsageReturns::ToObject(const EcmaVM *ecmaVm) const
     result->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "totalSize")),
         NumberRef::New(ecmaVm, totalSize_));
+
+    return result;
+}
+
+std::unique_ptr<PtJson> GetHeapUsageReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("usedSize", usedSize_);
+    result->Add("totalSize", totalSize_);
 
     return result;
 }
@@ -319,11 +552,35 @@ Local<ObjectRef> GetBestEffortCoverageReturns::ToObject(const EcmaVM *ecmaVm) co
     return result;
 }
 
+std::unique_ptr<PtJson> GetBestEffortCoverageReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    std::unique_ptr<PtJson> array = PtJson::CreateArray();
+    size_t len = result_.size();
+    for (size_t i = 0; i < len; i++) {
+        std::unique_ptr<PtJson> scriptCoverage = result_[i]->ToJson();
+        array->Push(scriptCoverage);
+    }
+    result->Add("result", array);
+
+    return result;
+}
+
 Local<ObjectRef> StartPreciseCoverageReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
     result->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timestamp")),
         NumberRef::New(ecmaVm, timestamp_));
+
+    return result;
+}
+
+std::unique_ptr<PtJson> StartPreciseCoverageReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("timestamp", timestamp_);
 
     return result;
 }
@@ -339,15 +596,29 @@ Local<ObjectRef> TakePreciseCoverageReturns::ToObject(const EcmaVM *ecmaVm) cons
         values->Set(ecmaVm, i, scriptCoverage);
     }
     returns->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "result")), values);
-    if (timestamp_) {
-        returns->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timestamp")),
-            NumberRef::New(ecmaVm, timestamp_));
-    }
+    returns->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timestamp")),
+        NumberRef::New(ecmaVm, timestamp_));
 
     return returns;
 }
 
-Local<ObjectRef> TakeTypeProfileturns::ToObject(const EcmaVM *ecmaVm) const
+std::unique_ptr<PtJson> TakePreciseCoverageReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    std::unique_ptr<PtJson> array = PtJson::CreateArray();
+    size_t len = result_.size();
+    for (size_t i = 0; i < len; i++) {
+        std::unique_ptr<PtJson> scriptTypeProfile = result_[i]->ToJson();
+        array->Push(scriptTypeProfile);
+    }
+    result->Add("result", array);
+    result->Add("timestamp", timestamp_);
+
+    return result;
+}
+
+Local<ObjectRef> TakeTypeProfileReturns::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> result = NewObject(ecmaVm);
 
@@ -358,6 +629,21 @@ Local<ObjectRef> TakeTypeProfileturns::ToObject(const EcmaVM *ecmaVm) const
         values->Set(ecmaVm, i, scriptTypeProfile);
     }
     result->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "result")), values);
+    return result;
+}
+
+std::unique_ptr<PtJson> TakeTypeProfileReturns::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    std::unique_ptr<PtJson> array = PtJson::CreateArray();
+    size_t len = result_.size();
+    for (size_t i = 0; i < len; i++) {
+        std::unique_ptr<PtJson> scriptTypeProfile = result_[i]->ToJson();
+        array->Push(scriptTypeProfile);
+    }
+    result->Add("result", array);
+
     return result;
 }
 }  // namespace panda::ecmascript::tooling

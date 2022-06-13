@@ -168,7 +168,7 @@ bool HeapProfilerImpl::Frontend::AllowNotify() const
     return channel_ != nullptr;
 }
 
-void HeapProfilerImpl::Frontend::AddHeapSnapshotChunk(char *data, int size)
+void HeapProfilerImpl::Frontend::AddHeapSnapshotChunk(char *data, int32_t size)
 {
     if (!AllowNotify()) {
         return;
@@ -176,7 +176,7 @@ void HeapProfilerImpl::Frontend::AddHeapSnapshotChunk(char *data, int size)
 
     tooling::AddHeapSnapshotChunk addHeapSnapshotChunk;
     addHeapSnapshotChunk.GetChunk().resize(size);
-    for (int i = 0; i < size; ++i) {
+    for (int32_t i = 0; i < size; ++i) {
         addHeapSnapshotChunk.GetChunk()[i] = data[i];
     }
 
@@ -197,13 +197,13 @@ void HeapProfilerImpl::Frontend::ReportHeapSnapshotProgress(int32_t done, int32_
     channel_->SendNotification(reportHeapSnapshotProgress);
 }
 
-void HeapProfilerImpl::Frontend::HeapStatsUpdate(HeapStat* updateData, int count)
+void HeapProfilerImpl::Frontend::HeapStatsUpdate(HeapStat* updateData, int32_t count)
 {
     if (!AllowNotify()) {
         return;
     }
-    std::vector<uint32_t> statsDiff;
-    for (int i = 0; i < count; ++i) {
+    std::vector<int32_t> statsDiff;
+    for (int32_t i = 0; i < count; ++i) {
         statsDiff.emplace_back(updateData[i].index_);
         statsDiff.emplace_back(updateData[i].count_);
         statsDiff.emplace_back(updateData[i].size_);
@@ -213,7 +213,7 @@ void HeapProfilerImpl::Frontend::HeapStatsUpdate(HeapStat* updateData, int count
     channel_->SendNotification(heapStatsUpdate);
 }
 
-void HeapProfilerImpl::Frontend::LastSeenObjectId(uint32_t lastSeenObjectId)
+void HeapProfilerImpl::Frontend::LastSeenObjectId(int32_t lastSeenObjectId)
 {
     if (!AllowNotify()) {
         return;
