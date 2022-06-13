@@ -86,6 +86,35 @@ Local<ObjectRef> Paused::ToObject(const EcmaVM *ecmaVm) const
     return object;
 }
 
+std::unique_ptr<PtJson> Paused::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    std::unique_ptr<PtJson> array = PtJson::CreateArray();
+    size_t len = callFrames_.size();
+    for (size_t i = 0; i < len; i++) {
+        array->Push(callFrames_[i]->ToJson());
+    }
+    result->Add("callFrames", array);
+    result->Add("reason", reason_.c_str());
+    if (data_) {
+        result->Add("data", data_.value()->ToJson());
+    }
+    if (hitBreakpoints_) {
+        std::unique_ptr<PtJson> breakpoints = PtJson::CreateArray();
+        len = hitBreakpoints_->size();
+        for (size_t i = 0; i < len; i++) {
+            array->Push(hitBreakpoints_.value()[i].c_str());
+        }
+    }
+
+    std::unique_ptr<PtJson> object = PtJson::CreateObject();
+    object->Add("method", GetName().c_str());
+    object->Add("params", result);
+
+    return object;
+}
+
 Local<ObjectRef> Resumed::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -95,6 +124,17 @@ Local<ObjectRef> Resumed::ToObject(const EcmaVM *ecmaVm) const
         StringRef::NewFromUtf8(ecmaVm, "method"),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, GetName().c_str())));
     object->Set(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "params"), Local<JSValueRef>(params));
+
+    return object;
+}
+
+std::unique_ptr<PtJson> Resumed::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    std::unique_ptr<PtJson> object = PtJson::CreateObject();
+    object->Add("method", GetName().c_str());
+    object->Add("params", result);
 
     return object;
 }
@@ -170,6 +210,47 @@ Local<ObjectRef> ScriptFailedToParse::ToObject(const EcmaVM *ecmaVm) const
         StringRef::NewFromUtf8(ecmaVm, "method"),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, GetName().c_str())));
     object->Set(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "params"), Local<JSValueRef>(params));
+
+    return object;
+}
+
+std::unique_ptr<PtJson> ScriptFailedToParse::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("scriptId", std::to_string(scriptId_).c_str());
+    result->Add("url", url_.c_str());
+    result->Add("startLine", startLine_);
+    result->Add("startColumn", startColumn_);
+    result->Add("endLine", endLine_);
+    result->Add("endColumn", endColumn_);
+    result->Add("executionContextId", executionContextId_);
+    result->Add("hash", hash_.c_str());
+    if (sourceMapUrl_) {
+        result->Add("sourceMapURL", sourceMapUrl_->c_str());
+    }
+    if (hasSourceUrl_) {
+        result->Add("hasSourceURL", hasSourceUrl_.value());
+    }
+    if (isModule_) {
+        result->Add("isModule", isModule_.value());
+    }
+    if (length_) {
+        result->Add("length", length_.value());
+    }
+    if (codeOffset_) {
+        result->Add("codeOffset", codeOffset_.value());
+    }
+    if (scriptLanguage_) {
+        result->Add("scriptLanguage", scriptLanguage_->c_str());
+    }
+    if (embedderName_) {
+        result->Add("embedderName", embedderName_->c_str());
+    }
+
+    std::unique_ptr<PtJson> object = PtJson::CreateObject();
+    object->Add("method", GetName().c_str());
+    object->Add("params", result);
 
     return object;
 }
@@ -253,6 +334,50 @@ Local<ObjectRef> ScriptParsed::ToObject(const EcmaVM *ecmaVm) const
     return object;
 }
 
+std::unique_ptr<PtJson> ScriptParsed::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("scriptId", std::to_string(scriptId_).c_str());
+    result->Add("url", url_.c_str());
+    result->Add("startLine", startLine_);
+    result->Add("startColumn", startColumn_);
+    result->Add("endLine", endLine_);
+    result->Add("endColumn", endColumn_);
+    result->Add("executionContextId", executionContextId_);
+    result->Add("hash", hash_.c_str());
+    if (isLiveEdit_) {
+        result->Add("isLiveEdit", isLiveEdit_.value());
+    }
+    if (sourceMapUrl_) {
+        result->Add("sourceMapURL", sourceMapUrl_->c_str());
+    }
+    if (hasSourceUrl_) {
+        result->Add("hasSourceURL", hasSourceUrl_.value());
+    }
+    if (isModule_) {
+        result->Add("isModule", isModule_.value());
+    }
+    if (length_) {
+        result->Add("length", length_.value());
+    }
+    if (codeOffset_) {
+        result->Add("codeOffset", codeOffset_.value());
+    }
+    if (scriptLanguage_) {
+        result->Add("scriptLanguage", scriptLanguage_->c_str());
+    }
+    if (embedderName_) {
+        result->Add("embedderName", embedderName_->c_str());
+    }
+
+    std::unique_ptr<PtJson> object = PtJson::CreateObject();
+    object->Add("method", GetName().c_str());
+    object->Add("params", result);
+
+    return object;
+}
+
 Local<ObjectRef> AddHeapSnapshotChunk::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -266,6 +391,19 @@ Local<ObjectRef> AddHeapSnapshotChunk::ToObject(const EcmaVM *ecmaVm) const
         StringRef::NewFromUtf8(ecmaVm, "method"),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, GetName().c_str())));
     object->Set(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "params"), Local<JSValueRef>(params));
+
+    return object;
+}
+
+std::unique_ptr<PtJson> AddHeapSnapshotChunk::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("chunk", chunk_.c_str());
+
+    std::unique_ptr<PtJson> object = PtJson::CreateObject();
+    object->Add("method", GetName().c_str());
+    object->Add("params", result);
 
     return object;
 }
@@ -298,6 +436,28 @@ Local<ObjectRef> ConsoleProfileFinished::ToObject(const EcmaVM *ecmaVm) const
     return object;
 }
 
+std::unique_ptr<PtJson> ConsoleProfileFinished::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("id", id_.c_str());
+    if (location_ != nullptr) {
+        result->Add("location", location_->ToJson());
+    }
+    if (profile_ != nullptr) {
+        result->Add("profile", profile_->ToJson());
+    }
+    if (title_) {
+        result->Add("title", title_->c_str());
+    }
+
+    std::unique_ptr<PtJson> object = PtJson::CreateObject();
+    object->Add("method", GetName().c_str());
+    object->Add("params", result);
+
+    return object;
+}
+
 Local<ObjectRef> ConsoleProfileStarted::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -319,6 +479,25 @@ Local<ObjectRef> ConsoleProfileStarted::ToObject(const EcmaVM *ecmaVm) const
         StringRef::NewFromUtf8(ecmaVm, "method"),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, GetName().c_str())));
     object->Set(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "params"), Local<JSValueRef>(params));
+
+    return object;
+}
+
+std::unique_ptr<PtJson> ConsoleProfileStarted::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("id", id_.c_str());
+    if (location_ != nullptr) {
+        result->Add("location", location_->ToJson());
+    }
+    if (title_) {
+        result->Add("title", title_->c_str());
+    }
+
+    std::unique_ptr<PtJson> object = PtJson::CreateObject();
+    object->Add("method", GetName().c_str());
+    object->Add("params", result);
 
     return object;
 }
@@ -349,6 +528,27 @@ Local<ObjectRef> PreciseCoverageDeltaUpdate::ToObject(const EcmaVM *ecmaVm) cons
     return object;
 }
 
+std::unique_ptr<PtJson> PreciseCoverageDeltaUpdate::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("timestamp", timestamp_);
+    result->Add("occasion", occasion_.c_str());
+    std::unique_ptr<PtJson> array = PtJson::CreateArray();
+    size_t len = result_.size();
+    for (size_t i = 0; i < len; i++) {
+        std::unique_ptr<PtJson> res = result_[i]->ToJson();
+        array->Push(res);
+    }
+    result->Add("result", array);
+
+    std::unique_ptr<PtJson> object = PtJson::CreateObject();
+    object->Add("method", GetName().c_str());
+    object->Add("params", result);
+
+    return object;
+}
+
 Local<ObjectRef> HeapStatsUpdate::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -370,6 +570,24 @@ Local<ObjectRef> HeapStatsUpdate::ToObject(const EcmaVM *ecmaVm) const
     return object;
 }
 
+std::unique_ptr<PtJson> HeapStatsUpdate::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    std::unique_ptr<PtJson> array = PtJson::CreateArray();
+    size_t len = statsUpdate_.size();
+    for (size_t i = 0; i < len; i++) {
+        array->Push(statsUpdate_[i]);
+    }
+    result->Add("statsUpdate", array);
+
+    std::unique_ptr<PtJson> object = PtJson::CreateObject();
+    object->Add("method", GetName().c_str());
+    object->Add("params", result);
+
+    return object;
+}
+
 Local<ObjectRef> LastSeenObjectId::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -384,6 +602,20 @@ Local<ObjectRef> LastSeenObjectId::ToObject(const EcmaVM *ecmaVm) const
         StringRef::NewFromUtf8(ecmaVm, "method"),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, GetName().c_str())));
     object->Set(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "params"), Local<JSValueRef>(params));
+
+    return object;
+}
+
+std::unique_ptr<PtJson> LastSeenObjectId::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("lastSeenObjectId", lastSeenObjectId_);
+    result->Add("timestamp", timestamp_);
+
+    std::unique_ptr<PtJson> object = PtJson::CreateObject();
+    object->Add("method", GetName().c_str());
+    object->Add("params", result);
 
     return object;
 }
@@ -408,6 +640,23 @@ Local<ObjectRef> ReportHeapSnapshotProgress::ToObject(const EcmaVM *ecmaVm) cons
         StringRef::NewFromUtf8(ecmaVm, "method"),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, GetName().c_str())));
     object->Set(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "params"), Local<JSValueRef>(params));
+
+    return object;
+}
+
+std::unique_ptr<PtJson> ReportHeapSnapshotProgress::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+
+    result->Add("done", done_);
+    result->Add("total", total_);
+    if (finished_) {
+        result->Add("finished", finished_.value());
+    }
+
+    std::unique_ptr<PtJson> object = PtJson::CreateObject();
+    object->Add("method", GetName().c_str());
+    object->Add("params", result);
 
     return object;
 }

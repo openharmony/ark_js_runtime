@@ -372,8 +372,8 @@ HWTEST_F_L0(DebuggerReturnsTest, TakeTypeProfileturnsToObjectTest)
 {
     auto result = std::vector<std::unique_ptr<ScriptTypeProfile>>();
     std::unique_ptr<ScriptTypeProfile> scriptTypeProfile = std::make_unique<ScriptTypeProfile>();
-    std::unique_ptr<TakeTypeProfileturns> takeTypeProfileturns = std::make_unique
-                                                    <TakeTypeProfileturns>(std::move(result));
+    std::unique_ptr<TakeTypeProfileReturns> takeTypeProfileturns = std::make_unique
+                                                    <TakeTypeProfileReturns>(std::move(result));
     Local<ArrayRef> getObject = takeTypeProfileturns->ToObject(ecmaVm);
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "result");
     ASSERT_TRUE(getObject->Has(ecmaVm, tmpStr));

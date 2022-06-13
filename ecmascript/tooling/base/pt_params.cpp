@@ -257,7 +257,7 @@ std::unique_ptr<SetBlackboxPatternsParams> SetBlackboxPatternsParams::Create(con
             if (item->IsString()) {
                 paramsObject->patterns_.emplace_back(item->GetString());
             } else {
-                    error += "'patterns' items should be a String;";
+                error += "'patterns' items should be a String;";
             }
         }
     } else {

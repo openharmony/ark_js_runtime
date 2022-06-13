@@ -62,6 +62,7 @@ public:
     ~SetBreakpointByUrlReturns() override = default;
 
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     SetBreakpointByUrlReturns() = default;
@@ -80,6 +81,7 @@ public:
     {}
     ~EvaluateOnCallFrameReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     EvaluateOnCallFrameReturns() = default;
@@ -98,6 +100,7 @@ public:
     ~GetPossibleBreakpointsReturns() override = default;
 
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     GetPossibleBreakpointsReturns() = default;
@@ -115,6 +118,7 @@ public:
     ~GetScriptSourceReturns() override = default;
 
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     GetScriptSourceReturns() = default;
@@ -132,6 +136,7 @@ public:
     {}
     ~RestartFrameReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     RestartFrameReturns() = default;
@@ -147,6 +152,7 @@ public:
     {}
     ~SearchInContentReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     SearchInContentReturns() = default;
@@ -163,6 +169,7 @@ public:
     {}
     ~SetBreakpointReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     SetBreakpointReturns() = default;
@@ -178,6 +185,7 @@ public:
     {}
     ~SetInstrumentationBreakpointReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     SetInstrumentationBreakpointReturns() = default;
@@ -198,6 +206,7 @@ public:
     {}
     ~SetScriptSourceReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     SetScriptSourceReturns() = default;
@@ -222,6 +231,7 @@ public:
     {}
     ~GetPropertiesReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     GetPropertiesReturns() = default;
@@ -243,6 +253,7 @@ public:
     {}
     ~CallFunctionOnReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     CallFunctionOnReturns() = default;
@@ -261,6 +272,7 @@ public:
     ~StopSamplingReturns() override = default;
 
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     StopSamplingReturns() = default;
@@ -278,6 +290,7 @@ public:
     ~GetHeapObjectIdReturns() override = default;
 
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     GetHeapObjectIdReturns() = default;
@@ -295,6 +308,7 @@ public:
     ~GetObjectByHeapObjectIdReturns() override = default;
 
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     GetObjectByHeapObjectIdReturns() = default;
@@ -309,6 +323,7 @@ public:
     explicit StopReturns(std::unique_ptr<Profile> profile) : profile_(std::move(profile)) {}
     ~StopReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     StopReturns() = default;
@@ -324,6 +339,7 @@ public:
         : usedSize_(usedSize), totalSize_(totalSize) {}
     ~GetHeapUsageReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     GetHeapUsageReturns() = default;
@@ -341,6 +357,7 @@ public:
     {}
     ~GetBestEffortCoverageReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     GetBestEffortCoverageReturns() = default;
@@ -355,6 +372,7 @@ public:
     explicit StartPreciseCoverageReturns(int64_t tamp) : timestamp_(tamp) {}
     ~StartPreciseCoverageReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     StartPreciseCoverageReturns() = default;
@@ -372,6 +390,7 @@ public:
     {}
     ~TakePreciseCoverageReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
     TakePreciseCoverageReturns() = default;
@@ -382,18 +401,19 @@ private:
     int64_t timestamp_ {0};
 };
 
-class TakeTypeProfileturns : public PtBaseReturns {
+class TakeTypeProfileReturns : public PtBaseReturns {
 public:
-    explicit TakeTypeProfileturns(std::vector<std::unique_ptr<ScriptTypeProfile>> result)
+    explicit TakeTypeProfileReturns(std::vector<std::unique_ptr<ScriptTypeProfile>> result)
         : result_(std::move(result))
     {}
-    ~TakeTypeProfileturns() override = default;
+    ~TakeTypeProfileReturns() override = default;
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
+    std::unique_ptr<PtJson> ToJson() const override;
 
 private:
-    TakeTypeProfileturns() = default;
-    NO_COPY_SEMANTIC(TakeTypeProfileturns);
-    NO_MOVE_SEMANTIC(TakeTypeProfileturns);
+    TakeTypeProfileReturns() = default;
+    NO_COPY_SEMANTIC(TakeTypeProfileReturns);
+    NO_MOVE_SEMANTIC(TakeTypeProfileReturns);
 
     std::vector<std::unique_ptr<ScriptTypeProfile>> result_ {};
 };
