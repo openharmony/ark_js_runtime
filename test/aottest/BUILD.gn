@@ -29,6 +29,7 @@ group("ark_aot_test") {
     # "definencfunc:definencfuncAotAction",
     "delobjprop:delobjpropAotAction",
     "div:divAotAction",
+    "exceptionhandler:exceptionhandlerAotAction",
     "exp:expAotAction",
     "helloaot:helloaotAotAction",
     "inc:incAotAction",

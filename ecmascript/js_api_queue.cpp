@@ -177,7 +177,7 @@ bool JSAPIQueue::GetOwnProperty(JSThread *thread, const JSHandle<JSAPIQueue> &ob
 OperationResult JSAPIQueue::GetProperty(JSThread *thread, const JSHandle<JSAPIQueue> &obj,
                                         const JSHandle<JSTaggedValue> &key)
 {
-    int length = obj->GetLength().GetArrayLength();
+    int length = static_cast<int>(obj->GetLength().GetArrayLength());
     int index = key->GetInt();
     if (index < 0 || index >= length) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "GetProperty index out-of-bounds",

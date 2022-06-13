@@ -90,7 +90,8 @@ public:
     bool IsInterpretedEntryFrame() const
     {
         if (thread_->IsAsmInterpreter()) {
-            return (GetFrameType() == FrameType::ASM_INTERPRETER_ENTRY_FRAME);
+            FrameType type = GetFrameType();
+            return (type == FrameType::ASM_INTERPRETER_ENTRY_FRAME || type == FrameType::ASM_INTERPRETER_BRIDGE_FRAME);
         }
         return (GetFrameType() == FrameType::INTERPRETER_ENTRY_FRAME);
     }
@@ -152,6 +153,10 @@ public:
     void IterateRsp(const RootVisitor &v0, const RootRangeVisitor &v1);
     void IterateSp(const RootVisitor &v0, const RootRangeVisitor &v1);
 
+    // for collecting bc offset in aot
+    void CollectBCOffsetInfo();
+    std::string GetAotExceptionFuncName(JSTaggedType* fp) const;
+
 private:
     FrameType GetFrameType() const
     {
@@ -168,6 +173,9 @@ private:
     void InterpretedFrameIterate(const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1) const;
     void AsmInterpretedFrameIterate(const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1) const;
     void InterpretedEntryFrameIterate(const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1) const;
+    void AsmInterpretedBridgeFrameIterate(
+        const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
+        ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;
     void BuiltinFrameIterate(
         const JSTaggedType *sp, const RootVisitor &v0, const RootRangeVisitor &v1,
         ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const;

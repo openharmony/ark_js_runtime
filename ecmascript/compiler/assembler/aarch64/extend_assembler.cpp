@@ -84,12 +84,27 @@ void ExtendedAssembler::RestoreFpAndLr()
     Ldp(Register(X29), Register(X30), MemoryOperand(sp, 16, POSTINDEX));
 }
 
+void ExtendedAssembler::SaveLrAndFp()
+{
+    Register sp(SP);
+    Stp(Register(X30), Register(X29), MemoryOperand(sp, -16, PREINDEX));  // 16: 2 registers
+    Mov(Register(X29), Register(SP));
+}
+
+void ExtendedAssembler::RestoreLrAndFp()
+{
+    Register sp(SP);
+    Ldp(Register(X30), Register(X29), MemoryOperand(sp, 16, POSTINDEX));  // 16: 2 registers
+}
+
 void ExtendedAssembler::PushArgsWithArgv(Register argc, Register argv, Register op, panda::ecmascript::Label *next)
 {
     Label loopBeginning;
     Register sp(SP);
-    Cmp(argc.W(), Immediate(0));
-    B(Condition::LS, next);
+    if (next != nullptr) {
+        Cmp(argc.W(), Immediate(0));
+        B(Condition::LS, next);
+    }
     Add(argv, argv, Operand(argc.W(), UXTW, 3));  // 3: argc * 8
     Bind(&loopBeginning);
     Ldr(op, MemoryOperand(argv, -8, PREINDEX));  // -8: 8 bytes

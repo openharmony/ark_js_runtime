@@ -75,7 +75,8 @@ JSHandle<Derived> TaggedList<Derived>::GrowCapacity(const JSThread *thread, cons
     if (needCapacity * Derived::ENTRY_SIZE < actualArrayCapacity) {
         return taggedList;
     }
-    int newCapacity = actualNodeNum + (actualNodeNum >> 1UL);
+    uint32_t length = static_cast<uint32_t>(actualNodeNum);
+    uint32_t newCapacity = length + (length >> 1UL);
     JSHandle<Derived> list = Create(thread, newCapacity < DEFAULT_ARRAY_LENGHT ? DEFAULT_ARRAY_LENGHT : newCapacity);
     taggedList->CopyArray(thread, list);
     return list;

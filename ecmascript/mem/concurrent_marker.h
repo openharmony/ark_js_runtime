@@ -28,12 +28,45 @@
 namespace panda::ecmascript {
 class EcmaVM;
 class Heap;
+// CONFIG_DISABLE means concurrent marker is disabled by options or macros and cannot be changed.
+// REQUEST_DISABLE means we want to disable concurrent sweeper while it is marking.
+// REQUEST_DISABLE can be ragarded as enable and will be changed into disable after this GC.
+enum class EnableConcurrentMarkType : uint8_t {
+    ENABLE,
+    CONFIG_DISABLE,
+    DISABLE,
+    REQUEST_DISABLE
+};
 
 class ConcurrentMarker {
 public:
-    explicit ConcurrentMarker(Heap *heap);
+    explicit ConcurrentMarker(Heap *heap, EnableConcurrentMarkType type);
     ~ConcurrentMarker() = default;
 
+    /*
+     * Concurrent marking related configurations and utilities.
+     */
+    void EnableConcurrentMarking(EnableConcurrentMarkType type);
+
+    bool IsEnabled() const
+    {
+        return !IsDisabled();
+    }
+
+    bool IsDisabled() const
+    {
+        return enableMarkType_ == EnableConcurrentMarkType::DISABLE ||
+            enableMarkType_ == EnableConcurrentMarkType::CONFIG_DISABLE;
+    }
+    bool IsRequestDisabled() const
+    {
+        return enableMarkType_ == EnableConcurrentMarkType::REQUEST_DISABLE;
+    }
+
+    bool IsConfigDisabled() const
+    {
+        return enableMarkType_ == EnableConcurrentMarkType::CONFIG_DISABLE;
+    }
     void Mark();
     void Finish();
     void ReMark();
@@ -85,6 +118,7 @@ private:
     WorkManager *workManager_ {nullptr};
     size_t heapObjectSize_ {0};
     double duration_ {0.0};
+    EnableConcurrentMarkType enableMarkType_ {EnableConcurrentMarkType::CONFIG_DISABLE};
 
     bool notifyMarkingFinished_ {false};         // notify js-thread that marking is finished and sweeping is needed
     bool vmThreadWaitMarkingFinished_ {false};   // jsMainThread waiting for concurrentGC FINISHED

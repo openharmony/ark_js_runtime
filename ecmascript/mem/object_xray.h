@@ -91,6 +91,9 @@
 #include "ecmascript/module/js_module_source_text.h"
 #include "ecmascript/ts_types/ts_type.h"
 #include "ecmascript/ts_types/ts_type_table.h"
+#include "ecmascript/require/js_cjs_module.h"
+#include "ecmascript/require/js_cjs_require.h"
+#include "ecmascript/require/js_cjs_exports.h"
 
 namespace panda::ecmascript {
 class ObjectXRay {
@@ -517,6 +520,15 @@ public:
                 break;
             case JSType::JS_MODULE_NAMESPACE:
                 ModuleNamespace::Cast(object)->VisitRangeSlot(visitor);
+                break;
+            case JSType::JS_CJS_EXPORTS:
+                JSCjsExports::Cast(object)->VisitRangeSlot(visitor);
+                break;
+            case JSType::JS_CJS_MODULE:
+                JSCjsModule::Cast(object)->VisitRangeSlot(visitor);
+                break;
+            case JSType::JS_CJS_REQUIRE:
+                JSCjsRequire::Cast(object)->VisitRangeSlot(visitor);
                 break;
             default:
                 UNREACHABLE();

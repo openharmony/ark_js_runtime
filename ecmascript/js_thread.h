@@ -44,16 +44,17 @@ struct BCStubEntries {
     static constexpr size_t EXISTING_BC_HANDLER_STUB_ENTRIES_COUNT =
         kungfu::BytecodeStubCSigns::NUM_OF_ALL_NORMAL_STUBS;
     // The number of bytecodes.
-    static constexpr size_t BC_HANDLER_STUB_ENTRIES_COUNT = 0x100;
-    static_assert(EXISTING_BC_HANDLER_STUB_ENTRIES_COUNT <= BC_HANDLER_STUB_ENTRIES_COUNT);
-    Address stubEntries_[BC_HANDLER_STUB_ENTRIES_COUNT] = {0};
+    static constexpr size_t BC_HANDLER_COUNT = kungfu::BytecodeStubCSigns::LAST_VALID_OPCODE + 1;
+    static constexpr size_t COUNT = kungfu::BytecodeStubCSigns::NUM_OF_STUBS;
+    static_assert(EXISTING_BC_HANDLER_STUB_ENTRIES_COUNT <= COUNT);
+    Address stubEntries_[COUNT] = {0};
 
-    static constexpr size_t SizeArch32 = sizeof(uint32_t) * BC_HANDLER_STUB_ENTRIES_COUNT;
-    static constexpr size_t SizeArch64 = sizeof(uint64_t) * BC_HANDLER_STUB_ENTRIES_COUNT;
+    static constexpr size_t SizeArch32 = sizeof(uint32_t) * COUNT;
+    static constexpr size_t SizeArch64 = sizeof(uint64_t) * COUNT;
 
     void Set(size_t index, Address addr)
     {
-        assert(index < BC_HANDLER_STUB_ENTRIES_COUNT);
+        assert(index < COUNT);
         stubEntries_[index] = addr;
     }
 
@@ -67,7 +68,7 @@ struct BCStubEntries {
     }
     void SetNonexistentBCHandlerStubEntries(Address addr)
     {
-        for (size_t i = EXISTING_BC_HANDLER_STUB_ENTRIES_COUNT; i < BC_HANDLER_STUB_ENTRIES_COUNT; i++) {
+        for (size_t i = EXISTING_BC_HANDLER_STUB_ENTRIES_COUNT; i < BC_HANDLER_COUNT; i++) {
             if (stubEntries_[i] == 0) {
                 stubEntries_[i] = addr;
             }
@@ -90,7 +91,7 @@ struct BCStubEntries {
 
     Address Get(size_t index)
     {
-        assert(index < BC_HANDLER_STUB_ENTRIES_COUNT);
+        assert(index < COUNT);
         return stubEntries_[index];
     }
 };
@@ -134,6 +135,37 @@ struct COStubEntries {
     {
         assert(index < COUNT);
         return stubEntries_[index];
+    }
+};
+
+struct BCDebuggerStubEntries {
+    static constexpr size_t EXISTING_BC_HANDLER_STUB_ENTRIES_COUNT =
+        kungfu::BytecodeStubCSigns::NUM_OF_ALL_NORMAL_STUBS;
+    static constexpr size_t COUNT = kungfu::BytecodeStubCSigns::LAST_VALID_OPCODE + 1;
+    Address stubEntries_[COUNT];
+
+    static constexpr size_t SizeArch32 = sizeof(uint32_t) * COUNT;
+    static constexpr size_t SizeArch64 = sizeof(uint64_t) * COUNT;
+
+    void Set(size_t index, Address addr)
+    {
+        assert(index < COUNT);
+        stubEntries_[index] = addr;
+    }
+
+    Address Get(size_t index)
+    {
+        assert(index < COUNT);
+        return stubEntries_[index];
+    }
+
+    void SetNonexistentBCHandlerStubEntries(Address addr)
+    {
+        for (size_t i = EXISTING_BC_HANDLER_STUB_ENTRIES_COUNT; i < COUNT; i++) {
+            if (stubEntries_[i] == 0) {
+                stubEntries_[i] = addr;
+            }
+        }
     }
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(COStubEntries), COStubEntries::SizeArch32, COStubEntries::SizeArch64);
@@ -458,6 +490,18 @@ public:
         return reinterpret_cast<JSThread *>(glue - GetGlueDataOffset());
     }
 
+    bool IsPrintBCOffset() const
+    {
+        return enablePrintBCOffset_;
+    }
+
+    void SetPrintBCOffset(bool flag)
+    {
+        enablePrintBCOffset_ = flag;
+    }
+
+    void CollectBCOffsetInfo();
+
     struct GlueData : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
                                                  JSTaggedValue,
                                                  JSTaggedValue,
@@ -469,7 +513,7 @@ public:
                                                  BCStubEntries,
                                                  RTStubEntries,
                                                  COStubEntries,
-                                                 BCStubEntries,
+                                                 BCDebuggerStubEntries,
                                                  base::AlignedUint64,
                                                  base::AlignedPointer,
                                                  GlobalEnvConstants> {
@@ -572,7 +616,7 @@ public:
         alignas(EAS) BCStubEntries bcStubEntries_;
         alignas(EAS) RTStubEntries rtStubEntries_;
         alignas(EAS) COStubEntries coStubEntries_;
-        alignas(EAS) BCStubEntries bcDebuggerStubEntries_;
+        alignas(EAS) BCDebuggerStubEntries bcDebuggerStubEntries_;
         alignas(EAS) volatile uint64_t threadStateBitField_ {0ULL};
         alignas(EAS) JSTaggedType *frameBase_ {nullptr};
         alignas(EAS) GlobalEnvConstants globalConst_;
@@ -609,6 +653,7 @@ private:
     bool gcState_ {false};
     bool isAsmInterpreter_ {false};
     VmThreadControl *vmThreadControl_ {nullptr};
+    bool enablePrintBCOffset_ {false};
     bool stableArrayElementsGuardians_ {true};
     GlueData glueData_;
 

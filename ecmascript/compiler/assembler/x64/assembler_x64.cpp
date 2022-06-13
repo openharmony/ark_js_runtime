@@ -321,6 +321,7 @@ void AssemblerX64::EmitJa(int32_t offset)
         EmitU8(0x77);
         EmitI8(offset - sizeof(int8_t));
     } else {
+        offset--;
         // 0F 87 : ja rel32
         EmitU8(0x0F);
         EmitU8(0x87);
@@ -336,6 +337,7 @@ void AssemblerX64::EmitJb(int32_t offset)
         EmitU8(0x72);
         EmitI8(offset - sizeof(int8_t));
     } else {
+        offset--;
         // 0F 82 : Jb rel32
         EmitU8(0x0F);
         EmitU8(0x82);
@@ -351,6 +353,7 @@ void AssemblerX64::EmitJz(int32_t offset)
         EmitU8(0x74);
         EmitI8(offset - sizeof(int8_t));
     } else {
+        offset--;
         // 0F 84 : Jz rel32
         EmitU8(0x0F);
         EmitU8(0x84);
@@ -366,6 +369,7 @@ void AssemblerX64::EmitJne(int32_t offset)
         EmitU8(0x75);
         EmitI8(offset - sizeof(int8_t));
     } else {
+        offset--;
         // 0F 85 : Jne rel32
         EmitU8(0x0F);
         EmitU8(0x85);
@@ -381,6 +385,7 @@ void AssemblerX64::EmitJbe(int32_t offset)
         EmitU8(0x76);
         EmitI8(offset - sizeof(int8_t));
     } else {
+        offset--;
         // 0F 86 : Jne rel32
         EmitU8(0x0F);
         EmitU8(0x86);
@@ -396,6 +401,7 @@ void AssemblerX64::EmitJnz(int32_t offset)
         EmitU8(0x75);
         EmitI8(offset - sizeof(int8_t));
     } else {
+        offset--;
         // 0F 85: Jnz rel32
         EmitU8(0x0F);
         EmitU8(0x85);
@@ -411,6 +417,7 @@ void AssemblerX64::EmitJle(int32_t offset)
         EmitU8(0x7E);
         EmitI8(offset - sizeof(int8_t));
     } else {
+        offset--;
         // 0F 8E: Jle rel32
         EmitU8(0x0F);
         EmitU8(0x8E);
@@ -426,6 +433,7 @@ void AssemblerX64::EmitJae(int32_t offset)
         EmitU8(0x73);
         EmitI8(offset - sizeof(int8_t));
     } else {
+        offset--;
         // 0F 83: Jae rel32
         EmitU8(0x0F);
         EmitU8(0x83);
@@ -441,9 +449,26 @@ void AssemblerX64::EmitJg(int32_t offset)
         EmitU8(0x7F);
         EmitI8(offset - sizeof(int8_t));
     } else {
+        offset--;
         // 0F 8F: Jg rel32
         EmitU8(0x0F);
         EmitU8(0x8F);
+        EmitI32(offset - sizeof(int32_t));
+    }
+}
+
+void AssemblerX64::EmitJge(int32_t offset)
+{
+    offset--;
+    if (InRange8(offset)) {
+        // 7D : Jg rel8
+        EmitU8(0x7D);
+        EmitI8(offset - sizeof(int8_t));
+    } else {
+        offset--;
+        // 0F 8F: Jg rel32
+        EmitU8(0x0F);
+        EmitU8(0x8D);
         EmitI32(offset - sizeof(int32_t));
     }
 }
@@ -456,6 +481,7 @@ void AssemblerX64::EmitJe(int32_t offset)
         EmitU8(0x74);
         EmitI8(offset - sizeof(int8_t));
     } else {
+        offset--;
         // 0F 84: Je rel32
         EmitU8(0x0F);
         EmitU8(0x84);
@@ -479,6 +505,7 @@ void AssemblerX64::EmitJnb(int32_t offset)
         EmitU8(0x73);
         EmitI8(offset - sizeof(int8_t));
     } else {
+        offset--;
         // 0F 83: Jnb rel32
         EmitU8(0x0F);
         EmitU8(0x83);
@@ -1193,6 +1220,38 @@ void AssemblerX64::Jg(Label *target, Distance distance)
         // 0F 8F: Jae rel32
         EmitU8(0x0F);
         EmitU8(0x8F);
+        EmitI32(emitPos);
+    }
+}
+
+void AssemblerX64::Jge(Label *target, Distance distance)
+{
+    if (target->IsBound()) {
+        int32_t offset = static_cast<int32_t>(target->GetPos() - GetCurrentPosition());
+        EmitJge(offset);
+        return;
+    }
+    auto pos = GetCurrentPosition();
+    int32_t emitPos = 0;
+    if (distance == Distance::Near) {
+        if (target->IsLinkedNear()) {
+            emitPos = static_cast<int32_t>(target->GetLinkedNearPos() - pos);
+        }
+        // +1: skip opcode
+        target->LinkNearPos(pos + 1);
+        ASSERT(InRange8(emitPos));
+        // 7F : Jg rel8
+        EmitU8(0x7D);
+        EmitI8(static_cast<int8_t>(emitPos));
+    } else {
+        if (target->IsLinked()) {
+            emitPos = static_cast<int32_t>(target->GetLinkedPos());
+        }
+        // 2: skip opcode
+        target->LinkTo(pos + 2);
+        // 0F 8F: Jae rel32
+        EmitU8(0x0F);
+        EmitU8(0x8D);
         EmitI32(emitPos);
     }
 }

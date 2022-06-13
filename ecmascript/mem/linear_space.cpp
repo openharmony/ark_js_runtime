@@ -24,14 +24,13 @@ namespace panda::ecmascript {
 LinearSpace::LinearSpace(Heap *heap, MemSpaceType type, size_t initialCapacity, size_t maximumCapacity)
     : Space(heap->GetHeapRegionAllocator(), type, initialCapacity, maximumCapacity),
       heap_(heap),
-      allocator_(new BumpPointerAllocator()),
       waterLine_(0)
 {
 }
 
 uintptr_t LinearSpace::Allocate(size_t size, bool isPromoted)
 {
-    auto object = allocator_->Allocate(size);
+    auto object = allocator_.Allocate(size);
     if (object != 0) {
         return object;
     }
@@ -39,12 +38,12 @@ uintptr_t LinearSpace::Allocate(size_t size, bool isPromoted)
         if (!isPromoted) {
             heap_->TryTriggerConcurrentMarking();
         }
-        object = allocator_->Allocate(size);
+        object = allocator_.Allocate(size);
     } else if (heap_->GetJSThread()->IsMarking()) {
         // Temporary adjust semi space capacity
         overShootSize_ = SEMI_SPACE_OVERSHOOT_SIZE;
         if (Expand(isPromoted)) {
-            object = allocator_->Allocate(size);
+            object = allocator_.Allocate(size);
         }
     }
     return object;
@@ -56,7 +55,7 @@ bool LinearSpace::Expand(bool isPromoted)
         return false;
     }
 
-    uintptr_t top = allocator_->GetTop();
+    uintptr_t top = allocator_.GetTop();
     auto currentRegion = GetCurrentRegion();
     if (currentRegion != nullptr) {
         if (!isPromoted) {
@@ -73,7 +72,7 @@ bool LinearSpace::Expand(bool isPromoted)
         currentRegion->SetHighWaterMark(top);
     }
     Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE, heap_->GetJSThread());
-    allocator_->Reset(region->GetBegin(), region->GetEnd());
+    allocator_.Reset(region->GetBegin(), region->GetEnd());
 
     AddRegion(region);
     return true;
@@ -82,7 +81,7 @@ bool LinearSpace::Expand(bool isPromoted)
 void LinearSpace::Stop()
 {
     if (GetCurrentRegion() != nullptr) {
-        GetCurrentRegion()->SetHighWaterMark(allocator_->GetTop());
+        GetCurrentRegion()->SetHighWaterMark(allocator_.GetTop());
     }
 }
 
@@ -90,7 +89,7 @@ void LinearSpace::ResetAllocator()
 {
     auto currentRegion = GetCurrentRegion();
     if (currentRegion != nullptr) {
-        allocator_->Reset(currentRegion->GetBegin(), currentRegion->GetEnd(), currentRegion->GetHighWaterMark());
+        allocator_.Reset(currentRegion->GetBegin(), currentRegion->GetEnd(), currentRegion->GetHighWaterMark());
     }
 }
 
@@ -101,7 +100,7 @@ void LinearSpace::IterateOverObjects(const std::function<void(TaggedObject *obje
         auto curPtr = region->GetBegin();
         uintptr_t endPtr;
         if (region == current) {
-            auto top = allocator_->GetTop();
+            auto top = allocator_.GetTop();
             endPtr = curPtr + region->GetAllocatedBytes(top);
         } else {
             endPtr = curPtr + region->GetAllocatedBytes();
@@ -132,7 +131,7 @@ void SemiSpace::Initialize()
 {
     Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE, heap_->GetJSThread());
     AddRegion(region);
-    allocator_->Reset(region->GetBegin(), region->GetEnd());
+    allocator_.Reset(region->GetBegin(), region->GetEnd());
 }
 
 void SemiSpace::Restart()
@@ -168,7 +167,7 @@ bool SemiSpace::SwapRegion(Region *region, SemiSpace *fromSpace)
 
 void SemiSpace::SetWaterLine()
 {
-    waterLine_ = allocator_->GetTop();
+    waterLine_ = allocator_.GetTop();
     allocateAfterLastGC_ = 0;
     Region *last = GetCurrentRegion();
     if (last != nullptr) {

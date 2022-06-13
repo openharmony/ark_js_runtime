@@ -94,49 +94,86 @@ int AssemblerModule::GetArgcFromJSCallMode(JSCallMode mode)
         case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
         case JSCallMode::CALL_SUPER_CALL_WITH_ARGV:
         case JSCallMode::CALL_ENTRY:
+        case JSCallMode::CALL_FROM_AOT:
             return -1;
         case JSCallMode::CALL_GETTER:
             return 0;
         case JSCallMode::CALL_SETTER:
             return 1;
-        case JSCallMode::CALL_FROM_AOT:
         default:
             UNREACHABLE();
     }
 }
 
-size_t AssemblerModule::GetJumpSizeFromJSCallMode(JSCallMode mode)
+int AssemblerModule::GetJumpSizeFromJSCallMode(JSCallMode mode)
 {
-    size_t jumpSize = 0U;
     switch (mode) {
         case JSCallMode::CALL_ARG0:
-            jumpSize = BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8);
-            break;
+            return BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8);
         case JSCallMode::CALL_ARG1:
-            jumpSize = BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8);
-            break;
+            return BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8);
         case JSCallMode::CALL_ARG2:
-            jumpSize = BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8_V8);
-            break;
+            return BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8_V8);
         case JSCallMode::CALL_ARG3:
-            jumpSize = BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8_V8_V8);
-            break;
+            return BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8_V8_V8);
         case JSCallMode::CALL_THIS_WITH_ARGV:
         case JSCallMode::CALL_WITH_ARGV:
         case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
         case JSCallMode::CALL_SUPER_CALL_WITH_ARGV:
-            jumpSize = BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_IMM16_V8);
-            break;
+            return BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_IMM16_V8);
         case JSCallMode::CALL_GETTER:
         case JSCallMode::CALL_SETTER:
         case JSCallMode::CALL_ENTRY:
-            // default return 0
-            break;
         case JSCallMode::CALL_FROM_AOT:
+            return -1;
         default:
             UNREACHABLE();
     }
-    return jumpSize;
+    return 0;
+}
+
+bool AssemblerModule::JSModeHaveThisArg(JSCallMode mode)
+{
+    switch (mode) {
+        case JSCallMode::CALL_ARG0:
+        case JSCallMode::CALL_ARG1:
+        case JSCallMode::CALL_ARG2:
+        case JSCallMode::CALL_ARG3:
+        case JSCallMode::CALL_WITH_ARGV:
+            return false;
+        case JSCallMode::CALL_THIS_WITH_ARGV:
+        case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
+        case JSCallMode::CALL_SUPER_CALL_WITH_ARGV:
+        case JSCallMode::CALL_ENTRY:
+        case JSCallMode::CALL_FROM_AOT:
+        case JSCallMode::CALL_GETTER:
+        case JSCallMode::CALL_SETTER:
+            return true;
+        default:
+            UNREACHABLE();
+    }
+}
+
+bool AssemblerModule::JSModeHaveNewTargetArg(JSCallMode mode)
+{
+    switch (mode) {
+        case JSCallMode::CALL_ARG0:
+        case JSCallMode::CALL_ARG1:
+        case JSCallMode::CALL_ARG2:
+        case JSCallMode::CALL_ARG3:
+        case JSCallMode::CALL_WITH_ARGV:
+        case JSCallMode::CALL_THIS_WITH_ARGV:
+        case JSCallMode::CALL_GETTER:
+        case JSCallMode::CALL_SETTER:
+            return false;
+        case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
+        case JSCallMode::CALL_SUPER_CALL_WITH_ARGV:
+        case JSCallMode::CALL_ENTRY:
+        case JSCallMode::CALL_FROM_AOT:
+            return true;
+        default:
+            UNREACHABLE();
+    }
 }
 
 #define DECLARE_ASM_STUB_X64_GENERATE(name)                                                       \

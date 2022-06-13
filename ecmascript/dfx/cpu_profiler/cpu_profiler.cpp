@@ -27,18 +27,18 @@
 namespace panda::ecmascript {
 CMap<JSMethod *, struct FrameInfo> CpuProfiler::staticStackInfo_ = CMap<JSMethod *, struct FrameInfo>();
 std::atomic<CpuProfiler*> CpuProfiler::singleton_ = nullptr;
-sem_t CpuProfiler::sem_ = sem_t {};
 CMap<std::string, int> CpuProfiler::scriptIdMap_ = CMap<std::string, int>();
 CVector<JSMethod *> CpuProfiler::staticFrameStack_ = CVector<JSMethod *>();
 os::memory::Mutex CpuProfiler::synchronizationMutex_;
+sem_t CpuProfiler::sem_[2] = {}; // 2 : sem_ size is two.
 CpuProfiler::CpuProfiler()
 {
     generator_ = new SamplesRecord();
-    if (sem_init(&sem_, 0, 1) != 0) {
-        LOG(ERROR, RUNTIME) << "sem_ init failed";
+    if (sem_init(&sem_[0], 0, 0) != 0) {
+        LOG(ERROR, RUNTIME) << "sem_[0] init failed";
     }
-    if (sem_wait(&sem_) != 0) {
-        LOG(ERROR, RUNTIME) << "sem_ wait failed";
+    if (sem_init(&sem_[1], 0, 0) != 0) {
+        LOG(ERROR, RUNTIME) << "sem_[1] init failed";
     }
 }
 
@@ -148,8 +148,13 @@ std::unique_ptr<struct ProfileInfo> CpuProfiler::StopCpuProfilerForInfo()
     }
     isProfiling_ = false;
     SamplingProcessor::SetIsStart(false);
-    if (sem_wait(&sem_) != 0) {
-        LOG(ERROR, RUNTIME) << "sem_ wait failed";
+    generator_->SetLastSampleFlag();
+    if (sem_post(&sem_[0]) != 0) {
+        LOG(ERROR, RUNTIME) << "sem_[0] post failed";
+        return profileInfo;
+    }
+    if (sem_wait(&sem_[1]) != 0) {
+        LOG(ERROR, RUNTIME) << "sem_[1] wait failed";
         return profileInfo;
     }
 
@@ -186,8 +191,13 @@ void CpuProfiler::StopCpuProfilerForFile()
     }
     isProfiling_ = false;
     SamplingProcessor::SetIsStart(false);
-    if (sem_wait(&sem_) != 0) {
-        LOG(ERROR, RUNTIME) << "sem_ wait failed";
+    generator_->SetLastSampleFlag();
+    if (sem_post(&sem_[0]) != 0) {
+        LOG(ERROR, RUNTIME) << "sem_[0] post failed";
+        return;
+    }
+    if (sem_wait(&sem_[1]) != 0) {
+        LOG(ERROR, RUNTIME) << "sem_[1] wait failed";
         return;
     }
     generator_->WriteMethodsAndSampleInfo(true);
@@ -202,8 +212,11 @@ void CpuProfiler::StopCpuProfilerForFile()
 
 CpuProfiler::~CpuProfiler()
 {
-    if (sem_destroy(&sem_) != 0) {
-        LOG(ERROR, RUNTIME) << "sem_ destroy failed";
+    if (sem_destroy(&sem_[0]) != 0) {
+        LOG(ERROR, RUNTIME) << "sem_[0] destroy failed";
+    }
+    if (sem_destroy(&sem_[1]) != 0) {
+        LOG(ERROR, RUNTIME) << "sem_[1] destroy failed";
     }
     if (generator_ != nullptr) {
         delete generator_;
@@ -329,8 +342,8 @@ void CpuProfiler::IsNeedAndGetStack(JSThread *thread)
 {
     if (thread->GetStackSignal()) {
         GetFrameStack(thread);
-        if (sem_post(&CpuProfiler::sem_) != 0) {
-            LOG(ERROR, RUNTIME) << "sem_ post failed";
+        if (sem_post(&sem_[0]) != 0) {
+            LOG(ERROR, RUNTIME) << "sem_[0] post failed";
             return;
         }
         thread->SetGetStackSignal(false);
@@ -341,8 +354,8 @@ void CpuProfiler::GetStackSignalHandler([[maybe_unused]] int signal)
 {
     JSThread *thread = SamplingProcessor::GetJSThread();
     GetFrameStack(thread);
-    if (sem_post(&CpuProfiler::sem_) != 0) {
-        LOG(ERROR, RUNTIME) << "sem_ post failed";
+    if (sem_post(&sem_[0]) != 0) {
+        LOG(ERROR, RUNTIME) << "sem_[0] post failed";
         return;
     }
 }

@@ -786,7 +786,7 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
         {
             length = Int32(JSObject::MIN_PROPERTIES_LENGTH);
             array = CallRuntime(glue, RTSTUB_ID(NewTaggedArray), { IntBuildTaggedTypeWithNoGC(*length) });
-            SetPropertiesArray(glue, receiver, *array);
+            SetPropertiesArray(VariableType::JS_POINTER(), glue, receiver, *array);
             Jump(&afterLenCon);
         }
         Bind(&lenNotZero);
@@ -801,7 +801,7 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
         {
             GateRef res = CallRuntime(glue, RTSTUB_ID(NameDictPutIfAbsent),
                                       {receiver, *array, key, value, IntBuildTaggedTypeWithNoGC(*attr), TaggedFalse()});
-            SetPropertiesArray(glue, receiver, res);
+            SetPropertiesArray(VariableType::JS_POINTER(), glue, receiver, res);
             Jump(&exit);
         }
         Bind(&notDictMode);
@@ -827,7 +827,7 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                                 Int32(PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES));
                             GateRef res = CallRuntime(glue, RTSTUB_ID(NameDictPutIfAbsent),
                                 { receiver, *array, key, value, IntBuildTaggedTypeWithNoGC(*attr), TaggedTrue() });
-                            SetPropertiesArray(glue, receiver, res);
+                            SetPropertiesArray(VariableType::JS_POINTER(), glue, receiver, res);
                             result = Undefined(VariableType::INT64());
                             Jump(&exit);
                         }
@@ -838,7 +838,7 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                     GateRef capacity = ComputePropertyCapacityInJSObj(*length);
                     array = CallRuntime(glue, RTSTUB_ID(CopyArray),
                         { *array, IntBuildTaggedTypeWithNoGC(*length), IntBuildTaggedTypeWithNoGC(capacity) });
-                    SetPropertiesArray(glue, receiver, *array);
+                    SetPropertiesArray(VariableType::JS_POINTER(), glue, receiver, *array);
                     Jump(&afterArrLenCon);
                 }
                 Bind(&arrayNotFull);
@@ -3624,9 +3624,9 @@ GateRef Stub::AllocateInYoung(GateRef glue, GateRef size)
     auto endOffset = JSThread::GlueData::GetNewSpaceAllocationEndAddressOffset(env->Is32Bit());
     auto topAddress = Load(VariableType::NATIVE_POINTER(), glue, IntPtr(topOffset));
     auto endAddress = Load(VariableType::NATIVE_POINTER(), glue, IntPtr(endOffset));
-    auto top = Load(VariableType::NATIVE_POINTER(), topAddress, IntPtr(0));
-    auto end = Load(VariableType::NATIVE_POINTER(), endAddress, IntPtr(0));
-    DEFVARIABLE(result, VariableType::INT64(), Undefined());
+    auto top = Load(VariableType::JS_POINTER(), topAddress, IntPtr(0));
+    auto end = Load(VariableType::JS_POINTER(), endAddress, IntPtr(0));
+    DEFVARIABLE(result, VariableType::JS_ANY(), Undefined());
     auto newTop = PtrAdd(top, size);
     Branch(IntPtrGreaterThan(newTop, end), &callRuntime, &success);
     Bind(&success);
@@ -3640,8 +3640,8 @@ GateRef Stub::AllocateInYoung(GateRef glue, GateRef size)
     }
     Bind(&callRuntime);
     {
-        result = TaggedCastToInt64(CallRuntime(glue, RTSTUB_ID(AllocateInYoung), {
-            IntBuildTaggedTypeWithNoGC(size) }));
+        result = CallRuntime(glue, RTSTUB_ID(AllocateInYoung), {
+            IntBuildTaggedTypeWithNoGC(size) });
         Jump(&exit);
     }
     Bind(&exit);
@@ -3650,8 +3650,8 @@ GateRef Stub::AllocateInYoung(GateRef glue, GateRef size)
     return ret;
 }
 
-void Stub::InitializeTaggedArrayWithSpeicalValue(
-    GateRef glue, GateRef array, GateRef value, GateRef start, GateRef length)
+void Stub::InitializeWithSpeicalValue(
+    GateRef glue, GateRef object, GateRef value, GateRef start, GateRef end)
 {
     auto env = GetEnvironment();
     Label entry(env);
@@ -3659,24 +3659,35 @@ void Stub::InitializeTaggedArrayWithSpeicalValue(
     Label exit(env);
     Label begin(env);
     Label storeValue(env);
-    Label end(env);
-    Store(VariableType::INT32(), glue, array, IntPtr(TaggedArray::LENGTH_OFFSET), length);
-    DEFVARIABLE(i, VariableType::INT32(), start);
+    Label endLoop(env);
+
+    DEFVARIABLE(startOffset, VariableType::INT32(), start);
     Jump(&begin);
     LoopBegin(&begin);
     {
-        Branch(Int32UnsignedLessThan(*i, length), &storeValue, &exit);
+        Branch(Int32UnsignedLessThan(*startOffset, end), &storeValue, &exit);
         Bind(&storeValue);
         {
-            SetValueToTaggedArray(VariableType::INT64(), glue, array, *i, value);
-            i = Int32Add(*i, Int32(1));
-            Jump(&end);
+            Store(VariableType::INT64(), glue, object, ChangeInt32ToIntPtr(*startOffset), value);
+            startOffset = Int32Add(*startOffset, Int32(JSTaggedValue::TaggedTypeSize()));
+            Jump(&endLoop);
         }
-        Bind(&end);
+        Bind(&endLoop);
         LoopEnd(&begin);
     }
     Bind(&exit);
     env->SubCfgExit();
+}
+
+void Stub::InitializeTaggedArrayWithSpeicalValue(
+    GateRef glue, GateRef array, GateRef value, GateRef start, GateRef length)
+{
+    Store(VariableType::INT32(), glue, array, IntPtr(TaggedArray::LENGTH_OFFSET), length);
+    auto offset = Int32Mul(start, Int32(JSTaggedValue::TaggedTypeSize()));
+    auto dataOffset = Int32Add(offset, Int32(TaggedArray::DATA_OFFSET));
+    offset = Int32Mul(length, Int32(JSTaggedValue::TaggedTypeSize()));
+    auto endOffset = Int32Add(offset, Int32(TaggedArray::DATA_OFFSET));
+    InitializeWithSpeicalValue(glue, array, value, dataOffset, endOffset);
 }
 
 GateRef Stub::NewLexicalEnv(GateRef glue, GateRef numSlots, GateRef parent)
@@ -3713,7 +3724,44 @@ GateRef Stub::NewLexicalEnv(GateRef glue, GateRef numSlots, GateRef parent)
 
     Bind(&exit);
     env->SubCfgExit();
-    return ChangeInt64ToTagged(object);
+    return object;
+}
+
+GateRef Stub::NewJSObject(GateRef glue, GateRef hclass)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->SubCfgEntry(&entry);
+    Label exit(env);
+
+    auto size = GetObjectSizeFromHClass(hclass);
+    // Be careful. NO GC is allowed when initization is not complete.
+    auto object = AllocateInYoung(glue, size);
+    Label hasPendingException(env);
+    Label noException(env);
+    Branch(TaggedIsException(object), &hasPendingException, &noException);
+    Bind(&noException);
+    {
+        StoreHClass(glue, object, hclass);
+        InitializeWithSpeicalValue(glue,
+            object, Undefined(), Int32(JSObject::SIZE), ChangeIntPtrToInt32(size));
+        auto emptyArray = GetGlobalConstantValue(
+            VariableType::JS_POINTER(), glue, ConstantIndex::EMPTY_ARRAY_OBJECT_INDEX);
+        SetHash(glue, object, Int64(JSTaggedValue(0).GetRawData()));
+        SetPropertiesArray(VariableType::INT64(),
+            glue, object, emptyArray);
+        SetElementsArray(VariableType::INT64(),
+            glue, object, emptyArray);
+        Jump(&exit);
+    }
+    Bind(&hasPendingException);
+    {
+        Jump(&exit);
+    }
+
+    Bind(&exit);
+    env->SubCfgExit();
+    return object;
 }
 
 GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
@@ -3730,17 +3778,20 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
     Label funcNotCallable(env);
     // save pc
     SavePcIfNeeded(glue);
-    Branch(TaggedIsHeapObject(func), &funcIsHeapObject, &funcNotCallable);
-    Bind(&funcIsHeapObject);
-    GateRef hclass = LoadHClass(func);
-    GateRef bitfield = Load(VariableType::INT32(), hclass, IntPtr(JSHClass::BIT_FIELD_OFFSET));
-    Branch(IsCallableFromBitField(bitfield), &funcIsCallable, &funcNotCallable);
-    Bind(&funcNotCallable);
-    {
-        CallRuntime(glue, RTSTUB_ID(ThrowNotCallableException), {});
-        Jump(&exit);
+    GateRef bitfield = 0;
+    if (mode != JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV) {
+        Branch(TaggedIsHeapObject(func), &funcIsHeapObject, &funcNotCallable);
+        Bind(&funcIsHeapObject);
+        GateRef hclass = LoadHClass(func);
+        bitfield = Load(VariableType::INT32(), hclass, IntPtr(JSHClass::BIT_FIELD_OFFSET));
+        Branch(IsCallableFromBitField(bitfield), &funcIsCallable, &funcNotCallable);
+        Bind(&funcNotCallable);
+        {
+            CallRuntime(glue, RTSTUB_ID(ThrowNotCallableException), {});
+            Jump(&exit);
+        }
+        Bind(&funcIsCallable);
     }
-    Bind(&funcIsCallable);
     GateRef method = GetMethodFromJSFunction(func);
     GateRef callField = GetCallFieldFromMethod(method);
     GateRef isNativeMask = Int64(static_cast<uint64_t>(1) << JSMethod::IsNativeBit::START_BIT);
@@ -3784,6 +3835,8 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
                     { glue, nativeCode, func, thisValue, data[0], data[1] });
                 break;
             case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
+                result = CallNGCRuntime(glue, RTSTUB_ID(PushCallNewAndDispatchNative),
+                    { glue, nativeCode, func, data[2], data[0], data[1] });
                 break;
             case JSCallMode::CALL_GETTER:
                 result = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
@@ -3802,15 +3855,17 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
     }
     // 4. call nonNative
     Bind(&methodNotNative);
-    Label funcIsClassConstructor(env);
-    Label funcNotClassConstructor(env);
-    Branch(IsClassConstructorFromBitField(bitfield), &funcIsClassConstructor, &funcNotClassConstructor);
-    Bind(&funcIsClassConstructor);
-    {
-        CallRuntime(glue, RTSTUB_ID(ThrowCallConstructorException), {});
-        Jump(&exit);
+    if (mode != JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV) {
+        Label funcIsClassConstructor(env);
+        Label funcNotClassConstructor(env);
+        Branch(IsClassConstructorFromBitField(bitfield), &funcIsClassConstructor, &funcNotClassConstructor);
+        Bind(&funcIsClassConstructor);
+        {
+            CallRuntime(glue, RTSTUB_ID(ThrowCallConstructorException), {});
+            Jump(&exit);
+        }
+        Bind(&funcNotClassConstructor);
     }
-    Bind(&funcNotClassConstructor);
     GateRef sp = 0;
     if (env->IsAsmInterp()) {
         sp = PtrArgument(static_cast<size_t>(InterpreterHandlerInputs::SP));
@@ -3844,10 +3899,13 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
                 break;
             case JSCallMode::CALL_THIS_WITH_ARGV:
                 result = CallNGCRuntime(glue, RTSTUB_ID(PushCallIThisRangeAndDispatch),
-                    { glue, sp, func, method, callField, data[0], data[1] });
+                    { glue, sp, func, method, callField, data[0], data[1], data[2] });
                 Return();
                 break;
             case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
+                result = CallNGCRuntime(glue, RTSTUB_ID(PushCallNewAndDispatch),
+                    { glue, sp, func, method, callField, data[0], data[1], data[2] });
+                Return();
                 break;
             case JSCallMode::CALL_GETTER:
                 result = CallNGCRuntime(glue, RTSTUB_ID(CallGetter),
@@ -3856,7 +3914,7 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
                 break;
             case JSCallMode::CALL_SETTER:
                 result = CallNGCRuntime(glue, RTSTUB_ID(CallSetter),
-                    { glue, func, method, callField, data[0], data[1], });
+                    { glue, func, method, callField, data[1], data[0] });
                 Jump(&exit);
                 break;
             default:

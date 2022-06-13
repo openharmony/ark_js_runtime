@@ -82,8 +82,8 @@ public:
     GateRef Int32Argument(size_t index);
     GateRef Int64Argument(size_t index);
     GateRef TaggedArgument(size_t index);
-    GateRef TaggedPointerArgument(size_t index, GateType type = GateType::TAGGED_POINTER);
-    GateRef PtrArgument(size_t index, GateType type = GateType::NJS_VALUE);
+    GateRef TaggedPointerArgument(size_t index, GateType type = GateType::TaggedPointer());
+    GateRef PtrArgument(size_t index, GateType type = GateType::NJSValue());
     GateRef Float32Argument(size_t index);
     GateRef Float64Argument(size_t index);
     GateRef Alloca(int size);
@@ -221,14 +221,16 @@ public:
     GateRef ChangeInt64ToInt32(GateRef val);
     GateRef ChangeInt64ToIntPtr(GateRef val);
     GateRef ChangeInt32ToIntPtr(GateRef val);
+    GateRef ChangeIntPtrToInt32(GateRef val);
     // math operation
     GateRef Sqrt(GateRef x);
     GateRef GetSetterFromAccessor(GateRef accessor);
     GateRef GetElementsArray(GateRef object);
-    void SetElementsArray(GateRef glue, GateRef object, GateRef elementsArray);
+    void SetElementsArray(VariableType type, GateRef glue, GateRef object, GateRef elementsArray);
     GateRef GetPropertiesArray(GateRef object);
     // SetProperties in js_object.h
-    void SetPropertiesArray(GateRef glue, GateRef object, GateRef propsArray);
+    void SetPropertiesArray(VariableType type, GateRef glue, GateRef object, GateRef propsArray);
+    void SetHash(GateRef glue, GateRef object, GateRef hash);
     GateRef GetLengthOfTaggedArray(GateRef array);
     // object operation
     GateRef IsJSHClass(GateRef obj);
@@ -244,7 +246,7 @@ public:
     GateRef IsClassConstructor(GateRef object);
     GateRef IsClassPrototype(GateRef object);
     GateRef IsExtensible(GateRef object);
-    GateRef IsEcmaObject(GateRef obj);
+    GateRef TaggedObjectIsEcmaObject(GateRef obj);
     GateRef IsSymbol(GateRef obj);
     GateRef IsString(GateRef obj);
     GateRef TaggedIsBigInt(GateRef obj);
@@ -456,8 +458,11 @@ public:
         VariableType type, GateRef glue, ConstantIndex index);
     void InitializeTaggedArrayWithSpeicalValue(
         GateRef glue, GateRef array, GateRef value, GateRef start, GateRef length);
+    void InitializeWithSpeicalValue(
+        GateRef glue, GateRef object, GateRef value, GateRef start, GateRef end);
     GateRef AllocateInYoung(GateRef glue, GateRef size);
     GateRef NewLexicalEnv(GateRef glue, GateRef numSlots, GateRef parent);
+    GateRef NewJSObject(GateRef glue, GateRef hclass);
     GateRef CallGetterHelper(GateRef glue, GateRef receiver, GateRef holder, GateRef accessor);
     GateRef JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
                            JSCallMode mode, std::initializer_list<GateRef> args);

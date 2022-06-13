@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_SAMPLES_RECORD_H
 #define ECMASCRIPT_SAMPLES_RECORD_H
 
+#include <atomic>
 #include <ctime>
 #include <fstream>
 #include <string>
@@ -66,6 +67,7 @@ public:
     explicit SamplesRecord();
     virtual ~SamplesRecord();
 
+    void SetLastSampleFlag();
     void AddSample(CVector<JSMethod *> sample, uint64_t sampleTimeStamp, bool outToFile);
     void WriteMethodsAndSampleInfo(bool timeEnd);
     CVector<struct CpuProfileNode> GetMethodNodes() const;
@@ -81,13 +83,13 @@ public:
 
     static bool staticGcState_;
     std::ofstream fileHandle_;
-
 private:
     void WriteAddNodes();
     void WriteAddSamples();
     struct FrameInfo GetMethodInfo(JSMethod *method);
     struct FrameInfo GetGcInfo();
 
+    std::atomic_bool isLastSample_ = false;
     std::unique_ptr<struct ProfileInfo> profileInfo_;
     CVector<int> stackTopLines_;
     CMap<struct MethodKey, int> methodMap_;

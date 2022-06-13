@@ -314,7 +314,6 @@ private:
     V(CallRuntime)                          \
     V(AsmInterpreterEntry)                  \
     V(GeneratorReEnterAsmInterp)            \
-    V(JSCallDispatch)                       \
     V(CallRuntimeWithArgv)                  \
     V(OptimizedCallOptimized)               \
     V(PushCallArgs0AndDispatch)             \
@@ -325,6 +324,8 @@ private:
     V(PushCallIRangeAndDispatch)            \
     V(PushCallIRangeAndDispatchNative)      \
     V(PushCallIThisRangeAndDispatch)        \
+    V(PushCallNewAndDispatchNative)         \
+    V(PushCallNewAndDispatch)               \
     V(CallGetter)                           \
     V(CallSetter)                           \
     V(ResumeRspAndDispatch)                 \

@@ -16,16 +16,21 @@
 #include "ecmascript/snapshot/mem/snapshot_processor.h"
 
 #include "ecmascript/base/error_type.h"
+#include "ecmascript/builtins/builtins_ark_tools.h"
 #include "ecmascript/builtins/builtins_array.h"
 #include "ecmascript/builtins/builtins_arraybuffer.h"
 #include "ecmascript/builtins/builtins_async_function.h"
 #include "ecmascript/builtins/builtins_atomics.h"
 #include "ecmascript/builtins/builtins_bigint.h"
 #include "ecmascript/builtins/builtins_boolean.h"
+#include "ecmascript/builtins/builtin_cjs_exports.h"
+#include "ecmascript/builtins/builtin_cjs_module.h"
+#include "ecmascript/builtins/builtin_cjs_require.h"
 #include "ecmascript/builtins/builtins_collator.h"
 #include "ecmascript/builtins/builtins_dataview.h"
 #include "ecmascript/builtins/builtins_date.h"
 #include "ecmascript/builtins/builtins_date_time_format.h"
+#include "ecmascript/builtins/builtins_displaynames.h"
 #include "ecmascript/builtins/builtins_errors.h"
 #include "ecmascript/builtins/builtins_finalization_registry.h"
 #include "ecmascript/builtins/builtins_function.h"
@@ -34,6 +39,7 @@
 #include "ecmascript/builtins/builtins_intl.h"
 #include "ecmascript/builtins/builtins_iterator.h"
 #include "ecmascript/builtins/builtins_json.h"
+#include "ecmascript/builtins/builtins_list_format.h"
 #include "ecmascript/builtins/builtins_locale.h"
 #include "ecmascript/builtins/builtins_map.h"
 #include "ecmascript/builtins/builtins_math.h"
@@ -49,6 +55,7 @@
 #include "ecmascript/builtins/builtins_regexp.h"
 #include "ecmascript/builtins/builtins_relative_time_format.h"
 #include "ecmascript/builtins/builtins_set.h"
+#include "ecmascript/builtins/builtins_sharedarraybuffer.h"
 #include "ecmascript/builtins/builtins_string.h"
 #include "ecmascript/builtins/builtins_string_iterator.h"
 #include "ecmascript/builtins/builtins_symbol.h"
@@ -85,6 +92,7 @@
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_map_iterator.h"
+#include "ecmascript/js_regexp_iterator.h"
 #include "ecmascript/js_set_iterator.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/jspandafile/js_pandafile.h"
@@ -100,6 +108,7 @@ using Number = builtins::BuiltinsNumber;
 using BuiltinsBigInt = builtins::BuiltinsBigInt;
 using Object = builtins::BuiltinsObject;
 using Date = builtins::BuiltinsDate;
+using DisplayNames = builtins::BuiltinsDisplayNames;
 using Symbol = builtins::BuiltinsSymbol;
 using Boolean = builtins::BuiltinsBoolean;
 using BuiltinsMap = builtins::BuiltinsMap;
@@ -127,6 +136,7 @@ using Function = builtins::BuiltinsFunction;
 using Math = builtins::BuiltinsMath;
 using Atomics = builtins::BuiltinsAtomics;
 using ArrayBuffer = builtins::BuiltinsArrayBuffer;
+using SharedArrayBuffer = builtins::BuiltinsSharedArrayBuffer;
 using Json = builtins::BuiltinsJson;
 using Proxy = builtins::BuiltinsProxy;
 using Reflect = builtins::BuiltinsReflect;
@@ -135,6 +145,12 @@ using GeneratorObject = builtins::BuiltinsGenerator;
 using Promise = builtins::BuiltinsPromise;
 using BuiltinsPromiseHandler = builtins::BuiltinsPromiseHandler;
 using BuiltinsPromiseJob = builtins::BuiltinsPromiseJob;
+using ListFormat = builtins::BuiltinsListFormat;
+using CjsExports = builtins::BuiltinsCjsExports;
+using CjsModule = builtins::BuiltinsCjsModule;
+using CjsRequire = builtins::BuiltinsCjsRequire;
+using ArkTools = builtins::BuiltinsArkTools;
+
 using ErrorType = base::ErrorType;
 using DataView = builtins::BuiltinsDataView;
 using Intl = builtins::BuiltinsIntl;
@@ -171,6 +187,7 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(Function::FunctionPrototypeCall),
     reinterpret_cast<uintptr_t>(Function::FunctionPrototypeToString),
     reinterpret_cast<uintptr_t>(Object::ObjectConstructor),
+    reinterpret_cast<uintptr_t>(Object::FromEntries),
     reinterpret_cast<uintptr_t>(Error::ErrorConstructor),
     reinterpret_cast<uintptr_t>(Error::ToString),
     reinterpret_cast<uintptr_t>(RangeError::RangeErrorConstructor),
@@ -261,6 +278,10 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(Date::Now),
     reinterpret_cast<uintptr_t>(Date::Parse),
     reinterpret_cast<uintptr_t>(Date::UTC),
+    reinterpret_cast<uintptr_t>(DisplayNames::DisplayNamesConstructor),
+    reinterpret_cast<uintptr_t>(DisplayNames::SupportedLocalesOf),
+    reinterpret_cast<uintptr_t>(DisplayNames::Of),
+    reinterpret_cast<uintptr_t>(DisplayNames::ResolvedOptions),
     reinterpret_cast<uintptr_t>(Object::Assign),
     reinterpret_cast<uintptr_t>(Object::Create),
     reinterpret_cast<uintptr_t>(Object::DefineProperties),
@@ -306,6 +327,7 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(RegExp::Split),
     reinterpret_cast<uintptr_t>(RegExp::Search),
     reinterpret_cast<uintptr_t>(RegExp::Match),
+    reinterpret_cast<uintptr_t>(RegExp::MatchAll),
     reinterpret_cast<uintptr_t>(RegExp::Replace),
     reinterpret_cast<uintptr_t>(BuiltinsSet::SetConstructor),
     reinterpret_cast<uintptr_t>(BuiltinsSet::Add),
@@ -376,6 +398,9 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(BuiltinsArray::Of),
     reinterpret_cast<uintptr_t>(BuiltinsArray::Species),
     reinterpret_cast<uintptr_t>(BuiltinsArray::Unscopables),
+    reinterpret_cast<uintptr_t>(BuiltinsArray::Includes),
+    reinterpret_cast<uintptr_t>(BuiltinsArray::Flat),
+    reinterpret_cast<uintptr_t>(BuiltinsArray::FlatMap),
     reinterpret_cast<uintptr_t>(BuiltinsTypedArray::TypedArrayBaseConstructor),
     reinterpret_cast<uintptr_t>(BuiltinsTypedArray::CopyWithin),
     reinterpret_cast<uintptr_t>(BuiltinsTypedArray::Entries),
@@ -408,6 +433,7 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(BuiltinsTypedArray::From),
     reinterpret_cast<uintptr_t>(BuiltinsTypedArray::Of),
     reinterpret_cast<uintptr_t>(BuiltinsTypedArray::Species),
+    reinterpret_cast<uintptr_t>(BuiltinsTypedArray::Includes),
     reinterpret_cast<uintptr_t>(BuiltinsTypedArray::Int8ArrayConstructor),
     reinterpret_cast<uintptr_t>(BuiltinsTypedArray::Uint8ArrayConstructor),
     reinterpret_cast<uintptr_t>(BuiltinsTypedArray::Uint8ClampedArrayConstructor),
@@ -417,6 +443,8 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(BuiltinsTypedArray::Uint32ArrayConstructor),
     reinterpret_cast<uintptr_t>(BuiltinsTypedArray::Float32ArrayConstructor),
     reinterpret_cast<uintptr_t>(BuiltinsTypedArray::Float64ArrayConstructor),
+    reinterpret_cast<uintptr_t>(BuiltinsTypedArray::BigInt64ArrayConstructor),
+    reinterpret_cast<uintptr_t>(BuiltinsTypedArray::BigUint64ArrayConstructor),
     reinterpret_cast<uintptr_t>(BuiltinsString::StringConstructor),
     reinterpret_cast<uintptr_t>(BuiltinsString::CharAt),
     reinterpret_cast<uintptr_t>(BuiltinsString::CharCodeAt),
@@ -454,6 +482,11 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(ArrayBuffer::IsView),
     reinterpret_cast<uintptr_t>(ArrayBuffer::Species),
     reinterpret_cast<uintptr_t>(ArrayBuffer::GetByteLength),
+    reinterpret_cast<uintptr_t>(SharedArrayBuffer::SharedArrayBufferConstructor),
+    reinterpret_cast<uintptr_t>(SharedArrayBuffer::IsSharedArrayBuffer),
+    reinterpret_cast<uintptr_t>(SharedArrayBuffer::Species),
+    reinterpret_cast<uintptr_t>(SharedArrayBuffer::GetByteLength),
+    reinterpret_cast<uintptr_t>(SharedArrayBuffer::Slice),
     reinterpret_cast<uintptr_t>(DataView::DataViewConstructor),
     reinterpret_cast<uintptr_t>(DataView::GetFloat32),
     reinterpret_cast<uintptr_t>(DataView::GetFloat64),
@@ -524,6 +557,7 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(Atomics::Wait),
     reinterpret_cast<uintptr_t>(Atomics::Exchange),
     reinterpret_cast<uintptr_t>(Atomics::CompareExchange),
+    reinterpret_cast<uintptr_t>(Atomics::IsLockFree),
     reinterpret_cast<uintptr_t>(Atomics::Store),
     reinterpret_cast<uintptr_t>(Atomics::Load),
     reinterpret_cast<uintptr_t>(Atomics::Notify),
@@ -539,6 +573,7 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(BuiltinsIterator::Throw),
     reinterpret_cast<uintptr_t>(BuiltinsIterator::GetIteratorObj),
     reinterpret_cast<uintptr_t>(JSForInIterator::Next),
+    reinterpret_cast<uintptr_t>(JSRegExpIterator::Next),
     reinterpret_cast<uintptr_t>(JSSetIterator::Next),
     reinterpret_cast<uintptr_t>(JSMapIterator::Next),
     reinterpret_cast<uintptr_t>(JSArrayIterator::Next),
@@ -613,6 +648,25 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(PluralRules::SupportedLocalesOf),
     reinterpret_cast<uintptr_t>(PluralRules::Select),
     reinterpret_cast<uintptr_t>(PluralRules::ResolvedOptions),
+    reinterpret_cast<uintptr_t>(ListFormat::ListFormatConstructor),
+    reinterpret_cast<uintptr_t>(ListFormat::SupportedLocalesOf),
+    reinterpret_cast<uintptr_t>(ListFormat::Format),
+    reinterpret_cast<uintptr_t>(ListFormat::FormatToParts),
+    reinterpret_cast<uintptr_t>(ListFormat::ResolvedOptions),
+    reinterpret_cast<uintptr_t>(CjsExports::CjsExportsConstructor),
+    reinterpret_cast<uintptr_t>(CjsModule::CjsModuleConstructor),
+    reinterpret_cast<uintptr_t>(CjsModule::Compiler),
+    reinterpret_cast<uintptr_t>(CjsModule::Load),
+    reinterpret_cast<uintptr_t>(CjsModule::Require),
+    reinterpret_cast<uintptr_t>(CjsModule::GetExportsForCircularRequire),
+    reinterpret_cast<uintptr_t>(CjsModule::UpdateChildren),
+    reinterpret_cast<uintptr_t>(CjsModule::ResolveFilename),
+    reinterpret_cast<uintptr_t>(CjsRequire::CjsRequireConstructor),
+    reinterpret_cast<uintptr_t>(CjsRequire::Main),
+    reinterpret_cast<uintptr_t>(CjsRequire::Resolve),
+    reinterpret_cast<uintptr_t>(ArkTools::ObjectDump),
+    reinterpret_cast<uintptr_t>(ArkTools::CompareHClass),
+    reinterpret_cast<uintptr_t>(ArkTools::DumpHClass),
 
     // non ECMA standard jsapi containers.
     reinterpret_cast<uintptr_t>(ContainersPrivate::Load),
@@ -910,6 +964,21 @@ uint32_t SnapshotProcessor::StatisticsSpaceObjectSize(Space* space)
     return static_cast<uint32_t>(objSize);
 }
 
+void SnapshotProcessor::ProcessObjectQueue(CQueue<TaggedObject *> *queue,
+                                           std::unordered_map<uint64_t, ObjectEncode> *data)
+{
+    while (!queue->empty()) {
+        auto taggedObject = queue->front();
+        if (taggedObject == nullptr) {
+            break;
+        }
+        queue->pop();
+        SerializeObject(taggedObject, queue, data);
+    }
+
+    StopAllocate();
+}
+
 uintptr_t SnapshotProcessor::AllocateObjectToLocalSpace(Space *space, size_t objectSize)
 {
     uintptr_t newObj = 0;
@@ -1052,7 +1121,8 @@ void SnapshotProcessor::DeserializePandaMethod(uintptr_t begin, uintptr_t end, J
     }
 }
 
-void SnapshotProcessor::HandleRootObject(SnapshotType type, uintptr_t rootObjectAddr, size_t objType, size_t objIndex)
+void SnapshotProcessor::HandleRootObject(SnapshotType type, uintptr_t rootObjectAddr,
+                                         size_t objType, size_t &constSpecialIndex)
 {
     switch (type) {
         case SnapshotType::VM_ROOT:
@@ -1062,10 +1132,19 @@ void SnapshotProcessor::HandleRootObject(SnapshotType type, uintptr_t rootObject
                 vm_->SetMicroJobQueue(reinterpret_cast<job::MicroJobQueue *>(rootObjectAddr));
             }
             break;
-        case SnapshotType::GLOBAL_CONST: {
+        case SnapshotType::BUILTINS: {
             JSTaggedValue result(rootObjectAddr);
             auto constants = const_cast<GlobalEnvConstants *>(vm_->GetJSThread()->GlobalConstants());
-            constants->SetConstant(ConstantIndex(objIndex), result);
+            size_t constCount = constants->GetConstantCount();
+            while (constants->IsSpecialOrUndefined(constSpecialIndex)) {
+                constSpecialIndex++; // Skip special or undefined value
+            }
+            if (constSpecialIndex < constCount) {
+                constants->SetConstant(ConstantIndex(constSpecialIndex), result);
+            } else {
+                vm_->SetGlobalEnv(reinterpret_cast<GlobalEnv *>(rootObjectAddr));
+            }
+            constSpecialIndex++;
             break;
         }
         default:
@@ -1074,7 +1153,7 @@ void SnapshotProcessor::HandleRootObject(SnapshotType type, uintptr_t rootObject
 }
 
 void SnapshotProcessor::SerializeObject(TaggedObject *objectHeader, CQueue<TaggedObject *> *queue,
-                                        std::unordered_map<uint64_t, std::pair<uint64_t, EncodeBit>> *data)
+                                        std::unordered_map<uint64_t, ObjectEncode> *data)
 {
     auto hclass = objectHeader->GetClass();
     JSType objectType = hclass->GetObjectType();
@@ -1134,7 +1213,10 @@ void SnapshotProcessor::RelocateSpaceObject(Space* space, SnapshotType type, JSM
 {
     size_t others = 0;
     size_t objIndex = 0;
-    space->EnumerateRegions([&others, &objIndex, &rootObjSize, &type, this, methods, &methodNums](Region *current) {
+    size_t constSpecialIndex = 0;
+    EcmaStringTable *stringTable = vm_->GetEcmaStringTable();
+    space->EnumerateRegions([stringTable, &others, &objIndex, &rootObjSize, &constSpecialIndex,
+                            &type, this, methods, &methodNums](Region *current) {
         if (!current->NeedRelocate()) {
             return;
         }
@@ -1158,8 +1240,13 @@ void SnapshotProcessor::RelocateSpaceObject(Space* space, SnapshotType type, JSM
             TaggedObject *objectHeader = reinterpret_cast<TaggedObject *>(begin);
             DeserializeClassWord(objectHeader);
             DeserializeField(objectHeader);
+            if (builtinsDeserialize_ && JSType(objType) == JSType::STRING) {
+                auto str = reinterpret_cast<EcmaString *>(begin);
+                str->ClearInternStringFlag();
+                stringTable->InsertStringIfNotExist(str);
+            }
             if (objIndex < rootObjSize) {
-                HandleRootObject(type, begin, objType, objIndex);
+                HandleRootObject(type, begin, objType, constSpecialIndex);
             }
             begin = begin + AlignUp(objectHeader->GetClass()->SizeFromJSHClass(objectHeader),
                                     static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
@@ -1170,30 +1257,23 @@ void SnapshotProcessor::RelocateSpaceObject(Space* space, SnapshotType type, JSM
 
 EncodeBit SnapshotProcessor::SerializeObjectHeader(TaggedObject *objectHeader, size_t objectType,
                                                    CQueue<TaggedObject *> *queue,
-                                                   std::unordered_map<uint64_t, std::pair<uint64_t, EncodeBit>> *data)
+                                                   std::unordered_map<uint64_t, ObjectEncode> *data)
 {
-    auto *hclass = objectHeader->GetClass();
-    EncodeBit encodeBit(0);
+    auto hclass = objectHeader->GetClass();
     ASSERT(hclass != nullptr);
-    size_t hclassIndex = vm_->GetSnapshotEnv()->GetEnvObjectIndex(ToUintPtr(hclass));
-    if (hclassIndex != SnapshotEnv::MAX_UINT_32) {
-        encodeBit.SetGlobalEnvConst();
-        encodeBit.SetNativeOrGlobalIndex(hclassIndex);
-        encodeBit.SetObjectType(objectType);
-        return encodeBit;
-    }
+    EncodeBit encodeBit(0);
     if (data->find(ToUintPtr(hclass)) == data->end()) {
         encodeBit = EncodeTaggedObject(hclass, queue, data);
     } else {
-        std::pair<uint64_t, EncodeBit> valuePair = data->find(ToUintPtr(hclass))->second;
-        encodeBit = valuePair.second;
+        ObjectEncode objectEncodePair = data->find(ToUintPtr(hclass))->second;
+        encodeBit = objectEncodePair.second;
     }
     encodeBit.SetObjectType(objectType);
     return encodeBit;
 }
 
 uint64_t SnapshotProcessor::SerializeTaggedField(JSTaggedType *tagged, CQueue<TaggedObject *> *queue,
-                                                 std::unordered_map<uint64_t, std::pair<uint64_t, EncodeBit>> *data)
+                                                 std::unordered_map<uint64_t, ObjectEncode> *data)
 {
     JSTaggedValue taggedValue(*tagged);
     if (taggedValue.IsWeak()) {
@@ -1213,17 +1293,11 @@ uint64_t SnapshotProcessor::SerializeTaggedField(JSTaggedType *tagged, CQueue<Ta
     }
 
     EncodeBit encodeBit(0);
-    size_t globalEnvIndex = vm_->GetSnapshotEnv()->GetEnvObjectIndex(ToUintPtr(taggedValue.GetTaggedObject()));
-    if (globalEnvIndex != SnapshotEnv::MAX_UINT_32) {
-        encodeBit.SetGlobalEnvConst();
-        encodeBit.SetNativeOrGlobalIndex(globalEnvIndex);
-        return encodeBit.GetValue();
-    }
     if (data->find(*tagged) == data->end()) {
         encodeBit = EncodeTaggedObject(taggedValue.GetTaggedObject(), queue, data);
     } else {
-        std::pair<uint64_t, EncodeBit> valuePair = data->find(taggedValue.GetRawData())->second;
-        encodeBit = valuePair.second;
+        ObjectEncode objectEncodePair = data->find(taggedValue.GetRawData())->second;
+        encodeBit = objectEncodePair.second;
     }
 
     if (taggedValue.IsString()) {
@@ -1235,7 +1309,7 @@ uint64_t SnapshotProcessor::SerializeTaggedField(JSTaggedType *tagged, CQueue<Ta
 void SnapshotProcessor::DeserializeTaggedField(uint64_t *value)
 {
     EncodeBit encodeBit(*value);
-    if (encodeBit.IsGlobalEnvConst()) {
+    if (!builtinsDeserialize_ && encodeBit.IsGlobalEnvConst()) {
         size_t index = encodeBit.GetNativeOrGlobalIndex();
         auto globalEnv = vm_->GetGlobalEnv();
         auto globalEnvObjectValue = globalEnv->GetGlobalEnvObjectByIndex(index);
@@ -1257,7 +1331,7 @@ void SnapshotProcessor::DeserializeTaggedField(uint64_t *value)
 void SnapshotProcessor::DeserializeClassWord(TaggedObject *object)
 {
     EncodeBit encodeBit(*reinterpret_cast<uint64_t *>(object));
-    if (encodeBit.IsGlobalEnvConst()) {
+    if (!builtinsDeserialize_ && encodeBit.IsGlobalEnvConst()) {
         size_t hclassIndex = encodeBit.GetNativeOrGlobalIndex();
         auto globalConst = const_cast<GlobalEnvConstants *>(vm_->GetJSThread()->GlobalConstants());
         JSTaggedValue hclassValue = globalConst->GetGlobalConstantObject(hclassIndex);
@@ -1338,13 +1412,15 @@ size_t SnapshotProcessor::SearchNativeMethodIndex(void *nativePointer)
             return i;
         }
     }
-    return Constants::MAX_C_POINTER_INDEX;
+
+    LOG_ECMA(FATAL) << "native method did not register in g_table, please register it first";
+    UNREACHABLE();
 }
 
 uintptr_t SnapshotProcessor::TaggedObjectEncodeBitToAddr(EncodeBit taggedBit)
 {
     ASSERT(taggedBit.IsReference());
-    if (taggedBit.IsReferenceToString()) {
+    if (!builtinsDeserialize_ && taggedBit.IsReferenceToString()) {
         size_t stringIndex = taggedBit.GetStringIndex();
         return stringVector_[stringIndex];
     }
@@ -1364,9 +1440,6 @@ void SnapshotProcessor::DeserializeNativePointer(uint64_t *value)
     uintptr_t addr = 0U;
     size_t nativeTableSize = GetNativeTableSize();
 
-    if (index == Constants::MAX_C_POINTER_INDEX) {
-        return;
-    }
     if (index < nativeTableSize - Constants::PROGRAM_NATIVE_METHOD_BEGIN) {
         addr = reinterpret_cast<uintptr_t>(vm_->GetFactory()->nativeMethods_.at(index));
     } else if (index < nativeTableSize) {
@@ -1409,15 +1482,27 @@ void SnapshotProcessor::SerializePandaFileMethod()
 }
 
 EncodeBit SnapshotProcessor::EncodeTaggedObject(TaggedObject *objectHeader, CQueue<TaggedObject *> *queue,
-                                                std::unordered_map<uint64_t,
-                                                                   std::pair<uint64_t, ecmascript::EncodeBit>> *data)
+                                                std::unordered_map<uint64_t, ObjectEncode> *data)
 {
-    if (objectHeader->GetClass()->GetObjectType() == JSType::STRING) {
-        ASSERT(stringVector_.size() < Constants::MAX_STRING_SIZE);
-        EncodeBit encodeBit(stringVector_.size());
-        stringVector_.emplace_back(ToUintPtr(objectHeader));
-        data->emplace(ToUintPtr(objectHeader), std::make_pair(0U, encodeBit));
-        return encodeBit;
+    if (!builtinsSerialize_) {
+        // String duplicate
+        if (objectHeader->GetClass()->GetObjectType() == JSType::STRING) {
+            ASSERT(stringVector_.size() < Constants::MAX_STRING_SIZE);
+            EncodeBit encodeBit(stringVector_.size());
+            stringVector_.emplace_back(ToUintPtr(objectHeader));
+            data->emplace(ToUintPtr(objectHeader), std::make_pair(0U, encodeBit));
+            return encodeBit;
+        }
+
+        // builtins object reuse
+        size_t globalEnvIndex = vm_->GetSnapshotEnv()->GetEnvObjectIndex(ToUintPtr(objectHeader));
+        if (globalEnvIndex != SnapshotEnv::MAX_UINT_32) {
+            EncodeBit encodeBit(0);
+            encodeBit.SetGlobalEnvConst();
+            encodeBit.SetNativeOrGlobalIndex(globalEnvIndex);
+            data->emplace(ToUintPtr(objectHeader), std::make_pair(0U, encodeBit));
+            return encodeBit;
+        }
     }
     queue->emplace(objectHeader);
     size_t objectSize = objectHeader->GetClass()->SizeFromJSHClass(objectHeader);
@@ -1429,15 +1514,19 @@ EncodeBit SnapshotProcessor::EncodeTaggedObject(TaggedObject *objectHeader, CQue
         LOG_ECMA_MEM(FATAL) << "It is a zero object. Not Support.";
     }
     uintptr_t newObj = 0;
-    auto region = Region::ObjectAddressToRange(objectHeader);
-    if (region->InYoungOrOldSpace()) {
-        newObj = AllocateObjectToLocalSpace(oldLocalSpace_, objectSize);
-    } else if (region->InMachineCodeSpace()) {
-        newObj = AllocateObjectToLocalSpace(machineCodeLocalSpace_, objectSize);
-    } else if (region->InNonMovableSpace()) {
-        newObj = AllocateObjectToLocalSpace(nonMovableLocalSpace_, objectSize);
-    } else {
+    if (builtinsSerialize_) {
         newObj = AllocateObjectToLocalSpace(snapshotLocalSpace_, objectSize);
+    } else {
+        auto region = Region::ObjectAddressToRange(objectHeader);
+        if (region->InYoungOrOldSpace()) {
+            newObj = AllocateObjectToLocalSpace(oldLocalSpace_, objectSize);
+        } else if (region->InMachineCodeSpace()) {
+            newObj = AllocateObjectToLocalSpace(machineCodeLocalSpace_, objectSize);
+        } else if (region->InNonMovableSpace()) {
+            newObj = AllocateObjectToLocalSpace(nonMovableLocalSpace_, objectSize);
+        } else {
+            newObj = AllocateObjectToLocalSpace(snapshotLocalSpace_, objectSize);
+        }
     }
 
     if (newObj == 0) {
@@ -1457,8 +1546,7 @@ EncodeBit SnapshotProcessor::EncodeTaggedObject(TaggedObject *objectHeader, CQue
 }
 
 void SnapshotProcessor::EncodeTaggedObjectRange(ObjectSlot start, ObjectSlot end, CQueue<TaggedObject *> *queue,
-                                                std::unordered_map<uint64_t,
-                                                                   std::pair<uint64_t, ecmascript::EncodeBit>> *data)
+                                                std::unordered_map<uint64_t, ObjectEncode> *data)
 {
     while (start < end) {
         JSTaggedValue object(start.GetTaggedType());

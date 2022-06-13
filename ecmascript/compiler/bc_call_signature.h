@@ -180,7 +180,9 @@ namespace panda::ecmascript::kungfu {
     V(SingleStepDebugging)                               \
     V(HandleOverflow)                                    \
     V(BCDebuggerEntry)                                   \
-    V(BCDebuggerExceptionEntry)
+    V(BCDebuggerExceptionEntry)                          \
+    V(NewObjectDynRangeReturn)                           \
+    V(InterpreterGetPropertyByName)                      \
 
 #define INTERPRETER_IGNORED_BC_STUB_LIST(V) \
     ASM_INTERPRETER_BC_STUB_LIST(IGNORE_BC_STUB, IGNORE_BC_STUB, V)
@@ -193,6 +195,8 @@ namespace panda::ecmascript::kungfu {
 
 class BytecodeStubCSigns {
 public:
+    // is uint8 max
+    static constexpr size_t LAST_VALID_OPCODE = 0xFF;
     // all valid stub, include normal and helper stub
     enum ValidID {
 #define DEF_VALID_BC_STUB_ID(name) name,
@@ -205,15 +209,11 @@ public:
     enum ID {
 #define DEF_BC_STUB_ID(name) ID_##name,
         ASM_INTERPRETER_BC_STUB_ID_LIST(DEF_BC_STUB_ID)
-#undef DEF_BC_STUB_ID
-        NUM_OF_ALL_NORMAL_STUBS
-    };
-
-    enum HelperID {
-#define DEF_BC_STUB_ID(name) HELPER_ID_##name,
+        NUM_OF_ALL_NORMAL_STUBS,
+        lastOpcode = LAST_VALID_OPCODE, // last Opcode is max opcode size
         ASM_INTERPRETER_BC_HELPER_STUB_LIST(DEF_BC_STUB_ID)
 #undef DEF_BC_STUB_ID
-        NUM_OF_ALL_HELPER_STUBS
+        NUM_OF_STUBS
     };
 
     static void Initialize();
@@ -269,5 +269,6 @@ enum class CallDispatchInputs : size_t {
 };
 
 #define BYTECODE_STUB_END_ID BytecodeStubCSigns::ID_ExceptionHandler
+#define BCSTUB_ID(name) kungfu::BytecodeStubCSigns::ID_##name
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_BC_CALL_SIGNATURE_H

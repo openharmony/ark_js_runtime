@@ -22,7 +22,7 @@ namespace panda::ecmascript::kungfu {
 class VariableType {
 public:
     explicit VariableType()
-        : machineType_(MachineType::NOVALUE), gateType_(GateType::EMPTY)
+        : machineType_(MachineType::NOVALUE), gateType_(GateType::Empty())
     {
     }
 
@@ -43,62 +43,62 @@ public:
 
     static VariableType VOID()
     {
-        return VariableType(MachineType::NOVALUE, GateType::EMPTY);
+        return VariableType(MachineType::NOVALUE, GateType::Empty());
     }
 
     static VariableType BOOL()
     {
-        return VariableType(MachineType::I1, GateType::NJS_VALUE);
+        return VariableType(MachineType::I1, GateType::NJSValue());
     }
 
     static VariableType INT8()
     {
-        return VariableType(MachineType::I8, GateType::NJS_VALUE);
+        return VariableType(MachineType::I8, GateType::NJSValue());
     }
 
     static VariableType INT16()
     {
-        return VariableType(MachineType::I16, GateType::NJS_VALUE);
+        return VariableType(MachineType::I16, GateType::NJSValue());
     }
 
     static VariableType INT32()
     {
-        return VariableType(MachineType::I32, GateType::NJS_VALUE);
+        return VariableType(MachineType::I32, GateType::NJSValue());
     }
 
     static VariableType INT64()
     {
-        return VariableType(MachineType::I64, GateType::NJS_VALUE);
+        return VariableType(MachineType::I64, GateType::NJSValue());
     }
 
     static VariableType FLOAT32()
     {
-        return VariableType(MachineType::F32, GateType::NJS_VALUE);
+        return VariableType(MachineType::F32, GateType::NJSValue());
     }
 
     static VariableType FLOAT64()
     {
-        return VariableType(MachineType::F64, GateType::NJS_VALUE);
+        return VariableType(MachineType::F64, GateType::NJSValue());
     }
 
     static VariableType NATIVE_POINTER()
     {
-        return VariableType(MachineType::ARCH, GateType::NJS_VALUE);
+        return VariableType(MachineType::ARCH, GateType::NJSValue());
     }
 
     static VariableType JS_ANY()
     {
-        return VariableType(MachineType::I64, GateType::TAGGED_VALUE);
+        return VariableType(MachineType::I64, GateType::TaggedValue());
     }
 
     static VariableType JS_POINTER()
     {
-        return VariableType(MachineType::I64, GateType::TAGGED_POINTER);
+        return VariableType(MachineType::I64, GateType::TaggedPointer());
     }
 
     static VariableType JS_NOT_POINTER()
     {
-        return VariableType(MachineType::I64, GateType::TAGGED_NPOINTER);
+        return VariableType(MachineType::I64, GateType::TaggedNPointer());
     }
 
     bool operator==(const VariableType &rhs) const

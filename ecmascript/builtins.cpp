@@ -33,6 +33,9 @@
 #include "ecmascript/builtins/builtins_atomics.h"
 #include "ecmascript/builtins/builtins_bigint.h"
 #include "ecmascript/builtins/builtins_boolean.h"
+#include "ecmascript/builtins/builtin_cjs_module.h"
+#include "ecmascript/builtins/builtin_cjs_require.h"
+#include "ecmascript/builtins/builtin_cjs_exports.h"
 #include "ecmascript/builtins/builtins_collator.h"
 #include "ecmascript/builtins/builtins_dataview.h"
 #include "ecmascript/builtins/builtins_date.h"
@@ -106,6 +109,10 @@
 #include "ecmascript/js_weak_ref.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/module/js_module_namespace.h"
+#include "ecmascript/require/js_cjs_module.h"
+#include "ecmascript/require/js_cjs_module_cache.h"
+#include "ecmascript/require/js_cjs_require.h"
+#include "ecmascript/require/js_cjs_exports.h"
 #include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/object_factory.h"
 #include "ohos/init_data.h"
@@ -162,6 +169,9 @@ using Collator = builtins::BuiltinsCollator;
 using PluralRules = builtins::BuiltinsPluralRules;
 using DisplayNames = builtins::BuiltinsDisplayNames;
 using ListFormat = builtins::BuiltinsListFormat;
+using CjsModule = builtins::BuiltinsCjsModule;
+using CjsExports = builtins::BuiltinsCjsExports;
+using CjsRequire = builtins::BuiltinsCjsRequire;
 
 using ContainersPrivate = containers::ContainersPrivate;
 using SharedArrayBuffer = builtins::BuiltinsSharedArrayBuffer;
@@ -332,20 +342,6 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     InitializeGeneratorFunction(env, objFuncDynclass);
     InitializePromise(env, objFuncDynclass);
     InitializePromiseJob(env);
-
-    // Initialize IcuData Path
-    JSRuntimeOptions options = vm_->GetJSOptions();
-    std::string icuPath = options.GetIcuDataPath();
-    if (icuPath == "default") {
-#if !defined(PANDA_TARGET_WINDOWS) && !defined(PANDA_TARGET_MACOS)
-        SetHwIcuDirectory();
-#endif
-    } else {
-        std::string absPath;
-        if (GetAbsolutePath(icuPath, absPath)) {
-            u_setDataDirectory(absPath.c_str());
-        }
-    }
     InitializeIntl(env, objFuncPrototypeVal);
     InitializeLocale(env);
     InitializeDateTimeFormat(env);
@@ -355,15 +351,34 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     InitializePluralRules(env);
     InitializeDisplayNames(env);
     InitializeListFormat(env);
+    InitializeIcuData();
 
     InitializeModuleNamespace(env, objFuncDynclass);
-
+    InitializeCjsModule(env);
+    InitializeCjsExports(env);
+    InitializeCjsRequire(env);
     JSHandle<JSHClass> generatorFuncClass =
         factory_->CreateFunctionClass(FunctionKind::GENERATOR_FUNCTION, JSFunction::SIZE, JSType::JS_GENERATOR_FUNCTION,
                                       env->GetGeneratorFunctionPrototype());
     env->SetGeneratorFunctionClass(thread_, generatorFuncClass);
     env->SetObjectFunctionPrototypeClass(thread_, JSTaggedValue(objFuncPrototype->GetClass()));
     thread_->ResetGuardians();
+}
+void Builtins::InitializeForSnapshot(JSThread *thread)
+{
+    thread_ = thread;
+    vm_ = thread->GetEcmaVM();
+    factory_ = vm_->GetFactory();
+
+    InitializeIcuData();
+    // Initialize ArkTools
+    JSRuntimeOptions options = vm_->GetJSOptions();
+    if (options.EnableArkTools()) {
+        auto env = vm_->GetGlobalEnv();
+        auto globalObject = JSHandle<JSObject>::Cast(env->GetJSGlobalObject());
+        JSHandle<JSTaggedValue> arkTools(InitializeArkTools(env));
+        SetConstantObject(globalObject, "ArkTools", arkTools);
+    }
 }
 
 void Builtins::InitializeGlobalObject(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &globalObject)
@@ -2524,6 +2539,25 @@ JSHandle<JSFunction> Builtins::NewBuiltinConstructor(const JSHandle<GlobalEnv> &
     return ctor;
 }
 
+JSHandle<JSFunction> Builtins::NewBuiltinCjsCtor(const JSHandle<GlobalEnv> &env,
+                                                 const JSHandle<JSObject> &prototype, EcmaEntrypoint ctorFunc,
+                                                 const char *name, int length) const
+{
+    JSHandle<JSFunction> ctor =
+        factory_->NewJSFunction(env, reinterpret_cast<void *>(ctorFunc), FunctionKind::BUILTIN_CONSTRUCTOR);
+
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSFunction::SetFunctionLength(thread_, ctor, JSTaggedValue(length));
+    JSHandle<JSTaggedValue> nameString(factory_->NewFromUtf8(name));
+    JSFunction::SetFunctionName(thread_, JSHandle<JSFunctionBase>(ctor), nameString,
+                                JSHandle<JSTaggedValue>(thread_, JSTaggedValue::Undefined()));
+    JSHandle<JSTaggedValue> constructorKey = globalConst->GetHandledConstructorString();
+    PropertyDescriptor descriptor(thread_, JSHandle<JSTaggedValue>::Cast(ctor), true, false, true);
+    JSObject::DefineOwnProperty(thread_, prototype, constructorKey, descriptor);
+
+    return ctor;
+}
+
 JSHandle<JSFunction> Builtins::NewFunction(const JSHandle<GlobalEnv> &env, const JSHandle<JSTaggedValue> &key,
                                            EcmaEntrypoint func, int length) const
 {
@@ -2627,6 +2661,14 @@ void Builtins::SetConstantObject(const JSHandle<JSObject> &obj, const char *key,
 {
     JSHandle<JSTaggedValue> keyString(factory_->NewFromUtf8(key));
     PropertyDescriptor descriptor(thread_, value, false, false, false);
+    JSObject::DefineOwnProperty(thread_, obj, keyString, descriptor);
+}
+
+void Builtins::SetNonConstantObject(const JSHandle<JSObject> &obj, const char *key,
+                                    JSHandle<JSTaggedValue> &value) const
+{
+    JSHandle<JSTaggedValue> keyString(factory_->NewFromUtf8(key));
+    PropertyDescriptor descriptor(thread_, value, true, true, true);
     JSObject::DefineOwnProperty(thread_, obj, keyString, descriptor);
 }
 
@@ -3204,5 +3246,121 @@ void Builtins::InitializeModuleNamespace(const JSHandle<GlobalEnv> &env,
         factory_->NewEcmaDynClass(ModuleNamespace::SIZE, JSType::JS_MODULE_NAMESPACE, moduleNamespacePrototypeValue);
     moduleNamespaceDynclass->SetPrototype(thread_, JSTaggedValue::Null());
     env->SetModuleNamespaceClass(thread_, moduleNamespaceDynclass.GetTaggedValue());
+}
+
+void Builtins::InitializeCjsModule(const JSHandle<GlobalEnv> &env) const
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    // CjsModule.prototype
+    JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
+    JSHandle<JSObject> cjsModulePrototype = factory_->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    JSHandle<JSTaggedValue> cjsModulePrototypeValue(cjsModulePrototype);
+
+    // CjsModule.prototype_or_dynclass
+    JSHandle<JSHClass> cjsModuleDynclass =
+        factory_->NewEcmaDynClass(JSCjsModule::SIZE, JSType::JS_CJS_MODULE, cjsModulePrototypeValue);
+
+    // CjsModule.prototype.Constructor
+    JSHandle<JSObject> cjsModuleFunction(
+        NewBuiltinCjsCtor(env, cjsModulePrototype, CjsModule::CjsModuleConstructor, "Module", FunctionLength::TWO));
+
+    JSHandle<JSFunction>(cjsModuleFunction)->SetFunctionPrototype(thread_, cjsModuleDynclass.GetTaggedValue());
+
+    // CjsModule method
+    SetFunction(env, cjsModuleFunction, "_load", CjsModule::Load, FunctionLength::ONE);
+    SetFunction(env, cjsModuleFunction, "_resolveFilename", CjsModule::ResolveFilename, FunctionLength::ONE);
+
+    // CjsModule.prototype method
+    SetFunction(env, cjsModulePrototype, "require", CjsModule::Require, FunctionLength::ONE);
+    SetFunction(env, cjsModulePrototype, "getExportsForCircularRequire",
+                CjsModule::GetExportsForCircularRequire, FunctionLength::ONE);
+    SetFunction(env, cjsModulePrototype, "updateChildren", CjsModule::UpdateChildren, FunctionLength::ONE);
+
+    JSHandle<JSTaggedValue> id(thread_->GlobalConstants()->GetHandledEmptyString());
+    JSHandle<JSTaggedValue> path(thread_->GlobalConstants()->GetHandledEmptyString());
+    JSHandle<JSTaggedValue> exports(factory_->NewEmptyJSObject());
+    JSHandle<JSTaggedValue> parent(factory_->NewEmptyJSObject());
+    JSHandle<JSTaggedValue> filename(thread_->GlobalConstants()->GetHandledEmptyString());
+    JSHandle<JSTaggedValue> loaded(factory_->NewEmptyJSObject());
+    JSHandle<JSTaggedValue> children(factory_->NewEmptyJSObject());
+    JSHandle<JSTaggedValue> cache = JSHandle<JSTaggedValue>::Cast(CjsModuleCache::Create(thread_,
+                                                                  CjsModuleCache::DEAULT_DICTIONART_CAPACITY));
+
+    // CjsModule.prototype members
+    SetNonConstantObject(cjsModulePrototype, "id", id);
+    SetNonConstantObject(cjsModulePrototype, "path", path);
+    SetNonConstantObject(cjsModulePrototype, "exports", exports);
+    SetNonConstantObject(cjsModulePrototype, "parent", parent);
+    SetNonConstantObject(cjsModulePrototype, "filename", filename);
+    SetNonConstantObject(cjsModulePrototype, "loaded", loaded);
+    SetNonConstantObject(cjsModulePrototype, "children", children);
+
+    // CjsModule members
+    SetNonConstantObject(cjsModuleFunction, "_cache", cache);
+
+    env->SetCjsModuleFunction(thread_, cjsModuleFunction);
+}
+
+void Builtins::InitializeCjsExports(const JSHandle<GlobalEnv> &env) const
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+
+    // CjsExports.prototype
+    JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
+    JSHandle<JSObject> cjsExportsPrototype = factory_->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    JSHandle<JSTaggedValue> cjsExportsPrototypeValue(cjsExportsPrototype);
+
+    // CjsExports.prototype_or_dynclass
+    JSHandle<JSHClass> cjsExportsDynclass =
+        factory_->NewEcmaDynClass(JSCjsExports::SIZE, JSType::JS_CJS_EXPORTS, cjsExportsPrototypeValue);
+
+    // CjsExports.prototype.Constructor
+    JSHandle<JSObject> cjsExportsFunction(
+        NewBuiltinCjsCtor(env, cjsExportsPrototype, CjsExports::CjsExportsConstructor, "Exports",
+                          FunctionLength::TWO));
+
+    JSHandle<JSFunction>(cjsExportsFunction)->SetFunctionPrototype(thread_, cjsExportsDynclass.GetTaggedValue());
+
+    env->SetCjsExportsFunction(thread_, cjsExportsFunction);
+}
+
+void Builtins::InitializeCjsRequire(const JSHandle<GlobalEnv> &env) const
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    // CjsRequire.prototype
+    JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
+    JSHandle<JSObject> cjsRequirePrototype = factory_->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    JSHandle<JSTaggedValue> cjsRequirePrototypeValue(cjsRequirePrototype);
+
+    // CjsExports.prototype_or_dynclass
+    JSHandle<JSHClass> cjsRequireDynclass =
+        factory_->NewEcmaDynClass(JSCjsRequire::SIZE, JSType::JS_CJS_REQUIRE, cjsRequirePrototypeValue);
+
+    // CjsExports.prototype.Constructor
+    JSHandle<JSFunction> cjsRequireFunction =
+        NewBuiltinCjsCtor(env, cjsRequirePrototype, CjsRequire::CjsRequireConstructor, "require", FunctionLength::ONE);
+    JSHandle<JSFunction>(cjsRequireFunction)->SetFunctionPrototype(thread_, cjsRequireDynclass.GetTaggedValue());
+
+    // CjsModule.prototype method
+    SetFunction(env, cjsRequirePrototype, "Main", builtins::BuiltinsCjsRequire::Main, FunctionLength::ONE);
+
+    env->SetCjsRequireFunction(thread_, cjsRequireFunction);
+}
+
+void Builtins::InitializeIcuData()
+{
+    ASSERT(vm_ != nullptr);
+    JSRuntimeOptions options = vm_->GetJSOptions();
+    std::string icuPath = options.GetIcuDataPath();
+    if (icuPath == "default") {
+        if (!WIN_OR_MAC_PLATFORM) {
+            SetHwIcuDirectory();
+        }
+    } else {
+        std::string absPath;
+        if (GetAbsolutePath(icuPath, absPath)) {
+            u_setDataDirectory(absPath.c_str());
+        }
+    }
 }
 }  // namespace panda::ecmascript

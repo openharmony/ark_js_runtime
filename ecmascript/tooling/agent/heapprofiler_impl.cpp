@@ -46,12 +46,12 @@ void HeapProfilerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
 void HeapProfilerImpl::DispatcherImpl::AddInspectedHeapObject(const DispatchRequest &request)
 {
     std::unique_ptr<AddInspectedHeapObjectParams> params =
-        AddInspectedHeapObjectParams::Create(request.GetEcmaVM(), request.GetParams());
+        AddInspectedHeapObjectParams::Create(request.GetEcmaVM(), request.GetParamsObj());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
-    DispatchResponse response = heapprofiler_->AddInspectedHeapObject(std::move(params));
+    DispatchResponse response = heapprofiler_->AddInspectedHeapObject(*params);
     SendResponse(request, response);
 }
 
@@ -76,14 +76,14 @@ void HeapProfilerImpl::DispatcherImpl::Disable(const DispatchRequest &request)
 void HeapProfilerImpl::DispatcherImpl::GetHeapObjectId(const DispatchRequest &request)
 {
     std::unique_ptr<GetHeapObjectIdParams> params =
-        GetHeapObjectIdParams::Create(request.GetEcmaVM(), request.GetParams());
+        GetHeapObjectIdParams::Create(request.GetEcmaVM(), request.GetParamsObj());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
 
     HeapSnapshotObjectId objectId;
-    DispatchResponse response = heapprofiler_->GetHeapObjectId(std::move(params), &objectId);
+    DispatchResponse response = heapprofiler_->GetHeapObjectId(*params, &objectId);
     GetHeapObjectIdReturns result(std::move(objectId));
     SendResponse(request, response, result);
 }
@@ -91,14 +91,14 @@ void HeapProfilerImpl::DispatcherImpl::GetHeapObjectId(const DispatchRequest &re
 void HeapProfilerImpl::DispatcherImpl::GetObjectByHeapObjectId(const DispatchRequest &request)
 {
     std::unique_ptr<GetObjectByHeapObjectIdParams> params =
-        GetObjectByHeapObjectIdParams::Create(request.GetEcmaVM(), request.GetParams());
+        GetObjectByHeapObjectIdParams::Create(request.GetEcmaVM(), request.GetParamsObj());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
 
     std::unique_ptr<RemoteObject> remoteObjectResult;
-    DispatchResponse response = heapprofiler_->GetObjectByHeapObjectId(std::move(params), &remoteObjectResult);
+    DispatchResponse response = heapprofiler_->GetObjectByHeapObjectId(*params, &remoteObjectResult);
     GetObjectByHeapObjectIdReturns result(std::move(remoteObjectResult));
     SendResponse(request, response, result);
 }
@@ -115,24 +115,24 @@ void HeapProfilerImpl::DispatcherImpl::GetSamplingProfile(const DispatchRequest 
 void HeapProfilerImpl::DispatcherImpl::StartSampling(const DispatchRequest &request)
 {
     std::unique_ptr<StartSamplingParams> params =
-        StartSamplingParams::Create(request.GetEcmaVM(), request.GetParams());
+        StartSamplingParams::Create(request.GetEcmaVM(), request.GetParamsObj());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
-    DispatchResponse response = heapprofiler_->StartSampling(std::move(params));
+    DispatchResponse response = heapprofiler_->StartSampling(*params);
     SendResponse(request, response);
 }
 
 void HeapProfilerImpl::DispatcherImpl::StartTrackingHeapObjects(const DispatchRequest &request)
 {
     std::unique_ptr<StartTrackingHeapObjectsParams> params =
-        StartTrackingHeapObjectsParams::Create(request.GetEcmaVM(), request.GetParams());
+        StartTrackingHeapObjectsParams::Create(request.GetEcmaVM(), request.GetParamsObj());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
-    DispatchResponse response = heapprofiler_->StartTrackingHeapObjects(std::move(params));
+    DispatchResponse response = heapprofiler_->StartTrackingHeapObjects(*params);
     SendResponse(request, response);
 }
 
@@ -148,24 +148,24 @@ void HeapProfilerImpl::DispatcherImpl::StopSampling(const DispatchRequest &reque
 void HeapProfilerImpl::DispatcherImpl::StopTrackingHeapObjects(const DispatchRequest &request)
 {
     std::unique_ptr<StopTrackingHeapObjectsParams> params =
-        StopTrackingHeapObjectsParams::Create(request.GetEcmaVM(), request.GetParams());
+        StopTrackingHeapObjectsParams::Create(request.GetEcmaVM(), request.GetParamsObj());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
-    DispatchResponse response = heapprofiler_->StopTrackingHeapObjects(std::move(params));
+    DispatchResponse response = heapprofiler_->StopTrackingHeapObjects(*params);
     SendResponse(request, response);
 }
 
 void HeapProfilerImpl::DispatcherImpl::TakeHeapSnapshot(const DispatchRequest &request)
 {
     std::unique_ptr<StopTrackingHeapObjectsParams> params =
-        StopTrackingHeapObjectsParams::Create(request.GetEcmaVM(), request.GetParams());
+        StopTrackingHeapObjectsParams::Create(request.GetEcmaVM(), request.GetParamsObj());
     if (params == nullptr) {
         SendResponse(request, DispatchResponse::Fail("wrong params"));
         return;
     }
-    DispatchResponse response = heapprofiler_->TakeHeapSnapshot(std::move(params));
+    DispatchResponse response = heapprofiler_->TakeHeapSnapshot(*params);
     SendResponse(request, response);
 }
 
@@ -231,7 +231,7 @@ void HeapProfilerImpl::Frontend::LastSeenObjectId(uint32_t lastSeenObjectId)
     struct timeval tv = {0, 0};
     gettimeofday(&tv, nullptr);
     const int THOUSAND = 1000;
-    timestamp = tv.tv_usec + tv.tv_sec * THOUSAND * THOUSAND;
+    timestamp = static_cast<size_t>(tv.tv_usec + tv.tv_sec * THOUSAND * THOUSAND);
     lastSeenObjectIdEvent.SetTimestamp(timestamp);
     channel_->SendNotification(lastSeenObjectIdEvent);
 }
@@ -244,7 +244,7 @@ void HeapProfilerImpl::Frontend::ResetProfiles()
 }
 
 DispatchResponse HeapProfilerImpl::AddInspectedHeapObject(
-    [[maybe_unused]] std::unique_ptr<AddInspectedHeapObjectParams> params)
+    [[maybe_unused]] const AddInspectedHeapObjectParams &params)
 {
     LOG(ERROR, DEBUGGER) << "AddInspectedHeapObject not support now.";
     return DispatchResponse::Ok();
@@ -268,7 +268,7 @@ DispatchResponse HeapProfilerImpl::Disable()
     return DispatchResponse::Ok();
 }
 
-DispatchResponse HeapProfilerImpl::GetHeapObjectId([[maybe_unused]] std::unique_ptr<GetHeapObjectIdParams> params,
+DispatchResponse HeapProfilerImpl::GetHeapObjectId([[maybe_unused]] const GetHeapObjectIdParams &params,
     HeapSnapshotObjectId *objectId)
 {
     ASSERT(objectId != nullptr);
@@ -278,7 +278,7 @@ DispatchResponse HeapProfilerImpl::GetHeapObjectId([[maybe_unused]] std::unique_
 }
 
 DispatchResponse HeapProfilerImpl::GetObjectByHeapObjectId(
-    [[maybe_unused]] std::unique_ptr<GetObjectByHeapObjectIdParams> params,
+    [[maybe_unused]] const GetObjectByHeapObjectIdParams &params,
     [[maybe_unused]] std::unique_ptr<RemoteObject> *remoteObjectResult)
 {
     LOG(ERROR, DEBUGGER) << "GetObjectByHeapObjectId not support now.";
@@ -291,22 +291,16 @@ DispatchResponse HeapProfilerImpl::GetSamplingProfile([[maybe_unused]]std::uniqu
     return DispatchResponse::Ok();
 }
 
-DispatchResponse HeapProfilerImpl::StartSampling([[maybe_unused]]std::unique_ptr<StartSamplingParams> params)
+DispatchResponse HeapProfilerImpl::StartSampling([[maybe_unused]]const StartSamplingParams &params)
 {
     LOG(ERROR, DEBUGGER) << "StartSampling not support now.";
     return DispatchResponse::Ok();
 }
 
-DispatchResponse HeapProfilerImpl::StartTrackingHeapObjects(std::unique_ptr<StartTrackingHeapObjectsParams> params)
+DispatchResponse HeapProfilerImpl::StartTrackingHeapObjects(
+    [[maybe_unused]]const StartTrackingHeapObjectsParams &params)
 {
-    bool result = false;
-    bool trackAllocations = params->GetTrackAllocations();
-    if (trackAllocations) {
-        result = panda::DFXJSNApi::StartHeapTracking(vm_, INTERVAL, true, &stream_);
-    } else {
-        result = panda::DFXJSNApi::StartHeapTracking(vm_, INTERVAL, true, nullptr);
-    }
-
+    bool result = panda::DFXJSNApi::StartHeapTracking(vm_, INTERVAL, true, &stream_);
     if (result) {
         return DispatchResponse::Ok();
     } else {
@@ -320,10 +314,10 @@ DispatchResponse HeapProfilerImpl::StopSampling([[maybe_unused]]std::unique_ptr<
     return DispatchResponse::Ok();
 }
 
-DispatchResponse HeapProfilerImpl::StopTrackingHeapObjects(std::unique_ptr<StopTrackingHeapObjectsParams> params)
+DispatchResponse HeapProfilerImpl::StopTrackingHeapObjects(const StopTrackingHeapObjectsParams &params)
 {
     bool result = false;
-    if (params->GetReportProgress()) {
+    if (params.GetReportProgress()) {
         HeapProfilerProgress progress(&frontend_);
         result = panda::DFXJSNApi::StopHeapTracking(vm_, &stream_, &progress);
     } else {
@@ -336,9 +330,9 @@ DispatchResponse HeapProfilerImpl::StopTrackingHeapObjects(std::unique_ptr<StopT
     }
 }
 
-DispatchResponse HeapProfilerImpl::TakeHeapSnapshot(std::unique_ptr<StopTrackingHeapObjectsParams> params)
+DispatchResponse HeapProfilerImpl::TakeHeapSnapshot(const StopTrackingHeapObjectsParams &params)
 {
-    if (params->GetReportProgress()) {
+    if (params.GetReportProgress()) {
         HeapProfilerProgress progress(&frontend_);
         panda::DFXJSNApi::DumpHeapSnapshot(vm_, 0, &stream_, &progress, true);
     } else {

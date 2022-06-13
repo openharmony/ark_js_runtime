@@ -48,6 +48,7 @@ enum class ResponseCode : uint8_t { OK, NOK };
 class DispatchRequest {
 public:
     explicit DispatchRequest(const EcmaVM *ecmaVm, const std::string &message);
+    ~DispatchRequest();
 
     bool IsValid() const
     {
@@ -57,9 +58,13 @@ public:
     {
         return callId_;
     }
-    Local<JSValueRef> GetParams() const
+    Local<JSValueRef> GetParamsObj() const
     {
-        return params_;
+        return paramsObj_;
+    }
+    const PtJson &GetParams() const
+    {
+        return *params_;
     }
     const std::string &GetDomain() const
     {
@@ -74,14 +79,13 @@ public:
         return ecmaVm_;
     }
 
-    ~DispatchRequest() = default;
-
 private:
     const EcmaVM *ecmaVm_ {nullptr};
-    int32_t callId_ {-1};
+    int32_t callId_ = -1;
     std::string domain_ {};
     std::string method_ {};
-    Local<JSValueRef> params_ {};
+    Local<JSValueRef> paramsObj_ {};
+    std::unique_ptr<PtJson> params_ = std::make_unique<PtJson>();
     RequestCode code_ {RequestCode::OK};
     std::string errorMsg_ {};
 };

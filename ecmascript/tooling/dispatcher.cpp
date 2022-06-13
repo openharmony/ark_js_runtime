@@ -26,46 +26,30 @@
 namespace panda::ecmascript::tooling {
 DispatchRequest::DispatchRequest(const EcmaVM *ecmaVm, const std::string &message) : ecmaVm_(ecmaVm)
 {
-    Local<JSValueRef> msgValue = JSON::Parse(ecmaVm, StringRef::NewFromUtf8(ecmaVm, message.c_str()));
-    if (msgValue->IsException()) {
-        DebuggerApi::ClearException(ecmaVm);
-        LOG(ERROR, DEBUGGER) << "json parse throw exception";
-        return;
-    }
-    if (!msgValue->IsObject()) {
+    std::unique_ptr<PtJson> json = PtJson::Parse(message);
+    if (json == nullptr || !json->IsObject()) {
         code_ = RequestCode::JSON_PARSE_ERROR;
         LOG(ERROR, DEBUGGER) << "json parse error";
         return;
     }
-    ObjectRef *msgObj = ObjectRef::Cast(*msgValue);
 
-    Local<StringRef> idStr = StringRef::NewFromUtf8(ecmaVm, "id");
-    Local<JSValueRef> idResult = msgObj->Get(ecmaVm, idStr);
-    if (idResult.IsEmpty()) {
+    Result ret;
+    int32_t callId;
+    ret = json->GetInt("id", &callId);
+    if (ret != Result::SUCCESS) {
         code_ = RequestCode::PARSE_ID_ERROR;
         LOG(ERROR, DEBUGGER) << "parse id error";
         return;
     }
-    if (!idResult->IsNumber()) {
-        code_ = RequestCode::ID_FORMAT_ERROR;
-        LOG(ERROR, DEBUGGER) << "id format error";
-        return;
-    }
-    callId_ = static_cast<int32_t>(Local<NumberRef>(idResult)->Value());
+    callId_ = callId;
 
-    Local<StringRef> methodStr = StringRef::NewFromUtf8(ecmaVm, "method");
-    Local<JSValueRef> methodResult = msgObj->Get(ecmaVm, methodStr);
-    if (methodResult.IsEmpty()) {
+    std::string wholeMethod;
+    ret = json->GetString("method", &wholeMethod);
+    if (ret != Result::SUCCESS) {
         code_ = RequestCode::PARSE_METHOD_ERROR;
         LOG(ERROR, DEBUGGER) << "parse method error";
         return;
     }
-    if (!methodResult->IsString()) {
-        code_ = RequestCode::METHOD_FORMAT_ERROR;
-        LOG(ERROR, DEBUGGER) << "method format error";
-        return;
-    }
-    std::string wholeMethod = DebuggerApi::ToStdString(methodResult);
     std::string::size_type length = wholeMethod.length();
     std::string::size_type indexPoint;
     indexPoint = wholeMethod.find_first_of('.', 0);
@@ -81,7 +65,32 @@ DispatchRequest::DispatchRequest(const EcmaVM *ecmaVm, const std::string &messag
     LOG(DEBUG, DEBUGGER) << "domain: " << domain_;
     LOG(DEBUG, DEBUGGER) << "method: " << method_;
 
+    std::unique_ptr<PtJson> params;
+    ret = json->GetObject("params", &params);
+    if (ret == Result::NOT_EXIST) {
+        return;
+    }
+    if (ret == Result::TYPE_ERROR) {
+        code_ = RequestCode::PARAMS_FORMAT_ERROR;
+        LOG(ERROR, DEBUGGER) << "params format error";
+        return;
+    }
+    params_ = std::move(params);
+
+    // below code will delete soon
+    Local<JSValueRef> msgValue = JSON::Parse(ecmaVm, StringRef::NewFromUtf8(ecmaVm, message.c_str()));
+    if (msgValue->IsException()) {
+        DebuggerApi::ClearException(ecmaVm);
+        LOG(ERROR, DEBUGGER) << "json parse throw exception";
+        return;
+    }
+    if (!msgValue->IsObject()) {
+        code_ = RequestCode::JSON_PARSE_ERROR;
+        LOG(ERROR, DEBUGGER) << "json parse error";
+        return;
+    }
     Local<StringRef> paramsStr = StringRef::NewFromUtf8(ecmaVm, "params");
+    ObjectRef *msgObj = ObjectRef::Cast(*msgValue);
     Local<JSValueRef> paramsValue = msgObj->Get(ecmaVm, paramsStr);
     if (paramsValue.IsEmpty()) {
         return;
@@ -91,7 +100,12 @@ DispatchRequest::DispatchRequest(const EcmaVM *ecmaVm, const std::string &messag
         LOG(ERROR, DEBUGGER) << "params format error";
         return;
     }
-    params_ = paramsValue;
+    paramsObj_ = paramsValue;
+}
+
+DispatchRequest::~DispatchRequest()
+{
+    params_->ReleaseRoot();
 }
 
 DispatchResponse DispatchResponse::Create(ResponseCode code, const std::string &msg)

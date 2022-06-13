@@ -443,6 +443,7 @@ DEF_CALL_SIGNATURE(BytecodeHandler)
     };
     callSign->SetParameters(params.data());
     callSign->SetTargetKind(CallSignature::TargetKind::BYTECODE_HANDLER);
+    callSign->SetCallConv(CallSignature::CallConv::GHCCallConv);
 }
 
 DEF_CALL_SIGNATURE(BytecodeDebuggerHandler)
@@ -504,22 +505,6 @@ DEF_CALL_SIGNATURE(GeneratorReEnterAsmInterp)
     std::array<VariableType, 2> params = { /* 2 : 2 input parameters */
         VariableType::NATIVE_POINTER(),  // glue
         VariableType::JS_POINTER(),      // context
-    };
-    callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
-    callSign->SetCallConv(CallSignature::CallConv::CCallConv);
-}
-
-DEF_CALL_SIGNATURE(JSCallDispatch)
-{
-    /* 3 : 3 input parameters */
-    CallSignature jsCallDispatch("JSCallDispatch", 0, 3,
-        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *callSign = jsCallDispatch;
-    std::array<VariableType, 3> params = { /* 3 : 3 input parameters */
-        VariableType::NATIVE_POINTER(),  // glue
-        VariableType::INT32(),  // argc
-        VariableType::NATIVE_POINTER(),  // argv
     };
     callSign->SetParameters(params.data());
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
@@ -786,6 +771,16 @@ DEF_CALL_SIGNATURE(PushCallArgs3AndDispatch)
 DEF_CALL_SIGNATURE(PushCallIRangeAndDispatchNative)
 {
     PUSH_CALL_ARGS_AND_DISPATCH_NATIVE_RANGE_SIGNATURE(PushCallIRangeAndDispatchNative)
+}
+
+DEF_CALL_SIGNATURE(PushCallNewAndDispatchNative)
+{
+    PUSH_CALL_ARGS_AND_DISPATCH_NATIVE_RANGE_SIGNATURE(PushCallNewAndDispatchNative)
+}
+
+DEF_CALL_SIGNATURE(PushCallNewAndDispatch)
+{
+    PUSH_CALL_ARGS_AND_DISPATCH_SIGNATURE(PushCallNewAndDispatch)
 }
 
 DEF_CALL_SIGNATURE(PushCallIRangeAndDispatch)

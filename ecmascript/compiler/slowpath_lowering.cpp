@@ -48,6 +48,14 @@ void SlowPathLowering::CallRuntimeLowering()
     }
 }
 
+int32_t SlowPathLowering::ComputeCallArgc(GateRef gate, EcmaOpcode op)
+{
+    if (op == EcmaOpcode::CALLITHISRANGEDYN_PREF_IMM16_V8) {
+        return acc_.GetNumValueIn(gate) + NUM_MANDATORY_JSFUNC_ARGS - 3; // 3: calltarget, this and bcoffset
+    }
+    return acc_.GetNumValueIn(gate) + NUM_MANDATORY_JSFUNC_ARGS - 2; // 2: calltarget and bcoffset
+}
+
 void SlowPathLowering::ReplaceHirControlGate(GateAccessor::UsesIterator &useIt, GateRef newGate, bool noThrow)
 {
     GateAccessor acc(circuit_);
@@ -132,7 +140,7 @@ void SlowPathLowering::ReplaceHirToCall(GateRef hirGate, GateRef callGate, bool 
     GateRef ifBranch;
     if (!noThrow) {
         // exception value
-        GateRef exceptionVal = builder_.ExceptionConstant(GateType::TAGGED_NPOINTER);
+        GateRef exceptionVal = builder_.ExceptionConstant(GateType::TaggedNPointer());
         // compare with trampolines result
         GateRef equal = builder_.BinaryLogic(OpCode(OpCode::EQ), callGate, exceptionVal);
         ifBranch = builder_.Branch(stateInGate, equal);
@@ -796,40 +804,47 @@ void SlowPathLowering::LowerToJSCall(GateRef gate, GateRef glue, const std::vect
 
 void SlowPathLowering::LowerCallArg0Dyn(GateRef gate, GateRef glue)
 {
-    ASSERT(acc_.GetNumValueIn(gate) == 1);
-    GateRef actualArgc = builder_.Int32(acc_.GetNumValueIn(gate) - 1 + NUM_MANDATORY_JSFUNC_ARGS);
+    // 2: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 2);
+
+    GateRef actualArgc = builder_.Int32(ComputeCallArgc(gate, EcmaOpcode::CALLARG0DYN_PREF_V8));
     GateRef newTarget = builder_.Undefined();
     GateRef thisObj = builder_.Undefined();
-    LowerToJSCall(gate, glue, {glue, actualArgc, acc_.GetValueIn(gate, 0), newTarget, thisObj});
+    LowerToJSCall(gate, glue, {glue, actualArgc, acc_.GetValueIn(gate, 0), newTarget, thisObj,
+                  acc_.GetValueIn(gate, 1)});
 }
 
 void SlowPathLowering::LowerCallArg1Dyn(GateRef gate, GateRef glue)
 {
-    // 2: number of value inputs
-    ASSERT(acc_.GetNumValueIn(gate) == 2);
-    GateRef actualArgc = builder_.Int32(acc_.GetNumValueIn(gate) - 1 + NUM_MANDATORY_JSFUNC_ARGS);
-    GateRef newTarget = builder_.Undefined();
-    GateRef thisObj = builder_.Undefined();
-    LowerToJSCall(gate, glue, {glue, actualArgc,
-        acc_.GetValueIn(gate, 0), newTarget, thisObj, acc_.GetValueIn(gate, 1)});
-}
-
-void SlowPathLowering::LowerCallArgs2Dyn(GateRef gate, GateRef glue)
-{
     // 3: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 3);
-    GateRef actualArgc = builder_.Int32(acc_.GetNumValueIn(gate) - 1 + NUM_MANDATORY_JSFUNC_ARGS);
+    // 2: func and bcoffset
+    GateRef actualArgc = builder_.Int32(ComputeCallArgc(gate, EcmaOpcode::CALLARG1DYN_PREF_V8_V8));
     GateRef newTarget = builder_.Undefined();
     GateRef thisObj = builder_.Undefined();
     LowerToJSCall(gate, glue, {glue, actualArgc,
         acc_.GetValueIn(gate, 0), newTarget, thisObj, acc_.GetValueIn(gate, 1), acc_.GetValueIn(gate, 2)});
 }
 
-void SlowPathLowering::LowerCallArgs3Dyn(GateRef gate, GateRef glue)
+void SlowPathLowering::LowerCallArgs2Dyn(GateRef gate, GateRef glue)
 {
     // 4: number of value inputs
     ASSERT(acc_.GetNumValueIn(gate) == 4);
-    GateRef actualArgc = builder_.Int32(acc_.GetNumValueIn(gate) - 1 + NUM_MANDATORY_JSFUNC_ARGS);
+    // 2: func and bcoffset
+    GateRef actualArgc = builder_.Int32(ComputeCallArgc(gate, EcmaOpcode::CALLARGS2DYN_PREF_V8_V8_V8));
+    GateRef newTarget = builder_.Undefined();
+    GateRef thisObj = builder_.Undefined();
+    LowerToJSCall(gate, glue, {glue, actualArgc,
+        acc_.GetValueIn(gate, 0), newTarget, thisObj, acc_.GetValueIn(gate, 1), acc_.GetValueIn(gate, 2),
+        acc_.GetValueIn(gate, 3)});
+}
+
+void SlowPathLowering::LowerCallArgs3Dyn(GateRef gate, GateRef glue)
+{
+    // 5: number of value inputs
+    ASSERT(acc_.GetNumValueIn(gate) == 5);
+    // 2: func and bcoffset
+    GateRef actualArgc = builder_.Int32(ComputeCallArgc(gate, EcmaOpcode::CALLARGS3DYN_PREF_V8_V8_V8_V8));
     GateRef newTarget = builder_.Undefined();
     GateRef thisObj = builder_.Undefined();
     LowerToJSCall(gate, glue, {glue, actualArgc,
@@ -842,9 +857,8 @@ void SlowPathLowering::LowerCallIThisRangeDyn(GateRef gate, GateRef glue)
     std::vector<GateRef> vec;
     // The first register input is callTarget, second is thisObj and other inputs are common args.
     size_t fixedInputsNum = 2;
-    size_t numArgs = acc_.GetNumValueIn(gate) - fixedInputsNum;
-    ASSERT(numArgs >= 0);
-    GateRef actualArgc = builder_.Int32(numArgs + NUM_MANDATORY_JSFUNC_ARGS);
+    ASSERT(acc_.GetNumValueIn(gate) - fixedInputsNum >= 0);
+    GateRef actualArgc = builder_.Int32(ComputeCallArgc(gate, EcmaOpcode::CALLITHISRANGEDYN_PREF_IMM16_V8));
     GateRef callTarget = acc_.GetValueIn(gate, 0);
     GateRef thisObj = acc_.GetValueIn(gate, 1);
     GateRef newTarget = builder_.Undefined();
@@ -875,7 +889,7 @@ void SlowPathLowering::LowerCallIRangeDyn(GateRef gate, GateRef glue)
 {
     std::vector<GateRef> vec;
     size_t numArgs = acc_.GetNumValueIn(gate) - 1;
-    GateRef actualArgc = builder_.Int32(numArgs + NUM_MANDATORY_JSFUNC_ARGS);
+    GateRef actualArgc = builder_.Int32(ComputeCallArgc(gate, EcmaOpcode::CALLIRANGEDYN_PREF_IMM16_V8));
     GateRef callTarget = acc_.GetValueIn(gate, 0);
     GateRef newTarget = builder_.Undefined();
     GateRef thisObj = builder_.Undefined();
