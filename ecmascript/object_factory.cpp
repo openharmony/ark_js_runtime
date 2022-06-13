@@ -1225,7 +1225,7 @@ FreeObject *ObjectFactory::FillFreeObject(uintptr_t address, size_t size, Remove
 
     if (removeSlots == RemoveSlots::YES) {
         Region *region = Region::ObjectAddressToRange(object);
-        if (!region->InYoungGeneration()) {
+        if (!region->InYoungSpace()) {
             heap_->ClearSlotsRange(region, address, address + size);
         }
     }

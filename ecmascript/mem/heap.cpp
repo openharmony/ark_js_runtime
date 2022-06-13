@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -746,14 +746,11 @@ bool Heap::IsAlive(TaggedObject *object) const
         return false;
     }
 
-    Region *region = Region::ObjectAddressToRange(object);
-    if (region->InHugeObjectGeneration()) {
-        return true;
-    }
     bool isFree = object->GetClass() != nullptr && FreeObject::Cast(ToUintPtr(object))->IsFreeObject();
     if (isFree) {
+        Region *region = Region::ObjectAddressToRange(object);
         LOG(ERROR, RUNTIME) << "The object " << object << " in "
-                            << ToSpaceTypeName(region->GetSpace()->GetSpaceType())
+                            << region->GetSpaceTypeName()
                             << " already free";
     }
     return !isFree;
@@ -761,30 +758,16 @@ bool Heap::IsAlive(TaggedObject *object) const
 
 bool Heap::ContainObject(TaggedObject *object) const
 {
-    // semi space
-    if (activeSemiSpace_->ContainObject(object)) {
-        return true;
-    }
-    // old space
-    if (oldSpace_->ContainObject(object)) {
-        return true;
-    }
-    // non movable space
-    if (nonMovableSpace_->ContainObject(object)) {
-        return true;
-    }
-    // huge object space
-    if (hugeObjectSpace_->ContainObject(object)) {
-        return true;
-    }
-    // machine code space
-    if (machineCodeSpace_->ContainObject(object)) {
-        return true;
-    }
-    // snapshot space
-    if (snapshotSpace_->ContainObject(object)) {
-        return true;
-    }
-    return false;
+    /*
+     * fixme: There's no absolutely safe appraoch to doing this, given that the region object is currently
+     * allocated and maintained in the JS object heap. We cannot safely tell whether a region object
+     * calculated from an object address is still valid or alive in a cheap way.
+     * This will introduce inaccurate result to verify if an object is contained in the heap, and it may
+     * introduce additional incorrect memory access issues.
+     * Unless we can tolerate the performance impact of iterating the region list of each space and change
+     * the implementation to that approach, don't rely on current implementation to get accurate result.
+     */
+    Region *region = Region::ObjectAddressToRange(object);
+    return region->InHeapSpace();
 }
 }  // namespace panda::ecmascript

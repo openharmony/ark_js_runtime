@@ -1826,11 +1826,11 @@ inline GateRef Stub::InYoungGeneration(GateRef region)
     GateRef x = Load(VariableType::NATIVE_POINTER(), PtrAdd(IntPtr(offset), region),
         IntPtr(0));
     if (env_.Is32Bit()) {
-        return Int32NotEqual(Int32And(x,
-            Int32(RegionFlags::IS_IN_YOUNG_GENERATION)), IntPtr(0));
+        return Int32Equal(Int32And(x,
+            Int32(RegionSpaceFlag::VALID_SPACE_MASK)), Int32(RegionSpaceFlag::IN_YOUNG_SPACE));
     } else {
-        return Int64NotEqual(Int64And(x,
-            Int64(RegionFlags::IS_IN_YOUNG_GENERATION)), IntPtr(0));
+        return Int64Equal(Int64And(x,
+            Int64(RegionSpaceFlag::VALID_SPACE_MASK)), Int64(RegionSpaceFlag::IN_YOUNG_SPACE));
     }
 }
 

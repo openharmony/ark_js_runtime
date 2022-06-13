@@ -32,7 +32,7 @@ inline void NonMovableMarker::MarkObject(uint32_t threadId, TaggedObject *object
 {
     Region *objectRegion = Region::ObjectAddressToRange(object);
 
-    if (!heap_->IsFullMark() && !objectRegion->InYoungGeneration()) {
+    if (!heap_->IsFullMark() && !objectRegion->InYoungSpace()) {
         return;
     }
 
@@ -85,7 +85,7 @@ inline void NonMovableMarker::RecordWeakReference(uint32_t threadId, JSTaggedTyp
     auto value = JSTaggedValue(*ref);
     Region *valueRegion = Region::ObjectAddressToRange(value.GetTaggedWeakRef());
     Region *objectRegion = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(ref));
-    if (!objectRegion->InYoungOrCSetGeneration() && !valueRegion->InYoungOrCSetGeneration()) {
+    if (!objectRegion->InYoungSpaceOrCSet() && !valueRegion->InYoungSpaceOrCSet()) {
         workManager_->PushWeakReference(threadId, ref);
     }
 }
@@ -181,13 +181,13 @@ inline bool MovableMarker::UpdateForwardAddressIfFailed(TaggedObject *object, ui
     FreeObject::FillFreeObject(heap_->GetEcmaVM(), toAddress, size);
     TaggedObject *dst = MarkWord(object).ToForwardingAddress();
     slot.Update(dst);
-    return Region::ObjectAddressToRange(dst)->InYoungGeneration();
+    return Region::ObjectAddressToRange(dst)->InYoungSpace();
 }
 
 inline SlotStatus SemiGCMarker::MarkObject(uint32_t threadId, TaggedObject *object, ObjectSlot slot)
 {
     Region *objectRegion = Region::ObjectAddressToRange(object);
-    if (!objectRegion->InYoungGeneration()) {
+    if (!objectRegion->InYoungSpace()) {
         return SlotStatus::CLEAR_SLOT;
     }
 
@@ -196,7 +196,7 @@ inline SlotStatus SemiGCMarker::MarkObject(uint32_t threadId, TaggedObject *obje
         TaggedObject *dst = markWord.ToForwardingAddress();
         slot.Update(dst);
         Region *valueRegion = Region::ObjectAddressToRange(dst);
-        return valueRegion->InYoungGeneration() ? SlotStatus::KEEP_SLOT : SlotStatus::CLEAR_SLOT;
+        return valueRegion->InYoungSpace() ? SlotStatus::KEEP_SLOT : SlotStatus::CLEAR_SLOT;
     }
     return EvacuateObject(threadId, object, markWord, slot);
 }
@@ -229,7 +229,7 @@ inline void SemiGCMarker::RecordWeakReference(uint32_t threadId, JSTaggedType *r
 {
     auto value = JSTaggedValue(*ref);
     Region *objectRegion = Region::ObjectAddressToRange(value.GetTaggedWeakRef());
-    if (objectRegion->InYoungGeneration()) {
+    if (objectRegion->InYoungSpace()) {
         workManager_->PushWeakReference(threadId, ref);
     }
 }
@@ -237,7 +237,7 @@ inline void SemiGCMarker::RecordWeakReference(uint32_t threadId, JSTaggedType *r
 inline SlotStatus CompressGCMarker::MarkObject(uint32_t threadId, TaggedObject *object, ObjectSlot slot)
 {
     Region *objectRegion = Region::ObjectAddressToRange(object);
-    if (!objectRegion->InYoungAndOldGeneration()) {
+    if (!objectRegion->InYoungOrOldSpace()) {
         if (objectRegion->AtomicMark(object)) {
             workManager_->Push(threadId, object);
         }

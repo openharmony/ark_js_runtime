@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,7 +20,7 @@
 
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/mem.h"
-#include "ecmascript/mem/space.h"
+#include "ecmascript/mem/native_area_allocator.h"
 
 namespace panda::ecmascript {
 inline RememberedSet *Region::CreateRememberedSet()
@@ -48,7 +48,7 @@ inline RememberedSet *Region::GetOrCreateOldToNewRememberedSet()
     if (UNLIKELY(oldToNewSet_ == nullptr)) {
         os::memory::LockHolder lock(lock_);
         if (oldToNewSet_ == nullptr) {
-            if (sweepingRSet_ != nullptr && HasSwept()) {
+            if (sweepingRSet_ != nullptr && IsGCFlagSet(RegionGCFlags::HAS_BEEN_SWEPT)) {
                 oldToNewSet_ = sweepingRSet_;
                 sweepingRSet_ = nullptr;
             } else {

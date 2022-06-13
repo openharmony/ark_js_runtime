@@ -117,7 +117,7 @@ void PartialGC::ProcessNativeDelete()
 {
     WeakRootVisitor gcUpdateWeak = [this](TaggedObject *header) {
         Region *objectRegion = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(header));
-        if (!objectRegion->InYoungOrCSetGeneration() && !heap_->IsFullMark()) {
+        if (!objectRegion->InYoungSpaceOrCSet() && !heap_->IsFullMark()) {
             return header;
         }
         if (!objectRegion->Test(header)) {

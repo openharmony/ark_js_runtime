@@ -24,14 +24,14 @@ void Barriers::Update(uintptr_t slotAddr, Region *objectRegion, TaggedObject *va
     auto heap = thread->GetEcmaVM()->GetHeap();
     bool isFullMark = heap->IsFullMark();
     if (!JSTaggedValue(value).IsWeakForHeapObject()) {
-        if (!isFullMark && !valueRegion->InYoungGeneration()) {
+        if (!isFullMark && !valueRegion->InYoungSpace()) {
             return;
         }
         if (valueRegion->AtomicMark(value)) {
             heap->GetWorkManager()->Push(0, value, valueRegion);
         }
     }
-    if (isFullMark && valueRegion->InCollectSet() && !objectRegion->InYoungOrCSetGeneration()) {
+    if (isFullMark && valueRegion->InCollectSet() && !objectRegion->InYoungSpaceOrCSet()) {
         objectRegion->AtomicInsertCrossRegionRSet(slotAddr);
     }
 }

@@ -53,7 +53,7 @@ void NonMovableMarker::ProcessMarkStack(uint32_t threadId)
     auto visitor = [this, threadId, isFullMark](TaggedObject *root, ObjectSlot start, ObjectSlot end,
                                                 [[maybe_unused]] bool isNative) {
         Region *rootRegion = Region::ObjectAddressToRange(root);
-        bool needBarrier = isFullMark && !rootRegion->InYoungOrCSetGeneration();
+        bool needBarrier = isFullMark && !rootRegion->InYoungSpaceOrCSet();
         for (ObjectSlot slot = start; slot < end; slot++) {
             JSTaggedValue value(slot.GetTaggedType());
             if (value.IsHeapObject()) {
@@ -105,7 +105,7 @@ void SemiGCMarker::ProcessMarkStack(uint32_t threadId)
                 }
                 Region *rootRegion = Region::ObjectAddressToRange(root);
                 auto slotStatus = MarkObject(threadId, value.GetTaggedObject(), slot);
-                if (!rootRegion->InYoungGeneration() && slotStatus == SlotStatus::KEEP_SLOT) {
+                if (!rootRegion->InYoungSpace() && slotStatus == SlotStatus::KEEP_SLOT) {
                     SlotNeedUpdate waitUpdate(reinterpret_cast<TaggedObject *>(root), slot);
                     workManager_->PushSlotNeedUpdate(threadId, waitUpdate);
                 }

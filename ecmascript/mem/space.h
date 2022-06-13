@@ -119,7 +119,7 @@ public:
         return spaceType_;
     }
 
-    inline RegionFlags GetRegionFlag() const;
+    inline RegionSpaceFlag GetRegionFlag() const;
 
     uintptr_t GetAllocateAreaBegin() const
     {
@@ -174,8 +174,6 @@ public:
     void Destroy();
 
     void ReclaimRegions();
-
-    bool ContainObject(TaggedObject *object) const;
 
 protected:
     void ClearAndFreeRegion(Region *region);

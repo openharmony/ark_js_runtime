@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -40,9 +40,9 @@ void Snapshot::Serialize(TaggedObject *objectHeader, const panda_file::File *pf,
     if (!filePath.first) {
         LOG_ECMA(FATAL) << "snapshot file path error";
     }
-    std::fstream write(fileName.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
-    if (!write.good()) {
-        write.close();
+    std::fstream writer(fileName.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
+    if (!writer.good()) {
+        writer.close();
         LOG_ECMA(FATAL) << "snapshot open file failed";
     }
 
@@ -60,7 +60,7 @@ void Snapshot::Serialize(TaggedObject *objectHeader, const panda_file::File *pf,
     processor.EncodeTaggedObject(objectHeader, &objectQueue, &data);
     size_t rootObjSize = objectQueue.size();
     processor.ProcessObjectQueue(&objectQueue, &data);
-    WriteToFile(write, pf, rootObjSize, processor);
+    WriteToFile(writer, pf, rootObjSize, processor);
     vm_->GetSnapshotEnv()->ClearEnvMap();
 }
 
@@ -70,9 +70,9 @@ void Snapshot::Serialize(uintptr_t startAddr, size_t size, const CString &fileNa
     if (!filePath.first) {
         LOG_ECMA(FATAL) << "snapshot file path error";
     }
-    std::fstream write(fileName.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
-    if (!write.good()) {
-        write.close();
+    std::fstream writer(fileName.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
+    if (!writer.good()) {
+        writer.close();
         LOG_ECMA(FATAL) << "snapshot open file failed";
     }
 
@@ -88,7 +88,7 @@ void Snapshot::Serialize(uintptr_t startAddr, size_t size, const CString &fileNa
     processor.EncodeTaggedObjectRange(start, end, &objectQueue, &data);
 
     processor.ProcessObjectQueue(&objectQueue, &data);
-    WriteToFile(write, nullptr, size, processor);
+    WriteToFile(writer, nullptr, size, processor);
     vm_->GetSnapshotEnv()->ClearEnvMap();
 }
 
@@ -205,7 +205,7 @@ std::pair<bool, CString> Snapshot::VerifyFilePath(const CString &filePath, bool 
     return std::make_pair(true, CString(resolvedPath.data()));
 }
 
-void Snapshot::WriteToFile(std::fstream &write, const panda_file::File *pf, size_t size, SnapshotProcessor &processor)
+void Snapshot::WriteToFile(std::fstream &writer, const panda_file::File *pf, size_t size, SnapshotProcessor &processor)
 {
     uint32_t totalStringSize = 0U;
     CVector<uintptr_t> stringVector = processor.GetStringVector();
@@ -223,21 +223,21 @@ void Snapshot::WriteToFile(std::fstream &write, const panda_file::File *pf, size
     uint32_t pandaFileBegin = RoundUp(totalObjSize + sizeof(Header), Constants::PAGE_SIZE_ALIGN_UP);
     Header hdr {objSizeVector[0], objSizeVector[1], objSizeVector[2], objSizeVector[3], // 0,1,2,3: index of element
                 totalStringSize, pandaFileBegin, static_cast<uint32_t>(size)};
-    write.write(reinterpret_cast<char *>(&hdr), sizeof(hdr));
+    writer.write(reinterpret_cast<char *>(&hdr), sizeof(hdr));
 
-    processor.WriteObjectToFile(write);
+    processor.WriteObjectToFile(writer);
 
     for (size_t i = 0; i < stringVector.size(); ++i) {
         auto str = reinterpret_cast<EcmaString *>(stringVector[i]);
         size_t strSize = AlignUp(str->ObjectSize(), static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
-        write.write(reinterpret_cast<char *>(str), strSize);
-        write.flush();
+        writer.write(reinterpret_cast<char *>(str), strSize);
+        writer.flush();
     }
-    ASSERT(static_cast<size_t>(write.tellp()) == totalObjSize + sizeof(Header));
+    ASSERT(static_cast<size_t>(writer.tellp()) == totalObjSize + sizeof(Header));
     if (pf) {
-        write.seekp(pandaFileBegin);
-        write.write(reinterpret_cast<const char *>(pf->GetBase()), pf->GetHeader()->file_size);
+        writer.seekp(pandaFileBegin);
+        writer.write(reinterpret_cast<const char *>(pf->GetBase()), pf->GetHeader()->file_size);
     }
-    write.close();
+    writer.close();
 }
 }  // namespace panda::ecmascript
