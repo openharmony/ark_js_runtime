@@ -55,8 +55,8 @@ JSTaggedValue AtomicHelper::ValidateIntegerTypedArray(JSThread *thread, JSHandle
     return bufferHandle.GetTaggedValue();
 }
 
-int32_t AtomicHelper::ValidateAtomicAccess(JSThread *thread, const JSHandle<JSTaggedValue> typedArray,
-                                           JSHandle<JSTaggedValue> requestIndex)
+uint32_t AtomicHelper::ValidateAtomicAccess(JSThread *thread, const JSHandle<JSTaggedValue> typedArray,
+                                            JSHandle<JSTaggedValue> requestIndex)
 {
     // 1. Assert: typedArray is an Object that has a [[ViewedArrayBuffer]] internal slot.
     ASSERT(typedArray->IsECMAObject() && typedArray->IsTypedArray());
@@ -82,10 +82,10 @@ int32_t AtomicHelper::ValidateAtomicAccess(JSThread *thread, const JSHandle<JSTa
     // 7. Let elementSize be the Element Size value specified in Table 60 for arrayTypeName.
     // 8. Let offset be typedArray.[[ByteOffset]].
     JSHandle<JSTaggedValue> arrayTypeName(thread, JSTypedArray::Cast(*typedArrayObj)->GetTypedArrayName());
-    int32_t elementSize = TypedArrayHelper::GetSizeFromName(thread, arrayTypeName);
+    uint32_t elementSize = TypedArrayHelper::GetSizeFromName(thread, arrayTypeName);
     uint32_t offset = srcObj->GetByteOffset();
     // 9. Return (accessIndex × elementSize) + offset.
-    int32_t allOffset = index * elementSize + offset;
+    uint32_t allOffset = index * elementSize + offset;
     return allOffset;
 }
 
@@ -124,7 +124,7 @@ JSTaggedValue AtomicHelper::AtomicLoad(JSThread *thread, const JSHandle<JSTagged
     JSTaggedValue bufferValue = ValidateIntegerTypedArray(thread, typedArray);
     JSHandle<JSTaggedValue> buffer(thread, bufferValue);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    int32_t indexedPosition = ValidateAtomicAccess(thread, typedArray, index);
+    uint32_t indexedPosition = ValidateAtomicAccess(thread, typedArray, index);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (BuiltinsArrayBuffer::IsDetachedBuffer(buffer.GetTaggedValue())) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "The ArrayBuffer of this value is detached buffer.",
