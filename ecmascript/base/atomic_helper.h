@@ -92,7 +92,7 @@ public:
     static JSTaggedValue ValidateIntegerTypedArray(JSThread *thread, JSHandle<JSTaggedValue> typedArray,
                                                    bool waitable = false);
     // 25.4.2.2 ValidateAtomicAccess ( typedArray, requestIndex )
-    static int32_t ValidateAtomicAccess(JSThread *thread, const JSHandle<JSTaggedValue> typedArray,
+    static uint32_t ValidateAtomicAccess(JSThread *thread, const JSHandle<JSTaggedValue> typedArray,
                                         JSHandle<JSTaggedValue> requestIndex);
     static JSTaggedValue AtomicStore(JSThread *thread, const JSHandle<JSTaggedValue> &typedArray,
                                      JSHandle<JSTaggedValue> index, JSHandle<JSTaggedValue> &value);

@@ -176,7 +176,7 @@ JSTaggedValue BuiltinsAtomics::Wait(EcmaRuntimeCallInfo *argv)
     }
 
     // 3. Let indexedPosition be ? ValidateAtomicAccess(typedArray, index).
-    int32_t indexedPosition = AtomicHelper::ValidateAtomicAccess(thread, array, index);
+    uint32_t indexedPosition = AtomicHelper::ValidateAtomicAccess(thread, array, index);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     // 4. If typedArray.[[TypedArrayName]] is "BigInt64Array", let v be ? ToBigInt64(value).
@@ -245,7 +245,7 @@ JSTaggedValue BuiltinsAtomics::Notify(EcmaRuntimeCallInfo *argv)
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     // 2. Let indexedPosition be ? ValidateAtomicAccess(typedArray, index).
-    int32_t indexedPosition = AtomicHelper::ValidateAtomicAccess(thread, array, index);
+    uint32_t indexedPosition = AtomicHelper::ValidateAtomicAccess(thread, array, index);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     // 3. If count is undefined, let c be +∞.
@@ -281,7 +281,7 @@ JSTaggedValue BuiltinsAtomics::AtomicReadModifyWrite(JSThread *thread, const JSH
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     JSHandle<JSTaggedValue> buffer(thread, bufferValue);
     // 2. Let indexedPosition be ? ValidateAtomicAccess(typedArray, index).
-    int32_t indexedPosition = base::AtomicHelper::ValidateAtomicAccess(thread, typedArray, index);
+    uint32_t indexedPosition = base::AtomicHelper::ValidateAtomicAccess(thread, typedArray, index);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 3. Let arrayTypeName be typedArray.[[TypedArrayName]].
     JSHandle<JSTaggedValue> arrayTypeName(thread,
@@ -301,7 +301,7 @@ JSTaggedValue BuiltinsAtomics::AtomicReadModifyWrite(JSThread *thread, const JSH
 
 template<typename callbackfun>
 JSTaggedValue BuiltinsAtomics::AtomicReadModifyWriteCase(JSThread *thread, JSTaggedValue arrBuf,
-                                                         DataViewType type, int32_t indexedPosition,
+                                                         DataViewType type, uint32_t indexedPosition,
                                                          EcmaRuntimeCallInfo *argv, const callbackfun &op)
 {
     JSArrayBuffer *jsArrayBuffer = JSArrayBuffer::Cast(arrBuf.GetTaggedObject());
@@ -334,7 +334,7 @@ JSTaggedValue BuiltinsAtomics::AtomicReadModifyWriteCase(JSThread *thread, JSTag
 
 template<typename callbackfun>
 JSTaggedValue BuiltinsAtomics::HandleWithUint8(JSThread *thread, uint32_t size, uint8_t *block,
-                                               int32_t indexedPosition,
+                                               uint32_t indexedPosition,
                                                EcmaRuntimeCallInfo *argv, const callbackfun &op)
 {
     JSHandle<JSTaggedValue> value = BuiltinsBase::GetCallArg(argv, BuiltinsBase::ArgsPosition::THIRD);
@@ -354,7 +354,7 @@ JSTaggedValue BuiltinsAtomics::HandleWithUint8(JSThread *thread, uint32_t size, 
 
 template<typename callbackfun>
 JSTaggedValue BuiltinsAtomics::HandleWithInt8(JSThread *thread, uint32_t size, uint8_t *block,
-                                              int32_t indexedPosition,
+                                              uint32_t indexedPosition,
                                               EcmaRuntimeCallInfo *argv, const callbackfun &op)
 {
     JSHandle<JSTaggedValue> value = BuiltinsBase::GetCallArg(argv, BuiltinsBase::ArgsPosition::THIRD);
@@ -374,7 +374,7 @@ JSTaggedValue BuiltinsAtomics::HandleWithInt8(JSThread *thread, uint32_t size, u
 
 template<typename callbackfun>
 JSTaggedValue BuiltinsAtomics::HandleWithUint16(JSThread *thread, uint32_t size, uint8_t *block,
-                                                int32_t indexedPosition,
+                                                uint32_t indexedPosition,
                                                 EcmaRuntimeCallInfo *argv, const callbackfun &op)
 {
     JSHandle<JSTaggedValue> value = BuiltinsBase::GetCallArg(argv, BuiltinsBase::ArgsPosition::THIRD);
@@ -394,7 +394,7 @@ JSTaggedValue BuiltinsAtomics::HandleWithUint16(JSThread *thread, uint32_t size,
 
 template<typename callbackfun>
 JSTaggedValue BuiltinsAtomics::HandleWithInt16(JSThread *thread, uint32_t size, uint8_t *block,
-                                               int32_t indexedPosition,
+                                               uint32_t indexedPosition,
                                                EcmaRuntimeCallInfo *argv, const callbackfun &op)
 {
     JSHandle<JSTaggedValue> value = BuiltinsBase::GetCallArg(argv, BuiltinsBase::ArgsPosition::THIRD);
@@ -414,7 +414,7 @@ JSTaggedValue BuiltinsAtomics::HandleWithInt16(JSThread *thread, uint32_t size, 
 
 template<typename callbackfun>
 JSTaggedValue BuiltinsAtomics::HandleWithUint32(JSThread *thread, uint32_t size, uint8_t *block,
-                                                int32_t indexedPosition,
+                                                uint32_t indexedPosition,
                                                 EcmaRuntimeCallInfo *argv, const callbackfun &op)
 {
     JSHandle<JSTaggedValue> value = BuiltinsBase::GetCallArg(argv, BuiltinsBase::ArgsPosition::THIRD);
@@ -434,7 +434,7 @@ JSTaggedValue BuiltinsAtomics::HandleWithUint32(JSThread *thread, uint32_t size,
 
 template<typename callbackfun>
 JSTaggedValue BuiltinsAtomics::HandleWithInt32(JSThread *thread, uint32_t size, uint8_t *block,
-                                               int32_t indexedPosition,
+                                               uint32_t indexedPosition,
                                                EcmaRuntimeCallInfo *argv, const callbackfun &op)
 {
     JSHandle<JSTaggedValue> value = BuiltinsBase::GetCallArg(argv, BuiltinsBase::ArgsPosition::THIRD);
@@ -454,7 +454,7 @@ JSTaggedValue BuiltinsAtomics::HandleWithInt32(JSThread *thread, uint32_t size, 
 
 template<typename callbackfun>
 JSTaggedValue BuiltinsAtomics::HandleWithBigInt64(JSThread *thread, uint32_t size, uint8_t *block,
-                                                  int32_t indexedPosition,
+                                                  uint32_t indexedPosition,
                                                   EcmaRuntimeCallInfo *argv, const callbackfun &op)
 {
     JSHandle<JSTaggedValue> value = BuiltinsBase::GetCallArg(argv, BuiltinsBase::ArgsPosition::THIRD);
@@ -477,7 +477,7 @@ JSTaggedValue BuiltinsAtomics::HandleWithBigInt64(JSThread *thread, uint32_t siz
 
 template<typename callbackfun>
 JSTaggedValue BuiltinsAtomics::HandleWithBigUint64(JSThread *thread, uint32_t size, uint8_t *block,
-                                                   int32_t indexedPosition,
+                                                   uint32_t indexedPosition,
                                                    EcmaRuntimeCallInfo *argv, const callbackfun &op)
 {
     JSHandle<JSTaggedValue> value = BuiltinsBase::GetCallArg(argv, BuiltinsBase::ArgsPosition::THIRD);
