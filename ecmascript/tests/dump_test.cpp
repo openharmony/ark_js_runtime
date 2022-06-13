@@ -334,8 +334,10 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
             case JSType::JS_EVAL_ERROR:
             case JSType::JS_RANGE_ERROR:
             case JSType::JS_TYPE_ERROR:
+            case JSType::JS_AGGREGATE_ERROR:
             case JSType::JS_REFERENCE_ERROR:
             case JSType::JS_URI_ERROR:
+            case JSType::JS_ARGUMENTS:
             case JSType::JS_SYNTAX_ERROR:
             case JSType::JS_OBJECT: {
                 CHECK_DUMP_FIELDS(ECMAObject::SIZE, JSObject::SIZE, 2U)
@@ -393,6 +395,38 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                     JSHandle<JSHClass>::Cast(globalEnv->GetPromiseAllResolveElementFunctionClass());
                 JSHandle<JSObject> promiseAllFunc = factory->NewJSObjectWithInit(promiseAllClass);
                 DUMP_FOR_HANDLE(promiseAllFunc)
+                break;
+            }
+            case JSType::JS_PROMISE_ANY_REJECT_ELEMENT_FUNCTION: {
+                CHECK_DUMP_FIELDS(JSFunction::SIZE, JSPromiseAnyRejectElementFunction::SIZE, 5U)
+                JSHandle<JSHClass> promiseAnyClass =
+                    JSHandle<JSHClass>::Cast(globalEnv->GetPromiseAnyRejectElementFunctionClass());
+                JSHandle<JSObject> promiseAnyFunc = factory->NewJSObjectWithInit(promiseAnyClass);
+                DUMP_FOR_HANDLE(promiseAnyFunc)
+                break;
+            }
+            case JSType::JS_PROMISE_ALL_SETTLED_ELEMENT_FUNCTION: {
+                CHECK_DUMP_FIELDS(JSFunction::SIZE, JSPromiseAllSettledElementFunction::SIZE, 5U)
+                JSHandle<JSHClass> promiseAllSettledClass =
+                    JSHandle<JSHClass>::Cast(globalEnv->GetPromiseAllSettledElementFunctionClass());
+                JSHandle<JSObject> promiseAllSettledFunc = factory->NewJSObjectWithInit(promiseAllSettledClass);
+                DUMP_FOR_HANDLE(promiseAllSettledFunc)
+                break;
+            }
+            case JSType::JS_PROMISE_FINALLY_FUNCTION: {
+                CHECK_DUMP_FIELDS(JSFunction::SIZE, JSPromiseFinallyFunction::SIZE, 2U)
+                JSHandle<JSHClass> promiseFinallyClass =
+                    JSHandle<JSHClass>::Cast(globalEnv->GetPromiseFinallyFunctionClass());
+                JSHandle<JSObject> promiseFinallyFunc = factory->NewJSObjectWithInit(promiseFinallyClass);
+                DUMP_FOR_HANDLE(promiseFinallyFunc)
+                break;
+            }
+            case JSType::JS_PROMISE_VALUE_THUNK_OR_THROWER_FUNCTION: {
+                CHECK_DUMP_FIELDS(JSFunction::SIZE, JSPromiseValueThunkOrThrowerFunction::SIZE, 1U)
+                JSHandle<JSHClass> promiseValueClass =
+                    JSHandle<JSHClass>::Cast(globalEnv->GetPromiseValueThunkOrThrowerFunctionClass());
+                JSHandle<JSObject> promiseValueFunc = factory->NewJSObjectWithInit(promiseValueClass);
+                DUMP_FOR_HANDLE(promiseValueFunc)
                 break;
             }
             case JSType::JS_GENERATOR_FUNCTION: {

@@ -77,6 +77,48 @@ JSHandle<TaggedArray> JSObject::GrowElementsCapacity(const JSThread *thread, con
     return newElements;
 }
 
+JSHandle<JSTaggedValue> JSObject::IterableToList(JSThread *thread, const JSHandle<JSTaggedValue> &items,
+                                                 JSTaggedValue method)
+{
+    // 1. If method is present, then
+    // a. Let iteratorRecord be ? GetIterator(items, sync, method).
+    // 2. Else,
+    // a. Let iteratorRecord be ? GetIterator(items, sync).
+    JSHandle<JSTaggedValue> iteratorRecord;
+    JSHandle<JSTaggedValue> methodHandle(thread, method);
+    if (!methodHandle->IsUndefined()) {
+        iteratorRecord = JSIterator::GetIterator(thread, items, methodHandle);
+        RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSTaggedValue, thread);
+    } else {
+        iteratorRecord = JSIterator::GetIterator(thread, items);
+        RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSTaggedValue, thread);
+    }
+    // 3. Let values be a new empty List.
+    // 4. Let next be true.
+    JSHandle<JSArray> array = JSHandle<JSArray>::Cast(JSArray::ArrayCreate(thread, JSTaggedNumber(0)));
+    JSHandle<JSTaggedValue> valuesList = JSHandle<JSTaggedValue>::Cast(array);
+    JSMutableHandle<JSTaggedValue> next(thread, JSTaggedValue::True());
+    // 5. Repeat, while next is not false,
+    // a. Set next to ? IteratorStep(iteratorRecord).
+    // b. If next is not false, then
+    // i. Let nextValue be ? IteratorValue(next).
+    // ii. Append nextValue to the end of the List values.
+    uint32_t k = 0;
+    while (!next->IsFalse()) {
+        next.Update(JSIterator::IteratorStep(thread, iteratorRecord).GetTaggedValue());
+        RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSTaggedValue, thread);
+        if (!next->IsFalse()) {
+            JSHandle<JSTaggedValue> nextValue(JSIterator::IteratorValue(thread, next));
+            RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSTaggedValue, thread);
+            JSArray::FastSetPropertyByValue(thread, valuesList, k, nextValue);
+            RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSTaggedValue, thread);
+            k++;
+        }
+    }
+    // 6. Return values.
+    return valuesList;
+}
+
 bool JSObject::IsRegExp(JSThread *thread, const JSHandle<JSTaggedValue> &argument)
 {
     if (!argument->IsECMAObject()) {
@@ -1674,7 +1716,8 @@ JSHandle<JSTaggedValue> JSObject::SpeciesConstructor(JSThread *thread, const JSH
 
     // Let C be Get(O, "constructor").
     JSHandle<JSTaggedValue> contructorKey = globalConst->GetHandledConstructorString();
-    JSHandle<JSTaggedValue> objConstructor(GetProperty(thread, JSHandle<JSTaggedValue>(obj), contructorKey).GetValue());
+    JSHandle<JSTaggedValue> objConstructor(JSTaggedValue::GetProperty(thread, JSHandle<JSTaggedValue>(obj),
+                                                                      contructorKey).GetValue());
     // ReturnIfAbrupt(C).
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSTaggedValue, thread);
     // If C is undefined, return defaultConstructor.

@@ -107,6 +107,9 @@ JSHandle<JSTaggedValue> ErrorHelper::GetErrorName(JSThread *thread, const JSHand
             case ErrorType::TYPE_ERROR:
                 errorKey = reinterpret_cast<TaggedObject *>(*globalConst->GetHandledTypeErrorString());
                 break;
+            case ErrorType::AGGREGATE_ERROR:
+                errorKey = reinterpret_cast<TaggedObject *>(*globalConst->GetHandledAggregateErrorString());
+                break;
             case ErrorType::URI_ERROR:
                 errorKey = reinterpret_cast<TaggedObject *>(*globalConst->GetHandledURIErrorString());
                 break;

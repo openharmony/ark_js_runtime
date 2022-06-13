@@ -77,6 +77,13 @@ public:
 
     static JSTaggedValue ToString(EcmaRuntimeCallInfo *argv);
 };
-}  // namespace panda::ecmascript::builtins
 
+
+class BuiltinsAggregateError : public base::BuiltinsBase {
+public:
+    static JSTaggedValue AggregateErrorConstructor(EcmaRuntimeCallInfo *argv);
+
+    static JSTaggedValue ToString(EcmaRuntimeCallInfo *argv);
+};
+}  // namespace panda::ecmascript::builtins
 #endif  // ECMASCRIPT_BUILTINS_BUILTINS_ERRORS_H

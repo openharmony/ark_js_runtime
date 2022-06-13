@@ -434,6 +434,9 @@ namespace panda::ecmascript {
     V(PromiseHandler, Reject)                 \
     V(PromiseHandler, Executor)               \
     V(PromiseHandler, ResolveElementFunction) \
+    V(PromiseHandler, AllSettledResolveElementFunction) \
+    V(PromiseHandler, AllSettledRejectElementFunction) \
+    V(PromiseHandler, AnyRejectElementFunction) \
     V(PromiseJob, Reaction)                   \
     V(PromiseJob, ResolveThenableJob)         \
     V(Promise, Constructor)                   \
@@ -445,6 +448,11 @@ namespace panda::ecmascript {
     V(Promise, Catch)                         \
     V(Promise, Then)                          \
     V(Promise, PerformPromiseThen)            \
+    V(Promise, Finally)                       \
+    V(Promise, Any)                           \
+    V(Promise, PerformPromiseAny)             \
+    V(Promise, AllSettled)                    \
+    V(Promise, PerformPromiseAllSettled)      \
     V(Proxy, Constructor)                     \
     V(Proxy, Revocable)                       \
     V(Proxy, InvalidateProxyFunction)         \

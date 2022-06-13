@@ -71,6 +71,10 @@ class ProtoChangeDetails;
         JS_PROMISE_REACTIONS_FUNCTION, /* /////////////////////////////////////////////////////////////////-PADDING */ \
         JS_PROMISE_EXECUTOR_FUNCTION,  /* /////////////////////////////////////////////////////////////////-PADDING */ \
         JS_PROMISE_ALL_RESOLVE_ELEMENT_FUNCTION,  /* //////////////////////////////////////////////////////-PADDING */ \
+        JS_PROMISE_ANY_REJECT_ELEMENT_FUNCTION,  /* ///////////////////////////////////////////////////////-PADDING */ \
+        JS_PROMISE_ALL_SETTLED_ELEMENT_FUNCTION,  /* //////////////////////////////////////////////////////-PADDING */ \
+        JS_PROMISE_FINALLY_FUNCTION,  /* //////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_PROMISE_VALUE_THUNK_OR_THROWER_FUNCTION,  /* ///////////////////////////////////////////////////-PADDING */ \
         JS_GENERATOR_FUNCTION, /* /////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_ASYNC_FUNCTION, /* /////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_INTL_BOUND_FUNCTION, /* ////////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -82,6 +86,7 @@ class ProtoChangeDetails;
         JS_RANGE_ERROR,     /* ////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_REFERENCE_ERROR, /* ////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_TYPE_ERROR,      /* ////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_AGGREGATE_ERROR, /* ////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_URI_ERROR,       /* ////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_SYNTAX_ERROR,    /* JS_ERROR_END /////////////////////////////////////////////////////////////////////// */ \
                                                                                                                        \
@@ -563,6 +568,26 @@ public:
     inline bool IsJSPromiseAllResolveElementFunction() const
     {
         return GetObjectType() == JSType::JS_PROMISE_ALL_RESOLVE_ELEMENT_FUNCTION;
+    }
+
+    inline bool IsJSPromiseAnyRejectElementFunction() const
+    {
+        return GetObjectType() == JSType::JS_PROMISE_ANY_REJECT_ELEMENT_FUNCTION;
+    }
+
+    inline bool IsJSPromiseAllSettledElementFunction() const
+    {
+        return GetObjectType() == JSType::JS_PROMISE_ALL_SETTLED_ELEMENT_FUNCTION;
+    }
+
+    inline bool IsJSPromiseFinallyFunction() const
+    {
+        return GetObjectType() == JSType::JS_PROMISE_FINALLY_FUNCTION;
+    }
+
+    inline bool IsJSPromiseValueThunkOrThrowerFunction() const
+    {
+        return GetObjectType() == JSType::JS_PROMISE_VALUE_THUNK_OR_THROWER_FUNCTION;
     }
 
     inline bool IsMicroJobQueue() const

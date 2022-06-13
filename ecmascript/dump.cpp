@@ -144,6 +144,8 @@ CString JSHClass::DumpJSType(JSType type)
             return "Range Error";
         case JSType::JS_TYPE_ERROR:
             return "Type Error";
+        case JSType::JS_AGGREGATE_ERROR:
+            return "Aggregate Error";
         case JSType::JS_REFERENCE_ERROR:
             return "Reference Error";
         case JSType::JS_URI_ERROR:
@@ -244,6 +246,14 @@ CString JSHClass::DumpJSType(JSType type)
             return "PromiseExecutorFunction";
         case JSType::JS_PROMISE_ALL_RESOLVE_ELEMENT_FUNCTION:
             return "PromiseAllResolveElementFunction";
+        case JSType::JS_PROMISE_ANY_REJECT_ELEMENT_FUNCTION:
+            return "PromiseAnyRejectElementFunction";
+        case JSType::JS_PROMISE_ALL_SETTLED_ELEMENT_FUNCTION:
+            return "PromiseAllSettledElementFunction";
+        case JSType::JS_PROMISE_FINALLY_FUNCTION:
+            return "PromiseFinallyFunction";
+        case JSType::JS_PROMISE_VALUE_THUNK_OR_THROWER_FUNCTION:
+            return "PromiseValueThunkOrThrowerFunction";
         case JSType::MICRO_JOB_QUEUE:
             return "MicroJobQueue";
         case JSType::PENDING_JOB:
@@ -504,6 +514,7 @@ static void DumpObject(TaggedObject *obj, std::ostream &os)
         case JSType::JS_EVAL_ERROR:
         case JSType::JS_RANGE_ERROR:
         case JSType::JS_TYPE_ERROR:
+        case JSType::JS_AGGREGATE_ERROR:
         case JSType::JS_REFERENCE_ERROR:
         case JSType::JS_URI_ERROR:
         case JSType::JS_SYNTAX_ERROR:
@@ -613,6 +624,18 @@ static void DumpObject(TaggedObject *obj, std::ostream &os)
             break;
         case JSType::JS_PROMISE_ALL_RESOLVE_ELEMENT_FUNCTION:
             JSPromiseAllResolveElementFunction::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_PROMISE_ANY_REJECT_ELEMENT_FUNCTION:
+            JSPromiseAnyRejectElementFunction::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_PROMISE_ALL_SETTLED_ELEMENT_FUNCTION:
+            JSPromiseAllSettledElementFunction::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_PROMISE_FINALLY_FUNCTION:
+            JSPromiseFinallyFunction::Cast(obj)->Dump(os);
+            break;
+        case JSType::JS_PROMISE_VALUE_THUNK_OR_THROWER_FUNCTION:
+            JSPromiseValueThunkOrThrowerFunction::Cast(obj)->Dump(os);
             break;
         case JSType::MICRO_JOB_QUEUE:
             MicroJobQueue::Cast(obj)->Dump(os);
@@ -1914,6 +1937,8 @@ void GlobalEnv::Dump(std::ostream &os) const
     GetReferenceErrorFunction().GetTaggedValue().Dump(os);
     os << " - TypeErrorFunction: ";
     GetTypeErrorFunction().GetTaggedValue().Dump(os);
+    os << " - AggregateErrorFunction: ";
+    GetAggregateErrorFunction().GetTaggedValue().Dump(os);
     os << " - URIErrorFunction: ";
     GetURIErrorFunction().GetTaggedValue().Dump(os);
     os << " - SyntaxErrorFunction: ";
@@ -2199,6 +2224,52 @@ void JSPromiseAllResolveElementFunction::Dump(std::ostream &os) const
     GetRemainingElements().Dump(os);
     os << " - already-called: ";
     GetAlreadyCalled().Dump(os);
+    JSObject::Dump(os);
+}
+
+void JSPromiseAnyRejectElementFunction::Dump(std::ostream &os) const
+{
+    os << " - index: ";
+    JSTaggedValue(GetIndex()).Dump(os);
+    os << " - errors: ";
+    GetErrors().Dump(os);
+    os << " - capability: ";
+    GetCapability().Dump(os);
+    os << " - remaining-elements: ";
+    GetRemainingElements().Dump(os);
+    os << " - already-called: ";
+    GetAlreadyCalled().Dump(os);
+    JSObject::Dump(os);
+}
+
+void JSPromiseAllSettledElementFunction::Dump(std::ostream &os) const
+{
+    os << " - already-called: ";
+    GetAlreadyCalled().Dump(os);
+    os << " - index: ";
+    JSTaggedValue(GetIndex()).Dump(os);
+    os << " - values: ";
+    GetValues().Dump(os);
+    os << " - capability: ";
+    GetCapability().Dump(os);
+    os << " - remaining-elements: ";
+    GetRemainingElements().Dump(os);
+    JSObject::Dump(os);
+}
+
+void JSPromiseFinallyFunction::Dump(std::ostream &os) const
+{
+    os << " - constructor: ";
+    GetConstructor().Dump(os);
+    os << " - onFinally: ";
+    GetOnFinally().Dump(os);
+    JSObject::Dump(os);
+}
+
+void JSPromiseValueThunkOrThrowerFunction::Dump(std::ostream &os) const
+{
+    os << " - result: ";
+    GetResult().Dump(os);
     JSObject::Dump(os);
 }
 
@@ -3097,6 +3168,7 @@ static void DumpObject(TaggedObject *obj,
         case JSType::JS_EVAL_ERROR:
         case JSType::JS_RANGE_ERROR:
         case JSType::JS_TYPE_ERROR:
+        case JSType::JS_AGGREGATE_ERROR:
         case JSType::JS_REFERENCE_ERROR:
         case JSType::JS_URI_ERROR:
         case JSType::JS_SYNTAX_ERROR:
@@ -3200,6 +3272,18 @@ static void DumpObject(TaggedObject *obj,
             return;
         case JSType::JS_PROMISE_ALL_RESOLVE_ELEMENT_FUNCTION:
             JSPromiseAllResolveElementFunction::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_PROMISE_ANY_REJECT_ELEMENT_FUNCTION:
+            JSPromiseAnyRejectElementFunction::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_PROMISE_ALL_SETTLED_ELEMENT_FUNCTION:
+            JSPromiseAllSettledElementFunction::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_PROMISE_FINALLY_FUNCTION:
+            JSPromiseFinallyFunction::Cast(obj)->DumpForSnapshot(vec);
+            return;
+        case JSType::JS_PROMISE_VALUE_THUNK_OR_THROWER_FUNCTION:
+            JSPromiseValueThunkOrThrowerFunction::Cast(obj)->DumpForSnapshot(vec);
             return;
         case JSType::MICRO_JOB_QUEUE:
             MicroJobQueue::Cast(obj)->DumpForSnapshot(vec);
@@ -3948,6 +4032,7 @@ void GlobalEnv::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &
     vec.push_back(std::make_pair(CString("RangeErrorFunction"), GetRangeErrorFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("ReferenceErrorFunction"), GetReferenceErrorFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("TypeErrorFunction"), GetTypeErrorFunction().GetTaggedValue()));
+    vec.push_back(std::make_pair(CString("AggregateErrorFunction"), GetAggregateErrorFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("URIErrorFunction"), GetURIErrorFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("SyntaxErrorFunction"), GetSyntaxErrorFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("EvalErrorFunction"), GetEvalErrorFunction().GetTaggedValue()));
@@ -4135,6 +4220,39 @@ void JSPromiseAllResolveElementFunction::DumpForSnapshot(std::vector<std::pair<C
     vec.push_back(std::make_pair(CString("capabilities"), GetCapabilities()));
     vec.push_back(std::make_pair(CString("remaining-elements"), GetRemainingElements()));
     vec.push_back(std::make_pair(CString("already-called"), GetAlreadyCalled()));
+    JSObject::DumpForSnapshot(vec);
+}
+
+void JSPromiseAnyRejectElementFunction::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("index"), JSTaggedValue(GetIndex())));
+    vec.push_back(std::make_pair(CString("errors"), GetErrors()));
+    vec.push_back(std::make_pair(CString("capability"), GetCapability()));
+    vec.push_back(std::make_pair(CString("remaining-elements"), GetRemainingElements()));
+    vec.push_back(std::make_pair(CString("already-called"), GetAlreadyCalled()));
+    JSObject::DumpForSnapshot(vec);
+}
+
+void JSPromiseAllSettledElementFunction::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("already-called"), GetAlreadyCalled()));
+    vec.push_back(std::make_pair(CString("index"), JSTaggedValue(GetIndex())));
+    vec.push_back(std::make_pair(CString("values"), GetValues()));
+    vec.push_back(std::make_pair(CString("capability"), GetCapability()));
+    vec.push_back(std::make_pair(CString("remaining-elements"), GetRemainingElements()));
+    JSObject::DumpForSnapshot(vec);
+}
+
+void JSPromiseFinallyFunction::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("constructor"), GetConstructor()));
+    vec.push_back(std::make_pair(CString("onFinally"), GetOnFinally()));
+    JSObject::DumpForSnapshot(vec);
+}
+
+void JSPromiseValueThunkOrThrowerFunction::DumpForSnapshot(std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("result"), GetResult()));
     JSObject::DumpForSnapshot(vec);
 }
 

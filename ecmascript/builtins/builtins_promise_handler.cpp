@@ -233,4 +233,316 @@ JSTaggedValue BuiltinsPromiseHandler::AsyncAwaitRejected(EcmaRuntimeCallInfo *ar
     JSHandle<JSAsyncAwaitStatusFunction> func(GetConstructor(argv));
     return JSAsyncAwaitStatusFunction::AsyncFunctionAwaitRejected(argv->GetThread(), func, reason).GetTaggedValue();
 }
+
+JSTaggedValue BuiltinsPromiseHandler::valueThunkFunction(EcmaRuntimeCallInfo *argv)
+{
+    JSHandle<JSPromiseValueThunkOrThrowerFunction> valueThunk =
+        JSHandle<JSPromiseValueThunkOrThrowerFunction>::Cast(GetConstructor(argv));
+    return valueThunk->GetResult();
+}
+
+JSTaggedValue BuiltinsPromiseHandler::throwerFunction(EcmaRuntimeCallInfo *argv)
+{
+    JSThread *thread = argv->GetThread();
+    JSHandle<JSPromiseValueThunkOrThrowerFunction> thrower =
+        JSHandle<JSPromiseValueThunkOrThrowerFunction>::Cast(GetConstructor(argv));
+    JSTaggedValue undefined = thread->GlobalConstants()->GetUndefined();
+    THROW_NEW_ERROR_AND_RETURN_VALUE(thread, thrower->GetResult(), undefined);
+}
+
+JSTaggedValue BuiltinsPromiseHandler::ThenFinally(EcmaRuntimeCallInfo *argv)
+{
+    // 1. Let F be the active function object.
+    JSThread *thread = argv->GetThread();
+    auto ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    JSHandle<JSPromiseFinallyFunction> thenFinally(GetConstructor(argv));
+    JSHandle<JSTaggedValue> value = BuiltinsBase::GetCallArg(argv, 0);
+    // 2. Let onFinally be F.[[OnFinally]].
+    // 3. Assert: IsCallable(onFinally) is true.
+    JSHandle<JSTaggedValue> onFinally(thread, thenFinally->GetOnFinally());
+    ASSERT_PRINT(onFinally->IsCallable(), "onFinally is not callable");
+    // 4. Let result be ? Call(onFinally, undefined).
+    JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
+    EcmaRuntimeCallInfo taggedInfo =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, onFinally, undefined, undefined, 0);
+    JSTaggedValue result = JSFunction::Call(&taggedInfo);
+    JSHandle<JSTaggedValue> resultHandle(thread, result);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    // 5. Let C be F.[[Constructor]].
+    // 6. Assert: IsConstructor(C) is true.
+    JSHandle<JSTaggedValue> thenFinallyConstructor(thread, thenFinally->GetConstructor());
+    ASSERT_PRINT(thenFinallyConstructor->IsConstructor(), "thenFinallyConstructor is not constructor");
+    // 7. Let promise be ? PromiseResolve(C, result).
+    JSHandle<JSTaggedValue> promiseHandle =
+        BuiltinsPromiseHandler::PromiseResolve(thread, thenFinallyConstructor, resultHandle);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    // 8. Let valueThunk be equivalent to a function that returns value.
+    JSHandle<JSPromiseValueThunkOrThrowerFunction> valueThunk =
+        factory->NewJSPromiseValueThunkFunction();
+    valueThunk->SetResult(thread, value);
+    JSHandle<JSTaggedValue> thenKey(globalConst->GetHandledPromiseThenString());
+    EcmaRuntimeCallInfo invokeInfo =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, promiseHandle, undefined, 1);
+    invokeInfo.SetCallArg(valueThunk.GetTaggedValue());
+    // 9. Return ? Invoke(promise, "then", « valueThunk »).
+    return JSFunction::Invoke(&invokeInfo, thenKey);
+}
+
+JSTaggedValue BuiltinsPromiseHandler::CatchFinally(EcmaRuntimeCallInfo *argv)
+{
+    // 1. Let F be the active function object.
+    JSThread *thread = argv->GetThread();
+    auto ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    JSHandle<JSPromiseFinallyFunction> catchFinally(GetConstructor(argv));
+    // 2. Let onFinally be F.[[OnFinally]].
+    // 3. Assert: IsCallable(onFinally) is true.
+    JSHandle<JSTaggedValue> onFinally(thread, catchFinally->GetOnFinally());
+    ASSERT_PRINT(onFinally->IsCallable(), "thenOnFinally is not callable");
+    // 4. Let result be ? Call(onFinally, undefined).
+    JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
+    EcmaRuntimeCallInfo Info =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, onFinally, undefined, undefined, 0);
+    JSTaggedValue result = JSFunction::Call(&Info);
+    JSHandle<JSTaggedValue> resultHandle(thread, result);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    // 5. Let C be F.[[Constructor]].
+    // 6. Assert: IsConstructor(C) is true.
+    JSHandle<JSTaggedValue> catchFinallyConstructor(thread, catchFinally->GetConstructor());
+    ASSERT_PRINT(catchFinallyConstructor->IsConstructor(), "catchFinallyConstructor is not constructor");
+    // 7. Let promise be ? PromiseResolve(C, result).
+    JSHandle<JSTaggedValue> promiseHandle =
+        BuiltinsPromiseHandler::PromiseResolve(thread, catchFinallyConstructor, resultHandle);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    // 8. Let thrower be equivalent to a function that throws reason.
+    JSHandle<JSTaggedValue> reason = BuiltinsBase::GetCallArg(argv, 0);
+    JSHandle<JSTaggedValue> thenKey(globalConst->GetHandledPromiseThenString());
+    JSHandle<JSPromiseValueThunkOrThrowerFunction> thrower =
+        factory->NewJSPromiseThrowerFunction();
+    thrower->SetResult(thread, reason);
+    EcmaRuntimeCallInfo invokeInfo =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, promiseHandle, undefined, 1);
+    invokeInfo.SetCallArg(thrower.GetTaggedValue());
+    // 9. Return ? Invoke(promise, "then", « thrower »).
+    return JSFunction::Invoke(&invokeInfo, thenKey);
+}
+
+JSHandle<JSTaggedValue> BuiltinsPromiseHandler::PromiseResolve(JSThread *thread,
+                                                               const JSHandle<JSTaggedValue> &constructor,
+                                                               const JSHandle<JSTaggedValue> &xValue)
+{
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    // 1. Assert: Type(C) is Object.
+    ASSERT_PRINT(constructor->IsECMAObject(), "PromiseResolve : is not callable");
+    // 2. If IsPromise(x) is true, then
+    if (xValue->IsJSPromise()) {
+        // a. Let xConstructor be ? Get(x, "constructor").
+        JSHandle<JSTaggedValue> ctorKey(globalConst->GetHandledConstructorString());
+        JSHandle<JSTaggedValue> ctorValue = JSObject::GetProperty(thread, xValue, ctorKey).GetValue();
+        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ctorValue);
+        // b. If SameValue(xConstructor, C) is true, return x.
+        if (JSTaggedValue::SameValue(ctorValue, constructor)) {
+            return xValue;
+        }
+    }
+    // 3. Let promiseCapability be ? NewPromiseCapability(C).
+    // 4. ReturnIfAbrupt(promiseCapability)
+    JSHandle<PromiseCapability> promiseCapability = JSPromise::NewPromiseCapability(thread, constructor);
+    JSHandle<JSTaggedValue> promiseCapaHandle = JSHandle<JSTaggedValue>::Cast(promiseCapability);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, promiseCapaHandle);
+    // 6. Let resolveResult be Call(promiseCapability.[[Resolve]], undefined, «x»).
+    // 7. ReturnIfAbrupt(resolveResult).
+    JSHandle<JSTaggedValue> resolve(thread, promiseCapability->GetResolve());
+    JSHandle<JSTaggedValue> undefined(globalConst->GetHandledUndefined());
+    EcmaRuntimeCallInfo info =
+        EcmaInterpreter::NewRuntimeCallInfo(thread, resolve, undefined, undefined, 1);
+    info.SetCallArg(xValue.GetTaggedValue());
+    JSTaggedValue resolveResult = JSFunction::Call(&info);
+    JSHandle<JSTaggedValue> resolveResultHandle(thread, resolveResult);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, resolveResultHandle);
+    // 8. Return promiseCapability.[[Promise]].
+    JSHandle<JSTaggedValue> promise(thread, promiseCapability->GetPromise());
+    return promise;
+}
+
+JSTaggedValue BuiltinsPromiseHandler::AllSettledResolveElementFunction(EcmaRuntimeCallInfo *argv)
+{
+    // 1. Let F be the active function object.
+    JSThread *thread = argv->GetThread();
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    JSHandle<JSPromiseAllSettledElementFunction> resolveElement =
+        JSHandle<JSPromiseAllSettledElementFunction>::Cast((GetConstructor(argv)));
+    // 2. Let alreadyCalled be F.[[AlreadyCalled]].
+    JSHandle<PromiseRecord> alreadyCalled =
+        JSHandle<PromiseRecord>::Cast(JSHandle<JSTaggedValue>(thread, resolveElement->GetAlreadyCalled()));
+    // 3. If alreadyCalled.[[Value]] is true, return undefined.
+    if (alreadyCalled->GetValue().IsTrue()) {
+        return JSTaggedValue::Undefined();
+    }
+    // 4. Set alreadyCalled.[[Value]] to true.
+    alreadyCalled->SetValue(thread, JSTaggedValue::True());
+    // 5. Let index be F.[[Index]].
+    uint32_t index = resolveElement->GetIndex();
+    // 6. Let values be F.[[Values]].
+    JSHandle<PromiseRecord> values =
+        JSHandle<PromiseRecord>::Cast(JSHandle<JSTaggedValue>(thread, resolveElement->GetValues()));
+    // 7. Let promiseCapability be F.[[Capability]].
+    JSHandle<PromiseCapability> capa =
+        JSHandle<PromiseCapability>::Cast(JSHandle<JSTaggedValue>(thread, resolveElement->GetCapability()));
+    // 8. Let remainingElementsCount be F.[[RemainingElements]].
+    JSHandle<PromiseRecord> remainCnt =
+        JSHandle<PromiseRecord>::Cast(JSHandle<JSTaggedValue>(thread, resolveElement->GetRemainingElements()));
+    // 9. Let obj be ! OrdinaryObjectCreate(%Object.prototype%).
+    JSHandle<JSTaggedValue> proto = env->GetObjectFunctionPrototype();
+    JSHandle<JSObject> obj = thread->GetEcmaVM()->GetFactory()->OrdinaryNewJSObjectCreate(proto);
+    // 10. Perform ! CreateDataPropertyOrThrow(obj, "status", "fulfilled").
+    JSHandle<JSTaggedValue> statusKey = globalConst->GetHandledPromiseStatusString();
+    JSHandle<JSTaggedValue> fulfilledKey = globalConst->GetHandledPromiseFulfilledString();
+    JSObject::CreateDataPropertyOrThrow(thread, obj, statusKey, fulfilledKey);
+    // 11. Perform ! CreateDataPropertyOrThrow(obj, "value", x).
+    JSHandle<JSTaggedValue> valueKey = globalConst->GetHandledValueString();
+    JSHandle<JSTaggedValue> xValue = GetCallArg(argv, 0);
+    JSObject::CreateDataPropertyOrThrow(thread, obj, valueKey, xValue);
+    // 12. Set values[index] to obj.
+    JSHandle<TaggedArray> arrayValues =
+        JSHandle<TaggedArray>::Cast(JSHandle<JSTaggedValue>(thread, values->GetValue()));
+    arrayValues->Set(thread, index, obj.GetTaggedValue());
+    // 13. Set remainingElementsCount.[[Value]] to remainingElementsCount.[[Value]] - 1.
+    remainCnt->SetValue(thread, --JSTaggedNumber(remainCnt->GetValue()));
+    // 14. If remainingElementsCount.[[Value]] is 0, then
+    if (remainCnt->GetValue().IsZero()) {
+        // a. Let valuesArray be CreateArrayFromList(values).
+        JSHandle<JSArray> jsArrayValues = JSArray::CreateArrayFromList(thread, arrayValues);
+        // b. Return ? Call(promiseCapability.[[Resolve]], undefined, « valuesArray »).
+        JSHandle<JSTaggedValue> capaResolve(thread, capa->GetResolve());
+        JSHandle<JSTaggedValue> undefined(globalConst->GetHandledUndefined());
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, capaResolve, undefined, undefined, 1);
+        info.SetCallArg(jsArrayValues.GetTaggedValue());
+        return JSFunction::Call(&info);
+    }
+    // 15. Return undefined.
+    return JSTaggedValue::Undefined();
+}
+
+JSTaggedValue BuiltinsPromiseHandler::AllSettledRejectElementFunction(EcmaRuntimeCallInfo *argv)
+{
+    // 1. Let F be the active function object.
+    JSThread *thread = argv->GetThread();
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    JSHandle<JSPromiseAllSettledElementFunction> rejectElement =
+        JSHandle<JSPromiseAllSettledElementFunction>::Cast((GetConstructor(argv)));
+    // 2. Let alreadyCalled be F.[[AlreadyCalled]].
+    JSHandle<PromiseRecord> alreadyCalled =
+        JSHandle<PromiseRecord>::Cast(JSHandle<JSTaggedValue>(thread, rejectElement->GetAlreadyCalled()));
+    // 3. If alreadyCalled.[[Value]] is true, return undefined.
+    if (alreadyCalled->GetValue().IsTrue()) {
+        return JSTaggedValue::Undefined();
+    }
+    // 4. Set alreadyCalled.[[Value]] to true.
+    alreadyCalled->SetValue(thread, JSTaggedValue::True());
+    // 5. Let index be F.[[Index]].
+    uint32_t index = rejectElement->GetIndex();
+    // 6. Let values be F.[[Values]].
+    JSHandle<PromiseRecord> values =
+        JSHandle<PromiseRecord>::Cast(JSHandle<JSTaggedValue>(thread, rejectElement->GetValues()));
+    // 7. Let promiseCapability be F.[[Capability]].
+    [[maybe_unused]] JSHandle<PromiseCapability> capa =
+        JSHandle<PromiseCapability>::Cast(JSHandle<JSTaggedValue>(thread, rejectElement->GetCapability()));
+    // 8. Let remainingElementsCount be F.[[RemainingElements]].
+    [[maybe_unused]] JSHandle<PromiseRecord> remainCnt =
+        JSHandle<PromiseRecord>::Cast(JSHandle<JSTaggedValue>(thread, rejectElement->GetRemainingElements()));
+    // 9. Let obj be ! OrdinaryObjectCreate(%Object.prototype%).
+    JSHandle<JSTaggedValue> proto = env->GetObjectFunctionPrototype();
+    JSHandle<JSObject> obj = thread->GetEcmaVM()->GetFactory()->OrdinaryNewJSObjectCreate(proto);
+    // 10. Perform ! CreateDataPropertyOrThrow(obj, "status", "rejected").
+    JSHandle<JSTaggedValue> statusKey = globalConst->GetHandledPromiseStatusString();
+    JSHandle<JSTaggedValue> rejectedKey = globalConst->GetHandledPromiseRejectedString();
+    JSObject::CreateDataPropertyOrThrow(thread, obj, statusKey, rejectedKey);
+    // 11. Perform ! CreateDataPropertyOrThrow(obj, "reason", x).
+    JSHandle<JSTaggedValue> xReason = GetCallArg(argv, 0);
+    JSHandle<JSTaggedValue> reasonKey = globalConst->GetHandledPromiseReasonString();
+    JSObject::CreateDataPropertyOrThrow(thread, obj, reasonKey, xReason);
+    // 12. Set values[index] to obj.
+    JSHandle<TaggedArray> arrayValues =
+        JSHandle<TaggedArray>::Cast(JSHandle<JSTaggedValue>(thread, values->GetValue()));
+    arrayValues->Set(thread, index, obj.GetTaggedValue());
+    // 13. Set remainingElementsCount.[[Value]] to remainingElementsCount.[[Value]] - 1.
+    remainCnt->SetValue(thread, --JSTaggedNumber(remainCnt->GetValue()));
+    // 14. If remainingElementsCount.[[Value]] is 0, then
+    if (remainCnt->GetValue().IsZero()) {
+        // a. Let valuesArray be CreateArrayFromList(values).
+        JSHandle<JSArray> jsArrayValues = JSArray::CreateArrayFromList(thread, arrayValues);
+        // b. Return ? Call(promiseCapability.[[Resolve]], undefined, « valuesArray »).
+        JSHandle<JSTaggedValue> capaResolve(thread, capa->GetResolve());
+        JSHandle<JSTaggedValue> undefined(globalConst->GetHandledUndefined());
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, capaResolve, undefined, undefined, 1);
+        info.SetCallArg(jsArrayValues.GetTaggedValue());
+        return JSFunction::Call(&info);
+    }
+    // 15. Return undefined.
+    return JSTaggedValue::Undefined();
+}
+
+JSTaggedValue BuiltinsPromiseHandler::AnyRejectElementFunction(EcmaRuntimeCallInfo *argv)
+{
+    // 1. Let F be the active function object.
+    JSThread *thread = argv->GetThread();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    JSHandle<JSPromiseAnyRejectElementFunction> rejectElement =
+        JSHandle<JSPromiseAnyRejectElementFunction>::Cast((GetConstructor(argv)));
+    // 2. If F.[[AlreadyCalled]] is true, return undefined.
+    JSTaggedValue alreadyCalled = rejectElement->GetAlreadyCalled();
+    if (alreadyCalled.IsTrue()) {
+        return JSTaggedValue::Undefined();
+    }
+    // 3. Set F.[[AlreadyCalled]] to true.
+    rejectElement->SetAlreadyCalled(thread, JSTaggedValue::True());
+    // 4. Let index be F.[[Index]].
+    uint32_t index = rejectElement->GetIndex();
+    // 5. Let errors be F.[[Errors]].
+    [[maybe_unused]] JSHandle<PromiseRecord> errors =
+        JSHandle<PromiseRecord>::Cast(JSHandle<JSTaggedValue>(thread, rejectElement->GetErrors()));
+    // 6. Let promiseCapability be F.[[Capability]].
+    [[maybe_unused]] JSHandle<PromiseCapability> capa =
+        JSHandle<PromiseCapability>::Cast(JSHandle<JSTaggedValue>(thread, rejectElement->GetCapability()));
+    // 7. Let remainingElementsCount be F.[[RemainingElements]].
+    JSHandle<PromiseRecord> remainCnt =
+        JSHandle<PromiseRecord>::Cast(JSHandle<JSTaggedValue>(thread, rejectElement->GetRemainingElements()));
+    // 8. Set errors[index] to x.
+    JSHandle<JSTaggedValue> xValue = GetCallArg(argv, 0);
+    JSHandle<TaggedArray> errorsArray =
+        JSHandle<TaggedArray>::Cast(JSHandle<JSTaggedValue>(thread, errors->GetValue()));
+    errorsArray->Set(thread, index, xValue.GetTaggedValue());
+    // 9. Set remainingElementsCount.[[Value]] to remainingElementsCount.[[Value]] - 1.
+    remainCnt->SetValue(thread, --JSTaggedNumber(remainCnt->GetValue()));
+    // 10. If remainingElementsCount.[[Value]] is 0, then
+    if (remainCnt->GetValue().IsZero()) {
+        // a. Let error be a newly created AggregateError object.
+        JSHandle<JSObject> error = factory->NewJSAggregateError();
+        // b. Perform ! DefinePropertyOrThrow(error, "errors", PropertyDescriptor { [[Configurable]]: true,
+        //    [[Enumerable]]: false, [[Writable]]: true, [[Value]]: ! CreateArrayFromList(errors) }).
+        JSHandle<JSTaggedValue> errorsKey(thread, globalConst->GetErrorsString());
+        JSHandle<JSTaggedValue> errorsValue(JSArray::CreateArrayFromList(thread, errorsArray));
+        PropertyDescriptor msgDesc(thread, errorsValue, true, false, true);
+        JSHandle<JSTaggedValue> errorTagged = JSHandle<JSTaggedValue>::Cast(error);
+        JSTaggedValue::DefinePropertyOrThrow(thread, errorTagged, errorsKey, msgDesc);
+        // c. Return ? Call(promiseCapability.[[Reject]], undefined, « error »).
+        JSHandle<JSTaggedValue> capaReject(thread, capa->GetReject());
+        JSHandle<JSTaggedValue> undefined(globalConst->GetHandledUndefined());
+        EcmaRuntimeCallInfo info =
+            EcmaInterpreter::NewRuntimeCallInfo(thread, capaReject, undefined, undefined, 1);
+        info.SetCallArg(error.GetTaggedValue());
+        return JSFunction::Call(&info);
+    }
+    // 11. Return undefined.
+    return JSTaggedValue::Undefined();
+}
 }  // namespace panda::ecmascript::builtins

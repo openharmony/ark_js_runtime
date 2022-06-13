@@ -38,6 +38,23 @@ public:
 
     // es6 25.4.4.1.2 Promise.all Resolve Element Functions
     static JSTaggedValue ResolveElementFunction(EcmaRuntimeCallInfo *argv);
+
+    static JSTaggedValue ThenFinally(EcmaRuntimeCallInfo *argv);
+
+    static JSTaggedValue CatchFinally(EcmaRuntimeCallInfo *argv);
+
+    static JSTaggedValue valueThunkFunction(EcmaRuntimeCallInfo *argv);
+
+    static JSTaggedValue throwerFunction(EcmaRuntimeCallInfo *argv);
+
+    static JSHandle<JSTaggedValue> PromiseResolve(JSThread *thread, const JSHandle<JSTaggedValue> &constructor,
+                                                  const JSHandle<JSTaggedValue> &xValue);
+
+    static JSTaggedValue AllSettledResolveElementFunction(EcmaRuntimeCallInfo *argv);
+
+    static JSTaggedValue AllSettledRejectElementFunction(EcmaRuntimeCallInfo *argv);
+
+    static JSTaggedValue AnyRejectElementFunction(EcmaRuntimeCallInfo *argv);
 };
 }  // namespace panda::ecmascript::builtins
 

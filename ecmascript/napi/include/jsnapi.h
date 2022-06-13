@@ -730,6 +730,7 @@ class PUBLIC_API PromiseRef : public ObjectRef {
 public:
     Local<PromiseRef> Catch(const EcmaVM *vm, Local<FunctionRef> handler);
     Local<PromiseRef> Then(const EcmaVM *vm, Local<FunctionRef> handler);
+    Local<PromiseRef> Finally(const EcmaVM *vm, Local<FunctionRef> handler);
     Local<PromiseRef> Then(const EcmaVM *vm, Local<FunctionRef> onFulfilled, Local<FunctionRef> onRejected);
 };
 
@@ -865,6 +866,7 @@ public:
     static Local<JSValueRef> ReferenceError(const EcmaVM *vm, Local<StringRef> message);
     static Local<JSValueRef> SyntaxError(const EcmaVM *vm, Local<StringRef> message);
     static Local<JSValueRef> TypeError(const EcmaVM *vm, Local<StringRef> message);
+    static Local<JSValueRef> AggregateError(const EcmaVM *vm, Local<StringRef> message);
     static Local<JSValueRef> EvalError(const EcmaVM *vm, Local<StringRef> message);
 };
 
