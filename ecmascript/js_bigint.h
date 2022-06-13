@@ -27,7 +27,7 @@ enum class Comparestr : uint32_t { EQUAL = 0, GREATER, LESS };
 
 class BigInt : public TaggedObject {
 public:
-    Comparestr static ComString(std::string &a, std::string &b);
+    Comparestr static ComString(const CString &a, const CString &b);
     static constexpr uint32_t DATEBITS = sizeof(uint32_t) * 8; // 8 : one-bit number of bytes
     static constexpr uint32_t MAXBITS = 1024 * 1024; // 1024 * 1024 : Maximum space that can be opened up
     static constexpr uint32_t MAXSIZE = MAXBITS / DATEBITS; // the maximum value of size
@@ -53,7 +53,7 @@ public:
     static JSHandle<BigInt> BitwiseAddOne(JSThread *thread, JSHandle<BigInt> bigint);
     static JSHandle<EcmaString> ToString(JSThread *thread, JSHandle<BigInt> bigint,
                                          uint32_t conversionToRadix = BigInt::DECIMAL);
-    std::string ToStdString(uint32_t conversionToRadix) const;
+    CString ToStdString(uint32_t conversionToRadix) const;
 
     static JSHandle<BigInt> UnaryMinus(JSThread *thread, JSHandle<BigInt> x);
     static JSHandle<BigInt> BitwiseNOT(JSThread *thread, JSHandle<BigInt> x);
@@ -81,6 +81,7 @@ public:
     static JSHandle<BigInt> Int32ToBigInt(JSThread *thread, const int &number);
     static JSHandle<BigInt> Int64ToBigInt(JSThread *thread, const int64_t &number);
     static JSHandle<BigInt> Uint64ToBigInt(JSThread *thread, const uint64_t &number);
+    int64_t ToInt64();
     static void BigIntToInt64(JSThread *thread, JSHandle<JSTaggedValue> bigint, int64_t *cValue, bool *lossless);
     static void BigIntToUint64(JSThread *thread, JSHandle<JSTaggedValue> bigint, uint64_t *cValue, bool *lossless);
     static JSHandle<BigInt> CreateBigWords(JSThread *thread, bool sign, uint32_t size, const uint64_t* words);
@@ -90,7 +91,6 @@ public:
     static JSTaggedNumber BigIntToNumber(JSHandle<BigInt> bigint);
     static ComparisonResult CompareWithNumber(JSHandle<BigInt> bigint, JSHandle<JSTaggedValue> number);
 
-    int64_t ToInt64();
     inline bool IsZero()
     {
         return GetLength() == 1 && !GetDigit(0);
@@ -120,18 +120,17 @@ private:
 
 class BigIntHelper {
 public:
-    static std::string Conversion(const std::string &num, uint32_t conversionToRadix, uint32_t currentRadix);
-    static JSHandle<BigInt> SetBigInt(JSThread *thread, const std::string &numStr,
+    static CString Conversion(const CString &num, uint32_t conversionToRadix, uint32_t currentRadix);
+    static JSHandle<BigInt> SetBigInt(JSThread *thread, const CString &numStr,
                                       uint32_t currentRadix = BigInt::DECIMAL);
-    static std::string GetBinary(const BigInt *bigint);
+    static CString GetBinary(const BigInt *bigint);
     static JSHandle<BigInt> RightTruncate(JSThread *thread, JSHandle<BigInt> x);
 
     static JSHandle<BigInt> DivideImpl(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y);
-    static std::string MultiplyImpl(std::string &a, std::string &b);
-    static std::string DeZero(std::string &a);
-    static std::string Minus(std::string &a, std::string &b);
-    static std::string DevStr(std::string &strValue);
-    static std::string Divide(std::string &a, std::string &b);
+    static CString MultiplyImpl(CString &a, CString &b);
+    static void DeZero(CString &a);
+    static void Minus(CString &a, CString &b);
+    static CString Divide(CString &a, CString &b);
 
     static uint32_t AddHelper(uint32_t x, uint32_t y, uint32_t &bigintCarry);
     static uint32_t SubHelper(uint32_t x, uint32_t y, uint32_t &bigintCarry);

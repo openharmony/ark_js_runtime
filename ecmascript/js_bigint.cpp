@@ -34,7 +34,7 @@ static int CharToInt(char c)
     return static_cast<int>(res);
 }
 
-static std::string Division(std::string &num, uint32_t conversionToRadix, uint32_t currentRadix, uint32_t &remain)
+static void Division(CString &num, uint32_t conversionToRadix, uint32_t currentRadix, uint32_t &remain)
 {
     ASSERT(conversionToRadix != 0);
     uint32_t temp = 0;
@@ -44,34 +44,34 @@ static std::string Division(std::string &num, uint32_t conversionToRadix, uint32
         num[i] = dp[temp / conversionToRadix];
         remain = temp % conversionToRadix;
     }
-    int count = 0;
-    while (num[count] == '0') {
+    size_t count = 0;
+    while (count < num.size() && num[count] == '0') {
         count++;
     }
-    return num.substr(count);
+    num = num.substr(count);
 }
 
-std::string BigIntHelper::Conversion(const std::string &num, uint32_t conversionToRadix, uint32_t currentRadix)
+CString BigIntHelper::Conversion(const CString &num, uint32_t conversionToRadix, uint32_t currentRadix)
 {
     ASSERT(conversionToRadix != 0);
-    std::string newNum = num;
-    std::string res;
+    CString newNum = num;
+    CString res;
     uint32_t remain = 0;
     while (newNum.size() != 0) {
-        newNum = Division(newNum, conversionToRadix, currentRadix, remain);
+        Division(newNum, conversionToRadix, currentRadix, remain);
         res = dp[remain] + res;
     }
     return res;
 }
 
-JSHandle<BigInt> BigIntHelper::SetBigInt(JSThread *thread, const std::string &numStr, uint32_t currentRadix)
+JSHandle<BigInt> BigIntHelper::SetBigInt(JSThread *thread, const CString &numStr, uint32_t currentRadix)
 {
     int flag = 0;
     if (numStr[0] == '-') {
         flag = 1;
     }
 
-    std::string binaryStr = "";
+    CString binaryStr = "";
     if (currentRadix != BigInt::BINARY) {
         binaryStr = Conversion(numStr.substr(flag), BigInt::BINARY, currentRadix);
     } else {
@@ -144,13 +144,13 @@ JSHandle<BigInt> BigIntHelper::RightTruncate(JSThread *thread, JSHandle<BigInt> 
     return x;
 }
 
-std::string BigIntHelper::GetBinary(const BigInt *bigint)
+CString BigIntHelper::GetBinary(const BigInt *bigint)
 {
     ASSERT(bigint != nullptr);
     int index = 0;
     int len = static_cast<int>(bigint->GetLength());
     int strLen = BigInt::DATEBITS * len;
-    std::string res(strLen, '0');
+    CString res(strLen, '0');
     int strIndex = strLen - 1;
     while (index < len) {
         int bityLen = BigInt::DATEBITS;
@@ -161,18 +161,8 @@ std::string BigIntHelper::GetBinary(const BigInt *bigint)
         }
         index++;
     }
-    size_t count = 0;
-    size_t resLen = res.size();
-    for (size_t i = 0; i < resLen; ++i) {
-        if (res[i] != '0') {
-            break;
-        }
-        count++;
-    }
-    if (count == resLen) {
-        return "0";
-    }
-    return res.substr(count);
+    DeZero(res);
+    return res;
 }
 
 uint32_t BigInt::GetDigit(uint32_t index) const
@@ -472,13 +462,13 @@ JSHandle<BigInt> BigInt::BitwiseOR(JSThread *thread, JSHandle<BigInt> x, JSHandl
 JSHandle<EcmaString> BigInt::ToString(JSThread *thread, JSHandle<BigInt> bigint, uint32_t conversionToRadix)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    std::string result = bigint->ToStdString(conversionToRadix);
+    CString result = bigint->ToStdString(conversionToRadix);
     return factory->NewFromASCII(result.c_str());
 }
 
-std::string BigInt::ToStdString(uint32_t conversionToRadix) const
+CString BigInt::ToStdString(uint32_t conversionToRadix) const
 {
-    std::string result =
+    CString result =
         BigIntHelper::Conversion(BigIntHelper::GetBinary(this), conversionToRadix, BINARY);
     if (GetSign()) {
         result = "-" + result;
@@ -573,6 +563,21 @@ JSHandle<BigInt> BigInt::Uint64ToBigInt(JSThread *thread, const uint64_t &number
     return BigIntHelper::RightTruncate(thread, bigint);
 }
 
+int64_t BigInt::ToInt64()
+{
+    int len = GetLength();
+    ASSERT(len < 2); // The maximum length of the BigInt data is less 2
+    uint64_t value = 0;
+    uint32_t *addr = reinterpret_cast<uint32_t *>(&value);
+    for (int index = len - 1; index >= 0; --index) {
+        *(addr + index) = GetDigit(index);
+    }
+    if (GetSign()) {
+        value = ~(value - 1);
+    }
+    return static_cast<int64_t>(value);
+}
+
 void BigInt::BigIntToInt64(JSThread *thread, JSHandle<JSTaggedValue> bigint, int64_t *cValue, bool *lossless)
 {
     ASSERT(cValue != nullptr);
@@ -582,14 +587,7 @@ void BigInt::BigIntToInt64(JSThread *thread, JSHandle<JSTaggedValue> bigint, int
     if (Equal(bigInt64.GetTaggedValue(), bigint.GetTaggedValue())) {
         *lossless = true;
     }
-    uint32_t *addr = reinterpret_cast<uint32_t *>(cValue);
-    int len = static_cast<int>(bigInt64->GetLength());
-    for (int index = len - 1; index >= 0; --index) {
-        *(addr + index) = bigInt64->GetDigit(index);
-    }
-    if (bigInt64->GetSign()) {
-        *cValue = ~(static_cast<uint64_t>(static_cast<int64_t>(*cValue - 1)));
-    }
+    *cValue = bigInt64->ToInt64();
 }
 
 void BigInt::BigIntToUint64(JSThread *thread, JSHandle<JSTaggedValue> bigint, uint64_t *cValue, bool *lossless)
@@ -828,12 +826,12 @@ JSHandle<BigInt> BigInt::SignedRightShift(JSThread *thread, JSHandle<BigInt> x, 
 
 JSHandle<BigInt> BigInt::RightShiftHelper(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y)
 {
-    std::string shiftBinay = BigIntHelper::GetBinary(*x);
-    std::string revTemp = std::string(shiftBinay.rbegin(), shiftBinay.rend());
+    CString shiftBinay = BigIntHelper::GetBinary(*x);
+    CString revTemp = CString(shiftBinay.rbegin(), shiftBinay.rend());
     for (uint32_t i = 0; i < y->GetLength(); i++) {
         revTemp = revTemp.erase(0, y->GetDigit(i));
     }
-    std::string finalBinay = std::string(revTemp.rbegin(), revTemp.rend());
+    CString finalBinay = CString(revTemp.rbegin(), revTemp.rend());
     if (finalBinay.empty()) {
         finalBinay = "0";
     }
@@ -856,7 +854,7 @@ JSHandle<BigInt> BigInt::LeftShift(JSThread *thread, JSHandle<BigInt> x, JSHandl
 
 JSHandle<BigInt> BigInt::LeftShiftHelper(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y)
 {
-    std::string shiftBinary = BigIntHelper::GetBinary(*x);
+    CString shiftBinary = BigIntHelper::GetBinary(*x);
     for (size_t i = 0; i < y->GetLength(); i++) {
         shiftBinary = shiftBinary.append(y->GetDigit(i), '0');
     }
@@ -925,9 +923,9 @@ JSHandle<BigInt> BigInt::Exponentiate(JSThread *thread, JSHandle<BigInt> base, J
         return base;
     }
     uint32_t j = exponent->GetDigit(0) - 1;
-    std::string a = BigIntHelper::GetBinary(*base);
+    CString a = BigIntHelper::GetBinary(*base);
     a = BigIntHelper::Conversion(a, DECIMAL, BINARY);
-    std::string b = a;
+    CString b = a;
     for (uint32_t i = 0; i < j; ++i) {
         b = BigIntHelper::MultiplyImpl(b, a);
     }
@@ -938,11 +936,12 @@ JSHandle<BigInt> BigInt::Exponentiate(JSThread *thread, JSHandle<BigInt> base, J
     }
     return BigIntHelper::SetBigInt(thread, b, DECIMAL);
 }
-std::string BigIntHelper::MultiplyImpl(std::string &a, std::string &b)
+
+CString BigIntHelper::MultiplyImpl(CString &a, CString &b)
 {
     int size1 = static_cast<int>(a.size());
     int size2 = static_cast<int>(b.size());
-    std::string str(size1 + size2, '0');
+    CString str(size1 + size2, '0');
     for (int i = size2 - 1; i >= 0; --i) {
         int mulflag = 0;
         int addflag = 0;
@@ -951,7 +950,7 @@ std::string BigIntHelper::MultiplyImpl(std::string &a, std::string &b)
             mulflag = temp1 / 10; // 10:help to Remove single digits
             temp1 = temp1 % 10; // 10:help to Take single digit
             int temp2 = str[i + j + 1] - '0' + temp1 + addflag;
-            str[i + j + 1] = static_cast<int8_t>(temp2 % 10 + 48); // 2 and 10 and 48 is number
+            str[i + j + 1] = static_cast<int8_t>(temp2 % 10 + '0'); // 2 and 10 and 48 is number
             addflag = temp2 / 10;
         }
         str[i] += static_cast<uint32_t>(mulflag + addflag);
@@ -970,33 +969,32 @@ JSHandle<BigInt> BigInt::Multiply(JSThread *thread, JSHandle<BigInt> x, JSHandle
     if (y->IsZero()) {
         return y;
     }
-    std::string left = BigIntHelper::GetBinary(*x);
-    std::string right = BigIntHelper::GetBinary(*y);
+    CString left = BigIntHelper::GetBinary(*x);
+    CString right = BigIntHelper::GetBinary(*y);
     left = BigIntHelper::Conversion(left, DECIMAL, BINARY);
     right = BigIntHelper::Conversion(right, DECIMAL, BINARY);
-    std::string ab = BigIntHelper::MultiplyImpl(left, right);
+
+    CString ab = BigIntHelper::MultiplyImpl(left, right);
     if (x->GetSign() != y->GetSign()) {
         ab = "-" + ab;
     }
     return BigIntHelper::SetBigInt(thread, ab, DECIMAL);
 }
 
-std::string BigIntHelper::DeZero(std::string &a)
+void BigIntHelper::DeZero(CString &a)
 {
-    size_t i;
-    for (i = 0; i < a.length(); i++) {
-        if (a.at(i) > 48) { // 48 is ascill of '0'
-            break;
-        }
+    size_t count = 0;
+    while (count < a.size() && a[count] == '0') {
+        count++;
     }
-    if (i == a.length()) {
-        return "0";
+    if (count == a.size()) {
+        a = "0";
+    } else {
+        a = a.substr(count);
     }
-    a.erase(0, i);
-    return a;
 }
 
-Comparestr BigInt::ComString(std::string &a, std::string &b)
+Comparestr BigInt::ComString(const CString &a, const CString &b)
 {
     if (a.length() > b.length()) {
         return Comparestr::GREATER;
@@ -1005,137 +1003,67 @@ Comparestr BigInt::ComString(std::string &a, std::string &b)
         return Comparestr::LESS;
     }
     for (size_t i = 0; i < a.length(); i++) {
-        if (a.at(i) > b.at(i)) {
+        if (a[i] > b[i]) {
             return Comparestr::GREATER;
         }
-        if (a.at(i) < b.at(i)) {
+        if (a[i] < b[i]) {
             return Comparestr::LESS;
         }
     }
     return Comparestr::EQUAL;
 }
 
-std::string BigIntHelper::DevStr(std::string &strValue)
+void BigIntHelper::Minus(CString &a, CString &b)
 {
-    size_t i = 0;
-    for (i = 0; i < strValue.length(); i++) {
-        if (strValue.at(i) >= 48 && strValue.at(i) <= 57) { // 48 and 57 is '0' and '9'
-            strValue.at(i) -= 48; // 48:'0'
+    int i = static_cast<int>(a.size() - 1);
+    int j = static_cast<int>(b.size() - 1);
+    int carry = 0;
+    int sum = 0;
+    while (i >= 0 || j >= 0 || carry != 0) {
+        sum = (i >= 0 ? a[i] - '0' : 0) - (j >= 0 ? b[j] - '0' : 0) - carry;
+        if (sum < 0) {
+            carry = 1;
+            sum += 10; // 10:means borrow 1 from high
+        } else {
+            carry = 0;
         }
-        if (strValue.at(i) >= 97 && strValue.at(i) <= 122) { // 97 and 122 is 'a' and 'z'
-            strValue.at(i) -= 87; // 87 control result is greater than 10
-        }
+        a[i] = sum % 10 + '0'; // 10:To get single digits
+        i--;
+        j--;
     }
-    return strValue;
+    DeZero(a);
 }
 
-std::string BigIntHelper::Minus(std::string &a, std::string &b)
+CString BigIntHelper::Divide(CString &a, CString &b)
 {
-    a = DeZero(a);
-    b = DeZero(b);
-    size_t i = 0;
-    int j = 0;
-    std::string res = "0";
-    std::string result1;
-    std::string result2;
-    std::string dsymbol = "-";
-    if (BigInt::ComString(a, b) == Comparestr::EQUAL) {
-        return res;
-    }
-    if (BigInt::ComString(a, b) == Comparestr::GREATER) {
-        result1 = a;
-        result2 = b;
-    }
-    if (BigInt::ComString(a, b) == Comparestr::LESS) {
-        result1 = b;
-        result2 = a;
-        j = -1;
-    }
-    reverse(result1.begin(), result1.end());
-    reverse(result2.begin(), result2.end());
-    result1 =  DevStr(result1);
-    result2 =  DevStr(result2);
-    for (i = 0; i < result2.length(); i++) {
-        result1.at(i) = result1.at(i) - result2.at(i);
-    }
-    for (i = 0; i < result1.length() - 1; i++) {
-        if (result1.at(i) < 0) {
-            result1.at(i) += BigInt::DECIMAL;
-            result1.at(i + 1)--;
-        }
-    }
-    for (i = result1.length() - 1; i >= 0; i--) {
-        if (result1.at(i) > 0) {
-            break;
-        }
-    }
-    result1.erase(i + 1, result1.length());
-    for (i = 0; i < result1.length(); i++) {
-        if (result1.at(i) >= 10) { // 10:Hexadecimal a
-            result1.at(i) += 87; // 87:control result is greater than 97
-        }
-        if (result1.at(i) < 10) { // 10: 10:Hexadecimal a
-            result1.at(i) += 48; // 48:'0'
-        }
-    }
-    reverse(result1.begin(), result1.end());
-    if (j == -1) {
-        result1.insert(0, dsymbol);
-    }
-    return result1;
-}
-
-std::string BigIntHelper::Divide(std::string &a, std::string &b)
-{
-    size_t i = 0;
-    size_t j = 0;
-    std::string result1;
-    std::string result2;
-    std::string dsy;
-    std::string quotient;
+    CString dsy = "";
+    CString quotient = "";
     if (BigInt::ComString(a, b) == Comparestr::EQUAL) {
         return "1";
     }
     if (BigInt::ComString(a, b) == Comparestr::LESS) {
         return "0";
     }
-    result1 = DeZero(a);
-    result2 = DeZero(b);
-    dsy = "";
-    quotient = "";
-    for (i = 0; i < result1.length(); i++) {
-        j = 0;
-        dsy = dsy + result1.at(i);
-        dsy = DeZero(dsy);
-        while (BigInt::ComString(dsy, b) == Comparestr::EQUAL ||
-               BigInt::ComString(dsy, b) == Comparestr::GREATER) {
-            dsy = Minus(dsy, b);
-            dsy = DeZero(dsy);
+    for (size_t i = 0; i < a.length(); i++) {
+        dsy += a[i];
+        DeZero(dsy);
+        int j = 0;
+        while (!(BigInt::ComString(dsy, b) == Comparestr::LESS)) {
+            Minus(dsy, b);
             j++;
         }
-        quotient = quotient + "0";
-        quotient.at(i) = static_cast<int8_t>(j);
+        quotient += (static_cast<int8_t>(j + '0'));
     }
-    for (i = 0; i < quotient.length(); i++) {
-        if (quotient.at(i) >= 10) { // 10 is number
-            quotient.at(i) += 87; // 87 is number
-        }
-        if (quotient.at(i) < 10) { // 10 is number
-            quotient.at(i) += 48; // 48 is number
-        }
-    }
-    quotient = DeZero(quotient);
+    DeZero(quotient);
     return quotient;
 }
 
 JSHandle<BigInt> BigIntHelper::DivideImpl(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y)
 {
-    std::string a = Conversion(GetBinary(*x), BigInt::DECIMAL, BigInt::BINARY);
-    std::string b = Conversion(GetBinary(*y), BigInt::DECIMAL, BigInt::BINARY);
-    std::string ab = Divide(a, b);
-    if (ab == "0") {
-        ab = "0";
-    } else if (x->GetSign() != y->GetSign()) {
+    CString a = Conversion(GetBinary(*x), BigInt::DECIMAL, BigInt::BINARY);
+    CString b = Conversion(GetBinary(*y), BigInt::DECIMAL, BigInt::BINARY);
+    CString ab = Divide(a, b);
+    if (x->GetSign() != y->GetSign()) {
         ab = "-" + ab;
     }
     return SetBigInt(thread, ab, BigInt::DECIMAL);
@@ -1430,20 +1358,5 @@ ComparisonResult BigInt::CompareWithNumber(JSHandle<BigInt> bigint, JSHandle<JST
         return bigintSign ? ComparisonResult::GREAT : ComparisonResult::LESS;
     }
     return ComparisonResult::EQUAL;
-}
-
-int64_t BigInt::ToInt64()
-{
-    int len = static_cast<int>(GetLength());
-    ASSERT(len < 2); // The maximum length of the BigInt data is less 2
-    uint64_t value = 0;
-    uint32_t *addr = reinterpret_cast<uint32_t *>(&value);
-    for (int index = len - 1; index >= 0; --index) {
-        *(addr + index) = GetDigit(index);
-    }
-    if (GetSign()) {
-        value = ~(value - 1);
-    }
-    return static_cast<int64_t>(value);
 }
 } // namespace

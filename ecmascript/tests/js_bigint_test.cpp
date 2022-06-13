@@ -55,9 +55,9 @@ public:
  */
 HWTEST_F_L0(JSBigintTest, ComString)
 {
-    std::string str1 = "9007199254740991012345";
-    std::string str2 = "9007199254740991012345 ";
-    std::string str3 = "-9007199254740991012345";
+    CString str1 = "9007199254740991012345";
+    CString str2 = "9007199254740991012345 ";
+    CString str3 = "-9007199254740991012345";
     EXPECT_EQ(BigInt::ComString(str1, str1), Comparestr::EQUAL);
     EXPECT_EQ(BigInt::ComString(str3, str2), Comparestr::LESS);
     EXPECT_EQ(BigInt::ComString(str1, str2), Comparestr::LESS);
@@ -87,8 +87,8 @@ HWTEST_F_L0(JSBigintTest, CreateBigint)
 HWTEST_F_L0(JSBigintTest, Equal_SameValue_SameValueZero)
 {
     // The largest safe integer in JavaScript is in [-(2 ^ 53 - 1), 2 ^ 53 - 1].
-    std::string maxSafeIntStr = "9007199254740991";
-    std::string minSafeIntStr = "-9007199254740991";
+    CString maxSafeIntStr = "9007199254740991";
+    CString minSafeIntStr = "-9007199254740991";
     JSHandle<BigInt> maxSafeInt = BigIntHelper::SetBigInt(thread, maxSafeIntStr);
     JSHandle<BigInt> minSafeInt = BigIntHelper::SetBigInt(thread, minSafeIntStr);
 
@@ -115,8 +115,8 @@ HWTEST_F_L0(JSBigintTest, Equal_SameValue_SameValueZero)
     EXPECT_TRUE(result3);
 
     // Compare two integers outside the safe range.
-    std::string unsafeIntStr1 = maxSafeIntStr + "0123456789";
-    std::string unsafeIntStr2 = minSafeIntStr + "0123456789";
+    CString unsafeIntStr1 = maxSafeIntStr + "0123456789";
+    CString unsafeIntStr2 = minSafeIntStr + "0123456789";
     JSHandle<BigInt> unsafeInt1 = BigIntHelper::SetBigInt(thread, unsafeIntStr1);
     JSHandle<BigInt> unsafeInt2 = BigIntHelper::SetBigInt(thread, unsafeIntStr2);
     JSHandle<BigInt> minusUnsafeInt1 = BigInt::UnaryMinus(thread, unsafeInt1);
@@ -136,7 +136,7 @@ HWTEST_F_L0(JSBigintTest, Equal_SameValue_SameValueZero)
  */
 HWTEST_F_L0(JSBigintTest, InitializationZero)
 {
-    std::string maxSafeIntPlusOneStr = "9007199254740992";
+    CString maxSafeIntPlusOneStr = "9007199254740992";
     JSHandle<BigInt> maxSafeIntPlusOne = BigIntHelper::SetBigInt(thread, maxSafeIntPlusOneStr);
     uint32_t size = maxSafeIntPlusOne->GetLength();
     uint32_t countZero = 0;
@@ -163,9 +163,9 @@ HWTEST_F_L0(JSBigintTest, InitializationZero)
  */
 HWTEST_F_L0(JSBigintTest, Bitwise_AND_XOR_OR_NOT_SubOne_AddOne)
 {
-    std::string maxSafeIntStr = "11111111111111111111111111111111111111111111111111111"; // Binary: 2 ^ 53 - 1
-    std::string maxSafeIntPlusOneStr = "100000000000000000000000000000000000000000000000000000"; // Binary: 2 ^ 53
-    std::string bigintStr1 = "111111111111111111111111111111111111111111111111111111"; // Binary: 2 ^ 54 - 1
+    CString maxSafeIntStr = "11111111111111111111111111111111111111111111111111111"; // Binary: 2 ^ 53 - 1
+    CString maxSafeIntPlusOneStr = "100000000000000000000000000000000000000000000000000000"; // Binary: 2 ^ 53
+    CString bigintStr1 = "111111111111111111111111111111111111111111111111111111"; // Binary: 2 ^ 54 - 1
     JSHandle<BigInt> maxSafeInt = BigIntHelper::SetBigInt(thread, maxSafeIntStr, BigInt::BINARY);
     JSHandle<BigInt> maxSafeIntPlusOne = BigIntHelper::SetBigInt(thread, maxSafeIntPlusOneStr, BigInt::BINARY);
     JSHandle<BigInt> bigint1 = BigIntHelper::SetBigInt(thread, bigintStr1, BigInt::BINARY);
@@ -216,8 +216,8 @@ HWTEST_F_L0(JSBigintTest, Bitwise_AND_XOR_OR_NOT_SubOne_AddOne)
  */
 HWTEST_F_L0(JSBigintTest, ToString_ToStdString)
 {
-    std::string bigintStdStr1 = "111111111111111111111111111111111111111111111111111111"; // Binary: 2 ^ 54 - 1
-    std::string bigintStdStr2 = "1234567890987654321"; // Decimal
+    CString bigintStdStr1 = "111111111111111111111111111111111111111111111111111111"; // Binary: 2 ^ 54 - 1
+    CString bigintStdStr2 = "1234567890987654321"; // Decimal
     JSHandle<BigInt> bigint1 = BigIntHelper::SetBigInt(thread, bigintStdStr1, BigInt::BINARY);
     JSHandle<BigInt> bigint2 = BigIntHelper::SetBigInt(thread, bigintStdStr2, BigInt::DECIMAL);
 
@@ -261,10 +261,10 @@ HWTEST_F_L0(JSBigintTest, ToString_ToStdString)
  */
 HWTEST_F_L0(JSBigintTest, UnaryMinus)
 {
-    std::string maxSafeIntStr = "9007199254740991";
-    std::string minSafeIntStr = "-9007199254740991";
-    std::string maxSafeIntPlusOneStr = "9007199254740992";
-    std::string minSafeIntSubOneStr = "-9007199254740992";
+    CString maxSafeIntStr = "9007199254740991";
+    CString minSafeIntStr = "-9007199254740991";
+    CString maxSafeIntPlusOneStr = "9007199254740992";
+    CString minSafeIntSubOneStr = "-9007199254740992";
     JSHandle<BigInt> maxSafeInt = BigIntHelper::SetBigInt(thread, maxSafeIntStr);
     JSHandle<BigInt> minSafeInt = BigIntHelper::SetBigInt(thread, minSafeIntStr);
     JSHandle<BigInt> maxSafeIntPlusOne = BigIntHelper::SetBigInt(thread, maxSafeIntPlusOneStr);
@@ -288,13 +288,13 @@ HWTEST_F_L0(JSBigintTest, UnaryMinus)
  */
 HWTEST_F_L0(JSBigintTest, Exponentiate_Multiply_Divide_Remainder)
 {
-    std::string baseBigintStr = "2";
-    std::string expBigintStr1 = "53";
-    std::string expBigintStr2 = "54";
-    std::string resBigintStr1 = "9007199254740992"; // 2 ^ 53
-    std::string resBigintStr2 = "18014398509481984"; // 2 ^ 54
-    std::string resBigintStr3 = "162259276829213363391578010288128"; // 2 ^ 107
-    std::string resBigintStr4 = "162259276829213363391578010288182"; // 2 ^ 107 + 54
+    CString baseBigintStr = "2";
+    CString expBigintStr1 = "53";
+    CString expBigintStr2 = "54";
+    CString resBigintStr1 = "9007199254740992"; // 2 ^ 53
+    CString resBigintStr2 = "18014398509481984"; // 2 ^ 54
+    CString resBigintStr3 = "162259276829213363391578010288128"; // 2 ^ 107
+    CString resBigintStr4 = "162259276829213363391578010288182"; // 2 ^ 107 + 54
     JSHandle<BigInt> baseBigint = BigIntHelper::SetBigInt(thread, baseBigintStr);
     JSHandle<BigInt> expBigint1 = BigIntHelper::SetBigInt(thread, expBigintStr1);
     JSHandle<BigInt> expBigint2 = BigIntHelper::SetBigInt(thread, expBigintStr2);
