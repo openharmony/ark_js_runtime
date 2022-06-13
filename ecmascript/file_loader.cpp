@@ -63,8 +63,8 @@ bool StubModulePackInfo::Load(EcmaVM *vm, const std::string &filename)
     //  then MachineCode will support movable, code is saved to MachineCode and stackmap is saved
     // to different heap which will be freed when stackmap is parsed by EcmaVM is started.
     if (!VerifyFilePath(filename)) {
-        COMPILER_LOG(ERROR) << "Can not load stub file from default path [ "  << filename << " ], "
-            << "please execute ark_stub_compiler with options --stub-file manually.";
+        COMPILER_LOG(ERROR) << "Can not load stub file from path [ "  << filename << " ], "
+            << "please execute ark_stub_compiler with options --stub-file.";
         return false;
     }
     std::ifstream moduleFile(filename.c_str(), std::ofstream::binary);
@@ -121,6 +121,7 @@ bool StubModulePackInfo::Load(EcmaVM *vm, const std::string &filename)
         entries_[i].codeAddr_ += des.GetDeviceCodeSecAddr();
     }
     moduleFile.close();
+    COMPILER_LOG(INFO) << "Load stub file success";
     return true;
 }
 
@@ -155,6 +156,8 @@ void AOTModulePackInfo::Save(const std::string &filename)
 bool AOTModulePackInfo::Load(EcmaVM *vm, const std::string &filename)
 {
     if (!VerifyFilePath(filename)) {
+        COMPILER_LOG(ERROR) << "Can not load aot file from path [ "  << filename << " ], "
+            << "please execute ark_aot_compiler with options --aot-file.";
         return false;
     }
     std::ifstream moduleFile(filename.c_str(), std::ofstream::binary);
@@ -215,6 +218,7 @@ bool AOTModulePackInfo::Load(EcmaVM *vm, const std::string &filename)
         vm->SetAOTFuncEntry(curFileHash, curMethodId, entries_[i].codeAddr_);
     }
     moduleFile.close();
+    COMPILER_LOG(INFO) << "Load aot file success";
     return true;
 }
 
@@ -272,6 +276,12 @@ void FileLoader::TryLoadSnapshotFile()
 #endif
 }
 
+bool FileLoader::hasLoaded(const JSPandaFile *jsPandaFile)
+{
+    auto fileHash = jsPandaFile->GetPandaFile()->GetFilenameHash();
+    return !(hashToEntryMap_.find(fileHash) == hashToEntryMap_.end());
+}
+
 void FileLoader::UpdateJSMethods(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile)
 {
     // get generated const pool in execution phase
@@ -312,11 +322,11 @@ void FileLoader::AdjustBCStubAndDebuggerStubEntries(JSThread *thread,
     const std::vector<ModulePackInfo::FuncEntryDes> &stubs,
     const AsmInterParsedOption &asmInterOpt)
 {
-    auto defaultBCStubDes = stubs[CommonStubCSigns::NUM_OF_STUBS + BytecodeStubCSigns::SingleStepDebugging];
-    auto defaultNonexistentBCStubDes = stubs[CommonStubCSigns::NUM_OF_STUBS + BytecodeStubCSigns::HandleOverflow];
-    auto defaultBCDebuggerStubDes = stubs[CommonStubCSigns::NUM_OF_STUBS + BytecodeStubCSigns::BCDebuggerEntry];
-    auto defaultBCDebuggerExceptionStubDes =
-        stubs[CommonStubCSigns::NUM_OF_STUBS + BytecodeStubCSigns::BCDebuggerExceptionEntry];
+    auto defaultBCStubDes = stubs[BytecodeStubCSigns::SingleStepDebugging];
+    auto defaultNonexistentBCStubDes = stubs[BytecodeStubCSigns::HandleOverflow];
+    auto defaultBCDebuggerStubDes = stubs[BytecodeStubCSigns::BCDebuggerEntry];
+    auto defaultBCDebuggerExceptionStubDes = stubs[BytecodeStubCSigns::BCDebuggerExceptionEntry];
+    ASSERT(defaultBCStubDes.kind_ == CallSignature::TargetKind::BYTECODE_HELPER_HANDLER);
     thread->SetUnrealizedBCStubEntry(defaultBCStubDes.codeAddr_);
     thread->SetNonExistedBCStubEntry(defaultNonexistentBCStubDes.codeAddr_);
 #define UNDEF_STUB(name)    \

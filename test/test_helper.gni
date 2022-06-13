@@ -179,7 +179,7 @@ template("host_moduletest_action") {
 
     script = "//ark/js_runtime/script/run_ark_executable.py"
 
-    _asm_run_options_ = " --enable-stub-aot=true" + " --asm-interpreter=true"
+    _asm_run_options_ = " --asm-interpreter=true"
     if (defined(invoker.is_set_maxNonmovableSpaceCapacity) &&
         invoker.is_set_maxNonmovableSpaceCapacity) {
       _asm_run_options_ += " --maxNonmovableSpaceCapacity=524288"  # 0.5M
@@ -253,9 +253,8 @@ template("host_aot_test_action") {
     script = "//ark/js_runtime/script/run_ark_executable.py"
 
     _aot_compile_options_ =
-        " --aot-output-file=" + rebase_path(_test_m_path_) +
-        " --snapshot-output-file=" + rebase_path(_test_snapshot_path_) +
-        " --asm-interpreter=true"
+        " --aot-file=" + rebase_path(_test_m_path_) +
+        " --snapshot-output-file=" + rebase_path(_test_snapshot_path_)
 
     args = [
       "--script-file",
@@ -299,9 +298,8 @@ template("host_aot_test_action") {
     script = "//ark/js_runtime/script/run_ark_executable.py"
 
     _aot_run_options_ =
-        " --aot-output-file=" + rebase_path(_test_m_path_) +
+        " --aot-file=" + rebase_path(_test_m_path_) +
         " --snapshot-output-file=" + rebase_path(_test_snapshot_path_) +
-        " --enable-ts-aot=true" + " --enable-stub-aot=true" +
         " --asm-interpreter=true"
 
     args = [

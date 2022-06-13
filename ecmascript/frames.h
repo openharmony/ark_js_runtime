@@ -132,7 +132,7 @@
 // address space grow from high address to low address.we add new field  **FrameType** ,
 // the field's value is INTERPRETER_FRAME(represent interpreter frame).
 // **currentsp**  is pointer to  callTarget field address, sp field 's value is  **currentsp** ,
-// pre field pointer pre stack frame point. fill JSthread's sp field with iframe sp field
+// pre field pointer pre stack frame point. fill JSThread's sp field with iframe sp field
 // by  calling JSThread->SetCurrentSPFrame and save pre Frame address to iframe pre field.
 
 // For Example:

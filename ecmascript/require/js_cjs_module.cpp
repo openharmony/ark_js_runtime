@@ -26,7 +26,7 @@ void JSCjsModule::InitializeModule(JSThread *thread, JSHandle<JSCjsModule> &modu
                                    JSHandle<JSTaggedValue> &filename, JSHandle<JSTaggedValue> &dirname)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    
+
     JSHandle<JSTaggedValue> dirKey(factory->NewFromASCII("path"));
     SlowRuntimeStub::StObjByName(thread, module.GetTaggedValue(), dirKey.GetTaggedValue(),
                                  dirname.GetTaggedValue());
@@ -75,7 +75,7 @@ void JSCjsModule::PutIntoCache(JSThread *thread, JSHandle<JSCjsModule> &module, 
     JSTaggedValue modCache = SlowRuntimeStub::LdObjByName(thread, moduleObj.GetTaggedValue(),
                                                           cacheName.GetTaggedValue(),
                                                           false,
-                                                          JSTaggedValue::Undefined());  
+                                                          JSTaggedValue::Undefined());
     JSHandle<CjsModuleCache> moduleCache = JSHandle<CjsModuleCache>(thread, modCache);
     JSHandle<JSTaggedValue> moduleHandle = JSHandle<JSTaggedValue>::Cast(module);
     JSHandle<CjsModuleCache> newCache = CjsModuleCache::PutIfAbsent(thread, moduleCache, filename,
@@ -128,7 +128,7 @@ void JSCjsModule::RequireExecution(JSThread *thread, const JSHandle<EcmaString> 
 {
     CString moduleFilenameStr = ConvertToString(moduleFileName.GetTaggedValue());
     const JSPandaFile *jsPandaFile =
-        JSPandaFileManager::GetInstance()->LoadJSPandaFile(moduleFilenameStr, JSPandaFile::ENTRY_MAIN_FUNCTION);
+        JSPandaFileManager::GetInstance()->LoadJSPandaFile(thread, moduleFilenameStr, JSPandaFile::ENTRY_MAIN_FUNCTION);
     if (jsPandaFile == nullptr) {
         LOG_ECMA(ERROR) << "open jsPandaFile " << moduleFilenameStr << " error";
         UNREACHABLE();
@@ -143,7 +143,7 @@ JSHandle<EcmaString> JSCjsModule::ResolveFilename(JSThread *thread, JSTaggedValu
     ResolvePathCallback resolvePathCallback = thread->GetEcmaVM()->GetResolvePathCallback();
     if (resolvePathCallback == nullptr) {
         JSHandle<EcmaString> nativeRequireName = ResolveFilenameFromNative(thread, dirname, request);
-        return nativeRequireName; 
+        return nativeRequireName;
     }
     std::string modDirname = std::string(ConvertToString(EcmaString::Cast(dirname.GetHeapObject())));
     std::string modFile = std::string(ConvertToString(EcmaString::Cast(request.GetHeapObject())));
