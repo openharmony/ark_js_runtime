@@ -11,5 +11,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-LDLEXENVDYN:0,LDA_STR:4,DEFINECLASSWITHBUFFER:INF,LDA_STR:4,LDOBJBYNAME:4,TYPEOFDYN:4
-[LDLEXENVDYN:0
+LDOBJBYNAME:string
