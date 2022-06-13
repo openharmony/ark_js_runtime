@@ -234,6 +234,8 @@
 #include "ecmascript/base/aligned_struct.h"
 
 namespace panda::ecmascript {
+class JSThread;
+class EcmaVM;
 enum class FrameType: uintptr_t {
     OPTIMIZED_FRAME = 0,
     OPTIMIZED_ENTRY_FRAME = 1,
@@ -303,6 +305,10 @@ public:
     {
         return prevFp;
     }
+    uintptr_t GetReturnAddr()
+    {
+        return returnAddr;
+    }
     alignas(EAS) FrameType type {0};
     alignas(EAS) JSTaggedType *prevFp {nullptr};
     alignas(EAS) uintptr_t returnAddr {0};
@@ -368,6 +374,10 @@ public:
     JSTaggedType* GetArgv(uintptr_t *preFrameSp)
     {
         return reinterpret_cast<JSTaggedType *>(preFrameSp + sizeof(uint64_t) / sizeof(uintptr_t));
+    }
+    uintptr_t GetReturnAddr()
+    {
+        return returnAddr;
     }
     // dynamic callee saveregisters for x86-64
     alignas(EAS) FrameType type {0};
@@ -662,6 +672,10 @@ struct AsmInterpretedBridgeFrame : public base::AlignedStruct<JSTaggedValue::Tag
 
     alignas(EAS) AsmInterpretedEntryFrame entry;
     alignas(EAS) uintptr_t returnAddr;
+    uintptr_t GetReturnAddr()
+    {
+        return returnAddr;
+    }
 };
 
 struct OptimizedLeaveFrame {
@@ -690,6 +704,10 @@ struct OptimizedLeaveFrame {
     {
         return reinterpret_cast<JSTaggedType*>(callsiteFp);
     }
+    uintptr_t GetReturnAddr()
+    {
+        return returnAddr;
+    }
 };
 
 struct OptimizedWithArgvLeaveFrame {
@@ -717,6 +735,10 @@ struct OptimizedWithArgvLeaveFrame {
     inline JSTaggedType* GetPrevFrameFp()
     {
         return reinterpret_cast<JSTaggedType*>(callsiteFp);
+    }
+    uintptr_t GetReturnAddr()
+    {
+        return returnAddr;
     }
 };
 
@@ -787,6 +809,10 @@ struct BuiltinFrame : public base::AlignedStruct<base::AlignedPointer::Size(),
         return numArgs & 0xFFFFFFFF;
     }
 
+    uintptr_t GetReturnAddr()
+    {
+        return returnAddr;
+    }
     alignas(EAS) FrameType type;
     alignas(EAS) JSTaggedType *prevFp;
     alignas(EAS) uintptr_t returnAddr;
@@ -840,11 +866,66 @@ struct BuiltinWithArgvFrame : public base::AlignedStruct<base::AlignedPointer::S
             ToUintPtr(this) + (static_cast<int>(Index::NumArgsIndex) * sizeof(uintptr_t)));
         return *argcAddress;
     }
+    uintptr_t GetReturnAddr()
+    {
+        return returnAddr;
+    }
     // argv(... this, new.target, function)
     // numargs
     alignas(EAS) FrameType type;
     alignas(EAS) JSTaggedType *prevFp;
     alignas(EAS) uintptr_t returnAddr;
+};
+
+#define FRAME_LIST(V)             \
+    V(OptimizedFrame)             \
+    V(OptimizedEntryFrame)        \
+    V(OptimizedJSFunctionFrame)   \
+    V(OptimizedLeaveFrame)        \
+    V(InterpretedFrame)           \
+    V(AsmInterpretedFrame)        \
+    V(BuiltinFrame)               \
+    V(BuiltinWithArgvFrame)       \
+    V(InterpretedEntryFrame)      \
+    V(AsmInterpretedEntryFrame)   \
+    V(OptimizedWithArgvLeaveFrame)\
+    V(AsmInterpretedBridgeFrame)
+
+class FrameIterator
+{
+public:
+    explicit FrameIterator(JSTaggedType *sp, const JSThread *thread) : current_(sp), thread_(thread)
+    {
+    }
+    FrameType GetFrameType()
+    {
+        ASSERT(current_ != nullptr);
+        FrameType *typeAddr = reinterpret_cast<FrameType *>(
+            reinterpret_cast<uintptr_t>(current_) - sizeof(FrameType));
+        return *typeAddr;
+    }
+    template <class Frame>
+    Frame* GetFrame();
+
+    #define EXPLICIT_DECLARE_GET_FRAME(Frame)         \
+        template<>                                    \
+        Frame* GetFrame<Frame>();
+        FRAME_LIST(EXPLICIT_DECLARE_GET_FRAME)
+    #undef EXPLICIT_DECLARE_GET_FRAME
+
+    bool Done()
+    {
+        return current_ == nullptr;
+    }
+    JSTaggedType *GetSp()
+    {
+        return current_;
+    }
+    void Advance();
+    uintptr_t GetPrevFrameCallSiteSp(uintptr_t curPc = 0);
+private:
+    JSTaggedType *current_ {nullptr};
+    const JSThread *thread_ {nullptr};
 };
 }  // namespace panda::ecmascript
 #endif // ECMASCRIPT_FRAMES_H

@@ -67,6 +67,7 @@
 #include "ecmascript/require/js_cjs_module_cache.h"
 #include "ecmascript/require/js_require_manager.h"
 #include "ecmascript/tooling/interface/js_debugger_manager.h"
+#include "ecmascript/llvm_stackmap_parser.h"
 #ifdef PANDA_TARGET_WINDOWS
 #ifdef ERROR
 #undef ERROR
@@ -684,5 +685,10 @@ void EcmaVM::LoadAOTFiles()
 void EcmaVM::SetAOTFuncEntry(uint32_t hash, uint32_t methodId, uint64_t funcEntry)
 {
     fileLoader_->SetAOTFuncEntry(hash, methodId, funcEntry);
+}
+
+kungfu::LLVMStackMapParser* EcmaVM::GetStackMapParser()
+{
+    return fileLoader_->GetStackMapParser();
 }
 }  // namespace panda::ecmascript
