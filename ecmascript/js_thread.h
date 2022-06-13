@@ -449,16 +449,6 @@ public:
         return gcState_;
     }
 
-    void SetCheckAndCallEnterState(bool checkAndCallEnterState)
-    {
-        checkAndCallEnterState_ = checkAndCallEnterState;
-    }
-
-    bool GetCheckAndCallEnterState() const
-    {
-        return checkAndCallEnterState_;
-    }
-
     void EnableAsmInterpreter()
     {
         isAsmInterpreter_ = true;
@@ -657,7 +647,6 @@ private:
     bool stableArrayElementsGuardians_ {true};
     GlueData glueData_;
 
-    bool checkAndCallEnterState_ {false};
     friend class EcmaHandleScope;
     friend class GlobalHandleCollection;
 };
