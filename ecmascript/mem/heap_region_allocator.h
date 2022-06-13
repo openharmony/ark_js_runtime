@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -61,9 +61,6 @@ private:
     NO_COPY_SEMANTIC(HeapRegionAllocator);
     NO_MOVE_SEMANTIC(HeapRegionAllocator);
 
-#if ECMASCRIPT_ENABLE_ZAP_MEM
-    static constexpr int INVALID_VALUE = 0x7;
-#endif
     std::atomic<size_t> annoMemoryUsage_ {0};
     std::atomic<size_t> maxAnnoMemoryUsage_ {0};
 };

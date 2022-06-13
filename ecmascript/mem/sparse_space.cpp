@@ -36,7 +36,7 @@ void SparseSpace::Initialize()
 {
     Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE,
                                                                  heap_->GetJSThread());
-    region->InitializeSet();
+    region->InitializeFreeObjectSets();
     if (spaceType_ == MemSpaceType::MACHINE_CODE_SPACE) {
         int res = region->SetCodeExecutableAndReadable();
         LOG_ECMA_MEM(DEBUG) << "MachineCodeSpace::Expand() SetCodeExecutableAndReadable" << res;
@@ -93,7 +93,7 @@ bool SparseSpace::Expand()
         int res = region->SetCodeExecutableAndReadable();
         LOG_ECMA_MEM(DEBUG) << "MachineCodeSpace::Expand() SetCodeExecutableAndReadable" << res;
     }
-    region->InitializeSet();
+    region->InitializeFreeObjectSets();
     AddRegion(region);
     allocator_->AddFree(region);
     return true;
@@ -316,7 +316,6 @@ void OldSpace::Merge(LocalSpace *localSpace)
         localSpace->DetachFreeObjectSet(region);
         localSpace->RemoveRegion(region);
         localSpace->DecreaseLiveObjectSize(region->AliveObject());
-        region->SetSpace(this);
         AddRegion(region);
         region->MergeRSetForConcurrentSweeping();
         IncreaseLiveObjectSize(region->AliveObject());
@@ -360,7 +359,7 @@ void OldSpace::SelectCSet()
         RemoveRegion(current);
         DecreaseLiveObjectSize(current->AliveObject());
         allocator_->DetachFreeObjectSet(current);
-        current->SetFlag(RegionFlags::IS_IN_COLLECT_SET);
+        current->SetGCFlag(RegionGCFlags::IN_COLLECT_SET);
     });
     sweepState_ = SweepState::NO_SWEEP;
     LOG_ECMA_MEM(DEBUG) << "Select CSet success: number is " << collectRegionSet_.size();
@@ -386,8 +385,7 @@ void OldSpace::CheckRegionSize()
 void OldSpace::RevertCSet()
 {
     EnumerateCollectRegionSet([&](Region *region) {
-        region->ClearFlag(RegionFlags::IS_IN_COLLECT_SET);
-        region->SetSpace(this);
+        region->ClearGCFlag(RegionGCFlags::IN_COLLECT_SET);
         AddRegion(region);
         allocator_->CollectFreeObjectSet(region);
         IncreaseLiveObjectSize(region->AliveObject());
@@ -398,11 +396,10 @@ void OldSpace::RevertCSet()
 void OldSpace::ReclaimCSet()
 {
     EnumerateCollectRegionSet([this](Region *region) {
-        region->SetSpace(nullptr);
         region->DeleteCrossRegionRSet();
         region->DeleteOldToNewRSet();
         region->DeleteSweepingRSet();
-        region->DestroySet();
+        region->DestroyFreeObjectSets();
         heapRegionAllocator_->FreeRegion(region);
     });
     collectRegionSet_.clear();
@@ -417,7 +414,6 @@ bool LocalSpace::AddRegionToList(Region *region)
         LOG_ECMA_MEM(FATAL) << "AddRegionTotList::Committed size " << committedSize_ << " of local space is too big.";
         return false;
     }
-    region->SetSpace(this);
     AddRegion(region);
     allocator_->CollectFreeObjectSet(region);
     IncreaseLiveObjectSize(region->AliveObject());

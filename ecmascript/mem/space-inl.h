@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -70,26 +70,28 @@ void Space::EnumerateRegionsWithRecord(const Callback &cb) const
     EnumerateRegions(cb, recordRegion_);
 }
 
-RegionFlags Space::GetRegionFlag() const
+RegionSpaceFlag Space::GetRegionFlag() const
 {
-    RegionFlags flags = RegionFlags::IS_INVALID;
+    RegionSpaceFlag flags = RegionSpaceFlag::UNINITIALIZED;
     switch (spaceType_) {
         case MemSpaceType::OLD_SPACE:
         case MemSpaceType::LOCAL_SPACE:
-            flags = RegionFlags::IS_IN_OLD_GENERATION;
-            break;
-        case MemSpaceType::NON_MOVABLE:
-        case MemSpaceType::MACHINE_CODE_SPACE:
-            flags = RegionFlags::IS_IN_NON_MOVABLE_GENERATION;
+            flags = RegionSpaceFlag::IN_OLD_SPACE;
             break;
         case MemSpaceType::SEMI_SPACE:
-            flags = RegionFlags::IS_IN_YOUNG_GENERATION;
-            break;
-        case MemSpaceType::SNAPSHOT_SPACE:
-            flags = RegionFlags::IS_IN_SNAPSHOT_GENERATION;
+            flags = RegionSpaceFlag::IN_YOUNG_SPACE;
             break;
         case MemSpaceType::HUGE_OBJECT_SPACE:
-            flags = RegionFlags::IS_HUGE_OBJECT;
+            flags = RegionSpaceFlag::IN_HUGE_OBJECT_SPACE;
+            break;
+        case MemSpaceType::MACHINE_CODE_SPACE:
+            flags = RegionSpaceFlag::IN_MACHINE_CODE_SPACE;
+            break;
+        case MemSpaceType::NON_MOVABLE:
+            flags = RegionSpaceFlag::IN_NON_MOVABLE_SPACE;
+            break;
+        case MemSpaceType::SNAPSHOT_SPACE:
+            flags = RegionSpaceFlag::IN_SNAPSHOT_SPACE;
             break;
         default:
             UNREACHABLE();
