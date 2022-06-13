@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_COMPILER_LLVM_LLVMSTACKPARSE_H
-#define ECMASCRIPT_COMPILER_LLVM_LLVMSTACKPARSE_H
+#ifndef ECMASCRIPT_LLVM_STACKMAP_PARSER_H
+#define ECMASCRIPT_LLVM_STACKMAP_PARSER_H
 
 #include <iostream>
 #include <memory>
@@ -192,11 +192,6 @@ struct LLVMStackMap {
 
 class LLVMStackMapParser {
 public:
-    static LLVMStackMapParser& GetInstance(bool enableLog = false)
-    {
-        static LLVMStackMapParser instance(enableLog);
-        return instance;
-    }
     bool PUBLIC_API CalculateStackMap(std::unique_ptr<uint8_t []> stackMapAddr);
     bool PUBLIC_API CalculateStackMap(std::unique_ptr<uint8_t []> stackMapAddr,
     uintptr_t hostCodeSectionAddr, uintptr_t deviceCodeSectionAddr);
@@ -207,11 +202,10 @@ public:
         }
     }
     const CallSiteInfo *GetCallSiteInfoByPc(uintptr_t funcAddr) const;
-    bool CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp,
+    bool CollectGCSlots(uintptr_t callSiteAddr, uintptr_t callsiteFp,
                             std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, uintptr_t> *data,
                             [[maybe_unused]] bool isVerifying,
-                            uintptr_t curPc) const;
-
+                            uintptr_t callSiteSp) const;
     bool IsLogEnabled() const
     {
         return enableLog_;
@@ -231,8 +225,7 @@ public:
         return {};
     }
 
-private:
-    explicit LLVMStackMapParser(bool enableLog)
+    explicit LLVMStackMapParser(bool enableLog = false)
     {
         pc2CallSiteInfoVec_.clear();
         dataInfo_ = nullptr;
@@ -249,11 +242,17 @@ private:
         fun2FpDelta_.clear();
         pc2ConstInfoVec_.clear();
     }
+private:
     void CalcCallSite();
-    bool IsDeriveredPointer(int callsitetime) const;
     void PrintCallSiteInfo(const CallSiteInfo *infos, OptimizedLeaveFrame *frame) const;
-    void PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp, uintptr_t curPc) const;
+    void PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t callSiteFp, uintptr_t callSiteSp) const;
     int FindFpDelta(uintptr_t funcAddr, uintptr_t callsitePc) const;
+    inline uintptr_t GetStackSlotAddress(const DwarfRegAndOffsetType info,
+        uintptr_t callSiteSp, uintptr_t callsiteFp, bool flag = false) const;
+    void CollectBaseAndDerivedPointers(const CallSiteInfo *infos, std::set<uintptr_t> &baseSet,
+        ChunkMap<DerivedDataKey, uintptr_t> *data, uintptr_t callsiteFp, uintptr_t callSiteSp) const;
+    void PrintCallSiteSlotAddr(const CallSiteInfo& callsiteInfo, uintptr_t callSiteSp,
+        uintptr_t callsiteFp) const;
 
     struct LLVMStackMap llvmStackMap_;
     std::vector<Pc2CallSiteInfo> pc2CallSiteInfoVec_;
@@ -264,4 +263,4 @@ private:
     std::vector<Pc2ConstInfo> pc2ConstInfoVec_;
 };
 } // namespace panda::ecmascript::kungfu
-#endif  // ECMASCRIPT_COMPILER_LLVM_LLVMSTACKPARSE_H
+#endif  // ECMASCRIPT_LLVM_STACKMAP_PARSER_H
