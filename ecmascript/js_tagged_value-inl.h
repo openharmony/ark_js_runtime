@@ -661,6 +661,26 @@ inline bool JSTaggedValue::IsPromiseCapability() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsPromiseCapability();
 }
 
+inline bool JSTaggedValue::IsJSPromiseAnyRejectElementFunction() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSPromiseAnyRejectElementFunction();
+}
+
+inline bool JSTaggedValue::IsJSPromiseAllSettledElementFunction() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSPromiseAllSettledElementFunction();
+}
+
+inline bool JSTaggedValue::IsJSPromiseFinallyFunction() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSPromiseFinallyFunction();
+}
+
+inline bool JSTaggedValue::IsJSPromiseValueThunkOrThrowerFunction() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSPromiseValueThunkOrThrowerFunction();
+}
+
 inline bool JSTaggedValue::IsJSError() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSError();

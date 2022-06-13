@@ -124,6 +124,7 @@ using Error = builtins::BuiltinsError;
 using RangeError = builtins::BuiltinsRangeError;
 using ReferenceError = builtins::BuiltinsReferenceError;
 using TypeError = builtins::BuiltinsTypeError;
+using AggregateError = builtins::BuiltinsAggregateError;
 using URIError = builtins::BuiltinsURIError;
 using SyntaxError = builtins::BuiltinsSyntaxError;
 using EvalError = builtins::BuiltinsEvalError;
@@ -197,6 +198,8 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(TypeError::TypeErrorConstructor),
     reinterpret_cast<uintptr_t>(TypeError::ToString),
     reinterpret_cast<uintptr_t>(TypeError::ThrowTypeError),
+    reinterpret_cast<uintptr_t>(AggregateError::AggregateErrorConstructor),
+    reinterpret_cast<uintptr_t>(AggregateError::ToString),
     reinterpret_cast<uintptr_t>(URIError::URIErrorConstructor),
     reinterpret_cast<uintptr_t>(URIError::ToString),
     reinterpret_cast<uintptr_t>(SyntaxError::SyntaxErrorConstructor),
@@ -604,6 +607,9 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(Promise::Reject),
     reinterpret_cast<uintptr_t>(Promise::Catch),
     reinterpret_cast<uintptr_t>(Promise::Then),
+    reinterpret_cast<uintptr_t>(Promise::Finally),
+    reinterpret_cast<uintptr_t>(Promise::Any),
+    reinterpret_cast<uintptr_t>(Promise::AllSettled),
     reinterpret_cast<uintptr_t>(Promise::GetSpecies),
     reinterpret_cast<uintptr_t>(BuiltinsPromiseJob::PromiseReactionJob),
     reinterpret_cast<uintptr_t>(BuiltinsPromiseJob::PromiseResolveThenableJob),

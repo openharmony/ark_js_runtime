@@ -168,6 +168,11 @@ class JSThread;
     V(JSTaggedValue, ProxyCallString, PROXY_CALL_STRING_INDEX, call)                                                  \
     V(JSTaggedValue, PromiseThenString, PROMISE_THEN_STRING_INDEX, then)                                              \
     V(JSTaggedValue, PromiseCatchString, PROMISE_CATCH_STRING_INDEX, catch)                                           \
+    V(JSTaggedValue, PromiseFinallyString, PROMISE_FINALLY_STRING_INDEX, finally)                                     \
+    V(JSTaggedValue, PromiseStatusString, PROMISE_STATUS_STRING_INDEX, status)                                        \
+    V(JSTaggedValue, PromiseFulfilledString, PROMISE_FULFILLED_STRING_INDEX, fulfilled)                               \
+    V(JSTaggedValue, PromiseRejectedString, PROMISE_REJECTED_STRING_INDEX, rejected)                                  \
+    V(JSTaggedValue, PromiseReasonString, PROMISE_REASON_STRING_INDEX, reason)                                        \
     V(JSTaggedValue, ScriptJobString, SCRIPT_JOB_STRING_INDEX, ScriptJobs)                                            \
     V(JSTaggedValue, PromiseString, PROMISE_STRING_INDEX, PrimiseJobs)                                                \
     V(JSTaggedValue, ThrowerString, THROWER_STRING_INDEX, Thrower)                                                    \
@@ -198,6 +203,8 @@ class JSThread;
     V(JSTaggedValue, RangeErrorString, RANGE_ERROR_STRING_INDEX, RangeError)                                          \
     V(JSTaggedValue, ReferenceErrorString, REFERENCE_ERROR_STRING_INDEX, ReferenceError)                              \
     V(JSTaggedValue, TypeErrorString, TYPE_ERROR_STRING_INDEX, TypeError)                                             \
+    V(JSTaggedValue, ErrorsString, ERRORS_STRING_INDEX, Errors)                                                       \
+    V(JSTaggedValue, AggregateErrorString, AGGREGATE_ERROR_STRING_INDEX, AggregateError)                              \
     V(JSTaggedValue, URIErrorString, URI_ERROR_STRING_INDEX, URIError)                                                \
     V(JSTaggedValue, SyntaxErrorString, SYNTAX_ERROR_STRING_INDEX, SyntaxError)                                       \
     V(JSTaggedValue, EvalErrorString, EVAL_ERROR_STRING_INDEX, EvalError)                                             \

@@ -1208,6 +1208,24 @@ Local<PromiseRef> PromiseRef::Catch(const EcmaVM *vm, Local<FunctionRef> handler
     return JSNApiHelper::ToLocal<PromiseRef>(JSHandle<JSTaggedValue>(thread, result));
 }
 
+Local<PromiseRef> PromiseRef::Finally(const EcmaVM *vm, Local<FunctionRef> handler)
+{
+    JSThread *thread = vm->GetJSThread();
+    const GlobalEnvConstants *constants = thread->GlobalConstants();
+
+    JSHandle<JSTaggedValue> promise = JSNApiHelper::ToJSHandle(this);
+    JSHandle<JSTaggedValue> finallyKey = constants->GetHandledPromiseFinallyString();
+    JSHandle<JSTaggedValue> resolver = JSNApiHelper::ToJSHandle(handler);
+    JSHandle<JSTaggedValue> undefined(constants->GetHandledUndefined());
+    EcmaRuntimeCallInfo info =
+        ecmascript::EcmaInterpreter::NewRuntimeCallInfo(thread, undefined, promise, undefined, 2); // 2: two args
+    info.SetCallArg(resolver.GetTaggedValue(), undefined.GetTaggedValue());
+    JSTaggedValue result = JSFunction::Invoke(&info, finallyKey);
+
+    RETURN_VALUE_IF_ABRUPT(thread, JSValueRef::Exception(vm));
+    return JSNApiHelper::ToLocal<PromiseRef>(JSHandle<JSTaggedValue>(thread, result));
+}
+
 Local<PromiseRef> PromiseRef::Then(const EcmaVM *vm, Local<FunctionRef> handler)
 {
     JSThread *thread = vm->GetJSThread();

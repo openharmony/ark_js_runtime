@@ -71,6 +71,10 @@ class JSPromise;
 class JSPromiseReactionsFunction;
 class JSPromiseExecutorFunction;
 class JSPromiseAllResolveElementFunction;
+class JSPromiseAnyRejectElementFunction;
+class JSPromiseAllSettledElementFunction;
+class JSPromiseFinallyFunction;
+class JSPromiseValueThunkOrThrowerFunction;
 class PromiseReaction;
 class PromiseCapability;
 class PromiseIteratorRecord;
@@ -164,6 +168,13 @@ enum class MethodIndex : uint8_t {
     BUILTINS_PROMISE_HANDLER_RESOLVE,
     BUILTINS_PROMISE_HANDLER_REJECT,
     BUILTINS_PROMISE_HANDLER_EXECUTOR,
+    BUILTINS_PROMISE_HANDLER_ANY_REJECT_ELEMENT_FUNCTION,
+    BUILTINS_PROMISE_HANDLER_ALL_SETTLED_RESOLVE_ELEMENT_FUNCTION,
+    BUILTINS_PROMISE_HANDLER_ALL_SETTLED_REJECT_ELEMENT_FUNCTION,
+    BUILTINS_PROMISE_HANDLER_THEN_FINALLY_FUNCTION,
+    BUILTINS_PROMISE_HANDLER_CATCH_FINALLY_FUNCTION,
+    BUILTINS_PROMISE_HANDLER_VALUE_THUNK_FUNCTION,
+    BUILTINS_PROMISE_HANDLER_THROWER_FUNCTION,
     METHOD_END
 };
 
@@ -183,6 +194,8 @@ public:
     JSHandle<JSObject> GetJSError(const ErrorType &errorType, const char *data = nullptr);
 
     JSHandle<JSObject> NewJSError(const ErrorType &errorType, const JSHandle<EcmaString> &message);
+
+    JSHandle<JSObject> NewJSAggregateError();
 
     JSHandle<TransitionHandler> NewTransitionHandler();
 
@@ -348,6 +361,20 @@ public:
     JSHandle<JSPromiseExecutorFunction> CreateJSPromiseExecutorFunction();
 
     JSHandle<JSPromiseAllResolveElementFunction> NewJSPromiseAllResolveElementFunction();
+
+    JSHandle<JSPromiseAnyRejectElementFunction> NewJSPromiseAnyRejectElementFunction();
+
+    JSHandle<JSPromiseAllSettledElementFunction> NewJSPromiseAllSettledResolveElementFunction();
+
+    JSHandle<JSPromiseAllSettledElementFunction> NewJSPromiseAllSettledRejectElementFunction();
+
+    JSHandle<JSPromiseFinallyFunction> NewJSPromiseThenFinallyFunction();
+
+    JSHandle<JSPromiseFinallyFunction> NewJSPromiseCatchFinallyFunction();
+
+    JSHandle<JSPromiseValueThunkOrThrowerFunction> NewJSPromiseValueThunkFunction();
+
+    JSHandle<JSPromiseValueThunkOrThrowerFunction> NewJSPromiseThrowerFunction();
 
     JSHandle<JSObject> CloneObjectLiteral(JSHandle<JSObject> object, const JSHandle<JSTaggedValue> &env,
                                           const JSHandle<JSTaggedValue> &constpool, bool canShareHClass = true);

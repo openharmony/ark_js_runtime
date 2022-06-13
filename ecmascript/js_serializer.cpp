@@ -261,6 +261,7 @@ bool JSSerializer::WriteTaggedObject(const JSHandle<JSTaggedValue> &value)
         case JSType::JS_RANGE_ERROR:
         case JSType::JS_REFERENCE_ERROR:
         case JSType::JS_TYPE_ERROR:
+        case JSType::JS_AGGREGATE_ERROR:
         case JSType::JS_URI_ERROR:
         case JSType::JS_SYNTAX_ERROR:
             return WriteJSError(value);
@@ -341,6 +342,8 @@ bool JSSerializer::WriteJSErrorHeader(JSType type)
             return WriteType(SerializationUID::REFERENCE_ERROR);
         case JSType::JS_TYPE_ERROR:
             return WriteType(SerializationUID::TYPE_ERROR);
+        case JSType::JS_AGGREGATE_ERROR:
+            return WriteType(SerializationUID::AGGREGATE_ERROR);
         case JSType::JS_URI_ERROR:
             return WriteType(SerializationUID::URI_ERROR);
         case JSType::JS_SYNTAX_ERROR:
@@ -935,6 +938,7 @@ JSHandle<JSTaggedValue> JSDeserializer::DeserializeJSTaggedValue()
         case SerializationUID::RANGE_ERROR:
         case SerializationUID::REFERENCE_ERROR:
         case SerializationUID::TYPE_ERROR:
+        case SerializationUID::AGGREGATE_ERROR:
         case SerializationUID::URI_ERROR:
         case SerializationUID::SYNTAX_ERROR:
             return ReadJSError(uid);
@@ -1006,6 +1010,9 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSError(SerializationUID uid)
             break;
         case SerializationUID::TYPE_ERROR:
             errorType = base::ErrorType::TYPE_ERROR;
+            break;
+        case SerializationUID::AGGREGATE_ERROR:
+            errorType = base::ErrorType::AGGREGATE_ERROR;
             break;
         case SerializationUID::URI_ERROR:
             errorType = base::ErrorType::URI_ERROR;

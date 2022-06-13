@@ -138,6 +138,7 @@ using Error = builtins::BuiltinsError;
 using RangeError = builtins::BuiltinsRangeError;
 using ReferenceError = builtins::BuiltinsReferenceError;
 using TypeError = builtins::BuiltinsTypeError;
+using AggregateError = builtins::BuiltinsAggregateError;
 using URIError = builtins::BuiltinsURIError;
 using SyntaxError = builtins::BuiltinsSyntaxError;
 using EvalError = builtins::BuiltinsEvalError;
@@ -252,25 +253,6 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
         factory_->CreateFunctionClass(FunctionKind::NORMAL_FUNCTION, JSAsyncAwaitStatusFunction::SIZE,
                                       JSType::JS_ASYNC_AWAIT_STATUS_FUNCTION, env->GetFunctionPrototype());
     env->SetAsyncAwaitStatusFunctionClass(thread_, asyncAwaitStatusFuncClass);
-
-    JSHandle<JSHClass> promiseReactionFuncClass = factory_->NewEcmaDynClass(
-        JSPromiseReactionsFunction::SIZE, JSType::JS_PROMISE_REACTIONS_FUNCTION, env->GetFunctionPrototype());
-    promiseReactionFuncClass->SetCallable(true);
-    promiseReactionFuncClass->SetExtensible(true);
-    env->SetPromiseReactionFunctionClass(thread_, promiseReactionFuncClass);
-
-    JSHandle<JSHClass> promiseExecutorFuncClass = factory_->NewEcmaDynClass(
-        JSPromiseExecutorFunction::SIZE, JSType::JS_PROMISE_EXECUTOR_FUNCTION, env->GetFunctionPrototype());
-    promiseExecutorFuncClass->SetCallable(true);
-    promiseExecutorFuncClass->SetExtensible(true);
-    env->SetPromiseExecutorFunctionClass(thread_, promiseExecutorFuncClass);
-
-    JSHandle<JSHClass> promiseAllResolveElementFunctionClass =
-        factory_->NewEcmaDynClass(JSPromiseAllResolveElementFunction::SIZE,
-                                  JSType::JS_PROMISE_ALL_RESOLVE_ELEMENT_FUNCTION, env->GetFunctionPrototype());
-    promiseAllResolveElementFunctionClass->SetCallable(true);
-    promiseAllResolveElementFunctionClass->SetExtensible(true);
-    env->SetPromiseAllResolveElementFunctionClass(thread_, promiseAllResolveElementFunctionClass);
 
     JSHandle<JSHClass> proxyRevocFuncClass = factory_->NewEcmaDynClass(
         JSProxyRevocFunction::SIZE, JSType::JS_PROXY_REVOC_FUNCTION, env->GetFunctionPrototype());
@@ -1024,6 +1006,7 @@ void Builtins::InitializeAllTypeError(const JSHandle<GlobalEnv> &env, const JSHa
     InitializeError(env, errorNativeFuncInstanceDynclass, JSType::JS_RANGE_ERROR);
     InitializeError(env, errorNativeFuncInstanceDynclass, JSType::JS_REFERENCE_ERROR);
     InitializeError(env, errorNativeFuncInstanceDynclass, JSType::JS_TYPE_ERROR);
+    InitializeError(env, errorNativeFuncInstanceDynclass, JSType::JS_AGGREGATE_ERROR);
     InitializeError(env, errorNativeFuncInstanceDynclass, JSType::JS_URI_ERROR);
     InitializeError(env, errorNativeFuncInstanceDynclass, JSType::JS_SYNTAX_ERROR);
     InitializeError(env, errorNativeFuncInstanceDynclass, JSType::JS_EVAL_ERROR);
@@ -1039,6 +1022,7 @@ void Builtins::InitializeAllTypeErrorWithRealm(const JSHandle<GlobalEnv> &realm)
     SetErrorWithRealm(realm, JSType::JS_RANGE_ERROR);
     SetErrorWithRealm(realm, JSType::JS_REFERENCE_ERROR);
     SetErrorWithRealm(realm, JSType::JS_TYPE_ERROR);
+    SetErrorWithRealm(realm, JSType::JS_AGGREGATE_ERROR);
     SetErrorWithRealm(realm, JSType::JS_URI_ERROR);
     SetErrorWithRealm(realm, JSType::JS_SYNTAX_ERROR);
     SetErrorWithRealm(realm, JSType::JS_EVAL_ERROR);
@@ -1071,6 +1055,11 @@ void Builtins::SetErrorWithRealm(const JSHandle<GlobalEnv> &realm, const JSType 
             nameString = JSHandle<JSTaggedValue>(thread_->GlobalConstants()->GetHandledTypeErrorString());
             realm->SetTypeErrorFunction(thread_, nativeErrorFunction);
             realm->SetThrowTypeError(thread_, env->GetThrowTypeError());
+            break;
+        case JSType::JS_AGGREGATE_ERROR:
+            nativeErrorFunction = env->GetAggregateErrorFunction();
+            nameString = JSHandle<JSTaggedValue>(thread_->GlobalConstants()->GetHandledAggregateErrorString());
+            realm->SetAggregateErrorFunction(thread_, nativeErrorFunction);
             break;
         case JSType::JS_URI_ERROR:
             nativeErrorFunction = env->GetURIErrorFunction();
@@ -1124,6 +1113,10 @@ void Builtins::InitializeError(const JSHandle<GlobalEnv> &env, const JSHandle<JS
             GeneralUpdateError(&errorParameter, TypeError::TypeErrorConstructor, TypeError::ToString, "TypeError",
                                JSType::JS_TYPE_ERROR);
             break;
+        case JSType::JS_AGGREGATE_ERROR:
+            GeneralUpdateError(&errorParameter, AggregateError::AggregateErrorConstructor, AggregateError::ToString,
+                               "AggregateError", JSType::JS_AGGREGATE_ERROR);
+            break;
         case JSType::JS_URI_ERROR:
             GeneralUpdateError(&errorParameter, URIError::URIErrorConstructor, URIError::ToString, "URIError",
                                JSType::JS_URI_ERROR);
@@ -1141,10 +1134,14 @@ void Builtins::InitializeError(const JSHandle<GlobalEnv> &env, const JSHandle<JS
         factory_->NewEcmaDynClass(JSObject::SIZE, errorParameter.nativeJstype, nativeErrorFuncPrototypeValue);
 
     // NativeError() = new Error()
+    FunctionLength functionLength = FunctionLength::ONE;
+    if (errorTag == JSType::JS_AGGREGATE_ERROR) {
+        functionLength = FunctionLength::TWO;
+    }
     JSHandle<JSFunction> nativeErrorFunction =
         factory_->NewJSNativeErrorFunction(env, reinterpret_cast<void *>(errorParameter.nativeConstructor));
     InitializeCtor(env, nativeErrorFuncPrototype, nativeErrorFunction, errorParameter.nativePropertyName,
-                   FunctionLength::ONE);
+                   functionLength);
 
     nativeErrorFunction->SetFunctionPrototype(thread_, nativeErrorFuncInstanceDynclass.GetTaggedValue());
 
@@ -1167,6 +1164,8 @@ void Builtins::InitializeError(const JSHandle<GlobalEnv> &env, const JSHandle<JS
         JSFunction::SetFunctionLength(thread_, throwTypeErrorFunction, JSTaggedValue(1), false);
         JSObject::PreventExtensions(thread_, JSHandle<JSObject>::Cast(throwTypeErrorFunction));
         env->SetThrowTypeError(thread_, throwTypeErrorFunction);
+    } else if (errorTag == JSType::JS_AGGREGATE_ERROR) {
+        env->SetAggregateErrorFunction(thread_, nativeErrorFunction);
     } else if (errorTag == JSType::JS_URI_ERROR) {
         env->SetURIErrorFunction(thread_, nativeErrorFunction);
     } else if (errorTag == JSType::JS_SYNTAX_ERROR) {
@@ -2444,10 +2443,13 @@ void Builtins::InitializePromise(const JSHandle<GlobalEnv> &env, const JSHandle<
     SetFunction(env, promiseFunction, "race", Promise::Race, FunctionLength::ONE);
     SetFunction(env, promiseFunction, "resolve", Promise::Resolve, FunctionLength::ONE);
     SetFunction(env, promiseFunction, "reject", Promise::Reject, FunctionLength::ONE);
+    SetFunction(env, promiseFunction, "any", Promise::Any, FunctionLength::ONE);
+    SetFunction(env, promiseFunction, "allSettled", Promise::AllSettled, FunctionLength::ONE);
 
     // promise.prototype method
     SetFunction(env, promiseFuncPrototype, "catch", Promise::Catch, FunctionLength::ONE);
     SetFunction(env, promiseFuncPrototype, "then", Promise::Then, FunctionLength::TWO);
+    SetFunction(env, promiseFuncPrototype, "finally", Promise::Finally, FunctionLength::ONE);
 
     // Promise.prototype [ @@toStringTag ]
     SetStringTagSymbol(env, promiseFuncPrototype, "Promise");
@@ -2459,6 +2461,61 @@ void Builtins::InitializePromise(const JSHandle<GlobalEnv> &env, const JSHandle<
     SetGetter(promiseFunction, speciesSymbol, speciesGetter);
 
     env->SetPromiseFunction(thread_, promiseFunction);
+    InitializeForPromiseFuncClass(env);
+}
+
+
+void Builtins::InitializeForPromiseFuncClass(const JSHandle<GlobalEnv> &env)
+{
+    vm_ = thread_->GetEcmaVM();
+    factory_ = vm_->GetFactory();
+
+    JSHandle<JSHClass> promiseReactionFuncClass = factory_->NewEcmaDynClass(
+        JSPromiseReactionsFunction::SIZE, JSType::JS_PROMISE_REACTIONS_FUNCTION, env->GetFunctionPrototype());
+    promiseReactionFuncClass->SetCallable(true);
+    promiseReactionFuncClass->SetExtensible(true);
+    env->SetPromiseReactionFunctionClass(thread_, promiseReactionFuncClass);
+
+    JSHandle<JSHClass> promiseExecutorFuncClass = factory_->NewEcmaDynClass(
+        JSPromiseExecutorFunction::SIZE, JSType::JS_PROMISE_EXECUTOR_FUNCTION, env->GetFunctionPrototype());
+    promiseExecutorFuncClass->SetCallable(true);
+    promiseExecutorFuncClass->SetExtensible(true);
+    env->SetPromiseExecutorFunctionClass(thread_, promiseExecutorFuncClass);
+
+    JSHandle<JSHClass> promiseAllResolveElementFunctionClass =
+        factory_->NewEcmaDynClass(JSPromiseAllResolveElementFunction::SIZE,
+                                  JSType::JS_PROMISE_ALL_RESOLVE_ELEMENT_FUNCTION, env->GetFunctionPrototype());
+    promiseAllResolveElementFunctionClass->SetCallable(true);
+    promiseAllResolveElementFunctionClass->SetExtensible(true);
+    env->SetPromiseAllResolveElementFunctionClass(thread_, promiseAllResolveElementFunctionClass);
+
+    JSHandle<JSHClass> promiseAnyRejectElementFunctionClass =
+        factory_->NewEcmaDynClass(JSPromiseAnyRejectElementFunction::SIZE,
+                                  JSType::JS_PROMISE_ANY_REJECT_ELEMENT_FUNCTION, env->GetFunctionPrototype());
+    promiseAnyRejectElementFunctionClass->SetCallable(true);
+    promiseAnyRejectElementFunctionClass->SetExtensible(true);
+    env->SetPromiseAnyRejectElementFunctionClass(thread_, promiseAnyRejectElementFunctionClass);
+
+    JSHandle<JSHClass> promiseAllSettledElementFunctionClass =
+        factory_->NewEcmaDynClass(JSPromiseAllSettledElementFunction::SIZE,
+                                  JSType::JS_PROMISE_ALL_SETTLED_ELEMENT_FUNCTION, env->GetFunctionPrototype());
+    promiseAllSettledElementFunctionClass->SetCallable(true);
+    promiseAllSettledElementFunctionClass->SetExtensible(true);
+    env->SetPromiseAllSettledElementFunctionClass(thread_, promiseAllSettledElementFunctionClass);
+
+    JSHandle<JSHClass> promiseFinallyFunctionClass =
+        factory_->NewEcmaDynClass(JSPromiseFinallyFunction::SIZE,
+                                  JSType::JS_PROMISE_FINALLY_FUNCTION, env->GetFunctionPrototype());
+    promiseFinallyFunctionClass->SetCallable(true);
+    promiseFinallyFunctionClass->SetExtensible(true);
+    env->SetPromiseFinallyFunctionClass(thread_, promiseFinallyFunctionClass);
+
+    JSHandle<JSHClass> promiseValueThunkOrThrowerFunctionClass =
+        factory_->NewEcmaDynClass(JSPromiseValueThunkOrThrowerFunction::SIZE,
+                                  JSType::JS_PROMISE_VALUE_THUNK_OR_THROWER_FUNCTION, env->GetFunctionPrototype());
+    promiseValueThunkOrThrowerFunctionClass->SetCallable(true);
+    promiseValueThunkOrThrowerFunctionClass->SetExtensible(true);
+    env->SetPromiseValueThunkOrThrowerFunctionClass(thread_, promiseValueThunkOrThrowerFunctionClass);
 }
 
 void Builtins::InitializePromiseJob(const JSHandle<GlobalEnv> &env)

@@ -310,6 +310,70 @@ public:
     DECL_DUMP()
 };
 
+// PromiseAnyRejectElementFunction
+class JSPromiseAnyRejectElementFunction : public JSFunction {
+public:
+    CAST_CHECK(JSPromiseAnyRejectElementFunction, IsJSPromiseAnyRejectElementFunction);
+
+    static constexpr size_t ERRORS_OFFSET = JSFunction::SIZE;
+    
+    ACCESSORS(Errors, ERRORS_OFFSET, CAPABILITY_OFFSET);
+    ACCESSORS(Capability, CAPABILITY_OFFSET, REMAINING_ELEMENTS_OFFSET);
+    ACCESSORS(RemainingElements, REMAINING_ELEMENTS_OFFSET, ALREADY_CALLED_OFFSET);
+    ACCESSORS(AlreadyCalled, ALREADY_CALLED_OFFSET, INDEX_OFFSET);
+    ACCESSORS_PRIMITIVE_FIELD(Index, uint32_t, INDEX_OFFSET, LAST_OFFSET);
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
+
+    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSFunction, ERRORS_OFFSET, INDEX_OFFSET)
+
+    DECL_DUMP()
+};
+
+// PromiseAllSettledElementFunction
+class JSPromiseAllSettledElementFunction : public JSFunction {
+public:
+    CAST_CHECK(JSPromiseAllSettledElementFunction, IsJSPromiseAllSettledElementFunction);
+
+    static constexpr size_t ALREADY_CALLED_OFFSET = JSFunction::SIZE;
+    ACCESSORS(AlreadyCalled, ALREADY_CALLED_OFFSET, VALUES_OFFSET);
+    ACCESSORS(Values, VALUES_OFFSET, CAPABILITY_OFFSET);
+    ACCESSORS(Capability, CAPABILITY_OFFSET, REMAINING_ELEMENTS_OFFSET);
+    ACCESSORS(RemainingElements, REMAINING_ELEMENTS_OFFSET, INDEX_OFFSET);
+    ACCESSORS_PRIMITIVE_FIELD(Index, uint32_t, INDEX_OFFSET, LAST_OFFSET);
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
+
+    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSFunction, ALREADY_CALLED_OFFSET, INDEX_OFFSET)
+
+    DECL_DUMP()
+};
+
+// PromiseFinallyFunction
+class JSPromiseFinallyFunction : public JSFunction {
+public:
+    CAST_CHECK(JSPromiseFinallyFunction, IsJSPromiseFinallyFunction);
+
+    static constexpr size_t CONSTRUCTOR_OFFSET = JSFunction::SIZE;
+    ACCESSORS(Constructor, CONSTRUCTOR_OFFSET, ONFINALLY_OFFSET);
+    ACCESSORS(OnFinally, ONFINALLY_OFFSET, SIZE);
+
+    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSFunction, CONSTRUCTOR_OFFSET, SIZE)
+
+    DECL_DUMP()
+};
+
+// ValueThunkOrThrowReason
+class JSPromiseValueThunkOrThrowerFunction : public JSFunction {
+public:
+    CAST_CHECK(JSPromiseValueThunkOrThrowerFunction, IsJSPromiseValueThunkOrThrowerFunction);
+
+    static constexpr size_t RESULT_OFFSET = JSFunction::SIZE;
+    ACCESSORS(Result, RESULT_OFFSET, SIZE);
+
+    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSFunction, RESULT_OFFSET, SIZE)
+
+    DECL_DUMP()
+};
+
 class JSIntlBoundFunction : public JSFunction {
 public:
     CAST_CHECK(JSIntlBoundFunction, IsJSIntlBoundFunction);
