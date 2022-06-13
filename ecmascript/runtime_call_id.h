@@ -498,7 +498,10 @@ namespace panda::ecmascript {
     V(String, LastIndexOf)                    \
     V(String, LocaleCompare)                  \
     V(String, Match)                          \
+    V(String, MatchAll)                       \
     V(String, Normalize)                      \
+    V(String, PadStart)                       \
+    V(String, PadEnd)                         \
     V(String, Repeat)                         \
     V(String, Replace)                        \
     V(String, Search)                         \
@@ -512,6 +515,10 @@ namespace panda::ecmascript {
     V(String, ToString)                       \
     V(String, ToUpperCase)                    \
     V(String, Trim)                           \
+    V(String, TrimStart)                      \
+    V(String, TrimEnd)                        \
+    V(String, TrimLeft)                       \
+    V(String, TrimRight)                      \
     V(String, GetStringIterator)              \
     V(String, SubStr)                         \
     V(Symbol, Constructor)                    \
