@@ -29,7 +29,7 @@ class JSThread;
 
 enum RegionSpaceFlag {
     UNINITIALIZED = 0,
-    // We shuold avoid using the lower 3 bits (bits 0 to 2).
+    // We should avoid using the lower 3 bits (bits 0 to 2).
     // If ZAP_MEM is enabled, the value of the lower 3 bits conflicts with the INVALID_VALUE.
 
     // Bits 3 to 7 are reserved to denote the space where the region is located.
@@ -44,12 +44,10 @@ enum RegionSpaceFlag {
 };
 
 enum RegionGCFlags {
-    // We shuold avoid using the lower 3 bits (bits 0 to 2).
+    // We should avoid using the lower 3 bits (bits 0 to 2).
     // If ZAP_MEM is enabled, the value of the lower 3 bits conflicts with the INVALID_VALUE.
 
-    // Below flags are used for GC, and each flag has a dedicated bit starting from the 8th bit.
-    // We could think about further separating them from the space type values,
-    // e.g., by using separately declared types.
+    // Below flags are used for GC, and each flag has a dedicated bit starting from the 3rd bit.
     NEVER_EVACUATE = 1 << 3,
     HAS_AGE_MARK = 1 << 4,
     BELOW_AGE_MARK = 1 << 5,
