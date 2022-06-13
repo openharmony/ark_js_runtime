@@ -240,25 +240,25 @@ GateRef CircuitBuilder::DoubleToTaggedTypeNGC(GateRef x)
 
 GateRef CircuitBuilder::Tagged(GateRef x)
 {
-    GetCircuit()->SetGateType(x, GateType::TAGGED_VALUE);
+    GetCircuit()->SetGateType(x, GateType::TaggedValue());
     return Int64Or(x, Int64(JSTaggedValue::TAG_INT));
 }
 
 GateRef CircuitBuilder::DoubleToTagged(GateRef x)
 {
     GateRef val = CastDoubleToInt64(x);
-    GetCircuit()->SetGateType(val, GateType::TAGGED_VALUE);
+    GetCircuit()->SetGateType(val, GateType::TaggedValue());
     return Int64Add(val, Int64(JSTaggedValue::DOUBLE_ENCODE_OFFSET));
 }
 
 GateRef CircuitBuilder::TaggedTrue()
 {
-    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_TRUE, GateType::NJS_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_TRUE, GateType::NJSValue());
 }
 
 GateRef CircuitBuilder::TaggedFalse()
 {
-    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_FALSE, GateType::NJS_VALUE);
+    return GetCircuit()->GetConstantGate(MachineType::I64, JSTaggedValue::VALUE_FALSE, GateType::NJSValue());
 }
 
 GateRef CircuitBuilder::GetValueFromTaggedArray(VariableType returnType, GateRef array, GateRef index)
@@ -375,28 +375,14 @@ GateRef CircuitBuilder::IsExtensible(GateRef object)
         Int32(0));
 }
 
-GateRef CircuitBuilder::IsEcmaObject(GateRef obj)
+GateRef CircuitBuilder::TaggedObjectIsEcmaObject(GateRef obj)
 {
-    Label subentry(env_);
-    env_->SubCfgEntry(&subentry);
-    Label exit(env_);
-    Label isHeapObject(env_);
-    DEFVAlUE(result, env_, VariableType::BOOL(), False());
-    Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
-    Bind(&isHeapObject);
-    {
-        GateRef objectType = GetObjectType(LoadHClass(obj));
-        auto ret1 = Int32And(ZExtInt1ToInt32(Int32LessThanOrEqual(objectType,
-            Int32(static_cast<int32_t>(JSType::ECMA_OBJECT_END)))),
-            ZExtInt1ToInt32(Int32GreaterThanOrEqual(objectType,
-            Int32(static_cast<int32_t>(JSType::ECMA_OBJECT_BEGIN)))));
-        result = TruncInt32ToInt1(ret1);
-        Jump(&exit);
-    }
-    Bind(&exit);
-    auto ret = *result;
-    env_->SubCfgExit();
-    return ret;
+    GateRef objectType = GetObjectType(LoadHClass(obj));
+    auto ret = Int32And(ZExtInt1ToInt32(Int32LessThanOrEqual(objectType,
+        Int32(static_cast<int32_t>(JSType::ECMA_OBJECT_END)))),
+        ZExtInt1ToInt32(Int32GreaterThanOrEqual(objectType,
+        Int32(static_cast<int32_t>(JSType::ECMA_OBJECT_BEGIN)))));
+    return TruncInt32ToInt1(ret);
 }
 
 GateRef CircuitBuilder::IsJsObject(GateRef obj)

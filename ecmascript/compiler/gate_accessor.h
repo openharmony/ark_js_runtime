@@ -231,80 +231,81 @@ public:
     };
 
     struct ConstUseWrapper {
-        const GateAccessor& iterable;
+        Circuit* circuit;
         GateRef gate;
         auto begin()
         {
-            return iterable.ConstUseBegin(gate);
+            return GateAccessor(circuit).ConstUseBegin(gate);
         }
         auto end()
         {
-            return iterable.ConstUseEnd();
+            return GateAccessor(circuit).ConstUseEnd();
         }
     };
 
     struct UseWrapper {
-        GateAccessor& iterable;
+        Circuit* circuit;
         GateRef gate;
         auto begin()
         {
-            return iterable.UseBegin(gate);
+            return GateAccessor(circuit).UseBegin(gate);
         }
         auto end()
         {
-            return iterable.UseEnd();
+            return GateAccessor(circuit).UseEnd();
         }
     };
 
     struct ConstInWrapper {
-        const GateAccessor& iterable;
+        Circuit* circuit;
         const GateRef gate;
         auto begin()
         {
-            return iterable.ConstInBegin(gate);
+            return GateAccessor(circuit).ConstInBegin(gate);
         }
         auto end()
         {
-            return iterable.ConstInEnd(gate);
+            return GateAccessor(circuit).ConstInEnd(gate);
         }
     };
 
     struct InWrapper {
-        GateAccessor& iterable;
+        Circuit* circuit;
         GateRef gate;
         auto begin()
         {
-            return iterable.InBegin(gate);
+            return GateAccessor(circuit).InBegin(gate);
         }
         auto end()
         {
-            return iterable.InEnd(gate);
+            return GateAccessor(circuit).InEnd(gate);
         }
     };
 
     [[nodiscard]] ConstInWrapper ConstIns(GateRef gate)
     {
-        return { *this, gate };
+        return { circuit_, gate };
     }
 
     [[nodiscard]] InWrapper Ins(GateRef gate)
     {
-        return { *this, gate };
+        return { circuit_, gate };
     }
 
     [[nodiscard]] ConstUseWrapper ConstUses(GateRef gate)
     {
-        return { *this, gate };
+        return { circuit_, gate };
     }
 
     [[nodiscard]] UseWrapper Uses(GateRef gate)
     {
-        return { *this, gate };
+        return { circuit_, gate };
     }
 
     explicit GateAccessor(Circuit *circuit) : circuit_(circuit)
     {
     }
+
     Circuit *GetCircuit() const
     {
         return circuit_;
@@ -335,6 +336,7 @@ public:
     void DeleteIn(UsesIterator &useIt);
     void DeleteGate(UsesIterator &useIt);
     void DecreaseIn(UsesIterator &useIt);
+    void NewIn(GateRef gate, size_t idx, GateRef in);
 
 private:
     [[nodiscard]] ConstUsesIterator ConstUseBegin(GateRef gate) const

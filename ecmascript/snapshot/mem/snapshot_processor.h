@@ -32,9 +32,11 @@ class JSPandaFile;
 
 enum class SnapshotType {
     VM_ROOT,
-    GLOBAL_CONST,
+    BUILTINS,
     TS_LOADER
 };
+
+using ObjectEncode = std::pair<uint64_t, ecmascript::EncodeBit>;
 
 class SnapshotProcessor final {
 public:
@@ -45,15 +47,16 @@ public:
     void StopAllocate();
     void WriteObjectToFile(std::fstream &write);
     std::vector<uint32_t> StatisticsObjectSize();
+    void ProcessObjectQueue(CQueue<TaggedObject *> *queue, std::unordered_map<uint64_t, ObjectEncode> *data);
     void SerializeObject(TaggedObject *objectHeader, CQueue<TaggedObject *> *queue,
-                         std::unordered_map<uint64_t, std::pair<uint64_t, ecmascript::EncodeBit>> *data);
+                         std::unordered_map<uint64_t, ObjectEncode> *data);
     void Relocate(SnapshotType type, const JSPandaFile *jsPandaFile, uint64_t rootObjSize);
     void RelocateSpaceObject(Space* space, SnapshotType type, JSMethod* methods, size_t methodNums, size_t rootObjSize);
     void SerializePandaFileMethod();
     EncodeBit EncodeTaggedObject(TaggedObject *objectHeader, CQueue<TaggedObject *> *queue,
-                                 std::unordered_map<uint64_t, std::pair<uint64_t, ecmascript::EncodeBit>> *data);
+                                 std::unordered_map<uint64_t, ObjectEncode> *data);
     void EncodeTaggedObjectRange(ObjectSlot start, ObjectSlot end, CQueue<TaggedObject *> *queue,
-                                 std::unordered_map<uint64_t, std::pair<uint64_t, ecmascript::EncodeBit>> *data);
+                                 std::unordered_map<uint64_t, ObjectEncode> *data);
     void DeserializeObjectExcludeString(uintptr_t oldSpaceBegin, size_t oldSpaceObjSize, size_t nonMovableObjSize,
                                         size_t machineCodeObjSize, size_t snapshotObjSize);
     void DeserializeString(uintptr_t stringBegin, uintptr_t stringEnd);
@@ -61,6 +64,16 @@ public:
     void SetProgramSerializeStart()
     {
         programSerialize_ = true;
+    }
+
+    void SetBuiltinsSerializeStart()
+    {
+        builtinsSerialize_ = true;
+    }
+
+    void SetBuiltinsDeserializeStart()
+    {
+        builtinsDeserialize_ = true;
     }
 
     const CVector<uintptr_t> GetStringVector() const
@@ -80,16 +93,16 @@ private:
     void SetObjectEncodeField(uintptr_t obj, size_t offset, uint64_t value);
 
     EncodeBit SerializeObjectHeader(TaggedObject *objectHeader, size_t objectType, CQueue<TaggedObject *> *queue,
-                                    std::unordered_map<uint64_t, std::pair<uint64_t, ecmascript::EncodeBit>> *data);
+                                    std::unordered_map<uint64_t, ObjectEncode> *data);
     uint64_t SerializeTaggedField(JSTaggedType *tagged, CQueue<TaggedObject *> *queue,
-                                  std::unordered_map<uint64_t, std::pair<uint64_t, ecmascript::EncodeBit>> *data);
+                                  std::unordered_map<uint64_t, ObjectEncode> *data);
     void DeserializeField(TaggedObject *objectHeader);
     void DeserializeTaggedField(uint64_t *value);
     void DeserializeNativePointer(uint64_t *value);
     void DeserializeClassWord(TaggedObject *object);
     void DeserializePandaMethod(uintptr_t begin, uintptr_t end, JSMethod *methods, size_t &methodNums, size_t &others);
     void DeserializeSpaceObject(uintptr_t beginAddr, Space* space, size_t spaceObjSize);
-    void HandleRootObject(SnapshotType type, uintptr_t rootObjectAddr, size_t objType, size_t objIndex);
+    void HandleRootObject(SnapshotType type, uintptr_t rootObjectAddr, size_t objType, size_t &constSpecialIndex);
 
     EncodeBit NativePointerToEncodeBit(void *nativePointer);
     void *NativePointerEncodeBitToAddr(EncodeBit nativeBit);
@@ -106,6 +119,8 @@ private:
     SnapshotSpace *snapshotLocalSpace_ {nullptr};
     ObjectXRay objXRay_;
     bool programSerialize_ {false};
+    bool builtinsSerialize_ {false};
+    bool builtinsDeserialize_ {false};
     CVector<uintptr_t> pandaMethod_;
     CVector<uintptr_t> stringVector_;
     std::unordered_map<uint32_t, Region *> regionIndexMap_;

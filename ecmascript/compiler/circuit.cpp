@@ -19,16 +19,16 @@
 namespace panda::ecmascript::kungfu {
 Circuit::Circuit() : space_(), circuitSize_(0), gateCount_(0), time_(1), dataSection_()
 {
-    NewGate(OpCode(OpCode::CIRCUIT_ROOT), 0, {}, GateType::EMPTY);  // circuit root
+    NewGate(OpCode(OpCode::CIRCUIT_ROOT), 0, {}, GateType::Empty());  // circuit root
     auto circuitRoot = Circuit::GetCircuitRoot(OpCode(OpCode::CIRCUIT_ROOT));
-    NewGate(OpCode(OpCode::STATE_ENTRY), 0, {circuitRoot}, GateType::EMPTY);
-    NewGate(OpCode(OpCode::DEPEND_ENTRY), 0, {circuitRoot}, GateType::EMPTY);
-    NewGate(OpCode(OpCode::FRAMESTATE_ENTRY), 0, {circuitRoot}, GateType::EMPTY);
-    NewGate(OpCode(OpCode::RETURN_LIST), 0, {circuitRoot}, GateType::EMPTY);
-    NewGate(OpCode(OpCode::THROW_LIST), 0, {circuitRoot}, GateType::EMPTY);
-    NewGate(OpCode(OpCode::CONSTANT_LIST), 0, {circuitRoot}, GateType::EMPTY);
-    NewGate(OpCode(OpCode::ALLOCA_LIST), 0, {circuitRoot}, GateType::EMPTY);
-    NewGate(OpCode(OpCode::ARG_LIST), 0, {circuitRoot}, GateType::EMPTY);
+    NewGate(OpCode(OpCode::STATE_ENTRY), 0, {circuitRoot}, GateType::Empty());
+    NewGate(OpCode(OpCode::DEPEND_ENTRY), 0, {circuitRoot}, GateType::Empty());
+    NewGate(OpCode(OpCode::FRAMESTATE_ENTRY), 0, {circuitRoot}, GateType::Empty());
+    NewGate(OpCode(OpCode::RETURN_LIST), 0, {circuitRoot}, GateType::Empty());
+    NewGate(OpCode(OpCode::THROW_LIST), 0, {circuitRoot}, GateType::Empty());
+    NewGate(OpCode(OpCode::CONSTANT_LIST), 0, {circuitRoot}, GateType::Empty());
+    NewGate(OpCode(OpCode::ALLOCA_LIST), 0, {circuitRoot}, GateType::Empty());
+    NewGate(OpCode(OpCode::ARG_LIST), 0, {circuitRoot}, GateType::Empty());
 }
 
 uint8_t *Circuit::AllocateSpace(size_t gateSize)

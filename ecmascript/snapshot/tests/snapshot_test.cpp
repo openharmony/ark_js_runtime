@@ -248,4 +248,37 @@ HWTEST_F_L0(SnapshotTest, SerializeMultiFile)
     std::remove(fileName1.c_str());
     std::remove(fileName2.c_str());
 }
+
+HWTEST_F_L0(SnapshotTest, SerializeBuiltins)
+{
+    // generate builtins.snapshot file
+    JSRuntimeOptions options1;
+    options1.SetArkProperties(ArkProperties::ENABLE_SNAPSHOT_SERIALIZE);
+    EcmaVM *ecmaVm1 = EcmaVM::Create(options1);
+    EcmaVM::Destroy(ecmaVm1);
+
+    // create EcmaVM use builtins deserialzie
+    JSRuntimeOptions options2;
+    options2.SetArkProperties(ArkProperties::ENABLE_SNAPSHOT_DESERIALIZE);
+    EcmaVM *ecmaVm2 = EcmaVM::Create(options2);
+    EXPECT_TRUE(ecmaVm2->GetGlobalEnv()->GetClass()->GetObjectType() == JSType::GLOBAL_ENV);
+    auto globalConst = const_cast<GlobalEnvConstants *>(ecmaVm2->GetJSThread()->GlobalConstants());
+    size_t hclassEndIndex = globalConst->GetHClassEndIndex();
+    size_t hclassIndex = 0;
+    globalConst->VisitRangeSlot([&hclassIndex, &hclassEndIndex]([[maybe_unused]]Root type,
+                                                                ObjectSlot start, ObjectSlot end) {
+        while (start < end) {
+            JSTaggedValue object(start.GetTaggedType());
+            start++;
+            if (hclassIndex <= hclassEndIndex) {
+                EXPECT_TRUE(object.IsJSHClass());
+            }
+            hclassIndex++;
+        }
+    });
+    EcmaVM::Destroy(ecmaVm2);
+
+    CString fileName = "builtins.snapshot";
+    std::remove(fileName.c_str());
+}
 }  // namespace panda::test

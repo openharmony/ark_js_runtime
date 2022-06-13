@@ -41,7 +41,7 @@ JSTaggedValue JSAPILinkedListIterator::Next(EcmaRuntimeCallInfo *argv)
     if (linkedList->IsUndefined()) {
         return JSIterator::CreateIterResultObject(thread, undefinedHandle, true).GetTaggedValue();
     }
-    int index = iter->GetNextIndex();
+    int index = static_cast<int>(iter->GetNextIndex());
     int length = list->Length();
     if (index >= length) {
         iter->SetIteratedLinkedList(thread, undefinedHandle);

@@ -94,7 +94,7 @@ GateRef GateAccessor::GetDep(GateRef gate, size_t idx) const
 size_t GateAccessor::GetImmediateId(GateRef gate) const
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);
-    ASSERT(gatePtr->GetGateType() == GateType::NJS_VALUE);
+    ASSERT(gatePtr->GetGateType() == GateType::NJSValue());
     ASSERT(gatePtr->GetOpCode() == OpCode::CONSTANT);
     ASSERT(gatePtr->GetMachineType() == MachineType::I64);
     size_t imm = gatePtr->GetBitField();
@@ -174,5 +174,10 @@ void GateAccessor::DecreaseIn(UsesIterator &useIt)
     size_t idx = useIt.GetIndex();
     circuit_->DecreaseIn(*useIt, idx);
     useIt.SetChanged();
+}
+
+void GateAccessor::NewIn(GateRef gate, size_t idx, GateRef in)
+{
+    circuit_->NewIn(gate, idx, in);
 }
 }

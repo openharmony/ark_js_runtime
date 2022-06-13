@@ -157,7 +157,7 @@ inline GateRef Stub::TaggedArgument(size_t index)
 {
     GateRef argument = Argument(index);
     env_.GetCircuit()->SetOpCode(argument, OpCode(OpCode::ARG));
-    env_.GetCircuit()->SetGateType(argument, GateType::TAGGED_VALUE);
+    env_.GetCircuit()->SetGateType(argument, GateType::TaggedValue());
     env_.GetCircuit()->SetMachineType(argument, MachineType::I64);
     return argument;
 }
@@ -884,7 +884,7 @@ inline GateRef Stub::ChangeInt64ToInt32(GateRef val)
 inline GateRef Stub::ChangeInt64ToIntPtr(GateRef val)
 {
     if (env_.IsArch32Bit()) {
-        return env_.GetBulder()->UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT32), val);
+        return ChangeInt64ToInt32(val);
     }
     return val;
 }
@@ -895,6 +895,14 @@ inline GateRef Stub::ChangeInt32ToIntPtr(GateRef val)
         return val;
     }
     return ZExtInt32ToInt64(val);
+}
+
+inline GateRef Stub::ChangeIntPtrToInt32(GateRef val)
+{
+    if (env_.IsArch32Bit()) {
+        return val;
+    }
+    return ChangeInt64ToInt32(val);
 }
 
 inline GateRef Stub::GetSetterFromAccessor(GateRef accessor)
@@ -909,10 +917,10 @@ inline GateRef Stub::GetElementsArray(GateRef object)
     return Load(VariableType::JS_POINTER(), object, elementsOffset);
 }
 
-inline void Stub::SetElementsArray(GateRef glue, GateRef object, GateRef elementsArray)
+inline void Stub::SetElementsArray(VariableType type, GateRef glue, GateRef object, GateRef elementsArray)
 {
     GateRef elementsOffset = IntPtr(JSObject::ELEMENTS_OFFSET);
-    Store(VariableType::JS_POINTER(), glue, object, elementsOffset, elementsArray);
+    Store(type, glue, object, elementsOffset, elementsArray);
 }
 
 inline GateRef Stub::GetPropertiesArray(GateRef object)
@@ -922,10 +930,16 @@ inline GateRef Stub::GetPropertiesArray(GateRef object)
 }
 
 // SetProperties in js_object.h
-inline void Stub::SetPropertiesArray(GateRef glue, GateRef object, GateRef propsArray)
+inline void Stub::SetPropertiesArray(VariableType type, GateRef glue, GateRef object, GateRef propsArray)
 {
     GateRef propertiesOffset = IntPtr(JSObject::PROPERTIES_OFFSET);
-    Store(VariableType::JS_POINTER(), glue, object, propertiesOffset, propsArray);
+    Store(type, glue, object, propertiesOffset, propsArray);
+}
+
+inline void Stub::SetHash(GateRef glue, GateRef object, GateRef hash)
+{
+    GateRef hashOffset = IntPtr(ECMAObject::HASH_OFFSET);
+    Store(VariableType::INT64(), glue, object, hashOffset, hash);
 }
 
 inline GateRef Stub::GetLengthOfTaggedArray(GateRef array)
@@ -1043,31 +1057,16 @@ inline GateRef Stub::IsExtensible(GateRef object)
         Int32(0));
 }
 
-inline GateRef Stub::IsEcmaObject(GateRef obj)
+inline GateRef Stub::TaggedObjectIsEcmaObject(GateRef obj)
 {
-    auto env = GetEnvironment();
-    Label subentry(env);
-    env->SubCfgEntry(&subentry);
-    Label exit(env);
-    Label isHeapObject(env);
-    DEFVARIABLE(result, VariableType::BOOL(), False());
-    Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
-    Bind(&isHeapObject);
-    {
-        GateRef objectType = GetObjectType(LoadHClass(obj));
-        auto ret1 = Int32And(
-            ZExtInt1ToInt32(
-                Int32LessThanOrEqual(objectType, Int32(static_cast<int32_t>(JSType::ECMA_OBJECT_END)))),
-            ZExtInt1ToInt32(
-                Int32GreaterThanOrEqual(objectType,
-                    Int32(static_cast<int32_t>(JSType::ECMA_OBJECT_BEGIN)))));
-        result = TruncInt32ToInt1(ret1);
-        Jump(&exit);
-    }
-    Bind(&exit);
-    auto ret = *result;
-    env->SubCfgExit();
-    return ret;
+    GateRef objectType = GetObjectType(LoadHClass(obj));
+    auto ret = Int32And(
+        ZExtInt1ToInt32(
+            Int32LessThanOrEqual(objectType, Int32(static_cast<int32_t>(JSType::ECMA_OBJECT_END)))),
+        ZExtInt1ToInt32(
+            Int32GreaterThanOrEqual(objectType,
+                Int32(static_cast<int32_t>(JSType::ECMA_OBJECT_BEGIN)))));
+    return TruncInt32ToInt1(ret);
 }
 
 inline GateRef Stub::IsJSObject(GateRef obj)

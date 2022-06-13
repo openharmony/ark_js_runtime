@@ -289,13 +289,21 @@ private:
     {
         return enableLog_;
     }
-    LLVMValueRef GetFunction(LLVMValueRef glue, StubIdType id, bool isDebug = false);
+    LLVMValueRef GetFunction(LLVMValueRef glue, const CallSignature *signature, LLVMValueRef rtbaseoffset);
     bool IsInterpreted();
     bool IsOptimized();
     void SetGCLeafFunction(LLVMValueRef call);
     void SetCallConvAttr(const CallSignature *calleeDescriptor, LLVMValueRef call);
 
 private:
+    LLVMValueRef GetGlue(const std::vector<GateRef> &inList);
+    LLVMValueRef GetRTStubOffset(LLVMValueRef glue, int index);
+    LLVMValueRef GetCoStubOffset(LLVMValueRef glue, int index);
+    LLVMValueRef GetBCStubOffset(LLVMValueRef glue);
+    LLVMValueRef GetBCDebugStubOffset(LLVMValueRef glue);
+    bool NeedBCOffset(OpCode op);
+    void ComputeArgCountAndBCOffset(size_t &actualNumArgs, LLVMValueRef &bcOffset, const std::vector<GateRef> &inList,
+                                    OpCode op);
     const CompilationConfig *compCfg_ {nullptr};
     const std::vector<std::vector<GateRef>> *scheduledGates_ {nullptr};
     const Circuit *circuit_ {nullptr};

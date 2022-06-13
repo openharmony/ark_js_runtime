@@ -323,6 +323,42 @@ struct BytecodeInfo {
     {
         return !IsMov() && !IsJump() && !IsReturn() && !IsSetConstant() && !IsDiscarded();
     }
+
+    bool IsCall() const
+    {
+        auto ecmaOpcode = static_cast<EcmaOpcode>(opcode);
+        switch (ecmaOpcode) {
+            case EcmaOpcode::CALLARG0DYN_PREF_V8:
+            case EcmaOpcode::CALLARG1DYN_PREF_V8_V8:
+            case EcmaOpcode::CALLARGS2DYN_PREF_V8_V8_V8:
+            case EcmaOpcode::CALLARGS3DYN_PREF_V8_V8_V8_V8:
+            case EcmaOpcode::CALLITHISRANGEDYN_PREF_IMM16_V8:
+            case EcmaOpcode::CALLIRANGEDYN_PREF_IMM16_V8:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    size_t ComputeBCOffsetInputCount() const
+    {
+        return IsCall() ? 1 : 0;
+    }
+
+    size_t ComputeValueInputCount() const
+    {
+        return (accIn ? 1 : 0) + inputs.size();
+    }
+
+    size_t ComputeOutCount() const
+    {
+        return accOut ? 1 : 0;
+    }
+
+    size_t ComputeTotalValueCount() const
+    {
+        return ComputeValueInputCount() + ComputeBCOffsetInputCount();
+    }
 };
 
 enum BytecodeOffset {
@@ -444,10 +480,11 @@ private:
     void NewJump(BytecodeRegion &bb, const uint8_t *pc, GateRef &state, GateRef &depend);
     void NewReturn(BytecodeRegion &bb, const uint8_t *pc, GateRef &state, GateRef &depend);
     void NewByteCode(BytecodeRegion &bb, const uint8_t *pc, GateRef &state, GateRef &depend);
+    void AddBytecodeOffsetInfo(GateRef &gate, const BytecodeInfo &info, size_t bcOffsetIndex, uint8_t *pc);
     void BuildSubCircuit();
     GateRef NewPhi(BytecodeRegion &bb, uint16_t reg, bool acc);
     GateRef RenameVariable(const size_t bbId, const uint8_t *end,
-        const uint16_t reg, const bool acc, GateType gateType = GateType::JS_ANY);
+        const uint16_t reg, const bool acc, GateType gateType = GateType::AnyType());
     void BuildCircuit();
 
     void PrintCollectBlockInfo(std::vector<CfgInfo> &bytecodeBlockInfos);
@@ -474,6 +511,7 @@ private:
     const std::vector<uint8_t *> pcArray_;
     JSHandle<JSTaggedValue> constantPool_;
     bool enableLog_ {false};
+    std::map<uint8_t *, int32_t> pcToBCOffset_;
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_CLASS_LINKER_BYTECODE_CIRCUIT_IR_BUILDER_H

@@ -249,7 +249,8 @@ enum class FrameType: uintptr_t {
     INTERPRETER_FAST_NEW_FRAME = 11,
     INTERPRETER_ENTRY_FRAME = 12,
     ASM_INTERPRETER_ENTRY_FRAME = 13,
-    OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME = 14,
+    ASM_INTERPRETER_BRIDGE_FRAME = 14,
+    OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME = 15,
 
     INTERPRETER_BEGIN = INTERPRETER_FRAME,
     INTERPRETER_END = INTERPRETER_FAST_NEW_FRAME,
@@ -577,7 +578,7 @@ struct AsmInterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTyp
     // args, may be truncated if not extra
     // thisObject, used in asm constructor frame
     // numArgs, used if extra or asm constructor frame
-    enum ReverseIndex : int32_t { NUM_ARGS_REVERSE_INDEX = -1, THIS_OBJECT_REVERSE_INDEX = -2 };
+    enum ReverseIndex : int32_t { THIS_OBJECT_REVERSE_INDEX = -2 };
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(AsmInterpretedFrame), AsmInterpretedFrame::SizeArch32, AsmInterpretedFrame::SizeArch64);
 
@@ -606,6 +607,10 @@ struct InterpretedEntryFrame : public base::AlignedStruct<JSTaggedValue::TaggedT
     alignas(EAS) InterpretedFrameBase base;
 };
 
+STATIC_ASSERT_EQ_ARCH(sizeof(InterpretedEntryFrame),
+                      InterpretedEntryFrame::SizeArch32,
+                      InterpretedEntryFrame::SizeArch64);
+
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct AsmInterpretedEntryFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
                                                              base::AlignedPointer,
@@ -622,18 +627,42 @@ struct AsmInterpretedEntryFrame : public base::AlignedStruct<JSTaggedValue::Tagg
         return base.prev;
     }
 
-    static InterpretedEntryFrame* GetFrameFromSp(const JSTaggedType *sp)
+    static AsmInterpretedEntryFrame* GetFrameFromSp(const JSTaggedType *sp)
     {
-        return reinterpret_cast<InterpretedEntryFrame *>(const_cast<JSTaggedType *>(sp)) - 1;
+        return reinterpret_cast<AsmInterpretedEntryFrame *>(const_cast<JSTaggedType *>(sp)) - 1;
     }
 
     alignas(EAS) const uint8_t *pc {nullptr};
     alignas(EAS) InterpretedFrameBase base;
 };
 
-STATIC_ASSERT_EQ_ARCH(sizeof(InterpretedEntryFrame),
-                      InterpretedEntryFrame::SizeArch32,
-                      InterpretedEntryFrame::SizeArch64);
+struct AsmInterpretedBridgeFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
+                                                              AsmInterpretedEntryFrame,
+                                                              base::AlignedPointer> {
+    enum class Index : size_t {
+        EntryIndex = 0,
+        ReturnAddrIndex,
+        NumOfMembers
+    };
+    static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
+
+    static AsmInterpretedBridgeFrame* GetFrameFromSp(const JSTaggedType *sp)
+    {
+        return reinterpret_cast<AsmInterpretedBridgeFrame *>(reinterpret_cast<uintptr_t>(sp) -
+            MEMBER_OFFSET(AsmInterpretedBridgeFrame, returnAddr));
+    }
+    uintptr_t GetCallSiteSp()
+    {
+        return ToUintPtr(this) + sizeof(AsmInterpretedBridgeFrame);
+    }
+    inline JSTaggedType* GetPrevFrameFp()
+    {
+        return entry.base.prev;
+    }
+
+    alignas(EAS) AsmInterpretedEntryFrame entry;
+    alignas(EAS) uintptr_t returnAddr;
+};
 
 struct OptimizedLeaveFrame {
     FrameType type;

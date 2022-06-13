@@ -229,8 +229,8 @@ GateRef InterpreterStub::GetConstpoolFromFunction(GateRef function)
 // only use for fast new, not universal API
 GateRef InterpreterStub::GetThisObjectFromFastNewFrame(GateRef prevSp)
 {
-    GateRef currentSpEnd = PointerSub(prevSp, IntPtr(AsmInterpretedFrame::GetSize(GetEnvironment()->IsArch32Bit())));
-    return GetVregValue(currentSpEnd, IntPtr(AsmInterpretedFrame::ReverseIndex::THIS_OBJECT_REVERSE_INDEX));
+    auto idx = AsmInterpretedFrame::ReverseIndex::THIS_OBJECT_REVERSE_INDEX;
+    return Load(VariableType::JS_ANY(), prevSp, IntPtr(idx * sizeof(JSTaggedType)));
 }
 
 GateRef InterpreterStub::GetResumeModeFromGeneratorObject(GateRef obj)
@@ -533,6 +533,15 @@ void InterpreterStub::SetHotnessCounter(GateRef glue, GateRef method, GateRef va
     GateRef newValue = env->GetBulder()->UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT16), value);
     Store(VariableType::INT16(), glue, method,
           IntPtr(JSMethod::GetHotnessCounterOffset(env->IsArch32Bit())), newValue);
+}
+
+void InterpreterStub::DispatchWithId(GateRef glue, GateRef sp, GateRef pc, GateRef constpool,
+                                     GateRef profileTypeInfo, GateRef acc,
+                                     GateRef hotnessCounter, int index)
+{
+    GateRef target = PtrMul(IntPtr(index), IntPtrSize());
+    DispatchBase(target, glue, sp, pc, constpool, profileTypeInfo, acc, hotnessCounter);
+    Return();
 }
 } //  namespace panda::ecmascript::kungfu
 #endif // ECMASCRIPT_COMPILER_INTERPRETER_STUB_INL_H

@@ -87,6 +87,30 @@ HWTEST_F_L0(DebuggerEventsTest, BreakpointResolvedToObjectTest)
     ASSERT_TRUE(result->IsObject());
 }
 
+HWTEST_F_L0(DebuggerEventsTest, BreakpointResolvedToJsonTest)
+{
+    BreakpointResolved breakpointResolved;
+
+    auto location = std::make_unique<Location>();
+    location->SetScriptId(2).SetLine(99);
+    breakpointResolved.SetBreakpointId("00").SetLocation(std::move(location));
+
+    std::unique_ptr<PtJson> json;
+    ASSERT_EQ(breakpointResolved.ToJson()->GetObject("params", &json), Result::SUCCESS);
+    std::string breakpointId;
+    ASSERT_EQ(json->GetString("breakpointId", &breakpointId), Result::SUCCESS);
+    EXPECT_EQ(breakpointId, "00");
+
+    std::unique_ptr<PtJson> locationJson;
+    ASSERT_EQ(json->GetObject("location", &locationJson), Result::SUCCESS);
+    std::string scriptId;
+    ASSERT_EQ(locationJson->GetString("scriptId", &scriptId), Result::SUCCESS);
+    EXPECT_EQ(scriptId, "2");
+    int32_t lineNumber;
+    ASSERT_EQ(locationJson->GetInt("lineNumber", &lineNumber), Result::SUCCESS);
+    EXPECT_EQ(lineNumber, 99);
+}
+
 HWTEST_F_L0(DebuggerEventsTest, PausedToObjectTest)
 {
     Paused paused;

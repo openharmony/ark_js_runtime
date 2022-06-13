@@ -78,7 +78,7 @@ HWTEST_F_L0(DebuggerReturnsTest, SetBreakpointByUrlReturnsToObjectTest)
     std::unique_ptr<Location> location = std::make_unique<Location>();
     location->SetScriptId(1);
     locations.emplace_back(std::move(location));
-    ASSERT_EQ(locations.back()->GetScriptId(), 1U);
+    ASSERT_EQ(locations.back()->GetScriptId(), 1);
 
     std::unique_ptr<SetBreakpointByUrlReturns> setBreakpointByUrlReturns
                      = std::make_unique<SetBreakpointByUrlReturns>("11", std::move(locations));
@@ -208,7 +208,7 @@ HWTEST_F_L0(DebuggerReturnsTest, SetScriptSourceReturnsToObjectTest)
 
     ASSERT_NE(setScriptSourceReturns, nullptr);
     exceptionDetails->SetScriptId(5);
-    ASSERT_EQ(exceptionDetails->GetScriptId(), 5U);
+    ASSERT_EQ(exceptionDetails->GetScriptId(), 5);
 }
 
 HWTEST_F_L0(DebuggerReturnsTest, GetPropertiesReturnsToObjectTest)
@@ -220,7 +220,7 @@ HWTEST_F_L0(DebuggerReturnsTest, GetPropertiesReturnsToObjectTest)
                                                         <GetPropertiesReturns>(std::move(descriptor));
     ASSERT_NE(getPropertiesReturns, nullptr);
     exceptionDetails->SetScriptId(6);
-    ASSERT_EQ(exceptionDetails->GetScriptId(), 6U);
+    ASSERT_EQ(exceptionDetails->GetScriptId(), 6);
 
     Local<ArrayRef> getObject = getPropertiesReturns->ToObject(ecmaVm);
     Local<StringRef> tmpStr = StringRef::NewFromUtf8(ecmaVm, "result");

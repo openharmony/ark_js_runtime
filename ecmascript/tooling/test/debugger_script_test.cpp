@@ -60,7 +60,7 @@ HWTEST_F_L0(DebuggerScriptTest, ScriptIdTest)
 {
     std::unique_ptr<PtScript> script = std::make_unique<PtScript>(1, "name_1", "url_1", "source_1");
     script->SetScriptId(100);
-    ASSERT_EQ(script->GetScriptId(), 100U);
+    ASSERT_EQ(script->GetScriptId(), 100);
 }
 
 HWTEST_F_L0(DebuggerScriptTest, FileNameTest)

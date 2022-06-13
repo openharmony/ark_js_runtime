@@ -605,6 +605,9 @@ public:
     bool IsTSFunctionType() const;
     bool IsTSArrayType() const;
 
+    bool IsJSCjsExports() const;
+    bool IsJSCjsModule() const;
+    bool IsJSCjsRequire() const;
     bool IsModuleRecord() const;
     bool IsSourceTextModule() const;
     bool IsImportEntry() const;

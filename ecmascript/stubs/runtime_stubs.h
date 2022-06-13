@@ -39,13 +39,14 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
     V(CallRuntime)                           \
     V(AsmInterpreterEntry)                   \
     V(GeneratorReEnterAsmInterp)             \
-    V(JSCallDispatch)                        \
     V(PushCallArgsAndDispatchNative)         \
     V(PushCallArgs0AndDispatch)              \
     V(PushCallArgs1AndDispatch)              \
     V(PushCallArgs2AndDispatch)              \
     V(PushCallArgs3AndDispatch)              \
     V(PushCallIRangeAndDispatch)             \
+    V(PushCallNewAndDispatch)                \
+    V(PushCallNewAndDispatchNative)          \
     V(PushCallIRangeAndDispatchNative)       \
     V(PushCallIThisRangeAndDispatch)         \
     V(ResumeRspAndDispatch)                  \
@@ -221,10 +222,10 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
     V(SuspendAotGenerator)                \
     V(NewAotObjDynRange)
 
-#define RUNTIME_STUB_LIST(V)                 \
-    RUNTIME_ASM_STUB_LIST(V)                 \
-    RUNTIME_STUB_WITHOUT_GC_LIST(V)          \
-    RUNTIME_STUB_WITH_GC_LIST(V)             \
+#define RUNTIME_STUB_LIST(V)                     \
+    RUNTIME_ASM_STUB_LIST(V)                     \
+    RUNTIME_STUB_WITHOUT_GC_LIST(V)              \
+    RUNTIME_STUB_WITH_GC_LIST(V)                 \
     TEST_RUNTIME_STUB_GC_LIST(V)
 
 class RuntimeStubs {

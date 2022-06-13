@@ -36,6 +36,19 @@ Local<ObjectRef> BreakpointResolved::ToObject(const EcmaVM *ecmaVm) const
     return object;
 }
 
+std::unique_ptr<PtJson> BreakpointResolved::ToJson() const
+{
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
+    result->Add("breakpointId", breakpointId_.c_str());
+    result->Add("location", location_->ToJson());
+
+    std::unique_ptr<PtJson> object = PtJson::CreateObject();
+    object->Add("method", GetName().c_str());
+    object->Add("params", result);
+
+    return object;
+}
+
 Local<ObjectRef> Paused::ToObject(const EcmaVM *ecmaVm) const
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
@@ -315,7 +328,7 @@ Local<ObjectRef> PreciseCoverageDeltaUpdate::ToObject(const EcmaVM *ecmaVm) cons
     Local<ObjectRef> params = NewObject(ecmaVm);
 
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "timestamp")),
-        IntegerRef::New(ecmaVm, timestamp_));
+        NumberRef::New(ecmaVm, timestamp_));
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "occasion")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, occasion_.c_str())));

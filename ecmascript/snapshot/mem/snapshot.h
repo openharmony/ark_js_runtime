@@ -37,7 +37,8 @@ public:
 
     void Serialize(TaggedObject *objectHeader, const panda_file::File *pf, const CString &fileName = "./snapshot");
     void Serialize(uintptr_t startAddr, size_t size, const CString &fileName = "./snapshot");
-    const JSPandaFile *Deserialize(SnapshotType type, const CString &snapshotFile = "./snapshot");
+    void SerializeBuiltins(const CString &fileName = "./snapshot");
+    const JSPandaFile *Deserialize(SnapshotType type, const CString &snapshotFile, bool isBuiltins = false);
 
 private:
     struct Header {

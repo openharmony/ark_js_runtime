@@ -21,6 +21,7 @@
 #include "ecmascript/frames.h"
 
 namespace panda::ecmascript::aarch64 {
+using Label = panda::ecmascript::Label;
 class AssemblerStubs {
 public:
     static const int FRAME_SLOT_SIZE = 8;
@@ -63,6 +64,8 @@ public:
 
     static void GeneratorReEnterAsmInterp(ExtendedAssembler *assembler);
 
+    static void GeneratorReEnterAsmInterpDispatch(ExtendedAssembler *assembler);
+
     static void PushCallIThisRangeAndDispatch(ExtendedAssembler *assembler);
 
     static void PushCallIRangeAndDispatch(ExtendedAssembler *assembler);
@@ -78,6 +81,10 @@ public:
     static void PushCallIThisRangeAndDispatchNative(ExtendedAssembler *assembler);
 
     static void PushCallIRangeAndDispatchNative(ExtendedAssembler *assembler);
+
+    static void PushCallNewAndDispatchNative(ExtendedAssembler *assembler);
+
+    static void PushCallNewAndDispatch(ExtendedAssembler *assembler);
 
     static void PushCallArgsAndDispatchNative(ExtendedAssembler *assembler);
 
@@ -96,35 +103,9 @@ public:
 private:
     static void JSCallBody(ExtendedAssembler *assembler, Register jsfunc);
 
-    static void CallIThisRangeNoExtraEntry(ExtendedAssembler *assembler);
+    static void PushCallThis(ExtendedAssembler *assembler, JSCallMode mode);
 
-    static void CallIRangeNoExtraEntry(ExtendedAssembler *assembler);
-
-    static void Callargs3NoExtraEntry(ExtendedAssembler *assembler);
-
-    static void Callargs2NoExtraEntry(ExtendedAssembler *assembler);
-
-    static void Callargs1NoExtraEntry(ExtendedAssembler *assembler);
-
-    static void Callargs0NoExtraEntry(ExtendedAssembler *assembler);
-
-    static void CallIThisRangeEntry(ExtendedAssembler *assembler);
-
-    static void PushCallThis(ExtendedAssembler *assembler, Register thisRegister, bool isUndefined);
-
-    static void CallIRangeEntry(ExtendedAssembler *assembler);
-
-    static void Callargs3Entry(ExtendedAssembler *assembler);
-
-    static void Callargs2Entry(ExtendedAssembler *assembler);
-
-    static void Callarg1Entry(ExtendedAssembler *assembler);
-
-    static void PushCallThisUndefined(ExtendedAssembler *assembler);
-
-    static void PushNewTarget(ExtendedAssembler *assembler);
-
-    static void PushCallTarget(ExtendedAssembler *assembler);
+    static Register GetThisRegsiter(ExtendedAssembler *assembler, JSCallMode mode);
 
     static void PushVregs(ExtendedAssembler *assembler);
 
@@ -138,18 +119,10 @@ private:
     static void PushFrameState(ExtendedAssembler *assembler, Register prevSp, Register fp, Register callTarget,
         Register method, Register pc, Register op);
 
-    using AssemblerClosure = std::function<void(ExtendedAssembler *assembler)>;
-    static void JSCallCommonEntry(ExtendedAssembler *assembler, JSCallMode mode,
-                                  const AssemblerClosure& fastEntry, const AssemblerClosure& slowEntry);
+    static void JSCallCommonEntry(ExtendedAssembler *assembler, JSCallMode mode);
+    static void JSCallCommonFastPath(ExtendedAssembler *assembler, JSCallMode mode, Label *pushCallThis);
     static void JSCallCommonSlowPath(ExtendedAssembler *assembler, JSCallMode mode,
-                                     const AssemblerClosure& entry,
-                                     const AssemblerClosure& extraEntry);
-    static void PushCallIThisRangeAndDispatchSlowPath(ExtendedAssembler *assembler);
-    static void PushCallIRangeAndDispatchSlowPath(ExtendedAssembler *assembler);
-    static void PushCallArgs3AndDispatchSlowPath(ExtendedAssembler *assembler);
-    static void PushCallArgs2AndDispatchSlowPath(ExtendedAssembler *assembler);
-    static void PushCallArgs1AndDispatchSlowPath(ExtendedAssembler *assembler);
-    static void PushCallArgs0AndDispatchSlowPath(ExtendedAssembler *assembler);
+                                     Label *fastPathEntry, Label *pushCallThis);
 
     static void GetNumVregsFromCallField(ExtendedAssembler *assembler, Register callField, Register numVregs);
 
@@ -181,6 +154,8 @@ private:
 
     static void CallNativeEntry(ExtendedAssembler *assembler);
 
+    static void CallNativeWithArgv(ExtendedAssembler *assembler, bool callNew);
+
     static void PushArgsFastPath(ExtendedAssembler *assembler,
         Register &glue, Register &argc, Register &argv, Register &callTarget,
         Register &method, Register &prevSp, Register &fp, Register &callField);
@@ -188,12 +163,7 @@ private:
     static void PushArgsSlowPath(ExtendedAssembler *assembler, Register &glueRegister,
         Register &declaredNumArgsRegister, Register &argcRegister, Register &argvRegister, Register &callTargetRegister,
         Register &methodRegister, Register &prevSpRegister, Register &callFieldRegister);
-
-    static void CallGetterSlow(ExtendedAssembler *assembler);
-    static void CallSetterSlow(ExtendedAssembler *assembler);
-    static void CallGetterEntry(ExtendedAssembler *assembler);
-    static void CallSetterEntry(ExtendedAssembler *assembler);
-    static void CallNoExtraSetterEntry(ExtendedAssembler *assembler);
+    static void OptimizedCallAsmInterpreter(ExtendedAssembler *assembler);
 };
 }  // namespace panda::ecmascript::x64
 #endif  // ECMASCRIPT_COMPILER_ASSEMBLER_MODULE_X64_H

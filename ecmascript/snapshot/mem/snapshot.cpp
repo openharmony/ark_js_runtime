@@ -38,14 +38,12 @@ void Snapshot::Serialize(TaggedObject *objectHeader, const panda_file::File *pf,
 {
     std::pair<bool, CString> filePath = VerifyFilePath(fileName, true);
     if (!filePath.first) {
-        LOG(ERROR, RUNTIME) << "snapshot file path error";
-        return;
+        LOG_ECMA(FATAL) << "snapshot file path error";
     }
     std::fstream writer(fileName.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
     if (!writer.good()) {
         writer.close();
-        LOG(DEBUG, RUNTIME) << "snapshot open file failed";
-        return;
+        LOG_ECMA(FATAL) << "snapshot open file failed";
     }
 
     SnapshotProcessor processor(vm_);
@@ -60,20 +58,8 @@ void Snapshot::Serialize(TaggedObject *objectHeader, const panda_file::File *pf,
     }
 
     processor.EncodeTaggedObject(objectHeader, &objectQueue, &data);
-
     size_t rootObjSize = objectQueue.size();
-
-    while (!objectQueue.empty()) {
-        auto taggedObject = objectQueue.front();
-        if (taggedObject == nullptr) {
-            break;
-        }
-        objectQueue.pop();
-
-        processor.SerializeObject(taggedObject, &objectQueue, &data);
-    }
-    processor.StopAllocate();
-
+    processor.ProcessObjectQueue(&objectQueue, &data);
     WriteToFile(writer, pf, rootObjSize, processor);
     vm_->GetSnapshotEnv()->ClearEnvMap();
 }
@@ -82,14 +68,12 @@ void Snapshot::Serialize(uintptr_t startAddr, size_t size, const CString &fileNa
 {
     std::pair<bool, CString> filePath = VerifyFilePath(fileName, true);
     if (!filePath.first) {
-        LOG(ERROR, RUNTIME) << "snapshot file path error";
-        return;
+        LOG_ECMA(FATAL) << "snapshot file path error";
     }
     std::fstream writer(fileName.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
     if (!writer.good()) {
         writer.close();
-        LOG(DEBUG, RUNTIME) << "snapshot open file failed";
-        return;
+        LOG_ECMA(FATAL) << "snapshot open file failed";
     }
 
     SnapshotProcessor processor(vm_);
@@ -101,32 +85,55 @@ void Snapshot::Serialize(uintptr_t startAddr, size_t size, const CString &fileNa
 
     ObjectSlot start(startAddr);
     ObjectSlot end(startAddr + size * sizeof(JSTaggedType));
-
     processor.EncodeTaggedObjectRange(start, end, &objectQueue, &data);
-    while (!objectQueue.empty()) {
-        auto taggedObject = objectQueue.front();
-        if (taggedObject == nullptr) {
-            break;
-        }
-        objectQueue.pop();
-        processor.SerializeObject(taggedObject, &objectQueue, &data);
-    }
 
-    processor.StopAllocate();
-
+    processor.ProcessObjectQueue(&objectQueue, &data);
     WriteToFile(writer, nullptr, size, processor);
     vm_->GetSnapshotEnv()->ClearEnvMap();
 }
 
-const JSPandaFile *Snapshot::Deserialize(SnapshotType type, const CString &snapshotFile)
+void Snapshot::SerializeBuiltins(const CString &fileName)
 {
-    SnapshotProcessor processor(vm_);
-    std::pair<bool, CString> filePath = VerifyFilePath(snapshotFile, false);
+    std::pair<bool, CString> filePath = VerifyFilePath(fileName, true);
     if (!filePath.first) {
-        LOG(ERROR, RUNTIME) << "snapshot file path error";
-        return nullptr;
+        LOG_ECMA(FATAL) << "snapshot file path error";
+    }
+    // if builtins.snapshot file has exist, return directly
+    if (!filePath.second.empty()) {
+        return;
+    }
+    std::fstream write(fileName.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
+    if (!write.good()) {
+        write.close();
+        LOG_ECMA(FATAL) << "snapshot open file failed";
     }
 
+    SnapshotProcessor processor(vm_);
+    processor.Initialize();
+    processor.SetBuiltinsSerializeStart();
+
+    std::unordered_map<uint64_t, std::pair<uint64_t, EncodeBit>> data;
+    CQueue<TaggedObject *> objectQueue;
+
+    auto globalEnvHandle = vm_->GetGlobalEnv();
+    auto constant = const_cast<GlobalEnvConstants *>(vm_->GetJSThread()->GlobalConstants());
+    constant->VisitRangeSlot([&objectQueue, &data, &processor]([[maybe_unused]]Root type,
+                                                               ObjectSlot start, ObjectSlot end) {
+        processor.EncodeTaggedObjectRange(start, end, &objectQueue, &data);
+    });
+    processor.EncodeTaggedObject(*globalEnvHandle, &objectQueue, &data);
+    size_t rootObjSize = objectQueue.size();
+    processor.ProcessObjectQueue(&objectQueue, &data);
+    WriteToFile(write, nullptr, rootObjSize, processor);
+}
+
+const JSPandaFile *Snapshot::Deserialize(SnapshotType type, const CString &snapshotFile, bool isBuiltins)
+{
+    std::pair<bool, CString> filePath = VerifyFilePath(snapshotFile, false);
+    if (!filePath.first) {
+        LOG_ECMA(FATAL) << "snapshot file path error";
+        UNREACHABLE();
+    }
     int fd = open(filePath.second.c_str(), O_CLOEXEC);  // NOLINT(cppcoreguidelines-pro-type-vararg)
     if (UNLIKELY(fd == -1)) {
         LOG_ECMA(FATAL) << "open file failed";
@@ -136,6 +143,12 @@ const JSPandaFile *Snapshot::Deserialize(SnapshotType type, const CString &snaps
     if (file_size == -1) {
         LOG_ECMA(FATAL) << "lseek failed";
         UNREACHABLE();
+    }
+
+    SnapshotProcessor processor(vm_);
+    if (isBuiltins) {
+        processor.SetBuiltinsDeserializeStart();
+        processor.GeneratedNativeMethod();
     }
     auto readFile = ToUintPtr(mmap(nullptr, file_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0));
     auto hdr = *ToNativePtr<const Header>(readFile);
@@ -184,7 +197,7 @@ std::pair<bool, CString> Snapshot::VerifyFilePath(const CString &filePath, bool 
     CVector<char> resolvedPath(PATH_MAX);
     auto result = realpath(filePath.c_str(), resolvedPath.data());
     if (toGenerate && errno == ENOENT) {
-        return std::make_pair(true, CString(resolvedPath.data()));
+        return std::make_pair(true, "");
     }
     if (!result) {
         return std::make_pair(false, "");

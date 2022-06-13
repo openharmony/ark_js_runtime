@@ -122,6 +122,9 @@ class ModuleNamespace;
 class ImportEntry;
 class ExportEntry;
 class SourceTextModule;
+class JSCjsModule;
+class JSCjsRequire;
+class JSCjsExports;
 class ResolvedBinding;
 class BigInt;
 class CellRecord;
@@ -171,7 +174,7 @@ public:
     void GenerateInternalNativeMethods();
     JSMethod *GetMethodByIndex(MethodIndex idx);
     JSMethod *NewMethodForNativeFunction(const void *func);
-    JSMethod *NewMethodForAOTFunction(const void *func, size_t numArgs);
+    JSMethod *NewMethodForAOTFunction(const void *func, size_t numArgs, const JSPandaFile *pf, uint32_t methodId);
 
     JSHandle<ProfileTypeInfo> NewProfileTypeInfo(uint32_t length);
     JSHandle<ConstantPool> NewConstantPool(uint32_t capacity);
@@ -478,6 +481,11 @@ public:
     JSHandle<ResolvedBinding> NewResolvedBindingRecord(const JSHandle<SourceTextModule> &module,
                                                        const JSHandle<JSTaggedValue> &bindingName);
     JSHandle<CellRecord> NewCellRecord();
+
+    // --------------------------------------require--------------------------------------------
+    JSHandle<JSCjsModule> NewCjsModule();
+    JSHandle<JSCjsExports> NewCjsExports();
+    JSHandle<JSCjsRequire> NewCjsRequire();
 
 private:
     friend class GlobalEnv;
