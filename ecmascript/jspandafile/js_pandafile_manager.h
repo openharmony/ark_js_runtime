@@ -43,9 +43,9 @@ public:
     const JSPandaFile* LoadAotInfoFromPf(const CString &filename, std::string_view entryPoint,
                                          std::vector<MethodPcInfo> *methodPcInfos);
 
-    const JSPandaFile *LoadJSPandaFile(const CString &filename, std::string_view entryPoint);
+    const JSPandaFile *LoadJSPandaFile(JSThread *thread, const CString &filename, std::string_view entryPoint);
 
-    const JSPandaFile *LoadJSPandaFile(const CString &filename, std::string_view entryPoint,
+    const JSPandaFile *LoadJSPandaFile(JSThread *thread, const CString &filename, std::string_view entryPoint,
                                        const void *buffer, size_t size);
 
     JSPandaFile *OpenJSPandaFile(const CString &filename);
@@ -78,7 +78,7 @@ private:
         static void FreeBuffer(void *mem);
     };
 
-    const JSPandaFile *GenerateJSPandaFile(const panda_file::File *pf, const CString &desc,
+    const JSPandaFile *GenerateJSPandaFile(JSThread *thread, const panda_file::File *pf, const CString &desc,
                                            std::string_view entryPoint);
     void ReleaseJSPandaFile(const JSPandaFile *jsPandaFile);
     const JSPandaFile *GetJSPandaFile(const panda_file::File *pf);

@@ -157,7 +157,7 @@ public:
     }
 
     void AddStubEntry(CallSignature::TargetKind kind, int indexInKind, uint64_t offset,
-    uint32_t moduleIndex, int delta, uint32_t size)
+                      uint32_t moduleIndex, int delta, uint32_t size)
     {
         FuncEntryDes des;
         des.kind_ = kind;
@@ -256,6 +256,7 @@ public:
     }
 
     void UpdateJSMethods(JSHandle<JSFunction> mainFunc, const JSPandaFile *jsPandaFile);
+    bool hasLoaded(const JSPandaFile *jsPandaFile);
     void TryLoadSnapshotFile();
 private:
     EcmaVM *vm_ {nullptr};

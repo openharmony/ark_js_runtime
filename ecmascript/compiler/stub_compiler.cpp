@@ -185,7 +185,7 @@ int main(const int argc, const char **argv)
         return -1;
     }
     std::string tripleString = runtimeOptions.GetTargetTriple();
-    std::string stubFile = runtimeOptions.WasStubFileSet() ? runtimeOptions.GetStubFile() : "";
+    std::string stubFile = runtimeOptions.GetStubFile();
     std::string logMethods = vm->GetJSOptions().GetlogCompiledMethods();
     size_t optLevel = runtimeOptions.GetOptLevel();
     panda::ecmascript::kungfu::CompilerLog log(logMethods);

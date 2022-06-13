@@ -107,6 +107,16 @@ public:
         return hasTSTypes_;
     }
 
+    void SetLoadedAOTStatus(bool status)
+    {
+        isLoadedAOT_ = status;
+    }
+
+    bool IsLoadedAOT() const
+    {
+        return isLoadedAOT_;
+    }
+
     uint32_t GetTypeSummaryIndex() const
     {
         return typeSummaryIndex_;
@@ -114,7 +124,6 @@ public:
 
 private:
     void Initialize();
-    static constexpr uint32_t NOT_FOUND_IDX = 0xffffffff;
     uint32_t constpoolIndex_ {0};
     CUnorderedMap<uint32_t, uint64_t> constpoolMap_;
     uint32_t numMethods_ {0};
@@ -126,6 +135,7 @@ private:
     bool isModule_ {false};
     bool isCjs_ {false};
     bool hasTSTypes_ {false};
+    bool isLoadedAOT_ {false};
     uint32_t typeSummaryIndex_ {0};
 };
 }  // namespace ecmascript

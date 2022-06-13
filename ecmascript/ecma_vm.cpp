@@ -177,10 +177,10 @@ bool EcmaVM::Initialize()
     tsLoader_ = new TSLoader(this);
     snapshotEnv_ = new SnapshotEnv(this);
     fileLoader_ = new FileLoader(this);
-    if (options_.EnableStubAot()) {
+    if (options_.GetEnableAsmInterpreter()) {
         LoadStubFile();
     }
-    if (options_.EnableTSAot()) {
+    if (options_.GetEnableAsmInterpreter() && options_.WasAOTOutputFileSet()) {
         LoadAOTFiles();
     }
     InitializeFinish();
@@ -389,8 +389,7 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
         func->SetModule(thread_, module);
     }
 
-    auto options = GetJSOptions();
-    if (options.EnableTSAot()) {
+    if (jsPandaFile->IsLoadedAOT()) {
         thread_->SetPrintBCOffset(true);
         result = InvokeEcmaAotEntrypoint(func, jsPandaFile);
     } else {
@@ -403,7 +402,7 @@ Expected<JSTaggedValue, bool> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
             EcmaRuntimeStatScope runtimeStatScope(this);
             CpuProfilingScope profilingScope(this);
             EcmaInterpreter::Execute(&info);
-        }  
+        }
     }
     if (!thread_->HasPendingException()) {
         job::MicroJobQueue::ExecutePendingJob(thread_, GetMicroJobQueue());
@@ -430,7 +429,7 @@ void EcmaVM::CJSExecution(JSHandle<JSFunction> &func, const JSPandaFile *jsPanda
 {
     [[maybe_unused]] EcmaHandleScope scope(thread_);
     ObjectFactory *factory = GetFactory();
-    
+
     // create "module", "exports", "require", "filename", "dirname"
     JSHandle<JSCjsModule> module = factory->NewCjsModule();
     JSHandle<JSTaggedValue> require = GetGlobalEnv()->GetCjsRequireFunction();
@@ -670,12 +669,14 @@ void EcmaVM::SetupRegExpResultCache()
 void EcmaVM::LoadStubFile()
 {
     std::string file = options_.GetStubFile();
+    LOG(INFO, RUNTIME) << "Try to load stub file" << file.c_str();
     fileLoader_->LoadStubFile(file);
 }
 
 void EcmaVM::LoadAOTFiles()
 {
     std::string file = options_.GetAOTOutputFile();
+    LOG(INFO, RUNTIME) << "Try to load aot file" << file.c_str();
     fileLoader_->LoadAOTFile(file);
     fileLoader_->TryLoadSnapshotFile();
 }
