@@ -402,6 +402,7 @@ public:
     void SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRef value);
     GateRef GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index);
     GateRef GetPropertyByName(GateRef glue, GateRef receiver, GateRef key);
+    GateRef GetPropertyByValue(GateRef glue, GateRef receiver, GateRef keyValue);
     GateRef SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, GateRef value, bool useOwn);
     GateRef SetPropertyByName(GateRef glue, GateRef receiver, GateRef key,
         GateRef value, bool useOwn); // Crawl prototype chain

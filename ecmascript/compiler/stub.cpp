@@ -1973,6 +1973,81 @@ GateRef Stub::GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index)
     return ret;
 }
 
+GateRef Stub::GetPropertyByValue(GateRef glue, GateRef receiver, GateRef keyValue)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->SubCfgEntry(&entry);
+    DEFVARIABLE(key, VariableType::JS_ANY(), keyValue);
+    DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
+    Label isNumberOrStringSymbol(env);
+    Label notNumber(env);
+    Label isStringOrSymbol(env);
+    Label notStringOrSymbol(env);
+    Label exit(env);
+
+    Branch(TaggedIsNumber(*key), &isNumberOrStringSymbol, &notNumber);
+    Bind(&notNumber);
+    {
+        Branch(TaggedIsStringOrSymbol(*key), &isNumberOrStringSymbol, &notStringOrSymbol);
+        Bind(&notStringOrSymbol);
+        {
+            result = Hole();
+            Jump(&exit);
+        }
+    }
+    Bind(&isNumberOrStringSymbol);
+    {
+        GateRef index = TryToElementsIndex(*key);
+        Label validIndex(env);
+        Label notValidIndex(env);
+        Branch(Int32GreaterThanOrEqual(index, Int32(0)), &validIndex, &notValidIndex);
+        Bind(&validIndex);
+        {
+            result = GetPropertyByIndex(glue, receiver, index);
+            Jump(&exit);
+        }
+        Bind(&notValidIndex);
+        {
+            Label notNumber1(env);
+            Label getByName(env);
+            Branch(TaggedIsNumber(*key), &exit, &notNumber1);
+            Bind(&notNumber1);
+            {
+                Label isString(env);
+                Label notString(env);
+                Label isInternalString(env);
+                Label notIntenalString(env);
+                Branch(TaggedIsString(*key), &isString, &notString);
+                Bind(&isString);
+                {
+                    Branch(IsInternalString(*key), &isInternalString, &notIntenalString);
+                    Bind(&isInternalString);
+                    Jump(&getByName);
+                    Bind(&notIntenalString);
+                    {
+                        key = CallRuntime(glue, RTSTUB_ID(NewInternalString), { *key });
+                        Jump(&getByName);
+                    }
+                }
+                Bind(&notString);
+                {
+                    Jump(&getByName);
+                }
+            }
+            Bind(&getByName);
+            {
+                result = GetPropertyByName(glue, receiver, *key);
+                Jump(&exit);
+            }
+        }
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->SubCfgExit();
+    return ret;
+}
+
 GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
 {
     auto env = GetEnvironment();
