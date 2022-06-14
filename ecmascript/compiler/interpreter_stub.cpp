@@ -1545,10 +1545,12 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     DEFVARIABLE(varHotnessCounter, VariableType::INT32(), hotnessCounter);
 
-    varPc = TaggedCastToIntPtr(CallRuntime(glue,
+    varSp = TaggedCastToIntPtr(CallRuntime(glue,
                                            RTSTUB_ID(JumpToCInterpreter),
                                            { constpool, profileTypeInfo, acc,
                                              IntBuildTaggedTypeWithNoGC(hotnessCounter)}));
+    GateRef frame = GetFrame(*varSp);
+    varPc = GetPcFromFrame(frame);
     Label shouldReturn(env);
     Label shouldContinue(env);
 
@@ -1560,10 +1562,7 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
     }
     Bind(&shouldContinue);
     {
-        varSp = GetCurrentSpFrame(glue);
-        GateRef frame = GetFrame(*varSp);
         varAcc = GetAccFromFrame(frame);
-
         GateRef function = GetFunctionFromFrame(frame);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
         varConstpool = GetConstpoolFromFunction(function);
