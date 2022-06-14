@@ -21,20 +21,6 @@
 #include "ecmascript/weak_vector.h"
 
 namespace panda::ecmascript {
-class CheckAndCallScrop {
-public:
-    CheckAndCallScrop(JSThread *thread) : thread_(thread)
-    {
-        thread_->SetCheckAndCallEnterState(true);
-    }
-    ~CheckAndCallScrop()
-    {
-        thread_->SetCheckAndCallEnterState(false);
-    }
-private:
-    JSThread *thread_;
-};
-
 class CellRecord final : public Record {
 public:
     CAST_CHECK(CellRecord, IsCellRecord);

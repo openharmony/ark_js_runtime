@@ -366,9 +366,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
     }
     isVerifying_ = false;
 #endif
-    if (!thread_->GetCheckAndCallEnterState()) {
-        JSFinalizationRegistry::CheckAndCall(thread_);
-    }
+    JSFinalizationRegistry::CheckAndCall(thread_);
 }
 
 void Heap::ThrowOutOfMemoryError(size_t size, std::string functionName)
