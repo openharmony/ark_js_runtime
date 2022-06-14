@@ -21,7 +21,6 @@
 
 #include "ecmascript/common.h"
 #include "ecmascript/snapshot/mem/encode_bit.h"
-#include "ecmascript/snapshot/mem/snapshot_env.h"
 #include "ecmascript/snapshot/mem/snapshot_processor.h"
 #include "ecmascript/mem/c_string.h"
 

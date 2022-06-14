@@ -49,7 +49,6 @@
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/space.h"
 #include "ecmascript/mem/visitor.h"
-#include "ecmascript/snapshot/mem/snapshot_env.h"
 #include "ecmascript/taskpool/task.h"
 #include "ecmascript/module/js_module_manager.h"
 #include "ecmascript/object_factory.h"
@@ -177,6 +176,9 @@ bool EcmaVM::Initialize()
     debuggerManager_->Initialize();
     tsLoader_ = new TSLoader(this);
     snapshotEnv_ = new SnapshotEnv(this);
+    if (!WIN_OR_MAC_PLATFORM) {
+        snapshotEnv_->Initialize();
+    }
     fileLoader_ = new FileLoader(this);
     if (options_.GetEnableAsmInterpreter()) {
         LoadStubFile();

@@ -1279,4 +1279,4 @@ inline JSTaggedNumber JSTaggedValue::StringToDouble(JSTaggedValue tagged)
     return JSTaggedNumber(d);
 }
 }  // namespace panda::ecmascript
-#endif  // ECMASCRIPT_TAGGED_VALUE__INL_H
+#endif  // ECMASCRIPT_TAGGED_VALUE_INL_H

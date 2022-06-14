@@ -133,7 +133,6 @@ HWTEST_F_L0(SnapshotTest, SerializeConstPool)
     EXPECT_TRUE(constpool1->Get(0).IsJSFunction());
     EXPECT_TRUE(constpool1->Get(1).IsJSFunction());
     EXPECT_TRUE(constpool1->Get(3).IsJSFunction());
-    EXPECT_EQ(constpool1->Get(0).GetRawData(), constpool1->Get(0).GetRawData());
     EcmaString *str11 = reinterpret_cast<EcmaString *>(constpool1->Get(2).GetTaggedObject());
     EcmaString *str22 = reinterpret_cast<EcmaString *>(constpool1->Get(4).GetTaggedObject());
     EcmaString *str33 = reinterpret_cast<EcmaString *>(constpool1->Get(5).GetTaggedObject());
@@ -263,14 +262,14 @@ HWTEST_F_L0(SnapshotTest, SerializeBuiltins)
     EcmaVM *ecmaVm2 = EcmaVM::Create(options2);
     EXPECT_TRUE(ecmaVm2->GetGlobalEnv()->GetClass()->GetObjectType() == JSType::GLOBAL_ENV);
     auto globalConst = const_cast<GlobalEnvConstants *>(ecmaVm2->GetJSThread()->GlobalConstants());
-    size_t hclassEndIndex = globalConst->GetHClassEndIndex();
+    size_t hclassEndIndex = static_cast<size_t>(ConstantIndex::UNDEFINED_INDEX);
     size_t hclassIndex = 0;
     globalConst->VisitRangeSlot([&hclassIndex, &hclassEndIndex]([[maybe_unused]]Root type,
                                                                 ObjectSlot start, ObjectSlot end) {
         while (start < end) {
             JSTaggedValue object(start.GetTaggedType());
             start++;
-            if (hclassIndex <= hclassEndIndex) {
+            if (hclassIndex < hclassEndIndex) {
                 EXPECT_TRUE(object.IsJSHClass());
             }
             hclassIndex++;

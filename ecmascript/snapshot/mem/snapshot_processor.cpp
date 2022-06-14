@@ -1093,7 +1093,7 @@ void SnapshotProcessor::DeserializeString(uintptr_t stringBegin, uintptr_t strin
         if (strFromTable) {
             stringVector_.emplace_back(ToUintPtr(strFromTable));
         } else {
-            uintptr_t newObj = oldSpace->Allocate(strSize);
+            uintptr_t newObj = oldSpace->Allocate(strSize, false);
             if (newObj == 0) {
                 LOG_ECMA_MEM(FATAL) << "Snapshot Allocate OldLocalSpace OOM";
             }
@@ -1240,7 +1240,7 @@ void SnapshotProcessor::RelocateSpaceObject(Space* space, SnapshotType type, JSM
             auto objType = encodeBit.GetObjectType();
             if (objType == Constants::MASK_METHOD_SPACE_BEGIN) {
                 begin += sizeof(uint64_t);
-                others = encodeBit.GetNativeOrGlobalIndex();
+                others = encodeBit.GetNativePointerOrObjectIndex();
                 DeserializePandaMethod(begin, end, methods, methodNums, others);
                 break;
             }
@@ -1316,11 +1316,9 @@ uint64_t SnapshotProcessor::SerializeTaggedField(JSTaggedType *tagged, CQueue<Ta
 void SnapshotProcessor::DeserializeTaggedField(uint64_t *value)
 {
     EncodeBit encodeBit(*value);
-    if (!builtinsDeserialize_ && encodeBit.IsGlobalEnvConst()) {
-        size_t index = encodeBit.GetNativeOrGlobalIndex();
-        auto globalEnv = vm_->GetGlobalEnv();
-        auto globalEnvObjectValue = globalEnv->GetGlobalEnvObjectByIndex(index);
-        *value = ToUintPtr(globalEnvObjectValue->GetTaggedObject());
+    if (!builtinsDeserialize_ && encodeBit.IsReference() && encodeBit.IsGlobalConstOrBuiltins()) {
+        size_t index = encodeBit.GetNativePointerOrObjectIndex();
+        *value = vm_->GetSnapshotEnv()->FindEnvObjectByIndex(index);
         return;
     }
     if (encodeBit.IsReference() && !encodeBit.IsSpecial()) {
@@ -1338,8 +1336,8 @@ void SnapshotProcessor::DeserializeTaggedField(uint64_t *value)
 void SnapshotProcessor::DeserializeClassWord(TaggedObject *object)
 {
     EncodeBit encodeBit(*reinterpret_cast<uint64_t *>(object));
-    if (!builtinsDeserialize_ && encodeBit.IsGlobalEnvConst()) {
-        size_t hclassIndex = encodeBit.GetNativeOrGlobalIndex();
+    if (!builtinsDeserialize_ && encodeBit.IsGlobalConstOrBuiltins()) {
+        size_t hclassIndex = encodeBit.GetNativePointerOrObjectIndex();
         auto globalConst = const_cast<GlobalEnvConstants *>(vm_->GetJSThread()->GlobalConstants());
         JSTaggedValue hclassValue = globalConst->GetGlobalConstantObject(hclassIndex);
         ASSERT(hclassValue.IsJSHClass());
@@ -1382,14 +1380,14 @@ EncodeBit SnapshotProcessor::NativePointerToEncodeBit(void *nativePointer)
         }
 
         LOG_IF(index > Constants::MAX_C_POINTER_INDEX, FATAL, RUNTIME) << "MAX_C_POINTER_INDEX: " + ToCString(index);
-        native.SetNativeOrGlobalIndex(index);
+        native.SetNativePointerOrObjectIndex(index);
     }
     return native;
 }
 
 void *SnapshotProcessor::NativePointerEncodeBitToAddr(EncodeBit nativeBit)
 {
-    size_t index = nativeBit.GetNativeOrGlobalIndex();
+    size_t index = nativeBit.GetNativePointerOrObjectIndex();
     void *addr = nullptr;
     size_t nativeTableSize = GetNativeTableSize();
 
@@ -1428,7 +1426,7 @@ uintptr_t SnapshotProcessor::TaggedObjectEncodeBitToAddr(EncodeBit taggedBit)
 {
     ASSERT(taggedBit.IsReference());
     if (!builtinsDeserialize_ && taggedBit.IsReferenceToString()) {
-        size_t stringIndex = taggedBit.GetStringIndex();
+        size_t stringIndex = taggedBit.GetNativePointerOrObjectIndex();
         return stringVector_[stringIndex];
     }
     size_t regionIndex = taggedBit.GetRegionIndex();
@@ -1443,7 +1441,7 @@ uintptr_t SnapshotProcessor::TaggedObjectEncodeBitToAddr(EncodeBit taggedBit)
 void SnapshotProcessor::DeserializeNativePointer(uint64_t *value)
 {
     EncodeBit native(*value);
-    size_t index = native.GetNativeOrGlobalIndex();
+    size_t index = native.GetNativePointerOrObjectIndex();
     uintptr_t addr = 0U;
     size_t nativeTableSize = GetNativeTableSize();
 
@@ -1459,9 +1457,8 @@ void SnapshotProcessor::DeserializeNativePointer(uint64_t *value)
 
 void SnapshotProcessor::SerializePandaFileMethod()
 {
-    EncodeBit encodeBit(0);
+    EncodeBit encodeBit(pandaMethod_.size());
     encodeBit.SetObjectType(Constants::MASK_METHOD_SPACE_BEGIN);
-    encodeBit.SetNativeOrGlobalIndex(pandaMethod_.size());
 
     ObjectFactory *factory = vm_->GetFactory();
     // panda method space begin
@@ -1494,7 +1491,7 @@ EncodeBit SnapshotProcessor::EncodeTaggedObject(TaggedObject *objectHeader, CQue
     if (!builtinsSerialize_) {
         // String duplicate
         if (objectHeader->GetClass()->GetObjectType() == JSType::STRING) {
-            ASSERT(stringVector_.size() < Constants::MAX_STRING_SIZE);
+            ASSERT(stringVector_.size() < Constants::MAX_OBJECT_INDEX);
             EncodeBit encodeBit(stringVector_.size());
             stringVector_.emplace_back(ToUintPtr(objectHeader));
             data->emplace(ToUintPtr(objectHeader), std::make_pair(0U, encodeBit));
@@ -1502,13 +1499,14 @@ EncodeBit SnapshotProcessor::EncodeTaggedObject(TaggedObject *objectHeader, CQue
         }
 
         // builtins object reuse
-        size_t globalEnvIndex = vm_->GetSnapshotEnv()->GetEnvObjectIndex(ToUintPtr(objectHeader));
-        if (globalEnvIndex != SnapshotEnv::MAX_UINT_32) {
-            EncodeBit encodeBit(0);
-            encodeBit.SetGlobalEnvConst();
-            encodeBit.SetNativeOrGlobalIndex(globalEnvIndex);
-            data->emplace(ToUintPtr(objectHeader), std::make_pair(0U, encodeBit));
-            return encodeBit;
+        if (objectHeader->GetClass()->IsGlobalConstOrBuiltinsObject()) {
+            size_t index = vm_->GetSnapshotEnv()->GetEnvObjectIndex(ToUintPtr(objectHeader));
+            if (index != SnapshotEnv::MAX_UINT_32) {
+                EncodeBit encodeBit(index);
+                encodeBit.SetGlobalConstOrBuiltins();
+                data->emplace(ToUintPtr(objectHeader), std::make_pair(0U, encodeBit));
+                return encodeBit;
+            }
         }
     }
     queue->emplace(objectHeader);

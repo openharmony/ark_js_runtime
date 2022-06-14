@@ -240,19 +240,20 @@ enum class JSType : uint8_t {
 class JSHClass : public TaggedObject {
 public:
     static constexpr int TYPE_BITFIELD_NUM = 8;
-    using ObjectTypeBits = BitField<JSType, 0, TYPE_BITFIELD_NUM>;  // 7
+    using ObjectTypeBits = BitField<JSType, 0, TYPE_BITFIELD_NUM>;  // 8
     using CallableBit = ObjectTypeBits::NextFlag;
-    using ConstructorBit = CallableBit::NextFlag;      // 9
+    using ConstructorBit = CallableBit::NextFlag;      // 10
     using ExtensibleBit = ConstructorBit::NextFlag;
     using IsPrototypeBit = ExtensibleBit::NextFlag;
     using ElementRepresentationBits = IsPrototypeBit::NextField<Representation, 3>;        // 3 means next 3 bit
-    using DictionaryElementBits = ElementRepresentationBits::NextFlag;                     // 15
-    using IsDictionaryBit = DictionaryElementBits::NextFlag;                               // 16
-    using IsStableElementsBit = IsDictionaryBit::NextFlag;                                 // 17
-    using HasConstructorBits = IsStableElementsBit::NextFlag;                              // 18
-    using IsLiteralBit = HasConstructorBits::NextFlag;                                     // 19
-    using ClassConstructorBit = IsLiteralBit::NextFlag;                                    // 20
-    using ClassPrototypeBit = ClassConstructorBit::NextFlag;                               // 21
+    using DictionaryElementBits = ElementRepresentationBits::NextFlag;                     // 16
+    using IsDictionaryBit = DictionaryElementBits::NextFlag;                               // 17
+    using IsStableElementsBit = IsDictionaryBit::NextFlag;                                 // 18
+    using HasConstructorBits = IsStableElementsBit::NextFlag;                              // 19
+    using IsLiteralBit = HasConstructorBits::NextFlag;                                     // 20
+    using ClassConstructorBit = IsLiteralBit::NextFlag;                                    // 21
+    using ClassPrototypeBit = ClassConstructorBit::NextFlag;                               // 22
+    using GlobalConstOrBuiltinsObjectBit = ClassPrototypeBit::NextFlag;                    // 23
 
     static constexpr int DEFAULT_CAPACITY_OF_IN_OBJECTS = 4;
     static constexpr int MAX_CAPACITY_OF_OUT_OBJECTS =
@@ -368,6 +369,11 @@ public:
     inline void SetClassPrototype(bool flag) const
     {
         ClassPrototypeBit::Set<uint32_t>(flag, GetBitFieldAddr());
+    }
+
+    inline void SetGlobalConstOrBuiltinsObject(bool flag) const
+    {
+        GlobalConstOrBuiltinsObjectBit::Set<uint32_t>(flag, GetBitFieldAddr());
     }
 
     inline void SetIsDictionaryMode(bool flag) const
@@ -922,6 +928,12 @@ public:
     {
         uint32_t bits = GetBitField();
         return ClassPrototypeBit::Decode(bits);
+    }
+
+    inline bool IsGlobalConstOrBuiltinsObject() const
+    {
+        uint32_t bits = GetBitField();
+        return GlobalConstOrBuiltinsObjectBit::Decode(bits);
     }
 
     inline bool IsDictionaryMode() const
