@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
+#include "ecmascript/llvm_stackmap_parser.h"
 #include "ecmascript/compiler/assembler/assembler.h"
 #include "ecmascript/frames.h"
 #include "ecmascript/mem/slots.h"
@@ -42,136 +42,78 @@ std::string LocationTy::TypeToString(Kind loc) const
 
 const CallSiteInfo* LLVMStackMapParser::GetCallSiteInfoByPc(uintptr_t callSiteAddr) const
 {
-    for (auto &callSiteInfo: pc2CallSiteInfoVec_) {
-        auto it = callSiteInfo.find(callSiteAddr);
-        if (it != callSiteInfo.end()) {
+    for (auto &pc2CallSiteInfo: pc2CallSiteInfoVec_) {
+        auto it = pc2CallSiteInfo.find(callSiteAddr);
+        if (it != pc2CallSiteInfo.end()) {
             return &(it->second);
         }
     }
     return nullptr;
 }
 
+void LLVMStackMapParser::PrintCallSiteSlotAddr(const CallSiteInfo& callsiteInfo, uintptr_t callSiteSp,
+    uintptr_t callsiteFp) const
+{
+    bool flag = (callsiteInfo.size() % 2 != 0);
+    size_t j = flag ? 1 : 0; // skip first element when size is odd number
+    for (; j < callsiteInfo.size(); j += 2) { // 2: base and derived
+        const DwarfRegAndOffsetType baseInfo = callsiteInfo[j];
+        const DwarfRegAndOffsetType derivedInfo = callsiteInfo[j + 1];
+        COMPILER_LOG(DEBUG) << std::hex << " callSiteSp:0x" << callSiteSp << " callsiteFp:" << callsiteFp;
+        COMPILER_LOG(DEBUG) << std::dec << "base DWARF_REG:" << baseInfo.first
+                    << " OFFSET:" << baseInfo.second;
+        uintptr_t base = GetStackSlotAddress(baseInfo, callSiteSp, callsiteFp);
+        uintptr_t derived = GetStackSlotAddress(derivedInfo, callSiteSp, callsiteFp);
+        if (base != derived) {
+            COMPILER_LOG(DEBUG) << std::dec << "derived DWARF_REG:" << derivedInfo.first
+                << " OFFSET:" << derivedInfo.second;
+        }
+    }
+}
 void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptimizedLeaveFrame *frame) const
 {
-    if (!IsLogEnabled()) {
-        return;
-    }
-
-    int i = 0;
-    uintptr_t address = 0;
-    uintptr_t base = 0;
-    uintptr_t derived = 0;
-    for (auto &info: *infos) {
-        if (info.first == GCStackMapRegisters::SP) {
-            uintptr_t rsp = frame->GetCallSiteSp();
-            address = rsp + info.second;
-            COMPILER_LOG(DEBUG) << std::dec << "SP_DWARF_REG_NUM:  info.second:" << info.second
-                                << std::hex << "rsp :" << rsp;
-        } else if (info.first == GCStackMapRegisters::FP) {
-            uintptr_t fp = frame->callsiteFp;
-            address = fp + info.second;
-            COMPILER_LOG(DEBUG) << std::dec << "FP_DWARF_REG_NUM:  info.second:" << info.second
-                                << std::hex << "rfp :" << fp;
-        } else {
-            COMPILER_LOG(DEBUG) << "REG_NUM :  info.first:" << info.first;
-            UNREACHABLE();
-        }
-
-        if (IsDeriveredPointer(i)) {
-            derived = reinterpret_cast<uintptr_t>(address);
-            if (base == derived) {
-                COMPILER_LOG(INFO) << std::hex << "visit base:" << base << " base Value: " <<
-                    *reinterpret_cast<uintptr_t *>(base);
-            } else {
-                COMPILER_LOG(INFO) << std::hex << "push base:" << base << " base Value: " <<
-                    *reinterpret_cast<uintptr_t *>(base) << " derived:" << derived;
-            }
-        } else {
-            base = reinterpret_cast<uintptr_t>(address);
-        }
-        i++;
-    }
+    uintptr_t callSiteSp = frame->GetCallSiteSp();
+    uintptr_t callsiteFp = frame->callsiteFp;
+    ASSERT(infos != nullptr);
+    PrintCallSiteSlotAddr(*infos, callSiteSp, callsiteFp);
 }
 
-void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp, uintptr_t curPc) const
+void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t callsiteFp, uintptr_t callSiteSp) const
 {
     if (!IsLogEnabled()) {
         return;
     }
 
-    int i = 0;
-    uintptr_t address = 0;
-    uintptr_t base = 0;
-    uintptr_t derived = 0;
-
-    uintptr_t callsiteFp = *fp;
-    uintptr_t callSiteSp = FrameHandler::GetPrevFrameCallSiteSp(reinterpret_cast<JSTaggedType *>(fp), curPc);
-
-    for (auto &info: *infos) {
-        if (info.first == GCStackMapRegisters::SP) {
-            address = callSiteSp + info.second;
-        } else if (info.first == GCStackMapRegisters::FP) {
-            address = callsiteFp + info.second;
-        } else {
-            UNREACHABLE();
-        }
-
-        if (IsDeriveredPointer(i)) {
-            derived = reinterpret_cast<uintptr_t>(address);
-            if (base == derived) {
-                COMPILER_LOG(DEBUG) << std::hex << "visit base:" << base << " base Value: " <<
-                    *reinterpret_cast<uintptr_t *>(base);
-            } else {
-                COMPILER_LOG(DEBUG) << std::hex << "push base:" << base << " base Value: " <<
-                    *reinterpret_cast<uintptr_t *>(base) << " derived:" << derived;
-            }
-        } else {
-            base = reinterpret_cast<uintptr_t>(address);
-        }
-        i++;
-    }
+    CallSiteInfo callsiteInfo = *infos;
+    PrintCallSiteSlotAddr(*infos, callSiteSp, callsiteFp);
 }
 
-bool LLVMStackMapParser::IsDeriveredPointer(int callsitetime) const
+uintptr_t LLVMStackMapParser::GetStackSlotAddress(const DwarfRegAndOffsetType info,
+    uintptr_t callSiteSp, uintptr_t callsiteFp) const
 {
-    return static_cast<uint32_t>(callsitetime) & 1;
+    uintptr_t address = 0;
+    if (info.first == GCStackMapRegisters::SP) {
+        address = callSiteSp + info.second;
+    } else if (info.first == GCStackMapRegisters::FP) {
+        address = callsiteFp + info.second;
+    } else {
+        UNREACHABLE();
+    }
+    return address;
 }
 
-bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp,
-    std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, uintptr_t> *data, [[maybe_unused]] bool isVerifying,
-    uintptr_t curPc) const
+void LLVMStackMapParser::CollectBaseAndDerivedPointers(const CallSiteInfo* infos, std::set<uintptr_t> &baseSet,
+    ChunkMap<DerivedDataKey, uintptr_t> *data, uintptr_t callsiteFp, uintptr_t callSiteSp) const
 {
-    const CallSiteInfo *infos = GetCallSiteInfoByPc(callSiteAddr);
-    if (infos == nullptr) {
-        return false;
-    }
-
-    uintptr_t *fp = reinterpret_cast<uintptr_t *>(frameFp);
-    uintptr_t callsiteFp = *fp;
-    uintptr_t callSiteSp = FrameHandler::GetPrevFrameCallSiteSp(reinterpret_cast<JSTaggedType *>(frameFp), curPc);
-    uintptr_t address = 0;
-    uintptr_t base = 0;
-    uintptr_t derived = 0;
-    int i = 0;
-
-    if (IsLogEnabled()) {
-        PrintCallSiteInfo(infos, fp, curPc);
-    }
-
-    for (auto &info: *infos) {
-        if (info.first == GCStackMapRegisters::SP) {
-            address = callSiteSp + info.second;
-        } else if (info.first == GCStackMapRegisters::FP) {
-            address = callsiteFp + info.second;
-        } else {
-            UNREACHABLE();
-        }
-
-        if (IsDeriveredPointer(i)) {
-            derived = reinterpret_cast<uintptr_t>(address);
-            if (base == derived) {
-                baseSet.emplace(base);
-            } else {
+    bool flag = (infos->size() % 2 != 0);
+    size_t j = flag ? 1 : 0; // skip first element when size is odd number
+    for (; j < infos->size(); j += 2) { // 2: base and derived
+        const DwarfRegAndOffsetType& baseInfo = infos->at(j);
+        const DwarfRegAndOffsetType& derivedInfo = infos->at(j + 1);
+        uintptr_t base = GetStackSlotAddress(baseInfo, callSiteSp, callsiteFp);
+        uintptr_t derived = GetStackSlotAddress(derivedInfo, callSiteSp, callsiteFp);
+        baseSet.emplace(base);
+        if (base != derived) {
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
                 if (!isVerifying) {
 #endif
@@ -179,12 +121,23 @@ bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t 
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
                 }
 #endif
-            }
-        } else {
-            base = reinterpret_cast<uintptr_t>(address);
-            baseSet.emplace(base);
         }
-        i++;
+    }
+}
+
+bool LLVMStackMapParser::CollectGCSlots(uintptr_t callSiteAddr, uintptr_t callsiteFp,
+    std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, uintptr_t> *data, [[maybe_unused]] bool isVerifying,
+    uintptr_t callSiteSp) const
+{
+    const CallSiteInfo *infos = GetCallSiteInfoByPc(callSiteAddr);
+    if (infos == nullptr) {
+        return false;
+    }
+    ASSERT(callsiteFp != callSiteSp);
+    CollectBaseAndDerivedPointers(infos, baseSet, data, callsiteFp, callSiteSp);
+
+    if (IsLogEnabled()) {
+        PrintCallSiteInfo(infos, callsiteFp, callSiteSp);
     }
     return true;
 }

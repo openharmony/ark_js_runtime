@@ -17,7 +17,7 @@
 #include "ecmascript/base/config.h"
 #include "ecmascript/compiler/bc_call_signature.h"
 #include "ecmascript/compiler/common_stubs.h"
-#include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
+#include "ecmascript/llvm_stackmap_parser.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/jspandafile/constpool_value.h"
 #include "ecmascript/jspandafile/js_pandafile.h"
@@ -100,8 +100,7 @@ bool StubModulePackInfo::Load(EcmaVM *vm, const std::string &filename)
         std::unique_ptr<uint8_t[]> stackmapPtr(std::make_unique<uint8_t[]>(stackmapSize));
         moduleFile.read(reinterpret_cast<char *>(stackmapPtr.get()), stackmapSize);
         if (stackmapSize != 0) {
-            bool enableLog = vm->GetJSOptions().WasSetlogCompiledMethods();
-            kungfu::LLVMStackMapParser::GetInstance(enableLog).CalculateStackMap(std::move(stackmapPtr),
+            vm->GetFileLoader()->GetStackMapParser()->CalculateStackMap(std::move(stackmapPtr),
                 des_[i].GetHostCodeSecAddr(), startAddr);
         }
     }
@@ -114,7 +113,7 @@ bool StubModulePackInfo::Load(EcmaVM *vm, const std::string &filename)
         kungfu::Func2FpDelta fun2fpDelta;
         auto funSize = funcEntryDes.funcSize_;
         fun2fpDelta[funAddr] = std::make_pair(delta, funSize);
-        kungfu::LLVMStackMapParser::GetInstance().CalculateFuncFpDelta(fun2fpDelta);
+        vm->GetFileLoader()->GetStackMapParser()->CalculateFuncFpDelta(fun2fpDelta);
     }
     for (size_t i = 0; i < entries_.size(); i++) {
         auto des = des_[entries_[i].moduleIndex_];
@@ -193,8 +192,7 @@ bool AOTModulePackInfo::Load(EcmaVM *vm, const std::string &filename)
         std::unique_ptr<uint8_t[]> stackmapPtr(std::make_unique<uint8_t[]>(stackmapSize));
         moduleFile.read(reinterpret_cast<char *>(stackmapPtr.get()), stackmapSize);
         if (stackmapSize != 0) {
-            bool enableLog = vm->GetJSOptions().WasSetlogCompiledMethods();
-            kungfu::LLVMStackMapParser::GetInstance(enableLog).CalculateStackMap(std::move(stackmapPtr),
+            vm->GetFileLoader()->GetStackMapParser()->CalculateStackMap(std::move(stackmapPtr),
                 des_[i].GetHostCodeSecAddr(), startAddr);
         }
     }
@@ -207,7 +205,7 @@ bool AOTModulePackInfo::Load(EcmaVM *vm, const std::string &filename)
         uintptr_t funAddr = startAddr + codeAddr;
         kungfu::Func2FpDelta fun2fpDelta;
         fun2fpDelta[funAddr] = std::make_pair(delta, funSize);
-        kungfu::LLVMStackMapParser::GetInstance().CalculateFuncFpDelta(fun2fpDelta);
+        vm->GetFileLoader()->GetStackMapParser()->CalculateFuncFpDelta(fun2fpDelta);
     }
 
     for (size_t i = 0; i < entries_.size(); i++) {
@@ -369,5 +367,24 @@ void FileLoader::InitializeStubEntries(const std::vector<AOTModulePackInfo::Func
     }
     AsmInterParsedOption asmInterOpt = vm_->GetJSOptions().GetAsmInterParsedOption();
     AdjustBCStubAndDebuggerStubEntries(thread, stubs, asmInterOpt);
+}
+
+FileLoader::~FileLoader()
+{
+    if (stackMapParser_ != nullptr) {
+        delete stackMapParser_;
+        stackMapParser_ = nullptr;
+    }
+}
+
+FileLoader::FileLoader(EcmaVM *vm) : vm_(vm), factory_(vm->GetFactory())
+{
+    bool enableLog = vm->GetJSOptions().WasSetlogCompiledMethods();
+    stackMapParser_ = new kungfu::LLVMStackMapParser(enableLog);
+}
+
+kungfu::LLVMStackMapParser* FileLoader::GetStackMapParser()
+{
+    return stackMapParser_;
 }
 }
