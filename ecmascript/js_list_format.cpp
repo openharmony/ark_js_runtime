@@ -98,7 +98,7 @@ JSHandle<JSListFormat> JSListFormat::InitializeListFormat(JSThread *thread,
     // 4. Let options be ? GetOptionsObject(options).
     JSHandle<JSObject> optionsObject;
     if (options->IsUndefined()) {
-        optionsObject = factory->OrdinaryNewJSObjectCreate(JSHandle<JSTaggedValue>(thread, JSTaggedValue::Null()));
+        optionsObject = factory->CreateNullJSObject();
     } else {
         optionsObject = JSTaggedValue::ToObject(thread, options);
         RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSListFormat, thread);
