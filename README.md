@@ -55,7 +55,7 @@ For more information, see: [ARK Runtime Subsystem](https://gitee.com/openharmony
 ## Build<a name="section137768191623"></a>
 
 ```
-./build.sh --product-name rk3568 --build-target ark_js_host_linux_tools_packages
+./build.sh --product-name hispark_taurus_standard --build-target ark_js_host_linux_tools_packages
 ```
 
 ### Available APIs<a name="section175841548124517"></a>
@@ -68,7 +68,7 @@ For details about how to generate JS bytecodes, see  [Using the Toolchain](docs/
 
 To run bytecodes: 
 ```
-LD_LIBRARY_PATH=out/rk3568/clang_x64/ark/ark:out/rk3568/clang_x64/ark/ark_js_runtime:out/rk3568/clang_x64/thirdparty/icu:prebuilts/clang/ohos/linux-x86_64/llvm/lib ./out/rk3568/clang_x64/ark/ark_js_runtime/ark_js_vm helloworld.abc
+LD_LIBRARY_PATH=out/hispark_taurus/clang_x64/ark/ark:out/hispark_taurus/clang_x64/ark/ark_js_runtime:out/hispark_taurus/clang_x64/thirdparty/icu:prebuilts/clang/ohos/linux-x86_64/llvm/lib ./out/hispark_taurus/clang_x64/ark/ark_js_runtime/ark_js_vm helloworld.abc
 ```
 
 For more information, please see: [ARK-Runtime-Usage-Guide](https://gitee.com/openharmony/ark_js_runtime/blob/master/docs/ARK-Runtime-Usage-Guide.md).
