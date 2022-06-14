@@ -35,6 +35,7 @@
 #endif
 
 #include "ecmascript/compiler/call_signature.h"
+#include "ecmascript/llvm_stackmap_parser.h"
 #include "llvm-c/Analysis.h"
 #include "llvm-c/Core.h"
 #include "llvm-c/Disassembler.h"
@@ -64,7 +65,6 @@
 #include "llvm/Support/Host.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Transforms/Scalar.h"
-#include "llvm/llvm_stackmap_parser.h"
 
 #if defined(__clang__)
 #pragma clang diagnostic pop

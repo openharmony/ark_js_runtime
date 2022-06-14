@@ -18,7 +18,7 @@
 
 #include "runtime_stubs.h"
 #include "ecmascript/builtins/builtins_regexp.h"
-#include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
+#include "ecmascript/llvm_stackmap_parser.h"
 #include "ecmascript/ecma_string_table.h"
 #include "ecmascript/global_dictionary-inl.h"
 #include "ecmascript/global_env.h"
