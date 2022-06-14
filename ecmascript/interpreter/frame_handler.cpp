@@ -324,8 +324,6 @@ ARK_INLINE void FrameHandler::AsmInterpretedFrameIterate(const JSTaggedType *sp,
 #endif
         return;
     }
-
-
     for (auto slot : slotAddrs) {
         v0(Root::ROOT_FRAME, ObjectSlot(slot));
     }
@@ -352,10 +350,10 @@ ARK_INLINE void FrameHandler::BuiltinFrameIterate(const JSTaggedType *sp,
 }
 
 ARK_INLINE void FrameHandler::BuiltinWithArgvFrameIterate(const JSTaggedType *sp,
-                                                          [[maybe_unused]] const RootVisitor &v0,
-                                                          const RootRangeVisitor &v1,
-                                                          [[maybe_unused]] ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
-                                                          [[maybe_unused]] bool isVerifying)
+    [[maybe_unused]] const RootVisitor &v0,
+    const RootRangeVisitor &v1,
+    [[maybe_unused]] ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
+    [[maybe_unused]] bool isVerifying)
 {
     auto frame = BuiltinWithArgvFrame::GetFrameFromSp(sp);
     auto argc = frame->GetNumArgs() + BuiltinFrame::RESERVED_CALL_ARGCOUNT;
@@ -390,8 +388,8 @@ ARK_INLINE void FrameHandler::OptimizedFrameIterate(const JSTaggedType *sp,
 {
     std::set<uintptr_t> slotAddrs;
     bool ret = thread_->GetEcmaVM()->GetStackMapParser()->CollectGCSlots(
-        optimizedReturnAddr_, reinterpret_cast<uintptr_t>(sp), slotAddrs, derivedPointers, isVerifying, optimizedCallSiteSp_);
-
+        optimizedReturnAddr_, reinterpret_cast<uintptr_t>(sp), slotAddrs, derivedPointers,
+        isVerifying, optimizedCallSiteSp_);
     if (!ret) {
 #ifndef NDEBUG
         LOG_ECMA(DEBUG) << " stackmap don't found returnAddr " << optimizedReturnAddr_;
@@ -463,10 +461,10 @@ ARK_INLINE void FrameHandler::OptimizedEntryFrameIterate(const JSTaggedType *sp,
 }
 
 ARK_INLINE void FrameHandler::OptimizedLeaveFrameIterate(const JSTaggedType *sp,
-                                                         [[maybe_unused]] const RootVisitor &v0,
-                                                         [[maybe_unused]] const RootRangeVisitor &v1,
-                                                         [[maybe_unused]] ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
-                                                         [[maybe_unused]] bool isVerifying)
+    [[maybe_unused]] const RootVisitor &v0,
+    [[maybe_unused]] const RootRangeVisitor &v1,
+    [[maybe_unused]] ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
+    [[maybe_unused]] bool isVerifying)
 {
     OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(sp);
     if (frame->argc > 0) {
@@ -478,10 +476,10 @@ ARK_INLINE void FrameHandler::OptimizedLeaveFrameIterate(const JSTaggedType *sp,
 }
 
 ARK_INLINE void FrameHandler::OptimizedWithArgvLeaveFrameIterate(const JSTaggedType *sp,
-                                                                 [[maybe_unused]] const RootVisitor &v0,
-                                                                 [[maybe_unused]] const RootRangeVisitor &v1,
-                                                                 [[maybe_unused]] ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
-                                                                 [[maybe_unused]] bool isVerifying)
+    [[maybe_unused]] const RootVisitor &v0,
+    [[maybe_unused]] const RootRangeVisitor &v1,
+    [[maybe_unused]] ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
+    [[maybe_unused]] bool isVerifying)
 {
     OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(sp);
     if (frame->argc > 0) {

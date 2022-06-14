@@ -877,22 +877,21 @@ struct BuiltinWithArgvFrame : public base::AlignedStruct<base::AlignedPointer::S
     alignas(EAS) uintptr_t returnAddr;
 };
 
-#define FRAME_LIST(V)             \
-    V(OptimizedFrame)             \
-    V(OptimizedEntryFrame)        \
-    V(OptimizedJSFunctionFrame)   \
-    V(OptimizedLeaveFrame)        \
-    V(InterpretedFrame)           \
-    V(AsmInterpretedFrame)        \
-    V(BuiltinFrame)               \
-    V(BuiltinWithArgvFrame)       \
-    V(InterpretedEntryFrame)      \
-    V(AsmInterpretedEntryFrame)   \
-    V(OptimizedWithArgvLeaveFrame)\
+#define FRAME_LIST(V)               \
+    V(OptimizedFrame)               \
+    V(OptimizedEntryFrame)          \
+    V(OptimizedJSFunctionFrame)     \
+    V(OptimizedLeaveFrame)          \
+    V(InterpretedFrame)             \
+    V(AsmInterpretedFrame)          \
+    V(BuiltinFrame)                 \
+    V(BuiltinWithArgvFrame)         \
+    V(InterpretedEntryFrame)        \
+    V(AsmInterpretedEntryFrame)     \
+    V(OptimizedWithArgvLeaveFrame)  \
     V(AsmInterpretedBridgeFrame)
 
-class FrameIterator
-{
+class FrameIterator {
 public:
     explicit FrameIterator(JSTaggedType *sp, const JSThread *thread) : current_(sp), thread_(thread)
     {

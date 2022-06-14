@@ -248,7 +248,7 @@ private:
     void PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t callSiteFp, uintptr_t callSiteSp) const;
     int FindFpDelta(uintptr_t funcAddr, uintptr_t callsitePc) const;
     inline uintptr_t GetStackSlotAddress(const DwarfRegAndOffsetType info,
-        uintptr_t callSiteSp, uintptr_t callsiteFp, bool flag = false) const;
+        uintptr_t callSiteSp, uintptr_t callsiteFp) const;
     void CollectBaseAndDerivedPointers(const CallSiteInfo *infos, std::set<uintptr_t> &baseSet,
         ChunkMap<DerivedDataKey, uintptr_t> *data, uintptr_t callsiteFp, uintptr_t callSiteSp) const;
     void PrintCallSiteSlotAddr(const CallSiteInfo& callsiteInfo, uintptr_t callSiteSp,

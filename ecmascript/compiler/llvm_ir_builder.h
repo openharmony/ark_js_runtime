@@ -294,6 +294,7 @@ private:
     bool IsOptimized();
     void SetGCLeafFunction(LLVMValueRef call);
     void SetCallConvAttr(const CallSignature *calleeDescriptor, LLVMValueRef call);
+    bool IsHeapPointerType(LLVMTypeRef valueType);
 
 private:
     LLVMValueRef GetGlue(const std::vector<GateRef> &inList);
