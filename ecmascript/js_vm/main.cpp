@@ -109,16 +109,18 @@ int Main(const int argc, const char **argv)
         return -1;
     }
 
-    LocalScope scope(vm);
-    std::string entry = entrypoint.GetValue();
+    {
+        LocalScope scope(vm);
+        std::string entry = entrypoint.GetValue();
 
-    arg_list_t fileNames = files.GetValue();
-    for (const auto &fileName : fileNames) {
-        auto res = JSNApi::Execute(vm, fileName, entry);
-        if (!res) {
-            std::cerr << "Cannot execute panda file '" << fileName << "' with entry '" << entry << "'" << std::endl;
-            ret = false;
-            break;
+        arg_list_t fileNames = files.GetValue();
+        for (const auto &fileName : fileNames) {
+            auto res = JSNApi::Execute(vm, fileName, entry);
+            if (!res) {
+                std::cerr << "Cannot execute panda file '" << fileName << "' with entry '" << entry << "'" << std::endl;
+                ret = false;
+                break;
+            }
         }
     }
 
