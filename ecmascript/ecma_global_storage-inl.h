@@ -19,24 +19,24 @@
 #include "ecmascript/mem/chunk.h"
 
 namespace panda::ecmascript {
-inline EcmaGlobalStorage::NodeList *EcmaGlobalStorage::NodeList::NodeToNodeList(
-    EcmaGlobalStorage::Node *node)
+template<typename T>
+inline EcmaGlobalStorage::NodeList<T> *EcmaGlobalStorage::NodeList<T>::NodeToNodeList(T *node)
 {
-    uintptr_t ptr = ToUintPtr(node) - node->GetIndex() * sizeof(EcmaGlobalStorage::Node);
-    return reinterpret_cast<NodeList *>(ptr);
+    uintptr_t ptr = ToUintPtr(node) - node->GetIndex() * sizeof(T);
+    return reinterpret_cast<NodeList<T> *>(ptr);
 }
 
-EcmaGlobalStorage::Node *EcmaGlobalStorage::NodeList::NewNode(JSTaggedType value)
+template<typename T>
+T *EcmaGlobalStorage::NodeList<T>::NewNode(JSTaggedType value)
 {
     if (IsFull()) {
         return nullptr;
     }
-    Node *node = &nodeList_[index_++];
+    T *node = &nodeList_[index_++];
     node->SetPrev(nullptr);
     node->SetNext(usedList_);
     node->SetObject(value);
     node->SetUsing(true);
-
     if (usedList_ != nullptr) {
         usedList_->SetPrev(node);
     }
@@ -44,7 +44,8 @@ EcmaGlobalStorage::Node *EcmaGlobalStorage::NodeList::NewNode(JSTaggedType value
     return node;
 }
 
-void EcmaGlobalStorage::NodeList::FreeNode(EcmaGlobalStorage::Node *node)
+template<typename T>
+void EcmaGlobalStorage::NodeList<T>::FreeNode(T *node)
 {
     if (node->GetPrev() != nullptr) {
         node->GetPrev()->SetNext(node->GetNext());
@@ -53,30 +54,33 @@ void EcmaGlobalStorage::NodeList::FreeNode(EcmaGlobalStorage::Node *node)
         node->GetNext()->SetPrev(node->GetPrev());
     }
     if (node == usedList_) {
-        usedList_ = node->GetNext();
+        usedList_ = reinterpret_cast<T *>(node->GetNext());
     }
     node->SetPrev(nullptr);
     node->SetNext(freeList_);
     node->SetObject(JSTaggedValue::Undefined().GetRawData());
     node->SetUsing(false);
-
+    if (node->IsWeak()) {
+        reinterpret_cast<WeakNode *>(node)->SetReference(nullptr);
+        reinterpret_cast<WeakNode *>(node)->SetCallback(nullptr);
+    }
     if (freeList_ != nullptr) {
         freeList_->SetPrev(node);
     }
     freeList_ = node;
 }
 
-EcmaGlobalStorage::Node *EcmaGlobalStorage::NodeList::GetFreeNode(JSTaggedType value)
+template<typename T>
+T *EcmaGlobalStorage::NodeList<T>::GetFreeNode(JSTaggedType value)
 {
-    Node *node = freeList_;
+    T *node = freeList_;
     if (node != nullptr) {
-        freeList_ = node->GetNext();
+        freeList_ = reinterpret_cast<T *>(node->GetNext());
 
         node->SetPrev(nullptr);
         node->SetNext(usedList_);
         node->SetObject(value);
         node->SetUsing(true);
-
         if (usedList_ != nullptr) {
             usedList_->SetPrev(node);
         }
@@ -85,14 +89,16 @@ EcmaGlobalStorage::Node *EcmaGlobalStorage::NodeList::GetFreeNode(JSTaggedType v
     return node;
 }
 
-void EcmaGlobalStorage::NodeList::LinkTo(NodeList *prev)
+template<typename T>
+void EcmaGlobalStorage::NodeList<T>::LinkTo(NodeList<T> *prev)
 {
     next_ = nullptr;
     prev_ = prev;
     prev_->next_ = this;
 }
 
-void EcmaGlobalStorage::NodeList::RemoveList()
+template<typename T>
+void EcmaGlobalStorage::NodeList<T>::RemoveList()
 {
     if (next_ != nullptr) {
         next_->SetPrev(prev_);
@@ -108,15 +114,15 @@ void EcmaGlobalStorage::NodeList::RemoveList()
     }
 }
 
-uintptr_t EcmaGlobalStorage::NewGlobalHandleImplement(NodeList **storage, NodeList **freeList,
-                                                      bool isWeak, JSTaggedType value)
+template<typename T>
+uintptr_t EcmaGlobalStorage::NewGlobalHandleImplement(NodeList<T> **storage, NodeList<T> **freeList, JSTaggedType value)
 {
 #if ECMASCRIPT_ENABLE_NEW_HANDLE_CHECK
     thread_->CheckJSTaggedType(value);
 #endif
     if (!(*storage)->IsFull()) {
         // alloc new block
-        Node *node = (*storage)->NewNode(value);
+        T *node = (*storage)->NewNode(value);
         ASSERT(node != nullptr);
         return node->GetObjectAddress();
     }
@@ -135,53 +141,40 @@ uintptr_t EcmaGlobalStorage::NewGlobalHandleImplement(NodeList **storage, NodeLi
         }
         return node->GetObjectAddress();
     }
-    auto block = chunk_->New<NodeList>(isWeak);
+    auto block = chunk_->New<NodeList<T>>();
     block->LinkTo(*storage);
     *storage = block;
 
     // use node in block finally
-    Node *node = (*storage)->NewNode(value);
+    T *node = (*storage)->NewNode(value);
     ASSERT(node != nullptr);
     return node->GetObjectAddress();
 }
 
 inline uintptr_t EcmaGlobalStorage::NewGlobalHandle(JSTaggedType value)
 {
-    return NewGlobalHandleImplement(&lastGlobalNodes_, &freeListNodes_, false, value);
+    uintptr_t ret = NewGlobalHandleImplement(&lastGlobalNodes_, &freeListNodes_, value);
+    return ret;
 }
 
-inline void EcmaGlobalStorage::DisposeGlobalHandle(uintptr_t nodeAddr)
+template<typename T>
+inline void EcmaGlobalStorage::DisposeGlobalHandle(T *node, NodeList<T> **freeList, NodeList<T> **topNodes,
+                                                   NodeList<T> **lastNodes)
 {
-    Node *node = reinterpret_cast<Node *>(nodeAddr);
-    if (!node->IsUsing()) {
-        return;
-    }
-    NodeList *list = NodeList::NodeToNodeList(node);
+    NodeList<T> *list = NodeList<T>::NodeToNodeList(node);
     list->FreeNode(node);
 
     // If NodeList has no usage node, then delete NodeList
-    NodeList **freeList = nullptr;
-    NodeList **top = nullptr;
-    NodeList **last = nullptr;
-    if (list->IsWeak()) {
-        freeList = &weakFreeListNodes_;
-        top = &topWeakGlobalNodes_;
-        last = &lastWeakGlobalNodes_;
-    } else {
-        freeList = &freeListNodes_;
-        top = &topGlobalNodes_;
-        last = &lastGlobalNodes_;
-    }
-    if (!list->HasUsagedNode() && (*top != *last)) {
+    if (!list->HasUsagedNode() && (*topNodes != *lastNodes)) {
         list->RemoveList();
         if (*freeList == list) {
             *freeList = list->GetNext();
         }
-        if (*top == list) {
-            *top = list->GetNext();
+        if (*topNodes == list) {
+            *topNodes = list->GetNext();
         }
-        if (*last == list) {
-            *last = list->GetPrev();
+        if (*lastNodes == list) {
+            *lastNodes = list->GetPrev();
         }
         chunk_->Delete(list);
     } else {
@@ -196,25 +189,43 @@ inline void EcmaGlobalStorage::DisposeGlobalHandle(uintptr_t nodeAddr)
     }
 }
 
-inline uintptr_t EcmaGlobalStorage::SetWeak(uintptr_t nodeAddr)
+inline void EcmaGlobalStorage::DisposeGlobalHandle(uintptr_t nodeAddr)
+{
+    Node *node = reinterpret_cast<Node *>(nodeAddr);
+    if (!node->IsUsing()) {
+        return;
+    }
+    if (node->IsWeak()) {
+        DisposeGlobalHandle(reinterpret_cast<WeakNode *>(node), &weakFreeListNodes_, &topWeakGlobalNodes_,
+                            &lastWeakGlobalNodes_);
+    } else {
+        DisposeGlobalHandle(node, &freeListNodes_, &topGlobalNodes_, &lastGlobalNodes_);
+    }
+}
+
+inline uintptr_t EcmaGlobalStorage::SetWeak(uintptr_t nodeAddr, void *ref, WeakClearCallback callback)
 {
     auto value = reinterpret_cast<Node *>(nodeAddr)->GetObject();
     DisposeGlobalHandle(nodeAddr);
-    return NewGlobalHandleImplement(&lastWeakGlobalNodes_, &weakFreeListNodes_, true, value);
+    uintptr_t addr = NewGlobalHandleImplement<WeakNode>(&lastWeakGlobalNodes_, &weakFreeListNodes_, value);
+    WeakNode *node = reinterpret_cast<WeakNode *>(addr);
+    node->SetReference(ref);
+    node->SetCallback(callback);
+    return addr;
 }
 
 inline uintptr_t EcmaGlobalStorage::ClearWeak(uintptr_t nodeAddr)
 {
     auto value = reinterpret_cast<Node *>(nodeAddr)->GetObject();
     DisposeGlobalHandle(nodeAddr);
-    return NewGlobalHandleImplement(&lastGlobalNodes_, &freeListNodes_, false, value);
+    uintptr_t ret = NewGlobalHandleImplement<Node>(&lastGlobalNodes_, &freeListNodes_, value);
+    return ret;
 }
 
 inline bool EcmaGlobalStorage::IsWeak(uintptr_t addr) const
 {
     Node *node = reinterpret_cast<Node *>(addr);
-    NodeList *list = NodeList::NodeToNodeList(node);
-    return list->IsWeak();
+    return node->IsWeak();
 }
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_ECMA_GLOABL_STORAGE_INL_H

@@ -25,18 +25,19 @@ namespace panda::ecmascript {
 class EcmaGlobalStorage {
 public:
     static const int32_t GLOBAL_BLOCK_SIZE = 256;
+    using WeakClearCallback = void (*)(void *);
 
     explicit EcmaGlobalStorage(JSThread *thread, Chunk *chunk) : thread_(thread), chunk_(chunk)
     {
         ASSERT(chunk != nullptr);
-        topGlobalNodes_ = lastGlobalNodes_ = chunk_->New<NodeList>(false);
-        topWeakGlobalNodes_ = lastWeakGlobalNodes_ = chunk_->New<NodeList>(true);
+        topGlobalNodes_ = lastGlobalNodes_ = chunk_->New<NodeList<Node>>();
+        topWeakGlobalNodes_ = lastWeakGlobalNodes_ = chunk_->New<NodeList<WeakNode>>();
     }
 
     ~EcmaGlobalStorage()
     {
-        NodeList *next = topGlobalNodes_;
-        NodeList *current = nullptr;
+        auto *next = topGlobalNodes_;
+        NodeList<Node> *current = nullptr;
         while (next != nullptr) {
             current = next;
             next = current->GetNext();
@@ -47,15 +48,17 @@ public:
             chunk_->Delete(current);
         }
 
-        next = topWeakGlobalNodes_;
-        while (next != nullptr) {
-            current = next;
-            next = current->GetNext();
-            current->IterateUsageGlobal([] (Node *node) {
+        auto *weakNext = topWeakGlobalNodes_;
+        NodeList<WeakNode> *weakCurrent = nullptr;
+        while (weakNext != nullptr) {
+            weakCurrent = weakNext;
+            weakNext = weakCurrent->GetNext();
+            weakCurrent->IterateUsageGlobal([] (Node *node) {
                 node->SetUsing(false);
                 node->SetObject(JSTaggedValue::Undefined().GetRawData());
+                reinterpret_cast<WeakNode *>(node)->CallWeakCallback();
             });
-            chunk_->Delete(current);
+            chunk_->Delete(weakCurrent);
         }
     }
 
@@ -106,9 +109,19 @@ public:
             isUsing_ = free;
         }
 
+        void SetWeak(bool isWeak)
+        {
+            isWeak_ = isWeak;
+        }
+
         bool IsUsing() const
         {
             return isUsing_;
+        }
+
+        bool IsWeak() const
+        {
+            return isWeak_;
         }
 
         uintptr_t GetObjectAddress() const
@@ -122,35 +135,58 @@ public:
         Node *prev_ {nullptr};
         int32_t index_ {-1};
         bool isUsing_ {false};
+        bool isWeak_ {false};
     };
 
+    class WeakNode : public Node {
+    public:
+        void SetReference(void *ref)
+        {
+            reference_ = ref;
+        }
+
+        void SetCallback(WeakClearCallback callback)
+        {
+            callback_ = callback;
+        }
+
+        void CallWeakCallback()
+        {
+            if (callback_ != nullptr) {
+                callback_(reference_);
+            }
+        }
+    private:
+        void *reference_ {nullptr};
+        WeakClearCallback callback_ {nullptr};
+    };
+
+    template<typename T>
     class NodeList {
     public:
-        explicit NodeList(bool isWeak) : isWeak_(isWeak)
+        explicit NodeList()
         {
+            bool isWeak = std::is_same<T, EcmaGlobalStorage::WeakNode>::value;
             for (int i = 0; i < GLOBAL_BLOCK_SIZE; i++) {
                 nodeList_[i].SetIndex(i);
+                nodeList_[i].SetWeak(isWeak);
             }
         }
         ~NodeList() = default;
 
-        inline static NodeList *NodeToNodeList(Node *node);
+        inline static NodeList<T> *NodeToNodeList(T *node);
 
-        inline Node *NewNode(JSTaggedType value);
-        inline Node *GetFreeNode(JSTaggedType value);
-        inline void FreeNode(Node *node);
+        inline T *NewNode(JSTaggedType value);
+        inline T *GetFreeNode(JSTaggedType value);
 
-        inline void LinkTo(NodeList *prev);
+        inline void FreeNode(T *node);
+
+        inline void LinkTo(NodeList<T> *prev);
         inline void RemoveList();
 
         inline bool IsFull()
         {
             return index_ >= GLOBAL_BLOCK_SIZE;
-        }
-
-        inline bool IsWeak()
-        {
-            return isWeak_;
         }
 
         inline bool HasFreeNode()
@@ -167,34 +203,34 @@ public:
         {
             next_ = next;
         }
-        inline NodeList *GetNext() const
+        inline NodeList<T> *GetNext() const
         {
             return next_;
         }
 
-        inline void SetPrev(NodeList *prev)
+        inline void SetPrev(NodeList<T> *prev)
         {
             prev_ = prev;
         }
-        inline NodeList *GetPrev() const
+        inline NodeList<T> *GetPrev() const
         {
             return prev_;
         }
 
-        inline void SetFreeNext(NodeList *next)
+        inline void SetFreeNext(NodeList<T> *next)
         {
             freeNext_ = next;
         }
-        inline NodeList *GetFreeNext() const
+        inline NodeList<T> *GetFreeNext() const
         {
             return freeNext_;
         }
 
-        inline void SetFreePrev(NodeList *prev)
+        inline void SetFreePrev(NodeList<T> *prev)
         {
             freePrev_ = prev;
         }
-        inline NodeList *GetFreePrev() const
+        inline NodeList<T> *GetFreePrev() const
         {
             return freePrev_;
         }
@@ -213,28 +249,27 @@ public:
         }
 
     private:
-        Node nodeList_[GLOBAL_BLOCK_SIZE];  // all
-        Node *freeList_ {nullptr};  // dispose node
-        Node *usedList_ {nullptr};  // usage node
+        T nodeList_[GLOBAL_BLOCK_SIZE];  // all
+        T *freeList_ {nullptr};  // dispose node
+        T *usedList_ {nullptr};  // usage node
         int32_t index_ {0};
-        bool isWeak_ {false};
-        NodeList *next_ {nullptr};
-        NodeList *prev_ {nullptr};
-        NodeList *freeNext_ {nullptr};
-        NodeList *freePrev_ {nullptr};
+        NodeList<T> *next_ {nullptr};
+        NodeList<T> *prev_ {nullptr};
+        NodeList<T> *freeNext_ {nullptr};
+        NodeList<T> *freePrev_ {nullptr};
     };
 
     inline uintptr_t NewGlobalHandle(JSTaggedType value);
     inline void DisposeGlobalHandle(uintptr_t addr);
-    inline uintptr_t SetWeak(uintptr_t addr);
+    inline uintptr_t SetWeak(uintptr_t addr, void *ref = nullptr, WeakClearCallback callback = nullptr);
     inline uintptr_t ClearWeak(uintptr_t addr);
     inline bool IsWeak(uintptr_t addr) const;
 
     template<class Callback>
     void IterateUsageGlobal(Callback callback)
     {
-        NodeList *next = topGlobalNodes_;
-        NodeList *current = nullptr;
+        NodeList<Node> *next = topGlobalNodes_;
+        NodeList<Node> *current = nullptr;
         while (next != nullptr) {
             current = next;
             next = current->GetNext();
@@ -246,8 +281,8 @@ public:
     template<class Callback>
     void IterateWeakUsageGlobal(Callback callback)
     {
-        NodeList *next = topWeakGlobalNodes_;
-        NodeList *current = nullptr;
+        NodeList<WeakNode> *next = topWeakGlobalNodes_;
+        NodeList<WeakNode> *current = nullptr;
         while (next != nullptr) {
             current = next;
             next = current->GetNext();
@@ -260,17 +295,21 @@ private:
     NO_COPY_SEMANTIC(EcmaGlobalStorage);
     NO_MOVE_SEMANTIC(EcmaGlobalStorage);
 
-    inline uintptr_t NewGlobalHandleImplement(NodeList **storage, NodeList **freeList, bool isWeak, JSTaggedType value);
+    template<typename T>
+    inline void DisposeGlobalHandle(T *node, NodeList<T> **freeLis, NodeList<T> **topNodes,
+                                    NodeList<T> **lastNodes);
+    template<typename T>
+    inline uintptr_t NewGlobalHandleImplement(NodeList<T> **storage, NodeList<T> **freeList, JSTaggedType value);
 
     [[maybe_unused]] JSThread *thread_ {nullptr};
     Chunk *chunk_ {nullptr};
-    NodeList *topGlobalNodes_ {nullptr};
-    NodeList *lastGlobalNodes_ {nullptr};
-    NodeList *freeListNodes_ {nullptr};
+    NodeList<Node> *topGlobalNodes_ {nullptr};
+    NodeList<Node> *lastGlobalNodes_ {nullptr};
+    NodeList<Node> *freeListNodes_ {nullptr};
 
-    NodeList *topWeakGlobalNodes_ {nullptr};
-    NodeList *lastWeakGlobalNodes_ {nullptr};
-    NodeList *weakFreeListNodes_ {nullptr};
+    NodeList<WeakNode> *topWeakGlobalNodes_ {nullptr};
+    NodeList<WeakNode> *lastWeakGlobalNodes_ {nullptr};
+    NodeList<WeakNode> *weakFreeListNodes_ {nullptr};
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_ECMA_GLOBAL_STORAGE_H
