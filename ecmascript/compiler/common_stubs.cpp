@@ -229,72 +229,10 @@ void SetPropertyByNameWithOwnStub::GenerateCircuit(const CompilationConfig *cfg)
 void GetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
-    auto env = GetEnvironment();
     GateRef glue = PtrArgument(0);
     GateRef receiver = TaggedArgument(1);
-    DEFVARIABLE(key, VariableType::JS_ANY(), TaggedArgument(2)); /* 2 : 3rd parameter is key */
-
-    Label isNumberOrStringSymbol(env);
-    Label notNumber(env);
-    Label isStringOrSymbol(env);
-    Label notStringOrSymbol(env);
-    Label exit(env);
-
-    Branch(TaggedIsNumber(*key), &isNumberOrStringSymbol, &notNumber);
-    Bind(&notNumber);
-    {
-        Branch(TaggedIsStringOrSymbol(*key), &isNumberOrStringSymbol, &notStringOrSymbol);
-        Bind(&notStringOrSymbol);
-        {
-            Return(Hole());
-        }
-    }
-    Bind(&isNumberOrStringSymbol);
-    {
-        GateRef index = TryToElementsIndex(*key);
-        Label validIndex(env);
-        Label notValidIndex(env);
-        Branch(Int32GreaterThanOrEqual(index, Int32(0)), &validIndex, &notValidIndex);
-        Bind(&validIndex);
-        {
-            Return(GetPropertyByIndex(glue, receiver, index));
-        }
-        Bind(&notValidIndex);
-        {
-            Label notNumber1(env);
-            Label getByName(env);
-            Branch(TaggedIsNumber(*key), &exit, &notNumber1);
-            Bind(&notNumber1);
-            {
-                Label isString(env);
-                Label notString(env);
-                Label isInternalString(env);
-                Label notIntenalString(env);
-                Branch(TaggedIsString(*key), &isString, &notString);
-                Bind(&isString);
-                {
-                    Branch(IsInternalString(*key), &isInternalString, &notIntenalString);
-                    Bind(&isInternalString);
-                    Jump(&getByName);
-                    Bind(&notIntenalString);
-                    {
-                        key = CallRuntime(glue, RTSTUB_ID(NewInternalString), { *key });
-                        Jump(&getByName);
-                    }
-                }
-                Bind(&notString);
-                {
-                    Jump(&getByName);
-                }
-            }
-            Bind(&getByName);
-            {
-                Return(GetPropertyByName(glue, receiver, *key));
-            }
-        }
-    }
-    Bind(&exit);
-    Return(Hole());
+    GateRef key = TaggedArgument(2); // 2 : 3rd para
+    Return(GetPropertyByValue(glue, receiver, key));
 }
 
 void SetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
