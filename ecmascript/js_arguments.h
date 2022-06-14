@@ -58,11 +58,6 @@ public:
     static bool DeleteProperty(JSThread *thread, const JSHandle<JSArguments> &args, const JSHandle<JSTaggedValue> &key);
     // 9.4.4.6 CreateUnmappedArgumentsObject(argumentsList)
     // 9.4.4.7 CreateMappedArgumentsObject ( func, formals, argumentsList, env )
-
-    static constexpr size_t PARAMETER_MAP_OFFSET = JSObject::SIZE;
-    ACCESSORS(ParameterMap, PARAMETER_MAP_OFFSET, SIZE)
-
-    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, PARAMETER_MAP_OFFSET, SIZE)
 };
 }  // namespace panda::ecmascript
 

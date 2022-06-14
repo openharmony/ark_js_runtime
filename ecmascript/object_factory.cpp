@@ -781,7 +781,6 @@ JSHandle<JSArguments> ObjectFactory::NewJSArguments()
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetArgumentsClass());
     JSHandle<JSArguments> obj = JSHandle<JSArguments>::Cast(NewJSObject(dynclass));
-    obj->SetParameterMap(thread_, JSTaggedValue::Undefined());
     return obj;
 }
 
@@ -1163,7 +1162,6 @@ void ObjectFactory::InitializeJSObject(const JSHandle<JSObject> &obj, const JSHa
             JSBoundFunction::Cast(*obj)->SetBoundArguments(JSTaggedValue::Undefined());
             break;
         case JSType::JS_ARGUMENTS:
-            JSArguments::Cast(*obj)->SetParameterMap(JSTaggedValue::Undefined());
             break;
         case JSType::JS_FORIN_ITERATOR:
         case JSType::JS_MAP_ITERATOR:
