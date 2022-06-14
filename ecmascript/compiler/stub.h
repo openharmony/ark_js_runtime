@@ -240,7 +240,6 @@ public:
     GateRef IsDictionaryMode(GateRef object);
     GateRef IsDictionaryModeByHClass(GateRef hClass);
     GateRef IsDictionaryElement(GateRef hClass);
-    GateRef NotBuiltinsConstructor(GateRef object);
     GateRef IsClassConstructorFromBitField(GateRef bitfield);
     GateRef IsClassConstructor(GateRef object);
     GateRef IsClassPrototype(GateRef object);
@@ -253,7 +252,6 @@ public:
     GateRef IsJsProxy(GateRef obj);
     GateRef IsJSFunctionBase(GateRef obj);
     GateRef IsConstructor(GateRef object);
-    GateRef IsBuiltinsConstructor(GateRef object);
     GateRef IsBase(GateRef func);
     GateRef IsJsArray(GateRef obj);
     GateRef IsJSObject(GateRef obj);

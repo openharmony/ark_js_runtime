@@ -23,16 +23,6 @@
 #include "ecmascript/tagged_array-inl.h"
 
 namespace panda::ecmascript {
-inline void ECMAObject::SetBuiltinsCtorMode()
-{
-    GetClass()->SetBuiltinsCtor(true);
-}
-
-inline bool ECMAObject::IsBuiltinsConstructor() const
-{
-    return GetClass()->IsBuiltinsCtor();
-}
-
 inline void ECMAObject::SetCallable(bool flag)
 {
     GetClass()->SetCallable(flag);

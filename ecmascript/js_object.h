@@ -326,8 +326,6 @@ class ECMAObject : public TaggedObject {
 public:
     CAST_CHECK(ECMAObject, IsECMAObject);
 
-    void SetBuiltinsCtorMode();
-    bool IsBuiltinsConstructor() const;
     void SetCallable(bool flag);
     bool IsCallable() const;
     JSMethod *GetCallTarget() const;

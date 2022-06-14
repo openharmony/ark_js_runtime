@@ -264,7 +264,7 @@ JSTaggedValue JSFunction::Call(EcmaRuntimeCallInfo *info)
     }
 
     auto *hclass = func->GetTaggedObject()->GetClass();
-    if (!hclass->IsBuiltinsCtor() && hclass->IsClassConstructor()) {
+    if (hclass->IsClassConstructor()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "class constructor cannot call", JSTaggedValue::Exception());
     }
     return EcmaInterpreter::Execute(info);
@@ -320,7 +320,7 @@ JSTaggedValue JSFunction::ConstructInternal(EcmaRuntimeCallInfo *info)
     }
 
     JSHandle<JSTaggedValue> obj(thread, JSTaggedValue::Undefined());
-    if (!func->IsBuiltinsConstructor() && func->IsBase()) {
+    if (func->IsBase()) {
         ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
         obj = JSHandle<JSTaggedValue>(factory->NewJSObjectByConstructor(func, newTarget));
     }
@@ -329,7 +329,7 @@ JSTaggedValue JSFunction::ConstructInternal(EcmaRuntimeCallInfo *info)
     JSTaggedValue resultValue = EcmaInterpreter::Execute(info);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 9.3.2 [[Construct]] (argumentsList, newTarget)
-    if (func->IsBuiltinsConstructor() || resultValue.IsECMAObject()) {
+    if (resultValue.IsECMAObject()) {
         return resultValue;
     }
 

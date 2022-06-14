@@ -1933,7 +1933,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         if (ctor.IsJSFunction() && ctor.IsConstructor()) {
             JSFunction *ctorFunc = JSFunction::Cast(ctor.GetTaggedObject());
             JSMethod *ctorMethod = ctorFunc->GetMethod();
-            if (ctorFunc->IsBuiltinsConstructor()) {
+            if (ctorFunc->IsBuiltinConstructor()) {
                 ASSERT(ctorMethod->GetNumVregsWithCallField() == 0);
                 size_t frameSize = INTERPRETER_FRAME_STATE_SIZE + numArgs + 1;  // +1 for this
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -3472,7 +3472,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         if (superCtor.IsJSFunction() && superCtor.IsConstructor() && !newTarget.IsUndefined()) {
             JSFunction *superCtorFunc = JSFunction::Cast(superCtor.GetTaggedObject());
             JSMethod *superCtorMethod = superCtorFunc->GetMethod();
-            if (superCtorFunc->IsBuiltinsConstructor()) {
+            if (superCtorFunc->IsBuiltinConstructor()) {
                 ASSERT(superCtorMethod->GetNumVregsWithCallField() == 0);
                 size_t frameSize = INTERPRETER_FRAME_STATE_SIZE + range + NUM_MANDATORY_JSFUNC_ARGS;
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
