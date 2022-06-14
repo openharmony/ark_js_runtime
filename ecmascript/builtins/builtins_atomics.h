@@ -61,31 +61,31 @@ private:
                                                const callbackfun &op);
     template<typename callbackfun>
     static JSTaggedValue AtomicReadModifyWriteCase(JSThread *thread, JSTaggedValue buffer, DataViewType type,
-                                                   int32_t indexedPosition, EcmaRuntimeCallInfo *argv,
+                                                   uint32_t indexedPosition, EcmaRuntimeCallInfo *argv,
                                                    const callbackfun &op);
     template<typename callbackfun>
-    static JSTaggedValue HandleWithUint8(JSThread *thread, uint32_t size, uint8_t *block, int32_t indexedPosition,
+    static JSTaggedValue HandleWithUint8(JSThread *thread, uint32_t size, uint8_t *block, uint32_t indexedPosition,
                                          EcmaRuntimeCallInfo *argv, const callbackfun &op);
     template<typename callbackfun>
-    static JSTaggedValue HandleWithInt8(JSThread *thread, uint32_t size, uint8_t *block, int32_t indexedPosition,
+    static JSTaggedValue HandleWithInt8(JSThread *thread, uint32_t size, uint8_t *block, uint32_t indexedPosition,
                                         EcmaRuntimeCallInfo *argv, const callbackfun &op);
     template<typename callbackfun>
-    static JSTaggedValue HandleWithUint16(JSThread *thread, uint32_t size, uint8_t *block, int32_t indexedPosition,
+    static JSTaggedValue HandleWithUint16(JSThread *thread, uint32_t size, uint8_t *block, uint32_t indexedPosition,
                                           EcmaRuntimeCallInfo *argv, const callbackfun &op);
     template<typename callbackfun>
-    static JSTaggedValue HandleWithInt16(JSThread *thread, uint32_t size, uint8_t *block, int32_t indexedPosition,
+    static JSTaggedValue HandleWithInt16(JSThread *thread, uint32_t size, uint8_t *block, uint32_t indexedPosition,
                                          EcmaRuntimeCallInfo *argv, const callbackfun &op);
     template<typename callbackfun>
-    static JSTaggedValue HandleWithUint32(JSThread *thread, uint32_t size, uint8_t *block, int32_t indexedPosition,
+    static JSTaggedValue HandleWithUint32(JSThread *thread, uint32_t size, uint8_t *block, uint32_t indexedPosition,
                                           EcmaRuntimeCallInfo *argv, const callbackfun &op);
     template<typename callbackfun>
-    static JSTaggedValue HandleWithInt32(JSThread *thread, uint32_t size, uint8_t *block, int32_t indexedPosition,
+    static JSTaggedValue HandleWithInt32(JSThread *thread, uint32_t size, uint8_t *block, uint32_t indexedPosition,
                                          EcmaRuntimeCallInfo *argv, const callbackfun &op);
     template<typename callbackfun>
-    static JSTaggedValue HandleWithBigInt64(JSThread *thread, uint32_t size, uint8_t *block, int32_t indexedPosition,
+    static JSTaggedValue HandleWithBigInt64(JSThread *thread, uint32_t size, uint8_t *block, uint32_t indexedPosition,
                                             EcmaRuntimeCallInfo *argv, const callbackfun &op);
     template<typename callbackfun>
-    static JSTaggedValue HandleWithBigUint64(JSThread *thread, uint32_t size, uint8_t *block, int32_t indexedPosition,
+    static JSTaggedValue HandleWithBigUint64(JSThread *thread, uint32_t size, uint8_t *block, uint32_t indexedPosition,
                                              EcmaRuntimeCallInfo *argv, const callbackfun &op);
 
     static constexpr int ARGS_NUMBER = 2;
