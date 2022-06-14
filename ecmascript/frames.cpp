@@ -13,52 +13,81 @@
  * limitations under the License.
  */
 #include "ecmascript/frames.h"
-#include <typeinfo>
 #include "ecmascript/ecma_vm.h"
+#include "ecmascript/file_loader.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/llvm_stackmap_parser.h"
 
 namespace panda::ecmascript {
-#define FRAME_AND_TYPE_LIST(V)                                           \
-    V(OptimizedFrame, OPTIMIZED_FRAME)                                   \
-    V(OptimizedEntryFrame, OPTIMIZED_ENTRY_FRAME)                        \
-    V(OptimizedJSFunctionFrame, OPTIMIZED_JS_FUNCTION_FRAME)             \
-    V(OptimizedLeaveFrame, LEAVE_FRAME)                                  \
-    V(OptimizedWithArgvLeaveFrame, LEAVE_FRAME_WITH_ARGV)                \
-    V(InterpretedFrame, INTERPRETER_FRAME)                               \
-    V(AsmInterpretedFrame, ASM_INTERPRETER_FRAME)                        \
-    V(AsmInterpretedFrame, INTERPRETER_CONSTRUCTOR_FRAME)                \
-    V(BuiltinFrame, BUILTIN_FRAME)                                       \
-    V(BuiltinWithArgvFrame, BUILTIN_FRAME_WITH_ARGV)                     \
-    V(BuiltinFrame, BUILTIN_ENTRY_FRAME)                                 \
-    V(InterpretedFrame, INTERPRETER_FAST_NEW_FRAME)                      \
-    V(InterpretedEntryFrame, INTERPRETER_ENTRY_FRAME)                    \
-    V(AsmInterpretedEntryFrame, ASM_INTERPRETER_ENTRY_FRAME)             \
-    V(OptimizedJSFunctionFrame, OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME) \
-    V(AsmInterpretedBridgeFrame, ASM_INTERPRETER_BRIDGE_FRAME)
-
-#define IMPLEMENT_GET_FRAME(Frame)                  \
-    template<>                                      \
-    Frame* FrameIterator::GetFrame()                \
-    {                                               \
-        return Frame::GetFrameFromSp(current_);     \
-    }
-    FRAME_LIST(IMPLEMENT_GET_FRAME)
-#undef IMPLEMENT_GET_FRAME
-
 void FrameIterator::Advance()
 {
     ASSERT(!Done());
     FrameType t = GetFrameType();
     switch (t) {
-#define CASE(FRAME, Type)                       \
-        case FrameType::Type : {                \
-            auto frame = GetFrame<FRAME>();     \
-            current_ = frame->GetPrevFrameFp(); \
-            break;                              \
+        case FrameType::OPTIMIZED_FRAME : {
+            auto frame = GetFrame<OptimizedFrame>();
+            current_ = frame->GetPrevFrameFp();
+            break;
         }
-        FRAME_AND_TYPE_LIST(CASE)
-#undef CASE
+        case FrameType::OPTIMIZED_ENTRY_FRAME : {
+            auto frame = GetFrame<OptimizedEntryFrame>();
+            current_ = frame->GetPrevFrameFp();
+            break;
+        }
+        case FrameType::OPTIMIZED_JS_FUNCTION_FRAME:
+        case FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME : {
+            auto frame = GetFrame<OptimizedJSFunctionFrame>();
+            current_ = frame->GetPrevFrameFp();
+            break;
+        }
+        case FrameType::LEAVE_FRAME : {
+            auto frame = GetFrame<OptimizedLeaveFrame>();
+            current_ = frame->GetPrevFrameFp();
+            break;
+        }
+        case FrameType::LEAVE_FRAME_WITH_ARGV : {
+            auto frame = GetFrame<OptimizedWithArgvLeaveFrame>();
+            current_ = frame->GetPrevFrameFp();
+            break;
+        }
+        case FrameType::INTERPRETER_FRAME:
+        case FrameType::INTERPRETER_FAST_NEW_FRAME : {
+            auto frame = GetFrame<InterpretedFrame>();
+            current_ = frame->GetPrevFrameFp();
+            break;
+        }
+        case FrameType::INTERPRETER_CONSTRUCTOR_FRAME:
+        case FrameType::ASM_INTERPRETER_FRAME : {
+            auto frame = GetFrame<AsmInterpretedFrame>();
+            current_ = frame->GetPrevFrameFp();
+            break;
+        }
+        case FrameType::BUILTIN_FRAME:
+        case FrameType::BUILTIN_ENTRY_FRAME : {
+            auto frame = GetFrame<BuiltinFrame>();
+            current_ = frame->GetPrevFrameFp();
+            break;
+        }
+        case FrameType::BUILTIN_FRAME_WITH_ARGV : {
+            auto frame = GetFrame<BuiltinWithArgvFrame>();
+            current_ = frame->GetPrevFrameFp();
+            break;
+        }
+        case FrameType::INTERPRETER_ENTRY_FRAME : {
+            auto frame = GetFrame<InterpretedEntryFrame>();
+            current_ = frame->GetPrevFrameFp();
+            break;
+        }
+        case FrameType::ASM_INTERPRETER_ENTRY_FRAME : {
+            auto frame = GetFrame<AsmInterpretedEntryFrame>();
+            current_ = frame->GetPrevFrameFp();
+            break;
+        }
+        case FrameType::ASM_INTERPRETER_BRIDGE_FRAME : {
+            auto frame = GetFrame<AsmInterpretedBridgeFrame>();
+            current_ = frame->GetPrevFrameFp();
+            break;
+        }
         default: {
             UNREACHABLE();
         }
@@ -69,26 +98,32 @@ uintptr_t FrameIterator::GetPrevFrameCallSiteSp(uintptr_t curPc)
     if (Done()) {
         return 0;
     }
-#define GET_CALLSITE_SP_LIST(V)                                \
-    V(LEAVE_FRAME, OptimizedLeaveFrame)                        \
-    V(LEAVE_FRAME_WITH_ARGV, OptimizedWithArgvLeaveFrame)      \
-    V(BUILTIN_FRAME_WITH_ARGV, BuiltinWithArgvFrame)           \
-    V(BUILTIN_FRAME, BuiltinFrame)                             \
-    V(ASM_INTERPRETER_BRIDGE_FRAME, AsmInterpretedBridgeFrame)
-
     auto type = GetFrameType();
     switch (type) {
-#define CASE(Type, Frame)                          \
-        case FrameType::Type: {                    \
-            auto frame = GetFrame<Frame>();        \
-            return frame->GetCallSiteSp();         \
+        case FrameType::LEAVE_FRAME: {
+            auto frame = GetFrame<OptimizedLeaveFrame>();
+            return frame->GetCallSiteSp();
         }
-        GET_CALLSITE_SP_LIST(CASE)
-#undef CASE
+        case FrameType::LEAVE_FRAME_WITH_ARGV: {
+            auto frame = GetFrame<OptimizedWithArgvLeaveFrame>();
+            return frame->GetCallSiteSp();
+        }
+        case FrameType::BUILTIN_FRAME_WITH_ARGV: {
+            auto frame = GetFrame<BuiltinWithArgvFrame>();
+            return frame->GetCallSiteSp();
+        }
+        case FrameType::BUILTIN_FRAME: {
+            auto frame = GetFrame<BuiltinFrame>();
+            return frame->GetCallSiteSp();
+        }
+        case FrameType::ASM_INTERPRETER_BRIDGE_FRAME: {
+            auto frame = GetFrame<AsmInterpretedBridgeFrame>();
+            return frame->GetCallSiteSp();
+        }
         case FrameType::OPTIMIZED_FRAME:
         case FrameType::OPTIMIZED_JS_FUNCTION_FRAME: {
             auto callSiteSp = reinterpret_cast<uintptr_t>(current_) +
-                thread_->GetEcmaVM()->GetStackMapParser()->GetFuncFpDelta(curPc);
+                thread_->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->GetFuncFpDelta(curPc);
             return callSiteSp;
         }
         case FrameType::OPTIMIZED_JS_FUNCTION_ARGS_CONFIG_FRAME : {

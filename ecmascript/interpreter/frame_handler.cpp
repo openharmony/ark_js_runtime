@@ -16,6 +16,7 @@
 
 #include "ecmascript/interpreter/frame_handler.h"
 
+#include "ecmascript/file_loader.h"
 #include "ecmascript/llvm_stackmap_parser.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_thread.h"
@@ -298,10 +299,10 @@ ARK_INLINE void FrameHandler::InterpretedFrameIterate(const JSTaggedType *sp,
 }
 
 ARK_INLINE void FrameHandler::AsmInterpretedFrameIterate(const JSTaggedType *sp,
-                                                         const RootVisitor &v0,
-                                                         const RootRangeVisitor &v1,
-                                                         ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
-                                                         bool isVerifying)
+    const RootVisitor &v0,
+    const RootRangeVisitor &v1,
+    ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
+    bool isVerifying)
 {
     AsmInterpretedFrame *frame = AsmInterpretedFrame::GetFrameFromSp(sp);
     uintptr_t start = ToUintPtr(sp);
@@ -315,7 +316,7 @@ ARK_INLINE void FrameHandler::AsmInterpretedFrameIterate(const JSTaggedType *sp,
 
     uintptr_t curPc = optimizedReturnAddr_;
     std::set<uintptr_t> slotAddrs;
-    bool ret = thread_->GetEcmaVM()->GetStackMapParser()->CollectGCSlots(
+    bool ret = thread_->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->CollectGCSlots(
         curPc, reinterpret_cast<uintptr_t>(sp), slotAddrs, derivedPointers, isVerifying,
         optimizedCallSiteSp_);
     if (!ret) {
@@ -330,10 +331,10 @@ ARK_INLINE void FrameHandler::AsmInterpretedFrameIterate(const JSTaggedType *sp,
 }
 
 ARK_INLINE void FrameHandler::BuiltinFrameIterate(const JSTaggedType *sp,
-                                                  [[maybe_unused]] const RootVisitor &v0,
-                                                  const RootRangeVisitor &v1,
-                                                  [[maybe_unused]] ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
-                                                  [[maybe_unused]] bool isVerifying)
+    [[maybe_unused]] const RootVisitor &v0,
+    const RootRangeVisitor &v1,
+    [[maybe_unused]] ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
+    [[maybe_unused]] bool isVerifying)
 {
     auto frame = BuiltinFrame::GetFrameFromSp(sp);
     // no need to visit stack map for entry frame
@@ -387,7 +388,7 @@ ARK_INLINE void FrameHandler::OptimizedFrameIterate(const JSTaggedType *sp,
     bool isVerifying)
 {
     std::set<uintptr_t> slotAddrs;
-    bool ret = thread_->GetEcmaVM()->GetStackMapParser()->CollectGCSlots(
+    bool ret = thread_->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->CollectGCSlots(
         optimizedReturnAddr_, reinterpret_cast<uintptr_t>(sp), slotAddrs, derivedPointers,
         isVerifying, optimizedCallSiteSp_);
     if (!ret) {
@@ -410,7 +411,7 @@ ARK_INLINE void FrameHandler::OptimizedJSFunctionFrameIterate(const JSTaggedType
 {
     OptimizedJSFunctionFrame *frame = OptimizedJSFunctionFrame::GetFrameFromSp(sp);
 
-    int delta = thread_->GetEcmaVM()->GetStackMapParser()->GetFuncFpDelta(optimizedReturnAddr_);
+    int delta = thread_->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->GetFuncFpDelta(optimizedReturnAddr_);
     uintptr_t *preFrameSp = frame->ComputePrevFrameSp(sp, delta);
 
     auto argc = *(reinterpret_cast<uint64_t *>(preFrameSp));
@@ -423,7 +424,7 @@ ARK_INLINE void FrameHandler::OptimizedJSFunctionFrameIterate(const JSTaggedType
 
     std::set<uintptr_t> slotAddrs;
     auto currentPc = optimizedReturnAddr_;
-    bool ret = thread_->GetEcmaVM()->GetStackMapParser()->CollectGCSlots(
+    bool ret = thread_->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->CollectGCSlots(
         currentPc, reinterpret_cast<uintptr_t>(sp), slotAddrs, derivedPointers, isVerifying, optimizedCallSiteSp_);
     if (!ret) {
 #ifndef NDEBUG
@@ -446,7 +447,7 @@ ARK_INLINE void FrameHandler::OptimizedEntryFrameIterate(const JSTaggedType *sp,
     std::set<uintptr_t> slotAddrs;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     auto returnAddr = reinterpret_cast<uintptr_t>(*(reinterpret_cast<uintptr_t*>(const_cast<JSTaggedType *>(sp)) + 1));
-    bool ret = thread_->GetEcmaVM()->GetStackMapParser()->CollectGCSlots(
+    bool ret = thread_->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->CollectGCSlots(
         returnAddr, reinterpret_cast<uintptr_t>(sp), slotAddrs, derivedPointers, isVerifying, optimizedReturnAddr_);
     if (!ret) {
 #ifndef NDEBUG
@@ -651,7 +652,7 @@ void FrameHandler::CollectBCOffsetInfo()
             case FrameType::OPTIMIZED_JS_FUNCTION_FRAME: {
                 auto frame = it.GetFrame<OptimizedJSFunctionFrame>();
                 auto returnAddr = frame->GetReturnAddr();
-                auto constInfo = thread_->GetEcmaVM()->GetStackMapParser()->GetConstInfo(returnAddr);
+                auto constInfo = thread_->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->GetConstInfo(returnAddr);
                 if (!constInfo.empty()) {
                     auto prevFp = frame->GetPrevFrameFp();
                     auto name = GetAotExceptionFuncName(prevFp);
@@ -662,7 +663,7 @@ void FrameHandler::CollectBCOffsetInfo()
             case FrameType::LEAVE_FRAME: {
                 auto frame = it.GetFrame<OptimizedLeaveFrame>();
                 auto returnAddr = frame->GetReturnAddr();
-                auto constInfo = thread_->GetEcmaVM()->GetStackMapParser()->GetConstInfo(returnAddr);
+                auto constInfo = thread_->GetEcmaVM()->GetFileLoader()->GetStackMapParser()->GetConstInfo(returnAddr);
                 if (!constInfo.empty()) {
                     auto prevFp = frame->GetPrevFrameFp();
                     auto name = GetAotExceptionFuncName(prevFp);
