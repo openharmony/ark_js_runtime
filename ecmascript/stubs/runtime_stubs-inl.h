@@ -1215,6 +1215,7 @@ JSTaggedValue RuntimeStubs::RuntimeGetUnmapedArgs(JSThread *thread, JSTaggedType
     uint32_t len = argumentsList->GetLength();
     // 2. Let obj be ObjectCreate(%ObjectPrototype%, «[[ParameterMap]]»).
     // 3. Set obj’s [[ParameterMap]] internal slot to undefined.
+    // [[ParameterMap]] setted as undifined.
     JSHandle<JSArguments> obj = factory->NewJSArguments();
     // 4. Perform DefinePropertyOrThrow(obj, "length", PropertyDescriptor{[[Value]]: len, [[Writable]]: true,
     // [[Enumerable]]: false, [[Configurable]]: true}).

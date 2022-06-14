@@ -336,6 +336,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
             case JSType::JS_TYPE_ERROR:
             case JSType::JS_REFERENCE_ERROR:
             case JSType::JS_URI_ERROR:
+            case JSType::JS_ARGUMENTS:
             case JSType::JS_SYNTAX_ERROR:
             case JSType::JS_OBJECT: {
                 CHECK_DUMP_FIELDS(ECMAObject::SIZE, JSObject::SIZE, 2U)
@@ -491,9 +492,6 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 DUMP_FOR_HANDLE(date)
                 break;
             }
-            case JSType::JS_ITERATOR:
-                // JS Iterate is a tool class, so we don't need to check it.
-                break;
             case JSType::JS_FORIN_ITERATOR: {
                 CHECK_DUMP_FIELDS(JSObject::SIZE, JSForInIterator::SIZE, 4U)
                 JSHandle<JSTaggedValue> array(thread, factory->NewJSArray().GetTaggedValue());
@@ -598,11 +596,6 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 NEW_OBJECT_AND_DUMP(JSDataView, JS_DATA_VIEW)
                 break;
             }
-            case JSType::JS_ARGUMENTS: {
-                CHECK_DUMP_FIELDS(JSObject::SIZE, JSArguments::SIZE, 1U)
-                NEW_OBJECT_AND_DUMP(JSArguments, JS_ARGUMENTS)
-                break;
-            }
             case JSType::JS_GENERATOR_OBJECT: {
                 CHECK_DUMP_FIELDS(JSObject::SIZE, JSGeneratorObject::SIZE, 3U)
                 NEW_OBJECT_AND_DUMP(JSGeneratorObject, JS_GENERATOR_OBJECT)
@@ -676,15 +669,6 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
             case JSType::TAGGED_DICTIONARY: {
                 JSHandle<TaggedArray> dict = factory->NewDictionaryArray(4);
                 DUMP_FOR_HANDLE(dict)
-                break;
-            }
-            case JSType::FREE_OBJECT_WITH_ONE_FIELD:
-            case JSType::FREE_OBJECT_WITH_NONE_FIELD:
-            case JSType::FREE_OBJECT_WITH_TWO_FIELD:
-            {
-                break;
-            }
-            case JSType::JS_NATIVE_POINTER: {
                 break;
             }
             case JSType::GLOBAL_ENV: {
@@ -1066,6 +1050,13 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 CHECK_DUMP_FIELDS(JSObject::SIZE, JSCjsRequire::SIZE, 2U);
                 JSHandle<JSCjsRequire> cjsRequire = factory->NewCjsRequire();
                 DUMP_FOR_HANDLE(cjsRequire);
+                break;
+            }
+            case JSType::JS_ITERATOR:
+            case JSType::FREE_OBJECT_WITH_ONE_FIELD:
+            case JSType::FREE_OBJECT_WITH_NONE_FIELD:
+            case JSType::FREE_OBJECT_WITH_TWO_FIELD:
+            case JSType::JS_NATIVE_POINTER: {
                 break;
             }
             default:
