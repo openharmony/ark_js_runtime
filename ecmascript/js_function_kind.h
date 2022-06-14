@@ -28,9 +28,6 @@ enum class FunctionKind : uint8_t {
     // END arrow functions
     ASYNC_FUNCTION,
     // END async functions
-    // BEGIN constructable functions
-    BUILTIN_PROXY_CONSTRUCTOR,
-    BUILTIN_CONSTRUCTOR,
     // BEGIN base constructors
     BASE_CONSTRUCTOR,
     // BEGIN default constructors
@@ -38,6 +35,9 @@ enum class FunctionKind : uint8_t {
     // BEGIN class constructors
     CLASS_CONSTRUCTOR,
     // END base constructors
+    // BEGIN constructable functions
+    BUILTIN_PROXY_CONSTRUCTOR,
+    BUILTIN_CONSTRUCTOR,
     // END default constructors
     DERIVED_CONSTRUCTOR,
     // END class constructors

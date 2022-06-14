@@ -73,17 +73,6 @@ JSTaggedValue SlowRuntimeHelper::NewObject(EcmaRuntimeCallInfo *info)
         THROW_TYPE_ERROR_AND_RETURN(thread, "Constructed NonConstructable", JSTaggedValue::Exception());
     }
 
-    JSHandle<JSFunction> jsFunc = JSHandle<JSFunction>::Cast(func);
-    ASSERT(jsFunc->GetCallTarget() != nullptr);
-    ASSERT(JSFunction::Cast(info->GetNewTarget()->GetTaggedObject())->GetCallTarget() != nullptr);
-
-    if (jsFunc->GetCallTarget()->IsNativeWithCallField()) {
-        if (jsFunc->IsBuiltinsConstructor()) {
-            return EcmaInterpreter::Execute(info);
-        }
-        THROW_TYPE_ERROR_AND_RETURN(thread, "Constructed NonConstructable", JSTaggedValue::Exception());
-    }
-
     JSTaggedValue result = JSFunction::ConstructInternal(info);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return result;
@@ -116,7 +105,7 @@ JSTaggedValue ConstructGeneric(JSThread *thread, JSHandle<JSFunction> ctor, JSHa
     }
 
     JSHandle<JSTaggedValue> obj(thread, JSTaggedValue::Undefined());
-    if (!ctor->IsBuiltinsConstructor() && ctor->IsBase()) {
+    if (ctor->IsBase()) {
         ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
         obj = JSHandle<JSTaggedValue>(factory->NewJSObjectByConstructor(ctor, newTgt));
     }
@@ -155,7 +144,7 @@ JSTaggedValue ConstructGeneric(JSThread *thread, JSHandle<JSFunction> ctor, JSHa
     JSTaggedValue resultValue = EcmaInterpreter::Execute(&info);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 9.3.2 [[Construct]] (argumentsList, newTarget)
-    if (ctor->IsBuiltinsConstructor() || resultValue.IsECMAObject()) {
+    if (resultValue.IsECMAObject()) {
         return resultValue;
     }
 
