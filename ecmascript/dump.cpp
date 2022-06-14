@@ -3454,7 +3454,10 @@ static void KeyToStd(CString &res, JSTaggedValue key)
             EcmaStringToStd(res, EcmaString::Cast(key.GetTaggedObject()));
         } else if (key.IsSymbol()) {
             JSSymbol *sym = JSSymbol::Cast(key.GetTaggedObject());
-            EcmaStringToStd(res, EcmaString::Cast(sym->GetDescription().GetTaggedObject()));
+            JSTaggedValue desc = sym->GetDescription();
+            if (desc.IsString()) {
+                EcmaStringToStd(res, EcmaString::Cast(desc.GetTaggedObject()));
+            }
         }
     }
 }
