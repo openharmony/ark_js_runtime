@@ -56,14 +56,14 @@ void LLVMStackMapParser::PrintCallSiteSlotAddr(const CallSiteInfo& callsiteInfo,
 {
     bool flag = (callsiteInfo.size() % 2 != 0);
     size_t j = flag ? 1 : 0; // skip first element when size is odd number
-    for (; j < callsiteInfo.size(); j += 2) {
+    for (; j < callsiteInfo.size(); j += 2) { // 2: base and derived
         const DwarfRegAndOffsetType baseInfo = callsiteInfo[j];
         const DwarfRegAndOffsetType derivedInfo = callsiteInfo[j + 1];
         COMPILER_LOG(DEBUG) << std::hex << " callSiteSp:0x" << callSiteSp << " callsiteFp:" << callsiteFp;
         COMPILER_LOG(DEBUG) << std::dec << "base DWARF_REG:" << baseInfo.first
                     << " OFFSET:" << baseInfo.second;
-        uintptr_t base = GetStackSlotAddress(baseInfo, callSiteSp, callsiteFp, flag);
-        uintptr_t derived = GetStackSlotAddress(derivedInfo, callSiteSp, callsiteFp, flag);
+        uintptr_t base = GetStackSlotAddress(baseInfo, callSiteSp, callsiteFp);
+        uintptr_t derived = GetStackSlotAddress(derivedInfo, callSiteSp, callsiteFp);
         if (base != derived) {
             COMPILER_LOG(DEBUG) << std::dec << "derived DWARF_REG:" << derivedInfo.first
                 << " OFFSET:" << derivedInfo.second;
@@ -89,12 +89,9 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t 
 }
 
 uintptr_t LLVMStackMapParser::GetStackSlotAddress(const DwarfRegAndOffsetType info,
-    uintptr_t callSiteSp, uintptr_t callsiteFp, bool flag) const
+    uintptr_t callSiteSp, uintptr_t callsiteFp) const
 {
     uintptr_t address = 0;
-    if (flag) {
-        std::cout << "  szc--------- ino.first:" << info.first << " second:" << info.second << std::endl;
-    }
     if (info.first == GCStackMapRegisters::SP) {
         address = callSiteSp + info.second;
     } else if (info.first == GCStackMapRegisters::FP) {
@@ -110,11 +107,11 @@ void LLVMStackMapParser::CollectBaseAndDerivedPointers(const CallSiteInfo* infos
 {
     bool flag = (infos->size() % 2 != 0);
     size_t j = flag ? 1 : 0; // skip first element when size is odd number
-    for (; j < infos->size(); j += 2) {
+    for (; j < infos->size(); j += 2) { // 2: base and derived
         const DwarfRegAndOffsetType& baseInfo = infos->at(j);
         const DwarfRegAndOffsetType& derivedInfo = infos->at(j + 1);
-        uintptr_t base = GetStackSlotAddress(baseInfo, callSiteSp, callsiteFp, flag);
-        uintptr_t derived = GetStackSlotAddress(derivedInfo, callSiteSp, callsiteFp, flag);
+        uintptr_t base = GetStackSlotAddress(baseInfo, callSiteSp, callsiteFp);
+        uintptr_t derived = GetStackSlotAddress(derivedInfo, callSiteSp, callsiteFp);
         baseSet.emplace(base);
         if (base != derived) {
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
@@ -125,7 +122,6 @@ void LLVMStackMapParser::CollectBaseAndDerivedPointers(const CallSiteInfo* infos
                 }
 #endif
         }
-
     }
 }
 

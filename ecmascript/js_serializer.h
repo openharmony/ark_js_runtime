@@ -53,7 +53,7 @@ enum class SerializationUID : uint8_t {
     JS_DATE,
     JS_REG_EXP,
     JS_PLAIN_OBJECT,
-    JS_NATIVE_OBJECT,
+    NATIVE_BINDING_OBJECT,
     JS_SET,
     JS_MAP,
     JS_ARRAY,
@@ -117,7 +117,7 @@ private:
     bool WriteEcmaString(const JSHandle<JSTaggedValue> &value);
     bool WriteJSTypedArray(const JSHandle<JSTaggedValue> &value, SerializationUID uId);
     bool WritePlainObject(const JSHandle<JSTaggedValue> &value);
-    bool WriteNativeObject(const JSHandle<JSTaggedValue> &value, std::vector<JSTaggedValue> keyVector);
+    bool WriteNativeBindingObject(const JSHandle<JSTaggedValue> &value, std::vector<JSTaggedValue> keyVector);
     bool WriteNativeFunctionPointer(const JSHandle<JSTaggedValue> &value);
     bool WriteJSArrayBuffer(const JSHandle<JSTaggedValue> &value);
     bool WriteDesc(const PropertyDescriptor &desc);
@@ -165,10 +165,11 @@ private:
     JSHandle<JSTaggedValue> ReadNativeFunctionPointer();
     JSHandle<JSTaggedValue> ReadJSArrayBuffer();
     JSHandle<JSTaggedValue> ReadReference();
-    JSHandle<JSTaggedValue> ReadNativeObject();
+    JSHandle<JSTaggedValue> ReadNativeBindingObject();
     bool JudgeType(SerializationUID targetUid);
     void *GetBuffer(uint32_t bufferSize);
     bool ReadJSTaggedValue(JSTaggedValue *originalFlags);
+    bool ReadNativePointer(uintptr_t *pointer);
     bool DefinePropertiesAndElements(const JSHandle<JSTaggedValue> &obj);
     bool ReadDesc(PropertyDescriptor *desc);
     bool ReadBoolean(bool *value);

@@ -482,7 +482,7 @@ private:
     void NewByteCode(BytecodeRegion &bb, const uint8_t *pc, GateRef &state, GateRef &depend);
     void AddBytecodeOffsetInfo(GateRef &gate, const BytecodeInfo &info, size_t bcOffsetIndex, uint8_t *pc);
     void BuildSubCircuit();
-    GateRef NewPhi(BytecodeRegion &bb, uint16_t reg, bool acc);
+    void NewPhi(BytecodeRegion &bb, uint16_t reg, bool acc, GateRef &currentPhi);
     GateRef RenameVariable(const size_t bbId, const uint8_t *end,
         const uint16_t reg, const bool acc, GateType gateType = GateType::AnyType());
     void BuildCircuit();
