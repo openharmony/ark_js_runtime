@@ -400,7 +400,6 @@ enum class ConstantIndex : size_t {
     READ_ONLY_CONSTATNT_END = CONSTATNT_END,
     JSAPI_CONTAINERS_BEGIN = ARRAYLIST_FUNCTION_INDEX,
     JSAPI_CONTAINERS_END = LINKED_LIST_ITERATOR_PROTOTYPE_INDEX,
-    HCLASS_END = CELL_RECORD_CLASS_INDEX,
     // ...
 };
 // clang-format on
@@ -454,11 +453,6 @@ public:
     {
         ASSERT(static_cast<ConstantIndex>(index) < ConstantIndex::CONSTATNT_COUNT);
         return constants_[index];
-    }
-
-    size_t GetHClassEndIndex() const
-    {
-        return static_cast<size_t>(ConstantIndex::HCLASS_END);
     }
 
     size_t GetConstantCount() const

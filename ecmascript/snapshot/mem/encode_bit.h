@@ -25,9 +25,9 @@
 /*
  *                        EncodeBit: use uint64_t value to encode TaggedObject when serialize
  *
- *     |0000...000|      |0000...000|      |0|       |0|     |0000000|     |0|      |0000...000|       |00...0|
- *   16bit:is reference  10bit:native or  builtins  special   obj type    string   18bit:obj offset  10bit:region index
- *                        global index
+ *     |0000...000|      |0000...00|      |0|       |0|     |00000000|     |0|      |0000...000|       |00...0|
+ *   16bit:is reference  9bit:unused   builtins  special     obj type     string   18bit:obj offset  10bit:region index
+ *
  */
 
 namespace panda::ecmascript {
@@ -45,10 +45,10 @@ public:
     static constexpr int REGION_INDEX_BIT_NUMBER = 10;         // region index
     static constexpr int OBJECT_OFFSET_IN_REGION_NUMBER = 18;  // object offset in current region
     static constexpr int OBJECT_TO_STRING_FLAG_NUMBER = 1;     // 1 : reference to string
-    static constexpr int OBJECT_TYPE_BIT_NUMBER = 7;           // js_type
+    static constexpr int OBJECT_TYPE_BIT_NUMBER = 8;           // js_type
     static constexpr int OBJECT_SPECIAL = 1;                   // special
-    static constexpr int GLOBAL_ENV_CONST = 1;                 // global object which has initialized before snapshot
-    static constexpr int NATIVE_OR_GLOBAL_INDEX_NUMBER = 10;   // native pointer or global object index
+    static constexpr int GLOBAL_CONST_OR_BUILTINS = 1;         // is global const or builtins object
+    static constexpr int UNUSED_BIT_NUMBER = 9;                // unused bit number
     static constexpr int IS_REFERENCE_BIT_NUMBER = 16;         // [0x0000] is reference
 
     using RegionIndexBits = BitField<size_t, 0, REGION_INDEX_BIT_NUMBER>;
@@ -56,9 +56,9 @@ public:
     using ObjectToStringBits = ObjectOffsetInRegionBits::NextField<bool, OBJECT_TO_STRING_FLAG_NUMBER>;
     using ObjectTypeBits = ObjectToStringBits::NextField<size_t, OBJECT_TYPE_BIT_NUMBER>;
     using ObjectSpecialBits = ObjectTypeBits::NextField<bool, OBJECT_SPECIAL>;
-    using GlobalEnvConstBits = ObjectSpecialBits::NextField<bool, GLOBAL_ENV_CONST>;
-    using NativeOrGlobalIndexBits = GlobalEnvConstBits::NextField<size_t, NATIVE_OR_GLOBAL_INDEX_NUMBER>;
-    using IsReferenceBits = NativeOrGlobalIndexBits::NextField<size_t, IS_REFERENCE_BIT_NUMBER>;
+    using GlobalConstOrBuiltinsBits = ObjectSpecialBits::NextField<bool, GLOBAL_CONST_OR_BUILTINS>;
+    using UnusedBits = GlobalConstOrBuiltinsBits::NextField<size_t, UNUSED_BIT_NUMBER>;
+    using IsReferenceBits = UnusedBits::NextField<size_t, IS_REFERENCE_BIT_NUMBER>;
 
     void SetRegionIndex(size_t region_index)
     {
@@ -85,11 +85,6 @@ public:
         ObjectTypeBits::Set<uint64_t>(object_type, &value_);
     }
 
-    void SetNativeOrGlobalIndex(size_t native_or_global_index)
-    {
-        NativeOrGlobalIndexBits::Set<uint64_t>(native_or_global_index, &value_);
-    }
-
     uint64_t GetValue() const
     {
         return value_;
@@ -105,7 +100,7 @@ public:
         return ObjectOffsetInRegionBits::Decode(value_);
     }
 
-    size_t GetStringIndex() const
+    size_t GetNativePointerOrObjectIndex() const
     {
         return (ObjectOffsetInRegionBits::Decode(value_) << REGION_INDEX_BIT_NUMBER) + RegionIndexBits::Decode(value_);
     }
@@ -113,11 +108,6 @@ public:
     size_t GetObjectType() const
     {
         return ObjectTypeBits::Decode(value_);
-    }
-
-    size_t GetNativeOrGlobalIndex() const
-    {
-        return NativeOrGlobalIndexBits::Decode(value_);
     }
 
     bool IsReference() const
@@ -135,14 +125,23 @@ public:
         ObjectSpecialBits::Set<uint64_t>(true, &value_);
     }
 
-    bool IsGlobalEnvConst() const
+    bool IsGlobalConstOrBuiltins() const
     {
-        return GlobalEnvConstBits::Decode(value_);
+        return GlobalConstOrBuiltinsBits::Decode(value_);
     }
 
-    void SetGlobalEnvConst()
+    void SetGlobalConstOrBuiltins()
     {
-        GlobalEnvConstBits::Set<uint64_t>(true, &value_);
+        GlobalConstOrBuiltinsBits::Set<uint64_t>(true, &value_);
+    }
+
+    // low 28 bits are used to record object location(region index and object offset), besides, it's
+    // used to record string index, global const and builtins object index, native pointer index
+    void SetNativePointerOrObjectIndex(size_t index)
+    {
+        ASSERT(index < Constants::MAX_OBJECT_INDEX);
+        ObjectOffsetInRegionBits::Set<uint64_t>(index >> REGION_INDEX_BIT_NUMBER, &value_);
+        RegionIndexBits::Set<uint64_t>(index & Constants::REGION_INDEX_MASK, &value_);
     }
 
     void ClearObjectSpecialFlag()
@@ -155,7 +154,7 @@ private:
 };
 static_assert(EncodeBit::REGION_INDEX_BIT_NUMBER + EncodeBit::OBJECT_OFFSET_IN_REGION_NUMBER +
               EncodeBit::OBJECT_TO_STRING_FLAG_NUMBER + EncodeBit::OBJECT_TYPE_BIT_NUMBER + EncodeBit::OBJECT_SPECIAL +
-              EncodeBit::GLOBAL_ENV_CONST + EncodeBit::NATIVE_OR_GLOBAL_INDEX_NUMBER +
+              EncodeBit::GLOBAL_CONST_OR_BUILTINS + EncodeBit::UNUSED_BIT_NUMBER +
               EncodeBit::IS_REFERENCE_BIT_NUMBER == Constants::UINT_64_BITS_COUNT);
 }  // namespace panda::ecmascript
 
