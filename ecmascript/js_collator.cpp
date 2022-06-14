@@ -79,8 +79,7 @@ JSHandle<JSCollator> JSCollator::InitializeCollator(JSThread *thread, const JSHa
     //      a. Let options be ? ToObject(options).
     JSHandle<JSObject> optionsObject;
     if (options->IsUndefined()) {
-        JSHandle<JSTaggedValue> nullValue = globalConst->GetHandledNull();
-        optionsObject = factory->OrdinaryNewJSObjectCreate(nullValue);
+        optionsObject = factory->CreateNullJSObject();
     } else {
         optionsObject = JSTaggedValue::ToObject(thread, options);
         RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSCollator, thread);

@@ -1267,8 +1267,9 @@ void ObjectFactory::InitializeExtraProperties(const JSHandle<JSHClass> &dynclass
 JSHandle<JSObject> ObjectFactory::OrdinaryNewJSObjectCreate(const JSHandle<JSTaggedValue> &proto)
 {
     JSHandle<JSTaggedValue> protoValue(proto);
-    JSHandle<JSHClass> protoDyn = NewEcmaDynClass(JSObject::SIZE, JSType::JS_OBJECT, protoValue);
-    JSHandle<JSObject> newObj = NewJSObject(protoDyn);
+    JSHandle<JSHClass> dynclass(thread_, thread_->GlobalConstants()->GetObjectDynClass().GetTaggedObject());
+    JSHandle<JSHClass> newDynclass = JSHClass::TransProtoWithoutLayout(thread_, dynclass, protoValue);
+    JSHandle<JSObject> newObj = NewJSObject(newDynclass);
     newObj->GetJSHClass()->SetExtensible(true);
     return newObj;
 }
@@ -2563,6 +2564,13 @@ JSHandle<JSObject> ObjectFactory::NewEmptyJSObject()
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSTaggedValue> builtinObj = env->GetObjectFunction();
     return NewJSObjectByConstructor(JSHandle<JSFunction>(builtinObj), builtinObj);
+}
+
+JSHandle<JSObject> ObjectFactory::CreateNullJSObject()
+{
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSTaggedValue> nullValue = globalConst->GetHandledNull();
+    return OrdinaryNewJSObjectCreate(nullValue);
 }
 
 uintptr_t ObjectFactory::NewSpaceBySnapshotAllocator(size_t size)

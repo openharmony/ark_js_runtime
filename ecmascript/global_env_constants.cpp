@@ -212,6 +212,7 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
                 factory->NewEcmaDynClass(dynClassClass, JSAPITreeSetIterator::SIZE, JSType::JS_API_TREESET_ITERATOR));
     SetConstant(ConstantIndex::CELL_RECORD_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, CellRecord::SIZE, JSType::CELL_RECORD));
+    SetConstant(ConstantIndex::OBJECT_DYN_CLASS_INDEX, factory->NewEcmaDynClass(JSObject::SIZE, JSType::JS_OBJECT));
 }
 
 void GlobalEnvConstants::InitGlobalConstantSpecial(JSThread *thread)

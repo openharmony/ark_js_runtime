@@ -440,7 +440,7 @@ void JSNumberFormat::InitializeNumberFormat(JSThread *thread, const JSHandle<JSN
     //      a. Let options be ? ToObject(options).
     JSHandle<JSObject> optionsObject;
     if (options->IsUndefined()) {
-        optionsObject = factory->OrdinaryNewJSObjectCreate(JSHandle<JSTaggedValue>(thread, JSTaggedValue::Null()));
+        optionsObject = factory->CreateNullJSObject();
     } else {
         optionsObject = JSTaggedValue::ToObject(thread, options);
         RETURN_IF_ABRUPT_COMPLETION(thread);
