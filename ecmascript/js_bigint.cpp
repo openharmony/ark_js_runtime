@@ -946,10 +946,10 @@ CString BigIntHelper::MultiplyImpl(CString &a, CString &b)
         int mulflag = 0;
         int addflag = 0;
         for (int j = size1 - 1; j >= 0; --j) {
-            int temp1 = (b[i] - '0') * (a[j] - '0') + mulflag;
+            int temp1 = static_cast<int>((b[i] - '0') * (a[j] - '0')) + mulflag;
             mulflag = temp1 / 10; // 10:help to Remove single digits
             temp1 = temp1 % 10; // 10:help to Take single digit
-            int temp2 = str[i + j + 1] - '0' + temp1 + addflag;
+            int temp2 = static_cast<int>(str[i + j + 1] - '0') + temp1 + addflag;
             str[i + j + 1] = static_cast<int8_t>(temp2 % 10 + '0'); // 2 and 10 and 48 is number
             addflag = temp2 / 10;
         }
@@ -1189,7 +1189,7 @@ JSTaggedNumber BigInt::BigIntToNumber(JSHandle<BigInt> bigint)
         }
         preZero++;
     }
-    int bigintBitLen = bigintLen * BigInt::DATEBITS - preZero;
+    int bigintBitLen = static_cast<int>(bigintLen * BigInt::DATEBITS) - preZero;
     // if Significant bits greater than 1024 then double is infinity
     bool bigintSign = bigint->GetSign();
     if (bigintBitLen > (base::DOUBLE_EXPONENT_BIAS + 1)) {
@@ -1262,7 +1262,7 @@ static int CompareToBitsLen(JSHandle<BigInt> bigint, int numBitLen, int &preZero
         preZero++;
     }
     
-    int bigintBitLen = bigintLen * BigInt::DATEBITS - preZero;
+    int bigintBitLen = static_cast<int>(bigintLen * BigInt::DATEBITS) - preZero;
     bool bigintSign = bigint->GetSign();
     if (bigintBitLen > numBitLen) {
         return bigintSign ? 0 : 1;

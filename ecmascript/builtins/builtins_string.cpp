@@ -1014,7 +1014,7 @@ JSTaggedValue BuiltinsString::Replace(EcmaRuntimeCallInfo *argv)
     }
     JSHandle<EcmaString> realReplaceStr = JSTaggedValue::ToString(thread, replHandle);
     // Let tailPos be pos + the number of code units in matched.
-    int32_t tailPos = pos + searchString->GetLength();
+    int32_t tailPos = pos + static_cast<int32_t>(searchString->GetLength());
     // Let newString be the String formed by concatenating the first pos code units of string, replStr, and the trailing
     // substring of string starting at index tailPos. If pos is 0, the first element of the concatenation will be the
     // empty String.
@@ -1067,7 +1067,7 @@ JSTaggedValue BuiltinsString::GetSubstitution(JSThread *thread, const JSHandle<E
     ObjectFactory *factory = ecmaVm->GetFactory();
     JSHandle<EcmaString> dollarString = JSHandle<EcmaString>::Cast(thread->GlobalConstants()->GetHandledDollarString());
     int32_t replaceLength = static_cast<int32_t>(replacement->GetLength());
-    int32_t tailPos = position + matched->GetLength();
+    int32_t tailPos = position + static_cast<int32_t>(matched->GetLength());
 
     int32_t nextDollarIndex = replacement->IndexOf(*dollarString, 0);
     if (nextDollarIndex < 0) {

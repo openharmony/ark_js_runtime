@@ -28,7 +28,7 @@ void JSRequireManager::ResolveCurrentPath(JSThread *thread,
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     CString fullName = CString(jsPandaFile->GetPandaFile()->GetFilename());
     // find last '/'
-    int foundPos = fullName.find_last_of("/\\");
+    int foundPos = static_cast<int>(fullName.find_last_of("/\\"));
     if (foundPos == -1) {
         RETURN_IF_ABRUPT_COMPLETION(thread);
     }

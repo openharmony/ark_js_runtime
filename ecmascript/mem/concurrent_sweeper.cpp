@@ -155,7 +155,7 @@ void ConcurrentSweeper::ClearRSetInRange(Region *current, uintptr_t freeStart, u
 
 bool ConcurrentSweeper::SweeperTask::Run([[maybe_unused]] uint32_t threadIndex)
 {
-    int sweepTypeNum = FREE_LIST_NUM - sweeper_->startSpaceType_;
+    uint32_t sweepTypeNum = FREE_LIST_NUM - sweeper_->startSpaceType_;
     for (size_t i = sweeper_->startSpaceType_; i < FREE_LIST_NUM; i++) {
         auto type = static_cast<MemSpaceType>(((i + type_) % sweepTypeNum) + sweeper_->startSpaceType_);
         sweeper_->AsyncSweepSpace(type, false);
