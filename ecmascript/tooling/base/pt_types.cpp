@@ -1009,7 +1009,7 @@ std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSV
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            location->scriptId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
+            location->scriptId_ = DebuggerApi::StringToInt(result);
         } else {
             error += "'scriptId' should be a String;";
         }
@@ -1051,7 +1051,7 @@ std::unique_ptr<Location> Location::Create(const PtJson &params)
     std::string scriptId;
     ret = params.GetString("scriptId", &scriptId);
     if (ret == Result::SUCCESS) {
-        location->scriptId_ = static_cast<uint32_t>(std::stoi(scriptId));
+        location->scriptId_ = std::stoi(scriptId);
     } else {
         error += "Unknown 'scriptId';";
     }
@@ -1224,7 +1224,7 @@ std::unique_ptr<LocationRange> LocationRange::Create(const EcmaVM *ecmaVm, const
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            locationRange->scriptId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
+            locationRange->scriptId_ = DebuggerApi::StringToInt(result);
         } else {
             error += "'scriptId' should be a String;";
         }
@@ -1300,7 +1300,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            breakLocation->scriptId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
+            breakLocation->scriptId_ = DebuggerApi::StringToInt(result);
         } else {
             error += "'scriptId' should be a String;";
         }
@@ -1496,7 +1496,7 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrameId")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
-            callFrame->callFrameId_ = static_cast<uint32_t>(DebuggerApi::StringToInt(result));
+            callFrame->callFrameId_ = DebuggerApi::StringToInt(result);
         } else {
             error += "'callFrameId' should be a String;";
         }

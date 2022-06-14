@@ -67,7 +67,7 @@ bool SamplingProcessor::Run([[maybe_unused]] uint32_t threadIndex)
                 generator_->WriteMethodsAndSampleInfo(false);
             }
         }
-        int64_t ts = interval_ - (endTime - startTime);
+        int64_t ts = interval_ - static_cast<int64_t>(endTime - startTime);
         if (ts > 0) {
             usleep(ts);
         }

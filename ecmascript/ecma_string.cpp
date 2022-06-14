@@ -158,7 +158,7 @@ int32_t EcmaString::IndexOf(Span<const T1> &lhsSp, Span<const T2> &rhsSp, int32_
         /* Found first character, now look at the rest of rhsSp */
         if (i <= max) {
             int j = i + 1;
-            int end = j + rhsSp.size() - 1;
+            int end = j + static_cast<int>(rhsSp.size()) - 1;
 
             for (int k = 1; j < end && static_cast<int32_t>(lhsSp[j]) == static_cast<int32_t>(rhsSp[k]); j++, k++) {
             }
