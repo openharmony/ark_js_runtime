@@ -220,7 +220,9 @@ using JSFunctionEntryType = uint64_t (*)(uintptr_t glue, uintptr_t prevFp, uint3
     V(NewAotLexicalEnvDyn)                \
     V(NewAotLexicalEnvWithNameDyn)        \
     V(SuspendAotGenerator)                \
-    V(NewAotObjDynRange)
+    V(NewAotObjDynRange)                  \
+    V(GetTypeArrayPropertyByIndex)        \
+    V(SetTypeArrayPropertyByIndex)
 
 #define RUNTIME_STUB_LIST(V)                     \
     RUNTIME_ASM_STUB_LIST(V)                     \

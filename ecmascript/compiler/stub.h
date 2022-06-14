@@ -465,6 +465,11 @@ public:
     GateRef CallGetterHelper(GateRef glue, GateRef receiver, GateRef holder, GateRef accessor);
     GateRef JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
                            JSCallMode mode, std::initializer_list<GateRef> args);
+    GateRef IsFastTypeArray(GateRef jsType);
+    GateRef GetTypeArrayPropertyByName(GateRef glue, GateRef receiver, GateRef holder, GateRef key, GateRef jsType);
+    GateRef SetTypeArrayPropertyByName(GateRef glue, GateRef receiver, GateRef holder, GateRef key, GateRef value,
+                                       GateRef jsType);
+    GateRef TryStringOrSymbelToElementIndex(GateRef string);
 private:
     using BinaryOperation = std::function<GateRef(Environment*, GateRef, GateRef)>;
     template<OpCode::Op Op>
