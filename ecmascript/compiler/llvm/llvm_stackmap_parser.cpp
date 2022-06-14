@@ -194,30 +194,31 @@ void LLVMStackMapParser::CalcCallSite()
     uint64_t recordNum = 0;
     Pc2CallSiteInfo pc2CallSiteInfo;
     Pc2ConstInfo pc2ConstInfo;
-    auto calStkMapRecordFunc = [this, &recordNum, &pc2CallSiteInfo, &pc2ConstInfo](uintptr_t address, int recordId) {
+    auto calStkMapRecordFunc =
+        [this, &recordNum, &pc2CallSiteInfo, &pc2ConstInfo](uintptr_t address, uint32_t recordId) {
         struct StkMapRecordHeadTy recordHead = llvmStackMap_.StkMapRecord[recordNum + recordId].head;
         for (int j = 0; j < recordHead.NumLocations; j++) {
-                struct LocationTy loc = llvmStackMap_.StkMapRecord[recordNum + recordId].Locations[j];
-                uint32_t instructionOffset = recordHead.InstructionOffset;
-                uintptr_t callsite = address + instructionOffset;
-                uint64_t  patchPointID = recordHead.PatchPointID;
-                if (loc.location == LocationTy::Kind::INDIRECT) {
-                    COMPILER_OPTIONAL_LOG(DEBUG) << "DwarfRegNum:" << loc.DwarfRegNum << " loc.OffsetOrSmallConstant:"
-                        << loc.OffsetOrSmallConstant << "address:" << address << " instructionOffset:" <<
-                        instructionOffset << " callsite:" << "  patchPointID :" << std::hex << patchPointID <<
-                        callsite;
-                    DwarfRegAndOffsetType info(loc.DwarfRegNum, loc.OffsetOrSmallConstant);
-                    auto it = pc2CallSiteInfo.find(callsite);
-                    if (pc2CallSiteInfo.find(callsite) == pc2CallSiteInfo.end()) {
-                        pc2CallSiteInfo.insert(std::pair<uintptr_t, CallSiteInfo>(callsite, {info}));
-                    } else {
-                        it->second.emplace_back(info);
-                    }
-                } else if (loc.location == LocationTy::Kind::CONSTANT) {
-                    if (j >= LocationTy::CONSTANT_FIRST_ELEMENT_INDEX) {
-                        pc2ConstInfo[callsite].push_back(loc.OffsetOrSmallConstant);
-                    }
+            struct LocationTy loc = llvmStackMap_.StkMapRecord[recordNum + recordId].Locations[j];
+            uint32_t instructionOffset = recordHead.InstructionOffset;
+            uintptr_t callsite = address + instructionOffset;
+            uint64_t  patchPointID = recordHead.PatchPointID;
+            if (loc.location == LocationTy::Kind::INDIRECT) {
+                COMPILER_OPTIONAL_LOG(DEBUG) << "DwarfRegNum:" << loc.DwarfRegNum << " loc.OffsetOrSmallConstant:"
+                    << loc.OffsetOrSmallConstant << "address:" << address << " instructionOffset:" <<
+                    instructionOffset << " callsite:" << "  patchPointID :" << std::hex << patchPointID <<
+                    callsite;
+                DwarfRegAndOffsetType info(loc.DwarfRegNum, loc.OffsetOrSmallConstant);
+                auto it = pc2CallSiteInfo.find(callsite);
+                if (pc2CallSiteInfo.find(callsite) == pc2CallSiteInfo.end()) {
+                    pc2CallSiteInfo.insert(std::pair<uintptr_t, CallSiteInfo>(callsite, {info}));
+                } else {
+                    it->second.emplace_back(info);
                 }
+            } else if (loc.location == LocationTy::Kind::CONSTANT) {
+                if (j >= LocationTy::CONSTANT_FIRST_ELEMENT_INDEX) {
+                    pc2ConstInfo[callsite].push_back(loc.OffsetOrSmallConstant);
+                }
+            }
         }
     };
     for (size_t i = 0; i < llvmStackMap_.StkSizeRecords.size(); i++) {
