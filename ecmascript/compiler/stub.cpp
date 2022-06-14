@@ -1877,6 +1877,18 @@ GateRef Stub::GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index)
         Branch(IsSpecialIndexedObj(jsType), &isSpecialIndexed, &notSpecialIndexed);
         Bind(&isSpecialIndexed);
         {
+            // TypeArray
+            Label isFastTypeArray(env);
+            Label notFastTypeArray(env);
+            Branch(IsFastTypeArray(jsType), &isFastTypeArray, &notFastTypeArray);
+            Bind(&isFastTypeArray);
+            {
+                result = CallRuntime(glue, RTSTUB_ID(GetTypeArrayPropertyByIndex),
+                    { *holder, IntBuildTaggedTypeWithNoGC(index), IntBuildTaggedTypeWithNoGC(jsType)});
+                Jump(&exit);
+            }
+            Bind(&notFastTypeArray);
+
             Label isSpecialContainer(env);
             Label notSpecialContainer(env);
             // Add SpecialContainer
@@ -1995,8 +2007,29 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
         Branch(IsSpecialIndexedObj(jsType), &isSIndexObj, &notSIndexObj);
         Bind(&isSIndexObj);
         {
-            result = Hole();
-            Jump(&exit);
+            // TypeArray
+            Label isFastTypeArray(env);
+            Label notFastTypeArray(env);
+            Branch(IsFastTypeArray(jsType), &isFastTypeArray, &notFastTypeArray);
+            Bind(&isFastTypeArray);
+            {
+                result = GetTypeArrayPropertyByName(glue, receiver, *holder, key, jsType);
+                Label isNull(env);
+                Label notNull(env);
+                Branch(TaggedIsNull(*result), &isNull, &notNull);
+                Bind(&isNull);
+                {
+                    result = Hole();
+                    Jump(&exit);
+                }
+                Bind(&notNull);
+                Branch(TaggedIsHole(*result), &notSIndexObj, &exit);
+            }
+            Bind(&notFastTypeArray);
+            {
+                result = Hole();
+                Jump(&exit);
+            }
         }
         Bind(&notSIndexObj);
         {
@@ -2220,6 +2253,17 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
     Branch(IsSpecialIndexedObj(jsType), &isSpecialIndex, &notSpecialIndex);
     Bind(&isSpecialIndex);
     {
+        // TypeArray
+        Label isFastTypeArray(env);
+        Label notFastTypeArray(env);
+        Branch(IsFastTypeArray(jsType), &isFastTypeArray, &notFastTypeArray);
+        Bind(&isFastTypeArray);
+        {
+            returnValue = ChangeTaggedPointerToInt64(CallRuntime(glue, RTSTUB_ID(SetTypeArrayPropertyByIndex),
+                { receiver, IntBuildTaggedTypeWithNoGC(index), value, IntBuildTaggedTypeWithNoGC(jsType)}));
+            Jump(&exit);
+        }
+        Bind(&notFastTypeArray);
         returnValue = Hole(VariableType::INT64());
         Jump(&exit);
     }
@@ -2345,6 +2389,26 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
     Branch(IsSpecialIndexedObj(jsType), &isSIndexObj, &notSIndexObj);
     Bind(&isSIndexObj);
     {
+        Label isFastTypeArray(env);
+        Label notFastTypeArray(env);
+        Branch(IsFastTypeArray(jsType), &isFastTypeArray, &notFastTypeArray);
+        Bind(&isFastTypeArray);
+        {
+            result =
+                ChangeTaggedPointerToInt64(SetTypeArrayPropertyByName(glue, receiver, *holder, key, value, jsType));
+            Label isNull(env);
+            Label notNull(env);
+            Branch(TaggedIsNull(*result), &isNull, &notNull);
+            Bind(&isNull);
+            {
+                result = Hole(VariableType::INT64());
+                Jump(&exit);
+            }
+            Bind(&notNull);
+            Branch(TaggedIsHole(*result), &notSIndexObj, &exit);
+        }
+        Bind(&notFastTypeArray);
+
         Label isSpecialContainer(env);
         Label notSpecialContainer(env);
         // Add SpecialContainer
@@ -3921,6 +3985,228 @@ GateRef Stub::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs,
                 UNREACHABLE();
         }
     }
+    Bind(&exit);
+    auto ret = *result;
+    env->SubCfgExit();
+    return ret;
+}
+
+GateRef Stub::TryStringOrSymbelToElementIndex(GateRef key)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->SubCfgEntry(&entry);
+    Label exit(env);
+    DEFVARIABLE(result, VariableType::INT32(), Int32(-1));
+
+    Label keyNotSymbol(env);
+    Branch(IsSymbol(key), &exit, &keyNotSymbol);
+    Bind(&keyNotSymbol);
+
+    Label greatThanZero(env);
+    Label inRange(env);
+    auto len = GetLengthFromString(key);
+    Branch(Int32Equal(len, Int32(0)), &exit, &greatThanZero);
+    Bind(&greatThanZero);
+    Branch(Int32GreaterThan(len, Int32(MAX_INDEX_LEN)), &exit, &inRange);
+    Bind(&inRange);
+    {
+        Label isUtf8(env);
+        Branch(IsUtf16String(key), &exit, &isUtf8);
+        Bind(&isUtf8);
+
+        GateRef data = PtrAdd(key, IntPtr(EcmaString::DATA_OFFSET));
+        DEFVARIABLE(c, VariableType::INT32(), Int32(0));
+        c = ZExtInt8ToInt32(Load(VariableType::INT8(), data));
+        Label isDigitZero(env);
+        Label notDigitZero(env);
+        Branch(Int32Equal(*c, Int32('0')), &isDigitZero, &notDigitZero);
+        Bind(&isDigitZero);
+        {
+            Label lengthIsOne(env);
+            Branch(Int32Equal(len, Int32(1)), &lengthIsOne, &exit);
+            Bind(&lengthIsOne);
+            {
+                result = Int32(0);
+                Jump(&exit);
+            }
+        }
+        Bind(&notDigitZero);
+        {
+            Label isDigit(env);
+            Label notIsDigit(env);
+            DEFVARIABLE(i, VariableType::INT32(), Int32(1));
+            DEFVARIABLE(n, VariableType::INT32(), Int32Sub(*c, Int32('0')));
+
+            Branch(IsDigit(*c), &isDigit, &notIsDigit);
+            Label loopHead(env);
+            Label loopEnd(env);
+            Label afterLoop(env);
+            Bind(&isDigit);
+            Branch(Int32UnsignedLessThan(*i, len), &loopHead, &afterLoop);
+            LoopBegin(&loopHead);
+            {
+                c = ZExtInt8ToInt32(Load(VariableType::INT8(), data, ChangeInt32ToIntPtr(*i)));
+                Label isDigit2(env);
+                Label notDigit2(env);
+                Branch(IsDigit(*c), &isDigit2, &notDigit2);
+                Bind(&isDigit2);
+                {
+                    // 10 means the base of digit is 10.
+                    n = Int32Add(Int32Mul(*n, Int32(10)),
+                                 Int32Sub(*c, Int32('0')));
+                    i = Int32Add(*i, Int32(1));
+                    Branch(Int32UnsignedLessThan(*i, len), &loopEnd, &afterLoop);
+                }
+                Bind(&notDigit2);
+                {
+                    Label hasPoint(env);
+                    Branch(Int32Equal(*c, Int32('.')), &hasPoint, &exit);
+                    Bind(&hasPoint);
+                    {
+                        result = Int32(-2); // -2:return -2 means should goto slow path
+                        Jump(&exit);
+                    }
+                }
+            }
+            Bind(&loopEnd);
+            LoopEnd(&loopHead);
+            Bind(&afterLoop);
+            {
+                Label lessThanMaxIndex(env);
+                Branch(Int32UnsignedLessThan(*n, Int32(JSObject::MAX_ELEMENT_INDEX)),
+                       &lessThanMaxIndex, &exit);
+                Bind(&lessThanMaxIndex);
+                {
+                    result = *n;
+                    Jump(&exit);
+                }
+            }
+            Bind(&notIsDigit);
+            {
+                Label isNegative(env);
+                Branch(Int32Equal(*c, Int32('-')), &isNegative, &exit);
+                Bind(&isNegative);
+                {
+                    result = Int32(-2); // -2:return -2 means should goto slow path
+                    Jump(&exit);
+                }
+            }
+        }
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->SubCfgExit();
+    return ret;
+}
+
+GateRef Stub::GetTypeArrayPropertyByName(GateRef glue, GateRef receiver, GateRef holder, GateRef key, GateRef jsType)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->SubCfgEntry(&entry);
+    Label exit(env);
+    DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
+
+    Label notOnProtoChain(env);
+    Branch(Int64NotEqual(receiver, holder), &exit, &notOnProtoChain);
+    Bind(&notOnProtoChain);
+
+    auto negativeZero = GetGlobalConstantValue(
+        VariableType::JS_POINTER(), glue, ConstantIndex::NEGATIVE_ZERO_STRING_INDEX);
+    Label isNegativeZero(env);
+    Label notNegativeZero(env);
+    Branch(Int64Equal(negativeZero, key), &isNegativeZero, &notNegativeZero);
+    Bind(&isNegativeZero);
+    {
+        result = Undefined();
+        Jump(&exit);
+    }
+    Bind(&notNegativeZero);
+    {
+        GateRef index = TryStringOrSymbelToElementIndex(key);
+        Label validIndex(env);
+        Label notValidIndex(env);
+        Branch(Int32GreaterThanOrEqual(index, Int32(0)), &validIndex, &notValidIndex);
+        Bind(&validIndex);
+        {
+            result = CallRuntime(glue, RTSTUB_ID(GetTypeArrayPropertyByIndex),
+                                 { holder, IntBuildTaggedTypeWithNoGC(index), IntBuildTaggedTypeWithNoGC(jsType) });
+            Jump(&exit);
+        }
+        Bind(&notValidIndex);
+        {
+            Label returnNull(env);
+            Branch(Int32Equal(index, Int32(-2)), &returnNull, &exit); // -2:equal -2 means should goto slow path
+            Bind(&returnNull);
+            {
+                result = Null();
+                Jump(&exit);
+            }
+        }
+    }
+
+    Bind(&exit);
+    auto ret = *result;
+    env->SubCfgExit();
+    return ret;
+}
+
+GateRef Stub::SetTypeArrayPropertyByName(GateRef glue, GateRef receiver, GateRef holder, GateRef key, GateRef value,
+                                         GateRef jsType)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->SubCfgEntry(&entry);
+    Label exit(env);
+    DEFVARIABLE(result, VariableType::JS_ANY(), Hole());
+    Label notOnProtoChain(env);
+    Branch(Int64NotEqual(receiver, holder), &exit, &notOnProtoChain);
+    Bind(&notOnProtoChain);
+
+    auto negativeZero = GetGlobalConstantValue(
+        VariableType::JS_POINTER(), glue, ConstantIndex::NEGATIVE_ZERO_STRING_INDEX);
+    Label isNegativeZero(env);
+    Label notNegativeZero(env);
+    Branch(Int64Equal(negativeZero, key), &isNegativeZero, &notNegativeZero);
+    Bind(&isNegativeZero);
+    {
+        Label isObj(env);
+        Label notObj(env);
+        Branch(TaggedObjectIsEcmaObject(value), &isObj, &notObj);
+        Bind(&isObj);
+        {
+            result = Null();
+            Jump(&exit);
+        }
+        Bind(&notObj);
+        result = Undefined();
+        Jump(&exit);
+    }
+    Bind(&notNegativeZero);
+    {
+        GateRef index = TryStringOrSymbelToElementIndex(key);
+        Label validIndex(env);
+        Label notValidIndex(env);
+        Branch(Int32GreaterThanOrEqual(index, Int32(0)), &validIndex, &notValidIndex);
+        Bind(&validIndex);
+        {
+            result = CallRuntime(glue, RTSTUB_ID(SetTypeArrayPropertyByIndex),
+                { receiver, IntBuildTaggedTypeWithNoGC(index), value, IntBuildTaggedTypeWithNoGC(jsType) });
+            Jump(&exit);
+        }
+        Bind(&notValidIndex);
+        {
+            Label returnNull(env);
+            Branch(Int32Equal(index, Int32(-2)), &returnNull, &exit); // -2:equal -2 means should goto slow path
+            Bind(&returnNull);
+            {
+                result = Null();
+                Jump(&exit);
+            }
+        }
+    }
+
     Bind(&exit);
     auto ret = *result;
     env->SubCfgExit();
