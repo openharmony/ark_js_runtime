@@ -686,9 +686,4 @@ void EcmaVM::SetAOTFuncEntry(uint32_t hash, uint32_t methodId, uint64_t funcEntr
 {
     fileLoader_->SetAOTFuncEntry(hash, methodId, funcEntry);
 }
-
-kungfu::LLVMStackMapParser* EcmaVM::GetStackMapParser()
-{
-    return fileLoader_->GetStackMapParser();
-}
 }  // namespace panda::ecmascript

@@ -337,8 +337,6 @@ public:
 
     void SetAOTFuncEntry(uint32_t hash, uint32_t methodId, uint64_t funcEntry);
 
-    kungfu::LLVMStackMapParser* GetStackMapParser();
-
     void StoreBCOffsetInfo(const std::string& methodName, int32_t bcOffset)
     {
         exceptionBCList_.emplace_back(std::pair<std::string, int32_t>(methodName, bcOffset));

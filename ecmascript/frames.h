@@ -877,20 +877,6 @@ struct BuiltinWithArgvFrame : public base::AlignedStruct<base::AlignedPointer::S
     alignas(EAS) uintptr_t returnAddr;
 };
 
-#define FRAME_LIST(V)               \
-    V(OptimizedFrame)               \
-    V(OptimizedEntryFrame)          \
-    V(OptimizedJSFunctionFrame)     \
-    V(OptimizedLeaveFrame)          \
-    V(InterpretedFrame)             \
-    V(AsmInterpretedFrame)          \
-    V(BuiltinFrame)                 \
-    V(BuiltinWithArgvFrame)         \
-    V(InterpretedEntryFrame)        \
-    V(AsmInterpretedEntryFrame)     \
-    V(OptimizedWithArgvLeaveFrame)  \
-    V(AsmInterpretedBridgeFrame)
-
 class FrameIterator {
 public:
     explicit FrameIterator(JSTaggedType *sp, const JSThread *thread) : current_(sp), thread_(thread)
@@ -903,14 +889,12 @@ public:
             reinterpret_cast<uintptr_t>(current_) - sizeof(FrameType));
         return *typeAddr;
     }
-    template <class Frame>
-    Frame* GetFrame();
 
-    #define EXPLICIT_DECLARE_GET_FRAME(Frame)         \
-        template<>                                    \
-        Frame* GetFrame<Frame>();
-        FRAME_LIST(EXPLICIT_DECLARE_GET_FRAME)
-    #undef EXPLICIT_DECLARE_GET_FRAME
+    template<class T>
+    T* GetFrame()
+    {
+        return T::GetFrameFromSp(current_);
+    }
 
     bool Done()
     {
