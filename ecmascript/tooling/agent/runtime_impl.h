@@ -76,9 +76,9 @@ private:
         const char* name, std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
     void AddTypedArrayRefs(Local<ArrayBufferRef> arrayBufferRef,
         std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
-    void GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn, bool isAccessorOnly,
+    void GetProtoOrProtoType(Local<JSValueRef> value, bool isOwn, bool isAccessorOnly,
                              std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
-    void GetAdditionalProperties(const Local<JSValueRef> &value,
+    void GetAdditionalProperties(Local<JSValueRef> value,
         std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
 
     class Frontend {

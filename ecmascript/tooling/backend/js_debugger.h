@@ -92,7 +92,7 @@ public:
         hooks_ = nullptr;
     }
 
-    bool SetBreakpoint(const JSPtLocation &location, const Local<FunctionRef> &condFuncRef) override;
+    bool SetBreakpoint(const JSPtLocation &location, Local<FunctionRef> condFuncRef) override;
     bool RemoveBreakpoint(const JSPtLocation &location) override;
     void BytecodePcChanged(JSThread *thread, JSMethod *method, uint32_t bcOffset) override;
     void LoadModule(std::string_view filename) override

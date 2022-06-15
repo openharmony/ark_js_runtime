@@ -39,8 +39,8 @@ public:
 private:
     NO_MOVE_SEMANTIC(ProtocolHandler);
     NO_COPY_SEMANTIC(ProtocolHandler);
-    Local<ObjectRef> CreateErrorReply(const DispatchResponse &response);
-    void SendReply(Local<ObjectRef> reply);
+    std::unique_ptr<PtJson> CreateErrorReply(const DispatchResponse &response);
+    void SendReply(const PtJson &reply);
 
     std::function<void(const std::string &)> callback_;
     Dispatcher dispatcher_;

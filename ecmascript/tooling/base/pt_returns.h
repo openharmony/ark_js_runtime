@@ -23,11 +23,6 @@ class PtBaseReturns : public PtBaseTypes {
 public:
     PtBaseReturns() = default;
     ~PtBaseReturns() override = default;
-
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override
-    {
-        return NewObject(ecmaVm);
-    }
     std::unique_ptr<PtJson> ToJson() const override
     {
         return PtJson::CreateObject();
@@ -43,7 +38,6 @@ public:
     explicit EnableReturns(UniqueDebuggerId id) : debuggerId_(id) {}
     ~EnableReturns() override = default;
 
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -61,7 +55,6 @@ public:
     {}
     ~SetBreakpointByUrlReturns() override = default;
 
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -80,7 +73,6 @@ public:
         : result_(std::move(result)), exceptionDetails_(std::move(exceptionDetails))
     {}
     ~EvaluateOnCallFrameReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -99,7 +91,6 @@ public:
     {}
     ~GetPossibleBreakpointsReturns() override = default;
 
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -117,7 +108,6 @@ public:
     {}
     ~GetScriptSourceReturns() override = default;
 
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -135,7 +125,6 @@ public:
         : callFrames_(std::move(callFrames))
     {}
     ~RestartFrameReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -151,7 +140,6 @@ public:
     explicit SearchInContentReturns(std::vector<std::unique_ptr<SearchMatch>> result) : result_(std::move(result))
     {}
     ~SearchInContentReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -168,7 +156,6 @@ public:
         : breakpointId_(id), location_(std::move(location))
     {}
     ~SetBreakpointReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -184,7 +171,6 @@ public:
     explicit SetInstrumentationBreakpointReturns(const std::string &id) : breakpointId_(id)
     {}
     ~SetInstrumentationBreakpointReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -205,7 +191,6 @@ public:
           exceptionDetails_(std::move(exceptionDetails))
     {}
     ~SetScriptSourceReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -230,7 +215,6 @@ public:
           exceptionDetails_(std::move(exceptionDetails))
     {}
     ~GetPropertiesReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -252,7 +236,6 @@ public:
           exceptionDetails_(std::move(exceptionDetails))
     {}
     ~CallFunctionOnReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -271,7 +254,6 @@ public:
     {}
     ~StopSamplingReturns() override = default;
 
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -289,7 +271,6 @@ public:
     {}
     ~GetHeapObjectIdReturns() override = default;
 
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -307,7 +288,6 @@ public:
     {}
     ~GetObjectByHeapObjectIdReturns() override = default;
 
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -322,7 +302,6 @@ class StopReturns : public PtBaseReturns {
 public:
     explicit StopReturns(std::unique_ptr<Profile> profile) : profile_(std::move(profile)) {}
     ~StopReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -338,7 +317,6 @@ public:
     explicit GetHeapUsageReturns(double usedSize, double totalSize)
         : usedSize_(usedSize), totalSize_(totalSize) {}
     ~GetHeapUsageReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -356,7 +334,6 @@ public:
         : result_(std::move(result))
     {}
     ~GetBestEffortCoverageReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -371,7 +348,6 @@ class StartPreciseCoverageReturns : public PtBaseReturns {
 public:
     explicit StartPreciseCoverageReturns(int64_t tamp) : timestamp_(tamp) {}
     ~StartPreciseCoverageReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -389,7 +365,6 @@ public:
           timestamp_(tamp)
     {}
     ~TakePreciseCoverageReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:
@@ -407,7 +382,6 @@ public:
         : result_(std::move(result))
     {}
     ~TakeTypeProfileReturns() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
 private:

@@ -15,7 +15,6 @@
 
 #include "ecmascript/tooling/protocol_handler.h"
 
-#include "ecmascript/base/string_helper.h"
 #include "ecmascript/tooling/agent/debugger_impl.h"
 #include "utils/logger.h"
 
@@ -39,7 +38,7 @@ void ProtocolHandler::ProcessCommand(const std::string &msg)
     LOG(DEBUG, DEBUGGER) << "ProtocolHandler::ProcessCommand: " << msg;
     [[maybe_unused]] LocalScope scope(vm_);
     Local<JSValueRef> exception = DebuggerApi::GetAndClearException(vm_);
-    dispatcher_.Dispatch(DispatchRequest(vm_, msg));
+    dispatcher_.Dispatch(DispatchRequest(msg));
     DebuggerApi::SetException(vm_, exception);
 }
 
@@ -49,51 +48,42 @@ void ProtocolHandler::SendResponse(const DispatchRequest &request, const Dispatc
     LOG(INFO, DEBUGGER) << "ProtocolHandler::SendResponse: "
                         << (response.IsOk() ? "success" : "failed: " + response.GetMessage());
 
-    Local<ObjectRef> reply = PtBaseTypes::NewObject(vm_);
-    reply->Set(vm_, StringRef::NewFromUtf8(vm_, "id"), IntegerRef::New(vm_, request.GetCallId()));
-    Local<ObjectRef> resultObj;
+    std::unique_ptr<PtJson> reply = PtJson::CreateObject();
+    reply->Add("id", request.GetCallId());
+    std::unique_ptr<PtJson> resultObj;
     if (response.IsOk()) {
-        resultObj = result.ToObject(vm_);
+        resultObj = result.ToJson();
     } else {
         resultObj = CreateErrorReply(response);
     }
-    reply->Set(vm_, StringRef::NewFromUtf8(vm_, "result"), Local<JSValueRef>(resultObj));
-    SendReply(reply);
+    reply->Add("result", resultObj);
+    SendReply(*reply);
 }
 
 void ProtocolHandler::SendNotification(const PtBaseEvents &events)
 {
     LOG(DEBUG, DEBUGGER) << "ProtocolHandler::SendNotification: " << events.GetName();
-    SendReply(events.ToObject(vm_));
+    SendReply(*events.ToJson());
 }
 
-void ProtocolHandler::SendReply(Local<ObjectRef> reply)
+void ProtocolHandler::SendReply(const PtJson &reply)
 {
-    Local<JSValueRef> str = JSON::Stringify(vm_, reply);
-    if (str->IsException()) {
-        DebuggerApi::ClearException(vm_);
-        LOG(ERROR, DEBUGGER) << "json stringifier throw exception";
-        return;
-    }
-    if (!str->IsString()) {
+    std::string str = reply.Stringify();
+    if (str.empty()) {
         LOG(ERROR, DEBUGGER) << "ProtocolHandler::SendReply: json stringify error";
         return;
     }
 
-    callback_(StringRef::Cast(*str)->ToString());
+    callback_(str);
 }
 
-Local<ObjectRef> ProtocolHandler::CreateErrorReply(const DispatchResponse &response)
+std::unique_ptr<PtJson> ProtocolHandler::CreateErrorReply(const DispatchResponse &response)
 {
-    Local<ObjectRef> result = PtBaseTypes::NewObject(vm_);
+    std::unique_ptr<PtJson> result = PtJson::CreateObject();
 
     if (!response.IsOk()) {
-        result->Set(vm_,
-            Local<JSValueRef>(StringRef::NewFromUtf8(vm_, "code")),
-            IntegerRef::New(vm_, static_cast<int32_t>(response.GetError())));
-        result->Set(vm_,
-            Local<JSValueRef>(StringRef::NewFromUtf8(vm_, "message")),
-            Local<JSValueRef>(StringRef::NewFromUtf8(vm_, response.GetMessage().c_str())));
+        result->Add("code", static_cast<int32_t>(response.GetError()));
+        result->Add("message", response.GetMessage().c_str());
     }
 
     return result;

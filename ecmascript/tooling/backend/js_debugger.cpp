@@ -25,7 +25,7 @@
 namespace panda::ecmascript::tooling {
 using panda::ecmascript::base::BuiltinsBase;
 
-bool JSDebugger::SetBreakpoint(const JSPtLocation &location, const Local<FunctionRef> &condFuncRef)
+bool JSDebugger::SetBreakpoint(const JSPtLocation &location, Local<FunctionRef> condFuncRef)
 {
     JSMethod *method = FindMethod(location);
     if (method == nullptr) {
