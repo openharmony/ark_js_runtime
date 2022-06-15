@@ -17,6 +17,8 @@
         <preparer>
             <option name="push" value="obj/ark/js_runtime/ecmascript/tooling/test/Sample.abc -> /data/test" src="out"/>
             <option name="push" value="obj/ark/js_runtime/ecmascript/tooling/test/exception.abc -> /data/test" src="out"/>
+            <option name="push" value="obj/ark/js_runtime/ecmascript/tooling/test/ArrowFunc.abc -> /data/test" src="out"/>
+            <option name="push" value="obj/ark/js_runtime/ecmascript/tooling/test/AsyncFunc.abc -> /data/test" src="out"/>
             <option name="push" value="test/test/libjsdebugtest.so -> /data/test" src="out"/>
             <option name="push" value="test/test/libdebugger_entry.so -> /data/test" src="out"/>
         </preparer>
