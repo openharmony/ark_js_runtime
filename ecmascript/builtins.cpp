@@ -372,8 +372,7 @@ void Builtins::InitializeForSnapshot(JSThread *thread)
 
     InitializeIcuData();
     // Initialize ArkTools
-    JSRuntimeOptions options = vm_->GetJSOptions();
-    if (options.EnableArkTools()) {
+    if (vm_->GetJSOptions().EnableArkTools()) {
         auto env = vm_->GetGlobalEnv();
         auto globalObject = JSHandle<JSObject>::Cast(env->GetJSGlobalObject());
         JSHandle<JSTaggedValue> arkTools(InitializeArkTools(env));
@@ -392,8 +391,7 @@ void Builtins::InitializeGlobalObject(const JSHandle<GlobalEnv> &env, const JSHa
     SetFunction(env, globalObject, "stopRuntimeStat", Global::StopRuntimeStat, 0);
 #endif
 
-    JSRuntimeOptions options = vm_->GetJSOptions();
-    if (options.EnableArkTools()) {
+    if (vm_->GetJSOptions().EnableArkTools()) {
         JSHandle<JSTaggedValue> arkTools(InitializeArkTools(env));
         SetConstantObject(globalObject, "ArkTools", arkTools);
     }

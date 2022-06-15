@@ -332,8 +332,7 @@ JSHandle<job::MicroJobQueue> EcmaVM::GetMicroJobQueue() const
 EcmaVM::CpuProfilingScope::CpuProfilingScope(EcmaVM* vm) : vm_(vm), profiler_(nullptr)
 {
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
-    JSRuntimeOptions options = vm_->GetJSOptions();
-    if (options.EnableCpuProfiler()) {
+    if (vm_->GetJSOptions().EnableCpuProfiler()) {
         profiler_ = CpuProfiler::GetInstance();
         profiler_->CpuProfiler::StartCpuProfilerForFile(vm, "");
     }

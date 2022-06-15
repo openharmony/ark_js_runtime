@@ -146,7 +146,7 @@ public:
     ~WorkManager();
 
     void Initialize(TriggerGCType gcType, ParallelGCTaskPhase taskPhase);
-    void Finish(size_t &aliveSize);
+    size_t Finish();
     void Finish(size_t &aliveSize, size_t &promotedSize);
 
     bool Push(uint32_t threadId, TaggedObject *object);

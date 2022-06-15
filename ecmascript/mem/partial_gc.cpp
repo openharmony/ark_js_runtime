@@ -79,8 +79,7 @@ void PartialGC::Finish()
         auto marker = heap_->GetConcurrentMarker();
         marker->Reset(false);
     } else {
-        size_t aliveSize = 0;
-        workManager_->Finish(aliveSize);
+        workManager_->Finish();
     }
     if (heap_->IsFullMark()) {
         heap_->GetSweeper()->TryFillSweptRegion();
