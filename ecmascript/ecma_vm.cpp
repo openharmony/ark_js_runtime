@@ -78,9 +78,9 @@
 
 namespace panda::ecmascript {
 /* static */
-EcmaVM *EcmaVM::Create(const JSRuntimeOptions &options)
+EcmaVM *EcmaVM::Create(const JSRuntimeOptions &options, EcmaParamConfiguration &config)
 {
-    auto vm = new EcmaVM(options);
+    auto vm = new EcmaVM(options, config);
     if (UNLIKELY(vm == nullptr)) {
         LOG_ECMA(ERROR) << "Failed to create jsvm";
         return nullptr;
@@ -102,12 +102,13 @@ bool EcmaVM::Destroy(EcmaVM *vm)
     return false;
 }
 
-EcmaVM::EcmaVM(JSRuntimeOptions options)
+EcmaVM::EcmaVM(JSRuntimeOptions options, EcmaParamConfiguration config)
     : stringTable_(new EcmaStringTable(this)),
       nativeAreaAllocator_(std::make_unique<NativeAreaAllocator>()),
       heapRegionAllocator_(std::make_unique<HeapRegionAllocator>()),
       chunk_(nativeAreaAllocator_.get()),
-      nativePointerList_(&chunk_)
+      nativePointerList_(&chunk_),
+      ecmaParamConfiguration_(std::move(config))
 {
     options_ = std::move(options);
     icEnabled_ = options_.EnableIC();

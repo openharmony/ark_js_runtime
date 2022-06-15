@@ -19,17 +19,146 @@
 #include "libpandabase/mem/mem.h"
 
 namespace panda::ecmascript {
-    // MEMEORY SIZE SHOULD ROUND UP TO 256KB
-    static constexpr size_t MAX_HEAP_SIZE = 256_MB;                 // Recommended range: 128-256MB
-    static constexpr size_t DEFAULT_SEMI_SPACE_SIZE = 2_MB;         // Recommended range: 2-4MB
-    static constexpr size_t MAX_SEMI_SPACE_SIZE = 16_MB;            // Recommended range: 2-16MB
-    static constexpr size_t DEFAULT_NONMOVABLE_SPACE_SIZE = 4_MB;   // Recommended range: 4-8MB
-    static constexpr size_t DEFAULT_SNAPSHOT_SPACE_SIZE = 256_KB;
-    static constexpr size_t MAX_SNAPSHOT_SPACE_SIZE = 8_MB;
-    static constexpr size_t DEFAULT_MACHINECODE_SPACE_SIZE = 8_MB;
+static constexpr size_t DEFAULT_HEAP_SIZE = 256_MB;                 // Recommended range: 128-256MB
+static constexpr size_t DEFAULT_WORKER_HEAP_SIZE = 64_MB;           // Recommended range: 64_MB
 
-    static constexpr size_t MIN_AllOC_LIMIT_GROWING_STEP = 8_MB;
-    static constexpr uint32_t MAX_STACK_SIZE = 512_KB;
+class EcmaParamConfiguration {
+public:
+    EcmaParamConfiguration(bool isWorker, size_t poolSize)
+    {
+        if (isWorker) {
+            maxHeapSize_ = DEFAULT_WORKER_HEAP_SIZE;
+        } else {
+            if (poolSize >= DEFAULT_HEAP_SIZE) {
+                maxHeapSize_ = DEFAULT_HEAP_SIZE;
+            } else {
+                maxHeapSize_ = poolSize; // pool is too small, no memory left for worker
+            }
+        }
+        Initialize();
+    }
+
+    void Initialize()
+    {
+        if (maxHeapSize_ < LOW_MEMORY) {
+            UNREACHABLE();
+        }
+        if (maxHeapSize_ < MEDIUM_MEMORY) { // 64_MB ~ 128_MB
+            minSemiSpaceSize_ = 2_MB;
+            maxSemiSpaceSize_ = 4_MB;
+            defaultNonMovableSpaceSize_ = 2_MB;
+            defaultSnapshotSpaceSize_ = 512_KB;
+            defaultMachineCodeSpaceSize_ = 2_MB;
+            semiSpaceTriggerConcurrentMark_ = 1_MB;
+            semiSpaceOvershootSize_ = 2_MB;
+            minAllocLimitGrowingStep_ = 2_MB;
+            minGrowingStep_ = 4_MB;
+            maxStackSize_ = 512_KB;
+        } else if (maxHeapSize_ < HIGH_MEMORY) { // 128_MB ~ 256_MB
+            minSemiSpaceSize_ = 2_MB;
+            maxSemiSpaceSize_ = 8_MB;
+            defaultNonMovableSpaceSize_ = 4_MB;
+            defaultSnapshotSpaceSize_ = 512_KB;
+            defaultMachineCodeSpaceSize_ = 2_MB;
+            semiSpaceTriggerConcurrentMark_ = 1.5_MB;
+            semiSpaceOvershootSize_ = 2_MB;
+            minAllocLimitGrowingStep_ = 4_MB;
+            minGrowingStep_ = 8_MB;
+            maxStackSize_ = 512_KB;
+        }  else { // 256_MB
+            minSemiSpaceSize_ = 2_MB;
+            maxSemiSpaceSize_ = 16_MB;
+            defaultNonMovableSpaceSize_ = 4_MB;
+            defaultSnapshotSpaceSize_ = 4_MB;
+            defaultMachineCodeSpaceSize_ = 8_MB;
+            semiSpaceTriggerConcurrentMark_ = 1.5_MB;
+            semiSpaceOvershootSize_ = 2_MB;
+            minAllocLimitGrowingStep_ = 8_MB;
+            minGrowingStep_ = 16_MB;
+            maxStackSize_ = 512_KB;
+        }
+        size_t half = 2;
+        defaultHugeObjectSpaceSize_ = maxHeapSize_ / half;
+    }
+
+    size_t GetMaxHeapSize() const
+    {
+        return maxHeapSize_;
+    }
+
+    size_t GetMinSemiSpaceSize() const
+    {
+        return minSemiSpaceSize_;
+    }
+
+    size_t GetMaxSemiSpaceSize() const
+    {
+        return maxSemiSpaceSize_;
+    }
+
+    size_t GetDefaultNonMovableSpaceSize() const
+    {
+        return defaultNonMovableSpaceSize_;
+    }
+
+    size_t GetDefaultSnapshotSpaceSize() const
+    {
+        return defaultSnapshotSpaceSize_;
+    }
+
+    size_t GetDefaultMachineCodeSpaceSize() const
+    {
+        return defaultMachineCodeSpaceSize_;
+    }
+
+    size_t GetSemiSpaceTriggerConcurrentMark() const
+    {
+        return semiSpaceTriggerConcurrentMark_;
+    }
+
+    size_t GetSemiSpaceOvershootSize() const
+    {
+        return semiSpaceOvershootSize_;
+    }
+
+    size_t GetDefaultHugeObjectSpaceSize() const
+    {
+        return defaultHugeObjectSpaceSize_;
+    }
+
+    size_t GetMinAllocLimitGrowingStep() const
+    {
+        return minAllocLimitGrowingStep_;
+    }
+
+    size_t GetMinGrowingStep() const
+    {
+        return minGrowingStep_;
+    }
+
+    uint32_t GetMaxStackSize() const
+    {
+        return maxStackSize_;
+    }
+
+private:
+    static constexpr size_t LOW_MEMORY = 64_MB;
+    static constexpr size_t MEDIUM_MEMORY = 128_MB;
+    static constexpr size_t HIGH_MEMORY = 256_MB;
+
+    size_t maxHeapSize_ {0};
+    size_t minSemiSpaceSize_ {0};
+    size_t maxSemiSpaceSize_ {0};
+    size_t defaultNonMovableSpaceSize_ {0};
+    size_t defaultSnapshotSpaceSize_ {0};
+    size_t defaultMachineCodeSpaceSize_ {0};
+    size_t defaultHugeObjectSpaceSize_ {0};
+    size_t semiSpaceTriggerConcurrentMark_ {0};
+    size_t semiSpaceOvershootSize_ {0};
+    size_t minAllocLimitGrowingStep_ {0};
+    size_t minGrowingStep_ {0};
+    uint32_t maxStackSize_ {0};
+};
 } // namespace panda::ecmascript
 
 #endif // ECMASCRIPT_ECMA_PARAM_CONFIGURATION_H

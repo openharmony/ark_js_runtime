@@ -135,6 +135,7 @@ private:
                                         const BytesAndDuration &initial, const double timeMs);
 
     Heap* heap_;
+    size_t minAllocLimitGrowingStep_ {0};
 
     double gcStartTime_ {0.0};
     double gcEndTime_ {0.0};

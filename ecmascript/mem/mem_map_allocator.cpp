@@ -127,6 +127,13 @@ void MemMapAllocator::AdapterSuitablePoolCapacity()
     long physSize = pages * pageSize;
 #endif
     capacity_ = std::max<size_t>(physSize / PHY_SIZE_MULTIPLE, MIN_MEM_POOL_CAPACITY);
-    LOG(INFO, RUNTIME) << "Auto adapter memory pool capacity:" << capacity_;
+    if (capacity_ > LARGE_POOL_SIZE) {
+        capacity_ = std::max<size_t>(capacity_, STANDARD_POOL_SIZE);
+    } else if (capacity_ >= MEDIUM_POOL_SIZE) {
+        capacity_ = std::min<size_t>(capacity_, STANDARD_POOL_SIZE);
+    } else if (capacity_ >= LOW_POOL_SIZE) {
+        capacity_ = std::max<size_t>(capacity_, 128_MB);
+    }
+    LOG(INFO, RUNTIME) << "Ark Auto adapter memory pool capacity:" << capacity_;
 }
 }  // namespace panda::ecmascript
