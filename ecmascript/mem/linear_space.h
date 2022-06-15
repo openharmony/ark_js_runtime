@@ -22,6 +22,8 @@ namespace panda::ecmascript {
 class LinearSpace : public Space {
 public:
     explicit LinearSpace(Heap *heap, MemSpaceType type, size_t initialCapacity, size_t maximumCapacity);
+    NO_COPY_SEMANTIC(LinearSpace);
+    NO_MOVE_SEMANTIC(LinearSpace);
     uintptr_t Allocate(size_t size, bool isPromoted = false);
     bool Expand(bool isPromoted);
     void Stop();

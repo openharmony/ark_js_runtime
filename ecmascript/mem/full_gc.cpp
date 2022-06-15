@@ -141,7 +141,7 @@ void FullGC::Finish()
 {
     ECMA_BYTRACE_NAME(HITRACE_TAG_ARK, "FullGC::Finish");
     heap_->Resume(FULL_GC);
-    workManager_->Finish(youngAndOldAliveSize_);
+    youngAndOldAliveSize_ = workManager_->Finish();
     heap_->GetSweeper()->TryFillSweptRegion();
 }
 }  // namespace panda::ecmascript

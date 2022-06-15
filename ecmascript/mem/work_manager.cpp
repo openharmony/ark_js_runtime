@@ -39,11 +39,13 @@ WorkManager::WorkManager(Heap *heap, uint32_t threadNum)
 
 WorkManager::~WorkManager()
 {
+    Finish();
     for (uint32_t i = 0; i < threadNum_; i++) {
         continuousQueue_[i]->Destroy();
         delete continuousQueue_[i];
         continuousQueue_[i] = nullptr;
     }
+
     heap_->GetNativeAreaAllocator()->FreeBuffer(
         reinterpret_cast<void *>(workSpace_));
 }
@@ -103,13 +105,16 @@ bool WorkManager::PopWorkNodeFromGlobal(uint32_t threadId)
     return workStack_.Pop(&works_[threadId].outNode_);
 }
 
-void WorkManager::Finish(size_t &aliveSize)
+size_t WorkManager::Finish()
 {
+    size_t aliveSize = 0;
     for (uint32_t i = 0; i < threadNum_; i++) {
         WorkNodeHolder &holder = works_[i];
-        holder.weakQueue_->FinishMarking(continuousQueue_[i]);
-        delete holder.weakQueue_;
-        holder.weakQueue_ = nullptr;
+        if (holder.weakQueue_ != nullptr) {
+            holder.weakQueue_->FinishMarking(continuousQueue_[i]);
+            delete holder.weakQueue_;
+            holder.weakQueue_ = nullptr;
+        }
         if (holder.allocator_ != nullptr) {
             holder.allocator_->Finalize();
             delete holder.allocator_;
@@ -124,11 +129,12 @@ void WorkManager::Finish(size_t &aliveSize)
             agedSpaces_.back()));
         agedSpaces_.pop_back();
     }
+    return aliveSize;
 }
 
 void WorkManager::Finish(size_t &aliveSize, size_t &promotedSize)
 {
-    Finish(aliveSize);
+    aliveSize = Finish();
     for (uint32_t i = 0; i < threadNum_; i++) {
         WorkNodeHolder &holder = works_[i];
         promotedSize += holder.promotedSize_;
