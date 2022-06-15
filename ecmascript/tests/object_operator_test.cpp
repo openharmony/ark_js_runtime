@@ -240,12 +240,13 @@ JSTaggedValue TestDefinedSetter([[maybe_unused]] EcmaRuntimeCallInfo *argv)
     return JSTaggedValue(12);
 }
 
-JSTaggedValue TestBoolSetter([[maybe_unused]] EcmaRuntimeCallInfo *argv)
+bool TestBoolSetter([[maybe_unused]] JSThread *thread,
+                    [[maybe_unused]] JSHandle<JSObject> &jsObject,
+                    [[maybe_unused]] JSHandle<JSTaggedValue> &value,
+                    [[maybe_unused]] bool success)
 {
-    // 12 : test case
-    return JSTaggedValue(JSTaggedValue::True());
+    return true;
 }
-
 static JSFunction *JSObjectTestCreate(JSThread *thread)
 {
     JSHandle<GlobalEnv> globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
