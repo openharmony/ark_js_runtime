@@ -29,7 +29,6 @@ class PtBaseEvents : public PtBaseTypes {
 public:
     PtBaseEvents() = default;
     ~PtBaseEvents() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override = 0;
     virtual std::string GetName() const = 0;
 
 private:
@@ -41,7 +40,6 @@ class BreakpointResolved final : public PtBaseEvents {
 public:
     BreakpointResolved() = default;
     ~BreakpointResolved() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const override
@@ -83,7 +81,6 @@ class Paused final : public PtBaseEvents {
 public:
     Paused() = default;
     ~Paused() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const override
@@ -208,7 +205,6 @@ class Resumed final : public PtBaseEvents {
 public:
     Resumed() = default;
     ~Resumed() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const override
@@ -225,7 +221,6 @@ class ScriptFailedToParse final : public PtBaseEvents {
 public:
     ScriptFailedToParse() = default;
     ~ScriptFailedToParse() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const override
@@ -326,7 +321,7 @@ public:
         return execContextAuxData_.value_or(Local<ObjectRef>());
     }
 
-    ScriptFailedToParse &SetExecutionContextAuxData(const Local<ObjectRef> &execContextAuxData)
+    ScriptFailedToParse &SetExecutionContextAuxData(Local<ObjectRef> execContextAuxData)
     {
         execContextAuxData_ = execContextAuxData;
         return *this;
@@ -456,7 +451,7 @@ private:
     NO_COPY_SEMANTIC(ScriptFailedToParse);
     NO_MOVE_SEMANTIC(ScriptFailedToParse);
 
-    ScriptId scriptId_ {};
+    ScriptId scriptId_ {0};
     std::string url_ {};
     int32_t startLine_ {0};
     int32_t startColumn_ {0};
@@ -478,7 +473,6 @@ class ScriptParsed final : public PtBaseEvents {
 public:
     ScriptParsed() = default;
     ~ScriptParsed() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const override
@@ -595,7 +589,7 @@ public:
         return execContextAuxData_.value_or(Local<ObjectRef>());
     }
 
-    ScriptParsed &SetExecutionContextAuxData(const Local<ObjectRef> &execContextAuxData)
+    ScriptParsed &SetExecutionContextAuxData(Local<ObjectRef> execContextAuxData)
     {
         execContextAuxData_ = execContextAuxData;
         return *this;
@@ -725,7 +719,7 @@ private:
     NO_COPY_SEMANTIC(ScriptParsed);
     NO_MOVE_SEMANTIC(ScriptParsed);
 
-    ScriptId scriptId_ {};
+    ScriptId scriptId_ {0};
     std::string url_ {};
     int32_t startLine_ {0};
     int32_t startColumn_ {0};
@@ -748,7 +742,6 @@ class AddHeapSnapshotChunk final : public PtBaseEvents {
 public:
     AddHeapSnapshotChunk() = default;
     ~AddHeapSnapshotChunk() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const override
@@ -772,7 +765,6 @@ class ConsoleProfileFinished final : public PtBaseEvents {
 public:
     ConsoleProfileFinished() = default;
     ~ConsoleProfileFinished() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
     std::string GetName() const override
     {
@@ -843,7 +835,6 @@ class ConsoleProfileStarted final : public PtBaseEvents {
 public:
     ConsoleProfileStarted() = default;
     ~ConsoleProfileStarted() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
     std::string GetName() const override
     {
@@ -902,7 +893,6 @@ class PreciseCoverageDeltaUpdate final : public PtBaseEvents {
 public:
     PreciseCoverageDeltaUpdate() = default;
     ~PreciseCoverageDeltaUpdate() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
     std::string GetName() const override
     {
@@ -955,7 +945,6 @@ class HeapStatsUpdate final : public PtBaseEvents {
 public:
     HeapStatsUpdate() = default;
     ~HeapStatsUpdate() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const override
@@ -985,7 +974,6 @@ class LastSeenObjectId final : public PtBaseEvents {
 public:
     LastSeenObjectId() = default;
     ~LastSeenObjectId() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const override
@@ -1027,7 +1015,6 @@ class ReportHeapSnapshotProgress final : public PtBaseEvents {
 public:
     ReportHeapSnapshotProgress() = default;
     ~ReportHeapSnapshotProgress() override = default;
-    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) const override;
     std::unique_ptr<PtJson> ToJson() const override;
 
     std::string GetName() const override

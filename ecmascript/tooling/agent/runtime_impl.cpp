@@ -281,7 +281,7 @@ void RuntimeImpl::CacheObjectIfNeeded(Local<JSValueRef> valRef, RemoteObject *re
     }
 }
 
-void RuntimeImpl::GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn, bool isAccessorOnly,
+void RuntimeImpl::GetProtoOrProtoType(Local<JSValueRef> value, bool isOwn, bool isAccessorOnly,
     std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
 {
     if (!isAccessorOnly && isOwn && !value->IsProxy()) {
@@ -315,7 +315,7 @@ void RuntimeImpl::GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn
     outPropertyDesc->emplace_back(std::move(debuggerProperty));
 }
 
-void RuntimeImpl::GetAdditionalProperties(const Local<JSValueRef> &value,
+void RuntimeImpl::GetAdditionalProperties(Local<JSValueRef> value,
     std::vector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc)
 {
     // The length of the TypedArray have to be limited(less than or equal to lengthTypedArrayLimit) until we construct

@@ -24,7 +24,7 @@
 #include "ecmascript/tooling/protocol_channel.h"
 
 namespace panda::ecmascript::tooling {
-DispatchRequest::DispatchRequest(const EcmaVM *ecmaVm, const std::string &message) : ecmaVm_(ecmaVm)
+DispatchRequest::DispatchRequest(const std::string &message)
 {
     std::unique_ptr<PtJson> json = PtJson::Parse(message);
     if (json == nullptr || !json->IsObject()) {
@@ -76,31 +76,6 @@ DispatchRequest::DispatchRequest(const EcmaVM *ecmaVm, const std::string &messag
         return;
     }
     params_ = std::move(params);
-
-    // below code will delete soon
-    Local<JSValueRef> msgValue = JSON::Parse(ecmaVm, StringRef::NewFromUtf8(ecmaVm, message.c_str()));
-    if (msgValue->IsException()) {
-        DebuggerApi::ClearException(ecmaVm);
-        LOG(ERROR, DEBUGGER) << "json parse throw exception";
-        return;
-    }
-    if (!msgValue->IsObject()) {
-        code_ = RequestCode::JSON_PARSE_ERROR;
-        LOG(ERROR, DEBUGGER) << "json parse error";
-        return;
-    }
-    Local<StringRef> paramsStr = StringRef::NewFromUtf8(ecmaVm, "params");
-    ObjectRef *msgObj = ObjectRef::Cast(*msgValue);
-    Local<JSValueRef> paramsValue = msgObj->Get(ecmaVm, paramsStr);
-    if (paramsValue.IsEmpty()) {
-        return;
-    }
-    if (!paramsValue->IsObject()) {
-        code_ = RequestCode::PARAMS_FORMAT_ERROR;
-        LOG(ERROR, DEBUGGER) << "params format error";
-        return;
-    }
-    paramsObj_ = paramsValue;
 }
 
 DispatchRequest::~DispatchRequest()

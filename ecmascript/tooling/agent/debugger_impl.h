@@ -141,7 +141,7 @@ private:
     void GetLocalVariables(const FrameHandler *frameHandler, const JSMethod *method,
         Local<JSValueRef> &thisVal, Local<ObjectRef> &localObj);
     void CleanUpOnPaused();
-    void UpdateScopeObject(const FrameHandler *frameHandler, std::string_view varName, const Local<JSValueRef> &newVal);
+    void UpdateScopeObject(const FrameHandler *frameHandler, std::string_view varName, Local<JSValueRef> newVal);
     Local<JSValueRef> ConvertToLocal(const std::string &varValue);
     bool DecodeAndCheckBase64(const std::string &src, std::string &dest);
     bool IsSkipLine(const JSPtLocation &location);
