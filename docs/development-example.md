@@ -251,13 +251,18 @@ Run the script in  _Project root directory_**/ark/ts2abc**.
 -   Run test case ES2015 only.
 
     ```
-     python3 test262/run_test262.py --es2015 only
+     python3 test262/run_test262.py --es2015
     ```
 
--   Run all ES2015 and ES51 test cases.
+-   Run test case ES2021 only.
 
     ```
-     python3 test262/run_test262.py --es2015 all
+     python3 test262/run_test262.py --es2021 only
+  
+-   Run all ES2015 and ES51 and ES2021 test cases.
+
+    ```
+     python3 test262/run_test262.py --es2021 all
     ```
 
 -   Run a test case.

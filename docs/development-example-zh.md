@@ -260,16 +260,20 @@ python3 test262/run_test262.py [options]
      python3 test262/run_test262.py --es51
     ```
 
--   仅运行ES2015测试用：
+-   仅运行ES2015测试用例：
 
     ```
-     python3 test262/run_test262.py --es2015 only
+     python3 test262/run_test262.py --es2015
     ```
-
--   运行ES2015和ES51所有测试用例：
+-   仅运行ES2021测试用例：
 
     ```
-     python3 test262/run_test262.py --es2015 all
+     python3 test262/run_test262.py --es2021 only
+  
+-   运行ES2015和ES51和ES2021所有测试用例：
+
+    ```
+     python3 test262/run_test262.py --es2021 all
     ```
 
 -   运行单一测试用例：
