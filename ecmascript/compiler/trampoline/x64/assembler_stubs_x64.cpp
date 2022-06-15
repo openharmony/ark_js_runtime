@@ -1836,6 +1836,7 @@ void AssemblerStubsX64::ResumeRspAndDispatch(ExtendedAssembler *assembler)
     Register glueRegister = __ GlueRegister();
     Register spRegister = rbp;
     Register pcRegister = r12;
+    Register ret = rsi;
     Register jumpSizeRegister = r8;
 
     Register frameStateBaseRegister = r11;
@@ -1849,6 +1850,7 @@ void AssemblerStubsX64::ResumeRspAndDispatch(ExtendedAssembler *assembler)
 
     __ Movq(Operand(frameStateBaseRegister, AsmInterpretedFrame::GetBaseOffset(false)), spRegister);  // update sp
     __ Addq(jumpSizeRegister, pcRegister);  // newPc
+    Register temp = rax;
     Register opcodeRegister = rax;
     __ Movzbq(Operand(pcRegister, 0), opcodeRegister);
     Register bcStubRegister = r11;
@@ -1858,13 +1860,15 @@ void AssemblerStubsX64::ResumeRspAndDispatch(ExtendedAssembler *assembler)
 
     auto jumpSize = kungfu::AssemblerModule::GetJumpSizeFromJSCallMode(
         JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV);
+    Label getHiddenThis;
     Label notUndefined;
     __ Bind(&newObjectDynRangeReturn);
-    __ Cmpq(JSTaggedValue::Undefined().GetRawData(), rsi);
+    __ Cmpq(JSTaggedValue::Undefined().GetRawData(), ret);
     __ Jne(&notUndefined);
 
     auto index = AsmInterpretedFrame::ReverseIndex::THIS_OBJECT_REVERSE_INDEX;
-    __ Movq(Operand(rsp, index * 8), rsi);  // 8: byte size, update acc
+    __ Bind(&getHiddenThis);
+    __ Movq(Operand(rsp, index * 8), ret);  // 8: byte size, update acc
     __ Movq(Operand(frameStateBaseRegister, AsmInterpretedFrame::GetBaseOffset(false)), spRegister);  // update sp
     __ Addq(jumpSize, pcRegister);  // newPc
     __ Movzbq(Operand(pcRegister, 0), opcodeRegister);
@@ -1873,10 +1877,47 @@ void AssemblerStubsX64::ResumeRspAndDispatch(ExtendedAssembler *assembler)
     __ Jmp(bcStubRegister);
 
     __ Bind(&notUndefined);
-    __ Movq(kungfu::BytecodeStubCSigns::ID_NewObjectDynRangeReturn, opcodeRegister);
-    __ Movq(Operand(glueRegister, opcodeRegister, Times8, JSThread::GlueData::GetBCStubEntriesOffset(false)),
+    {
+        Label notEcmaObject;
+        __ Movabs(JSTaggedValue::TAG_HEAPOBJECT_BOOLEAN, temp);
+        __ And(ret, temp);
+        __ Cmpq(0, temp);
+        __ Jne(&notEcmaObject);
+        // acc is heap object
+        __ Movq(Operand(ret, 0), temp);  // hclass
+        __ Movl(Operand(temp, JSHClass::BIT_FIELD_OFFSET), temp);
+        __ Cmpb(static_cast<int32_t>(JSType::ECMA_OBJECT_END), temp);
+        __ Ja(&notEcmaObject);
+        __ Cmpb(static_cast<int32_t>(JSType::ECMA_OBJECT_BEGIN), temp);
+        __ Jb(&notEcmaObject);
+        // acc is ecma object
+        __ Movq(Operand(frameStateBaseRegister, AsmInterpretedFrame::GetBaseOffset(false)), spRegister);  // update sp
+        __ Addq(jumpSize, pcRegister);  // newPc
+        __ Movzbq(Operand(pcRegister, 0), opcodeRegister);
+        __ Movq(Operand(glueRegister, opcodeRegister, Times8, JSThread::GlueData::GetBCStubEntriesOffset(false)),
             bcStubRegister);
-    __ Jmp(bcStubRegister);
+        __ Jmp(bcStubRegister);
+
+        __ Bind(&notEcmaObject);
+        {
+            // load constructor
+            __ Movq(Operand(frameStateBaseRegister, AsmInterpretedFrame::GetFunctionOffset(false)), temp);
+            __ Movl(Operand(temp, JSFunction::BIT_FIELD_OFFSET), temp);
+            __ Shr(JSFunction::FunctionKindBits::START_BIT, temp);
+            __ Andl((1LU << JSFunction::FunctionKindBits::SIZE) - 1, temp);
+            __ Cmpl(static_cast<int32_t>(FunctionKind::CLASS_CONSTRUCTOR), temp);
+            __ Jbe(&getHiddenThis);  // constructor is base
+            // fall through
+        }
+        // exception branch
+        {
+            __ Movq(Operand(frameStateBaseRegister, AsmInterpretedFrame::GetBaseOffset(false)), spRegister);
+            __ Movq(kungfu::BytecodeStubCSigns::ID_NewObjectDynRangeThrowException, opcodeRegister);
+            __ Movq(Operand(glueRegister, opcodeRegister, Times8, JSThread::GlueData::GetBCStubEntriesOffset(false)),
+                    bcStubRegister);
+            __ Jmp(bcStubRegister);
+        }
+    }
 }
 
 // c++ calling convention
