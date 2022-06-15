@@ -181,7 +181,7 @@ namespace panda::ecmascript::kungfu {
     V(HandleOverflow)                                    \
     V(BCDebuggerEntry)                                   \
     V(BCDebuggerExceptionEntry)                          \
-    V(NewObjectDynRangeReturn)                           \
+    V(NewObjectDynRangeThrowException)                   \
     V(InterpreterGetPropertyByName)                      \
 
 #define INTERPRETER_IGNORED_BC_STUB_LIST(V) \
