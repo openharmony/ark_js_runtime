@@ -37,24 +37,19 @@ enum class MemAlignmentLog2 : uint8_t {
     MEM_ALIGN_REGION_LOG2 = 4,
 };
 
-static constexpr size_t SEMI_SPACE_TRIGGER_CONCURRENT_MARK = 1.5_MB;
-static constexpr size_t SEMI_SPACE_OVERSHOOT_SIZE = 2_MB;
-
-static constexpr size_t CONSTRAINT_MIN_SEMI_SPACE_SIZE = 1_MB;
-static constexpr size_t CONSTRAINT_MAX_SEMI_SPACE_SIZE = 16_MB;
-static constexpr size_t CONSTRAINT_MIN_NONMOVABLE_SPACE_SIZE = 1_MB;
-static constexpr size_t CONSTRAINT_MIN_SNAPSHOT_SPACE_SIZE = 256_KB;
-static constexpr size_t CONSTRAINT_MIN_MACHINECODE_SPACE_SIZE = 4_MB;
-
-static constexpr size_t MIN_MEM_POOL_CAPACITY = 32_MB;
+static constexpr size_t LARGE_POOL_SIZE = 480_MB;
+static constexpr size_t MEDIUM_POOL_SIZE = 256_MB;
+static constexpr size_t LOW_POOL_SIZE = 64_MB;
+static constexpr size_t MIN_MEM_POOL_CAPACITY = 64_MB;
 static constexpr size_t PHY_SIZE_MULTIPLE = 4;
+static constexpr size_t WORKER_NUM = 7;
+static constexpr size_t STANDARD_POOL_SIZE = WORKER_NUM * DEFAULT_WORKER_HEAP_SIZE + DEFAULT_HEAP_SIZE;
 
 static constexpr size_t MIN_OLD_SPACE_LIMIT = 2_MB;
-static constexpr size_t MIN_GROWING_STEP = 16_MB;
 
 static constexpr size_t REGION_SIZE_LOG2 = 18U;
 
-static constexpr size_t DEFAULT_HEAP_SIZE = 5_MB;
+static constexpr size_t MIN_HEAP_SIZE = 5_MB;
 
 static constexpr size_t DEFAULT_REGION_SIZE = 1U << REGION_SIZE_LOG2;
 static constexpr size_t DEFAULT_REGION_MASK = DEFAULT_REGION_SIZE - 1;

@@ -51,9 +51,10 @@ Heap::Heap(EcmaVM *ecmaVm) : ecmaVm_(ecmaVm), thread_(ecmaVm->GetJSThread()),
 void Heap::Initialize()
 {
     memController_ = new MemController(this);
-
-    size_t minSemiSpaceCapacity = std::max(DEFAULT_SEMI_SPACE_SIZE, CONSTRAINT_MIN_SEMI_SPACE_SIZE);
-    size_t maxSemiSpaceCapacity = std::min(MAX_SEMI_SPACE_SIZE, CONSTRAINT_MAX_SEMI_SPACE_SIZE);
+    auto &config = ecmaVm_->GetEcmaParamConfiguration();
+    size_t maxHeapSize = config.GetMaxHeapSize();
+    size_t minSemiSpaceCapacity = config.GetMinSemiSpaceSize();
+    size_t maxSemiSpaceCapacity = config.GetMaxSemiSpaceSize();
     activeSemiSpace_ = new SemiSpace(this, minSemiSpaceCapacity, maxSemiSpaceCapacity);
     activeSemiSpace_->Restart();
     activeSemiSpace_->SetWaterLine();
@@ -63,35 +64,37 @@ void Heap::Initialize()
     inactiveSemiSpace_ = new SemiSpace(this, minSemiSpaceCapacity, maxSemiSpaceCapacity);
     // not set up from space
 
-    size_t nonmovableSpaceCapacity = std::max(DEFAULT_NONMOVABLE_SPACE_SIZE, CONSTRAINT_MIN_NONMOVABLE_SPACE_SIZE);
+    size_t nonmovableSpaceCapacity = config.GetDefaultNonMovableSpaceSize();
     if (ecmaVm_->GetJSOptions().WasSetMaxNonmovableSpaceCapacity()) {
         nonmovableSpaceCapacity = ecmaVm_->GetJSOptions().MaxNonmovableSpaceCapacity();
     }
     nonMovableSpace_ = new NonMovableSpace(this, nonmovableSpaceCapacity, nonmovableSpaceCapacity);
     nonMovableSpace_->Initialize();
-    size_t snapshotSpaceCapacity = std::max(DEFAULT_SNAPSHOT_SPACE_SIZE, CONSTRAINT_MIN_SNAPSHOT_SPACE_SIZE);
-    snapshotSpace_ = new SnapshotSpace(this, snapshotSpaceCapacity, MAX_SNAPSHOT_SPACE_SIZE);
-    size_t machineCodeSpaceCapacity = std::max(DEFAULT_MACHINECODE_SPACE_SIZE, CONSTRAINT_MIN_MACHINECODE_SPACE_SIZE);
+    size_t snapshotSpaceCapacity = config.GetDefaultSnapshotSpaceSize();
+    snapshotSpace_ = new SnapshotSpace(this, snapshotSpaceCapacity, snapshotSpaceCapacity);
+    size_t machineCodeSpaceCapacity = config.GetDefaultMachineCodeSpaceSize();
     machineCodeSpace_ = new MachineCodeSpace(this, machineCodeSpaceCapacity, machineCodeSpaceCapacity);
     machineCodeSpace_->Initialize();
 
     size_t capacities = minSemiSpaceCapacity * 2 + nonmovableSpaceCapacity + snapshotSpaceCapacity +
         machineCodeSpaceCapacity;
-    if (MAX_HEAP_SIZE < capacities || MAX_HEAP_SIZE - capacities < MIN_OLD_SPACE_LIMIT) {
-        LOG_ECMA_MEM(FATAL) << "HeapSize is too small to initialize oldspace, heapSize = " << MAX_HEAP_SIZE;
+    if (maxHeapSize < capacities || maxHeapSize - capacities < MIN_OLD_SPACE_LIMIT) {
+        LOG_ECMA_MEM(FATAL) << "HeapSize is too small to initialize oldspace, heapSize = " << maxHeapSize;
     }
-    size_t oldSpaceCapacity = MAX_HEAP_SIZE - capacities;
-    globalSpaceAllocLimit_ = MAX_HEAP_SIZE - minSemiSpaceCapacity;
+    size_t oldSpaceCapacity = maxHeapSize - capacities;
+    globalSpaceAllocLimit_ = maxHeapSize - minSemiSpaceCapacity;
 
     oldSpace_ = new OldSpace(this, oldSpaceCapacity, oldSpaceCapacity);
     compressSpace_ = new OldSpace(this, oldSpaceCapacity, oldSpaceCapacity);
     oldSpace_->Initialize();
-    hugeObjectSpace_ = new HugeObjectSpace(heapRegionAllocator_, oldSpaceCapacity, oldSpaceCapacity);
+
+    size_t hugeObjectSpaceCapacity = config.GetDefaultHugeObjectSpaceSize();
+    hugeObjectSpace_ = new HugeObjectSpace(heapRegionAllocator_, hugeObjectSpaceCapacity, hugeObjectSpaceCapacity);
     maxEvacuateTaskCount_ = Taskpool::GetCurrentTaskpool()->GetTotalThreadNum();
     maxMarkTaskCount_ = std::min<size_t>(ecmaVm_->GetJSOptions().GetGcThreadNum(),
         maxEvacuateTaskCount_ - 1);
 
-    LOG(INFO, RUNTIME) << "heap initialize: heap size = " << MAX_HEAP_SIZE
+    LOG(INFO, RUNTIME) << "heap initialize: heap size = " << maxHeapSize
         << ", semispace capacity = " << minSemiSpaceCapacity
         << ", nonmovablespace capacity = " << nonmovableSpaceCapacity
         << ", snapshotspace capacity = " << snapshotSpaceCapacity
@@ -414,8 +417,9 @@ void Heap::AdjustOldSpaceLimit()
     if (oldSpaceLimitAdjusted_) {
         return;
     }
+    size_t minGrowingStep = ecmaVm_->GetEcmaParamConfiguration().GetMinGrowingStep();
     size_t oldSpaceAllocLimit = GetOldSpace()->GetInitialCapacity();
-    size_t newOldSpaceAllocLimit = std::max(oldSpace_->GetHeapObjectSize() + MIN_GROWING_STEP,
+    size_t newOldSpaceAllocLimit = std::max(oldSpace_->GetHeapObjectSize() + minGrowingStep,
         static_cast<size_t>(oldSpaceAllocLimit * memController_->GetAverageSurvivalRate()));
     if (newOldSpaceAllocLimit <= oldSpaceAllocLimit) {
         GetOldSpace()->SetInitialCapacity(newOldSpaceAllocLimit);
@@ -423,7 +427,7 @@ void Heap::AdjustOldSpaceLimit()
         oldSpaceLimitAdjusted_ = true;
     }
 
-    size_t newGlobalSpaceAllocLimit = std::max(GetHeapObjectSize() + MIN_GROWING_STEP,
+    size_t newGlobalSpaceAllocLimit = std::max(GetHeapObjectSize() + minGrowingStep,
         static_cast<size_t>(globalSpaceAllocLimit_ * memController_->GetAverageSurvivalRate()));
     if (newGlobalSpaceAllocLimit < globalSpaceAllocLimit_) {
         globalSpaceAllocLimit_ = newGlobalSpaceAllocLimit;
@@ -459,11 +463,12 @@ void Heap::RecomputeLimits()
     size_t newSpaceCapacity = activeSemiSpace_->GetInitialCapacity();
 
     double growingFactor = memController_->CalculateGrowingFactor(gcSpeed, mutatorSpeed);
-    size_t maxOldSpaceCapacity = oldSpace_->GetMaximumCapacity();
+    // newOldSpaceLimit should consider committedSize of hugeObjectSpace
+    size_t maxOldSpaceCapacity = oldSpace_->GetMaximumCapacity() - hugeObjectSpace_->GetCommittedSize();
     auto newOldSpaceLimit = memController_->CalculateAllocLimit(oldSpaceSize, MIN_OLD_SPACE_LIMIT, maxOldSpaceCapacity,
                                                                 newSpaceCapacity, growingFactor);
-    size_t maxGlobalSize = MAX_HEAP_SIZE - newSpaceCapacity;
-    auto newGlobalSpaceLimit = memController_->CalculateAllocLimit(GetHeapObjectSize(), DEFAULT_HEAP_SIZE,
+    size_t maxGlobalSize = ecmaVm_->GetEcmaParamConfiguration().GetMaxHeapSize() - newSpaceCapacity;
+    auto newGlobalSpaceLimit = memController_->CalculateAllocLimit(GetHeapObjectSize(), MIN_HEAP_SIZE,
                                                                    maxGlobalSize, newSpaceCapacity, growingFactor);
     globalSpaceAllocLimit_ = newGlobalSpaceLimit;
     oldSpace_->SetInitialCapacity(newOldSpaceLimit);
@@ -541,7 +546,8 @@ void Heap::TryTriggerConcurrentMarking()
     double newSpaceConcurrentMarkSpeed = memController_->GetNewSpaceConcurrentMarkSpeedPerMS();
 
     if (newSpaceConcurrentMarkSpeed == 0 || newSpaceAllocSpeed == 0) {
-        if (activeSemiSpace_->GetCommittedSize() >= SEMI_SPACE_TRIGGER_CONCURRENT_MARK) {
+        auto &config = ecmaVm_->GetEcmaParamConfiguration();
+        if (activeSemiSpace_->GetCommittedSize() >= config.GetSemiSpaceTriggerConcurrentMark()) {
             markType_ = MarkType::MARK_YOUNG;
             TriggerConcurrentMarking();
             OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Trigger the first semi mark" << fullGCRequested_;

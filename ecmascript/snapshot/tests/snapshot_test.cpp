@@ -254,13 +254,14 @@ HWTEST_F_L0(SnapshotTest, SerializeBuiltins)
     // generate builtins.snapshot file
     JSRuntimeOptions options1;
     options1.SetArkProperties(ArkProperties::ENABLE_SNAPSHOT_SERIALIZE);
-    EcmaVM *ecmaVm1 = EcmaVM::Create(options1);
+    auto config = ecmascript::EcmaParamConfiguration(false, MemMapAllocator::GetInstance()->GetCapacity());
+    EcmaVM *ecmaVm1 = EcmaVM::Create(options1, config);
     EcmaVM::Destroy(ecmaVm1);
 
     // create EcmaVM use builtins deserialzie
     JSRuntimeOptions options2;
     options2.SetArkProperties(ArkProperties::ENABLE_SNAPSHOT_DESERIALIZE);
-    EcmaVM *ecmaVm2 = EcmaVM::Create(options2);
+    EcmaVM *ecmaVm2 = EcmaVM::Create(options2, config);
     EXPECT_TRUE(ecmaVm2->GetGlobalEnv()->GetClass()->GetObjectType() == JSType::GLOBAL_ENV);
     auto globalConst = const_cast<GlobalEnvConstants *>(ecmaVm2->GetJSThread()->GlobalConstants());
     size_t hclassEndIndex = globalConst->GetHClassEndIndex();
